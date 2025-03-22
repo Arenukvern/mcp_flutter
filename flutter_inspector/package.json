@@ -1,0 +1,41 @@
+{
+  "name": "flutter-inspector",
+  "version": "0.1.0",
+  "description": "MCP for flutter application",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "flutter-inspector": "./build/index.js"
+  },
+  "files": [
+    "build"
+  ],
+  "scripts": {
+    "build": "npm run generate-rpc-handlers && tsc && node -e \"require('fs').chmodSync('build/index.js', '755')\" && npm run copy-yaml-files",
+    "prepare": "npm run build",
+    "watch": "tsc --watch",
+    "bi": "npm run prepare && npm run inspector",
+    "inspector": "npx @modelcontextprotocol/inspector build/index.js",
+    "start": "node build/index.js",
+    "generate-rpc-handlers": "ts-node scripts/generate_rpc_handlers.ts",
+    "copy-yaml-files": "mkdir -p build/servers && cp src/servers/server_tools_flutter.yaml build/servers/ && cp src/servers/server_tools_custom.yaml build/servers/"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "0.6.0",
+    "@types/axios": "^0.9.36",
+    "@types/js-yaml": "^4.0.9",
+    "@types/ws": "^8.5.10",
+    "axios": "^1.8.3",
+    "dotenv": "^16.4.5",
+    "js-yaml": "^4.1.0",
+    "ws": "^8.16.0",
+    "yargs": "^17.7.2"
+  },
+  "devDependencies": {
+    "@types/dotenv": "^8.2.0",
+    "@types/node": "^20.11.24",
+    "@types/yargs": "^17.0.32",
+    "typescript": "^5.3.3",
+    "ts-node": "^10.9.1"
+  }
+}

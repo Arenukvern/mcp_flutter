@@ -1,0 +1,27 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Flutter test_app degug",
+      "request": "launch",
+      "type": "dart",
+      "cwd": "test_app",
+      "flutterMode": "debug",
+      "args": [
+        "--debug",
+        // "-d=macos",
+        "--observatory-port=8181",
+        "--enable-vm-service",
+        "--disable-service-auth-codes"
+      ]
+    },
+    {
+      "name": "Flutter MCP extension debug",
+      "request": "launch",
+      "type": "dart",
+      "cwd": "flutter_mcp_extension",
+      "flutterMode": "debug",
+      "args": ["--debug", "--web-port=3434"]
+    }
+  ]
+}

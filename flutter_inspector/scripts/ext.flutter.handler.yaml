@@ -1,0 +1,464 @@
+# server_tools_handler.yaml
+handlers:
+  - name: debug_dump_render_tree
+    description: Fetches the widget tree.
+    rpcMethod: "ext.flutter.debugDumpRenderTree"
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters: {}
+
+  - name: inspector_get_properties
+    description: Fetches details for a specific widget.
+    rpcMethod: "ext.flutter.inspector.getProperties"
+    needsDartServiceExtensionProxy: true
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters:
+      objectId: "arg.objectId"
+
+  - name: debug_set_debug_paint
+    description: Toggles debug paint mode.
+    rpcMethod: "ext.flutter.debugPaint"
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters:
+      enabled: ""
+
+  - name: inspector_get_root_widget_summary_tree
+    description: Fetches the root widget summary tree using the Dart Service Extension Proxy.
+    rpcMethod: "ext.flutter.inspector.getRootWidgetSummaryTree"
+    needsDartServiceExtensionProxy: true
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters:
+      includeProperties: "arg.includeProperties"
+      subtreeDepth: "arg.subtreeDepth"
+
+  - name: debug_dump_layer_tree
+    description: Dumps the layer tree from the Flutter app.
+    rpcMethod: "ext.flutter.debugDumpLayerTree"
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters: {}
+
+  - name: debug_dump_semantics_tree
+    description: Dumps the semantics tree in traversal order.
+    rpcMethod: "ext.flutter.debugDumpSemanticsTreeInTraversalOrder"
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters: {}
+
+  - name: debug_dump_semantics_tree_inverse
+    description: Dumps the semantics tree in inverse hit test order.
+    rpcMethod: "ext.flutter.debugDumpSemanticsTreeInInverseHitTestOrder"
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters: {}
+
+  - name: debug_dump_focus_tree
+    description: Dumps the focus tree from the Flutter app.
+    rpcMethod: "ext.flutter.debugDumpFocusTree"
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters: {}
+
+  - name: debug_paint_baselines_enabled
+    description: Toggles baseline paint debugging.
+    rpcMethod: "ext.flutter.debugPaintBaselinesEnabled"
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters:
+      enabled: ""
+
+  - name: debug_disable_clip_layers
+    description: Toggles disabling of clip layers.
+    rpcMethod: "ext.flutter.debugDisableClipLayers"
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters:
+      enabled: ""
+
+  - name: debug_disable_physical_shape_layers
+    description: Toggles physical shape layers debugging.
+    rpcMethod: "ext.flutter.debugDisablePhysicalShapeLayers"
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters:
+      enabled: ""
+
+  - name: debug_disable_opacity_layers
+    description: Toggles opacity layers debugging.
+    rpcMethod: "ext.flutter.debugDisableOpacityLayers"
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters:
+      enabled: ""
+
+  - name: repaint_rainbow
+    description: Toggles repaint rainbow debugging.
+    rpcMethod: "ext.flutter.repaintRainbow"
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters:
+      enabled: ""
+
+  - name: debug_allow_banner
+    description: Toggles the debug banner in the Flutter app.
+    rpcMethod: "ext.flutter.debugAllowBanner"
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters:
+      enabled: ""
+
+  - name: flutter_core_invert_oversized_images
+    description: Toggles inverting of oversized images for debugging.
+    rpcMethod: "ext.flutter.invertOversizedImages"
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters:
+      enabled: ""
+
+  - name: flutter_core_platform_override
+    description: Overrides the platform for the Flutter app.
+    rpcMethod: "ext.flutter.platformOverride"
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters:
+      platform: ""
+
+  - name: flutter_core_brightness_override
+    description: Overrides the brightness for the Flutter app.
+    rpcMethod: "ext.flutter.brightnessOverride"
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters:
+      brightness: ""
+
+  - name: flutter_core_time_dilation
+    description: Sets the time dilation factor for animations.
+    rpcMethod: "ext.flutter.timeDilation"
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters:
+      dilation: ""
+
+  - name: flutter_core_evict
+    description: Evicts an asset from the Flutter app's cache.
+    rpcMethod: "ext.flutter.evict"
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters:
+      asset: ""
+
+  - name: inspector_screenshot
+    description: Takes a screenshot of the Flutter app.
+    rpcMethod: "ext.flutter.inspector.screenshot"
+    needsDartServiceExtensionProxy: true
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters: {}
+
+  - name: inspector_get_layout_explorer_node
+    description: Gets layout explorer information for a widget.
+    rpcMethod: "ext.flutter.inspector.getLayoutExplorerNode"
+    needsDartServiceExtensionProxy: true
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters:
+      objectId: "arg.objectId"
+
+  - name: inspector_track_rebuild_dirty_widgets
+    description: Tracks widget rebuilds to identify performance issues.
+    rpcMethod: "ext.flutter.inspector.trackRebuildDirtyWidgets"
+    needsDartServiceExtensionProxy: true
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters:
+      enabled: ""
+
+  - name: inspector_set_selection_by_id
+    description: Sets the selected widget by ID.
+    rpcMethod: "ext.flutter.inspector.setSelectionById"
+    needsDartServiceExtensionProxy: true
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters:
+      selectionId: "arg.selectionId"
+
+  - name: inspector_get_parent_chain
+    description: Gets the parent chain for a widget.
+    rpcMethod: "ext.flutter.inspector.getParentChain"
+    needsDartServiceExtensionProxy: true
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters:
+      objectId: "arg.objectId"
+
+  - name: inspector_get_children_summary_tree
+    description: Gets the children summary tree for a widget.
+    rpcMethod: "ext.flutter.inspector.getChildrenSummaryTree"
+    needsDartServiceExtensionProxy: true
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters:
+      objectId: "arg.objectId"
+
+  - name: inspector_get_details_subtree
+    description: Gets the details subtree for a widget.
+    rpcMethod: "ext.flutter.inspector.getDetailsSubtree"
+    needsDartServiceExtensionProxy: true
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters:
+      objectId: "arg.objectId"
+
+  - name: inspector_get_selected_widget
+    description: Gets information about the currently selected widget.
+    rpcMethod: "ext.flutter.inspector.getSelectedWidget"
+    needsDartServiceExtensionProxy: true
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters: {}
+
+  - name: inspector_get_selected_summary_widget
+    description: Gets summary information about the currently selected widget.
+    rpcMethod: "ext.flutter.inspector.getSelectedSummaryWidget"
+    needsDartServiceExtensionProxy: true
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters: {}
+
+  - name: inspector_is_widget_creation_tracked
+    description: Checks if widget creation tracking is enabled.
+    rpcMethod: "ext.flutter.inspector.isWidgetCreationTracked"
+    needsDartServiceExtensionProxy: true
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters: {}
+
+  - name: inspector_structured_errors
+    description: Enables or disables structured error reporting.
+    rpcMethod: "ext.flutter.inspector.structuredErrors"
+    needsDartServiceExtensionProxy: true
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters:
+      enabled: ""
+
+  - name: inspector_show
+    description: Shows specific widget details in the Flutter app inspector.
+    rpcMethod: "ext.flutter.inspector.show"
+    needsDartServiceExtensionProxy: true
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters:
+      options: "arg.options"
+
+  - name: flutter_core_profile_platform_channels
+    description: Enables or disables platform channel profiling.
+    rpcMethod: "ext.flutter.profilePlatformChannels"
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters:
+      enabled: ""
+
+  - name: flutter_core_profile_render_object_paints
+    description: Enables or disables profiling of render object paints.
+    rpcMethod: "ext.flutter.profileRenderObjectPaints"
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters:
+      enabled: ""
+
+  - name: flutter_core_profile_render_object_layouts
+    description: Enables or disables profiling of render object layouts.
+    rpcMethod: "ext.flutter.profileRenderObjectLayouts"
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters:
+      enabled: ""
+
+  - name: flutter_core_show_performance_overlay
+    description: Shows or hides the performance overlay.
+    rpcMethod: "ext.flutter.showPerformanceOverlay"
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters:
+      enabled: ""
+
+  - name: flutter_core_profile_widget_builds
+    description: Enables or disables profiling of widget builds.
+    rpcMethod: "ext.flutter.profileWidgetBuilds"
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters:
+      enabled: ""
+
+  - name: flutter_core_profile_user_widget_builds
+    description: Enables or disables profiling of user widget builds.
+    rpcMethod: "ext.flutter.profileUserWidgetBuilds"
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters:
+      enabled: ""
+
+  - name: inspector_track_repaint_widgets
+    description: Tracks widget repaints to identify performance issues.
+    rpcMethod: "ext.flutter.inspector.trackRepaintWidgets"
+    needsDartServiceExtensionProxy: true
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters:
+      enabled: ""
+
+  - name: inspector_widget_location_id_map
+    description: Gets the mapping between widget locations and their IDs.
+    rpcMethod: "ext.flutter.inspector.widgetLocationIdMap"
+    needsDartServiceExtensionProxy: true
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters: {}
+
+  - name: inspector_dispose_all_groups
+    description: Disposes all inspector groups.
+    rpcMethod: "ext.flutter.inspector.disposeAllGroups"
+    needsDartServiceExtensionProxy: true
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters: {}
+
+  - name: inspector_dispose_group
+    description: Disposes a specific inspector group.
+    rpcMethod: "ext.flutter.inspector.disposeGroup"
+    needsDartServiceExtensionProxy: true
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters:
+      groupName: "arg.groupName"
+
+  - name: inspector_is_widget_tree_ready
+    description: Checks if the widget tree is ready for inspection.
+    rpcMethod: "ext.flutter.inspector.isWidgetTreeReady"
+    needsDartServiceExtensionProxy: true
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters: {}
+
+  - name: inspector_dispose_id
+    description: Disposes a specific object by its ID.
+    rpcMethod: "ext.flutter.inspector.disposeId"
+    needsDartServiceExtensionProxy: true
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters:
+      objectId: "arg.objectId"
+
+  - name: inspector_set_pub_root_directories
+    description: Sets the pub root directories.
+    rpcMethod: "ext.flutter.inspector.setPubRootDirectories"
+    needsDartServiceExtensionProxy: true
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters:
+      rootDirectories: "arg.rootDirectories"
+
+  - name: inspector_add_pub_root_directories
+    description: Adds pub root directories.
+    rpcMethod: "ext.flutter.inspector.addPubRootDirectories"
+    needsDartServiceExtensionProxy: true
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters:
+      rootDirectories: "arg.rootDirectories"
+
+  - name: inspector_remove_pub_root_directories
+    description: Removes pub root directories.
+    rpcMethod: "ext.flutter.inspector.removePubRootDirectories"
+    needsDartServiceExtensionProxy: true
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters:
+      rootDirectories: "arg.rootDirectories"
+
+  - name: inspector_get_pub_root_directories
+    description: Gets the pub root directories.
+    rpcMethod: "ext.flutter.inspector.getPubRootDirectories"
+    needsDartServiceExtensionProxy: true
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters: {}
+
+  - name: inspector_get_children
+    description: Gets the children of a widget.
+    rpcMethod: "ext.flutter.inspector.getChildren"
+    needsDartServiceExtensionProxy: true
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters:
+      objectId: "arg.objectId"
+
+  - name: inspector_get_children_details_subtree
+    description: Gets the children details subtree of a widget.
+    rpcMethod: "ext.flutter.inspector.getChildrenDetailsSubtree"
+    needsDartServiceExtensionProxy: true
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters:
+      objectId: "arg.objectId"
+
+  - name: inspector_get_root_widget
+    description: Gets the root widget.
+    rpcMethod: "ext.flutter.inspector.getRootWidget"
+    needsDartServiceExtensionProxy: true
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters: {}
+
+  - name: inspector_get_root_widget_summary_tree_with_previews
+    description: Gets the root widget summary tree with previews.
+    rpcMethod: "ext.flutter.inspector.getRootWidgetSummaryTreeWithPreviews"
+    needsDartServiceExtensionProxy: true
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters:
+      includeProperties: "arg.includeProperties"
+      subtreeDepth: "arg.subtreeDepth"
+
+  - name: inspector_get_root_widget_tree
+    description: Gets the complete root widget tree.
+    rpcMethod: "ext.flutter.inspector.getRootWidgetTree"
+    needsDartServiceExtensionProxy: true
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters: {}
+
+  - name: inspector_set_flex_fit
+    description: Sets the flex fit property of a flex widget.
+    rpcMethod: "ext.flutter.inspector.setFlexFit"
+    needsDartServiceExtensionProxy: true
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters:
+      objectId: "arg.objectId"
+      flexFit: "arg.flexFit"
+
+  - name: inspector_set_flex_factor
+    description: Sets the flex factor property of a flex widget.
+    rpcMethod: "ext.flutter.inspector.setFlexFactor"
+    needsDartServiceExtensionProxy: true
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters:
+      objectId: "arg.objectId"
+      flexFactor: "arg.flexFactor"
+
+  - name: inspector_set_flex_properties
+    description: Sets multiple flex properties of a flex widget.
+    rpcMethod: "ext.flutter.inspector.setFlexProperties"
+    needsDartServiceExtensionProxy: true
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters:
+      objectId: "arg.objectId"
+      flexFactor: "arg.flexFactor"
+      flexFit: "arg.flexFit"

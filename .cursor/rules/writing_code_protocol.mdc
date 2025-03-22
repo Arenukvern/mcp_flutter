@@ -1,0 +1,51 @@
+---
+description: Writing Code Protocol
+globs: *dart
+alwaysApply: false
+---
+**Writing Code Protocol**
+
+- Place mock, test and implementation exactly near intent file.
+- Export files from its folders using barrel file (ui/ui.dart, commands/commands.dart etc.).
+- To find implementation, try to load intents first.
+- Do not rely on strings, use enums.
+- Use context.read/context.select to subscribe to observable state in build methods.
+- If you create new file, make sure to check its intent. If it doesn't have an intent - create it.
+- Use EquatableMixin for classes.
+
+**Intent and Implementation Consistency**
+  *   Ensure that the implementation of `Resources`, `Commands`, and `UI components` strictly adheres to the definitions provided in their corresponding `SemanticIntents`.
+  *   Any discrepancies between the SemanticIntent and the implementation should be treated as issues. Resolve these by either updating the code to match the intent or revising the intent to accurately reflect the code, always prioritizing the clarity and correctness of the `SemanticIntent`.
+
+**Command-Resource Pattern**
+- **Commands**: Pure business logic containers
+  - Extend `SemanticCommand` with `execute()` method
+  - Named as `{Action}{Resource}Command`
+  - File named as {snake_case}.cmd.dart
+  - Can read/update multiple resources
+  - Contain all transformative logic
+  - Commands are executed based on user or other actions
+- **Resources**: Pure data containers
+  - Named as `{Domain}Resource`
+  - File named as {snake_case}.src.dart
+  - Place ResourceData (BLoC models, see below) and support types to  {snake_case}.src.data.dart
+  - Minimal business logic related to state management. Focus on holding and managing state, not complex domain logic.
+  - **Immutable Resources**
+    - Use for all Flutter UI Widget related data.
+    - Use `BLoC Style`, see explanation below.
+    - For resources representing collections (lists, maps), always extend `OrderedMapNotifier`/`OrderedListNotifier`.
+    - Protocol defining `ResourceData` class:
+      - If the domain scope is similar: `KeyboardSetting`, `MusicSettings`, `GridSettings` etc..
+      - If it is related to one model, like `Apple` has properties: color, shape etc..
+      - If that's the case, always create `ResourceData`.
+      - Otherwise create for every primitive different Resource, like `GameStatusResource extends ValueNotifier` etc.
+      - In the context of `Immutable Resources`, `BLoC style` refers to the practice of separating the immutable data structure (the "State" in BLoC terminology) into its own Data class (`Model`). This Data class is then held and managed by the Resource class (which acts as a simplified "BLoC"), using `ValueNotifier`, `OrderedMapNotifier`, or `OrderedListNotifier` to notify listeners of state changes. This promotes a clear separation of concerns and improves the manageability of immutable state.
+
+  - **Mutable Resources**
+    - For fast and effecient operations, like rendering, game loops etc..
+    - Pure classes with mutable structures.
+    - Create separate 'Data', Bloc style files for complex data structures. When using in Mutable Resource, Data should have prefix `Mut` and be mutable. 
+  - Resources should provide a clear way to define their initial state. Use factory constructors like `initial()` within the state class for this purpose.
+  - Cannot have any dependencies!
+
+

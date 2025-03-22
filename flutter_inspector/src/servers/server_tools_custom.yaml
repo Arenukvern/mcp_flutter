@@ -1,0 +1,41 @@
+tools:
+  - name: get_active_ports
+    description: "Utility: Get list of ports where Flutter/Dart processes are listening. This is a local utility, not a Flutter RPC method."
+    inputSchema:
+      type: object
+      properties: {}
+      required: []
+  - name: get_supported_protocols
+    description: "Utility: Get supported protocols from a Flutter app. This is a VM service method, not a Flutter RPC. Connects to the default Flutter debug port (8181) unless specified otherwise."
+    inputSchema:
+      type: object
+      properties:
+        port:
+          type: number
+          description: "Optional: Custom port number if not using default Flutter debug port 8181"
+      required: []
+  - name: get_vm
+    description: "Utility: Get VM information from a Flutter app. This is a VM service method, not a Flutter RPC. Connects to the default Flutter debug port (8181) unless specified otherwise."
+    inputSchema:
+      type: object
+      properties:
+        port:
+          type: number
+          description: "Optional: Custom port number if not using default Flutter debug port 8181"
+      required: []
+  - name: get_extension_rpcs
+    description: "Utility: List all available extension RPCs in the Flutter app. This is a helper tool for discovering available methods."
+    inputSchema:
+      type: object
+      properties:
+        port:
+          type: number
+          description: "Optional: Custom port number if not using default Flutter debug port 8181"
+        isolateId:
+          type: string
+          description: "Optional specific isolate ID to check. If not provided, checks all isolates"
+        isRawResponse:
+          type: boolean
+          description: "If true, returns the raw response from the VM service without processing"
+          default: false
+      required: []

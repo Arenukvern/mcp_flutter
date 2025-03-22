@@ -39,38 +39,46 @@ For developers who want to contribute to the project or run the latest version d
 
    This command compiles the TypeScript code and creates the `build` directory with the compiled JavaScript files, including `build/index.js`.
 
-4. **Run the Flutter Inspector server:**
-   ```bash
-   node build/index.js --stdio
-   ```
-   This command starts the server in stdio mode. You can also use:
-   ```bash
-   npx -y . --stdio # if you prefer to use npx, ensure package.json "main" points to build/index.js
-   ```
-
-After these steps, you can configure your AI coding assistant to use the Flutter Inspector server. Refer to the "🛠️ Add Flutter Inspector to your AI tool" section for configuration details.
-
-### 1-Minute Setup
-
-1. **Start your Flutter app in debug mode**
-
-! Current workaround for security reasons is to run with `--disable-service-auth-codes`. If you know how to fix this, please let me know!
-
-```bash
-flutter run --debug --observatory-port=8181 --enable-vm-service --disable-service-auth-codes
-```
-
-2. **Run Flutter Inspector (Global Install)**
+4. **To debug use MCP Inspector:**
 
    ```bash
-   npx flutter-inspector --port=3334
+   npx @modelcontextprotocol/inspector build/index.js
    ```
 
-3. **🛠️ Add Flutter Inspector to your AI tool**
+5. **Start your Flutter app in debug mode**
+
+   ! Current workaround for security reasons is to run with `--disable-service-auth-codes`. If you know how to fix this, please let me know!
+
+   ```bash
+   flutter run --debug --observatory-port=8181 --enable-vm-service --disable-service-auth-codes
+   ```
+
+6. **🛠️ Add Flutter Inspector to your AI tool**
 
    **Note for Local Development (GitHub Install):**
 
    If you installed the Flutter Inspector from GitHub and built it locally, you need to adjust the paths in the AI tool configurations to point to your local `build/index.js` file. Refer to the "Installation from GitHub" section for instructions on cloning and building the project.
+
+   #### Cline Setup
+
+   1. Add to your `.cline/config.json`:
+      ```json
+      {
+        "mcpServers": {
+          "flutter-inspector": {
+            "command": "node",
+            "args": ["/path/to/your/cloned/flutter-inspector/build/index.js"],
+            "env": {
+              "PORT": "3334",
+              "LOG_LEVEL": "info"
+            },
+            "disabled": false
+          }
+        }
+      }
+      ```
+   2. Restart Cline
+   3. The Flutter inspector will be automatically available in your conversations
 
    #### Cursor Setup
 
@@ -91,7 +99,7 @@ flutter run --debug --observatory-port=8181 --enable-vm-service --disable-servic
       }
       ```
    4. Restart Cursor
-   5. Open Composer in agent mode
+   5. Open Agent Panel (cmd + L on macOS)
    6. You're ready! Try commands like "analyze my Flutter app's widget tree"
 
    #### Claude Setup
@@ -114,27 +122,6 @@ flutter run --debug --observatory-port=8181 --enable-vm-service --disable-servic
       ```
    2. Restart Claude
    3. The Flutter inspector tools will be automatically available
-
-   #### Cline Setup
-
-   1. Add to your `.cline/config.json`:
-      ```json
-      {
-        "mcpServers": {
-          "flutter-inspector": {
-            "command": "node",
-            "args": ["/path/to/your/cloned/flutter-inspector/build/index.js"],
-            "env": {
-              "PORT": "3334",
-              "LOG_LEVEL": "info"
-            },
-            "disabled": false
-          }
-        }
-      }
-      ```
-   2. Restart Cline
-   3. The Flutter inspector will be automatically available in your conversations
 
 ## 🎯 What You Can Do
 

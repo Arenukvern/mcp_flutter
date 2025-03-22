@@ -1,0 +1,82 @@
+# server_tools_handler.yaml
+handlers:
+  - name: get_vm
+    description: Fetches VM information.
+    rpcMethod: "getVM"
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters: {}
+
+  - name: dart_io_socket_profiling_enabled
+    description: Enables or disables socket profiling.
+    rpcMethod: "ext.dart.io.socketProfilingEnabled"
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters:
+      enabled: ""
+
+  - name: dart_io_http_enable_timeline_logging
+    description: Enables or disables HTTP timeline logging.
+    rpcMethod: "ext.dart.io.httpEnableTimelineLogging"
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters:
+      enabled: ""
+
+  - name: dart_io_get_version
+    description: Gets Flutter version information.
+    rpcMethod: "ext.dart.io.getVersion"
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters: {}
+
+  - name: dart_io_get_http_profile_request
+    description: Gets details of a specific HTTP request from the profile.
+    rpcMethod: "ext.dart.io.getHttpProfileRequest"
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters:
+      requestId: ""
+
+  - name: dart_io_get_socket_profile
+    description: Gets socket profiling information.
+    rpcMethod: "ext.dart.io.getSocketProfile"
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters: {}
+
+  - name: dart_io_clear_socket_profile
+    description: Clears the socket profiling data.
+    rpcMethod: "ext.dart.io.clearSocketProfile"
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters: {}
+
+  - name: dart_io_get_http_profile
+    description: Gets HTTP profiling information.
+    rpcMethod: "ext.dart.io.getHttpProfile"
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters: {}
+
+  - name: dart_io_clear_http_profile
+    description: Clears the HTTP profiling data.
+    rpcMethod: "ext.dart.io.clearHttpProfile"
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters: {}
+
+  - name: dart_io_get_open_files
+    description: Gets list of currently open files in the Flutter app.
+    rpcMethod: "ext.dart.io.getOpenFiles"
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters: {}
+
+  - name: dart_io_get_open_file_by_id
+    description: Gets details of a specific open file by its ID.
+    rpcMethod: "ext.dart.io.getOpenFileById"
+    needsDebugVerification: true
+    responseWrapper: true
+    parameters:
+      fileId: ""
