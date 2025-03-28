@@ -1,6 +1,10 @@
-import { Logger } from "forwarding-server";
+import { Logger } from "flutter_mcp_forwarding_server";
 import { FlutterPort, IsolateInfo } from "../types/types.js";
-import { execAsync, RpcUtilities } from "./rpc_utilities.js";
+import {
+  ConnectionDestination,
+  execAsync,
+  RpcUtilities,
+} from "./rpc_utilities.js";
 
 // Define a type for the handler function
 type RpcHandler = (request: any) => Promise<any>;
@@ -16,7 +20,10 @@ interface CustomRpcHandlerMap {
 export function createCustomRpcHandlerMap(
   rpcUtils: RpcUtilities,
   logger: Logger,
-  handlePortParam: (request: any) => number
+  handlePortParam: (
+    request: any,
+    connectionDestination: ConnectionDestination
+  ) => number
 ): CustomRpcHandlerMap {
   return {
     get_active_ports: async () => {
@@ -31,7 +38,7 @@ export function createCustomRpcHandlerMap(
       };
     },
     get_extension_rpcs: async (request: any) => {
-      const port = handlePortParam(request);
+      const port = handlePortParam(request, "dart-vm");
       const { isolateId, isRawResponse = false } =
         (request.params.arguments as {
           isolateId?: string;

@@ -1,5 +1,7 @@
 # Forwarding Server
 
+This package is a part of the [Flutter MCP](https://github.com/Arenukvern/mcp_flutter).
+
 A WebSocket forwarding server that enables bi-directional communication between Flutter applications and TypeScript clients.
 
 ## Overview

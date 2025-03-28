@@ -1,0 +1,103 @@
+# Visual State Debug Implementation Plan
+
+1_core_capture:
+  what: "Capture current visual state and widget tree"
+  why: "Need accurate representation of what's actually rendered"
+  steps:
+    - Create WidgetInspectorService binding
+    - Implement widget tree traversal
+    - Capture layout and render information
+    - Add widget properties and state capture
+    - Map widget IDs to source locations
+
+2_code_mapping:
+  what: "Map widgets to source code"
+  why: "Connect visual elements with their code definitions"
+  steps:
+    - Extract widget creation locations
+    - Map build methods to widgets
+    - Create source code position index
+    - Link widget state to variables
+    - Add constructor parameter tracking
+
+3_resource_structure:
+  what: "Define MCP resource format"
+  why: "Standardize how visual state is exposed to agents"
+  resources:
+    visual_state:
+      uri: "visual://app/state/current"
+      content:
+        - widget_tree: "Current widget hierarchy"
+        - layout_info: "Position and size data"
+        - source_maps: "Code location mappings"
+        - state_values: "Current widget states"
+
+    widget_info:
+      uri: "visual://app/widget/{id}"
+      content:
+        - properties: "Widget properties"
+        - source_location: "Code definition location"
+        - state_data: "Current state values"
+        - build_context: "Build method context"
+
+4_chunking_strategy:
+  what: "Organize data into manageable chunks"
+  why: "Handle large widget trees efficiently"
+  chunks:
+    viewport:
+      - visible_widgets
+      - immediate_children
+      - parent_chain
+
+    widget:
+      - direct_properties
+      - computed_values
+      - source_references
+
+5_implementation_order:
+  1_setup:
+    - Initialize widget inspector service
+    - Setup source code mapping
+    - Create resource handlers
+
+  2_capture:
+    - Implement widget tree capture
+    - Add layout information
+    - Collect state data
+
+  3_mapping:
+    - Create source location index
+    - Map widgets to code
+    - Link state to definitions
+
+  4_resources:
+    - Implement resource endpoints
+    - Add chunking logic
+    - Create response formatters
+
+6_validation:
+  checks:
+    - Widget tree accuracy
+    - Source mapping correctness
+    - State value accuracy
+    - Resource response format
+    - Chunk size efficiency
+
+success_criteria:
+  accuracy:
+    - Correct widget identification
+    - Accurate source mapping
+    - Valid state values
+
+  performance:
+    - Capture time < 100ms
+    - Response size < 1MB per chunk
+    - Resource access < 50ms
+
+example_usage:
+  # Agent workflow
+  1: "Request current visual state"
+  2: "Identify widget of interest"
+  3: "Get widget's source location"
+  4: "Compare rendered state with code"
+  5: "Identify discrepancies"

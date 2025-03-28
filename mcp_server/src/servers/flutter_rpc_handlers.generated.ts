@@ -1,4 +1,340 @@
-import { RpcUtilities } from "./rpc_utilities.js";
+
+export const rpcToolConfigs = {
+  get_vm: {
+    rpcMethod: 'getVM',
+    needsDebugVerification: true,
+    needsDartProxy: false
+  },
+  dart_io_socket_profiling_enabled: {
+    rpcMethod: 'ext.dart.io.socketProfilingEnabled',
+    needsDebugVerification: true,
+    needsDartProxy: false
+  },
+  dart_io_http_enable_timeline_logging: {
+    rpcMethod: 'ext.dart.io.httpEnableTimelineLogging',
+    needsDebugVerification: true,
+    needsDartProxy: false
+  },
+  dart_io_get_version: {
+    rpcMethod: 'ext.dart.io.getVersion',
+    needsDebugVerification: true,
+    needsDartProxy: false
+  },
+  dart_io_get_http_profile_request: {
+    rpcMethod: 'ext.dart.io.getHttpProfileRequest',
+    needsDebugVerification: true,
+    needsDartProxy: false
+  },
+  dart_io_get_socket_profile: {
+    rpcMethod: 'ext.dart.io.getSocketProfile',
+    needsDebugVerification: true,
+    needsDartProxy: false
+  },
+  dart_io_clear_socket_profile: {
+    rpcMethod: 'ext.dart.io.clearSocketProfile',
+    needsDebugVerification: true,
+    needsDartProxy: false
+  },
+  dart_io_get_http_profile: {
+    rpcMethod: 'ext.dart.io.getHttpProfile',
+    needsDebugVerification: true,
+    needsDartProxy: false
+  },
+  dart_io_clear_http_profile: {
+    rpcMethod: 'ext.dart.io.clearHttpProfile',
+    needsDebugVerification: true,
+    needsDartProxy: false
+  },
+  dart_io_get_open_files: {
+    rpcMethod: 'ext.dart.io.getOpenFiles',
+    needsDebugVerification: true,
+    needsDartProxy: false
+  },
+  dart_io_get_open_file_by_id: {
+    rpcMethod: 'ext.dart.io.getOpenFileById',
+    needsDebugVerification: true,
+    needsDartProxy: false
+  },
+  debug_dump_render_tree: {
+    rpcMethod: 'ext.flutter.debugDumpRenderTree',
+    needsDebugVerification: true,
+    needsDartProxy: false
+  },
+  inspector_get_properties: {
+    rpcMethod: 'ext.flutter.inspector.getProperties',
+    needsDebugVerification: true,
+    needsDartProxy: true
+  },
+  debug_set_debug_paint: {
+    rpcMethod: 'ext.flutter.debugPaint',
+    needsDebugVerification: true,
+    needsDartProxy: false
+  },
+  inspector_get_root_widget_summary_tree: {
+    rpcMethod: 'ext.flutter.inspector.getRootWidgetSummaryTree',
+    needsDebugVerification: true,
+    needsDartProxy: true
+  },
+  debug_dump_layer_tree: {
+    rpcMethod: 'ext.flutter.debugDumpLayerTree',
+    needsDebugVerification: true,
+    needsDartProxy: false
+  },
+  debug_dump_semantics_tree: {
+    rpcMethod: 'ext.flutter.debugDumpSemanticsTreeInTraversalOrder',
+    needsDebugVerification: true,
+    needsDartProxy: false
+  },
+  debug_dump_semantics_tree_inverse: {
+    rpcMethod: 'ext.flutter.debugDumpSemanticsTreeInInverseHitTestOrder',
+    needsDebugVerification: true,
+    needsDartProxy: false
+  },
+  debug_dump_focus_tree: {
+    rpcMethod: 'ext.flutter.debugDumpFocusTree',
+    needsDebugVerification: true,
+    needsDartProxy: false
+  },
+  debug_paint_baselines_enabled: {
+    rpcMethod: 'ext.flutter.debugPaintBaselinesEnabled',
+    needsDebugVerification: true,
+    needsDartProxy: false
+  },
+  debug_disable_clip_layers: {
+    rpcMethod: 'ext.flutter.debugDisableClipLayers',
+    needsDebugVerification: true,
+    needsDartProxy: false
+  },
+  debug_disable_physical_shape_layers: {
+    rpcMethod: 'ext.flutter.debugDisablePhysicalShapeLayers',
+    needsDebugVerification: true,
+    needsDartProxy: false
+  },
+  debug_disable_opacity_layers: {
+    rpcMethod: 'ext.flutter.debugDisableOpacityLayers',
+    needsDebugVerification: true,
+    needsDartProxy: false
+  },
+  repaint_rainbow: {
+    rpcMethod: 'ext.flutter.repaintRainbow',
+    needsDebugVerification: true,
+    needsDartProxy: false
+  },
+  debug_allow_banner: {
+    rpcMethod: 'ext.flutter.debugAllowBanner',
+    needsDebugVerification: true,
+    needsDartProxy: false
+  },
+  flutter_core_invert_oversized_images: {
+    rpcMethod: 'ext.flutter.invertOversizedImages',
+    needsDebugVerification: true,
+    needsDartProxy: false
+  },
+  flutter_core_platform_override: {
+    rpcMethod: 'ext.flutter.platformOverride',
+    needsDebugVerification: true,
+    needsDartProxy: false
+  },
+  flutter_core_brightness_override: {
+    rpcMethod: 'ext.flutter.brightnessOverride',
+    needsDebugVerification: true,
+    needsDartProxy: false
+  },
+  flutter_core_time_dilation: {
+    rpcMethod: 'ext.flutter.timeDilation',
+    needsDebugVerification: true,
+    needsDartProxy: false
+  },
+  flutter_core_evict: {
+    rpcMethod: 'ext.flutter.evict',
+    needsDebugVerification: true,
+    needsDartProxy: false
+  },
+  inspector_screenshot: {
+    rpcMethod: 'ext.flutter.inspector.screenshot',
+    needsDebugVerification: true,
+    needsDartProxy: true
+  },
+  inspector_get_layout_explorer_node: {
+    rpcMethod: 'ext.flutter.inspector.getLayoutExplorerNode',
+    needsDebugVerification: true,
+    needsDartProxy: true
+  },
+  inspector_track_rebuild_dirty_widgets: {
+    rpcMethod: 'ext.flutter.inspector.trackRebuildDirtyWidgets',
+    needsDebugVerification: true,
+    needsDartProxy: true
+  },
+  inspector_set_selection_by_id: {
+    rpcMethod: 'ext.flutter.inspector.setSelectionById',
+    needsDebugVerification: true,
+    needsDartProxy: true
+  },
+  inspector_get_parent_chain: {
+    rpcMethod: 'ext.flutter.inspector.getParentChain',
+    needsDebugVerification: true,
+    needsDartProxy: true
+  },
+  inspector_get_children_summary_tree: {
+    rpcMethod: 'ext.flutter.inspector.getChildrenSummaryTree',
+    needsDebugVerification: true,
+    needsDartProxy: true
+  },
+  inspector_get_details_subtree: {
+    rpcMethod: 'ext.flutter.inspector.getDetailsSubtree',
+    needsDebugVerification: true,
+    needsDartProxy: true
+  },
+  inspector_get_selected_widget: {
+    rpcMethod: 'ext.flutter.inspector.getSelectedWidget',
+    needsDebugVerification: true,
+    needsDartProxy: true
+  },
+  inspector_get_selected_summary_widget: {
+    rpcMethod: 'ext.flutter.inspector.getSelectedSummaryWidget',
+    needsDebugVerification: true,
+    needsDartProxy: true
+  },
+  inspector_is_widget_creation_tracked: {
+    rpcMethod: 'ext.flutter.inspector.isWidgetCreationTracked',
+    needsDebugVerification: true,
+    needsDartProxy: true
+  },
+  inspector_structured_errors: {
+    rpcMethod: 'ext.flutter.inspector.structuredErrors',
+    needsDebugVerification: true,
+    needsDartProxy: true
+  },
+  inspector_show: {
+    rpcMethod: 'ext.flutter.inspector.show',
+    needsDebugVerification: true,
+    needsDartProxy: true
+  },
+  flutter_core_profile_platform_channels: {
+    rpcMethod: 'ext.flutter.profilePlatformChannels',
+    needsDebugVerification: true,
+    needsDartProxy: false
+  },
+  flutter_core_profile_render_object_paints: {
+    rpcMethod: 'ext.flutter.profileRenderObjectPaints',
+    needsDebugVerification: true,
+    needsDartProxy: false
+  },
+  flutter_core_profile_render_object_layouts: {
+    rpcMethod: 'ext.flutter.profileRenderObjectLayouts',
+    needsDebugVerification: true,
+    needsDartProxy: false
+  },
+  flutter_core_show_performance_overlay: {
+    rpcMethod: 'ext.flutter.showPerformanceOverlay',
+    needsDebugVerification: true,
+    needsDartProxy: false
+  },
+  flutter_core_profile_widget_builds: {
+    rpcMethod: 'ext.flutter.profileWidgetBuilds',
+    needsDebugVerification: true,
+    needsDartProxy: false
+  },
+  flutter_core_profile_user_widget_builds: {
+    rpcMethod: 'ext.flutter.profileUserWidgetBuilds',
+    needsDebugVerification: true,
+    needsDartProxy: false
+  },
+  inspector_track_repaint_widgets: {
+    rpcMethod: 'ext.flutter.inspector.trackRepaintWidgets',
+    needsDebugVerification: true,
+    needsDartProxy: true
+  },
+  inspector_widget_location_id_map: {
+    rpcMethod: 'ext.flutter.inspector.widgetLocationIdMap',
+    needsDebugVerification: true,
+    needsDartProxy: true
+  },
+  inspector_dispose_all_groups: {
+    rpcMethod: 'ext.flutter.inspector.disposeAllGroups',
+    needsDebugVerification: true,
+    needsDartProxy: true
+  },
+  inspector_dispose_group: {
+    rpcMethod: 'ext.flutter.inspector.disposeGroup',
+    needsDebugVerification: true,
+    needsDartProxy: true
+  },
+  inspector_is_widget_tree_ready: {
+    rpcMethod: 'ext.flutter.inspector.isWidgetTreeReady',
+    needsDebugVerification: true,
+    needsDartProxy: true
+  },
+  inspector_dispose_id: {
+    rpcMethod: 'ext.flutter.inspector.disposeId',
+    needsDebugVerification: true,
+    needsDartProxy: true
+  },
+  inspector_set_pub_root_directories: {
+    rpcMethod: 'ext.flutter.inspector.setPubRootDirectories',
+    needsDebugVerification: true,
+    needsDartProxy: true
+  },
+  inspector_add_pub_root_directories: {
+    rpcMethod: 'ext.flutter.inspector.addPubRootDirectories',
+    needsDebugVerification: true,
+    needsDartProxy: true
+  },
+  inspector_remove_pub_root_directories: {
+    rpcMethod: 'ext.flutter.inspector.removePubRootDirectories',
+    needsDebugVerification: true,
+    needsDartProxy: true
+  },
+  inspector_get_pub_root_directories: {
+    rpcMethod: 'ext.flutter.inspector.getPubRootDirectories',
+    needsDebugVerification: true,
+    needsDartProxy: true
+  },
+  inspector_get_children: {
+    rpcMethod: 'ext.flutter.inspector.getChildren',
+    needsDebugVerification: true,
+    needsDartProxy: true
+  },
+  inspector_get_children_details_subtree: {
+    rpcMethod: 'ext.flutter.inspector.getChildrenDetailsSubtree',
+    needsDebugVerification: true,
+    needsDartProxy: true
+  },
+  inspector_get_root_widget: {
+    rpcMethod: 'ext.flutter.inspector.getRootWidget',
+    needsDebugVerification: true,
+    needsDartProxy: true
+  },
+  inspector_get_root_widget_summary_tree_with_previews: {
+    rpcMethod: 'ext.flutter.inspector.getRootWidgetSummaryTreeWithPreviews',
+    needsDebugVerification: true,
+    needsDartProxy: true
+  },
+  inspector_get_root_widget_tree: {
+    rpcMethod: 'ext.flutter.inspector.getRootWidgetTree',
+    needsDebugVerification: true,
+    needsDartProxy: true
+  },
+  inspector_set_flex_fit: {
+    rpcMethod: 'ext.flutter.inspector.setFlexFit',
+    needsDebugVerification: true,
+    needsDartProxy: true
+  },
+  inspector_set_flex_factor: {
+    rpcMethod: 'ext.flutter.inspector.setFlexFactor',
+    needsDebugVerification: true,
+    needsDartProxy: true
+  },
+  inspector_set_flex_properties: {
+    rpcMethod: 'ext.flutter.inspector.setFlexProperties',
+    needsDebugVerification: true,
+    needsDartProxy: true
+  }
+} as const;
+
+export type RpcToolName = keyof typeof rpcToolConfigs;
+
+import { ConnectionDestination, RpcUtilities } from "./rpc_utilities.js";
 
 /**
  * Generated class containing handlers for Flutter RPC tools.
@@ -7,604 +343,26 @@ import { RpcUtilities } from "./rpc_utilities.js";
  * Do not edit this file directly.
  */
 export class FlutterRpcHandlers {
-  private rpcUtils: RpcUtilities;
+  constructor(
+    private rpcUtils: RpcUtilities,
+    private handlePortParam: (request: any, connectionDestination: ConnectionDestination) => number
+  ) {}
 
-  constructor(rpcUtils: RpcUtilities) {
-    this.rpcUtils = rpcUtils;
-  }
+  async handleToolRequest(toolName: RpcToolName, request: any): Promise<unknown> {
+    const config = rpcToolConfigs[toolName];
+    if (!config) throw new Error(`Invalid tool request: ${toolName}`);
+    
+    const port = this.handlePortParam(request, config.needsDartProxy ? "dart-vm" : "flutter-extension");
+    const params = request.params?.arguments;
 
-  /**
-   * Fetches VM information.
-   */
-  async handleGetVm(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callDartVm("getVM", port, {});
+    if (config.needsDebugVerification) {
+      await this.rpcUtils.verifyFlutterDebugMode(port);
+    }
+
+    const result = config.needsDartProxy
+      ? await this.rpcUtils.callFlutterExtension(config.rpcMethod, params)
+      : await this.rpcUtils.callDartVm(config.rpcMethod, port, params);
+
     return this.rpcUtils.wrapResponse(Promise.resolve(result));
   }
-  
-  /**
-   * Enables or disables socket profiling.
-   */
-  async handleDartIoSocketProfilingEnabled(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callDartVm("ext.dart.io.socketProfilingEnabled", port, { enabled: params?.enabled });
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Enables or disables HTTP timeline logging.
-   */
-  async handleDartIoHttpEnableTimelineLogging(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callDartVm("ext.dart.io.httpEnableTimelineLogging", port, { enabled: params?.enabled });
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Gets Flutter version information.
-   */
-  async handleDartIoGetVersion(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callDartVm("ext.dart.io.getVersion", port, {});
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Gets details of a specific HTTP request from the profile.
-   */
-  async handleDartIoGetHttpProfileRequest(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callDartVm("ext.dart.io.getHttpProfileRequest", port, { requestId: params?.requestId });
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Gets socket profiling information.
-   */
-  async handleDartIoGetSocketProfile(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callDartVm("ext.dart.io.getSocketProfile", port, {});
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Clears the socket profiling data.
-   */
-  async handleDartIoClearSocketProfile(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callDartVm("ext.dart.io.clearSocketProfile", port, {});
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Gets HTTP profiling information.
-   */
-  async handleDartIoGetHttpProfile(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callDartVm("ext.dart.io.getHttpProfile", port, {});
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Clears the HTTP profiling data.
-   */
-  async handleDartIoClearHttpProfile(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callDartVm("ext.dart.io.clearHttpProfile", port, {});
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Gets list of currently open files in the Flutter app.
-   */
-  async handleDartIoGetOpenFiles(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callDartVm("ext.dart.io.getOpenFiles", port, {});
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Gets details of a specific open file by its ID.
-   */
-  async handleDartIoGetOpenFileById(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callDartVm("ext.dart.io.getOpenFileById", port, { fileId: params?.fileId });
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Fetches the widget tree.
-   */
-  async handleDebugDumpRenderTree(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callDartVm("ext.flutter.debugDumpRenderTree", port, {});
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Fetches details for a specific widget.
-   */
-  async handleInspectorGetProperties(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callFlutterExtension("ext.flutter.inspector.getProperties", port,{ arg: { objectId: params?.objectId } });
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Toggles debug paint mode.
-   */
-  async handleDebugSetDebugPaint(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callDartVm("ext.flutter.debugPaint", port, { enabled: params?.enabled });
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Fetches the root widget summary tree using the Dart Service Extension Proxy.
-   */
-  async handleInspectorGetRootWidgetSummaryTree(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callFlutterExtension("ext.flutter.inspector.getRootWidgetSummaryTree", port,{ arg: { includeProperties: params?.includeProperties, subtreeDepth: params?.subtreeDepth } });
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Dumps the layer tree from the Flutter app.
-   */
-  async handleDebugDumpLayerTree(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callDartVm("ext.flutter.debugDumpLayerTree", port, {});
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Dumps the semantics tree in traversal order.
-   */
-  async handleDebugDumpSemanticsTree(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callDartVm("ext.flutter.debugDumpSemanticsTreeInTraversalOrder", port, {});
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Dumps the semantics tree in inverse hit test order.
-   */
-  async handleDebugDumpSemanticsTreeInverse(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callDartVm("ext.flutter.debugDumpSemanticsTreeInInverseHitTestOrder", port, {});
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Dumps the focus tree from the Flutter app.
-   */
-  async handleDebugDumpFocusTree(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callDartVm("ext.flutter.debugDumpFocusTree", port, {});
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Toggles baseline paint debugging.
-   */
-  async handleDebugPaintBaselinesEnabled(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callDartVm("ext.flutter.debugPaintBaselinesEnabled", port, { enabled: params?.enabled });
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Toggles disabling of clip layers.
-   */
-  async handleDebugDisableClipLayers(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callDartVm("ext.flutter.debugDisableClipLayers", port, { enabled: params?.enabled });
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Toggles physical shape layers debugging.
-   */
-  async handleDebugDisablePhysicalShapeLayers(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callDartVm("ext.flutter.debugDisablePhysicalShapeLayers", port, { enabled: params?.enabled });
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Toggles opacity layers debugging.
-   */
-  async handleDebugDisableOpacityLayers(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callDartVm("ext.flutter.debugDisableOpacityLayers", port, { enabled: params?.enabled });
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Toggles repaint rainbow debugging.
-   */
-  async handleRepaintRainbow(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callDartVm("ext.flutter.repaintRainbow", port, { enabled: params?.enabled });
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Toggles the debug banner in the Flutter app.
-   */
-  async handleDebugAllowBanner(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callDartVm("ext.flutter.debugAllowBanner", port, { enabled: params?.enabled });
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Toggles inverting of oversized images for debugging.
-   */
-  async handleFlutterCoreInvertOversizedImages(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callDartVm("ext.flutter.invertOversizedImages", port, { enabled: params?.enabled });
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Overrides the platform for the Flutter app.
-   */
-  async handleFlutterCorePlatformOverride(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callDartVm("ext.flutter.platformOverride", port, { platform: params?.platform });
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Overrides the brightness for the Flutter app.
-   */
-  async handleFlutterCoreBrightnessOverride(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callDartVm("ext.flutter.brightnessOverride", port, { brightness: params?.brightness });
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Sets the time dilation factor for animations.
-   */
-  async handleFlutterCoreTimeDilation(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callDartVm("ext.flutter.timeDilation", port, { dilation: params?.dilation });
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Evicts an asset from the Flutter app's cache.
-   */
-  async handleFlutterCoreEvict(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callDartVm("ext.flutter.evict", port, { asset: params?.asset });
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Takes a screenshot of the Flutter app.
-   */
-  async handleInspectorScreenshot(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callFlutterExtension("ext.flutter.inspector.screenshot", port,{});
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Gets layout explorer information for a widget.
-   */
-  async handleInspectorGetLayoutExplorerNode(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callFlutterExtension("ext.flutter.inspector.getLayoutExplorerNode", port,{ arg: { objectId: params?.objectId } });
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Tracks widget rebuilds to identify performance issues.
-   */
-  async handleInspectorTrackRebuildDirtyWidgets(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callFlutterExtension("ext.flutter.inspector.trackRebuildDirtyWidgets", port,{ enabled: params?.enabled });
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Sets the selected widget by ID.
-   */
-  async handleInspectorSetSelectionById(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callFlutterExtension("ext.flutter.inspector.setSelectionById", port,{ arg: { selectionId: params?.selectionId } });
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Gets the parent chain for a widget.
-   */
-  async handleInspectorGetParentChain(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callFlutterExtension("ext.flutter.inspector.getParentChain", port,{ arg: { objectId: params?.objectId } });
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Gets the children summary tree for a widget.
-   */
-  async handleInspectorGetChildrenSummaryTree(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callFlutterExtension("ext.flutter.inspector.getChildrenSummaryTree", port,{ arg: { objectId: params?.objectId } });
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Gets the details subtree for a widget.
-   */
-  async handleInspectorGetDetailsSubtree(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callFlutterExtension("ext.flutter.inspector.getDetailsSubtree", port,{ arg: { objectId: params?.objectId } });
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Gets information about the currently selected widget.
-   */
-  async handleInspectorGetSelectedWidget(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callFlutterExtension("ext.flutter.inspector.getSelectedWidget", port,{ arg: { groupName: params?.groupName } });
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Gets summary information about the currently selected widget.
-   */
-  async handleInspectorGetSelectedSummaryWidget(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callFlutterExtension("ext.flutter.inspector.getSelectedSummaryWidget", port,{});
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Checks if widget creation tracking is enabled.
-   */
-  async handleInspectorIsWidgetCreationTracked(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callFlutterExtension("ext.flutter.inspector.isWidgetCreationTracked", port,{});
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Enables or disables structured error reporting.
-   */
-  async handleInspectorStructuredErrors(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callFlutterExtension("ext.flutter.inspector.structuredErrors", port,{ enabled: params?.enabled });
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Shows specific widget details in the Flutter app inspector.
-   */
-  async handleInspectorShow(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callFlutterExtension("ext.flutter.inspector.show", port,{ arg: { options: params?.options } });
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Enables or disables platform channel profiling.
-   */
-  async handleFlutterCoreProfilePlatformChannels(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callDartVm("ext.flutter.profilePlatformChannels", port, { enabled: params?.enabled });
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Enables or disables profiling of render object paints.
-   */
-  async handleFlutterCoreProfileRenderObjectPaints(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callDartVm("ext.flutter.profileRenderObjectPaints", port, { enabled: params?.enabled });
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Enables or disables profiling of render object layouts.
-   */
-  async handleFlutterCoreProfileRenderObjectLayouts(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callDartVm("ext.flutter.profileRenderObjectLayouts", port, { enabled: params?.enabled });
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Shows or hides the performance overlay.
-   */
-  async handleFlutterCoreShowPerformanceOverlay(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callDartVm("ext.flutter.showPerformanceOverlay", port, { enabled: params?.enabled });
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Enables or disables profiling of widget builds.
-   */
-  async handleFlutterCoreProfileWidgetBuilds(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callDartVm("ext.flutter.profileWidgetBuilds", port, { enabled: params?.enabled });
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Enables or disables profiling of user widget builds.
-   */
-  async handleFlutterCoreProfileUserWidgetBuilds(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callDartVm("ext.flutter.profileUserWidgetBuilds", port, { enabled: params?.enabled });
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Tracks widget repaints to identify performance issues.
-   */
-  async handleInspectorTrackRepaintWidgets(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callFlutterExtension("ext.flutter.inspector.trackRepaintWidgets", port,{ enabled: params?.enabled });
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Gets the mapping between widget locations and their IDs.
-   */
-  async handleInspectorWidgetLocationIdMap(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callFlutterExtension("ext.flutter.inspector.widgetLocationIdMap", port,{});
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Disposes all inspector groups.
-   */
-  async handleInspectorDisposeAllGroups(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callFlutterExtension("ext.flutter.inspector.disposeAllGroups", port,{});
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Disposes a specific inspector group.
-   */
-  async handleInspectorDisposeGroup(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callFlutterExtension("ext.flutter.inspector.disposeGroup", port,{ arg: { groupName: params?.groupName } });
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Checks if the widget tree is ready for inspection.
-   */
-  async handleInspectorIsWidgetTreeReady(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callFlutterExtension("ext.flutter.inspector.isWidgetTreeReady", port,{});
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Disposes a specific object by its ID.
-   */
-  async handleInspectorDisposeId(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callFlutterExtension("ext.flutter.inspector.disposeId", port,{ arg: { objectId: params?.objectId } });
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Sets the pub root directories.
-   */
-  async handleInspectorSetPubRootDirectories(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callFlutterExtension("ext.flutter.inspector.setPubRootDirectories", port,{ arg: { rootDirectories: params?.rootDirectories } });
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Adds pub root directories.
-   */
-  async handleInspectorAddPubRootDirectories(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callFlutterExtension("ext.flutter.inspector.addPubRootDirectories", port,{ arg: { rootDirectories: params?.rootDirectories } });
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Removes pub root directories.
-   */
-  async handleInspectorRemovePubRootDirectories(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callFlutterExtension("ext.flutter.inspector.removePubRootDirectories", port,{ arg: { rootDirectories: params?.rootDirectories } });
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Gets the pub root directories.
-   */
-  async handleInspectorGetPubRootDirectories(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callFlutterExtension("ext.flutter.inspector.getPubRootDirectories", port,{});
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Gets the children of a widget.
-   */
-  async handleInspectorGetChildren(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callFlutterExtension("ext.flutter.inspector.getChildren", port,{ arg: { objectId: params?.objectId } });
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Gets the children details subtree of a widget.
-   */
-  async handleInspectorGetChildrenDetailsSubtree(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callFlutterExtension("ext.flutter.inspector.getChildrenDetailsSubtree", port,{ arg: { objectId: params?.objectId } });
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Gets the root widget.
-   */
-  async handleInspectorGetRootWidget(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callFlutterExtension("ext.flutter.inspector.getRootWidget", port,{});
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Gets the root widget summary tree with previews.
-   */
-  async handleInspectorGetRootWidgetSummaryTreeWithPreviews(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callFlutterExtension("ext.flutter.inspector.getRootWidgetSummaryTreeWithPreviews", port,{ arg: { includeProperties: params?.includeProperties, subtreeDepth: params?.subtreeDepth } });
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Gets the complete root widget tree.
-   */
-  async handleInspectorGetRootWidgetTree(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callFlutterExtension("ext.flutter.inspector.getRootWidgetTree", port,{});
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Sets the flex fit property of a flex widget.
-   */
-  async handleInspectorSetFlexFit(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callFlutterExtension("ext.flutter.inspector.setFlexFit", port,{ arg: { objectId: params?.objectId, flexFit: params?.flexFit } });
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Sets the flex factor property of a flex widget.
-   */
-  async handleInspectorSetFlexFactor(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callFlutterExtension("ext.flutter.inspector.setFlexFactor", port,{ arg: { objectId: params?.objectId, flexFactor: params?.flexFactor } });
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
-  /**
-   * Sets multiple flex properties of a flex widget.
-   */
-  async handleInspectorSetFlexProperties(port: number, params?: any): Promise<unknown> {
-    await this.rpcUtils.verifyFlutterDebugMode(port);
-    const result = await this.rpcUtils.callFlutterExtension("ext.flutter.inspector.setFlexProperties", port,{ arg: { objectId: params?.objectId, flexFactor: params?.flexFactor, flexFit: params?.flexFit } });
-    return this.rpcUtils.wrapResponse(Promise.resolve(result));
-  }
-  
 }

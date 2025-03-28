@@ -1,0 +1,34 @@
+---
+description: 
+globs: *_test.dart
+alwaysApply: false
+---
+# Test Guidelines
+
+This guide outlines concise rules for writing and modifying tests in this project.
+
+## 1. Data-Driven Structure
+
+- Use maps (e.g., `Map<String, ({...})>`) to define test cases.
+- Iterate over cases with `forEach` to minimize boilerplate.
+
+## 2. Test Organization
+
+- Group related tests using `group()` and individual cases using `test()`.
+- Name tests and groups descriptively (e.g., "parses various currency formats", "formats EUR in different locales").
+
+## 3. Input & Expected Outputs
+
+- Define inputs and expected outputs clearly in your maps.
+- Separate cases for different locales or edge conditions.
+
+## 4. Assertions
+
+- Use `expect()` with a clear `reason` to explain failures.
+- Assert each property (price, symbols, code) individually.
+
+## 5. General Best Practices
+
+- Keep tests self-contained and independent.
+- Write concise, readable tests that are easy to update.
+- Use data-driven approaches to facilitate modifications and extensions.

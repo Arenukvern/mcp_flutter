@@ -5,22 +5,71 @@ startCommand:
   configSchema:
     # JSON Schema defining the configuration options for the MCP.
     type: object
+    required:
+      [
+        "logLevel",
+        "mcpServerPort",
+        "flutterDebugPort",
+        "flutterInspectorPort",
+        "forwardingServerPort",
+        "host",
+      ]
     properties:
-      log-level:
+      logLevel:
         type: string
         enum:
           - error
           - warn
           - info
           - debug
+        default: "error"
+        description: "Logging level for the server"
+      mcpServerPort:
+        type: number
+        default: 7468
+        description: "MCP Server port"
       host:
         type: string
         default: "localhost"
-      port:
+        description: "Server host"
+      flutterDebugPort:
         type: number
-        default: 3535
-  commandFunction:
-    # A JS function that produces the CLI command based on the given config to start the MCP on stdio.
-    |-
-    (config) => ({ command: 'node', args: ['build/index.js', '--stdio'], env: {} })
-  exampleConfig: { "logLevel": "error", "port": 3535, "host": "localhost" }
+        default: 8100
+        description: "Flutter debug port"
+      flutterInspectorPort:
+        type: number
+        default: 8181
+        description: "Flutter inspector port"
+      forwardingServerPort:
+        type: number
+        default: 8182
+        description: "Forwarding server port"
+      allowRemoteConnections:
+        type: boolean
+        default: false
+        description: "Allow connections from remote hosts"
+  commandFunction: |
+    (config) => ({
+      command: 'node',
+      args: ['build/index.js', '--stdio'],
+      env: {
+        MCP_SERVER_PORT: config.mcpServerPort.toString(),
+        FORWARDING_SERVER_PORT: config.forwardingServerPort.toString(),
+        FLUTTER_DEBUG_PORT: config.flutterDebugPort.toString(),
+        FLUTTER_INSPECTOR_PORT: config.flutterInspectorPort.toString(),
+        LOG_LEVEL: config.logLevel,
+        HOST: config.host,
+        ALLOW_REMOTE_CONNECTIONS: config.allowRemoteConnections.toString(),
+        NODE_ENV: 'production'
+      }
+    })
+  exampleConfig:
+    {
+      "logLevel": "error",
+      "mcpServerPort": 7468,
+      "host": "localhost",
+      "flutterDebugPort": 8100,
+      "flutterInspectorPort": 8181,
+      "forwardingServerPort": 8182,
+      "allowRemoteConnections": false,
+    }

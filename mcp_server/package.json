@@ -21,22 +21,23 @@
     "copy-yaml-files": "mkdir -p build/servers && cp src/servers/server_tools_flutter.yaml build/servers/ && cp src/servers/server_tools_custom.yaml build/servers/"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "0.6.0",
-    "@types/axios": "^0.9.36",
+    "@modelcontextprotocol/sdk": "^1.8.0",
+    "@types/axios": "^0.14.4",
     "@types/js-yaml": "^4.0.9",
-    "@types/ws": "^8.5.10",
-    "axios": "^1.8.3",
-    "dotenv": "^16.4.5",
-    "forwarding-server": "../forwarding-server",
+    "@types/ws": "^8.18.0",
+    "axios": "^1.8.4",
+    "dotenv": "^16.4.7",
+    "flutter_mcp_forwarding_server": "^0.1.0",
     "js-yaml": "^4.1.0",
-    "ws": "^8.16.0",
+    "node-calls-python": "^1.11.1",
+    "ws": "^8.18.1",
     "yargs": "^17.7.2"
   },
   "devDependencies": {
-    "@types/dotenv": "^8.2.0",
-    "@types/node": "^20.11.24",
-    "@types/yargs": "^17.0.32",
-    "typescript": "^5.3.3",
-    "ts-node": "^10.9.1"
+    "@types/dotenv": "^8.2.3",
+    "@types/node": "^22.13.14",
+    "@types/yargs": "^17.0.33",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.2"
   }
 }

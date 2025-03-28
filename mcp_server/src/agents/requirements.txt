@@ -1,0 +1,2 @@
+smolagents
+transformers

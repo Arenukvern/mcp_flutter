@@ -1,4 +1,4 @@
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
   CallToolRequestSchema,
@@ -6,18 +6,17 @@ import {
   ListToolsRequestSchema,
   McpError,
 } from "@modelcontextprotocol/sdk/types.js";
-import { Logger, LogLevel } from "forwarding-server";
+import { Logger, LogLevel } from "flutter_mcp_forwarding_server";
 import path from "path";
 import { fileURLToPath } from "url";
-import { CommandLineArgs } from "../index.js";
+import { CommandLineConfig } from "../index.js";
 import { createCustomRpcHandlerMap } from "./create_custom_rpc_handler_map.js";
-import { createRpcHandlerMap } from "./create_rpc_handler_map.generated.js";
-import { FlutterRpcHandlers } from "./flutter_rpc_handlers.generated.js";
+import { createRpcHandlerMap } from "./create_rpc_handler_map.js";
+import {
+  FlutterRpcHandlers,
+  RpcToolName,
+} from "./flutter_rpc_handlers.generated.js";
 import { RpcUtilities } from "./rpc_utilities.js";
-
-export const defaultDartVMPort = 8181;
-export const defaultMCPServerPort = 3535;
-export const defaultForwardingServerPort = 8143;
 
 // Get the directory name in ESM
 const __filename = fileURLToPath(import.meta.url);
@@ -25,36 +24,29 @@ const __dirname = path.dirname(__filename);
 
 export class FlutterInspectorServer {
   // Declare server with any type to work around type issues
-  private server: any; // Server<Request, Notification, Result>;
+  private server: McpServer;
   private port: number;
   private logLevel: LogLevel;
   private rpcUtils: RpcUtilities;
   private logger: Logger;
 
-  constructor(args: CommandLineArgs) {
+  constructor(private readonly args: CommandLineConfig) {
     this.port = args.port;
     this.logLevel = args.logLevel;
     this.logger = new Logger(this.logLevel);
-    this.rpcUtils = new RpcUtilities(args.host, this.logger);
+    this.rpcUtils = new RpcUtilities(this.logger, this.args);
 
-    this.server = new Server(
-      {
-        name: "flutter-inspector",
-        version: "0.1.0",
-      },
-      {
-        capabilities: {
-          tools: {},
-        },
-      }
-    );
+    this.server = new McpServer({
+      name: "flutter-inspector",
+      version: "0.1.0",
+    });
 
     this.setupToolHandlers();
     this.setupErrorHandling();
   }
 
   private setupErrorHandling() {
-    this.server.onerror = (error: Error) =>
+    this.server.server.onerror = (error: Error) =>
       this.logger.error("[MCP Error]", error);
 
     process.on("SIGINT", async () => {
@@ -82,33 +74,39 @@ export class FlutterInspectorServer {
         serverToolsCustomPath
       );
 
-      this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
-        tools: [...serverToolsFlutter.tools, ...serverToolsCustom.tools],
-      }));
+      this.server.server.setRequestHandler(
+        ListToolsRequestSchema,
+        async () => ({
+          tools: [...serverToolsFlutter.tools, ...serverToolsCustom.tools],
+        })
+      );
 
-      const rpcHandlers = new FlutterRpcHandlers(this.rpcUtils);
+      const rpcHandlers = new FlutterRpcHandlers(
+        this.rpcUtils,
+        (request, connectionDestination) =>
+          this.rpcUtils.handlePortParam(request, connectionDestination)
+      );
 
       // Use the generated function to create the handler map
-      const handlerMap = createRpcHandlerMap(rpcHandlers, (request) =>
-        this.rpcUtils.handlePortParam(request)
-      );
+      const handlerMap = createRpcHandlerMap(rpcHandlers);
 
       // Get custom handlers
       const customHandlerMap = createCustomRpcHandlerMap(
         this.rpcUtils,
         this.logger,
-        (request) => this.rpcUtils.handlePortParam(request)
+        (request, connectionDestination) =>
+          this.rpcUtils.handlePortParam(request, connectionDestination)
       );
 
-      this.server.setRequestHandler(
+      this.server.server.setRequestHandler(
         CallToolRequestSchema,
         async (request: any) => {
           const toolName = request.params.name;
-
+          const generatedHandler:
+            | ((request: any) => Promise<unknown>)
+            | undefined = handlerMap[toolName as RpcToolName];
           // Check generated handlers first
-          if (handlerMap[toolName]) {
-            return handlerMap[toolName](request);
-          }
+          if (generatedHandler) return generatedHandler(request);
 
           // Then check custom handlers
           if (customHandlerMap[toolName]) {
@@ -137,9 +135,9 @@ export class FlutterInspectorServer {
       await this.server.connect(transport);
 
       // Now try to connect to the services - these connections are now resilient to failure
-      await this.rpcUtils.connect(defaultDartVMPort, "dart-vm");
+      await this.rpcUtils.connect(this.args.dartVMPort, "dart-vm");
       await this.rpcUtils.connect(
-        defaultForwardingServerPort,
+        this.args.forwardingServerPort,
         "flutter-extension"
       );
 
@@ -154,8 +152,8 @@ export class FlutterInspectorServer {
 
       this.logger.info(`
         MCP Server: Ready on stdio (port ${this.port})
-        RPC Server: Attempting to connect to ws://localhost:${defaultDartVMPort}/ws
-        Forwarding Client: Attempting to connect to ws://localhost:${defaultForwardingServerPort}/forward
+        RPC Server: Attempting to connect to ws://${this.args.dartVMHost}:${this.args.dartVMPort}/ws
+        Forwarding Client: Attempting to connect to ws://${this.args.forwardingServerHost}:${this.args.forwardingServerPort}/forward
       `);
     } catch (error) {
       this.logger.error("Failed to start server:", error);

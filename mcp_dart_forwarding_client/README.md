@@ -1,5 +1,7 @@
 # Dart Forwarding Client
 
+This package is a part of the [Flutter MCP](https://github.com/Arenukvern/mcp_flutter).
+
 A Dart client for connecting to the forwarding server. This client implements the same functionality as the TypeScript BrowserForwardingClient and provides a WebSocket-based bi-directional communication layer between Flutter applications and Inspector clients.
 
 ## Features
