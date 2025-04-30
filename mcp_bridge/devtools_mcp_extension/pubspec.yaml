@@ -15,7 +15,7 @@ repository: https://github.com/Arenukvern/mcp_flutter
 # https://developer.apple.com/library/mcp_dart_forwarding_client/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 0.2.0
+version: 0.3.0
 
 environment:
   sdk: ">=3.7.0 <4.0.0"
@@ -51,8 +51,8 @@ dependencies:
   stack_trace: ^1.12.1
   universal_io: ^2.2.2
   uuid: ^4.0.0
-  vm_service: "^15.0.0"
-  web: ^1.1.0
+  vm_service: ^15.0.0
+  web: ^1.1.1
   web_socket_channel: ^3.0.2
   xsoulspace_foundation: ^0.0.11
 
@@ -64,7 +64,7 @@ dev_dependencies:
   freezed: ^3.0.6
   json_serializable: ^6.9.4
   lints: ^5.0.0
-  xsoulspace_lints: ^0.0.14
+  xsoulspace_lints: ^0.0.15
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

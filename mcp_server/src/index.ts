@@ -12,7 +12,7 @@ export const defaultEnvConfig = {
   forwardingServerPort: 8143,
   forwardingServerHost: "localhost",
   resourcesSupported: true,
-  imagesSupported: false,
+  imagesSupported: true,
   dumpsSupported: false,
 };
 

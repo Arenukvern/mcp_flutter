@@ -62,11 +62,11 @@ class ForwardingRpcListener {
           final screenshot = await devtoolsService.takeScreenshot(data);
           final base64Image = screenshot.data;
           var compressedScreenshot = base64Image is String ? base64Image : '';
-          // Print response info without the full data
           if (base64Image != null) {
             compressedScreenshot = await ImageCompressor.compressBase64Image(
               base64Image: base64Image,
             );
+            // Print response info without the full data
             print(
               'Screenshot result - error: ${screenshot.error} '
               'success: ${screenshot.success} data length: ${compressedScreenshot.length}',

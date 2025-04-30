@@ -5,7 +5,7 @@ part of '../custom_devtools_service.dart';
 final class ErrorDevtoolsService extends BaseDevtoolsService {
   ErrorDevtoolsService({required super.devtoolsService});
   late final _flutterErrorMonitor = FlutterErrorMonitor(
-    service: devtoolsService,
+    serviceManager: devtoolsService.serviceManager,
   );
 
   Future<void> init() async {

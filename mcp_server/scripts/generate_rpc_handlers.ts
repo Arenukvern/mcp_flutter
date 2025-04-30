@@ -92,7 +92,11 @@ export class FlutterRpcHandlers {
 
     const result = config.needsDartProxy
       ? await this.rpcUtils.callFlutterExtension(config.rpcMethod, params)
-      : await this.rpcUtils.callDartVm(config.rpcMethod, port, params);
+      : await this.rpcUtils.callDartVm({
+          method: config.rpcMethod,
+          dartVmPort: port,
+          params,
+        });
 
     return this.rpcUtils.wrapResponse(Promise.resolve(result));
   }

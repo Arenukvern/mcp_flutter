@@ -96,7 +96,13 @@ final class CustomDevtoolsService extends BaseDevtoolsService {
       return RPCResponse.error('VM service not available');
     }
     final objectGroupManager = initObjectGroup(debugName: 'playground');
-
+    final responsed = await devtoolsService.serviceManager
+        .callServiceExtensionOnMainIsolate(
+          'ext.mcp.bridge.apperrors',
+          // args: {'count': 10},
+        );
+    print(responsed.json);
+    return RPCResponse.successMap({'errors': []});
     // final objectRef = await vmService.getObject(
     //   isolateId,
     //   'RenderFlex#${errors.first.renderFlexId}', // The ID from RenderFlex#f8f6b

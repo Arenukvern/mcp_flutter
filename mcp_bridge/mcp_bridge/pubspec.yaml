@@ -1,0 +1,23 @@
+name: mcp_bridge
+description: "MCP Bridge"
+repository: https://github.com/Arenukvern/mcp_flutter
+version: 0.1.0
+
+environment:
+  sdk: ">=3.7.0 <4.0.0"
+
+dependencies:
+  collection: ^1.19.1
+  equatable: ^2.0.7
+  flutter:
+    sdk: flutter
+  from_json_to_json: ^0.1.0
+  is_dart_empty_or_not: ^0.2.2
+  universal_io: ^2.2.2
+
+dev_dependencies:
+  lints: ^5.0.0
+  xsoulspace_lints: ^0.0.15
+
+flutter:
+  uses-material-design: true

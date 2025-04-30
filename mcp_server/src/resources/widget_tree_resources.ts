@@ -31,10 +31,10 @@ export const createTreeResources = (rpcUtils: RpcUtilities): Resource[] => {
   }
   if (rpcUtils.args.areImagesSupported) {
     resources.push({
-      uri: "visual://localhost/app/screenshot",
-      name: "Screenshot",
+      uri: "visual://localhost/view/screenshots",
+      name: "Screenshots",
       description:
-        "Get screenshot of the application. Returns a base64 encoded image in blob format.",
+        "Get screenshots of all views in the application. Returns a base64 encoded images.",
       mimeType: "image/png",
     });
   }

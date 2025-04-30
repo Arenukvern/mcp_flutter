@@ -1,5 +1,7 @@
 // ignore_for_file: avoid_catches_without_on_clauses
 
+import 'package:devtools_extensions/devtools_extensions.dart'
+    as devtools_extensions;
 import 'package:devtools_mcp_extension/common_imports.dart';
 import 'package:devtools_mcp_extension/core/devtools_core/shared/diagnostics/diagnostics_node.dart';
 import 'package:devtools_mcp_extension/services/error_devtools/error_event.dart';
@@ -8,18 +10,19 @@ import 'package:vm_service/vm_service.dart';
 /// A class that monitors Flutter errors in real-time using the VM Service.
 class FlutterErrorMonitor {
   /// Creates a new [FlutterErrorMonitor] instance.
-  FlutterErrorMonitor({required this.service});
+  FlutterErrorMonitor({final ServiceManager? serviceManager})
+    : _serviceManager = serviceManager;
+  final ServiceManager? _serviceManager;
 
-  /// The VM service connection.
-  final DartVmDevtoolsService service;
+  ServiceManager get serviceManager =>
+      _serviceManager ?? devtools_extensions.serviceManager;
 
   /// Controller for broadcasting error events.
   final _errorController = StreamController<FlutterErrorEvent>.broadcast();
   final _errors = <FlutterErrorEvent>{};
 
-  VmService? get vmService => service.serviceManager.service;
-  String? get isolateId =>
-      service.serviceManager.isolateManager.mainIsolate.value?.id;
+  VmService? get vmService => serviceManager.service;
+  String? get isolateId => serviceManager.isolateManager.mainIsolate.value?.id;
 
   /// Stream of error events.
   Stream<FlutterErrorEvent> get onError => _errorController.stream;
@@ -35,7 +38,7 @@ class FlutterErrorMonitor {
 
     try {
       // Enable structured errors
-      await service.callServiceExtensionRaw(
+      await serviceManager.callServiceExtensionOnMainIsolate(
         'ext.flutter.inspector.${WidgetInspectorServiceExtensions.structuredErrors.name}',
         args: {'enabled': 'true'},
       );

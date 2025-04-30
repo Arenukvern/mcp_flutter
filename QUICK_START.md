@@ -54,7 +54,7 @@ For developers who want to contribute to the project or run the latest version d
    ! Current workaround for security reasons is to run with `--disable-service-auth-codes`. If you know how to fix this, please let me know!
 
    ```bash
-   flutter run --debug --observatory-port=8181 --enable-vm-service --disable-service-auth-codes
+   flutter run --debug --host-vmservice-port=8181 --enable-vm-service --disable-service-auth-codes
    ```
 
 6. **Open DevTools in Browser**
@@ -86,7 +86,9 @@ For developers who want to contribute to the project or run the latest version d
             ],
             "env": {
               "PORT": "3334",
-              "LOG_LEVEL": "critical"
+              "LOG_LEVEL": "critical",
+              "RESOURCES_SUPPORTED": "true",
+              "IMAGES_SUPPORTED": "true"
             },
             "disabled": false,
             "autoApprove": []
@@ -115,7 +117,9 @@ For developers who want to contribute to the project or run the latest version d
               "/path/to/your/cloned/mcp_flutter/mcp_server/build/index.js"
             ],
             "env": {
-              "RESOURCES_SUPPORTED": false
+              "RESOURCES_SUPPORTED": "false",
+              "IMAGES_SUPPORTED": "true",
+              "LOG_LEVEL": "critical"
             },
             "disabled": false
           }

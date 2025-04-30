@@ -101,7 +101,7 @@ class RpcClientsOrchestrator with ChangeNotifier {
   Future<void> initializeAll() async {
     // Connect to VM service
     await _dartVmDevtoolsService.connectToVmService();
-    const forwardingServiceEnabled = true;
+    const forwardingServiceEnabled = false;
     if (forwardingServiceEnabled) await connectToForwardingService();
     await customDevtoolsService.init();
     await errorDevtoolsService.init();

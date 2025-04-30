@@ -20,17 +20,18 @@ The whole server is now divided into two parts:
 
 ### Development Tools
 
+- `screenshot` [Resource|Tool] - Captures a screenshot of the running application.
+  **Configuration**:
+
+  - Enable with `--images` flag or `IMAGES_SUPPORTED=true` environment variable
+  - May use compression to optimize image size
+
 - `hot_reload` [Tool] - Performs hot reload of the Flutter application
   **Tested on**:
   ✅ macOS, ✅ iOS, ✅ Android
   **Not tested on**:
   🤔 Windows, 🤔 Linux, ❌ Web
   [See issue](https://github.com/Arenukvern/mcp_flutter/issues/23)
-- `screenshot` [Resource|Tool] - Captures a screenshot of the running application.
-  **Configuration**:
-
-  - Enable with `--images` flag or `IMAGES_SUPPORTED=true` environment variable
-  - May use compression to optimize image size
 
   **Tested on**:
   ✅ macOS, ✅ iOS
