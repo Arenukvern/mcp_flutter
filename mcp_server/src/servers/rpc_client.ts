@@ -1,5 +1,5 @@
-import { Logger } from "flutter_mcp_forwarding_server";
 import WebSocket from "ws";
+import { Logger } from "../logger.js";
 
 export class RpcClient {
   constructor(public logger: Logger) {}

@@ -3,4 +3,4 @@ documentation: https://docs.flutter.dev/tools/devtools/extensions#configure-exte
 extensions:
   - provider: true
   - shared_preferences: true
-  - mcp_bridge: true
+  - mcp_toolkit: true

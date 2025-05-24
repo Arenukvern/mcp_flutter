@@ -1,9 +1,21 @@
 tools:
+  - name: test_custom_ext
+    description: "Utility: Test the custom extension. This is a helper tool for testing the custom extension."
+    inputSchema:
+      type: object
+      properties:
+        port:
+          type: number
+          description: "Optional: Custom port number if not using default Flutter debug port 8181"
+      required: []
   - name: hot_reload_flutter
     description: Hot reloads the Flutter app.
     inputSchema:
       type: object
       properties:
+        port:
+          type: number
+          description: "Optional: Custom port number if not using default Flutter debug port 8181"
         force:
           type: boolean
           description: "If true, forces a hot reload even if there are no changes to the source code"

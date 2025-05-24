@@ -2,8 +2,8 @@
 
 ## Quick Start
 
-- [Installation Guide](README.md#quick-start)
-- [API Documentation](README.md#learn-more)
+- [Installation Guide](QUICK_START.md)
+- [API Documentation](MCP_RPC_DESCRIPTION.md)
 - [Contributing Guidelines](README.md#contributing)
 
 ## System Overview
@@ -26,15 +26,15 @@ Used for: Basic VM operations, general Dart runtime inspection
 ### 2. Flutter-Specific Communication
 
 ```
-┌─────────────────┐     ┌──────────────┐     ┌──────────────┐     ┌─────────────────┐
-│                 │     │              │     │              │     │                 │
-│  Flutter App    │<--->│  DevTools    │<--->│  Forwarding  │<--->│   MCP Server   │
-│  (Debug Mode)   │     │  Extension   │     │  Server      │     │                 │
-│                 │     │              │     │              │     │                 │
-└─────────────────┘     └──────────────┘     └──────────────┘     └─────────────────┘
+┌─────────────────┐     ┌───────────────────────┐     ┌─────────────────┐
+│                 │     │  Flutter App with     │     │                 │
+│  Flutter App    │<--->│  mcp_toolkit (VM Svc.  │<--->│   MCP Server   │
+│  (Debug Mode)   │     │  Extensions)          │     │                 │
+│                 │     │                       │     │                 │
+└─────────────────┘     └───────────────────────┘     └─────────────────┘
 ```
 
-Used for: Flutter-specific operations (widget inspection, layout analysis, etc.)
+Used for: Flutter-specific operations (widget inspection, layout analysis, error reporting, screenshots, etc.) via direct MCP Server to VM Service extension calls.
 
 ### When to Use This
 
@@ -45,7 +45,7 @@ Used for: Flutter-specific operations (widget inspection, layout analysis, etc.)
    - Isolate management
    - General VM state queries
 
-2. **Flutter-Specific Operations** (via Forwarding Server):
+2. **Flutter-Specific Operations**:
    - Widget tree inspection
    - Layout debugging
    - State management analysis
@@ -61,19 +61,20 @@ Used for: Flutter-specific operations (widget inspection, layout analysis, etc.)
 **Requirements**:
 
 - Must run in debug mode
-- DevTools MCP Extension installed
+- `mcp_toolkit` package integrated, providing service extensions
 - Port 8181 available for VM Service
 
-### 2. DevTools MCP Extension Layer
+### 2. MCP Toolkit Layer (In-App Service Extensions)
 
-**Location**: `devtools_mcp_extension/`
-**Purpose**: Bridge between Flutter and MCP
+**Location**: `mcp_toolkit/mcp_toolkit/` (as a Dart package integrated into the Flutter Application)
+**Purpose**: Exposes Flutter-specific functionalities to external tools (like AI assistants via the MCP/Forwarding server) through custom Dart VM Service extensions.
 **Key Features**:
 
-- VM Service Protocol integration
-- Real-time widget tree access
-- State management hooks
-- Performance metrics collection
+- Registers custom Dart VM Service extensions (e.g., `ext.mcp.toolkit.app_errors`, `ext.mcp.toolkit.view_screenshots`).
+- Captures and reports Flutter application errors.
+- Provides screenshot capabilities of the application's UI.
+- Enables retrieval of application view details.
+- Facilitates interaction with the Flutter application at a higher level than raw VM service calls.
 
 ### 3. MCP Server Layer
 
@@ -105,21 +106,15 @@ Used for: Flutter-specific operations (widget inspection, layout analysis, etc.)
    AI Assistant -> MCP JSON-RPC Request -> MCP Server
    ```
 
-2. **Protocol Translation**:
+2. **Protocol Translation & Interaction**:
 
    ```
-   MCP Server -> VM Service Protocol -> DevTools Extension
+   MCP Server -> Dart VM Service (invoking mcp_toolkit extensions on Flutter App)
    ```
 
-3. **Flutter Interaction**:
-
+3. **Response Flow**:
    ```
-   DevTools Extension -> VM Service -> Flutter App
-   ```
-
-4. **Response Flow**:
-   ```
-   Flutter App -> DevTools Extension -> MCP Server -> AI Assistant
+   mcp_toolkit in Flutter App -> Dart VM Service -> MCP Server -> AI Assistant
    ```
 
 ## Protocol Details

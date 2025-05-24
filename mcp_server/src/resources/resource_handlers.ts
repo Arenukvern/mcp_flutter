@@ -17,20 +17,42 @@ import {
   createTreeResources,
   TREE_RESOURCES_TEMPLATES,
 } from "./widget_tree_resources.js";
+
+const _RPC_PREFIX = "ext.mcp.toolkit.";
+
+/**
+ * Tool configurations for resource-related operations
+ * All methods route through Dart VM backend
+ */
 const ToolNames = {
   getAppErrors: {
     toolName: "get_app_errors",
-    rpcMethod: "ext.mcpdevtools.getAppErrors",
+    rpcMethod: `${_RPC_PREFIX}app_errors`,
   },
-  getScreenshot: {
-    toolName: "inspector_screenshot",
-    rpcMethod: "ext.flutter.inspector.screenshot",
+  getViewDetails: {
+    toolName: "get_view_details",
+    rpcMethod: `${_RPC_PREFIX}view_details`,
+  },
+  viewScreenshots: {
+    toolName: "view_screenshots",
+    rpcMethod: `${_RPC_PREFIX}view_screenshots`,
   },
 } as const;
+
+type ScreenshotResult = {
+  images: string[];
+};
+
 type AppErrorsResponse = {
   message: string;
   errors: unknown[];
 };
+
+type ViewDetailsResponse = {
+  message: string;
+  details: unknown[];
+};
+
 type ResourceType =
   | "root"
   | "node"
@@ -38,10 +60,15 @@ type ResourceType =
   | "children"
   | "screenshot"
   | "app_errors"
-  | "view"
-  | "info"
+  | "view_details"
+  | "view_widget_tree"
+  | "is_widget_tree_ready"
   | "unknown";
 
+/**
+ * Handles all resource-related operations for the Flutter Inspector
+ * All operations route through Dart VM backend for consistency
+ */
 export class ResourcesHandlers {
   public setHandlers(
     server: Server,
@@ -54,20 +81,23 @@ export class ResourcesHandlers {
         resources: [...createTreeResources(rpcUtils)],
       };
     });
+
     // List available resource templates when clients request them
     server.setRequestHandler(ListResourceTemplatesRequestSchema, async () => {
       return { resourceTemplates: [...TREE_RESOURCES_TEMPLATES] };
     });
+
     // Return resource content when clients request it
     server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
       return this.#handleRead(request.params.uri, rpcUtils, rpcToolHandlers);
     });
   }
+
   /**
-   * Get the flutter application errors list.
-   * @param count - The count of errors to get.
-   * @param rpcUtils - The RPC utilities.
-   * @returns The errors list.
+   * Get the flutter application errors list via Dart VM
+   * @param count - The count of errors to get
+   * @param rpcUtils - The RPC utilities
+   * @returns The errors list
    */
   async #getErrorsList(
     count: number | undefined,
@@ -76,14 +106,16 @@ export class ResourcesHandlers {
     errorsListJson: AppErrorsResponse;
     errorsList: unknown[];
   }> {
-    const appErrorsResult = await rpcUtils.callFlutterExtension(
-      ToolNames.getAppErrors.rpcMethod,
-      {
+    const dartVmPort = rpcUtils.args.dartVMPort;
+    const appErrorsResult = await rpcUtils.callDartVm({
+      method: ToolNames.getAppErrors.rpcMethod,
+      dartVmPort,
+      params: {
         count: count ?? 4,
-      }
-    );
-    const errorsListJson = appErrorsResult?.data as AppErrorsResponse;
+      },
+    });
 
+    const errorsListJson = appErrorsResult as AppErrorsResponse;
     const errorsList = errorsListJson?.errors ?? [];
 
     return {
@@ -92,25 +124,36 @@ export class ResourcesHandlers {
     };
   }
 
+  /**
+   * Get view details via Dart VM
+   * @param rpcUtils - The RPC utilities
+   * @returns View details response
+   */
+  async #getViewDetails(rpcUtils: RpcUtilities): Promise<ViewDetailsResponse> {
+    const dartVmPort = rpcUtils.args.dartVMPort;
+    const viewDetailsResult = await rpcUtils.callDartVm({
+      method: ToolNames.getViewDetails.rpcMethod,
+      dartVmPort,
+    });
+    const viewDetailsResultJson = viewDetailsResult as ViewDetailsResponse;
+
+    return {
+      message: viewDetailsResultJson.message,
+      details: viewDetailsResultJson.details,
+    };
+  }
+
+  /**
+   * Handle resource read requests
+   * All operations route through Dart VM backend
+   */
   async #handleRead(
     uri: string,
     rpcUtils: RpcUtilities,
     rpcToolHandlers: FlutterRpcHandlers
   ): Promise<ResourceContents> {
     const parsedUri = this.#parseUri(uri);
-    // if (this._test) {
-    //   return {
-    //     contents: [
-    //       {
-    //         uri: uri,
-    //         text: "HOHOHO",
-    //         json: {
-    //           test: "test",
-    //         },
-    //       },
-    //     ],
-    //   };
-    // }
+
     try {
       switch (parsedUri.type) {
         case "root":
@@ -131,6 +174,7 @@ export class ResourcesHandlers {
           if (!parsedUri.nodeId) {
             throw new McpError(ErrorCode.InvalidParams, "Node ID is required");
           }
+          // Route through Dart VM (via callFlutterExtension which now uses Dart VM)
           const nodeResult = await rpcUtils.callFlutterExtension(
             "ext.flutter.inspector.getProperties",
             {
@@ -152,6 +196,7 @@ export class ResourcesHandlers {
           if (!parsedUri.nodeId) {
             throw new McpError(ErrorCode.InvalidParams, "Node ID is required");
           }
+          // Route through Dart VM (via callFlutterExtension which now uses Dart VM)
           const parentResult = await rpcUtils.callFlutterExtension(
             "ext.flutter.inspector.getParentChain",
             {
@@ -173,6 +218,7 @@ export class ResourcesHandlers {
           if (!parsedUri.nodeId) {
             throw new McpError(ErrorCode.InvalidParams, "Node ID is required");
           }
+          // Route through Dart VM (via callFlutterExtension which now uses Dart VM)
           const childrenResult = await rpcUtils.callFlutterExtension(
             "ext.flutter.inspector.getChildrenDetailsSubtree",
             {
@@ -223,7 +269,22 @@ export class ResourcesHandlers {
             );
           }
 
-        case "view":
+        case "view_details":
+          const viewDetailsResult = await this.#getViewDetails(rpcUtils);
+          return {
+            uri: uri,
+            contents: [
+              {
+                uri: uri,
+                text: viewDetailsResult.message,
+                json: viewDetailsResult.details,
+                mimeType: "application/json",
+              },
+            ],
+          };
+
+        case "view_widget_tree":
+          // Route through Dart VM (via callFlutterExtension which now uses Dart VM)
           const viewResult = await rpcUtils.callFlutterExtension(
             "ext.flutter.inspector.getRootWidgetSummaryTreeWithPreviews",
             {
@@ -242,7 +303,8 @@ export class ResourcesHandlers {
             ],
           };
 
-        case "info":
+        case "is_widget_tree_ready":
+          // Route through Dart VM (via callFlutterExtension which now uses Dart VM)
           const infoResult = await rpcUtils.callFlutterExtension(
             "ext.flutter.inspector.isWidgetTreeReady",
             {}
@@ -259,20 +321,22 @@ export class ResourcesHandlers {
           };
 
         case "screenshot":
-          const screenshotResult = await rpcToolHandlers.handleToolRequest(
-            ToolNames.getScreenshot.toolName,
-            {}
-          );
-          const screenshotData = screenshotResult.content[0].text;
+          // Route through Dart VM
+          const screenshotResult = (await rpcUtils.callDartVm({
+            method: ToolNames.viewScreenshots.rpcMethod,
+            dartVmPort: rpcUtils.args.dartVMPort,
+            params: {
+              compress: true,
+            },
+          })) as ScreenshotResult | undefined;
           return {
             uri: uri,
-            contents: [
-              {
+            contents:
+              screenshotResult?.images.map((image) => ({
                 uri: uri,
-                blob: screenshotData,
+                blob: image,
                 mimeType: "image/png",
-              },
-            ],
+              })) ?? [],
           };
       }
       throw new McpError(
@@ -289,6 +353,7 @@ export class ResourcesHandlers {
       );
     }
   }
+
   /**
    * Parse the URI to get the resource type and parameters.
    * @param uri - The URI to parse.
@@ -343,18 +408,20 @@ export class ResourcesHandlers {
               type: "app_errors",
               count,
             };
-          } else if (action === "screenshot") {
-            return {
-              type: "screenshot",
-            };
           }
           break;
 
         case "view":
-          if (action === "info") {
-            return { type: "info" };
+          if (action === "is_widget_tree_ready") {
+            return { type: "is_widget_tree_ready" };
+          } else if (action === "screenshots") {
+            return {
+              type: "screenshot",
+            };
+          } else if (action === "details") {
+            return { type: "view_details" };
           }
-          return { type: "view" };
+          return { type: "unknown" };
       }
 
       return { type: "unknown" };
@@ -376,6 +443,23 @@ export class ResourcesHandlers {
       return {};
     }
     const tools = <CustomRpcHandlerMap>{
+      [ToolNames.getViewDetails.toolName]: async (
+        request: CallToolRequest
+      ): Promise<CallToolResult> => {
+        const viewDetailsResult = await this.#getViewDetails(rpcUtils);
+        return {
+          content: [
+            {
+              type: "text",
+              text: viewDetailsResult.message,
+            },
+            {
+              type: "text",
+              text: JSON.stringify(viewDetailsResult.details, null, 2),
+            },
+          ],
+        };
+      },
       [ToolNames.getAppErrors.toolName]: async (
         request: CallToolRequest
       ): Promise<CallToolResult> => {
@@ -390,7 +474,7 @@ export class ResourcesHandlers {
               type: "text",
               text:
                 errorsListJson.message ||
-                "MCP bridge is not active. Make sure devtools in browser is not disconnected and mcp bridge is running.",
+                "MCP Toolkit is not active. Make sure devtools in browser is not disconnected and MCP Toolkit is running.",
             },
             {
               type: "text",
@@ -401,20 +485,22 @@ export class ResourcesHandlers {
       },
     };
     if (rpcUtils.args.areImagesSupported) {
-      tools[ToolNames.getScreenshot.toolName] = async (request) => {
-        const screenshotResult = await rpcToolHandlers.handleToolRequest(
-          ToolNames.getScreenshot.toolName,
-          {}
-        );
+      tools[ToolNames.viewScreenshots.toolName] = async (request) => {
+        const compress = request.params.arguments?.compress;
+        const screenshotResult = (await rpcUtils.callDartVm({
+          method: ToolNames.viewScreenshots.rpcMethod,
+          dartVmPort: rpcUtils.args.dartVMPort,
+          params: {
+            compress: compress ?? true,
+          },
+        })) as ScreenshotResult;
         const uri = request.params.uri;
         return {
-          content: [
-            {
-              type: "image",
-              data: screenshotResult.content[0].text,
-              mimeType: "image/png",
-            },
-          ],
+          content: screenshotResult.images.map((image) => ({
+            type: "image",
+            data: image,
+            mimeType: "image/png",
+          })),
         };
       };
     }
@@ -428,7 +514,7 @@ export class ResourcesHandlers {
    */
   getToolSchemes(rpcUtils: RpcUtilities): Tool[] {
     const screenshot = <Tool>{
-      name: ToolNames.getScreenshot.toolName,
+      name: ToolNames.viewScreenshots.toolName,
       description: "Get the screenshot of the app",
       inputSchema: {
         type: "object",

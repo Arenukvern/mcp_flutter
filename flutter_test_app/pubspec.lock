@@ -108,11 +108,10 @@ packages:
   devtools_mcp_extension:
     dependency: "direct dev"
     description:
-      name: devtools_mcp_extension
-      sha256: ae280b6add5bd5572ae1d940a8bd81f352116bd752af56e95087b18a7da16739
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.2.0"
+      path: "../mcp_toolkit/devtools_mcp_extension"
+      relative: true
+    source: path
+    version: "0.3.0"
   devtools_shared:
     dependency: transitive
     description:
@@ -267,6 +266,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.0"
+  from_json_to_json:
+    dependency: transitive
+    description:
+      name: from_json_to_json
+      sha256: ed6382b875aeb263ed37a99fdef062767f5ad2c4ade4e6ce3048bc23d171b9ca
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.0"
   gap:
     dependency: transitive
     description:
@@ -315,6 +322,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.5"
+  is_dart_empty_or_not:
+    dependency: transitive
+    description:
+      name: is_dart_empty_or_not
+      sha256: "0a4eef789b8a9d84542abbe4e03f2ae1151fa635f4a2b18893777bc6902df404"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.2.2"
   json_annotation:
     dependency: transitive
     description:
@@ -363,6 +378,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.1.1"
+  mcp_toolkit:
+    dependency: "direct main"
+    description:
+      path: "../mcp_toolkit/mcp_toolkit"
+      relative: true
+    source: path
+    version: "0.1.0"
   meta:
     dependency: transitive
     description:

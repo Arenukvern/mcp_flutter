@@ -8,7 +8,7 @@
       "cwd": "./flutter_test_app",
       "flutterMode": "debug",
       "args": [
-        "--observatory-port=8181",
+        "--host-vmservice-port=8181",
         "--enable-vm-service",
         "--disable-service-auth-codes"
       ]
@@ -17,7 +17,7 @@
       "name": "devtools_mcp_extension debug",
       "request": "launch",
       "type": "dart",
-      "cwd": "devtools_mcp_extension",
+      "cwd": "./mcp_toolkit/devtools_mcp_extension",
       "flutterMode": "debug",
       "args": ["--debug", "--web-port=3434"]
     }

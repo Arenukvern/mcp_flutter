@@ -1,12 +1,16 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { Logger } from "flutter_mcp_forwarding_server";
 import { CommandLineConfig } from "../index.js";
+import { Logger } from "../logger.js";
 import { ResourcesHandlers } from "../resources/resource_handlers.js";
 import { FlutterRpcHandlers } from "../tools/index.js";
 import { ToolsHandlers } from "../tools/tools_handlers.js";
 import { RpcUtilities } from "./rpc_utilities.js";
 
+/**
+ * Main Flutter Inspector MCP Server
+ * Currently configured for Dart VM backend only, with extension points for future backends
+ */
 export class FlutterInspectorServer {
   // Declare server with any type to work around type issues
   private server: McpServer;
@@ -15,6 +19,7 @@ export class FlutterInspectorServer {
   private logger: Logger;
   private resources = new ResourcesHandlers();
   private tools = new ToolsHandlers();
+
   constructor(private readonly args: CommandLineConfig) {
     this.port = args.port;
     this.server = new McpServer(
@@ -53,22 +58,27 @@ export class FlutterInspectorServer {
     });
   }
 
+  /**
+   * Set up handlers for tools and resources
+   * TODO: Add dependency injection for backend-specific handlers in the future
+   */
   private setHandlers() {
     try {
       const server = this.server.server;
 
+      // Create RPC handlers - currently using Dart VM only
       const rpcHandlers = new FlutterRpcHandlers(
         this.rpcUtils,
-        (request, connectionDestination) =>
-          this.rpcUtils.handlePortParam(request, connectionDestination)
+        (request) => this.rpcUtils.handlePortParam(request) // Simplified since only Dart VM supported
       );
+
+      // Set up resource and tool handlers
       this.resources.setHandlers(server, this.rpcUtils, rpcHandlers);
       this.tools.setHandlers(
         server,
         this.rpcUtils,
         this.logger,
         rpcHandlers,
-
         this.resources
       );
     } catch (error) {
@@ -83,17 +93,14 @@ export class FlutterInspectorServer {
 
     // 2. Start servers in parallel with proper cleanup
     try {
-      // Setup the transport first
+      // Setup the MCP transport
       await this.server.connect(transport);
 
-      // Now try to connect to the services - these connections are now resilient to failure
-      await this.rpcUtils.connect(this.args.dartVMPort, "dart-vm");
-      await this.rpcUtils.connect(
-        this.args.forwardingServerPort,
-        "flutter-extension"
-      );
+      // Connect to Dart VM backend
+      // Note: Connection errors are handled gracefully and don't crash the server
+      await this.rpcUtils.connect(this.args.dartVMPort);
 
-      // 3. Add coordinated shutdown
+      // Setup coordinated shutdown
       const cleanup = async () => {
         await this.rpcUtils.closeAllConnections();
         await transport.close();
@@ -103,13 +110,22 @@ export class FlutterInspectorServer {
       process.on("SIGTERM", cleanup);
 
       this.logger.info(`
-        MCP Server: Ready on stdio (port ${this.port})
-        RPC Server: Attempting to connect to ws://${this.args.dartVMHost}:${this.args.dartVMPort}/ws
-        Forwarding Client: Attempting to connect to ws://${this.args.forwardingServerHost}:${this.args.forwardingServerPort}/forward
+        🚀 Flutter Inspector MCP Server Ready
+        📡 MCP Server: stdio mode (port ${this.port})
+        🎯 Dart VM Backend: ws://${this.args.dartVMHost}:${this.args.dartVMPort}/ws
+        💡 Backend Architecture: Ready for future extension via plugin system
       `);
     } catch (error) {
       this.logger.error("Failed to start server:", { error });
       process.exit(1);
     }
   }
+
+  /**
+   * TODO: Future extension point for backend registration
+   * Example usage: server.registerBackend('grpc', new GrpcBackendClient(...))
+   */
+  // registerBackend(name: string, client: IBackendClient): void {
+  //   this.backendClients.set(name, client);
+  // }
 }

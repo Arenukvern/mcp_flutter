@@ -2,12 +2,8 @@ import {
   CallToolRequest,
   CallToolResult,
 } from "@modelcontextprotocol/sdk/types.js";
-import { Logger } from "flutter_mcp_forwarding_server";
-import {
-  ConnectionDestination,
-  execAsync,
-  RpcUtilities,
-} from "../servers/rpc_utilities.js";
+import { Logger } from "../logger.js";
+import { execAsync, RpcUtilities } from "../servers/rpc_utilities.js";
 import { FlutterPort, IsolateInfo } from "../types/types.js";
 
 // Define a type for the handler function
@@ -20,18 +16,30 @@ export interface CustomRpcHandlerMap {
 
 /**
  * Creates a map of custom RPC handlers that aren't part of the generated handlers
+ * All handlers route through Dart VM backend
  */
 export function createCustomRpcHandlerMap(
   rpcUtils: RpcUtilities,
   logger: Logger,
-  handlePortParam: (
-    request: CallToolRequest,
-    connectionDestination: ConnectionDestination
-  ) => number
+  handlePortParam: (request: CallToolRequest) => number
 ): CustomRpcHandlerMap {
   return {
+    test_custom_ext: async (request: CallToolRequest) => {
+      const port = handlePortParam(request);
+      const result = await rpcUtils.callDartVm({
+        method: "ext.mcp.toolkit.app_errors",
+        dartVmPort: port,
+        params: {
+          count: 10,
+        },
+      });
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+      };
+    },
+
     get_vm: async (request: CallToolRequest) => {
-      const port = handlePortParam(request, "dart-vm");
+      const port = handlePortParam(request);
       const vm = await rpcUtils.getVmInfo(port);
       return {
         content: [
@@ -42,7 +50,9 @@ export function createCustomRpcHandlerMap(
         ],
       };
     },
+
     hot_reload_flutter: async (request: CallToolRequest) => {
+      // Route through Dart VM (callFlutterExtension now uses Dart VM)
       const result = await rpcUtils.callFlutterExtension(
         "ext.mcpdevtools.hotReload",
         {
@@ -59,6 +69,7 @@ export function createCustomRpcHandlerMap(
         ],
       };
     },
+
     get_active_ports: async () => {
       const ports = await _getActivePorts(logger);
       return {
@@ -70,8 +81,9 @@ export function createCustomRpcHandlerMap(
         ],
       };
     },
+
     get_extension_rpcs: async (request: CallToolRequest) => {
-      const port = handlePortParam(request, "dart-vm");
+      const port = handlePortParam(request);
       const { isolateId, isRawResponse = false } =
         (request.params.arguments as {
           isolateId?: string;
@@ -143,7 +155,8 @@ export function createCustomRpcHandlerMap(
 }
 
 /**
- * Get active ports for Flutter/Dart processes
+ * Get active ports for Flutter/Dart processes via system commands
+ * This is a utility function that doesn't depend on backend type
  */
 async function _getActivePorts(logger: Logger): Promise<FlutterPort[]> {
   try {

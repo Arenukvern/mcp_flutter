@@ -1,0 +1,55 @@
+---
+description: Rule describes how to work with jules ai agent correctly.
+globs: 
+alwaysApply: false
+---
+Please write condensed plan for AI Agent, so he could execute it step by step.
+Make sure that plan has ony onne final goal otherwise ask user what to do.
+
+Make sure, that plan contains orginal links to sources, chosen configuration script, and written that way, so it would be possible to copy & paste in one click.
+
+Always add as first steps:
+1. Branch & Environment Setup
+1.1 Create a new branch from the default branch (e.g., {name}).
+1.2 Run the provided environment setup scripts to ensure Dart, FVM, and Flutter are correctly installed and configured.
+
+- For flutter fvm (should be dependent from what user asks):
+```
+# Install Dart SDK (using apt, official Google repo)
+sudo apt-get update
+sudo apt-get install -y apt-transport-https wget
+wget -qO- https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+sudo sh -c 'wget -qO- https://storage.googleapis.com/download.dartlang.org/linux/debian/dart_stable.list > /etc/apt/sources.list.d/dart_stable.list'
+sudo apt-get update
+sudo apt-get install -y dart
+
+# Add Dart to PATH
+export PATH="$PATH:/usr/lib/dart/bin"
+
+# Install FVM globally
+dart pub global activate fvm
+
+# Add FVM to PATH
+export PATH="$PATH:$HOME/.pub-cache/bin"
+
+# Install Flutter version from .fvmrc
+fvm install
+
+# Get Flutter dependencies
+fvm flutter pub get
+```
+- For flutter without fvm:
+```
+# Install Dart SDK (using apt, official Google repo)
+sudo apt-get update
+sudo apt-get install -y apt-transport-https wget
+wget -qO- https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+sudo sh -c 'wget -qO- https://storage.googleapis.com/download.dartlang.org/linux/debian/dart_stable.list > /etc/apt/sources.list.d/dart_stable.list'
+sudo apt-get update
+sudo apt-get install -y dart
+
+# Add Dart to PATH
+export PATH="$PATH:/usr/lib/dart/bin"
+
+flutter pub get
+```

@@ -8,10 +8,10 @@ import {
   Result,
   Tool,
 } from "@modelcontextprotocol/sdk/types.js";
-import { Logger } from "flutter_mcp_forwarding_server";
 import path from "path";
 import { fileURLToPath } from "url";
 import { Env } from "../index.js";
+import { Logger } from "../logger.js";
 import { ResourcesHandlers } from "../resources/resource_handlers.js";
 import { RpcUtilities } from "../servers/rpc_utilities.js";
 import { createCustomRpcHandlerMap } from "./create_custom_rpc_handler_map.js";
@@ -25,6 +25,10 @@ import {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+/**
+ * Handles tool registration and routing for the Flutter Inspector
+ * All tools route through Dart VM backend
+ */
 export class ToolsHandlers {
   public setHandlers(
     server: Server,
@@ -41,19 +45,23 @@ export class ToolsHandlers {
       __dirname,
       "server_tools_custom.yaml"
     );
-    // Load tools configuration
+
+    // Load tools configuration from YAML files
     const serverToolsFlutter: { tools: Tool[] } = rpcUtils.loadYamlConfig(
       serverToolsFlutterPath
     );
     const serverToolsCustom: { tools: Tool[] } = rpcUtils.loadYamlConfig(
       serverToolsCustomPath
     );
+
+    // Combine all tool schemes
     const toolSchemes: Tool[] = [
       ...serverToolsFlutter.tools,
       ...serverToolsCustom.tools,
       ...resourcesHandlers.getToolSchemes(rpcUtils),
     ];
 
+    // Filter tools based on environment and capabilities
     const filteredToolSchemes = toolSchemes.filter((tool) => {
       if (rpcUtils.args.env === Env.Production) {
         if (tool.name.includes("dump") && !rpcUtils.args.areDumpSupported) {
@@ -67,27 +75,30 @@ export class ToolsHandlers {
       return false;
     });
 
+    // Register list tools handler
     server.setRequestHandler(ListToolsRequestSchema, async () => {
       return {
         tools: filteredToolSchemes,
       };
     });
 
-    // Use the generated function to create the handler map
+    // Create handler maps for different tool types
     const handlerMap = createRpcHandlerMap(rpcHandlers);
 
-    // Get custom handlers
+    // Get custom handlers (all using Dart VM backend)
     const customHandlerMap = createCustomRpcHandlerMap(
       rpcUtils,
       logger,
-      (request, connectionDestination) =>
-        rpcUtils.handlePortParam(request, connectionDestination)
+      (request) => rpcUtils.handlePortParam(request) // Simplified since only Dart VM supported
     );
+
+    // Get resource-based tool handlers
     const customResourceHandlerMap = resourcesHandlers.getTools(
       rpcUtils,
       rpcHandlers
     );
 
+    // Register call tool handler with routing logic
     server.setRequestHandler(
       CallToolRequestSchema,
       async (request: Request): Promise<Result> => {
@@ -98,7 +109,9 @@ export class ToolsHandlers {
             `Unknown tool: ${request.params?.name}`
           );
         }
+
         const generatedHandler = handlerMap[toolName as RpcToolName];
+
         // Check generated handlers first
         if (generatedHandler) return generatedHandler(request);
 
@@ -107,6 +120,7 @@ export class ToolsHandlers {
           return customHandlerMap[toolName](request);
         }
 
+        // Finally check resource-based handlers
         if (customResourceHandlerMap[toolName]) {
           return customResourceHandlerMap[toolName](request);
         }

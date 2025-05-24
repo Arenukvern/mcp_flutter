@@ -10,7 +10,7 @@ A small video tutorial how to setup mcp server on macOS with Cursor - https://ww
 - A Flutter app running in debug mode
 - One of: Cursor, Claude, Cline AI, Windsurf, RooCode, or any other AI assistant that supports MCP server
 
-## 📦 Installation via Smithery (WIP)
+## 📦 Installation via Smithery (🚧 WIP 🚧)
 
 To install Flutter Inspector for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@Arenukvern/mcp_flutter):
 
@@ -35,18 +35,55 @@ For developers who want to contribute to the project or run the latest version d
    make install
    ```
 
-   This command installs all necessary dependencies listed in `package.json` and then builds MCP server and forwarding server.
+   This command installs all necessary dependencies listed in `package.json` and then builds the MCP server.
 
-3. **Start forwarding server:**
+3. **Add `mcp_toolkit` Package to Your Flutter App:**
+
+   The `mcp_toolkit` package provides the necessary service extensions within your Flutter application. You need to add it to your app's `pubspec.yaml`.
+
+   Run this command in your Flutter app's directory to add the `mcp_toolkit` package:
 
    ```bash
-   make forward
+   flutter pub add mcp_toolkit
    ```
 
-4. **Add DevTools Flutter Extension to Flutter App:**
+   or add it to your `pubspec.yaml` manually:
 
-   ```bash
-   flutter pub add --dev devtools_mcp_extension
+   ```yaml
+   dev_dependencies:
+     flutter_test:
+       sdk: flutter
+     # ... other dev_dependencies
+     mcp_toolkit: ^0.1.1
+   ```
+
+   Then run `flutter pub get` in your Flutter app's directory.
+
+4. **Initialize in Your App**:
+   In your Flutter application's `main.dart` file (or equivalent entry point), initialize the bridge binding:
+
+   ```dart
+   import 'package:flutter/material.dart';
+   import 'package:mcp_toolkit/mcp_toolkit.dart'; // Import the package
+   import 'dart:async';
+
+   Future<void> main() async {
+     runZonedGuarded(
+       () async {
+         WidgetsFlutterBinding.ensureInitialized();
+         MCPToolkitBinding.instance
+            ..initialize() // Initializes the Toolkit
+            ..initializeFlutterToolkit(); // Adds Flutter related methods to the MCP server
+         runApp(const MyApp());
+       },
+       (error, stack) {
+         // You can place it in your error handling tool, or directly in the zone. The most important thing is to have it - otherwise the errors will not be captured and MCP server will not return error results.
+         MCPToolkitBinding.instance.handleZoneError(error, stack);
+       },
+     );
+   }
+
+   // ... rest of your app code
    ```
 
 5. **Start your Flutter app in debug mode**
@@ -54,20 +91,10 @@ For developers who want to contribute to the project or run the latest version d
    ! Current workaround for security reasons is to run with `--disable-service-auth-codes`. If you know how to fix this, please let me know!
 
    ```bash
-   flutter run --debug --observatory-port=8181 --enable-vm-service --disable-service-auth-codes
+   flutter run --debug --host-vmservice-port=8181 --enable-vm-service --disable-service-auth-codes
    ```
 
-6. **Open DevTools in Browser**
-
-   Important part is to open DevTools in browser, and activate `mcp_bridge`.
-
-   - For VSCode, run `cmd+shift+p` and search for `Open DevTools in Browser`.
-   - Then go to `Devtools Extension` button (right corner of the window) and enable `mcp_bridge`.
-     ![DevTools Extension Settings](./docs/devtools_extension_settings.png)
-   - Then open `mcp_bridge` tab and make sure everything is connected.
-     ![MCP Bridge](./docs/devtools_mcp_bridge.png)
-
-7. **🛠️ Add Flutter Inspector to your AI tool**
+6. **🛠️ Add Flutter Inspector to your AI tool**
 
    **Note for Local Development (GitHub Install):**
 
@@ -86,7 +113,9 @@ For developers who want to contribute to the project or run the latest version d
             ],
             "env": {
               "PORT": "3334",
-              "LOG_LEVEL": "critical"
+              "LOG_LEVEL": "critical",
+              "RESOURCES_SUPPORTED": "true",
+              "IMAGES_SUPPORTED": "true"
             },
             "disabled": false,
             "autoApprove": []
@@ -115,7 +144,9 @@ For developers who want to contribute to the project or run the latest version d
               "/path/to/your/cloned/mcp_flutter/mcp_server/build/index.js"
             ],
             "env": {
-              "RESOURCES_SUPPORTED": false
+              "RESOURCES_SUPPORTED": "false",
+              "IMAGES_SUPPORTED": "true",
+              "LOG_LEVEL": "critical"
             },
             "disabled": false
           }

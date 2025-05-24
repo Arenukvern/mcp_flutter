@@ -9,10 +9,8 @@ export const defaultEnvConfig = {
   dartVMHost: "localhost",
   mcpServerPort: 3535,
   mcpServerHost: "localhost",
-  forwardingServerPort: 8143,
-  forwardingServerHost: "localhost",
   resourcesSupported: true,
-  imagesSupported: false,
+  imagesSupported: true,
   dumpsSupported: false,
 };
 
@@ -23,6 +21,7 @@ export enum Env {
 
 // Load environment variables
 dotenv.config();
+
 export interface CommandLineConfig {
   port: number;
   host: string;
@@ -30,8 +29,6 @@ export interface CommandLineConfig {
   logLevel: LogLevel;
   dartVMPort: number;
   dartVMHost: string;
-  forwardingServerPort: number;
-  forwardingServerHost: string;
   areResourcesSupported: boolean;
   areImagesSupported: boolean;
   areDumpSupported: boolean;
@@ -46,7 +43,7 @@ export class CommandLineArgs {
       .options({
         port: {
           alias: "p",
-          description: "Port to run the server on",
+          description: "Port to run the MCP server on",
           type: "number",
           default: parseInt(
             process.env.MCP_SERVER_PORT || `${defaultEnvConfig.mcpServerPort}`,
@@ -55,14 +52,14 @@ export class CommandLineArgs {
         },
         host: {
           alias: "h",
-          description: "Host to run the mcp server on",
+          description: "Host to run the MCP server on",
           type: "string",
           default:
             process.env.MCP_SERVER_HOST || defaultEnvConfig.mcpServerHost,
         },
         dartVMPort: {
           alias: "dart-vm-port",
-          description: "Port to run the dart vm on",
+          description: "Port for Dart VM connection",
           type: "number",
           default: parseInt(
             process.env.DART_VM_PORT || `${defaultEnvConfig.dartVMPort}`,
@@ -71,27 +68,9 @@ export class CommandLineArgs {
         },
         dartVMHost: {
           alias: "dart-vm-host",
-          description: "Host to run the dart vm on",
+          description: "Host for Dart VM connection",
           type: "string",
           default: process.env.DART_VM_HOST || defaultEnvConfig.dartVMHost,
-        },
-        forwardingServerPort: {
-          alias: "forwarding-server-port",
-          description: "Port to run the forwarding server on",
-          type: "number",
-          default: parseInt(
-            process.env.FORWARDING_SERVER_PORT ||
-              `${defaultEnvConfig.forwardingServerPort}`,
-            10
-          ),
-        },
-        forwardingServerHost: {
-          alias: "forwarding-server-host",
-          description: "Host to run the forwarding server on",
-          type: "string",
-          default:
-            process.env.FORWARDING_SERVER_HOST ||
-            defaultEnvConfig.forwardingServerHost,
         },
         stdio: {
           description: "Run in stdio mode instead of HTTP mode",
@@ -141,7 +120,7 @@ export class CommandLineArgs {
         },
         env: {
           alias: "e",
-          description: "Environment",
+          description: "Environment (development or production)",
           type: "string",
           default: Object.values(Env).includes(process.env.NODE_ENV as Env)
             ? (process.env.NODE_ENV as Env)
@@ -156,8 +135,6 @@ export class CommandLineArgs {
       logLevel: argv["log-level"] as LogLevel,
       dartVMPort: argv.dartVMPort,
       dartVMHost: argv.dartVMHost,
-      forwardingServerPort: argv.forwardingServerPort,
-      forwardingServerHost: argv.forwardingServerHost,
       port: argv.port,
       host: argv.host,
       areResourcesSupported: argv.resources,
@@ -170,6 +147,8 @@ export class CommandLineArgs {
 
 const args = CommandLineArgs.fromCommandLine().config;
 
+// TODO: Add extension point for future backend clients via dependency injection
+// Currently using Dart VM as the sole backend - ready for plugin architecture
 const server = new FlutterInspectorServer(args);
 server.run().catch((error) => {
   console.error("Fatal error:", error);

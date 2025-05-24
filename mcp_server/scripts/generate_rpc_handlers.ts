@@ -65,7 +65,7 @@ export type RpcToolName = keyof typeof rpcToolConfigs;
 
     // Generate the handler class
     let handlerClassCode = `
-import { ConnectionDestination, RpcToolResponseType, RpcUtilities } from "../servers/rpc_utilities.js";
+import { RpcToolResponseType, RpcUtilities } from "../servers/rpc_utilities.js";
 
 /**
  * Generated class containing handlers for Flutter RPC tools.
@@ -76,23 +76,25 @@ import { ConnectionDestination, RpcToolResponseType, RpcUtilities } from "../ser
 export class FlutterRpcHandlers {
   constructor(
     private rpcUtils: RpcUtilities,
-    private handlePortParam: (request: any, connectionDestination: ConnectionDestination) => number
+    private handlePortParam: (request: any) => number
   ) {}
 
   async handleToolRequest(toolName: RpcToolName, request: any): Promise<RpcToolResponseType> {
     const config = rpcToolConfigs[toolName];
     if (!config) throw new Error(\`Invalid tool request: \${toolName}\`);
     
-    const port = this.handlePortParam(request, config.needsDartProxy ? "dart-vm" : "flutter-extension");
+    const port = this.handlePortParam(request);
     const params = request?.params?.arguments;
 
     if (config.needsDebugVerification) {
       await this.rpcUtils.verifyFlutterDebugMode(port);
     }
 
-    const result = config.needsDartProxy
-      ? await this.rpcUtils.callFlutterExtension(config.rpcMethod, params)
-      : await this.rpcUtils.callDartVm(config.rpcMethod, port, params);
+    const result = await this.rpcUtils.callDartVm({
+          method: config.rpcMethod,
+          dartVmPort: port,
+          params,
+        });
 
     return this.rpcUtils.wrapResponse(Promise.resolve(result));
   }

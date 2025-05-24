@@ -1,31 +1,54 @@
-# Flutter Inspector MCP Server for AI-Powered Development
+<div align="center">
 
-[GitHub Repository](https://github.com/Arenukvern/mcp_flutter)
+# MCP Server + Flutter MCP Toolkit
+
+_For AI-Powered Development_
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Flutter](https://img.shields.io/badge/Flutter-3.x-blue.svg)](https://flutter.dev)
 [![smithery badge](https://smithery.ai/badge/@Arenukvern/mcp_flutter)](https://smithery.ai/server/@Arenukvern/mcp_flutter)
+
+</div>
+
+<a href="https://glama.ai/mcp/servers/qnu3f0fa20">
+<img width="380" height="200" src="https://glama.ai/mcp/servers/qnu3f0fa20/badge" alt="Flutter Inspector Server MCP server" />
+</a>
 
 🔍 Model Context Protocol (MCP) server that connects your Flutter apps with AI coding assistants like Cursor, Claude, Cline, Windsurf, RooCode or any other AI assistant that supports MCP server
 
-See small video tutorial how to setup mcp server on macOS with Cursor - https://www.youtube.com/watch?v=NBY2p7XIass
+<!-- Media -->
 
-<a href="https://glama.ai/mcp/servers/qnu3f0fa20">
-  <img width="380" height="200" src="https://glama.ai/mcp/servers/qnu3f0fa20/badge" alt="Flutter Inspector Server MCP server" />
-</a>
+![View Screenshots](docs/view_screenshots.gif)
+
+<!-- End of Media -->
+
+## 📖 Documentation
+
+- [Quick Start](QUICK_START.md)
+- [Configuration](CONFIGURATION.md)
+
+### Video tutorial how to setup mcp server on macOS (Soon):
+
+- with Cursor:
+- with VSCode + Cline:
 
 > [!NOTE]
-> Since there is a new [experimental package in development](https://github.com/dart-lang/ai/tree/main/pkgs/dart_tooling_mcp_server) which exposes Dart tooling development tool actions to clients, maybe in future this project may be not needed that much.
+> There is a new [experimental package in development from Flutter team](https://github.com/dart-lang/ai/tree/main/pkgs/dart_tooling_mcp_server) which exposes Dart tooling development.
 >
 > Therefore my current focus is
 >
-> 1. to stabilize and polish only these tools that will be useful in development (so it would be more plug & play) [see more in MCP_RPC_DESCRIPTION.md](MCP_RPC_DESCRIPTION.md)
-> 2. find workaround to not use forwarding server.
+> 1. to stabilize and polish tools which are useful in development (so it would be more plug & play, for example: it will return not only the errors, but prompt for AI how to work with that error) [see more in MCP_RPC_DESCRIPTION.md](MCP_RPC_DESCRIPTION.md)
+> 2. fine-tune process of MCP server tools creation by making it customizable.
 >
 > Hope it will be useful for you,
 >
 > Have a nice day!
 
-Currently Flutter works with MCP server via forwarding server. Please see [Architecture](https://github.com/Arenukvern/mcp_flutter/blob/main/ARCHITECTURE.md) for more details.
+## 🎉 v2 released! 🎉
 
-## ⚠️ WARNING ⚠️
+Now Flutter MCP server works without forwarding server and devtools extension. See more in [CHANGELOG.md](CHANGELOG.md).
+
+## ⚠️ WARNING
 
 Dump RPC methods (like `dump_render_tree`), may cause huge amount of tokens usage or overload context. Therefore now they are disabled by default, but can be enabled via environment variable `DUMPS_SUPPORTED=true`.
 
@@ -36,7 +59,7 @@ See more details about environment variables in [.env.example](mcp_server/.env.e
 - Quick Start is available in [QUICK_START.md](QUICK_START.md)
 - Configuration options are available in [CONFIGURATION.md](CONFIGURATION.md)
 
-## 🎯 Available tools for AI Agents
+## 🎯 AI Agent Tools
 
 ### Error Analysis
 
@@ -44,7 +67,7 @@ See more details about environment variables in [.env.example](mcp_server/.env.e
   **Usage**:
 
   - Uses only short description of the error. Should filter duplicate errors, to avoid flooding Agent context window with the same errors.
-  - Uses Error Monitor to capture Dart VM errors. Meaning: first, start mcp server, forwarding server, start app, open devtools and extension, and then reload app, to capture errors. All errors will be captured in the DevTools Extension (mcp_bridge).
+  - Uses Error Monitor to capture Dart VM errors. All errors captured in Flutter app, and then available by request from MCP server.
 
   **Tested on**:
   ✅ macOS, ✅ iOS
@@ -54,23 +77,26 @@ See more details about environment variables in [.env.example](mcp_server/.env.e
 
 ### Development Tools
 
-- `hot_reload` [Tool] - Performs hot reload of the Flutter application
-  **Tested on**:
-  ✅ macOS, ✅ iOS, ✅ Android
-  **Not tested on**:
-  🤔 Windows, 🤔 Linux, ❌ Web
-  [See issue](https://github.com/Arenukvern/mcp_flutter/issues/23)
 - `screenshot` [Resource|Tool] - Captures a screenshot of the running application.
   **Configuration**:
 
   - Enable with `--images` flag or `IMAGES_SUPPORTED=true` environment variable
   - May use compression to optimize image size
 
+<!-- - `hot_reload` [Tool] - Performs hot reload of the Flutter application
+  **Tested on**:
+  ✅ macOS, ✅ iOS, ✅ Android
+  **Not tested on**:
+  🤔 Windows, 🤔 Linux, ❌ Web
+  [See issue](https://github.com/Arenukvern/mcp_flutter/issues/23)
+
   **Tested on**:
   ✅ macOS, ✅ iOS
   **Not tested on**:
   🚧 Android, 🤔 Windows, 🤔 Linux, ❌ Web
-  [See issue](https://github.com/Arenukvern/mcp_flutter/issues/23)
+  [See issue](https://github.com/Arenukvern/mcp_flutter/issues/23) -->
+
+- `get_view_info` [Resource|Tool] - size of screen, pixel ratio. May unlock ability for an Agent to use widget selection.
 
 All tools default to using port 8181 if no port is specified. You can override this by providing a specific port number.
 
@@ -78,38 +104,28 @@ All tools default to using port 8181 if no port is specified. You can override t
 
 ## 🔧 Troubleshooting
 
-`get_app_errors`- Since errors are captured in DevTools Extension, you need to make sure that, you have restarted or reloaded Flutter app after starting MCP server, forwarding server and DevTools mcp_bridge extension.
-
-Also make sure you:
-
-1. Verify that forwarding server is running.
-2. Opened Devtools in Browser.
-3. Have added MCP extension to your Flutter app dev dependencies and enabled it in Devtools.
-
-4. **Connection Issues**
+1. **Connection Issues**
 
    - Ensure your Flutter app is running in debug mode
-   - Verify the port matches in both Flutter app and inspector
+   - Verify the port matches in both Flutter app and MCP server
    - Check if the port is not being used by another process
 
-5. **AI Tool Not Detecting Inspector**
+2. **AI Tool Not Detecting Inspector**
    - Restart the AI tool after configuration changes
    - Verify the configuration JSON syntax
    - Check the tool's logs for connection errors
 
-## 🚧 Smithery Integration 🚧 (work in progress)
-
-The Flutter Inspector is registered with Smithery's registry, making it discoverable and usable by other AI tools through a standardized interface.
+The Flutter MCP Server is registered with Smithery's registry, making it discoverable and usable by other AI tools through a standardized interface.
 
 ### Integration Architecture
 
 ```
-┌─────────────────┐     ┌──────────────┐     ┌──────────────┐     ┌─────────────────┐     ┌─────────────┐
-│                 │     │              │     │              │     │                 │     │             │
-│  Flutter App    │<--->│  DevTools    │<--->│  Forwarding  │<--->│   MCP Server   │<--->│  Smithery   │
-│  (Debug Mode)   │     │  Extension   │     │  Server      │     │   (Registered) │     │  Registry   │
-│                 │     │              │     │              │     │                 │     │             │
-└─────────────────┘     └──────────────┘     └──────────────┘     └─────────────────┘     └─────────────┘
+┌─────────────────┐     ┌───────────────────────┐     ┌─────────────────┐
+│                 │     │  Flutter App with     │     │                 │
+│  Flutter App    │<--->│  mcp_toolkit (VM Svc.  │<--->│   MCP Server   │
+│  (Debug Mode)   │     │  Extensions)          │     │                 │
+│                 │     │                       │     │                 │
+└─────────────────┘     └───────────────────────┘     └─────────────────┘
 ```
 
 ## 🤝 Contributing
@@ -122,9 +138,13 @@ Contributions are welcome! Please feel free to submit pull requests or report is
 - [Dart VM Service Protocol](https://github.com/dart-lang/sdk/blob/main/runtime/vm/service/service.md)
 - [Flutter DevTools RPC Constants (I guess and hope they are correct:))](https://github.com/flutter/devtools/tree/87f8016e2610c98c3e2eae8b1c823de068701dfd/packages/devtools_app/lib/src/shared/analytics/constants)
 
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=Arenukvern/mcp_flutter&type=Date)](https://www.star-history.com/#Arenukvern/mcp_flutter&Date)
+
 ## 📄 License
 
-MIT - Feel free to use in your projects!
+[MIT](LICENSE) - Feel free to use in your projects!
 
 ---
 
