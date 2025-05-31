@@ -8,6 +8,7 @@ environment:
 
 dependencies:
   collection: ^1.19.1
+  dart_mcp: ^0.2.1
   equatable: ^2.0.7
   flutter:
     sdk: flutter

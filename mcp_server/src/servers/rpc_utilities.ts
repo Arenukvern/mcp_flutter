@@ -22,17 +22,6 @@ export type FlutterExtensionResponse = {
 };
 
 /**
- * Backend client interface for future extensibility
- * TODO: Implement this interface for additional backend types (e.g., HTTP, gRPC)
- */
-export interface IBackendClient {
-  connect(host: string, port: number, path?: string): Promise<void>;
-  callMethod(method: string, params: Record<string, unknown>): Promise<unknown>;
-  disconnect(): void;
-  isConnected(): boolean;
-}
-
-/**
  * Utilities for handling RPC communication with Flutter applications
  * Currently supports only Dart VM backend, designed for future extensibility
  */

@@ -1,10 +1,17 @@
-# 🚀 Quick Start
+# 🚀 MCP Flutter - Quick Start Guide
 
-- (Experimental for AI Agents in Cursor, Cline and Claude Desktop) You can try to install MCP server and configure it using your AI Agent. Use the following prompt: `Please install MCP server using this link: https://github.com/Arenukvern/mcp_flutter/blob/main/llm_install.md`
+This guide walks you through setting up the MCP Flutter toolkit to enable AI assistants to interact with Flutter applications.
+
+## Overview
+
+MCP Flutter provides a bridge between AI assistants and Flutter applications through the Model Context Protocol (MCP). The system uses **Flutter's native service extension mechanism** to enable real-time communication.
+
+**Architecture**: `AI Assistant ↔ MCP Server ↔ Dart VM ↔ Flutter Service Extensions`
 
 ## 📦 Prerequisites
 
 - Node.js (v14 or later)
+- Flutter SDK (3.0.0 or later)
 - A Flutter app running in debug mode
 - One of: Cursor, Claude, Cline AI, Windsurf, RooCode, or any other AI assistant that supports MCP server
 

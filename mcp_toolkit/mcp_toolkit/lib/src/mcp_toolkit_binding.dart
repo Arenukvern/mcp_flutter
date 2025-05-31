@@ -1,5 +1,7 @@
 // ignore_for_file: prefer_asserts_with_message
 
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 import 'mcp_models.dart';
@@ -62,12 +64,16 @@ class MCPToolkitBinding extends MCPToolkitBindingBase
 
   /// Initializes the MCP Toolkit binding.
   ///
-  /// If [listeners] is not provided, the [MCPToolkitListenersImpl]
-  /// will be used.
-  void addEntries({required final Set<MCPCallEntry> entries}) {
+  /// Registers service extensions that can be called by the MCP server
+  /// through the Dart VM service.
+  Future<void> addEntries({required final Set<MCPCallEntry> entries}) async {
     assert(() {
       initializeServiceExtensions(errorMonitor: this, entries: entries);
       return true;
     }());
   }
+
+  /// Get all accumulated entries across all addEntries calls
+  @override
+  Set<MCPCallEntry> get allEntries => super.allEntries;
 }

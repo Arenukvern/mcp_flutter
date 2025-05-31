@@ -18,7 +18,7 @@ export class FlutterInspectorServer {
   private rpcUtils: RpcUtilities;
   private logger: Logger;
   private resources = new ResourcesHandlers();
-  private tools = new ToolsHandlers();
+  private tools: ToolsHandlers;
 
   constructor(private readonly args: CommandLineConfig) {
     this.port = args.port;
@@ -30,7 +30,9 @@ export class FlutterInspectorServer {
       {
         capabilities: {
           logging: {},
-          tools: {},
+          tools: {
+            listChanged: true,
+          },
           prompts: {},
           resources: {},
         },
@@ -42,8 +44,8 @@ export class FlutterInspectorServer {
       this.server.server
     );
     this.rpcUtils = new RpcUtilities(this.logger, this.args);
+    this.tools = new ToolsHandlers(this.logger);
 
-    this.setHandlers();
     this.setupErrorHandling();
   }
 
@@ -62,8 +64,9 @@ export class FlutterInspectorServer {
    * Set up handlers for tools and resources
    * TODO: Add dependency injection for backend-specific handlers in the future
    */
-  private setHandlers() {
+  private async setHandlers() {
     try {
+      this.logger.info("[FlutterInspectorServer] Starting setHandlers");
       const server = this.server.server;
 
       // Create RPC handlers - currently using Dart VM only
@@ -72,15 +75,28 @@ export class FlutterInspectorServer {
         (request) => this.rpcUtils.handlePortParam(request) // Simplified since only Dart VM supported
       );
 
-      // Set up resource and tool handlers
-      this.resources.setHandlers(server, this.rpcUtils, rpcHandlers);
-      this.tools.setHandlers(
+      this.logger.info("[FlutterInspectorServer] Created RPC handlers");
+
+      // Set up tool handlers first to initialize dynamic registry
+      await this.tools.setHandlers(
         server,
         this.rpcUtils,
         this.logger,
         rpcHandlers,
         this.resources
       );
+
+      this.logger.info("[FlutterInspectorServer] Set up tool handlers");
+
+      // Set up resource handlers with access to dynamic registry
+      this.resources.setHandlers(
+        server,
+        this.rpcUtils,
+        rpcHandlers,
+        this.tools.getDynamicRegistry()
+      );
+
+      this.logger.info("[FlutterInspectorServer] Set up resource handlers");
     } catch (error) {
       this.logger.error("Error setting up tool handlers:", { error });
       throw error;
@@ -99,6 +115,9 @@ export class FlutterInspectorServer {
       // Connect to Dart VM backend
       // Note: Connection errors are handled gracefully and don't crash the server
       await this.rpcUtils.connect(this.args.dartVMPort);
+
+      // Set up handlers after connections are established
+      await this.setHandlers();
 
       // Setup coordinated shutdown
       const cleanup = async () => {
