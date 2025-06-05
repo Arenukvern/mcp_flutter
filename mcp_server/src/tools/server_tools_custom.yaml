@@ -60,3 +60,31 @@ tools:
           description: "If true, returns the raw response from the VM service without processing"
           default: false
       required: []
+
+  - name: registerDynamics
+    description: "Register multiple tools and resources from a Flutter application in a single atomic operation. This calls the Flutter app's service extension to get all available tools and resources."
+    inputSchema:
+      type: object
+      properties:
+        dartVmPort:
+          type: number
+          description: "Dart VM port for the source application"
+          default: 8181
+      required: []
+  - name: listDynamicRegistrations
+    description: "List all dynamically registered tools and resources with their source applications and registration details."
+    inputSchema:
+      type: object
+      properties:
+        type:
+          type: string
+          description: "Filter by registration type"
+          enum: ["tools", "resources", "all"]
+          default: "all"
+      required: []
+  - name: autoRegisterDynamics
+    description: "Manually trigger automatic registration of Flutter app tools and resources. This uses the AutomaticRegistrationManager to detect and register tools from connected Flutter applications."
+    inputSchema:
+      type: object
+      properties: {}
+      required: []

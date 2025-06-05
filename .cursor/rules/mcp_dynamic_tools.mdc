@@ -1,0 +1,458 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# MCP Dynamic Tools - AI Agent Guide
+
+## Overview
+This rule provides AI agents with comprehensive instructions for creating, managing, and executing dynamic tools in the Flutter Inspector MCP Server. Dynamic tools allow runtime registration of custom debugging and inspection capabilities.
+
+## Core Concepts
+
+### Dynamic Tool Architecture
+- **MCPCallEntry**: Core structure defining a tool or resource
+- **addMcpTool()**: Function to register tools at runtime
+- **Dynamic Registry**: System that discovers and manages runtime-registered tools
+- **Hot Reload Integration**: Tools can be added/modified without app restart
+
+### Tool Lifecycle
+1. **Design** → Define tool purpose and interface
+2. **Generate** → Create Dart code with MCPCallEntry
+3. **Integrate** → Add code to Flutter app
+4. **Register** → Execute addMcpTool() call
+5. **Discover** → Use listClientToolsAndResources
+6. **Execute** → Run via runClientTool
+
+## AI Agent Workflow
+
+### Phase 1: Discovery and Assessment
+```
+1. listClientToolsAndResources → Check existing dynamic tools
+2. get_view_details → Understand current app state
+3. get_screenshots → Visual context for debugging needs
+```
+
+### Phase 2: Tool Design and Generation
+When creating a new dynamic tool:
+
+#### Tool Structure Template
+```dart
+final MCPCallEntry customTool = MCPCallEntry.tool(
+  handler: (request_params) {
+    // Extract parameters
+    final param1 = request_params['param1'] as String? ?? '';
+    
+    // Tool logic here
+    // Access Flutter widgets, state, services, etc.
+    
+    return MCPCallResult(
+      message: 'Tool executed successfully',
+      parameters: {
+        'result': 'value',
+        'data': {...},
+      },
+    );
+  },
+  definition: MCPToolDefinition(
+    name: 'unique_tool_name', // Must be unique across all tools
+    description: 'Clear description of what this tool does',
+    inputSchema: {
+      'type': 'object',
+      'properties': {
+        'param1': {
+          'type': 'string',
+          'description': 'Parameter description'
+        },
+      },
+      'required': ['param1'], // Optional
+    },
+  ),
+);
+```
+
+#### Resource Structure Template
+```dart
+final MCPCallEntry customResource = MCPCallEntry.resource(
+  handler: (uri) {
+    // Parse URI and extract parameters
+    // Return relevant data
+    
+    return MCPCallResult(
+      message: 'Resource data retrieved',
+      parameters: {
+        'data': {...},
+      },
+    );
+  },
+  definition: MCPResourceDefinition(
+    uri: 'visual://localhost/custom/resource/{param}',
+    name: 'Custom Resource',
+    description: 'Description of what this resource provides',
+    mimeType: 'application/json',
+  ),
+);
+```
+
+### Phase 3: Integration Strategies
+
+#### Option A: Direct Integration (Preferred)
+Use `edit_file` to add tools directly to Flutter app:
+
+**Target Locations:**
+- [flutter_test_app/lib/main.dart](mdc:flutter_test_app/lib/main.dart) - Main entry point, any place which you need to debug.
+- Create dedicated debug file: `lib/debug_tools.dart`
+
+**Integration Pattern:**
+```dart
+// In main.dart or debug_tools.dart
+void registerCustomMCPTools() {
+  if (!kDebugMode) return; // Safety check
+  
+  // Tool definitions here
+  addMcpTool(customTool);
+  addMcpTool(customResource);
+  
+  debugPrint('Custom MCP tools registered');
+}
+
+// In main() function:
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize MCP toolkit first
+  MCPToolkitBinding.instance
+    ..initialize()
+    ..initializeFlutterToolkit();
+  
+  // Register custom tools
+  if (kDebugMode) {
+    registerCustomMCPTools();
+  }
+  
+  runApp(const MyApp());
+}
+```
+
+#### Option B: Present for Manual Integration
+When direct integration isn't possible, provide:
+1. Complete Dart code snippet
+2. Clear integration instructions
+3. Placement recommendations
+4. Execution order requirements
+
+### Phase 4: Activation and Verification
+```
+1. hot_reload_flutter → Apply changes without restart
+2. listClientToolsAndResources → Verify tool registration
+3. runClientTool → Test tool execution
+4. get_view_errors → Check for any issues
+```
+
+## Common Tool Patterns
+
+### Widget Inspector Tool
+```dart
+final widgetInspector = MCPCallEntry.tool(
+  handler: (params) {
+    final widgetKey = params['widgetKey'] as String?;
+    // Logic to find and inspect widget
+    return MCPCallResult(
+      message: 'Widget inspected',
+      parameters: {'properties': {...}},
+    );
+  },
+  definition: MCPToolDefinition(
+    name: 'inspect_widget_by_key',
+    description: 'Inspect widget properties by key',
+    inputSchema: {
+      'type': 'object',
+      'properties': {
+        'widgetKey': {'type': 'string'},
+      },
+      'required': ['widgetKey'],
+    },
+  ),
+);
+```
+
+### State Modifier Tool
+```dart
+final stateModifier = MCPCallEntry.tool(
+  handler: (params) {
+    final newValue = params['value'];
+    // Logic to modify app state
+    return MCPCallResult(
+      message: 'State modified',
+      parameters: {'oldValue': '...', 'newValue': newValue},
+    );
+  },
+  definition: MCPToolDefinition(
+    name: 'modify_app_state',
+    description: 'Modify specific app state values',
+    inputSchema: {
+      'type': 'object',
+      'properties': {
+        'key': {'type': 'string'},
+        'value': {'type': 'string'},
+      },
+      'required': ['key', 'value'],
+    },
+  ),
+);
+```
+
+### Performance Monitor Tool
+```dart
+final performanceMonitor = MCPCallEntry.tool(
+  handler: (params) {
+    final duration = int.parse(params['duration'] ?? '5');
+    // Logic to monitor performance metrics
+    return MCPCallResult(
+      message: 'Performance data collected',
+      parameters: {
+        'fps': 60.0,
+        'memoryUsage': '45MB',
+        'duration': duration,
+      },
+    );
+  },
+  definition: MCPToolDefinition(
+    name: 'monitor_performance',
+    description: 'Monitor app performance metrics',
+    inputSchema: {
+      'type': 'object',
+      'properties': {
+        'duration': {'type': 'string', 'description': 'Duration in seconds'},
+      },
+    },
+  ),
+);
+```
+
+## Best Practices for AI Agents
+
+### Tool Naming
+- Use descriptive, unique names
+- Follow snake_case convention
+- Include action verb: `inspect_`, `modify_`, `monitor_`
+- Avoid conflicts with existing tools
+
+### Error Handling
+```dart
+handler: (params) {
+  try {
+    // Tool logic
+    return MCPCallResult(message: 'Success', parameters: {...});
+  } catch (e, stackTrace) {
+    return MCPCallResult(
+      message: 'Tool execution failed: $e',
+      parameters: {
+        'error': e.toString(),
+        'stackTrace': stackTrace.toString(),
+      },
+    );
+  }
+},
+```
+
+### Parameter Validation
+```dart
+handler: (params) {
+  // Validate required parameters
+  final requiredParam = params['required'] as String?;
+  if (requiredParam == null || requiredParam.isEmpty) {
+    return MCPCallResult(
+      message: 'Missing required parameter: required',
+      parameters: {'error': 'validation_failed'},
+    );
+  }
+  
+  // Continue with tool logic
+},
+```
+
+### Flutter Context Access
+```dart
+// For tools that need BuildContext
+handler: (params) {
+  final context = WidgetsBinding.instance.rootElement;
+  if (context == null) {
+    return MCPCallResult(
+      message: 'No root context available',
+      parameters: {'error': 'no_context'},
+    );
+  }
+  
+  // Use context for widget tree operations
+},
+```
+
+## Debugging Dynamic Tools
+
+### Common Issues
+1. **Tool not appearing**: Check addMcpTool() was called after MCPToolkitBinding.initialize()
+2. **Execution fails**: Verify parameter types match inputSchema
+3. **Context errors**: Ensure Flutter app is fully initialized
+4. **Hot reload issues**: Some changes may require full restart
+
+### Debugging Commands
+```
+1. listClientToolsAndResources → Verify registration
+2. get_extension_rpcs → Check MCP toolkit availability
+3. get_vm → Verify VM service connection
+4. get_view_errors → Check for runtime errors
+```
+
+## Advanced Patterns
+
+### Stateful Tools
+Tools can maintain state between calls using static variables or singletons:
+
+```dart
+class ToolState {
+  static final Map<String, dynamic> _state = {};
+  
+  static void set(String key, dynamic value) => _state[key] = value;
+  static T? get<T>(String key) => _state[key] as T?;
+}
+```
+
+### Tool Chaining
+Create tools that work together:
+
+```dart
+// Tool 1: Start monitoring
+final startMonitor = MCPCallEntry.tool(
+  handler: (params) {
+    ToolState.set('monitoring', true);
+    return MCPCallResult(message: 'Monitoring started');
+  },
+  // ... definition
+);
+
+// Tool 2: Get monitor results
+final getResults = MCPCallEntry.tool(
+  handler: (params) {
+    final isMonitoring = ToolState.get<bool>('monitoring') ?? false;
+    return MCPCallResult(
+      message: isMonitoring ? 'Results available' : 'Not monitoring',
+    );
+  },
+  // ... definition
+);
+```
+
+### Resource Providers
+Create dynamic resources that provide real-time data:
+
+```dart
+final liveStateResource = MCPCallEntry.resource(
+  handler: (uri) {
+    // Parse URI: visual://localhost/live/state/{component}
+    final component = uri.pathSegments.last;
+    
+    // Get current state for component
+    final state = getCurrentState(component);
+    
+    return MCPCallResult(
+      message: 'Live state retrieved',
+      parameters: {'state': state, 'timestamp': DateTime.now().toIso8601String()},
+    );
+  },
+  definition: MCPResourceDefinition(
+    uri: 'visual://localhost/live/state/{component}',
+    name: 'Live State Provider',
+    description: 'Provides real-time component state',
+    mimeType: 'application/json',
+  ),
+);
+```
+
+## Integration with MCP Server
+
+The MCP server automatically discovers and exposes dynamic tools through:
+- **listClientToolsAndResources**: Lists all registered tools/resources
+- **runClientTool**: Executes registered tools
+- **runClientResource**: Accesses registered resources
+
+Tools are available immediately after registration without server restart.
+
+## Security Considerations
+
+- Always wrap tool registration in `if (kDebugMode)` checks
+- Validate all input parameters
+- Avoid exposing sensitive app data
+- Use appropriate error handling to prevent crashes
+- Consider tool permissions and access levels
+
+## Example: Complete Tool Creation Workflow
+
+```dart
+// 1. Define the tool
+void registerNetworkInspector() {
+  final networkInspector = MCPCallEntry.tool(
+    handler: (params) {
+      final url = params['url'] as String? ?? '';
+      
+      try {
+        // Inspect network requests for URL
+        final requests = NetworkLogger.getRequestsForUrl(url);
+        
+        return MCPCallResult(
+          message: 'Network requests retrieved',
+          parameters: {
+            'url': url,
+            'requestCount': requests.length,
+            'requests': requests.map((r) => r.toJson()).toList(),
+          },
+        );
+      } catch (e) {
+        return MCPCallResult(
+          message: 'Failed to inspect network: $e',
+          parameters: {'error': e.toString()},
+        );
+      }
+    },
+    definition: MCPToolDefinition(
+      name: 'inspect_network_requests',
+      description: 'Inspect network requests for a specific URL pattern',
+      inputSchema: {
+        'type': 'object',
+        'properties': {
+          'url': {
+            'type': 'string',
+            'description': 'URL pattern to inspect (can be partial)',
+          },
+        },
+        'required': ['url'],
+      },
+    ),
+  );
+  
+  addMcpTool(networkInspector);
+  debugPrint('Network inspector tool registered');
+}
+
+// 2. Integration in main.dart
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  MCPToolkitBinding.instance
+    ..initialize()
+    ..initializeFlutterToolkit();
+  
+  /// or in the widget tree, or in state management tool/service
+  if (kDebugMode) {
+    registerNetworkInspector();
+  }
+  
+  runApp(const MyApp());
+}
+
+// 3. Usage via MCP
+// listClientToolsAndResources → verify 'inspect_network_requests' appears
+// runClientTool → {"toolName": "inspect_network_requests", "arguments": {"url": "api.example.com"}}
+```
+
+This rule enables AI agents to create powerful, runtime-configurable debugging tools that integrate seamlessly with the Flutter Inspector MCP Server.

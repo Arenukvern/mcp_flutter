@@ -21,6 +21,28 @@
       "cwd": "./mcp_toolkit/devtools_mcp_extension",
       "flutterMode": "debug",
       "args": ["--debug", "--web-port=3434"]
+    },
+    {
+      "name": "Debug MCP Server",
+      "type": "dart",
+      "request": "launch",
+      "program": "bin/main.dart",
+      "args": [
+        "--dart-vm-host=localhost",
+        "--dart-vm-port=8181",
+        "--log-level=debug"
+      ],
+      "console": "terminal",
+      "cwd": "${workspaceFolder}/mcp_server_dart"
+    },
+    {
+      "name": "Debug with Input File",
+      "type": "dart",
+      "request": "launch",
+      "program": "bin/main.dart",
+      "console": "terminal",
+      "args": ["--log-level=debug"],
+      "cwd": "${workspaceFolder}/mcp_server_dart"
     }
   ]
 }

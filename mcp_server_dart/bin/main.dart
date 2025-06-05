@@ -7,18 +7,19 @@ import 'dart:io' as io;
 
 import 'package:args/args.dart';
 import 'package:async/async.dart';
+import 'package:dart_mcp/server.dart';
 import 'package:flutter_inspector_mcp_server/flutter_inspector_mcp_server.dart';
 import 'package:stream_channel/stream_channel.dart';
 
-void main(final List<String> args) {
+Future<void> main(final List<String> args) async {
   final parsedArgs = argParser.parse(args);
   if (parsedArgs.flag(help)) {
-    print(argParser.usage);
+    io.stdout.writeln(argParser.usage);
     io.exit(0);
   }
 
-  runZonedGuarded(
-    () {
+  await runZonedGuarded(
+    () async {
       final VMServiceConfigurationRecord configuration = (
         vmHost: parsedArgs.option(dartVMHost) ?? defaultHost,
         vmPort:
@@ -28,8 +29,9 @@ void main(final List<String> args) {
         dumpsSupported: parsedArgs.flag(dumpsSupported),
         logLevel: parsedArgs.option(logLevel) ?? defaultLogLevel,
         environment: parsedArgs.option(environment) ?? defaultEnvironment,
+        dynamicRegistrySupported: parsedArgs.flag(dynamicRegistrySupported),
       );
-      MCPToolkitServer.connect(
+      final server = MCPToolkitServer.connect(
         StreamChannel.withCloseGuarantee(io.stdin, io.stdout)
             .transform(StreamChannelTransformer.fromCodec(utf8))
             .transformStream(const LineSplitter())
@@ -41,6 +43,21 @@ void main(final List<String> args) {
               ),
             ),
         configuration: configuration,
+      );
+      await server.handleSetLevel(
+        SetLevelRequest(
+          level: switch (configuration.logLevel) {
+            'debug' => LoggingLevel.debug,
+            'info' => LoggingLevel.info,
+            'notice' => LoggingLevel.notice,
+            'warning' => LoggingLevel.warning,
+            'error' => LoggingLevel.error,
+            'critical' => LoggingLevel.critical,
+            'alert' => LoggingLevel.alert,
+            'emergency' => LoggingLevel.emergency,
+            _ => LoggingLevel.critical,
+          },
+        ),
       );
     },
     (final e, final s) {
@@ -78,6 +95,11 @@ final argParser =
         defaultsTo: true,
         help: 'Enable images support for screenshots',
       )
+      ..addFlag(
+        dynamicRegistrySupported,
+        help: 'Enable dynamic registry support',
+        defaultsTo: true,
+      )
       ..addFlag(dumpsSupported, help: 'Enable debug dump operations')
       ..addOption(
         logLevel,
@@ -105,3 +127,4 @@ const dumpsSupported = 'dumps';
 const logLevel = 'log-level';
 const environment = 'environment';
 const help = 'help';
+const dynamicRegistrySupported = 'dynamics';

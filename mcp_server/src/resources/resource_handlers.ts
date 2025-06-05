@@ -11,6 +11,7 @@ import {
   Tool,
 } from "@modelcontextprotocol/sdk/types.js";
 import { RpcUtilities } from "../servers/rpc_utilities.js";
+import { DynamicToolRegistry } from "../services/dynamic_registry/dynamic_tool_registry.js";
 import { FlutterRpcHandlers } from "../tools/flutter_rpc_handlers.generated.js";
 import { CustomRpcHandlerMap } from "../tools/index.js";
 import {
@@ -73,12 +74,16 @@ export class ResourcesHandlers {
   public setHandlers(
     server: Server,
     rpcUtils: RpcUtilities,
-    rpcToolHandlers: FlutterRpcHandlers
+    rpcToolHandlers: FlutterRpcHandlers,
+    dynamicRegistry?: DynamicToolRegistry
   ): void {
-    // List available resources when clients request them
+    // List available resources when clients request them - dynamically fetch resources on each request
     server.setRequestHandler(ListResourcesRequestSchema, async () => {
+      const staticResources = createTreeResources(rpcUtils);
+      const dynamicResources = dynamicRegistry?.getDynamicResources() || [];
+
       return {
-        resources: [...createTreeResources(rpcUtils)],
+        resources: [...staticResources, ...dynamicResources],
       };
     });
 

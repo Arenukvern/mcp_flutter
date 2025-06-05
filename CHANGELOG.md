@@ -1,3 +1,19 @@
+## 2.2.0
+
+This release adds ability to register new tools and resources on server from client side.
+
+todo: describe release and how to use it
+
+## Code Rabbit Poem :)
+
+> In the warren of code, new features appear,
+> Dynamic tools hop in—now discovery is clear!
+> Registries and managers with event-driven flair,
+> Flutter and MCP, a seamless new pair.
+> With docs and examples, the future looks bright—
+> This bunny approves: the registry’s just right!
+> 🐇✨
+
 ## 2.1.0
 
 This release adds experimental Dart MCP Server.

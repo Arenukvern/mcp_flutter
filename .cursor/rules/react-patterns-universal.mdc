@@ -1,0 +1,423 @@
+---
+description: 
+globs: *.tsx
+alwaysApply: false
+---
+
+# Universal React Development Patterns & Best Practices
+
+A comprehensive guide for writing maintainable, scalable React applications with TypeScript. These patterns are technology-agnostic and can be applied to any React project.
+
+## Core Principles
+
+### Code Quality Foundation
+
+- **Single Responsibility**: Each component, hook, and function should have one clear purpose
+- **Composition over Inheritance**: Build complex functionality by combining simple pieces
+- **Explicit over Implicit**: Make intentions clear through naming and structure
+- **Fail Fast**: Use TypeScript strict mode and early returns for better error handling
+- **Readable over Clever**: Prioritize code clarity over performance micro-optimizations
+
+## React Architecture Patterns
+
+### Custom Hook Design
+
+#### Hook Responsibility Separation
+
+```typescript
+// ✅ Good: Single-purpose hooks
+function useApiData(endpoint: string) {
+  /* data fetching logic */
+}
+function useFormValidation(schema: Schema) {
+  /* validation logic */
+}
+function useLocalStorage(key: string) {
+  /* storage logic */
+}
+
+// ❌ Avoid: Multi-purpose hooks
+function useEverything() {
+  /* data + validation + storage + ... */
+}
+```
+
+#### Hook Return Patterns
+
+```typescript
+// ✅ Good: Named object returns for clarity
+function useCounter(initial = 0) {
+  return { count, increment, decrement, reset };
+}
+
+// ✅ Good: Single value for simple hooks
+function useToggle(initial = false) {
+  return [isToggled, toggle] as const;
+}
+
+// ❌ Avoid: Unclear array returns for complex data
+function useComplexState() {
+  return [data, loading, error, refetch, status]; // Hard to remember order
+}
+```
+
+#### Hook Naming Conventions
+
+- **Descriptive prefixes**: `useApi`, `useForm`, `useModal`, `useAuth`
+- **Action-oriented**: `useToggle`, `useCounter`, `useDebounce`
+- **Domain-specific**: `useShoppingCart`, `useUserProfile`, `usePayment`
+
+### State Management Patterns
+
+#### State Separation by Concern
+
+```typescript
+// ✅ Good: Separate hooks for different concerns
+function useUserData(userId: string) {
+  // Handle user data fetching and caching
+}
+
+function useUserPermissions(user: User) {
+  // Handle permission calculations
+}
+
+function useUserPreferences(userId: string) {
+  // Handle user settings and preferences
+}
+```
+
+#### Effect Separation
+
+```typescript
+// ✅ Good: Multiple focused effects
+useEffect(() => {
+  // Handle data fetching
+  fetchData();
+}, [dependencies]);
+
+useEffect(() => {
+  // Handle logging/analytics
+  trackEvent("component_mounted");
+}, []);
+
+useEffect(() => {
+  // Handle cleanup
+  return () => cleanup();
+}, []);
+
+// ❌ Avoid: One large effect doing everything
+useEffect(() => {
+  fetchData();
+  trackEvent();
+  setupCleanup();
+  // ... many other concerns
+}, [manyDependencies]);
+```
+
+### Component Composition Patterns
+
+#### Component Breakdown Strategy
+
+```typescript
+// ✅ Good: Focused components
+function UserProfile({ user }: { user: User }) {
+  return (
+    <div>
+      <UserAvatar user={user} />
+      <UserInfo user={user} />
+      <UserActions user={user} />
+    </div>
+  );
+}
+
+function UserAvatar({ user }: { user: User }) {
+  // Single responsibility: display avatar
+}
+
+// ❌ Avoid: Monolithic components
+function UserEverything({ user }: { user: User }) {
+  // Handles avatar, info, actions, modals, forms, etc.
+}
+```
+
+#### Helper Function Patterns
+
+```typescript
+// ✅ Good: Pure helper functions
+function formatCurrency(amount: number, currency: string): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency,
+  }).format(amount);
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
+  return "An unknown error occurred";
+}
+
+// ✅ Good: Domain-specific helpers
+function calculateTotalPrice(items: CartItem[]): number {
+  return items.reduce((total, item) => total + item.price * item.quantity, 0);
+}
+```
+
+### TypeScript Integration Patterns
+
+#### Type Design
+
+```typescript
+// ✅ Good: Descriptive type aliases
+type LoadingState = "idle" | "loading" | "success" | "error";
+type UserRole = "admin" | "user" | "guest";
+
+// ✅ Good: Intersection types for composition
+type BaseProps = { id: string; className?: string };
+type ClickableProps = BaseProps & { onClick: () => void };
+type FormProps = BaseProps & { onSubmit: (data: FormData) => void };
+
+// ✅ Good: Generic constraints
+interface ApiHook<T> {
+  data: T | null;
+  loading: boolean;
+  error: string | null;
+  refetch: () => void;
+}
+
+function useApi<T>(endpoint: string): ApiHook<T> {
+  // Implementation
+}
+```
+
+#### Prop Interface Design
+
+```typescript
+// ✅ Good: Clear, focused interfaces
+interface ButtonProps {
+  variant: "primary" | "secondary" | "danger";
+  size: "small" | "medium" | "large";
+  disabled?: boolean;
+  loading?: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}
+
+// ✅ Good: Optional vs required clarity
+interface FormFieldProps {
+  name: string; // Required
+  label: string; // Required
+  placeholder?: string; // Optional
+  required?: boolean; // Optional, defaults to false
+  validation?: ValidationRule[]; // Optional
+}
+```
+
+### Error Handling & Debugging Patterns
+
+#### Comprehensive Error Management
+
+```typescript
+// ✅ Good: Centralized error handling hook
+function useErrorHandler() {
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const addError = (key: string, message: string) => {
+    setErrors((prev) => ({ ...prev, [key]: message }));
+  };
+
+  const clearError = (key: string) => {
+    setErrors((prev) => {
+      const { [key]: _, ...rest } = prev;
+      return rest;
+    });
+  };
+
+  const clearAllErrors = () => setErrors({});
+
+  return { errors, addError, clearError, clearAllErrors };
+}
+```
+
+#### Status-Based Rendering
+
+```typescript
+// ✅ Good: Exhaustive status handling
+function DataComponent({ status, data, error }: ComponentProps) {
+  switch (status) {
+    case "loading":
+      return <LoadingSpinner />;
+    case "error":
+      return <ErrorMessage error={error} />;
+    case "success":
+      return data ? <DataDisplay data={data} /> : <EmptyState />;
+    case "idle":
+      return <InitialState />;
+    default:
+      // TypeScript will catch missing cases
+      const _exhaustive: never = status;
+      return <div>Unknown status</div>;
+  }
+}
+```
+
+#### Development Debugging
+
+```typescript
+// ✅ Good: Conditional debug components
+function DebugPanel({ data, isVisible }: { data: any; isVisible: boolean }) {
+  if (!isVisible || process.env.NODE_ENV === "production") {
+    return null;
+  }
+
+  return (
+    <details>
+      <summary>Debug Information</summary>
+      <pre>{JSON.stringify(data, null, 2)}</pre>
+    </details>
+  );
+}
+
+// ✅ Good: Structured logging
+function useDebugLog(componentName: string, data: any) {
+  useEffect(() => {
+    if (process.env.NODE_ENV === "development") {
+      console.group(`🔍 ${componentName}`);
+      console.log("Data:", data);
+      console.log("Timestamp:", new Date().toISOString());
+      console.groupEnd();
+    }
+  }, [componentName, data]);
+}
+```
+
+### Performance Patterns
+
+#### Memoization Strategy
+
+```typescript
+// ✅ Good: Memoize expensive calculations
+const ExpensiveComponent = memo(({ data }: { data: ComplexData }) => {
+  const processedData = useMemo(() => {
+    return expensiveCalculation(data);
+  }, [data]);
+
+  return <div>{processedData}</div>;
+});
+
+// ✅ Good: Memoize callback functions
+function ParentComponent() {
+  const handleClick = useCallback((id: string) => {
+    // Handle click logic
+  }, []);
+
+  return (
+    <div>
+      {items.map((item) => (
+        <ChildComponent key={item.id} onClick={handleClick} />
+      ))}
+    </div>
+  );
+}
+```
+
+#### Code Splitting Patterns
+
+```typescript
+// ✅ Good: Route-based splitting
+const HomePage = lazy(() => import("./pages/HomePage"));
+const ProfilePage = lazy(() => import("./pages/ProfilePage"));
+
+// ✅ Good: Feature-based splitting
+const AdminPanel = lazy(() => import("./features/admin/AdminPanel"));
+const PaymentForm = lazy(() => import("./features/payment/PaymentForm"));
+```
+
+### Testing Patterns
+
+#### Testable Component Design
+
+```typescript
+// ✅ Good: Dependency injection for testing
+interface ApiService {
+  fetchUser: (id: string) => Promise<User>;
+}
+
+function UserProfile({
+  userId,
+  apiService = defaultApiService,
+}: {
+  userId: string;
+  apiService?: ApiService;
+}) {
+  // Component logic using apiService
+}
+
+// Easy to test with mock service
+```
+
+#### Hook Testing Patterns
+
+```typescript
+// ✅ Good: Pure hooks are easier to test
+function useCounter(initialValue = 0) {
+  const [count, setCount] = useState(initialValue);
+
+  const increment = useCallback(() => setCount((c) => c + 1), []);
+  const decrement = useCallback(() => setCount((c) => c - 1), []);
+  const reset = useCallback(() => setCount(initialValue), [initialValue]);
+
+  return { count, increment, decrement, reset };
+}
+```
+
+## File Organization Patterns
+
+### Feature-Based Structure
+
+```
+src/
+├── features/
+│   ├── auth/
+│   │   ├── components/
+│   │   ├── hooks/
+│   │   ├── types/
+│   │   └── index.ts
+│   ├── dashboard/
+│   └── profile/
+├── shared/
+│   ├── components/
+│   ├── hooks/
+│   ├── utils/
+│   └── types/
+└── app/
+```
+
+### Component Co-location
+
+```
+components/
+├── UserProfile/
+│   ├── UserProfile.tsx
+│   ├── UserProfile.test.tsx
+│   ├── UserProfile.stories.tsx
+│   ├── UserProfile.module.scss
+│   ├── hooks/
+│   │   └── useUserProfile.ts
+│   └── index.ts
+```
+
+## Universal Best Practices
+
+1. **Start Simple**: Begin with basic patterns and refactor as complexity grows
+2. **Consistent Naming**: Establish and follow naming conventions across the project
+3. **Type Safety**: Use TypeScript strictly to catch errors early
+4. **Component Boundaries**: Keep components focused and composable
+5. **State Locality**: Keep state as close to where it's used as possible
+6. **Effect Cleanup**: Always clean up subscriptions and timers
+7. **Error Boundaries**: Implement error boundaries for graceful failure handling
+8. **Performance Monitoring**: Measure before optimizing
+9. **Accessibility**: Consider keyboard navigation and screen readers
+10. **Documentation**: Write self-documenting code with clear interfaces
+
+These patterns provide a solid foundation for any React application, regardless of the specific technologies or frameworks used alongside React.

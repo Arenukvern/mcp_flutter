@@ -1,3 +1,14 @@
+## 0.2.0
+
+- Added `addMcpTool` function to add a single MCP tool to the MCP toolkit.
+
+## BREAKING CHANGES
+
+- Replaced `MCPCallEntry` with two constructors to create MCPCallEntry for resources and tools:
+  - `MCPCallEntry.resource` to create MCPCallEntry for resources.
+  - `MCPCallEntry.tool` to create MCPCallEntry for tools.
+    This change simplifies the syntax by removing the need to write name of tool twice.
+
 ## 0.1.2
 
 - Added `kDefaultMaxErrors` and `maxErrors` constants to `ErrorMonitor` class to limit number of errors stored.
