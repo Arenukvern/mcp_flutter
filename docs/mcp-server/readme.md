@@ -1,6 +1,6 @@
 # MCP Toolkit Server (Dart) (beta)
 
-This is a beta version of MCP Toolkit Server (Dart) that will replace the deprecated [mcp_server](../mcp_server/README.md) server.
+This is a beta version of MCP Toolkit Server (Dart) that will replace the deprecated [mcp_server](https://github.com/Arenukvern/mcp_flutter/tree/main/mcp_server/README.md) server.
 
 ## Quick Start
 

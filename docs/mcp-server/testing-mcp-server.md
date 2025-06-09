@@ -245,9 +245,9 @@ When reporting issues, include:
 
 ## 🔗 Related Documentation
 
-- [Cursor MCP Integration Guide](cursor_mcp_integration.md)
-- [Quick Setup Guide](quick_setup_cursor.md)
-- [Configuration Options](../CONFIGURATION.md)
+- [Cursor MCP Integration Guide](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_server_dart/experiments/cursor_mcp_integration.md)
+- [Quick Setup Guide](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_server_dart/experiments/quick_setup_cursor.md)
+- [Configuration Options](../getting-started/configuration.md)
 
 ---
 

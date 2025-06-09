@@ -1,0 +1,64 @@
+{
+  "title": "MCP Flutter Documentation",
+  "sidebar": [
+    {
+      "title": "Overview",
+      "pages": [
+        "index.md"
+      ]
+    },
+    {
+      "title": "Getting Started",
+      "pages": [
+        "getting-started/quick-start.md",
+        "getting-started/configuration.md",
+        "getting-started/llm-install.md"
+      ]
+    },
+    {
+      "title": "Architecture",
+      "pages": [
+        "architecture/overview.md",
+        "architecture/mcp-rpc-description.md"
+      ]
+    },
+    {
+      "title": "MCP Server (Dart)",
+      "pages": [
+        "mcp-server/readme.md",
+        "mcp-server/simplified-dynamic-registration.md",
+        "mcp-server/enhancement-suggestions.md",
+        "mcp-server/testing-mcp-server.md"
+      ]
+    },
+    {
+      "title": "MCP Toolkit",
+      "pages": [
+        "mcp-toolkit/readme.md",
+        "mcp-toolkit/changelog.md"
+      ]
+    },
+    {
+      "title": "Devtools MCP Extension (Experimental)",
+      "pages": [
+        "devtools-extension/readme.md",
+        "devtools-extension/changelog.md",
+        "devtools-extension/ideas/fix-devtools-core.md",
+        "devtools-extension/ideas/get-errors-implementation-plan.md",
+        "devtools-extension/ideas/object-group-implementation-plan.md"
+      ]
+    },
+    {
+      "title": "Contributing",
+      "pages": [
+        "contributing/contributing.md"
+      ]
+    },
+    {
+      "title": "Changelog",
+      "pages": [
+        "changelog.md"
+      ]
+    }
+  ]
+}

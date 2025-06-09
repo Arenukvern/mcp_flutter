@@ -2,9 +2,9 @@
 
 ## Quick Start
 
-- [Installation Guide](QUICK_START.md)
-- [API Documentation](MCP_RPC_DESCRIPTION.md)
-- [Contributing Guidelines](README.md#contributing)
+- [Installation Guide](../getting-started/quick-start.md)
+- [API Documentation](mcp-rpc-description.md)
+- [Contributing Guidelines](../index.md#contributing)
 
 ## System Overview
 
@@ -22,7 +22,7 @@ This project enables AI-powered development tools to interact with Flutter appli
 └─────────────────────────────┘     └──────────────────┘     └─────────────────────────────┘
 ```
 
-![Flutter Inspector Architecture](./docs/architecture.png)
+![Flutter Inspector Architecture](./architecture.png)
 
 This unified architecture supports:
 

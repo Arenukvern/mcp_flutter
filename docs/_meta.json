@@ -1,0 +1,10 @@
+{
+  "index": "Introduction",
+  "getting-started": "Getting Started",
+  "llm-install-guide": "LLM Installation Guide",
+  "architecture": "Architecture",
+  "configuration": "Configuration",
+  "api-reference": "API Reference",
+  "tooling": "Tooling",
+  "contributing": "Contributing"
+}

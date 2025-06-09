@@ -51,7 +51,7 @@
 
 #### For New Users
 
-Follow the updated [Quick Start Guide](QUICK_START.md) for complete setup instructions.
+Follow the updated [Quick Start Guide](getting-started/quick-start.md) for complete setup instructions.
 
 ### 🔧 Technical Changes
 
@@ -115,7 +115,7 @@ So after experimenting with some ideas (the most of work is on branch feat/mcp-r
 
 Hopefully, the idea will work and will be useful (but maybe not:))
 
-If you want to try dart server - please check [README](mcp_server_dart/README.md) for more details.
+If you want to try dart server - please check [MCP Server Dart README](mcp-server/readme.md) for more details.
 
 For dynamic registry of client tools and resources, please check [issue](https://github.com/Arenukvern/mcp_flutter/issues/32) - will update it during the work.
 
@@ -125,7 +125,7 @@ Have a nice day!
 
 This release removes the forwarding server, devtools extension and refactors all communication to use Dart VM.
 
-Note that setup is changed - see new [Quick Start](QUICK_START.md) and [Configuration](CONFIGURATION.md) docs.
+Note that setup is changed - see new [Quick Start](getting-started/quick-start.md) and [Configuration](getting-started/configuration.md) docs.
 
 The major change, is that now you can control what MCP Server will receive from your Flutter app.
 

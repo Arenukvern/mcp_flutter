@@ -115,7 +115,7 @@ addMcpTool(
 
 ## Role in `mcp_flutter`
 
-For the full setup and more details on the `MCP Server` and AI tool integration, please refer to the main [QUICK_START.md](https://github.com/Arenukvern/mcp_flutter/blob/main/QUICK_START.md) in the root of the `mcp_flutter` repository.
+For the full setup and more details on the `MCP Server` and AI tool integration, please refer to the main [QUICK_START.md](../../getting-started/quick-start.md) in the root of the `mcp_flutter` repository.
 
 ## 🤝 Contributing
 

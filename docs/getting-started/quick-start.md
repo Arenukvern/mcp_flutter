@@ -8,7 +8,7 @@ MCP Flutter provides a bridge between AI assistants and Flutter applications thr
 
 **Architecture**: `AI Assistant ↔ MCP Server (Dart) ↔ Dart VM ↔ Flutter Service Extensions`
 
-![Flutter Inspector Architecture](./docs/architecture.png)
+![Flutter Inspector Architecture](../architecture/architecture.png)
 
 ## 📦 Prerequisites
 
