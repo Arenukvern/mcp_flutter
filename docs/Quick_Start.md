@@ -5,6 +5,7 @@ This guide will walk you through the process of setting up the MCP server and co
 ### Prerequisites
 
 - Flutter SDK installed
+- Dart SDK (included with Flutter)
 - An AI assistant that supports MCP (e.g., Cursor, Cline)
 
 ### 1. Clone the Repository
@@ -14,12 +15,22 @@ git clone https://github.com/Arenukvern/mcp_flutter.git
 cd mcp_flutter
 ```
 
-### 2. Run the MCP Server
+### 2. Build and Run the MCP Server
 
-The MCP server is a Dart application located in the `mcp_server_dart` directory. To run it, execute the following command from the root of the project:
+The MCP server is a Dart application located in the `mcp_server_dart` directory. It is recommended to build a compiled binary for production use.
+
+First, build the server binary from the project root:
 
 ```bash
-dart run mcp_server_dart/bin/main.dart
+make install
+```
+
+This command installs all necessary dependencies and builds the MCP server binary, typically located at `mcp_server_dart/build/flutter_inspector_mcp`.
+
+Then, run the compiled server binary:
+
+```bash
+./mcp_server_dart/build/flutter_inspector_mcp
 ```
 
 By default, the server will listen for connections from the AI assistant on `stdin`/`stdout` and from the Flutter app on port `8181`.
