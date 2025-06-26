@@ -1,0 +1,29 @@
+# A Practical Debugging Workflow
+
+This guide demonstrates how to use the Flutter MCP Toolkit to debug a common issue: a UI that doesn't look right.
+
+### The Scenario
+
+Imagine you have a button that is supposed to be centered on the screen, but it's appearing in the top-left corner.
+
+### The Workflow
+
+1.  **Take a Screenshot**: First, ask your AI assistant to take a screenshot of the app. This will give you a visual representation of the problem.
+
+    > "Take a screenshot of the app."
+
+2.  **Inspect the Widget Tree**: Next, ask the AI to get the details of the current view. This will give you the widget tree, which you can use to see how the button is being laid out.
+
+    > "Get the details of the current view."
+
+3.  **Identify the Problem**: By examining the widget tree, you might discover that the button is not wrapped in a `Center` widget. 
+
+4.  **Fix the Code**: Now, you can ask the AI to fix the code by wrapping the button in a `Center` widget.
+
+    > "Wrap the button in a Center widget."
+
+5.  **Hot Reload and Verify**: Finally, hot reload the app and take another screenshot to verify that the button is now centered.
+
+    > "Hot reload the app and take another screenshot."
+
+This workflow demonstrates how the Flutter MCP Toolkit can be used to quickly and efficiently debug UI issues.

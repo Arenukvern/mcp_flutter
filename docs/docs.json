@@ -1,0 +1,50 @@
+{
+  "title": "Flutter MCP Toolkit",
+  "description": "Documentation for the MCP Server and Flutter Toolkit for AI-Powered Development.",
+  "logo": "/architecture.png",
+  "github": "https://github.com/Arenukvern/mcp_flutter",
+  "nav": [
+    {
+      "title": "Getting Started",
+      "links": [
+        "Overview",
+        "Quick Start",
+        "Configuration",
+        "AI Assistant Setup"
+      ]
+    },
+    {
+      "title": "Core Concepts",
+      "links": [
+        "Architecture",
+        "Dynamic Tool Registration",
+        "Built-in Tools"
+      ]
+    },
+    {
+      "title": "Guides",
+      "links": [
+        "Creating Your First Dynamic Tool",
+        "A Practical Debugging Workflow"
+      ]
+    },
+    {
+      "title": "API Reference",
+      "links": [
+        "MCP Server (Dart)",
+        "MCP Toolkit (Flutter)"
+      ]
+    },
+    {
+      "title": "Contributing",
+      "links": [
+        "Contribution Guide",
+        "Project Structure"
+      ]
+    },
+    {
+      "title": "Changelog",
+      "links": ["Changelog"]
+    }
+  ]
+}
