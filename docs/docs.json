@@ -4,7 +4,24 @@
   "logo": "/architecture.png",
   "github": "https://github.com/Arenukvern/mcp_flutter",
   "$schema": "https://docs.page/schema.json",
-  "nav": [
+  "sidebar": [
+    {
+      "group": "Getting Started",
+      "pages": [
+        {
+          "title": "Overview",
+          "href": "/"
+        },
+        {
+          "title": "Manual Installation",
+          "href": "/getting_started/manual_installation"
+        },
+        {
+          "title": "Manual Client Setup",
+          "href": "/getting_started/manual_client_setup"
+        }
+      ]
+    },
     {
       "title": "Getting Started",
       "links": [
