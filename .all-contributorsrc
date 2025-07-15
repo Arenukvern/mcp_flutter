@@ -87,6 +87,18 @@
         "bug",
         "research"
       ]
+    },
+    {
+      "login": "lukemmtt",
+      "name": "Luke Memet",
+      "avatar_url": "https://avatars.githubusercontent.com/u/1598289?v=4",
+      "profile": "https://github.com/lukemmtt",
+      "contributions": [
+        "userTesting",
+        "research",
+        "maintenance",
+        "tutorial"
+      ]
     }
   ]
 }
