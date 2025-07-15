@@ -1,0 +1,45 @@
+# Configuration
+
+The MCP server can be configured using command-line arguments. 
+
+## Command Line Arguments
+
+| Option | Description |
+| --- | --- |
+| `--dart-vm-host` | The host for the Dart VM connection. Defaults to `localhost`. |
+| `--dart-vm-port` | The port for the Dart VM connection. Defaults to `8181`. |
+| `--resources` | Enable or disable support for resources (widget tree, screenshots). Defaults to `true`. |
+| `--images` | Enable or disable support for images (screenshots). Defaults to `true`. |
+| `--dumps` | Enable or disable support for debug dump operations (e.g., `dump_render_tree`). Defaults to `false`. |
+| `--dynamics` | Enable or disable support for dynamic tool registration. Defaults to `true`. |
+| `--await-dnd` | Await until a dynamic tool registration connection is established. This can be useful for some AI clients. Defaults to `false`. |
+| `--save-images` | Save captured images as files instead of returning them as base64 data. Defaults to `false`. |
+| `--log-level` | The logging level for the server. Can be `debug`, `info`, `notice`, `warning`, `error`, `critical`, `alert`, or `emergency`. Defaults to `error`. Log levels made accordingly to https://spec.modelcontextprotocol.io/specification/2025-03-26/server/utilities/logging/#log-levels |
+| `--environment` | The environment mode. Can be `development` or `production`. Defaults to `production`. |
+| `-h`, `--help` | Show the usage text. |
+
+
+## Port Configuration
+
+All Flutter Inspector tools automatically connect to the default Flutter debug port (8181). You only need to specify a port if:
+
+- You're running Flutter on a different port
+- You have multiple Flutter instances running
+- You've configured a custom debug port
+
+Example usage:
+
+```json
+// Default port (8181)
+{
+  "name": "debug_dump_render_tree"
+}
+
+// Custom port
+{
+  "name": "debug_dump_render_tree",
+  "arguments": {
+    "port": 8182
+  }
+}
+```
