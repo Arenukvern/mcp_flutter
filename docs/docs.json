@@ -13,6 +13,10 @@
           "href": "/"
         },
         {
+          "title": "LLM Auto Install Files",
+          "href": "/getting_started/llm_install_files"
+        },
+        {
           "title": "Manual Installation",
           "href": "/getting_started/manual_installation"
         },
@@ -23,41 +27,68 @@
       ]
     },
     {
-      "title": "Getting Started",
-      "links": [
-        "Overview",
-        "Quick Start",
-        "Configuration",
-        "AI Assistant Setup",
-        "Troubleshooting"
+      "group": "Core Concepts",
+      "pages": [
+        {
+          "title": "Architecture",
+          "href": "/core/project_architecture"
+        },
+        {
+          "title": "MCP Configuration",
+          "href": "/core/mcp_configuration"
+        },
+        {
+          "title": "Dynamic Tool Registry",
+          "href": "/core/dynamic_tools_registry"
+        },
+        {
+          "title": "Built-in Tools",
+          "href": "/core/built_in_tools"
+        }
       ]
     },
     {
-      "title": "Core Concepts",
-      "links": ["Architecture", "Dynamic Tool Registration", "Built-in Tools"]
-    },
-    {
-      "title": "Guides",
-      "links": [
-        "Creating Your First Dynamic Tool",
-        "A Practical Debugging Workflow"
+      "group": "Guides",
+      "pages": [
+        {
+          "title": "Creating Dynamic Tools",
+          "href": "/guides/creating_dynamic_tools"
+        },
+        {
+          "title": "Debugging Workflow",
+          "href": "/guides/debugging_workflow"
+        }
       ]
     },
     {
-      "title": "API Reference",
-      "links": ["MCP Server (Dart)", "MCP Toolkit (Flutter)"]
+      "group": "Troubleshooting",
+      "pages": [
+        {
+          "title": "Common Issues",
+          "href": "/troubleshooting/common_issues"
+        },
+        {
+          "title": "Claude Code Issues",
+          "href": "/troubleshooting/claude_code_issues"
+        }
+      ]
     },
     {
-      "title": "Troubleshooting",
-      "links": ["Troubleshooting"]
-    },
-    {
-      "title": "Contributing",
-      "links": ["Contribution Guide", "Project Structure"]
-    },
-    {
-      "title": "Changelog",
-      "links": ["Changelog"]
+      "group": "Contributing",
+      "pages": [
+        {
+          "title": "Contribution Guide",
+          "href": "/contributing/contribution_guide"
+        },
+        {
+          "title": "Contributors",
+          "href": "/contributing/contributors"
+        },
+        {
+          "title": "Docs Maintenance",
+          "href": "/contributing/docs_maintenance"
+        }
+      ]
     }
   ]
 }

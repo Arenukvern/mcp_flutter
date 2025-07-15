@@ -2,29 +2,71 @@
 
 Dynamic tool registration is the most powerful feature of the Flutter MCP Toolkit. It allows you to create custom tools within your Flutter application and make them available to the AI assistant at runtime.
 
-### Architecture Flow
+## Architecture Flow
+
+### Dynamic Registration Flow 🆕
+
+1. **Tool Registration**:
+
+   ```
+   Flutter App -> MCPToolkitBinding.addEntries() -> DTD Event -> MCP Server Dart
+   ```
+
+2. **Discovery**:
+
+   ```
+   AI Assistant -> listClientToolsAndResources -> MCP Server Dart -> Dynamic Registry
+   ```
+
+3. **Execution**:
+   ```
+   AI Assistant -> runClientTool -> MCP Server Dart -> Dynamic Registry -> Flutter App
+   ```
+
+### Architecture Components
 
 ```
 ┌─────────────────────────────┐     ┌──────────────────┐     ┌─────────────────────────────┐
 │                             │     │                  │     │                             │
 │  Flutter App                │<--->│    Dart VM       │<--->│ MCP Server Dart            │
 │  + mcp_toolkit              │     │    Service       │     │ + Dynamic Registry         │
-│  + Dynamic Tool Registration│     │            │     │                             │
+│  + Dynamic Tool Registration│     │    (Port 8181)   │     │                             │
 │                             │     │                  │     │                             │
 └─────────────────────────────┘     └──────────────────┘     └─────────────────────────────┘
 ```
 
-![Flutter Inspector Architecture](./architecture.png)
+## Dynamic Registry Architecture
 
-### How It Works
+### Components
 
-1.  **Create an `MCPCallEntry`**: In your Flutter app, you create an instance of the `MCPCallEntry` class. This class defines the tool's name, description, input schema, and handler function.
+1. **DynamicRegistry**: Core registry managing tool/resource lifecycle
+2. **RegistryDiscoveryService**: DTD event-driven discovery service
+3. **DynamicRegistryTools**: MCP tools for registry interaction
+4. **MCPToolkitBinding**: Client-side registration interface
 
-2.  **Register the Tool**: You then register the tool with the `MCPToolkitBinding` by calling the `addMcpTool()` or `addEntries()` method.
+### Event Flow
 
-3.  **Discovery**: The MCP server automatically discovers the new tool through the Dart VM service and makes it available to the AI assistant.
+```
+Flutter App Tool Registration -> DTD Event -> Discovery Service -> Registry Update -> MCP Tool Availability
+```
 
-### Example
+### Tool Lifecycle
+
+1. **Registration**: Flutter app calls `addEntries()`
+2. **Discovery**: DTD event triggers server-side discovery
+3. **Availability**: Tool becomes available via MCP protocol
+4. **Execution**: AI assistant can call tool via `runClientTool`
+5. **Cleanup**: Hot reload or app restart clears registry
+
+## How It Works
+
+1. **Create an `MCPCallEntry`**: In your Flutter app, you create an instance of the `MCPCallEntry` class. This class defines the tool's name, description, input schema, and handler function.
+
+2. **Register the Tool**: You then register the tool with the `MCPToolkitBinding` by calling the `addMcpTool()` or `addEntries()` method.
+
+3. **Discovery**: The MCP server automatically discovers the new tool through the Dart VM service and makes it available to the AI assistant.
+
+## Basic Example
 
 Here is an example of how to create and register a simple tool that returns a greeting:
 
@@ -53,5 +95,410 @@ void registerGreetingTool() {
   );
 
   addMcpTool(greetingTool);
+}
+```
+
+## Advanced Examples
+
+### 1. State Management Tool
+
+```dart
+void registerStateManagementTool() {
+  final stateTool = MCPCallEntry.tool(
+    handler: (params) {
+      final action = params['action'] as String;
+      final key = params['key'] as String?;
+      final value = params['value'] as dynamic;
+
+      switch (action) {
+        case 'get':
+          return MCPCallResult(
+            message: 'State retrieved',
+            parameters: {'value': getCurrentState(key!)},
+          );
+        case 'set':
+          setState(key!, value);
+          return MCPCallResult(message: 'State updated');
+        case 'list':
+          return MCPCallResult(
+            message: 'All state keys',
+            parameters: {'keys': getAllStateKeys()},
+          );
+        default:
+          return MCPCallResult(
+            message: 'Unknown action',
+            isError: true,
+          );
+      }
+    },
+    definition: MCPToolDefinition(
+      name: 'state_manager',
+      description: 'Manage application state',
+      inputSchema: {
+        'type': 'object',
+        'properties': {
+          'action': {
+            'type': 'string',
+            'enum': ['get', 'set', 'list'],
+            'description': 'The action to perform',
+          },
+          'key': {
+            'type': 'string',
+            'description': 'The state key (required for get/set)',
+          },
+          'value': {
+            'description': 'The value to set (required for set action)',
+          },
+        },
+        'required': ['action'],
+      },
+    ),
+  );
+
+  addMcpTool(stateTool);
+}
+```
+
+### 2. Navigation Tool
+
+```dart
+void registerNavigationTool() {
+  final navigationTool = MCPCallEntry.tool(
+    handler: (params) {
+      final route = params['route'] as String;
+      final arguments = params['arguments'] as Map<String, dynamic>?;
+
+      try {
+        Navigator.pushNamed(
+          GlobalNavigator.context,
+          route,
+          arguments: arguments,
+        );
+        return MCPCallResult(message: 'Navigation successful');
+      } catch (e) {
+        return MCPCallResult(
+          message: 'Navigation failed: $e',
+          isError: true,
+        );
+      }
+    },
+    definition: MCPToolDefinition(
+      name: 'navigate',
+      description: 'Navigate to a specific route in the app',
+      inputSchema: {
+        'type': 'object',
+        'properties': {
+          'route': {
+            'type': 'string',
+            'description': 'The route path to navigate to',
+          },
+          'arguments': {
+            'type': 'object',
+            'description': 'Optional arguments to pass to the route',
+          },
+        },
+        'required': ['route'],
+      },
+    ),
+  );
+
+  addMcpTool(navigationTool);
+}
+```
+
+### 3. Database Query Tool
+
+```dart
+void registerDatabaseTool() {
+  final dbTool = MCPCallEntry.tool(
+    handler: (params) async {
+      final query = params['query'] as String;
+      final parameters = params['parameters'] as List<dynamic>?;
+
+      try {
+        final result = await DatabaseService.instance.rawQuery(
+          query,
+          parameters,
+        );
+        return MCPCallResult(
+          message: 'Query executed successfully',
+          parameters: {'result': result},
+        );
+      } catch (e) {
+        return MCPCallResult(
+          message: 'Database query failed: $e',
+          isError: true,
+        );
+      }
+    },
+    definition: MCPToolDefinition(
+      name: 'database_query',
+      description: 'Execute a database query',
+      inputSchema: {
+        'type': 'object',
+        'properties': {
+          'query': {
+            'type': 'string',
+            'description': 'The SQL query to execute',
+          },
+          'parameters': {
+            'type': 'array',
+            'items': {'type': 'string'},
+            'description': 'Optional query parameters',
+          },
+        },
+        'required': ['query'],
+      },
+    ),
+  );
+
+  addMcpTool(dbTool);
+}
+```
+
+## Resource Registration
+
+You can also register resources (read-only data) that the AI assistant can access:
+
+```dart
+void registerAppConfigResource() {
+  final configResource = MCPCallEntry.resource(
+    handler: (uri) {
+      // Extract resource identifier from URI
+      final resourceId = uri.pathSegments.last;
+
+      switch (resourceId) {
+        case 'config':
+          return MCPCallResult(
+            message: 'App configuration',
+            parameters: {'config': getAppConfig()},
+          );
+        case 'version':
+          return MCPCallResult(
+            message: 'App version info',
+            parameters: {'version': getVersionInfo()},
+          );
+        default:
+          return MCPCallResult(
+            message: 'Resource not found',
+            isError: true,
+          );
+      }
+    },
+    definition: MCPResourceDefinition(
+      uri: 'app://config/{resourceId}',
+      name: 'App Configuration',
+      description: 'Access to app configuration and metadata',
+      mimeType: 'application/json',
+    ),
+  );
+
+  addMcpResource(configResource);
+}
+```
+
+## Best Practices
+
+### 1. Error Handling
+
+Always handle errors gracefully and provide meaningful error messages:
+
+```dart
+final robustTool = MCPCallEntry.tool(
+  handler: (params) {
+    try {
+      // Your tool logic here
+      return MCPCallResult(message: 'Success');
+    } catch (e) {
+      return MCPCallResult(
+        message: 'Tool execution failed: ${e.toString()}',
+        isError: true,
+      );
+    }
+  },
+  definition: MCPToolDefinition(
+    name: 'robust_tool',
+    description: 'A tool with proper error handling',
+    inputSchema: {...},
+  ),
+);
+```
+
+### 2. Input Validation
+
+Validate inputs before processing:
+
+```dart
+final validatingTool = MCPCallEntry.tool(
+  handler: (params) {
+    final requiredParam = params['required'] as String?;
+    if (requiredParam == null || requiredParam.isEmpty) {
+      return MCPCallResult(
+        message: 'Required parameter is missing or empty',
+        isError: true,
+      );
+    }
+
+    // Process the validated input
+    return MCPCallResult(message: 'Processing complete');
+  },
+  definition: MCPToolDefinition(
+    name: 'validating_tool',
+    description: 'A tool that validates its inputs',
+    inputSchema: {
+      'type': 'object',
+      'properties': {
+        'required': {
+          'type': 'string',
+          'minLength': 1,
+          'description': 'A required string parameter',
+        },
+      },
+      'required': ['required'],
+    },
+  ),
+);
+```
+
+### 3. Asynchronous Operations
+
+Handle async operations properly:
+
+```dart
+final asyncTool = MCPCallEntry.tool(
+  handler: (params) async {
+    final url = params['url'] as String;
+
+    try {
+      final response = await http.get(Uri.parse(url));
+      return MCPCallResult(
+        message: 'HTTP request completed',
+        parameters: {
+          'status': response.statusCode,
+          'body': response.body,
+        },
+      );
+    } catch (e) {
+      return MCPCallResult(
+        message: 'HTTP request failed: $e',
+        isError: true,
+      );
+    }
+  },
+  definition: MCPToolDefinition(
+    name: 'http_request',
+    description: 'Make an HTTP request',
+    inputSchema: {
+      'type': 'object',
+      'properties': {
+        'url': {
+          'type': 'string',
+          'format': 'uri',
+          'description': 'The URL to request',
+        },
+      },
+      'required': ['url'],
+    },
+  ),
+);
+```
+
+## Registry Management
+
+### Listing Registered Tools
+
+```dart
+void listRegisteredTools() {
+  final tools = MCPToolkitBinding.instance.getRegisteredTools();
+  print('Registered tools: ${tools.map((t) => t.name).join(', ')}');
+}
+```
+
+### Removing Tools
+
+```dart
+void removeToolByName(String toolName) {
+  MCPToolkitBinding.instance.removeToolByName(toolName);
+}
+```
+
+### Bulk Registration
+
+```dart
+void registerMultipleTools() {
+  final tools = {
+    greetingTool,
+    navigationTool,
+    stateTool,
+    databaseTool,
+  };
+
+  MCPToolkitBinding.instance.addEntries(entries: tools);
+}
+```
+
+## Troubleshooting
+
+### Dynamic Registration Issues
+
+1. **Tool Not Appearing**:
+
+   - Ensure `mcp_toolkit` is properly initialized
+   - Check that your Flutter app is running in debug mode
+   - Verify DTD event streaming is working
+
+2. **Tool Execution Failures**:
+
+   - Check handler function for runtime errors
+   - Verify input schema matches expected parameters
+   - Ensure async operations are handled properly
+
+3. **Performance Issues**:
+   - Avoid heavy computations in tool handlers
+   - Use async operations for I/O bound tasks
+   - Consider caching for frequently accessed data
+
+### Debugging Tools
+
+Use `listClientToolsAndResources` to debug tool registration:
+
+```dart
+void debugRegistration() {
+  final tools = MCPToolkitBinding.instance.getRegisteredTools();
+  for (final tool in tools) {
+    print('Tool: ${tool.name}');
+    print('Description: ${tool.description}');
+    print('Schema: ${tool.inputSchema}');
+    print('---');
+  }
+}
+```
+
+## Security Considerations
+
+1. **Input Sanitization**: Always sanitize and validate inputs
+2. **Permission Checks**: Implement proper permission checks for sensitive operations
+3. **Rate Limiting**: Consider implementing rate limiting for resource-intensive tools
+4. **Audit Logging**: Log tool executions for security auditing
+
+## Integration with Hot Reload
+
+Dynamic tools are automatically cleared when the app hot reloads. To persist tools across reloads, register them in your app's initialization code:
+
+```dart
+void main() {
+  runApp(MyApp());
+
+  // Register tools after app initialization
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    registerAllTools();
+  });
+}
+
+void registerAllTools() {
+  registerGreetingTool();
+  registerNavigationTool();
+  registerStateManagementTool();
+  // ... register other tools
 }
 ```
