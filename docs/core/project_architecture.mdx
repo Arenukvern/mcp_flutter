@@ -1,6 +1,14 @@
 # Architecture
 
-The Flutter MCP Toolkit consists of three main components:
+## Overview
+
+This project is a monorepo containing the following packages:
+
+- **`mcp_server_dart`**: The core MCP server.
+- **`mcp_toolkit`**: The Flutter package that you include in your app.
+- **`flutter_test_app`**: An example Flutter application.
+
+## Architecture
 
 1.  **The MCP Server (`mcp_server_dart`)**: A Dart-based server that acts as the central hub of communication. It connects to the AI assistant over `stdin`/`stdout` and to the Flutter application via the Dart VM service.
 

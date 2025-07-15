@@ -2,6 +2,20 @@
 
 Dynamic tool registration is the most powerful feature of the Flutter MCP Toolkit. It allows you to create custom tools within your Flutter application and make them available to the AI assistant at runtime.
 
+### Architecture Flow
+
+```
+┌─────────────────────────────┐     ┌──────────────────┐     ┌─────────────────────────────┐
+│                             │     │                  │     │                             │
+│  Flutter App                │<--->│    Dart VM       │<--->│ MCP Server Dart            │
+│  + mcp_toolkit              │     │    Service       │     │ + Dynamic Registry         │
+│  + Dynamic Tool Registration│     │            │     │                             │
+│                             │     │                  │     │                             │
+└─────────────────────────────┘     └──────────────────┘     └─────────────────────────────┘
+```
+
+![Flutter Inspector Architecture](./architecture.png)
+
 ### How It Works
 
 1.  **Create an `MCPCallEntry`**: In your Flutter app, you create an instance of the `MCPCallEntry` class. This class defines the tool's name, description, input schema, and handler function.
