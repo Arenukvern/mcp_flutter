@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/arenukvern-mcp-flutter-badge.png)](https://mseep.ai/app/arenukvern-mcp-flutter)
+
 # Flutter Inspector MCP Server for AI-Powered Development
 
 [GitHub Repository](https://github.com/Arenukvern/mcp_flutter)
