@@ -1,5 +1,7 @@
 # Flutter Inspector Architecture
 
+This doc is written mostly for AI.
+
 ## Quick Start
 
 - [Installation Guide](QUICK_START.md)
@@ -240,45 +242,24 @@ await MCPToolkitBinding.instance.addEntries(entries: {customTool});
 
 ## Common Use Cases
 
-1. **Widget Analysis**:
+**Dynamic Tool Registration**:
 
-   ```dart
-   // Example: Get widget tree
-   final widgetTree = await inspector.getRootWidget();
-   ```
+```dart
+// Example: Register custom debugging tool
+final debugTool = MCPCallEntry.tool(
+  handler: (request) => MCPCallResult(
+    message: 'Debug info',
+    parameters: {'state': getCurrentState()},
+  ),
+  definition: MCPToolDefinition(
+    name: 'get_debug_state',
+    description: 'Get current debug state',
+    inputSchema: {'type': 'object', 'properties': {}},
+  ),
+);
 
-2. **Layout Debugging**:
-
-   ```dart
-   // Example: Analyze layout issues
-   final layoutInfo = await inspector.debugDumpRenderTree();
-   ```
-
-3. **Performance Profiling**:
-
-   ```dart
-   // Example: Profile widget builds
-   await inspector.profileWidgetBuilds({ enabled: true });
-   ```
-
-4. **Dynamic Tool Registration**:
-
-   ```dart
-   // Example: Register custom debugging tool
-   final debugTool = MCPCallEntry.tool(
-     handler: (request) => MCPCallResult(
-       message: 'Debug info',
-       parameters: {'state': getCurrentState()},
-     ),
-     definition: MCPToolDefinition(
-       name: 'get_debug_state',
-       description: 'Get current debug state',
-       inputSchema: {'type': 'object', 'properties': {}},
-     ),
-   );
-
-   await MCPToolkitBinding.instance.addEntries(entries: {debugTool});
-   ```
+await MCPToolkitBinding.instance.addEntries(entries: {debugTool});
+```
 
 ## Dynamic Registry Architecture:
 
