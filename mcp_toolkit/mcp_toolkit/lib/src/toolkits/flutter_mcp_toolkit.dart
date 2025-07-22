@@ -24,7 +24,8 @@ Set<MCPCallEntry> getFlutterMcpToolkitEntries({
   OnAppErrorsEntry(errorMonitor: binding),
   OnViewScreenshotsEntry(),
   OnViewDetailsEntry(),
-  OnGetPubDocEntry(), // Register the new tool
+  OnGetPubDocEntry(),
+  OnGetDartMemberDocEntry(), // Register the new tool
 };
 
 /// Extension on [MCPToolkitBinding] to initialize the Flutter MCP Toolkit.
@@ -245,5 +246,51 @@ extension type OnGetPubDocEntry._(MCPCallEntry entry) implements MCPCallEntry {
       ),
     );
     return OnGetPubDocEntry._(entry);
+  }
+}
+
+/// {@template on_get_dart_member_doc_entry}
+/// MCPCallEntry for retrieving documentation for a Dart member (class, function, etc.).
+/// Currently returns a stub message; future versions may integrate with Dart Analysis Server.
+/// {@endtemplate}
+extension type OnGetDartMemberDocEntry._(MCPCallEntry entry)
+    implements MCPCallEntry {
+  /// {@macro on_get_dart_member_doc_entry}
+  factory OnGetDartMemberDocEntry() {
+    final entry = MCPCallEntry.tool(
+      handler: (final parameters) async {
+        final member = parameters['member']?.toString();
+        if (member == null || member.isEmpty) {
+          return MCPCallResult(
+            message: 'No member name provided.',
+            parameters: {'doc': '', 'location': ''},
+          );
+        }
+        // Stub: Real implementation would query Dart Analysis Server
+        return MCPCallResult(
+          message:
+              'Documentation lookup for "$member" is not yet implemented. (Stub)',
+          parameters: {
+            'doc':
+                'Documentation for "$member" is not available in this build. Future versions may support Dart Analysis Server integration.',
+            'location': '',
+          },
+        );
+      },
+      definition: MCPToolDefinition(
+        name: 'get_dart_member_doc',
+        description:
+            'Get the documentation for a Dart member (class, function, etc.). Currently a stub.',
+        inputSchema: ObjectSchema(
+          properties: {
+            'member': StringSchema(
+              description:
+                  'The Dart member name (class, function, etc.) to fetch documentation for',
+            ),
+          },
+        ),
+      ),
+    );
+    return OnGetDartMemberDocEntry._(entry);
   }
 }
