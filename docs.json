@@ -1,0 +1,93 @@
+{
+  "name": "Flutter MCP Toolkit",
+  "description": "Documentation for the MCP Server and Flutter Toolkit for AI-Powered Development.",
+  "github": "https://github.com/Arenukvern/mcp_flutter",
+  "$schema": "https://docs.page/schema.json",
+  "sidebar": [
+    {
+      "group": "Getting Started",
+      "pages": [
+        {
+          "title": "Overview",
+          "href": "/"
+        },
+        {
+          "title": "LLM Auto Install Files",
+          "href": "/getting_started/llm_install_files"
+        },
+        {
+          "title": "Manual Installation",
+          "href": "/getting_started/manual_installation"
+        },
+        {
+          "title": "Manual Client Setup",
+          "href": "/getting_started/manual_client_setup"
+        }
+      ]
+    },
+    {
+      "group": "Core Concepts",
+      "pages": [
+        {
+          "title": "Architecture",
+          "href": "/core/project_architecture"
+        },
+        {
+          "title": "MCP Configuration",
+          "href": "/core/mcp_configuration"
+        },
+        {
+          "title": "Dynamic Tool Registry",
+          "href": "/core/dynamic_tools_registry"
+        },
+        {
+          "title": "Built-in Tools",
+          "href": "/core/built_in_tools"
+        }
+      ]
+    },
+    {
+      "group": "Guides",
+      "pages": [
+        {
+          "title": "Creating Dynamic Tools",
+          "href": "/guides/creating_dynamic_tools"
+        },
+        {
+          "title": "Debugging Workflow",
+          "href": "/guides/debugging_workflow"
+        }
+      ]
+    },
+    {
+      "group": "Troubleshooting",
+      "pages": [
+        {
+          "title": "Common Issues",
+          "href": "/troubleshooting/common_issues"
+        },
+        {
+          "title": "Claude Code Issues",
+          "href": "/troubleshooting/claude_code_issues"
+        }
+      ]
+    },
+    {
+      "group": "Contributing",
+      "pages": [
+        {
+          "title": "Contribution Guide",
+          "href": "/contributing/contribution_guide"
+        },
+        {
+          "title": "Contributors",
+          "href": "/contributing/contributors"
+        },
+        {
+          "title": "Docs Maintenance",
+          "href": "/contributing/docs_maintenance"
+        }
+      ]
+    }
+  ]
+}

@@ -1,12 +1,21 @@
-# Flutter Inspector Architecture
+# Architecture
 
-This doc is written mostly for AI.
+This document is written mostly for AI Agents.
 
 ## Quick Start
 
-- [Installation Guide](QUICK_START.md)
-- [API Documentation](MCP_RPC_DESCRIPTION.md)
-- [Contributing Guidelines](README.md#contributing)
+- [Installation Guide](../../llm_install.md)
+- [Configuration Guide](./mcp_configuration.mdx)
+- [Dynamic Tools Registry](./dynamic_tools_registry.mdx)
+- [Contributing Guidelines](../../README.md#contributing)
+
+## Overview
+
+This project is a monorepo containing the following packages:
+
+- **`mcp_server_dart`**: The core MCP server with dynamic registry capabilities.
+- **`mcp_toolkit`**: The Flutter package that you include in your app.
+- **`flutter_test_app`**: An example Flutter application demonstrating the toolkit.
 
 ## System Overview
 
@@ -23,8 +32,6 @@ This project enables AI-powered development tools to interact with Flutter appli
 │                             │     │                  │     │                             │
 └─────────────────────────────┘     └──────────────────┘     └─────────────────────────────┘
 ```
-
-![Flutter Inspector Architecture](./docs/architecture.png)
 
 This unified architecture supports:
 
@@ -126,24 +133,21 @@ This unified architecture supports:
    mcp_toolkit in Flutter App -> Dart VM Service -> MCP Server Dart -> AI Assistant
    ```
 
-### Dynamic Registration Flow 🆕
+### Communication Details
 
-1. **Tool Registration**:
+```mermaid
+graph TD
+    A[AI Assistant] <-->|stdin/stdout| B(MCP Server);
+    B <-->|Dart VM Service| C(Flutter App with mcp_toolkit);
+    B <-->|DTD Events| D(Dynamic Registry);
+    C <-->|Tool Registration| D;
+```
 
-   ```
-   Flutter App -> MCPToolkitBinding.addEntries() -> DTD Event -> MCP Server Dart
-   ```
-
-2. **Discovery**:
-
-   ```
-   AI Assistant -> listClientToolsAndResources -> MCP Server Dart -> Dynamic Registry
-   ```
-
-3. **Execution**:
-   ```
-   AI Assistant -> runClientTool -> MCP Server Dart -> Dynamic Registry -> Flutter App
-   ```
+1. The AI assistant sends a request to the MCP server.
+2. The MCP server forwards the request to the Flutter app through the Dart VM service.
+3. The Flutter app executes the requested tool and sends the result back to the server.
+4. The server forwards the result to the AI assistant.
+5. Dynamic tools are discovered via DTD events and registered in real-time.
 
 ## Protocol Details
 
@@ -242,47 +246,25 @@ await MCPToolkitBinding.instance.addEntries(entries: {customTool});
 
 ## Common Use Cases
 
-**Dynamic Tool Registration**:
+1. **Widget Analysis**:
 
-```dart
-// Example: Register custom debugging tool
-final debugTool = MCPCallEntry.tool(
-  handler: (request) => MCPCallResult(
-    message: 'Debug info',
-    parameters: {'state': getCurrentState()},
-  ),
-  definition: MCPToolDefinition(
-    name: 'get_debug_state',
-    description: 'Get current debug state',
-    inputSchema: {'type': 'object', 'properties': {}},
-  ),
-);
+   ```dart
+   // Example: Get widget tree
+   final widgetTree = await inspector.getRootWidget();
+   ```
 
-await MCPToolkitBinding.instance.addEntries(entries: {debugTool});
-```
+2. **Layout Debugging**:
 
-## Dynamic Registry Architecture:
+   ```dart
+   // Example: Analyze layout issues
+   final layoutInfo = await inspector.debugDumpRenderTree();
+   ```
 
-### Components
-
-1. **DynamicRegistry**: Core registry managing tool/resource lifecycle
-2. **RegistryDiscoveryService**: DTD event-driven discovery service
-3. **DynamicRegistryTools**: MCP tools for registry interaction
-4. **MCPToolkitBinding**: Client-side registration interface
-
-### Event Flow
-
-```
-Flutter App Tool Registration -> DTD Event -> Discovery Service -> Registry Update -> MCP Tool Availability
-```
-
-### Tool Lifecycle
-
-1. **Registration**: Flutter app calls `addEntries()`
-2. **Discovery**: DTD event triggers server-side discovery
-3. **Availability**: Tool becomes available via MCP protocol
-4. **Execution**: AI assistant can call tool via `runClientTool`
-5. **Cleanup**: Hot reload or app restart clears registry
+3. **Performance Profiling**:
+   ```dart
+   // Example: Profile widget builds
+   await inspector.profileWidgetBuilds({ enabled: true });
+   ```
 
 ## Troubleshooting
 
@@ -299,16 +281,9 @@ Flutter App Tool Registration -> DTD Event -> Discovery Service -> Registry Upda
    - Verify parameter types
 
 3. **Performance Problems**:
-
    - Monitor message volume
    - Check response times
    - Analyze resource usage
-
-4. **Dynamic Registration Issues**:
-   - Ensure `mcp_toolkit` is properly initialized
-   - Check DTD event streaming
-   - Verify tool schema compliance
-   - Use `listClientToolsAndResources` for debugging
 
 ## Further Reading
 
