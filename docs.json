@@ -1,7 +1,6 @@
 {
-  "title": "Flutter MCP Toolkit",
+  "name": "Flutter MCP Toolkit",
   "description": "Documentation for the MCP Server and Flutter Toolkit for AI-Powered Development.",
-  "logo": "/architecture.png",
   "github": "https://github.com/Arenukvern/mcp_flutter",
   "$schema": "https://docs.page/schema.json",
   "sidebar": [
