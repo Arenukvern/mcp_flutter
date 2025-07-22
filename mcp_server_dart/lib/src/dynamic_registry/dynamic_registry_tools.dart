@@ -5,11 +5,13 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_inspector_mcp_server/src/dynamic_registry/dynamic_registry.dart';
 import 'package:flutter_inspector_mcp_server/src/server.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
+import 'package:http/http.dart' as http;
 import 'package:meta/meta.dart';
 
 /// MCP tools for managing dynamic registry
@@ -111,6 +113,38 @@ final class DynamicRegistryTools {
     ),
   );
 
+  /// Tool to get pub package documentation (README)
+  static final getPubDoc = Tool(
+    name: 'get_pub_doc',
+    description:
+        'Get the README documentation for a Dart/Flutter package from pub.dev or local pub cache. Supports FVM SDK path.',
+    inputSchema: ObjectSchema(
+      properties: {
+        'package': Schema.string(
+          description: 'The package name to fetch documentation for',
+        ),
+        'fvm_sdk_path': Schema.string(
+          description: 'Optional: The FVM SDK path to use for pub cache lookup',
+        ),
+      },
+    ),
+  );
+
+  /// Tool to get Dart member documentation (stub)
+  static final getDartMemberDoc = Tool(
+    name: 'get_dart_member_doc',
+    description:
+        'Get the documentation for a Dart member (class, function, etc.). Currently a stub.',
+    inputSchema: ObjectSchema(
+      properties: {
+        'member': Schema.string(
+          description:
+              'The Dart member name (class, function, etc.) to fetch documentation for',
+        ),
+      },
+    ),
+  );
+
   /// Get all management tools
   Map<Tool, FutureOr<CallToolResult> Function(CallToolRequest)> get allTools =>
       {
@@ -118,6 +152,8 @@ final class DynamicRegistryTools {
         runClientTool: _handleRunClientTool,
         runClientResource: _handleRunClientResource,
         if (kDebugMode) getRegistryStats: _handleGetRegistryStats,
+        getPubDoc: _handleGetPubDoc,
+        getDartMemberDoc: _handleGetDartMemberDoc,
       };
 
   FutureOr<CallToolResult> _handleListClientToolsAndResources(
@@ -241,6 +277,99 @@ final class DynamicRegistryTools {
 
     return CallToolResult(
       content: [TextContent(text: jsonEncode(result))],
+      isError: false,
+    );
+  }
+
+  FutureOr<CallToolResult> _handleGetPubDoc(
+    final CallToolRequest request,
+  ) async {
+    final args = request.arguments;
+    final package = args?['package']?.toString();
+    final fvmSdkPath = args?['fvm_sdk_path']?.toString();
+    if (package == null || package.isEmpty) {
+      return CallToolResult(
+        content: [TextContent(text: 'No package name provided.')],
+        isError: true,
+      );
+    }
+    // Try pub.dev first
+    final pubDevUrl =
+        'https://pub.dev/packages/$package/versions/latest/README.md';
+    try {
+      final response = await http.get(Uri.parse(pubDevUrl));
+      if (response.statusCode == 200) {
+        return CallToolResult(
+          content: [
+            TextContent(text: response.body),
+            TextContent(text: '{"source":"pub.dev"}'),
+          ],
+          isError: false,
+        );
+      }
+    } catch (_) {}
+    // Fallback: try local pub cache
+    String pubCache;
+    if (fvmSdkPath != null && fvmSdkPath.isNotEmpty) {
+      pubCache = '$fvmSdkPath/.pub-cache/hosted/pub.dev/$package';
+    } else {
+      final home =
+          Platform.environment['HOME'] ??
+          Platform.environment['USERPROFILE'] ??
+          '';
+      pubCache = '$home/.pub-cache/hosted/pub.dev/$package';
+    }
+    String? readmeContent;
+    try {
+      final dir = Directory(pubCache);
+      if (dir.existsSync()) {
+        final files = dir.listSync(recursive: true).whereType<File>();
+        final readmeFiles = files.where(
+          (final f) => f.path.toLowerCase().endsWith('readme.md'),
+        );
+        if (readmeFiles.isNotEmpty) {
+          final readmeFile = readmeFiles.first;
+          readmeContent = readmeFile.readAsStringSync();
+        }
+      }
+    } catch (_) {}
+    if (readmeContent != null && readmeContent.isNotEmpty) {
+      return CallToolResult(
+        content: [
+          TextContent(text: readmeContent),
+          TextContent(text: '{"source":"local"}'),
+        ],
+        isError: false,
+      );
+    }
+    return CallToolResult(
+      content: [
+        TextContent(text: ''),
+        TextContent(text: '{"source":"not_found"}'),
+      ],
+      isError: false,
+    );
+  }
+
+  FutureOr<CallToolResult> _handleGetDartMemberDoc(
+    final CallToolRequest request,
+  ) async {
+    final args = request.arguments;
+    final member = args?['member']?.toString();
+    if (member == null || member.isEmpty) {
+      return CallToolResult(
+        content: [TextContent(text: 'No member name provided.')],
+        isError: true,
+      );
+    }
+    // Stub: Real implementation would query Dart Analysis Server
+    return CallToolResult(
+      content: [
+        TextContent(
+          text:
+              'Documentation lookup for "$member" is not yet implemented. (Stub)',
+        ),
+      ],
       isError: false,
     );
   }

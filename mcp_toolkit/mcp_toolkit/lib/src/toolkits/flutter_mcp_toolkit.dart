@@ -1,6 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
-import 'dart:io';
 
 import 'package:dart_mcp/client.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
@@ -24,8 +22,6 @@ Set<MCPCallEntry> getFlutterMcpToolkitEntries({
   OnAppErrorsEntry(errorMonitor: binding),
   OnViewScreenshotsEntry(),
   OnViewDetailsEntry(),
-  OnGetPubDocEntry(),
-  OnGetDartMemberDocEntry(), // Register the new tool
 };
 
 /// Extension on [MCPToolkitBinding] to initialize the Flutter MCP Toolkit.
@@ -152,145 +148,5 @@ extension type const OnViewDetailsEntry._(MCPCallEntry entry)
       ),
     );
     return OnViewDetailsEntry._(entry);
-  }
-}
-
-/// {@template on_get_pub_doc_entry}
-/// MCPCallEntry for retrieving package documentation (README) from pub.dev or local pub cache.
-/// {@endtemplate}
-extension type OnGetPubDocEntry._(MCPCallEntry entry) implements MCPCallEntry {
-  /// {@macro on_get_pub_doc_entry}
-  factory OnGetPubDocEntry() {
-    final entry = MCPCallEntry.tool(
-      handler: (final parameters) async {
-        final package = parameters['package']?.toString();
-        final fvmSdkPath = parameters['fvm_sdk_path']?.toString();
-        if (package == null || package.isEmpty) {
-          return MCPCallResult(
-            message: 'No package name provided.',
-            parameters: {'readme': '', 'source': 'none'},
-          );
-        }
-        // Try pub.dev first
-        final pubDevUrl =
-            'https://pub.dev/packages/$package/versions/latest/README.md';
-        try {
-          final uri = Uri.parse(pubDevUrl);
-          final client = HttpClient();
-          final request = await client.getUrl(uri);
-          final response = await request.close();
-          if (response.statusCode == 200) {
-            final contents =
-                await response.transform(const Utf8Decoder()).join();
-            return MCPCallResult(
-              message: 'README fetched from pub.dev',
-              parameters: {'readme': contents, 'source': 'pub.dev'},
-            );
-          }
-        } catch (_) {
-          // Ignore and fallback
-        }
-        // Fallback: try local pub cache
-        String pubCache;
-        if (fvmSdkPath != null && fvmSdkPath.isNotEmpty) {
-          pubCache = '$fvmSdkPath/.pub-cache/hosted/pub.dev/$package';
-        } else {
-          final home =
-              Platform.environment['HOME'] ??
-              Platform.environment['USERPROFILE'] ??
-              '';
-          pubCache = '$home/.pub-cache/hosted/pub.dev/$package';
-        }
-        String? readmeContent;
-        try {
-          final dir = Directory(pubCache);
-          if (dir.existsSync()) {
-            final files = dir.listSync(recursive: true).cast<File>();
-            final readmeFiles = files.where(
-              (final f) => f.path.toLowerCase().endsWith('readme.md'),
-            );
-            if (readmeFiles.isNotEmpty) {
-              final readmeFile = readmeFiles.first;
-              readmeContent = readmeFile.readAsStringSync();
-            }
-          }
-        } catch (_) {
-          // Ignore
-        }
-        if (readmeContent != null && readmeContent.isNotEmpty) {
-          return MCPCallResult(
-            message: 'README fetched from local pub cache',
-            parameters: {'readme': readmeContent, 'source': 'local'},
-          );
-        }
-        return MCPCallResult(
-          message: 'README not found for package: $package',
-          parameters: {'readme': '', 'source': 'not_found'},
-        );
-      },
-      definition: MCPToolDefinition(
-        name: 'get_pub_doc',
-        description:
-            'Get the README documentation for a Dart/Flutter package from pub.dev or local pub cache. Supports FVM SDK path.',
-        inputSchema: ObjectSchema(
-          properties: {
-            'package': StringSchema(
-              description: 'The package name to fetch documentation for',
-            ),
-            'fvm_sdk_path': StringSchema(
-              description:
-                  'Optional: The FVM SDK path to use for pub cache lookup',
-            ),
-          },
-        ),
-      ),
-    );
-    return OnGetPubDocEntry._(entry);
-  }
-}
-
-/// {@template on_get_dart_member_doc_entry}
-/// MCPCallEntry for retrieving documentation for a Dart member (class, function, etc.).
-/// Currently returns a stub message; future versions may integrate with Dart Analysis Server.
-/// {@endtemplate}
-extension type OnGetDartMemberDocEntry._(MCPCallEntry entry)
-    implements MCPCallEntry {
-  /// {@macro on_get_dart_member_doc_entry}
-  factory OnGetDartMemberDocEntry() {
-    final entry = MCPCallEntry.tool(
-      handler: (final parameters) async {
-        final member = parameters['member']?.toString();
-        if (member == null || member.isEmpty) {
-          return MCPCallResult(
-            message: 'No member name provided.',
-            parameters: {'doc': '', 'location': ''},
-          );
-        }
-        // Stub: Real implementation would query Dart Analysis Server
-        return MCPCallResult(
-          message:
-              'Documentation lookup for "$member" is not yet implemented. (Stub)',
-          parameters: {
-            'doc':
-                'Documentation for "$member" is not available in this build. Future versions may support Dart Analysis Server integration.',
-            'location': '',
-          },
-        );
-      },
-      definition: MCPToolDefinition(
-        name: 'get_dart_member_doc',
-        description:
-            'Get the documentation for a Dart member (class, function, etc.). Currently a stub.',
-        inputSchema: ObjectSchema(
-          properties: {
-            'member': StringSchema(
-              description:
-                  'The Dart member name (class, function, etc.) to fetch documentation for',
-            ),
-          },
-        ),
-      ),
-    );
-    return OnGetDartMemberDocEntry._(entry);
   }
 }
