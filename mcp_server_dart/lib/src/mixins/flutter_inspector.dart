@@ -47,14 +47,6 @@ base mixin FlutterInspector
       logger: 'FlutterInspector',
     );
     registerTool(DocToolsHandler.getPubDoc, _docTools.handleGetPubDoc);
-    registerTool(
-      DocToolsHandler.getDartMemberDoc,
-      _docTools.handleGetDartMemberDoc,
-    );
-    registerTool(
-      DocToolsHandler.getDartHoverDoc,
-      _docTools.handleGetDartHoverDoc,
-    );
 
     // Register debug dump tools
     if (configuration.dumpsSupported) {
@@ -254,5 +246,6 @@ base mixin FlutterInspector
 
   Future<void> dispose() async {
     await _resourceHandler.dispose();
+    _docTools.dispose();
   }
 }

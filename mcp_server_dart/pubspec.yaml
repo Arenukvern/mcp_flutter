@@ -20,6 +20,8 @@ dependencies:
   dtd: ^3.0.0
   equatable: ^2.0.7
   from_json_to_json: ^0.2.0
+  github: ^9.25.0
+  html: ^0.15.6
   http: ^1.4.0
   is_dart_empty_or_not: ^0.2.0
   json_rpc_2: ^4.0.0

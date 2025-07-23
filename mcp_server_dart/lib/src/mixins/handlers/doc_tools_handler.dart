@@ -9,6 +9,8 @@ import 'package:flutter_inspector_mcp_server/src/base_server.dart';
 import 'package:flutter_inspector_mcp_server/src/mixins/vm_service_support.dart';
 import 'package:flutter_inspector_mcp_server/src/services/dart_vm_doc_service.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
+import 'package:github/github.dart';
+import 'package:html/parser.dart';
 import 'package:http/http.dart' as http;
 import 'package:is_dart_empty_or_not/is_dart_empty_or_not.dart';
 import 'package:logging/logging.dart';
@@ -43,12 +45,46 @@ class DocToolsHandler {
     // Initialize the VM documentation service
     _vmDocService = DartVmDocService(logger: Logger('DocToolsHandler'));
     _logger = Logger('DocToolsHandler');
+    _github = GitHub();
   }
-
+  late final GitHub _github;
   final BaseMCPToolkitServer server;
   final VMServiceSupport vmService;
   late final DartVmDocService _vmDocService;
   late final Logger _logger;
+  void dispose() {
+    _github.dispose();
+  }
+
+  /// Check if a package exists on pub.dev using the official API
+  Future<bool> _packageExistsOnPubDev(final String packageName) async {
+    try {
+      // Use the official pub.dev API to check package existence
+      final response = await http.get(
+        Uri.parse('https://pub.dev/api/packages/$packageName'),
+        headers: {'accept-encoding': 'gzip'},
+      );
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Get package info from pub.dev using the official Hosted Pub Repository API
+  Future<Map<String, dynamic>?> _getPackageInfoFromPubDev(
+    final String packageName,
+  ) async {
+    try {
+      final response = await http.get(
+        Uri.parse('https://pub.dev/api/packages/$packageName'),
+        headers: {'accept-encoding': 'gzip'},
+      );
+      if (response.statusCode == 200) {
+        return jsonDecodeMapAs<String, dynamic>(response.body);
+      }
+    } catch (_) {}
+    return null;
+  }
 
   /// Tool to get pub package documentation (README)
   static final getPubDoc = Tool(
@@ -154,8 +190,13 @@ class DocToolsHandler {
         if (pubspecFile.existsSync()) {
           final pubspecContent = pubspecFile.readAsStringSync();
           final pubspec = loadYaml(pubspecContent) as YamlMap;
+          // Check both dependencies and dev_dependencies
           final deps = pubspec['dependencies'] as YamlMap?;
-          final dep = deps != null ? deps[package] : null;
+          final devDeps = pubspec['dev_dependencies'] as YamlMap?;
+          final dep =
+              (deps != null ? deps[package] : null) ??
+              (devDeps != null ? devDeps[package] : null);
+
           if (dep is String) {
             // Hosted dependency
             resolvedPackage = package;
@@ -205,7 +246,6 @@ class DocToolsHandler {
             TextContent(text: content),
             TextContent(text: '{"source":"local_path"}'),
           ],
-          isError: false,
         );
       }
     }
@@ -220,28 +260,69 @@ class DocToolsHandler {
             TextContent(text: content),
             TextContent(text: '{"source":"git"}'),
           ],
-          isError: false,
         );
       }
     }
-
     // 3. pub.dev
     if (effectivePackage.isNotEmpty) {
-      final pubDevUrl =
-          'https://pub.dev/packages/$effectivePackage/versions/latest/README.md';
-      try {
-        final response = await http.get(Uri.parse(pubDevUrl));
-        if (response.statusCode == 200) {
+      // First check if package exists on pub.dev using official API
+      final packageExists = await _packageExistsOnPubDev(effectivePackage);
+
+      if (packageExists) {
+        // Try to get the latest version's README
+        try {
+          final readmeUrl =
+              'https://pub.dev/documentation/$effectivePackage/latest/';
+          final response = await http.get(Uri.parse(readmeUrl));
+
+          if (response.statusCode == 200) {
+            final document = parse(response.body);
+            final readme = document.getElementById('dartdoc-main-content');
+            if (readme != null) {
+              // Extract the README in markdown-like format, preserving text order
+              // dartdoc-main-content may contain HTML, so walk children in order
+              final StringBuffer markdown = StringBuffer();
+              for (final node in readme.children) {
+                final tag = node.localName;
+                if (tag == 'pre') {
+                  markdown.writeln('```\n${node.text.trim()}\n```');
+                  markdown.writeln();
+                } else if (tag == 'p' ||
+                    tag == 'h1' ||
+                    tag == 'h2' ||
+                    tag == 'h3' ||
+                    tag == 'h4' ||
+                    tag == 'h5' ||
+                    tag == 'h6') {
+                  markdown.writeln(node.text.trim());
+                  markdown.writeln();
+                } else if (tag == 'ul' || tag == 'ol') {
+                  for (final li in node.children.where(
+                    (final c) => c.localName == 'li',
+                  )) {
+                    markdown.writeln('- ${li.text.trim()}');
+                  }
+                  markdown.writeln();
+                }
+              }
+              // Fallback: if markdown is empty, use the full text
+              final result =
+                  markdown.toString().trim().isEmpty
+                      ? readme.text.trim()
+                      : markdown.toString().trim();
+              return CallToolResult(content: [TextContent(text: result)]);
+            }
+          }
+        } catch (e, s) {
+          _logger.severe('Error getting README from pub.dev: $e', s);
           return CallToolResult(
             content: [
-              TextContent(text: response.body),
-              TextContent(text: '{"source":"pub.dev"}'),
+              TextContent(text: 'Error getting README from pub.dev: $e'),
             ],
-            isError: false,
+            isError: true,
           );
         }
-      } catch (_) {}
-
+      }
       // 4. Fallback: try local pub cache
       String pubCache;
       if (fvmSdkPath.isNotEmpty) {
@@ -287,7 +368,6 @@ class DocToolsHandler {
             TextContent(text: readmeContent),
             TextContent(text: '{"source":"local"}'),
           ],
-          isError: false,
         );
       }
     }
@@ -296,388 +376,5 @@ class DocToolsHandler {
       content: [TextContent(text: '{"source":"not_found"}')],
       isError: false,
     );
-  }
-
-  /// Handle get_dart_member_doc tool calls (supports VM Service and LSP modes)
-  FutureOr<CallToolResult> handleGetDartMemberDoc(
-    final CallToolRequest request,
-  ) async {
-    final args = request.arguments;
-    final member = jsonDecodeString(args?['member']);
-    final isolateId = jsonDecodeString(args?['isolate_id']);
-    final filePath = jsonDecodeString(args?['file_path']);
-    final line = jsonDecodeInt(args?['line']);
-    final character = jsonDecodeInt(args?['character']);
-
-    if (member.isEmpty) {
-      return CallToolResult(
-        content: [TextContent(text: 'Member name is required')],
-        isError: true,
-      );
-    }
-
-    try {
-      // If specific position is provided, use LSP hover
-      if (filePath.isNotEmpty && !line.isZero && !character.isZero) {
-        return await _handleHoverBasedExtraction(filePath, line, character);
-      }
-
-      // Auto-discover member location if not explicitly provided
-      MemberLocation? location;
-      if (filePath.isEmpty || line.isZero || character.isZero) {
-        _logger.info('Auto-discovering location for member: $member');
-        location = await _findMemberInProject(member);
-
-        if (location == null) {
-          return CallToolResult(
-            content: [
-              TextContent(
-                text:
-                    'Member "$member" not found in current project.\n\n'
-                    'Searched in all .dart files in the current directory and subdirectories.\n'
-                    'Make sure:\n'
-                    '1. The member name is spelled correctly\n'
-                    '2. The member is defined in a .dart file in this project\n'
-                    '3. You are running this from the project root directory',
-              ),
-            ],
-            isError: false,
-          );
-        }
-
-        _logger.info('Found member at: $location');
-
-        // Use discovered location for hover-based extraction
-        return await _handleHoverBasedExtraction(
-          location.filePath,
-          location.line,
-          location.character,
-        );
-      }
-
-      // Otherwise use member-based extraction with LSP fallback
-      return await _handleMemberBasedExtraction(
-        member,
-        isolateId,
-        filePath: filePath.isEmpty ? null : filePath,
-      );
-    } catch (e) {
-      return CallToolResult(
-        content: [TextContent(text: 'Error extracting documentation: $e')],
-        isError: true,
-      );
-    }
-  }
-
-  /// Handle get_dart_hover_doc tool calls
-  FutureOr<CallToolResult> handleGetDartHoverDoc(
-    final CallToolRequest request,
-  ) async {
-    final args = request.arguments;
-    final filePath = jsonDecodeString(args?['file_path']);
-    final line = jsonDecodeInt(args?['line']);
-    final character = jsonDecodeInt(args?['character']);
-
-    if (filePath.isEmpty) {
-      return CallToolResult(
-        content: [TextContent(text: 'file_path parameter is required')],
-        isError: true,
-      );
-    }
-
-    if (line.isZero || character.isZero) {
-      return CallToolResult(
-        content: [
-          TextContent(text: 'line and character parameters are required'),
-        ],
-        isError: true,
-      );
-    }
-
-    try {
-      return await _handleHoverBasedExtraction(filePath, line, character);
-    } catch (e) {
-      return CallToolResult(
-        content: [TextContent(text: 'Error getting hover documentation: $e')],
-        isError: true,
-      );
-    }
-  }
-
-  /// Handle hover-based documentation extraction using LSP
-  Future<CallToolResult> _handleHoverBasedExtraction(
-    final String filePath,
-    final int line,
-    final int character,
-  ) async {
-    try {
-      final documentation = await _vmDocService.getHoverDocumentation(
-        filePath,
-        line,
-        character,
-      );
-
-      if (documentation != null && documentation.isNotEmpty) {
-        return CallToolResult(content: [TextContent(text: documentation)]);
-      } else {
-        return CallToolResult(
-          content: [
-            TextContent(
-              text:
-                  'No documentation found at position $line:$character in $filePath.\n\n'
-                  'Make sure:\n'
-                  '1. The file path is correct\n'
-                  '2. The position contains a valid Dart symbol\n'
-                  '3. The Dart analysis server is accessible',
-            ),
-          ],
-        );
-      }
-    } catch (e) {
-      return CallToolResult(
-        content: [TextContent(text: 'Error getting hover documentation: $e')],
-        isError: true,
-      );
-    }
-  }
-
-  /// Handle member name-based documentation extraction (VM Service with LSP fallback)
-  Future<CallToolResult> _handleMemberBasedExtraction(
-    final String member,
-    final String? isolateId, {
-    final String? filePath,
-  }) async {
-    try {
-      // Ensure VM service is connected
-      final connected = await vmService.ensureVMServiceConnected();
-      if (!connected) {
-        return CallToolResult(
-          content: [
-            TextContent(
-              text:
-                  'No VM Service connection. Please ensure a Flutter/Dart app is running in debug mode.',
-            ),
-          ],
-          isError: true,
-        );
-      }
-
-      final vmServiceInstance = vmService.vmService!;
-
-      // Get the documentation using the VM service with LSP fallback
-      final documentation = await _vmDocService.getMemberDocumentation(
-        member,
-        vmServiceInstance,
-        isolateId: isolateId,
-        filePath: filePath,
-      );
-
-      if (documentation != null && documentation.isNotEmpty) {
-        return CallToolResult(content: [TextContent(text: documentation)]);
-      } else {
-        return CallToolResult(
-          content: [
-            TextContent(
-              text:
-                  'No documentation found for member "$member".\n\n'
-                  'Make sure:\n'
-                  '1. The member name is correct\n'
-                  '2. The Flutter/Dart app is running\n'
-                  '3. The member is loaded in the current app context',
-            ),
-          ],
-        );
-      }
-    } catch (e) {
-      return CallToolResult(
-        content: [
-          TextContent(text: 'Error getting documentation for "$member": $e'),
-        ],
-        isError: true,
-      );
-    }
-  }
-
-  /// Automatically find a Dart member in the current project
-  Future<MemberLocation?> _findMemberInProject(final String memberName) async {
-    try {
-      final currentDir = Directory.current;
-      final dartFiles = await _findDartFiles(currentDir);
-
-      _logger.info(
-        'Searching for "$memberName" in ${dartFiles.length} Dart files',
-      );
-
-      for (final file in dartFiles) {
-        final location = await _searchMemberInFile(file, memberName);
-        if (location != null) {
-          return location;
-        }
-      }
-
-      return null;
-    } catch (e) {
-      _logger.severe('Error finding member in project: $e');
-      return null;
-    }
-  }
-
-  /// Recursively find all .dart files in the project
-  Future<List<File>> _findDartFiles(final Directory directory) async {
-    final dartFiles = <File>[];
-
-    try {
-      final entities = directory.listSync(recursive: true);
-      for (final entity in entities) {
-        if (entity is File && entity.path.endsWith('.dart')) {
-          // Skip generated files and common exclusions
-          final relativePath = p.relative(
-            entity.path,
-            from: Directory.current.path,
-          );
-          if (!_shouldSkipFile(relativePath)) {
-            dartFiles.add(entity);
-          }
-        }
-      }
-    } catch (e) {
-      _logger.warning('Error listing files in ${directory.path}: $e');
-    }
-
-    return dartFiles;
-  }
-
-  /// Check if a file should be skipped during search
-  bool _shouldSkipFile(final String relativePath) {
-    final skipPatterns = [
-      '.dart_tool/',
-      'build/',
-      '.pub-cache/',
-      'android/',
-      'ios/',
-      'linux/',
-      'macos/',
-      'web/',
-      'windows/',
-      '.freezed.dart',
-      '.g.dart',
-      '.gr.dart',
-      'generated_plugin_registrant.dart',
-    ];
-
-    return skipPatterns.any(relativePath.contains);
-  }
-
-  /// Search for a specific member in a Dart file
-  Future<MemberLocation?> _searchMemberInFile(
-    final File file,
-    final String memberName,
-  ) async {
-    try {
-      final content = await file.readAsString();
-      final lines = content.split('\n');
-
-      // Define regex patterns for different member types
-      final patterns = [
-        // Class definitions
-        RegExp(
-          r'^\s*(?:abstract\s+)?class\s+' + RegExp.escape(memberName) + r'\b',
-          multiLine: true,
-        ),
-        // Mixin definitions
-        RegExp(
-          r'^\s*mixin\s+' + RegExp.escape(memberName) + r'\b',
-          multiLine: true,
-        ),
-        // Enum definitions
-        RegExp(
-          r'^\s*enum\s+' + RegExp.escape(memberName) + r'\b',
-          multiLine: true,
-        ),
-        // Extension definitions
-        RegExp(
-          r'^\s*extension\s+' + RegExp.escape(memberName) + r'\b',
-          multiLine: true,
-        ),
-        // Function definitions (top-level)
-        RegExp(
-          r'^\s*(?:[\w<>?,\s]+\s+)?' + RegExp.escape(memberName) + r'\s*\(',
-          multiLine: true,
-        ),
-        // Method definitions (within class)
-        RegExp(
-          r'^\s*(?:[\w<>?,\s]+\s+)?' + RegExp.escape(memberName) + r'\s*\(',
-          multiLine: true,
-        ),
-        // Variable/field definitions
-        RegExp(
-          r'^\s*(?:final\s+|var\s+|const\s+|static\s+)*(?:[\w<>?,\s]+\s+)?' +
-              RegExp.escape(memberName) +
-              r'\s*[=;]',
-          multiLine: true,
-        ),
-        // Typedef definitions
-        RegExp(
-          r'^\s*typedef\s+' + RegExp.escape(memberName) + r'\b',
-          multiLine: true,
-        ),
-      ];
-
-      for (int i = 0; i < patterns.length; i++) {
-        final pattern = patterns[i];
-        final match = pattern.firstMatch(content);
-
-        if (match != null) {
-          final matchStart = match.start;
-          final lineNumber =
-              content.substring(0, matchStart).split('\n').length - 1;
-          final lineStart =
-              lineNumber == 0
-                  ? 0
-                  : content.lastIndexOf('\n', matchStart - 1) + 1;
-          final character = matchStart - lineStart;
-
-          final memberType = _determineMemberType(match.group(0) ?? '');
-
-          return MemberLocation(
-            filePath: file.path,
-            line: lineNumber,
-            character: character,
-            memberType: memberType,
-            fullMatch: match.group(0) ?? '',
-          );
-        }
-      }
-
-      return null;
-    } catch (e) {
-      _logger.warning('Error searching in file ${file.path}: $e');
-      return null;
-    }
-  }
-
-  /// Determine the type of member based on the matched text
-  String _determineMemberType(final String matchText) {
-    final trimmed = matchText.trim().toLowerCase();
-
-    if (trimmed.startsWith('class')) return 'class';
-    if (trimmed.startsWith('abstract class')) return 'abstract class';
-    if (trimmed.startsWith('mixin')) return 'mixin';
-    if (trimmed.startsWith('enum')) return 'enum';
-    if (trimmed.startsWith('extension')) return 'extension';
-    if (trimmed.startsWith('typedef')) return 'typedef';
-    if (trimmed.contains('(')) {
-      if (trimmed.startsWith('static') ||
-          matchText.trim().contains(' static ')) {
-        return 'static method';
-      }
-      return 'function/method';
-    }
-    if (trimmed.startsWith('final')) return 'final field';
-    if (trimmed.startsWith('const')) return 'const field';
-    if (trimmed.startsWith('var')) return 'variable';
-    if (trimmed.startsWith('static')) return 'static field';
-
-    return 'member';
   }
 }
