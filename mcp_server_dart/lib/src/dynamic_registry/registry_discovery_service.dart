@@ -7,7 +7,7 @@ import 'package:dart_mcp/server.dart';
 import 'package:dtd/dtd.dart';
 import 'package:flutter_inspector_mcp_server/flutter_inspector_mcp_server.dart';
 import 'package:flutter_inspector_mcp_server/src/dynamic_registry/dynamic_registry.dart';
-import 'package:flutter_inspector_mcp_server/src/mixins/flutter_inspector.dart';
+import 'package:flutter_inspector_mcp_server/src/mixins/mcp_toolkit_consts.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
 import 'package:rx/constructors.dart';
 import 'package:rx/converters.dart';
@@ -135,7 +135,7 @@ final class RegistryDiscoveryService {
         case 'ServiceExtensionStateChanged':
           // Tool state changed - might need re-registration
           final extensionName = jsonDecodeString(eventData['extension']);
-          if (extensionName.contains('registerDynamics')) {
+          if (extensionName.contains(mcpToolkitExtNames.registerDynamics)) {
             await registerToolsAndResources();
           }
         default:
@@ -165,7 +165,7 @@ final class RegistryDiscoveryService {
       );
 
       final response = await server.callFlutterExtension(
-        '$mcpToolkitExt.registerDynamics',
+        '$mcpToolkitExt.${mcpToolkitExtNames.registerDynamics}',
       );
 
       final data = jsonDecodeMap(response.json);

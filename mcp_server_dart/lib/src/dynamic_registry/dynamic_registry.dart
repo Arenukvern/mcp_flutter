@@ -7,7 +7,7 @@ import 'dart:convert';
 import 'package:dart_mcp/server.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_inspector_mcp_server/flutter_inspector_mcp_server.dart';
-import 'package:flutter_inspector_mcp_server/src/mixins/flutter_inspector.dart';
+import 'package:flutter_inspector_mcp_server/src/mixins/mcp_toolkit_consts.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
 import 'package:is_dart_empty_or_not/is_dart_empty_or_not.dart';
 import 'package:meta/meta.dart';
