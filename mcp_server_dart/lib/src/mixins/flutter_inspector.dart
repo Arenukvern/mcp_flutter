@@ -16,7 +16,7 @@ base mixin FlutterInspector
   late final _debugTools = DebugToolsHandler(server: this, vmService: this);
   late final _vmTools = VMToolsHandler(server: this, vmService: this);
   late final _resourceHandler = ResourceHandler(server: this, vmService: this);
-  late final _docTools = DocToolsHandler(server: this);
+  late final _docTools = DocToolsHandler(server: this, vmService: this);
 
   @override
   FutureOr<InitializeResult> initialize(final InitializeRequest request) {
@@ -50,6 +50,10 @@ base mixin FlutterInspector
     registerTool(
       DocToolsHandler.getDartMemberDoc,
       _docTools.handleGetDartMemberDoc,
+    );
+    registerTool(
+      DocToolsHandler.getDartHoverDoc,
+      _docTools.handleGetDartHoverDoc,
     );
 
     // Register debug dump tools
