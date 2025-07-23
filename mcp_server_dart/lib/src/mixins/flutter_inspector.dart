@@ -14,10 +14,9 @@ import 'package:flutter_inspector_mcp_server/src/mixins/vm_service_support.dart'
 base mixin FlutterInspector
     on BaseMCPToolkitServer, ToolsSupport, ResourcesSupport, VMServiceSupport {
   late final _debugTools = DebugToolsHandler(server: this, vmService: this);
-
   late final _vmTools = VMToolsHandler(server: this, vmService: this);
-
   late final _resourceHandler = ResourceHandler(server: this, vmService: this);
+  late final _docTools = DocToolsHandler(server: this);
 
   @override
   FutureOr<InitializeResult> initialize(final InitializeRequest request) {
@@ -40,6 +39,18 @@ base mixin FlutterInspector
       _vmTools.getExtensionRpcs,
     );
     registerTool(VMToolsHandler.getActivePortsTool, _vmTools.getActivePorts);
+
+    // Register documentation tools
+    log(
+      LoggingLevel.debug,
+      'Registering documentation tools',
+      logger: 'FlutterInspector',
+    );
+    registerTool(DocToolsHandler.getPubDoc, _docTools.handleGetPubDoc);
+    registerTool(
+      DocToolsHandler.getDartMemberDoc,
+      _docTools.handleGetDartMemberDoc,
+    );
 
     // Register debug dump tools
     if (configuration.dumpsSupported) {
@@ -84,10 +95,10 @@ base mixin FlutterInspector
     } else {
       log(
         LoggingLevel.debug,
-        'Registering Flutter functionality as tools (resources disabled)',
+        'Resources disabled, registering as tools',
         logger: 'FlutterInspector',
       );
-      // Register as tools instead
+      // Register as tools (alternative behavior)
       _registerResourcesAsTools();
     }
 
