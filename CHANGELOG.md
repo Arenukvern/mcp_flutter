@@ -1,3 +1,7 @@
+## 2.4.0
+
+- mcp_toolkit: ^0.3.0 with breaking changes, see [mcp_toolkit/mcp_toolkit/CHANGELOG.md](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_toolkit/mcp_toolkit/CHANGELOG.md)
+
 ## 2.3.1
 
 - added new examples for MCPToolkit package dynamic tools usage see [flutter_test_app/lib/main.dart](https://github.com/Arenukvern/mcp_flutter/tree/main/flutter_test_app/lib)

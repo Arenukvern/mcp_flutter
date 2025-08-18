@@ -1,3 +1,14 @@
+## 0.3.0
+
+BREAKING CHANGES:
+
+Dart SDK: 3.8.0
+
+- chore: dart_mcp: ^0.3.30
+- chore: from_json_to_json: ^0.3.0
+- chore: lints: ^6.0.0
+- chore: xsoulspace_lints: ^0.1.2
+
 ## 0.2.3
 
 - perf: added more checks for [MCPCallEntry.resourceUri]
