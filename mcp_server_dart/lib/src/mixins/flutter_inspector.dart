@@ -59,6 +59,7 @@ base mixin FlutterInspector
       logger: 'FlutterInspector',
     );
     registerTool(hotReloadTool, _hotReload);
+    registerTool(hotRestartTool, _hotRestart);
     registerTool(getVmTool, _getVm);
     registerTool(getExtensionRpcsTool, _getExtensionRpcs);
     registerTool(getActivePortsTool, _getActivePorts);
@@ -279,6 +280,48 @@ base mixin FlutterInspector
       return CallToolResult(
         isError: true,
         content: [TextContent(text: 'Failed to get VM info: $e')],
+      );
+    }
+  }
+
+  /// Hot restart the Flutter application.
+  Future<CallToolResult> _hotRestart(final CallToolRequest request) async {
+    log(
+      LoggingLevel.info,
+      'Executing hot restart tool',
+      logger: 'FlutterInspector',
+    );
+
+    final connected = await ensureVMServiceConnected();
+    if (!connected) {
+      log(
+        LoggingLevel.error,
+        'Hot restart tool failed: VM service not connected',
+        logger: 'FlutterInspector',
+      );
+      return CallToolResult(
+        isError: true,
+        content: [TextContent(text: 'VM service not connected')],
+      );
+    }
+
+    try {
+      final result = await hotRestart();
+      return CallToolResult(content: [TextContent(text: jsonEncode(result))]);
+    } on Exception catch (e, s) {
+      log(
+        LoggingLevel.error,
+        'Hot restart tool failed: $e',
+        logger: 'FlutterInspector',
+      );
+      log(
+        LoggingLevel.debug,
+        () => 'Stack trace: $s',
+        logger: 'FlutterInspector',
+      );
+      return CallToolResult(
+        isError: true,
+        content: [TextContent(text: 'Hot restart failed: $e')],
       );
     }
   }
@@ -645,6 +688,21 @@ base mixin FlutterInspector
         'force': Schema.bool(
           description:
               'If true, forces a hot reload even if there are no changes to the source code',
+        ),
+      },
+    ),
+  );
+
+  @visibleForTesting
+  static final hotRestartTool = Tool(
+    name: 'hot_restart_flutter',
+    description:
+        'Hot restarts the Flutter app (full restart; state not preserved).',
+    inputSchema: Schema.object(
+      properties: {
+        'port': Schema.int(
+          description:
+              'Optional: Custom port number if not using default Flutter debug port 8181',
         ),
       },
     ),
