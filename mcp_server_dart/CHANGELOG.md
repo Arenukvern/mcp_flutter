@@ -2,7 +2,7 @@
 
 ## 0.2.0
 
-Huge thank you to [cosystudio](https://github.com/cosystudio) for PR with Hot Restart tool and docs! https://github.com/Arenukvern/mcp_flutter/pull/67
+Huge thank you to [CommentakMedia](https://github.com/CommentakMedia) for PR with Hot Restart tool and docs! https://github.com/Arenukvern/mcp_flutter/pull/67
 
 ### Added
 
