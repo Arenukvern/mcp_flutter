@@ -22,7 +22,8 @@ class VMToolsHandler {
 
   static final hotRestartTool = Tool(
     name: 'hot_restart_flutter',
-    description: 'Hot restarts the Flutter app.',
+    description:
+        'Hot restarts the Flutter app (full restart; state not preserved).',
     inputSchema: Schema.object(
       properties: {
         'port': Schema.int(
