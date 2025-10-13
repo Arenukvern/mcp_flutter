@@ -110,6 +110,16 @@
         "maintenance",
         "doc"
       ]
+    },
+    {
+      "login": "arslanmit",
+      "name": "Umit Arslan",
+      "avatar_url": "https://avatars.githubusercontent.com/u/4801240?v=4",
+      "profile": "https://www.linkedin.com/in/umitarslan/",
+      "contributions": [
+        "code",
+        "maintenance"
+      ]
     }
   ]
 }
