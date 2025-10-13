@@ -1,0 +1,39 @@
+# Development Dockerfile - faster builds, no compilation
+# Use this for development/testing where you need quick iteration
+# Build: docker build -f Dockerfile.dev -t mcp_server:dev .
+# Run: docker run -i mcp_server:dev
+
+FROM dart:3.7.0-sdk
+
+WORKDIR /app
+
+# Install tini for proper signal handling
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends tini && \
+    rm -rf /var/lib/apt/lists/* && \
+    apt-get clean
+
+# Copy dependency files first (layer caching optimization)
+COPY pubspec.yaml pubspec.lock ./
+RUN dart pub get
+
+# Copy source code
+COPY bin/ ./bin/
+COPY lib/ ./lib/
+COPY analysis_options.yaml ./
+
+# Create non-root user for security
+RUN useradd -r -u 1001 -m mcpuser && \
+    chown -R mcpuser:mcpuser /app
+
+# Switch to non-root user
+USER mcpuser
+
+# Note: MCP servers communicate via stdio (stdin/stdout), not network ports
+
+# Use tini for proper signal forwarding to Dart VM
+ENTRYPOINT ["/usr/bin/tini", "--"]
+
+# Run via dart VM (not compiled) for easier debugging
+CMD ["dart", "run", "bin/main.dart", "--resources", "--images", "--log-level=debug"]
+

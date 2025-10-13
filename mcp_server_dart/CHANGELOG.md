@@ -1,5 +1,10 @@
 # Changelog
 
+## [unreleased]
+
+- dockerfile for MCP Server - not tested.
+  Huge thank you to [arslanmit](https://github.com/arslanmit) for PR with Dockerfile! https://github.com/Arenukvern/mcp_flutter/pull/64
+
 ## 0.2.0
 
 Huge thank you to [CommentakMedia](https://github.com/CommentakMedia) for PR with Hot Restart tool and docs! https://github.com/Arenukvern/mcp_flutter/pull/67

@@ -1,3 +1,8 @@
+## [unreleased]
+
+- dockerfile for MCP Server - not tested.
+  Huge thank you to [arslanmit](https://github.com/arslanmit) for PR with Dockerfile! https://github.com/Arenukvern/mcp_flutter/pull/64
+
 ## 2.5.0
 
 - new tool: `hot_restart_flutter` to perform VM Service Hot Restart from MCP.

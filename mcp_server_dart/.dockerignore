@@ -1,0 +1,53 @@
+# Git files
+.git/
+.gitignore
+.github/
+
+# Dart tool cache
+.dart_tool/
+.packages
+build/
+
+# IDE files
+.vscode/
+.idea/
+*.iml
+*.code-workspace
+
+# Documentation (except README)
+*.md
+!README.md
+docs/
+experiments/
+
+# Test files
+test/
+coverage/
+*.test.dart
+
+# Build artifacts
+*.log
+*.tmp
+*.temp
+
+# Docker files
+.dockerignore
+Dockerfile*
+docker-compose*.yml
+
+# Development files
+makefile
+Makefile
+
+# Example files
+example/
+
+# Local configuration
+.env
+.env.*
+*.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
