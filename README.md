@@ -42,21 +42,16 @@ _For AI-Powered Development_
 >
 > Have a nice day!
 
-## 🎉 v2.3.0 released! 🎉
+**Major Difference of this MCP server from official Dart MCP Server:**
 
-- feature: Added support for saving captured screenshots as files instead of returning them as base64 data, with automatic cleanup of old screenshots. Use (`--save-images`) flag to enable it.
-
-- fix: Fixed various issues with dynamic registry, made logs level error by default.
-
-- perf: v0.2.3 - added more checks for [MCPCallEntry.resourceUri] for MCPToolkit package (MCPToolkit updated to v0.2.3)
-- disabled resources support by default for RooCode and Cline setups (for unknown reason it doesn't work)
-- added section for RooCode in QUICK_START.md
-- Huge thank you to [cosystudio](https://github.com/cosystudio) for raising, researching and (describing issues)[https://github.com/Arenukvern/mcp_flutter/issues/53] with RooCode MCP server.
-
-**Major Changes in v2.2.0:**
-
-- **Dart-based MCP Server now is the main server**: Typescript server removed, and `mcp_server_dart` is the main server.
 - **Dynamic Tools Registration**: Flutter apps can now register custom tools at the MCP server. See how it works in [short YouTube video](https://www.youtube.com/watch?v=Qog3x2VcO98). See [Dynamic Tools Registration Docs](https://github.com/Arenukvern/mcp_flutter/blob/main/QUICK_START.md#dynamic-tools-registration) for more details.
+
+## 🎉 v2.5.0 released! 🎉
+
+- new tool: `hot_restart_flutter` to perform VM Service Hot Restart from MCP.
+- VM service integration method `hotRestart()` with namespaced service discovery fallback.
+
+Huge thank you to [CommentakMedia](https://github.com/CommentakMedia) for PR with Hot Restart tool and docs! https://github.com/Arenukvern/mcp_flutter/pull/67
 
 See more details in [CHANGELOG.md](CHANGELOG.md).
 
@@ -178,6 +173,8 @@ Huge thanks to all contributors for making this project better!
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/cosystudio"><img src="https://avatars.githubusercontent.com/u/149987661?v=4?s=100" width="100px;" alt="Cosy Studio"/><br /><sub><b>Cosy Studio</b></sub></a><br /><a href="#userTesting-cosystudio" title="User Testing">📓</a> <a href="#bug-cosystudio" title="Bug reports">🐛</a> <a href="#research-cosystudio" title="Research">🔬</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/lukemmtt"><img src="https://avatars.githubusercontent.com/u/1598289?v=4?s=100" width="100px;" alt="Luke Memet"/><br /><sub><b>Luke Memet</b></sub></a><br /><a href="#userTesting-lukemmtt" title="User Testing">📓</a> <a href="#research-lukemmtt" title="Research">🔬</a> <a href="#maintenance-lukemmtt" title="Maintenance">🚧</a> <a href="#tutorial-lukemmtt" title="Tutorials">✅</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://commentatk-media.com"><img src="https://avatars.githubusercontent.com/u/70331129?v=4?s=100" width="100px;" alt="Commentatk Media"/><br /><sub><b>Commentatk Media</b></sub></a><br /><a href="#code-CommentakMedia" title="Code">💻</a> <a href="#maintenance-CommentakMedia" title="Maintenance">🚧</a> <a href="#doc-CommentakMedia" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://www.linkedin.com/in/umitarslan/"><img src="https://avatars.githubusercontent.com/u/4801240?v=4?s=100" width="100px;" alt="Umit Arslan"/><br /><sub><b>Umit Arslan</b></sub></a><br /><a href="#code-arslanmit" title="Code">💻</a> <a href="#maintenance-arslanmit" title="Maintenance">🚧</a></td>
     </tr>
   </tbody>
 </table>

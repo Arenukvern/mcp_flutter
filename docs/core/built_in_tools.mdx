@@ -2,11 +2,36 @@
 
 The Flutter MCP Toolkit comes with a set of pre-built tools and resources for common development tasks.
 
+Note:
+
+- Requires a connected Flutter app in debug mode with VM service enabled (see the run flags above).
+- If VM service is not connected, the tool returns an error message instead of failing the whole request.
+
 ### Core Tools
 
 - **`hot_reload_flutter`**: Performs a hot reload of the Flutter app.
+- **`hot_restart_flutter`**: Performs a hot restart of the Flutter app.
 - **`get_vm`**: Returns information about the Dart VM.
 - **`get_extension_rpcs`**: Lists the available extension RPCs in the Flutter app.
+
+### Hot Restart Tool Usage
+
+The server now provides a dedicated hot restart tool for situations where hot reload isn't sufficient (for example after adding service extensions or when the app state is corrupted):
+
+```json
+{
+  "name": "hot_restart_flutter",
+  "arguments": {}
+}
+```
+
+Expected result:
+
+```json
+{
+  "message": "{\"report\":{\"type\":\"Success\",\"success\":true}}"
+}
+```
 
 ### Debug Dump Tools
 

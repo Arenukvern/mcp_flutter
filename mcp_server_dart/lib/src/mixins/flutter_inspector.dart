@@ -33,6 +33,7 @@ base mixin FlutterInspector
       logger: 'FlutterInspector',
     );
     registerTool(VMToolsHandler.hotReloadTool, _vmTools.hotReload);
+    registerTool(VMToolsHandler.hotRestartTool, _vmTools.hotRestart);
     registerTool(VMToolsHandler.getVmTool, _vmTools.getVm);
     registerTool(
       VMToolsHandler.getExtensionRpcsTool,

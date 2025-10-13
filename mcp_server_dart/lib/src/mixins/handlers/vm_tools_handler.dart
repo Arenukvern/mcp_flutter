@@ -20,6 +20,19 @@ class VMToolsHandler {
   final VMServiceSupport vmService;
   late final _portScanner = PortScanner(server: server);
 
+  static final hotRestartTool = Tool(
+    name: 'hot_restart_flutter',
+    description: 'Hot restarts the Flutter app.',
+    inputSchema: Schema.object(
+      properties: {
+        'port': Schema.int(
+          description:
+              'Optional: Custom port number if not using default Flutter debug port 8181',
+        ),
+      },
+    ),
+  );
+
   // Tool definitions
   static final hotReloadTool = Tool(
     name: 'hot_reload_flutter',
@@ -86,6 +99,48 @@ class VMToolsHandler {
       },
     ),
   );
+
+  /// Hot restart the Flutter application.
+  Future<CallToolResult> hotRestart(final CallToolRequest request) async {
+    server.log(
+      LoggingLevel.info,
+      'Executing hot restart tool',
+      logger: 'FlutterInspector',
+    );
+
+    final connected = await vmService.ensureVMServiceConnected();
+    if (!connected) {
+      server.log(
+        LoggingLevel.error,
+        'Hot restart tool failed: VM service not connected',
+        logger: 'FlutterInspector',
+      );
+      return CallToolResult(
+        isError: true,
+        content: [TextContent(text: 'VM service not connected')],
+      );
+    }
+
+    try {
+      final result = await vmService.hotRestart();
+      return CallToolResult(content: [TextContent(text: jsonEncode(result))]);
+    } on Exception catch (e, s) {
+      server.log(
+        LoggingLevel.error,
+        'Hot restart tool failed: $e',
+        logger: 'FlutterInspector',
+      );
+      server.log(
+        LoggingLevel.debug,
+        () => 'Stack trace: $s',
+        logger: 'FlutterInspector',
+      );
+      return CallToolResult(
+        isError: true,
+        content: [TextContent(text: 'Hot restart failed: $e')],
+      );
+    }
+  }
 
   /// Hot reload the Flutter application.
   Future<CallToolResult> hotReload(final CallToolRequest request) async {

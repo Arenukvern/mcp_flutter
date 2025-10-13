@@ -564,4 +564,95 @@ base mixin VMServiceSupport on BaseMCPToolkitServer {
       return false;
     }
   }
+
+  /// Hot restart the Flutter app using VM service registered service 'hotRestart'.
+  /// Falls back to calling the registered method name if a namespaced version is found.
+  Future<Map<String, dynamic>?> hotRestart() async {
+    log(LoggingLevel.info, 'Starting hot restart', logger: 'VMService');
+
+    final vmService = this.vmService;
+    if (vmService == null) {
+      log(
+        LoggingLevel.error,
+        'Hot restart failed: VM service not connected',
+        logger: 'VMService',
+      );
+      return {'error': 'VM service not connected'};
+    }
+
+    try {
+      // Listen for service registration to discover a namespaced hotRestart method
+      String? hotRestartMethodName;
+      StreamSubscription<Event>? eventSubscription;
+      try {
+        final completer = Completer<String?>();
+        eventSubscription = vmService.onEvent(EventStreams.kService).listen((
+          final e,
+        ) {
+          if (e.kind == EventKind.kServiceRegistered) {
+            final serviceName = e.service;
+            if (serviceName == 'hotRestart') {
+              log(
+                LoggingLevel.debug,
+                'Found hot restart service: ${e.method}',
+                logger: 'VMService',
+              );
+              if (!completer.isCompleted) completer.complete(e.method);
+            }
+          }
+        });
+
+        await vmService.streamListen(EventStreams.kService);
+
+        // Give it a brief moment to capture any registration events
+        hotRestartMethodName = await completer.future.timeout(
+          const Duration(milliseconds: 800),
+          onTimeout: () => null,
+        );
+      } finally {
+        try {
+          await eventSubscription?.cancel();
+          await vmService.streamCancel(EventStreams.kService);
+        } catch (_) {
+          /* ignore */
+        }
+      }
+
+      // If no namespaced method discovered, try the default service call
+      final String methodToCall = hotRestartMethodName ?? 'hotRestart';
+      log(
+        LoggingLevel.debug,
+        'Invoking hot restart via ${hotRestartMethodName == null ? 'default' : 'namespaced'} method: $methodToCall',
+        logger: 'VMService',
+      );
+
+      // Use callMethod for service calls (not callServiceExtension)
+      final Response response = await vmService.callMethod(methodToCall);
+      final json = response.json;
+      final result = <String, dynamic>{
+        'type': json?['type'] ?? 'Success',
+        'success': json?['success'] ?? true,
+      };
+
+      log(
+        LoggingLevel.info,
+        'Hot restart completed successfully',
+        logger: 'VMService',
+      );
+      log(
+        LoggingLevel.debug,
+        () => 'Hot restart result: $result',
+        logger: 'VMService',
+      );
+      return {'report': result};
+    } on Exception catch (e, s) {
+      log(
+        LoggingLevel.error,
+        'Hot restart operation failed: $e',
+        logger: 'VMService',
+      );
+      log(LoggingLevel.debug, () => 'Stack trace: $s', logger: 'VMService');
+      return {'error': 'Hot restart failed: $e $s'};
+    }
+  }
 }

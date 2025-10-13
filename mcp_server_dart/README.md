@@ -1,6 +1,15 @@
-# MCP Toolkit Server (Dart) (beta)
+## Core Static Tools
 
-This is a beta version of MCP Toolkit Server (Dart) that will replace the deprecated [mcp_server](../mcp_server/README.md) server.
+# MCP Toolkit Server (Dart)
+
+**Essential Tools:**
+
+- hot_reload_flutter: Hot reload the Flutter app for instant UI updates
+- hot_restart_flutter: Hot restart the Flutter app (full app restart without reinstall) – useful when state corruption occurs or after adding new VM service extensions
+- get_vm: Get VM information and connection status
+- get_extension_rpcs: List available extension RPCs in the Flutter app
+
+6. You're ready! Try commands like "Please get screenshot of my app"
 
 ## Quick Start
 
