@@ -583,9 +583,12 @@ base mixin VMServiceSupport on BaseMCPToolkitServer {
     try {
       // Listen for service registration to discover a namespaced hotRestart method
       String? hotRestartMethodName;
+      StreamSubscription<Event>? eventSubscription;
       try {
         final completer = Completer<String?>();
-        vmService.onEvent(EventStreams.kService).listen((final e) {
+        eventSubscription = vmService.onEvent(EventStreams.kService).listen((
+          final e,
+        ) {
           if (e.kind == EventKind.kServiceRegistered) {
             final serviceName = e.service;
             if (serviceName == 'hotRestart') {
@@ -594,7 +597,7 @@ base mixin VMServiceSupport on BaseMCPToolkitServer {
                 'Found hot restart service: ${e.method}',
                 logger: 'VMService',
               );
-              completer.complete(e.method);
+              if (!completer.isCompleted) completer.complete(e.method);
             }
           }
         });
@@ -608,6 +611,7 @@ base mixin VMServiceSupport on BaseMCPToolkitServer {
         );
       } finally {
         try {
+          await eventSubscription?.cancel();
           await vmService.streamCancel(EventStreams.kService);
         } catch (_) {
           /* ignore */
