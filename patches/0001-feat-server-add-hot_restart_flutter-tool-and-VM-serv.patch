@@ -1,0 +1,193 @@
+From 6594c7b5c412895a5831ffa7723fd7770f2c6737 Mon Sep 17 00:00:00 2001
+From: Mahmoud Alkomy <apps@commentatk-media.com>
+Date: Wed, 3 Sep 2025 21:52:26 +0300
+Subject: [PATCH 1/2] feat(server): add hot_restart_flutter tool and VM service
+ hotRestart(); docs: update README with setup + runtime notes; format &
+ analyze clean
+
+---
+ .../lib/src/mixins/flutter_inspector.dart     | 58 +++++++++++++
+ .../lib/src/mixins/vm_service_support.dart    | 87 +++++++++++++++++++
+ 2 files changed, 145 insertions(+)
+
+diff --git a/mcp_server_dart/lib/src/mixins/flutter_inspector.dart b/mcp_server_dart/lib/src/mixins/flutter_inspector.dart
+index 0f9ec13..7eb53c5 100644
+--- a/mcp_server_dart/lib/src/mixins/flutter_inspector.dart
++++ b/mcp_server_dart/lib/src/mixins/flutter_inspector.dart
+@@ -59,6 +59,7 @@ base mixin FlutterInspector
+       logger: 'FlutterInspector',
+     );
+     registerTool(hotReloadTool, _hotReload);
++    registerTool(hotRestartTool, _hotRestart);
+     registerTool(getVmTool, _getVm);
+     registerTool(getExtensionRpcsTool, _getExtensionRpcs);
+     registerTool(getActivePortsTool, _getActivePorts);
+@@ -283,6 +284,48 @@ base mixin FlutterInspector
+     }
+   }
+ 
++  /// Hot restart the Flutter application.
++  Future<CallToolResult> _hotRestart(final CallToolRequest request) async {
++    log(
++      LoggingLevel.info,
++      'Executing hot restart tool',
++      logger: 'FlutterInspector',
++    );
++
++    final connected = await ensureVMServiceConnected();
++    if (!connected) {
++      log(
++        LoggingLevel.error,
++        'Hot restart tool failed: VM service not connected',
++        logger: 'FlutterInspector',
++      );
++      return CallToolResult(
++        isError: true,
++        content: [TextContent(text: 'VM service not connected')],
++      );
++    }
++
++    try {
++      final result = await hotRestart();
++      return CallToolResult(content: [TextContent(text: jsonEncode(result))]);
++    } on Exception catch (e, s) {
++      log(
++        LoggingLevel.error,
++        'Hot restart tool failed: $e',
++        logger: 'FlutterInspector',
++      );
++      log(
++        LoggingLevel.debug,
++        () => 'Stack trace: $s',
++        logger: 'FlutterInspector',
++      );
++      return CallToolResult(
++        isError: true,
++        content: [TextContent(text: 'Hot restart failed: $e')],
++      );
++    }
++  }
++
+   /// Get available extension RPCs.
+   Future<CallToolResult> _getExtensionRpcs(
+     final CallToolRequest request,
+@@ -650,6 +693,21 @@ base mixin FlutterInspector
+     ),
+   );
+ 
++  @visibleForTesting
++  static final hotRestartTool = Tool(
++    name: 'hot_restart_flutter',
++    description:
++        'Hot restarts the Flutter app (full restart; state not preserved).',
++    inputSchema: Schema.object(
++      properties: {
++        'port': Schema.int(
++          description:
++              'Optional: Custom port number if not using default Flutter debug port 8181',
++        ),
++      },
++    ),
++  );
++
+   @visibleForTesting
+   static final getVmTool = Tool(
+     name: 'get_vm',
+diff --git a/mcp_server_dart/lib/src/mixins/vm_service_support.dart b/mcp_server_dart/lib/src/mixins/vm_service_support.dart
+index 669a1af..2624bde 100644
+--- a/mcp_server_dart/lib/src/mixins/vm_service_support.dart
++++ b/mcp_server_dart/lib/src/mixins/vm_service_support.dart
+@@ -564,4 +564,91 @@ base mixin VMServiceSupport on BaseMCPToolkitServer {
+       return false;
+     }
+   }
++
++  /// Hot restart the Flutter app using VM service registered service 'hotRestart'.
++  /// Falls back to calling the registered method name if a namespaced version is found.
++  Future<Map<String, dynamic>?> hotRestart() async {
++    log(LoggingLevel.info, 'Starting hot restart', logger: 'VMService');
++
++    final vmService = this.vmService;
++    if (vmService == null) {
++      log(
++        LoggingLevel.error,
++        'Hot restart failed: VM service not connected',
++        logger: 'VMService',
++      );
++      return {'error': 'VM service not connected'};
++    }
++
++    try {
++      // Listen for service registration to discover a namespaced hotRestart method
++      String? hotRestartMethodName;
++      try {
++        final completer = Completer<String?>();
++        vmService.onEvent(EventStreams.kService).listen((final e) {
++          if (e.kind == EventKind.kServiceRegistered) {
++            final serviceName = e.service;
++            if (serviceName == 'hotRestart') {
++              log(
++                LoggingLevel.debug,
++                'Found hot restart service: ${e.method}',
++                logger: 'VMService',
++              );
++              completer.complete(e.method);
++            }
++          }
++        });
++
++        await vmService.streamListen(EventStreams.kService);
++
++        // Give it a brief moment to capture any registration events
++        hotRestartMethodName = await completer.future.timeout(
++          const Duration(milliseconds: 800),
++          onTimeout: () => null,
++        );
++      } finally {
++        try {
++          await vmService.streamCancel(EventStreams.kService);
++        } catch (_) {
++          /* ignore */
++        }
++      }
++
++      // If no namespaced method discovered, try the default service call
++      final String methodToCall = hotRestartMethodName ?? 'hotRestart';
++      log(
++        LoggingLevel.debug,
++        'Invoking hot restart via ${hotRestartMethodName == null ? 'default' : 'namespaced'} method: $methodToCall',
++        logger: 'VMService',
++      );
++
++      // Use callMethod for service calls (not callServiceExtension)
++      final Response response = await vmService.callMethod(methodToCall);
++      final json = response.json;
++      final result = <String, dynamic>{
++        'type': json?['type'] ?? 'Success',
++        'success': json?['success'] ?? true,
++      };
++
++      log(
++        LoggingLevel.info,
++        'Hot restart completed successfully',
++        logger: 'VMService',
++      );
++      log(
++        LoggingLevel.debug,
++        () => 'Hot restart result: $result',
++        logger: 'VMService',
++      );
++      return {'report': result};
++    } on Exception catch (e, s) {
++      log(
++        LoggingLevel.error,
++        'Hot restart operation failed: $e',
++        logger: 'VMService',
++      );
++      log(LoggingLevel.debug, () => 'Stack trace: $s', logger: 'VMService');
++      return {'error': 'Hot restart failed: $e $s'};
++    }
++  }
+ }
+-- 
+2.49.0
