@@ -99,6 +99,16 @@
         "maintenance",
         "tutorial"
       ]
+    },
+    {
+      "login": "CommentakMedia",
+      "name": "Commentatk Media",
+      "avatar_url": "https://avatars.githubusercontent.com/u/70331129?v=4",
+      "profile": "https://commentatk-media.com",
+      "contributions": [
+        "code",
+        "maintenance"
+      ]
     }
   ]
 }
