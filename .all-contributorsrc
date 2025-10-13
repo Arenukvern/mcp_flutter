@@ -107,7 +107,8 @@
       "profile": "https://commentatk-media.com",
       "contributions": [
         "code",
-        "maintenance"
+        "maintenance",
+        "doc"
       ]
     }
   ]
