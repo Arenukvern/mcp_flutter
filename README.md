@@ -82,10 +82,17 @@ See more details about command line options in [mcp_server_dart README](mcp_serv
   - Uses Error Monitor to capture Dart VM errors. All errors captured in Flutter app, and then available by request from MCP server.
 
   **Tested on**:
-  ✅ macOS, ✅ iOS
+  ✅ macOS, ✅ iOS, ✅ Web (via WebSocket bridge)
   **Not tested on**:
-  🚧 Android, 🤔 Windows, 🤔 Linux, ❌ Web
-  [See issue](https://github.com/Arenukvern/mcp_flutter/issues/23)
+  🚧 Android, 🤔 Windows, 🤔 Linux
+
+  **Web Platform Support:**
+  - ✅ Available: `get_app_errors`, `get_screenshots`, `get_view_details`, `get_active_ports`
+  - ❌ Not Available: `get_vm`, `get_extension_rpcs`, `listClientToolsAndResources`, `hot_reload_flutter`, `hot_restart_flutter`
+  
+  Flutter Web uses WebSocket bridge (port 8183) instead of VM Service. Tools that require VM Service are not available on web.
+  
+  **Note:** While Flutter Web supports hot reload (since Flutter 3.32/3.35), it can only be triggered through DevTools or terminal commands that require VM Service. There's no programmatic API to trigger hot reload on web without VM Service.
 
 - `view_screenshot` [Resource|Tool] - Captures screenshots of the running application.
   **Configuration**:

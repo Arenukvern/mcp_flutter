@@ -10,6 +10,7 @@ import 'package:flutter_inspector_mcp_server/src/base_server.dart';
 import 'package:flutter_inspector_mcp_server/src/mixins/dynamic_registry_integration.dart';
 import 'package:flutter_inspector_mcp_server/src/mixins/flutter_inspector.dart';
 import 'package:flutter_inspector_mcp_server/src/mixins/vm_service_support.dart';
+import 'package:flutter_inspector_mcp_server/src/mixins/web_bridge_support.dart';
 import 'package:stream_channel/stream_channel.dart';
 
 // ignore: do_not_use_environment
@@ -19,7 +20,11 @@ const kDebugMode = bool.fromEnvironment('kDebugMode');
 ///
 /// Provides tools and resources for Flutter app inspection and debugging
 final class MCPToolkitServer extends BaseMCPToolkitServer
-    with VMServiceSupport, DynamicRegistryIntegration, FlutterInspector {
+    with
+        VMServiceSupport,
+        DynamicRegistryIntegration,
+        WebBridgeSupport,
+        FlutterInspector {
   MCPToolkitServer.fromStreamChannel(
     super.channel, {
     required super.configuration,
@@ -325,6 +330,22 @@ Connect to a running Flutter app on debug mode to use these features.
         logger: 'VMService',
       );
       log(LoggingLevel.debug, () => 'Stack trace: $s', logger: 'VMService');
+    }
+
+    // Start web bridge server for Flutter Web support
+    try {
+      await startWebBridge(port: 8183);
+      log(
+        LoggingLevel.info,
+        'Web bridge server started on port 8183',
+        logger: 'MCPToolkitServer',
+      );
+    } catch (e) {
+      log(
+        LoggingLevel.warning,
+        'Failed to start web bridge server: $e',
+        logger: 'MCPToolkitServer',
+      );
     }
 
     // Start dynamic registry discovery if supported

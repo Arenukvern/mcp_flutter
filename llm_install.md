@@ -50,8 +50,14 @@ Let `[CLONED_MCP_FLUTTER_PATH]` be `[MCP_SERVER_BASE_PATH]/mcp_flutter`.
 
 AI Agent: Execute this within `[CLONED_MCP_FLUTTER_PATH]`.
 
+**On Linux/macOS:**
 ```bash
 make install
+```
+
+**On Windows (PowerShell):**
+```powershell
+.\install.ps1
 ```
 
 This command will:

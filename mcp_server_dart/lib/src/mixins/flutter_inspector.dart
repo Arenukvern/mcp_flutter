@@ -11,6 +11,7 @@ import 'package:flutter_inspector_mcp_server/src/base_server.dart';
 import 'package:flutter_inspector_mcp_server/src/mixins/image_file_saver.dart';
 import 'package:flutter_inspector_mcp_server/src/mixins/port_scanner.dart';
 import 'package:flutter_inspector_mcp_server/src/mixins/vm_service_support.dart';
+import 'package:flutter_inspector_mcp_server/src/mixins/web_bridge_support.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
 import 'package:is_dart_empty_or_not/is_dart_empty_or_not.dart';
 import 'package:meta/meta.dart';
@@ -40,7 +41,7 @@ const mcpToolkitExtNames = (
 
 /// Mix this in to any MCPServer to add Flutter Inspector functionality.
 base mixin FlutterInspector
-    on BaseMCPToolkitServer, ToolsSupport, ResourcesSupport, VMServiceSupport {
+    on BaseMCPToolkitServer, ToolsSupport, ResourcesSupport, VMServiceSupport, WebBridgeSupport {
   late final _portScanner = PortScanner(server: this);
   late final _imageFileSaver = ImageFileSaver(server: this);
 
@@ -1126,16 +1127,18 @@ base mixin FlutterInspector
       logger: 'FlutterInspector',
     );
 
-    final connected = await ensureVMServiceConnected();
-    if (!connected) {
+    final vmConnected = await ensureVMServiceConnected();
+    final webConnected = hasWebClients;
+
+    if (!vmConnected && !webConnected) {
       log(
         LoggingLevel.error,
-        'Get app errors tool failed: VM service not connected',
+        'Get app errors tool failed: Neither VM service nor web bridge connected',
         logger: 'FlutterInspector',
       );
       return CallToolResult(
         isError: true,
-        content: [TextContent(text: 'VM service not connected')],
+        content: [TextContent(text: 'VM service not connected and no web clients available')],
       );
     }
 
@@ -1143,34 +1146,64 @@ base mixin FlutterInspector
       final count = jsonDecodeInt(request.arguments?['count']).whenZeroUse(4);
       log(
         LoggingLevel.debug,
-        'Requesting $count app errors',
+        'Requesting $count app errors (VM: $vmConnected, Web: $webConnected)',
         logger: 'FlutterInspector',
       );
 
-      final result = await callFlutterExtension(
-        mcpToolkitExtKeys.appErrors,
-        args: {'count': count},
-      );
+      if (vmConnected) {
+        final result = await callFlutterExtension(
+          mcpToolkitExtKeys.appErrors,
+          args: {'count': count},
+        );
 
-      final errors = jsonDecodeListAs<Map<String, dynamic>>(
-        result.json?['errors'],
-      );
-      final message = jsonDecodeString(
-        result.json?['message'],
-      ).whenEmptyUse('No errors found');
+        final errors = jsonDecodeListAs<Map<String, dynamic>>(
+          result.json?['errors'],
+        );
+        final message = jsonDecodeString(
+          result.json?['message'],
+        ).whenEmptyUse('No errors found');
 
-      log(
-        LoggingLevel.info,
-        'Get app errors tool completed: found ${errors.length} errors',
-        logger: 'FlutterInspector',
-      );
+        log(
+          LoggingLevel.info,
+          'Get app errors tool completed: found ${errors.length} errors',
+          logger: 'FlutterInspector',
+        );
 
-      return CallToolResult(
-        content: [
-          TextContent(text: message),
-          ...errors.map((final error) => TextContent(text: jsonEncode(error))),
-        ],
-      );
+        return CallToolResult(
+          content: [
+            TextContent(text: message),
+            ...errors.map((final error) => TextContent(text: jsonEncode(error))),
+          ],
+        );
+      } else {
+        // Web bridge path
+        final webResult = await callServiceExtensionViaWeb(
+          mcpToolkitExtKeys.appErrors,
+          {'count': count.toString()},
+        );
+        
+        // Extract result from web response
+        final resultData = webResult['result'] as Map<String, dynamic>? ?? webResult;
+        final errors = jsonDecodeListAs<Map<String, dynamic>>(
+          resultData['errors'],
+        );
+        final message = jsonDecodeString(
+          resultData['message'],
+        ).whenEmptyUse('No errors found');
+
+        log(
+          LoggingLevel.info,
+          'Get app errors tool completed: found ${errors.length} errors',
+          logger: 'FlutterInspector',
+        );
+
+        return CallToolResult(
+          content: [
+            TextContent(text: message),
+            ...errors.map((final error) => TextContent(text: jsonEncode(error))),
+          ],
+        );
+      }
     } on Exception catch (e) {
       log(
         LoggingLevel.error,
@@ -1192,16 +1225,18 @@ base mixin FlutterInspector
       logger: 'FlutterInspector',
     );
 
-    final connected = await ensureVMServiceConnected();
-    if (!connected) {
+    final vmConnected = await ensureVMServiceConnected();
+    final webConnected = hasWebClients;
+
+    if (!vmConnected && !webConnected) {
       log(
         LoggingLevel.error,
-        'Get screenshots tool failed: VM service not connected',
+        'Get screenshots tool failed: Neither VM service nor web bridge connected',
         logger: 'FlutterInspector',
       );
       return CallToolResult(
         isError: true,
-        content: [TextContent(text: 'VM service not connected')],
+        content: [TextContent(text: 'VM service not connected and no web clients available')],
       );
     }
 
@@ -1210,16 +1245,28 @@ base mixin FlutterInspector
           bool.tryParse('${request.arguments?['compress']}') ?? true;
       log(
         LoggingLevel.debug,
-        'Screenshots compression: $compress',
+        'Screenshots compression: $compress (VM: $vmConnected, Web: $webConnected)',
         logger: 'FlutterInspector',
       );
 
-      final result = await callFlutterExtension(
-        mcpToolkitExtKeys.viewScreenshots,
-        args: {'compress': compress},
-      );
-
-      final images = jsonDecodeListAs<String>(result.json?['images']);
+      List<String> images;
+      if (vmConnected) {
+        final result = await callFlutterExtension(
+          mcpToolkitExtKeys.viewScreenshots,
+          args: {'compress': compress},
+        );
+        images = jsonDecodeListAs<String>(result.json?['images']);
+      } else {
+        // Web bridge path
+        final webResult = await callServiceExtensionViaWeb(
+          mcpToolkitExtKeys.viewScreenshots,
+          {'compress': compress.toString()},
+        );
+        
+        // Extract result from web response
+        final resultData = webResult['result'] as Map<String, dynamic>? ?? webResult;
+        images = jsonDecodeListAs<String>(resultData['images']);
+      }
       log(
         LoggingLevel.info,
         'Get screenshots tool completed: captured ${images.length} screenshots',
@@ -1272,27 +1319,49 @@ base mixin FlutterInspector
       logger: 'FlutterInspector',
     );
 
-    final connected = await ensureVMServiceConnected();
-    if (!connected) {
+    final vmConnected = await ensureVMServiceConnected();
+    final webConnected = hasWebClients;
+
+    if (!vmConnected && !webConnected) {
       log(
         LoggingLevel.error,
-        'Get view details tool failed: VM service not connected',
+        'Get view details tool failed: Neither VM service nor web bridge connected',
         logger: 'FlutterInspector',
       );
       return CallToolResult(
         isError: true,
-        content: [TextContent(text: 'VM service not connected')],
+        content: [TextContent(text: 'VM service not connected and no web clients available')],
       );
     }
 
     try {
-      final result = await callFlutterExtension(mcpToolkitExtKeys.viewDetails);
-      final details = jsonDecodeListAs<Map<String, dynamic>>(
-        result.json?['details'],
-      );
-      final message = jsonDecodeString(
-        result.json?['message'],
-      ).whenEmptyUse('View details');
+      List<Map<String, dynamic>> details;
+      String message;
+      
+      if (vmConnected) {
+        final result = await callFlutterExtension(mcpToolkitExtKeys.viewDetails);
+        details = jsonDecodeListAs<Map<String, dynamic>>(
+          result.json?['details'],
+        );
+        message = jsonDecodeString(
+          result.json?['message'],
+        ).whenEmptyUse('View details');
+      } else {
+        // Web bridge path
+        final webResult = await callServiceExtensionViaWeb(
+          mcpToolkitExtKeys.viewDetails,
+          {},
+        );
+        
+        // Extract result from web response
+        final resultData = webResult['result'] as Map<String, dynamic>? ?? webResult;
+        details = jsonDecodeListAs<Map<String, dynamic>>(
+          resultData['details'],
+        );
+        message = jsonDecodeString(
+          resultData['message'],
+        ).whenEmptyUse('View details');
+      }
 
       log(
         LoggingLevel.info,

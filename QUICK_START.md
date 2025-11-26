@@ -6,7 +6,9 @@ This guide walks you through setting up the MCP Flutter toolkit to enable AI ass
 
 MCP Flutter provides a bridge between AI assistants and Flutter applications through the Model Context Protocol (MCP). The system uses **Flutter's native service extension mechanism** to enable real-time communication and **dynamic tools registration** for registering client side (Flutter App) tools and resources.
 
-**Architecture**: `AI Assistant ↔ MCP Server (Dart) ↔ Dart VM ↔ Flutter Service Extensions`
+**Architecture:**
+- **Mobile/Desktop**: `AI Assistant ↔ MCP Server ↔ Dart VM Service ↔ Flutter Service Extensions`
+- **Web**: `AI Assistant ↔ MCP Server ↔ WebSocket Bridge (port 8183) ↔ Flutter Web App`
 
 ![Flutter Inspector Architecture](./docs/architecture.png)
 
@@ -35,8 +37,14 @@ For developers who want to contribute to the project or run the latest version d
 
 2. **Install and build dependencies:**
 
+   **On Linux/macOS:**
    ```bash
    make install
+   ```
+
+   **On Windows (PowerShell):**
+   ```powershell
+   .\install.ps1
    ```
 
    This command installs all necessary dependencies listed in `pubspec.yaml` and then builds the MCP server.
@@ -66,43 +74,74 @@ For developers who want to contribute to the project or run the latest version d
 4. **Initialize in Your App**:
    In your Flutter application's `main.dart` file (or equivalent entry point), initialize the bridge binding:
 
+   **For Mobile/Desktop platforms:**
    ```dart
    import 'package:flutter/material.dart';
-   import 'package:mcp_toolkit/mcp_toolkit.dart'; // Import the package
+   import 'package:flutter/foundation.dart';
+   import 'package:mcp_toolkit/mcp_toolkit.dart';
    import 'dart:async';
 
    Future<void> main() async {
      runZonedGuarded(
        () async {
          WidgetsFlutterBinding.ensureInitialized();
-         MCPToolkitBinding.instance
-            ..initialize() // Initializes the Toolkit
-            ..initializeFlutterToolkit(); // Adds Flutter related methods to the MCP server
+         if (kIsWeb) {
+           // For Flutter Web: use WebSocket bridge
+           await MCPToolkitBinding.instance.initializeWebBridgeForWeb(
+             bridgeUrl: 'ws://localhost:8183',
+           );
+           MCPToolkitBinding.instance.initializeFlutterToolkit();
+         } else {
+           // For Mobile/Desktop: use VM Service
+           MCPToolkitBinding.instance
+              ..initialize()
+              ..initializeFlutterToolkit();
+         }
          runApp(const MyApp());
        },
        (error, stack) {
-         // You can place it in your error handling tool, or directly in the zone. The most important thing is to have it - otherwise the errors will not be captured and MCP server will not return error results.
          MCPToolkitBinding.instance.handleZoneError(error, stack);
        },
      );
    }
-
-   // ... rest of your app code
    ```
+
+   **Note:** The app automatically detects the platform and uses the appropriate connection method (VM Service for mobile/desktop, WebSocket bridge for web).
 
 5. **Start your Flutter app in debug mode**
 
+   **For Mobile/Desktop:**
+   
    ! Current workaround for security reasons is to run with `--disable-service-auth-codes`. If you know how to fix this, please let me know!
 
    ```bash
    flutter run --debug --host-vmservice-port=8182 --dds-port=8181 --enable-vm-service --disable-service-auth-codes
    ```
 
+   The app will expose the Dart VM Service on port 8181, which the MCP server can connect to.
+
+   **For Flutter Web:**
+   ```bash
+   flutter run -d chrome --web-port=8080
+   ```
+
+   The app will automatically connect to the WebSocket bridge on port 8183. The MCP server starts the web bridge automatically when initialized.
+
+   **⚠️ Web Platform Limitations:**
+   
+   Flutter Web doesn't expose the Dart VM Service, so some tools are not available:
+   - ✅ **Available**: `get_app_errors`, `get_screenshots`, `get_view_details`, `get_active_ports`
+   - ❌ **Not Available**: `get_vm`, `get_extension_rpcs`, `listClientToolsAndResources`, `hot_reload_flutter`, `hot_restart_flutter`
+   
+   **Note on Hot Reload:** While Flutter Web supports hot reload (since Flutter 3.32/3.35), it can only be triggered through DevTools or terminal commands, both of which require the VM Service. There's no programmatic API to trigger hot reload on web without the VM Service. To use hot reload on web, you need to run the app with VM Service enabled (mobile/desktop mode) or use DevTools manually.
+   
+   These VM Service-specific tools require the Dart VM Service which is only available on mobile/desktop platforms.
+
 6. **🛠️ Add Flutter Inspector to your AI tool**
 
    **Note for Local Development (GitHub Install):**
 
-   If you installed the Flutter Inspector from GitHub and built it locally, you need to adjust the paths in the AI tool configurations to point to your local `build/flutter_inspector_mcp` file. Refer to the "Installation from GitHub" section for instructions on cloning and building the project.
+   If you installed the Flutter Inspector from GitHub and built it locally, you need to adjust the paths in the AI tool configurations to point to your local `build/flutter_inspector_mcp.exe` file (or `build/flutter_inspector_mcp` on Linux/macOS). Refer to the "Installation from GitHub" section for instructions on cloning and building the project.
 
    #### Cline Setup
 
@@ -113,7 +152,7 @@ For developers who want to contribute to the project or run the latest version d
       {
         "mcpServers": {
           "flutter-inspector": {
-            "command": "/path/to/your/cloned/mcp_flutter/mcp_server_dart/build/flutter_inspector_mcp",
+            "command": "/path/to/your/cloned/mcp_flutter/mcp_server_dart/build/flutter_inspector_mcp.exe",
             "args": [
               "--dart-vm-host=localhost",
               "--dart-vm-port=8181",
@@ -155,7 +194,7 @@ For developers who want to contribute to the project or run the latest version d
       {
         "mcpServers": {
           "flutter-inspector": {
-            "command": "/path/to/your/cloned/mcp_flutter/mcp_server_dart/build/flutter_inspector_mcp",
+            "command": "/path/to/your/cloned/mcp_flutter/mcp_server_dart/build/flutter_inspector_mcp.exe",
             "args": [
               "--dart-vm-host=localhost",
               "--dart-vm-port=8181",
@@ -168,6 +207,12 @@ For developers who want to contribute to the project or run the latest version d
         }
       }
       ```
+
+   **⚠️ Important for Windows users:**
+   - The executable is located at `mcp_server_dart/build/flutter_inspector_mcp.exe` (note the `build/` directory and `.exe` extension)
+   - Use the full absolute path in Windows format: `C:\Users\YourName\Documents\projects\mcp_flutter\mcp_server_dart\build\flutter_inspector_mcp.exe`
+   - Or use Git Bash format: `/c/Users/YourName/Documents/projects/mcp_flutter/mcp_server_dart/build/flutter_inspector_mcp.exe`
+   - **Important:** On Windows, the executable must have the `.exe` extension in the path!
    4. Restart Cursor
    5. Open Agent Panel (cmd + L on macOS)
    6. You're ready! Try commands like "List all available tools from my Flutter app" or "Take a screenshot of my app"
@@ -179,7 +224,7 @@ For developers who want to contribute to the project or run the latest version d
       {
         "mcpServers": {
           "flutter-inspector": {
-            "command": "/path/to/your/cloned/mcp_flutter/mcp_server_dart/build/flutter_inspector_mcp",
+            "command": "/path/to/your/cloned/mcp_flutter/mcp_server_dart/build/flutter_inspector_mcp.exe",
             "args": [
               "--dart-vm-host=localhost",
               "--dart-vm-port=8181",

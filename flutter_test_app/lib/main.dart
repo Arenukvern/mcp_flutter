@@ -2,6 +2,7 @@
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 import 'package:provider/provider.dart';
@@ -12,14 +13,21 @@ Future<void> main() async {
   runZonedGuarded(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
-      MCPToolkitBinding.instance
-        ..initialize()
-        ..initializeFlutterToolkit();
+      
+      if (kIsWeb) {
+        await MCPToolkitBinding.instance.initializeWebBridgeForWeb(
+          bridgeUrl: 'ws://localhost:8183',
+        );
+        MCPToolkitBinding.instance.initializeFlutterToolkit();
+      } else {
+        MCPToolkitBinding.instance
+          ..initialize()
+          ..initializeFlutterToolkit();
+      }
 
       await _registerInitialMCPTools();
       runApp(const MyApp());
 
-      // Demonstrate delayed tool registration
       Timer(const Duration(seconds: 5), () async {
         await _registerDelayedMCPTools();
       });
