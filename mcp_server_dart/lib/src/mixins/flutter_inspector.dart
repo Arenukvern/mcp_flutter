@@ -1130,6 +1130,12 @@ base mixin FlutterInspector
     final vmConnected = await ensureVMServiceConnected();
     final webConnected = hasWebClients;
 
+    log(
+      LoggingLevel.debug,
+      'Get app errors: VM=$vmConnected, Web=$webConnected',
+      logger: 'FlutterInspector',
+    );
+
     if (!vmConnected && !webConnected) {
       log(
         LoggingLevel.error,
@@ -1228,6 +1234,12 @@ base mixin FlutterInspector
     final vmConnected = await ensureVMServiceConnected();
     final webConnected = hasWebClients;
 
+    log(
+      LoggingLevel.debug,
+      'Get screenshots: VM=$vmConnected, Web=$webConnected',
+      logger: 'FlutterInspector',
+    );
+
     if (!vmConnected && !webConnected) {
       log(
         LoggingLevel.error,
@@ -1321,6 +1333,12 @@ base mixin FlutterInspector
 
     final vmConnected = await ensureVMServiceConnected();
     final webConnected = hasWebClients;
+
+    log(
+      LoggingLevel.debug,
+      'Get view details: VM=$vmConnected, Web=$webConnected',
+      logger: 'FlutterInspector',
+    );
 
     if (!vmConnected && !webConnected) {
       log(

@@ -323,13 +323,25 @@ Connect to a running Flutter app on debug mode to use these features.
       );
     } catch (e, s) {
       // Log but don't fail - tools should still be available
-      log(
-        LoggingLevel.warning,
-        'VM service initialization failed (this is normal if no '
-        'Flutter app is running): $e ',
-        logger: 'VMService',
-      );
-      log(LoggingLevel.debug, () => 'Stack trace: $s', logger: 'VMService');
+      // This is normal when no Flutter app is running or when running on web
+      final errorMessage = e.toString();
+      if (errorMessage.contains('recusou a conexão') ||
+          errorMessage.contains('connection refused') ||
+          errorMessage.contains('SocketException')) {
+        log(
+          LoggingLevel.debug,
+          'VM service connection refused (normal if no Flutter app running): $e',
+          logger: 'VMService',
+        );
+      } else {
+        log(
+          LoggingLevel.warning,
+          'VM service initialization failed (this is normal if no '
+          'Flutter app is running): $e',
+          logger: 'VMService',
+        );
+        log(LoggingLevel.debug, () => 'Stack trace: $s', logger: 'VMService');
+      }
     }
 
     // Start web bridge server for Flutter Web support

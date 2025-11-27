@@ -14,6 +14,7 @@ class WebBridgeClient {
   bool _connected = false;
   final StreamController<Map<String, dynamic>> _messageController = 
       StreamController<Map<String, dynamic>>.broadcast();
+  Completer<void>? _connectCompleter;
 
   html.WebSocket? get webSocket => _webSocket;
   Stream<Map<String, dynamic>> get messages => _messageController.stream;
@@ -23,13 +24,29 @@ class WebBridgeClient {
       throw UnsupportedError('WebBridgeClient only works on web platform');
     }
 
+    _connectCompleter = Completer<void>();
+
     try {
       _webSocket = html.WebSocket(bridgeUrl);
       _setupWebSocketListeners();
+      
+      await _connectCompleter!.future.timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          if (_connectCompleter != null && !_connectCompleter!.isCompleted) {
+            _connectCompleter!.completeError(
+              TimeoutException('WebSocket connection timeout'),
+            );
+            _connectCompleter = null;
+          }
+          throw TimeoutException('WebSocket connection timeout');
+        },
+      );
     } catch (e) {
       if (kDebugMode) {
         debugPrint('[WebBridgeClient] Failed to connect: $e');
       }
+      _connectCompleter = null;
       rethrow;
     }
   }
@@ -39,6 +56,10 @@ class WebBridgeClient {
       _connected = true;
       if (kDebugMode) {
         debugPrint('[WebBridgeClient] Connected to bridge');
+      }
+      if (_connectCompleter != null && !_connectCompleter!.isCompleted) {
+        _connectCompleter!.complete();
+        _connectCompleter = null;
       }
     });
 
@@ -51,12 +72,24 @@ class WebBridgeClient {
         debugPrint('[WebBridgeClient] WebSocket error: $error');
       }
       _connected = false;
+      if (_connectCompleter != null && !_connectCompleter!.isCompleted) {
+        _connectCompleter!.completeError(
+          error ?? StateError('WebSocket connection failed'),
+        );
+        _connectCompleter = null;
+      }
     });
 
     _webSocket!.onClose.listen((_) {
       _connected = false;
       if (kDebugMode) {
         debugPrint('[WebBridgeClient] Connection closed');
+      }
+      if (_connectCompleter != null && !_connectCompleter!.isCompleted) {
+        _connectCompleter!.completeError(
+          StateError('WebSocket connection closed before opening'),
+        );
+        _connectCompleter = null;
       }
     });
   }
@@ -96,7 +129,7 @@ class WebBridgeClient {
 
     final request = {
       'id': id,
-      'type': 'service_extension',
+      'type': 'mcp_service_extension',
       'method': method,
       'parameters': parameters,
     };
@@ -120,6 +153,12 @@ class WebBridgeClient {
     _connected = false;
     _pendingRequests.clear();
     _messageController.close();
+    if (_connectCompleter != null && !_connectCompleter!.isCompleted) {
+      _connectCompleter!.completeError(
+        StateError('Connection closed during connect'),
+      );
+      _connectCompleter = null;
+    }
   }
 
   void sendMessage(Map<String, dynamic> message) {

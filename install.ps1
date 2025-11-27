@@ -39,4 +39,11 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Host "Installation completed successfully!" -ForegroundColor Green
 Write-Host "Executable created at: $buildDir\flutter_inspector_mcp.exe" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "Next steps:" -ForegroundColor Yellow
+Write-Host "1. Configure your AI assistant (Cursor, Claude, etc.) to use:" -ForegroundColor White
+Write-Host "   $buildDir\flutter_inspector_mcp.exe" -ForegroundColor Cyan
+Write-Host "2. For Flutter Web apps, use initializeWebBridgeForWeb() in main.dart" -ForegroundColor White
+Write-Host "3. For Mobile/Desktop apps, use initialize() in main.dart" -ForegroundColor White
+Write-Host "4. Restart your AI assistant after configuration" -ForegroundColor White
 

@@ -88,9 +88,14 @@ See more details about command line options in [mcp_server_dart README](mcp_serv
 
   **Web Platform Support:**
   - ✅ Available: `get_app_errors`, `get_screenshots`, `get_view_details`, `get_active_ports`
-  - ❌ Not Available: `get_vm`, `get_extension_rpcs`, `listClientToolsAndResources`, `hot_reload_flutter`, `hot_restart_flutter`
+  - ✅ Partially Available: `listClientToolsAndResources` (works via web bridge when web client is connected)
+  - ❌ Not Available: `get_vm`, `get_extension_rpcs`, `hot_reload_flutter`, `hot_restart_flutter`
   
-  Flutter Web uses WebSocket bridge (port 8183) instead of VM Service. Tools that require VM Service are not available on web.
+  Flutter Web uses WebSocket bridge (port 8183) instead of VM Service. The web bridge:
+  - Starts automatically when the MCP server initializes
+  - Requires `initializeWebBridgeForWeb()` in the Flutter app's `main.dart`
+  - Connects to `ws://localhost:8183` by default
+  - Supports dynamic tool registration via web bridge
   
   **Note:** While Flutter Web supports hot reload (since Flutter 3.32/3.35), it can only be triggered through DevTools or terminal commands that require VM Service. There's no programmatic API to trigger hot reload on web without VM Service.
 
@@ -127,18 +132,30 @@ This MCP server is verified by [MseeP.ai](https://mseep.ai).
    - Ensure your Flutter app is running in debug mode
    - Verify the port matches in both Flutter app and MCP server
    - Check if the port is not being used by another process
+   - **For Web**: Ensure `initializeWebBridgeForWeb()` is used in `main.dart` and wait 30-40 seconds for connection
 
 2. **AI Tool Not Detecting Inspector**
 
    - Restart the AI tool after configuration changes
    - Verify the configuration JSON syntax
    - Check the tool's logs for connection errors
+   - **For Windows**: Ensure the path includes `build/` directory and `.exe` extension
 
 3. **Dynamic Tools Not Appearing**
    - Ensure `mcp_toolkit` package is properly initialized in your Flutter app
    - Check that tools are registered using `MCPToolkitBinding.instance.addEntries()`
    - Use `listClientToolsAndResources` to verify registration
    - Hot reload your Flutter app after adding new tools
+   - **For Web**: Ensure web bridge connection is established (check MCP server logs)
+
+4. **Web Platform: "VM service not connected and no web clients available"**
+   - Verify `initializeWebBridgeForWeb()` is called in `main.dart` for web platform
+   - Check that MCP server web bridge is running (port 8183)
+   - Ensure app is running: `flutter run -d chrome --web-port=8080`
+   - Wait 30-40 seconds after starting the app
+   - Verify connection: `netstat -ano | findstr 8183` (Windows) or `lsof -i :8183` (macOS/Linux)
+   
+   **See also:** [Web Platform Setup Checklist](docs/WEB_SETUP_CHECKLIST.md) for detailed web setup instructions.
 
 The Flutter MCP Server is registered with Smithery's registry, making it discoverable and usable by other AI tools through a standardized interface.
 

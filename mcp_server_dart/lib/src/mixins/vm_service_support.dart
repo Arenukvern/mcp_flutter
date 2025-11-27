@@ -38,17 +38,39 @@ base mixin VMServiceSupport on BaseMCPToolkitServer {
       final uri = Uri.parse(url);
       log(
         LoggingLevel.debug,
-        'Creating WebSocket connection',
+        'Creating WebSocket connection to $uri',
         logger: 'VMService',
       );
-      _vmChannel = WebSocketChannel.connect(uri);
+      
+      try {
+        _vmChannel = WebSocketChannel.connect(uri);
+      } on Exception catch (e) {
+        log(
+          LoggingLevel.warning,
+          'Failed to create WebSocket channel to $uri: $e',
+          logger: 'VMService',
+        );
+        rethrow;
+      }
 
       log(
         LoggingLevel.debug,
-        'Connecting to Dart Tooling Daemon',
+        'Connecting to Dart Tooling Daemon at $uri',
         logger: 'VMService',
       );
-      _dartToolingDaemon = await DartToolingDaemon.connect(uri);
+      
+      try {
+        _dartToolingDaemon = await DartToolingDaemon.connect(uri);
+      } on Exception catch (e) {
+        log(
+          LoggingLevel.warning,
+          'Failed to connect to Dart Tooling Daemon at $uri: $e',
+          logger: 'VMService',
+        );
+        await _vmChannel?.sink.close();
+        _vmChannel = null;
+        rethrow;
+      }
 
       log(
         LoggingLevel.debug,

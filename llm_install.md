@@ -93,10 +93,15 @@ flutter pub get
 
 ### 5. Initialize MCP Toolkit in the User's Flutter App
 
-AI Agent: Instruct the USER to update their Flutter app's `main.dart` file located at `[FLUTTER_APP_PATH]/lib/main.dart`:
+AI Agent: Instruct the USER to update their Flutter app's `main.dart` file located at `[FLUTTER_APP_PATH]/lib/main.dart`.
+
+**⚠️ CRITICAL: Platform-Specific Initialization Required**
+
+The initialization code **must** check the platform and use the appropriate method:
 
 ```dart
 import \'package:flutter/material.dart\';
+import \'package:flutter/foundation.dart\';
 import \'package:mcp_toolkit/mcp_toolkit.dart\';
 import \'dart:async\';
 
@@ -104,32 +109,59 @@ Future<void> main() async {
   runZonedGuarded(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
-      MCPToolkitBinding.instance
-        ..initialize() // Initializes the Toolkit
-        ..initializeFlutterToolkit(); // Adds Flutter related methods to the MCP server
-      runApp(const MyApp()); // Ensure MyApp is their actual root widget
+      
+      // CRITICAL: Platform-specific initialization
+      if (kIsWeb) {
+        // For Flutter Web: use WebSocket bridge (port 8183)
+        await MCPToolkitBinding.instance.initializeWebBridgeForWeb(
+          bridgeUrl: \'ws://localhost:8183\',
+        );
+        MCPToolkitBinding.instance.initializeFlutterToolkit();
+      } else {
+        // For Mobile/Desktop: use VM Service (port 8181)
+        MCPToolkitBinding.instance
+          ..initialize()
+          ..initializeFlutterToolkit();
+      }
+      
+      runApp(const MyApp());
     },
     (error, stack) {
-      // Critical: Handle zone errors for MCP server error reporting
       MCPToolkitBinding.instance.handleZoneError(error, stack);
     },
   );
 }
-
-// ... rest of their app code
 ```
+
+**Important Notes:**
+- **Web Platform**: Must use `initializeWebBridgeForWeb()` with `bridgeUrl: 'ws://localhost:8183'`
+- **Mobile/Desktop**: Use `initialize()` for VM Service connection
+- The `kIsWeb` check is **required** - do not skip it
+- Both paths must call `initializeFlutterToolkit()` after initialization
+- Always use `runZonedGuarded` for error handling
 
 AI Agent: Remind the USER to replace `const MyApp()` with their actual root widget if it's different.
 
 ### 6. Start Flutter App with Required Flags
 
-AI Agent: Instruct the USER to start their Flutter application (located at `[FLUTTER_APP_PATH]`) with the following command:
+AI Agent: Instruct the USER to start their Flutter application (located at `[FLUTTER_APP_PATH]`) with the appropriate command based on platform:
 
+**For Mobile/Desktop (iOS, Android, Windows, macOS, Linux):**
 ```bash
 flutter run --debug --host-vmservice-port=8182 --dds-port=8181 --enable-vm-service --disable-service-auth-codes
 ```
 
 **Note to USER (Relay this):** The `--disable-service-auth-codes` flag is currently required as a security workaround.
+
+**For Flutter Web:**
+```bash
+flutter run -d chrome --web-port=8080
+```
+
+**Important Notes:**
+- **Web Platform**: The app automatically connects to the web bridge (port 8183) when using `initializeWebBridgeForWeb()`
+- **Mobile/Desktop**: Requires the VM Service flags to expose the Dart VM Service on port 8181
+- **Web**: Wait 30-40 seconds after starting the app for the web bridge connection to establish
 
 ### 7. Configure Your AI Tool
 
@@ -221,6 +253,39 @@ AI Agent: Ask the USER which AI assistant they are using (Cursor, Cline AI, Clau
 
 2.  AI Agent: Instruct the USER to restart Claude Desktop.
 3.  Flutter inspector tools will be automatically available.
+
+## Web Platform Support
+
+AI Agent: Inform the USER about web platform support:
+
+### Web Platform Setup
+
+**For Flutter Web applications:**
+
+1. **Initialization**: Use `initializeWebBridgeForWeb()` in `main.dart` (see step 5)
+2. **Running**: Start the app with `flutter run -d chrome --web-port=8080`
+3. **Connection**: The app automatically connects to the MCP server's web bridge on port 8183
+
+### Web Platform Limitations
+
+**Available Tools:**
+- ✅ `get_app_errors` - Get application errors
+- ✅ `get_screenshots` - Capture screenshots  
+- ✅ `get_view_details` - Get view information
+- ✅ `get_active_ports` - List active ports
+- ✅ `listClientToolsAndResources` - Dynamic tools discovery (when web client is connected)
+
+**Not Available (require VM Service):**
+- ❌ `get_vm` - VM information
+- ❌ `get_extension_rpcs` - Extension RPCs
+- ❌ `hot_reload_flutter` - Hot reload (Flutter Web supports hot reload but only via DevTools/terminal)
+- ❌ `hot_restart_flutter` - Hot restart
+
+**Important Notes:**
+- The web bridge starts automatically when the MCP server initializes
+- Both MCP server and Flutter app must be on localhost
+- Wait 30-40 seconds after starting the app for the connection to establish
+- The web bridge uses WebSocket communication (port 8183)
 
 ## Dynamic Tools Registration
 

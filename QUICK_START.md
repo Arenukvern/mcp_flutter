@@ -7,8 +7,14 @@ This guide walks you through setting up the MCP Flutter toolkit to enable AI ass
 MCP Flutter provides a bridge between AI assistants and Flutter applications through the Model Context Protocol (MCP). The system uses **Flutter's native service extension mechanism** to enable real-time communication and **dynamic tools registration** for registering client side (Flutter App) tools and resources.
 
 **Architecture:**
-- **Mobile/Desktop**: `AI Assistant ↔ MCP Server ↔ Dart VM Service ↔ Flutter Service Extensions`
+- **Mobile/Desktop**: `AI Assistant ↔ MCP Server ↔ Dart VM Service (port 8181) ↔ Flutter Service Extensions`
 - **Web**: `AI Assistant ↔ MCP Server ↔ WebSocket Bridge (port 8183) ↔ Flutter Web App`
+
+**⚠️ Critical Setup Requirement:**
+- Your Flutter app's `main.dart` **must** check the platform using `kIsWeb` and use the appropriate initialization method
+- **Web**: Use `initializeWebBridgeForWeb(bridgeUrl: 'ws://localhost:8183')`
+- **Mobile/Desktop**: Use `initialize()` for VM Service
+- See step 4 for the complete code template
 
 ![Flutter Inspector Architecture](./docs/architecture.png)
 
@@ -71,10 +77,17 @@ For developers who want to contribute to the project or run the latest version d
 
    Then run `flutter pub get` in your Flutter app's directory.
 
+   **⚠️ Important for Web Support:**
+   
+   The `mcp_toolkit` package includes web bridge support that requires proper initialization. Make sure to use `initializeWebBridgeForWeb()` for web platforms as shown in step 4.
+
 4. **Initialize in Your App**:
    In your Flutter application's `main.dart` file (or equivalent entry point), initialize the bridge binding:
 
-   **For Mobile/Desktop platforms:**
+   **⚠️ CRITICAL: Platform-Specific Initialization Required**
+   
+   The initialization code **must** check the platform using `kIsWeb` and use the appropriate method. This is essential for proper functionality on both web and mobile/desktop platforms.
+
    ```dart
    import 'package:flutter/material.dart';
    import 'package:flutter/foundation.dart';
@@ -85,18 +98,23 @@ For developers who want to contribute to the project or run the latest version d
      runZonedGuarded(
        () async {
          WidgetsFlutterBinding.ensureInitialized();
+         
+         // CRITICAL: Platform-specific initialization
          if (kIsWeb) {
-           // For Flutter Web: use WebSocket bridge
+           // For Flutter Web: use WebSocket bridge (port 8183)
+           // The web bridge connects to the MCP server's WebSocket bridge
            await MCPToolkitBinding.instance.initializeWebBridgeForWeb(
              bridgeUrl: 'ws://localhost:8183',
            );
            MCPToolkitBinding.instance.initializeFlutterToolkit();
          } else {
-           // For Mobile/Desktop: use VM Service
+           // For Mobile/Desktop: use VM Service (port 8181)
+           // Requires running with --enable-vm-service flag
            MCPToolkitBinding.instance
               ..initialize()
               ..initializeFlutterToolkit();
          }
+         
          runApp(const MyApp());
        },
        (error, stack) {
@@ -131,9 +149,19 @@ For developers who want to contribute to the project or run the latest version d
    
    Flutter Web doesn't expose the Dart VM Service, so some tools are not available:
    - ✅ **Available**: `get_app_errors`, `get_screenshots`, `get_view_details`, `get_active_ports`
-   - ❌ **Not Available**: `get_vm`, `get_extension_rpcs`, `listClientToolsAndResources`, `hot_reload_flutter`, `hot_restart_flutter`
+   - ✅ **Partially Available**: `listClientToolsAndResources` (works via web bridge, but requires web client connection)
+   - ❌ **Not Available**: `get_vm`, `get_extension_rpcs`, `hot_reload_flutter`, `hot_restart_flutter`
    
    **Note on Hot Reload:** While Flutter Web supports hot reload (since Flutter 3.32/3.35), it can only be triggered through DevTools or terminal commands, both of which require the VM Service. There's no programmatic API to trigger hot reload on web without the VM Service. To use hot reload on web, you need to run the app with VM Service enabled (mobile/desktop mode) or use DevTools manually.
+   
+   **Important:** The web bridge uses WebSocket communication (port 8183) and requires:
+   - The MCP server to be running (web bridge starts automatically on port 8183)
+   - The Flutter app to initialize `initializeWebBridgeForWeb(bridgeUrl: 'ws://localhost:8183')` in `main.dart`
+   - Both to be on the same machine (localhost)
+   - Wait 30-40 seconds after starting the app for the connection to establish
+   - The `kIsWeb` platform check is **required** - do not hardcode the platform
+   
+   **Setup Checklist:** See [docs/WEB_SETUP_CHECKLIST.md](../docs/WEB_SETUP_CHECKLIST.md) for a complete web platform setup checklist.
    
    These VM Service-specific tools require the Dart VM Service which is only available on mobile/desktop platforms.
 
@@ -267,6 +295,49 @@ For developers who want to contribute to the project or run the latest version d
      }
    }
    ```
+
+## 🔧 Troubleshooting
+
+### Web Platform Issues
+
+**Problem: "VM service not connected and no web clients available"**
+
+**Solution:**
+1. Verify the MCP server is running and the web bridge started (check logs for "Web bridge server started on port 8183")
+2. Ensure your Flutter app's `main.dart` uses `initializeWebBridgeForWeb()` for web platform:
+   ```dart
+   if (kIsWeb) {
+     await MCPToolkitBinding.instance.initializeWebBridgeForWeb(
+       bridgeUrl: 'ws://localhost:8183',
+     );
+   }
+   ```
+3. Check that the app is running: `flutter run -d chrome --web-port=8080`
+4. Verify connection: Check if port 8183 is listening: `netstat -ano | findstr 8183` (Windows) or `lsof -i :8183` (macOS/Linux)
+5. Wait 30-40 seconds after starting the app for the connection to establish
+
+**Problem: "Bad state: VM service not connected" during initialization**
+
+**Solution:**
+This is normal when running on web. The MCP server now handles this gracefully and will use the web bridge instead. If you see this error repeatedly, ensure:
+- The web bridge is properly initialized in your Flutter app
+- The MCP server has been restarted after compilation
+- You're using the latest version with web bridge support
+
+### Connection Issues
+
+- Ensure your Flutter app is running in debug mode
+- Verify the port matches in both Flutter app and MCP server
+- Check if the port is not being used by another process
+- For web: Ensure both MCP server and Flutter app are on localhost
+
+### Dynamic Tools Not Appearing
+
+- Ensure `mcp_toolkit` package is properly initialized in your Flutter app
+- Check that tools are registered using `MCPToolkitBinding.instance.addEntries()`
+- Use `listClientToolsAndResources` to verify registration
+- Hot reload your Flutter app after adding new tools
+- For web: Wait for the web bridge connection to establish before tools appear
 
 ## Dynamic Tools Registration
 
