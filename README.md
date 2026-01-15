@@ -46,12 +46,16 @@ _For AI-Powered Development_
 
 - **Dynamic Tools Registration**: Flutter apps can now register custom tools at the MCP server. See how it works in [short YouTube video](https://www.youtube.com/watch?v=Qog3x2VcO98). See [Dynamic Tools Registration Docs](https://github.com/Arenukvern/mcp_flutter/blob/main/QUICK_START.md#dynamic-tools-registration) for more details.
 
-## 🎉 v2.5.0 released! 🎉
+## 🎉 v2.6.0 released! 🎉
 
-- new tool: `hot_restart_flutter` to perform VM Service Hot Restart from MCP.
-- VM service integration method `hotRestart()` with namespaced service discovery fallback.
+BREAKING CHANGES:
 
-Huge thank you to [CommentakMedia](https://github.com/CommentakMedia) for PR with Hot Restart tool and docs! https://github.com/Arenukvern/mcp_flutter/pull/67
+- Dart SDK updated to 3.10.0 with all dependencies updated to the latest versions
+
+- now VM service auto-reconnect when Flutter app restarts. Huge thank you to [@jkitching](https://github.com/jkitching) for PR! https://github.com/Arenukvern/mcp_flutter/pull/73
+
+- dockerfile for MCP Server - not tested.
+  Huge thank you to [@arslanmit](https://github.com/arslanmit) for PR with Dockerfile! https://github.com/Arenukvern/mcp_flutter/pull/64
 
 See more details in [CHANGELOG.md](CHANGELOG.md).
 
