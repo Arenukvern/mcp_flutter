@@ -8,6 +8,7 @@ import 'mcp_models.dart';
 import 'mcp_toolkit_binding_base.dart';
 import 'mcp_toolkit_extensions.dart';
 import 'services/error_monitor.dart';
+import 'web/web_service_extensions.dart';
 
 /// Add a single MCP tool to the MCP toolkit.
 ///
@@ -47,7 +48,7 @@ void addMcpTool(final MCPCallEntry entry) =>
 /// }
 /// ```
 class MCPToolkitBinding extends MCPToolkitBindingBase
-    with ErrorMonitor, MCPToolkitExtensions {
+    with ErrorMonitor, MCPToolkitExtensions, WebServiceExtensions {
   MCPToolkitBinding._();
 
   /// The singleton instance of the MCP Toolkit binding.
@@ -84,4 +85,32 @@ class MCPToolkitBinding extends MCPToolkitBindingBase
   /// Get all accumulated entries across all addEntries calls
   @override
   Set<MCPCallEntry> get allEntries => super.allEntries;
+
+  /// Initialize web bridge for Flutter Web applications.
+  ///
+  /// This should be called instead of [initialize] when running on web platform.
+  ///
+  /// Example:
+  /// ```dart
+  /// if (kIsWeb) {
+  ///   await MCPToolkitBinding.instance.initializeWebBridge(
+  ///     bridgeUrl: 'ws://localhost:8183',
+  ///   );
+  /// } else {
+  ///   MCPToolkitBinding.instance.initialize();
+  /// }
+  /// ```
+  Future<void> initializeWebBridgeForWeb({required String bridgeUrl}) async {
+    assert(() {
+      assert(
+        kDebugMode,
+        'MCP Toolkit should only be initialized in debug mode',
+      );
+      attachToFlutterError();
+      return true;
+    }());
+
+    super.initialize();
+    await initializeWebBridge(bridgeUrl: bridgeUrl);
+  }
 }

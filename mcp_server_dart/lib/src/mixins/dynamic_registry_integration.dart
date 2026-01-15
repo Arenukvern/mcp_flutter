@@ -64,12 +64,29 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
     );
 
     try {
-      await mcpToolkitServer.ensureVMServiceConnected();
+      // Try to ensure VM service connection, but don't fail if it's not available
+      // (e.g., when running on web)
+      final vmConnected = await mcpToolkitServer.ensureVMServiceConnected(
+        timeout: const Duration(seconds: 2),
+      );
+      final webConnected = mcpToolkitServer.hasWebClients;
+
+      if (!vmConnected && !webConnected) {
+        log(
+          LoggingLevel.debug,
+          'No VM service or web clients available for discovery, '
+          'will retry when connection is established',
+          logger: 'DynamicRegistry',
+        );
+        // Still start discovery to listen for future connections
+        await discoveryService?.startDiscovery();
+        return;
+      }
 
       await discoveryService?.startDiscovery();
 
       // Immediate registration when connected
-      // will fail if VM service is not connected
+      // Works with both VM service and web bridge
       await discoveryService?.registerToolsAndResources();
 
       log(

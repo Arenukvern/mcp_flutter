@@ -24,13 +24,8 @@ echo "=================================================="
 # Check prerequisites
 echo -e "${YELLOW}Checking prerequisites...${NC}"
 
-if ! command -v dart &> /dev/null; then
-    echo -e "${RED}❌ Dart SDK not found. Please install Dart SDK first.${NC}"
-    exit 1
-fi
-
-if ! command -v flutter &> /dev/null; then
-    echo -e "${RED}❌ Flutter SDK not found. Please install Flutter SDK first.${NC}"
+if ! command -v fvm &> /dev/null; then
+    echo -e "${RED}❌ FVM (Flutter Version Manager) not found. Please install FVM first.${NC}"
     exit 1
 fi
 
@@ -40,7 +35,7 @@ echo -e "${GREEN}✅ Prerequisites check passed${NC}"
 echo -e "${YELLOW}Building MCP server executable...${NC}"
 cd "$MCP_SERVER_DIR"
 
-if dart compile exe bin/main.dart -o "$EXECUTABLE_NAME"; then
+if fvm dart compile exe bin/main.dart -o "$EXECUTABLE_NAME"; then
     chmod +x "$EXECUTABLE_NAME"
     echo -e "${GREEN}✅ Executable built successfully: $MCP_SERVER_DIR/$EXECUTABLE_NAME${NC}"
 else
@@ -155,7 +150,7 @@ echo -e "${GREEN}🎉 Setup completed successfully!${NC}"
 echo ""
 echo -e "${BLUE}Next steps:${NC}"
 echo "1. Start your Flutter app in debug mode:"
-echo "   ${YELLOW}flutter run --debug${NC}"
+echo "   ${YELLOW}fvm flutter run --debug${NC}"
 echo ""
 echo "2. Restart Cursor IDE to load the new MCP configuration"
 echo ""

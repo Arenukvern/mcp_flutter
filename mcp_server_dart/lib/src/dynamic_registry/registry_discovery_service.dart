@@ -164,15 +164,40 @@ final class RegistryDiscoveryService {
         logger: _loggerName,
       );
 
-      final response = await server.callFlutterExtension(
-        '$mcpToolkitExt.registerDynamics',
-      );
+      // Check if VM service is available, otherwise try web bridge
+      final vmConnected = server.isVMServiceConnected;
+      final webConnected = server.hasWebClients;
 
-      final data = jsonDecodeMap(response.json);
+      if (!vmConnected && !webConnected) {
+        logger.log(
+          LoggingLevel.debug,
+          'Skipping registerDynamics: No VM service or web clients available',
+          logger: _loggerName,
+        );
+        return;
+      }
+
+      Map<String, dynamic> data;
+      if (vmConnected) {
+        final response = await server.callFlutterExtension(
+          '$mcpToolkitExt.registerDynamics',
+        );
+        data = jsonDecodeMap(response.json);
+      } else {
+        // Use web bridge
+        final webResult = await server.callServiceExtensionViaWeb(
+          '$mcpToolkitExt.registerDynamics',
+          {},
+        );
+        // Extract result from web response
+        final resultData = webResult['result'] as Map<String, dynamic>? ?? webResult;
+        data = resultData;
+      }
+
       await _processRegistrationResponse(data);
     } on Exception catch (e, stackTrace) {
       logger.log(
-        LoggingLevel.error,
+        LoggingLevel.warning,
         'Failed to call registerDynamics: $e'
         'stackTrace: $stackTrace',
         logger: _loggerName,
