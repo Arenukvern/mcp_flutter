@@ -74,14 +74,60 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
 
       log(
         LoggingLevel.info,
-        'Simplified Flutter app discovery started successfully',
-        logger: 'VMService',
+        'Flutter app discovery started successfully',
+        logger: 'DynamicRegistryIntegration',
       );
     } on Exception catch (e, s) {
       log(
         LoggingLevel.warning,
-        'Failed to start simplified discovery: $e',
-        logger: 'VMService',
+        'Failed to start discovery: $e',
+        logger: 'DynamicRegistryIntegration',
+      );
+      log(LoggingLevel.debug, () => 'Stack trace: $s', logger: 'VMService');
+    }
+
+    // Set up reconnection callback AFTER initial attempt (success or failure).
+    // This ensures callback only fires on REconnection, not initial connection.
+    mcpToolkitServer.onVMServiceReconnected = () {
+      log(
+        LoggingLevel.info,
+        'VM service reconnected, re-initializing registry discovery...',
+        logger: 'DynamicRegistryIntegration',
+      );
+      unawaited(_reinitializeDiscovery(mcpToolkitServer));
+    };
+  }
+
+  /// Re-initialize discovery after VM service reconnection
+  Future<void> _reinitializeDiscovery(
+    final MCPToolkitServer mcpToolkitServer,
+  ) async {
+    try {
+      // Dispose old discovery service
+      await discoveryService?.dispose();
+
+      // Create new discovery service
+      final registry = _dynamicRegistry;
+      if (registry == null) return;
+
+      discoveryService = RegistryDiscoveryService(
+        dynamicRegistry: registry,
+        server: mcpToolkitServer,
+      );
+
+      await discoveryService?.startDiscovery();
+      await discoveryService?.registerToolsAndResources();
+
+      log(
+        LoggingLevel.info,
+        'Registry discovery re-initialized successfully after reconnection',
+        logger: 'DynamicRegistryIntegration',
+      );
+    } on Exception catch (e, s) {
+      log(
+        LoggingLevel.warning,
+        'Failed to re-initialize discovery after reconnection: $e',
+        logger: 'DynamicRegistryIntegration',
       );
       log(LoggingLevel.debug, () => 'Stack trace: $s', logger: 'VMService');
     }
