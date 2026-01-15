@@ -76,7 +76,7 @@ dependencies:
   flutter:
     sdk: flutter
   # ... other dependencies
-  mcp_toolkit: ^0.2.0
+  mcp_toolkit: ^0.4.0
 ```
 
 Then, AI Agent, run the following within `[FLUTTER_APP_PATH]`:

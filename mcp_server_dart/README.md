@@ -49,7 +49,7 @@ For developers who want to contribute to the project or run the latest version d
      flutter:
        sdk: flutter
      # ... other dependencies
-     mcp_toolkit: ^0.1.2
+     mcp_toolkit: ^0.4.0
    ```
 
    Then run `flutter pub get` in your Flutter app's directory.
