@@ -180,6 +180,7 @@ Huge thanks to all contributors for making this project better!
       <td align="center" valign="top" width="14.28%"><a href="https://commentatk-media.com"><img src="https://avatars.githubusercontent.com/u/70331129?v=4?s=100" width="100px;" alt="Commentatk Media"/><br /><sub><b>Commentatk Media</b></sub></a><br /><a href="#code-CommentakMedia" title="Code">💻</a> <a href="#maintenance-CommentakMedia" title="Maintenance">🚧</a> <a href="#doc-CommentakMedia" title="Documentation">📖</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://www.linkedin.com/in/umitarslan/"><img src="https://avatars.githubusercontent.com/u/4801240?v=4?s=100" width="100px;" alt="Umit Arslan"/><br /><sub><b>Umit Arslan</b></sub></a><br /><a href="#code-arslanmit" title="Code">💻</a> <a href="#maintenance-arslanmit" title="Maintenance">🚧</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://joelkitching.com/"><img src="https://avatars.githubusercontent.com/u/514199?v=4?s=100" width="100px;" alt="Joel Kitching"/><br /><sub><b>Joel Kitching</b></sub></a><br /><a href="#code-jkitching" title="Code">💻</a> <a href="#maintenance-jkitching" title="Maintenance">🚧</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/jeanlucthumm"><img src="https://avatars.githubusercontent.com/u/4934853?v=4?s=100" width="100px;" alt="Jean-Luc Thumm"/><br /><sub><b>Jean-Luc Thumm</b></sub></a><br /><a href="#maintenance-jeanlucthumm" title="Maintenance">🚧</a></td>
     </tr>
   </tbody>
 </table>
