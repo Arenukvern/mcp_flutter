@@ -16,11 +16,17 @@ import 'package:mcp_toolkit/mcp_toolkit.dart';
 void registerMyTools() {
   final helloTool = MCPCallEntry.tool(
     handler: (params) {
-      return MCPCallResult(message: 'Hello from a dynamic tool!');
+      return MCPCallResult(
+        message: 'Hello from a dynamic tool!',
+        parameters: const {},
+      );
     },
     definition: MCPToolDefinition(
       name: 'hello',
       description: 'A simple tool that says hello.',
+      inputSchema: ObjectSchema(
+        properties: const {},
+      ),
     ),
   );
 

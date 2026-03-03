@@ -110,6 +110,7 @@ class RpcClientsOrchestrator with ChangeNotifier {
 
   @override
   Future<void> dispose() async {
+    await customDevtoolsService.dispose();
     _dartVmDevtoolsService.dispose();
     await errorDevtoolsService.dispose();
     super.dispose();

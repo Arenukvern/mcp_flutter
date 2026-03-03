@@ -7,6 +7,7 @@ import 'package:flutter_inspector_mcp_server/src/core/commands.dart';
 import 'package:flutter_inspector_mcp_server/src/core/connection_context.dart';
 import 'package:flutter_inspector_mcp_server/src/core/error_codes.dart';
 import 'package:flutter_inspector_mcp_server/src/core/results.dart';
+import 'package:flutter_inspector_mcp_server/src/core/state_lock_manager.dart';
 import 'package:flutter_inspector_mcp_server/src/core/state_store.dart';
 
 final class SessionManager {
@@ -25,7 +26,9 @@ final class SessionManager {
 
   SessionState? getSession(final String? sessionId) {
     final resolvedId = _resolveSessionId(sessionId);
-    if (resolvedId == null || resolvedId.isEmpty) return null;
+    if (resolvedId == null || resolvedId.isEmpty) {
+      return null;
+    }
     return _state.sessions[resolvedId];
   }
 
@@ -43,6 +46,7 @@ final class SessionManager {
     try {
       final connectionData = await connectionContext.connect(
         mode: command.mode,
+        targetId: command.targetId,
         uri: command.uri,
         host: command.host,
         port: command.port,
@@ -58,41 +62,61 @@ final class SessionManager {
       }
 
       final id = command.sessionId ?? _newSessionId();
-      final now = DateTime.now().toUtc();
-      final nextSession = SessionState(
-        id: id,
-        endpoint: endpoint,
-        createdAt: now,
-        lastUsedAt: now,
-        mode: command.mode.name,
-        host: command.host,
-        port: command.port,
-        uri: command.uri,
-      );
 
-      final nextSessions = <String, SessionState>{
-        ..._state.sessions,
-        id: nextSession,
-      };
+      return await _withLockedResult(() async {
+        final current = await stateStore.readUnlocked();
+        final now = DateTime.now().toUtc();
+        final nextSession = SessionState(
+          id: id,
+          endpoint: endpoint,
+          createdAt: now,
+          lastUsedAt: now,
+          mode: command.mode.name,
+          host: command.host,
+          port: command.port,
+          uri: command.uri,
+        );
 
-      _state = _state.copyWith(
-        activeSessionId: id,
-        sessions: nextSessions,
-        stickyEndpoint: endpoint,
-        lastMode: command.mode.name,
-      );
-      await stateStore.write(_state);
+        final nextSessions = <String, SessionState>{
+          ...current.sessions,
+          id: nextSession,
+        };
 
-      return CoreResult.success(
-        data: {
-          'sessionId': id,
-          'endpoint': endpoint,
-          'mode': command.mode.name,
-          'connected': true,
-          'reusedConnection': connectionData['reusedConnection'] == true,
-          'selectionDiagnostics': connectionContext.lastSelectionDiagnostics,
-        },
-        meta: {'sessionId': id},
+        final nextState = current.copyWith(
+          activeSessionId: id,
+          sessions: nextSessions,
+          stickyEndpoint: endpoint,
+          lastMode: command.mode.name,
+        );
+
+        await stateStore.writeUnlocked(nextState);
+        _state = nextState;
+
+        return CoreResult.success(
+          data: {
+            'sessionId': id,
+            'endpoint': endpoint,
+            'mode': command.mode.name,
+            'connected': true,
+            'reusedConnection': connectionData['reusedConnection'] == true,
+            'selectionDiagnostics': connectionContext.lastSelectionDiagnostics,
+          },
+          meta: {'sessionId': id},
+        );
+      });
+    } on CoreConnectionException catch (e) {
+      if (e.reason == CoreConnectionFailureReason.multipleTargets) {
+        return CoreResult.failure(
+          code: CoreErrorCode.connectionSelectionRequired,
+          message: e.message,
+          details: e.details,
+        );
+      }
+
+      return CoreResult.failure(
+        code: CoreErrorCode.connectFailed,
+        message: 'Failed to start session: ${e.message}',
+        details: e.details,
       );
     } on Exception catch (e) {
       return CoreResult.failure(
@@ -106,14 +130,40 @@ final class SessionManager {
     final String? sessionId,
     final bool forceReconnect = false,
   }) async {
-    final session = getSession(sessionId);
-    if (session == null) {
-      return CoreResult.failure(
-        code: CoreErrorCode.sessionNotFound,
-        message: 'Session not found',
-        details: {'requestedSessionId': sessionId},
-      );
+    final resolvedSession = await _withLockedResult(() async {
+      final current = await stateStore.readUnlocked();
+      _state = current;
+
+      final resolvedId = _resolveSessionId(sessionId);
+      if (resolvedId == null || resolvedId.isEmpty) {
+        return CoreResult.failure(
+          code: CoreErrorCode.sessionNotFound,
+          message: 'Session not found',
+          details: {'requestedSessionId': sessionId},
+        );
+      }
+
+      final session = current.sessions[resolvedId];
+      if (session == null) {
+        return CoreResult.failure(
+          code: CoreErrorCode.sessionNotFound,
+          message: 'Session not found',
+          details: {'requestedSessionId': sessionId},
+        );
+      }
+
+      return CoreResult.success(data: {'session': session.toJson()});
+    });
+
+    if (!resolvedSession.ok) {
+      return resolvedSession;
     }
+
+    final sessionJson =
+        (resolvedSession.data as Map<String, Object?>)['session'];
+    final session = SessionState.fromJson(
+      (sessionJson as Map).cast<String, Object?>(),
+    );
 
     try {
       final data = await connectionContext.connect(
@@ -121,11 +171,20 @@ final class SessionManager {
         uri: session.endpoint,
         forceReconnect: forceReconnect,
       );
-      await _markSessionUsed(session.id, endpointOverride: session.endpoint);
-      return CoreResult.success(
-        data: {'sessionId': session.id, ...data},
-        meta: {'sessionId': session.id},
-      );
+
+      final markResult = await _withLockedResult(() async {
+        await _markSessionUsedLocked(
+          session.id,
+          endpointOverride: session.endpoint,
+        );
+
+        return CoreResult.success(
+          data: {'sessionId': session.id, ...data},
+          meta: {'sessionId': session.id},
+        );
+      });
+
+      return markResult;
     } on Exception catch (e) {
       return CoreResult.failure(
         code: CoreErrorCode.connectFailed,
@@ -136,59 +195,72 @@ final class SessionManager {
   }
 
   Future<CoreResult> endSession(final String? sessionId) async {
-    final resolvedId = _resolveSessionId(sessionId);
-    if (resolvedId == null || resolvedId.isEmpty) {
-      return CoreResult.failure(
-        code: CoreErrorCode.sessionNotFound,
-        message: 'Session not found',
-        details: {'requestedSessionId': sessionId},
-      );
-    }
+    bool shouldDisconnect = false;
 
-    final existing = _state.sessions[resolvedId];
-    if (existing == null) {
-      return CoreResult.failure(
-        code: CoreErrorCode.sessionNotFound,
-        message: 'Session not found',
-        details: {'requestedSessionId': resolvedId},
-      );
-    }
+    final result = await _withLockedResult(() async {
+      final current = await stateStore.readUnlocked();
+      _state = current;
 
-    if (_state.activeSessionId == resolvedId) {
+      final resolvedId = _resolveSessionId(sessionId);
+      if (resolvedId == null || resolvedId.isEmpty) {
+        return CoreResult.failure(
+          code: CoreErrorCode.sessionNotFound,
+          message: 'Session not found',
+          details: {'requestedSessionId': sessionId},
+        );
+      }
+
+      final existing = current.sessions[resolvedId];
+      if (existing == null) {
+        return CoreResult.failure(
+          code: CoreErrorCode.sessionNotFound,
+          message: 'Session not found',
+          details: {'requestedSessionId': resolvedId},
+        );
+      }
+
+      shouldDisconnect = current.activeSessionId == resolvedId;
+
+      final nextSessions = <String, SessionState>{...current.sessions}
+        ..remove(resolvedId);
+
+      final nextActive = current.activeSessionId == resolvedId
+          ? null
+          : current.activeSessionId;
+
+      final sticky = nextActive == null
+          ? (nextSessions.values.isEmpty
+                ? current.stickyEndpoint
+                : nextSessions.values.last.endpoint)
+          : current.stickyEndpoint;
+
+      final nextState = current.copyWith(
+        sessions: nextSessions,
+        activeSessionId: nextActive,
+        clearActiveSessionId: nextActive == null,
+        stickyEndpoint: sticky,
+        clearStickyEndpoint: sticky == null || sticky.isEmpty,
+      );
+
+      await stateStore.writeUnlocked(nextState);
+      _state = nextState;
+
+      return CoreResult.success(
+        data: {
+          'sessionId': resolvedId,
+          'ended': true,
+          'activeSessionId': nextState.activeSessionId,
+          'remainingSessions': nextState.sessions.length,
+        },
+        meta: {'sessionId': resolvedId},
+      );
+    });
+
+    if (result.ok && shouldDisconnect) {
       await connectionContext.disconnect();
     }
 
-    final nextSessions = <String, SessionState>{..._state.sessions}
-      ..remove(resolvedId);
-
-    final nextActive = _state.activeSessionId == resolvedId
-        ? null
-        : _state.activeSessionId;
-
-    final sticky = nextActive == null
-        ? (nextSessions.values.isEmpty
-              ? _state.stickyEndpoint
-              : nextSessions.values.last.endpoint)
-        : _state.stickyEndpoint;
-
-    _state = _state.copyWith(
-      sessions: nextSessions,
-      activeSessionId: nextActive,
-      clearActiveSessionId: nextActive == null,
-      stickyEndpoint: sticky,
-      clearStickyEndpoint: sticky == null || sticky.isEmpty,
-    );
-    await stateStore.write(_state);
-
-    return CoreResult.success(
-      data: {
-        'sessionId': resolvedId,
-        'ended': true,
-        'activeSessionId': _state.activeSessionId,
-        'remainingSessions': _state.sessions.length,
-      },
-      meta: {'sessionId': resolvedId},
-    );
+    return result;
   }
 
   Future<void> markSessionUsed(
@@ -199,15 +271,26 @@ final class SessionManager {
     if (resolvedId == null || resolvedId.isEmpty) {
       return;
     }
-    await _markSessionUsed(resolvedId, endpointOverride: endpointOverride);
+
+    await _withLockedResult(() async {
+      await _markSessionUsedLocked(
+        resolvedId,
+        endpointOverride: endpointOverride,
+      );
+      return CoreResult.success();
+    });
   }
 
-  Future<void> _markSessionUsed(
+  Future<void> _markSessionUsedLocked(
     final String resolvedSessionId, {
     final String? endpointOverride,
   }) async {
-    final existing = _state.sessions[resolvedSessionId];
-    if (existing == null) return;
+    final current = await stateStore.readUnlocked();
+    final existing = current.sessions[resolvedSessionId];
+    if (existing == null) {
+      _state = current;
+      return;
+    }
 
     final endpoint = endpointOverride ?? existing.endpoint;
     final next = existing.copyWith(
@@ -216,17 +299,38 @@ final class SessionManager {
     );
 
     final nextSessions = <String, SessionState>{
-      ..._state.sessions,
+      ...current.sessions,
       resolvedSessionId: next,
     };
 
-    _state = _state.copyWith(
+    final nextState = current.copyWith(
       sessions: nextSessions,
       activeSessionId: resolvedSessionId,
       stickyEndpoint: endpoint,
       lastMode: existing.mode,
     );
-    await stateStore.write(_state);
+
+    await stateStore.writeUnlocked(nextState);
+    _state = nextState;
+  }
+
+  Future<CoreResult> _withLockedResult(
+    final Future<CoreResult> Function() action,
+  ) async {
+    try {
+      return await stateStore.withStateLock(action);
+    } on StateLockException catch (e) {
+      return CoreResult.failure(
+        code: CoreErrorCode.stateLockTimeout,
+        message: e.message,
+        details: {'lockFilePath': e.lockFilePath, 'owner': e.owner},
+      );
+    } on Exception catch (e) {
+      return CoreResult.failure(
+        code: CoreErrorCode.stateStoreWriteFailed,
+        message: 'State operation failed: $e',
+      );
+    }
   }
 
   String _newSessionId() {

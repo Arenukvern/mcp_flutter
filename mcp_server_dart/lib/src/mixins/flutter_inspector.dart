@@ -40,6 +40,7 @@ base mixin FlutterInspector
       'Registering core Flutter tools',
       logger: 'FlutterInspector',
     );
+    registerTool(VMToolsHandler.connectDebugAppTool, _vmTools.connectDebugApp);
     registerTool(VMToolsHandler.hotReloadTool, _vmTools.hotReload);
     registerTool(VMToolsHandler.hotRestartTool, _vmTools.hotRestart);
     registerTool(VMToolsHandler.getVmTool, _vmTools.getVm);

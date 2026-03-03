@@ -4,6 +4,7 @@
 import 'dart:convert';
 
 import 'package:flutter_inspector_mcp_server/src/core/connection_context.dart';
+import 'package:flutter_inspector_mcp_server/src/core/error_codes.dart';
 import 'package:flutter_inspector_mcp_server/src/core/results.dart';
 import 'package:flutter_inspector_mcp_server/src/mixins/mcp_toolkit_consts.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
@@ -35,12 +36,9 @@ final class VmExtensionDynamicGateway implements CoreDynamicGateway {
 
   @override
   Future<CoreResult> listClientToolsAndResources() async {
-    final connected = await connectionContext.ensureConnected();
-    if (!connected) {
-      return CoreResult.failure(
-        code: 'vm_not_connected',
-        message: 'VM service not connected',
-      );
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) {
+      return ensureFailure;
     }
 
     try {
@@ -74,7 +72,7 @@ final class VmExtensionDynamicGateway implements CoreDynamicGateway {
       );
     } on Exception catch (e) {
       return CoreResult.failure(
-        code: 'dynamic_registry_list_failed',
+        code: CoreErrorCode.dynamicRegistryListFailed,
         message: 'Failed to list dynamic tools/resources: $e',
       );
     }
@@ -87,17 +85,14 @@ final class VmExtensionDynamicGateway implements CoreDynamicGateway {
   ) async {
     if (toolName.isEmpty) {
       return CoreResult.failure(
-        code: 'missing_tool_name',
+        code: CoreErrorCode.missingToolName,
         message: 'Missing required parameter: toolName',
       );
     }
 
-    final connected = await connectionContext.ensureConnected();
-    if (!connected) {
-      return CoreResult.failure(
-        code: 'vm_not_connected',
-        message: 'VM service not connected',
-      );
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) {
+      return ensureFailure;
     }
 
     try {
@@ -117,7 +112,7 @@ final class VmExtensionDynamicGateway implements CoreDynamicGateway {
       );
     } on Exception catch (e) {
       return CoreResult.failure(
-        code: 'dynamic_tool_failed',
+        code: CoreErrorCode.dynamicToolFailed,
         message: 'Error forwarding tool call: $e',
       );
     }
@@ -127,17 +122,14 @@ final class VmExtensionDynamicGateway implements CoreDynamicGateway {
   Future<CoreResult> runClientResource(final String resourceUri) async {
     if (resourceUri.isEmpty) {
       return CoreResult.failure(
-        code: 'missing_resource_uri',
+        code: CoreErrorCode.missingResourceUri,
         message: 'Missing required parameter: resourceUri',
       );
     }
 
-    final connected = await connectionContext.ensureConnected();
-    if (!connected) {
-      return CoreResult.failure(
-        code: 'vm_not_connected',
-        message: 'VM service not connected',
-      );
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) {
+      return ensureFailure;
     }
 
     try {
@@ -164,7 +156,7 @@ final class VmExtensionDynamicGateway implements CoreDynamicGateway {
       );
     } on Exception catch (e) {
       return CoreResult.failure(
-        code: 'dynamic_resource_failed',
+        code: CoreErrorCode.dynamicResourceFailed,
         message: 'Error forwarding resource read: $e',
       );
     }
@@ -188,6 +180,19 @@ final class VmExtensionDynamicGateway implements CoreDynamicGateway {
     }
 
     return CoreResult.success(data: result);
+  }
+
+  Future<CoreResult?> _ensureVmConnected() async {
+    final ensure = await connectionContext.ensureConnectedWithPolicy();
+    if (ensure.connected) {
+      return null;
+    }
+
+    return CoreResult.failure(
+      code: ensure.code ?? CoreErrorCode.vmNotConnected,
+      message: ensure.message ?? 'VM service not connected',
+      details: ensure.details,
+    );
   }
 }
 

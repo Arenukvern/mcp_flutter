@@ -32,6 +32,13 @@ Future<void> main(final List<String> args) async {
         dynamicRegistrySupported: parsedArgs.flag(dynamicRegistrySupported),
         awaitDndConnection: parsedArgs.flag(awaitDndConnection),
         saveImagesToFiles: parsedArgs.flag(saveImagesToFiles),
+        flutterProjectDir: _nonEmptyOption(
+          parsedArgs.option(flutterProjectDir),
+        ),
+        flutterDevice: _nonEmptyOption(parsedArgs.option(flutterDevice)),
+        flutterDiscoveryTimeoutMs:
+            int.tryParse(parsedArgs.option(flutterDiscoveryTimeoutMs) ?? '') ??
+            defaultFlutterDiscoveryTimeoutMs,
       );
       final server = MCPToolkitServer.fromStreamChannel(
         StreamChannel.withCloseGuarantee(io.stdin, io.stdout)
@@ -85,6 +92,15 @@ Future<void> main(final List<String> args) async {
   );
 }
 
+String? _nonEmptyOption(final String? value) {
+  if (value == null) {
+    return null;
+  }
+
+  final trimmed = value.trim();
+  return trimmed.isEmpty ? null : trimmed;
+}
+
 final argParser = ArgParser(allowTrailingOptions: false)
   ..addOption(
     dartVMHost,
@@ -129,6 +145,25 @@ final argParser = ArgParser(allowTrailingOptions: false)
         ' returning base64 data',
   )
   ..addOption(
+    flutterProjectDir,
+    help:
+        'Optional Flutter project directory used for machine discovery '
+        '(flutter attach --machine)',
+  )
+  ..addOption(
+    flutterDevice,
+    help:
+        'Optional Flutter device for machine discovery '
+        '(for example: chrome)',
+  )
+  ..addOption(
+    flutterDiscoveryTimeoutMs,
+    defaultsTo: '$defaultFlutterDiscoveryTimeoutMs',
+    help:
+        'Timeout in milliseconds for flutter machine discovery '
+        '(flutter attach --machine)',
+  )
+  ..addOption(
     logLevel,
     defaultsTo: defaultLogLevel,
     help:
@@ -157,3 +192,7 @@ const help = 'help';
 const dynamicRegistrySupported = 'dynamics';
 const awaitDndConnection = 'await-dnd';
 const saveImagesToFiles = 'save-images';
+const flutterProjectDir = 'flutter-project-dir';
+const flutterDevice = 'flutter-device';
+const flutterDiscoveryTimeoutMs = 'flutter-discovery-timeout-ms';
+const defaultFlutterDiscoveryTimeoutMs = 2500;

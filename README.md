@@ -91,7 +91,7 @@ See more details about command line options in [mcp_server_dart README](mcp_serv
   🚧 Android, 🤔 Windows, 🤔 Linux, ❌ Web
   [See issue](https://github.com/Arenukvern/mcp_flutter/issues/23)
 
-- `view_screenshot` [Resource|Tool] - Captures screenshots of the running application.
+- `get_screenshots` [Resource|Tool] - Captures screenshots of the running application.
   **Configuration**:
 
   - Enable with `--images` flag
@@ -105,7 +105,9 @@ See more details about command line options in [mcp_server_dart README](mcp_serv
 
 Flutter apps can now register custom tools and resources at runtime. See how it works in [short YouTube video](https://www.youtube.com/watch?v=Qog3x2VcO98). See [Dynamic Tools Registration Docs](#dynamic-tools-registration-🆕) for more details.
 
-All tools default to using port 8181 if no port is specified. You can override this by providing a specific port number.
+VM-dependent calls use automatic target resolution by default and can be overridden per request with `arguments.connection` (preferred: `connection.targetId` as full VM WS URI).
+
+The same targeting object is supported in CLI v2 one-shot `exec --args`, daemon `command/execute`, daemon `watch/start`, and snapshot step args (`commands[i].args.connection`).
 
 📚 Please see more in [MCP_RPC_DESCRIPTION](MCP_RPC_DESCRIPTION.md)
 
@@ -124,6 +126,7 @@ This MCP server is verified by [MseeP.ai](https://mseep.ai).
    - Ensure your Flutter app is running in debug mode
    - Verify the port matches in both Flutter app and MCP server
    - Check if the port is not being used by another process
+   - If response includes `connection_selection_required`, retry with `arguments.connection.targetId` using one URI from `availableTargets` (or set `arguments.connection.uri` directly)
 
 2. **AI Tool Not Detecting Inspector**
 

@@ -1,5 +1,9 @@
 # Dynamic Registry Enhancement Suggestions for AI Agents
 
+> [!WARNING]
+> Historical/internal brainstorming note. Content is not a guaranteed description of currently shipped APIs.
+> Use root docs and `docs/` as the source of truth.
+
 ## Current State Analysis
 
 The dynamic registry feature provides excellent foundations for AI agent workflows but could be enhanced in several key areas:

@@ -4,6 +4,7 @@
 import 'dart:convert';
 import 'dart:io' as io;
 
+import 'package:flutter_inspector_mcp_server/src/core/state_lock_manager.dart';
 import 'package:path/path.dart' as p;
 
 final class SessionState {
@@ -88,7 +89,9 @@ final class PersistedState {
 
   SessionState? get activeSession {
     final id = activeSessionId;
-    if (id == null || id.isEmpty) return null;
+    if (id == null || id.isEmpty) {
+      return null;
+    }
     return sessions[id];
   }
 
@@ -157,11 +160,29 @@ final class PersistedState {
 }
 
 final class StateStore {
-  StateStore({required this.path});
+  StateStore({required this.path, StateLockManager? lockManager})
+    : lockManager =
+          lockManager ??
+          StateLockManager(
+            lockFilePath: p.normalize(p.join(p.dirname(path), 'state.lock')),
+          );
 
   final String path;
+  final StateLockManager lockManager;
 
-  Future<PersistedState> read() async {
+  Future<T> withStateLock<T>(final Future<T> Function() action) {
+    return lockManager.withLock(action);
+  }
+
+  Future<PersistedState> read() {
+    return withStateLock(readUnlocked);
+  }
+
+  Future<void> write(final PersistedState state) {
+    return withStateLock(() => writeUnlocked(state));
+  }
+
+  Future<PersistedState> readUnlocked() async {
     try {
       final file = io.File(path);
       if (!file.existsSync()) {
@@ -187,7 +208,7 @@ final class StateStore {
     return const PersistedState();
   }
 
-  Future<void> write(final PersistedState state) async {
+  Future<void> writeUnlocked(final PersistedState state) async {
     final file = io.File(path);
     file.parent.createSync(recursive: true);
     final payload = const JsonEncoder.withIndent('  ').convert(state.toJson());

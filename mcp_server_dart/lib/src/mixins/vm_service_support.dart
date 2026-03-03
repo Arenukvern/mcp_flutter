@@ -15,15 +15,20 @@ import 'package:flutter_inspector_mcp_server/src/core/dynamic_gateway.dart';
 import 'package:flutter_inspector_mcp_server/src/core/executor.dart';
 import 'package:flutter_inspector_mcp_server/src/core/services/core_image_file_saver.dart';
 import 'package:flutter_inspector_mcp_server/src/core/services/core_port_scanner.dart';
+import 'package:flutter_inspector_mcp_server/src/core/services/flutter_tool_machine_discovery.dart';
 import 'package:vm_service/vm_service.dart';
 
 /// Mixin that exposes VM service lifecycle but delegates implementation to core.
 base mixin VMServiceSupport on BaseMCPToolkitServer {
+  late final FlutterToolMachineDiscovery _flutterMachineDiscovery =
+      FlutterToolMachineDiscovery(logger: _log);
+
   late final ConnectionContext _connectionContext = ConnectionContext(
     defaultHost: configuration.vmHost,
     defaultPort: configuration.vmPort,
     logger: _log,
     discoverPorts: _corePortScanner.scanForFlutterPorts,
+    discoverMachineTargets: _discoverMachineTargets,
   );
 
   late final CorePortScanner _corePortScanner = CorePortScanner(logger: _log);
@@ -31,6 +36,14 @@ base mixin VMServiceSupport on BaseMCPToolkitServer {
   late final CoreImageFileSaver _coreImageFileSaver = CoreImageFileSaver(
     logger: _log,
   );
+
+  Future<List<FlutterMachineDiscoveryTarget>> _discoverMachineTargets() {
+    return _flutterMachineDiscovery.discover(
+      projectDir: configuration.flutterProjectDir,
+      device: configuration.flutterDevice,
+      timeout: Duration(milliseconds: configuration.flutterDiscoveryTimeoutMs),
+    );
+  }
 
   late final DefaultCoreCommandExecutor _coreCommandExecutor =
       DefaultCoreCommandExecutor(
@@ -89,9 +102,7 @@ base mixin VMServiceSupport on BaseMCPToolkitServer {
   /// Initialize VM service connection using configured host/port.
   Future<void> initializeVMService() async {
     await _connectionContext.connect(
-      mode: CoreConnectionMode.manual,
-      host: configuration.vmHost,
-      port: configuration.vmPort,
+      mode: CoreConnectionMode.auto,
       forceReconnect: true,
       timeout: const Duration(seconds: 3),
     );
@@ -172,21 +183,10 @@ base mixin VMServiceSupport on BaseMCPToolkitServer {
   Future<bool> ensureVMServiceConnected({
     final Duration timeout = const Duration(seconds: 2),
   }) async {
-    if (isVMServiceConnected) {
-      return true;
-    }
-
-    try {
-      await _connectionContext.connect(
-        mode: CoreConnectionMode.manual,
-        host: configuration.vmHost,
-        port: configuration.vmPort,
-        timeout: timeout,
-      );
-      return true;
-    } catch (_) {
-      return false;
-    }
+    final ensure = await _connectionContext.ensureConnectedWithPolicy(
+      timeout: timeout,
+    );
+    return ensure.connected;
   }
 
   /// Hot restart the Flutter app.

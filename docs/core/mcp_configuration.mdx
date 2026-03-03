@@ -1,6 +1,7 @@
 # Configuration
 
-The MCP server can be configured using command-line arguments. 
+The MCP server can be configured using command-line arguments.
+MCP transport is `stdin/stdout` (no inbound MCP TCP port).
 
 ## Command Line Arguments
 
@@ -14,32 +15,114 @@ The MCP server can be configured using command-line arguments.
 | `--dynamics` | Enable or disable support for dynamic tool registration. Defaults to `true`. |
 | `--await-dnd` | Await until a dynamic tool registration connection is established. This can be useful for some AI clients. Defaults to `false`. |
 | `--save-images` | Save captured images as files instead of returning them as base64 data. Defaults to `false`. |
-| `--log-level` | The logging level for the server. Can be `debug`, `info`, `notice`, `warning`, `error`, `critical`, `alert`, or `emergency`. Defaults to `error`. Log levels made accordingly to https://spec.modelcontextprotocol.io/specification/2025-03-26/server/utilities/logging/#log-levels |
+| `--flutter-project-dir` | Optional Flutter project directory used by machine discovery (`flutter attach --machine`). |
+| `--flutter-device` | Optional Flutter device for machine discovery (for example `chrome`). |
+| `--flutter-discovery-timeout-ms` | Timeout in milliseconds for machine discovery. Defaults to `2500`. |
+| `--log-level` | The logging level for the server. Can be `debug`, `info`, `notice`, `warning`, `error`, `critical`, `alert`, or `emergency`. Defaults to `critical`. Log levels are based on https://spec.modelcontextprotocol.io/specification/2025-03-26/server/utilities/logging/#log-levels |
 | `--environment` | The environment mode. Can be `development` or `production`. Defaults to `production`. |
 | `-h`, `--help` | Show the usage text. |
 
+CLI note: `flutter_mcp_cli` has a separate `--log-level` default of `error`.
 
-## Port Configuration
 
-All Flutter Inspector tools automatically connect to the default Flutter debug port (8181). You only need to specify a port if:
+## Connection Targeting
 
-- You're running Flutter on a different port
-- You have multiple Flutter instances running
-- You've configured a custom debug port
+Server flags (`--dart-vm-host`, `--dart-vm-port`) define defaults, but VM-dependent requests can override connection selection per call.
 
-Example usage:
+### Resolution Policy
+
+For VM-dependent operations, the server resolves target in this order:
+
+1. Reuse active healthy connection.
+2. Reuse sticky target if still discoverable.
+3. Auto-attach if exactly one target is discovered.
+4. Return `connection_selection_required` if multiple targets exist and no explicit target is provided.
+
+### Per-Request `connection` Object
+
+VM-dependent tool calls support optional `arguments.connection`:
 
 ```json
-// Default port (8181)
-{
-  "name": "debug_dump_render_tree"
-}
-
-// Custom port
 {
   "name": "debug_dump_render_tree",
   "arguments": {
-    "port": 8182
+    "connection": {
+      "targetId": "ws://127.0.0.1:59490/<token>/ws"
+    }
   }
 }
 ```
+
+Supported fields:
+
+- `targetId` (preferred, full VM websocket URI)
+- `mode`: `auto`, `manual`, or `uri`
+- `host`
+- `port`
+- `uri`
+- `forceReconnect`
+
+Examples:
+
+```json
+{
+  "name": "get_vm",
+  "arguments": {
+    "connection": {
+      "mode": "manual",
+      "host": "localhost",
+      "port": 8182
+    }
+  }
+}
+```
+
+```json
+{
+  "name": "get_vm",
+  "arguments": {
+    "connection": {
+      "mode": "uri",
+      "uri": "ws://127.0.0.1:8181/<token>/ws",
+      "forceReconnect": true
+    }
+  }
+}
+```
+
+Important:
+
+- Legacy `host:port` values are rejected for `connection.targetId`.
+- Tool input schemas are strict: flat aliases like `arguments.port`, `arguments.host`, and `arguments.uri` are rejected.
+- `connect_debug_app` accepts the same `connection` object.
+- Dynamic registry tools (`listClientToolsAndResources`, `runClientTool`, `runClientResource`) also accept optional `connection`.
+- CLI one-shot `exec --args`, daemon `command/execute`, and daemon `watch/start` accept the same nested `connection` object contract.
+- `snapshot/create` supports per-step `args.commands[i].args.connection`.
+- `connect` and `session_start` reject mixed native selector fields and nested `connection` in the same args object.
+
+### Resource URI Targeting
+
+Resource reads can target a specific connection using query params:
+
+- `targetId`
+- `mode`
+- `host`
+- `port`
+- `uri`
+- `forceReconnect`
+
+Example:
+
+- `visual://localhost/view/details?targetId=ws%3A%2F%2F127.0.0.1%3A59490%2F%3Ctoken%3E%2Fws`
+
+### Flutter Web
+
+Discovery order is:
+
+1. Flutter machine discovery (`flutter attach --machine`)
+2. Port-scan fallback
+
+Manual fallback remains available:
+
+- CLI: `--vm-service-uri ws://127.0.0.1:59490/<token>/ws`
+- MCP calls: `arguments.connection.uri`

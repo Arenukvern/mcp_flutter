@@ -57,5 +57,144 @@ void main() {
       expect(result.ok, isFalse);
       expect(result.error?.code, equals('dynamic_registry_disabled'));
     });
+
+    test('auto ambiguity returns connection_selection_required', () async {
+      final logger =
+          (
+            final LoggingLevel level,
+            final String message, {
+            final String logger = 'test',
+          }) {};
+
+      final context = ConnectionContext(
+        defaultHost: 'localhost',
+        defaultPort: 8181,
+        logger: logger,
+        discoverPorts: () async => <int>[8181, 8182],
+      );
+
+      final localExecutor = DefaultCoreCommandExecutor(
+        connectionContext: context,
+        portScanner: CorePortScanner(logger: logger),
+        imageFileSaver: CoreImageFileSaver(logger: logger),
+        configuration: const CoreRuntimeConfiguration(
+          vmHost: 'localhost',
+          vmPort: 8181,
+          resourcesSupported: true,
+          imagesSupported: true,
+          dumpsSupported: false,
+          dynamicRegistrySupported: false,
+          saveImagesToFiles: false,
+        ),
+      );
+
+      final result = await localExecutor.execute(const GetVmCommand());
+
+      expect(result.ok, isFalse);
+      expect(
+        result.error?.code,
+        equals(CoreErrorCode.connectionSelectionRequired),
+      );
+
+      final details = result.error?.details as Map<String, Object?>?;
+      expect(details?['reason'], equals('multiple_targets'));
+      expect(details?['availableTargets'], isA<List<Object?>>());
+      expect(
+        details?['suggestedAction'],
+        equals('retry_with_connection_target'),
+      );
+      expect(details?['example'], isA<Map<String, Object?>>());
+      final available = (details?['availableTargets'] as List<Object?>?) ?? [];
+      final firstTarget = available.first as Map<String, Object?>;
+      expect(firstTarget['targetId'], startsWith('ws://'));
+    });
+
+    test('unknown targetId returns connect_failed target_not_found', () async {
+      final logger =
+          (
+            final LoggingLevel level,
+            final String message, {
+            final String logger = 'test',
+          }) {};
+
+      final context = ConnectionContext(
+        defaultHost: 'localhost',
+        defaultPort: 8181,
+        logger: logger,
+        discoverPorts: () async => <int>[8181, 8182],
+      );
+
+      final localExecutor = DefaultCoreCommandExecutor(
+        connectionContext: context,
+        portScanner: CorePortScanner(logger: logger),
+        imageFileSaver: CoreImageFileSaver(logger: logger),
+        configuration: const CoreRuntimeConfiguration(
+          vmHost: 'localhost',
+          vmPort: 8181,
+          resourcesSupported: true,
+          imagesSupported: true,
+          dumpsSupported: false,
+          dynamicRegistrySupported: false,
+          saveImagesToFiles: false,
+        ),
+      );
+
+      final result = await localExecutor.execute(
+        const ConnectCommand(
+          mode: CoreConnectionMode.auto,
+          targetId: 'ws://localhost:9999/ws',
+        ),
+      );
+
+      expect(result.ok, isFalse);
+      expect(result.error?.code, equals(CoreErrorCode.connectFailed));
+      final details = result.error?.details as Map<String, Object?>?;
+      expect(details?['reason'], equals('target_not_found'));
+      expect(details?['availableTargets'], isA<List<Object?>>());
+    });
+
+    test('legacy host:port targetId returns migration error', () async {
+      final logger =
+          (
+            final LoggingLevel level,
+            final String message, {
+            final String logger = 'test',
+          }) {};
+
+      final context = ConnectionContext(
+        defaultHost: 'localhost',
+        defaultPort: 8181,
+        logger: logger,
+        discoverPorts: () async => <int>[8181],
+      );
+
+      final localExecutor = DefaultCoreCommandExecutor(
+        connectionContext: context,
+        portScanner: CorePortScanner(logger: logger),
+        imageFileSaver: CoreImageFileSaver(logger: logger),
+        configuration: const CoreRuntimeConfiguration(
+          vmHost: 'localhost',
+          vmPort: 8181,
+          resourcesSupported: true,
+          imagesSupported: true,
+          dumpsSupported: false,
+          dynamicRegistrySupported: false,
+          saveImagesToFiles: false,
+        ),
+      );
+
+      final result = await localExecutor.execute(
+        const ConnectCommand(
+          mode: CoreConnectionMode.auto,
+          targetId: 'localhost:8181',
+        ),
+      );
+
+      expect(result.ok, isFalse);
+      expect(result.error?.code, equals(CoreErrorCode.connectFailed));
+      final details = result.error?.details as Map<String, Object?>?;
+      expect(details?['reason'], equals('invalid_target_id_legacy_host_port'));
+      expect(details?['migrationHint'], isA<String>());
+    });
   });
 }

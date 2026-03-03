@@ -9,8 +9,8 @@ import 'dart:convert';
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_inspector_mcp_server/src/core/commands.dart';
 import 'package:flutter_inspector_mcp_server/src/core/executor.dart';
-import 'package:flutter_inspector_mcp_server/src/core/results.dart';
 import 'package:flutter_inspector_mcp_server/src/dynamic_registry/dynamic_registry.dart';
+import 'package:flutter_inspector_mcp_server/src/mixins/handlers/connection_override.dart';
 import 'package:flutter_inspector_mcp_server/src/server.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
 import 'package:is_dart_empty_or_not/is_dart_empty_or_not.dart';
@@ -50,7 +50,7 @@ final class DynamicRegistryTools {
   static final listClientToolsAndResources = Tool(
     name: 'listClientToolsAndResources',
     description: _listClientToolsAndResourcesDescription,
-    inputSchema: ObjectSchema(properties: {}),
+    inputSchema: strictToolInputSchema(),
   );
 
   static final runClientTool = Tool(
@@ -63,7 +63,7 @@ final class DynamicRegistryTools {
         'This is your primary way to interact with Flutter app functionality beyond static MCP server tools. '
         '\n\nFor custom tools: $_setupWorkflowText'
         'Example: Create MCPCallEntry.tool() with handler: (params) => MCPCallResult(...), then register and hot reload.',
-    inputSchema: ObjectSchema(
+    inputSchema: strictToolInputSchema(
       required: ['toolName'],
       properties: {
         'toolName': Schema.string(
@@ -89,7 +89,7 @@ final class DynamicRegistryTools {
         'Typically used for getting current app state snapshots or accessing structured data. '
         '\n\nFor custom resources: $_setupWorkflowText'
         'Example: Create MCPCallEntry.resource() with handler: (uri) => MCPCallResult(...), then register and hot reload.',
-    inputSchema: ObjectSchema(
+    inputSchema: strictToolInputSchema(
       required: ['resourceUri'],
       properties: {
         'resourceUri': Schema.string(
@@ -123,13 +123,21 @@ final class DynamicRegistryTools {
   FutureOr<CallToolResult> _handleListClientToolsAndResources(
     final CallToolRequest request,
   ) async {
+    final connectError = await applyConnectionOverride(
+      request: request,
+      executor: _executor,
+    );
+    if (connectError != null) {
+      return toCallToolErrorResult(connectError, prefix: 'Failed to connect');
+    }
+
     final result = await _executor.execute(
       const ListClientToolsAndResourcesCommand(),
     );
     if (!result.ok) {
-      return CallToolResult(
-        isError: true,
-        content: [TextContent(text: _errorText(result))],
+      return toCallToolErrorResult(
+        result,
+        prefix: 'Failed to list dynamic tools/resources',
       );
     }
 
@@ -150,6 +158,14 @@ final class DynamicRegistryTools {
   FutureOr<CallToolResult> _handleRunClientTool(
     final CallToolRequest request,
   ) async {
+    final connectError = await applyConnectionOverride(
+      request: request,
+      executor: _executor,
+    );
+    if (connectError != null) {
+      return toCallToolErrorResult(connectError, prefix: 'Failed to connect');
+    }
+
     final arguments = request.arguments;
     final toolName = jsonDecodeString(arguments?['toolName']);
     if (toolName.isEmpty) {
@@ -168,10 +184,7 @@ final class DynamicRegistryTools {
     );
 
     if (!result.ok) {
-      return CallToolResult(
-        content: [TextContent(text: _errorText(result))],
-        isError: true,
-      );
+      return toCallToolErrorResult(result, prefix: 'Dynamic tool execution failed');
     }
 
     final data = _map(result.data);
@@ -193,6 +206,14 @@ final class DynamicRegistryTools {
   FutureOr<CallToolResult> _handleRunClientResource(
     final CallToolRequest request,
   ) async {
+    final connectError = await applyConnectionOverride(
+      request: request,
+      executor: _executor,
+    );
+    if (connectError != null) {
+      return toCallToolErrorResult(connectError, prefix: 'Failed to connect');
+    }
+
     final arguments = request.arguments;
     final resourceUri = jsonDecodeString(arguments?['resourceUri']);
     if (resourceUri.isEmpty) {
@@ -207,10 +228,7 @@ final class DynamicRegistryTools {
     );
 
     if (!result.ok) {
-      return CallToolResult(
-        content: [TextContent(text: _errorText(result))],
-        isError: true,
-      );
+      return toCallToolErrorResult(result, prefix: 'Dynamic resource read failed');
     }
 
     final data = _map(result.data);
@@ -252,10 +270,7 @@ final class DynamicRegistryTools {
     );
 
     if (!result.ok) {
-      return CallToolResult(
-        content: [TextContent(text: _errorText(result))],
-        isError: true,
-      );
+      return toCallToolErrorResult(result, prefix: 'Failed to get registry stats');
     }
 
     return CallToolResult(
@@ -263,9 +278,6 @@ final class DynamicRegistryTools {
       isError: false,
     );
   }
-
-  String _errorText(final CoreResult result) =>
-      result.error?.message ?? 'Unknown dynamic registry error';
 
   Map<String, Object?> _map(final Object? data) {
     if (data is Map<String, Object?>) {

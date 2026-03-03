@@ -4,6 +4,37 @@
 
 - dockerfile for MCP Server - not tested.
   Huge thank you to [arslanmit](https://github.com/arslanmit) for PR with Dockerfile! https://github.com/Arenukvern/mcp_flutter/pull/64
+- connection UX redesign for VM-dependent operations:
+  - startup remains non-blocking (no forced VM target lock)
+  - first VM-dependent call auto-attaches if target is unambiguous
+  - ambiguous multi-target selection returns `connection_selection_required` with structured details:
+    `reason`, `availableTargets`, `suggestedAction`, `example`, `howToRetry`
+- added strict optional nested `arguments.connection` support across VM-dependent MCP tools:
+  `targetId`, `mode`, `host`, `port`, `uri`, `forceReconnect`
+- `connect_debug_app` now accepts the same `connection` object contract
+- dynamic registry parity:
+  - added optional `connection` to `listClientToolsAndResources`, `runClientTool`, `runClientResource`
+  - unified pre-connect flow and ambiguity/error semantics
+- resource read targeting now supports URI query params:
+  `targetId`, `mode`, `host`, `port`, `uri`, `forceReconnect`
+- strict schema change: legacy flat top-level connection aliases (`host` / `port` / `uri`) are rejected in MCP tool inputs
+- target identity migration (hard break):
+  - `connection.targetId` and `availableTargets[].targetId` now use full VM websocket URI IDs
+  - legacy `host:port` target IDs are rejected with migration hints (`connection.uri` fallback remains supported)
+- Flutter web connectivity upgrade:
+  - added `flutter attach --machine` discovery provider with `app.debugPort.wsUri` parsing
+  - merged machine discovery and port-scan fallback before VM-dependent auto-attach
+- new runtime discovery flags:
+  - `--flutter-project-dir`
+  - `--flutter-device`
+  - `--flutter-discovery-timeout-ms`
+- CLI UX alignment with MCP connection policy:
+  - one-shot `exec` now supports strict optional `args.connection` with shared parser
+  - daemon `command/execute` and `watch/start` accept the same `params.args.connection` targeting contract
+  - snapshot `create` supports per-step `args.connection` targeting before each step executes
+  - `exec` preconnect no longer emits synthetic `vm_not_connected` for VM-required ambiguity paths; executor auto policy returns `connection_selection_required`
+  - explicit session attach remains strict, while implicit stale active-session attach now falls back to executor auto connection policy
+  - conflict guard: `connect` / `session_start` reject mixed native selector fields and nested `args.connection`
 
 ## 0.2.0
 

@@ -90,9 +90,9 @@ flutter pub get
 AI Agent: Instruct the USER to update their Flutter app's `main.dart` file located at `[FLUTTER_APP_PATH]/lib/main.dart`:
 
 ```dart
-import \'package:flutter/material.dart\';
-import \'package:mcp_toolkit/mcp_toolkit.dart\';
-import \'dart:async\';
+import 'package:flutter/material.dart';
+import 'package:mcp_toolkit/mcp_toolkit.dart';
+import 'dart:async';
 
 Future<void> main() async {
   runZonedGuarded(

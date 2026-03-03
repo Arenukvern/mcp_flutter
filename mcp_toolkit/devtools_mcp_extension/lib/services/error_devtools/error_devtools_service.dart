@@ -13,6 +13,7 @@ final class ErrorDevtoolsService extends BaseDevtoolsService {
   }
 
   Future<void> dispose() async {
+    await disposeObjectGroups();
     await _flutterErrorMonitor.dispose();
   }
 

@@ -302,13 +302,21 @@ final class DynamicRegistry {
   DynamicToolEntry? getToolEntry(final String name) => _tools[name];
 
   /// Get resource entry by URI for MCP ReadResourceRequest handling
-  DynamicResourceEntry? getResourceEntry(final String uri) => _resources[uri];
+  DynamicResourceEntry? getResourceEntry(final String uri) {
+    final direct = _resources[uri];
+    if (direct != null) {
+      return direct;
+    }
+
+    final normalized = _normalizeResourceLookupUri(uri);
+    return _resources[normalized];
+  }
 
   /// Check if a tool is dynamically registered (for MCP tool routing)
   bool isDynamicTool(final String name) => _tools.containsKey(name);
 
   /// Check if a resource is dynamically registered (for MCP resource routing)
-  bool isDynamicResource(final String uri) => _resources.containsKey(uri);
+  bool isDynamicResource(final String uri) => getResourceEntry(uri) != null;
 
   /// Forward MCP tool call to the appropriate Flutter app
   /// Returns null if tool not found, otherwise forwards the call
@@ -416,7 +424,7 @@ final class DynamicRegistry {
       // Call the resource's specific service extension
       final response = await server.callFlutterExtension(
         '$mcpToolkitExt.$resourceName',
-        args: {'uri': resourceUri},
+        args: {'uri': entry.resource.uri},
       );
 
       // Parse the response from the Flutter app
@@ -479,4 +487,13 @@ final class DynamicRegistry {
   String toString() =>
       'DynamicRegistry(${_tools.length} tools, '
       '${_resources.length} resources)';
+
+  String _normalizeResourceLookupUri(final String uri) {
+    final parsed = Uri.tryParse(uri);
+    if (parsed == null) {
+      return uri;
+    }
+
+    return parsed.replace(query: '', fragment: '').toString();
+  }
 }

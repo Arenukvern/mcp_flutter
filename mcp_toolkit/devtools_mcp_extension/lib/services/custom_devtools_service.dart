@@ -6,38 +6,37 @@ import 'package:devtools_mcp_extension/services/object_group_manager.dart';
 
 part 'error_devtools/error_devtools_service.dart';
 
-class _DebugKey {
-  const _DebugKey(this.name);
-  final String name;
-}
-
 base class BaseDevtoolsService {
   BaseDevtoolsService({required this.devtoolsService});
   final DartVmDevtoolsService devtoolsService;
 
-  /// Expando is used to associate ObjectGroupManager instances with debug names
-  /// without creating a direct reference that would prevent garbage collection.
-  /// This allows us to manage object groups efficiently
-  /// while maintaining memory safety.
-  final Expando<ObjectGroupManager> _objectGroupManagers = Expando();
-
-  /// Map to keep debug keys alive while they're needed
-  final Map<String, _DebugKey> _debugKeys = {};
+  final Map<String, ObjectGroupManager> _objectGroupManagers = {};
 
   ObjectGroupManager initObjectGroup({required final String debugName}) {
-    // Create or get existing debug key
-    final debugKey = _debugKeys.putIfAbsent(
-      debugName,
-      () => _DebugKey(debugName),
-    );
+    final existing = _objectGroupManagers[debugName];
+    if (existing != null) {
+      return existing;
+    }
+
+    final vmService = devtoolsService.serviceManager.service;
+    if (vmService == null) {
+      throw StateError('VM service not available');
+    }
 
     final manager = ObjectGroupManager(
       debugName: debugName,
-      vmService: devtoolsService.serviceManager.service!,
+      vmService: vmService,
       isolate: devtoolsService.serviceManager.isolateManager.mainIsolate,
     );
-    _objectGroupManagers[debugKey] = manager;
+    _objectGroupManagers[debugName] = manager;
     return manager;
+  }
+
+  Future<void> disposeObjectGroups() async {
+    for (final manager in _objectGroupManagers.values) {
+      await manager.dispose();
+    }
+    _objectGroupManagers.clear();
   }
 }
 
@@ -47,6 +46,10 @@ final class CustomDevtoolsService extends BaseDevtoolsService {
   CustomDevtoolsService({required super.devtoolsService});
 
   Future<void> init() async {}
+
+  Future<void> dispose() async {
+    await disposeObjectGroups();
+  }
 
   String get isolateIdNumber =>
       devtoolsService.serviceManager.isolateManager.mainIsolate.value?.id
@@ -80,7 +83,10 @@ final class CustomDevtoolsService extends BaseDevtoolsService {
   /// - errorType: Type of the error (e.g., "Layout Overflow", "Render Issue")
   Future<RPCResponse> callPlaygroundFunction(
     final Map<String, dynamic> params,
-  ) async {
+  ) => getErrors(params);
+
+  /// Analyzes the remote diagnostics tree and returns visual / build errors.
+  Future<RPCResponse> getErrors(final Map<String, dynamic> params) async {
     final serviceManager = devtoolsService.serviceManager;
     if (!serviceManager.connectedState.value.connected) {
       return RPCResponse.error('Not connected to VM service');
@@ -90,128 +96,245 @@ final class CustomDevtoolsService extends BaseDevtoolsService {
     if (vmService == null) {
       return RPCResponse.error('VM service not available');
     }
-    final objectGroupManager = initObjectGroup(debugName: 'playground');
-    final response = await devtoolsService.serviceManager
-        .callServiceExtensionOnMainIsolate(
-          'ext.mcp.toolkit.app_errors',
-          // args: {'count': 10},
-        );
-    print(response.json);
-    return RPCResponse.successMap({'errors': []});
-    // final objectRef = await vmService.getObject(
-    //   isolateId,
-    //   'RenderFlex#${errors.first.renderFlexId}', // The ID from RenderFlex#f8f6b
-    // );
-    // final group = objectGroupManager.next;
-    // final response = await devtoolsService.serviceManager.callService(
-    //   // 'ext.flutter.inspector.'
-    //   // '${WidgetInspectorServiceExtensions.getRootWidget.name}',
-    //   'reloadSources',
-    //   isolateId:
-    //       devtoolsService.serviceManager.isolateManager.mainIsolate.value?.id
-    //           ?.split('/')
-    //           .last ??
-    //       '',
-    //   args: {
-    //     // 'isolateId':
-    //     //     devtoolsService.serviceManager.isolateManager.mainIsolate.value?.id
-    //     //         ?.split('/')
-    //     //         .last ??
-    //     //     '',
-    //     // 'groupName': group.groupName,
-    //     // 'objectGroup': group.groupName,
-    //     // 'isSummaryTree': 'true',
-    //     // 'withPreviews': 'true',
-    //     // 'fullDetails': 'true',
-    //     'force': true,
-    //   },
-    // );
 
-    // final objectGroupApi = inspector_service.ObjectGroup(
-    //   'visual-errors',
-    //   inspector_service.InspectorService(
-    //     dartVmDevtoolsService: devtoolsService,
-    //   ),
-    // );
+    final isolateId = serviceManager.isolateManager.mainIsolate.value?.id;
+    if (isolateId == null) {
+      return RPCResponse.error('No main isolate available');
+    }
 
-    // final rootNodes = RemoteDiagnosticsNode(
-    //   response.json!['result'] as Map<String, Object?>,
-    //   objectGroupApi,
-    //   false,
-    //   null,
-    // );
+    final count = _parseInt(params['count'], fallback: 10);
+    final isSummaryTree = _parseBool(params['isSummaryTree'], fallback: true);
+    final includeProperties = _parseBool(
+      params['includeProperties'],
+      fallback: true,
+    );
+    final fullDetails = _parseBool(params['fullDetails'], fallback: true);
 
-    // // one of children contains in description correct renderFlexId.
-    // // so we need to find it and use it as rootNode.
-    // Future<RemoteDiagnosticsNode?> findNodeWithId(
-    //   final RemoteDiagnosticsNode node,
-    //   final String id,
-    // ) async {
-    //   if (node.toString(minLevel: DiagnosticLevel.debug).contains(id)) {
-    //     return node;
-    //   }
-    //   if (!node.hasChildren) return null;
-    //   final children = await node.children ?? [];
-    //   for (final child in children) {
-    //     final found = await findNodeWithId(child, id);
-    //     if (found != null) return found;
-    //   }
-    //   return null;
-    // }
+    final objectGroupManager = initObjectGroup(debugName: 'visual-errors');
+    final group = objectGroupManager.next;
 
-    // // final rootNode = await findNodeWithId(rootNodes, errors.first.renderFlexId);
+    try {
+      final extensionMethod = isSummaryTree
+          ? includeProperties
+                ? WidgetInspectorServiceExtensions
+                      .getRootWidgetSummaryTreeWithPreviews
+                : WidgetInspectorServiceExtensions.getRootWidgetSummaryTree
+          : WidgetInspectorServiceExtensions.getRootWidgetTree;
 
-    // // print(jsonEncode(rootNode?.json));
+      final response = await vmService.callServiceExtension(
+        'ext.flutter.inspector.${extensionMethod.name}',
+        isolateId: isolateId,
+        args: {
+          // Different Flutter versions use either `groupName` or `objectGroup`.
+          'groupName': group.groupName,
+          'objectGroup': group.groupName,
+          if (includeProperties) 'includeProperties': 'true',
+          if (fullDetails) 'subtreeDepth': '-1',
+        },
+      );
 
-    // // return RPCResponse.successMap({'errors': errors});
+      final result = response.json?['result'];
+      if (result is! Map) {
+        await objectGroupManager.cancelNext();
+        return RPCResponse.error('Root widget tree not available');
+      }
 
-    // try {
-    //   // Get a new object group for this operation
-    //   final group = objectGroupManager.next;
+      final errors = _extractVisualErrors(
+        rootNode: result.cast<String, Object?>(),
+        groupName: group.groupName,
+        limit: count,
+      );
 
-    //   try {
-    //     // Get the root widget tree with full details to analyze for errors
-    //     final response = await vmService.callServiceExtension(
-    //       'ext.flutter.inspector.getRootWidgetTree',
-    //       // isolateId: isolateId,
-    //       args: {
-    //         'groupName': group.groupName,
-    //         'isSummaryTree': 'true',
-    //         'withPreviews': 'true',
-    //         'fullDetails': 'false',
-    //       },
-    //     );
+      await objectGroupManager.promoteNext();
+      return RPCResponse.successMap({
+        'groupName': group.groupName,
+        'count': errors.length,
+        'errors': errors,
+      });
+    } catch (e, stack) {
+      await objectGroupManager.cancelNext();
+      return RPCResponse.error('Error getting visual errors: $e', stack);
+    }
+  }
 
-    //     if (response.json == null || response.json!['result'] == null) {
-    //       await objectGroupManager.cancelNext();
-    //       return RPCResponse.error('Root widget tree not available');
-    //     }
+  List<Map<String, dynamic>> _extractVisualErrors({
+    required final Map<String, Object?> rootNode,
+    required final String groupName,
+    required final int limit,
+  }) {
+    final maxErrors = limit <= 0 ? 1 : limit;
+    final errors = <Map<String, dynamic>>[];
+    final seen = <String>{};
 
-    //     // Parse the root node
-    //     final rootNode = RemoteDiagnosticsNode(
-    //       response.json!['result'] as Map<String, Object?>,
-    //       null, // objectGroupApi not needed for error detection
-    //       false, // not a property
-    //       null, // no parent
-    //     );
-    //     print(jsonEncode(rootNode.json));
+    void visitNode(final Object? rawNode) {
+      if (errors.length >= maxErrors || rawNode is! Map) {
+        return;
+      }
 
-    //     // Find all errors in the tree
-    //     // final errors = await _findErrors(rootNode);
+      final node = rawNode.cast<String, Object?>();
+      final description = _extractDescription(node);
+      final errorType = _classifyErrorType(node, description);
 
-    //     // Promote the group after successful operation
-    //     await objectGroupManager.promoteNext();
+      if (errorType != null) {
+        final nodeId = _extractNodeId(node);
+        final dedupeKey = '$nodeId|$description|$errorType';
+        if (seen.add(dedupeKey)) {
+          errors.add({
+            'nodeId': nodeId,
+            'groupName': groupName,
+            'description': description,
+            'errorType': errorType,
+          });
+        }
+      }
 
-    //     return RPCResponse.successMap({'errors': []});
-    //   } catch (e) {
-    //     // Cancel the group on error
-    //     await objectGroupManager.cancelNext();
-    //     rethrow;
-    //   }
-    // } catch (e, stackTrace) {
-    //   return RPCResponse.error('Error getting
-    // visual errors: $e', stackTrace);
-    // }
+      final children = node['children'];
+      if (children is List) {
+        for (final child in children) {
+          visitNode(child);
+          if (errors.length >= maxErrors) {
+            return;
+          }
+        }
+      }
+
+      final properties = node['properties'];
+      if (properties is List) {
+        for (final property in properties) {
+          visitNode(property);
+          if (errors.length >= maxErrors) {
+            return;
+          }
+        }
+      }
+    }
+
+    visitNode(rootNode);
+    return errors;
+  }
+
+  static int _parseInt(final Object? value, {required final int fallback}) {
+    if (value is int) {
+      return value;
+    }
+    if (value is num) {
+      return value.toInt();
+    }
+    if (value is String) {
+      return int.tryParse(value) ?? fallback;
+    }
+    return fallback;
+  }
+
+  static bool _parseBool(final Object? value, {required final bool fallback}) {
+    if (value is bool) {
+      return value;
+    }
+    if (value is String) {
+      if (value.toLowerCase() == 'true') {
+        return true;
+      }
+      if (value.toLowerCase() == 'false') {
+        return false;
+      }
+    }
+    return fallback;
+  }
+
+  static String _extractDescription(final Map<String, Object?> node) {
+    final candidates = [
+      node['description'],
+      node['renderedErrorText'],
+      node['name'],
+      node['type'],
+      node['propertyType'],
+    ];
+
+    for (final candidate in candidates) {
+      final value = _asNonEmptyString(candidate);
+      if (value != null) {
+        return value;
+      }
+    }
+    return 'Unknown diagnostics error';
+  }
+
+  static String _extractNodeId(final Map<String, Object?> node) {
+    final directIds = [
+      node['nodeId'],
+      node['valueId'],
+      node['objectId'],
+      node['id'],
+      node['creationLocation'],
+    ];
+    for (final id in directIds) {
+      final value = _asNonEmptyString(id);
+      if (value != null) {
+        return value;
+      }
+    }
+
+    final valueRef = node['valueRef'];
+    if (valueRef is Map) {
+      final fromValueRef = _asNonEmptyString(valueRef['id']);
+      if (fromValueRef != null) {
+        return fromValueRef;
+      }
+    }
+
+    return '';
+  }
+
+  static String? _classifyErrorType(
+    final Map<String, Object?> node,
+    final String description,
+  ) {
+    final signalText = [
+      description,
+      _asNonEmptyString(node['renderedErrorText']) ?? '',
+      _asNonEmptyString(node['name']) ?? '',
+      _asNonEmptyString(node['type']) ?? '',
+      _asNonEmptyString(node['style']) ?? '',
+      _asNonEmptyString(node['level']) ?? '',
+    ].join(' ').toLowerCase();
+
+    final hasErrorSignal =
+        signalText.contains('error') ||
+        signalText.contains('exception') ||
+        signalText.contains('overflow') ||
+        signalText.contains('assert') ||
+        signalText.contains('failed');
+
+    if (!hasErrorSignal) {
+      return null;
+    }
+    if (signalText.contains('overflow')) {
+      return 'Layout Overflow';
+    }
+    if (signalText.contains('assert')) {
+      return 'Invalid State';
+    }
+    if (signalText.contains('render')) {
+      return 'Render Issue';
+    }
+    if (signalText.contains('exception') || signalText.contains('thrown')) {
+      return 'Usage Error';
+    }
+    if (signalText.contains('failed')) {
+      return 'Operation Failed';
+    }
+    return 'General Error';
+  }
+
+  static String? _asNonEmptyString(final Object? value) {
+    if (value == null) {
+      return null;
+    }
+    final stringValue = value.toString().trim();
+    if (stringValue.isEmpty || stringValue == 'null') {
+      return null;
+    }
+    return stringValue;
   }
 
   /// Gets the diagnostic tree for the current Flutter widget tree.
@@ -240,7 +363,7 @@ final class CustomDevtoolsService extends BaseDevtoolsService {
     if (isolateId == null) {
       return RPCResponse.error('No main isolate available');
     }
-    final objectGroupManager = initObjectGroup(debugName: 'playground');
+    final objectGroupManager = initObjectGroup(debugName: 'diagnostic-tree');
 
     try {
       // Get a new object group for this operation
@@ -248,13 +371,12 @@ final class CustomDevtoolsService extends BaseDevtoolsService {
 
       try {
         // Use the appropriate extension based on parameters
-        final extensionMethod =
-            isSummaryTree
-                ? withPreviews
-                    ? WidgetInspectorServiceExtensions
+        final extensionMethod = isSummaryTree
+            ? withPreviews
+                  ? WidgetInspectorServiceExtensions
                         .getRootWidgetSummaryTreeWithPreviews
-                    : WidgetInspectorServiceExtensions.getRootWidgetSummaryTree
-                : WidgetInspectorServiceExtensions.getRootWidgetTree;
+                  : WidgetInspectorServiceExtensions.getRootWidgetSummaryTree
+            : WidgetInspectorServiceExtensions.getRootWidgetTree;
 
         final response = await vmService.callServiceExtension(
           'ext.flutter.inspector.${extensionMethod.name}',
@@ -271,22 +393,11 @@ final class CustomDevtoolsService extends BaseDevtoolsService {
           return RPCResponse.error('Root widget tree not available');
         }
 
-        // Parse the root node
-        // final rootNode = RemoteDiagnosticsNode(
-        //   response.json!['result'] as Map<String, Object?>,
-        //   null, // objectGroupApi not needed for tree viewing
-        //   false, // not a property
-        //   null, // no parent
-        // );
-
-        // Promote the group after successful operation
-        // await objectGroupManager.promoteNext();
-
-        // return RPCResponse.successMap({
-        //   'root': rootNode.json,
-        //   'groupName': group.groupName,
-        // });
-        throw UnimplementedError();
+        await objectGroupManager.promoteNext();
+        return RPCResponse.successMap({
+          'root': response.json!['result'],
+          'groupName': group.groupName,
+        });
       } catch (e, stack) {
         // Cancel the group on error
         await objectGroupManager.cancelNext();
@@ -348,27 +459,10 @@ final class CustomDevtoolsService extends BaseDevtoolsService {
         return RPCResponse.error('Node properties not available');
       }
 
-      // Parse the properties
-      final List<Object?> propertiesList =
-          propertiesResponse.json!['result'] as List<Object?>;
-      final properties =
-          propertiesList.map((final prop) {
-            // final propNode = RemoteDiagnosticsNode(
-            //   prop! as Map<String, Object?>,
-            //   null, // objectGroupApi not needed for properties viewing
-            //   true, // this is a property
-            //   null, // no parent
-            // );
-            // return {
-            //   'name': propNode.name,
-            //   'description': propNode.description,
-            //   'value': propNode.valueRef.id,
-            //   'type': propNode.type,
-            //   'level': propNode.level.toString(),
-            //   'propertyType': propNode.propertyType,
-            //   'style': propNode.style.toString(),
-            // };
-          }).toList();
+      final properties = (propertiesResponse.json!['result'] as List<Object?>)
+          .whereType<Map<Object?, Object?>>()
+          .map((final prop) => prop.cast<String, Object?>())
+          .toList();
 
       // Get the parent chain for context
       final parentChainResponse = await vmService.callServiceExtension(
@@ -378,33 +472,18 @@ final class CustomDevtoolsService extends BaseDevtoolsService {
         args: {'arg': nodeId, 'objectGroup': groupName},
       );
 
-      // List<Map<String, Object?>> parentChain = [];
-      // if (parentChainResponse.json != null &&
-      //     parentChainResponse.json!['result'] != null) {
-      //   final List<Object?> chainList =
-      //       parentChainResponse.json!['result'] as List<Object?>;
-      //   parentChain =
-      //       chainList.map((final node) {
-      //         final parentNode = RemoteDiagnosticsNode(
-      //           node! as Map<String, Object?>,
-      //           null,
-      //           false,
-      //           null,
-      //         );
-      //         return {
-      //           'id': parentNode.valueRef.id,
-      //           'type': parentNode.type,
-      //           'description': parentNode.description,
-      //           'widgetRuntimeType': parentNode.widgetRuntimeType,
-      //         };
-      //       }).toList();
-      // }
+      final parentChain = parentChainResponse.json?['result'] is List<Object?>
+          ? (parentChainResponse.json!['result'] as List<Object?>)
+                .whereType<Map<Object?, Object?>>()
+                .map((final node) => node.cast<String, Object?>())
+                .toList()
+          : <Map<String, Object?>>[];
 
-      // return RPCResponse.successMap({
-      //   'properties': properties,
-      //   'parentChain': parentChain,
-      // });
-      throw UnimplementedError();
+      return RPCResponse.successMap({
+        'properties': properties,
+        'parentChain': parentChain,
+        'groupName': groupName,
+      });
     } catch (e, stack) {
       return RPCResponse.error('Error getting node details: $e', stack);
     }
@@ -437,10 +516,9 @@ final class CustomDevtoolsService extends BaseDevtoolsService {
 
     try {
       // Use the appropriate children extension based on isSummaryTree
-      final extensionMethod =
-          isSummaryTree
-              ? WidgetInspectorServiceExtensions.getChildrenSummaryTree
-              : WidgetInspectorServiceExtensions.getChildrenDetailsSubtree;
+      final extensionMethod = isSummaryTree
+          ? WidgetInspectorServiceExtensions.getChildrenSummaryTree
+          : WidgetInspectorServiceExtensions.getChildrenDetailsSubtree;
 
       final response = await vmService.callServiceExtension(
         'ext.flutter.inspector.${extensionMethod.name}',
@@ -452,30 +530,15 @@ final class CustomDevtoolsService extends BaseDevtoolsService {
         return RPCResponse.error('Node children not available');
       }
 
-      // Parse the children
-      final List<Object?> childrenList =
-          response.json!['result'] as List<Object?>;
-      final children =
-          // childrenList.map((final child) {
-          //   final childNode = RemoteDiagnosticsNode(
-          //     child! as Map<String, Object?>,
-          //     null, // objectGroupApi not needed for children viewing
-          //     false, // not a property
-          //     null, // parent will be set when tree is built
-          //   );
-          //   return {
-          //     'id': childNode.valueRef.id,
-          //     'description': childNode.description,
-          //     'type': childNode.type,
-          //     'style': childNode.style.toString(),
-          //     'hasChildren': childNode.hasChildren,
-          //     'widgetRuntimeType': childNode.widgetRuntimeType,
-          //     'isStateful': childNode.isStateful,
-          //     'isSummaryTree': childNode.isSummaryTree,
-          //   };
-          // }).toList();
-          // return RPCResponse.successMap({'children': children});
-          throw UnimplementedError();
+      final children = (response.json!['result'] as List<Object?>)
+          .whereType<Map<Object?, Object?>>()
+          .map((final child) => child.cast<String, Object?>())
+          .toList();
+
+      return RPCResponse.successMap({
+        'children': children,
+        'groupName': groupName,
+      });
     } catch (e, stack) {
       return RPCResponse.error('Error getting node children: $e', stack);
     }

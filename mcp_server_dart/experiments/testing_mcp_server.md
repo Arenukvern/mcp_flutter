@@ -2,6 +2,13 @@
 
 This guide explains how to test and verify that the Flutter Inspector MCP Server is working correctly.
 
+> [!WARNING]
+> This file is an experimental/internal testing note and may lag behind the current public setup.
+> Use the canonical setup docs first:
+> - `README.md` (repo root)
+> - `QUICK_START.md` (repo root)
+> - `docs/` site content
+
 ## 🧪 Quick Verification Tests
 
 ### Test 1: Basic Server Functionality
@@ -24,9 +31,9 @@ dart ../scripts/clean_mcp_test.dart | dart run bin/main.dart --dart-vm-port=8181
 
 **Expected Output:**
 
-- ✅ Initialization response with protocol version `2024-11-05`
-- ✅ Tools list with 4 tools: `hot_reload_flutter`, `get_vm`, `get_extension_rpcs`, `test_custom_ext`
-- ✅ Resources list with 3 resources: app errors, screenshots, view details
+- ✅ Initialization response succeeds
+- ✅ Tools list includes core tools like `hot_reload_flutter`, `get_vm`, `get_extension_rpcs`
+- ✅ Resources list includes app errors, screenshots, and view details (when resources are enabled)
 
 ### Test 3: Executable Compilation
 
@@ -64,8 +71,8 @@ Create `~/.cursor/mcp_servers.json`:
       "args": [
         "--dart-vm-host=localhost",
         "--dart-vm-port=8181",
-        "--resources-supported",
-        "--images-supported"
+        "--resources",
+        "--images"
       ]
     }
   }
@@ -149,10 +156,10 @@ chmod +x flutter_inspector_mcp
 - **Without Flutter app**: Returns error about VM service not connected
 - **With Flutter app**: Returns list of available extension RPCs
 
-### 4. `test_custom_ext`
+### 4. `get_active_ports`
 
-- **Without Flutter app**: Returns error about VM service not connected
-- **With Flutter app**: Tests custom extension and returns results
+- **Without Flutter app**: Returns current active debug ports (may be empty)
+- **With Flutter app**: Includes active Flutter/Dart debug ports for target selection
 
 ## 🔍 Advanced Testing
 
@@ -245,9 +252,9 @@ When reporting issues, include:
 
 ## 🔗 Related Documentation
 
-- [Cursor MCP Integration Guide](cursor_mcp_integration.md)
-- [Quick Setup Guide](quick_setup_cursor.md)
-- [Configuration Options](../CONFIGURATION.md)
+- [Server README](../README.md)
+- [Quick Start](../../QUICK_START.md)
+- [Configuration](../../CONFIGURATION.md)
 
 ---
 

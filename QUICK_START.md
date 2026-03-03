@@ -8,7 +8,7 @@ MCP Flutter provides a bridge between AI assistants and Flutter applications thr
 
 **Architecture**: `AI Assistant ↔ MCP Server (Dart) ↔ Dart VM ↔ Flutter Service Extensions`
 
-![Flutter Inspector Architecture](./docs/architecture.png)
+![Flutter Inspector Architecture](./docs/core/architecture.png)
 
 ## 📦 Prerequisites
 
@@ -222,6 +222,59 @@ For developers who want to contribute to the project or run the latest version d
      }
    }
    ```
+
+## Connection Selection Behavior
+
+MCP server startup is non-blocking and does not require selecting a VM target upfront.
+
+On the first VM-dependent tool/resource call, the server resolves the target automatically:
+
+1. Reuse active connection if healthy.
+2. Reuse sticky target if still discoverable.
+3. Auto-attach if only one target is available.
+4. Return `connection_selection_required` if multiple targets exist and no explicit target is provided.
+
+When you receive `connection_selection_required`, retry the same call with:
+
+```json
+{
+  "connection": {
+    "targetId": "ws://127.0.0.1:59490/<token>/ws"
+  }
+}
+```
+
+You can also call `connect_debug_app` with the same nested `connection` object.
+
+Resource reads support explicit targeting via URI query params (`targetId`, `mode`, `host`, `port`, `uri`, `forceReconnect`), for example:
+
+- `visual://localhost/view/details?targetId=ws%3A%2F%2F127.0.0.1%3A59490%2F%3Ctoken%3E%2Fws`
+
+### CLI/Daemon Targeting Parity
+
+The same `connection` contract is supported in CLI v2 and daemon JSON-RPC:
+
+- one-shot `exec`: `--args '{"connection":{"targetId":"ws://127.0.0.1:59490/<token>/ws"}}'`
+- daemon `command/execute`: `params.args.connection`
+- daemon `watch/start`: `params.args.connection` (applied once before watch loop)
+- `snapshot create`: per-step `args.commands[i].args.connection`
+
+Selector commands keep explicit native fields (`mode`, `targetId`, `host`, `port`, `uri`, `force`).  
+Do not mix these native selector fields with nested `connection` in `connect` or `session_start` requests.
+
+### Flutter Web (Auto Discovery + Fallback)
+
+For Flutter web targets, the server/CLI now discover full VM websocket URIs first (`flutter attach --machine`) and then fall back to port scanning.
+
+- CLI discovery context flags:
+  - `--flutter-project-dir`
+  - `--flutter-device` (for example `chrome`)
+  - `--flutter-discovery-timeout-ms`
+- MCP server has the same runtime flags.
+- `connection.targetId` must be full VM WS URI (`ws://.../ws`), not `host:port`.
+- Manual fallback remains available:
+  - CLI: `--vm-service-uri ws://127.0.0.1:59490/<token>/ws`
+  - MCP tools/resources: `arguments.connection.uri`
 
 ## Dynamic Tools Registration
 

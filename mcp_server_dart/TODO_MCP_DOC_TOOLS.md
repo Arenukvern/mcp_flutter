@@ -1,5 +1,9 @@
 # TODO: MCP Documentation Tools
 
+> [!WARNING]
+> Internal tracking note. Checklist/history may lag behind current implementation and docs.
+> Treat this file as backlog context, not end-user documentation.
+
 ## get_dart_member_doc (in mcp_server_dart)
 
 - [x] Implemented as a Tool in mcp_server_dart/lib/src/mixins/handlers/doc_tools_handler.dart

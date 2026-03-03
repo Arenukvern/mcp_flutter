@@ -5,6 +5,8 @@
    - Ensure your Flutter app is running in debug mode
    - Verify the port matches in both Flutter app and MCP server
    - Check if the port is not being used by another process
+   - If you get `connection_selection_required`, retry with `arguments.connection.targetId` using one URI from `availableTargets` (or call `connect_debug_app` first)
+   - Do not use `host:port` for `targetId`; use full VM websocket URI or `arguments.connection.uri`
 
 2. **AI Tool Not Detecting Inspector**
 
@@ -17,3 +19,9 @@
    - Check that tools are registered using `MCPToolkitBinding.instance.addEntries()`
    - Use `listClientToolsAndResources` to verify registration
    - Hot reload your Flutter app after adding new tools
+
+4. **`connection_selection_required` Errors**
+
+   - This means multiple debug targets are available and the server needs an explicit target.
+   - Use the returned `availableTargets` list and retry with `connection.targetId`.
+   - Example: `"arguments": {"connection": {"targetId": "ws://127.0.0.1:59490/<token>/ws"}}`

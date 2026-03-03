@@ -6,47 +6,51 @@ This project now uses a shared core execution layer:
 
 1. `flutter_mcp_cli` is the canonical command surface (connect, inspect, execute, diagnostics).
 2. `flutter_inspector_mcp_server` is a thin MCP protocol adapter that maps MCP tool/resource calls to the same core executor.
-3. Existing MCP tool/resource names and argument contracts remain unchanged.
+3. Existing MCP tool/resource names remain stable. VM-dependent tool inputs now use a strict nested `connection` object for target selection.
 
 The shared core module is available as `flutter_mcp_core` inside this package.
 
-## Canonical Commands
+## CLI v2 Surface (Hard Break)
 
-`connect`, `status`, `discover_debug_apps`, `get_vm`, `get_extension_rpcs`, `hot_reload_flutter`, `hot_restart_flutter`, `get_active_ports`, `get_app_errors`, `get_screenshots`, `get_view_details`, `debug_dump_layer_tree`, `debug_dump_semantics_tree`, `debug_dump_render_tree`, `debug_dump_focus_tree`, `listClientToolsAndResources`, `runClientTool`, `runClientResource`, `dynamicRegistryStats`.
+The CLI is now agent-first and exposes a canonical interface:
 
-Additional CLI-first commands:
-`session_start`, `session_exec`, `session_end`, `diagnose`, `watch`, `explain_errors`.
+- `exec --name <command> --args <json>`
+- `schema [--name <command>]`
+- `capabilities`
+- `serve` (JSON-RPC 2.0 over stdio)
+- `snapshot create --name <id> [--args <json>]`
+- `snapshot diff --from <id> --to <id>`
+- `bundle create --from-snapshot <id> [--output <dir>]`
 
-## CLI Quick Use
+`exec` targets commands in the shared `CommandCatalog`:
+`connect`, `session_start`, `session_exec`, `session_end`, `diagnose`, `watch`, `explain_errors`, `status`, `discover_debug_apps`, `get_vm`, `get_extension_rpcs`, `hot_reload_flutter`, `hot_restart_flutter`, `get_active_ports`, `get_app_errors`, `get_screenshots`, `get_view_details`, `debug_dump_layer_tree`, `debug_dump_semantics_tree`, `debug_dump_render_tree`, `debug_dump_focus_tree`, `listClientToolsAndResources`, `runClientTool`, `runClientResource`, `dynamicRegistryStats`.
 
-```bash
-# JSON envelope output (default)
-dart run bin/flutter_mcp_cli.dart status
-
-# Human output
-dart run bin/flutter_mcp_cli.dart --human discover_debug_apps
-
-# Run a canonical command directly
-dart run bin/flutter_mcp_cli.dart get_vm
-```
-
-## CLI Session Workflow (Agent Friendly)
+## CLI Quick Use (v2)
 
 ```bash
-# 1) Start a sticky session (state file defaults to .flutter_mcp/state.json)
-dart run bin/flutter_mcp_cli.dart session_start --mode uri --uri ws://127.0.0.1:8181/<token>/ws
+# introspection
+dart run bin/flutter_mcp_cli.dart schema
+dart run bin/flutter_mcp_cli.dart capabilities
 
-# 2) Execute commands without passing URI repeatedly
-dart run bin/flutter_mcp_cli.dart session_exec --command get_vm --arguments '{}'
-dart run bin/flutter_mcp_cli.dart session_exec --command get_app_errors --arguments '{"count":4}'
+# one-shot execution (machine envelope)
+dart run bin/flutter_mcp_cli.dart exec --name status --args '{}'
+dart run bin/flutter_mcp_cli.dart exec --name get_vm --args '{}'
+dart run bin/flutter_mcp_cli.dart exec --name get_vm --args '{"connection":{"targetId":"ws://127.0.0.1:8181/<token>/ws"}}'
 
-# 3) End the session
-dart run bin/flutter_mcp_cli.dart session_end
+# session lifecycle
+dart run bin/flutter_mcp_cli.dart exec --name session_start --args '{"mode":"uri","uri":"ws://127.0.0.1:8181/<token>/ws"}'
+dart run bin/flutter_mcp_cli.dart exec --name session_exec --args '{"command":"get_app_errors","arguments":{"count":4}}'
+dart run bin/flutter_mcp_cli.dart exec --name session_end --args '{}'
+
+# reproducible artifacts
+dart run bin/flutter_mcp_cli.dart snapshot create --name baseline --args '{"commands":[{"name":"status","args":{}}]}'
+dart run bin/flutter_mcp_cli.dart snapshot diff --from baseline --to after_fix
+dart run bin/flutter_mcp_cli.dart bundle create --from-snapshot baseline
 ```
 
-### Machine Envelope (v1 additive)
+### Machine Envelope
 
-Default JSON output:
+One-shot commands return one JSON envelope with stable fields:
 
 ```json
 {
@@ -57,76 +61,130 @@ Default JSON output:
     "schemaVersion": "core-envelope/v1",
     "command": "status",
     "timestamp": "2026-03-03T00:00:00.000Z",
-    "durationMs": 2,
-    "endpoint": "ws://127.0.0.1:8181/<token>/ws",
-    "mode": "uri"
+    "durationMs": 2
   }
 }
 ```
 
-`ok`, `data`, `error`, and `meta` are stable. New metadata fields are additive.
+Failures include deterministic policy metadata in `error`:
+`code`, `category`, `retryable`, `exitCode`, `httpLikeStatus`.
 
-### `watch` NDJSON Contract
+### Daemon Protocol
 
-`watch` emits one JSON event per line:
+`serve` runs JSON-RPC 2.0 over stdio. Key methods:
 
-1. `watch_started`
-2. `command_result` (repeated)
-3. `watch_error` (optional)
-4. `watch_stopped`
+- requests: `initialize`, `capabilities/get`, `schema/get`, `command/execute`, `watch/start`, `watch/stop`, `snapshot/create`, `snapshot/diff`, `bundle/create`, `session/start`, `session/end`
+- notifications: `watch/event`, `session/changed`
 
-```bash
-dart run bin/flutter_mcp_cli.dart watch --command get_app_errors --arguments '{"count":1}' --interval-ms 500 --max-events 3
+Watch notifications are NDJSON JSON-RPC notifications with monotonic `seq` per watch.
+
+Targeting contracts:
+
+- `command/execute`: optional `params.args.connection`
+- `watch/start`: optional `params.args.connection` (applied once before watch loop starts)
+- `snapshot/create`: per-step optional `args.commands[i].args.connection`
+
+### State + Locking
+
+- State root defaults to `.flutter_mcp/`
+- state file: `.flutter_mcp/state.json`
+- lock file: `.flutter_mcp/state.lock`
+- snapshots: `.flutter_mcp/snapshots/`
+- bundles: `.flutter_mcp/bundles/`
+
+State operations use a lock with stale-lock TTL recovery to support concurrent agents safely.
+
+### Connection Resolution UX
+
+The server keeps startup non-blocking and defers target lock until a VM-dependent call is executed.
+
+Resolution policy for VM-dependent commands/resources:
+
+1. Reuse active connection if still healthy.
+2. Else reuse sticky target if it exists in current discovery results.
+3. Else auto-attach if exactly one target is discovered.
+4. Else fail with `connection_selection_required` when multiple targets exist and no explicit target is provided.
+
+Selection-required errors are returned as structured JSON so agents can retry immediately:
+
+```json
+{
+  "code": "connection_selection_required",
+  "message": "Multiple debug targets detected. Retry with URI connection.targetId.",
+  "details": {
+    "reason": "multiple_targets",
+    "availableTargets": [
+      {
+        "targetId": "ws://127.0.0.1:8181/<token>/ws",
+        "host": "localhost",
+        "port": 8181,
+        "endpoint": "ws://127.0.0.1:8181/<token>/ws",
+        "isSticky": false,
+        "isCurrent": false
+      }
+    ],
+    "suggestedAction": "retry_with_connection_target",
+    "example": {
+      "connection": {"targetId": "ws://127.0.0.1:8181/<token>/ws"}
+    },
+    "howToRetry": {
+      "connection": {"targetId": "ws://127.0.0.1:8181/<token>/ws"}
+    }
+  }
+}
 ```
 
-Each event includes monotonic `seq`, `timestamp`, and command name.
+CLI one-shot and daemon calls use the same handshake semantics. For ambiguous multi-target sessions, retry with an explicit selector:
 
-### Diagnose + Cause Analysis
-
-```bash
-# deterministic bundle snapshot
-dart run bin/flutter_mcp_cli.dart diagnose --include-view-details
-
-# deterministic causes + optional summary provider
-dart run bin/flutter_mcp_cli.dart explain_errors --count 4 --summary-provider none
-dart run bin/flutter_mcp_cli.dart explain_errors --count 4 --summary-provider openai
+```json
+{
+  "connection": {"targetId": "ws://127.0.0.1:8181/<token>/ws"}
+}
 ```
 
-`openai` summary provider is optional and only used when `OPENAI_API_KEY` is set.
+All VM-dependent MCP tools now accept optional `arguments.connection`:
 
-## Troubleshooting: URI/Token Auto-Attach and State
-
-Connection precedence:
-
-1. `--vm-service-uri`
-2. active session in state file
-3. persisted sticky endpoint in state file
-4. auto discovery (`localhost:8181` fallback)
-
-Use custom state path for isolated CI or multi-project runs:
-
-```bash
-dart run bin/flutter_mcp_cli.dart --state-file /tmp/flutter_mcp_state.json status
+```json
+{
+  "connection": {
+    "targetId": "ws://127.0.0.1:8181/<token>/ws",
+    "mode": "auto",
+    "host": "localhost",
+    "port": 8181,
+    "uri": "ws://127.0.0.1:8181/<token>/ws",
+    "forceReconnect": false
+  }
+}
 ```
 
-Reset stuck session state:
+Notes:
 
-```bash
-dart run bin/flutter_mcp_cli.dart --state-file /tmp/flutter_mcp_state.json session_end --session-id <id>
-```
+- `targetId` is the preferred selector and must be full VM websocket URI.
+- Legacy `host:port` target IDs are rejected; use URI target IDs or `connection.uri`.
+- CLI `exec --args` and daemon `command/execute` / `watch/start` accept the same optional nested `connection` object.
+- `connect_debug_app` accepts the same `connection` shape.
+- Dynamic registry tools (`listClientToolsAndResources`, `runClientTool`, `runClientResource`) accept the same optional `connection`.
+- Resource reads also support query targeting: `targetId`, `mode`, `host`, `port`, `uri`, `forceReconnect`.
+- Flat top-level connection aliases like `host`/`port`/`uri` in tool arguments are intentionally rejected by strict schemas.
+- For `connect` and `session_start`, native selector args (`mode`, `targetId`, `host`, `port`, `uri`, `force`) cannot be mixed with nested `connection`.
 
-## Stable Error Codes
+### Flutter Web Discovery
 
-Core command failures return stable `error.code` values, including:
+Discovery order is:
 
-- `connect_failed`
-- `vm_not_connected`
-- `dynamic_registry_disabled`
-- `session_not_found`
-- `invalid_command`
-- `diagnose_failed`
-- `explain_errors_failed`
-- `unsupported_summary_provider`
+1. Flutter machine discovery (`flutter attach --machine`)
+2. Port-scan fallback
+
+Both CLI and MCP server accept:
+
+- `--flutter-project-dir`
+- `--flutter-device` (for example `chrome`)
+- `--flutter-discovery-timeout-ms`
+
+Manual fallback remains available:
+
+- CLI: `--vm-service-uri ws://127.0.0.1:59490/<token>/ws`
+- MCP tool/resource calls: `arguments.connection.uri`
 
 ## Quick Start
 
@@ -311,7 +369,7 @@ For developers who want to contribute to the project or run the latest version d
 ### Command Line Options
 
 ```bash
-./build/flutter_inspector_mcp_server [options]
+./build/flutter_inspector_mcp [options]
 
 Options:
   --dart-vm-host                Host for Dart VM connection (default: localhost)
@@ -352,5 +410,5 @@ This mode is useful when:
 2. Run the MCP server:
 
    ```bash
-   ./build/flutter_inspector_mcp_server
+   ./build/flutter_inspector_mcp
    ```

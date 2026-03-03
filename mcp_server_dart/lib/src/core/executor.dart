@@ -130,12 +130,27 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     try {
       final data = await connectionContext.connect(
         mode: command.mode,
+        targetId: command.targetId,
         uri: command.uri,
         host: command.host,
         port: command.port,
         forceReconnect: command.forceReconnect,
       );
       return CoreResult.success(data: data);
+    } on CoreConnectionException catch (e) {
+      if (e.reason == CoreConnectionFailureReason.multipleTargets) {
+        return CoreResult.failure(
+          code: CoreErrorCode.connectionSelectionRequired,
+          message: e.message,
+          details: e.details,
+        );
+      }
+
+      return CoreResult.failure(
+        code: CoreErrorCode.connectFailed,
+        message: 'Failed to connect: ${e.message}',
+        details: e.details,
+      );
     } on Exception catch (e) {
       return CoreResult.failure(
         code: CoreErrorCode.connectFailed,
@@ -310,8 +325,16 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
 
   Future<CoreResult> _discoverDebugApps() async {
     try {
-      final ports = await portScanner.scanForFlutterPorts();
-      return CoreResult.success(data: {'ports': ports, 'count': ports.length});
+      final targets = await connectionContext.discoverTargets();
+      final ports = targets.map((final target) => target.port).toSet().toList()
+        ..sort();
+      return CoreResult.success(
+        data: {
+          'targets': targets.map((final target) => target.toJson()).toList(),
+          'ports': ports,
+          'count': targets.length,
+        },
+      );
     } on Exception catch (e) {
       return CoreResult.failure(
         code: CoreErrorCode.discoverDebugAppsFailed,
@@ -321,8 +344,8 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
   }
 
   Future<CoreResult> _getVm() async {
-    final connected = await connectionContext.ensureConnected();
-    if (!connected) return _vmNotConnected();
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) return ensureFailure;
 
     try {
       final vm = await connectionContext.vmService!.getVM();
@@ -336,8 +359,8 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
   }
 
   Future<CoreResult> _getExtensionRpcs() async {
-    final connected = await connectionContext.ensureConnected();
-    if (!connected) return _vmNotConnected();
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) return ensureFailure;
 
     try {
       final vm = await connectionContext.vmService!.getVM();
@@ -362,8 +385,8 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
   }
 
   Future<CoreResult> _hotReload(final HotReloadFlutterCommand command) async {
-    final connected = await connectionContext.ensureConnected();
-    if (!connected) return _vmNotConnected();
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) return ensureFailure;
 
     final result = await connectionContext.hotReload(force: command.force);
     if (result == null) {
@@ -384,8 +407,8 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
   }
 
   Future<CoreResult> _hotRestart() async {
-    final connected = await connectionContext.ensureConnected();
-    if (!connected) return _vmNotConnected();
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) return ensureFailure;
 
     final result = await connectionContext.hotRestart();
     if (result == null) {
@@ -418,8 +441,8 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
   }
 
   Future<CoreResult> _getAppErrors(final GetAppErrorsCommand command) async {
-    final connected = await connectionContext.ensureConnected();
-    if (!connected) return _vmNotConnected();
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) return ensureFailure;
 
     try {
       final result = await connectionContext.callFlutterExtension(
@@ -446,8 +469,8 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
   Future<CoreResult> _getScreenshots(
     final GetScreenshotsCommand command,
   ) async {
-    final connected = await connectionContext.ensureConnected();
-    if (!connected) return _vmNotConnected();
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) return ensureFailure;
 
     try {
       final result = await connectionContext.callFlutterExtension(
@@ -477,8 +500,8 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
   }
 
   Future<CoreResult> _getViewDetails() async {
-    final connected = await connectionContext.ensureConnected();
-    if (!connected) return _vmNotConnected();
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) return ensureFailure;
 
     try {
       final result = await connectionContext.callFlutterExtension(
@@ -517,8 +540,8 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
   }
 
   Future<CoreResult> _debugDump(final String extensionName) async {
-    final connected = await connectionContext.ensureConnected();
-    if (!connected) return _vmNotConnected();
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) return ensureFailure;
 
     try {
       final response = await connectionContext.callFlutterExtension(
@@ -548,6 +571,9 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
         _dynamicGateway ??
         VmExtensionDynamicGateway(connectionContext: connectionContext);
 
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) return ensureFailure;
+
     return gateway.listClientToolsAndResources();
   }
 
@@ -562,6 +588,9 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     final gateway =
         _dynamicGateway ??
         VmExtensionDynamicGateway(connectionContext: connectionContext);
+
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) return ensureFailure;
 
     return gateway.runClientTool(command.toolName, command.arguments);
   }
@@ -580,6 +609,9 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
         _dynamicGateway ??
         VmExtensionDynamicGateway(connectionContext: connectionContext);
 
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) return ensureFailure;
+
     return gateway.runClientResource(command.resourceUri);
   }
 
@@ -597,8 +629,24 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
         _dynamicGateway ??
         VmExtensionDynamicGateway(connectionContext: connectionContext);
 
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) return ensureFailure;
+
     return gateway.dynamicRegistryStats(
       includeAppDetails: command.includeAppDetails,
+    );
+  }
+
+  Future<CoreResult?> _ensureVmConnected() async {
+    final ensure = await connectionContext.ensureConnectedWithPolicy();
+    if (ensure.connected) {
+      return null;
+    }
+
+    return CoreResult.failure(
+      code: ensure.code ?? CoreErrorCode.vmNotConnected,
+      message: ensure.message ?? 'VM service not connected',
+      details: ensure.details,
     );
   }
 
@@ -634,9 +682,4 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
     return const <String, Object?>{};
   }
-
-  CoreResult _vmNotConnected() => CoreResult.failure(
-    code: CoreErrorCode.vmNotConnected,
-    message: 'VM service not connected',
-  );
 }

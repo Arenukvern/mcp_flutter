@@ -35,6 +35,10 @@ Then, run the compiled server binary:
 
 By default, the server will listen for connections from the AI assistant on `stdin`/`stdout` and from the Flutter app on port `8181`.
 
+Startup is non-blocking: the server can initialize without locking to a specific VM target. Target selection is resolved when the first VM-dependent request is executed.
+
+If multiple debug targets are discovered and none is already sticky/current, VM-dependent calls return `connection_selection_required` with available targets and retry guidance (`connection.targetId`).
+
 ### 3. Add `mcp_toolkit` to Your Flutter App
 
 The `mcp_toolkit` package provides the necessary service extensions within your Flutter application. You need to add it to your app's `pubspec.yaml`.

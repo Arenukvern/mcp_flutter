@@ -56,6 +56,12 @@ class ForwardingRpcListener {
         print('getAppErrors result: ${jsonEncode(result).substring(0, 50)}');
         return result;
       })
+      ..registerMethod('$mcpDevtoolsName.getErrors', (final data) async {
+        print('Handler called: getErrors with data: $data');
+        final result = await customDevtoolsService.getErrors(data);
+        print('getErrors result: ${jsonEncode(result).substring(0, 50)}');
+        return result;
+      })
       ..registerMethod('$flutterInspectorName.screenshot', (final data) async {
         print('Handler called: screenshot with data: $data');
         try {

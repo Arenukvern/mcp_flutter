@@ -9,6 +9,8 @@ import 'package:dart_mcp/server.dart';
 import 'package:dtd/dtd.dart';
 import 'package:flutter_inspector_mcp_server/src/core/commands.dart';
 import 'package:flutter_inspector_mcp_server/src/core/core_types.dart';
+import 'package:flutter_inspector_mcp_server/src/core/error_codes.dart';
+import 'package:flutter_inspector_mcp_server/src/core/services/flutter_tool_machine_discovery.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
 import 'package:vm_service/vm_service.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
@@ -57,12 +59,126 @@ final class CoreEndpoint {
   int get hashCode => Object.hash(host, port, wsPath);
 }
 
+final class CoreConnectionTarget {
+  const CoreConnectionTarget({
+    required this.targetId,
+    required this.host,
+    required this.port,
+    required this.endpoint,
+    required this.isSticky,
+    required this.isCurrent,
+    this.dtdUri,
+    this.discoverySource = _portScanSource,
+  });
+
+  final String targetId;
+  final String host;
+  final int port;
+  final String endpoint;
+  final bool isSticky;
+  final bool isCurrent;
+  final String? dtdUri;
+  final String discoverySource;
+
+  static const String machineDiscoverySource = _machineSource;
+  static const String portScanDiscoverySource = _portScanSource;
+
+  static String buildTargetId({required final Uri vmServiceWsUri}) =>
+      canonicalizeVmServiceWsUri(vmServiceWsUri).toString();
+
+  static Uri canonicalizeVmServiceWsUri(final Uri vmServiceWsUri) =>
+      FlutterToolMachineDiscovery.canonicalizeVmServiceWsUri(vmServiceWsUri);
+
+  static Uri? parseTargetIdUri(final String value) =>
+      FlutterToolMachineDiscovery.parseVmServiceWsUri(value);
+
+  static bool isLegacyHostPortTargetId(final String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty ||
+        trimmed.contains('://') ||
+        trimmed.contains('/') ||
+        trimmed.contains('?') ||
+        trimmed.contains('#')) {
+      return false;
+    }
+
+    final delimiter = trimmed.lastIndexOf(':');
+    if (delimiter <= 0 || delimiter == trimmed.length - 1) {
+      return false;
+    }
+
+    final parsedPort = int.tryParse(trimmed.substring(delimiter + 1));
+    return parsedPort != null && parsedPort > 0;
+  }
+
+  Map<String, Object?> toJson() => {
+    'targetId': targetId,
+    'host': host,
+    'port': port,
+    'endpoint': endpoint,
+    if (dtdUri != null) 'dtdUri': dtdUri,
+    'discoverySource': discoverySource,
+    'isSticky': isSticky,
+    'isCurrent': isCurrent,
+  };
+}
+
+const _machineSource = 'flutter_tool_machine';
+const _portScanSource = 'port_scan';
+
+enum CoreConnectionFailureReason {
+  multipleTargets,
+  targetNotFound,
+  noTargets,
+  invalidUri,
+  invalidTargetId,
+}
+
+final class CoreConnectionException implements Exception {
+  const CoreConnectionException({
+    required this.reason,
+    required this.message,
+    this.details,
+  });
+
+  final CoreConnectionFailureReason reason;
+  final String message;
+  final Object? details;
+
+  @override
+  String toString() => message;
+}
+
+final class EnsureConnectionResult {
+  const EnsureConnectionResult._({
+    required this.connected,
+    this.code,
+    this.message,
+    this.details,
+  });
+
+  const EnsureConnectionResult.success()
+    : this._(connected: true, code: null, message: null, details: null);
+
+  const EnsureConnectionResult.failure({
+    required final String code,
+    required final String message,
+    final Object? details,
+  }) : this._(connected: false, code: code, message: message, details: details);
+
+  final bool connected;
+  final String? code;
+  final String? message;
+  final Object? details;
+}
+
 final class ConnectionContext {
   ConnectionContext({
     required this.defaultHost,
     required this.defaultPort,
     required this.logger,
     required this.discoverPorts,
+    this.discoverMachineTargets,
     this.initialStickyEndpointUri,
   }) {
     final rawSticky = initialStickyEndpointUri;
@@ -82,6 +198,8 @@ final class ConnectionContext {
   final int defaultPort;
   final CoreLogger logger;
   final Future<List<int>> Function() discoverPorts;
+  final Future<List<FlutterMachineDiscoveryTarget>> Function()?
+  discoverMachineTargets;
   final String? initialStickyEndpointUri;
 
   VmService? _vmService;
@@ -115,6 +233,7 @@ final class ConnectionContext {
 
   Future<Map<String, Object?>> connect({
     final CoreConnectionMode mode = CoreConnectionMode.auto,
+    final String? targetId,
     final String? uri,
     final String? host,
     final int? port,
@@ -123,6 +242,7 @@ final class ConnectionContext {
   }) async {
     final resolution = await _resolveEndpoint(
       mode: mode,
+      targetId: targetId,
       uri: uri,
       host: host,
       port: port,
@@ -170,24 +290,130 @@ final class ConnectionContext {
     };
   }
 
-  Future<bool> ensureConnected({
+  Future<EnsureConnectionResult> ensureConnectedWithPolicy({
     final Duration timeout = const Duration(seconds: 2),
   }) async {
     if (isConnected) {
-      return true;
+      final healthy = await _isCurrentConnectionHealthy(
+        timeout: _connectionHealthCheckTimeout,
+      );
+      if (healthy) {
+        return const EnsureConnectionResult.success();
+      }
+
+      await disconnect();
     }
 
     try {
       await connect(mode: CoreConnectionMode.auto, timeout: timeout);
-      return isConnected;
+      return const EnsureConnectionResult.success();
+    } on CoreConnectionException catch (e) {
+      if (e.reason == CoreConnectionFailureReason.multipleTargets) {
+        return EnsureConnectionResult.failure(
+          code: CoreErrorCode.connectionSelectionRequired,
+          message: e.message,
+          details: e.details,
+        );
+      }
+
+      return EnsureConnectionResult.failure(
+        code: CoreErrorCode.vmNotConnected,
+        message: 'VM service not connected',
+        details: e.details,
+      );
     } catch (e) {
       logger(
         LoggingLevel.warning,
         'Failed to ensure connection: $e',
         logger: 'ConnectionContext',
       );
-      return false;
+      return const EnsureConnectionResult.failure(
+        code: CoreErrorCode.vmNotConnected,
+        message: 'VM service not connected',
+      );
     }
+  }
+
+  Future<bool> ensureConnected({
+    final Duration timeout = const Duration(seconds: 2),
+  }) async => (await ensureConnectedWithPolicy(timeout: timeout)).connected;
+
+  Future<List<CoreConnectionTarget>> discoverTargets() async {
+    final machineTargets = await _discoverMachineTargets();
+    final discoveredPorts = await _discoverPorts();
+    final sticky = _stickyEndpoint;
+    final current = _activeEndpoint;
+    final targetsById = <String, CoreConnectionTarget>{};
+    final machineHostPorts = <String>{};
+
+    void upsertTarget({
+      required final CoreEndpoint endpoint,
+      required final String discoverySource,
+      final String? dtdUri,
+    }) {
+      final canonicalTargetId = CoreConnectionTarget.buildTargetId(
+        vmServiceWsUri: endpoint.wsUri,
+      );
+      final nextTarget = CoreConnectionTarget(
+        targetId: canonicalTargetId,
+        host: endpoint.host,
+        port: endpoint.port,
+        endpoint: canonicalTargetId,
+        dtdUri: dtdUri,
+        discoverySource: discoverySource,
+        isSticky: sticky != null && _sameEndpointByTargetId(sticky, endpoint),
+        isCurrent:
+            current != null && _sameEndpointByTargetId(current, endpoint),
+      );
+
+      final existing = targetsById[canonicalTargetId];
+      if (existing == null) {
+        targetsById[canonicalTargetId] = nextTarget;
+        return;
+      }
+
+      if (existing.discoverySource ==
+              CoreConnectionTarget.machineDiscoverySource &&
+          discoverySource != CoreConnectionTarget.machineDiscoverySource) {
+        return;
+      }
+
+      targetsById[canonicalTargetId] = nextTarget;
+    }
+
+    for (final machineTarget in machineTargets) {
+      try {
+        final endpoint = CoreEndpoint.fromUri(machineTarget.vmServiceWsUri);
+        machineHostPorts.add(_hostPortKeyForEndpoint(endpoint));
+        upsertTarget(
+          endpoint: endpoint,
+          dtdUri: machineTarget.dtdUri?.toString(),
+          discoverySource: CoreConnectionTarget.machineDiscoverySource,
+        );
+      } on FormatException catch (e) {
+        logger(
+          LoggingLevel.debug,
+          'Skipping invalid machine discovery endpoint: $e',
+          logger: 'ConnectionContext',
+        );
+      }
+    }
+
+    for (final discoveredPort in discoveredPorts) {
+      final endpoint = _endpointForDiscoveredPort(discoveredPort);
+      if (machineHostPorts.contains(_hostPortKeyForEndpoint(endpoint))) {
+        continue;
+      }
+
+      upsertTarget(
+        endpoint: endpoint,
+        discoverySource: CoreConnectionTarget.portScanDiscoverySource,
+      );
+    }
+
+    final targets = targetsById.values.toList()
+      ..sort((final a, final b) => a.targetId.compareTo(b.targetId));
+    return targets;
   }
 
   Future<void> disconnect() async {
@@ -292,24 +518,52 @@ final class ConnectionContext {
   Future<({CoreEndpoint endpoint, Map<String, Object?> diagnostics})>
   _resolveEndpoint({
     required final CoreConnectionMode mode,
+    final String? targetId,
     final String? uri,
     final String? host,
     final int? port,
   }) async {
+    final normalizedTargetId = targetId?.trim();
+    if (normalizedTargetId != null && normalizedTargetId.isNotEmpty) {
+      return _resolveByTargetId(normalizedTargetId, mode: mode);
+    }
+
     switch (mode) {
       case CoreConnectionMode.uri:
         final parsedUri = Uri.tryParse(uri ?? '');
         if (parsedUri == null) {
-          throw const FormatException('Invalid URI');
+          throw const CoreConnectionException(
+            reason: CoreConnectionFailureReason.invalidUri,
+            message: 'Invalid URI',
+            details: {'reason': 'invalid_uri', 'uri': null},
+          );
         }
-        final endpoint = CoreEndpoint.fromUri(parsedUri);
+        late final CoreEndpoint endpoint;
+        try {
+          endpoint = CoreEndpoint.fromUri(parsedUri);
+        } on FormatException catch (e) {
+          throw CoreConnectionException(
+            reason: CoreConnectionFailureReason.invalidUri,
+            message: e.message,
+            details: {'reason': 'invalid_uri', 'uri': uri},
+          );
+        }
         return (
           endpoint: endpoint,
           diagnostics: {
             'mode': mode.name,
-            'selectedEndpoint': endpoint.display,
+            'selectedTargetId': CoreConnectionTarget.buildTargetId(
+              vmServiceWsUri: endpoint.wsUri,
+            ),
+            'selectedEndpoint': CoreConnectionTarget.buildTargetId(
+              vmServiceWsUri: endpoint.wsUri,
+            ),
             'decision': 'Used explicit URI endpoint',
-            'candidates': <String>[endpoint.display],
+            'candidates': <String>[
+              CoreConnectionTarget.buildTargetId(
+                vmServiceWsUri: endpoint.wsUri,
+              ),
+            ],
             'stickyEndpoint': _stickyEndpoint?.display,
           },
         );
@@ -324,61 +578,288 @@ final class ConnectionContext {
           endpoint: endpoint,
           diagnostics: {
             'mode': mode.name,
-            'selectedEndpoint': endpoint.display,
+            'selectedTargetId': CoreConnectionTarget.buildTargetId(
+              vmServiceWsUri: endpoint.wsUri,
+            ),
+            'selectedEndpoint': CoreConnectionTarget.buildTargetId(
+              vmServiceWsUri: endpoint.wsUri,
+            ),
             'decision': 'Used manually provided host/port',
-            'candidates': <String>[endpoint.display],
+            'candidates': <String>[
+              CoreConnectionTarget.buildTargetId(
+                vmServiceWsUri: endpoint.wsUri,
+              ),
+            ],
             'stickyEndpoint': _stickyEndpoint?.display,
           },
         );
 
       case CoreConnectionMode.auto:
-        final discoveredPorts = (await discoverPorts().catchError(
-          (_) => <int>[],
-        )).toSet().toList()..sort();
+        return _resolveAutoEndpoint();
+    }
+  }
 
-        final sticky = _stickyEndpoint;
-        final stickyInDiscovery =
-            sticky != null && discoveredPorts.contains(sticky.port);
+  Future<({CoreEndpoint endpoint, Map<String, Object?> diagnostics})>
+  _resolveByTargetId(
+    final String targetId, {
+    required final CoreConnectionMode mode,
+  }) async {
+    final parsedTargetUri = _parseTargetIdOrThrow(targetId);
+    final canonicalTargetId = CoreConnectionTarget.buildTargetId(
+      vmServiceWsUri: parsedTargetUri,
+    );
+    final targets = await discoverTargets();
+    final selected = targets.firstWhere(
+      (final t) => t.targetId == canonicalTargetId,
+      orElse: () => const CoreConnectionTarget(
+        targetId: '',
+        host: '',
+        port: 0,
+        endpoint: '',
+        isSticky: false,
+        isCurrent: false,
+      ),
+    );
 
-        CoreEndpoint endpoint;
-        String decision;
+    if (selected.targetId.isEmpty) {
+      throw CoreConnectionException(
+        reason: CoreConnectionFailureReason.targetNotFound,
+        message: 'Target not found: $canonicalTargetId',
+        details: {
+          'reason': 'target_not_found',
+          'targetId': canonicalTargetId,
+          'availableTargets': targets.map((final t) => t.toJson()).toList(),
+        },
+      );
+    }
 
-        if (stickyInDiscovery) {
-          endpoint = sticky;
-          decision = 'Reused sticky endpoint discovered in current scan';
-        } else if (discoveredPorts.contains(defaultPort)) {
-          endpoint = CoreEndpoint(host: defaultHost, port: defaultPort);
-          decision =
-              'Selected configured default endpoint from discovered ports';
-        } else if (discoveredPorts.isNotEmpty) {
-          endpoint = CoreEndpoint(
-            host: defaultHost,
-            port: discoveredPorts.first,
-          );
-          decision = 'Selected lowest discovered debug port deterministically';
-        } else if (sticky != null) {
-          endpoint = sticky;
-          decision = 'No ports discovered, falling back to sticky endpoint';
-        } else {
-          endpoint = CoreEndpoint(host: defaultHost, port: defaultPort);
-          decision = 'No ports discovered, falling back to configured default';
-        }
+    final endpoint = CoreEndpoint.fromUri(Uri.parse(selected.endpoint));
+    return (
+      endpoint: endpoint,
+      diagnostics: {
+        'mode': mode.name,
+        'selectedTargetId': selected.targetId,
+        'selectedEndpoint': selected.endpoint,
+        'decision': 'Used explicit targetId',
+        'availableTargets': targets.map((final t) => t.toJson()).toList(),
+        'stickyEndpoint': _stickyEndpoint?.display,
+      },
+    );
+  }
 
-        final candidates = discoveredPorts
-            .map((final p) => Uri.parse('ws://$defaultHost:$p/ws').toString())
-            .toList();
-
+  Future<({CoreEndpoint endpoint, Map<String, Object?> diagnostics})>
+  _resolveAutoEndpoint() async {
+    final active = _activeEndpoint;
+    if (isConnected && active != null) {
+      final healthy = await _isCurrentConnectionHealthy(
+        timeout: _connectionHealthCheckTimeout,
+      );
+      if (healthy) {
+        final targets = await discoverTargets();
+        final selectedTargetId = CoreConnectionTarget.buildTargetId(
+          vmServiceWsUri: active.wsUri,
+        );
         return (
-          endpoint: endpoint,
+          endpoint: active,
           diagnostics: {
-            'mode': mode.name,
-            'selectedEndpoint': endpoint.display,
-            'decision': decision,
-            'candidates': candidates,
-            'discoveredPorts': discoveredPorts,
+            'mode': CoreConnectionMode.auto.name,
+            'selectedTargetId': selectedTargetId,
+            'selectedEndpoint': selectedTargetId,
+            'decision': 'Reused active connection',
+            'availableTargets': targets.map((final t) => t.toJson()).toList(),
             'stickyEndpoint': _stickyEndpoint?.display,
           },
         );
+      }
+
+      await disconnect();
+    }
+
+    final targets = await discoverTargets();
+    final sticky = _stickyEndpoint;
+
+    if (targets.isEmpty) {
+      throw CoreConnectionException(
+        reason: CoreConnectionFailureReason.noTargets,
+        message: 'No debug targets discovered',
+        details: {'reason': 'no_targets', 'availableTargets': const []},
+      );
+    }
+
+    CoreConnectionTarget? stickyTarget;
+    if (sticky != null) {
+      final stickyTargetId = CoreConnectionTarget.buildTargetId(
+        vmServiceWsUri: sticky.wsUri,
+      );
+      for (final target in targets) {
+        if (target.targetId == stickyTargetId) {
+          stickyTarget = target;
+          break;
+        }
+      }
+    }
+
+    final selected =
+        stickyTarget ?? (targets.length == 1 ? targets.first : null);
+    if (selected == null) {
+      final selectionDetails = _multipleTargetsDetails(targets);
+      throw CoreConnectionException(
+        reason: CoreConnectionFailureReason.multipleTargets,
+        message:
+            'Multiple debug targets detected. Retry with URI connection.targetId.',
+        details: selectionDetails,
+      );
+    }
+
+    final endpoint = CoreEndpoint.fromUri(Uri.parse(selected.endpoint));
+    return (
+      endpoint: endpoint,
+      diagnostics: {
+        'mode': CoreConnectionMode.auto.name,
+        'selectedTargetId': selected.targetId,
+        'selectedEndpoint': selected.endpoint,
+        'decision': stickyTarget != null
+            ? 'Reused sticky target discovered in current scan'
+            : 'Auto-attached single discovered target',
+        'availableTargets': targets.map((final t) => t.toJson()).toList(),
+        'stickyEndpoint': _stickyEndpoint?.display,
+      },
+    );
+  }
+
+  Map<String, Object?> _multipleTargetsDetails(
+    final List<CoreConnectionTarget> targets,
+  ) {
+    final availableTargets = targets.map((final t) => t.toJson()).toList();
+    final suggestedTarget = targets.first.targetId;
+
+    return {
+      'reason': 'multiple_targets',
+      'availableTargets': availableTargets,
+      'suggestedAction': 'retry_with_connection_target',
+      'example': {
+        'connection': {'targetId': suggestedTarget},
+      },
+      'howToRetry': {
+        'connection': {'targetId': suggestedTarget},
+      },
+    };
+  }
+
+  Future<List<FlutterMachineDiscoveryTarget>> _discoverMachineTargets() async {
+    final provider = discoverMachineTargets;
+    if (provider == null) {
+      return const <FlutterMachineDiscoveryTarget>[];
+    }
+
+    try {
+      return await provider();
+    } on Exception catch (e) {
+      logger(
+        LoggingLevel.debug,
+        'Machine discovery provider failed: $e',
+        logger: 'ConnectionContext',
+      );
+      return const <FlutterMachineDiscoveryTarget>[];
+    }
+  }
+
+  Uri _parseTargetIdOrThrow(final String targetId) {
+    if (CoreConnectionTarget.isLegacyHostPortTargetId(targetId)) {
+      throw CoreConnectionException(
+        reason: CoreConnectionFailureReason.invalidTargetId,
+        message:
+            'Invalid targetId: host:port identifiers are no longer supported. '
+            'Use a full VM websocket URI targetId or connection.uri.',
+        details: {
+          'reason': 'invalid_target_id_legacy_host_port',
+          'targetId': targetId,
+          'migrationHint':
+              'Use connection.targetId set to a full ws://.../ws URI or provide connection.uri.',
+        },
+      );
+    }
+
+    final parsed = CoreConnectionTarget.parseTargetIdUri(targetId);
+    if (parsed == null) {
+      throw CoreConnectionException(
+        reason: CoreConnectionFailureReason.invalidTargetId,
+        message:
+            'Invalid targetId: expected full VM websocket URI (ws://.../ws).',
+        details: {
+          'reason': 'invalid_target_id',
+          'targetId': targetId,
+          'migrationHint':
+              'Use connection.targetId set to a full ws://.../ws URI or provide connection.uri.',
+        },
+      );
+    }
+
+    return parsed;
+  }
+
+  Future<List<int>> _discoverPorts() async {
+    final discovered = (await discoverPorts().catchError(
+      (_) => <int>[],
+    )).toSet().toList()..sort();
+    return discovered;
+  }
+
+  CoreEndpoint _endpointForDiscoveredPort(final int discoveredPort) {
+    final sticky = _stickyEndpoint;
+    if (sticky != null && sticky.port == discoveredPort) {
+      return sticky;
+    }
+
+    final current = _activeEndpoint;
+    if (current != null && current.port == discoveredPort) {
+      return current;
+    }
+
+    return CoreEndpoint(host: defaultHost, port: discoveredPort);
+  }
+
+  bool _sameEndpointByTargetId(final CoreEndpoint a, final CoreEndpoint b) {
+    return CoreConnectionTarget.buildTargetId(vmServiceWsUri: a.wsUri) ==
+        CoreConnectionTarget.buildTargetId(vmServiceWsUri: b.wsUri);
+  }
+
+  String _hostPortKeyForEndpoint(final CoreEndpoint endpoint) =>
+      '${_normalizeHostForPortDedup(endpoint.host)}:${endpoint.port}';
+
+  String _normalizeHostForPortDedup(final String host) {
+    final lower = host.toLowerCase();
+    if (lower == 'localhost' ||
+        lower == '127.0.0.1' ||
+        lower == '::1' ||
+        lower == '[::1]') {
+      return 'loopback';
+    }
+    return lower;
+  }
+
+  static const Duration _connectionHealthCheckTimeout = Duration(
+    milliseconds: 300,
+  );
+
+  Future<bool> _isCurrentConnectionHealthy({
+    required final Duration timeout,
+  }) async {
+    final vmService = _vmService;
+    if (vmService == null) {
+      return false;
+    }
+
+    try {
+      final ping = vmService.getVM();
+      if (timeout == Duration.zero) {
+        await ping;
+      } else {
+        await ping.timeout(timeout);
+      }
+      return true;
+    } on Exception {
+      return false;
     }
   }
 

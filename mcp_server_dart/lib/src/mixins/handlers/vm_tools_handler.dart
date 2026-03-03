@@ -7,9 +7,10 @@ import 'dart:convert';
 
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_inspector_mcp_server/src/base_server.dart';
+import 'package:flutter_inspector_mcp_server/src/core/command_catalog.dart';
 import 'package:flutter_inspector_mcp_server/src/core/commands.dart';
 import 'package:flutter_inspector_mcp_server/src/core/executor.dart';
-import 'package:flutter_inspector_mcp_server/src/core/results.dart';
+import 'package:flutter_inspector_mcp_server/src/mixins/handlers/connection_override.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
 
 /// Thin MCP adapter for VM-related tools.
@@ -18,33 +19,38 @@ class VMToolsHandler {
 
   final BaseMCPToolkitServer server;
   final CoreCommandExecutor executor;
+  static final _catalog = CommandCatalog.instance;
+
+  static String _description(final String name, final String fallback) =>
+      _catalog.specFor(name)?.description ?? fallback;
+
+  static final connectDebugAppTool = Tool(
+    name: 'connect_debug_app',
+    description:
+        'Connect to a Flutter debug VM. Use this to select an app when multiple are running.',
+    inputSchema: strictToolInputSchema(),
+  );
 
   static final hotRestartTool = Tool(
     name: 'hot_restart_flutter',
-    description:
-        'Hot restarts the Flutter app (full restart; state not preserved).',
-    inputSchema: Schema.object(
-      properties: {
-        'port': Schema.int(
-          description:
-              'Optional: Custom port number if not using default Flutter debug port 8181',
-        ),
-      },
+    description: _description(
+      'hot_restart_flutter',
+      'Hot restarts the Flutter app (full restart; state not preserved).',
     ),
+    inputSchema: strictToolInputSchema(),
   );
 
   static final hotReloadTool = Tool(
     name: 'hot_reload_flutter',
-    description: 'Hot reloads the Flutter app.',
-    inputSchema: Schema.object(
+    description: _description(
+      'hot_reload_flutter',
+      'Hot reloads the Flutter app.',
+    ),
+    inputSchema: strictToolInputSchema(
       properties: {
-        'port': Schema.int(
-          description:
-              'Optional: Custom port number if not using default Flutter debug port 8181',
-        ),
         'force': Schema.bool(
           description:
-              'If true, forces a hot reload even if there are no changes to the source code',
+              'If true, forces a hot reload even if there are no source changes',
         ),
       },
     ),
@@ -52,35 +58,28 @@ class VMToolsHandler {
 
   static final getVmTool = Tool(
     name: 'get_vm',
-    description:
-        'Utility: Get VM information from a Flutter app. This is a VM service method, not a Flutter RPC.',
-    inputSchema: Schema.object(
-      properties: {
-        'port': Schema.int(
-          description:
-              'Optional: Custom port number if not using default Flutter debug port 8181',
-        ),
-      },
+    description: _description(
+      'get_vm',
+      'Utility: Get VM information from a Flutter app. This is a VM service method, not a Flutter RPC.',
     ),
+    inputSchema: strictToolInputSchema(),
   );
 
   static final getExtensionRpcsTool = Tool(
     name: 'get_extension_rpcs',
-    description:
-        'Utility: List all available extension RPCs in the Flutter app.',
-    inputSchema: Schema.object(
+    description: _description(
+      'get_extension_rpcs',
+      'Utility: List all available extension RPCs in the Flutter app.',
+    ),
+    inputSchema: strictToolInputSchema(
       properties: {
-        'port': Schema.int(
-          description:
-              'Optional: Custom port number if not using default Flutter debug port 8181',
-        ),
         'isolateId': Schema.string(
           description:
-              'Optional specific isolate ID to check. If not provided, checks all isolates',
+              'Optional specific isolate ID to inspect. If omitted, checks all isolates.',
         ),
         'isRawResponse': Schema.bool(
           description:
-              'If true, returns the raw response from the VM service without processing',
+              'If true, returns the raw VM response without post-processing.',
         ),
       },
     ),
@@ -88,21 +87,43 @@ class VMToolsHandler {
 
   static final getActivePortsTool = Tool(
     name: 'get_active_ports',
-    description: 'Gets the active ports of the Flutter app.',
-    inputSchema: Schema.object(
-      properties: {
-        'port': Schema.int(
-          description:
-              'Optional: Custom port number if not using default Flutter debug port 8181',
-        ),
-      },
+    description: _description(
+      'get_active_ports',
+      'Gets active debug ports for Flutter/Dart processes (useful for selecting an app).',
     ),
+    inputSchema: Schema.object(properties: const <String, Schema>{}),
   );
 
+  Future<CallToolResult> connectDebugApp(final CallToolRequest request) async {
+    final resolved = buildConnectCommandFromArguments(
+      arguments: request.arguments,
+      fallbackToAuto: true,
+    );
+    final parseError = resolved.error;
+    if (parseError != null) {
+      return toCallToolErrorResult(parseError, prefix: 'Failed to connect');
+    }
+
+    final command = resolved.command ?? const ConnectCommand();
+    final result = await executor.execute(command);
+    if (!result.ok) {
+      return toCallToolErrorResult(result, prefix: 'Failed to connect');
+    }
+
+    return CallToolResult(
+      content: [TextContent(text: jsonEncode(result.data))],
+    );
+  }
+
   Future<CallToolResult> hotRestart(final CallToolRequest request) async {
+    final overrideError = await _prepareConnectionIfRequested(request);
+    if (overrideError != null) {
+      return overrideError;
+    }
+
     final result = await executor.execute(const HotRestartFlutterCommand());
     if (!result.ok) {
-      return _errorResult(_errorText(result, prefix: 'Hot restart failed'));
+      return toCallToolErrorResult(result, prefix: 'Hot restart failed');
     }
 
     return CallToolResult(
@@ -111,13 +132,18 @@ class VMToolsHandler {
   }
 
   Future<CallToolResult> hotReload(final CallToolRequest request) async {
+    final overrideError = await _prepareConnectionIfRequested(request);
+    if (overrideError != null) {
+      return overrideError;
+    }
+
     final force = jsonDecodeBool(request.arguments?['force']);
     final result = await executor.execute(
       HotReloadFlutterCommand(force: force),
     );
 
     if (!result.ok) {
-      return _errorResult(_errorText(result, prefix: 'Hot reload failed'));
+      return toCallToolErrorResult(result, prefix: 'Hot reload failed');
     }
 
     return CallToolResult(
@@ -129,9 +155,14 @@ class VMToolsHandler {
   }
 
   Future<CallToolResult> getVm(final CallToolRequest request) async {
+    final overrideError = await _prepareConnectionIfRequested(request);
+    if (overrideError != null) {
+      return overrideError;
+    }
+
     final result = await executor.execute(const GetVmCommand());
     if (!result.ok) {
-      return _errorResult(_errorText(result, prefix: 'Failed to get VM info'));
+      return toCallToolErrorResult(result, prefix: 'Failed to get VM info');
     }
 
     return CallToolResult(
@@ -140,10 +171,16 @@ class VMToolsHandler {
   }
 
   Future<CallToolResult> getExtensionRpcs(final CallToolRequest request) async {
+    final overrideError = await _prepareConnectionIfRequested(request);
+    if (overrideError != null) {
+      return overrideError;
+    }
+
     final result = await executor.execute(const GetExtensionRpcsCommand());
     if (!result.ok) {
-      return _errorResult(
-        _errorText(result, prefix: 'Failed to get extension RPCs'),
+      return toCallToolErrorResult(
+        result,
+        prefix: 'Failed to get extension RPCs',
       );
     }
 
@@ -155,8 +192,9 @@ class VMToolsHandler {
   Future<CallToolResult> getActivePorts(final CallToolRequest request) async {
     final result = await executor.execute(const GetActivePortsCommand());
     if (!result.ok) {
-      return _errorResult(
-        _errorText(result, prefix: 'Failed to get active ports'),
+      return toCallToolErrorResult(
+        result,
+        prefix: 'Failed to get active ports',
       );
     }
 
@@ -165,14 +203,17 @@ class VMToolsHandler {
     );
   }
 
-  CallToolResult _errorResult(final String message) =>
-      CallToolResult(isError: true, content: [TextContent(text: message)]);
-
-  String _errorText(final CoreResult result, {required final String prefix}) {
-    final message = result.error?.message ?? 'Unknown error';
-    if (message == 'VM service not connected') {
-      return message;
+  Future<CallToolResult?> _prepareConnectionIfRequested(
+    final CallToolRequest request,
+  ) async {
+    final connectError = await applyConnectionOverride(
+      request: request,
+      executor: executor,
+    );
+    if (connectError == null) {
+      return null;
     }
-    return '$prefix: $message';
+
+    return toCallToolErrorResult(connectError, prefix: 'Failed to connect');
   }
 }

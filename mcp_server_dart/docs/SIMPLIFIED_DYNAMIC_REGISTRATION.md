@@ -1,5 +1,9 @@
 # Simplified Dynamic Registration System
 
+> [!WARNING]
+> Historical/internal design note. Examples here may not match the current public API exactly.
+> For canonical usage, use root docs (`README.md`, `QUICK_START.md`, `CONFIGURATION.md`) and `docs/`.
+
 ## Overview
 
 This document describes the **simplified and optimized** dynamic tool registration system for the Flutter MCP project. Based on the insight that when VM Service connects, we're already connected to the Flutter isolate, this system eliminates complex multi-isolate discovery and uses event-driven updates instead of polling.

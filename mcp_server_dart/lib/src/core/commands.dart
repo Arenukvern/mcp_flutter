@@ -14,6 +14,7 @@ sealed class CoreCommand {
 final class ConnectCommand extends CoreCommand {
   const ConnectCommand({
     this.mode = CoreConnectionMode.auto,
+    this.targetId,
     this.uri,
     this.host,
     this.port,
@@ -21,6 +22,7 @@ final class ConnectCommand extends CoreCommand {
   });
 
   final CoreConnectionMode mode;
+  final String? targetId;
   final String? uri;
   final String? host;
   final int? port;
@@ -33,6 +35,7 @@ final class ConnectCommand extends CoreCommand {
 final class SessionStartCommand extends CoreCommand {
   const SessionStartCommand({
     this.mode = CoreConnectionMode.auto,
+    this.targetId,
     this.uri,
     this.host,
     this.port,
@@ -41,6 +44,7 @@ final class SessionStartCommand extends CoreCommand {
   });
 
   final CoreConnectionMode mode;
+  final String? targetId;
   final String? uri;
   final String? host;
   final int? port;

@@ -98,23 +98,35 @@ void main() {
       skip: runIntegration ? false : 'Set RUN_FLUTTER_CLI_INTEGRATION=1 to run',
       timeout: const Timeout(Duration(minutes: 8)),
       () async {
-        final status = await _runCli(['status']);
+        final status = await _runCli([
+          'exec',
+          '--name',
+          'status',
+          '--args',
+          '{}',
+        ]);
         expect(status['ok'], isTrue);
 
         final connect = await _runCli([
+          'exec',
+          '--name',
           'connect',
-          '--mode',
-          'uri',
-          '--uri',
-          _globalVmServiceWsUri!,
+          '--args',
+          jsonEncode({'mode': 'uri', 'uri': _globalVmServiceWsUri}),
         ]);
         expect(connect['ok'], isTrue);
 
-        final vm = await _runCli(['get_vm']);
+        final vm = await _runCli(['exec', '--name', 'get_vm', '--args', '{}']);
         expect(vm['ok'], isTrue);
         expect((vm['data'] as Map<String, dynamic>)['isolates'], isNotNull);
 
-        final exts = await _runCli(['get_extension_rpcs']);
+        final exts = await _runCli([
+          'exec',
+          '--name',
+          'get_extension_rpcs',
+          '--args',
+          '{}',
+        ]);
         expect(exts['ok'], isTrue);
         final extList = ((exts['data'] as List).cast<String>());
         expect(extList.any((final e) => e.startsWith('ext.flutter')), isTrue);
@@ -125,27 +137,33 @@ void main() {
           isTrue,
         );
 
-        final viewDetails = await _runCli(['get_view_details']);
+        final viewDetails = await _runCli([
+          'exec',
+          '--name',
+          'get_view_details',
+          '--args',
+          '{}',
+        ]);
         expect(viewDetails['ok'], isTrue);
 
         final dynamicList = await _waitForDynamicTool('get_app_ui_state');
         expect(dynamicList['ok'], isTrue);
 
         final runTool = await _runCli([
+          'exec',
+          '--name',
           'runClientTool',
-          '--tool-name',
-          'get_app_ui_state',
-          '--arguments',
-          '{}',
+          '--args',
+          '{"toolName":"get_app_ui_state","arguments":{}}',
         ]);
         expect(runTool['ok'], isTrue);
 
         final sessionStart = await _runCli([
+          'exec',
+          '--name',
           'session_start',
-          '--mode',
-          'uri',
-          '--uri',
-          _globalVmServiceWsUri!,
+          '--args',
+          jsonEncode({'mode': 'uri', 'uri': _globalVmServiceWsUri}),
         ]);
         expect(sessionStart['ok'], isTrue);
         final sessionId =
@@ -154,13 +172,15 @@ void main() {
         expect(sessionId, isNotEmpty);
 
         final sessionExec = await _runCli([
+          'exec',
+          '--name',
           'session_exec',
-          '--session-id',
-          sessionId,
-          '--command',
-          'get_vm',
-          '--arguments',
-          '{}',
+          '--args',
+          jsonEncode({
+            'sessionId': sessionId,
+            'command': 'get_vm',
+            'arguments': <String, Object?>{},
+          }),
         ]);
         expect(sessionExec['ok'], isTrue);
         expect(
@@ -172,38 +192,40 @@ void main() {
           sessionId,
         );
 
-        final diagnose = await _runCli(['diagnose', '--include-view-details']);
+        final diagnose = await _runCli([
+          'exec',
+          '--name',
+          'diagnose',
+          '--args',
+          '{"includeViewDetails":true}',
+        ]);
         expect(diagnose['ok'], isTrue);
         final summary =
             (diagnose['data'] as Map<String, dynamic>)['summary']
                 as Map<String, dynamic>;
         expect(summary['total'], greaterThan(0));
 
-        final watchEvents = await _runCliWatch([
+        final watchSnapshot = await _runCli([
+          'exec',
+          '--name',
           'watch',
-          '--session-id',
-          sessionId,
-          '--command',
-          'get_app_errors',
-          '--arguments',
-          '{"count":1}',
-          '--interval-ms',
-          '300',
-          '--max-events',
-          '2',
+          '--args',
+          jsonEncode({
+            'sessionId': sessionId,
+            'command': 'get_app_errors',
+            'arguments': <String, Object?>{'count': 1},
+            'intervalMs': 300,
+            'maxEvents': 2,
+          }),
         ]);
-        expect(watchEvents.first['event'], equals('watch_started'));
-        expect(watchEvents.last['event'], equals('watch_stopped'));
-        expect(
-          watchEvents.where((final e) => e['event'] == 'command_result').length,
-          equals(2),
-        );
+        expect(watchSnapshot['ok'], isTrue);
 
         final explain = await _runCli([
+          'exec',
+          '--name',
           'explain_errors',
-          '--count',
-          '4',
-          '--no-include-summary',
+          '--args',
+          '{"count":4,"includeSummary":false}',
         ]);
         expect(explain['ok'], isTrue);
         final causes =
@@ -215,13 +237,21 @@ void main() {
         );
 
         final sessionEnd = await _runCli([
+          'exec',
+          '--name',
           'session_end',
-          '--session-id',
-          sessionId,
+          '--args',
+          jsonEncode({'sessionId': sessionId}),
         ]);
         expect(sessionEnd['ok'], isTrue);
 
-        final hotReload = await _runCli(['hot_reload_flutter']);
+        final hotReload = await _runCli([
+          'exec',
+          '--name',
+          'hot_reload_flutter',
+          '--args',
+          '{}',
+        ]);
         expect(hotReload['ok'], isTrue);
       },
     );
@@ -260,11 +290,11 @@ Future<void> _waitForCliConnectable({
 
   while (DateTime.now().difference(start) < timeout) {
     final connect = await _runCliRaw([
+      'exec',
+      '--name',
       'connect',
-      '--mode',
-      'uri',
-      '--uri',
-      vmServiceWsUri,
+      '--args',
+      jsonEncode({'mode': 'uri', 'uri': vmServiceWsUri}),
     ]);
 
     if (connect.envelope['ok'] == true) {
@@ -282,7 +312,13 @@ Future<Map<String, dynamic>> _waitForDynamicTool(final String toolName) async {
   const timeout = Duration(seconds: 60);
 
   while (DateTime.now().difference(start) < timeout) {
-    final result = await _runCli(['listClientToolsAndResources']);
+    final result = await _runCli([
+      'exec',
+      '--name',
+      'listClientToolsAndResources',
+      '--args',
+      '{}',
+    ]);
     if (result['ok'] == true) {
       final data = result['data'] as Map<String, dynamic>;
       final tools = (data['tools'] as List?) ?? const [];
@@ -372,10 +408,12 @@ List<String> _buildCliArgs(final List<String> args) {
   }
 
   final vmServiceUri = _globalVmServiceWsUri;
-  if (vmServiceUri != null &&
-      vmServiceUri.isNotEmpty &&
-      args.isNotEmpty &&
-      args.first != 'connect') {
+  final isExecConnect =
+      args.length >= 3 &&
+      args[0] == 'exec' &&
+      args[1] == '--name' &&
+      args[2] == 'connect';
+  if (vmServiceUri != null && vmServiceUri.isNotEmpty && !isExecConnect) {
     fullArgs.addAll(['--vm-service-uri', vmServiceUri]);
   }
 

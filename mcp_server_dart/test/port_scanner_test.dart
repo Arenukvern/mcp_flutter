@@ -30,6 +30,9 @@ base class TestPortScannerServer extends BaseMCPToolkitServer {
           environment: 'test',
           dynamicRegistrySupported: false,
           saveImagesToFiles: false,
+          flutterProjectDir: null,
+          flutterDevice: null,
+          flutterDiscoveryTimeoutMs: 2500,
         ),
         implementation: Implementation(
           name: 'test-port-scanner',

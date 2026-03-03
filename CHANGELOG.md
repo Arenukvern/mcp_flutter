@@ -1,3 +1,32 @@
+## Unreleased
+
+### mcp_server_dart
+
+- connection UX redesign for VM-dependent calls:
+  - startup stays non-blocking and does not fail when multiple targets are present
+  - first VM-dependent call auto-attaches only when target resolution is unambiguous
+  - ambiguous cases now return `connection_selection_required` with `availableTargets` and retry guidance
+- added optional strict nested `connection` object support across VM-dependent MCP tools and dynamic registry tools
+- added resource URI query-based connection targeting (`targetId`, `mode`, `host`, `port`, `uri`, `forceReconnect`)
+- strict input schemas now reject legacy flat connection aliases (`host`, `port`, `uri`) at top-level tool arguments
+- target identity migration (hard break):
+  - `connection.targetId` now uses full VM websocket URI IDs (`ws://.../ws`)
+  - legacy `host:port` `targetId` values are rejected with migration guidance to URI IDs or `connection.uri`
+- Flutter web auto discovery:
+  - added machine discovery via `flutter attach --machine` with optional project/device context
+  - merged machine + port-scan discovery with URI-ID selection payloads
+- added runtime discovery flags for CLI and MCP server:
+  - `--flutter-project-dir`
+  - `--flutter-device`
+  - `--flutter-discovery-timeout-ms`
+- CLI v2 and daemon alignment:
+  - one-shot `exec --args` now supports optional strict nested `connection` targeting for VM-dependent execution
+  - daemon `command/execute` and `watch/start` accept the same optional `params.args.connection` contract
+  - `snapshot create` supports per-step `args.commands[i].args.connection` targeting
+  - preconnect no longer returns synthetic `vm_not_connected` for ambiguous multi-target paths; ambiguity now surfaces as `connection_selection_required`
+  - explicit requested session attach remains strict; implicit stale active-session attach falls back to auto target resolution
+  - `connect` and `session_start` reject mixed native selector args with nested `connection`
+
 ## 2.6.0
 
 BREAKING CHANGES:

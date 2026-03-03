@@ -6,11 +6,14 @@
 import 'dart:async';
 
 import 'package:dart_mcp/server.dart';
+import 'package:flutter_inspector_mcp_server/src/core/error_codes.dart';
+import 'package:flutter_inspector_mcp_server/src/core/results.dart';
 import 'package:flutter_inspector_mcp_server/src/base_server.dart';
 import 'package:flutter_inspector_mcp_server/src/dynamic_registry/core_dynamic_registry_gateway.dart';
 import 'package:flutter_inspector_mcp_server/src/dynamic_registry/dynamic_registry.dart';
 import 'package:flutter_inspector_mcp_server/src/dynamic_registry/dynamic_registry_tools.dart';
 import 'package:flutter_inspector_mcp_server/src/dynamic_registry/registry_discovery_service.dart';
+import 'package:flutter_inspector_mcp_server/src/mixins/handlers/connection_override.dart';
 import 'package:flutter_inspector_mcp_server/src/server.dart';
 import 'package:meta/meta.dart';
 
@@ -223,18 +226,31 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
 
     // Register as a standard MCP tool that forwards to the dynamic registry
     try {
+      final toolkitServer = this as MCPToolkitServer;
       registerTool(
         tool,
-        (final request) async =>
-            await registry.forwardToolCall(request.name, request.arguments) ??
-            CallToolResult(
-              content: [
-                TextContent(
-                  text: 'Dynamic tool not available: ${request.name}',
-                ),
-              ],
-              isError: true,
-            ),
+        (final request) async {
+          final ensure = await toolkitServer.connectionContext
+              .ensureConnectedWithPolicy();
+          if (!ensure.connected) {
+            final failure = CoreResult.failure(
+              code: ensure.code ?? CoreErrorCode.vmNotConnected,
+              message: ensure.message ?? 'VM service not connected',
+              details: ensure.details,
+            );
+            return toCallToolErrorResult(failure, prefix: 'Failed to connect');
+          }
+
+          return await registry.forwardToolCall(request.name, request.arguments) ??
+              CallToolResult(
+                content: [
+                  TextContent(
+                    text: 'Dynamic tool not available: ${request.name}',
+                  ),
+                ],
+                isError: true,
+              );
+        },
       );
 
       log(
@@ -278,7 +294,35 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
 
     // Register as a standard MCP resource that forwards to the dynamic registry
     try {
+      final toolkitServer = this as MCPToolkitServer;
       addResource(resource, (final request) async {
+        final connectError = await applyConnectionOverrideFromResourceUri(
+          resourceUri: request.uri,
+          executor: toolkitServer.coreCommandExecutor,
+        );
+        if (connectError != null) {
+          return toReadResourceErrorResult(
+            uri: request.uri,
+            result: connectError,
+            prefix: 'Failed to connect',
+          );
+        }
+
+        final ensure = await toolkitServer.connectionContext
+            .ensureConnectedWithPolicy();
+        if (!ensure.connected) {
+          final failure = CoreResult.failure(
+            code: ensure.code ?? CoreErrorCode.vmNotConnected,
+            message: ensure.message ?? 'VM service not connected',
+            details: ensure.details,
+          );
+          return toReadResourceErrorResult(
+            uri: request.uri,
+            result: failure,
+            prefix: 'Failed to connect',
+          );
+        }
+
         final content = await registry.forwardResourceRead(request.uri);
         if (content != null) return content;
 

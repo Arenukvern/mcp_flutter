@@ -4,19 +4,21 @@
 import 'package:dart_mcp/server.dart';
 
 /// Interface for accessing VM service configuration.
-typedef VMServiceConfigurationRecord =
-    ({
-      String vmHost,
-      int vmPort,
-      bool resourcesSupported,
-      bool imagesSupported,
-      bool dumpsSupported,
-      bool dynamicRegistrySupported,
-      String logLevel,
-      String environment,
-      bool awaitDndConnection,
-      bool saveImagesToFiles,
-    });
+typedef VMServiceConfigurationRecord = ({
+  String vmHost,
+  int vmPort,
+  bool resourcesSupported,
+  bool imagesSupported,
+  bool dumpsSupported,
+  bool dynamicRegistrySupported,
+  String logLevel,
+  String environment,
+  bool awaitDndConnection,
+  bool saveImagesToFiles,
+  String? flutterProjectDir,
+  String? flutterDevice,
+  int flutterDiscoveryTimeoutMs,
+});
 
 abstract base class BaseMCPToolkitServer extends MCPServer
     with LoggingSupport, ToolsSupport, ResourcesSupport {

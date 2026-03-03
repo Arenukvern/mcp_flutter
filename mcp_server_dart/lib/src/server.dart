@@ -37,6 +37,8 @@ This server provides comprehensive tools for inspecting, debugging, and dynamica
 ## Core Static Tools
 
 **Essential Tools:**
+- connect_debug_app: Explicitly connect/select a target Flutter debug VM
+- get_active_ports: Discover running Flutter/Dart debug ports
 - hot_reload_flutter: Hot reload the Flutter app for instant UI updates
 - get_vm: Get VM information and connection status  
 - get_extension_rpcs: List available extension RPCs in the Flutter app
@@ -261,7 +263,8 @@ void registerAIWidgetInspector() { // Helper function for organization
 
 - Flutter app must be running in **debug mode** with `--enable-vm-service` 
 `--host-vmservice-port=8182 --dds-port=8181 --disable-service-auth-codes` flags.
-- Default connection: localhost:8181 (Dart VM port)
+- Default connection mode: auto-discover active Flutter debug targets.
+- Explicit selection: use `connection.targetId` with full VM websocket URI or `connection.uri`.
 - Dynamic tools register automatically when app calls `addMcpTool()`
 - No server restart needed when new tools are registered
 

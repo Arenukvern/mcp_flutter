@@ -2,6 +2,28 @@
 
 To use the Flutter MCP Toolkit, you need to configure your AI assistant to connect to the running MCP server. It is recommended to use the compiled server binary, which is typically located at `/path/to/your/mcp_flutter/mcp_server_dart/build/flutter_inspector_mcp` after running `make install`.
 
+### Multiple Debug Targets (Important)
+
+When multiple Flutter debug apps are running:
+
+- VM-dependent tools do not guess the target.
+- The server returns `connection_selection_required` with `availableTargets` and a retry example.
+- Retry the same tool call with `arguments.connection.targetId`, or call `connect_debug_app` with the same `connection` object.
+- The same nested `connection` object is also used by CLI one-shot `exec --args`, daemon `command/execute` / `watch/start`, and snapshot step args.
+
+Example retry payload:
+
+```json
+{
+  "name": "get_vm",
+  "arguments": {
+    "connection": {
+      "targetId": "ws://127.0.0.1:59490/<token>/ws"
+    }
+  }
+}
+```
+
 ### Cline Setup
 
 > Note: Please use `--no-resources` flag to disable resources support - for unknown reason it doesn't work with Cline.

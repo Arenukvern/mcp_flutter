@@ -2,17 +2,83 @@
 
 The Flutter MCP Toolkit comes with a set of pre-built tools and resources for common development tasks.
 
-Note:
+Notes:
 
-- Requires a connected Flutter app in debug mode with VM service enabled (see the run flags above).
-- If VM service is not connected, the tool returns an error message instead of failing the whole request.
+- VM-dependent tools/resources resolve connection on demand. Startup does not force choosing a VM target.
+- If VM service is unavailable, the tool returns an error payload.
+- If multiple debug targets are discovered and no sticky/explicit target is available, the tool returns `connection_selection_required`.
 
 ### Core Tools
 
+- **`connect_debug_app`**: Explicitly select/connect a debug target.
 - **`hot_reload_flutter`**: Performs a hot reload of the Flutter app.
 - **`hot_restart_flutter`**: Performs a hot restart of the Flutter app.
 - **`get_vm`**: Returns information about the Dart VM.
 - **`get_extension_rpcs`**: Lists the available extension RPCs in the Flutter app.
+
+### Connection Targeting (Per Request)
+
+All VM-dependent tools accept an optional nested `connection` object in `arguments`:
+
+```json
+{
+  "name": "get_vm",
+  "arguments": {
+    "connection": {
+      "targetId": "ws://127.0.0.1:59490/<token>/ws"
+    }
+  }
+}
+```
+
+Supported fields:
+
+- `targetId` (preferred, full VM websocket URI)
+- `mode` (`auto`, `manual`, `uri`)
+- `host`
+- `port`
+- `uri`
+- `forceReconnect`
+
+Legacy `host:port` values for `targetId` are rejected.
+
+Flat top-level aliases like `arguments.port`, `arguments.host`, and `arguments.uri` are not supported.
+
+The same nested object is used in CLI/daemon flows:
+
+- one-shot `exec --args`
+- daemon `command/execute` and `watch/start`
+- snapshot step args (`commands[i].args.connection`)
+
+### Ambiguity Handshake
+
+When multiple targets exist and no sticky/explicit target resolves ambiguity, the server returns:
+
+```json
+{
+  "code": "connection_selection_required",
+  "details": {
+    "reason": "multiple_targets",
+    "availableTargets": [
+      {
+        "targetId": "ws://127.0.0.1:8181/<token>/ws",
+        "host": "localhost",
+        "port": 8181,
+        "endpoint": "ws://127.0.0.1:8181/<token>/ws",
+        "isSticky": false,
+        "isCurrent": false
+      }
+    ],
+    "suggestedAction": "retry_with_connection_target",
+    "example": {
+      "connection": {"targetId": "ws://127.0.0.1:8181/<token>/ws"}
+    },
+    "howToRetry": {
+      "connection": {"targetId": "ws://127.0.0.1:8181/<token>/ws"}
+    }
+  }
+}
+```
 
 ### Hot Restart Tool Usage
 
@@ -47,3 +113,16 @@ These tools are disabled by default and can be enabled with the `--dumps` flag.
 - **`visual://localhost/app/errors/latest`**: Gets the latest errors from the app.
 - **`visual://localhost/view/details`**: Gets details about the current view.
 - **`visual://localhost/view/screenshots`**: Takes a screenshot of the app.
+
+Resource reads also support connection targeting via URI query params:
+
+- `targetId`
+- `mode`
+- `host`
+- `port`
+- `uri`
+- `forceReconnect`
+
+Example:
+
+- `visual://localhost/view/details?targetId=ws%3A%2F%2F127.0.0.1%3A59490%2F%3Ctoken%3E%2Fws`

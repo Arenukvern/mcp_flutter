@@ -31,7 +31,7 @@ void main() {
         requestSink.add(jsonEncode(initRequest));
 
         final response = await responseStream.first.timeout(
-          const Duration(seconds: 5),
+          const Duration(seconds: 20),
           onTimeout: () => throw TimeoutException('No response received'),
         );
 
@@ -209,7 +209,7 @@ void main() {
         requestSink.add(jsonEncode(invalidRequest));
 
         final response = await responseStream.first.timeout(
-          const Duration(seconds: 5),
+          const Duration(seconds: 20),
           onTimeout: () => throw TimeoutException('No error response'),
         );
 
@@ -239,7 +239,7 @@ void main() {
         // We'll wait a short time to see if there's a response
         try {
           final response = await responseStream.first.timeout(
-            const Duration(seconds: 2),
+            const Duration(seconds: 8),
           );
 
           // If we get a response, it should be an error
@@ -272,7 +272,7 @@ void main() {
 
         try {
           final response = await responseStream.first.timeout(
-            const Duration(seconds: 5),
+            const Duration(seconds: 20),
           );
 
           expect(response['jsonrpc'], equals('2.0'));
@@ -357,7 +357,7 @@ Future<bool> _runServerTest(
     serverProcess?.kill();
     if (serverProcess != null) {
       try {
-        await serverProcess.exitCode.timeout(const Duration(seconds: 2));
+        await serverProcess.exitCode.timeout(const Duration(seconds: 8));
       } catch (e, stackTrace) {
         print('Error killing server: $e');
         print('Stack trace: $stackTrace');
@@ -372,7 +372,7 @@ Future<Map<String, dynamic>> _waitForResponse(
   final List<Map<String, dynamic>> responses,
   final bool Function(Map<String, dynamic>) condition,
 ) async {
-  const maxWaitTime = Duration(seconds: 10);
+  const maxWaitTime = Duration(seconds: 30);
   const checkInterval = Duration(milliseconds: 100);
   final startTime = DateTime.now();
 

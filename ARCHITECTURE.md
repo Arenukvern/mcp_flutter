@@ -24,7 +24,7 @@ This project enables AI-powered development tools to interact with Flutter appli
 └─────────────────────────────┘     └──────────────────┘     └─────────────────────────────┘
 ```
 
-![Flutter Inspector Architecture](./docs/architecture.png)
+![Flutter Inspector Architecture](./docs/core/architecture.png)
 
 This unified architecture supports:
 
@@ -177,11 +177,11 @@ This unified architecture supports:
    - No production access
    - Controlled environment execution
 
-2. **Port Security**:
+2. **Transport and Port Security**:
 
-   - Default ports: 8181 (VM), 8182 (MCP)
-   - Local-only connections
-   - Port validation and verification
+   - MCP server communication is stdio-based (no inbound MCP network port)
+   - Default VM target port is `8181` (configurable with `--dart-vm-port`)
+   - Local-only connections are recommended
 
 3. **Data Safety**:
 
@@ -228,7 +228,7 @@ This unified architecture supports:
 final customTool = MCPCallEntry.tool(
   handler: (request) {
     // Your custom logic
-    return MCPCallResult(message: 'Success');
+    return MCPCallResult(message: 'Success', parameters: const {});
   },
   definition: MCPToolDefinition(
     name: 'custom_command',
