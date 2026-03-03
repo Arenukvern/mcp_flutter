@@ -1,0 +1,36 @@
+# AI Agent Overview
+
+This section is for Codex, Claude, Cursor, and similar agents configuring or operating this MCP server.
+
+## Goal
+
+Get to a reliable end state where:
+
+- MCP server binary is built
+- Flutter app is instrumented with `mcp_toolkit`
+- client MCP config is updated safely (without deleting other servers)
+- tool calls work against the correct debug target
+
+If you need deterministic terminal automation instead of MCP client integration, see [CLI vs MCP](/start_here/cli_vs_mcp).
+
+## Start Here
+
+1. Follow the [Execution playbook](/ai_agents/execution_playbook).
+2. Apply client-specific config:
+   - [Codex](/ai_agents/codex)
+   - [Cursor](/ai_agents/cursor)
+   - [Claude](/ai_agents/claude)
+3. Validate with [AI troubleshooting](/ai_agents/troubleshooting).
+
+## Canonical Agent Prompt File
+
+If your assistant can follow a remote install guide, use:
+
+- [llm_install.md (GitHub)](https://github.com/Arenukvern/mcp_flutter/blob/main/llm_install.md)
+
+## Agent Safety Rules
+
+- Ask for absolute paths before cloning or editing user files.
+- Merge JSON changes instead of replacing entire config files.
+- Preserve existing MCP servers in user config.
+- When multiple debug targets exist, retry with `arguments.connection.targetId`.

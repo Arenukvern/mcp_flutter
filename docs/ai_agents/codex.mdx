@@ -1,0 +1,39 @@
+# Codex Setup
+
+Use this when configuring Codex to talk to the Flutter inspector MCP server.
+
+## Server Entry
+
+Add this server definition to your Codex MCP configuration (merge into existing `mcpServers` object):
+
+```json
+{
+  "mcpServers": {
+    "flutter-inspector": {
+      "command": "/ABSOLUTE/PATH/mcp_flutter/mcp_server_dart/build/flutter_inspector_mcp",
+      "args": [
+        "--dart-vm-host=localhost",
+        "--dart-vm-port=8181",
+        "--resources",
+        "--images",
+        "--dynamics"
+      ],
+      "env": {},
+      "disabled": false
+    }
+  }
+}
+```
+
+## Validation
+
+After restarting Codex client/session, test:
+
+- "List available tools from flutter-inspector"
+- "Take a screenshot of my app"
+- "Get current app errors"
+
+## Notes
+
+- If your Codex client has poor resource support, replace `--resources` with `--no-resources`.
+- If multiple debug targets are active, retry calls with `arguments.connection.targetId`.

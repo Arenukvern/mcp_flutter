@@ -1,20 +1,45 @@
 {
   "name": "Flutter MCP Toolkit",
-  "description": "Documentation for the MCP Server and Flutter Toolkit for AI-Powered Development.",
+  "description": "Audience-first documentation for Flutter MCP Toolkit: human docs and AI agent docs.",
   "github": "https://github.com/Arenukvern/mcp_flutter",
   "$schema": "https://docs.page/schema.json",
   "sidebar": [
     {
-      "group": "Getting Started",
+      "group": "Start Here",
       "pages": [
         {
           "title": "Overview",
           "href": "/"
         },
         {
-          "title": "LLM Auto Install Files",
-          "href": "/getting_started/llm_install_files"
+          "title": "Why This Repo Matters",
+          "href": "/start_here/why_this_repo_matters"
         },
+        {
+          "title": "Feature Map",
+          "href": "/start_here/feature_map"
+        },
+        {
+          "title": "Docs Map",
+          "href": "/start_here/docs_map"
+        },
+        {
+          "title": "CLI vs MCP",
+          "href": "/start_here/cli_vs_mcp"
+        },
+        {
+          "title": "CLI Quick Recipes",
+          "href": "/start_here/cli_quick_recipes"
+        },
+        {
+          "title": "Video Walkthroughs",
+          "href": "/start_here/video_walkthroughs"
+        }
+      ]
+    },
+    {
+      "group": "For Humans",
+      "pages": [
         {
           "title": "Manual Installation",
           "href": "/getting_started/manual_installation"
@@ -22,11 +47,56 @@
         {
           "title": "Manual Client Setup",
           "href": "/getting_started/manual_client_setup"
+        },
+        {
+          "title": "Debugging Workflow",
+          "href": "/guides/debugging_workflow"
+        },
+        {
+          "title": "Creating Dynamic Tools",
+          "href": "/guides/creating_dynamic_tools"
+        },
+        {
+          "title": "Common Issues",
+          "href": "/troubleshooting/common_issues"
         }
       ]
     },
     {
-      "group": "Core Concepts",
+      "group": "For AI Agents",
+      "pages": [
+        {
+          "title": "AI Agent Overview",
+          "href": "/ai_agents/overview"
+        },
+        {
+          "title": "Execution Playbook",
+          "href": "/ai_agents/execution_playbook"
+        },
+        {
+          "title": "Codex Setup",
+          "href": "/ai_agents/codex"
+        },
+        {
+          "title": "Cursor Setup",
+          "href": "/ai_agents/cursor"
+        },
+        {
+          "title": "Claude Setup",
+          "href": "/ai_agents/claude"
+        },
+        {
+          "title": "AI Troubleshooting",
+          "href": "/ai_agents/troubleshooting"
+        },
+        {
+          "title": "AI-Assisted Installation",
+          "href": "/getting_started/llm_install_files"
+        }
+      ]
+    },
+    {
+      "group": "Core Reference",
       "pages": [
         {
           "title": "Architecture",
@@ -43,32 +113,6 @@
         {
           "title": "Built-in Tools",
           "href": "/core/built_in_tools"
-        }
-      ]
-    },
-    {
-      "group": "Guides",
-      "pages": [
-        {
-          "title": "Creating Dynamic Tools",
-          "href": "/guides/creating_dynamic_tools"
-        },
-        {
-          "title": "Debugging Workflow",
-          "href": "/guides/debugging_workflow"
-        }
-      ]
-    },
-    {
-      "group": "Troubleshooting",
-      "pages": [
-        {
-          "title": "Common Issues",
-          "href": "/troubleshooting/common_issues"
-        },
-        {
-          "title": "Claude Code Issues",
-          "href": "/troubleshooting/claude_code_issues"
         }
       ]
     },

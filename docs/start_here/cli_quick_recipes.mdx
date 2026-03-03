@@ -1,0 +1,94 @@
+# CLI Quick Recipes
+
+Practical command patterns for `flutter_mcp_cli`.
+
+If you have not decided between interfaces yet, read [CLI vs MCP](/start_here/cli_vs_mcp) first.
+
+## Prerequisites
+
+From repo root:
+
+```bash
+make install
+```
+
+Run commands with:
+
+```bash
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart
+```
+
+## 1. Inspect Available Capabilities
+
+```bash
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart capabilities
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart schema
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart schema --name get_app_errors
+```
+
+## 2. Run One-Shot Health Checks
+
+```bash
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec --name status --args '{}'
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec --name get_vm --args '{}'
+```
+
+## 3. Pull Common Debug Data
+
+```bash
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec --name get_app_errors --args '{"count":5}'
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec --name get_view_details --args '{}'
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec --name get_screenshots --args '{}'
+```
+
+## 4. Handle Multiple Debug Targets Explicitly
+
+When calls fail with `connection_selection_required`, retry with a target URI:
+
+```bash
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec \
+  --name get_vm \
+  --args '{"connection":{"targetId":"ws://127.0.0.1:59490/<token>/ws"}}'
+```
+
+## 5. Use Session Lifecycle Commands
+
+```bash
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec --name session_start --args '{"mode":"uri","uri":"ws://127.0.0.1:8181/<token>/ws"}'
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec --name session_exec --args '{"command":"get_app_errors","arguments":{"count":3}}'
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec --name session_end --args '{}'
+```
+
+## 6. Create Reproducible Artifacts
+
+```bash
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart snapshot create --name baseline --args '{"commands":[{"name":"status","args":{}},{"name":"get_app_errors","args":{"count":5}}]}'
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart snapshot create --name after_fix --args '{"commands":[{"name":"status","args":{}},{"name":"get_app_errors","args":{"count":5}}]}'
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart snapshot diff --from baseline --to after_fix
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart bundle create --from-snapshot after_fix
+```
+
+## 7. CI Script Template
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+make install
+
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec --name status --args '{}'
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec --name get_app_errors --args '{"count":10}'
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart snapshot create --name ci_run --args '{"commands":[{"name":"status","args":{}},{"name":"get_app_errors","args":{"count":10}}]}'
+```
+
+## 8. Common Failure Recovery
+
+- `connection_selection_required`: retry with `connection.targetId`.
+- No data from app tools: ensure Flutter app is running in debug mode and `mcp_toolkit` is initialized.
+- Schema validation failures: use nested `connection` object, not flat `host`/`port` aliases.
+
+## Related Docs
+
+- [MCP configuration](/core/mcp_configuration)
+- [Built-in tools](/core/built_in_tools)
+- [AI troubleshooting](/ai_agents/troubleshooting)

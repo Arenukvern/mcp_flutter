@@ -1,0 +1,32 @@
+# Why This Repo Matters
+
+This project exists to make Flutter debugging and automation truly usable from AI assistants.
+
+## The Problem
+
+Generic MCP or Dart-only tooling can expose low-level VM data, but real Flutter debugging usually needs:
+
+- app-level errors with useful summaries
+- UI screenshots and view metadata
+- fast actions like hot reload/hot restart
+- app-specific tools that know your domain
+
+## What This Repo Adds
+
+- A Dart MCP server focused on Flutter workflows.
+- A CLI (`flutter_mcp_cli`) for deterministic automation, snapshots, and CI.
+- `mcp_toolkit` for in-app extensions.
+- Dynamic tool/resource registration from the running app.
+- Target-resolution and retry guidance for multi-app debug sessions.
+
+## Relationship To Official Dart MCP Server
+
+The official Dart MCP server from the Flutter/Dart team is important and useful for Dart tooling.
+
+This repo focuses on a different goal: Flutter app-centric workflows and dynamic runtime tools. Many teams can use both, depending on needs.
+
+## Who Benefits
+
+- Flutter teams that want AI-assisted debugging with runtime context.
+- Teams building custom agent workflows around app-specific diagnostics.
+- Contributors experimenting with MCP tools inside real Flutter apps.

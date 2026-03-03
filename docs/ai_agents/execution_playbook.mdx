@@ -1,0 +1,65 @@
+# AI Agent Execution Playbook
+
+Use this when you are an agent performing install/config steps end to end.
+
+## Inputs To Collect First
+
+- `[MCP_SERVER_BASE_PATH]`: absolute directory where repo should be cloned.
+- `[FLUTTER_APP_PATH]`: absolute Flutter app path to instrument.
+
+Do not start cloning or editing until both paths are confirmed.
+
+## Step 1. Clone And Build
+
+```bash
+cd [MCP_SERVER_BASE_PATH]
+git clone https://github.com/Arenukvern/mcp_flutter
+cd mcp_flutter
+make install
+```
+
+Expected binary:
+
+- `[MCP_SERVER_BASE_PATH]/mcp_flutter/mcp_server_dart/build/flutter_inspector_mcp`
+
+## Step 2. Add Toolkit To Flutter App
+
+```bash
+cd [FLUTTER_APP_PATH]
+flutter pub add mcp_toolkit
+flutter pub get
+```
+
+In `main.dart`, initialize toolkit and error forwarding:
+
+```dart
+MCPToolkitBinding.instance
+  ..initialize()
+  ..initializeFlutterToolkit();
+
+MCPToolkitBinding.instance.handleZoneError(error, stack);
+```
+
+## Step 3. Run Flutter In Debug Mode
+
+```bash
+flutter run --debug --host-vmservice-port=8182 --dds-port=8181 --enable-vm-service --disable-service-auth-codes
+```
+
+## Step 4. Configure Client
+
+Pick one guide:
+
+- [Codex](/ai_agents/codex)
+- [Cursor](/ai_agents/cursor)
+- [Claude](/ai_agents/claude)
+
+## Step 5. Validate
+
+Ask the assistant to run:
+
+1. "List available MCP tools for flutter-inspector"
+2. "Take a screenshot of the app"
+3. "Get app errors"
+
+If tool calls fail with `connection_selection_required`, retry with `arguments.connection.targetId`.

@@ -1,0 +1,39 @@
+# AI Agent Troubleshooting
+
+## `connection_selection_required`
+
+Cause: multiple debug targets found.
+
+Fix:
+
+1. Read `availableTargets` from the response.
+2. Retry with:
+
+```json
+{
+  "arguments": {
+    "connection": {
+      "targetId": "ws://127.0.0.1:59490/<token>/ws"
+    }
+  }
+}
+```
+
+## No Tools Showing In Client
+
+- Restart the AI client after MCP config changes.
+- Ensure JSON syntax is valid.
+- Verify `command` points to existing compiled binary.
+- Confirm Flutter app is running in debug mode.
+
+## Screenshots Missing
+
+- Ensure `--images` is enabled.
+- For clients with limited resource support, use `--no-resources` and call tool variants.
+- For file-based image workflows (for example RooCode), use `--save-images`.
+
+## Dynamic Tools Not Appearing
+
+- Verify `MCPToolkitBinding.instance.addEntries(...)` is called.
+- Hot reload or restart the Flutter app.
+- Use `listClientToolsAndResources` to verify registration.

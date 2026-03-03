@@ -1,0 +1,39 @@
+# Cursor Setup
+
+Cursor usually works best with `--no-resources`.
+
+## Config File
+
+Update `~/.cursor/mcp.json` and merge into existing `mcpServers`:
+
+```json
+{
+  "mcpServers": {
+    "flutter-inspector": {
+      "command": "/ABSOLUTE/PATH/mcp_flutter/mcp_server_dart/build/flutter_inspector_mcp",
+      "args": [
+        "--dart-vm-host=localhost",
+        "--dart-vm-port=8181",
+        "--no-resources",
+        "--images",
+        "--dynamics"
+      ],
+      "env": {},
+      "disabled": false
+    }
+  }
+}
+```
+
+## Validation
+
+1. Restart Cursor.
+2. Open agent panel.
+3. Run:
+   - "List available MCP tools"
+   - "Take a screenshot of the app"
+   - "Show app errors"
+
+## Video
+
+- [Cursor setup walkthrough (YouTube)](https://www.youtube.com/watch?v=pyDHaI81uts)

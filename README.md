@@ -26,8 +26,14 @@ _For AI-Powered Development_
 
 ## 📖 Documentation
 
-- [Quick Start](QUICK_START.md)
-- [Configuration](CONFIGURATION.md)
+- Audience-first docs in MDX (docs.page + repo):
+  - Human path: [manual install](docs/getting_started/manual_installation.mdx), [manual client setup](docs/getting_started/manual_client_setup.mdx)
+  - AI agent path (Codex/Claude/Cursor): [AI agent overview](docs/ai_agents/overview.mdx), [execution playbook](docs/ai_agents/execution_playbook.mdx)
+  - Why this repo matters: [docs/start_here/why_this_repo_matters.mdx](docs/start_here/why_this_repo_matters.mdx)
+  - Feature map: [docs/start_here/feature_map.mdx](docs/start_here/feature_map.mdx)
+  - CLI vs MCP (when to use which): [docs/start_here/cli_vs_mcp.mdx](docs/start_here/cli_vs_mcp.mdx)
+  - Contributors and contribution types: [docs/contributing/contributors.mdx](docs/contributing/contributors.mdx)
+- Root markdown docs: [Quick Start](QUICK_START.md), [Configuration](CONFIGURATION.md), [Architecture](ARCHITECTURE.md), [MCP RPC description](MCP_RPC_DESCRIPTION.md)
 
 > [!NOTE]
 > There is official [MCP Server for Flutter from Flutter team](https://github.com/dart-lang/ai/tree/main/pkgs/dart_mcp_server) which exposes Dart tooling.

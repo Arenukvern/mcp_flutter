@@ -1,58 +1,14 @@
-# MCP RPC Surface
+# MCP RPC Surface (Entry)
 
-This file summarizes the current MCP-facing tools/resources implemented by `mcp_server_dart`.
+This root file is now a short entry point.
 
-## Core VM Tools
+Canonical MCP surface docs live in MDX:
 
-- `connect_debug_app`: Explicitly select/connect to a debug target.
-- `hot_reload_flutter`: Trigger Flutter hot reload.
-- `hot_restart_flutter`: Trigger Flutter hot restart.
-- `get_vm`: Return Dart VM details.
-- `get_extension_rpcs`: List available extension RPCs.
-- `get_active_ports`: Scan active Flutter/Dart debug ports.
+- Built-in tools/resources: [docs/core/built_in_tools.mdx](docs/core/built_in_tools.mdx)
+- Dynamic tools/resources from Flutter app: [docs/core/dynamic_tools_registry.mdx](docs/core/dynamic_tools_registry.mdx)
+- Connection targeting and retry model: [docs/core/mcp_configuration.mdx](docs/core/mcp_configuration.mdx)
+- CLI vs MCP usage guidance: [docs/start_here/cli_vs_mcp.mdx](docs/start_here/cli_vs_mcp.mdx)
 
-## Flutter App Data Tools
+## Why this changed
 
-- `get_app_errors`: Return recent captured app errors.
-- `get_screenshots`: Capture screenshots from app views.
-- `get_view_details`: Return view metrics/details.
-
-When resources are enabled (`--resources`), equivalent data is also available via:
-
-- `visual://localhost/app/errors/latest`
-- `visual://localhost/app/errors/{count}`
-- `visual://localhost/view/screenshots`
-- `visual://localhost/view/details`
-
-When resources are disabled (`--no-resources`), these capabilities are exposed as tools only.
-
-## Optional Debug Dump Tools
-
-Disabled by default. Enable with `--dumps`.
-
-- `debug_dump_layer_tree`
-- `debug_dump_semantics_tree`
-- `debug_dump_render_tree`
-- `debug_dump_focus_tree`
-
-## Dynamic Registry Tools
-
-Enabled by default (`--dynamics`):
-
-- `listClientToolsAndResources`
-- `runClientTool`
-- `runClientResource`
-- `getRegistryStats` (debug mode utility)
-
-## Connection Selection Contract
-
-VM-dependent calls support optional nested `arguments.connection` with:
-
-- `targetId` (preferred; full VM websocket URI)
-- `mode` (`auto`, `manual`, `uri`)
-- `host`
-- `port`
-- `uri`
-- `forceReconnect`
-
-If multiple targets exist and no explicit target is supplied, calls return `connection_selection_required` with `availableTargets` and retry guidance.
+RPC surface details were moved into the docs site structure to keep documentation consistent for humans and AI agents.

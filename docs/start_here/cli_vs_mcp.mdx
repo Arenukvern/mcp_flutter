@@ -1,0 +1,89 @@
+# CLI vs MCP: What To Use, When
+
+Both interfaces are valid and both execute the same core command catalog.
+
+- `flutter_mcp_cli`: direct command-line interface for scripts, CI, snapshots, and deterministic automation.
+- `flutter_inspector_mcp` (MCP server): assistant-facing interface over MCP for Codex/Claude/Cursor workflows.
+
+## Why We Have Both
+
+They solve different UX problems:
+
+- CLI is optimized for reproducible terminal automation.
+- MCP is optimized for conversational tool use inside AI clients.
+
+Internally they share the same execution core, so behavior and command semantics stay aligned.
+
+## Quick Difference Table
+
+| Topic | CLI (`flutter_mcp_cli`) | MCP Server (`flutter_inspector_mcp`) |
+| --- | --- | --- |
+| Primary user | developers, CI, automation scripts | AI assistants and agent chat clients |
+| Interface | terminal commands / JSON args | MCP tools/resources via client |
+| Transport | local process execution | stdio MCP protocol between client and server |
+| Best for | snapshots, diff/bundle artifacts, repeatable runs | interactive debugging and assistant-led workflows |
+| State handling | explicit state/snapshot/bundle commands | conversation/tool-call driven operations |
+| Typical trigger | shell script, make target, CI pipeline | prompt in Codex/Claude/Cursor |
+
+## When To Use CLI
+
+Use CLI when you need:
+
+- deterministic, scriptable runs
+- artifacts (`snapshot create`, `snapshot diff`, `bundle create`)
+- non-interactive CI jobs
+- explicit one-shot command execution in terminal
+
+Example:
+
+```bash
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec --name get_vm --args '{}'
+```
+
+Need command patterns you can copy quickly?
+[CLI quick recipes](/start_here/cli_quick_recipes)
+
+## When To Use MCP
+
+Use MCP server when you need:
+
+- AI assistant-driven debugging loops
+- tool invocation from chat/editor agents
+- mixed workflows with screenshots, app errors, and dynamic tools during conversation
+
+Example (conceptual):
+
+```json
+{
+  "name": "get_app_errors",
+  "arguments": {}
+}
+```
+
+## Use Both Together
+
+A common pattern:
+
+1. Use MCP in editor/chat for day-to-day debugging and iteration.
+2. Use CLI in CI or local scripts to create reproducible diagnostics artifacts.
+3. Share output or artifacts back into assistant workflows.
+
+## Decision Guide
+
+- Need interactive assistant workflow right now: use MCP.
+- Need deterministic automation or CI: use CLI.
+- Need both interactive and reproducible workflows: use both.
+
+## Important Parity Notes
+
+- VM target selection uses the same nested `connection` model in both interfaces.
+- Multi-target ambiguity returns guidance (`connection_selection_required`), then retry with `connection.targetId`.
+- Core capability definitions come from the same command catalog.
+
+## Related Docs
+
+- [MCP configuration](/core/mcp_configuration)
+- [Built-in tools](/core/built_in_tools)
+- [CLI quick recipes](/start_here/cli_quick_recipes)
+- [AI agent execution playbook](/ai_agents/execution_playbook)
+- [Server architecture details](/core/project_architecture)

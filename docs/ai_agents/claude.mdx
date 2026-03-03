@@ -1,0 +1,36 @@
+# Claude Setup
+
+## Config File
+
+Update Claude Desktop MCP config (commonly `~/Library/Application Support/Claude/claude_desktop_config.json` on macOS) and merge into existing `mcpServers`:
+
+```json
+{
+  "mcpServers": {
+    "flutter-inspector": {
+      "command": "/ABSOLUTE/PATH/mcp_flutter/mcp_server_dart/build/flutter_inspector_mcp",
+      "args": [
+        "--dart-vm-host=localhost",
+        "--dart-vm-port=8181",
+        "--resources",
+        "--images",
+        "--dynamics"
+      ],
+      "env": {},
+      "disabled": false
+    }
+  }
+}
+```
+
+## Validation
+
+1. Restart Claude Desktop.
+2. Ask Claude to:
+   - list available tools
+   - capture a screenshot
+   - retrieve app errors
+
+## If Calls Fail
+
+Use [AI troubleshooting](/ai_agents/troubleshooting), especially target selection with `arguments.connection.targetId`.

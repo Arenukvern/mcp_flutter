@@ -1,0 +1,242 @@
+# Dynamic Tool Registry
+
+Dynamic Tool Registry lets your Flutter app expose app-specific MCP tools/resources at runtime, without rebuilding the MCP server.
+
+## Why It Exists
+
+Built-in MCP tools are generic. Real projects usually need custom actions like:
+
+- inspect app state that only your code understands
+- run domain-specific debug checks
+- expose read-only app snapshots to the AI assistant
+
+Dynamic registry exists so these capabilities can live in the Flutter app (where context and access control already exist), while still being callable through MCP.
+
+## When To Use It
+
+Use Dynamic Tool Registry when:
+
+- you need app-specific diagnostics beyond built-in tools
+- you have repeated debugging workflows worth turning into tools
+- your project has internal state/config that should be exposed in a controlled shape
+
+Do not use it when:
+
+- built-in tools (`get_vm`, `get_app_errors`, `get_view_details`) already solve the need
+- the action should run in production user builds
+- the handler would perform risky side effects without explicit safeguards
+
+## Architecture (ASCII)
+
+```text
++---------------------+          stdio MCP           +---------------------------+
+| AI Client           | <--------------------------> | mcp_server_dart           |
+| (Cursor/Cline/etc.) |                              | - static tools            |
++---------------------+                              | - dynamic registry bridge |
+                                                     +-------------+-------------+
+                                                                   |
+                                                     VM Service + DTD events
+                                                                   |
+                                                     +-------------v-------------+
+                                                     | Flutter App               |
+                                                     | + mcp_toolkit             |
+                                                     | + MCPToolkitBinding       |
+                                                     +---------------------------+
+```
+
+## Lifecycle (ASCII)
+
+```text
+App start
+  |
+  | MCPToolkitBinding.initialize()
+  | MCPToolkitBinding.initializeFlutterToolkit()
+  v
+Register entries with addEntries(...)
+  |
+  v
+Server discovers dynamic entries via VM/DTD
+  |
+  v
+AI calls listClientToolsAndResources
+  |
+  +--> runClientTool(toolName, arguments)
+  |
+  +--> runClientResource(resourceUri)
+```
+
+## Minimal Correct Setup
+
+```dart
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:mcp_toolkit/mcp_toolkit.dart';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  MCPToolkitBinding.instance
+    ..initialize()
+    ..initializeFlutterToolkit();
+
+  if (kDebugMode) {
+    await registerDynamicEntries();
+  }
+
+  runApp(const MyApp());
+}
+```
+
+## Register A Dynamic Tool
+
+```dart
+import 'package:dart_mcp/client.dart';
+import 'package:mcp_toolkit/mcp_toolkit.dart';
+
+Future<void> registerDynamicEntries() async {
+  final sayHello = MCPCallEntry.tool(
+    handler: (request) {
+      final name = request['name'] ?? 'World';
+      return MCPCallResult(
+        message: 'Hello, $name!',
+        parameters: {'greeting': 'Hello, $name!'},
+      );
+    },
+    definition: MCPToolDefinition(
+      name: 'say_hello',
+      description: 'Return a greeting for a provided name',
+      inputSchema: ObjectSchema(
+        properties: {
+          'name': StringSchema(description: 'Name to greet'),
+        },
+      ),
+    ),
+  );
+
+  await MCPToolkitBinding.instance.addEntries(entries: {sayHello});
+}
+```
+
+## Register A Dynamic Resource
+
+`MCPResourceDefinition` is name-based. URI is derived from `name`:
+
+- `app_config` -> `visual://localhost/app/config`
+- `user_debug_state` -> `visual://localhost/user/debug/state`
+
+```dart
+import 'package:mcp_toolkit/mcp_toolkit.dart';
+
+Future<void> registerConfigResource() async {
+  final appConfig = MCPCallEntry.resource(
+    handler: (_) => MCPCallResult(
+      message: 'App configuration snapshot',
+      parameters: {
+        'config': {'apiBaseUrl': 'https://example.com'},
+      },
+    ),
+    definition: MCPResourceDefinition(
+      name: 'app_config',
+      description: 'Read current app configuration',
+      mimeType: 'application/json',
+    ),
+  );
+
+  await MCPToolkitBinding.instance.addEntries(entries: {appConfig});
+}
+```
+
+## How To Use It From AI Clients
+
+1. Discover currently registered dynamic entries:
+
+```json
+{
+  "name": "listClientToolsAndResources",
+  "arguments": {}
+}
+```
+
+2. Execute by exact tool name:
+
+```json
+{
+  "name": "runClientTool",
+  "arguments": {
+    "toolName": "say_hello",
+    "arguments": {"name": "Anton"}
+  }
+}
+```
+
+3. Read by exact resource URI:
+
+```json
+{
+  "name": "runClientResource",
+  "arguments": {
+    "resourceUri": "visual://localhost/app/config"
+  }
+}
+```
+
+## Multi-App / Multi-Target Correctness
+
+If multiple debug targets are running, dynamic calls may return `connection_selection_required`.
+
+Retry with explicit nested `connection`:
+
+```json
+{
+  "name": "runClientTool",
+  "arguments": {
+    "toolName": "say_hello",
+    "arguments": {"name": "Anton"},
+    "connection": {
+      "targetId": "ws://127.0.0.1:59490/<token>/ws"
+    }
+  }
+}
+```
+
+Connection fields supported:
+
+- `targetId` (preferred, full VM websocket URI)
+- `mode` (`auto`, `manual`, `uri`)
+- `host`
+- `port`
+- `uri`
+- `forceReconnect`
+
+## Use It Correctly
+
+Rules that prevent most issues:
+
+- register entries only after `initialize()` has run
+- keep names stable (`snake_case`) and unique
+- always provide clear `description` and strict `inputSchema`
+- keep handlers deterministic and response payloads compact
+- return structured JSON in `parameters` for machine use
+- guard debug-only tools with `kDebugMode`
+- avoid hidden side effects; make destructive actions explicit in name/description
+
+## Common Mistakes
+
+| Symptom | Likely cause | Fix |
+| --- | --- | --- |
+| Tool/resource not visible | Entry not registered or client cached old tool list | Ensure `addEntries(...)` executes, then reload MCP server/client if needed |
+| `tool not found` | Name mismatch | Copy exact `toolName` from `listClientToolsAndResources` |
+| `resource not found` | URI mismatch | Copy exact `resourceUri` from `listClientToolsAndResources` |
+| `connection_selection_required` | Multiple debug targets | Retry with `arguments.connection.targetId` |
+| Unexpectedly large responses | Handler returns verbose payload | Return summary fields and only required details |
+
+## Quick Checklist
+
+- [ ] `MCPToolkitBinding.instance.initialize()` is called
+- [ ] `initializeFlutterToolkit()` is called (if needed)
+- [ ] dynamic entries are registered via `addEntries(...)`
+- [ ] names/descriptions/schemas are explicit
+- [ ] dynamic entries are verified via `listClientToolsAndResources`
+- [ ] multi-target retries include explicit `connection.targetId`
