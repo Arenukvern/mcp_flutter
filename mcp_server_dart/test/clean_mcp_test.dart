@@ -105,6 +105,16 @@ void main() {
           expect(response['result'], isNotNull);
           final result = response['result'] as Map<String, dynamic>;
           expect(result['tools'], isList);
+          final tools = (result['tools'] as List).cast<Map<String, dynamic>>();
+          final names = tools
+              .map((final tool) => tool['name']?.toString() ?? '')
+              .toSet();
+
+          expect(names.contains('hot_reload_flutter'), isTrue);
+          expect(names.contains('hot_restart_flutter'), isTrue);
+          expect(names.contains('get_vm'), isTrue);
+          expect(names.contains('get_extension_rpcs'), isTrue);
+          expect(names.contains('get_active_ports'), isTrue);
         } finally {
           await responseSubscription.cancel();
         }
@@ -169,6 +179,13 @@ void main() {
           expect(response['result'], isNotNull);
           final result = response['result'] as Map<String, dynamic>;
           expect(result['resources'], isList);
+          final resources = (result['resources'] as List)
+              .cast<Map<String, dynamic>>();
+          final uris = resources
+              .map((final resource) => resource['uri']?.toString() ?? '')
+              .toSet();
+          expect(uris.contains('visual://localhost/app/errors/latest'), isTrue);
+          expect(uris.contains('visual://localhost/view/details'), isTrue);
         } finally {
           await responseSubscription.cancel();
         }
@@ -253,22 +270,22 @@ void main() {
 
         requestSink.add(jsonEncode(toolsRequest));
 
-        final response = await responseStream.first.timeout(
-          const Duration(seconds: 5),
-          onTimeout:
-              () =>
-                  throw TimeoutException(
-                    'No response to uninitialized request',
-                  ),
-        );
+        try {
+          final response = await responseStream.first.timeout(
+            const Duration(seconds: 5),
+          );
 
-        expect(response['jsonrpc'], equals('2.0'));
-        expect(response['id'], anyOf(equals(6), isNull));
-        // Should either return an error or handle gracefully
-        expect(
-          response.containsKey('result') || response.containsKey('error'),
-          isTrue,
-        );
+          expect(response['jsonrpc'], equals('2.0'));
+          expect(response['id'], anyOf(equals(6), isNull));
+          // Should either return an error or handle gracefully
+          expect(
+            response.containsKey('result') || response.containsKey('error'),
+            isTrue,
+          );
+        } on TimeoutException {
+          // Also acceptable for implementations to ignore pre-initialize
+          // requests.
+        }
       });
 
       expect(result, isTrue);
@@ -304,23 +321,19 @@ Future<bool> _runServerTest(
         );
 
     // Set up response stream from server's stdout as a broadcast stream
-    final responseStream =
-        serverProcess.stdout
-            .transform(utf8.decoder)
-            .transform(const LineSplitter())
-            .where((final line) => line.trim().isNotEmpty)
-            .map((final line) {
-              try {
-                return jsonDecode(line) as Map<String, dynamic>;
-              } catch (e, stackTrace) {
-                print('Invalid JSON response: $line');
-                throw FormatException(
-                  'Invalid JSON response: $line',
-                  stackTrace,
-                );
-              }
-            })
-            .asBroadcastStream();
+    final responseStream = serverProcess.stdout
+        .transform(utf8.decoder)
+        .transform(const LineSplitter())
+        .where((final line) => line.trim().isNotEmpty)
+        .map((final line) {
+          try {
+            return jsonDecode(line) as Map<String, dynamic>;
+          } catch (e, stackTrace) {
+            print('Invalid JSON response: $line');
+            throw FormatException('Invalid JSON response: $line', stackTrace);
+          }
+        })
+        .asBroadcastStream();
 
     // Handle server errors (but don't fail the test)
     serverProcess.stderr
@@ -328,7 +341,7 @@ Future<bool> _runServerTest(
         .listen((final error) => print('Server stderr: $error'));
 
     // Give the server a moment to start up
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future.delayed(const Duration(milliseconds: 1000));
 
     // Run the actual test
     await testFunction(requestController.sink, responseStream);

@@ -7,18 +7,17 @@ import 'dart:convert';
 
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_inspector_mcp_server/src/base_server.dart';
-import 'package:flutter_inspector_mcp_server/src/mixins/port_scanner.dart';
-import 'package:flutter_inspector_mcp_server/src/mixins/vm_service_support.dart';
+import 'package:flutter_inspector_mcp_server/src/core/commands.dart';
+import 'package:flutter_inspector_mcp_server/src/core/executor.dart';
+import 'package:flutter_inspector_mcp_server/src/core/results.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
-import 'package:vm_service/vm_service.dart';
 
-/// Handles VM-related tools and functionality for the Flutter Inspector.
+/// Thin MCP adapter for VM-related tools.
 class VMToolsHandler {
-  /// Creates a new [VMToolsHandler] instance.
-  VMToolsHandler({required this.server, required this.vmService});
+  VMToolsHandler({required this.server, required this.executor});
+
   final BaseMCPToolkitServer server;
-  final VMServiceSupport vmService;
-  late final _portScanner = PortScanner(server: server);
+  final CoreCommandExecutor executor;
 
   static final hotRestartTool = Tool(
     name: 'hot_restart_flutter',
@@ -34,7 +33,6 @@ class VMToolsHandler {
     ),
   );
 
-  // Tool definitions
   static final hotReloadTool = Tool(
     name: 'hot_reload_flutter',
     description: 'Hot reloads the Flutter app.',
@@ -101,254 +99,80 @@ class VMToolsHandler {
     ),
   );
 
-  /// Hot restart the Flutter application.
   Future<CallToolResult> hotRestart(final CallToolRequest request) async {
-    server.log(
-      LoggingLevel.info,
-      'Executing hot restart tool',
-      logger: 'FlutterInspector',
+    final result = await executor.execute(const HotRestartFlutterCommand());
+    if (!result.ok) {
+      return _errorResult(_errorText(result, prefix: 'Hot restart failed'));
+    }
+
+    return CallToolResult(
+      content: [TextContent(text: jsonEncode(result.data))],
     );
-
-    final connected = await vmService.ensureVMServiceConnected();
-    if (!connected) {
-      server.log(
-        LoggingLevel.error,
-        'Hot restart tool failed: VM service not connected',
-        logger: 'FlutterInspector',
-      );
-      return CallToolResult(
-        isError: true,
-        content: [TextContent(text: 'VM service not connected')],
-      );
-    }
-
-    try {
-      final result = await vmService.hotRestart();
-      return CallToolResult(content: [TextContent(text: jsonEncode(result))]);
-    } on Exception catch (e, s) {
-      server.log(
-        LoggingLevel.error,
-        'Hot restart tool failed: $e',
-        logger: 'FlutterInspector',
-      );
-      server.log(
-        LoggingLevel.debug,
-        () => 'Stack trace: $s',
-        logger: 'FlutterInspector',
-      );
-      return CallToolResult(
-        isError: true,
-        content: [TextContent(text: 'Hot restart failed: $e')],
-      );
-    }
   }
 
-  /// Hot reload the Flutter application.
   Future<CallToolResult> hotReload(final CallToolRequest request) async {
-    server.log(
-      LoggingLevel.info,
-      'Executing hot reload tool',
-      logger: 'FlutterInspector',
+    final force = jsonDecodeBool(request.arguments?['force']);
+    final result = await executor.execute(
+      HotReloadFlutterCommand(force: force),
     );
 
-    final connected = await vmService.ensureVMServiceConnected();
-    if (!connected) {
-      server.log(
-        LoggingLevel.error,
-        'Hot reload tool failed: VM service not connected',
-        logger: 'FlutterInspector',
-      );
-      return CallToolResult(
-        isError: true,
-        content: [TextContent(text: 'VM service not connected')],
-      );
+    if (!result.ok) {
+      return _errorResult(_errorText(result, prefix: 'Hot reload failed'));
     }
-    try {
-      final force = jsonDecodeBool(request.arguments?['force']);
-      server.log(
-        LoggingLevel.debug,
-        'Hot reload force parameter: $force',
-        logger: 'FlutterInspector',
-      );
 
-      final result = await vmService.hotReload(force: force);
-
-      server.log(
-        LoggingLevel.info,
-        'Hot reload tool completed successfully',
-        logger: 'FlutterInspector',
-      );
-      return CallToolResult(
-        content: [
-          TextContent(text: 'Hot reload completed'),
-          TextContent(text: jsonEncode(result)),
-        ],
-      );
-    } on Exception catch (e) {
-      server.log(
-        LoggingLevel.error,
-        'Hot reload tool failed: $e',
-        logger: 'FlutterInspector',
-      );
-      return CallToolResult(
-        isError: true,
-        content: [TextContent(text: 'Hot reload failed: $e')],
-      );
-    }
+    return CallToolResult(
+      content: [
+        TextContent(text: 'Hot reload completed'),
+        TextContent(text: jsonEncode(result.data)),
+      ],
+    );
   }
 
-  /// Get VM information.
   Future<CallToolResult> getVm(final CallToolRequest request) async {
-    server.log(
-      LoggingLevel.info,
-      'Executing get VM tool',
-      logger: 'FlutterInspector',
+    final result = await executor.execute(const GetVmCommand());
+    if (!result.ok) {
+      return _errorResult(_errorText(result, prefix: 'Failed to get VM info'));
+    }
+
+    return CallToolResult(
+      content: [TextContent(text: jsonEncode(result.data))],
     );
-
-    final connected = await vmService.ensureVMServiceConnected();
-    if (!connected) {
-      server.log(
-        LoggingLevel.error,
-        'Get VM tool failed: VM service not connected',
-        logger: 'FlutterInspector',
-      );
-      return CallToolResult(
-        isError: true,
-        content: [TextContent(text: 'VM service not connected')],
-      );
-    }
-    try {
-      final vm = await vmService.vmService!.getVM();
-
-      server
-        ..log(
-          LoggingLevel.info,
-          'Get VM tool completed successfully',
-          logger: 'FlutterInspector',
-        )
-        ..log(
-          LoggingLevel.debug,
-          () => 'VM info: ${vm.name} v${vm.version}',
-          logger: 'FlutterInspector',
-        );
-      return CallToolResult(
-        content: [TextContent(text: jsonEncode(vm.toJson()))],
-      );
-    } on Exception catch (e, s) {
-      server.log(
-        LoggingLevel.error,
-        'Get VM tool failed: $e\nStack trace: $s',
-        logger: 'FlutterInspector',
-      );
-      return CallToolResult(
-        isError: true,
-        content: [TextContent(text: 'Failed to get VM info: $e')],
-      );
-    }
   }
 
-  /// Get available extension RPCs.
   Future<CallToolResult> getExtensionRpcs(final CallToolRequest request) async {
-    server.log(
-      LoggingLevel.info,
-      'Executing get extension RPCs tool',
-      logger: 'FlutterInspector',
+    final result = await executor.execute(const GetExtensionRpcsCommand());
+    if (!result.ok) {
+      return _errorResult(
+        _errorText(result, prefix: 'Failed to get extension RPCs'),
+      );
+    }
+
+    return CallToolResult(
+      content: [TextContent(text: jsonEncode(result.data))],
     );
-
-    final connected = await vmService.ensureVMServiceConnected();
-    if (!connected) {
-      server.log(
-        LoggingLevel.error,
-        'Get extension RPCs tool failed: VM service not connected',
-        logger: 'FlutterInspector',
-      );
-      return CallToolResult(
-        isError: true,
-        content: [TextContent(text: 'VM service not connected')],
-      );
-    }
-    try {
-      final vm = await vmService.vmService!.getVM();
-      final allExtensions = <String>[];
-
-      server.log(
-        LoggingLevel.debug,
-        'Scanning ${vm.isolates?.length ?? 0} isolates for extensions',
-        logger: 'FlutterInspector',
-      );
-      for (final isolateRef in vm.isolates ?? <IsolateRef>[]) {
-        final isolate = await vmService.vmService!.getIsolate(isolateRef.id!);
-        if (isolate.extensionRPCs != null) {
-          allExtensions.addAll(isolate.extensionRPCs!);
-          server.log(
-            LoggingLevel.debug,
-            'Found ${isolate.extensionRPCs!.length} extensions in isolate ${isolateRef.id}',
-            logger: 'FlutterInspector',
-          );
-        }
-      }
-
-      final uniqueExtensions = allExtensions.toSet().toList();
-      server
-        ..log(
-          LoggingLevel.info,
-          'Get extension RPCs tool completed: found ${uniqueExtensions.length} unique extensions',
-          logger: 'FlutterInspector',
-        )
-        ..log(
-          LoggingLevel.debug,
-          () => 'Extensions: $uniqueExtensions',
-          logger: 'FlutterInspector',
-        );
-
-      return CallToolResult(
-        content: [TextContent(text: jsonEncode(uniqueExtensions))],
-      );
-    } on Exception catch (e, s) {
-      server.log(
-        LoggingLevel.error,
-        'Get extension RPCs tool failed: $e\nStack trace: $s',
-        logger: 'FlutterInspector',
-      );
-      return CallToolResult(
-        isError: true,
-        content: [TextContent(text: 'Failed to get extension RPCs: $e')],
-      );
-    }
   }
 
-  /// Get active ports.
   Future<CallToolResult> getActivePorts(final CallToolRequest request) async {
-    server.log(
-      LoggingLevel.info,
-      'Executing get active ports tool',
-      logger: 'FlutterInspector',
-    );
-
-    try {
-      final ports = await _portScanner.scanForFlutterPorts();
-      server
-        ..log(
-          LoggingLevel.info,
-          'Get active ports completed: found ${ports.length} ports',
-          logger: 'FlutterInspector',
-        )
-        ..log(
-          LoggingLevel.debug,
-          () => 'Active ports: $ports',
-          logger: 'FlutterInspector',
-        );
-      return CallToolResult(content: [TextContent(text: jsonEncode(ports))]);
-    } on Exception catch (e) {
-      server.log(
-        LoggingLevel.error,
-        'Get active ports failed: $e',
-        logger: 'FlutterInspector',
-      );
-      return CallToolResult(
-        isError: true,
-        content: [TextContent(text: 'Failed to get active ports: $e')],
+    final result = await executor.execute(const GetActivePortsCommand());
+    if (!result.ok) {
+      return _errorResult(
+        _errorText(result, prefix: 'Failed to get active ports'),
       );
     }
+
+    return CallToolResult(
+      content: [TextContent(text: jsonEncode(result.data))],
+    );
+  }
+
+  CallToolResult _errorResult(final String message) =>
+      CallToolResult(isError: true, content: [TextContent(text: message)]);
+
+  String _errorText(final CoreResult result, {required final String prefix}) {
+    final message = result.error?.message ?? 'Unknown error';
+    if (message == 'VM service not connected') {
+      return message;
+    }
+    return '$prefix: $message';
   }
 }

@@ -93,19 +93,18 @@ final class RegistryDiscoveryService {
         }
         unawaited(_handleMCPToolkitEvent(e));
       },
-      onError:
-          (final error, final stackTrace) => logger.log(
-            LoggingLevel.warning,
-            'Error in DTD event listener: $error'
-            'stackTrace: $stackTrace',
-            logger: _loggerName,
-          ),
+      onError: (final error, final stackTrace) => logger.log(
+        LoggingLevel.warning,
+        'Error in DTD event listener: $error'
+        'stackTrace: $stackTrace',
+        logger: _loggerName,
+      ),
     );
 
     try {
       // Listen to the MCPToolkit stream for tool registration events
       return listener;
-    } on Exception catch (e, stackTrace) {
+    } catch (e, stackTrace) {
       logger.log(
         LoggingLevel.warning,
         'Failed to set up DTD event listener: $e'
@@ -145,7 +144,7 @@ final class RegistryDiscoveryService {
             logger: _loggerName,
           );
       }
-    } on Exception catch (e, stackTrace) {
+    } catch (e, stackTrace) {
       logger.log(
         LoggingLevel.warning,
         'Error handling MCP Toolkit event: $e'
@@ -170,7 +169,7 @@ final class RegistryDiscoveryService {
 
       final data = jsonDecodeMap(response.json);
       await _processRegistrationResponse(data);
-    } on Exception catch (e, stackTrace) {
+    } catch (e, stackTrace) {
       logger.log(
         LoggingLevel.error,
         'Failed to call registerDynamics: $e'
@@ -209,7 +208,7 @@ final class RegistryDiscoveryService {
             continue;
           }
           server.registerDynamicTool(tool, appId);
-        } on Exception catch (e) {
+        } catch (e) {
           logger.log(
             LoggingLevel.warning,
             'Failed to register tool ${toolData['name']}: $e',
@@ -226,7 +225,7 @@ final class RegistryDiscoveryService {
             continue;
           }
           server.registerDynamicResource(resource, appId);
-        } on Exception catch (e) {
+        } catch (e) {
           logger.log(
             LoggingLevel.warning,
             'Failed to register resource ${resourceData['uri']}: $e',
@@ -241,7 +240,7 @@ final class RegistryDiscoveryService {
         'tools and ${resources.length} resources',
         logger: _loggerName,
       );
-    } on Exception catch (e, stackTrace) {
+    } catch (e, stackTrace) {
       logger.log(
         LoggingLevel.error,
         'Failed to process registration response: $e'

@@ -5,16 +5,17 @@ import 'dart:convert';
 
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_inspector_mcp_server/src/base_server.dart';
-import 'package:flutter_inspector_mcp_server/src/mixins/vm_service_support.dart';
+import 'package:flutter_inspector_mcp_server/src/core/commands.dart';
+import 'package:flutter_inspector_mcp_server/src/core/executor.dart';
+import 'package:flutter_inspector_mcp_server/src/core/results.dart';
 
-/// Handles debug-related tools and functionality for the Flutter Inspector.
+/// Thin MCP adapter for debug-dump tools.
 class DebugToolsHandler {
-  /// Creates a new [DebugToolsHandler] instance.
-  DebugToolsHandler({required this.server, required this.vmService});
-  final BaseMCPToolkitServer server;
-  final VMServiceSupport vmService;
+  DebugToolsHandler({required this.server, required this.executor});
 
-  // Tool definitions
+  final BaseMCPToolkitServer server;
+  final CoreCommandExecutor executor;
+
   static final debugDumpLayerTreeTool = Tool(
     name: 'debug_dump_layer_tree',
     description: 'Dumps the layer tree of the Flutter app.',
@@ -67,197 +68,44 @@ class DebugToolsHandler {
     ),
   );
 
-  /// Debug dump layer tree.
-  Future<CallToolResult> debugDumpLayerTree(
-    final CallToolRequest request,
-  ) async {
-    server.log(
-      LoggingLevel.info,
-      'Executing debug dump layer tree tool',
-      logger: 'FlutterInspector',
-    );
+  Future<CallToolResult> debugDumpLayerTree(final CallToolRequest request) =>
+      _run(const DebugDumpLayerTreeCommand(), 'Debug dump layer tree failed');
 
-    final connected = await vmService.ensureVMServiceConnected();
-    if (!connected) {
-      server.log(
-        LoggingLevel.error,
-        'Debug dump layer tree failed: VM service not connected',
-        logger: 'FlutterInspector',
-      );
-      return CallToolResult(
-        isError: true,
-        content: [TextContent(text: 'VM service not connected')],
-      );
-    }
-
-    try {
-      final result = await vmService.callFlutterExtension(
-        'ext.flutter.debugDumpLayerTree',
-        args: {},
-      );
-      server.log(
-        LoggingLevel.info,
-        'Debug dump layer tree completed successfully',
-        logger: 'FlutterInspector',
-      );
-      return CallToolResult(
-        content: [TextContent(text: jsonEncode(result.json))],
-      );
-    } on Exception catch (e) {
-      server.log(
-        LoggingLevel.error,
-        'Debug dump layer tree failed: $e',
-        logger: 'FlutterInspector',
-      );
-      return CallToolResult(
-        isError: true,
-        content: [TextContent(text: 'Debug dump layer tree failed: $e')],
-      );
-    }
-  }
-
-  /// Debug dump semantics tree.
   Future<CallToolResult> debugDumpSemanticsTree(
     final CallToolRequest request,
+  ) => _run(
+    const DebugDumpSemanticsTreeCommand(),
+    'Debug dump semantics tree failed',
+  );
+
+  Future<CallToolResult> debugDumpRenderTree(final CallToolRequest request) =>
+      _run(const DebugDumpRenderTreeCommand(), 'Debug dump render tree failed');
+
+  Future<CallToolResult> debugDumpFocusTree(final CallToolRequest request) =>
+      _run(const DebugDumpFocusTreeCommand(), 'Debug dump focus tree failed');
+
+  Future<CallToolResult> _run(
+    final CoreCommand command,
+    final String errorPrefix,
   ) async {
-    server.log(
-      LoggingLevel.info,
-      'Executing debug dump semantics tree tool',
-      logger: 'FlutterInspector',
+    final result = await executor.execute(command);
+    if (!result.ok) {
+      return CallToolResult(
+        isError: true,
+        content: [TextContent(text: _errorText(result, prefix: errorPrefix))],
+      );
+    }
+
+    return CallToolResult(
+      content: [TextContent(text: jsonEncode(result.data))],
     );
-
-    final connected = await vmService.ensureVMServiceConnected();
-    if (!connected) {
-      server.log(
-        LoggingLevel.error,
-        'Debug dump semantics tree failed: VM service not connected',
-        logger: 'FlutterInspector',
-      );
-      return CallToolResult(
-        isError: true,
-        content: [TextContent(text: 'VM service not connected')],
-      );
-    }
-
-    try {
-      final result = await vmService.callFlutterExtension(
-        'ext.flutter.debugDumpSemanticsTreeInTraversalOrder',
-      );
-      server.log(
-        LoggingLevel.info,
-        'Debug dump semantics tree completed successfully',
-        logger: 'FlutterInspector',
-      );
-      return CallToolResult(
-        content: [TextContent(text: jsonEncode(result.json))],
-      );
-    } on Exception catch (e) {
-      server.log(
-        LoggingLevel.error,
-        'Debug dump semantics tree failed: $e',
-        logger: 'FlutterInspector',
-      );
-      return CallToolResult(
-        isError: true,
-        content: [TextContent(text: 'Debug dump semantics tree failed: $e')],
-      );
-    }
   }
 
-  /// Debug dump render tree.
-  Future<CallToolResult> debugDumpRenderTree(
-    final CallToolRequest request,
-  ) async {
-    server.log(
-      LoggingLevel.info,
-      'Executing debug dump render tree tool',
-      logger: 'FlutterInspector',
-    );
-
-    final connected = await vmService.ensureVMServiceConnected();
-    if (!connected) {
-      server.log(
-        LoggingLevel.error,
-        'Debug dump render tree failed: VM service not connected',
-        logger: 'FlutterInspector',
-      );
-      return CallToolResult(
-        isError: true,
-        content: [TextContent(text: 'VM service not connected')],
-      );
+  String _errorText(final CoreResult result, {required final String prefix}) {
+    final message = result.error?.message ?? 'Unknown error';
+    if (message == 'VM service not connected') {
+      return message;
     }
-
-    try {
-      final result = await vmService.callFlutterExtension(
-        'ext.flutter.debugDumpRenderTree',
-      );
-      server.log(
-        LoggingLevel.info,
-        'Debug dump render tree completed successfully',
-        logger: 'FlutterInspector',
-      );
-      return CallToolResult(
-        content: [TextContent(text: jsonEncode(result.json))],
-      );
-    } on Exception catch (e, s) {
-      server.log(
-        LoggingLevel.error,
-        'Debug dump render tree failed: $e\nStack trace: $s',
-        logger: 'FlutterInspector',
-      );
-      return CallToolResult(
-        isError: true,
-        content: [TextContent(text: 'Debug dump render tree failed: $e')],
-      );
-    }
-  }
-
-  /// Debug dump focus tree.
-  Future<CallToolResult> debugDumpFocusTree(
-    final CallToolRequest request,
-  ) async {
-    server.log(
-      LoggingLevel.info,
-      'Executing debug dump focus tree tool',
-      logger: 'FlutterInspector',
-    );
-
-    final connected = await vmService.ensureVMServiceConnected();
-    if (!connected) {
-      server.log(
-        LoggingLevel.error,
-        'Debug dump focus tree failed: VM service not connected',
-        logger: 'FlutterInspector',
-      );
-      return CallToolResult(
-        isError: true,
-        content: [TextContent(text: 'VM service not connected')],
-      );
-    }
-
-    try {
-      final result = await vmService.callFlutterExtension(
-        'ext.flutter.debugDumpFocusTree',
-        args: {},
-      );
-      server.log(
-        LoggingLevel.info,
-        'Debug dump focus tree completed successfully',
-        logger: 'FlutterInspector',
-      );
-      return CallToolResult(
-        content: [TextContent(text: jsonEncode(result.json))],
-      );
-    } on Exception catch (e) {
-      server.log(
-        LoggingLevel.error,
-        'Debug dump focus tree failed: $e',
-        logger: 'FlutterInspector',
-      );
-      return CallToolResult(
-        isError: true,
-        content: [TextContent(text: 'Debug dump focus tree failed: $e')],
-      );
-    }
+    return '$prefix: $message';
   }
 }

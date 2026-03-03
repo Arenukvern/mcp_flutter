@@ -10,7 +10,7 @@
 /// See [MCPToolkitBinding] for more information on how to use this package.
 library;
 
-export 'package:dart_mcp/client.dart';
+export 'package:dart_mcp/client.dart' hide Icon;
 
 export 'src/mcp_models.dart';
 export 'src/mcp_toolkit_binding.dart';

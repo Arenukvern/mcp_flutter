@@ -37,6 +37,16 @@ Future<void> main(final List<String> args) async {
         StreamChannel.withCloseGuarantee(io.stdin, io.stdout)
             .transform(StreamChannelTransformer.fromCodec(utf8))
             .transformStream(const LineSplitter())
+            .transformStream(
+              StreamTransformer.fromHandlers(
+                handleData: (final data, final sink) {
+                  if (data.trim().isEmpty) {
+                    return;
+                  }
+                  sink.add(data);
+                },
+              ),
+            )
             .transformSink(
               StreamSinkTransformer.fromHandlers(
                 handleData: (final data, final sink) {
@@ -75,67 +85,66 @@ Future<void> main(final List<String> args) async {
   );
 }
 
-final argParser =
-    ArgParser(allowTrailingOptions: false)
-      ..addOption(
-        dartVMHost,
-        defaultsTo: defaultHost,
-        help: 'Host for Dart VM connection',
-      )
-      ..addOption(
-        dartVMPort,
-        defaultsTo: '$defaultPort',
-        help: 'Port for Dart VM connection',
-      )
-      ..addFlag(
-        resourcesSupported,
-        defaultsTo: true,
-        help: 'Enable resources support for widget tree and screenshots',
-      )
-      ..addFlag(
-        imagesSupported,
-        defaultsTo: true,
-        help: 'Enable images support for screenshots',
-      )
-      ..addFlag(
-        dynamicRegistrySupported,
-        help: 'Enable dynamic registry support',
-        defaultsTo: true,
-      )
-      ..addFlag(
-        awaitDndConnection,
-        help:
-            'Await until DND connection is established. '
-            'Will block server startup until DND is connected. '
-            "This is workaround for MCP Clients which don't "
-            'support tools updates. '
-            "Important: some clients doesn't support it. "
-            'Use with caution. (disable for Windsurf, works with Cursor)',
-      )
-      ..addFlag(dumpsSupported, help: 'Enable debug dump operations')
-      ..addFlag(
-        saveImagesToFiles,
-        help:
-            'Save captured images as files in temporal folder instead of'
-            ' returning base64 data',
-      )
-      ..addOption(
-        logLevel,
-        defaultsTo: defaultLogLevel,
-        help:
-            'Logging level '
-            '(debug|info|notice|warning|error|critical|alert|emergency)',
-      )
-      ..addOption(
-        environment,
-        defaultsTo: defaultEnvironment,
-        help: 'Environment mode (development|production)',
-      )
-      ..addFlag(help, abbr: 'h', help: 'Show usage text');
+final argParser = ArgParser(allowTrailingOptions: false)
+  ..addOption(
+    dartVMHost,
+    defaultsTo: defaultHost,
+    help: 'Host for Dart VM connection',
+  )
+  ..addOption(
+    dartVMPort,
+    defaultsTo: '$defaultPort',
+    help: 'Port for Dart VM connection',
+  )
+  ..addFlag(
+    resourcesSupported,
+    defaultsTo: true,
+    help: 'Enable resources support for widget tree and screenshots',
+  )
+  ..addFlag(
+    imagesSupported,
+    defaultsTo: true,
+    help: 'Enable images support for screenshots',
+  )
+  ..addFlag(
+    dynamicRegistrySupported,
+    help: 'Enable dynamic registry support',
+    defaultsTo: true,
+  )
+  ..addFlag(
+    awaitDndConnection,
+    help:
+        'Await until DND connection is established. '
+        'Will block server startup until DND is connected. '
+        "This is workaround for MCP Clients which don't "
+        'support tools updates. '
+        "Important: some clients doesn't support it. "
+        'Use with caution. (disable for Windsurf, works with Cursor)',
+  )
+  ..addFlag(dumpsSupported, help: 'Enable debug dump operations')
+  ..addFlag(
+    saveImagesToFiles,
+    help:
+        'Save captured images as files in temporal folder instead of'
+        ' returning base64 data',
+  )
+  ..addOption(
+    logLevel,
+    defaultsTo: defaultLogLevel,
+    help:
+        'Logging level '
+        '(debug|info|notice|warning|error|critical|alert|emergency)',
+  )
+  ..addOption(
+    environment,
+    defaultsTo: defaultEnvironment,
+    help: 'Environment mode (development|production)',
+  )
+  ..addFlag(help, abbr: 'h', help: 'Show usage text');
 
 const defaultHost = 'localhost';
 const defaultPort = 8181;
-const defaultLogLevel = 'error';
+const defaultLogLevel = 'critical';
 const defaultEnvironment = 'production';
 const dartVMHost = 'dart-vm-host';
 const dartVMPort = 'dart-vm-port';

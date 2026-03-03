@@ -8,16 +8,16 @@ environment:
 
 dependencies:
   collection: ^1.19.1
-  dart_mcp: ^0.4.1
+  dart_mcp: ^0.5.0
   equatable: ^2.0.8
   flutter:
     sdk: flutter
-  from_json_to_json: ^0.3.0
-  is_dart_empty_or_not: ^0.2.3
+  from_json_to_json: ^0.4.0
+  is_dart_empty_or_not: ^0.3.0
   universal_io: ^2.3.1
 
 dev_dependencies:
-  lints: ^6.0.0
+  lints: ^6.1.0
   xsoulspace_lints: ^0.1.2
 
 flutter:

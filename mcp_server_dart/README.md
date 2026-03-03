@@ -1,15 +1,132 @@
-## Core Static Tools
-
 # MCP Toolkit Server (Dart)
 
-**Essential Tools:**
+## Architecture
 
-- hot_reload_flutter: Hot reload the Flutter app for instant UI updates
-- hot_restart_flutter: Hot restart the Flutter app (full app restart without reinstall) – useful when state corruption occurs or after adding new VM service extensions
-- get_vm: Get VM information and connection status
-- get_extension_rpcs: List available extension RPCs in the Flutter app
+This project now uses a shared core execution layer:
 
-6. You're ready! Try commands like "Please get screenshot of my app"
+1. `flutter_mcp_cli` is the canonical command surface (connect, inspect, execute, diagnostics).
+2. `flutter_inspector_mcp_server` is a thin MCP protocol adapter that maps MCP tool/resource calls to the same core executor.
+3. Existing MCP tool/resource names and argument contracts remain unchanged.
+
+The shared core module is available as `flutter_mcp_core` inside this package.
+
+## Canonical Commands
+
+`connect`, `status`, `discover_debug_apps`, `get_vm`, `get_extension_rpcs`, `hot_reload_flutter`, `hot_restart_flutter`, `get_active_ports`, `get_app_errors`, `get_screenshots`, `get_view_details`, `debug_dump_layer_tree`, `debug_dump_semantics_tree`, `debug_dump_render_tree`, `debug_dump_focus_tree`, `listClientToolsAndResources`, `runClientTool`, `runClientResource`, `dynamicRegistryStats`.
+
+Additional CLI-first commands:
+`session_start`, `session_exec`, `session_end`, `diagnose`, `watch`, `explain_errors`.
+
+## CLI Quick Use
+
+```bash
+# JSON envelope output (default)
+dart run bin/flutter_mcp_cli.dart status
+
+# Human output
+dart run bin/flutter_mcp_cli.dart --human discover_debug_apps
+
+# Run a canonical command directly
+dart run bin/flutter_mcp_cli.dart get_vm
+```
+
+## CLI Session Workflow (Agent Friendly)
+
+```bash
+# 1) Start a sticky session (state file defaults to .flutter_mcp/state.json)
+dart run bin/flutter_mcp_cli.dart session_start --mode uri --uri ws://127.0.0.1:8181/<token>/ws
+
+# 2) Execute commands without passing URI repeatedly
+dart run bin/flutter_mcp_cli.dart session_exec --command get_vm --arguments '{}'
+dart run bin/flutter_mcp_cli.dart session_exec --command get_app_errors --arguments '{"count":4}'
+
+# 3) End the session
+dart run bin/flutter_mcp_cli.dart session_end
+```
+
+### Machine Envelope (v1 additive)
+
+Default JSON output:
+
+```json
+{
+  "ok": true,
+  "data": {},
+  "error": null,
+  "meta": {
+    "schemaVersion": "core-envelope/v1",
+    "command": "status",
+    "timestamp": "2026-03-03T00:00:00.000Z",
+    "durationMs": 2,
+    "endpoint": "ws://127.0.0.1:8181/<token>/ws",
+    "mode": "uri"
+  }
+}
+```
+
+`ok`, `data`, `error`, and `meta` are stable. New metadata fields are additive.
+
+### `watch` NDJSON Contract
+
+`watch` emits one JSON event per line:
+
+1. `watch_started`
+2. `command_result` (repeated)
+3. `watch_error` (optional)
+4. `watch_stopped`
+
+```bash
+dart run bin/flutter_mcp_cli.dart watch --command get_app_errors --arguments '{"count":1}' --interval-ms 500 --max-events 3
+```
+
+Each event includes monotonic `seq`, `timestamp`, and command name.
+
+### Diagnose + Cause Analysis
+
+```bash
+# deterministic bundle snapshot
+dart run bin/flutter_mcp_cli.dart diagnose --include-view-details
+
+# deterministic causes + optional summary provider
+dart run bin/flutter_mcp_cli.dart explain_errors --count 4 --summary-provider none
+dart run bin/flutter_mcp_cli.dart explain_errors --count 4 --summary-provider openai
+```
+
+`openai` summary provider is optional and only used when `OPENAI_API_KEY` is set.
+
+## Troubleshooting: URI/Token Auto-Attach and State
+
+Connection precedence:
+
+1. `--vm-service-uri`
+2. active session in state file
+3. persisted sticky endpoint in state file
+4. auto discovery (`localhost:8181` fallback)
+
+Use custom state path for isolated CI or multi-project runs:
+
+```bash
+dart run bin/flutter_mcp_cli.dart --state-file /tmp/flutter_mcp_state.json status
+```
+
+Reset stuck session state:
+
+```bash
+dart run bin/flutter_mcp_cli.dart --state-file /tmp/flutter_mcp_state.json session_end --session-id <id>
+```
+
+## Stable Error Codes
+
+Core command failures return stable `error.code` values, including:
+
+- `connect_failed`
+- `vm_not_connected`
+- `dynamic_registry_disabled`
+- `session_not_found`
+- `invalid_command`
+- `diagnose_failed`
+- `explain_errors_failed`
+- `unsupported_summary_provider`
 
 ## Quick Start
 

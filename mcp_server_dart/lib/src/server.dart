@@ -28,7 +28,8 @@ final class MCPToolkitServer extends BaseMCPToolkitServer
            name: 'flutter-inspector',
            version: '1.0.0',
          ),
-         instructions: '''
+         instructions:
+             '''
 Flutter Inspector MCP Server - AI Agent Guide
 
 This server provides comprehensive tools for inspecting, debugging, and dynamically interacting with Flutter applications. It supports both static tools and **dynamic runtime tool registration** for advanced debugging workflows.
@@ -307,15 +308,19 @@ Connect to a running Flutter app on debug mode to use these features.
     try {
       if (configuration.awaitDndConnection) {
         await _initializeVMServiceAsync();
+        log(
+          LoggingLevel.info,
+          'VM service connected successfully',
+          logger: 'VMService',
+        );
       } else {
-        await _initializeVMServiceAsync().timeout(const Duration(seconds: 10));
+        unawaited(_initializeVMServiceAsync());
+        log(
+          LoggingLevel.debug,
+          'VM service initialization started in background',
+          logger: 'VMService',
+        );
       }
-
-      log(
-        LoggingLevel.info,
-        'VM service connected successfully',
-        logger: 'VMService',
-      );
     } catch (e, s) {
       // Log but don't fail - tools should still be available
       log(
@@ -338,7 +343,11 @@ Connect to a running Flutter app on debug mode to use these features.
       if (configuration.awaitDndConnection) {
         await startRegistryDiscovery(mcpToolkitServer: this);
       } else {
-        unawaited(startRegistryDiscovery(mcpToolkitServer: this));
+        unawaited(
+          Future<void>(() async {
+            await startRegistryDiscovery(mcpToolkitServer: this);
+          }),
+        );
       }
     }
 
@@ -366,7 +375,7 @@ Connect to a running Flutter app on debug mode to use these features.
         'VM service initialization completed',
         logger: 'VMService',
       );
-    } on Exception catch (e, s) {
+    } catch (e, s) {
       // Log but don't fail - tools should still be available
       log(
         LoggingLevel.error,
@@ -390,7 +399,7 @@ Connect to a running Flutter app on debug mode to use these features.
       await dispose();
       await disposeDynamicRegistry();
       log(LoggingLevel.debug, 'VM service disconnected', logger: 'VMService');
-    } on Exception catch (e) {
+    } catch (e) {
       log(
         LoggingLevel.warning,
         'Error during VM service disconnect: $e',

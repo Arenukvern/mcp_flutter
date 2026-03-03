@@ -5,7 +5,8 @@ setup:
 .PHONY: compile
 compile:
 	@ mkdir -p build && \
-	dart compile exe bin/main.dart -o build/flutter_inspector_mcp
+	dart compile exe bin/main.dart -o build/flutter_inspector_mcp && \
+	dart compile exe bin/flutter_mcp_cli.dart -o build/flutter_mcp_cli
 
 .PHONY: inspect
 inspect:

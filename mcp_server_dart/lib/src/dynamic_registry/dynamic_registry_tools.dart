@@ -7,13 +7,16 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:dart_mcp/server.dart';
+import 'package:flutter_inspector_mcp_server/src/core/commands.dart';
+import 'package:flutter_inspector_mcp_server/src/core/executor.dart';
+import 'package:flutter_inspector_mcp_server/src/core/results.dart';
 import 'package:flutter_inspector_mcp_server/src/dynamic_registry/dynamic_registry.dart';
 import 'package:flutter_inspector_mcp_server/src/server.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
+import 'package:is_dart_empty_or_not/is_dart_empty_or_not.dart';
 import 'package:meta/meta.dart';
 
-/// MCP tools for managing dynamic registry
-/// These tools allow clients to interact with dynamically registered tools and resources
+/// MCP tools for managing dynamic registry via shared core command surface.
 @immutable
 final class DynamicRegistryTools {
   const DynamicRegistryTools({required this.registry, required this.server});
@@ -21,7 +24,8 @@ final class DynamicRegistryTools {
   final DynamicRegistry registry;
   final MCPToolkitServer server;
 
-  // Reusable text constants for setup instructions
+  CoreCommandExecutor get _executor => server.coreCommandExecutor;
+
   static const _setupWorkflowText =
       'To create new tools/resources: 1) Generate MCPCallEntry.tool() or MCPCallEntry.resource() with handler and definition, '
       '2) Add to Flutter app (in main.dart, widget tree, or state management like provider/riverpod) using addMcpTool(), '
@@ -43,14 +47,12 @@ final class DynamicRegistryTools {
       '\n\n$_setupWorkflowText'
       'See server instructions for detailed examples of creating custom MCPCallEntry definitions.';
 
-  /// Tool to list all client tools and resources
   static final listClientToolsAndResources = Tool(
     name: 'listClientToolsAndResources',
     description: _listClientToolsAndResourcesDescription,
     inputSchema: ObjectSchema(properties: {}),
   );
 
-  /// Tool to run a client tool
   static final runClientTool = Tool(
     name: 'runClientTool',
     description:
@@ -77,7 +79,6 @@ final class DynamicRegistryTools {
     ),
   );
 
-  /// Tool to read a client resource
   static final runClientResource = Tool(
     name: 'runClientResource',
     description:
@@ -99,7 +100,6 @@ final class DynamicRegistryTools {
     ),
   );
 
-  /// Tool to get registry statistics
   static final getRegistryStats = Tool(
     name: 'getRegistryStats',
     description: 'Get statistics about the dynamic registry',
@@ -112,7 +112,6 @@ final class DynamicRegistryTools {
     ),
   );
 
-  /// Get all management tools
   Map<Tool, FutureOr<CallToolResult> Function(CallToolRequest)> get allTools =>
       {
         listClientToolsAndResources: _handleListClientToolsAndResources,
@@ -124,29 +123,25 @@ final class DynamicRegistryTools {
   FutureOr<CallToolResult> _handleListClientToolsAndResources(
     final CallToolRequest request,
   ) async {
-    await server.discoveryService?.registerToolsAndResources();
+    final result = await _executor.execute(
+      const ListClientToolsAndResourcesCommand(),
+    );
+    if (!result.ok) {
+      return CallToolResult(
+        isError: true,
+        content: [TextContent(text: _errorText(result))],
+      );
+    }
 
-    final toolEntries = registry.getToolEntries();
-    final resourceEntries = registry.getResourceEntries();
-
-    final result = <String, dynamic>{
-      'tools': toolEntries.map((final entry) => entry.tool).toList(),
-      'resources':
-          resourceEntries.map((final entry) => entry.resource).toList(),
-      'summary': {
-        'totalTools': toolEntries.length,
-        'totalResources': resourceEntries.length,
-      },
-    };
-
-    if (resourceEntries.isEmpty) {
-      result['resources'] = [];
+    final data = _map(result.data);
+    if (jsonDecodeList(data['resources']).isEmpty) {
+      data['resources'] = [];
     }
 
     return CallToolResult(
       content: [
         TextContent(text: _setupWorkflowText),
-        TextContent(text: jsonEncode(result)),
+        TextContent(text: jsonEncode(data)),
       ],
       isError: false,
     );
@@ -168,23 +163,31 @@ final class DynamicRegistryTools {
       arguments?['arguments'],
     );
 
-    // Forward to the dynamic registry
-    final result = await registry.forwardToolCall(toolName, toolArguments);
+    final result = await _executor.execute(
+      RunClientToolCommand(toolName: toolName, arguments: toolArguments),
+    );
 
-    if (result == null) {
+    if (!result.ok) {
       return CallToolResult(
-        content: [
-          TextContent(
-            text:
-                'Tool not found: $toolName. '
-                'Use listClientToolsAndResources to see available tools.',
-          ),
-        ],
+        content: [TextContent(text: _errorText(result))],
         isError: true,
       );
     }
 
-    return result;
+    final data = _map(result.data);
+    final message = jsonDecodeString(
+      data['message'],
+    ).whenEmptyUse('Tool executed successfully');
+
+    final parameters = data['parameters'] ?? const <String, Object?>{};
+
+    return CallToolResult(
+      content: [
+        TextContent(text: message),
+        TextContent(text: jsonEncode(parameters)),
+      ],
+      isError: false,
+    );
   }
 
   FutureOr<CallToolResult> _handleRunClientResource(
@@ -199,74 +202,78 @@ final class DynamicRegistryTools {
       );
     }
 
-    // Forward to the dynamic registry
-    final content = await registry.forwardResourceRead(resourceUri);
+    final result = await _executor.execute(
+      RunClientResourceCommand(resourceUri: resourceUri),
+    );
 
-    if (content == null) {
+    if (!result.ok) {
       return CallToolResult(
-        content: [
-          TextContent(
-            text:
-                'Resource not found: $resourceUri. '
-                'Use listClientToolsAndResources to see available resources.',
-          ),
-        ],
+        content: [TextContent(text: _errorText(result))],
         isError: true,
       );
     }
 
+    final data = _map(result.data);
+    final mimeType = jsonDecodeString(
+      data['mimeType'],
+    ).whenEmptyUse('text/plain');
+    if (jsonDecodeBool(data['isBlob'])) {
+      final blob = jsonDecodeString(data['blob']);
+      if (mimeType.startsWith('image/')) {
+        return CallToolResult(
+          content: [ImageContent(data: blob, mimeType: mimeType)],
+          isError: false,
+        );
+      }
+      if (mimeType.startsWith('audio/')) {
+        return CallToolResult(
+          content: [AudioContent(data: blob, mimeType: mimeType)],
+          isError: false,
+        );
+      }
+      return CallToolResult(content: [TextContent(text: blob)], isError: false);
+    }
+
+    final content = jsonDecodeString(data['content']);
     return CallToolResult(
-      content: content.contents.map((final c) => c.toContent()).toList(),
+      content: [TextContent(text: content)],
       isError: false,
     );
   }
 
   FutureOr<CallToolResult> _handleGetRegistryStats(
     final CallToolRequest request,
-  ) {
+  ) async {
     final arguments = request.arguments;
     final includeAppDetails = jsonDecodeBool(arguments?['includeAppDetails']);
-    final info = registry.appInfo;
-    if (info == null) {
+
+    final result = await _executor.execute(
+      DynamicRegistryStatsCommand(includeAppDetails: includeAppDetails),
+    );
+
+    if (!result.ok) {
       return CallToolResult(
-        content: [TextContent(text: 'No app info available')],
+        content: [TextContent(text: _errorText(result))],
         isError: true,
       );
     }
 
-    final result = <String, dynamic>{
-      'toolCount': info.toolCount,
-      'resourceCount': info.resourceCount,
-      if (includeAppDetails) ...info,
-    };
-
     return CallToolResult(
-      content: [TextContent(text: jsonEncode(result))],
+      content: [TextContent(text: jsonEncode(result.data))],
       isError: false,
     );
   }
-}
 
-extension on ResourceContents {
-  Content toContent() {
-    final mimeType = this.mimeType;
-    if (mimeType == null ||
-        mimeType.startsWith('text/') ||
-        mimeType.startsWith('application/')) {
-      final textContent = this as TextResourceContents;
-      return TextContent(text: textContent.text);
-    } else if (mimeType.startsWith('image/')) {
-      return ImageContent(
-        data: (this as BlobResourceContents).blob,
-        mimeType: mimeType,
-      );
-    } else if (mimeType.startsWith('audio/')) {
-      return AudioContent(
-        data: (this as BlobResourceContents).blob,
-        mimeType: mimeType,
-      );
-    } else {
-      return TextContent(text: 'Unsupported resource contents type: $this');
+  String _errorText(final CoreResult result) =>
+      result.error?.message ?? 'Unknown dynamic registry error';
+
+  Map<String, Object?> _map(final Object? data) {
+    if (data is Map<String, Object?>) {
+      return data;
     }
+    if (data is Map) {
+      return data.cast<String, Object?>();
+    }
+    return <String, Object?>{};
   }
 }

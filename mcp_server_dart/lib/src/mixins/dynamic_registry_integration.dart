@@ -7,6 +7,7 @@ import 'dart:async';
 
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_inspector_mcp_server/src/base_server.dart';
+import 'package:flutter_inspector_mcp_server/src/dynamic_registry/core_dynamic_registry_gateway.dart';
 import 'package:flutter_inspector_mcp_server/src/dynamic_registry/dynamic_registry.dart';
 import 'package:flutter_inspector_mcp_server/src/dynamic_registry/dynamic_registry_tools.dart';
 import 'package:flutter_inspector_mcp_server/src/dynamic_registry/registry_discovery_service.dart';
@@ -34,11 +35,18 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
   void initializeDynamicRegistry({
     required final MCPToolkitServer mcpToolkitServer,
   }) {
-    final registry =
-        _dynamicRegistry = DynamicRegistry(server: mcpToolkitServer);
+    final registry = _dynamicRegistry = DynamicRegistry(
+      server: mcpToolkitServer,
+    );
     _dynamicRegistryTools = DynamicRegistryTools(
       registry: registry,
       server: mcpToolkitServer,
+    );
+    mcpToolkitServer.attachDynamicGateway(
+      RegistryBackedDynamicGateway(
+        registry: registry,
+        discoveryService: () => discoveryService,
+      ),
     );
 
     log(
@@ -77,7 +85,7 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
         'Flutter app discovery started successfully',
         logger: 'DynamicRegistryIntegration',
       );
-    } on Exception catch (e, s) {
+    } catch (e, s) {
       log(
         LoggingLevel.warning,
         'Failed to start discovery: $e',
@@ -123,7 +131,7 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
         'Registry discovery re-initialized successfully after reconnection',
         logger: 'DynamicRegistryIntegration',
       );
-    } on Exception catch (e, s) {
+    } catch (e, s) {
       log(
         LoggingLevel.warning,
         'Failed to re-initialize discovery after reconnection: $e',
@@ -153,6 +161,10 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
   Future<void> disposeDynamicRegistry() async {
     await _subscription?.cancel();
     await _dynamicRegistry?.dispose();
+    final server = this;
+    if (server case final MCPToolkitServer toolkitServer) {
+      toolkitServer.attachDynamicGateway(null);
+    }
     log(
       LoggingLevel.info,
       'Dynamic registry disposed',
@@ -174,7 +186,7 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
         //
         // https://github.com/orgs/modelcontextprotocol/discussions/76
         registerTool(tool, handler);
-      } on Exception catch (e, stackTrace) {
+      } catch (e, stackTrace) {
         log(
           LoggingLevel.warning,
           'Failed to register dynamic registry tool ${tool.name}: $e '
@@ -230,7 +242,7 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
         'Registered dynamic tool as MCP tool: ${tool.name}',
         logger: 'DynamicRegistryIntegration',
       );
-    } on Exception catch (e, stackTrace) {
+    } catch (e, stackTrace) {
       log(
         LoggingLevel.warning,
         'Failed to register dynamic tool ${tool.name} as MCP tool: $e '
@@ -285,7 +297,7 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
         'Registered dynamic resource as MCP resource: ${resource.uri}',
         logger: 'DynamicRegistryIntegration',
       );
-    } on Exception catch (e, stackTrace) {
+    } catch (e, stackTrace) {
       log(
         LoggingLevel.warning,
         'Failed to register dynamic resource ${resource.uri} as MCP resource: $e '
@@ -308,7 +320,7 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
     for (final entry in hadContent.tools) {
       try {
         unregisterTool(entry.tool.name);
-      } on Exception catch (e, stackTrace) {
+      } catch (e, stackTrace) {
         log(
           LoggingLevel.warning,
           'Failed to unregister MCP tool ${entry.tool.name}: $e '
@@ -321,7 +333,7 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
     for (final entry in hadContent.resources) {
       try {
         removeResource(entry.resource.uri);
-      } on Exception catch (e, stackTrace) {
+      } catch (e, stackTrace) {
         log(
           LoggingLevel.warning,
           'Failed to unregister MCP resource ${entry.resource.uri}: $e '

@@ -13,10 +13,18 @@ import 'package:flutter_inspector_mcp_server/src/mixins/vm_service_support.dart'
 /// Mix this in to any MCPServer to add Flutter Inspector functionality.
 base mixin FlutterInspector
     on BaseMCPToolkitServer, ToolsSupport, ResourcesSupport, VMServiceSupport {
-  late final _debugTools = DebugToolsHandler(server: this, vmService: this);
-  late final _vmTools = VMToolsHandler(server: this, vmService: this);
-  late final _resourceHandler = ResourceHandler(server: this, vmService: this);
-  late final _docTools = DocToolsHandler(server: this, vmService: this);
+  late final _debugTools = DebugToolsHandler(
+    server: this,
+    executor: coreCommandExecutor,
+  );
+  late final _vmTools = VMToolsHandler(
+    server: this,
+    executor: coreCommandExecutor,
+  );
+  late final _resourceHandler = ResourceHandler(
+    server: this,
+    executor: coreCommandExecutor,
+  );
 
   @override
   FutureOr<InitializeResult> initialize(final InitializeRequest request) {
@@ -40,14 +48,6 @@ base mixin FlutterInspector
       _vmTools.getExtensionRpcs,
     );
     registerTool(VMToolsHandler.getActivePortsTool, _vmTools.getActivePorts);
-
-    // Register documentation tools
-    log(
-      LoggingLevel.debug,
-      'Registering documentation tools',
-      logger: 'FlutterInspector',
-    );
-    registerTool(DocToolsHandler.getPubDoc, _docTools.handleGetPubDoc);
 
     // Register debug dump tools
     if (configuration.dumpsSupported) {
@@ -247,6 +247,5 @@ base mixin FlutterInspector
 
   Future<void> dispose() async {
     await _resourceHandler.dispose();
-    _docTools.dispose();
   }
 }
