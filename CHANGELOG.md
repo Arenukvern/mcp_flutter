@@ -1,7 +1,12 @@
-## [unreleased]
+## 2.6.0
 
+BREAKING CHANGES:
+
+- Dart SDK updated to 3.10.0 with all dependencies updated to the latest versions
+
+- now VM service auto-reconnect when Flutter app restarts. Huge thank you to [@jkitching](https://github.com/jkitching) for PR! https://github.com/Arenukvern/mcp_flutter/pull/73
 - dockerfile for MCP Server - not tested.
-  Huge thank you to [arslanmit](https://github.com/arslanmit) for PR with Dockerfile! https://github.com/Arenukvern/mcp_flutter/pull/64
+  Huge thank you to [@arslanmit](https://github.com/arslanmit) for PR with Dockerfile! https://github.com/Arenukvern/mcp_flutter/pull/64
 
 ## 2.5.0
 

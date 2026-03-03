@@ -12,11 +12,20 @@ import 'package:from_json_to_json/from_json_to_json.dart';
 import 'package:vm_service/vm_service.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
-/// Mixin providing VM service connection and management capabilities
+/// Mixin providing VM service connection and management capabilities.
+///
+/// Disconnection detection works via sink.done listener attached in
+/// initializeVMService(). When WebSocket closes (e.g., Flutter app restart),
+/// _handleDisconnect() nulls out state so ensureVMServiceConnected() can
+/// reconnect on the next tool call. No proactive auto-reconnect - keeps it simple.
 base mixin VMServiceSupport on BaseMCPToolkitServer {
   VmService? _vmService;
   WebSocketChannel? _vmChannel;
   DartToolingDaemon? _dartToolingDaemon;
+
+  /// Callback invoked when VM service reconnects after a disconnection.
+  /// Used by DynamicRegistryIntegration to re-initialize discovery.
+  void Function()? onVMServiceReconnected;
 
   /// Get the current VM service instance
   VmService? get vmService => _vmService;
@@ -67,6 +76,29 @@ base mixin VMServiceSupport on BaseMCPToolkitServer {
         logger: 'VMService',
       );
       await _vmService!.getVM();
+
+      // Attach disconnection listener to detect when Flutter app restarts
+      // Use sink.done since stream is already consumed by VmService
+      unawaited(
+        _vmChannel!.sink.done
+            .then((_) {
+              log(
+                LoggingLevel.info,
+                'WebSocket sink closed (Flutter app may have restarted)',
+                logger: 'VMService',
+              );
+              _handleDisconnect();
+            })
+            .catchError((final error) {
+              log(
+                LoggingLevel.warning,
+                'WebSocket sink error: $error',
+                logger: 'VMService',
+              );
+              _handleDisconnect();
+            }),
+      );
+
       log(
         LoggingLevel.info,
         'VM service connection established successfully',
@@ -110,12 +142,17 @@ base mixin VMServiceSupport on BaseMCPToolkitServer {
 
       _vmService = null;
       _vmChannel = null;
+      _dartToolingDaemon = null;
       log(
         LoggingLevel.info,
         'VM service disconnected successfully',
         logger: 'VMService',
       );
     } on Exception catch (e, s) {
+      // Ensure state is cleaned up even on error
+      _vmService = null;
+      _vmChannel = null;
+      _dartToolingDaemon = null;
       log(
         LoggingLevel.warning,
         'Error during VM service disconnect: $e',
@@ -123,6 +160,30 @@ base mixin VMServiceSupport on BaseMCPToolkitServer {
       );
       log(LoggingLevel.debug, () => 'Stack trace: $s', logger: 'VMService');
     }
+  }
+
+  /// Handle disconnection event from WebSocket stream.
+  /// Just cleans up state - reconnection happens via ensureVMServiceConnected().
+  void _handleDisconnect() {
+    // Prevent re-entrant calls
+    if (_vmService == null) return;
+
+    log(
+      LoggingLevel.info,
+      'VM service disconnection detected, cleaning up...',
+      logger: 'VMService',
+    );
+
+    // Clean up synchronously to ensure state is immediately updated
+    _vmService = null;
+    _vmChannel = null;
+    _dartToolingDaemon = null;
+
+    log(
+      LoggingLevel.info,
+      'VM service cleaned up. Next tool call will reconnect via ensureVMServiceConnected().',
+      logger: 'VMService',
+    );
   }
 
   /// Call a Flutter extension method
@@ -513,6 +574,7 @@ base mixin VMServiceSupport on BaseMCPToolkitServer {
   }
 
   /// Ensure VM service is connected; try to connect if not.
+  /// Calls onVMServiceReconnected callback after successful reconnection.
   Future<bool> ensureVMServiceConnected({
     final Duration timeout = const Duration(seconds: 2),
   }) async {
@@ -547,6 +609,8 @@ base mixin VMServiceSupport on BaseMCPToolkitServer {
           'VM service connection ensured successfully',
           logger: 'VMService',
         );
+        // Notify listeners about reconnection (e.g., for registry re-initialization)
+        onVMServiceReconnected?.call();
       } else {
         log(
           LoggingLevel.warning,

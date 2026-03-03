@@ -1,3 +1,9 @@
+# 0.4.0
+
+- Dart SDK updated to 3.10.0 with all dependencies updated to the latest versions
+
+- now VM service auto-reconnect when Flutter app restarts. Huge thank you to [@jkitching](https://github.com/jkitching) for PR! https://github.com/Arenukvern/mcp_flutter/pull/73
+
 ## 0.3.0
 
 BREAKING CHANGES:

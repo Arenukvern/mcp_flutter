@@ -120,6 +120,25 @@
         "code",
         "maintenance"
       ]
+    },
+    {
+      "login": "jkitching",
+      "name": "Joel Kitching",
+      "avatar_url": "https://avatars.githubusercontent.com/u/514199?v=4",
+      "profile": "https://joelkitching.com/",
+      "contributions": [
+        "code",
+        "maintenance"
+      ]
+    },
+    {
+      "login": "jeanlucthumm",
+      "name": "Jean-Luc Thumm",
+      "avatar_url": "https://avatars.githubusercontent.com/u/4934853?v=4",
+      "profile": "https://github.com/jeanlucthumm",
+      "contributions": [
+        "maintenance"
+      ]
     }
   ]
 }
