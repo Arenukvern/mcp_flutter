@@ -101,11 +101,14 @@ void main() {
       final vmError = vmFailure['error'] as Map<String, dynamic>;
       expect(vmError['data'], isA<Map<String, dynamic>>());
       final errorData = vmError['data'] as Map<String, dynamic>;
-      expect(errorData['errorDescriptor'], isA<Map<String, dynamic>>());
+      expect(errorData['error'], isA<Map<String, dynamic>>());
+      final coreError = errorData['error'] as Map<String, dynamic>;
+      expect(coreError['descriptor'], isA<Map<String, dynamic>>());
       expect(
-        (errorData['errorDescriptor'] as Map<String, dynamic>)['retryable'],
+        (coreError['descriptor'] as Map<String, dynamic>)['retryable'],
         isTrue,
       );
+      expect(coreError['recovery'], isA<Map<String, dynamic>>());
 
       final watchStart = await _sendRequest(
         id: 5,

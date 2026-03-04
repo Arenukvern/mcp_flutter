@@ -43,7 +43,7 @@ MCPToolkitBinding.instance.handleZoneError(error, stack);
 ## Step 3. Run Flutter In Debug Mode
 
 ```bash
-flutter run --debug --host-vmservice-port=8182 --dds-port=8181 --enable-vm-service --disable-service-auth-codes
+flutter run --debug --host-vmservice-port=8182 --dds-port=8181 --enable-vm-service
 ```
 
 ## Step 4. Configure Client
@@ -62,4 +62,4 @@ Ask the assistant to run:
 2. "Take a screenshot of the app"
 3. "Get app errors"
 
-If tool calls fail with `connection_selection_required`, retry with `arguments.connection.targetId`.
+If tool calls fail with `connection_selection_required`, retry with `arguments.connection.targetId` or exact `arguments.connection.uri` from Flutter machine `app.debugPort.wsUri`.

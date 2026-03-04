@@ -4,6 +4,7 @@
 import 'dart:convert';
 import 'dart:io' as io;
 
+import 'package:flutter_inspector_mcp_server/src/core/safe_writes.dart';
 import 'package:flutter_inspector_mcp_server/src/core/state_lock_manager.dart';
 import 'package:path/path.dart' as p;
 
@@ -210,9 +211,8 @@ final class StateStore {
 
   Future<void> writeUnlocked(final PersistedState state) async {
     final file = io.File(path);
-    file.parent.createSync(recursive: true);
     final payload = const JsonEncoder.withIndent('  ').convert(state.toJson());
-    file.writeAsStringSync(payload);
+    await SafeFileWriter.writeTextFile(path: file.path, content: payload);
 
     if (!io.Platform.isWindows) {
       io.Process.runSync('chmod', ['600', p.normalize(file.path)]);

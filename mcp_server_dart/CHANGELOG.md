@@ -2,6 +2,28 @@
 
 ## [unreleased]
 
+## [3.0.0]
+
+Strict hard-cut release focused on reliability and machine contracts.
+
+- Added `flutter_mcp_cli doctor [--json] [--target <path>] [--timeout-ms <n>]`.
+- Added safe-write flags for `snapshot create` and `bundle create`:
+  `--check`, `--diff`, `--backup`, `--no-overwrite`.
+- Replaced destructive bundle overwrite flow with staged atomic publish.
+- Unified error envelopes across CLI/MCP/daemon with:
+  `code`, `message`, `details`, `descriptor`, `recovery`.
+- Enforced strict typed parsing and removed implicit coercions.
+- Defaulted command schemas to strict (`additionalProperties: false`) with explicit opt-in openings.
+- Unified runtime/protocol metadata via shared version constants.
+- Bumped package version to `3.0.0`.
+
+### Migration: v2.x -> v3.0.0
+
+- Parse descriptor fields from `error.descriptor`.
+- Stop sending string-encoded booleans/objects/lists/integers.
+- Prefer `doctor --json` preflight in automation.
+- Update write flows to handle `write_blocked` and safe-write statuses.
+
 - dockerfile for MCP Server - not tested.
   Huge thank you to [arslanmit](https://github.com/arslanmit) for PR with Dockerfile! https://github.com/Arenukvern/mcp_flutter/pull/64
 - connection UX redesign for VM-dependent operations:

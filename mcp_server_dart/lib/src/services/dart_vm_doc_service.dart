@@ -219,8 +219,9 @@ final class DartVmDocService {
       final classes = classListResponse.classes ?? [];
 
       // Find the class by name
-      final classRef =
-          classes.where((final c) => c.name == className).firstOrNull;
+      final classRef = classes
+          .where((final c) => c.name == className)
+          .firstOrNull;
       if (classRef?.id == null) {
         return null;
       }
@@ -256,8 +257,9 @@ final class DartVmDocService {
 
         // Check library functions
         final functions = library.functions ?? [];
-        final functionRef =
-            functions.where((final f) => f.name == memberName).firstOrNull;
+        final functionRef = functions
+            .where((final f) => f.name == memberName)
+            .firstOrNull;
 
         if (functionRef?.id != null) {
           final function = await vmService.getObject(
@@ -271,8 +273,9 @@ final class DartVmDocService {
 
         // Check library variables
         final variables = library.variables ?? [];
-        final variableRef =
-            variables.where((final v) => v.name == memberName).firstOrNull;
+        final variableRef = variables
+            .where((final v) => v.name == memberName)
+            .firstOrNull;
 
         if (variableRef?.id != null) {
           final variable = await vmService.getObject(
@@ -389,8 +392,9 @@ final class DartVmDocService {
         for (int j = i + 1; j < targetLine; j++) {
           final blockLine = lines[j].trim();
           if (blockLine.endsWith('*/')) {
-            final blockContent =
-                blockLine.substring(0, blockLine.length - 2).trim();
+            final blockContent = blockLine
+                .substring(0, blockLine.length - 2)
+                .trim();
             if (blockContent.startsWith('*')) {
               docLines.add(blockContent.substring(1).trim());
             } else if (blockContent.isNotEmpty) {

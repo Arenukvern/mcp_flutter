@@ -91,7 +91,7 @@ class VMToolsHandler {
       'get_active_ports',
       'Gets active debug ports for Flutter/Dart processes (useful for selecting an app).',
     ),
-    inputSchema: Schema.object(properties: const <String, Schema>{}),
+    inputSchema: strictToolInputSchema(),
   );
 
   Future<CallToolResult> connectDebugApp(final CallToolRequest request) async {

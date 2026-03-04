@@ -1,3 +1,8 @@
+# 3.0.0
+
+- Version alignment hard cut with Flutter MCP v3 release train.
+- No API redesign in this cut; bump is release-line consistency for monorepo consumers.
+
 # 0.4.0
 
 - Dart SDK updated to 3.10.0 with all dependencies updated to the latest versions

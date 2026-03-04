@@ -1,0 +1,75 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - triple: darwin-arm64
+            runner: macos-14
+          - triple: darwin-x64
+            runner: macos-14
+          - triple: linux-x64
+            runner: ubuntu-latest
+
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Dart SDK
+        uses: dart-lang/setup-dart@v1
+
+      - name: Install mcp_server_dart dependencies
+        working-directory: mcp_server_dart
+        run: dart pub get
+
+      - name: Build release artifacts
+        env:
+          VERSION: ${{ github.ref_name }}
+        run: |
+          VERSION_NO_PREFIX="${VERSION#v}"
+          bash tool/release/build_release_artifacts.sh --version "$VERSION_NO_PREFIX" --triple "${{ matrix.triple }}"
+
+      - name: Upload release tarball
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.triple }}
+          path: dist/release/flutter_mcp_*_${{ matrix.triple }}.tar.gz
+          if-no-files-found: error
+
+  publish:
+    runs-on: ubuntu-latest
+    needs: build
+    timeout-minutes: 15
+
+    steps:
+      - name: Download release tarballs
+        uses: actions/download-artifact@v4
+        with:
+          path: dist/release
+          merge-multiple: true
+
+      - name: Generate checksums
+        run: |
+          cd dist/release
+          sha256sum *.tar.gz > checksums.txt
+
+      - name: Publish GitHub release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/release/*.tar.gz
+            dist/release/checksums.txt
+          fail_on_unmatched_files: true

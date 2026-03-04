@@ -13,7 +13,9 @@ Map<String, Object?> connectionOverrideJsonSchema() => {
       'type': 'string',
       'description':
           'Preferred target identifier as full VM websocket URI '
-          '(e.g. ws://127.0.0.1:8181/<token>/ws)',
+          '(e.g. ws://127.0.0.1:8181/<token>/ws). '
+          'Copy from discover_debug_apps/availableTargets when possible. '
+          'Do not use host:port values.',
     },
     'mode': {
       'type': 'string',
@@ -27,7 +29,9 @@ Map<String, Object?> connectionOverrideJsonSchema() => {
     'port': {'type': 'integer', 'description': 'Port used for manual mode'},
     'uri': {
       'type': 'string',
-      'description': 'Full websocket VM URI used for uri mode selection',
+      'description':
+          'Full websocket VM URI used for uri mode selection. '
+          'Safest selector: paste app.debugPort.wsUri exactly.',
     },
     'forceReconnect': {
       'type': 'boolean',
@@ -420,7 +424,6 @@ Map<String, Object?> _selectorArgsFromConnectCommand(
   final parsed = switch (raw) {
     final int value => value,
     final num value when value == value.toInt() => value.toInt(),
-    final String value => int.tryParse(value.trim()),
     _ => null,
   };
 

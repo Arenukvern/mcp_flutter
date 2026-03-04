@@ -1,24 +1,21 @@
 # Progress
 
-**Status:** Object Group Management - Planning Complete.
+**Status:** Flutter MCP v3 hard-cut implementation completed.
 
 **What Works:**
 
-- Basic project structure exists.
-- Detailed implementation plan for Object Group Management is created: `devtools_mcp_extension/object_group_implementation_plan.md`.
-- Added `uuid` dependency to `devtools_mcp_extension/pubspec.yaml` and ran `flutter pub get`.
-- Created `ObjectGroup` and `ObjectGroupManager` classes in `devtools_mcp_extension/lib/services/object_group_manager.dart`.
-- Integrated `ObjectGroupManager` into `DevtoolsService`.
-- Refactored `getRootWidget` method in `DevtoolsService` to use `ObjectGroupManager`.
-- Verified generic `callServiceExtension` method in `DevtoolsService`.
+- Strict CLI/MCP error envelope contract is implemented.
+- Typed parsing hard cut and schema strictness defaults are implemented.
+- Safe write framework (`--check`, `--diff`, `--backup`, `--no-overwrite`) is implemented.
+- `doctor` preflight command is implemented.
+- Release artifact build + installer flow is implemented.
 
 **What's Left:**
 
-- Implement Object Group Management in `devtools_mcp_extension` (following the plan).
-- Implement the core functionality of the MCP server, DevTools extension, and forwarding server.
-- Implement specific RPC methods.
+- Continue iterating on feature work in `mcp_server_dart` and `mcp_toolkit`.
+- Keep docs and contract tests aligned with future protocol changes.
 
-**Known Issues:** The README mentions that not all Flutter Inspector related methods are implemented yet.
+**Known Issues:** None currently tracked in this file.
 
 ### Progress: Implementing `getErrors` Function
 

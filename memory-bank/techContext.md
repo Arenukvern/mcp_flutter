@@ -1,13 +1,12 @@
 # Tech Context
 
-**Technologies:** Flutter, Dart, Node.js (for the MCP server and forwarding server), JSON-RPC, VM Service Protocol, WebSockets.
+**Technologies:** Flutter, Dart, JSON-RPC, VM Service Protocol, WebSockets.
 
-**Development Setup:** Requires Node.js, a Flutter app running in debug mode with the `devtools_mcp_extension` package, and an AI assistant (Cursor, Claude, or Cline).
+**Development Setup:** Requires Dart/Flutter SDK, a Flutter app running in debug mode with `mcp_toolkit`, and an AI assistant (Cursor, Claude, or Cline).
 
 **Dependencies:**
 
-- Flutter/Dart: `devtools_mcp_extension`, `vm_service`, `websocket`
-- Node.js: Various packages (listed in `package.json` files)
+- Flutter/Dart: `mcp_server_dart`, `mcp_toolkit`, `vm_service`, `web_socket_channel`
 
 ## VM Service Protocol
 
@@ -26,17 +25,6 @@ class NodeErrorInfo {
   // Additional diagnostic properties
 }
 ```
-
-## Forwarding Server
-
-**Technology:** Node.js, WebSockets
-
-**Setup:** Configurable via environment variables (`FORWARDING_SERVER_PORT`, `FORWARDING_SERVER_PATH`) or CLI arguments
-
-**Client Connection:**
-
-- Flutter: `ws://localhost:8143/forward?clientType=flutter`
-- Inspector: `ws://localhost:8143/forward?clientType=inspector`
 
 ## Flutter Application Error Handling
 

@@ -197,25 +197,18 @@ String formatCoreErrorForMcp(
   final CoreResult result, {
   required final String prefix,
 }) {
+  final _ = prefix;
   final error = result.error;
   if (error == null) {
-    return '$prefix: Unknown error';
+    return jsonEncode(
+      CoreResult.failure(
+        code: CoreErrorCode.unknown,
+        message: 'Unknown error',
+      ).error?.toJson(),
+    );
   }
 
-  if (error.code == CoreErrorCode.connectionSelectionRequired) {
-    return jsonEncode({
-      'code': error.code,
-      'message': error.message,
-      'details': error.details,
-    });
-  }
-
-  if (error.code == CoreErrorCode.vmNotConnected &&
-      error.message == 'VM service not connected') {
-    return error.message;
-  }
-
-  return '$prefix: ${error.message}';
+  return jsonEncode(error.toJson());
 }
 
 bool? _asBool(final Object? value) {

@@ -1,6 +1,6 @@
 # MCP Toolkit for Flutter
 
-[![Pub Version](https://img.shields.io/badge/version-0.4.0-blue)](https://github.com/Arenukvern/mcp_flutter/tree/main/mcp_toolkit/mcp_toolkit)
+[![Pub Version](https://img.shields.io/badge/version-3.0.0-blue)](https://github.com/Arenukvern/mcp_flutter/tree/main/mcp_toolkit/mcp_toolkit)
 
 > [!NOTE]
 > This is not official package - it's a personal project.
@@ -81,7 +81,7 @@ addMcpTool(
       flutter:
         sdk: flutter
       # ... other dependencies
-      mcp_toolkit: ^0.4.0 # Use the latest version
+      mcp_toolkit: ^3.0.0 # Use the latest version
     ```
 
     Then, run `flutter pub get` in your Flutter project's directory.

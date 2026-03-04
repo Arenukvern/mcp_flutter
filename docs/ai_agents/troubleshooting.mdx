@@ -19,12 +19,35 @@ Fix:
 }
 ```
 
+## `target_not_found` (with `connection.targetId`)
+
+Cause: `targetId` does not match discovered targets for this moment.
+
+Fix:
+
+1. Prefer `connection.uri` with exact machine `app.debugPort.wsUri`.
+2. Or refresh `discover_debug_apps` / `availableTargets` and copy one `targetId` exactly.
+3. Never use plain `host:port` as `targetId`.
+
+Example retry:
+
+```json
+{
+  "arguments": {
+    "connection": {
+      "uri": "ws://127.0.0.1:59490/<token>/ws"
+    }
+  }
+}
+```
+
 ## No Tools Showing In Client
 
 - Restart the AI client after MCP config changes.
 - Ensure JSON syntax is valid.
 - Verify `command` points to existing compiled binary.
 - Confirm Flutter app is running in debug mode.
+- Run `flutter_mcp_cli doctor --json` to check environment prerequisites.
 
 ## Screenshots Missing
 

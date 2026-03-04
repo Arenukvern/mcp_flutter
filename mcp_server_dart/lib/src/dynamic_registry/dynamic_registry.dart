@@ -7,6 +7,8 @@ import 'dart:convert';
 import 'package:dart_mcp/server.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_inspector_mcp_server/flutter_inspector_mcp_server.dart';
+import 'package:flutter_inspector_mcp_server/src/core/error_codes.dart';
+import 'package:flutter_inspector_mcp_server/src/core/results.dart';
 import 'package:flutter_inspector_mcp_server/src/mixins/mcp_toolkit_consts.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
 import 'package:is_dart_empty_or_not/is_dart_empty_or_not.dart';
@@ -341,7 +343,14 @@ final class DynamicRegistry {
         );
         return CallToolResult(
           content: [
-            TextContent(text: 'VM service not available for tool forwarding'),
+            TextContent(
+              text: jsonEncode(
+                CoreResult.failure(
+                  code: CoreErrorCode.vmNotConnected,
+                  message: 'VM service not available for tool forwarding',
+                ).error?.toJson(),
+              ),
+            ),
           ],
           isError: true,
         );
@@ -376,7 +385,16 @@ final class DynamicRegistry {
       );
 
       return CallToolResult(
-        content: [TextContent(text: 'Error forwarding tool call: $e')],
+        content: [
+          TextContent(
+            text: jsonEncode(
+              CoreResult.failure(
+                code: CoreErrorCode.dynamicToolFailed,
+                message: 'Error forwarding tool call: $e',
+              ).error?.toJson(),
+            ),
+          ),
+        ],
         isError: true,
       );
     }
@@ -406,7 +424,12 @@ final class DynamicRegistry {
           contents: [
             TextResourceContents(
               uri: resourceUri,
-              text: 'VM service not available for resource forwarding',
+              text: jsonEncode(
+                CoreResult.failure(
+                  code: CoreErrorCode.vmNotConnected,
+                  message: 'VM service not available for resource forwarding',
+                ).error?.toJson(),
+              ),
             ),
           ],
         );
@@ -457,7 +480,12 @@ final class DynamicRegistry {
         contents: [
           TextResourceContents(
             uri: resourceUri,
-            text: 'Error forwarding resource read: $e',
+            text: jsonEncode(
+              CoreResult.failure(
+                code: CoreErrorCode.dynamicResourceFailed,
+                message: 'Error forwarding resource read: $e',
+              ).error?.toJson(),
+            ),
           ),
         ],
       );
@@ -466,10 +494,8 @@ final class DynamicRegistry {
 
   /// Get tools and resources for the current app
   ({List<DynamicToolEntry> tools, List<DynamicResourceEntry> resources})
-  getAppEntries() => (
-    tools: _tools.values.toList(),
-    resources: _resources.values.toList(),
-  );
+  getAppEntries() =>
+      (tools: _tools.values.toList(), resources: _resources.values.toList());
 
   /// Update app activity timestamp
   void updateAppActivity() {

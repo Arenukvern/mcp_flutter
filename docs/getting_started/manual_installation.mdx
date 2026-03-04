@@ -57,7 +57,7 @@ Future<void> main() async {
 ## 4. Run Flutter In Debug Mode
 
 ```bash
-flutter run --debug --host-vmservice-port=8182 --dds-port=8181 --enable-vm-service --disable-service-auth-codes
+flutter run --debug --host-vmservice-port=8182 --dds-port=8181 --enable-vm-service
 ```
 
 ## 5. Configure Your AI Client
@@ -76,4 +76,4 @@ Try these prompts in your assistant:
 - "Take a screenshot of the app"
 - "Get app errors"
 
-If multiple targets are found, retry with `arguments.connection.targetId`.
+If multiple targets are found, retry with `arguments.connection.targetId` or prefer exact `arguments.connection.uri` from Flutter machine `app.debugPort.wsUri`.

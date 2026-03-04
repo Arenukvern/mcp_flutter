@@ -12,6 +12,7 @@ import 'package:flutter_inspector_mcp_server/src/core/error_codes.dart';
 import 'package:flutter_inspector_mcp_server/src/core/executor.dart';
 import 'package:flutter_inspector_mcp_server/src/core/preconnect.dart';
 import 'package:flutter_inspector_mcp_server/src/core/results.dart';
+import 'package:flutter_inspector_mcp_server/src/core/safe_writes.dart';
 
 final class SnapshotStore {
   SnapshotStore({required this.snapshotsDir});
@@ -23,6 +24,7 @@ final class SnapshotStore {
     required final DefaultCoreCommandExecutor executor,
     required final CommandCatalog catalog,
     final Map<String, Object?> args = const <String, Object?>{},
+    final SafeWriteOptions writeOptions = const SafeWriteOptions(),
   }) async {
     final createdAt = DateTime.now().toUtc();
     final plan = _resolvePlan(catalog: catalog, args: args);
@@ -84,10 +86,13 @@ final class SnapshotStore {
     };
 
     final file = _fileFor(id);
-    file.parent.createSync(recursive: true);
-    file.writeAsStringSync(
-      const JsonEncoder.withIndent('  ').convert(snapshot),
+    final writeResult = await SafeFileWriter.writeTextFile(
+      path: file.path,
+      content: const JsonEncoder.withIndent('  ').convert(snapshot),
+      options: writeOptions,
     );
+    snapshot['path'] = file.path;
+    snapshot['writeResults'] = [writeResult.toJson()];
 
     return snapshot;
   }

@@ -34,6 +34,7 @@ _For AI-Powered Development_
   - CLI vs MCP (when to use which): [docs/start_here/cli_vs_mcp.mdx](docs/start_here/cli_vs_mcp.mdx)
   - Contributors and contribution types: [docs/contributing/contributors.mdx](docs/contributing/contributors.mdx)
 - Root markdown docs: [Quick Start](QUICK_START.md), [Configuration](CONFIGURATION.md), [Architecture](ARCHITECTURE.md), [MCP RPC description](MCP_RPC_DESCRIPTION.md)
+- Error code contract: [docs/core/error_code_playbook.mdx](docs/core/error_code_playbook.mdx)
 
 > [!NOTE]
 > There is official [MCP Server for Flutter from Flutter team](https://github.com/dart-lang/ai/tree/main/pkgs/dart_mcp_server) which exposes Dart tooling.
@@ -52,18 +53,17 @@ _For AI-Powered Development_
 
 - **Dynamic Tools Registration**: Flutter apps can now register custom tools at the MCP server. See how it works in [short YouTube video](https://www.youtube.com/watch?v=Qog3x2VcO98). See [Dynamic Tools Registration Docs](https://github.com/Arenukvern/mcp_flutter/blob/main/QUICK_START.md#dynamic-tools-registration) for more details.
 
-## 🎉 v2.6.0 released! 🎉
+## v3.0.0 Hard Cut
 
-BREAKING CHANGES:
+This release is a strict hard cut focused on reliability and automation safety:
 
-- Dart SDK updated to 3.10.0 with all dependencies updated to the latest versions
+- unified JSON error envelope contract (`code`, `message`, `details`, `descriptor`, `recovery`)
+- strict typed parsing and strict schemas (`additionalProperties: false` by default)
+- safe write semantics for snapshot/bundle (`--check`, `--diff`, `--backup`, `--no-overwrite`) with atomic write/publish
+- contextual command help and `flutter_mcp_cli doctor`
+- one-command binary install via root `install.sh`
 
-- now VM service auto-reconnect when Flutter app restarts. Huge thank you to [@jkitching](https://github.com/jkitching) for PR! https://github.com/Arenukvern/mcp_flutter/pull/73
-
-- dockerfile for MCP Server - not tested.
-  Huge thank you to [@arslanmit](https://github.com/arslanmit) for PR with Dockerfile! https://github.com/Arenukvern/mcp_flutter/pull/64
-
-See more details in [CHANGELOG.md](CHANGELOG.md).
+Migration details are documented in [CHANGELOG.md](CHANGELOG.md) and [mcp_server_dart/README.md](mcp_server_dart/README.md).
 
 ## ⚠️ WARNING
 
@@ -72,6 +72,12 @@ Dump RPC methods (like `dump_render_tree`), may cause huge amount of tokens usag
 See more details about command line options in [mcp_server_dart README](mcp_server_dart/README.md).
 
 ## 🚀 Getting Started
+
+- One-command install (macOS/Linux):
+
+  ```bash
+  curl -fsSL https://raw.githubusercontent.com/Arenukvern/mcp_flutter/main/install.sh | bash
+  ```
 
 - (Experimental) You can try to install MCP server and configure it using your AI Agent. Use the following prompt: `Please install MCP server using this link: https://github.com/Arenukvern/mcp_flutter/blob/main/llm_install.md`
 
@@ -111,9 +117,11 @@ See more details about command line options in [mcp_server_dart README](mcp_serv
 
 Flutter apps can now register custom tools and resources at runtime. See how it works in [short YouTube video](https://www.youtube.com/watch?v=Qog3x2VcO98). See [Dynamic Tools Registration Docs](#dynamic-tools-registration-🆕) for more details.
 
-VM-dependent calls use automatic target resolution by default and can be overridden per request with `arguments.connection` (preferred: `connection.targetId` as full VM WS URI).
+VM-dependent calls use automatic target resolution by default and can be overridden per request with `arguments.connection`.
+Safest explicit selector: `connection.uri` with exact Flutter machine `app.debugPort.wsUri`.
+`connection.targetId` also works when copied from `availableTargets` / `discover_debug_apps` (never use `host:port`).
 
-The same targeting object is supported in CLI v2 one-shot `exec --args`, daemon `command/execute`, daemon `watch/start`, and snapshot step args (`commands[i].args.connection`).
+The same targeting object is supported in CLI v3 one-shot `exec --args`, daemon `command/execute`, daemon `watch/start`, and snapshot step args (`commands[i].args.connection`).
 
 📚 Please see more in [MCP_RPC_DESCRIPTION](MCP_RPC_DESCRIPTION.md)
 
@@ -132,6 +140,7 @@ This MCP server is verified by [MseeP.ai](https://mseep.ai).
    - Ensure your Flutter app is running in debug mode
    - Verify the port matches in both Flutter app and MCP server
    - Check if the port is not being used by another process
+   - Safest explicit targeting: use `arguments.connection.uri` and paste exact Flutter machine `app.debugPort.wsUri`
    - If response includes `connection_selection_required`, retry with `arguments.connection.targetId` using one URI from `availableTargets` (or set `arguments.connection.uri` directly)
 
 2. **AI Tool Not Detecting Inspector**

@@ -7,6 +7,7 @@ import 'dart:async';
 
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_inspector_mcp_server/src/base_server.dart';
+import 'package:flutter_inspector_mcp_server/src/core/runtime_version.dart';
 import 'package:flutter_inspector_mcp_server/src/mixins/dynamic_registry_integration.dart';
 import 'package:flutter_inspector_mcp_server/src/mixins/flutter_inspector.dart';
 import 'package:flutter_inspector_mcp_server/src/mixins/vm_service_support.dart';
@@ -25,8 +26,8 @@ final class MCPToolkitServer extends BaseMCPToolkitServer
     required super.configuration,
   }) : super.fromStreamChannel(
          implementation: Implementation(
-           name: 'flutter-inspector',
-           version: '1.0.0',
+           name: kFlutterMcpServerImplementationName,
+           version: kFlutterMcpVersion,
          ),
          instructions:
              '''

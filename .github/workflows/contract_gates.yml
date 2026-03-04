@@ -1,0 +1,39 @@
+name: Contract Gates
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Dart SDK
+        uses: dart-lang/setup-dart@v1
+
+      - name: Install mcp_server_dart dependencies
+        working-directory: mcp_server_dart
+        run: dart pub get
+
+      - name: Run mcp_server_dart tests
+        working-directory: mcp_server_dart
+        env:
+          HOME: /tmp
+          DART_SUPPRESS_ANALYTICS: 'true'
+        run: dart test
+
+      - name: Check docs/help drift
+        run: bash tool/contracts/check_docs_drift.sh
+
+      - name: Check error-code playbook coverage
+        run: bash tool/contracts/check_error_code_playbook.sh
+
+      - name: Check SDK parity
+        run: bash tool/contracts/check_sdk_parity.sh

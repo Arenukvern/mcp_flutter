@@ -1,12 +1,11 @@
 // Copyright (c) 2025, Flutter Inspector MCP Server authors.
 // Licensed under the MIT License.
 
-import 'dart:convert';
-
 import 'package:flutter_inspector_mcp_server/src/core/capabilities_model.dart';
 import 'package:flutter_inspector_mcp_server/src/core/commands.dart';
 import 'package:flutter_inspector_mcp_server/src/core/connection_override.dart';
 import 'package:flutter_inspector_mcp_server/src/core/core_types.dart';
+import 'package:flutter_inspector_mcp_server/src/core/runtime_version.dart';
 
 typedef CoreCommandFactory = CoreCommand Function(Map<String, Object?> args);
 
@@ -68,6 +67,7 @@ final class CommandCatalog {
     if (spec == null) {
       throw ArgumentError('Unsupported command: $name');
     }
+    _validateUnknownKeys(spec: spec, args: args);
     return spec.build(args);
   }
 
@@ -77,11 +77,14 @@ final class CommandCatalog {
       if (spec == null) {
         throw ArgumentError('Unknown command for schema lookup: $name');
       }
-      return {'schemaVersion': 'command-catalog/v1', 'command': spec.toJson()};
+      return {
+        'schemaVersion': kCommandCatalogSchemaVersion,
+        'command': spec.toJson(),
+      };
     }
 
     return {
-      'schemaVersion': 'command-catalog/v1',
+      'schemaVersion': kCommandCatalogSchemaVersion,
       'commands': commands.map((final spec) => spec.toJson()).toList(),
     };
   }
@@ -101,8 +104,8 @@ final class CommandCatalog {
         .toList();
 
     return CapabilitiesModel(
-      protocolVersion: 'flutter-mcp-cli/2.0',
-      schemaVersion: 'command-catalog/v1',
+      protocolVersion: kFlutterMcpProtocolVersion,
+      schemaVersion: kCommandCatalogSchemaVersion,
       commands: commandSummaries,
       providers: {
         'summaryProviders': const <String>['none', 'openai'],
@@ -164,9 +167,14 @@ final class CommandCatalog {
             ),
             'targetId': _stringSchema(
               description:
-                  'Preferred target identifier as full VM websocket URI.',
+                  'Preferred target identifier as full VM websocket URI. '
+                  'Copy from discover_debug_apps/availableTargets. '
+                  'Do not use host:port.',
             ),
-            'uri': _stringSchema(description: 'Full websocket VM URI.'),
+            'uri': _stringSchema(
+              description:
+                  'Full websocket VM URI. Safest selector: paste app.debugPort.wsUri exactly.',
+            ),
             'host': _stringSchema(),
             'port': _intSchema(),
             'force': _boolSchema(defaultValue: false),
@@ -204,9 +212,14 @@ final class CommandCatalog {
             ),
             'targetId': _stringSchema(
               description:
-                  'Preferred target identifier as full VM websocket URI.',
+                  'Preferred target identifier as full VM websocket URI. '
+                  'Copy from discover_debug_apps/availableTargets. '
+                  'Do not use host:port.',
             ),
-            'uri': _stringSchema(description: 'Full websocket VM URI.'),
+            'uri': _stringSchema(
+              description:
+                  'Full websocket VM URI. Safest selector: paste app.debugPort.wsUri exactly.',
+            ),
             'host': _stringSchema(),
             'port': _intSchema(),
             'force': _boolSchema(defaultValue: false),
@@ -249,11 +262,11 @@ final class CommandCatalog {
           properties: {
             'sessionId': _stringSchema(),
             'command': _stringSchema(),
-            'arguments': _objectSchema(),
+            'arguments': _objectSchema(additionalProperties: true),
           },
           required: const <String>['command'],
         ),
-        outputSchema: _objectSchema(),
+        outputSchema: _objectSchema(additionalProperties: true),
         requiresVm: false,
         supportsWatch: false,
         mcpExposed: false,
@@ -320,7 +333,7 @@ final class CommandCatalog {
           properties: {
             'sessionId': _stringSchema(),
             'command': _stringSchema(),
-            'arguments': _objectSchema(),
+            'arguments': _objectSchema(additionalProperties: true),
             'intervalMs': _intSchema(defaultValue: 1000),
             'maxEvents': _intSchema(defaultValue: 0),
             'stopOnError': _boolSchema(defaultValue: false),
@@ -457,7 +470,7 @@ final class CommandCatalog {
         name: 'get_vm',
         description: 'Fetch VM metadata from active Dart VM service.',
         inputSchema: _objectSchema(),
-        outputSchema: _objectSchema(),
+        outputSchema: _objectSchema(additionalProperties: true),
         requiresVm: true,
         supportsWatch: true,
         mcpExposed: true,
@@ -479,7 +492,7 @@ final class CommandCatalog {
         inputSchema: _objectSchema(
           properties: {'force': _boolSchema(defaultValue: false)},
         ),
-        outputSchema: _objectSchema(),
+        outputSchema: _objectSchema(additionalProperties: true),
         requiresVm: true,
         supportsWatch: true,
         mcpExposed: true,
@@ -491,7 +504,7 @@ final class CommandCatalog {
         name: 'hot_restart_flutter',
         description: 'Run Flutter hot restart through VM service.',
         inputSchema: _objectSchema(),
-        outputSchema: _objectSchema(),
+        outputSchema: _objectSchema(additionalProperties: true),
         requiresVm: true,
         supportsWatch: true,
         mcpExposed: true,
@@ -563,7 +576,7 @@ final class CommandCatalog {
         name: 'debug_dump_layer_tree',
         description: 'Run ext.flutter.debugDumpLayerTree.',
         inputSchema: _objectSchema(),
-        outputSchema: _objectSchema(),
+        outputSchema: _objectSchema(additionalProperties: true),
         requiresVm: true,
         supportsWatch: true,
         mcpExposed: true,
@@ -573,7 +586,7 @@ final class CommandCatalog {
         name: 'debug_dump_semantics_tree',
         description: 'Run ext.flutter.debugDumpSemanticsTreeInTraversalOrder.',
         inputSchema: _objectSchema(),
-        outputSchema: _objectSchema(),
+        outputSchema: _objectSchema(additionalProperties: true),
         requiresVm: true,
         supportsWatch: true,
         mcpExposed: true,
@@ -583,7 +596,7 @@ final class CommandCatalog {
         name: 'debug_dump_render_tree',
         description: 'Run ext.flutter.debugDumpRenderTree.',
         inputSchema: _objectSchema(),
-        outputSchema: _objectSchema(),
+        outputSchema: _objectSchema(additionalProperties: true),
         requiresVm: true,
         supportsWatch: true,
         mcpExposed: true,
@@ -593,7 +606,7 @@ final class CommandCatalog {
         name: 'debug_dump_focus_tree',
         description: 'Run ext.flutter.debugDumpFocusTree.',
         inputSchema: _objectSchema(),
-        outputSchema: _objectSchema(),
+        outputSchema: _objectSchema(additionalProperties: true),
         requiresVm: true,
         supportsWatch: true,
         mcpExposed: true,
@@ -622,14 +635,14 @@ final class CommandCatalog {
         inputSchema: _objectSchema(
           properties: {
             'toolName': _stringSchema(),
-            'arguments': _objectSchema(),
+            'arguments': _objectSchema(additionalProperties: true),
           },
           required: const <String>['toolName'],
         ),
         outputSchema: _objectSchema(
           properties: {
             'message': _stringSchema(),
-            'parameters': _objectSchema(),
+            'parameters': _objectSchema(additionalProperties: true),
           },
         ),
         requiresVm: true,
@@ -722,11 +735,12 @@ final class CommandCatalog {
   static Map<String, Object?> _objectSchema({
     final Map<String, Object?> properties = const <String, Object?>{},
     final List<String> required = const <String>[],
+    final bool additionalProperties = false,
   }) => {
     'type': 'object',
     'properties': properties,
     'required': required,
-    'additionalProperties': true,
+    'additionalProperties': additionalProperties,
   };
 
   static Map<String, Object?> _stringSchema({
@@ -758,6 +772,57 @@ final class CommandCatalog {
     required final Map<String, Object?> items,
   }) => {'type': 'array', 'items': items};
 
+  static void _validateUnknownKeys({
+    required final CommandSpec spec,
+    required final Map<String, Object?> args,
+  }) {
+    final allowsUnknown = spec.inputSchema['additionalProperties'] == true;
+    if (allowsUnknown || args.isEmpty) {
+      return;
+    }
+
+    final properties = _asSchemaProperties(spec.inputSchema['properties']);
+    if (properties.isEmpty) {
+      if (args.isNotEmpty) {
+        final unknown = args.keys.toList()..sort();
+        throw ArgumentError(
+          'Unknown argument key(s): ${unknown.join(', ')} '
+          '(schema path: \$.commands.${spec.name}.inputSchema.properties)',
+        );
+      }
+      return;
+    }
+
+    final acceptedKeys = <String>{};
+    for (final key in properties.keys) {
+      acceptedKeys
+        ..add(key)
+        ..add(_toKebabCase(key))
+        ..add(_toCamelCase(key));
+    }
+
+    final unknownKeys =
+        args.keys.where((final key) => !acceptedKeys.contains(key)).toList()
+          ..sort();
+
+    if (unknownKeys.isNotEmpty) {
+      throw ArgumentError(
+        'Unknown argument key(s): ${unknownKeys.join(', ')} '
+        '(schema path: \$.commands.${spec.name}.inputSchema.properties)',
+      );
+    }
+  }
+
+  static Map<String, Object?> _asSchemaProperties(final Object? value) {
+    if (value is Map<String, Object?>) {
+      return value;
+    }
+    if (value is Map) {
+      return value.cast<String, Object?>();
+    }
+    return const <String, Object?>{};
+  }
+
   static Map<String, Object?> _mapArg(
     final Map<String, Object?> args,
     final String key,
@@ -769,16 +834,14 @@ final class CommandCatalog {
     if (value is Map) {
       return value.cast<String, Object?>();
     }
-    if (value is String && value.trim().isNotEmpty) {
-      final decoded = jsonDecode(value);
-      if (decoded is Map<String, Object?>) {
-        return decoded;
-      }
-      if (decoded is Map) {
-        return decoded.cast<String, Object?>();
-      }
+    if (value == null) {
+      return const <String, Object?>{};
     }
-    return const <String, Object?>{};
+
+    throw ArgumentError(
+      'Invalid type for "$key": expected object '
+      '(schema path: \$.inputSchema.properties.$key)',
+    );
   }
 
   static String _stringArg(
@@ -791,8 +854,13 @@ final class CommandCatalog {
     if (value == null) {
       return fallback;
     }
-    final next = '$value';
-    return next.isEmpty ? fallback : next;
+    if (value is! String) {
+      throw ArgumentError(
+        'Invalid type for "$key": expected string '
+        '(schema path: \$.inputSchema.properties.$key)',
+      );
+    }
+    return value.isEmpty ? fallback : value;
   }
 
   static String? _nullableStringArg(
@@ -804,8 +872,13 @@ final class CommandCatalog {
     if (value == null) {
       return null;
     }
-    final next = '$value';
-    return next.isEmpty ? null : next;
+    if (value is! String) {
+      throw ArgumentError(
+        'Invalid type for "$key": expected string '
+        '(schema path: \$.inputSchema.properties.$key)',
+      );
+    }
+    return value.isEmpty ? null : value;
   }
 
   static int _intArg(
@@ -815,12 +888,10 @@ final class CommandCatalog {
     required final int fallback,
   }) {
     final value = _findArg(args, key, alias: alias);
-    return switch (value) {
-      final int v => v,
-      final num v => v.toInt(),
-      final String v => int.tryParse(v) ?? fallback,
-      _ => fallback,
-    };
+    if (value == null) {
+      return fallback;
+    }
+    return _strictIntArg(value: value, key: key);
   }
 
   static int? _nullableIntArg(
@@ -829,13 +900,10 @@ final class CommandCatalog {
     final String? alias,
   }) {
     final value = _findArg(args, key, alias: alias);
-    return switch (value) {
-      null => null,
-      final int v => v,
-      final num v => v.toInt(),
-      final String v => int.tryParse(v),
-      _ => null,
-    };
+    if (value == null) {
+      return null;
+    }
+    return _strictIntArg(value: value, key: key);
   }
 
   static bool _boolArg(
@@ -845,11 +913,29 @@ final class CommandCatalog {
     required final bool fallback,
   }) {
     final value = _findArg(args, key, alias: alias);
+    if (value == null) {
+      return fallback;
+    }
+    if (value is bool) {
+      return value;
+    }
+    throw ArgumentError(
+      'Invalid type for "$key": expected boolean '
+      '(schema path: \$.inputSchema.properties.$key)',
+    );
+  }
+
+  static int _strictIntArg({
+    required final Object value,
+    required final String key,
+  }) {
     return switch (value) {
-      final bool v => v,
-      final num v => v != 0,
-      final String v => bool.tryParse(v) ?? fallback,
-      _ => fallback,
+      final int v => v,
+      final num v when v == v.roundToDouble() => v.toInt(),
+      _ => throw ArgumentError(
+        'Invalid type for "$key": expected integer '
+        '(schema path: \$.inputSchema.properties.$key)',
+      ),
     };
   }
 
@@ -912,9 +998,13 @@ final class CommandCatalog {
 
   static CoreConnectionMode _parseConnectionMode(final String mode) {
     return switch (mode) {
+      'auto' => CoreConnectionMode.auto,
       'manual' => CoreConnectionMode.manual,
       'uri' => CoreConnectionMode.uri,
-      _ => CoreConnectionMode.auto,
+      _ => throw ArgumentError(
+        'Invalid value for "mode": "$mode" '
+        '(schema path: \$.inputSchema.properties.mode)',
+      ),
     };
   }
 }

@@ -4,6 +4,7 @@
 import 'dart:convert';
 
 import 'package:dart_mcp/server.dart';
+import 'package:flutter_inspector_mcp_server/src/core/error_codes.dart';
 import 'package:flutter_inspector_mcp_server/src/core/dynamic_gateway.dart';
 import 'package:flutter_inspector_mcp_server/src/core/results.dart';
 import 'package:flutter_inspector_mcp_server/src/dynamic_registry/dynamic_registry.dart';
@@ -45,7 +46,7 @@ final class RegistryBackedDynamicGateway implements CoreDynamicGateway {
   ) async {
     if (toolName.isEmpty) {
       return CoreResult.failure(
-        code: 'missing_tool_name',
+        code: CoreErrorCode.missingToolName,
         message: 'Missing required parameter: toolName',
       );
     }
@@ -53,8 +54,9 @@ final class RegistryBackedDynamicGateway implements CoreDynamicGateway {
     final result = await registry.forwardToolCall(toolName, arguments);
     if (result == null) {
       return CoreResult.failure(
-        code: 'tool_not_found',
+        code: CoreErrorCode.dynamicToolFailed,
         message: 'Tool not found: $toolName',
+        details: {'reason': 'tool_not_found', 'toolName': toolName},
       );
     }
 
@@ -74,7 +76,7 @@ final class RegistryBackedDynamicGateway implements CoreDynamicGateway {
 
     if (result.isError ?? false) {
       return CoreResult.failure(
-        code: 'dynamic_tool_failed',
+        code: CoreErrorCode.dynamicToolFailed,
         message: message,
         details: parameters,
       );
@@ -89,7 +91,7 @@ final class RegistryBackedDynamicGateway implements CoreDynamicGateway {
   Future<CoreResult> runClientResource(final String resourceUri) async {
     if (resourceUri.isEmpty) {
       return CoreResult.failure(
-        code: 'missing_resource_uri',
+        code: CoreErrorCode.missingResourceUri,
         message: 'Missing required parameter: resourceUri',
       );
     }
@@ -97,8 +99,9 @@ final class RegistryBackedDynamicGateway implements CoreDynamicGateway {
     final result = await registry.forwardResourceRead(resourceUri);
     if (result == null || result.contents.isEmpty) {
       return CoreResult.failure(
-        code: 'resource_not_found',
+        code: CoreErrorCode.dynamicResourceFailed,
         message: 'Resource not found: $resourceUri',
+        details: {'reason': 'resource_not_found', 'resourceUri': resourceUri},
       );
     }
 
@@ -125,8 +128,12 @@ final class RegistryBackedDynamicGateway implements CoreDynamicGateway {
     }
 
     return CoreResult.failure(
-      code: 'unsupported_resource_content',
+      code: CoreErrorCode.dynamicResourceFailed,
       message: 'Unsupported resource content type for $resourceUri',
+      details: {
+        'reason': 'unsupported_resource_content',
+        'resourceUri': resourceUri,
+      },
     );
   }
 
@@ -137,8 +144,9 @@ final class RegistryBackedDynamicGateway implements CoreDynamicGateway {
     final info = registry.appInfo;
     if (info == null) {
       return CoreResult.failure(
-        code: 'no_app_info',
+        code: CoreErrorCode.dynamicRegistryListFailed,
         message: 'No app info available',
+        details: {'reason': 'no_app_info'},
       );
     }
 

@@ -18,7 +18,7 @@ void main() {
       expect(descriptor.code, equals('custom_unknown_error'));
     });
 
-    test('CoreResult.failure embeds descriptor fields', () {
+    test('CoreResult.failure embeds descriptor envelope and recovery', () {
       final result = CoreResult.failure(
         code: CoreErrorCode.invalidCommand,
         message: 'bad command',
@@ -29,9 +29,12 @@ void main() {
 
       final envelope = result.toEnvelopeJson();
       final error = envelope['error'] as Map<String, Object?>;
-      expect(error['retryable'], isFalse);
-      expect(error['category'], equals('validation'));
-      expect(error['exitCode'], equals(64));
+      expect(error['descriptor'], isA<Map<String, Object?>>());
+      final descriptor = error['descriptor'] as Map<String, Object?>;
+      expect(descriptor['retryable'], isFalse);
+      expect(descriptor['category'], equals('validation'));
+      expect(descriptor['exitCode'], equals(64));
+      expect(error['recovery'], isA<Map<String, Object?>>());
     });
   });
 }

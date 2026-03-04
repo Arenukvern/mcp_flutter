@@ -7,6 +7,7 @@ Notes:
 - VM-dependent tools/resources resolve connection on demand. Startup does not force choosing a VM target.
 - If VM service is unavailable, the tool returns an error payload.
 - If multiple debug targets are discovered and no sticky/explicit target is available, the tool returns `connection_selection_required`.
+- Error envelope and code semantics are defined in [Error Code Playbook](/core/error_code_playbook).
 
 ### Core Tools
 
@@ -33,7 +34,7 @@ All VM-dependent tools accept an optional nested `connection` object in `argumen
 
 Supported fields:
 
-- `targetId` (preferred, full VM websocket URI)
+- `targetId` (full VM websocket URI)
 - `mode` (`auto`, `manual`, `uri`)
 - `host`
 - `port`
@@ -41,6 +42,12 @@ Supported fields:
 - `forceReconnect`
 
 Legacy `host:port` values for `targetId` are rejected.
+
+Zero-mistake targeting:
+
+1. Safest: use `connection.uri` with exact `app.debugPort.wsUri`.
+2. If using `connection.targetId`, copy from `discover_debug_apps` or `availableTargets`.
+3. If `target_not_found` occurs, retry with `connection.uri` and exact machine `wsUri`.
 
 Flat top-level aliases like `arguments.port`, `arguments.host`, and `arguments.uri` are not supported.
 

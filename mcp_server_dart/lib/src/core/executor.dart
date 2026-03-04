@@ -10,6 +10,7 @@ import 'package:flutter_inspector_mcp_server/src/core/error_analysis.dart';
 import 'package:flutter_inspector_mcp_server/src/core/error_codes.dart';
 import 'package:flutter_inspector_mcp_server/src/core/error_summary_provider.dart';
 import 'package:flutter_inspector_mcp_server/src/core/results.dart';
+import 'package:flutter_inspector_mcp_server/src/core/runtime_version.dart';
 import 'package:flutter_inspector_mcp_server/src/core/services/core_image_file_saver.dart';
 import 'package:flutter_inspector_mcp_server/src/core/services/core_port_scanner.dart';
 import 'package:flutter_inspector_mcp_server/src/core/session_manager.dart';
@@ -115,7 +116,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
   ) {
     final nextMeta = <String, Object?>{
       ...result.meta,
-      'schemaVersion': 'core-envelope/v1',
+      'schemaVersion': kCoreEnvelopeSchemaVersion,
       'command': commandName,
       'timestamp': DateTime.now().toUtc().toIso8601String(),
       'durationMs': durationMs,

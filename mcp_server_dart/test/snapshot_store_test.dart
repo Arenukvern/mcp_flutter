@@ -176,5 +176,120 @@ void main() {
         equals('target_not_found'),
       );
     });
+
+    test(
+      '--check mode reports planned snapshot drift without writing file',
+      () async {
+        final store = SnapshotStore(snapshotsDir: snapshotsDir);
+        final catalog = CommandCatalog.instance;
+
+        final logger =
+            (
+              final LoggingLevel level,
+              final String message, {
+              final String logger = 'test',
+            }) {};
+
+        final context = ConnectionContext(
+          defaultHost: 'localhost',
+          defaultPort: 8181,
+          logger: logger,
+          discoverPorts: () async => <int>[8181],
+        );
+
+        final executor = DefaultCoreCommandExecutor(
+          connectionContext: context,
+          portScanner: CorePortScanner(logger: logger),
+          imageFileSaver: CoreImageFileSaver(logger: logger),
+          configuration: const CoreRuntimeConfiguration(
+            vmHost: 'localhost',
+            vmPort: 8181,
+            resourcesSupported: true,
+            imagesSupported: true,
+            dumpsSupported: false,
+            dynamicRegistrySupported: false,
+            saveImagesToFiles: false,
+          ),
+        );
+
+        final snapshot = await store.createSnapshot(
+          id: 'check_only',
+          executor: executor,
+          catalog: catalog,
+          args: {
+            'commands': [
+              {'name': 'status', 'args': {}},
+            ],
+          },
+          writeOptions: const SafeWriteOptions(check: true, diff: true),
+        );
+
+        final writes = (snapshot['writeResults'] as List)
+            .cast<Map<String, Object?>>();
+        expect(writes.single['status'], equals(SafeWriteStatus.added));
+        expect(writes.single['wrote'], isFalse);
+        expect(writes.single['diff'], isA<Map<String, Object?>>());
+        expect(File('$snapshotsDir/check_only.json').existsSync(), isFalse);
+      },
+    );
+
+    test('--no-overwrite blocks existing snapshot target', () async {
+      final store = SnapshotStore(snapshotsDir: snapshotsDir);
+      final catalog = CommandCatalog.instance;
+      final logger =
+          (
+            final LoggingLevel level,
+            final String message, {
+            final String logger = 'test',
+          }) {};
+      final context = ConnectionContext(
+        defaultHost: 'localhost',
+        defaultPort: 8181,
+        logger: logger,
+        discoverPorts: () async => <int>[8181],
+      );
+      final executor = DefaultCoreCommandExecutor(
+        connectionContext: context,
+        portScanner: CorePortScanner(logger: logger),
+        imageFileSaver: CoreImageFileSaver(logger: logger),
+        configuration: const CoreRuntimeConfiguration(
+          vmHost: 'localhost',
+          vmPort: 8181,
+          resourcesSupported: true,
+          imagesSupported: true,
+          dumpsSupported: false,
+          dynamicRegistrySupported: false,
+          saveImagesToFiles: false,
+        ),
+      );
+
+      await store.createSnapshot(
+        id: 'existing',
+        executor: executor,
+        catalog: catalog,
+        args: {
+          'commands': [
+            {'name': 'status', 'args': {}},
+          ],
+        },
+      );
+
+      final snapshot = await store.createSnapshot(
+        id: 'existing',
+        executor: executor,
+        catalog: catalog,
+        args: {
+          'commands': [
+            {'name': 'status', 'args': {}},
+          ],
+        },
+        writeOptions: const SafeWriteOptions(noOverwrite: true),
+      );
+
+      final writes = (snapshot['writeResults'] as List)
+          .cast<Map<String, Object?>>();
+      expect(writes.single['status'], equals(SafeWriteStatus.blocked));
+      expect(writes.single['wrote'], isFalse);
+    });
   });
 }

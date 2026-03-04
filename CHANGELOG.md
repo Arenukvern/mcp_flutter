@@ -1,5 +1,53 @@
 ## Unreleased
 
+## 3.0.0
+
+Strict hard-cut release across the monorepo.
+
+### Hard-cut contracts
+
+- Added `flutter_mcp_cli doctor [--json] [--target <path>] [--timeout-ms <n>]`.
+- Added safe-write flags for `snapshot create` and `bundle create`:
+  `--check`, `--diff`, `--backup`, `--no-overwrite`.
+- Removed destructive bundle pre-delete behavior. Directory publishing is now staged and atomic.
+- Standardized all MCP tool/resource errors to one JSON envelope:
+  `code`, `message`, `details`, `descriptor`, `recovery`.
+- Enforced typed parsing hard cut: no string-encoded object/list/bool coercions.
+- Enforced schema strictness default: `additionalProperties: false` unless explicitly opened.
+- Unified runtime/build protocol version metadata from a single source.
+
+### Install and release
+
+- Added root `install.sh` for one-command install/upgrade on `darwin-arm64`, `darwin-x64`, `linux-x64`.
+- Added release artifact builder script with tarball + checksum generation:
+  `tool/release/build_release_artifacts.sh`.
+- Added tagged release workflow for build, smoke, and publish:
+  `.github/workflows/release.yml`.
+
+### Contract quality gates
+
+- Added docs/help drift gate:
+  `tool/contracts/check_docs_drift.sh`.
+- Added error-code playbook coverage gate:
+  `tool/contracts/check_error_code_playbook.sh`.
+- Added SDK parity gate (Docker base image vs `pubspec`):
+  `tool/contracts/check_sdk_parity.sh`.
+- Added CI contract workflow:
+  `.github/workflows/contract_gates.yml`.
+
+### Version alignment
+
+- `mcp_server_dart`: `3.0.0`
+- `mcp_toolkit`: `3.0.0`
+
+### Migration: v2.x -> v3.0.0
+
+- Replace any error parsing that expects top-level `category/retryable/exitCode` with `error.descriptor`.
+- Stop sending string-encoded typed values; pass real JSON types only.
+- For write-producing commands, prefer `--check --diff` first in automation.
+- If overwrite must be blocked, set `--no-overwrite` and handle `write_blocked`.
+- Use `flutter_mcp_cli doctor --json` in CI preflight before VM-dependent operations.
+
 ### mcp_server_dart
 
 - connection UX redesign for VM-dependent calls:
@@ -208,7 +256,7 @@ Have a nice day!
 
 ## 2.0.0
 
-This release removes the forwarding server, devtools extension and refactors all communication to use Dart VM.
+This release removes the forwarding server path and refactors all communication to use Dart VM.
 
 Note that setup is changed - see new [Quick Start](QUICK_START.md) and [Configuration](CONFIGURATION.md) docs.
 
@@ -242,4 +290,4 @@ Thanks Code Rabbit for poem:
 
 ## 1.0.0
 
-Stable release with forwarding server and devtools extension.
+Stable release with forwarding server implementation.

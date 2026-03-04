@@ -82,6 +82,8 @@ abstract final class CoreErrorCode {
   static const snapshotNotFound = 'snapshot_not_found';
   static const snapshotInvalid = 'snapshot_invalid';
   static const bundleBuildFailed = 'bundle_build_failed';
+  static const writeBlocked = 'write_blocked';
+  static const doctorCriticalFailed = 'doctor_critical_failed';
 
   static const unknown = 'unknown_error';
 }
@@ -319,6 +321,20 @@ const Map<String, CoreErrorDescriptor> _descriptorMap =
         exitCode: 74,
         httpLikeStatus: 500,
       ),
+      CoreErrorCode.writeBlocked: CoreErrorDescriptor(
+        code: CoreErrorCode.writeBlocked,
+        category: CoreErrorCategory.state,
+        retryable: false,
+        exitCode: 73,
+        httpLikeStatus: 409,
+      ),
+      CoreErrorCode.doctorCriticalFailed: CoreErrorDescriptor(
+        code: CoreErrorCode.doctorCriticalFailed,
+        category: CoreErrorCategory.validation,
+        retryable: true,
+        exitCode: 1,
+        httpLikeStatus: 503,
+      ),
       CoreErrorCode.unknown: CoreErrorDescriptor(
         code: CoreErrorCode.unknown,
         category: CoreErrorCategory.internal,
@@ -346,3 +362,79 @@ CoreErrorDescriptor descriptorForErrorCode(final String? code) {
 int exitCodeForErrorCode(final String? code) {
   return descriptorForErrorCode(code).exitCode;
 }
+
+Map<String, Object?> recoveryForErrorCode(
+  final String? code, {
+  final Object? details,
+}) {
+  final resolvedCode = (code == null || code.isEmpty)
+      ? CoreErrorCode.unknown
+      : code;
+
+  if (resolvedCode == CoreErrorCode.connectionSelectionRequired) {
+    final detailMap = switch (details) {
+      final Map<String, Object?> value => value,
+      final Map value => value.cast<String, Object?>(),
+      _ => const <String, Object?>{},
+    };
+    final targets = switch (detailMap['availableTargets']) {
+      final List value => value,
+      _ => const <Object?>[],
+    };
+
+    final firstTarget = targets.isNotEmpty && targets.first is Map
+        ? (targets.first as Map)['targetId']?.toString()
+        : null;
+
+    return {
+      'summary': 'Select an explicit VM target and retry the command.',
+      'fix_command': firstTarget == null
+          ? r"""flutter_mcp_cli exec --name discover_debug_apps --args '{}'"""
+          : 'flutter_mcp_cli exec --name get_vm --args '
+                '\'{"connection":{"targetId":"$firstTarget"}}\'',
+    };
+  }
+
+  return _defaultRecoveryMap[resolvedCode] ??
+      _defaultRecoveryMap[CoreErrorCode.unknown]!;
+}
+
+const Map<String, Map<String, Object?>>
+_defaultRecoveryMap = <String, Map<String, Object?>>{
+  CoreErrorCode.connectFailed: <String, Object?>{
+    'summary': 'Retry with an explicit VM URI target.',
+    'fix_command':
+        'flutter_mcp_cli exec --name get_vm --args '
+        '\'{"connection":{"uri":"ws://127.0.0.1:8181/<token>/ws"}}\'',
+  },
+  CoreErrorCode.vmNotConnected: <String, Object?>{
+    'summary': 'Connect to a running debug target before issuing VM commands.',
+    'fix_command': r"""flutter_mcp_cli exec --name status --args '{}'""",
+  },
+  CoreErrorCode.invalidCommand: <String, Object?>{
+    'summary': 'Validate command name, arguments, and schema types.',
+    'fix_command': r"""flutter_mcp_cli schema --name <command_name>""",
+  },
+  CoreErrorCode.dynamicRegistryDisabled: <String, Object?>{
+    'summary': 'Enable dynamic registry support before dynamic tool calls.',
+    'fix_command':
+        'flutter_mcp_cli --dynamics exec --name status --args \'{}\'',
+  },
+  CoreErrorCode.snapshotNotFound: <String, Object?>{
+    'summary': 'Create the snapshot before referencing it.',
+    'fix_command':
+        r"""flutter_mcp_cli snapshot create --name <snapshot_id> --args '{}'""",
+  },
+  CoreErrorCode.writeBlocked: <String, Object?>{
+    'summary': 'Target exists and overwrite is disabled.',
+    'fix_command': 'Retry without --no-overwrite or change --output/--name.',
+  },
+  CoreErrorCode.doctorCriticalFailed: <String, Object?>{
+    'summary': 'Resolve critical environment checks before continuing.',
+    'fix_command': r"""flutter_mcp_cli doctor --json""",
+  },
+  CoreErrorCode.unknown: <String, Object?>{
+    'summary': 'Inspect error details and retry once prerequisites are fixed.',
+    'fix_command': r"""flutter_mcp_cli doctor --json""",
+  },
+};

@@ -312,7 +312,10 @@ class ResourceHandler {
     final result = await executor.execute(const GetViewDetailsCommand());
 
     if (!result.ok) {
-      return toCallToolErrorResult(result, prefix: 'Failed to get view details');
+      return toCallToolErrorResult(
+        result,
+        prefix: 'Failed to get view details',
+      );
     }
 
     final data = _map(result.data);

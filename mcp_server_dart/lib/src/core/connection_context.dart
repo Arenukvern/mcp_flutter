@@ -622,6 +622,31 @@ final class ConnectionContext {
     );
 
     if (selected.targetId.isEmpty) {
+      // Explicit target IDs with tokenized VM paths (for example /<token>/ws)
+      // may not be discoverable via port scan. When path is non-default, trust
+      // the caller-provided URI and attempt direct connection.
+      if (_hasNonDefaultWsPath(parsedTargetUri)) {
+        final endpoint = CoreEndpoint.fromUri(parsedTargetUri);
+        return (
+          endpoint: endpoint,
+          diagnostics: {
+            'mode': mode.name,
+            'selectedTargetId': CoreConnectionTarget.buildTargetId(
+              vmServiceWsUri: endpoint.wsUri,
+            ),
+            'selectedEndpoint': CoreConnectionTarget.buildTargetId(
+              vmServiceWsUri: endpoint.wsUri,
+            ),
+            'decision':
+                'Used explicit targetId URI fallback after discovery miss',
+            'requestedTargetId': targetId,
+            'targetIdLookupMiss': canonicalTargetId,
+            'availableTargets': targets.map((final t) => t.toJson()).toList(),
+            'stickyEndpoint': _stickyEndpoint?.display,
+          },
+        );
+      }
+
       throw CoreConnectionException(
         reason: CoreConnectionFailureReason.targetNotFound,
         message: 'Target not found: $canonicalTargetId',
@@ -796,6 +821,20 @@ final class ConnectionContext {
     }
 
     return parsed;
+  }
+
+  bool _hasNonDefaultWsPath(final Uri uri) {
+    final rawPath = uri.path.trim();
+    if (rawPath.isEmpty) {
+      return false;
+    }
+
+    var normalizedPath = rawPath.startsWith('/') ? rawPath : '/$rawPath';
+    while (normalizedPath.length > 1 && normalizedPath.endsWith('/')) {
+      normalizedPath = normalizedPath.substring(0, normalizedPath.length - 1);
+    }
+
+    return normalizedPath != '/ws';
   }
 
   Future<List<int>> _discoverPorts() async {

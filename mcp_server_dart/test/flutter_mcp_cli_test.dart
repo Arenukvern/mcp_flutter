@@ -4,12 +4,12 @@ import 'dart:io';
 import 'package:test/test.dart';
 
 void main() {
-  group('flutter_mcp_cli v2 one-shot', () {
+  group('flutter_mcp_cli v3 one-shot', () {
     late Directory tempDir;
     late String statePath;
 
     setUp(() {
-      tempDir = Directory.systemTemp.createTempSync('flutter_mcp_cli_v2_');
+      tempDir = Directory.systemTemp.createTempSync('flutter_mcp_cli_v3_');
       statePath = '${tempDir.path}/state.json';
     });
 
@@ -86,7 +86,7 @@ void main() {
       expect(envelope['ok'], isTrue);
 
       final data = envelope['data'] as Map<String, dynamic>;
-      expect(data['protocolVersion'], equals('flutter-mcp-cli/2.0'));
+      expect(data['protocolVersion'], equals('flutter-mcp-cli/3.0'));
       expect(data['schemaVersion'], equals('command-catalog/v1'));
       expect((data['features'] as Map<String, dynamic>)['serve'], isTrue);
     });
@@ -109,9 +109,12 @@ void main() {
         expect(envelope['ok'], isFalse);
         final error = envelope['error'] as Map<String, dynamic>;
         expect(error['code'], equals('invalid_command'));
-        expect(error['retryable'], isFalse);
-        expect(error['exitCode'], equals(64));
-        expect(error['category'], equals('validation'));
+        expect(error['descriptor'], isA<Map<String, dynamic>>());
+        final descriptor = error['descriptor'] as Map<String, dynamic>;
+        expect(descriptor['retryable'], isFalse);
+        expect(descriptor['exitCode'], equals(64));
+        expect(descriptor['category'], equals('validation'));
+        expect(error['recovery'], isA<Map<String, dynamic>>());
       },
     );
 
@@ -132,6 +135,70 @@ void main() {
       expect(error['code'], equals('invalid_command'));
       expect((error['message'] as String).contains('expected object'), isTrue);
     });
+
+    test('exec rejects unknown keys when command schema is strict', () async {
+      final result = await _runCli(statePath, [
+        'exec',
+        '--name',
+        'status',
+        '--args',
+        '{"unknownKey":true}',
+      ]);
+      expect(result.exitCode, equals(64));
+
+      final envelope =
+          jsonDecode((result.stdout as String).trim()) as Map<String, dynamic>;
+      expect(envelope['ok'], isFalse);
+      final error = envelope['error'] as Map<String, dynamic>;
+      expect(error['code'], equals('invalid_command'));
+      expect(
+        (error['message'] as String).contains('Unknown argument key'),
+        isTrue,
+      );
+    });
+
+    test('exec rejects string-encoded integers for typed fields', () async {
+      final result = await _runCli(statePath, [
+        'exec',
+        '--name',
+        'get_app_errors',
+        '--args',
+        '{"count":"4"}',
+      ]);
+      expect(result.exitCode, equals(64));
+
+      final envelope =
+          jsonDecode((result.stdout as String).trim()) as Map<String, dynamic>;
+      expect(envelope['ok'], isFalse);
+      final error = envelope['error'] as Map<String, dynamic>;
+      expect(error['code'], equals('invalid_command'));
+      expect((error['message'] as String).contains('expected integer'), isTrue);
+    });
+
+    test(
+      'exec rejects string-encoded object args for dynamic tool calls',
+      () async {
+        final result = await _runCli(statePath, [
+          'exec',
+          '--name',
+          'runClientTool',
+          '--args',
+          '{"toolName":"example_tool","arguments":"{}"}',
+        ]);
+        expect(result.exitCode, equals(64));
+
+        final envelope =
+            jsonDecode((result.stdout as String).trim())
+                as Map<String, dynamic>;
+        expect(envelope['ok'], isFalse);
+        final error = envelope['error'] as Map<String, dynamic>;
+        expect(error['code'], equals('invalid_command'));
+        expect(
+          (error['message'] as String).contains('expected object'),
+          isTrue,
+        );
+      },
+    );
 
     test(
       'exec rejects legacy flat host/port aliases on non-connect commands',

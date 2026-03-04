@@ -9,9 +9,29 @@ import 'package:dart_mcp/server.dart';
 import 'package:flutter_inspector_mcp_server/flutter_mcp_core.dart';
 
 Future<void> main(final List<String> args) async {
-  final parsed = _argParser.parse(args);
-  if (parsed.flag(_help) || parsed.command == null) {
-    io.stdout.writeln(_usage());
+  late final ArgResults parsed;
+  try {
+    parsed = _argParser.parse(args);
+  } on FormatException catch (error) {
+    final result = CoreResult.failure(
+      code: CoreErrorCode.invalidCommand,
+      message: 'Failed to parse arguments: ${error.message}',
+    );
+    io.stdout.writeln(jsonEncode(result.toEnvelopeJson()));
+    io.exit(result.exitCode);
+  }
+
+  final helpPath = _helpCommandPath(parsed);
+  final showGlobalHelp =
+      (parsed.wasParsed(_help) && parsed.flag(_help) && helpPath == null) ||
+      parsed.command == null;
+  if (showGlobalHelp) {
+    io.stdout.writeln(_globalUsage());
+    io.exit(0);
+  }
+
+  if (helpPath != null) {
+    io.stdout.writeln(_usageForCommand(helpPath));
     io.exit(0);
   }
 
@@ -80,6 +100,13 @@ Future<void> main(final List<String> args) async {
     snapshotStore: snapshotStore,
     stateFilePath: statePath,
   );
+  final doctorRunner = DoctorRunner(
+    connectionContext: connectionContext,
+    executor: executor,
+    stateFilePath: statePath,
+    dynamicRegistrySupported: configuration.dynamicRegistrySupported,
+    logger: logger,
+  );
 
   final command = parsed.command!;
 
@@ -106,11 +133,12 @@ Future<void> main(final List<String> args) async {
     sessionManager: sessionManager,
     snapshotStore: snapshotStore,
     bundleBuilder: bundleBuilder,
+    doctorRunner: doctorRunner,
   );
 
   io.stdout.writeln(jsonEncode(result.toEnvelopeJson()));
   await connectionContext.disconnect();
-  io.exit(result.exitCode);
+  io.exit(_resolveExitCode(topLevel: command, result: result));
 }
 
 Future<CoreResult> _runOneShot({
@@ -122,6 +150,7 @@ Future<CoreResult> _runOneShot({
   required final SessionManager sessionManager,
   required final SnapshotStore snapshotStore,
   required final BundleBuilder bundleBuilder,
+  required final DoctorRunner doctorRunner,
 }) async {
   try {
     switch (topLevel.name) {
@@ -167,7 +196,7 @@ Future<CoreResult> _runOneShot({
         final data = catalog.schema(name: name);
         return CoreResult.success(
           data: data,
-          meta: {'schemaVersion': 'command-catalog/v1'},
+          meta: {'schemaVersion': kCommandCatalogSchemaVersion},
         );
 
       case 'capabilities':
@@ -176,8 +205,19 @@ Future<CoreResult> _runOneShot({
             .toJson();
         return CoreResult.success(
           data: data,
-          meta: {'schemaVersion': 'command-catalog/v1'},
+          meta: {'schemaVersion': kCommandCatalogSchemaVersion},
         );
+
+      case 'doctor':
+        final timeoutMs = _parsePositiveIntOption(
+          topLevel.option('timeout-ms'),
+          fallback: _defaultDoctorTimeoutMs,
+        );
+        final data = await doctorRunner.run(
+          target: _nonEmptyOption(topLevel.option('target')),
+          timeout: Duration(milliseconds: timeoutMs),
+        );
+        return CoreResult.success(data: data);
 
       case 'snapshot':
         final snapshotCommand = topLevel.command;
@@ -213,10 +253,20 @@ Future<CoreResult> _runOneShot({
         }
 
         try {
+          final writeOptions = _safeWriteOptionsFrom(bundleCommand);
           final bundle = await bundleBuilder.createBundle(
             fromSnapshot: fromSnapshot,
             outputDirectory: bundleCommand.option('output'),
+            writeOptions: writeOptions,
           );
+          if (_containsBlockedWrite(bundle)) {
+            return CoreResult.failure(
+              code: CoreErrorCode.writeBlocked,
+              message:
+                  'Bundle output already exists and is blocked by --no-overwrite',
+              details: bundle,
+            );
+          }
           return CoreResult.success(data: bundle);
         } on ArgumentError catch (e) {
           return CoreResult.failure(
@@ -271,13 +321,23 @@ Future<CoreResult> _runSnapshotCommand({
       }
 
       final args = _parseArgumentsJson(snapshotCommand.option('args'));
+      final writeOptions = _safeWriteOptionsFrom(snapshotCommand);
       try {
         final snapshot = await snapshotStore.createSnapshot(
           id: name,
           executor: executor,
           catalog: catalog,
           args: args,
+          writeOptions: writeOptions,
         );
+        if (_containsBlockedWrite(snapshot)) {
+          return CoreResult.failure(
+            code: CoreErrorCode.writeBlocked,
+            message:
+                'Snapshot target already exists and is blocked by --no-overwrite',
+            details: snapshot,
+          );
+        }
         return CoreResult.success(data: snapshot);
       } on Exception catch (e) {
         return CoreResult.failure(
@@ -359,6 +419,41 @@ Map<String, Object?> _parseArgumentsJson(final String? value) {
   throw const FormatException('Expected JSON object for --args');
 }
 
+SafeWriteOptions _safeWriteOptionsFrom(final ArgResults command) {
+  return SafeWriteOptions(
+    check: command.flag(_check),
+    diff: command.flag(_diff),
+    backup: command.flag(_backup),
+    noOverwrite: command.flag(_noOverwrite),
+  );
+}
+
+bool _containsBlockedWrite(final Object? payload) {
+  final map = switch (payload) {
+    final Map<String, Object?> value => value,
+    final Map value => value.cast<String, Object?>(),
+    _ => null,
+  };
+  if (map == null) {
+    return false;
+  }
+
+  final writeResults = map['writeResults'];
+  if (writeResults is! List) {
+    return false;
+  }
+
+  for (final entry in writeResults) {
+    if (entry is! Map) {
+      continue;
+    }
+    if ('${entry['status'] ?? ''}' == SafeWriteStatus.blocked) {
+      return true;
+    }
+  }
+  return false;
+}
+
 LoggingLevel _parseLogLevel(final String? level) {
   return switch (level) {
     'debug' => LoggingLevel.debug,
@@ -411,46 +506,116 @@ String _resolveStateRoot(final String statePath) {
   return parent;
 }
 
-String _usage() {
+String _globalUsage() {
   final buffer = StringBuffer()
-    ..writeln('flutter_mcp_cli v2')
+    ..writeln('$kFlutterMcpCliName v$kFlutterMcpVersion')
     ..writeln('')
     ..writeln('Usage:')
     ..writeln('  flutter_mcp_cli [global options] <command> [command options]')
     ..writeln('')
     ..writeln('Commands:')
-    ..writeln(
-      '  exec --name <command> --args <json> (optional args.connection for per-request target)',
-    )
-    ..writeln('  schema [--name <command>]')
+    ..writeln('  exec')
+    ..writeln('  schema')
     ..writeln('  capabilities')
     ..writeln('  serve')
-    ..writeln('  snapshot create --name <id> [--args <json>]')
-    ..writeln('  snapshot diff --from <id> --to <id>')
-    ..writeln('  bundle create --from-snapshot <id> [--output <dir>]')
+    ..writeln('  snapshot create')
+    ..writeln('  snapshot diff')
+    ..writeln('  bundle create')
+    ..writeln('  doctor')
     ..writeln('')
     ..writeln('Global options:')
-    ..writeln(_argParser.usage);
-
+    ..writeln(_argParser.usage)
+    ..writeln('')
+    ..writeln(
+      'Use `flutter_mcp_cli <command> --help` for contextual examples.',
+    );
   return buffer.toString();
 }
+
+String _usageForCommand(final List<String> commandPath) {
+  final key = commandPath.join(' ');
+  return switch (key) {
+    'exec' => _usageExec(),
+    'schema' => _usageSchema(),
+    'capabilities' => _usageCapabilities(),
+    'serve' => _usageServe(),
+    'snapshot' => _usageSnapshot(),
+    'snapshot create' => _usageSnapshotCreate(),
+    'snapshot diff' => _usageSnapshotDiff(),
+    'bundle' => _usageBundle(),
+    'bundle create' => _usageBundleCreate(),
+    'doctor' => _usageDoctor(),
+    _ => _globalUsage(),
+  };
+}
+
+List<String>? _helpCommandPath(final ArgResults parsed) {
+  final path = <String>[];
+  List<String>? selectedPath;
+  var cursor = parsed.command;
+  while (cursor != null) {
+    if (cursor.name != null && cursor.name!.isNotEmpty) {
+      path.add(cursor.name!);
+    }
+    if (cursor.wasParsed(_help) && cursor.flag(_help)) {
+      selectedPath = List<String>.from(path);
+    }
+    cursor = cursor.command;
+  }
+  return selectedPath;
+}
+
+int _resolveExitCode({
+  required final ArgResults topLevel,
+  required final CoreResult result,
+}) {
+  if (topLevel.name != 'doctor') {
+    return result.exitCode;
+  }
+
+  final data = result.data;
+  if (data is! Map) {
+    return result.exitCode;
+  }
+
+  final checks = data['checks'];
+  if (checks is! List) {
+    return result.exitCode;
+  }
+
+  final hasCriticalFailure = checks.any((final check) {
+    if (check is! Map) {
+      return false;
+    }
+    return check['critical'] == true && check['status'] == 'fail';
+  });
+
+  return hasCriticalFailure
+      ? exitCodeForErrorCode(CoreErrorCode.doctorCriticalFailed)
+      : result.exitCode;
+}
+
+ArgParser _commandParser() => ArgParser()..addFlag(_help, abbr: 'h');
 
 final _argParser = ArgParser(allowTrailingOptions: false)
   ..addOption(
     _dartVmHost,
     defaultsTo: _defaultHost,
-    help: 'Host for Dart VM connection',
+    help:
+        'Fallback host for manual VM connection (prefer args.connection.uri for explicit targeting)',
   )
   ..addOption(
     _dartVmPort,
     defaultsTo: '$_defaultPort',
-    help: 'Port for Dart VM connection',
+    help:
+        'Fallback port for manual VM connection (prefer args.connection.uri for explicit targeting)',
   )
   ..addOption(
     _vmServiceUri,
     help:
         'Optional full VM service websocket URI '
         '(e.g. ws://127.0.0.1:8181/<token>/ws). '
+        'Paste app.debugPort.wsUri exactly. '
         'Applied after args.connection and before session attach.',
   )
   ..addOption(
@@ -503,44 +668,100 @@ final _argParser = ArgParser(allowTrailingOptions: false)
   ..addFlag(_help, abbr: 'h', help: 'Show usage text')
   ..addCommand(
     'exec',
-    ArgParser()
+    _commandParser()
       ..addOption('name', help: 'Core command name from schema catalog')
       ..addOption(
         'args',
         defaultsTo: '{}',
         help:
             'Command args as JSON object. VM-dependent commands also accept '
-            'optional args.connection: '
-            '{"connection":{"targetId":"ws://127.0.0.1:8181/<token>/ws"}}',
+            'optional args.connection. Safest form: '
+            '{"connection":{"uri":"ws://127.0.0.1:8181/<token>/ws"}}. '
+            'targetId also works when copied from discover_debug_apps/availableTargets. '
+            'Never pass host:port as targetId.',
       ),
   )
-  ..addCommand('schema', ArgParser()..addOption('name'))
-  ..addCommand('capabilities')
-  ..addCommand('serve')
+  ..addCommand('schema', _commandParser()..addOption('name'))
+  ..addCommand('capabilities', _commandParser())
+  ..addCommand('serve', _commandParser())
   ..addCommand(
     'snapshot',
-    ArgParser()
+    _commandParser()
       ..addCommand(
         'create',
-        ArgParser()
+        _commandParser()
           ..addOption('name')
-          ..addOption('args', defaultsTo: '{}'),
+          ..addOption('args', defaultsTo: '{}')
+          ..addFlag(
+            _check,
+            defaultsTo: false,
+            help: 'Evaluate changes without writing files',
+          )
+          ..addFlag(
+            _diff,
+            defaultsTo: false,
+            help: 'Attach unified diff metadata per changed target',
+          )
+          ..addFlag(
+            _backup,
+            defaultsTo: false,
+            help: 'Create timestamped backups before replacing targets',
+          )
+          ..addFlag(
+            _noOverwrite,
+            defaultsTo: false,
+            help: 'Block writes when target already exists',
+          ),
       )
       ..addCommand(
         'diff',
-        ArgParser()
+        _commandParser()
           ..addOption('from')
           ..addOption('to'),
       ),
   )
   ..addCommand(
     'bundle',
-    ArgParser()..addCommand(
+    _commandParser()..addCommand(
       'create',
-      ArgParser()
+      _commandParser()
         ..addOption('from-snapshot')
-        ..addOption('output'),
+        ..addOption('output')
+        ..addFlag(
+          _check,
+          defaultsTo: false,
+          help: 'Evaluate changes without writing files',
+        )
+        ..addFlag(
+          _diff,
+          defaultsTo: false,
+          help: 'Attach unified diff metadata per changed target',
+        )
+        ..addFlag(
+          _backup,
+          defaultsTo: false,
+          help: 'Create timestamped backups before replacing targets',
+        )
+        ..addFlag(
+          _noOverwrite,
+          defaultsTo: false,
+          help: 'Block writes when target already exists',
+        ),
     ),
+  )
+  ..addCommand(
+    'doctor',
+    _commandParser()
+      ..addFlag('json', defaultsTo: false, help: 'Emit machine-readable JSON')
+      ..addOption(
+        'target',
+        help: 'Optional explicit websocket target URI to test reachability',
+      )
+      ..addOption(
+        'timeout-ms',
+        defaultsTo: '$_defaultDoctorTimeoutMs',
+        help: 'Per-check timeout in milliseconds',
+      ),
   );
 
 const _defaultHost = 'localhost';
@@ -548,6 +769,7 @@ const _defaultPort = 8181;
 const _defaultLogLevel = 'error';
 const _defaultStateFile = '.flutter_mcp/state.json';
 const _defaultFlutterDiscoveryTimeoutMs = 2500;
+const _defaultDoctorTimeoutMs = 2500;
 
 const _dartVmHost = 'dart-vm-host';
 const _dartVmPort = 'dart-vm-port';
@@ -563,3 +785,86 @@ const _dynamicRegistrySupported = 'dynamics';
 const _saveImagesToFiles = 'save-images';
 const _logLevel = 'log-level';
 const _help = 'help';
+const _check = 'check';
+const _diff = 'diff';
+const _backup = 'backup';
+const _noOverwrite = 'no-overwrite';
+
+String _usageExec() => '''
+Usage: flutter_mcp_cli exec --name <command> [--args <json>]
+
+Examples:
+  flutter_mcp_cli exec --name status --args '{}'
+  flutter_mcp_cli exec --name get_vm --args '{"connection":{"uri":"ws://127.0.0.1:8181/<token>/ws"}}'
+''';
+
+String _usageSchema() => '''
+Usage: flutter_mcp_cli schema [--name <command>]
+
+Examples:
+  flutter_mcp_cli schema
+  flutter_mcp_cli schema --name get_vm
+''';
+
+String _usageCapabilities() => '''
+Usage: flutter_mcp_cli capabilities
+
+Examples:
+  flutter_mcp_cli capabilities
+''';
+
+String _usageServe() => '''
+Usage: flutter_mcp_cli serve
+
+Examples:
+  flutter_mcp_cli serve
+''';
+
+String _usageSnapshot() => '''
+Usage:
+  flutter_mcp_cli snapshot create ...
+  flutter_mcp_cli snapshot diff ...
+
+Examples:
+  flutter_mcp_cli snapshot create --name baseline --args '{"commands":[{"name":"status","args":{}}]}'
+  flutter_mcp_cli snapshot diff --from baseline --to current
+''';
+
+String _usageSnapshotCreate() => '''
+Usage: flutter_mcp_cli snapshot create --name <id> [--args <json>] [--check] [--diff] [--backup] [--no-overwrite]
+
+Examples:
+  flutter_mcp_cli snapshot create --name baseline --args '{"commands":[{"name":"status","args":{}}]}'
+  flutter_mcp_cli snapshot create --name baseline --check --diff
+''';
+
+String _usageSnapshotDiff() => '''
+Usage: flutter_mcp_cli snapshot diff --from <id> --to <id>
+
+Examples:
+  flutter_mcp_cli snapshot diff --from baseline --to after_fix
+''';
+
+String _usageBundle() => '''
+Usage:
+  flutter_mcp_cli bundle create ...
+
+Examples:
+  flutter_mcp_cli bundle create --from-snapshot baseline --output .flutter_mcp/bundles/baseline
+''';
+
+String _usageBundleCreate() => '''
+Usage: flutter_mcp_cli bundle create --from-snapshot <id> [--output <dir>] [--check] [--diff] [--backup] [--no-overwrite]
+
+Examples:
+  flutter_mcp_cli bundle create --from-snapshot baseline --output ./bundle_out
+  flutter_mcp_cli bundle create --from-snapshot baseline --check --diff
+''';
+
+String _usageDoctor() => '''
+Usage: flutter_mcp_cli doctor [--json] [--target <ws_uri>] [--timeout-ms <n>]
+
+Examples:
+  flutter_mcp_cli doctor
+  flutter_mcp_cli doctor --json --target ws://127.0.0.1:8181/<token>/ws --timeout-ms 4000
+''';

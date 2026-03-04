@@ -14,6 +14,8 @@ import 'package:flutter_inspector_mcp_server/src/core/error_codes.dart';
 import 'package:flutter_inspector_mcp_server/src/core/executor.dart';
 import 'package:flutter_inspector_mcp_server/src/core/preconnect.dart';
 import 'package:flutter_inspector_mcp_server/src/core/results.dart';
+import 'package:flutter_inspector_mcp_server/src/core/runtime_version.dart';
+import 'package:flutter_inspector_mcp_server/src/core/safe_writes.dart';
 import 'package:flutter_inspector_mcp_server/src/core/session_manager.dart';
 import 'package:flutter_inspector_mcp_server/src/core/snapshot_store.dart';
 
@@ -100,7 +102,7 @@ final class CliDaemonServer {
     }
 
     if (method == r'$/cancelRequest') {
-      final params = _asMap(request['params']);
+      final params = _asMapOrEmpty(request['params']);
       final cancelId = params['id'];
       if (cancelId != null) {
         _cancelledRequestIds.add('$cancelId');
@@ -111,9 +113,16 @@ final class CliDaemonServer {
     final isNotification = !request.containsKey('id');
 
     try {
+      final paramsValue = request['params'];
+      if (paramsValue != null && paramsValue is! Map) {
+        throw const _JsonRpcException(
+          code: -32602,
+          message: 'Invalid params: params must be an object',
+        );
+      }
       final result = await _dispatch(
         method: method,
-        params: _asMap(request['params']),
+        params: _asMapOrEmpty(paramsValue),
         id: id,
       );
       if (!isNotification) {
@@ -165,7 +174,7 @@ final class CliDaemonServer {
     final capabilities = catalog.capabilities(configuration: configuration);
     return {
       'protocolVersion': capabilities.protocolVersion,
-      'serverInfo': {'name': 'flutter_mcp_cli', 'version': '2.0.0'},
+      'serverInfo': {'name': kFlutterMcpCliName, 'version': kFlutterMcpVersion},
       'capabilities': capabilities.toJson(),
     };
   }
@@ -176,7 +185,7 @@ final class CliDaemonServer {
   }
 
   Map<String, Object?> _handleSchema(final Map<String, Object?> params) {
-    final name = params['name']?.toString();
+    final name = _optionalString(params, 'name');
     try {
       return catalog.schema(name: name);
     } on ArgumentError catch (e) {
@@ -194,16 +203,9 @@ final class CliDaemonServer {
   }) async {
     _throwIfCancelled(id);
 
-    final name = params['name']?.toString();
-    if (name == null || name.isEmpty) {
-      throw _JsonRpcException(
-        code: -32602,
-        message: 'Invalid params: missing name',
-      );
-    }
-
-    final rawArgs = _asMap(params['args']);
-    final sessionId = params['sessionId']?.toString();
+    final name = _requiredString(params, 'name');
+    final rawArgs = _optionalObject(params, 'args');
+    final sessionId = _optionalString(params, 'sessionId');
     final argsResolution = resolveCommandArgumentsForExecution(
       commandName: name,
       arguments: rawArgs,
@@ -247,21 +249,27 @@ final class CliDaemonServer {
   Future<Map<String, Object?>> _handleWatchStart(
     final Map<String, Object?> params,
   ) async {
-    final name = params['name']?.toString();
-    if (name == null || name.isEmpty) {
+    final name = _requiredString(params, 'name');
+    final rawArgs = _optionalObject(params, 'args');
+    final sessionId = _optionalString(params, 'sessionId');
+    final intervalMs = _optionalInt(params, 'intervalMs', fallback: 1000);
+    final maxEvents = _optionalInt(params, 'maxEvents', fallback: 0);
+    final stopOnError = _optionalBool(params, 'stopOnError', fallback: false);
+
+    if (intervalMs <= 0) {
       throw _JsonRpcException(
         code: -32602,
-        message: 'Invalid params: missing name',
+        message: 'Invalid params: intervalMs must be > 0',
+      );
+    }
+    if (maxEvents < 0) {
+      throw _JsonRpcException(
+        code: -32602,
+        message: 'Invalid params: maxEvents must be >= 0',
       );
     }
 
-    final rawArgs = _asMap(params['args']);
-    final sessionId = params['sessionId']?.toString();
-    final intervalMs = _int(params['intervalMs'], fallback: 1000);
-    final maxEvents = _int(params['maxEvents'], fallback: 0);
-    final stopOnError = _bool(params['stopOnError'], fallback: false);
-
-    final watchIdRaw = params['watchId']?.toString();
+    final watchIdRaw = _optionalString(params, 'watchId');
     final watchId = (watchIdRaw == null || watchIdRaw.isEmpty)
         ? _nextWatchId()
         : watchIdRaw;
@@ -345,15 +353,14 @@ final class CliDaemonServer {
   Future<Map<String, Object?>> _handleSnapshotCreate(
     final Map<String, Object?> params,
   ) async {
-    final name = params['name']?.toString();
-    if (name == null || name.isEmpty) {
-      throw _JsonRpcException(
-        code: -32602,
-        message: 'Invalid params: missing name',
-      );
-    }
-
-    final args = _asMap(params['args']);
+    final name = _requiredString(params, 'name');
+    final args = _optionalObject(params, 'args');
+    final writeOptions = SafeWriteOptions(
+      check: _optionalBool(params, 'check', fallback: false),
+      diff: _optionalBool(params, 'diff', fallback: false),
+      backup: _optionalBool(params, 'backup', fallback: false),
+      noOverwrite: _optionalBool(params, 'noOverwrite', fallback: false),
+    );
 
     try {
       final snapshot = await snapshotStore.createSnapshot(
@@ -361,7 +368,18 @@ final class CliDaemonServer {
         executor: executor,
         catalog: catalog,
         args: args,
+        writeOptions: writeOptions,
       );
+      if (_containsBlockedWrite(snapshot)) {
+        throw _coreFailure(
+          CoreResult.failure(
+            code: CoreErrorCode.writeBlocked,
+            message:
+                'Snapshot target already exists and is blocked by noOverwrite',
+            details: snapshot,
+          ),
+        );
+      }
       return {'snapshot': snapshot};
     } on ArgumentError catch (e) {
       throw _JsonRpcException(
@@ -375,15 +393,8 @@ final class CliDaemonServer {
   Future<Map<String, Object?>> _handleSnapshotDiff(
     final Map<String, Object?> params,
   ) async {
-    final from = params['from']?.toString();
-    final to = params['to']?.toString();
-
-    if (from == null || from.isEmpty || to == null || to.isEmpty) {
-      throw _JsonRpcException(
-        code: -32602,
-        message: 'Invalid params: from and to are required',
-      );
-    }
+    final from = _requiredString(params, 'from');
+    final to = _requiredString(params, 'to');
 
     try {
       final diff = await snapshotStore.diffSnapshots(fromId: from, toId: to);
@@ -400,19 +411,28 @@ final class CliDaemonServer {
   Future<Map<String, Object?>> _handleBundleCreate(
     final Map<String, Object?> params,
   ) async {
-    final fromSnapshot = params['fromSnapshot']?.toString();
-    if (fromSnapshot == null || fromSnapshot.isEmpty) {
-      throw _JsonRpcException(
-        code: -32602,
-        message: 'Invalid params: fromSnapshot is required',
-      );
-    }
-
-    final outputDir = params['output']?.toString();
+    final fromSnapshot = _requiredString(params, 'fromSnapshot');
+    final outputDir = _optionalString(params, 'output');
+    final writeOptions = SafeWriteOptions(
+      check: _optionalBool(params, 'check', fallback: false),
+      diff: _optionalBool(params, 'diff', fallback: false),
+      backup: _optionalBool(params, 'backup', fallback: false),
+      noOverwrite: _optionalBool(params, 'noOverwrite', fallback: false),
+    );
     final bundle = await bundleBuilder.createBundle(
       fromSnapshot: fromSnapshot,
       outputDirectory: outputDir,
+      writeOptions: writeOptions,
     );
+    if (_containsBlockedWrite(bundle)) {
+      throw _coreFailure(
+        CoreResult.failure(
+          code: CoreErrorCode.writeBlocked,
+          message: 'Bundle target already exists and is blocked by noOverwrite',
+          details: bundle,
+        ),
+      );
+    }
 
     return {'bundle': bundle};
   }
@@ -565,7 +585,7 @@ final class CliDaemonServer {
   }
 
   void _emitSessionChanged(final CoreResult result) {
-    final data = _asMap(result.data);
+    final data = _asMapOrEmpty(result.data);
     final params = <String, Object?>{
       'sessionId': data['sessionId'] ?? result.meta['sessionId'],
       'activeSessionId': sessionManager.state.activeSessionId,
@@ -616,7 +636,7 @@ final class CliDaemonServer {
     return _JsonRpcException(
       code: _jsonRpcCodeFromDescriptor(descriptor),
       message: error.message,
-      data: {'error': error.toJson(), 'errorDescriptor': descriptor.toJson()},
+      data: {'error': error.toJson()},
     );
   }
 
@@ -667,7 +687,7 @@ final class CliDaemonServer {
     _stdout.writeln(jsonEncode(payload));
   }
 
-  Map<String, Object?> _asMap(final Object? value) {
+  Map<String, Object?> _asMapOrEmpty(final Object? value) {
     if (value is Map<String, Object?>) {
       return value;
     }
@@ -677,22 +697,126 @@ final class CliDaemonServer {
     return const <String, Object?>{};
   }
 
-  int _int(final Object? value, {required final int fallback}) {
-    return switch (value) {
-      final int v => v,
-      final num v => v.toInt(),
-      final String v => int.tryParse(v) ?? fallback,
-      _ => fallback,
-    };
+  Map<String, Object?> _optionalObject(
+    final Map<String, Object?> params,
+    final String key,
+  ) {
+    if (!params.containsKey(key) || params[key] == null) {
+      return const <String, Object?>{};
+    }
+
+    final value = params[key];
+    if (value is Map<String, Object?>) {
+      return value;
+    }
+    if (value is Map) {
+      return value.cast<String, Object?>();
+    }
+
+    throw _JsonRpcException(
+      code: -32602,
+      message: 'Invalid params: $key must be an object',
+    );
   }
 
-  bool _bool(final Object? value, {required final bool fallback}) {
-    return switch (value) {
-      final bool v => v,
-      final num v => v != 0,
-      final String v => bool.tryParse(v) ?? fallback,
-      _ => fallback,
-    };
+  String _requiredString(final Map<String, Object?> params, final String key) {
+    final value = params[key];
+    if (value == null) {
+      throw _JsonRpcException(
+        code: -32602,
+        message: 'Invalid params: missing $key',
+      );
+    }
+    if (value is! String) {
+      throw _JsonRpcException(
+        code: -32602,
+        message: 'Invalid params: $key must be a string',
+      );
+    }
+
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) {
+      throw _JsonRpcException(
+        code: -32602,
+        message: 'Invalid params: missing $key',
+      );
+    }
+    return trimmed;
+  }
+
+  String? _optionalString(final Map<String, Object?> params, final String key) {
+    if (!params.containsKey(key) || params[key] == null) {
+      return null;
+    }
+    final value = params[key];
+    if (value is! String) {
+      throw _JsonRpcException(
+        code: -32602,
+        message: 'Invalid params: $key must be a string',
+      );
+    }
+    final trimmed = value.trim();
+    return trimmed.isEmpty ? null : trimmed;
+  }
+
+  int _optionalInt(
+    final Map<String, Object?> params,
+    final String key, {
+    required final int fallback,
+  }) {
+    if (!params.containsKey(key) || params[key] == null) {
+      return fallback;
+    }
+
+    final value = params[key];
+    if (value case final int v) {
+      return v;
+    }
+    if (value case final num v when v == v.roundToDouble()) {
+      return v.toInt();
+    }
+
+    throw _JsonRpcException(
+      code: -32602,
+      message: 'Invalid params: $key must be an integer',
+    );
+  }
+
+  bool _optionalBool(
+    final Map<String, Object?> params,
+    final String key, {
+    required final bool fallback,
+  }) {
+    if (!params.containsKey(key) || params[key] == null) {
+      return fallback;
+    }
+
+    final value = params[key];
+    if (value is bool) {
+      return value;
+    }
+
+    throw _JsonRpcException(
+      code: -32602,
+      message: 'Invalid params: $key must be a boolean',
+    );
+  }
+
+  bool _containsBlockedWrite(final Object? payload) {
+    final map = _asMapOrEmpty(payload);
+    final writeResults = map['writeResults'];
+    if (writeResults is! List) {
+      return false;
+    }
+    for (final entry in writeResults) {
+      if (entry is! Map) {
+        continue;
+      }
+      if ('${entry['status'] ?? ''}' == SafeWriteStatus.blocked) {
+        return true;
+      }
+    }
+    return false;
   }
 
   String _nextWatchId() {

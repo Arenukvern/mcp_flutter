@@ -24,6 +24,19 @@ MCP transport is `stdin/stdout` (no inbound MCP TCP port).
 
 CLI note: `flutter_mcp_cli` has a separate `--log-level` default of `error`.
 
+## v3 Reliability Commands
+
+- Preflight diagnostics:
+  - `flutter_mcp_cli doctor --json`
+  - `flutter_mcp_cli doctor --json --target ws://127.0.0.1:8181/<token>/ws --timeout-ms 4000`
+- Safe write controls for `snapshot create` and `bundle create`:
+  - `--check` (no writes)
+  - `--diff` (unified diff metadata)
+  - `--backup` (timestamped backup before replace)
+  - `--no-overwrite` (block existing targets)
+
+Error codes and descriptor semantics are documented in [Error Code Playbook](/core/error_code_playbook).
+
 
 ## Connection Targeting
 
@@ -55,12 +68,21 @@ VM-dependent tool calls support optional `arguments.connection`:
 
 Supported fields:
 
-- `targetId` (preferred, full VM websocket URI)
+- `targetId` (full VM websocket URI)
 - `mode`: `auto`, `manual`, or `uri`
 - `host`
 - `port`
 - `uri`
 - `forceReconnect`
+
+### Zero-Mistake Rules
+
+Use these in order:
+
+1. **Safest**: set `connection.uri` to the exact `app.debugPort.wsUri` value from Flutter machine output.
+2. If you use `connection.targetId`, copy it exactly from `discover_debug_apps` / `availableTargets`.
+3. Never use plain `host:port` as `targetId` (rejected).
+4. If you get `target_not_found` with `targetId`, retry with `connection.uri` using exact `app.debugPort.wsUri`.
 
 Examples:
 
@@ -93,6 +115,8 @@ Examples:
 Important:
 
 - Legacy `host:port` values are rejected for `connection.targetId`.
+- `connection.uri` is the most robust selector because it preserves tokenized VM paths exactly.
+- Full tokenized URI `targetId` values are accepted. If discovery cannot resolve them, the server attempts direct connect using that URI.
 - Tool input schemas are strict: flat aliases like `arguments.port`, `arguments.host`, and `arguments.uri` are rejected.
 - `connect_debug_app` accepts the same `connection` object.
 - Dynamic registry tools (`listClientToolsAndResources`, `runClientTool`, `runClientResource`) also accept optional `connection`.

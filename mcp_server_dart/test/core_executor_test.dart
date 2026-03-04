@@ -153,6 +153,55 @@ void main() {
       expect(details?['availableTargets'], isA<List<Object?>>());
     });
 
+    test(
+      'tokenized targetId bypasses discovery lookup and attempts direct connect',
+      () async {
+        final logger =
+            (
+              final LoggingLevel level,
+              final String message, {
+              final String logger = 'test',
+            }) {};
+
+        final context = ConnectionContext(
+          defaultHost: 'localhost',
+          defaultPort: 8181,
+          logger: logger,
+          discoverPorts: () async => <int>[8181, 8182],
+        );
+
+        final localExecutor = DefaultCoreCommandExecutor(
+          connectionContext: context,
+          portScanner: CorePortScanner(logger: logger),
+          imageFileSaver: CoreImageFileSaver(logger: logger),
+          configuration: const CoreRuntimeConfiguration(
+            vmHost: 'localhost',
+            vmPort: 8181,
+            resourcesSupported: true,
+            imagesSupported: true,
+            dumpsSupported: false,
+            dynamicRegistrySupported: false,
+            saveImagesToFiles: false,
+          ),
+        );
+
+        final result = await localExecutor.execute(
+          const ConnectCommand(
+            mode: CoreConnectionMode.auto,
+            targetId: 'ws://127.0.0.1:9999/token/ws',
+          ),
+        );
+
+        expect(result.ok, isFalse);
+        expect(result.error?.code, equals(CoreErrorCode.connectFailed));
+
+        final details = result.error?.details;
+        if (details is Map<String, Object?>) {
+          expect(details['reason'], isNot(equals('target_not_found')));
+        }
+      },
+    );
+
     test('legacy host:port targetId returns migration error', () async {
       final logger =
           (

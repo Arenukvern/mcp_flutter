@@ -227,31 +227,30 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
     // Register as a standard MCP tool that forwards to the dynamic registry
     try {
       final toolkitServer = this as MCPToolkitServer;
-      registerTool(
-        tool,
-        (final request) async {
-          final ensure = await toolkitServer.connectionContext
-              .ensureConnectedWithPolicy();
-          if (!ensure.connected) {
-            final failure = CoreResult.failure(
-              code: ensure.code ?? CoreErrorCode.vmNotConnected,
-              message: ensure.message ?? 'VM service not connected',
-              details: ensure.details,
-            );
-            return toCallToolErrorResult(failure, prefix: 'Failed to connect');
-          }
+      registerTool(tool, (final request) async {
+        final ensure = await toolkitServer.connectionContext
+            .ensureConnectedWithPolicy();
+        if (!ensure.connected) {
+          final failure = CoreResult.failure(
+            code: ensure.code ?? CoreErrorCode.vmNotConnected,
+            message: ensure.message ?? 'VM service not connected',
+            details: ensure.details,
+          );
+          return toCallToolErrorResult(failure, prefix: 'Failed to connect');
+        }
 
-          return await registry.forwardToolCall(request.name, request.arguments) ??
-              CallToolResult(
-                content: [
-                  TextContent(
-                    text: 'Dynamic tool not available: ${request.name}',
-                  ),
-                ],
-                isError: true,
-              );
-        },
-      );
+        return await registry.forwardToolCall(
+              request.name,
+              request.arguments,
+            ) ??
+            toCallToolErrorResult(
+              CoreResult.failure(
+                code: CoreErrorCode.dynamicToolFailed,
+                message: 'Dynamic tool not available: ${request.name}',
+              ),
+              prefix: 'Dynamic tool execution failed',
+            );
+      });
 
       log(
         LoggingLevel.info,
@@ -326,13 +325,13 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
         final content = await registry.forwardResourceRead(request.uri);
         if (content != null) return content;
 
-        return ReadResourceResult(
-          contents: [
-            TextResourceContents(
-              uri: request.uri,
-              text: 'Dynamic resource not available: ${request.uri}',
-            ),
-          ],
+        return toReadResourceErrorResult(
+          uri: request.uri,
+          result: CoreResult.failure(
+            code: CoreErrorCode.dynamicResourceFailed,
+            message: 'Dynamic resource not available: ${request.uri}',
+          ),
+          prefix: 'Dynamic resource read failed',
         );
       });
 

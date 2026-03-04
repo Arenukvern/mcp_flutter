@@ -29,6 +29,7 @@ dart run mcp_server_dart/bin/flutter_mcp_cli.dart schema --name get_app_errors
 ## 2. Run One-Shot Health Checks
 
 ```bash
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart doctor --json
 dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec --name status --args '{}'
 dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec --name get_vm --args '{}'
 ```
@@ -51,7 +52,17 @@ dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec \
   --args '{"connection":{"targetId":"ws://127.0.0.1:59490/<token>/ws"}}'
 ```
 
-## 5. Use Session Lifecycle Commands
+## 5. Safest Explicit Targeting (Recommended)
+
+If you have Flutter machine output with `app.debugPort.wsUri`, prefer `connection.uri` and paste that value exactly:
+
+```bash
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec \
+  --name get_vm \
+  --args '{"connection":{"uri":"ws://127.0.0.1:59490/<token>/ws"}}'
+```
+
+## 6. Use Session Lifecycle Commands
 
 ```bash
 dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec --name session_start --args '{"mode":"uri","uri":"ws://127.0.0.1:8181/<token>/ws"}'
@@ -59,16 +70,18 @@ dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec --name session_exec --arg
 dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec --name session_end --args '{}'
 ```
 
-## 6. Create Reproducible Artifacts
+## 7. Create Reproducible Artifacts
 
 ```bash
-dart run mcp_server_dart/bin/flutter_mcp_cli.dart snapshot create --name baseline --args '{"commands":[{"name":"status","args":{}},{"name":"get_app_errors","args":{"count":5}}]}'
-dart run mcp_server_dart/bin/flutter_mcp_cli.dart snapshot create --name after_fix --args '{"commands":[{"name":"status","args":{}},{"name":"get_app_errors","args":{"count":5}}]}'
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart snapshot create --name baseline --args '{"commands":[{"name":"status","args":{}},{"name":"get_app_errors","args":{"count":5}}]}' --check --diff
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart snapshot create --name baseline --args '{"commands":[{"name":"status","args":{}},{"name":"get_app_errors","args":{"count":5}}]}' --backup
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart snapshot create --name after_fix --args '{"commands":[{"name":"status","args":{}},{"name":"get_app_errors","args":{"count":5}}]}' --no-overwrite
 dart run mcp_server_dart/bin/flutter_mcp_cli.dart snapshot diff --from baseline --to after_fix
-dart run mcp_server_dart/bin/flutter_mcp_cli.dart bundle create --from-snapshot after_fix
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart bundle create --from-snapshot after_fix --check --diff
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart bundle create --from-snapshot after_fix --backup
 ```
 
-## 7. CI Script Template
+## 8. CI Script Template
 
 ```bash
 #!/usr/bin/env bash
@@ -76,14 +89,16 @@ set -euo pipefail
 
 make install
 
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart doctor --json
 dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec --name status --args '{}'
 dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec --name get_app_errors --args '{"count":10}'
-dart run mcp_server_dart/bin/flutter_mcp_cli.dart snapshot create --name ci_run --args '{"commands":[{"name":"status","args":{}},{"name":"get_app_errors","args":{"count":10}}]}'
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart snapshot create --name ci_run --args '{"commands":[{"name":"status","args":{}},{"name":"get_app_errors","args":{"count":10}}]}' --check --diff
 ```
 
-## 8. Common Failure Recovery
+## 9. Common Failure Recovery
 
 - `connection_selection_required`: retry with `connection.targetId`.
+- `target_not_found` with `connection.targetId`: retry with `connection.uri` using exact `app.debugPort.wsUri`.
 - No data from app tools: ensure Flutter app is running in debug mode and `mcp_toolkit` is initialized.
 - Schema validation failures: use nested `connection` object, not flat `host`/`port` aliases.
 

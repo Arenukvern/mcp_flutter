@@ -8,7 +8,9 @@ import 'dart:convert';
 
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_inspector_mcp_server/src/core/commands.dart';
+import 'package:flutter_inspector_mcp_server/src/core/error_codes.dart';
 import 'package:flutter_inspector_mcp_server/src/core/executor.dart';
+import 'package:flutter_inspector_mcp_server/src/core/results.dart';
 import 'package:flutter_inspector_mcp_server/src/dynamic_registry/dynamic_registry.dart';
 import 'package:flutter_inspector_mcp_server/src/mixins/handlers/connection_override.dart';
 import 'package:flutter_inspector_mcp_server/src/server.dart';
@@ -103,7 +105,7 @@ final class DynamicRegistryTools {
   static final getRegistryStats = Tool(
     name: 'getRegistryStats',
     description: 'Get statistics about the dynamic registry',
-    inputSchema: ObjectSchema(
+    inputSchema: strictToolInputSchema(
       properties: {
         'includeAppDetails': Schema.bool(
           description: 'Include detailed app information (default: true)',
@@ -169,9 +171,12 @@ final class DynamicRegistryTools {
     final arguments = request.arguments;
     final toolName = jsonDecodeString(arguments?['toolName']);
     if (toolName.isEmpty) {
-      return CallToolResult(
-        content: [TextContent(text: 'Missing required parameter: toolName')],
-        isError: true,
+      return toCallToolErrorResult(
+        CoreResult.failure(
+          code: CoreErrorCode.missingToolName,
+          message: 'Missing required parameter: toolName',
+        ),
+        prefix: 'Dynamic tool execution failed',
       );
     }
 
@@ -184,7 +189,10 @@ final class DynamicRegistryTools {
     );
 
     if (!result.ok) {
-      return toCallToolErrorResult(result, prefix: 'Dynamic tool execution failed');
+      return toCallToolErrorResult(
+        result,
+        prefix: 'Dynamic tool execution failed',
+      );
     }
 
     final data = _map(result.data);
@@ -217,9 +225,12 @@ final class DynamicRegistryTools {
     final arguments = request.arguments;
     final resourceUri = jsonDecodeString(arguments?['resourceUri']);
     if (resourceUri.isEmpty) {
-      return CallToolResult(
-        content: [TextContent(text: 'Missing required parameter: resourceUri')],
-        isError: true,
+      return toCallToolErrorResult(
+        CoreResult.failure(
+          code: CoreErrorCode.missingResourceUri,
+          message: 'Missing required parameter: resourceUri',
+        ),
+        prefix: 'Dynamic resource read failed',
       );
     }
 
@@ -228,7 +239,10 @@ final class DynamicRegistryTools {
     );
 
     if (!result.ok) {
-      return toCallToolErrorResult(result, prefix: 'Dynamic resource read failed');
+      return toCallToolErrorResult(
+        result,
+        prefix: 'Dynamic resource read failed',
+      );
     }
 
     final data = _map(result.data);
@@ -270,7 +284,10 @@ final class DynamicRegistryTools {
     );
 
     if (!result.ok) {
-      return toCallToolErrorResult(result, prefix: 'Failed to get registry stats');
+      return toCallToolErrorResult(
+        result,
+        prefix: 'Failed to get registry stats',
+      );
     }
 
     return CallToolResult(

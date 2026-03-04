@@ -113,6 +113,10 @@
         {
           "title": "Built-in Tools",
           "href": "/core/built_in_tools"
+        },
+        {
+          "title": "Error Code Playbook",
+          "href": "/core/error_code_playbook"
         }
       ]
     },

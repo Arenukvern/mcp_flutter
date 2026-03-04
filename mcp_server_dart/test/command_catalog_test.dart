@@ -46,11 +46,43 @@ void main() {
         ),
       );
 
-      expect(capabilities.protocolVersion, equals('flutter-mcp-cli/2.0'));
+      expect(capabilities.protocolVersion, equals(kFlutterMcpProtocolVersion));
       expect(capabilities.schemaVersion, equals('command-catalog/v1'));
       expect(capabilities.providers['summaryProviders'], isNotNull);
       expect(capabilities.features['serve'], isTrue);
       expect(capabilities.commands, isNotEmpty);
+    });
+
+    test('rejects unknown keys when command schema is strict by default', () {
+      expect(
+        () => catalog.buildCommand('status', {'unexpected': true}),
+        throwsA(
+          isA<ArgumentError>().having(
+            (final error) => error.message,
+            'message',
+            contains('Unknown argument key'),
+          ),
+        ),
+      );
+    });
+
+    test('rejects string-encoded booleans where bool is required', () {
+      expect(
+        () => catalog.buildCommand('hot_reload_flutter', {'force': 'true'}),
+        throwsA(
+          isA<ArgumentError>().having(
+            (final error) => error.message,
+            'message',
+            contains('expected boolean'),
+          ),
+        ),
+      );
+    });
+
+    test('accepts correctly typed payloads', () {
+      final command = catalog.buildCommand('get_app_errors', {'count': 5});
+      expect(command, isA<GetAppErrorsCommand>());
+      expect((command as GetAppErrorsCommand).count, equals(5));
     });
 
     test('adds optional connection schema for VM and wrapper commands', () {

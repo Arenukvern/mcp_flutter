@@ -27,11 +27,8 @@ final class CoreError {
       'code': code,
       'message': message,
       'details': details,
-      'category': resolved.category,
-      'retryable': resolved.retryable,
-      'exitCode': resolved.exitCode,
-      'httpLikeStatus': resolved.httpLikeStatus,
       'descriptor': resolved.toJson(),
+      'recovery': recoveryForErrorCode(code, details: details),
     };
   }
 }

@@ -10,7 +10,7 @@ This project now uses a shared core execution layer:
 
 The shared core module is available as `flutter_mcp_core` inside this package.
 
-## CLI v2 Surface (Hard Break)
+## CLI v3 Surface (Hard Cut)
 
 The CLI is now agent-first and exposes a canonical interface:
 
@@ -21,11 +21,17 @@ The CLI is now agent-first and exposes a canonical interface:
 - `snapshot create --name <id> [--args <json>]`
 - `snapshot diff --from <id> --to <id>`
 - `bundle create --from-snapshot <id> [--output <dir>]`
+- `doctor [--json] [--target <path>] [--timeout-ms <n>]`
+
+Safe-write flags for write-producing commands:
+
+- `snapshot create`: `--check --diff --backup --no-overwrite`
+- `bundle create`: `--check --diff --backup --no-overwrite`
 
 `exec` targets commands in the shared `CommandCatalog`:
 `connect`, `session_start`, `session_exec`, `session_end`, `diagnose`, `watch`, `explain_errors`, `status`, `discover_debug_apps`, `get_vm`, `get_extension_rpcs`, `hot_reload_flutter`, `hot_restart_flutter`, `get_active_ports`, `get_app_errors`, `get_screenshots`, `get_view_details`, `debug_dump_layer_tree`, `debug_dump_semantics_tree`, `debug_dump_render_tree`, `debug_dump_focus_tree`, `listClientToolsAndResources`, `runClientTool`, `runClientResource`, `dynamicRegistryStats`.
 
-## CLI Quick Use (v2)
+## CLI Quick Use (v3)
 
 ```bash
 # introspection
@@ -43,10 +49,21 @@ dart run bin/flutter_mcp_cli.dart exec --name session_exec --args '{"command":"g
 dart run bin/flutter_mcp_cli.dart exec --name session_end --args '{}'
 
 # reproducible artifacts
-dart run bin/flutter_mcp_cli.dart snapshot create --name baseline --args '{"commands":[{"name":"status","args":{}}]}'
+dart run bin/flutter_mcp_cli.dart snapshot create --name baseline --args '{"commands":[{"name":"status","args":{}}]}' --check --diff
 dart run bin/flutter_mcp_cli.dart snapshot diff --from baseline --to after_fix
-dart run bin/flutter_mcp_cli.dart bundle create --from-snapshot baseline
+dart run bin/flutter_mcp_cli.dart bundle create --from-snapshot baseline --backup
+
+# environment preflight
+dart run bin/flutter_mcp_cli.dart doctor --json
 ```
+
+## Migration (v2.x -> v3.0.0)
+
+- Error metadata moved under `error.descriptor`; do not parse legacy top-level fields.
+- Typed arguments are strict. String-encoded booleans/objects/lists/integers now fail validation.
+- For write-producing automation, run with `--check --diff` before actual writes.
+- Handle `write_blocked` explicitly when using `--no-overwrite`.
+- Add `flutter_mcp_cli doctor --json` as preflight before VM-dependent execution.
 
 ### Machine Envelope
 
@@ -66,8 +83,10 @@ One-shot commands return one JSON envelope with stable fields:
 }
 ```
 
-Failures include deterministic policy metadata in `error`:
-`code`, `category`, `retryable`, `exitCode`, `httpLikeStatus`.
+Failures use one strict envelope in `error`:
+`code`, `message`, `details`, `descriptor` (`category`, `retryable`, `exitCode`, `httpLikeStatus`), `recovery`.
+
+The full contract table is documented in [docs/core/error_code_playbook.mdx](../docs/core/error_code_playbook.mdx).
 
 ### Daemon Protocol
 
@@ -111,6 +130,12 @@ Selection-required errors are returned as structured JSON so agents can retry im
 {
   "code": "connection_selection_required",
   "message": "Multiple debug targets detected. Retry with URI connection.targetId.",
+  "descriptor": {
+    "category": "validation",
+    "retryable": true,
+    "exitCode": 64,
+    "httpLikeStatus": 409
+  },
   "details": {
     "reason": "multiple_targets",
     "availableTargets": [
@@ -130,6 +155,10 @@ Selection-required errors are returned as structured JSON so agents can retry im
     "howToRetry": {
       "connection": {"targetId": "ws://127.0.0.1:8181/<token>/ws"}
     }
+  },
+  "recovery": {
+    "summary": "Select an explicit VM target and retry the command.",
+    "fix_command": "flutter_mcp_cli exec --name discover_debug_apps --args '{}'"
   }
 }
 ```
@@ -161,12 +190,20 @@ Notes:
 
 - `targetId` is the preferred selector and must be full VM websocket URI.
 - Legacy `host:port` target IDs are rejected; use URI target IDs or `connection.uri`.
+- Safest selector is `connection.uri` with exact Flutter machine `app.debugPort.wsUri`.
+- If `targetId` lookup misses but URI is a full tokenized VM path (`/<token>/ws`), server attempts direct connect fallback.
 - CLI `exec --args` and daemon `command/execute` / `watch/start` accept the same optional nested `connection` object.
 - `connect_debug_app` accepts the same `connection` shape.
 - Dynamic registry tools (`listClientToolsAndResources`, `runClientTool`, `runClientResource`) accept the same optional `connection`.
 - Resource reads also support query targeting: `targetId`, `mode`, `host`, `port`, `uri`, `forceReconnect`.
 - Flat top-level connection aliases like `host`/`port`/`uri` in tool arguments are intentionally rejected by strict schemas.
 - For `connect` and `session_start`, native selector args (`mode`, `targetId`, `host`, `port`, `uri`, `force`) cannot be mixed with nested `connection`.
+
+Zero-mistake recipe:
+
+1. Read machine `app.debugPort.wsUri`.
+2. Use `{"connection":{"uri":"<that exact wsUri>"}}`.
+3. If using `targetId`, copy exactly from `availableTargets` / `discover_debug_apps`.
 
 ### Flutter Web Discovery
 
@@ -224,7 +261,7 @@ For developers who want to contribute to the project or run the latest version d
      flutter:
        sdk: flutter
      # ... other dependencies
-     mcp_toolkit: ^0.4.0
+     mcp_toolkit: ^3.0.0
    ```
 
    Then run `flutter pub get` in your Flutter app's directory.
@@ -258,11 +295,11 @@ For developers who want to contribute to the project or run the latest version d
 
 5. **Start your Flutter app in debug mode**
 
-   ! Current workaround for security reasons is to run with `--disable-service-auth-codes`. If you know how to fix this, please let me know!
-
    ```bash
-   flutter run --debug --host-vmservice-port=8182 --dds-port=8181 --enable-vm-service --disable-service-auth-codes
+   flutter run --debug --host-vmservice-port=8182 --dds-port=8181 --enable-vm-service
    ```
+
+   Then prefer explicit URI targeting with exact `app.debugPort.wsUri` in `arguments.connection.uri`.
 
 6. **🛠️ Add Flutter Inspector to your AI tool**
 
