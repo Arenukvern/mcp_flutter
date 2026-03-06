@@ -23,3 +23,4 @@ Thumbs.db
 .env.local
 .env.*.local
 mcp_server_dart/flutter_inspector_mcp
+.web_probe_machine.log
