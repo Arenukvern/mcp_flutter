@@ -62,7 +62,7 @@ ${configuration.resourcesSupported ? '''
 - visual://localhost/view/screenshots: Get screenshots of all app views
 ''' : '''
 **Error & View Tools:**
-- get_view_errors: Get view errors with diagnostic information
+- get_app_errors: Get app errors with diagnostic information
 - get_view_details: Get detailed view information and widget tree
 - get_screenshots: Get screenshots of all views for visual debugging
 '''}
@@ -223,9 +223,10 @@ void registerAIWidgetInspector() { // Helper function for organization
 
 **For Runtime Debugging:**
 1. Always start with `listClientToolsAndResources` to see what's available
-2. Use `get_view_errors` if encountering UI issues
-3. Take `get_screenshots` for visual debugging before and after changes
-4. Use `hot_reload_flutter` after making code changes
+2. Run `get_extension_rpcs` and verify `ext.mcp.toolkit.app_errors`, `ext.mcp.toolkit.view_details`, and `ext.mcp.toolkit.view_screenshots` exist
+3. Use `get_app_errors` if encountering UI/runtime issues
+4. Take `get_screenshots` and `get_view_details` before and after changes
+5. Use `hot_reload_flutter` after making code changes
 
 **For Dynamic Experimentation:**
 1. Flutter apps can register new tools dynamically using `addMcpTool()`
@@ -242,11 +243,12 @@ void registerAIWidgetInspector() { // Helper function for organization
 **Common Debugging Workflow:**
 ```
 1. listClientToolsAndResources → discover available tools
-2. get_screenshots → visual state before changes  
-3. runClientTool → execute debugging tool
-4. hot_reload_flutter → apply any code changes
-5. get_screenshots → visual state after changes
-6. get_view_errors → check for any new issues
+2. get_extension_rpcs → confirm toolkit extensions are active
+3. get_screenshots + get_view_details → visual/layout state before changes
+4. runClientTool → execute debugging tool
+5. hot_reload_flutter → apply any code changes
+6. get_screenshots + get_view_details → visual/layout state after changes
+7. get_app_errors → check for any new issues
 ```
 
 **Custom Tool Creation Workflow (When Working with Flutter Codebase):**
@@ -264,6 +266,7 @@ void registerAIWidgetInspector() { // Helper function for organization
 
 - Flutter app must be running in **debug mode** with `--enable-vm-service` 
 `--host-vmservice-port=8182 --dds-port=8181 --disable-service-auth-codes` flags.
+- Flutter app must include and initialize `mcp_toolkit`; otherwise app-level tools (screenshots/view details/app errors) cannot work.
 - Default connection mode: auto-discover active Flutter debug targets.
 - Explicit selection: use `connection.targetId` with full VM websocket URI or `connection.uri`.
 - Dynamic tools register automatically when app calls `addMcpTool()`

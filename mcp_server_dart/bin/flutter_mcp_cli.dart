@@ -755,7 +755,9 @@ final _argParser = ArgParser(allowTrailingOptions: false)
       ..addFlag('json', defaultsTo: false, help: 'Emit machine-readable JSON')
       ..addOption(
         'target',
-        help: 'Optional explicit websocket target URI to test reachability',
+        help:
+            'Optional explicit websocket target URI to test reachability '
+            '(use exact app.debugPort.wsUri).',
       )
       ..addOption(
         'timeout-ms',
@@ -796,6 +798,17 @@ Usage: flutter_mcp_cli exec --name <command> [--args <json>]
 Examples:
   flutter_mcp_cli exec --name status --args '{}'
   flutter_mcp_cli exec --name get_vm --args '{"connection":{"uri":"ws://127.0.0.1:8181/<token>/ws"}}'
+  flutter_mcp_cli exec --name get_extension_rpcs --args '{}'
+  flutter_mcp_cli exec --name get_screenshots --args '{}'
+  flutter_mcp_cli exec --name get_view_details --args '{}'
+
+CLI-first runtime validation sequence:
+  1) get_extension_rpcs -> confirm ext.mcp.toolkit.app_errors/view_details/view_screenshots
+  2) get_screenshots + get_view_details -> visual/layout baseline
+  3) get_app_errors -> runtime error context
+
+If connection_selection_required appears:
+  retry with args.connection.targetId or args.connection.uri (exact app.debugPort.wsUri).
 ''';
 
 String _usageSchema() => '''
@@ -867,4 +880,12 @@ Usage: flutter_mcp_cli doctor [--json] [--target <ws_uri>] [--timeout-ms <n>]
 Examples:
   flutter_mcp_cli doctor
   flutter_mcp_cli doctor --json --target ws://127.0.0.1:8181/<token>/ws --timeout-ms 4000
+
+Doctor checks include:
+  - VM reachability
+  - required mcp_toolkit extensions for app inspection
+  - dynamic registry availability
+
+If mcp_toolkit_extensions fails, screenshot/layout/error inspection is not reliable
+until app instrumentation is fixed and app is hot restarted or rerun.
 ''';

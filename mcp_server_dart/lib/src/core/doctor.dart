@@ -10,6 +10,7 @@ import 'package:flutter_inspector_mcp_server/src/core/connection_context.dart';
 import 'package:flutter_inspector_mcp_server/src/core/core_types.dart';
 import 'package:flutter_inspector_mcp_server/src/core/error_codes.dart';
 import 'package:flutter_inspector_mcp_server/src/core/executor.dart';
+import 'package:flutter_inspector_mcp_server/src/mixins/mcp_toolkit_consts.dart';
 
 enum DoctorCheckStatus { pass, warn, fail }
 
@@ -38,6 +39,7 @@ final class DoctorRunner {
     checks.add(await _checkFlutterSdk(timeout: timeout));
     checks.add(await _checkStatePathWritable());
     checks.add(await _checkVmTargetReachable(target: target, timeout: timeout));
+    checks.add(await _checkToolkitExtensions(timeout: timeout));
     checks.add(await _checkDynamicRegistryAvailable(timeout: timeout));
 
     final passCount = checks.where((final c) => c['status'] == 'pass').length;
@@ -360,6 +362,100 @@ final class DoctorRunner {
         diagnostic: 'Dynamic registry check failed unexpectedly: $error',
         fixCommand:
             'Verify app-side dynamic registry initialization and retry doctor.',
+      );
+    }
+  }
+
+  Future<Map<String, Object?>> _checkToolkitExtensions({
+    required final Duration timeout,
+  }) async {
+    try {
+      final result = await executor
+          .execute(const GetExtensionRpcsCommand())
+          .timeout(timeout);
+
+      if (!result.ok) {
+        final errorCode = result.error?.code;
+        final status =
+            (errorCode == CoreErrorCode.vmNotConnected ||
+                errorCode == CoreErrorCode.connectionSelectionRequired ||
+                errorCode == CoreErrorCode.connectFailed)
+            ? DoctorCheckStatus.warn
+            : DoctorCheckStatus.fail;
+
+        return _check(
+          id: 'mcp_toolkit_extensions',
+          status: status,
+          critical: false,
+          diagnostic:
+              'Failed to read extension RPCs: '
+              '${result.error?.message ?? 'unknown error'}',
+          fixCommand:
+              'Run `flutter_mcp_cli exec --name get_extension_rpcs --args "{}"`. '
+              'If unavailable, install and initialize mcp_toolkit, then hot restart '
+              'or rerun the app in debug mode.',
+        );
+      }
+
+      final extensionList = switch (result.data) {
+        final List values => values.map((final value) => '$value').toSet(),
+        _ => <String>{},
+      };
+
+      final requiredExtensions = <String>{
+        mcpToolkitExtKeys.appErrors,
+        mcpToolkitExtKeys.viewDetails,
+        mcpToolkitExtKeys.viewScreenshots,
+      };
+      final missing = requiredExtensions.difference(extensionList).toList()
+        ..sort();
+
+      if (missing.isNotEmpty) {
+        return _check(
+          id: 'mcp_toolkit_extensions',
+          status: DoctorCheckStatus.fail,
+          critical: false,
+          diagnostic:
+              'Missing required toolkit extensions: ${missing.join(', ')}',
+          fixCommand:
+              'App-level inspection is blocked. Ensure '
+              '`MCPToolkitBinding.instance..initialize()..initializeFlutterToolkit();` '
+              'runs before `runApp`, '
+              'then hot restart or rerun the app. If app cannot be modified, skip '
+              'screenshot/layout/error inspection claims.',
+        );
+      }
+
+      return _check(
+        id: 'mcp_toolkit_extensions',
+        status: DoctorCheckStatus.pass,
+        critical: false,
+        diagnostic:
+            'Required toolkit extensions detected '
+            '(${requiredExtensions.length}/${requiredExtensions.length}).',
+        fixCommand:
+            'If screenshots are blank, keep app window visible/foreground and '
+            'retry get_screenshots.',
+      );
+    } on TimeoutException {
+      return _check(
+        id: 'mcp_toolkit_extensions',
+        status: DoctorCheckStatus.warn,
+        critical: false,
+        diagnostic:
+            'Extension RPC check timed out after ${timeout.inMilliseconds}ms',
+        fixCommand:
+            'Increase --timeout-ms or retry with explicit --target <ws_uri>.',
+      );
+    } on Exception catch (error) {
+      return _check(
+        id: 'mcp_toolkit_extensions',
+        status: DoctorCheckStatus.warn,
+        critical: false,
+        diagnostic: 'Extension RPC check failed unexpectedly: $error',
+        fixCommand:
+            'Retry with exact app.debugPort.wsUri target. If app was just '
+            'instrumented, perform full restart and re-run doctor.',
       );
     }
   }

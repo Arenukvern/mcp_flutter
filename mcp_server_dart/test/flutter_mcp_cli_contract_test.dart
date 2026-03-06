@@ -83,6 +83,7 @@ void main() {
           'flutter_sdk',
           'state_path_writable',
           'vm_target_reachable',
+          'mcp_toolkit_extensions',
           'dynamic_registry_available',
         };
         expect(byId.keys.toSet(), containsAll(expectedIds));

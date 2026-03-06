@@ -79,10 +79,21 @@ Pick one and merge a `flutter-inspector` server entry (do not delete existing se
 Run these checks in the assistant:
 
 1. List tools from `flutter-inspector`
-2. Take a screenshot
-3. Get app errors
+2. Get extension RPCs and verify:
+   - `ext.mcp.toolkit.app_errors`
+   - `ext.mcp.toolkit.view_details`
+   - `ext.mcp.toolkit.view_screenshots`
+3. Take a screenshot
+4. Get view details (layout metadata)
+5. Get app errors
 
 If response is `connection_selection_required`, retry with `arguments.connection.targetId` from `availableTargets`.
+
+If toolkit extension RPCs are missing, do not claim app-level inspection success:
+
+- Ensure `mcp_toolkit` is installed and initialized in app startup.
+- Restart debug app and retry `get_extension_rpcs`.
+- If app cannot be modified, report that Flutter MCP cannot plug into this app for screenshots/layout/errors.
 
 ## 7. Escalation
 

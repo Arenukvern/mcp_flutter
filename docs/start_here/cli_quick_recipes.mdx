@@ -34,7 +34,26 @@ dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec --name status --args '{}'
 dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec --name get_vm --args '{}'
 ```
 
-## 3. Pull Common Debug Data
+## 3. CLI-First Runtime Preflight (Required Before App Inspection)
+
+```bash
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec --name get_extension_rpcs --args '{}'
+```
+
+Confirm these extensions exist before claiming screenshot/layout/error inspection works:
+
+- `ext.mcp.toolkit.app_errors`
+- `ext.mcp.toolkit.view_details`
+- `ext.mcp.toolkit.view_screenshots`
+
+If any are missing:
+
+- Add `mcp_toolkit` to app dependencies.
+- Ensure startup initializes toolkit before `runApp`:
+  `MCPToolkitBinding.instance..initialize()..initializeFlutterToolkit();`
+- Run full restart (`hot_restart_flutter` or rerun app), then retry `get_extension_rpcs`.
+
+## 4. Pull Common Debug Data
 
 ```bash
 dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec --name get_app_errors --args '{"count":5}'
@@ -42,7 +61,20 @@ dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec --name get_view_details -
 dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec --name get_screenshots --args '{}'
 ```
 
-## 4. Handle Multiple Debug Targets Explicitly
+## 5. Verify Runtime Changes (Agent-Style)
+
+```bash
+# baseline visual/layout state
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec --name get_screenshots --args '{}'
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec --name get_view_details --args '{}'
+
+# after code edits
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec --name hot_reload_flutter --args '{}'
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec --name get_screenshots --args '{}'
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec --name get_view_details --args '{}'
+```
+
+## 6. Handle Multiple Debug Targets Explicitly
 
 When calls fail with `connection_selection_required`, retry with a target URI:
 
@@ -52,7 +84,7 @@ dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec \
   --args '{"connection":{"targetId":"ws://127.0.0.1:59490/<token>/ws"}}'
 ```
 
-## 5. Safest Explicit Targeting (Recommended)
+## 7. Safest Explicit Targeting (Recommended)
 
 If you have Flutter machine output with `app.debugPort.wsUri`, prefer `connection.uri` and paste that value exactly:
 
@@ -62,7 +94,7 @@ dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec \
   --args '{"connection":{"uri":"ws://127.0.0.1:59490/<token>/ws"}}'
 ```
 
-## 6. Use Session Lifecycle Commands
+## 8. Use Session Lifecycle Commands
 
 ```bash
 dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec --name session_start --args '{"mode":"uri","uri":"ws://127.0.0.1:8181/<token>/ws"}'
@@ -70,7 +102,7 @@ dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec --name session_exec --arg
 dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec --name session_end --args '{}'
 ```
 
-## 7. Create Reproducible Artifacts
+## 9. Create Reproducible Artifacts
 
 ```bash
 dart run mcp_server_dart/bin/flutter_mcp_cli.dart snapshot create --name baseline --args '{"commands":[{"name":"status","args":{}},{"name":"get_app_errors","args":{"count":5}}]}' --check --diff
@@ -81,7 +113,7 @@ dart run mcp_server_dart/bin/flutter_mcp_cli.dart bundle create --from-snapshot 
 dart run mcp_server_dart/bin/flutter_mcp_cli.dart bundle create --from-snapshot after_fix --backup
 ```
 
-## 8. CI Script Template
+## 10. CI Script Template
 
 ```bash
 #!/usr/bin/env bash
@@ -90,16 +122,20 @@ set -euo pipefail
 make install
 
 dart run mcp_server_dart/bin/flutter_mcp_cli.dart doctor --json
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec --name get_extension_rpcs --args '{}'
 dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec --name status --args '{}'
 dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec --name get_app_errors --args '{"count":10}'
 dart run mcp_server_dart/bin/flutter_mcp_cli.dart snapshot create --name ci_run --args '{"commands":[{"name":"status","args":{}},{"name":"get_app_errors","args":{"count":10}}]}' --check --diff
 ```
 
-## 9. Common Failure Recovery
+## 11. Common Failure Recovery
 
 - `connection_selection_required`: retry with `connection.targetId`.
 - `target_not_found` with `connection.targetId`: retry with `connection.uri` using exact `app.debugPort.wsUri`.
-- No data from app tools: ensure Flutter app is running in debug mode and `mcp_toolkit` is initialized.
+- `mcp_toolkit` extensions missing: app cannot be inspected via screenshot/layout/errors until toolkit is installed, initialized, and app is restarted.
+- Screenshots are blank or stale: ensure app window is visible/foreground (not minimized/headless), then retry `get_screenshots`.
+- App was just instrumented but extensions still missing: hot reload may be insufficient; run `hot_restart_flutter` or rerun app.
+- No data from app tools: ensure Flutter app is running in debug mode and VM service is enabled.
 - Schema validation failures: use nested `connection` object, not flat `host`/`port` aliases.
 
 ## Related Docs

@@ -1,6 +1,6 @@
 # AI Agent Execution Playbook
 
-Use this when you are an agent performing install/config steps end to end.
+Use this when you are an agent performing install/config steps end to end and validating a live app (not test-only validation).
 
 ## Inputs To Collect First
 
@@ -54,12 +54,48 @@ Pick one guide:
 - [Cursor](/ai_agents/cursor)
 - [Claude](/ai_agents/claude)
 
-## Step 5. Validate
+## Step 5. Preflight: Confirm App Instrumentation
+
+Before asking for screenshots/layout/errors, verify that the app exposes toolkit service extensions.
 
 Ask the assistant to run:
 
 1. "List available MCP tools for flutter-inspector"
-2. "Take a screenshot of the app"
+2. "Get extension RPCs from the connected Flutter app"
+
+Required extension RPCs:
+
+- `ext.mcp.toolkit.app_errors`
+- `ext.mcp.toolkit.view_details`
+- `ext.mcp.toolkit.view_screenshots`
+
+If these are missing, do not continue app-level inspection.
+
+- Re-check that `mcp_toolkit` is installed in `pubspec.yaml`.
+- Re-check `MCPToolkitBinding.instance..initialize()..initializeFlutterToolkit();`.
+- Hot restart the Flutter app and retry `get_extension_rpcs`.
+
+If the app cannot be modified (for example third-party binary or restricted environment), report clearly that Flutter MCP cannot plug into this app and skip screenshot/layout/error claims.
+
+## Step 6. Validate Like A Runtime Agent
+
+Run this sequence after preflight succeeds:
+
+1. "Take a screenshot of the app"
+2. "Get view details (layout metadata)"
 3. "Get app errors"
+4. Optional when server was started with `--dumps`: "Dump render tree"
+5. After any code edit: "Hot reload and take another screenshot"
+
+Use before/after screenshots and view details as proof that the runtime change actually took effect.
+
+## Step 7. Resolve Common Runtime Challenges
 
 If tool calls fail with `connection_selection_required`, retry with `arguments.connection.targetId` or exact `arguments.connection.uri` from Flutter machine `app.debugPort.wsUri`.
+
+Also handle:
+
+- `target_not_found`: refresh targets, then prefer exact `arguments.connection.uri`.
+- Empty screenshot output: verify server was not started with `--no-images`.
+- Missing view resource/tool: verify server was not started with `--no-resources`.
+- App not reachable: confirm Flutter app is running in debug mode with VM service enabled.

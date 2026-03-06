@@ -6,6 +6,7 @@
    - Verify the port matches in both Flutter app and MCP server
    - Check if the port is not being used by another process
    - Run `flutter_mcp_cli doctor --json` for preflight diagnostics
+   - Run `flutter_mcp_cli exec --name get_extension_rpcs --args '{}'` before app-level inspection
    - Safest selector: use `arguments.connection.uri` and paste exact Flutter machine `app.debugPort.wsUri`
    - If you get `connection_selection_required`, retry with `arguments.connection.targetId` using one URI from `availableTargets` (or call `connect_debug_app` first)
    - Do not use `host:port` for `targetId`; use full VM websocket URI or `arguments.connection.uri`
@@ -22,13 +23,26 @@
    - Use `listClientToolsAndResources` to verify registration
    - Hot reload your Flutter app after adding new tools
 
-4. **`connection_selection_required` Errors**
+4. **Missing `mcp_toolkit` Extensions (`Cannot Plug Into App`)**
+
+   - Symptom: `get_extension_rpcs` is missing `ext.mcp.toolkit.app_errors`, `ext.mcp.toolkit.view_details`, or `ext.mcp.toolkit.view_screenshots`
+   - Ensure startup includes `MCPToolkitBinding.instance..initialize()..initializeFlutterToolkit();`
+   - Hot reload may not be enough after instrumentation changes; run hot restart or rerun the app
+   - If the app cannot be modified, do not claim screenshot/layout/error inspection works
+
+5. **Blank Screenshots**
+
+   - Ensure server runs with images enabled (`--images`)
+   - Keep app window visible and foreground; minimized/headless windows can produce blank captures
+   - Retry with `flutter_mcp_cli exec --name get_screenshots --args '{}'`
+
+6. **`connection_selection_required` Errors**
 
    - This means multiple debug targets are available and the server needs an explicit target.
    - Use the returned `availableTargets` list and retry with `connection.targetId`.
    - Example: `"arguments": {"connection": {"targetId": "ws://127.0.0.1:59490/<token>/ws"}}`
 
-5. **`target_not_found` Errors**
+7. **`target_not_found` Errors**
 
    - This means the provided `connection.targetId` was not in current discovery results.
    - Retry with `arguments.connection.uri` using exact `app.debugPort.wsUri` from Flutter machine output.

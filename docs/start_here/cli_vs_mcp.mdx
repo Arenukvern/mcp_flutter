@@ -5,6 +5,8 @@ Both interfaces are valid and both execute the same core command catalog.
 - `flutter_mcp_cli`: direct command-line interface for scripts, CI, snapshots, and deterministic automation.
 - `flutter_inspector_mcp` (MCP server): assistant-facing interface over MCP for Codex/Claude/Cursor workflows.
 
+Recommended default: start with CLI, then layer MCP client workflows on top.
+
 ## Why We Have Both
 
 They solve different UX problems:
@@ -33,6 +35,7 @@ Use CLI when you need:
 - artifacts (`snapshot create`, `snapshot diff`, `bundle create`)
 - non-interactive CI jobs
 - explicit one-shot command execution in terminal
+- reliable preflight gating before app-level inspection (`doctor`, `get_extension_rpcs`)
 
 Example:
 
@@ -64,15 +67,16 @@ Example (conceptual):
 
 A common pattern:
 
-1. Use MCP in editor/chat for day-to-day debugging and iteration.
-2. Use CLI in CI or local scripts to create reproducible diagnostics artifacts.
-3. Share output or artifacts back into assistant workflows.
+1. Start with CLI preflight: `doctor --json` and `get_extension_rpcs`.
+2. Use CLI for reproducible screenshot/layout/error baselines.
+3. Use MCP in editor/chat for interactive follow-up loops.
+4. Share CLI outputs/artifacts back into assistant workflows.
 
 ## Decision Guide
 
-- Need interactive assistant workflow right now: use MCP.
-- Need deterministic automation or CI: use CLI.
-- Need both interactive and reproducible workflows: use both.
+- Need deterministic automation, CI, or trustworthy runtime gating: use CLI first.
+- Need interactive assistant workflow right now: use MCP after CLI preflight.
+- Need both interactive and reproducible workflows: use both (CLI baseline + MCP iteration).
 
 ## Important Parity Notes
 
