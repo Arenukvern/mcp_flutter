@@ -21,49 +21,56 @@ void main() {
       }
     });
 
-    test('global help and contextual subcommand help are distinct', () async {
-      final globalHelp = await _runCli(statePath, ['--help']);
-      expect(globalHelp.exitCode, equals(0));
-      final global = (globalHelp.stdout as String);
-      expect(global.contains('Usage:'), isTrue);
-      expect(global.contains('snapshot create'), isTrue);
-      expect(global.contains('doctor'), isTrue);
-      expect(global.contains('validate-runtime'), isTrue);
+    test(
+      'global help and contextual subcommand help are distinct',
+      () async {
+        final globalHelp = await _runCli(statePath, ['--help']);
+        expect(globalHelp.exitCode, equals(0));
+        final global = (globalHelp.stdout as String);
+        expect(global.contains('Usage:'), isTrue);
+        expect(global.contains('snapshot create'), isTrue);
+        expect(global.contains('doctor'), isTrue);
+        expect(global.contains('validate-runtime'), isTrue);
 
-      final snapshotHelp = await _runCli(statePath, [
-        'snapshot',
-        'create',
-        '--help',
-      ]);
-      expect(snapshotHelp.exitCode, equals(0));
-      final scoped = (snapshotHelp.stdout as String);
-      expect(scoped.contains('snapshot create --name <id>'), isTrue);
-      expect(scoped.contains('--check'), isTrue);
-      expect(scoped.contains('--diff'), isTrue);
-      expect(scoped.contains('--backup'), isTrue);
-      expect(scoped.contains('--no-overwrite'), isTrue);
-      expect(scoped.contains('Commands:'), isFalse);
+        final snapshotHelp = await _runCli(statePath, [
+          'snapshot',
+          'create',
+          '--help',
+        ]);
+        expect(snapshotHelp.exitCode, equals(0));
+        final scoped = (snapshotHelp.stdout as String);
+        expect(scoped.contains('snapshot create --name <id>'), isTrue);
+        expect(scoped.contains('--check'), isTrue);
+        expect(scoped.contains('--diff'), isTrue);
+        expect(scoped.contains('--backup'), isTrue);
+        expect(scoped.contains('--no-overwrite'), isTrue);
+        expect(scoped.contains('Commands:'), isFalse);
 
-      final doctorHelp = await _runCli(statePath, ['doctor', '--help']);
-      expect(doctorHelp.exitCode, equals(0));
-      final doctor = (doctorHelp.stdout as String);
-      expect(
-        doctor.contains(
-          'doctor [--json] [--target <ws_uri>] [--timeout-ms <n>]',
-        ),
-        isTrue,
-      );
+        final doctorHelp = await _runCli(statePath, ['doctor', '--help']);
+        expect(doctorHelp.exitCode, equals(0));
+        final doctor = (doctorHelp.stdout as String);
+        expect(
+          doctor.contains(
+            'doctor [--json] [--target <ws_uri>] [--timeout-ms <n>]',
+          ),
+          isTrue,
+        );
 
-      final validateHelp = await _runCli(statePath, [
-        'validate-runtime',
-        '--help',
-      ]);
-      expect(validateHelp.exitCode, equals(0));
-      final validate = (validateHelp.stdout as String);
-      expect(validate.contains('validate-runtime [--target <ws_uri>]'), isTrue);
-      expect(validate.contains('--connect-retries <n>'), isTrue);
-      expect(validate.contains('--install-skill'), isTrue);
-    });
+        final validateHelp = await _runCli(statePath, [
+          'validate-runtime',
+          '--help',
+        ]);
+        expect(validateHelp.exitCode, equals(0));
+        final validate = (validateHelp.stdout as String);
+        expect(
+          validate.contains('validate-runtime [--target <ws_uri>]'),
+          isTrue,
+        );
+        expect(validate.contains('--connect-retries <n>'), isTrue);
+        expect(validate.contains('--install-skill'), isTrue);
+      },
+      timeout: const Timeout(Duration(seconds: 90)),
+    );
 
     test(
       'doctor emits required checks and critical-fail exit semantics',

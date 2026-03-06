@@ -885,7 +885,7 @@ int _copyDirectoryContents({
 }) {
   var filesCopied = 0;
   for (final entity in source.listSync(followLinks: false)) {
-    final name = entity.uri.pathSegments.last;
+    final name = _lastPathSegment(entity.path);
     final targetPath = '${destination.path}/$name';
 
     if (entity is io.Directory) {
@@ -907,6 +907,16 @@ int _copyDirectoryContents({
   }
 
   return filesCopied;
+}
+
+String _lastPathSegment(final String path) {
+  var normalized = path;
+  final separator = io.Platform.pathSeparator;
+  while (normalized.endsWith(separator)) {
+    normalized = normalized.substring(0, normalized.length - 1);
+  }
+  final parts = normalized.split(separator);
+  return parts.isEmpty ? normalized : parts.last;
 }
 
 String? _nonEmptyOption(final String? value) {
