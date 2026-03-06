@@ -1,0 +1,54 @@
+---
+name: flutter-mcp-cli-runtime-validation
+description: Run Flutter MCP runtime validation from CLI in two steps (launch app, then run validate-runtime), including toolkit-extension gating, screenshot/layout capture, app error collection, optional reload verification, and retry handling for transient first-connect failures.
+---
+
+# Flutter MCP CLI Runtime Validation
+
+Use this skill when you need agent-style runtime validation through `flutter_mcp_cli` with minimal operator steps.
+
+## Two-Step Flow
+
+1. Launch the Flutter app in debug mode.
+2. Run one CLI command:
+
+```bash
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart --save-images validate-runtime \
+  --target ws://127.0.0.1:8181/<token>/ws \
+  --timeout-ms 10000 \
+  --after-reload
+```
+
+Optional skill install in the same command:
+
+```bash
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart validate-runtime \
+  --target ws://127.0.0.1:8181/<token>/ws \
+  --install-skill
+```
+
+## What `validate-runtime` Must Prove
+
+- Doctor preflight passes critical checks.
+- Required toolkit extensions exist:
+  - `ext.mcp.toolkit.app_errors`
+  - `ext.mcp.toolkit.view_details`
+  - `ext.mcp.toolkit.view_screenshots`
+- Screenshot capture works.
+- View details (layout metadata) are available.
+- App errors are retrievable.
+- If `--after-reload` is enabled, post-reload screenshot also works.
+
+## Output Handling
+
+- Use `data.summary` as pass/fail status for automation.
+- Use `data.steps` for per-step evidence and retries.
+- Use `data.doctor.checks` to explain setup blockers.
+- When `--save-images` is enabled, read screenshot file URLs from step data.
+
+## Failure Rules
+
+- If toolkit extensions are missing, stop and report instrumentation gap.
+- If first explicit URI connect fails, retry is automatic for retryable connection errors.
+- If screenshots are blank, verify app window is visible and retry.
+- If app cannot be instrumented, do not claim screenshot/layout/error inspection success.

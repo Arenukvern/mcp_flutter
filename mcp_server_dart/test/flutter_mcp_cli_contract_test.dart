@@ -62,6 +62,7 @@ void main() {
       final validate = (validateHelp.stdout as String);
       expect(validate.contains('validate-runtime [--target <ws_uri>]'), isTrue);
       expect(validate.contains('--connect-retries <n>'), isTrue);
+      expect(validate.contains('--install-skill'), isTrue);
     });
 
     test(

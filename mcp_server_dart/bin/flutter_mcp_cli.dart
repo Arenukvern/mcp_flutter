@@ -407,6 +407,25 @@ Future<CoreResult> _runValidateRuntime({
     fallback: _defaultValidateRuntimeConnectRetries,
   );
   final afterReload = command.flag('after-reload');
+  final installSkill = command.flag('install-skill');
+  final forceSkillInstall = command.flag('force-skill-install');
+  final skillDestination = _nonEmptyOption(command.option('skill-destination'));
+
+  Map<String, Object?>? skillInstallData;
+  if (installSkill) {
+    final installResult = _installBundledSkill(
+      destinationRoot: skillDestination,
+      force: forceSkillInstall,
+    );
+    if (!installResult.ok) {
+      return installResult;
+    }
+    skillInstallData = switch (installResult.data) {
+      final Map<String, Object?> value => value,
+      final Map value => value.cast<String, Object?>(),
+      _ => null,
+    };
+  }
 
   final doctorData = await doctorRunner.run(target: target, timeout: timeout);
   if (_doctorHasCriticalFailures(doctorData)) {
@@ -591,6 +610,7 @@ Future<CoreResult> _runValidateRuntime({
         'afterReload': afterReload,
         'errorsCount': errorsCount,
         'requiredExtensions': requiredSorted,
+        'skillInstallation': skillInstallData,
       },
     },
   );
@@ -770,6 +790,123 @@ Future<({CoreResult result, int attempts})> _executeWithRetry({
   }
 
   return (result: result, attempts: retriesUsed + 1);
+}
+
+CoreResult _installBundledSkill({
+  final String skillName = _runtimeValidationSkillName,
+  final String? destinationRoot,
+  final bool force = false,
+}) {
+  final sourceDir = _resolveBundledSkillSource(skillName);
+  if (sourceDir == null) {
+    return CoreResult.failure(
+      code: CoreErrorCode.invalidCommand,
+      message:
+          'Bundled skill "$skillName" was not found in this repository layout.',
+      details: {
+        'expected': ['mcp_server_dart/skills/$skillName', 'skills/$skillName'],
+      },
+    );
+  }
+
+  final codexHome = destinationRoot ?? _defaultCodexHomePath();
+  final destination = io.Directory('$codexHome/skills/$skillName');
+
+  try {
+    if (destination.existsSync()) {
+      if (!force) {
+        return CoreResult.failure(
+          code: CoreErrorCode.writeBlocked,
+          message:
+              'Skill destination already exists. Re-run with --force-skill-install.',
+          details: {'destination': destination.path},
+        );
+      }
+      destination.deleteSync(recursive: true);
+    }
+
+    destination.createSync(recursive: true);
+    final filesCopied = _copyDirectoryContents(
+      source: sourceDir,
+      destination: destination,
+    );
+
+    return CoreResult.success(
+      data: {
+        'skill': skillName,
+        'source': sourceDir.path,
+        'destination': destination.path,
+        'filesCopied': filesCopied,
+      },
+    );
+  } on Exception catch (error) {
+    return CoreResult.failure(
+      code: CoreErrorCode.writeBlocked,
+      message: 'Failed to install skill "$skillName": $error',
+      details: {'destination': destination.path},
+    );
+  }
+}
+
+io.Directory? _resolveBundledSkillSource(final String skillName) {
+  final scriptDir = io.File(io.Platform.script.toFilePath()).parent;
+  final candidates = <io.Directory>[
+    io.Directory('${scriptDir.parent.path}/skills/$skillName'),
+    io.Directory('mcp_server_dart/skills/$skillName'),
+    io.Directory('skills/$skillName'),
+  ];
+
+  for (final candidate in candidates) {
+    if (candidate.existsSync()) {
+      return candidate;
+    }
+  }
+
+  return null;
+}
+
+String _defaultCodexHomePath() {
+  final codeHome = io.Platform.environment['CODEX_HOME']?.trim();
+  if (codeHome != null && codeHome.isNotEmpty) {
+    return codeHome;
+  }
+
+  final home = io.Platform.environment['HOME']?.trim();
+  if (home == null || home.isEmpty) {
+    return '.codex';
+  }
+
+  return '$home/.codex';
+}
+
+int _copyDirectoryContents({
+  required final io.Directory source,
+  required final io.Directory destination,
+}) {
+  var filesCopied = 0;
+  for (final entity in source.listSync(followLinks: false)) {
+    final name = entity.uri.pathSegments.last;
+    final targetPath = '${destination.path}/$name';
+
+    if (entity is io.Directory) {
+      final targetDir = io.Directory(targetPath);
+      targetDir.createSync(recursive: true);
+      filesCopied += _copyDirectoryContents(
+        source: entity,
+        destination: targetDir,
+      );
+      continue;
+    }
+
+    if (entity is io.File) {
+      io.File(targetPath)
+        ..createSync(recursive: true)
+        ..writeAsBytesSync(entity.readAsBytesSync());
+      filesCopied += 1;
+    }
+  }
+
+  return filesCopied;
 }
 
 String? _nonEmptyOption(final String? value) {
@@ -1090,6 +1227,23 @@ final _argParser = ArgParser(allowTrailingOptions: false)
         defaultsTo: false,
         help:
             'Also run hot_reload_flutter and capture one more screenshot after reload.',
+      )
+      ..addFlag(
+        'install-skill',
+        defaultsTo: false,
+        help:
+            'Install bundled Codex runtime-validation skill before running checks.',
+      )
+      ..addOption(
+        'skill-destination',
+        help:
+            'Optional destination root for skill install '
+            '(defaults to \$CODEX_HOME/skills).',
+      )
+      ..addFlag(
+        'force-skill-install',
+        defaultsTo: false,
+        help: 'Replace existing skill directory when using --install-skill.',
       ),
   );
 
@@ -1102,6 +1256,7 @@ const _defaultDoctorTimeoutMs = 2500;
 const _defaultValidateRuntimeTimeoutMs = 10000;
 const _defaultValidateRuntimeErrorsCount = 5;
 const _defaultValidateRuntimeConnectRetries = 1;
+const _runtimeValidationSkillName = 'flutter-mcp-cli-runtime-validation';
 
 const _dartVmHost = 'dart-vm-host';
 const _dartVmPort = 'dart-vm-port';
@@ -1220,8 +1375,9 @@ If mcp_toolkit_extensions fails, screenshot/layout/error inspection is not relia
 until app instrumentation is fixed and app is hot restarted or rerun.
 ''';
 
-String _usageValidateRuntime() => '''
-Usage: flutter_mcp_cli validate-runtime [--target <ws_uri>] [--timeout-ms <n>] [--errors-count <n>] [--connect-retries <n>] [--after-reload]
+String _usageValidateRuntime() =>
+    '''
+Usage: flutter_mcp_cli validate-runtime [--target <ws_uri>] [--timeout-ms <n>] [--errors-count <n>] [--connect-retries <n>] [--after-reload] [--install-skill] [--skill-destination <dir>] [--force-skill-install]
 
 Two-step agent flow:
   1) Start Flutter app in debug mode
@@ -1230,6 +1386,7 @@ Two-step agent flow:
 Examples:
   flutter_mcp_cli validate-runtime --target ws://127.0.0.1:8181/<token>/ws --timeout-ms 10000
   flutter_mcp_cli --save-images validate-runtime --target ws://127.0.0.1:8181/<token>/ws --after-reload
+  flutter_mcp_cli validate-runtime --target ws://127.0.0.1:8181/<token>/ws --install-skill
 
 What it does:
   - doctor preflight (including mcp_toolkit extension gate)
@@ -1240,4 +1397,5 @@ What it does:
   - optional hot_reload + screenshot
 
 Transient first-connect failures are retried automatically for connect/vm_not_connected errors.
+Optional skill installation copies mcp_server_dart/skills/$_runtimeValidationSkillName to \$CODEX_HOME/skills.
 ''';

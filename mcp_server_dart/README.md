@@ -62,6 +62,11 @@ dart run bin/flutter_mcp_cli.dart --save-images validate-runtime \
   --target ws://127.0.0.1:8181/<token>/ws \
   --timeout-ms 10000 \
   --after-reload
+
+# optional: install bundled skill during runtime validation
+dart run bin/flutter_mcp_cli.dart validate-runtime \
+  --target ws://127.0.0.1:8181/<token>/ws \
+  --install-skill
 ```
 
 CLI runtime gate for app inspection:
