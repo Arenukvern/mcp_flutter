@@ -219,6 +219,13 @@ Future<CoreResult> _runOneShot({
         );
         return CoreResult.success(data: data);
 
+      case 'validate-runtime':
+        return _runValidateRuntime(
+          command: topLevel,
+          executor: executor,
+          doctorRunner: doctorRunner,
+        );
+
       case 'snapshot':
         final snapshotCommand = topLevel.command;
         if (snapshotCommand == null) {
@@ -380,6 +387,215 @@ Future<CoreResult> _runSnapshotCommand({
   }
 }
 
+Future<CoreResult> _runValidateRuntime({
+  required final ArgResults command,
+  required final DefaultCoreCommandExecutor executor,
+  required final DoctorRunner doctorRunner,
+}) async {
+  final timeoutMs = _parsePositiveIntOption(
+    command.option('timeout-ms'),
+    fallback: _defaultValidateRuntimeTimeoutMs,
+  );
+  final timeout = Duration(milliseconds: timeoutMs);
+  final target = _nonEmptyOption(command.option('target'));
+  final errorsCount = _parsePositiveIntOption(
+    command.option('errors-count'),
+    fallback: _defaultValidateRuntimeErrorsCount,
+  );
+  final connectRetries = _parseNonNegativeIntOption(
+    command.option('connect-retries'),
+    fallback: _defaultValidateRuntimeConnectRetries,
+  );
+  final afterReload = command.flag('after-reload');
+
+  final doctorData = await doctorRunner.run(target: target, timeout: timeout);
+  if (_doctorHasCriticalFailures(doctorData)) {
+    return CoreResult.failure(
+      code: CoreErrorCode.doctorCriticalFailed,
+      message: 'Runtime validation blocked by critical doctor checks.',
+      details: {'doctor': doctorData},
+    );
+  }
+
+  final toolkitCheck = _doctorCheckById(doctorData, 'mcp_toolkit_extensions');
+  if (toolkitCheck != null && toolkitCheck['status'] == 'fail') {
+    return CoreResult.failure(
+      code: CoreErrorCode.getExtensionRpcsFailed,
+      message:
+          'Runtime validation blocked: required mcp_toolkit extensions are missing.',
+      details: {'doctor': doctorData, 'toolkitCheck': toolkitCheck},
+    );
+  }
+
+  final steps = <Map<String, Object?>>[];
+
+  Future<CoreResult?> runStep(
+    final String name,
+    final CoreCommand coreCommand,
+  ) async {
+    final executed = await _executeWithRetry(
+      run: () => executor.execute(coreCommand),
+      maxRetries: connectRetries,
+    );
+    final result = executed.result;
+    steps.add({
+      'name': name,
+      'attempts': executed.attempts,
+      'ok': result.ok,
+      'data': result.data,
+      'error': result.error?.toJson(),
+      'meta': result.meta,
+    });
+    if (result.ok) {
+      return null;
+    }
+    return result;
+  }
+
+  if (target != null) {
+    final connectFailure = await runStep(
+      'connect_target',
+      ConnectCommand(
+        mode: CoreConnectionMode.uri,
+        uri: target,
+        forceReconnect: true,
+      ),
+    );
+    if (connectFailure != null) {
+      return CoreResult.failure(
+        code: connectFailure.error?.code ?? CoreErrorCode.connectFailed,
+        message:
+            'Runtime validation failed: unable to connect to explicit target.',
+        details: {'doctor': doctorData, 'steps': steps},
+      );
+    }
+  }
+
+  final extensionFailure = await runStep(
+    'get_extension_rpcs',
+    const GetExtensionRpcsCommand(),
+  );
+  if (extensionFailure != null) {
+    return CoreResult.failure(
+      code:
+          extensionFailure.error?.code ?? CoreErrorCode.getExtensionRpcsFailed,
+      message: 'Runtime validation failed at get_extension_rpcs.',
+      details: {'doctor': doctorData, 'steps': steps},
+    );
+  }
+
+  final extensionStep = steps.last;
+  final extensionData = extensionStep['data'];
+  final extensionSet = switch (extensionData) {
+    final List values => values.map((final value) => '$value').toSet(),
+    _ => <String>{},
+  };
+  final requiredExtensions = <String>{
+    'ext.mcp.toolkit.app_errors',
+    'ext.mcp.toolkit.view_details',
+    'ext.mcp.toolkit.view_screenshots',
+  };
+  final missingExtensions = requiredExtensions.difference(extensionSet).toList()
+    ..sort();
+  if (missingExtensions.isNotEmpty) {
+    return CoreResult.failure(
+      code: CoreErrorCode.getExtensionRpcsFailed,
+      message:
+          'Runtime validation failed: missing required toolkit extensions.',
+      details: {
+        'doctor': doctorData,
+        'missingExtensions': missingExtensions,
+        'steps': steps,
+      },
+    );
+  }
+
+  final screenshotFailure = await runStep(
+    'get_screenshots',
+    const GetScreenshotsCommand(),
+  );
+  if (screenshotFailure != null) {
+    return CoreResult.failure(
+      code: screenshotFailure.error?.code ?? CoreErrorCode.getScreenshotsFailed,
+      message: 'Runtime validation failed at get_screenshots.',
+      details: {'doctor': doctorData, 'steps': steps},
+    );
+  }
+
+  final viewDetailsFailure = await runStep(
+    'get_view_details',
+    const GetViewDetailsCommand(),
+  );
+  if (viewDetailsFailure != null) {
+    return CoreResult.failure(
+      code:
+          viewDetailsFailure.error?.code ?? CoreErrorCode.getViewDetailsFailed,
+      message: 'Runtime validation failed at get_view_details.',
+      details: {'doctor': doctorData, 'steps': steps},
+    );
+  }
+
+  final appErrorsFailure = await runStep(
+    'get_app_errors',
+    GetAppErrorsCommand(count: errorsCount),
+  );
+  if (appErrorsFailure != null) {
+    return CoreResult.failure(
+      code: appErrorsFailure.error?.code ?? CoreErrorCode.getAppErrorsFailed,
+      message: 'Runtime validation failed at get_app_errors.',
+      details: {'doctor': doctorData, 'steps': steps},
+    );
+  }
+
+  if (afterReload) {
+    final reloadFailure = await runStep(
+      'hot_reload_flutter',
+      const HotReloadFlutterCommand(),
+    );
+    if (reloadFailure != null) {
+      return CoreResult.failure(
+        code: reloadFailure.error?.code ?? CoreErrorCode.hotReloadFailed,
+        message: 'Runtime validation failed at hot_reload_flutter.',
+        details: {'doctor': doctorData, 'steps': steps},
+      );
+    }
+
+    final afterReloadScreenshotFailure = await runStep(
+      'get_screenshots_after_reload',
+      const GetScreenshotsCommand(),
+    );
+    if (afterReloadScreenshotFailure != null) {
+      return CoreResult.failure(
+        code:
+            afterReloadScreenshotFailure.error?.code ??
+            CoreErrorCode.getScreenshotsFailed,
+        message: 'Runtime validation failed at post-reload screenshot capture.',
+        details: {'doctor': doctorData, 'steps': steps},
+      );
+    }
+  }
+
+  final failedSteps = steps.where((final step) => step['ok'] != true).length;
+  final requiredSorted = requiredExtensions.toList()..sort();
+  return CoreResult.success(
+    data: {
+      'doctor': doctorData,
+      'steps': steps,
+      'summary': {
+        'total': steps.length,
+        'success': steps.length - failedSteps,
+        'failed': failedSteps,
+        'target': target,
+        'timeoutMs': timeoutMs,
+        'connectRetries': connectRetries,
+        'afterReload': afterReload,
+        'errorsCount': errorsCount,
+        'requiredExtensions': requiredSorted,
+      },
+    },
+  );
+}
+
 Future<PersistedState> _readBootstrapState(final StateStore store) async {
   try {
     return await store.read();
@@ -479,6 +695,83 @@ int _parsePositiveIntOption(
   return parsed;
 }
 
+int _parseNonNegativeIntOption(
+  final String? value, {
+  required final int fallback,
+}) {
+  final parsed = int.tryParse(value ?? '');
+  if (parsed == null || parsed < 0) {
+    return fallback;
+  }
+  return parsed;
+}
+
+Map<String, Object?>? _doctorCheckById(
+  final Map<String, Object?> doctorData,
+  final String id,
+) {
+  final checks = doctorData['checks'];
+  if (checks is! List) {
+    return null;
+  }
+
+  for (final entry in checks) {
+    final map = switch (entry) {
+      final Map<String, Object?> value => value,
+      final Map value => value.cast<String, Object?>(),
+      _ => null,
+    };
+    if (map == null) {
+      continue;
+    }
+    if ('${map['id'] ?? ''}' == id) {
+      return map;
+    }
+  }
+
+  return null;
+}
+
+bool _doctorHasCriticalFailures(final Map<String, Object?> doctorData) {
+  final summary = doctorData['summary'];
+  final summaryMap = switch (summary) {
+    final Map<String, Object?> value => value,
+    final Map value => value.cast<String, Object?>(),
+    _ => null,
+  };
+  final criticalFailures = summaryMap?['criticalFailures'];
+  if (criticalFailures is int) {
+    return criticalFailures > 0;
+  }
+  if (criticalFailures is num) {
+    return criticalFailures > 0;
+  }
+  return false;
+}
+
+Future<({CoreResult result, int attempts})> _executeWithRetry({
+  required final Future<CoreResult> Function() run,
+  required final int maxRetries,
+}) async {
+  var retriesUsed = 0;
+  var result = await run();
+  while (!result.ok && retriesUsed < maxRetries) {
+    final code = result.error?.code;
+    final retryable =
+        code == CoreErrorCode.connectFailed ||
+        code == CoreErrorCode.vmNotConnected;
+    if (!retryable) {
+      break;
+    }
+
+    retriesUsed += 1;
+    await Future<void>.delayed(const Duration(milliseconds: 250));
+    result = await run();
+  }
+
+  return (result: result, attempts: retriesUsed + 1);
+}
+
 String? _nonEmptyOption(final String? value) {
   if (value == null) {
     return null;
@@ -522,6 +815,7 @@ String _globalUsage() {
     ..writeln('  snapshot diff')
     ..writeln('  bundle create')
     ..writeln('  doctor')
+    ..writeln('  validate-runtime')
     ..writeln('')
     ..writeln('Global options:')
     ..writeln(_argParser.usage)
@@ -545,6 +839,7 @@ String _usageForCommand(final List<String> commandPath) {
     'bundle' => _usageBundle(),
     'bundle create' => _usageBundleCreate(),
     'doctor' => _usageDoctor(),
+    'validate-runtime' => _usageValidateRuntime(),
     _ => _globalUsage(),
   };
 }
@@ -764,6 +1059,38 @@ final _argParser = ArgParser(allowTrailingOptions: false)
         defaultsTo: '$_defaultDoctorTimeoutMs',
         help: 'Per-check timeout in milliseconds',
       ),
+  )
+  ..addCommand(
+    'validate-runtime',
+    _commandParser()
+      ..addOption(
+        'target',
+        help:
+            'Optional explicit websocket target URI '
+            '(use exact app.debugPort.wsUri).',
+      )
+      ..addOption(
+        'timeout-ms',
+        defaultsTo: '$_defaultValidateRuntimeTimeoutMs',
+        help: 'Timeout used by doctor preflight in milliseconds.',
+      )
+      ..addOption(
+        'errors-count',
+        defaultsTo: '$_defaultValidateRuntimeErrorsCount',
+        help: 'Number of app errors to collect from get_app_errors.',
+      )
+      ..addOption(
+        'connect-retries',
+        defaultsTo: '$_defaultValidateRuntimeConnectRetries',
+        help:
+            'Retries for transient connect/vm_not_connected failures per step.',
+      )
+      ..addFlag(
+        'after-reload',
+        defaultsTo: false,
+        help:
+            'Also run hot_reload_flutter and capture one more screenshot after reload.',
+      ),
   );
 
 const _defaultHost = 'localhost';
@@ -772,6 +1099,9 @@ const _defaultLogLevel = 'error';
 const _defaultStateFile = '.flutter_mcp/state.json';
 const _defaultFlutterDiscoveryTimeoutMs = 2500;
 const _defaultDoctorTimeoutMs = 2500;
+const _defaultValidateRuntimeTimeoutMs = 10000;
+const _defaultValidateRuntimeErrorsCount = 5;
+const _defaultValidateRuntimeConnectRetries = 1;
 
 const _dartVmHost = 'dart-vm-host';
 const _dartVmPort = 'dart-vm-port';
@@ -888,4 +1218,26 @@ Doctor checks include:
 
 If mcp_toolkit_extensions fails, screenshot/layout/error inspection is not reliable
 until app instrumentation is fixed and app is hot restarted or rerun.
+''';
+
+String _usageValidateRuntime() => '''
+Usage: flutter_mcp_cli validate-runtime [--target <ws_uri>] [--timeout-ms <n>] [--errors-count <n>] [--connect-retries <n>] [--after-reload]
+
+Two-step agent flow:
+  1) Start Flutter app in debug mode
+  2) Run this command
+
+Examples:
+  flutter_mcp_cli validate-runtime --target ws://127.0.0.1:8181/<token>/ws --timeout-ms 10000
+  flutter_mcp_cli --save-images validate-runtime --target ws://127.0.0.1:8181/<token>/ws --after-reload
+
+What it does:
+  - doctor preflight (including mcp_toolkit extension gate)
+  - get_extension_rpcs
+  - get_screenshots
+  - get_view_details
+  - get_app_errors
+  - optional hot_reload + screenshot
+
+Transient first-connect failures are retried automatically for connect/vm_not_connected errors.
 ''';

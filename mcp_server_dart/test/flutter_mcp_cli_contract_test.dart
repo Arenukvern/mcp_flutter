@@ -28,6 +28,7 @@ void main() {
       expect(global.contains('Usage:'), isTrue);
       expect(global.contains('snapshot create'), isTrue);
       expect(global.contains('doctor'), isTrue);
+      expect(global.contains('validate-runtime'), isTrue);
 
       final snapshotHelp = await _runCli(statePath, [
         'snapshot',
@@ -52,6 +53,15 @@ void main() {
         ),
         isTrue,
       );
+
+      final validateHelp = await _runCli(statePath, [
+        'validate-runtime',
+        '--help',
+      ]);
+      expect(validateHelp.exitCode, equals(0));
+      final validate = (validateHelp.stdout as String);
+      expect(validate.contains('validate-runtime [--target <ws_uri>]'), isTrue);
+      expect(validate.contains('--connect-retries <n>'), isTrue);
     });
 
     test(

@@ -56,6 +56,12 @@ dart run bin/flutter_mcp_cli.dart bundle create --from-snapshot baseline --backu
 # environment preflight
 dart run bin/flutter_mcp_cli.dart doctor --json
 dart run bin/flutter_mcp_cli.dart exec --name get_extension_rpcs --args '{}'
+
+# one-command runtime validation (after app launch)
+dart run bin/flutter_mcp_cli.dart --save-images validate-runtime \
+  --target ws://127.0.0.1:8181/<token>/ws \
+  --timeout-ms 10000 \
+  --after-reload
 ```
 
 CLI runtime gate for app inspection:
@@ -63,6 +69,7 @@ CLI runtime gate for app inspection:
 - Require `ext.mcp.toolkit.app_errors`, `ext.mcp.toolkit.view_details`, and `ext.mcp.toolkit.view_screenshots` from `get_extension_rpcs`.
 - If missing, app-level screenshot/layout/error inspection is blocked until `mcp_toolkit` is installed, initialized, and the app is hot restarted or rerun.
 - If screenshots are blank, ensure app window is visible/foreground and retry `get_screenshots`.
+- If first explicit-URI connect times out, retry once and validate with `doctor --json --target <ws_uri> --timeout-ms 10000`.
 
 ## Migration (v2.x -> v3.0.0)
 

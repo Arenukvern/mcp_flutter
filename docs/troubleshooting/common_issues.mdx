@@ -46,3 +46,9 @@
 
    - This means the provided `connection.targetId` was not in current discovery results.
    - Retry with `arguments.connection.uri` using exact `app.debugPort.wsUri` from Flutter machine output.
+
+8. **First Explicit URI Connect Times Out (`connect_failed`)**
+
+   - Some environments need longer than the default connect timeout for first handshake.
+   - Retry the same command once with exact tokenized URI.
+   - Verify with `flutter_mcp_cli doctor --json --target <ws_uri> --timeout-ms 10000`.

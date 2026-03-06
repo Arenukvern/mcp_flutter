@@ -18,6 +18,26 @@ Run commands with:
 dart run mcp_server_dart/bin/flutter_mcp_cli.dart
 ```
 
+## 0. Two-Step Agent Flow (Recommended)
+
+Step 1: run app in debug mode.
+
+```bash
+cd /ABSOLUTE/PATH/TO/FLUTTER_APP
+flutter run --debug --host-vmservice-port=8182 --dds-port=8181
+```
+
+Step 2: run a single runtime validation command.
+
+```bash
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart --save-images validate-runtime \
+  --target ws://127.0.0.1:8181/<token>/ws \
+  --timeout-ms 10000 \
+  --after-reload
+```
+
+This single command runs doctor preflight, toolkit-extension gating, screenshot capture, layout details, app errors, and optional reload verification.
+
 ## 1. Inspect Available Capabilities
 
 ```bash
@@ -135,6 +155,7 @@ dart run mcp_server_dart/bin/flutter_mcp_cli.dart snapshot create --name ci_run 
 - `mcp_toolkit` extensions missing: app cannot be inspected via screenshot/layout/errors until toolkit is installed, initialized, and app is restarted.
 - Screenshots are blank or stale: ensure app window is visible/foreground (not minimized/headless), then retry `get_screenshots`.
 - App was just instrumented but extensions still missing: hot reload may be insufficient; run `hot_restart_flutter` or rerun app.
+- First explicit-URI connect times out (`connect_failed` with 2s timeout): retry the same command once, then run `doctor --json --target <ws_uri> --timeout-ms 10000` to confirm reachability.
 - No data from app tools: ensure Flutter app is running in debug mode and VM service is enabled.
 - Schema validation failures: use nested `connection` object, not flat `host`/`port` aliases.
 
