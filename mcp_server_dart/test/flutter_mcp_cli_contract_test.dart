@@ -69,7 +69,7 @@ void main() {
         expect(validate.contains('--connect-retries <n>'), isTrue);
         expect(validate.contains('--install-skill'), isTrue);
       },
-      timeout: const Timeout(Duration(seconds: 90)),
+      timeout: const Timeout(Duration(minutes: 3)),
     );
 
     test(

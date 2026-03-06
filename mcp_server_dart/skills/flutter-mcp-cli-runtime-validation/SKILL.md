@@ -48,7 +48,17 @@ dart run mcp_server_dart/bin/flutter_mcp_cli.dart validate-runtime \
 
 ## Failure Rules
 
-- If toolkit extensions are missing, stop and report instrumentation gap.
+- If toolkit extensions are missing, stop and report instrumentation gap with exact fix:
+  - add `mcp_toolkit` to app dependencies
+  - ensure `MCPToolkitBinding.instance..initialize()..initializeFlutterToolkit();` runs before `runApp`
+  - hot restart or rerun the app
 - If first explicit URI connect fails, retry is automatic for retryable connection errors.
 - If screenshots are blank, verify app window is visible and retry.
 - If app cannot be instrumented, do not claim screenshot/layout/error inspection success.
+
+## Challenge Cases (Always Call Out Explicitly)
+
+- No running debug app: `doctor` critical failure on `vm_target_reachable`; request app launch before continuing.
+- Wrong target URI/token: treat as connection mismatch and retry with exact `app.debugPort.wsUri`.
+- Toolkit added but still missing extensions: hot reload is often insufficient, require hot restart/full rerun.
+- Non-modifiable app (cannot add toolkit): report inspection as unavailable instead of guessing.

@@ -442,7 +442,14 @@ Future<CoreResult> _runValidateRuntime({
       code: CoreErrorCode.getExtensionRpcsFailed,
       message:
           'Runtime validation blocked: required mcp_toolkit extensions are missing.',
-      details: {'doctor': doctorData, 'toolkitCheck': toolkitCheck},
+      details: {
+        'doctor': doctorData,
+        'toolkitCheck': toolkitCheck,
+        'fix':
+            'Add `mcp_toolkit` to app dependencies and ensure '
+            '`MCPToolkitBinding.instance..initialize()..initializeFlutterToolkit();` '
+            'runs before `runApp`, then hot restart or rerun the app.',
+      },
     );
   }
 
@@ -524,6 +531,8 @@ Future<CoreResult> _runValidateRuntime({
       details: {
         'doctor': doctorData,
         'missingExtensions': missingExtensions,
+        'fix':
+            'Install/initialize `mcp_toolkit` in the app, then hot restart or rerun.',
         'steps': steps,
       },
     );
@@ -1398,13 +1407,17 @@ Examples:
   flutter_mcp_cli --save-images validate-runtime --target ws://127.0.0.1:8181/<token>/ws --after-reload
   flutter_mcp_cli validate-runtime --target ws://127.0.0.1:8181/<token>/ws --install-skill
 
-What it does:
+  What it does:
   - doctor preflight (including mcp_toolkit extension gate)
   - get_extension_rpcs
   - get_screenshots
   - get_view_details
   - get_app_errors
   - optional hot_reload + screenshot
+
+If toolkit extensions are missing, add `mcp_toolkit` to app dependencies and
+initialize `MCPToolkitBinding.instance..initialize()..initializeFlutterToolkit();`
+before `runApp`, then hot restart or rerun.
 
 Transient first-connect failures are retried automatically for connect/vm_not_connected errors.
 Optional skill installation copies mcp_server_dart/skills/$_runtimeValidationSkillName to \$CODEX_HOME/skills.
