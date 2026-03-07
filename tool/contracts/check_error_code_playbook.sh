@@ -17,8 +17,13 @@ done < <(
   awk '
     /abstract final class CoreErrorCode/ {in_block=1; next}
     in_block && /^}/ {in_block=0}
-    in_block {print}
-  ' "$ERROR_CODES_FILE" | rg -o "static const [A-Za-z0-9]+ = '([a-z0-9_]+)';" --replace '$1' | sort -u
+    in_block && /static const/ {
+      n = split($0, parts, "'\''")
+      if (n >= 2 && parts[2] ~ /^[a-z0-9_]+$/) {
+        print parts[2]
+      }
+    }
+  ' "$ERROR_CODES_FILE" | sort -u
 )
 
 if [[ ${#error_codes[@]} -eq 0 ]]; then
@@ -28,7 +33,7 @@ fi
 
 missing=()
 for code in "${error_codes[@]}"; do
-  if ! rg -F --quiet -- "\`$code\`" "$PLAYBOOK_FILE"; then
+  if ! grep -Fq -- "\`$code\`" "$PLAYBOOK_FILE"; then
     missing+=("$code")
   fi
 done

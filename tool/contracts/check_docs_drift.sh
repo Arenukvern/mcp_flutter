@@ -21,6 +21,17 @@ require_output_contains() {
   fi
 }
 
+contains_token_in_files() {
+  local token="$1"
+  shift
+
+  if command -v rg >/dev/null 2>&1; then
+    rg -F --quiet -- "$token" "$@"
+  else
+    grep -Fq -- "$token" "$@"
+  fi
+}
+
 global_help="$(run_cli_help --help)"
 snapshot_create_help="$(run_cli_help snapshot create --help)"
 bundle_create_help="$(run_cli_help bundle create --help)"
@@ -45,7 +56,7 @@ require_docs_contains() {
     "$ROOT_DIR/docs/core/mcp_configuration.mdx"
   )
 
-  if ! rg -F --quiet -- "$token" "${files[@]}"; then
+  if ! contains_token_in_files "$token" "${files[@]}"; then
     echo "Documentation drift: '$token' not found in required docs" >&2
     exit 1
   fi
