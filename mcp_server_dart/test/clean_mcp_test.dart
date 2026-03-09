@@ -114,7 +114,9 @@ void main() {
           expect(names.contains('hot_restart_flutter'), isTrue);
           expect(names.contains('get_vm'), isTrue);
           expect(names.contains('get_extension_rpcs'), isTrue);
-          expect(names.contains('get_active_ports'), isTrue);
+          expect(names.contains('discover_debug_apps'), isTrue);
+          expect(names.contains('inspect_widget_at_point'), isTrue);
+          expect(names.contains('capture_ui_snapshot'), isTrue);
         } finally {
           await responseSubscription.cancel();
         }

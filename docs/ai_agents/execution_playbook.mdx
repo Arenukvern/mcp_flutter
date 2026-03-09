@@ -68,6 +68,7 @@ Required extension RPCs:
 - `ext.mcp.toolkit.app_errors`
 - `ext.mcp.toolkit.view_details`
 - `ext.mcp.toolkit.view_screenshots`
+- `ext.mcp.toolkit.inspect_widget_at_point`
 
 If these are missing, do not continue app-level inspection.
 
@@ -81,13 +82,14 @@ If the app cannot be modified (for example third-party binary or restricted envi
 
 Run this sequence after preflight succeeds:
 
-1. "Take a screenshot of the app"
-2. "Get view details (layout metadata)"
-3. "Get app errors"
-4. Optional when server was started with `--dumps`: "Dump render tree"
-5. After any code edit: "Hot reload and take another screenshot"
+1. "Discover debug apps and confirm target URI"
+2. "Capture UI snapshot bundle (`capture_ui_snapshot`)"
+3. "Inspect widget at specific coordinates (`inspect_widget_at_point`)"
+4. "Get app errors and map top stack frame to source"
+5. After any code edit: "Hot reload and capture another UI snapshot"
+6. Optional when server was started with `--dumps`: "Dump render tree"
 
-Use before/after screenshots and view details as proof that the runtime change actually took effect.
+Use before/after snapshot bundles as proof that runtime changes took effect.
 
 ## Step 7. Resolve Common Runtime Challenges
 

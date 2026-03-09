@@ -48,7 +48,18 @@ base mixin FlutterInspector
       VMToolsHandler.getExtensionRpcsTool,
       _vmTools.getExtensionRpcs,
     );
-    registerTool(VMToolsHandler.getActivePortsTool, _vmTools.getActivePorts);
+    registerTool(
+      VMToolsHandler.discoverDebugAppsTool,
+      _vmTools.discoverDebugApps,
+    );
+    registerTool(
+      ResourceHandler.inspectWidgetAtPointTool,
+      _resourceHandler.inspectWidgetAtPoint,
+    );
+    registerTool(
+      ResourceHandler.captureUiSnapshotTool,
+      _resourceHandler.captureUiSnapshot,
+    );
 
     // Register debug dump tools
     if (configuration.dumpsSupported) {

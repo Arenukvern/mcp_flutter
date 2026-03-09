@@ -109,7 +109,19 @@ See more details about command line options in [mcp_server_dart README](mcp_serv
   - Enable with `--images` flag
   - Will use PNG compression to optimize image size.
 
-- `get_view_details` [Resource|Tool] - size of screen, pixel ratio. May unlock ability for an Agent to use widget selection. Will return details about each view in the app.
+- `get_view_details` [Resource|Tool] - Returns view metrics and widget-tree inspection payloads (bounds, route/source hints).
+- `inspect_widget_at_point` [Tool] - Maps global `(x,y)` coordinates to the deepest widget/render node.
+- `capture_ui_snapshot` [Tool] - Captures screenshots + view details + app errors in one evidence bundle.
+- `discover_debug_apps` [Tool] - Preferred target discovery API with canonical websocket URIs.
+
+CLI parity check (same shared core logic as MCP):
+
+```bash
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart schema --name discover_debug_apps
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart schema --name capture_ui_snapshot
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart schema --name inspect_widget_at_point
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec --name discover_debug_apps --args '{}'
+```
 
 ### Dynamic Tools Registration 🆕
 

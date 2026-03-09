@@ -134,27 +134,85 @@ final class VmExtensionDynamicGateway implements CoreDynamicGateway {
 
     try {
       final parsed = Uri.parse(resourceUri);
-      final resourceName = parsed.pathSegments.isEmpty
-          ? resourceUri
-          : parsed.pathSegments.last;
-
-      final response = await connectionContext.callFlutterExtension(
-        '$mcpToolkitExt.$resourceName',
-        args: {'uri': resourceUri},
+      final candidates = _resourceExtensionCandidates(
+        parsed: parsed,
+        fallback: resourceUri,
       );
 
-      final json = jsonDecodeMap(response.json);
-      final content = jsonDecodeString(
-        json['content'],
-      ).whenEmptyUse('Resource content not available');
-      final mimeType = jsonDecodeString(
-        json['mimeType'],
-      ).whenEmptyUse('text/plain');
+      Map<String, Object?>? json;
+      Object? lastUnknownMethodError;
+      for (final candidate in candidates) {
+        try {
+          final response = await connectionContext.callFlutterExtension(
+            '$mcpToolkitExt.$candidate',
+            args: {'uri': resourceUri},
+          );
+          json = jsonDecodeMap(response.json);
+          break;
+        } catch (e) {
+          if (!_isUnknownExtensionMethodError(e)) {
+            rethrow;
+          }
+          lastUnknownMethodError = e;
+        }
+      }
+
+      if (json == null) {
+        throw StateError(
+          'No matching dynamic resource extension for $resourceUri. '
+          'Last error: $lastUnknownMethodError',
+        );
+      }
+
+      final mimeType = jsonDecodeString(json['mimeType']).whenEmptyUse(
+        jsonDecodeBool(json['isBlob'])
+            ? 'application/octet-stream'
+            : 'application/json',
+      );
+
+      if (jsonDecodeBool(json['isBlob'])) {
+        final blob = jsonDecodeString(json['blob']);
+        if (blob.isNotEmpty) {
+          return CoreResult.success(
+            data: {
+              'uri': resourceUri,
+              'blob': blob,
+              'mimeType': mimeType,
+              'isBlob': true,
+            },
+          );
+        }
+      }
+
+      final content = jsonDecodeString(json['content']);
+      if (content.isNotEmpty) {
+        return CoreResult.success(
+          data: {'uri': resourceUri, 'content': content, 'mimeType': mimeType},
+        );
+      }
+
+      final payload = <String, Object?>{...json}
+        ..remove('content')
+        ..remove('mimeType')
+        ..remove('blob')
+        ..remove('isBlob');
+      final message = jsonDecodeString(payload['message']);
+      payload.remove('message');
+      final normalizedPayload = <String, Object?>{
+        if (message.isNotEmpty) 'message': message,
+        if (payload.isNotEmpty) 'parameters': payload,
+      };
 
       return CoreResult.success(
-        data: {'uri': resourceUri, 'content': content, 'mimeType': mimeType},
+        data: {
+          'uri': resourceUri,
+          'content': jsonEncode(normalizedPayload),
+          'mimeType': 'application/json',
+          if (message.isNotEmpty) 'message': message,
+          if (payload.isNotEmpty) 'payload': payload,
+        },
       );
-    } on Exception catch (e) {
+    } catch (e) {
       return CoreResult.failure(
         code: CoreErrorCode.dynamicResourceFailed,
         message: 'Error forwarding resource read: $e',
@@ -193,6 +251,43 @@ final class VmExtensionDynamicGateway implements CoreDynamicGateway {
       message: ensure.message ?? 'VM service not connected',
       details: ensure.details,
     );
+  }
+
+  List<String> _resourceExtensionCandidates({
+    required final Uri parsed,
+    required final String fallback,
+  }) {
+    final candidates = <String>[];
+
+    void addCandidate(final String value) {
+      final normalized = value.trim();
+      if (normalized.isEmpty || candidates.contains(normalized)) {
+        return;
+      }
+      candidates.add(normalized);
+    }
+
+    final pathSegments = parsed.pathSegments
+        .where((final segment) => segment.trim().isNotEmpty)
+        .toList();
+    if (pathSegments.isNotEmpty) {
+      addCandidate(pathSegments.last);
+      if (pathSegments.length > 1) {
+        addCandidate(pathSegments.join('_'));
+      }
+    } else {
+      addCandidate(fallback);
+    }
+
+    return candidates;
+  }
+
+  bool _isUnknownExtensionMethodError(final Object error) {
+    final text = '$error'.toLowerCase();
+    return text.contains('unknown method') ||
+        text.contains('not found') ||
+        text.contains('extension call returned null') ||
+        text.contains('-32601');
   }
 }
 

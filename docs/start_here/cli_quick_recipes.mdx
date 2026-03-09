@@ -67,6 +67,7 @@ Confirm these extensions exist before claiming screenshot/layout/error inspectio
 - `ext.mcp.toolkit.app_errors`
 - `ext.mcp.toolkit.view_details`
 - `ext.mcp.toolkit.view_screenshots`
+- `ext.mcp.toolkit.inspect_widget_at_point`
 
 If any are missing:
 
@@ -81,6 +82,9 @@ If any are missing:
 dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec --name get_app_errors --args '{"count":5}'
 dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec --name get_view_details --args '{}'
 dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec --name get_screenshots --args '{}'
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec --name discover_debug_apps --args '{}'
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec --name capture_ui_snapshot --args '{"includeViewDetails":true,"includeErrors":true}'
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec --name inspect_widget_at_point --args '{"x":120,"y":220}'
 ```
 
 ## 5. Verify Runtime Changes (Agent-Style)

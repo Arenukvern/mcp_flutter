@@ -6,9 +6,9 @@ import 'package:is_dart_empty_or_not/is_dart_empty_or_not.dart';
 
 import '../mcp_models.dart';
 import '../mcp_toolkit_binding.dart';
-import '../services/application_info.dart';
 import '../services/error_monitor.dart';
 import '../services/screenshot_service.dart';
+import '../services/view_introspection_service.dart';
 
 /// Returns a set of MCPCallEntry objects for the Flutter MCP Toolkit.
 ///
@@ -22,6 +22,7 @@ Set<MCPCallEntry> getFlutterMcpToolkitEntries({
   OnAppErrorsEntry(errorMonitor: binding),
   OnViewScreenshotsEntry(),
   OnViewDetailsEntry(),
+  OnInspectWidgetAtPointEntry(),
 };
 
 /// Extension on [MCPToolkitBinding] to initialize the Flutter MCP Toolkit.
@@ -132,11 +133,10 @@ extension type const OnViewDetailsEntry._(MCPCallEntry entry)
   factory OnViewDetailsEntry() {
     final entry = MCPCallEntry.tool(
       handler: (final parameters) {
-        final details = ApplicationInfo.getViewsInformation();
-        final json = details.map((final e) => e.toJson()).toList();
+        final payload = ViewIntrospectionService.buildViewDetailsPayload();
         return MCPCallResult(
-          message: 'Information about each view. ',
-          parameters: {'details': json},
+          message: 'Detailed information for Flutter views and widget tree.',
+          parameters: payload,
         );
       },
       definition: MCPToolDefinition(
@@ -148,5 +148,48 @@ extension type const OnViewDetailsEntry._(MCPCallEntry entry)
       ),
     );
     return OnViewDetailsEntry._(entry);
+  }
+}
+
+/// {@template on_inspect_widget_at_point_entry}
+/// MCPCallEntry for inspecting widget details at global coordinates.
+/// {@endtemplate}
+extension type const OnInspectWidgetAtPointEntry._(MCPCallEntry entry)
+    implements MCPCallEntry {
+  /// {@macro on_inspect_widget_at_point_entry}
+  factory OnInspectWidgetAtPointEntry() {
+    final entry = MCPCallEntry.tool(
+      handler: (final parameters) {
+        final x = jsonDecodeInt(parameters['x']).whenZeroUse(0);
+        final y = jsonDecodeInt(parameters['y']).whenZeroUse(0);
+        final viewId = jsonDecodeInt(parameters['viewId']);
+        final payload = ViewIntrospectionService.inspectWidgetAtPoint(
+          x: x,
+          y: y,
+          viewId: viewId == 0 ? null : viewId,
+        );
+
+        return MCPCallResult(
+          message: 'Widget inspection at point completed.',
+          parameters: payload,
+        );
+      },
+      definition: MCPToolDefinition(
+        name: 'inspect_widget_at_point',
+        description:
+            'Inspect deepest widget/render node at global logical coordinates.',
+        inputSchema: ObjectSchema(
+          required: ['x', 'y'],
+          properties: {
+            'x': IntegerSchema(description: 'Global logical X coordinate'),
+            'y': IntegerSchema(description: 'Global logical Y coordinate'),
+            'viewId': IntegerSchema(
+              description: 'Optional FlutterView id for multi-view apps',
+            ),
+          },
+        ),
+      ),
+    );
+    return OnInspectWidgetAtPointEntry._(entry);
   }
 }

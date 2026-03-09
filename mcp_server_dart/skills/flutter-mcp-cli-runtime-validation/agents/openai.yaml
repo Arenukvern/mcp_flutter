@@ -1,4 +1,4 @@
 interface:
   display_name: "Flutter MCP CLI Runtime Validation"
   short_description: "Run 2-step runtime validation with validate-runtime"
-  default_prompt: "Use $flutter-mcp-cli-runtime-validation to run Flutter MCP runtime checks in two steps, report screenshot/layout/error evidence, and call out missing mcp_toolkit instrumentation when inspection is blocked."
+  default_prompt: "Use $flutter-mcp-cli-runtime-validation to run Flutter MCP runtime checks in two steps, then collect capture_ui_snapshot and inspect_widget_at_point evidence and map findings to source locations from get_app_errors."

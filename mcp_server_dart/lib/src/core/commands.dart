@@ -193,6 +193,38 @@ final class GetViewDetailsCommand extends CoreCommand {
   String get name => 'get_view_details';
 }
 
+final class InspectWidgetAtPointCommand extends CoreCommand {
+  const InspectWidgetAtPointCommand({
+    required this.x,
+    required this.y,
+    this.viewId,
+  });
+
+  final int x;
+  final int y;
+  final int? viewId;
+
+  @override
+  String get name => 'inspect_widget_at_point';
+}
+
+final class CaptureUiSnapshotCommand extends CoreCommand {
+  const CaptureUiSnapshotCommand({
+    this.errorsCount = 4,
+    this.compress = true,
+    this.includeViewDetails = true,
+    this.includeErrors = true,
+  });
+
+  final int errorsCount;
+  final bool compress;
+  final bool includeViewDetails;
+  final bool includeErrors;
+
+  @override
+  String get name => 'capture_ui_snapshot';
+}
+
 final class DebugDumpLayerTreeCommand extends CoreCommand {
   const DebugDumpLayerTreeCommand();
 

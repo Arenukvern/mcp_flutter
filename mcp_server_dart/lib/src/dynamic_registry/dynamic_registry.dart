@@ -441,34 +441,91 @@ final class DynamicRegistry {
         logger: 'DynamicRegistry',
       );
 
-      // Extract resource name from URI for service extension call
-      final resourceName = Uri.parse(entry.resource.uri).pathSegments.last;
-
-      // Call the resource's specific service extension
-      final response = await server.callFlutterExtension(
-        '$mcpToolkitExt.$resourceName',
-        args: {'uri': entry.resource.uri},
+      final parsedResourceUri = Uri.parse(entry.resource.uri);
+      final candidates = _resourceExtensionCandidates(
+        parsed: parsedResourceUri,
+        fallbackName: entry.resource.name,
       );
 
-      // Parse the response from the Flutter app
-      final data = jsonDecodeMap(response.json);
-      final content = jsonDecodeString(
-        data['content'],
-      ).whenEmptyUse('Resource content not available');
+      Map<String, Object?>? data;
+      Object? lastUnknownMethodError;
+      for (final candidate in candidates) {
+        try {
+          final response = await server.callFlutterExtension(
+            '$mcpToolkitExt.$candidate',
+            args: {'uri': entry.resource.uri},
+          );
+          data = jsonDecodeMap(response.json);
+          break;
+        } catch (e) {
+          if (!_isUnknownExtensionMethodError(e)) {
+            rethrow;
+          }
+          lastUnknownMethodError = e;
+        }
+      }
+
+      if (data == null) {
+        throw StateError(
+          'No matching dynamic resource extension for ${entry.resource.uri}. '
+          'Last error: $lastUnknownMethodError',
+        );
+      }
+
       final mimeType = jsonDecodeString(
         data['mimeType'],
-      ).whenEmptyUse(entry.resource.mimeType ?? 'text/plain');
+      ).whenEmptyUse(entry.resource.mimeType ?? 'application/json');
+
+      if (jsonDecodeBool(data['isBlob'])) {
+        final blob = jsonDecodeString(data['blob']);
+        if (blob.isNotEmpty) {
+          return ReadResourceResult(
+            contents: [
+              BlobResourceContents(
+                uri: resourceUri,
+                blob: blob,
+                mimeType: mimeType,
+              ),
+            ],
+          );
+        }
+      }
+
+      final content = jsonDecodeString(data['content']);
+      if (content.isNotEmpty) {
+        return ReadResourceResult(
+          contents: [
+            TextResourceContents(
+              uri: resourceUri,
+              text: content,
+              mimeType: mimeType,
+            ),
+          ],
+        );
+      }
+
+      final payload = <String, Object?>{...data}
+        ..remove('content')
+        ..remove('mimeType')
+        ..remove('blob')
+        ..remove('isBlob');
+      final message = jsonDecodeString(payload['message']);
+      payload.remove('message');
+      final normalizedPayload = <String, Object?>{
+        if (message.isNotEmpty) 'message': message,
+        if (payload.isNotEmpty) 'parameters': payload,
+      };
 
       return ReadResourceResult(
         contents: [
           TextResourceContents(
             uri: resourceUri,
-            text: content,
-            mimeType: mimeType,
+            text: jsonEncode(normalizedPayload),
+            mimeType: 'application/json',
           ),
         ],
       );
-    } on Exception catch (e, stackTrace) {
+    } catch (e, stackTrace) {
       logger.log(
         LoggingLevel.error,
         'Failed to forward resource read to ${entry.resource.uri}: $e'
@@ -521,5 +578,41 @@ final class DynamicRegistry {
     }
 
     return parsed.replace(query: '', fragment: '').toString();
+  }
+
+  List<String> _resourceExtensionCandidates({
+    required final Uri parsed,
+    required final String fallbackName,
+  }) {
+    final candidates = <String>[];
+
+    void addCandidate(final String value) {
+      final normalized = value.trim();
+      if (normalized.isEmpty || candidates.contains(normalized)) {
+        return;
+      }
+      candidates.add(normalized);
+    }
+
+    final pathSegments = parsed.pathSegments
+        .where((final segment) => segment.trim().isNotEmpty)
+        .toList();
+    if (pathSegments.isNotEmpty) {
+      addCandidate(pathSegments.last);
+      if (pathSegments.length > 1) {
+        addCandidate(pathSegments.join('_'));
+      }
+    }
+    addCandidate(fallbackName);
+
+    return candidates;
+  }
+
+  bool _isUnknownExtensionMethodError(final Object error) {
+    final text = '$error'.toLowerCase();
+    return text.contains('unknown method') ||
+        text.contains('not found') ||
+        text.contains('extension call returned null') ||
+        text.contains('-32601');
   }
 }

@@ -39,19 +39,19 @@ This server provides comprehensive tools for inspecting, debugging, and dynamica
 
 **Essential Tools:**
 - connect_debug_app: Explicitly connect/select a target Flutter debug VM
-- get_active_ports: Discover running Flutter/Dart debug ports
+- discover_debug_apps: Discover running Flutter targets with canonical ws URIs
 - hot_reload_flutter: Hot reload the Flutter app for instant UI updates
 - get_vm: Get VM information and connection status  
 - get_extension_rpcs: List available extension RPCs in the Flutter app
+- inspect_widget_at_point: Map screenshot coordinates to widget/render node
+- capture_ui_snapshot: Capture screenshots + layout + errors in one bundle
 
 ${configuration.dumpsSupported ? '''
 **Debug Dump Tools (Heavy Operations - Use Sparingly):**
 - debug_dump_layer_tree: Dump complete layer tree structure
 - debug_dump_semantics_tree: Dump accessibility tree structure  
-- debug_dump_semantics_tree_inverse: Dump semantics tree in inverse order
 - debug_dump_render_tree: Dump render tree for layout debugging
 - debug_dump_focus_tree: Dump focus tree for navigation debugging
-- get_active_ports: Get list of active Flutter/Dart process ports
 ''' : ''}
 
 ${configuration.resourcesSupported ? '''

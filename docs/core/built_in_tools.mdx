@@ -12,10 +12,27 @@ Notes:
 ### Core Tools
 
 - **`connect_debug_app`**: Explicitly select/connect a debug target.
+- **`discover_debug_apps`**: List active debug targets with canonical websocket URIs.
 - **`hot_reload_flutter`**: Performs a hot reload of the Flutter app.
 - **`hot_restart_flutter`**: Performs a hot restart of the Flutter app.
 - **`get_vm`**: Returns information about the Dart VM.
 - **`get_extension_rpcs`**: Lists the available extension RPCs in the Flutter app.
+- **`capture_ui_snapshot`**: Captures screenshots + view details + app errors in one bundle.
+- **`inspect_widget_at_point`**: Resolves global (x,y) to the deepest widget/render node.
+
+`get_active_ports` remains available in CLI for low-level workflows, but
+`discover_debug_apps` is the preferred API for agent-driven target selection.
+
+### CLI Parity Quick Check
+
+CLI and MCP use the same shared command catalog/executor. You can verify quickly:
+
+```bash
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart schema --name discover_debug_apps
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart schema --name capture_ui_snapshot
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart schema --name inspect_widget_at_point
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec --name discover_debug_apps --args '{}'
+```
 
 ### Connection Targeting (Per Request)
 

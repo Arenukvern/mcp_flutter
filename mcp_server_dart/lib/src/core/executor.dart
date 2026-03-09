@@ -1,6 +1,8 @@
 // Copyright (c) 2025, Flutter Inspector MCP Server authors.
 // Licensed under the MIT License.
 
+import 'dart:convert';
+
 import 'package:flutter_inspector_mcp_server/src/core/commands.dart';
 import 'package:flutter_inspector_mcp_server/src/core/connection_context.dart';
 import 'package:flutter_inspector_mcp_server/src/core/core_types.dart';
@@ -98,6 +100,8 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       GetAppErrorsCommand() => _getAppErrors(command),
       GetScreenshotsCommand() => _getScreenshots(command),
       GetViewDetailsCommand() => _getViewDetails(),
+      InspectWidgetAtPointCommand() => _inspectWidgetAtPoint(command),
+      CaptureUiSnapshotCommand() => _captureUiSnapshot(command),
       DebugDumpLayerTreeCommand() => _debugDumpLayerTree(),
       DebugDumpSemanticsTreeCommand() => _debugDumpSemanticsTree(),
       DebugDumpRenderTreeCommand() => _debugDumpRenderTree(),
@@ -451,9 +455,10 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
         args: {'count': command.count},
       );
 
-      final errors = jsonDecodeListAs<Map<String, dynamic>>(
+      final rawErrors = jsonDecodeListAs<Map<String, dynamic>>(
         result.json?['errors'],
       ).map((final e) => e.cast<String, Object?>()).toList();
+      final errors = rawErrors.map(_enrichErrorWithTopFrame).toList();
       final message = jsonDecodeString(
         result.json?['message'],
       ).whenEmptyUse('No errors found');
@@ -508,20 +513,102 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       final result = await connectionContext.callFlutterExtension(
         mcpToolkitExtKeys.viewDetails,
       );
+      final payload = _map(result.json);
       final details = jsonDecodeListAs<Map<String, dynamic>>(
-        result.json?['details'],
+        payload['details'],
       ).map((final e) => e.cast<String, Object?>()).toList();
       final message = jsonDecodeString(
-        result.json?['message'],
+        payload['message'],
       ).whenEmptyUse('View details');
 
-      return CoreResult.success(data: {'message': message, 'details': details});
+      return CoreResult.success(
+        data: {...payload, 'message': message, 'details': details},
+      );
     } on Exception catch (e) {
       return CoreResult.failure(
         code: CoreErrorCode.getViewDetailsFailed,
         message: 'Failed to get view details: $e',
       );
     }
+  }
+
+  Future<CoreResult> _inspectWidgetAtPoint(
+    final InspectWidgetAtPointCommand command,
+  ) async {
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) return ensureFailure;
+
+    try {
+      final result = await connectionContext.callFlutterExtension(
+        mcpToolkitExtKeys.inspectWidgetAtPoint,
+        args: {
+          'x': command.x,
+          'y': command.y,
+          if (command.viewId != null) 'viewId': command.viewId,
+        },
+      );
+      return CoreResult.success(data: _map(result.json));
+    } on Exception catch (e) {
+      return CoreResult.failure(
+        code: CoreErrorCode.getViewDetailsFailed,
+        message: 'Failed to inspect widget at point: $e',
+      );
+    }
+  }
+
+  Future<CoreResult> _captureUiSnapshot(
+    final CaptureUiSnapshotCommand command,
+  ) async {
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) return ensureFailure;
+
+    final screenshotResult = await _getScreenshots(
+      GetScreenshotsCommand(compress: command.compress),
+    );
+    if (!screenshotResult.ok) {
+      return screenshotResult;
+    }
+
+    final screenshotData = _map(screenshotResult.data);
+    final imageSummaries = _buildImageSummaries(screenshotData);
+
+    Object? viewDetails;
+    if (command.includeViewDetails) {
+      final viewResult = await _getViewDetails();
+      if (!viewResult.ok) {
+        return viewResult;
+      }
+      viewDetails = viewResult.data;
+    }
+
+    Object? appErrors;
+    if (command.includeErrors) {
+      final errorResult = await _getAppErrors(
+        GetAppErrorsCommand(count: command.errorsCount),
+      );
+      if (!errorResult.ok) {
+        return errorResult;
+      }
+      appErrors = errorResult.data;
+    }
+
+    return CoreResult.success(
+      data: {
+        'message': 'Captured UI snapshot bundle.',
+        'capturedAt': DateTime.now().toUtc().toIso8601String(),
+        'screenshots': screenshotData,
+        'imageSummaries': imageSummaries,
+        if (viewDetails != null) 'viewDetails': viewDetails,
+        if (appErrors != null) 'appErrors': appErrors,
+        'summary': {
+          'imageCount': imageSummaries.length,
+          'includeViewDetails': command.includeViewDetails,
+          'includeErrors': command.includeErrors,
+          'errorsCount': command.errorsCount,
+          'compress': command.compress,
+        },
+      },
+    );
   }
 
   Future<CoreResult> _debugDumpLayerTree() async {
@@ -682,5 +769,100 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       return data.cast<String, Object?>();
     }
     return const <String, Object?>{};
+  }
+
+  Map<String, Object?> _enrichErrorWithTopFrame(
+    final Map<String, Object?> error,
+  ) {
+    final next = <String, Object?>{...error};
+    final stackTrace = '${next['stackTrace'] ?? ''}'.trim();
+    if (stackTrace.isEmpty) {
+      return next;
+    }
+
+    final frames = _parseStackFrames(stackTrace);
+    if (frames.isEmpty) {
+      return next;
+    }
+
+    next['topFrame'] = frames.first;
+    next['frames'] = frames;
+    return next;
+  }
+
+  List<Map<String, Object?>> _parseStackFrames(final String stackTrace) {
+    final lines = stackTrace.split('\n');
+    final frames = <Map<String, Object?>>[];
+    final pattern = RegExp(r'\(([^:]+):(\d+):(\d+)\)$');
+
+    for (final line in lines) {
+      final trimmed = line.trim();
+      if (trimmed.isEmpty) {
+        continue;
+      }
+
+      final match = pattern.firstMatch(trimmed);
+      if (match == null) {
+        continue;
+      }
+
+      final file = match.group(1);
+      final lineNumber = int.tryParse(match.group(2) ?? '');
+      final columnNumber = int.tryParse(match.group(3) ?? '');
+      if (file == null || lineNumber == null || columnNumber == null) {
+        continue;
+      }
+
+      frames.add({
+        'file': file,
+        'line': lineNumber,
+        'column': columnNumber,
+        'raw': trimmed,
+      });
+
+      if (frames.length >= 10) {
+        break;
+      }
+    }
+
+    return frames;
+  }
+
+  List<Map<String, Object?>> _buildImageSummaries(
+    final Map<String, Object?> screenshotData,
+  ) {
+    final summaries = <Map<String, Object?>>[];
+
+    final images = jsonDecodeListAs<String>(screenshotData['images']);
+    for (var i = 0; i < images.length; i++) {
+      final image = images[i];
+      summaries.add({
+        'id': 'image_${i + 1}',
+        'source': 'inline_base64',
+        'hash': _stableStringHash(image),
+      });
+    }
+
+    final fileUrls = jsonDecodeListAs<String>(screenshotData['fileUrls']);
+    for (var i = 0; i < fileUrls.length; i++) {
+      final url = fileUrls[i];
+      summaries.add({
+        'id': 'image_${images.length + i + 1}',
+        'source': 'file_url',
+        'fileUrl': url,
+        'hash': _stableStringHash(url),
+      });
+    }
+
+    return summaries;
+  }
+
+  String _stableStringHash(final String value) {
+    var hash = 0x811c9dc5;
+    for (final byte in utf8.encode(value)) {
+      hash ^= byte;
+      hash = (hash * 0x01000193) & 0x7fffffff;
+    }
+    return hash.toRadixString(16).padLeft(8, '0');
   }
 }

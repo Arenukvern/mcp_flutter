@@ -8,6 +8,7 @@ Symptoms:
   - `ext.mcp.toolkit.app_errors`
   - `ext.mcp.toolkit.view_details`
   - `ext.mcp.toolkit.view_screenshots`
+  - `ext.mcp.toolkit.inspect_widget_at_point`
 - `get_screenshots`, `get_view_details`, or `get_app_errors` fail even though VM connection works.
 
 Fix:
@@ -88,6 +89,12 @@ Example retry:
 - Verify toolkit extension `ext.mcp.toolkit.view_details` is present.
 - If multiple apps are running, pin target with `arguments.connection.uri`.
 - Retry after hot restart if the app was just instrumented.
+
+## Coordinate Inspection Missing
+
+- Verify toolkit extension `ext.mcp.toolkit.inspect_widget_at_point` is present.
+- Retry with explicit target selection (`arguments.connection.targetId` or `arguments.connection.uri`).
+- Confirm provided `x` and `y` are global logical coordinates.
 
 ## Dynamic Tools Not Appearing
 

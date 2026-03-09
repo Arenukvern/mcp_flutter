@@ -7,6 +7,7 @@ import 'package:from_json_to_json/from_json_to_json.dart';
 extension type ViewMetrics.fromMap(Map<String, Object?> _value) {
   /// Creates view metrics with the given parameters
   factory ViewMetrics({
+    required final int viewId,
     required final double devicePixelRatio,
     required final Size physicalSize,
     required final Size logicalSize,
@@ -16,6 +17,7 @@ extension type ViewMetrics.fromMap(Map<String, Object?> _value) {
     required final EdgeInsets systemGestureInsets,
     required final EdgeInsets padding,
   }) => ViewMetrics.fromMap({
+    'viewId': viewId,
     'devicePixelRatio': devicePixelRatio,
     'physicalSize': {
       'width': physicalSize.width,
@@ -51,6 +53,9 @@ extension type ViewMetrics.fromMap(Map<String, Object?> _value) {
 
   /// The device pixel ratio for this view
   double get devicePixelRatio => jsonDecodeDouble(_value['devicePixelRatio']);
+
+  /// The FlutterView identifier.
+  int get viewId => jsonDecodeInt(_value['viewId']);
 
   /// The physical size of the view in pixels
   Size get physicalSize {
@@ -133,6 +138,7 @@ mixin ApplicationInfo {
       final flutterView = view.flutterView;
 
       return ViewMetrics(
+        viewId: flutterView.viewId,
         devicePixelRatio: flutterView.devicePixelRatio,
         physicalSize: flutterView.physicalSize,
         logicalSize: Size(

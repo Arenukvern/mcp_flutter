@@ -25,7 +25,7 @@
 
 4. **Missing `mcp_toolkit` Extensions (`Cannot Plug Into App`)**
 
-   - Symptom: `get_extension_rpcs` is missing `ext.mcp.toolkit.app_errors`, `ext.mcp.toolkit.view_details`, or `ext.mcp.toolkit.view_screenshots`
+   - Symptom: `get_extension_rpcs` is missing `ext.mcp.toolkit.app_errors`, `ext.mcp.toolkit.view_details`, `ext.mcp.toolkit.view_screenshots`, or `ext.mcp.toolkit.inspect_widget_at_point`
    - Ensure startup includes `MCPToolkitBinding.instance..initialize()..initializeFlutterToolkit();`
    - Hot reload may not be enough after instrumentation changes; run hot restart or rerun the app
    - If the app cannot be modified, do not claim screenshot/layout/error inspection works

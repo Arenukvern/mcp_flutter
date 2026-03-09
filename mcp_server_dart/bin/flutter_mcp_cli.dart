@@ -520,6 +520,7 @@ Future<CoreResult> _runValidateRuntime({
     'ext.mcp.toolkit.app_errors',
     'ext.mcp.toolkit.view_details',
     'ext.mcp.toolkit.view_screenshots',
+    'ext.mcp.toolkit.inspect_widget_at_point',
   };
   final missingExtensions = requiredExtensions.difference(extensionSet).toList()
     ..sort();
@@ -1307,7 +1308,7 @@ Examples:
   flutter_mcp_cli exec --name get_view_details --args '{}'
 
 CLI-first runtime validation sequence:
-  1) get_extension_rpcs -> confirm ext.mcp.toolkit.app_errors/view_details/view_screenshots
+  1) get_extension_rpcs -> confirm ext.mcp.toolkit.app_errors/view_details/view_screenshots/inspect_widget_at_point
   2) get_screenshots + get_view_details -> visual/layout baseline
   3) get_app_errors -> runtime error context
 

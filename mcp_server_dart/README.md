@@ -29,7 +29,11 @@ Safe-write flags for write-producing commands:
 - `bundle create`: `--check --diff --backup --no-overwrite`
 
 `exec` targets commands in the shared `CommandCatalog`:
-`connect`, `session_start`, `session_exec`, `session_end`, `diagnose`, `watch`, `explain_errors`, `status`, `discover_debug_apps`, `get_vm`, `get_extension_rpcs`, `hot_reload_flutter`, `hot_restart_flutter`, `get_active_ports`, `get_app_errors`, `get_screenshots`, `get_view_details`, `debug_dump_layer_tree`, `debug_dump_semantics_tree`, `debug_dump_render_tree`, `debug_dump_focus_tree`, `listClientToolsAndResources`, `runClientTool`, `runClientResource`, `dynamicRegistryStats`.
+`connect`, `session_start`, `session_exec`, `session_end`, `diagnose`, `watch`, `explain_errors`, `status`, `discover_debug_apps`, `get_vm`, `get_extension_rpcs`, `hot_reload_flutter`, `hot_restart_flutter`, `get_active_ports`, `get_app_errors`, `get_screenshots`, `get_view_details`, `inspect_widget_at_point`, `capture_ui_snapshot`, `debug_dump_layer_tree`, `debug_dump_semantics_tree`, `debug_dump_render_tree`, `debug_dump_focus_tree`, `listClientToolsAndResources`, `runClientTool`, `runClientResource`, `dynamicRegistryStats`.
+
+CLI runs the same shared command catalog/executor as MCP. Preferred debugging path:
+`discover_debug_apps` -> `capture_ui_snapshot` -> `inspect_widget_at_point`.
+`get_active_ports` and `dynamicRegistryStats` remain available in CLI for low-level diagnostics, but are intentionally not MCP-exposed by default.
 
 ## CLI Quick Use (v3)
 
@@ -42,6 +46,9 @@ dart run bin/flutter_mcp_cli.dart capabilities
 dart run bin/flutter_mcp_cli.dart exec --name status --args '{}'
 dart run bin/flutter_mcp_cli.dart exec --name get_vm --args '{}'
 dart run bin/flutter_mcp_cli.dart exec --name get_vm --args '{"connection":{"targetId":"ws://127.0.0.1:8181/<token>/ws"}}'
+dart run bin/flutter_mcp_cli.dart exec --name discover_debug_apps --args '{}'
+dart run bin/flutter_mcp_cli.dart exec --name capture_ui_snapshot --args '{"connection":{"targetId":"ws://127.0.0.1:8181/<token>/ws"}}'
+dart run bin/flutter_mcp_cli.dart exec --name inspect_widget_at_point --args '{"x":120,"y":220,"connection":{"targetId":"ws://127.0.0.1:8181/<token>/ws"}}'
 
 # session lifecycle
 dart run bin/flutter_mcp_cli.dart exec --name session_start --args '{"mode":"uri","uri":"ws://127.0.0.1:8181/<token>/ws"}'
@@ -71,7 +78,7 @@ dart run bin/flutter_mcp_cli.dart validate-runtime \
 
 CLI runtime gate for app inspection:
 
-- Require `ext.mcp.toolkit.app_errors`, `ext.mcp.toolkit.view_details`, and `ext.mcp.toolkit.view_screenshots` from `get_extension_rpcs`.
+- Require `ext.mcp.toolkit.app_errors`, `ext.mcp.toolkit.view_details`, `ext.mcp.toolkit.view_screenshots`, and `ext.mcp.toolkit.inspect_widget_at_point` from `get_extension_rpcs`.
 - If missing, app-level screenshot/layout/error inspection is blocked until `mcp_toolkit` is installed, initialized, and the app is hot restarted or rerun.
 - If screenshots are blank, ensure app window is visible/foreground and retry `get_screenshots`.
 - If first explicit-URI connect times out, retry once and validate with `doctor --json --target <ws_uri> --timeout-ms 10000`.

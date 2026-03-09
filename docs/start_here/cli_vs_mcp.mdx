@@ -83,6 +83,8 @@ A common pattern:
 - VM target selection uses the same nested `connection` model in both interfaces.
 - Multi-target ambiguity returns guidance (`connection_selection_required`), then retry with `connection.targetId`.
 - Core capability definitions come from the same command catalog.
+- High-signal debugging commands are shared: `discover_debug_apps`, `capture_ui_snapshot`, `inspect_widget_at_point`.
+- Low-signal diagnostics (`get_active_ports`, `dynamicRegistryStats`) remain CLI-available but are not MCP-exposed by default.
 
 ## Related Docs
 

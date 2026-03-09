@@ -406,6 +406,7 @@ final class DoctorRunner {
         mcpToolkitExtKeys.appErrors,
         mcpToolkitExtKeys.viewDetails,
         mcpToolkitExtKeys.viewScreenshots,
+        mcpToolkitExtKeys.inspectWidgetAtPoint,
       };
       final missing = requiredExtensions.difference(extensionList).toList()
         ..sort();

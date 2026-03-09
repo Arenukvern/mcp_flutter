@@ -14,6 +14,17 @@ void main() {
       expect(names.contains('session_start'), isTrue);
       expect(names.contains('session_exec'), isTrue);
       expect(names.contains('runClientTool'), isTrue);
+      expect(names.contains('discover_debug_apps'), isTrue);
+      expect(names.contains('inspect_widget_at_point'), isTrue);
+      expect(names.contains('capture_ui_snapshot'), isTrue);
+    });
+
+    test('marks high-signal and low-signal MCP exposure explicitly', () {
+      expect(catalog.specFor('discover_debug_apps')!.mcpExposed, isTrue);
+      expect(catalog.specFor('inspect_widget_at_point')!.mcpExposed, isTrue);
+      expect(catalog.specFor('capture_ui_snapshot')!.mcpExposed, isTrue);
+      expect(catalog.specFor('get_active_ports')!.mcpExposed, isFalse);
+      expect(catalog.specFor('dynamicRegistryStats')!.mcpExposed, isFalse);
     });
 
     test('every command has input and output schemas', () {

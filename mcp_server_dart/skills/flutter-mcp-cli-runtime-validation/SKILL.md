@@ -34,6 +34,7 @@ dart run mcp_server_dart/bin/flutter_mcp_cli.dart validate-runtime \
   - `ext.mcp.toolkit.app_errors`
   - `ext.mcp.toolkit.view_details`
   - `ext.mcp.toolkit.view_screenshots`
+  - `ext.mcp.toolkit.inspect_widget_at_point`
 - Screenshot capture works.
 - View details (layout metadata) are available.
 - App errors are retrievable.
@@ -45,6 +46,9 @@ dart run mcp_server_dart/bin/flutter_mcp_cli.dart validate-runtime \
 - Use `data.steps` for per-step evidence and retries.
 - Use `data.doctor.checks` to explain setup blockers.
 - When `--save-images` is enabled, read screenshot file URLs from step data.
+- For visual debugging reports, also run:
+  - `exec --name capture_ui_snapshot --args '{"errorsCount":4,"compress":true,"includeViewDetails":true,"includeErrors":true}'`
+  - `exec --name inspect_widget_at_point --args '{"x":<int>,"y":<int>}'`
 
 ## Failure Rules
 
@@ -55,6 +59,13 @@ dart run mcp_server_dart/bin/flutter_mcp_cli.dart validate-runtime \
 - If first explicit URI connect fails, retry is automatic for retryable connection errors.
 - If screenshots are blank, verify app window is visible and retry.
 - If app cannot be instrumented, do not claim screenshot/layout/error inspection success.
+
+## Visual QA + Source Mapping Rules
+
+- Always compare before/after screenshot evidence around changes.
+- For each reported visual issue, provide coordinate + `inspect_widget_at_point` output.
+- Map defects to source using `get_app_errors` top stack frame (`file`, `line`, `column`) when available.
+- Do not use `debug_dump_*` unless explicitly requested.
 
 ## Challenge Cases (Always Call Out Explicitly)
 

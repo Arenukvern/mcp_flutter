@@ -94,6 +94,15 @@ class VMToolsHandler {
     inputSchema: strictToolInputSchema(),
   );
 
+  static final discoverDebugAppsTool = Tool(
+    name: 'discover_debug_apps',
+    description: _description(
+      'discover_debug_apps',
+      'Discover Flutter debug targets with canonical ws target URIs.',
+    ),
+    inputSchema: strictToolInputSchema(),
+  );
+
   Future<CallToolResult> connectDebugApp(final CallToolRequest request) async {
     final resolved = buildConnectCommandFromArguments(
       arguments: request.arguments,
@@ -195,6 +204,22 @@ class VMToolsHandler {
       return toCallToolErrorResult(
         result,
         prefix: 'Failed to get active ports',
+      );
+    }
+
+    return CallToolResult(
+      content: [TextContent(text: jsonEncode(result.data))],
+    );
+  }
+
+  Future<CallToolResult> discoverDebugApps(
+    final CallToolRequest request,
+  ) async {
+    final result = await executor.execute(const DiscoverDebugAppsCommand());
+    if (!result.ok) {
+      return toCallToolErrorResult(
+        result,
+        prefix: 'Failed to discover debug apps',
       );
     }
 

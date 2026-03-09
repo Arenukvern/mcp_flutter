@@ -102,24 +102,11 @@ final class DynamicRegistryTools {
     ),
   );
 
-  static final getRegistryStats = Tool(
-    name: 'getRegistryStats',
-    description: 'Get statistics about the dynamic registry',
-    inputSchema: strictToolInputSchema(
-      properties: {
-        'includeAppDetails': Schema.bool(
-          description: 'Include detailed app information (default: true)',
-        ),
-      },
-    ),
-  );
-
   Map<Tool, FutureOr<CallToolResult> Function(CallToolRequest)> get allTools =>
       {
         listClientToolsAndResources: _handleListClientToolsAndResources,
         runClientTool: _handleRunClientTool,
         runClientResource: _handleRunClientResource,
-        if (kDebugMode) getRegistryStats: _handleGetRegistryStats,
       };
 
   FutureOr<CallToolResult> _handleListClientToolsAndResources(
@@ -269,29 +256,6 @@ final class DynamicRegistryTools {
     final content = jsonDecodeString(data['content']);
     return CallToolResult(
       content: [TextContent(text: content)],
-      isError: false,
-    );
-  }
-
-  FutureOr<CallToolResult> _handleGetRegistryStats(
-    final CallToolRequest request,
-  ) async {
-    final arguments = request.arguments;
-    final includeAppDetails = jsonDecodeBool(arguments?['includeAppDetails']);
-
-    final result = await _executor.execute(
-      DynamicRegistryStatsCommand(includeAppDetails: includeAppDetails),
-    );
-
-    if (!result.ok) {
-      return toCallToolErrorResult(
-        result,
-        prefix: 'Failed to get registry stats',
-      );
-    }
-
-    return CallToolResult(
-      content: [TextContent(text: jsonEncode(result.data))],
       isError: false,
     );
   }

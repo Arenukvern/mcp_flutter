@@ -136,6 +136,27 @@ void main() {
           ),
           isTrue,
         );
+        expect(
+          extList.any(
+            (final e) => e.contains('ext.mcp.toolkit.inspect_widget_at_point'),
+          ),
+          isTrue,
+        );
+
+        final discover = await _runCli([
+          'exec',
+          '--name',
+          'discover_debug_apps',
+          '--args',
+          '{}',
+        ]);
+        expect(discover['ok'], isTrue);
+        final discoverData = discover['data'] as Map<String, dynamic>;
+        final targets = (discoverData['targets'] as List)
+            .whereType<Map>()
+            .map((final e) => e.cast<String, Object?>())
+            .toList();
+        expect(targets, isNotEmpty);
 
         final viewDetails = await _runCli([
           'exec',
@@ -146,8 +167,51 @@ void main() {
         ]);
         expect(viewDetails['ok'], isTrue);
 
+        final snapshot = await _runCli([
+          'exec',
+          '--name',
+          'capture_ui_snapshot',
+          '--args',
+          jsonEncode({
+            'connection': {'uri': _globalVmServiceWsUri},
+            'errorsCount': 3,
+            'includeViewDetails': true,
+            'includeErrors': true,
+            'compress': true,
+          }),
+        ]);
+        expect(snapshot['ok'], isTrue);
+        final snapshotData = snapshot['data'] as Map<String, dynamic>;
+        expect(snapshotData['viewDetails'], isNotNull);
+        expect(snapshotData['appErrors'], isNotNull);
+        final snapshotSummary = snapshotData['summary'] as Map<String, dynamic>;
+        expect(snapshotSummary['imageCount'], isA<int>());
+        expect((snapshotSummary['imageCount'] as int) >= 1, isTrue);
+
+        final inspectAtPoint = await _runCli([
+          'exec',
+          '--name',
+          'inspect_widget_at_point',
+          '--args',
+          jsonEncode({
+            'x': 120,
+            'y': 220,
+            'connection': {'uri': _globalVmServiceWsUri},
+          }),
+        ]);
+        expect(inspectAtPoint['ok'], isTrue);
+        final inspectData = inspectAtPoint['data'] as Map<String, dynamic>;
+        expect(inspectData['hit'], isA<bool>());
+        expect(inspectData['summary'], isA<Map>());
+
         final dynamicList = await _waitForDynamicTool('get_app_ui_state');
         expect(dynamicList['ok'], isTrue);
+        final dynamicData = dynamicList['data'] as Map<String, dynamic>;
+        final appStateResourceUri = _findResourceUri(
+          dynamicData,
+          resourceName: 'app_state',
+        );
+        expect(appStateResourceUri, isNotNull);
 
         final runTool = await _runCli([
           'exec',
@@ -157,6 +221,35 @@ void main() {
           '{"toolName":"get_app_ui_state","arguments":{}}',
         ]);
         expect(runTool['ok'], isTrue);
+
+        final runResource = await _runCli([
+          'exec',
+          '--name',
+          'runClientResource',
+          '--args',
+          jsonEncode({'resourceUri': appStateResourceUri}),
+        ]);
+        expect(runResource['ok'], isTrue);
+        final resourceData = runResource['data'] as Map<String, dynamic>;
+        final content = '${resourceData['content'] ?? ''}'.trim();
+        expect(content, isNotEmpty);
+        expect('${resourceData['mimeType'] ?? ''}'.trim(), isNotEmpty);
+        final decodedResource = _tryDecodeJsonMap(content);
+        expect(decodedResource, isNotNull);
+        final parameters = decodedResource!['parameters'];
+        if (parameters is Map) {
+          final params = parameters.cast<String, dynamic>();
+          expect(
+            params.containsKey('appName') || params.containsKey('isConnected'),
+            isTrue,
+          );
+        } else {
+          expect(
+            decodedResource.containsKey('appName') ||
+                decodedResource.containsKey('message'),
+            isTrue,
+          );
+        }
 
         final sessionStart = await _runCli([
           'exec',
@@ -335,6 +428,40 @@ Future<Map<String, dynamic>> _waitForDynamicTool(final String toolName) async {
   }
 
   fail('Dynamic tool $toolName did not appear in time');
+}
+
+String? _findResourceUri(
+  final Map<String, dynamic> dynamicData, {
+  required final String resourceName,
+}) {
+  final resources = (dynamicData['resources'] as List?) ?? const [];
+  for (final resource in resources.whereType<Map>()) {
+    final map = resource.cast<String, Object?>();
+    final name = '${map['name'] ?? ''}'.trim();
+    final uri = '${map['uri'] ?? ''}'.trim();
+    if (name == resourceName && uri.isNotEmpty) {
+      return uri;
+    }
+    if (uri.contains(resourceName)) {
+      return uri;
+    }
+  }
+  return null;
+}
+
+Map<String, dynamic>? _tryDecodeJsonMap(final String value) {
+  try {
+    final decoded = jsonDecode(value);
+    if (decoded is Map<String, dynamic>) {
+      return decoded;
+    }
+    if (decoded is Map) {
+      return decoded.cast<String, dynamic>();
+    }
+    return null;
+  } catch (_) {
+    return null;
+  }
 }
 
 Future<Map<String, dynamic>> _runCli(final List<String> args) async {

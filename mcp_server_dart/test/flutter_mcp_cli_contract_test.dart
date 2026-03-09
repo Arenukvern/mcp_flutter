@@ -73,6 +73,61 @@ void main() {
     );
 
     test(
+      'schema exposes visual-debug commands with expected MCP visibility',
+      () async {
+        final schemaResult = await _runCli(statePath, ['schema']);
+        expect(schemaResult.exitCode, equals(0));
+
+        final envelope =
+            jsonDecode((schemaResult.stdout as String).trim())
+                as Map<String, dynamic>;
+        expect(envelope['ok'], isTrue);
+
+        final data = envelope['data'] as Map<String, dynamic>;
+        final commands = (data['commands'] as List)
+            .cast<Map<String, dynamic>>();
+        final byName = <String, Map<String, dynamic>>{
+          for (final command in commands) command['name'] as String: command,
+        };
+
+        expect(byName.containsKey('discover_debug_apps'), isTrue);
+        expect(byName.containsKey('inspect_widget_at_point'), isTrue);
+        expect(byName.containsKey('capture_ui_snapshot'), isTrue);
+        expect(byName.containsKey('get_active_ports'), isTrue);
+        expect(byName.containsKey('dynamicRegistryStats'), isTrue);
+
+        expect(byName['discover_debug_apps']!['mcpExposed'], isTrue);
+        expect(byName['inspect_widget_at_point']!['mcpExposed'], isTrue);
+        expect(byName['capture_ui_snapshot']!['mcpExposed'], isTrue);
+        expect(byName['get_active_ports']!['mcpExposed'], isFalse);
+        expect(byName['dynamicRegistryStats']!['mcpExposed'], isFalse);
+      },
+    );
+
+    test(
+      'exec routes visual-debug commands via the shared command catalog',
+      () async {
+        final inspectResult = await _runCli(statePath, [
+          'exec',
+          '--name',
+          'inspect_widget_at_point',
+          '--args',
+          '{"x":1,"y":1,"connection":{"uri":"ws://127.0.0.1:1/unreachable/ws"}}',
+        ]);
+
+        expect(inspectResult.exitCode, isNonZero);
+
+        final envelope =
+            jsonDecode((inspectResult.stdout as String).trim())
+                as Map<String, dynamic>;
+        expect(envelope['ok'], isFalse);
+        final error = envelope['error'] as Map<String, dynamic>;
+        final code = error['code'] as String;
+        expect(code, isNot(equals('invalid_command')));
+      },
+    );
+
+    test(
       'doctor emits required checks and critical-fail exit semantics',
       () async {
         final result = await _runCli(statePath, [

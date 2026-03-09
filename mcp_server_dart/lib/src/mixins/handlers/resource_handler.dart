@@ -62,6 +62,49 @@ class ResourceHandler {
     inputSchema: strictToolInputSchema(),
   );
 
+  static final inspectWidgetAtPointTool = Tool(
+    name: 'inspect_widget_at_point',
+    description: _description(
+      'inspect_widget_at_point',
+      'Inspect the deepest widget at global logical coordinates (x, y).',
+    ),
+    inputSchema: strictToolInputSchema(
+      required: ['x', 'y'],
+      properties: {
+        'x': Schema.int(description: 'Global logical X coordinate'),
+        'y': Schema.int(description: 'Global logical Y coordinate'),
+        'viewId': Schema.int(
+          description: 'Optional FlutterView id for multi-view apps',
+        ),
+      },
+    ),
+  );
+
+  static final captureUiSnapshotTool = Tool(
+    name: 'capture_ui_snapshot',
+    description: _description(
+      'capture_ui_snapshot',
+      'Capture screenshots, view details, and app errors in one response.',
+    ),
+    inputSchema: strictToolInputSchema(
+      properties: {
+        'errorsCount': Schema.int(
+          description: 'Number of recent errors to include (default: 4)',
+        ),
+        'compress': Schema.bool(
+          description:
+              'Whether screenshots should be compressed (default: true)',
+        ),
+        'includeViewDetails': Schema.bool(
+          description: 'Include detailed view/widget data (default: true)',
+        ),
+        'includeErrors': Schema.bool(
+          description: 'Include app errors (default: true)',
+        ),
+      },
+    ),
+  );
+
   Future<ReadResourceResult> handleAppErrorsResource(
     final ReadResourceRequest request, {
     final int count = 4,
@@ -204,22 +247,12 @@ class ResourceHandler {
     }
 
     final data = _map(result.data);
-    final message = jsonDecodeString(
-      data['message'],
-    ).whenEmptyUse('View details');
-    final details = jsonDecodeListAs<Map<String, dynamic>>(
-      data['details'],
-    ).map((final e) => e.cast<String, Object?>()).toList();
-
     return ReadResourceResult(
       contents: [
-        TextResourceContents(uri: request.uri, text: message),
-        ...details.map(
-          (final detail) => TextResourceContents(
-            uri: request.uri,
-            text: jsonEncode(detail),
-            mimeType: 'application/json',
-          ),
+        TextResourceContents(
+          uri: request.uri,
+          text: jsonEncode(data),
+          mimeType: 'application/json',
         ),
       ],
     );
@@ -319,18 +352,94 @@ class ResourceHandler {
     }
 
     final data = _map(result.data);
-    final message = jsonDecodeString(
-      data['message'],
-    ).whenEmptyUse('View details');
-    final details = jsonDecodeListAs<Map<String, dynamic>>(
-      data['details'],
-    ).map((final e) => e.cast<String, Object?>()).toList();
+    return CallToolResult(content: [TextContent(text: jsonEncode(data))]);
+  }
+
+  Future<CallToolResult> inspectWidgetAtPoint(
+    final CallToolRequest request,
+  ) async {
+    final connectError = await applyConnectionOverride(
+      request: request,
+      executor: executor,
+    );
+    if (connectError != null) {
+      return toCallToolErrorResult(connectError, prefix: 'Failed to connect');
+    }
+
+    final x = jsonDecodeInt(request.arguments?['x']).whenZeroUse(0);
+    final y = jsonDecodeInt(request.arguments?['y']).whenZeroUse(0);
+    final rawViewId = request.arguments?['viewId'];
+    final viewId = switch (rawViewId) {
+      final int v => v,
+      final String v when int.tryParse(v) != null => int.parse(v),
+      _ => null,
+    };
+
+    final result = await executor.execute(
+      InspectWidgetAtPointCommand(x: x, y: y, viewId: viewId),
+    );
+
+    if (!result.ok) {
+      return toCallToolErrorResult(
+        result,
+        prefix: 'Failed to inspect widget at point',
+      );
+    }
 
     return CallToolResult(
-      content: [
-        TextContent(text: message),
-        ...details.map((final detail) => TextContent(text: jsonEncode(detail))),
-      ],
+      content: [TextContent(text: jsonEncode(result.data))],
+    );
+  }
+
+  Future<CallToolResult> captureUiSnapshot(
+    final CallToolRequest request,
+  ) async {
+    final connectError = await applyConnectionOverride(
+      request: request,
+      executor: executor,
+    );
+    if (connectError != null) {
+      return toCallToolErrorResult(connectError, prefix: 'Failed to connect');
+    }
+
+    final errorsCount = jsonDecodeInt(
+      request.arguments?['errorsCount'],
+    ).whenZeroUse(4);
+    final compress = switch (request.arguments?['compress']) {
+      final bool value => value,
+      final String value => value.toLowerCase() != 'false',
+      _ => true,
+    };
+    final includeViewDetails =
+        switch (request.arguments?['includeViewDetails']) {
+          final bool value => value,
+          final String value => value.toLowerCase() != 'false',
+          _ => true,
+        };
+    final includeErrors = switch (request.arguments?['includeErrors']) {
+      final bool value => value,
+      final String value => value.toLowerCase() != 'false',
+      _ => true,
+    };
+
+    final result = await executor.execute(
+      CaptureUiSnapshotCommand(
+        errorsCount: errorsCount,
+        compress: compress,
+        includeViewDetails: includeViewDetails,
+        includeErrors: includeErrors,
+      ),
+    );
+
+    if (!result.ok) {
+      return toCallToolErrorResult(
+        result,
+        prefix: 'Failed to capture UI snapshot',
+      );
+    }
+
+    return CallToolResult(
+      content: [TextContent(text: jsonEncode(result.data))],
     );
   }
 

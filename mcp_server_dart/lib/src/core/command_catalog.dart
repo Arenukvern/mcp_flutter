@@ -136,14 +136,14 @@ final class CommandCatalog {
   final List<Map<String, Object?>> defaultSnapshotPlan =
       const <Map<String, Object?>>[
         <String, Object?>{'name': 'status', 'args': <String, Object?>{}},
+        <String, Object?>{
+          'name': 'discover_debug_apps',
+          'args': <String, Object?>{},
+        },
         <String, Object?>{'name': 'get_vm', 'args': <String, Object?>{}},
         <String, Object?>{
           'name': 'get_extension_rpcs',
           'args': <String, Object?>{},
-        },
-        <String, Object?>{
-          'name': 'dynamicRegistryStats',
-          'args': <String, Object?>{'includeAppDetails': true},
         },
         <String, Object?>{
           'name': 'get_app_errors',
@@ -463,7 +463,7 @@ final class CommandCatalog {
         ),
         requiresVm: false,
         supportsWatch: true,
-        mcpExposed: false,
+        mcpExposed: true,
         build: (final args) => const DiscoverDebugAppsCommand(),
       ),
       CommandSpec(
@@ -517,7 +517,7 @@ final class CommandCatalog {
         outputSchema: _arraySchema(items: _intSchema()),
         requiresVm: false,
         supportsWatch: true,
-        mcpExposed: true,
+        mcpExposed: false,
         build: (final args) => const GetActivePortsCommand(),
       ),
       CommandSpec(
@@ -529,8 +529,11 @@ final class CommandCatalog {
         outputSchema: _objectSchema(
           properties: {
             'message': _stringSchema(),
-            'errors': _arraySchema(items: _objectSchema()),
+            'errors': _arraySchema(
+              items: _objectSchema(additionalProperties: true),
+            ),
           },
+          additionalProperties: true,
         ),
         requiresVm: true,
         supportsWatch: true,
@@ -559,18 +562,79 @@ final class CommandCatalog {
       ),
       CommandSpec(
         name: 'get_view_details',
-        description: 'Read detailed info for all Flutter views.',
+        description:
+            'Read detailed Flutter view metrics and widget tree information.',
         inputSchema: _objectSchema(),
         outputSchema: _objectSchema(
           properties: {
             'message': _stringSchema(),
-            'details': _arraySchema(items: _objectSchema()),
+            'details': _arraySchema(
+              items: _objectSchema(additionalProperties: true),
+            ),
+            'widgetTree': _objectSchema(additionalProperties: true),
+            'summary': _objectSchema(additionalProperties: true),
           },
+          additionalProperties: true,
         ),
         requiresVm: true,
         supportsWatch: true,
         mcpExposed: true,
         build: (final args) => const GetViewDetailsCommand(),
+      ),
+      CommandSpec(
+        name: 'inspect_widget_at_point',
+        description:
+            'Inspect the deepest widget/render node at global logical (x,y).',
+        inputSchema: _objectSchema(
+          properties: {
+            'x': _intSchema(),
+            'y': _intSchema(),
+            'viewId': _intSchema(),
+          },
+          required: const <String>['x', 'y'],
+        ),
+        outputSchema: _objectSchema(additionalProperties: true),
+        requiresVm: true,
+        supportsWatch: true,
+        mcpExposed: true,
+        build: (final args) => InspectWidgetAtPointCommand(
+          x: _intArg(args, 'x', fallback: 0),
+          y: _intArg(args, 'y', fallback: 0),
+          viewId: _nullableIntArg(args, 'viewId', alias: 'view-id'),
+        ),
+      ),
+      CommandSpec(
+        name: 'capture_ui_snapshot',
+        description:
+            'Capture screenshot(s), view details, and app errors in one bundle.',
+        inputSchema: _objectSchema(
+          properties: {
+            'errorsCount': _intSchema(defaultValue: 4),
+            'compress': _boolSchema(defaultValue: true),
+            'includeViewDetails': _boolSchema(defaultValue: true),
+            'includeErrors': _boolSchema(defaultValue: true),
+          },
+        ),
+        outputSchema: _objectSchema(additionalProperties: true),
+        requiresVm: true,
+        supportsWatch: true,
+        mcpExposed: true,
+        build: (final args) => CaptureUiSnapshotCommand(
+          errorsCount: _intArg(args, 'errorsCount', fallback: 4),
+          compress: _boolArg(args, 'compress', fallback: true),
+          includeViewDetails: _boolArg(
+            args,
+            'includeViewDetails',
+            alias: 'include-view-details',
+            fallback: true,
+          ),
+          includeErrors: _boolArg(
+            args,
+            'includeErrors',
+            alias: 'include-errors',
+            fallback: true,
+          ),
+        ),
       ),
       CommandSpec(
         name: 'debug_dump_layer_tree',
@@ -670,7 +734,12 @@ final class CommandCatalog {
             'uri': _stringSchema(),
             'content': _stringSchema(),
             'mimeType': _stringSchema(),
+            'blob': _stringSchema(),
+            'isBlob': _boolSchema(),
+            'message': _stringSchema(),
+            'payload': _objectSchema(additionalProperties: true),
           },
+          additionalProperties: true,
         ),
         requiresVm: true,
         supportsWatch: true,
@@ -698,7 +767,7 @@ final class CommandCatalog {
         ),
         requiresVm: true,
         supportsWatch: true,
-        mcpExposed: true,
+        mcpExposed: false,
         build: (final args) => DynamicRegistryStatsCommand(
           includeAppDetails: _boolArg(
             args,
