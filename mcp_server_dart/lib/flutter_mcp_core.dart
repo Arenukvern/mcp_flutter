@@ -27,3 +27,4 @@ export 'src/core/services/core_image_file_saver.dart';
 export 'src/core/services/core_port_scanner.dart';
 export 'src/core/services/flutter_tool_machine_discovery.dart';
 export 'src/core/state_store.dart';
+export 'src/core/visual_capture.dart';

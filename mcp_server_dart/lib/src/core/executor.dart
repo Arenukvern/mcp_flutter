@@ -13,9 +13,11 @@ import 'package:flutter_inspector_mcp_server/src/core/error_codes.dart';
 import 'package:flutter_inspector_mcp_server/src/core/error_summary_provider.dart';
 import 'package:flutter_inspector_mcp_server/src/core/results.dart';
 import 'package:flutter_inspector_mcp_server/src/core/runtime_version.dart';
+import 'package:flutter_inspector_mcp_server/src/core/services/desktop_window_screenshot.dart';
 import 'package:flutter_inspector_mcp_server/src/core/services/core_image_file_saver.dart';
 import 'package:flutter_inspector_mcp_server/src/core/services/core_port_scanner.dart';
 import 'package:flutter_inspector_mcp_server/src/core/session_manager.dart';
+import 'package:flutter_inspector_mcp_server/src/core/visual_capture.dart';
 import 'package:flutter_inspector_mcp_server/src/mixins/mcp_toolkit_consts.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
 import 'package:is_dart_empty_or_not/is_dart_empty_or_not.dart';
@@ -33,10 +35,14 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     required this.imageFileSaver,
     required this.configuration,
     CoreDynamicGateway? dynamicGateway,
+    DesktopWindowScreenshotService? desktopWindowScreenshotService,
     this.sessionManager,
     ErrorCauseAnalyzer? errorCauseAnalyzer,
     Map<String, ErrorSummaryProvider>? summaryProviders,
   }) : _dynamicGateway = dynamicGateway,
+       _desktopWindowScreenshotService =
+           desktopWindowScreenshotService ??
+           MacOsDesktopWindowScreenshotService(),
        _errorCauseAnalyzer = errorCauseAnalyzer ?? const ErrorCauseAnalyzer(),
        _summaryProviders =
            summaryProviders ??
@@ -53,12 +59,26 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
 
   final ErrorCauseAnalyzer _errorCauseAnalyzer;
   final Map<String, ErrorSummaryProvider> _summaryProviders;
+  final DesktopWindowScreenshotService _desktopWindowScreenshotService;
 
   CoreDynamicGateway? _dynamicGateway;
 
   void setDynamicGateway(final CoreDynamicGateway? gateway) {
     _dynamicGateway = gateway;
   }
+
+  Iterable<VisualCapturePlatformAdapter> get visualCaptureAdapters sync* {
+    if (_desktopWindowScreenshotService
+        case final VisualCapturePlatformAdapter adapter) {
+      yield adapter;
+    }
+  }
+
+  VisualCaptureBroker _visualCaptureBroker() => VisualCaptureBroker(
+    configuration: configuration,
+    dynamicGateway: _dynamicGateway,
+    adapters: visualCaptureAdapters,
+  );
 
   @override
   Future<CoreResult> execute(final CoreCommand command) async {
@@ -475,6 +495,36 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
   Future<CoreResult> _getScreenshots(
     final GetScreenshotsCommand command,
   ) async {
+    final permission = await _visualCaptureBroker().prepareForCapture(
+      requestedMode: command.mode.wireName,
+      policy: command.permissionPolicy,
+    );
+    if (!permission.canCapture) {
+      return _visualCaptureFailure(
+        permission,
+        defaultMessage: 'Visual capture is unavailable for this request.',
+      );
+    }
+
+    if (permission.actualMode == screenshotModeDesktopWindow) {
+      final desktopCapture = await _tryDesktopWindowCapture(command);
+      if (desktopCapture.data != null) {
+        return CoreResult.success(
+          data: _withPermissionMetadata(
+            data: desktopCapture.data!,
+            requestedMode: command.mode.wireName,
+            permission: permission,
+          ),
+        );
+      }
+      return CoreResult.failure(
+        code: CoreErrorCode.getScreenshotsFailed,
+        message:
+            desktopCapture.errorMessage ?? 'Desktop window screenshot failed.',
+        details: <String, Object?>{'permission': permission.toJson()},
+      );
+    }
+
     final ensureFailure = await _ensureVmConnected();
     if (ensureFailure != null) return ensureFailure;
 
@@ -487,7 +537,15 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       final images = jsonDecodeListAs<String>(result.json?['images']);
       if (!configuration.saveImagesToFiles) {
         return CoreResult.success(
-          data: {'images': images, 'fileUrls': const <String>[]},
+          data: _withPermissionMetadata(
+            data: {
+              'images': images,
+              'fileUrls': const <String>[],
+              'captureMode': screenshotModeFlutterLayer,
+            },
+            requestedMode: command.mode.wireName,
+            permission: permission,
+          ),
         );
       }
 
@@ -495,7 +553,15 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       final fileUrls = await imageFileSaver.saveImagesToFiles(images);
 
       return CoreResult.success(
-        data: {'images': const <String>[], 'fileUrls': fileUrls},
+        data: _withPermissionMetadata(
+          data: {
+            'images': const <String>[],
+            'fileUrls': fileUrls,
+            'captureMode': screenshotModeFlutterLayer,
+          },
+          requestedMode: command.mode.wireName,
+          permission: permission,
+        ),
       );
     } on Exception catch (e) {
       return CoreResult.failure(
@@ -563,7 +629,11 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     if (ensureFailure != null) return ensureFailure;
 
     final screenshotResult = await _getScreenshots(
-      GetScreenshotsCommand(compress: command.compress),
+      GetScreenshotsCommand(
+        compress: command.compress,
+        mode: command.screenshotMode,
+        permissionPolicy: command.permissionPolicy,
+      ),
     );
     if (!screenshotResult.ok) {
       return screenshotResult;
@@ -606,10 +676,107 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
           'includeErrors': command.includeErrors,
           'errorsCount': command.errorsCount,
           'compress': command.compress,
+          'requestedMode': command.screenshotMode.wireName,
+          'actualMode':
+              screenshotData['actualMode'] ?? screenshotData['captureMode'],
+          'permissionStatus':
+              _map(screenshotData['permission'])['status'] ??
+              PermissionStatus.unsupported.wireName,
+          'fallbackReason': screenshotData['fallbackReason'],
         },
       },
     );
   }
+
+  Future<_DesktopCaptureResolution> _tryDesktopWindowCapture(
+    final GetScreenshotsCommand command,
+  ) async {
+    if (command.mode == ScreenshotMode.flutterLayer) {
+      return const _DesktopCaptureResolution();
+    }
+
+    final projectDir = configuration.flutterProjectDir;
+    final device = configuration.flutterDevice;
+    if (projectDir == null || device == null) {
+      return command.mode == ScreenshotMode.desktopWindow
+          ? const _DesktopCaptureResolution(
+              errorMessage:
+                  'Desktop window screenshot mode requires both '
+                  '--flutter-project-dir and --flutter-device.',
+            )
+          : const _DesktopCaptureResolution();
+    }
+
+    try {
+      final capture = await _desktopWindowScreenshotService.capture(
+        projectDir: projectDir,
+        device: device,
+        compress: command.compress,
+        cacheDir: configuration.stateRootDir,
+      );
+      if (capture == null) {
+        if (command.mode == ScreenshotMode.auto && device != 'macos') {
+          return const _DesktopCaptureResolution();
+        }
+        return const _DesktopCaptureResolution(
+          errorMessage:
+              'Desktop window screenshot mode is unavailable for the current '
+              'target or app window.',
+        );
+      }
+
+      if (!configuration.saveImagesToFiles) {
+        return _DesktopCaptureResolution(
+          data: capture.toJson(fileUrls: const <String>[]),
+        );
+      }
+
+      await imageFileSaver.cleanupOldScreenshots();
+      final fileUrls = await imageFileSaver.saveImagesToFiles(capture.images);
+      return _DesktopCaptureResolution(
+        data: capture.toJson(fileUrls: fileUrls, includeImages: false),
+      );
+    } on Object catch (e) {
+      return _DesktopCaptureResolution(
+        errorMessage: 'Desktop window screenshot failed: $e',
+      );
+    }
+  }
+
+  CoreResult _visualCaptureFailure(
+    final PermissionBrokerResult permission, {
+    required final String defaultMessage,
+  }) {
+    final code = switch (permission.status) {
+      PermissionStatus.denied => CoreErrorCode.visualCapturePermissionDenied,
+      PermissionStatus.unsupported ||
+      PermissionStatus.unsupportedUntilAppBridge =>
+        CoreErrorCode.visualCaptureUnsupported,
+      _ => CoreErrorCode.getScreenshotsFailed,
+    };
+    return CoreResult.failure(
+      code: code,
+      message: permission.message ?? defaultMessage,
+      details: <String, Object?>{
+        'permission': permission.toJson(),
+        if (permission.canOpenSettings)
+          'suggestedAction': 'flutter_mcp_cli permissions open-settings',
+      },
+    );
+  }
+
+  Map<String, Object?> _withPermissionMetadata({
+    required final Map<String, Object?> data,
+    required final String requestedMode,
+    required final PermissionBrokerResult permission,
+  }) => <String, Object?>{
+    ...data,
+    'requestedMode': requestedMode,
+    'actualMode': permission.actualMode,
+    'fallbackReason': permission.fallbackReason,
+    'permissionStatus': permission.status.wireName,
+    'permission': permission.toJson(),
+  };
 
   Future<CoreResult> _debugDumpLayerTree() async {
     return _debugDump('ext.flutter.debugDumpLayerTree');
@@ -865,4 +1032,11 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
     return hash.toRadixString(16).padLeft(8, '0');
   }
+}
+
+final class _DesktopCaptureResolution {
+  const _DesktopCaptureResolution({this.data, this.errorMessage});
+
+  final Map<String, Object?>? data;
+  final String? errorMessage;
 }

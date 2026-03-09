@@ -22,6 +22,7 @@ The CLI is now agent-first and exposes a canonical interface:
 - `snapshot diff --from <id> --to <id>`
 - `bundle create --from-snapshot <id> [--output <dir>]`
 - `doctor [--json] [--target <path>] [--timeout-ms <n>]`
+- `permissions status|request|open-settings [--kind visual_capture]`
 
 Safe-write flags for write-producing commands:
 
@@ -62,7 +63,14 @@ dart run bin/flutter_mcp_cli.dart bundle create --from-snapshot baseline --backu
 
 # environment preflight
 dart run bin/flutter_mcp_cli.dart doctor --json
+dart run bin/flutter_mcp_cli.dart permissions status
+dart run bin/flutter_mcp_cli.dart permissions request
+dart run bin/flutter_mcp_cli.dart permissions open-settings
 dart run bin/flutter_mcp_cli.dart exec --name get_extension_rpcs --args '{}'
+
+# explicit capture policy/mode
+dart run bin/flutter_mcp_cli.dart exec --name get_screenshots --args '{"mode":"desktop_window","permissionPolicy":"auto_request_once"}'
+dart run bin/flutter_mcp_cli.dart exec --name capture_ui_snapshot --args '{"screenshotMode":"auto","permissionPolicy":"auto_request_once"}'
 
 # one-command runtime validation (after app launch)
 dart run bin/flutter_mcp_cli.dart --save-images validate-runtime \
@@ -82,6 +90,24 @@ CLI runtime gate for app inspection:
 - If missing, app-level screenshot/layout/error inspection is blocked until `mcp_toolkit` is installed, initialized, and the app is hot restarted or rerun.
 - If screenshots are blank, ensure app window is visible/foreground and retry `get_screenshots`.
 - If first explicit-URI connect times out, retry once and validate with `doctor --json --target <ws_uri> --timeout-ms 10000`.
+
+## Visual Capture Permissions
+
+- `doctor` stays read-only. It now reports `visual_capture_backend`, `visual_capture_permission`, `visual_capture_truth_mode`, and `app_permission_bridge`.
+- Interactive CLI capture flows default to `auto_request_once` for `exec get_screenshots`, `exec capture_ui_snapshot`, and `validate-runtime`. Raw command schemas still default to `check_only`.
+- macOS truthful capture is `desktop_window`. Screen Recording permission belongs to the host process running `flutter_mcp_cli`, not the Flutter app. Use `permissions request` for the native prompt and `permissions open-settings` after a denial.
+- Web has no OS permission flow. `flutter_layer` is the supported path, `desktop_window` is unsupported, and `auto` resolves to `flutter_layer`.
+- App-owned capture targets such as iOS/Android/Linux must have a reachable VM
+  target selected before `permissions` or `doctor` can verify bridge-backed
+  permission tools/resources. Use `--target <ws_uri>` or the global
+  `--vm-service-uri <ws_uri>` when probing those platforms.
+- `desktop_window` never silently falls back. `auto` may fall back to `flutter_layer`, but responses always report `requestedMode`, `actualMode`, `permissionStatus`, and `fallbackReason`.
+
+Troubleshooting:
+
+- If macOS capture is denied, rerun `flutter_mcp_cli permissions status` first. If status is still `denied`, open System Settings from the CLI and grant Screen Recording to the terminal or client process you are using.
+- If `doctor --json` shows `visual_capture_truth_mode=flutter_layer` on macOS, you are not getting native window pixels yet.
+- If web capture fails with `desktop_window`, switch to `flutter_layer` or keep `auto`.
 
 ## Migration (v2.x -> v3.0.0)
 

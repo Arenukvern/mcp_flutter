@@ -83,6 +83,9 @@ Future<void> main(final List<String> args) async {
     dumpsSupported: parsed.flag(_dumpsSupported),
     dynamicRegistrySupported: parsed.flag(_dynamicRegistrySupported),
     saveImagesToFiles: parsed.flag(_saveImagesToFiles),
+    flutterProjectDir: flutterProjectDir,
+    flutterDevice: flutterDevice,
+    stateRootDir: stateRoot,
   );
 
   final executor = DefaultCoreCommandExecutor(
@@ -136,6 +139,7 @@ Future<void> main(final List<String> args) async {
     doctorRunner: doctorRunner,
   );
 
+  _printInteractiveNarrativeIfNeeded(topLevel: command, result: result);
   io.stdout.writeln(jsonEncode(result.toEnvelopeJson()));
   await connectionContext.disconnect();
   io.exit(_resolveExitCode(topLevel: command, result: result));
@@ -163,33 +167,23 @@ Future<CoreResult> _runOneShot({
           );
         }
 
-        final rawArgs = _parseArgumentsJson(topLevel.option('args'));
-        final argsResolution = resolveCommandArgumentsForExecution(
-          commandName: name,
-          arguments: rawArgs,
-        );
-        final argsResolutionError = argsResolution.error;
-        if (argsResolutionError != null) {
-          return argsResolutionError;
-        }
-
-        final command = catalog.buildCommand(
-          name,
-          argsResolution.sanitizedArgs,
-        );
-
-        final preconnectError = await _preconnectIfNeeded(
+        return _executeExecCommand(
           parsed: parsed,
-          command: command,
-          sessionManager: sessionManager,
           executor: executor,
-          explicitConnectionOverride: argsResolution.preconnectCommand,
+          catalog: catalog,
+          sessionManager: sessionManager,
+          name: name,
+          rawArgs: _parseArgumentsJson(topLevel.option('args')),
         );
-        if (preconnectError != null) {
-          return preconnectError;
-        }
 
-        return executor.execute(command);
+      case 'batch':
+        return _runBatchCommand(
+          parsed: parsed,
+          command: topLevel,
+          executor: executor,
+          catalog: catalog,
+          sessionManager: sessionManager,
+        );
 
       case 'schema':
         final name = topLevel.option('name');
@@ -218,6 +212,15 @@ Future<CoreResult> _runOneShot({
           timeout: Duration(milliseconds: timeoutMs),
         );
         return CoreResult.success(data: data);
+
+      case 'permissions':
+        return _runPermissionsCommand(
+          parsed: parsed,
+          command: topLevel,
+          configuration: configuration,
+          executor: executor,
+          sessionManager: sessionManager,
+        );
 
       case 'validate-runtime':
         return _runValidateRuntime(
@@ -309,6 +312,77 @@ Future<CoreResult> _runOneShot({
       message: 'Unexpected CLI error: $e',
     );
   }
+}
+
+Future<CoreResult> _runBatchCommand({
+  required final ArgResults parsed,
+  required final ArgResults command,
+  required final DefaultCoreCommandExecutor executor,
+  required final CommandCatalog catalog,
+  required final SessionManager sessionManager,
+}) async {
+  final steps = _parseBatchStepsJson(command.option('steps'));
+  if (steps.isEmpty) {
+    return CoreResult.failure(
+      code: CoreErrorCode.invalidCommand,
+      message: 'Batch requires at least one step.',
+    );
+  }
+
+  final continueOnError = command.flag('continue-on-error');
+  final stepResults = <Map<String, Object?>>[];
+  CoreResult? firstFailure;
+
+  for (var index = 0; index < steps.length; index += 1) {
+    final step = steps[index];
+    final result = await _executeExecCommand(
+      parsed: parsed,
+      executor: executor,
+      catalog: catalog,
+      sessionManager: sessionManager,
+      name: step.name,
+      rawArgs: step.args,
+    );
+    stepResults.add({
+      'index': index,
+      'name': step.name,
+      'args': step.args,
+      'ok': result.ok,
+      'data': result.data,
+      'error': result.error?.toJson(),
+      'meta': result.meta,
+    });
+    if (result.ok) {
+      continue;
+    }
+    firstFailure ??= result;
+    if (!continueOnError) {
+      break;
+    }
+  }
+
+  final failureCount = stepResults
+      .where((final result) => result['ok'] != true)
+      .length;
+  final summary = <String, Object?>{
+    'total': steps.length,
+    'executed': stepResults.length,
+    'success': stepResults.length - failureCount,
+    'failed': failureCount,
+    'continueOnError': continueOnError,
+  };
+  final payload = <String, Object?>{'steps': stepResults, 'summary': summary};
+  if (firstFailure == null) {
+    return CoreResult.success(data: payload);
+  }
+
+  return CoreResult.failure(
+    code: firstFailure.error?.code ?? CoreErrorCode.unexpectedExecutorError,
+    message: continueOnError
+        ? 'Batch completed with failed steps.'
+        : 'Batch stopped after a failed step.',
+    details: payload,
+  );
 }
 
 Future<CoreResult> _runSnapshotCommand({
@@ -541,7 +615,9 @@ Future<CoreResult> _runValidateRuntime({
 
   final screenshotFailure = await runStep(
     'get_screenshots',
-    const GetScreenshotsCommand(),
+    const GetScreenshotsCommand(
+      permissionPolicy: PermissionPolicy.autoRequestOnce,
+    ),
   );
   if (screenshotFailure != null) {
     return CoreResult.failure(
@@ -591,7 +667,9 @@ Future<CoreResult> _runValidateRuntime({
 
     final afterReloadScreenshotFailure = await runStep(
       'get_screenshots_after_reload',
-      const GetScreenshotsCommand(),
+      const GetScreenshotsCommand(
+        permissionPolicy: PermissionPolicy.autoRequestOnce,
+      ),
     );
     if (afterReloadScreenshotFailure != null) {
       return CoreResult.failure(
@@ -626,6 +704,60 @@ Future<CoreResult> _runValidateRuntime({
   );
 }
 
+Future<CoreResult> _runPermissionsCommand({
+  required final ArgResults parsed,
+  required final ArgResults command,
+  required final CoreRuntimeConfiguration configuration,
+  required final DefaultCoreCommandExecutor executor,
+  required final SessionManager sessionManager,
+}) async {
+  final actionCommand = command.command;
+  if (actionCommand == null) {
+    return CoreResult.failure(
+      code: CoreErrorCode.invalidCommand,
+      message: 'Missing permissions action (status|request|open-settings)',
+    );
+  }
+
+  final broker = VisualCaptureBroker(
+    configuration: configuration,
+    dynamicGateway: configuration.dynamicRegistrySupported
+        ? VmExtensionDynamicGateway(
+            connectionContext: executor.connectionContext,
+          )
+        : null,
+    adapters: executor.visualCaptureAdapters,
+  );
+  if (broker.adapter.owner == PermissionOwner.app) {
+    final preconnectError = await _preconnectIfNeeded(
+      parsed: parsed,
+      command: const GetVmCommand(),
+      sessionManager: sessionManager,
+      executor: executor,
+    );
+    if (preconnectError != null) {
+      return preconnectError;
+    }
+  }
+  final kind = parsePermissionKind(actionCommand.option('kind'));
+  final result = switch (actionCommand.name) {
+    'status' => await broker.status(kind: kind),
+    'request' => await broker.request(
+      kind: kind,
+      policy: PermissionPolicy.requestAlways,
+    ),
+    'open-settings' => await broker.openSettings(kind: kind),
+    _ => null,
+  };
+  if (result == null) {
+    return CoreResult.failure(
+      code: CoreErrorCode.invalidCommand,
+      message: 'Unsupported permissions action: ${actionCommand.name}',
+    );
+  }
+  return CoreResult.success(data: result.toJson());
+}
+
 Future<PersistedState> _readBootstrapState(final StateStore store) async {
   try {
     return await store.read();
@@ -650,6 +782,71 @@ Future<CoreResult?> _preconnectIfNeeded({
   );
 }
 
+Future<CoreResult> _executeExecCommand({
+  required final ArgResults parsed,
+  required final DefaultCoreCommandExecutor executor,
+  required final CommandCatalog catalog,
+  required final SessionManager sessionManager,
+  required final String name,
+  required final Map<String, Object?> rawArgs,
+}) async {
+  try {
+    final effectiveArgs = _applyCliPermissionDefaults(name, rawArgs);
+    final argsResolution = resolveCommandArgumentsForExecution(
+      commandName: name,
+      arguments: effectiveArgs,
+    );
+    final argsResolutionError = argsResolution.error;
+    if (argsResolutionError != null) {
+      return argsResolutionError;
+    }
+
+    final command = catalog.buildCommand(name, argsResolution.sanitizedArgs);
+    final preconnectError = await _preconnectIfNeeded(
+      parsed: parsed,
+      command: command,
+      sessionManager: sessionManager,
+      executor: executor,
+      explicitConnectionOverride: argsResolution.preconnectCommand,
+    );
+    if (preconnectError != null) {
+      return preconnectError;
+    }
+
+    return executor.execute(command);
+  } on ArgumentError catch (e) {
+    return CoreResult.failure(
+      code: CoreErrorCode.invalidCommand,
+      message: '$e',
+    );
+  } on FormatException catch (e) {
+    return CoreResult.failure(
+      code: CoreErrorCode.invalidCommand,
+      message: '$e',
+    );
+  } on Exception catch (e) {
+    return CoreResult.failure(
+      code: CoreErrorCode.unexpectedExecutorError,
+      message: 'Unexpected CLI error: $e',
+    );
+  }
+}
+
+Map<String, Object?> _applyCliPermissionDefaults(
+  final String name,
+  final Map<String, Object?> rawArgs,
+) {
+  final withDefaults = Map<String, Object?>.from(rawArgs);
+  if (withDefaults.containsKey('permissionPolicy')) {
+    return withDefaults;
+  }
+  if (name == 'get_screenshots' || name == 'capture_ui_snapshot') {
+    withDefaults['permissionPolicy'] =
+        PermissionPolicy.autoRequestOnce.wireName;
+  }
+  return withDefaults;
+}
+
 Map<String, Object?> _parseArgumentsJson(final String? value) {
   if (value == null || value.isEmpty) {
     return const <String, Object?>{};
@@ -663,6 +860,43 @@ Map<String, Object?> _parseArgumentsJson(final String? value) {
     return decoded.cast<String, Object?>();
   }
   throw const FormatException('Expected JSON object for --args');
+}
+
+List<_BatchStep> _parseBatchStepsJson(final String? value) {
+  if (value == null || value.isEmpty) {
+    throw const FormatException('Expected JSON array for --steps');
+  }
+
+  final decoded = jsonDecode(value);
+  if (decoded is! List) {
+    throw const FormatException('Expected JSON array for --steps');
+  }
+
+  return decoded.indexed
+      .map((final entry) {
+        final (index, rawStep) = entry;
+        final step = switch (rawStep) {
+          final Map<String, Object?> value => value,
+          final Map value => value.cast<String, Object?>(),
+          _ => throw FormatException(
+            'Expected JSON object for batch step ${index + 1}',
+          ),
+        };
+        final name = '${step['name'] ?? ''}'.trim();
+        if (name.isEmpty) {
+          throw FormatException('Batch step ${index + 1} is missing "name"');
+        }
+        final args = switch (step['args']) {
+          null => <String, Object?>{},
+          final Map<String, Object?> value => value,
+          final Map value => value.cast<String, Object?>(),
+          _ => throw FormatException(
+            'Batch step ${index + 1} "args" must be a JSON object',
+          ),
+        };
+        return _BatchStep(name: name, args: args);
+      })
+      .toList(growable: false);
 }
 
 SafeWriteOptions _safeWriteOptionsFrom(final ArgResults command) {
@@ -956,6 +1190,58 @@ String _resolveStateRoot(final String statePath) {
   return parent;
 }
 
+void _printInteractiveNarrativeIfNeeded({
+  required final ArgResults topLevel,
+  required final CoreResult result,
+}) {
+  if (!io.stdout.hasTerminal) {
+    return;
+  }
+
+  switch (topLevel.name) {
+    case 'doctor':
+      io.stdout.writeln(
+        'doctor: visual-capture checks run in read-only mode; capture commands can auto-request once when needed.',
+      );
+      return;
+    case 'validate-runtime':
+      io.stdout.writeln(
+        'validate-runtime: screenshot steps use auto-request-once for visual capture when the selected target supports it.',
+      );
+      return;
+    case 'permissions':
+      final data = _asObject(result.data);
+      final status = '${data['status'] ?? 'unknown'}';
+      final backend = '${data['backend'] ?? 'unknown'}';
+      io.stdout.writeln('permissions: $backend reports $status.');
+      return;
+    case 'exec':
+      final name = topLevel.option('name');
+      if (name == 'get_screenshots' || name == 'capture_ui_snapshot') {
+        final data = _asObject(result.data);
+        final permission = _asObject(data['permission']);
+        final status =
+            '${permission['status'] ?? data['permissionStatus'] ?? 'unknown'}';
+        final actual =
+            '${data['actualMode'] ?? data['captureMode'] ?? 'unknown'}';
+        io.stdout.writeln(
+          'capture: permission status $status, actual mode $actual.',
+        );
+      }
+      return;
+  }
+}
+
+Map<String, Object?> _asObject(final Object? value) {
+  if (value is Map<String, Object?>) {
+    return value;
+  }
+  if (value is Map) {
+    return value.cast<String, Object?>();
+  }
+  return const <String, Object?>{};
+}
+
 String _globalUsage() {
   final buffer = StringBuffer()
     ..writeln('$kFlutterMcpCliName v$kFlutterMcpVersion')
@@ -965,6 +1251,7 @@ String _globalUsage() {
     ..writeln('')
     ..writeln('Commands:')
     ..writeln('  exec')
+    ..writeln('  batch')
     ..writeln('  schema')
     ..writeln('  capabilities')
     ..writeln('  serve')
@@ -972,6 +1259,7 @@ String _globalUsage() {
     ..writeln('  snapshot diff')
     ..writeln('  bundle create')
     ..writeln('  doctor')
+    ..writeln('  permissions status|request|open-settings')
     ..writeln('  validate-runtime')
     ..writeln('')
     ..writeln('Global options:')
@@ -987,6 +1275,7 @@ String _usageForCommand(final List<String> commandPath) {
   final key = commandPath.join(' ');
   return switch (key) {
     'exec' => _usageExec(),
+    'batch' => _usageBatch(),
     'schema' => _usageSchema(),
     'capabilities' => _usageCapabilities(),
     'serve' => _usageServe(),
@@ -996,6 +1285,10 @@ String _usageForCommand(final List<String> commandPath) {
     'bundle' => _usageBundle(),
     'bundle create' => _usageBundleCreate(),
     'doctor' => _usageDoctor(),
+    'permissions' => _usagePermissions(),
+    'permissions status' => _usagePermissions(),
+    'permissions request' => _usagePermissions(),
+    'permissions open-settings' => _usagePermissions(),
     'validate-runtime' => _usageValidateRuntime(),
     _ => _globalUsage(),
   };
@@ -1133,6 +1426,22 @@ final _argParser = ArgParser(allowTrailingOptions: false)
             'Never pass host:port as targetId.',
       ),
   )
+  ..addCommand(
+    'batch',
+    _commandParser()
+      ..addOption(
+        'steps',
+        help:
+            'Batch steps as JSON array. '
+            'Each step must contain {"name":"<command>"} and may include '
+            '{"args":{...}}.',
+      )
+      ..addFlag(
+        'continue-on-error',
+        defaultsTo: false,
+        help: 'Continue running remaining steps after a step fails.',
+      ),
+  )
   ..addCommand('schema', _commandParser()..addOption('name'))
   ..addCommand('capabilities', _commandParser())
   ..addCommand('serve', _commandParser())
@@ -1218,6 +1527,34 @@ final _argParser = ArgParser(allowTrailingOptions: false)
       ),
   )
   ..addCommand(
+    'permissions',
+    _commandParser()
+      ..addCommand(
+        'status',
+        _commandParser()..addOption(
+          'kind',
+          defaultsTo: PermissionKind.visualCapture.wireName,
+          help: 'Permission kind to inspect.',
+        ),
+      )
+      ..addCommand(
+        'request',
+        _commandParser()..addOption(
+          'kind',
+          defaultsTo: PermissionKind.visualCapture.wireName,
+          help: 'Permission kind to request.',
+        ),
+      )
+      ..addCommand(
+        'open-settings',
+        _commandParser()..addOption(
+          'kind',
+          defaultsTo: PermissionKind.visualCapture.wireName,
+          help: 'Permission kind to open in settings.',
+        ),
+      ),
+  )
+  ..addCommand(
     'validate-runtime',
     _commandParser()
       ..addOption(
@@ -1278,6 +1615,13 @@ const _defaultValidateRuntimeErrorsCount = 5;
 const _defaultValidateRuntimeConnectRetries = 1;
 const _runtimeValidationSkillName = 'flutter-mcp-cli-runtime-validation';
 
+final class _BatchStep {
+  const _BatchStep({required this.name, required this.args});
+
+  final String name;
+  final Map<String, Object?> args;
+}
+
 const _dartVmHost = 'dart-vm-host';
 const _dartVmPort = 'dart-vm-port';
 const _vmServiceUri = 'vm-service-uri';
@@ -1314,6 +1658,19 @@ CLI-first runtime validation sequence:
 
 If connection_selection_required appears:
   retry with args.connection.targetId or args.connection.uri (exact app.debugPort.wsUri).
+''';
+
+String _usageBatch() => '''
+Usage: flutter_mcp_cli batch --steps <json> [--continue-on-error]
+
+Examples:
+  flutter_mcp_cli batch --steps '[{"name":"status"},{"name":"status"}]'
+  flutter_mcp_cli batch --steps '[{"name":"discover_debug_apps"},{"name":"capture_ui_snapshot","args":{"compress":true}}]'
+  flutter_mcp_cli batch --continue-on-error --steps '[{"name":"status"},{"name":"unknown_command"}]'
+
+Each step reuses the same command catalog and preconnect flow as `exec`.
+Use this when you want one CLI startup and one target selection path for a
+small deterministic command sequence.
 ''';
 
 String _usageSchema() => '''
@@ -1393,6 +1750,18 @@ Doctor checks include:
 
 If mcp_toolkit_extensions fails, screenshot/layout/error inspection is not reliable
 until app instrumentation is fixed and app is hot restarted or rerun.
+''';
+
+String _usagePermissions() => '''
+Usage:
+  flutter_mcp_cli permissions status [--kind visual_capture]
+  flutter_mcp_cli permissions request [--kind visual_capture]
+  flutter_mcp_cli permissions open-settings [--kind visual_capture]
+
+Examples:
+  flutter_mcp_cli permissions status
+  flutter_mcp_cli permissions request
+  flutter_mcp_cli permissions open-settings
 ''';
 
 String _usageValidateRuntime() =>

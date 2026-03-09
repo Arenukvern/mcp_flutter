@@ -30,7 +30,12 @@ void main() {
         expect(global.contains('Usage:'), isTrue);
         expect(global.contains('snapshot create'), isTrue);
         expect(global.contains('doctor'), isTrue);
+        expect(
+          global.contains('permissions status|request|open-settings'),
+          isTrue,
+        );
         expect(global.contains('validate-runtime'), isTrue);
+        expect(global.contains('batch'), isTrue);
 
         final snapshotHelp = await _runCli(statePath, [
           'snapshot',
@@ -56,6 +61,15 @@ void main() {
           isTrue,
         );
 
+        final permissionsHelp = await _runCli(statePath, [
+          'permissions',
+          '--help',
+        ]);
+        expect(permissionsHelp.exitCode, equals(0));
+        final permissions = (permissionsHelp.stdout as String);
+        expect(permissions.contains('permissions status'), isTrue);
+        expect(permissions.contains('open-settings'), isTrue);
+
         final validateHelp = await _runCli(statePath, [
           'validate-runtime',
           '--help',
@@ -68,9 +82,80 @@ void main() {
         );
         expect(validate.contains('--connect-retries <n>'), isTrue);
         expect(validate.contains('--install-skill'), isTrue);
+
+        final batchHelp = await _runCli(statePath, ['batch', '--help']);
+        expect(batchHelp.exitCode, equals(0));
+        final batch = (batchHelp.stdout as String);
+        expect(
+          batch.contains('batch --steps <json> [--continue-on-error]'),
+          isTrue,
+        );
+        expect(batch.contains('status"},{"name":"status'), isTrue);
       },
       timeout: const Timeout(Duration(minutes: 3)),
     );
+
+    test('batch executes multiple status steps in one invocation', () async {
+      final result = await _runCli(statePath, [
+        'batch',
+        '--steps',
+        '[{"name":"status"},{"name":"status","args":{}}]',
+      ]);
+
+      expect(result.exitCode, equals(0));
+
+      final envelope =
+          jsonDecode((result.stdout as String).trim()) as Map<String, dynamic>;
+      expect(envelope['ok'], isTrue);
+
+      final data = envelope['data'] as Map<String, dynamic>;
+      final steps = (data['steps'] as List).cast<Map<String, dynamic>>();
+      final summary = data['summary'] as Map<String, dynamic>;
+
+      expect(steps, hasLength(2));
+      expect(summary['total'], equals(2));
+      expect(summary['executed'], equals(2));
+      expect(summary['success'], equals(2));
+      expect(summary['failed'], equals(0));
+      expect(summary['continueOnError'], isFalse);
+
+      for (var index = 0; index < steps.length; index += 1) {
+        final step = steps[index];
+        expect(step['index'], equals(index));
+        expect(step['name'], equals('status'));
+        expect(step['args'], isA<Map>());
+        expect(step['ok'], isTrue);
+        expect(step['error'], isNull);
+        expect(step['data'], isA<Map>());
+      }
+    });
+
+    test('batch reports step failure details for unknown commands', () async {
+      final result = await _runCli(statePath, [
+        'batch',
+        '--steps',
+        '[{"name":"status"},{"name":"unknown_command"}]',
+      ]);
+
+      expect(result.exitCode, isNonZero);
+
+      final envelope =
+          jsonDecode((result.stdout as String).trim()) as Map<String, dynamic>;
+      expect(envelope['ok'], isFalse);
+      final error = envelope['error'] as Map<String, dynamic>;
+      expect(error['message'], contains('Batch stopped'));
+      final details = error['details'] as Map<String, dynamic>;
+      final steps = (details['steps'] as List).cast<Map<String, dynamic>>();
+      final summary = details['summary'] as Map<String, dynamic>;
+
+      expect(steps, hasLength(2));
+      expect(steps[0]['ok'], isTrue);
+      expect(steps[1]['ok'], isFalse);
+      expect((steps[1]['error'] as Map<String, dynamic>)['code'], isNotEmpty);
+      expect(summary['executed'], equals(2));
+      expect(summary['failed'], equals(1));
+      expect(summary['continueOnError'], isFalse);
+    });
 
     test(
       'schema exposes visual-debug commands with expected MCP visibility',
@@ -155,6 +240,10 @@ void main() {
           'dart_sdk',
           'flutter_sdk',
           'state_path_writable',
+          'visual_capture_backend',
+          'visual_capture_permission',
+          'visual_capture_truth_mode',
+          'app_permission_bridge',
           'vm_target_reachable',
           'mcp_toolkit_extensions',
           'dynamic_registry_available',
@@ -175,6 +264,57 @@ void main() {
 
         expect(byId['state_path_writable']!['critical'], isTrue);
         expect(byId['vm_target_reachable']!['critical'], isTrue);
+      },
+    );
+
+    test('permissions preconnects before probing app-owned bridges', () async {
+      final result = await _runCli(statePath, [
+        '--flutter-device',
+        'ios',
+        '--vm-service-uri',
+        'ws://127.0.0.1:1/unreachable/ws',
+        'permissions',
+        'status',
+      ]);
+
+      expect(result.exitCode, isNonZero);
+
+      final envelope =
+          jsonDecode((result.stdout as String).trim()) as Map<String, dynamic>;
+      expect(envelope['ok'], isFalse);
+      final error = envelope['error'] as Map<String, dynamic>;
+      expect(error['code'], equals('connect_failed'));
+    });
+
+    test(
+      'doctor reports app-owned bridge checks as connection-blocked when target is unreachable',
+      () async {
+        final result = await _runCli(statePath, [
+          '--flutter-device',
+          'ios',
+          'doctor',
+          '--json',
+          '--target',
+          'ws://127.0.0.1:1/unreachable/ws',
+          '--timeout-ms',
+          '50',
+        ]);
+
+        expect(result.exitCode, isNonZero);
+
+        final envelope =
+            jsonDecode((result.stdout as String).trim())
+                as Map<String, dynamic>;
+        expect(envelope['ok'], isTrue);
+
+        final data = envelope['data'] as Map<String, dynamic>;
+        final checks = (data['checks'] as List).cast<Map<String, dynamic>>();
+        final byId = {for (final check in checks) check['id'] as String: check};
+
+        expect(
+          byId['app_permission_bridge']!['diagnostic'],
+          contains('VM target is not connected'),
+        );
       },
     );
   });

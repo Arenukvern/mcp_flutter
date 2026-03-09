@@ -1,5 +1,6 @@
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_inspector_mcp_server/flutter_mcp_core.dart';
+import 'package:flutter_inspector_mcp_server/src/core/services/desktop_window_screenshot.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -47,6 +48,145 @@ void main() {
       expect(result.meta['schemaVersion'], equals('core-envelope/v1'));
       expect(result.meta['command'], equals('status'));
       expect(result.meta['timestamp'], isA<String>());
+    });
+
+    test('desktop window screenshot mode succeeds without VM bridge', () async {
+      final logger =
+          (
+            final LoggingLevel level,
+            final String message, {
+            final String logger = 'test',
+          }) {};
+
+      final localExecutor = DefaultCoreCommandExecutor(
+        connectionContext: ConnectionContext(
+          defaultHost: 'localhost',
+          defaultPort: 8181,
+          logger: logger,
+          discoverPorts: () async => <int>[8181],
+        ),
+        portScanner: CorePortScanner(logger: logger),
+        imageFileSaver: CoreImageFileSaver(logger: logger),
+        configuration: const CoreRuntimeConfiguration(
+          vmHost: 'localhost',
+          vmPort: 8181,
+          resourcesSupported: true,
+          imagesSupported: true,
+          dumpsSupported: false,
+          dynamicRegistrySupported: false,
+          saveImagesToFiles: false,
+          flutterProjectDir: '/tmp/sample_app',
+          flutterDevice: 'macos',
+        ),
+        desktopWindowScreenshotService: _FakeDesktopWindowScreenshotService(
+          result: const DesktopWindowScreenshotCapture(
+            images: <String>['AQID'],
+            captureMode: 'desktop_window',
+            metadata: <String, Object?>{'appName': 'sample_app'},
+          ),
+        ),
+      );
+
+      final result = await localExecutor.execute(
+        const GetScreenshotsCommand(mode: ScreenshotMode.desktopWindow),
+      );
+
+      expect(result.ok, isTrue);
+      final data = result.data! as Map<String, Object?>;
+      expect(data['captureMode'], equals('desktop_window'));
+      expect(data['appName'], equals('sample_app'));
+      expect(data['images'], equals(const <String>['AQID']));
+    });
+
+    test('desktop window screenshot mode surfaces capture failures', () async {
+      final logger =
+          (
+            final LoggingLevel level,
+            final String message, {
+            final String logger = 'test',
+          }) {};
+
+      final localExecutor = DefaultCoreCommandExecutor(
+        connectionContext: ConnectionContext(
+          defaultHost: 'localhost',
+          defaultPort: 8181,
+          logger: logger,
+          discoverPorts: () async => <int>[8181],
+        ),
+        portScanner: CorePortScanner(logger: logger),
+        imageFileSaver: CoreImageFileSaver(logger: logger),
+        configuration: const CoreRuntimeConfiguration(
+          vmHost: 'localhost',
+          vmPort: 8181,
+          resourcesSupported: true,
+          imagesSupported: true,
+          dumpsSupported: false,
+          dynamicRegistrySupported: false,
+          saveImagesToFiles: false,
+          flutterProjectDir: '/tmp/sample_app',
+          flutterDevice: 'macos',
+        ),
+        desktopWindowScreenshotService: _FakeDesktopWindowScreenshotService(
+          error: StateError('screen permission missing'),
+        ),
+      );
+
+      final result = await localExecutor.execute(
+        const GetScreenshotsCommand(mode: ScreenshotMode.desktopWindow),
+      );
+
+      expect(result.ok, isFalse);
+      expect(result.error?.code, equals(CoreErrorCode.getScreenshotsFailed));
+      expect(result.error?.message, contains('screen permission missing'));
+    });
+
+    test('auto-request surfaces actionable permission denial', () async {
+      final logger =
+          (
+            final LoggingLevel level,
+            final String message, {
+            final String logger = 'test',
+          }) {};
+
+      final localExecutor = DefaultCoreCommandExecutor(
+        connectionContext: ConnectionContext(
+          defaultHost: 'localhost',
+          defaultPort: 8181,
+          logger: logger,
+          discoverPorts: () async => <int>[8181],
+        ),
+        portScanner: CorePortScanner(logger: logger),
+        imageFileSaver: CoreImageFileSaver(logger: logger),
+        configuration: const CoreRuntimeConfiguration(
+          vmHost: 'localhost',
+          vmPort: 8181,
+          resourcesSupported: true,
+          imagesSupported: true,
+          dumpsSupported: false,
+          dynamicRegistrySupported: false,
+          saveImagesToFiles: false,
+          flutterProjectDir: '/tmp/sample_app',
+          flutterDevice: 'macos',
+        ),
+        desktopWindowScreenshotService:
+            const _FakeDesktopWindowScreenshotService(
+              permissionStatus: PermissionStatus.denied,
+            ),
+      );
+
+      final result = await localExecutor.execute(
+        const GetScreenshotsCommand(
+          permissionPolicy: PermissionPolicy.autoRequestOnce,
+        ),
+      );
+
+      expect(result.ok, isFalse);
+      expect(
+        result.error?.code,
+        equals(CoreErrorCode.visualCapturePermissionDenied),
+      );
+      final details = result.error?.details as Map<String, Object?>?;
+      expect(details?['permission'], isA<Map<String, Object?>>());
     });
 
     test('dynamic commands are rejected when disabled', () async {
@@ -246,4 +386,87 @@ void main() {
       expect(details?['migrationHint'], isA<String>());
     });
   });
+}
+
+final class _FakeDesktopWindowScreenshotService
+    implements DesktopWindowScreenshotService, VisualCapturePlatformAdapter {
+  const _FakeDesktopWindowScreenshotService({
+    this.result,
+    this.error,
+    this.permissionStatus = PermissionStatus.granted,
+  });
+
+  final DesktopWindowScreenshotCapture? result;
+  final Object? error;
+  final PermissionStatus permissionStatus;
+
+  @override
+  String get backend => 'fake_macos';
+
+  @override
+  Set<CaptureCapability> get capabilities => const <CaptureCapability>{
+    CaptureCapability.desktopWindow,
+    CaptureCapability.flutterLayer,
+  };
+
+  @override
+  PermissionOwner get owner => PermissionOwner.host;
+
+  @override
+  Set<String> get supportedModes => const <String>{
+    screenshotModeDesktopWindow,
+    screenshotModeFlutterLayer,
+  };
+
+  @override
+  String get truthMode => screenshotModeDesktopWindow;
+
+  @override
+  bool supportsPlatform(final String effectivePlatform) =>
+      effectivePlatform == 'macos';
+
+  @override
+  Future<DesktopWindowScreenshotCapture?> capture({
+    required final String projectDir,
+    required final String device,
+    required final bool compress,
+    final String? cacheDir,
+  }) async {
+    if (error != null) {
+      throw error!;
+    }
+    return result;
+  }
+
+  @override
+  Future<PermissionBrokerResult> status({
+    required final PermissionKind kind,
+    required final PermissionPolicy policy,
+    required final CoreRuntimeConfiguration configuration,
+  }) async => PermissionBrokerResult(
+    kind: kind,
+    status: permissionStatus,
+    policy: policy,
+    owner: owner,
+    backend: backend,
+    capabilities: capabilities,
+    supportedModes: supportedModes,
+    truthMode: truthMode,
+    canRequest: true,
+    canOpenSettings: true,
+  );
+
+  @override
+  Future<PermissionBrokerResult> request({
+    required final PermissionKind kind,
+    required final PermissionPolicy policy,
+    required final CoreRuntimeConfiguration configuration,
+  }) => status(kind: kind, policy: policy, configuration: configuration);
+
+  @override
+  Future<PermissionBrokerResult> openSettings({
+    required final PermissionKind kind,
+    required final PermissionPolicy policy,
+    required final CoreRuntimeConfiguration configuration,
+  }) => status(kind: kind, policy: policy, configuration: configuration);
 }

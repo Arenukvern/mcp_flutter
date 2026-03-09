@@ -6,6 +6,7 @@ import 'package:flutter_inspector_mcp_server/src/core/commands.dart';
 import 'package:flutter_inspector_mcp_server/src/core/connection_override.dart';
 import 'package:flutter_inspector_mcp_server/src/core/core_types.dart';
 import 'package:flutter_inspector_mcp_server/src/core/runtime_version.dart';
+import 'package:flutter_inspector_mcp_server/src/core/visual_capture.dart';
 
 typedef CoreCommandFactory = CoreCommand Function(Map<String, Object?> args);
 
@@ -545,19 +546,45 @@ final class CommandCatalog {
         name: 'get_screenshots',
         description: 'Collect screenshots for all current Flutter views.',
         inputSchema: _objectSchema(
-          properties: {'compress': _boolSchema(defaultValue: true)},
+          properties: {
+            'compress': _boolSchema(defaultValue: true),
+            'mode': _stringSchema(
+              enumValues: ScreenshotMode.values
+                  .map((final mode) => mode.wireName)
+                  .toList(growable: false),
+              defaultValue: ScreenshotMode.auto.wireName,
+            ),
+            'permissionPolicy': _stringSchema(
+              enumValues: PermissionPolicy.values
+                  .map((final policy) => policy.wireName)
+                  .toList(growable: false),
+              defaultValue: PermissionPolicy.checkOnly.wireName,
+            ),
+          },
         ),
         outputSchema: _objectSchema(
           properties: {
             'images': _arraySchema(items: _stringSchema()),
             'fileUrls': _arraySchema(items: _stringSchema()),
+            'captureMode': _stringSchema(),
+            'requestedMode': _stringSchema(),
+            'actualMode': _stringSchema(),
+            'fallbackReason': _stringSchema(),
+            'permissionStatus': _stringSchema(),
+            'permission': _objectSchema(additionalProperties: true),
+            'appName': _stringSchema(),
+            'windowId': _intSchema(),
+            'windowBounds': _objectSchema(additionalProperties: true),
           },
+          additionalProperties: true,
         ),
         requiresVm: true,
         supportsWatch: true,
         mcpExposed: true,
         build: (final args) => GetScreenshotsCommand(
           compress: _boolArg(args, 'compress', fallback: true),
+          mode: parseScreenshotMode(args['mode']),
+          permissionPolicy: parsePermissionPolicy(args['permissionPolicy']),
         ),
       ),
       CommandSpec(
@@ -613,6 +640,18 @@ final class CommandCatalog {
             'compress': _boolSchema(defaultValue: true),
             'includeViewDetails': _boolSchema(defaultValue: true),
             'includeErrors': _boolSchema(defaultValue: true),
+            'screenshotMode': _stringSchema(
+              enumValues: ScreenshotMode.values
+                  .map((final mode) => mode.wireName)
+                  .toList(growable: false),
+              defaultValue: ScreenshotMode.auto.wireName,
+            ),
+            'permissionPolicy': _stringSchema(
+              enumValues: PermissionPolicy.values
+                  .map((final policy) => policy.wireName)
+                  .toList(growable: false),
+              defaultValue: PermissionPolicy.checkOnly.wireName,
+            ),
           },
         ),
         outputSchema: _objectSchema(additionalProperties: true),
@@ -634,6 +673,8 @@ final class CommandCatalog {
             alias: 'include-errors',
             fallback: true,
           ),
+          screenshotMode: parseScreenshotMode(args['screenshotMode']),
+          permissionPolicy: parsePermissionPolicy(args['permissionPolicy']),
         ),
       ),
       CommandSpec(

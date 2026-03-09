@@ -1,6 +1,8 @@
 // Copyright (c) 2025, Flutter Inspector MCP Server authors.
 // Licensed under the MIT License.
 
+import 'package:flutter_inspector_mcp_server/src/core/visual_capture.dart';
+
 /// Connection mode used by the shared core runtime.
 enum CoreConnectionMode { auto, manual, uri }
 
@@ -177,10 +179,39 @@ final class GetAppErrorsCommand extends CoreCommand {
   String get name => 'get_app_errors';
 }
 
+enum ScreenshotMode {
+  auto('auto'),
+  flutterLayer('flutter_layer'),
+  desktopWindow('desktop_window');
+
+  const ScreenshotMode(this.wireName);
+
+  final String wireName;
+}
+
+ScreenshotMode parseScreenshotMode(
+  final Object? value, {
+  final ScreenshotMode fallback = ScreenshotMode.auto,
+}) {
+  final normalized = '$value'.trim().toLowerCase();
+  for (final mode in ScreenshotMode.values) {
+    if (mode.wireName == normalized) {
+      return mode;
+    }
+  }
+  return fallback;
+}
+
 final class GetScreenshotsCommand extends CoreCommand {
-  const GetScreenshotsCommand({this.compress = true});
+  const GetScreenshotsCommand({
+    this.compress = true,
+    this.mode = ScreenshotMode.auto,
+    this.permissionPolicy = PermissionPolicy.checkOnly,
+  });
 
   final bool compress;
+  final ScreenshotMode mode;
+  final PermissionPolicy permissionPolicy;
 
   @override
   String get name => 'get_screenshots';
@@ -214,12 +245,16 @@ final class CaptureUiSnapshotCommand extends CoreCommand {
     this.compress = true,
     this.includeViewDetails = true,
     this.includeErrors = true,
+    this.screenshotMode = ScreenshotMode.auto,
+    this.permissionPolicy = PermissionPolicy.checkOnly,
   });
 
   final int errorsCount;
   final bool compress;
   final bool includeViewDetails;
   final bool includeErrors;
+  final ScreenshotMode screenshotMode;
+  final PermissionPolicy permissionPolicy;
 
   @override
   String get name => 'capture_ui_snapshot';

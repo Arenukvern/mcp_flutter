@@ -17,6 +17,9 @@ final class CoreRuntimeConfiguration {
     required this.dumpsSupported,
     required this.dynamicRegistrySupported,
     required this.saveImagesToFiles,
+    this.flutterProjectDir,
+    this.flutterDevice,
+    this.stateRootDir,
   });
 
   final String vmHost;
@@ -26,4 +29,7 @@ final class CoreRuntimeConfiguration {
   final bool dumpsSupported;
   final bool dynamicRegistrySupported;
   final bool saveImagesToFiles;
+  final String? flutterProjectDir;
+  final String? flutterDevice;
+  final String? stateRootDir;
 }

@@ -96,6 +96,19 @@ void main() {
       expect((command as GetAppErrorsCommand).count, equals(5));
     });
 
+    test('parses screenshot permission policy fields', () {
+      final command = catalog.buildCommand('get_screenshots', {
+        'mode': 'auto',
+        'permissionPolicy': 'auto_request_once',
+      });
+
+      expect(command, isA<GetScreenshotsCommand>());
+      expect(
+        (command as GetScreenshotsCommand).permissionPolicy,
+        equals(PermissionPolicy.autoRequestOnce),
+      );
+    });
+
     test('adds optional connection schema for VM and wrapper commands', () {
       final getVmSchema =
           catalog.specFor('get_vm')!.inputSchema['properties']

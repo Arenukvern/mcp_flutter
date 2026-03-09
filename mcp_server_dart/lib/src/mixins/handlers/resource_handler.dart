@@ -8,6 +8,7 @@ import 'package:flutter_inspector_mcp_server/src/base_server.dart';
 import 'package:flutter_inspector_mcp_server/src/core/command_catalog.dart';
 import 'package:flutter_inspector_mcp_server/src/core/commands.dart';
 import 'package:flutter_inspector_mcp_server/src/core/executor.dart';
+import 'package:flutter_inspector_mcp_server/src/core/visual_capture.dart';
 import 'package:flutter_inspector_mcp_server/src/mixins/handlers/connection_override.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
 import 'package:is_dart_empty_or_not/is_dart_empty_or_not.dart';
@@ -48,6 +49,16 @@ class ResourceHandler {
       properties: {
         'compress': Schema.bool(
           description: 'Whether to compress the images (default: true)',
+        ),
+        'mode': Schema.string(
+          description:
+              'Screenshot mode: auto, flutter_layer, or desktop_window '
+              '(default: auto)',
+        ),
+        'permissionPolicy': Schema.string(
+          description:
+              'Permission policy: check_only, auto_request_once, or request_always '
+              '(default: check_only)',
         ),
       },
     ),
@@ -100,6 +111,16 @@ class ResourceHandler {
         ),
         'includeErrors': Schema.bool(
           description: 'Include app errors (default: true)',
+        ),
+        'screenshotMode': Schema.string(
+          description:
+              'Screenshot mode: auto, flutter_layer, or desktop_window '
+              '(default: auto)',
+        ),
+        'permissionPolicy': Schema.string(
+          description:
+              'Permission policy: check_only, auto_request_once, or request_always '
+              '(default: check_only)',
         ),
       },
     ),
@@ -301,7 +322,13 @@ class ResourceHandler {
 
     final compress = bool.tryParse('${request.arguments?['compress']}') ?? true;
     final result = await executor.execute(
-      GetScreenshotsCommand(compress: compress),
+      GetScreenshotsCommand(
+        compress: compress,
+        mode: parseScreenshotMode(request.arguments?['mode']),
+        permissionPolicy: parsePermissionPolicy(
+          request.arguments?['permissionPolicy'],
+        ),
+      ),
     );
 
     if (!result.ok) {
@@ -428,6 +455,12 @@ class ResourceHandler {
         compress: compress,
         includeViewDetails: includeViewDetails,
         includeErrors: includeErrors,
+        screenshotMode: parseScreenshotMode(
+          request.arguments?['screenshotMode'],
+        ),
+        permissionPolicy: parsePermissionPolicy(
+          request.arguments?['permissionPolicy'],
+        ),
       ),
     );
 

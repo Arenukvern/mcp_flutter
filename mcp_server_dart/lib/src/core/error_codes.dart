@@ -57,6 +57,9 @@ abstract final class CoreErrorCode {
   static const getActivePortsFailed = 'get_active_ports_failed';
   static const getAppErrorsFailed = 'get_app_errors_failed';
   static const getScreenshotsFailed = 'get_screenshots_failed';
+  static const visualCapturePermissionDenied =
+      'visual_capture_permission_denied';
+  static const visualCaptureUnsupported = 'visual_capture_unsupported';
   static const getViewDetailsFailed = 'get_view_details_failed';
   static const debugDumpFailed = 'debug_dump_failed';
 
@@ -173,6 +176,20 @@ const Map<String, CoreErrorDescriptor> _descriptorMap =
         retryable: true,
         exitCode: 69,
         httpLikeStatus: 500,
+      ),
+      CoreErrorCode.visualCapturePermissionDenied: CoreErrorDescriptor(
+        code: CoreErrorCode.visualCapturePermissionDenied,
+        category: CoreErrorCategory.capability,
+        retryable: true,
+        exitCode: 77,
+        httpLikeStatus: 403,
+      ),
+      CoreErrorCode.visualCaptureUnsupported: CoreErrorDescriptor(
+        code: CoreErrorCode.visualCaptureUnsupported,
+        category: CoreErrorCategory.capability,
+        retryable: false,
+        exitCode: 78,
+        httpLikeStatus: 501,
       ),
       CoreErrorCode.getViewDetailsFailed: CoreErrorDescriptor(
         code: CoreErrorCode.getViewDetailsFailed,
@@ -419,6 +436,16 @@ _defaultRecoveryMap = <String, Map<String, Object?>>{
     'summary': 'Enable dynamic registry support before dynamic tool calls.',
     'fix_command':
         'flutter_mcp_cli --dynamics exec --name status --args \'{}\'',
+  },
+  CoreErrorCode.visualCapturePermissionDenied: <String, Object?>{
+    'summary':
+        'Grant Screen Recording or open settings before retrying truthful capture.',
+    'fix_command': 'flutter_mcp_cli permissions open-settings',
+  },
+  CoreErrorCode.visualCaptureUnsupported: <String, Object?>{
+    'summary': 'Use a supported target or capture mode.',
+    'fix_command':
+        'flutter_mcp_cli permissions status && flutter_mcp_cli doctor --json',
   },
   CoreErrorCode.snapshotNotFound: <String, Object?>{
     'summary': 'Create the snapshot before referencing it.',

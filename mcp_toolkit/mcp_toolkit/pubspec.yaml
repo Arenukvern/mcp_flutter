@@ -17,6 +17,8 @@ dependencies:
   universal_io: ^2.3.1
 
 dev_dependencies:
+  flutter_test:
+    sdk: flutter
   lints: ^6.1.0
   xsoulspace_lints: ^0.1.2
 

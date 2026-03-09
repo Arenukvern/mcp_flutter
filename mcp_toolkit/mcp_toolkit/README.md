@@ -32,6 +32,15 @@ MCPToolkitBinding.instance
   ..initializeFlutterToolkit();
 ```
 
+App-side permission bridging is separate and opt-in:
+
+```dart
+MCPToolkitBinding.instance
+  ..initialize()
+  ..initializeFlutterToolkit()
+  ..initializeFlutterPermissionToolkit(delegate: MyPermissionDelegate());
+```
+
 ## Features
 
 - Auto register tools and resources in MCP server:
@@ -68,6 +77,7 @@ addMcpTool(
 - **Error Reporting**: Captures and makes available runtime errors from the Flutter application.
 - **Screenshot Capability**: Allows external tools to request screenshots of the application's views.
 - **Application Details**: Provides a mechanism to fetch basic details about the application's views.
+- **Optional Permission Bridge**: Lets the app expose permission status/request/open-settings handlers only when you register a delegate.
 
 ## Integration
 
@@ -112,6 +122,47 @@ addMcpTool(
 
     // ... rest of your app code
     ```
+
+3.  **Optional: Register an App-Side Permission Delegate**:
+    Keep `initializeFlutterToolkit()` unchanged and add the permission bridge only if the app owns the relevant permission flow.
+
+    ```dart
+    final class MyPermissionDelegate implements MCPPermissionDelegate {
+      @override
+      Iterable<String> listSupportedPermissionKinds() => const <String>[
+        'visual_capture',
+      ];
+
+      @override
+      Future<MCPPermissionResult> getPermissionStatus({
+        required final String kind,
+      }) async => const MCPPermissionResult(
+        kind: 'visual_capture',
+        status: 'granted',
+        canRequest: false,
+        canOpenSettings: false,
+      );
+
+      @override
+      Future<MCPPermissionResult> requestPermission({
+        required final String kind,
+      }) async => await getPermissionStatus(kind: kind);
+
+      @override
+      Future<MCPPermissionResult> openPermissionSettings({
+        required final String kind,
+      }) async => await getPermissionStatus(kind: kind);
+    }
+
+    MCPToolkitBinding.instance.initializeFlutterPermissionToolkit(
+      delegate: MyPermissionDelegate(),
+    );
+    ```
+
+    When the delegate is present, `mcp_toolkit` registers:
+    `permissions_supported_kinds`, `permission_status`,
+    `request_permission`, and `open_permission_settings`.
+    Without a delegate, those entries are not exposed.
 
 ## Role in `mcp_flutter`
 

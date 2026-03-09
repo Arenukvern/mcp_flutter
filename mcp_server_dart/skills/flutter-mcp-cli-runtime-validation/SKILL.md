@@ -27,6 +27,13 @@ dart run mcp_server_dart/bin/flutter_mcp_cli.dart validate-runtime \
   --install-skill
 ```
 
+Permission behavior for this flow:
+
+- `validate-runtime` stays read/write only for visual capture and defaults to `auto_request_once`.
+- `doctor` remains read-only.
+- On macOS, Screen Recording permission belongs to the host process running `flutter_mcp_cli`.
+- On web, `flutter_layer` is the only supported truth path and no OS permission prompt is expected.
+
 ## What `validate-runtime` Must Prove
 
 - Doctor preflight passes critical checks.
@@ -58,6 +65,10 @@ dart run mcp_server_dart/bin/flutter_mcp_cli.dart validate-runtime \
   - hot restart or rerun the app
 - If first explicit URI connect fails, retry is automatic for retryable connection errors.
 - If screenshots are blank, verify app window is visible and retry.
+- If macOS visual capture is denied, use:
+  - `dart run mcp_server_dart/bin/flutter_mcp_cli.dart permissions status`
+  - `dart run mcp_server_dart/bin/flutter_mcp_cli.dart permissions request`
+  - `dart run mcp_server_dart/bin/flutter_mcp_cli.dart permissions open-settings`
 - If app cannot be instrumented, do not claim screenshot/layout/error inspection success.
 
 ## Visual QA + Source Mapping Rules

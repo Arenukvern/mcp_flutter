@@ -10,6 +10,8 @@ import 'package:flutter_inspector_mcp_server/src/core/connection_context.dart';
 import 'package:flutter_inspector_mcp_server/src/core/core_types.dart';
 import 'package:flutter_inspector_mcp_server/src/core/error_codes.dart';
 import 'package:flutter_inspector_mcp_server/src/core/executor.dart';
+import 'package:flutter_inspector_mcp_server/src/core/dynamic_gateway.dart';
+import 'package:flutter_inspector_mcp_server/src/core/visual_capture.dart';
 import 'package:flutter_inspector_mcp_server/src/mixins/mcp_toolkit_consts.dart';
 
 enum DoctorCheckStatus { pass, warn, fail }
@@ -34,33 +36,58 @@ final class DoctorRunner {
     final Duration timeout = const Duration(milliseconds: 2500),
   }) async {
     final checks = <Map<String, Object?>>[];
+    final visualCaptureBroker = VisualCaptureBroker(
+      configuration: executor.configuration,
+      dynamicGateway: dynamicRegistrySupported
+          ? VmExtensionDynamicGateway(connectionContext: connectionContext)
+          : null,
+      adapters: executor.visualCaptureAdapters,
+    );
 
-    checks.add(await _checkDartSdk(timeout: timeout));
-    checks.add(await _checkFlutterSdk(timeout: timeout));
-    checks.add(await _checkStatePathWritable());
-    checks.add(await _checkVmTargetReachable(target: target, timeout: timeout));
-    checks.add(await _checkToolkitExtensions(timeout: timeout));
-    checks.add(await _checkDynamicRegistryAvailable(timeout: timeout));
+    try {
+      checks.add(await _checkDartSdk(timeout: timeout));
+      checks.add(await _checkFlutterSdk(timeout: timeout));
+      checks.add(await _checkStatePathWritable());
+      checks.add(
+        await _checkVmTargetReachable(
+          target: target,
+          timeout: timeout,
+          disconnectAfterCheck: false,
+        ),
+      );
+      checks.add(await _checkVisualCaptureBackend(broker: visualCaptureBroker));
+      checks.add(
+        await _checkVisualCapturePermission(broker: visualCaptureBroker),
+      );
+      checks.add(
+        await _checkVisualCaptureTruthMode(broker: visualCaptureBroker),
+      );
+      checks.add(await _checkAppPermissionBridge(broker: visualCaptureBroker));
+      checks.add(await _checkToolkitExtensions(timeout: timeout));
+      checks.add(await _checkDynamicRegistryAvailable(timeout: timeout));
 
-    final passCount = checks.where((final c) => c['status'] == 'pass').length;
-    final warnCount = checks.where((final c) => c['status'] == 'warn').length;
-    final failCount = checks.where((final c) => c['status'] == 'fail').length;
-    final criticalFailures = checks.where((final c) {
-      return c['critical'] == true && c['status'] == 'fail';
-    }).length;
+      final passCount = checks.where((final c) => c['status'] == 'pass').length;
+      final warnCount = checks.where((final c) => c['status'] == 'warn').length;
+      final failCount = checks.where((final c) => c['status'] == 'fail').length;
+      final criticalFailures = checks.where((final c) {
+        return c['critical'] == true && c['status'] == 'fail';
+      }).length;
 
-    return {
-      'checks': checks,
-      'summary': {
-        'total': checks.length,
-        'pass': passCount,
-        'warn': warnCount,
-        'fail': failCount,
-        'criticalFailures': criticalFailures,
-      },
-      'target': target,
-      'checkedAt': DateTime.now().toUtc().toIso8601String(),
-    };
+      return {
+        'checks': checks,
+        'summary': {
+          'total': checks.length,
+          'pass': passCount,
+          'warn': warnCount,
+          'fail': failCount,
+          'criticalFailures': criticalFailures,
+        },
+        'target': target,
+        'checkedAt': DateTime.now().toUtc().toIso8601String(),
+      };
+    } finally {
+      await connectionContext.disconnect();
+    }
   }
 
   Future<Map<String, Object?>> _checkDartSdk({
@@ -204,6 +231,7 @@ final class DoctorRunner {
   Future<Map<String, Object?>> _checkVmTargetReachable({
     required final String? target,
     required final Duration timeout,
+    final bool disconnectAfterCheck = true,
   }) async {
     try {
       final normalizedTarget = target?.trim();
@@ -281,8 +309,222 @@ final class DoctorRunner {
             'Use --target with exact app.debugPort.wsUri or run discover_debug_apps.',
       );
     } finally {
-      await connectionContext.disconnect();
+      if (disconnectAfterCheck) {
+        await connectionContext.disconnect();
+      }
     }
+  }
+
+  Future<Map<String, Object?>> _checkVisualCaptureBackend({
+    required final VisualCaptureBroker broker,
+  }) async {
+    final skipped = _skipAppOwnedBridgeCheck(
+      broker: broker,
+      id: 'visual_capture_backend',
+      fixCommand:
+          'Start or connect to the target app before probing app-owned capture backends.',
+    );
+    if (skipped != null) {
+      return skipped;
+    }
+    try {
+      final result = await broker.status();
+      final capabilityNames = result.capabilities
+          .map((final capability) => capability.wireName)
+          .join(', ');
+      final status = switch (result.status) {
+        PermissionStatus.unsupported ||
+        PermissionStatus.unsupportedUntilAppBridge => DoctorCheckStatus.warn,
+        _ => DoctorCheckStatus.pass,
+      };
+      return _check(
+        id: 'visual_capture_backend',
+        status: status,
+        critical: false,
+        diagnostic:
+            'Visual capture backend ${result.backend} (owner: ${result.owner.wireName}; capabilities: $capabilityNames).',
+        fixCommand:
+            'Use `flutter_mcp_cli permissions status` to inspect capture support for the selected target.',
+      );
+    } on Object catch (error) {
+      logger(
+        LoggingLevel.debug,
+        'visual_capture_backend check failed: $error',
+        logger: 'Doctor',
+      );
+      return _check(
+        id: 'visual_capture_backend',
+        status: DoctorCheckStatus.warn,
+        critical: false,
+        diagnostic: 'Visual capture backend probe failed: $error',
+        fixCommand:
+            'Verify the host visual-capture helper can run, or use the Flutter-layer capture path on supported targets.',
+      );
+    }
+  }
+
+  Future<Map<String, Object?>> _checkVisualCapturePermission({
+    required final VisualCaptureBroker broker,
+  }) async {
+    final skipped = _skipAppOwnedBridgeCheck(
+      broker: broker,
+      id: 'visual_capture_permission',
+      fixCommand:
+          'Start or connect to the target app before probing app-owned capture permissions.',
+    );
+    if (skipped != null) {
+      return skipped;
+    }
+    try {
+      final result = await broker.status();
+      final status = result.status.isGranted
+          ? DoctorCheckStatus.pass
+          : DoctorCheckStatus.warn;
+      return _check(
+        id: 'visual_capture_permission',
+        status: status,
+        critical: false,
+        diagnostic:
+            'Visual capture permission status: ${result.status.wireName} (${result.backend}).',
+        fixCommand: result.canOpenSettings
+            ? 'Run `flutter_mcp_cli permissions open-settings` or retry a capture command with auto-request enabled.'
+            : 'Permission is not required or not supported on this target.',
+      );
+    } on Object catch (error) {
+      logger(
+        LoggingLevel.debug,
+        'visual_capture_permission check failed: $error',
+        logger: 'Doctor',
+      );
+      return _check(
+        id: 'visual_capture_permission',
+        status: DoctorCheckStatus.warn,
+        critical: false,
+        diagnostic: 'Visual capture permission probe failed: $error',
+        fixCommand:
+            'Use `flutter_mcp_cli permissions status` for a direct permission check after fixing the host adapter.',
+      );
+    }
+  }
+
+  Future<Map<String, Object?>> _checkVisualCaptureTruthMode({
+    required final VisualCaptureBroker broker,
+  }) async {
+    final skipped = _skipAppOwnedBridgeCheck(
+      broker: broker,
+      id: 'visual_capture_truth_mode',
+      fixCommand:
+          'Start or connect to the target app before probing app-owned capture truth mode.',
+    );
+    if (skipped != null) {
+      return skipped;
+    }
+    try {
+      final result = await broker.prepareForCapture(
+        requestedMode: screenshotModeAuto,
+        policy: PermissionPolicy.checkOnly,
+      );
+      final actualMode = result.actualMode ?? 'unavailable';
+      final status = switch (broker.effectivePlatform) {
+        'macos' when actualMode == screenshotModeDesktopWindow =>
+          DoctorCheckStatus.pass,
+        'web' when actualMode == screenshotModeFlutterLayer =>
+          DoctorCheckStatus.pass,
+        _ => DoctorCheckStatus.warn,
+      };
+      return _check(
+        id: 'visual_capture_truth_mode',
+        status: status,
+        critical: false,
+        diagnostic:
+            'Visual truth path requested ${screenshotModeAuto} -> actual $actualMode'
+            '${result.fallbackReason == null ? '' : ' (${result.fallbackReason})'}.',
+        fixCommand:
+            'Grant capture permission or adjust the target/capture mode before relying on visual assertions.',
+      );
+    } on Object catch (error) {
+      logger(
+        LoggingLevel.debug,
+        'visual_capture_truth_mode check failed: $error',
+        logger: 'Doctor',
+      );
+      return _check(
+        id: 'visual_capture_truth_mode',
+        status: DoctorCheckStatus.warn,
+        critical: false,
+        diagnostic: 'Visual truth-mode probe failed: $error',
+        fixCommand:
+            'Fix the visual-capture backend or fall back to an explicitly supported capture mode.',
+      );
+    }
+  }
+
+  Future<Map<String, Object?>> _checkAppPermissionBridge({
+    required final VisualCaptureBroker broker,
+  }) async {
+    if (broker.adapter.owner != PermissionOwner.app) {
+      return _check(
+        id: 'app_permission_bridge',
+        status: DoctorCheckStatus.pass,
+        critical: false,
+        diagnostic: 'App permission bridge is not required for this target.',
+        fixCommand:
+            'Only app-owned capture targets need the optional permission bridge.',
+      );
+    }
+    if (!dynamicRegistrySupported) {
+      return _check(
+        id: 'app_permission_bridge',
+        status: DoctorCheckStatus.warn,
+        critical: false,
+        diagnostic:
+            'App permission bridge could not be checked because dynamic registry support is disabled.',
+        fixCommand:
+            'Run with --dynamics and install the optional app permission bridge if this target requires it.',
+      );
+    }
+    if (!connectionContext.isConnected) {
+      return _check(
+        id: 'app_permission_bridge',
+        status: DoctorCheckStatus.warn,
+        critical: false,
+        diagnostic:
+            'App permission bridge could not be checked because VM target is not connected.',
+        fixCommand:
+            'Use --target <ws_uri> or start the debug app before re-running doctor.',
+      );
+    }
+
+    final installed = await broker.isAppBridgeInstalled();
+    return _check(
+      id: 'app_permission_bridge',
+      status: installed ? DoctorCheckStatus.pass : DoctorCheckStatus.warn,
+      critical: false,
+      diagnostic: installed
+          ? 'App permission bridge detected through dynamic registry.'
+          : 'App permission bridge not detected.',
+      fixCommand:
+          'Install the optional mcp_toolkit permission delegate and re-run doctor.',
+    );
+  }
+
+  Map<String, Object?>? _skipAppOwnedBridgeCheck({
+    required final VisualCaptureBroker broker,
+    required final String id,
+    required final String fixCommand,
+  }) {
+    if (broker.adapter.owner != PermissionOwner.app ||
+        connectionContext.isConnected) {
+      return null;
+    }
+    return _check(
+      id: id,
+      status: DoctorCheckStatus.warn,
+      critical: false,
+      diagnostic:
+          'App-owned visual capture could not be checked because VM target is not connected.',
+      fixCommand: fixCommand,
+    );
   }
 
   Future<Map<String, Object?>> _checkDynamicRegistryAvailable({
