@@ -71,6 +71,9 @@ void main() {
             'ok': true,
             'appName': 'sample_app',
             'windowId': 77,
+            'windowTitle': 'Sample Window',
+            'windowSelectionSource': 'all_windows_fallback',
+            'windowCaptureVisibility': 'offscreen_or_hidden',
             'windowBounds': <String, Object?>{
               'x': 10.0,
               'y': 20.0,
@@ -96,7 +99,74 @@ void main() {
       expect(capture.images, hasLength(1));
       expect(capture.metadata['appName'], equals('sample_app'));
       expect(capture.metadata['windowId'], equals(77));
+      expect(capture.metadata['windowTitle'], equals('Sample Window'));
+      expect(
+        capture.metadata['windowSelectionSource'],
+        equals('all_windows_fallback'),
+      );
+      expect(
+        capture.metadata['windowCaptureVisibility'],
+        equals('offscreen_or_hidden'),
+      );
       expect(compiledBinary, isNotNull);
+    });
+
+    test('surfaces structured helper failures with details', () async {
+      final tempDir = await Directory.systemTemp.createTemp(
+        'mcp_window_capture',
+      );
+      addTearDown(() async {
+        if (tempDir.existsSync()) {
+          await tempDir.delete(recursive: true);
+        }
+      });
+
+      final bundleDir = Directory(
+        '${tempDir.path}/build/macos/Build/Products/Debug/sample_app.app/Contents/MacOS',
+      )..createSync(recursive: true);
+      File('${bundleDir.path}/sample_app').writeAsStringSync('');
+
+      String? compiledBinary;
+      final service = MacOsDesktopWindowScreenshotService(
+        runProcess: (final executable, final arguments) async {
+          if (executable == 'swiftc') {
+            compiledBinary = arguments.last;
+            return ProcessResult(1, 0, '', '');
+          }
+          expect(executable, equals(compiledBinary));
+          final payload = <String, Object?>{
+            'ok': false,
+            'error': 'window_not_found',
+            'details': <String, Object?>{
+              'visibleOwners': <String>['Codex'],
+              'allOwners': <String>['Codex', 'sample_app'],
+            },
+          };
+          return ProcessResult(1, 0, jsonEncode(payload), '');
+        },
+      );
+
+      expect(
+        () => service.capture(
+          projectDir: tempDir.path,
+          device: 'macos',
+          compress: true,
+          cacheDir: tempDir.path,
+        ),
+        throwsA(
+          isA<DesktopWindowCaptureException>()
+              .having(
+                (final e) => e.message,
+                'message',
+                contains('window_not_found'),
+              )
+              .having(
+                (final e) => e.details['allOwners'],
+                'details.allOwners',
+                equals(const <String>['Codex', 'sample_app']),
+              ),
+        ),
+      );
     });
 
     test('status/request/open-settings parse helper payloads', () async {

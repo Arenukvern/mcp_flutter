@@ -39,6 +39,19 @@ final class DesktopWindowScreenshotCapture {
   };
 }
 
+final class DesktopWindowCaptureException implements Exception {
+  const DesktopWindowCaptureException({
+    required this.message,
+    this.details = const <String, Object?>{},
+  });
+
+  final String message;
+  final Map<String, Object?> details;
+
+  @override
+  String toString() => message;
+}
+
 final class MacOsDesktopWindowScreenshotService
     implements DesktopWindowScreenshotService, VisualCapturePlatformAdapter {
   MacOsDesktopWindowScreenshotService({RunProcessFn? runProcess})
@@ -147,8 +160,10 @@ final class MacOsDesktopWindowScreenshotService
       trailing: <String>[...appNames],
     );
     if (payload['ok'] != true) {
-      throw Exception(
-        'macOS desktop window capture failed: ${payload['error'] ?? payload}',
+      throw DesktopWindowCaptureException(
+        message:
+            'macOS desktop window capture failed: ${payload['error'] ?? payload}',
+        details: _asObject(payload['details']),
       );
     }
 
@@ -163,7 +178,10 @@ final class MacOsDesktopWindowScreenshotService
       metadata: <String, Object?>{
         'appName': payload['appName'],
         'windowId': payload['windowId'],
+        'windowTitle': payload['windowTitle'],
         'windowBounds': _asObject(payload['windowBounds']),
+        'windowSelectionSource': payload['windowSelectionSource'],
+        'windowCaptureVisibility': payload['windowCaptureVisibility'],
         'permissionStatus': payload['permissionStatus'],
         'requestedCompress': compress,
       },
@@ -355,17 +373,73 @@ func emit(_ payload: [String: Any]) {
     print(String(data: data, encoding: .utf8)!)
 }
 
-func matchesOwner(_ owner: String, candidates: Set<String>) -> Bool {
-    if candidates.isEmpty {
-        return true
+func normalizeOwnerName(_ value: String) -> String {
+    return value.lowercased().replacingOccurrences(
+        of: "[^a-z0-9]+",
+        with: "",
+        options: .regularExpression
+    )
+}
+
+func matchesCandidate(_ value: String, candidates: Set<String>) -> Bool {
+    let normalized = normalizeOwnerName(value)
+    if normalized.isEmpty {
+        return false
     }
-    let normalized = owner.lowercased()
     for candidate in candidates {
-        if normalized == candidate || normalized.contains(candidate) || candidate.contains(normalized) {
+        let normalizedCandidate = normalizeOwnerName(candidate)
+        if normalizedCandidate.isEmpty {
+            continue
+        }
+        if normalized == normalizedCandidate ||
+            normalized.contains(normalizedCandidate) ||
+            normalizedCandidate.contains(normalized) {
             return true
         }
     }
     return false
+}
+
+func matchesOwner(_ owner: String, candidates: Set<String>) -> Bool {
+    if candidates.isEmpty {
+        return true
+    }
+    return matchesCandidate(owner, candidates: candidates)
+}
+
+func matchesWindow(_ window: SCWindow, candidates: Set<String>) -> Bool {
+    if candidates.isEmpty {
+        return true
+    }
+    let owner = window.owningApplication?.applicationName ?? ""
+    let title = window.title ?? ""
+    return matchesCandidate(owner, candidates: candidates) ||
+        matchesCandidate(title, candidates: candidates)
+}
+
+func eligibleWindows(_ windows: [SCWindow], candidates: Set<String>) -> [SCWindow] {
+    return windows.filter { window in
+        let frame = window.frame
+        return matchesWindow(window, candidates: candidates) &&
+            frame.width > 8 &&
+            frame.height > 8
+    }
+}
+
+func largestWindow(_ windows: [SCWindow]) -> SCWindow? {
+    return windows.max { lhs, rhs in
+        lhs.frame.width * lhs.frame.height < rhs.frame.width * rhs.frame.height
+    }
+}
+
+func windowSummary(_ window: SCWindow) -> [String: Any] {
+    [
+        "owner": window.owningApplication?.applicationName ?? "",
+        "title": window.title ?? "",
+        "width": window.frame.size.width,
+        "height": window.frame.size.height,
+        "windowId": Int(window.windowID),
+    ]
 }
 
 func permissionStatusPayload(_ status: String, message: String) {
@@ -398,7 +472,10 @@ func openSettings() {
     ])
 }
 
+@MainActor
 func capture(candidates: Set<String>) async {
+    _ = NSApplication.shared
+
     guard CGPreflightScreenCaptureAccess() else {
         emit([
             "ok": false,
@@ -412,35 +489,55 @@ func capture(candidates: Set<String>) async {
     }
 
     do {
-        let shareableContent = try await SCShareableContent.excludingDesktopWindows(
+        let onScreenContent = try await SCShareableContent.excludingDesktopWindows(
             false,
             onScreenWindowsOnly: true
         )
 
-        var selectedWindow: SCWindow?
-        var selectedArea: CGFloat = -1
+        let onScreenMatches = eligibleWindows(onScreenContent.windows, candidates: candidates)
+        var selectionSource = "on_screen"
+        var captureVisibility = "on_screen"
+        var selectedWindow = largestWindow(onScreenMatches)
+        var allWindowsContent: SCShareableContent?
 
-        for window in shareableContent.windows {
-            let owner = window.owningApplication?.applicationName ?? ""
-            let frame = window.frame
-            guard matchesOwner(owner, candidates: candidates),
-                  frame.width > 8,
-                  frame.height > 8 else {
-                continue
-            }
-
-            let area = frame.width * frame.height
-            if area > selectedArea {
-                selectedWindow = window
-                selectedArea = area
+        if selectedWindow == nil {
+            let anyContent = try await SCShareableContent.excludingDesktopWindows(
+                false,
+                onScreenWindowsOnly: false
+            )
+            allWindowsContent = anyContent
+            let allMatches = eligibleWindows(anyContent.windows, candidates: candidates)
+            selectedWindow = largestWindow(allMatches)
+            if selectedWindow != nil {
+                selectionSource = "all_windows_fallback"
+                captureVisibility = "offscreen_or_hidden"
             }
         }
 
         guard let window = selectedWindow else {
+            let visibleOwners = Array(Set(onScreenContent.windows.compactMap {
+                let owner = $0.owningApplication?.applicationName ?? ""
+                return owner.isEmpty ? nil : owner
+            })).sorted()
+            let visibleWindows = onScreenContent.windows.prefix(20).map(windowSummary)
+            let allOwners = Array(Set((allWindowsContent?.windows ?? []).compactMap {
+                let owner = $0.owningApplication?.applicationName ?? ""
+                return owner.isEmpty ? nil : owner
+            })).sorted()
+            let allCandidateWindows = eligibleWindows(
+                allWindowsContent?.windows ?? [],
+                candidates: candidates
+            ).prefix(20).map(windowSummary)
             emit([
                 "ok": false,
                 "error": "window_not_found",
-                "details": ["candidates": Array(candidates)],
+                "details": [
+                    "candidates": Array(candidates).sorted(),
+                    "visibleOwners": visibleOwners,
+                    "visibleWindows": Array(visibleWindows),
+                    "allOwners": allOwners,
+                    "allCandidateWindows": Array(allCandidateWindows),
+                ],
             ])
             return
         }
@@ -472,6 +569,9 @@ func capture(candidates: Set<String>) async {
             "permissionStatus": "granted",
             "appName": window.owningApplication?.applicationName ?? "",
             "windowId": Int(window.windowID),
+            "windowTitle": window.title ?? "",
+            "windowSelectionSource": selectionSource,
+            "windowCaptureVisibility": captureVisibility,
             "windowBounds": [
                 "x": window.frame.origin.x,
                 "y": window.frame.origin.y,

@@ -521,7 +521,11 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
         code: CoreErrorCode.getScreenshotsFailed,
         message:
             desktopCapture.errorMessage ?? 'Desktop window screenshot failed.',
-        details: <String, Object?>{'permission': permission.toJson()},
+        details: <String, Object?>{
+          'permission': permission.toJson(),
+          if (desktopCapture.errorDetails.isNotEmpty)
+            'desktopWindow': desktopCapture.errorDetails,
+        },
       );
     }
 
@@ -735,6 +739,11 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       final fileUrls = await imageFileSaver.saveImagesToFiles(capture.images);
       return _DesktopCaptureResolution(
         data: capture.toJson(fileUrls: fileUrls, includeImages: false),
+      );
+    } on DesktopWindowCaptureException catch (e) {
+      return _DesktopCaptureResolution(
+        errorMessage: 'Desktop window screenshot failed: $e',
+        errorDetails: e.details,
       );
     } on Object catch (e) {
       return _DesktopCaptureResolution(
@@ -1035,8 +1044,13 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
 }
 
 final class _DesktopCaptureResolution {
-  const _DesktopCaptureResolution({this.data, this.errorMessage});
+  const _DesktopCaptureResolution({
+    this.data,
+    this.errorMessage,
+    this.errorDetails = const <String, Object?>{},
+  });
 
   final Map<String, Object?>? data;
   final String? errorMessage;
+  final Map<String, Object?> errorDetails;
 }

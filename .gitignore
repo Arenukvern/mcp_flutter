@@ -17,7 +17,7 @@ dist/
 # OS
 .DS_Store
 Thumbs.db
-
+.mcp_screenshots
 # Environment
 .env
 .env.local

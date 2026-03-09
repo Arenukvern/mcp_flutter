@@ -140,6 +140,64 @@ void main() {
       expect(result.error?.message, contains('screen permission missing'));
     });
 
+    test(
+      'desktop window screenshot mode preserves structured capture diagnostics',
+      () async {
+        final logger =
+            (
+              final LoggingLevel level,
+              final String message, {
+              final String logger = 'test',
+            }) {};
+
+        final localExecutor = DefaultCoreCommandExecutor(
+          connectionContext: ConnectionContext(
+            defaultHost: 'localhost',
+            defaultPort: 8181,
+            logger: logger,
+            discoverPorts: () async => <int>[8181],
+          ),
+          portScanner: CorePortScanner(logger: logger),
+          imageFileSaver: CoreImageFileSaver(logger: logger),
+          configuration: const CoreRuntimeConfiguration(
+            vmHost: 'localhost',
+            vmPort: 8181,
+            resourcesSupported: true,
+            imagesSupported: true,
+            dumpsSupported: false,
+            dynamicRegistrySupported: false,
+            saveImagesToFiles: false,
+            flutterProjectDir: '/tmp/sample_app',
+            flutterDevice: 'macos',
+          ),
+          desktopWindowScreenshotService: _FakeDesktopWindowScreenshotService(
+            error: const DesktopWindowCaptureException(
+              message: 'macOS desktop window capture failed: window_not_found',
+              details: <String, Object?>{
+                'visibleOwners': <String>['Codex'],
+                'allOwners': <String>['Codex', 'sample_app'],
+              },
+            ),
+          ),
+        );
+
+        final result = await localExecutor.execute(
+          const GetScreenshotsCommand(mode: ScreenshotMode.desktopWindow),
+        );
+
+        expect(result.ok, isFalse);
+        expect(result.error?.code, equals(CoreErrorCode.getScreenshotsFailed));
+        final details = result.error?.details as Map<String, Object?>?;
+        expect(details?['desktopWindow'], isA<Map<String, Object?>>());
+        final desktopWindow =
+            details?['desktopWindow'] as Map<String, Object?>?;
+        expect(
+          desktopWindow?['allOwners'],
+          equals(const <String>['Codex', 'sample_app']),
+        );
+      },
+    );
+
     test('auto-request surfaces actionable permission denial', () async {
       final logger =
           (
