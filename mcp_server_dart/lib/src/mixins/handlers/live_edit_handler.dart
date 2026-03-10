@@ -43,6 +43,17 @@ class LiveEditHandler {
     properties: {'sessionId': Schema.string()},
   );
 
+  static final liveEditPrepareSessionTool = _tool(
+    name: 'live_edit_prepare_session',
+    fallbackDescription:
+        'Prepare a live edit session, enable the overlay, and return readiness data.',
+    properties: {
+      'sessionId': Schema.string(),
+      'backendId': Schema.string(),
+      'workingDirectory': Schema.string(),
+    },
+  );
+
   static final liveEditSetOverlayTool = _tool(
     name: 'live_edit_set_overlay',
     fallbackDescription: 'Enable or disable the live edit overlay.',
@@ -71,6 +82,47 @@ class LiveEditHandler {
   static final liveEditGetSelectionTool = _tool(
     name: 'live_edit_get_selection',
     fallbackDescription: 'Get the current live edit selection.',
+    properties: {'sessionId': Schema.string()},
+  );
+
+  static final liveEditGetCapabilitiesTool = _tool(
+    name: 'live_edit_get_capabilities',
+    fallbackDescription: 'Get live edit runtime capabilities.',
+    properties: {'sessionId': Schema.string()},
+  );
+
+  static final liveEditGetSelectionCandidatesTool = _tool(
+    name: 'live_edit_get_selection_candidates',
+    fallbackDescription: 'Get the current live edit selection candidates.',
+    properties: {'sessionId': Schema.string()},
+  );
+
+  static final liveEditSetActiveSelectionTool = _tool(
+    name: 'live_edit_set_active_selection',
+    fallbackDescription: 'Promote one candidate as the active live edit selection.',
+    properties: {
+      'sessionId': Schema.string(),
+      'nodeId': Schema.string(),
+      'index': Schema.int(),
+    },
+  );
+
+  static final liveEditGetPropertyPanelTool = _tool(
+    name: 'live_edit_get_property_panel',
+    fallbackDescription: 'Get the current live edit property panel payload.',
+    properties: {'sessionId': Schema.string()},
+  );
+
+  static final liveEditSetEditModeTool = _tool(
+    name: 'live_edit_set_edit_mode',
+    fallbackDescription: 'Set the live edit overlay mode.',
+    properties: {'sessionId': Schema.string(), 'mode': Schema.string()},
+    required: const <String>['mode'],
+  );
+
+  static final liveEditGetPreviewStateTool = _tool(
+    name: 'live_edit_get_preview_state',
+    fallbackDescription: 'Get the current live edit preview state.',
     properties: {'sessionId': Schema.string()},
   );
 
@@ -152,6 +204,9 @@ class LiveEditHandler {
   Future<CallToolResult> liveEditStartSession(final CallToolRequest request) =>
       _executeNamed('live_edit_start_session', request);
 
+  Future<CallToolResult> liveEditPrepareSession(final CallToolRequest request) =>
+      _executeNamed('live_edit_prepare_session', request);
+
   Future<CallToolResult> liveEditSetOverlay(final CallToolRequest request) =>
       _executeNamed('live_edit_set_overlay', request);
 
@@ -163,6 +218,29 @@ class LiveEditHandler {
 
   Future<CallToolResult> liveEditGetSelection(final CallToolRequest request) =>
       _executeNamed('live_edit_get_selection', request);
+
+  Future<CallToolResult> liveEditGetCapabilities(
+    final CallToolRequest request,
+  ) => _executeNamed('live_edit_get_capabilities', request);
+
+  Future<CallToolResult> liveEditGetSelectionCandidates(
+    final CallToolRequest request,
+  ) => _executeNamed('live_edit_get_selection_candidates', request);
+
+  Future<CallToolResult> liveEditSetActiveSelection(
+    final CallToolRequest request,
+  ) => _executeNamed('live_edit_set_active_selection', request);
+
+  Future<CallToolResult> liveEditGetPropertyPanel(
+    final CallToolRequest request,
+  ) => _executeNamed('live_edit_get_property_panel', request);
+
+  Future<CallToolResult> liveEditSetEditMode(final CallToolRequest request) =>
+      _executeNamed('live_edit_set_edit_mode', request);
+
+  Future<CallToolResult> liveEditGetPreviewState(
+    final CallToolRequest request,
+  ) => _executeNamed('live_edit_get_preview_state', request);
 
   Future<CallToolResult> liveEditUpdateDraft(final CallToolRequest request) =>
       _executeNamed('live_edit_update_draft', request);

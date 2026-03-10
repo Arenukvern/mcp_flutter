@@ -53,7 +53,11 @@ void main() {
       patch: '--- a/lib/main.dart',
       changedFiles: <String>['lib/main.dart'],
       filePatches: <LiveEditFilePatch>[
-        LiveEditFilePatch(path: 'lib/main.dart', content: 'new content'),
+        LiveEditFilePatch(
+          path: 'lib/main.dart',
+          content: 'new content',
+          patch: '@@ -1 +1 @@',
+        ),
       ],
       expectedRuntimeEffects: <String>['Wider container'],
       validationSteps: <String>['Hot reload and compare width'],

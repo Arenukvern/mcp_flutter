@@ -430,19 +430,19 @@ final class LiveEditFilePatch {
   const LiveEditFilePatch({
     required this.path,
     required this.content,
-    this.patch,
+    required this.patch,
     this.meta = const <String, Object?>{},
   });
 
   final String path;
   final String content;
-  final String? patch;
+  final String patch;
   final Map<String, Object?> meta;
 
   Map<String, Object?> toJson() => <String, Object?>{
     'path': path,
     'content': content,
-    if (patch != null) 'patch': patch,
+    'patch': patch,
     'meta': meta,
   };
 
@@ -450,7 +450,7 @@ final class LiveEditFilePatch {
       LiveEditFilePatch(
         path: '${json['path'] ?? ''}',
         content: '${json['content'] ?? ''}',
-        patch: _asNullableString(json['patch']),
+        patch: '${json['patch'] ?? ''}',
         meta: _asMap(json['meta']),
       );
 }

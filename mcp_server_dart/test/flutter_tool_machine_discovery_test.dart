@@ -37,5 +37,31 @@ void main() {
       );
       expect(parsed, isNull);
     });
+
+    test(
+      'parseProcessVmServiceWsUri upgrades http VM URI to canonical ws URI',
+      () {
+        final parsed = FlutterToolMachineDiscovery.parseProcessVmServiceWsUri(
+          '/path/to/dart development-service --vm-service-uri=http://127.0.0.1:55571/jafDCsl7Cz4=/ --bind-address=127.0.0.1 --bind-port=0',
+        );
+
+        expect(
+          parsed?.toString(),
+          equals('ws://127.0.0.1:55571/jafDCsl7Cz4=/ws'),
+        );
+      },
+    );
+
+    test('parseProcessDiscoveryLine extracts target from DDS command line', () {
+      final parsed = FlutterToolMachineDiscovery.parseProcessDiscoveryLine(
+        '76597 /Users/anton/flutter/bin/cache/dart-sdk/bin/dart development-service --vm-service-uri=http://127.0.0.1:55571/jafDCsl7Cz4=/ --bind-address=127.0.0.1 --bind-port=0 --serve-devtools',
+      );
+
+      expect(
+        parsed?.vmServiceWsUri.toString(),
+        equals('ws://127.0.0.1:55571/jafDCsl7Cz4=/ws'),
+      );
+      expect(parsed?.sourceEvent, equals('process.vmServiceUri'));
+    });
   });
 }

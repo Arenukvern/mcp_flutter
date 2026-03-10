@@ -47,6 +47,7 @@ final class FlutterMachineEventData {
 }
 
 typedef FlutterAttachArgumentsBuilder = List<String> Function({String? device});
+typedef FlutterMachineProcessLinesProvider = Future<List<String>> Function();
 
 /// Discovers active Flutter debug VMs by parsing `flutter attach --machine`.
 final class FlutterToolMachineDiscovery {
@@ -54,12 +55,14 @@ final class FlutterToolMachineDiscovery {
     required this.logger,
     this.flutterExecutable = 'flutter',
     this.attachArgumentsBuilder = _defaultAttachArgumentsBuilder,
+    this.processLinesProvider = _defaultProcessLinesProvider,
     this.settleAfterFirstMatch = const Duration(milliseconds: 250),
   });
 
   final CoreLogger logger;
   final String flutterExecutable;
   final FlutterAttachArgumentsBuilder attachArgumentsBuilder;
+  final FlutterMachineProcessLinesProvider processLinesProvider;
   final Duration settleAfterFirstMatch;
 
   Future<List<FlutterMachineDiscoveryTarget>> discover({
@@ -180,6 +183,11 @@ final class FlutterToolMachineDiscovery {
       settleTimer?.cancel();
     }
 
+    final processDiscovered = await _discoverFromProcessMetadata();
+    for (final target in processDiscovered) {
+      byWsUri.putIfAbsent(target.vmServiceWsUri.toString(), () => target);
+    }
+
     final discovered = byWsUri.values.toList()
       ..sort(
         (final a, final b) =>
@@ -196,6 +204,32 @@ final class FlutterToolMachineDiscovery {
     }
 
     return discovered;
+  }
+
+  Future<List<FlutterMachineDiscoveryTarget>>
+  _discoverFromProcessMetadata() async {
+    try {
+      final lines = await processLinesProvider();
+      final byWsUri = <String, FlutterMachineDiscoveryTarget>{};
+      for (final line in lines) {
+        final target = parseProcessDiscoveryLine(line);
+        if (target == null) {
+          continue;
+        }
+        byWsUri.putIfAbsent(target.vmServiceWsUri.toString(), () => target);
+      }
+      return byWsUri.values.toList()..sort(
+        (final a, final b) =>
+            a.vmServiceWsUri.toString().compareTo(b.vmServiceWsUri.toString()),
+      );
+    } on Exception catch (e) {
+      logger(
+        LoggingLevel.debug,
+        'Process metadata discovery failed: $e',
+        logger: 'FlutterMachineDiscovery',
+      );
+      return const <FlutterMachineDiscoveryTarget>[];
+    }
   }
 
   static FlutterMachineEventData parseMachineEvent(
@@ -243,6 +277,62 @@ final class FlutterToolMachineDiscovery {
       eventName: eventName,
       vmServiceWsUri: vmUri,
       dtdUri: dtdUri,
+    );
+  }
+
+  static FlutterMachineDiscoveryTarget? parseProcessDiscoveryLine(
+    final String line,
+  ) {
+    final trimmed = line.trim();
+    if (trimmed.isEmpty ||
+        !trimmed.contains('development-service') ||
+        !trimmed.contains('--vm-service-uri=')) {
+      return null;
+    }
+
+    final vmUri = parseProcessVmServiceWsUri(trimmed);
+    if (vmUri == null) {
+      return null;
+    }
+
+    return FlutterMachineDiscoveryTarget(
+      vmServiceWsUri: vmUri,
+      sourceEvent: 'process.vmServiceUri',
+    );
+  }
+
+  static Uri? parseProcessVmServiceWsUri(final String commandLine) {
+    final match = RegExp(r'--vm-service-uri=([^\s]+)').firstMatch(commandLine);
+    final rawValue = match?.group(1);
+    if (rawValue == null || rawValue.isEmpty) {
+      return null;
+    }
+
+    final parsed = parseAnyUri(rawValue);
+    if (parsed == null) {
+      return null;
+    }
+
+    final scheme = parsed.scheme.toLowerCase();
+    if (scheme == 'ws' || scheme == 'wss') {
+      return canonicalizeVmServiceWsUri(parsed);
+    }
+    if (scheme != 'http' && scheme != 'https') {
+      return null;
+    }
+
+    final tokenSegments = parsed.pathSegments.where(
+      (final segment) => segment.isNotEmpty,
+    );
+    if (tokenSegments.isEmpty) {
+      return null;
+    }
+
+    return Uri(
+      scheme: scheme == 'https' ? 'wss' : 'ws',
+      host: parsed.host.toLowerCase(),
+      port: parsed.hasPort ? parsed.port : 0,
+      pathSegments: <String>[...tokenSegments, 'ws'],
     );
   }
 
@@ -301,6 +391,26 @@ final class FlutterToolMachineDiscovery {
         ..add(normalizedDevice);
     }
     return args;
+  }
+
+  static Future<List<String>> _defaultProcessLinesProvider() async {
+    if (!(Platform.isMacOS || Platform.isLinux)) {
+      return const <String>[];
+    }
+
+    final result = await Process.run('ps', const <String>[
+      '-wwaxo',
+      'pid=,command=',
+    ]);
+    if (result.exitCode != 0) {
+      return const <String>[];
+    }
+
+    return '${result.stdout}'
+        .split('\n')
+        .map((final line) => line.trimRight())
+        .where((final line) => line.trim().isNotEmpty)
+        .toList(growable: false);
   }
 
   static String _normalizeWsPath(final String path) {

@@ -336,6 +336,21 @@ final class LiveEditStartSessionCommand extends CoreCommand {
   String get name => 'live_edit_start_session';
 }
 
+final class LiveEditPrepareSessionCommand extends CoreCommand {
+  const LiveEditPrepareSessionCommand({
+    this.sessionId,
+    this.backendId,
+    this.workingDirectory,
+  });
+
+  final String? sessionId;
+  final String? backendId;
+  final String? workingDirectory;
+
+  @override
+  String get name => 'live_edit_prepare_session';
+}
+
 final class LiveEditSetOverlayCommand extends CoreCommand {
   const LiveEditSetOverlayCommand({this.sessionId, required this.enabled});
 
@@ -379,6 +394,67 @@ final class LiveEditGetSelectionCommand extends CoreCommand {
 
   @override
   String get name => 'live_edit_get_selection';
+}
+
+final class LiveEditGetCapabilitiesCommand extends CoreCommand {
+  const LiveEditGetCapabilitiesCommand({this.sessionId});
+
+  final String? sessionId;
+
+  @override
+  String get name => 'live_edit_get_capabilities';
+}
+
+final class LiveEditGetSelectionCandidatesCommand extends CoreCommand {
+  const LiveEditGetSelectionCandidatesCommand({this.sessionId});
+
+  final String? sessionId;
+
+  @override
+  String get name => 'live_edit_get_selection_candidates';
+}
+
+final class LiveEditSetActiveSelectionCommand extends CoreCommand {
+  const LiveEditSetActiveSelectionCommand({
+    this.sessionId,
+    this.nodeId,
+    this.index,
+  });
+
+  final String? sessionId;
+  final String? nodeId;
+  final int? index;
+
+  @override
+  String get name => 'live_edit_set_active_selection';
+}
+
+final class LiveEditGetPropertyPanelCommand extends CoreCommand {
+  const LiveEditGetPropertyPanelCommand({this.sessionId});
+
+  final String? sessionId;
+
+  @override
+  String get name => 'live_edit_get_property_panel';
+}
+
+final class LiveEditSetEditModeCommand extends CoreCommand {
+  const LiveEditSetEditModeCommand({this.sessionId, required this.mode});
+
+  final String? sessionId;
+  final String mode;
+
+  @override
+  String get name => 'live_edit_set_edit_mode';
+}
+
+final class LiveEditGetPreviewStateCommand extends CoreCommand {
+  const LiveEditGetPreviewStateCommand({this.sessionId});
+
+  final String? sessionId;
+
+  @override
+  String get name => 'live_edit_get_preview_state';
 }
 
 final class LiveEditUpdateDraftCommand extends CoreCommand {

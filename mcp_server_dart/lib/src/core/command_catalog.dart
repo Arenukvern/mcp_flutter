@@ -809,6 +809,31 @@ final class CommandCatalog {
         ),
       ),
       CommandSpec(
+        name: 'live_edit_prepare_session',
+        description:
+            'Bootstrap a live-edit session, enable the overlay, and return capabilities plus backend readiness.',
+        inputSchema: _objectSchema(
+          properties: {
+            'sessionId': _stringSchema(),
+            'backendId': _stringSchema(),
+            'workingDirectory': _stringSchema(),
+          },
+        ),
+        outputSchema: _objectSchema(additionalProperties: true),
+        requiresVm: true,
+        supportsWatch: false,
+        mcpExposed: true,
+        build: (final args) => LiveEditPrepareSessionCommand(
+          sessionId: _nullableStringArg(args, 'sessionId', alias: 'session-id'),
+          backendId: _nullableStringArg(args, 'backendId', alias: 'backend-id'),
+          workingDirectory: _nullableStringArg(
+            args,
+            'workingDirectory',
+            alias: 'working-directory',
+          ),
+        ),
+      ),
+      CommandSpec(
         name: 'live_edit_set_overlay',
         description:
             'Enable or disable the live-edit overlay inside the running app.',
@@ -873,6 +898,99 @@ final class CommandCatalog {
         supportsWatch: true,
         mcpExposed: true,
         build: (final args) => LiveEditGetSelectionCommand(
+          sessionId: _nullableStringArg(args, 'sessionId', alias: 'session-id'),
+        ),
+      ),
+      CommandSpec(
+        name: 'live_edit_get_capabilities',
+        description:
+            'Return normalized live-edit runtime capabilities for the active session.',
+        inputSchema: _objectSchema(properties: {'sessionId': _stringSchema()}),
+        outputSchema: _objectSchema(additionalProperties: true),
+        requiresVm: true,
+        supportsWatch: true,
+        mcpExposed: true,
+        build: (final args) => LiveEditGetCapabilitiesCommand(
+          sessionId: _nullableStringArg(args, 'sessionId', alias: 'session-id'),
+        ),
+      ),
+      CommandSpec(
+        name: 'live_edit_get_selection_candidates',
+        description:
+            'Return the current live-edit selection candidate stack for the session.',
+        inputSchema: _objectSchema(properties: {'sessionId': _stringSchema()}),
+        outputSchema: _objectSchema(additionalProperties: true),
+        requiresVm: true,
+        supportsWatch: true,
+        mcpExposed: true,
+        build: (final args) => LiveEditGetSelectionCandidatesCommand(
+          sessionId: _nullableStringArg(args, 'sessionId', alias: 'session-id'),
+        ),
+      ),
+      CommandSpec(
+        name: 'live_edit_set_active_selection',
+        description:
+            'Promote one candidate node to become the active live-edit selection.',
+        inputSchema: _objectSchema(
+          properties: {
+            'sessionId': _stringSchema(),
+            'nodeId': _stringSchema(),
+            'index': _intSchema(),
+          },
+        ),
+        outputSchema: _objectSchema(additionalProperties: true),
+        requiresVm: true,
+        supportsWatch: false,
+        mcpExposed: true,
+        build: (final args) => LiveEditSetActiveSelectionCommand(
+          sessionId: _nullableStringArg(args, 'sessionId', alias: 'session-id'),
+          nodeId: _nullableStringArg(args, 'nodeId', alias: 'node-id'),
+          index: _nullableIntArg(args, 'index'),
+        ),
+      ),
+      CommandSpec(
+        name: 'live_edit_get_property_panel',
+        description:
+            'Return the normalized live-edit property panel for the current selection.',
+        inputSchema: _objectSchema(properties: {'sessionId': _stringSchema()}),
+        outputSchema: _objectSchema(additionalProperties: true),
+        requiresVm: true,
+        supportsWatch: true,
+        mcpExposed: true,
+        build: (final args) => LiveEditGetPropertyPanelCommand(
+          sessionId: _nullableStringArg(args, 'sessionId', alias: 'session-id'),
+        ),
+      ),
+      CommandSpec(
+        name: 'live_edit_set_edit_mode',
+        description:
+            'Set the current live-edit overlay mode such as inspect or editing.',
+        inputSchema: _objectSchema(
+          properties: {
+            'sessionId': _stringSchema(),
+            'mode': _stringSchema(),
+          },
+          required: const <String>['mode'],
+        ),
+        outputSchema: _objectSchema(additionalProperties: true),
+        requiresVm: true,
+        supportsWatch: false,
+        mcpExposed: true,
+        build: (final args) => LiveEditSetEditModeCommand(
+          sessionId: _nullableStringArg(args, 'sessionId', alias: 'session-id'),
+          mode: _stringArg(args, 'mode', fallback: 'inspect'),
+        ),
+      ),
+      CommandSpec(
+        name: 'live_edit_get_preview_state',
+        description:
+            'Return the current live-edit preview state, including exact versus draft-only status.',
+        inputSchema: _objectSchema(properties: {'sessionId': _stringSchema()}),
+        outputSchema: _objectSchema(additionalProperties: true),
+        requiresVm: true,
+        supportsWatch: true,
+        mcpExposed: true,
+        build: (final args) => LiveEditGetPreviewStateCommand(
           sessionId: _nullableStringArg(args, 'sessionId', alias: 'session-id'),
         ),
       ),

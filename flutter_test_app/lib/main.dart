@@ -2,7 +2,9 @@
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_live_edit_toolkit/flutter_live_edit_toolkit.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 import 'package:provider/provider.dart';
@@ -13,6 +15,9 @@ Future<void> main() async {
   runZonedGuarded(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
+      if (kIsWeb) {
+        SemanticsBinding.instance.ensureSemantics();
+      }
       MCPToolkitBinding.instance
         ..initialize()
         ..initializeFlutterToolkit()
@@ -110,7 +115,10 @@ class _MCPDemoHomePageState extends State<MCPDemoHomePage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: const Text('MCP Toolkit Demo'),
+        title: const Text(
+          'MCP Toolkit Demo',
+          semanticsIdentifier: 'app_title_text',
+        ),
         elevation: 2,
       ),
       body: const SingleChildScrollView(
@@ -374,15 +382,31 @@ class _DynamicToolRegistrationState extends State<_DynamicToolRegistration> {
         const SizedBox(height: 12),
         Row(
           children: [
-            ElevatedButton.icon(
-              onPressed: _registerNewTool,
-              icon: const Icon(Icons.add_circle),
-              label: const Text('Register New Tool'),
+            Semantics(
+              identifier: 'register_new_tool_button',
+              button: true,
+              child: ElevatedButton.icon(
+                onPressed: _registerNewTool,
+                icon: const Icon(Icons.add_circle),
+                label: const Text(
+                  'Register New Tool',
+                  semanticsIdentifier: 'register_new_tool_label',
+                ),
+              ),
             ),
             const SizedBox(width: 16),
-            Text(
-              'Tools created: $_toolCount',
-              style: const TextStyle(fontWeight: FontWeight.w500),
+            Semantics(
+              container: true,
+              identifier: 'dynamic_tool_count',
+              label: 'Tools created: $_toolCount',
+              liveRegion: true,
+              child: ExcludeSemantics(
+                child: Text(
+                  'Tools created: $_toolCount',
+                  semanticsIdentifier: 'dynamic_tool_count_text',
+                  style: const TextStyle(fontWeight: FontWeight.w500),
+                ),
+              ),
             ),
           ],
         ),

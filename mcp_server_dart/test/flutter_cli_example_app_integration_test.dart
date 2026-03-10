@@ -178,6 +178,7 @@ void main() {
             'includeViewDetails': true,
             'includeErrors': true,
             'compress': true,
+            'screenshotMode': 'flutter_layer',
           }),
         ]);
         expect(snapshot['ok'], isTrue);
@@ -203,6 +204,195 @@ void main() {
         final inspectData = inspectAtPoint['data'] as Map<String, dynamic>;
         expect(inspectData['hit'], isA<bool>());
         expect(inspectData['summary'], isA<Map>());
+
+        final liveEditSession = await _runCli([
+          'exec',
+          '--name',
+          'live_edit_start_session',
+          '--args',
+          jsonEncode({'sessionId': 'live-edit-cli'}),
+        ]);
+        expect(liveEditSession['ok'], isTrue);
+        expect(
+          (liveEditSession['data'] as Map<String, dynamic>)['sessionId'],
+          'live-edit-cli',
+        );
+
+        final liveEditTree = await _runCli([
+          'exec',
+          '--name',
+          'live_edit_get_tree',
+          '--args',
+          jsonEncode({'sessionId': 'live-edit-cli'}),
+        ]);
+        expect(liveEditTree['ok'], isTrue);
+        final liveEditTreeData = liveEditTree['data'] as Map<String, dynamic>;
+        expect(liveEditTreeData['tree'], isNotNull);
+
+        Map<String, dynamic>? selection;
+        Map<String, dynamic>? editableProperty;
+        for (final point in _liveEditProbePoints) {
+          final liveEditSelect = await _runCli([
+            'exec',
+            '--name',
+            'live_edit_select_at_point',
+            '--args',
+            jsonEncode({
+              'sessionId': 'live-edit-cli',
+              'x': point['x'],
+              'y': point['y'],
+            }),
+          ]);
+          expect(liveEditSelect['ok'], isTrue);
+          final liveEditSelectData =
+              liveEditSelect['data'] as Map<String, dynamic>;
+          if (liveEditSelectData['hit'] != true) {
+            continue;
+          }
+          final candidateSelection = (liveEditSelectData['selection'] as Map)
+              .cast<String, dynamic>();
+          final candidateProperty = _pickEditableProperty(candidateSelection);
+          if (candidateProperty != null) {
+            selection = candidateSelection;
+            editableProperty = candidateProperty;
+            break;
+          }
+        }
+        expect(selection, isNotNull, reason: 'No editable live-edit selection');
+        expect(
+          editableProperty,
+          isNotNull,
+          reason: 'No editable live-edit property found at probe points',
+        );
+
+        final liveEditSelection = await _runCli([
+          'exec',
+          '--name',
+          'live_edit_get_selection',
+          '--args',
+          jsonEncode({'sessionId': 'live-edit-cli'}),
+        ]);
+        expect(liveEditSelection['ok'], isTrue);
+        final liveEditSelectionData =
+            liveEditSelection['data'] as Map<String, dynamic>;
+        expect(liveEditSelectionData['hasSelection'], isTrue);
+
+        final liveEditOverlay = await _runCli([
+          'exec',
+          '--name',
+          'live_edit_set_overlay',
+          '--args',
+          jsonEncode({'sessionId': 'live-edit-cli', 'enabled': true}),
+        ]);
+        expect(liveEditOverlay['ok'], isTrue);
+        expect(
+          (liveEditOverlay['data'] as Map<String, dynamic>)['overlayEnabled'],
+          isTrue,
+        );
+
+        final liveEditUpdate = await _runCli([
+          'exec',
+          '--name',
+          'live_edit_update_draft',
+          '--args',
+          jsonEncode({
+            'sessionId': 'live-edit-cli',
+            'change': {
+              'nodeId': selection!['nodeId'],
+              'propertyId': editableProperty!['id'],
+              'targetValue': _draftTargetValue(editableProperty),
+              'previewMode': editableProperty['previewMode'],
+              'confidence': 0.8,
+            },
+          }),
+        ]);
+        expect(liveEditUpdate['ok'], isTrue);
+        final liveEditUpdateData =
+            liveEditUpdate['data'] as Map<String, dynamic>;
+        expect(liveEditUpdateData['updated'], isTrue);
+
+        final liveEditDraft = await _runCli([
+          'exec',
+          '--name',
+          'live_edit_get_draft',
+          '--args',
+          jsonEncode({'sessionId': 'live-edit-cli'}),
+        ]);
+        expect(liveEditDraft['ok'], isTrue);
+        final draftChanges =
+            ((liveEditDraft['data'] as Map<String, dynamic>)['draftChanges']
+                    as List)
+                .cast<Object?>();
+        expect(draftChanges, isNotEmpty);
+
+        final backendList = await _runCli([
+          'exec',
+          '--name',
+          'live_edit_list_agent_backends',
+          '--args',
+          '{}',
+        ]);
+        expect(backendList['ok'], isTrue);
+        final backendListData = backendList['data'] as Map<String, dynamic>;
+        final backends = (backendListData['backends'] as List)
+            .whereType<Map>()
+            .map((final entry) => entry.cast<String, dynamic>())
+            .toList();
+        expect(backends, isNotEmpty);
+        final defaultBackendId =
+            backendListData['defaultBackendId'] as String? ?? '';
+        expect(defaultBackendId, isNotEmpty);
+
+        final backendGet = await _runCli([
+          'exec',
+          '--name',
+          'live_edit_get_agent_backend',
+          '--args',
+          jsonEncode({'sessionId': 'live-edit-cli'}),
+        ]);
+        expect(backendGet['ok'], isTrue);
+
+        final backendSet = await _runCli([
+          'exec',
+          '--name',
+          'live_edit_set_agent_backend',
+          '--args',
+          jsonEncode({
+            'sessionId': 'live-edit-cli',
+            'backendId': defaultBackendId,
+          }),
+        ]);
+        expect(backendSet['ok'], isTrue);
+        final backendSetData = backendSet['data'] as Map<String, dynamic>;
+        expect(
+          ((backendSetData['backend'] as Map)['id'] as String),
+          defaultBackendId,
+        );
+
+        final liveEditDiscard = await _runCli([
+          'exec',
+          '--name',
+          'live_edit_discard_draft',
+          '--args',
+          jsonEncode({'sessionId': 'live-edit-cli'}),
+        ]);
+        expect(liveEditDiscard['ok'], isTrue);
+        expect(
+          ((liveEditDiscard['data'] as Map<String, dynamic>)['draftChanges']
+                  as List)
+              .isEmpty,
+          isTrue,
+        );
+
+        final liveEditEnd = await _runCli([
+          'exec',
+          '--name',
+          'live_edit_end_session',
+          '--args',
+          jsonEncode({'sessionId': 'live-edit-cli'}),
+        ]);
+        expect(liveEditEnd['ok'], isTrue);
+        expect((liveEditEnd['data'] as Map<String, dynamic>)['ended'], isTrue);
 
         final dynamicList = await _waitForDynamicTool('get_app_ui_state');
         expect(dynamicList['ok'], isTrue);
@@ -354,6 +544,12 @@ void main() {
 String? _globalVmServiceWsUri;
 String? _stateFilePath;
 
+const List<Map<String, int>> _liveEditProbePoints = <Map<String, int>>[
+  <String, int>{'x': 180, 'y': 400},
+  <String, int>{'x': 150, 'y': 320},
+  <String, int>{'x': 120, 'y': 220},
+];
+
 Directory _serverDirectory() => Directory.current;
 
 Directory _appDirectory() =>
@@ -461,6 +657,44 @@ Map<String, dynamic>? _tryDecodeJsonMap(final String value) {
     return null;
   } catch (_) {
     return null;
+  }
+}
+
+Map<String, dynamic>? _pickEditableProperty(
+  final Map<String, dynamic> selection,
+) {
+  final properties = (selection['properties'] as List?) ?? const [];
+  for (final property in properties.whereType<Map>()) {
+    final map = property.cast<String, dynamic>();
+    if (map['editable'] == true) {
+      return map;
+    }
+  }
+  return null;
+}
+
+Object? _draftTargetValue(final Map<String, dynamic> property) {
+  if (property['value'] != null) {
+    return property['value'];
+  }
+
+  final kind = '${property['kind'] ?? ''}';
+  switch (kind) {
+    case 'boolean':
+      return false;
+    case 'integer':
+    case 'number':
+      return 0;
+    case 'string':
+      return '';
+    case 'enum':
+      final options = (property['options'] as List?) ?? const [];
+      if (options.isNotEmpty) {
+        return options.first;
+      }
+      return '';
+    default:
+      return null;
   }
 }
 

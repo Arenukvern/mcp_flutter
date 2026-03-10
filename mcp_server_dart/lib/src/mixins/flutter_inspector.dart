@@ -69,6 +69,10 @@ base mixin FlutterInspector
       _liveEditHandler.liveEditStartSession,
     );
     registerTool(
+      LiveEditHandler.liveEditPrepareSessionTool,
+      _liveEditHandler.liveEditPrepareSession,
+    );
+    registerTool(
       LiveEditHandler.liveEditSetOverlayTool,
       _liveEditHandler.liveEditSetOverlay,
     );
@@ -83,6 +87,30 @@ base mixin FlutterInspector
     registerTool(
       LiveEditHandler.liveEditGetSelectionTool,
       _liveEditHandler.liveEditGetSelection,
+    );
+    registerTool(
+      LiveEditHandler.liveEditGetCapabilitiesTool,
+      _liveEditHandler.liveEditGetCapabilities,
+    );
+    registerTool(
+      LiveEditHandler.liveEditGetSelectionCandidatesTool,
+      _liveEditHandler.liveEditGetSelectionCandidates,
+    );
+    registerTool(
+      LiveEditHandler.liveEditSetActiveSelectionTool,
+      _liveEditHandler.liveEditSetActiveSelection,
+    );
+    registerTool(
+      LiveEditHandler.liveEditGetPropertyPanelTool,
+      _liveEditHandler.liveEditGetPropertyPanel,
+    );
+    registerTool(
+      LiveEditHandler.liveEditSetEditModeTool,
+      _liveEditHandler.liveEditSetEditMode,
+    );
+    registerTool(
+      LiveEditHandler.liveEditGetPreviewStateTool,
+      _liveEditHandler.liveEditGetPreviewState,
     );
     registerTool(
       LiveEditHandler.liveEditUpdateDraftTool,

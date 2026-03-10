@@ -28,15 +28,11 @@ final class LiveEditSchemas {
         'type': 'array',
         'items': <String, dynamic>{
           'type': 'object',
-          'required': <String>['path', 'content'],
+          'required': <String>['path', 'content', 'patch'],
           'properties': <String, dynamic>{
             'path': <String, dynamic>{'type': 'string'},
             'content': <String, dynamic>{'type': 'string'},
             'patch': <String, dynamic>{'type': 'string'},
-            'meta': <String, dynamic>{
-              'type': 'object',
-              'additionalProperties': true,
-            },
           },
           'additionalProperties': false,
         },
@@ -57,7 +53,6 @@ final class LiveEditSchemas {
         'type': 'array',
         'items': <String, dynamic>{'type': 'string'},
       },
-      'meta': <String, dynamic>{'type': 'object', 'additionalProperties': true},
     },
     'additionalProperties': false,
   };

@@ -72,6 +72,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
   final Future<void> Function(int pid) _activateMacOsTargetPid;
 
   CoreDynamicGateway? _dynamicGateway;
+  final Map<String, String> _liveEditSessionModes = <String, String>{};
 
   void setDynamicGateway(final CoreDynamicGateway? gateway) {
     _dynamicGateway = gateway;
@@ -140,10 +141,19 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       RunClientToolCommand() => _runClientTool(command),
       RunClientResourceCommand() => _runClientResource(command),
       LiveEditStartSessionCommand() => _liveEditStartSession(command),
+      LiveEditPrepareSessionCommand() => _liveEditPrepareSession(command),
       LiveEditSetOverlayCommand() => _liveEditSetOverlay(command),
       LiveEditGetTreeCommand() => _liveEditGetTree(command),
       LiveEditSelectAtPointCommand() => _liveEditSelectAtPoint(command),
       LiveEditGetSelectionCommand() => _liveEditGetSelection(command),
+      LiveEditGetCapabilitiesCommand() => _liveEditGetCapabilities(command),
+      LiveEditGetSelectionCandidatesCommand() =>
+        _liveEditGetSelectionCandidates(command),
+      LiveEditSetActiveSelectionCommand() =>
+        _liveEditSetActiveSelection(command),
+      LiveEditGetPropertyPanelCommand() => _liveEditGetPropertyPanel(command),
+      LiveEditSetEditModeCommand() => _liveEditSetEditMode(command),
+      LiveEditGetPreviewStateCommand() => _liveEditGetPreviewState(command),
       LiveEditUpdateDraftCommand() => _liveEditUpdateDraft(command),
       LiveEditGetDraftCommand() => _liveEditGetDraft(command),
       LiveEditDiscardDraftCommand() => _liveEditDiscardDraft(command),
@@ -935,6 +945,68 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     },
   );
 
+  Future<CoreResult> _liveEditPrepareSession(
+    final LiveEditPrepareSessionCommand command,
+  ) async {
+    final sessionResult = await _ensureLiveEditSessionId(command.sessionId);
+    if (!sessionResult.ok) {
+      return sessionResult;
+    }
+
+    final sessionId = _stringOrNull(_map(sessionResult.data)['sessionId']);
+    if (!_hasText(sessionId)) {
+      return CoreResult.failure(
+        code: CoreErrorCode.unexpectedExecutorError,
+        message: 'Live edit session initialization did not return a session id',
+      );
+    }
+
+    if (_hasText(command.backendId)) {
+      final backendResult = await _liveEditSetAgentBackend(
+        LiveEditSetAgentBackendCommand(
+          sessionId: sessionId!,
+          backendId: command.backendId!,
+        ),
+      );
+      if (!backendResult.ok) {
+        return backendResult;
+      }
+    }
+
+    final overlayResult = await _liveEditSetOverlay(
+      LiveEditSetOverlayCommand(sessionId: sessionId, enabled: true),
+    );
+    if (!overlayResult.ok) {
+      return overlayResult;
+    }
+
+    final capabilitiesResult = await _liveEditGetCapabilities(
+      LiveEditGetCapabilitiesCommand(sessionId: sessionId),
+    );
+    if (!capabilitiesResult.ok) {
+      return capabilitiesResult;
+    }
+
+    final selectionResult = await _liveEditGetSelection(
+      LiveEditGetSelectionCommand(sessionId: sessionId),
+    );
+    final draftResult = await _liveEditGetDraft(
+      LiveEditGetDraftCommand(sessionId: sessionId),
+    );
+
+    return CoreResult.success(
+      data: <String, Object?>{
+        'sessionId': sessionId!,
+        if (_hasText(command.workingDirectory))
+          'workingDirectory': command.workingDirectory,
+        'overlay': _map(overlayResult.data),
+        'capabilities': _map(capabilitiesResult.data),
+        if (selectionResult.ok) 'selection': _map(selectionResult.data),
+        if (draftResult.ok) 'draft': _map(draftResult.data),
+      },
+    );
+  }
+
   Future<CoreResult> _liveEditSetOverlay(
     final LiveEditSetOverlayCommand command,
   ) => _runLiveEditRuntimeTool(
@@ -973,6 +1045,220 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       if (_hasText(command.sessionId)) 'sessionId': command.sessionId!,
     },
   );
+
+  Future<CoreResult> _liveEditGetCapabilities(
+    final LiveEditGetCapabilitiesCommand command,
+  ) async {
+    final backend = _liveEditAgentService.getBackend(sessionId: command.sessionId);
+    return CoreResult.success(
+      data: <String, Object?>{
+        if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
+        'backend': backend.toJson(),
+        'capabilities': <String, Object?>{
+          'overlay': true,
+          'selection': true,
+          'selectionCandidates': false,
+          'propertyPanel': true,
+          'draft': true,
+          'exactPreview': true,
+          'ghostPreview': true,
+          'agentResolution': true,
+          'editModes': const <String>['inspect', 'edit', 'hidden'],
+        },
+      },
+    );
+  }
+
+  Future<CoreResult> _liveEditGetSelectionCandidates(
+    final LiveEditGetSelectionCandidatesCommand command,
+  ) async {
+    final selectionResult = await _liveEditGetSelection(
+      LiveEditGetSelectionCommand(sessionId: command.sessionId),
+    );
+    if (!selectionResult.ok) {
+      return selectionResult;
+    }
+
+    final data = _map(selectionResult.data);
+    final selection = _decodeSelection(data['selection']);
+    final candidates = selection == null
+        ? const <Map<String, Object?>>[]
+        : <Map<String, Object?>>[
+            <String, Object?>{
+              'index': 0,
+              'nodeId': selection.nodeId,
+              'widgetType': selection.widgetType,
+              'selection': selection.toJson(),
+            },
+          ];
+    return CoreResult.success(
+      data: <String, Object?>{
+        if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
+        'activeNodeId': selection?.nodeId,
+        'candidates': candidates,
+      },
+    );
+  }
+
+  Future<CoreResult> _liveEditSetActiveSelection(
+    final LiveEditSetActiveSelectionCommand command,
+  ) async {
+    final candidatesResult = await _liveEditGetSelectionCandidates(
+      LiveEditGetSelectionCandidatesCommand(sessionId: command.sessionId),
+    );
+    if (!candidatesResult.ok) {
+      return candidatesResult;
+    }
+
+    final data = _map(candidatesResult.data);
+    final candidates = _asObjectList(data['candidates']);
+    if (candidates.isEmpty) {
+      return CoreResult.success(
+        data: <String, Object?>{
+          if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
+          'activated': false,
+          'reason': 'no_selection_candidates',
+          'candidates': candidates,
+        },
+      );
+    }
+
+    final first = _map(candidates.first);
+    final requestedIndex = command.index;
+    final requestedNodeId = _stringOrNull(command.nodeId);
+    final matchesIndex = requestedIndex == null || requestedIndex == 0;
+    final matchesNode =
+        !_hasText(requestedNodeId) || requestedNodeId == first['nodeId'];
+
+    return CoreResult.success(
+      data: <String, Object?>{
+        if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
+        'activated': matchesIndex && matchesNode,
+        'activeNodeId': first['nodeId'],
+        'selection': first['selection'],
+        if (!(matchesIndex && matchesNode))
+          'reason': 'selection_candidates_runtime_only_supports_active_node',
+        'candidates': candidates,
+      },
+    );
+  }
+
+  Future<CoreResult> _liveEditGetPropertyPanel(
+    final LiveEditGetPropertyPanelCommand command,
+  ) async {
+    final selectionResult = await _liveEditGetSelection(
+      LiveEditGetSelectionCommand(sessionId: command.sessionId),
+    );
+    if (!selectionResult.ok) {
+      return selectionResult;
+    }
+
+    final selection = _decodeSelection(_map(selectionResult.data)['selection']);
+    return CoreResult.success(
+      data: <String, Object?>{
+        if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
+        if (selection != null) 'nodeId': selection.nodeId,
+        if (selection != null) 'widgetType': selection.widgetType,
+        'properties': selection?.propertyGroups
+                .map((final property) => property.toJson())
+                .toList(growable: false) ??
+            const <Object?>[],
+        if (selection != null) 'selection': selection.toJson(),
+      },
+    );
+  }
+
+  Future<CoreResult> _liveEditSetEditMode(
+    final LiveEditSetEditModeCommand command,
+  ) async {
+    final sessionResult = await _ensureLiveEditSessionId(command.sessionId);
+    if (!sessionResult.ok) {
+      return sessionResult;
+    }
+
+    final sessionId = _stringOrNull(_map(sessionResult.data)['sessionId']);
+    if (!_hasText(sessionId)) {
+      return CoreResult.failure(
+        code: CoreErrorCode.unexpectedExecutorError,
+        message: 'Live edit session initialization did not return a session id',
+      );
+    }
+
+    final normalizedMode = command.mode.trim().isEmpty
+        ? 'inspect'
+        : command.mode.trim().toLowerCase();
+    _liveEditSessionModes[sessionId!] = normalizedMode;
+    if (normalizedMode == 'hidden') {
+      final overlayResult = await _liveEditSetOverlay(
+        LiveEditSetOverlayCommand(sessionId: sessionId, enabled: false),
+      );
+      if (!overlayResult.ok) {
+        return overlayResult;
+      }
+    } else {
+      final overlayResult = await _liveEditSetOverlay(
+        LiveEditSetOverlayCommand(sessionId: sessionId, enabled: true),
+      );
+      if (!overlayResult.ok) {
+        return overlayResult;
+      }
+    }
+
+    return CoreResult.success(
+      data: <String, Object?>{'sessionId': sessionId, 'mode': normalizedMode},
+    );
+  }
+
+  Future<CoreResult> _liveEditGetPreviewState(
+    final LiveEditGetPreviewStateCommand command,
+  ) async {
+    final draftResult = await _liveEditGetDraft(
+      LiveEditGetDraftCommand(sessionId: command.sessionId),
+    );
+    if (!draftResult.ok) {
+      return draftResult;
+    }
+
+    final selectionResult = await _liveEditGetSelection(
+      LiveEditGetSelectionCommand(sessionId: command.sessionId),
+    );
+    if (!selectionResult.ok) {
+      return selectionResult;
+    }
+
+    final draftChanges = _decodeDraftChanges(_map(draftResult.data)['draftChanges']);
+    final selection = _decodeSelection(_map(selectionResult.data)['selection']);
+    final propertyById = <String, LiveEditPropertyDescriptor>{
+      for (final property in selection?.propertyGroups ?? const <LiveEditPropertyDescriptor>[])
+        property.id: property,
+    };
+
+    final exactPreviewPropertyIds = <String>[];
+    final pendingPropertyIds = <String>[];
+    for (final draft in draftChanges) {
+      final property = propertyById[draft.propertyId];
+      if (property != null && _looselyEquivalent(property.value, draft.targetValue)) {
+        exactPreviewPropertyIds.add(draft.propertyId);
+      } else {
+        pendingPropertyIds.add(draft.propertyId);
+      }
+    }
+
+    return CoreResult.success(
+      data: <String, Object?>{
+        if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
+        'mode': _liveEditSessionModes[command.sessionId ?? ''] ?? 'inspect',
+        'selectionAvailable': selection != null,
+        if (selection != null) 'nodeId': selection.nodeId,
+        'draftChanges': draftChanges
+            .map((final change) => change.toJson())
+            .toList(growable: false),
+        'hasDraft': draftChanges.isNotEmpty,
+        'exactPreviewPropertyIds': exactPreviewPropertyIds,
+        'pendingPropertyIds': pendingPropertyIds,
+      },
+    );
+  }
 
   Future<CoreResult> _liveEditUpdateDraft(
     final LiveEditUpdateDraftCommand command,
@@ -1170,6 +1456,15 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
           'proposal': proposal.toJson(),
         },
       );
+    } on LiveEditAgentException catch (error) {
+      return CoreResult.failure(
+        code: CoreErrorCode.liveEditBackendFailed,
+        message: 'Live edit resolution failed: $error',
+        details: <String, Object?>{
+          'request': request.toJson(),
+          'backendError': error.toJson(),
+        },
+      );
     } on StateError catch (error) {
       return CoreResult.failure(
         code: CoreErrorCode.liveEditBackendFailed,
@@ -1244,29 +1539,40 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       );
     }
 
-    final validation = await _validateAppliedLiveEditRequest(
+    var validation = await _validateAppliedLiveEditRequest(
       request: request,
       fallbackSessionId: command.sessionId,
     );
+    Map<String, Object?>? validationRecovery;
     if (validation['validated'] != true) {
-      return CoreResult.failure(
-        code: CoreErrorCode.liveEditValidationFailed,
-        message:
-            'Proposal applied, but runtime validation did not match the draft',
-        details: <String, Object?>{
-          'proposal': proposal.toJson(),
-          'apply': applyResult.toJson(),
-          'hotReload': hotReloadResult.data,
-          'validation': validation,
-        },
+      validationRecovery = await _recoverLiveEditValidationAfterHotRestart(
+        request: request,
+        fallbackSessionId: command.sessionId,
       );
+      final recoveredValidation = _map(validationRecovery['validation']);
+      if (recoveredValidation['validated'] == true) {
+        validation = recoveredValidation;
+      } else {
+        return CoreResult.failure(
+          code: CoreErrorCode.liveEditValidationFailed,
+          message:
+              'Proposal applied, but runtime validation did not match the draft',
+          details: <String, Object?>{
+            'proposal': proposal.toJson(),
+            'apply': applyResult.toJson(),
+            'hotReload': hotReloadResult.data,
+            'validation': validation,
+            'validationRecovery': validationRecovery,
+          },
+        );
+      }
     }
 
+    Map<String, Object?>? discardData;
     final discardSessionId = _firstNonEmpty(
       command.sessionId,
       request.sessionId,
     );
-    Map<String, Object?>? discardData;
     if (_hasText(discardSessionId)) {
       final discardResult = await _liveEditDiscardDraft(
         LiveEditDiscardDraftCommand(sessionId: discardSessionId),
@@ -1282,9 +1588,315 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
         'result': applyResult.toJson(),
         'hotReload': hotReloadResult.data,
         'validation': validation,
+        if (validationRecovery != null) 'validationRecovery': validationRecovery,
         if (discardData != null) 'draft': discardData,
       },
     );
+  }
+
+  Future<Map<String, Object?>> _recoverLiveEditValidationAfterHotRestart({
+    required final LiveEditResolutionRequest request,
+    required final String? fallbackSessionId,
+  }) async {
+    final result = <String, Object?>{'attempted': true};
+
+    final hotRestartResult = await _hotRestart();
+    result['hotRestart'] = hotRestartResult.ok
+        ? hotRestartResult.data
+        : hotRestartResult.error?.toJson();
+    if (!hotRestartResult.ok) {
+      return <String, Object?>{
+        ...result,
+        'validated': false,
+        'reason': 'hot_restart_failed',
+      };
+    }
+
+    final isolateReady = await _waitForFlutterIsolateAfterRestart();
+    result['flutterIsolateReady'] = isolateReady;
+    if (!isolateReady) {
+      return <String, Object?>{
+        ...result,
+        'validated': false,
+        'reason': 'flutter_isolate_unavailable_after_restart',
+      };
+    }
+
+    final runtimeReady = await _waitForLiveEditRuntimeToolAfterRestart(
+      LiveEditRuntimeToolNames.selectAtPoint,
+    );
+    result['liveEditRuntimeReady'] = runtimeReady;
+    if (!runtimeReady) {
+      return <String, Object?>{
+        ...result,
+        'validated': false,
+        'reason': 'live_edit_runtime_unavailable_after_restart',
+      };
+    }
+
+    final sessionId = _firstNonEmpty(fallbackSessionId, request.sessionId);
+    if (_hasText(sessionId)) {
+      final restartSession = await _liveEditStartSession(
+        LiveEditStartSessionCommand(sessionId: sessionId),
+      );
+      result['restartSession'] = restartSession.ok
+          ? restartSession.data
+          : restartSession.error?.toJson();
+      if (!restartSession.ok) {
+        return <String, Object?>{
+          ...result,
+          'validated': false,
+          'reason': 'live_edit_session_restart_failed',
+        };
+      }
+    }
+
+    Map<String, Object?>? reselection;
+    try {
+      reselection = await _reselectLiveEditTargetFromRequest(
+        request: request,
+        fallbackSessionId: fallbackSessionId,
+      );
+    } on StateError catch (error) {
+      return <String, Object?>{
+        ...result,
+        'validated': false,
+        'reason': 'reselect_failed',
+        'error': '$error',
+      };
+    }
+    if (reselection != null) {
+      result['reselection'] = reselection;
+      if (reselection['ok'] != true || reselection['hit'] != true) {
+        return <String, Object?>{
+          ...result,
+          'validated': false,
+          'reason': reselection['ok'] == true
+              ? 'reselect_missed'
+              : 'reselect_failed',
+        };
+      }
+    }
+
+    final validation = await _validateAppliedLiveEditRequest(
+      request: request,
+      fallbackSessionId: fallbackSessionId,
+    );
+    return <String, Object?>{
+      ...result,
+      'validated': validation['validated'] == true,
+      'validation': validation,
+      if (validation['validated'] != true)
+        'reason': 'validation_mismatch_after_restart',
+    };
+  }
+
+  Future<bool> _waitForFlutterIsolateAfterRestart({
+    final Duration timeout = const Duration(seconds: 10),
+    final Duration pollInterval = const Duration(milliseconds: 250),
+  }) async {
+    final deadline = DateTime.now().add(timeout);
+    while (DateTime.now().isBefore(deadline)) {
+      try {
+        final isolate = await connectionContext.getFlutterIsolate();
+        if (isolate?.id != null) {
+          return true;
+        }
+      } on StateError {
+        // Keep retrying until timeout while the isolate comes back.
+      }
+      await Future<void>.delayed(pollInterval);
+    }
+    return false;
+  }
+
+  Future<bool> _waitForLiveEditRuntimeToolAfterRestart(
+    final String toolName, {
+    final Duration timeout = const Duration(seconds: 15),
+    final Duration pollInterval = const Duration(milliseconds: 500),
+  }) async {
+    final deadline = DateTime.now().add(timeout);
+    while (DateTime.now().isBefore(deadline)) {
+      final toolsResult = await _listClientToolsAndResources();
+      if (toolsResult.ok) {
+        final tools = _asObjectList(_map(toolsResult.data)['tools']);
+        final names = tools
+            .whereType<Map>()
+            .map((final entry) => '${entry['name'] ?? ''}')
+            .toSet();
+        if (names.contains(toolName)) {
+          return true;
+        }
+      }
+      await Future<void>.delayed(pollInterval);
+    }
+    return false;
+  }
+
+  Future<Map<String, Object?>?> _reselectLiveEditTargetFromRequest({
+    required final LiveEditResolutionRequest request,
+    required final String? fallbackSessionId,
+  }) async {
+    final sessionId = _firstNonEmpty(fallbackSessionId, request.sessionId);
+    final bounds = request.selection?.bounds;
+    if (!_hasText(sessionId) || bounds == null) {
+      return null;
+    }
+
+    final candidatePoints = _liveEditCandidatePointsForBounds(bounds);
+    final attempts = <Map<String, Object?>>[];
+
+    for (var index = 0; index < 6; index++) {
+      var widgetTreeUnavailable = false;
+      for (final point in candidatePoints) {
+        final x = point['x']!;
+        final y = point['y']!;
+        final result = await _liveEditSelectAtPoint(
+          LiveEditSelectAtPointCommand(sessionId: sessionId, x: x, y: y),
+        );
+        final data = _map(result.data);
+        final hit = data['hit'] == true;
+        final reason = _stringOrNull(data['reason']);
+        final selection = _decodeSelection(data['selection']);
+        final matched = _matchesRequestedLiveEditSelection(
+          requested: request.selection,
+          actual: selection,
+          hit: hit,
+        );
+        attempts.add(<String, Object?>{
+          'attempt': index + 1,
+          'x': x,
+          'y': y,
+          'ok': result.ok,
+          'hit': hit,
+          'matched': matched,
+          if (selection != null) 'selectedWidgetType': selection.widgetType,
+          if (selection?.source != null) 'selectedSource': selection!.source!.toJson(),
+          if (_hasText(reason)) 'reason': reason,
+          if (result.ok) 'data': data,
+          if (!result.ok) 'error': result.error?.toJson(),
+        });
+
+        if (!result.ok) {
+          return <String, Object?>{
+            'ok': false,
+            'hit': false,
+            'attempts': attempts,
+            'error': result.error?.toJson(),
+          };
+        }
+
+        if (matched) {
+          return <String, Object?>{
+            'ok': true,
+            'hit': true,
+            'matched': true,
+            'x': x,
+            'y': y,
+            'attempts': attempts,
+            'data': data,
+          };
+        }
+
+        if (reason == 'widget_tree_unavailable') {
+          widgetTreeUnavailable = true;
+          break;
+        }
+      }
+
+      if (!widgetTreeUnavailable || index == 5) {
+        return <String, Object?>{
+          'ok': true,
+          'hit': false,
+          'matched': false,
+          'attempts': attempts,
+        };
+      }
+
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+    }
+
+    return <String, Object?>{
+      'ok': true,
+      'hit': false,
+      'matched': false,
+      'attempts': attempts,
+    };
+  }
+
+  List<Map<String, int>> _liveEditCandidatePointsForBounds(
+    final LiveEditBounds bounds,
+  ) {
+    final inset = bounds.width < 24 || bounds.height < 24 ? 2.0 : 8.0;
+    final left = bounds.left + inset;
+    final right = bounds.right - inset;
+    final top = bounds.top + inset;
+    final bottom = bounds.bottom - inset;
+    final midX = (bounds.left + bounds.right) / 2;
+    final midY = (bounds.top + bounds.bottom) / 2;
+
+    final ordered = <Map<String, int>>[
+      <String, int>{'x': left.round(), 'y': top.round()},
+      <String, int>{'x': right.round(), 'y': top.round()},
+      <String, int>{'x': left.round(), 'y': bottom.round()},
+      <String, int>{'x': right.round(), 'y': bottom.round()},
+      <String, int>{'x': left.round(), 'y': midY.round()},
+      <String, int>{'x': right.round(), 'y': midY.round()},
+      <String, int>{'x': midX.round(), 'y': top.round()},
+      <String, int>{'x': midX.round(), 'y': bottom.round()},
+      <String, int>{'x': midX.round(), 'y': midY.round()},
+    ];
+
+    final seen = <String>{};
+    return ordered.where((final point) {
+      final key = '${point['x']}:${point['y']}';
+      return seen.add(key);
+    }).toList(growable: false);
+  }
+
+  bool _matchesRequestedLiveEditSelection({
+    required final LiveEditSelection? requested,
+    required final LiveEditSelection? actual,
+    required final bool hit,
+  }) {
+    if (!hit || actual == null) {
+      return false;
+    }
+    if (requested == null) {
+      return true;
+    }
+    if (requested.widgetType != actual.widgetType) {
+      return false;
+    }
+
+    final requestedSource = requested.source;
+    if (requestedSource == null) {
+      return true;
+    }
+
+    final actualSource = actual.source;
+    if (actualSource == null) {
+      return false;
+    }
+
+    if (_normalizeLiveEditSourceFile(requestedSource.file) !=
+        _normalizeLiveEditSourceFile(actualSource.file)) {
+      return false;
+    }
+
+    if (requestedSource.line != null && actualSource.line != requestedSource.line) {
+      return false;
+    }
+
+    return true;
+  }
+
+  String _normalizeLiveEditSourceFile(final String file) {
+    final parsed = Uri.tryParse(file);
+    if (parsed != null && parsed.scheme == 'file') {
+      return parsed.toFilePath();
+    }
+    return file;
   }
 
   Future<CoreResult> _liveEditRejectResolution(
@@ -1487,6 +2099,16 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
           return LiveEditDraftChange.fromJson(item.cast<String, Object?>());
         })
         .toList(growable: false);
+  }
+
+  List<Object?> _asObjectList(final Object? value) {
+    if (value is List<Object?>) {
+      return value;
+    }
+    if (value is List) {
+      return value.cast<Object?>();
+    }
+    return const <Object?>[];
   }
 
   String _resolveWorkingDirectory(final String? workingDirectory) {
