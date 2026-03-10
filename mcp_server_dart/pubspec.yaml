@@ -20,6 +20,10 @@ dependencies:
   dart_mcp: ^0.5.0
   dtd: ^4.0.0
   equatable: ^2.0.8
+  flutter_live_edit_agent:
+    path: ../flutter_live_edit/flutter_live_edit_agent
+  flutter_live_edit_core:
+    path: ../flutter_live_edit/flutter_live_edit_core
   from_json_to_json: ^0.4.0
   is_dart_empty_or_not: ^0.3.0
   json_rpc_2: ^4.1.0

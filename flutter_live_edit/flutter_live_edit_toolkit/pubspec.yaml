@@ -1,0 +1,25 @@
+name: flutter_live_edit_toolkit
+description: Flutter app-side live edit runtime built on top of mcp_toolkit.
+publish_to: none
+version: 0.1.0
+
+environment:
+  sdk: ^3.10.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  dart_mcp: ^0.5.0
+  flutter_live_edit_core:
+    path: ../flutter_live_edit_core
+  mcp_toolkit:
+    path: ../../mcp_toolkit/mcp_toolkit
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  lints: ^6.1.0
+  xsoulspace_lints: ^0.1.2
+
+flutter:
+  uses-material-design: true

@@ -1,0 +1,15 @@
+name: flutter_live_edit_core
+description: Shared models and schemas for Flutter live edit runtime and agent resolution.
+publish_to: none
+version: 0.1.0
+
+environment:
+  sdk: ^3.10.0
+
+dependencies:
+  collection: ^1.19.1
+
+dev_dependencies:
+  lints: ^6.1.0
+  test: ^1.30.0
+  xsoulspace_lints: ^0.1.2

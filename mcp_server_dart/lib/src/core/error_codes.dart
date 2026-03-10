@@ -69,6 +69,10 @@ abstract final class CoreErrorCode {
   static const dynamicToolFailed = 'dynamic_tool_failed';
   static const missingResourceUri = 'missing_resource_uri';
   static const dynamicResourceFailed = 'dynamic_resource_failed';
+  static const liveEditBackendFailed = 'live_edit_backend_failed';
+  static const liveEditProposalNotFound = 'live_edit_proposal_not_found';
+  static const liveEditApplyFailed = 'live_edit_apply_failed';
+  static const liveEditValidationFailed = 'live_edit_validation_failed';
 
   static const sessionManagerNotConfigured = 'session_manager_not_configured';
   static const sessionNotFound = 'session_not_found';
@@ -246,6 +250,34 @@ const Map<String, CoreErrorDescriptor> _descriptorMap =
         retryable: true,
         exitCode: 69,
         httpLikeStatus: 500,
+      ),
+      CoreErrorCode.liveEditBackendFailed: CoreErrorDescriptor(
+        code: CoreErrorCode.liveEditBackendFailed,
+        category: CoreErrorCategory.execution,
+        retryable: true,
+        exitCode: 69,
+        httpLikeStatus: 500,
+      ),
+      CoreErrorCode.liveEditProposalNotFound: CoreErrorDescriptor(
+        code: CoreErrorCode.liveEditProposalNotFound,
+        category: CoreErrorCategory.state,
+        retryable: false,
+        exitCode: 66,
+        httpLikeStatus: 404,
+      ),
+      CoreErrorCode.liveEditApplyFailed: CoreErrorDescriptor(
+        code: CoreErrorCode.liveEditApplyFailed,
+        category: CoreErrorCategory.io,
+        retryable: false,
+        exitCode: 74,
+        httpLikeStatus: 500,
+      ),
+      CoreErrorCode.liveEditValidationFailed: CoreErrorDescriptor(
+        code: CoreErrorCode.liveEditValidationFailed,
+        category: CoreErrorCategory.validation,
+        retryable: false,
+        exitCode: 65,
+        httpLikeStatus: 409,
       ),
       CoreErrorCode.sessionManagerNotConfigured: CoreErrorDescriptor(
         code: CoreErrorCode.sessionManagerNotConfigured,
@@ -436,6 +468,28 @@ _defaultRecoveryMap = <String, Map<String, Object?>>{
     'summary': 'Enable dynamic registry support before dynamic tool calls.',
     'fix_command':
         'flutter_mcp_cli --dynamics exec --name status --args \'{}\'',
+  },
+  CoreErrorCode.liveEditBackendFailed: <String, Object?>{
+    'summary': 'Check the configured live-edit backend and retry resolution.',
+    'fix_command':
+        'flutter_mcp_cli schema --name live_edit_resolve_draft && '
+        'flutter_mcp_cli exec --name live_edit_list_agent_backends --args \'{}\'',
+  },
+  CoreErrorCode.liveEditProposalNotFound: <String, Object?>{
+    'summary': 'Resolve a draft again or use a valid proposal id.',
+    'fix_command':
+        'flutter_mcp_cli exec --name live_edit_resolve_draft --args \'{"sessionId":"<live_edit_session>"}\'',
+  },
+  CoreErrorCode.liveEditApplyFailed: <String, Object?>{
+    'summary':
+        'Inspect the proposed file paths and write permissions, then retry.',
+    'fix_command': 'flutter_mcp_cli schema --name live_edit_accept_resolution',
+  },
+  CoreErrorCode.liveEditValidationFailed: <String, Object?>{
+    'summary':
+        'The patch applied, but runtime validation did not match the draft intent.',
+    'fix_command':
+        'flutter_mcp_cli exec --name live_edit_get_selection --args \'{"sessionId":"<live_edit_session>"}\'',
   },
   CoreErrorCode.visualCapturePermissionDenied: <String, Object?>{
     'summary':

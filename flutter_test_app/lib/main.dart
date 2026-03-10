@@ -3,6 +3,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_live_edit_toolkit/flutter_live_edit_toolkit.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 import 'package:provider/provider.dart';
 import 'package:test_app/change_notifier_example.dart';
@@ -14,7 +15,8 @@ Future<void> main() async {
       WidgetsFlutterBinding.ensureInitialized();
       MCPToolkitBinding.instance
         ..initialize()
-        ..initializeFlutterToolkit();
+        ..initializeFlutterToolkit()
+        ..initializeFlutterLiveEditToolkit();
 
       await _registerInitialMCPTools();
       runApp(const MyApp());
@@ -41,8 +43,11 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
+      builder: (final context, final child) {
+        return FlutterLiveEditHost(child: child ?? const SizedBox.shrink());
+      },
       home: ChangeNotifierProvider(
-        create: (context) => CustomNotifier(),
+        create: (final context) => CustomNotifier(),
         child: const MCPDemoHomePage(),
       ),
     );
@@ -463,19 +468,18 @@ class _StatusSection extends StatelessWidget {
                     Wrap(
                       spacing: 8,
                       runSpacing: 4,
-                      children:
-                          allEntries
-                              .map(
-                                (entry) => Chip(
-                                  label: Text(
-                                    entry.key,
-                                    style: const TextStyle(fontSize: 11),
-                                  ),
-                                  materialTapTargetSize:
-                                      MaterialTapTargetSize.shrinkWrap,
-                                ),
-                              )
-                              .toList(),
+                      children: allEntries
+                          .map(
+                            (entry) => Chip(
+                              label: Text(
+                                entry.key,
+                                style: const TextStyle(fontSize: 11),
+                              ),
+                              materialTapTargetSize:
+                                  MaterialTapTargetSize.shrinkWrap,
+                            ),
+                          )
+                          .toList(),
                     ),
                   ],
                 ),

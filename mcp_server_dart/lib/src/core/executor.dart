@@ -4,6 +4,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter_live_edit_agent/flutter_live_edit_agent.dart';
+import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 import 'package:flutter_inspector_mcp_server/src/core/commands.dart';
 import 'package:flutter_inspector_mcp_server/src/core/connection_context.dart';
 import 'package:flutter_inspector_mcp_server/src/core/core_types.dart';
@@ -41,11 +43,13 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     ErrorCauseAnalyzer? errorCauseAnalyzer,
     Map<String, ErrorSummaryProvider>? summaryProviders,
     Future<void> Function(int pid)? activateMacOsTargetPid,
+    LiveEditAgentService? liveEditAgentService,
   }) : _dynamicGateway = dynamicGateway,
        _desktopWindowScreenshotService =
            desktopWindowScreenshotService ??
            MacOsDesktopWindowScreenshotService(),
        _errorCauseAnalyzer = errorCauseAnalyzer ?? const ErrorCauseAnalyzer(),
+       _liveEditAgentService = liveEditAgentService ?? LiveEditAgentService(),
        _activateMacOsTargetPid =
            activateMacOsTargetPid ?? _defaultActivateMacOsTargetPid,
        _summaryProviders =
@@ -64,6 +68,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
   final ErrorCauseAnalyzer _errorCauseAnalyzer;
   final Map<String, ErrorSummaryProvider> _summaryProviders;
   final DesktopWindowScreenshotService _desktopWindowScreenshotService;
+  final LiveEditAgentService _liveEditAgentService;
   final Future<void> Function(int pid) _activateMacOsTargetPid;
 
   CoreDynamicGateway? _dynamicGateway;
@@ -134,6 +139,21 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       ListClientToolsAndResourcesCommand() => _listClientToolsAndResources(),
       RunClientToolCommand() => _runClientTool(command),
       RunClientResourceCommand() => _runClientResource(command),
+      LiveEditStartSessionCommand() => _liveEditStartSession(command),
+      LiveEditSetOverlayCommand() => _liveEditSetOverlay(command),
+      LiveEditGetTreeCommand() => _liveEditGetTree(command),
+      LiveEditSelectAtPointCommand() => _liveEditSelectAtPoint(command),
+      LiveEditGetSelectionCommand() => _liveEditGetSelection(command),
+      LiveEditUpdateDraftCommand() => _liveEditUpdateDraft(command),
+      LiveEditGetDraftCommand() => _liveEditGetDraft(command),
+      LiveEditDiscardDraftCommand() => _liveEditDiscardDraft(command),
+      LiveEditEndSessionCommand() => _liveEditEndSession(command),
+      LiveEditListAgentBackendsCommand() => _liveEditListAgentBackends(),
+      LiveEditGetAgentBackendCommand() => _liveEditGetAgentBackend(command),
+      LiveEditSetAgentBackendCommand() => _liveEditSetAgentBackend(command),
+      LiveEditResolveDraftCommand() => _liveEditResolveDraft(command),
+      LiveEditAcceptResolutionCommand() => _liveEditAcceptResolution(command),
+      LiveEditRejectResolutionCommand() => _liveEditRejectResolution(command),
       DynamicRegistryStatsCommand() => _dynamicRegistryStats(command),
     };
   }
@@ -906,6 +926,381 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     return gateway.runClientResource(command.resourceUri);
   }
 
+  Future<CoreResult> _liveEditStartSession(
+    final LiveEditStartSessionCommand command,
+  ) => _runLiveEditRuntimeTool(
+    LiveEditRuntimeToolNames.startSession,
+    arguments: <String, Object?>{
+      if (_hasText(command.sessionId)) 'sessionId': command.sessionId!,
+    },
+  );
+
+  Future<CoreResult> _liveEditSetOverlay(
+    final LiveEditSetOverlayCommand command,
+  ) => _runLiveEditRuntimeTool(
+    LiveEditRuntimeToolNames.setOverlay,
+    arguments: <String, Object?>{
+      if (_hasText(command.sessionId)) 'sessionId': command.sessionId!,
+      'enabled': command.enabled,
+    },
+  );
+
+  Future<CoreResult> _liveEditGetTree(final LiveEditGetTreeCommand command) =>
+      _runLiveEditRuntimeTool(
+        LiveEditRuntimeToolNames.getTree,
+        arguments: <String, Object?>{
+          if (_hasText(command.sessionId)) 'sessionId': command.sessionId!,
+        },
+      );
+
+  Future<CoreResult> _liveEditSelectAtPoint(
+    final LiveEditSelectAtPointCommand command,
+  ) => _runLiveEditRuntimeTool(
+    LiveEditRuntimeToolNames.selectAtPoint,
+    arguments: <String, Object?>{
+      if (_hasText(command.sessionId)) 'sessionId': command.sessionId!,
+      'x': command.x,
+      'y': command.y,
+      if (command.viewId != null) 'viewId': command.viewId!,
+    },
+  );
+
+  Future<CoreResult> _liveEditGetSelection(
+    final LiveEditGetSelectionCommand command,
+  ) => _runLiveEditRuntimeTool(
+    LiveEditRuntimeToolNames.getSelection,
+    arguments: <String, Object?>{
+      if (_hasText(command.sessionId)) 'sessionId': command.sessionId!,
+    },
+  );
+
+  Future<CoreResult> _liveEditUpdateDraft(
+    final LiveEditUpdateDraftCommand command,
+  ) => _runLiveEditRuntimeTool(
+    LiveEditRuntimeToolNames.updateDraft,
+    arguments: <String, Object?>{
+      if (_hasText(command.sessionId)) 'sessionId': command.sessionId!,
+      'changeJson': encodeLiveEditJson(command.change.toJson()),
+    },
+  );
+
+  Future<CoreResult> _liveEditGetDraft(final LiveEditGetDraftCommand command) =>
+      _runLiveEditRuntimeTool(
+        LiveEditRuntimeToolNames.getDraft,
+        arguments: <String, Object?>{
+          if (_hasText(command.sessionId)) 'sessionId': command.sessionId!,
+        },
+      );
+
+  Future<CoreResult> _liveEditDiscardDraft(
+    final LiveEditDiscardDraftCommand command,
+  ) => _runLiveEditRuntimeTool(
+    LiveEditRuntimeToolNames.discardDraft,
+    arguments: <String, Object?>{
+      if (_hasText(command.sessionId)) 'sessionId': command.sessionId!,
+    },
+  );
+
+  Future<CoreResult> _liveEditEndSession(
+    final LiveEditEndSessionCommand command,
+  ) => _runLiveEditRuntimeTool(
+    LiveEditRuntimeToolNames.endSession,
+    arguments: <String, Object?>{
+      if (_hasText(command.sessionId)) 'sessionId': command.sessionId!,
+    },
+  );
+
+  Future<CoreResult> _liveEditListAgentBackends() async {
+    final backends = _liveEditAgentService.listBackends();
+    final defaultBackend = backends.firstWhere(
+      (final backend) => backend.isDefault,
+      orElse: () => backends.first,
+    );
+    return CoreResult.success(
+      data: <String, Object?>{
+        'backends': backends.map((final backend) => backend.toJson()).toList(),
+        'defaultBackendId': defaultBackend.id,
+      },
+    );
+  }
+
+  Future<CoreResult> _liveEditGetAgentBackend(
+    final LiveEditGetAgentBackendCommand command,
+  ) async {
+    try {
+      final backend = _liveEditAgentService.getBackend(
+        backendId: command.backendId,
+        sessionId: command.sessionId,
+      );
+      return CoreResult.success(
+        data: <String, Object?>{
+          'backend': backend.toJson(),
+          if (_hasText(command.sessionId)) 'sessionId': command.sessionId!,
+        },
+      );
+    } on StateError catch (error) {
+      return CoreResult.failure(
+        code: CoreErrorCode.invalidCommand,
+        message: '$error',
+        details: <String, Object?>{
+          'backendId': command.backendId,
+          'sessionId': command.sessionId,
+        },
+      );
+    }
+  }
+
+  Future<CoreResult> _liveEditSetAgentBackend(
+    final LiveEditSetAgentBackendCommand command,
+  ) async {
+    try {
+      _liveEditAgentService.setSessionBackend(
+        sessionId: command.sessionId,
+        backendId: command.backendId,
+      );
+      final backend = _liveEditAgentService.getBackend(
+        backendId: command.backendId,
+        sessionId: command.sessionId,
+      );
+      return CoreResult.success(
+        data: <String, Object?>{
+          'sessionId': command.sessionId,
+          'backend': backend.toJson(),
+        },
+      );
+    } on StateError catch (error) {
+      return CoreResult.failure(
+        code: CoreErrorCode.invalidCommand,
+        message: '$error',
+        details: <String, Object?>{
+          'sessionId': command.sessionId,
+          'backendId': command.backendId,
+        },
+      );
+    }
+  }
+
+  Future<CoreResult> _liveEditResolveDraft(
+    final LiveEditResolveDraftCommand command,
+  ) async {
+    final sessionIdResult = await _ensureLiveEditSessionId(command.sessionId);
+    if (!sessionIdResult.ok) {
+      return sessionIdResult;
+    }
+
+    final sessionId = _stringOrNull(_map(sessionIdResult.data)['sessionId']);
+    if (!_hasText(sessionId)) {
+      return CoreResult.failure(
+        code: CoreErrorCode.invalidCommand,
+        message: 'Live edit session id is unavailable',
+      );
+    }
+
+    final draftResult = await _liveEditGetDraft(
+      LiveEditGetDraftCommand(sessionId: sessionId),
+    );
+    if (!draftResult.ok) {
+      return draftResult;
+    }
+
+    final draftData = _map(draftResult.data);
+    final draftChanges = _decodeDraftChanges(draftData['draftChanges']);
+    if (draftChanges.isEmpty) {
+      return CoreResult.failure(
+        code: CoreErrorCode.invalidCommand,
+        message: 'No live edit draft changes are available for resolution',
+        details: <String, Object?>{'sessionId': sessionId},
+      );
+    }
+
+    final selectionResult = await _liveEditGetSelection(
+      LiveEditGetSelectionCommand(sessionId: sessionId),
+    );
+    if (!selectionResult.ok) {
+      return selectionResult;
+    }
+
+    final treeResult = await _liveEditGetTree(
+      LiveEditGetTreeCommand(sessionId: sessionId),
+    );
+    if (!treeResult.ok) {
+      return treeResult;
+    }
+
+    final selection = _decodeSelection(_map(selectionResult.data)['selection']);
+    final treeData = _map(treeResult.data);
+    final workingDirectory = _resolveWorkingDirectory(command.workingDirectory);
+    final snapshotResult = await _captureUiSnapshot(
+      const CaptureUiSnapshotCommand(
+        includeViewDetails: false,
+        includeErrors: false,
+      ),
+    );
+
+    final evidence = <String, Object?>{
+      'tree': treeData['tree'],
+      if (selection != null) 'selection': selection.toJson(),
+      if (snapshotResult.ok)
+        'uiSnapshot': snapshotResult.data
+      else
+        'uiSnapshotError': snapshotResult.error?.toJson(),
+    };
+
+    final request = LiveEditResolutionRequest(
+      sessionId: sessionId!,
+      workingDirectory: workingDirectory,
+      draftChanges: draftChanges,
+      selection: selection,
+      backendId: command.backendId,
+      intentText: command.intentText,
+      evidence: evidence,
+      meta: <String, Object?>{'treeSelectedNodeId': treeData['selectedNodeId']},
+    );
+
+    try {
+      final proposal = await _liveEditAgentService.resolve(request);
+      final backend = _liveEditAgentService.getBackend(
+        backendId: proposal.backendId,
+        sessionId: sessionId,
+      );
+      return CoreResult.success(
+        data: <String, Object?>{
+          'sessionId': sessionId,
+          'backend': backend.toJson(),
+          'proposal': proposal.toJson(),
+        },
+      );
+    } on StateError catch (error) {
+      return CoreResult.failure(
+        code: CoreErrorCode.liveEditBackendFailed,
+        message: 'Live edit resolution failed: $error',
+        details: request.toJson(),
+      );
+    } on FileSystemException catch (error) {
+      return CoreResult.failure(
+        code: CoreErrorCode.liveEditBackendFailed,
+        message: 'Live edit resolution failed: $error',
+        details: request.toJson(),
+      );
+    }
+  }
+
+  Future<CoreResult> _liveEditAcceptResolution(
+    final LiveEditAcceptResolutionCommand command,
+  ) async {
+    final request = _liveEditAgentService.requestForProposal(
+      command.proposalId,
+    );
+    if (request == null) {
+      return CoreResult.failure(
+        code: CoreErrorCode.liveEditProposalNotFound,
+        message: 'Unknown live edit proposal: ${command.proposalId}',
+      );
+    }
+
+    final proposal = _liveEditAgentService.getProposal(command.proposalId);
+    final workingDirectory = _resolveWorkingDirectory(
+      command.workingDirectory ?? request.workingDirectory,
+    );
+
+    LiveEditResolutionResult applyResult;
+    try {
+      applyResult = await _liveEditAgentService.applyProposal(
+        command.proposalId,
+        workingDirectory: workingDirectory,
+      );
+    } on FileSystemException catch (error) {
+      return CoreResult.failure(
+        code: CoreErrorCode.liveEditApplyFailed,
+        message: 'Failed to apply live edit proposal: $error',
+        details: <String, Object?>{
+          'proposalId': command.proposalId,
+          'workingDirectory': workingDirectory,
+        },
+      );
+    } on StateError catch (error) {
+      return CoreResult.failure(
+        code: CoreErrorCode.liveEditApplyFailed,
+        message: 'Failed to apply live edit proposal: $error',
+        details: <String, Object?>{
+          'proposalId': command.proposalId,
+          'workingDirectory': workingDirectory,
+        },
+      );
+    }
+
+    final hotReloadResult = await _hotReload(
+      const HotReloadFlutterCommand(force: true),
+    );
+    if (!hotReloadResult.ok) {
+      return CoreResult.failure(
+        code: CoreErrorCode.liveEditApplyFailed,
+        message: 'Proposal applied, but hot reload failed',
+        details: <String, Object?>{
+          'proposal': proposal.toJson(),
+          'apply': applyResult.toJson(),
+          'hotReload': hotReloadResult.error?.toJson(),
+        },
+      );
+    }
+
+    final validation = await _validateAppliedLiveEditRequest(
+      request: request,
+      fallbackSessionId: command.sessionId,
+    );
+    if (validation['validated'] != true) {
+      return CoreResult.failure(
+        code: CoreErrorCode.liveEditValidationFailed,
+        message:
+            'Proposal applied, but runtime validation did not match the draft',
+        details: <String, Object?>{
+          'proposal': proposal.toJson(),
+          'apply': applyResult.toJson(),
+          'hotReload': hotReloadResult.data,
+          'validation': validation,
+        },
+      );
+    }
+
+    final discardSessionId = _firstNonEmpty(
+      command.sessionId,
+      request.sessionId,
+    );
+    Map<String, Object?>? discardData;
+    if (_hasText(discardSessionId)) {
+      final discardResult = await _liveEditDiscardDraft(
+        LiveEditDiscardDraftCommand(sessionId: discardSessionId),
+      );
+      if (discardResult.ok) {
+        discardData = _map(discardResult.data);
+      }
+    }
+
+    return CoreResult.success(
+      data: <String, Object?>{
+        'proposal': proposal.toJson(),
+        'result': applyResult.toJson(),
+        'hotReload': hotReloadResult.data,
+        'validation': validation,
+        if (discardData != null) 'draft': discardData,
+      },
+    );
+  }
+
+  Future<CoreResult> _liveEditRejectResolution(
+    final LiveEditRejectResolutionCommand command,
+  ) async {
+    try {
+      final result = _liveEditAgentService.rejectProposal(command.proposalId);
+      return CoreResult.success(data: result.toJson());
+    } on StateError {
+      return CoreResult.failure(
+        code: CoreErrorCode.liveEditProposalNotFound,
+        message: 'Unknown live edit proposal: ${command.proposalId}',
+      );
+    }
+  }
+
   Future<CoreResult> _dynamicRegistryStats(
     final DynamicRegistryStatsCommand command,
   ) async {
@@ -926,6 +1321,104 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     return gateway.dynamicRegistryStats(
       includeAppDetails: command.includeAppDetails,
     );
+  }
+
+  Future<CoreResult> _runLiveEditRuntimeTool(
+    final String toolName, {
+    final Map<String, Object?> arguments = const <String, Object?>{},
+  }) async {
+    final result = await _runClientTool(
+      RunClientToolCommand(toolName: toolName, arguments: arguments),
+    );
+    if (!result.ok) {
+      return result;
+    }
+
+    final data = _map(result.data);
+    return CoreResult.success(
+      data: _map(data['parameters']),
+      meta: <String, Object?>{
+        ...result.meta,
+        'clientTool': toolName,
+        if (_hasText(data['message'])) 'clientMessage': '${data['message']}',
+      },
+    );
+  }
+
+  Future<CoreResult> _ensureLiveEditSessionId(final String? sessionId) async {
+    if (_hasText(sessionId)) {
+      return CoreResult.success(
+        data: <String, Object?>{'sessionId': sessionId!.trim()},
+      );
+    }
+    return _liveEditStartSession(const LiveEditStartSessionCommand());
+  }
+
+  Future<Map<String, Object?>> _validateAppliedLiveEditRequest({
+    required final LiveEditResolutionRequest request,
+    required final String? fallbackSessionId,
+  }) async {
+    final sessionId = _firstNonEmpty(fallbackSessionId, request.sessionId);
+    if (!_hasText(sessionId)) {
+      return <String, Object?>{
+        'validated': false,
+        'reason': 'missing_session_id',
+      };
+    }
+
+    final selectionResult = await _liveEditGetSelection(
+      LiveEditGetSelectionCommand(sessionId: sessionId),
+    );
+    if (!selectionResult.ok) {
+      return <String, Object?>{
+        'validated': false,
+        'reason': 'selection_unavailable',
+        'error': selectionResult.error?.toJson(),
+      };
+    }
+
+    final selection = _decodeSelection(_map(selectionResult.data)['selection']);
+    if (selection == null) {
+      return <String, Object?>{
+        'validated': false,
+        'reason': 'selection_missing',
+      };
+    }
+
+    final propertyById = <String, LiveEditPropertyDescriptor>{
+      for (final property in selection.propertyGroups) property.id: property,
+    };
+    final matched = <String>[];
+    final mismatches = <Map<String, Object?>>[];
+    for (final draft in request.draftChanges) {
+      final property = propertyById[draft.propertyId];
+      if (property == null) {
+        mismatches.add(<String, Object?>{
+          'propertyId': draft.propertyId,
+          'reason': 'property_missing',
+          'expected': draft.targetValue,
+        });
+        continue;
+      }
+
+      if (_looselyEquivalent(property.value, draft.targetValue)) {
+        matched.add(draft.propertyId);
+        continue;
+      }
+
+      mismatches.add(<String, Object?>{
+        'propertyId': draft.propertyId,
+        'expected': draft.targetValue,
+        'actual': property.value,
+      });
+    }
+
+    return <String, Object?>{
+      'validated': mismatches.isEmpty,
+      'nodeId': selection.nodeId,
+      'matchedProperties': matched,
+      'mismatches': mismatches,
+    };
   }
 
   Future<CoreResult?> _ensureVmConnected() async {
@@ -972,6 +1465,93 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       return data.cast<String, Object?>();
     }
     return const <String, Object?>{};
+  }
+
+  LiveEditSelection? _decodeSelection(final Object? value) {
+    if (value is Map<String, Object?>) {
+      return LiveEditSelection.fromJson(value);
+    }
+    if (value is Map) {
+      return LiveEditSelection.fromJson(value.cast<String, Object?>());
+    }
+    return null;
+  }
+
+  List<LiveEditDraftChange> _decodeDraftChanges(final Object? value) {
+    if (value is! List) {
+      return const <LiveEditDraftChange>[];
+    }
+    return value
+        .whereType<Map>()
+        .map((final item) {
+          return LiveEditDraftChange.fromJson(item.cast<String, Object?>());
+        })
+        .toList(growable: false);
+  }
+
+  String _resolveWorkingDirectory(final String? workingDirectory) {
+    if (_hasText(workingDirectory)) {
+      return workingDirectory!.trim();
+    }
+    if (_hasText(configuration.flutterProjectDir)) {
+      return configuration.flutterProjectDir!.trim();
+    }
+    return Directory.current.path;
+  }
+
+  String? _stringOrNull(final Object? value) {
+    final normalized = '$value'.trim();
+    if (value == null || normalized.isEmpty || normalized == 'null') {
+      return null;
+    }
+    return normalized;
+  }
+
+  bool _hasText(final Object? value) => _stringOrNull(value) != null;
+
+  String? _firstNonEmpty(final String? first, final String? second) =>
+      _stringOrNull(first) ?? _stringOrNull(second);
+
+  bool _looselyEquivalent(final Object? left, final Object? right) {
+    final normalizedLeft = _normalizeComparableValue(left);
+    final normalizedRight = _normalizeComparableValue(right);
+    if (normalizedLeft is num && normalizedRight is num) {
+      return (normalizedLeft - normalizedRight).abs() < 0.001;
+    }
+    return normalizedLeft == normalizedRight;
+  }
+
+  Object? _normalizeComparableValue(final Object? value) {
+    if (value is num) {
+      return value.toDouble();
+    }
+    if (value is bool) {
+      return value;
+    }
+    if (value is String) {
+      final trimmed = value.trim();
+      if (trimmed.isEmpty) {
+        return '';
+      }
+      final parsedNumber = num.tryParse(trimmed);
+      if (parsedNumber != null) {
+        return parsedNumber.toDouble();
+      }
+      return trimmed.toLowerCase();
+    }
+    if (value is Map) {
+      return jsonEncode(
+        value.map((final key, final nestedValue) {
+          return MapEntry('$key', _normalizeComparableValue(nestedValue));
+        }),
+      );
+    }
+    if (value is List) {
+      return jsonEncode(
+        value.map(_normalizeComparableValue).toList(growable: false),
+      );
+    }
+    return value;
   }
 
   Map<String, Object?> _enrichErrorWithTopFrame(

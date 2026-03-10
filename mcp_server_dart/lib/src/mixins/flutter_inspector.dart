@@ -25,6 +25,10 @@ base mixin FlutterInspector
     server: this,
     executor: coreCommandExecutor,
   );
+  late final _liveEditHandler = LiveEditHandler(
+    server: this,
+    executor: coreCommandExecutor,
+  );
 
   @override
   FutureOr<InitializeResult> initialize(final InitializeRequest request) {
@@ -59,6 +63,66 @@ base mixin FlutterInspector
     registerTool(
       ResourceHandler.captureUiSnapshotTool,
       _resourceHandler.captureUiSnapshot,
+    );
+    registerTool(
+      LiveEditHandler.liveEditStartSessionTool,
+      _liveEditHandler.liveEditStartSession,
+    );
+    registerTool(
+      LiveEditHandler.liveEditSetOverlayTool,
+      _liveEditHandler.liveEditSetOverlay,
+    );
+    registerTool(
+      LiveEditHandler.liveEditGetTreeTool,
+      _liveEditHandler.liveEditGetTree,
+    );
+    registerTool(
+      LiveEditHandler.liveEditSelectAtPointTool,
+      _liveEditHandler.liveEditSelectAtPoint,
+    );
+    registerTool(
+      LiveEditHandler.liveEditGetSelectionTool,
+      _liveEditHandler.liveEditGetSelection,
+    );
+    registerTool(
+      LiveEditHandler.liveEditUpdateDraftTool,
+      _liveEditHandler.liveEditUpdateDraft,
+    );
+    registerTool(
+      LiveEditHandler.liveEditGetDraftTool,
+      _liveEditHandler.liveEditGetDraft,
+    );
+    registerTool(
+      LiveEditHandler.liveEditDiscardDraftTool,
+      _liveEditHandler.liveEditDiscardDraft,
+    );
+    registerTool(
+      LiveEditHandler.liveEditEndSessionTool,
+      _liveEditHandler.liveEditEndSession,
+    );
+    registerTool(
+      LiveEditHandler.liveEditListAgentBackendsTool,
+      _liveEditHandler.liveEditListAgentBackends,
+    );
+    registerTool(
+      LiveEditHandler.liveEditGetAgentBackendTool,
+      _liveEditHandler.liveEditGetAgentBackend,
+    );
+    registerTool(
+      LiveEditHandler.liveEditSetAgentBackendTool,
+      _liveEditHandler.liveEditSetAgentBackend,
+    );
+    registerTool(
+      LiveEditHandler.liveEditResolveDraftTool,
+      _liveEditHandler.liveEditResolveDraft,
+    );
+    registerTool(
+      LiveEditHandler.liveEditAcceptResolutionTool,
+      _liveEditHandler.liveEditAcceptResolution,
+    );
+    registerTool(
+      LiveEditHandler.liveEditRejectResolutionTool,
+      _liveEditHandler.liveEditRejectResolution,
     );
 
     // Register debug dump tools

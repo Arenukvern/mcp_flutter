@@ -1,6 +1,7 @@
 // Copyright (c) 2025, Flutter Inspector MCP Server authors.
 // Licensed under the MIT License.
 
+import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 import 'package:flutter_inspector_mcp_server/src/core/capabilities_model.dart';
 import 'package:flutter_inspector_mcp_server/src/core/commands.dart';
 import 'package:flutter_inspector_mcp_server/src/core/connection_override.dart';
@@ -790,6 +791,289 @@ final class CommandCatalog {
             args,
             'resourceUri',
             alias: 'resource-uri',
+            fallback: '',
+          ),
+        ),
+      ),
+      CommandSpec(
+        name: 'live_edit_start_session',
+        description:
+            'Start or reuse a Flutter live-edit session in the running app.',
+        inputSchema: _objectSchema(properties: {'sessionId': _stringSchema()}),
+        outputSchema: _objectSchema(additionalProperties: true),
+        requiresVm: true,
+        supportsWatch: false,
+        mcpExposed: true,
+        build: (final args) => LiveEditStartSessionCommand(
+          sessionId: _nullableStringArg(args, 'sessionId', alias: 'session-id'),
+        ),
+      ),
+      CommandSpec(
+        name: 'live_edit_set_overlay',
+        description:
+            'Enable or disable the live-edit overlay inside the running app.',
+        inputSchema: _objectSchema(
+          properties: {
+            'sessionId': _stringSchema(),
+            'enabled': _boolSchema(defaultValue: false),
+          },
+          required: const <String>['enabled'],
+        ),
+        outputSchema: _objectSchema(additionalProperties: true),
+        requiresVm: true,
+        supportsWatch: false,
+        mcpExposed: true,
+        build: (final args) => LiveEditSetOverlayCommand(
+          sessionId: _nullableStringArg(args, 'sessionId', alias: 'session-id'),
+          enabled: _boolArg(args, 'enabled', fallback: false),
+        ),
+      ),
+      CommandSpec(
+        name: 'live_edit_get_tree',
+        description: 'Return the current live-edit widget summary tree.',
+        inputSchema: _objectSchema(properties: {'sessionId': _stringSchema()}),
+        outputSchema: _objectSchema(additionalProperties: true),
+        requiresVm: true,
+        supportsWatch: true,
+        mcpExposed: true,
+        build: (final args) => LiveEditGetTreeCommand(
+          sessionId: _nullableStringArg(args, 'sessionId', alias: 'session-id'),
+        ),
+      ),
+      CommandSpec(
+        name: 'live_edit_select_at_point',
+        description:
+            'Select the deepest live-edit node at global logical coordinates.',
+        inputSchema: _objectSchema(
+          properties: {
+            'sessionId': _stringSchema(),
+            'x': _intSchema(),
+            'y': _intSchema(),
+            'viewId': _intSchema(),
+          },
+          required: const <String>['x', 'y'],
+        ),
+        outputSchema: _objectSchema(additionalProperties: true),
+        requiresVm: true,
+        supportsWatch: false,
+        mcpExposed: true,
+        build: (final args) => LiveEditSelectAtPointCommand(
+          sessionId: _nullableStringArg(args, 'sessionId', alias: 'session-id'),
+          x: _intArg(args, 'x', fallback: 0),
+          y: _intArg(args, 'y', fallback: 0),
+          viewId: _nullableIntArg(args, 'viewId', alias: 'view-id'),
+        ),
+      ),
+      CommandSpec(
+        name: 'live_edit_get_selection',
+        description: 'Return the current live-edit selection payload.',
+        inputSchema: _objectSchema(properties: {'sessionId': _stringSchema()}),
+        outputSchema: _objectSchema(additionalProperties: true),
+        requiresVm: true,
+        supportsWatch: true,
+        mcpExposed: true,
+        build: (final args) => LiveEditGetSelectionCommand(
+          sessionId: _nullableStringArg(args, 'sessionId', alias: 'session-id'),
+        ),
+      ),
+      CommandSpec(
+        name: 'live_edit_update_draft',
+        description: 'Update one draft property change for the active node.',
+        inputSchema: _objectSchema(
+          properties: {
+            'sessionId': _stringSchema(),
+            'change': _objectSchema(additionalProperties: true),
+          },
+          required: const <String>['change'],
+        ),
+        outputSchema: _objectSchema(additionalProperties: true),
+        requiresVm: true,
+        supportsWatch: false,
+        mcpExposed: true,
+        build: (final args) => LiveEditUpdateDraftCommand(
+          sessionId: _nullableStringArg(args, 'sessionId', alias: 'session-id'),
+          change: LiveEditDraftChange.fromJson(_mapArg(args, 'change')),
+        ),
+      ),
+      CommandSpec(
+        name: 'live_edit_get_draft',
+        description: 'Return the current live-edit draft for the session.',
+        inputSchema: _objectSchema(properties: {'sessionId': _stringSchema()}),
+        outputSchema: _objectSchema(additionalProperties: true),
+        requiresVm: true,
+        supportsWatch: true,
+        mcpExposed: true,
+        build: (final args) => LiveEditGetDraftCommand(
+          sessionId: _nullableStringArg(args, 'sessionId', alias: 'session-id'),
+        ),
+      ),
+      CommandSpec(
+        name: 'live_edit_discard_draft',
+        description: 'Discard all current live-edit draft changes.',
+        inputSchema: _objectSchema(properties: {'sessionId': _stringSchema()}),
+        outputSchema: _objectSchema(additionalProperties: true),
+        requiresVm: true,
+        supportsWatch: false,
+        mcpExposed: true,
+        build: (final args) => LiveEditDiscardDraftCommand(
+          sessionId: _nullableStringArg(args, 'sessionId', alias: 'session-id'),
+        ),
+      ),
+      CommandSpec(
+        name: 'live_edit_end_session',
+        description: 'End the current live-edit session.',
+        inputSchema: _objectSchema(properties: {'sessionId': _stringSchema()}),
+        outputSchema: _objectSchema(additionalProperties: true),
+        requiresVm: true,
+        supportsWatch: false,
+        mcpExposed: true,
+        build: (final args) => LiveEditEndSessionCommand(
+          sessionId: _nullableStringArg(args, 'sessionId', alias: 'session-id'),
+        ),
+      ),
+      CommandSpec(
+        name: 'live_edit_list_agent_backends',
+        description: 'List server-side live-edit inference backends.',
+        inputSchema: _objectSchema(),
+        outputSchema: _objectSchema(
+          properties: {
+            'backends': _arraySchema(
+              items: _objectSchema(additionalProperties: true),
+            ),
+          },
+        ),
+        requiresVm: false,
+        supportsWatch: false,
+        mcpExposed: true,
+        build: (final args) => const LiveEditListAgentBackendsCommand(),
+      ),
+      CommandSpec(
+        name: 'live_edit_get_agent_backend',
+        description:
+            'Return one live-edit backend by id or the active/default backend.',
+        inputSchema: _objectSchema(
+          properties: {
+            'sessionId': _stringSchema(),
+            'backendId': _stringSchema(),
+          },
+        ),
+        outputSchema: _objectSchema(additionalProperties: true),
+        requiresVm: false,
+        supportsWatch: false,
+        mcpExposed: true,
+        build: (final args) => LiveEditGetAgentBackendCommand(
+          sessionId: _nullableStringArg(args, 'sessionId', alias: 'session-id'),
+          backendId: _nullableStringArg(args, 'backendId', alias: 'backend-id'),
+        ),
+      ),
+      CommandSpec(
+        name: 'live_edit_set_agent_backend',
+        description:
+            'Set the active live-edit backend for one session on the server.',
+        inputSchema: _objectSchema(
+          properties: {
+            'sessionId': _stringSchema(),
+            'backendId': _stringSchema(),
+          },
+          required: const <String>['sessionId', 'backendId'],
+        ),
+        outputSchema: _objectSchema(additionalProperties: true),
+        requiresVm: false,
+        supportsWatch: false,
+        mcpExposed: true,
+        build: (final args) => LiveEditSetAgentBackendCommand(
+          sessionId: _stringArg(
+            args,
+            'sessionId',
+            alias: 'session-id',
+            fallback: '',
+          ),
+          backendId: _stringArg(
+            args,
+            'backendId',
+            alias: 'backend-id',
+            fallback: '',
+          ),
+        ),
+      ),
+      CommandSpec(
+        name: 'live_edit_resolve_draft',
+        description:
+            'Resolve the current live-edit draft into a structured patch proposal.',
+        inputSchema: _objectSchema(
+          properties: {
+            'sessionId': _stringSchema(),
+            'backendId': _stringSchema(),
+            'workingDirectory': _stringSchema(),
+            'intentText': _stringSchema(),
+          },
+        ),
+        outputSchema: _objectSchema(additionalProperties: true),
+        requiresVm: true,
+        supportsWatch: false,
+        mcpExposed: true,
+        build: (final args) => LiveEditResolveDraftCommand(
+          sessionId: _nullableStringArg(args, 'sessionId', alias: 'session-id'),
+          backendId: _nullableStringArg(args, 'backendId', alias: 'backend-id'),
+          workingDirectory: _nullableStringArg(
+            args,
+            'workingDirectory',
+            alias: 'working-directory',
+          ),
+          intentText: _nullableStringArg(
+            args,
+            'intentText',
+            alias: 'intent-text',
+          ),
+        ),
+      ),
+      CommandSpec(
+        name: 'live_edit_accept_resolution',
+        description:
+            'Apply a reviewed live-edit proposal, hot reload, and validate.',
+        inputSchema: _objectSchema(
+          properties: {
+            'proposalId': _stringSchema(),
+            'sessionId': _stringSchema(),
+            'workingDirectory': _stringSchema(),
+          },
+          required: const <String>['proposalId'],
+        ),
+        outputSchema: _objectSchema(additionalProperties: true),
+        requiresVm: true,
+        supportsWatch: false,
+        mcpExposed: true,
+        build: (final args) => LiveEditAcceptResolutionCommand(
+          proposalId: _stringArg(
+            args,
+            'proposalId',
+            alias: 'proposal-id',
+            fallback: '',
+          ),
+          sessionId: _nullableStringArg(args, 'sessionId', alias: 'session-id'),
+          workingDirectory: _nullableStringArg(
+            args,
+            'workingDirectory',
+            alias: 'working-directory',
+          ),
+        ),
+      ),
+      CommandSpec(
+        name: 'live_edit_reject_resolution',
+        description: 'Reject a pending live-edit resolution proposal.',
+        inputSchema: _objectSchema(
+          properties: {'proposalId': _stringSchema()},
+          required: const <String>['proposalId'],
+        ),
+        outputSchema: _objectSchema(additionalProperties: true),
+        requiresVm: false,
+        supportsWatch: false,
+        mcpExposed: true,
+        build: (final args) => LiveEditRejectResolutionCommand(
+          proposalId: _stringArg(
+            args,
+            'proposalId',
+            alias: 'proposal-id',
             fallback: '',
           ),
         ),

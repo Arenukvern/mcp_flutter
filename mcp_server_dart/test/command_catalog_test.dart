@@ -1,3 +1,4 @@
+import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 import 'package:flutter_inspector_mcp_server/flutter_mcp_core.dart';
 import 'package:test/test.dart';
 
@@ -17,12 +18,18 @@ void main() {
       expect(names.contains('discover_debug_apps'), isTrue);
       expect(names.contains('inspect_widget_at_point'), isTrue);
       expect(names.contains('capture_ui_snapshot'), isTrue);
+      expect(names.contains('live_edit_start_session'), isTrue);
+      expect(names.contains('live_edit_update_draft'), isTrue);
+      expect(names.contains('live_edit_resolve_draft'), isTrue);
+      expect(names.contains('live_edit_accept_resolution'), isTrue);
     });
 
     test('marks high-signal and low-signal MCP exposure explicitly', () {
       expect(catalog.specFor('discover_debug_apps')!.mcpExposed, isTrue);
       expect(catalog.specFor('inspect_widget_at_point')!.mcpExposed, isTrue);
       expect(catalog.specFor('capture_ui_snapshot')!.mcpExposed, isTrue);
+      expect(catalog.specFor('live_edit_start_session')!.mcpExposed, isTrue);
+      expect(catalog.specFor('live_edit_resolve_draft')!.mcpExposed, isTrue);
       expect(catalog.specFor('get_active_ports')!.mcpExposed, isFalse);
       expect(catalog.specFor('dynamicRegistryStats')!.mcpExposed, isFalse);
     });
@@ -94,6 +101,27 @@ void main() {
       final command = catalog.buildCommand('get_app_errors', {'count': 5});
       expect(command, isA<GetAppErrorsCommand>());
       expect((command as GetAppErrorsCommand).count, equals(5));
+    });
+
+    test('builds live edit draft commands from structured payloads', () {
+      final command = catalog.buildCommand('live_edit_update_draft', {
+        'sessionId': 'live-session',
+        'change': {
+          'nodeId': 'node-1',
+          'propertyId': 'width',
+          'targetValue': 140,
+          'previewMode': 'ghost',
+          'confidence': 0.9,
+        },
+      });
+
+      expect(command, isA<LiveEditUpdateDraftCommand>());
+      final update = command as LiveEditUpdateDraftCommand;
+      expect(update.sessionId, 'live-session');
+      expect(update.change.nodeId, 'node-1');
+      expect(update.change.propertyId, 'width');
+      expect(update.change.targetValue, 140);
+      expect(update.change.previewMode, LiveEditPreviewMode.ghost);
     });
 
     test('parses screenshot permission policy fields', () {

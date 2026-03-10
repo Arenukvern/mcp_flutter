@@ -1,0 +1,21 @@
+name: flutter_live_edit_agent
+description: Server-side live edit agent orchestration with pluggable inference backends.
+publish_to: none
+version: 0.1.0
+
+environment:
+  sdk: ^3.10.0
+
+dependencies:
+  flutter_live_edit_core:
+    path: ../flutter_live_edit_core
+  path: ^1.9.1
+  xsoulspace_inference_core:
+    path: ../../../../xs/dart_flutter_packages/pkgs/xsoulspace_inference_core
+  xsoulspace_inference_codex_exec:
+    path: ../../../../xs/dart_flutter_packages/pkgs/xsoulspace_inference_codex_exec
+
+dev_dependencies:
+  lints: ^6.1.0
+  test: ^1.30.0
+  xsoulspace_lints: ^0.1.2

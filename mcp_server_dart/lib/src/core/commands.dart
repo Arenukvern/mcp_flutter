@@ -1,6 +1,7 @@
 // Copyright (c) 2025, Flutter Inspector MCP Server authors.
 // Licensed under the MIT License.
 
+import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 import 'package:flutter_inspector_mcp_server/src/core/visual_capture.dart';
 
 /// Connection mode used by the shared core runtime.
@@ -324,4 +325,166 @@ final class DynamicRegistryStatsCommand extends CoreCommand {
 
   @override
   String get name => 'dynamicRegistryStats';
+}
+
+final class LiveEditStartSessionCommand extends CoreCommand {
+  const LiveEditStartSessionCommand({this.sessionId});
+
+  final String? sessionId;
+
+  @override
+  String get name => 'live_edit_start_session';
+}
+
+final class LiveEditSetOverlayCommand extends CoreCommand {
+  const LiveEditSetOverlayCommand({this.sessionId, required this.enabled});
+
+  final String? sessionId;
+  final bool enabled;
+
+  @override
+  String get name => 'live_edit_set_overlay';
+}
+
+final class LiveEditGetTreeCommand extends CoreCommand {
+  const LiveEditGetTreeCommand({this.sessionId});
+
+  final String? sessionId;
+
+  @override
+  String get name => 'live_edit_get_tree';
+}
+
+final class LiveEditSelectAtPointCommand extends CoreCommand {
+  const LiveEditSelectAtPointCommand({
+    this.sessionId,
+    required this.x,
+    required this.y,
+    this.viewId,
+  });
+
+  final String? sessionId;
+  final int x;
+  final int y;
+  final int? viewId;
+
+  @override
+  String get name => 'live_edit_select_at_point';
+}
+
+final class LiveEditGetSelectionCommand extends CoreCommand {
+  const LiveEditGetSelectionCommand({this.sessionId});
+
+  final String? sessionId;
+
+  @override
+  String get name => 'live_edit_get_selection';
+}
+
+final class LiveEditUpdateDraftCommand extends CoreCommand {
+  const LiveEditUpdateDraftCommand({this.sessionId, required this.change});
+
+  final String? sessionId;
+  final LiveEditDraftChange change;
+
+  @override
+  String get name => 'live_edit_update_draft';
+}
+
+final class LiveEditGetDraftCommand extends CoreCommand {
+  const LiveEditGetDraftCommand({this.sessionId});
+
+  final String? sessionId;
+
+  @override
+  String get name => 'live_edit_get_draft';
+}
+
+final class LiveEditDiscardDraftCommand extends CoreCommand {
+  const LiveEditDiscardDraftCommand({this.sessionId});
+
+  final String? sessionId;
+
+  @override
+  String get name => 'live_edit_discard_draft';
+}
+
+final class LiveEditEndSessionCommand extends CoreCommand {
+  const LiveEditEndSessionCommand({this.sessionId});
+
+  final String? sessionId;
+
+  @override
+  String get name => 'live_edit_end_session';
+}
+
+final class LiveEditListAgentBackendsCommand extends CoreCommand {
+  const LiveEditListAgentBackendsCommand();
+
+  @override
+  String get name => 'live_edit_list_agent_backends';
+}
+
+final class LiveEditGetAgentBackendCommand extends CoreCommand {
+  const LiveEditGetAgentBackendCommand({this.sessionId, this.backendId});
+
+  final String? sessionId;
+  final String? backendId;
+
+  @override
+  String get name => 'live_edit_get_agent_backend';
+}
+
+final class LiveEditSetAgentBackendCommand extends CoreCommand {
+  const LiveEditSetAgentBackendCommand({
+    required this.sessionId,
+    required this.backendId,
+  });
+
+  final String sessionId;
+  final String backendId;
+
+  @override
+  String get name => 'live_edit_set_agent_backend';
+}
+
+final class LiveEditResolveDraftCommand extends CoreCommand {
+  const LiveEditResolveDraftCommand({
+    this.sessionId,
+    this.backendId,
+    this.workingDirectory,
+    this.intentText,
+  });
+
+  final String? sessionId;
+  final String? backendId;
+  final String? workingDirectory;
+  final String? intentText;
+
+  @override
+  String get name => 'live_edit_resolve_draft';
+}
+
+final class LiveEditAcceptResolutionCommand extends CoreCommand {
+  const LiveEditAcceptResolutionCommand({
+    required this.proposalId,
+    this.sessionId,
+    this.workingDirectory,
+  });
+
+  final String proposalId;
+  final String? sessionId;
+  final String? workingDirectory;
+
+  @override
+  String get name => 'live_edit_accept_resolution';
+}
+
+final class LiveEditRejectResolutionCommand extends CoreCommand {
+  const LiveEditRejectResolutionCommand({required this.proposalId});
+
+  final String proposalId;
+
+  @override
+  String get name => 'live_edit_reject_resolution';
 }
