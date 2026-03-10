@@ -452,11 +452,13 @@ final class _FakeDesktopWindowScreenshotService
     this.result,
     this.error,
     this.permissionStatus = PermissionStatus.granted,
+    this.onCapture,
   });
 
   final DesktopWindowScreenshotCapture? result;
   final Object? error;
   final PermissionStatus permissionStatus;
+  final void Function(int? targetPid)? onCapture;
 
   @override
   String get backend => 'fake_macos';
@@ -488,8 +490,10 @@ final class _FakeDesktopWindowScreenshotService
     required final String projectDir,
     required final String device,
     required final bool compress,
+    final int? targetPid,
     final String? cacheDir,
   }) async {
+    onCapture?.call(targetPid);
     if (error != null) {
       throw error!;
     }

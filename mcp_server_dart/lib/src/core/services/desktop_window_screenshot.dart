@@ -13,6 +13,7 @@ abstract interface class DesktopWindowScreenshotService {
     required String projectDir,
     required String device,
     required bool compress,
+    int? targetPid,
     String? cacheDir,
   });
 }
@@ -143,6 +144,7 @@ final class MacOsDesktopWindowScreenshotService
     required final String projectDir,
     required final String device,
     required final bool compress,
+    final int? targetPid,
     final String? cacheDir,
   }) async {
     if (device != 'macos') {
@@ -157,7 +159,10 @@ final class MacOsDesktopWindowScreenshotService
     final payload = await _runHelper(
       command: 'capture',
       cacheDir: cacheDir,
-      trailing: <String>[...appNames],
+      trailing: <String>[
+        if (targetPid != null) ...<String>['--pid', '$targetPid'],
+        ...appNames,
+      ],
     );
     if (payload['ok'] != true) {
       throw DesktopWindowCaptureException(
@@ -177,6 +182,7 @@ final class MacOsDesktopWindowScreenshotService
       captureMode: screenshotModeDesktopWindow,
       metadata: <String, Object?>{
         'appName': payload['appName'],
+        'windowOwnerPid': payload['windowOwnerPid'],
         'windowId': payload['windowId'],
         'windowTitle': payload['windowTitle'],
         'windowBounds': _asObject(payload['windowBounds']),
@@ -370,7 +376,9 @@ import ScreenCaptureKit
 
 func emit(_ payload: [String: Any]) {
     let data = try! JSONSerialization.data(withJSONObject: payload)
-    print(String(data: data, encoding: .utf8)!)
+    FileHandle.standardOutput.write(data)
+    FileHandle.standardOutput.write(Data([0x0A]))
+    Foundation.exit(0)
 }
 
 func normalizeOwnerName(_ value: String) -> String {
@@ -407,7 +415,14 @@ func matchesOwner(_ owner: String, candidates: Set<String>) -> Bool {
     return matchesCandidate(owner, candidates: candidates)
 }
 
-func matchesWindow(_ window: SCWindow, candidates: Set<String>) -> Bool {
+func matchesWindow(
+    _ window: SCWindow,
+    candidates: Set<String>,
+    expectedPid: Int32?
+) -> Bool {
+    if let expectedPid {
+        return window.owningApplication?.processID == expectedPid
+    }
     if candidates.isEmpty {
         return true
     }
@@ -417,10 +432,18 @@ func matchesWindow(_ window: SCWindow, candidates: Set<String>) -> Bool {
         matchesCandidate(title, candidates: candidates)
 }
 
-func eligibleWindows(_ windows: [SCWindow], candidates: Set<String>) -> [SCWindow] {
+func eligibleWindows(
+    _ windows: [SCWindow],
+    candidates: Set<String>,
+    expectedPid: Int32?
+) -> [SCWindow] {
     return windows.filter { window in
         let frame = window.frame
-        return matchesWindow(window, candidates: candidates) &&
+        return matchesWindow(
+            window,
+            candidates: candidates,
+            expectedPid: expectedPid
+        ) &&
             frame.width > 8 &&
             frame.height > 8
     }
@@ -435,6 +458,7 @@ func largestWindow(_ windows: [SCWindow]) -> SCWindow? {
 func windowSummary(_ window: SCWindow) -> [String: Any] {
     [
         "owner": window.owningApplication?.applicationName ?? "",
+        "ownerPid": Int(window.owningApplication?.processID ?? 0),
         "title": window.title ?? "",
         "width": window.frame.size.width,
         "height": window.frame.size.height,
@@ -473,7 +497,7 @@ func openSettings() {
 }
 
 @MainActor
-func capture(candidates: Set<String>) async {
+func capture(candidates: Set<String>, expectedPid: Int32?) async {
     _ = NSApplication.shared
 
     guard CGPreflightScreenCaptureAccess() else {
@@ -494,7 +518,11 @@ func capture(candidates: Set<String>) async {
             onScreenWindowsOnly: true
         )
 
-        let onScreenMatches = eligibleWindows(onScreenContent.windows, candidates: candidates)
+        let onScreenMatches = eligibleWindows(
+            onScreenContent.windows,
+            candidates: candidates,
+            expectedPid: expectedPid
+        )
         var selectionSource = "on_screen"
         var captureVisibility = "on_screen"
         var selectedWindow = largestWindow(onScreenMatches)
@@ -506,7 +534,11 @@ func capture(candidates: Set<String>) async {
                 onScreenWindowsOnly: false
             )
             allWindowsContent = anyContent
-            let allMatches = eligibleWindows(anyContent.windows, candidates: candidates)
+            let allMatches = eligibleWindows(
+                anyContent.windows,
+                candidates: candidates,
+                expectedPid: expectedPid
+            )
             selectedWindow = largestWindow(allMatches)
             if selectedWindow != nil {
                 selectionSource = "all_windows_fallback"
@@ -526,18 +558,23 @@ func capture(candidates: Set<String>) async {
             })).sorted()
             let allCandidateWindows = eligibleWindows(
                 allWindowsContent?.windows ?? [],
-                candidates: candidates
+                candidates: candidates,
+                expectedPid: expectedPid
             ).prefix(20).map(windowSummary)
+            var details: [String: Any] = [
+                "candidates": Array(candidates).sorted(),
+                "visibleOwners": visibleOwners,
+                "visibleWindows": Array(visibleWindows),
+                "allOwners": allOwners,
+                "allCandidateWindows": Array(allCandidateWindows),
+            ]
+            if let expectedPid {
+                details["expectedPid"] = Int(expectedPid)
+            }
             emit([
                 "ok": false,
                 "error": "window_not_found",
-                "details": [
-                    "candidates": Array(candidates).sorted(),
-                    "visibleOwners": visibleOwners,
-                    "visibleWindows": Array(visibleWindows),
-                    "allOwners": allOwners,
-                    "allCandidateWindows": Array(allCandidateWindows),
-                ],
+                "details": details,
             ])
             return
         }
@@ -568,6 +605,7 @@ func capture(candidates: Set<String>) async {
             "ok": true,
             "permissionStatus": "granted",
             "appName": window.owningApplication?.applicationName ?? "",
+            "windowOwnerPid": Int(window.owningApplication?.processID ?? 0),
             "windowId": Int(window.windowID),
             "windowTitle": window.title ?? "",
             "windowSelectionSource": selectionSource,
@@ -618,8 +656,20 @@ struct VisualCaptureHelper {
         case "open-settings":
             openSettings()
         case "capture":
-            let candidates = Set(args.dropFirst().map { $0.lowercased() })
-            await capture(candidates: candidates)
+            var expectedPid: Int32?
+            var candidates = Set<String>()
+            var index = 1
+            while index < args.count {
+                let argument = args[index]
+                if argument == "--pid", index + 1 < args.count {
+                    expectedPid = Int32(args[index + 1])
+                    index += 2
+                    continue
+                }
+                candidates.insert(argument.lowercased())
+                index += 1
+            }
+            await capture(candidates: candidates, expectedPid: expectedPid)
         default:
             emit([
                 "ok": false,

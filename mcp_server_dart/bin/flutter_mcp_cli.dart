@@ -613,16 +613,18 @@ Future<CoreResult> _runValidateRuntime({
     );
   }
 
-  final screenshotFailure = await runStep(
-    'get_screenshots',
-    const GetScreenshotsCommand(
+  final snapshotFailure = await runStep(
+    'capture_ui_snapshot',
+    const CaptureUiSnapshotCommand(
+      includeViewDetails: false,
+      includeErrors: false,
       permissionPolicy: PermissionPolicy.autoRequestOnce,
     ),
   );
-  if (screenshotFailure != null) {
+  if (snapshotFailure != null) {
     return CoreResult.failure(
-      code: screenshotFailure.error?.code ?? CoreErrorCode.getScreenshotsFailed,
-      message: 'Runtime validation failed at get_screenshots.',
+      code: snapshotFailure.error?.code ?? CoreErrorCode.getScreenshotsFailed,
+      message: 'Runtime validation failed at capture_ui_snapshot.',
       details: {'doctor': doctorData, 'steps': steps},
     );
   }
@@ -665,18 +667,21 @@ Future<CoreResult> _runValidateRuntime({
       );
     }
 
-    final afterReloadScreenshotFailure = await runStep(
-      'get_screenshots_after_reload',
-      const GetScreenshotsCommand(
+    final afterReloadSnapshotFailure = await runStep(
+      'capture_ui_snapshot_after_reload',
+      const CaptureUiSnapshotCommand(
+        includeViewDetails: false,
+        includeErrors: false,
         permissionPolicy: PermissionPolicy.autoRequestOnce,
       ),
     );
-    if (afterReloadScreenshotFailure != null) {
+    if (afterReloadSnapshotFailure != null) {
       return CoreResult.failure(
         code:
-            afterReloadScreenshotFailure.error?.code ??
+            afterReloadSnapshotFailure.error?.code ??
             CoreErrorCode.getScreenshotsFailed,
-        message: 'Runtime validation failed at post-reload screenshot capture.',
+        message:
+            'Runtime validation failed at post-reload capture_ui_snapshot.',
         details: {'doctor': doctorData, 'steps': steps},
       );
     }
@@ -697,6 +702,7 @@ Future<CoreResult> _runValidateRuntime({
         'connectRetries': connectRetries,
         'afterReload': afterReload,
         'errorsCount': errorsCount,
+        'visualCaptureCommand': 'capture_ui_snapshot',
         'requiredExtensions': requiredSorted,
         'skillInstallation': skillInstallData,
       },
@@ -1206,7 +1212,7 @@ void _printInteractiveNarrativeIfNeeded({
       return;
     case 'validate-runtime':
       io.stdout.writeln(
-        'validate-runtime: screenshot steps use auto-request-once for visual capture when the selected target supports it.',
+        'validate-runtime: visual capture uses capture_ui_snapshot with auto-request-once when the selected target supports it.',
       );
       return;
     case 'permissions':
@@ -1653,7 +1659,7 @@ Examples:
 
 CLI-first runtime validation sequence:
   1) get_extension_rpcs -> confirm ext.mcp.toolkit.app_errors/view_details/view_screenshots/inspect_widget_at_point
-  2) get_screenshots + get_view_details -> visual/layout baseline
+  2) capture_ui_snapshot + get_view_details -> visual/layout baseline
   3) get_app_errors -> runtime error context
 
 If connection_selection_required appears:
@@ -1780,14 +1786,18 @@ Examples:
   What it does:
   - doctor preflight (including mcp_toolkit extension gate)
   - get_extension_rpcs
-  - get_screenshots
+  - capture_ui_snapshot (screenshot-only mode for the visual gate)
   - get_view_details
   - get_app_errors
-  - optional hot_reload + screenshot
+  - optional hot_reload + capture_ui_snapshot
 
 If toolkit extensions are missing, add `mcp_toolkit` to app dependencies and
 initialize `MCPToolkitBinding.instance..initialize()..initializeFlutterToolkit();`
 before `runApp`, then hot restart or rerun.
+
+For truthful `desktop_window` capture from the bare CLI, also pass global
+`--flutter-project-dir <app_dir>` and `--flutter-device <device>` so host
+window capture can resolve the running Flutter app.
 
 Transient first-connect failures are retried automatically for connect/vm_not_connected errors.
 Optional skill installation copies mcp_server_dart/skills/$_runtimeValidationSkillName to \$CODEX_HOME/skills.

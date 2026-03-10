@@ -67,9 +67,12 @@ void main() {
           }
           expect(executable, equals(compiledBinary));
           expect(arguments.first, equals('capture'));
+          expect(arguments[1], equals('--pid'));
+          expect(arguments[2], equals('98223'));
           final payload = <String, Object?>{
             'ok': true,
             'appName': 'sample_app',
+            'windowOwnerPid': 98223,
             'windowId': 77,
             'windowTitle': 'Sample Window',
             'windowSelectionSource': 'all_windows_fallback',
@@ -91,6 +94,7 @@ void main() {
         projectDir: tempDir.path,
         device: 'macos',
         compress: true,
+        targetPid: 98223,
         cacheDir: tempDir.path,
       );
 
@@ -98,6 +102,7 @@ void main() {
       expect(capture!.captureMode, equals('desktop_window'));
       expect(capture.images, hasLength(1));
       expect(capture.metadata['appName'], equals('sample_app'));
+      expect(capture.metadata['windowOwnerPid'], equals(98223));
       expect(capture.metadata['windowId'], equals(77));
       expect(capture.metadata['windowTitle'], equals('Sample Window'));
       expect(
@@ -110,6 +115,65 @@ void main() {
       );
       expect(compiledBinary, isNotNull);
     });
+
+    test(
+      'compiled helper source exits explicitly after emitting payload',
+      () async {
+        final tempDir = await Directory.systemTemp.createTemp(
+          'mcp_window_capture',
+        );
+        addTearDown(() async {
+          if (tempDir.existsSync()) {
+            await tempDir.delete(recursive: true);
+          }
+        });
+
+        final bundleDir = Directory(
+          '${tempDir.path}/build/macos/Build/Products/Debug/sample_app.app/Contents/MacOS',
+        )..createSync(recursive: true);
+        File('${bundleDir.path}/sample_app').writeAsStringSync('');
+
+        late final String helperSourcePath;
+        final service = MacOsDesktopWindowScreenshotService(
+          runProcess: (final executable, final arguments) async {
+            if (executable == 'swiftc') {
+              helperSourcePath = arguments[1];
+              return ProcessResult(1, 0, '', '');
+            }
+            final payload = <String, Object?>{
+              'ok': true,
+              'appName': 'sample_app',
+              'windowOwnerPid': 98223,
+              'windowId': 77,
+              'windowTitle': 'Sample Window',
+              'windowSelectionSource': 'on_screen',
+              'windowCaptureVisibility': 'on_screen',
+              'windowBounds': <String, Object?>{
+                'x': 10.0,
+                'y': 20.0,
+                'width': 300.0,
+                'height': 200.0,
+              },
+              'pngBase64': base64Encode(<int>[1, 2, 3, 4]),
+              'permissionStatus': 'granted',
+            };
+            return ProcessResult(1, 0, jsonEncode(payload), '');
+          },
+        );
+
+        await service.capture(
+          projectDir: tempDir.path,
+          device: 'macos',
+          compress: true,
+          targetPid: 98223,
+          cacheDir: tempDir.path,
+        );
+
+        final helperSource = File(helperSourcePath).readAsStringSync();
+        expect(helperSource, contains('FileHandle.standardOutput.write(data)'));
+        expect(helperSource, contains('Foundation.exit(0)'));
+      },
+    );
 
     test('surfaces structured helper failures with details', () async {
       final tempDir = await Directory.systemTemp.createTemp(
@@ -151,6 +215,7 @@ void main() {
           projectDir: tempDir.path,
           device: 'macos',
           compress: true,
+          targetPid: 98223,
           cacheDir: tempDir.path,
         ),
         throwsA(

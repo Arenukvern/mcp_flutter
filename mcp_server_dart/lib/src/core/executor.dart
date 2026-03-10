@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_inspector_mcp_server/src/core/commands.dart';
 import 'package:flutter_inspector_mcp_server/src/core/connection_context.dart';
@@ -39,11 +40,14 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     this.sessionManager,
     ErrorCauseAnalyzer? errorCauseAnalyzer,
     Map<String, ErrorSummaryProvider>? summaryProviders,
+    Future<void> Function(int pid)? activateMacOsTargetPid,
   }) : _dynamicGateway = dynamicGateway,
        _desktopWindowScreenshotService =
            desktopWindowScreenshotService ??
            MacOsDesktopWindowScreenshotService(),
        _errorCauseAnalyzer = errorCauseAnalyzer ?? const ErrorCauseAnalyzer(),
+       _activateMacOsTargetPid =
+           activateMacOsTargetPid ?? _defaultActivateMacOsTargetPid,
        _summaryProviders =
            summaryProviders ??
            <String, ErrorSummaryProvider>{
@@ -60,6 +64,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
   final ErrorCauseAnalyzer _errorCauseAnalyzer;
   final Map<String, ErrorSummaryProvider> _summaryProviders;
   final DesktopWindowScreenshotService _desktopWindowScreenshotService;
+  final Future<void> Function(int pid) _activateMacOsTargetPid;
 
   CoreDynamicGateway? _dynamicGateway;
 
@@ -712,10 +717,15 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
 
     try {
+      final targetPid = await _connectedVmPid();
+      if (device == 'macos' && targetPid != null && targetPid > 0) {
+        await _activateMacOsTargetPid(targetPid);
+      }
       final capture = await _desktopWindowScreenshotService.capture(
         projectDir: projectDir,
         device: device,
         compress: command.compress,
+        targetPid: targetPid,
         cacheDir: configuration.stateRootDir,
       );
       if (capture == null) {
@@ -772,6 +782,23 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
           'suggestedAction': 'flutter_mcp_cli permissions open-settings',
       },
     );
+  }
+
+  Future<int?> _connectedVmPid() async {
+    final vmService = connectionContext.vmService;
+    if (vmService == null) {
+      return null;
+    }
+    try {
+      final vm = await vmService.getVM();
+      final pid = vm.pid;
+      if (pid is int && pid > 0) {
+        return pid;
+      }
+      return int.tryParse('$pid');
+    } on Object {
+      return null;
+    }
   }
 
   Map<String, Object?> _withPermissionMetadata({
@@ -1040,6 +1067,22 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       hash = (hash * 0x01000193) & 0x7fffffff;
     }
     return hash.toRadixString(16).padLeft(8, '0');
+  }
+}
+
+Future<void> _defaultActivateMacOsTargetPid(final int pid) async {
+  try {
+    await Process.run('swift', <String>[
+      '-e',
+      'import AppKit; import Foundation; '
+          'let pid = pid_t($pid); '
+          'guard let app = NSRunningApplication(processIdentifier: pid) '
+          'else { Foundation.exit(2) }; '
+          'let activated = app.activate(options: [.activateAllWindows, .activateIgnoringOtherApps]); '
+          'Foundation.exit(activated ? 0 : 1)',
+    ]);
+  } on Exception {
+    // Best effort only. Capture still runs even if activation fails.
   }
 }
 
