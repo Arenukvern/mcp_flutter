@@ -109,6 +109,58 @@ void main() {
       );
     });
 
+    test('builds condensed execution plan from proposal state', () async {
+      final tempDir = await Directory.systemTemp.createTemp('live_edit_agent');
+      addTearDown(() => tempDir.delete(recursive: true));
+
+      final service = LiveEditAgentService(
+        registry: LiveEditAgentRegistry(
+          clients: <String, InferenceClient>{'fake': _FakeInferenceClient()},
+          defaultBackendId: 'fake',
+        ),
+      );
+
+      final proposal = await service.resolve(
+        LiveEditResolutionRequest(
+          sessionId: 'session-plan',
+          workingDirectory: tempDir.path,
+          draftChanges: const <LiveEditDraftChange>[
+            LiveEditDraftChange(
+              nodeId: 'node-1',
+              propertyId: 'width',
+              targetValue: 140,
+              confidence: 0.75,
+            ),
+          ],
+          selection: const LiveEditSelection(
+            sessionId: 'session-plan',
+            nodeId: 'node-1',
+            widgetType: 'Container',
+            source: LiveEditSourceLocation(
+              file: '/tmp/lib/main.dart',
+              line: 42,
+            ),
+            propertyGroups: <LiveEditPropertyDescriptor>[
+              LiveEditPropertyDescriptor(
+                id: 'width',
+                label: 'Width',
+                group: LiveEditPropertyGroup.layout,
+                kind: LiveEditPropertyKind.number,
+              ),
+            ],
+            rawNode: <String, Object?>{},
+          ),
+        ),
+      );
+
+      final plan = service.buildExecutionPlan(proposal.proposalId);
+
+      expect(plan.proposalId, proposal.proposalId);
+      expect(plan.selectedNode, contains('Container'));
+      expect(plan.requestedChanges.single, contains('Width'));
+      expect(plan.agentInstruction, contains('width=140'));
+    });
+
     test(
       'compacts large runtime payloads before prompting the backend',
       () async {
@@ -234,80 +286,6 @@ void main() {
   });
 }
 
-class _FakeInferenceClient implements InferenceClient {
-  @override
-  String get id => 'fake';
-
-  @override
-  bool get isAvailable => true;
-
-  @override
-  Future<InferenceResult<InferenceResponse>> infer(
-    final InferenceRequest request,
-  ) async {
-    return InferenceResult<InferenceResponse>.ok(
-      InferenceResponse(
-        output: <String, dynamic>{
-          'proposalId': 'proposal-1',
-          'backendId': 'fake',
-          'summary': 'Update width to 140.',
-          'patch': '--- a/lib/main.dart\n+++ b/lib/main.dart',
-          'changedFiles': <String>['lib/main.dart'],
-          'filePatches': <Map<String, dynamic>>[
-            <String, dynamic>{
-              'path': 'lib/main.dart',
-              'content': 'Container(width: 140)',
-              'patch': '@@ -1 +1 @@',
-            },
-          ],
-          'expectedRuntimeEffects': <String>[
-            'The selected widget becomes wider.',
-          ],
-          'validationSteps': <String>['Hot reload and verify width.'],
-          'warnings': <String>[],
-          'riskFlags': <String>[],
-          'meta': <String, dynamic>{'provider': 'fake'},
-        },
-      ),
-    );
-  }
-}
-
-final class _CapturingInferenceClient extends _FakeInferenceClient {
-  InferenceRequest? lastRequest;
-
-  @override
-  Future<InferenceResult<InferenceResponse>> infer(
-    final InferenceRequest request,
-  ) async {
-    lastRequest = request;
-    return super.infer(request);
-  }
-}
-
-final class _FailingInferenceClient implements InferenceClient {
-  @override
-  String get id => 'fake';
-
-  @override
-  bool get isAvailable => true;
-
-  @override
-  Future<InferenceResult<InferenceResponse>> infer(
-    final InferenceRequest request,
-  ) async {
-    return InferenceResult<InferenceResponse>.fail(
-      code: 'codex_exec_failed',
-      message: 'codex exec failed with exit code 1',
-      details: <String, Object?>{
-        'exit_code': 1,
-        'stderr': 'Request exceeded token limit',
-      },
-      meta: <String, Object?>{'attempt_count': 1},
-    );
-  }
-}
-
 Map<String, Object?> _buildVerboseNode() {
   const payload = 'VERBOSE_PAYLOAD_';
   return <String, Object?>{
@@ -338,4 +316,74 @@ Map<String, Object?> _buildVerboseNode() {
       growable: false,
     ),
   };
+}
+
+final class _CapturingInferenceClient extends _FakeInferenceClient {
+  InferenceRequest? lastRequest;
+
+  @override
+  Future<InferenceResult<InferenceResponse>> infer(
+    final InferenceRequest request,
+  ) async {
+    lastRequest = request;
+    return super.infer(request);
+  }
+}
+
+final class _FailingInferenceClient implements InferenceClient {
+  @override
+  String get id => 'fake';
+
+  @override
+  bool get isAvailable => true;
+
+  @override
+  Future<InferenceResult<InferenceResponse>> infer(
+    final InferenceRequest request,
+  ) async => InferenceResult<InferenceResponse>.fail(
+    code: 'codex_exec_failed',
+    message: 'codex exec failed with exit code 1',
+    details: <String, Object?>{
+      'exit_code': 1,
+      'stderr': 'Request exceeded token limit',
+    },
+    meta: <String, Object?>{'attempt_count': 1},
+  );
+}
+
+class _FakeInferenceClient implements InferenceClient {
+  @override
+  String get id => 'fake';
+
+  @override
+  bool get isAvailable => true;
+
+  @override
+  Future<InferenceResult<InferenceResponse>> infer(
+    final InferenceRequest request,
+  ) async => InferenceResult<InferenceResponse>.ok(
+    const InferenceResponse(
+      output: <String, dynamic>{
+        'proposalId': 'proposal-1',
+        'backendId': 'fake',
+        'summary': 'Update width to 140.',
+        'patch': '--- a/lib/main.dart\n+++ b/lib/main.dart',
+        'changedFiles': <String>['lib/main.dart'],
+        'filePatches': <Map<String, dynamic>>[
+          <String, dynamic>{
+            'path': 'lib/main.dart',
+            'content': 'Container(width: 140)',
+            'patch': '@@ -1 +1 @@',
+          },
+        ],
+        'expectedRuntimeEffects': <String>[
+          'The selected widget becomes wider.',
+        ],
+        'validationSteps': <String>['Hot reload and verify width.'],
+        'warnings': <String>[],
+        'riskFlags': <String>[],
+        'meta': <String, dynamic>{'provider': 'fake'},
+      },
+    ),
+  );
 }

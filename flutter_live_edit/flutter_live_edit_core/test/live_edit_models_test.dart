@@ -31,6 +31,9 @@ void main() {
           editable: true,
           previewMode: LiveEditPreviewMode.ghost,
           persistable: true,
+          canPreviewExactly: false,
+          requiresAgentForPersistence: true,
+          safeToAutoGroupInApply: true,
         ),
       ],
       layoutContext: <String, Object?>{'parent': 'Column'},
@@ -43,6 +46,7 @@ void main() {
     expect(decoded.nodeId, selection.nodeId);
     expect(decoded.propertyGroups.single.id, 'width');
     expect(decoded.bounds?.width, 100);
+    expect(decoded.propertyGroups.single.requiresAgentForPersistence, isTrue);
   });
 
   test('resolution proposal serializes and deserializes', () {
@@ -70,5 +74,25 @@ void main() {
     expect(decoded.proposalId, proposal.proposalId);
     expect(decoded.filePatches.single.path, 'lib/main.dart');
     expect(decoded.expectedRuntimeEffects.single, 'Wider container');
+  });
+
+  test('execution plan serializes and deserializes', () {
+    const plan = LiveEditExecutionPlan(
+      proposalId: 'proposal-1',
+      title: 'Apply live edit',
+      summary: 'Center the selected column.',
+      selectedNode: 'Column',
+      requestedChanges: <String>['Set mainAxisAlignment to center'],
+      affectedFiles: <String>['lib/stateful_widget_example.dart'],
+      confidence: 0.9,
+      riskNotes: <String>['Touches widget layout'],
+      agentInstruction: 'Center the selected Column in source.',
+    );
+
+    final decoded = LiveEditExecutionPlan.fromJson(plan.toJson());
+
+    expect(decoded.proposalId, plan.proposalId);
+    expect(decoded.requestedChanges.single, 'Set mainAxisAlignment to center');
+    expect(decoded.agentInstruction, contains('Column'));
   });
 }

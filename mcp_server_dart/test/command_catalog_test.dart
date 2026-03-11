@@ -1,5 +1,5 @@
-import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 import 'package:flutter_inspector_mcp_server/flutter_mcp_core.dart';
+import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -21,6 +21,7 @@ void main() {
       expect(names.contains('live_edit_start_session'), isTrue);
       expect(names.contains('live_edit_update_draft'), isTrue);
       expect(names.contains('live_edit_resolve_draft'), isTrue);
+      expect(names.contains('live_edit_apply_draft'), isTrue);
       expect(names.contains('live_edit_accept_resolution'), isTrue);
     });
 
@@ -139,27 +140,27 @@ void main() {
 
     test('adds optional connection schema for VM and wrapper commands', () {
       final getVmSchema =
-          catalog.specFor('get_vm')!.inputSchema['properties']
+          catalog.specFor('get_vm')!.inputSchema['properties']!
               as Map<String, Object?>;
       expect(getVmSchema.containsKey('connection'), isTrue);
 
       final watchSchema =
-          catalog.specFor('watch')!.inputSchema['properties']
+          catalog.specFor('watch')!.inputSchema['properties']!
               as Map<String, Object?>;
       expect(watchSchema.containsKey('connection'), isTrue);
 
       final sessionExecSchema =
-          catalog.specFor('session_exec')!.inputSchema['properties']
+          catalog.specFor('session_exec')!.inputSchema['properties']!
               as Map<String, Object?>;
       expect(sessionExecSchema.containsKey('connection'), isTrue);
 
       final statusSchema =
-          catalog.specFor('status')!.inputSchema['properties']
+          catalog.specFor('status')!.inputSchema['properties']!
               as Map<String, Object?>;
       expect(statusSchema.containsKey('connection'), isFalse);
 
       final connectSchema =
-          catalog.specFor('connect')!.inputSchema['properties']
+          catalog.specFor('connect')!.inputSchema['properties']!
               as Map<String, Object?>;
       expect(connectSchema.containsKey('connection'), isFalse);
     });

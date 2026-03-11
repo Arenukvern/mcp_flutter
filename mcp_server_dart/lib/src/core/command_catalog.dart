@@ -1,47 +1,15 @@
 // Copyright (c) 2025, Flutter Inspector MCP Server authors.
 // Licensed under the MIT License.
 
-import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 import 'package:flutter_inspector_mcp_server/src/core/capabilities_model.dart';
 import 'package:flutter_inspector_mcp_server/src/core/commands.dart';
 import 'package:flutter_inspector_mcp_server/src/core/connection_override.dart';
 import 'package:flutter_inspector_mcp_server/src/core/core_types.dart';
 import 'package:flutter_inspector_mcp_server/src/core/runtime_version.dart';
 import 'package:flutter_inspector_mcp_server/src/core/visual_capture.dart';
+import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 
 typedef CoreCommandFactory = CoreCommand Function(Map<String, Object?> args);
-
-final class CommandSpec {
-  const CommandSpec({
-    required this.name,
-    required this.description,
-    required this.inputSchema,
-    required this.outputSchema,
-    required this.requiresVm,
-    required this.supportsWatch,
-    required this.mcpExposed,
-    required this.build,
-  });
-
-  final String name;
-  final String description;
-  final Map<String, Object?> inputSchema;
-  final Map<String, Object?> outputSchema;
-  final bool requiresVm;
-  final bool supportsWatch;
-  final bool mcpExposed;
-  final CoreCommandFactory build;
-
-  Map<String, Object?> toJson() => {
-    'name': name,
-    'description': description,
-    'inputSchema': inputSchema,
-    'outputSchema': outputSchema,
-    'requiresVm': requiresVm,
-    'supportsWatch': supportsWatch,
-    'mcpExposed': mcpExposed,
-  };
-}
 
 final class CommandCatalog {
   CommandCatalog._();
@@ -52,17 +20,33 @@ final class CommandCatalog {
     for (final spec in _buildSpecs()) spec.name: spec,
   };
 
+  final List<Map<String, Object?>> defaultSnapshotPlan =
+      const <Map<String, Object?>>[
+        <String, Object?>{'name': 'status', 'args': <String, Object?>{}},
+        <String, Object?>{
+          'name': 'discover_debug_apps',
+          'args': <String, Object?>{},
+        },
+        <String, Object?>{'name': 'get_vm', 'args': <String, Object?>{}},
+        <String, Object?>{
+          'name': 'get_extension_rpcs',
+          'args': <String, Object?>{},
+        },
+        <String, Object?>{
+          'name': 'get_app_errors',
+          'args': <String, Object?>{'count': 4},
+        },
+        <String, Object?>{
+          'name': 'get_view_details',
+          'args': <String, Object?>{},
+        },
+      ];
+
   List<CommandSpec> get commands {
     final all = _byName.values.toList()
-      ..sort((final a, final b) {
-        return a.name.compareTo(b.name);
-      });
+      ..sort((final a, final b) => a.name.compareTo(b.name));
     return all;
   }
-
-  CommandSpec? specFor(final String name) => _byName[name];
-
-  bool contains(final String name) => _byName.containsKey(name);
 
   CoreCommand buildCommand(final String name, final Map<String, Object?> args) {
     final spec = _byName[name];
@@ -71,24 +55,6 @@ final class CommandCatalog {
     }
     _validateUnknownKeys(spec: spec, args: args);
     return spec.build(args);
-  }
-
-  Map<String, Object?> schema({final String? name}) {
-    if (name != null && name.isNotEmpty) {
-      final spec = _byName[name];
-      if (spec == null) {
-        throw ArgumentError('Unknown command for schema lookup: $name');
-      }
-      return {
-        'schemaVersion': kCommandCatalogSchemaVersion,
-        'command': spec.toJson(),
-      };
-    }
-
-    return {
-      'schemaVersion': kCommandCatalogSchemaVersion,
-      'commands': commands.map((final spec) => spec.toJson()).toList(),
-    };
   }
 
   CapabilitiesModel capabilities({
@@ -109,8 +75,8 @@ final class CommandCatalog {
       protocolVersion: kFlutterMcpProtocolVersion,
       schemaVersion: kCommandCatalogSchemaVersion,
       commands: commandSummaries,
-      providers: {
-        'summaryProviders': const <String>['none', 'openai'],
+      providers: const {
+        'summaryProviders': <String>['none', 'openai'],
       },
       features: {
         'exec': true,
@@ -135,27 +101,27 @@ final class CommandCatalog {
     );
   }
 
-  final List<Map<String, Object?>> defaultSnapshotPlan =
-      const <Map<String, Object?>>[
-        <String, Object?>{'name': 'status', 'args': <String, Object?>{}},
-        <String, Object?>{
-          'name': 'discover_debug_apps',
-          'args': <String, Object?>{},
-        },
-        <String, Object?>{'name': 'get_vm', 'args': <String, Object?>{}},
-        <String, Object?>{
-          'name': 'get_extension_rpcs',
-          'args': <String, Object?>{},
-        },
-        <String, Object?>{
-          'name': 'get_app_errors',
-          'args': <String, Object?>{'count': 4},
-        },
-        <String, Object?>{
-          'name': 'get_view_details',
-          'args': <String, Object?>{},
-        },
-      ];
+  bool contains(final String name) => _byName.containsKey(name);
+
+  Map<String, Object?> schema({final String? name}) {
+    if (name != null && name.isNotEmpty) {
+      final spec = _byName[name];
+      if (spec == null) {
+        throw ArgumentError('Unknown command for schema lookup: $name');
+      }
+      return {
+        'schemaVersion': kCommandCatalogSchemaVersion,
+        'command': spec.toJson(),
+      };
+    }
+
+    return {
+      'schemaVersion': kCommandCatalogSchemaVersion,
+      'commands': commands.map((final spec) => spec.toJson()).toList(),
+    };
+  }
+
+  CommandSpec? specFor(final String name) => _byName[name];
 
   List<CommandSpec> _buildSpecs() {
     final specs = <CommandSpec>[
@@ -966,10 +932,7 @@ final class CommandCatalog {
         description:
             'Set the current live-edit overlay mode such as inspect or editing.',
         inputSchema: _objectSchema(
-          properties: {
-            'sessionId': _stringSchema(),
-            'mode': _stringSchema(),
-          },
+          properties: {'sessionId': _stringSchema(), 'mode': _stringSchema()},
           required: const <String>['mode'],
         ),
         outputSchema: _objectSchema(additionalProperties: true),
@@ -1146,6 +1109,45 @@ final class CommandCatalog {
         ),
       ),
       CommandSpec(
+        name: 'live_edit_apply_draft',
+        description:
+            'Run a single live-edit transaction for resolve, compact plan review, and optional apply.',
+        inputSchema: _objectSchema(
+          properties: {
+            'sessionId': _stringSchema(),
+            'backendId': _stringSchema(),
+            'workingDirectory': _stringSchema(),
+            'intentText': _stringSchema(),
+            'proposalId': _stringSchema(),
+            'approve': _boolSchema(defaultValue: false),
+          },
+        ),
+        outputSchema: _objectSchema(additionalProperties: true),
+        requiresVm: true,
+        supportsWatch: false,
+        mcpExposed: true,
+        build: (final args) => LiveEditApplyDraftCommand(
+          sessionId: _nullableStringArg(args, 'sessionId', alias: 'session-id'),
+          backendId: _nullableStringArg(args, 'backendId', alias: 'backend-id'),
+          workingDirectory: _nullableStringArg(
+            args,
+            'workingDirectory',
+            alias: 'working-directory',
+          ),
+          intentText: _nullableStringArg(
+            args,
+            'intentText',
+            alias: 'intent-text',
+          ),
+          proposalId: _nullableStringArg(
+            args,
+            'proposalId',
+            alias: 'proposal-id',
+          ),
+          approve: _boolArg(args, 'approve', fallback: false),
+        ),
+      ),
+      CommandSpec(
         name: 'live_edit_accept_resolution',
         description:
             'Apply a reviewed live-edit proposal, hot reload, and validate.',
@@ -1225,6 +1227,44 @@ final class CommandCatalog {
     return specs.map(_decorateConnectionSchema).toList();
   }
 
+  static Map<String, Object?> _arraySchema({
+    required final Map<String, Object?> items,
+  }) => {'type': 'array', 'items': items};
+
+  static Map<String, Object?> _asSchemaProperties(final Object? value) {
+    if (value is Map<String, Object?>) {
+      return value;
+    }
+    if (value is Map) {
+      return value.cast<String, Object?>();
+    }
+    return const <String, Object?>{};
+  }
+
+  static bool _boolArg(
+    final Map<String, Object?> args,
+    final String key, {
+    required final bool fallback,
+    final String? alias,
+  }) {
+    final value = _findArg(args, key, alias: alias);
+    if (value == null) {
+      return fallback;
+    }
+    if (value is bool) {
+      return value;
+    }
+    throw ArgumentError(
+      'Invalid type for "$key": expected boolean '
+      '(schema path: \$.inputSchema.properties.$key)',
+    );
+  }
+
+  static Map<String, Object?> _boolSchema({final Object? defaultValue}) => {
+    'type': 'boolean',
+    'default': ?defaultValue,
+  };
+
   static CommandSpec _decorateConnectionSchema(final CommandSpec spec) {
     final supportsConnectionOverride =
         spec.requiresVm || spec.name == 'watch' || spec.name == 'session_exec';
@@ -1244,6 +1284,101 @@ final class CommandCatalog {
     );
   }
 
+  static Object? _findArg(
+    final Map<String, Object?> args,
+    final String key, {
+    final String? alias,
+  }) {
+    if (args.containsKey(key)) {
+      return args[key];
+    }
+    final nextAlias = alias;
+    if (nextAlias != null && args.containsKey(nextAlias)) {
+      return args[nextAlias];
+    }
+
+    final kebab = _toKebabCase(key);
+    if (args.containsKey(kebab)) {
+      return args[kebab];
+    }
+
+    final camel = _toCamelCase(key);
+    if (args.containsKey(camel)) {
+      return args[camel];
+    }
+
+    return null;
+  }
+
+  static int _intArg(
+    final Map<String, Object?> args,
+    final String key, {
+    required final int fallback,
+    final String? alias,
+  }) {
+    final value = _findArg(args, key, alias: alias);
+    if (value == null) {
+      return fallback;
+    }
+    return _strictIntArg(value: value, key: key);
+  }
+
+  static Map<String, Object?> _intSchema({final Object? defaultValue}) => {
+    'type': 'integer',
+    'default': ?defaultValue,
+  };
+
+  static Map<String, Object?> _mapArg(
+    final Map<String, Object?> args,
+    final String key,
+  ) {
+    final value = _findArg(args, key, alias: key);
+    if (value is Map<String, Object?>) {
+      return value;
+    }
+    if (value is Map) {
+      return value.cast<String, Object?>();
+    }
+    if (value == null) {
+      return const <String, Object?>{};
+    }
+
+    throw ArgumentError(
+      'Invalid type for "$key": expected object '
+      '(schema path: \$.inputSchema.properties.$key)',
+    );
+  }
+
+  static int? _nullableIntArg(
+    final Map<String, Object?> args,
+    final String key, {
+    final String? alias,
+  }) {
+    final value = _findArg(args, key, alias: alias);
+    if (value == null) {
+      return null;
+    }
+    return _strictIntArg(value: value, key: key);
+  }
+
+  static String? _nullableStringArg(
+    final Map<String, Object?> args,
+    final String key, {
+    final String? alias,
+  }) {
+    final value = _findArg(args, key, alias: alias);
+    if (value == null) {
+      return null;
+    }
+    if (value is! String) {
+      throw ArgumentError(
+        'Invalid type for "$key": expected string '
+        '(schema path: \$.inputSchema.properties.$key)',
+      );
+    }
+    return value.isEmpty ? null : value;
+  }
+
   static Map<String, Object?> _objectSchema({
     final Map<String, Object?> properties = const <String, Object?>{},
     final List<String> required = const <String>[],
@@ -1255,6 +1390,48 @@ final class CommandCatalog {
     'additionalProperties': additionalProperties,
   };
 
+  static CoreConnectionMode _parseConnectionMode(final String mode) =>
+      switch (mode) {
+        'auto' => CoreConnectionMode.auto,
+        'manual' => CoreConnectionMode.manual,
+        'uri' => CoreConnectionMode.uri,
+        _ => throw ArgumentError(
+          'Invalid value for "mode": "$mode" '
+          r'(schema path: $.inputSchema.properties.mode)',
+        ),
+      };
+
+  static int _strictIntArg({
+    required final Object value,
+    required final String key,
+  }) => switch (value) {
+    final int v => v,
+    final num v when v == v.roundToDouble() => v.toInt(),
+    _ => throw ArgumentError(
+      'Invalid type for "$key": expected integer '
+      '(schema path: \$.inputSchema.properties.$key)',
+    ),
+  };
+
+  static String _stringArg(
+    final Map<String, Object?> args,
+    final String key, {
+    required final String fallback,
+    final String? alias,
+  }) {
+    final value = _findArg(args, key, alias: alias);
+    if (value == null) {
+      return fallback;
+    }
+    if (value is! String) {
+      throw ArgumentError(
+        'Invalid type for "$key": expected string '
+        '(schema path: \$.inputSchema.properties.$key)',
+      );
+    }
+    return value.isEmpty ? fallback : value;
+  }
+
   static Map<String, Object?> _stringSchema({
     final String? description,
     final List<String>? enumValues,
@@ -1264,25 +1441,42 @@ final class CommandCatalog {
     final type = nullable ? const <String>['string', 'null'] : 'string';
     return {
       'type': type,
-      if (description != null) 'description': description,
-      if (enumValues != null) 'enum': enumValues,
-      if (defaultValue != null) 'default': defaultValue,
+      'description': ?description,
+      'enum': ?enumValues,
+      'default': ?defaultValue,
     };
   }
 
-  static Map<String, Object?> _intSchema({final Object? defaultValue}) => {
-    'type': 'integer',
-    if (defaultValue != null) 'default': defaultValue,
-  };
+  static String _toCamelCase(final String value) {
+    if (!value.contains('-') && !value.contains('_')) {
+      return value;
+    }
 
-  static Map<String, Object?> _boolSchema({final Object? defaultValue}) => {
-    'type': 'boolean',
-    if (defaultValue != null) 'default': defaultValue,
-  };
+    final parts = value.split(RegExp('[-_]'));
+    if (parts.isEmpty) {
+      return value;
+    }
 
-  static Map<String, Object?> _arraySchema({
-    required final Map<String, Object?> items,
-  }) => {'type': 'array', 'items': items};
+    return [
+      parts.first,
+      ...parts.skip(1).map((final part) {
+        if (part.isEmpty) {
+          return '';
+        }
+        return '${part[0].toUpperCase()}${part.substring(1)}';
+      }),
+    ].join();
+  }
+
+  static String _toKebabCase(final String value) {
+    final normalized = value
+        .replaceAllMapped(
+          RegExp('([a-z0-9])([A-Z])'),
+          (final match) => '${match.group(1)}-${match.group(2)}',
+        )
+        .replaceAll('_', '-');
+    return normalized.toLowerCase();
+  }
 
   static void _validateUnknownKeys({
     required final CommandSpec spec,
@@ -1324,199 +1518,36 @@ final class CommandCatalog {
       );
     }
   }
+}
 
-  static Map<String, Object?> _asSchemaProperties(final Object? value) {
-    if (value is Map<String, Object?>) {
-      return value;
-    }
-    if (value is Map) {
-      return value.cast<String, Object?>();
-    }
-    return const <String, Object?>{};
-  }
+final class CommandSpec {
+  const CommandSpec({
+    required this.name,
+    required this.description,
+    required this.inputSchema,
+    required this.outputSchema,
+    required this.requiresVm,
+    required this.supportsWatch,
+    required this.mcpExposed,
+    required this.build,
+  });
 
-  static Map<String, Object?> _mapArg(
-    final Map<String, Object?> args,
-    final String key,
-  ) {
-    final value = _findArg(args, key, alias: key);
-    if (value is Map<String, Object?>) {
-      return value;
-    }
-    if (value is Map) {
-      return value.cast<String, Object?>();
-    }
-    if (value == null) {
-      return const <String, Object?>{};
-    }
+  final String name;
+  final String description;
+  final Map<String, Object?> inputSchema;
+  final Map<String, Object?> outputSchema;
+  final bool requiresVm;
+  final bool supportsWatch;
+  final bool mcpExposed;
+  final CoreCommandFactory build;
 
-    throw ArgumentError(
-      'Invalid type for "$key": expected object '
-      '(schema path: \$.inputSchema.properties.$key)',
-    );
-  }
-
-  static String _stringArg(
-    final Map<String, Object?> args,
-    final String key, {
-    final String? alias,
-    required final String fallback,
-  }) {
-    final value = _findArg(args, key, alias: alias);
-    if (value == null) {
-      return fallback;
-    }
-    if (value is! String) {
-      throw ArgumentError(
-        'Invalid type for "$key": expected string '
-        '(schema path: \$.inputSchema.properties.$key)',
-      );
-    }
-    return value.isEmpty ? fallback : value;
-  }
-
-  static String? _nullableStringArg(
-    final Map<String, Object?> args,
-    final String key, {
-    final String? alias,
-  }) {
-    final value = _findArg(args, key, alias: alias);
-    if (value == null) {
-      return null;
-    }
-    if (value is! String) {
-      throw ArgumentError(
-        'Invalid type for "$key": expected string '
-        '(schema path: \$.inputSchema.properties.$key)',
-      );
-    }
-    return value.isEmpty ? null : value;
-  }
-
-  static int _intArg(
-    final Map<String, Object?> args,
-    final String key, {
-    final String? alias,
-    required final int fallback,
-  }) {
-    final value = _findArg(args, key, alias: alias);
-    if (value == null) {
-      return fallback;
-    }
-    return _strictIntArg(value: value, key: key);
-  }
-
-  static int? _nullableIntArg(
-    final Map<String, Object?> args,
-    final String key, {
-    final String? alias,
-  }) {
-    final value = _findArg(args, key, alias: alias);
-    if (value == null) {
-      return null;
-    }
-    return _strictIntArg(value: value, key: key);
-  }
-
-  static bool _boolArg(
-    final Map<String, Object?> args,
-    final String key, {
-    final String? alias,
-    required final bool fallback,
-  }) {
-    final value = _findArg(args, key, alias: alias);
-    if (value == null) {
-      return fallback;
-    }
-    if (value is bool) {
-      return value;
-    }
-    throw ArgumentError(
-      'Invalid type for "$key": expected boolean '
-      '(schema path: \$.inputSchema.properties.$key)',
-    );
-  }
-
-  static int _strictIntArg({
-    required final Object value,
-    required final String key,
-  }) {
-    return switch (value) {
-      final int v => v,
-      final num v when v == v.roundToDouble() => v.toInt(),
-      _ => throw ArgumentError(
-        'Invalid type for "$key": expected integer '
-        '(schema path: \$.inputSchema.properties.$key)',
-      ),
-    };
-  }
-
-  static Object? _findArg(
-    final Map<String, Object?> args,
-    final String key, {
-    final String? alias,
-  }) {
-    if (args.containsKey(key)) {
-      return args[key];
-    }
-    final nextAlias = alias;
-    if (nextAlias != null && args.containsKey(nextAlias)) {
-      return args[nextAlias];
-    }
-
-    final kebab = _toKebabCase(key);
-    if (args.containsKey(kebab)) {
-      return args[kebab];
-    }
-
-    final camel = _toCamelCase(key);
-    if (args.containsKey(camel)) {
-      return args[camel];
-    }
-
-    return null;
-  }
-
-  static String _toCamelCase(final String value) {
-    if (!value.contains('-') && !value.contains('_')) {
-      return value;
-    }
-
-    final parts = value.split(RegExp('[-_]'));
-    if (parts.isEmpty) {
-      return value;
-    }
-
-    return [
-      parts.first,
-      ...parts.skip(1).map((final part) {
-        if (part.isEmpty) {
-          return '';
-        }
-        return '${part[0].toUpperCase()}${part.substring(1)}';
-      }),
-    ].join();
-  }
-
-  static String _toKebabCase(final String value) {
-    final normalized = value
-        .replaceAllMapped(
-          RegExp(r'([a-z0-9])([A-Z])'),
-          (final match) => '${match.group(1)}-${match.group(2)}',
-        )
-        .replaceAll('_', '-');
-    return normalized.toLowerCase();
-  }
-
-  static CoreConnectionMode _parseConnectionMode(final String mode) {
-    return switch (mode) {
-      'auto' => CoreConnectionMode.auto,
-      'manual' => CoreConnectionMode.manual,
-      'uri' => CoreConnectionMode.uri,
-      _ => throw ArgumentError(
-        'Invalid value for "mode": "$mode" '
-        '(schema path: \$.inputSchema.properties.mode)',
-      ),
-    };
-  }
+  Map<String, Object?> toJson() => {
+    'name': name,
+    'description': description,
+    'inputSchema': inputSchema,
+    'outputSchema': outputSchema,
+    'requiresVm': requiresVm,
+    'supportsWatch': supportsWatch,
+    'mcpExposed': mcpExposed,
+  };
 }

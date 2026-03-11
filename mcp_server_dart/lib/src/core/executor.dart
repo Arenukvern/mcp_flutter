@@ -4,8 +4,6 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter_live_edit_agent/flutter_live_edit_agent.dart';
-import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 import 'package:flutter_inspector_mcp_server/src/core/commands.dart';
 import 'package:flutter_inspector_mcp_server/src/core/connection_context.dart';
 import 'package:flutter_inspector_mcp_server/src/core/core_types.dart';
@@ -16,15 +14,33 @@ import 'package:flutter_inspector_mcp_server/src/core/error_codes.dart';
 import 'package:flutter_inspector_mcp_server/src/core/error_summary_provider.dart';
 import 'package:flutter_inspector_mcp_server/src/core/results.dart';
 import 'package:flutter_inspector_mcp_server/src/core/runtime_version.dart';
-import 'package:flutter_inspector_mcp_server/src/core/services/desktop_window_screenshot.dart';
 import 'package:flutter_inspector_mcp_server/src/core/services/core_image_file_saver.dart';
 import 'package:flutter_inspector_mcp_server/src/core/services/core_port_scanner.dart';
+import 'package:flutter_inspector_mcp_server/src/core/services/desktop_window_screenshot.dart';
 import 'package:flutter_inspector_mcp_server/src/core/session_manager.dart';
 import 'package:flutter_inspector_mcp_server/src/core/visual_capture.dart';
 import 'package:flutter_inspector_mcp_server/src/mixins/mcp_toolkit_consts.dart';
+import 'package:flutter_live_edit_agent/flutter_live_edit_agent.dart';
+import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
 import 'package:is_dart_empty_or_not/is_dart_empty_or_not.dart';
 import 'package:vm_service/vm_service.dart';
+
+Future<void> _defaultActivateMacOsTargetPid(final int pid) async {
+  try {
+    await Process.run('swift', <String>[
+      '-e',
+      'import AppKit; import Foundation; '
+          'let pid = pid_t($pid); '
+          'guard let app = NSRunningApplication(processIdentifier: pid) '
+          'else { Foundation.exit(2) }; '
+          'let activated = app.activate(options: [.activateAllWindows, .activateIgnoringOtherApps]); '
+          'Foundation.exit(activated ? 0 : 1)',
+    ]);
+  } on Exception {
+    // Best effort only. Capture still runs even if activation fails.
+  }
+}
 
 /// Single command dispatch interface shared by CLI and MCP wrapper.
 abstract interface class CoreCommandExecutor {
@@ -37,13 +53,13 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     required this.portScanner,
     required this.imageFileSaver,
     required this.configuration,
-    CoreDynamicGateway? dynamicGateway,
-    DesktopWindowScreenshotService? desktopWindowScreenshotService,
+    final CoreDynamicGateway? dynamicGateway,
+    final DesktopWindowScreenshotService? desktopWindowScreenshotService,
     this.sessionManager,
-    ErrorCauseAnalyzer? errorCauseAnalyzer,
-    Map<String, ErrorSummaryProvider>? summaryProviders,
-    Future<void> Function(int pid)? activateMacOsTargetPid,
-    LiveEditAgentService? liveEditAgentService,
+    final ErrorCauseAnalyzer? errorCauseAnalyzer,
+    final Map<String, ErrorSummaryProvider>? summaryProviders,
+    final Future<void> Function(int pid)? activateMacOsTargetPid,
+    final LiveEditAgentService? liveEditAgentService,
   }) : _dynamicGateway = dynamicGateway,
        _desktopWindowScreenshotService =
            desktopWindowScreenshotService ??
@@ -74,22 +90,12 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
   CoreDynamicGateway? _dynamicGateway;
   final Map<String, String> _liveEditSessionModes = <String, String>{};
 
-  void setDynamicGateway(final CoreDynamicGateway? gateway) {
-    _dynamicGateway = gateway;
-  }
-
   Iterable<VisualCapturePlatformAdapter> get visualCaptureAdapters sync* {
     if (_desktopWindowScreenshotService
         case final VisualCapturePlatformAdapter adapter) {
       yield adapter;
     }
   }
-
-  VisualCaptureBroker _visualCaptureBroker() => VisualCaptureBroker(
-    configuration: configuration,
-    dynamicGateway: _dynamicGateway,
-    adapters: visualCaptureAdapters,
-  );
 
   @override
   Future<CoreResult> execute(final CoreCommand command) async {
@@ -112,78 +118,113 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
   }
 
-  Future<CoreResult> _dispatch(final CoreCommand command) async {
-    return switch (command) {
-      ConnectCommand() => _connect(command),
-      SessionStartCommand() => _sessionStart(command),
-      SessionExecCommand() => _sessionExec(command),
-      SessionEndCommand() => _sessionEnd(command),
-      DiagnoseCommand() => _diagnose(command),
-      WatchCommand() => _watchSnapshot(command),
-      ExplainErrorsCommand() => _explainErrors(command),
-      StatusCommand() => Future.value(_status()),
-      DiscoverDebugAppsCommand() => _discoverDebugApps(),
-      GetVmCommand() => _getVm(),
-      GetExtensionRpcsCommand() => _getExtensionRpcs(),
-      HotReloadFlutterCommand() => _hotReload(command),
-      HotRestartFlutterCommand() => _hotRestart(),
-      GetActivePortsCommand() => _getActivePorts(),
-      GetAppErrorsCommand() => _getAppErrors(command),
-      GetScreenshotsCommand() => _getScreenshots(command),
-      GetViewDetailsCommand() => _getViewDetails(),
-      InspectWidgetAtPointCommand() => _inspectWidgetAtPoint(command),
-      CaptureUiSnapshotCommand() => _captureUiSnapshot(command),
-      DebugDumpLayerTreeCommand() => _debugDumpLayerTree(),
-      DebugDumpSemanticsTreeCommand() => _debugDumpSemanticsTree(),
-      DebugDumpRenderTreeCommand() => _debugDumpRenderTree(),
-      DebugDumpFocusTreeCommand() => _debugDumpFocusTree(),
-      ListClientToolsAndResourcesCommand() => _listClientToolsAndResources(),
-      RunClientToolCommand() => _runClientTool(command),
-      RunClientResourceCommand() => _runClientResource(command),
-      LiveEditStartSessionCommand() => _liveEditStartSession(command),
-      LiveEditPrepareSessionCommand() => _liveEditPrepareSession(command),
-      LiveEditSetOverlayCommand() => _liveEditSetOverlay(command),
-      LiveEditGetTreeCommand() => _liveEditGetTree(command),
-      LiveEditSelectAtPointCommand() => _liveEditSelectAtPoint(command),
-      LiveEditGetSelectionCommand() => _liveEditGetSelection(command),
-      LiveEditGetCapabilitiesCommand() => _liveEditGetCapabilities(command),
-      LiveEditGetSelectionCandidatesCommand() =>
-        _liveEditGetSelectionCandidates(command),
-      LiveEditSetActiveSelectionCommand() =>
-        _liveEditSetActiveSelection(command),
-      LiveEditGetPropertyPanelCommand() => _liveEditGetPropertyPanel(command),
-      LiveEditSetEditModeCommand() => _liveEditSetEditMode(command),
-      LiveEditGetPreviewStateCommand() => _liveEditGetPreviewState(command),
-      LiveEditUpdateDraftCommand() => _liveEditUpdateDraft(command),
-      LiveEditGetDraftCommand() => _liveEditGetDraft(command),
-      LiveEditDiscardDraftCommand() => _liveEditDiscardDraft(command),
-      LiveEditEndSessionCommand() => _liveEditEndSession(command),
-      LiveEditListAgentBackendsCommand() => _liveEditListAgentBackends(),
-      LiveEditGetAgentBackendCommand() => _liveEditGetAgentBackend(command),
-      LiveEditSetAgentBackendCommand() => _liveEditSetAgentBackend(command),
-      LiveEditResolveDraftCommand() => _liveEditResolveDraft(command),
-      LiveEditAcceptResolutionCommand() => _liveEditAcceptResolution(command),
-      LiveEditRejectResolutionCommand() => _liveEditRejectResolution(command),
-      DynamicRegistryStatsCommand() => _dynamicRegistryStats(command),
-    };
+  void setDynamicGateway(final CoreDynamicGateway? gateway) {
+    _dynamicGateway = gateway;
   }
 
-  CoreResult _withMeta(
-    final CoreResult result,
-    final int durationMs,
-    final String commandName,
+  List<Object?> _asObjectList(final Object? value) {
+    if (value is List<Object?>) {
+      return value;
+    }
+    if (value is List) {
+      return value.cast<Object?>();
+    }
+    return const <Object?>[];
+  }
+
+  List<Map<String, Object?>> _buildImageSummaries(
+    final Map<String, Object?> screenshotData,
   ) {
-    final nextMeta = <String, Object?>{
-      ...result.meta,
-      'schemaVersion': kCoreEnvelopeSchemaVersion,
-      'command': commandName,
-      'timestamp': DateTime.now().toUtc().toIso8601String(),
-      'durationMs': durationMs,
-      'endpoint': connectionContext.activeEndpoint?.display,
-      'mode': connectionContext.lastMode.name,
-      'selectionDiagnostics': connectionContext.lastSelectionDiagnostics,
-    };
-    return result.withMeta(nextMeta);
+    final summaries = <Map<String, Object?>>[];
+
+    final images = jsonDecodeListAs<String>(screenshotData['images']);
+    for (var i = 0; i < images.length; i++) {
+      final image = images[i];
+      summaries.add({
+        'id': 'image_${i + 1}',
+        'source': 'inline_base64',
+        'hash': _stableStringHash(image),
+      });
+    }
+
+    final fileUrls = jsonDecodeListAs<String>(screenshotData['fileUrls']);
+    for (var i = 0; i < fileUrls.length; i++) {
+      final url = fileUrls[i];
+      summaries.add({
+        'id': 'image_${images.length + i + 1}',
+        'source': 'file_url',
+        'fileUrl': url,
+        'hash': _stableStringHash(url),
+      });
+    }
+
+    return summaries;
+  }
+
+  Future<CoreResult> _captureUiSnapshot(
+    final CaptureUiSnapshotCommand command,
+  ) async {
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) return ensureFailure;
+
+    final screenshotResult = await _getScreenshots(
+      GetScreenshotsCommand(
+        compress: command.compress,
+        mode: command.screenshotMode,
+        permissionPolicy: command.permissionPolicy,
+      ),
+    );
+    if (!screenshotResult.ok) {
+      return screenshotResult;
+    }
+
+    final screenshotData = _map(screenshotResult.data);
+    final imageSummaries = _buildImageSummaries(screenshotData);
+
+    Object? viewDetails;
+    if (command.includeViewDetails) {
+      final viewResult = await _getViewDetails();
+      if (!viewResult.ok) {
+        return viewResult;
+      }
+      viewDetails = viewResult.data;
+    }
+
+    Object? appErrors;
+    if (command.includeErrors) {
+      final errorResult = await _getAppErrors(
+        GetAppErrorsCommand(count: command.errorsCount),
+      );
+      if (!errorResult.ok) {
+        return errorResult;
+      }
+      appErrors = errorResult.data;
+    }
+
+    return CoreResult.success(
+      data: {
+        'message': 'Captured UI snapshot bundle.',
+        'capturedAt': DateTime.now().toUtc().toIso8601String(),
+        'screenshots': screenshotData,
+        'imageSummaries': imageSummaries,
+        'viewDetails': ?viewDetails,
+        'appErrors': ?appErrors,
+        'summary': {
+          'imageCount': imageSummaries.length,
+          'includeViewDetails': command.includeViewDetails,
+          'includeErrors': command.includeErrors,
+          'errorsCount': command.errorsCount,
+          'compress': command.compress,
+          'requestedMode': command.screenshotMode.wireName,
+          'actualMode':
+              screenshotData['actualMode'] ?? screenshotData['captureMode'],
+          'permissionStatus':
+              _map(screenshotData['permission'])['status'] ??
+              PermissionStatus.unsupported.wireName,
+          'fallbackReason': screenshotData['fallbackReason'],
+        },
+      },
+    );
   }
 
   Future<CoreResult> _connect(final ConnectCommand command) async {
@@ -219,64 +260,76 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
   }
 
-  Future<CoreResult> _sessionStart(final SessionStartCommand command) async {
-    final manager = sessionManager;
-    if (manager == null) {
-      return CoreResult.failure(
-        code: CoreErrorCode.sessionManagerNotConfigured,
-        message: 'Session manager not configured for executor',
-      );
+  Future<int?> _connectedVmPid() async {
+    final vmService = connectionContext.vmService;
+    if (vmService == null) {
+      return null;
     }
-
-    return manager.startSession(command);
+    try {
+      final vm = await vmService.getVM();
+      final pid = vm.pid;
+      if (pid is int && pid > 0) {
+        return pid;
+      }
+      return int.tryParse('$pid');
+    } on Object {
+      return null;
+    }
   }
 
-  Future<CoreResult> _sessionExec(final SessionExecCommand command) async {
-    final manager = sessionManager;
-    if (manager == null) {
+  Future<CoreResult> _debugDump(final String extensionName) async {
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) return ensureFailure;
+
+    try {
+      final response = await connectionContext.callFlutterExtension(
+        extensionName,
+        args: const <String, dynamic>{},
+      );
+      return CoreResult.success(
+        data: response.json ?? const <String, Object?>{},
+      );
+    } on Exception catch (e) {
       return CoreResult.failure(
-        code: CoreErrorCode.sessionManagerNotConfigured,
-        message: 'Session manager not configured for executor',
+        code: CoreErrorCode.debugDumpFailed,
+        message: 'Debug dump failed: $e',
       );
     }
-
-    final attach = await manager.attachSession(sessionId: command.sessionId);
-    if (!attach.ok) {
-      return attach;
-    }
-
-    if (_isSessionControlCommand(command.command)) {
-      return CoreResult.failure(
-        code: CoreErrorCode.invalidCommand,
-        message:
-            'session_exec cannot execute session control, watch, or diagnose commands',
-      );
-    }
-
-    final sessionId = _extractSessionId(attach);
-    final innerResult = await _dispatch(command.command);
-    await manager.markSessionUsed(
-      sessionId,
-      endpointOverride: connectionContext.activeEndpoint?.display,
-    );
-
-    return innerResult.withMeta({
-      ...innerResult.meta,
-      'sessionId': sessionId,
-      'sessionCommand': command.command.name,
-    });
   }
 
-  Future<CoreResult> _sessionEnd(final SessionEndCommand command) async {
-    final manager = sessionManager;
-    if (manager == null) {
-      return CoreResult.failure(
-        code: CoreErrorCode.sessionManagerNotConfigured,
-        message: 'Session manager not configured for executor',
-      );
-    }
+  Future<CoreResult> _debugDumpFocusTree() async =>
+      _debugDump('ext.flutter.debugDumpFocusTree');
 
-    return manager.endSession(command.sessionId);
+  Future<CoreResult> _debugDumpLayerTree() async =>
+      _debugDump('ext.flutter.debugDumpLayerTree');
+
+  Future<CoreResult> _debugDumpRenderTree() async =>
+      _debugDump('ext.flutter.debugDumpRenderTree');
+
+  Future<CoreResult> _debugDumpSemanticsTree() async =>
+      _debugDump('ext.flutter.debugDumpSemanticsTreeInTraversalOrder');
+
+  List<LiveEditDraftChange> _decodeDraftChanges(final Object? value) {
+    if (value is! List) {
+      return const <LiveEditDraftChange>[];
+    }
+    return value
+        .whereType<Map>()
+        .map(
+          (final item) =>
+              LiveEditDraftChange.fromJson(item.cast<String, Object?>()),
+        )
+        .toList(growable: false);
+  }
+
+  LiveEditSelection? _decodeSelection(final Object? value) {
+    if (value is Map<String, Object?>) {
+      return LiveEditSelection.fromJson(value);
+    }
+    if (value is Map) {
+      return LiveEditSelection.fromJson(value.cast<String, Object?>());
+    }
+    return null;
   }
 
   Future<CoreResult> _diagnose(final DiagnoseCommand command) async {
@@ -294,31 +347,143 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
   }
 
-  Future<CoreResult> _watchSnapshot(final WatchCommand command) async {
-    if (_isSessionControlCommand(command.command)) {
+  Future<CoreResult> _discoverDebugApps() async {
+    try {
+      final targets = await connectionContext.discoverTargets();
+      final ports = targets.map((final target) => target.port).toSet().toList()
+        ..sort();
+      return CoreResult.success(
+        data: {
+          'targets': targets.map((final target) => target.toJson()).toList(),
+          'ports': ports,
+          'count': targets.length,
+        },
+      );
+    } on Exception catch (e) {
       return CoreResult.failure(
-        code: CoreErrorCode.invalidCommand,
-        message:
-            'watch command cannot target session control, diagnose, or watch commands',
+        code: CoreErrorCode.discoverDebugAppsFailed,
+        message: 'Failed to discover debug apps: $e',
+      );
+    }
+  }
+
+  Future<CoreResult> _dispatch(final CoreCommand command) async =>
+      switch (command) {
+        ConnectCommand() => _connect(command),
+        SessionStartCommand() => _sessionStart(command),
+        SessionExecCommand() => _sessionExec(command),
+        SessionEndCommand() => _sessionEnd(command),
+        DiagnoseCommand() => _diagnose(command),
+        WatchCommand() => _watchSnapshot(command),
+        ExplainErrorsCommand() => _explainErrors(command),
+        StatusCommand() => Future.value(_status()),
+        DiscoverDebugAppsCommand() => _discoverDebugApps(),
+        GetVmCommand() => _getVm(),
+        GetExtensionRpcsCommand() => _getExtensionRpcs(),
+        HotReloadFlutterCommand() => _hotReload(command),
+        HotRestartFlutterCommand() => _hotRestart(),
+        GetActivePortsCommand() => _getActivePorts(),
+        GetAppErrorsCommand() => _getAppErrors(command),
+        GetScreenshotsCommand() => _getScreenshots(command),
+        GetViewDetailsCommand() => _getViewDetails(),
+        InspectWidgetAtPointCommand() => _inspectWidgetAtPoint(command),
+        CaptureUiSnapshotCommand() => _captureUiSnapshot(command),
+        DebugDumpLayerTreeCommand() => _debugDumpLayerTree(),
+        DebugDumpSemanticsTreeCommand() => _debugDumpSemanticsTree(),
+        DebugDumpRenderTreeCommand() => _debugDumpRenderTree(),
+        DebugDumpFocusTreeCommand() => _debugDumpFocusTree(),
+        ListClientToolsAndResourcesCommand() => _listClientToolsAndResources(),
+        RunClientToolCommand() => _runClientTool(command),
+        RunClientResourceCommand() => _runClientResource(command),
+        LiveEditStartSessionCommand() => _liveEditStartSession(command),
+        LiveEditPrepareSessionCommand() => _liveEditPrepareSession(command),
+        LiveEditSetOverlayCommand() => _liveEditSetOverlay(command),
+        LiveEditGetTreeCommand() => _liveEditGetTree(command),
+        LiveEditSelectAtPointCommand() => _liveEditSelectAtPoint(command),
+        LiveEditGetSelectionCommand() => _liveEditGetSelection(command),
+        LiveEditGetCapabilitiesCommand() => _liveEditGetCapabilities(command),
+        LiveEditGetSelectionCandidatesCommand() =>
+          _liveEditGetSelectionCandidates(command),
+        LiveEditSetActiveSelectionCommand() => _liveEditSetActiveSelection(
+          command,
+        ),
+        LiveEditGetPropertyPanelCommand() => _liveEditGetPropertyPanel(command),
+        LiveEditSetEditModeCommand() => _liveEditSetEditMode(command),
+        LiveEditGetPreviewStateCommand() => _liveEditGetPreviewState(command),
+        LiveEditUpdateDraftCommand() => _liveEditUpdateDraft(command),
+        LiveEditGetDraftCommand() => _liveEditGetDraft(command),
+        LiveEditDiscardDraftCommand() => _liveEditDiscardDraft(command),
+        LiveEditEndSessionCommand() => _liveEditEndSession(command),
+        LiveEditListAgentBackendsCommand() => _liveEditListAgentBackends(),
+        LiveEditGetAgentBackendCommand() => _liveEditGetAgentBackend(command),
+        LiveEditSetAgentBackendCommand() => _liveEditSetAgentBackend(command),
+        LiveEditResolveDraftCommand() => _liveEditResolveDraft(command),
+        LiveEditApplyDraftCommand() => _liveEditApplyDraft(command),
+        LiveEditAcceptResolutionCommand() => _liveEditAcceptResolution(command),
+        LiveEditRejectResolutionCommand() => _liveEditRejectResolution(command),
+        DynamicRegistryStatsCommand() => _dynamicRegistryStats(command),
+      };
+
+  Future<CoreResult> _dynamicRegistryStats(
+    final DynamicRegistryStatsCommand command,
+  ) async {
+    if (!configuration.dynamicRegistrySupported) {
+      return CoreResult.failure(
+        code: CoreErrorCode.dynamicRegistryDisabled,
+        message: 'Dynamic registry support is disabled',
       );
     }
 
-    final manager = sessionManager;
-    if (command.sessionId != null && manager != null) {
-      final attach = await manager.attachSession(sessionId: command.sessionId);
-      if (!attach.ok) {
-        return attach;
-      }
+    final gateway =
+        _dynamicGateway ??
+        VmExtensionDynamicGateway(connectionContext: connectionContext);
+
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) return ensureFailure;
+
+    return gateway.dynamicRegistryStats(
+      includeAppDetails: command.includeAppDetails,
+    );
+  }
+
+  Map<String, Object?> _enrichErrorWithTopFrame(
+    final Map<String, Object?> error,
+  ) {
+    final next = <String, Object?>{...error};
+    final stackTrace = '${next['stackTrace'] ?? ''}'.trim();
+    if (stackTrace.isEmpty) {
+      return next;
     }
 
-    final snapshotResult = await _dispatch(command.command);
-    return CoreResult.success(
-      data: {
-        'event': 'command_result',
-        'command': command.command.name,
-        'result': snapshotResult.toEnvelopeJson(),
-      },
-      meta: {if (command.sessionId != null) 'sessionId': command.sessionId},
+    final frames = _parseStackFrames(stackTrace);
+    if (frames.isEmpty) {
+      return next;
+    }
+
+    next['topFrame'] = frames.first;
+    next['frames'] = frames;
+    return next;
+  }
+
+  Future<CoreResult> _ensureLiveEditSessionId(final String? sessionId) async {
+    if (_hasText(sessionId)) {
+      return CoreResult.success(
+        data: <String, Object?>{'sessionId': sessionId!.trim()},
+      );
+    }
+    return _liveEditStartSession(const LiveEditStartSessionCommand());
+  }
+
+  Future<CoreResult?> _ensureVmConnected() async {
+    final ensure = await connectionContext.ensureConnectedWithPolicy();
+    if (ensure.connected) {
+      return null;
+    }
+
+    return CoreResult.failure(
+      code: ensure.code ?? CoreErrorCode.vmNotConnected,
+      message: ensure.message ?? 'VM service not connected',
+      details: ensure.details,
     );
   }
 
@@ -372,121 +537,23 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
   }
 
-  CoreResult _status() => CoreResult.success(
-    data: {
-      'connected': connectionContext.isConnected,
-      'activeEndpoint': connectionContext.activeEndpoint?.display,
-      'stickyEndpoint': connectionContext.stickyEndpoint?.display,
-      'mode': connectionContext.lastMode.name,
-      'dynamicRegistrySupported': configuration.dynamicRegistrySupported,
-      'sessionsEnabled': sessionManager != null,
-    },
-  );
-
-  Future<CoreResult> _discoverDebugApps() async {
-    try {
-      final targets = await connectionContext.discoverTargets();
-      final ports = targets.map((final target) => target.port).toSet().toList()
-        ..sort();
-      return CoreResult.success(
-        data: {
-          'targets': targets.map((final target) => target.toJson()).toList(),
-          'ports': ports,
-          'count': targets.length,
-        },
-      );
-    } on Exception catch (e) {
-      return CoreResult.failure(
-        code: CoreErrorCode.discoverDebugAppsFailed,
-        message: 'Failed to discover debug apps: $e',
-      );
+  String? _extractSessionId(final CoreResult result) {
+    final metaSession = result.meta['sessionId'];
+    if (metaSession is String && metaSession.isNotEmpty) {
+      return metaSession;
     }
+
+    final data = result.data;
+    if (data is Map && data['sessionId'] is String) {
+      final sessionId = data['sessionId'] as String;
+      if (sessionId.isNotEmpty) return sessionId;
+    }
+
+    return null;
   }
 
-  Future<CoreResult> _getVm() async {
-    final ensureFailure = await _ensureVmConnected();
-    if (ensureFailure != null) return ensureFailure;
-
-    try {
-      final vm = await connectionContext.vmService!.getVM();
-      return CoreResult.success(data: vm.toJson());
-    } on Exception catch (e) {
-      return CoreResult.failure(
-        code: CoreErrorCode.getVmFailed,
-        message: 'Failed to get VM info: $e',
-      );
-    }
-  }
-
-  Future<CoreResult> _getExtensionRpcs() async {
-    final ensureFailure = await _ensureVmConnected();
-    if (ensureFailure != null) return ensureFailure;
-
-    try {
-      final vm = await connectionContext.vmService!.getVM();
-      final allExtensions = <String>[];
-
-      for (final isolateRef in vm.isolates ?? <IsolateRef>[]) {
-        final isolate = await connectionContext.vmService!.getIsolate(
-          isolateRef.id!,
-        );
-        if (isolate.extensionRPCs == null) continue;
-        allExtensions.addAll(isolate.extensionRPCs!);
-      }
-
-      final uniqueExtensions = allExtensions.toSet().toList()..sort();
-      return CoreResult.success(data: uniqueExtensions);
-    } on Exception catch (e) {
-      return CoreResult.failure(
-        code: CoreErrorCode.getExtensionRpcsFailed,
-        message: 'Failed to get extension RPCs: $e',
-      );
-    }
-  }
-
-  Future<CoreResult> _hotReload(final HotReloadFlutterCommand command) async {
-    final ensureFailure = await _ensureVmConnected();
-    if (ensureFailure != null) return ensureFailure;
-
-    final result = await connectionContext.hotReload(force: command.force);
-    if (result == null) {
-      return CoreResult.failure(
-        code: CoreErrorCode.hotReloadFailed,
-        message: 'Hot reload failed: null response',
-      );
-    }
-
-    if (result.containsKey('error')) {
-      return CoreResult.failure(
-        code: CoreErrorCode.hotReloadFailed,
-        message: '${result['error']}',
-      );
-    }
-
-    return CoreResult.success(data: result);
-  }
-
-  Future<CoreResult> _hotRestart() async {
-    final ensureFailure = await _ensureVmConnected();
-    if (ensureFailure != null) return ensureFailure;
-
-    final result = await connectionContext.hotRestart();
-    if (result == null) {
-      return CoreResult.failure(
-        code: CoreErrorCode.hotRestartFailed,
-        message: 'Hot restart failed: null response',
-      );
-    }
-
-    if (result.containsKey('error')) {
-      return CoreResult.failure(
-        code: CoreErrorCode.hotRestartFailed,
-        message: '${result['error']}',
-      );
-    }
-
-    return CoreResult.success(data: result);
-  }
+  String? _firstNonEmpty(final String? first, final String? second) =>
+      _stringOrNull(first) ?? _stringOrNull(second);
 
   Future<CoreResult> _getActivePorts() async {
     try {
@@ -523,6 +590,32 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       return CoreResult.failure(
         code: CoreErrorCode.getAppErrorsFailed,
         message: 'Failed to get app errors: $e',
+      );
+    }
+  }
+
+  Future<CoreResult> _getExtensionRpcs() async {
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) return ensureFailure;
+
+    try {
+      final vm = await connectionContext.vmService!.getVM();
+      final allExtensions = <String>[];
+
+      for (final isolateRef in vm.isolates ?? <IsolateRef>[]) {
+        final isolate = await connectionContext.vmService!.getIsolate(
+          isolateRef.id!,
+        );
+        if (isolate.extensionRPCs == null) continue;
+        allExtensions.addAll(isolate.extensionRPCs!);
+      }
+
+      final uniqueExtensions = allExtensions.toSet().toList()..sort();
+      return CoreResult.success(data: uniqueExtensions);
+    } on Exception catch (e) {
+      return CoreResult.failure(
+        code: CoreErrorCode.getExtensionRpcsFailed,
+        message: 'Failed to get extension RPCs: $e',
       );
     }
   }
@@ -637,6 +730,67 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
   }
 
+  Future<CoreResult> _getVm() async {
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) return ensureFailure;
+
+    try {
+      final vm = await connectionContext.vmService!.getVM();
+      return CoreResult.success(data: vm.toJson());
+    } on Exception catch (e) {
+      return CoreResult.failure(
+        code: CoreErrorCode.getVmFailed,
+        message: 'Failed to get VM info: $e',
+      );
+    }
+  }
+
+  bool _hasText(final Object? value) => _stringOrNull(value) != null;
+
+  Future<CoreResult> _hotReload(final HotReloadFlutterCommand command) async {
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) return ensureFailure;
+
+    final result = await connectionContext.hotReload(force: command.force);
+    if (result == null) {
+      return CoreResult.failure(
+        code: CoreErrorCode.hotReloadFailed,
+        message: 'Hot reload failed: null response',
+      );
+    }
+
+    if (result.containsKey('error')) {
+      return CoreResult.failure(
+        code: CoreErrorCode.hotReloadFailed,
+        message: '${result['error']}',
+      );
+    }
+
+    return CoreResult.success(data: result);
+  }
+
+  Future<CoreResult> _hotRestart() async {
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) return ensureFailure;
+
+    final result = await connectionContext.hotRestart();
+    if (result == null) {
+      return CoreResult.failure(
+        code: CoreErrorCode.hotRestartFailed,
+        message: 'Hot restart failed: null response',
+      );
+    }
+
+    if (result.containsKey('error')) {
+      return CoreResult.failure(
+        code: CoreErrorCode.hotRestartFailed,
+        message: '${result['error']}',
+      );
+    }
+
+    return CoreResult.success(data: result);
+  }
+
   Future<CoreResult> _inspectWidgetAtPoint(
     final InspectWidgetAtPointCommand command,
   ) async {
@@ -661,224 +815,12 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
   }
 
-  Future<CoreResult> _captureUiSnapshot(
-    final CaptureUiSnapshotCommand command,
-  ) async {
-    final ensureFailure = await _ensureVmConnected();
-    if (ensureFailure != null) return ensureFailure;
-
-    final screenshotResult = await _getScreenshots(
-      GetScreenshotsCommand(
-        compress: command.compress,
-        mode: command.screenshotMode,
-        permissionPolicy: command.permissionPolicy,
-      ),
-    );
-    if (!screenshotResult.ok) {
-      return screenshotResult;
-    }
-
-    final screenshotData = _map(screenshotResult.data);
-    final imageSummaries = _buildImageSummaries(screenshotData);
-
-    Object? viewDetails;
-    if (command.includeViewDetails) {
-      final viewResult = await _getViewDetails();
-      if (!viewResult.ok) {
-        return viewResult;
-      }
-      viewDetails = viewResult.data;
-    }
-
-    Object? appErrors;
-    if (command.includeErrors) {
-      final errorResult = await _getAppErrors(
-        GetAppErrorsCommand(count: command.errorsCount),
-      );
-      if (!errorResult.ok) {
-        return errorResult;
-      }
-      appErrors = errorResult.data;
-    }
-
-    return CoreResult.success(
-      data: {
-        'message': 'Captured UI snapshot bundle.',
-        'capturedAt': DateTime.now().toUtc().toIso8601String(),
-        'screenshots': screenshotData,
-        'imageSummaries': imageSummaries,
-        if (viewDetails != null) 'viewDetails': viewDetails,
-        if (appErrors != null) 'appErrors': appErrors,
-        'summary': {
-          'imageCount': imageSummaries.length,
-          'includeViewDetails': command.includeViewDetails,
-          'includeErrors': command.includeErrors,
-          'errorsCount': command.errorsCount,
-          'compress': command.compress,
-          'requestedMode': command.screenshotMode.wireName,
-          'actualMode':
-              screenshotData['actualMode'] ?? screenshotData['captureMode'],
-          'permissionStatus':
-              _map(screenshotData['permission'])['status'] ??
-              PermissionStatus.unsupported.wireName,
-          'fallbackReason': screenshotData['fallbackReason'],
-        },
-      },
-    );
-  }
-
-  Future<_DesktopCaptureResolution> _tryDesktopWindowCapture(
-    final GetScreenshotsCommand command,
-  ) async {
-    if (command.mode == ScreenshotMode.flutterLayer) {
-      return const _DesktopCaptureResolution();
-    }
-
-    final projectDir = configuration.flutterProjectDir;
-    final device = configuration.flutterDevice;
-    if (projectDir == null || device == null) {
-      return command.mode == ScreenshotMode.desktopWindow
-          ? const _DesktopCaptureResolution(
-              errorMessage:
-                  'Desktop window screenshot mode requires both '
-                  '--flutter-project-dir and --flutter-device.',
-            )
-          : const _DesktopCaptureResolution();
-    }
-
-    try {
-      final targetPid = await _connectedVmPid();
-      if (device == 'macos' && targetPid != null && targetPid > 0) {
-        await _activateMacOsTargetPid(targetPid);
-      }
-      final capture = await _desktopWindowScreenshotService.capture(
-        projectDir: projectDir,
-        device: device,
-        compress: command.compress,
-        targetPid: targetPid,
-        cacheDir: configuration.stateRootDir,
-      );
-      if (capture == null) {
-        if (command.mode == ScreenshotMode.auto && device != 'macos') {
-          return const _DesktopCaptureResolution();
-        }
-        return const _DesktopCaptureResolution(
-          errorMessage:
-              'Desktop window screenshot mode is unavailable for the current '
-              'target or app window.',
-        );
-      }
-
-      if (!configuration.saveImagesToFiles) {
-        return _DesktopCaptureResolution(
-          data: capture.toJson(fileUrls: const <String>[]),
-        );
-      }
-
-      await imageFileSaver.cleanupOldScreenshots();
-      final fileUrls = await imageFileSaver.saveImagesToFiles(capture.images);
-      return _DesktopCaptureResolution(
-        data: capture.toJson(fileUrls: fileUrls, includeImages: false),
-      );
-    } on DesktopWindowCaptureException catch (e) {
-      return _DesktopCaptureResolution(
-        errorMessage: 'Desktop window screenshot failed: $e',
-        errorDetails: e.details,
-      );
-    } on Object catch (e) {
-      return _DesktopCaptureResolution(
-        errorMessage: 'Desktop window screenshot failed: $e',
-      );
-    }
-  }
-
-  CoreResult _visualCaptureFailure(
-    final PermissionBrokerResult permission, {
-    required final String defaultMessage,
-  }) {
-    final code = switch (permission.status) {
-      PermissionStatus.denied => CoreErrorCode.visualCapturePermissionDenied,
-      PermissionStatus.unsupported ||
-      PermissionStatus.unsupportedUntilAppBridge =>
-        CoreErrorCode.visualCaptureUnsupported,
-      _ => CoreErrorCode.getScreenshotsFailed,
-    };
-    return CoreResult.failure(
-      code: code,
-      message: permission.message ?? defaultMessage,
-      details: <String, Object?>{
-        'permission': permission.toJson(),
-        if (permission.canOpenSettings)
-          'suggestedAction': 'flutter_mcp_cli permissions open-settings',
-      },
-    );
-  }
-
-  Future<int?> _connectedVmPid() async {
-    final vmService = connectionContext.vmService;
-    if (vmService == null) {
-      return null;
-    }
-    try {
-      final vm = await vmService.getVM();
-      final pid = vm.pid;
-      if (pid is int && pid > 0) {
-        return pid;
-      }
-      return int.tryParse('$pid');
-    } on Object {
-      return null;
-    }
-  }
-
-  Map<String, Object?> _withPermissionMetadata({
-    required final Map<String, Object?> data,
-    required final String requestedMode,
-    required final PermissionBrokerResult permission,
-  }) => <String, Object?>{
-    ...data,
-    'requestedMode': requestedMode,
-    'actualMode': permission.actualMode,
-    'fallbackReason': permission.fallbackReason,
-    'permissionStatus': permission.status.wireName,
-    'permission': permission.toJson(),
-  };
-
-  Future<CoreResult> _debugDumpLayerTree() async {
-    return _debugDump('ext.flutter.debugDumpLayerTree');
-  }
-
-  Future<CoreResult> _debugDumpSemanticsTree() async {
-    return _debugDump('ext.flutter.debugDumpSemanticsTreeInTraversalOrder');
-  }
-
-  Future<CoreResult> _debugDumpRenderTree() async {
-    return _debugDump('ext.flutter.debugDumpRenderTree');
-  }
-
-  Future<CoreResult> _debugDumpFocusTree() async {
-    return _debugDump('ext.flutter.debugDumpFocusTree');
-  }
-
-  Future<CoreResult> _debugDump(final String extensionName) async {
-    final ensureFailure = await _ensureVmConnected();
-    if (ensureFailure != null) return ensureFailure;
-
-    try {
-      final response = await connectionContext.callFlutterExtension(
-        extensionName,
-        args: const <String, dynamic>{},
-      );
-      return CoreResult.success(
-        data: response.json ?? const <String, Object?>{},
-      );
-    } on Exception catch (e) {
-      return CoreResult.failure(
-        code: CoreErrorCode.debugDumpFailed,
-        message: 'Debug dump failed: $e',
-      );
-    }
-  }
+  bool _isSessionControlCommand(final CoreCommand command) =>
+      command is SessionStartCommand ||
+      command is SessionExecCommand ||
+      command is SessionEndCommand ||
+      command is WatchCommand ||
+      command is DiagnoseCommand;
 
   Future<CoreResult> _listClientToolsAndResources() async {
     if (!configuration.dynamicRegistrySupported) {
@@ -898,52 +840,444 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     return gateway.listClientToolsAndResources();
   }
 
-  Future<CoreResult> _runClientTool(final RunClientToolCommand command) async {
-    if (!configuration.dynamicRegistrySupported) {
-      return CoreResult.failure(
-        code: CoreErrorCode.dynamicRegistryDisabled,
-        message: 'Dynamic registry support is disabled',
-      );
-    }
-
-    final gateway =
-        _dynamicGateway ??
-        VmExtensionDynamicGateway(connectionContext: connectionContext);
-
-    final ensureFailure = await _ensureVmConnected();
-    if (ensureFailure != null) return ensureFailure;
-
-    return gateway.runClientTool(command.toolName, command.arguments);
-  }
-
-  Future<CoreResult> _runClientResource(
-    final RunClientResourceCommand command,
+  Future<CoreResult> _liveEditAcceptResolution(
+    final LiveEditAcceptResolutionCommand command,
   ) async {
-    if (!configuration.dynamicRegistrySupported) {
+    final request = _liveEditAgentService.requestForProposal(
+      command.proposalId,
+    );
+    if (request == null) {
       return CoreResult.failure(
-        code: CoreErrorCode.dynamicRegistryDisabled,
-        message: 'Dynamic registry support is disabled',
+        code: CoreErrorCode.liveEditProposalNotFound,
+        message: 'Unknown live edit proposal: ${command.proposalId}',
       );
     }
 
-    final gateway =
-        _dynamicGateway ??
-        VmExtensionDynamicGateway(connectionContext: connectionContext);
+    final proposal = _liveEditAgentService.getProposal(command.proposalId);
+    final workingDirectory = _resolveWorkingDirectory(
+      command.workingDirectory ?? request.workingDirectory,
+    );
 
-    final ensureFailure = await _ensureVmConnected();
-    if (ensureFailure != null) return ensureFailure;
+    LiveEditResolutionResult applyResult;
+    try {
+      applyResult = await _liveEditAgentService.applyProposal(
+        command.proposalId,
+        workingDirectory: workingDirectory,
+      );
+    } on FileSystemException catch (error) {
+      return CoreResult.failure(
+        code: CoreErrorCode.liveEditApplyFailed,
+        message: 'Failed to apply live edit proposal: $error',
+        details: <String, Object?>{
+          'proposalId': command.proposalId,
+          'workingDirectory': workingDirectory,
+        },
+      );
+    } on StateError catch (error) {
+      return CoreResult.failure(
+        code: CoreErrorCode.liveEditApplyFailed,
+        message: 'Failed to apply live edit proposal: $error',
+        details: <String, Object?>{
+          'proposalId': command.proposalId,
+          'workingDirectory': workingDirectory,
+        },
+      );
+    }
 
-    return gateway.runClientResource(command.resourceUri);
+    final hotReloadResult = await _hotReload(
+      const HotReloadFlutterCommand(force: true),
+    );
+    if (!hotReloadResult.ok) {
+      return CoreResult.failure(
+        code: CoreErrorCode.liveEditApplyFailed,
+        message: 'Proposal applied, but hot reload failed',
+        details: <String, Object?>{
+          'proposal': proposal.toJson(),
+          'apply': applyResult.toJson(),
+          'hotReload': hotReloadResult.error?.toJson(),
+        },
+      );
+    }
+
+    var validation = await _validateAppliedLiveEditRequest(
+      request: request,
+      fallbackSessionId: command.sessionId,
+    );
+    Map<String, Object?>? validationRecovery;
+    if (validation['validated'] != true) {
+      validationRecovery = await _recoverLiveEditValidationAfterHotRestart(
+        request: request,
+        fallbackSessionId: command.sessionId,
+      );
+      final recoveredValidation = _map(validationRecovery['validation']);
+      if (recoveredValidation['validated'] == true) {
+        validation = recoveredValidation;
+      } else {
+        return CoreResult.failure(
+          code: CoreErrorCode.liveEditValidationFailed,
+          message:
+              'Proposal applied, but runtime validation did not match the draft',
+          details: <String, Object?>{
+            'proposal': proposal.toJson(),
+            'apply': applyResult.toJson(),
+            'hotReload': hotReloadResult.data,
+            'validation': validation,
+            'validationRecovery': validationRecovery,
+          },
+        );
+      }
+    }
+
+    Map<String, Object?>? discardData;
+    final discardSessionId = _firstNonEmpty(
+      command.sessionId,
+      request.sessionId,
+    );
+    if (_hasText(discardSessionId)) {
+      final discardResult = await _liveEditDiscardDraft(
+        LiveEditDiscardDraftCommand(sessionId: discardSessionId),
+      );
+      if (discardResult.ok) {
+        discardData = _map(discardResult.data);
+      }
+    }
+
+    return CoreResult.success(
+      data: <String, Object?>{
+        'proposal': proposal.toJson(),
+        'result': applyResult.toJson(),
+        'hotReload': hotReloadResult.data,
+        'validation': validation,
+        'validationRecovery': ?validationRecovery,
+        'draft': ?discardData,
+      },
+    );
   }
 
-  Future<CoreResult> _liveEditStartSession(
-    final LiveEditStartSessionCommand command,
+  Future<CoreResult> _liveEditApplyDraft(
+    final LiveEditApplyDraftCommand command,
+  ) async {
+    String? proposalId = _stringOrNull(command.proposalId);
+    CoreResult? resolveResult;
+
+    if (!_hasText(proposalId)) {
+      resolveResult = await _liveEditResolveDraft(
+        LiveEditResolveDraftCommand(
+          sessionId: command.sessionId,
+          backendId: command.backendId,
+          workingDirectory: command.workingDirectory,
+          intentText: command.intentText,
+        ),
+      );
+      if (!resolveResult.ok) {
+        return resolveResult;
+      }
+      final proposal = _map(_map(resolveResult.data)['proposal']);
+      proposalId = _stringOrNull(proposal['proposalId']);
+    }
+
+    if (!_hasText(proposalId)) {
+      return CoreResult.failure(
+        code: CoreErrorCode.liveEditProposalNotFound,
+        message: 'Live edit proposal id is unavailable for apply flow',
+      );
+    }
+
+    LiveEditExecutionPlan executionPlan;
+    try {
+      executionPlan = _liveEditAgentService.buildExecutionPlan(proposalId!);
+    } on StateError catch (error) {
+      return CoreResult.failure(
+        code: CoreErrorCode.liveEditProposalNotFound,
+        message: '$error',
+        details: <String, Object?>{'proposalId': proposalId},
+      );
+    }
+
+    if (!command.approve) {
+      return CoreResult.success(
+        data: <String, Object?>{
+          'proposalId': proposalId,
+          'requiresApproval': true,
+          'executionPlan': executionPlan.toJson(),
+          if (resolveResult != null) 'resolve': resolveResult.data,
+        },
+      );
+    }
+
+    final acceptResult = await _liveEditAcceptResolution(
+      LiveEditAcceptResolutionCommand(
+        proposalId: proposalId,
+        sessionId: command.sessionId,
+        workingDirectory: command.workingDirectory,
+      ),
+    );
+    if (!acceptResult.ok) {
+      return acceptResult;
+    }
+
+    return CoreResult.success(
+      data: <String, Object?>{
+        'proposalId': proposalId,
+        'approved': true,
+        'executionPlan': executionPlan.toJson(),
+        'result': acceptResult.data,
+        if (resolveResult != null) 'resolve': resolveResult.data,
+      },
+    );
+  }
+
+  List<Map<String, int>> _liveEditCandidatePointsForBounds(
+    final LiveEditBounds bounds,
+  ) {
+    final inset = bounds.width < 24 || bounds.height < 24 ? 2.0 : 8.0;
+    final left = bounds.left + inset;
+    final right = bounds.right - inset;
+    final top = bounds.top + inset;
+    final bottom = bounds.bottom - inset;
+    final midX = (bounds.left + bounds.right) / 2;
+    final midY = (bounds.top + bounds.bottom) / 2;
+
+    final ordered = <Map<String, int>>[
+      <String, int>{'x': left.round(), 'y': top.round()},
+      <String, int>{'x': right.round(), 'y': top.round()},
+      <String, int>{'x': left.round(), 'y': bottom.round()},
+      <String, int>{'x': right.round(), 'y': bottom.round()},
+      <String, int>{'x': left.round(), 'y': midY.round()},
+      <String, int>{'x': right.round(), 'y': midY.round()},
+      <String, int>{'x': midX.round(), 'y': top.round()},
+      <String, int>{'x': midX.round(), 'y': bottom.round()},
+      <String, int>{'x': midX.round(), 'y': midY.round()},
+    ];
+
+    final seen = <String>{};
+    return ordered
+        .where((final point) {
+          final key = '${point['x']}:${point['y']}';
+          return seen.add(key);
+        })
+        .toList(growable: false);
+  }
+
+  Future<CoreResult> _liveEditDiscardDraft(
+    final LiveEditDiscardDraftCommand command,
   ) => _runLiveEditRuntimeTool(
-    LiveEditRuntimeToolNames.startSession,
+    LiveEditRuntimeToolNames.discardDraft,
     arguments: <String, Object?>{
-      if (_hasText(command.sessionId)) 'sessionId': command.sessionId!,
+      if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
     },
   );
+
+  Future<CoreResult> _liveEditEndSession(
+    final LiveEditEndSessionCommand command,
+  ) => _runLiveEditRuntimeTool(
+    LiveEditRuntimeToolNames.endSession,
+    arguments: <String, Object?>{
+      if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
+    },
+  );
+
+  Future<CoreResult> _liveEditGetAgentBackend(
+    final LiveEditGetAgentBackendCommand command,
+  ) async {
+    try {
+      final backend = _liveEditAgentService.getBackend(
+        backendId: command.backendId,
+        sessionId: command.sessionId,
+      );
+      return CoreResult.success(
+        data: <String, Object?>{
+          'backend': backend.toJson(),
+          if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
+        },
+      );
+    } on StateError catch (error) {
+      return CoreResult.failure(
+        code: CoreErrorCode.invalidCommand,
+        message: '$error',
+        details: <String, Object?>{
+          'backendId': command.backendId,
+          'sessionId': command.sessionId,
+        },
+      );
+    }
+  }
+
+  Future<CoreResult> _liveEditGetCapabilities(
+    final LiveEditGetCapabilitiesCommand command,
+  ) async {
+    final backend = _liveEditAgentService.getBackend(
+      sessionId: command.sessionId,
+    );
+    return CoreResult.success(
+      data: <String, Object?>{
+        if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
+        'backend': backend.toJson(),
+        'capabilities': const <String, Object?>{
+          'overlay': true,
+          'selection': true,
+          'selectionCandidates': false,
+          'propertyPanel': true,
+          'draft': true,
+          'exactPreview': true,
+          'ghostPreview': true,
+          'agentResolution': true,
+          'editModes': <String>['inspect', 'edit', 'hidden'],
+        },
+      },
+    );
+  }
+
+  Future<CoreResult> _liveEditGetDraft(final LiveEditGetDraftCommand command) =>
+      _runLiveEditRuntimeTool(
+        LiveEditRuntimeToolNames.getDraft,
+        arguments: <String, Object?>{
+          if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
+        },
+      );
+
+  Future<CoreResult> _liveEditGetPreviewState(
+    final LiveEditGetPreviewStateCommand command,
+  ) async {
+    final draftResult = await _liveEditGetDraft(
+      LiveEditGetDraftCommand(sessionId: command.sessionId),
+    );
+    if (!draftResult.ok) {
+      return draftResult;
+    }
+
+    final selectionResult = await _liveEditGetSelection(
+      LiveEditGetSelectionCommand(sessionId: command.sessionId),
+    );
+    if (!selectionResult.ok) {
+      return selectionResult;
+    }
+
+    final draftChanges = _decodeDraftChanges(
+      _map(draftResult.data)['draftChanges'],
+    );
+    final selection = _decodeSelection(_map(selectionResult.data)['selection']);
+    final propertyById = <String, LiveEditPropertyDescriptor>{
+      for (final property
+          in selection?.propertyGroups ?? const <LiveEditPropertyDescriptor>[])
+        property.id: property,
+    };
+
+    final exactPreviewPropertyIds = <String>[];
+    final pendingPropertyIds = <String>[];
+    for (final draft in draftChanges) {
+      final property = propertyById[draft.propertyId];
+      if (property != null &&
+          _looselyEquivalent(property.value, draft.targetValue)) {
+        exactPreviewPropertyIds.add(draft.propertyId);
+      } else {
+        pendingPropertyIds.add(draft.propertyId);
+      }
+    }
+
+    return CoreResult.success(
+      data: <String, Object?>{
+        if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
+        'mode': _liveEditSessionModes[command.sessionId ?? ''] ?? 'inspect',
+        'selectionAvailable': selection != null,
+        if (selection != null) 'nodeId': selection.nodeId,
+        'draftChanges': draftChanges
+            .map((final change) => change.toJson())
+            .toList(growable: false),
+        'hasDraft': draftChanges.isNotEmpty,
+        'exactPreviewPropertyIds': exactPreviewPropertyIds,
+        'pendingPropertyIds': pendingPropertyIds,
+      },
+    );
+  }
+
+  Future<CoreResult> _liveEditGetPropertyPanel(
+    final LiveEditGetPropertyPanelCommand command,
+  ) async {
+    final selectionResult = await _liveEditGetSelection(
+      LiveEditGetSelectionCommand(sessionId: command.sessionId),
+    );
+    if (!selectionResult.ok) {
+      return selectionResult;
+    }
+
+    final selection = _decodeSelection(_map(selectionResult.data)['selection']);
+    return CoreResult.success(
+      data: <String, Object?>{
+        if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
+        if (selection != null) 'nodeId': selection.nodeId,
+        if (selection != null) 'widgetType': selection.widgetType,
+        'properties':
+            selection?.propertyGroups
+                .map((final property) => property.toJson())
+                .toList(growable: false) ??
+            const <Object?>[],
+        if (selection != null) 'selection': selection.toJson(),
+      },
+    );
+  }
+
+  Future<CoreResult> _liveEditGetSelection(
+    final LiveEditGetSelectionCommand command,
+  ) => _runLiveEditRuntimeTool(
+    LiveEditRuntimeToolNames.getSelection,
+    arguments: <String, Object?>{
+      if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
+    },
+  );
+
+  Future<CoreResult> _liveEditGetSelectionCandidates(
+    final LiveEditGetSelectionCandidatesCommand command,
+  ) async {
+    final selectionResult = await _liveEditGetSelection(
+      LiveEditGetSelectionCommand(sessionId: command.sessionId),
+    );
+    if (!selectionResult.ok) {
+      return selectionResult;
+    }
+
+    final data = _map(selectionResult.data);
+    final selection = _decodeSelection(data['selection']);
+    final candidates = selection == null
+        ? const <Map<String, Object?>>[]
+        : <Map<String, Object?>>[
+            <String, Object?>{
+              'index': 0,
+              'nodeId': selection.nodeId,
+              'widgetType': selection.widgetType,
+              'selection': selection.toJson(),
+            },
+          ];
+    return CoreResult.success(
+      data: <String, Object?>{
+        if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
+        'activeNodeId': selection?.nodeId,
+        'candidates': candidates,
+      },
+    );
+  }
+
+  Future<CoreResult> _liveEditGetTree(final LiveEditGetTreeCommand command) =>
+      _runLiveEditRuntimeTool(
+        LiveEditRuntimeToolNames.getTree,
+        arguments: <String, Object?>{
+          if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
+        },
+      );
+
+  Future<CoreResult> _liveEditListAgentBackends() async {
+    final backends = _liveEditAgentService.listBackends();
+    final defaultBackend = backends.firstWhere(
+      (final backend) => backend.isDefault,
+      orElse: () => backends.first,
+    );
+    return CoreResult.success(
+      data: <String, Object?>{
+        'backends': backends.map((final backend) => backend.toJson()).toList(),
+        'defaultBackendId': defaultBackend.id,
+      },
+    );
+  }
 
   Future<CoreResult> _liveEditPrepareSession(
     final LiveEditPrepareSessionCommand command,
@@ -996,7 +1330,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
 
     return CoreResult.success(
       data: <String, Object?>{
-        'sessionId': sessionId!,
+        'sessionId': sessionId,
         if (_hasText(command.workingDirectory))
           'workingDirectory': command.workingDirectory,
         'overlay': _map(overlayResult.data),
@@ -1007,361 +1341,16 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     );
   }
 
-  Future<CoreResult> _liveEditSetOverlay(
-    final LiveEditSetOverlayCommand command,
-  ) => _runLiveEditRuntimeTool(
-    LiveEditRuntimeToolNames.setOverlay,
-    arguments: <String, Object?>{
-      if (_hasText(command.sessionId)) 'sessionId': command.sessionId!,
-      'enabled': command.enabled,
-    },
-  );
-
-  Future<CoreResult> _liveEditGetTree(final LiveEditGetTreeCommand command) =>
-      _runLiveEditRuntimeTool(
-        LiveEditRuntimeToolNames.getTree,
-        arguments: <String, Object?>{
-          if (_hasText(command.sessionId)) 'sessionId': command.sessionId!,
-        },
-      );
-
-  Future<CoreResult> _liveEditSelectAtPoint(
-    final LiveEditSelectAtPointCommand command,
-  ) => _runLiveEditRuntimeTool(
-    LiveEditRuntimeToolNames.selectAtPoint,
-    arguments: <String, Object?>{
-      if (_hasText(command.sessionId)) 'sessionId': command.sessionId!,
-      'x': command.x,
-      'y': command.y,
-      if (command.viewId != null) 'viewId': command.viewId!,
-    },
-  );
-
-  Future<CoreResult> _liveEditGetSelection(
-    final LiveEditGetSelectionCommand command,
-  ) => _runLiveEditRuntimeTool(
-    LiveEditRuntimeToolNames.getSelection,
-    arguments: <String, Object?>{
-      if (_hasText(command.sessionId)) 'sessionId': command.sessionId!,
-    },
-  );
-
-  Future<CoreResult> _liveEditGetCapabilities(
-    final LiveEditGetCapabilitiesCommand command,
-  ) async {
-    final backend = _liveEditAgentService.getBackend(sessionId: command.sessionId);
-    return CoreResult.success(
-      data: <String, Object?>{
-        if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
-        'backend': backend.toJson(),
-        'capabilities': <String, Object?>{
-          'overlay': true,
-          'selection': true,
-          'selectionCandidates': false,
-          'propertyPanel': true,
-          'draft': true,
-          'exactPreview': true,
-          'ghostPreview': true,
-          'agentResolution': true,
-          'editModes': const <String>['inspect', 'edit', 'hidden'],
-        },
-      },
-    );
-  }
-
-  Future<CoreResult> _liveEditGetSelectionCandidates(
-    final LiveEditGetSelectionCandidatesCommand command,
-  ) async {
-    final selectionResult = await _liveEditGetSelection(
-      LiveEditGetSelectionCommand(sessionId: command.sessionId),
-    );
-    if (!selectionResult.ok) {
-      return selectionResult;
-    }
-
-    final data = _map(selectionResult.data);
-    final selection = _decodeSelection(data['selection']);
-    final candidates = selection == null
-        ? const <Map<String, Object?>>[]
-        : <Map<String, Object?>>[
-            <String, Object?>{
-              'index': 0,
-              'nodeId': selection.nodeId,
-              'widgetType': selection.widgetType,
-              'selection': selection.toJson(),
-            },
-          ];
-    return CoreResult.success(
-      data: <String, Object?>{
-        if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
-        'activeNodeId': selection?.nodeId,
-        'candidates': candidates,
-      },
-    );
-  }
-
-  Future<CoreResult> _liveEditSetActiveSelection(
-    final LiveEditSetActiveSelectionCommand command,
-  ) async {
-    final candidatesResult = await _liveEditGetSelectionCandidates(
-      LiveEditGetSelectionCandidatesCommand(sessionId: command.sessionId),
-    );
-    if (!candidatesResult.ok) {
-      return candidatesResult;
-    }
-
-    final data = _map(candidatesResult.data);
-    final candidates = _asObjectList(data['candidates']);
-    if (candidates.isEmpty) {
-      return CoreResult.success(
-        data: <String, Object?>{
-          if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
-          'activated': false,
-          'reason': 'no_selection_candidates',
-          'candidates': candidates,
-        },
-      );
-    }
-
-    final first = _map(candidates.first);
-    final requestedIndex = command.index;
-    final requestedNodeId = _stringOrNull(command.nodeId);
-    final matchesIndex = requestedIndex == null || requestedIndex == 0;
-    final matchesNode =
-        !_hasText(requestedNodeId) || requestedNodeId == first['nodeId'];
-
-    return CoreResult.success(
-      data: <String, Object?>{
-        if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
-        'activated': matchesIndex && matchesNode,
-        'activeNodeId': first['nodeId'],
-        'selection': first['selection'],
-        if (!(matchesIndex && matchesNode))
-          'reason': 'selection_candidates_runtime_only_supports_active_node',
-        'candidates': candidates,
-      },
-    );
-  }
-
-  Future<CoreResult> _liveEditGetPropertyPanel(
-    final LiveEditGetPropertyPanelCommand command,
-  ) async {
-    final selectionResult = await _liveEditGetSelection(
-      LiveEditGetSelectionCommand(sessionId: command.sessionId),
-    );
-    if (!selectionResult.ok) {
-      return selectionResult;
-    }
-
-    final selection = _decodeSelection(_map(selectionResult.data)['selection']);
-    return CoreResult.success(
-      data: <String, Object?>{
-        if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
-        if (selection != null) 'nodeId': selection.nodeId,
-        if (selection != null) 'widgetType': selection.widgetType,
-        'properties': selection?.propertyGroups
-                .map((final property) => property.toJson())
-                .toList(growable: false) ??
-            const <Object?>[],
-        if (selection != null) 'selection': selection.toJson(),
-      },
-    );
-  }
-
-  Future<CoreResult> _liveEditSetEditMode(
-    final LiveEditSetEditModeCommand command,
-  ) async {
-    final sessionResult = await _ensureLiveEditSessionId(command.sessionId);
-    if (!sessionResult.ok) {
-      return sessionResult;
-    }
-
-    final sessionId = _stringOrNull(_map(sessionResult.data)['sessionId']);
-    if (!_hasText(sessionId)) {
-      return CoreResult.failure(
-        code: CoreErrorCode.unexpectedExecutorError,
-        message: 'Live edit session initialization did not return a session id',
-      );
-    }
-
-    final normalizedMode = command.mode.trim().isEmpty
-        ? 'inspect'
-        : command.mode.trim().toLowerCase();
-    _liveEditSessionModes[sessionId!] = normalizedMode;
-    if (normalizedMode == 'hidden') {
-      final overlayResult = await _liveEditSetOverlay(
-        LiveEditSetOverlayCommand(sessionId: sessionId, enabled: false),
-      );
-      if (!overlayResult.ok) {
-        return overlayResult;
-      }
-    } else {
-      final overlayResult = await _liveEditSetOverlay(
-        LiveEditSetOverlayCommand(sessionId: sessionId, enabled: true),
-      );
-      if (!overlayResult.ok) {
-        return overlayResult;
-      }
-    }
-
-    return CoreResult.success(
-      data: <String, Object?>{'sessionId': sessionId, 'mode': normalizedMode},
-    );
-  }
-
-  Future<CoreResult> _liveEditGetPreviewState(
-    final LiveEditGetPreviewStateCommand command,
-  ) async {
-    final draftResult = await _liveEditGetDraft(
-      LiveEditGetDraftCommand(sessionId: command.sessionId),
-    );
-    if (!draftResult.ok) {
-      return draftResult;
-    }
-
-    final selectionResult = await _liveEditGetSelection(
-      LiveEditGetSelectionCommand(sessionId: command.sessionId),
-    );
-    if (!selectionResult.ok) {
-      return selectionResult;
-    }
-
-    final draftChanges = _decodeDraftChanges(_map(draftResult.data)['draftChanges']);
-    final selection = _decodeSelection(_map(selectionResult.data)['selection']);
-    final propertyById = <String, LiveEditPropertyDescriptor>{
-      for (final property in selection?.propertyGroups ?? const <LiveEditPropertyDescriptor>[])
-        property.id: property,
-    };
-
-    final exactPreviewPropertyIds = <String>[];
-    final pendingPropertyIds = <String>[];
-    for (final draft in draftChanges) {
-      final property = propertyById[draft.propertyId];
-      if (property != null && _looselyEquivalent(property.value, draft.targetValue)) {
-        exactPreviewPropertyIds.add(draft.propertyId);
-      } else {
-        pendingPropertyIds.add(draft.propertyId);
-      }
-    }
-
-    return CoreResult.success(
-      data: <String, Object?>{
-        if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
-        'mode': _liveEditSessionModes[command.sessionId ?? ''] ?? 'inspect',
-        'selectionAvailable': selection != null,
-        if (selection != null) 'nodeId': selection.nodeId,
-        'draftChanges': draftChanges
-            .map((final change) => change.toJson())
-            .toList(growable: false),
-        'hasDraft': draftChanges.isNotEmpty,
-        'exactPreviewPropertyIds': exactPreviewPropertyIds,
-        'pendingPropertyIds': pendingPropertyIds,
-      },
-    );
-  }
-
-  Future<CoreResult> _liveEditUpdateDraft(
-    final LiveEditUpdateDraftCommand command,
-  ) => _runLiveEditRuntimeTool(
-    LiveEditRuntimeToolNames.updateDraft,
-    arguments: <String, Object?>{
-      if (_hasText(command.sessionId)) 'sessionId': command.sessionId!,
-      'changeJson': encodeLiveEditJson(command.change.toJson()),
-    },
-  );
-
-  Future<CoreResult> _liveEditGetDraft(final LiveEditGetDraftCommand command) =>
-      _runLiveEditRuntimeTool(
-        LiveEditRuntimeToolNames.getDraft,
-        arguments: <String, Object?>{
-          if (_hasText(command.sessionId)) 'sessionId': command.sessionId!,
-        },
-      );
-
-  Future<CoreResult> _liveEditDiscardDraft(
-    final LiveEditDiscardDraftCommand command,
-  ) => _runLiveEditRuntimeTool(
-    LiveEditRuntimeToolNames.discardDraft,
-    arguments: <String, Object?>{
-      if (_hasText(command.sessionId)) 'sessionId': command.sessionId!,
-    },
-  );
-
-  Future<CoreResult> _liveEditEndSession(
-    final LiveEditEndSessionCommand command,
-  ) => _runLiveEditRuntimeTool(
-    LiveEditRuntimeToolNames.endSession,
-    arguments: <String, Object?>{
-      if (_hasText(command.sessionId)) 'sessionId': command.sessionId!,
-    },
-  );
-
-  Future<CoreResult> _liveEditListAgentBackends() async {
-    final backends = _liveEditAgentService.listBackends();
-    final defaultBackend = backends.firstWhere(
-      (final backend) => backend.isDefault,
-      orElse: () => backends.first,
-    );
-    return CoreResult.success(
-      data: <String, Object?>{
-        'backends': backends.map((final backend) => backend.toJson()).toList(),
-        'defaultBackendId': defaultBackend.id,
-      },
-    );
-  }
-
-  Future<CoreResult> _liveEditGetAgentBackend(
-    final LiveEditGetAgentBackendCommand command,
+  Future<CoreResult> _liveEditRejectResolution(
+    final LiveEditRejectResolutionCommand command,
   ) async {
     try {
-      final backend = _liveEditAgentService.getBackend(
-        backendId: command.backendId,
-        sessionId: command.sessionId,
-      );
-      return CoreResult.success(
-        data: <String, Object?>{
-          'backend': backend.toJson(),
-          if (_hasText(command.sessionId)) 'sessionId': command.sessionId!,
-        },
-      );
-    } on StateError catch (error) {
+      final result = _liveEditAgentService.rejectProposal(command.proposalId);
+      return CoreResult.success(data: result.toJson());
+    } on StateError {
       return CoreResult.failure(
-        code: CoreErrorCode.invalidCommand,
-        message: '$error',
-        details: <String, Object?>{
-          'backendId': command.backendId,
-          'sessionId': command.sessionId,
-        },
-      );
-    }
-  }
-
-  Future<CoreResult> _liveEditSetAgentBackend(
-    final LiveEditSetAgentBackendCommand command,
-  ) async {
-    try {
-      _liveEditAgentService.setSessionBackend(
-        sessionId: command.sessionId,
-        backendId: command.backendId,
-      );
-      final backend = _liveEditAgentService.getBackend(
-        backendId: command.backendId,
-        sessionId: command.sessionId,
-      );
-      return CoreResult.success(
-        data: <String, Object?>{
-          'sessionId': command.sessionId,
-          'backend': backend.toJson(),
-        },
-      );
-    } on StateError catch (error) {
-      return CoreResult.failure(
-        code: CoreErrorCode.invalidCommand,
-        message: '$error',
-        details: <String, Object?>{
-          'sessionId': command.sessionId,
-          'backendId': command.backendId,
-        },
+        code: CoreErrorCode.liveEditProposalNotFound,
+        message: 'Unknown live edit proposal: ${command.proposalId}',
       );
     }
   }
@@ -1480,118 +1469,296 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
   }
 
-  Future<CoreResult> _liveEditAcceptResolution(
-    final LiveEditAcceptResolutionCommand command,
+  Future<CoreResult> _liveEditSelectAtPoint(
+    final LiveEditSelectAtPointCommand command,
+  ) => _runLiveEditRuntimeTool(
+    LiveEditRuntimeToolNames.selectAtPoint,
+    arguments: <String, Object?>{
+      if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
+      'x': command.x,
+      'y': command.y,
+      if (command.viewId != null) 'viewId': command.viewId,
+    },
+  );
+
+  Future<CoreResult> _liveEditSetActiveSelection(
+    final LiveEditSetActiveSelectionCommand command,
   ) async {
-    final request = _liveEditAgentService.requestForProposal(
-      command.proposalId,
+    final candidatesResult = await _liveEditGetSelectionCandidates(
+      LiveEditGetSelectionCandidatesCommand(sessionId: command.sessionId),
     );
-    if (request == null) {
-      return CoreResult.failure(
-        code: CoreErrorCode.liveEditProposalNotFound,
-        message: 'Unknown live edit proposal: ${command.proposalId}',
+    if (!candidatesResult.ok) {
+      return candidatesResult;
+    }
+
+    final data = _map(candidatesResult.data);
+    final candidates = _asObjectList(data['candidates']);
+    if (candidates.isEmpty) {
+      return CoreResult.success(
+        data: <String, Object?>{
+          if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
+          'activated': false,
+          'reason': 'no_selection_candidates',
+          'candidates': candidates,
+        },
       );
     }
 
-    final proposal = _liveEditAgentService.getProposal(command.proposalId);
-    final workingDirectory = _resolveWorkingDirectory(
-      command.workingDirectory ?? request.workingDirectory,
-    );
+    final first = _map(candidates.first);
+    final requestedIndex = command.index;
+    final requestedNodeId = _stringOrNull(command.nodeId);
+    final matchesIndex = requestedIndex == null || requestedIndex == 0;
+    final matchesNode =
+        !_hasText(requestedNodeId) || requestedNodeId == first['nodeId'];
 
-    LiveEditResolutionResult applyResult;
+    return CoreResult.success(
+      data: <String, Object?>{
+        if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
+        'activated': matchesIndex && matchesNode,
+        'activeNodeId': first['nodeId'],
+        'selection': first['selection'],
+        if (!(matchesIndex && matchesNode))
+          'reason': 'selection_candidates_runtime_only_supports_active_node',
+        'candidates': candidates,
+      },
+    );
+  }
+
+  Future<CoreResult> _liveEditSetAgentBackend(
+    final LiveEditSetAgentBackendCommand command,
+  ) async {
     try {
-      applyResult = await _liveEditAgentService.applyProposal(
-        command.proposalId,
-        workingDirectory: workingDirectory,
+      _liveEditAgentService.setSessionBackend(
+        sessionId: command.sessionId,
+        backendId: command.backendId,
       );
-    } on FileSystemException catch (error) {
-      return CoreResult.failure(
-        code: CoreErrorCode.liveEditApplyFailed,
-        message: 'Failed to apply live edit proposal: $error',
-        details: <String, Object?>{
-          'proposalId': command.proposalId,
-          'workingDirectory': workingDirectory,
+      final backend = _liveEditAgentService.getBackend(
+        backendId: command.backendId,
+        sessionId: command.sessionId,
+      );
+      return CoreResult.success(
+        data: <String, Object?>{
+          'sessionId': command.sessionId,
+          'backend': backend.toJson(),
         },
       );
     } on StateError catch (error) {
       return CoreResult.failure(
-        code: CoreErrorCode.liveEditApplyFailed,
-        message: 'Failed to apply live edit proposal: $error',
+        code: CoreErrorCode.invalidCommand,
+        message: '$error',
         details: <String, Object?>{
-          'proposalId': command.proposalId,
-          'workingDirectory': workingDirectory,
+          'sessionId': command.sessionId,
+          'backendId': command.backendId,
         },
       );
     }
+  }
 
-    final hotReloadResult = await _hotReload(
-      const HotReloadFlutterCommand(force: true),
-    );
-    if (!hotReloadResult.ok) {
+  Future<CoreResult> _liveEditSetEditMode(
+    final LiveEditSetEditModeCommand command,
+  ) async {
+    final sessionResult = await _ensureLiveEditSessionId(command.sessionId);
+    if (!sessionResult.ok) {
+      return sessionResult;
+    }
+
+    final sessionId = _stringOrNull(_map(sessionResult.data)['sessionId']);
+    if (!_hasText(sessionId)) {
       return CoreResult.failure(
-        code: CoreErrorCode.liveEditApplyFailed,
-        message: 'Proposal applied, but hot reload failed',
-        details: <String, Object?>{
-          'proposal': proposal.toJson(),
-          'apply': applyResult.toJson(),
-          'hotReload': hotReloadResult.error?.toJson(),
-        },
+        code: CoreErrorCode.unexpectedExecutorError,
+        message: 'Live edit session initialization did not return a session id',
       );
     }
 
-    var validation = await _validateAppliedLiveEditRequest(
-      request: request,
-      fallbackSessionId: command.sessionId,
-    );
-    Map<String, Object?>? validationRecovery;
-    if (validation['validated'] != true) {
-      validationRecovery = await _recoverLiveEditValidationAfterHotRestart(
-        request: request,
-        fallbackSessionId: command.sessionId,
+    final normalizedMode = command.mode.trim().isEmpty
+        ? 'inspect'
+        : command.mode.trim().toLowerCase();
+    _liveEditSessionModes[sessionId!] = normalizedMode;
+    if (normalizedMode == 'hidden') {
+      final overlayResult = await _liveEditSetOverlay(
+        LiveEditSetOverlayCommand(sessionId: sessionId, enabled: false),
       );
-      final recoveredValidation = _map(validationRecovery['validation']);
-      if (recoveredValidation['validated'] == true) {
-        validation = recoveredValidation;
-      } else {
-        return CoreResult.failure(
-          code: CoreErrorCode.liveEditValidationFailed,
-          message:
-              'Proposal applied, but runtime validation did not match the draft',
-          details: <String, Object?>{
-            'proposal': proposal.toJson(),
-            'apply': applyResult.toJson(),
-            'hotReload': hotReloadResult.data,
-            'validation': validation,
-            'validationRecovery': validationRecovery,
-          },
-        );
+      if (!overlayResult.ok) {
+        return overlayResult;
       }
-    }
-
-    Map<String, Object?>? discardData;
-    final discardSessionId = _firstNonEmpty(
-      command.sessionId,
-      request.sessionId,
-    );
-    if (_hasText(discardSessionId)) {
-      final discardResult = await _liveEditDiscardDraft(
-        LiveEditDiscardDraftCommand(sessionId: discardSessionId),
+    } else {
+      final overlayResult = await _liveEditSetOverlay(
+        LiveEditSetOverlayCommand(sessionId: sessionId, enabled: true),
       );
-      if (discardResult.ok) {
-        discardData = _map(discardResult.data);
+      if (!overlayResult.ok) {
+        return overlayResult;
       }
     }
 
     return CoreResult.success(
-      data: <String, Object?>{
-        'proposal': proposal.toJson(),
-        'result': applyResult.toJson(),
-        'hotReload': hotReloadResult.data,
-        'validation': validation,
-        if (validationRecovery != null) 'validationRecovery': validationRecovery,
-        if (discardData != null) 'draft': discardData,
-      },
+      data: <String, Object?>{'sessionId': sessionId, 'mode': normalizedMode},
     );
+  }
+
+  Future<CoreResult> _liveEditSetOverlay(
+    final LiveEditSetOverlayCommand command,
+  ) => _runLiveEditRuntimeTool(
+    LiveEditRuntimeToolNames.setOverlay,
+    arguments: <String, Object?>{
+      if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
+      'enabled': command.enabled,
+    },
+  );
+
+  Future<CoreResult> _liveEditStartSession(
+    final LiveEditStartSessionCommand command,
+  ) => _runLiveEditRuntimeTool(
+    LiveEditRuntimeToolNames.startSession,
+    arguments: <String, Object?>{
+      if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
+    },
+  );
+
+  Future<CoreResult> _liveEditUpdateDraft(
+    final LiveEditUpdateDraftCommand command,
+  ) => _runLiveEditRuntimeTool(
+    LiveEditRuntimeToolNames.updateDraft,
+    arguments: <String, Object?>{
+      if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
+      'changeJson': encodeLiveEditJson(command.change.toJson()),
+    },
+  );
+
+  bool _looselyEquivalent(final Object? left, final Object? right) {
+    final normalizedLeft = _normalizeComparableValue(left);
+    final normalizedRight = _normalizeComparableValue(right);
+    if (normalizedLeft is num && normalizedRight is num) {
+      return (normalizedLeft - normalizedRight).abs() < 0.001;
+    }
+    return normalizedLeft == normalizedRight;
+  }
+
+  Map<String, Object?> _map(final Object? data) {
+    if (data is Map<String, Object?>) {
+      return data;
+    }
+    if (data is Map) {
+      return data.cast<String, Object?>();
+    }
+    return const <String, Object?>{};
+  }
+
+  bool _matchesRequestedLiveEditSelection({
+    required final LiveEditSelection? requested,
+    required final LiveEditSelection? actual,
+    required final bool hit,
+  }) {
+    if (!hit || actual == null) {
+      return false;
+    }
+    if (requested == null) {
+      return true;
+    }
+    if (requested.widgetType != actual.widgetType) {
+      return false;
+    }
+
+    final requestedSource = requested.source;
+    if (requestedSource == null) {
+      return true;
+    }
+
+    final actualSource = actual.source;
+    if (actualSource == null) {
+      return false;
+    }
+
+    if (_normalizeLiveEditSourceFile(requestedSource.file) !=
+        _normalizeLiveEditSourceFile(actualSource.file)) {
+      return false;
+    }
+
+    if (requestedSource.line != null &&
+        actualSource.line != requestedSource.line) {
+      return false;
+    }
+
+    return true;
+  }
+
+  Object? _normalizeComparableValue(final Object? value) {
+    if (value is num) {
+      return value.toDouble();
+    }
+    if (value is bool) {
+      return value;
+    }
+    if (value is String) {
+      final trimmed = value.trim();
+      if (trimmed.isEmpty) {
+        return '';
+      }
+      final parsedNumber = num.tryParse(trimmed);
+      if (parsedNumber != null) {
+        return parsedNumber.toDouble();
+      }
+      return trimmed.toLowerCase();
+    }
+    if (value is Map) {
+      return jsonEncode(
+        value.map(
+          (final key, final nestedValue) =>
+              MapEntry('$key', _normalizeComparableValue(nestedValue)),
+        ),
+      );
+    }
+    if (value is List) {
+      return jsonEncode(
+        value.map(_normalizeComparableValue).toList(growable: false),
+      );
+    }
+    return value;
+  }
+
+  String _normalizeLiveEditSourceFile(final String file) {
+    final parsed = Uri.tryParse(file);
+    if (parsed != null && parsed.scheme == 'file') {
+      return parsed.toFilePath();
+    }
+    return file;
+  }
+
+  List<Map<String, Object?>> _parseStackFrames(final String stackTrace) {
+    final lines = stackTrace.split('\n');
+    final frames = <Map<String, Object?>>[];
+    final pattern = RegExp(r'\(([^:]+):(\d+):(\d+)\)$');
+
+    for (final line in lines) {
+      final trimmed = line.trim();
+      if (trimmed.isEmpty) {
+        continue;
+      }
+
+      final match = pattern.firstMatch(trimmed);
+      if (match == null) {
+        continue;
+      }
+
+      final file = match.group(1);
+      final lineNumber = int.tryParse(match.group(2) ?? '');
+      final columnNumber = int.tryParse(match.group(3) ?? '');
+      if (file == null || lineNumber == null || columnNumber == null) {
+        continue;
+      }
+
+      frames.add({
+        'file': file,
+        'line': lineNumber,
+        'column': columnNumber,
+        'raw': trimmed,
+      });
+
+      if (frames.length >= 10) {
+        break;
+      }
+    }
+
+    return frames;
   }
 
   Future<Map<String, Object?>> _recoverLiveEditValidationAfterHotRestart({
@@ -1691,48 +1858,6 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     };
   }
 
-  Future<bool> _waitForFlutterIsolateAfterRestart({
-    final Duration timeout = const Duration(seconds: 10),
-    final Duration pollInterval = const Duration(milliseconds: 250),
-  }) async {
-    final deadline = DateTime.now().add(timeout);
-    while (DateTime.now().isBefore(deadline)) {
-      try {
-        final isolate = await connectionContext.getFlutterIsolate();
-        if (isolate?.id != null) {
-          return true;
-        }
-      } on StateError {
-        // Keep retrying until timeout while the isolate comes back.
-      }
-      await Future<void>.delayed(pollInterval);
-    }
-    return false;
-  }
-
-  Future<bool> _waitForLiveEditRuntimeToolAfterRestart(
-    final String toolName, {
-    final Duration timeout = const Duration(seconds: 15),
-    final Duration pollInterval = const Duration(milliseconds: 500),
-  }) async {
-    final deadline = DateTime.now().add(timeout);
-    while (DateTime.now().isBefore(deadline)) {
-      final toolsResult = await _listClientToolsAndResources();
-      if (toolsResult.ok) {
-        final tools = _asObjectList(_map(toolsResult.data)['tools']);
-        final names = tools
-            .whereType<Map>()
-            .map((final entry) => '${entry['name'] ?? ''}')
-            .toSet();
-        if (names.contains(toolName)) {
-          return true;
-        }
-      }
-      await Future<void>.delayed(pollInterval);
-    }
-    return false;
-  }
-
   Future<Map<String, Object?>?> _reselectLiveEditTargetFromRequest({
     required final LiveEditResolutionRequest request,
     required final String? fallbackSessionId,
@@ -1771,7 +1896,8 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
           'hit': hit,
           'matched': matched,
           if (selection != null) 'selectedWidgetType': selection.widgetType,
-          if (selection?.source != null) 'selectedSource': selection!.source!.toJson(),
+          if (selection?.source != null)
+            'selectedSource': selection!.source!.toJson(),
           if (_hasText(reason)) 'reason': reason,
           if (result.ok) 'data': data,
           if (!result.ok) 'error': result.error?.toJson(),
@@ -1824,97 +1950,18 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     };
   }
 
-  List<Map<String, int>> _liveEditCandidatePointsForBounds(
-    final LiveEditBounds bounds,
-  ) {
-    final inset = bounds.width < 24 || bounds.height < 24 ? 2.0 : 8.0;
-    final left = bounds.left + inset;
-    final right = bounds.right - inset;
-    final top = bounds.top + inset;
-    final bottom = bounds.bottom - inset;
-    final midX = (bounds.left + bounds.right) / 2;
-    final midY = (bounds.top + bounds.bottom) / 2;
-
-    final ordered = <Map<String, int>>[
-      <String, int>{'x': left.round(), 'y': top.round()},
-      <String, int>{'x': right.round(), 'y': top.round()},
-      <String, int>{'x': left.round(), 'y': bottom.round()},
-      <String, int>{'x': right.round(), 'y': bottom.round()},
-      <String, int>{'x': left.round(), 'y': midY.round()},
-      <String, int>{'x': right.round(), 'y': midY.round()},
-      <String, int>{'x': midX.round(), 'y': top.round()},
-      <String, int>{'x': midX.round(), 'y': bottom.round()},
-      <String, int>{'x': midX.round(), 'y': midY.round()},
-    ];
-
-    final seen = <String>{};
-    return ordered.where((final point) {
-      final key = '${point['x']}:${point['y']}';
-      return seen.add(key);
-    }).toList(growable: false);
+  String _resolveWorkingDirectory(final String? workingDirectory) {
+    if (_hasText(workingDirectory)) {
+      return workingDirectory!.trim();
+    }
+    if (_hasText(configuration.flutterProjectDir)) {
+      return configuration.flutterProjectDir!.trim();
+    }
+    return Directory.current.path;
   }
 
-  bool _matchesRequestedLiveEditSelection({
-    required final LiveEditSelection? requested,
-    required final LiveEditSelection? actual,
-    required final bool hit,
-  }) {
-    if (!hit || actual == null) {
-      return false;
-    }
-    if (requested == null) {
-      return true;
-    }
-    if (requested.widgetType != actual.widgetType) {
-      return false;
-    }
-
-    final requestedSource = requested.source;
-    if (requestedSource == null) {
-      return true;
-    }
-
-    final actualSource = actual.source;
-    if (actualSource == null) {
-      return false;
-    }
-
-    if (_normalizeLiveEditSourceFile(requestedSource.file) !=
-        _normalizeLiveEditSourceFile(actualSource.file)) {
-      return false;
-    }
-
-    if (requestedSource.line != null && actualSource.line != requestedSource.line) {
-      return false;
-    }
-
-    return true;
-  }
-
-  String _normalizeLiveEditSourceFile(final String file) {
-    final parsed = Uri.tryParse(file);
-    if (parsed != null && parsed.scheme == 'file') {
-      return parsed.toFilePath();
-    }
-    return file;
-  }
-
-  Future<CoreResult> _liveEditRejectResolution(
-    final LiveEditRejectResolutionCommand command,
-  ) async {
-    try {
-      final result = _liveEditAgentService.rejectProposal(command.proposalId);
-      return CoreResult.success(data: result.toJson());
-    } on StateError {
-      return CoreResult.failure(
-        code: CoreErrorCode.liveEditProposalNotFound,
-        message: 'Unknown live edit proposal: ${command.proposalId}',
-      );
-    }
-  }
-
-  Future<CoreResult> _dynamicRegistryStats(
-    final DynamicRegistryStatsCommand command,
+  Future<CoreResult> _runClientResource(
+    final RunClientResourceCommand command,
   ) async {
     if (!configuration.dynamicRegistrySupported) {
       return CoreResult.failure(
@@ -1930,9 +1977,25 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     final ensureFailure = await _ensureVmConnected();
     if (ensureFailure != null) return ensureFailure;
 
-    return gateway.dynamicRegistryStats(
-      includeAppDetails: command.includeAppDetails,
-    );
+    return gateway.runClientResource(command.resourceUri);
+  }
+
+  Future<CoreResult> _runClientTool(final RunClientToolCommand command) async {
+    if (!configuration.dynamicRegistrySupported) {
+      return CoreResult.failure(
+        code: CoreErrorCode.dynamicRegistryDisabled,
+        message: 'Dynamic registry support is disabled',
+      );
+    }
+
+    final gateway =
+        _dynamicGateway ??
+        VmExtensionDynamicGateway(connectionContext: connectionContext);
+
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) return ensureFailure;
+
+    return gateway.runClientTool(command.toolName, command.arguments);
   }
 
   Future<CoreResult> _runLiveEditRuntimeTool(
@@ -1957,13 +2020,157 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     );
   }
 
-  Future<CoreResult> _ensureLiveEditSessionId(final String? sessionId) async {
-    if (_hasText(sessionId)) {
-      return CoreResult.success(
-        data: <String, Object?>{'sessionId': sessionId!.trim()},
+  Future<CoreResult> _sessionEnd(final SessionEndCommand command) async {
+    final manager = sessionManager;
+    if (manager == null) {
+      return CoreResult.failure(
+        code: CoreErrorCode.sessionManagerNotConfigured,
+        message: 'Session manager not configured for executor',
       );
     }
-    return _liveEditStartSession(const LiveEditStartSessionCommand());
+
+    return manager.endSession(command.sessionId);
+  }
+
+  Future<CoreResult> _sessionExec(final SessionExecCommand command) async {
+    final manager = sessionManager;
+    if (manager == null) {
+      return CoreResult.failure(
+        code: CoreErrorCode.sessionManagerNotConfigured,
+        message: 'Session manager not configured for executor',
+      );
+    }
+
+    final attach = await manager.attachSession(sessionId: command.sessionId);
+    if (!attach.ok) {
+      return attach;
+    }
+
+    if (_isSessionControlCommand(command.command)) {
+      return CoreResult.failure(
+        code: CoreErrorCode.invalidCommand,
+        message:
+            'session_exec cannot execute session control, watch, or diagnose commands',
+      );
+    }
+
+    final sessionId = _extractSessionId(attach);
+    final innerResult = await _dispatch(command.command);
+    await manager.markSessionUsed(
+      sessionId,
+      endpointOverride: connectionContext.activeEndpoint?.display,
+    );
+
+    return innerResult.withMeta({
+      ...innerResult.meta,
+      'sessionId': sessionId,
+      'sessionCommand': command.command.name,
+    });
+  }
+
+  Future<CoreResult> _sessionStart(final SessionStartCommand command) async {
+    final manager = sessionManager;
+    if (manager == null) {
+      return CoreResult.failure(
+        code: CoreErrorCode.sessionManagerNotConfigured,
+        message: 'Session manager not configured for executor',
+      );
+    }
+
+    return manager.startSession(command);
+  }
+
+  String _stableStringHash(final String value) {
+    var hash = 0x811c9dc5;
+    for (final byte in utf8.encode(value)) {
+      hash ^= byte;
+      hash = (hash * 0x01000193) & 0x7fffffff;
+    }
+    return hash.toRadixString(16).padLeft(8, '0');
+  }
+
+  CoreResult _status() => CoreResult.success(
+    data: {
+      'connected': connectionContext.isConnected,
+      'activeEndpoint': connectionContext.activeEndpoint?.display,
+      'stickyEndpoint': connectionContext.stickyEndpoint?.display,
+      'mode': connectionContext.lastMode.name,
+      'dynamicRegistrySupported': configuration.dynamicRegistrySupported,
+      'sessionsEnabled': sessionManager != null,
+    },
+  );
+
+  String? _stringOrNull(final Object? value) {
+    final normalized = '$value'.trim();
+    if (value == null || normalized.isEmpty || normalized == 'null') {
+      return null;
+    }
+    return normalized;
+  }
+
+  Future<_DesktopCaptureResolution> _tryDesktopWindowCapture(
+    final GetScreenshotsCommand command,
+  ) async {
+    if (command.mode == ScreenshotMode.flutterLayer) {
+      return const _DesktopCaptureResolution();
+    }
+
+    final projectDir = configuration.flutterProjectDir;
+    final device = configuration.flutterDevice;
+    if (projectDir == null || device == null) {
+      return command.mode == ScreenshotMode.desktopWindow
+          ? const _DesktopCaptureResolution(
+              errorMessage:
+                  'Desktop window screenshot mode requires both '
+                  '--flutter-project-dir and --flutter-device.',
+            )
+          : const _DesktopCaptureResolution();
+    }
+
+    try {
+      final targetPid = await _connectedVmPid();
+      if (device == 'macos' && targetPid != null && targetPid > 0) {
+        await _activateMacOsTargetPid(targetPid);
+      }
+      final capture = await _desktopWindowScreenshotService.capture(
+        projectDir: projectDir,
+        device: device,
+        compress: command.compress,
+        targetPid: targetPid,
+        cacheDir: configuration.stateRootDir,
+      );
+      if (capture == null) {
+        if (command.mode == ScreenshotMode.auto && device != 'macos') {
+          return const _DesktopCaptureResolution();
+        }
+        return const _DesktopCaptureResolution(
+          errorMessage:
+              'Desktop window screenshot mode is unavailable for the current '
+              'target or app window.',
+        );
+      }
+
+      if (!configuration.saveImagesToFiles) {
+        return _DesktopCaptureResolution(
+          data: capture.toJson(fileUrls: const <String>[]),
+        );
+      }
+
+      await imageFileSaver.cleanupOldScreenshots();
+      final fileUrls = await imageFileSaver.saveImagesToFiles(capture.images);
+      return _DesktopCaptureResolution(
+        data: capture.toJson(fileUrls: fileUrls, includeImages: false),
+      );
+    } on DesktopWindowCaptureException catch (e) {
+      return _DesktopCaptureResolution(
+        errorMessage: 'Desktop window screenshot failed: $e',
+        errorDetails: e.details,
+      );
+    } on Object catch (e) {
+      return _DesktopCaptureResolution(
+        errorMessage: 'Desktop window screenshot failed: $e',
+      );
+    }
   }
 
   Future<Map<String, Object?>> _validateAppliedLiveEditRequest({
@@ -2033,259 +2240,134 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     };
   }
 
-  Future<CoreResult?> _ensureVmConnected() async {
-    final ensure = await connectionContext.ensureConnectedWithPolicy();
-    if (ensure.connected) {
-      return null;
-    }
+  VisualCaptureBroker _visualCaptureBroker() => VisualCaptureBroker(
+    configuration: configuration,
+    dynamicGateway: _dynamicGateway,
+    adapters: visualCaptureAdapters,
+  );
 
+  CoreResult _visualCaptureFailure(
+    final PermissionBrokerResult permission, {
+    required final String defaultMessage,
+  }) {
+    final code = switch (permission.status) {
+      PermissionStatus.denied => CoreErrorCode.visualCapturePermissionDenied,
+      PermissionStatus.unsupported ||
+      PermissionStatus.unsupportedUntilAppBridge =>
+        CoreErrorCode.visualCaptureUnsupported,
+      _ => CoreErrorCode.getScreenshotsFailed,
+    };
     return CoreResult.failure(
-      code: ensure.code ?? CoreErrorCode.vmNotConnected,
-      message: ensure.message ?? 'VM service not connected',
-      details: ensure.details,
+      code: code,
+      message: permission.message ?? defaultMessage,
+      details: <String, Object?>{
+        'permission': permission.toJson(),
+        if (permission.canOpenSettings)
+          'suggestedAction': 'flutter_mcp_cli permissions open-settings',
+      },
     );
   }
 
-  bool _isSessionControlCommand(final CoreCommand command) {
-    return command is SessionStartCommand ||
-        command is SessionExecCommand ||
-        command is SessionEndCommand ||
-        command is WatchCommand ||
-        command is DiagnoseCommand;
-  }
-
-  String? _extractSessionId(final CoreResult result) {
-    final metaSession = result.meta['sessionId'];
-    if (metaSession is String && metaSession.isNotEmpty) {
-      return metaSession;
-    }
-
-    final data = result.data;
-    if (data is Map && data['sessionId'] is String) {
-      final sessionId = data['sessionId'] as String;
-      if (sessionId.isNotEmpty) return sessionId;
-    }
-
-    return null;
-  }
-
-  Map<String, Object?> _map(final Object? data) {
-    if (data is Map<String, Object?>) {
-      return data;
-    }
-    if (data is Map) {
-      return data.cast<String, Object?>();
-    }
-    return const <String, Object?>{};
-  }
-
-  LiveEditSelection? _decodeSelection(final Object? value) {
-    if (value is Map<String, Object?>) {
-      return LiveEditSelection.fromJson(value);
-    }
-    if (value is Map) {
-      return LiveEditSelection.fromJson(value.cast<String, Object?>());
-    }
-    return null;
-  }
-
-  List<LiveEditDraftChange> _decodeDraftChanges(final Object? value) {
-    if (value is! List) {
-      return const <LiveEditDraftChange>[];
-    }
-    return value
-        .whereType<Map>()
-        .map((final item) {
-          return LiveEditDraftChange.fromJson(item.cast<String, Object?>());
-        })
-        .toList(growable: false);
-  }
-
-  List<Object?> _asObjectList(final Object? value) {
-    if (value is List<Object?>) {
-      return value;
-    }
-    if (value is List) {
-      return value.cast<Object?>();
-    }
-    return const <Object?>[];
-  }
-
-  String _resolveWorkingDirectory(final String? workingDirectory) {
-    if (_hasText(workingDirectory)) {
-      return workingDirectory!.trim();
-    }
-    if (_hasText(configuration.flutterProjectDir)) {
-      return configuration.flutterProjectDir!.trim();
-    }
-    return Directory.current.path;
-  }
-
-  String? _stringOrNull(final Object? value) {
-    final normalized = '$value'.trim();
-    if (value == null || normalized.isEmpty || normalized == 'null') {
-      return null;
-    }
-    return normalized;
-  }
-
-  bool _hasText(final Object? value) => _stringOrNull(value) != null;
-
-  String? _firstNonEmpty(final String? first, final String? second) =>
-      _stringOrNull(first) ?? _stringOrNull(second);
-
-  bool _looselyEquivalent(final Object? left, final Object? right) {
-    final normalizedLeft = _normalizeComparableValue(left);
-    final normalizedRight = _normalizeComparableValue(right);
-    if (normalizedLeft is num && normalizedRight is num) {
-      return (normalizedLeft - normalizedRight).abs() < 0.001;
-    }
-    return normalizedLeft == normalizedRight;
-  }
-
-  Object? _normalizeComparableValue(final Object? value) {
-    if (value is num) {
-      return value.toDouble();
-    }
-    if (value is bool) {
-      return value;
-    }
-    if (value is String) {
-      final trimmed = value.trim();
-      if (trimmed.isEmpty) {
-        return '';
+  Future<bool> _waitForFlutterIsolateAfterRestart({
+    final Duration timeout = const Duration(seconds: 10),
+    final Duration pollInterval = const Duration(milliseconds: 250),
+  }) async {
+    final deadline = DateTime.now().add(timeout);
+    while (DateTime.now().isBefore(deadline)) {
+      try {
+        final isolate = await connectionContext.getFlutterIsolate();
+        if (isolate?.id != null) {
+          return true;
+        }
+      } on StateError {
+        // Keep retrying until timeout while the isolate comes back.
       }
-      final parsedNumber = num.tryParse(trimmed);
-      if (parsedNumber != null) {
-        return parsedNumber.toDouble();
-      }
-      return trimmed.toLowerCase();
+      await Future<void>.delayed(pollInterval);
     }
-    if (value is Map) {
-      return jsonEncode(
-        value.map((final key, final nestedValue) {
-          return MapEntry('$key', _normalizeComparableValue(nestedValue));
-        }),
+    return false;
+  }
+
+  Future<bool> _waitForLiveEditRuntimeToolAfterRestart(
+    final String toolName, {
+    final Duration timeout = const Duration(seconds: 15),
+    final Duration pollInterval = const Duration(milliseconds: 500),
+  }) async {
+    final deadline = DateTime.now().add(timeout);
+    while (DateTime.now().isBefore(deadline)) {
+      final toolsResult = await _listClientToolsAndResources();
+      if (toolsResult.ok) {
+        final tools = _asObjectList(_map(toolsResult.data)['tools']);
+        final names = tools
+            .whereType<Map>()
+            .map((final entry) => '${entry['name'] ?? ''}')
+            .toSet();
+        if (names.contains(toolName)) {
+          return true;
+        }
+      }
+      await Future<void>.delayed(pollInterval);
+    }
+    return false;
+  }
+
+  Future<CoreResult> _watchSnapshot(final WatchCommand command) async {
+    if (_isSessionControlCommand(command.command)) {
+      return CoreResult.failure(
+        code: CoreErrorCode.invalidCommand,
+        message:
+            'watch command cannot target session control, diagnose, or watch commands',
       );
     }
-    if (value is List) {
-      return jsonEncode(
-        value.map(_normalizeComparableValue).toList(growable: false),
-      );
+
+    final manager = sessionManager;
+    if (command.sessionId != null && manager != null) {
+      final attach = await manager.attachSession(sessionId: command.sessionId);
+      if (!attach.ok) {
+        return attach;
+      }
     }
-    return value;
+
+    final snapshotResult = await _dispatch(command.command);
+    return CoreResult.success(
+      data: {
+        'event': 'command_result',
+        'command': command.command.name,
+        'result': snapshotResult.toEnvelopeJson(),
+      },
+      meta: {if (command.sessionId != null) 'sessionId': command.sessionId},
+    );
   }
 
-  Map<String, Object?> _enrichErrorWithTopFrame(
-    final Map<String, Object?> error,
+  CoreResult _withMeta(
+    final CoreResult result,
+    final int durationMs,
+    final String commandName,
   ) {
-    final next = <String, Object?>{...error};
-    final stackTrace = '${next['stackTrace'] ?? ''}'.trim();
-    if (stackTrace.isEmpty) {
-      return next;
-    }
-
-    final frames = _parseStackFrames(stackTrace);
-    if (frames.isEmpty) {
-      return next;
-    }
-
-    next['topFrame'] = frames.first;
-    next['frames'] = frames;
-    return next;
+    final nextMeta = <String, Object?>{
+      ...result.meta,
+      'schemaVersion': kCoreEnvelopeSchemaVersion,
+      'command': commandName,
+      'timestamp': DateTime.now().toUtc().toIso8601String(),
+      'durationMs': durationMs,
+      'endpoint': connectionContext.activeEndpoint?.display,
+      'mode': connectionContext.lastMode.name,
+      'selectionDiagnostics': connectionContext.lastSelectionDiagnostics,
+    };
+    return result.withMeta(nextMeta);
   }
 
-  List<Map<String, Object?>> _parseStackFrames(final String stackTrace) {
-    final lines = stackTrace.split('\n');
-    final frames = <Map<String, Object?>>[];
-    final pattern = RegExp(r'\(([^:]+):(\d+):(\d+)\)$');
-
-    for (final line in lines) {
-      final trimmed = line.trim();
-      if (trimmed.isEmpty) {
-        continue;
-      }
-
-      final match = pattern.firstMatch(trimmed);
-      if (match == null) {
-        continue;
-      }
-
-      final file = match.group(1);
-      final lineNumber = int.tryParse(match.group(2) ?? '');
-      final columnNumber = int.tryParse(match.group(3) ?? '');
-      if (file == null || lineNumber == null || columnNumber == null) {
-        continue;
-      }
-
-      frames.add({
-        'file': file,
-        'line': lineNumber,
-        'column': columnNumber,
-        'raw': trimmed,
-      });
-
-      if (frames.length >= 10) {
-        break;
-      }
-    }
-
-    return frames;
-  }
-
-  List<Map<String, Object?>> _buildImageSummaries(
-    final Map<String, Object?> screenshotData,
-  ) {
-    final summaries = <Map<String, Object?>>[];
-
-    final images = jsonDecodeListAs<String>(screenshotData['images']);
-    for (var i = 0; i < images.length; i++) {
-      final image = images[i];
-      summaries.add({
-        'id': 'image_${i + 1}',
-        'source': 'inline_base64',
-        'hash': _stableStringHash(image),
-      });
-    }
-
-    final fileUrls = jsonDecodeListAs<String>(screenshotData['fileUrls']);
-    for (var i = 0; i < fileUrls.length; i++) {
-      final url = fileUrls[i];
-      summaries.add({
-        'id': 'image_${images.length + i + 1}',
-        'source': 'file_url',
-        'fileUrl': url,
-        'hash': _stableStringHash(url),
-      });
-    }
-
-    return summaries;
-  }
-
-  String _stableStringHash(final String value) {
-    var hash = 0x811c9dc5;
-    for (final byte in utf8.encode(value)) {
-      hash ^= byte;
-      hash = (hash * 0x01000193) & 0x7fffffff;
-    }
-    return hash.toRadixString(16).padLeft(8, '0');
-  }
-}
-
-Future<void> _defaultActivateMacOsTargetPid(final int pid) async {
-  try {
-    await Process.run('swift', <String>[
-      '-e',
-      'import AppKit; import Foundation; '
-          'let pid = pid_t($pid); '
-          'guard let app = NSRunningApplication(processIdentifier: pid) '
-          'else { Foundation.exit(2) }; '
-          'let activated = app.activate(options: [.activateAllWindows, .activateIgnoringOtherApps]); '
-          'Foundation.exit(activated ? 0 : 1)',
-    ]);
-  } on Exception {
-    // Best effort only. Capture still runs even if activation fails.
-  }
+  Map<String, Object?> _withPermissionMetadata({
+    required final Map<String, Object?> data,
+    required final String requestedMode,
+    required final PermissionBrokerResult permission,
+  }) => <String, Object?>{
+    ...data,
+    'requestedMode': requestedMode,
+    'actualMode': permission.actualMode,
+    'fallbackReason': permission.fallbackReason,
+    'permissionStatus': permission.status.wireName,
+    'permission': permission.toJson(),
+  };
 }
 
 final class _DesktopCaptureResolution {
