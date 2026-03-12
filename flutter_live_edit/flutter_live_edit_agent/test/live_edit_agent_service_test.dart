@@ -338,6 +338,15 @@ final class _FailingInferenceClient implements InferenceClient {
   bool get isAvailable => true;
 
   @override
+  Set<InferenceTask> get supportedTasks => {InferenceTask.structuredText};
+
+  @override
+  Future<bool> refreshAvailability() async => true;
+
+  @override
+  void resetAvailabilityCache() {}
+
+  @override
   Future<InferenceResult<InferenceResponse>> infer(
     final InferenceRequest request,
   ) async => InferenceResult<InferenceResponse>.fail(
@@ -357,6 +366,15 @@ class _FakeInferenceClient implements InferenceClient {
 
   @override
   bool get isAvailable => true;
+
+  @override
+  Set<InferenceTask> get supportedTasks => {InferenceTask.structuredText};
+
+  @override
+  Future<bool> refreshAvailability() async => true;
+
+  @override
+  void resetAvailabilityCache() {}
 
   @override
   Future<InferenceResult<InferenceResponse>> infer(

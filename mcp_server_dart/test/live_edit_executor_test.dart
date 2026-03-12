@@ -1,5 +1,6 @@
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_live_edit_agent/flutter_live_edit_agent.dart';
+import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 import 'package:flutter_inspector_mcp_server/flutter_mcp_core.dart';
 import 'package:test/test.dart';
 import 'package:xsoulspace_inference_core/xsoulspace_inference_core.dart';
@@ -88,47 +89,50 @@ void main() {
       );
     });
 
-    test('apply draft returns condensed execution plan before approval', () async {
-      final proposal = await liveEditAgentService.resolve(
-        const LiveEditResolutionRequest(
-          sessionId: 'session-1',
-          workingDirectory: '/tmp',
-          draftChanges: <LiveEditDraftChange>[
-            LiveEditDraftChange(
-              nodeId: 'node-1',
-              propertyId: 'width',
-              targetValue: 140,
-              confidence: 0.8,
-            ),
-          ],
-          selection: LiveEditSelection(
+    test(
+      'apply draft returns condensed execution plan before approval',
+      () async {
+        final proposal = await liveEditAgentService.resolve(
+          const LiveEditResolutionRequest(
             sessionId: 'session-1',
-            nodeId: 'node-1',
-            widgetType: 'Container',
-            propertyGroups: <LiveEditPropertyDescriptor>[
-              LiveEditPropertyDescriptor(
-                id: 'width',
-                label: 'Width',
-                group: LiveEditPropertyGroup.layout,
-                kind: LiveEditPropertyKind.number,
+            workingDirectory: '/tmp',
+            draftChanges: <LiveEditDraftChange>[
+              LiveEditDraftChange(
+                nodeId: 'node-1',
+                propertyId: 'width',
+                targetValue: 140,
+                confidence: 0.8,
               ),
             ],
-            rawNode: <String, Object?>{},
+            selection: LiveEditSelection(
+              sessionId: 'session-1',
+              nodeId: 'node-1',
+              widgetType: 'Container',
+              propertyGroups: <LiveEditPropertyDescriptor>[
+                LiveEditPropertyDescriptor(
+                  id: 'width',
+                  label: 'Width',
+                  group: LiveEditPropertyGroup.layout,
+                  kind: LiveEditPropertyKind.number,
+                ),
+              ],
+              rawNode: <String, Object?>{},
+            ),
           ),
-        ),
-      );
+        );
 
-      final result = await executor.execute(
-        LiveEditApplyDraftCommand(proposalId: proposal.proposalId),
-      );
+        final result = await executor.execute(
+          LiveEditApplyDraftCommand(proposalId: proposal.proposalId),
+        );
 
-      expect(result.ok, isTrue);
-      final data = result.data! as Map<String, Object?>;
-      expect(data['requiresApproval'], isTrue);
-      final executionPlan = data['executionPlan']! as Map<String, Object?>;
-      expect(executionPlan['proposalId'], proposal.proposalId);
-      expect(executionPlan['agentInstruction'], contains('width=140'));
-    });
+        expect(result.ok, isTrue);
+        final data = result.data! as Map<String, Object?>;
+        expect(data['requiresApproval'], isTrue);
+        final executionPlan = data['executionPlan']! as Map<String, Object?>;
+        expect(executionPlan['proposalId'], proposal.proposalId);
+        expect(executionPlan['agentInstruction'], contains('width=140'));
+      },
+    );
   });
 }
 
@@ -138,6 +142,15 @@ final class _FakeInferenceClient implements InferenceClient {
 
   @override
   bool get isAvailable => true;
+
+  @override
+  Set<InferenceTask> get supportedTasks => {InferenceTask.structuredText};
+
+  @override
+  Future<bool> refreshAvailability() async => true;
+
+  @override
+  void resetAvailabilityCache() {}
 
   @override
   Future<InferenceResult<InferenceResponse>> infer(

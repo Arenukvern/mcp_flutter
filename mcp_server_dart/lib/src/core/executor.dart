@@ -948,8 +948,9 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
         'result': applyResult.toJson(),
         'hotReload': hotReloadResult.data,
         'validation': validation,
-        'validationRecovery': ?validationRecovery,
-        'draft': ?discardData,
+        if (validationRecovery != null)
+          'validationRecovery': validationRecovery,
+        if (discardData != null) 'draft': discardData,
       },
     );
   }

@@ -202,78 +202,27 @@ final class LiveEditExecutionPlan {
     required this.selectedNode,
     required this.requestedChanges,
     required this.affectedFiles,
-    required this.shortAgentInstruction,
-    this.confidence = 0,
-    this.riskNotes = const <String>[],
-    this.meta = const <String, Object?>{},
-  });
-
-  factory LiveEditExecutionPlan.fromJson(final Map<String, Object?> json) =>
-      LiveEditExecutionPlan(
-        proposalId: '${json['proposalId'] ?? ''}',
-        title: '${json['title'] ?? ''}',
-        summary: '${json['summary'] ?? ''}',
-        selectedNode: '${json['selectedNode'] ?? ''}',
-        requestedChanges: _asStringList(json['requestedChanges']),
-        affectedFiles: _asStringList(json['affectedFiles']),
-        confidence: _asDouble(json['confidence']),
-        riskNotes: _asStringList(json['riskNotes']),
-        shortAgentInstruction: '${json['shortAgentInstruction'] ?? ''}',
-        meta: _asMap(json['meta']),
-      );
-
-  final String proposalId;
-  final String title;
-  final String summary;
-  final String selectedNode;
-  final List<String> requestedChanges;
-  final List<String> affectedFiles;
-  final double confidence;
-  final List<String> riskNotes;
-  final String shortAgentInstruction;
-  final Map<String, Object?> meta;
-
-  Map<String, Object?> toJson() => <String, Object?>{
-    'proposalId': proposalId,
-    'title': title,
-    'summary': summary,
-    'selectedNode': selectedNode,
-    'requestedChanges': requestedChanges,
-    'affectedFiles': affectedFiles,
-    'confidence': confidence,
-    'riskNotes': riskNotes,
-    'shortAgentInstruction': shortAgentInstruction,
-    'meta': meta,
-  };
-}
-
-final class LiveEditExecutionPlan {
-  const LiveEditExecutionPlan({
-    required this.proposalId,
-    required this.title,
-    required this.summary,
-    required this.selectedNode,
-    required this.requestedChanges,
-    required this.affectedFiles,
     required this.agentInstruction,
     this.confidence = 0,
     this.riskNotes = const <String>[],
     this.meta = const <String, Object?>{},
   });
 
-  factory LiveEditExecutionPlan.fromJson(final Map<String, Object?> json) =>
-      LiveEditExecutionPlan(
-        proposalId: '${json['proposalId'] ?? ''}',
-        title: '${json['title'] ?? ''}',
-        summary: '${json['summary'] ?? ''}',
-        selectedNode: '${json['selectedNode'] ?? ''}',
-        requestedChanges: _asStringList(json['requestedChanges']),
-        affectedFiles: _asStringList(json['affectedFiles']),
-        confidence: _asDouble(json['confidence']),
-        riskNotes: _asStringList(json['riskNotes']),
-        agentInstruction: '${json['agentInstruction'] ?? ''}',
-        meta: _asMap(json['meta']),
-      );
+  factory LiveEditExecutionPlan.fromJson(
+    final Map<String, Object?> json,
+  ) => LiveEditExecutionPlan(
+    proposalId: '${json['proposalId'] ?? ''}',
+    title: '${json['title'] ?? ''}',
+    summary: '${json['summary'] ?? ''}',
+    selectedNode: '${json['selectedNode'] ?? ''}',
+    requestedChanges: _asStringList(json['requestedChanges']),
+    affectedFiles: _asStringList(json['affectedFiles']),
+    confidence: _asDouble(json['confidence']),
+    riskNotes: _asStringList(json['riskNotes']),
+    agentInstruction:
+        '${json['agentInstruction'] ?? json['shortAgentInstruction'] ?? ''}',
+    meta: _asMap(json['meta']),
+  );
 
   final String proposalId;
   final String title;
@@ -296,6 +245,8 @@ final class LiveEditExecutionPlan {
     'confidence': confidence,
     'riskNotes': riskNotes,
     'agentInstruction': agentInstruction,
+    // Backward-compatible wire key during migration to condensed plan naming.
+    'shortAgentInstruction': agentInstruction,
     'meta': meta,
   };
 }

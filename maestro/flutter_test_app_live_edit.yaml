@@ -1,0 +1,18 @@
+# Live Edit e2e: start example app at http://127.0.0.1:3000 then run: maestro test maestro/flutter_test_app_live_edit.yaml
+url: http://127.0.0.1:3000
+---
+- launchApp
+- assertVisible: "MCP Toolkit Demo"
+- tapOn:
+      id: "live_edit_launcher_chip"
+      retryTapIfNoChange: true
+- assertVisible: "Live Edit: ON"
+- assertVisible: "Tap a widget to select"
+- tapOn:
+      text: "About This Demo"
+      retryTapIfNoChange: true
+- assertVisible: "Draft changes:"
+- tapOn:
+      id: "live_edit_launcher_chip"
+      retryTapIfNoChange: true
+- assertVisible: "Live Edit"
