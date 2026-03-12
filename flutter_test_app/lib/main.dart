@@ -11,6 +11,45 @@ import 'package:provider/provider.dart';
 import 'package:test_app/change_notifier_example.dart';
 import 'package:test_app/stateful_widget_example.dart';
 
+const _liveEditTestModeFromDefine = bool.fromEnvironment('LIVE_EDIT_TEST_MODE');
+
+bool get _liveEditTestMode =>
+    _liveEditTestModeFromDefine ||
+    (kIsWeb && Uri.base.queryParameters['live_edit_test_mode'] == '1');
+
+Future<Map<String, Object?>> _liveEditTestApplyDelegate(
+  final LiveEditApplyDraftRequest request,
+) async {
+  await Future<void>.delayed(const Duration(milliseconds: 120));
+  if (!request.approve) {
+    return <String, Object?>{
+      'proposalId': 'maestro-live-edit-proposal',
+      'executionPlan': <String, Object?>{
+        'proposalId': 'maestro-live-edit-proposal',
+        'title': 'Apply live edit',
+        'summary': 'Persist the inline live-edit changes for Maestro.',
+        'selectedNode': 'Text',
+        'requestedChanges': <String>[
+          'Update selected text property from the panel draft.',
+        ],
+        'affectedFiles': <String>['lib/main.dart'],
+        'confidence': 0.96,
+        'riskNotes': <String>['demo'],
+        'agentInstruction':
+            'Persist the selected live-edit draft in the demo app.',
+      },
+      'result': <String, Object?>{'status': 'proposed'},
+    };
+  }
+  return <String, Object?>{
+    'proposalId': 'maestro-live-edit-proposal',
+    'result': <String, Object?>{
+      'status': 'applied',
+      'changedFiles': <String>['lib/main.dart'],
+    },
+  };
+}
+
 Future<void> main() async {
   runZonedGuarded(
     () async {
@@ -49,7 +88,16 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       builder: (final context, final child) {
-        return FlutterLiveEditHost(child: child ?? const SizedBox.shrink());
+        return FlutterLiveEditHost(
+          applyDraftDelegate: _liveEditTestMode
+              ? _liveEditTestApplyDelegate
+              : null,
+          backendId: _liveEditTestMode ? 'maestro_demo_backend' : null,
+          intentText: _liveEditTestMode
+              ? 'Persist live-edit changes for the Maestro test fixture.'
+              : null,
+          child: child ?? const SizedBox.shrink(),
+        );
       },
       home: ChangeNotifierProvider(
         create: (final context) => CustomNotifier(),
@@ -121,11 +169,15 @@ class _MCPDemoHomePageState extends State<MCPDemoHomePage> {
         ),
         elevation: 2,
       ),
-      body: const SingleChildScrollView(
-        padding: EdgeInsets.all(16.0),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (_liveEditTestMode) ...[
+              _LiveEditTestFixture(),
+              SizedBox(height: 24),
+            ],
             // Header Section
             _HeaderSection(),
             SizedBox(height: 24),
@@ -144,6 +196,42 @@ class _MCPDemoHomePageState extends State<MCPDemoHomePage> {
 
             // Error Section
             ErrorSection(),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LiveEditTestFixture extends StatelessWidget {
+  const _LiveEditTestFixture();
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: const Color(0xFFFFF7ED),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            const Text(
+              'Live Edit Maestro Fixture',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 12),
+            Semantics(
+              identifier: 'live_edit_test_target',
+              child: const Text(
+                'Live Edit Test Target',
+                semanticsIdentifier: 'live_edit_test_target_text',
+                style: TextStyle(fontSize: 18),
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Use this deterministic target for Maestro live-edit coverage.',
+            ),
           ],
         ),
       ),

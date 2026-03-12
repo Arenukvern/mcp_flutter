@@ -69,6 +69,34 @@ List<LiveEditPropertyDescriptor> _buildPropertyDescriptors(
   final descriptors = <LiveEditPropertyDescriptor>[];
 
   void add(final LiveEditPropertyDescriptor descriptor) {
+    final normalizedMeta = <String, Object?>{
+      ...descriptor.meta,
+      if (!descriptor.meta.containsKey('editSurface'))
+        'editSurface': descriptor.requiresAgentForPersistence
+            ? LiveEditEditSurface.aiBubble.wireName
+            : descriptor.options.isNotEmpty ||
+                  descriptor.kind == LiveEditPropertyKind.boolean ||
+                  descriptor.kind == LiveEditPropertyKind.enumValue
+            ? LiveEditEditSurface.inline.wireName
+            : LiveEditEditSurface.panel.wireName,
+      if (!descriptor.meta.containsKey('editor'))
+        'editor': switch (descriptor.kind) {
+          LiveEditPropertyKind.boolean => 'toggle',
+          LiveEditPropertyKind.integer ||
+          LiveEditPropertyKind.number => 'number',
+          LiveEditPropertyKind.string => 'text',
+          LiveEditPropertyKind.enumValue => 'options',
+          _ when descriptor.options.isNotEmpty => 'options',
+          _ => 'readonly',
+        },
+      if (!descriptor.meta.containsKey('selectionUi') &&
+          descriptor.options.isNotEmpty)
+        'selectionUi': 'chips',
+      if (!descriptor.meta.containsKey('step') &&
+          (descriptor.kind == LiveEditPropertyKind.integer ||
+              descriptor.kind == LiveEditPropertyKind.number))
+        'step': descriptor.kind == LiveEditPropertyKind.integer ? 1 : 1.0,
+    };
     descriptors.add(
       LiveEditPropertyDescriptor(
         id: descriptor.id,
@@ -89,7 +117,7 @@ List<LiveEditPropertyDescriptor> _buildPropertyDescriptors(
                 descriptor.previewMode != LiveEditPreviewMode.exact),
         safeToAutoGroupInApply:
             descriptor.safeToAutoGroupInApply || descriptor.editable,
-        meta: descriptor.meta,
+        meta: normalizedMeta,
       ),
     );
   }
@@ -248,6 +276,12 @@ List<LiveEditPropertyDescriptor> _buildPropertyDescriptors(
         editable: true,
         previewMode: LiveEditPreviewMode.ghost,
         persistable: true,
+        meta: <String, Object?>{
+          'editor': 'text',
+          'editSurface': LiveEditEditSurface.inline.wireName,
+          'multiline': ((widget.data ?? widget.textSpan?.toPlainText()) ?? '')
+              .contains('\n'),
+        },
       ),
     );
     if (widget.style?.fontSize != null) {
@@ -425,7 +459,7 @@ LiveEditSourceLocation? _extractSourceLocation(
   return LiveEditSourceLocation(file: '', sourceHint: sourceHint!.trim());
 }
 
-_ElementHit? _findElementHit(
+List<_ElementHit> _findElementHitCandidates(
   final Element root, {
   required final ui.Offset point,
   required final int? requestedViewId,
@@ -434,22 +468,22 @@ _ElementHit? _findElementHit(
   final renderObject = root.renderObject;
   final bounds = _boundsForRenderObject(renderObject);
   if (bounds == null) {
-    return null;
+    return const <_ElementHit>[];
   }
   if (!_containsPoint(bounds, point)) {
-    return null;
+    return const <_ElementHit>[];
   }
 
   final viewId = _viewIdForRenderObject(renderObject);
   if (requestedViewId != null && viewId != null && viewId != requestedViewId) {
-    return null;
+    return const <_ElementHit>[];
   }
 
   final children = <Element>[];
   root.visitChildElements(children.add);
   for (var index = children.length - 1; index >= 0; index -= 1) {
     final child = children[index];
-    final childHit = _findElementHit(
+    final childHits = _findElementHitCandidates(
       child,
       point: point,
       requestedViewId: requestedViewId,
@@ -461,12 +495,15 @@ _ElementHit? _findElementHit(
         },
       ],
     );
-    if (childHit != null) {
-      return childHit;
+    if (childHits.isNotEmpty) {
+      return <_ElementHit>[
+        ...childHits,
+        _ElementHit(element: root, ancestry: ancestry),
+      ];
     }
   }
 
-  return _ElementHit(element: root, ancestry: ancestry);
+  return <_ElementHit>[_ElementHit(element: root, ancestry: ancestry)];
 }
 
 double? _finiteDimension(final double? value) {
@@ -552,6 +589,12 @@ final class LiveEditController extends ChangeNotifier {
 
   LiveEditSelection? get activeSelection => _activeSessionOrNull()?.selection;
 
+  List<LiveEditSelectionCandidate> get activeSelectionCandidates =>
+      List<LiveEditSelectionCandidate>.unmodifiable(
+        _activeSessionOrNull()?.selectionCandidates ??
+            const <LiveEditSelectionCandidate>[],
+      );
+
   String? get activeSessionId => _activeSessionId;
 
   bool get overlayVisible => _activeSessionOrNull()?.overlayEnabled ?? false;
@@ -600,6 +643,9 @@ final class LiveEditController extends ChangeNotifier {
       'sessionId': session.sessionId,
       'selection': selection?.toJson(),
       'hasSelection': selection != null,
+      'selectionCandidates': session.selectionCandidates
+          .map((final candidate) => candidate.toJson())
+          .toList(growable: false),
     };
   }
 
@@ -645,8 +691,12 @@ final class LiveEditController extends ChangeNotifier {
     }
 
     final point = ui.Offset(x.toDouble(), y.toDouble());
-    final hit = _findElementHit(root, point: point, requestedViewId: viewId);
-    if (hit == null) {
+    final hits = _findElementHitCandidates(
+      root,
+      point: point,
+      requestedViewId: viewId,
+    );
+    if (hits.isEmpty) {
       return <String, Object?>{
         'sessionId': session.sessionId,
         'hit': false,
@@ -654,18 +704,92 @@ final class LiveEditController extends ChangeNotifier {
       };
     }
 
+    session.selectionHitCandidates = hits;
     final selection = _setSelection(
       session: session,
-      element: hit.element,
-      ancestry: hit.ancestry,
+      element: hits.first.element,
+      ancestry: hits.first.ancestry,
     );
+    _syncSelectionCandidates(session);
     notifyListeners();
     return <String, Object?>{
       'sessionId': session.sessionId,
       'hit': true,
       'point': <String, Object?>{'x': x, 'y': y},
       'selection': selection.toJson(),
+      'selectionCandidates': session.selectionCandidates
+          .map((final candidate) => candidate.toJson())
+          .toList(growable: false),
     };
+  }
+
+  Map<String, Object?> selectCandidate({
+    final String? sessionId,
+    final int? index,
+    final String? nodeId,
+  }) {
+    final session = _requireSession(sessionId);
+    final hits = session.selectionHitCandidates;
+    if (hits.isEmpty) {
+      return <String, Object?>{
+        'sessionId': session.sessionId,
+        'selected': false,
+        'reason': 'no_candidates',
+      };
+    }
+    final resolvedIndex =
+        index ??
+        hits.indexWhere(
+          (final candidate) =>
+              (WidgetInspectorService.instance.toId(
+                    candidate.element,
+                    session.objectGroup,
+                  ) ??
+                  '') ==
+              '$nodeId',
+        );
+    if (resolvedIndex < 0 || resolvedIndex >= hits.length) {
+      return <String, Object?>{
+        'sessionId': session.sessionId,
+        'selected': false,
+        'reason': 'candidate_not_found',
+      };
+    }
+    final hit = hits[resolvedIndex];
+    final selection = _setSelection(
+      session: session,
+      element: hit.element,
+      ancestry: hit.ancestry,
+    );
+    _syncSelectionCandidates(session);
+    notifyListeners();
+    return <String, Object?>{
+      'sessionId': session.sessionId,
+      'selected': true,
+      'selection': selection.toJson(),
+      'selectionCandidates': session.selectionCandidates
+          .map((final candidate) => candidate.toJson())
+          .toList(growable: false),
+    };
+  }
+
+  Map<String, Object?> selectParent({final String? sessionId}) {
+    final session = _requireSession(sessionId);
+    final activeIndex = session.selectionCandidates.indexWhere(
+      (final candidate) => candidate.active,
+    );
+    if (activeIndex < 0 ||
+        activeIndex + 1 >= session.selectionHitCandidates.length) {
+      return <String, Object?>{
+        'sessionId': session.sessionId,
+        'selected': false,
+        'reason': 'parent_unavailable',
+      };
+    }
+    return selectCandidate(
+      sessionId: session.sessionId,
+      index: activeIndex + 1,
+    );
   }
 
   Map<String, Object?> setOverlay({
@@ -702,6 +826,9 @@ final class LiveEditController extends ChangeNotifier {
       'sessionId': sessionId,
       'active': true,
       'overlayEnabled': session.overlayEnabled,
+      'selectionCandidates': session.selectionCandidates
+          .map((final candidate) => candidate.toJson())
+          .toList(growable: false),
     };
   }
 
@@ -760,7 +887,7 @@ final class LiveEditController extends ChangeNotifier {
   ) {
     final selection = session.selection;
     final element = session.selectedElement;
-    if (selection == null || element == null) {
+    if (selection == null || element == null || !element.mounted) {
       return false;
     }
 
@@ -839,7 +966,12 @@ final class LiveEditController extends ChangeNotifier {
   }
 
   void _revertExactPreview(final _LiveEditSessionState session) {
-    final renderObject = session.selectedElement?.renderObject;
+    final element = session.selectedElement;
+    if (element == null || !element.mounted) {
+      session.originalExactValues.clear();
+      return;
+    }
+    final renderObject = element.renderObject;
     if (renderObject == null) {
       session.originalExactValues.clear();
       return;
@@ -944,6 +1076,39 @@ final class LiveEditController extends ChangeNotifier {
     session.lastTouchedAt = DateTime.now().toUtc();
     return selection;
   }
+
+  void _syncSelectionCandidates(final _LiveEditSessionState session) {
+    final activeElement = session.selectedElement;
+    session.selectionCandidates = session.selectionHitCandidates.indexed
+        .map((final entry) {
+          final index = entry.$1;
+          final hit = entry.$2;
+          final renderObject = hit.element.renderObject;
+          final nodeId =
+              WidgetInspectorService.instance.toId(
+                hit.element,
+                session.objectGroup,
+              ) ??
+              'live_edit_candidate_${session.sessionId}_$index';
+          return LiveEditSelectionCandidate(
+            nodeId: nodeId,
+            widgetType: hit.element.widget.runtimeType.toString(),
+            bounds: _boundsForRenderObject(renderObject),
+            depth: index,
+            source: _extractSourceLocation(
+              _decodeObject(
+                WidgetInspectorService.instance.getDetailsSubtree(
+                  nodeId,
+                  session.objectGroup,
+                ),
+              ),
+              hit.element,
+            ),
+            active: identical(hit.element, activeElement),
+          );
+        })
+        .toList(growable: false);
+  }
 }
 
 final class _ElementHit {
@@ -962,6 +1127,9 @@ final class _LiveEditSessionState {
   Element? selectedElement;
   LiveEditSelection? selection;
   List<Map<String, Object?>> ancestry = const <Map<String, Object?>>[];
+  List<_ElementHit> selectionHitCandidates = const <_ElementHit>[];
+  List<LiveEditSelectionCandidate> selectionCandidates =
+      const <LiveEditSelectionCandidate>[];
   final List<LiveEditDraftChange> draftChanges = <LiveEditDraftChange>[];
   final Map<String, Object?> originalExactValues = <String, Object?>{};
   DateTime lastTouchedAt = DateTime.now().toUtc();

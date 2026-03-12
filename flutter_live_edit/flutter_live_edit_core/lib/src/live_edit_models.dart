@@ -298,6 +298,86 @@ enum LiveEditPreviewMode {
   }
 }
 
+enum LiveEditEditSurface {
+  inline('inline'),
+  panel('panel'),
+  aiBubble('aiBubble');
+
+  const LiveEditEditSurface(this.wireName);
+
+  final String wireName;
+
+  static LiveEditEditSurface fromWire(final Object? value) {
+    final normalized = '$value'.trim().toLowerCase();
+    return LiveEditEditSurface.values.firstWhere(
+      (final surface) => surface.wireName.toLowerCase() == normalized,
+      orElse: () => LiveEditEditSurface.panel,
+    );
+  }
+}
+
+enum LiveEditEditMode {
+  inspect('inspect'),
+  edit('edit'),
+  ai('ai');
+
+  const LiveEditEditMode(this.wireName);
+
+  final String wireName;
+
+  static LiveEditEditMode fromWire(final Object? value) {
+    final normalized = '$value'.trim().toLowerCase();
+    return LiveEditEditMode.values.firstWhere(
+      (final mode) => mode.wireName == normalized,
+      orElse: () => LiveEditEditMode.inspect,
+    );
+  }
+}
+
+final class LiveEditSelectionCandidate {
+  const LiveEditSelectionCandidate({
+    required this.nodeId,
+    required this.widgetType,
+    required this.bounds,
+    required this.depth,
+    this.source,
+    this.active = false,
+  });
+
+  factory LiveEditSelectionCandidate.fromJson(
+    final Map<String, Object?> json,
+  ) => LiveEditSelectionCandidate(
+    nodeId: '${json['nodeId'] ?? ''}',
+    widgetType: '${json['widgetType'] ?? ''}',
+    bounds: switch (json['bounds']) {
+      final Map value => LiveEditBounds.fromJson(_asMap(value)),
+      _ => null,
+    },
+    depth: _asNullableInt(json['depth']) ?? 0,
+    source: switch (json['source']) {
+      final Map value => LiveEditSourceLocation.fromJson(_asMap(value)),
+      _ => null,
+    },
+    active: json['active'] == true,
+  );
+
+  final String nodeId;
+  final String widgetType;
+  final LiveEditBounds? bounds;
+  final int depth;
+  final LiveEditSourceLocation? source;
+  final bool active;
+
+  Map<String, Object?> toJson() => <String, Object?>{
+    'nodeId': nodeId,
+    'widgetType': widgetType,
+    if (bounds != null) 'bounds': bounds!.toJson(),
+    'depth': depth,
+    if (source != null) 'source': source!.toJson(),
+    'active': active,
+  };
+}
+
 final class LiveEditPropertyDescriptor {
   const LiveEditPropertyDescriptor({
     required this.id,
@@ -346,6 +426,17 @@ final class LiveEditPropertyDescriptor {
   final bool requiresAgentForPersistence;
   final bool safeToAutoGroupInApply;
   final Map<String, Object?> meta;
+
+  LiveEditEditSurface get preferredEditSurface =>
+      LiveEditEditSurface.fromWire(meta['editSurface']);
+
+  String get preferredEditor => '${meta['editor'] ?? ''}'.trim();
+
+  bool get prefersMultiline => meta['multiline'] == true;
+
+  double get numericStep => _asDouble(meta['step'], fallback: 1);
+
+  String get selectionPresentation => '${meta['selectionUi'] ?? ''}'.trim();
 
   Map<String, Object?> toJson() => <String, Object?>{
     'id': id,
