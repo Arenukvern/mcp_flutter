@@ -723,7 +723,6 @@ class _SelectionBubble extends StatelessWidget {
                       identifier: 'live_edit_select_parent_button',
                       button: true,
                       child: IconButton(
-                        tooltip: 'Select parent',
                         onPressed:
                             orchestrator.activeSelectionCandidates.length > 1
                             ? orchestrator.selectParentCandidate

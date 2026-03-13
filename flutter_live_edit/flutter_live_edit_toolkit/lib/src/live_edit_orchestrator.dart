@@ -23,6 +23,8 @@ typedef LiveEditApplyDraftDelegate =
 final class LiveEditApplyDraftRequest {
   const LiveEditApplyDraftRequest({
     required this.sessionId,
+    this.draftChanges = const <LiveEditDraftChange>[],
+    this.selection,
     this.proposalId,
     this.backendId,
     this.workingDirectory,
@@ -31,6 +33,8 @@ final class LiveEditApplyDraftRequest {
   });
 
   final String sessionId;
+  final List<LiveEditDraftChange> draftChanges;
+  final LiveEditSelection? selection;
   final String? proposalId;
   final String? backendId;
   final String? workingDirectory;
@@ -39,6 +43,10 @@ final class LiveEditApplyDraftRequest {
 
   Map<String, Object?> toJson() => <String, Object?>{
     'sessionId': sessionId,
+    'draftChanges': draftChanges
+        .map((final change) => change.toJson())
+        .toList(growable: false),
+    if (selection != null) 'selection': selection!.toJson(),
     if (_hasText(proposalId)) 'proposalId': proposalId,
     if (_hasText(backendId)) 'backendId': backendId,
     if (_hasText(workingDirectory)) 'workingDirectory': workingDirectory,
@@ -210,6 +218,10 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       final response = await applyDraftDelegate!(
         LiveEditApplyDraftRequest(
           sessionId: sessionId,
+          draftChanges: List<LiveEditDraftChange>.unmodifiable(
+            activeDraftChanges,
+          ),
+          selection: activeSelection,
           proposalId: _pendingProposalId,
           backendId: backendId,
           workingDirectory: workingDirectory,

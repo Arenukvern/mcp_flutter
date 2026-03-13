@@ -17,6 +17,9 @@ bool get _liveEditTestMode =>
     _liveEditTestModeFromDefine ||
     (kIsWeb && Uri.base.queryParameters['live_edit_test_mode'] == '1');
 
+@visibleForTesting
+LiveEditOrchestrator? debugLiveEditOrchestratorOverride;
+
 Future<Map<String, Object?>> _liveEditTestApplyDelegate(
   final LiveEditApplyDraftRequest request,
 ) async {
@@ -88,12 +91,16 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       builder: (final context, final child) {
+        final orchestrator = debugLiveEditOrchestratorOverride;
         return FlutterLiveEditHost(
-          applyDraftDelegate: _liveEditTestMode
+          orchestrator: orchestrator,
+          applyDraftDelegate: orchestrator == null && _liveEditTestMode
               ? _liveEditTestApplyDelegate
               : null,
-          backendId: _liveEditTestMode ? 'maestro_demo_backend' : null,
-          intentText: _liveEditTestMode
+          backendId: orchestrator == null && _liveEditTestMode
+              ? 'maestro_demo_backend'
+              : null,
+          intentText: orchestrator == null && _liveEditTestMode
               ? 'Persist live-edit changes for the Maestro test fixture.'
               : null,
           child: child ?? const SizedBox.shrink(),
