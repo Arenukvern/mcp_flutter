@@ -10,10 +10,12 @@ dependencies:
   flutter_live_edit_core:
     path: ../flutter_live_edit_core
   path: ^1.9.1
-  xsoulspace_inference_core:
-    path: ../../../../xs/dart_flutter_packages/pkgs/xsoulspace_inference_core
   xsoulspace_inference_codex_exec:
     path: ../../../../xs/dart_flutter_packages/pkgs/xsoulspace_inference_codex_exec
+  xsoulspace_inference_core:
+    path: ../../../../xs/dart_flutter_packages/pkgs/xsoulspace_inference_core
+  xsoulspace_inference_cursor_agent:
+    path: ../../../../xs/dart_flutter_packages/pkgs/xsoulspace_inference_cursor_agent
 
 dev_dependencies:
   lints: ^6.1.0

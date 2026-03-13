@@ -782,6 +782,8 @@ final class CommandCatalog {
           properties: {
             'sessionId': _stringSchema(),
             'backendId': _stringSchema(),
+            'inferenceConfig': _inferenceConfigSchema(),
+            'codexConfig': _inferenceConfigSchema(),
             'workingDirectory': _stringSchema(),
           },
         ),
@@ -792,6 +794,7 @@ final class CommandCatalog {
         build: (final args) => LiveEditPrepareSessionCommand(
           sessionId: _nullableStringArg(args, 'sessionId', alias: 'session-id'),
           backendId: _nullableStringArg(args, 'backendId', alias: 'backend-id'),
+          inferenceConfig: _nullableInferenceConfigArg(args),
           workingDirectory: _nullableStringArg(
             args,
             'workingDirectory',
@@ -834,13 +837,14 @@ final class CommandCatalog {
       CommandSpec(
         name: 'live_edit_select_at_point',
         description:
-            'Select the deepest live-edit node at global logical coordinates.',
+            'Select a live-edit node at global logical coordinates using an optional selection policy.',
         inputSchema: _objectSchema(
           properties: {
             'sessionId': _stringSchema(),
             'x': _intSchema(),
             'y': _intSchema(),
             'viewId': _intSchema(),
+            'selectionPolicy': _stringSchema(),
           },
           required: const <String>['x', 'y'],
         ),
@@ -853,6 +857,13 @@ final class CommandCatalog {
           x: _intArg(args, 'x', fallback: 0),
           y: _intArg(args, 'y', fallback: 0),
           viewId: _nullableIntArg(args, 'viewId', alias: 'view-id'),
+          selectionPolicy: LiveEditSelectionPolicy.fromWire(
+            _nullableStringArg(
+              args,
+              'selectionPolicy',
+              alias: 'selection-policy',
+            ),
+          ),
         ),
       ),
       CommandSpec(
@@ -1055,6 +1066,8 @@ final class CommandCatalog {
           properties: {
             'sessionId': _stringSchema(),
             'backendId': _stringSchema(),
+            'inferenceConfig': _inferenceConfigSchema(),
+            'codexConfig': _inferenceConfigSchema(),
           },
           required: const <String>['sessionId', 'backendId'],
         ),
@@ -1075,6 +1088,7 @@ final class CommandCatalog {
             alias: 'backend-id',
             fallback: '',
           ),
+          inferenceConfig: _nullableInferenceConfigArg(args),
         ),
       ),
       CommandSpec(
@@ -1085,6 +1099,8 @@ final class CommandCatalog {
           properties: {
             'sessionId': _stringSchema(),
             'backendId': _stringSchema(),
+            'inferenceConfig': _inferenceConfigSchema(),
+            'codexConfig': _inferenceConfigSchema(),
             'workingDirectory': _stringSchema(),
             'intentText': _stringSchema(),
           },
@@ -1096,6 +1112,7 @@ final class CommandCatalog {
         build: (final args) => LiveEditResolveDraftCommand(
           sessionId: _nullableStringArg(args, 'sessionId', alias: 'session-id'),
           backendId: _nullableStringArg(args, 'backendId', alias: 'backend-id'),
+          inferenceConfig: _nullableInferenceConfigArg(args),
           workingDirectory: _nullableStringArg(
             args,
             'workingDirectory',
@@ -1116,6 +1133,8 @@ final class CommandCatalog {
           properties: {
             'sessionId': _stringSchema(),
             'backendId': _stringSchema(),
+            'inferenceConfig': _inferenceConfigSchema(),
+            'codexConfig': _inferenceConfigSchema(),
             'workingDirectory': _stringSchema(),
             'intentText': _stringSchema(),
             'proposalId': _stringSchema(),
@@ -1129,6 +1148,7 @@ final class CommandCatalog {
         build: (final args) => LiveEditApplyDraftCommand(
           sessionId: _nullableStringArg(args, 'sessionId', alias: 'session-id'),
           backendId: _nullableStringArg(args, 'backendId', alias: 'backend-id'),
+          inferenceConfig: _nullableInferenceConfigArg(args),
           workingDirectory: _nullableStringArg(
             args,
             'workingDirectory',
@@ -1310,6 +1330,15 @@ final class CommandCatalog {
     return null;
   }
 
+  static Map<String, Object?> _inferenceConfigSchema() => _objectSchema(
+    properties: <String, Object?>{
+      'model': _stringSchema(),
+      'reasoningEffort': _stringSchema(
+        enumValues: const <String>['low', 'medium', 'high', 'middle'],
+      ),
+    },
+  );
+
   static int _intArg(
     final Map<String, Object?> args,
     final String key, {
@@ -1346,6 +1375,23 @@ final class CommandCatalog {
     throw ArgumentError(
       'Invalid type for "$key": expected object '
       '(schema path: \$.inputSchema.properties.$key)',
+    );
+  }
+
+  static LiveEditInferenceConfig? _nullableInferenceConfigArg(
+    final Map<String, Object?> args,
+  ) {
+    final value = _findArg(args, 'inferenceConfig', alias: 'inference-config') ??
+        _findArg(args, 'codexConfig', alias: 'codex-config');
+    if (value == null) return null;
+    final map = value is Map<String, Object?>
+        ? value
+        : (value is Map
+            ? value.map((final k, final v) => MapEntry('$k', v))
+            : null);
+    if (map == null) return null;
+    return LiveEditCodexOptions.normalizeConfig(
+      LiveEditInferenceConfig.fromJson(map),
     );
   }
 

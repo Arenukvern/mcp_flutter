@@ -948,9 +948,8 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
         'result': applyResult.toJson(),
         'hotReload': hotReloadResult.data,
         'validation': validation,
-        if (validationRecovery != null)
-          'validationRecovery': validationRecovery,
-        if (discardData != null) 'draft': discardData,
+        'validationRecovery': ?validationRecovery,
+        'draft': ?discardData,
       },
     );
   }
@@ -966,6 +965,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
         LiveEditResolveDraftCommand(
           sessionId: command.sessionId,
           backendId: command.backendId,
+          inferenceConfig: command.inferenceConfig,
           workingDirectory: command.workingDirectory,
           intentText: command.intentText,
         ),
@@ -995,17 +995,6 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       );
     }
 
-    if (!command.approve) {
-      return CoreResult.success(
-        data: <String, Object?>{
-          'proposalId': proposalId,
-          'requiresApproval': true,
-          'executionPlan': executionPlan.toJson(),
-          if (resolveResult != null) 'resolve': resolveResult.data,
-        },
-      );
-    }
-
     final acceptResult = await _liveEditAcceptResolution(
       LiveEditAcceptResolutionCommand(
         proposalId: proposalId,
@@ -1021,6 +1010,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       data: <String, Object?>{
         'proposalId': proposalId,
         'approved': true,
+        'applied': true,
         'executionPlan': executionPlan.toJson(),
         'result': acceptResult.data,
         if (resolveResult != null) 'resolve': resolveResult.data,
@@ -1296,11 +1286,14 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       );
     }
 
-    if (_hasText(command.backendId)) {
+    if (_hasText(command.backendId) || command.inferenceConfig != null) {
       final backendResult = await _liveEditSetAgentBackend(
         LiveEditSetAgentBackendCommand(
           sessionId: sessionId!,
-          backendId: command.backendId!,
+          backendId:
+              command.backendId ??
+              _liveEditAgentService.getBackend(sessionId: sessionId).id,
+          inferenceConfig: command.inferenceConfig,
         ),
       );
       if (!backendResult.ok) {
@@ -1381,7 +1374,8 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
 
     final draftData = _map(draftResult.data);
     final draftChanges = _decodeDraftChanges(draftData['draftChanges']);
-    if (draftChanges.isEmpty) {
+    final hasIntentText = _hasText(command.intentText);
+    if (draftChanges.isEmpty && !hasIntentText) {
       return CoreResult.failure(
         code: CoreErrorCode.invalidCommand,
         message: 'No live edit draft changes are available for resolution',
@@ -1428,6 +1422,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       draftChanges: draftChanges,
       selection: selection,
       backendId: command.backendId,
+      inferenceConfig: command.inferenceConfig,
       intentText: command.intentText,
       evidence: evidence,
       meta: <String, Object?>{'treeSelectedNodeId': treeData['selectedNodeId']},
@@ -1479,6 +1474,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       'x': command.x,
       'y': command.y,
       if (command.viewId != null) 'viewId': command.viewId,
+      'selectionPolicy': command.selectionPolicy.wireName,
     },
   );
 
@@ -1532,6 +1528,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       _liveEditAgentService.setSessionBackend(
         sessionId: command.sessionId,
         backendId: command.backendId,
+        inferenceConfig: command.inferenceConfig,
       );
       final backend = _liveEditAgentService.getBackend(
         backendId: command.backendId,
@@ -1878,7 +1875,12 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
         final x = point['x']!;
         final y = point['y']!;
         final result = await _liveEditSelectAtPoint(
-          LiveEditSelectAtPointCommand(sessionId: sessionId, x: x, y: y),
+          LiveEditSelectAtPointCommand(
+            sessionId: sessionId,
+            x: x,
+            y: y,
+            selectionPolicy: LiveEditSelectionPolicy.nearestProjectAncestor,
+          ),
         );
         final data = _map(result.data);
         final hit = data['hit'] == true;

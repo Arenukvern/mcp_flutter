@@ -246,6 +246,7 @@ final class LiveEditApplyDraftCommand extends CoreCommand {
   const LiveEditApplyDraftCommand({
     this.sessionId,
     this.backendId,
+    this.inferenceConfig,
     this.workingDirectory,
     this.intentText,
     this.proposalId,
@@ -254,6 +255,7 @@ final class LiveEditApplyDraftCommand extends CoreCommand {
 
   final String? sessionId;
   final String? backendId;
+  final LiveEditInferenceConfig? inferenceConfig;
   final String? workingDirectory;
   final String? intentText;
   final String? proposalId;
@@ -365,11 +367,13 @@ final class LiveEditPrepareSessionCommand extends CoreCommand {
   const LiveEditPrepareSessionCommand({
     this.sessionId,
     this.backendId,
+    this.inferenceConfig,
     this.workingDirectory,
   });
 
   final String? sessionId;
   final String? backendId;
+  final LiveEditInferenceConfig? inferenceConfig;
   final String? workingDirectory;
 
   @override
@@ -389,12 +393,14 @@ final class LiveEditResolveDraftCommand extends CoreCommand {
   const LiveEditResolveDraftCommand({
     this.sessionId,
     this.backendId,
+    this.inferenceConfig,
     this.workingDirectory,
     this.intentText,
   });
 
   final String? sessionId;
   final String? backendId;
+  final LiveEditInferenceConfig? inferenceConfig;
   final String? workingDirectory;
   final String? intentText;
 
@@ -408,12 +414,14 @@ final class LiveEditSelectAtPointCommand extends CoreCommand {
     required this.y,
     this.sessionId,
     this.viewId,
+    this.selectionPolicy = LiveEditSelectionPolicy.deepest,
   });
 
   final String? sessionId;
   final int x;
   final int y;
   final int? viewId;
+  final LiveEditSelectionPolicy selectionPolicy;
 
   @override
   String get name => 'live_edit_select_at_point';
@@ -438,10 +446,12 @@ final class LiveEditSetAgentBackendCommand extends CoreCommand {
   const LiveEditSetAgentBackendCommand({
     required this.sessionId,
     required this.backendId,
+    this.inferenceConfig,
   });
 
   final String sessionId;
   final String backendId;
+  final LiveEditInferenceConfig? inferenceConfig;
 
   @override
   String get name => 'live_edit_set_agent_backend';

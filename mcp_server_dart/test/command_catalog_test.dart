@@ -125,6 +125,68 @@ void main() {
       expect(update.change.previewMode, LiveEditPreviewMode.ghost);
     });
 
+    test('live edit select-at-point keeps deepest policy when omitted', () {
+      final command = catalog.buildCommand('live_edit_select_at_point', {
+        'sessionId': 'live-session',
+        'x': 120,
+        'y': 240,
+      });
+
+      expect(command, isA<LiveEditSelectAtPointCommand>());
+      final select = command as LiveEditSelectAtPointCommand;
+      expect(select.selectionPolicy, LiveEditSelectionPolicy.deepest);
+    });
+
+    test(
+      'builds live edit inference config payloads and normalizes middle',
+      () {
+        final prepare = catalog.buildCommand('live_edit_prepare_session', {
+          'sessionId': 'live-session',
+          'backendId': 'codex_exec',
+          'inferenceConfig': {
+            'model': 'GPT-5.3-Codex',
+            'reasoningEffort': 'middle',
+          },
+        });
+
+        expect(prepare, isA<LiveEditPrepareSessionCommand>());
+        final config =
+            (prepare as LiveEditPrepareSessionCommand).inferenceConfig;
+        expect(config?.model, 'gpt-5.3-codex');
+        expect(config?.reasoningEffort, 'medium');
+      },
+    );
+
+    test('parses codexConfig as backward compat for inferenceConfig', () {
+      final prepare = catalog.buildCommand('live_edit_prepare_session', {
+        'sessionId': 'live-session',
+        'backendId': 'codex_exec',
+        'codexConfig': {'model': 'GPT-5.4', 'reasoningEffort': 'high'},
+      });
+      final config = (prepare as LiveEditPrepareSessionCommand).inferenceConfig;
+      expect(config?.model, 'gpt-5.4');
+      expect(config?.reasoningEffort, 'high');
+    });
+
+    test('exposes inferenceConfig in live edit command schemas', () {
+      final prepareSchema =
+          catalog
+                  .specFor('live_edit_prepare_session')!
+                  .inputSchema['properties']!
+              as Map<String, Object?>;
+      expect(prepareSchema.containsKey('inferenceConfig'), isTrue);
+
+      final resolveSchema =
+          catalog.specFor('live_edit_resolve_draft')!.inputSchema['properties']!
+              as Map<String, Object?>;
+      expect(resolveSchema.containsKey('inferenceConfig'), isTrue);
+
+      final applySchema =
+          catalog.specFor('live_edit_apply_draft')!.inputSchema['properties']!
+              as Map<String, Object?>;
+      expect(applySchema.containsKey('inferenceConfig'), isTrue);
+    });
+
     test('parses screenshot permission policy fields', () {
       final command = catalog.buildCommand('get_screenshots', {
         'mode': 'auto',

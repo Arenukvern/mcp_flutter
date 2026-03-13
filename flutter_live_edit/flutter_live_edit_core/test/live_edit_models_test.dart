@@ -31,7 +31,6 @@ void main() {
           editable: true,
           previewMode: LiveEditPreviewMode.ghost,
           persistable: true,
-          canPreviewExactly: false,
           requiresAgentForPersistence: true,
           safeToAutoGroupInApply: true,
         ),
@@ -75,6 +74,52 @@ void main() {
     expect(decoded.filePatches.single.path, 'lib/main.dart');
     expect(decoded.expectedRuntimeEffects.single, 'Wider container');
   });
+
+  test('inference config normalizes middle to medium and round-trips', () {
+    final config = LiveEditInferenceConfig.fromJson(<String, Object?>{
+      'model': 'GPT-5.4',
+      'reasoningEffort': 'middle',
+    });
+
+    expect(config.model, 'gpt-5.4');
+    expect(config.reasoningEffort, 'medium');
+    expect(config.toJson(), <String, Object?>{
+      'model': 'gpt-5.4',
+      'reasoningEffort': 'medium',
+    });
+  });
+
+  test(
+    'resolution request accepts inferenceConfig and codexConfig (backward compat)',
+    () {
+      final fromInference = LiveEditResolutionRequest.fromJson(
+        <String, Object?>{
+          'sessionId': 's1',
+          'workingDirectory': '/wd',
+          'draftChanges': <Object?>[],
+          'inferenceConfig': <String, Object?>{'model': 'gpt-5.4'},
+        },
+      );
+      expect(fromInference.inferenceConfig?.model, 'gpt-5.4');
+
+      final fromCodex = LiveEditResolutionRequest.fromJson(<String, Object?>{
+        'sessionId': 's1',
+        'workingDirectory': '/wd',
+        'draftChanges': <Object?>[],
+        'codexConfig': <String, Object?>{'model': 'gpt-5.3-codex'},
+      });
+      expect(fromCodex.inferenceConfig?.model, 'gpt-5.3-codex');
+
+      const req = LiveEditResolutionRequest(
+        sessionId: 's1',
+        workingDirectory: '/wd',
+        draftChanges: [],
+        inferenceConfig: LiveEditInferenceConfig(model: 'x'),
+      );
+      expect(req.toJson().containsKey('inferenceConfig'), isTrue);
+      expect(req.toJson()['codexConfig'], isNull);
+    },
+  );
 
   test('execution plan serializes and deserializes', () {
     const plan = LiveEditExecutionPlan(

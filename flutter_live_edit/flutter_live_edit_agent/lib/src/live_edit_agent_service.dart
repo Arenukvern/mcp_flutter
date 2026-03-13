@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -5,6 +6,7 @@ import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 import 'package:path/path.dart' as p;
 import 'package:xsoulspace_inference_codex_exec/xsoulspace_inference_codex_exec.dart';
 import 'package:xsoulspace_inference_core/xsoulspace_inference_core.dart';
+import 'package:xsoulspace_inference_cursor_agent/xsoulspace_inference_cursor_agent.dart';
 
 String _agentInstruction(
   final LiveEditResolutionProposal proposal,
@@ -14,11 +16,13 @@ String _agentInstruction(
       (request?.draftChanges ?? const <LiveEditDraftChange>[])
           .map((final change) => '${change.propertyId}=${change.targetValue}')
           .join(', ');
+  final intentText = request?.intentText?.trim();
   final widgetType = request?.selection?.widgetType.trim();
   final summary = proposal.summary.trim();
   final parts = <String>[
     if (_hasText(widgetType)) 'Update $widgetType',
     if (_hasText(requestedChanges)) 'with $requestedChanges',
+    if (_hasText(intentText)) 'for request: $intentText',
     if (_hasText(summary))
       'and persist the source change described as: $summary',
   ];
@@ -52,6 +56,9 @@ Map<String, Object?> _buildPromptRequest(
   }
   if (_hasText(request.backendId)) {
     promptRequest['backendId'] = request.backendId;
+  }
+  if (request.inferenceConfig != null) {
+    promptRequest['inferenceConfig'] = request.inferenceConfig!.toJson();
   }
   if (_hasText(request.intentText)) {
     promptRequest['intentText'] = request.intentText;
@@ -181,6 +188,25 @@ String _draftChangeSummary(
   return 'Set $label to ${change.targetValue}';
 }
 
+List<String> _executionRequestedChanges(
+  final LiveEditResolutionRequest? request,
+  final LiveEditSelection? selection,
+) {
+  final requestedChanges = <String>[
+    ...(request?.draftChanges ?? const <LiveEditDraftChange>[]).map(
+      (final change) => _draftChangeSummary(change, selection),
+    ),
+  ];
+  final intentText = request?.intentText?.trim();
+  if (_hasText(intentText)) {
+    requestedChanges.add(intentText!);
+  }
+  return requestedChanges;
+}
+
+bool _hasResolveIntent(final LiveEditResolutionRequest request) =>
+    request.draftChanges.isNotEmpty || _trimmedIntentText(request) != null;
+
 bool _hasText(final String? value) => value != null && value.trim().isNotEmpty;
 
 bool _isLargePayloadKey(final String key) =>
@@ -241,6 +267,25 @@ Map<String, Object?>? _loadSourceExcerpt(
   }
 }
 
+Map<String, Object?> _mergeErrorDetails(
+  final Object? details, {
+  required final LiveEditResolutionRequest request,
+  required final String backendId,
+}) {
+  final merged = <String, Object?>{
+    'requestSummary': _resolutionRequestSummary(request, backendId: backendId),
+    'request': request.toJson(),
+  };
+  if (details is Map) {
+    merged.addAll(_normalizeMap(details));
+    return merged;
+  }
+  if (details != null) {
+    merged['rawDetails'] = details;
+  }
+  return merged;
+}
+
 String? _normalizeFilePath(final String rawPath) {
   final uri = Uri.tryParse(rawPath);
   if (uri != null && uri.scheme == 'file') {
@@ -280,6 +325,23 @@ double _planConfidence(
       changeConfidences.length;
   return average.clamp(0, 1).toDouble();
 }
+
+Map<String, Object?> _resolutionRequestSummary(
+  final LiveEditResolutionRequest request, {
+  required final String backendId,
+}) => <String, Object?>{
+  'sessionId': request.sessionId,
+  'backendId': backendId,
+  'workingDirectory': request.workingDirectory,
+  'selectionNodeId': request.selection?.nodeId,
+  'draftChangeCount': request.draftChanges.length,
+  'intentTextPresent': _trimmedIntentText(request) != null,
+  'requestMode': request.draftChanges.isEmpty ? 'prompt-only' : 'draft-backed',
+  if (request.inferenceConfig?.model != null)
+    'inferenceModel': request.inferenceConfig!.model,
+  if (request.inferenceConfig?.reasoningEffort != null)
+    'inferenceReasoningEffort': request.inferenceConfig!.reasoningEffort,
+};
 
 String _selectedNodeLabel(final LiveEditSelection? selection) {
   if (selection == null) {
@@ -501,6 +563,46 @@ Map<String, Object?> _summarizeSourceLocation(
   return summary;
 }
 
+String? _trimmedIntentText(final LiveEditResolutionRequest request) {
+  final value = request.intentText?.trim();
+  if (value == null || value.isEmpty) {
+    return null;
+  }
+  return value;
+}
+
+String? _validateResolutionRequest(final LiveEditResolutionRequest request) {
+  final workingDirectory = request.workingDirectory.trim();
+  if (workingDirectory.isEmpty || !Directory(workingDirectory).existsSync()) {
+    return 'Live edit working directory is unavailable for source persistence.';
+  }
+  if (!_hasResolveIntent(request)) {
+    return 'Live edit needs either draft changes or a prompt before the selected backend can resolve it.';
+  }
+
+  final selection = request.selection;
+  final source = selection?.source;
+  if (selection == null || source == null) {
+    return null;
+  }
+
+  final normalizedPath = _normalizeFilePath(source.file);
+  if (!_hasText(normalizedPath)) {
+    return 'The selected element does not expose a source file, so the selected backend cannot persist this change yet.';
+  }
+
+  final absolutePath = p.isAbsolute(normalizedPath!)
+      ? normalizedPath
+      : p.normalize(p.join(workingDirectory, normalizedPath));
+  if (!_isWithinWorkspace(absolutePath, workingDirectory)) {
+    return 'The selected source file is outside the live edit workspace.';
+  }
+  if (!File(absolutePath).existsSync()) {
+    return 'The selected source file could not be found in the live edit workspace.';
+  }
+  return null;
+}
+
 final class LiveEditAgentException implements Exception {
   const LiveEditAgentException({
     required this.code,
@@ -533,22 +635,33 @@ final class LiveEditAgentRegistry {
     required final Map<String, InferenceClient> clients,
     final String? defaultBackendId,
   }) : _clients = Map<String, InferenceClient>.unmodifiable(clients),
-       _defaultBackendId = defaultBackendId ?? clients.keys.first;
+       _defaultBackendId = _resolveDefaultBackendId(
+         clients: clients,
+         requestedBackendId: defaultBackendId,
+       );
 
   factory LiveEditAgentRegistry.withDefaults() {
     final codexClient = CodexExecInferenceClient(
       executionTimeout: const Duration(minutes: 6),
       maxTimeoutRetries: 0,
     );
+    final cursorClient = CursorAgentInferenceClient(
+      executionTimeout: const Duration(minutes: 6),
+      maxTimeoutRetries: 0,
+    );
     return LiveEditAgentRegistry(
-      clients: <String, InferenceClient>{'codex_exec': codexClient},
-      defaultBackendId: 'codex_exec',
+      clients: <String, InferenceClient>{
+        'codex_exec': codexClient,
+        'cursor_agent': cursorClient,
+      },
+      defaultBackendId: Platform.environment['LIVE_EDIT_BACKEND'],
     );
   }
 
   final Map<String, InferenceClient> _clients;
   final String _defaultBackendId;
-  final Map<String, String> _sessionBackendIds = <String, String>{};
+  final Map<String, _LiveEditAgentSessionState> _sessionStates =
+      <String, _LiveEditAgentSessionState>{};
 
   InferenceClient clientFor({
     final String? backendId,
@@ -569,21 +682,17 @@ final class LiveEditAgentRegistry {
       backendId: backendId,
       sessionId: sessionId,
     );
-    return listBackends().firstWhere(
-      (final backend) => backend.id == resolvedId,
+    return _buildBackend(
+      backendId: resolvedId,
+      client: _clients[resolvedId]!,
+      sessionId: sessionId,
     );
   }
 
   List<LiveEditAgentBackend> listBackends() => _clients.entries
       .map(
-        (final entry) => LiveEditAgentBackend(
-          id: entry.key,
-          label: entry.key,
-          description: 'Inference backend `${entry.key}`',
-          available: entry.value.isAvailable,
-          isDefault: entry.key == _defaultBackendId,
-          meta: <String, Object?>{'clientId': entry.value.id},
-        ),
+        (final entry) =>
+            _buildBackend(backendId: entry.key, client: entry.value),
       )
       .toList(growable: false);
 
@@ -595,20 +704,162 @@ final class LiveEditAgentRegistry {
       }
       return requested;
     }
-    if (sessionId != null && _sessionBackendIds.containsKey(sessionId)) {
-      return _sessionBackendIds[sessionId]!;
+    if (sessionId != null && _sessionStates.containsKey(sessionId)) {
+      return _sessionStates[sessionId]!.backendId;
     }
     return _defaultBackendId;
+  }
+
+  LiveEditInferenceConfig? resolveInferenceConfig({
+    final String? backendId,
+    final String? sessionId,
+    final LiveEditInferenceConfig? requestInferenceConfig,
+  }) {
+    final resolvedBackendId = resolveBackendId(
+      backendId: backendId,
+      sessionId: sessionId,
+    );
+    final normalizedRequest = LiveEditCodexOptions.normalizeConfig(
+      requestInferenceConfig,
+    );
+    if (normalizedRequest != null) {
+      return normalizedRequest;
+    }
+    final sessionConfig = sessionId == null
+        ? null
+        : LiveEditCodexOptions.normalizeConfig(
+            _sessionStates[sessionId]?.inferenceConfig,
+          );
+    if (sessionConfig != null) {
+      return sessionConfig;
+    }
+    final client = _clients[resolvedBackendId];
+    return switch (client) {
+      CodexExecInferenceClient(
+        :final defaultModel,
+        :final defaultReasoningEffort,
+      ) =>
+        LiveEditCodexOptions.normalizeConfig(
+          LiveEditInferenceConfig(
+            model: defaultModel,
+            reasoningEffort: defaultReasoningEffort,
+          ),
+        ),
+      CursorAgentInferenceClient(
+        :final defaultModel,
+        :final defaultReasoningEffort,
+      ) =>
+        LiveEditCodexOptions.normalizeConfig(
+          LiveEditInferenceConfig(
+            model: defaultModel,
+            reasoningEffort: defaultReasoningEffort,
+          ),
+        ),
+      _ => null,
+    };
   }
 
   void setSessionBackend({
     required final String sessionId,
     required final String backendId,
+    final LiveEditInferenceConfig? inferenceConfig,
   }) {
     if (!_clients.containsKey(backendId)) {
       throw StateError('Unknown live edit backend: $backendId');
     }
-    _sessionBackendIds[sessionId] = backendId;
+    final normalized = LiveEditCodexOptions.normalizeConfig(inferenceConfig);
+    _sessionStates[sessionId] = _LiveEditAgentSessionState(
+      backendId: backendId,
+      inferenceConfig: normalized,
+    );
+  }
+
+  LiveEditAgentBackend _buildBackend({
+    required final String backendId,
+    required final InferenceClient client,
+    final String? sessionId,
+  }) {
+    final meta = <String, Object?>{
+      'displayLabel': _backendLabel(backendId),
+      'backendId': backendId,
+      'clientId': client.id,
+      'binaryName': _binaryName(client),
+    };
+    if (backendId == 'codex_exec') {
+      meta['supportedModels'] = LiveEditCodexOptions.supportedModels
+          .map((final model) => model.toJson())
+          .toList(growable: false);
+      meta['supportedReasoningEfforts'] =
+          LiveEditCodexOptions.supportedReasoningEfforts;
+      meta['defaultInferenceConfig'] =
+          (resolveInferenceConfig(backendId: backendId) ??
+                  const LiveEditInferenceConfig())
+              .toJson();
+      if (sessionId != null) {
+        meta['effectiveInferenceConfig'] =
+            (resolveInferenceConfig(
+                      backendId: backendId,
+                      sessionId: sessionId,
+                    ) ??
+                    const LiveEditInferenceConfig())
+                .toJson();
+      }
+    } else {
+      meta['defaultInferenceConfig'] =
+          (resolveInferenceConfig(backendId: backendId) ??
+                  const LiveEditInferenceConfig())
+              .toJson();
+      if (sessionId != null) {
+        meta['effectiveInferenceConfig'] =
+            (resolveInferenceConfig(
+                      backendId: backendId,
+                      sessionId: sessionId,
+                    ) ??
+                    const LiveEditInferenceConfig())
+                .toJson();
+      }
+    }
+    return LiveEditAgentBackend(
+      id: backendId,
+      label: _backendLabel(backendId),
+      description: _backendDescription(backendId),
+      available: client.isAvailable,
+      isDefault: backendId == _defaultBackendId,
+      meta: meta,
+    );
+  }
+
+  static String _backendDescription(final String backendId) =>
+      switch (backendId) {
+        'codex_exec' => 'OpenAI Codex CLI backend using `codex exec`.',
+        'cursor_agent' =>
+          'Cursor Agent CLI backend using `cursor-agent --print`.',
+        _ => 'Inference backend `$backendId`.',
+      };
+
+  static String _backendLabel(final String backendId) => switch (backendId) {
+    'codex_exec' => 'Codex',
+    'cursor_agent' => 'Cursor',
+    _ => backendId,
+  };
+
+  static String? _binaryName(final InferenceClient client) => switch (client) {
+    CodexExecInferenceClient(:final binaryName) => binaryName,
+    CursorAgentInferenceClient(:final binaryName) => binaryName,
+    _ => null,
+  };
+
+  static String _resolveDefaultBackendId({
+    required final Map<String, InferenceClient> clients,
+    required final String? requestedBackendId,
+  }) {
+    final requested = requestedBackendId?.trim();
+    if (requested != null &&
+        requested.isNotEmpty &&
+        clients.containsKey(requested)) {
+      return requested;
+    }
+    return clients.keys.first;
   }
 }
 
@@ -662,10 +913,7 @@ final class LiveEditAgentService {
     final proposal = getProposal(proposalId);
     final request = requestForProposal(proposalId);
     final selection = request?.selection;
-    final requestedChanges =
-        (request?.draftChanges ?? const <LiveEditDraftChange>[])
-            .map((final change) => _draftChangeSummary(change, selection))
-            .toList(growable: false);
+    final requestedChanges = _executionRequestedChanges(request, selection);
     final riskNotes = <String>{
       ...proposal.riskFlags,
       ...proposal.warnings,
@@ -725,36 +973,82 @@ final class LiveEditAgentService {
   }
 
   Future<LiveEditResolutionProposal> resolve(
-    final LiveEditResolutionRequest request,
-  ) async {
+    final LiveEditResolutionRequest request, {
+    final void Function(InferenceStructuredTextStreamEvent event)?
+    onStreamEvent,
+  }) async {
+    final requestValidationError = _validateResolutionRequest(request);
+    if (_hasText(requestValidationError)) {
+      throw LiveEditAgentException(
+        code: 'source_context_unavailable',
+        message: requestValidationError!,
+        details: request.toJson(),
+      );
+    }
+
     final backendId = registry.resolveBackendId(
       backendId: request.backendId,
       sessionId: request.sessionId,
+    );
+    final effectiveInferenceConfig = registry.resolveInferenceConfig(
+      backendId: backendId,
+      sessionId: request.sessionId,
+      requestInferenceConfig: request.inferenceConfig,
     );
     final client = registry.clientFor(
       backendId: request.backendId,
       sessionId: request.sessionId,
     );
+    final resolvedRequest = request.copyWith(
+      backendId: backendId,
+      inferenceConfig: effectiveInferenceConfig,
+    );
+    final requestSummary = _resolutionRequestSummary(
+      resolvedRequest,
+      backendId: backendId,
+    );
 
-    final prompt = _buildPrompt(request: request, backendId: backendId);
+    final prompt = _buildPrompt(request: resolvedRequest, backendId: backendId);
+    final metadata = <String, dynamic>{
+      ...requestSummary,
+      'promptBytes': utf8.encode(prompt).length,
+      if (effectiveInferenceConfig?.model != null)
+        'inferenceModel': effectiveInferenceConfig!.model,
+      if (effectiveInferenceConfig?.reasoningEffort != null)
+        'inferenceReasoningEffort': effectiveInferenceConfig!.reasoningEffort,
+    };
+    if (backendId == 'codex_exec') {
+      if (effectiveInferenceConfig?.model != null) {
+        metadata['codexExecModel'] = effectiveInferenceConfig!.model;
+      }
+      if (effectiveInferenceConfig?.reasoningEffort != null) {
+        metadata['codexExecReasoningEffort'] =
+            effectiveInferenceConfig!.reasoningEffort;
+      }
+    }
     final inferenceRequest = InferenceRequest(
       prompt: prompt,
       outputSchema: LiveEditSchemas.resolutionProposal,
-      workingDirectory: request.workingDirectory,
-      metadata: <String, dynamic>{
-        'sessionId': request.sessionId,
-        'backendId': backendId,
-        'draftChangeCount': request.draftChanges.length,
-        'promptBytes': utf8.encode(prompt).length,
-      },
+      workingDirectory: resolvedRequest.workingDirectory,
+      metadata: metadata,
     );
 
-    final inferenceResult = await client.infer(inferenceRequest);
+    final inferenceResult = client.supportsStructuredTextStreaming
+        ? await _resolveViaStreamingClient(
+            client: client,
+            request: inferenceRequest,
+            onStreamEvent: onStreamEvent,
+          )
+        : await client.infer(inferenceRequest);
     if (!inferenceResult.success || inferenceResult.data == null) {
       throw LiveEditAgentException(
         code: inferenceResult.error?.code ?? 'inference_failed',
         message: inferenceResult.error?.message ?? 'Inference failed',
-        details: inferenceResult.error?.details,
+        details: _mergeErrorDetails(
+          inferenceResult.error?.details,
+          request: resolvedRequest,
+          backendId: backendId,
+        ),
         warnings: inferenceResult.warnings,
         meta: _normalizeMap(inferenceResult.meta),
       );
@@ -772,7 +1066,7 @@ final class LiveEditAgentService {
       },
     );
     _proposals[proposal.proposalId] = proposal;
-    _requests[proposal.proposalId] = request;
+    _requests[proposal.proposalId] = resolvedRequest;
     _proposalStatus[proposal.proposalId] = LiveEditResolutionStatus.proposed;
     _persistProposalState(proposal.proposalId);
     return proposal;
@@ -781,8 +1075,13 @@ final class LiveEditAgentService {
   void setSessionBackend({
     required final String sessionId,
     required final String backendId,
+    final LiveEditInferenceConfig? inferenceConfig,
   }) {
-    registry.setSessionBackend(sessionId: sessionId, backendId: backendId);
+    registry.setSessionBackend(
+      sessionId: sessionId,
+      backendId: backendId,
+      inferenceConfig: inferenceConfig,
+    );
   }
 
   String _buildPrompt({
@@ -799,6 +1098,7 @@ You are resolving a Flutter live edit draft into real source changes inside a Da
 Return JSON only and make it match the provided schema exactly.
 
 Rules:
+- Prompt-only requests are valid when intentText is present, even if draftChanges is empty.
 - Respect existing app abstractions, theme usage, and state management.
 - Prefer minimal edits that implement the draft intent.
 - Produce complete replacement contents for every changed file under filePatches[].content.
@@ -881,6 +1181,47 @@ $requestJson
     final encodedId = base64Url.encode(utf8.encode(proposalId));
     return p.join(_storagePath, '$encodedId.json');
   }
+
+  Future<InferenceResult<InferenceResponse>> _resolveViaStreamingClient({
+    required final InferenceClient client,
+    required final InferenceRequest request,
+    final void Function(InferenceStructuredTextStreamEvent event)?
+    onStreamEvent,
+  }) async {
+    final streamDone = Completer<void>();
+    final session = await client.streamStructuredText(request);
+    final subscription = session.events.listen(
+      (final event) {
+        onStreamEvent?.call(event);
+      },
+      onDone: () {
+        if (!streamDone.isCompleted) {
+          streamDone.complete();
+        }
+      },
+    );
+    try {
+      final result = await session.result;
+      await streamDone.future.timeout(
+        const Duration(milliseconds: 100),
+        onTimeout: () {},
+      );
+      return result;
+    } finally {
+      await subscription.cancel();
+      await session.dispose();
+    }
+  }
+}
+
+final class _LiveEditAgentSessionState {
+  const _LiveEditAgentSessionState({
+    required this.backendId,
+    this.inferenceConfig,
+  });
+
+  final String backendId;
+  final LiveEditInferenceConfig? inferenceConfig;
 }
 
 extension on LiveEditResolutionProposal {
@@ -908,6 +1249,30 @@ extension on LiveEditResolutionProposal {
     validationSteps: validationSteps ?? this.validationSteps,
     warnings: warnings ?? this.warnings,
     riskFlags: riskFlags ?? this.riskFlags,
+    meta: meta ?? this.meta,
+  );
+}
+
+extension on LiveEditResolutionRequest {
+  LiveEditResolutionRequest copyWith({
+    final String? sessionId,
+    final String? workingDirectory,
+    final List<LiveEditDraftChange>? draftChanges,
+    final LiveEditSelection? selection,
+    final String? backendId,
+    final LiveEditInferenceConfig? inferenceConfig,
+    final String? intentText,
+    final Map<String, Object?>? evidence,
+    final Map<String, Object?>? meta,
+  }) => LiveEditResolutionRequest(
+    sessionId: sessionId ?? this.sessionId,
+    workingDirectory: workingDirectory ?? this.workingDirectory,
+    draftChanges: draftChanges ?? this.draftChanges,
+    selection: selection ?? this.selection,
+    backendId: backendId ?? this.backendId,
+    inferenceConfig: inferenceConfig ?? this.inferenceConfig,
+    intentText: intentText ?? this.intentText,
+    evidence: evidence ?? this.evidence,
     meta: meta ?? this.meta,
   );
 }

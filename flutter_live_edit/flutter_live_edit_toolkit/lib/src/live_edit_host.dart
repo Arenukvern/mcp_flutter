@@ -1,6 +1,7 @@
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 
 import 'live_edit_controller.dart';
@@ -31,7 +32,13 @@ Object? _coerceValueForProperty(
     case LiveEditPropertyKind.boolean:
       final normalized = value.toLowerCase();
       return normalized == 'true' || normalized == '1' || normalized == 'yes';
-    default:
+    case LiveEditPropertyKind.string:
+    case LiveEditPropertyKind.color:
+    case LiveEditPropertyKind.enumValue:
+    case LiveEditPropertyKind.edgeInsets:
+    case LiveEditPropertyKind.alignment:
+    case LiveEditPropertyKind.bounds:
+    case LiveEditPropertyKind.object:
       return value;
   }
 }
@@ -67,10 +74,108 @@ void _drawDashedRect(final Canvas canvas, final Rect rect, final Paint paint) {
 
 bool _hasText(final String? value) => value != null && value.trim().isNotEmpty;
 
+String _basename(final String value) {
+  final normalized = value.replaceAll('\\', '/');
+  final slashIndex = normalized.lastIndexOf('/');
+  if (slashIndex < 0 || slashIndex + 1 >= normalized.length) {
+    return normalized;
+  }
+  return normalized.substring(slashIndex + 1);
+}
+
+String _sourceLocationLabel(
+  final LiveEditSourceLocation? source, {
+  final bool compact = false,
+}) {
+  if (source == null) {
+    return '';
+  }
+  final file = source.file.trim();
+  if (file.isNotEmpty) {
+    final label = compact ? _basename(file) : file;
+    if (source.line != null) {
+      return '$label:${source.line}';
+    }
+    return label;
+  }
+  return source.sourceHint?.trim() ?? '';
+}
+
 String _semanticsId(final String value) => value
     .replaceAll(RegExp(r'[^a-zA-Z0-9]+'), '_')
     .replaceAll(RegExp(r'^_+|_+$'), '')
     .toLowerCase();
+
+String _previewLabel(final LiveEditPropertyDescriptor property) {
+  if (property.requiresAgentForPersistence) {
+    return 'AI only';
+  }
+  if (property.canPreviewExactly) {
+    return 'Live';
+  }
+  return 'Preview';
+}
+
+Color _previewColor(final LiveEditPropertyDescriptor property) {
+  if (property.requiresAgentForPersistence) {
+    return const Color(0xFF7C2D12);
+  }
+  if (property.canPreviewExactly) {
+    return const Color(0xFF065F46);
+  }
+  return const Color(0xFF92400E);
+}
+
+String _persistLabel(
+  final LiveEditPropertyDescriptor property,
+  final LiveEditOrchestrator orchestrator,
+) => property.requiresAgentForPersistence
+    ? orchestrator.currentBackendLabel
+    : property.persistable
+    ? 'Direct'
+    : 'Preview only';
+
+String _bubbleStatusLabel(final LiveEditBubbleStatus status) =>
+    switch (status) {
+      LiveEditBubbleStatus.editing => 'Draft ready',
+      LiveEditBubbleStatus.waiting => 'Applying',
+      LiveEditBubbleStatus.needsApproval => 'Applying',
+      LiveEditBubbleStatus.applied => 'Applied',
+      LiveEditBubbleStatus.failed => 'Failed',
+    };
+
+Color _bubbleStatusColor(final LiveEditBubbleStatus status) => switch (status) {
+  LiveEditBubbleStatus.editing => const Color(0xFF0F766E),
+  LiveEditBubbleStatus.waiting => const Color(0xFF1D4ED8),
+  LiveEditBubbleStatus.needsApproval => const Color(0xFF92400E),
+  LiveEditBubbleStatus.applied => const Color(0xFF166534),
+  LiveEditBubbleStatus.failed => const Color(0xFFB91C1C),
+};
+
+String _activityElapsedLabel(final LiveEditActivityEntry activity) {
+  final elapsed = DateTime.now().toUtc().difference(activity.timestamp);
+  if (elapsed.inSeconds < 5) {
+    return activity.inProgress ? 'In progress' : 'Just now';
+  }
+  if (elapsed.inMinutes < 1) {
+    return '${elapsed.inSeconds}s ago';
+  }
+  return '${elapsed.inMinutes}m ago';
+}
+
+class _SelectParentIntent extends Intent {
+  const _SelectParentIntent();
+}
+
+class _SelectChildIntent extends Intent {
+  const _SelectChildIntent();
+}
+
+class _CycleCandidateIntent extends Intent {
+  const _CycleCandidateIntent(this.delta);
+
+  final int delta;
+}
 
 class FlutterLiveEditHost extends StatefulWidget {
   const FlutterLiveEditHost({
@@ -80,6 +185,7 @@ class FlutterLiveEditHost extends StatefulWidget {
     this.orchestrator,
     this.applyDraftDelegate,
     this.backendId,
+    this.availableBackends = const <LiveEditAgentBackend>[],
     this.workingDirectory,
     this.intentText,
   });
@@ -89,6 +195,7 @@ class FlutterLiveEditHost extends StatefulWidget {
   final LiveEditOrchestrator? orchestrator;
   final LiveEditApplyDraftDelegate? applyDraftDelegate;
   final String? backendId;
+  final List<LiveEditAgentBackend> availableBackends;
   final String? workingDirectory;
   final String? intentText;
 
@@ -104,36 +211,93 @@ class _FlutterLiveEditHostState extends State<FlutterLiveEditHost> {
   @override
   Widget build(final BuildContext context) => AnimatedBuilder(
     animation: _orchestrator,
-    builder: (final context, final _) => LayoutBuilder(
-      builder: (final context, final constraints) => Stack(
-        fit: StackFit.expand,
-        children: <Widget>[
-          KeyedSubtree(key: _contentKey, child: widget.child),
-          if (_orchestrator.overlayVisible)
-            _LiveEditOverlay(
-              orchestrator: _orchestrator,
-              contentKey: _contentKey,
-            ),
-          Positioned(
-            left: 16,
-            bottom: 16,
-            child: _LauncherChip(orchestrator: _orchestrator),
+    builder: (final context, final _) => Shortcuts(
+      shortcuts: const <ShortcutActivator, Intent>{
+        SingleActivator(LogicalKeyboardKey.arrowUp): _SelectParentIntent(),
+        SingleActivator(LogicalKeyboardKey.arrowDown): _SelectChildIntent(),
+        SingleActivator(LogicalKeyboardKey.arrowLeft): _CycleCandidateIntent(
+          -1,
+        ),
+        SingleActivator(LogicalKeyboardKey.arrowRight): _CycleCandidateIntent(
+          1,
+        ),
+      },
+      child: Actions(
+        actions: <Type, Action<Intent>>{
+          _SelectParentIntent: CallbackAction<_SelectParentIntent>(
+            onInvoke: (final _) {
+              if (_orchestrator.overlayVisible) {
+                _orchestrator.selectParentCandidate();
+              }
+              return null;
+            },
           ),
-          if (_orchestrator.overlayVisible &&
-              _orchestrator.activeSelection != null)
-            _SelectionBubble(
-              orchestrator: _orchestrator,
-              viewportSize: constraints.biggest,
-            ),
-          if (_orchestrator.overlayVisible)
-            Positioned(
-              right: 16,
-              top: 16,
-              bottom: 16,
-              width: 360,
-              child: _PropertyPanel(orchestrator: _orchestrator),
-            ),
-        ],
+          _SelectChildIntent: CallbackAction<_SelectChildIntent>(
+            onInvoke: (final _) {
+              if (_orchestrator.overlayVisible) {
+                _orchestrator.selectChildCandidate();
+              }
+              return null;
+            },
+          ),
+          _CycleCandidateIntent: CallbackAction<_CycleCandidateIntent>(
+            onInvoke: (final intent) {
+              if (_orchestrator.overlayVisible) {
+                _orchestrator.cycleSelectionCandidate(intent.delta);
+              }
+              return null;
+            },
+          ),
+        },
+        child: Focus(
+          autofocus: true,
+          child: Overlay(
+            initialEntries: <OverlayEntry>[
+              OverlayEntry(
+                builder: (final context) => LayoutBuilder(
+                  builder: (final context, final constraints) => Stack(
+                    fit: StackFit.expand,
+                    children: <Widget>[
+                      KeyedSubtree(key: _contentKey, child: widget.child),
+                      if (_orchestrator.overlayVisible)
+                        _LiveEditOverlay(
+                          orchestrator: _orchestrator,
+                          contentKey: _contentKey,
+                        ),
+                      if (_orchestrator.overlayVisible)
+                        ..._orchestrator.pinnedBubbleSummaries.map(
+                          (final summary) => _PinnedBubblePill(
+                            orchestrator: _orchestrator,
+                            summary: summary,
+                            viewportSize: constraints.biggest,
+                          ),
+                        ),
+                      Positioned(
+                        left: 16,
+                        bottom: 16,
+                        child: _LauncherChip(orchestrator: _orchestrator),
+                      ),
+                      if (_orchestrator.overlayVisible &&
+                          _orchestrator.activeSelection != null)
+                        _SelectionBubble(
+                          orchestrator: _orchestrator,
+                          viewportSize: constraints.biggest,
+                        ),
+                      if (_orchestrator.overlayVisible)
+                        Positioned(
+                          right: 16,
+                          top: 16,
+                          bottom: 16,
+                          width: _orchestrator.panelExpanded ? 312 : 64,
+                          child: _PanelSurface(orchestrator: _orchestrator),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     ),
   );
@@ -157,29 +321,46 @@ class _FlutterLiveEditHostState extends State<FlutterLiveEditHost> {
         controller: widget.controller,
         applyDraftDelegate: widget.applyDraftDelegate,
         backendId: widget.backendId,
+        availableBackends: widget.availableBackends,
         workingDirectory: widget.workingDirectory,
         intentText: widget.intentText,
       );
       _ownsOrchestrator = true;
     }
   }
+
+  @override
+  void didUpdateWidget(covariant final FlutterLiveEditHost oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.availableBackends != oldWidget.availableBackends) {
+      _orchestrator.setAvailableBackends(widget.availableBackends);
+    }
+    if (_ownsOrchestrator &&
+        widget.backendId != oldWidget.backendId &&
+        widget.backendId != null) {
+      _orchestrator.setBackend(widget.backendId!);
+    }
+  }
 }
 
 class _ApplyActions extends StatelessWidget {
-  const _ApplyActions({required this.orchestrator, this.compact = false});
+  const _ApplyActions({
+    required this.orchestrator,
+    this.compact = false,
+    this.semanticsPrefix,
+  });
 
   final LiveEditOrchestrator orchestrator;
   final bool compact;
+  final String? semanticsPrefix;
 
   @override
   Widget build(final BuildContext context) {
     final draftCount = orchestrator.activeDraftChanges.length;
-    final busy =
-        orchestrator.applyPhase == LiveEditApplyPhase.preparing ||
-        orchestrator.applyPhase == LiveEditApplyPhase.applying;
-    final needsApproval = orchestrator.needsApproval;
-    final canApply = draftCount > 0 && !busy;
-    final buttons = _buttons(canApply, busy, needsApproval);
+    final stagedSummary = orchestrator.stagedRequestSummary;
+    final busy = orchestrator.isApplyingBusy;
+    final canApply = orchestrator.canTriggerApply && !busy;
+    final buttons = _buttons(canApply, busy);
     final wrap = compact
         ? Wrap(spacing: 8, runSpacing: 8, children: buttons)
         : Row(
@@ -201,19 +382,24 @@ class _ApplyActions extends StatelessWidget {
           'Draft changes: $draftCount',
           style: const TextStyle(fontSize: 12, color: Color(0xFF475569)),
         ),
+        if (_hasText(stagedSummary)) ...<Widget>[
+          const SizedBox(height: 4),
+          Text(
+            stagedSummary!,
+            style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+            maxLines: 4,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
         const SizedBox(height: 8),
         wrap,
       ],
     );
   }
 
-  List<Widget> _buttons(
-    final bool canApply,
-    final bool busy,
-    final bool needsApproval,
-  ) => <Widget>[
+  List<Widget> _buttons(final bool canApply, final bool busy) => <Widget>[
     Semantics(
-      identifier: 'live_edit_discard_button',
+      identifier: _actionId('discard_button'),
       button: true,
       child: OutlinedButton(
         onPressed: canApply ? orchestrator.undoDraft : null,
@@ -221,26 +407,21 @@ class _ApplyActions extends StatelessWidget {
       ),
     ),
     if (orchestrator.hasAgentBackedDrafts ||
-        orchestrator.editMode == LiveEditEditMode.ai)
+        orchestrator.editMode == LiveEditEditMode.ai ||
+        orchestrator.activeSelection != null)
       OutlinedButton(
         onPressed: busy ? null : orchestrator.openAiBubble,
         child: const Text('AI'),
       ),
     Semantics(
-      identifier: needsApproval
-          ? 'live_edit_approve_apply_button'
-          : 'live_edit_apply_button',
+      identifier: _actionId('apply_button'),
       button: true,
       child: FilledButton(
         onPressed: !canApply
             ? null
             : () async {
-                if (needsApproval) {
-                  await orchestrator.applyDraft(approve: true);
-                  return;
-                }
                 await orchestrator.applyDraft(
-                  message: orchestrator.editMode == LiveEditEditMode.ai
+                  message: orchestrator.canSubmitAiPrompt
                       ? orchestrator.aiComposer
                       : null,
                 );
@@ -248,13 +429,22 @@ class _ApplyActions extends StatelessWidget {
         child: Text(
           busy
               ? 'Working...'
-              : needsApproval
-              ? 'Approve & Apply'
+              : (orchestrator.canSubmitAiPrompt &&
+                    !orchestrator.hasDraftChanges)
+              ? 'Send'
               : (orchestrator.hasAgentBackedDrafts ? 'Resolve' : 'Apply'),
         ),
       ),
     ),
   ];
+
+  String _actionId(final String suffix) {
+    final prefix = semanticsPrefix;
+    if (_hasText(prefix)) {
+      return '${prefix!}_$suffix';
+    }
+    return 'live_edit_$suffix';
+  }
 }
 
 class _LauncherChip extends StatelessWidget {
@@ -283,7 +473,7 @@ class _LauncherChip extends StatelessWidget {
   );
 }
 
-class _LiveEditOverlay extends StatelessWidget {
+class _LiveEditOverlay extends StatefulWidget {
   const _LiveEditOverlay({
     required this.orchestrator,
     required this.contentKey,
@@ -293,16 +483,98 @@ class _LiveEditOverlay extends StatelessWidget {
   final GlobalKey contentKey;
 
   @override
+  State<_LiveEditOverlay> createState() => _LiveEditOverlayState();
+}
+
+class _LiveEditOverlayState extends State<_LiveEditOverlay> {
+  static const double _dragThreshold = 8;
+  Offset? _pointerDown;
+  bool _dragging = false;
+
+  @override
   Widget build(final BuildContext context) => Positioned.fill(
-    child: GestureDetector(
-      behavior: HitTestBehavior.translucent,
-      onTapDown: (final details) {
-        orchestrator.selectNode(details.globalPosition, contentKey: contentKey);
-      },
-      child: CustomPaint(
-        painter: _LiveEditOverlayPainter(
-          selection: orchestrator.activeSelection,
-          draftChanges: orchestrator.activeDraftChanges,
+    child: Focus(
+      autofocus: true,
+      child: MouseRegion(
+        onHover: (final event) {
+          widget.orchestrator.hoverNode(
+            event.position,
+            contentKey: widget.contentKey,
+            deeperMode: widget.orchestrator.deeperPickEnabled,
+          );
+        },
+        onExit: (_) => widget.orchestrator.clearHover(),
+        child: Listener(
+          behavior: HitTestBehavior.translucent,
+          onPointerDown: (final event) {
+            _pointerDown = event.position;
+            _dragging = false;
+            widget.orchestrator.hoverNode(
+              event.position,
+              contentKey: widget.contentKey,
+              deeperMode: widget.orchestrator.deeperPickEnabled,
+            );
+          },
+          onPointerMove: (final event) {
+            final start = _pointerDown;
+            if (start == null) {
+              widget.orchestrator.hoverNode(
+                event.position,
+                contentKey: widget.contentKey,
+                deeperMode: widget.orchestrator.deeperPickEnabled,
+              );
+              return;
+            }
+            if (!_dragging &&
+                (event.position - start).distance >= _dragThreshold) {
+              _dragging = true;
+              widget.orchestrator.startMarquee(start);
+            }
+            if (_dragging) {
+              widget.orchestrator.updateMarquee(
+                event.position,
+                contentKey: widget.contentKey,
+              );
+              return;
+            }
+            widget.orchestrator.hoverNode(
+              event.position,
+              contentKey: widget.contentKey,
+              deeperMode: widget.orchestrator.deeperPickEnabled,
+            );
+          },
+          onPointerUp: (final event) {
+            if (_dragging) {
+              widget.orchestrator.commitMarquee();
+            } else {
+              widget.orchestrator.selectNode(
+                event.position,
+                contentKey: widget.contentKey,
+                preferHoverPreview: widget.orchestrator.deeperPickEnabled,
+              );
+            }
+            _pointerDown = null;
+            _dragging = false;
+          },
+          onPointerCancel: (_) {
+            if (_dragging) {
+              widget.orchestrator.cancelMarquee();
+            }
+            _pointerDown = null;
+            _dragging = false;
+          },
+          child: CustomPaint(
+            painter: _LiveEditOverlayPainter(
+              selection: widget.orchestrator.activeSelection,
+              hoverSelection: widget.orchestrator.hoverSelection,
+              multiSelection: widget.orchestrator.hasMarqueePreview
+                  ? widget.orchestrator.marqueePreviewSelections
+                  : widget.orchestrator.activeMultiSelection,
+              marqueeRect: widget.orchestrator.marqueeRect,
+              deeperPickActive: widget.orchestrator.deeperPickEnabled,
+              draftChanges: widget.orchestrator.activeDraftChanges,
+            ),
+          ),
         ),
       ),
     ),
@@ -312,14 +584,25 @@ class _LiveEditOverlay extends StatelessWidget {
 class _LiveEditOverlayPainter extends CustomPainter {
   const _LiveEditOverlayPainter({
     required this.selection,
+    required this.hoverSelection,
+    required this.multiSelection,
+    required this.marqueeRect,
+    required this.deeperPickActive,
     required this.draftChanges,
   });
 
   final LiveEditSelection? selection;
+  final LiveEditSelection? hoverSelection;
+  final List<LiveEditSelection> multiSelection;
+  final Rect? marqueeRect;
+  final bool deeperPickActive;
   final List<LiveEditDraftChange> draftChanges;
 
   @override
   void paint(final Canvas canvas, final Size size) {
+    _paintHover(canvas);
+    _paintMultiSelection(canvas);
+    _paintMarquee(canvas);
     final currentSelection = selection;
     if (currentSelection == null || currentSelection.bounds == null) {
       return;
@@ -335,7 +618,9 @@ class _LiveEditOverlayPainter extends CustomPainter {
     final selectionPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2
-      ..color = const Color(0xFF00A77F);
+      ..color = deeperPickActive
+          ? const Color(0xFF2563EB)
+          : const Color(0xFF00A77F);
     canvas.drawRect(baseRect, selectionPaint);
 
     final ghostRect = _ghostRectFromDrafts(baseRect);
@@ -380,7 +665,70 @@ class _LiveEditOverlayPainter extends CustomPainter {
   @override
   bool shouldRepaint(final _LiveEditOverlayPainter oldDelegate) =>
       oldDelegate.selection != selection ||
+      oldDelegate.hoverSelection != hoverSelection ||
+      oldDelegate.multiSelection != multiSelection ||
+      oldDelegate.marqueeRect != marqueeRect ||
+      oldDelegate.deeperPickActive != deeperPickActive ||
       oldDelegate.draftChanges != draftChanges;
+
+  void _paintHover(final Canvas canvas) {
+    final hovered = hoverSelection?.bounds;
+    if (hovered == null) {
+      return;
+    }
+    final rect = Rect.fromLTRB(
+      hovered.left,
+      hovered.top,
+      hovered.right,
+      hovered.bottom,
+    );
+    canvas.drawRect(rect, Paint()..color = const Color(0x220EA5E9));
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5
+        ..color = deeperPickActive
+            ? const Color(0xFF2563EB)
+            : const Color(0xFF0EA5E9),
+    );
+  }
+
+  void _paintMultiSelection(final Canvas canvas) {
+    if (multiSelection.length < 2) {
+      return;
+    }
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5
+      ..color = const Color(0xFFF97316);
+    for (final selection in multiSelection) {
+      final bounds = selection.bounds;
+      if (bounds == null) {
+        continue;
+      }
+      canvas.drawRect(
+        Rect.fromLTRB(bounds.left, bounds.top, bounds.right, bounds.bottom),
+        paint,
+      );
+    }
+  }
+
+  void _paintMarquee(final Canvas canvas) {
+    final rect = marqueeRect;
+    if (rect == null) {
+      return;
+    }
+    canvas.drawRect(rect, Paint()..color = const Color(0x1A2563EB));
+    _drawDashedRect(
+      canvas,
+      rect,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5
+        ..color = const Color(0xFF2563EB),
+    );
+  }
 
   String _buildLabelText() {
     if (draftChanges.isEmpty) {
@@ -413,206 +761,581 @@ class _LiveEditOverlayPainter extends CustomPainter {
   }
 }
 
+class _PanelSurface extends StatelessWidget {
+  const _PanelSurface({required this.orchestrator});
+
+  final LiveEditOrchestrator orchestrator;
+
+  @override
+  Widget build(final BuildContext context) => orchestrator.panelExpanded
+      ? _PropertyPanel(
+          key: const ValueKey<String>('expanded_panel'),
+          orchestrator: orchestrator,
+        )
+      : _PanelRail(
+          key: const ValueKey<String>('rail_panel'),
+          orchestrator: orchestrator,
+        );
+}
+
+class _PanelRail extends StatelessWidget {
+  const _PanelRail({required this.orchestrator, super.key});
+
+  final LiveEditOrchestrator orchestrator;
+
+  @override
+  Widget build(final BuildContext context) => Card(
+    child: Semantics(
+      identifier: 'live_edit_panel_rail',
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          children: <Widget>[
+            Semantics(
+              identifier: 'live_edit_panel_expand_button',
+              button: true,
+              child: IconButton(
+                tooltip: 'Expand inspector',
+                visualDensity: VisualDensity.compact,
+                iconSize: 16,
+                onPressed: orchestrator.expandPanel,
+                icon: const Icon(Icons.chevron_left),
+              ),
+            ),
+            Transform.scale(
+              scale: 0.72,
+              child: Switch(
+                value: orchestrator.debugModeEnabled,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                onChanged: orchestrator.setDebugModeEnabled,
+              ),
+            ),
+            Text(
+              orchestrator.hasBackendChoice
+                  ? orchestrator.currentBackendLabel
+                        .substring(0, 1)
+                        .toUpperCase()
+                  : 'DBG',
+              style: TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.w700,
+                color: orchestrator.hasBackendChoice
+                    ? const Color(0xFF1D4ED8)
+                    : orchestrator.debugModeEnabled
+                    ? const Color(0xFF0F766E)
+                    : const Color(0xFF64748B),
+              ),
+            ),
+            if (orchestrator.hasBackendChoice) ...<Widget>[
+              const SizedBox(height: 6),
+              _BackendSwitcher(orchestrator: orchestrator, rail: true),
+            ],
+            const SizedBox(height: 6),
+            if (orchestrator.activeSelection != null)
+              Column(
+                children: <Widget>[
+                  _RailStatusDot(
+                    label: orchestrator.activeSelection!.widgetType,
+                    status: orchestrator.bubbleStatusForActiveSelection,
+                    active: true,
+                    onTap: () => orchestrator.selectTrackedBubble(
+                      orchestrator.activeSelection!.nodeId,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Text(
+                      orchestrator.currentActivity?.label ??
+                          _bubbleStatusLabel(
+                            orchestrator.bubbleStatusForActiveSelection,
+                          ),
+                      style: const TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: ListView.separated(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                itemBuilder: (final context, final index) {
+                  final summary = orchestrator.bubbleSummaries[index];
+                  return _RailStatusDot(
+                    label: summary.label,
+                    status: summary.status,
+                    active: summary.active,
+                    onTap: () =>
+                        orchestrator.selectTrackedBubble(summary.nodeId),
+                  );
+                },
+                separatorBuilder: (final context, final index) =>
+                    const SizedBox(height: 6),
+                itemCount: orchestrator.bubbleSummaries.length,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+class _RailStatusDot extends StatelessWidget {
+  const _RailStatusDot({
+    required this.label,
+    required this.status,
+    required this.active,
+    required this.onTap,
+  });
+
+  final String label;
+  final LiveEditBubbleStatus status;
+  final bool active;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(final BuildContext context) => Tooltip(
+    message: '$label • ${_bubbleStatusLabel(status)}',
+    child: InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        width: 40,
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        decoration: BoxDecoration(
+          color: active ? const Color(0xFFE0F2FE) : const Color(0xFFF8FAFC),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: active ? const Color(0xFF0EA5E9) : const Color(0xFFE2E8F0),
+          ),
+        ),
+        child: Column(
+          children: <Widget>[
+            Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                color: _bubbleStatusColor(status),
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              label.isEmpty ? '?' : label[0].toUpperCase(),
+              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
 class _PropertyPanel extends StatelessWidget {
-  const _PropertyPanel({required this.orchestrator});
+  const _PropertyPanel({required this.orchestrator, super.key});
 
   final LiveEditOrchestrator orchestrator;
 
   List<LiveEditSelectionCandidate> get _visibleCandidates =>
-      orchestrator.activeSelectionCandidates.take(5).toList(growable: false);
+      orchestrator.activeSelectionCandidates.take(3).toList(growable: false);
 
   @override
   Widget build(final BuildContext context) {
     final selection = orchestrator.activeSelection;
+    final properties = orchestrator.effectiveProperties;
     final error = orchestrator.lastError;
 
     return Card(
       clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Container(
-            color: const Color(0xFF0F172A),
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                const Text(
-                  'Live Edit',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  selection == null
-                      ? 'Tap a widget to select'
-                      : '${selection.widgetType} (${selection.nodeId})',
-                  style: const TextStyle(color: Colors.white70, fontSize: 12),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                if (_hasText(selection?.source?.file))
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      '${selection!.source!.file}${selection.source?.line == null ? '' : ':${selection.source!.line}'}',
-                      style: const TextStyle(
-                        color: Colors.white60,
-                        fontSize: 11,
-                      ),
+      child: Semantics(
+        identifier: 'live_edit_panel',
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Container(
+              color: const Color(0xFF0F172A),
+              padding: const EdgeInsets.fromLTRB(10, 8, 8, 8),
+              child: Row(
+                children: <Widget>[
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        const Text(
+                          'Live Edit',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          selection == null
+                              ? 'Tap a widget'
+                              : orchestrator.hasMultiSelection
+                              ? '${orchestrator.activeMultiSelection.length} widgets • ${orchestrator.currentActivity?.label ?? _bubbleStatusLabel(orchestrator.bubbleStatusForActiveSelection)}'
+                              : '${selection.widgetType} • ${orchestrator.currentActivity?.label ?? _bubbleStatusLabel(orchestrator.bubbleStatusForActiveSelection)}',
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 11,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (orchestrator.debugModeEnabled &&
+                            _hasText(_sourceLocationLabel(selection?.source)))
+                          Text(
+                            _sourceLocationLabel(
+                              selection?.source,
+                              compact: true,
+                            ),
+                            style: const TextStyle(
+                              color: Colors.white54,
+                              fontSize: 10,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        if (orchestrator.debugModeEnabled &&
+                            !_hasText(_sourceLocationLabel(selection?.source)))
+                          const Text(
+                            'No concrete source context',
+                            style: TextStyle(
+                              color: Colors.white54,
+                              fontSize: 10,
+                            ),
+                          ),
+                        if (orchestrator.hasBackendChoice) ...<Widget>[
+                          const SizedBox(height: 6),
+                          _BackendSwitcher(orchestrator: orchestrator),
+                        ],
+                      ],
                     ),
                   ),
-              ],
-            ),
-          ),
-          if (_hasText(error))
-            Container(
-              color: const Color(0xFFFEF2F2),
-              padding: const EdgeInsets.all(10),
-              child: Text(
-                error!,
-                style: const TextStyle(color: Color(0xFF991B1B), fontSize: 12),
-              ),
-            ),
-          Expanded(
-            child: selection == null
-                ? const Center(child: Text('Tap any widget in the app'))
-                : ListView(
-                    padding: const EdgeInsets.all(12),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
-                      _PanelSection(
-                        title: 'Selection',
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: <Widget>[
-                            Text(
-                              'Mode: ${orchestrator.editMode.wireName}',
-                              style: const TextStyle(fontSize: 12),
-                            ),
-                            const SizedBox(height: 8),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: <Widget>[
-                                for (final candidate
-                                    in _visibleCandidates.indexed)
-                                  Semantics(
-                                    identifier:
-                                        'live_edit_candidate_chip_${candidate.$1}',
-                                    child: ChoiceChip(
-                                      label: Text(candidate.$2.widgetType),
-                                      selected: candidate.$2.active,
-                                      onSelected: (_) => orchestrator
-                                          .selectCandidateAt(candidate.$1),
-                                    ),
-                                  ),
-                                if (orchestrator
-                                        .activeSelectionCandidates
-                                        .length >
-                                    _visibleCandidates.length)
-                                  Chip(
-                                    label: Text(
-                                      '+${orchestrator.activeSelectionCandidates.length - _visibleCandidates.length}',
-                                    ),
-                                  ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Align(
-                              alignment: Alignment.centerLeft,
-                              child: Semantics(
-                                identifier: 'live_edit_select_parent_button',
-                                button: true,
-                                child: OutlinedButton.icon(
-                                  onPressed:
-                                      orchestrator
-                                              .activeSelectionCandidates
-                                              .length >
-                                          1
-                                      ? orchestrator.selectParentCandidate
-                                      : null,
-                                  icon: const Icon(
-                                    Icons.arrow_upward,
-                                    size: 16,
-                                  ),
-                                  label: const Text('Select Parent'),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                      const Icon(
+                        Icons.bug_report_outlined,
+                        color: Colors.white70,
+                        size: 14,
                       ),
-                      _PanelSection(
-                        title: 'Properties',
-                        child: Column(
-                          children: <Widget>[
-                            for (final property in selection.propertyGroups)
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 10),
-                                child: _PropertyEditorCard(
-                                  orchestrator: orchestrator,
-                                  property: property,
-                                  surface: LiveEditEditSurface.panel,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                      _PanelSection(
-                        title: 'Draft',
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: <Widget>[
-                            if (orchestrator.activeDraftChanges.isEmpty)
-                              const Text(
-                                'No draft changes.',
-                                style: TextStyle(fontSize: 12),
-                              ),
-                            for (final draft in orchestrator.activeDraftChanges)
-                              Text(
-                                '${draft.propertyId}: ${draft.targetValue}',
-                                style: const TextStyle(fontSize: 12),
-                              ),
-                          ],
-                        ),
-                      ),
-                      _PanelSection(
-                        title: 'AI Thread',
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: <Widget>[
-                            _AiComposer(orchestrator: orchestrator),
-                            const SizedBox(height: 8),
-                            if (orchestrator.historyForActiveSelection.isEmpty)
-                              const Text(
-                                'No AI activity yet.',
-                                style: TextStyle(fontSize: 12),
-                              ),
-                            for (final entry
-                                in orchestrator
-                                    .historyForActiveSelection
-                                    .reversed
-                                    .take(6))
-                              _TimelineBubble(entry: entry),
-                          ],
+                      Transform.scale(
+                        scale: 0.72,
+                        child: Switch(
+                          value: orchestrator.debugModeEnabled,
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                          onChanged: orchestrator.setDebugModeEnabled,
                         ),
                       ),
                     ],
                   ),
-          ),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: const BoxDecoration(
-              border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
+                  Semantics(
+                    identifier: 'live_edit_panel_collapse_button',
+                    button: true,
+                    child: IconButton(
+                      tooltip: 'Collapse inspector',
+                      visualDensity: VisualDensity.compact,
+                      iconSize: 16,
+                      color: Colors.white,
+                      onPressed: orchestrator.collapsePanel,
+                      icon: const Icon(Icons.chevron_right),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            child: _ApplyActions(orchestrator: orchestrator),
-          ),
-        ],
+            if (_hasText(error))
+              Container(
+                color: const Color(0xFFFEF2F2),
+                padding: const EdgeInsets.all(8),
+                child: Text(
+                  error!,
+                  style: const TextStyle(
+                    color: Color(0xFF991B1B),
+                    fontSize: 11,
+                  ),
+                ),
+              ),
+            Expanded(
+              child: selection == null
+                  ? const Center(
+                      child: Text(
+                        'Tap any widget in the app',
+                        style: TextStyle(fontSize: 11),
+                      ),
+                    )
+                  : ListView(
+                      padding: const EdgeInsets.all(8),
+                      children: <Widget>[
+                        _PanelSection(
+                          title: 'Bubbles',
+                          child: Wrap(
+                            spacing: 6,
+                            runSpacing: 6,
+                            children: <Widget>[
+                              for (final summary
+                                  in orchestrator.bubbleSummaries)
+                                ActionChip(
+                                  visualDensity: VisualDensity.compact,
+                                  avatar: Container(
+                                    width: 8,
+                                    height: 8,
+                                    decoration: BoxDecoration(
+                                      color: _bubbleStatusColor(summary.status),
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  label: Text(
+                                    summary.active
+                                        ? '${summary.label} • active'
+                                        : summary.label,
+                                    style: const TextStyle(fontSize: 11),
+                                  ),
+                                  onPressed: () => orchestrator
+                                      .selectTrackedBubble(summary.nodeId),
+                                ),
+                            ],
+                          ),
+                        ),
+                        _PanelSection(
+                          title: 'Selection',
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: <Widget>[
+                              SwitchListTile.adaptive(
+                                dense: true,
+                                contentPadding: EdgeInsets.zero,
+                                title: const Text(
+                                  'Deeper pick',
+                                  style: TextStyle(fontSize: 11),
+                                ),
+                                value: orchestrator.deeperPickEnabled,
+                                onChanged: orchestrator.setDeeperPickEnabled,
+                              ),
+                              Wrap(
+                                spacing: 6,
+                                runSpacing: 6,
+                                children: <Widget>[
+                                  for (final candidate
+                                      in _visibleCandidates.indexed)
+                                    Semantics(
+                                      identifier:
+                                          'live_edit_candidate_chip_${candidate.$1}',
+                                      child: ChoiceChip(
+                                        visualDensity: VisualDensity.compact,
+                                        materialTapTargetSize:
+                                            MaterialTapTargetSize.shrinkWrap,
+                                        label: Text(
+                                          _candidateLabel(candidate.$1),
+                                          style: const TextStyle(fontSize: 11),
+                                        ),
+                                        selected: candidate.$2.active,
+                                        onSelected: (_) => orchestrator
+                                            .selectCandidateAt(candidate.$1),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Row(
+                                children: <Widget>[
+                                  Expanded(
+                                    child: Semantics(
+                                      identifier:
+                                          'live_edit_select_parent_button',
+                                      button: true,
+                                      child: OutlinedButton.icon(
+                                        style: OutlinedButton.styleFrom(
+                                          visualDensity: VisualDensity.compact,
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 6,
+                                          ),
+                                        ),
+                                        onPressed:
+                                            orchestrator
+                                                    .activeSelectionCandidates
+                                                    .length >
+                                                1
+                                            ? orchestrator.selectParentCandidate
+                                            : null,
+                                        icon: const Icon(
+                                          Icons.arrow_upward,
+                                          size: 14,
+                                        ),
+                                        label: const Text(
+                                          'Parent',
+                                          style: TextStyle(fontSize: 11),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: OutlinedButton.icon(
+                                      style: OutlinedButton.styleFrom(
+                                        visualDensity: VisualDensity.compact,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 6,
+                                        ),
+                                      ),
+                                      onPressed:
+                                          orchestrator
+                                                  .activeSelectionCandidates
+                                                  .length >
+                                              1
+                                          ? orchestrator.selectChildCandidate
+                                          : null,
+                                      icon: const Icon(
+                                        Icons.arrow_downward,
+                                        size: 14,
+                                      ),
+                                      label: const Text(
+                                        'Child',
+                                        style: TextStyle(fontSize: 11),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (orchestrator.debugModeEnabled &&
+                                  _hasText(
+                                    _sourceLocationLabel(selection.source),
+                                  )) ...<Widget>[
+                                const SizedBox(height: 6),
+                                Text(
+                                  'Code: ${_sourceLocationLabel(selection.source)}',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Color(0xFF0F172A),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                if (_hasText(selection.source?.sourceHint))
+                                  Text(
+                                    selection.source!.sourceHint!,
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      color: Color(0xFF64748B),
+                                    ),
+                                    maxLines: 4,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                              ],
+                              if (orchestrator.debugModeEnabled &&
+                                  !_hasText(
+                                    _sourceLocationLabel(selection.source),
+                                  )) ...<Widget>[
+                                const SizedBox(height: 6),
+                                const Text(
+                                  'Code: No concrete source context',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Color(0xFF64748B),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        _PanelSection(
+                          title: 'Activity',
+                          child: _AgentActivityPanel(
+                            orchestrator: orchestrator,
+                            dense: true,
+                          ),
+                        ),
+                        _PanelSection(
+                          title: 'Properties',
+                          child: Column(
+                            children: <Widget>[
+                              if (orchestrator.hasMultiSelection &&
+                                  properties.isEmpty)
+                                const Padding(
+                                  padding: EdgeInsets.only(bottom: 4),
+                                  child: Text(
+                                    'No shared editable properties for this selection.',
+                                    style: TextStyle(fontSize: 11),
+                                  ),
+                                ),
+                              for (final property in properties)
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 4),
+                                  child: _PropertyEditorCard(
+                                    orchestrator: orchestrator,
+                                    property: property,
+                                    surface: LiveEditEditSurface.panel,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        _PanelSection(
+                          title: 'Thread',
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: <Widget>[
+                              _AiComposer(orchestrator: orchestrator),
+                              if (_hasText(
+                                orchestrator.stagedRequestSummary,
+                              )) ...<Widget>[
+                                const SizedBox(height: 6),
+                                _PendingRequestCard(
+                                  summary: orchestrator.stagedRequestSummary!,
+                                ),
+                              ],
+                              const SizedBox(height: 6),
+                              for (final entry
+                                  in orchestrator
+                                      .historyForActiveSelection
+                                      .reversed
+                                      .take(5))
+                                _TimelineBubble(entry: entry),
+                            ],
+                          ),
+                        ),
+                        if (orchestrator.debugModeEnabled)
+                          _PanelSection(
+                            title: 'Debug Log',
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: <Widget>[
+                                for (final entry
+                                    in orchestrator
+                                        .debugTimelineForActiveSelection
+                                        .reversed
+                                        .take(10))
+                                  _TimelineBubble(entry: entry, debug: true),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }
+
+  String _candidateLabel(final int index) => switch (index) {
+    0 => 'Selected',
+    1 => 'Parent',
+    2 => 'Child',
+    _ => 'Alt ${index + 1}',
+  };
 }
 
 class _PanelSection extends StatelessWidget {
@@ -623,23 +1346,68 @@ class _PanelSection extends StatelessWidget {
 
   @override
   Widget build(final BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: 16),
+    padding: const EdgeInsets.only(bottom: 10),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         Text(
           title,
           style: const TextStyle(
-            fontSize: 12,
+            fontSize: 10,
             fontWeight: FontWeight.w700,
             color: Color(0xFF334155),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 5),
         child,
       ],
     ),
   );
+}
+
+class _PinnedBubblePill extends StatelessWidget {
+  const _PinnedBubblePill({
+    required this.orchestrator,
+    required this.summary,
+    required this.viewportSize,
+  });
+
+  final LiveEditOrchestrator orchestrator;
+  final LiveEditBubbleSummary summary;
+  final Size viewportSize;
+
+  @override
+  Widget build(final BuildContext context) {
+    final bounds = summary.bounds;
+    if (bounds == null) {
+      return const SizedBox.shrink();
+    }
+    final left = mathMin(viewportSize.width - 28, mathMax(8, bounds.right + 6));
+    final top = mathMin(viewportSize.height - 28, mathMax(8, bounds.top));
+    return Positioned(
+      left: left,
+      top: top,
+      child: Semantics(
+        identifier: 'live_edit_pinned_bubble_${summary.nodeId}',
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(999),
+            onTap: () => orchestrator.selectTrackedBubble(summary.nodeId),
+            child: Container(
+              width: 18,
+              height: 18,
+              decoration: BoxDecoration(
+                color: _bubbleStatusColor(summary.status),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _SelectionBubble extends StatelessWidget {
@@ -652,7 +1420,7 @@ class _SelectionBubble extends StatelessWidget {
   final Size viewportSize;
 
   List<LiveEditSelectionCandidate> get _visibleCandidates =>
-      orchestrator.activeSelectionCandidates.take(4).toList(growable: false);
+      orchestrator.activeSelectionCandidates.take(3).toList(growable: false);
 
   @override
   Widget build(final BuildContext context) {
@@ -662,13 +1430,16 @@ class _SelectionBubble extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    const bubbleWidth = 320.0;
-    const bubbleHeight = 340.0;
-    final placement = _bubblePlacement(
-      bounds,
-      viewportSize,
-      bubbleWidth,
-      bubbleHeight,
+    final status = orchestrator.bubbleStatusForActiveSelection;
+    final bubbleWidth = orchestrator.bubbleWidth;
+    final bubbleHeight = orchestrator.bubbleHeight;
+    final autoPlacement = orchestrator.autoBubblePlacement(
+      bounds: bounds,
+      viewport: viewportSize,
+    );
+    final placement = orchestrator.bubblePlacement(
+      bounds: bounds,
+      viewport: viewportSize,
     );
 
     return Positioned(
@@ -685,94 +1456,212 @@ class _SelectionBubble extends StatelessWidget {
           color: const Color(0xFFF8FAFC),
           child: Container(
             height: bubbleHeight,
-            padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(18),
               border: Border.all(color: const Color(0xFFCBD5E1)),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+            child: Stack(
               children: <Widget>[
-                Row(
-                  children: <Widget>[
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Text(
-                            orchestrator.editMode == LiveEditEditMode.ai
-                                ? 'AI Bubble'
-                                : 'Selection Bubble',
+                Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      _BubbleDragHandle(
+                        alignment: autoPlacement.dx > bounds.left
+                            ? Alignment.centerLeft
+                            : Alignment.centerRight,
+                        onPanUpdate: (final details) {
+                          orchestrator.dragBubble(details.delta);
+                        },
+                      ),
+                      if (orchestrator.applyPhase == LiveEditApplyPhase.success)
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFECFDF5),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFA7F3D0)),
+                          ),
+                          child: Text(
+                            'Last apply succeeded. Review the updated node or discard the session draft state.',
                             style: const TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 13,
+                              fontSize: 12,
+                              color: Color(0xFF065F46),
                             ),
                           ),
-                          const SizedBox(height: 2),
-                          Text(
-                            selection.widgetType,
-                            style: const TextStyle(
-                              color: Color(0xFF475569),
-                              fontSize: 12,
+                        ),
+                      Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                Text(
+                                  orchestrator.hasMarqueePreview
+                                      ? 'Selecting ${orchestrator.marqueePreviewSelections.length}'
+                                      : orchestrator.currentActivity?.label ??
+                                            _bubbleStatusLabel(status),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  orchestrator.hasMultiSelection
+                                      ? '${orchestrator.activeMultiSelection.length} widgets • ${orchestrator.activeProperty?.label ?? 'shared'}'
+                                      : orchestrator.hasMarqueePreview
+                                      ? 'Drag selection preview • ${orchestrator.marqueePreviewSelections.length} hits'
+                                      : '${selection.widgetType} • ${orchestrator.activeProperty?.label ?? 'node'}',
+                                  style: const TextStyle(
+                                    color: Color(0xFF475569),
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                if (orchestrator.debugModeEnabled &&
+                                    _hasText(
+                                      _sourceLocationLabel(
+                                        selection.source,
+                                        compact: true,
+                                      ),
+                                    ))
+                                  Text(
+                                    _sourceLocationLabel(
+                                      selection.source,
+                                      compact: true,
+                                    ),
+                                    style: const TextStyle(
+                                      color: Color(0xFF64748B),
+                                      fontSize: 11,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                if (orchestrator.debugModeEnabled &&
+                                    !_hasText(
+                                      _sourceLocationLabel(
+                                        selection.source,
+                                        compact: true,
+                                      ),
+                                    ))
+                                  const Text(
+                                    'No concrete source context',
+                                    style: TextStyle(
+                                      color: Color(0xFF64748B),
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          Semantics(
+                            identifier: 'live_edit_select_parent_button',
+                            button: true,
+                            child: IconButton(
+                              onPressed:
+                                  orchestrator
+                                          .activeSelectionCandidates
+                                          .length >
+                                      1
+                                  ? orchestrator.selectParentCandidate
+                                  : null,
+                              icon: const Icon(
+                                Icons.vertical_align_top,
+                                size: 18,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            tooltip: 'Sticky deeper pick',
+                            onPressed: () => orchestrator.setDeeperPickEnabled(
+                              !orchestrator.deeperPickEnabled,
+                            ),
+                            icon: Icon(
+                              orchestrator.deeperPickEnabled
+                                  ? Icons.layers
+                                  : Icons.layers_outlined,
+                              size: 18,
+                            ),
+                          ),
+                          IconButton(
+                            onPressed:
+                                orchestrator.activeSelectionCandidates.length >
+                                    1
+                                ? orchestrator.selectChildCandidate
+                                : null,
+                            icon: const Icon(
+                              Icons.vertical_align_bottom,
+                              size: 18,
                             ),
                           ),
                         ],
                       ),
-                    ),
-                    Semantics(
-                      identifier: 'live_edit_select_parent_button',
-                      button: true,
-                      child: IconButton(
-                        onPressed:
-                            orchestrator.activeSelectionCandidates.length > 1
-                            ? orchestrator.selectParentCandidate
-                            : null,
-                        icon: const Icon(Icons.vertical_align_top, size: 18),
+                      const SizedBox(height: 8),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: <Widget>[
+                            for (final candidate
+                                in _visibleCandidates.indexed) ...<Widget>[
+                              Semantics(
+                                identifier:
+                                    'live_edit_candidate_chip_${candidate.$1}',
+                                child: ChoiceChip(
+                                  materialTapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                  label: Text(
+                                    _candidateLabel(candidate.$1),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  selected: candidate.$2.active,
+                                  onSelected: (_) => orchestrator
+                                      .selectCandidateAt(candidate.$1),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                            ],
+                            if (orchestrator.activeSelectionCandidates.length >
+                                _visibleCandidates.length)
+                              Chip(
+                                label: Text(
+                                  '+${orchestrator.activeSelectionCandidates.length - _visibleCandidates.length}',
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: <Widget>[
-                      for (final candidate
-                          in _visibleCandidates.indexed) ...<Widget>[
-                        Semantics(
-                          identifier:
-                              'live_edit_candidate_chip_${candidate.$1}',
-                          child: ChoiceChip(
-                            materialTapTargetSize:
-                                MaterialTapTargetSize.shrinkWrap,
-                            label: Text(
-                              candidate.$2.widgetType,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            selected: candidate.$2.active,
-                            onSelected: (_) =>
-                                orchestrator.selectCandidateAt(candidate.$1),
+                      const SizedBox(height: 10),
+                      Expanded(
+                        child: switch (status) {
+                          LiveEditBubbleStatus.waiting => _WaitingBubbleBody(
+                            orchestrator: orchestrator,
                           ),
-                        ),
-                        const SizedBox(width: 6),
-                      ],
-                      if (orchestrator.activeSelectionCandidates.length >
-                          _visibleCandidates.length)
-                        Chip(
-                          label: Text(
-                            '+${orchestrator.activeSelectionCandidates.length - _visibleCandidates.length}',
+                          LiveEditBubbleStatus.failed => _WaitingBubbleBody(
+                            orchestrator: orchestrator,
                           ),
-                        ),
+                          LiveEditBubbleStatus.applied => _AppliedBubbleBody(
+                            orchestrator: orchestrator,
+                          ),
+                          _ when orchestrator.editMode == LiveEditEditMode.ai =>
+                            _AiBubbleBody(orchestrator: orchestrator),
+                          _ => _SelectionBubbleBody(orchestrator: orchestrator),
+                        },
+                      ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 10),
-                Expanded(
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 180),
-                    child: orchestrator.editMode == LiveEditEditMode.ai
-                        ? _AiBubbleBody(orchestrator: orchestrator)
-                        : _SelectionBubbleBody(orchestrator: orchestrator),
+                Positioned(
+                  right: 6,
+                  bottom: 6,
+                  child: _BubbleResizeHandle(
+                    onPanUpdate: (final details) {
+                      orchestrator.resizeBubble(
+                        width: bubbleWidth + details.delta.dx,
+                        height: bubbleHeight + details.delta.dy,
+                      );
+                    },
                   ),
                 ),
               ],
@@ -783,30 +1672,59 @@ class _SelectionBubble extends StatelessWidget {
     );
   }
 
-  Offset _bubblePlacement(
-    final LiveEditBounds bounds,
-    final Size viewport,
-    final double width,
-    final double height,
-  ) {
-    const gap = 12.0;
-    final rightSpace = viewport.width - bounds.right - 16;
-    final leftSpace = bounds.left - 16;
-    double left;
-    double top = mathMax(16, bounds.top);
+  String _candidateLabel(final int index) => switch (index) {
+    0 => 'Selected',
+    1 => 'Parent',
+    2 => 'Child',
+    _ => 'Alt ${index + 1}',
+  };
+}
 
-    if (rightSpace >= width) {
-      left = bounds.right + gap;
-    } else if (leftSpace >= width) {
-      left = bounds.left - width - gap;
-    } else {
-      left = mathMin(viewport.width - width - 16, mathMax(16, bounds.left));
-      top = mathMin(viewport.height - height - 16, bounds.bottom + gap);
-    }
+class _BubbleDragHandle extends StatelessWidget {
+  const _BubbleDragHandle({required this.alignment, required this.onPanUpdate});
 
-    top = mathMin(top, viewport.height - height - 16);
-    return Offset(left, mathMax(16, top));
-  }
+  final Alignment alignment;
+  final ValueChanged<DragUpdateDetails> onPanUpdate;
+
+  @override
+  Widget build(final BuildContext context) => Semantics(
+    identifier: 'live_edit_bubble_drag_handle',
+    child: GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onPanUpdate: onPanUpdate,
+      child: SizedBox(
+        height: 12,
+        child: Align(
+          alignment: alignment,
+          child: Container(
+            width: 28,
+            height: 3,
+            margin: const EdgeInsets.only(bottom: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF94A3B8),
+              borderRadius: BorderRadius.circular(999),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+class _BubbleResizeHandle extends StatelessWidget {
+  const _BubbleResizeHandle({required this.onPanUpdate});
+
+  final ValueChanged<DragUpdateDetails> onPanUpdate;
+
+  @override
+  Widget build(final BuildContext context) => GestureDetector(
+    behavior: HitTestBehavior.opaque,
+    onPanUpdate: onPanUpdate,
+    child: Padding(
+      padding: const EdgeInsets.only(top: 6, left: 6),
+      child: Icon(Icons.open_in_full, size: 14, color: const Color(0xFF64748B)),
+    ),
+  );
 }
 
 class _SelectionBubbleBody extends StatelessWidget {
@@ -817,27 +1735,165 @@ class _SelectionBubbleBody extends StatelessWidget {
   @override
   Widget build(final BuildContext context) {
     final property = orchestrator.activeProperty;
-    if (property == null) {
-      return const Text('Select a property in the panel to edit inline.');
-    }
-
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          _PropertyEditorCard(
-            orchestrator: orchestrator,
-            property: property,
-            surface: property.requiresAgentForPersistence
-                ? LiveEditEditSurface.aiBubble
-                : LiveEditEditSurface.inline,
-          ),
+          if (property != null)
+            _PropertyEditorCard(
+              orchestrator: orchestrator,
+              property: property,
+              surface: property.requiresAgentForPersistence
+                  ? LiveEditEditSurface.aiBubble
+                  : LiveEditEditSurface.inline,
+            )
+          else
+            const Text(
+              'No direct property editor for this candidate yet. Use AI or cycle candidates.',
+            ),
           const SizedBox(height: 12),
-          _ApplyActions(orchestrator: orchestrator, compact: true),
+          _BubbleComposerSection(orchestrator: orchestrator),
+          const SizedBox(height: 12),
+          _ApplyActions(
+            orchestrator: orchestrator,
+            compact: true,
+            semanticsPrefix: 'live_edit_bubble',
+          ),
         ],
       ),
     );
   }
+}
+
+class _WaitingBubbleBody extends StatelessWidget {
+  const _WaitingBubbleBody({required this.orchestrator});
+
+  final LiveEditOrchestrator orchestrator;
+
+  @override
+  Widget build(final BuildContext context) {
+    final status = orchestrator.bubbleStatusForActiveSelection;
+    final color = _bubbleStatusColor(status);
+    final plan = orchestrator.pendingExecutionPlan;
+    final property = orchestrator.activeProperty;
+    final failure = status == LiveEditBubbleStatus.failed;
+    return ListView(
+      shrinkWrap: true,
+      children: <Widget>[
+        Container(
+          key: ValueKey<String>('waiting_${status.name}'),
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: color.withOpacity(0.35)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Text(
+                failure
+                    ? (orchestrator.lastError ?? 'Agent request failed.')
+                    : orchestrator.currentActivity?.summary ??
+                          '${orchestrator.currentBackendLabel} is working on ${property?.label ?? 'this change'}.',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: color,
+                ),
+              ),
+              const SizedBox(height: 8),
+              _AgentActivityPanel(orchestrator: orchestrator),
+              const SizedBox(height: 8),
+              Text(
+                orchestrator.currentActivity?.summary ??
+                    plan?.summary ??
+                    orchestrator.activeDraftChanges
+                        .map(
+                          (final draft) =>
+                              '${draft.propertyId}=${draft.targetValue}',
+                        )
+                        .join(' • '),
+                style: const TextStyle(fontSize: 11, color: Color(0xFF334155)),
+                maxLines: 4,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        _BubbleComposerSection(orchestrator: orchestrator),
+        const SizedBox(height: 8),
+        Row(
+          children: <Widget>[
+            Expanded(
+              child: OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                ),
+                onPressed: orchestrator.expandPanel,
+                child: const Text('Inspector'),
+              ),
+            ),
+            if (failure) ...<Widget>[
+              const SizedBox(width: 6),
+              Expanded(
+                child: FilledButton(
+                  style: FilledButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                  ),
+                  onPressed: orchestrator.retryApply,
+                  child: const Text('Retry'),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _AppliedBubbleBody extends StatelessWidget {
+  const _AppliedBubbleBody({required this.orchestrator});
+
+  final LiveEditOrchestrator orchestrator;
+
+  @override
+  Widget build(final BuildContext context) => ListView(
+    shrinkWrap: true,
+    children: <Widget>[
+      Container(
+        key: const ValueKey<String>('applied_bubble'),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFFECFDF5),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFA7F3D0)),
+        ),
+        child: Text(
+          '${orchestrator.currentActivity?.summary ?? 'Applied live-edit changes.'} ${orchestrator.pendingExecutionPlan?.affectedFiles.join(', ') ?? 'Source updated.'}',
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF166534),
+          ),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
+      const SizedBox(height: 10),
+      _BubbleComposerSection(orchestrator: orchestrator),
+      const SizedBox(height: 10),
+      _ApplyActions(
+        orchestrator: orchestrator,
+        compact: true,
+        semanticsPrefix: 'live_edit_bubble',
+      ),
+    ],
+  );
 }
 
 class _AiBubbleBody extends StatelessWidget {
@@ -849,6 +1905,14 @@ class _AiBubbleBody extends StatelessWidget {
   Widget build(final BuildContext context) => ListView(
     shrinkWrap: true,
     children: <Widget>[
+      _AgentActivityPanel(orchestrator: orchestrator),
+      const SizedBox(height: 8),
+      if (_hasText(orchestrator.stagedRequestSummary) &&
+          !orchestrator.needsApproval &&
+          orchestrator.applyPhase != LiveEditApplyPhase.success) ...<Widget>[
+        _PendingRequestCard(summary: orchestrator.stagedRequestSummary!),
+        const SizedBox(height: 10),
+      ],
       if (orchestrator.pendingExecutionPlan case final plan?)
         Container(
           margin: const EdgeInsets.only(bottom: 10),
@@ -889,21 +1953,87 @@ class _AiBubbleBody extends StatelessWidget {
       ))
         _TimelineBubble(entry: entry),
       const SizedBox(height: 8),
-      _AiComposer(orchestrator: orchestrator, autofocus: true),
+      _BubbleComposerSection(orchestrator: orchestrator, autofocus: true),
       const SizedBox(height: 10),
-      _ApplyActions(orchestrator: orchestrator, compact: true),
+      _ApplyActions(
+        orchestrator: orchestrator,
+        compact: true,
+        semanticsPrefix: 'live_edit_bubble',
+      ),
     ],
   );
 }
 
+class _BubbleComposerSection extends StatelessWidget {
+  const _BubbleComposerSection({
+    required this.orchestrator,
+    this.autofocus = false,
+  });
+
+  final LiveEditOrchestrator orchestrator;
+  final bool autofocus;
+
+  @override
+  Widget build(final BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: <Widget>[
+      const Text(
+        'AI',
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFF334155),
+        ),
+      ),
+      const SizedBox(height: 6),
+      _AiComposer(orchestrator: orchestrator, autofocus: autofocus),
+    ],
+  );
+}
+
+class _PendingRequestCard extends StatelessWidget {
+  const _PendingRequestCard({required this.summary});
+
+  final String summary;
+
+  @override
+  Widget build(final BuildContext context) => Container(
+    padding: const EdgeInsets.all(10),
+    decoration: BoxDecoration(
+      color: const Color(0xFFFFFBEB),
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: const Color(0xFFFDE68A)),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        const Text(
+          'Pending request',
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF92400E),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          summary,
+          style: const TextStyle(fontSize: 11, color: Color(0xFF78350F)),
+        ),
+      ],
+    ),
+  );
+}
+
 class _TimelineBubble extends StatelessWidget {
-  const _TimelineBubble({required this.entry});
+  const _TimelineBubble({required this.entry, this.debug = false});
 
   final LiveEditTimelineEntry entry;
+  final bool debug;
 
   @override
   Widget build(final BuildContext context) {
-    final isAssistant = entry.role == 'assistant';
+    final isAssistant = entry.role == 'assistant' || entry.role == 'debug';
     return Align(
       alignment: isAssistant ? Alignment.centerLeft : Alignment.centerRight,
       child: Container(
@@ -911,7 +2041,9 @@ class _TimelineBubble extends StatelessWidget {
         padding: const EdgeInsets.all(10),
         constraints: const BoxConstraints(maxWidth: 260),
         decoration: BoxDecoration(
-          color: isAssistant
+          color: entry.role == 'debug'
+              ? const Color(0xFF111827)
+              : isAssistant
               ? const Color(0xFFE2E8F0)
               : const Color(0xFFDCFCE7),
           borderRadius: BorderRadius.circular(12),
@@ -919,20 +2051,259 @@ class _TimelineBubble extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Text(entry.message, style: const TextStyle(fontSize: 12)),
+            Text(
+              entry.message,
+              style: TextStyle(
+                fontSize: 12,
+                color: entry.role == 'debug' ? Colors.white : null,
+              ),
+            ),
+            if (debug || entry.role == 'debug') ...<Widget>[
+              const SizedBox(height: 4),
+              Text(
+                entry.timestamp.toLocal().toIso8601String(),
+                style: TextStyle(
+                  fontSize: 10,
+                  color: entry.role == 'debug'
+                      ? Colors.white70
+                      : const Color(0xFF64748B),
+                ),
+              ),
+            ],
             if (entry.details.isNotEmpty) ...<Widget>[
               const SizedBox(height: 4),
               for (final detail in entry.details.take(4))
                 Text(
                   detail,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
-                    color: Color(0xFF475569),
+                    color: entry.role == 'debug'
+                        ? Colors.white70
+                        : const Color(0xFF475569),
                   ),
                 ),
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _BackendSwitcher extends StatelessWidget {
+  const _BackendSwitcher({required this.orchestrator, this.rail = false});
+
+  final LiveEditOrchestrator orchestrator;
+  final bool rail;
+
+  @override
+  Widget build(final BuildContext context) {
+    final backends = orchestrator.availableBackends;
+    if (backends.length < 2) {
+      return const SizedBox.shrink();
+    }
+    final selected = orchestrator.currentBackendId;
+    if (rail) {
+      return PopupMenuButton<String>(
+        tooltip: 'Select backend',
+        onSelected: orchestrator.setBackend,
+        itemBuilder: (final context) => backends
+            .map(
+              (final backend) => PopupMenuItem<String>(
+                value: backend.id,
+                enabled: backend.available,
+                child: Text(
+                  backend.available
+                      ? backend.label
+                      : '${backend.label} offline',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: backend.available
+                        ? const Color(0xFF0F172A)
+                        : const Color(0xFF94A3B8),
+                    fontWeight: backend.id == selected
+                        ? FontWeight.w700
+                        : FontWeight.w500,
+                  ),
+                ),
+              ),
+            )
+            .toList(growable: false),
+        child: Semantics(
+          identifier: 'live_edit_backend_switcher_rail',
+          button: true,
+          child: Container(
+            width: 40,
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: Column(
+              children: <Widget>[
+                const Icon(Icons.sync_alt, size: 14),
+                const SizedBox(height: 4),
+                Text(
+                  orchestrator.currentBackendLabel
+                      .substring(0, 1)
+                      .toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+    return Semantics(
+      identifier: 'live_edit_backend_switcher',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            'Backend',
+            style: TextStyle(
+              color: rail ? Colors.white70 : const Color(0xFF64748B),
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: <Widget>[
+              for (final backend in backends)
+                ChoiceChip(
+                  label: Text(
+                    backend.available
+                        ? backend.label
+                        : '${backend.label} offline',
+                    style: const TextStyle(fontSize: 11),
+                  ),
+                  selected: backend.id == selected,
+                  onSelected: backend.available
+                      ? (final value) {
+                          if (value) {
+                            orchestrator.setBackend(backend.id);
+                          }
+                        }
+                      : null,
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AgentActivityPanel extends StatelessWidget {
+  const _AgentActivityPanel({required this.orchestrator, this.dense = false});
+
+  final LiveEditOrchestrator orchestrator;
+  final bool dense;
+
+  @override
+  Widget build(final BuildContext context) {
+    final latest = orchestrator.currentActivity;
+    if (latest == null) {
+      return Container(
+        padding: EdgeInsets.all(dense ? 8 : 10),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8FAFC),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+        ),
+        child: const Text(
+          'No activity yet.',
+          style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+        ),
+      );
+    }
+    final details = latest.details.take(dense ? 2 : 4).toList(growable: false);
+    return Container(
+      padding: EdgeInsets.all(dense ? 8 : 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEFF6FF),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFBFDBFE)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: Text(
+                  latest.label,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1D4ED8),
+                  ),
+                ),
+              ),
+              Text(
+                _activityElapsedLabel(latest),
+                style: const TextStyle(fontSize: 10, color: Color(0xFF64748B)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            latest.summary,
+            style: const TextStyle(fontSize: 11, color: Color(0xFF334155)),
+          ),
+          if (orchestrator.lastError case final error?) ...<Widget>[
+            const SizedBox(height: 6),
+            Text(
+              error,
+              style: const TextStyle(fontSize: 10, color: Color(0xFF991B1B)),
+              maxLines: dense ? 2 : 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+          if (details.isNotEmpty) ...<Widget>[
+            const SizedBox(height: 4),
+            if (orchestrator.debugModeEnabled)
+              ExpansionTile(
+                tilePadding: EdgeInsets.zero,
+                childrenPadding: EdgeInsets.zero,
+                title: const Text(
+                  'Technical details',
+                  style: TextStyle(fontSize: 10, color: Color(0xFF334155)),
+                ),
+                children: <Widget>[
+                  for (final detail in details)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Text(
+                          detail,
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: Color(0xFF334155),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              )
+            else
+              Text(
+                details.first,
+                style: const TextStyle(fontSize: 10, color: Color(0xFF334155)),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+          ],
+        ],
       ),
     );
   }
@@ -969,10 +2340,12 @@ class _AiComposerState extends State<_AiComposer> {
           child: TextField(
             controller: _controller,
             autofocus: widget.autofocus,
+            enableInteractiveSelection: false,
             maxLines: 3,
             minLines: 2,
-            decoration: const InputDecoration(
-              hintText: 'Talk to the agent about this selected element',
+            decoration: InputDecoration(
+              hintText:
+                  'Talk to ${widget.orchestrator.currentBackendLabel} about this selected element',
               border: OutlineInputBorder(),
               isDense: true,
             ),
@@ -1012,12 +2385,13 @@ class _PropertyEditorCard extends StatelessWidget {
   Widget build(final BuildContext context) {
     final isActive = orchestrator.activePropertyId == property.id;
     final disabled = !property.editable;
+    final effectiveValue = orchestrator.effectiveValueForProperty(property);
 
     final cardChild = Ink(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
         color: isActive ? const Color(0xFFF8FAFC) : Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: isActive ? const Color(0xFF0EA5E9) : const Color(0xFFE2E8F0),
         ),
@@ -1026,48 +2400,100 @@ class _PropertyEditorCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Expanded(
+              SizedBox(
+                width: surface == LiveEditEditSurface.panel ? 78 : 96,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Text(
                       property.label,
-                      style: const TextStyle(fontWeight: FontWeight.w700),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 11,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      _propertySubtitle(property),
+                      _propertySubtitle(property, effectiveValue),
                       style: const TextStyle(
-                        fontSize: 12,
+                        fontSize: 10,
                         color: Color(0xFF475569),
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
               ),
-              if (property.requiresAgentForPersistence)
-                const Icon(Icons.smart_toy_outlined, size: 18)
-              else if (disabled)
-                const Icon(Icons.lock_outline, size: 16),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    Wrap(
+                      spacing: 4,
+                      runSpacing: 4,
+                      children: <Widget>[
+                        _PropertyBadge(
+                          label: _previewLabel(property),
+                          textColor: _previewColor(property),
+                          backgroundColor: _previewColor(
+                            property,
+                          ).withOpacity(0.12),
+                        ),
+                        _PropertyBadge(
+                          label: _persistLabel(property, orchestrator),
+                          textColor: property.requiresAgentForPersistence
+                              ? const Color(0xFF7C2D12)
+                              : const Color(0xFF1D4ED8),
+                          backgroundColor: property.requiresAgentForPersistence
+                              ? const Color(0xFFFFEDD5)
+                              : const Color(0xFFDBEAFE),
+                        ),
+                        if (orchestrator.hasDraftForProperty(property))
+                          _PropertyBadge(
+                            label: orchestrator.isPropertyWaiting(property)
+                                ? 'Waiting'
+                                : 'Dirty',
+                            textColor: orchestrator.isPropertyWaiting(property)
+                                ? const Color(0xFF1D4ED8)
+                                : const Color(0xFF0F766E),
+                            backgroundColor:
+                                orchestrator.isPropertyWaiting(property)
+                                ? const Color(0xFFDBEAFE)
+                                : const Color(0xFFCCFBF1),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    (surface == LiveEditEditSurface.panel)
+                        ? Semantics(
+                            identifier:
+                                'live_edit_property_input_${_semanticsId(property.id)}',
+                            child: _PropertyEditor(
+                              orchestrator: orchestrator,
+                              property: property,
+                              surface: surface,
+                            ),
+                          )
+                        : _PropertyEditor(
+                            orchestrator: orchestrator,
+                            property: property,
+                            surface: surface,
+                          ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 6),
+              _PropertyActionColumn(
+                orchestrator: orchestrator,
+                property: property,
+                surface: surface,
+              ),
             ],
           ),
-          const SizedBox(height: 10),
-          (surface == LiveEditEditSurface.panel)
-              ? Semantics(
-                  identifier:
-                      'live_edit_property_input_${_semanticsId(property.id)}',
-                  child: _PropertyEditor(
-                    orchestrator: orchestrator,
-                    property: property,
-                    surface: surface,
-                  ),
-                )
-              : _PropertyEditor(
-                  orchestrator: orchestrator,
-                  property: property,
-                  surface: surface,
-                ),
         ],
       ),
     );
@@ -1093,15 +2519,83 @@ class _PropertyEditorCard extends StatelessWidget {
     );
   }
 
-  String _propertySubtitle(final LiveEditPropertyDescriptor property) {
-    final value = '${property.value ?? 'unset'}';
-    final preview = property.canPreviewExactly
-        ? 'exact preview'
-        : property.previewMode.wireName;
-    final persist = property.requiresAgentForPersistence
-        ? 'agent persist'
-        : (property.persistable ? 'safe persist' : 'preview only');
-    return '$value | $preview | $persist';
+  String _propertySubtitle(
+    final LiveEditPropertyDescriptor property,
+    final Object? value,
+  ) {
+    final resolved = '$value'.isEmpty ? 'unset' : '$value';
+    final editor = property.preferredEditor.isEmpty
+        ? property.kind.wireName
+        : property.preferredEditor;
+    return '$resolved • $editor';
+  }
+}
+
+class _PropertyBadge extends StatelessWidget {
+  const _PropertyBadge({
+    required this.label,
+    required this.textColor,
+    required this.backgroundColor,
+  });
+
+  final String label;
+  final Color textColor;
+  final Color backgroundColor;
+
+  @override
+  Widget build(final BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+    decoration: BoxDecoration(
+      color: backgroundColor,
+      borderRadius: BorderRadius.circular(999),
+    ),
+    child: Text(
+      label,
+      style: TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.w600,
+        color: textColor,
+      ),
+    ),
+  );
+}
+
+class _PropertyActionColumn extends StatelessWidget {
+  const _PropertyActionColumn({
+    required this.orchestrator,
+    required this.property,
+    required this.surface,
+  });
+
+  final LiveEditOrchestrator orchestrator;
+  final LiveEditPropertyDescriptor property;
+  final LiveEditEditSurface surface;
+
+  @override
+  Widget build(final BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        if (surface == LiveEditEditSurface.panel) ...<Widget>[
+          IconButton(
+            visualDensity: VisualDensity.compact,
+            iconSize: 16,
+            onPressed: () {
+              if (property.requiresAgentForPersistence) {
+                orchestrator.openAiBubble(property: property);
+              } else {
+                orchestrator.focusProperty(property);
+              }
+            },
+            icon: Icon(
+              property.requiresAgentForPersistence
+                  ? Icons.smart_toy_outlined
+                  : Icons.ads_click_outlined,
+            ),
+          ),
+        ],
+      ],
+    );
   }
 }
 
@@ -1118,10 +2612,11 @@ class _PropertyEditor extends StatelessWidget {
 
   @override
   Widget build(final BuildContext context) {
+    final waiting = orchestrator.isPropertyWaiting(property);
     if (!property.editable) {
       return Text(
         '${property.value ?? 'Not editable'}',
-        style: const TextStyle(fontSize: 12),
+        style: const TextStyle(fontSize: 11),
       );
     }
     if (property.requiresAgentForPersistence &&
@@ -1129,31 +2624,35 @@ class _PropertyEditor extends StatelessWidget {
       return Row(
         children: <Widget>[
           const Expanded(
-            child: Text(
-              'This property needs AI-assisted persistence.',
-              style: TextStyle(fontSize: 12),
-            ),
+            child: Text('Use Apply', style: TextStyle(fontSize: 11)),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 4),
           OutlinedButton(
+            style: OutlinedButton.styleFrom(
+              visualDensity: VisualDensity.compact,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            ),
             onPressed: () => orchestrator.openAiBubble(property: property),
-            child: const Text('Open AI'),
+            child: const Text('AI', style: TextStyle(fontSize: 11)),
           ),
         ],
       );
     }
 
     if (property.kind == LiveEditPropertyKind.boolean) {
-      final current = property.value == true;
-      return SwitchListTile(
-        dense: true,
-        value: current,
-        contentPadding: EdgeInsets.zero,
-        title: const Text('Enabled'),
-        onChanged: (final value) => orchestrator.updateDraft(
-          property: property,
-          targetValue: value,
-          surface: surface,
+      final current = orchestrator.effectiveValueForProperty(property) == true;
+      return Align(
+        alignment: Alignment.centerLeft,
+        child: Switch(
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          value: current,
+          onChanged: waiting
+              ? null
+              : (final value) => orchestrator.updateDraft(
+                  property: property,
+                  targetValue: value,
+                  surface: surface,
+                ),
         ),
       );
     }
@@ -1161,18 +2660,25 @@ class _PropertyEditor extends StatelessWidget {
     if (property.options.isNotEmpty ||
         property.kind == LiveEditPropertyKind.enumValue) {
       return Wrap(
-        spacing: 8,
-        runSpacing: 8,
+        spacing: 4,
+        runSpacing: 4,
         children: <Widget>[
           for (final option in property.options)
             ChoiceChip(
+              visualDensity: VisualDensity.compact,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              labelStyle: const TextStyle(fontSize: 11),
               label: Text(option),
-              selected: '$option' == '${property.value}',
-              onSelected: (_) => orchestrator.updateDraft(
-                property: property,
-                targetValue: option,
-                surface: surface,
-              ),
+              selected:
+                  '$option' ==
+                  '${orchestrator.effectiveValueForProperty(property)}',
+              onSelected: waiting
+                  ? null
+                  : (_) => orchestrator.updateDraft(
+                      property: property,
+                      targetValue: option,
+                      surface: surface,
+                    ),
             ),
         ],
       );
@@ -1225,7 +2731,9 @@ class _NumericEditorState extends State<_NumericEditor> {
 
   @override
   Widget build(final BuildContext context) {
-    final text = '${widget.property.value ?? ''}';
+    final text =
+        '${widget.orchestrator.effectiveValueForProperty(widget.property) ?? ''}';
+    final waiting = widget.orchestrator.isPropertyWaiting(widget.property);
     if (_controller.text != text) {
       _controller.value = TextEditingValue(
         text: text,
@@ -1235,24 +2743,36 @@ class _NumericEditorState extends State<_NumericEditor> {
     return Row(
       children: <Widget>[
         IconButton(
-          onPressed: () => _applyDelta(-widget.property.numericStep),
-          icon: const Icon(Icons.remove_circle_outline),
+          visualDensity: VisualDensity.compact,
+          iconSize: 14,
+          onPressed: waiting
+              ? null
+              : () => _applyDelta(-widget.property.numericStep),
+          icon: const Icon(Icons.remove),
         ),
         Expanded(
           child: TextField(
             controller: _controller,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             autofocus: widget.surface == LiveEditEditSurface.inline,
+            enableInteractiveSelection: false,
+            enabled: !waiting,
+            style: const TextStyle(fontSize: 11),
             decoration: const InputDecoration(
               border: OutlineInputBorder(),
               isDense: true,
+              contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             ),
             onSubmitted: (final value) => _submit(value),
           ),
         ),
         IconButton(
-          onPressed: () => _applyDelta(widget.property.numericStep),
-          icon: const Icon(Icons.add_circle_outline),
+          visualDensity: VisualDensity.compact,
+          iconSize: 14,
+          onPressed: waiting
+              ? null
+              : () => _applyDelta(widget.property.numericStep),
+          icon: const Icon(Icons.add),
         ),
       ],
     );
@@ -1271,7 +2791,9 @@ class _NumericEditorState extends State<_NumericEditor> {
   }
 
   void _applyDelta(final double delta) {
-    final base = _asDouble(widget.property.value);
+    final base = _asDouble(
+      widget.orchestrator.effectiveValueForProperty(widget.property),
+    );
     final next = base + delta;
     final targetValue = widget.property.kind == LiveEditPropertyKind.integer
         ? next.round()
@@ -1314,7 +2836,9 @@ class _TextValueEditorState extends State<_TextValueEditor> {
 
   @override
   Widget build(final BuildContext context) {
-    final text = '${widget.property.value ?? ''}';
+    final text =
+        '${widget.orchestrator.effectiveValueForProperty(widget.property) ?? ''}';
+    final waiting = widget.orchestrator.isPropertyWaiting(widget.property);
     if (_controller.text != text) {
       _controller.value = TextEditingValue(
         text: text,
@@ -1324,11 +2848,15 @@ class _TextValueEditorState extends State<_TextValueEditor> {
     return TextField(
       controller: _controller,
       autofocus: widget.surface == LiveEditEditSurface.inline,
+      enableInteractiveSelection: false,
+      enabled: !waiting,
       maxLines: widget.multiline ? 4 : 1,
       minLines: widget.multiline ? 3 : 1,
+      style: const TextStyle(fontSize: 11),
       decoration: InputDecoration(
         border: const OutlineInputBorder(),
         isDense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         hintText: widget.multiline
             ? 'Edit value here without leaving the panel'
             : 'Edit inline',

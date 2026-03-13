@@ -79,6 +79,36 @@ List<String> _asStringList(final Object? value) => _asList(
   value,
 ).map((final item) => '$item').where((final item) => item.isNotEmpty).toList();
 
+String? _normalizeCodexModel(final String? value) {
+  final normalized = _asNullableString(value)?.toLowerCase();
+  return normalized;
+}
+
+String? _normalizeCodexReasoningEffort(final String? value) {
+  final normalized = _asNullableString(value)?.toLowerCase();
+  return switch (normalized) {
+    null => null,
+    'middle' => 'medium',
+    _ => normalized,
+  };
+}
+
+LiveEditInferenceConfig? _parseInferenceConfig(final Object? value) {
+  if (value == null) return null;
+  if (value is Map<String, Object?>) {
+    return LiveEditInferenceConfig.fromJson(value);
+  }
+  if (value is Map) {
+    return LiveEditInferenceConfig.fromJson(
+      value.map((final k, final v) => MapEntry('$k', v)),
+    );
+  }
+  return null;
+}
+
+/// Alias for backward compatibility; prefer [LiveEditInferenceConfig].
+typedef LiveEditCodexConfig = LiveEditInferenceConfig;
+
 final class LiveEditAgentBackend {
   const LiveEditAgentBackend({
     required this.id,
@@ -153,6 +183,71 @@ final class LiveEditBounds {
   };
 }
 
+enum LiveEditBubbleDisplayState {
+  expanded('expanded'),
+  minimized('minimized');
+
+  const LiveEditBubbleDisplayState(this.wireName);
+
+  final String wireName;
+
+  static LiveEditBubbleDisplayState fromWire(final Object? value) {
+    final normalized = '$value'.trim().toLowerCase();
+    return LiveEditBubbleDisplayState.values.firstWhere(
+      (final state) => state.wireName == normalized,
+      orElse: () => LiveEditBubbleDisplayState.expanded,
+    );
+  }
+}
+
+final class LiveEditCodexModelOption {
+  const LiveEditCodexModelOption({required this.id, required this.label});
+
+  factory LiveEditCodexModelOption.fromJson(final Map<String, Object?> json) =>
+      LiveEditCodexModelOption(
+        id: '${json['id'] ?? ''}',
+        label: '${json['label'] ?? ''}',
+      );
+
+  final String id;
+  final String label;
+
+  Map<String, Object?> toJson() => <String, Object?>{'id': id, 'label': label};
+}
+
+final class LiveEditCodexOptions {
+  const LiveEditCodexOptions._();
+
+  static const List<LiveEditCodexModelOption> supportedModels =
+      <LiveEditCodexModelOption>[
+        LiveEditCodexModelOption(id: 'gpt-5.4', label: 'GPT-5.4'),
+        LiveEditCodexModelOption(id: 'gpt-5.3-codex', label: 'GPT-5.3-Codex'),
+        LiveEditCodexModelOption(
+          id: 'gpt-5.3-codex-spark',
+          label: 'GPT-5.3-Codex-Spark',
+        ),
+      ];
+
+  static const List<String> supportedReasoningEfforts = <String>[
+    'low',
+    'medium',
+    'high',
+  ];
+
+  static bool isSupportedReasoningEffort(final String value) =>
+      supportedReasoningEfforts.contains(_normalizeCodexReasoningEffort(value));
+
+  static LiveEditCodexConfig? normalizeConfig(
+    final LiveEditCodexConfig? value,
+  ) {
+    if (value == null) {
+      return null;
+    }
+    final normalized = value.normalized();
+    return normalized.isEmpty ? null : normalized;
+  }
+}
+
 final class LiveEditDraftChange {
   const LiveEditDraftChange({
     required this.nodeId,
@@ -192,6 +287,42 @@ final class LiveEditDraftChange {
     if (intentText != null) 'intentText': intentText,
     'meta': meta,
   };
+}
+
+enum LiveEditEditMode {
+  inspect('inspect'),
+  edit('edit'),
+  ai('ai');
+
+  const LiveEditEditMode(this.wireName);
+
+  final String wireName;
+
+  static LiveEditEditMode fromWire(final Object? value) {
+    final normalized = '$value'.trim().toLowerCase();
+    return LiveEditEditMode.values.firstWhere(
+      (final mode) => mode.wireName == normalized,
+      orElse: () => LiveEditEditMode.inspect,
+    );
+  }
+}
+
+enum LiveEditEditSurface {
+  inline('inline'),
+  panel('panel'),
+  aiBubble('aiBubble');
+
+  const LiveEditEditSurface(this.wireName);
+
+  final String wireName;
+
+  static LiveEditEditSurface fromWire(final Object? value) {
+    final normalized = '$value'.trim().toLowerCase();
+    return LiveEditEditSurface.values.firstWhere(
+      (final surface) => surface.wireName.toLowerCase() == normalized,
+      orElse: () => LiveEditEditSurface.panel,
+    );
+  }
 }
 
 final class LiveEditExecutionPlan {
@@ -280,6 +411,35 @@ final class LiveEditFilePatch {
   };
 }
 
+/// Backend-agnostic inference config (model + optional reasoning effort).
+/// Codex uses both fields; Cursor and others use model only.
+final class LiveEditInferenceConfig {
+  const LiveEditInferenceConfig({this.model, this.reasoningEffort});
+
+  factory LiveEditInferenceConfig.fromJson(final Map<String, Object?> json) =>
+      LiveEditInferenceConfig(
+        model: _normalizeCodexModel(_asNullableString(json['model'])),
+        reasoningEffort: _normalizeCodexReasoningEffort(
+          _asNullableString(json['reasoningEffort']),
+        ),
+      );
+
+  final String? model;
+  final String? reasoningEffort;
+
+  bool get isEmpty => model == null && reasoningEffort == null;
+
+  LiveEditInferenceConfig normalized() => LiveEditInferenceConfig(
+    model: _normalizeCodexModel(model),
+    reasoningEffort: _normalizeCodexReasoningEffort(reasoningEffort),
+  );
+
+  Map<String, Object?> toJson() => <String, Object?>{
+    if (model != null) 'model': model,
+    if (reasoningEffort != null) 'reasoningEffort': reasoningEffort,
+  };
+}
+
 enum LiveEditPreviewMode {
   exact('exact'),
   ghost('ghost'),
@@ -296,86 +456,6 @@ enum LiveEditPreviewMode {
       orElse: () => LiveEditPreviewMode.none,
     );
   }
-}
-
-enum LiveEditEditSurface {
-  inline('inline'),
-  panel('panel'),
-  aiBubble('aiBubble');
-
-  const LiveEditEditSurface(this.wireName);
-
-  final String wireName;
-
-  static LiveEditEditSurface fromWire(final Object? value) {
-    final normalized = '$value'.trim().toLowerCase();
-    return LiveEditEditSurface.values.firstWhere(
-      (final surface) => surface.wireName.toLowerCase() == normalized,
-      orElse: () => LiveEditEditSurface.panel,
-    );
-  }
-}
-
-enum LiveEditEditMode {
-  inspect('inspect'),
-  edit('edit'),
-  ai('ai');
-
-  const LiveEditEditMode(this.wireName);
-
-  final String wireName;
-
-  static LiveEditEditMode fromWire(final Object? value) {
-    final normalized = '$value'.trim().toLowerCase();
-    return LiveEditEditMode.values.firstWhere(
-      (final mode) => mode.wireName == normalized,
-      orElse: () => LiveEditEditMode.inspect,
-    );
-  }
-}
-
-final class LiveEditSelectionCandidate {
-  const LiveEditSelectionCandidate({
-    required this.nodeId,
-    required this.widgetType,
-    required this.bounds,
-    required this.depth,
-    this.source,
-    this.active = false,
-  });
-
-  factory LiveEditSelectionCandidate.fromJson(
-    final Map<String, Object?> json,
-  ) => LiveEditSelectionCandidate(
-    nodeId: '${json['nodeId'] ?? ''}',
-    widgetType: '${json['widgetType'] ?? ''}',
-    bounds: switch (json['bounds']) {
-      final Map value => LiveEditBounds.fromJson(_asMap(value)),
-      _ => null,
-    },
-    depth: _asNullableInt(json['depth']) ?? 0,
-    source: switch (json['source']) {
-      final Map value => LiveEditSourceLocation.fromJson(_asMap(value)),
-      _ => null,
-    },
-    active: json['active'] == true,
-  );
-
-  final String nodeId;
-  final String widgetType;
-  final LiveEditBounds? bounds;
-  final int depth;
-  final LiveEditSourceLocation? source;
-  final bool active;
-
-  Map<String, Object?> toJson() => <String, Object?>{
-    'nodeId': nodeId,
-    'widgetType': widgetType,
-    if (bounds != null) 'bounds': bounds!.toJson(),
-    'depth': depth,
-    if (source != null) 'source': source!.toJson(),
-    'active': active,
-  };
 }
 
 final class LiveEditPropertyDescriptor {
@@ -427,14 +507,14 @@ final class LiveEditPropertyDescriptor {
   final bool safeToAutoGroupInApply;
   final Map<String, Object?> meta;
 
-  LiveEditEditSurface get preferredEditSurface =>
-      LiveEditEditSurface.fromWire(meta['editSurface']);
+  double get numericStep => _asDouble(meta['step'], fallback: 1);
 
   String get preferredEditor => '${meta['editor'] ?? ''}'.trim();
 
-  bool get prefersMultiline => meta['multiline'] == true;
+  LiveEditEditSurface get preferredEditSurface =>
+      LiveEditEditSurface.fromWire(meta['editSurface']);
 
-  double get numericStep => _asDouble(meta['step'], fallback: 1);
+  bool get prefersMultiline => meta['multiline'] == true;
 
   String get selectionPresentation => '${meta['selectionUi'] ?? ''}'.trim();
 
@@ -567,34 +647,41 @@ final class LiveEditResolutionRequest {
     required this.draftChanges,
     this.selection,
     this.backendId,
+    this.inferenceConfig,
     this.intentText,
     this.evidence = const <String, Object?>{},
     this.meta = const <String, Object?>{},
   });
 
-  factory LiveEditResolutionRequest.fromJson(final Map<String, Object?> json) =>
-      LiveEditResolutionRequest(
-        sessionId: '${json['sessionId'] ?? ''}',
-        workingDirectory: '${json['workingDirectory'] ?? ''}',
-        draftChanges: _asList(json['draftChanges'])
-            .whereType<Map>()
-            .map((final item) => LiveEditDraftChange.fromJson(_asMap(item)))
-            .toList(growable: false),
-        selection: switch (json['selection']) {
-          final Map value => LiveEditSelection.fromJson(_asMap(value)),
-          _ => null,
-        },
-        backendId: _asNullableString(json['backendId']),
-        intentText: _asNullableString(json['intentText']),
-        evidence: _asMap(json['evidence']),
-        meta: _asMap(json['meta']),
-      );
+  factory LiveEditResolutionRequest.fromJson(final Map<String, Object?> json) {
+    final inferenceConfig = _parseInferenceConfig(
+      json['inferenceConfig'] ?? json['codexConfig'],
+    );
+    return LiveEditResolutionRequest(
+      sessionId: '${json['sessionId'] ?? ''}',
+      workingDirectory: '${json['workingDirectory'] ?? ''}',
+      draftChanges: _asList(json['draftChanges'])
+          .whereType<Map>()
+          .map((final item) => LiveEditDraftChange.fromJson(_asMap(item)))
+          .toList(growable: false),
+      selection: switch (json['selection']) {
+        final Map value => LiveEditSelection.fromJson(_asMap(value)),
+        _ => null,
+      },
+      backendId: _asNullableString(json['backendId']),
+      inferenceConfig: inferenceConfig,
+      intentText: _asNullableString(json['intentText']),
+      evidence: _asMap(json['evidence']),
+      meta: _asMap(json['meta']),
+    );
+  }
 
   final String sessionId;
   final String workingDirectory;
   final List<LiveEditDraftChange> draftChanges;
   final LiveEditSelection? selection;
   final String? backendId;
+  final LiveEditInferenceConfig? inferenceConfig;
   final String? intentText;
   final Map<String, Object?> evidence;
   final Map<String, Object?> meta;
@@ -607,6 +694,7 @@ final class LiveEditResolutionRequest {
         .toList(),
     if (selection != null) 'selection': selection!.toJson(),
     if (backendId != null) 'backendId': backendId,
+    if (inferenceConfig != null) 'inferenceConfig': inferenceConfig!.toJson(),
     if (intentText != null) 'intentText': intentText,
     'evidence': evidence,
     'meta': meta,
@@ -698,6 +786,8 @@ final class LiveEditSelection {
     this.parentChain = const <Map<String, Object?>>[],
     this.detailsTree = const <String, Object?>{},
     this.propertiesTree = const <String, Object?>{},
+    this.selectionMode = LiveEditSelectionMode.single,
+    this.selectedNodeIds = const <String>[],
   });
 
   factory LiveEditSelection.fromJson(final Map<String, Object?> json) =>
@@ -727,6 +817,8 @@ final class LiveEditSelection {
         detailsTree: _asMap(json['detailsTree']),
         propertiesTree: _asMap(json['propertiesTree']),
         rawNode: _asMap(json['rawNode']),
+        selectionMode: LiveEditSelectionMode.fromWire(json['selectionMode']),
+        selectedNodeIds: _asStringList(json['selectedNodeIds']),
       );
 
   final String sessionId;
@@ -741,6 +833,8 @@ final class LiveEditSelection {
   final Map<String, Object?> detailsTree;
   final Map<String, Object?> propertiesTree;
   final Map<String, Object?> rawNode;
+  final LiveEditSelectionMode selectionMode;
+  final List<String> selectedNodeIds;
 
   Map<String, Object?> toJson() => <String, Object?>{
     'sessionId': sessionId,
@@ -757,7 +851,91 @@ final class LiveEditSelection {
     'detailsTree': detailsTree,
     'propertiesTree': propertiesTree,
     'rawNode': rawNode,
+    'selectionMode': selectionMode.wireName,
+    'selectedNodeIds': selectedNodeIds,
   };
+}
+
+final class LiveEditSelectionCandidate {
+  const LiveEditSelectionCandidate({
+    required this.nodeId,
+    required this.widgetType,
+    required this.bounds,
+    required this.depth,
+    this.source,
+    this.createdByLocalProject = false,
+    this.active = false,
+  });
+
+  factory LiveEditSelectionCandidate.fromJson(
+    final Map<String, Object?> json,
+  ) => LiveEditSelectionCandidate(
+    nodeId: '${json['nodeId'] ?? ''}',
+    widgetType: '${json['widgetType'] ?? ''}',
+    bounds: switch (json['bounds']) {
+      final Map value => LiveEditBounds.fromJson(_asMap(value)),
+      _ => null,
+    },
+    depth: _asNullableInt(json['depth']) ?? 0,
+    source: switch (json['source']) {
+      final Map value => LiveEditSourceLocation.fromJson(_asMap(value)),
+      _ => null,
+    },
+    createdByLocalProject: json['createdByLocalProject'] == true,
+    active: json['active'] == true,
+  );
+
+  final String nodeId;
+  final String widgetType;
+  final LiveEditBounds? bounds;
+  final int depth;
+  final LiveEditSourceLocation? source;
+  final bool createdByLocalProject;
+  final bool active;
+
+  Map<String, Object?> toJson() => <String, Object?>{
+    'nodeId': nodeId,
+    'widgetType': widgetType,
+    if (bounds != null) 'bounds': bounds!.toJson(),
+    'depth': depth,
+    if (source != null) 'source': source!.toJson(),
+    'createdByLocalProject': createdByLocalProject,
+    'active': active,
+  };
+}
+
+enum LiveEditSelectionMode {
+  single('single'),
+  multi('multi');
+
+  const LiveEditSelectionMode(this.wireName);
+
+  final String wireName;
+
+  static LiveEditSelectionMode fromWire(final Object? value) {
+    final normalized = '$value'.trim().toLowerCase();
+    return LiveEditSelectionMode.values.firstWhere(
+      (final mode) => mode.wireName == normalized,
+      orElse: () => LiveEditSelectionMode.single,
+    );
+  }
+}
+
+enum LiveEditSelectionPolicy {
+  deepest('deepest'),
+  nearestProjectAncestor('nearestProjectAncestor');
+
+  const LiveEditSelectionPolicy(this.wireName);
+
+  final String wireName;
+
+  static LiveEditSelectionPolicy fromWire(final Object? value) {
+    final normalized = '$value'.trim().toLowerCase();
+    return LiveEditSelectionPolicy.values.firstWhere(
+      (final policy) => policy.wireName.toLowerCase() == normalized,
+      orElse: () => LiveEditSelectionPolicy.deepest,
+    );
+  }
 }
 
 final class LiveEditSourceLocation {

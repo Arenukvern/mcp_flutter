@@ -26,8 +26,11 @@ void main() {
 
       liveEditAgentService = LiveEditAgentService(
         registry: LiveEditAgentRegistry(
-          clients: <String, InferenceClient>{'fake': _FakeInferenceClient()},
-          defaultBackendId: 'fake',
+          clients: <String, InferenceClient>{
+            'codex_exec': _FakeInferenceClient(id: 'codex_exec'),
+            'cursor_agent': _FakeInferenceClient(id: 'cursor_agent'),
+          },
+          defaultBackendId: 'codex_exec',
         ),
       );
 
@@ -56,13 +59,18 @@ void main() {
       expect(listResult.ok, isTrue);
       final listData = listResult.data! as Map<String, Object?>;
       final backends = listData['backends']! as List<Object?>;
-      expect(backends, hasLength(1));
-      expect((backends.single as Map<String, Object?>)['id'], 'fake');
+      expect(backends, hasLength(2));
+      expect(
+        backends.map(
+          (final backend) => (backend as Map<String, Object?>)['id'],
+        ),
+        containsAll(<String>['codex_exec', 'cursor_agent']),
+      );
 
       final setResult = await executor.execute(
         const LiveEditSetAgentBackendCommand(
           sessionId: 'session-1',
-          backendId: 'fake',
+          backendId: 'cursor_agent',
         ),
       );
       expect(setResult.ok, isTrue);
@@ -73,7 +81,7 @@ void main() {
       expect(getResult.ok, isTrue);
       final getData = getResult.data! as Map<String, Object?>;
       final backend = getData['backend']! as Map<String, Object?>;
-      expect(backend['id'], 'fake');
+      expect(backend['id'], 'cursor_agent');
       expect(getData['sessionId'], 'session-1');
     });
 
@@ -90,7 +98,7 @@ void main() {
     });
 
     test(
-      'apply draft returns condensed execution plan before approval',
+      'apply draft reports hot reload failure without VM connection',
       () async {
         final proposal = await liveEditAgentService.resolve(
           const LiveEditResolutionRequest(
@@ -122,23 +130,25 @@ void main() {
         );
 
         final result = await executor.execute(
-          LiveEditApplyDraftCommand(proposalId: proposal.proposalId),
+          LiveEditApplyDraftCommand(
+            proposalId: proposal.proposalId,
+            workingDirectory: '/tmp',
+          ),
         );
 
-        expect(result.ok, isTrue);
-        final data = result.data! as Map<String, Object?>;
-        expect(data['requiresApproval'], isTrue);
-        final executionPlan = data['executionPlan']! as Map<String, Object?>;
-        expect(executionPlan['proposalId'], proposal.proposalId);
-        expect(executionPlan['agentInstruction'], contains('width=140'));
+        expect(result.ok, isFalse);
+        expect(result.error?.code, CoreErrorCode.liveEditApplyFailed);
+        expect(result.error?.message, contains('hot reload failed'));
       },
     );
   });
 }
 
 final class _FakeInferenceClient implements InferenceClient {
+  const _FakeInferenceClient({required this.id});
+
   @override
-  String get id => 'fake';
+  final String id;
 
   @override
   bool get isAvailable => true;

@@ -34,13 +34,8 @@ url: http://127.0.0.1:3000/?live_edit_test_mode=1
 - tapOn:
       id: "live_edit_apply_button"
       retryTapIfNoChange: true
-- assertVisible:
-      id: "live_edit_approve_apply_button"
 - assertVisible: "Persist the inline live-edit changes for Maestro."
-- tapOn:
-      id: "live_edit_approve_apply_button"
-      retryTapIfNoChange: true
-- assertVisible: "Applied live-edit proposal."
+- assertVisible: "Applied live-edit changes."
 - assertVisible: "No draft changes."
 - tapOn:
       id: "live_edit_launcher_chip"

@@ -1,17 +1,28 @@
 // ignore_for_file: avoid_print
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
+import 'package:flutter_live_edit_agent/flutter_live_edit_agent.dart';
 import 'package:flutter_live_edit_toolkit/flutter_live_edit_toolkit.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 import 'package:provider/provider.dart';
 import 'package:test_app/change_notifier_example.dart';
+import 'package:test_app/live_edit_codex_fixture.dart';
 import 'package:test_app/stateful_widget_example.dart';
+import 'package:xsoulspace_inference_core/xsoulspace_inference_core.dart';
 
 const _liveEditTestModeFromDefine = bool.fromEnvironment('LIVE_EDIT_TEST_MODE');
+const _liveEditBackendId = String.fromEnvironment(
+  'LIVE_EDIT_BACKEND',
+  defaultValue: 'codex_exec',
+);
+const _liveEditWorkingDirectoryDefine = String.fromEnvironment(
+  'LIVE_EDIT_WORKING_DIRECTORY',
+);
 
 bool get _liveEditTestMode =>
     _liveEditTestModeFromDefine ||
@@ -20,37 +31,553 @@ bool get _liveEditTestMode =>
 @visibleForTesting
 LiveEditOrchestrator? debugLiveEditOrchestratorOverride;
 
+final LiveEditAgentService _liveEditAgentService = LiveEditAgentService();
+final List<LiveEditAgentBackend> _liveEditBackends = _liveEditAgentService
+    .listBackends();
+
+String _backendLabel(final String backendId) {
+  for (final backend in _liveEditBackends) {
+    if (backend.id == backendId) {
+      return backend.label;
+    }
+  }
+  return backendId;
+}
+
 Future<Map<String, Object?>> _liveEditTestApplyDelegate(
   final LiveEditApplyDraftRequest request,
 ) async {
+  request.onEvent?.call(
+    const LiveEditRuntimeEvent(
+      kind: LiveEditRuntimeEventKind.codex,
+      message: 'Preparing deterministic test response.',
+    ),
+  );
   await Future<void>.delayed(const Duration(milliseconds: 120));
-  if (!request.approve) {
-    return <String, Object?>{
-      'proposalId': 'maestro-live-edit-proposal',
-      'executionPlan': <String, Object?>{
-        'proposalId': 'maestro-live-edit-proposal',
-        'title': 'Apply live edit',
-        'summary': 'Persist the inline live-edit changes for Maestro.',
-        'selectedNode': 'Text',
-        'requestedChanges': <String>[
-          'Update selected text property from the panel draft.',
-        ],
-        'affectedFiles': <String>['lib/main.dart'],
-        'confidence': 0.96,
-        'riskNotes': <String>['demo'],
-        'agentInstruction':
-            'Persist the selected live-edit draft in the demo app.',
-      },
-      'result': <String, Object?>{'status': 'proposed'},
-    };
-  }
+  request.onEvent?.call(
+    const LiveEditRuntimeEvent(
+      kind: LiveEditRuntimeEventKind.codex,
+      message: 'Deterministic backend stream started.',
+    ),
+  );
+  request.onEvent?.call(
+    const LiveEditRuntimeEvent(
+      kind: LiveEditRuntimeEventKind.codex,
+      message: 'Deterministic backend streamed draft output.',
+      details: <String>['{"summary":"Persist the inline live-edit changes."}'],
+    ),
+  );
+  request.onEvent?.call(
+    const LiveEditRuntimeEvent(
+      kind: LiveEditRuntimeEventKind.debug,
+      message: 'Deterministic raw stdout chunk.',
+      details: <String>['{"summary":"Persist the inline live-edit changes."}'],
+      debugOnly: true,
+    ),
+  );
+  request.onEvent?.call(
+    const LiveEditRuntimeEvent(
+      kind: LiveEditRuntimeEventKind.codex,
+      message: 'Returning deterministic proposal.',
+    ),
+  );
+  request.onEvent?.call(
+    const LiveEditRuntimeEvent(
+      kind: LiveEditRuntimeEventKind.codex,
+      message: 'Applying deterministic test patch.',
+    ),
+  );
   return <String, Object?>{
     'proposalId': 'maestro-live-edit-proposal',
+    'executionPlan': <String, Object?>{
+      'proposalId': 'maestro-live-edit-proposal',
+      'title': 'Apply live edit',
+      'summary': 'Persist the inline live-edit changes for Maestro.',
+      'selectedNode': 'Text',
+      'requestedChanges': <String>[
+        'Update selected text property from the panel draft.',
+      ],
+      'affectedFiles': <String>['lib/main.dart'],
+      'confidence': 0.96,
+      'riskNotes': <String>['demo'],
+      'agentInstruction':
+          'Persist the selected live-edit draft in the demo app.',
+    },
     'result': <String, Object?>{
       'status': 'applied',
       'changedFiles': <String>['lib/main.dart'],
     },
   };
+}
+
+String _normalizePath(final String rawPath) {
+  final uri = Uri.tryParse(rawPath);
+  if (uri != null && uri.scheme == 'file') {
+    return uri.toFilePath();
+  }
+  return rawPath;
+}
+
+String? _workingDirectoryFromSelection(final LiveEditSelection? selection) {
+  final sourceFile = selection?.source?.file;
+  if (sourceFile == null || sourceFile.trim().isEmpty) {
+    return null;
+  }
+  final normalized = _normalizePath(sourceFile);
+  final file = File(normalized);
+  Directory? cursor = file.existsSync() ? file.parent : Directory(normalized);
+  while (cursor != null) {
+    final pubspec = File('${cursor.path}/pubspec.yaml');
+    if (pubspec.existsSync()) {
+      return cursor.path;
+    }
+    final parent = cursor.parent;
+    if (parent.path == cursor.path) {
+      break;
+    }
+    cursor = parent;
+  }
+  return null;
+}
+
+String? _resolveLiveEditWorkingDirectory(
+  final LiveEditApplyDraftRequest request,
+) {
+  final requested = request.workingDirectory?.trim() ?? '';
+  if (requested.isNotEmpty) {
+    return requested;
+  }
+  if (_liveEditWorkingDirectoryDefine.isNotEmpty) {
+    return _liveEditWorkingDirectoryDefine;
+  }
+  final inferred = _workingDirectoryFromSelection(request.selection);
+  if (inferred != null && inferred.isNotEmpty) {
+    return inferred;
+  }
+  final cwd = Directory.current.path;
+  return File('$cwd/pubspec.yaml').existsSync() ? cwd : null;
+}
+
+List<String> _liveEditRequestDebugDetails(
+  final LiveEditApplyDraftRequest request, {
+  required final String backendId,
+  required final String workingDirectory,
+}) => <String>[
+  'Session: ${request.sessionId}',
+  'Backend: $backendId',
+  'Workspace: $workingDirectory',
+  'Node: ${request.selection?.nodeId ?? '<none>'}',
+  'Drafts: ${request.draftChanges.length}',
+  'Intent present: ${((request.intentText ?? '').trim().isNotEmpty)}',
+];
+
+String _liveEditErrorMessage(final String message, {final Object? details}) {
+  final normalizedMessage = message.trim().isEmpty
+      ? 'Live edit failed.'
+      : message.trim();
+  String? salient;
+  if (details is Map) {
+    final map = details.map(
+      (final key, final value) => MapEntry('$key', value),
+    );
+    final stderr = '${map['stderr'] ?? ''}'.trim();
+    final rawDetails = '${map['rawDetails'] ?? ''}'.trim();
+    if (stderr.isNotEmpty) {
+      salient = stderr;
+    } else if (rawDetails.isNotEmpty) {
+      salient = rawDetails;
+    }
+  } else {
+    final raw = '$details'.trim();
+    if (raw.isNotEmpty && raw != 'null') {
+      salient = raw;
+    }
+  }
+  if (salient == null || salient == normalizedMessage) {
+    return normalizedMessage;
+  }
+  return '$normalizedMessage\n$salient';
+}
+
+Map<String, Object?> _liveEditFailureResponse(
+  final String message, {
+  final Object? details,
+  final Map<String, Object?> meta = const <String, Object?>{},
+}) => <String, Object?>{
+  'ok': false,
+  'message': _liveEditErrorMessage(message, details: details),
+  'details': details,
+  if (meta.isNotEmpty) 'meta': meta,
+  'error': <String, Object?>{
+    'message': _liveEditErrorMessage(message, details: details),
+    if (details != null) 'details': details,
+    if (meta.isNotEmpty) 'meta': meta,
+  },
+};
+
+String _truncateForActivity(final String value, {final int max = 140}) {
+  final trimmed = value.trim();
+  if (trimmed.length <= max) {
+    return trimmed;
+  }
+  return '${trimmed.substring(0, max)}...';
+}
+
+void _emitInferenceStreamEvent(
+  final LiveEditApplyDraftRequest request,
+  final InferenceStructuredTextStreamEvent event,
+) {
+  final sink = request.onEvent;
+  if (sink == null) {
+    return;
+  }
+
+  final attempt = event.attempt == null ? null : 'Attempt: ${event.attempt}';
+  final metadata = event.metadata.entries
+      .where((final entry) => '${entry.value}'.trim().isNotEmpty)
+      .take(4)
+      .map((final entry) => '${entry.key}: ${entry.value}')
+      .toList(growable: false);
+  final backendLabel = _backendLabel(request.backendId ?? _liveEditBackendId);
+
+  switch (event.type) {
+    case InferenceStructuredTextStreamEventType.lifecycle:
+      sink(
+        LiveEditRuntimeEvent(
+          kind: LiveEditRuntimeEventKind.codex,
+          message: event.message ?? '$backendLabel stream lifecycle updated.',
+          details: <String>[
+            if (attempt != null) attempt,
+            if (event.lifecycleState != null)
+              'State: ${event.lifecycleState!.name}',
+            ...metadata,
+          ],
+        ),
+      );
+      sink(
+        LiveEditRuntimeEvent(
+          kind: LiveEditRuntimeEventKind.debug,
+          message: 'Inference lifecycle event.',
+          details: <String>[
+            if (event.message != null) event.message!,
+            if (attempt != null) attempt,
+            if (event.lifecycleState != null)
+              'State: ${event.lifecycleState!.name}',
+            ...metadata,
+          ],
+          debugOnly: true,
+        ),
+      );
+    case InferenceStructuredTextStreamEventType.progress:
+      sink(
+        LiveEditRuntimeEvent(
+          kind: LiveEditRuntimeEventKind.codex,
+          message: _truncateForActivity(
+            event.message ?? '$backendLabel reported progress.',
+          ),
+          details: <String>[if (attempt != null) attempt, ...metadata],
+        ),
+      );
+      sink(
+        LiveEditRuntimeEvent(
+          kind: LiveEditRuntimeEventKind.debug,
+          message: 'Inference progress event.',
+          details: <String>[
+            if (event.message != null) event.message!,
+            if (attempt != null) attempt,
+            ...metadata,
+          ],
+          debugOnly: true,
+        ),
+      );
+    case InferenceStructuredTextStreamEventType.partialOutput:
+      sink(
+        LiveEditRuntimeEvent(
+          kind: LiveEditRuntimeEventKind.codex,
+          message: '$backendLabel streamed output.',
+          details: <String>[
+            if (attempt != null) attempt,
+            if ((event.textDelta ?? '').trim().isNotEmpty)
+              _truncateForActivity(event.textDelta!),
+          ],
+        ),
+      );
+      sink(
+        LiveEditRuntimeEvent(
+          kind: LiveEditRuntimeEventKind.debug,
+          message: 'Inference partial output event.',
+          details: <String>[
+            if ((event.textDelta ?? '').trim().isNotEmpty) event.textDelta!,
+            if (attempt != null) attempt,
+          ],
+          debugOnly: true,
+        ),
+      );
+    case InferenceStructuredTextStreamEventType.raw:
+      sink(
+        LiveEditRuntimeEvent(
+          kind: LiveEditRuntimeEventKind.debug,
+          message:
+              'Raw ${event.rawChannel?.name ?? 'stream'} chunk from $backendLabel.',
+          details: <String>[
+            if ((event.rawText ?? '').trim().isNotEmpty) event.rawText!,
+            if (attempt != null) attempt,
+            ...metadata,
+          ],
+          debugOnly: true,
+        ),
+      );
+    case InferenceStructuredTextStreamEventType.warning:
+      sink(
+        LiveEditRuntimeEvent(
+          kind: LiveEditRuntimeEventKind.codex,
+          message: event.message ?? '$backendLabel emitted a warning.',
+          details: <String>[
+            if (attempt != null) attempt,
+            if (event.isTransient) 'Transient warning',
+          ],
+        ),
+      );
+      sink(
+        LiveEditRuntimeEvent(
+          kind: LiveEditRuntimeEventKind.debug,
+          message: 'Inference warning event.',
+          details: <String>[
+            if (event.message != null) event.message!,
+            if (attempt != null) attempt,
+            if (event.isTransient) 'Transient warning',
+          ],
+          debugOnly: true,
+        ),
+      );
+    case InferenceStructuredTextStreamEventType.error:
+      sink(
+        LiveEditRuntimeEvent(
+          kind: LiveEditRuntimeEventKind.codex,
+          message:
+              event.message ?? event.error?.message ?? '$backendLabel failed.',
+          details: <String>[
+            if (attempt != null) attempt,
+            if (event.error != null) 'Code: ${event.error!.code}',
+          ],
+        ),
+      );
+      sink(
+        LiveEditRuntimeEvent(
+          kind: LiveEditRuntimeEventKind.debug,
+          message: 'Inference error event.',
+          details: <String>[
+            if (event.message != null) event.message!,
+            if (event.error != null) 'Code: ${event.error!.code}',
+            if (event.error?.details != null) '${event.error!.details}',
+            if (attempt != null) attempt,
+          ],
+          debugOnly: true,
+        ),
+      );
+    case InferenceStructuredTextStreamEventType.completion:
+      sink(
+        LiveEditRuntimeEvent(
+          kind: LiveEditRuntimeEventKind.codex,
+          message: event.completion?.result.success == true
+              ? '$backendLabel stream completed.'
+              : '$backendLabel stream failed.',
+          details: <String>[
+            if (attempt != null) attempt,
+            if (event.completion?.attemptCount != null)
+              'Attempts: ${event.completion!.attemptCount}',
+          ],
+        ),
+      );
+      sink(
+        LiveEditRuntimeEvent(
+          kind: LiveEditRuntimeEventKind.debug,
+          message: 'Inference completion event.',
+          details: <String>[
+            'Success: ${event.completion?.result.success == true}',
+            if (attempt != null) attempt,
+            if (event.completion?.attemptCount != null)
+              'Attempts: ${event.completion!.attemptCount}',
+          ],
+          debugOnly: true,
+        ),
+      );
+  }
+}
+
+Future<Map<String, Object?>> _liveEditDefaultApplyDelegate(
+  final LiveEditApplyDraftRequest request,
+) async {
+  final workingDirectory = _resolveLiveEditWorkingDirectory(request);
+  if (workingDirectory == null || workingDirectory.isEmpty) {
+    return <String, Object?>{
+      'ok': false,
+      'message':
+          'Live edit could not infer a working directory. Set LIVE_EDIT_WORKING_DIRECTORY or select a source-backed widget.',
+    };
+  }
+
+  final backendId = request.backendId ?? _liveEditBackendId;
+  final backendLabel = _backendLabel(backendId);
+  final debugDetails = _liveEditRequestDebugDetails(
+    request,
+    backendId: backendId,
+    workingDirectory: workingDirectory,
+  );
+  request.onEvent?.call(
+    LiveEditRuntimeEvent(
+      kind: LiveEditRuntimeEventKind.codex,
+      message: 'Preparing source context for $backendLabel.',
+      details: <String>[
+        'Workspace: $workingDirectory',
+        'Backend: $backendLabel',
+      ],
+    ),
+  );
+  request.onEvent?.call(
+    LiveEditRuntimeEvent(
+      kind: LiveEditRuntimeEventKind.debug,
+      message: 'Dispatching resolve request.',
+      details: <String>[
+        ...debugDetails,
+        if ((request.intentText ?? '').trim().isNotEmpty)
+          'Intent: ${request.intentText!.trim()}',
+      ],
+      debugOnly: true,
+    ),
+  );
+
+  LiveEditResolutionProposal proposal;
+  try {
+    proposal = await _liveEditAgentService.resolve(
+      LiveEditResolutionRequest(
+        sessionId: request.sessionId,
+        backendId: backendId,
+        workingDirectory: workingDirectory,
+        intentText: request.intentText,
+        draftChanges: request.draftChanges,
+        selection: request.selection,
+        meta: const <String, Object?>{
+          'app': 'test_app',
+          'driver': 'live_edit_host',
+        },
+      ),
+      onStreamEvent: (final event) => _emitInferenceStreamEvent(request, event),
+    );
+  } on LiveEditAgentException catch (error) {
+    request.onEvent?.call(
+      LiveEditRuntimeEvent(
+        kind: LiveEditRuntimeEventKind.debug,
+        message: 'Resolve request failed.',
+        details: <String>[
+          ...debugDetails,
+          'Error: ${_liveEditErrorMessage(error.message, details: error.details)}',
+        ],
+        debugOnly: true,
+      ),
+    );
+    return _liveEditFailureResponse(
+      error.message,
+      details: error.details,
+      meta: error.meta,
+    );
+  } on Exception catch (error) {
+    request.onEvent?.call(
+      LiveEditRuntimeEvent(
+        kind: LiveEditRuntimeEventKind.debug,
+        message: 'Resolve request failed.',
+        details: <String>[...debugDetails, 'Error: $error'],
+        debugOnly: true,
+      ),
+    );
+    return _liveEditFailureResponse('$error');
+  }
+
+  request.onEvent?.call(
+    LiveEditRuntimeEvent(
+      kind: LiveEditRuntimeEventKind.codex,
+      message: '$backendLabel returned a proposal.',
+      details: <String>[proposal.summary, ...proposal.changedFiles.take(4)],
+    ),
+  );
+  request.onEvent?.call(
+    LiveEditRuntimeEvent(
+      kind: LiveEditRuntimeEventKind.debug,
+      message: 'Proposal decoded.',
+      details: <String>[
+        'Proposal: ${proposal.proposalId}',
+        'Backend: ${proposal.backendId}',
+        ...proposal.changedFiles.take(4),
+      ],
+      debugOnly: true,
+    ),
+  );
+  final executionPlan = _liveEditAgentService.buildExecutionPlan(
+    proposal.proposalId,
+  );
+
+  request.onEvent?.call(
+    LiveEditRuntimeEvent(
+      kind: LiveEditRuntimeEventKind.codex,
+      message: 'Applying $backendLabel patch to source.',
+      details: <String>['Workspace: $workingDirectory'],
+    ),
+  );
+  request.onEvent?.call(
+    LiveEditRuntimeEvent(
+      kind: LiveEditRuntimeEventKind.debug,
+      message: 'Apply dispatched.',
+      details: <String>[
+        'Proposal: ${proposal.proposalId}',
+        'Workspace: $workingDirectory',
+      ],
+      debugOnly: true,
+    ),
+  );
+  try {
+    final result = await _liveEditAgentService.applyProposal(
+      proposal.proposalId,
+      workingDirectory: workingDirectory,
+    );
+    request.onEvent?.call(
+      LiveEditRuntimeEvent(
+        kind: LiveEditRuntimeEventKind.codex,
+        message: '$backendLabel finished writing source changes.',
+        details: result.changedFiles,
+      ),
+    );
+    request.onEvent?.call(
+      LiveEditRuntimeEvent(
+        kind: LiveEditRuntimeEventKind.debug,
+        message: 'Apply result received.',
+        details: <String>[
+          'Proposal: ${result.proposalId}',
+          ...result.changedFiles,
+        ],
+        debugOnly: true,
+      ),
+    );
+    return <String, Object?>{
+      'proposalId': result.proposalId,
+      'executionPlan': executionPlan.toJson(),
+      'proposal': proposal.toJson(),
+      'result': result.toJson(),
+    };
+  } on Exception catch (error) {
+    request.onEvent?.call(
+      LiveEditRuntimeEvent(
+        kind: LiveEditRuntimeEventKind.debug,
+        message: 'Apply request failed.',
+        details: <String>[
+          'Proposal: ${proposal.proposalId}',
+          'Workspace: $workingDirectory',
+          'Error: $error',
+        ],
+        debugOnly: true,
+      ),
+    );
+    return _liveEditFailureResponse('$error');
+  }
 }
 
 Future<void> main() async {
@@ -92,16 +619,25 @@ class MyApp extends StatelessWidget {
       ),
       builder: (final context, final child) {
         final orchestrator = debugLiveEditOrchestratorOverride;
+        final applyDelegate = orchestrator == null
+            ? (_liveEditTestMode
+                  ? _liveEditTestApplyDelegate
+                  : (!kIsWeb ? _liveEditDefaultApplyDelegate : null))
+            : null;
         return FlutterLiveEditHost(
           orchestrator: orchestrator,
-          applyDraftDelegate: orchestrator == null && _liveEditTestMode
-              ? _liveEditTestApplyDelegate
+          applyDraftDelegate: applyDelegate,
+          backendId: orchestrator == null ? _liveEditBackendId : null,
+          availableBackends: orchestrator == null
+              ? _liveEditBackends
+              : const <LiveEditAgentBackend>[],
+          workingDirectory: orchestrator == null && !_liveEditTestMode
+              ? _liveEditWorkingDirectoryDefine
               : null,
-          backendId: orchestrator == null && _liveEditTestMode
-              ? 'maestro_demo_backend'
-              : null,
-          intentText: orchestrator == null && _liveEditTestMode
-              ? 'Persist live-edit changes for the Maestro test fixture.'
+          intentText: orchestrator == null
+              ? (_liveEditTestMode
+                    ? 'Persist live-edit changes for the Maestro test fixture.'
+                    : 'Persist the requested live-edit change in the selected source file.')
               : null,
           child: child ?? const SizedBox.shrink(),
         );
@@ -182,7 +718,7 @@ class _MCPDemoHomePageState extends State<MCPDemoHomePage> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (_liveEditTestMode) ...[
-              _LiveEditTestFixture(),
+              const LiveEditCodexFixture(),
               SizedBox(height: 24),
             ],
             // Header Section
@@ -210,42 +746,6 @@ class _MCPDemoHomePageState extends State<MCPDemoHomePage> {
   }
 }
 
-class _LiveEditTestFixture extends StatelessWidget {
-  const _LiveEditTestFixture();
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      color: const Color(0xFFFFF7ED),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            const Text(
-              'Live Edit Maestro Fixture',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 12),
-            Semantics(
-              identifier: 'live_edit_test_target',
-              child: const Text(
-                'Live Edit Test Target',
-                semanticsIdentifier: 'live_edit_test_target_text',
-                style: TextStyle(fontSize: 18),
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Use this deterministic target for Maestro live-edit coverage.',
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 // Header section explaining the demo
 class _HeaderSection extends StatelessWidget {
   const _HeaderSection();
@@ -265,9 +765,12 @@ class _HeaderSection extends StatelessWidget {
                   color: Theme.of(context).colorScheme.primary,
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  'About This Demo',
-                  style: Theme.of(context).textTheme.titleLarge,
+                Semantics(
+                  identifier: 'about_demo_heading',
+                  child: Text(
+                    'Hello Live Flutter Editing',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
                 ),
               ],
             ),
@@ -316,14 +819,20 @@ class _CounterDemoSection extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(
-                  Icons.calculate,
-                  color: Theme.of(context).colorScheme.primary,
+                Semantics(
+                  identifier: 'counter_demo_icon',
+                  child: Icon(
+                    Icons.calculate,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  'State Management Examples',
-                  style: Theme.of(context).textTheme.titleLarge,
+                Semantics(
+                  identifier: 'counter_demo_heading',
+                  child: Text(
+                    'State Management Examples',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
                 ),
               ],
             ),

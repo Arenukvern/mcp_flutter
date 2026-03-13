@@ -44,30 +44,45 @@ class _StatefulCounterWidgetState extends State<StatefulCounterWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        children: [
-          const Text(
-            'StatefulWidget',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '$_counter',
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          ElevatedButton.icon(
-            onPressed: _incrementCounter,
-            icon: const Icon(Icons.add, size: 16),
-            label: const Text('Increment'),
-          ),
-        ],
+    return Semantics(
+      identifier: 'stateful_counter_root',
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey.shade300),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          children: [
+            Semantics(
+              identifier: 'stateful_counter_heading',
+              child: Text(
+                'StatefulWidget',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Semantics(
+              identifier: 'stateful_counter_value',
+              child: Text(
+                '$_counter',
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Semantics(
+              identifier: 'stateful_counter_increment_button',
+              child: ElevatedButton.icon(
+                onPressed: _incrementCounter,
+                icon: const Icon(Icons.add, size: 16),
+                label: const Text('Increment'),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

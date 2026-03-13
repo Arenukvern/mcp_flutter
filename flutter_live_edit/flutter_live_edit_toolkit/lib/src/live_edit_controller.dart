@@ -8,6 +8,8 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 
+bool _hasText(final String? value) => value != null && value.trim().isNotEmpty;
+
 Map<String, Object?> _alignmentJson(final AlignmentGeometry geometry) {
   final resolved = geometry.resolve(TextDirection.ltr);
   return <String, Object?>{'x': resolved.x, 'y': resolved.y};
@@ -59,6 +61,29 @@ LiveEditBounds? _boundsForRenderObject(final RenderObject? renderObject) {
   } on Exception {
     return null;
   }
+}
+
+RenderObject? _previewRenderObjectForElement(final Element element) {
+  final direct = element.renderObject;
+  if (direct != null) {
+    return direct;
+  }
+  RenderObject? resolved;
+
+  void visit(final Element candidate) {
+    if (resolved != null) {
+      return;
+    }
+    final renderObject = candidate.renderObject;
+    if (renderObject != null) {
+      resolved = renderObject;
+      return;
+    }
+    candidate.visitChildElements(visit);
+  }
+
+  element.visitChildElements(visit);
+  return resolved;
 }
 
 List<LiveEditPropertyDescriptor> _buildPropertyDescriptors(
@@ -274,7 +299,7 @@ List<LiveEditPropertyDescriptor> _buildPropertyDescriptors(
         kind: LiveEditPropertyKind.string,
         value: widget.data ?? widget.textSpan?.toPlainText(),
         editable: true,
-        previewMode: LiveEditPreviewMode.ghost,
+        previewMode: LiveEditPreviewMode.exact,
         persistable: true,
         meta: <String, Object?>{
           'editor': 'text',
@@ -403,6 +428,73 @@ bool _containsPoint(final LiveEditBounds bounds, final ui.Offset point) =>
     point.dy >= bounds.top &&
     point.dy <= bounds.bottom;
 
+const double _hoverReuseDistance = 8.0;
+
+Rect _rectFromBounds(final LiveEditBounds bounds) =>
+    Rect.fromLTRB(bounds.left, bounds.top, bounds.right, bounds.bottom);
+
+bool _intersectsRect(final LiveEditBounds bounds, final Rect rect) =>
+    _rectFromBounds(bounds).overlaps(rect);
+
+bool _sameNodeIdSet(
+  final List<LiveEditSelection> left,
+  final List<LiveEditSelection> right,
+) {
+  if (identical(left, right)) {
+    return true;
+  }
+  if (left.length != right.length) {
+    return false;
+  }
+  for (var index = 0; index < left.length; index += 1) {
+    if (left[index].nodeId != right[index].nodeId) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool _isVisibleCandidate(final Element element) {
+  final renderObject = element.renderObject;
+  final bounds = _boundsForRenderObject(renderObject);
+  if (renderObject == null || bounds == null) {
+    return false;
+  }
+  if (bounds.width <= 0 || bounds.height <= 0) {
+    return false;
+  }
+  if (renderObject is RenderOpacity && renderObject.opacity <= 0) {
+    return false;
+  }
+  return true;
+}
+
+const double _edgeHitMargin = 2.0;
+
+const Set<String> _structuralWidgetTypes = <String>{
+  'Align',
+  'Builder',
+  'Center',
+  'ColoredBox',
+  'Column',
+  'ConstrainedBox',
+  'Container',
+  'DecoratedBox',
+  'DefaultTextStyle',
+  'Expanded',
+  'Flex',
+  'Flexible',
+  'IconTheme',
+  'KeyedSubtree',
+  'MediaQuery',
+  'Padding',
+  'Positioned',
+  'RepaintBoundary',
+  'RichText',
+  'Row',
+  'Semantics',
+};
+
 List<Object?> _decodeList(final String raw) {
   final decoded = jsonDecode(raw);
   if (decoded is! List) {
@@ -459,33 +551,390 @@ LiveEditSourceLocation? _extractSourceLocation(
   return LiveEditSourceLocation(file: '', sourceHint: sourceHint!.trim());
 }
 
-List<_ElementHit> _findElementHitCandidates(
+String? _normalizeSourceFilePath(final String? rawPath) {
+  if (!_hasText(rawPath)) {
+    return null;
+  }
+  final trimmed = rawPath!.trim();
+  final uri = Uri.tryParse(trimmed);
+  if (uri != null && uri.scheme == 'file') {
+    return uri.toFilePath();
+  }
+  return trimmed;
+}
+
+bool _containsPathSegment(final String path, final String segment) {
+  final normalizedPath = path.replaceAll('\\', '/').toLowerCase();
+  final normalizedSegment = segment.toLowerCase();
+  return normalizedPath.contains(normalizedSegment);
+}
+
+bool _isFrameworkOwnedPath(final String path) {
+  return _containsPathSegment(path, '/packages/flutter/') ||
+      _containsPathSegment(path, '/bin/cache/pkg/sky_engine/') ||
+      _containsPathSegment(path, '/flutter/packages/flutter/');
+}
+
+bool _isThirdPartyPackagePath(final String path) {
+  return _containsPathSegment(path, '/.pub-cache/') ||
+      _containsPathSegment(path, '/pub.dev/');
+}
+
+bool _looksProjectOwnedPath(final String? path) {
+  if (!_hasText(path)) {
+    return false;
+  }
+  final normalizedPath = _normalizeSourceFilePath(path);
+  if (!_hasText(normalizedPath)) {
+    return false;
+  }
+  return !_isFrameworkOwnedPath(normalizedPath!) &&
+      !_isThirdPartyPackagePath(normalizedPath);
+}
+
+bool _looksFrameworkOwnedHint(final String? hint) {
+  if (!_hasText(hint)) {
+    return false;
+  }
+  final normalized = hint!.toLowerCase();
+  return normalized.contains('package:flutter/') ||
+      normalized.contains('/packages/flutter/') ||
+      normalized.contains('/flutter/packages/flutter/') ||
+      normalized.contains('widgets/text.dart');
+}
+
+final class _SelectionCandidateMetadata {
+  const _SelectionCandidateMetadata({
+    required this.nodeId,
+    required this.source,
+    required this.createdByLocalProject,
+    required this.hasProjectPathSignal,
+    required this.hasProjectHintSignal,
+    required this.hasEditableStringProperty,
+    required this.hasEditableProperty,
+  });
+
+  final String nodeId;
+  final LiveEditSourceLocation? source;
+  final bool createdByLocalProject;
+  final bool hasProjectPathSignal;
+  final bool hasProjectHintSignal;
+  final bool hasEditableStringProperty;
+  final bool hasEditableProperty;
+
+  bool get hasStrongProjectOwnership =>
+      createdByLocalProject || hasProjectPathSignal;
+}
+
+final class _MarqueeCandidateCacheEntry {
+  const _MarqueeCandidateCacheEntry({
+    required this.element,
+    required this.renderObject,
+    required this.parentElement,
+    required this.ancestry,
+    required this.nodeId,
+    required this.widgetType,
+    required this.depth,
+    required this.isStructural,
+    required this.isUserAuthored,
+    required this.bounds,
+  });
+
+  final Element element;
+  final RenderObject renderObject;
+  final Element? parentElement;
+  final List<Map<String, Object?>> ancestry;
+  final String nodeId;
+  final String widgetType;
+  final int depth;
+  final bool isStructural;
+  final bool isUserAuthored;
+  final LiveEditBounds? bounds;
+
+  bool get isVisualCandidate => isUserAuthored && !isStructural && bounds != null;
+}
+
+_SelectionCandidateMetadata _selectionMetadataForElement(
+  final _LiveEditSessionState session,
+  final Element element, {
+  final String? cachedNodeId,
+  final Map<String, Object?>? cachedDetailsTree,
+}) {
+  final nodeId =
+      cachedNodeId ??
+      WidgetInspectorService.instance.toId(element, session.objectGroup) ??
+      'live_edit_candidate_${session.sessionId}_${element.hashCode}';
+  final detailsTree =
+      cachedDetailsTree ??
+      _decodeObject(
+        WidgetInspectorService.instance.getDetailsSubtree(
+          nodeId,
+          session.objectGroup,
+        ),
+      );
+  final source = _extractSourceLocation(detailsTree, element);
+  final properties = _buildPropertyDescriptors(element);
+  final createdByLocalProject = detailsTree['createdByLocalProject'] == true;
+  final hasProjectPathSignal = _looksProjectOwnedPath(source?.file);
+  final hasProjectHintSignal =
+      !createdByLocalProject &&
+      !hasProjectPathSignal &&
+      _hasText(source?.sourceHint) &&
+      !_looksFrameworkOwnedHint(source?.sourceHint);
+  final hasEditableStringProperty = properties.any(
+    (final property) =>
+        property.editable && property.kind == LiveEditPropertyKind.string,
+  );
+  final hasEditableProperty =
+      hasEditableStringProperty ||
+      properties.any((final property) => property.editable);
+  return _SelectionCandidateMetadata(
+    nodeId: nodeId,
+    source: source,
+    createdByLocalProject: createdByLocalProject,
+    hasProjectPathSignal: hasProjectPathSignal,
+    hasProjectHintSignal: hasProjectHintSignal,
+    hasEditableStringProperty: hasEditableStringProperty,
+    hasEditableProperty: hasEditableProperty,
+  );
+}
+
+int _preferredSelectionIndex({
+  required final _LiveEditSessionState session,
+  required final List<_ElementHit> hits,
+  required final LiveEditSelectionPolicy selectionPolicy,
+}) {
+  if (hits.isEmpty || selectionPolicy == LiveEditSelectionPolicy.deepest) {
+    return 0;
+  }
+
+  int? bestIndex;
+  var bestRank = -1;
+  for (var index = 0; index < hits.length; index += 1) {
+    final hit = hits[index];
+    final metadata = _selectionMetadataForElement(session, hit.element);
+    final widgetType = hit.element.widget.runtimeType.toString();
+    final weakStructuralCandidate = _structuralWidgetTypes.contains(widgetType);
+    var rank = 0;
+    if (metadata.hasStrongProjectOwnership &&
+        metadata.hasEditableStringProperty) {
+      rank = 90;
+    } else if (metadata.hasProjectHintSignal &&
+        metadata.hasEditableStringProperty) {
+      rank = 80;
+    } else if (metadata.hasStrongProjectOwnership) {
+      rank = 70;
+    } else if (metadata.hasEditableStringProperty && !weakStructuralCandidate) {
+      rank = 60;
+    } else if (metadata.hasProjectHintSignal &&
+        metadata.hasEditableProperty &&
+        !weakStructuralCandidate) {
+      rank = 50;
+    } else if (metadata.hasProjectHintSignal && !weakStructuralCandidate) {
+      rank = 40;
+    }
+    if (rank > bestRank) {
+      bestRank = rank;
+      bestIndex = index;
+    }
+  }
+  return bestIndex ?? 0;
+}
+
+bool _isUserAuthoredElement(
+  final _LiveEditSessionState session,
+  final Element element,
+  final String nodeId,
+) {
+  final tracked = session.trackedSelections[nodeId]?.selection;
+  final trackedSource = tracked?.source;
+  if (_looksProjectOwnedPath(trackedSource?.file)) {
+    return true;
+  }
+  if (_hasText(trackedSource?.sourceHint) &&
+      !_looksFrameworkOwnedHint(trackedSource?.sourceHint)) {
+    return true;
+  }
+  String? sourceHint;
+  assert(() {
+    sourceHint = element.debugGetCreatorChain(8);
+    return true;
+  }());
+  return _hasText(sourceHint) && !_looksFrameworkOwnedHint(sourceHint);
+}
+
+bool _nativeHitTestHelper(
+  List<RenderObject> hits,
+  List<RenderObject> edgeHits,
+  ui.Offset position,
+  RenderObject object,
+  Matrix4 transform,
+) {
+  var hit = false;
+  final inverse = Matrix4.tryInvert(transform);
+  if (inverse == null) {
+    return false;
+  }
+  final localPosition = MatrixUtils.transformPoint(inverse, position);
+
+  final children = object.debugDescribeChildren();
+  for (var index = children.length - 1; index >= 0; index -= 1) {
+    final diagnostics = children[index];
+    if (diagnostics.style == DiagnosticsTreeStyle.offstage ||
+        diagnostics.value is! RenderObject) {
+      continue;
+    }
+    final child = diagnostics.value! as RenderObject;
+    final paintClip = object.describeApproximatePaintClip(child);
+    if (paintClip != null && !paintClip.contains(localPosition)) {
+      continue;
+    }
+    final childTransform = transform.clone();
+    object.applyPaintTransform(child, childTransform);
+    if (_nativeHitTestHelper(hits, edgeHits, position, child, childTransform)) {
+      hit = true;
+    }
+  }
+
+  final bounds = object.semanticBounds;
+  if (bounds.contains(localPosition)) {
+    hit = true;
+    if (!bounds.deflate(_edgeHitMargin).contains(localPosition)) {
+      edgeHits.add(object);
+    }
+  }
+  if (hit) {
+    hits.add(object);
+  }
+  return hit;
+}
+
+double _semanticArea(final RenderObject object) {
+  final size = object.semanticBounds.size;
+  return size.width * size.height;
+}
+
+List<_ElementHit> _nativeElementHitCandidates(
   final Element root, {
   required final ui.Offset point,
   required final int? requestedViewId,
+}) {
+  final rootRenderObject = _previewRenderObjectForElement(root);
+  if (rootRenderObject == null) {
+    return const <_ElementHit>[];
+  }
+  final rootViewId = _viewIdForRenderObject(rootRenderObject);
+  if (requestedViewId != null &&
+      rootViewId != null &&
+      rootViewId != requestedViewId) {
+    return const <_ElementHit>[];
+  }
+
+  final regularHits = <RenderObject>[];
+  final edgeHits = <RenderObject>[];
+  _nativeHitTestHelper(
+    regularHits,
+    edgeHits,
+    point,
+    rootRenderObject,
+    rootRenderObject.getTransformTo(null),
+  );
+  regularHits.sort(
+    (final left, final right) =>
+        _semanticArea(left).compareTo(_semanticArea(right)),
+  );
+  final ordered = <RenderObject>{...edgeHits, ...regularHits}.toList();
+  final results = <_ElementHit>[];
+  for (final renderObject in ordered) {
+    final debugCreator = renderObject.debugCreator;
+    if (debugCreator is! DebugCreator) {
+      continue;
+    }
+    final element = debugCreator.element;
+    if (!element.mounted || !_isVisibleCandidate(element)) {
+      continue;
+    }
+    results.add(
+      _ElementHit(
+        element: element,
+        renderObject: renderObject,
+        ancestry: _ancestryForElement(element),
+        depth: _depthForElement(element),
+        edgeHit: edgeHits.contains(renderObject),
+      ),
+    );
+  }
+  return results;
+}
+
+List<Map<String, Object?>> _ancestryForElement(final Element element) {
+  final ancestry = <Map<String, Object?>>[];
+  Element? current = element;
+  while (true) {
+    final parent = current?.findAncestorRenderObjectOfType<RenderObject>();
+    final currentParent = current;
+    if (currentParent == null) {
+      break;
+    }
+    Element? directParent;
+    currentParent.visitAncestorElements((final candidate) {
+      directParent = candidate;
+      return false;
+    });
+    if (directParent == null) {
+      break;
+    }
+    ancestry.add(<String, Object?>{
+      'widgetType': directParent!.widget.runtimeType.toString(),
+      'renderObjectType': parent?.runtimeType.toString(),
+    });
+    current = directParent;
+  }
+  return ancestry.reversed.toList(growable: false);
+}
+
+int _depthForElement(final Element element) {
+  var depth = 0;
+  element.visitAncestorElements((final _) {
+    depth += 1;
+    return true;
+  });
+  return depth;
+}
+
+void _collectElementsIntersectingRect(
+  final Element root, {
+  required final Rect rect,
+  required final List<_ElementHit> results,
+  required final int? requestedViewId,
   final List<Map<String, Object?>> ancestry = const <Map<String, Object?>>[],
+  final Element? parentElement,
 }) {
   final renderObject = root.renderObject;
   final bounds = _boundsForRenderObject(renderObject);
-  if (bounds == null) {
-    return const <_ElementHit>[];
+  if (bounds == null || !_intersectsRect(bounds, rect)) {
+    return;
   }
-  if (!_containsPoint(bounds, point)) {
-    return const <_ElementHit>[];
-  }
-
   final viewId = _viewIdForRenderObject(renderObject);
   if (requestedViewId != null && viewId != null && viewId != requestedViewId) {
-    return const <_ElementHit>[];
+    return;
   }
-
-  final children = <Element>[];
-  root.visitChildElements(children.add);
-  for (var index = children.length - 1; index >= 0; index -= 1) {
-    final child = children[index];
-    final childHits = _findElementHitCandidates(
+  if (_isVisibleCandidate(root)) {
+    results.add(
+      _ElementHit(
+        element: root,
+        renderObject: renderObject!,
+        ancestry: ancestry,
+        depth: ancestry.length,
+        parentElement: parentElement,
+      ),
+    );
+  }
+  root.visitChildElements((final child) {
+    _collectElementsIntersectingRect(
       child,
-      point: point,
+      rect: rect,
+      results: results,
       requestedViewId: requestedViewId,
       ancestry: <Map<String, Object?>>[
         ...ancestry,
@@ -494,16 +943,9 @@ List<_ElementHit> _findElementHitCandidates(
           'renderObjectType': renderObject?.runtimeType.toString(),
         },
       ],
+      parentElement: root,
     );
-    if (childHits.isNotEmpty) {
-      return <_ElementHit>[
-        ...childHits,
-        _ElementHit(element: root, ancestry: ancestry),
-      ];
-    }
-  }
-
-  return <_ElementHit>[_ElementHit(element: root, ancestry: ancestry)];
+  });
 }
 
 double? _finiteDimension(final double? value) {
@@ -559,6 +1001,103 @@ Map<String, Object?> _layoutContextForElement(final Element element) {
   return context;
 }
 
+LiveEditSelection _buildHoverSelection({
+  required final _LiveEditSessionState session,
+  required final Element element,
+}) {
+  final renderObject = _previewRenderObjectForElement(element);
+  final nodeId =
+      WidgetInspectorService.instance.toId(element, session.objectGroup) ??
+      'live_edit_hover_${DateTime.now().microsecondsSinceEpoch}';
+  final tracked = session.trackedSelections[nodeId]?.selection;
+  return LiveEditSelection(
+    sessionId: session.sessionId,
+    nodeId: nodeId,
+    widgetType: element.widget.runtimeType.toString(),
+    renderObjectType: renderObject?.runtimeType.toString(),
+    bounds: _boundsForRenderObject(renderObject),
+    source: tracked?.source,
+    propertyGroups:
+        tracked?.propertyGroups ?? const <LiveEditPropertyDescriptor>[],
+    rawNode: tracked?.rawNode ?? const <String, Object?>{},
+    selectionMode: LiveEditSelectionMode.single,
+  );
+}
+
+bool _isHydratedSelection(final LiveEditSelection selection) =>
+    selection.detailsTree.isNotEmpty &&
+    selection.propertiesTree.isNotEmpty &&
+    selection.parentChain.isNotEmpty;
+
+LiveEditSelection _buildLightweightSelection({
+  required final _LiveEditSessionState session,
+  required final _ElementHit hit,
+  final bool includePropertyGroups = false,
+}) {
+  final element = hit.element;
+  final renderObject = _previewRenderObjectForElement(element);
+  final nodeId =
+      WidgetInspectorService.instance.toId(element, session.objectGroup) ??
+      'live_edit_preview_${DateTime.now().microsecondsSinceEpoch}';
+  final tracked = session.trackedSelections[nodeId]?.selection;
+  final propertyGroups =
+      tracked?.propertyGroups ??
+      (includePropertyGroups
+          ? _buildPropertyDescriptors(element)
+          : const <LiveEditPropertyDescriptor>[]);
+  return LiveEditSelection(
+    sessionId: session.sessionId,
+    nodeId: nodeId,
+    widgetType: element.widget.runtimeType.toString(),
+    renderObjectType: renderObject?.runtimeType.toString(),
+    bounds: _boundsForRenderObject(renderObject),
+    source: tracked?.source,
+    propertyGroups: propertyGroups,
+    rawNode: tracked?.rawNode ?? const <String, Object?>{},
+    selectionMode: LiveEditSelectionMode.single,
+  );
+}
+
+LiveEditSelection _buildLightweightSelectionFromCache({
+  required final _LiveEditSessionState session,
+  required final _MarqueeCandidateCacheEntry entry,
+  final bool includePropertyGroups = false,
+}) {
+  final tracked = session.trackedSelections[entry.nodeId]?.selection;
+  final propertyGroups =
+      tracked?.propertyGroups ??
+      (includePropertyGroups
+          ? _buildPropertyDescriptors(entry.element)
+          : const <LiveEditPropertyDescriptor>[]);
+  return LiveEditSelection(
+    sessionId: session.sessionId,
+    nodeId: entry.nodeId,
+    widgetType: entry.widgetType,
+    renderObjectType: entry.renderObject.runtimeType.toString(),
+    bounds: entry.bounds,
+    source: tracked?.source,
+    propertyGroups: propertyGroups,
+    rawNode: tracked?.rawNode ?? const <String, Object?>{},
+    selectionMode: LiveEditSelectionMode.single,
+  );
+}
+
+bool _sameHoverRequest({
+  required final _LiveEditSessionState session,
+  required final ui.Offset point,
+  required final Element root,
+  required final int? viewId,
+}) {
+  final hoverPoint = session.hoverPoint;
+  if (hoverPoint == null || session.hoverRootElement != root) {
+    return false;
+  }
+  if (session.hoverViewId != viewId) {
+    return false;
+  }
+  return (hoverPoint - point).distance <= _hoverReuseDistance;
+}
+
 int? _viewIdForRenderObject(final RenderObject? renderObject) {
   if (renderObject == null) {
     return null;
@@ -589,6 +1128,22 @@ final class LiveEditController extends ChangeNotifier {
 
   LiveEditSelection? get activeSelection => _activeSessionOrNull()?.selection;
 
+  LiveEditSelection? get hoverSelection =>
+      _activeSessionOrNull()?.hoverSelection;
+
+  Rect? get activeMarqueeRect => _activeSessionOrNull()?.marqueeRect;
+
+  List<LiveEditSelection> get activeMarqueeSelections =>
+      List<LiveEditSelection>.unmodifiable(
+        _activeSessionOrNull()?.marqueeSelections ??
+            const <LiveEditSelection>[],
+      );
+
+  List<LiveEditSelection> get activeMultiSelection =>
+      List<LiveEditSelection>.unmodifiable(
+        _activeSessionOrNull()?.multiSelections ?? const <LiveEditSelection>[],
+      );
+
   List<LiveEditSelectionCandidate> get activeSelectionCandidates =>
       List<LiveEditSelectionCandidate>.unmodifiable(
         _activeSessionOrNull()?.selectionCandidates ??
@@ -599,10 +1154,14 @@ final class LiveEditController extends ChangeNotifier {
 
   bool get overlayVisible => _activeSessionOrNull()?.overlayEnabled ?? false;
 
+  bool isMeaningfulNode(final String nodeId, {final String? sessionId}) =>
+      _requireSession(sessionId).meaningfulNodeIds.contains(nodeId);
+
   Map<String, Object?> discardDraft({final String? sessionId}) {
     final session = _requireSession(sessionId);
     _revertExactPreview(session);
     session.draftChanges.clear();
+    session.meaningfulNodeIds.remove(session.selection?.nodeId);
     session.lastTouchedAt = DateTime.now().toUtc();
     notifyListeners();
     return <String, Object?>{
@@ -610,6 +1169,47 @@ final class LiveEditController extends ChangeNotifier {
       'discarded': true,
       'draftChanges': const <Object?>[],
     };
+  }
+
+  Map<String, Object?> commitDraft({final String? sessionId}) {
+    final session = _requireSession(sessionId);
+    session.draftChanges.clear();
+    session.originalExactValues.clear();
+    session.lastTouchedAt = DateTime.now().toUtc();
+    notifyListeners();
+    return <String, Object?>{
+      'sessionId': session.sessionId,
+      'committed': true,
+      'draftChanges': const <Object?>[],
+    };
+  }
+
+  void showAppliedPreview({
+    required final List<LiveEditDraftChange> changes,
+    final String? sessionId,
+  }) {
+    final session = _requireSession(sessionId);
+    if (changes.isEmpty) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((final _) {
+      final currentSession = _sessions[session.sessionId];
+      if (currentSession == null) {
+        return;
+      }
+      for (final change in changes) {
+        final tracked = currentSession.trackedSelections[change.nodeId];
+        if (tracked == null) {
+          continue;
+        }
+        _applyExactPreviewIfSupported(
+          currentSession,
+          change,
+          elementOverride: tracked.element,
+          selectionOverride: tracked.selection,
+        );
+      }
+    });
   }
 
   Map<String, Object?> endSession({final String? sessionId}) {
@@ -643,6 +1243,10 @@ final class LiveEditController extends ChangeNotifier {
       'sessionId': session.sessionId,
       'selection': selection?.toJson(),
       'hasSelection': selection != null,
+      'hoverSelection': session.hoverSelection?.toJson(),
+      'selectedNodeIds': session.multiSelections
+          .map((final item) => item.nodeId)
+          .toList(growable: false),
       'selectionCandidates': session.selectionCandidates
           .map((final candidate) => candidate.toJson())
           .toList(growable: false),
@@ -671,12 +1275,103 @@ final class LiveEditController extends ChangeNotifier {
         y: offset.dy.round(),
       );
 
+  Map<String, Object?> hoverAtPoint({
+    required final int x,
+    required final int y,
+    final bool deeperMode = false,
+    final String? sessionId,
+    final int? viewId,
+    final Element? contentRoot,
+  }) {
+    final session = _requireSession(sessionId);
+    final root =
+        (contentRoot != null && contentRoot.mounted ? contentRoot : null) ??
+        WidgetsBinding.instance.rootElement;
+    if (root == null) {
+      return <String, Object?>{
+        'sessionId': session.sessionId,
+        'hovered': false,
+        'reason': 'widget_tree_unavailable',
+      };
+    }
+    final point = ui.Offset(x.toDouble(), y.toDouble());
+    final reuseHover = _sameHoverRequest(
+      session: session,
+      point: point,
+      root: root,
+      viewId: viewId,
+    );
+    final hits = reuseHover
+        ? session.hoverHitCandidates
+        : _nativeElementHitCandidates(
+            root,
+            point: point,
+            requestedViewId: viewId,
+          );
+    final nextPreviewIndex = _resolvedHoverIndex(
+      session: session,
+      hits: hits,
+      deeperMode: deeperMode,
+    );
+    final previousHover = session.hoverSelection;
+    final nextHoverSelection = hits.isEmpty
+        ? null
+        : reuseHover &&
+              previousHover != null &&
+              session.hoverPreviewIndex == nextPreviewIndex
+        ? previousHover
+        : _buildHoverSelection(
+            session: session,
+            element: hits[nextPreviewIndex].element,
+          );
+    final hoverUnchanged =
+        previousHover?.nodeId == nextHoverSelection?.nodeId &&
+        session.hoverPreviewIndex == nextPreviewIndex;
+    session.hoverHitCandidates = hits;
+    session.hoverPreviewIndex = nextPreviewIndex;
+    session.hoverSelection = nextHoverSelection;
+    session.hoverPoint = point;
+    session.hoverRootElement = root;
+    session.hoverViewId = viewId;
+    session.lastTouchedAt = DateTime.now().toUtc();
+    if (!hoverUnchanged || !reuseHover) {
+      notifyListeners();
+    }
+    return <String, Object?>{
+      'sessionId': session.sessionId,
+      'hovered': session.hoverSelection != null,
+      if (session.hoverSelection != null)
+        'selection': session.hoverSelection!.toJson(),
+    };
+  }
+
+  Map<String, Object?> clearHover({final String? sessionId}) {
+    final session = _requireSession(sessionId);
+    final hadHover =
+        session.hoverSelection != null ||
+        session.hoverHitCandidates.isNotEmpty ||
+        session.hoverPoint != null;
+    session.hoverSelection = null;
+    session.hoverHitCandidates = const <_ElementHit>[];
+    session.hoverPreviewIndex = 0;
+    session.hoverPoint = null;
+    session.hoverRootElement = null;
+    session.hoverViewId = null;
+    if (hadHover) {
+      notifyListeners();
+    }
+    return <String, Object?>{'sessionId': session.sessionId, 'cleared': true};
+  }
+
   Map<String, Object?> selectAtPoint({
     required final int x,
     required final int y,
     final String? sessionId,
     final int? viewId,
     final Element? contentRoot,
+    final bool preferHoverPreview = false,
+    final LiveEditSelectionPolicy selectionPolicy =
+        LiveEditSelectionPolicy.deepest,
   }) {
     final session = _requireSession(sessionId);
     final root =
@@ -691,11 +1386,21 @@ final class LiveEditController extends ChangeNotifier {
     }
 
     final point = ui.Offset(x.toDouble(), y.toDouble());
-    final hits = _findElementHitCandidates(
-      root,
-      point: point,
-      requestedViewId: viewId,
-    );
+    final canReuseHover =
+        session.hoverHitCandidates.isNotEmpty &&
+        _sameHoverRequest(
+          session: session,
+          point: point,
+          root: root,
+          viewId: viewId,
+        );
+    final hits = canReuseHover
+        ? session.hoverHitCandidates
+        : _nativeElementHitCandidates(
+            root,
+            point: point,
+            requestedViewId: viewId,
+          );
     if (hits.isEmpty) {
       return <String, Object?>{
         'sessionId': session.sessionId,
@@ -705,11 +1410,19 @@ final class LiveEditController extends ChangeNotifier {
     }
 
     session.selectionHitCandidates = hits;
+    final selectedIndex = (preferHoverPreview && canReuseHover)
+        ? session.hoverPreviewIndex.clamp(0, hits.length - 1)
+        : _preferredSelectionIndex(
+            session: session,
+            hits: hits,
+            selectionPolicy: selectionPolicy,
+          );
     final selection = _setSelection(
       session: session,
-      element: hits.first.element,
-      ancestry: hits.first.ancestry,
+      element: hits[selectedIndex].element,
+      ancestry: hits[selectedIndex].ancestry,
     );
+    session.multiSelections = <LiveEditSelection>[selection];
     _syncSelectionCandidates(session);
     notifyListeners();
     return <String, Object?>{
@@ -721,6 +1434,192 @@ final class LiveEditController extends ChangeNotifier {
           .map((final candidate) => candidate.toJson())
           .toList(growable: false),
     };
+  }
+
+  Map<String, Object?> startMarquee({
+    required final int x,
+    required final int y,
+    final String? sessionId,
+  }) {
+    final session = _requireSession(sessionId);
+    session.marqueeStart = ui.Offset(x.toDouble(), y.toDouble());
+    session.marqueeRect = Rect.fromLTWH(x.toDouble(), y.toDouble(), 0, 0);
+    session.marqueeHits = const <_ElementHit>[];
+    session.marqueeSelections = const <LiveEditSelection>[];
+    notifyListeners();
+    return <String, Object?>{'sessionId': session.sessionId, 'started': true};
+  }
+
+  Map<String, Object?> updateMarquee({
+    required final int x,
+    required final int y,
+    final String? sessionId,
+    final int? viewId,
+    final Element? contentRoot,
+  }) {
+    final session = _requireSession(sessionId);
+    final start = session.marqueeStart;
+    final root =
+        (contentRoot != null && contentRoot.mounted ? contentRoot : null) ??
+        WidgetsBinding.instance.rootElement;
+    if (start == null || root == null) {
+      return <String, Object?>{
+        'sessionId': session.sessionId,
+        'updated': false,
+      };
+    }
+    final rect = Rect.fromPoints(start, ui.Offset(x.toDouble(), y.toDouble()));
+    final hits = <_ElementHit>[];
+    _collectElementsIntersectingRect(
+      root,
+      rect: rect,
+      results: hits,
+      requestedViewId: viewId,
+    );
+    final ranked = _sortMarqueeHits(session, hits);
+    final previewSelections = _buildMarqueeSelections(session, ranked);
+    final shouldNotify =
+        session.marqueeRect != rect ||
+        !_sameNodeIdSet(session.marqueeSelections, previewSelections);
+    session.marqueeRect = rect;
+    session.marqueeHits = ranked;
+    session.marqueeSelections = previewSelections;
+    if (shouldNotify) {
+      notifyListeners();
+    }
+    return <String, Object?>{
+      'sessionId': session.sessionId,
+      'updated': true,
+      'selectedNodeIds': session.marqueeSelections
+          .map((final item) => item.nodeId)
+          .toList(growable: false),
+    };
+  }
+
+  Map<String, Object?> commitMarquee({final String? sessionId}) {
+    final session = _requireSession(sessionId);
+    final previewSelections = session.marqueeSelections;
+    final hits = session.marqueeHits;
+    session.marqueeRect = null;
+    session.marqueeStart = null;
+    session.marqueeHits = const <_ElementHit>[];
+    if (previewSelections.isEmpty || hits.isEmpty) {
+      notifyListeners();
+      return <String, Object?>{
+        'sessionId': session.sessionId,
+        'selected': false,
+      };
+    }
+    if (previewSelections.length == 1) {
+      final selection = previewSelections.first;
+      final tracked = session.trackedSelections[selection.nodeId];
+      if (tracked == null) {
+        final hit = hits.firstWhere(
+          (final candidate) =>
+              (WidgetInspectorService.instance.toId(
+                    candidate.element,
+                    session.objectGroup,
+                  ) ??
+                  '') ==
+              selection.nodeId,
+          orElse: () => hits.first,
+        );
+        final committed = _setSelection(
+          session: session,
+          element: hit.element,
+          ancestry: hit.ancestry,
+        );
+        session.multiSelections = <LiveEditSelection>[committed];
+        _syncSelectionCandidates(session);
+        notifyListeners();
+        return <String, Object?>{
+          'sessionId': session.sessionId,
+          'selected': true,
+          'selection': committed.toJson(),
+        };
+      }
+      return selectTrackedNode(nodeId: selection.nodeId, sessionId: sessionId);
+    }
+    final lightweightSelections = _buildMarqueeSelections(session, hits);
+    final selectedNodeIds = lightweightSelections
+        .map((final selection) => selection.nodeId)
+        .toList(growable: false);
+    final selections = lightweightSelections
+        .map(
+          (final selection) => LiveEditSelection(
+            sessionId: selection.sessionId,
+            nodeId: selection.nodeId,
+            widgetType: selection.widgetType,
+            renderObjectType: selection.renderObjectType,
+            bounds: selection.bounds,
+            source: selection.source,
+            propertyGroups: selection.propertyGroups,
+            layoutContext: selection.layoutContext,
+            parentChain: selection.parentChain,
+            detailsTree: selection.detailsTree,
+            propertiesTree: selection.propertiesTree,
+            rawNode: selection.rawNode,
+            selectionMode: LiveEditSelectionMode.multi,
+            selectedNodeIds: selectedNodeIds,
+          ),
+        )
+        .toList(growable: false);
+    final activeHit = hits.first;
+    final activeNodeId =
+        WidgetInspectorService.instance.toId(
+          activeHit.element,
+          session.objectGroup,
+        ) ??
+        selections.first.nodeId;
+    session.selectionHitCandidates = hits;
+    session.multiSelections = selections;
+    session.selectedElement = activeHit.element;
+    session.ancestry = activeHit.ancestry;
+    session.selection = selections.firstWhere(
+      (final selection) => selection.nodeId == activeNodeId,
+      orElse: () => selections.first,
+    );
+    final tracked = session.trackedSelections[activeNodeId];
+    if (tracked != null) {
+      _hydrateTrackedSelection(
+        session: session,
+        tracked: tracked,
+        updateInspectorSelection: true,
+      );
+    } else {
+      final hydrated = _buildSelection(
+        session: session,
+        element: activeHit.element,
+        ancestry: activeHit.ancestry,
+        selectedNodeIds: selectedNodeIds,
+        selectionMode: LiveEditSelectionMode.multi,
+        updateInspectorSelection: true,
+      );
+      session.selection = hydrated;
+      _replaceSelectionInMulti(session, hydrated);
+      session.selectedElement = activeHit.element;
+      session.ancestry = activeHit.ancestry;
+      session.lastTouchedAt = DateTime.now().toUtc();
+    }
+    _syncSelectionCandidates(session);
+    notifyListeners();
+    return <String, Object?>{
+      'sessionId': session.sessionId,
+      'selected': true,
+      'selectedNodeIds': session.multiSelections
+          .map((final item) => item.nodeId)
+          .toList(growable: false),
+    };
+  }
+
+  Map<String, Object?> cancelMarquee({final String? sessionId}) {
+    final session = _requireSession(sessionId);
+    session.marqueeRect = null;
+    session.marqueeStart = null;
+    session.marqueeHits = const <_ElementHit>[];
+    session.marqueeSelections = const <LiveEditSelection>[];
+    notifyListeners();
+    return <String, Object?>{'sessionId': session.sessionId, 'cancelled': true};
   }
 
   Map<String, Object?> selectCandidate({
@@ -756,11 +1655,25 @@ final class LiveEditController extends ChangeNotifier {
       };
     }
     final hit = hits[resolvedIndex];
-    final selection = _setSelection(
-      session: session,
-      element: hit.element,
-      ancestry: hit.ancestry,
-    );
+    final hitNodeId =
+        WidgetInspectorService.instance.toId(hit.element, session.objectGroup) ??
+        '';
+    final tracked = session.trackedSelections[hitNodeId];
+    final selection =
+        session.multiSelections.length > 1 && tracked != null
+        ? _hydrateTrackedSelection(
+            session: session,
+            tracked: tracked,
+            updateInspectorSelection: true,
+          )
+        : _setSelection(
+            session: session,
+            element: hit.element,
+            ancestry: hit.ancestry,
+          );
+    if (session.multiSelections.length <= 1) {
+      session.multiSelections = <LiveEditSelection>[selection];
+    }
     _syncSelectionCandidates(session);
     notifyListeners();
     return <String, Object?>{
@@ -770,6 +1683,45 @@ final class LiveEditController extends ChangeNotifier {
       'selectionCandidates': session.selectionCandidates
           .map((final candidate) => candidate.toJson())
           .toList(growable: false),
+    };
+  }
+
+  Map<String, Object?> selectTrackedNode({
+    required final String nodeId,
+    final String? sessionId,
+  }) {
+    final session = _requireSession(sessionId);
+    final tracked = session.trackedSelections[nodeId];
+    if (tracked == null ||
+        !tracked.element.mounted ||
+        tracked.element.renderObject == null) {
+      return <String, Object?>{
+        'sessionId': session.sessionId,
+        'selected': false,
+        'reason': 'tracked_node_unavailable',
+      };
+    }
+    final trackedSelection = tracked.selection;
+    final selection = _isHydratedSelection(trackedSelection)
+        ? _setSelection(
+            session: session,
+            element: tracked.element,
+            ancestry: tracked.ancestry,
+          )
+        : _hydrateTrackedSelection(
+            session: session,
+            tracked: tracked,
+            updateInspectorSelection: true,
+          );
+    if (session.multiSelections.length <= 1) {
+      session.multiSelections = <LiveEditSelection>[selection];
+    }
+    _syncSelectionCandidates(session);
+    notifyListeners();
+    return <String, Object?>{
+      'sessionId': session.sessionId,
+      'selected': true,
+      'selection': selection.toJson(),
     };
   }
 
@@ -789,6 +1741,24 @@ final class LiveEditController extends ChangeNotifier {
     return selectCandidate(
       sessionId: session.sessionId,
       index: activeIndex + 1,
+    );
+  }
+
+  Map<String, Object?> selectChild({final String? sessionId}) {
+    final session = _requireSession(sessionId);
+    final activeIndex = session.selectionCandidates.indexWhere(
+      (final candidate) => candidate.active,
+    );
+    if (activeIndex <= 0) {
+      return <String, Object?>{
+        'sessionId': session.sessionId,
+        'selected': false,
+        'reason': 'child_unavailable',
+      };
+    }
+    return selectCandidate(
+      sessionId: session.sessionId,
+      index: activeIndex - 1,
     );
   }
 
@@ -832,13 +1802,181 @@ final class LiveEditController extends ChangeNotifier {
     };
   }
 
+  List<_ElementHit> _rankSelectionHits(final List<_ElementHit> hits) {
+    return List<_ElementHit>.from(hits);
+  }
+
+  _MarqueeCandidateCacheEntry? _resolveMarqueeCandidate(
+    final _LiveEditSessionState session,
+    final _ElementHit hit,
+  ) {
+    if (!hit.element.mounted) {
+      session.marqueeCache.remove(hit.element);
+      return null;
+    }
+    final renderObject = hit.renderObject;
+    if (!renderObject.attached) {
+      session.marqueeCache.remove(hit.element);
+      return null;
+    }
+    final bounds = _boundsForRenderObject(renderObject);
+    if (bounds == null) {
+      session.marqueeCache.remove(hit.element);
+      return null;
+    }
+    final cached = session.marqueeCache[hit.element];
+    final nodeId =
+        cached?.nodeId ??
+        WidgetInspectorService.instance.toId(hit.element, session.objectGroup) ??
+        'live_edit_marquee_${session.sessionId}_${hit.element.hashCode}';
+    final widgetType = hit.element.widget.runtimeType.toString();
+    final entry = _MarqueeCandidateCacheEntry(
+      element: hit.element,
+      renderObject: renderObject,
+      parentElement: hit.parentElement,
+      ancestry: hit.ancestry,
+      nodeId: nodeId,
+      widgetType: widgetType,
+      depth: hit.depth,
+      isStructural: _structuralWidgetTypes.contains(widgetType),
+      isUserAuthored:
+          cached?.isUserAuthored ??
+          _isUserAuthoredElement(session, hit.element, nodeId),
+      bounds: bounds,
+    );
+    session.marqueeCache[hit.element] = entry;
+    return entry;
+  }
+
+  int _compareMarqueeEntries(
+    final _MarqueeCandidateCacheEntry left,
+    final _MarqueeCandidateCacheEntry right,
+  ) {
+    final leftBounds = left.bounds;
+    final rightBounds = right.bounds;
+    if (leftBounds != null && rightBounds != null) {
+      if (leftBounds.top != rightBounds.top) {
+        return leftBounds.top.compareTo(rightBounds.top);
+      }
+      if (leftBounds.left != rightBounds.left) {
+        return leftBounds.left.compareTo(rightBounds.left);
+      }
+      final leftArea = leftBounds.width * leftBounds.height;
+      final rightArea = rightBounds.width * rightBounds.height;
+      if (leftArea != rightArea) {
+        return leftArea.compareTo(rightArea);
+      }
+    }
+    if (left.depth != right.depth) {
+      return right.depth.compareTo(left.depth);
+    }
+    return left.widgetType.compareTo(right.widgetType);
+  }
+
+  List<LiveEditSelection> _buildMarqueeSelections(
+    final _LiveEditSessionState session,
+    final List<_ElementHit> hits, {
+    final bool includePropertyGroups = false,
+  }) {
+    return hits
+        .map((final hit) => _resolveMarqueeCandidate(session, hit))
+        .whereType<_MarqueeCandidateCacheEntry>()
+        .map(
+          (final entry) => _buildLightweightSelectionFromCache(
+            session: session,
+            entry: entry,
+            includePropertyGroups: includePropertyGroups,
+          ),
+        )
+        .fold(<String, LiveEditSelection>{}, (final map, final selection) {
+          map.putIfAbsent(selection.nodeId, () => selection);
+          return map;
+        })
+        .values
+        .toList(growable: false);
+  }
+
+  List<_ElementHit> _sortMarqueeHits(
+    final _LiveEditSessionState session,
+    final List<_ElementHit> hits,
+  ) {
+    session.marqueeCache.removeWhere(
+      (final element, final _) => !element.mounted,
+    );
+    final candidatesByNodeId = <String, _MarqueeCandidateCacheEntry>{};
+    final candidatesByElement = <Element, _MarqueeCandidateCacheEntry>{};
+    for (final hit in hits) {
+      final entry = _resolveMarqueeCandidate(session, hit);
+      if (entry == null || !entry.isUserAuthored) {
+        continue;
+      }
+      candidatesByNodeId.putIfAbsent(entry.nodeId, () => entry);
+      candidatesByElement.putIfAbsent(entry.element, () => entry);
+    }
+    if (candidatesByNodeId.isEmpty) {
+      return const <_ElementHit>[];
+    }
+
+    final covered = candidatesByNodeId.values.toList(growable: false);
+    final depthRanked = List<_MarqueeCandidateCacheEntry>.from(covered)
+      ..sort((final left, final right) {
+        if (left.depth != right.depth) {
+          return right.depth.compareTo(left.depth);
+        }
+        return _compareMarqueeEntries(left, right);
+      });
+    final blockedStructuralAncestors = <Element>{};
+    final kept = <_MarqueeCandidateCacheEntry>[];
+    for (final candidate in depthRanked) {
+      if (!candidate.isVisualCandidate ||
+          blockedStructuralAncestors.contains(candidate.element)) {
+        continue;
+      }
+      kept.add(candidate);
+      var ancestor = candidate.parentElement;
+      while (ancestor != null) {
+        final coveredAncestor = candidatesByElement[ancestor];
+        if (coveredAncestor != null) {
+          if (coveredAncestor.isStructural) {
+            blockedStructuralAncestors.add(ancestor);
+          }
+          ancestor = coveredAncestor.parentElement;
+          continue;
+        }
+        Element? nextAncestor;
+        ancestor.visitAncestorElements((final parent) {
+          if (candidatesByElement.containsKey(parent)) {
+            nextAncestor = parent;
+            return false;
+          }
+          return true;
+        });
+        ancestor = nextAncestor;
+      }
+    }
+    kept.sort(_compareMarqueeEntries);
+    return kept
+        .map(
+          (final candidate) => _ElementHit(
+            element: candidate.element,
+            renderObject: candidate.renderObject,
+            ancestry: candidate.ancestry,
+            depth: candidate.depth,
+            parentElement: candidate.parentElement,
+          ),
+        )
+        .toList(growable: false);
+  }
+
   Map<String, Object?> updateDraft({
     required final LiveEditDraftChange change,
     final String? sessionId,
   }) {
     final session = _requireSession(sessionId);
-    final selection = session.selection;
-    if (selection == null || selection.nodeId != change.nodeId) {
+    final trackedSelection = session.selection?.nodeId == change.nodeId
+        ? session.selection
+        : session.trackedSelections[change.nodeId]?.selection;
+    if (trackedSelection == null) {
       return <String, Object?>{
         'sessionId': session.sessionId,
         'updated': false,
@@ -857,19 +1995,77 @@ final class LiveEditController extends ChangeNotifier {
       session.draftChanges.add(change);
     }
 
-    final appliedExact = _applyExactPreviewIfSupported(session, change);
+    final appliedExact = _applyExactPreviewIfSupported(
+      session,
+      change,
+      elementOverride: session.trackedSelections[change.nodeId]?.element,
+      selectionOverride: trackedSelection,
+    );
+    if (_isMeaningfulChange(session, change, trackedSelection)) {
+      session.meaningfulNodeIds.add(change.nodeId);
+    }
     session.lastTouchedAt = DateTime.now().toUtc();
     notifyListeners();
+    if (appliedExact) {
+      WidgetsBinding.instance.addPostFrameCallback((final _) {
+        final currentSession = _sessions[session.sessionId];
+        final trackedElement = currentSession?.trackedSelections[change.nodeId];
+        if (currentSession == null || trackedElement == null) {
+          return;
+        }
+        _applyExactPreviewIfSupported(
+          currentSession,
+          change,
+          elementOverride: trackedElement.element,
+          selectionOverride: trackedElement.selection,
+        );
+      });
+    }
     return <String, Object?>{
       'sessionId': session.sessionId,
       'updated': true,
-      'selection': selection.toJson(),
+      'selection': trackedSelection.toJson(),
       'draftChanges': session.draftChanges
           .map((final draft) => draft.toJson())
           .toList(),
       'appliedPreviewMode': appliedExact
           ? LiveEditPreviewMode.exact.wireName
           : LiveEditPreviewMode.ghost.wireName,
+    };
+  }
+
+  Map<String, Object?> updateDraftBatch({
+    required final List<String> nodeIds,
+    required final String propertyId,
+    required final Object? targetValue,
+    required final LiveEditPreviewMode previewMode,
+    required final String intentText,
+    required final Map<String, Object?> meta,
+    final String? sessionId,
+  }) {
+    final session = _requireSession(sessionId);
+    final updated = <Map<String, Object?>>[];
+    for (final nodeId in nodeIds) {
+      final result = updateDraft(
+        sessionId: session.sessionId,
+        change: LiveEditDraftChange(
+          nodeId: nodeId,
+          propertyId: propertyId,
+          targetValue: targetValue,
+          previewMode: previewMode,
+          confidence: 0.9,
+          intentText: intentText,
+          meta: meta,
+        ),
+      );
+      if (result['updated'] == true) {
+        updated.add(result);
+      }
+    }
+    return <String, Object?>{
+      'sessionId': session.sessionId,
+      'updated': updated.isNotEmpty,
+      'count': updated.length,
     };
   }
 
@@ -883,20 +2079,36 @@ final class LiveEditController extends ChangeNotifier {
 
   bool _applyExactPreviewIfSupported(
     final _LiveEditSessionState session,
-    final LiveEditDraftChange change,
-  ) {
-    final selection = session.selection;
-    final element = session.selectedElement;
+    final LiveEditDraftChange change, {
+    final Element? elementOverride,
+    final LiveEditSelection? selectionOverride,
+  }) {
+    final selection = selectionOverride ?? session.selection;
+    final element = elementOverride ?? session.selectedElement;
     if (selection == null || element == null || !element.mounted) {
       return false;
     }
 
     void captureOriginal(final String propertyId, final Object? currentValue) {
-      session.originalExactValues.putIfAbsent(propertyId, () => currentValue);
+      session.originalExactValues.putIfAbsent(
+        '${selection.nodeId}::$propertyId',
+        () => currentValue,
+      );
     }
 
-    final renderObject = element.renderObject;
+    final renderObject = _previewRenderObjectForElement(element);
     switch (change.propertyId) {
+      case 'text':
+        if (renderObject is RenderParagraph) {
+          captureOriginal(change.propertyId, renderObject.text);
+          renderObject.text = TextSpan(
+            style: renderObject.text.style,
+            text: '${change.targetValue ?? ''}',
+          );
+          renderObject.markNeedsLayout();
+          renderObject.markNeedsPaint();
+          return true;
+        }
       case 'flexFactor':
         final parentData = renderObject?.parentData;
         if (parentData is FlexParentData) {
@@ -966,26 +2178,34 @@ final class LiveEditController extends ChangeNotifier {
   }
 
   void _revertExactPreview(final _LiveEditSessionState session) {
-    final element = session.selectedElement;
-    if (element == null || !element.mounted) {
-      session.originalExactValues.clear();
-      return;
-    }
-    final renderObject = element.renderObject;
-    if (renderObject == null) {
-      session.originalExactValues.clear();
-      return;
-    }
-
     for (final entry in session.originalExactValues.entries) {
+      final parts = entry.key.split('::');
+      if (parts.length != 2) {
+        continue;
+      }
+      final tracked = session.trackedSelections[parts.first];
+      final element = tracked?.element;
+      if (element == null || !element.mounted) {
+        continue;
+      }
+      final renderObject = element.renderObject;
+      if (renderObject == null) {
+        continue;
+      }
       switch (entry.key) {
-        case 'flexFactor':
+        case final key when key.endsWith('::text'):
+          if (renderObject is RenderParagraph && entry.value is InlineSpan) {
+            renderObject.text = entry.value! as InlineSpan;
+            renderObject.markNeedsLayout();
+            renderObject.markNeedsPaint();
+          }
+        case final key when key.endsWith('::flexFactor'):
           final parentData = renderObject.parentData;
           if (parentData is FlexParentData) {
             parentData.flex = _asNullableInt(entry.value);
             renderObject.markNeedsLayout();
           }
-        case 'flexFit':
+        case final key when key.endsWith('::flexFit'):
           final parentData = renderObject.parentData;
           if (parentData is FlexParentData) {
             parentData.fit = '${entry.value ?? 'tight'}' == 'loose'
@@ -993,7 +2213,7 @@ final class LiveEditController extends ChangeNotifier {
                 : FlexFit.tight;
             renderObject.markNeedsLayout();
           }
-        case 'mainAxisAlignment':
+        case final key when key.endsWith('::mainAxisAlignment'):
           if (renderObject is RenderFlex) {
             renderObject.mainAxisAlignment = MainAxisAlignment.values
                 .firstWhere(
@@ -1003,7 +2223,7 @@ final class LiveEditController extends ChangeNotifier {
             renderObject.markNeedsLayout();
             renderObject.markNeedsPaint();
           }
-        case 'crossAxisAlignment':
+        case final key when key.endsWith('::crossAxisAlignment'):
           if (renderObject is RenderFlex) {
             renderObject.crossAxisAlignment = CrossAxisAlignment.values
                 .firstWhere(
@@ -1018,21 +2238,64 @@ final class LiveEditController extends ChangeNotifier {
     session.originalExactValues.clear();
   }
 
-  LiveEditSelection _setSelection({
+  bool _isMeaningfulChange(
+    final _LiveEditSessionState session,
+    final LiveEditDraftChange change,
+    final LiveEditSelection selection,
+  ) {
+    final property = selection.propertyGroups.firstWhere(
+      (final item) => item.id == change.propertyId,
+      orElse: () => LiveEditPropertyDescriptor(
+        id: change.propertyId,
+        label: change.propertyId,
+        group: LiveEditPropertyGroup.diagnostics,
+        kind: LiveEditPropertyKind.object,
+      ),
+    );
+    return '${property.value}' != '${change.targetValue}';
+  }
+
+  int _resolvedHoverIndex({
+    required final _LiveEditSessionState session,
+    required final List<_ElementHit> hits,
+    required final bool deeperMode,
+  }) {
+    if (hits.isEmpty || !deeperMode) {
+      return 0;
+    }
+    final activeNodeId = session.selection?.nodeId;
+    if (activeNodeId != null) {
+      final activeIndex = hits.indexWhere((final hit) {
+        final nodeId = WidgetInspectorService.instance.toId(
+          hit.element,
+          session.objectGroup,
+        );
+        return nodeId == activeNodeId;
+      });
+      if (activeIndex >= 0 && activeIndex + 1 < hits.length) {
+        return activeIndex + 1;
+      }
+    }
+    return hits.length > 1 ? 1 : 0;
+  }
+
+  LiveEditSelection _buildSelection({
     required final _LiveEditSessionState session,
     required final Element element,
     required final List<Map<String, Object?>> ancestry,
+    required final List<String> selectedNodeIds,
+    required final LiveEditSelectionMode selectionMode,
+    final bool updateInspectorSelection = false,
   }) {
-    if (session.selectedElement != null && session.selectedElement != element) {
-      _revertExactPreview(session);
-      session.draftChanges.clear();
-    }
-
     final nodeId =
         WidgetInspectorService.instance.toId(element, session.objectGroup) ??
         'live_edit_node_${DateTime.now().microsecondsSinceEpoch}';
-    WidgetInspectorService.instance.setSelection(element, session.objectGroup);
-
+    if (updateInspectorSelection) {
+      WidgetInspectorService.instance.setSelection(
+        element,
+        session.objectGroup,
+      );
+    }
     final detailsTree = _decodeObject(
       WidgetInspectorService.instance.getDetailsSubtree(
         nodeId,
@@ -1051,7 +2314,7 @@ final class LiveEditController extends ChangeNotifier {
         session.objectGroup,
       ),
     );
-    final renderObject = element.renderObject;
+    final renderObject = _previewRenderObjectForElement(element);
     final selection = LiveEditSelection(
       sessionId: session.sessionId,
       nodeId: nodeId,
@@ -1068,13 +2331,90 @@ final class LiveEditController extends ChangeNotifier {
       detailsTree: detailsTree,
       propertiesTree: <String, Object?>{'items': propertiesList},
       rawNode: detailsTree,
+      selectionMode: selectionMode,
+      selectedNodeIds: selectedNodeIds,
+    );
+    session.trackedSelections[nodeId] = _TrackedSelectionTarget(
+      element: element,
+      ancestry: ancestry,
+      selection: selection,
+    );
+    return selection;
+  }
+
+  LiveEditSelection _setSelection({
+    required final _LiveEditSessionState session,
+    required final Element element,
+    required final List<Map<String, Object?>> ancestry,
+  }) {
+    if (session.selectedElement != null && session.selectedElement != element) {
+      _revertExactPreview(session);
+      session.draftChanges.clear();
+    }
+
+    final selection = _buildSelection(
+      session: session,
+      element: element,
+      ancestry: ancestry,
+      selectedNodeIds: session.multiSelections
+          .map((final item) => item.nodeId)
+          .toList(growable: false),
+      selectionMode: session.multiSelections.length > 1
+          ? LiveEditSelectionMode.multi
+          : LiveEditSelectionMode.single,
+      updateInspectorSelection: true,
     );
 
     session.selectedElement = element;
     session.selection = selection;
     session.ancestry = ancestry;
+    session.multiSelections = <LiveEditSelection>[selection];
     session.lastTouchedAt = DateTime.now().toUtc();
     return selection;
+  }
+
+  void _replaceSelectionInMulti(
+    final _LiveEditSessionState session,
+    final LiveEditSelection selection,
+  ) {
+    final hasExisting = session.multiSelections.any(
+      (final candidate) => candidate.nodeId == selection.nodeId,
+    );
+    final nextSelections = session.multiSelections
+        .map(
+          (final candidate) =>
+              candidate.nodeId == selection.nodeId ? selection : candidate,
+        )
+        .toList(growable: false);
+    session.multiSelections = hasExisting
+        ? nextSelections
+        : <LiveEditSelection>[...nextSelections, selection];
+  }
+
+  LiveEditSelection _hydrateTrackedSelection({
+    required final _LiveEditSessionState session,
+    required final _TrackedSelectionTarget tracked,
+    required final bool updateInspectorSelection,
+  }) {
+    final selectedNodeIds = session.multiSelections
+        .map((final selection) => selection.nodeId)
+        .toList(growable: false);
+    final hydrated = _buildSelection(
+      session: session,
+      element: tracked.element,
+      ancestry: tracked.ancestry,
+      selectedNodeIds: selectedNodeIds,
+      selectionMode: selectedNodeIds.length > 1
+          ? LiveEditSelectionMode.multi
+          : LiveEditSelectionMode.single,
+      updateInspectorSelection: updateInspectorSelection,
+    );
+    session.selectedElement = tracked.element;
+    session.selection = hydrated;
+    session.ancestry = tracked.ancestry;
+    _replaceSelectionInMulti(session, hydrated);
+    session.lastTouchedAt = DateTime.now().toUtc();
+    return hydrated;
   }
 
   void _syncSelectionCandidates(final _LiveEditSessionState session) {
@@ -1083,27 +2423,32 @@ final class LiveEditController extends ChangeNotifier {
         .map((final entry) {
           final index = entry.$1;
           final hit = entry.$2;
-          final renderObject = hit.element.renderObject;
+          final renderObject = _previewRenderObjectForElement(hit.element);
           final nodeId =
               WidgetInspectorService.instance.toId(
                 hit.element,
                 session.objectGroup,
               ) ??
               'live_edit_candidate_${session.sessionId}_$index';
+          final detailsTree = _decodeObject(
+            WidgetInspectorService.instance.getDetailsSubtree(
+              nodeId,
+              session.objectGroup,
+            ),
+          );
+          final metadata = _selectionMetadataForElement(
+            session,
+            hit.element,
+            cachedNodeId: nodeId,
+            cachedDetailsTree: detailsTree,
+          );
           return LiveEditSelectionCandidate(
             nodeId: nodeId,
             widgetType: hit.element.widget.runtimeType.toString(),
             bounds: _boundsForRenderObject(renderObject),
             depth: index,
-            source: _extractSourceLocation(
-              _decodeObject(
-                WidgetInspectorService.instance.getDetailsSubtree(
-                  nodeId,
-                  session.objectGroup,
-                ),
-              ),
-              hit.element,
-            ),
+            source: metadata.source,
+            createdByLocalProject: metadata.createdByLocalProject,
             active: identical(hit.element, activeElement),
           );
         })
@@ -1112,10 +2457,21 @@ final class LiveEditController extends ChangeNotifier {
 }
 
 final class _ElementHit {
-  const _ElementHit({required this.element, required this.ancestry});
+  const _ElementHit({
+    required this.element,
+    required this.renderObject,
+    required this.ancestry,
+    required this.depth,
+    this.parentElement,
+    this.edgeHit = false,
+  });
 
   final Element element;
+  final RenderObject renderObject;
   final List<Map<String, Object?>> ancestry;
+  final int depth;
+  final Element? parentElement;
+  final bool edgeHit;
 }
 
 final class _LiveEditSessionState {
@@ -1126,11 +2482,39 @@ final class _LiveEditSessionState {
   bool overlayEnabled = false;
   Element? selectedElement;
   LiveEditSelection? selection;
+  LiveEditSelection? hoverSelection;
+  ui.Offset? hoverPoint;
+  Element? hoverRootElement;
+  int? hoverViewId;
   List<Map<String, Object?>> ancestry = const <Map<String, Object?>>[];
   List<_ElementHit> selectionHitCandidates = const <_ElementHit>[];
+  List<_ElementHit> hoverHitCandidates = const <_ElementHit>[];
   List<LiveEditSelectionCandidate> selectionCandidates =
       const <LiveEditSelectionCandidate>[];
+  int hoverPreviewIndex = 0;
+  ui.Offset? marqueeStart;
+  Rect? marqueeRect;
+  List<_ElementHit> marqueeHits = const <_ElementHit>[];
+  List<LiveEditSelection> marqueeSelections = const <LiveEditSelection>[];
+  List<LiveEditSelection> multiSelections = const <LiveEditSelection>[];
+  final Map<Element, _MarqueeCandidateCacheEntry> marqueeCache =
+      <Element, _MarqueeCandidateCacheEntry>{};
   final List<LiveEditDraftChange> draftChanges = <LiveEditDraftChange>[];
   final Map<String, Object?> originalExactValues = <String, Object?>{};
+  final Set<String> meaningfulNodeIds = <String>{};
+  final Map<String, _TrackedSelectionTarget> trackedSelections =
+      <String, _TrackedSelectionTarget>{};
   DateTime lastTouchedAt = DateTime.now().toUtc();
+}
+
+final class _TrackedSelectionTarget {
+  const _TrackedSelectionTarget({
+    required this.element,
+    required this.ancestry,
+    required this.selection,
+  });
+
+  final Element element;
+  final List<Map<String, Object?>> ancestry;
+  final LiveEditSelection selection;
 }

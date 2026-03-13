@@ -70,7 +70,8 @@ Set<MCPCallEntry> getFlutterLiveEditEntries() => <MCPCallEntry>{
   MCPCallEntry.tool(
     definition: MCPToolDefinition(
       name: LiveEditRuntimeToolNames.selectAtPoint,
-      description: 'Select the deepest widget at global logical coordinates.',
+      description:
+          'Select a live edit widget at global logical coordinates using an optional selection policy.',
       inputSchema: ObjectSchema(
         required: const <String>['x', 'y'],
         properties: <String, Schema>{
@@ -78,6 +79,7 @@ Set<MCPCallEntry> getFlutterLiveEditEntries() => <MCPCallEntry>{
           'x': IntegerSchema(),
           'y': IntegerSchema(),
           'viewId': IntegerSchema(),
+          'selectionPolicy': StringSchema(),
         },
       ),
     ),
@@ -87,6 +89,9 @@ Set<MCPCallEntry> getFlutterLiveEditEntries() => <MCPCallEntry>{
         x: _parseInt(request['x']),
         y: _parseInt(request['y']),
         viewId: _parseNullableInt(request['viewId']),
+        selectionPolicy: LiveEditSelectionPolicy.fromWire(
+          request['selectionPolicy'],
+        ),
       );
       return MCPCallResult(
         message: 'Live edit selection updated.',
