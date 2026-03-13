@@ -432,10 +432,19 @@ class _ApplyActions extends StatelessWidget {
               : (orchestrator.canSubmitAiPrompt &&
                     !orchestrator.hasDraftChanges)
               ? 'Send'
-              : (orchestrator.hasAgentBackedDrafts ? 'Resolve' : 'Apply'),
+              : 'Apply',
         ),
       ),
     ),
+    if (orchestrator.canApplyAllBubbles)
+      Semantics(
+        identifier: _actionId('apply_all_button'),
+        button: true,
+        child: OutlinedButton(
+          onPressed: orchestrator.applyAllBubbles,
+          child: Text('Apply all (${orchestrator.pendingBubbleCount})'),
+        ),
+      ),
   ];
 
   String _actionId(final String suffix) {
@@ -1308,6 +1317,14 @@ class _PropertyPanel extends StatelessWidget {
                         ),
                         if (orchestrator.debugModeEnabled)
                           _PanelSection(
+                            title: 'Prompt',
+                            child: _SelectedPromptCard(
+                              promptText:
+                                  orchestrator.debugPromptForActiveSelection,
+                            ),
+                          ),
+                        if (orchestrator.debugModeEnabled)
+                          _PanelSection(
                             title: 'Debug Log',
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -2023,6 +2040,58 @@ class _PendingRequestCard extends StatelessWidget {
       ],
     ),
   );
+}
+
+class _SelectedPromptCard extends StatelessWidget {
+  const _SelectedPromptCard({required this.promptText});
+
+  final String? promptText;
+
+  @override
+  Widget build(final BuildContext context) {
+    final hasPrompt = _hasText(promptText);
+    return Semantics(
+      identifier: 'live_edit_selected_prompt',
+      child: ExpansionTile(
+        key: const PageStorageKey<String>('live_edit_selected_prompt_tile'),
+        tilePadding: EdgeInsets.zero,
+        childrenPadding: EdgeInsets.zero,
+        title: const Text(
+          'Agent request',
+          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+        ),
+        subtitle: Text(
+          hasPrompt
+              ? 'Exact request sent to the agent for this bubble.'
+              : 'No agent request sent for this bubble yet.',
+          style: const TextStyle(fontSize: 10),
+        ),
+        children: <Widget>[
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: SelectionArea(
+              child: Text(
+                hasPrompt
+                    ? promptText!.trim()
+                    : 'No agent request sent for this bubble yet.',
+                style: const TextStyle(
+                  fontSize: 11,
+                  height: 1.35,
+                  color: Color(0xFF0F172A),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _TimelineBubble extends StatelessWidget {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
+import 'package:path/path.dart' as p;
 
 import 'live_edit_controller.dart';
 
@@ -61,12 +62,14 @@ final class LiveEditRuntimeEvent {
     required this.kind,
     required this.message,
     this.details = const <String>[],
+    this.promptText,
     this.debugOnly = false,
   });
 
   final LiveEditRuntimeEventKind kind;
   final String message;
   final List<String> details;
+  final String? promptText;
   final bool debugOnly;
 }
 
@@ -98,6 +101,13 @@ final class LiveEditApplyDraftRequest {
   const LiveEditApplyDraftRequest({
     required this.sessionId,
     this.draftChanges = const <LiveEditDraftChange>[],
+    this.bubbleId,
+    this.instructionText,
+    this.primarySelection,
+    this.selectedWidgets = const <LiveEditSelection>[],
+    this.sourceTargets = const <LiveEditSourceTarget>[],
+    this.stagedPropertyChanges = const <LiveEditDraftChange>[],
+    this.applyMode = LiveEditApplyMode.singleBubble,
     this.selection,
     this.proposalId,
     this.backendId,
@@ -109,6 +119,13 @@ final class LiveEditApplyDraftRequest {
 
   final String sessionId;
   final List<LiveEditDraftChange> draftChanges;
+  final String? bubbleId;
+  final String? instructionText;
+  final LiveEditSelection? primarySelection;
+  final List<LiveEditSelection> selectedWidgets;
+  final List<LiveEditSourceTarget> sourceTargets;
+  final List<LiveEditDraftChange> stagedPropertyChanges;
+  final LiveEditApplyMode applyMode;
   final LiveEditSelection? selection;
   final String? proposalId;
   final String? backendId;
@@ -117,8 +134,51 @@ final class LiveEditApplyDraftRequest {
   final bool approve;
   final LiveEditRuntimeEventSink? onEvent;
 
+  String? get effectiveBubbleId =>
+      bubbleId?.trim().isEmpty == true ? null : bubbleId?.trim();
+
+  String? get effectiveInstructionText =>
+      instructionText?.trim().isNotEmpty == true
+      ? instructionText!.trim()
+      : intentText?.trim().isNotEmpty == true
+      ? intentText!.trim()
+      : null;
+
+  LiveEditSelection? get effectivePrimarySelection =>
+      primarySelection ?? selection;
+
+  List<LiveEditSelection> get effectiveSelectedWidgets {
+    if (selectedWidgets.isNotEmpty) {
+      return selectedWidgets;
+    }
+    final primary = effectivePrimarySelection;
+    return primary == null
+        ? const <LiveEditSelection>[]
+        : <LiveEditSelection>[primary];
+  }
+
+  List<LiveEditDraftChange> get effectiveStagedPropertyChanges =>
+      stagedPropertyChanges.isNotEmpty ? stagedPropertyChanges : draftChanges;
+
   Map<String, Object?> toJson() => <String, Object?>{
     'sessionId': sessionId,
+    if (_hasText(effectiveBubbleId)) 'bubbleId': effectiveBubbleId,
+    if (_hasText(effectiveInstructionText))
+      'instructionText': effectiveInstructionText,
+    if (primarySelection != null)
+      'primarySelection': primarySelection!.toJson(),
+    if (selectedWidgets.isNotEmpty)
+      'selectedWidgets': selectedWidgets
+          .map((final selection) => selection.toJson())
+          .toList(growable: false),
+    if (sourceTargets.isNotEmpty)
+      'sourceTargets': sourceTargets
+          .map((final target) => target.toJson())
+          .toList(growable: false),
+    'stagedPropertyChanges': effectiveStagedPropertyChanges
+        .map((final change) => change.toJson())
+        .toList(growable: false),
+    'applyMode': applyMode.wireName,
     'draftChanges': draftChanges
         .map((final change) => change.toJson())
         .toList(growable: false),
@@ -180,6 +240,73 @@ final class LiveEditBubbleSummary {
   final String? sourceLabel;
 }
 
+final class _LiveEditBubbleState {
+  const _LiveEditBubbleState({
+    required this.bubbleId,
+    this.primarySelection,
+    this.selectedWidgets = const <LiveEditSelection>[],
+    this.draftChanges = const <LiveEditDraftChange>[],
+    this.instructionText = '',
+    this.status = LiveEditBubbleStatus.editing,
+    this.displayState = LiveEditBubbleDisplayState.expanded,
+    this.changedFiles = const <String>[],
+    this.backendId,
+    this.executionPlan,
+    this.lastError,
+  });
+
+  final String bubbleId;
+  final LiveEditSelection? primarySelection;
+  final List<LiveEditSelection> selectedWidgets;
+  final List<LiveEditDraftChange> draftChanges;
+  final String instructionText;
+  final LiveEditBubbleStatus status;
+  final LiveEditBubbleDisplayState displayState;
+  final List<String> changedFiles;
+  final String? backendId;
+  final LiveEditExecutionPlan? executionPlan;
+  final String? lastError;
+
+  List<String> get nodeIds {
+    final nodes = <String>{
+      if (primarySelection != null) primarySelection!.nodeId,
+      ...selectedWidgets.map((final selection) => selection.nodeId),
+      ...draftChanges.map((final change) => change.nodeId),
+    };
+    return nodes.where(_hasText).toList(growable: false);
+  }
+
+  bool get hasPendingApply =>
+      draftChanges.isNotEmpty ||
+      (status != LiveEditBubbleStatus.applied &&
+          instructionText.trim().isNotEmpty);
+
+  _LiveEditBubbleState copyWith({
+    final LiveEditSelection? primarySelection,
+    final List<LiveEditSelection>? selectedWidgets,
+    final List<LiveEditDraftChange>? draftChanges,
+    final String? instructionText,
+    final LiveEditBubbleStatus? status,
+    final LiveEditBubbleDisplayState? displayState,
+    final List<String>? changedFiles,
+    final String? backendId,
+    final LiveEditExecutionPlan? executionPlan,
+    final String? lastError,
+  }) => _LiveEditBubbleState(
+    bubbleId: bubbleId,
+    primarySelection: primarySelection ?? this.primarySelection,
+    selectedWidgets: selectedWidgets ?? this.selectedWidgets,
+    draftChanges: draftChanges ?? this.draftChanges,
+    instructionText: instructionText ?? this.instructionText,
+    status: status ?? this.status,
+    displayState: displayState ?? this.displayState,
+    changedFiles: changedFiles ?? this.changedFiles,
+    backendId: backendId ?? this.backendId,
+    executionPlan: executionPlan ?? this.executionPlan,
+    lastError: lastError ?? this.lastError,
+  );
+}
+
 final class LiveEditOrchestrator extends ChangeNotifier {
   LiveEditOrchestrator({
     final LiveEditController? controller,
@@ -236,9 +363,12 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       <String, List<LiveEditActivityEntry>>{};
   final Map<String, List<LiveEditTimelineEntry>> _debugHistoryByNode =
       <String, List<LiveEditTimelineEntry>>{};
+  final Map<String, String> _debugPromptByNode = <String, String>{};
+  final Map<String, _LiveEditBubbleState> _bubbleStateByNode =
+      <String, _LiveEditBubbleState>{};
 
   List<LiveEditDraftChange> get activeDraftChanges =>
-      controller.activeDraftChanges;
+      _activeBubbleState?.draftChanges ?? _draftChangesForActiveSelection();
   LiveEditSelection? get activeSelection => controller.activeSelection;
   LiveEditSelection? get hoverSelection => controller.hoverSelection;
   List<LiveEditSelection> get activeMultiSelection =>
@@ -254,9 +384,10 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   bool get hasMultiSelection => activeMultiSelection.length > 1;
   bool get hasMarqueePreview =>
       marqueeRect != null && marqueePreviewSelections.isNotEmpty;
-  String? get lastError => _lastError;
+  String? get lastError => _activeBubbleState?.lastError ?? _lastError;
   bool get overlayVisible => controller.overlayVisible;
-  LiveEditExecutionPlan? get pendingExecutionPlan => _pendingExecutionPlan;
+  LiveEditExecutionPlan? get pendingExecutionPlan =>
+      _activeBubbleState?.executionPlan ?? _pendingExecutionPlan;
   LiveEditEditMode get editMode => _editMode;
   LiveEditPanelDisplayMode get panelDisplayMode => _panelDisplayMode;
   double get bubbleWidth => _bubbleWidth;
@@ -264,9 +395,17 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   Offset get bubbleDragOffset => _bubbleDragOffset;
   bool get debugModeEnabled => _debugModeEnabled;
   String? get activePropertyId => _activePropertyId;
-  String get aiComposer => _aiComposer;
+  String get aiComposer => _activeBubbleState?.instructionText ?? _aiComposer;
   String? get currentBackendId => _backendId;
   List<LiveEditAgentBackend> get availableBackends => _availableBackends;
+  _LiveEditBubbleState? get _activeBubbleState {
+    final nodeId = activeSelection?.nodeId;
+    if (!_hasText(nodeId)) {
+      return null;
+    }
+    return _bubbleStateByNode[nodeId!];
+  }
+
   LiveEditAgentBackend? get currentBackend {
     final backendId = _backendId;
     if (!_hasText(backendId)) {
@@ -288,10 +427,15 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       : 'AI agent';
 
   bool get hasBackendChoice => _availableBackends.length > 1;
-  bool get hasAiPrompt => _hasText(_aiComposer);
+  bool get hasAiPrompt => _hasText(aiComposer);
   String? get stagedPromptText {
-    final prompt = _aiComposer.trim();
+    final prompt = aiComposer.trim();
     return prompt.isEmpty ? null : prompt;
+  }
+
+  String? get debugPromptForActiveSelection {
+    final prompt = _debugPromptByKey(selection: activeSelection)?.trim();
+    return _hasText(prompt) ? prompt : null;
   }
 
   String? get stagedDraftSummary {
@@ -325,6 +469,9 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       !isApplyingBusy;
   bool get canTriggerApply =>
       needsApproval || hasDraftChanges || canSubmitAiPrompt;
+  bool get canApplyAllBubbles =>
+      !isApplyingBusy && _pendingBubbleStates().length > 1;
+  int get pendingBubbleCount => _pendingBubbleStates().length;
   bool get aiBubbleVisible =>
       overlayVisible &&
       activeSelection != null &&
@@ -338,6 +485,10 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       _hasText(_pendingProposalId);
 
   LiveEditBubbleStatus get bubbleStatusForActiveSelection {
+    final bubble = _activeBubbleState;
+    if (bubble != null) {
+      return bubble.status;
+    }
     final nodeId = activeSelection?.nodeId;
     if (!_hasText(nodeId)) {
       return LiveEditBubbleStatus.editing;
@@ -455,7 +606,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
         label: 'Applying',
         summary:
             _pendingExecutionPlan?.summary ??
-            '$currentBackendLabel prepared a patch and is applying it.',
+            '$currentBackendLabel is applying this bubble change.',
         timestamp: now,
         nodeId: currentNodeId,
       );
@@ -545,150 +696,25 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     final bool approve = false,
     final String? message,
   }) async {
-    final sessionId = ensureSession();
-    final resolvedIntent = _resolveIntentText(message);
-    final allowPromptOnlyRequest =
-        (_editMode == LiveEditEditMode.ai || hasAiPrompt) &&
-        _hasText(resolvedIntent);
-    if (!hasDraftChanges && !allowPromptOnlyRequest) {
+    final bubbleId = _bubbleIdForSelection(activeSelection);
+    if (!_hasText(bubbleId)) {
       _setError('No draft changes to apply.');
       return;
     }
-    if (applyDraftDelegate == null) {
-      _setError('Apply transport is not configured for this host app.');
-      return;
-    }
-    _applyPhase = LiveEditApplyPhase.preparing;
-    _lastError = null;
-    final selection = activeSelection;
-    final activePropertyId = _activePropertyId;
-    if (_hasText(selection?.nodeId)) {
-      _bubbleStatusByNode[selection!.nodeId] = LiveEditBubbleStatus.waiting;
-      _bubbleDisplayStateByNode[selection.nodeId] =
-          LiveEditBubbleDisplayState.expanded;
-      _pendingNodeId = selection.nodeId;
-      _pendingPropertyId = activePropertyId;
-    }
-    _appendActivity(
-      step: LiveEditActivityStep.preparingRequest,
-      label: 'Preparing request',
-      summary: 'Preparing the live-edit request for $currentBackendLabel.',
-      inProgress: true,
-      details: <String>[
-        if (_hasText(selection?.source?.file))
-          'Source: ${selection!.source!.file}${selection.source?.line == null ? '' : ':${selection.source!.line}'}',
-        if (_hasText(_backendId)) 'Backend: $currentBackendLabel',
-        if (activeDraftChanges.isNotEmpty)
-          'Drafts: ${activeDraftChanges.length}',
-        if (activeDraftChanges.isEmpty && _hasText(resolvedIntent))
-          'Prompt-only request',
-      ],
-      nodeId: selection?.nodeId,
+    await _applyBubble(
+      bubbleId!,
+      approve: approve,
+      message: message,
+      applyMode: LiveEditApplyMode.singleBubble,
     );
-    _appendDebug(
-      message: 'Dispatching live-edit request to $currentBackendLabel.',
-      details: <String>[
-        if (_hasText(selection?.source?.file))
-          'Source: ${selection!.source!.file}${selection.source?.line == null ? '' : ':${selection.source!.line}'}',
-        if (_hasText(_backendId)) 'Backend: $currentBackendLabel',
-        if (_hasText(workingDirectory)) 'Workspace: $workingDirectory',
-        if (activeDraftChanges.isNotEmpty)
-          'Drafts: ${activeDraftChanges.length}',
-        if (activeDraftChanges.isEmpty) 'Mode: prompt-only',
-      ],
-      nodeId: selection?.nodeId,
+  }
+
+  Future<void> applyAllBubbles() async {
+    final bubbleIds = _pendingBubbleStates().map(
+      (final bubble) => bubble.bubbleId,
     );
-    _panelDisplayMode = LiveEditPanelDisplayMode.rail;
-    _editMode = LiveEditEditMode.ai;
-    _appendTimeline(role: 'user', message: resolvedIntent);
-    notifyListeners();
-
-    try {
-      final response = await applyDraftDelegate!(
-        LiveEditApplyDraftRequest(
-          sessionId: sessionId,
-          draftChanges: List<LiveEditDraftChange>.unmodifiable(
-            activeDraftChanges,
-          ),
-          selection: activeSelection,
-          proposalId: _pendingProposalId,
-          backendId: _backendId,
-          workingDirectory: workingDirectory,
-          intentText: resolvedIntent,
-          approve: approve,
-          onEvent: _emitEvent,
-        ),
-      );
-
-      final responseError = _extractError(response);
-      if (_hasText(responseError)) {
-        _setError(responseError!);
-        return;
-      }
-
-      final proposalId = '${response['proposalId'] ?? ''}'.trim();
-      if (_hasText(proposalId)) {
-        _pendingProposalId = proposalId;
-        _appendDebug(
-          message: 'Received proposal id.',
-          details: <String>['Proposal: $proposalId'],
-          nodeId: selection?.nodeId,
-        );
-      }
-
-      final executionPlan = _decodeExecutionPlan(response['executionPlan']);
-      if (executionPlan != null) {
-        _pendingExecutionPlan = executionPlan;
-        _appendActivity(
-          step: LiveEditActivityStep.applyingChanges,
-          label: 'Applying',
-          summary: executionPlan.summary,
-          details: executionPlan.affectedFiles.take(4).toList(growable: false),
-          inProgress: true,
-          nodeId: selection?.nodeId,
-        );
-        _appendTimeline(
-          role: 'assistant',
-          message: executionPlan.summary,
-          details: <String>[
-            ...executionPlan.requestedChanges,
-            ...executionPlan.riskNotes,
-          ],
-        );
-      }
-
-      final appliedChanges = List<LiveEditDraftChange>.unmodifiable(
-        activeDraftChanges,
-      );
-      _applyPhase = LiveEditApplyPhase.success;
-      if (_hasText(selection?.nodeId)) {
-        _bubbleStatusByNode[selection!.nodeId] = LiveEditBubbleStatus.applied;
-        _bubbleDisplayStateByNode[selection.nodeId] =
-            LiveEditBubbleDisplayState.minimized;
-      }
-      _pendingNodeId = null;
-      _pendingPropertyId = null;
-      _appendTimeline(
-        role: 'assistant',
-        message: 'Applied live-edit changes.',
-        details: _pendingExecutionPlan?.affectedFiles ?? const <String>[],
-      );
-      _appendActivity(
-        step: LiveEditActivityStep.finished,
-        label: 'Applied',
-        summary: '$currentBackendLabel applied the patch to source.',
-        details: _pendingExecutionPlan?.affectedFiles ?? const <String>[],
-        nodeId: selection?.nodeId,
-      );
-      _pendingProposalId = null;
-      controller.commitDraft(sessionId: sessionId);
-      controller.showAppliedPreview(
-        sessionId: sessionId,
-        changes: appliedChanges,
-      );
-      notifyListeners();
-    } on Exception catch (error) {
-      _setError('Apply failed: $error');
+    for (final bubbleId in bubbleIds) {
+      await _applyBubble(bubbleId, applyMode: LiveEditApplyMode.applyAll);
     }
   }
 
@@ -703,8 +729,8 @@ final class LiveEditOrchestrator extends ChangeNotifier {
             property.requiresAgentForPersistence
         ? LiveEditEditMode.ai
         : LiveEditEditMode.edit;
-    if (_editMode == LiveEditEditMode.ai && !_hasText(_aiComposer)) {
-      _aiComposer = _defaultAiPrompt();
+    if (_editMode == LiveEditEditMode.ai && !_hasText(aiComposer)) {
+      updateAiComposer(_defaultAiPrompt());
     }
     notifyListeners();
   }
@@ -898,8 +924,8 @@ final class LiveEditOrchestrator extends ChangeNotifier {
         _bubbleStatusByNode[nodeId!] = LiveEditBubbleStatus.editing;
       }
     }
-    if (!_hasText(_aiComposer)) {
-      _aiComposer = _defaultAiPrompt();
+    if (!_hasText(aiComposer)) {
+      updateAiComposer(_defaultAiPrompt());
     }
     notifyListeners();
   }
@@ -917,15 +943,15 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     _activePropertyId = property.id;
     _editMode = LiveEditEditMode.ai;
     _panelDisplayMode = LiveEditPanelDisplayMode.expanded;
-    if (!_hasText(_aiComposer)) {
-      _aiComposer = _defaultAiPrompt();
+    if (!_hasText(aiComposer)) {
+      updateAiComposer(_defaultAiPrompt());
     }
     notifyListeners();
   }
 
   Future<void> retryApply() async {
     openAiBubble();
-    await applyDraft(message: _aiComposer);
+    await applyDraft(message: aiComposer);
   }
 
   void selectCandidateAt(final int index) {
@@ -1070,7 +1096,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
 
   Future<void> showApprovalSheet(final BuildContext context) async {
     openAiBubble();
-    await applyDraft(message: _aiComposer);
+    await applyDraft(message: aiComposer);
   }
 
   Future<void> submitAiPrompt() async {
@@ -1078,11 +1104,25 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     if (!canSubmitAiPrompt) {
       return;
     }
-    await applyDraft(message: _aiComposer);
+    await applyDraft(message: aiComposer);
   }
 
   void updateAiComposer(final String value) {
     _aiComposer = value;
+    final bubbleId = _bubbleIdForSelection(activeSelection);
+    if (_hasText(bubbleId)) {
+      final bubble = _ensureBubbleState(
+        bubbleId!,
+        selection: activeSelection,
+        selectedWidgets: _activeSelectedWidgets(),
+      );
+      _bubbleStateByNode[bubbleId] = bubble.copyWith(
+        instructionText: value,
+        status: LiveEditBubbleStatus.editing,
+        displayState: LiveEditBubbleDisplayState.expanded,
+        lastError: null,
+      );
+    }
     if (!needsApproval &&
         _applyPhase != LiveEditApplyPhase.preparing &&
         _applyPhase != LiveEditApplyPhase.applying) {
@@ -1100,11 +1140,32 @@ final class LiveEditOrchestrator extends ChangeNotifier {
 
   void undoDraft() {
     final sessionId = ensureSession();
-    controller.discardDraft(sessionId: sessionId);
-    final nodeId = activeSelection?.nodeId;
+    final nodeId = _bubbleIdForSelection(activeSelection);
+    final bubble = _activeBubbleState;
+    final nodeIds =
+        bubble?.nodeIds ??
+        _activeSelectedWidgets()
+            .map((final item) => item.nodeId)
+            .toList(growable: false);
+    controller.discardDraftNodes(sessionId: sessionId, nodeIds: nodeIds);
     if (_hasText(nodeId)) {
       _bubbleStatusByNode[nodeId!] = LiveEditBubbleStatus.editing;
       _bubbleDisplayStateByNode.remove(nodeId);
+      final preservedInstruction =
+          _bubbleStateByNode[nodeId]?.instructionText ?? '';
+      _bubbleStateByNode[nodeId] =
+          _ensureBubbleState(
+            nodeId,
+            selection: activeSelection,
+            selectedWidgets: _activeSelectedWidgets(),
+          ).copyWith(
+            draftChanges: const <LiveEditDraftChange>[],
+            instructionText: preservedInstruction,
+            status: LiveEditBubbleStatus.editing,
+            changedFiles: const <String>[],
+            executionPlan: null,
+            lastError: null,
+          );
     }
     _resetApplyState(clearError: true);
   }
@@ -1177,8 +1238,15 @@ final class LiveEditOrchestrator extends ChangeNotifier {
           LiveEditBubbleDisplayState.expanded;
       _trackedSelections[selection.nodeId] = selection;
     }
-    if (_editMode == LiveEditEditMode.ai && !_hasText(_aiComposer)) {
-      _aiComposer = _defaultAiPrompt();
+    _captureBubbleState(
+      selection: selection,
+      selectedWidgets: _activeSelectedWidgets(),
+      instructionText: aiComposer,
+      status: LiveEditBubbleStatus.editing,
+      lastError: null,
+    );
+    if (_editMode == LiveEditEditMode.ai && !_hasText(aiComposer)) {
+      updateAiComposer(_defaultAiPrompt());
     }
     _appendDebug(
       message: 'Edited ${property.label}.',
@@ -1191,6 +1259,356 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       nodeId: selection.nodeId,
     );
     notifyListeners();
+  }
+
+  Future<void> _applyBubble(
+    final String bubbleId, {
+    final bool approve = false,
+    final String? message,
+    final LiveEditApplyMode applyMode = LiveEditApplyMode.singleBubble,
+  }) async {
+    final sessionId = ensureSession();
+    if (applyDraftDelegate == null) {
+      _setError('Apply transport is not configured for this host app.');
+      return;
+    }
+    final bubble = _bubbleStateByNode[bubbleId];
+    final selection = bubble?.primarySelection;
+    final selectedWidgets =
+        bubble?.selectedWidgets ?? const <LiveEditSelection>[];
+    final draftChanges = bubble?.draftChanges ?? const <LiveEditDraftChange>[];
+    final resolvedIntent = _resolveBubbleInstruction(
+      bubbleId: bubbleId,
+      message: message,
+      draftChanges: draftChanges,
+    );
+    if (draftChanges.isEmpty && !_hasText(resolvedIntent)) {
+      if (bubbleId == _bubbleIdForSelection(activeSelection)) {
+        _setError('No draft changes to apply.');
+      }
+      return;
+    }
+
+    _applyPhase = LiveEditApplyPhase.preparing;
+    _lastError = null;
+    _pendingNodeId = bubbleId;
+    _pendingPropertyId = _activePropertyId;
+    _bubbleStatusByNode[bubbleId] = LiveEditBubbleStatus.waiting;
+    _bubbleDisplayStateByNode[bubbleId] = LiveEditBubbleDisplayState.expanded;
+    _bubbleStateByNode[bubbleId] =
+        _ensureBubbleState(
+          bubbleId,
+          selection: selection,
+          selectedWidgets: selectedWidgets,
+        ).copyWith(
+          draftChanges: draftChanges,
+          instructionText: resolvedIntent,
+          status: LiveEditBubbleStatus.waiting,
+          backendId: _backendId,
+          lastError: null,
+        );
+    _appendActivity(
+      step: LiveEditActivityStep.preparingRequest,
+      label: 'Preparing request',
+      summary: 'Preparing the live-edit request for $currentBackendLabel.',
+      inProgress: true,
+      details: <String>[
+        if (_hasText(selection?.source?.file))
+          'Source: ${selection!.source!.file}${selection.source?.line == null ? '' : ':${selection.source!.line}'}',
+        if (_hasText(_backendId)) 'Backend: $currentBackendLabel',
+        if (draftChanges.isNotEmpty) 'Drafts: ${draftChanges.length}',
+        if (draftChanges.isEmpty && _hasText(resolvedIntent))
+          'Prompt-only request',
+      ],
+      nodeId: bubbleId,
+    );
+    _appendDebug(
+      message: 'Dispatching live-edit request to $currentBackendLabel.',
+      details: <String>[
+        if (_hasText(selection?.source?.file))
+          'Source: ${selection!.source!.file}${selection.source?.line == null ? '' : ':${selection.source!.line}'}',
+        if (_hasText(_backendId)) 'Backend: $currentBackendLabel',
+        if (_hasText(workingDirectory)) 'Workspace: $workingDirectory',
+        if (draftChanges.isNotEmpty) 'Drafts: ${draftChanges.length}',
+        if (draftChanges.isEmpty) 'Mode: prompt-only',
+      ],
+      nodeId: bubbleId,
+    );
+    _panelDisplayMode = LiveEditPanelDisplayMode.rail;
+    _editMode = LiveEditEditMode.ai;
+    _appendTimeline(role: 'user', message: resolvedIntent);
+    notifyListeners();
+
+    try {
+      final response = await applyDraftDelegate!(
+        LiveEditApplyDraftRequest(
+          sessionId: sessionId,
+          bubbleId: bubbleId,
+          instructionText: resolvedIntent,
+          primarySelection: selection,
+          selectedWidgets: List<LiveEditSelection>.unmodifiable(
+            selectedWidgets,
+          ),
+          sourceTargets: _sourceTargetsForSelections(selectedWidgets),
+          stagedPropertyChanges: List<LiveEditDraftChange>.unmodifiable(
+            draftChanges,
+          ),
+          applyMode: applyMode,
+          draftChanges: List<LiveEditDraftChange>.unmodifiable(draftChanges),
+          selection: selection,
+          proposalId: _pendingProposalId,
+          backendId: _backendId,
+          workingDirectory: workingDirectory,
+          intentText: resolvedIntent,
+          approve: approve,
+          onEvent: _emitEvent,
+        ),
+      );
+
+      final responseError = _extractError(response);
+      if (_hasText(responseError)) {
+        _setErrorForBubble(bubbleId, responseError!);
+        return;
+      }
+
+      final executionPlan = _decodeExecutionPlan(response['executionPlan']);
+      final executionResult = _decodeExecutionResult(
+        response['executionResult'] ?? response['result'],
+      );
+      if (executionPlan != null) {
+        _pendingExecutionPlan = executionPlan;
+        _bubbleStateByNode[bubbleId] =
+            _ensureBubbleState(
+              bubbleId,
+              selection: selection,
+              selectedWidgets: selectedWidgets,
+            ).copyWith(
+              draftChanges: draftChanges,
+              instructionText: resolvedIntent,
+              status: LiveEditBubbleStatus.waiting,
+              backendId: _backendId,
+              executionPlan: executionPlan,
+              changedFiles: executionPlan.affectedFiles,
+            );
+        _appendActivity(
+          step: LiveEditActivityStep.applyingChanges,
+          label: 'Applying',
+          summary: executionPlan.summary,
+          details: executionPlan.affectedFiles.take(4).toList(growable: false),
+          inProgress: true,
+          nodeId: bubbleId,
+        );
+        _appendTimeline(
+          role: 'assistant',
+          message: executionPlan.summary,
+          details: <String>[
+            ...executionPlan.requestedChanges,
+            ...executionPlan.riskNotes,
+          ],
+        );
+      }
+
+      final changedFiles =
+          executionResult?.changedFiles ??
+          executionPlan?.affectedFiles ??
+          const <String>[];
+      _applyPhase = LiveEditApplyPhase.success;
+      _bubbleStatusByNode[bubbleId] = LiveEditBubbleStatus.applied;
+      _bubbleDisplayStateByNode[bubbleId] =
+          LiveEditBubbleDisplayState.minimized;
+      _bubbleStateByNode[bubbleId] =
+          _ensureBubbleState(
+            bubbleId,
+            selection: selection,
+            selectedWidgets: selectedWidgets,
+          ).copyWith(
+            draftChanges: const <LiveEditDraftChange>[],
+            instructionText: resolvedIntent,
+            status: LiveEditBubbleStatus.applied,
+            displayState: LiveEditBubbleDisplayState.minimized,
+            changedFiles: changedFiles,
+            backendId: _backendId,
+            executionPlan: executionPlan,
+            lastError: null,
+          );
+      _pendingNodeId = null;
+      _pendingPropertyId = null;
+      _appendTimeline(
+        role: 'assistant',
+        message: 'Applied live-edit changes.',
+        details: changedFiles,
+      );
+      _appendActivity(
+        step: LiveEditActivityStep.finished,
+        label: 'Applied',
+        summary:
+            executionResult?.summary ??
+            '$currentBackendLabel applied this bubble change to source.',
+        details: changedFiles,
+        nodeId: bubbleId,
+      );
+      _pendingProposalId = null;
+      final committedBubble = _bubbleStateByNode[bubbleId];
+      controller.commitDraftNodes(
+        sessionId: sessionId,
+        nodeIds:
+            committedBubble?.nodeIds ??
+            selectedWidgets
+                .map((final item) => item.nodeId)
+                .toList(growable: false),
+      );
+      controller.showAppliedPreview(
+        sessionId: sessionId,
+        changes: draftChanges,
+      );
+      notifyListeners();
+    } on Exception catch (error) {
+      _setErrorForBubble(bubbleId, 'Apply failed: $error');
+    }
+  }
+
+  List<LiveEditSelection> _activeSelectedWidgets() {
+    if (hasMultiSelection) {
+      return List<LiveEditSelection>.unmodifiable(activeMultiSelection);
+    }
+    final selection = activeSelection;
+    return selection == null
+        ? const <LiveEditSelection>[]
+        : <LiveEditSelection>[selection];
+  }
+
+  List<LiveEditDraftChange> _draftChangesForActiveSelection() {
+    final selection = activeSelection;
+    if (selection == null) {
+      return const <LiveEditDraftChange>[];
+    }
+    final nodeIds = <String>{
+      selection.nodeId,
+      ...selection.selectedNodeIds,
+      ...activeMultiSelection.map((final item) => item.nodeId),
+    };
+    return controller.activeDraftChanges
+        .where((final draft) => nodeIds.contains(draft.nodeId))
+        .toList(growable: false);
+  }
+
+  String? _bubbleIdForSelection(final LiveEditSelection? selection) {
+    final nodeId = selection?.nodeId.trim();
+    return _hasText(nodeId) ? nodeId : null;
+  }
+
+  _LiveEditBubbleState _ensureBubbleState(
+    final String bubbleId, {
+    final LiveEditSelection? selection,
+    final List<LiveEditSelection>? selectedWidgets,
+  }) {
+    return _bubbleStateByNode[bubbleId] ??
+        _LiveEditBubbleState(
+          bubbleId: bubbleId,
+          primarySelection: selection,
+          selectedWidgets: selectedWidgets ?? const <LiveEditSelection>[],
+        );
+  }
+
+  void _captureBubbleState({
+    required final LiveEditSelection selection,
+    required final List<LiveEditSelection> selectedWidgets,
+    final String? instructionText,
+    final LiveEditBubbleStatus? status,
+    final String? lastError,
+  }) {
+    final bubbleId = _bubbleIdForSelection(selection);
+    if (!_hasText(bubbleId)) {
+      return;
+    }
+    _bubbleStateByNode[bubbleId!] =
+        _ensureBubbleState(
+          bubbleId,
+          selection: selection,
+          selectedWidgets: selectedWidgets,
+        ).copyWith(
+          primarySelection: selection,
+          selectedWidgets: selectedWidgets,
+          draftChanges: _draftChangesForActiveSelection(),
+          instructionText: instructionText ?? aiComposer,
+          status:
+              status ??
+              (_bubbleStateByNode[bubbleId]?.status ??
+                  LiveEditBubbleStatus.editing),
+          displayState:
+              _bubbleDisplayStateByNode[bubbleId] ??
+              LiveEditBubbleDisplayState.expanded,
+          changedFiles:
+              _bubbleStateByNode[bubbleId]?.changedFiles ?? const <String>[],
+          backendId: _backendId,
+          executionPlan: _bubbleStateByNode[bubbleId]?.executionPlan,
+          lastError: lastError ?? _bubbleStateByNode[bubbleId]?.lastError,
+        );
+  }
+
+  Iterable<_LiveEditBubbleState> _pendingBubbleStates() =>
+      _bubbleStateByNode.values.where((final bubble) => bubble.hasPendingApply);
+
+  String _resolveBubbleInstruction({
+    required final String bubbleId,
+    required final List<LiveEditDraftChange> draftChanges,
+    final String? message,
+  }) {
+    final prompt = (message?.trim().isNotEmpty == true)
+        ? message!.trim()
+        : (_bubbleStateByNode[bubbleId]?.instructionText ??
+              stagedPromptText ??
+              '');
+    final draftSummary = draftChanges
+        .map((final draft) => '- ${_describeDraftChange(draft)}')
+        .join('\n');
+    if (prompt.isNotEmpty && draftSummary.isNotEmpty) {
+      return '$prompt\n\nStaged fixes:\n$draftSummary';
+    }
+    if (prompt.isNotEmpty) {
+      return prompt;
+    }
+    if (draftSummary.isNotEmpty) {
+      return 'Staged fixes:\n$draftSummary';
+    }
+    return _defaultAiPrompt();
+  }
+
+  List<LiveEditSourceTarget> _sourceTargetsForSelections(
+    final List<LiveEditSelection> selections,
+  ) {
+    final workspace = workingDirectory;
+    final deduped = <String, LiveEditSourceTarget>{};
+    for (final selection in selections) {
+      final source = selection.source;
+      if (!_hasText(source?.file)) {
+        continue;
+      }
+      final absolutePath = source!.file;
+      final workspacePath =
+          _hasText(workspace) && p.isWithin(workspace!, absolutePath)
+          ? p.relative(absolutePath, from: workspace)
+          : null;
+      deduped[workspacePath ?? absolutePath] = LiveEditSourceTarget(
+        nodeId: selection.nodeId,
+        widgetType: selection.widgetType,
+        absolutePath: absolutePath,
+        workspacePath: workspacePath,
+        line: source.line,
+        column: source.column,
+      );
+    }
+    return deduped.values.toList(growable: false);
+  }
+
+  LiveEditDirectApplyResult? _decodeExecutionResult(final Object? value) {
+    if (value is Map) {
+      final normalized = value.map(
+        (final key, final nested) => MapEntry('$key', nested),
+      );
+      return LiveEditDirectApplyResult.fromJson(normalized);
+    }
+    return null;
   }
 
   Object? effectiveValueForProperty(final LiveEditPropertyDescriptor property) {
@@ -1222,15 +1640,15 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     }
     return LiveEditExecutionPlan(
       proposalId: _pendingProposalId ?? '',
-      title: 'Apply live edit',
-      summary: 'Persist current draft changes.',
+      title: 'Apply this bubble change',
+      summary: 'Persist current bubble changes.',
       selectedNode: selection.widgetType,
       requestedChanges: activeDraftChanges
           .map((final draft) => '${draft.propertyId}: ${draft.targetValue}')
           .toList(growable: false),
       affectedFiles: const <String>[],
       confidence: activeDraftChanges.isEmpty ? 0 : 0.7,
-      agentInstruction: 'Apply current live-edit draft changes.',
+      agentInstruction: 'Apply current bubble changes.',
     );
   }
 
@@ -1426,6 +1844,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     if (normalized.contains('sending') ||
         normalized.contains('resolve') ||
         normalized.contains('generating proposal') ||
+        normalized.contains('direct apply') ||
         normalized.contains('stream started') ||
         normalized.contains('streamed output') ||
         normalized.contains('reported progress') ||
@@ -1435,25 +1854,29 @@ final class LiveEditOrchestrator extends ChangeNotifier {
         normalized.contains('starting cursor-agent')) {
       return (
         LiveEditActivityStep.generatingProposal,
-        'Generating proposal',
-        '$currentBackendLabel is generating a proposal for this node.',
+        'Applying with agent',
+        '$currentBackendLabel is implementing this bubble change.',
         true,
       );
     }
     if (normalized.contains('stream completed')) {
       return (
         LiveEditActivityStep.generatingProposal,
-        'Generating proposal',
-        '$currentBackendLabel finished streaming the proposal response.',
+        'Applying with agent',
+        '$currentBackendLabel finished streaming the agent response.',
         true,
       );
     }
-    if (normalized.contains('proposal') &&
-        (normalized.contains('returned') || normalized.contains('produced'))) {
+    if ((normalized.contains('proposal') ||
+            normalized.contains('execution result') ||
+            normalized.contains('applied this bubble')) &&
+        (normalized.contains('returned') ||
+            normalized.contains('produced') ||
+            normalized.contains('received'))) {
       return (
         LiveEditActivityStep.applyingChanges,
         'Applying',
-        '$currentBackendLabel prepared a patch and is applying it.',
+        '$currentBackendLabel is writing the requested source changes.',
         true,
       );
     }
@@ -1466,7 +1889,9 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       );
     }
     if (normalized.contains('finished') ||
-        normalized.contains('applied the patch')) {
+        normalized.contains('applied the patch') ||
+        normalized.contains('finished writing') ||
+        normalized.contains('source changes applied')) {
       return (
         LiveEditActivityStep.finished,
         'Applied',
@@ -1492,14 +1917,58 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     }
     if (normalized.contains('apply') ||
         normalized.contains('write') ||
+        normalized.contains('executionid') ||
         normalized.contains('proposalid')) {
       return 'Applying source changes failed.';
     }
     return '$currentBackendLabel request failed.';
   }
 
+  String? _debugPromptByKey({
+    final LiveEditSelection? selection,
+    final String? nodeId,
+  }) {
+    final key = _debugPromptKey(selection: selection, nodeId: nodeId);
+    if (!_hasText(key)) {
+      return null;
+    }
+    return _debugPromptByNode[key!];
+  }
+
+  String? _debugPromptKey({
+    final LiveEditSelection? selection,
+    final String? nodeId,
+  }) {
+    final resolvedSelection =
+        selection ??
+        (_hasText(nodeId) ? _trackedSelections[nodeId!] : null) ??
+        activeSelection;
+    final source = resolvedSelection?.source;
+    if (_hasText(source?.file)) {
+      return [
+        resolvedSelection?.widgetType ?? '',
+        source!.file,
+        '${source.line ?? ''}',
+        '${source.column ?? ''}',
+      ].join('|');
+    }
+    if (_hasText(resolvedSelection?.nodeId)) {
+      return resolvedSelection!.nodeId;
+    }
+    final resolvedNodeId = nodeId?.trim();
+    return _hasText(resolvedNodeId) ? resolvedNodeId : null;
+  }
+
   void _emitEvent(final LiveEditRuntimeEvent event) {
     final nodeId = activeSelection?.nodeId ?? _pendingNodeId;
+    final promptText = event.promptText?.trim();
+    final promptKey = _debugPromptKey(
+      selection: activeSelection,
+      nodeId: nodeId,
+    );
+    if (_hasText(promptKey) && _hasText(promptText)) {
+      _debugPromptByNode[promptKey!] = promptText!;
+    }
     if (event.debugOnly || event.kind == LiveEditRuntimeEventKind.debug) {
       _appendDebug(
         message: event.message,
@@ -1537,8 +2006,21 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     if (!_hasText(nodeId) || nodeId == nextNodeId) {
       return;
     }
+    _captureBubbleState(
+      selection: activeSelection!,
+      selectedWidgets: _activeSelectedWidgets(),
+      instructionText: aiComposer,
+      status: _bubbleStatusByNode[nodeId!] ?? LiveEditBubbleStatus.editing,
+      lastError: _lastError,
+    );
     if (_shouldKeepBubblePinned(nodeId)) {
-      _bubbleDisplayStateByNode[nodeId!] = LiveEditBubbleDisplayState.minimized;
+      _bubbleDisplayStateByNode[nodeId] = LiveEditBubbleDisplayState.minimized;
+      final bubble = _bubbleStateByNode[nodeId];
+      if (bubble != null) {
+        _bubbleStateByNode[nodeId] = bubble.copyWith(
+          displayState: LiveEditBubbleDisplayState.minimized,
+        );
+      }
       return;
     }
     _bubbleDisplayStateByNode.remove(nodeId);
@@ -1546,6 +2028,11 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     _historyByNode.remove(nodeId);
     _activityByNode.remove(nodeId);
     _debugHistoryByNode.remove(nodeId);
+    final promptKey = _debugPromptKey(nodeId: nodeId);
+    if (_hasText(promptKey)) {
+      _debugPromptByNode.remove(promptKey);
+    }
+    _bubbleStateByNode.remove(nodeId);
     _trackedSelections.remove(nodeId);
   }
 
@@ -1553,21 +2040,27 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     if (!_hasText(nodeId)) {
       return false;
     }
-    final hasMeaningfulDraft = activeDraftChanges.any(
-      (final draft) =>
-          draft.nodeId == nodeId && '${draft.targetValue}'.trim().isNotEmpty,
-    );
+    final bubble = _bubbleStateByNode[nodeId!];
+    final hasMeaningfulDraft =
+        bubble?.draftChanges.any(
+          (final draft) => '${draft.targetValue}'.trim().isNotEmpty,
+        ) ??
+        false;
+    final hasInstruction = _hasText(bubble?.instructionText);
     final hasMeaningfulNode = controller.isMeaningfulNode(
-      nodeId!,
+      nodeId,
       sessionId: activeSessionId,
     );
-    final status = _bubbleStatusByNode[nodeId!];
+    final status = bubble?.status ?? _bubbleStatusByNode[nodeId];
     final hasPersistentStatus =
         status == LiveEditBubbleStatus.waiting ||
         status == LiveEditBubbleStatus.needsApproval ||
         status == LiveEditBubbleStatus.applied ||
         status == LiveEditBubbleStatus.failed;
-    return hasMeaningfulDraft || hasMeaningfulNode || hasPersistentStatus;
+    return hasMeaningfulDraft ||
+        hasInstruction ||
+        hasMeaningfulNode ||
+        hasPersistentStatus;
   }
 
   void _restoreBubbleState(final String? nodeId) {
@@ -1575,6 +2068,12 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       return;
     }
     _bubbleDisplayStateByNode[nodeId!] = LiveEditBubbleDisplayState.expanded;
+    final bubble = _bubbleStateByNode[nodeId];
+    if (bubble != null) {
+      _bubbleStateByNode[nodeId] = bubble.copyWith(
+        displayState: LiveEditBubbleDisplayState.expanded,
+      );
+    }
   }
 
   void _onControllerChanged() {
@@ -1629,26 +2128,39 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       .join('\n');
 
   void _setError(final String error) {
+    _setErrorForBubble(
+      _bubbleIdForSelection(activeSelection) ?? _pendingNodeId,
+      error,
+    );
+  }
+
+  void _setErrorForBubble(final String? bubbleId, final String error) {
     _applyPhase = LiveEditApplyPhase.failed;
     _lastError = error;
-    if (_hasText(activeSelection?.nodeId)) {
-      _bubbleStatusByNode[activeSelection!.nodeId] =
-          LiveEditBubbleStatus.failed;
-      _bubbleDisplayStateByNode[activeSelection!.nodeId] =
-          LiveEditBubbleDisplayState.expanded;
+    if (_hasText(bubbleId)) {
+      _bubbleStatusByNode[bubbleId!] = LiveEditBubbleStatus.failed;
+      _bubbleDisplayStateByNode[bubbleId] = LiveEditBubbleDisplayState.expanded;
+      final activeBubble = _bubbleStateByNode[bubbleId];
+      if (activeBubble != null) {
+        _bubbleStateByNode[bubbleId] = activeBubble.copyWith(
+          status: LiveEditBubbleStatus.failed,
+          displayState: LiveEditBubbleDisplayState.expanded,
+          lastError: error,
+        );
+      }
     }
     _appendActivity(
       step: LiveEditActivityStep.failed,
       label: 'Failed',
       summary: _failureSummary(error),
       details: <String>[error],
-      nodeId: activeSelection?.nodeId ?? _pendingNodeId,
+      nodeId: bubbleId ?? activeSelection?.nodeId ?? _pendingNodeId,
       errorText: error,
     );
     _appendDebug(
       message: 'Live-edit request failed.',
       details: <String>[error],
-      nodeId: activeSelection?.nodeId ?? _pendingNodeId,
+      nodeId: bubbleId ?? activeSelection?.nodeId ?? _pendingNodeId,
     );
     _pendingNodeId = null;
     _pendingPropertyId = null;
@@ -1661,11 +2173,24 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     final currentNodeId = selection?.nodeId;
     if (currentNodeId != _lastSelectionNodeId) {
       _lastSelectionNodeId = currentNodeId;
-      _pendingExecutionPlan = null;
-      _pendingProposalId = null;
-      _applyPhase = LiveEditApplyPhase.idle;
-      _lastError = null;
-      _aiComposer = '';
+      final bubble = _hasText(currentNodeId)
+          ? _ensureBubbleState(
+              currentNodeId!,
+              selection: selection,
+              selectedWidgets: _activeSelectedWidgets(),
+            )
+          : null;
+      _pendingExecutionPlan = bubble?.executionPlan;
+      _pendingProposalId = bubble?.executionPlan?.proposalId;
+      _applyPhase = bubble?.status == LiveEditBubbleStatus.waiting
+          ? LiveEditApplyPhase.preparing
+          : bubble?.status == LiveEditBubbleStatus.applied
+          ? LiveEditApplyPhase.success
+          : bubble?.status == LiveEditBubbleStatus.failed
+          ? LiveEditApplyPhase.failed
+          : LiveEditApplyPhase.idle;
+      _lastError = bubble?.lastError;
+      _aiComposer = bubble?.instructionText ?? '';
       _editMode = selection == null
           ? LiveEditEditMode.inspect
           : LiveEditEditMode.edit;
@@ -1676,11 +2201,21 @@ final class LiveEditOrchestrator extends ChangeNotifier {
           currentNodeId,
           () => LiveEditBubbleDisplayState.expanded,
         );
+        _captureBubbleState(
+          selection: selection,
+          selectedWidgets: _activeSelectedWidgets(),
+          instructionText: _aiComposer,
+          status: bubble?.status,
+          lastError: bubble?.lastError,
+        );
       }
       if (selection != null &&
           activeProperty?.requiresAgentForPersistence == true) {
         _editMode = LiveEditEditMode.ai;
-        _aiComposer = _defaultAiPrompt();
+        if (!_hasText(_aiComposer)) {
+          _aiComposer = _defaultAiPrompt();
+          updateAiComposer(_aiComposer);
+        }
       }
       if (selection == null && !overlayVisible) {
         _bubbleDragOffset = Offset.zero;

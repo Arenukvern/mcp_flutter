@@ -325,6 +325,23 @@ enum LiveEditEditSurface {
   }
 }
 
+enum LiveEditApplyMode {
+  singleBubble('single_bubble'),
+  applyAll('apply_all');
+
+  const LiveEditApplyMode(this.wireName);
+
+  final String wireName;
+
+  static LiveEditApplyMode fromWire(final Object? value) {
+    final normalized = '$value'.trim().toLowerCase();
+    return LiveEditApplyMode.values.firstWhere(
+      (final mode) => mode.wireName == normalized,
+      orElse: () => LiveEditApplyMode.singleBubble,
+    );
+  }
+}
+
 final class LiveEditExecutionPlan {
   const LiveEditExecutionPlan({
     required this.proposalId,
@@ -645,6 +662,13 @@ final class LiveEditResolutionRequest {
     required this.sessionId,
     required this.workingDirectory,
     required this.draftChanges,
+    this.bubbleId,
+    this.instructionText,
+    this.primarySelection,
+    this.selectedWidgets = const <LiveEditSelection>[],
+    this.sourceTargets = const <LiveEditSourceTarget>[],
+    this.stagedPropertyChanges = const <LiveEditDraftChange>[],
+    this.applyMode = LiveEditApplyMode.singleBubble,
     this.selection,
     this.backendId,
     this.inferenceConfig,
@@ -664,6 +688,28 @@ final class LiveEditResolutionRequest {
           .whereType<Map>()
           .map((final item) => LiveEditDraftChange.fromJson(_asMap(item)))
           .toList(growable: false),
+      bubbleId: _asNullableString(json['bubbleId']),
+      instructionText: _asNullableString(
+        json['instructionText'] ?? json['intentText'],
+      ),
+      primarySelection: switch (json['primarySelection']) {
+        final Map value => LiveEditSelection.fromJson(_asMap(value)),
+        _ => null,
+      },
+      selectedWidgets: _asList(json['selectedWidgets'])
+          .whereType<Map>()
+          .map((final item) => LiveEditSelection.fromJson(_asMap(item)))
+          .toList(growable: false),
+      sourceTargets: _asList(json['sourceTargets'])
+          .whereType<Map>()
+          .map((final item) => LiveEditSourceTarget.fromJson(_asMap(item)))
+          .toList(growable: false),
+      stagedPropertyChanges:
+          _asList(json['stagedPropertyChanges'] ?? json['draftChanges'])
+              .whereType<Map>()
+              .map((final item) => LiveEditDraftChange.fromJson(_asMap(item)))
+              .toList(growable: false),
+      applyMode: LiveEditApplyMode.fromWire(json['applyMode']),
       selection: switch (json['selection']) {
         final Map value => LiveEditSelection.fromJson(_asMap(value)),
         _ => null,
@@ -679,6 +725,13 @@ final class LiveEditResolutionRequest {
   final String sessionId;
   final String workingDirectory;
   final List<LiveEditDraftChange> draftChanges;
+  final String? bubbleId;
+  final String? instructionText;
+  final LiveEditSelection? primarySelection;
+  final List<LiveEditSelection> selectedWidgets;
+  final List<LiveEditSourceTarget> sourceTargets;
+  final List<LiveEditDraftChange> stagedPropertyChanges;
+  final LiveEditApplyMode applyMode;
   final LiveEditSelection? selection;
   final String? backendId;
   final LiveEditInferenceConfig? inferenceConfig;
@@ -686,9 +739,46 @@ final class LiveEditResolutionRequest {
   final Map<String, Object?> evidence;
   final Map<String, Object?> meta;
 
+  String? get effectiveBubbleId => _asNullableString(bubbleId);
+
+  String? get effectiveInstructionText =>
+      _asNullableString(instructionText) ?? _asNullableString(intentText);
+
+  LiveEditSelection? get effectivePrimarySelection =>
+      primarySelection ?? selection;
+
+  List<LiveEditSelection> get effectiveSelectedWidgets {
+    if (selectedWidgets.isNotEmpty) {
+      return selectedWidgets;
+    }
+    final primary = effectivePrimarySelection;
+    return primary == null
+        ? const <LiveEditSelection>[]
+        : <LiveEditSelection>[primary];
+  }
+
+  List<LiveEditDraftChange> get effectiveStagedPropertyChanges =>
+      stagedPropertyChanges.isNotEmpty ? stagedPropertyChanges : draftChanges;
+
   Map<String, Object?> toJson() => <String, Object?>{
     'sessionId': sessionId,
     'workingDirectory': workingDirectory,
+    if (bubbleId != null) 'bubbleId': bubbleId,
+    if (instructionText != null) 'instructionText': instructionText,
+    if (primarySelection != null)
+      'primarySelection': primarySelection!.toJson(),
+    if (selectedWidgets.isNotEmpty)
+      'selectedWidgets': selectedWidgets
+          .map((final selection) => selection.toJson())
+          .toList(),
+    if (sourceTargets.isNotEmpty)
+      'sourceTargets': sourceTargets
+          .map((final target) => target.toJson())
+          .toList(),
+    'stagedPropertyChanges': effectiveStagedPropertyChanges
+        .map((final change) => change.toJson())
+        .toList(),
+    'applyMode': applyMode.wireName,
     'draftChanges': draftChanges
         .map((final change) => change.toJson())
         .toList(),
@@ -698,6 +788,86 @@ final class LiveEditResolutionRequest {
     if (intentText != null) 'intentText': intentText,
     'evidence': evidence,
     'meta': meta,
+  };
+}
+
+final class LiveEditSourceTarget {
+  const LiveEditSourceTarget({
+    required this.nodeId,
+    required this.widgetType,
+    this.absolutePath,
+    this.workspacePath,
+    this.line,
+    this.column,
+  });
+
+  factory LiveEditSourceTarget.fromJson(final Map<String, Object?> json) =>
+      LiveEditSourceTarget(
+        nodeId: '${json['nodeId'] ?? ''}',
+        widgetType: '${json['widgetType'] ?? ''}',
+        absolutePath: _asNullableString(json['absolutePath']),
+        workspacePath: _asNullableString(json['workspacePath']),
+        line: _asNullableInt(json['line']),
+        column: _asNullableInt(json['column']),
+      );
+
+  final String nodeId;
+  final String widgetType;
+  final String? absolutePath;
+  final String? workspacePath;
+  final int? line;
+  final int? column;
+
+  Map<String, Object?> toJson() => <String, Object?>{
+    'nodeId': nodeId,
+    'widgetType': widgetType,
+    if (absolutePath != null) 'absolutePath': absolutePath,
+    if (workspacePath != null) 'workspacePath': workspacePath,
+    if (line != null) 'line': line,
+    if (column != null) 'column': column,
+  };
+}
+
+final class LiveEditDirectApplyResult {
+  const LiveEditDirectApplyResult({
+    required this.executionId,
+    required this.backendId,
+    required this.summary,
+    this.changedFiles = const <String>[],
+    this.warnings = const <String>[],
+    this.validationSteps = const <String>[],
+    this.meta = const <String, Object?>{},
+  });
+
+  factory LiveEditDirectApplyResult.fromJson(final Map<String, Object?> json) =>
+      LiveEditDirectApplyResult(
+        executionId: '${json['executionId'] ?? json['proposalId'] ?? ''}',
+        backendId: '${json['backendId'] ?? ''}',
+        summary: '${json['summary'] ?? ''}',
+        changedFiles: _asStringList(json['changedFiles']),
+        warnings: _asStringList(json['warnings']),
+        validationSteps: _asStringList(json['validationSteps']),
+        meta: _asMap(json['meta']),
+      );
+
+  final String executionId;
+  final String backendId;
+  final String summary;
+  final List<String> changedFiles;
+  final List<String> warnings;
+  final List<String> validationSteps;
+  final Map<String, Object?> meta;
+
+  Map<String, Object?> toJson() => <String, Object?>{
+    'executionId': executionId,
+    'backendId': backendId,
+    'summary': summary,
+    'changedFiles': changedFiles,
+    'warnings': warnings,
+    'validationSteps': validationSteps,
+    'meta': meta,
+    // Backward-compatible alias while older callers still expect proposalId.
+    'proposalId': executionId,
   };
 }
 

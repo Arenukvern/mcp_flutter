@@ -187,27 +187,80 @@ final class _CodexIntegrationHarness {
     );
     print('[codex-test] resolving via codex');
 
-    LiveEditResolutionProposal proposal;
+    final resolutionRequest = LiveEditResolutionRequest(
+      sessionId: request.sessionId,
+      bubbleId: request.effectiveBubbleId,
+      backendId: backendId,
+      workingDirectory: workingDirectory,
+      instructionText: request.effectiveInstructionText,
+      primarySelection: _rewriteSelection(request.effectivePrimarySelection),
+      selectedWidgets: request.effectiveSelectedWidgets
+          .map(_rewriteSelection)
+          .whereType<LiveEditSelection>()
+          .toList(growable: false),
+      sourceTargets: request.sourceTargets,
+      stagedPropertyChanges: request.effectiveStagedPropertyChanges,
+      applyMode: request.applyMode,
+      intentText: request.intentText,
+      draftChanges: request.draftChanges,
+      selection: _rewriteSelection(request.selection),
+      meta: const <String, Object?>{
+        'integrationTest': true,
+        'driver': 'flutter_integration_test',
+      },
+    );
+    final promptText = service.buildResolvedPrompt(resolutionRequest);
+    request.onEvent?.call(
+      LiveEditRuntimeEvent(
+        kind: LiveEditRuntimeEventKind.debug,
+        message: 'Resolved backend prompt captured.',
+        details: <String>[
+          ...debugDetails,
+          'Prompt bytes: ${promptText.length}',
+        ],
+        promptText: promptText,
+        debugOnly: true,
+      ),
+    );
     try {
-      proposal = await service.resolve(
-        LiveEditResolutionRequest(
-          sessionId: request.sessionId,
-          backendId: backendId,
-          workingDirectory: workingDirectory,
-          intentText: request.intentText,
-          draftChanges: request.draftChanges,
-          selection: _rewriteSelection(request.selection),
-          meta: const <String, Object?>{
-            'integrationTest': true,
-            'driver': 'flutter_integration_test',
-          },
+      final execution = await service.executeDirectApply(resolutionRequest);
+      final executionPlan = service.buildExecutionPlanForExecution(
+        request: resolutionRequest,
+        execution: execution,
+      );
+      request.onEvent?.call(
+        LiveEditRuntimeEvent(
+          kind: LiveEditRuntimeEventKind.codex,
+          message: 'Codex applied the requested heading change.',
+          details: <String>[execution.summary, ...execution.changedFiles],
         ),
       );
+      request.onEvent?.call(
+        LiveEditRuntimeEvent(
+          kind: LiveEditRuntimeEventKind.debug,
+          message: 'Execution result received.',
+          details: <String>[
+            'Execution: ${execution.executionId}',
+            'Backend: ${execution.backendId}',
+            ...execution.changedFiles,
+          ],
+          debugOnly: true,
+        ),
+      );
+      print(
+        '[codex-test] direct apply complete files=${execution.changedFiles.length}',
+      );
+      return <String, Object?>{
+        'proposalId': execution.executionId,
+        'executionPlan': executionPlan.toJson(),
+        'executionResult': execution.toJson(),
+        'result': execution.toJson(),
+      };
     } on LiveEditAgentException catch (error) {
       request.onEvent?.call(
         LiveEditRuntimeEvent(
           kind: LiveEditRuntimeEventKind.debug,
-          message: 'Resolve request failed.',
+          message: 'Direct apply request failed.',
           details: <String>[
             ...debugDetails,
             'Error: ${_errorMessageWithDetails(error.message, details: error.details)}',
@@ -224,94 +277,8 @@ final class _CodexIntegrationHarness {
       request.onEvent?.call(
         LiveEditRuntimeEvent(
           kind: LiveEditRuntimeEventKind.debug,
-          message: 'Resolve request failed.',
+          message: 'Direct apply request failed.',
           details: <String>[...debugDetails, 'Error: $error'],
-          debugOnly: true,
-        ),
-      );
-      return _failureResponse('$error');
-    }
-
-    request.onEvent?.call(
-      LiveEditRuntimeEvent(
-        kind: LiveEditRuntimeEventKind.codex,
-        message: 'Codex produced a proposal for the selected heading.',
-        details: <String>[proposal.summary],
-      ),
-    );
-    request.onEvent?.call(
-      LiveEditRuntimeEvent(
-        kind: LiveEditRuntimeEventKind.debug,
-        message: 'Proposal decoded.',
-        details: <String>[
-          'Proposal: ${proposal.proposalId}',
-          'Backend: ${proposal.backendId}',
-        ],
-        debugOnly: true,
-      ),
-    );
-    print('[codex-test] resolve complete proposal=${proposal.proposalId}');
-    final executionPlan = service.buildExecutionPlan(proposal.proposalId);
-
-    request.onEvent?.call(
-      LiveEditRuntimeEvent(
-        kind: LiveEditRuntimeEventKind.codex,
-        message: 'Applying Codex proposal to the temp workspace.',
-        details: <String>['Workspace: $workingDirectory'],
-      ),
-    );
-    request.onEvent?.call(
-      LiveEditRuntimeEvent(
-        kind: LiveEditRuntimeEventKind.debug,
-        message: 'Apply dispatched.',
-        details: <String>[
-          'Proposal: ${proposal.proposalId}',
-          'Workspace: $workingDirectory',
-        ],
-        debugOnly: true,
-      ),
-    );
-    print('[codex-test] applying proposal=${proposal.proposalId}');
-    try {
-      final result = await service.applyProposal(
-        proposal.proposalId,
-        workingDirectory: workingDirectory,
-      );
-      request.onEvent?.call(
-        LiveEditRuntimeEvent(
-          kind: LiveEditRuntimeEventKind.codex,
-          message: 'Codex finished writing the temp workspace patch.',
-          details: result.changedFiles,
-        ),
-      );
-      request.onEvent?.call(
-        LiveEditRuntimeEvent(
-          kind: LiveEditRuntimeEventKind.debug,
-          message: 'Apply result received.',
-          details: <String>[
-            'Proposal: ${result.proposalId}',
-            ...result.changedFiles,
-          ],
-          debugOnly: true,
-        ),
-      );
-      print('[codex-test] apply complete files=${result.changedFiles.length}');
-      return <String, Object?>{
-        'proposalId': result.proposalId,
-        'executionPlan': executionPlan.toJson(),
-        'proposal': proposal.toJson(),
-        'result': result.toJson(),
-      };
-    } on Exception catch (error) {
-      request.onEvent?.call(
-        LiveEditRuntimeEvent(
-          kind: LiveEditRuntimeEventKind.debug,
-          message: 'Apply request failed.',
-          details: <String>[
-            'Proposal: ${proposal.proposalId}',
-            'Workspace: $workingDirectory',
-            'Error: $error',
-          ],
           debugOnly: true,
         ),
       );

@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_live_edit_agent/flutter_live_edit_agent.dart';
 import 'package:flutter_live_edit_toolkit/flutter_live_edit_toolkit.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -9,6 +12,13 @@ Finder _semanticsId(final String id) => find.byWidgetPredicate(
   (final widget) => widget is Semantics && widget.properties.identifier == id,
   description: 'Semantics identifier $id',
 );
+
+Finder _panelScrollable() => find
+    .descendant(
+      of: _semanticsId('live_edit_panel'),
+      matching: find.byType(Scrollable),
+    )
+    .first;
 
 Future<void> _pumpUntil(
   final WidgetTester tester,
@@ -148,6 +158,137 @@ void main() {
     expect(find.textContaining('No draft', findRichText: true), findsNothing);
   });
 
+  testWidgets('debug panel shows the exact resolved backend prompt', (
+    final tester,
+  ) async {
+    final binding = IntegrationTestWidgetsFlutterBinding.instance;
+    await binding.setSurfaceSize(const Size(8000, 2000));
+    addTearDown(() async {
+      app.debugLiveEditOrchestratorOverride = null;
+      await binding.setSurfaceSize(null);
+    });
+
+    final agentService = LiveEditAgentService();
+    final orchestrator = LiveEditOrchestrator(
+      applyDraftDelegate: (final request) async {
+        final resolutionRequest = LiveEditResolutionRequest(
+          sessionId: request.sessionId,
+          bubbleId: request.effectiveBubbleId,
+          backendId: request.backendId ?? 'codex_exec',
+          workingDirectory: Directory.current.path,
+          instructionText: request.effectiveInstructionText,
+          primarySelection: request.effectivePrimarySelection,
+          selectedWidgets: request.effectiveSelectedWidgets,
+          sourceTargets: request.sourceTargets,
+          stagedPropertyChanges: request.effectiveStagedPropertyChanges,
+          applyMode: request.applyMode,
+          intentText: request.intentText,
+          draftChanges: request.draftChanges,
+          selection: request.selection,
+          meta: const <String, Object?>{
+            'integrationTest': true,
+            'driver': 'live_edit_test',
+          },
+        );
+        final promptText = agentService.buildResolvedPrompt(resolutionRequest);
+        request.onEvent?.call(
+          LiveEditRuntimeEvent(
+            kind: LiveEditRuntimeEventKind.debug,
+            message: 'Resolved backend prompt captured.',
+            promptText: promptText,
+            debugOnly: true,
+          ),
+        );
+        return <String, Object?>{
+          'proposalId': 'prompt-debug-proposal',
+          'executionPlan': <String, Object?>{
+            'proposalId': 'prompt-debug-proposal',
+            'title': 'Apply this bubble change',
+            'summary': 'Persist the selected heading text from the AI prompt.',
+            'selectedNode': 'Text',
+            'requestedChanges': <String>[request.intentText ?? ''],
+            'affectedFiles': <String>['lib/main.dart'],
+            'confidence': 0.88,
+            'riskNotes': const <String>[],
+            'agentInstruction': 'Persist the selected heading text.',
+          },
+          'executionResult': <String, Object?>{
+            'executionId': 'prompt-debug-proposal',
+            'backendId': 'codex_exec',
+            'summary': 'Persist the selected heading text from the AI prompt.',
+            'changedFiles': <String>['lib/main.dart'],
+            'warnings': const <String>[],
+            'validationSteps': const <String>[],
+          },
+          'result': <String, Object?>{
+            'executionId': 'prompt-debug-proposal',
+            'backendId': 'codex_exec',
+            'summary': 'Persist the selected heading text from the AI prompt.',
+            'changedFiles': <String>['lib/main.dart'],
+            'warnings': const <String>[],
+            'validationSteps': const <String>[],
+          },
+        };
+      },
+    );
+    app.debugLiveEditOrchestratorOverride = orchestrator;
+
+    await app.main();
+    await _pumpUntil(
+      tester,
+      () => find.text('MCP Toolkit Demo').evaluate().isNotEmpty,
+      timeout: const Duration(seconds: 30),
+    );
+
+    await tester.tap(find.widgetWithText(ActionChip, 'Live Edit'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+    await _pumpUntil(tester, () => orchestrator.overlayVisible);
+
+    final aboutHeading = _semanticsId('about_demo_heading');
+    await tester.tap(aboutHeading, warnIfMissed: false);
+    await tester.pumpAndSettle();
+    if (orchestrator.activeSelection == null) {
+      orchestrator.selectNode(tester.getCenter(aboutHeading));
+      await _pumpUntil(tester, () => orchestrator.activeSelection != null);
+    }
+
+    await tester.tap(_semanticsId('live_edit_panel_expand_button'));
+    await tester.pumpAndSettle();
+    orchestrator.setDebugModeEnabled(true);
+    orchestrator.updateAiComposer(
+      'Rewrite the selected heading in a cleaner style.',
+    );
+    await tester.pumpAndSettle();
+
+    await orchestrator.submitAiPrompt();
+    await tester.pumpAndSettle();
+    await _pumpUntil(
+      tester,
+      () => orchestrator.debugPromptForActiveSelection != null,
+    );
+
+    if (!orchestrator.panelExpanded) {
+      orchestrator.expandPanel();
+      await tester.pumpAndSettle();
+    }
+
+    expect(_semanticsId('live_edit_selected_prompt'), findsOneWidget);
+    await tester.tap(_semanticsId('live_edit_selected_prompt'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.textContaining('You are an agent working directly inside'),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining(
+        '"instructionText": "Rewrite the selected heading in a cleaner style."',
+      ),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('selection policy promotes the heading to app-owned Text', (
     final tester,
   ) async {
@@ -269,55 +410,58 @@ void main() {
     expect(orchestrator.marqueeRect, isNull);
   });
 
-  testWidgets('marquee includes all covered user widgets in the stateful branch', (
-    final tester,
-  ) async {
-    final binding = IntegrationTestWidgetsFlutterBinding.instance;
-    await binding.setSurfaceSize(const Size(8000, 2000));
-    addTearDown(() async {
-      app.debugLiveEditOrchestratorOverride = null;
-      await binding.setSurfaceSize(null);
-    });
+  testWidgets(
+    'marquee includes all covered user widgets in the stateful branch',
+    (final tester) async {
+      final binding = IntegrationTestWidgetsFlutterBinding.instance;
+      await binding.setSurfaceSize(const Size(8000, 2000));
+      addTearDown(() async {
+        app.debugLiveEditOrchestratorOverride = null;
+        await binding.setSurfaceSize(null);
+      });
 
-    final orchestrator = LiveEditOrchestrator();
-    app.debugLiveEditOrchestratorOverride = orchestrator;
+      final orchestrator = LiveEditOrchestrator();
+      app.debugLiveEditOrchestratorOverride = orchestrator;
 
-    await app.main();
-    await _pumpUntil(
-      tester,
-      () => find.text('MCP Toolkit Demo').evaluate().isNotEmpty,
-      timeout: const Duration(seconds: 30),
-    );
+      await app.main();
+      await _pumpUntil(
+        tester,
+        () => find.text('MCP Toolkit Demo').evaluate().isNotEmpty,
+        timeout: const Duration(seconds: 30),
+      );
 
-    await tester.tap(find.widgetWithText(ActionChip, 'Live Edit'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
-    await _pumpUntil(tester, () => orchestrator.overlayVisible);
+      await tester.tap(find.widgetWithText(ActionChip, 'Live Edit'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+      await _pumpUntil(tester, () => orchestrator.overlayVisible);
 
-    final dragStart =
-        tester.getTopLeft(_semanticsId('counter_demo_icon')) -
-        const Offset(8, 8);
-    final dragEnd =
-        tester.getBottomRight(_semanticsId('stateful_counter_increment_button')) +
-        const Offset(8, 8);
-    final gesture = await tester.startGesture(
-      dragStart,
-      kind: PointerDeviceKind.mouse,
-    );
-    await gesture.moveTo(dragEnd);
-    await gesture.up();
-    await tester.pumpAndSettle();
+      final dragStart =
+          tester.getTopLeft(_semanticsId('counter_demo_icon')) -
+          const Offset(8, 8);
+      final dragEnd =
+          tester.getBottomRight(
+            _semanticsId('stateful_counter_increment_button'),
+          ) +
+          const Offset(8, 8);
+      final gesture = await tester.startGesture(
+        dragStart,
+        kind: PointerDeviceKind.mouse,
+      );
+      await gesture.moveTo(dragEnd);
+      await gesture.up();
+      await tester.pumpAndSettle();
 
-    final widgetTypes = orchestrator.activeMultiSelection
-        .map((final selection) => selection.widgetType)
-        .toSet();
-    expect(widgetTypes, contains('Icon'));
-    expect(widgetTypes, contains('Text'));
-    expect(widgetTypes, contains('ElevatedButton'));
-    expect(widgetTypes, contains('StatefulCounterWidget'));
-    expect(widgetTypes, isNot(contains('Row')));
-    expect(widgetTypes, isNot(contains('Column')));
-    expect(widgetTypes, isNot(contains('Padding')));
-    expect(widgetTypes, isNot(contains('Container')));
-  });
+      final widgetTypes = orchestrator.activeMultiSelection
+          .map((final selection) => selection.widgetType)
+          .toSet();
+      expect(widgetTypes, contains('Icon'));
+      expect(widgetTypes, contains('Text'));
+      expect(widgetTypes, contains('ElevatedButton'));
+      expect(widgetTypes, contains('StatefulCounterWidget'));
+      expect(widgetTypes, isNot(contains('Row')));
+      expect(widgetTypes, isNot(contains('Column')));
+      expect(widgetTypes, isNot(contains('Padding')));
+      expect(widgetTypes, isNot(contains('Container')));
+    },
+  );
 }

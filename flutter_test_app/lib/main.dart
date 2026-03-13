@@ -447,28 +447,76 @@ Future<Map<String, Object?>> _liveEditDefaultApplyDelegate(
     ),
   );
 
-  LiveEditResolutionProposal proposal;
+  final resolutionRequest = LiveEditResolutionRequest(
+    sessionId: request.sessionId,
+    bubbleId: request.effectiveBubbleId,
+    backendId: backendId,
+    workingDirectory: workingDirectory,
+    instructionText: request.effectiveInstructionText,
+    primarySelection: request.effectivePrimarySelection,
+    selectedWidgets: request.effectiveSelectedWidgets,
+    sourceTargets: request.sourceTargets,
+    stagedPropertyChanges: request.effectiveStagedPropertyChanges,
+    applyMode: request.applyMode,
+    intentText: request.intentText,
+    draftChanges: request.draftChanges,
+    selection: request.selection,
+    meta: const <String, Object?>{
+      'app': 'test_app',
+      'driver': 'live_edit_host',
+    },
+  );
+  final promptText = _liveEditAgentService.buildResolvedPrompt(
+    resolutionRequest,
+  );
+  request.onEvent?.call(
+    LiveEditRuntimeEvent(
+      kind: LiveEditRuntimeEventKind.debug,
+      message: 'Resolved backend prompt captured.',
+      details: <String>[...debugDetails, 'Prompt bytes: ${promptText.length}'],
+      promptText: promptText,
+      debugOnly: true,
+    ),
+  );
   try {
-    proposal = await _liveEditAgentService.resolve(
-      LiveEditResolutionRequest(
-        sessionId: request.sessionId,
-        backendId: backendId,
-        workingDirectory: workingDirectory,
-        intentText: request.intentText,
-        draftChanges: request.draftChanges,
-        selection: request.selection,
-        meta: const <String, Object?>{
-          'app': 'test_app',
-          'driver': 'live_edit_host',
-        },
-      ),
+    final execution = await _liveEditAgentService.executeDirectApply(
+      resolutionRequest,
       onStreamEvent: (final event) => _emitInferenceStreamEvent(request, event),
     );
+    final executionPlan = _liveEditAgentService.buildExecutionPlanForExecution(
+      request: resolutionRequest,
+      execution: execution,
+    );
+    request.onEvent?.call(
+      LiveEditRuntimeEvent(
+        kind: LiveEditRuntimeEventKind.codex,
+        message: '$backendLabel applied this bubble change.',
+        details: <String>[execution.summary, ...execution.changedFiles.take(4)],
+      ),
+    );
+    request.onEvent?.call(
+      LiveEditRuntimeEvent(
+        kind: LiveEditRuntimeEventKind.debug,
+        message: 'Execution result received.',
+        details: <String>[
+          'Execution: ${execution.executionId}',
+          'Backend: ${execution.backendId}',
+          ...execution.changedFiles.take(4),
+        ],
+        debugOnly: true,
+      ),
+    );
+    return <String, Object?>{
+      'proposalId': execution.executionId,
+      'executionPlan': executionPlan.toJson(),
+      'executionResult': execution.toJson(),
+      'result': execution.toJson(),
+    };
   } on LiveEditAgentException catch (error) {
     request.onEvent?.call(
       LiveEditRuntimeEvent(
         kind: LiveEditRuntimeEventKind.debug,
-        message: 'Resolve request failed.',
+        message: 'Direct apply request failed.',
         details: <String>[
           ...debugDetails,
           'Error: ${_liveEditErrorMessage(error.message, details: error.details)}',
@@ -485,94 +533,8 @@ Future<Map<String, Object?>> _liveEditDefaultApplyDelegate(
     request.onEvent?.call(
       LiveEditRuntimeEvent(
         kind: LiveEditRuntimeEventKind.debug,
-        message: 'Resolve request failed.',
+        message: 'Direct apply request failed.',
         details: <String>[...debugDetails, 'Error: $error'],
-        debugOnly: true,
-      ),
-    );
-    return _liveEditFailureResponse('$error');
-  }
-
-  request.onEvent?.call(
-    LiveEditRuntimeEvent(
-      kind: LiveEditRuntimeEventKind.codex,
-      message: '$backendLabel returned a proposal.',
-      details: <String>[proposal.summary, ...proposal.changedFiles.take(4)],
-    ),
-  );
-  request.onEvent?.call(
-    LiveEditRuntimeEvent(
-      kind: LiveEditRuntimeEventKind.debug,
-      message: 'Proposal decoded.',
-      details: <String>[
-        'Proposal: ${proposal.proposalId}',
-        'Backend: ${proposal.backendId}',
-        ...proposal.changedFiles.take(4),
-      ],
-      debugOnly: true,
-    ),
-  );
-  final executionPlan = _liveEditAgentService.buildExecutionPlan(
-    proposal.proposalId,
-  );
-
-  request.onEvent?.call(
-    LiveEditRuntimeEvent(
-      kind: LiveEditRuntimeEventKind.codex,
-      message: 'Applying $backendLabel patch to source.',
-      details: <String>['Workspace: $workingDirectory'],
-    ),
-  );
-  request.onEvent?.call(
-    LiveEditRuntimeEvent(
-      kind: LiveEditRuntimeEventKind.debug,
-      message: 'Apply dispatched.',
-      details: <String>[
-        'Proposal: ${proposal.proposalId}',
-        'Workspace: $workingDirectory',
-      ],
-      debugOnly: true,
-    ),
-  );
-  try {
-    final result = await _liveEditAgentService.applyProposal(
-      proposal.proposalId,
-      workingDirectory: workingDirectory,
-    );
-    request.onEvent?.call(
-      LiveEditRuntimeEvent(
-        kind: LiveEditRuntimeEventKind.codex,
-        message: '$backendLabel finished writing source changes.',
-        details: result.changedFiles,
-      ),
-    );
-    request.onEvent?.call(
-      LiveEditRuntimeEvent(
-        kind: LiveEditRuntimeEventKind.debug,
-        message: 'Apply result received.',
-        details: <String>[
-          'Proposal: ${result.proposalId}',
-          ...result.changedFiles,
-        ],
-        debugOnly: true,
-      ),
-    );
-    return <String, Object?>{
-      'proposalId': result.proposalId,
-      'executionPlan': executionPlan.toJson(),
-      'proposal': proposal.toJson(),
-      'result': result.toJson(),
-    };
-  } on Exception catch (error) {
-    request.onEvent?.call(
-      LiveEditRuntimeEvent(
-        kind: LiveEditRuntimeEventKind.debug,
-        message: 'Apply request failed.',
-        details: <String>[
-          'Proposal: ${proposal.proposalId}',
-          'Workspace: $workingDirectory',
-          'Error: $error',
-        ],
         debugOnly: true,
       ),
     );
@@ -768,7 +730,7 @@ class _HeaderSection extends StatelessWidget {
                 Semantics(
                   identifier: 'about_demo_heading',
                   child: Text(
-                    'Hello Live Flutter Editing',
+                    'Hello Live Editing in Flutter',
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ),

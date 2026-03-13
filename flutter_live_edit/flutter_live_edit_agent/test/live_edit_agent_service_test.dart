@@ -330,7 +330,7 @@ void main() {
       });
     });
 
-    test('resolves structured proposal and applies files', () async {
+    test('executes direct apply and returns changed files', () async {
       final tempDir = await Directory.systemTemp.createTemp('live_edit_agent');
       addTearDown(() => tempDir.delete(recursive: true));
 
@@ -341,7 +341,7 @@ void main() {
         ),
       );
 
-      final proposal = await service.resolve(
+      final result = await service.executeDirectApply(
         LiveEditResolutionRequest(
           sessionId: 'session-1',
           workingDirectory: tempDir.path,
@@ -355,16 +355,9 @@ void main() {
           ],
         ),
       );
-
-      final result = await service.applyProposal(
-        proposal.proposalId,
-        workingDirectory: tempDir.path,
-      );
-      final writtenFile = File('${tempDir.path}/lib/main.dart');
-
-      expect(result.status, LiveEditResolutionStatus.applied);
-      expect(writtenFile.existsSync(), isTrue);
-      expect(writtenFile.readAsStringSync(), contains('width: 140'));
+      expect(result.executionId, 'proposal-1');
+      expect(result.backendId, 'fake');
+      expect(result.changedFiles, contains('lib/main.dart'));
     });
 
     test('persists proposal state across service instances', () async {
@@ -513,9 +506,7 @@ void main() {
       expect(request.metadata['requestMode'], 'prompt-only');
       expect(
         request.prompt,
-        contains(
-          'Prompt-only requests are valid when intentText is present, even if draftChanges is empty.',
-        ),
+        contains('Implement the requested UI change immediately'),
       );
     });
 

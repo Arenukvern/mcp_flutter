@@ -651,7 +651,8 @@ final class _MarqueeCandidateCacheEntry {
   final bool isUserAuthored;
   final LiveEditBounds? bounds;
 
-  bool get isVisualCandidate => isUserAuthored && !isStructural && bounds != null;
+  bool get isVisualCandidate =>
+      isUserAuthored && !isStructural && bounds != null;
 }
 
 _SelectionCandidateMetadata _selectionMetadataForElement(
@@ -1171,6 +1172,31 @@ final class LiveEditController extends ChangeNotifier {
     };
   }
 
+  Map<String, Object?> discardDraftNodes({
+    required final List<String> nodeIds,
+    final String? sessionId,
+  }) {
+    final session = _requireSession(sessionId);
+    final normalized = nodeIds.where(_hasText).toSet();
+    if (normalized.isEmpty) {
+      return discardDraft(sessionId: session.sessionId);
+    }
+    _revertExactPreview(session, nodeIds: normalized);
+    session.draftChanges.removeWhere(
+      (final draft) => normalized.contains(draft.nodeId),
+    );
+    session.meaningfulNodeIds.removeAll(normalized);
+    session.lastTouchedAt = DateTime.now().toUtc();
+    notifyListeners();
+    return <String, Object?>{
+      'sessionId': session.sessionId,
+      'discarded': true,
+      'draftChanges': session.draftChanges
+          .map((final draft) => draft.toJson())
+          .toList(growable: false),
+    };
+  }
+
   Map<String, Object?> commitDraft({final String? sessionId}) {
     final session = _requireSession(sessionId);
     session.draftChanges.clear();
@@ -1181,6 +1207,35 @@ final class LiveEditController extends ChangeNotifier {
       'sessionId': session.sessionId,
       'committed': true,
       'draftChanges': const <Object?>[],
+    };
+  }
+
+  Map<String, Object?> commitDraftNodes({
+    required final List<String> nodeIds,
+    final String? sessionId,
+  }) {
+    final session = _requireSession(sessionId);
+    final normalized = nodeIds.where(_hasText).toSet();
+    if (normalized.isEmpty) {
+      return commitDraft(sessionId: session.sessionId);
+    }
+    session.draftChanges.removeWhere(
+      (final draft) => normalized.contains(draft.nodeId),
+    );
+    session.originalExactValues.removeWhere((final key, final _) {
+      final separator = key.indexOf('::');
+      final nodeId = separator < 0 ? key : key.substring(0, separator);
+      return normalized.contains(nodeId);
+    });
+    session.meaningfulNodeIds.removeAll(normalized);
+    session.lastTouchedAt = DateTime.now().toUtc();
+    notifyListeners();
+    return <String, Object?>{
+      'sessionId': session.sessionId,
+      'committed': true,
+      'draftChanges': session.draftChanges
+          .map((final draft) => draft.toJson())
+          .toList(growable: false),
     };
   }
 
@@ -1656,11 +1711,13 @@ final class LiveEditController extends ChangeNotifier {
     }
     final hit = hits[resolvedIndex];
     final hitNodeId =
-        WidgetInspectorService.instance.toId(hit.element, session.objectGroup) ??
+        WidgetInspectorService.instance.toId(
+          hit.element,
+          session.objectGroup,
+        ) ??
         '';
     final tracked = session.trackedSelections[hitNodeId];
-    final selection =
-        session.multiSelections.length > 1 && tracked != null
+    final selection = session.multiSelections.length > 1 && tracked != null
         ? _hydrateTrackedSelection(
             session: session,
             tracked: tracked,
@@ -1827,7 +1884,10 @@ final class LiveEditController extends ChangeNotifier {
     final cached = session.marqueeCache[hit.element];
     final nodeId =
         cached?.nodeId ??
-        WidgetInspectorService.instance.toId(hit.element, session.objectGroup) ??
+        WidgetInspectorService.instance.toId(
+          hit.element,
+          session.objectGroup,
+        ) ??
         'live_edit_marquee_${session.sessionId}_${hit.element.hashCode}';
     final widgetType = hit.element.widget.runtimeType.toString();
     final entry = _MarqueeCandidateCacheEntry(
@@ -2177,10 +2237,16 @@ final class LiveEditController extends ChangeNotifier {
     );
   }
 
-  void _revertExactPreview(final _LiveEditSessionState session) {
+  void _revertExactPreview(
+    final _LiveEditSessionState session, {
+    final Set<String>? nodeIds,
+  }) {
     for (final entry in session.originalExactValues.entries) {
       final parts = entry.key.split('::');
       if (parts.length != 2) {
+        continue;
+      }
+      if (nodeIds != null && !nodeIds.contains(parts.first)) {
         continue;
       }
       final tracked = session.trackedSelections[parts.first];
@@ -2235,7 +2301,15 @@ final class LiveEditController extends ChangeNotifier {
           }
       }
     }
-    session.originalExactValues.clear();
+    if (nodeIds == null) {
+      session.originalExactValues.clear();
+    } else {
+      session.originalExactValues.removeWhere((final key, final _) {
+        final separator = key.indexOf('::');
+        final nodeId = separator < 0 ? key : key.substring(0, separator);
+        return nodeIds.contains(nodeId);
+      });
+    }
   }
 
   bool _isMeaningfulChange(
@@ -2349,7 +2423,6 @@ final class LiveEditController extends ChangeNotifier {
   }) {
     if (session.selectedElement != null && session.selectedElement != element) {
       _revertExactPreview(session);
-      session.draftChanges.clear();
     }
 
     final selection = _buildSelection(

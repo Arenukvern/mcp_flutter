@@ -13,11 +13,11 @@ String _agentInstruction(
   final LiveEditResolutionRequest? request,
 ) {
   final requestedChanges =
-      (request?.draftChanges ?? const <LiveEditDraftChange>[])
+      (request?.effectiveStagedPropertyChanges ?? const <LiveEditDraftChange>[])
           .map((final change) => '${change.propertyId}=${change.targetValue}')
           .join(', ');
-  final intentText = request?.intentText?.trim();
-  final widgetType = request?.selection?.widgetType.trim();
+  final intentText = request?.effectiveInstructionText?.trim();
+  final widgetType = request?.effectivePrimarySelection?.widgetType.trim();
   final summary = proposal.summary.trim();
   final parts = <String>[
     if (_hasText(widgetType)) 'Update $widgetType',
@@ -39,29 +39,46 @@ List<Map<String, Object?>> _asMapList(final Object? value) {
 Map<String, Object?> _buildPromptRequest(
   final LiveEditResolutionRequest request,
 ) {
+  final primarySelection = request.effectivePrimarySelection;
   final promptRequest = <String, Object?>{
     'sessionId': request.sessionId,
+    'applyMode': request.applyMode.wireName,
     'workingDirectory': request.workingDirectory,
-    'draftChanges': request.draftChanges
+    'stagedPropertyChanges': request.effectiveStagedPropertyChanges
         .map((final change) => change.toJson())
         .toList(growable: false),
   };
 
-  final selection = request.selection;
-  if (selection != null) {
-    promptRequest['selection'] = _summarizeSelection(
-      selection,
+  if (_hasText(request.effectiveBubbleId)) {
+    promptRequest['bubbleId'] = request.effectiveBubbleId;
+  }
+  if (_hasText(request.effectiveInstructionText)) {
+    promptRequest['instructionText'] = request.effectiveInstructionText;
+  }
+  if (primarySelection != null) {
+    promptRequest['primarySelection'] = _summarizeSelection(
+      primarySelection,
       workingDirectory: request.workingDirectory,
     );
+  }
+  final selectedWidgets = request.effectiveSelectedWidgets;
+  if (selectedWidgets.isNotEmpty) {
+    promptRequest['selectedWidgets'] = _summarizeSelectedWidgets(
+      selectedWidgets,
+      workingDirectory: request.workingDirectory,
+    );
+  }
+  final sourceTargets = _sourceTargetsForRequest(request);
+  if (sourceTargets.isNotEmpty) {
+    promptRequest['sourceTargets'] = sourceTargets
+        .map((final target) => target.toJson())
+        .toList(growable: false);
   }
   if (_hasText(request.backendId)) {
     promptRequest['backendId'] = request.backendId;
   }
   if (request.inferenceConfig != null) {
     promptRequest['inferenceConfig'] = request.inferenceConfig!.toJson();
-  }
-  if (_hasText(request.intentText)) {
-    promptRequest['intentText'] = request.intentText;
   }
   if (request.evidence.isNotEmpty) {
     promptRequest['evidence'] = _summarizeEvidence(request.evidence);
@@ -193,11 +210,11 @@ List<String> _executionRequestedChanges(
   final LiveEditSelection? selection,
 ) {
   final requestedChanges = <String>[
-    ...(request?.draftChanges ?? const <LiveEditDraftChange>[]).map(
-      (final change) => _draftChangeSummary(change, selection),
-    ),
+    ...(request?.effectiveStagedPropertyChanges ??
+            const <LiveEditDraftChange>[])
+        .map((final change) => _draftChangeSummary(change, selection)),
   ];
-  final intentText = request?.intentText?.trim();
+  final intentText = request?.effectiveInstructionText?.trim();
   if (_hasText(intentText)) {
     requestedChanges.add(intentText!);
   }
@@ -205,7 +222,8 @@ List<String> _executionRequestedChanges(
 }
 
 bool _hasResolveIntent(final LiveEditResolutionRequest request) =>
-    request.draftChanges.isNotEmpty || _trimmedIntentText(request) != null;
+    request.effectiveStagedPropertyChanges.isNotEmpty ||
+    _trimmedIntentText(request) != null;
 
 bool _hasText(final String? value) => value != null && value.trim().isNotEmpty;
 
@@ -333,10 +351,15 @@ Map<String, Object?> _resolutionRequestSummary(
   'sessionId': request.sessionId,
   'backendId': backendId,
   'workingDirectory': request.workingDirectory,
-  'selectionNodeId': request.selection?.nodeId,
-  'draftChangeCount': request.draftChanges.length,
+  'bubbleId': request.effectiveBubbleId,
+  'selectionNodeId': request.effectivePrimarySelection?.nodeId,
+  'selectedWidgetCount': request.effectiveSelectedWidgets.length,
+  'draftChangeCount': request.effectiveStagedPropertyChanges.length,
   'intentTextPresent': _trimmedIntentText(request) != null,
-  'requestMode': request.draftChanges.isEmpty ? 'prompt-only' : 'draft-backed',
+  'applyMode': request.applyMode.wireName,
+  'requestMode': request.effectiveStagedPropertyChanges.isEmpty
+      ? 'prompt-only'
+      : 'draft-backed',
   if (request.inferenceConfig?.model != null)
     'inferenceModel': request.inferenceConfig!.model,
   if (request.inferenceConfig?.reasoningEffort != null)
@@ -545,6 +568,36 @@ Map<String, Object?> _summarizeSelection(
   return summary;
 }
 
+List<Map<String, Object?>> _summarizeSelectedWidgets(
+  final List<LiveEditSelection> selections, {
+  required final String workingDirectory,
+}) {
+  final summaries = selections
+      .take(6)
+      .map((final selection) {
+        final source = selection.source;
+        return <String, Object?>{
+          'nodeId': selection.nodeId,
+          'widgetType': selection.widgetType,
+          if (_hasText(source?.file))
+            'source': _summarizeSourceLocation(
+              source!,
+              workingDirectory: workingDirectory,
+            ),
+        };
+      })
+      .toList(growable: false);
+  if (selections.length > summaries.length) {
+    return <Map<String, Object?>>[
+      ...summaries,
+      <String, Object?>{
+        'truncatedWidgets': selections.length - summaries.length,
+      },
+    ];
+  }
+  return summaries;
+}
+
 Map<String, Object?> _summarizeSourceLocation(
   final LiveEditSourceLocation source, {
   required final String workingDirectory,
@@ -564,11 +617,47 @@ Map<String, Object?> _summarizeSourceLocation(
 }
 
 String? _trimmedIntentText(final LiveEditResolutionRequest request) {
-  final value = request.intentText?.trim();
+  final value = request.effectiveInstructionText?.trim();
   if (value == null || value.isEmpty) {
     return null;
   }
   return value;
+}
+
+List<LiveEditSourceTarget> _sourceTargetsForRequest(
+  final LiveEditResolutionRequest request,
+) {
+  if (request.sourceTargets.isNotEmpty) {
+    return request.sourceTargets;
+  }
+  final deduped = <String, LiveEditSourceTarget>{};
+  for (final selection in request.effectiveSelectedWidgets) {
+    final source = selection.source;
+    if (source == null) {
+      continue;
+    }
+    final normalizedPath = _normalizeFilePath(source.file);
+    if (!_hasText(normalizedPath)) {
+      continue;
+    }
+    final absolutePath = p.isAbsolute(normalizedPath!)
+        ? p.normalize(normalizedPath)
+        : p.normalize(p.join(request.workingDirectory, normalizedPath));
+    final workspacePath =
+        _isWithinWorkspace(absolutePath, request.workingDirectory)
+        ? p.relative(absolutePath, from: request.workingDirectory)
+        : null;
+    final key = workspacePath ?? absolutePath;
+    deduped[key] = LiveEditSourceTarget(
+      nodeId: selection.nodeId,
+      widgetType: selection.widgetType,
+      absolutePath: absolutePath,
+      workspacePath: workspacePath,
+      line: source.line,
+      column: source.column,
+    );
+  }
+  return deduped.values.toList(growable: false);
 }
 
 String? _validateResolutionRequest(final LiveEditResolutionRequest request) {
@@ -580,7 +669,7 @@ String? _validateResolutionRequest(final LiveEditResolutionRequest request) {
     return 'Live edit needs either draft changes or a prompt before the selected backend can resolve it.';
   }
 
-  final selection = request.selection;
+  final selection = request.effectivePrimarySelection;
   final source = selection?.source;
   if (selection == null || source == null) {
     return null;
@@ -888,6 +977,22 @@ final class LiveEditAgentService {
     final proposal = getProposal(proposalId);
     final changedFiles = <String>[];
 
+    if (proposal.filePatches.isEmpty) {
+      final directResult = LiveEditDirectApplyResult.fromJson(proposal.meta);
+      _proposalStatus[proposalId] = LiveEditResolutionStatus.applied;
+      _persistProposalState(proposalId);
+      return LiveEditResolutionResult(
+        proposalId: proposalId,
+        status: LiveEditResolutionStatus.applied,
+        changedFiles: directResult.changedFiles,
+        validation: <String, Object?>{
+          'writeCount': directResult.changedFiles.length,
+        },
+        warnings: directResult.warnings,
+        meta: directResult.meta,
+      );
+    }
+
     for (final filePatch in proposal.filePatches) {
       final targetPath = p.isAbsolute(filePatch.path)
           ? filePatch.path
@@ -912,7 +1017,7 @@ final class LiveEditAgentService {
   LiveEditExecutionPlan buildExecutionPlan(final String proposalId) {
     final proposal = getProposal(proposalId);
     final request = requestForProposal(proposalId);
-    final selection = request?.selection;
+    final selection = request?.effectivePrimarySelection;
     final requestedChanges = _executionRequestedChanges(request, selection);
     final riskNotes = <String>{
       ...proposal.riskFlags,
@@ -921,7 +1026,7 @@ final class LiveEditAgentService {
 
     return LiveEditExecutionPlan(
       proposalId: proposal.proposalId,
-      title: 'Apply live edit',
+      title: 'Apply this bubble change',
       summary: proposal.summary,
       selectedNode: _selectedNodeLabel(selection),
       requestedChanges: requestedChanges,
@@ -932,6 +1037,28 @@ final class LiveEditAgentService {
       meta: <String, Object?>{
         'backendId': proposal.backendId,
         'validationSteps': proposal.validationSteps,
+      },
+    );
+  }
+
+  LiveEditExecutionPlan buildExecutionPlanForExecution({
+    required final LiveEditResolutionRequest request,
+    required final LiveEditDirectApplyResult execution,
+  }) {
+    final selection = request.effectivePrimarySelection;
+    return LiveEditExecutionPlan(
+      proposalId: execution.executionId,
+      title: 'Apply this bubble change',
+      summary: execution.summary,
+      selectedNode: _selectedNodeLabel(selection),
+      requestedChanges: _executionRequestedChanges(request, selection),
+      affectedFiles: execution.changedFiles,
+      confidence: execution.changedFiles.isEmpty ? 0.4 : 0.85,
+      riskNotes: execution.warnings,
+      agentInstruction: execution.summary,
+      meta: <String, Object?>{
+        'backendId': execution.backendId,
+        'validationSteps': execution.validationSteps,
       },
     );
   }
@@ -972,42 +1099,28 @@ final class LiveEditAgentService {
     return _requests[proposalId];
   }
 
-  Future<LiveEditResolutionProposal> resolve(
+  String buildResolvedPrompt(final LiveEditResolutionRequest request) {
+    final resolved = _resolveRequestContext(request);
+    return _buildPrompt(request: resolved.$1, backendId: resolved.$2);
+  }
+
+  Future<LiveEditDirectApplyResult> executeDirectApply(
     final LiveEditResolutionRequest request, {
     final void Function(InferenceStructuredTextStreamEvent event)?
     onStreamEvent,
   }) async {
-    final requestValidationError = _validateResolutionRequest(request);
-    if (_hasText(requestValidationError)) {
-      throw LiveEditAgentException(
-        code: 'source_context_unavailable',
-        message: requestValidationError!,
-        details: request.toJson(),
-      );
-    }
-
-    final backendId = registry.resolveBackendId(
-      backendId: request.backendId,
-      sessionId: request.sessionId,
-    );
-    final effectiveInferenceConfig = registry.resolveInferenceConfig(
-      backendId: backendId,
-      sessionId: request.sessionId,
-      requestInferenceConfig: request.inferenceConfig,
-    );
+    final resolved = _resolveRequestContext(request);
+    final resolvedRequest = resolved.$1;
+    final backendId = resolved.$2;
+    final effectiveInferenceConfig = resolved.$3;
     final client = registry.clientFor(
       backendId: request.backendId,
       sessionId: request.sessionId,
-    );
-    final resolvedRequest = request.copyWith(
-      backendId: backendId,
-      inferenceConfig: effectiveInferenceConfig,
     );
     final requestSummary = _resolutionRequestSummary(
       resolvedRequest,
       backendId: backendId,
     );
-
     final prompt = _buildPrompt(request: resolvedRequest, backendId: backendId);
     final metadata = <String, dynamic>{
       ...requestSummary,
@@ -1028,7 +1141,7 @@ final class LiveEditAgentService {
     }
     final inferenceRequest = InferenceRequest(
       prompt: prompt,
-      outputSchema: LiveEditSchemas.resolutionProposal,
+      outputSchema: LiveEditSchemas.directApplyExecution,
       workingDirectory: resolvedRequest.workingDirectory,
       metadata: metadata,
     );
@@ -1056,7 +1169,7 @@ final class LiveEditAgentService {
 
     final rawOutput = Map<String, Object?>.from(inferenceResult.data!.output);
     final response = inferenceResult.data!;
-    final proposal = LiveEditResolutionProposal.fromJson(rawOutput).copyWith(
+    return LiveEditDirectApplyResult.fromJson(rawOutput).copyWith(
       backendId: backendId,
       meta: <String, Object?>{
         ..._normalizeMap(rawOutput['meta']),
@@ -1064,10 +1177,47 @@ final class LiveEditAgentService {
         'inferenceMeta': inferenceResult.meta,
         'warnings': <String>[...response.warnings, ...inferenceResult.warnings],
       },
+      warnings: <String>[
+        ...response.warnings,
+        ...inferenceResult.warnings,
+        ...switch (rawOutput['warnings']) {
+          final List warnings =>
+            warnings
+                .map((final warning) => '$warning')
+                .where((final warning) => warning.isNotEmpty),
+          _ => const <String>[],
+        },
+      ],
+    );
+  }
+
+  Future<LiveEditResolutionProposal> resolve(
+    final LiveEditResolutionRequest request, {
+    final void Function(InferenceStructuredTextStreamEvent event)?
+    onStreamEvent,
+  }) async {
+    final resolved = _resolveRequestContext(request);
+    final resolvedRequest = resolved.$1;
+    final execution = await executeDirectApply(
+      resolvedRequest,
+      onStreamEvent: onStreamEvent,
+    );
+    final proposal = LiveEditResolutionProposal(
+      proposalId: execution.executionId,
+      backendId: execution.backendId,
+      summary: execution.summary,
+      patch: '',
+      changedFiles: execution.changedFiles,
+      filePatches: const <LiveEditFilePatch>[],
+      expectedRuntimeEffects: const <String>[],
+      validationSteps: execution.validationSteps,
+      warnings: execution.warnings,
+      riskFlags: const <String>[],
+      meta: execution.toJson(),
     );
     _proposals[proposal.proposalId] = proposal;
     _requests[proposal.proposalId] = resolvedRequest;
-    _proposalStatus[proposal.proposalId] = LiveEditResolutionStatus.proposed;
+    _proposalStatus[proposal.proposalId] = LiveEditResolutionStatus.applied;
     _persistProposalState(proposal.proposalId);
     return proposal;
   }
@@ -1084,6 +1234,35 @@ final class LiveEditAgentService {
     );
   }
 
+  (LiveEditResolutionRequest, String, LiveEditInferenceConfig?)
+  _resolveRequestContext(final LiveEditResolutionRequest request) {
+    final requestValidationError = _validateResolutionRequest(request);
+    if (_hasText(requestValidationError)) {
+      throw LiveEditAgentException(
+        code: 'source_context_unavailable',
+        message: requestValidationError!,
+        details: request.toJson(),
+      );
+    }
+    final backendId = registry.resolveBackendId(
+      backendId: request.backendId,
+      sessionId: request.sessionId,
+    );
+    final effectiveInferenceConfig = registry.resolveInferenceConfig(
+      backendId: backendId,
+      sessionId: request.sessionId,
+      requestInferenceConfig: request.inferenceConfig,
+    );
+    return (
+      request.copyWith(
+        backendId: backendId,
+        inferenceConfig: effectiveInferenceConfig,
+      ),
+      backendId,
+      effectiveInferenceConfig,
+    );
+  }
+
   String _buildPrompt({
     required final LiveEditResolutionRequest request,
     required final String backendId,
@@ -1093,24 +1272,23 @@ final class LiveEditAgentService {
       '  ',
     ).convert(promptRequest);
     return '''
-You are resolving a Flutter live edit draft into real source changes inside a Dart/Flutter workspace.
+You are an agent working directly inside a Dart/Flutter workspace.
 
-Return JSON only and make it match the provided schema exactly.
+Implement the requested UI change immediately in the real source files, keep edits minimal, and leave the workspace hot-reload ready.
+
+Return only a compact JSON execution report that matches the schema.
 
 Rules:
-- Prompt-only requests are valid when intentText is present, even if draftChanges is empty.
+- Inspect the referenced files before editing.
 - Respect existing app abstractions, theme usage, and state management.
-- Prefer minimal edits that implement the draft intent.
-- Produce complete replacement contents for every changed file under filePatches[].content.
-- Always include a readable unified patch summary in patch.
-- If a request is ambiguous or risky, keep filePatches empty and explain it in warnings/riskFlags.
-- Do not invent unsupported backends or tooling assumptions.
-- Use the source location and workspace files to inspect the real implementation before proposing changes.
-- The request payload is intentionally summarized; treat it as guidance, not the complete widget tree dump.
+- Prefer the smallest edit that satisfies the request.
+- Use the primary selection and source targets as the main context; the widget summaries are intentionally compact.
+- If the request is ambiguous or risky, make no code changes and explain it in warnings.
+- Do not invent unsupported tooling assumptions or rewrite unrelated code.
 
 Active backend: $backendId
 
-Resolution request:
+Direct apply request:
 $requestJson
 ''';
   }
@@ -1258,6 +1436,13 @@ extension on LiveEditResolutionRequest {
     final String? sessionId,
     final String? workingDirectory,
     final List<LiveEditDraftChange>? draftChanges,
+    final String? bubbleId,
+    final String? instructionText,
+    final LiveEditSelection? primarySelection,
+    final List<LiveEditSelection>? selectedWidgets,
+    final List<LiveEditSourceTarget>? sourceTargets,
+    final List<LiveEditDraftChange>? stagedPropertyChanges,
+    final LiveEditApplyMode? applyMode,
     final LiveEditSelection? selection,
     final String? backendId,
     final LiveEditInferenceConfig? inferenceConfig,
@@ -1268,11 +1453,38 @@ extension on LiveEditResolutionRequest {
     sessionId: sessionId ?? this.sessionId,
     workingDirectory: workingDirectory ?? this.workingDirectory,
     draftChanges: draftChanges ?? this.draftChanges,
+    bubbleId: bubbleId ?? this.bubbleId,
+    instructionText: instructionText ?? this.instructionText,
+    primarySelection: primarySelection ?? this.primarySelection,
+    selectedWidgets: selectedWidgets ?? this.selectedWidgets,
+    sourceTargets: sourceTargets ?? this.sourceTargets,
+    stagedPropertyChanges: stagedPropertyChanges ?? this.stagedPropertyChanges,
+    applyMode: applyMode ?? this.applyMode,
     selection: selection ?? this.selection,
     backendId: backendId ?? this.backendId,
     inferenceConfig: inferenceConfig ?? this.inferenceConfig,
     intentText: intentText ?? this.intentText,
     evidence: evidence ?? this.evidence,
+    meta: meta ?? this.meta,
+  );
+}
+
+extension on LiveEditDirectApplyResult {
+  LiveEditDirectApplyResult copyWith({
+    final String? executionId,
+    final String? backendId,
+    final String? summary,
+    final List<String>? changedFiles,
+    final List<String>? warnings,
+    final List<String>? validationSteps,
+    final Map<String, Object?>? meta,
+  }) => LiveEditDirectApplyResult(
+    executionId: executionId ?? this.executionId,
+    backendId: backendId ?? this.backendId,
+    summary: summary ?? this.summary,
+    changedFiles: changedFiles ?? this.changedFiles,
+    warnings: warnings ?? this.warnings,
+    validationSteps: validationSteps ?? this.validationSteps,
     meta: meta ?? this.meta,
   );
 }
