@@ -992,7 +992,7 @@ class _HeaderSection extends StatelessWidget {
                 Semantics(
                   identifier: 'about_demo_heading',
                   child: Text(
-                    'MCP Toolkit Demo',
+                    'Cursor Live Edit in Flutter',
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ),

@@ -27,8 +27,7 @@ Finder _aiPromptField() => find.byWidgetPredicate(
 );
 
 Finder _propertyInputField() => find.byWidgetPredicate(
-  (final widget) =>
-      widget is TextField && widget.style?.fontSize == 11,
+  (final widget) => widget is TextField && widget.style?.fontSize == 11,
 );
 
 Finder _panelScrollable() => find
@@ -1340,6 +1339,94 @@ void main() {
     expect(orchestrator.activeSelection?.nodeId, alphaNodeId);
   });
 
+  testWidgets('done button appears only after apply and resolves bubble', (
+    final tester,
+  ) async {
+    final orchestrator = LiveEditOrchestrator(
+      applyDraftDelegate: (final request) async => <String, Object?>{
+        'proposalId': 'proposal-done',
+        'executionPlan': <String, Object?>{
+          'proposalId': 'proposal-done',
+          'title': 'Apply this bubble change',
+          'summary': 'Persist bubble edits.',
+          'selectedNode': 'Text',
+          'requestedChanges': <String>['Update text'],
+          'affectedFiles': <String>['lib/main.dart'],
+          'confidence': 0.9,
+          'riskNotes': const <String>[],
+          'agentInstruction': 'Update selected text.',
+        },
+        'executionResult': <String, Object?>{
+          'executionId': 'proposal-done',
+          'backendId': 'codex_exec',
+          'summary': 'Persist bubble edits.',
+          'changedFiles': <String>['lib/main.dart'],
+          'warnings': const <String>[],
+          'validationSteps': const <String>[],
+        },
+      },
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: FlutterLiveEditHost(
+          orchestrator: orchestrator,
+          child: const Scaffold(body: Center(child: Text('Target'))),
+        ),
+      ),
+    );
+
+    await tester.tap(find.byType(ActionChip));
+    await tester.pumpAndSettle();
+    await tester.tapAt(tester.getCenter(find.text('Target')));
+    await tester.pumpAndSettle();
+    if (orchestrator.activeSelection == null) {
+      orchestrator.selectNode(tester.getCenter(find.text('Target')));
+      await tester.pumpAndSettle();
+    }
+    await selectEditableCandidate(tester, orchestrator);
+    final property = orchestrator.activeSelection!.propertyGroups.firstWhere(
+      (final candidate) => candidate.editable,
+    );
+    final targetValue = switch (property.kind) {
+      LiveEditPropertyKind.boolean => !(property.value == true),
+      LiveEditPropertyKind.integer => 140,
+      LiveEditPropertyKind.number => 140.0,
+      _ when property.options.isNotEmpty => property.options.first,
+      _ => 'Updated',
+    };
+    orchestrator.updateDraft(property: property, targetValue: targetValue);
+    await tester.pumpAndSettle();
+
+    expect(_semanticsId('live_edit_bubble_done_button'), findsNothing);
+
+    await orchestrator.applyDraft();
+    await tester.pumpAndSettle();
+    if (orchestrator.activeSelection == null) {
+      orchestrator.selectNode(tester.getCenter(find.text('Target')));
+      await tester.pumpAndSettle();
+    }
+
+    expect(orchestrator.applyPhase, LiveEditApplyPhase.success);
+    expect(orchestrator.canResolveActiveBubble, isTrue);
+    final appliedScrollables = find.descendant(
+      of: _activeBubble(orchestrator),
+      matching: find.byType(ListView),
+    );
+    if (appliedScrollables.evaluate().isNotEmpty) {
+      await tester.drag(appliedScrollables.first, const Offset(0, -260));
+      await tester.pumpAndSettle();
+    }
+    expect(_semanticsId('live_edit_bubble_done_button'), findsOneWidget);
+
+    orchestrator.resolveActiveBubble();
+    await tester.pumpAndSettle();
+
+    expect(orchestrator.activeBubbleResolved, isTrue);
+    expect(_activeBubble(orchestrator), findsNothing);
+    expect(orchestrator.pinnedBubbleSummaries, isEmpty);
+    expect(_semanticsId('live_edit_bubble_done_button'), findsNothing);
+  });
+
   testWidgets('wait action only stages edits and does not dispatch', (
     final tester,
   ) async {
@@ -1871,60 +1958,61 @@ void main() {
     expect(orchestrator.pendingExecutionPlan, isNotNull);
   });
 
-  testWidgets('panel property editor keeps arrow keys inside focused text editing', (
-    final tester,
-  ) async {
-    final orchestrator = LiveEditOrchestrator();
-    await tester.pumpWidget(
-      MaterialApp(
-        home: FlutterLiveEditHost(
-          orchestrator: orchestrator,
-          child: const Scaffold(
-            body: Center(
-              child: SizedBox(width: 120, height: 80, child: Text('Target')),
+  testWidgets(
+    'panel property editor keeps arrow keys inside focused text editing',
+    (final tester) async {
+      final orchestrator = LiveEditOrchestrator();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: FlutterLiveEditHost(
+            orchestrator: orchestrator,
+            child: const Scaffold(
+              body: Center(
+                child: SizedBox(width: 120, height: 80, child: Text('Target')),
+              ),
             ),
           ),
         ),
-      ),
-    );
+      );
 
-    await tester.tap(find.byType(ActionChip));
-    await tester.pumpAndSettle();
-    await tester.tapAt(tester.getCenter(find.text('Target')));
-    await tester.pumpAndSettle();
-    await selectEditableCandidate(tester, orchestrator);
-    await tester.tap(_semanticsId('live_edit_panel_expand_button'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.byType(ActionChip));
+      await tester.pumpAndSettle();
+      await tester.tapAt(tester.getCenter(find.text('Target')));
+      await tester.pumpAndSettle();
+      await selectEditableCandidate(tester, orchestrator);
+      await tester.tap(_semanticsId('live_edit_panel_expand_button'));
+      await tester.pumpAndSettle();
 
-    final property = orchestrator.activeSelection!.propertyGroups.firstWhere(
-      (final candidate) =>
-          candidate.editable &&
-          (candidate.kind == LiveEditPropertyKind.string ||
-              candidate.kind == LiveEditPropertyKind.integer ||
-              candidate.kind == LiveEditPropertyKind.number),
-    );
-    orchestrator.focusProperty(property);
-    await tester.pumpAndSettle();
-    final selectedNodeId = orchestrator.activeSelection?.nodeId;
-    final field = _propertyInputField().first;
-    expect(field, findsOneWidget);
+      final property = orchestrator.activeSelection!.propertyGroups.firstWhere(
+        (final candidate) =>
+            candidate.editable &&
+            (candidate.kind == LiveEditPropertyKind.string ||
+                candidate.kind == LiveEditPropertyKind.integer ||
+                candidate.kind == LiveEditPropertyKind.number),
+      );
+      orchestrator.focusProperty(property);
+      await tester.pumpAndSettle();
+      final selectedNodeId = orchestrator.activeSelection?.nodeId;
+      final field = _propertyInputField().first;
+      expect(field, findsOneWidget);
 
-    await tester.showKeyboard(field);
-    await tester.pumpAndSettle();
-    await tester.enterText(field, 'Target label');
-    await tester.pumpAndSettle();
+      await tester.showKeyboard(field);
+      await tester.pumpAndSettle();
+      await tester.enterText(field, 'Target label');
+      await tester.pumpAndSettle();
 
-    final textField = tester.widget<TextField>(field);
-    final controller = textField.controller!;
-    controller.selection = const TextSelection.collapsed(offset: 6);
-    await tester.pump();
+      final textField = tester.widget<TextField>(field);
+      final controller = textField.controller!;
+      controller.selection = const TextSelection.collapsed(offset: 6);
+      await tester.pump();
 
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
-    await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+      await tester.pumpAndSettle();
 
-    expect(orchestrator.activeSelection?.nodeId, selectedNodeId);
-    expect(textField.enableInteractiveSelection, isTrue);
-  });
+      expect(orchestrator.activeSelection?.nodeId, selectedNodeId);
+      expect(textField.enableInteractiveSelection, isTrue);
+    },
+  );
 
   testWidgets('overlay arrow navigation still works outside text editing', (
     final tester,

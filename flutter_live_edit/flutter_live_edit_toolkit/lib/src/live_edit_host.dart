@@ -235,7 +235,8 @@ class _FlutterLiveEditHostState extends State<FlutterLiveEditHost> {
         actions: <Type, Action<Intent>>{
           _SelectParentIntent: CallbackAction<_SelectParentIntent>(
             onInvoke: (final _) {
-              if (_orchestrator.overlayVisible && !_editableTextHasPrimaryFocus) {
+              if (_orchestrator.overlayVisible &&
+                  !_editableTextHasPrimaryFocus) {
                 _orchestrator.selectParentCandidate();
               }
               return null;
@@ -243,7 +244,8 @@ class _FlutterLiveEditHostState extends State<FlutterLiveEditHost> {
           ),
           _SelectChildIntent: CallbackAction<_SelectChildIntent>(
             onInvoke: (final _) {
-              if (_orchestrator.overlayVisible && !_editableTextHasPrimaryFocus) {
+              if (_orchestrator.overlayVisible &&
+                  !_editableTextHasPrimaryFocus) {
                 _orchestrator.selectChildCandidate();
               }
               return null;
@@ -251,7 +253,8 @@ class _FlutterLiveEditHostState extends State<FlutterLiveEditHost> {
           ),
           _CycleCandidateIntent: CallbackAction<_CycleCandidateIntent>(
             onInvoke: (final intent) {
-              if (_orchestrator.overlayVisible && !_editableTextHasPrimaryFocus) {
+              if (_orchestrator.overlayVisible &&
+                  !_editableTextHasPrimaryFocus) {
                 _orchestrator.cycleSelectionCandidate(intent.delta);
               }
               return null;
@@ -287,7 +290,8 @@ class _FlutterLiveEditHostState extends State<FlutterLiveEditHost> {
                         child: _LauncherChip(orchestrator: _orchestrator),
                       ),
                       if (_orchestrator.overlayVisible &&
-                          _orchestrator.activeSelection != null)
+                          _orchestrator.activeSelection != null &&
+                          !_orchestrator.activeBubbleResolved)
                         _SelectionBubble(
                           orchestrator: _orchestrator,
                           viewportSize: constraints.biggest,
@@ -452,6 +456,15 @@ class _ApplyActions extends StatelessWidget {
         child: OutlinedButton(
           onPressed: orchestrator.applyAllBubbles,
           child: Text('Apply all (${orchestrator.pendingBubbleCount})'),
+        ),
+      ),
+    if (orchestrator.canResolveActiveBubble)
+      Semantics(
+        identifier: _actionId('done_button'),
+        button: true,
+        child: FilledButton.tonal(
+          onPressed: orchestrator.resolveActiveBubble,
+          child: const Text('Done'),
         ),
       ),
   ];

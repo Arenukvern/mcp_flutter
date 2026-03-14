@@ -374,6 +374,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   final Map<String, String> _debugPromptByNode = <String, String>{};
   final Map<String, _LiveEditBubbleState> _bubbleStateByNode =
       <String, _LiveEditBubbleState>{};
+  final Set<String> _resolvedBubbleNodeIds = <String>{};
 
   List<LiveEditDraftChange> get activeDraftChanges =>
       _activeBubbleState?.draftChanges ?? _draftChangesForActiveSelection();
@@ -555,6 +556,12 @@ final class LiveEditOrchestrator extends ChangeNotifier {
 
   bool get isWaitingForAgent =>
       bubbleStatusForActiveSelection == LiveEditBubbleStatus.waiting;
+  bool get activeBubbleResolved =>
+      _hasText(activeSelection?.nodeId) &&
+      _resolvedBubbleNodeIds.contains(activeSelection!.nodeId);
+  bool get canResolveActiveBubble =>
+      bubbleStatusForActiveSelection == LiveEditBubbleStatus.applied &&
+      _hasText(_bubbleIdForSelection(activeSelection));
 
   bool get deeperPickEnabled => _deeperPickEnabled;
 
@@ -709,6 +716,9 @@ final class LiveEditOrchestrator extends ChangeNotifier {
           _bubbleDisplayStateByNode[nodeId] ??
           LiveEditBubbleDisplayState.minimized;
       if (displayState != LiveEditBubbleDisplayState.minimized) {
+        continue;
+      }
+      if (_resolvedBubbleNodeIds.contains(nodeId)) {
         continue;
       }
       final label = selection?.widgetType ?? nodeId;
@@ -1057,6 +1067,35 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     await applyDraft(message: aiComposer);
   }
 
+  void resolveActiveBubble() {
+    final bubbleId = _bubbleIdForSelection(activeSelection);
+    if (!_hasText(bubbleId)) {
+      return;
+    }
+    _resolvedBubbleNodeIds.add(bubbleId!);
+    _bubbleDisplayStateByNode.remove(bubbleId);
+    _bubbleStatusByNode.remove(bubbleId);
+    _historyByNode.remove(bubbleId);
+    _activityByNode.remove(bubbleId);
+    _debugHistoryByNode.remove(bubbleId);
+    final promptKey = _debugPromptKey(nodeId: bubbleId);
+    if (_hasText(promptKey)) {
+      _debugPromptByNode.remove(promptKey);
+    }
+    _bubbleStateByNode.remove(bubbleId);
+    _trackedSelections.remove(bubbleId);
+    _pendingExecutionPlan = null;
+    _pendingProposalId = null;
+    _pendingNodeId = null;
+    _pendingPropertyId = null;
+    _lastError = null;
+    _applyPhase = LiveEditApplyPhase.idle;
+    _aiComposer = '';
+    _panelDisplayMode = LiveEditPanelDisplayMode.rail;
+    _editMode = LiveEditEditMode.inspect;
+    notifyListeners();
+  }
+
   void selectCandidateAt(final int index) {
     controller.selectCandidate(sessionId: activeSessionId, index: index);
     _restoreBubbleState(activeSelection?.nodeId);
@@ -1213,6 +1252,9 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   void updateAiComposer(final String value) {
     _aiComposer = value;
     final bubbleId = _bubbleIdForSelection(activeSelection);
+    if (_hasText(bubbleId) && value.trim().isNotEmpty) {
+      _resolvedBubbleNodeIds.remove(bubbleId);
+    }
     if (_hasText(bubbleId)) {
       final bubble = _ensureBubbleState(
         bubbleId!,
@@ -1335,6 +1377,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
                 LiveEditEditSurface.aiBubble
         ? LiveEditEditMode.ai
         : LiveEditEditMode.edit;
+    _resolvedBubbleNodeIds.remove(selection.nodeId);
     if (_hasText(selection.nodeId)) {
       _bubbleStatusByNode[selection.nodeId] = LiveEditBubbleStatus.editing;
       _bubbleDisplayStateByNode[selection.nodeId] =
@@ -1397,6 +1440,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     _lastError = null;
     _pendingNodeId = bubbleId;
     _pendingPropertyId = _activePropertyId;
+    _resolvedBubbleNodeIds.remove(bubbleId);
     _bubbleStatusByNode[bubbleId] = LiveEditBubbleStatus.waiting;
     _bubbleDisplayStateByNode[bubbleId] = LiveEditBubbleDisplayState.expanded;
     _bubbleStateByNode[bubbleId] =
