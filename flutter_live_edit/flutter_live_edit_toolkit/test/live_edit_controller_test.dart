@@ -1425,6 +1425,12 @@ void main() {
     expect(_activeBubble(orchestrator), findsNothing);
     expect(orchestrator.pinnedBubbleSummaries, isEmpty);
     expect(_semanticsId('live_edit_bubble_done_button'), findsNothing);
+
+    orchestrator.selectNode(tester.getCenter(find.text('Target')));
+    await tester.pumpAndSettle();
+
+    expect(orchestrator.activeBubbleResolved, isFalse);
+    expect(_activeBubble(orchestrator), findsOneWidget);
   });
 
   testWidgets('wait action only stages edits and does not dispatch', (

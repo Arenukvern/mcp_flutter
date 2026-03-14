@@ -1153,7 +1153,11 @@ final class LiveEditOrchestrator extends ChangeNotifier {
         () => LiveEditBubbleStatus.editing,
       );
     }
-    _restoreBubbleState(activeSelection?.nodeId);
+    final selectedNodeId = activeSelection?.nodeId;
+    if (_hasText(selectedNodeId)) {
+      _resolvedBubbleNodeIds.remove(selectedNodeId);
+    }
+    _restoreBubbleState(selectedNodeId);
     _syncSelectionState();
   }
 
@@ -2417,6 +2421,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   }
 
   void selectTrackedBubble(final String nodeId) {
+    _resolvedBubbleNodeIds.remove(nodeId);
     _finalizeCurrentBubbleOnBlur(nextNodeId: nodeId);
     controller.selectTrackedNode(sessionId: activeSessionId, nodeId: nodeId);
     _restoreBubbleState(nodeId);
