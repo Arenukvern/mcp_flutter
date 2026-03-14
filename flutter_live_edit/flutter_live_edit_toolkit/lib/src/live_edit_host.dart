@@ -1600,15 +1600,6 @@ class _SelectionBubble extends StatelessWidget {
                                       fontSize: 11,
                                     ),
                                   ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  orchestrator.currentBackendLabel,
-                                  style: const TextStyle(
-                                    color: Color(0xFF1D4ED8),
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
                               ],
                             ),
                           ),
@@ -2041,17 +2032,12 @@ class _BubbleComposerSection extends StatelessWidget {
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: <Widget>[
       _BackendSwitcher(orchestrator: orchestrator, bubble: true),
-      const SizedBox(height: 8),
-      const Text(
-        'AI',
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          color: Color(0xFF334155),
-        ),
-      ),
       const SizedBox(height: 6),
       _AiComposer(orchestrator: orchestrator, autofocus: autofocus),
+      if (_hasText(orchestrator.stagedRequestSummary)) ...<Widget>[
+        const SizedBox(height: 8),
+        _PendingRequestCard(summary: orchestrator.stagedRequestSummary!),
+      ],
     ],
   );
 }
@@ -2281,15 +2267,46 @@ class _BackendSwitcher extends StatelessWidget {
         ),
       );
     }
+    if (bubble) {
+      return Semantics(
+        identifier: 'live_edit_bubble_backend_switcher',
+        child: Row(
+          children: <Widget>[
+            for (var index = 0; index < backends.length; index += 1)
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    right: index == backends.length - 1 ? 0 : 6,
+                  ),
+                  child: ChoiceChip(
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    visualDensity: VisualDensity.compact,
+                    label: Text(
+                      backends[index].label,
+                      style: const TextStyle(fontSize: 11),
+                    ),
+                    selected: backends[index].id == selected,
+                    onSelected: backends[index].available
+                        ? (final value) {
+                            if (value) {
+                              orchestrator.setBackend(backends[index].id);
+                            }
+                          }
+                        : null,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      );
+    }
     return Semantics(
-      identifier: bubble
-          ? 'live_edit_bubble_backend_switcher'
-          : 'live_edit_backend_switcher',
+      identifier: 'live_edit_backend_switcher',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Text(
-            bubble ? 'Agent' : 'Backend',
+            'Backend',
             style: TextStyle(
               color: rail ? Colors.white70 : const Color(0xFF64748B),
               fontSize: 10,

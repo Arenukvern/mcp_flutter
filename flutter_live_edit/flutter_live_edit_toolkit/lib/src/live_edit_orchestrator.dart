@@ -367,7 +367,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   String? _pendingNodeId;
   String? _pendingPropertyId;
   double _bubbleWidth = 300;
-  double _bubbleHeight = 300;
+  double _bubbleHeight = 340;
   Offset _bubbleDragOffset = Offset.zero;
   bool _debugModeEnabled = false;
   bool _deeperPickEnabled = false;
@@ -1085,7 +1085,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     required final double height,
   }) {
     _bubbleWidth = width.clamp(260, 520);
-    _bubbleHeight = height.clamp(240, 520);
+    _bubbleHeight = height.clamp(300, 520);
     notifyListeners();
   }
 
