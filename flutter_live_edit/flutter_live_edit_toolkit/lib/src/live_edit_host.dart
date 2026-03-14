@@ -286,6 +286,16 @@ class _FlutterLiveEditHostState extends State<FlutterLiveEditHost> {
                         _LiveEditOverlay(
                           orchestrator: _orchestrator,
                           contentKey: _contentKey,
+                          targetDomain: LiveEditTargetDomain.appScene,
+                          interactive: !_orchestrator.editingToolScene,
+                        ),
+                      if (_orchestrator.overlayVisible &&
+                          _orchestrator.editingToolScene)
+                        _LiveEditOverlay(
+                          orchestrator: _orchestrator,
+                          contentKey: _contentKey,
+                          targetDomain: LiveEditTargetDomain.toolScene,
+                          interactive: true,
                         ),
                       if (_orchestrator.overlayVisible)
                         ..._orchestrator.pinnedBubbleSummaries.map(
@@ -768,10 +778,14 @@ class _LiveEditOverlay extends StatefulWidget {
   const _LiveEditOverlay({
     required this.orchestrator,
     required this.contentKey,
+    required this.targetDomain,
+    required this.interactive,
   });
 
   final LiveEditOrchestrator orchestrator;
   final GlobalKey contentKey;
+  final LiveEditTargetDomain targetDomain;
+  final bool interactive;
 
   @override
   State<_LiveEditOverlay> createState() => _LiveEditOverlayState();
@@ -782,88 +796,131 @@ class _LiveEditOverlayState extends State<_LiveEditOverlay> {
   Offset? _pointerDown;
   bool _dragging = false;
 
+  LiveEditSelection? get _selectionForDomain =>
+      widget.orchestrator.controller.selectionForDomain(
+        targetDomain: widget.targetDomain,
+        sessionId: widget.orchestrator.activeSessionId,
+      );
+
+  LiveEditSelection? get _hoverForDomain =>
+      widget.orchestrator.controller.hoverSelectionForDomain(
+        targetDomain: widget.targetDomain,
+        sessionId: widget.orchestrator.activeSessionId,
+      );
+
+  Rect? get _marqueeRectForDomain =>
+      widget.orchestrator.controller.marqueeRectForDomain(
+        targetDomain: widget.targetDomain,
+        sessionId: widget.orchestrator.activeSessionId,
+      );
+
+  List<LiveEditSelection> get _marqueeSelectionsForDomain =>
+      widget.orchestrator.controller.marqueeSelectionsForDomain(
+        targetDomain: widget.targetDomain,
+        sessionId: widget.orchestrator.activeSessionId,
+      );
+
+  List<LiveEditDraftChange> get _draftChangesForDomain =>
+      widget.orchestrator.controller.draftChangesForDomain(
+        targetDomain: widget.targetDomain,
+        sessionId: widget.orchestrator.activeSessionId,
+      );
+
+  List<LiveEditSelection> get _multiSelectionForDomain =>
+      widget.orchestrator.controller.multiSelectionForDomain(
+        targetDomain: widget.targetDomain,
+        sessionId: widget.orchestrator.activeSessionId,
+      );
+
   @override
   Widget build(final BuildContext context) => Positioned.fill(
     child: Focus(
       autofocus: true,
       child: MouseRegion(
-        onHover: (final event) {
-          widget.orchestrator.hoverNode(
-            event.position,
-            contentKey: widget.contentKey,
-            deeperMode: widget.orchestrator.deeperPickEnabled,
-          );
-        },
-        onExit: (_) => widget.orchestrator.clearHover(),
-        child: Listener(
-          behavior: HitTestBehavior.translucent,
-          onPointerDown: (final event) {
-            _pointerDown = event.position;
-            _dragging = false;
-            widget.orchestrator.hoverNode(
-              event.position,
-              contentKey: widget.contentKey,
-              deeperMode: widget.orchestrator.deeperPickEnabled,
-            );
-          },
-          onPointerMove: (final event) {
-            final start = _pointerDown;
-            if (start == null) {
+        onHover: widget.interactive
+            ? (final event) {
+                widget.orchestrator.hoverNode(
+                  event.position,
+                  contentKey: widget.contentKey,
+                  deeperMode: widget.orchestrator.deeperPickEnabled,
+                );
+              }
+            : null,
+        onExit: widget.interactive ? (_) => widget.orchestrator.clearHover() : null,
+        child: IgnorePointer(
+          ignoring: !widget.interactive,
+          child: Listener(
+            behavior: HitTestBehavior.translucent,
+            onPointerDown: (final event) {
+              _pointerDown = event.position;
+              _dragging = false;
               widget.orchestrator.hoverNode(
                 event.position,
                 contentKey: widget.contentKey,
                 deeperMode: widget.orchestrator.deeperPickEnabled,
               );
-              return;
-            }
-            if (!_dragging &&
-                (event.position - start).distance >= _dragThreshold) {
-              _dragging = true;
-              widget.orchestrator.startMarquee(start);
-            }
-            if (_dragging) {
-              widget.orchestrator.updateMarquee(
+            },
+            onPointerMove: (final event) {
+              final start = _pointerDown;
+              if (start == null) {
+                widget.orchestrator.hoverNode(
+                  event.position,
+                  contentKey: widget.contentKey,
+                  deeperMode: widget.orchestrator.deeperPickEnabled,
+                );
+                return;
+              }
+              if (!_dragging &&
+                  (event.position - start).distance >= _dragThreshold) {
+                _dragging = true;
+                widget.orchestrator.startMarquee(start);
+              }
+              if (_dragging) {
+                widget.orchestrator.updateMarquee(
+                  event.position,
+                  contentKey: widget.contentKey,
+                );
+                return;
+              }
+              widget.orchestrator.hoverNode(
                 event.position,
                 contentKey: widget.contentKey,
+                deeperMode: widget.orchestrator.deeperPickEnabled,
               );
-              return;
-            }
-            widget.orchestrator.hoverNode(
-              event.position,
-              contentKey: widget.contentKey,
-              deeperMode: widget.orchestrator.deeperPickEnabled,
-            );
-          },
-          onPointerUp: (final event) {
-            if (_dragging) {
-              widget.orchestrator.commitMarquee();
-            } else {
-              widget.orchestrator.selectNode(
-                event.position,
-                contentKey: widget.contentKey,
-                preferHoverPreview: widget.orchestrator.deeperPickEnabled,
-              );
-            }
-            _pointerDown = null;
-            _dragging = false;
-          },
-          onPointerCancel: (_) {
-            if (_dragging) {
-              widget.orchestrator.cancelMarquee();
-            }
-            _pointerDown = null;
-            _dragging = false;
-          },
-          child: CustomPaint(
-            painter: _LiveEditOverlayPainter(
-              selection: widget.orchestrator.activeSelection,
-              hoverSelection: widget.orchestrator.hoverSelection,
-              multiSelection: widget.orchestrator.hasMarqueePreview
-                  ? widget.orchestrator.marqueePreviewSelections
-                  : widget.orchestrator.activeMultiSelection,
-              marqueeRect: widget.orchestrator.marqueeRect,
-              deeperPickActive: widget.orchestrator.deeperPickEnabled,
-              draftChanges: widget.orchestrator.activeDraftChanges,
+            },
+            onPointerUp: (final event) {
+              if (_dragging) {
+                widget.orchestrator.commitMarquee();
+              } else {
+                widget.orchestrator.selectNode(
+                  event.position,
+                  contentKey: widget.contentKey,
+                  preferHoverPreview: widget.orchestrator.deeperPickEnabled,
+                );
+              }
+              _pointerDown = null;
+              _dragging = false;
+            },
+            onPointerCancel: (_) {
+              if (_dragging) {
+                widget.orchestrator.cancelMarquee();
+              }
+              _pointerDown = null;
+              _dragging = false;
+            },
+            child: CustomPaint(
+              painter: _LiveEditOverlayPainter(
+                selection: _selectionForDomain,
+                hoverSelection: _hoverForDomain,
+                multiSelection: _marqueeRectForDomain != null
+                    ? _marqueeSelectionsForDomain
+                    : _multiSelectionForDomain,
+                marqueeRect: _marqueeRectForDomain,
+                deeperPickActive:
+                    widget.interactive &&
+                    widget.orchestrator.deeperPickEnabled,
+                draftChanges: _draftChangesForDomain,
+              ),
             ),
           ),
         ),

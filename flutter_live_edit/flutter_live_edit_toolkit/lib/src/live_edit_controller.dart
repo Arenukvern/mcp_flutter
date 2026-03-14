@@ -1124,33 +1124,43 @@ final class LiveEditController extends ChangeNotifier {
       <String, _LiveEditSessionState>{};
   String? _activeSessionId;
 
+  _LiveEditLayerState _activeLayerOrNull() {
+    final session = _activeSessionOrNull();
+    if (session == null) {
+      return _LiveEditLayerState();
+    }
+    return session.layerFor(session.targetDomain);
+  }
+
+  _LiveEditLayerState _layerForRequest(
+    final _LiveEditSessionState session, {
+    final LiveEditTargetDomain? requested,
+  }) => session.layerFor(requested ?? session.targetDomain);
+
   List<LiveEditDraftChange> get activeDraftChanges =>
       List<LiveEditDraftChange>.unmodifiable(
-        _activeSessionOrNull()?.draftChanges ?? const <LiveEditDraftChange>[],
+        _activeLayerOrNull().draftChanges,
       );
 
-  LiveEditSelection? get activeSelection => _activeSessionOrNull()?.selection;
+  LiveEditSelection? get activeSelection => _activeLayerOrNull().selection;
 
-  LiveEditSelection? get hoverSelection =>
-      _activeSessionOrNull()?.hoverSelection;
+  LiveEditSelection? get hoverSelection => _activeLayerOrNull().hoverSelection;
 
-  Rect? get activeMarqueeRect => _activeSessionOrNull()?.marqueeRect;
+  Rect? get activeMarqueeRect => _activeLayerOrNull().marqueeRect;
 
   List<LiveEditSelection> get activeMarqueeSelections =>
       List<LiveEditSelection>.unmodifiable(
-        _activeSessionOrNull()?.marqueeSelections ??
-            const <LiveEditSelection>[],
+        _activeLayerOrNull().marqueeSelections,
       );
 
   List<LiveEditSelection> get activeMultiSelection =>
       List<LiveEditSelection>.unmodifiable(
-        _activeSessionOrNull()?.multiSelections ?? const <LiveEditSelection>[],
+        _activeLayerOrNull().multiSelections,
       );
 
   List<LiveEditSelectionCandidate> get activeSelectionCandidates =>
       List<LiveEditSelectionCandidate>.unmodifiable(
-        _activeSessionOrNull()?.selectionCandidates ??
-            const <LiveEditSelectionCandidate>[],
+        _activeLayerOrNull().selectionCandidates,
       );
 
   String? get activeSessionId => _activeSessionId;
@@ -1161,13 +1171,64 @@ final class LiveEditController extends ChangeNotifier {
       _requireSession(sessionId).targetDomain;
 
   bool isMeaningfulNode(final String nodeId, {final String? sessionId}) =>
-      _requireSession(sessionId).meaningfulNodeIds.contains(nodeId);
+      _layerForRequest(_requireSession(sessionId)).meaningfulNodeIds.contains(
+        nodeId,
+      );
+
+  LiveEditSelection? selectionForDomain({
+    required final LiveEditTargetDomain targetDomain,
+    final String? sessionId,
+  }) => _layerForRequest(
+    _requireSession(sessionId),
+    requested: targetDomain,
+  ).selection;
+
+  LiveEditSelection? hoverSelectionForDomain({
+    required final LiveEditTargetDomain targetDomain,
+    final String? sessionId,
+  }) => _layerForRequest(
+    _requireSession(sessionId),
+    requested: targetDomain,
+  ).hoverSelection;
+
+  Rect? marqueeRectForDomain({
+    required final LiveEditTargetDomain targetDomain,
+    final String? sessionId,
+  }) => _layerForRequest(
+    _requireSession(sessionId),
+    requested: targetDomain,
+  ).marqueeRect;
+
+  List<LiveEditSelection> marqueeSelectionsForDomain({
+    required final LiveEditTargetDomain targetDomain,
+    final String? sessionId,
+  }) => List<LiveEditSelection>.unmodifiable(
+    _layerForRequest(_requireSession(sessionId), requested: targetDomain)
+        .marqueeSelections,
+  );
+
+  List<LiveEditDraftChange> draftChangesForDomain({
+    required final LiveEditTargetDomain targetDomain,
+    final String? sessionId,
+  }) => List<LiveEditDraftChange>.unmodifiable(
+    _layerForRequest(_requireSession(sessionId), requested: targetDomain)
+        .draftChanges,
+  );
+
+  List<LiveEditSelection> multiSelectionForDomain({
+    required final LiveEditTargetDomain targetDomain,
+    final String? sessionId,
+  }) => List<LiveEditSelection>.unmodifiable(
+    _layerForRequest(_requireSession(sessionId), requested: targetDomain)
+        .multiSelections,
+  );
 
   Map<String, Object?> discardDraft({final String? sessionId}) {
     final session = _requireSession(sessionId);
-    _revertExactPreview(session);
-    session.draftChanges.clear();
-    session.meaningfulNodeIds.remove(session.selection?.nodeId);
+    final layer = _layerForRequest(session);
+    _revertExactPreview(session, layer: layer);
+    layer.draftChanges.clear();
+    layer.meaningfulNodeIds.remove(layer.selection?.nodeId);
     session.lastTouchedAt = DateTime.now().toUtc();
     notifyListeners();
     return <String, Object?>{
@@ -1182,21 +1243,22 @@ final class LiveEditController extends ChangeNotifier {
     final String? sessionId,
   }) {
     final session = _requireSession(sessionId);
+    final layer = _layerForRequest(session);
     final normalized = nodeIds.where(_hasText).toSet();
     if (normalized.isEmpty) {
       return discardDraft(sessionId: session.sessionId);
     }
-    _revertExactPreview(session, nodeIds: normalized);
-    session.draftChanges.removeWhere(
+    _revertExactPreview(session, layer: layer, nodeIds: normalized);
+    layer.draftChanges.removeWhere(
       (final draft) => normalized.contains(draft.nodeId),
     );
-    session.meaningfulNodeIds.removeAll(normalized);
+    layer.meaningfulNodeIds.removeAll(normalized);
     session.lastTouchedAt = DateTime.now().toUtc();
     notifyListeners();
     return <String, Object?>{
       'sessionId': session.sessionId,
       'discarded': true,
-      'draftChanges': session.draftChanges
+      'draftChanges': layer.draftChanges
           .map((final draft) => draft.toJson())
           .toList(growable: false),
     };
@@ -1204,8 +1266,9 @@ final class LiveEditController extends ChangeNotifier {
 
   Map<String, Object?> commitDraft({final String? sessionId}) {
     final session = _requireSession(sessionId);
-    session.draftChanges.clear();
-    session.originalExactValues.clear();
+    final layer = _layerForRequest(session);
+    layer.draftChanges.clear();
+    layer.originalExactValues.clear();
     session.lastTouchedAt = DateTime.now().toUtc();
     notifyListeners();
     return <String, Object?>{
@@ -1220,25 +1283,26 @@ final class LiveEditController extends ChangeNotifier {
     final String? sessionId,
   }) {
     final session = _requireSession(sessionId);
+    final layer = _layerForRequest(session);
     final normalized = nodeIds.where(_hasText).toSet();
     if (normalized.isEmpty) {
       return commitDraft(sessionId: session.sessionId);
     }
-    session.draftChanges.removeWhere(
+    layer.draftChanges.removeWhere(
       (final draft) => normalized.contains(draft.nodeId),
     );
-    session.originalExactValues.removeWhere((final key, final _) {
+    layer.originalExactValues.removeWhere((final key, final _) {
       final separator = key.indexOf('::');
       final nodeId = separator < 0 ? key : key.substring(0, separator);
       return normalized.contains(nodeId);
     });
-    session.meaningfulNodeIds.removeAll(normalized);
+    layer.meaningfulNodeIds.removeAll(normalized);
     session.lastTouchedAt = DateTime.now().toUtc();
     notifyListeners();
     return <String, Object?>{
       'sessionId': session.sessionId,
       'committed': true,
-      'draftChanges': session.draftChanges
+      'draftChanges': layer.draftChanges
           .map((final draft) => draft.toJson())
           .toList(growable: false),
     };
@@ -1249,6 +1313,7 @@ final class LiveEditController extends ChangeNotifier {
     final String? sessionId,
   }) {
     final session = _requireSession(sessionId);
+    final layer = _layerForRequest(session);
     if (changes.isEmpty) {
       return;
     }
@@ -1258,13 +1323,16 @@ final class LiveEditController extends ChangeNotifier {
         return;
       }
       for (final change in changes) {
-        final tracked = currentSession.trackedSelections[change.nodeId];
+        final tracked = currentSession.layerFor(
+          LiveEditTargetDomain.fromWire(change.meta['targetDomain']),
+        ).trackedSelections[change.nodeId];
         if (tracked == null) {
           continue;
         }
         _applyExactPreviewIfSupported(
           currentSession,
           change,
+          layerOverride: layer,
           elementOverride: tracked.element,
           selectionOverride: tracked.selection,
         );
@@ -1274,7 +1342,8 @@ final class LiveEditController extends ChangeNotifier {
 
   Map<String, Object?> endSession({final String? sessionId}) {
     final session = _requireSession(sessionId);
-    _revertExactPreview(session);
+    _revertExactPreview(session, layer: session.appLayer);
+    _revertExactPreview(session, layer: session.toolLayer);
     final removed = _sessions.remove(session.sessionId);
     if (_activeSessionId == session.sessionId) {
       _activeSessionId = _sessions.keys.isEmpty ? null : _sessions.keys.first;
@@ -1288,9 +1357,10 @@ final class LiveEditController extends ChangeNotifier {
 
   Map<String, Object?> getDraft({final String? sessionId}) {
     final session = _requireSession(sessionId);
+    final layer = _layerForRequest(session);
     return <String, Object?>{
       'sessionId': session.sessionId,
-      'draftChanges': session.draftChanges
+      'draftChanges': layer.draftChanges
           .map((final draft) => draft.toJson())
           .toList(),
     };
@@ -1298,17 +1368,18 @@ final class LiveEditController extends ChangeNotifier {
 
   Map<String, Object?> getSelection({final String? sessionId}) {
     final session = _requireSession(sessionId);
-    final selection = session.selection;
+    final layer = _layerForRequest(session);
+    final selection = layer.selection;
     return <String, Object?>{
       'sessionId': session.sessionId,
       'targetDomain': session.targetDomain.wireName,
       'selection': selection?.toJson(),
       'hasSelection': selection != null,
-      'hoverSelection': session.hoverSelection?.toJson(),
-      'selectedNodeIds': session.multiSelections
+      'hoverSelection': layer.hoverSelection?.toJson(),
+      'selectedNodeIds': layer.multiSelections
           .map((final item) => item.nodeId)
           .toList(growable: false),
-      'selectionCandidates': session.selectionCandidates
+      'selectionCandidates': layer.selectionCandidates
           .map((final candidate) => candidate.toJson())
           .toList(growable: false),
     };
@@ -2324,17 +2395,19 @@ final class LiveEditController extends ChangeNotifier {
   bool _applyExactPreviewIfSupported(
     final _LiveEditSessionState session,
     final LiveEditDraftChange change, {
+    final _LiveEditLayerState? layerOverride,
     final Element? elementOverride,
     final LiveEditSelection? selectionOverride,
   }) {
-    final selection = selectionOverride ?? session.selection;
-    final element = elementOverride ?? session.selectedElement;
+    final layer = layerOverride ?? session.currentLayer;
+    final selection = selectionOverride ?? layer.selection;
+    final element = elementOverride ?? layer.selectedElement;
     if (selection == null || element == null || !element.mounted) {
       return false;
     }
 
     void captureOriginal(final String propertyId, final Object? currentValue) {
-      session.originalExactValues.putIfAbsent(
+      layer.originalExactValues.putIfAbsent(
         '${selection.nodeId}::$propertyId',
         () => currentValue,
       );
@@ -2433,9 +2506,10 @@ final class LiveEditController extends ChangeNotifier {
 
   void _revertExactPreview(
     final _LiveEditSessionState session, {
+    required final _LiveEditLayerState layer,
     final Set<String>? nodeIds,
   }) {
-    for (final entry in session.originalExactValues.entries) {
+    for (final entry in layer.originalExactValues.entries) {
       final parts = entry.key.split('::');
       if (parts.length != 2) {
         continue;
@@ -2443,7 +2517,7 @@ final class LiveEditController extends ChangeNotifier {
       if (nodeIds != null && !nodeIds.contains(parts.first)) {
         continue;
       }
-      final tracked = session.trackedSelections[parts.first];
+      final tracked = layer.trackedSelections[parts.first];
       final element = tracked?.element;
       if (element == null || !element.mounted) {
         continue;
@@ -2496,9 +2570,9 @@ final class LiveEditController extends ChangeNotifier {
       }
     }
     if (nodeIds == null) {
-      session.originalExactValues.clear();
+      layer.originalExactValues.clear();
     } else {
-      session.originalExactValues.removeWhere((final key, final _) {
+      layer.originalExactValues.removeWhere((final key, final _) {
         final separator = key.indexOf('::');
         final nodeId = separator < 0 ? key : key.substring(0, separator);
         return nodeIds.contains(nodeId);
@@ -2616,7 +2690,7 @@ final class LiveEditController extends ChangeNotifier {
     required final List<Map<String, Object?>> ancestry,
   }) {
     if (session.selectedElement != null && session.selectedElement != element) {
-      _revertExactPreview(session);
+      _revertExactPreview(session, layer: session.currentLayer);
     }
 
     final selection = _buildSelection(
@@ -2748,6 +2822,92 @@ final class _LiveEditSessionState {
   final String objectGroup;
   LiveEditTargetDomain targetDomain = LiveEditTargetDomain.appScene;
   bool overlayEnabled = false;
+  final _LiveEditLayerState appLayer = _LiveEditLayerState();
+  final _LiveEditLayerState toolLayer = _LiveEditLayerState();
+  DateTime lastTouchedAt = DateTime.now().toUtc();
+
+  _LiveEditLayerState layerFor(final LiveEditTargetDomain domain) => switch (
+    domain
+  ) {
+    LiveEditTargetDomain.appScene => appLayer,
+    LiveEditTargetDomain.toolScene => toolLayer,
+  };
+
+  _LiveEditLayerState get currentLayer => layerFor(targetDomain);
+
+  Element? get selectedElement => currentLayer.selectedElement;
+  set selectedElement(final Element? value) => currentLayer.selectedElement = value;
+
+  LiveEditSelection? get selection => currentLayer.selection;
+  set selection(final LiveEditSelection? value) => currentLayer.selection = value;
+
+  LiveEditSelection? get hoverSelection => currentLayer.hoverSelection;
+  set hoverSelection(final LiveEditSelection? value) =>
+      currentLayer.hoverSelection = value;
+
+  ui.Offset? get hoverPoint => currentLayer.hoverPoint;
+  set hoverPoint(final ui.Offset? value) => currentLayer.hoverPoint = value;
+
+  Element? get hoverRootElement => currentLayer.hoverRootElement;
+  set hoverRootElement(final Element? value) =>
+      currentLayer.hoverRootElement = value;
+
+  int? get hoverViewId => currentLayer.hoverViewId;
+  set hoverViewId(final int? value) => currentLayer.hoverViewId = value;
+
+  List<Map<String, Object?>> get ancestry => currentLayer.ancestry;
+  set ancestry(final List<Map<String, Object?>> value) =>
+      currentLayer.ancestry = value;
+
+  List<_ElementHit> get selectionHitCandidates =>
+      currentLayer.selectionHitCandidates;
+  set selectionHitCandidates(final List<_ElementHit> value) =>
+      currentLayer.selectionHitCandidates = value;
+
+  List<_ElementHit> get hoverHitCandidates => currentLayer.hoverHitCandidates;
+  set hoverHitCandidates(final List<_ElementHit> value) =>
+      currentLayer.hoverHitCandidates = value;
+
+  List<LiveEditSelectionCandidate> get selectionCandidates =>
+      currentLayer.selectionCandidates;
+  set selectionCandidates(final List<LiveEditSelectionCandidate> value) =>
+      currentLayer.selectionCandidates = value;
+
+  int get hoverPreviewIndex => currentLayer.hoverPreviewIndex;
+  set hoverPreviewIndex(final int value) => currentLayer.hoverPreviewIndex = value;
+
+  ui.Offset? get marqueeStart => currentLayer.marqueeStart;
+  set marqueeStart(final ui.Offset? value) => currentLayer.marqueeStart = value;
+
+  Rect? get marqueeRect => currentLayer.marqueeRect;
+  set marqueeRect(final Rect? value) => currentLayer.marqueeRect = value;
+
+  List<_ElementHit> get marqueeHits => currentLayer.marqueeHits;
+  set marqueeHits(final List<_ElementHit> value) =>
+      currentLayer.marqueeHits = value;
+
+  List<LiveEditSelection> get marqueeSelections => currentLayer.marqueeSelections;
+  set marqueeSelections(final List<LiveEditSelection> value) =>
+      currentLayer.marqueeSelections = value;
+
+  List<LiveEditSelection> get multiSelections => currentLayer.multiSelections;
+  set multiSelections(final List<LiveEditSelection> value) =>
+      currentLayer.multiSelections = value;
+
+  Map<Element, _MarqueeCandidateCacheEntry> get marqueeCache =>
+      currentLayer.marqueeCache;
+
+  List<LiveEditDraftChange> get draftChanges => currentLayer.draftChanges;
+
+  Map<String, Object?> get originalExactValues => currentLayer.originalExactValues;
+
+  Set<String> get meaningfulNodeIds => currentLayer.meaningfulNodeIds;
+
+  Map<String, _TrackedSelectionTarget> get trackedSelections =>
+      currentLayer.trackedSelections;
+}
+
+final class _LiveEditLayerState {
   Element? selectedElement;
   LiveEditSelection? selection;
   LiveEditSelection? hoverSelection;
@@ -2772,7 +2932,6 @@ final class _LiveEditSessionState {
   final Set<String> meaningfulNodeIds = <String>{};
   final Map<String, _TrackedSelectionTarget> trackedSelections =
       <String, _TrackedSelectionTarget>{};
-  DateTime lastTouchedAt = DateTime.now().toUtc();
 }
 
 final class _TrackedSelectionTarget {

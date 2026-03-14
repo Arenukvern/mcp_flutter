@@ -406,6 +406,87 @@ void main() {
     );
   });
 
+  testWidgets('switching to tool scene preserves app layer selection state', (
+    final tester,
+  ) async {
+    final orchestrator = LiveEditOrchestrator();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: FlutterLiveEditHost(
+          orchestrator: orchestrator,
+          child: const Scaffold(body: Center(child: Text('Target'))),
+        ),
+      ),
+    );
+
+    await tester.tap(find.byType(ActionChip));
+    await tester.pumpAndSettle();
+    await tester.tapAt(tester.getCenter(find.text('Target')));
+    await tester.pumpAndSettle();
+
+    final appSelection = orchestrator.activeSelection;
+    expect(appSelection, isNotNull);
+    expect(appSelection!.targetDomain, LiveEditTargetDomain.appScene);
+
+    await tester.tap(_semanticsId('live_edit_panel_expand_button'));
+    await tester.pumpAndSettle();
+    orchestrator.setTargetDomain(LiveEditTargetDomain.toolScene);
+    await tester.pumpAndSettle();
+
+    final panelKey = LiveEditOverlayThemeModel.instance.keyFor(
+      kLiveEditPanelExpandedSurfaceId,
+    );
+    orchestrator.selectNode(tester.getCenter(find.byKey(panelKey)));
+    await tester.pumpAndSettle();
+
+    expect(
+      orchestrator.activeSelection?.targetDomain,
+      LiveEditTargetDomain.toolScene,
+    );
+    expect(
+      orchestrator.controller.selectionForDomain(
+        targetDomain: LiveEditTargetDomain.appScene,
+        sessionId: orchestrator.activeSessionId,
+      )?.nodeId,
+      appSelection.nodeId,
+    );
+    expect(
+      orchestrator.controller.selectionForDomain(
+        targetDomain: LiveEditTargetDomain.toolScene,
+        sessionId: orchestrator.activeSessionId,
+      )?.nodeId,
+      kLiveEditPanelExpandedSurfaceId,
+    );
+  });
+
+  testWidgets('tool scene overlay keeps app selection highlighted underneath', (
+    final tester,
+  ) async {
+    final orchestrator = LiveEditOrchestrator();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: FlutterLiveEditHost(
+          orchestrator: orchestrator,
+          child: const Scaffold(body: Center(child: Text('Target'))),
+        ),
+      ),
+    );
+
+    await tester.tap(find.byType(ActionChip));
+    await tester.pumpAndSettle();
+    await tester.tapAt(tester.getCenter(find.text('Target')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(_semanticsId('live_edit_panel_expand_button'));
+    await tester.pumpAndSettle();
+    orchestrator.setTargetDomain(LiveEditTargetDomain.toolScene);
+    await tester.pumpAndSettle();
+
+    final customPaints = find.byType(CustomPaint);
+    expect(customPaints, findsWidgets);
+    expect(customPaints.evaluate().length, greaterThanOrEqualTo(2));
+  });
+
   testWidgets('apply completion updates the originating bubble only', (
     final tester,
   ) async {
