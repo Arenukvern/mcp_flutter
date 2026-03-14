@@ -283,7 +283,7 @@ void main() {
           clients: <String, InferenceClient>{
             'cursor_agent': CursorAgentInferenceClient(
               binaryName: '/tmp/cursor-agent',
-              defaultModel: 'claude-3-5-sonnet',
+              defaultModel: 'auto',
             ),
           },
           defaultBackendId: 'cursor_agent',
@@ -297,15 +297,30 @@ void main() {
         expect(backend.meta['defaultInferenceConfig'], isA<Map>());
         expect(
           (backend.meta['defaultInferenceConfig']! as Map)['model'],
-          'claude-3-5-sonnet',
+          'auto',
         );
         expect(backend.meta['effectiveInferenceConfig'], isA<Map>());
         expect(
           (backend.meta['effectiveInferenceConfig']! as Map)['model'],
-          'claude-3-5-sonnet',
+          'auto',
         );
       },
     );
+
+    test('default registry exposes auto model for cursor backend', () {
+      final registry = LiveEditAgentRegistry.withDefaults();
+      registry.setSessionBackend(
+        sessionId: 'session-cursor-default',
+        backendId: 'cursor_agent',
+      );
+
+      final backend = registry.getBackend(sessionId: 'session-cursor-default');
+      expect((backend.meta['defaultInferenceConfig']! as Map)['model'], 'auto');
+      expect(
+        (backend.meta['effectiveInferenceConfig']! as Map)['model'],
+        'auto',
+      );
+    });
 
     test('codex backend metadata exposes supported and effective config', () {
       final registry = LiveEditAgentRegistry(

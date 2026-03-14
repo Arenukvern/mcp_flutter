@@ -737,6 +737,7 @@ final class LiveEditAgentRegistry {
       maxTimeoutRetries: 0,
     );
     final cursorClient = CursorAgentInferenceClient(
+      defaultModel: 'auto',
       executionTimeout: const Duration(minutes: 6),
       maxTimeoutRetries: 0,
     );

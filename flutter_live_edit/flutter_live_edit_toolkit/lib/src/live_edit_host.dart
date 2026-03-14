@@ -209,11 +209,13 @@ class _FlutterLiveEditHostState extends State<FlutterLiveEditHost> {
   final GlobalKey _contentKey = GlobalKey();
 
   bool get _editableTextHasPrimaryFocus {
-    final context = FocusManager.instance.primaryFocus?.context;
+    final focus = FocusManager.instance.primaryFocus;
+    final context = focus?.context;
     if (context == null) {
       return false;
     }
     return context.widget is EditableText ||
+        context.findAncestorWidgetOfExactType<EditableText>() != null ||
         context.findAncestorStateOfType<EditableTextState>() != null;
   }
 
@@ -1520,7 +1522,7 @@ class _SelectionBubble extends StatelessWidget {
                           orchestrator.dragBubble(details.delta);
                         },
                       ),
-                      if (orchestrator.applyPhase == LiveEditApplyPhase.success)
+                      if (status == LiveEditBubbleStatus.applied)
                         Container(
                           margin: const EdgeInsets.only(bottom: 12),
                           padding: const EdgeInsets.all(10),
@@ -1598,6 +1600,15 @@ class _SelectionBubble extends StatelessWidget {
                                       fontSize: 11,
                                     ),
                                   ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  orchestrator.currentBackendLabel,
+                                  style: const TextStyle(
+                                    color: Color(0xFF1D4ED8),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -1639,6 +1650,15 @@ class _SelectionBubble extends StatelessWidget {
                             icon: const Icon(
                               Icons.vertical_align_bottom,
                               size: 18,
+                            ),
+                          ),
+                          Semantics(
+                            identifier: 'live_edit_bubble_hide_button',
+                            button: true,
+                            child: IconButton(
+                              tooltip: 'Hide bubble',
+                              onPressed: orchestrator.hideActiveBubble,
+                              icon: const Icon(Icons.visibility_off_outlined),
                             ),
                           ),
                         ],
@@ -1778,36 +1798,34 @@ class _SelectionBubbleBody extends StatelessWidget {
   final LiveEditOrchestrator orchestrator;
 
   @override
-  Widget build(final BuildContext context) {
-    final property = orchestrator.activeProperty;
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          if (property != null)
-            _PropertyEditorCard(
-              orchestrator: orchestrator,
-              property: property,
-              surface: property.requiresAgentForPersistence
-                  ? LiveEditEditSurface.aiBubble
-                  : LiveEditEditSurface.inline,
-            )
-          else
-            const Text(
-              'No direct property editor for this candidate yet. Use AI or cycle candidates.',
-            ),
-          const SizedBox(height: 12),
-          _BubbleComposerSection(orchestrator: orchestrator),
-          const SizedBox(height: 12),
-          _ApplyActions(
-            orchestrator: orchestrator,
-            compact: true,
-            semanticsPrefix: 'live_edit_bubble',
+  Widget build(final BuildContext context) => SingleChildScrollView(
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
           ),
-        ],
-      ),
-    );
-  }
+          child: Text(
+            orchestrator.stagedDraftSummary ??
+                'Describe the change in plain English. Use the inspector on the right for detailed properties.',
+            style: const TextStyle(fontSize: 12, color: Color(0xFF334155)),
+          ),
+        ),
+        const SizedBox(height: 12),
+        _BubbleComposerSection(orchestrator: orchestrator),
+        const SizedBox(height: 12),
+        _ApplyActions(
+          orchestrator: orchestrator,
+          compact: true,
+          semanticsPrefix: 'live_edit_bubble',
+        ),
+      ],
+    ),
+  );
 }
 
 class _WaitingBubbleBody extends StatelessWidget {
@@ -2022,6 +2040,8 @@ class _BubbleComposerSection extends StatelessWidget {
   Widget build(final BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: <Widget>[
+      _BackendSwitcher(orchestrator: orchestrator, bubble: true),
+      const SizedBox(height: 8),
       const Text(
         'AI',
         style: TextStyle(
@@ -2188,10 +2208,15 @@ class _TimelineBubble extends StatelessWidget {
 }
 
 class _BackendSwitcher extends StatelessWidget {
-  const _BackendSwitcher({required this.orchestrator, this.rail = false});
+  const _BackendSwitcher({
+    required this.orchestrator,
+    this.rail = false,
+    this.bubble = false,
+  });
 
   final LiveEditOrchestrator orchestrator;
   final bool rail;
+  final bool bubble;
 
   @override
   Widget build(final BuildContext context) {
@@ -2257,12 +2282,14 @@ class _BackendSwitcher extends StatelessWidget {
       );
     }
     return Semantics(
-      identifier: 'live_edit_backend_switcher',
+      identifier: bubble
+          ? 'live_edit_bubble_backend_switcher'
+          : 'live_edit_backend_switcher',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Text(
-            'Backend',
+            bubble ? 'Agent' : 'Backend',
             style: TextStyle(
               color: rail ? Colors.white70 : const Color(0xFF64748B),
               fontSize: 10,
@@ -2336,7 +2363,7 @@ class _InferenceConfigEditor extends StatelessWidget {
               initialValue: model,
               decoration: const InputDecoration(
                 labelText: 'Model',
-                hintText: 'claude-3-5-sonnet',
+                hintText: 'auto',
                 isDense: true,
                 border: OutlineInputBorder(),
               ),

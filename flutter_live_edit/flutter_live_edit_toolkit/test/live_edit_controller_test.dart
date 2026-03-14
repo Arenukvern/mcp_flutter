@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
@@ -66,10 +68,8 @@ List<LiveEditAgentBackend> _testBackends() => const <LiveEditAgentBackend>[
     description: 'Cursor backend',
     available: true,
     meta: <String, Object?>{
-      'defaultInferenceConfig': <String, Object?>{'model': 'claude-3-5-sonnet'},
-      'effectiveInferenceConfig': <String, Object?>{
-        'model': 'claude-3-5-sonnet',
-      },
+      'defaultInferenceConfig': <String, Object?>{'model': 'auto'},
+      'effectiveInferenceConfig': <String, Object?>{'model': 'auto'},
     },
   ),
 ];
@@ -203,7 +203,188 @@ void main() {
     expect(_semanticsId('live_edit_model_input'), findsOneWidget);
     expect(_semanticsId('live_edit_reasoning_dropdown'), findsNothing);
     expect(orchestrator.currentBackendUsesFreeformModel, isTrue);
+    expect(orchestrator.currentModel, 'auto');
   });
+
+  testWidgets('bubble backend stays attached to its own node', (
+    final tester,
+  ) async {
+    final orchestrator = LiveEditOrchestrator(
+      availableBackends: _testBackends(),
+      backendId: 'codex_exec',
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: FlutterLiveEditHost(
+          orchestrator: orchestrator,
+          child: const Scaffold(
+            body: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[Text('First'), Text('Second')],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.byType(ActionChip));
+    await tester.pumpAndSettle();
+    await tester.tapAt(tester.getCenter(find.text('First')));
+    await tester.pumpAndSettle();
+    final firstNodeId = orchestrator.activeSelection!.nodeId;
+    orchestrator.setBackend('cursor_agent');
+    await tester.pumpAndSettle();
+
+    await tester.tapAt(tester.getCenter(find.text('Second')));
+    await tester.pumpAndSettle();
+    final secondNodeId = orchestrator.activeSelection!.nodeId;
+    expect(secondNodeId, isNot(firstNodeId));
+    expect(orchestrator.currentBackendId, 'codex_exec');
+
+    orchestrator.selectTrackedBubble(firstNodeId);
+    await tester.pumpAndSettle();
+    expect(orchestrator.currentBackendId, 'cursor_agent');
+
+    orchestrator.selectTrackedBubble(secondNodeId);
+    await tester.pumpAndSettle();
+    expect(orchestrator.currentBackendId, 'codex_exec');
+  });
+
+  testWidgets('apply completion updates the originating bubble only', (
+    final tester,
+  ) async {
+    final response = Completer<Map<String, Object?>>();
+    final orchestrator = LiveEditOrchestrator(
+      availableBackends: _testBackends(),
+      applyDraftDelegate: (final request) => response.future,
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: FlutterLiveEditHost(
+          orchestrator: orchestrator,
+          child: const Scaffold(
+            body: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[Text('First'), Text('Second')],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.byType(ActionChip));
+    await tester.pumpAndSettle();
+    await tester.tapAt(tester.getCenter(find.text('First')));
+    await tester.pumpAndSettle();
+    final firstNodeId = orchestrator.activeSelection!.nodeId;
+    orchestrator.openAiBubble();
+    await tester.pumpAndSettle();
+    await tester.enterText(_aiPromptField(), 'Rewrite the first text.');
+    await tester.pumpAndSettle();
+    unawaited(orchestrator.submitAiPrompt());
+    await tester.pump();
+
+    expect(
+      orchestrator.bubbleStatusForBubble(firstNodeId),
+      LiveEditBubbleStatus.waiting,
+    );
+
+    await tester.tapAt(tester.getCenter(find.text('Second')));
+    await tester.pumpAndSettle();
+    final secondNodeId = orchestrator.activeSelection!.nodeId;
+
+    response.complete(<String, Object?>{
+      'proposalId': 'proposal-first',
+      'executionPlan': <String, Object?>{
+        'proposalId': 'proposal-first',
+        'title': 'Apply live edit',
+        'summary': 'Update the first bubble.',
+        'selectedNode': 'Text',
+        'requestedChanges': <String>['Rewrite first'],
+        'affectedFiles': <String>['lib/main.dart'],
+        'confidence': 0.8,
+        'riskNotes': const <String>[],
+        'agentInstruction': 'Update first bubble only.',
+      },
+      'result': <String, Object?>{
+        'status': 'applied',
+        'changedFiles': <String>['lib/main.dart'],
+      },
+    });
+    await tester.pumpAndSettle();
+
+    expect(
+      orchestrator.bubbleStatusForBubble(secondNodeId),
+      LiveEditBubbleStatus.editing,
+    );
+
+    orchestrator.selectTrackedBubble(firstNodeId);
+    await tester.pumpAndSettle();
+    expect(
+      orchestrator.bubbleStatusForBubble(firstNodeId),
+      LiveEditBubbleStatus.applied,
+    );
+  });
+
+  testWidgets('bubble hide button minimizes into pinned bubble pill', (
+    final tester,
+  ) async {
+    final orchestrator = LiveEditOrchestrator();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: FlutterLiveEditHost(
+          orchestrator: orchestrator,
+          child: const Scaffold(body: Center(child: Text('Target'))),
+        ),
+      ),
+    );
+
+    await tester.tap(find.byType(ActionChip));
+    await tester.pumpAndSettle();
+    await tester.tapAt(tester.getCenter(find.text('Target')));
+    await tester.pumpAndSettle();
+
+    final nodeId = orchestrator.activeSelection!.nodeId;
+    await tester.tap(_semanticsId('live_edit_bubble_hide_button'));
+    await tester.pumpAndSettle();
+
+    expect(_semanticsId('live_edit_pinned_bubble_$nodeId'), findsOneWidget);
+
+    await tester.tap(_semanticsId('live_edit_pinned_bubble_$nodeId'));
+    await tester.pumpAndSettle();
+
+    expect(_activeBubble(orchestrator), findsOneWidget);
+  });
+
+  testWidgets(
+    'selection bubble shows simple prompt flow without property editor',
+    (final tester) async {
+      final orchestrator = LiveEditOrchestrator(
+        availableBackends: _testBackends(),
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          home: FlutterLiveEditHost(
+            orchestrator: orchestrator,
+            child: const Scaffold(body: Center(child: Text('Target'))),
+          ),
+        ),
+      );
+
+      await tester.tap(find.byType(ActionChip));
+      await tester.pumpAndSettle();
+      await tester.tapAt(tester.getCenter(find.text('Target')));
+      await tester.pumpAndSettle();
+
+      expect(_semanticsId('live_edit_bubble_backend_switcher'), findsOneWidget);
+      expect(
+        find.text(
+          'Describe the change in plain English. Use the inspector on the right for detailed properties.',
+        ),
+        findsOneWidget,
+      );
+    },
+  );
 
   testWidgets('overlay selection shows anchored bubble and candidate chips', (
     final tester,
