@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 import 'package:flutter_live_edit_toolkit/flutter_live_edit_toolkit.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -23,6 +24,11 @@ Finder _aiPromptField() => find.byWidgetPredicate(
   (final widget) =>
       widget is TextField &&
       widget.decoration?.hintText?.startsWith('Talk to ') == true,
+);
+
+Finder _propertyInputField() => find.byWidgetPredicate(
+  (final widget) =>
+      widget is TextField && widget.style?.fontSize == 11,
 );
 
 Finder _panelScrollable() => find
@@ -486,9 +492,9 @@ void main() {
 
     await tester.tap(find.byType(ActionChip));
     await tester.pumpAndSettle();
-    await tester.tapAt(tester.getCenter(find.text('Target')));
+    orchestrator.selectNode(tester.getCenter(find.text('Target')));
     await tester.pumpAndSettle();
-    await tester.tap(_semanticsId('live_edit_panel_expand_button'));
+    orchestrator.togglePanelDisplayMode();
     await tester.pumpAndSettle();
 
     final chip = tester.widget<ChoiceChip>(
@@ -1755,9 +1761,23 @@ void main() {
 
     final promptField = _aiPromptField();
     expect(promptField, findsOneWidget);
+    final selectedNodeId = orchestrator.activeSelection?.nodeId;
 
+    await tester.showKeyboard(promptField);
+    await tester.pumpAndSettle();
     await tester.enterText(promptField, 'Rewrite the selected text.');
     await tester.pumpAndSettle();
+
+    final promptWidget = tester.widget<TextField>(promptField);
+    final promptController = promptWidget.controller!;
+    promptController.selection = const TextSelection.collapsed(offset: 3);
+    await tester.pump();
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+    await tester.pumpAndSettle();
+
+    expect(orchestrator.activeSelection?.nodeId, selectedNodeId);
+    expect(promptWidget.enableInteractiveSelection, isTrue);
 
     expect(orchestrator.canSubmitAiPrompt, isTrue);
     final sendButton = find.widgetWithText(FilledButton, 'Send');
@@ -1849,6 +1869,88 @@ void main() {
     expect(orchestrator.lastError, isNull);
     expect(orchestrator.editMode, LiveEditEditMode.ai);
     expect(orchestrator.pendingExecutionPlan, isNotNull);
+  });
+
+  testWidgets('panel property editor keeps arrow keys inside focused text editing', (
+    final tester,
+  ) async {
+    final orchestrator = LiveEditOrchestrator();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: FlutterLiveEditHost(
+          orchestrator: orchestrator,
+          child: const Scaffold(
+            body: Center(
+              child: SizedBox(width: 120, height: 80, child: Text('Target')),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.byType(ActionChip));
+    await tester.pumpAndSettle();
+    await tester.tapAt(tester.getCenter(find.text('Target')));
+    await tester.pumpAndSettle();
+    await selectEditableCandidate(tester, orchestrator);
+    await tester.tap(_semanticsId('live_edit_panel_expand_button'));
+    await tester.pumpAndSettle();
+
+    final property = orchestrator.activeSelection!.propertyGroups.firstWhere(
+      (final candidate) =>
+          candidate.editable &&
+          (candidate.kind == LiveEditPropertyKind.string ||
+              candidate.kind == LiveEditPropertyKind.integer ||
+              candidate.kind == LiveEditPropertyKind.number),
+    );
+    orchestrator.focusProperty(property);
+    await tester.pumpAndSettle();
+    final selectedNodeId = orchestrator.activeSelection?.nodeId;
+    final field = _propertyInputField().first;
+    expect(field, findsOneWidget);
+
+    await tester.showKeyboard(field);
+    await tester.pumpAndSettle();
+    await tester.enterText(field, 'Target label');
+    await tester.pumpAndSettle();
+
+    final textField = tester.widget<TextField>(field);
+    final controller = textField.controller!;
+    controller.selection = const TextSelection.collapsed(offset: 6);
+    await tester.pump();
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+    await tester.pumpAndSettle();
+
+    expect(orchestrator.activeSelection?.nodeId, selectedNodeId);
+    expect(textField.enableInteractiveSelection, isTrue);
+  });
+
+  testWidgets('overlay arrow navigation still works outside text editing', (
+    final tester,
+  ) async {
+    final orchestrator = LiveEditOrchestrator();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: FlutterLiveEditHost(
+          orchestrator: orchestrator,
+          child: const Scaffold(body: Center(child: Text('Target'))),
+        ),
+      ),
+    );
+
+    await tester.tap(find.byType(ActionChip));
+    await tester.pumpAndSettle();
+    await tester.tapAt(tester.getCenter(find.text('Target')));
+    await tester.pumpAndSettle();
+
+    final selectedNodeId = orchestrator.activeSelection?.nodeId;
+    expect(selectedNodeId, isNotNull);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+    await tester.pumpAndSettle();
+
+    expect(orchestrator.activeSelection?.nodeId, isNot(selectedNodeId));
   });
 
   testWidgets(

@@ -1,6 +1,7 @@
 // ignore_for_file: avoid_print
 
 import 'dart:async';
+import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -13,6 +14,9 @@ import 'package:provider/provider.dart';
 import 'package:test_app/change_notifier_example.dart';
 import 'package:test_app/live_edit_codex_fixture.dart';
 import 'package:test_app/stateful_widget_example.dart';
+import 'package:vm_service/utils.dart';
+import 'package:vm_service/vm_service.dart';
+import 'package:vm_service/vm_service_io.dart';
 import 'package:xsoulspace_inference_core/xsoulspace_inference_core.dart';
 
 const _liveEditTestModeFromDefine = bool.fromEnvironment('LIVE_EDIT_TEST_MODE');
@@ -225,6 +229,140 @@ String _truncateForActivity(final String value, {final int max = 140}) {
     return trimmed;
   }
   return '${trimmed.substring(0, max)}...';
+}
+
+Future<LiveEditRuntimeRefreshResult> _refreshOwnRuntime(
+  final LiveEditApplyDraftRequest request,
+) async {
+  if (kIsWeb || kReleaseMode) {
+    return const LiveEditRuntimeRefreshResult(
+      validation: <String, Object?>{
+        'validated': false,
+        'reason': 'runtime_refresh_unavailable',
+      },
+    );
+  }
+
+  final info = await developer.Service.getInfo();
+  final wsUri =
+      info.serverWebSocketUri ??
+      (info.serverUri == null
+          ? null
+          : convertToWebSocketUrl(serviceProtocolUrl: info.serverUri!));
+  if (wsUri == null) {
+    return const LiveEditRuntimeRefreshResult(
+      validation: <String, Object?>{
+        'validated': false,
+        'reason': 'vm_service_uri_unavailable',
+      },
+    );
+  }
+
+  final service = await vmServiceConnectUri(wsUri.toString());
+  try {
+    final vm = await service.getVM();
+    final isolateId = vm.isolates != null && vm.isolates!.isNotEmpty
+        ? vm.isolates!.first.id
+        : null;
+    if (isolateId == null || isolateId.isEmpty) {
+      return const LiveEditRuntimeRefreshResult(
+        validation: <String, Object?>{
+          'validated': false,
+          'reason': 'isolate_unavailable',
+        },
+      );
+    }
+
+    request.onEvent?.call(
+      const LiveEditRuntimeEvent(
+        kind: LiveEditRuntimeEventKind.codex,
+        message: 'Triggering hot reload after apply.',
+      ),
+    );
+    final reloadReport = await service.reloadSources(isolateId, force: true);
+    final hotReload = <String, Object?>{'report': reloadReport.toJson()};
+    if (reloadReport.success == true) {
+      return LiveEditRuntimeRefreshResult(
+        action: LiveEditRuntimeAction.hotReload,
+        validation: const <String, Object?>{
+          'validated': true,
+          'reason': 'reload_report_success',
+        },
+        hotReload: hotReload,
+      );
+    }
+
+    request.onEvent?.call(
+      const LiveEditRuntimeEvent(
+        kind: LiveEditRuntimeEventKind.codex,
+        message: 'Hot reload was insufficient. Triggering hot restart.',
+      ),
+    );
+    final hotRestart = await _triggerOwnHotRestart(service);
+    return LiveEditRuntimeRefreshResult(
+      action: hotRestart['ok'] == true
+          ? LiveEditRuntimeAction.hotRestart
+          : LiveEditRuntimeAction.none,
+      validation: <String, Object?>{
+        'validated': hotRestart['ok'] == true,
+        'reason': hotRestart['ok'] == true
+            ? 'hot_restart_after_reload_failure'
+            : 'hot_restart_failed',
+      },
+      hotReload: hotReload,
+      hotRestart: hotRestart,
+      validationRecovery: const <String, Object?>{'attempted': true},
+    );
+  } finally {
+    await service.dispose();
+  }
+}
+
+Future<Map<String, Object?>> _triggerOwnHotRestart(
+  final VmService service,
+) async {
+  String? hotRestartMethodName;
+  StreamSubscription<Event>? eventSubscription;
+  try {
+    final completer = Completer<String?>();
+    eventSubscription = service.onEvent(EventStreams.kService).listen((
+      final event,
+    ) {
+      if (event.kind == EventKind.kServiceRegistered &&
+          event.service == 'hotRestart' &&
+          !completer.isCompleted) {
+        completer.complete(event.method);
+      }
+    });
+
+    await service.streamListen(EventStreams.kService);
+    hotRestartMethodName = await completer.future.timeout(
+      const Duration(milliseconds: 800),
+      onTimeout: () => null,
+    );
+  } finally {
+    try {
+      await eventSubscription?.cancel();
+      await service.streamCancel(EventStreams.kService);
+    } catch (_) {
+      // Ignore shutdown races.
+    }
+  }
+
+  try {
+    final response = await service.callMethod(
+      hotRestartMethodName ?? 'hotRestart',
+    );
+    return <String, Object?>{
+      'ok': true,
+      'report': <String, Object?>{
+        'type': response.json?['type'] ?? 'Success',
+        'success': response.json?['success'] ?? true,
+      },
+    };
+  } on Exception catch (error) {
+    return <String, Object?>{'ok': false, 'error': '$error'};
+  }
 }
 
 void _emitInferenceStreamEvent(
@@ -488,15 +626,31 @@ Future<Map<String, Object?>> _liveEditDefaultApplyDelegate(
       resolutionRequest,
       onStreamEvent: (final event) => _emitInferenceStreamEvent(request, event),
     );
+    final runtimeRefresh = await _refreshOwnRuntime(request);
+    final refreshedExecution = LiveEditDirectApplyResult(
+      executionId: execution.executionId,
+      backendId: execution.backendId,
+      summary: execution.summary,
+      changedFiles: execution.changedFiles,
+      warnings: execution.warnings,
+      validationSteps: execution.validationSteps,
+      runtimeRefresh: runtimeRefresh,
+      meta: execution.meta,
+    );
     final executionPlan = _liveEditAgentService.buildExecutionPlanForExecution(
       request: resolutionRequest,
-      execution: execution,
+      execution: refreshedExecution,
     );
     request.onEvent?.call(
       LiveEditRuntimeEvent(
         kind: LiveEditRuntimeEventKind.codex,
         message: '$backendLabel applied this bubble change.',
-        details: <String>[execution.summary, ...execution.changedFiles.take(4)],
+        details: <String>[
+          refreshedExecution.summary,
+          ...refreshedExecution.changedFiles.take(4),
+          if (runtimeRefresh.didRefresh)
+            'Runtime: ${runtimeRefresh.action.wireName}',
+        ],
       ),
     );
     request.onEvent?.call(
@@ -504,20 +658,23 @@ Future<Map<String, Object?>> _liveEditDefaultApplyDelegate(
         kind: LiveEditRuntimeEventKind.debug,
         message: 'Execution result received.',
         details: <String>[
-          'Execution: ${execution.executionId}',
-          'Backend: ${execution.backendId}',
+          'Execution: ${refreshedExecution.executionId}',
+          'Backend: ${refreshedExecution.backendId}',
           if ((request.inferenceConfig?.model ?? '').trim().isNotEmpty)
             'Model: ${request.inferenceConfig!.model}',
-          ...execution.changedFiles.take(4),
+          if (runtimeRefresh.didRefresh)
+            'Runtime: ${runtimeRefresh.action.wireName}',
+          ...refreshedExecution.changedFiles.take(4),
         ],
         debugOnly: true,
       ),
     );
     return <String, Object?>{
-      'proposalId': execution.executionId,
+      'proposalId': refreshedExecution.executionId,
       'executionPlan': executionPlan.toJson(),
-      'executionResult': execution.toJson(),
-      'result': execution.toJson(),
+      'executionResult': refreshedExecution.toJson(),
+      'result': refreshedExecution.toJson(),
+      'runtimeRefresh': runtimeRefresh.toJson(),
     };
   } on LiveEditAgentException catch (error) {
     request.onEvent?.call(
@@ -737,7 +894,7 @@ class _HeaderSection extends StatelessWidget {
                 Semantics(
                   identifier: 'about_demo_heading',
                   child: Text(
-                    'Hello Live Editing in Flutter',
+                    'Live Editing with Flutter!',
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ),

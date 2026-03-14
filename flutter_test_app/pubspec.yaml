@@ -43,6 +43,7 @@ dependencies:
   mcp_toolkit:
     path: ../mcp_toolkit/mcp_toolkit
   provider: ^6.1.5+1
+  vm_service: ^15.0.2
   xsoulspace_inference_core:
     path: ../../../xs/dart_flutter_packages/pkgs/xsoulspace_inference_core
 

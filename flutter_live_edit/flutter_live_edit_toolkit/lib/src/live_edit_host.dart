@@ -208,6 +208,15 @@ class _FlutterLiveEditHostState extends State<FlutterLiveEditHost> {
   late final bool _ownsOrchestrator;
   final GlobalKey _contentKey = GlobalKey();
 
+  bool get _editableTextHasPrimaryFocus {
+    final context = FocusManager.instance.primaryFocus?.context;
+    if (context == null) {
+      return false;
+    }
+    return context.widget is EditableText ||
+        context.findAncestorStateOfType<EditableTextState>() != null;
+  }
+
   @override
   Widget build(final BuildContext context) => AnimatedBuilder(
     animation: _orchestrator,
@@ -226,7 +235,7 @@ class _FlutterLiveEditHostState extends State<FlutterLiveEditHost> {
         actions: <Type, Action<Intent>>{
           _SelectParentIntent: CallbackAction<_SelectParentIntent>(
             onInvoke: (final _) {
-              if (_orchestrator.overlayVisible) {
+              if (_orchestrator.overlayVisible && !_editableTextHasPrimaryFocus) {
                 _orchestrator.selectParentCandidate();
               }
               return null;
@@ -234,7 +243,7 @@ class _FlutterLiveEditHostState extends State<FlutterLiveEditHost> {
           ),
           _SelectChildIntent: CallbackAction<_SelectChildIntent>(
             onInvoke: (final _) {
-              if (_orchestrator.overlayVisible) {
+              if (_orchestrator.overlayVisible && !_editableTextHasPrimaryFocus) {
                 _orchestrator.selectChildCandidate();
               }
               return null;
@@ -242,7 +251,7 @@ class _FlutterLiveEditHostState extends State<FlutterLiveEditHost> {
           ),
           _CycleCandidateIntent: CallbackAction<_CycleCandidateIntent>(
             onInvoke: (final intent) {
-              if (_orchestrator.overlayVisible) {
+              if (_orchestrator.overlayVisible && !_editableTextHasPrimaryFocus) {
                 _orchestrator.cycleSelectionCandidate(intent.delta);
               }
               return null;
@@ -2526,7 +2535,7 @@ class _AiComposerState extends State<_AiComposer> {
           child: TextField(
             controller: _controller,
             autofocus: widget.autofocus,
-            enableInteractiveSelection: false,
+            enableInteractiveSelection: true,
             maxLines: 3,
             minLines: 2,
             decoration: InputDecoration(
@@ -2941,7 +2950,7 @@ class _NumericEditorState extends State<_NumericEditor> {
             controller: _controller,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             autofocus: widget.surface == LiveEditEditSurface.inline,
-            enableInteractiveSelection: false,
+            enableInteractiveSelection: true,
             enabled: !waiting,
             style: const TextStyle(fontSize: 11),
             decoration: const InputDecoration(
@@ -3034,7 +3043,7 @@ class _TextValueEditorState extends State<_TextValueEditor> {
     return TextField(
       controller: _controller,
       autofocus: widget.surface == LiveEditEditSurface.inline,
-      enableInteractiveSelection: false,
+      enableInteractiveSelection: true,
       enabled: !waiting,
       maxLines: widget.multiline ? 4 : 1,
       minLines: widget.multiline ? 3 : 1,
