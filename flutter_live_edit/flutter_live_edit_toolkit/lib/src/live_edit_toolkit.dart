@@ -13,12 +13,14 @@ Set<MCPCallEntry> getFlutterLiveEditEntries() => <MCPCallEntry>{
           'sessionId': StringSchema(
             description: 'Optional explicit session identifier',
           ),
+          'targetDomain': StringSchema(),
         },
       ),
     ),
     handler: (final request) {
       final result = LiveEditController.instance.startSession(
         requestedSessionId: request['sessionId'],
+        targetDomain: LiveEditTargetDomain.fromWire(request['targetDomain']),
       );
       return MCPCallResult(
         message: 'Live edit session started.',
@@ -54,12 +56,16 @@ Set<MCPCallEntry> getFlutterLiveEditEntries() => <MCPCallEntry>{
       name: LiveEditRuntimeToolNames.getTree,
       description: 'Get the current widget summary tree for the session.',
       inputSchema: ObjectSchema(
-        properties: <String, Schema>{'sessionId': StringSchema()},
+        properties: <String, Schema>{
+          'sessionId': StringSchema(),
+          'targetDomain': StringSchema(),
+        },
       ),
     ),
     handler: (final request) {
       final result = LiveEditController.instance.getTree(
         sessionId: request['sessionId'],
+        targetDomain: LiveEditTargetDomain.fromWire(request['targetDomain']),
       );
       return MCPCallResult(
         message: 'Live edit tree captured.',
@@ -80,6 +86,7 @@ Set<MCPCallEntry> getFlutterLiveEditEntries() => <MCPCallEntry>{
           'y': IntegerSchema(),
           'viewId': IntegerSchema(),
           'selectionPolicy': StringSchema(),
+          'targetDomain': StringSchema(),
         },
       ),
     ),
@@ -92,6 +99,7 @@ Set<MCPCallEntry> getFlutterLiveEditEntries() => <MCPCallEntry>{
         selectionPolicy: LiveEditSelectionPolicy.fromWire(
           request['selectionPolicy'],
         ),
+        targetDomain: LiveEditTargetDomain.fromWire(request['targetDomain']),
       );
       return MCPCallResult(
         message: 'Live edit selection updated.',
@@ -104,10 +112,20 @@ Set<MCPCallEntry> getFlutterLiveEditEntries() => <MCPCallEntry>{
       name: LiveEditRuntimeToolNames.getSelection,
       description: 'Get the currently selected live edit node.',
       inputSchema: ObjectSchema(
-        properties: <String, Schema>{'sessionId': StringSchema()},
+        properties: <String, Schema>{
+          'sessionId': StringSchema(),
+          'targetDomain': StringSchema(),
+        },
       ),
     ),
     handler: (final request) {
+      final domain = LiveEditTargetDomain.fromWire(request['targetDomain']);
+      if (request['targetDomain'] != null) {
+        LiveEditController.instance.setTargetDomain(
+          sessionId: request['sessionId'],
+          targetDomain: domain,
+        );
+      }
       final result = LiveEditController.instance.getSelection(
         sessionId: request['sessionId'],
       );

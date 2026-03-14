@@ -5,6 +5,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 import 'package:flutter_live_edit_toolkit/flutter_live_edit_toolkit.dart';
+import 'package:flutter_live_edit_toolkit/src/live_edit_overlay_theme.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Finder _semanticsId(final String id) => find.byWidgetPredicate(
@@ -226,6 +227,182 @@ void main() {
     expect(
       orchestrator.inferenceConfigForBubble('bubble-second')?.model,
       'gpt-5.3-codex',
+    );
+  });
+
+  testWidgets('tool scene can select expanded panel and update preview state', (
+    final tester,
+  ) async {
+    final orchestrator = LiveEditOrchestrator();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: FlutterLiveEditHost(
+          orchestrator: orchestrator,
+          child: const Scaffold(body: Text('Target')),
+        ),
+      ),
+    );
+
+    await tester.tap(find.byType(ActionChip));
+    await tester.pumpAndSettle();
+    await tester.tap(_semanticsId('live_edit_panel_expand_button'));
+    await tester.pumpAndSettle();
+
+    orchestrator.setTargetDomain(LiveEditTargetDomain.toolScene);
+    await tester.pumpAndSettle();
+
+    final panelKey = LiveEditOverlayThemeModel.instance.keyFor(
+      kLiveEditPanelExpandedSurfaceId,
+    );
+    orchestrator.selectNode(tester.getCenter(find.byKey(panelKey)));
+    await tester.pumpAndSettle();
+
+    final selection = orchestrator.activeSelection;
+    expect(selection, isNotNull);
+    expect(selection!.targetDomain, LiveEditTargetDomain.toolScene);
+    expect(selection.nodeId, kLiveEditPanelExpandedSurfaceId);
+
+    final widthProperty = selection.propertyGroups.firstWhere(
+      (final property) => property.id == 'width',
+    );
+    orchestrator.updateDraft(property: widthProperty, targetValue: 360.0);
+    await tester.pumpAndSettle();
+
+    expect(
+      tester.getSize(find.byKey(panelKey)).width,
+      moreOrLessEquals(360, epsilon: 1.5),
+    );
+  });
+
+  testWidgets('tool scene hover resolves registered surface like app hover', (
+    final tester,
+  ) async {
+    final orchestrator = LiveEditOrchestrator();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: FlutterLiveEditHost(
+          orchestrator: orchestrator,
+          child: const Scaffold(body: Text('Target')),
+        ),
+      ),
+    );
+
+    await tester.tap(find.byType(ActionChip));
+    await tester.pumpAndSettle();
+    await tester.tap(_semanticsId('live_edit_panel_expand_button'));
+    await tester.pumpAndSettle();
+
+    orchestrator.setTargetDomain(LiveEditTargetDomain.toolScene);
+    await tester.pumpAndSettle();
+
+    final panelKey = LiveEditOverlayThemeModel.instance.keyFor(
+      kLiveEditPanelExpandedSurfaceId,
+    );
+    orchestrator.hoverNode(tester.getCenter(find.byKey(panelKey)));
+    await tester.pumpAndSettle();
+
+    expect(orchestrator.hoverSelection, isNotNull);
+    expect(
+      orchestrator.hoverSelection!.targetDomain,
+      LiveEditTargetDomain.toolScene,
+    );
+    expect(
+      orchestrator.hoverSelection!.nodeId,
+      kLiveEditPanelExpandedSurfaceId,
+    );
+  });
+
+  testWidgets(
+    'tool scene uses movable editor panel above selectable target overlay',
+    (final tester) async {
+      final orchestrator = LiveEditOrchestrator();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: FlutterLiveEditHost(
+            orchestrator: orchestrator,
+            child: const Scaffold(body: Text('Target')),
+          ),
+        ),
+      );
+
+      await tester.tap(find.byType(ActionChip));
+      await tester.pumpAndSettle();
+      await tester.tap(_semanticsId('live_edit_panel_expand_button'));
+      await tester.pumpAndSettle();
+
+      orchestrator.setTargetDomain(LiveEditTargetDomain.toolScene);
+      await tester.pumpAndSettle();
+
+      final editorPanel = _semanticsId('live_edit_panel');
+      final dragHandle = _semanticsId('live_edit_panel_drag_handle');
+      final resizeHandle = _semanticsId('live_edit_panel_resize_handle');
+      final targetPanelKey = LiveEditOverlayThemeModel.instance.keyFor(
+        kLiveEditPanelExpandedSurfaceId,
+      );
+      final targetPanel = find.byKey(targetPanelKey);
+
+      final initialTopLeft = tester.getTopLeft(editorPanel);
+      final initialSize = tester.getSize(editorPanel);
+
+      await tester.drag(dragHandle, const Offset(-220, 180));
+      await tester.pumpAndSettle();
+
+      final movedTopLeft = tester.getTopLeft(editorPanel);
+      expect(movedTopLeft.dx, lessThan(initialTopLeft.dx - 100));
+      expect(movedTopLeft.dy, greaterThan(initialTopLeft.dy + 40));
+
+      await tester.drag(resizeHandle, const Offset(80, 120));
+      await tester.pumpAndSettle();
+
+      final resized = tester.getSize(editorPanel);
+      expect(resized.width, greaterThan(initialSize.width + 30));
+      expect(resized.height, greaterThan(initialSize.height + 40));
+
+      await tester.tapAt(tester.getCenter(targetPanel));
+      await tester.pumpAndSettle();
+
+      expect(orchestrator.activeSelection, isNotNull);
+      expect(
+        orchestrator.activeSelection!.targetDomain,
+        LiveEditTargetDomain.toolScene,
+      );
+      expect(
+        orchestrator.activeSelection!.nodeId,
+        kLiveEditPanelExpandedSurfaceId,
+      );
+    },
+  );
+
+  testWidgets('switching back to app scene restores widget selection', (
+    final tester,
+  ) async {
+    final orchestrator = LiveEditOrchestrator();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: FlutterLiveEditHost(
+          orchestrator: orchestrator,
+          child: const Scaffold(body: Text('Target')),
+        ),
+      ),
+    );
+
+    await tester.tap(find.byType(ActionChip));
+    await tester.pumpAndSettle();
+    await tester.tap(_semanticsId('live_edit_panel_expand_button'));
+    await tester.pumpAndSettle();
+
+    orchestrator.setTargetDomain(LiveEditTargetDomain.toolScene);
+    await tester.pumpAndSettle();
+    orchestrator.setTargetDomain(LiveEditTargetDomain.appScene);
+    await tester.pumpAndSettle();
+
+    orchestrator.selectNode(tester.getCenter(find.text('Target')));
+    await tester.pumpAndSettle();
+
+    expect(orchestrator.activeSelection, isNotNull);
+    expect(
+      orchestrator.activeSelection!.targetDomain,
+      LiveEditTargetDomain.appScene,
     );
   });
 
@@ -2434,7 +2611,6 @@ Direct apply request:
       }
 
       expect(find.textContaining('Code:'), findsWidgets);
-      expect(find.text('Technical details'), findsWidgets);
     },
   );
 

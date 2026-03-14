@@ -3,6 +3,7 @@ import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 import 'package:path/path.dart' as p;
 
 import 'live_edit_controller.dart';
+import 'live_edit_overlay_theme.dart';
 
 bool _hasText(final String? value) => value != null && value.trim().isNotEmpty;
 const Object _unsetValue = Object();
@@ -369,6 +370,11 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   double _bubbleWidth = 300;
   double _bubbleHeight = 340;
   Offset _bubbleDragOffset = Offset.zero;
+  double _panelExpandedWidth = 312;
+  double _panelExpandedHeight = 520;
+  double _panelRailWidth = 64;
+  double _panelRailHeight = 420;
+  Offset _panelDragOffset = Offset.zero;
   bool _debugModeEnabled = false;
   bool _deeperPickEnabled = false;
   final Map<String, List<LiveEditTimelineEntry>> _historyByNode =
@@ -408,6 +414,11 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   double get bubbleWidth => _bubbleWidth;
   double get bubbleHeight => _bubbleHeight;
   Offset get bubbleDragOffset => _bubbleDragOffset;
+  double get panelWidth =>
+      panelExpanded ? _panelExpandedWidth : _panelRailWidth;
+  double get panelHeight =>
+      panelExpanded ? _panelExpandedHeight : _panelRailHeight;
+  Offset get panelDragOffset => _panelDragOffset;
   bool get debugModeEnabled => _debugModeEnabled;
   String? get activePropertyId => _activePropertyId;
   String get aiComposer => _activeBubbleState?.instructionText ?? _aiComposer;
@@ -468,6 +479,9 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   String? get currentModel => currentInferenceConfig?.model;
 
   String? get currentReasoningEffort => currentInferenceConfig?.reasoningEffort;
+  LiveEditTargetDomain get targetDomain =>
+      controller.currentTargetDomain(sessionId: activeSessionId);
+  bool get editingToolScene => targetDomain == LiveEditTargetDomain.toolScene;
 
   String get currentBackendLabel =>
       currentBackend?.label.trim().isNotEmpty == true
@@ -807,8 +821,15 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     if (_hasText(current)) {
       return current!;
     }
-    final started = controller.startSession();
+    final started = controller.startSession(targetDomain: targetDomain);
     return '${started['sessionId'] ?? ''}';
+  }
+
+  void setTargetDomain(final LiveEditTargetDomain domain) {
+    final sessionId = ensureSession();
+    controller.setTargetDomain(sessionId: sessionId, targetDomain: domain);
+    _panelDisplayMode = LiveEditPanelDisplayMode.expanded;
+    notifyListeners();
   }
 
   void focusProperty(final LiveEditPropertyDescriptor property) {
@@ -1086,6 +1107,33 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   }) {
     _bubbleWidth = width.clamp(260, 520);
     _bubbleHeight = height.clamp(300, 520);
+    final surfaceId = _editMode == LiveEditEditMode.ai
+        ? kLiveEditAiBubbleSurfaceId
+        : kLiveEditSelectionBubbleSurfaceId;
+    LiveEditOverlayThemeModel.instance.applyDraft(
+      LiveEditDraftChange(
+        nodeId: surfaceId,
+        propertyId: 'width',
+        targetValue: _bubbleWidth,
+        previewMode: LiveEditPreviewMode.exact,
+        meta: <String, Object?>{
+          'surfaceId': surfaceId,
+          'targetDomain': LiveEditTargetDomain.toolScene.wireName,
+        },
+      ),
+    );
+    LiveEditOverlayThemeModel.instance.applyDraft(
+      LiveEditDraftChange(
+        nodeId: surfaceId,
+        propertyId: 'height',
+        targetValue: _bubbleHeight,
+        previewMode: LiveEditPreviewMode.exact,
+        meta: <String, Object?>{
+          'surfaceId': surfaceId,
+          'targetDomain': LiveEditTargetDomain.toolScene.wireName,
+        },
+      ),
+    );
     notifyListeners();
   }
 
@@ -1158,6 +1206,45 @@ final class LiveEditOrchestrator extends ChangeNotifier {
 
   void expandPanel() {
     _panelDisplayMode = LiveEditPanelDisplayMode.expanded;
+    notifyListeners();
+  }
+
+  Offset clampPanelPlacement({
+    required final Offset placement,
+    required final Size viewport,
+  }) {
+    final maxLeft = _maxDouble(16, viewport.width - panelWidth - 16);
+    final maxTop = _maxDouble(16, viewport.height - panelHeight - 16);
+    return Offset(
+      placement.dx.clamp(16, maxLeft),
+      placement.dy.clamp(16, maxTop),
+    );
+  }
+
+  Offset panelPlacement({required final Size viewport}) => clampPanelPlacement(
+    placement: Offset(viewport.width - panelWidth - 16, 16) + _panelDragOffset,
+    viewport: viewport,
+  );
+
+  void dragPanel(final Offset delta) {
+    if (delta == Offset.zero) {
+      return;
+    }
+    _panelDragOffset += delta;
+    notifyListeners();
+  }
+
+  void resizePanel({
+    required final double width,
+    required final double height,
+  }) {
+    if (panelExpanded) {
+      _panelExpandedWidth = width.clamp(240, 640);
+      _panelExpandedHeight = height.clamp(320, 760);
+    } else {
+      _panelRailWidth = width.clamp(56, 160);
+      _panelRailHeight = height.clamp(220, 760);
+    }
     notifyListeners();
   }
 
@@ -1278,6 +1365,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       y: globalOffset.dy.round(),
       deeperMode: deeperMode || _deeperPickEnabled,
       contentRoot: contentRoot is Element ? contentRoot : null,
+      targetDomain: targetDomain,
     );
   }
 
@@ -1307,6 +1395,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       preferHoverPreview: preferHoverPreview || _deeperPickEnabled,
       selectionPolicy: selectionPolicy,
       contentRoot: contentRoot is Element ? contentRoot : null,
+      targetDomain: targetDomain,
     );
     if (_hasText(previousNodeId) && shouldPinPrevious) {
       _bubbleDisplayStateByNode[previousNodeId!] =
@@ -1505,6 +1594,9 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     final meta = <String, Object?>{
       'requiresAgentForPersistence': property.requiresAgentForPersistence,
       'editSurface': (surface ?? property.preferredEditSurface).wireName,
+      'targetDomain': selection.targetDomain.wireName,
+      if (_hasText('${property.meta['surfaceId'] ?? ''}'))
+        'surfaceId': '${property.meta['surfaceId']}',
     };
     if (hasMultiSelection) {
       controller.updateDraftBatch(

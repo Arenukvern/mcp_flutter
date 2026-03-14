@@ -992,7 +992,7 @@ class _HeaderSection extends StatelessWidget {
                 Semantics(
                   identifier: 'about_demo_heading',
                   child: Text(
-                    'Live change from Codex in Flutter',
+                    'Live Edit with AI agents for Flutter App',
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ),

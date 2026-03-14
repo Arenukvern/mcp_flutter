@@ -307,6 +307,23 @@ enum LiveEditEditMode {
   }
 }
 
+enum LiveEditTargetDomain {
+  appScene('app_scene'),
+  toolScene('tool_scene');
+
+  const LiveEditTargetDomain(this.wireName);
+
+  final String wireName;
+
+  static LiveEditTargetDomain fromWire(final Object? value) {
+    final normalized = '$value'.trim().toLowerCase();
+    return LiveEditTargetDomain.values.firstWhere(
+      (final domain) => domain.wireName == normalized,
+      orElse: () => LiveEditTargetDomain.appScene,
+    );
+  }
+}
+
 enum LiveEditEditSurface {
   inline('inline'),
   panel('panel'),
@@ -1012,6 +1029,7 @@ final class LiveEditSelection {
     required this.widgetType,
     required this.propertyGroups,
     required this.rawNode,
+    this.targetDomain = LiveEditTargetDomain.appScene,
     this.renderObjectType,
     this.bounds,
     this.source,
@@ -1028,6 +1046,7 @@ final class LiveEditSelection {
         sessionId: '${json['sessionId'] ?? ''}',
         nodeId: '${json['nodeId'] ?? ''}',
         widgetType: '${json['widgetType'] ?? ''}',
+        targetDomain: LiveEditTargetDomain.fromWire(json['targetDomain']),
         renderObjectType: _asNullableString(json['renderObjectType']),
         bounds: switch (json['bounds']) {
           final Map value => LiveEditBounds.fromJson(_asMap(value)),
@@ -1057,6 +1076,7 @@ final class LiveEditSelection {
   final String sessionId;
   final String nodeId;
   final String widgetType;
+  final LiveEditTargetDomain targetDomain;
   final String? renderObjectType;
   final LiveEditBounds? bounds;
   final LiveEditSourceLocation? source;
@@ -1073,6 +1093,7 @@ final class LiveEditSelection {
     'sessionId': sessionId,
     'nodeId': nodeId,
     'widgetType': widgetType,
+    'targetDomain': targetDomain.wireName,
     if (renderObjectType != null) 'renderObjectType': renderObjectType,
     if (bounds != null) 'bounds': bounds!.toJson(),
     if (source != null) 'source': source!.toJson(),

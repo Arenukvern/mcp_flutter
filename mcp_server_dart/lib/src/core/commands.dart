@@ -294,9 +294,10 @@ final class LiveEditGetAgentBackendCommand extends CoreCommand {
 }
 
 final class LiveEditGetCapabilitiesCommand extends CoreCommand {
-  const LiveEditGetCapabilitiesCommand({this.sessionId});
+  const LiveEditGetCapabilitiesCommand({this.sessionId, this.targetDomain});
 
   final String? sessionId;
+  final String? targetDomain;
 
   @override
   String get name => 'live_edit_get_capabilities';
@@ -312,45 +313,53 @@ final class LiveEditGetDraftCommand extends CoreCommand {
 }
 
 final class LiveEditGetPreviewStateCommand extends CoreCommand {
-  const LiveEditGetPreviewStateCommand({this.sessionId});
+  const LiveEditGetPreviewStateCommand({this.sessionId, this.targetDomain});
 
   final String? sessionId;
+  final String? targetDomain;
 
   @override
   String get name => 'live_edit_get_preview_state';
 }
 
 final class LiveEditGetPropertyPanelCommand extends CoreCommand {
-  const LiveEditGetPropertyPanelCommand({this.sessionId});
+  const LiveEditGetPropertyPanelCommand({this.sessionId, this.targetDomain});
 
   final String? sessionId;
+  final String? targetDomain;
 
   @override
   String get name => 'live_edit_get_property_panel';
 }
 
 final class LiveEditGetSelectionCandidatesCommand extends CoreCommand {
-  const LiveEditGetSelectionCandidatesCommand({this.sessionId});
+  const LiveEditGetSelectionCandidatesCommand({
+    this.sessionId,
+    this.targetDomain,
+  });
 
   final String? sessionId;
+  final String? targetDomain;
 
   @override
   String get name => 'live_edit_get_selection_candidates';
 }
 
 final class LiveEditGetSelectionCommand extends CoreCommand {
-  const LiveEditGetSelectionCommand({this.sessionId});
+  const LiveEditGetSelectionCommand({this.sessionId, this.targetDomain});
 
   final String? sessionId;
+  final String? targetDomain;
 
   @override
   String get name => 'live_edit_get_selection';
 }
 
 final class LiveEditGetTreeCommand extends CoreCommand {
-  const LiveEditGetTreeCommand({this.sessionId});
+  const LiveEditGetTreeCommand({this.sessionId, this.targetDomain});
 
   final String? sessionId;
+  final String? targetDomain;
 
   @override
   String get name => 'live_edit_get_tree';
@@ -369,12 +378,14 @@ final class LiveEditPrepareSessionCommand extends CoreCommand {
     this.backendId,
     this.inferenceConfig,
     this.workingDirectory,
+    this.targetDomain,
   });
 
   final String? sessionId;
   final String? backendId;
   final LiveEditInferenceConfig? inferenceConfig;
   final String? workingDirectory;
+  final String? targetDomain;
 
   @override
   String get name => 'live_edit_prepare_session';
@@ -396,6 +407,7 @@ final class LiveEditResolveDraftCommand extends CoreCommand {
     this.inferenceConfig,
     this.workingDirectory,
     this.intentText,
+    this.targetDomain,
   });
 
   final String? sessionId;
@@ -403,6 +415,7 @@ final class LiveEditResolveDraftCommand extends CoreCommand {
   final LiveEditInferenceConfig? inferenceConfig;
   final String? workingDirectory;
   final String? intentText;
+  final String? targetDomain;
 
   @override
   String get name => 'live_edit_resolve_draft';
@@ -415,6 +428,7 @@ final class LiveEditSelectAtPointCommand extends CoreCommand {
     this.sessionId,
     this.viewId,
     this.selectionPolicy = LiveEditSelectionPolicy.deepest,
+    this.targetDomain,
   });
 
   final String? sessionId;
@@ -422,6 +436,7 @@ final class LiveEditSelectAtPointCommand extends CoreCommand {
   final int y;
   final int? viewId;
   final LiveEditSelectionPolicy selectionPolicy;
+  final String? targetDomain;
 
   @override
   String get name => 'live_edit_select_at_point';
@@ -432,11 +447,13 @@ final class LiveEditSetActiveSelectionCommand extends CoreCommand {
     this.sessionId,
     this.nodeId,
     this.index,
+    this.targetDomain,
   });
 
   final String? sessionId;
   final String? nodeId;
   final int? index;
+  final String? targetDomain;
 
   @override
   String get name => 'live_edit_set_active_selection';
@@ -458,10 +475,15 @@ final class LiveEditSetAgentBackendCommand extends CoreCommand {
 }
 
 final class LiveEditSetEditModeCommand extends CoreCommand {
-  const LiveEditSetEditModeCommand({required this.mode, this.sessionId});
+  const LiveEditSetEditModeCommand({
+    required this.mode,
+    this.sessionId,
+    this.targetDomain,
+  });
 
   final String? sessionId;
   final String mode;
+  final String? targetDomain;
 
   @override
   String get name => 'live_edit_set_edit_mode';
@@ -478,19 +500,25 @@ final class LiveEditSetOverlayCommand extends CoreCommand {
 }
 
 final class LiveEditStartSessionCommand extends CoreCommand {
-  const LiveEditStartSessionCommand({this.sessionId});
+  const LiveEditStartSessionCommand({this.sessionId, this.targetDomain});
 
   final String? sessionId;
+  final String? targetDomain;
 
   @override
   String get name => 'live_edit_start_session';
 }
 
 final class LiveEditUpdateDraftCommand extends CoreCommand {
-  const LiveEditUpdateDraftCommand({required this.change, this.sessionId});
+  const LiveEditUpdateDraftCommand({
+    required this.change,
+    this.sessionId,
+    this.targetDomain,
+  });
 
   final String? sessionId;
   final LiveEditDraftChange change;
+  final String? targetDomain;
 
   @override
   String get name => 'live_edit_update_draft';

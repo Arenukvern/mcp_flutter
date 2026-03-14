@@ -19,7 +19,7 @@ class LiveEditHandler {
   static final liveEditStartSessionTool = _tool(
     name: 'live_edit_start_session',
     fallbackDescription: 'Start or reuse a live edit session.',
-    properties: {'sessionId': Schema.string()},
+    properties: {'sessionId': Schema.string(), 'targetDomain': Schema.string()},
   );
 
   static final liveEditPrepareSessionTool = _tool(
@@ -31,6 +31,7 @@ class LiveEditHandler {
       'backendId': Schema.string(),
       'inferenceConfig': _inferenceConfigSchema(),
       'workingDirectory': Schema.string(),
+      'targetDomain': Schema.string(),
     },
   );
 
@@ -44,7 +45,7 @@ class LiveEditHandler {
   static final liveEditGetTreeTool = _tool(
     name: 'live_edit_get_tree',
     fallbackDescription: 'Get the live edit widget tree.',
-    properties: {'sessionId': Schema.string()},
+    properties: {'sessionId': Schema.string(), 'targetDomain': Schema.string()},
   );
 
   static final liveEditSelectAtPointTool = _tool(
@@ -56,6 +57,7 @@ class LiveEditHandler {
       'y': Schema.int(),
       'viewId': Schema.int(),
       'selectionPolicy': Schema.string(),
+      'targetDomain': Schema.string(),
     },
     required: const <String>['x', 'y'],
   );
@@ -63,19 +65,19 @@ class LiveEditHandler {
   static final liveEditGetSelectionTool = _tool(
     name: 'live_edit_get_selection',
     fallbackDescription: 'Get the current live edit selection.',
-    properties: {'sessionId': Schema.string()},
+    properties: {'sessionId': Schema.string(), 'targetDomain': Schema.string()},
   );
 
   static final liveEditGetCapabilitiesTool = _tool(
     name: 'live_edit_get_capabilities',
     fallbackDescription: 'Get live edit runtime capabilities.',
-    properties: {'sessionId': Schema.string()},
+    properties: {'sessionId': Schema.string(), 'targetDomain': Schema.string()},
   );
 
   static final liveEditGetSelectionCandidatesTool = _tool(
     name: 'live_edit_get_selection_candidates',
     fallbackDescription: 'Get the current live edit selection candidates.',
-    properties: {'sessionId': Schema.string()},
+    properties: {'sessionId': Schema.string(), 'targetDomain': Schema.string()},
   );
 
   static final liveEditSetActiveSelectionTool = _tool(
@@ -86,26 +88,31 @@ class LiveEditHandler {
       'sessionId': Schema.string(),
       'nodeId': Schema.string(),
       'index': Schema.int(),
+      'targetDomain': Schema.string(),
     },
   );
 
   static final liveEditGetPropertyPanelTool = _tool(
     name: 'live_edit_get_property_panel',
     fallbackDescription: 'Get the current live edit property panel payload.',
-    properties: {'sessionId': Schema.string()},
+    properties: {'sessionId': Schema.string(), 'targetDomain': Schema.string()},
   );
 
   static final liveEditSetEditModeTool = _tool(
     name: 'live_edit_set_edit_mode',
     fallbackDescription: 'Set the live edit overlay mode.',
-    properties: {'sessionId': Schema.string(), 'mode': Schema.string()},
+    properties: {
+      'sessionId': Schema.string(),
+      'mode': Schema.string(),
+      'targetDomain': Schema.string(),
+    },
     required: const <String>['mode'],
   );
 
   static final liveEditGetPreviewStateTool = _tool(
     name: 'live_edit_get_preview_state',
     fallbackDescription: 'Get the current live edit preview state.',
-    properties: {'sessionId': Schema.string()},
+    properties: {'sessionId': Schema.string(), 'targetDomain': Schema.string()},
   );
 
   static final liveEditUpdateDraftTool = _tool(
@@ -114,6 +121,7 @@ class LiveEditHandler {
     properties: {
       'sessionId': Schema.string(),
       'change': Schema.object(additionalProperties: true),
+      'targetDomain': Schema.string(),
     },
     required: const <String>['change'],
   );
@@ -167,6 +175,7 @@ class LiveEditHandler {
       'inferenceConfig': _inferenceConfigSchema(),
       'workingDirectory': Schema.string(),
       'intentText': Schema.string(),
+      'targetDomain': Schema.string(),
     },
   );
 

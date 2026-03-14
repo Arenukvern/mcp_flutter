@@ -1136,6 +1136,8 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     return CoreResult.success(
       data: <String, Object?>{
         if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
+        if (_hasText(command.targetDomain))
+          'targetDomain': command.targetDomain,
         'backend': backend.toJson(),
         'capabilities': const <String, Object?>{
           'overlay': true,
@@ -1147,6 +1149,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
           'ghostPreview': true,
           'agentResolution': true,
           'editModes': <String>['inspect', 'edit', 'hidden'],
+          'targetDomains': <String>['app_scene', 'tool_scene'],
         },
       },
     );
@@ -1171,7 +1174,10 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
 
     final selectionResult = await _liveEditGetSelection(
-      LiveEditGetSelectionCommand(sessionId: command.sessionId),
+      LiveEditGetSelectionCommand(
+        sessionId: command.sessionId,
+        targetDomain: command.targetDomain,
+      ),
     );
     if (!selectionResult.ok) {
       return selectionResult;
@@ -1202,6 +1208,8 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     return CoreResult.success(
       data: <String, Object?>{
         if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
+        if (_hasText(command.targetDomain))
+          'targetDomain': command.targetDomain,
         'mode': _liveEditSessionModes[command.sessionId ?? ''] ?? 'inspect',
         'selectionAvailable': selection != null,
         if (selection != null) 'nodeId': selection.nodeId,
@@ -1219,7 +1227,10 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     final LiveEditGetPropertyPanelCommand command,
   ) async {
     final selectionResult = await _liveEditGetSelection(
-      LiveEditGetSelectionCommand(sessionId: command.sessionId),
+      LiveEditGetSelectionCommand(
+        sessionId: command.sessionId,
+        targetDomain: command.targetDomain,
+      ),
     );
     if (!selectionResult.ok) {
       return selectionResult;
@@ -1229,6 +1240,8 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     return CoreResult.success(
       data: <String, Object?>{
         if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
+        if (_hasText(command.targetDomain))
+          'targetDomain': command.targetDomain,
         if (selection != null) 'nodeId': selection.nodeId,
         if (selection != null) 'widgetType': selection.widgetType,
         'properties':
@@ -1247,6 +1260,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     LiveEditRuntimeToolNames.getSelection,
     arguments: <String, Object?>{
       if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
+      if (_hasText(command.targetDomain)) 'targetDomain': command.targetDomain,
     },
   );
 
@@ -1254,7 +1268,10 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     final LiveEditGetSelectionCandidatesCommand command,
   ) async {
     final selectionResult = await _liveEditGetSelection(
-      LiveEditGetSelectionCommand(sessionId: command.sessionId),
+      LiveEditGetSelectionCommand(
+        sessionId: command.sessionId,
+        targetDomain: command.targetDomain,
+      ),
     );
     if (!selectionResult.ok) {
       return selectionResult;
@@ -1275,6 +1292,8 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     return CoreResult.success(
       data: <String, Object?>{
         if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
+        if (_hasText(command.targetDomain))
+          'targetDomain': command.targetDomain,
         'activeNodeId': selection?.nodeId,
         'candidates': candidates,
       },
@@ -1286,6 +1305,8 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
         LiveEditRuntimeToolNames.getTree,
         arguments: <String, Object?>{
           if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
+          if (_hasText(command.targetDomain))
+            'targetDomain': command.targetDomain,
         },
       );
 
@@ -1342,14 +1363,20 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
 
     final capabilitiesResult = await _liveEditGetCapabilities(
-      LiveEditGetCapabilitiesCommand(sessionId: sessionId),
+      LiveEditGetCapabilitiesCommand(
+        sessionId: sessionId,
+        targetDomain: command.targetDomain,
+      ),
     );
     if (!capabilitiesResult.ok) {
       return capabilitiesResult;
     }
 
     final selectionResult = await _liveEditGetSelection(
-      LiveEditGetSelectionCommand(sessionId: sessionId),
+      LiveEditGetSelectionCommand(
+        sessionId: sessionId,
+        targetDomain: command.targetDomain,
+      ),
     );
     final draftResult = await _liveEditGetDraft(
       LiveEditGetDraftCommand(sessionId: sessionId),
@@ -1358,6 +1385,8 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     return CoreResult.success(
       data: <String, Object?>{
         'sessionId': sessionId,
+        if (_hasText(command.targetDomain))
+          'targetDomain': command.targetDomain,
         if (_hasText(command.workingDirectory))
           'workingDirectory': command.workingDirectory,
         'overlay': _map(overlayResult.data),
@@ -1417,14 +1446,20 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
 
     final selectionResult = await _liveEditGetSelection(
-      LiveEditGetSelectionCommand(sessionId: sessionId),
+      LiveEditGetSelectionCommand(
+        sessionId: sessionId,
+        targetDomain: command.targetDomain,
+      ),
     );
     if (!selectionResult.ok) {
       return selectionResult;
     }
 
     final treeResult = await _liveEditGetTree(
-      LiveEditGetTreeCommand(sessionId: sessionId),
+      LiveEditGetTreeCommand(
+        sessionId: sessionId,
+        targetDomain: command.targetDomain,
+      ),
     );
     if (!treeResult.ok) {
       return treeResult;
@@ -1470,6 +1505,8 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       return CoreResult.success(
         data: <String, Object?>{
           'sessionId': sessionId,
+          if (_hasText(command.targetDomain))
+            'targetDomain': command.targetDomain,
           'backend': backend.toJson(),
           'proposal': proposal.toJson(),
         },
@@ -1508,6 +1545,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       'y': command.y,
       if (command.viewId != null) 'viewId': command.viewId,
       'selectionPolicy': command.selectionPolicy.wireName,
+      if (_hasText(command.targetDomain)) 'targetDomain': command.targetDomain,
     },
   );
 
@@ -1515,7 +1553,10 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     final LiveEditSetActiveSelectionCommand command,
   ) async {
     final candidatesResult = await _liveEditGetSelectionCandidates(
-      LiveEditGetSelectionCandidatesCommand(sessionId: command.sessionId),
+      LiveEditGetSelectionCandidatesCommand(
+        sessionId: command.sessionId,
+        targetDomain: command.targetDomain,
+      ),
     );
     if (!candidatesResult.ok) {
       return candidatesResult;
@@ -1527,6 +1568,8 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       return CoreResult.success(
         data: <String, Object?>{
           if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
+          if (_hasText(command.targetDomain))
+            'targetDomain': command.targetDomain,
           'activated': false,
           'reason': 'no_selection_candidates',
           'candidates': candidates,
@@ -1544,6 +1587,8 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     return CoreResult.success(
       data: <String, Object?>{
         if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
+        if (_hasText(command.targetDomain))
+          'targetDomain': command.targetDomain,
         'activated': matchesIndex && matchesNode,
         'activeNodeId': first['nodeId'],
         'selection': first['selection'],
@@ -1622,7 +1667,12 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
 
     return CoreResult.success(
-      data: <String, Object?>{'sessionId': sessionId, 'mode': normalizedMode},
+      data: <String, Object?>{
+        'sessionId': sessionId,
+        'mode': normalizedMode,
+        if (_hasText(command.targetDomain))
+          'targetDomain': command.targetDomain,
+      },
     );
   }
 
@@ -1642,6 +1692,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     LiveEditRuntimeToolNames.startSession,
     arguments: <String, Object?>{
       if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
+      if (_hasText(command.targetDomain)) 'targetDomain': command.targetDomain,
     },
   );
 
@@ -1651,6 +1702,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     LiveEditRuntimeToolNames.updateDraft,
     arguments: <String, Object?>{
       if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
+      if (_hasText(command.targetDomain)) 'targetDomain': command.targetDomain,
       'changeJson': encodeLiveEditJson(command.change.toJson()),
     },
   );

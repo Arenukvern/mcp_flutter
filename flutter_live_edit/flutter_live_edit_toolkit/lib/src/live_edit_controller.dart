@@ -8,6 +8,8 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 
+import 'live_edit_overlay_theme.dart';
+
 bool _hasText(final String? value) => value != null && value.trim().isNotEmpty;
 
 Map<String, Object?> _alignmentJson(final AlignmentGeometry geometry) {
@@ -1155,6 +1157,9 @@ final class LiveEditController extends ChangeNotifier {
 
   bool get overlayVisible => _activeSessionOrNull()?.overlayEnabled ?? false;
 
+  LiveEditTargetDomain currentTargetDomain({final String? sessionId}) =>
+      _requireSession(sessionId).targetDomain;
+
   bool isMeaningfulNode(final String nodeId, {final String? sessionId}) =>
       _requireSession(sessionId).meaningfulNodeIds.contains(nodeId);
 
@@ -1296,6 +1301,7 @@ final class LiveEditController extends ChangeNotifier {
     final selection = session.selection;
     return <String, Object?>{
       'sessionId': session.sessionId,
+      'targetDomain': session.targetDomain.wireName,
       'selection': selection?.toJson(),
       'hasSelection': selection != null,
       'hoverSelection': session.hoverSelection?.toJson(),
@@ -1308,8 +1314,23 @@ final class LiveEditController extends ChangeNotifier {
     };
   }
 
-  Map<String, Object?> getTree({final String? sessionId}) {
+  Map<String, Object?> getTree({
+    final String? sessionId,
+    final LiveEditTargetDomain? targetDomain,
+  }) {
     final session = _requireSession(sessionId);
+    final resolvedDomain = _resolveTargetDomain(session, targetDomain);
+    if (resolvedDomain == LiveEditTargetDomain.toolScene) {
+      session.lastTouchedAt = DateTime.now().toUtc();
+      return <String, Object?>{
+        'sessionId': session.sessionId,
+        'targetDomain': resolvedDomain.wireName,
+        'selectedNodeId': session.selection?.nodeId,
+        'tree': LiveEditOverlayThemeModel.instance.buildTreeSnapshot(
+          session.sessionId,
+        ),
+      };
+    }
     final rawTree = _decodeObject(
       WidgetInspectorService.instance.getRootWidgetSummaryTree(
         session.objectGroup,
@@ -1318,6 +1339,7 @@ final class LiveEditController extends ChangeNotifier {
     session.lastTouchedAt = DateTime.now().toUtc();
     return <String, Object?>{
       'sessionId': session.sessionId,
+      'targetDomain': resolvedDomain.wireName,
       'selectedNodeId': session.selection?.nodeId,
       'tree': rawTree,
     };
@@ -1337,8 +1359,26 @@ final class LiveEditController extends ChangeNotifier {
     final String? sessionId,
     final int? viewId,
     final Element? contentRoot,
+    final LiveEditTargetDomain? targetDomain,
   }) {
     final session = _requireSession(sessionId);
+    final resolvedDomain = _resolveTargetDomain(session, targetDomain);
+    if (resolvedDomain == LiveEditTargetDomain.toolScene) {
+      final hits = LiveEditOverlayThemeModel.instance.hitTest(
+        sessionId: session.sessionId,
+        point: ui.Offset(x.toDouble(), y.toDouble()),
+      );
+      session.hoverSelection = hits.isEmpty ? null : hits.first;
+      session.lastTouchedAt = DateTime.now().toUtc();
+      notifyListeners();
+      return <String, Object?>{
+        'sessionId': session.sessionId,
+        'targetDomain': resolvedDomain.wireName,
+        'hovered': session.hoverSelection != null,
+        if (session.hoverSelection != null)
+          'selection': session.hoverSelection!.toJson(),
+      };
+    }
     final root =
         (contentRoot != null && contentRoot.mounted ? contentRoot : null) ??
         WidgetsBinding.instance.rootElement;
@@ -1427,8 +1467,51 @@ final class LiveEditController extends ChangeNotifier {
     final bool preferHoverPreview = false,
     final LiveEditSelectionPolicy selectionPolicy =
         LiveEditSelectionPolicy.deepest,
+    final LiveEditTargetDomain? targetDomain,
   }) {
     final session = _requireSession(sessionId);
+    final resolvedDomain = _resolveTargetDomain(session, targetDomain);
+    if (resolvedDomain == LiveEditTargetDomain.toolScene) {
+      final hits = LiveEditOverlayThemeModel.instance.hitTest(
+        sessionId: session.sessionId,
+        point: ui.Offset(x.toDouble(), y.toDouble()),
+      );
+      if (hits.isEmpty) {
+        return <String, Object?>{
+          'sessionId': session.sessionId,
+          'targetDomain': resolvedDomain.wireName,
+          'hit': false,
+          'point': <String, Object?>{'x': x, 'y': y},
+        };
+      }
+      session.selection = hits.first;
+      session.multiSelections = <LiveEditSelection>[hits.first];
+      session.selectionCandidates = hits.indexed
+          .map(
+            (final entry) => LiveEditSelectionCandidate(
+              nodeId: entry.$2.nodeId,
+              widgetType: entry.$2.widgetType,
+              bounds: entry.$2.bounds,
+              depth: entry.$1,
+              source: entry.$2.source,
+              createdByLocalProject: true,
+              active: entry.$1 == 0,
+            ),
+          )
+          .toList(growable: false);
+      session.lastTouchedAt = DateTime.now().toUtc();
+      notifyListeners();
+      return <String, Object?>{
+        'sessionId': session.sessionId,
+        'targetDomain': resolvedDomain.wireName,
+        'hit': true,
+        'point': <String, Object?>{'x': x, 'y': y},
+        'selection': hits.first.toJson(),
+        'selectionCandidates': session.selectionCandidates
+            .map((final candidate) => candidate.toJson())
+            .toList(growable: false),
+      };
+    }
     final root =
         (contentRoot != null && contentRoot.mounted ? contentRoot : null) ??
         WidgetsBinding.instance.rootElement;
@@ -1482,6 +1565,7 @@ final class LiveEditController extends ChangeNotifier {
     notifyListeners();
     return <String, Object?>{
       'sessionId': session.sessionId,
+      'targetDomain': resolvedDomain.wireName,
       'hit': true,
       'point': <String, Object?>{'x': x, 'y': y},
       'selection': selection.toJson(),
@@ -1748,6 +1832,38 @@ final class LiveEditController extends ChangeNotifier {
     final String? sessionId,
   }) {
     final session = _requireSession(sessionId);
+    if (session.targetDomain == LiveEditTargetDomain.toolScene) {
+      final selection = LiveEditOverlayThemeModel.instance.selectionForSurface(
+        surfaceId: nodeId,
+        sessionId: session.sessionId,
+      );
+      if (selection == null) {
+        return <String, Object?>{
+          'sessionId': session.sessionId,
+          'selected': false,
+          'reason': 'tracked_node_unavailable',
+        };
+      }
+      session.selection = selection;
+      session.multiSelections = <LiveEditSelection>[selection];
+      session.selectionCandidates = <LiveEditSelectionCandidate>[
+        LiveEditSelectionCandidate(
+          nodeId: selection.nodeId,
+          widgetType: selection.widgetType,
+          bounds: selection.bounds,
+          depth: 0,
+          source: selection.source,
+          createdByLocalProject: true,
+          active: true,
+        ),
+      ];
+      notifyListeners();
+      return <String, Object?>{
+        'sessionId': session.sessionId,
+        'selected': true,
+        'selection': selection.toJson(),
+      };
+    }
     final tracked = session.trackedSelections[nodeId];
     if (tracked == null ||
         !tracked.element.mounted ||
@@ -1834,7 +1950,10 @@ final class LiveEditController extends ChangeNotifier {
     };
   }
 
-  Map<String, Object?> startSession({final String? requestedSessionId}) {
+  Map<String, Object?> startSession({
+    final String? requestedSessionId,
+    final LiveEditTargetDomain targetDomain = LiveEditTargetDomain.appScene,
+  }) {
     final sessionId = requestedSessionId?.trim().isNotEmpty == true
         ? requestedSessionId!.trim()
         : 'live_edit_${DateTime.now().millisecondsSinceEpoch}';
@@ -1847,15 +1966,36 @@ final class LiveEditController extends ChangeNotifier {
         objectGroup: 'live_edit_group_$sessionId',
       ),
     );
+    session.targetDomain = targetDomain;
     session.lastTouchedAt = DateTime.now().toUtc();
     notifyListeners();
     return <String, Object?>{
       'sessionId': sessionId,
       'active': true,
+      'targetDomain': targetDomain.wireName,
       'overlayEnabled': session.overlayEnabled,
       'selectionCandidates': session.selectionCandidates
           .map((final candidate) => candidate.toJson())
           .toList(growable: false),
+    };
+  }
+
+  Map<String, Object?> setTargetDomain({
+    required final LiveEditTargetDomain targetDomain,
+    final String? sessionId,
+  }) {
+    final session = _requireSession(sessionId);
+    session.targetDomain = targetDomain;
+    if (targetDomain == LiveEditTargetDomain.toolScene) {
+      session.selectedElement = null;
+      session.hoverSelection = null;
+      session.hoverHitCandidates = const <_ElementHit>[];
+    }
+    session.lastTouchedAt = DateTime.now().toUtc();
+    notifyListeners();
+    return <String, Object?>{
+      'sessionId': session.sessionId,
+      'targetDomain': targetDomain.wireName,
     };
   }
 
@@ -2033,6 +2173,49 @@ final class LiveEditController extends ChangeNotifier {
     final String? sessionId,
   }) {
     final session = _requireSession(sessionId);
+    final targetDomain = change.meta['targetDomain'] == null
+        ? session.targetDomain
+        : LiveEditTargetDomain.fromWire(change.meta['targetDomain']);
+    if (targetDomain == LiveEditTargetDomain.toolScene) {
+      final updated = LiveEditOverlayThemeModel.instance.applyDraft(change);
+      if (!updated) {
+        return <String, Object?>{
+          'sessionId': session.sessionId,
+          'updated': false,
+          'reason': 'selection_mismatch',
+        };
+      }
+      final existingIndex = session.draftChanges.indexWhere(
+        (final candidate) =>
+            candidate.nodeId == change.nodeId &&
+            candidate.propertyId == change.propertyId,
+      );
+      if (existingIndex >= 0) {
+        session.draftChanges[existingIndex] = change;
+      } else {
+        session.draftChanges.add(change);
+      }
+      final selection = LiveEditOverlayThemeModel.instance.selectionForSurface(
+        surfaceId: change.nodeId,
+        sessionId: session.sessionId,
+      );
+      session.selection = selection;
+      session.multiSelections = selection == null
+          ? const <LiveEditSelection>[]
+          : <LiveEditSelection>[selection];
+      session.lastTouchedAt = DateTime.now().toUtc();
+      notifyListeners();
+      return <String, Object?>{
+        'sessionId': session.sessionId,
+        'targetDomain': targetDomain.wireName,
+        'updated': true,
+        'selection': selection?.toJson(),
+        'draftChanges': session.draftChanges
+            .map((final draft) => draft.toJson())
+            .toList(),
+        'appliedPreviewMode': LiveEditPreviewMode.exact.wireName,
+      };
+    }
     final trackedSelection = session.selection?.nodeId == change.nodeId
         ? session.selection
         : session.trackedSelections[change.nodeId]?.selection;
@@ -2083,6 +2266,7 @@ final class LiveEditController extends ChangeNotifier {
     }
     return <String, Object?>{
       'sessionId': session.sessionId,
+      'targetDomain': targetDomain.wireName,
       'updated': true,
       'selection': trackedSelection.toJson(),
       'draftChanges': session.draftChanges
@@ -2235,6 +2419,16 @@ final class LiveEditController extends ChangeNotifier {
         objectGroup: 'live_edit_group_$resolvedId',
       ),
     );
+  }
+
+  LiveEditTargetDomain _resolveTargetDomain(
+    final _LiveEditSessionState session,
+    final LiveEditTargetDomain? requested,
+  ) {
+    if (requested != null) {
+      session.targetDomain = requested;
+    }
+    return session.targetDomain;
   }
 
   void _revertExactPreview(
@@ -2552,6 +2746,7 @@ final class _LiveEditSessionState {
 
   final String sessionId;
   final String objectGroup;
+  LiveEditTargetDomain targetDomain = LiveEditTargetDomain.appScene;
   bool overlayEnabled = false;
   Element? selectedElement;
   LiveEditSelection? selection;

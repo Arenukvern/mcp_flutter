@@ -254,7 +254,12 @@ final class CommandCatalog {
       CommandSpec(
         name: 'session_end',
         description: 'Terminate a persisted session record.',
-        inputSchema: _objectSchema(properties: {'sessionId': _stringSchema()}),
+        inputSchema: _objectSchema(
+          properties: {
+            'sessionId': _stringSchema(),
+            'targetDomain': _stringSchema(),
+          },
+        ),
         outputSchema: _objectSchema(
           properties: {
             'sessionId': _stringSchema(),
@@ -765,13 +770,23 @@ final class CommandCatalog {
         name: 'live_edit_start_session',
         description:
             'Start or reuse a Flutter live-edit session in the running app.',
-        inputSchema: _objectSchema(properties: {'sessionId': _stringSchema()}),
+        inputSchema: _objectSchema(
+          properties: {
+            'sessionId': _stringSchema(),
+            'targetDomain': _stringSchema(),
+          },
+        ),
         outputSchema: _objectSchema(additionalProperties: true),
         requiresVm: true,
         supportsWatch: false,
         mcpExposed: true,
         build: (final args) => LiveEditStartSessionCommand(
           sessionId: _nullableStringArg(args, 'sessionId', alias: 'session-id'),
+          targetDomain: _nullableStringArg(
+            args,
+            'targetDomain',
+            alias: 'target-domain',
+          ),
         ),
       ),
       CommandSpec(
@@ -785,6 +800,7 @@ final class CommandCatalog {
             'inferenceConfig': _inferenceConfigSchema(),
             'codexConfig': _inferenceConfigSchema(),
             'workingDirectory': _stringSchema(),
+            'targetDomain': _stringSchema(),
           },
         ),
         outputSchema: _objectSchema(additionalProperties: true),
@@ -799,6 +815,11 @@ final class CommandCatalog {
             args,
             'workingDirectory',
             alias: 'working-directory',
+          ),
+          targetDomain: _nullableStringArg(
+            args,
+            'targetDomain',
+            alias: 'target-domain',
           ),
         ),
       ),
@@ -825,13 +846,23 @@ final class CommandCatalog {
       CommandSpec(
         name: 'live_edit_get_tree',
         description: 'Return the current live-edit widget summary tree.',
-        inputSchema: _objectSchema(properties: {'sessionId': _stringSchema()}),
+        inputSchema: _objectSchema(
+          properties: {
+            'sessionId': _stringSchema(),
+            'targetDomain': _stringSchema(),
+          },
+        ),
         outputSchema: _objectSchema(additionalProperties: true),
         requiresVm: true,
         supportsWatch: true,
         mcpExposed: true,
         build: (final args) => LiveEditGetTreeCommand(
           sessionId: _nullableStringArg(args, 'sessionId', alias: 'session-id'),
+          targetDomain: _nullableStringArg(
+            args,
+            'targetDomain',
+            alias: 'target-domain',
+          ),
         ),
       ),
       CommandSpec(
@@ -845,6 +876,7 @@ final class CommandCatalog {
             'y': _intSchema(),
             'viewId': _intSchema(),
             'selectionPolicy': _stringSchema(),
+            'targetDomain': _stringSchema(),
           },
           required: const <String>['x', 'y'],
         ),
@@ -864,44 +896,79 @@ final class CommandCatalog {
               alias: 'selection-policy',
             ),
           ),
+          targetDomain: _nullableStringArg(
+            args,
+            'targetDomain',
+            alias: 'target-domain',
+          ),
         ),
       ),
       CommandSpec(
         name: 'live_edit_get_selection',
         description: 'Return the current live-edit selection payload.',
-        inputSchema: _objectSchema(properties: {'sessionId': _stringSchema()}),
+        inputSchema: _objectSchema(
+          properties: {
+            'sessionId': _stringSchema(),
+            'targetDomain': _stringSchema(),
+          },
+        ),
         outputSchema: _objectSchema(additionalProperties: true),
         requiresVm: true,
         supportsWatch: true,
         mcpExposed: true,
         build: (final args) => LiveEditGetSelectionCommand(
           sessionId: _nullableStringArg(args, 'sessionId', alias: 'session-id'),
+          targetDomain: _nullableStringArg(
+            args,
+            'targetDomain',
+            alias: 'target-domain',
+          ),
         ),
       ),
       CommandSpec(
         name: 'live_edit_get_capabilities',
         description:
             'Return normalized live-edit runtime capabilities for the active session.',
-        inputSchema: _objectSchema(properties: {'sessionId': _stringSchema()}),
+        inputSchema: _objectSchema(
+          properties: {
+            'sessionId': _stringSchema(),
+            'targetDomain': _stringSchema(),
+          },
+        ),
         outputSchema: _objectSchema(additionalProperties: true),
         requiresVm: true,
         supportsWatch: true,
         mcpExposed: true,
         build: (final args) => LiveEditGetCapabilitiesCommand(
           sessionId: _nullableStringArg(args, 'sessionId', alias: 'session-id'),
+          targetDomain: _nullableStringArg(
+            args,
+            'targetDomain',
+            alias: 'target-domain',
+          ),
         ),
       ),
       CommandSpec(
         name: 'live_edit_get_selection_candidates',
         description:
             'Return the current live-edit selection candidate stack for the session.',
-        inputSchema: _objectSchema(properties: {'sessionId': _stringSchema()}),
+        inputSchema: _objectSchema(
+          properties: {
+            'sessionId': _stringSchema(),
+            'targetDomain': _stringSchema(),
+          },
+        ),
         outputSchema: _objectSchema(additionalProperties: true),
         requiresVm: true,
         supportsWatch: true,
         mcpExposed: true,
         build: (final args) => LiveEditGetSelectionCandidatesCommand(
           sessionId: _nullableStringArg(args, 'sessionId', alias: 'session-id'),
+          targetDomain: _nullableStringArg(
+            args,
+            'targetDomain',
+            alias: 'target-domain',
+          ),
         ),
       ),
       CommandSpec(
@@ -913,6 +980,7 @@ final class CommandCatalog {
             'sessionId': _stringSchema(),
             'nodeId': _stringSchema(),
             'index': _intSchema(),
+            'targetDomain': _stringSchema(),
           },
         ),
         outputSchema: _objectSchema(additionalProperties: true),
@@ -923,6 +991,11 @@ final class CommandCatalog {
           sessionId: _nullableStringArg(args, 'sessionId', alias: 'session-id'),
           nodeId: _nullableStringArg(args, 'nodeId', alias: 'node-id'),
           index: _nullableIntArg(args, 'index'),
+          targetDomain: _nullableStringArg(
+            args,
+            'targetDomain',
+            alias: 'target-domain',
+          ),
         ),
       ),
       CommandSpec(
@@ -936,6 +1009,11 @@ final class CommandCatalog {
         mcpExposed: true,
         build: (final args) => LiveEditGetPropertyPanelCommand(
           sessionId: _nullableStringArg(args, 'sessionId', alias: 'session-id'),
+          targetDomain: _nullableStringArg(
+            args,
+            'targetDomain',
+            alias: 'target-domain',
+          ),
         ),
       ),
       CommandSpec(
@@ -943,7 +1021,11 @@ final class CommandCatalog {
         description:
             'Set the current live-edit overlay mode such as inspect or editing.',
         inputSchema: _objectSchema(
-          properties: {'sessionId': _stringSchema(), 'mode': _stringSchema()},
+          properties: {
+            'sessionId': _stringSchema(),
+            'mode': _stringSchema(),
+            'targetDomain': _stringSchema(),
+          },
           required: const <String>['mode'],
         ),
         outputSchema: _objectSchema(additionalProperties: true),
@@ -953,19 +1035,34 @@ final class CommandCatalog {
         build: (final args) => LiveEditSetEditModeCommand(
           sessionId: _nullableStringArg(args, 'sessionId', alias: 'session-id'),
           mode: _stringArg(args, 'mode', fallback: 'inspect'),
+          targetDomain: _nullableStringArg(
+            args,
+            'targetDomain',
+            alias: 'target-domain',
+          ),
         ),
       ),
       CommandSpec(
         name: 'live_edit_get_preview_state',
         description:
             'Return the current live-edit preview state, including exact versus draft-only status.',
-        inputSchema: _objectSchema(properties: {'sessionId': _stringSchema()}),
+        inputSchema: _objectSchema(
+          properties: {
+            'sessionId': _stringSchema(),
+            'targetDomain': _stringSchema(),
+          },
+        ),
         outputSchema: _objectSchema(additionalProperties: true),
         requiresVm: true,
         supportsWatch: true,
         mcpExposed: true,
         build: (final args) => LiveEditGetPreviewStateCommand(
           sessionId: _nullableStringArg(args, 'sessionId', alias: 'session-id'),
+          targetDomain: _nullableStringArg(
+            args,
+            'targetDomain',
+            alias: 'target-domain',
+          ),
         ),
       ),
       CommandSpec(
@@ -975,6 +1072,7 @@ final class CommandCatalog {
           properties: {
             'sessionId': _stringSchema(),
             'change': _objectSchema(additionalProperties: true),
+            'targetDomain': _stringSchema(),
           },
           required: const <String>['change'],
         ),
@@ -985,6 +1083,11 @@ final class CommandCatalog {
         build: (final args) => LiveEditUpdateDraftCommand(
           sessionId: _nullableStringArg(args, 'sessionId', alias: 'session-id'),
           change: LiveEditDraftChange.fromJson(_mapArg(args, 'change')),
+          targetDomain: _nullableStringArg(
+            args,
+            'targetDomain',
+            alias: 'target-domain',
+          ),
         ),
       ),
       CommandSpec(
@@ -1103,6 +1206,7 @@ final class CommandCatalog {
             'codexConfig': _inferenceConfigSchema(),
             'workingDirectory': _stringSchema(),
             'intentText': _stringSchema(),
+            'targetDomain': _stringSchema(),
           },
         ),
         outputSchema: _objectSchema(additionalProperties: true),
@@ -1122,6 +1226,11 @@ final class CommandCatalog {
             args,
             'intentText',
             alias: 'intent-text',
+          ),
+          targetDomain: _nullableStringArg(
+            args,
+            'targetDomain',
+            alias: 'target-domain',
           ),
         ),
       ),
@@ -1381,14 +1490,15 @@ final class CommandCatalog {
   static LiveEditInferenceConfig? _nullableInferenceConfigArg(
     final Map<String, Object?> args,
   ) {
-    final value = _findArg(args, 'inferenceConfig', alias: 'inference-config') ??
+    final value =
+        _findArg(args, 'inferenceConfig', alias: 'inference-config') ??
         _findArg(args, 'codexConfig', alias: 'codex-config');
     if (value == null) return null;
     final map = value is Map<String, Object?>
         ? value
         : (value is Map
-            ? value.map((final k, final v) => MapEntry('$k', v))
-            : null);
+              ? value.map((final k, final v) => MapEntry('$k', v))
+              : null);
     if (map == null) return null;
     return LiveEditCodexOptions.normalizeConfig(
       LiveEditInferenceConfig.fromJson(map),
