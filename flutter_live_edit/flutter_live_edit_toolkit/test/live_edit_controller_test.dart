@@ -327,7 +327,7 @@ void main() {
 
       await tester.tap(find.byType(ActionChip));
       await tester.pumpAndSettle();
-      await tester.tap(_semanticsId('live_edit_panel_expand_button'));
+      orchestrator.expandPanel();
       await tester.pumpAndSettle();
 
       orchestrator.setTargetDomain(LiveEditTargetDomain.toolScene);
@@ -388,7 +388,7 @@ void main() {
 
     await tester.tap(find.byType(ActionChip));
     await tester.pumpAndSettle();
-    await tester.tap(_semanticsId('live_edit_panel_expand_button'));
+    orchestrator.expandPanel();
     await tester.pumpAndSettle();
 
     orchestrator.setTargetDomain(LiveEditTargetDomain.toolScene);
@@ -428,7 +428,7 @@ void main() {
     expect(appSelection, isNotNull);
     expect(appSelection!.targetDomain, LiveEditTargetDomain.appScene);
 
-    await tester.tap(_semanticsId('live_edit_panel_expand_button'));
+    orchestrator.expandPanel();
     await tester.pumpAndSettle();
     orchestrator.setTargetDomain(LiveEditTargetDomain.toolScene);
     await tester.pumpAndSettle();
@@ -485,6 +485,275 @@ void main() {
     final customPaints = find.byType(CustomPaint);
     expect(customPaints, findsWidgets);
     expect(customPaints.evaluate().length, greaterThanOrEqualTo(2));
+  });
+
+  testWidgets(
+    'domain-scoped bubbles preserve per-layer prompt backend and minimized state',
+    (final tester) async {
+      final orchestrator = LiveEditOrchestrator(
+        availableBackends: _testBackends(),
+        backendId: 'codex_exec',
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          home: FlutterLiveEditHost(
+            orchestrator: orchestrator,
+            child: const Scaffold(body: Center(child: Text('Target'))),
+          ),
+        ),
+      );
+
+      await tester.tap(find.byType(ActionChip));
+      await tester.pumpAndSettle();
+      await tester.tapAt(tester.getCenter(find.text('Target')));
+      await tester.pumpAndSettle();
+
+      orchestrator.openAiBubble();
+      await tester.pumpAndSettle();
+      orchestrator.updateAiComposer('App prompt');
+      orchestrator.setBackend('cursor_agent');
+      await tester.pumpAndSettle();
+      final appBubbleId = orchestrator.activeBubbleId;
+      expect(appBubbleId, isNotNull);
+
+      await tester.tap(_semanticsId('live_edit_bubble_hide_button'));
+      await tester.pumpAndSettle();
+      expect(
+        orchestrator.pinnedBubbleSummaries.any(
+          (final summary) => summary.bubbleId == appBubbleId,
+        ),
+        isTrue,
+      );
+
+      orchestrator.expandPanel();
+      await tester.pumpAndSettle();
+      orchestrator.setTargetDomain(LiveEditTargetDomain.toolScene);
+      await tester.pumpAndSettle();
+
+      final panelKey = LiveEditOverlayThemeModel.instance.keyFor(
+        kLiveEditPanelExpandedSurfaceId,
+      );
+      orchestrator.selectNode(tester.getCenter(find.byKey(panelKey)));
+      await tester.pumpAndSettle();
+
+      orchestrator.openAiBubble();
+      orchestrator.updateAiComposer('Tool prompt');
+      orchestrator.setBackend('codex_exec');
+      await tester.pumpAndSettle();
+      final toolBubbleId = orchestrator.activeBubbleId;
+      expect(toolBubbleId, isNotNull);
+      expect(toolBubbleId, isNot(equals(appBubbleId)));
+
+      orchestrator.setTargetDomain(LiveEditTargetDomain.appScene);
+      await tester.pumpAndSettle();
+
+      expect(orchestrator.activeBubbleId, appBubbleId);
+      expect(orchestrator.aiComposer, 'App prompt');
+      expect(orchestrator.currentBackendId, 'cursor_agent');
+      expect(
+        orchestrator.pinnedBubbleSummaries.any(
+          (final summary) => summary.bubbleId == appBubbleId,
+        ),
+        isTrue,
+      );
+
+      orchestrator.setTargetDomain(LiveEditTargetDomain.toolScene);
+      await tester.pumpAndSettle();
+
+      expect(orchestrator.activeBubbleId, toolBubbleId);
+      expect(orchestrator.aiComposer, 'Tool prompt');
+      expect(orchestrator.currentBackendId, 'codex_exec');
+    },
+  );
+
+  testWidgets('bubble summaries prioritize the active layer and keep domain ids', (
+    final tester,
+  ) async {
+    final orchestrator = LiveEditOrchestrator();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: FlutterLiveEditHost(
+          orchestrator: orchestrator,
+          child: const Scaffold(body: Center(child: Text('Target'))),
+        ),
+      ),
+    );
+
+    await tester.tap(find.byType(ActionChip));
+    await tester.pumpAndSettle();
+    await tester.tapAt(tester.getCenter(find.text('Target')));
+    await tester.pumpAndSettle();
+    await tester.tap(_semanticsId('live_edit_bubble_hide_button'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(_semanticsId('live_edit_panel_expand_button'));
+    await tester.pumpAndSettle();
+    orchestrator.setTargetDomain(LiveEditTargetDomain.toolScene);
+    await tester.pumpAndSettle();
+
+    final panelKey = LiveEditOverlayThemeModel.instance.keyFor(
+      kLiveEditPanelExpandedSurfaceId,
+    );
+    orchestrator.selectNode(tester.getCenter(find.byKey(panelKey)));
+    await tester.pumpAndSettle();
+    await tester.tap(_semanticsId('live_edit_bubble_hide_button'));
+    await tester.pumpAndSettle();
+
+    final summaries = orchestrator.bubbleSummaries;
+    expect(summaries, isNotEmpty);
+    expect(summaries.first.targetDomain, LiveEditTargetDomain.toolScene);
+    expect(
+      summaries.every((final summary) => summary.bubbleId.isNotEmpty),
+      isTrue,
+    );
+    expect(find.textContaining('Tool'), findsWidgets);
+    expect(find.textContaining('App'), findsWidgets);
+  });
+
+  testWidgets('marquee-created bubbles keep a stable area bubble id', (
+    final tester,
+  ) async {
+    final orchestrator = LiveEditOrchestrator();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: FlutterLiveEditHost(
+          orchestrator: orchestrator,
+          child: Scaffold(
+            body: Stack(
+              children: const <Widget>[
+                Positioned(left: 40, top: 80, child: Text('One')),
+                Positioned(left: 120, top: 80, child: Text('Two')),
+                Positioned(left: 220, top: 220, child: Text('Other')),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.byType(ActionChip));
+    await tester.pumpAndSettle();
+
+    final gesture = await tester.startGesture(const Offset(24, 56));
+    await gesture.moveTo(const Offset(200, 140));
+    await tester.pump();
+    await gesture.up();
+    await tester.pumpAndSettle();
+
+    final marqueeBubbleId = orchestrator.activeBubbleId;
+    expect(marqueeBubbleId, contains('area:'));
+    expect(orchestrator.activeMultiSelection.length, greaterThan(1));
+
+    orchestrator.openAiBubble();
+    orchestrator.updateAiComposer('Grouped prompt');
+    await tester.pumpAndSettle();
+
+    await tester.tapAt(tester.getCenter(find.text('Other')));
+    await tester.pumpAndSettle();
+
+    final secondGesture = await tester.startGesture(const Offset(24, 56));
+    await secondGesture.moveTo(const Offset(200, 140));
+    await tester.pump();
+    await secondGesture.up();
+    await tester.pumpAndSettle();
+
+    expect(orchestrator.activeBubbleId, marqueeBubbleId);
+    expect(orchestrator.aiComposer, 'Grouped prompt');
+  });
+
+  testWidgets('controller selection and draft payloads stay domain scoped', (
+    final tester,
+  ) async {
+    final orchestrator = LiveEditOrchestrator();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: FlutterLiveEditHost(
+          orchestrator: orchestrator,
+          child: const Scaffold(
+            body: Center(
+              child: SizedBox(width: 120, height: 80, child: Text('Target')),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.byType(ActionChip));
+    await tester.pumpAndSettle();
+    await tester.tapAt(tester.getCenter(find.text('Target')));
+    await tester.pumpAndSettle();
+
+    final appSelection = orchestrator.activeSelection!;
+    final appWidthProperty = appSelection.propertyGroups.firstWhere(
+      (final property) => property.id == 'width',
+    );
+    orchestrator.updateDraft(property: appWidthProperty, targetValue: 180.0);
+    await tester.pumpAndSettle();
+
+    await tester.tap(_semanticsId('live_edit_panel_expand_button'));
+    await tester.pumpAndSettle();
+    orchestrator.setTargetDomain(LiveEditTargetDomain.toolScene);
+    await tester.pumpAndSettle();
+
+    final panelKey = LiveEditOverlayThemeModel.instance.keyFor(
+      kLiveEditPanelExpandedSurfaceId,
+    );
+    orchestrator.selectNode(tester.getCenter(find.byKey(panelKey)));
+    await tester.pumpAndSettle();
+
+    final toolSelection = orchestrator.activeSelection!;
+    final toolWidthProperty = toolSelection.propertyGroups.firstWhere(
+      (final property) => property.id == 'width',
+    );
+    orchestrator.updateDraft(property: toolWidthProperty, targetValue: 360.0);
+    await tester.pumpAndSettle();
+
+    final controller = orchestrator.controller;
+    final appSelectionPayload = controller.getSelection(
+      sessionId: orchestrator.activeSessionId,
+      targetDomain: LiveEditTargetDomain.appScene,
+    );
+    final toolSelectionPayload = controller.getSelection(
+      sessionId: orchestrator.activeSessionId,
+      targetDomain: LiveEditTargetDomain.toolScene,
+    );
+    final appDraftPayload = controller.getDraft(
+      sessionId: orchestrator.activeSessionId,
+      targetDomain: LiveEditTargetDomain.appScene,
+    );
+    final toolDraftPayload = controller.getDraft(
+      sessionId: orchestrator.activeSessionId,
+      targetDomain: LiveEditTargetDomain.toolScene,
+    );
+
+    expect(appSelectionPayload['targetDomain'], 'app_scene');
+    expect(toolSelectionPayload['targetDomain'], 'tool_scene');
+    expect(
+      (appSelectionPayload['selection']! as Map<String, Object?>)['nodeId'],
+      appSelection.nodeId,
+    );
+    expect(
+      (toolSelectionPayload['selection']! as Map<String, Object?>)['nodeId'],
+      toolSelection.nodeId,
+    );
+    expect(
+      (appDraftPayload['draftChanges']! as List<Object?>).length,
+      greaterThan(0),
+    );
+    expect(
+      (toolDraftPayload['draftChanges']! as List<Object?>).length,
+      greaterThan(0),
+    );
+    expect(
+      ((appDraftPayload['draftChanges']! as List<Object?>).first
+              as Map<String, Object?>)['nodeId'],
+      appSelection.nodeId,
+    );
+    expect(
+      ((toolDraftPayload['draftChanges']! as List<Object?>).first
+              as Map<String, Object?>)['nodeId'],
+      toolSelection.nodeId,
+    );
   });
 
   testWidgets('apply completion updates the originating bubble only', (

@@ -120,14 +120,9 @@ Set<MCPCallEntry> getFlutterLiveEditEntries() => <MCPCallEntry>{
     ),
     handler: (final request) {
       final domain = LiveEditTargetDomain.fromWire(request['targetDomain']);
-      if (request['targetDomain'] != null) {
-        LiveEditController.instance.setTargetDomain(
-          sessionId: request['sessionId'],
-          targetDomain: domain,
-        );
-      }
       final result = LiveEditController.instance.getSelection(
         sessionId: request['sessionId'],
+        targetDomain: request['targetDomain'] == null ? null : domain,
       );
       return MCPCallResult(
         message: 'Live edit selection state returned.',
@@ -168,12 +163,18 @@ Set<MCPCallEntry> getFlutterLiveEditEntries() => <MCPCallEntry>{
       name: LiveEditRuntimeToolNames.getDraft,
       description: 'Get the current draft changes for the session.',
       inputSchema: ObjectSchema(
-        properties: <String, Schema>{'sessionId': StringSchema()},
+        properties: <String, Schema>{
+          'sessionId': StringSchema(),
+          'targetDomain': StringSchema(),
+        },
       ),
     ),
     handler: (final request) {
       final result = LiveEditController.instance.getDraft(
         sessionId: request['sessionId'],
+        targetDomain: request['targetDomain'] == null
+            ? null
+            : LiveEditTargetDomain.fromWire(request['targetDomain']),
       );
       return MCPCallResult(
         message: 'Live edit draft returned.',

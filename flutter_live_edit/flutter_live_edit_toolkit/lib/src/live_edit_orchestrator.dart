@@ -506,6 +506,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       targetDomain == LiveEditTargetDomain.appScene
       ? LiveEditTargetDomain.toolScene
       : LiveEditTargetDomain.appScene;
+  LiveEditTargetDomain get activeLayer => targetDomain;
   LiveEditBubbleId? get activeBubbleId =>
       _activeLayerViewState.activeBubbleId ??
       _bubbleIdForSelection(activeSelection);
@@ -530,6 +531,22 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     }
     return normalized;
   }
+  LiveEditSelection? selectionByDomain(final LiveEditTargetDomain domain) =>
+      controller.selectionForDomain(
+        targetDomain: domain,
+        sessionId: activeSessionId,
+      );
+  List<LiveEditDraftChange> draftsByDomain(final LiveEditTargetDomain domain) =>
+      controller.draftChangesForDomain(
+        targetDomain: domain,
+        sessionId: activeSessionId,
+      );
+  LiveEditBubbleRecord? bubbleForSelectionInLayer(
+    final LiveEditTargetDomain domain, {
+    final LiveEditSelection? selection,
+  }) => _bubbleRecordFor(
+    _bubbleIdForSelection(selection ?? selectionByDomain(domain)),
+  );
 
   LiveEditAgentBackend? get currentBackend {
     final bubbleId = activeBubbleId;
@@ -840,12 +857,14 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     final LiveEditEditSurface? surface,
   }) {
     _activePropertyId = property.id;
+    _activeLayerViewState.activePropertyId = property.id;
     final resolvedSurface = surface ?? property.preferredEditSurface;
     _editMode =
         resolvedSurface == LiveEditEditSurface.aiBubble ||
             property.requiresAgentForPersistence
         ? LiveEditEditMode.ai
         : LiveEditEditMode.edit;
+    _activeLayerViewState.editMode = _editMode;
     if (_editMode == LiveEditEditMode.ai && !_hasText(aiComposer)) {
       updateAiComposer(_defaultAiPrompt());
     }
@@ -1318,8 +1337,10 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   void openAiBubble({final LiveEditPropertyDescriptor? property}) {
     if (property != null) {
       _activePropertyId = property.id;
+      _activeLayerViewState.activePropertyId = property.id;
     }
     _editMode = LiveEditEditMode.ai;
+    _activeLayerViewState.editMode = _editMode;
     _panelDisplayMode = LiveEditPanelDisplayMode.expanded;
     if (!needsApproval &&
         _applyPhase != LiveEditApplyPhase.preparing &&
@@ -1354,6 +1375,8 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     }
     _activePropertyId = property.id;
     _editMode = LiveEditEditMode.ai;
+    _activeLayerViewState.activePropertyId = property.id;
+    _activeLayerViewState.editMode = _editMode;
     _panelDisplayMode = LiveEditPanelDisplayMode.expanded;
     if (!_hasText(aiComposer)) {
       updateAiComposer(_defaultAiPrompt());
@@ -1383,6 +1406,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     _aiComposer = '';
     _panelDisplayMode = LiveEditPanelDisplayMode.rail;
     _editMode = LiveEditEditMode.inspect;
+    _activeLayerViewState.editMode = _editMode;
     notifyListeners();
   }
 
@@ -1524,6 +1548,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     controller.setOverlay(sessionId: sessionId, enabled: enabled);
     if (!enabled) {
       _editMode = LiveEditEditMode.inspect;
+      _activeLayerViewState.editMode = _editMode;
       _panelDisplayMode = LiveEditPanelDisplayMode.rail;
       _aiComposer = '';
       _resetApplyState(clearError: false);
@@ -1667,6 +1692,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     }
 
     _activePropertyId = property.id;
+    _activeLayerViewState.activePropertyId = property.id;
     _lastError = null;
     _applyPhase = LiveEditApplyPhase.idle;
     _pendingExecutionPlan = null;
@@ -1679,6 +1705,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
                 LiveEditEditSurface.aiBubble
         ? LiveEditEditMode.ai
         : LiveEditEditMode.edit;
+    _activeLayerViewState.editMode = _editMode;
     final bubbleId = _bubbleIdForSelection(selection);
     if (_hasText(bubbleId)) {
       _resolvedBubbleIds.remove(bubbleId);

@@ -1355,24 +1355,33 @@ final class LiveEditController extends ChangeNotifier {
     };
   }
 
-  Map<String, Object?> getDraft({final String? sessionId}) {
+  Map<String, Object?> getDraft({
+    final String? sessionId,
+    final LiveEditTargetDomain? targetDomain,
+  }) {
     final session = _requireSession(sessionId);
-    final layer = _layerForRequest(session);
+    final resolvedDomain = _resolveTargetDomain(session, targetDomain);
+    final layer = _layerForRequest(session, requested: resolvedDomain);
     return <String, Object?>{
       'sessionId': session.sessionId,
+      'targetDomain': resolvedDomain.wireName,
       'draftChanges': layer.draftChanges
           .map((final draft) => draft.toJson())
           .toList(),
     };
   }
 
-  Map<String, Object?> getSelection({final String? sessionId}) {
+  Map<String, Object?> getSelection({
+    final String? sessionId,
+    final LiveEditTargetDomain? targetDomain,
+  }) {
     final session = _requireSession(sessionId);
-    final layer = _layerForRequest(session);
+    final resolvedDomain = _resolveTargetDomain(session, targetDomain);
+    final layer = _layerForRequest(session, requested: resolvedDomain);
     final selection = layer.selection;
     return <String, Object?>{
       'sessionId': session.sessionId,
-      'targetDomain': session.targetDomain.wireName,
+      'targetDomain': resolvedDomain.wireName,
       'selection': selection?.toJson(),
       'hasSelection': selection != null,
       'hoverSelection': layer.hoverSelection?.toJson(),

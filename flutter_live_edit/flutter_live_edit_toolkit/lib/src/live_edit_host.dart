@@ -153,6 +153,11 @@ Color _bubbleStatusColor(final LiveEditBubbleStatus status) => switch (status) {
   LiveEditBubbleStatus.failed => const Color(0xFFB91C1C),
 };
 
+String _domainLabel(final LiveEditTargetDomain domain) => switch (domain) {
+  LiveEditTargetDomain.appScene => 'App',
+  LiveEditTargetDomain.toolScene => 'Tool',
+};
+
 String _activityElapsedLabel(final LiveEditActivityEntry activity) {
   final elapsed = DateTime.now().toUtc().difference(activity.timestamp);
   if (elapsed.inSeconds < 5) {
@@ -1226,8 +1231,10 @@ class _PanelRail extends StatelessWidget {
                       label: orchestrator.activeSelection!.widgetType,
                       status: orchestrator.bubbleStatusForActiveSelection,
                       active: true,
+                      targetDomain: orchestrator.targetDomain,
                       onTap: () => orchestrator.selectTrackedBubble(
-                        orchestrator.activeSelection!.nodeId,
+                        orchestrator.activeBubbleId ??
+                            orchestrator.activeSelection!.nodeId,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -1259,8 +1266,9 @@ class _PanelRail extends StatelessWidget {
                       label: summary.label,
                       status: summary.status,
                       active: summary.active,
+                      targetDomain: summary.targetDomain,
                       onTap: () =>
-                          orchestrator.selectTrackedBubble(summary.nodeId),
+                          orchestrator.selectTrackedBubble(summary.bubbleId),
                     );
                   },
                   separatorBuilder: (final context, final index) =>
@@ -1281,17 +1289,20 @@ class _RailStatusDot extends StatelessWidget {
     required this.label,
     required this.status,
     required this.active,
+    required this.targetDomain,
     required this.onTap,
   });
 
   final String label;
   final LiveEditBubbleStatus status;
   final bool active;
+  final LiveEditTargetDomain targetDomain;
   final VoidCallback onTap;
 
   @override
   Widget build(final BuildContext context) => Tooltip(
-    message: '$label • ${_bubbleStatusLabel(status)}',
+    message:
+        '${_domainLabel(targetDomain)} • $label • ${_bubbleStatusLabel(status)}',
     child: InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(10),
@@ -1319,6 +1330,11 @@ class _RailStatusDot extends StatelessWidget {
             Text(
               label.isEmpty ? '?' : label[0].toUpperCase(),
               style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              _domainLabel(targetDomain)[0],
+              style: const TextStyle(fontSize: 8, color: Color(0xFF64748B)),
             ),
           ],
         ),
@@ -1481,7 +1497,7 @@ class _PropertyPanel extends StatelessWidget {
                       padding: const EdgeInsets.all(8),
                       children: <Widget>[
                         _PanelSection(
-                          title: 'Bubbles',
+                          title: 'Navigator',
                           child: Wrap(
                             spacing: 6,
                             runSpacing: 6,
@@ -1500,12 +1516,12 @@ class _PropertyPanel extends StatelessWidget {
                                   ),
                                   label: Text(
                                     summary.active
-                                        ? '${summary.label} • active'
-                                        : summary.label,
+                                        ? '${_domainLabel(summary.targetDomain)} • ${summary.label} • active'
+                                        : '${_domainLabel(summary.targetDomain)} • ${summary.label}',
                                     style: const TextStyle(fontSize: 11),
                                   ),
                                   onPressed: () => orchestrator
-                                      .selectTrackedBubble(summary.nodeId),
+                                      .selectTrackedBubble(summary.bubbleId),
                                 ),
                             ],
                           ),
@@ -1810,7 +1826,7 @@ class _PinnedBubblePill extends StatelessWidget {
           color: Colors.transparent,
           child: InkWell(
             borderRadius: BorderRadius.circular(999),
-            onTap: () => orchestrator.selectTrackedBubble(summary.nodeId),
+            onTap: () => orchestrator.selectTrackedBubble(summary.bubbleId),
             child: Container(
               width: 18,
               height: 18,
