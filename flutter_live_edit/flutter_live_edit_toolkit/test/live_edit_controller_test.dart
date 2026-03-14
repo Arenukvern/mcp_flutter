@@ -358,13 +358,13 @@ void main() {
       await tester.tapAt(tester.getCenter(find.text('Target')));
       await tester.pumpAndSettle();
 
-      expect(find.widgetWithText(ChoiceChip, 'Codex'), findsWidgets);
-      expect(find.widgetWithText(ChoiceChip, 'Cursor'), findsWidgets);
+      expect(_activeBubble(orchestrator), findsOneWidget);
       expect(
-        find.text(
-          'Describe the change in plain English. Use the inspector on the right for detailed properties.',
+        find.descendant(
+          of: _activeBubble(orchestrator),
+          matching: _propertyInputField(),
         ),
-        findsOneWidget,
+        findsNothing,
       );
     },
   );
