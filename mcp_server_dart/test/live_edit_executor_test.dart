@@ -137,8 +137,11 @@ void main() {
         );
 
         expect(result.ok, isFalse);
-        expect(result.error?.code, CoreErrorCode.liveEditApplyFailed);
-        expect(result.error?.message, contains('hot reload failed'));
+        expect(result.error?.code, CoreErrorCode.liveEditValidationFailed);
+        expect(
+          result.error?.message,
+          contains('runtime validation did not match the draft'),
+        );
       },
     );
   });

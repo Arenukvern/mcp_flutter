@@ -26,6 +26,15 @@ void main() {
             .meta,
         containsPair('displayLabel', 'Cursor'),
       );
+      expect(
+        backends
+            .firstWhere((final backend) => backend.id == 'codex_exec')
+            .meta['defaultInferenceConfig'],
+        <String, Object?>{
+          'model': 'gpt-5.3-codex',
+          'reasoningEffort': 'medium',
+        },
+      );
     });
 
     test('lists registered backends', () {
@@ -358,6 +367,41 @@ void main() {
       expect(result.executionId, 'proposal-1');
       expect(result.backendId, 'fake');
       expect(result.changedFiles, contains('lib/main.dart'));
+    });
+
+    test('normalizes partial backend output for direct apply', () async {
+      final tempDir = await Directory.systemTemp.createTemp('live_edit_agent');
+      addTearDown(() => tempDir.delete(recursive: true));
+
+      final service = LiveEditAgentService(
+        registry: LiveEditAgentRegistry(
+          clients: <String, InferenceClient>{
+            'cursor_agent': _PartialInferenceClient(),
+          },
+          defaultBackendId: 'cursor_agent',
+        ),
+      );
+
+      final result = await service.executeDirectApply(
+        LiveEditResolutionRequest(
+          sessionId: 'session-1',
+          backendId: 'cursor_agent',
+          workingDirectory: tempDir.path,
+          draftChanges: const <LiveEditDraftChange>[
+            LiveEditDraftChange(
+              nodeId: 'node-1',
+              propertyId: 'width',
+              targetValue: 140,
+            ),
+          ],
+        ),
+      );
+
+      expect(result.executionId, isNotEmpty);
+      expect(result.backendId, 'cursor_agent');
+      expect(result.summary, 'Adjust width safely.');
+      expect(result.warnings, isEmpty);
+      expect(result.validationSteps, isEmpty);
     });
 
     test('persists proposal state across service instances', () async {
@@ -962,6 +1006,37 @@ class _FakeInferenceClient implements InferenceClient {
         'warnings': <String>[],
         'riskFlags': <String>[],
         'meta': <String, dynamic>{'provider': 'fake'},
+      },
+    ),
+  );
+
+  @override
+  Future<bool> refreshAvailability() async => true;
+
+  @override
+  void resetAvailabilityCache() {}
+}
+
+final class _PartialInferenceClient implements InferenceClient {
+  @override
+  String get id => 'partial';
+
+  @override
+  bool get isAvailable => true;
+
+  @override
+  Set<InferenceTask> get supportedTasks => {InferenceTask.structuredText};
+
+  @override
+  Future<InferenceResult<InferenceResponse>> infer(
+    final InferenceRequest request,
+  ) async => InferenceResult<InferenceResponse>.ok(
+    const InferenceResponse(
+      output: <String, dynamic>{
+        'summary': 'Adjust width safely.',
+        'changedFiles': <String>['lib/main.dart'],
+        'warnings': <String>[],
+        'validationSteps': <String>[],
       },
     ),
   );

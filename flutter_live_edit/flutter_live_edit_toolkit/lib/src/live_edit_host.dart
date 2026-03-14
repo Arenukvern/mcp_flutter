@@ -1117,6 +1117,12 @@ class _PropertyPanel extends StatelessWidget {
                           ),
                         ),
                         _PanelSection(
+                          title: 'Agent',
+                          child: _InferenceConfigEditor(
+                            orchestrator: orchestrator,
+                          ),
+                        ),
+                        _PanelSection(
                           title: 'Selection',
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -2267,6 +2273,117 @@ class _BackendSwitcher extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _InferenceConfigEditor extends StatelessWidget {
+  const _InferenceConfigEditor({required this.orchestrator});
+
+  final LiveEditOrchestrator orchestrator;
+
+  @override
+  Widget build(final BuildContext context) {
+    final backend = orchestrator.currentBackend;
+    if (backend == null) {
+      return const Text(
+        'No backend selected.',
+        style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+      );
+    }
+    final model = orchestrator.currentModel ?? '';
+    final reasoning = orchestrator.currentReasoningEffort;
+    final freeform = orchestrator.currentBackendUsesFreeformModel;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          'Backend: ${backend.label}',
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF0F172A),
+          ),
+        ),
+        const SizedBox(height: 8),
+        if (freeform)
+          Semantics(
+            identifier: 'live_edit_model_input',
+            child: TextFormField(
+              key: ValueKey<String>('model-${backend.id}'),
+              initialValue: model,
+              decoration: const InputDecoration(
+                labelText: 'Model',
+                hintText: 'claude-3-5-sonnet',
+                isDense: true,
+                border: OutlineInputBorder(),
+              ),
+              style: const TextStyle(fontSize: 12),
+              onChanged: (final value) {
+                orchestrator.setInferenceConfig(model: value);
+              },
+            ),
+          )
+        else
+          Semantics(
+            identifier: 'live_edit_model_dropdown',
+            child: DropdownButtonFormField<String>(
+              value: model.isEmpty ? null : model,
+              isExpanded: true,
+              decoration: const InputDecoration(
+                labelText: 'Model',
+                isDense: true,
+                border: OutlineInputBorder(),
+              ),
+              items: orchestrator.currentSupportedModels
+                  .map(
+                    (final option) => DropdownMenuItem<String>(
+                      value: option.id,
+                      child: Text(
+                        option.label,
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ),
+                  )
+                  .toList(growable: false),
+              onChanged: (final value) {
+                orchestrator.setInferenceConfig(
+                  model: value,
+                  reasoningEffort: reasoning,
+                );
+              },
+            ),
+          ),
+        if (!freeform) ...<Widget>[
+          const SizedBox(height: 8),
+          Semantics(
+            identifier: 'live_edit_reasoning_dropdown',
+            child: DropdownButtonFormField<String>(
+              value: reasoning,
+              isExpanded: true,
+              decoration: const InputDecoration(
+                labelText: 'Reasoning',
+                isDense: true,
+                border: OutlineInputBorder(),
+              ),
+              items: orchestrator.currentSupportedReasoningEfforts
+                  .map(
+                    (final effort) => DropdownMenuItem<String>(
+                      value: effort,
+                      child: Text(effort, style: const TextStyle(fontSize: 12)),
+                    ),
+                  )
+                  .toList(growable: false),
+              onChanged: (final value) {
+                orchestrator.setInferenceConfig(
+                  model: model,
+                  reasoningEffort: value,
+                );
+              },
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

@@ -457,6 +457,60 @@ final class LiveEditInferenceConfig {
   };
 }
 
+enum LiveEditRuntimeAction {
+  none('none'),
+  hotReload('hot_reload'),
+  hotRestart('hot_restart');
+
+  const LiveEditRuntimeAction(this.wireName);
+
+  final String wireName;
+
+  static LiveEditRuntimeAction fromWire(final Object? value) {
+    final normalized = '$value'.trim().toLowerCase();
+    return LiveEditRuntimeAction.values.firstWhere(
+      (final action) => action.wireName == normalized,
+      orElse: () => LiveEditRuntimeAction.none,
+    );
+  }
+}
+
+final class LiveEditRuntimeRefreshResult {
+  const LiveEditRuntimeRefreshResult({
+    this.action = LiveEditRuntimeAction.none,
+    this.validation = const <String, Object?>{},
+    this.hotReload = const <String, Object?>{},
+    this.hotRestart = const <String, Object?>{},
+    this.validationRecovery = const <String, Object?>{},
+  });
+
+  factory LiveEditRuntimeRefreshResult.fromJson(
+    final Map<String, Object?> json,
+  ) => LiveEditRuntimeRefreshResult(
+    action: LiveEditRuntimeAction.fromWire(json['action']),
+    validation: _asMap(json['validation']),
+    hotReload: _asMap(json['hotReload']),
+    hotRestart: _asMap(json['hotRestart']),
+    validationRecovery: _asMap(json['validationRecovery']),
+  );
+
+  final LiveEditRuntimeAction action;
+  final Map<String, Object?> validation;
+  final Map<String, Object?> hotReload;
+  final Map<String, Object?> hotRestart;
+  final Map<String, Object?> validationRecovery;
+
+  bool get didRefresh => action != LiveEditRuntimeAction.none;
+
+  Map<String, Object?> toJson() => <String, Object?>{
+    'action': action.wireName,
+    'validation': validation,
+    'hotReload': hotReload,
+    'hotRestart': hotRestart,
+    'validationRecovery': validationRecovery,
+  };
+}
+
 enum LiveEditPreviewMode {
   exact('exact'),
   ghost('ghost'),
@@ -836,6 +890,7 @@ final class LiveEditDirectApplyResult {
     this.changedFiles = const <String>[],
     this.warnings = const <String>[],
     this.validationSteps = const <String>[],
+    this.runtimeRefresh,
     this.meta = const <String, Object?>{},
   });
 
@@ -847,6 +902,12 @@ final class LiveEditDirectApplyResult {
         changedFiles: _asStringList(json['changedFiles']),
         warnings: _asStringList(json['warnings']),
         validationSteps: _asStringList(json['validationSteps']),
+        runtimeRefresh: switch (json['runtimeRefresh']) {
+          final Map value => LiveEditRuntimeRefreshResult.fromJson(
+            _asMap(value),
+          ),
+          _ => null,
+        },
         meta: _asMap(json['meta']),
       );
 
@@ -856,6 +917,7 @@ final class LiveEditDirectApplyResult {
   final List<String> changedFiles;
   final List<String> warnings;
   final List<String> validationSteps;
+  final LiveEditRuntimeRefreshResult? runtimeRefresh;
   final Map<String, Object?> meta;
 
   Map<String, Object?> toJson() => <String, Object?>{
@@ -865,6 +927,7 @@ final class LiveEditDirectApplyResult {
     'changedFiles': changedFiles,
     'warnings': warnings,
     'validationSteps': validationSteps,
+    if (runtimeRefresh != null) 'runtimeRefresh': runtimeRefresh!.toJson(),
     'meta': meta,
     // Backward-compatible alias while older callers still expect proposalId.
     'proposalId': executionId,

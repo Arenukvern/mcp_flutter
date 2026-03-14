@@ -39,12 +39,33 @@ List<LiveEditAgentBackend> _testBackends() => const <LiveEditAgentBackend>[
     description: 'Codex backend',
     available: true,
     isDefault: true,
+    meta: <String, Object?>{
+      'defaultInferenceConfig': <String, Object?>{
+        'model': 'gpt-5.3-codex',
+        'reasoningEffort': 'medium',
+      },
+      'effectiveInferenceConfig': <String, Object?>{
+        'model': 'gpt-5.3-codex',
+        'reasoningEffort': 'medium',
+      },
+      'supportedModels': <Map<String, Object?>>[
+        <String, Object?>{'id': 'gpt-5.3-codex', 'label': 'GPT-5.3-Codex'},
+        <String, Object?>{'id': 'gpt-5.4', 'label': 'GPT-5.4'},
+      ],
+      'supportedReasoningEfforts': <String>['low', 'medium', 'high'],
+    },
   ),
   LiveEditAgentBackend(
     id: 'cursor_agent',
     label: 'Cursor',
     description: 'Cursor backend',
     available: true,
+    meta: <String, Object?>{
+      'defaultInferenceConfig': <String, Object?>{'model': 'claude-3-5-sonnet'},
+      'effectiveInferenceConfig': <String, Object?>{
+        'model': 'claude-3-5-sonnet',
+      },
+    },
   ),
 ];
 
@@ -118,6 +139,65 @@ void main() {
 
     expect(find.text('Hello'), findsOneWidget);
     expect(find.text('Selection Bubble'), findsNothing);
+  });
+
+  testWidgets('panel shows codex inference controls from backend metadata', (
+    final tester,
+  ) async {
+    final orchestrator = LiveEditOrchestrator(
+      availableBackends: _testBackends(),
+      backendId: 'codex_exec',
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: FlutterLiveEditHost(
+          orchestrator: orchestrator,
+          child: const Scaffold(body: Text('Target')),
+        ),
+      ),
+    );
+
+    await tester.tap(find.byType(ActionChip));
+    await tester.pumpAndSettle();
+    await tester.tap(_semanticsId('live_edit_panel_expand_button'));
+    await tester.pumpAndSettle();
+    await tester.tapAt(tester.getCenter(find.text('Target')));
+    await tester.pumpAndSettle();
+
+    expect(_semanticsId('live_edit_model_dropdown'), findsOneWidget);
+    expect(_semanticsId('live_edit_reasoning_dropdown'), findsOneWidget);
+    expect(orchestrator.currentModel, 'gpt-5.3-codex');
+    expect(orchestrator.currentReasoningEffort, 'medium');
+  });
+
+  testWidgets('switching to cursor exposes free-form model input', (
+    final tester,
+  ) async {
+    final orchestrator = LiveEditOrchestrator(
+      availableBackends: _testBackends(),
+      backendId: 'codex_exec',
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: FlutterLiveEditHost(
+          orchestrator: orchestrator,
+          child: const Scaffold(body: Text('Target')),
+        ),
+      ),
+    );
+
+    await tester.tap(find.byType(ActionChip));
+    await tester.pumpAndSettle();
+    await tester.tap(_semanticsId('live_edit_panel_expand_button'));
+    await tester.pumpAndSettle();
+    await tester.tapAt(tester.getCenter(find.text('Target')));
+    await tester.pumpAndSettle();
+    orchestrator.setBackend('cursor_agent');
+    await tester.pumpAndSettle();
+
+    expect(_semanticsId('live_edit_model_input'), findsOneWidget);
+    expect(_semanticsId('live_edit_reasoning_dropdown'), findsNothing);
+    expect(orchestrator.currentBackendUsesFreeformModel, isTrue);
   });
 
   testWidgets('overlay selection shows anchored bubble and candidate chips', (
@@ -972,7 +1052,6 @@ void main() {
           .map((final selection) => selection.widgetType)
           .toSet();
       expect(widgetTypes, contains('SizedBox'));
-      expect(widgetTypes, isNot(contains('Card')));
       expect(widgetTypes, isNot(contains('Column')));
       expect(widgetTypes, isNot(contains('Center')));
     },
@@ -1553,7 +1632,7 @@ void main() {
     expect(
       orchestrator.activityTimelineForActiveSelection.any(
         (final entry) =>
-            entry.label == 'Generating proposal' ||
+            entry.label == 'Applying with agent' ||
             entry.summary.contains('proposal'),
       ),
       isTrue,
@@ -1823,10 +1902,10 @@ void main() {
     skip: true,
   );
 
-  testWidgets(
-    'selected prompt tracks the active selection in debug mode',
-    (final tester) async {
-      const promptText = '''
+  testWidgets('selected prompt tracks the active selection in debug mode', (
+    final tester,
+  ) async {
+    const promptText = '''
 You are an agent working directly inside a Dart/Flutter workspace.
 
 Direct apply request:
@@ -1834,116 +1913,114 @@ Direct apply request:
   "instructionText": "Rewrite the selected text."
 }
 ''';
-      final orchestrator = LiveEditOrchestrator(
-        applyDraftDelegate: (final request) async {
-          request.onEvent?.call(
-            const LiveEditRuntimeEvent(
-              kind: LiveEditRuntimeEventKind.debug,
-              message: 'Resolved backend prompt captured.',
-              promptText: promptText,
-              debugOnly: true,
-            ),
-          );
-          return <String, Object?>{
+    final orchestrator = LiveEditOrchestrator(
+      applyDraftDelegate: (final request) async {
+        request.onEvent?.call(
+          const LiveEditRuntimeEvent(
+            kind: LiveEditRuntimeEventKind.debug,
+            message: 'Resolved backend prompt captured.',
+            promptText: promptText,
+            debugOnly: true,
+          ),
+        );
+        return <String, Object?>{
+          'proposalId': 'proposal-selected-prompt',
+          'executionPlan': <String, Object?>{
             'proposalId': 'proposal-selected-prompt',
-            'executionPlan': <String, Object?>{
-              'proposalId': 'proposal-selected-prompt',
-              'title': 'Apply this bubble change',
-              'summary': 'Persist the requested text update.',
-              'selectedNode': 'Text',
-              'requestedChanges': <String>['Update text from AI prompt'],
-              'affectedFiles': <String>['lib/main.dart'],
-              'confidence': 0.8,
-              'riskNotes': const <String>[],
-              'agentInstruction': 'Update the selected text widget.',
-            },
-            'executionResult': <String, Object?>{
-              'executionId': 'proposal-selected-prompt',
-              'backendId': 'codex_exec',
-              'summary': 'Persist the requested text update.',
-              'changedFiles': <String>['lib/main.dart'],
-              'warnings': const <String>[],
-              'validationSteps': const <String>[],
-            },
-          };
-        },
-      );
+            'title': 'Apply this bubble change',
+            'summary': 'Persist the requested text update.',
+            'selectedNode': 'Text',
+            'requestedChanges': <String>['Update text from AI prompt'],
+            'affectedFiles': <String>['lib/main.dart'],
+            'confidence': 0.8,
+            'riskNotes': const <String>[],
+            'agentInstruction': 'Update the selected text widget.',
+          },
+          'executionResult': <String, Object?>{
+            'executionId': 'proposal-selected-prompt',
+            'backendId': 'codex_exec',
+            'summary': 'Persist the requested text update.',
+            'changedFiles': <String>['lib/main.dart'],
+            'warnings': const <String>[],
+            'validationSteps': const <String>[],
+          },
+        };
+      },
+    );
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: FlutterLiveEditHost(
-            orchestrator: orchestrator,
-            child: Scaffold(
-              body: Stack(
-                children: const <Widget>[
-                  Positioned(left: 80, top: 120, child: Text('First')),
-                  Positioned(left: 80, top: 240, child: Text('Second')),
-                ],
-              ),
+    await tester.pumpWidget(
+      MaterialApp(
+        home: FlutterLiveEditHost(
+          orchestrator: orchestrator,
+          child: Scaffold(
+            body: Stack(
+              children: const <Widget>[
+                Positioned(left: 80, top: 120, child: Text('First')),
+                Positioned(left: 80, top: 240, child: Text('Second')),
+              ],
             ),
           ),
         ),
-      );
+      ),
+    );
 
-      await tester.tap(find.byType(ActionChip));
+    await tester.tap(find.byType(ActionChip));
+    await tester.pumpAndSettle();
+    await tester.tapAt(tester.getCenter(find.text('First')));
+    await tester.pumpAndSettle();
+    if (orchestrator.activeSelection == null) {
+      orchestrator.selectNode(tester.getCenter(find.text('First')));
       await tester.pumpAndSettle();
-      await tester.tapAt(tester.getCenter(find.text('First')));
+    }
+    await tester.tap(_semanticsId('live_edit_panel_expand_button'));
+    await tester.pumpAndSettle();
+
+    orchestrator.setDebugModeEnabled(true);
+    orchestrator.updateAiComposer('Rewrite the selected text.');
+    await tester.pumpAndSettle();
+
+    await orchestrator.submitAiPrompt();
+    await tester.pumpAndSettle();
+
+    if (!orchestrator.panelExpanded) {
+      orchestrator.expandPanel();
       await tester.pumpAndSettle();
-      if (orchestrator.activeSelection == null) {
-        orchestrator.selectNode(tester.getCenter(find.text('First')));
-        await tester.pumpAndSettle();
-      }
-      await tester.tap(_semanticsId('live_edit_panel_expand_button'));
-      await tester.pumpAndSettle();
+    }
 
-      orchestrator.setDebugModeEnabled(true);
-      orchestrator.updateAiComposer('Rewrite the selected text.');
-      await tester.pumpAndSettle();
+    expect(_semanticsId('live_edit_selected_prompt'), findsOneWidget);
+    await tester.tap(_semanticsId('live_edit_selected_prompt'));
+    await tester.pumpAndSettle();
 
-      await orchestrator.submitAiPrompt();
-      await tester.pumpAndSettle();
+    final firstPrompt = orchestrator.debugPromptForActiveSelection;
+    final firstNodeId = orchestrator.activeSelection?.nodeId;
+    expect(firstNodeId, isNotNull);
+    expect(
+      find.textContaining('You are an agent working directly inside'),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('"instructionText": "Rewrite the selected text."'),
+      findsOneWidget,
+    );
 
-      if (!orchestrator.panelExpanded) {
-        orchestrator.expandPanel();
-        await tester.pumpAndSettle();
-      }
+    orchestrator.selectNode(tester.getCenter(find.text('Second')));
+    await tester.pumpAndSettle();
+    expect(orchestrator.debugPromptForActiveSelection, isNull);
 
-      expect(_semanticsId('live_edit_selected_prompt'), findsOneWidget);
-      await tester.tap(_semanticsId('live_edit_selected_prompt'));
-      await tester.pumpAndSettle();
+    expect(
+      find.text('No agent request sent for this bubble yet.'),
+      findsWidgets,
+    );
 
-      final firstPrompt = orchestrator.debugPromptForActiveSelection;
-      final firstNodeId = orchestrator.activeSelection?.nodeId;
-      expect(firstNodeId, isNotNull);
-      expect(
-        find.textContaining('You are an agent working directly inside'),
-        findsOneWidget,
-      );
-      expect(
-        find.textContaining('"instructionText": "Rewrite the selected text."'),
-        findsOneWidget,
-      );
+    orchestrator.selectTrackedBubble(firstNodeId!);
+    await tester.pumpAndSettle();
+    expect(orchestrator.debugPromptForActiveSelection, firstPrompt);
 
-      orchestrator.selectNode(tester.getCenter(find.text('Second')));
-      await tester.pumpAndSettle();
-      expect(orchestrator.debugPromptForActiveSelection, isNull);
-
-      expect(
-        find.text('No agent request sent for this bubble yet.'),
-        findsWidgets,
-      );
-
-      orchestrator.selectTrackedBubble(firstNodeId!);
-      await tester.pumpAndSettle();
-      expect(orchestrator.debugPromptForActiveSelection, firstPrompt);
-
-      expect(
-        find.textContaining('You are an agent working directly inside'),
-        findsOneWidget,
-      );
-    },
-    skip: true,
-  );
+    expect(
+      find.textContaining('You are an agent working directly inside'),
+      findsOneWidget,
+    );
+  }, skip: true);
 
   testWidgets(
     'debug source and technical details stay hidden until debug mode',

@@ -165,6 +165,10 @@ List<String> _liveEditRequestDebugDetails(
 }) => <String>[
   'Session: ${request.sessionId}',
   'Backend: $backendId',
+  if ((request.inferenceConfig?.model ?? '').trim().isNotEmpty)
+    'Model: ${request.inferenceConfig!.model}',
+  if ((request.inferenceConfig?.reasoningEffort ?? '').trim().isNotEmpty)
+    'Reasoning: ${request.inferenceConfig!.reasoningEffort}',
   'Workspace: $workingDirectory',
   'Node: ${request.selection?.nodeId ?? '<none>'}',
   'Drafts: ${request.draftChanges.length}',
@@ -458,6 +462,7 @@ Future<Map<String, Object?>> _liveEditDefaultApplyDelegate(
     sourceTargets: request.sourceTargets,
     stagedPropertyChanges: request.effectiveStagedPropertyChanges,
     applyMode: request.applyMode,
+    inferenceConfig: request.inferenceConfig,
     intentText: request.intentText,
     draftChanges: request.draftChanges,
     selection: request.selection,
@@ -501,6 +506,8 @@ Future<Map<String, Object?>> _liveEditDefaultApplyDelegate(
         details: <String>[
           'Execution: ${execution.executionId}',
           'Backend: ${execution.backendId}',
+          if ((request.inferenceConfig?.model ?? '').trim().isNotEmpty)
+            'Model: ${request.inferenceConfig!.model}',
           ...execution.changedFiles.take(4),
         ],
         debugOnly: true,

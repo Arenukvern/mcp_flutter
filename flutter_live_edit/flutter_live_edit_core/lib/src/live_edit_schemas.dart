@@ -60,16 +60,12 @@ final class LiveEditSchemas {
   static const Map<String, dynamic> directApplyExecution = <String, dynamic>{
     'type': 'object',
     'required': <String>[
-      'executionId',
-      'backendId',
       'summary',
       'changedFiles',
       'warnings',
       'validationSteps',
     ],
     'properties': <String, dynamic>{
-      'executionId': <String, dynamic>{'type': 'string'},
-      'backendId': <String, dynamic>{'type': 'string'},
       'summary': <String, dynamic>{'type': 'string'},
       'changedFiles': <String, dynamic>{
         'type': 'array',
@@ -83,7 +79,6 @@ final class LiveEditSchemas {
         'type': 'array',
         'items': <String, dynamic>{'type': 'string'},
       },
-      'meta': <String, dynamic>{'type': 'object'},
     },
     'additionalProperties': false,
   };

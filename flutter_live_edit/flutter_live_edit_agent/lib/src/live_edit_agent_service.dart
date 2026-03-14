@@ -731,6 +731,8 @@ final class LiveEditAgentRegistry {
 
   factory LiveEditAgentRegistry.withDefaults() {
     final codexClient = CodexExecInferenceClient(
+      defaultModel: 'gpt-5.3-codex',
+      defaultReasoningEffort: 'medium',
       executionTimeout: const Duration(minutes: 6),
       maxTimeoutRetries: 0,
     );
@@ -1169,7 +1171,17 @@ final class LiveEditAgentService {
 
     final rawOutput = Map<String, Object?>.from(inferenceResult.data!.output);
     final response = inferenceResult.data!;
-    return LiveEditDirectApplyResult.fromJson(rawOutput).copyWith(
+    final normalizedOutput = <String, Object?>{
+      ...rawOutput,
+      'executionId': _hasText('${rawOutput['executionId'] ?? ''}')
+          ? rawOutput['executionId']
+          : rawOutput['proposalId'] ?? _generatedExecutionId(backendId),
+      'backendId': backendId,
+    };
+    return LiveEditDirectApplyResult.fromJson(normalizedOutput).copyWith(
+      executionId: _hasText('${normalizedOutput['executionId'] ?? ''}')
+          ? '${normalizedOutput['executionId']}'
+          : _generatedExecutionId(backendId),
       backendId: backendId,
       meta: <String, Object?>{
         ..._normalizeMap(rawOutput['meta']),
@@ -1277,6 +1289,7 @@ You are an agent working directly inside a Dart/Flutter workspace.
 Implement the requested UI change immediately in the real source files, keep edits minimal, and leave the workspace hot-reload ready.
 
 Return only a compact JSON execution report that matches the schema.
+Prompt-only requests still must return the full JSON object with summary, changedFiles, warnings, and validationSteps.
 
 Rules:
 - Inspect the referenced files before editing.
@@ -1292,6 +1305,9 @@ Direct apply request:
 $requestJson
 ''';
   }
+
+  String _generatedExecutionId(final String backendId) =>
+      'live_edit_${DateTime.now().millisecondsSinceEpoch}_$backendId';
 
   void _hydrateProposalState(final String proposalId) {
     if (_proposals.containsKey(proposalId) &&
@@ -1477,6 +1493,7 @@ extension on LiveEditDirectApplyResult {
     final List<String>? changedFiles,
     final List<String>? warnings,
     final List<String>? validationSteps,
+    final LiveEditRuntimeRefreshResult? runtimeRefresh,
     final Map<String, Object?>? meta,
   }) => LiveEditDirectApplyResult(
     executionId: executionId ?? this.executionId,
@@ -1485,6 +1502,7 @@ extension on LiveEditDirectApplyResult {
     changedFiles: changedFiles ?? this.changedFiles,
     warnings: warnings ?? this.warnings,
     validationSteps: validationSteps ?? this.validationSteps,
+    runtimeRefresh: runtimeRefresh ?? this.runtimeRefresh,
     meta: meta ?? this.meta,
   );
 }

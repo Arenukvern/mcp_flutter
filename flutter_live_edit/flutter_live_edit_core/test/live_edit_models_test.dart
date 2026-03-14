@@ -1,4 +1,5 @@
 import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
+import 'package:flutter_live_edit_core/src/live_edit_schemas.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -89,6 +90,22 @@ void main() {
     });
   });
 
+  test('runtime refresh result serializes and deserializes', () {
+    const refresh = LiveEditRuntimeRefreshResult(
+      action: LiveEditRuntimeAction.hotRestart,
+      validation: <String, Object?>{'validated': true},
+      hotReload: <String, Object?>{'ok': false},
+      hotRestart: <String, Object?>{'ok': true},
+      validationRecovery: <String, Object?>{'attempted': true},
+    );
+
+    final decoded = LiveEditRuntimeRefreshResult.fromJson(refresh.toJson());
+
+    expect(decoded.action, LiveEditRuntimeAction.hotRestart);
+    expect(decoded.validation['validated'], isTrue);
+    expect(decoded.hotRestart['ok'], isTrue);
+  });
+
   test(
     'resolution request accepts inferenceConfig and codexConfig (backward compat)',
     () {
@@ -140,4 +157,49 @@ void main() {
     expect(decoded.requestedChanges.single, 'Set mainAxisAlignment to center');
     expect(decoded.agentInstruction, contains('Column'));
   });
+
+  test('direct apply result retains runtime refresh metadata', () {
+    const result = LiveEditDirectApplyResult(
+      executionId: 'proposal-1',
+      backendId: 'codex_exec',
+      summary: 'Applied.',
+      changedFiles: <String>['lib/main.dart'],
+      warnings: <String>[],
+      validationSteps: <String>['Reload and verify'],
+      runtimeRefresh: LiveEditRuntimeRefreshResult(
+        action: LiveEditRuntimeAction.hotReload,
+        validation: <String, Object?>{'validated': true},
+      ),
+    );
+
+    final decoded = LiveEditDirectApplyResult.fromJson(result.toJson());
+
+    expect(decoded.runtimeRefresh?.action, LiveEditRuntimeAction.hotReload);
+    expect(decoded.runtimeRefresh?.validation['validated'], isTrue);
+  });
+
+  test(
+    'direct apply schema is closed and keeps model-owned fields minimal',
+    () {
+      final required =
+          LiveEditSchemas.directApplyExecution['required'] as List<Object?>;
+      final properties =
+          LiveEditSchemas.directApplyExecution['properties']!
+              as Map<String, Object?>;
+
+      expect(required, <Object?>[
+        'summary',
+        'changedFiles',
+        'warnings',
+        'validationSteps',
+      ]);
+      expect(
+        LiveEditSchemas.directApplyExecution['additionalProperties'],
+        isFalse,
+      );
+      expect(properties.containsKey('executionId'), isFalse);
+      expect(properties.containsKey('backendId'), isFalse);
+      expect(properties.containsKey('meta'), isFalse);
+    },
+  );
 }

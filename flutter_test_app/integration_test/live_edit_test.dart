@@ -182,6 +182,7 @@ void main() {
           sourceTargets: request.sourceTargets,
           stagedPropertyChanges: request.effectiveStagedPropertyChanges,
           applyMode: request.applyMode,
+          inferenceConfig: request.inferenceConfig,
           intentText: request.intentText,
           draftChanges: request.draftChanges,
           selection: request.selection,

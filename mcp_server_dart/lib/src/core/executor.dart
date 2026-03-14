@@ -884,48 +884,29 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       );
     }
 
-    final hotReloadResult = await _hotReload(
-      const HotReloadFlutterCommand(force: true),
-    );
-    if (!hotReloadResult.ok) {
-      return CoreResult.failure(
-        code: CoreErrorCode.liveEditApplyFailed,
-        message: 'Proposal applied, but hot reload failed',
-        details: <String, Object?>{
-          'proposal': proposal.toJson(),
-          'apply': applyResult.toJson(),
-          'hotReload': hotReloadResult.error?.toJson(),
-        },
-      );
-    }
-
-    var validation = await _validateAppliedLiveEditRequest(
+    final runtimeRefresh = await _refreshAppliedLiveEditRuntime(
       request: request,
       fallbackSessionId: command.sessionId,
     );
-    Map<String, Object?>? validationRecovery;
+    final validation = _map(runtimeRefresh['validation']);
+    final validationRecovery = switch (runtimeRefresh['validationRecovery']) {
+      final Map<String, Object?> value => value,
+      final Map value => value.map(
+        (final key, final nested) => MapEntry('$key', nested),
+      ),
+      _ => null,
+    };
     if (validation['validated'] != true) {
-      validationRecovery = await _recoverLiveEditValidationAfterHotRestart(
-        request: request,
-        fallbackSessionId: command.sessionId,
+      return CoreResult.failure(
+        code: CoreErrorCode.liveEditValidationFailed,
+        message:
+            'Proposal applied, but runtime validation did not match the draft',
+        details: <String, Object?>{
+          'proposal': proposal.toJson(),
+          'apply': applyResult.toJson(),
+          'runtimeRefresh': runtimeRefresh,
+        },
       );
-      final recoveredValidation = _map(validationRecovery['validation']);
-      if (recoveredValidation['validated'] == true) {
-        validation = recoveredValidation;
-      } else {
-        return CoreResult.failure(
-          code: CoreErrorCode.liveEditValidationFailed,
-          message:
-              'Proposal applied, but runtime validation did not match the draft',
-          details: <String, Object?>{
-            'proposal': proposal.toJson(),
-            'apply': applyResult.toJson(),
-            'hotReload': hotReloadResult.data,
-            'validation': validation,
-            'validationRecovery': validationRecovery,
-          },
-        );
-      }
     }
 
     Map<String, Object?>? discardData;
@@ -946,12 +927,64 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       data: <String, Object?>{
         'proposal': proposal.toJson(),
         'result': applyResult.toJson(),
-        'hotReload': hotReloadResult.data,
+        'runtimeRefresh': runtimeRefresh,
+        'hotReload': runtimeRefresh['hotReload'],
+        'hotRestart': runtimeRefresh['hotRestart'],
         'validation': validation,
         'validationRecovery': ?validationRecovery,
         'draft': ?discardData,
       },
     );
+  }
+
+  Future<Map<String, Object?>> _refreshAppliedLiveEditRuntime({
+    required final LiveEditResolutionRequest request,
+    required final String? fallbackSessionId,
+  }) async {
+    final result = <String, Object?>{
+      'action': LiveEditRuntimeAction.none.wireName,
+      'validation': const <String, Object?>{},
+      'hotReload': const <String, Object?>{},
+      'hotRestart': const <String, Object?>{},
+      'validationRecovery': const <String, Object?>{},
+    };
+
+    final hotReloadResult = await _hotReload(
+      const HotReloadFlutterCommand(force: true),
+    );
+    result['hotReload'] = hotReloadResult.ok
+        ? _map(hotReloadResult.data)
+        : <String, Object?>{
+            'ok': false,
+            'error': hotReloadResult.error?.toJson(),
+          };
+
+    if (hotReloadResult.ok) {
+      final validation = await _validateAppliedLiveEditRequest(
+        request: request,
+        fallbackSessionId: fallbackSessionId,
+      );
+      result['validation'] = validation;
+      if (validation['validated'] == true) {
+        result['action'] = LiveEditRuntimeAction.hotReload.wireName;
+        return result;
+      }
+    }
+
+    final validationRecovery = await _recoverLiveEditValidationAfterHotRestart(
+      request: request,
+      fallbackSessionId: fallbackSessionId,
+    );
+    result['validationRecovery'] = validationRecovery;
+    result['hotRestart'] = _map(validationRecovery['hotRestart']);
+    final recoveredValidation = _map(validationRecovery['validation']);
+    if (recoveredValidation.isNotEmpty) {
+      result['validation'] = recoveredValidation;
+    }
+    if (recoveredValidation['validated'] == true) {
+      result['action'] = LiveEditRuntimeAction.hotRestart.wireName;
+    }
+    return result;
   }
 
   Future<CoreResult> _liveEditApplyDraft(

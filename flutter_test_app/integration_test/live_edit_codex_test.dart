@@ -201,6 +201,7 @@ final class _CodexIntegrationHarness {
       sourceTargets: request.sourceTargets,
       stagedPropertyChanges: request.effectiveStagedPropertyChanges,
       applyMode: request.applyMode,
+      inferenceConfig: request.inferenceConfig,
       intentText: request.intentText,
       draftChanges: request.draftChanges,
       selection: _rewriteSelection(request.selection),
@@ -388,6 +389,10 @@ List<String> _requestDebugDetails(
 }) => <String>[
   'Session: ${request.sessionId}',
   'Backend: $backendId',
+  if ((request.inferenceConfig?.model ?? '').trim().isNotEmpty)
+    'Model: ${request.inferenceConfig!.model}',
+  if ((request.inferenceConfig?.reasoningEffort ?? '').trim().isNotEmpty)
+    'Reasoning: ${request.inferenceConfig!.reasoningEffort}',
   'Workspace: $workingDirectory',
   'Node: ${request.selection?.nodeId ?? '<none>'}',
   'Drafts: ${request.draftChanges.length}',

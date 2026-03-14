@@ -5,6 +5,7 @@ import 'package:path/path.dart' as p;
 import 'live_edit_controller.dart';
 
 bool _hasText(final String? value) => value != null && value.trim().isNotEmpty;
+const Object _unsetValue = Object();
 
 String _fallbackBackendLabel(final String backendId) => backendId
     .split(RegExp(r'[_\-\s]+'))
@@ -111,6 +112,7 @@ final class LiveEditApplyDraftRequest {
     this.selection,
     this.proposalId,
     this.backendId,
+    this.inferenceConfig,
     this.workingDirectory,
     this.intentText,
     this.approve = false,
@@ -129,6 +131,7 @@ final class LiveEditApplyDraftRequest {
   final LiveEditSelection? selection;
   final String? proposalId;
   final String? backendId;
+  final LiveEditInferenceConfig? inferenceConfig;
   final String? workingDirectory;
   final String? intentText;
   final bool approve;
@@ -185,6 +188,7 @@ final class LiveEditApplyDraftRequest {
     if (selection != null) 'selection': selection!.toJson(),
     if (_hasText(proposalId)) 'proposalId': proposalId,
     if (_hasText(backendId)) 'backendId': backendId,
+    if (inferenceConfig != null) 'inferenceConfig': inferenceConfig!.toJson(),
     if (_hasText(workingDirectory)) 'workingDirectory': workingDirectory,
     if (_hasText(intentText)) 'intentText': intentText,
     'approve': approve,
@@ -291,7 +295,7 @@ final class _LiveEditBubbleState {
     final List<String>? changedFiles,
     final String? backendId,
     final LiveEditExecutionPlan? executionPlan,
-    final String? lastError,
+    final Object? lastError = _unsetValue,
   }) => _LiveEditBubbleState(
     bubbleId: bubbleId,
     primarySelection: primarySelection ?? this.primarySelection,
@@ -303,7 +307,9 @@ final class _LiveEditBubbleState {
     changedFiles: changedFiles ?? this.changedFiles,
     backendId: backendId ?? this.backendId,
     executionPlan: executionPlan ?? this.executionPlan,
-    lastError: lastError ?? this.lastError,
+    lastError: identical(lastError, _unsetValue)
+        ? this.lastError
+        : lastError as String?,
   );
 }
 
@@ -333,6 +339,8 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   final String? intentText;
   String? _backendId;
   List<LiveEditAgentBackend> _availableBackends;
+  final Map<String, LiveEditInferenceConfig> _inferenceConfigByBackend =
+      <String, LiveEditInferenceConfig>{};
 
   LiveEditApplyPhase _applyPhase = LiveEditApplyPhase.idle;
   LiveEditExecutionPlan? _pendingExecutionPlan;
@@ -398,6 +406,48 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   String get aiComposer => _activeBubbleState?.instructionText ?? _aiComposer;
   String? get currentBackendId => _backendId;
   List<LiveEditAgentBackend> get availableBackends => _availableBackends;
+  LiveEditInferenceConfig? get currentInferenceConfig {
+    final backend = currentBackend;
+    if (backend == null) {
+      return null;
+    }
+    return _inferenceConfigByBackend[backend.id] ??
+        _backendEffectiveConfig(backend);
+  }
+
+  List<LiveEditCodexModelOption> get currentSupportedModels {
+    final backend = currentBackend;
+    if (backend == null || backend.id != 'codex_exec') {
+      return const <LiveEditCodexModelOption>[];
+    }
+    final models = backend.meta['supportedModels'];
+    if (models is! List) {
+      return LiveEditCodexOptions.supportedModels;
+    }
+    return models
+        .whereType<Map>()
+        .map(
+          (final item) => LiveEditCodexModelOption.fromJson(
+            item.map((final key, final value) => MapEntry('$key', value)),
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  List<String> get currentSupportedReasoningEfforts {
+    final backend = currentBackend;
+    if (backend == null || backend.id != 'codex_exec') {
+      return const <String>[];
+    }
+    final efforts = backend.meta['supportedReasoningEfforts'];
+    if (efforts is! List) {
+      return LiveEditCodexOptions.supportedReasoningEfforts;
+    }
+    return efforts.map((final item) => '$item').toList(growable: false);
+  }
+
+  bool get currentBackendUsesFreeformModel =>
+      currentBackend?.id == 'cursor_agent';
   _LiveEditBubbleState? get _activeBubbleState {
     final nodeId = activeSelection?.nodeId;
     if (!_hasText(nodeId)) {
@@ -418,6 +468,10 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     }
     return null;
   }
+
+  String? get currentModel => currentInferenceConfig?.model;
+
+  String? get currentReasoningEffort => currentInferenceConfig?.reasoningEffort;
 
   String get currentBackendLabel =>
       currentBackend?.label.trim().isNotEmpty == true
@@ -771,6 +825,12 @@ final class LiveEditOrchestrator extends ChangeNotifier {
 
   void setAvailableBackends(final List<LiveEditAgentBackend> backends) {
     _availableBackends = List<LiveEditAgentBackend>.unmodifiable(backends);
+    for (final backend in _availableBackends) {
+      final config = _backendEffectiveConfig(backend);
+      if (config != null) {
+        _inferenceConfigByBackend.putIfAbsent(backend.id, () => config);
+      }
+    }
     _backendId = _resolveInitialBackendId(
       availableBackends: _availableBackends,
       backendId: _backendId,
@@ -796,9 +856,52 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       return;
     }
     _backendId = normalized;
+    final config = _backendEffectiveConfig(backend);
+    if (config != null) {
+      _inferenceConfigByBackend.putIfAbsent(normalized, () => config);
+    }
     _appendDebug(
       message: 'Selected backend changed.',
-      details: <String>['Backend: ${backend.label}'],
+      details: <String>[
+        'Backend: ${backend.label}',
+        if (_hasText(currentModel)) 'Model: ${currentModel!}',
+        if (_hasText(currentReasoningEffort))
+          'Reasoning: ${currentReasoningEffort!}',
+      ],
+      nodeId: activeSelection?.nodeId,
+    );
+    notifyListeners();
+  }
+
+  void setInferenceConfig({
+    final String? model,
+    final String? reasoningEffort,
+  }) {
+    final backend = currentBackend;
+    if (backend == null) {
+      return;
+    }
+    final nextConfig = LiveEditCodexOptions.normalizeConfig(
+      LiveEditInferenceConfig(
+        model: _hasText(model) ? model!.trim() : null,
+        reasoningEffort: backend.id == 'codex_exec' && _hasText(reasoningEffort)
+            ? reasoningEffort!.trim()
+            : null,
+      ),
+    );
+    if (nextConfig == null) {
+      _inferenceConfigByBackend.remove(backend.id);
+    } else {
+      _inferenceConfigByBackend[backend.id] = nextConfig;
+    }
+    _appendDebug(
+      message: 'Inference config updated.',
+      details: <String>[
+        'Backend: ${backend.label}',
+        'Model: ${nextConfig?.model ?? '(default)'}',
+        if (backend.id == 'codex_exec')
+          'Reasoning: ${nextConfig?.reasoningEffort ?? '(default)'}',
+      ],
       nodeId: activeSelection?.nodeId,
     );
     notifyListeners();
@@ -1277,6 +1380,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     final selectedWidgets =
         bubble?.selectedWidgets ?? const <LiveEditSelection>[];
     final draftChanges = bubble?.draftChanges ?? const <LiveEditDraftChange>[];
+    final inferenceConfig = currentInferenceConfig;
     final resolvedIntent = _resolveBubbleInstruction(
       bubbleId: bubbleId,
       message: message,
@@ -1316,6 +1420,10 @@ final class LiveEditOrchestrator extends ChangeNotifier {
         if (_hasText(selection?.source?.file))
           'Source: ${selection!.source!.file}${selection.source?.line == null ? '' : ':${selection.source!.line}'}',
         if (_hasText(_backendId)) 'Backend: $currentBackendLabel',
+        if (_hasText(inferenceConfig?.model))
+          'Model: ${inferenceConfig!.model}',
+        if (_hasText(inferenceConfig?.reasoningEffort))
+          'Reasoning: ${inferenceConfig!.reasoningEffort}',
         if (draftChanges.isNotEmpty) 'Drafts: ${draftChanges.length}',
         if (draftChanges.isEmpty && _hasText(resolvedIntent))
           'Prompt-only request',
@@ -1328,6 +1436,10 @@ final class LiveEditOrchestrator extends ChangeNotifier {
         if (_hasText(selection?.source?.file))
           'Source: ${selection!.source!.file}${selection.source?.line == null ? '' : ':${selection.source!.line}'}',
         if (_hasText(_backendId)) 'Backend: $currentBackendLabel',
+        if (_hasText(inferenceConfig?.model))
+          'Model: ${inferenceConfig!.model}',
+        if (_hasText(inferenceConfig?.reasoningEffort))
+          'Reasoning: ${inferenceConfig!.reasoningEffort}',
         if (_hasText(workingDirectory)) 'Workspace: $workingDirectory',
         if (draftChanges.isNotEmpty) 'Drafts: ${draftChanges.length}',
         if (draftChanges.isEmpty) 'Mode: prompt-only',
@@ -1358,6 +1470,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
           selection: selection,
           proposalId: _pendingProposalId,
           backendId: _backendId,
+          inferenceConfig: inferenceConfig,
           workingDirectory: workingDirectory,
           intentText: resolvedIntent,
           approve: approve,
@@ -1412,7 +1525,14 @@ final class LiveEditOrchestrator extends ChangeNotifier {
           executionResult?.changedFiles ??
           executionPlan?.affectedFiles ??
           const <String>[];
+      final runtimeRefresh = executionResult?.runtimeRefresh;
+      final appliedDetails = <String>[
+        ...changedFiles,
+        if (runtimeRefresh?.didRefresh == true)
+          'Runtime: ${runtimeRefresh!.action.wireName}',
+      ];
       _applyPhase = LiveEditApplyPhase.success;
+      _lastError = null;
       _bubbleStatusByNode[bubbleId] = LiveEditBubbleStatus.applied;
       _bubbleDisplayStateByNode[bubbleId] =
           LiveEditBubbleDisplayState.minimized;
@@ -1436,7 +1556,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       _appendTimeline(
         role: 'assistant',
         message: 'Applied live-edit changes.',
-        details: changedFiles,
+        details: appliedDetails,
       );
       _appendActivity(
         step: LiveEditActivityStep.finished,
@@ -1444,7 +1564,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
         summary:
             executionResult?.summary ??
             '$currentBackendLabel applied this bubble change to source.',
-        details: changedFiles,
+        details: appliedDetails,
         nodeId: bubbleId,
       );
       _pendingProposalId = null;
@@ -1696,6 +1816,28 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       if (message.isNotEmpty) {
         return _formatErrorMessage(message, details: nestedError['details']);
       }
+    }
+    return null;
+  }
+
+  LiveEditInferenceConfig? _backendEffectiveConfig(
+    final LiveEditAgentBackend backend,
+  ) {
+    final effective = backend.meta['effectiveInferenceConfig'];
+    if (effective is Map) {
+      return LiveEditCodexOptions.normalizeConfig(
+        LiveEditInferenceConfig.fromJson(
+          effective.map((final key, final value) => MapEntry('$key', value)),
+        ),
+      );
+    }
+    final defaults = backend.meta['defaultInferenceConfig'];
+    if (defaults is Map) {
+      return LiveEditCodexOptions.normalizeConfig(
+        LiveEditInferenceConfig.fromJson(
+          defaults.map((final key, final value) => MapEntry('$key', value)),
+        ),
+      );
     }
     return null;
   }
