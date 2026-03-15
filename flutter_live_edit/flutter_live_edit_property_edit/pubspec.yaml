@@ -1,0 +1,23 @@
+name: flutter_live_edit_property_edit
+description: Optional direct property editing feature for Flutter live edit. Add this package to enable the Properties panel and per-widget property descriptors.
+publish_to: none
+version: 0.1.0
+
+environment:
+  sdk: ^3.10.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_live_edit_core:
+    path: ../flutter_live_edit_core
+  flutter_live_edit_toolkit:
+    path: ../flutter_live_edit_toolkit
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  lints: ^6.1.0
+
+flutter:
+  uses-material-design: true

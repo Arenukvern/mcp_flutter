@@ -207,6 +207,14 @@ String _sourceLocationLabel(
   return source.sourceHint?.trim() ?? '';
 }
 
+/// Builds the optional "Properties" panel section. When null, the panel
+/// does not show direct property editing; when set (e.g. by
+/// [LiveEditPropertyEditPlugin.buildPropertyPanelSection]), the returned
+/// widget is shown under the "Properties" section title.
+typedef LiveEditPropertyPanelSectionBuilder = Widget Function(
+  LiveEditOrchestrator orchestrator,
+);
+
 class FlutterLiveEditHost extends StatefulWidget {
   const FlutterLiveEditHost({
     required this.child,
@@ -218,6 +226,7 @@ class FlutterLiveEditHost extends StatefulWidget {
     this.availableBackends = const <LiveEditAgentBackend>[],
     this.workingDirectory,
     this.intentText,
+    this.buildPropertyPanelSection,
   });
 
   final Widget child;
@@ -228,6 +237,7 @@ class FlutterLiveEditHost extends StatefulWidget {
   final List<LiveEditAgentBackend> availableBackends;
   final String? workingDirectory;
   final String? intentText;
+  final LiveEditPropertyPanelSectionBuilder? buildPropertyPanelSection;
 
   @override
   State<FlutterLiveEditHost> createState() => _FlutterLiveEditHostState();
@@ -1063,14 +1073,23 @@ class _CycleCandidateIntent extends Intent {
 }
 
 class _EditorPanelSurface extends StatelessWidget {
-  const _EditorPanelSurface({required this.orchestrator});
+  const _EditorPanelSurface({
+    required this.orchestrator,
+    this.buildPropertyPanelSection,
+  });
 
   final LiveEditOrchestrator orchestrator;
+  final LiveEditPropertyPanelSectionBuilder? buildPropertyPanelSection;
 
   @override
   Widget build(final BuildContext context) => Stack(
     children: <Widget>[
-      Positioned.fill(child: _PanelSurface(orchestrator: orchestrator)),
+      Positioned.fill(
+        child: _PanelSurface(
+          orchestrator: orchestrator,
+          buildPropertyPanelSection: buildPropertyPanelSection,
+        ),
+      ),
       Positioned(
         top: 6,
         left: 0,
@@ -1213,6 +1232,8 @@ class _FlutterLiveEditHostState extends State<FlutterLiveEditHost> {
                                       height: panelRect.height,
                                       child: _EditorPanelSurface(
                                         orchestrator: _orchestrator,
+                                        buildPropertyPanelSection:
+                                            widget.buildPropertyPanelSection,
                                       ),
                                     );
                                   },
@@ -2095,9 +2116,13 @@ class _PanelSection extends StatelessWidget {
 }
 
 class _PanelSurface extends StatelessWidget {
-  const _PanelSurface({required this.orchestrator});
+  const _PanelSurface({
+    required this.orchestrator,
+    this.buildPropertyPanelSection,
+  });
 
   final LiveEditOrchestrator orchestrator;
+  final LiveEditPropertyPanelSectionBuilder? buildPropertyPanelSection;
 
   @override
   Widget build(final BuildContext context) {
@@ -2110,6 +2135,7 @@ class _PanelSurface extends StatelessWidget {
           ? _PropertyPanel(
               key: const ValueKey<String>('expanded_panel'),
               orchestrator: orchestrator,
+              buildPropertyPanelSection: buildPropertyPanelSection,
             )
           : _PanelRail(
               key: const ValueKey<String>('rail_panel'),
@@ -2568,9 +2594,14 @@ class _PropertyEditorCard extends StatelessWidget {
 }
 
 class _PropertyPanel extends StatelessWidget {
-  const _PropertyPanel({required this.orchestrator, super.key});
+  const _PropertyPanel({
+    required this.orchestrator,
+    this.buildPropertyPanelSection,
+    super.key,
+  });
 
   final LiveEditOrchestrator orchestrator;
+  final LiveEditPropertyPanelSectionBuilder? buildPropertyPanelSection;
 
   List<LiveEditSelectionCandidate> get _visibleCandidates =>
       orchestrator.activeSelectionCandidates.take(3).toList(growable: false);
@@ -2581,7 +2612,6 @@ class _PropertyPanel extends StatelessWidget {
       kLiveEditPanelExpandedSurfaceId,
     );
     final selection = orchestrator.activeSelection;
-    final properties = orchestrator.effectiveProperties;
     final error = orchestrator.lastError;
 
     return Card(
@@ -2902,31 +2932,11 @@ class _PropertyPanel extends StatelessWidget {
                             dense: true,
                           ),
                         ),
-                        _PanelSection(
-                          title: 'Properties',
-                          child: Column(
-                            children: <Widget>[
-                              if (orchestrator.hasMultiSelection &&
-                                  properties.isEmpty)
-                                const Padding(
-                                  padding: EdgeInsets.only(bottom: 4),
-                                  child: Text(
-                                    'No shared editable properties for this selection.',
-                                    style: TextStyle(fontSize: 11),
-                                  ),
-                                ),
-                              for (final property in properties)
-                                Padding(
-                                  padding: const EdgeInsets.only(bottom: 4),
-                                  child: _PropertyEditorCard(
-                                    orchestrator: orchestrator,
-                                    property: property,
-                                    surface: LiveEditEditSurface.panel,
-                                  ),
-                                ),
-                            ],
+                        if (buildPropertyPanelSection != null)
+                          _PanelSection(
+                            title: 'Properties',
+                            child: buildPropertyPanelSection!(orchestrator),
                           ),
-                        ),
                         _PanelSection(
                           title: 'Thread',
                           child: Column(

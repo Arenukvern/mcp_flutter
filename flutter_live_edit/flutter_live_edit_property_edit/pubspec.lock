@@ -42,7 +42,7 @@ packages:
     source: hosted
     version: "1.19.1"
   dart_mcp:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: dart_mcp
       sha256: "92a2ee1cca577ed54fa4f3d5ae0e80ce2dd61e1892e793bb4f951b30eab9c4b1"
@@ -71,7 +71,7 @@ packages:
     source: sdk
     version: "0.0.0"
   flutter_live_edit_agent:
-    dependency: "direct main"
+    dependency: transitive
     description:
       path: "../flutter_live_edit_agent"
       relative: true
@@ -84,10 +84,10 @@ packages:
       relative: true
     source: path
     version: "0.1.0"
-  flutter_live_edit_property_edit:
-    dependency: "direct dev"
+  flutter_live_edit_toolkit:
+    dependency: "direct main"
     description:
-      path: "../flutter_live_edit_property_edit"
+      path: "../flutter_live_edit_toolkit"
       relative: true
     source: path
     version: "0.1.0"
@@ -97,7 +97,7 @@ packages:
     source: sdk
     version: "0.0.0"
   from_json_to_json:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: from_json_to_json
       sha256: "31c0323d7d3ad03d40fbf2d81d1b7cbd87a6235c0d32d1a59a20f3862245fdca"
@@ -169,7 +169,7 @@ packages:
     source: hosted
     version: "0.13.0"
   mcp_toolkit:
-    dependency: "direct main"
+    dependency: transitive
     description:
       path: "../../mcp_toolkit/mcp_toolkit"
       relative: true
@@ -277,7 +277,7 @@ packages:
     source: hosted
     version: "2.2.0"
   vm_service:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: vm_service
       sha256: "45caa6c5917fa127b5dbcfbd1fa60b14e583afdc08bfc96dda38886ca252eb60"
@@ -292,7 +292,7 @@ packages:
     source: path
     version: "0.1.0"
   xsoulspace_inference_core:
-    dependency: "direct main"
+    dependency: transitive
     description:
       path: "../../../../xs/dart_flutter_packages/pkgs/xsoulspace_inference_core"
       relative: true
@@ -305,14 +305,6 @@ packages:
       relative: true
     source: path
     version: "0.1.0"
-  xsoulspace_lints:
-    dependency: "direct dev"
-    description:
-      name: xsoulspace_lints
-      sha256: fc56073d7a17b4b0e8ef9efbc5e1948b2b4eb8e0fabdbfe702e9887151250c34
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.1.2"
 sdks:
   dart: ">=3.10.0 <4.0.0"
   flutter: ">=3.18.0-18.0.pre.54"
