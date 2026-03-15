@@ -1,3 +1,7 @@
+## 2.6.1
+
+- old devtools extension removed
+
 ## 2.6.0
 
 BREAKING CHANGES:
