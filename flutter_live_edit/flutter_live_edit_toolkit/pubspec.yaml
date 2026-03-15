@@ -14,6 +14,7 @@ dependencies:
     path: ../flutter_live_edit_agent
   flutter_live_edit_core:
     path: ../flutter_live_edit_core
+  from_json_to_json: ^0.4.0
   mcp_toolkit:
     path: ../../mcp_toolkit/mcp_toolkit
   vm_service: ^15.0.2

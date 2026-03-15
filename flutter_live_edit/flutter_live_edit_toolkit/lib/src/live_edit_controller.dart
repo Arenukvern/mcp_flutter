@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
+import 'package:from_json_to_json/from_json_to_json.dart';
 
 import 'live_edit_overlay_theme.dart';
 
@@ -15,16 +16,6 @@ bool _hasText(final String? value) => value != null && value.trim().isNotEmpty;
 Map<String, Object?> _alignmentJson(final AlignmentGeometry geometry) {
   final resolved = geometry.resolve(TextDirection.ltr);
   return <String, Object?>{'x': resolved.x, 'y': resolved.y};
-}
-
-int? _asNullableInt(final Object? value) {
-  if (value == null) {
-    return null;
-  }
-  if (value is int) {
-    return value;
-  }
-  return int.tryParse('$value');
 }
 
 LiveEditBounds? _boundsForRenderObject(final RenderObject? renderObject) {
@@ -586,8 +577,8 @@ LiveEditSourceLocation? _extractSourceLocation(
     if (file.isNotEmpty) {
       return LiveEditSourceLocation(
         file: file,
-        line: _asNullableInt(normalized['line']),
-        column: _asNullableInt(normalized['column']),
+        line: jsonDecodeNullableInt(normalized['line']),
+        column: jsonDecodeNullableInt(normalized['column']),
       );
     }
   }
@@ -2693,7 +2684,7 @@ final class LiveEditController extends ChangeNotifier {
         final parentData = renderObject?.parentData;
         if (parentData is FlexParentData) {
           captureOriginal(change.propertyId, parentData.flex);
-          parentData.flex = _asNullableInt(change.targetValue);
+          parentData.flex = jsonDecodeNullableInt(change.targetValue);
           renderObject?.markNeedsLayout();
           return true;
         }
@@ -2799,7 +2790,7 @@ final class LiveEditController extends ChangeNotifier {
         case final key when key.endsWith('::flexFactor'):
           final parentData = renderObject.parentData;
           if (parentData is FlexParentData) {
-            parentData.flex = _asNullableInt(entry.value);
+            parentData.flex = jsonDecodeNullableInt(entry.value);
             renderObject.markNeedsLayout();
           }
         case final key when key.endsWith('::flexFit'):

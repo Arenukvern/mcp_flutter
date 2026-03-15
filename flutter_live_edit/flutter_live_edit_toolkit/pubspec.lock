@@ -90,7 +90,7 @@ packages:
     source: sdk
     version: "0.0.0"
   from_json_to_json:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: from_json_to_json
       sha256: "31c0323d7d3ad03d40fbf2d81d1b7cbd87a6235c0d32d1a59a20f3862245fdca"

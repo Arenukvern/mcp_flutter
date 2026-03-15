@@ -26,6 +26,52 @@ const _liveEditWorkingDirectoryFromDefine = String.fromEnvironment(
   'LIVE_EDIT_WORKING_DIRECTORY',
 );
 
+Future<void> bootstrapFlutterLiveEditApp({
+  required final void Function() runApp,
+  final Future<void> Function()? initializeApp,
+  final Future<void> Function()? registerInitialEntries,
+  final Future<void> Function()? registerDelayedEntries,
+  final Duration delayedRegistrationDelay = const Duration(seconds: 5),
+  final FlutterLiveEditAutoConfig? config,
+  final void Function(Object error, StackTrace stackTrace)? onError,
+}) async {
+  final resolvedConfig = config ?? FlutterLiveEditAutoConfig.fromEnvironment();
+  await runZonedGuarded(
+    () async {
+      WidgetsFlutterBinding.ensureInitialized();
+      if (kIsWeb && resolvedConfig.enableWebSemantics) {
+        SemanticsBinding.instance.ensureSemantics();
+      }
+      MCPToolkitBinding.instance
+        ..initialize()
+        ..initializeFlutterToolkit()
+        ..initializeFlutterLiveEditToolkit();
+
+      if (initializeApp != null) {
+        await initializeApp();
+      }
+      if (registerInitialEntries != null) {
+        await registerInitialEntries();
+      }
+      runApp();
+
+      if (registerDelayedEntries != null) {
+        Timer(
+          delayedRegistrationDelay,
+          () => unawaited(registerDelayedEntries()),
+        );
+      }
+    },
+    (final error, final stackTrace) {
+      if (onError != null) {
+        onError(error, stackTrace);
+        return;
+      }
+      MCPToolkitBinding.instance.handleZoneError(error, stackTrace);
+    },
+  );
+}
+
 @visibleForTesting
 LiveEditOrchestrator? debugFlutterLiveEditAutoHostOrchestratorOverride;
 
@@ -50,7 +96,6 @@ final class FlutterLiveEditAutoConfig {
     final String? appId,
     final Map<String, Object?> meta = const <String, Object?>{},
   }) => FlutterLiveEditAutoConfig(
-    backendId: _liveEditBackendIdFromDefine,
     workingDirectory: _trimToNull(_liveEditWorkingDirectoryFromDefine),
     intentText: intentText,
     testMode:
@@ -96,19 +141,17 @@ final class FlutterLiveEditAutoConfig {
     final bool? enableWebSemantics,
     final String? appId,
     final Map<String, Object?>? meta,
-  }) {
-    return FlutterLiveEditAutoConfig(
-      backendId: backendId ?? this.backendId,
-      workingDirectory: workingDirectory ?? this.workingDirectory,
-      intentText: intentText ?? this.intentText,
-      testMode: testMode ?? this.testMode,
-      availableBackends: availableBackends ?? this.availableBackends,
-      enableRuntimeRefresh: enableRuntimeRefresh ?? this.enableRuntimeRefresh,
-      enableWebSemantics: enableWebSemantics ?? this.enableWebSemantics,
-      appId: appId ?? this.appId,
-      meta: meta ?? this.meta,
-    );
-  }
+  }) => FlutterLiveEditAutoConfig(
+    backendId: backendId ?? this.backendId,
+    workingDirectory: workingDirectory ?? this.workingDirectory,
+    intentText: intentText ?? this.intentText,
+    testMode: testMode ?? this.testMode,
+    availableBackends: availableBackends ?? this.availableBackends,
+    enableRuntimeRefresh: enableRuntimeRefresh ?? this.enableRuntimeRefresh,
+    enableWebSemantics: enableWebSemantics ?? this.enableWebSemantics,
+    appId: appId ?? this.appId,
+    meta: meta ?? this.meta,
+  );
 }
 
 class FlutterLiveEditAutoHost extends StatelessWidget {
@@ -158,52 +201,6 @@ class FlutterLiveEditAutoHost extends StatelessWidget {
       child: child,
     );
   }
-}
-
-Future<void> bootstrapFlutterLiveEditApp({
-  required final void Function() runApp,
-  final Future<void> Function()? initializeApp,
-  final Future<void> Function()? registerInitialEntries,
-  final Future<void> Function()? registerDelayedEntries,
-  final Duration delayedRegistrationDelay = const Duration(seconds: 5),
-  final FlutterLiveEditAutoConfig? config,
-  final void Function(Object error, StackTrace stackTrace)? onError,
-}) async {
-  final resolvedConfig = config ?? FlutterLiveEditAutoConfig.fromEnvironment();
-  await runZonedGuarded(
-    () async {
-      WidgetsFlutterBinding.ensureInitialized();
-      if (kIsWeb && resolvedConfig.enableWebSemantics) {
-        SemanticsBinding.instance.ensureSemantics();
-      }
-      MCPToolkitBinding.instance
-        ..initialize()
-        ..initializeFlutterToolkit()
-        ..initializeFlutterLiveEditToolkit();
-
-      if (initializeApp != null) {
-        await initializeApp();
-      }
-      if (registerInitialEntries != null) {
-        await registerInitialEntries();
-      }
-      runApp();
-
-      if (registerDelayedEntries != null) {
-        Timer(
-          delayedRegistrationDelay,
-          () => unawaited(registerDelayedEntries()),
-        );
-      }
-    },
-    (final error, final stackTrace) {
-      if (onError != null) {
-        onError(error, stackTrace);
-        return;
-      }
-      MCPToolkitBinding.instance.handleZoneError(error, stackTrace);
-    },
-  );
 }
 
 final class _FlutterLiveEditAutoDelegate {
@@ -779,7 +776,7 @@ List<String> _liveEditRequestDebugDetails(
   'Workspace: $workingDirectory',
   'Node: ${request.selection?.nodeId ?? '<none>'}',
   'Drafts: ${request.draftChanges.length}',
-  'Intent present: ${((request.intentText ?? '').trim().isNotEmpty)}',
+  'Intent present: ${(request.intentText ?? '').trim().isNotEmpty}',
 ];
 
 void _emitInferenceStreamEvent(
@@ -853,7 +850,7 @@ void _emitInferenceStreamEvent(
           message: '$backendLabel streamed output.',
           details: _detailList(<String?>[
             attempt,
-            textDelta == null ? null : _truncateForActivity(textDelta),
+            if (textDelta == null) null else _truncateForActivity(textDelta),
           ]),
         ),
       );
@@ -959,9 +956,8 @@ void _emitInferenceStreamEvent(
 
 String _backendLabelForEvent(final String backendId) => backendId;
 
-List<String> _detailList(final List<String?> values) {
-  return values.whereType<String>().toList(growable: false);
-}
+List<String> _detailList(final List<String?> values) =>
+    values.whereType<String>().toList(growable: false);
 
 String _liveEditErrorMessage(final String message, {final Object? details}) {
   final normalizedMessage = message.trim().isEmpty
@@ -1007,11 +1003,8 @@ Map<String, Object?> _liveEditFailureResponse(
   },
 };
 
-Map<String, Object?> _optionalEntry(final String key, final Object? value) {
-  return value == null
-      ? const <String, Object?>{}
-      : <String, Object?>{key: value};
-}
+Map<String, Object?> _optionalEntry(final String key, final Object? value) =>
+    value == null ? const <String, Object?>{} : <String, Object?>{key: value};
 
 String _truncateForActivity(final String value, {final int max = 140}) {
   final trimmed = value.trim();
