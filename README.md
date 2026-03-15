@@ -51,11 +51,12 @@ _For AI-Powered Development_
 
 **Major Difference of this MCP server from official Dart MCP Server:**
 
-- **Dynamic Tools Registration**: Flutter apps can now register custom tools at the MCP server. See how it works in [short YouTube video](https://www.youtube.com/watch?v=Qog3x2VcO98). See [Dynamic Tools Registration Docs](https://github.com/Arenukvern/mcp_flutter/blob/main/QUICK_START.md#dynamic-tools-registration) for more details.
+- **Dynamic Tools Registration**: Flutter apps can register custom tools at the MCP server. See how it works in [short YouTube video](https://www.youtube.com/watch?v=Qog3x2VcO98). See [Dynamic Tools Registration Docs](https://github.com/Arenukvern/mcp_flutter/blob/main/QUICK_START.md#dynamic-tools-registration) for more details.
 
 ## v3.0.0 Hard Cut
 
-This release is a strict hard cut focused on reliability and automation safety:
+1. New CLI to use same functionality as MCP server - so AI Agents can use it directly without MCP server.
+2. MCP server now thin, and uses shared core logic as CLI.
 
 - unified JSON error envelope contract (`code`, `message`, `details`, `descriptor`, `recovery`)
 - strict typed parsing and strict schemas (`additionalProperties: false` by default)
@@ -93,7 +94,6 @@ See more details about command line options in [mcp_server_dart README](mcp_serv
 
 - `get_app_errors` [Resource|Tool] - Retrieves precise and condensed error information from your Flutter app
   **Usage**:
-
   - Uses only short description of the error. Should filter duplicate errors, to avoid flooding Agent context window with the same errors.
   - Uses Error Monitor to capture Dart VM errors. All errors captured in Flutter app, and then available by request from MCP server.
 
@@ -105,7 +105,6 @@ See more details about command line options in [mcp_server_dart README](mcp_serv
 
 - `get_screenshots` [Resource|Tool] - Captures screenshots of the running application.
   **Configuration**:
-
   - Enable with `--images` flag
   - Will use PNG compression to optimize image size.
 
@@ -166,7 +165,6 @@ This MCP server is verified by [MseeP.ai](https://mseep.ai).
 ## 🔧 Troubleshooting
 
 1. **Connection Issues**
-
    - Ensure your Flutter app is running in debug mode
    - Verify the port matches in both Flutter app and MCP server
    - Check if the port is not being used by another process
@@ -174,7 +172,6 @@ This MCP server is verified by [MseeP.ai](https://mseep.ai).
    - If response includes `connection_selection_required`, retry with `arguments.connection.targetId` using one URI from `availableTargets` (or set `arguments.connection.uri` directly)
 
 2. **AI Tool Not Detecting Inspector**
-
    - Restart the AI tool after configuration changes
    - Verify the configuration JSON syntax
    - Check the tool's logs for connection errors
