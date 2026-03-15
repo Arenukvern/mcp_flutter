@@ -179,8 +179,16 @@ class MCPDemoHomePage extends StatefulWidget {
   State<MCPDemoHomePage> createState() => _MCPDemoHomePageState();
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  final _propertyPanelSectionBuilder = LiveEditPropertyEditPlugin.install();
+  final _isPropertyPanelEnabled = false;
 
   @override
   Widget build(final BuildContext context) {
@@ -194,7 +202,9 @@ class MyApp extends StatelessWidget {
         create: (final context) => CustomNotifier(),
         child: FlutterLiveEditAutoHost(
           config: _liveEditConfig,
-          buildPropertyPanelSection: LiveEditPropertyEditPlugin.install(),
+          buildPropertyPanelSection: _isPropertyPanelEnabled
+              ? _propertyPanelSectionBuilder
+              : null,
           child: const MCPDemoHomePage(),
         ),
       ),
@@ -409,8 +419,6 @@ class _HeaderSection extends StatelessWidget {
 }
 
 class _MCPDemoHomePageState extends State<MCPDemoHomePage> {
-  Timer? _statusTimer;
-
   @override
   Widget build(final BuildContext context) {
     return Scaffold(
@@ -447,16 +455,9 @@ class _MCPDemoHomePageState extends State<MCPDemoHomePage> {
   }
 
   @override
-  void dispose() {
-    _statusTimer?.cancel();
-    super.dispose();
-  }
-
-  @override
   void initState() {
     super.initState();
     _initializeMCPIntegration();
-    _startPeriodicStatusCheck();
   }
 
   void _initializeMCPIntegration() {
@@ -478,14 +479,6 @@ class _MCPDemoHomePageState extends State<MCPDemoHomePage> {
         ),
       ),
     );
-  }
-
-  void _startPeriodicStatusCheck() {
-    _statusTimer = Timer.periodic(const Duration(seconds: 5), (final timer) {
-      if (mounted) {
-        setState(() {});
-      }
-    });
   }
 }
 
