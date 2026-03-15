@@ -269,6 +269,38 @@ final class LiveEditOverlayThemeModel extends ChangeNotifier {
   GlobalKey keyFor(final String surfaceId) =>
       _surfaceKeys[surfaceId] ??= GlobalKey(debugLabel: surfaceId);
 
+  String? surfaceIdForElement(final Element element) {
+    for (final entry in _surfaceKeys.entries) {
+      var cursor = element;
+      while (true) {
+        if (cursor.widget.key == entry.value) {
+          return entry.key;
+        }
+        Element? parent;
+        cursor.visitAncestorElements((final candidate) {
+          parent = candidate;
+          return false;
+        });
+        if (parent == null) {
+          break;
+        }
+        cursor = parent!;
+      }
+    }
+    return null;
+  }
+
+  bool isSurfaceRootElement(final Element element) {
+    final surfaceId = surfaceIdForElement(element);
+    if (surfaceId == null) {
+      return false;
+    }
+    return element.widget.key == keyFor(surfaceId);
+  }
+
+  String componentKindForSurface(final String surfaceId) =>
+      _componentKindFor(surfaceId);
+
   LiveEditOverlaySurfaceStyle styleFor(final String surfaceId) =>
       _styles[surfaceId] ?? _styles[kLiveEditPropertyEditorRowSurfaceId]!;
 

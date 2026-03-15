@@ -1510,6 +1510,10 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     }
     _restoreBubbleState(selectedBubbleId);
     _syncSelectionState();
+    if (targetDomain == LiveEditTargetDomain.toolScene &&
+        activeSelection?.targetDomain == LiveEditTargetDomain.toolScene) {
+      openAiBubble();
+    }
   }
 
   void startMarquee(final Offset globalOffset) {
@@ -1707,6 +1711,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       'requiresAgentForPersistence': property.requiresAgentForPersistence,
       'editSurface': (surface ?? property.preferredEditSurface).wireName,
       'targetDomain': selection.targetDomain.wireName,
+      'selectionNodeId': selection.nodeId,
       if (_hasText('${property.meta['surfaceId'] ?? ''}'))
         'surfaceId': '${property.meta['surfaceId']}',
     };

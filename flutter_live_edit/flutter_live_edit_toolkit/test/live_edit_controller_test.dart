@@ -40,6 +40,11 @@ Finder _panelScrollable() => find
     )
     .first;
 
+Finder _panelCollapseButton() =>
+    _semanticsId('live_edit_panel_collapse_button');
+
+Finder _bubblePromptField() => _semanticsId('live_edit_ai_prompt_field');
+
 List<LiveEditAgentBackend> _testBackends() => const <LiveEditAgentBackend>[
   LiveEditAgentBackend(
     id: 'codex_exec',
@@ -248,13 +253,12 @@ void main() {
     await tester.tap(_semanticsId('live_edit_panel_expand_button'));
     await tester.pumpAndSettle();
 
-    orchestrator.setTargetDomain(LiveEditTargetDomain.toolScene);
-    await tester.pumpAndSettle();
-
     final panelKey = LiveEditOverlayThemeModel.instance.keyFor(
       kLiveEditPanelExpandedSurfaceId,
     );
-    orchestrator.selectNode(tester.getCenter(find.byKey(panelKey)));
+    orchestrator.setTargetDomain(LiveEditTargetDomain.toolScene);
+    await tester.pumpAndSettle();
+    orchestrator.selectTrackedBubble(kLiveEditPanelExpandedSurfaceId);
     await tester.pumpAndSettle();
 
     final selection = orchestrator.activeSelection;
@@ -274,7 +278,7 @@ void main() {
     );
   });
 
-  testWidgets('tool scene hover resolves registered surface like app hover', (
+  testWidgets('tool scene hover resolves a real bubble child widget', (
     final tester,
   ) async {
     final orchestrator = LiveEditOrchestrator();
@@ -289,16 +293,17 @@ void main() {
 
     await tester.tap(find.byType(ActionChip));
     await tester.pumpAndSettle();
-    await tester.tap(_semanticsId('live_edit_panel_expand_button'));
+    await tester.tapAt(tester.getCenter(find.text('Target')));
+    await tester.pumpAndSettle();
+    orchestrator.openAiBubble();
     await tester.pumpAndSettle();
 
     orchestrator.setTargetDomain(LiveEditTargetDomain.toolScene);
     await tester.pumpAndSettle();
 
-    final panelKey = LiveEditOverlayThemeModel.instance.keyFor(
-      kLiveEditPanelExpandedSurfaceId,
+    orchestrator.hoverNode(
+      tester.getCenter(_semanticsId('live_edit_bubble_hide_button')),
     );
-    orchestrator.hoverNode(tester.getCenter(find.byKey(panelKey)));
     await tester.pumpAndSettle();
 
     expect(orchestrator.hoverSelection, isNotNull);
@@ -308,12 +313,16 @@ void main() {
     );
     expect(
       orchestrator.hoverSelection!.nodeId,
-      kLiveEditPanelExpandedSurfaceId,
+      isNot(kLiveEditAiBubbleSurfaceId),
+    );
+    expect(
+      orchestrator.hoverSelection!.rawNode['surfaceId'],
+      kLiveEditAiBubbleSurfaceId,
     );
   });
 
   testWidgets(
-    'tool scene uses the movable editor panel as the selectable target surface',
+    'tool scene keeps panel controls selectable after moving the editor panel',
     (final tester) async {
       final orchestrator = LiveEditOrchestrator();
       await tester.pumpWidget(
@@ -336,11 +345,6 @@ void main() {
       final editorPanel = _semanticsId('live_edit_panel');
       final dragHandle = _semanticsId('live_edit_panel_drag_handle');
       final resizeHandle = _semanticsId('live_edit_panel_resize_handle');
-      final targetPanelKey = LiveEditOverlayThemeModel.instance.keyFor(
-        kLiveEditPanelExpandedSurfaceId,
-      );
-      final targetPanel = find.byKey(targetPanelKey);
-
       final initialTopLeft = tester.getTopLeft(editorPanel);
       final initialSize = tester.getSize(editorPanel);
 
@@ -358,7 +362,7 @@ void main() {
       expect(resized.width, greaterThan(initialSize.width + 30));
       expect(resized.height, greaterThan(initialSize.height + 40));
 
-      orchestrator.selectNode(tester.getCenter(targetPanel));
+      orchestrator.selectNode(tester.getCenter(_panelCollapseButton()));
       await tester.pumpAndSettle();
 
       expect(orchestrator.activeSelection, isNotNull);
@@ -367,7 +371,7 @@ void main() {
         LiveEditTargetDomain.toolScene,
       );
       expect(
-        orchestrator.activeSelection!.nodeId,
+        orchestrator.activeSelection!.rawNode['surfaceId'],
         kLiveEditPanelExpandedSurfaceId,
       );
     },
@@ -427,16 +431,15 @@ void main() {
     final appSelection = orchestrator.activeSelection;
     expect(appSelection, isNotNull);
     expect(appSelection!.targetDomain, LiveEditTargetDomain.appScene);
+    orchestrator.openAiBubble();
+    await tester.pumpAndSettle();
 
     orchestrator.expandPanel();
     await tester.pumpAndSettle();
     orchestrator.setTargetDomain(LiveEditTargetDomain.toolScene);
     await tester.pumpAndSettle();
 
-    final panelKey = LiveEditOverlayThemeModel.instance.keyFor(
-      kLiveEditPanelExpandedSurfaceId,
-    );
-    orchestrator.selectNode(tester.getCenter(find.byKey(panelKey)));
+    orchestrator.selectTrackedBubble(kLiveEditAiBubbleSurfaceId);
     await tester.pumpAndSettle();
 
     expect(
@@ -458,8 +461,8 @@ void main() {
             targetDomain: LiveEditTargetDomain.toolScene,
             sessionId: orchestrator.activeSessionId,
           )
-          ?.nodeId,
-      kLiveEditPanelExpandedSurfaceId,
+          ?.rawNode['surfaceId'],
+      kLiveEditAiBubbleSurfaceId,
     );
   });
 
@@ -550,12 +553,7 @@ void main() {
       await tester.tap(find.widgetWithText(ChoiceChip, 'Edit Tools'));
       await tester.pumpAndSettle();
 
-      final bubbleKey = LiveEditOverlayThemeModel.instance.keyFor(
-        kLiveEditAiBubbleSurfaceId,
-      );
-      expect(find.byKey(bubbleKey), findsOneWidget);
-
-      orchestrator.selectNode(tester.getCenter(find.byKey(bubbleKey)));
+      orchestrator.selectTrackedBubble(kLiveEditAiBubbleSurfaceId);
       await tester.pumpAndSettle();
 
       expect(orchestrator.activeSelection, isNotNull);
@@ -635,15 +633,10 @@ void main() {
         isTrue,
       );
 
-      orchestrator.expandPanel();
-      await tester.pumpAndSettle();
       orchestrator.setTargetDomain(LiveEditTargetDomain.toolScene);
       await tester.pumpAndSettle();
 
-      final panelKey = LiveEditOverlayThemeModel.instance.keyFor(
-        kLiveEditPanelExpandedSurfaceId,
-      );
-      orchestrator.selectNode(tester.getCenter(find.byKey(panelKey)));
+      orchestrator.selectTrackedBubble(kLiveEditPanelExpandedSurfaceId);
       await tester.pumpAndSettle();
 
       orchestrator.openAiBubble();
@@ -678,7 +671,7 @@ void main() {
       expect(orchestrator.aiComposer, 'App prompt');
       expect(orchestrator.currentBackendId, 'cursor_agent');
 
-      orchestrator.selectNode(tester.getCenter(find.byKey(panelKey)));
+      orchestrator.selectTrackedBubble(kLiveEditPanelExpandedSurfaceId);
       await tester.pumpAndSettle();
 
       expect(
@@ -716,10 +709,7 @@ void main() {
       orchestrator.setTargetDomain(LiveEditTargetDomain.toolScene);
       await tester.pumpAndSettle();
 
-      final panelKey = LiveEditOverlayThemeModel.instance.keyFor(
-        kLiveEditPanelExpandedSurfaceId,
-      );
-      orchestrator.selectNode(tester.getCenter(find.byKey(panelKey)));
+      orchestrator.selectTrackedBubble(kLiveEditPanelExpandedSurfaceId);
       await tester.pumpAndSettle();
       await tester.tap(_semanticsId('live_edit_bubble_hide_button'));
       await tester.pumpAndSettle();
@@ -821,10 +811,7 @@ void main() {
     orchestrator.setTargetDomain(LiveEditTargetDomain.toolScene);
     await tester.pumpAndSettle();
 
-    final panelKey = LiveEditOverlayThemeModel.instance.keyFor(
-      kLiveEditPanelExpandedSurfaceId,
-    );
-    orchestrator.selectNode(tester.getCenter(find.byKey(panelKey)));
+    orchestrator.selectTrackedBubble(kLiveEditPanelExpandedSurfaceId);
     await tester.pumpAndSettle();
 
     final toolSelection = orchestrator.activeSelection!;

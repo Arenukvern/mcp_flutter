@@ -145,6 +145,52 @@ This unified architecture supports:
    AI Assistant -> runClientTool -> MCP Server Dart -> Dynamic Registry -> Flutter App
    ```
 
+## Live Edit Overlay Architecture
+
+The live edit toolkit has two editing domains with different interaction roots:
+
+1. `appScene`
+   - Hit-testing is rooted in the real app content subtree.
+   - Selection, hover, and candidate traversal operate on app widgets.
+
+2. `toolScene`
+   - Hit-testing is rooted in the rendered live-edit overlay subtree.
+   - Selection, hover, and candidate traversal operate on the real live-edit UI: bubble controls, prompt fields, panel rows, chips, and related widgets.
+
+### Layering Model
+
+`Edit Tools` is not a presentation swap. It is an extra interaction layer above the existing live-edit UI.
+
+Visual order:
+
+1. app content
+2. app live-edit overlay with the current app selection, bubble, and panel
+3. tool-edit interaction overlay above those tools
+
+This means:
+
+- entering `toolScene` keeps the currently shown app bubble and panel visible until the user explicitly selects a tool widget
+- tool-scene selections can target real child widgets inside the bubble or panel instead of only synthetic surfaces
+- the selection payload can keep the real widget node id while attaching `surfaceId` metadata so persistence still maps to the overlay theme source
+
+### Persistence Model
+
+Tool-scene persistence still uses the overlay theme/source model where possible.
+
+- real tool-widget selection drives interaction
+- `rawNode.surfaceId` links the selected widget back to its themed tool surface
+- editable property groups can therefore preview and persist against the owning surface without losing the actual selected widget context
+
+### Bounded Recursion
+
+The recursion depth is intentionally capped.
+
+- layer 0: app widgets edited by the standard live-edit overlay
+- layer 1: live-edit tool widgets edited in `Edit Tools`
+- no recursive layer 2+
+
+This keeps the UX predictable and prevents the nested tool-edit bubble from turning into an infinite editor-on-editor stack.
+
 ## Protocol Details
 
 ### 1. MCP (Model Context Protocol)

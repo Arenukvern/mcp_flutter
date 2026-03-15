@@ -341,6 +341,56 @@ List<LiveEditPropertyDescriptor> _buildPropertyDescriptors(
     }
   }
 
+  if (widget is RichText) {
+    final plainText = widget.text.toPlainText();
+    add(
+      LiveEditPropertyDescriptor(
+        id: 'text',
+        label: 'Text',
+        group: LiveEditPropertyGroup.content,
+        kind: LiveEditPropertyKind.string,
+        value: plainText,
+        editable: true,
+        previewMode: LiveEditPreviewMode.exact,
+        persistable: true,
+        meta: <String, Object?>{
+          'editor': 'text',
+          'editSurface': LiveEditEditSurface.inline.wireName,
+          'multiline': plainText.contains('\n'),
+        },
+      ),
+    );
+    final textStyle = widget.text.style;
+    if (textStyle?.fontSize != null) {
+      add(
+        LiveEditPropertyDescriptor(
+          id: 'fontSize',
+          label: 'Font Size',
+          group: LiveEditPropertyGroup.style,
+          kind: LiveEditPropertyKind.number,
+          value: textStyle?.fontSize,
+          editable: true,
+          previewMode: LiveEditPreviewMode.ghost,
+          persistable: true,
+        ),
+      );
+    }
+    if (textStyle?.color != null) {
+      add(
+        LiveEditPropertyDescriptor(
+          id: 'textColor',
+          label: 'Text Color',
+          group: LiveEditPropertyGroup.style,
+          kind: LiveEditPropertyKind.color,
+          value: _colorHex(textStyle!.color!),
+          editable: true,
+          previewMode: LiveEditPreviewMode.ghost,
+          persistable: true,
+        ),
+      );
+    }
+  }
+
   final parentData = renderObject?.parentData;
   if (parentData is FlexParentData) {
     add(
@@ -702,6 +752,151 @@ _SelectionCandidateMetadata _selectionMetadataForElement(
   );
 }
 
+LiveEditPropertyDescriptor _copyPropertyDescriptor(
+  final LiveEditPropertyDescriptor descriptor, {
+  final Object? value,
+  final bool preserveValue = true,
+  final Map<String, Object?>? meta,
+}) => LiveEditPropertyDescriptor(
+  id: descriptor.id,
+  label: descriptor.label,
+  group: descriptor.group,
+  kind: descriptor.kind,
+  value: preserveValue ? descriptor.value : value,
+  options: descriptor.options,
+  editable: descriptor.editable,
+  previewMode: descriptor.previewMode,
+  persistable: descriptor.persistable,
+  canPreviewExactly: descriptor.canPreviewExactly,
+  requiresAgentForPersistence: descriptor.requiresAgentForPersistence,
+  safeToAutoGroupInApply: descriptor.safeToAutoGroupInApply,
+  meta: meta ?? descriptor.meta,
+);
+
+String? _toolSurfaceIdForElement(final Element element) =>
+    LiveEditOverlayThemeModel.instance.surfaceIdForElement(element);
+
+bool _isMeaningfulToolElement(final Element element) {
+  final surfaceId = _toolSurfaceIdForElement(element);
+  if (!_hasText(surfaceId)) {
+    return false;
+  }
+  if (LiveEditOverlayThemeModel.instance.isSurfaceRootElement(element)) {
+    return true;
+  }
+  return !<String>{
+    'Align',
+    'Builder',
+    'Center',
+    'ColoredBox',
+    'Column',
+    'ConstrainedBox',
+    'Container',
+    'DecoratedBox',
+    'DefaultTextStyle',
+    'Expanded',
+    'Flex',
+    'Flexible',
+    'IconTheme',
+    'KeyedSubtree',
+    'MediaQuery',
+    'Padding',
+    'Positioned',
+    'RepaintBoundary',
+    'Semantics',
+  }.contains(element.widget.runtimeType.toString());
+}
+
+List<_ElementHit> _toolElementHitCandidates(
+  final Element root, {
+  required final ui.Offset point,
+  required final int? requestedViewId,
+}) =>
+    _nativeElementHitCandidates(
+          root,
+          point: point,
+          requestedViewId: requestedViewId,
+        )
+        .where((final hit) => _isMeaningfulToolElement(hit.element))
+        .toList(growable: false);
+
+Map<String, Object?> _toolSelectionRawNode({
+  required final Element element,
+  required final Map<String, Object?> detailsTree,
+  required final String surfaceId,
+}) {
+  final overlayTheme = LiveEditOverlayThemeModel.instance;
+  final surfaceRoot = overlayTheme.isSurfaceRootElement(element);
+  return <String, Object?>{
+    ...detailsTree,
+    'surfaceId': surfaceId,
+    'componentKind': overlayTheme.componentKindForSurface(surfaceId),
+    'toolSelectionKind': surfaceRoot ? 'surface_root' : 'surface_child',
+    'toolWidgetType': element.widget.runtimeType.toString(),
+  };
+}
+
+LiveEditSourceLocation? _selectionSourceForElement(
+  final _LiveEditSessionState session,
+  final Element element,
+  final Map<String, Object?> detailsTree, {
+  required final LiveEditTargetDomain targetDomain,
+}) {
+  if (targetDomain != LiveEditTargetDomain.toolScene) {
+    return _extractSourceLocation(detailsTree, element);
+  }
+  final surfaceId = _toolSurfaceIdForElement(element);
+  if (!_hasText(surfaceId)) {
+    return _extractSourceLocation(detailsTree, element);
+  }
+  final surfaceSelection = LiveEditOverlayThemeModel.instance
+      .selectionForSurface(surfaceId: surfaceId!, sessionId: session.sessionId);
+  return surfaceSelection?.source ??
+      LiveEditSourceLocation(
+        file: kLiveEditOverlayThemeSourcePath,
+        sourceHint: surfaceId,
+      );
+}
+
+List<LiveEditPropertyDescriptor> _selectionPropertyGroupsForElement(
+  final _LiveEditSessionState session,
+  final Element element, {
+  required final LiveEditTargetDomain targetDomain,
+}) {
+  if (targetDomain != LiveEditTargetDomain.toolScene) {
+    return _buildPropertyDescriptors(element);
+  }
+  final surfaceId = _toolSurfaceIdForElement(element);
+  if (!_hasText(surfaceId)) {
+    return _buildPropertyDescriptors(element);
+  }
+  final overlayTheme = LiveEditOverlayThemeModel.instance;
+  final surfaceSelection = overlayTheme.selectionForSurface(
+    surfaceId: surfaceId!,
+    sessionId: session.sessionId,
+  );
+  if (surfaceSelection == null) {
+    return _buildPropertyDescriptors(element);
+  }
+  final toolSelectionKind = overlayTheme.isSurfaceRootElement(element)
+      ? 'surface_root'
+      : 'surface_child';
+  return surfaceSelection.propertyGroups
+      .map(
+        (final property) => _copyPropertyDescriptor(
+          property,
+          meta: <String, Object?>{
+            ...property.meta,
+            'surfaceId': surfaceId,
+            'componentKind': overlayTheme.componentKindForSurface(surfaceId),
+            'toolSelectionKind': toolSelectionKind,
+            'toolWidgetType': element.widget.runtimeType.toString(),
+          },
+        ),
+      )
+      .toList(growable: false);
+}
+
 int _preferredSelectionIndex({
   required final _LiveEditSessionState session,
   required final List<_ElementHit> hits,
@@ -1007,22 +1202,42 @@ Map<String, Object?> _layoutContextForElement(final Element element) {
 LiveEditSelection _buildHoverSelection({
   required final _LiveEditSessionState session,
   required final Element element,
+  required final LiveEditTargetDomain targetDomain,
 }) {
   final renderObject = _previewRenderObjectForElement(element);
   final nodeId =
       WidgetInspectorService.instance.toId(element, session.objectGroup) ??
       'live_edit_hover_${DateTime.now().microsecondsSinceEpoch}';
   final tracked = session.trackedSelections[nodeId]?.selection;
+  final detailsTree = tracked?.detailsTree ?? const <String, Object?>{};
+  final surfaceId = _toolSurfaceIdForElement(element);
+  final rawNode =
+      tracked?.rawNode ??
+      (targetDomain == LiveEditTargetDomain.toolScene && _hasText(surfaceId)
+          ? _toolSelectionRawNode(
+              element: element,
+              detailsTree: detailsTree,
+              surfaceId: surfaceId!,
+            )
+          : const <String, Object?>{});
   return LiveEditSelection(
     sessionId: session.sessionId,
     nodeId: nodeId,
     widgetType: element.widget.runtimeType.toString(),
+    targetDomain: targetDomain,
     renderObjectType: renderObject?.runtimeType.toString(),
     bounds: _boundsForRenderObject(renderObject),
-    source: tracked?.source,
+    source:
+        tracked?.source ??
+        _selectionSourceForElement(
+          session,
+          element,
+          detailsTree,
+          targetDomain: targetDomain,
+        ),
     propertyGroups:
         tracked?.propertyGroups ?? const <LiveEditPropertyDescriptor>[],
-    rawNode: tracked?.rawNode ?? const <String, Object?>{},
+    rawNode: rawNode,
     selectionMode: LiveEditSelectionMode.single,
   );
 }
@@ -1046,15 +1261,27 @@ LiveEditSelection _buildLightweightSelection({
   final propertyGroups =
       tracked?.propertyGroups ??
       (includePropertyGroups
-          ? _buildPropertyDescriptors(element)
+          ? _selectionPropertyGroupsForElement(
+              session,
+              element,
+              targetDomain: session.targetDomain,
+            )
           : const <LiveEditPropertyDescriptor>[]);
   return LiveEditSelection(
     sessionId: session.sessionId,
     nodeId: nodeId,
     widgetType: element.widget.runtimeType.toString(),
+    targetDomain: session.targetDomain,
     renderObjectType: renderObject?.runtimeType.toString(),
     bounds: _boundsForRenderObject(renderObject),
-    source: tracked?.source,
+    source:
+        tracked?.source ??
+        _selectionSourceForElement(
+          session,
+          element,
+          tracked?.detailsTree ?? const <String, Object?>{},
+          targetDomain: session.targetDomain,
+        ),
     propertyGroups: propertyGroups,
     rawNode: tracked?.rawNode ?? const <String, Object?>{},
     selectionMode: LiveEditSelectionMode.single,
@@ -1070,12 +1297,17 @@ LiveEditSelection _buildLightweightSelectionFromCache({
   final propertyGroups =
       tracked?.propertyGroups ??
       (includePropertyGroups
-          ? _buildPropertyDescriptors(entry.element)
+          ? _selectionPropertyGroupsForElement(
+              session,
+              entry.element,
+              targetDomain: session.targetDomain,
+            )
           : const <LiveEditPropertyDescriptor>[]);
   return LiveEditSelection(
     sessionId: session.sessionId,
     nodeId: entry.nodeId,
     widgetType: entry.widgetType,
+    targetDomain: session.targetDomain,
     renderObjectType: entry.renderObject.runtimeType.toString(),
     bounds: entry.bounds,
     source: tracked?.source,
@@ -1459,22 +1691,6 @@ final class LiveEditController extends ChangeNotifier {
   }) {
     final session = _requireSession(sessionId);
     final resolvedDomain = _resolveTargetDomain(session, targetDomain);
-    if (resolvedDomain == LiveEditTargetDomain.toolScene) {
-      final hits = LiveEditOverlayThemeModel.instance.hitTest(
-        sessionId: session.sessionId,
-        point: ui.Offset(x.toDouble(), y.toDouble()),
-      );
-      session.hoverSelection = hits.isEmpty ? null : hits.first;
-      session.lastTouchedAt = DateTime.now().toUtc();
-      notifyListeners();
-      return <String, Object?>{
-        'sessionId': session.sessionId,
-        'targetDomain': resolvedDomain.wireName,
-        'hovered': session.hoverSelection != null,
-        if (session.hoverSelection != null)
-          'selection': session.hoverSelection!.toJson(),
-      };
-    }
     final root =
         (contentRoot != null && contentRoot.mounted ? contentRoot : null) ??
         WidgetsBinding.instance.rootElement;
@@ -1494,6 +1710,8 @@ final class LiveEditController extends ChangeNotifier {
     );
     final hits = reuseHover
         ? session.hoverHitCandidates
+        : resolvedDomain == LiveEditTargetDomain.toolScene
+        ? _toolElementHitCandidates(root, point: point, requestedViewId: viewId)
         : _nativeElementHitCandidates(
             root,
             point: point,
@@ -1514,6 +1732,7 @@ final class LiveEditController extends ChangeNotifier {
         : _buildHoverSelection(
             session: session,
             element: hits[nextPreviewIndex].element,
+            targetDomain: resolvedDomain,
           );
     final hoverUnchanged =
         previousHover?.nodeId == nextHoverSelection?.nodeId &&
@@ -1567,47 +1786,6 @@ final class LiveEditController extends ChangeNotifier {
   }) {
     final session = _requireSession(sessionId);
     final resolvedDomain = _resolveTargetDomain(session, targetDomain);
-    if (resolvedDomain == LiveEditTargetDomain.toolScene) {
-      final hits = LiveEditOverlayThemeModel.instance.hitTest(
-        sessionId: session.sessionId,
-        point: ui.Offset(x.toDouble(), y.toDouble()),
-      );
-      if (hits.isEmpty) {
-        return <String, Object?>{
-          'sessionId': session.sessionId,
-          'targetDomain': resolvedDomain.wireName,
-          'hit': false,
-          'point': <String, Object?>{'x': x, 'y': y},
-        };
-      }
-      session.selection = hits.first;
-      session.multiSelections = <LiveEditSelection>[hits.first];
-      session.selectionCandidates = hits.indexed
-          .map(
-            (final entry) => LiveEditSelectionCandidate(
-              nodeId: entry.$2.nodeId,
-              widgetType: entry.$2.widgetType,
-              bounds: entry.$2.bounds,
-              depth: entry.$1,
-              source: entry.$2.source,
-              createdByLocalProject: true,
-              active: entry.$1 == 0,
-            ),
-          )
-          .toList(growable: false);
-      session.lastTouchedAt = DateTime.now().toUtc();
-      notifyListeners();
-      return <String, Object?>{
-        'sessionId': session.sessionId,
-        'targetDomain': resolvedDomain.wireName,
-        'hit': true,
-        'point': <String, Object?>{'x': x, 'y': y},
-        'selection': hits.first.toJson(),
-        'selectionCandidates': session.selectionCandidates
-            .map((final candidate) => candidate.toJson())
-            .toList(growable: false),
-      };
-    }
     final root =
         (contentRoot != null && contentRoot.mounted ? contentRoot : null) ??
         WidgetsBinding.instance.rootElement;
@@ -1630,6 +1808,8 @@ final class LiveEditController extends ChangeNotifier {
         );
     final hits = canReuseHover
         ? session.hoverHitCandidates
+        : resolvedDomain == LiveEditTargetDomain.toolScene
+        ? _toolElementHitCandidates(root, point: point, requestedViewId: viewId)
         : _nativeElementHitCandidates(
             root,
             point: point,
@@ -1936,26 +2116,45 @@ final class LiveEditController extends ChangeNotifier {
     final resolvedDomain = _resolveTargetDomain(session, targetDomain);
     final layer = _layerForRequest(session, requested: targetDomain);
     if (resolvedDomain == LiveEditTargetDomain.toolScene) {
-      final selection = LiveEditOverlayThemeModel.instance.selectionForSurface(
-        surfaceId: nodeId,
-        sessionId: session.sessionId,
-      );
-      if (selection == null) {
+      final tracked = layer.trackedSelections[nodeId];
+      if (tracked != null &&
+          tracked.element.mounted &&
+          tracked.element.renderObject != null) {
+        final selection = _hydrateTrackedSelection(
+          session: session,
+          tracked: tracked,
+          updateInspectorSelection: true,
+          targetDomain: targetDomain,
+        );
+        if (layer.multiSelections.length <= 1) {
+          layer.multiSelections = <LiveEditSelection>[selection];
+        }
+        _syncSelectionCandidates(session, requested: targetDomain);
+        notifyListeners();
+        return <String, Object?>{
+          'sessionId': session.sessionId,
+          'selected': true,
+          'selection': selection.toJson(),
+        };
+      }
+      final surfaceSelection = LiveEditOverlayThemeModel.instance
+          .selectionForSurface(surfaceId: nodeId, sessionId: session.sessionId);
+      if (surfaceSelection == null) {
         return <String, Object?>{
           'sessionId': session.sessionId,
           'selected': false,
           'reason': 'tracked_node_unavailable',
         };
       }
-      layer.selection = selection;
-      layer.multiSelections = <LiveEditSelection>[selection];
+      layer.selection = surfaceSelection;
+      layer.multiSelections = <LiveEditSelection>[surfaceSelection];
       layer.selectionCandidates = <LiveEditSelectionCandidate>[
         LiveEditSelectionCandidate(
-          nodeId: selection.nodeId,
-          widgetType: selection.widgetType,
-          bounds: selection.bounds,
+          nodeId: surfaceSelection.nodeId,
+          widgetType: surfaceSelection.widgetType,
+          bounds: surfaceSelection.bounds,
           depth: 0,
-          source: selection.source,
+          source: surfaceSelection.source,
           createdByLocalProject: true,
           active: true,
         ),
@@ -1964,7 +2163,7 @@ final class LiveEditController extends ChangeNotifier {
       return <String, Object?>{
         'sessionId': session.sessionId,
         'selected': true,
-        'selection': selection.toJson(),
+        'selection': surfaceSelection.toJson(),
       };
     }
     final tracked = layer.trackedSelections[nodeId];
@@ -2291,8 +2490,25 @@ final class LiveEditController extends ChangeNotifier {
     final targetDomain = change.meta['targetDomain'] == null
         ? session.targetDomain
         : LiveEditTargetDomain.fromWire(change.meta['targetDomain']);
+    final layer = _layerForRequest(session, requested: targetDomain);
     if (targetDomain == LiveEditTargetDomain.toolScene) {
-      final updated = LiveEditOverlayThemeModel.instance.applyDraft(change);
+      final selectionNodeId =
+          '${change.meta['selectionNodeId'] ?? change.nodeId}'.trim();
+      final surfaceId = '${change.meta['surfaceId'] ?? change.nodeId}'.trim();
+      final appliedChange = surfaceId == change.nodeId
+          ? change
+          : LiveEditDraftChange(
+              nodeId: surfaceId,
+              propertyId: change.propertyId,
+              targetValue: change.targetValue,
+              previewMode: change.previewMode,
+              confidence: change.confidence,
+              intentText: change.intentText,
+              meta: change.meta,
+            );
+      final updated = LiveEditOverlayThemeModel.instance.applyDraft(
+        appliedChange,
+      );
       if (!updated) {
         return <String, Object?>{
           'sessionId': session.sessionId,
@@ -2300,22 +2516,33 @@ final class LiveEditController extends ChangeNotifier {
           'reason': 'selection_mismatch',
         };
       }
-      final existingIndex = session.draftChanges.indexWhere(
+      final existingIndex = layer.draftChanges.indexWhere(
         (final candidate) =>
-            candidate.nodeId == change.nodeId &&
+            candidate.nodeId == selectionNodeId &&
             candidate.propertyId == change.propertyId,
       );
       if (existingIndex >= 0) {
-        session.draftChanges[existingIndex] = change;
+        layer.draftChanges[existingIndex] = change;
       } else {
-        session.draftChanges.add(change);
+        layer.draftChanges.add(change);
       }
-      final selection = LiveEditOverlayThemeModel.instance.selectionForSurface(
-        surfaceId: change.nodeId,
-        sessionId: session.sessionId,
-      );
-      session.selection = selection;
-      session.multiSelections = selection == null
+      final tracked = layer.trackedSelections[selectionNodeId];
+      final selection =
+          tracked != null &&
+              tracked.element.mounted &&
+              tracked.element.renderObject != null
+          ? _hydrateTrackedSelection(
+              session: session,
+              tracked: tracked,
+              updateInspectorSelection: false,
+              targetDomain: targetDomain,
+            )
+          : LiveEditOverlayThemeModel.instance.selectionForSurface(
+              surfaceId: surfaceId,
+              sessionId: session.sessionId,
+            );
+      layer.selection = selection;
+      layer.multiSelections = selection == null
           ? const <LiveEditSelection>[]
           : <LiveEditSelection>[selection];
       session.lastTouchedAt = DateTime.now().toUtc();
@@ -2325,7 +2552,7 @@ final class LiveEditController extends ChangeNotifier {
         'targetDomain': targetDomain.wireName,
         'updated': true,
         'selection': selection?.toJson(),
-        'draftChanges': session.draftChanges
+        'draftChanges': layer.draftChanges
             .map((final draft) => draft.toJson())
             .toList(),
         'appliedPreviewMode': LiveEditPreviewMode.exact.wireName,
@@ -2677,6 +2904,7 @@ final class LiveEditController extends ChangeNotifier {
     final nodeId =
         WidgetInspectorService.instance.toId(element, session.objectGroup) ??
         'live_edit_node_${DateTime.now().microsecondsSinceEpoch}';
+    final resolvedDomain = _resolveTargetDomain(session, targetDomain);
     if (updateInspectorSelection) {
       WidgetInspectorService.instance.setSelection(
         element,
@@ -2702,8 +2930,21 @@ final class LiveEditController extends ChangeNotifier {
       ),
     );
     final renderObject = _previewRenderObjectForElement(element);
-    final resolvedDomain = _resolveTargetDomain(session, targetDomain);
     final layer = _layerForRequest(session, requested: targetDomain);
+    final surfaceId = resolvedDomain == LiveEditTargetDomain.toolScene
+        ? _toolSurfaceIdForElement(element)
+        : null;
+    final source = _selectionSourceForElement(
+      session,
+      element,
+      detailsTree,
+      targetDomain: resolvedDomain,
+    );
+    final propertyGroups = _selectionPropertyGroupsForElement(
+      session,
+      element,
+      targetDomain: resolvedDomain,
+    );
     final selection = LiveEditSelection(
       sessionId: session.sessionId,
       nodeId: nodeId,
@@ -2711,8 +2952,8 @@ final class LiveEditController extends ChangeNotifier {
       targetDomain: resolvedDomain,
       renderObjectType: renderObject?.runtimeType.toString(),
       bounds: _boundsForRenderObject(renderObject),
-      source: _extractSourceLocation(detailsTree, element),
-      propertyGroups: _buildPropertyDescriptors(element),
+      source: source,
+      propertyGroups: propertyGroups,
       layoutContext: _layoutContextForElement(element),
       parentChain: parentChain
           .whereType<Map>()
@@ -2720,7 +2961,15 @@ final class LiveEditController extends ChangeNotifier {
           .toList(growable: false),
       detailsTree: detailsTree,
       propertiesTree: <String, Object?>{'items': propertiesList},
-      rawNode: detailsTree,
+      rawNode:
+          resolvedDomain == LiveEditTargetDomain.toolScene &&
+              _hasText(surfaceId)
+          ? _toolSelectionRawNode(
+              element: element,
+              detailsTree: detailsTree,
+              surfaceId: surfaceId!,
+            )
+          : detailsTree,
       selectionMode: selectionMode,
       selectedNodeIds: selectedNodeIds,
     );
@@ -2819,6 +3068,7 @@ final class LiveEditController extends ChangeNotifier {
     final LiveEditTargetDomain? requested,
   }) {
     final layer = _layerForRequest(session, requested: requested);
+    final targetDomain = _resolveTargetDomain(session, requested);
     final activeElement = layer.selectedElement;
     layer.selectionCandidates = layer.selectionHitCandidates.indexed
         .map((final entry) {
@@ -2843,13 +3093,22 @@ final class LiveEditController extends ChangeNotifier {
             cachedNodeId: nodeId,
             cachedDetailsTree: detailsTree,
           );
+          final source = _selectionSourceForElement(
+            session,
+            hit.element,
+            detailsTree,
+            targetDomain: targetDomain,
+          );
           return LiveEditSelectionCandidate(
             nodeId: nodeId,
             widgetType: hit.element.widget.runtimeType.toString(),
             bounds: _boundsForRenderObject(renderObject),
             depth: index,
-            source: metadata.source,
-            createdByLocalProject: metadata.createdByLocalProject,
+            source: source,
+            createdByLocalProject:
+                targetDomain == LiveEditTargetDomain.toolScene
+                ? true
+                : metadata.createdByLocalProject,
             active: identical(hit.element, activeElement),
           );
         })

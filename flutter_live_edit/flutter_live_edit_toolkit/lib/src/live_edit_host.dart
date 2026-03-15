@@ -213,6 +213,7 @@ class _FlutterLiveEditHostState extends State<FlutterLiveEditHost> {
   late final LiveEditOrchestrator _orchestrator;
   late final bool _ownsOrchestrator;
   final GlobalKey _contentKey = GlobalKey();
+  final GlobalKey _toolOverlayKey = GlobalKey();
   final LiveEditOverlayThemeModel _overlayTheme =
       LiveEditOverlayThemeModel.instance;
 
@@ -292,74 +293,85 @@ class _FlutterLiveEditHostState extends State<FlutterLiveEditHost> {
                           _orchestrator.editingToolScene)
                         _LiveEditOverlay(
                           orchestrator: _orchestrator,
-                          contentKey: _contentKey,
+                          contentKey: _toolOverlayKey,
                           targetDomain: LiveEditTargetDomain.toolScene,
                           interactive: true,
-                        ),
-                      if (_orchestrator.overlayVisible)
-                        ..._orchestrator.pinnedBubbleSummaries.map(
-                          (final summary) => _PinnedBubblePill(
-                            orchestrator: _orchestrator,
-                            summary: summary,
-                            viewportSize: constraints.biggest,
-                          ),
                         ),
                       Positioned(
                         left: 16,
                         bottom: 16,
                         child: _LauncherChip(orchestrator: _orchestrator),
                       ),
-                      if (_orchestrator.overlayVisible &&
-                          _orchestrator.activeSelection != null &&
-                          !_orchestrator.activeBubbleResolved)
-                        _SelectionBubble(
-                          orchestrator: _orchestrator,
-                          viewportSize: constraints.biggest,
-                        ),
                       if (_orchestrator.overlayVisible)
-                        Builder(
-                          builder: (final context) {
-                            if (_orchestrator.editingToolScene) {
-                              final panelSurfaceId = _orchestrator.panelExpanded
-                                  ? kLiveEditPanelExpandedSurfaceId
-                                  : kLiveEditPanelRailSurfaceId;
-                              final panelSurfaceTheme = _overlayTheme.styleFor(
-                                panelSurfaceId,
-                              );
-                              final panelWidth = mathMax(
-                                _orchestrator.panelWidth,
-                                _overlayTheme.panelWidth(
-                                  expanded: _orchestrator.panelExpanded,
+                        Positioned.fill(
+                          child: KeyedSubtree(
+                            key: _toolOverlayKey,
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: <Widget>[
+                                ..._orchestrator.pinnedBubbleSummaries.map(
+                                  (final summary) => _PinnedBubblePill(
+                                    orchestrator: _orchestrator,
+                                    summary: summary,
+                                    viewportSize: constraints.biggest,
+                                  ),
                                 ),
-                              );
-                              final panelHeight = mathMax(
-                                _orchestrator.panelHeight,
-                                panelSurfaceTheme.height ??
-                                    _orchestrator.panelHeight,
-                              );
-                              final panelOffset = _orchestrator.panelPlacement(
-                                viewport: constraints.biggest,
-                              );
-                              return Positioned(
-                                left: panelOffset.dx,
-                                top: panelOffset.dy,
-                                width: panelWidth,
-                                height: panelHeight,
-                                child: _EditorPanelSurface(
-                                  orchestrator: _orchestrator,
+                                if (_orchestrator.activeSelection != null &&
+                                    !_orchestrator.activeBubbleResolved)
+                                  _SelectionBubble(
+                                    orchestrator: _orchestrator,
+                                    viewportSize: constraints.biggest,
+                                  ),
+                                Builder(
+                                  builder: (final context) {
+                                    if (_orchestrator.editingToolScene) {
+                                      final panelSurfaceId =
+                                          _orchestrator.panelExpanded
+                                          ? kLiveEditPanelExpandedSurfaceId
+                                          : kLiveEditPanelRailSurfaceId;
+                                      final panelSurfaceTheme = _overlayTheme
+                                          .styleFor(panelSurfaceId);
+                                      final panelWidth = mathMax(
+                                        _orchestrator.panelWidth,
+                                        _overlayTheme.panelWidth(
+                                          expanded: _orchestrator.panelExpanded,
+                                        ),
+                                      );
+                                      final panelHeight = mathMax(
+                                        _orchestrator.panelHeight,
+                                        panelSurfaceTheme.height ??
+                                            _orchestrator.panelHeight,
+                                      );
+                                      final panelOffset = _orchestrator
+                                          .panelPlacement(
+                                            viewport: constraints.biggest,
+                                          );
+                                      return Positioned(
+                                        left: panelOffset.dx,
+                                        top: panelOffset.dy,
+                                        width: panelWidth,
+                                        height: panelHeight,
+                                        child: _EditorPanelSurface(
+                                          orchestrator: _orchestrator,
+                                        ),
+                                      );
+                                    }
+                                    return Positioned(
+                                      right: 16,
+                                      top: 16,
+                                      bottom: 16,
+                                      width: _overlayTheme.panelWidth(
+                                        expanded: _orchestrator.panelExpanded,
+                                      ),
+                                      child: _PanelSurface(
+                                        orchestrator: _orchestrator,
+                                      ),
+                                    );
+                                  },
                                 ),
-                              );
-                            }
-                            return Positioned(
-                              right: 16,
-                              top: 16,
-                              bottom: 16,
-                              width: _overlayTheme.panelWidth(
-                                expanded: _orchestrator.panelExpanded,
-                              ),
-                              child: _PanelSurface(orchestrator: _orchestrator),
-                            );
-                          },
+                              ],
+                            ),
+                          ),
                         ),
                     ],
                   ),

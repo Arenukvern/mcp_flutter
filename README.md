@@ -137,6 +137,24 @@ The same targeting object is supported in CLI v3 one-shot `exec --args`, daemon 
 
 📚 Please see more in [MCP_RPC_DESCRIPTION](MCP_RPC_DESCRIPTION.md)
 
+## Live Edit Overlay Layers
+
+The live edit toolkit now treats `Edit Tools` as a true second-layer editing mode over the existing live-edit UI.
+
+- `Edit App`: inspect and edit app widgets.
+- `Edit Tools`: keep the current app bubble and panel visible underneath, then inspect the real widget tree of those live-edit tools.
+
+Behavior summary:
+
+- Overlay stacking is:
+  1. app content
+  2. app live-edit overlay, bubble, and panel
+  3. tool-edit overlay above the existing live-edit UI
+- Switching to `Edit Tools` does not immediately replace the visible bubble or panel with synthetic placeholder content.
+- Tool selection is driven by real overlay widgets such as bubble buttons, prompt fields, panel controls, property rows, and chips.
+- Tool-scene selections keep the real widget node identity, while persistence can still map back to the owning themed surface.
+- Recursion is intentionally bounded to one extra layer. You can edit the live-edit UI, but the nested tool-edit bubble does not create an unbounded third editing layer.
+
 ## 🔒 Security
 
 Generally, since you use MCP server to connect to Flutter app in Debug Mode, it should be safe to use. However, I still recommend to review how it works in [ARCHITECTURE.md](ARCHITECTURE.md), how it can be modified to improve security if needed.

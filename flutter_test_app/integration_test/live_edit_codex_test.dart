@@ -599,9 +599,20 @@ Future<void> _selectFixtureTarget(
   final WidgetTester tester,
   final LiveEditOrchestrator orchestrator,
 ) async {
+  bool hasEditableStringSelection() {
+    final selection = orchestrator.activeSelection;
+    if (selection == null) {
+      return false;
+    }
+    return selection.propertyGroups.any(
+      (final property) =>
+          property.editable && property.kind == LiveEditPropertyKind.string,
+    );
+  }
+
   await tester.tap(_fixtureText(_fixtureOriginalText), warnIfMissed: false);
   await tester.pump(const Duration(milliseconds: 300));
-  if (orchestrator.activeSelection == null) {
+  if (!hasEditableStringSelection()) {
     orchestrator.selectNode(
       tester.getCenter(_fixtureText(_fixtureOriginalText)),
     );
@@ -611,6 +622,59 @@ Future<void> _selectFixtureTarget(
       timeout: const Duration(seconds: 10),
     );
   }
+
+  if (!hasEditableStringSelection()) {
+    final fixtureCenter = tester.getCenter(_fixtureRichText());
+    orchestrator.hoverNode(fixtureCenter, deeperMode: true);
+    await tester.pumpAndSettle();
+    orchestrator.selectNode(
+      fixtureCenter,
+      preferHoverPreview: true,
+      selectionPolicy: LiveEditSelectionPolicy.deepest,
+    );
+    await tester.pumpAndSettle();
+  }
+}
+
+Future<void> _selectEditableFixtureCandidate(
+  final WidgetTester tester,
+  final LiveEditOrchestrator orchestrator,
+) async {
+  bool hasEditableStringSelection() {
+    final selection = orchestrator.activeSelection;
+    if (selection == null) {
+      return false;
+    }
+    return selection.propertyGroups.any(
+      (final property) =>
+          property.editable && property.kind == LiveEditPropertyKind.string,
+    );
+  }
+
+  if (hasEditableStringSelection()) {
+    return;
+  }
+
+  for (
+    var index = 0;
+    index < orchestrator.activeSelectionCandidates.length;
+    index += 1
+  ) {
+    orchestrator.selectCandidateAt(index);
+    await tester.pumpAndSettle();
+    if (hasEditableStringSelection()) {
+      return;
+    }
+  }
+
+  final active = orchestrator.activeSelection;
+  print(
+    '[agent-test] fixture selection unresolved '
+    'widget=${active?.widgetType} '
+    'candidates=${orchestrator.activeSelectionCandidates.map((final candidate) => '${candidate.widgetType}:${candidate.nodeId}').join(', ')}',
+  );
+
+  fail('Could not resolve an editable text candidate for the fixture target.');
 }
 
 Future<void> _ensurePanelExpanded(
@@ -630,7 +694,9 @@ Future<void> _applyCurrentDraft(
   final WidgetTester tester,
   final LiveEditOrchestrator orchestrator,
 ) async {
-  await tester.tap(_semanticsId('live_edit_apply_button').first);
+  await orchestrator.applyDraft(
+    message: orchestrator.canSubmitAiPrompt ? orchestrator.aiComposer : null,
+  );
   await tester.pump();
   await _pumpUntilActivityLabel(
     tester,
@@ -664,7 +730,14 @@ Future<void> _roundTripFixtureText(
   expect(_fixtureRenderedText(tester), from);
   await _selectFixtureTarget(tester, orchestrator);
   await _ensurePanelExpanded(tester, orchestrator);
-  expect(orchestrator.activeSelection?.widgetType, 'Text');
+  await _selectEditableFixtureCandidate(tester, orchestrator);
+  expect(
+    orchestrator.activeSelection?.propertyGroups.any(
+      (final property) =>
+          property.editable && property.kind == LiveEditPropertyKind.string,
+    ),
+    isTrue,
+  );
 
   final textProperty = orchestrator.activeSelection!.propertyGroups.firstWhere(
     (final property) =>
@@ -712,7 +785,7 @@ Future<void> _selectToolAiBubble(
   );
   expect(_semanticsId('live_edit_ai_bubble'), findsOneWidget);
 
-  orchestrator.selectNode(tester.getCenter(_aiBubbleKey()));
+  orchestrator.selectTrackedBubble(kLiveEditAiBubbleSurfaceId);
   await tester.pumpAndSettle();
 
   expect(orchestrator.activeSelection, isNotNull);
