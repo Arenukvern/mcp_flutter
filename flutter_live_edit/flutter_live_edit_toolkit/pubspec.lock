@@ -70,6 +70,13 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_live_edit_agent:
+    dependency: "direct main"
+    description:
+      path: "../flutter_live_edit_agent"
+      relative: true
+    source: path
+    version: "0.1.0"
   flutter_live_edit_core:
     dependency: "direct main"
     description:
@@ -263,13 +270,34 @@ packages:
     source: hosted
     version: "2.2.0"
   vm_service:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: vm_service
       sha256: "45caa6c5917fa127b5dbcfbd1fa60b14e583afdc08bfc96dda38886ca252eb60"
       url: "https://pub.dev"
     source: hosted
     version: "15.0.2"
+  xsoulspace_inference_codex_exec:
+    dependency: transitive
+    description:
+      path: "../../../../xs/dart_flutter_packages/pkgs/xsoulspace_inference_codex_exec"
+      relative: true
+    source: path
+    version: "0.1.0"
+  xsoulspace_inference_core:
+    dependency: "direct main"
+    description:
+      path: "../../../../xs/dart_flutter_packages/pkgs/xsoulspace_inference_core"
+      relative: true
+    source: path
+    version: "0.1.0"
+  xsoulspace_inference_cursor_agent:
+    dependency: transitive
+    description:
+      path: "../../../../xs/dart_flutter_packages/pkgs/xsoulspace_inference_cursor_agent"
+      relative: true
+    source: path
+    version: "0.1.0"
   xsoulspace_lints:
     dependency: "direct dev"
     description:

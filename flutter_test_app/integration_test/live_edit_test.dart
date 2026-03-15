@@ -74,7 +74,7 @@ void main() {
     final binding = IntegrationTestWidgetsFlutterBinding.instance;
     await binding.setSurfaceSize(const Size(8000, 2000));
     addTearDown(() async {
-      app.debugLiveEditOrchestratorOverride = null;
+      debugFlutterLiveEditAutoHostOrchestratorOverride = null;
       await binding.setSurfaceSize(null);
     });
 
@@ -102,7 +102,7 @@ void main() {
         };
       },
     );
-    app.debugLiveEditOrchestratorOverride = orchestrator;
+    debugFlutterLiveEditAutoHostOrchestratorOverride = orchestrator;
 
     await app.main();
     await _pumpUntil(
@@ -164,7 +164,7 @@ void main() {
     final binding = IntegrationTestWidgetsFlutterBinding.instance;
     await binding.setSurfaceSize(const Size(8000, 2000));
     addTearDown(() async {
-      app.debugLiveEditOrchestratorOverride = null;
+      debugFlutterLiveEditAutoHostOrchestratorOverride = null;
       await binding.setSurfaceSize(null);
     });
 
@@ -232,7 +232,7 @@ void main() {
         };
       },
     );
-    app.debugLiveEditOrchestratorOverride = orchestrator;
+    debugFlutterLiveEditAutoHostOrchestratorOverride = orchestrator;
 
     await app.main();
     await _pumpUntil(
@@ -296,12 +296,12 @@ void main() {
     final binding = IntegrationTestWidgetsFlutterBinding.instance;
     await binding.setSurfaceSize(const Size(8000, 2000));
     addTearDown(() async {
-      app.debugLiveEditOrchestratorOverride = null;
+      debugFlutterLiveEditAutoHostOrchestratorOverride = null;
       await binding.setSurfaceSize(null);
     });
 
     final orchestrator = LiveEditOrchestrator();
-    app.debugLiveEditOrchestratorOverride = orchestrator;
+    debugFlutterLiveEditAutoHostOrchestratorOverride = orchestrator;
 
     await app.main();
     await _pumpUntil(
@@ -367,12 +367,12 @@ void main() {
     final binding = IntegrationTestWidgetsFlutterBinding.instance;
     await binding.setSurfaceSize(const Size(8000, 2000));
     addTearDown(() async {
-      app.debugLiveEditOrchestratorOverride = null;
+      debugFlutterLiveEditAutoHostOrchestratorOverride = null;
       await binding.setSurfaceSize(null);
     });
 
     final orchestrator = LiveEditOrchestrator();
-    app.debugLiveEditOrchestratorOverride = orchestrator;
+    debugFlutterLiveEditAutoHostOrchestratorOverride = orchestrator;
 
     await app.main();
     await _pumpUntil(
@@ -417,12 +417,12 @@ void main() {
       final binding = IntegrationTestWidgetsFlutterBinding.instance;
       await binding.setSurfaceSize(const Size(8000, 2000));
       addTearDown(() async {
-        app.debugLiveEditOrchestratorOverride = null;
+        debugFlutterLiveEditAutoHostOrchestratorOverride = null;
         await binding.setSurfaceSize(null);
       });
 
       final orchestrator = LiveEditOrchestrator();
-      app.debugLiveEditOrchestratorOverride = orchestrator;
+      debugFlutterLiveEditAutoHostOrchestratorOverride = orchestrator;
 
       await app.main();
       await _pumpUntil(

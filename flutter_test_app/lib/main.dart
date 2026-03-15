@@ -3,20 +3,19 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_live_edit_toolkit/flutter_live_edit_toolkit.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 import 'package:provider/provider.dart';
 import 'package:test_app/change_notifier_example.dart';
-import 'package:test_app/live_edit/app_live_edit_bootstrap.dart';
-import 'package:test_app/live_edit/app_live_edit_config.dart';
-import 'package:test_app/live_edit/app_live_edit_host.dart';
 import 'package:test_app/live_edit_codex_fixture.dart';
 import 'package:test_app/stateful_widget_example.dart';
 
-export 'package:test_app/live_edit/app_live_edit_host.dart'
-    show debugLiveEditOrchestratorOverride;
+final FlutterLiveEditAutoConfig _liveEditConfig =
+    FlutterLiveEditAutoConfig.fromEnvironment(appId: 'test_app');
 
 Future<void> main() async {
-  await bootstrapTestApp(
+  await bootstrapFlutterLiveEditApp(
+    config: _liveEditConfig,
     registerInitialEntries: _registerInitialMCPTools,
     registerDelayedEntries: _registerDelayedMCPTools,
     runApp: () => runApp(const MyApp()),
@@ -192,7 +191,10 @@ class MyApp extends StatelessWidget {
       ),
       home: ChangeNotifierProvider(
         create: (final context) => CustomNotifier(),
-        child: const TestAppLiveEditHost(child: MCPDemoHomePage()),
+        child: FlutterLiveEditAutoHost(
+          config: _liveEditConfig,
+          child: const MCPDemoHomePage(),
+        ),
       ),
     );
   }
@@ -423,7 +425,7 @@ class _MCPDemoHomePageState extends State<MCPDemoHomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (isLiveEditTestMode) ...[
+            if (_liveEditConfig.testMode) ...[
               const LiveEditCodexFixture(),
               const SizedBox(height: 24),
             ],

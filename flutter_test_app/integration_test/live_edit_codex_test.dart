@@ -643,7 +643,7 @@ Future<LiveEditOrchestrator> _launchIntegrationApp(
     workingDirectory: _resolvedWorkingDirectory(),
     intentText: _agentIntent,
   );
-  app.debugLiveEditOrchestratorOverride = orchestrator;
+  debugFlutterLiveEditAutoHostOrchestratorOverride = orchestrator;
 
   await app.main();
   print('[agent-test] app main started');
@@ -965,12 +965,12 @@ void main() {
   final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() {
-    app.debugLiveEditOrchestratorOverride = null;
+    debugFlutterLiveEditAutoHostOrchestratorOverride = null;
   });
 
   tearDown(() {
-    app.debugLiveEditOrchestratorOverride?.dispose();
-    app.debugLiveEditOrchestratorOverride = null;
+    debugFlutterLiveEditAutoHostOrchestratorOverride?.dispose();
+    debugFlutterLiveEditAutoHostOrchestratorOverride = null;
   });
 
   testWidgets(
