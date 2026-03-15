@@ -5,41 +5,47 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_live_edit_agent/flutter_live_edit_agent.dart';
 import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 import 'package:flutter_live_edit_toolkit/flutter_live_edit_toolkit.dart';
+import 'package:flutter_live_edit_toolkit/src/live_edit_overlay_theme.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:test_app/main.dart' as app;
 
-const _runCodexIntegration = bool.fromEnvironment(
-  'RUN_LIVE_EDIT_CODEX_INTEGRATION',
+const _runAgentIntegration = bool.fromEnvironment(
+  'RUN_LIVE_EDIT_AGENT_INTEGRATION',
 );
-const _codexBackendId = String.fromEnvironment(
-  'LIVE_EDIT_CODEX_BACKEND',
+const _agentBackendId = String.fromEnvironment(
+  'LIVE_EDIT_AGENT_BACKEND',
   defaultValue: 'codex_exec',
 );
-const _codexIntent = String.fromEnvironment(
-  'LIVE_EDIT_CODEX_INTENT',
+const _agentIntent = String.fromEnvironment(
+  'LIVE_EDIT_AGENT_INTENT',
   defaultValue:
-      'Persist the inline live-edit text change for the dedicated test fixture with minimal source edits.',
+      'Persist the requested live-edit change with minimal source edits.',
 );
-const _codexWorkingDirectoryDefine = String.fromEnvironment(
-  'LIVE_EDIT_CODEX_WORKING_DIRECTORY',
+const _agentWorkingDirectoryDefine = String.fromEnvironment(
+  'LIVE_EDIT_AGENT_WORKING_DIRECTORY',
 );
+
+const _fixtureOriginalText = 'Live Edit Test Target';
+const _fixtureUpdatedText = 'Live Edit Agent Target';
+const _bubbleOriginalColor = Color(0xFFFFFBEB);
+const _bubbleUpdatedColor = Color(0xFF112233);
 
 Finder _semanticsId(final String id) => find.byWidgetPredicate(
   (final widget) => widget is Semantics && widget.properties.identifier == id,
   description: 'Semantics identifier $id',
 );
 
-Finder _headingText(final String value) => find.descendant(
-  of: _semanticsId('about_demo_heading'),
+Finder _fixtureText(final String value) => find.descendant(
+  of: _semanticsId('live_edit_test_target'),
   matching: find.byWidgetPredicate(
     (final widget) => widget is Text && widget.data == value,
-    description: 'About heading text $value',
+    description: 'Fixture text $value',
   ),
 );
 
-Finder _headingRichText() => find.descendant(
-  of: _semanticsId('about_demo_heading'),
+Finder _fixtureRichText() => find.descendant(
+  of: _semanticsId('live_edit_test_target'),
   matching: find.byType(RichText),
 );
 
@@ -48,8 +54,8 @@ String _panelPropertyId(final String raw) => raw
     .replaceAll(RegExp(r'^_+|_+$'), '')
     .toLowerCase();
 
-String _resolvedWorkingDirectory() => _codexWorkingDirectoryDefine.isNotEmpty
-    ? _codexWorkingDirectoryDefine
+String _resolvedWorkingDirectory() => _agentWorkingDirectoryDefine.isNotEmpty
+    ? _agentWorkingDirectoryDefine
     : Directory.current.path;
 
 String _normalizePath(final String rawPath) {
@@ -60,23 +66,70 @@ String _normalizePath(final String rawPath) {
   return rawPath;
 }
 
-String _sourceRootFromSelection(final LiveEditSelection? selection) {
-  final sourceFile = selection?.source?.file;
-  if (sourceFile != null && sourceFile.trim().isNotEmpty) {
-    final normalized = _normalizePath(sourceFile);
-    var cursor = File(normalized).parent;
-    while (true) {
-      if (File('${cursor.path}/pubspec.yaml').existsSync()) {
-        return cursor.path;
-      }
-      final parent = cursor.parent;
-      if (parent.path == cursor.path) {
-        break;
-      }
-      cursor = parent;
+bool _containsPath(final String parent, final String child) {
+  final normalizedParent = _normalizePath(parent).replaceAll('\\', '/');
+  final normalizedChild = _normalizePath(child).replaceAll('\\', '/');
+  return normalizedChild == normalizedParent ||
+      normalizedChild.startsWith('$normalizedParent/');
+}
+
+String _joinPath(final String left, final String right) {
+  final normalizedLeft = left.endsWith(Platform.pathSeparator)
+      ? left.substring(0, left.length - 1)
+      : left;
+  final normalizedRight = right.startsWith(Platform.pathSeparator)
+      ? right.substring(1)
+      : right;
+  return '$normalizedLeft${Platform.pathSeparator}$normalizedRight';
+}
+
+String _relativePath({required final String root, required final String path}) {
+  final normalizedRoot = _normalizePath(root).replaceAll('\\', '/');
+  final normalizedPath = _normalizePath(path).replaceAll('\\', '/');
+  if (normalizedPath == normalizedRoot) {
+    return '';
+  }
+  if (normalizedPath.startsWith('$normalizedRoot/')) {
+    return normalizedPath.substring(normalizedRoot.length + 1);
+  }
+  return normalizedPath.split('/').last;
+}
+
+String _repoRootFromPath(final String seedPath) {
+  var cursor = Directory(seedPath);
+  if (!cursor.existsSync()) {
+    cursor = File(seedPath).parent;
+  }
+  while (true) {
+    final hasApp = Directory('${cursor.path}/flutter_test_app').existsSync();
+    final hasLiveEdit = Directory(
+      '${cursor.path}/flutter_live_edit',
+    ).existsSync();
+    if (hasApp && hasLiveEdit) {
+      return cursor.path;
     }
+    final parent = cursor.parent;
+    if (parent.path == cursor.path) {
+      break;
+    }
+    cursor = parent;
   }
   return _resolvedWorkingDirectory();
+}
+
+String _packageRootFromSource(final String sourceFile) {
+  var cursor = File(sourceFile).parent;
+  while (true) {
+    if (File('${cursor.path}/pubspec.yaml').existsSync()) {
+      return cursor.path;
+    }
+    final parent = cursor.parent;
+    if (parent.path == cursor.path) {
+      break;
+    }
+    cursor = parent;
+  }
+  return File(sourceFile).parent.path;
 }
 
 void _copyShallowDirectory(
@@ -108,6 +161,7 @@ LiveEditSelection _rewriteSelectionSource({
     sessionId: selection.sessionId,
     nodeId: selection.nodeId,
     widgetType: selection.widgetType,
+    targetDomain: selection.targetDomain,
     renderObjectType: selection.renderObjectType,
     bounds: selection.bounds,
     source: LiveEditSourceLocation(
@@ -122,18 +176,31 @@ LiveEditSelection _rewriteSelectionSource({
     detailsTree: selection.detailsTree,
     propertiesTree: selection.propertiesTree,
     rawNode: selection.rawNode,
+    selectionMode: selection.selectionMode,
+    selectedNodeIds: selection.selectedNodeIds,
   );
 }
 
-final class _CodexIntegrationHarness {
+final class _LiveEditAgentIntegrationHarness {
   final LiveEditAgentService service = LiveEditAgentService();
+  final Set<String> _copiedPackageRoots = <String>{};
+  final Map<String, String> _mappedFilesBySource = <String, String>{};
+  final Map<String, String> _originalContentsByMapped = <String, String>{};
+
   Directory? _workspace;
   String? _workspaceRoot;
-  String? _mappedSourcePath;
-  String? _originalFileContents;
+  String? _repoRoot;
 
-  String? get mappedSourcePath => _mappedSourcePath;
-  String? get originalFileContents => _originalFileContents;
+  String? mappedFileForSource(final String sourceFile) =>
+      _mappedFilesBySource[_normalizePath(sourceFile)];
+
+  String? originalContentsForSource(final String sourceFile) {
+    final mapped = mappedFileForSource(sourceFile);
+    if (mapped == null) {
+      return null;
+    }
+    return _originalContentsByMapped[mapped];
+  }
 
   Future<void> dispose() async {
     final workspace = _workspace;
@@ -152,24 +219,25 @@ final class _CodexIntegrationHarness {
       ),
     );
     print(
-      '[codex-test] handle approve=${request.approve} draftChanges=${request.draftChanges.length}',
+      '[agent-test] handle backend=${request.backendId ?? _agentBackendId} '
+      'approve=${request.approve} drafts=${request.draftChanges.length}',
     );
-    final workingDirectory = await _ensureWorkspace(request.selection);
-    final backendId = request.backendId ?? _codexBackendId;
+    final workingDirectory = await _ensureWorkspaceForRequest(request);
+    final backendId = request.backendId ?? _agentBackendId;
     final debugDetails = _requestDebugDetails(
       request,
       backendId: backendId,
       workingDirectory: workingDirectory,
     );
-    print('[codex-test] workspace=$workingDirectory');
+    print('[agent-test] workspace=$workingDirectory');
 
     request.onEvent?.call(
       LiveEditRuntimeEvent(
         kind: LiveEditRuntimeEventKind.codex,
-        message: 'Preparing source context for Codex.',
+        message: 'Preparing source context for $_agentBackendId.',
         details: <String>[
           'Workspace: $workingDirectory',
-          'Backend: ${request.backendId ?? _codexBackendId}',
+          'Backend: $backendId',
         ],
       ),
     );
@@ -185,7 +253,7 @@ final class _CodexIntegrationHarness {
         debugOnly: true,
       ),
     );
-    print('[codex-test] resolving via codex');
+    print('[agent-test] resolving via $backendId');
 
     final resolutionRequest = LiveEditResolutionRequest(
       sessionId: request.sessionId,
@@ -205,9 +273,10 @@ final class _CodexIntegrationHarness {
       intentText: request.intentText,
       draftChanges: request.draftChanges,
       selection: _rewriteSelection(request.selection),
-      meta: const <String, Object?>{
+      meta: <String, Object?>{
         'integrationTest': true,
         'driver': 'flutter_integration_test',
+        'backendId': backendId,
       },
     );
     final promptText = service.buildResolvedPrompt(resolutionRequest);
@@ -232,7 +301,7 @@ final class _CodexIntegrationHarness {
       request.onEvent?.call(
         LiveEditRuntimeEvent(
           kind: LiveEditRuntimeEventKind.codex,
-          message: 'Codex applied the requested heading change.',
+          message: 'Agent applied the requested live-edit change.',
           details: <String>[execution.summary, ...execution.changedFiles],
         ),
       );
@@ -249,7 +318,8 @@ final class _CodexIntegrationHarness {
         ),
       );
       print(
-        '[codex-test] direct apply complete files=${execution.changedFiles.length}',
+        '[agent-test] direct apply complete '
+        'files=${execution.changedFiles.length}',
       );
       return <String, Object?>{
         'proposalId': execution.executionId,
@@ -287,67 +357,118 @@ final class _CodexIntegrationHarness {
     }
   }
 
-  Future<String> _ensureWorkspace(final LiveEditSelection? selection) async {
+  Future<String> _ensureWorkspaceForRequest(
+    final LiveEditApplyDraftRequest request,
+  ) async {
+    await _ensureMappedSelection(request.effectivePrimarySelection);
+    for (final selection in request.effectiveSelectedWidgets) {
+      await _ensureMappedSelection(selection);
+    }
+    await _ensureMappedSelection(request.selection);
+    return _workspaceRoot ?? _resolvedWorkingDirectory();
+  }
+
+  Future<void> _ensureMappedSelection(
+    final LiveEditSelection? selection,
+  ) async {
+    final sourceFile = selection?.source?.file;
+    if (sourceFile == null || sourceFile.trim().isEmpty) {
+      return;
+    }
+    final normalizedSourceFile = _normalizePath(sourceFile);
+    if (_mappedFilesBySource.containsKey(normalizedSourceFile)) {
+      return;
+    }
+
+    final workspaceRoot = await _ensureWorkspaceRoot(normalizedSourceFile);
+    final repoRoot = _repoRoot!;
+    final packageRoot = _packageRootFromSource(normalizedSourceFile);
+    await _ensurePackageCopied(
+      packageRoot: packageRoot,
+      repoRoot: repoRoot,
+      workspaceRoot: workspaceRoot,
+    );
+
+    final relativePath = _relativePath(
+      root: repoRoot,
+      path: normalizedSourceFile,
+    );
+    final mappedPath = _joinPath(workspaceRoot, relativePath);
+    _mappedFilesBySource[normalizedSourceFile] = mappedPath;
+
+    final copiedSourceFile = File(mappedPath);
+    if (copiedSourceFile.existsSync()) {
+      _originalContentsByMapped[mappedPath] = await copiedSourceFile
+          .readAsString();
+      print('[agent-test] mapped source=$mappedPath');
+    }
+  }
+
+  Future<String> _ensureWorkspaceRoot(final String sourceFile) async {
     if (_workspaceRoot != null) {
       return _workspaceRoot!;
     }
-
-    final sourceRoot = _sourceRootFromSelection(selection);
-    print('[codex-test] creating temp workspace from $sourceRoot');
+    final repoRoot = _repoRootFromPath(sourceFile);
+    _repoRoot = repoRoot;
+    print('[agent-test] creating temp workspace from $repoRoot');
     final workspace = await Directory.systemTemp.createTemp(
-      'live_edit_codex_workspace_',
+      'live_edit_agent_workspace_',
     );
     _workspace = workspace;
     _workspaceRoot = workspace.path;
+    return workspace.path;
+  }
 
-    final libSource = Directory('$sourceRoot/lib');
+  Future<void> _ensurePackageCopied({
+    required final String packageRoot,
+    required final String repoRoot,
+    required final String workspaceRoot,
+  }) async {
+    final normalizedPackageRoot = _normalizePath(packageRoot);
+    if (_copiedPackageRoots.contains(normalizedPackageRoot)) {
+      return;
+    }
+    _copiedPackageRoots.add(normalizedPackageRoot);
+
+    final relativePackageRoot = _relativePath(
+      root: repoRoot,
+      path: normalizedPackageRoot,
+    );
+    final targetPackageRoot = relativePackageRoot.isEmpty
+        ? workspaceRoot
+        : _joinPath(workspaceRoot, relativePackageRoot);
+
+    final libSource = Directory('$normalizedPackageRoot/lib');
     if (libSource.existsSync()) {
-      _copyShallowDirectory(libSource, Directory('${workspace.path}/lib'));
+      _copyShallowDirectory(libSource, Directory('$targetPackageRoot/lib'));
     }
     for (final relativeFile in <String>[
       'pubspec.yaml',
       'analysis_options.yaml',
     ]) {
-      final sourceFile = File('$sourceRoot/$relativeFile');
+      final sourceFile = File('$normalizedPackageRoot/$relativeFile');
       if (!sourceFile.existsSync()) {
         continue;
       }
-      final targetFile = File('${workspace.path}/$relativeFile');
+      final targetFile = File('$targetPackageRoot/$relativeFile');
       targetFile.parent.createSync(recursive: true);
       targetFile.writeAsBytesSync(sourceFile.readAsBytesSync());
     }
-
-    final sourceFile = selection?.source?.file;
-    if (sourceFile == null || sourceFile.trim().isEmpty) {
-      return workspace.path;
-    }
-
-    final normalizedSourceFile = _normalizePath(sourceFile);
-    final relativePath = normalizedSourceFile.startsWith(sourceRoot)
-        ? normalizedSourceFile.substring(sourceRoot.length + 1)
-        : 'lib/${File(normalizedSourceFile).uri.pathSegments.last}';
-    _mappedSourcePath = '${workspace.path}/$relativePath';
-    final copiedSourceFile = File(_mappedSourcePath!);
-    if (copiedSourceFile.existsSync()) {
-      _originalFileContents = await copiedSourceFile.readAsString();
-      print('[codex-test] mapped source=$_mappedSourcePath');
-    }
-    print('[codex-test] workspace prepared');
-    return workspace.path;
   }
 
   LiveEditSelection? _rewriteSelection(final LiveEditSelection? selection) {
-    final mappedSourcePath = _mappedSourcePath;
-    if (selection == null || mappedSourcePath == null) {
+    final sourceFile = selection?.source?.file;
+    if (selection == null || sourceFile == null || sourceFile.trim().isEmpty) {
       return selection;
     }
-    final sourceFile = selection.source?.file;
-    if (sourceFile == null || sourceFile.trim().isEmpty) {
+    final normalizedSourceFile = _normalizePath(sourceFile);
+    final mappedSourcePath = _mappedFilesBySource[normalizedSourceFile];
+    if (mappedSourcePath == null) {
       return selection;
     }
     return _rewriteSelectionSource(
       selection: selection,
-      sourceFile: _normalizePath(sourceFile),
+      sourceFile: normalizedSourceFile,
       rewrittenFile: mappedSourcePath,
     );
   }
@@ -435,6 +556,205 @@ Map<String, Object?> _failureResponse(
   },
 };
 
+Future<LiveEditOrchestrator> _launchIntegrationApp(
+  final WidgetTester tester,
+  final IntegrationTestWidgetsFlutterBinding binding,
+  final _LiveEditAgentIntegrationHarness harness,
+) async {
+  await binding.setSurfaceSize(const Size(8000, 2000));
+  final orchestrator = LiveEditOrchestrator(
+    applyDraftDelegate: harness.handle,
+    backendId: _agentBackendId,
+    workingDirectory: _resolvedWorkingDirectory(),
+    intentText: _agentIntent,
+  );
+  app.debugLiveEditOrchestratorOverride = orchestrator;
+
+  await app.main();
+  print('[agent-test] app main started');
+  await _pumpUntil(
+    tester,
+    () => find.text('MCP Toolkit Demo').evaluate().isNotEmpty,
+    timeout: const Duration(seconds: 30),
+  );
+  print('[agent-test] app visible');
+  return orchestrator;
+}
+
+Future<void> _enableLiveEdit(
+  final WidgetTester tester,
+  final LiveEditOrchestrator orchestrator,
+) async {
+  await tester.tap(find.widgetWithText(ActionChip, 'Live Edit'));
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 200));
+  await _pumpUntil(
+    tester,
+    () => orchestrator.overlayVisible,
+    timeout: const Duration(seconds: 10),
+  );
+}
+
+Future<void> _selectFixtureTarget(
+  final WidgetTester tester,
+  final LiveEditOrchestrator orchestrator,
+) async {
+  await tester.tap(_fixtureText(_fixtureOriginalText), warnIfMissed: false);
+  await tester.pump(const Duration(milliseconds: 300));
+  if (orchestrator.activeSelection == null) {
+    orchestrator.selectNode(
+      tester.getCenter(_fixtureText(_fixtureOriginalText)),
+    );
+    await _pumpUntil(
+      tester,
+      () => orchestrator.activeSelection != null,
+      timeout: const Duration(seconds: 10),
+    );
+  }
+}
+
+Future<void> _ensurePanelExpanded(
+  final WidgetTester tester,
+  final LiveEditOrchestrator orchestrator,
+) async {
+  if (!orchestrator.panelExpanded) {
+    await tester.tap(_semanticsId('live_edit_panel_expand_button'));
+    await tester.pumpAndSettle();
+  }
+}
+
+String _fixtureRenderedText(final WidgetTester tester) =>
+    tester.renderObject<RenderParagraph>(_fixtureRichText()).text.toPlainText();
+
+Future<void> _applyCurrentDraft(
+  final WidgetTester tester,
+  final LiveEditOrchestrator orchestrator,
+) async {
+  await tester.tap(_semanticsId('live_edit_apply_button').first);
+  await tester.pump();
+  await _pumpUntilActivityLabel(
+    tester,
+    orchestrator,
+    'Preparing request',
+    timeout: const Duration(seconds: 10),
+  );
+  await _pumpUntil(
+    tester,
+    () =>
+        orchestrator.pendingExecutionPlan != null ||
+        orchestrator.lastError != null,
+    timeout: const Duration(minutes: 3),
+  );
+  expect(orchestrator.lastError, isNull);
+  await _pumpUntil(
+    tester,
+    () => orchestrator.applyPhase == LiveEditApplyPhase.success,
+    timeout: const Duration(seconds: 30),
+  );
+  await tester.pumpAndSettle();
+  expect(orchestrator.currentActivity?.label, 'Applied');
+}
+
+Future<void> _roundTripFixtureText(
+  final WidgetTester tester,
+  final LiveEditOrchestrator orchestrator, {
+  required final String from,
+  required final String to,
+}) async {
+  expect(_fixtureRenderedText(tester), from);
+  await _selectFixtureTarget(tester, orchestrator);
+  await _ensurePanelExpanded(tester, orchestrator);
+  expect(orchestrator.activeSelection?.widgetType, 'Text');
+
+  final textProperty = orchestrator.activeSelection!.propertyGroups.firstWhere(
+    (final property) =>
+        property.editable && property.kind == LiveEditPropertyKind.string,
+  );
+  final propertyId = _panelPropertyId(textProperty.id);
+  final propertyInput = find.descendant(
+    of: _semanticsId('live_edit_property_input_$propertyId'),
+    matching: find.byType(TextField),
+  );
+  expect(propertyInput, findsOneWidget);
+  await tester.ensureVisible(propertyInput);
+  await tester.enterText(propertyInput, to);
+  await tester.pump(const Duration(milliseconds: 300));
+
+  expect(orchestrator.activeDraftChanges, isNotEmpty);
+  expect(_fixtureRenderedText(tester), to);
+  await _applyCurrentDraft(tester, orchestrator);
+  expect(_fixtureRenderedText(tester), to);
+}
+
+Finder _aiBubbleKey() => find.byKey(
+  LiveEditOverlayThemeModel.instance.keyFor(kLiveEditAiBubbleSurfaceId),
+);
+
+Material _activeAiBubbleMaterial(final WidgetTester tester) => tester.widget(
+  find.descendant(of: _aiBubbleKey(), matching: find.byType(Material)).first,
+);
+
+Future<void> _selectToolAiBubble(
+  final WidgetTester tester,
+  final LiveEditOrchestrator orchestrator,
+) async {
+  orchestrator.openAiBubble();
+  await tester.pumpAndSettle();
+  expect(_aiBubbleKey(), findsOneWidget);
+
+  await tester.tap(find.widgetWithText(ChoiceChip, 'Edit Tools'));
+  await tester.pumpAndSettle();
+
+  expect(orchestrator.targetDomain, LiveEditTargetDomain.toolScene);
+  expect(
+    orchestrator.activeSelection?.targetDomain,
+    LiveEditTargetDomain.appScene,
+  );
+  expect(_semanticsId('live_edit_ai_bubble'), findsOneWidget);
+
+  orchestrator.selectNode(tester.getCenter(_aiBubbleKey()));
+  await tester.pumpAndSettle();
+
+  expect(orchestrator.activeSelection, isNotNull);
+  expect(
+    orchestrator.activeSelection!.targetDomain,
+    LiveEditTargetDomain.toolScene,
+  );
+  expect(orchestrator.activeSelection!.nodeId, kLiveEditAiBubbleSurfaceId);
+}
+
+Future<void> _roundTripToolAiBubbleColor(
+  final WidgetTester tester,
+  final LiveEditOrchestrator orchestrator,
+) async {
+  await _selectToolAiBubble(tester, orchestrator);
+  await _ensurePanelExpanded(tester, orchestrator);
+
+  expect(_activeAiBubbleMaterial(tester).color, _bubbleOriginalColor);
+  final backgroundColorProperty = orchestrator.activeSelection!.propertyGroups
+      .firstWhere((final property) => property.id == 'backgroundColor');
+  final propertyId = _panelPropertyId(backgroundColorProperty.id);
+  final propertyInput = find.descendant(
+    of: _semanticsId('live_edit_property_input_$propertyId'),
+    matching: find.byType(TextField),
+  );
+  expect(propertyInput, findsOneWidget);
+
+  await tester.ensureVisible(propertyInput);
+  await tester.enterText(propertyInput, '#112233');
+  await tester.pump(const Duration(milliseconds: 300));
+  expect(orchestrator.activeDraftChanges, isNotEmpty);
+  expect(_activeAiBubbleMaterial(tester).color, _bubbleUpdatedColor);
+  await _applyCurrentDraft(tester, orchestrator);
+  expect(_activeAiBubbleMaterial(tester).color, _bubbleUpdatedColor);
+
+  await tester.enterText(propertyInput, '#FFFBEB');
+  await tester.pump(const Duration(milliseconds: 300));
+  expect(_activeAiBubbleMaterial(tester).color, _bubbleOriginalColor);
+  await _applyCurrentDraft(tester, orchestrator);
+  expect(_activeAiBubbleMaterial(tester).color, _bubbleOriginalColor);
+}
+
 void main() {
   final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -448,166 +768,47 @@ void main() {
   });
 
   testWidgets(
-    'inline editing round-trips the About This Demo heading through Codex',
-    skip: !_runCodexIntegration,
+    'app overlay round-trips the deterministic fixture through a real agent',
+    skip: !_runAgentIntegration,
     (final tester) async {
-      await binding.setSurfaceSize(const Size(8000, 2000));
-      final harness = _CodexIntegrationHarness();
+      final harness = _LiveEditAgentIntegrationHarness();
       addTearDown(harness.dispose);
+      addTearDown(() => binding.setSurfaceSize(null));
 
-      final orchestrator = LiveEditOrchestrator(
-        applyDraftDelegate: harness.handle,
-        backendId: _codexBackendId,
-        workingDirectory: _resolvedWorkingDirectory(),
-        intentText: _codexIntent,
-      );
-      app.debugLiveEditOrchestratorOverride = orchestrator;
-
-      await app.main();
-      print('[codex-test] app main started');
-      await _pumpUntil(
+      final orchestrator = await _launchIntegrationApp(
         tester,
-        () => find.text('MCP Toolkit Demo').evaluate().isNotEmpty,
-        timeout: const Duration(seconds: 30),
+        binding,
+        harness,
       );
-      print('[codex-test] app visible');
+      await _enableLiveEdit(tester, orchestrator);
 
-      expect(find.text('MCP Toolkit Demo'), findsOneWidget);
-      expect(_semanticsId('about_demo_heading'), findsOneWidget);
-      expect(_headingText('About This Demo'), findsOneWidget);
+      expect(_semanticsId('live_edit_test_target'), findsOneWidget);
+      expect(_fixtureText(_fixtureOriginalText), findsOneWidget);
 
-      await tester.tap(find.widgetWithText(ActionChip, 'Live Edit'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 200));
-      await _pumpUntil(
+      await _roundTripFixtureText(
         tester,
-        () => orchestrator.overlayVisible,
-        timeout: const Duration(seconds: 10),
+        orchestrator,
+        from: _fixtureOriginalText,
+        to: _fixtureUpdatedText,
       );
-      print('[codex-test] live edit overlay enabled');
-
-      expect(find.text('Live Edit: ON'), findsOneWidget);
-      expect(_semanticsId('live_edit_panel_rail'), findsOneWidget);
-
-      await tester.tap(_headingText('About This Demo'), warnIfMissed: false);
-      await tester.pump(const Duration(milliseconds: 300));
-      if (orchestrator.activeSelection == null) {
-        orchestrator.selectNode(
-          tester.getCenter(_headingText('About This Demo')),
-        );
-        await _pumpUntil(
-          tester,
-          () => orchestrator.activeSelection != null,
-          timeout: const Duration(seconds: 10),
-        );
-      }
-      print(
-        '[codex-test] selection active ${orchestrator.activeSelection?.widgetType}',
+      await _roundTripFixtureText(
+        tester,
+        orchestrator,
+        from: _fixtureUpdatedText,
+        to: _fixtureOriginalText,
       );
 
-      expect(_semanticsId('live_edit_selection_bubble'), findsOneWidget);
-      expect(orchestrator.activeSelection, isNotNull);
-      await tester.tap(_semanticsId('live_edit_panel_expand_button'));
-      await tester.pumpAndSettle();
-      expect(_semanticsId('live_edit_panel'), findsOneWidget);
-      expect(orchestrator.activeSelection?.widgetType, 'Text');
-
-      Future<void> roundTripHeading(final String from, final String to) async {
-        expect(
-          tester
-              .renderObject<RenderParagraph>(_headingRichText())
-              .text
-              .toPlainText(),
-          from,
-        );
-        await tester.tap(
-          _semanticsId('about_demo_heading'),
-          warnIfMissed: false,
-        );
-        await tester.pump(const Duration(milliseconds: 250));
-        expect(orchestrator.activeSelection?.widgetType, 'Text');
-        if (!orchestrator.panelExpanded) {
-          await tester.tap(_semanticsId('live_edit_panel_expand_button'));
-          await tester.pumpAndSettle();
-        }
-        final textProperty = orchestrator.activeSelection!.propertyGroups
-            .firstWhere(
-              (final property) =>
-                  property.editable &&
-                  property.kind == LiveEditPropertyKind.string,
-            );
-        final propertyId = _panelPropertyId(textProperty.id);
-        final propertyInput = find.descendant(
-          of: _semanticsId('live_edit_property_input_$propertyId'),
-          matching: find.byType(TextField),
-        );
-        expect(propertyInput, findsOneWidget);
-        await tester.ensureVisible(propertyInput);
-        await tester.enterText(propertyInput, to);
-        await tester.pump(const Duration(milliseconds: 300));
-        expect(find.text(to), findsWidgets);
-        expect(orchestrator.activeDraftChanges, isNotEmpty);
-        await tester.tap(_semanticsId('live_edit_apply_button').first);
-        await tester.pump();
-        await _pumpUntilActivityLabel(
-          tester,
-          orchestrator,
-          'Preparing request',
-          timeout: const Duration(seconds: 10),
-        );
-        expect(orchestrator.panelExpanded, isFalse);
-        expect(
-          orchestrator.bubbleStatusForActiveSelection,
-          LiveEditBubbleStatus.waiting,
-        );
-        await tester.pump(const Duration(milliseconds: 200));
-        await _pumpUntil(
-          tester,
-          () =>
-              orchestrator.pendingExecutionPlan != null ||
-              orchestrator.lastError != null,
-          timeout: const Duration(minutes: 3),
-        );
-        expect(orchestrator.currentActivity?.label, 'Applied');
-        expect(_semanticsId('live_edit_ai_bubble'), findsOneWidget);
-        expect(orchestrator.pendingExecutionPlan, isNotNull);
-        expect(orchestrator.lastError, isNull);
-        await _pumpUntil(
-          tester,
-          () => orchestrator.applyPhase == LiveEditApplyPhase.success,
-          timeout: const Duration(seconds: 30),
-        );
-        await tester.pumpAndSettle();
-        expect(orchestrator.currentActivity?.label, 'Applied');
-        expect(
-          tester
-              .renderObject<RenderParagraph>(_headingRichText())
-              .text
-              .toPlainText(),
-          to,
-        );
-      }
-
-      await roundTripHeading(
-        'About This Demo',
-        'Hello Live Editing in Flutter💙',
-      );
-      await roundTripHeading(
-        'Hello Live Editing in Flutter💙',
-        'About This Demo',
-      );
-
-      final mappedSourcePath = harness.mappedSourcePath;
+      final selectionSource = orchestrator.activeSelection?.source?.file;
+      expect(selectionSource, isNotNull);
+      final mappedSourcePath = harness.mappedFileForSource(selectionSource!);
       expect(mappedSourcePath, isNotNull);
-      final changedFile = File(mappedSourcePath!);
-      expect(changedFile.existsSync(), isTrue);
 
-      final changedContents = await changedFile.readAsString();
-      expect(changedContents, isNot(equals(harness.originalFileContents)));
-      expect(changedContents, contains('About This Demo'));
+      final changedContents = await File(mappedSourcePath!).readAsString();
+      expect(changedContents, contains(_fixtureOriginalText));
+      expect(changedContents, isNot(contains(_fixtureUpdatedText)));
       expect(
         changedContents,
-        isNot(contains('Hello Live Editing in Flutter💙')),
+        isNot(equals(harness.originalContentsForSource(selectionSource))),
       );
       expect(orchestrator.applyPhase, LiveEditApplyPhase.success);
       expect(orchestrator.activeDraftChanges, isEmpty);
@@ -616,142 +817,53 @@ void main() {
   );
 
   testWidgets(
-    'ai prompt round-trips the About This Demo heading through Codex',
-    skip: !_runCodexIntegration,
+    'draft overlay ai bubble round-trips through a real agent',
+    skip: !_runAgentIntegration,
     (final tester) async {
-      await binding.setSurfaceSize(const Size(8000, 2000));
-      final harness = _CodexIntegrationHarness();
+      final harness = _LiveEditAgentIntegrationHarness();
       addTearDown(harness.dispose);
+      addTearDown(() => binding.setSurfaceSize(null));
 
-      final orchestrator = LiveEditOrchestrator(
-        applyDraftDelegate: harness.handle,
-        backendId: _codexBackendId,
-        workingDirectory: _resolvedWorkingDirectory(),
-        intentText: _codexIntent,
-      );
-      app.debugLiveEditOrchestratorOverride = orchestrator;
-
-      await app.main();
-      await _pumpUntil(
+      final orchestrator = await _launchIntegrationApp(
         tester,
-        () => find.text('MCP Toolkit Demo').evaluate().isNotEmpty,
-        timeout: const Duration(seconds: 30),
+        binding,
+        harness,
+      );
+      await _enableLiveEdit(tester, orchestrator);
+      await _selectFixtureTarget(tester, orchestrator);
+
+      final appSelectionNodeId = orchestrator.activeSelection?.nodeId;
+      expect(appSelectionNodeId, isNotNull);
+
+      await _roundTripToolAiBubbleColor(tester, orchestrator);
+
+      final toolSelectionSource = orchestrator.activeSelection?.source?.file;
+      expect(toolSelectionSource, isNotNull);
+      expect(
+        _containsPath(
+          'flutter_live_edit/flutter_live_edit_toolkit/lib/src/live_edit_overlay_theme.dart',
+          toolSelectionSource!,
+        ),
+        isTrue,
       );
 
-      await tester.tap(find.widgetWithText(ActionChip, 'Live Edit'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 200));
-      await _pumpUntil(
-        tester,
-        () => orchestrator.overlayVisible,
-        timeout: const Duration(seconds: 10),
-      );
-
-      await tester.tap(_headingText('About This Demo'), warnIfMissed: false);
-      await tester.pump(const Duration(milliseconds: 300));
-      if (orchestrator.activeSelection == null) {
-        orchestrator.selectNode(
-          tester.getCenter(_headingText('About This Demo')),
-        );
-        await _pumpUntil(
-          tester,
-          () => orchestrator.activeSelection != null,
-          timeout: const Duration(seconds: 10),
-        );
-      }
-      await tester.tap(_semanticsId('live_edit_panel_expand_button'));
-      await tester.pumpAndSettle();
-      expect(orchestrator.activeSelection?.widgetType, 'Text');
-
-      Future<void> roundTripHeadingViaPrompt({
-        required final String from,
-        required final String to,
-        required final String prompt,
-      }) async {
-        expect(
-          tester
-              .renderObject<RenderParagraph>(_headingRichText())
-              .text
-              .toPlainText(),
-          from,
-        );
-        await tester.tap(
-          _semanticsId('about_demo_heading'),
-          warnIfMissed: false,
-        );
-        await tester.pump(const Duration(milliseconds: 250));
-        expect(orchestrator.activeSelection?.widgetType, 'Text');
-        if (!orchestrator.panelExpanded) {
-          await tester.tap(_semanticsId('live_edit_panel_expand_button'));
-          await tester.pumpAndSettle();
-        }
-        await tester.tap(find.widgetWithText(OutlinedButton, 'AI'));
-        await tester.pumpAndSettle();
-        expect(orchestrator.activeDraftChanges, isEmpty);
-        expect(orchestrator.currentActivity?.label, 'Prompt ready');
-
-        final promptField = find.descendant(
-          of: _semanticsId('live_edit_ai_prompt_field'),
-          matching: find.byType(TextField),
-        );
-        expect(promptField, findsOneWidget);
-        await tester.enterText(promptField, prompt);
-        await tester.pump(const Duration(milliseconds: 200));
-        await tester.tap(_semanticsId('live_edit_bubble_apply_button'));
-        await tester.pump();
-        await _pumpUntilActivityLabel(
-          tester,
-          orchestrator,
-          'Preparing request',
-          timeout: const Duration(seconds: 10),
-        );
-        await _pumpUntilActivityLabel(
-          tester,
-          orchestrator,
-          'Applied',
-          timeout: const Duration(minutes: 3),
-        );
-        expect(orchestrator.pendingExecutionPlan, isNotNull);
-        await _pumpUntil(
-          tester,
-          () => orchestrator.applyPhase == LiveEditApplyPhase.success,
-          timeout: const Duration(seconds: 30),
-        );
-        await tester.pumpAndSettle();
-        expect(orchestrator.currentActivity?.label, 'Applied');
-        expect(
-          tester
-              .renderObject<RenderParagraph>(_headingRichText())
-              .text
-              .toPlainText(),
-          to,
-        );
-        final mappedSourcePath = harness.mappedSourcePath;
-        expect(mappedSourcePath, isNotNull);
-        expect(await File(mappedSourcePath!).readAsString(), contains(to));
-      }
-
-      await roundTripHeadingViaPrompt(
-        from: 'About This Demo',
-        to: 'Hello Live Editing in Flutter💙',
-        prompt:
-            'Change the selected About card heading text to exactly Hello Live Editing in Flutter💙 and only edit the source needed for that heading.',
-      );
-      await roundTripHeadingViaPrompt(
-        from: 'Hello Live Editing in Flutter💙',
-        to: 'About This Demo',
-        prompt:
-            'Restore the selected About card heading text to exactly About This Demo and remove the temporary replacement text.',
-      );
-
-      final mappedSourcePath = harness.mappedSourcePath;
+      final mappedSourcePath = harness.mappedFileForSource(toolSelectionSource);
       expect(mappedSourcePath, isNotNull);
       final changedContents = await File(mappedSourcePath!).readAsString();
-      expect(changedContents, contains('About This Demo'));
       expect(
         changedContents,
-        isNot(contains('Hello Live Editing in Flutter💙')),
+        isNot(equals(harness.originalContentsForSource(toolSelectionSource))),
       );
+      expect(changedContents, contains('backgroundColor'));
+      expect(changedContents, contains('0xFFFFFBEB'));
+
+      orchestrator.setTargetDomain(LiveEditTargetDomain.appScene);
+      await tester.pumpAndSettle();
+      expect(
+        orchestrator.activeSelection?.targetDomain,
+        LiveEditTargetDomain.appScene,
+      );
+      expect(orchestrator.activeSelection?.nodeId, appSelectionNodeId);
     },
     timeout: const Timeout(Duration(minutes: 8)),
   );

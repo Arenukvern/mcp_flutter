@@ -1861,9 +1861,11 @@ final class LiveEditController extends ChangeNotifier {
     final String? sessionId,
     final int? index,
     final String? nodeId,
+    final LiveEditTargetDomain? targetDomain,
   }) {
     final session = _requireSession(sessionId);
-    final hits = session.selectionHitCandidates;
+    final layer = _layerForRequest(session, requested: targetDomain);
+    final hits = layer.selectionHitCandidates;
     if (hits.isEmpty) {
       return <String, Object?>{
         'sessionId': session.sessionId,
@@ -1896,28 +1898,30 @@ final class LiveEditController extends ChangeNotifier {
           session.objectGroup,
         ) ??
         '';
-    final tracked = session.trackedSelections[hitNodeId];
-    final selection = session.multiSelections.length > 1 && tracked != null
+    final tracked = layer.trackedSelections[hitNodeId];
+    final selection = layer.multiSelections.length > 1 && tracked != null
         ? _hydrateTrackedSelection(
             session: session,
             tracked: tracked,
             updateInspectorSelection: true,
+            targetDomain: targetDomain,
           )
         : _setSelection(
             session: session,
             element: hit.element,
             ancestry: hit.ancestry,
+            targetDomain: targetDomain,
           );
-    if (session.multiSelections.length <= 1) {
-      session.multiSelections = <LiveEditSelection>[selection];
+    if (layer.multiSelections.length <= 1) {
+      layer.multiSelections = <LiveEditSelection>[selection];
     }
-    _syncSelectionCandidates(session);
+    _syncSelectionCandidates(session, requested: targetDomain);
     notifyListeners();
     return <String, Object?>{
       'sessionId': session.sessionId,
       'selected': true,
       'selection': selection.toJson(),
-      'selectionCandidates': session.selectionCandidates
+      'selectionCandidates': layer.selectionCandidates
           .map((final candidate) => candidate.toJson())
           .toList(growable: false),
     };
@@ -1926,9 +1930,12 @@ final class LiveEditController extends ChangeNotifier {
   Map<String, Object?> selectTrackedNode({
     required final String nodeId,
     final String? sessionId,
+    final LiveEditTargetDomain? targetDomain,
   }) {
     final session = _requireSession(sessionId);
-    if (session.targetDomain == LiveEditTargetDomain.toolScene) {
+    final resolvedDomain = _resolveTargetDomain(session, targetDomain);
+    final layer = _layerForRequest(session, requested: targetDomain);
+    if (resolvedDomain == LiveEditTargetDomain.toolScene) {
       final selection = LiveEditOverlayThemeModel.instance.selectionForSurface(
         surfaceId: nodeId,
         sessionId: session.sessionId,
@@ -1940,9 +1947,9 @@ final class LiveEditController extends ChangeNotifier {
           'reason': 'tracked_node_unavailable',
         };
       }
-      session.selection = selection;
-      session.multiSelections = <LiveEditSelection>[selection];
-      session.selectionCandidates = <LiveEditSelectionCandidate>[
+      layer.selection = selection;
+      layer.multiSelections = <LiveEditSelection>[selection];
+      layer.selectionCandidates = <LiveEditSelectionCandidate>[
         LiveEditSelectionCandidate(
           nodeId: selection.nodeId,
           widgetType: selection.widgetType,
@@ -1960,7 +1967,7 @@ final class LiveEditController extends ChangeNotifier {
         'selection': selection.toJson(),
       };
     }
-    final tracked = session.trackedSelections[nodeId];
+    final tracked = layer.trackedSelections[nodeId];
     if (tracked == null ||
         !tracked.element.mounted ||
         tracked.element.renderObject == null) {
@@ -1976,16 +1983,18 @@ final class LiveEditController extends ChangeNotifier {
             session: session,
             element: tracked.element,
             ancestry: tracked.ancestry,
+            targetDomain: targetDomain,
           )
         : _hydrateTrackedSelection(
             session: session,
             tracked: tracked,
             updateInspectorSelection: true,
+            targetDomain: targetDomain,
           );
-    if (session.multiSelections.length <= 1) {
-      session.multiSelections = <LiveEditSelection>[selection];
+    if (layer.multiSelections.length <= 1) {
+      layer.multiSelections = <LiveEditSelection>[selection];
     }
-    _syncSelectionCandidates(session);
+    _syncSelectionCandidates(session, requested: targetDomain);
     notifyListeners();
     return <String, Object?>{
       'sessionId': session.sessionId,
@@ -1994,13 +2003,17 @@ final class LiveEditController extends ChangeNotifier {
     };
   }
 
-  Map<String, Object?> selectParent({final String? sessionId}) {
+  Map<String, Object?> selectParent({
+    final String? sessionId,
+    final LiveEditTargetDomain? targetDomain,
+  }) {
     final session = _requireSession(sessionId);
-    final activeIndex = session.selectionCandidates.indexWhere(
+    final layer = _layerForRequest(session, requested: targetDomain);
+    final activeIndex = layer.selectionCandidates.indexWhere(
       (final candidate) => candidate.active,
     );
     if (activeIndex < 0 ||
-        activeIndex + 1 >= session.selectionHitCandidates.length) {
+        activeIndex + 1 >= layer.selectionHitCandidates.length) {
       return <String, Object?>{
         'sessionId': session.sessionId,
         'selected': false,
@@ -2010,12 +2023,17 @@ final class LiveEditController extends ChangeNotifier {
     return selectCandidate(
       sessionId: session.sessionId,
       index: activeIndex + 1,
+      targetDomain: targetDomain,
     );
   }
 
-  Map<String, Object?> selectChild({final String? sessionId}) {
+  Map<String, Object?> selectChild({
+    final String? sessionId,
+    final LiveEditTargetDomain? targetDomain,
+  }) {
     final session = _requireSession(sessionId);
-    final activeIndex = session.selectionCandidates.indexWhere(
+    final layer = _layerForRequest(session, requested: targetDomain);
+    final activeIndex = layer.selectionCandidates.indexWhere(
       (final candidate) => candidate.active,
     );
     if (activeIndex <= 0) {
@@ -2028,6 +2046,7 @@ final class LiveEditController extends ChangeNotifier {
     return selectCandidate(
       sessionId: session.sessionId,
       index: activeIndex - 1,
+      targetDomain: targetDomain,
     );
   }
 
@@ -2653,6 +2672,7 @@ final class LiveEditController extends ChangeNotifier {
     required final List<String> selectedNodeIds,
     required final LiveEditSelectionMode selectionMode,
     final bool updateInspectorSelection = false,
+    final LiveEditTargetDomain? targetDomain,
   }) {
     final nodeId =
         WidgetInspectorService.instance.toId(element, session.objectGroup) ??
@@ -2682,10 +2702,13 @@ final class LiveEditController extends ChangeNotifier {
       ),
     );
     final renderObject = _previewRenderObjectForElement(element);
+    final resolvedDomain = _resolveTargetDomain(session, targetDomain);
+    final layer = _layerForRequest(session, requested: targetDomain);
     final selection = LiveEditSelection(
       sessionId: session.sessionId,
       nodeId: nodeId,
       widgetType: element.widget.runtimeType.toString(),
+      targetDomain: resolvedDomain,
       renderObjectType: renderObject?.runtimeType.toString(),
       bounds: _boundsForRenderObject(renderObject),
       source: _extractSourceLocation(detailsTree, element),
@@ -2701,7 +2724,7 @@ final class LiveEditController extends ChangeNotifier {
       selectionMode: selectionMode,
       selectedNodeIds: selectedNodeIds,
     );
-    session.trackedSelections[nodeId] = _TrackedSelectionTarget(
+    layer.trackedSelections[nodeId] = _TrackedSelectionTarget(
       element: element,
       ancestry: ancestry,
       selection: selection,
@@ -2713,46 +2736,51 @@ final class LiveEditController extends ChangeNotifier {
     required final _LiveEditSessionState session,
     required final Element element,
     required final List<Map<String, Object?>> ancestry,
+    final LiveEditTargetDomain? targetDomain,
   }) {
-    if (session.selectedElement != null && session.selectedElement != element) {
-      _revertExactPreview(session, layer: session.currentLayer);
+    final layer = _layerForRequest(session, requested: targetDomain);
+    if (layer.selectedElement != null && layer.selectedElement != element) {
+      _revertExactPreview(session, layer: layer);
     }
 
     final selection = _buildSelection(
       session: session,
       element: element,
       ancestry: ancestry,
-      selectedNodeIds: session.multiSelections
+      selectedNodeIds: layer.multiSelections
           .map((final item) => item.nodeId)
           .toList(growable: false),
-      selectionMode: session.multiSelections.length > 1
+      selectionMode: layer.multiSelections.length > 1
           ? LiveEditSelectionMode.multi
           : LiveEditSelectionMode.single,
       updateInspectorSelection: true,
+      targetDomain: targetDomain,
     );
 
-    session.selectedElement = element;
-    session.selection = selection;
-    session.ancestry = ancestry;
-    session.multiSelections = <LiveEditSelection>[selection];
+    layer.selectedElement = element;
+    layer.selection = selection;
+    layer.ancestry = ancestry;
+    layer.multiSelections = <LiveEditSelection>[selection];
     session.lastTouchedAt = DateTime.now().toUtc();
     return selection;
   }
 
   void _replaceSelectionInMulti(
     final _LiveEditSessionState session,
-    final LiveEditSelection selection,
-  ) {
-    final hasExisting = session.multiSelections.any(
+    final LiveEditSelection selection, {
+    final LiveEditTargetDomain? targetDomain,
+  }) {
+    final layer = _layerForRequest(session, requested: targetDomain);
+    final hasExisting = layer.multiSelections.any(
       (final candidate) => candidate.nodeId == selection.nodeId,
     );
-    final nextSelections = session.multiSelections
+    final nextSelections = layer.multiSelections
         .map(
           (final candidate) =>
               candidate.nodeId == selection.nodeId ? selection : candidate,
         )
         .toList(growable: false);
-    session.multiSelections = hasExisting
+    layer.multiSelections = hasExisting
         ? nextSelections
         : <LiveEditSelection>[...nextSelections, selection];
   }
@@ -2761,8 +2789,10 @@ final class LiveEditController extends ChangeNotifier {
     required final _LiveEditSessionState session,
     required final _TrackedSelectionTarget tracked,
     required final bool updateInspectorSelection,
+    final LiveEditTargetDomain? targetDomain,
   }) {
-    final selectedNodeIds = session.multiSelections
+    final layer = _layerForRequest(session, requested: targetDomain);
+    final selectedNodeIds = layer.multiSelections
         .map((final selection) => selection.nodeId)
         .toList(growable: false);
     final hydrated = _buildSelection(
@@ -2774,18 +2804,23 @@ final class LiveEditController extends ChangeNotifier {
           ? LiveEditSelectionMode.multi
           : LiveEditSelectionMode.single,
       updateInspectorSelection: updateInspectorSelection,
+      targetDomain: targetDomain,
     );
-    session.selectedElement = tracked.element;
-    session.selection = hydrated;
-    session.ancestry = tracked.ancestry;
-    _replaceSelectionInMulti(session, hydrated);
+    layer.selectedElement = tracked.element;
+    layer.selection = hydrated;
+    layer.ancestry = tracked.ancestry;
+    _replaceSelectionInMulti(session, hydrated, targetDomain: targetDomain);
     session.lastTouchedAt = DateTime.now().toUtc();
     return hydrated;
   }
 
-  void _syncSelectionCandidates(final _LiveEditSessionState session) {
-    final activeElement = session.selectedElement;
-    session.selectionCandidates = session.selectionHitCandidates.indexed
+  void _syncSelectionCandidates(
+    final _LiveEditSessionState session, {
+    final LiveEditTargetDomain? requested,
+  }) {
+    final layer = _layerForRequest(session, requested: requested);
+    final activeElement = layer.selectedElement;
+    layer.selectionCandidates = layer.selectionHitCandidates.indexed
         .map((final entry) {
           final index = entry.$1;
           final hit = entry.$2;

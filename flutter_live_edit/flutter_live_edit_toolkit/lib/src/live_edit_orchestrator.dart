@@ -419,6 +419,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   Offset _panelDragOffset = Offset.zero;
   bool _debugModeEnabled = false;
   bool _deeperPickEnabled = false;
+  bool _toolPresentationArmed = false;
   final Set<LiveEditBubbleId> _resolvedBubbleIds = <LiveEditBubbleId>{};
 
   List<LiveEditDraftChange> get activeDraftChanges =>
@@ -513,8 +514,8 @@ final class LiveEditOrchestrator extends ChangeNotifier {
 
   bool get currentBackendUsesFreeformModel =>
       currentBackend?.id == 'cursor_agent';
-  LiveEditLayerViewState get _activeLayerViewState =>
-      _layerViewStateByDomain[targetDomain]!;
+  LiveEditLayerViewState get _presentedLayerViewState =>
+      _layerViewStateByDomain[_presentationLayer]!;
   LiveEditLayerViewState _layerViewStateFor(
     final LiveEditTargetDomain domain,
   ) => _layerViewStateByDomain[domain]!;
@@ -523,18 +524,11 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       ? LiveEditTargetDomain.toolScene
       : LiveEditTargetDomain.appScene;
   LiveEditTargetDomain get activeLayer => targetDomain;
-  LiveEditTargetDomain get _presentationLayer {
-    final activeState = _layerViewStateFor(targetDomain);
-    final hasVisibleState =
-        selectionByDomain(targetDomain) != null ||
-        _hasText(activeState.activeBubbleId) ||
-        draftsByDomain(targetDomain).isNotEmpty ||
-        _hasText(activeState.activePropertyId);
-    if (editingToolScene && !hasVisibleState) {
-      return inactiveLayer;
-    }
-    return targetDomain;
-  }
+  LiveEditTargetDomain get presentedLayer =>
+      editingToolScene && !_toolPresentationArmed
+      ? LiveEditTargetDomain.appScene
+      : targetDomain;
+  LiveEditTargetDomain get _presentationLayer => presentedLayer;
 
   LiveEditBubbleId? get activeBubbleId =>
       _layerViewStateFor(_presentationLayer).activeBubbleId ??
@@ -885,14 +879,14 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     final LiveEditEditSurface? surface,
   }) {
     _activePropertyId = property.id;
-    _activeLayerViewState.activePropertyId = property.id;
+    _presentedLayerViewState.activePropertyId = property.id;
     final resolvedSurface = surface ?? property.preferredEditSurface;
     _editMode =
         resolvedSurface == LiveEditEditSurface.aiBubble ||
             property.requiresAgentForPersistence
         ? LiveEditEditMode.ai
         : LiveEditEditMode.edit;
-    _activeLayerViewState.editMode = _editMode;
+    _presentedLayerViewState.editMode = _editMode;
     if (_editMode == LiveEditEditMode.ai && !_hasText(aiComposer)) {
       updateAiComposer(_defaultAiPrompt());
     }
@@ -918,6 +912,9 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   void setTargetDomain(final LiveEditTargetDomain domain) {
     final sessionId = ensureSession();
     controller.setTargetDomain(sessionId: sessionId, targetDomain: domain);
+    if (domain == LiveEditTargetDomain.toolScene) {
+      _toolPresentationArmed = false;
+    }
     _panelDisplayMode = LiveEditPanelDisplayMode.expanded;
     notifyListeners();
   }
@@ -1367,10 +1364,10 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   void openAiBubble({final LiveEditPropertyDescriptor? property}) {
     if (property != null) {
       _activePropertyId = property.id;
-      _activeLayerViewState.activePropertyId = property.id;
+      _presentedLayerViewState.activePropertyId = property.id;
     }
     _editMode = LiveEditEditMode.ai;
-    _activeLayerViewState.editMode = _editMode;
+    _presentedLayerViewState.editMode = _editMode;
     _panelDisplayMode = LiveEditPanelDisplayMode.expanded;
     if (!needsApproval &&
         _applyPhase != LiveEditApplyPhase.preparing &&
@@ -1405,8 +1402,8 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     }
     _activePropertyId = property.id;
     _editMode = LiveEditEditMode.ai;
-    _activeLayerViewState.activePropertyId = property.id;
-    _activeLayerViewState.editMode = _editMode;
+    _presentedLayerViewState.activePropertyId = property.id;
+    _presentedLayerViewState.editMode = _editMode;
     _panelDisplayMode = LiveEditPanelDisplayMode.expanded;
     if (!_hasText(aiComposer)) {
       updateAiComposer(_defaultAiPrompt());
@@ -1426,7 +1423,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     }
     _resolvedBubbleIds.add(bubbleId!);
     _bubbleRecordsById.remove(bubbleId);
-    _activeLayerViewState.activeBubbleId = null;
+    _presentedLayerViewState.activeBubbleId = null;
     _pendingExecutionPlan = null;
     _pendingProposalId = null;
     _pendingBubbleId = null;
@@ -1436,12 +1433,16 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     _aiComposer = '';
     _panelDisplayMode = LiveEditPanelDisplayMode.rail;
     _editMode = LiveEditEditMode.inspect;
-    _activeLayerViewState.editMode = _editMode;
+    _presentedLayerViewState.editMode = _editMode;
     notifyListeners();
   }
 
   void selectCandidateAt(final int index) {
-    controller.selectCandidate(sessionId: activeSessionId, index: index);
+    controller.selectCandidate(
+      sessionId: activeSessionId,
+      index: index,
+      targetDomain: _presentationLayer,
+    );
     _restoreBubbleState(_bubbleIdForSelection(activeSelection));
     _syncSelectionState();
   }
@@ -1491,6 +1492,10 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       contentRoot: contentRoot is Element ? contentRoot : null,
       targetDomain: targetDomain,
     );
+    if (targetDomain == LiveEditTargetDomain.toolScene) {
+      _toolPresentationArmed =
+          selectionByDomain(LiveEditTargetDomain.toolScene) != null;
+    }
     if (_hasText(previousBubbleId) && shouldPinPrevious) {
       final previousBubble = _bubbleRecordFor(previousBubbleId);
       if (previousBubble != null) {
@@ -1538,13 +1543,19 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   }
 
   void selectParentCandidate() {
-    controller.selectParent(sessionId: activeSessionId);
+    controller.selectParent(
+      sessionId: activeSessionId,
+      targetDomain: _presentationLayer,
+    );
     _restoreBubbleState(_bubbleIdForSelection(activeSelection));
     _syncSelectionState();
   }
 
   void selectChildCandidate() {
-    controller.selectChild(sessionId: activeSessionId);
+    controller.selectChild(
+      sessionId: activeSessionId,
+      targetDomain: _presentationLayer,
+    );
     _restoreBubbleState(_bubbleIdForSelection(activeSelection));
     _syncSelectionState();
   }
@@ -1560,7 +1571,11 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     final nextIndex = activeIndex < 0
         ? 0
         : (activeIndex + delta + candidates.length) % candidates.length;
-    controller.selectCandidate(sessionId: activeSessionId, index: nextIndex);
+    controller.selectCandidate(
+      sessionId: activeSessionId,
+      index: nextIndex,
+      targetDomain: _presentationLayer,
+    );
     _restoreBubbleState(_bubbleIdForSelection(activeSelection));
     _syncSelectionState();
   }
@@ -1577,8 +1592,9 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     final sessionId = ensureSession();
     controller.setOverlay(sessionId: sessionId, enabled: enabled);
     if (!enabled) {
+      _toolPresentationArmed = false;
       _editMode = LiveEditEditMode.inspect;
-      _activeLayerViewState.editMode = _editMode;
+      _presentedLayerViewState.editMode = _editMode;
       _panelDisplayMode = LiveEditPanelDisplayMode.rail;
       _aiComposer = '';
       _resetApplyState(clearError: false);
@@ -1722,7 +1738,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     }
 
     _activePropertyId = property.id;
-    _activeLayerViewState.activePropertyId = property.id;
+    _presentedLayerViewState.activePropertyId = property.id;
     _lastError = null;
     _applyPhase = LiveEditApplyPhase.idle;
     _pendingExecutionPlan = null;
@@ -1735,7 +1751,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
                 LiveEditEditSurface.aiBubble
         ? LiveEditEditMode.ai
         : LiveEditEditMode.edit;
-    _activeLayerViewState.editMode = _editMode;
+    _presentedLayerViewState.editMode = _editMode;
     final bubbleId = _bubbleIdForSelection(selection);
     if (_hasText(bubbleId)) {
       _resolvedBubbleIds.remove(bubbleId);
@@ -2009,7 +2025,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       ...selection.selectedNodeIds,
       ...activeMultiSelection.map((final item) => item.nodeId),
     };
-    return controller.activeDraftChanges
+    return draftsByDomain(_presentationLayer)
         .where((final draft) => nodeIds.contains(draft.nodeId))
         .toList(growable: false);
   }
@@ -2774,7 +2790,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
               selectedWidgets: _activeSelectedWidgets(),
             )
           : null;
-      _activeLayerViewState.activeBubbleId = currentBubbleId;
+      _presentedLayerViewState.activeBubbleId = currentBubbleId;
       _pendingExecutionPlan = bubble?.executionPlan;
       _pendingProposalId = bubble?.executionPlan?.proposalId;
       _applyPhase = bubble?.status == LiveEditBubbleStatus.waiting
@@ -2788,12 +2804,11 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       _aiComposer = bubble?.instructionText ?? '';
       _editMode = selection == null
           ? LiveEditEditMode.inspect
-          : (_layerViewStateFor(targetDomain).editMode == LiveEditEditMode.ai
+          : (_presentedLayerViewState.editMode == LiveEditEditMode.ai
                 ? LiveEditEditMode.ai
                 : LiveEditEditMode.edit);
       _activePropertyId =
-          _layerViewStateFor(targetDomain).activePropertyId ??
-          activeProperty?.id;
+          _presentedLayerViewState.activePropertyId ?? activeProperty?.id;
       if (_hasText(currentBubbleId) && selection != null) {
         _captureBubbleState(
           selection: selection,
@@ -2806,7 +2821,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       if (selection != null &&
           activeProperty?.requiresAgentForPersistence == true) {
         _editMode = LiveEditEditMode.ai;
-        _layerViewStateFor(targetDomain).editMode = _editMode;
+        _presentedLayerViewState.editMode = _editMode;
         if (!_hasText(_aiComposer)) {
           _aiComposer = _defaultAiPrompt();
           updateAiComposer(_aiComposer);
@@ -2819,7 +2834,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     if (active == null && selection != null) {
       final properties = effectiveProperties;
       _activePropertyId = properties.isEmpty ? null : properties.first.id;
-      _layerViewStateFor(targetDomain).activePropertyId = _activePropertyId;
+      _presentedLayerViewState.activePropertyId = _activePropertyId;
     }
   }
 
@@ -2834,11 +2849,14 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     _finalizeCurrentBubbleOnBlur(nextNodeId: resolvedBubbleId);
     final bubble = _bubbleRecordFor(resolvedBubbleId);
     final trackedNodeId = bubble?.primarySelection?.nodeId ?? nodeId;
+    final bubbleDomain = bubble?.targetDomain ?? targetDomain;
+    _toolPresentationArmed = bubbleDomain == LiveEditTargetDomain.toolScene;
     controller.selectTrackedNode(
       sessionId: activeSessionId,
       nodeId: trackedNodeId,
+      targetDomain: bubbleDomain,
     );
-    _activeLayerViewState.activeBubbleId = resolvedBubbleId;
+    _layerViewStateFor(bubbleDomain).activeBubbleId = resolvedBubbleId;
     _restoreBubbleState(resolvedBubbleId);
     _syncSelectionState();
   }

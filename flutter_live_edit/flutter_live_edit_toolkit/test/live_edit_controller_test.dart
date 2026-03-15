@@ -598,7 +598,7 @@ void main() {
   });
 
   testWidgets(
-    'domain-scoped bubbles preserve per-layer prompt backend and minimized state',
+    'domain-scoped bubbles preserve runtime state without auto-restoring tool presentation on toggle',
     (final tester) async {
       final orchestrator = LiveEditOrchestrator(
         availableBackends: _testBackends(),
@@ -670,6 +670,21 @@ void main() {
       orchestrator.setTargetDomain(LiveEditTargetDomain.toolScene);
       await tester.pumpAndSettle();
 
+      expect(
+        orchestrator.activeSelection?.targetDomain,
+        LiveEditTargetDomain.appScene,
+      );
+      expect(orchestrator.activeBubbleId, appBubbleId);
+      expect(orchestrator.aiComposer, 'App prompt');
+      expect(orchestrator.currentBackendId, 'cursor_agent');
+
+      orchestrator.selectNode(tester.getCenter(find.byKey(panelKey)));
+      await tester.pumpAndSettle();
+
+      expect(
+        orchestrator.activeSelection?.targetDomain,
+        LiveEditTargetDomain.toolScene,
+      );
       expect(orchestrator.activeBubbleId, toolBubbleId);
       expect(orchestrator.aiComposer, 'Tool prompt');
       expect(orchestrator.currentBackendId, 'codex_exec');
