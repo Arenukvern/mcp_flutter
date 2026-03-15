@@ -161,6 +161,7 @@ class FlutterLiveEditAutoHost extends StatelessWidget {
     this.config,
     this.orchestrator,
     this.applyDraftDelegate,
+    this.buildPropertyPanelSection,
     final LiveEditAgentService? agentService,
   }) : _agentService = agentService ?? LiveEditAgentService();
 
@@ -168,6 +169,7 @@ class FlutterLiveEditAutoHost extends StatelessWidget {
   final FlutterLiveEditAutoConfig? config;
   final LiveEditOrchestrator? orchestrator;
   final LiveEditApplyDraftDelegate? applyDraftDelegate;
+  final LiveEditPropertyPanelSectionBuilder? buildPropertyPanelSection;
   final LiveEditAgentService _agentService;
 
   @override
@@ -198,6 +200,7 @@ class FlutterLiveEditAutoHost extends StatelessWidget {
       intentText: resolvedOrchestrator == null
           ? resolvedConfig.hostIntentText
           : null,
+      buildPropertyPanelSection: buildPropertyPanelSection,
       child: child,
     );
   }

@@ -84,13 +84,6 @@ packages:
       relative: true
     source: path
     version: "0.1.0"
-  flutter_live_edit_property_edit:
-    dependency: "direct dev"
-    description:
-      path: "../flutter_live_edit_property_edit"
-      relative: true
-    source: path
-    version: "0.1.0"
   flutter_test:
     dependency: "direct dev"
     description: flutter

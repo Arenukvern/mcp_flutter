@@ -22,8 +22,6 @@ dependencies:
     path: ../../../../xs/dart_flutter_packages/pkgs/xsoulspace_inference_core
 
 dev_dependencies:
-  flutter_live_edit_property_edit:
-    path: ../flutter_live_edit_property_edit
   flutter_test:
     sdk: flutter
   lints: ^6.1.0

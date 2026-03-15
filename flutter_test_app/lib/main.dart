@@ -3,6 +3,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_live_edit_property_edit/flutter_live_edit_property_edit.dart';
 import 'package:flutter_live_edit_toolkit/flutter_live_edit_toolkit.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 import 'package:provider/provider.dart';
@@ -193,6 +194,7 @@ class MyApp extends StatelessWidget {
         create: (final context) => CustomNotifier(),
         child: FlutterLiveEditAutoHost(
           config: _liveEditConfig,
+          buildPropertyPanelSection: LiveEditPropertyEditPlugin.install(),
           child: const MCPDemoHomePage(),
         ),
       ),
