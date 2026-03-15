@@ -14,7 +14,10 @@ dist/
 .idea/
 *.swp
 *.swo
-
+.mcp_screenshots
+.maestro
+.flutter_mcp
+mcp_server_dart/.mcp_screenshots
 # OS
 .DS_Store
 Thumbs.db

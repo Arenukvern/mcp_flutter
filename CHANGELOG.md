@@ -75,6 +75,10 @@ Strict hard-cut release across the monorepo.
   - explicit requested session attach remains strict; implicit stale active-session attach falls back to auto target resolution
   - `connect` and `session_start` reject mixed native selector args with nested `connection`
 
+## 2.6.1
+
+- old devtools extension removed
+
 ## 2.6.0
 
 BREAKING CHANGES:
