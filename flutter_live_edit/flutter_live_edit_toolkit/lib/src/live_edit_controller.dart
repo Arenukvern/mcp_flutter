@@ -480,7 +480,7 @@ bool _containsPoint(final LiveEditBounds bounds, final ui.Offset point) =>
     point.dy >= bounds.top &&
     point.dy <= bounds.bottom;
 
-const double _hoverReuseDistance = 8.0;
+const double _hoverReuseDistance = 8;
 
 Rect _rectFromBounds(final LiveEditBounds bounds) =>
     Rect.fromLTRB(bounds.left, bounds.top, bounds.right, bounds.bottom);
@@ -521,7 +521,7 @@ bool _isVisibleCandidate(final Element element) {
   return true;
 }
 
-const double _edgeHitMargin = 2.0;
+const double _edgeHitMargin = 2;
 
 const Set<String> _structuralWidgetTypes = <String>{
   'Align',
@@ -616,21 +616,19 @@ String? _normalizeSourceFilePath(final String? rawPath) {
 }
 
 bool _containsPathSegment(final String path, final String segment) {
-  final normalizedPath = path.replaceAll('\\', '/').toLowerCase();
+  final normalizedPath = path.replaceAll(r'\', '/').toLowerCase();
   final normalizedSegment = segment.toLowerCase();
   return normalizedPath.contains(normalizedSegment);
 }
 
-bool _isFrameworkOwnedPath(final String path) {
-  return _containsPathSegment(path, '/packages/flutter/') ||
-      _containsPathSegment(path, '/bin/cache/pkg/sky_engine/') ||
-      _containsPathSegment(path, '/flutter/packages/flutter/');
-}
+bool _isFrameworkOwnedPath(final String path) =>
+    _containsPathSegment(path, '/packages/flutter/') ||
+    _containsPathSegment(path, '/bin/cache/pkg/sky_engine/') ||
+    _containsPathSegment(path, '/flutter/packages/flutter/');
 
-bool _isThirdPartyPackagePath(final String path) {
-  return _containsPathSegment(path, '/.pub-cache/') ||
-      _containsPathSegment(path, '/pub.dev/');
-}
+bool _isThirdPartyPackagePath(final String path) =>
+    _containsPathSegment(path, '/.pub-cache/') ||
+    _containsPathSegment(path, '/pub.dev/');
 
 bool _looksProjectOwnedPath(final String? path) {
   if (!_hasText(path)) {
@@ -962,11 +960,11 @@ bool _isUserAuthoredElement(
 }
 
 bool _nativeHitTestHelper(
-  List<RenderObject> hits,
-  List<RenderObject> edgeHits,
-  ui.Offset position,
-  RenderObject object,
-  Matrix4 transform,
+  final List<RenderObject> hits,
+  final List<RenderObject> edgeHits,
+  final ui.Offset position,
+  final RenderObject object,
+  final Matrix4 transform,
 ) {
   var hit = false;
   final inverse = Matrix4.tryInvert(transform);
@@ -1238,7 +1236,6 @@ LiveEditSelection _buildHoverSelection({
     propertyGroups:
         tracked?.propertyGroups ?? const <LiveEditPropertyDescriptor>[],
     rawNode: rawNode,
-    selectionMode: LiveEditSelectionMode.single,
   );
 }
 
@@ -1284,7 +1281,6 @@ LiveEditSelection _buildLightweightSelection({
         ),
     propertyGroups: propertyGroups,
     rawNode: tracked?.rawNode ?? const <String, Object?>{},
-    selectionMode: LiveEditSelectionMode.single,
   );
 }
 
@@ -1313,7 +1309,6 @@ LiveEditSelection _buildLightweightSelectionFromCache({
     source: tracked?.source,
     propertyGroups: propertyGroups,
     rawNode: tracked?.rawNode ?? const <String, Object?>{},
-    selectionMode: LiveEditSelectionMode.single,
   );
 }
 
@@ -2313,9 +2308,8 @@ final class LiveEditController extends ChangeNotifier {
     };
   }
 
-  List<_ElementHit> _rankSelectionHits(final List<_ElementHit> hits) {
-    return List<_ElementHit>.from(hits);
-  }
+  List<_ElementHit> _rankSelectionHits(final List<_ElementHit> hits) =>
+      List<_ElementHit>.from(hits);
 
   _MarqueeCandidateCacheEntry? _resolveMarqueeCandidate(
     final _LiveEditSessionState session,
@@ -2391,24 +2385,22 @@ final class LiveEditController extends ChangeNotifier {
     final _LiveEditSessionState session,
     final List<_ElementHit> hits, {
     final bool includePropertyGroups = false,
-  }) {
-    return hits
-        .map((final hit) => _resolveMarqueeCandidate(session, hit))
-        .whereType<_MarqueeCandidateCacheEntry>()
-        .map(
-          (final entry) => _buildLightweightSelectionFromCache(
-            session: session,
-            entry: entry,
-            includePropertyGroups: includePropertyGroups,
-          ),
-        )
-        .fold(<String, LiveEditSelection>{}, (final map, final selection) {
-          map.putIfAbsent(selection.nodeId, () => selection);
-          return map;
-        })
-        .values
-        .toList(growable: false);
-  }
+  }) => hits
+      .map((final hit) => _resolveMarqueeCandidate(session, hit))
+      .whereType<_MarqueeCandidateCacheEntry>()
+      .map(
+        (final entry) => _buildLightweightSelectionFromCache(
+          session: session,
+          entry: entry,
+          includePropertyGroups: includePropertyGroups,
+        ),
+      )
+      .fold(<String, LiveEditSelection>{}, (final map, final selection) {
+        map.putIfAbsent(selection.nodeId, () => selection);
+        return map;
+      })
+      .values
+      .toList(growable: false);
 
   List<_ElementHit> _sortMarqueeHits(
     final _LiveEditSessionState session,
@@ -3106,9 +3098,8 @@ final class LiveEditController extends ChangeNotifier {
             depth: index,
             source: source,
             createdByLocalProject:
-                targetDomain == LiveEditTargetDomain.toolScene
-                ? true
-                : metadata.createdByLocalProject,
+                targetDomain == LiveEditTargetDomain.toolScene ||
+                metadata.createdByLocalProject,
             active: identical(hit.element, activeElement),
           );
         })
