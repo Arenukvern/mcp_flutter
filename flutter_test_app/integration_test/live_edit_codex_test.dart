@@ -908,7 +908,7 @@ Future<void> _selectToolAiBubble(
   await tester.pumpAndSettle();
   expect(_aiBubbleKey(), findsOneWidget);
 
-  await tester.tap(find.widgetWithText(ChoiceChip, 'Edit Tools'));
+  await tester.tap(find.widgetWithText(ChoiceChip, 'Tools'));
   await tester.pumpAndSettle();
 
   expect(orchestrator.targetDomain, LiveEditTargetDomain.toolScene);

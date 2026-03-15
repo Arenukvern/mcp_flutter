@@ -503,7 +503,7 @@ void main() {
       );
       expect(find.text('Tap a widget'), findsNothing);
 
-      await tester.tap(find.widgetWithText(ChoiceChip, 'Edit Tools'));
+      await tester.tap(find.widgetWithText(ChoiceChip, 'Tools'));
       await tester.pumpAndSettle();
 
       expect(orchestrator.targetDomain, LiveEditTargetDomain.toolScene);
@@ -550,7 +550,7 @@ void main() {
       orchestrator.openAiBubble();
       await tester.pumpAndSettle();
 
-      await tester.tap(find.widgetWithText(ChoiceChip, 'Edit Tools'));
+      await tester.tap(find.widgetWithText(ChoiceChip, 'Tools'));
       await tester.pumpAndSettle();
 
       orchestrator.selectTrackedBubble(kLiveEditAiBubbleSurfaceId);
