@@ -494,6 +494,58 @@ void main() {
     },
   );
 
+  testWidgets(
+    'tool scene hit on bubble surface is excluded and does not select bubble',
+    (final tester) async {
+      final orchestrator = LiveEditOrchestrator(
+        availableBackends: _testBackends(),
+        backendId: 'codex_exec',
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          home: FlutterLiveEditHost(
+            orchestrator: orchestrator,
+            child: const Scaffold(body: Center(child: Text('Target'))),
+          ),
+        ),
+      );
+
+      await tester.tap(find.byType(ActionChip));
+      await tester.pumpAndSettle();
+      await tester.tapAt(tester.getCenter(find.text('Target')));
+      await tester.pumpAndSettle();
+      orchestrator.openAiBubble();
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(ChoiceChip, 'Tools'));
+      await tester.pumpAndSettle();
+
+      orchestrator.selectTrackedBubble(kLiveEditAiBubbleSurfaceId);
+      await tester.pumpAndSettle();
+      final toolSelection = orchestrator.selectionByDomain(
+        LiveEditTargetDomain.toolScene,
+      );
+      expect(toolSelection?.nodeId, kLiveEditAiBubbleSurfaceId);
+      final bounds = toolSelection?.bounds;
+      expect(bounds, isNotNull);
+
+      final expandedCountBefore = orchestrator.expandedBubbleSummaries.length;
+
+      final bubbleCenter = Offset(
+        bounds!.left + bounds.width / 2,
+        bounds.top + bounds.height / 2,
+      );
+      await tester.tapAt(bubbleCenter);
+      await tester.pumpAndSettle();
+
+      expect(
+        orchestrator.expandedBubbleSummaries.length,
+        expandedCountBefore,
+        reason: 'Tapping bubble in tool scene must not open a new bubble',
+      );
+    },
+  );
+
   testWidgets('tool scene overlay keeps app selection highlighted underneath', (
     final tester,
   ) async {

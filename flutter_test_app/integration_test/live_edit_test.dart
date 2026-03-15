@@ -8,32 +8,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:test_app/main.dart' as app;
 
-Finder _semanticsId(final String id) => find.byWidgetPredicate(
-  (final widget) => widget is Semantics && widget.properties.identifier == id,
-  description: 'Semantics identifier $id',
-);
-
-Finder _panelScrollable() => find
-    .descendant(
-      of: _semanticsId('live_edit_panel'),
-      matching: find.byType(Scrollable),
-    )
-    .first;
-
-Future<void> _pumpUntil(
-  final WidgetTester tester,
-  final bool Function() condition, {
-  final Duration timeout = const Duration(seconds: 10),
-}) async {
-  final end = DateTime.now().add(timeout);
-  while (!condition()) {
-    if (DateTime.now().isAfter(end)) {
-      fail('Timed out waiting for condition after $timeout');
-    }
-    await tester.pump(const Duration(milliseconds: 100));
-  }
-}
-
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -466,3 +440,29 @@ void main() {
     },
   );
 }
+
+Finder _panelScrollable() => find
+    .descendant(
+      of: _semanticsId('live_edit_panel'),
+      matching: find.byType(Scrollable),
+    )
+    .first;
+
+Future<void> _pumpUntil(
+  final WidgetTester tester,
+  final bool Function() condition, {
+  final Duration timeout = const Duration(seconds: 10),
+}) async {
+  final end = DateTime.now().add(timeout);
+  while (!condition()) {
+    if (DateTime.now().isAfter(end)) {
+      fail('Timed out waiting for condition after $timeout');
+    }
+    await tester.pump(const Duration(milliseconds: 100));
+  }
+}
+
+Finder _semanticsId(final String id) => find.byWidgetPredicate(
+  (final widget) => widget is Semantics && widget.properties.identifier == id,
+  description: 'Semantics identifier $id',
+);
