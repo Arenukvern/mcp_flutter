@@ -403,11 +403,11 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   LiveEditPanelDisplayMode _panelDisplayMode = LiveEditPanelDisplayMode.rail;
   final Map<LiveEditBubbleId, LiveEditBubbleRecord> _bubbleRecordsById =
       <LiveEditBubbleId, LiveEditBubbleRecord>{};
-  final Map<LiveEditTargetDomain, LiveEditLayerViewState> _layerViewStateByDomain =
-      <LiveEditTargetDomain, LiveEditLayerViewState>{
-        LiveEditTargetDomain.appScene: LiveEditLayerViewState(),
-        LiveEditTargetDomain.toolScene: LiveEditLayerViewState(),
-      };
+  final Map<LiveEditTargetDomain, LiveEditLayerViewState>
+  _layerViewStateByDomain = <LiveEditTargetDomain, LiveEditLayerViewState>{
+    LiveEditTargetDomain.appScene: LiveEditLayerViewState(),
+    LiveEditTargetDomain.toolScene: LiveEditLayerViewState(),
+  };
   String? _pendingBubbleId;
   String? _pendingPropertyId;
   double _bubbleWidth = 300;
@@ -423,15 +423,28 @@ final class LiveEditOrchestrator extends ChangeNotifier {
 
   List<LiveEditDraftChange> get activeDraftChanges =>
       _activeBubbleState?.draftChanges ?? _draftChangesForActiveSelection();
-  LiveEditSelection? get activeSelection => controller.activeSelection;
+  LiveEditSelection? get activeSelection =>
+      selectionByDomain(_presentationLayer);
   LiveEditSelection? get hoverSelection => controller.hoverSelection;
   List<LiveEditSelection> get activeMultiSelection =>
-      controller.activeMultiSelection;
-  Rect? get marqueeRect => controller.activeMarqueeRect;
+      controller.multiSelectionForDomain(
+        targetDomain: _presentationLayer,
+        sessionId: activeSessionId,
+      );
+  Rect? get marqueeRect => controller.marqueeRectForDomain(
+    targetDomain: _presentationLayer,
+    sessionId: activeSessionId,
+  );
   List<LiveEditSelection> get marqueePreviewSelections =>
-      controller.activeMarqueeSelections;
+      controller.marqueeSelectionsForDomain(
+        targetDomain: _presentationLayer,
+        sessionId: activeSessionId,
+      );
   List<LiveEditSelectionCandidate> get activeSelectionCandidates =>
-      controller.activeSelectionCandidates;
+      controller.selectionCandidatesForDomain(
+        targetDomain: _presentationLayer,
+        sessionId: activeSessionId,
+      );
   String? get activeSessionId => controller.activeSessionId;
   LiveEditApplyPhase get applyPhase => _applyPhase;
   bool get hasDraftChanges => activeDraftChanges.isNotEmpty;
@@ -442,7 +455,8 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   bool get overlayVisible => controller.overlayVisible;
   LiveEditExecutionPlan? get pendingExecutionPlan =>
       _activeBubbleState?.executionPlan ?? _pendingExecutionPlan;
-  LiveEditEditMode get editMode => _editMode;
+  LiveEditEditMode get editMode =>
+      _layerViewStateFor(_presentationLayer).editMode;
   LiveEditPanelDisplayMode get panelDisplayMode => _panelDisplayMode;
   double get bubbleWidth => _bubbleWidth;
   double get bubbleHeight => _bubbleHeight;
@@ -454,7 +468,9 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       panelExpanded ? _panelExpandedHeight : _panelRailHeight;
   Offset get panelDragOffset => _panelDragOffset;
   bool get debugModeEnabled => _debugModeEnabled;
-  String? get activePropertyId => _activePropertyId;
+  String? get activePropertyId =>
+      _layerViewStateFor(_presentationLayer).activePropertyId ??
+      _activePropertyId;
   String get aiComposer => _activeBubbleState?.instructionText ?? _aiComposer;
   String? get currentBackendId =>
       backendIdForBubble(activeBubbleId) ?? _backendId;
@@ -507,8 +523,21 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       ? LiveEditTargetDomain.toolScene
       : LiveEditTargetDomain.appScene;
   LiveEditTargetDomain get activeLayer => targetDomain;
+  LiveEditTargetDomain get _presentationLayer {
+    final activeState = _layerViewStateFor(targetDomain);
+    final hasVisibleState =
+        selectionByDomain(targetDomain) != null ||
+        _hasText(activeState.activeBubbleId) ||
+        draftsByDomain(targetDomain).isNotEmpty ||
+        _hasText(activeState.activePropertyId);
+    if (editingToolScene && !hasVisibleState) {
+      return inactiveLayer;
+    }
+    return targetDomain;
+  }
+
   LiveEditBubbleId? get activeBubbleId =>
-      _activeLayerViewState.activeBubbleId ??
+      _layerViewStateFor(_presentationLayer).activeBubbleId ??
       _bubbleIdForSelection(activeSelection);
   LiveEditBubbleRecord? get _activeBubbleState =>
       _bubbleRecordFor(activeBubbleId);
@@ -531,6 +560,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     }
     return normalized;
   }
+
   LiveEditSelection? selectionByDomain(final LiveEditTargetDomain domain) =>
       controller.selectionForDomain(
         targetDomain: domain,
@@ -805,9 +835,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
 
   List<LiveEditBubbleSummary> get bubbleSummaries {
     final domains = <LiveEditTargetDomain>[targetDomain, inactiveLayer];
-    return domains
-        .expand(bubbleSummariesByDomain)
-        .toList(growable: false);
+    return domains.expand(bubbleSummariesByDomain).toList(growable: false);
   }
 
   bool get hasAgentBackedDrafts {
@@ -1098,7 +1126,8 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     }
     final bubble = _ensureBubbleState(
       bubbleId,
-      selection: _bubbleRecordFor(bubbleId)?.primarySelection ?? activeSelection,
+      selection:
+          _bubbleRecordFor(bubbleId)?.primarySelection ?? activeSelection,
       selectedWidgets: _bubbleRecordFor(bubbleId)?.selectedWidgets,
     );
     _bubbleRecordsById[bubbleId] = bubble.copyWith(
@@ -1140,7 +1169,8 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     );
     final bubble = _ensureBubbleState(
       bubbleId,
-      selection: _bubbleRecordFor(bubbleId)?.primarySelection ?? activeSelection,
+      selection:
+          _bubbleRecordFor(bubbleId)?.primarySelection ?? activeSelection,
       selectedWidgets: _bubbleRecordFor(bubbleId)?.selectedWidgets,
     );
     _bubbleRecordsById[bubbleId] = bubble.copyWith(
@@ -2000,10 +2030,9 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     }
     if (selection.selectionMode == LiveEditSelectionMode.multi &&
         selection.selectedNodeIds.length > 1) {
-      final ordered = selection.selectedNodeIds
-          .where(_hasText)
-          .toList(growable: false)
-        ..sort();
+      final ordered =
+          selection.selectedNodeIds.where(_hasText).toList(growable: false)
+            ..sort();
       if (ordered.isNotEmpty) {
         return 'area:${ordered.join('|')}';
       }
@@ -2024,12 +2053,12 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     final bubbleDomain = selection?.targetDomain ?? targetDomain;
     final targetKey = _targetKeyForSelection(selection) ?? bubbleId;
     return LiveEditBubbleRecord(
-          bubbleId: bubbleId,
-          targetDomain: bubbleDomain,
-          targetKey: targetKey,
-          primarySelection: selection,
-          selectedWidgets: selectedWidgets ?? const <LiveEditSelection>[],
-        );
+      bubbleId: bubbleId,
+      targetDomain: bubbleDomain,
+      targetKey: targetKey,
+      primarySelection: selection,
+      selectedWidgets: selectedWidgets ?? const <LiveEditSelection>[],
+    );
   }
 
   void _captureBubbleState({
@@ -2054,9 +2083,9 @@ final class LiveEditOrchestrator extends ChangeNotifier {
           selectedWidgets: selectedWidgets,
           draftChanges: _draftChangesForActiveSelection(),
           instructionText: instructionText ?? aiComposer,
-          status:
-              status ?? (current?.status ?? LiveEditBubbleStatus.editing),
-          displayState: current?.displayState ?? LiveEditBubbleDisplayState.expanded,
+          status: status ?? (current?.status ?? LiveEditBubbleStatus.editing),
+          displayState:
+              current?.displayState ?? LiveEditBubbleDisplayState.expanded,
           changedFiles: current?.changedFiles ?? const <String>[],
           backendId: backendIdForBubble(bubbleId),
           inferenceConfig: inferenceConfigForBubble(bubbleId),
@@ -2299,7 +2328,8 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     }
     final bubble = _ensureBubbleState(
       bubbleId!,
-      selection: _bubbleRecordFor(bubbleId)?.primarySelection ?? activeSelection,
+      selection:
+          _bubbleRecordFor(bubbleId)?.primarySelection ?? activeSelection,
       selectedWidgets: _bubbleRecordFor(bubbleId)?.selectedWidgets,
     );
     _bubbleRecordsById[bubbleId] = bubble.copyWith(
@@ -2308,7 +2338,9 @@ final class LiveEditOrchestrator extends ChangeNotifier {
         LiveEditTimelineEntry(
           role: role,
           message: message.trim(),
-          details: details.where((final item) => item.trim().isNotEmpty).toList(),
+          details: details
+              .where((final item) => item.trim().isNotEmpty)
+              .toList(),
           timestamp: DateTime.now().toUtc(),
           nodeId: bubbleId,
         ),
@@ -2331,7 +2363,8 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     }
     final bubble = _ensureBubbleState(
       bubbleId!,
-      selection: _bubbleRecordFor(bubbleId)?.primarySelection ?? activeSelection,
+      selection:
+          _bubbleRecordFor(bubbleId)?.primarySelection ?? activeSelection,
       selectedWidgets: _bubbleRecordFor(bubbleId)?.selectedWidgets,
     );
     _bubbleRecordsById[bubbleId] = bubble.copyWith(
@@ -2341,7 +2374,9 @@ final class LiveEditOrchestrator extends ChangeNotifier {
           step: step,
           label: label.trim(),
           summary: summary.trim(),
-          details: details.where((final item) => item.trim().isNotEmpty).toList(),
+          details: details
+              .where((final item) => item.trim().isNotEmpty)
+              .toList(),
           timestamp: DateTime.now().toUtc(),
           nodeId: bubbleId,
           inProgress: inProgress,
@@ -2362,7 +2397,8 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     }
     final bubble = _ensureBubbleState(
       bubbleId!,
-      selection: _bubbleRecordFor(bubbleId)?.primarySelection ?? activeSelection,
+      selection:
+          _bubbleRecordFor(bubbleId)?.primarySelection ?? activeSelection,
       selectedWidgets: _bubbleRecordFor(bubbleId)?.selectedWidgets,
     );
     _bubbleRecordsById[bubbleId] = bubble.copyWith(
@@ -2371,7 +2407,9 @@ final class LiveEditOrchestrator extends ChangeNotifier {
         LiveEditTimelineEntry(
           role: 'debug',
           message: message.trim(),
-          details: details.where((final item) => item.trim().isNotEmpty).toList(),
+          details: details
+              .where((final item) => item.trim().isNotEmpty)
+              .toList(),
           timestamp: DateTime.now().toUtc(),
           nodeId: bubbleId,
         ),
@@ -2489,9 +2527,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     final String? nodeId,
   }) {
     final resolvedBubbleId =
-        nodeId ??
-        _bubbleIdForSelection(selection) ??
-        activeBubbleId;
+        nodeId ?? _bubbleIdForSelection(selection) ?? activeBubbleId;
     return _bubbleRecordFor(resolvedBubbleId)?.debugPromptText;
   }
 
@@ -2529,7 +2565,8 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       final bubble = _ensureBubbleState(
         resolvedBubbleId!,
         selection:
-            _bubbleRecordFor(resolvedBubbleId)?.primarySelection ?? activeSelection,
+            _bubbleRecordFor(resolvedBubbleId)?.primarySelection ??
+            activeSelection,
         selectedWidgets: _bubbleRecordFor(resolvedBubbleId)?.selectedWidgets,
       );
       _bubbleRecordsById[resolvedBubbleId] = bubble.copyWith(
@@ -2570,14 +2607,17 @@ final class LiveEditOrchestrator extends ChangeNotifier {
 
   void _finalizeCurrentBubbleOnBlur({final String? nextNodeId}) {
     final bubbleId = activeBubbleId;
-    if (!_hasText(bubbleId) || bubbleId == nextNodeId || activeSelection == null) {
+    if (!_hasText(bubbleId) ||
+        bubbleId == nextNodeId ||
+        activeSelection == null) {
       return;
     }
     _captureBubbleState(
       selection: activeSelection!,
       selectedWidgets: _activeSelectedWidgets(),
       instructionText: aiComposer,
-      status: _bubbleRecordFor(bubbleId!)?.status ?? LiveEditBubbleStatus.editing,
+      status:
+          _bubbleRecordFor(bubbleId!)?.status ?? LiveEditBubbleStatus.editing,
       lastError: _lastError,
     );
     if (_shouldKeepBubblePinned(bubbleId)) {
@@ -2683,10 +2723,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       .join('\n');
 
   void _setError(final String error) {
-    _setErrorForBubble(
-      activeBubbleId ?? _pendingBubbleId,
-      error,
-    );
+    _setErrorForBubble(activeBubbleId ?? _pendingBubbleId, error);
   }
 
   void _setErrorForBubble(final String? bubbleId, final String error) {
@@ -2752,10 +2789,11 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       _editMode = selection == null
           ? LiveEditEditMode.inspect
           : (_layerViewStateFor(targetDomain).editMode == LiveEditEditMode.ai
-              ? LiveEditEditMode.ai
-              : LiveEditEditMode.edit);
+                ? LiveEditEditMode.ai
+                : LiveEditEditMode.edit);
       _activePropertyId =
-          _layerViewStateFor(targetDomain).activePropertyId ?? activeProperty?.id;
+          _layerViewStateFor(targetDomain).activePropertyId ??
+          activeProperty?.id;
       if (_hasText(currentBubbleId) && selection != null) {
         _captureBubbleState(
           selection: selection,
