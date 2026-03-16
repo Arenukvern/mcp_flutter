@@ -31,12 +31,18 @@ Object? _coerceValueForProperty(
 
 String _persistLabel(
   final LiveEditPropertyDescriptor property,
-  final LiveEditOrchestrator orchestrator,
-) => property.requiresAgentForPersistence
-    ? orchestrator.currentBackendLabel
-    : property.persistable
-    ? 'Direct'
-    : 'Preview only';
+  final LiveEditContext ctx,
+  final LiveEditController controller,
+) =>
+    property.requiresAgentForPersistence
+        ? selectCurrentBackendLabel(
+            ctx,
+            controller,
+            presentationDomain: selectPresentedLayer(ctx),
+          )
+        : property.persistable
+            ? 'Direct'
+            : 'Preview only';
 
 Color _previewColor(final LiveEditPropertyDescriptor property) {
   if (property.requiresAgentForPersistence) return const Color(0xFF7C2D12);
@@ -109,12 +115,14 @@ class _PropertyBadge extends StatelessWidget {
 
 class _PropertyActionColumn extends StatelessWidget {
   const _PropertyActionColumn({
-    required this.orchestrator,
+    required this.ctx,
+    required this.controller,
     required this.property,
     required this.surface,
   });
 
-  final LiveEditOrchestrator orchestrator;
+  final LiveEditContext ctx;
+  final LiveEditController controller;
   final LiveEditPropertyDescriptor property;
   final LiveEditEditSurface surface;
 
@@ -128,9 +136,15 @@ class _PropertyActionColumn extends StatelessWidget {
           iconSize: 16,
           onPressed: () {
             if (property.requiresAgentForPersistence) {
-              orchestrator.openAiBubble(property: property);
+              OpenAiBubbleCommand(
+                property: property,
+                defaultPrompt: '',
+              ).execute(ctx);
             } else {
-              orchestrator.focusProperty(property);
+              FocusPropertyCommand(
+                property: property,
+                defaultPrompt: '',
+              ).execute(ctx);
             }
           },
           icon: Icon(
@@ -146,18 +160,26 @@ class _PropertyActionColumn extends StatelessWidget {
 
 class _PropertyEditor extends StatelessWidget {
   const _PropertyEditor({
-    required this.orchestrator,
+    required this.ctx,
+    required this.controller,
     required this.property,
     required this.surface,
   });
 
-  final LiveEditOrchestrator orchestrator;
+  final LiveEditContext ctx;
+  final LiveEditController controller;
   final LiveEditPropertyDescriptor property;
   final LiveEditEditSurface surface;
 
   @override
   Widget build(final BuildContext context) {
-    final waiting = orchestrator.isPropertyWaiting(property);
+    final presentationDomain = selectPresentedLayer(ctx);
+    final waiting = selectIsPropertyWaiting(
+      ctx,
+      controller,
+      property,
+      presentationDomain: presentationDomain,
+    );
     if (!property.editable) {
       return Text(
         '${property.value ?? 'Not editable'}',
@@ -177,14 +199,23 @@ class _PropertyEditor extends StatelessWidget {
               visualDensity: VisualDensity.compact,
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
             ),
-            onPressed: () => orchestrator.openAiBubble(property: property),
+            onPressed: () => OpenAiBubbleCommand(
+              property: property,
+              defaultPrompt: '',
+            ).execute(ctx),
             child: const Text('AI', style: TextStyle(fontSize: 11)),
           ),
         ],
       );
     }
+    final effectiveValue = selectEffectiveValueForProperty(
+      ctx,
+      controller,
+      property,
+      presentationDomain: presentationDomain,
+    );
     if (property.kind == LiveEditPropertyKind.boolean) {
-      final current = orchestrator.effectiveValueForProperty(property) == true;
+      final current = effectiveValue == true;
       return Align(
         alignment: Alignment.centerLeft,
         child: Switch(
@@ -192,11 +223,11 @@ class _PropertyEditor extends StatelessWidget {
           value: current,
           onChanged: waiting
               ? null
-              : (final value) => orchestrator.updateDraft(
-                  property: property,
-                  targetValue: value,
-                  surface: surface,
-                ),
+              : (final value) => UpdateDraftFromUiCommand(
+                    property: property,
+                    targetValue: value,
+                    surface: surface,
+                  ).execute(ctx),
         ),
       );
     }
@@ -212,15 +243,14 @@ class _PropertyEditor extends StatelessWidget {
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               labelStyle: const TextStyle(fontSize: 11),
               label: Text(option),
-              selected:
-                  option == '${orchestrator.effectiveValueForProperty(property)}',
+              selected: option == '$effectiveValue',
               onSelected: waiting
                   ? null
-                  : (_) => orchestrator.updateDraft(
-                      property: property,
-                      targetValue: option,
-                      surface: surface,
-                    ),
+                  : (_) => UpdateDraftFromUiCommand(
+                        property: property,
+                        targetValue: option,
+                        surface: surface,
+                      ).execute(ctx),
             ),
         ],
       );
@@ -228,7 +258,8 @@ class _PropertyEditor extends StatelessWidget {
     if (property.kind == LiveEditPropertyKind.integer ||
         property.kind == LiveEditPropertyKind.number) {
       return _NumericEditor(
-        orchestrator: orchestrator,
+        ctx: ctx,
+        controller: controller,
         property: property,
         surface: surface,
       );
@@ -237,7 +268,8 @@ class _PropertyEditor extends StatelessWidget {
       final multiline =
           property.prefersMultiline && surface == LiveEditEditSurface.panel;
       return _TextValueEditor(
-        orchestrator: orchestrator,
+        ctx: ctx,
+        controller: controller,
         property: property,
         surface: surface,
         multiline: multiline,
@@ -252,23 +284,32 @@ class _PropertyEditor extends StatelessWidget {
 
 class _PropertyEditorCard extends StatelessWidget {
   const _PropertyEditorCard({
-    required this.orchestrator,
+    required this.ctx,
+    required this.controller,
     required this.property,
     required this.surface,
   });
 
-  final LiveEditOrchestrator orchestrator;
+  final LiveEditContext ctx;
+  final LiveEditController controller;
   final LiveEditPropertyDescriptor property;
   final LiveEditEditSurface surface;
 
   @override
   Widget build(final BuildContext context) {
+    final presentationDomain = selectPresentedLayer(ctx);
+    final domain = ctx.sessionResource.value.targetDomain;
     final rowTheme = LiveEditOverlayThemeModel.instance.styleFor(
       kLiveEditPropertyEditorRowSurfaceId,
     );
-    final isActive = orchestrator.activePropertyId == property.id;
+    final isActive = selectActivePropertyId(ctx, domain: domain) == property.id;
     final disabled = !property.editable;
-    final effectiveValue = orchestrator.effectiveValueForProperty(property);
+    final effectiveValue = selectEffectiveValueForProperty(
+      ctx,
+      controller,
+      property,
+      presentationDomain: presentationDomain,
+    );
 
     final cardChild = Ink(
       padding: rowTheme.padding,
@@ -327,7 +368,7 @@ class _PropertyEditorCard extends StatelessWidget {
                           captureSurfaceKey: isActive,
                         ),
                         _PropertyBadge(
-                          label: _persistLabel(property, orchestrator),
+                          label: _persistLabel(property, ctx, controller),
                           textColor: property.requiresAgentForPersistence
                               ? const Color(0xFF7C2D12)
                               : const Color(0xFF1D4ED8),
@@ -335,18 +376,37 @@ class _PropertyEditorCard extends StatelessWidget {
                               ? const Color(0xFFFFEDD5)
                               : const Color(0xFFDBEAFE),
                         ),
-                        if (orchestrator.hasDraftForProperty(property))
+                        if (selectHasDraftForProperty(
+                          ctx,
+                          controller,
+                          property,
+                          presentationDomain: presentationDomain,
+                        ))
                           _PropertyBadge(
-                            label: orchestrator.isPropertyWaiting(property)
+                            label: selectIsPropertyWaiting(
+                              ctx,
+                              controller,
+                              property,
+                              presentationDomain: presentationDomain,
+                            )
                                 ? 'Waiting'
                                 : 'Dirty',
-                            textColor: orchestrator.isPropertyWaiting(property)
+                            textColor: selectIsPropertyWaiting(
+                              ctx,
+                              controller,
+                              property,
+                              presentationDomain: presentationDomain,
+                            )
                                 ? const Color(0xFF1D4ED8)
                                 : const Color(0xFF0F766E),
-                            backgroundColor:
-                                orchestrator.isPropertyWaiting(property)
-                                    ? const Color(0xFFDBEAFE)
-                                    : const Color(0xFFCCFBF1),
+                            backgroundColor: selectIsPropertyWaiting(
+                              ctx,
+                              controller,
+                              property,
+                              presentationDomain: presentationDomain,
+                            )
+                                ? const Color(0xFFDBEAFE)
+                                : const Color(0xFFCCFBF1),
                           ),
                       ],
                     ),
@@ -356,14 +416,16 @@ class _PropertyEditorCard extends StatelessWidget {
                         identifier:
                             'live_edit_property_input_${_semanticsId(property.id)}',
                         child: _PropertyEditor(
-                          orchestrator: orchestrator,
+                          ctx: ctx,
+                          controller: controller,
                           property: property,
                           surface: surface,
                         ),
                       )
                     else
                       _PropertyEditor(
-                        orchestrator: orchestrator,
+                        ctx: ctx,
+                        controller: controller,
                         property: property,
                         surface: surface,
                       ),
@@ -372,7 +434,8 @@ class _PropertyEditorCard extends StatelessWidget {
               ),
               SizedBox(width: rowTheme.gap),
               _PropertyActionColumn(
-                orchestrator: orchestrator,
+                ctx: ctx,
+                controller: controller,
                 property: property,
                 surface: surface,
               ),
@@ -388,9 +451,15 @@ class _PropertyEditorCard extends StatelessWidget {
           : () {
               if (surface == LiveEditEditSurface.aiBubble ||
                   property.requiresAgentForPersistence) {
-                orchestrator.openAiBubble(property: property);
+                OpenAiBubbleCommand(
+                  property: property,
+                  defaultPrompt: '',
+                ).execute(ctx);
               } else {
-                orchestrator.focusProperty(property);
+                FocusPropertyCommand(
+                  property: property,
+                  defaultPrompt: '',
+                ).execute(ctx);
               }
             },
       borderRadius: BorderRadius.circular(14),
@@ -415,12 +484,14 @@ class _PropertyEditorCard extends StatelessWidget {
 
 class _NumericEditor extends StatefulWidget {
   const _NumericEditor({
-    required this.orchestrator,
+    required this.ctx,
+    required this.controller,
     required this.property,
     required this.surface,
   });
 
-  final LiveEditOrchestrator orchestrator;
+  final LiveEditContext ctx;
+  final LiveEditController controller;
   final LiveEditPropertyDescriptor property;
   final LiveEditEditSurface surface;
 
@@ -445,32 +516,50 @@ class _NumericEditorState extends State<_NumericEditor> {
   }
 
   void _applyDelta(final double delta) {
-    final base =
-        _asDouble(widget.orchestrator.effectiveValueForProperty(widget.property));
+    final presentationDomain = selectPresentedLayer(widget.ctx);
+    final base = _asDouble(
+      selectEffectiveValueForProperty(
+        widget.ctx,
+        widget.controller,
+        widget.property,
+        presentationDomain: presentationDomain,
+      ),
+    );
     final next = base + delta;
     final targetValue = widget.property.kind == LiveEditPropertyKind.integer
         ? next.round()
         : next;
-    widget.orchestrator.updateDraft(
+    UpdateDraftFromUiCommand(
       property: widget.property,
       targetValue: targetValue,
       surface: widget.surface,
-    );
+    ).execute(widget.ctx);
   }
 
   void _submit(final String value) {
-    widget.orchestrator.updateDraft(
+    UpdateDraftFromUiCommand(
       property: widget.property,
       targetValue: _coerceValueForProperty(widget.property, value.trim()),
       surface: widget.surface,
-    );
+    ).execute(widget.ctx);
   }
 
   @override
   Widget build(final BuildContext context) {
+    final presentationDomain = selectPresentedLayer(widget.ctx);
     final text =
-        '${widget.orchestrator.effectiveValueForProperty(widget.property) ?? ''}';
-    final waiting = widget.orchestrator.isPropertyWaiting(widget.property);
+        '${selectEffectiveValueForProperty(
+          widget.ctx,
+          widget.controller,
+          widget.property,
+          presentationDomain: presentationDomain,
+        ) ?? ''}';
+    final waiting = selectIsPropertyWaiting(
+      widget.ctx,
+      widget.controller,
+      widget.property,
+      presentationDomain: presentationDomain,
+    );
     if (_controller.text != text) {
       _controller.value = TextEditingValue(
         text: text,
@@ -514,13 +603,15 @@ class _NumericEditorState extends State<_NumericEditor> {
 
 class _TextValueEditor extends StatefulWidget {
   const _TextValueEditor({
-    required this.orchestrator,
+    required this.ctx,
+    required this.controller,
     required this.property,
     required this.surface,
     required this.multiline,
   });
 
-  final LiveEditOrchestrator orchestrator;
+  final LiveEditContext ctx;
+  final LiveEditController controller;
   final LiveEditPropertyDescriptor property;
   final LiveEditEditSurface surface;
   final bool multiline;
@@ -546,18 +637,29 @@ class _TextValueEditorState extends State<_TextValueEditor> {
   }
 
   void _submit(final String value) {
-    widget.orchestrator.updateDraft(
+    UpdateDraftFromUiCommand(
       property: widget.property,
       targetValue: _coerceValueForProperty(widget.property, value.trim()),
       surface: widget.surface,
-    );
+    ).execute(widget.ctx);
   }
 
   @override
   Widget build(final BuildContext context) {
+    final presentationDomain = selectPresentedLayer(widget.ctx);
     final text =
-        '${widget.orchestrator.effectiveValueForProperty(widget.property) ?? ''}';
-    final waiting = widget.orchestrator.isPropertyWaiting(widget.property);
+        '${selectEffectiveValueForProperty(
+          widget.ctx,
+          widget.controller,
+          widget.property,
+          presentationDomain: presentationDomain,
+        ) ?? ''}';
+    final waiting = selectIsPropertyWaiting(
+      widget.ctx,
+      widget.controller,
+      widget.property,
+      presentationDomain: presentationDomain,
+    );
     if (_controller.text != text) {
       _controller.value = TextEditingValue(
         text: text,
@@ -581,11 +683,11 @@ class _TextValueEditorState extends State<_TextValueEditor> {
             : 'Edit inline',
       ),
       onChanged: (final value) {
-        widget.orchestrator.updateDraft(
+        UpdateDraftFromUiCommand(
           property: widget.property,
           targetValue: _coerceValueForProperty(widget.property, value.trim()),
           surface: widget.surface,
-        );
+        ).execute(widget.ctx);
       },
       onSubmitted: _submit,
       onEditingComplete: () => _submit(_controller.text),
@@ -595,11 +697,23 @@ class _TextValueEditorState extends State<_TextValueEditor> {
 
 /// Builds the Properties panel section widget. Use as
 /// [FlutterLiveEditHost.buildPropertyPanelSection] when the plugin is installed.
-Widget buildPropertyPanelSection(final LiveEditOrchestrator orchestrator) {
-  final properties = orchestrator.effectiveProperties;
+Widget buildPropertyPanelSection(
+  final LiveEditContext context,
+  final LiveEditController controller,
+) {
+  final presentationDomain = selectPresentedLayer(context);
+  final properties = selectEffectiveProperties(
+    context,
+    controller,
+    domain: presentationDomain,
+  );
   return Column(
     children: <Widget>[
-      if (orchestrator.hasMultiSelection && properties.isEmpty)
+      if (selectHasMultiSelection(
+        context,
+        controller,
+        presentationDomain: presentationDomain,
+      ) && properties.isEmpty)
         const Padding(
           padding: EdgeInsets.only(bottom: 4),
           child: Text(
@@ -611,7 +725,8 @@ Widget buildPropertyPanelSection(final LiveEditOrchestrator orchestrator) {
         Padding(
           padding: const EdgeInsets.only(bottom: 4),
           child: _PropertyEditorCard(
-            orchestrator: orchestrator,
+            ctx: context,
+            controller: controller,
             property: property,
             surface: LiveEditEditSurface.panel,
           ),

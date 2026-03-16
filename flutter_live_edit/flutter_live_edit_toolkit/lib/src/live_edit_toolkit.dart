@@ -2,7 +2,6 @@ import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 
 import 'commands/commands.dart';
-import 'live_edit_orchestrator.dart';
 import 'live_edit_runtime.dart';
 
 Map<String, Object?> _noContext() =>
@@ -24,22 +23,16 @@ Set<MCPCallEntry> getFlutterLiveEditEntries() => <MCPCallEntry>{
     ),
     handler: (final request) {
       final ctx = LiveEditRuntime.currentContext;
-      if (ctx != null) {
-        final result = StartSessionCommand(
-          requestedSessionId: request['sessionId'],
-          targetDomain: LiveEditTargetDomain.fromWire(request['targetDomain']),
-        ).execute(ctx);
+      if (ctx == null) {
         return MCPCallResult(
           message: 'Live edit session started.',
-          parameters: result,
+          parameters: _noContext(),
         );
       }
-      final o = LiveEditOrchestrator.instance;
-      final result = o?.startSession(
-            requestedSessionId: request['sessionId'],
-            targetDomain: LiveEditTargetDomain.fromWire(request['targetDomain']),
-          ) ??
-          _noContext();
+      final result = StartSessionCommand(
+        requestedSessionId: request['sessionId'],
+        targetDomain: LiveEditTargetDomain.fromWire(request['targetDomain']),
+      ).execute(ctx);
       return MCPCallResult(
         message: 'Live edit session started.',
         parameters: result,
@@ -60,22 +53,16 @@ Set<MCPCallEntry> getFlutterLiveEditEntries() => <MCPCallEntry>{
     ),
     handler: (final request) {
       final ctx = LiveEditRuntime.currentContext;
-      if (ctx != null) {
-        final result = SetOverlayCommand(
-          sessionId: request['sessionId'],
-          enabled: _parseBool(request['enabled']),
-        ).execute(ctx);
+      if (ctx == null) {
         return MCPCallResult(
           message: 'Live edit overlay updated.',
-          parameters: result,
+          parameters: _noContext(),
         );
       }
-      final o = LiveEditOrchestrator.instance;
-      final result = o?.setOverlay(
-            sessionId: request['sessionId'],
-            enabled: _parseBool(request['enabled']),
-          ) ??
-          _noContext();
+      final result = SetOverlayCommand(
+        sessionId: request['sessionId'],
+        enabled: _parseBool(request['enabled']),
+      ).execute(ctx);
       return MCPCallResult(
         message: 'Live edit overlay updated.',
         parameters: result,
@@ -95,24 +82,18 @@ Set<MCPCallEntry> getFlutterLiveEditEntries() => <MCPCallEntry>{
     ),
     handler: (final request) {
       final ctx = LiveEditRuntime.currentContext;
-      if (ctx != null) {
-        final result = GetTreeCommand(
-          sessionId: request['sessionId'],
-          targetDomain: request['targetDomain'] == null
-              ? null
-              : LiveEditTargetDomain.fromWire(request['targetDomain']),
-        ).execute(ctx);
+      if (ctx == null) {
         return MCPCallResult(
           message: 'Live edit tree captured.',
-          parameters: result,
+          parameters: _noContext(),
         );
       }
-      final o = LiveEditOrchestrator.instance;
-      final result = o?.getTree(
-            sessionId: request['sessionId'],
-            targetDomain: LiveEditTargetDomain.fromWire(request['targetDomain']),
-          ) ??
-          _noContext();
+      final result = GetTreeCommand(
+        sessionId: request['sessionId'],
+        targetDomain: request['targetDomain'] == null
+            ? null
+            : LiveEditTargetDomain.fromWire(request['targetDomain']),
+      ).execute(ctx);
       return MCPCallResult(
         message: 'Live edit tree captured.',
         parameters: result,
@@ -138,36 +119,24 @@ Set<MCPCallEntry> getFlutterLiveEditEntries() => <MCPCallEntry>{
     ),
     handler: (final request) {
       final ctx = LiveEditRuntime.currentContext;
-      if (ctx != null) {
-        final result = SelectAtPointCommand(
-          sessionId: request['sessionId'],
-          x: _parseInt(request['x']),
-          y: _parseInt(request['y']),
-          viewId: _parseNullableInt(request['viewId']),
-          selectionPolicy: LiveEditSelectionPolicy.fromWire(
-            request['selectionPolicy'],
-          ),
-          targetDomain: request['targetDomain'] == null
-              ? null
-              : LiveEditTargetDomain.fromWire(request['targetDomain']),
-        ).execute(ctx);
+      if (ctx == null) {
         return MCPCallResult(
           message: 'Live edit selection updated.',
-          parameters: result,
+          parameters: _noContext(),
         );
       }
-      final o = LiveEditOrchestrator.instance;
-      final result = o?.selectAtPoint(
-            sessionId: request['sessionId'],
-            x: _parseInt(request['x']),
-            y: _parseInt(request['y']),
-            viewId: _parseNullableInt(request['viewId']),
-            selectionPolicy: LiveEditSelectionPolicy.fromWire(
-              request['selectionPolicy'],
-            ),
-            targetDomain: LiveEditTargetDomain.fromWire(request['targetDomain']),
-          ) ??
-          _noContext();
+      final result = SelectAtPointCommand(
+        sessionId: request['sessionId'],
+        x: _parseInt(request['x']),
+        y: _parseInt(request['y']),
+        viewId: _parseNullableInt(request['viewId']),
+        selectionPolicy: LiveEditSelectionPolicy.fromWire(
+          request['selectionPolicy'],
+        ),
+        targetDomain: request['targetDomain'] == null
+            ? null
+            : LiveEditTargetDomain.fromWire(request['targetDomain']),
+      ).execute(ctx);
       return MCPCallResult(
         message: 'Live edit selection updated.',
         parameters: result,
@@ -187,27 +156,18 @@ Set<MCPCallEntry> getFlutterLiveEditEntries() => <MCPCallEntry>{
     ),
     handler: (final request) {
       final ctx = LiveEditRuntime.currentContext;
-      if (ctx != null) {
-        final result = GetSelectionCommand(
-          sessionId: request['sessionId'],
-          targetDomain: request['targetDomain'] == null
-              ? null
-              : LiveEditTargetDomain.fromWire(request['targetDomain']),
-        ).execute(ctx);
+      if (ctx == null) {
         return MCPCallResult(
           message: 'Live edit selection state returned.',
-          parameters: result,
+          parameters: _noContext(),
         );
       }
-      final o = LiveEditOrchestrator.instance;
-      final domain = request['targetDomain'] == null
-          ? null
-          : LiveEditTargetDomain.fromWire(request['targetDomain']);
-      final result = o?.getSelection(
-            sessionId: request['sessionId'],
-            targetDomain: domain,
-          ) ??
-          _noContext();
+      final result = GetSelectionCommand(
+        sessionId: request['sessionId'],
+        targetDomain: request['targetDomain'] == null
+            ? null
+            : LiveEditTargetDomain.fromWire(request['targetDomain']),
+      ).execute(ctx);
       return MCPCallResult(
         message: 'Live edit selection state returned.',
         parameters: result,
@@ -233,23 +193,16 @@ Set<MCPCallEntry> getFlutterLiveEditEntries() => <MCPCallEntry>{
         decodeLiveEditJsonObject(request['changeJson'] ?? '{}'),
       );
       final ctx = LiveEditRuntime.currentContext;
-      if (ctx != null) {
-        final result = UpdateDraftCommand(
-          sessionId: request['sessionId'],
-          change: change,
-        ).execute(ctx);
+      if (ctx == null) {
         return MCPCallResult(
           message: 'Live edit draft updated.',
-          parameters: result,
+          parameters: _noContext(),
         );
       }
-      final o = LiveEditOrchestrator.instance;
-      final result = o
-              ?.updateDraftFromChange(
-                sessionId: request['sessionId'],
-                change: change,
-              ) ??
-          _noContext();
+      final result = UpdateDraftCommand(
+        sessionId: request['sessionId'],
+        change: change,
+      ).execute(ctx);
       return MCPCallResult(
         message: 'Live edit draft updated.',
         parameters: result,
@@ -269,26 +222,18 @@ Set<MCPCallEntry> getFlutterLiveEditEntries() => <MCPCallEntry>{
     ),
     handler: (final request) {
       final ctx = LiveEditRuntime.currentContext;
-      if (ctx != null) {
-        final result = GetDraftCommand(
-          sessionId: request['sessionId'],
-          targetDomain: request['targetDomain'] == null
-              ? null
-              : LiveEditTargetDomain.fromWire(request['targetDomain']),
-        ).execute(ctx);
+      if (ctx == null) {
         return MCPCallResult(
           message: 'Live edit draft returned.',
-          parameters: result,
+          parameters: _noContext(),
         );
       }
-      final o = LiveEditOrchestrator.instance;
-      final result = o?.getDraft(
-            sessionId: request['sessionId'],
-            targetDomain: request['targetDomain'] == null
-                ? null
-                : LiveEditTargetDomain.fromWire(request['targetDomain']),
-          ) ??
-          _noContext();
+      final result = GetDraftCommand(
+        sessionId: request['sessionId'],
+        targetDomain: request['targetDomain'] == null
+            ? null
+            : LiveEditTargetDomain.fromWire(request['targetDomain']),
+      ).execute(ctx);
       return MCPCallResult(
         message: 'Live edit draft returned.',
         parameters: result,
@@ -305,17 +250,14 @@ Set<MCPCallEntry> getFlutterLiveEditEntries() => <MCPCallEntry>{
     ),
     handler: (final request) {
       final ctx = LiveEditRuntime.currentContext;
-      if (ctx != null) {
-        final result = DiscardDraftCommand(sessionId: request['sessionId'])
-            .execute(ctx);
+      if (ctx == null) {
         return MCPCallResult(
           message: 'Live edit draft discarded.',
-          parameters: result,
+          parameters: _noContext(),
         );
       }
-      final o = LiveEditOrchestrator.instance;
-      final result =
-          o?.discardDraft(sessionId: request['sessionId']) ?? _noContext();
+      final result = DiscardDraftCommand(sessionId: request['sessionId'])
+          .execute(ctx);
       return MCPCallResult(
         message: 'Live edit draft discarded.',
         parameters: result,
@@ -332,17 +274,14 @@ Set<MCPCallEntry> getFlutterLiveEditEntries() => <MCPCallEntry>{
     ),
     handler: (final request) {
       final ctx = LiveEditRuntime.currentContext;
-      if (ctx != null) {
-        final result =
-            EndSessionCommand(sessionId: request['sessionId']).execute(ctx);
+      if (ctx == null) {
         return MCPCallResult(
           message: 'Live edit session ended.',
-          parameters: result,
+          parameters: _noContext(),
         );
       }
-      final o = LiveEditOrchestrator.instance;
       final result =
-          o?.endSession(sessionId: request['sessionId']) ?? _noContext();
+          EndSessionCommand(sessionId: request['sessionId']).execute(ctx);
       return MCPCallResult(
         message: 'Live edit session ended.',
         parameters: result,

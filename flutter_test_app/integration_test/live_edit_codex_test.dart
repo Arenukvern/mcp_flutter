@@ -524,10 +524,10 @@ Future<void> _roundTripFixtureText(
       'rendered=${_fixtureRenderedText(tester)}',
     );
   } else {
-    orchestrator.openAiBubble();
-    orchestrator.updateAiComposer(
-      "Change the displayed text from '$from' to '$to'.",
-    );
+    OpenAiBubbleCommand(defaultPrompt: '').execute(orchestrator.context);
+    UpdateAiComposerCommand(
+      value: "Change the displayed text from '$from' to '$to'.",
+    ).execute(orchestrator.context);
     await tester.pumpAndSettle();
   }
 
@@ -706,7 +706,7 @@ Future<void> _selectToolAiBubble(
   final WidgetTester tester,
   final LiveEditOrchestrator orchestrator,
 ) async {
-  orchestrator.openAiBubble();
+  OpenAiBubbleCommand(defaultPrompt: '').execute(orchestrator.context);
   await tester.pumpAndSettle();
   expect(_aiBubbleKey(), findsOneWidget);
 

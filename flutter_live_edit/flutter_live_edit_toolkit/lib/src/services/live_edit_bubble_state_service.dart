@@ -3,6 +3,35 @@ import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 import '../live_edit_context.dart';
 import '../live_edit_types.dart';
 
+/// Parameters for [LiveEditBubbleStateService.syncSelectionState].
+final class SyncSelectionStateParams {
+  const SyncSelectionStateParams({
+    required this.activeSelection,
+    required this.activeSelectedWidgets,
+    required this.presentationLayer,
+    required this.lastSelectionIdentity,
+    required this.effectiveProperties,
+    required this.activeProperty,
+    required this.draftChanges,
+    required this.getBackendIdForBubble,
+    required this.getInferenceConfigForBubble,
+    required this.defaultAiPrompt,
+    required this.updateAiComposer,
+  });
+
+  final LiveEditSelection? activeSelection;
+  final List<LiveEditSelection> activeSelectedWidgets;
+  final LiveEditTargetDomain presentationLayer;
+  final String? lastSelectionIdentity;
+  final List<LiveEditPropertyDescriptor> effectiveProperties;
+  final LiveEditPropertyDescriptor? activeProperty;
+  final List<LiveEditDraftChange> draftChanges;
+  final String? Function(String?) getBackendIdForBubble;
+  final LiveEditInferenceConfig? Function(String?) getInferenceConfigForBubble;
+  final String defaultAiPrompt;
+  final void Function(String) updateAiComposer;
+}
+
 bool _hasText(final String? value) =>
     value != null && value.trim().isNotEmpty;
 
@@ -101,6 +130,102 @@ final class LiveEditBubbleStateService {
     ctx.bubbleResource.value = ctx.bubbleResource.value.copyWith(
       bubbleRecordsById: records,
     );
+  }
+
+  /// Syncs bubble/layer state when selection or identity changes. Returns new
+  /// lastSelectionIdentity (caller should store and pass back next time).
+  String? syncSelectionState(
+    final LiveEditContext ctx,
+    final SyncSelectionStateParams params,
+  ) {
+    final selection = params.activeSelection;
+    final currentBubbleId = bubbleIdForSelection(ctx, selection);
+    if (currentBubbleId != params.lastSelectionIdentity) {
+      final domain = params.presentationLayer;
+      final bubble = _hasText(currentBubbleId)
+          ? ensureBubbleState(
+              ctx,
+              currentBubbleId!,
+              selection: selection,
+              selectedWidgets: params.activeSelectedWidgets,
+            )
+          : null;
+      final phase = bubble?.status == LiveEditBubbleStatus.waiting
+          ? LiveEditApplyPhase.preparing
+          : bubble?.status == LiveEditBubbleStatus.applied
+              ? LiveEditApplyPhase.success
+              : bubble?.status == LiveEditBubbleStatus.failed
+                  ? LiveEditApplyPhase.failed
+                  : LiveEditApplyPhase.idle;
+      var editMode = selection == null
+          ? LiveEditEditMode.inspect
+          : (ctx.bubbleResource.value.layerViewStateByDomain[domain]?.editMode ==
+                  LiveEditEditMode.ai
+              ? LiveEditEditMode.ai
+              : LiveEditEditMode.edit);
+      var activePropertyId =
+          ctx.bubbleResource.value.layerViewStateByDomain[domain]?.activePropertyId ??
+              params.activeProperty?.id;
+      if (selection != null &&
+          params.activeProperty?.requiresAgentForPersistence == true) {
+        editMode = LiveEditEditMode.ai;
+        activePropertyId = params.activeProperty?.id ?? activePropertyId;
+      }
+      final layerMap = Map<LiveEditTargetDomain, LiveEditLayerViewState>.from(
+        ctx.bubbleResource.value.layerViewStateByDomain,
+      );
+      layerMap[domain] = (layerMap[domain] ?? LiveEditLayerViewState()).copyWith(
+        activeBubbleId: currentBubbleId,
+        editMode: editMode,
+        activePropertyId: activePropertyId,
+      );
+      ctx.bubbleResource.value = ctx.bubbleResource.value.copyWith(
+        layerViewStateByDomain: layerMap,
+        applyPhase: phase,
+        pendingExecutionPlan: bubble?.executionPlan,
+        pendingProposalId: bubble?.executionPlan?.proposalId,
+        lastError: bubble?.lastError,
+        globalComposerText: bubble?.instructionText ?? '',
+      );
+      ctx.panelViewResource.value =
+          ctx.panelViewResource.value.copyWith(editMode: editMode);
+      if (_hasText(currentBubbleId) && selection != null) {
+        captureBubbleState(
+          ctx,
+          selection,
+          params.activeSelectedWidgets,
+          instructionText: bubble?.instructionText ?? '',
+          status: bubble?.status,
+          lastError: bubble?.lastError,
+          draftChanges: params.draftChanges,
+          backendId: params.getBackendIdForBubble(currentBubbleId),
+          inferenceConfig:
+              params.getInferenceConfigForBubble(currentBubbleId),
+        );
+      }
+      if (selection != null &&
+          params.activeProperty?.requiresAgentForPersistence == true &&
+          !_hasText(bubble?.instructionText)) {
+        params.updateAiComposer(params.defaultAiPrompt);
+      }
+      return currentBubbleId;
+    }
+
+    final active = params.activeProperty;
+    if (active == null && selection != null) {
+      final properties = params.effectiveProperties;
+      final propId = properties.isEmpty ? null : properties.first.id;
+      final domain = params.presentationLayer;
+      final layerMap = Map<LiveEditTargetDomain, LiveEditLayerViewState>.from(
+        ctx.bubbleResource.value.layerViewStateByDomain,
+      );
+      layerMap[domain] = (layerMap[domain] ?? LiveEditLayerViewState())
+          .copyWith(activePropertyId: propId);
+      ctx.bubbleResource.value = ctx.bubbleResource.value.copyWith(
+        layerViewStateByDomain: layerMap,
+      );
+    }
+    return params.lastSelectionIdentity;
   }
 
   void appendActivity(

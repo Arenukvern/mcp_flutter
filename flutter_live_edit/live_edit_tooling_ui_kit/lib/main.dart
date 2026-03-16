@@ -25,34 +25,42 @@ class _ToolingUiKitScreen extends StatefulWidget {
 }
 
 class _ToolingUiKitScreenState extends State<_ToolingUiKitScreen> {
-  late final LiveEditOrchestrator _orchestrator;
+  bool _prefilled = false;
 
   @override
-  void initState() {
-    super.initState();
-    _orchestrator = LiveEditOrchestrator();
-    _orchestrator.prefillForToolingShowcase();
-  }
-
-  @override
-  void dispose() {
-    _orchestrator.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(final BuildContext context) => Scaffold(
-    body: FlutterLiveEditHost(
-      orchestrator: _orchestrator,
-      childIsToolLayer: true,
-      child: ListenableBuilder(
-        listenable: _orchestrator,
-        builder: (final _, final child) => LayoutBuilder(
-          builder: (final context, final constraints) => LiveEditToolLayer(
-            orchestrator: _orchestrator,
-            viewportSize: constraints.biggest,
-            buildPropertyPanelSection: null,
-          ),
+  Widget build(final BuildContext context) => LiveEditScope(
+    child: Scaffold(
+      body: FlutterLiveEditHost(
+        orchestrator: null,
+        childIsToolLayer: true,
+        child: Builder(
+          builder: (final ctx) {
+            final scope = LiveEditScope.of(ctx);
+            if (!_prefilled) {
+              _prefilled = true;
+              WidgetsBinding.instance.addPostFrameCallback((final _) {
+                PrefillToolingShowcaseCommand().execute(scope.context);
+              });
+            }
+            return ListenableBuilder(
+              listenable: Listenable.merge(<Listenable>[
+                scope.sessionResource,
+                scope.selectionResource,
+                scope.draftResource,
+                scope.bubbleResource,
+                scope.panelViewResource,
+                scope.backendConfigResource,
+              ]),
+              builder: (final _, final __) => LayoutBuilder(
+                builder: (final _, final constraints) => LiveEditToolLayer(
+                  context: scope.context,
+                  controller: scope.controller,
+                  viewportSize: constraints.biggest,
+                  buildPropertyPanelSection: null,
+                ),
+              ),
+            );
+          },
         ),
       ),
     ),

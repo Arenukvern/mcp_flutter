@@ -8,13 +8,14 @@ import 'src/property_panel_section.dart';
 abstract final class LiveEditPropertyEditPlugin {
   LiveEditPropertyEditPlugin._();
 
-  /// Sets the orchestrator's property descriptor provider and returns the
-  /// panel section builder for [FlutterLiveEditHost.buildPropertyPanelSection].
-  /// Call after the host has built (e.g. when [LiveEditOrchestrator.instance]
-  /// is set).
+  /// Registers the property descriptor provider with the live-edit runtime.
+  /// When the host or scope builds, [buildPropertyDescriptors] will be set on
+  /// the session service. Returns the panel section builder for
+  /// [FlutterLiveEditHost.buildPropertyPanelSection].
   static LiveEditPropertyPanelSectionBuilder install() {
-    final o = LiveEditOrchestrator.instance;
-    if (o != null) o.propertyDescriptorProvider = buildPropertyDescriptors;
+    LiveEditRuntime.onSessionServiceCreated = (final service) {
+      service.propertyDescriptorProvider = buildPropertyDescriptors;
+    };
     return buildPropertyPanelSection;
   }
 }

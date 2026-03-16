@@ -99,7 +99,7 @@ void main() {
     }
     await tester.tap(_semanticsId('live_edit_panel_expand_button'));
     await tester.pumpAndSettle();
-    orchestrator.openAiBubble();
+    OpenAiBubbleCommand(defaultPrompt: '').execute(orchestrator.context);
     await tester.pumpAndSettle();
 
     final promptField = find.descendant(
@@ -107,9 +107,9 @@ void main() {
       matching: find.byType(TextField),
     );
     expect(promptField, findsAtLeast(1));
-    orchestrator.updateAiComposer(
-      'Rewrite the selected heading in a cleaner style.',
-    );
+    UpdateAiComposerCommand(
+      value: 'Rewrite the selected heading in a cleaner style.',
+    ).execute(orchestrator.context);
     await tester.pump(const Duration(milliseconds: 200));
 
     await orchestrator.applyDraft(
@@ -230,10 +230,10 @@ void main() {
 
     await tester.tap(_semanticsId('live_edit_panel_expand_button'));
     await tester.pumpAndSettle();
-    orchestrator.setDebugModeEnabled(true);
-    orchestrator.updateAiComposer(
-      'Rewrite the selected heading in a cleaner style.',
-    );
+    SetDebugModeCommand(enabled: true).execute(orchestrator.context);
+    UpdateAiComposerCommand(
+      value: 'Rewrite the selected heading in a cleaner style.',
+    ).execute(orchestrator.context);
     await tester.pumpAndSettle();
 
     await orchestrator.submitAiPrompt();
@@ -244,7 +244,7 @@ void main() {
     );
 
     if (!orchestrator.panelExpanded) {
-      orchestrator.expandPanel();
+      ExpandPanelCommand().execute(orchestrator.context);
       await tester.pumpAndSettle();
     }
 

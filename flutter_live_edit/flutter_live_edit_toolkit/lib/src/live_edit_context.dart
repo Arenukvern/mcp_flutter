@@ -17,6 +17,7 @@ final class LiveEditContext {
     required this.backendConfigResource,
     required this.sessionService,
     required this.applyService,
+    required this.bubbleStateService,
     this.applyEventSink,
   });
 
@@ -28,6 +29,7 @@ final class LiveEditContext {
   final LiveEditBackendConfigResource backendConfigResource;
   final LiveEditSessionService sessionService;
   final LiveEditApplyService applyService;
+  final LiveEditBubbleStateService bubbleStateService;
 
   /// Optional sink for apply runtime events (e.g. streamed codex events).
   /// When set, ApplyDraftCommand passes it as [LiveEditApplyDraftRequest.onEvent].

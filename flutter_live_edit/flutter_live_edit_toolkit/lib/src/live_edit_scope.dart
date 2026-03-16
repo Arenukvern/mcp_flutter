@@ -4,6 +4,7 @@ import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 import 'live_edit_backend_utils.dart';
 import 'live_edit_context.dart';
 import 'live_edit_controller_adapter.dart';
+import 'live_edit_runtime.dart';
 import 'live_edit_types.dart';
 import 'resources/live_edit_backend_config.src.data.dart';
 import 'resources/resources.dart';
@@ -106,6 +107,7 @@ class _LiveEditScopeState extends State<LiveEditScope> {
       ),
     );
     _sessionService = LiveEditSessionService();
+    LiveEditRuntime.onSessionServiceCreated?.call(_sessionService);
     _applyService = LiveEditApplyService(
       applyDraftDelegate: widget.applyDraftDelegate,
     );
@@ -127,9 +129,11 @@ class _LiveEditScopeState extends State<LiveEditScope> {
       backendConfigResource: _backendConfigResource,
       sessionService: _sessionService,
       applyService: _applyService,
+      bubbleStateService: _bubbleStateService,
       applyEventSink: onBubbleEvent,
     );
     _controller = LiveEditController(_context);
+    LiveEditRuntime.contextAccessor = () => _context;
     _data = LiveEditScopeData(
       context: _context,
       controller: _controller,
@@ -144,6 +148,7 @@ class _LiveEditScopeState extends State<LiveEditScope> {
 
   @override
   void dispose() {
+    LiveEditRuntime.contextAccessor = null;
     super.dispose();
   }
 

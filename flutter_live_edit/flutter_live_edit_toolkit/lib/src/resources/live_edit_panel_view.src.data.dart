@@ -17,6 +17,8 @@ final class LiveEditPanelViewResourceData {
     this.panelDragOffset = Offset.zero,
     this.debugModeEnabled = false,
     this.deeperPickEnabled = false,
+    this.toolPresentationArmed = false,
+    this.lastSelectionIdentity,
   });
 
   final LiveEditEditMode editMode;
@@ -30,6 +32,8 @@ final class LiveEditPanelViewResourceData {
   final Offset panelDragOffset;
   final bool debugModeEnabled;
   final bool deeperPickEnabled;
+  final bool toolPresentationArmed;
+  final String? lastSelectionIdentity;
 
   static const LiveEditPanelViewResourceData initial =
       LiveEditPanelViewResourceData();
@@ -46,6 +50,8 @@ final class LiveEditPanelViewResourceData {
     final Offset? panelDragOffset,
     final bool? debugModeEnabled,
     final bool? deeperPickEnabled,
+    final bool? toolPresentationArmed,
+    final String? lastSelectionIdentity,
   }) =>
       LiveEditPanelViewResourceData(
         editMode: editMode ?? this.editMode,
@@ -59,5 +65,7 @@ final class LiveEditPanelViewResourceData {
         panelDragOffset: panelDragOffset ?? this.panelDragOffset,
         debugModeEnabled: debugModeEnabled ?? this.debugModeEnabled,
         deeperPickEnabled: deeperPickEnabled ?? this.deeperPickEnabled,
+        toolPresentationArmed: toolPresentationArmed ?? this.toolPresentationArmed,
+        lastSelectionIdentity: lastSelectionIdentity ?? this.lastSelectionIdentity,
       );
 }

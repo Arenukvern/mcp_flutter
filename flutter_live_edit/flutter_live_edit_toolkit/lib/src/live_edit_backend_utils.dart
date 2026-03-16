@@ -1,6 +1,76 @@
+import 'dart:ui' show Offset, Size;
+
 import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 
 import 'live_edit_context.dart';
+
+double _maxDouble(final double left, final double right) =>
+    left > right ? left : right;
+
+double _minDouble(final double left, final double right) =>
+    left < right ? left : right;
+
+/// Computes default bubble placement from bounds and viewport.
+Offset autoBubblePlacement({
+  required final LiveEditBounds bounds,
+  required final Size viewport,
+  required final double bubbleWidth,
+  required final double bubbleHeight,
+}) {
+  const gap = 12.0;
+  final rightSpace = viewport.width - bounds.right - 16;
+  final leftSpace = bounds.left - 16;
+  double left;
+  double top = _maxDouble(16, bounds.top);
+
+  if (rightSpace >= bubbleWidth) {
+    left = bounds.right + gap;
+  } else if (leftSpace >= bubbleWidth) {
+    left = bounds.left - bubbleWidth - gap;
+  } else {
+    left = _minDouble(
+      viewport.width - bubbleWidth - 16,
+      _maxDouble(16, bounds.left),
+    );
+    top = _minDouble(
+      viewport.height - bubbleHeight - 16,
+      bounds.bottom + gap,
+    );
+  }
+
+  top = _minDouble(top, viewport.height - bubbleHeight - 16);
+  return Offset(left, _maxDouble(16, top));
+}
+
+/// Clamps bubble placement to viewport.
+Offset clampBubblePlacement({
+  required final Offset placement,
+  required final Size viewport,
+  required final double bubbleWidth,
+  required final double bubbleHeight,
+}) {
+  final maxLeft = _maxDouble(16, viewport.width - bubbleWidth - 16);
+  final maxTop = _maxDouble(16, viewport.height - bubbleHeight - 16);
+  return Offset(
+    placement.dx.clamp(16, maxLeft),
+    placement.dy.clamp(16, maxTop),
+  );
+}
+
+/// Clamps panel placement to viewport. Used by host/selectors.
+Offset clampPanelPlacement({
+  required final Offset placement,
+  required final Size viewport,
+  required final double panelWidth,
+  required final double panelHeight,
+}) {
+  final maxLeft = _maxDouble(16, viewport.width - panelWidth - 16);
+  final maxTop = _maxDouble(16, viewport.height - panelHeight - 16);
+  return Offset(
+    placement.dx.clamp(16, maxLeft),
+    placement.dy.clamp(16, maxTop),
+  );
+}
 
 /// Returns effective inference config from backend meta, or null.
 LiveEditInferenceConfig? backendEffectiveConfig(
