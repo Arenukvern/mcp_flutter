@@ -29,16 +29,16 @@ final class LiveEditSelectionLayerData {
     final List<LiveEditSelection>? marqueeSelections,
     final List<LiveEditSelection>? multiSelections,
     final List<LiveEditSelectionCandidate>? selectionCandidates,
-  }) =>
-      LiveEditSelectionLayerData(
-        selection: selection ?? this.selection,
-        hoverSelection: hoverSelection ?? this.hoverSelection,
-        marqueeRect: marqueeRect ?? this.marqueeRect,
-        marqueeSelections: marqueeSelections ?? this.marqueeSelections,
-        multiSelections: multiSelections ?? this.multiSelections,
-        selectionCandidates: selectionCandidates ?? this.selectionCandidates,
-      );
+  }) => LiveEditSelectionLayerData(
+    selection: selection ?? this.selection,
+    hoverSelection: hoverSelection ?? this.hoverSelection,
+    marqueeRect: marqueeRect ?? this.marqueeRect,
+    marqueeSelections: marqueeSelections ?? this.marqueeSelections,
+    multiSelections: multiSelections ?? this.multiSelections,
+    selectionCandidates: selectionCandidates ?? this.selectionCandidates,
+  );
 }
 
 /// Key: sessionId, value: map of domain -> layer data.
-typedef LiveEditSelectionState = Map<String, Map<LiveEditTargetDomain, LiveEditSelectionLayerData>>;
+typedef LiveEditSelectionState =
+    Map<String, Map<LiveEditTargetDomain, LiveEditSelectionLayerData>>;

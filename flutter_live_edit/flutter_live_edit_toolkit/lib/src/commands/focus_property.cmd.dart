@@ -30,7 +30,8 @@ final class FocusPropertyCommand {
     layerMap[domain] = updatedLayer;
 
     final resolvedSurface = surface ?? property.preferredEditSurface;
-    final editMode = resolvedSurface == LiveEditEditSurface.aiBubble ||
+    final editMode =
+        resolvedSurface == LiveEditEditSurface.aiBubble ||
             property.requiresAgentForPersistence
         ? LiveEditEditMode.ai
         : LiveEditEditMode.edit;
@@ -60,8 +61,9 @@ final class FocusPropertyCommand {
             final records = Map<String, LiveEditBubbleRecord>.from(
               newBubbleData.bubbleRecordsById,
             );
-            records[activeId] =
-                bubble.copyWith(instructionText: defaultPrompt!);
+            records[activeId] = bubble.copyWith(
+              instructionText: defaultPrompt!,
+            );
             newBubbleData = newBubbleData.copyWith(bubbleRecordsById: records);
           }
         } else {

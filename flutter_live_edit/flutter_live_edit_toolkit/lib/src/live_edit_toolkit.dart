@@ -4,8 +4,9 @@ import 'package:mcp_toolkit/mcp_toolkit.dart';
 import 'commands/commands.dart';
 import 'live_edit_runtime.dart';
 
-Map<String, Object?> _noContext() =>
-    <String, Object?>{'error': 'No live edit context'};
+Map<String, Object?> _noContext() => <String, Object?>{
+  'error': 'No live edit context',
+};
 
 Set<MCPCallEntry> getFlutterLiveEditEntries() => <MCPCallEntry>{
   MCPCallEntry.tool(
@@ -256,8 +257,9 @@ Set<MCPCallEntry> getFlutterLiveEditEntries() => <MCPCallEntry>{
           parameters: _noContext(),
         );
       }
-      final result = DiscardDraftCommand(sessionId: request['sessionId'])
-          .execute(ctx);
+      final result = DiscardDraftCommand(
+        sessionId: request['sessionId'],
+      ).execute(ctx);
       return MCPCallResult(
         message: 'Live edit draft discarded.',
         parameters: result,
@@ -280,8 +282,9 @@ Set<MCPCallEntry> getFlutterLiveEditEntries() => <MCPCallEntry>{
           parameters: _noContext(),
         );
       }
-      final result =
-          EndSessionCommand(sessionId: request['sessionId']).execute(ctx);
+      final result = EndSessionCommand(
+        sessionId: request['sessionId'],
+      ).execute(ctx);
       return MCPCallResult(
         message: 'Live edit session ended.',
         parameters: result,

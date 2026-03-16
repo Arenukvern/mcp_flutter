@@ -22,15 +22,14 @@ final class LiveEditSessionResourceData {
     final bool? overlayVisible,
     final LiveEditTargetDomain? targetDomain,
     final List<String>? sessionIds,
-  }) =>
-      LiveEditSessionResourceData(
-        activeSessionId: identical(activeSessionId, _unset)
-            ? this.activeSessionId
-            : activeSessionId as String?,
-        overlayVisible: overlayVisible ?? this.overlayVisible,
-        targetDomain: targetDomain ?? this.targetDomain,
-        sessionIds: sessionIds ?? this.sessionIds,
-      );
+  }) => LiveEditSessionResourceData(
+    activeSessionId: identical(activeSessionId, _unset)
+        ? this.activeSessionId
+        : activeSessionId as String?,
+    overlayVisible: overlayVisible ?? this.overlayVisible,
+    targetDomain: targetDomain ?? this.targetDomain,
+    sessionIds: sessionIds ?? this.sessionIds,
+  );
 }
 
 const Object _unset = Object();

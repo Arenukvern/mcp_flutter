@@ -13,8 +13,9 @@ final class PrefillToolingShowcaseCommand {
   const PrefillToolingShowcaseCommand();
 
   void execute(final LiveEditContext context) {
-    StartSessionCommand(targetDomain: LiveEditTargetDomain.toolScene)
-        .execute(context);
+    StartSessionCommand(
+      targetDomain: LiveEditTargetDomain.toolScene,
+    ).execute(context);
     final sessionId = context.sessionResource.value.activeSessionId;
     if (sessionId == null || sessionId.isEmpty) return;
 

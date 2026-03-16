@@ -12,21 +12,14 @@ LiveEditTargetDomain _domain(final LiveEditOrchestrator o) =>
     selectPresentedLayer(o.context);
 String? _sid(final LiveEditOrchestrator o) =>
     o.context.sessionResource.value.activeSessionId;
-LiveEditSelection? _selection(final LiveEditOrchestrator o) =>
-    o.controller.selectionForDomain(
-      targetDomain: _domain(o),
-      sessionId: _sid(o),
-    );
-List<LiveEditSelection> _multiSelection(final LiveEditOrchestrator o) =>
-    o.controller.multiSelectionForDomain(
-      targetDomain: _domain(o),
-      sessionId: _sid(o),
-    );
-List<LiveEditSelectionCandidate> _candidates(final LiveEditOrchestrator o) =>
-    o.controller.selectionCandidatesForDomain(
-      targetDomain: _domain(o),
-      sessionId: _sid(o),
-    );
+LiveEditSelection? _selection(final LiveEditOrchestrator o) => o.controller
+    .selectionForDomain(targetDomain: _domain(o), sessionId: _sid(o));
+List<LiveEditSelection> _multiSelection(final LiveEditOrchestrator o) => o
+    .controller
+    .multiSelectionForDomain(targetDomain: _domain(o), sessionId: _sid(o));
+List<LiveEditSelectionCandidate> _candidates(final LiveEditOrchestrator o) => o
+    .controller
+    .selectionCandidatesForDomain(targetDomain: _domain(o), sessionId: _sid(o));
 LiveEditBubbleId? _bubbleId(final LiveEditOrchestrator o) =>
     selectActiveBubbleId(
       o.context,
@@ -34,16 +27,10 @@ LiveEditBubbleId? _bubbleId(final LiveEditOrchestrator o) =>
       presentationDomain: _domain(o),
       sessionId: _sid(o),
     );
-LiveEditSelection? _hoverSelection(final LiveEditOrchestrator o) =>
-    o.controller.hoverSelectionForDomain(
-      targetDomain: _domain(o),
-      sessionId: _sid(o),
-    );
-Rect? _marqueeRect(final LiveEditOrchestrator o) =>
-    o.controller.marqueeRectForDomain(
-      targetDomain: _domain(o),
-      sessionId: _sid(o),
-    );
+LiveEditSelection? _hoverSelection(final LiveEditOrchestrator o) => o.controller
+    .hoverSelectionForDomain(targetDomain: _domain(o), sessionId: _sid(o));
+Rect? _marqueeRect(final LiveEditOrchestrator o) => o.controller
+    .marqueeRectForDomain(targetDomain: _domain(o), sessionId: _sid(o));
 Offset _bubbleDragOffset(final LiveEditOrchestrator o) =>
     selectBubbleDragOffset(o.context, _bubbleId(o));
 
@@ -57,7 +44,12 @@ void main() {
     final sessionId = ctx.sessionResource.value.activeSessionId;
     if (sessionId == null) return;
     final domain = selectPresentedLayer(ctx);
-    if (selectEffectiveProperties(ctx, ctrl, domain: domain, sessionId: sessionId).isNotEmpty) {
+    if (selectEffectiveProperties(
+      ctx,
+      ctrl,
+      domain: domain,
+      sessionId: sessionId,
+    ).isNotEmpty) {
       return;
     }
     final candidates = ctrl.selectionCandidatesForDomain(
@@ -67,7 +59,12 @@ void main() {
     for (var index = 0; index < candidates.length; index += 1) {
       SelectCandidateAtCommand(controller: ctrl, index: index).execute(ctx);
       await tester.pumpAndSettle();
-      if (selectEffectiveProperties(ctx, ctrl, domain: domain, sessionId: sessionId).isNotEmpty) {
+      if (selectEffectiveProperties(
+        ctx,
+        ctrl,
+        domain: domain,
+        sessionId: sessionId,
+      ).isNotEmpty) {
         return;
       }
     }
@@ -80,9 +77,9 @@ void main() {
     final o = LiveEditOrchestrator();
     addTearDown(() => o.dispose());
 
-    final started =
-        StartSessionCommand(targetDomain: LiveEditTargetDomain.appScene)
-            .execute(o.context);
+    final started = StartSessionCommand(
+      targetDomain: LiveEditTargetDomain.appScene,
+    ).execute(o.context);
     final sessionId = started['sessionId']! as String;
 
     expect(sessionId, isNotEmpty);
@@ -203,19 +200,35 @@ void main() {
       backendId: 'codex_exec',
     );
 
-    SetBubbleBackendCommand(bubbleId: 'bubble-first', backendId: 'cursor_agent')
-        .execute(orchestrator.context);
-    SetBubbleBackendCommand(bubbleId: 'bubble-second', backendId: 'codex_exec')
-        .execute(orchestrator.context);
+    SetBubbleBackendCommand(
+      bubbleId: 'bubble-first',
+      backendId: 'cursor_agent',
+    ).execute(orchestrator.context);
+    SetBubbleBackendCommand(
+      bubbleId: 'bubble-second',
+      backendId: 'codex_exec',
+    ).execute(orchestrator.context);
 
-    expect(selectBackendIdForBubble(orchestrator.context, 'bubble-first'), 'cursor_agent');
-    expect(selectBackendIdForBubble(orchestrator.context, 'bubble-second'), 'codex_exec');
     expect(
-      selectInferenceConfigForBubble(orchestrator.context, 'bubble-first')?.model,
+      selectBackendIdForBubble(orchestrator.context, 'bubble-first'),
+      'cursor_agent',
+    );
+    expect(
+      selectBackendIdForBubble(orchestrator.context, 'bubble-second'),
+      'codex_exec',
+    );
+    expect(
+      selectInferenceConfigForBubble(
+        orchestrator.context,
+        'bubble-first',
+      )?.model,
       'auto',
     );
     expect(
-      selectInferenceConfigForBubble(orchestrator.context, 'bubble-second')?.model,
+      selectInferenceConfigForBubble(
+        orchestrator.context,
+        'bubble-second',
+      )?.model,
       'gpt-5.3-codex',
     );
   });
@@ -238,11 +251,13 @@ void main() {
     ExpandPanelCommand().execute(orchestrator.context);
     await tester.pumpAndSettle();
 
-    SetTargetDomainCommand(targetDomain: LiveEditTargetDomain.toolScene)
-        .execute(orchestrator.context);
+    SetTargetDomainCommand(
+      targetDomain: LiveEditTargetDomain.toolScene,
+    ).execute(orchestrator.context);
     await tester.pumpAndSettle();
-    SetTargetDomainCommand(targetDomain: LiveEditTargetDomain.appScene)
-        .execute(orchestrator.context);
+    SetTargetDomainCommand(
+      targetDomain: LiveEditTargetDomain.appScene,
+    ).execute(orchestrator.context);
     await tester.pumpAndSettle();
 
     final center = tester.getCenter(find.text('Target'));
@@ -253,7 +268,8 @@ void main() {
     ).execute(orchestrator.context);
     await tester.pumpAndSettle();
 
-    final sessionId = orchestrator.context.sessionResource.value.activeSessionId;
+    final sessionId =
+        orchestrator.context.sessionResource.value.activeSessionId;
     final selection = orchestrator.controller.selectionForDomain(
       targetDomain: LiveEditTargetDomain.appScene,
       sessionId: sessionId,
@@ -280,7 +296,8 @@ void main() {
     await tester.tapAt(tester.getCenter(find.text('Target')));
     await tester.pumpAndSettle();
 
-    final sessionId = orchestrator.context.sessionResource.value.activeSessionId;
+    final sessionId =
+        orchestrator.context.sessionResource.value.activeSessionId;
     final appSelection = orchestrator.controller.selectionForDomain(
       targetDomain: LiveEditTargetDomain.appScene,
       sessionId: sessionId,
@@ -292,8 +309,9 @@ void main() {
 
     ExpandPanelCommand().execute(orchestrator.context);
     await tester.pumpAndSettle();
-    SetTargetDomainCommand(targetDomain: LiveEditTargetDomain.toolScene)
-        .execute(orchestrator.context);
+    SetTargetDomainCommand(
+      targetDomain: LiveEditTargetDomain.toolScene,
+    ).execute(orchestrator.context);
     await tester.pumpAndSettle();
 
     SelectTrackedBubbleCommand(
@@ -308,17 +326,21 @@ void main() {
     );
     expect(toolSelection?.targetDomain, LiveEditTargetDomain.toolScene);
     expect(
-      orchestrator.controller.selectionForDomain(
-        targetDomain: LiveEditTargetDomain.appScene,
-        sessionId: sessionId,
-      )?.nodeId,
+      orchestrator.controller
+          .selectionForDomain(
+            targetDomain: LiveEditTargetDomain.appScene,
+            sessionId: sessionId,
+          )
+          ?.nodeId,
       appSelection.nodeId,
     );
     expect(
-      orchestrator.controller.selectionForDomain(
-        targetDomain: LiveEditTargetDomain.toolScene,
-        sessionId: sessionId,
-      )?.rawNode['surfaceId'],
+      orchestrator.controller
+          .selectionForDomain(
+            targetDomain: LiveEditTargetDomain.toolScene,
+            sessionId: sessionId,
+          )
+          ?.rawNode['surfaceId'],
       kLiveEditAiBubbleSurfaceId,
     );
   });
@@ -360,18 +382,20 @@ void main() {
       sessionId: _sid(orchestrator),
     );
     expect(marqueeBubbleId, contains('area:'));
-    final sessionId = orchestrator.context.sessionResource.value.activeSessionId;
+    final sessionId =
+        orchestrator.context.sessionResource.value.activeSessionId;
     final domain = selectPresentedLayer(orchestrator.context);
     expect(
-      orchestrator.controller.multiSelectionForDomain(
-        targetDomain: domain,
-        sessionId: sessionId,
-      ).length,
+      orchestrator.controller
+          .multiSelectionForDomain(targetDomain: domain, sessionId: sessionId)
+          .length,
       greaterThan(1),
     );
 
     OpenAiBubbleCommand(defaultPrompt: '').execute(orchestrator.context);
-    UpdateAiComposerCommand(value: 'Grouped prompt').execute(orchestrator.context);
+    UpdateAiComposerCommand(
+      value: 'Grouped prompt',
+    ).execute(orchestrator.context);
     await tester.pumpAndSettle();
 
     await tester.tapAt(tester.getCenter(find.text('Other')));
@@ -393,7 +417,10 @@ void main() {
       marqueeBubbleId,
     );
     expect(
-      selectInstructionTextForBubble(orchestrator.context, _bubbleId(orchestrator)),
+      selectInstructionTextForBubble(
+        orchestrator.context,
+        _bubbleId(orchestrator),
+      ),
       'Grouped prompt',
     );
   });
@@ -436,19 +463,27 @@ void main() {
     final firstNodeId = _selection(orchestrator)!.nodeId;
     OpenAiBubbleCommand(defaultPrompt: '').execute(orchestrator.context);
     await tester.pumpAndSettle();
-    UpdateAiComposerCommand(value: 'Rewrite the first text.').execute(orchestrator.context);
+    UpdateAiComposerCommand(
+      value: 'Rewrite the first text.',
+    ).execute(orchestrator.context);
     await tester.pumpAndSettle();
-    unawaited(SubmitAiPromptCommand(controller: orchestrator.controller).execute(orchestrator.context));
+    unawaited(
+      SubmitAiPromptCommand(
+        controller: orchestrator.controller,
+      ).execute(orchestrator.context),
+    );
     await tester.pump();
 
     expect(
-      selectBubbleStatusForBubble(orchestrator.context,firstNodeId),
+      selectBubbleStatusForBubble(orchestrator.context, firstNodeId),
       LiveEditBubbleStatus.waiting,
     );
 
     const untouchedBubbleId = 'untouched-bubble';
-    SetBubbleBackendCommand(bubbleId: untouchedBubbleId, backendId: 'codex_exec')
-        .execute(orchestrator.context);
+    SetBubbleBackendCommand(
+      bubbleId: untouchedBubbleId,
+      backendId: 'codex_exec',
+    ).execute(orchestrator.context);
 
     response.complete(<String, Object?>{
       'proposalId': 'proposal-first',
@@ -475,11 +510,13 @@ void main() {
       LiveEditBubbleStatus.editing,
     );
 
-    SelectTrackedBubbleCommand(bubbleId: firstNodeId, controller: orchestrator.controller)
-        .execute(orchestrator.context);
+    SelectTrackedBubbleCommand(
+      bubbleId: firstNodeId,
+      controller: orchestrator.controller,
+    ).execute(orchestrator.context);
     await tester.pumpAndSettle();
     expect(
-      selectBubbleStatusForBubble(orchestrator.context,firstNodeId),
+      selectBubbleStatusForBubble(orchestrator.context, firstNodeId),
       LiveEditBubbleStatus.applied,
     );
   });
@@ -576,7 +613,9 @@ void main() {
     await tester.tapAt(tester.getCenter(find.text('First')));
     await tester.pumpAndSettle();
     OpenAiBubbleCommand(defaultPrompt: '').execute(orchestrator.context);
-    UpdateAiComposerCommand(value: 'First bubble prompt').execute(orchestrator.context);
+    UpdateAiComposerCommand(
+      value: 'First bubble prompt',
+    ).execute(orchestrator.context);
     await tester.pumpAndSettle();
     final firstBubbleId = _bubbleId(orchestrator);
     expect(firstBubbleId, isNotNull);
@@ -880,12 +919,21 @@ void main() {
       ),
       'Cursor',
     );
-    if (selectEffectiveProperties(orchestrator.context, orchestrator.controller, domain: _domain(orchestrator), sessionId: _sid(orchestrator)).isEmpty) return;
+    if (selectEffectiveProperties(
+      orchestrator.context,
+      orchestrator.controller,
+      domain: _domain(orchestrator),
+      sessionId: _sid(orchestrator),
+    ).isEmpty)
+      return;
 
-    final editable = _selection(orchestrator)!.propertyGroups.firstWhere(
-      (final property) => property.editable,
-    );
-    UpdateDraftFromUiCommand(property: editable, targetValue: 'Hello').execute(orchestrator.context);
+    final editable = _selection(
+      orchestrator,
+    )!.propertyGroups.firstWhere((final property) => property.editable);
+    UpdateDraftFromUiCommand(
+      property: editable,
+      targetValue: 'Hello',
+    ).execute(orchestrator.context);
     await tester.pumpAndSettle();
     await ApplyDraftCommand().execute(orchestrator.context);
     await tester.pumpAndSettle();
@@ -1376,19 +1424,22 @@ void main() {
     await tester.pump();
 
     expect(_marqueeRect(orchestrator), isNotNull);
-    expect(selectMarqueePreviewSelections(
-      orchestrator.context,
-      orchestrator.controller,
-      presentationDomain: _domain(orchestrator),
-      sessionId: _sid(orchestrator),
-    ), isNotEmpty);
     expect(
       selectMarqueePreviewSelections(
-      orchestrator.context,
-      orchestrator.controller,
-      presentationDomain: _domain(orchestrator),
-      sessionId: _sid(orchestrator),
-    ).every(
+        orchestrator.context,
+        orchestrator.controller,
+        presentationDomain: _domain(orchestrator),
+        sessionId: _sid(orchestrator),
+      ),
+      isNotEmpty,
+    );
+    expect(
+      selectMarqueePreviewSelections(
+        orchestrator.context,
+        orchestrator.controller,
+        presentationDomain: _domain(orchestrator),
+        sessionId: _sid(orchestrator),
+      ).every(
         (final selection) =>
             selection.detailsTree.isEmpty && selection.propertiesTree.isEmpty,
       ),
@@ -1449,21 +1500,17 @@ void main() {
       await tester.pump();
 
       final previewNodeIds = selectMarqueePreviewSelections(
-      orchestrator.context,
-      orchestrator.controller,
-      presentationDomain: _domain(orchestrator),
-      sessionId: _sid(orchestrator),
-    )
-          .map((final selection) => selection.nodeId)
-          .toList(growable: false);
+        orchestrator.context,
+        orchestrator.controller,
+        presentationDomain: _domain(orchestrator),
+        sessionId: _sid(orchestrator),
+      ).map((final selection) => selection.nodeId).toList(growable: false);
       final previewTypes = selectMarqueePreviewSelections(
-      orchestrator.context,
-      orchestrator.controller,
-      presentationDomain: _domain(orchestrator),
-      sessionId: _sid(orchestrator),
-    )
-          .map((final selection) => selection.widgetType)
-          .toList(growable: false);
+        orchestrator.context,
+        orchestrator.controller,
+        presentationDomain: _domain(orchestrator),
+        sessionId: _sid(orchestrator),
+      ).map((final selection) => selection.widgetType).toList(growable: false);
       expect(previewNodeIds, isNotEmpty);
       expect(
         previewTypes,
@@ -1474,12 +1521,12 @@ void main() {
       await gesture.up();
       await tester.pumpAndSettle();
 
-      final committedNodeIds = _multiSelection(orchestrator)
-          .map((final selection) => selection.nodeId)
-          .toList(growable: false);
-      final committedTypes = _multiSelection(orchestrator)
-          .map((final selection) => selection.widgetType)
-          .toList(growable: false);
+      final committedNodeIds = _multiSelection(
+        orchestrator,
+      ).map((final selection) => selection.nodeId).toList(growable: false);
+      final committedTypes = _multiSelection(
+        orchestrator,
+      ).map((final selection) => selection.widgetType).toList(growable: false);
       expect(committedNodeIds, previewNodeIds);
       expect(
         committedTypes,
@@ -1528,9 +1575,9 @@ void main() {
       await gesture.up();
       await tester.pumpAndSettle();
 
-      final widgetTypes = _multiSelection(orchestrator)
-          .map((final selection) => selection.widgetType)
-          .toSet();
+      final widgetTypes = _multiSelection(
+        orchestrator,
+      ).map((final selection) => selection.widgetType).toSet();
       expect(widgetTypes, contains('SizedBox'));
       expect(widgetTypes, isNot(contains('Column')));
       expect(widgetTypes, isNot(contains('Center')));
@@ -1629,9 +1676,9 @@ void main() {
       await gesture.up();
       await tester.pumpAndSettle();
 
-      final inactiveIndex = _candidates(orchestrator).indexWhere(
-        (final candidate) => !candidate.active,
-      );
+      final inactiveIndex = _candidates(
+        orchestrator,
+      ).indexWhere((final candidate) => !candidate.active);
       expect(inactiveIndex, greaterThanOrEqualTo(0));
 
       SelectCandidateAtCommand(
@@ -1716,9 +1763,9 @@ void main() {
       o.addListener(handleNotification);
       addTearDown(() => o.removeListener(handleNotification));
 
-      final started =
-          StartSessionCommand(targetDomain: LiveEditTargetDomain.appScene)
-              .execute(o.context);
+      final started = StartSessionCommand(
+        targetDomain: LiveEditTargetDomain.appScene,
+      ).execute(o.context);
       final sessionId = started['sessionId']! as String;
       SetOverlayCommand(enabled: true, sessionId: sessionId).execute(o.context);
 
@@ -1726,13 +1773,25 @@ void main() {
           tester.getTopLeft(find.text('First')) - const Offset(20, 20);
       final end =
           tester.getBottomRight(find.text('Second')) + const Offset(20, 20);
-      StartMarqueeCommand(x: start.dx.toInt(), y: start.dy.toInt(), sessionId: sessionId).execute(o.context);
+      StartMarqueeCommand(
+        x: start.dx.toInt(),
+        y: start.dy.toInt(),
+        sessionId: sessionId,
+      ).execute(o.context);
       notifications = 0;
 
-      UpdateMarqueeCommand(x: end.dx.toInt(), y: end.dy.toInt(), sessionId: sessionId).execute(o.context);
+      UpdateMarqueeCommand(
+        x: end.dx.toInt(),
+        y: end.dy.toInt(),
+        sessionId: sessionId,
+      ).execute(o.context);
       final afterFirstUpdate = notifications;
 
-      UpdateMarqueeCommand(x: end.dx.toInt(), y: end.dy.toInt(), sessionId: sessionId).execute(o.context);
+      UpdateMarqueeCommand(
+        x: end.dx.toInt(),
+        y: end.dy.toInt(),
+        sessionId: sessionId,
+      ).execute(o.context);
 
       expect(afterFirstUpdate, greaterThanOrEqualTo(1));
       expect(notifications, lessThanOrEqualTo(afterFirstUpdate + 2));
@@ -1777,15 +1836,29 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tapAt(tester.getCenter(find.text('Beta')));
     await tester.pumpAndSettle();
-    expect(selectPinnedBubbleSummaries(orchestrator.context, orchestrator.controller, presentationDomain: _domain(orchestrator), sessionId: _sid(orchestrator)), isEmpty);
+    expect(
+      selectPinnedBubbleSummaries(
+        orchestrator.context,
+        orchestrator.controller,
+        presentationDomain: _domain(orchestrator),
+        sessionId: _sid(orchestrator),
+      ),
+      isEmpty,
+    );
 
     await tester.tapAt(tester.getCenter(find.text('Alpha')));
     await tester.pumpAndSettle();
     await selectEditableCandidate(tester, orchestrator);
-    if (selectEffectiveProperties(orchestrator.context, orchestrator.controller, domain: _domain(orchestrator), sessionId: _sid(orchestrator)).isEmpty) return;
-    final property = _selection(orchestrator)!.propertyGroups.firstWhere(
-      (final candidate) => candidate.editable,
-    );
+    if (selectEffectiveProperties(
+      orchestrator.context,
+      orchestrator.controller,
+      domain: _domain(orchestrator),
+      sessionId: _sid(orchestrator),
+    ).isEmpty)
+      return;
+    final property = _selection(
+      orchestrator,
+    )!.propertyGroups.firstWhere((final candidate) => candidate.editable);
     final targetValue = switch (property.kind) {
       LiveEditPropertyKind.boolean => !(property.value == true),
       LiveEditPropertyKind.integer => 180,
@@ -1793,7 +1866,10 @@ void main() {
       _ when property.options.isNotEmpty => property.options.first,
       _ => 'Changed',
     };
-    UpdateDraftFromUiCommand(property: property, targetValue: targetValue).execute(orchestrator.context);
+    UpdateDraftFromUiCommand(
+      property: property,
+      targetValue: targetValue,
+    ).execute(orchestrator.context);
     await tester.pumpAndSettle();
     final alphaNodeId = _selection(orchestrator)!.nodeId;
 
@@ -1807,7 +1883,15 @@ void main() {
     await betaGesture.down(betaCenter);
     await betaGesture.up();
     await tester.pumpAndSettle();
-    expect(selectPinnedBubbleSummaries(orchestrator.context, orchestrator.controller, presentationDomain: _domain(orchestrator), sessionId: _sid(orchestrator)).length, lessThanOrEqualTo(1));
+    expect(
+      selectPinnedBubbleSummaries(
+        orchestrator.context,
+        orchestrator.controller,
+        presentationDomain: _domain(orchestrator),
+        sessionId: _sid(orchestrator),
+      ).length,
+      lessThanOrEqualTo(1),
+    );
     SelectTrackedBubbleCommand(
       bubbleId: alphaNodeId,
       controller: orchestrator.controller,
@@ -1866,10 +1950,16 @@ void main() {
       await tester.pumpAndSettle();
     }
     await selectEditableCandidate(tester, orchestrator);
-    if (selectEffectiveProperties(orchestrator.context, orchestrator.controller, domain: _domain(orchestrator), sessionId: _sid(orchestrator)).isEmpty) return;
-    final property = _selection(orchestrator)!.propertyGroups.firstWhere(
-      (final candidate) => candidate.editable,
-    );
+    if (selectEffectiveProperties(
+      orchestrator.context,
+      orchestrator.controller,
+      domain: _domain(orchestrator),
+      sessionId: _sid(orchestrator),
+    ).isEmpty)
+      return;
+    final property = _selection(
+      orchestrator,
+    )!.propertyGroups.firstWhere((final candidate) => candidate.editable);
     final targetValue = switch (property.kind) {
       LiveEditPropertyKind.boolean => !(property.value == true),
       LiveEditPropertyKind.integer => 140,
@@ -1877,7 +1967,10 @@ void main() {
       _ when property.options.isNotEmpty => property.options.first,
       _ => 'Updated',
     };
-    UpdateDraftFromUiCommand(property: property, targetValue: targetValue).execute(orchestrator.context);
+    UpdateDraftFromUiCommand(
+      property: property,
+      targetValue: targetValue,
+    ).execute(orchestrator.context);
     await tester.pumpAndSettle();
 
     expect(_semanticsId('live_edit_bubble_done_button'), findsNothing);
@@ -1895,7 +1988,15 @@ void main() {
     }
 
     expect(selectApplyPhase(orchestrator.context), LiveEditApplyPhase.success);
-    expect(selectCanResolveActiveBubble(orchestrator.context, orchestrator.controller, presentationDomain: _domain(orchestrator), sessionId: _sid(orchestrator)), isTrue);
+    expect(
+      selectCanResolveActiveBubble(
+        orchestrator.context,
+        orchestrator.controller,
+        presentationDomain: _domain(orchestrator),
+        sessionId: _sid(orchestrator),
+      ),
+      isTrue,
+    );
     final appliedScrollables = find.descendant(
       of: _activeBubble(orchestrator),
       matching: find.byType(ListView),
@@ -1907,9 +2008,25 @@ void main() {
     ResolveActiveBubbleCommand().execute(orchestrator.context);
     await tester.pumpAndSettle();
 
-    expect(selectActiveBubbleResolved(orchestrator.context, orchestrator.controller, presentationDomain: _domain(orchestrator), sessionId: _sid(orchestrator)), isTrue);
+    expect(
+      selectActiveBubbleResolved(
+        orchestrator.context,
+        orchestrator.controller,
+        presentationDomain: _domain(orchestrator),
+        sessionId: _sid(orchestrator),
+      ),
+      isTrue,
+    );
     expect(_activeBubble(orchestrator), findsNothing);
-    expect(selectPinnedBubbleSummaries(orchestrator.context, orchestrator.controller, presentationDomain: _domain(orchestrator), sessionId: _sid(orchestrator)), isEmpty);
+    expect(
+      selectPinnedBubbleSummaries(
+        orchestrator.context,
+        orchestrator.controller,
+        presentationDomain: _domain(orchestrator),
+        sessionId: _sid(orchestrator),
+      ),
+      isEmpty,
+    );
     expect(_semanticsId('live_edit_bubble_done_button'), findsNothing);
 
     final _pt = tester.getCenter(find.text('Target'));
@@ -1920,7 +2037,15 @@ void main() {
     ).execute(orchestrator.context);
     await tester.pumpAndSettle();
 
-    expect(selectActiveBubbleResolved(orchestrator.context, orchestrator.controller, presentationDomain: _domain(orchestrator), sessionId: _sid(orchestrator)), isFalse);
+    expect(
+      selectActiveBubbleResolved(
+        orchestrator.context,
+        orchestrator.controller,
+        presentationDomain: _domain(orchestrator),
+        sessionId: _sid(orchestrator),
+      ),
+      isFalse,
+    );
     expect(_activeBubble(orchestrator), findsOneWidget);
   });
 
@@ -1976,7 +2101,13 @@ void main() {
     await tester.pumpAndSettle();
 
     final selection = _selection(orchestrator)!;
-    if (selectEffectiveProperties(orchestrator.context, orchestrator.controller, domain: _domain(orchestrator), sessionId: _sid(orchestrator)).isEmpty) return;
+    if (selectEffectiveProperties(
+      orchestrator.context,
+      orchestrator.controller,
+      domain: _domain(orchestrator),
+      sessionId: _sid(orchestrator),
+    ).isEmpty)
+      return;
     final editable = selection.propertyGroups.firstWhere(
       (final property) => property.editable,
       orElse: () => const LiveEditPropertyDescriptor(
@@ -1990,17 +2121,36 @@ void main() {
       ),
     );
 
-    UpdateDraftFromUiCommand(property: editable, targetValue: 140).execute(orchestrator.context);
+    UpdateDraftFromUiCommand(
+      property: editable,
+      targetValue: 140,
+    ).execute(orchestrator.context);
     await tester.pumpAndSettle();
 
     const expectedValue = 140;
     for (var i = 0; i < 50; i++) {
-      if (selectEffectiveValueForProperty(orchestrator.context, orchestrator.controller, editable, presentationDomain: _domain(orchestrator), sessionId: _sid(orchestrator)) == expectedValue) break;
+      if (selectEffectiveValueForProperty(
+            orchestrator.context,
+            orchestrator.controller,
+            editable,
+            presentationDomain: _domain(orchestrator),
+            sessionId: _sid(orchestrator),
+          ) ==
+          expectedValue)
+        break;
       await tester.pumpAndSettle();
     }
     expect(selectPanelExpanded(orchestrator.context), isTrue);
     expect(selectApplyPhase(orchestrator.context), LiveEditApplyPhase.idle);
-    expect(selectIsWaitingForAgent(orchestrator.context, orchestrator.controller, presentationDomain: _domain(orchestrator), sessionId: _sid(orchestrator)), isFalse);
+    expect(
+      selectIsWaitingForAgent(
+        orchestrator.context,
+        orchestrator.controller,
+        presentationDomain: _domain(orchestrator),
+        sessionId: _sid(orchestrator),
+      ),
+      isFalse,
+    );
     expect(find.byType(AlertDialog), findsNothing);
     expect(selectNeedsApproval(orchestrator.context), isFalse);
     expect(selectPendingExecutionPlan(orchestrator.context), isNull);
@@ -2046,22 +2196,58 @@ void main() {
     await tester.pumpAndSettle();
 
     OpenAiBubbleCommand(defaultPrompt: '').execute(orchestrator.context);
-    UpdateAiComposerCommand(value: 'Please rewrite this heading.').execute(orchestrator.context);
+    UpdateAiComposerCommand(
+      value: 'Please rewrite this heading.',
+    ).execute(orchestrator.context);
     await tester.pumpAndSettle();
 
-    expect(selectDraftChangesForDomain(orchestrator.context, orchestrator.controller, domain: _domain(orchestrator), sessionId: _sid(orchestrator)), isEmpty);
-    expect(selectCanSubmitAiPrompt(orchestrator.context, orchestrator.controller, presentationDomain: _domain(orchestrator), sessionId: _sid(orchestrator)), isTrue);
-    expect(selectCurrentActivity(orchestrator.context, orchestrator.controller, presentationDomain: _domain(orchestrator), sessionId: _sid(orchestrator))?.label, 'Prompt ready');
+    expect(
+      selectDraftChangesForDomain(
+        orchestrator.context,
+        orchestrator.controller,
+        domain: _domain(orchestrator),
+        sessionId: _sid(orchestrator),
+      ),
+      isEmpty,
+    );
+    expect(
+      selectCanSubmitAiPrompt(
+        orchestrator.context,
+        orchestrator.controller,
+        presentationDomain: _domain(orchestrator),
+        sessionId: _sid(orchestrator),
+      ),
+      isTrue,
+    );
+    expect(
+      selectCurrentActivity(
+        orchestrator.context,
+        orchestrator.controller,
+        presentationDomain: _domain(orchestrator),
+        sessionId: _sid(orchestrator),
+      )?.label,
+      'Prompt ready',
+    );
     expect(find.text('Prompt ready'), findsWidgets);
 
-    await SubmitAiPromptCommand(controller: orchestrator.controller).execute(orchestrator.context);
+    await SubmitAiPromptCommand(
+      controller: orchestrator.controller,
+    ).execute(orchestrator.context);
     await tester.pumpAndSettle();
 
     expect(requests, hasLength(1));
     expect(requests.single.draftChanges, isEmpty);
     expect(requests.single.intentText, 'Please rewrite this heading.');
     expect(selectPendingExecutionPlan(orchestrator.context), isNotNull);
-    expect(selectCurrentActivity(orchestrator.context, orchestrator.controller, presentationDomain: _domain(orchestrator), sessionId: _sid(orchestrator))?.label, 'Applied');
+    expect(
+      selectCurrentActivity(
+        orchestrator.context,
+        orchestrator.controller,
+        presentationDomain: _domain(orchestrator),
+        sessionId: _sid(orchestrator),
+      )?.label,
+      'Applied',
+    );
     expect(find.text('Applied'), findsWidgets);
   });
 
@@ -2110,7 +2296,13 @@ void main() {
     await tester.tap(_semanticsId('live_edit_panel_expand_button'));
     await tester.pumpAndSettle();
 
-    if (selectEffectiveProperties(orchestrator.context, orchestrator.controller, domain: _domain(orchestrator), sessionId: _sid(orchestrator)).isEmpty) return;
+    if (selectEffectiveProperties(
+      orchestrator.context,
+      orchestrator.controller,
+      domain: _domain(orchestrator),
+      sessionId: _sid(orchestrator),
+    ).isEmpty)
+      return;
     final editable = _selection(orchestrator)!.propertyGroups.firstWhere(
       (final property) => property.editable,
       orElse: () => const LiveEditPropertyDescriptor(
@@ -2124,12 +2316,31 @@ void main() {
       ),
     );
 
-    UpdateDraftFromUiCommand(property: editable, targetValue: 140).execute(orchestrator.context);
+    UpdateDraftFromUiCommand(
+      property: editable,
+      targetValue: 140,
+    ).execute(orchestrator.context);
     await tester.pumpAndSettle();
 
     expect(requests, isEmpty);
-    expect(selectDraftChangesForDomain(orchestrator.context, orchestrator.controller, domain: _domain(orchestrator), sessionId: _sid(orchestrator)), isNotEmpty);
-    expect(selectHistoryForActiveSelection(orchestrator.context, orchestrator.controller, presentationDomain: _domain(orchestrator), sessionId: _sid(orchestrator)), isEmpty);
+    expect(
+      selectDraftChangesForDomain(
+        orchestrator.context,
+        orchestrator.controller,
+        domain: _domain(orchestrator),
+        sessionId: _sid(orchestrator),
+      ),
+      isNotEmpty,
+    );
+    expect(
+      selectHistoryForActiveSelection(
+        orchestrator.context,
+        orchestrator.controller,
+        presentationDomain: _domain(orchestrator),
+        sessionId: _sid(orchestrator),
+      ),
+      isEmpty,
+    );
     expect(find.text('Pending request'), findsWidgets);
 
     await ApplyDraftCommand().execute(orchestrator.context);
@@ -2138,8 +2349,24 @@ void main() {
     expect(requests, hasLength(1));
     expect(requests.single.draftChanges, isNotEmpty);
     expect(requests.single.intentText, contains('Staged fixes:'));
-    expect(selectHistoryForActiveSelection(orchestrator.context, orchestrator.controller, presentationDomain: _domain(orchestrator), sessionId: _sid(orchestrator)), hasLength(3));
-    expect(selectHistoryForActiveSelection(orchestrator.context, orchestrator.controller, presentationDomain: _domain(orchestrator), sessionId: _sid(orchestrator)).first.role, 'user');
+    expect(
+      selectHistoryForActiveSelection(
+        orchestrator.context,
+        orchestrator.controller,
+        presentationDomain: _domain(orchestrator),
+        sessionId: _sid(orchestrator),
+      ),
+      hasLength(3),
+    );
+    expect(
+      selectHistoryForActiveSelection(
+        orchestrator.context,
+        orchestrator.controller,
+        presentationDomain: _domain(orchestrator),
+        sessionId: _sid(orchestrator),
+      ).first.role,
+      'user',
+    );
   });
 
   testWidgets('streamed codex events land in activity and debug history', (
@@ -2206,7 +2433,13 @@ void main() {
     await tester.tap(_semanticsId('live_edit_panel_expand_button'));
     await tester.pumpAndSettle();
 
-    if (selectEffectiveProperties(orchestrator.context, orchestrator.controller, domain: _domain(orchestrator), sessionId: _sid(orchestrator)).isEmpty) return;
+    if (selectEffectiveProperties(
+      orchestrator.context,
+      orchestrator.controller,
+      domain: _domain(orchestrator),
+      sessionId: _sid(orchestrator),
+    ).isEmpty)
+      return;
     final editable = _selection(orchestrator)!.propertyGroups.firstWhere(
       (final property) => property.editable,
       orElse: () => const LiveEditPropertyDescriptor(
@@ -2220,13 +2453,21 @@ void main() {
       ),
     );
 
-    UpdateDraftFromUiCommand(property: editable, targetValue: 140).execute(orchestrator.context);
+    UpdateDraftFromUiCommand(
+      property: editable,
+      targetValue: 140,
+    ).execute(orchestrator.context);
     await tester.pumpAndSettle();
     await ApplyDraftCommand().execute(orchestrator.context);
     await tester.pumpAndSettle();
 
     expect(
-      selectActivityTimelineForActiveSelection(orchestrator.context, orchestrator.controller, presentationDomain: _domain(orchestrator), sessionId: _sid(orchestrator)).any(
+      selectActivityTimelineForActiveSelection(
+        orchestrator.context,
+        orchestrator.controller,
+        presentationDomain: _domain(orchestrator),
+        sessionId: _sid(orchestrator),
+      ).any(
         (final entry) =>
             entry.label == 'Applying with agent' ||
             entry.summary.contains('proposal'),
@@ -2234,7 +2475,12 @@ void main() {
       isTrue,
     );
     expect(
-      selectDebugTimelineForActiveSelection(orchestrator.context, orchestrator.controller, presentationDomain: _domain(orchestrator), sessionId: _sid(orchestrator)).any(
+      selectDebugTimelineForActiveSelection(
+        orchestrator.context,
+        orchestrator.controller,
+        presentationDomain: _domain(orchestrator),
+        sessionId: _sid(orchestrator),
+      ).any(
         (final entry) => entry.message.contains('Raw stdout chunk from Codex.'),
       ),
       isTrue,
@@ -2283,12 +2529,23 @@ void main() {
     await tester.pumpAndSettle();
     await selectEditableCandidate(tester, orchestrator);
 
-    if (selectEffectiveProperties(orchestrator.context, orchestrator.controller, domain: _domain(orchestrator), sessionId: _sid(orchestrator)).isEmpty) return;
-    final editable = _selection(orchestrator)!.propertyGroups.firstWhere(
-      (final property) => property.editable,
-    );
-    UpdateDraftFromUiCommand(property: editable, targetValue: 'Hello').execute(orchestrator.context);
-    UpdateAiComposerCommand(value: 'Rewrite the tone to be more direct.').execute(orchestrator.context);
+    if (selectEffectiveProperties(
+      orchestrator.context,
+      orchestrator.controller,
+      domain: _domain(orchestrator),
+      sessionId: _sid(orchestrator),
+    ).isEmpty)
+      return;
+    final editable = _selection(
+      orchestrator,
+    )!.propertyGroups.firstWhere((final property) => property.editable);
+    UpdateDraftFromUiCommand(
+      property: editable,
+      targetValue: 'Hello',
+    ).execute(orchestrator.context);
+    UpdateAiComposerCommand(
+      value: 'Rewrite the tone to be more direct.',
+    ).execute(orchestrator.context);
     await tester.pumpAndSettle();
 
     await ApplyDraftCommand().execute(orchestrator.context);
@@ -2305,7 +2562,12 @@ void main() {
       ),
     );
     expect(
-      selectHistoryForActiveSelection(orchestrator.context, orchestrator.controller, presentationDomain: _domain(orchestrator), sessionId: _sid(orchestrator)).first.message,
+      selectHistoryForActiveSelection(
+        orchestrator.context,
+        orchestrator.controller,
+        presentationDomain: _domain(orchestrator),
+        sessionId: _sid(orchestrator),
+      ).first.message,
       contains('Staged fixes:'),
     );
   });
@@ -2376,12 +2638,22 @@ void main() {
     expect(_selection(orchestrator)?.nodeId, selectedNodeId);
     expect(promptWidget.enableInteractiveSelection, isTrue);
 
-    expect(selectCanSubmitAiPrompt(orchestrator.context, orchestrator.controller, presentationDomain: _domain(orchestrator), sessionId: _sid(orchestrator)), isTrue);
+    expect(
+      selectCanSubmitAiPrompt(
+        orchestrator.context,
+        orchestrator.controller,
+        presentationDomain: _domain(orchestrator),
+        sessionId: _sid(orchestrator),
+      ),
+      isTrue,
+    );
     final sendButton = find.widgetWithText(FilledButton, 'Send');
     expect(sendButton, findsOneWidget);
     expect(tester.widget<FilledButton>(sendButton).onPressed, isNotNull);
 
-    await SubmitAiPromptCommand(controller: orchestrator.controller).execute(orchestrator.context);
+    await SubmitAiPromptCommand(
+      controller: orchestrator.controller,
+    ).execute(orchestrator.context);
     await tester.pumpAndSettle();
 
     expect(requests, hasLength(1));
@@ -2447,13 +2719,18 @@ void main() {
     await tester.enterText(aiPromptField.first, 'Rewrite the selected text.');
     await tester.pumpAndSettle();
 
-    await SubmitAiPromptCommand(controller: orchestrator.controller).execute(orchestrator.context);
+    await SubmitAiPromptCommand(
+      controller: orchestrator.controller,
+    ).execute(orchestrator.context);
     await tester.pumpAndSettle();
 
     expect(selectApplyPhase(orchestrator.context), LiveEditApplyPhase.failed);
     expect(selectLastError(orchestrator.context), 'backend offline');
     expect(
-      selectInstructionTextForBubble(orchestrator.context, _bubbleId(orchestrator)),
+      selectInstructionTextForBubble(
+        orchestrator.context,
+        _bubbleId(orchestrator),
+      ),
       'Rewrite the selected text.',
     );
 
@@ -2504,7 +2781,13 @@ void main() {
       await tester.tap(_semanticsId('live_edit_panel_expand_button'));
       await tester.pumpAndSettle();
 
-      if (selectEffectiveProperties(orchestrator.context, orchestrator.controller, domain: _domain(orchestrator), sessionId: _sid(orchestrator)).isEmpty) return;
+      if (selectEffectiveProperties(
+        orchestrator.context,
+        orchestrator.controller,
+        domain: _domain(orchestrator),
+        sessionId: _sid(orchestrator),
+      ).isEmpty)
+        return;
       final property = _selection(orchestrator)!.propertyGroups.firstWhere(
         (final candidate) =>
             candidate.editable &&
@@ -2705,10 +2988,14 @@ Direct apply request:
     await tester.pumpAndSettle();
 
     SetDebugModeCommand(enabled: true).execute(orchestrator.context);
-    UpdateAiComposerCommand(value: 'Rewrite the selected text.').execute(orchestrator.context);
+    UpdateAiComposerCommand(
+      value: 'Rewrite the selected text.',
+    ).execute(orchestrator.context);
     await tester.pumpAndSettle();
 
-    await SubmitAiPromptCommand(controller: orchestrator.controller).execute(orchestrator.context);
+    await SubmitAiPromptCommand(
+      controller: orchestrator.controller,
+    ).execute(orchestrator.context);
     await tester.pumpAndSettle();
 
     if (!selectPanelExpanded(orchestrator.context)) {
@@ -2744,12 +3031,15 @@ Direct apply request:
       controller: orchestrator.controller,
     ).execute(orchestrator.context);
     await tester.pumpAndSettle();
-    expect(selectDebugPromptForActiveSelection(
-      orchestrator.context,
-      orchestrator.controller,
-      presentationDomain: _domain(orchestrator),
-      sessionId: _sid(orchestrator),
-    ), isNull);
+    expect(
+      selectDebugPromptForActiveSelection(
+        orchestrator.context,
+        orchestrator.controller,
+        presentationDomain: _domain(orchestrator),
+        sessionId: _sid(orchestrator),
+      ),
+      isNull,
+    );
 
     expect(
       find.text('No agent request sent for this bubble yet.'),
@@ -2761,12 +3051,15 @@ Direct apply request:
       controller: orchestrator.controller,
     ).execute(orchestrator.context);
     await tester.pumpAndSettle();
-    expect(selectDebugPromptForActiveSelection(
-      orchestrator.context,
-      orchestrator.controller,
-      presentationDomain: _domain(orchestrator),
-      sessionId: _sid(orchestrator),
-    ), firstPrompt);
+    expect(
+      selectDebugPromptForActiveSelection(
+        orchestrator.context,
+        orchestrator.controller,
+        presentationDomain: _domain(orchestrator),
+        sessionId: _sid(orchestrator),
+      ),
+      firstPrompt,
+    );
 
     expect(
       find.textContaining('You are an agent working directly inside'),
@@ -2814,12 +3107,24 @@ Direct apply request:
       expect(find.text('Technical details'), findsNothing);
 
       OpenAiBubbleCommand(defaultPrompt: '').execute(orchestrator.context);
-      UpdateAiComposerCommand(value: 'Rewrite the selected text.').execute(orchestrator.context);
+      UpdateAiComposerCommand(
+        value: 'Rewrite the selected text.',
+      ).execute(orchestrator.context);
       await tester.pumpAndSettle();
-      await SubmitAiPromptCommand(controller: orchestrator.controller).execute(orchestrator.context);
+      await SubmitAiPromptCommand(
+        controller: orchestrator.controller,
+      ).execute(orchestrator.context);
       await tester.pumpAndSettle();
 
-      expect(selectCurrentActivity(orchestrator.context, orchestrator.controller, presentationDomain: _domain(orchestrator), sessionId: _sid(orchestrator))?.label, 'Applied');
+      expect(
+        selectCurrentActivity(
+          orchestrator.context,
+          orchestrator.controller,
+          presentationDomain: _domain(orchestrator),
+          sessionId: _sid(orchestrator),
+        )?.label,
+        'Applied',
+      );
       expect(find.text('Technical details'), findsNothing);
 
       SetDebugModeCommand(enabled: true).execute(orchestrator.context);
@@ -2854,11 +3159,7 @@ Direct apply request:
     expect(find.byType(AlertDialog), findsNothing);
     expect(find.text('Selected'), findsWidgets);
 
-    for (
-      var index = 0;
-      index < _candidates(orchestrator).length;
-      index += 1
-    ) {
+    for (var index = 0; index < _candidates(orchestrator).length; index += 1) {
       final selection = _selection(orchestrator);
       if (selection != null &&
           selection.propertyGroups.any(
@@ -2873,10 +3174,16 @@ Direct apply request:
       await tester.pumpAndSettle();
     }
 
-    if (selectEffectiveProperties(orchestrator.context, orchestrator.controller, domain: _domain(orchestrator), sessionId: _sid(orchestrator)).isEmpty) return;
-    final property = _selection(orchestrator)!.propertyGroups.firstWhere(
-      (final candidate) => candidate.editable,
-    );
+    if (selectEffectiveProperties(
+      orchestrator.context,
+      orchestrator.controller,
+      domain: _domain(orchestrator),
+      sessionId: _sid(orchestrator),
+    ).isEmpty)
+      return;
+    final property = _selection(
+      orchestrator,
+    )!.propertyGroups.firstWhere((final candidate) => candidate.editable);
     FocusPropertyCommand(
       property: property,
       defaultPrompt: '',
@@ -2897,7 +3204,15 @@ Direct apply request:
     await tester.pumpAndSettle();
 
     expect(find.byType(AlertDialog), findsNothing);
-    expect(selectDraftChangesForDomain(orchestrator.context, orchestrator.controller, domain: _domain(orchestrator), sessionId: _sid(orchestrator)), isNotEmpty);
+    expect(
+      selectDraftChangesForDomain(
+        orchestrator.context,
+        orchestrator.controller,
+        domain: _domain(orchestrator),
+        sessionId: _sid(orchestrator),
+      ),
+      isNotEmpty,
+    );
   });
 
   testWidgets('selection and active property persist across draft updates', (
@@ -2920,7 +3235,13 @@ Direct apply request:
     await selectEditableCandidate(tester, orchestrator);
 
     final selection = _selection(orchestrator)!;
-    if (selectEffectiveProperties(orchestrator.context, orchestrator.controller, domain: _domain(orchestrator), sessionId: _sid(orchestrator)).isEmpty) return;
+    if (selectEffectiveProperties(
+      orchestrator.context,
+      orchestrator.controller,
+      domain: _domain(orchestrator),
+      sessionId: _sid(orchestrator),
+    ).isEmpty)
+      return;
     final property = selection.propertyGroups.firstWhere(
       (final candidate) => candidate.editable,
     );
@@ -2944,8 +3265,22 @@ Direct apply request:
     await tester.pumpAndSettle();
 
     expect(_selection(orchestrator)?.nodeId, selection.nodeId);
-    expect(selectActivePropertyId(orchestrator.context, domain: selectPresentedLayer(orchestrator.context)), property.id);
-    expect(selectDraftChangesForDomain(orchestrator.context, orchestrator.controller, domain: _domain(orchestrator), sessionId: _sid(orchestrator)).single.propertyId, property.id);
+    expect(
+      selectActivePropertyId(
+        orchestrator.context,
+        domain: selectPresentedLayer(orchestrator.context),
+      ),
+      property.id,
+    );
+    expect(
+      selectDraftChangesForDomain(
+        orchestrator.context,
+        orchestrator.controller,
+        domain: _domain(orchestrator),
+        sessionId: _sid(orchestrator),
+      ).single.propertyId,
+      property.id,
+    );
   });
 }
 

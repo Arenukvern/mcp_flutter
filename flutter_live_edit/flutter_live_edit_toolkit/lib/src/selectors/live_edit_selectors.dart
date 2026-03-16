@@ -10,8 +10,7 @@ import '../services/live_edit_bubble_state_service.dart';
 
 // --- Pure helpers (no context) ---
 
-bool hasText(final String? value) =>
-    value != null && value.trim().isNotEmpty;
+bool hasText(final String? value) => value != null && value.trim().isNotEmpty;
 
 double maxDouble(final double left, final double right) =>
     left > right ? left : right;
@@ -30,7 +29,9 @@ List<LiveEditPropertyDescriptor> commonEditableProperties(
       .toList(growable: false);
   return base
       .where(
-        (final property) => selections.skip(1).every(
+        (final property) => selections
+            .skip(1)
+            .every(
               (final selection) => selection.propertyGroups.any(
                 (final candidate) =>
                     candidate.id == property.id &&
@@ -57,17 +58,15 @@ LiveEditSelection? selectSelectionForDomain(
   final LiveEditController controller, {
   required final LiveEditTargetDomain domain,
   final String? sessionId,
-}) =>
-    controller.selectionForDomain(
-      targetDomain: domain,
-      sessionId: sessionId ?? ctx.sessionResource.value.activeSessionId,
-    );
+}) => controller.selectionForDomain(
+  targetDomain: domain,
+  sessionId: sessionId ?? ctx.sessionResource.value.activeSessionId,
+);
 
 String? selectBubbleIdForSelection(
   final LiveEditContext ctx,
   final LiveEditSelection? selection,
-) =>
-    _bubbleStateService.bubbleIdForSelection(ctx, selection);
+) => _bubbleStateService.bubbleIdForSelection(ctx, selection);
 
 LiveEditBubbleId? selectActiveBubbleId(
   final LiveEditContext ctx,
@@ -108,22 +107,20 @@ List<LiveEditSelection> selectMultiSelectionForDomain(
   final LiveEditController controller, {
   required final LiveEditTargetDomain domain,
   final String? sessionId,
-}) =>
-    controller.multiSelectionForDomain(
-      targetDomain: domain,
-      sessionId: sessionId ?? ctx.sessionResource.value.activeSessionId,
-    );
+}) => controller.multiSelectionForDomain(
+  targetDomain: domain,
+  sessionId: sessionId ?? ctx.sessionResource.value.activeSessionId,
+);
 
 List<LiveEditDraftChange> selectDraftChangesForDomain(
   final LiveEditContext ctx,
   final LiveEditController controller, {
   required final LiveEditTargetDomain domain,
   final String? sessionId,
-}) =>
-    controller.draftChangesForDomain(
-      targetDomain: domain,
-      sessionId: sessionId ?? ctx.sessionResource.value.activeSessionId,
-    );
+}) => controller.draftChangesForDomain(
+  targetDomain: domain,
+  sessionId: sessionId ?? ctx.sessionResource.value.activeSessionId,
+);
 
 bool selectOverlayVisible(final LiveEditContext ctx) =>
     ctx.sessionResource.value.overlayVisible;
@@ -139,12 +136,12 @@ LiveEditAgentBackend? selectBackendForBubble(
   final LiveEditContext ctx,
   final String? bubbleId,
 ) {
-  final bubbleBackendId =
-      _bubbleStateService.bubbleRecordFor(ctx, bubbleId)?.backendId?.trim();
+  final bubbleBackendId = _bubbleStateService
+      .bubbleRecordFor(ctx, bubbleId)
+      ?.backendId
+      ?.trim();
   final globalId = ctx.backendConfigResource.value.globalBackendId?.trim();
-  final backendId = hasText(bubbleBackendId)
-      ? bubbleBackendId
-      : globalId;
+  final backendId = hasText(bubbleBackendId) ? bubbleBackendId : globalId;
   if (!hasText(backendId)) return null;
   for (final b in ctx.backendConfigResource.value.availableBackends) {
     if (b.id == backendId) return b;
@@ -157,16 +154,15 @@ LiveEditAgentBackend? selectCurrentBackend(
   final LiveEditController controller, {
   required final LiveEditTargetDomain presentationDomain,
   final String? sessionId,
-}) =>
-    selectBackendForBubble(
-      ctx,
-      selectActiveBubbleId(
-        ctx,
-        controller,
-        presentationDomain: presentationDomain,
-        sessionId: sessionId,
-      ),
-    );
+}) => selectBackendForBubble(
+  ctx,
+  selectActiveBubbleId(
+    ctx,
+    controller,
+    presentationDomain: presentationDomain,
+    sessionId: sessionId,
+  ),
+);
 
 String? selectCurrentBackendId(
   final LiveEditContext ctx,
@@ -180,7 +176,10 @@ String? selectCurrentBackendId(
     presentationDomain: presentationDomain,
     sessionId: sessionId,
   );
-  final bid = _bubbleStateService.bubbleRecordFor(ctx, bubbleId)?.backendId?.trim();
+  final bid = _bubbleStateService
+      .bubbleRecordFor(ctx, bubbleId)
+      ?.backendId
+      ?.trim();
   if (hasText(bid)) return bid;
   return ctx.backendConfigResource.value.globalBackendId;
 }
@@ -193,7 +192,8 @@ LiveEditInferenceConfig? selectInferenceConfigForBubble(
   if (bubble?.inferenceConfig != null) return bubble!.inferenceConfig;
   final backend = selectBackendForBubble(ctx, bubbleId);
   if (backend == null) return null;
-  return ctx.backendConfigResource.value.inferenceConfigByBackendId[backend.id] ??
+  return ctx.backendConfigResource.value.inferenceConfigByBackendId[backend
+          .id] ??
       backendEffectiveConfig(backend);
 }
 
@@ -202,29 +202,27 @@ LiveEditInferenceConfig? selectCurrentInferenceConfig(
   final LiveEditController controller, {
   required final LiveEditTargetDomain presentationDomain,
   final String? sessionId,
-}) =>
-    selectInferenceConfigForBubble(
-      ctx,
-      selectActiveBubbleId(
-        ctx,
-        controller,
-        presentationDomain: presentationDomain,
-        sessionId: sessionId,
-      ),
-    );
+}) => selectInferenceConfigForBubble(
+  ctx,
+  selectActiveBubbleId(
+    ctx,
+    controller,
+    presentationDomain: presentationDomain,
+    sessionId: sessionId,
+  ),
+);
 
 String? selectCurrentModel(
   final LiveEditContext ctx,
   final LiveEditController controller, {
   required final LiveEditTargetDomain presentationDomain,
   final String? sessionId,
-}) =>
-    selectCurrentInferenceConfig(
-      ctx,
-      controller,
-      presentationDomain: presentationDomain,
-      sessionId: sessionId,
-    )?.model;
+}) => selectCurrentInferenceConfig(
+  ctx,
+  controller,
+  presentationDomain: presentationDomain,
+  sessionId: sessionId,
+)?.model;
 
 bool selectPanelExpanded(final LiveEditContext ctx) =>
     ctx.panelViewResource.value.panelDisplayMode ==
@@ -337,16 +335,15 @@ List<LiveEditTimelineEntry> selectHistoryForActiveSelection(
   final LiveEditController controller, {
   required final LiveEditTargetDomain presentationDomain,
   final String? sessionId,
-}) =>
-    selectHistoryForBubble(
-      ctx,
-      selectActiveBubbleId(
-        ctx,
-        controller,
-        presentationDomain: presentationDomain,
-        sessionId: sessionId,
-      ),
-    );
+}) => selectHistoryForBubble(
+  ctx,
+  selectActiveBubbleId(
+    ctx,
+    controller,
+    presentationDomain: presentationDomain,
+    sessionId: sessionId,
+  ),
+);
 
 List<LiveEditActivityEntry> selectActivityTimelineForActiveSelection(
   final LiveEditContext ctx,
@@ -412,9 +409,11 @@ bool selectCanTriggerApply(
     sessionId: sessionId,
   );
   final bubble = _bubbleStateService.bubbleRecordFor(ctx, activeBubbleId);
-  final aiComposer = bubble?.instructionText ?? ctx.bubbleResource.value.globalComposerText;
+  final aiComposer =
+      bubble?.instructionText ?? ctx.bubbleResource.value.globalComposerText;
   final hasAiPrompt = hasText(aiComposer);
-  final canSubmitAiPrompt = selection != null &&
+  final canSubmitAiPrompt =
+      selection != null &&
       hasAiPrompt &&
       !needsApproval &&
       !selectIsApplyingBusy(ctx);
@@ -440,7 +439,8 @@ bool selectCanSubmitAiPrompt(
     sessionId: sessionId,
   );
   final bubble = _bubbleStateService.bubbleRecordFor(ctx, activeBubbleId);
-  final aiComposer = bubble?.instructionText ?? ctx.bubbleResource.value.globalComposerText;
+  final aiComposer =
+      bubble?.instructionText ?? ctx.bubbleResource.value.globalComposerText;
   return selection != null &&
       hasText(aiComposer) &&
       !selectNeedsApproval(ctx) &&
@@ -485,12 +485,10 @@ double selectPanelHeight(final LiveEditContext ctx) {
       : pv.panelRailHeight;
 }
 
-Offset selectPanelPlacement(
-  final LiveEditContext ctx,
-  final Size viewport,
-) =>
+Offset selectPanelPlacement(final LiveEditContext ctx, final Size viewport) =>
     clampPanelPlacement(
-      placement: Offset(viewport.width - selectPanelWidth(ctx) - 16, 16) +
+      placement:
+          Offset(viewport.width - selectPanelWidth(ctx) - 16, 16) +
           ctx.panelViewResource.value.panelDragOffset,
       viewport: viewport,
       panelWidth: selectPanelWidth(ctx),
@@ -504,11 +502,11 @@ List<LiveEditBubbleSummary> selectPinnedBubbleSummaries(
   final String? sessionId,
 }) =>
     selectBubbleSummaries(
-      ctx,
-      controller,
-      presentationDomain: presentationDomain,
-      sessionId: sessionId,
-    )
+          ctx,
+          controller,
+          presentationDomain: presentationDomain,
+          sessionId: sessionId,
+        )
         .where(
           (final s) => s.displayState == LiveEditBubbleDisplayState.minimized,
         )
@@ -555,10 +553,10 @@ List<LiveEditBubbleSummary> selectExpandedBubbleSummariesByDomain(
       })
       .toList(growable: false)
     ..sort((final a, final b) {
-        final activeScore = (b.active ? 1 : 0) - (a.active ? 1 : 0);
-        if (activeScore != 0) return activeScore;
-        return a.label.compareTo(b.label);
-      });
+      final activeScore = (b.active ? 1 : 0) - (a.active ? 1 : 0);
+      if (activeScore != 0) return activeScore;
+      return a.label.compareTo(b.label);
+    });
 }
 
 List<LiveEditBubbleSummary> selectExpandedBubbleSummaries(
@@ -638,33 +636,31 @@ String? selectStagedDraftSummaryForBubble(
   final String? bubbleId, {
   required final LiveEditTargetDomain presentationDomain,
   final String? sessionId,
-}) =>
-    _stagedDraftSummaryForBubble(
-      ctx,
-      controller,
-      bubbleId,
-      presentationDomain: presentationDomain,
-      sessionId: sessionId,
-    );
+}) => _stagedDraftSummaryForBubble(
+  ctx,
+  controller,
+  bubbleId,
+  presentationDomain: presentationDomain,
+  sessionId: sessionId,
+);
 
 String? selectStagedDraftSummary(
   final LiveEditContext ctx,
   final LiveEditController controller, {
   required final LiveEditTargetDomain presentationDomain,
   final String? sessionId,
-}) =>
-    selectStagedDraftSummaryForBubble(
-      ctx,
-      controller,
-      selectActiveBubbleId(
-        ctx,
-        controller,
-        presentationDomain: presentationDomain,
-        sessionId: sessionId,
-      ),
-      presentationDomain: presentationDomain,
-      sessionId: sessionId,
-    );
+}) => selectStagedDraftSummaryForBubble(
+  ctx,
+  controller,
+  selectActiveBubbleId(
+    ctx,
+    controller,
+    presentationDomain: presentationDomain,
+    sessionId: sessionId,
+  ),
+  presentationDomain: presentationDomain,
+  sessionId: sessionId,
+);
 
 String? selectLastErrorForBubble(
   final LiveEditContext ctx,
@@ -674,8 +670,11 @@ String? selectLastErrorForBubble(
     final bubble = _bubbleStateService.bubbleRecordFor(ctx, bubbleId);
     return bubble?.lastError;
   }
-  final activeId = ctx.bubbleResource.value.layerViewStateByDomain[
-      ctx.sessionResource.value.targetDomain]?.activeBubbleId;
+  final activeId = ctx
+      .bubbleResource
+      .value
+      .layerViewStateByDomain[ctx.sessionResource.value.targetDomain]
+      ?.activeBubbleId;
   final active = _bubbleStateService.bubbleRecordFor(ctx, activeId);
   return active?.lastError ?? ctx.bubbleResource.value.lastError;
 }
@@ -694,21 +693,23 @@ String? selectStagedRequestSummary(
   final LiveEditController controller, {
   required final LiveEditTargetDomain presentationDomain,
   final String? sessionId,
-}) =>
-    selectStagedRequestSummaryForBubble(
-      ctx,
-      controller,
-      selectActiveBubbleId(
-        ctx,
-        controller,
-        presentationDomain: presentationDomain,
-        sessionId: sessionId,
-      ),
-      presentationDomain: presentationDomain,
-      sessionId: sessionId,
-    );
+}) => selectStagedRequestSummaryForBubble(
+  ctx,
+  controller,
+  selectActiveBubbleId(
+    ctx,
+    controller,
+    presentationDomain: presentationDomain,
+    sessionId: sessionId,
+  ),
+  presentationDomain: presentationDomain,
+  sessionId: sessionId,
+);
 
-bool selectNeedsApprovalForBubble(final LiveEditContext ctx, final String? bubbleId) =>
+bool selectNeedsApprovalForBubble(
+  final LiveEditContext ctx,
+  final String? bubbleId,
+) =>
     hasText(bubbleId) &&
     bubbleId == ctx.bubbleResource.value.pendingBubbleId &&
     selectNeedsApproval(ctx);
@@ -727,8 +728,7 @@ LiveEditExecutionPlan? selectExecutionPlanForBubble(
 LiveEditBubbleRecord? selectBubbleRecord(
   final LiveEditContext ctx,
   final String? bubbleId,
-) =>
-    _bubbleStateService.bubbleRecordFor(ctx, bubbleId);
+) => _bubbleStateService.bubbleRecordFor(ctx, bubbleId);
 
 Offset selectBubbleDragOffset(
   final LiveEditContext ctx,
@@ -747,8 +747,11 @@ List<LiveEditTimelineEntry> selectHistoryForBubble(
           const <LiveEditTimelineEntry>[],
     );
   }
-  final activeId = ctx.bubbleResource.value.layerViewStateByDomain[
-      ctx.sessionResource.value.targetDomain]?.activeBubbleId;
+  final activeId = ctx
+      .bubbleResource
+      .value
+      .layerViewStateByDomain[ctx.sessionResource.value.targetDomain]
+      ?.activeBubbleId;
   return List<LiveEditTimelineEntry>.unmodifiable(
     _bubbleStateService.bubbleRecordFor(ctx, activeId)?.history ??
         const <LiveEditTimelineEntry>[],
@@ -760,10 +763,16 @@ String selectInstructionTextForBubble(
   final String? bubbleId,
 ) {
   if (hasText(bubbleId)) {
-    return _bubbleStateService.bubbleRecordFor(ctx, bubbleId)?.instructionText ?? '';
+    return _bubbleStateService
+            .bubbleRecordFor(ctx, bubbleId)
+            ?.instructionText ??
+        '';
   }
-  final activeId = ctx.bubbleResource.value.layerViewStateByDomain[
-      ctx.sessionResource.value.targetDomain]?.activeBubbleId;
+  final activeId = ctx
+      .bubbleResource
+      .value
+      .layerViewStateByDomain[ctx.sessionResource.value.targetDomain]
+      ?.activeBubbleId;
   final active = _bubbleStateService.bubbleRecordFor(ctx, activeId);
   return active?.instructionText ?? ctx.bubbleResource.value.globalComposerText;
 }
@@ -777,7 +786,8 @@ bool selectCanTriggerApplyForBubble(
 }) =>
     hasText(bubbleId) &&
     (selectNeedsApprovalForBubble(ctx, bubbleId) ||
-        (_bubbleStateService.bubbleRecordFor(ctx, bubbleId)?.hasPendingApply ?? false));
+        (_bubbleStateService.bubbleRecordFor(ctx, bubbleId)?.hasPendingApply ??
+            false));
 
 Object? selectEffectiveValueForProperty(
   final LiveEditContext ctx,
@@ -817,7 +827,8 @@ bool selectIsPropertyWaiting(
   final String? sessionId,
 }) {
   final data = ctx.bubbleResource.value;
-  final isWaiting = selectBubbleStatusForBubble(
+  final isWaiting =
+      selectBubbleStatusForBubble(
         ctx,
         selectActiveBubbleId(
           ctx,
@@ -829,12 +840,12 @@ bool selectIsPropertyWaiting(
       LiveEditBubbleStatus.waiting;
   return isWaiting &&
       selectActiveBubbleId(
-        ctx,
-        controller,
-        presentationDomain: presentationDomain,
-        sessionId: sessionId,
-      ) ==
-      data.pendingBubbleId &&
+            ctx,
+            controller,
+            presentationDomain: presentationDomain,
+            sessionId: sessionId,
+          ) ==
+          data.pendingBubbleId &&
       property.id == data.pendingPropertyId;
 }
 
@@ -844,13 +855,12 @@ bool selectHasDraftForProperty(
   final LiveEditPropertyDescriptor property, {
   required final LiveEditTargetDomain presentationDomain,
   final String? sessionId,
-}) =>
-    selectDraftChangesForDomain(
-      ctx,
-      controller,
-      domain: presentationDomain,
-      sessionId: sessionId,
-    ).any((final d) => d.propertyId == property.id);
+}) => selectDraftChangesForDomain(
+  ctx,
+  controller,
+  domain: presentationDomain,
+  sessionId: sessionId,
+).any((final d) => d.propertyId == property.id);
 
 bool selectHasMultiSelection(
   final LiveEditContext ctx,
@@ -871,13 +881,12 @@ String? selectCurrentReasoningEffort(
   final LiveEditController controller, {
   required final LiveEditTargetDomain presentationDomain,
   final String? sessionId,
-}) =>
-    selectCurrentInferenceConfig(
-      ctx,
-      controller,
-      presentationDomain: presentationDomain,
-      sessionId: sessionId,
-    )?.reasoningEffort;
+}) => selectCurrentInferenceConfig(
+  ctx,
+  controller,
+  presentationDomain: presentationDomain,
+  sessionId: sessionId,
+)?.reasoningEffort;
 
 bool selectCurrentBackendUsesFreeformModel(
   final LiveEditContext ctx,
@@ -943,8 +952,14 @@ List<String> selectCurrentSupportedReasoningEfforts(
 LiveEditExecutionPlan? selectPendingExecutionPlan(final LiveEditContext ctx) =>
     ctx.bubbleResource.value.pendingExecutionPlan;
 
-String? selectBackendIdForBubble(final LiveEditContext ctx, final String? bubbleId) {
-  final bid = _bubbleStateService.bubbleRecordFor(ctx, bubbleId)?.backendId?.trim();
+String? selectBackendIdForBubble(
+  final LiveEditContext ctx,
+  final String? bubbleId,
+) {
+  final bid = _bubbleStateService
+      .bubbleRecordFor(ctx, bubbleId)
+      ?.backendId
+      ?.trim();
   if (hasText(bid)) return bid;
   return ctx.backendConfigResource.value.globalBackendId;
 }
@@ -966,22 +981,20 @@ Rect? selectMarqueeRect(
   final LiveEditController controller, {
   required final LiveEditTargetDomain presentationDomain,
   final String? sessionId,
-}) =>
-    controller.marqueeRectForDomain(
-      targetDomain: presentationDomain,
-      sessionId: sessionId ?? ctx.sessionResource.value.activeSessionId,
-    );
+}) => controller.marqueeRectForDomain(
+  targetDomain: presentationDomain,
+  sessionId: sessionId ?? ctx.sessionResource.value.activeSessionId,
+);
 
 List<LiveEditSelection> selectMarqueePreviewSelections(
   final LiveEditContext ctx,
   final LiveEditController controller, {
   required final LiveEditTargetDomain presentationDomain,
   final String? sessionId,
-}) =>
-    controller.marqueeSelectionsForDomain(
-      targetDomain: presentationDomain,
-      sessionId: sessionId ?? ctx.sessionResource.value.activeSessionId,
-    );
+}) => controller.marqueeSelectionsForDomain(
+  targetDomain: presentationDomain,
+  sessionId: sessionId ?? ctx.sessionResource.value.activeSessionId,
+);
 
 bool selectHasMarqueePreview(
   final LiveEditContext ctx,
@@ -1016,8 +1029,10 @@ String? selectDebugPromptForActiveSelection(
     presentationDomain: presentationDomain,
     sessionId: sessionId,
   );
-  final prompt =
-      _bubbleStateService.bubbleRecordFor(ctx, bubbleId)?.debugPromptText?.trim();
+  final prompt = _bubbleStateService
+      .bubbleRecordFor(ctx, bubbleId)
+      ?.debugPromptText
+      ?.trim();
   return hasText(prompt) ? prompt : null;
 }
 
@@ -1026,27 +1041,25 @@ List<LiveEditTimelineEntry> selectDebugTimelineForActiveSelection(
   final LiveEditController controller, {
   required final LiveEditTargetDomain presentationDomain,
   final String? sessionId,
-}) =>
-    List<LiveEditTimelineEntry>.unmodifiable(
-      _bubbleStateService
-              .bubbleRecordFor(
-                ctx,
-                selectActiveBubbleId(
-                  ctx,
-                  controller,
-                  presentationDomain: presentationDomain,
-                  sessionId: sessionId,
-                ),
-              )
-              ?.debugTimeline ??
-          const <LiveEditTimelineEntry>[],
-    );
+}) => List<LiveEditTimelineEntry>.unmodifiable(
+  _bubbleStateService
+          .bubbleRecordFor(
+            ctx,
+            selectActiveBubbleId(
+              ctx,
+              controller,
+              presentationDomain: presentationDomain,
+              sessionId: sessionId,
+            ),
+          )
+          ?.debugTimeline ??
+      const <LiveEditTimelineEntry>[],
+);
 
 String? selectActivePropertyId(
   final LiveEditContext ctx, {
   required final LiveEditTargetDomain domain,
-}) =>
-    ctx.bubbleResource.value.layerViewStateByDomain[domain]?.activePropertyId;
+}) => ctx.bubbleResource.value.layerViewStateByDomain[domain]?.activePropertyId;
 
 LiveEditPropertyDescriptor? selectActiveProperty(
   final LiveEditContext ctx,
@@ -1123,18 +1136,19 @@ LiveEditActivityEntry? selectCurrentActivity(
     return LiveEditActivityEntry(
       step: LiveEditActivityStep.applyingChanges,
       label: 'Applying',
-      summary: ctx.bubbleResource.value.pendingExecutionPlan?.summary ??
+      summary:
+          ctx.bubbleResource.value.pendingExecutionPlan?.summary ??
           '$backendLabel is applying this bubble change.',
       timestamp: now,
       nodeId: bubbleId!,
     );
   }
   if (selectDraftChangesForDomain(
-        ctx,
-        controller,
-        domain: presentationDomain,
-        sessionId: sessionId,
-      ).isNotEmpty) {
+    ctx,
+    controller,
+    domain: presentationDomain,
+    sessionId: sessionId,
+  ).isNotEmpty) {
     return LiveEditActivityEntry(
       step: LiveEditActivityStep.draftReady,
       label: 'Draft ready',
@@ -1157,8 +1171,8 @@ LiveEditActivityEntry? selectCurrentActivity(
       domain: presentationDomain,
       sessionId: sessionId,
     );
-    final aiComposer = bubble?.instructionText ??
-        ctx.bubbleResource.value.globalComposerText;
+    final aiComposer =
+        bubble?.instructionText ?? ctx.bubbleResource.value.globalComposerText;
     if (selection != null && hasText(aiComposer)) {
       return LiveEditActivityEntry(
         step: LiveEditActivityStep.promptReady,

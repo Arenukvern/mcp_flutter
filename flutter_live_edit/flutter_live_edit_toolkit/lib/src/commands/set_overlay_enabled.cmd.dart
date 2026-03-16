@@ -29,8 +29,8 @@ final class SetOverlayEnabledCommand {
         globalComposerText: '',
         applyPhase: LiveEditApplyPhase.idle,
       );
-      context.panelViewResource.value =
-          context.panelViewResource.value.copyWith(toolPresentationArmed: false);
+      context.panelViewResource.value = context.panelViewResource.value
+          .copyWith(toolPresentationArmed: false);
     }
   }
 }

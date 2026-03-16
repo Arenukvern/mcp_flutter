@@ -24,7 +24,8 @@ void main() {
     'proposalId': 'live_edit_1773440023273-cursor_agent',
     'backendId': 'cursor_agent',
     'summary': "Update about-demo heading text to 'Hello Flutter MCP Demo'.",
-    'patch': 'lib/main.dart: replace Text data in Semantics(about_demo_heading) from "Hello Live Flutter Editing" to "Hello Flutter MCP Demo".',
+    'patch':
+        'lib/main.dart: replace Text data in Semantics(about_demo_heading) from "Hello Live Flutter Editing" to "Hello Flutter MCP Demo".',
     'changedFiles': <String>[path],
     'filePatches': <Map<String, dynamic>>[filePatch],
     'expectedRuntimeEffects': <String>[

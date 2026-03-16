@@ -14,13 +14,11 @@ final class SetAvailableBackendsCommand {
   final String? initialBackendId;
 
   void execute(final LiveEditContext context) {
-    final backends =
-        List<LiveEditAgentBackend>.unmodifiable(availableBackends);
+    final backends = List<LiveEditAgentBackend>.unmodifiable(availableBackends);
     final data = context.backendConfigResource.value;
-    final configByBackend =
-        Map<String, LiveEditInferenceConfig>.from(
-          data.inferenceConfigByBackendId,
-        );
+    final configByBackend = Map<String, LiveEditInferenceConfig>.from(
+      data.inferenceConfigByBackendId,
+    );
     for (final backend in backends) {
       final config = backendEffectiveConfig(backend);
       if (config != null) {

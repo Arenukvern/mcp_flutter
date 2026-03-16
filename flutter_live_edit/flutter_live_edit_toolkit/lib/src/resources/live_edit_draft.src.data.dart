@@ -15,12 +15,12 @@ final class LiveEditDraftLayerData {
   LiveEditDraftLayerData copyWith({
     final List<LiveEditDraftChange>? draftChanges,
     final Set<String>? meaningfulNodeIds,
-  }) =>
-      LiveEditDraftLayerData(
-        draftChanges: draftChanges ?? this.draftChanges,
-        meaningfulNodeIds: meaningfulNodeIds ?? this.meaningfulNodeIds,
-      );
+  }) => LiveEditDraftLayerData(
+    draftChanges: draftChanges ?? this.draftChanges,
+    meaningfulNodeIds: meaningfulNodeIds ?? this.meaningfulNodeIds,
+  );
 }
 
 /// Key: sessionId, value: map of domain -> draft layer data.
-typedef LiveEditDraftState = Map<String, Map<LiveEditTargetDomain, LiveEditDraftLayerData>>;
+typedef LiveEditDraftState =
+    Map<String, Map<LiveEditTargetDomain, LiveEditDraftLayerData>>;

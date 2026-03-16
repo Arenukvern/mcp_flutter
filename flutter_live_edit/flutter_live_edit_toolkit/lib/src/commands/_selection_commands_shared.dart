@@ -22,18 +22,20 @@ void runAfterSelectionChange(
   service.restoreBubbleState(context, bubbleId);
 
   final activeSelectedWidgets =
-      controller.multiSelectionForDomain(
-        targetDomain: presentationLayer,
-        sessionId: sessionId,
-      ).length >
+      controller
+              .multiSelectionForDomain(
+                targetDomain: presentationLayer,
+                sessionId: sessionId,
+              )
+              .length >
           1
       ? controller.multiSelectionForDomain(
           targetDomain: presentationLayer,
           sessionId: sessionId,
         )
       : (activeSelection != null
-          ? <LiveEditSelection>[activeSelection]
-          : const <LiveEditSelection>[]);
+            ? <LiveEditSelection>[activeSelection]
+            : const <LiveEditSelection>[]);
   final effectiveProperties = selectEffectiveProperties(
     context,
     controller,
@@ -61,8 +63,11 @@ void runAfterSelectionChange(
       buf.write(' in ${sel.source!.file}');
       if (sel.source?.line != null) buf.write(':${sel.source!.line}');
     }
-    return buf.isEmpty ? 'Persist the current live-edit changes.' : buf.toString();
+    return buf.isEmpty
+        ? 'Persist the current live-edit changes.'
+        : buf.toString();
   }
+
   final newIdentity = service.syncSelectionState(
     context,
     SyncSelectionStateParams(
@@ -84,8 +89,7 @@ void runAfterSelectionChange(
     ),
   );
   if (newIdentity != null) {
-    context.panelViewResource.value =
-        context.panelViewResource.value.copyWith(
+    context.panelViewResource.value = context.panelViewResource.value.copyWith(
       lastSelectionIdentity: newIdentity,
     );
   }

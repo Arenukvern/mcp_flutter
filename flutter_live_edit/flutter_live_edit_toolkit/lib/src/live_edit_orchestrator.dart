@@ -93,8 +93,8 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   List<LiveEditPropertyDescriptor> Function(
     Element element,
     LiveEditTargetDomain targetDomain,
-  )? get propertyDescriptorProvider =>
-      _sessionService.propertyDescriptorProvider;
+  )?
+  get propertyDescriptorProvider => _sessionService.propertyDescriptorProvider;
 
   set propertyDescriptorProvider(
     final List<LiveEditPropertyDescriptor> Function(

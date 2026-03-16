@@ -8,7 +8,8 @@ final class TogglePanelDisplayModeCommand {
     final next = current == LiveEditPanelDisplayMode.expanded
         ? LiveEditPanelDisplayMode.rail
         : LiveEditPanelDisplayMode.expanded;
-    context.panelViewResource.value = context.panelViewResource.value
-        .copyWith(panelDisplayMode: next);
+    context.panelViewResource.value = context.panelViewResource.value.copyWith(
+      panelDisplayMode: next,
+    );
   }
 }

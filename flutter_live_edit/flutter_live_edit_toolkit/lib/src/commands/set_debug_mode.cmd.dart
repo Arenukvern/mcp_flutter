@@ -7,7 +7,8 @@ final class SetDebugModeCommand {
   final bool enabled;
 
   void execute(final LiveEditContext context) {
-    context.panelViewResource.value = context.panelViewResource.value
-        .copyWith(debugModeEnabled: enabled);
+    context.panelViewResource.value = context.panelViewResource.value.copyWith(
+      debugModeEnabled: enabled,
+    );
   }
 }

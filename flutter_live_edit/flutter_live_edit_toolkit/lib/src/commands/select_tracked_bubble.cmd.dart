@@ -35,19 +35,21 @@ final class SelectTrackedBubbleCommand {
     final bubble = service.bubbleRecordFor(context, resolvedBubbleId);
     final targetDomain = context.sessionResource.value.targetDomain;
     final bubbleDomain = bubble?.targetDomain ?? targetDomain;
-    final trackedNodeId =
-        bubble?.primarySelection?.nodeId ?? resolvedBubbleId;
+    final trackedNodeId = bubble?.primarySelection?.nodeId ?? resolvedBubbleId;
 
     if (bubbleDomain == LiveEditTargetDomain.toolScene) {
-      context.panelViewResource.value =
-          context.panelViewResource.value.copyWith(toolPresentationArmed: true);
+      context.panelViewResource.value = context.panelViewResource.value
+          .copyWith(toolPresentationArmed: true);
     }
 
     final currentSelection = controller.selectionForDomain(
       targetDomain: selectPresentedLayer(context),
       sessionId: sessionId,
     );
-    final currentBubbleId = service.bubbleIdForSelection(context, currentSelection);
+    final currentBubbleId = service.bubbleIdForSelection(
+      context,
+      currentSelection,
+    );
     if (currentBubbleId != null &&
         currentSelection != null &&
         resolvedBubbleId != currentBubbleId) {
@@ -56,16 +58,21 @@ final class SelectTrackedBubbleCommand {
         bubbleId: currentBubbleId,
         nextNodeId: resolvedBubbleId,
         selection: currentSelection,
-        selectedWidgets: controller.multiSelectionForDomain(
-          targetDomain: selectPresentedLayer(context),
-          sessionId: sessionId,
-        ).length > 1
+        selectedWidgets:
+            controller
+                    .multiSelectionForDomain(
+                      targetDomain: selectPresentedLayer(context),
+                      sessionId: sessionId,
+                    )
+                    .length >
+                1
             ? controller.multiSelectionForDomain(
                 targetDomain: selectPresentedLayer(context),
                 sessionId: sessionId,
               )
             : <LiveEditSelection>[currentSelection],
-        instructionText: bubble?.instructionText ??
+        instructionText:
+            bubble?.instructionText ??
             context.bubbleResource.value.globalComposerText,
         lastError: service.bubbleRecordFor(context, currentBubbleId)?.lastError,
         keepPinned: true,
@@ -84,8 +91,8 @@ final class SelectTrackedBubbleCommand {
     );
     layerMap[bubbleDomain] =
         (layerMap[bubbleDomain] ?? LiveEditLayerViewState()).copyWith(
-      activeBubbleId: resolvedBubbleId,
-    );
+          activeBubbleId: resolvedBubbleId,
+        );
     context.bubbleResource.value = context.bubbleResource.value.copyWith(
       layerViewStateByDomain: layerMap,
     );
@@ -109,8 +116,9 @@ final class SelectTrackedBubbleCommand {
       final records = Map<String, LiveEditBubbleRecord>.from(
         context.bubbleResource.value.bubbleRecordsById,
       );
-      records[resolvedBubbleId] =
-          record.copyWith(displayState: LiveEditBubbleDisplayState.expanded);
+      records[resolvedBubbleId] = record.copyWith(
+        displayState: LiveEditBubbleDisplayState.expanded,
+      );
       context.bubbleResource.value = context.bubbleResource.value.copyWith(
         bubbleRecordsById: records,
       );
@@ -122,18 +130,20 @@ final class SelectTrackedBubbleCommand {
       sessionId: sessionId,
     );
     final activeSelectedWidgets =
-        controller.multiSelectionForDomain(
-          targetDomain: presentationLayer,
-          sessionId: sessionId,
-        ).length >
+        controller
+                .multiSelectionForDomain(
+                  targetDomain: presentationLayer,
+                  sessionId: sessionId,
+                )
+                .length >
             1
         ? controller.multiSelectionForDomain(
             targetDomain: presentationLayer,
             sessionId: sessionId,
           )
         : (activeSelection != null
-            ? <LiveEditSelection>[activeSelection]
-            : const <LiveEditSelection>[]);
+              ? <LiveEditSelection>[activeSelection]
+              : const <LiveEditSelection>[]);
     final effectiveProperties = selectEffectiveProperties(
       context,
       controller,
@@ -161,8 +171,11 @@ final class SelectTrackedBubbleCommand {
         buf.write(' in ${sel.source!.file}');
         if (sel.source?.line != null) buf.write(':${sel.source!.line}');
       }
-      return buf.isEmpty ? 'Persist the current live-edit changes.' : buf.toString();
+      return buf.isEmpty
+          ? 'Persist the current live-edit changes.'
+          : buf.toString();
     }
+
     final newIdentity = service.syncSelectionState(
       context,
       SyncSelectionStateParams(
@@ -184,10 +197,8 @@ final class SelectTrackedBubbleCommand {
       ),
     );
     if (newIdentity != null) {
-      context.panelViewResource.value =
-          context.panelViewResource.value.copyWith(
-        lastSelectionIdentity: newIdentity,
-      );
+      context.panelViewResource.value = context.panelViewResource.value
+          .copyWith(lastSelectionIdentity: newIdentity);
     }
   }
 }

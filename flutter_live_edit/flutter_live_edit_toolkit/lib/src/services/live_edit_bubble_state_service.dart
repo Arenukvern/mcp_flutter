@@ -32,8 +32,7 @@ final class SyncSelectionStateParams {
   final void Function(String) updateAiComposer;
 }
 
-bool _hasText(final String? value) =>
-    value != null && value.trim().isNotEmpty;
+bool _hasText(final String? value) => value != null && value.trim().isNotEmpty;
 
 /// Encapsulates bubble record creation, update, and sync. Used by Commands and orchestrator.
 final class LiveEditBubbleStateService {
@@ -67,10 +66,11 @@ final class LiveEditBubbleStateService {
     if (selection == null) return null;
     if (selection.selectionMode == LiveEditSelectionMode.multi &&
         selection.selectedNodeIds.length > 1) {
-      final ordered = selection.selectedNodeIds
-          .where((final id) => _hasText(id))
-          .toList(growable: false)
-        ..sort();
+      final ordered =
+          selection.selectedNodeIds
+              .where((final id) => _hasText(id))
+              .toList(growable: false)
+            ..sort();
       if (ordered.isNotEmpty) return 'area:${ordered.join('|')}';
     }
     final nodeId = selection.nodeId.trim();
@@ -97,8 +97,8 @@ final class LiveEditBubbleStateService {
   }) {
     final existing = bubbleRecordFor(ctx, bubbleId);
     if (existing != null) return existing;
-    final domain = selection?.targetDomain ??
-        ctx.sessionResource.value.targetDomain;
+    final domain =
+        selection?.targetDomain ?? ctx.sessionResource.value.targetDomain;
     final targetKey = _targetKeyForSelection(selection) ?? bubbleId;
     final record = LiveEditBubbleRecord(
       bubbleId: bubbleId,
@@ -153,19 +153,27 @@ final class LiveEditBubbleStateService {
       final phase = bubble?.status == LiveEditBubbleStatus.waiting
           ? LiveEditApplyPhase.preparing
           : bubble?.status == LiveEditBubbleStatus.applied
-              ? LiveEditApplyPhase.success
-              : bubble?.status == LiveEditBubbleStatus.failed
-                  ? LiveEditApplyPhase.failed
-                  : LiveEditApplyPhase.idle;
+          ? LiveEditApplyPhase.success
+          : bubble?.status == LiveEditBubbleStatus.failed
+          ? LiveEditApplyPhase.failed
+          : LiveEditApplyPhase.idle;
       var editMode = selection == null
           ? LiveEditEditMode.inspect
-          : (ctx.bubbleResource.value.layerViewStateByDomain[domain]?.editMode ==
-                  LiveEditEditMode.ai
-              ? LiveEditEditMode.ai
-              : LiveEditEditMode.edit);
+          : (ctx
+                        .bubbleResource
+                        .value
+                        .layerViewStateByDomain[domain]
+                        ?.editMode ==
+                    LiveEditEditMode.ai
+                ? LiveEditEditMode.ai
+                : LiveEditEditMode.edit);
       var activePropertyId =
-          ctx.bubbleResource.value.layerViewStateByDomain[domain]?.activePropertyId ??
-              params.activeProperty?.id;
+          ctx
+              .bubbleResource
+              .value
+              .layerViewStateByDomain[domain]
+              ?.activePropertyId ??
+          params.activeProperty?.id;
       if (selection != null &&
           params.activeProperty?.requiresAgentForPersistence == true) {
         editMode = LiveEditEditMode.ai;
@@ -174,11 +182,12 @@ final class LiveEditBubbleStateService {
       final layerMap = Map<LiveEditTargetDomain, LiveEditLayerViewState>.from(
         ctx.bubbleResource.value.layerViewStateByDomain,
       );
-      layerMap[domain] = (layerMap[domain] ?? LiveEditLayerViewState()).copyWith(
-        activeBubbleId: currentBubbleId,
-        editMode: editMode,
-        activePropertyId: activePropertyId,
-      );
+      layerMap[domain] = (layerMap[domain] ?? LiveEditLayerViewState())
+          .copyWith(
+            activeBubbleId: currentBubbleId,
+            editMode: editMode,
+            activePropertyId: activePropertyId,
+          );
       ctx.bubbleResource.value = ctx.bubbleResource.value.copyWith(
         layerViewStateByDomain: layerMap,
         applyPhase: phase,
@@ -187,8 +196,9 @@ final class LiveEditBubbleStateService {
         lastError: bubble?.lastError,
         globalComposerText: bubble?.instructionText ?? '',
       );
-      ctx.panelViewResource.value =
-          ctx.panelViewResource.value.copyWith(editMode: editMode);
+      ctx.panelViewResource.value = ctx.panelViewResource.value.copyWith(
+        editMode: editMode,
+      );
       if (_hasText(currentBubbleId) && selection != null) {
         captureBubbleState(
           ctx,
@@ -199,8 +209,7 @@ final class LiveEditBubbleStateService {
           lastError: bubble?.lastError,
           draftChanges: params.draftChanges,
           backendId: params.getBackendIdForBubble(currentBubbleId),
-          inferenceConfig:
-              params.getInferenceConfigForBubble(currentBubbleId),
+          inferenceConfig: params.getInferenceConfigForBubble(currentBubbleId),
         );
       }
       if (selection != null &&
@@ -240,7 +249,11 @@ final class LiveEditBubbleStateService {
   }) {
     final data = ctx.bubbleResource.value;
     final bubbleId =
-        nodeId ?? data.layerViewStateByDomain[ctx.sessionResource.value.targetDomain]?.activeBubbleId ?? data.pendingBubbleId;
+        nodeId ??
+        data
+            .layerViewStateByDomain[ctx.sessionResource.value.targetDomain]
+            ?.activeBubbleId ??
+        data.pendingBubbleId;
     if (!_hasText(bubbleId) || summary.trim().isEmpty) return;
     final bubble = ensureBubbleState(ctx, bubbleId!);
     final updated = bubble.copyWith(
@@ -250,7 +263,9 @@ final class LiveEditBubbleStateService {
           step: step,
           label: label.trim(),
           summary: summary.trim(),
-          details: details.where((final item) => item.trim().isNotEmpty).toList(),
+          details: details
+              .where((final item) => item.trim().isNotEmpty)
+              .toList(),
           timestamp: DateTime.now().toUtc(),
           nodeId: bubbleId,
           inProgress: inProgress,
@@ -275,7 +290,11 @@ final class LiveEditBubbleStateService {
   }) {
     final data = ctx.bubbleResource.value;
     final bubbleId =
-        nodeId ?? data.layerViewStateByDomain[ctx.sessionResource.value.targetDomain]?.activeBubbleId ?? data.pendingBubbleId;
+        nodeId ??
+        data
+            .layerViewStateByDomain[ctx.sessionResource.value.targetDomain]
+            ?.activeBubbleId ??
+        data.pendingBubbleId;
     if (!_hasText(bubbleId) || message.trim().isEmpty) return;
     final bubble = ensureBubbleState(ctx, bubbleId!);
     final updated = bubble.copyWith(
@@ -284,7 +303,9 @@ final class LiveEditBubbleStateService {
         LiveEditTimelineEntry(
           role: 'debug',
           message: message.trim(),
-          details: details.where((final item) => item.trim().isNotEmpty).toList(),
+          details: details
+              .where((final item) => item.trim().isNotEmpty)
+              .toList(),
           timestamp: DateTime.now().toUtc(),
           nodeId: bubbleId,
         ),
@@ -308,7 +329,11 @@ final class LiveEditBubbleStateService {
   }) {
     final data = ctx.bubbleResource.value;
     final bubbleId =
-        nodeId ?? data.layerViewStateByDomain[ctx.sessionResource.value.targetDomain]?.activeBubbleId ?? data.pendingBubbleId;
+        nodeId ??
+        data
+            .layerViewStateByDomain[ctx.sessionResource.value.targetDomain]
+            ?.activeBubbleId ??
+        data.pendingBubbleId;
     if (!_hasText(bubbleId) || message.trim().isEmpty) return;
     final bubble = ensureBubbleState(ctx, bubbleId!);
     final updated = bubble.copyWith(
@@ -317,7 +342,9 @@ final class LiveEditBubbleStateService {
         LiveEditTimelineEntry(
           role: role,
           message: message.trim(),
-          details: details.where((final item) => item.trim().isNotEmpty).toList(),
+          details: details
+              .where((final item) => item.trim().isNotEmpty)
+              .toList(),
           timestamp: DateTime.now().toUtc(),
           nodeId: bubbleId,
         ),
@@ -347,25 +374,26 @@ final class LiveEditBubbleStateService {
     final bubbleId = bubbleIdForSelection(ctx, selection);
     if (!_hasText(bubbleId)) return;
     final current = bubbleRecordFor(ctx, bubbleId);
-    final record = ensureBubbleState(
-      ctx,
-      bubbleId!,
-      selection: selection,
-      selectedWidgets: selectedWidgets,
-    ).copyWith(
-      primarySelection: selection,
-      selectedWidgets: selectedWidgets,
-      draftChanges: draftChanges,
-      instructionText: instructionText ?? '',
-      status: status ?? (current?.status ?? LiveEditBubbleStatus.editing),
-      displayState:
-          current?.displayState ?? LiveEditBubbleDisplayState.expanded,
-      changedFiles: current?.changedFiles ?? const <String>[],
-      backendId: backendId ?? current?.backendId,
-      inferenceConfig: inferenceConfig ?? current?.inferenceConfig,
-      executionPlan: current?.executionPlan,
-      lastError: lastError ?? current?.lastError,
-    );
+    final record =
+        ensureBubbleState(
+          ctx,
+          bubbleId!,
+          selection: selection,
+          selectedWidgets: selectedWidgets,
+        ).copyWith(
+          primarySelection: selection,
+          selectedWidgets: selectedWidgets,
+          draftChanges: draftChanges,
+          instructionText: instructionText ?? '',
+          status: status ?? (current?.status ?? LiveEditBubbleStatus.editing),
+          displayState:
+              current?.displayState ?? LiveEditBubbleDisplayState.expanded,
+          changedFiles: current?.changedFiles ?? const <String>[],
+          backendId: backendId ?? current?.backendId,
+          inferenceConfig: inferenceConfig ?? current?.inferenceConfig,
+          executionPlan: current?.executionPlan,
+          lastError: lastError ?? current?.lastError,
+        );
     final records = Map<String, LiveEditBubbleRecord>.from(
       ctx.bubbleResource.value.bubbleRecordsById,
     );
@@ -385,15 +413,16 @@ final class LiveEditBubbleStateService {
     required final String? lastError,
     required final bool keepPinned,
   }) {
-    if (!_hasText(bubbleId) ||
-        bubbleId == nextNodeId ||
-        selection == null) return;
+    if (!_hasText(bubbleId) || bubbleId == nextNodeId || selection == null)
+      return;
     captureBubbleState(
       ctx,
       selection,
       selectedWidgets,
       instructionText: instructionText,
-      status: bubbleRecordFor(ctx, bubbleId)?.status ?? LiveEditBubbleStatus.editing,
+      status:
+          bubbleRecordFor(ctx, bubbleId)?.status ??
+          LiveEditBubbleStatus.editing,
       lastError: lastError,
     );
     if (keepPinned) {
@@ -468,14 +497,21 @@ final class LiveEditBubbleStateService {
       }
     }
     ctx.bubbleResource.value = data;
-    final nodeId = bubbleId ??
-        data.layerViewStateByDomain[ctx.sessionResource.value.targetDomain]?.activeBubbleId ??
+    final nodeId =
+        bubbleId ??
+        data
+            .layerViewStateByDomain[ctx.sessionResource.value.targetDomain]
+            ?.activeBubbleId ??
         data.pendingBubbleId;
     appendActivity(
       ctx,
       step: LiveEditActivityStep.failed,
       label: 'Failed',
-      summary: failureSummary(error, bubbleId: bubbleId, getBackendLabel: getBackendLabel),
+      summary: failureSummary(
+        error,
+        bubbleId: bubbleId,
+        getBackendLabel: getBackendLabel,
+      ),
       details: <String>[error],
       nodeId: nodeId,
       errorText: error,
@@ -586,8 +622,11 @@ final class LiveEditBubbleStateService {
     required final String Function(String?) getBackendLabel,
   }) {
     final data = ctx.bubbleResource.value;
-    final resolvedBubbleId = bubbleId ??
-        data.layerViewStateByDomain[ctx.sessionResource.value.targetDomain]?.activeBubbleId ??
+    final resolvedBubbleId =
+        bubbleId ??
+        data
+            .layerViewStateByDomain[ctx.sessionResource.value.targetDomain]
+            ?.activeBubbleId ??
         data.pendingBubbleId;
     final promptText = event.promptText?.trim();
     if (_hasText(resolvedBubbleId) && _hasText(promptText)) {

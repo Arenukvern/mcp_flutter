@@ -10,7 +10,8 @@ final class DragPanelCommand {
 
   void execute(final LiveEditContext context) {
     final current = context.panelViewResource.value.panelDragOffset;
-    context.panelViewResource.value = context.panelViewResource.value
-        .copyWith(panelDragOffset: current + delta);
+    context.panelViewResource.value = context.panelViewResource.value.copyWith(
+      panelDragOffset: current + delta,
+    );
   }
 }

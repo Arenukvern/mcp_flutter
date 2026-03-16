@@ -33,16 +33,15 @@ String _persistLabel(
   final LiveEditPropertyDescriptor property,
   final LiveEditContext ctx,
   final LiveEditController controller,
-) =>
-    property.requiresAgentForPersistence
-        ? selectCurrentBackendLabel(
-            ctx,
-            controller,
-            presentationDomain: selectPresentedLayer(ctx),
-          )
-        : property.persistable
-            ? 'Direct'
-            : 'Preview only';
+) => property.requiresAgentForPersistence
+    ? selectCurrentBackendLabel(
+        ctx,
+        controller,
+        presentationDomain: selectPresentedLayer(ctx),
+      )
+    : property.persistable
+    ? 'Direct'
+    : 'Preview only';
 
 Color _previewColor(final LiveEditPropertyDescriptor property) {
   if (property.requiresAgentForPersistence) return const Color(0xFF7C2D12);
@@ -224,10 +223,10 @@ class _PropertyEditor extends StatelessWidget {
           onChanged: waiting
               ? null
               : (final value) => UpdateDraftFromUiCommand(
-                    property: property,
-                    targetValue: value,
-                    surface: surface,
-                  ).execute(ctx),
+                  property: property,
+                  targetValue: value,
+                  surface: surface,
+                ).execute(ctx),
         ),
       );
     }
@@ -247,10 +246,10 @@ class _PropertyEditor extends StatelessWidget {
               onSelected: waiting
                   ? null
                   : (_) => UpdateDraftFromUiCommand(
-                        property: property,
-                        targetValue: option,
-                        surface: surface,
-                      ).execute(ctx),
+                      property: property,
+                      targetValue: option,
+                      surface: surface,
+                    ).execute(ctx),
             ),
         ],
       );
@@ -363,8 +362,9 @@ class _PropertyEditorCard extends StatelessWidget {
                         _PropertyBadge(
                           label: _previewLabel(property),
                           textColor: _previewColor(property),
-                          backgroundColor:
-                              _previewColor(property).withValues(alpha: 0.12),
+                          backgroundColor: _previewColor(
+                            property,
+                          ).withValues(alpha: 0.12),
                           captureSurfaceKey: isActive,
                         ),
                         _PropertyBadge(
@@ -383,28 +383,31 @@ class _PropertyEditorCard extends StatelessWidget {
                           presentationDomain: presentationDomain,
                         ))
                           _PropertyBadge(
-                            label: selectIsPropertyWaiting(
-                              ctx,
-                              controller,
-                              property,
-                              presentationDomain: presentationDomain,
-                            )
+                            label:
+                                selectIsPropertyWaiting(
+                                  ctx,
+                                  controller,
+                                  property,
+                                  presentationDomain: presentationDomain,
+                                )
                                 ? 'Waiting'
                                 : 'Dirty',
-                            textColor: selectIsPropertyWaiting(
-                              ctx,
-                              controller,
-                              property,
-                              presentationDomain: presentationDomain,
-                            )
+                            textColor:
+                                selectIsPropertyWaiting(
+                                  ctx,
+                                  controller,
+                                  property,
+                                  presentationDomain: presentationDomain,
+                                )
                                 ? const Color(0xFF1D4ED8)
                                 : const Color(0xFF0F766E),
-                            backgroundColor: selectIsPropertyWaiting(
-                              ctx,
-                              controller,
-                              property,
-                              presentationDomain: presentationDomain,
-                            )
+                            backgroundColor:
+                                selectIsPropertyWaiting(
+                                  ctx,
+                                  controller,
+                                  property,
+                                  presentationDomain: presentationDomain,
+                                )
                                 ? const Color(0xFFDBEAFE)
                                 : const Color(0xFFCCFBF1),
                           ),
@@ -505,8 +508,7 @@ class _NumericEditorState extends State<_NumericEditor> {
   @override
   void initState() {
     super.initState();
-    _controller =
-        TextEditingController(text: '${widget.property.value ?? ''}');
+    _controller = TextEditingController(text: '${widget.property.value ?? ''}');
   }
 
   @override
@@ -548,12 +550,7 @@ class _NumericEditorState extends State<_NumericEditor> {
   Widget build(final BuildContext context) {
     final presentationDomain = selectPresentedLayer(widget.ctx);
     final text =
-        '${selectEffectiveValueForProperty(
-          widget.ctx,
-          widget.controller,
-          widget.property,
-          presentationDomain: presentationDomain,
-        ) ?? ''}';
+        '${selectEffectiveValueForProperty(widget.ctx, widget.controller, widget.property, presentationDomain: presentationDomain) ?? ''}';
     final waiting = selectIsPropertyWaiting(
       widget.ctx,
       widget.controller,
@@ -571,7 +568,9 @@ class _NumericEditorState extends State<_NumericEditor> {
         IconButton(
           visualDensity: VisualDensity.compact,
           iconSize: 14,
-          onPressed: waiting ? null : () => _applyDelta(-widget.property.numericStep),
+          onPressed: waiting
+              ? null
+              : () => _applyDelta(-widget.property.numericStep),
           icon: const Icon(Icons.remove),
         ),
         Expanded(
@@ -593,7 +592,9 @@ class _NumericEditorState extends State<_NumericEditor> {
         IconButton(
           visualDensity: VisualDensity.compact,
           iconSize: 14,
-          onPressed: waiting ? null : () => _applyDelta(widget.property.numericStep),
+          onPressed: waiting
+              ? null
+              : () => _applyDelta(widget.property.numericStep),
           icon: const Icon(Icons.add),
         ),
       ],
@@ -626,8 +627,7 @@ class _TextValueEditorState extends State<_TextValueEditor> {
   @override
   void initState() {
     super.initState();
-    _controller =
-        TextEditingController(text: '${widget.property.value ?? ''}');
+    _controller = TextEditingController(text: '${widget.property.value ?? ''}');
   }
 
   @override
@@ -648,12 +648,7 @@ class _TextValueEditorState extends State<_TextValueEditor> {
   Widget build(final BuildContext context) {
     final presentationDomain = selectPresentedLayer(widget.ctx);
     final text =
-        '${selectEffectiveValueForProperty(
-          widget.ctx,
-          widget.controller,
-          widget.property,
-          presentationDomain: presentationDomain,
-        ) ?? ''}';
+        '${selectEffectiveValueForProperty(widget.ctx, widget.controller, widget.property, presentationDomain: presentationDomain) ?? ''}';
     final waiting = selectIsPropertyWaiting(
       widget.ctx,
       widget.controller,
@@ -710,10 +705,11 @@ Widget buildPropertyPanelSection(
   return Column(
     children: <Widget>[
       if (selectHasMultiSelection(
-        context,
-        controller,
-        presentationDomain: presentationDomain,
-      ) && properties.isEmpty)
+            context,
+            controller,
+            presentationDomain: presentationDomain,
+          ) &&
+          properties.isEmpty)
         const Padding(
           padding: EdgeInsets.only(bottom: 4),
           child: Text(

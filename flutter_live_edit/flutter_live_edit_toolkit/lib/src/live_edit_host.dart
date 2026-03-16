@@ -150,16 +150,15 @@ String _persistLabel(
   final LiveEditPropertyDescriptor property,
   final LiveEditContext ctx,
   final LiveEditController controller,
-) =>
-    property.requiresAgentForPersistence
-        ? selectCurrentBackendLabel(
-            ctx,
-            controller,
-            presentationDomain: selectPresentedLayer(ctx),
-          )
-        : property.persistable
-            ? 'Direct'
-            : 'Preview only';
+) => property.requiresAgentForPersistence
+    ? selectCurrentBackendLabel(
+        ctx,
+        controller,
+        presentationDomain: selectPresentedLayer(ctx),
+      )
+    : property.persistable
+    ? 'Direct'
+    : 'Preview only';
 
 Color _previewColor(final LiveEditPropertyDescriptor property) {
   if (property.requiresAgentForPersistence) {
@@ -341,9 +340,10 @@ class _AgentActivityPanel extends StatelessWidget {
         sessionId: sessionId,
       );
       final error = selectLastErrorForBubble(context, bubbleId);
-      final hasPrompt = selectInstructionTextForBubble(context, bubbleId)
-          .trim()
-          .isNotEmpty;
+      final hasPrompt = selectInstructionTextForBubble(
+        context,
+        bubbleId,
+      ).trim().isNotEmpty;
       final label = hasPrompt ? 'Prompt ready' : _bubbleStatusLabel(status);
       final summaryText = summary ?? 'Draft changes for this bubble.';
       return Container(
@@ -447,7 +447,8 @@ class _AgentActivityPanel extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ],
-          if (selectDebugModeEnabled(context) || details.isNotEmpty) ...<Widget>[
+          if (selectDebugModeEnabled(context) ||
+              details.isNotEmpty) ...<Widget>[
             const SizedBox(height: 4),
             if (selectDebugModeEnabled(context))
               ExpansionTile(
@@ -680,8 +681,7 @@ class _AiComposerState extends State<_AiComposer> {
             maxLines: 3,
             minLines: 2,
             decoration: InputDecoration(
-              hintText:
-                  'Talk to $backendLabel about this selected element',
+              hintText: 'Talk to $backendLabel about this selected element',
               border: const OutlineInputBorder(),
               isDense: true,
             ),
@@ -702,14 +702,16 @@ class _AiComposerState extends State<_AiComposer> {
                   message: _composerText().trim().isNotEmpty
                       ? _composerText()
                       : null,
-                  globalBackendId: widget.context
+                  globalBackendId: widget
+                      .context
                       .backendConfigResource
                       .value
                       .globalBackendId,
                 ).execute(widget.context);
               } else {
-                await SubmitAiPromptCommand(controller: widget.controller)
-                    .execute(widget.context);
+                await SubmitAiPromptCommand(
+                  controller: widget.controller,
+                ).execute(widget.context);
               }
             },
           ),
@@ -749,8 +751,8 @@ class _AppliedBubbleBody extends StatelessWidget {
     final bubbleRecord = selectBubbleRecord(context, bubbleId);
     final summary = bubbleId != null
         ? ((bubbleRecord?.instructionText ?? '').trim().isNotEmpty
-            ? 'Applied live-edit changes.'
-            : null)
+              ? 'Applied live-edit changes.'
+              : null)
         : selectCurrentActivity(
             context,
             controller,
@@ -856,14 +858,14 @@ class _ApplyActions extends StatelessWidget {
                 presentationDomain: presentationDomain,
                 sessionId: sessionId,
               ) &&
-            !busy)
+              !busy)
         : (selectCanTriggerApply(
                 context,
                 controller,
                 presentationDomain: presentationDomain,
                 sessionId: sessionId,
               ) &&
-            !busy);
+              !busy);
     final buttons = _buttons(canApply, busy);
     final wrap = compact
         ? Wrap(spacing: 8, runSpacing: 8, children: buttons)
@@ -940,8 +942,7 @@ class _ApplyActions extends StatelessWidget {
         OutlinedButton(
           onPressed: busy
               ? null
-              : () =>
-                  OpenAiBubbleCommand(defaultPrompt: '').execute(context),
+              : () => OpenAiBubbleCommand(defaultPrompt: '').execute(context),
           child: const Text('AI'),
         ),
       Semantics(
@@ -952,24 +953,24 @@ class _ApplyActions extends StatelessWidget {
               ? null
               : () async {
                   if (bubbleId != null) {
-                    final msg =
-                        selectInstructionTextForBubble(context, bubbleId)
-                            .trim();
+                    final msg = selectInstructionTextForBubble(
+                      context,
+                      bubbleId,
+                    ).trim();
                     await ApplyDraftForBubbleCommand(
                       bubbleId: bubbleId!,
                       message: msg.isNotEmpty ? msg : null,
-                      globalBackendId: context
-                          .backendConfigResource
-                          .value
-                          .globalBackendId,
+                      globalBackendId:
+                          context.backendConfigResource.value.globalBackendId,
                     ).execute(context);
                   } else {
-                    final msg = selectCanSubmitAiPrompt(
-                      context,
-                      controller,
-                      presentationDomain: presentationDomain,
-                      sessionId: sessionId,
-                    )
+                    final msg =
+                        selectCanSubmitAiPrompt(
+                          context,
+                          controller,
+                          presentationDomain: presentationDomain,
+                          sessionId: sessionId,
+                        )
                         ? selectInstructionTextForBubble(
                             context,
                             selectActiveBubbleId(
@@ -982,10 +983,8 @@ class _ApplyActions extends StatelessWidget {
                         : null;
                     await ApplyDraftCommand(
                       message: msg,
-                      globalBackendId: context
-                          .backendConfigResource
-                          .value
-                          .globalBackendId,
+                      globalBackendId:
+                          context.backendConfigResource.value.globalBackendId,
                     ).execute(context);
                   }
                 },
@@ -993,8 +992,8 @@ class _ApplyActions extends StatelessWidget {
             busy
                 ? 'Working...'
                 : _isSendLabel()
-                    ? 'Send'
-                    : 'Apply',
+                ? 'Send'
+                : 'Apply',
           ),
         ),
       ),
@@ -1017,8 +1016,7 @@ class _ApplyActions extends StatelessWidget {
           identifier: _actionId('done_button'),
           button: true,
           child: FilledButton.tonal(
-            onPressed: () =>
-                ResolveActiveBubbleCommand().execute(context),
+            onPressed: () => ResolveActiveBubbleCommand().execute(context),
             child: const Text('Done'),
           ),
         ),
@@ -1029,19 +1027,20 @@ class _ApplyActions extends StatelessWidget {
     final presentationDomain = selectPresentedLayer(context);
     final sessionId = context.sessionResource.value.activeSessionId;
     if (bubbleId != null) {
-      final hasPrompt = selectInstructionTextForBubble(context, bubbleId)
-          .trim()
-          .isNotEmpty;
+      final hasPrompt = selectInstructionTextForBubble(
+        context,
+        bubbleId,
+      ).trim().isNotEmpty;
       final draftCount =
           selectBubbleRecord(context, bubbleId)?.draftChanges.length ?? 0;
       return hasPrompt && draftCount == 0;
     }
     return selectCanSubmitAiPrompt(
-      context,
-      controller,
-      presentationDomain: presentationDomain,
-      sessionId: sessionId,
-    ) &&
+          context,
+          controller,
+          presentationDomain: presentationDomain,
+          sessionId: sessionId,
+        ) &&
         selectDraftChangesForDomain(
           context,
           controller,
@@ -1070,8 +1069,7 @@ class _BackendSwitcher extends StatelessWidget {
   Widget build(final BuildContext buildContext) {
     final presentationDomain = selectPresentedLayer(context);
     final sessionId = context.sessionResource.value.activeSessionId;
-    final backends =
-        context.backendConfigResource.value.availableBackends;
+    final backends = context.backendConfigResource.value.availableBackends;
     if (backends.length < 2) {
       return const SizedBox.shrink();
     }
@@ -1244,8 +1242,9 @@ class _BackendSwitcher extends StatelessWidget {
                     onSelected: backend.available
                         ? (final value) {
                             if (value) {
-                              SetBackendCommand(backendId: backend.id)
-                                  .execute(context);
+                              SetBackendCommand(
+                                backendId: backend.id,
+                              ).execute(context);
                             }
                           }
                         : null,
@@ -1407,11 +1406,10 @@ class _EditorPanelSurface extends StatelessWidget {
         right: 6,
         bottom: 6,
         child: _PanelResizeHandle(
-          onPanUpdate: (final details) =>
-              ResizePanelCommand(
-                width: selectPanelWidth(context) + details.delta.dx,
-                height: selectPanelHeight(context) + details.delta.dy,
-              ).execute(context),
+          onPanUpdate: (final details) => ResizePanelCommand(
+            width: selectPanelWidth(context) + details.delta.dx,
+            height: selectPanelHeight(context) + details.delta.dy,
+          ).execute(context),
         ),
       ),
     ],
@@ -1481,104 +1479,90 @@ class _FlutterLiveEditHostState extends State<FlutterLiveEditHost> {
     final BuildContext context,
     final LiveEditContext ctx,
     final LiveEditController ctrl,
-  ) =>
-      Shortcuts(
-        shortcuts: const <ShortcutActivator, Intent>{
-          SingleActivator(LogicalKeyboardKey.arrowUp): _SelectParentIntent(),
-          SingleActivator(LogicalKeyboardKey.arrowDown): _SelectChildIntent(),
-          SingleActivator(LogicalKeyboardKey.arrowLeft): _CycleCandidateIntent(
-            -1,
-          ),
-          SingleActivator(LogicalKeyboardKey.arrowRight): _CycleCandidateIntent(
-            1,
-          ),
-        },
-        child: Actions(
-          actions: <Type, Action<Intent>>{
-            _SelectParentIntent: CallbackAction<_SelectParentIntent>(
-              onInvoke: (final _) {
-                if (selectOverlayVisible(ctx) &&
-                    !_editableTextHasPrimaryFocus) {
-                  SelectParentCandidateCommand(controller: ctrl).execute(ctx);
-                }
-                return null;
-              },
-            ),
-            _SelectChildIntent: CallbackAction<_SelectChildIntent>(
-              onInvoke: (final _) {
-                if (selectOverlayVisible(ctx) &&
-                    !_editableTextHasPrimaryFocus) {
-                  SelectChildCandidateCommand(controller: ctrl).execute(ctx);
-                }
-                return null;
-              },
-            ),
-            _CycleCandidateIntent: CallbackAction<_CycleCandidateIntent>(
-              onInvoke: (final intent) {
-                if (selectOverlayVisible(ctx) &&
-                    !_editableTextHasPrimaryFocus) {
-                  CycleSelectionCandidateCommand(
-                    controller: ctrl,
-                    delta: intent.delta,
-                  ).execute(ctx);
-                }
-                return null;
-              },
-            ),
+  ) => Shortcuts(
+    shortcuts: const <ShortcutActivator, Intent>{
+      SingleActivator(LogicalKeyboardKey.arrowUp): _SelectParentIntent(),
+      SingleActivator(LogicalKeyboardKey.arrowDown): _SelectChildIntent(),
+      SingleActivator(LogicalKeyboardKey.arrowLeft): _CycleCandidateIntent(-1),
+      SingleActivator(LogicalKeyboardKey.arrowRight): _CycleCandidateIntent(1),
+    },
+    child: Actions(
+      actions: <Type, Action<Intent>>{
+        _SelectParentIntent: CallbackAction<_SelectParentIntent>(
+          onInvoke: (final _) {
+            if (selectOverlayVisible(ctx) && !_editableTextHasPrimaryFocus) {
+              SelectParentCandidateCommand(controller: ctrl).execute(ctx);
+            }
+            return null;
           },
-          child: Focus(
-            autofocus: true,
-            child: Overlay(
-              initialEntries: <OverlayEntry>[
-                OverlayEntry(
-                  builder: (final overlayContext) => LayoutBuilder(
-                    builder: (final _, final constraints) => Stack(
-                      fit: StackFit.expand,
-                      children: <Widget>[
-                        KeyedSubtree(
-                          key: _contentKey,
-                          child: widget.child,
-                        ),
-                        if (selectOverlayVisible(ctx))
-                          _LiveEditOverlay(
-                            context: ctx,
-                            controller: ctrl,
-                            contentKey: _contentKey,
-                            targetDomain: LiveEditTargetDomain.appScene,
-                            interactive: true,
-                            openBubbleOnSelect: widget.childIsToolLayer,
-                            orchestrator: _orchestrator,
-                          ),
-                        Positioned(
-                          left: 16,
-                          bottom: 16,
-                          child: _LauncherChip(
-                            context: ctx,
-                            controller: ctrl,
-                          ),
-                        ),
-                        if (selectOverlayVisible(ctx) && !widget.childIsToolLayer)
-                          Positioned.fill(
-                            child: KeyedSubtree(
-                              key: _toolOverlayKey,
-                              child: LiveEditToolLayer(
-                                context: ctx,
-                                controller: ctrl,
-                                viewportSize: constraints.biggest,
-                                buildPropertyPanelSection:
-                                    widget.buildPropertyPanelSection,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
         ),
-      );
+        _SelectChildIntent: CallbackAction<_SelectChildIntent>(
+          onInvoke: (final _) {
+            if (selectOverlayVisible(ctx) && !_editableTextHasPrimaryFocus) {
+              SelectChildCandidateCommand(controller: ctrl).execute(ctx);
+            }
+            return null;
+          },
+        ),
+        _CycleCandidateIntent: CallbackAction<_CycleCandidateIntent>(
+          onInvoke: (final intent) {
+            if (selectOverlayVisible(ctx) && !_editableTextHasPrimaryFocus) {
+              CycleSelectionCandidateCommand(
+                controller: ctrl,
+                delta: intent.delta,
+              ).execute(ctx);
+            }
+            return null;
+          },
+        ),
+      },
+      child: Focus(
+        autofocus: true,
+        child: Overlay(
+          initialEntries: <OverlayEntry>[
+            OverlayEntry(
+              builder: (final overlayContext) => LayoutBuilder(
+                builder: (final _, final constraints) => Stack(
+                  fit: StackFit.expand,
+                  children: <Widget>[
+                    KeyedSubtree(key: _contentKey, child: widget.child),
+                    if (selectOverlayVisible(ctx))
+                      _LiveEditOverlay(
+                        context: ctx,
+                        controller: ctrl,
+                        contentKey: _contentKey,
+                        targetDomain: LiveEditTargetDomain.appScene,
+                        interactive: true,
+                        openBubbleOnSelect: widget.childIsToolLayer,
+                        orchestrator: _orchestrator,
+                      ),
+                    Positioned(
+                      left: 16,
+                      bottom: 16,
+                      child: _LauncherChip(context: ctx, controller: ctrl),
+                    ),
+                    if (selectOverlayVisible(ctx) && !widget.childIsToolLayer)
+                      Positioned.fill(
+                        child: KeyedSubtree(
+                          key: _toolOverlayKey,
+                          child: LiveEditToolLayer(
+                            context: ctx,
+                            controller: ctrl,
+                            viewportSize: constraints.biggest,
+                            buildPropertyPanelSection:
+                                widget.buildPropertyPanelSection,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 
   @override
   void didUpdateWidget(covariant final FlutterLiveEditHost oldWidget) {
@@ -1587,13 +1571,16 @@ class _FlutterLiveEditHostState extends State<FlutterLiveEditHost> {
     if (widget.availableBackends != oldWidget.availableBackends) {
       SetAvailableBackendsCommand(
         availableBackends: widget.availableBackends,
-        initialBackendId: _orchestrator!.context.backendConfigResource.value.globalBackendId,
+        initialBackendId:
+            _orchestrator!.context.backendConfigResource.value.globalBackendId,
       ).execute(_orchestrator!.context);
     }
     if (_ownsOrchestrator &&
         widget.backendId != oldWidget.backendId &&
         widget.backendId != null) {
-      SetBackendCommand(backendId: widget.backendId!).execute(_orchestrator!.context);
+      SetBackendCommand(
+        backendId: widget.backendId!,
+      ).execute(_orchestrator!.context);
     }
   }
 
@@ -1678,12 +1665,14 @@ class _InferenceConfigEditor extends StatelessWidget {
         style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
       );
     }
-    final model = selectCurrentModel(
-      context,
-      controller,
-      presentationDomain: presentationDomain,
-      sessionId: sessionId,
-    ) ?? '';
+    final model =
+        selectCurrentModel(
+          context,
+          controller,
+          presentationDomain: presentationDomain,
+          sessionId: sessionId,
+        ) ??
+        '';
     final reasoning = selectCurrentReasoningEffort(
       context,
       controller,
@@ -1737,22 +1726,23 @@ class _InferenceConfigEditor extends StatelessWidget {
                 isDense: true,
                 border: OutlineInputBorder(),
               ),
-              items: selectCurrentSupportedModels(
-                context,
-                controller,
-                presentationDomain: presentationDomain,
-                sessionId: sessionId,
-              )
-                  .map(
-                    (final option) => DropdownMenuItem<String>(
-                      value: option.id,
-                      child: Text(
-                        option.label,
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                    ),
-                  )
-                  .toList(growable: false),
+              items:
+                  selectCurrentSupportedModels(
+                        context,
+                        controller,
+                        presentationDomain: presentationDomain,
+                        sessionId: sessionId,
+                      )
+                      .map(
+                        (final option) => DropdownMenuItem<String>(
+                          value: option.id,
+                          child: Text(
+                            option.label,
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ),
+                      )
+                      .toList(growable: false),
               onChanged: (final value) {
                 if (value != null) {
                   SetInferenceConfigCommand(
@@ -1775,22 +1765,23 @@ class _InferenceConfigEditor extends StatelessWidget {
                 isDense: true,
                 border: OutlineInputBorder(),
               ),
-              items: selectCurrentSupportedReasoningEfforts(
-                context,
-                controller,
-                presentationDomain: presentationDomain,
-                sessionId: sessionId,
-              )
-                  .map(
-                    (final effort) => DropdownMenuItem<String>(
-                      value: effort,
-                      child: Text(
-                        effort,
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                    ),
-                  )
-                  .toList(growable: false),
+              items:
+                  selectCurrentSupportedReasoningEfforts(
+                        context,
+                        controller,
+                        presentationDomain: presentationDomain,
+                        sessionId: sessionId,
+                      )
+                      .map(
+                        (final effort) => DropdownMenuItem<String>(
+                          value: effort,
+                          child: Text(
+                            effort,
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ),
+                      )
+                      .toList(growable: false),
               onChanged: (final value) {
                 if (value != null) {
                   SetInferenceConfigCommand(
@@ -1808,10 +1799,7 @@ class _InferenceConfigEditor extends StatelessWidget {
 }
 
 class _LauncherChip extends StatelessWidget {
-  const _LauncherChip({
-    required this.context,
-    required this.controller,
-  });
+  const _LauncherChip({required this.context, required this.controller});
 
   final LiveEditContext context;
   final LiveEditController controller;
@@ -1824,9 +1812,7 @@ class _LauncherChip extends StatelessWidget {
       child: Semantics(
         identifier: 'live_edit_launcher_chip',
         child: ActionChip(
-          label: Text(
-            overlayVisible ? 'Live Edit: ON' : 'Live Edit',
-          ),
+          label: Text(overlayVisible ? 'Live Edit: ON' : 'Live Edit'),
           avatar: Icon(
             overlayVisible ? Icons.tune : Icons.tune_outlined,
             size: 18,
@@ -1859,6 +1845,7 @@ class _LiveEditOverlay extends StatefulWidget {
   final bool interactive;
   final List<Rect> excludedRects;
   final bool openBubbleOnSelect;
+
   /// When non-null, overlay uses orchestrator for pointer actions (legacy).
   final LiveEditOrchestrator? orchestrator;
 
@@ -2067,11 +2054,10 @@ class _LiveEditOverlayState extends State<_LiveEditOverlay> {
         sessionId: _sessionId,
       );
 
-  Rect? get _marqueeRectForDomain =>
-      widget.controller.marqueeRectForDomain(
-        targetDomain: widget.targetDomain,
-        sessionId: _sessionId,
-      );
+  Rect? get _marqueeRectForDomain => widget.controller.marqueeRectForDomain(
+    targetDomain: widget.targetDomain,
+    sessionId: _sessionId,
+  );
 
   List<LiveEditSelection> get _marqueeSelectionsForDomain =>
       widget.controller.marqueeSelectionsForDomain(
@@ -2097,10 +2083,9 @@ class _LiveEditOverlayState extends State<_LiveEditOverlay> {
           .value
           .deeperPickEnabled;
 
-  Element? get _contentRoot =>
-      widget.contentKey.currentContext is Element
-          ? widget.contentKey.currentContext! as Element
-          : null;
+  Element? get _contentRoot => widget.contentKey.currentContext is Element
+      ? widget.contentKey.currentContext! as Element
+      : null;
 
   @override
   Widget build(final BuildContext context) => Positioned.fill(
@@ -2176,8 +2161,9 @@ class _LiveEditOverlayState extends State<_LiveEditOverlay> {
               },
               onPointerUp: (final event) {
                 if (_dragging) {
-                  CommitMarqueeCommand(controller: widget.controller)
-                      .execute(widget.context);
+                  CommitMarqueeCommand(
+                    controller: widget.controller,
+                  ).execute(widget.context);
                 } else {
                   SelectNodeCommand(
                     x: event.position.dx.round(),
@@ -2207,8 +2193,7 @@ class _LiveEditOverlayState extends State<_LiveEditOverlay> {
                       ? _marqueeSelectionsForDomain
                       : _multiSelectionForDomain,
                   marqueeRect: _marqueeRectForDomain,
-                  deeperPickActive:
-                      widget.interactive && _deeperPickEnabled,
+                  deeperPickActive: widget.interactive && _deeperPickEnabled,
                   draftChanges: _draftChangesForDomain,
                 ),
               ),
@@ -2440,8 +2425,8 @@ class _PanelRail extends StatelessWidget {
                   color: _hasBackendChoice(context)
                       ? const Color(0xFF1D4ED8)
                       : selectDebugModeEnabled(context)
-                          ? const Color(0xFF0F766E)
-                          : const Color(0xFF64748B),
+                      ? const Color(0xFF0F766E)
+                      : const Color(0xFF64748B),
                 ),
               ),
               if (_hasBackendChoice(context)) ...<Widget>[
@@ -2471,11 +2456,11 @@ class _PanelRail extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 4),
                       child: Text(
                         selectCurrentActivity(
-                          context,
-                          controller,
-                          presentationDomain: presentationDomain,
-                          sessionId: sessionId,
-                        )?.label ??
+                              context,
+                              controller,
+                              presentationDomain: presentationDomain,
+                              sessionId: sessionId,
+                            )?.label ??
                             _bubbleStatusLabel(bubbleStatus),
                         style: const TextStyle(
                           fontSize: 9,
@@ -2838,13 +2823,15 @@ class _PropertyEditor extends StatelessWidget {
     }
 
     if (property.kind == LiveEditPropertyKind.boolean) {
-      final current = selectEffectiveValueForProperty(
-        context,
-        controller,
-        property,
-        presentationDomain: presentationDomain,
-        sessionId: sessionId,
-      ) == true;
+      final current =
+          selectEffectiveValueForProperty(
+            context,
+            controller,
+            property,
+            presentationDomain: presentationDomain,
+            sessionId: sessionId,
+          ) ==
+          true;
       return Align(
         alignment: Alignment.centerLeft,
         child: Switch(
@@ -2939,7 +2926,7 @@ class _PropertyEditorCard extends StatelessWidget {
     );
     final isActive =
         selectActivePropertyId(context, domain: presentationDomain) ==
-            property.id;
+        property.id;
     final disabled = !property.editable;
     final effectiveValue = selectEffectiveValueForProperty(
       context,
@@ -3023,22 +3010,24 @@ class _PropertyEditorCard extends StatelessWidget {
                           sessionId: sessionId,
                         ))
                           _PropertyBadge(
-                            label: selectIsPropertyWaiting(
-                              context,
-                              controller,
-                              property,
-                              presentationDomain: presentationDomain,
-                              sessionId: sessionId,
-                            )
+                            label:
+                                selectIsPropertyWaiting(
+                                  context,
+                                  controller,
+                                  property,
+                                  presentationDomain: presentationDomain,
+                                  sessionId: sessionId,
+                                )
                                 ? 'Waiting'
                                 : 'Dirty',
-                            textColor: selectIsPropertyWaiting(
-                              context,
-                              controller,
-                              property,
-                              presentationDomain: presentationDomain,
-                              sessionId: sessionId,
-                            )
+                            textColor:
+                                selectIsPropertyWaiting(
+                                  context,
+                                  controller,
+                                  property,
+                                  presentationDomain: presentationDomain,
+                                  sessionId: sessionId,
+                                )
                                 ? const Color(0xFF1D4ED8)
                                 : const Color(0xFF0F766E),
                             backgroundColor:
@@ -3247,7 +3236,12 @@ class _PropertyPanel extends StatelessWidget {
                               fontSize: 10,
                             ),
                           ),
-                        if (context.backendConfigResource.value.availableBackends.length > 1) ...<Widget>[
+                        if (context
+                                .backendConfigResource
+                                .value
+                                .availableBackends
+                                .length >
+                            1) ...<Widget>[
                           const SizedBox(height: 6),
                           const SizedBox(height: 6),
                           _BackendSwitcher(
@@ -3286,8 +3280,7 @@ class _PropertyPanel extends StatelessWidget {
                       visualDensity: VisualDensity.compact,
                       iconSize: 16,
                       color: Colors.white,
-                      onPressed: () =>
-                          CollapsePanelCommand().execute(context),
+                      onPressed: () => CollapsePanelCommand().execute(context),
                       icon: const Icon(Icons.chevron_right),
                     ),
                   ),
@@ -3323,13 +3316,12 @@ class _PropertyPanel extends StatelessWidget {
                             spacing: 6,
                             runSpacing: 6,
                             children: <Widget>[
-                              for (final summary
-                                  in selectBubbleSummaries(
-                                        context,
-                                        controller,
-                                        presentationDomain: presentationDomain,
-                                        sessionId: sessionId,
-                                      ))
+                              for (final summary in selectBubbleSummaries(
+                                context,
+                                controller,
+                                presentationDomain: presentationDomain,
+                                sessionId: sessionId,
+                              ))
                                 ActionChip(
                                   visualDensity: VisualDensity.compact,
                                   avatar: Container(
@@ -3346,11 +3338,10 @@ class _PropertyPanel extends StatelessWidget {
                                         : '${_domainLabel(summary.targetDomain)} • ${summary.label}',
                                     style: const TextStyle(fontSize: 11),
                                   ),
-                                  onPressed: () =>
-                                      SelectTrackedBubbleCommand(
-                                        bubbleId: summary.bubbleId,
-                                        controller: controller,
-                                      ).execute(context),
+                                  onPressed: () => SelectTrackedBubbleCommand(
+                                    bubbleId: summary.bubbleId,
+                                    controller: controller,
+                                  ).execute(context),
                                 ),
                             ],
                           ),
@@ -3364,7 +3355,7 @@ class _PropertyPanel extends StatelessWidget {
                         ),
                         _PanelSection(
                           title: 'Selection',
-                            child: Column(
+                          child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: <Widget>[
                               SwitchListTile.adaptive(
@@ -3375,9 +3366,9 @@ class _PropertyPanel extends StatelessWidget {
                                   style: TextStyle(fontSize: 11),
                                 ),
                                 value: selectDeeperPickEnabled(context),
-                                onChanged: (final v) =>
-                                    SetDeeperPickCommand(enabled: v)
-                                        .execute(context),
+                                onChanged: (final v) => SetDeeperPickCommand(
+                                  enabled: v,
+                                ).execute(context),
                               ),
                               Wrap(
                                 spacing: 6,
@@ -3404,9 +3395,8 @@ class _PropertyPanel extends StatelessWidget {
                                               );
                                           if (activeIdx < 0) return;
                                           final len = _visibleCandidates.length;
-                                          final delta = (candidate.$1 -
-                                                  activeIdx +
-                                                  len) %
+                                          final delta =
+                                              (candidate.$1 - activeIdx + len) %
                                               len;
                                           if (delta == 0) return;
                                           CycleSelectionCandidateCommand(
@@ -3434,12 +3424,11 @@ class _PropertyPanel extends StatelessWidget {
                                             vertical: 6,
                                           ),
                                         ),
-                                        onPressed:
-                                            _visibleCandidates.length > 1
+                                        onPressed: _visibleCandidates.length > 1
                                             ? () =>
-                                                SelectParentCandidateCommand(
-                                                  controller: controller,
-                                                ).execute(context)
+                                                  SelectParentCandidateCommand(
+                                                    controller: controller,
+                                                  ).execute(context)
                                             : null,
                                         icon: const Icon(
                                           Icons.arrow_upward,
@@ -3462,12 +3451,10 @@ class _PropertyPanel extends StatelessWidget {
                                           vertical: 6,
                                         ),
                                       ),
-                                      onPressed:
-                                          _visibleCandidates.length > 1
-                                          ? () =>
-                                              SelectChildCandidateCommand(
-                                                controller: controller,
-                                              ).execute(context)
+                                      onPressed: _visibleCandidates.length > 1
+                                          ? () => SelectChildCandidateCommand(
+                                              controller: controller,
+                                            ).execute(context)
                                           : null,
                                       icon: const Icon(
                                         Icons.arrow_downward,
@@ -3533,10 +3520,12 @@ class _PropertyPanel extends StatelessWidget {
                         if (buildPropertyPanelSection != null)
                           _PanelSection(
                             title: 'Properties',
-                            child: buildPropertyPanelSection!(
-                              context,
-                              controller,
-                            ) ?? const SizedBox.shrink(),
+                            child:
+                                buildPropertyPanelSection!(
+                                  context,
+                                  controller,
+                                ) ??
+                                const SizedBox.shrink(),
                           ),
                         _PanelSection(
                           title: 'Thread',
@@ -3566,19 +3555,15 @@ class _PropertyPanel extends StatelessWidget {
                                 ),
                               ],
                               const SizedBox(height: 6),
-                              for (final entry
-                                  in selectHistoryForBubble(
-                                        context,
-                                        selectActiveBubbleId(
-                                          context,
-                                          controller,
-                                          presentationDomain:
-                                              presentationDomain,
-                                          sessionId: sessionId,
-                                        ),
-                                      )
-                                      .reversed
-                                      .take(5))
+                              for (final entry in selectHistoryForBubble(
+                                context,
+                                selectActiveBubbleId(
+                                  context,
+                                  controller,
+                                  presentationDomain: presentationDomain,
+                                  sessionId: sessionId,
+                                ),
+                              ).reversed.take(5))
                                 _TimelineBubble(entry: entry),
                             ],
                           ),
@@ -3603,14 +3588,11 @@ class _PropertyPanel extends StatelessWidget {
                               children: <Widget>[
                                 for (final entry
                                     in selectDebugTimelineForActiveSelection(
-                                          context,
-                                          controller,
-                                          presentationDomain:
-                                              presentationDomain,
-                                          sessionId: sessionId,
-                                        )
-                                        .reversed
-                                        .take(10))
+                                      context,
+                                      controller,
+                                      presentationDomain: presentationDomain,
+                                      sessionId: sessionId,
+                                    ).reversed.take(10))
                                   _TimelineBubble(entry: entry, debug: true),
                               ],
                             ),
@@ -3838,16 +3820,18 @@ class _SelectionBubble extends StatelessWidget {
           );
       status = selectBubbleStatusForBubble(context, summary.bubbleId);
       placement = clampBubblePlacement(
-        placement: autoBubblePlacement(
-          bounds: bounds,
-          viewport: viewportSize,
-          bubbleWidth: overlayTheme.selectionBubbleWidth(
-            aiMode: selectEditMode(context) == LiveEditEditMode.ai,
-          ),
-          bubbleHeight: overlayTheme.selectionBubbleHeight(
-            aiMode: selectEditMode(context) == LiveEditEditMode.ai,
-          ),
-        ) + selectBubbleDragOffset(context, summary.bubbleId),
+        placement:
+            autoBubblePlacement(
+              bounds: bounds,
+              viewport: viewportSize,
+              bubbleWidth: overlayTheme.selectionBubbleWidth(
+                aiMode: selectEditMode(context) == LiveEditEditMode.ai,
+              ),
+              bubbleHeight: overlayTheme.selectionBubbleHeight(
+                aiMode: selectEditMode(context) == LiveEditEditMode.ai,
+              ),
+            ) +
+            selectBubbleDragOffset(context, summary.bubbleId),
         viewport: viewportSize,
         bubbleWidth: overlayTheme.selectionBubbleWidth(
           aiMode: selectEditMode(context) == LiveEditEditMode.ai,
@@ -3885,24 +3869,26 @@ class _SelectionBubble extends StatelessWidget {
         ),
       );
       placement = clampBubblePlacement(
-        placement: autoBubblePlacement(
-          bounds: bounds,
-          viewport: viewportSize,
-          bubbleWidth: overlayTheme.selectionBubbleWidth(
-            aiMode: selectEditMode(context) == LiveEditEditMode.ai,
-          ),
-          bubbleHeight: overlayTheme.selectionBubbleHeight(
-            aiMode: selectEditMode(context) == LiveEditEditMode.ai,
-          ),
-        ) + selectBubbleDragOffset(
-          context,
-          selectActiveBubbleId(
-            context,
-            controller,
-            presentationDomain: presentationDomain,
-            sessionId: sessionId,
-          ),
-        ),
+        placement:
+            autoBubblePlacement(
+              bounds: bounds,
+              viewport: viewportSize,
+              bubbleWidth: overlayTheme.selectionBubbleWidth(
+                aiMode: selectEditMode(context) == LiveEditEditMode.ai,
+              ),
+              bubbleHeight: overlayTheme.selectionBubbleHeight(
+                aiMode: selectEditMode(context) == LiveEditEditMode.ai,
+              ),
+            ) +
+            selectBubbleDragOffset(
+              context,
+              selectActiveBubbleId(
+                context,
+                controller,
+                presentationDomain: presentationDomain,
+                sessionId: sessionId,
+              ),
+            ),
         viewport: viewportSize,
         bubbleWidth: overlayTheme.selectionBubbleWidth(
           aiMode: selectEditMode(context) == LiveEditEditMode.ai,
@@ -3924,10 +3910,8 @@ class _SelectionBubble extends StatelessWidget {
         ? kLiveEditAiBubbleSurfaceId
         : kLiveEditSelectionBubbleSurfaceId;
     final surfaceTheme = overlayTheme.styleFor(surfaceId);
-    final bubbleWidthVal =
-        overlayTheme.selectionBubbleWidth(aiMode: aiMode);
-    final bubbleHeightVal =
-        overlayTheme.selectionBubbleHeight(aiMode: aiMode);
+    final bubbleWidthVal = overlayTheme.selectionBubbleWidth(aiMode: aiMode);
+    final bubbleHeightVal = overlayTheme.selectionBubbleHeight(aiMode: aiMode);
     final autoPlacement = autoBubblePlacement(
       bounds: bounds,
       viewport: viewportSize,
@@ -3976,8 +3960,9 @@ class _SelectionBubble extends StatelessWidget {
                                   delta: details.delta,
                                 ).execute(context);
                               } else {
-                                DragBubbleCommand(delta: details.delta)
-                                    .execute(context);
+                                DragBubbleCommand(
+                                  delta: details.delta,
+                                ).execute(context);
                               }
                             },
                             semanticsId: isActive
@@ -4020,15 +4005,15 @@ class _SelectionBubble extends StatelessWidget {
                                             )
                                         ? 'Selecting ${selectMarqueePreviewSelections(context, controller, presentationDomain: presentationDomain, sessionId: sessionId).length}'
                                         : isActive
-                                            ? (selectCurrentActivity(
-                                                  context,
-                                                  controller,
-                                                  presentationDomain:
-                                                      presentationDomain,
-                                                  sessionId: sessionId,
-                                                )?.label ??
-                                                _bubbleStatusLabel(status))
-                                            : _bubbleStatusLabel(status),
+                                        ? (selectCurrentActivity(
+                                                context,
+                                                controller,
+                                                presentationDomain:
+                                                    presentationDomain,
+                                                sessionId: sessionId,
+                                              )?.label ??
+                                              _bubbleStatusLabel(status))
+                                        : _bubbleStatusLabel(status),
                                     style: const TextStyle(
                                       fontWeight: FontWeight.w700,
                                       fontSize: 13,
@@ -4046,15 +4031,15 @@ class _SelectionBubble extends StatelessWidget {
                                             )
                                         ? '${selectMultiSelectionForDomain(context, controller, domain: presentationDomain, sessionId: sessionId).length} widgets • ${selectActiveProperty(context, controller, presentationDomain: presentationDomain, sessionId: sessionId)?.label ?? 'shared'}'
                                         : isActive &&
-                                                selectHasMarqueePreview(
-                                                  context,
-                                                  controller,
-                                                  presentationDomain:
-                                                      presentationDomain,
-                                                  sessionId: sessionId,
-                                                )
-                                            ? 'Drag selection preview • ${selectMarqueePreviewSelections(context, controller, presentationDomain: presentationDomain, sessionId: sessionId).length} hits'
-                                            : '${selection?.widgetType ?? summary?.label ?? '?'} • ${isActive ? (selectActiveProperty(context, controller, presentationDomain: presentationDomain, sessionId: sessionId)?.label ?? 'node') : 'node'}',
+                                              selectHasMarqueePreview(
+                                                context,
+                                                controller,
+                                                presentationDomain:
+                                                    presentationDomain,
+                                                sessionId: sessionId,
+                                              )
+                                        ? 'Drag selection preview • ${selectMarqueePreviewSelections(context, controller, presentationDomain: presentationDomain, sessionId: sessionId).length} hits'
+                                        : '${selection?.widgetType ?? summary?.label ?? '?'} • ${isActive ? (selectActiveProperty(context, controller, presentationDomain: presentationDomain, sessionId: sessionId)?.label ?? 'node') : 'node'}',
                                     style: const TextStyle(
                                       color: Color(0xFF475569),
                                       fontSize: 12,
@@ -4104,11 +4089,10 @@ class _SelectionBubble extends StatelessWidget {
                               child: IconButton(
                                 onPressed:
                                     isActive && _visibleCandidates.length > 1
-                                        ? () =>
-                                            SelectParentCandidateCommand(
-                                              controller: controller,
-                                            ).execute(context)
-                                        : null,
+                                    ? () => SelectParentCandidateCommand(
+                                        controller: controller,
+                                      ).execute(context)
+                                    : null,
                                 icon: const Icon(
                                   Icons.vertical_align_top,
                                   size: 18,
@@ -4130,11 +4114,10 @@ class _SelectionBubble extends StatelessWidget {
                             IconButton(
                               onPressed:
                                   isActive && _visibleCandidates.length > 1
-                                      ? () =>
-                                          SelectChildCandidateCommand(
-                                            controller: controller,
-                                          ).execute(context)
-                                      : null,
+                                  ? () => SelectChildCandidateCommand(
+                                      controller: controller,
+                                    ).execute(context)
+                                  : null,
                               icon: const Icon(
                                 Icons.vertical_align_bottom,
                                 size: 18,
@@ -4149,17 +4132,17 @@ class _SelectionBubble extends StatelessWidget {
                                 tooltip: 'Hide bubble',
                                 onPressed: summary != null
                                     ? () => HideBubbleCommand(
-                                          bubbleId: summary.bubbleId,
-                                        ).execute(context)
+                                        bubbleId: summary.bubbleId,
+                                      ).execute(context)
                                     : () => HideBubbleCommand(
-                                          bubbleId: selectActiveBubbleId(
-                                            context,
-                                            controller,
-                                            presentationDomain:
-                                                presentationDomain,
-                                            sessionId: sessionId,
-                                          ),
-                                        ).execute(context),
+                                        bubbleId: selectActiveBubbleId(
+                                          context,
+                                          controller,
+                                          presentationDomain:
+                                              presentationDomain,
+                                          sessionId: sessionId,
+                                        ),
+                                      ).execute(context),
                                 icon: const Icon(Icons.visibility_off_outlined),
                               ),
                             ),
@@ -4186,14 +4169,11 @@ class _SelectionBubble extends StatelessWidget {
                                       selected: candidate.$2.active,
                                       onSelected: (_) {
                                         final activeIdx = _visibleCandidates
-                                            .indexWhere(
-                                              (final c) => c.active,
-                                            );
+                                            .indexWhere((final c) => c.active);
                                         if (activeIdx < 0) return;
                                         final len = _visibleCandidates.length;
-                                        final delta = (candidate.$1 -
-                                                activeIdx +
-                                                len) %
+                                        final delta =
+                                            (candidate.$1 - activeIdx + len) %
                                             len;
                                         if (delta == 0) return;
                                         CycleSelectionCandidateCommand(
@@ -4245,8 +4225,9 @@ class _SelectionBubble extends StatelessWidget {
                                   ? summary.bubbleId
                                   : null,
                             ),
-                            _ when selectEditMode(context) ==
-                                LiveEditEditMode.ai =>
+                            _
+                                when selectEditMode(context) ==
+                                    LiveEditEditMode.ai =>
                               _AiBubbleBody(
                                 context: context,
                                 controller: controller,
@@ -4573,11 +4554,11 @@ class _WaitingBubbleBody extends StatelessWidget {
                   .map((final d) => '${d.propertyId}=${d.targetValue}')
                   .join(' • '))
         : (selectCurrentActivity(
-                  context,
-                  controller,
-                  presentationDomain: presentationDomain,
-                  sessionId: sessionId,
-                )?.summary ??
+                context,
+                controller,
+                presentationDomain: presentationDomain,
+                sessionId: sessionId,
+              )?.summary ??
               plan?.summary ??
               draftChanges
                   .map(
@@ -4608,11 +4589,11 @@ class _WaitingBubbleBody extends StatelessWidget {
                 failure
                     ? (lastError ?? 'Agent request failed.')
                     : (selectCurrentActivity(
-                              context,
-                              controller,
-                              presentationDomain: presentationDomain,
-                              sessionId: sessionId,
-                            )?.summary ??
+                            context,
+                            controller,
+                            presentationDomain: presentationDomain,
+                            sessionId: sessionId,
+                          )?.summary ??
                           '$backendLabel is working on ${property?.label ?? 'this change'}.'),
                 style: TextStyle(
                   fontSize: 12,
@@ -4672,8 +4653,9 @@ class _WaitingBubbleBody extends StatelessWidget {
                         sessionId: sessionId,
                       ),
                     ).execute(context);
-                    await SubmitAiPromptCommand(controller: controller)
-                        .execute(context);
+                    await SubmitAiPromptCommand(
+                      controller: controller,
+                    ).execute(context);
                   },
                   child: const Text('Retry'),
                 ),

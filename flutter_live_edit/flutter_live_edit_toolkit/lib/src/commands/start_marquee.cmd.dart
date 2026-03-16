@@ -1,11 +1,7 @@
 import '../live_edit_context.dart';
 
 final class StartMarqueeCommand {
-  StartMarqueeCommand({
-    required this.x,
-    required this.y,
-    this.sessionId,
-  });
+  StartMarqueeCommand({required this.x, required this.y, this.sessionId});
 
   final int x;
   final int y;

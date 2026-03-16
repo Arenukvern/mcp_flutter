@@ -37,8 +37,9 @@ mixin ScreenshotService {
     }
 
     // Wait for all screenshots to complete and filter out failures (nulls)
-    final images =
-        (await Future.wait(imageFutures)).whereType<String>().toList();
+    final images = (await Future.wait(
+      imageFutures,
+    )).whereType<String>().toList();
 
     // The function should return this list. Ensure a return statement follows.
     return images; // Added return statement as it's logically required here.
@@ -119,10 +120,9 @@ mixin ScreenshotService {
           'ScreenshotService: Successfully captured screenshot for '
           'main view (${pngBytes.lengthInBytes} bytes).',
         );
-        final effectiveImage =
-            compress
-                ? await ImageCompressor.compressImage(image: image)
-                : pngBytes;
+        final effectiveImage = compress
+            ? await ImageCompressor.compressImage(image: image)
+            : pngBytes;
 
         return base64Encode(effectiveImage);
       } else {

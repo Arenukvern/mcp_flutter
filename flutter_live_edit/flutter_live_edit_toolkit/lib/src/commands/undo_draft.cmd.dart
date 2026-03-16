@@ -15,17 +15,13 @@ final class UndoDraftCommand {
 
     final domain = context.sessionResource.value.targetDomain;
     final bubbleData = context.bubbleResource.value;
-    final activeId =
-        bubbleData.layerViewStateByDomain[domain]?.activeBubbleId;
+    final activeId = bubbleData.layerViewStateByDomain[domain]?.activeBubbleId;
     final bubble = activeId != null
         ? bubbleData.bubbleRecordsById[activeId]
         : null;
     final nodeIds = bubble?.nodeIds ?? const <String>[];
 
-    context.sessionService.discardDraftNodes(
-      sessionId: sid,
-      nodeIds: nodeIds,
-    );
+    context.sessionService.discardDraftNodes(sessionId: sid, nodeIds: nodeIds);
     context.applySessionUpdate(context.sessionService.lastUpdate);
 
     var newBubbleData = bubbleData.copyWith(

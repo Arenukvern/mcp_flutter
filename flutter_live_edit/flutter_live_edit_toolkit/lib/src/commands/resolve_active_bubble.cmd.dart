@@ -40,10 +40,9 @@ final class ResolveActiveBubbleCommand {
       globalComposerText: '',
     );
 
-    context.panelViewResource.value = context.panelViewResource.value
-        .copyWith(
-          panelDisplayMode: LiveEditPanelDisplayMode.rail,
-          editMode: LiveEditEditMode.inspect,
-        );
+    context.panelViewResource.value = context.panelViewResource.value.copyWith(
+      panelDisplayMode: LiveEditPanelDisplayMode.rail,
+      editMode: LiveEditEditMode.inspect,
+    );
   }
 }

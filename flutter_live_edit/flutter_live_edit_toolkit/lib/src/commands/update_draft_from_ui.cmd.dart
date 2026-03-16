@@ -37,7 +37,8 @@ final class UpdateDraftFromUiCommand {
     final selectionLayer =
         context.selectionResource.value[sessionId]?[targetDomain];
     final selection = selectionLayer?.selection;
-    final multi = selectionLayer?.multiSelections ?? const <LiveEditSelection>[];
+    final multi =
+        selectionLayer?.multiSelections ?? const <LiveEditSelection>[];
 
     if (selection == null) {
       bubbleStateService.setErrorForBubble(
@@ -52,8 +53,8 @@ final class UpdateDraftFromUiCommand {
     final previewMode = property.canPreviewExactly
         ? LiveEditPreviewMode.exact
         : (property.previewMode == LiveEditPreviewMode.none
-            ? LiveEditPreviewMode.ghost
-            : property.previewMode);
+              ? LiveEditPreviewMode.ghost
+              : property.previewMode);
     final meta = <String, Object?>{
       'requiresAgentForPersistence': property.requiresAgentForPersistence,
       'editSurface': (surface ?? property.preferredEditSurface).wireName,
@@ -65,8 +66,8 @@ final class UpdateDraftFromUiCommand {
     final intent = intentText?.trim().isNotEmpty == true
         ? intentText!
         : (context.bubbleResource.value.globalComposerText.trim().isNotEmpty
-            ? context.bubbleResource.value.globalComposerText
-            : '');
+              ? context.bubbleResource.value.globalComposerText
+              : '');
 
     if (multi.length > 1) {
       context.sessionService.updateDraftBatch(
@@ -106,7 +107,10 @@ final class UpdateDraftFromUiCommand {
       lastError: null,
       applyPhase: LiveEditApplyPhase.idle,
     );
-    final bubbleId = bubbleStateService.bubbleIdForSelection(context, selection);
+    final bubbleId = bubbleStateService.bubbleIdForSelection(
+      context,
+      selection,
+    );
     if (hasText(bubbleId)) {
       final next = Set<LiveEditBubbleId>.from(
         context.bubbleResource.value.resolvedBubbleIds,
@@ -123,15 +127,23 @@ final class UpdateDraftFromUiCommand {
       selection,
       multi,
     );
-    final backendId = _backendIdForBubble(bubbleStateService, context, bubbleId);
-    final inferenceConfig =
-        _inferenceConfigForBubble(bubbleStateService, context, bubbleId);
+    final backendId = _backendIdForBubble(
+      bubbleStateService,
+      context,
+      bubbleId,
+    );
+    final inferenceConfig = _inferenceConfigForBubble(
+      bubbleStateService,
+      context,
+      bubbleId,
+    );
     final bubble = bubbleStateService.bubbleRecordFor(context, bubbleId);
     bubbleStateService.captureBubbleState(
       context,
       selection,
       multi.isEmpty ? <LiveEditSelection>[selection] : multi,
-      instructionText: bubble?.instructionText ??
+      instructionText:
+          bubble?.instructionText ??
           context.bubbleResource.value.globalComposerText,
       status: LiveEditBubbleStatus.editing,
       draftChanges: draftChanges,
@@ -139,7 +151,10 @@ final class UpdateDraftFromUiCommand {
       inferenceConfig: inferenceConfig,
     );
     if (editMode == LiveEditEditMode.ai &&
-        !hasText(bubble?.instructionText ?? context.bubbleResource.value.globalComposerText)) {
+        !hasText(
+          bubble?.instructionText ??
+              context.bubbleResource.value.globalComposerText,
+        )) {
       final defaultPrompt = _defaultAiPrompt(selection, multi);
       UpdateAiComposerCommand(value: defaultPrompt).execute(context);
     }
@@ -205,7 +220,10 @@ final class UpdateDraftFromUiCommand {
       }
     }
     if (backend == null) return null;
-    return context.backendConfigResource.value.inferenceConfigByBackendId[backend.id] ??
+    return context
+            .backendConfigResource
+            .value
+            .inferenceConfigByBackendId[backend.id] ??
         backendEffectiveConfig(backend);
   }
 
@@ -225,6 +243,8 @@ final class UpdateDraftFromUiCommand {
         }
       }
     }
-    return buffer.isEmpty ? 'Persist the current live-edit changes.' : buffer.toString();
+    return buffer.isEmpty
+        ? 'Persist the current live-edit changes.'
+        : buffer.toString();
   }
 }

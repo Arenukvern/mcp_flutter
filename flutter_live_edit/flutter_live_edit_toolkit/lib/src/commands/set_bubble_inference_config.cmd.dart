@@ -16,15 +16,15 @@ final class SetBubbleInferenceConfigCommand {
   final String? reasoningEffort;
 
   void execute(final LiveEditContext context) {
-    final bubble =
-        context.bubbleResource.value.bubbleRecordsById[bubbleId];
+    final bubble = context.bubbleResource.value.bubbleRecordsById[bubbleId];
     if (bubble == null) return;
     final backendId = bubble.backendId;
     if (backendId == null || backendId.isEmpty) return;
     final nextConfig = LiveEditCodexOptions.normalizeConfig(
       LiveEditInferenceConfig(
         model: model?.trim().isNotEmpty == true ? model!.trim() : null,
-        reasoningEffort: backendId == 'codex_exec' &&
+        reasoningEffort:
+            backendId == 'codex_exec' &&
                 (reasoningEffort?.trim().isNotEmpty == true)
             ? reasoningEffort!.trim()
             : null,

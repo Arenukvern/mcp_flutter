@@ -94,17 +94,15 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
   void _postToolRegistrationEvent(final Set<MCPCallEntry> newEntries) {
     if (newEntries.isEmpty) return;
 
-    final toolNames =
-        newEntries
-            .where((final entry) => entry.hasTool)
-            .map((final entry) => entry.key.toString())
-            .toList();
+    final toolNames = newEntries
+        .where((final entry) => entry.hasTool)
+        .map((final entry) => entry.key.toString())
+        .toList();
 
-    final resourceUris =
-        newEntries
-            .where((final entry) => entry.hasResource)
-            .map((final entry) => entry.resourceUri)
-            .toList();
+    final resourceUris = newEntries
+        .where((final entry) => entry.hasResource)
+        .map((final entry) => entry.resourceUri)
+        .toList();
 
     // Post event to Dart VM for DTD/MCP server consumption
     developer.postEvent('MCPToolkit.ToolRegistration', {

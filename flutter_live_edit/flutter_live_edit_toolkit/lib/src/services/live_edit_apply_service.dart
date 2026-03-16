@@ -3,8 +3,7 @@ import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 import '../live_edit_types.dart';
 import 'live_edit_apply_result.dart';
 
-bool _hasText(final String? value) =>
-    value != null && value.trim().isNotEmpty;
+bool _hasText(final String? value) => value != null && value.trim().isNotEmpty;
 
 /// Runs the apply delegate and returns a result for Commands to apply to Resources.
 final class LiveEditApplyService {
@@ -47,13 +46,13 @@ final class LiveEditApplyService {
           executionPlan?.affectedFiles ??
           const <String>[];
       final updatedRecord = currentBubbleRecord?.copyWith(
-              draftChanges: const <LiveEditDraftChange>[],
-              status: LiveEditBubbleStatus.applied,
-              displayState: LiveEditBubbleDisplayState.minimized,
-              changedFiles: changedFiles,
-              executionPlan: executionPlan,
-              lastError: null,
-            );
+        draftChanges: const <LiveEditDraftChange>[],
+        status: LiveEditBubbleStatus.applied,
+        displayState: LiveEditBubbleDisplayState.minimized,
+        changedFiles: changedFiles,
+        executionPlan: executionPlan,
+        lastError: null,
+      );
       final summary =
           executionResult?.summary ??
           (executionPlan != null

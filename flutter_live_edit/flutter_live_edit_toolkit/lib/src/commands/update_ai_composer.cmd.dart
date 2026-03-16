@@ -26,7 +26,8 @@ final class UpdateAiComposerCommand {
         return;
       }
     }
-    context.bubbleResource.value =
-        bubbleData.copyWith(globalComposerText: value);
+    context.bubbleResource.value = bubbleData.copyWith(
+      globalComposerText: value,
+    );
   }
 }

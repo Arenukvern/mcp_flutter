@@ -52,12 +52,11 @@ extension type const MCPMethodName(String _value) implements String {}
 typedef _MCPCallEntryRecord = MapEntry<MCPMethodName, _MCPCallEntryRecordValue>;
 
 /// A record value for the MCP call entry for type safety.
-typedef _MCPCallEntryRecordValue =
-    ({
-      MCPCallHandler handler,
-      MCPToolDefinition? toolDefinition,
-      MCPResourceDefinition? resourceDefinition,
-    });
+typedef _MCPCallEntryRecordValue = ({
+  MCPCallHandler handler,
+  MCPToolDefinition? toolDefinition,
+  MCPResourceDefinition? resourceDefinition,
+});
 
 /// A base definition for MCP definitions.
 extension type const MCPDefinition._(Map<String, dynamic> _value)

@@ -23,8 +23,7 @@ final class CycleSelectionCandidateCommand {
       sessionId: sessionId,
     );
     if (candidates.isEmpty) return;
-    final activeIndex =
-        candidates.indexWhere((final c) => c.active);
+    final activeIndex = candidates.indexWhere((final c) => c.active);
     final nextIndex = activeIndex < 0
         ? 0
         : (activeIndex + delta + candidates.length) % candidates.length;

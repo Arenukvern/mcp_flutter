@@ -13,8 +13,7 @@ final class DragBubbleCommand {
     if (delta == Offset.zero) return;
     final domain = context.sessionResource.value.targetDomain;
     final bubbleData = context.bubbleResource.value;
-    final activeId =
-        bubbleData.layerViewStateByDomain[domain]?.activeBubbleId;
+    final activeId = bubbleData.layerViewStateByDomain[domain]?.activeBubbleId;
     if (activeId == null) return;
     final bubble = bubbleData.bubbleRecordsById[activeId];
     if (bubble == null) return;

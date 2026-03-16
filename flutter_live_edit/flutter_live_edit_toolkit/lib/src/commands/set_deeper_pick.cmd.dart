@@ -7,7 +7,8 @@ final class SetDeeperPickCommand {
   final bool enabled;
 
   void execute(final LiveEditContext context) {
-    context.panelViewResource.value = context.panelViewResource.value
-        .copyWith(deeperPickEnabled: enabled);
+    context.panelViewResource.value = context.panelViewResource.value.copyWith(
+      deeperPickEnabled: enabled,
+    );
   }
 }

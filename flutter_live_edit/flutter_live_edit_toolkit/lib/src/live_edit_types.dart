@@ -8,8 +8,7 @@ typedef LiveEditBubbleId = String;
 
 typedef LiveEditRuntimeEventSink = void Function(LiveEditRuntimeEvent event);
 
-bool _hasText(final String? value) =>
-    value != null && value.trim().isNotEmpty;
+bool _hasText(final String? value) => value != null && value.trim().isNotEmpty;
 
 const Object _unsetValue = Object();
 
@@ -91,10 +90,10 @@ final class LiveEditApplyDraftRequest {
 
   String? get effectiveInstructionText =>
       instructionText?.trim().isNotEmpty == true
-          ? instructionText!.trim()
-          : intentText?.trim().isNotEmpty == true
-              ? intentText!.trim()
-              : null;
+      ? instructionText!.trim()
+      : intentText?.trim().isNotEmpty == true
+      ? intentText!.trim()
+      : null;
 
   LiveEditSelection? get effectivePrimarySelection =>
       primarySelection ?? selection;
@@ -111,36 +110,35 @@ final class LiveEditApplyDraftRequest {
       stagedPropertyChanges.isNotEmpty ? stagedPropertyChanges : draftChanges;
 
   Map<String, Object?> toJson() => <String, Object?>{
-        'sessionId': sessionId,
-        if (_hasText(effectiveBubbleId)) 'bubbleId': effectiveBubbleId,
-        if (_hasText(effectiveInstructionText))
-          'instructionText': effectiveInstructionText,
-        if (primarySelection != null)
-          'primarySelection': primarySelection!.toJson(),
-        if (selectedWidgets.isNotEmpty)
-          'selectedWidgets': selectedWidgets
-              .map((final s) => s.toJson())
-              .toList(growable: false),
-        if (sourceTargets.isNotEmpty)
-          'sourceTargets': sourceTargets
-              .map((final t) => t.toJson())
-              .toList(growable: false),
-        'stagedPropertyChanges': effectiveStagedPropertyChanges
-            .map((final c) => c.toJson())
-            .toList(growable: false),
-        'applyMode': applyMode.wireName,
-        'draftChanges': draftChanges
-            .map((final c) => c.toJson())
-            .toList(growable: false),
-        if (selection != null) 'selection': selection!.toJson(),
-        if (_hasText(proposalId)) 'proposalId': proposalId,
-        if (_hasText(backendId)) 'backendId': backendId,
-        if (inferenceConfig != null)
-          'inferenceConfig': inferenceConfig!.toJson(),
-        if (_hasText(workingDirectory)) 'workingDirectory': workingDirectory,
-        if (_hasText(intentText)) 'intentText': intentText,
-        'approve': approve,
-      };
+    'sessionId': sessionId,
+    if (_hasText(effectiveBubbleId)) 'bubbleId': effectiveBubbleId,
+    if (_hasText(effectiveInstructionText))
+      'instructionText': effectiveInstructionText,
+    if (primarySelection != null)
+      'primarySelection': primarySelection!.toJson(),
+    if (selectedWidgets.isNotEmpty)
+      'selectedWidgets': selectedWidgets
+          .map((final s) => s.toJson())
+          .toList(growable: false),
+    if (sourceTargets.isNotEmpty)
+      'sourceTargets': sourceTargets
+          .map((final t) => t.toJson())
+          .toList(growable: false),
+    'stagedPropertyChanges': effectiveStagedPropertyChanges
+        .map((final c) => c.toJson())
+        .toList(growable: false),
+    'applyMode': applyMode.wireName,
+    'draftChanges': draftChanges
+        .map((final c) => c.toJson())
+        .toList(growable: false),
+    if (selection != null) 'selection': selection!.toJson(),
+    if (_hasText(proposalId)) 'proposalId': proposalId,
+    if (_hasText(backendId)) 'backendId': backendId,
+    if (inferenceConfig != null) 'inferenceConfig': inferenceConfig!.toJson(),
+    if (_hasText(workingDirectory)) 'workingDirectory': workingDirectory,
+    if (_hasText(intentText)) 'intentText': intentText,
+    'approve': approve,
+  };
 }
 
 enum LiveEditApplyPhase {
@@ -226,43 +224,36 @@ final class LiveEditBubbleRecord {
     final List<LiveEditTimelineEntry>? debugTimeline,
     final Object? debugPromptText = _unsetValue,
     final Offset? bubbleDragOffset,
-  }) =>
-      LiveEditBubbleRecord(
-        bubbleId: bubbleId,
-        targetDomain: targetDomain,
-        targetKey: targetKey,
-        primarySelection: primarySelection ?? this.primarySelection,
-        selectedWidgets: selectedWidgets ?? this.selectedWidgets,
-        draftChanges: draftChanges ?? this.draftChanges,
-        instructionText: instructionText ?? this.instructionText,
-        status: status ?? this.status,
-        displayState: displayState ?? this.displayState,
-        changedFiles: changedFiles ?? this.changedFiles,
-        backendId: backendId ?? this.backendId,
-        inferenceConfig: identical(inferenceConfig, _unsetValue)
-            ? this.inferenceConfig
-            : inferenceConfig as LiveEditInferenceConfig?,
-        executionPlan: executionPlan ?? this.executionPlan,
-        lastError: identical(lastError, _unsetValue)
-            ? this.lastError
-            : lastError as String?,
-        history: history ?? this.history,
-        activity: activity ?? this.activity,
-        debugTimeline: debugTimeline ?? this.debugTimeline,
-        debugPromptText: identical(debugPromptText, _unsetValue)
-            ? this.debugPromptText
-            : debugPromptText as String?,
-        bubbleDragOffset: bubbleDragOffset ?? this.bubbleDragOffset,
-      );
+  }) => LiveEditBubbleRecord(
+    bubbleId: bubbleId,
+    targetDomain: targetDomain,
+    targetKey: targetKey,
+    primarySelection: primarySelection ?? this.primarySelection,
+    selectedWidgets: selectedWidgets ?? this.selectedWidgets,
+    draftChanges: draftChanges ?? this.draftChanges,
+    instructionText: instructionText ?? this.instructionText,
+    status: status ?? this.status,
+    displayState: displayState ?? this.displayState,
+    changedFiles: changedFiles ?? this.changedFiles,
+    backendId: backendId ?? this.backendId,
+    inferenceConfig: identical(inferenceConfig, _unsetValue)
+        ? this.inferenceConfig
+        : inferenceConfig as LiveEditInferenceConfig?,
+    executionPlan: executionPlan ?? this.executionPlan,
+    lastError: identical(lastError, _unsetValue)
+        ? this.lastError
+        : lastError as String?,
+    history: history ?? this.history,
+    activity: activity ?? this.activity,
+    debugTimeline: debugTimeline ?? this.debugTimeline,
+    debugPromptText: identical(debugPromptText, _unsetValue)
+        ? this.debugPromptText
+        : debugPromptText as String?,
+    bubbleDragOffset: bubbleDragOffset ?? this.bubbleDragOffset,
+  );
 }
 
-enum LiveEditBubbleStatus {
-  editing,
-  waiting,
-  needsApproval,
-  applied,
-  failed,
-}
+enum LiveEditBubbleStatus { editing, waiting, needsApproval, applied, failed }
 
 final class LiveEditBubbleSummary {
   const LiveEditBubbleSummary({
@@ -306,12 +297,11 @@ final class LiveEditLayerViewState {
     final LiveEditBubbleId? activeBubbleId,
     final String? activePropertyId,
     final LiveEditEditMode? editMode,
-  }) =>
-      LiveEditLayerViewState(
-        activeBubbleId: activeBubbleId ?? this.activeBubbleId,
-        activePropertyId: activePropertyId ?? this.activePropertyId,
-        editMode: editMode ?? this.editMode,
-      );
+  }) => LiveEditLayerViewState(
+    activeBubbleId: activeBubbleId ?? this.activeBubbleId,
+    activePropertyId: activePropertyId ?? this.activePropertyId,
+    editMode: editMode ?? this.editMode,
+  );
 }
 
 enum LiveEditPanelDisplayMode { rail, expanded }

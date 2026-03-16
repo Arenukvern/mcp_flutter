@@ -14,9 +14,17 @@ final class LiveEditSessionUpdate {
   });
 
   final LiveEditSessionResourceData? sessionData;
-  final (String sessionId, LiveEditTargetDomain domain, LiveEditSelectionLayerData data)?
-      selectionLayer;
-  final (String sessionId, LiveEditTargetDomain domain, LiveEditDraftLayerData data)?
-      draftLayer;
+  final (
+    String sessionId,
+    LiveEditTargetDomain domain,
+    LiveEditSelectionLayerData data,
+  )?
+  selectionLayer;
+  final (
+    String sessionId,
+    LiveEditTargetDomain domain,
+    LiveEditDraftLayerData data,
+  )?
+  draftLayer;
   final Map<String, Object?>? rawResult;
 }

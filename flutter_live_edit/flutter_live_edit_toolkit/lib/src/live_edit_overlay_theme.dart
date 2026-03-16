@@ -96,8 +96,6 @@ LiveEditBounds? _boundsForKey(final GlobalKey key) {
 
 final class LiveEditOverlaySurfaceStyle {
   const LiveEditOverlaySurfaceStyle({
-    this.width,
-    this.height,
     required this.cornerRadius,
     required this.padding,
     required this.gap,
@@ -106,6 +104,8 @@ final class LiveEditOverlaySurfaceStyle {
     required this.badgeTone,
     required this.showDragHandle,
     required this.showResizeHandle,
+    this.width,
+    this.height,
   });
 
   final double? width;
@@ -574,33 +574,26 @@ final class LiveEditOverlayThemeModel extends ChangeNotifier {
     switch (change.propertyId) {
       case 'width':
         next = next.copyWith(width: _asDouble(change.targetValue));
-        break;
       case 'height':
         next = next.copyWith(height: _asDouble(change.targetValue));
-        break;
       case 'x':
         _positions[surfaceId] = Offset(
           _asDouble(change.targetValue),
           positionFor(surfaceId).dy,
         );
-        break;
       case 'y':
         _positions[surfaceId] = Offset(
           positionFor(surfaceId).dx,
           _asDouble(change.targetValue),
         );
-        break;
       case 'cornerRadius':
         next = next.copyWith(cornerRadius: _asDouble(change.targetValue));
-        break;
       case 'padding':
         next = next.copyWith(
           padding: _parseEdgeInsets(change.targetValue, current.padding),
         );
-        break;
       case 'gap':
         next = next.copyWith(gap: _asDouble(change.targetValue));
-        break;
       case 'backgroundColor':
         next = next.copyWith(
           backgroundColor: _parseColor(
@@ -608,21 +601,16 @@ final class LiveEditOverlayThemeModel extends ChangeNotifier {
             current.backgroundColor,
           ),
         );
-        break;
       case 'borderColor':
         next = next.copyWith(
           borderColor: _parseColor(change.targetValue, current.borderColor),
         );
-        break;
       case 'badgeTone':
         next = next.copyWith(badgeTone: '${change.targetValue}'.trim());
-        break;
       case 'showDragHandle':
         next = next.copyWith(showDragHandle: _asBool(change.targetValue));
-        break;
       case 'showResizeHandle':
         next = next.copyWith(showResizeHandle: _asBool(change.targetValue));
-        break;
       default:
         return false;
     }

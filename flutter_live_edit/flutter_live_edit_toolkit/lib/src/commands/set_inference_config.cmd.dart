@@ -25,7 +25,8 @@ final class SetInferenceConfigCommand {
     final nextConfig = LiveEditCodexOptions.normalizeConfig(
       LiveEditInferenceConfig(
         model: model?.trim().isNotEmpty == true ? model!.trim() : null,
-        reasoningEffort: backend.id == 'codex_exec' &&
+        reasoningEffort:
+            backend.id == 'codex_exec' &&
                 (reasoningEffort?.trim().isNotEmpty == true)
             ? reasoningEffort!.trim()
             : null,
@@ -39,7 +40,8 @@ final class SetInferenceConfigCommand {
     } else {
       next[globalId] = nextConfig;
     }
-    context.backendConfigResource.value =
-        data.copyWith(inferenceConfigByBackendId: next);
+    context.backendConfigResource.value = data.copyWith(
+      inferenceConfigByBackendId: next,
+    );
   }
 }

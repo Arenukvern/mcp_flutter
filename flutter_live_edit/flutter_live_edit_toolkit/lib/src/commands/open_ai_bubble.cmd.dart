@@ -27,11 +27,10 @@ final class OpenAiBubbleCommand {
       layerState = updated[domain]!;
     }
 
-    context.panelViewResource.value = context.panelViewResource.value
-        .copyWith(
-          editMode: LiveEditEditMode.ai,
-          panelDisplayMode: LiveEditPanelDisplayMode.expanded,
-        );
+    context.panelViewResource.value = context.panelViewResource.value.copyWith(
+      editMode: LiveEditEditMode.ai,
+      panelDisplayMode: LiveEditPanelDisplayMode.expanded,
+    );
 
     final updatedLayer = layerState.copyWith(editMode: LiveEditEditMode.ai);
     final layerMap = Map<LiveEditTargetDomain, LiveEditLayerViewState>.from(
@@ -44,7 +43,8 @@ final class OpenAiBubbleCommand {
 
     final activeId = updatedLayer.activeBubbleId;
     final phase = newBubbleData.applyPhase;
-    final notBusy = phase != LiveEditApplyPhase.preparing &&
+    final notBusy =
+        phase != LiveEditApplyPhase.preparing &&
         phase != LiveEditApplyPhase.applying;
     if (notBusy) {
       newBubbleData = newBubbleData.copyWith(
@@ -83,8 +83,9 @@ final class OpenAiBubbleCommand {
           newBubbleData = newBubbleData.copyWith(bubbleRecordsById: records);
         }
       } else {
-        newBubbleData =
-            newBubbleData.copyWith(globalComposerText: defaultPrompt!);
+        newBubbleData = newBubbleData.copyWith(
+          globalComposerText: defaultPrompt!,
+        );
       }
     }
 

@@ -26,8 +26,7 @@ final class SelectAtPointCommand {
   final LiveEditTargetDomain? targetDomain;
 
   Map<String, Object?> execute(final LiveEditContext context) {
-    final domain =
-        targetDomain ?? context.sessionResource.value.targetDomain;
+    final domain = targetDomain ?? context.sessionResource.value.targetDomain;
     final result = context.sessionService.selectAtPoint(
       sessionId: sessionId,
       x: x,
@@ -40,8 +39,8 @@ final class SelectAtPointCommand {
     );
     context.applySessionUpdate(context.sessionService.lastUpdate);
     if (domain == LiveEditTargetDomain.toolScene) {
-      context.panelViewResource.value =
-          context.panelViewResource.value.copyWith(toolPresentationArmed: true);
+      context.panelViewResource.value = context.panelViewResource.value
+          .copyWith(toolPresentationArmed: true);
     }
     return result;
   }

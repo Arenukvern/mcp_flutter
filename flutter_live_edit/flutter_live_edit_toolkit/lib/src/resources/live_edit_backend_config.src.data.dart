@@ -19,11 +19,10 @@ final class LiveEditBackendConfigResourceData {
     final String? globalBackendId,
     final List<LiveEditAgentBackend>? availableBackends,
     final Map<String, LiveEditInferenceConfig>? inferenceConfigByBackendId,
-  }) =>
-      LiveEditBackendConfigResourceData(
-        globalBackendId: globalBackendId ?? this.globalBackendId,
-        availableBackends: availableBackends ?? this.availableBackends,
-        inferenceConfigByBackendId:
-            inferenceConfigByBackendId ?? this.inferenceConfigByBackendId,
-      );
+  }) => LiveEditBackendConfigResourceData(
+    globalBackendId: globalBackendId ?? this.globalBackendId,
+    availableBackends: availableBackends ?? this.availableBackends,
+    inferenceConfigByBackendId:
+        inferenceConfigByBackendId ?? this.inferenceConfigByBackendId,
+  );
 }

@@ -32,10 +32,7 @@ Offset autoBubblePlacement({
       viewport.width - bubbleWidth - 16,
       _maxDouble(16, bounds.left),
     );
-    top = _minDouble(
-      viewport.height - bubbleHeight - 16,
-      bounds.bottom + gap,
-    );
+    top = _minDouble(viewport.height - bubbleHeight - 16, bounds.bottom + gap);
   }
 
   top = _minDouble(top, viewport.height - bubbleHeight - 16);
@@ -138,12 +135,11 @@ String backendLabelFromContext(
   return fallbackBackendLabel(backendId);
 }
 
-String fallbackBackendLabel(final String backendId) =>
-    backendId
-        .split(RegExp(r'[_\-\s]+'))
-        .where((final part) => part.isNotEmpty)
-        .map(
-          (final part) =>
-              '${part.substring(0, 1).toUpperCase()}${part.substring(1).toLowerCase()}',
-        )
-        .join(' ');
+String fallbackBackendLabel(final String backendId) => backendId
+    .split(RegExp(r'[_\-\s]+'))
+    .where((final part) => part.isNotEmpty)
+    .map(
+      (final part) =>
+          '${part.substring(0, 1).toUpperCase()}${part.substring(1).toLowerCase()}',
+    )
+    .join(' ');

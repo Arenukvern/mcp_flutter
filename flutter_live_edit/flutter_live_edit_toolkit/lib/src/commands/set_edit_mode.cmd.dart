@@ -10,8 +10,9 @@ final class SetEditModeCommand {
   final LiveEditEditMode editMode;
 
   void execute(final LiveEditContext context) {
-    context.panelViewResource.value =
-        context.panelViewResource.value.copyWith(editMode: editMode);
+    context.panelViewResource.value = context.panelViewResource.value.copyWith(
+      editMode: editMode,
+    );
     final domain = context.sessionResource.value.targetDomain;
     final layerState =
         context.bubbleResource.value.layerViewStateByDomain[domain];

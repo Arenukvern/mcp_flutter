@@ -38,8 +38,9 @@ final class LiveEditScope extends StatefulWidget {
   }
 
   /// Returns scope data if a [LiveEditScope] is in the widget tree, else null.
-  static LiveEditScopeData? maybeOf(final BuildContext context) =>
-      context.dependOnInheritedWidgetOfExactType<_InheritedLiveEditScope>()?.data;
+  static LiveEditScopeData? maybeOf(final BuildContext context) => context
+      .dependOnInheritedWidgetOfExactType<_InheritedLiveEditScope>()
+      ?.data;
 
   @override
   State<LiveEditScope> createState() => _LiveEditScopeState();
@@ -89,8 +90,9 @@ class _LiveEditScopeState extends State<LiveEditScope> {
     _draftResource = LiveEditDraftResource();
     _bubbleResource = LiveEditBubbleResource();
     _panelViewResource = LiveEditPanelViewResource();
-    final backends =
-        List<LiveEditAgentBackend>.unmodifiable(widget.availableBackends);
+    final backends = List<LiveEditAgentBackend>.unmodifiable(
+      widget.availableBackends,
+    );
     final configByBackend = <String, LiveEditInferenceConfig>{};
     for (final backend in backends) {
       final config = backendEffectiveConfig(backend);
@@ -120,6 +122,7 @@ class _LiveEditScopeState extends State<LiveEditScope> {
         getBackendLabel: (final id) => backendLabelFromContext(_context, id),
       );
     }
+
     _context = LiveEditContext(
       sessionResource: _sessionResource,
       selectionResource: _selectionResource,
@@ -153,17 +156,12 @@ class _LiveEditScopeState extends State<LiveEditScope> {
   }
 
   @override
-  Widget build(final BuildContext context) => _InheritedLiveEditScope(
-        data: _data,
-        child: widget.child,
-      );
+  Widget build(final BuildContext context) =>
+      _InheritedLiveEditScope(data: _data, child: widget.child);
 }
 
 class _InheritedLiveEditScope extends InheritedWidget {
-  const _InheritedLiveEditScope({
-    required this.data,
-    required super.child,
-  });
+  const _InheritedLiveEditScope({required this.data, required super.child});
 
   final LiveEditScopeData data;
 

@@ -52,20 +52,19 @@ final class LiveEditPanelViewResourceData {
     final bool? deeperPickEnabled,
     final bool? toolPresentationArmed,
     final String? lastSelectionIdentity,
-  }) =>
-      LiveEditPanelViewResourceData(
-        editMode: editMode ?? this.editMode,
-        panelDisplayMode: panelDisplayMode ?? this.panelDisplayMode,
-        bubbleWidth: bubbleWidth ?? this.bubbleWidth,
-        bubbleHeight: bubbleHeight ?? this.bubbleHeight,
-        panelExpandedWidth: panelExpandedWidth ?? this.panelExpandedWidth,
-        panelExpandedHeight: panelExpandedHeight ?? this.panelExpandedHeight,
-        panelRailWidth: panelRailWidth ?? this.panelRailWidth,
-        panelRailHeight: panelRailHeight ?? this.panelRailHeight,
-        panelDragOffset: panelDragOffset ?? this.panelDragOffset,
-        debugModeEnabled: debugModeEnabled ?? this.debugModeEnabled,
-        deeperPickEnabled: deeperPickEnabled ?? this.deeperPickEnabled,
-        toolPresentationArmed: toolPresentationArmed ?? this.toolPresentationArmed,
-        lastSelectionIdentity: lastSelectionIdentity ?? this.lastSelectionIdentity,
-      );
+  }) => LiveEditPanelViewResourceData(
+    editMode: editMode ?? this.editMode,
+    panelDisplayMode: panelDisplayMode ?? this.panelDisplayMode,
+    bubbleWidth: bubbleWidth ?? this.bubbleWidth,
+    bubbleHeight: bubbleHeight ?? this.bubbleHeight,
+    panelExpandedWidth: panelExpandedWidth ?? this.panelExpandedWidth,
+    panelExpandedHeight: panelExpandedHeight ?? this.panelExpandedHeight,
+    panelRailWidth: panelRailWidth ?? this.panelRailWidth,
+    panelRailHeight: panelRailHeight ?? this.panelRailHeight,
+    panelDragOffset: panelDragOffset ?? this.panelDragOffset,
+    debugModeEnabled: debugModeEnabled ?? this.debugModeEnabled,
+    deeperPickEnabled: deeperPickEnabled ?? this.deeperPickEnabled,
+    toolPresentationArmed: toolPresentationArmed ?? this.toolPresentationArmed,
+    lastSelectionIdentity: lastSelectionIdentity ?? this.lastSelectionIdentity,
+  );
 }

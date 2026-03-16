@@ -6,10 +6,7 @@ import '../selectors/live_edit_selectors.dart';
 import '_selection_commands_shared.dart';
 
 final class SelectCandidateAtCommand {
-  SelectCandidateAtCommand({
-    required this.controller,
-    required this.index,
-  });
+  SelectCandidateAtCommand({required this.controller, required this.index});
 
   final LiveEditController controller;
   final int index;

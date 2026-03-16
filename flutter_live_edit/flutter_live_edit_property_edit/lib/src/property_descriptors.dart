@@ -128,278 +128,320 @@ List<LiveEditPropertyDescriptor> buildPropertyDescriptors(
   }
 
   if (widget is SizedBox) {
-    add(LiveEditPropertyDescriptor(
-      id: 'width',
-      label: 'Width',
-      group: LiveEditPropertyGroup.layout,
-      kind: LiveEditPropertyKind.number,
-      value: widget.width,
-      editable: true,
-      previewMode: LiveEditPreviewMode.ghost,
-      persistable: true,
-    ));
-    add(LiveEditPropertyDescriptor(
-      id: 'height',
-      label: 'Height',
-      group: LiveEditPropertyGroup.layout,
-      kind: LiveEditPropertyKind.number,
-      value: widget.height,
-      editable: true,
-      previewMode: LiveEditPreviewMode.ghost,
-      persistable: true,
-    ));
+    add(
+      LiveEditPropertyDescriptor(
+        id: 'width',
+        label: 'Width',
+        group: LiveEditPropertyGroup.layout,
+        kind: LiveEditPropertyKind.number,
+        value: widget.width,
+        editable: true,
+        previewMode: LiveEditPreviewMode.ghost,
+        persistable: true,
+      ),
+    );
+    add(
+      LiveEditPropertyDescriptor(
+        id: 'height',
+        label: 'Height',
+        group: LiveEditPropertyGroup.layout,
+        kind: LiveEditPropertyKind.number,
+        value: widget.height,
+        editable: true,
+        previewMode: LiveEditPreviewMode.ghost,
+        persistable: true,
+      ),
+    );
   }
 
   if (widget is Container) {
     final width = _finiteDimension(widget.constraints?.maxWidth);
     final height = _finiteDimension(widget.constraints?.maxHeight);
-    add(LiveEditPropertyDescriptor(
-      id: 'width',
-      label: 'Width',
-      group: LiveEditPropertyGroup.layout,
-      kind: LiveEditPropertyKind.number,
-      value: width,
-      editable: true,
-      previewMode: LiveEditPreviewMode.ghost,
-      persistable: true,
-    ));
-    add(LiveEditPropertyDescriptor(
-      id: 'height',
-      label: 'Height',
-      group: LiveEditPropertyGroup.layout,
-      kind: LiveEditPropertyKind.number,
-      value: height,
-      editable: true,
-      previewMode: LiveEditPreviewMode.ghost,
-      persistable: true,
-    ));
-    if (widget.padding != null) {
-      add(LiveEditPropertyDescriptor(
-        id: 'padding',
-        label: 'Padding',
+    add(
+      LiveEditPropertyDescriptor(
+        id: 'width',
+        label: 'Width',
         group: LiveEditPropertyGroup.layout,
-        kind: LiveEditPropertyKind.edgeInsets,
-        value: _edgeInsetsJson(widget.padding!),
+        kind: LiveEditPropertyKind.number,
+        value: width,
         editable: true,
         previewMode: LiveEditPreviewMode.ghost,
         persistable: true,
-      ));
+      ),
+    );
+    add(
+      LiveEditPropertyDescriptor(
+        id: 'height',
+        label: 'Height',
+        group: LiveEditPropertyGroup.layout,
+        kind: LiveEditPropertyKind.number,
+        value: height,
+        editable: true,
+        previewMode: LiveEditPreviewMode.ghost,
+        persistable: true,
+      ),
+    );
+    if (widget.padding != null) {
+      add(
+        LiveEditPropertyDescriptor(
+          id: 'padding',
+          label: 'Padding',
+          group: LiveEditPropertyGroup.layout,
+          kind: LiveEditPropertyKind.edgeInsets,
+          value: _edgeInsetsJson(widget.padding!),
+          editable: true,
+          previewMode: LiveEditPreviewMode.ghost,
+          persistable: true,
+        ),
+      );
     }
     if (widget.alignment != null) {
-      add(LiveEditPropertyDescriptor(
-        id: 'alignment',
-        label: 'Alignment',
-        group: LiveEditPropertyGroup.layout,
-        kind: LiveEditPropertyKind.alignment,
-        value: _alignmentJson(widget.alignment!),
-        editable: true,
-        previewMode: LiveEditPreviewMode.ghost,
-        persistable: true,
-      ));
+      add(
+        LiveEditPropertyDescriptor(
+          id: 'alignment',
+          label: 'Alignment',
+          group: LiveEditPropertyGroup.layout,
+          kind: LiveEditPropertyKind.alignment,
+          value: _alignmentJson(widget.alignment!),
+          editable: true,
+          previewMode: LiveEditPreviewMode.ghost,
+          persistable: true,
+        ),
+      );
     }
     if (widget.color != null) {
-      add(LiveEditPropertyDescriptor(
-        id: 'color',
-        label: 'Color',
-        group: LiveEditPropertyGroup.style,
-        kind: LiveEditPropertyKind.color,
-        value: _colorHex(widget.color!),
-        editable: true,
-        previewMode: LiveEditPreviewMode.ghost,
-        persistable: true,
-      ));
+      add(
+        LiveEditPropertyDescriptor(
+          id: 'color',
+          label: 'Color',
+          group: LiveEditPropertyGroup.style,
+          kind: LiveEditPropertyKind.color,
+          value: _colorHex(widget.color!),
+          editable: true,
+          previewMode: LiveEditPreviewMode.ghost,
+          persistable: true,
+        ),
+      );
     }
   }
 
   if (widget is Padding) {
-    add(LiveEditPropertyDescriptor(
-      id: 'padding',
-      label: 'Padding',
-      group: LiveEditPropertyGroup.layout,
-      kind: LiveEditPropertyKind.edgeInsets,
-      value: _edgeInsetsJson(widget.padding),
-      editable: true,
-      previewMode: LiveEditPreviewMode.ghost,
-      persistable: true,
-    ));
+    add(
+      LiveEditPropertyDescriptor(
+        id: 'padding',
+        label: 'Padding',
+        group: LiveEditPropertyGroup.layout,
+        kind: LiveEditPropertyKind.edgeInsets,
+        value: _edgeInsetsJson(widget.padding),
+        editable: true,
+        previewMode: LiveEditPreviewMode.ghost,
+        persistable: true,
+      ),
+    );
   }
 
   if (widget is Align) {
-    add(LiveEditPropertyDescriptor(
-      id: 'alignment',
-      label: 'Alignment',
-      group: LiveEditPropertyGroup.layout,
-      kind: LiveEditPropertyKind.alignment,
-      value: _alignmentJson(widget.alignment),
-      editable: true,
-      previewMode: LiveEditPreviewMode.ghost,
-      persistable: true,
-    ));
+    add(
+      LiveEditPropertyDescriptor(
+        id: 'alignment',
+        label: 'Alignment',
+        group: LiveEditPropertyGroup.layout,
+        kind: LiveEditPropertyKind.alignment,
+        value: _alignmentJson(widget.alignment),
+        editable: true,
+        previewMode: LiveEditPreviewMode.ghost,
+        persistable: true,
+      ),
+    );
   }
 
   if (widget is ColoredBox) {
-    add(LiveEditPropertyDescriptor(
-      id: 'color',
-      label: 'Color',
-      group: LiveEditPropertyGroup.style,
-      kind: LiveEditPropertyKind.color,
-      value: _colorHex(widget.color),
-      editable: true,
-      previewMode: LiveEditPreviewMode.ghost,
-      persistable: true,
-    ));
+    add(
+      LiveEditPropertyDescriptor(
+        id: 'color',
+        label: 'Color',
+        group: LiveEditPropertyGroup.style,
+        kind: LiveEditPropertyKind.color,
+        value: _colorHex(widget.color),
+        editable: true,
+        previewMode: LiveEditPreviewMode.ghost,
+        persistable: true,
+      ),
+    );
   }
 
   if (widget is Text) {
-    add(LiveEditPropertyDescriptor(
-      id: 'text',
-      label: 'Text',
-      group: LiveEditPropertyGroup.content,
-      kind: LiveEditPropertyKind.string,
-      value: widget.data ?? widget.textSpan?.toPlainText(),
-      editable: true,
-      previewMode: LiveEditPreviewMode.exact,
-      persistable: true,
-      meta: <String, Object?>{
-        'editor': 'text',
-        'editSurface': LiveEditEditSurface.inline.wireName,
-        'multiline': ((widget.data ?? widget.textSpan?.toPlainText()) ?? '')
-            .contains('\n'),
-      },
-    ));
-    if (widget.style?.fontSize != null) {
-      add(LiveEditPropertyDescriptor(
-        id: 'fontSize',
-        label: 'Font Size',
-        group: LiveEditPropertyGroup.style,
-        kind: LiveEditPropertyKind.number,
-        value: widget.style?.fontSize,
+    add(
+      LiveEditPropertyDescriptor(
+        id: 'text',
+        label: 'Text',
+        group: LiveEditPropertyGroup.content,
+        kind: LiveEditPropertyKind.string,
+        value: widget.data ?? widget.textSpan?.toPlainText(),
         editable: true,
-        previewMode: LiveEditPreviewMode.ghost,
+        previewMode: LiveEditPreviewMode.exact,
         persistable: true,
-      ));
+        meta: <String, Object?>{
+          'editor': 'text',
+          'editSurface': LiveEditEditSurface.inline.wireName,
+          'multiline': ((widget.data ?? widget.textSpan?.toPlainText()) ?? '')
+              .contains('\n'),
+        },
+      ),
+    );
+    if (widget.style?.fontSize != null) {
+      add(
+        LiveEditPropertyDescriptor(
+          id: 'fontSize',
+          label: 'Font Size',
+          group: LiveEditPropertyGroup.style,
+          kind: LiveEditPropertyKind.number,
+          value: widget.style?.fontSize,
+          editable: true,
+          previewMode: LiveEditPreviewMode.ghost,
+          persistable: true,
+        ),
+      );
     }
     if (widget.style?.color != null) {
-      add(LiveEditPropertyDescriptor(
-        id: 'textColor',
-        label: 'Text Color',
-        group: LiveEditPropertyGroup.style,
-        kind: LiveEditPropertyKind.color,
-        value: _colorHex(widget.style!.color!),
-        editable: true,
-        previewMode: LiveEditPreviewMode.ghost,
-        persistable: true,
-      ));
+      add(
+        LiveEditPropertyDescriptor(
+          id: 'textColor',
+          label: 'Text Color',
+          group: LiveEditPropertyGroup.style,
+          kind: LiveEditPropertyKind.color,
+          value: _colorHex(widget.style!.color!),
+          editable: true,
+          previewMode: LiveEditPreviewMode.ghost,
+          persistable: true,
+        ),
+      );
     }
   }
 
   if (widget is RichText) {
     final plainText = widget.text.toPlainText();
-    add(LiveEditPropertyDescriptor(
-      id: 'text',
-      label: 'Text',
-      group: LiveEditPropertyGroup.content,
-      kind: LiveEditPropertyKind.string,
-      value: plainText,
-      editable: true,
-      previewMode: LiveEditPreviewMode.exact,
-      persistable: true,
-      meta: <String, Object?>{
-        'editor': 'text',
-        'editSurface': LiveEditEditSurface.inline.wireName,
-        'multiline': plainText.contains('\n'),
-      },
-    ));
+    add(
+      LiveEditPropertyDescriptor(
+        id: 'text',
+        label: 'Text',
+        group: LiveEditPropertyGroup.content,
+        kind: LiveEditPropertyKind.string,
+        value: plainText,
+        editable: true,
+        previewMode: LiveEditPreviewMode.exact,
+        persistable: true,
+        meta: <String, Object?>{
+          'editor': 'text',
+          'editSurface': LiveEditEditSurface.inline.wireName,
+          'multiline': plainText.contains('\n'),
+        },
+      ),
+    );
     final textStyle = widget.text.style;
     if (textStyle?.fontSize != null) {
-      add(LiveEditPropertyDescriptor(
-        id: 'fontSize',
-        label: 'Font Size',
-        group: LiveEditPropertyGroup.style,
-        kind: LiveEditPropertyKind.number,
-        value: textStyle?.fontSize,
-        editable: true,
-        previewMode: LiveEditPreviewMode.ghost,
-        persistable: true,
-      ));
+      add(
+        LiveEditPropertyDescriptor(
+          id: 'fontSize',
+          label: 'Font Size',
+          group: LiveEditPropertyGroup.style,
+          kind: LiveEditPropertyKind.number,
+          value: textStyle?.fontSize,
+          editable: true,
+          previewMode: LiveEditPreviewMode.ghost,
+          persistable: true,
+        ),
+      );
     }
     if (textStyle?.color != null) {
-      add(LiveEditPropertyDescriptor(
-        id: 'textColor',
-        label: 'Text Color',
-        group: LiveEditPropertyGroup.style,
-        kind: LiveEditPropertyKind.color,
-        value: _colorHex(textStyle!.color!),
-        editable: true,
-        previewMode: LiveEditPreviewMode.ghost,
-        persistable: true,
-      ));
+      add(
+        LiveEditPropertyDescriptor(
+          id: 'textColor',
+          label: 'Text Color',
+          group: LiveEditPropertyGroup.style,
+          kind: LiveEditPropertyKind.color,
+          value: _colorHex(textStyle!.color!),
+          editable: true,
+          previewMode: LiveEditPreviewMode.ghost,
+          persistable: true,
+        ),
+      );
     }
   }
 
   final parentData = renderObject?.parentData;
   if (parentData is FlexParentData) {
-    add(LiveEditPropertyDescriptor(
-      id: 'flexFactor',
-      label: 'Flex',
-      group: LiveEditPropertyGroup.layout,
-      kind: LiveEditPropertyKind.integer,
-      value: parentData.flex,
-      editable: true,
-      previewMode: LiveEditPreviewMode.exact,
-      persistable: true,
-    ));
-    add(LiveEditPropertyDescriptor(
-      id: 'flexFit',
-      label: 'Flex Fit',
-      group: LiveEditPropertyGroup.layout,
-      kind: LiveEditPropertyKind.enumValue,
-      value: parentData.fit?.name ?? 'tight',
-      options: const <String>['tight', 'loose'],
-      editable: true,
-      previewMode: LiveEditPreviewMode.exact,
-      persistable: true,
-    ));
+    add(
+      LiveEditPropertyDescriptor(
+        id: 'flexFactor',
+        label: 'Flex',
+        group: LiveEditPropertyGroup.layout,
+        kind: LiveEditPropertyKind.integer,
+        value: parentData.flex,
+        editable: true,
+        previewMode: LiveEditPreviewMode.exact,
+        persistable: true,
+      ),
+    );
+    add(
+      LiveEditPropertyDescriptor(
+        id: 'flexFit',
+        label: 'Flex Fit',
+        group: LiveEditPropertyGroup.layout,
+        kind: LiveEditPropertyKind.enumValue,
+        value: parentData.fit?.name ?? 'tight',
+        options: const <String>['tight', 'loose'],
+        editable: true,
+        previewMode: LiveEditPreviewMode.exact,
+        persistable: true,
+      ),
+    );
   }
 
   if (renderObject is RenderFlex) {
-    add(LiveEditPropertyDescriptor(
-      id: 'mainAxisAlignment',
-      label: 'Main Axis',
-      group: LiveEditPropertyGroup.layout,
-      kind: LiveEditPropertyKind.enumValue,
-      value: renderObject.mainAxisAlignment.name,
-      options: MainAxisAlignment.values
-          .map((final value) => value.name)
-          .toList(growable: false),
-      editable: true,
-      previewMode: LiveEditPreviewMode.exact,
-      persistable: true,
-    ));
-    add(LiveEditPropertyDescriptor(
-      id: 'crossAxisAlignment',
-      label: 'Cross Axis',
-      group: LiveEditPropertyGroup.layout,
-      kind: LiveEditPropertyKind.enumValue,
-      value: renderObject.crossAxisAlignment.name,
-      options: CrossAxisAlignment.values
-          .map((final value) => value.name)
-          .toList(growable: false),
-      editable: true,
-      previewMode: LiveEditPreviewMode.exact,
-      persistable: true,
-    ));
+    add(
+      LiveEditPropertyDescriptor(
+        id: 'mainAxisAlignment',
+        label: 'Main Axis',
+        group: LiveEditPropertyGroup.layout,
+        kind: LiveEditPropertyKind.enumValue,
+        value: renderObject.mainAxisAlignment.name,
+        options: MainAxisAlignment.values
+            .map((final value) => value.name)
+            .toList(growable: false),
+        editable: true,
+        previewMode: LiveEditPreviewMode.exact,
+        persistable: true,
+      ),
+    );
+    add(
+      LiveEditPropertyDescriptor(
+        id: 'crossAxisAlignment',
+        label: 'Cross Axis',
+        group: LiveEditPropertyGroup.layout,
+        kind: LiveEditPropertyKind.enumValue,
+        value: renderObject.crossAxisAlignment.name,
+        options: CrossAxisAlignment.values
+            .map((final value) => value.name)
+            .toList(growable: false),
+        editable: true,
+        previewMode: LiveEditPreviewMode.exact,
+        persistable: true,
+      ),
+    );
   }
 
   final bounds = _boundsForRenderObject(renderObject);
   if (bounds != null) {
-    add(LiveEditPropertyDescriptor(
-      id: 'bounds',
-      label: 'Bounds',
-      group: LiveEditPropertyGroup.diagnostics,
-      kind: LiveEditPropertyKind.bounds,
-      value: bounds.toJson(),
-    ));
+    add(
+      LiveEditPropertyDescriptor(
+        id: 'bounds',
+        label: 'Bounds',
+        group: LiveEditPropertyGroup.diagnostics,
+        kind: LiveEditPropertyKind.bounds,
+        value: bounds.toJson(),
+      ),
+    );
   }
 
   return descriptors;

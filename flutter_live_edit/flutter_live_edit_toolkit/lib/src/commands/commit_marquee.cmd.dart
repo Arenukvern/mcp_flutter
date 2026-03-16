@@ -9,8 +9,7 @@ final class CommitMarqueeCommand {
   final String? sessionId;
 
   void execute(final LiveEditContext context) {
-    final sid =
-        sessionId ?? context.sessionResource.value.activeSessionId;
+    final sid = sessionId ?? context.sessionResource.value.activeSessionId;
     context.sessionService.commitMarquee(sessionId: sid);
     context.applySessionUpdate(context.sessionService.lastUpdate);
     runAfterSelectionChange(context, controller);
