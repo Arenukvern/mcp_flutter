@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
-import 'package:path/path.dart' as p;
 
 import 'commands/commands.dart';
 import 'live_edit_context.dart';
@@ -9,7 +8,6 @@ import 'live_edit_types.dart';
 import 'resources/resources.dart';
 import 'services/services.dart';
 
-const Object _unsetValue = Object();
 List<LiveEditPropertyDescriptor> _commonEditableProperties(
   final List<LiveEditSelection> selections,
 ) {
@@ -85,6 +83,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       panelViewResource: _panelViewResource,
       sessionService: _sessionService,
       applyService: _applyService,
+      applyEventSink: _emitEventForBubble,
     );
     _controller = LiveEditController(_context);
     LiveEditOrchestrator.instance = this;
@@ -567,10 +566,6 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       _bubbleRecordFor(activeBubbleId);
 
   LiveEditTargetDomain get _presentationLayer => presentedLayer;
-
-  LiveEditLayerViewState get _presentedLayerViewState =>
-      _bubbleResource.value.layerViewStateByDomain[_presentationLayer] ??
-      LiveEditLayerViewState();
 
   Future<void> applyAllBubbles() async =>
       ApplyAllBubblesCommand().execute(_context);
@@ -1819,75 +1814,6 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     );
   }
 
-  String? _debugPromptByKey({
-    final LiveEditSelection? selection,
-    final String? nodeId,
-  }) {
-    final resolvedBubbleId =
-        nodeId ?? _bubbleIdForSelection(selection) ?? activeBubbleId;
-    return _bubbleRecordFor(resolvedBubbleId)?.debugPromptText;
-  }
-
-  String? _debugPromptKey({
-    final LiveEditSelection? selection,
-    final String? nodeId,
-  }) {
-    final resolvedSelection =
-        selection ??
-        _bubbleRecordFor(nodeId)?.primarySelection ??
-        activeSelection;
-    final source = resolvedSelection?.source;
-    if (_hasText(source?.file)) {
-      return [
-        resolvedSelection?.widgetType ?? '',
-        source!.file,
-        '${source.line ?? ''}',
-        '${source.column ?? ''}',
-      ].join('|');
-    }
-    if (_hasText(resolvedSelection?.nodeId)) {
-      return resolvedSelection!.nodeId;
-    }
-    final resolvedNodeId = nodeId?.trim();
-    return _hasText(resolvedNodeId) ? resolvedNodeId : null;
-  }
-
-  LiveEditExecutionPlan? _decodeExecutionPlan(final Object? value) {
-    if (value is Map) {
-      final normalized = value.map(
-        (final key, final nested) => MapEntry('$key', nested),
-      );
-      return LiveEditExecutionPlan.fromJson(normalized);
-    }
-
-    final selection = activeSelection;
-    if (selection == null) {
-      return null;
-    }
-    return LiveEditExecutionPlan(
-      proposalId: _bubbleResource.value.pendingProposalId ?? '',
-      title: 'Apply this bubble change',
-      summary: 'Persist current bubble changes.',
-      selectedNode: selection.widgetType,
-      requestedChanges: activeDraftChanges
-          .map((final draft) => '${draft.propertyId}: ${draft.targetValue}')
-          .toList(growable: false),
-      affectedFiles: const <String>[],
-      confidence: activeDraftChanges.isEmpty ? 0 : 0.7,
-      agentInstruction: 'Apply current bubble changes.',
-    );
-  }
-
-  LiveEditDirectApplyResult? _decodeExecutionResult(final Object? value) {
-    if (value is Map) {
-      final normalized = value.map(
-        (final key, final nested) => MapEntry('$key', nested),
-      );
-      return LiveEditDirectApplyResult.fromJson(normalized);
-    }
-    return null;
-  }
-
   String _defaultAiPrompt() {
     final selection = activeSelection;
     final buffer = StringBuffer();
@@ -2032,23 +1958,6 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     );
   }
 
-  String? _extractError(final Map<String, Object?> response) {
-    if (response['ok'] == false) {
-      return _formatErrorMessage(
-        '${response['message'] ?? 'Unknown apply failure'}',
-        details: response['details'],
-      );
-    }
-    final nestedError = response['error'];
-    if (nestedError is Map) {
-      final message = '${nestedError['message'] ?? ''}'.trim();
-      if (message.isNotEmpty) {
-        return _formatErrorMessage(message, details: nestedError['details']);
-      }
-    }
-    return null;
-  }
-
   String _failureSummary(final String error, {final String? bubbleId}) {
     final normalized = error.toLowerCase();
     if (normalized.contains('working directory') ||
@@ -2107,28 +2016,11 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     }
   }
 
-  String _formatErrorMessage(final String message, {final Object? details}) {
-    final normalizedMessage = message.trim();
-    final extra = _salientErrorDetail(details);
-    if (!_hasText(extra) || extra == normalizedMessage) {
-      return normalizedMessage;
-    }
-    return '$normalizedMessage\n$extra';
-  }
-
   LiveEditLayerViewState _layerViewStateFor(
     final LiveEditTargetDomain domain,
   ) =>
       _bubbleResource.value.layerViewStateByDomain[domain] ??
       LiveEditLayerViewState();
-
-  void _onControllerChanged() {
-    if (_disposed) {
-      return;
-    }
-    _syncSelectionState();
-    notifyListeners();
-  }
 
   Iterable<LiveEditBubbleRecord> _pendingBubbleStates() {
     final data = _bubbleResource.value;
@@ -2150,31 +2042,6 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       }
     }
     return normalized;
-  }
-
-  String _resolveBubbleInstruction({
-    required final String bubbleId,
-    required final List<LiveEditDraftChange> draftChanges,
-    final String? message,
-  }) {
-    final prompt = (message?.trim().isNotEmpty == true)
-        ? message!.trim()
-        : (_bubbleRecordFor(bubbleId)?.instructionText ??
-              stagedPromptText ??
-              '');
-    final draftSummary = draftChanges
-        .map((final draft) => '- ${_describeDraftChange(draft)}')
-        .join('\n');
-    if (prompt.isNotEmpty && draftSummary.isNotEmpty) {
-      return '$prompt\n\nStaged fixes:\n$draftSummary';
-    }
-    if (prompt.isNotEmpty) {
-      return prompt;
-    }
-    if (draftSummary.isNotEmpty) {
-      return 'Staged fixes:\n$draftSummary';
-    }
-    return _defaultAiPrompt();
   }
 
   String _resolveIntentText(final String? message) {
@@ -2207,39 +2074,6 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     _bubbleResource.value = _bubbleResource.value.copyWith(
       bubbleRecordsById: records,
     );
-  }
-
-  String? _salientErrorDetail(final Object? details) {
-    if (details is Map) {
-      final normalized = details.map(
-        (final key, final value) => MapEntry('$key', value),
-      );
-      for (final key in const <String>['stderr', 'rawDetails', 'message']) {
-        final value = '${normalized[key] ?? ''}'.trim();
-        if (value.isNotEmpty) {
-          return value;
-        }
-      }
-      final requestSummary = normalized['requestSummary'];
-      if (requestSummary is Map) {
-        final mode = '${requestSummary['requestMode'] ?? ''}'.trim();
-        final drafts = '${requestSummary['draftChangeCount'] ?? ''}'.trim();
-        final intent = '${requestSummary['intentTextPresent'] ?? ''}'.trim();
-        final summary = <String>[
-          if (mode.isNotEmpty) 'Mode: $mode',
-          if (drafts.isNotEmpty) 'Drafts: $drafts',
-          if (intent.isNotEmpty) 'Intent present: $intent',
-        ].join(' • ');
-        if (summary.isNotEmpty) {
-          return summary;
-        }
-      }
-    }
-    final value = '$details'.trim();
-    if (value.isEmpty || value == 'null') {
-      return null;
-    }
-    return value;
   }
 
   void _setError(final String error) {
@@ -2315,33 +2149,6 @@ final class LiveEditOrchestrator extends ChangeNotifier {
         hasInstruction ||
         hasMeaningfulNode ||
         hasPersistentStatus;
-  }
-
-  List<LiveEditSourceTarget> _sourceTargetsForSelections(
-    final List<LiveEditSelection> selections,
-  ) {
-    final workspace = workingDirectory;
-    final deduped = <String, LiveEditSourceTarget>{};
-    for (final selection in selections) {
-      final source = selection.source;
-      if (!_hasText(source?.file)) {
-        continue;
-      }
-      final absolutePath = source!.file;
-      final workspacePath =
-          _hasText(workspace) && p.isWithin(workspace!, absolutePath)
-          ? p.relative(absolutePath, from: workspace)
-          : null;
-      deduped[workspacePath ?? absolutePath] = LiveEditSourceTarget(
-        nodeId: selection.nodeId,
-        widgetType: selection.widgetType,
-        absolutePath: absolutePath,
-        workspacePath: workspacePath,
-        line: source.line,
-        column: source.column,
-      );
-    }
-    return deduped.values.toList(growable: false);
   }
 
   void _syncSelectionState() {

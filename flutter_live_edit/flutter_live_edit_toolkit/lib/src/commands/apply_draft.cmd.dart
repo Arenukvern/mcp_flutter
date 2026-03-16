@@ -4,8 +4,7 @@ import 'package:path/path.dart' as p;
 import '../live_edit_context.dart';
 import '../live_edit_types.dart';
 
-bool _hasText(final String? value) =>
-    value != null && value.trim().isNotEmpty;
+bool _hasText(final String? value) => value != null && value.trim().isNotEmpty;
 
 /// Builds request from context, calls ApplyService, applies result to BubbleResource.
 final class ApplyDraftCommand {
@@ -41,8 +40,7 @@ final class ApplyDraftCommand {
     final selection = bubble?.primarySelection;
     final selectedWidgets =
         bubble?.selectedWidgets ?? const <LiveEditSelection>[];
-    final draftChanges =
-        bubble?.draftChanges ?? const <LiveEditDraftChange>[];
+    final draftChanges = bubble?.draftChanges ?? const <LiveEditDraftChange>[];
 
     final resolvedIntent = _resolveIntent(
       message: message,
@@ -63,8 +61,9 @@ final class ApplyDraftCommand {
       primarySelection: selection,
       selectedWidgets: List<LiveEditSelection>.unmodifiable(selectedWidgets),
       sourceTargets: _sourceTargets(selectedWidgets, workingDirectory),
-      stagedPropertyChanges:
-          List<LiveEditDraftChange>.unmodifiable(draftChanges),
+      stagedPropertyChanges: List<LiveEditDraftChange>.unmodifiable(
+        draftChanges,
+      ),
       applyMode: applyMode,
       draftChanges: List<LiveEditDraftChange>.unmodifiable(draftChanges),
       selection: selection,
@@ -74,6 +73,9 @@ final class ApplyDraftCommand {
       workingDirectory: workingDirectory,
       intentText: resolvedIntent,
       approve: approve,
+      onEvent: context.applyEventSink != null
+          ? (final e) => context.applyEventSink!(bid, e)
+          : null,
     );
 
     context.bubbleResource.value = bubbleData.copyWith(
@@ -105,7 +107,8 @@ final class ApplyDraftCommand {
     var nextData = newData.copyWith(
       applyPhase: result.applyPhase,
       lastError: result.lastError,
-      pendingExecutionPlan: result.pendingExecutionPlan ?? newData.pendingExecutionPlan,
+      pendingExecutionPlan:
+          result.pendingExecutionPlan ?? newData.pendingExecutionPlan,
       pendingProposalId: result.pendingProposalId ?? newData.pendingProposalId,
     );
 
@@ -119,17 +122,15 @@ final class ApplyDraftCommand {
 
     if (result.resolvedBubbleIdsAdd != null) {
       nextData = nextData.copyWith(
-        resolvedBubbleIds: nextData.resolvedBubbleIds
-            .union(result.resolvedBubbleIdsAdd!),
+        resolvedBubbleIds: nextData.resolvedBubbleIds.union(
+          result.resolvedBubbleIdsAdd!,
+        ),
       );
     }
 
     if (result.applyPhase == LiveEditApplyPhase.success ||
         result.applyPhase == LiveEditApplyPhase.failed) {
-      nextData = nextData.copyWith(
-        pendingBubbleId: null,
-        pendingPropertyId: null,
-      );
+      nextData = nextData.copyWith();
     }
 
     context.bubbleResource.value = nextData;
@@ -144,8 +145,10 @@ final class ApplyDraftCommand {
     final prompt = (message?.trim().isNotEmpty == true)
         ? message!.trim()
         : (instructionText?.trim().isNotEmpty == true
-            ? instructionText!.trim()
-            : (intentText?.trim().isNotEmpty == true ? intentText!.trim() : ''));
+              ? instructionText!.trim()
+              : (intentText?.trim().isNotEmpty == true
+                    ? intentText!.trim()
+                    : ''));
     if (prompt.isEmpty || draftChanges.isEmpty) return prompt;
     final draftSummary = draftChanges
         .map((final d) => '- ${d.propertyId}: ${d.targetValue}')
@@ -162,8 +165,8 @@ final class ApplyDraftCommand {
       final source = selection.source;
       if (!_hasText(source?.file)) continue;
       final absolutePath = source!.file;
-      final workspacePath = _hasText(workspace) &&
-              p.isWithin(workspace!, absolutePath)
+      final workspacePath =
+          _hasText(workspace) && p.isWithin(workspace!, absolutePath)
           ? p.relative(absolutePath, from: workspace)
           : null;
       deduped[workspacePath ?? absolutePath] = LiveEditSourceTarget(
