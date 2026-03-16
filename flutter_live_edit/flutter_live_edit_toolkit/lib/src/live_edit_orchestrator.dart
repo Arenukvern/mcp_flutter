@@ -5,7 +5,6 @@ import 'package:path/path.dart' as p;
 import 'commands/commands.dart';
 import 'live_edit_context.dart';
 import 'live_edit_controller_adapter.dart';
-import 'live_edit_overlay_theme.dart';
 import 'live_edit_types.dart';
 import 'resources/resources.dart';
 import 'services/services.dart';
@@ -304,7 +303,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
         step: LiveEditActivityStep.failed,
         label: 'Failed',
         summary: _failureSummary(lastErr!, bubbleId: bubbleId),
-        details: <String>[lastErr!],
+        details: <String>[lastErr],
         timestamp: now,
         nodeId: bubbleId,
         errorText: lastErr,
@@ -501,8 +500,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   );
 
   bool get needsApproval =>
-      _bubbleResource.value.applyPhase ==
-          LiveEditApplyPhase.awaitingApproval &&
+      _bubbleResource.value.applyPhase == LiveEditApplyPhase.awaitingApproval &&
       _bubbleResource.value.pendingExecutionPlan != null &&
       _hasText(_bubbleResource.value.pendingProposalId);
 
@@ -513,12 +511,10 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   Offset get panelDragOffset => _panelViewResource.value.panelDragOffset;
   bool get panelExpanded =>
       panelDisplayMode == LiveEditPanelDisplayMode.expanded;
-  double get panelHeight =>
-      panelExpanded
+  double get panelHeight => panelExpanded
       ? _panelViewResource.value.panelExpandedHeight
       : _panelViewResource.value.panelRailHeight;
-  double get panelWidth =>
-      panelExpanded
+  double get panelWidth => panelExpanded
       ? _panelViewResource.value.panelExpandedWidth
       : _panelViewResource.value.panelRailWidth;
   int get pendingBubbleCount => _pendingBubbleStates().length;
@@ -678,13 +674,12 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   void beginInlineEdit(
     final LiveEditPropertyDescriptor property, {
     final LiveEditEditSurface? surface,
-  }) =>
-      FocusPropertyCommand(
-        property: property,
-        surface: surface,
-        defaultPrompt: _defaultAiPrompt(),
-        expandPanel: false,
-      ).execute(_context);
+  }) => FocusPropertyCommand(
+    property: property,
+    surface: surface,
+    defaultPrompt: _defaultAiPrompt(),
+    expandPanel: false,
+  ).execute(_context);
 
   LiveEditBubbleRecord? bubbleForSelectionInLayer(
     final LiveEditTargetDomain domain, {
@@ -937,7 +932,6 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   void focusProperty(final LiveEditPropertyDescriptor property) {
     FocusPropertyCommand(
       property: property,
-      surface: null,
       defaultPrompt: _defaultAiPrompt(),
     ).execute(_context);
   }
@@ -1038,17 +1032,14 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   void resizeBubble({
     required final double width,
     required final double height,
-  }) =>
-      ResizeBubbleCommand(width: width, height: height).execute(_context);
+  }) => ResizeBubbleCommand(width: width, height: height).execute(_context);
 
   void resizePanel({
     required final double width,
     required final double height,
-  }) =>
-      ResizePanelCommand(width: width, height: height).execute(_context);
+  }) => ResizePanelCommand(width: width, height: height).execute(_context);
 
-  void resolveActiveBubble() =>
-      ResolveActiveBubbleCommand().execute(_context);
+  void resolveActiveBubble() => ResolveActiveBubbleCommand().execute(_context);
 
   Future<void> retryApply() async {
     openAiBubble();
@@ -1110,9 +1101,10 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     if (_hasText(selectedBubbleId)) {
       final next = Set<LiveEditBubbleId>.from(
         _bubbleResource.value.resolvedBubbleIds,
-      )..remove(selectedBubbleId!);
-      _bubbleResource.value =
-          _bubbleResource.value.copyWith(resolvedBubbleIds: next);
+      )..remove(selectedBubbleId);
+      _bubbleResource.value = _bubbleResource.value.copyWith(
+        resolvedBubbleIds: next,
+      );
     }
     _restoreBubbleState(selectedBubbleId);
     _syncSelectionState();
@@ -1143,8 +1135,9 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     final nextResolved = Set<LiveEditBubbleId>.from(
       _bubbleResource.value.resolvedBubbleIds,
     )..remove(resolvedBubbleId);
-    _bubbleResource.value =
-        _bubbleResource.value.copyWith(resolvedBubbleIds: nextResolved);
+    _bubbleResource.value = _bubbleResource.value.copyWith(
+      resolvedBubbleIds: nextResolved,
+    );
     _finalizeCurrentBubbleOnBlur(nextNodeId: resolvedBubbleId);
     final bubble = _bubbleRecordFor(resolvedBubbleId);
     final trackedNodeId = bubble?.primarySelection?.nodeId ?? nodeId;
@@ -1159,8 +1152,10 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     final layerMap = Map<LiveEditTargetDomain, LiveEditLayerViewState>.from(
       _bubbleResource.value.layerViewStateByDomain,
     );
-    layerMap[bubbleDomain] = (layerMap[bubbleDomain] ?? LiveEditLayerViewState())
-        .copyWith(activeBubbleId: resolvedBubbleId);
+    layerMap[bubbleDomain] =
+        (layerMap[bubbleDomain] ?? LiveEditLayerViewState()).copyWith(
+          activeBubbleId: resolvedBubbleId,
+        );
     _bubbleResource.value = _bubbleResource.value.copyWith(
       layerViewStateByDomain: layerMap,
     );
@@ -1178,8 +1173,9 @@ final class LiveEditOrchestrator extends ChangeNotifier {
         _bubbleResource.value.bubbleRecordsById,
       );
       newRecords[resolvedBubbleId] = record;
-      _bubbleResource.value =
-          _bubbleResource.value.copyWith(bubbleRecordsById: newRecords);
+      _bubbleResource.value = _bubbleResource.value.copyWith(
+        bubbleRecordsById: newRecords,
+      );
     }
     _syncSelectionState();
     notifyListeners();
@@ -1253,6 +1249,20 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       ),
     );
     if (!backend.available) return;
+    if (_bubbleRecordFor(bubbleId) == null) {
+      final record = _ensureBubbleState(
+        bubbleId,
+        selection: activeSelection,
+        selectedWidgets: _bubbleRecordFor(bubbleId)?.selectedWidgets,
+      );
+      final records = Map<String, LiveEditBubbleRecord>.from(
+        _bubbleResource.value.bubbleRecordsById,
+      );
+      records[bubbleId] = record;
+      _bubbleResource.value = _bubbleResource.value.copyWith(
+        bubbleRecordsById: records,
+      );
+    }
     SetBubbleBackendCommand(
       bubbleId: bubbleId,
       backendId: normalized,
@@ -1303,8 +1313,9 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       backendId: backend.id,
       inferenceConfig: nextConfig,
     );
-    _bubbleResource.value =
-        _bubbleResource.value.copyWith(bubbleRecordsById: records);
+    _bubbleResource.value = _bubbleResource.value.copyWith(
+      bubbleRecordsById: records,
+    );
     _appendDebug(
       message: 'Inference config updated.',
       details: <String>[
@@ -1378,8 +1389,6 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       _bubbleResource.value = _bubbleResource.value.copyWith(
         globalComposerText: '',
         applyPhase: LiveEditApplyPhase.idle,
-        pendingExecutionPlan: null,
-        pendingProposalId: null,
       );
     }
     notifyListeners();
@@ -1457,8 +1466,10 @@ final class LiveEditOrchestrator extends ChangeNotifier {
 
   void updateBubbleComposer(final String bubbleId, final String value) {
     if (!_hasText(bubbleId)) return;
-    UpdateBubbleComposerCommand(bubbleId: bubbleId, value: value)
-        .execute(_context);
+    UpdateBubbleComposerCommand(
+      bubbleId: bubbleId,
+      value: value,
+    ).execute(_context);
   }
 
   void updateDraft({
@@ -1516,7 +1527,8 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     _context.applySessionUpdate(_sessionService.lastUpdate);
 
     SetActivePropertyCommand(activePropertyId: property.id).execute(_context);
-    final editMode = property.requiresAgentForPersistence ||
+    final editMode =
+        property.requiresAgentForPersistence ||
             (surface ?? property.preferredEditSurface) ==
                 LiveEditEditSurface.aiBubble
         ? LiveEditEditMode.ai
@@ -1525,18 +1537,15 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     _bubbleResource.value = _bubbleResource.value.copyWith(
       lastError: null,
       applyPhase: LiveEditApplyPhase.idle,
-      pendingExecutionPlan: null,
-      pendingProposalId: null,
-      pendingBubbleId: null,
-      pendingPropertyId: null,
     );
     final bubbleId = _bubbleIdForSelection(selection);
     if (_hasText(bubbleId)) {
       final next = Set<LiveEditBubbleId>.from(
         _bubbleResource.value.resolvedBubbleIds,
-      )..remove(bubbleId!);
-      _bubbleResource.value =
-          _bubbleResource.value.copyWith(resolvedBubbleIds: next);
+      )..remove(bubbleId);
+      _bubbleResource.value = _bubbleResource.value.copyWith(
+        resolvedBubbleIds: next,
+      );
     }
     _captureBubbleState(
       selection: selection,
@@ -1585,7 +1594,6 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       property: property,
       surface: LiveEditEditSurface.aiBubble,
       defaultPrompt: _defaultAiPrompt(),
-      expandPanel: true,
     ).execute(_context);
     if (!_hasText(aiComposer)) {
       updateAiComposer(_defaultAiPrompt());
@@ -1642,8 +1650,9 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       _bubbleResource.value.bubbleRecordsById,
     );
     records[bubbleId] = updated;
-    _bubbleResource.value =
-        _bubbleResource.value.copyWith(bubbleRecordsById: records);
+    _bubbleResource.value = _bubbleResource.value.copyWith(
+      bubbleRecordsById: records,
+    );
   }
 
   void _appendDebug({
@@ -1678,8 +1687,9 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       _bubbleResource.value.bubbleRecordsById,
     );
     records[bubbleId] = updated;
-    _bubbleResource.value =
-        _bubbleResource.value.copyWith(bubbleRecordsById: records);
+    _bubbleResource.value = _bubbleResource.value.copyWith(
+      bubbleRecordsById: records,
+    );
   }
 
   void _appendTimeline({
@@ -1715,8 +1725,9 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       _bubbleResource.value.bubbleRecordsById,
     );
     records[bubbleId] = updated;
-    _bubbleResource.value =
-        _bubbleResource.value.copyWith(bubbleRecordsById: records);
+    _bubbleResource.value = _bubbleResource.value.copyWith(
+      bubbleRecordsById: records,
+    );
   }
 
   LiveEditInferenceConfig? _backendEffectiveConfig(
@@ -1767,30 +1778,32 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     final bubbleId = _bubbleIdForSelection(selection);
     if (!_hasText(bubbleId)) return;
     final current = _bubbleRecordFor(bubbleId);
-    final record = _ensureBubbleState(
-      bubbleId!,
-      selection: selection,
-      selectedWidgets: selectedWidgets,
-    ).copyWith(
-      primarySelection: selection,
-      selectedWidgets: selectedWidgets,
-      draftChanges: _draftChangesForActiveSelection(),
-      instructionText: instructionText ?? aiComposer,
-      status: status ?? (current?.status ?? LiveEditBubbleStatus.editing),
-      displayState:
-          current?.displayState ?? LiveEditBubbleDisplayState.expanded,
-      changedFiles: current?.changedFiles ?? const <String>[],
-      backendId: backendIdForBubble(bubbleId),
-      inferenceConfig: inferenceConfigForBubble(bubbleId),
-      executionPlan: current?.executionPlan,
-      lastError: lastError ?? current?.lastError,
-    );
+    final record =
+        _ensureBubbleState(
+          bubbleId!,
+          selection: selection,
+          selectedWidgets: selectedWidgets,
+        ).copyWith(
+          primarySelection: selection,
+          selectedWidgets: selectedWidgets,
+          draftChanges: _draftChangesForActiveSelection(),
+          instructionText: instructionText ?? aiComposer,
+          status: status ?? (current?.status ?? LiveEditBubbleStatus.editing),
+          displayState:
+              current?.displayState ?? LiveEditBubbleDisplayState.expanded,
+          changedFiles: current?.changedFiles ?? const <String>[],
+          backendId: backendIdForBubble(bubbleId),
+          inferenceConfig: inferenceConfigForBubble(bubbleId),
+          executionPlan: current?.executionPlan,
+          lastError: lastError ?? current?.lastError,
+        );
     final records = Map<String, LiveEditBubbleRecord>.from(
       _bubbleResource.value.bubbleRecordsById,
     );
     records[bubbleId] = record;
-    _bubbleResource.value =
-        _bubbleResource.value.copyWith(bubbleRecordsById: records);
+    _bubbleResource.value = _bubbleResource.value.copyWith(
+      bubbleRecordsById: records,
+    );
   }
 
   void _captureCurrentBubbleState() {
@@ -1963,8 +1976,9 @@ final class LiveEditOrchestrator extends ChangeNotifier {
         _bubbleResource.value.bubbleRecordsById,
       );
       records[resolvedBubbleId] = bubble.copyWith(debugPromptText: promptText);
-      _bubbleResource.value =
-          _bubbleResource.value.copyWith(bubbleRecordsById: records);
+      _bubbleResource.value = _bubbleResource.value.copyWith(
+        bubbleRecordsById: records,
+      );
     }
     if (event.debugOnly || event.kind == LiveEditRuntimeEventKind.debug) {
       _appendDebug(
@@ -2076,8 +2090,9 @@ final class LiveEditOrchestrator extends ChangeNotifier {
         records[bubbleId] = bubble.copyWith(
           displayState: LiveEditBubbleDisplayState.minimized,
         );
-        _bubbleResource.value =
-            _bubbleResource.value.copyWith(bubbleRecordsById: records);
+        _bubbleResource.value = _bubbleResource.value.copyWith(
+          bubbleRecordsById: records,
+        );
       }
       return;
     }
@@ -2086,8 +2101,9 @@ final class LiveEditOrchestrator extends ChangeNotifier {
         _bubbleResource.value.bubbleRecordsById,
       );
       records.remove(bubbleId);
-      _bubbleResource.value =
-          _bubbleResource.value.copyWith(bubbleRecordsById: records);
+      _bubbleResource.value = _bubbleResource.value.copyWith(
+        bubbleRecordsById: records,
+      );
     }
   }
 
@@ -2188,8 +2204,9 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     records[bubbleId!] = bubble.copyWith(
       displayState: LiveEditBubbleDisplayState.expanded,
     );
-    _bubbleResource.value =
-        _bubbleResource.value.copyWith(bubbleRecordsById: records);
+    _bubbleResource.value = _bubbleResource.value.copyWith(
+      bubbleRecordsById: records,
+    );
   }
 
   String? _salientErrorDetail(final Object? details) {
@@ -2236,10 +2253,6 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     var data = _bubbleResource.value.copyWith(
       applyPhase: LiveEditApplyPhase.failed,
       lastError: error,
-      pendingBubbleId: null,
-      pendingPropertyId: null,
-      pendingExecutionPlan: null,
-      pendingProposalId: null,
     );
     if (_hasText(bubbleId)) {
       final activeBubble = data.bubbleRecordsById[bubbleId];
@@ -2347,18 +2360,21 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       final phase = bubble?.status == LiveEditBubbleStatus.waiting
           ? LiveEditApplyPhase.preparing
           : bubble?.status == LiveEditBubbleStatus.applied
-              ? LiveEditApplyPhase.success
-              : bubble?.status == LiveEditBubbleStatus.failed
-                  ? LiveEditApplyPhase.failed
-                  : LiveEditApplyPhase.idle;
+          ? LiveEditApplyPhase.success
+          : bubble?.status == LiveEditBubbleStatus.failed
+          ? LiveEditApplyPhase.failed
+          : LiveEditApplyPhase.idle;
       var editMode = selection == null
           ? LiveEditEditMode.inspect
           : (_bubbleResource.value.layerViewStateByDomain[domain]?.editMode ==
-                  LiveEditEditMode.ai
-              ? LiveEditEditMode.ai
-              : LiveEditEditMode.edit);
-      var activePropertyId = _bubbleResource
-              .value.layerViewStateByDomain[domain]?.activePropertyId ??
+                    LiveEditEditMode.ai
+                ? LiveEditEditMode.ai
+                : LiveEditEditMode.edit);
+      var activePropertyId =
+          _bubbleResource
+              .value
+              .layerViewStateByDomain[domain]
+              ?.activePropertyId ??
           activeProperty?.id;
       if (selection != null &&
           activeProperty?.requiresAgentForPersistence == true) {
@@ -2382,8 +2398,9 @@ final class LiveEditOrchestrator extends ChangeNotifier {
         lastError: bubble?.lastError,
         globalComposerText: bubble?.instructionText ?? '',
       );
-      _panelViewResource.value =
-          _panelViewResource.value.copyWith(editMode: editMode);
+      _panelViewResource.value = _panelViewResource.value.copyWith(
+        editMode: editMode,
+      );
       if (_hasText(currentBubbleId) && selection != null) {
         _captureBubbleState(
           selection: selection,
@@ -2411,8 +2428,9 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       );
       layerMap[domain] = (layerMap[domain] ?? LiveEditLayerViewState())
           .copyWith(activePropertyId: propId);
-      _bubbleResource.value =
-          _bubbleResource.value.copyWith(layerViewStateByDomain: layerMap);
+      _bubbleResource.value = _bubbleResource.value.copyWith(
+        layerViewStateByDomain: layerMap,
+      );
     }
   }
 
