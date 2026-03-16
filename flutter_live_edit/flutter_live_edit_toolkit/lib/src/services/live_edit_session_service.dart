@@ -306,7 +306,8 @@ _SelectionCandidateMetadata _selectionMetadataForElement(
   final List<LiveEditPropertyDescriptor> Function(
     Element element,
     LiveEditTargetDomain targetDomain,
-  )? propertyDescriptorProvider,
+  )?
+  propertyDescriptorProvider,
 }) {
   final nodeId =
       cachedNodeId ??
@@ -375,7 +376,7 @@ LiveEditPropertyDescriptor _copyPropertyDescriptor(
 
 String? _toolSurfaceIdForElement(final Element element) =>
     LiveEditOverlayThemeModel.instance.surfaceIdForElement(element);
-
+// TODO: remove it
 bool _isMeaningfulToolElement(final Element element) {
   final surfaceId = _toolSurfaceIdForElement(element);
   if (!_hasText(surfaceId)) {
@@ -465,7 +466,8 @@ List<LiveEditPropertyDescriptor> _selectionPropertyGroupsForElement(
   final List<LiveEditPropertyDescriptor> Function(
     Element element,
     LiveEditTargetDomain targetDomain,
-  )? propertyDescriptorProvider,
+  )?
+  propertyDescriptorProvider,
 }) {
   if (targetDomain != LiveEditTargetDomain.toolScene) {
     final provider = propertyDescriptorProvider;
@@ -520,7 +522,8 @@ int _preferredSelectionIndex({
   final List<LiveEditPropertyDescriptor> Function(
     Element element,
     LiveEditTargetDomain targetDomain,
-  )? propertyDescriptorProvider,
+  )?
+  propertyDescriptorProvider,
 }) {
   if (hits.isEmpty || selectionPolicy == LiveEditSelectionPolicy.deepest) {
     return 0;
@@ -910,7 +913,8 @@ LiveEditSelection _buildLightweightSelectionFromCache({
   final List<LiveEditPropertyDescriptor> Function(
     Element element,
     LiveEditTargetDomain targetDomain,
-  )? propertyDescriptorProvider,
+  )?
+  propertyDescriptorProvider,
 }) {
   final tracked = session.trackedSelections[entry.nodeId]?.selection;
   final propertyGroups =
@@ -968,10 +972,11 @@ int? _viewIdForRenderObject(final RenderObject? renderObject) {
 
 final class LiveEditSessionService {
   LiveEditSessionService({
-    List<LiveEditPropertyDescriptor> Function(
+    final List<LiveEditPropertyDescriptor> Function(
       Element element,
       LiveEditTargetDomain targetDomain,
-    )? propertyDescriptorProvider,
+    )?
+    propertyDescriptorProvider,
   }) : _propertyDescriptorProvider = propertyDescriptorProvider;
 
   final Map<String, _LiveEditSessionState> _sessions =
@@ -982,7 +987,8 @@ final class LiveEditSessionService {
   List<LiveEditPropertyDescriptor> Function(
     Element element,
     LiveEditTargetDomain targetDomain,
-  )? _propertyDescriptorProvider;
+  )?
+  _propertyDescriptorProvider;
 
   List<LiveEditPropertyDescriptor> Function(
     Element element,
@@ -1018,10 +1024,13 @@ final class LiveEditSessionService {
         selection: layer.selection,
         hoverSelection: layer.hoverSelection,
         marqueeRect: layer.marqueeRect,
-        marqueeSelections: List<LiveEditSelection>.from(layer.marqueeSelections),
+        marqueeSelections: List<LiveEditSelection>.from(
+          layer.marqueeSelections,
+        ),
         multiSelections: List<LiveEditSelection>.from(layer.multiSelections),
-        selectionCandidates:
-            List<LiveEditSelectionCandidate>.from(layer.selectionCandidates),
+        selectionCandidates: List<LiveEditSelectionCandidate>.from(
+          layer.selectionCandidates,
+        ),
       ),
     );
     final draftLayer = (

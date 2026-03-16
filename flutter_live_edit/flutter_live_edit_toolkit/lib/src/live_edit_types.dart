@@ -300,6 +300,18 @@ final class LiveEditLayerViewState {
   LiveEditBubbleId? activeBubbleId;
   String? activePropertyId;
   LiveEditEditMode editMode = LiveEditEditMode.inspect;
+
+  /// New instance for Commands to put into BubbleResourceData.
+  LiveEditLayerViewState copyWith({
+    final LiveEditBubbleId? activeBubbleId,
+    final String? activePropertyId,
+    final LiveEditEditMode? editMode,
+  }) =>
+      LiveEditLayerViewState(
+        activeBubbleId: activeBubbleId ?? this.activeBubbleId,
+        activePropertyId: activePropertyId ?? this.activePropertyId,
+        editMode: editMode ?? this.editMode,
+      );
 }
 
 enum LiveEditPanelDisplayMode { rail, expanded }
