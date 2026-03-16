@@ -136,23 +136,11 @@ The same targeting object is supported in CLI v3 one-shot `exec --args`, daemon 
 
 📚 Please see more in [MCP_RPC_DESCRIPTION](MCP_RPC_DESCRIPTION.md)
 
-## Live Edit Overlay Layers
+## Live Edit Overlay
 
-The live edit toolkit now treats `Edit Tools` as a true second-layer editing mode over the existing live-edit UI.
+The live edit overlay shows a selection bubble and inspector panel above app content. You inspect and edit app widgets in the main app.
 
-- `Edit App`: inspect and edit app widgets.
-- `Edit Tools`: keep the current app bubble and panel visible underneath, then inspect the real widget tree of those live-edit tools.
-
-Behavior summary:
-
-- Overlay stacking is:
-  1. app content
-  2. app live-edit overlay, bubble, and panel
-  3. tool-edit overlay above the existing live-edit UI
-- Switching to `Edit Tools` does not immediately replace the visible bubble or panel with synthetic placeholder content.
-- Tool selection is driven by real overlay widgets such as bubble buttons, prompt fields, panel controls, property rows, and chips.
-- Tool-scene selections keep the real widget node identity, while persistence can still map back to the owning themed surface.
-- Recursion is intentionally bounded to one extra layer. You can edit the live-edit UI, but the nested tool-edit bubble does not create an unbounded third editing layer.
+To develop or refine the tooling UI (bubble, panel, property rows, chips), use the **live_edit_tooling_ui_kit** app: it runs the same tool layer with prefilled data so you can connect live-edit and iteratively improve those widgets.
 
 ## 🔒 Security
 

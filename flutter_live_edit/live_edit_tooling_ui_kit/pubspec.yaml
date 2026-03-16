@@ -1,0 +1,21 @@
+name: live_edit_tooling_ui_kit
+description: Runnable app that shows the live-edit tool layer (bubble + panel) with prefilled data so you can work in it and iteratively improve the tooling UI with live-edit tools.
+publish_to: none
+version: 0.1.0
+
+environment:
+  sdk: ^3.10.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_live_edit_toolkit:
+    path: ../flutter_live_edit_toolkit
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true

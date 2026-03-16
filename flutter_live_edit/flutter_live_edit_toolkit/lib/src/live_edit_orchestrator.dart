@@ -924,6 +924,71 @@ final class LiveEditOrchestrator extends ChangeNotifier {
 
   void expandPanel() => ExpandPanelCommand().execute(_context);
 
+  /// Prefills overlay, panel, and one demo bubble for use in
+  /// [live_edit_tooling_ui_kit]. Call after building the host/tool layer.
+  void prefillForToolingShowcase() {
+    final sessionId = ensureSession();
+    setOverlayEnabled(true);
+    expandPanel();
+    const bubbleId = 'showcase:tool-layer';
+    final selection = LiveEditSelection(
+      sessionId: sessionId,
+      nodeId: 'showcase_bubble',
+      widgetType: 'SelectionBubble',
+      propertyGroups: <LiveEditPropertyDescriptor>[
+        const LiveEditPropertyDescriptor(
+          id: 'label',
+          label: 'Label',
+          group: LiveEditPropertyGroup.content,
+          kind: LiveEditPropertyKind.string,
+          value: 'Demo bubble',
+          editable: true,
+        ),
+      ],
+      rawNode: const <String, Object?>{'surfaceId': 'ai_bubble'},
+      targetDomain: LiveEditTargetDomain.toolScene,
+      bounds: const LiveEditBounds(
+        left: 24,
+        top: 100,
+        right: 324,
+        bottom: 340,
+        width: 300,
+        height: 240,
+      ),
+    );
+    final record = LiveEditBubbleRecord(
+      bubbleId: bubbleId,
+      targetDomain: LiveEditTargetDomain.toolScene,
+      targetKey: 'SelectionBubble',
+      primarySelection: selection,
+      selectedWidgets: <LiveEditSelection>[selection],
+      instructionText: 'Prefilled prompt for tooling UI development.',
+    );
+    final records = Map<String, LiveEditBubbleRecord>.from(
+      _bubbleResource.value.bubbleRecordsById,
+    );
+    records[bubbleId] = record;
+    final layerMap = Map<LiveEditTargetDomain, LiveEditLayerViewState>.from(
+      _bubbleResource.value.layerViewStateByDomain,
+    );
+    layerMap[LiveEditTargetDomain.toolScene] =
+        (layerMap[LiveEditTargetDomain.toolScene] ?? LiveEditLayerViewState())
+            .copyWith(activeBubbleId: bubbleId, editMode: LiveEditEditMode.ai);
+    _bubbleResource.value = _bubbleResource.value.copyWith(
+      bubbleRecordsById: records,
+      layerViewStateByDomain: layerMap,
+    );
+    // Keep appScene so overlay hit-test uses _nativeElementHitCandidates;
+    // toolScene would use _toolElementHitCandidates and filter, which can
+    // yield no hover/selection when the tool layer is the host child.
+    _sessionService.setTargetDomain(
+      sessionId: sessionId,
+      targetDomain: LiveEditTargetDomain.appScene,
+    );
+    _context.applySessionUpdate(_sessionService.lastUpdate);
+    notifyListeners();
+  }
+
   void focusProperty(final LiveEditPropertyDescriptor property) {
     FocusPropertyCommand(
       property: property,

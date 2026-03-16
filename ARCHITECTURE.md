@@ -35,14 +35,12 @@ This unified architecture supports:
 ### When to Use This
 
 1. **Direct VM Service Communication**:
-
    - Memory inspection
    - Basic debugging operations
    - Isolate management
    - General VM state queries
 
 2. **Flutter-Specific Operations**:
-
    - Widget tree inspection
    - Layout debugging
    - State management analysis
@@ -147,49 +145,11 @@ This unified architecture supports:
 
 ## Live Edit Overlay Architecture
 
-The live edit toolkit has two editing domains with different interaction roots:
+The live edit toolkit uses a single editing domain in the main app:
 
-1. `appScene`
-   - Hit-testing is rooted in the real app content subtree.
-   - Selection, hover, and candidate traversal operate on app widgets.
+- **appScene**: Hit-testing is rooted in the real app content subtree. Selection, hover, and candidate traversal operate on app widgets. The overlay draws the selection bubble and inspector panel above the app.
 
-2. `toolScene`
-   - Hit-testing is rooted in the rendered live-edit overlay subtree.
-   - Selection, hover, and candidate traversal operate on the real live-edit UI: bubble controls, prompt fields, panel rows, chips, and related widgets.
-
-### Layering Model
-
-`Edit Tools` is not a presentation swap. It is an extra interaction layer above the existing live-edit UI.
-
-Visual order:
-
-1. app content
-2. app live-edit overlay with the current app selection, bubble, and panel
-3. tool-edit interaction overlay above those tools
-
-This means:
-
-- entering `toolScene` keeps the currently shown app bubble and panel visible until the user explicitly selects a tool widget
-- tool-scene selections can target real child widgets inside the bubble or panel instead of only synthetic surfaces
-- the selection payload can keep the real widget node id while attaching `surfaceId` metadata so persistence still maps to the overlay theme source
-
-### Persistence Model
-
-Tool-scene persistence still uses the overlay theme/source model where possible.
-
-- real tool-widget selection drives interaction
-- `rawNode.surfaceId` links the selected widget back to its themed tool surface
-- editable property groups can therefore preview and persist against the owning surface without losing the actual selected widget context
-
-### Bounded Recursion
-
-The recursion depth is intentionally capped.
-
-- layer 0: app widgets edited by the standard live-edit overlay
-- layer 1: live-edit tool widgets edited in `Edit Tools`
-- no recursive layer 2+
-
-This keeps the UX predictable and prevents the nested tool-edit bubble from turning into an infinite editor-on-editor stack.
+To iteratively improve the tooling UI (bubble, panel, chips), run the **live_edit_tooling_ui_kit** app: it renders the same tool layer with prefilled data so you can connect live-edit (and MCP) and refine those widgets in place.
 
 ## Protocol Details
 
@@ -218,19 +178,16 @@ This keeps the UX predictable and prevents the nested tool-edit bubble from turn
 ## Security Considerations
 
 1. **Debug Mode Only**:
-
    - All operations require debug mode
    - No production access
    - Controlled environment execution
 
 2. **Transport and Port Security**:
-
    - MCP server communication is stdio-based (no inbound MCP network port)
    - Default VM target port is `8181` (configurable with `--dart-vm-port`)
    - Local-only connections are recommended
 
 3. **Data Safety**:
-
    - No sensitive data exposure
    - Sanitized error messages
    - Controlled access scope
@@ -243,19 +200,16 @@ This keeps the UX predictable and prevents the nested tool-edit bubble from turn
 ## Performance Optimization
 
 1. **Connection Management**:
-
    - Connection pooling
    - Automatic reconnection
    - Resource cleanup
 
 2. **Data Efficiency**:
-
    - Response caching
    - Batch operations
    - Optimized protocol translation
 
 3. **Error Handling**:
-
    - Graceful degradation
    - Detailed error reporting
    - Recovery mechanisms
@@ -333,19 +287,16 @@ Flutter App Tool Registration -> DTD Event -> Discovery Service -> Registry Upda
 ## Troubleshooting
 
 1. **Connection Issues**:
-
    - Verify debug mode is active
    - Check port availability
    - Confirm extension installation
 
 2. **Protocol Errors**:
-
    - Validate message format
    - Check method availability
    - Verify parameter types
 
 3. **Performance Problems**:
-
    - Monitor message volume
    - Check response times
    - Analyze resource usage

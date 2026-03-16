@@ -7,8 +7,8 @@ import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 
 import 'live_edit_controller_adapter.dart';
 import 'live_edit_orchestrator.dart';
-import 'live_edit_types.dart';
 import 'live_edit_overlay_theme.dart';
+import 'live_edit_types.dart';
 
 double mathMax(final double left, final double right) =>
     left > right ? left : right;
@@ -119,22 +119,6 @@ void _drawDashedRect(final Canvas canvas, final Rect rect, final Paint paint) {
 
 bool _hasText(final String? value) => value != null && value.trim().isNotEmpty;
 
-List<Rect> _panelInteractionExclusionRects({
-  required final LiveEditOrchestrator orchestrator,
-  required final LiveEditOverlayThemeModel overlayTheme,
-  required final Size viewport,
-}) {
-  final panelRect = _panelRectForViewport(
-    orchestrator: orchestrator,
-    overlayTheme: overlayTheme,
-    viewport: viewport,
-  );
-  return <Rect>[
-    Rect.fromLTWH(panelRect.left, panelRect.top, panelRect.width, 30),
-    Rect.fromLTWH(panelRect.right - 40, panelRect.bottom - 40, 40, 40),
-  ];
-}
-
 Rect _panelRectForViewport({
   required final LiveEditOrchestrator orchestrator,
   required final LiveEditOverlayThemeModel overlayTheme,
@@ -227,6 +211,7 @@ class FlutterLiveEditHost extends StatefulWidget {
     this.workingDirectory,
     this.intentText,
     this.buildPropertyPanelSection,
+    this.childIsToolLayer = false,
   });
 
   final Widget child;
@@ -238,9 +223,64 @@ class FlutterLiveEditHost extends StatefulWidget {
   final String? workingDirectory;
   final String? intentText;
   final LiveEditPropertyPanelSectionBuilder? buildPropertyPanelSection;
+  final bool childIsToolLayer;
 
   @override
   State<FlutterLiveEditHost> createState() => _FlutterLiveEditHostState();
+}
+
+/// Reusable tool layer (pinned pills, expanded bubbles, panel) for the live-edit
+/// overlay. Used by [FlutterLiveEditHost] and by [live_edit_tooling_ui_kit].
+class LiveEditToolLayer extends StatelessWidget {
+  const LiveEditToolLayer({
+    required this.orchestrator,
+    required this.viewportSize,
+    super.key,
+    this.buildPropertyPanelSection,
+  });
+
+  final LiveEditOrchestrator orchestrator;
+  final Size viewportSize;
+  final LiveEditPropertyPanelSectionBuilder? buildPropertyPanelSection;
+
+  @override
+  Widget build(final BuildContext context) {
+    final overlayTheme = LiveEditOverlayThemeModel.instance;
+    final panelRect = _panelRectForViewport(
+      orchestrator: orchestrator,
+      overlayTheme: overlayTheme,
+      viewport: viewportSize,
+    );
+    return Stack(
+      fit: StackFit.expand,
+      children: <Widget>[
+        ...orchestrator.pinnedBubbleSummaries.map(
+          (final summary) => _PinnedBubblePill(
+            orchestrator: orchestrator,
+            summary: summary,
+            viewportSize: viewportSize,
+          ),
+        ),
+        ...orchestrator.expandedBubbleSummaries.map(
+          (final summary) => _SelectionBubble(
+            orchestrator: orchestrator,
+            viewportSize: viewportSize,
+            bubbleSummary: summary,
+          ),
+        ),
+        Positioned(
+          left: panelRect.left,
+          top: panelRect.top,
+          width: panelRect.width,
+          height: panelRect.height,
+          child: _EditorPanelSurface(
+            orchestrator: orchestrator,
+            buildPropertyPanelSection: buildPropertyPanelSection,
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 class _AgentActivityPanel extends StatelessWidget {
@@ -1190,69 +1230,25 @@ class _FlutterLiveEditHostState extends State<FlutterLiveEditHost> {
                           orchestrator: _orchestrator,
                           contentKey: _contentKey,
                           targetDomain: LiveEditTargetDomain.appScene,
-                          interactive: !_orchestrator.editingToolScene,
+                          interactive: true,
+                          openBubbleOnSelect: widget.childIsToolLayer,
                         ),
                       Positioned(
                         left: 16,
                         bottom: 16,
                         child: _LauncherChip(orchestrator: _orchestrator),
                       ),
-                      if (_orchestrator.overlayVisible)
+                      if (_orchestrator.overlayVisible &&
+                          !widget.childIsToolLayer)
                         Positioned.fill(
                           child: KeyedSubtree(
                             key: _toolOverlayKey,
-                            child: Stack(
-                              fit: StackFit.expand,
-                              children: <Widget>[
-                                ..._orchestrator.pinnedBubbleSummaries.map(
-                                  (final summary) => _PinnedBubblePill(
-                                    orchestrator: _orchestrator,
-                                    summary: summary,
-                                    viewportSize: constraints.biggest,
-                                  ),
-                                ),
-                                ..._orchestrator.expandedBubbleSummaries.map(
-                                  (final summary) => _SelectionBubble(
-                                    orchestrator: _orchestrator,
-                                    viewportSize: constraints.biggest,
-                                    bubbleSummary: summary,
-                                  ),
-                                ),
-                                Builder(
-                                  builder: (final context) {
-                                    final panelRect = _panelRectForViewport(
-                                      orchestrator: _orchestrator,
-                                      overlayTheme: _overlayTheme,
-                                      viewport: constraints.biggest,
-                                    );
-                                    return Positioned(
-                                      left: panelRect.left,
-                                      top: panelRect.top,
-                                      width: panelRect.width,
-                                      height: panelRect.height,
-                                      child: _EditorPanelSurface(
-                                        orchestrator: _orchestrator,
-                                        buildPropertyPanelSection:
-                                            widget.buildPropertyPanelSection,
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ],
+                            child: LiveEditToolLayer(
+                              orchestrator: _orchestrator,
+                              viewportSize: constraints.biggest,
+                              buildPropertyPanelSection:
+                                  widget.buildPropertyPanelSection,
                             ),
-                          ),
-                        ),
-                      if (_orchestrator.overlayVisible &&
-                          _orchestrator.editingToolScene)
-                        _LiveEditOverlay(
-                          orchestrator: _orchestrator,
-                          contentKey: _toolOverlayKey,
-                          targetDomain: LiveEditTargetDomain.toolScene,
-                          interactive: true,
-                          excludedRects: _panelInteractionExclusionRects(
-                            orchestrator: _orchestrator,
-                            overlayTheme: _overlayTheme,
-                            viewport: constraints.biggest,
                           ),
                         ),
                     ],
@@ -1488,6 +1484,7 @@ class _LiveEditOverlay extends StatefulWidget {
     required this.targetDomain,
     required this.interactive,
     this.excludedRects = const <Rect>[],
+    this.openBubbleOnSelect = false,
   });
 
   final LiveEditOrchestrator orchestrator;
@@ -1495,6 +1492,7 @@ class _LiveEditOverlay extends StatefulWidget {
   final LiveEditTargetDomain targetDomain;
   final bool interactive;
   final List<Rect> excludedRects;
+  final bool openBubbleOnSelect;
 
   @override
   State<_LiveEditOverlay> createState() => _LiveEditOverlayState();
@@ -1790,6 +1788,10 @@ class _LiveEditOverlayState extends State<_LiveEditOverlay> {
                     contentKey: widget.contentKey,
                     preferHoverPreview: widget.orchestrator.deeperPickEnabled,
                   );
+                  if (widget.openBubbleOnSelect &&
+                      widget.orchestrator.activeSelection != null) {
+                    widget.orchestrator.openAiBubble();
+                  }
                 }
                 _pointerDown = null;
                 _dragging = false;
@@ -1822,8 +1824,6 @@ class _LiveEditOverlayState extends State<_LiveEditOverlay> {
     ),
   );
 }
-
-enum _LiveEditPanelMode { off, app, tools }
 
 class _NumericEditor extends StatefulWidget {
   const _NumericEditor({
@@ -2680,9 +2680,8 @@ class _PropertyPanel extends StatelessWidget {
                               fontSize: 10,
                             ),
                           ),
-                        const SizedBox(height: 6),
-                        _ToolDomainSwitch(orchestrator: orchestrator),
                         if (orchestrator.hasBackendChoice) ...<Widget>[
+                          const SizedBox(height: 6),
                           const SizedBox(height: 6),
                           _BackendSwitcher(orchestrator: orchestrator),
                         ],
@@ -3736,73 +3735,6 @@ class _TimelineBubble extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-class _ToolDomainSwitch extends StatelessWidget {
-  const _ToolDomainSwitch({required this.orchestrator});
-
-  final LiveEditOrchestrator orchestrator;
-
-  _LiveEditPanelMode get _mode {
-    if (!orchestrator.overlayVisible) {
-      return _LiveEditPanelMode.off;
-    }
-    return orchestrator.editingToolScene
-        ? _LiveEditPanelMode.tools
-        : _LiveEditPanelMode.app;
-  }
-
-  @override
-  Widget build(final BuildContext context) => Wrap(
-    spacing: 6,
-    runSpacing: 6,
-    children: <Widget>[
-      ChoiceChip(
-        label: const Text('Off', style: TextStyle(fontSize: 11)),
-        selected: _mode == _LiveEditPanelMode.off,
-        onSelected: (final selected) {
-          if (selected) {
-            _selectMode(_LiveEditPanelMode.off);
-          }
-        },
-      ),
-      ChoiceChip(
-        label: const Text('App', style: TextStyle(fontSize: 11)),
-        selected: _mode == _LiveEditPanelMode.app,
-        onSelected: (final selected) {
-          if (selected) {
-            _selectMode(_LiveEditPanelMode.app);
-          }
-        },
-      ),
-      ChoiceChip(
-        label: const Text('Tools', style: TextStyle(fontSize: 11)),
-        selected: _mode == _LiveEditPanelMode.tools,
-        onSelected: (final selected) {
-          if (selected) {
-            _selectMode(_LiveEditPanelMode.tools);
-          }
-        },
-      ),
-    ],
-  );
-
-  void _selectMode(final _LiveEditPanelMode mode) {
-    switch (mode) {
-      case _LiveEditPanelMode.off:
-        orchestrator.setOverlayEnabled(false);
-      case _LiveEditPanelMode.app:
-        if (!orchestrator.overlayVisible) {
-          orchestrator.setOverlayEnabled(true);
-        }
-        orchestrator.setTargetDomain(LiveEditTargetDomain.appScene);
-      case _LiveEditPanelMode.tools:
-        if (!orchestrator.overlayVisible) {
-          orchestrator.setOverlayEnabled(true);
-        }
-        orchestrator.setTargetDomain(LiveEditTargetDomain.toolScene);
-    }
   }
 }
 
