@@ -14,6 +14,7 @@ final class LiveEditContext {
     required this.draftResource,
     required this.bubbleResource,
     required this.panelViewResource,
+    required this.backendConfigResource,
     required this.sessionService,
     required this.applyService,
     this.applyEventSink,
@@ -24,6 +25,7 @@ final class LiveEditContext {
   final LiveEditDraftResource draftResource;
   final LiveEditBubbleResource bubbleResource;
   final LiveEditPanelViewResource panelViewResource;
+  final LiveEditBackendConfigResource backendConfigResource;
   final LiveEditSessionService sessionService;
   final LiveEditApplyService applyService;
 

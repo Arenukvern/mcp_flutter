@@ -5,6 +5,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 
+import 'commands/commands.dart';
 import 'live_edit_controller_adapter.dart';
 import 'live_edit_orchestrator.dart';
 import 'live_edit_overlay_theme.dart';
@@ -1976,7 +1977,8 @@ class _PanelRail extends StatelessWidget {
                   tooltip: 'Expand inspector',
                   visualDensity: VisualDensity.compact,
                   iconSize: 16,
-                  onPressed: orchestrator.expandPanel,
+                  onPressed: () =>
+                      ExpandPanelCommand().execute(orchestrator.context),
                   icon: const Icon(Icons.chevron_left),
                 ),
               ),
@@ -2715,7 +2717,8 @@ class _PropertyPanel extends StatelessWidget {
                       visualDensity: VisualDensity.compact,
                       iconSize: 16,
                       color: Colors.white,
-                      onPressed: orchestrator.collapsePanel,
+                      onPressed: () =>
+                          CollapsePanelCommand().execute(orchestrator.context),
                       icon: const Icon(Icons.chevron_right),
                     ),
                   ),
@@ -3824,7 +3827,8 @@ class _WaitingBubbleBody extends StatelessWidget {
                   visualDensity: VisualDensity.compact,
                   padding: const EdgeInsets.symmetric(vertical: 8),
                 ),
-                onPressed: orchestrator.expandPanel,
+                onPressed: () =>
+                    ExpandPanelCommand().execute(orchestrator.context),
                 child: const Text('Inspector'),
               ),
             ),

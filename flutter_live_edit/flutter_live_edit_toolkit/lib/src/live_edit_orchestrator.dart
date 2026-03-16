@@ -2,53 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 
 import 'commands/commands.dart';
+import 'live_edit_backend_utils.dart';
 import 'live_edit_context.dart';
 import 'live_edit_controller_adapter.dart';
+import 'selectors/live_edit_selectors.dart';
+import 'live_edit_runtime.dart';
 import 'live_edit_types.dart';
+import 'resources/live_edit_backend_config.src.data.dart';
 import 'resources/resources.dart';
 import 'services/services.dart';
-
-List<LiveEditPropertyDescriptor> _commonEditableProperties(
-  final List<LiveEditSelection> selections,
-) {
-  if (selections.isEmpty) {
-    return const <LiveEditPropertyDescriptor>[];
-  }
-  final base = selections.first.propertyGroups
-      .where((final property) => property.editable)
-      .toList(growable: false);
-  return base
-      .where(
-        (final property) => selections
-            .skip(1)
-            .every(
-              (final selection) => selection.propertyGroups.any(
-                (final candidate) =>
-                    candidate.id == property.id &&
-                    candidate.kind == property.kind &&
-                    candidate.editable,
-              ),
-            ),
-      )
-      .toList(growable: false);
-}
-
-String _fallbackBackendLabel(final String backendId) => backendId
-    .split(RegExp(r'[_\-\s]+'))
-    .where((final part) => part.isNotEmpty)
-    .map(
-      (final part) =>
-          '${part.substring(0, 1).toUpperCase()}${part.substring(1).toLowerCase()}',
-    )
-    .join(' ');
-
-bool _hasText(final String? value) => value != null && value.trim().isNotEmpty;
-
-double _maxDouble(final double left, final double right) =>
-    left > right ? left : right;
-
-double _minDouble(final double left, final double right) =>
-    left < right ? left : right;
 
 final class LiveEditOrchestrator extends ChangeNotifier {
   LiveEditOrchestrator({
@@ -59,18 +21,30 @@ final class LiveEditOrchestrator extends ChangeNotifier {
         const <LiveEditAgentBackend>[],
     this.workingDirectory,
     this.intentText,
-  }) : _availableBackends = List<LiveEditAgentBackend>.unmodifiable(
-         availableBackends,
-       ),
-       _backendId = _resolveInitialBackendId(
-         availableBackends: availableBackends,
-         backendId: backendId,
-       ) {
+  }) {
     _sessionResource = LiveEditSessionResource();
     _selectionResource = LiveEditSelectionResource();
     _draftResource = LiveEditDraftResource();
     _bubbleResource = LiveEditBubbleResource();
     _panelViewResource = LiveEditPanelViewResource();
+    final backends = List<LiveEditAgentBackend>.unmodifiable(availableBackends);
+    final configByBackend = <String, LiveEditInferenceConfig>{};
+    for (final backend in backends) {
+      final config = backendEffectiveConfig(backend);
+      if (config != null) {
+        configByBackend[backend.id] = config;
+      }
+    }
+    _backendConfigResource = LiveEditBackendConfigResource(
+      LiveEditBackendConfigResourceData(
+        globalBackendId: resolveInitialBackendId(
+          availableBackends: backends,
+          backendId: backendId,
+        ),
+        availableBackends: backends,
+        inferenceConfigByBackendId: configByBackend,
+      ),
+    );
     _sessionService = LiveEditSessionService();
     _applyService = LiveEditApplyService(
       applyDraftDelegate: applyDraftDelegate,
@@ -81,18 +55,22 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       draftResource: _draftResource,
       bubbleResource: _bubbleResource,
       panelViewResource: _panelViewResource,
+      backendConfigResource: _backendConfigResource,
       sessionService: _sessionService,
       applyService: _applyService,
       applyEventSink: _emitEventForBubble,
     );
     _controller = LiveEditController(_context);
     LiveEditOrchestrator.instance = this;
+    LiveEditRuntime.contextAccessor = () => _context;
     void onResourceChange() => notifyListeners();
     _sessionResource.addListener(onResourceChange);
     _selectionResource.addListener(onResourceChange);
     _draftResource.addListener(onResourceChange);
     _bubbleResource.addListener(onResourceChange);
     _panelViewResource.addListener(onResourceChange);
+    _backendConfigResource.addListener(onResourceChange);
+    _bubbleStateService = LiveEditBubbleStateService();
   }
 
   late final LiveEditSessionResource _sessionResource;
@@ -100,12 +78,17 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   late final LiveEditDraftResource _draftResource;
   late final LiveEditBubbleResource _bubbleResource;
   late final LiveEditPanelViewResource _panelViewResource;
+  late final LiveEditBackendConfigResource _backendConfigResource;
+  late final LiveEditBubbleStateService _bubbleStateService;
   late final LiveEditSessionService _sessionService;
   late final LiveEditApplyService _applyService;
   late final LiveEditContext _context;
   late final LiveEditController _controller;
 
   LiveEditController get controller => _controller;
+
+  /// Exposes context for running Commands (e.g. from UI or MCP).
+  LiveEditContext get context => _context;
 
   /// Property-edit plugin: delegate to session service.
   set propertyDescriptorProvider(
@@ -195,12 +178,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   final LiveEditApplyDraftDelegate? applyDraftDelegate;
   final String? workingDirectory;
   final String? intentText;
-  String? _backendId;
-  List<LiveEditAgentBackend> _availableBackends;
-  final Map<String, LiveEditInferenceConfig> _inferenceConfigByBackend =
-      <String, LiveEditInferenceConfig>{};
 
-  bool _disposed = false;
   String? _lastSelectionIdentity;
   bool _toolPresentationArmed = false;
 
@@ -208,7 +186,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       _layerViewStateFor(_presentationLayer).activeBubbleId ??
       _bubbleIdForSelection(activeSelection);
   bool get activeBubbleResolved =>
-      _hasText(activeBubbleId) &&
+      hasText(activeBubbleId) &&
       _bubbleResource.value.resolvedBubbleIds.contains(activeBubbleId);
   List<LiveEditDraftChange> get activeDraftChanges =>
       _activeBubbleState?.draftChanges ?? _draftChangesForActiveSelection();
@@ -222,7 +200,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     final properties = effectiveProperties;
     if (properties.isEmpty) return null;
     final activeId = _layerViewStateFor(_presentationLayer).activePropertyId;
-    if (_hasText(activeId)) {
+    if (hasText(activeId)) {
       for (final property in properties) {
         if (property.id == activeId) {
           return property;
@@ -261,7 +239,8 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       _activeBubbleState?.instructionText ??
       _bubbleResource.value.globalComposerText;
   LiveEditApplyPhase get applyPhase => _bubbleResource.value.applyPhase;
-  List<LiveEditAgentBackend> get availableBackends => _availableBackends;
+  List<LiveEditAgentBackend> get availableBackends =>
+      _backendConfigResource.value.availableBackends;
   Offset get bubbleDragOffset =>
       _activeBubbleState?.bubbleDragOffset ?? Offset.zero;
   double get bubbleHeight => _panelViewResource.value.bubbleHeight;
@@ -280,7 +259,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       !isApplyingBusy && _pendingBubbleStates().length > 1;
   bool get canResolveActiveBubble =>
       bubbleStatusForActiveSelection == LiveEditBubbleStatus.applied &&
-      _hasText(activeBubbleId);
+      hasText(activeBubbleId);
   bool get canSubmitAiPrompt =>
       activeSelection != null &&
       hasAiPrompt &&
@@ -290,14 +269,14 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       needsApproval || hasDraftChanges || canSubmitAiPrompt;
   LiveEditActivityEntry? get currentActivity {
     final bubbleId = activeBubbleId;
-    if (!_hasText(bubbleId)) {
+    if (!hasText(bubbleId)) {
       return null;
     }
     final backendLabel = backendLabelForBubble(bubbleId);
     final now = DateTime.now().toUtc();
     final applyPhase = _bubbleResource.value.applyPhase;
     final lastErr = _bubbleResource.value.lastError;
-    if (applyPhase == LiveEditApplyPhase.failed && _hasText(lastErr)) {
+    if (applyPhase == LiveEditApplyPhase.failed && hasText(lastErr)) {
       return LiveEditActivityEntry(
         step: LiveEditActivityStep.failed,
         label: 'Failed',
@@ -367,12 +346,13 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   }
 
   String? get currentBackendId =>
-      backendIdForBubble(activeBubbleId) ?? _backendId;
+      backendIdForBubble(activeBubbleId) ??
+      _backendConfigResource.value.globalBackendId;
   String get currentBackendLabel =>
       currentBackend?.label.trim().isNotEmpty == true
       ? currentBackend!.label
-      : _hasText(_backendId)
-      ? _fallbackBackendLabel(_backendId!)
+      : hasText(_backendConfigResource.value.globalBackendId)
+      ? fallbackBackendLabel(_backendConfigResource.value.globalBackendId!)
       : 'AI agent';
   bool get currentBackendUsesFreeformModel =>
       currentBackend?.id == 'cursor_agent';
@@ -419,7 +399,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   bool get debugModeEnabled => _panelViewResource.value.debugModeEnabled;
   String? get debugPromptForActiveSelection {
     final prompt = _activeBubbleState?.debugPromptText?.trim();
-    return _hasText(prompt) ? prompt : null;
+    return hasText(prompt) ? prompt : null;
   }
 
   List<LiveEditTimelineEntry> get debugTimelineForActiveSelection =>
@@ -432,7 +412,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   LiveEditEditMode get editMode =>
       _layerViewStateFor(_presentationLayer).editMode;
   List<LiveEditPropertyDescriptor> get effectiveProperties => hasMultiSelection
-      ? _commonEditableProperties(activeMultiSelection)
+      ? commonEditableProperties(activeMultiSelection)
       : activeSelection?.propertyGroups ?? const <LiveEditPropertyDescriptor>[];
 
   List<LiveEditBubbleSummary> get expandedBubbleSummaries {
@@ -458,8 +438,9 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     return false;
   }
 
-  bool get hasAiPrompt => _hasText(aiComposer);
-  bool get hasBackendChoice => _availableBackends.length > 1;
+  bool get hasAiPrompt => hasText(aiComposer);
+  bool get hasBackendChoice =>
+      _backendConfigResource.value.availableBackends.length > 1;
   bool get hasDraftChanges => activeDraftChanges.isNotEmpty;
 
   bool get hasMarqueePreview =>
@@ -501,7 +482,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   bool get needsApproval =>
       _bubbleResource.value.applyPhase == LiveEditApplyPhase.awaitingApproval &&
       _bubbleResource.value.pendingExecutionPlan != null &&
-      _hasText(_bubbleResource.value.pendingProposalId);
+      hasText(_bubbleResource.value.pendingProposalId);
 
   bool get overlayVisible => _sessionResource.value.overlayVisible;
 
@@ -540,7 +521,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     }
     return activeDraftChanges
         .map(_describeDraftChange)
-        .where(_hasText)
+        .where(hasText)
         .join(' | ');
   }
 
@@ -551,8 +532,8 @@ final class LiveEditOrchestrator extends ChangeNotifier {
 
   String? get stagedRequestSummary {
     final sections = <String>[
-      if (_hasText(stagedDraftSummary)) 'Edits: ${stagedDraftSummary!}',
-      if (_hasText(stagedPromptText)) 'Prompt: ${stagedPromptText!}',
+      if (hasText(stagedDraftSummary)) 'Edits: ${stagedDraftSummary!}',
+      if (hasText(stagedPromptText)) 'Prompt: ${stagedPromptText!}',
     ];
     if (sections.isEmpty) {
       return null;
@@ -574,7 +555,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     final bool approve = false,
     final String? message,
   }) async {
-    if (!_hasText(activeBubbleId)) {
+    if (!hasText(activeBubbleId)) {
       _setError('No draft changes to apply.');
       return;
     }
@@ -583,7 +564,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       message: message,
       workingDirectory: workingDirectory,
       intentText: intentText,
-      globalBackendId: _backendId,
+      globalBackendId: _backendConfigResource.value.globalBackendId,
     ).execute(_context);
   }
 
@@ -592,14 +573,14 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     final bool approve = false,
     final String? message,
   }) async {
-    if (!_hasText(bubbleId)) return;
+    if (!hasText(bubbleId)) return;
     await ApplyDraftForBubbleCommand(
       bubbleId: bubbleId,
       approve: approve,
       message: message,
       workingDirectory: workingDirectory,
       intentText: intentText,
-      globalBackendId: _backendId,
+      globalBackendId: _backendConfigResource.value.globalBackendId,
     ).execute(_context);
   }
 
@@ -611,33 +592,33 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     final rightSpace = viewport.width - bounds.right - 16;
     final leftSpace = bounds.left - 16;
     double left;
-    double top = _maxDouble(16, bounds.top);
+    double top = maxDouble(16, bounds.top);
 
     if (rightSpace >= bubbleWidth) {
       left = bounds.right + gap;
     } else if (leftSpace >= bubbleWidth) {
       left = bounds.left - bubbleWidth - gap;
     } else {
-      left = _minDouble(
+      left = minDouble(
         viewport.width - bubbleWidth - 16,
-        _maxDouble(16, bounds.left),
+        maxDouble(16, bounds.left),
       );
-      top = _minDouble(
+      top = minDouble(
         viewport.height - bubbleHeight - 16,
         bounds.bottom + gap,
       );
     }
 
-    top = _minDouble(top, viewport.height - bubbleHeight - 16);
-    return Offset(left, _maxDouble(16, top));
+    top = minDouble(top, viewport.height - bubbleHeight - 16);
+    return Offset(left, maxDouble(16, top));
   }
 
   LiveEditAgentBackend? backendForBubble(final String? bubbleId) {
     final backendId = backendIdForBubble(bubbleId);
-    if (!_hasText(backendId)) {
+    if (!hasText(backendId)) {
       return null;
     }
-    for (final backend in _availableBackends) {
+    for (final backend in _backendConfigResource.value.availableBackends) {
       if (backend.id == backendId) {
         return backend;
       }
@@ -647,14 +628,16 @@ final class LiveEditOrchestrator extends ChangeNotifier {
 
   String? backendIdForBubble(final String? bubbleId) {
     final bubbleBackendId = _bubbleRecordFor(bubbleId)?.backendId?.trim();
-    if (_hasText(bubbleBackendId)) {
+    if (hasText(bubbleBackendId)) {
       return bubbleBackendId;
     }
-    final globalBackendId = _backendId?.trim();
-    if (_hasText(globalBackendId)) {
+    final globalBackendId =
+        _backendConfigResource.value.globalBackendId?.trim();
+    if (hasText(globalBackendId)) {
       return globalBackendId;
     }
-    return _availableBackends.isEmpty ? null : _availableBackends.first.id;
+    final backends = _backendConfigResource.value.availableBackends;
+    return backends.isEmpty ? null : backends.first.id;
   }
 
   String backendLabelForBubble(final String? bubbleId) {
@@ -662,8 +645,8 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     if (backend?.label.trim().isNotEmpty == true) {
       return backend!.label;
     }
-    final backendId = backendIdForBubble(bubbleId);
-    return _hasText(backendId) ? _fallbackBackendLabel(backendId!) : 'AI agent';
+    final bid = backendIdForBubble(bubbleId);
+    return hasText(bid) ? fallbackBackendLabel(bid!) : 'AI agent';
   }
 
   void beginInlineEdit(
@@ -711,7 +694,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       _bubbleRecordFor(bubbleId);
 
   LiveEditBubbleStatus bubbleStatusForBubble(final String? bubbleId) =>
-      _hasText(bubbleId)
+      hasText(bubbleId)
       ? (_bubbleRecordFor(bubbleId)?.status ?? LiveEditBubbleStatus.editing)
       : LiveEditBubbleStatus.editing;
 
@@ -739,7 +722,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
             active: bubble.bubbleId == activeBubbleId,
             displayState: bubble.displayState,
             bounds: selection?.bounds,
-            sourceLabel: !_hasText(source?.file)
+            sourceLabel: !hasText(source?.file)
                 ? null
                 : '${source!.file}${source.line == null ? '' : ':${source.line}'}',
           );
@@ -762,7 +745,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   }
 
   bool canTriggerApplyForBubble(final String? bubbleId) =>
-      _hasText(bubbleId) &&
+      hasText(bubbleId) &&
       (needsApprovalForBubble(bubbleId) ||
           (_bubbleRecordFor(bubbleId)?.hasPendingApply ?? false));
 
@@ -770,8 +753,8 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     required final Offset placement,
     required final Size viewport,
   }) {
-    final maxLeft = _maxDouble(16, viewport.width - bubbleWidth - 16);
-    final maxTop = _maxDouble(16, viewport.height - bubbleHeight - 16);
+    final maxLeft = maxDouble(16, viewport.width - bubbleWidth - 16);
+    final maxTop = maxDouble(16, viewport.height - bubbleHeight - 16);
     return Offset(
       placement.dx.clamp(16, maxLeft),
       placement.dy.clamp(16, maxTop),
@@ -782,8 +765,8 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     required final Offset placement,
     required final Size viewport,
   }) {
-    final maxLeft = _maxDouble(16, viewport.width - panelWidth - 16);
-    final maxTop = _maxDouble(16, viewport.height - panelHeight - 16);
+    final maxLeft = maxDouble(16, viewport.width - panelWidth - 16);
+    final maxTop = maxDouble(16, viewport.height - panelHeight - 16);
     return Offset(
       placement.dx.clamp(16, maxLeft),
       placement.dy.clamp(16, maxTop),
@@ -791,14 +774,12 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   }
 
   void clearHover() {
-    if (!_hasText(activeSessionId)) {
+    if (!hasText(activeSessionId)) {
       return;
     }
     _sessionService.clearHover(sessionId: activeSessionId);
     _context.applySessionUpdate(_sessionService.lastUpdate);
   }
-
-  void collapsePanel() => CollapsePanelCommand().execute(_context);
 
   void commitMarquee() {
     _sessionService.commitMarquee(sessionId: activeSessionId);
@@ -830,8 +811,10 @@ final class LiveEditOrchestrator extends ChangeNotifier {
 
   @override
   void dispose() {
-    _disposed = true;
-    if (instance == this) instance = null;
+    if (instance == this) {
+      instance = null;
+      LiveEditRuntime.contextAccessor = null;
+    }
     super.dispose();
   }
 
@@ -859,7 +842,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
         targetValue: null,
       ),
     );
-    if (_hasText(draft.propertyId)) {
+    if (hasText(draft.propertyId)) {
       return draft.targetValue;
     }
     return property.value;
@@ -867,7 +850,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
 
   String ensureSession() {
     final current = activeSessionId;
-    if (_hasText(current)) {
+    if (hasText(current)) {
       return current!;
     }
     final started = _sessionService.startSession(targetDomain: targetDomain);
@@ -877,7 +860,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
 
   LiveEditExecutionPlan? executionPlanForBubble(final String? bubbleId) {
     final data = _bubbleResource.value;
-    return _hasText(bubbleId) && bubbleId == data.pendingBubbleId
+    return hasText(bubbleId) && bubbleId == data.pendingBubbleId
         ? data.pendingExecutionPlan
         : _bubbleRecordFor(bubbleId)?.executionPlan;
   }
@@ -906,7 +889,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
             active: bubble.bubbleId == activeBubbleId,
             displayState: bubble.displayState,
             bounds: selection?.bounds,
-            sourceLabel: !_hasText(source?.file)
+            sourceLabel: !hasText(source?.file)
                 ? null
                 : '${source!.file}${source.line == null ? '' : ':${source.line}'}',
           );
@@ -921,8 +904,6 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     });
     return summaries;
   }
-
-  void expandPanel() => ExpandPanelCommand().execute(_context);
 
   /// Prefills overlay, panel, and one demo bubble for use in
   /// [live_edit_tooling_ui_kit]. Call after building the host/tool layer.
@@ -1008,7 +989,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
 
   List<LiveEditTimelineEntry> historyForBubble(final String? bubbleId) =>
       List<LiveEditTimelineEntry>.unmodifiable(
-        _hasText(bubbleId)
+        hasText(bubbleId)
             ? (_bubbleRecordFor(bubbleId)?.history ??
                   const <LiveEditTimelineEntry>[])
             : (_activeBubbleState?.history ?? const <LiveEditTimelineEntry>[]),
@@ -1041,12 +1022,12 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     if (backend == null) {
       return null;
     }
-    return _inferenceConfigByBackend[backend.id] ??
-        _backendEffectiveConfig(backend);
+    return _backendConfigResource.value.inferenceConfigByBackendId[backend.id] ??
+        backendEffectiveConfig(backend);
   }
 
   String instructionTextForBubble(final String? bubbleId) {
-    if (_hasText(bubbleId)) {
+    if (hasText(bubbleId)) {
       return _bubbleRecordFor(bubbleId)?.instructionText ?? '';
     }
     return _activeBubbleState?.instructionText ??
@@ -1060,12 +1041,12 @@ final class LiveEditOrchestrator extends ChangeNotifier {
         property.id == data.pendingPropertyId;
   }
 
-  String? lastErrorForBubble(final String? bubbleId) => _hasText(bubbleId)
+  String? lastErrorForBubble(final String? bubbleId) => hasText(bubbleId)
       ? _bubbleRecordFor(bubbleId)?.lastError
       : (_activeBubbleState?.lastError ?? _bubbleResource.value.lastError);
 
   bool needsApprovalForBubble(final String? bubbleId) =>
-      _hasText(bubbleId) &&
+      hasText(bubbleId) &&
       bubbleId == _bubbleResource.value.pendingBubbleId &&
       needsApproval;
 
@@ -1158,7 +1139,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
           selectionByDomain(LiveEditTargetDomain.toolScene) != null;
     }
     final selectedBubbleId = _bubbleIdForSelection(activeSelection);
-    if (_hasText(selectedBubbleId)) {
+    if (hasText(selectedBubbleId)) {
       final next = Set<LiveEditBubbleId>.from(
         _bubbleResource.value.resolvedBubbleIds,
       )..remove(selectedBubbleId);
@@ -1242,53 +1223,26 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   }
 
   void setAvailableBackends(final List<LiveEditAgentBackend> backends) {
-    _availableBackends = List<LiveEditAgentBackend>.unmodifiable(backends);
-    for (final backend in _availableBackends) {
-      final config = _backendEffectiveConfig(backend);
-      if (config != null) {
-        _inferenceConfigByBackend.putIfAbsent(backend.id, () => config);
-      }
-    }
-    _backendId = _resolveInitialBackendId(
-      availableBackends: _availableBackends,
-      backendId: _backendId,
-    );
+    SetAvailableBackendsCommand(
+      availableBackends: backends,
+      initialBackendId: _backendConfigResource.value.globalBackendId,
+    ).execute(_context);
     notifyListeners();
   }
 
   void setBackend(final String backendId) {
     final bubbleId = _bubbleIdForSelection(activeSelection);
-    if (_hasText(bubbleId)) {
+    if (hasText(bubbleId)) {
       setBubbleBackend(bubbleId!, backendId);
       return;
     }
-    final normalized = backendId.trim();
-    if (normalized.isEmpty || normalized == _backendId) {
-      return;
-    }
-    final backend = _availableBackends.firstWhere(
-      (final candidate) => candidate.id == normalized,
-      orElse: () => LiveEditAgentBackend(
-        id: normalized,
-        label: _fallbackBackendLabel(normalized),
-        description: '',
-        available: true,
-      ),
-    );
-    if (!backend.available) {
-      return;
-    }
-    _backendId = normalized;
-    final config = _backendEffectiveConfig(backend);
-    if (config != null) {
-      _inferenceConfigByBackend.putIfAbsent(normalized, () => config);
-    }
+    SetBackendCommand(backendId: backendId).execute(_context);
     _appendDebug(
       message: 'Selected backend changed.',
       details: <String>[
-        'Backend: ${backend.label}',
-        if (_hasText(currentModel)) 'Model: ${currentModel!}',
-        if (_hasText(currentReasoningEffort))
+        if (hasText(currentBackendLabel)) 'Backend: $currentBackendLabel',
+        if (hasText(currentModel)) 'Model: ${currentModel!}',
+        if (hasText(currentReasoningEffort))
           'Reasoning: ${currentReasoningEffort!}',
       ],
       nodeId: activeSelection?.nodeId,
@@ -1299,15 +1253,23 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   void setBubbleBackend(final String bubbleId, final String backendId) {
     final normalized = backendId.trim();
     if (normalized.isEmpty) return;
-    final backend = _availableBackends.firstWhere(
-      (final candidate) => candidate.id == normalized,
-      orElse: () => LiveEditAgentBackend(
-        id: normalized,
-        label: _fallbackBackendLabel(normalized),
-        description: '',
-        available: true,
-      ),
-    );
+    final backends = _backendConfigResource.value.availableBackends;
+    final backend = backends.isEmpty
+        ? LiveEditAgentBackend(
+            id: normalized,
+            label: fallbackBackendLabel(normalized),
+            description: '',
+            available: true,
+          )
+        : backends.firstWhere(
+            (final b) => b.id == normalized,
+            orElse: () => LiveEditAgentBackend(
+              id: normalized,
+              label: fallbackBackendLabel(normalized),
+              description: '',
+              available: true,
+            ),
+          );
     if (!backend.available) return;
     if (_bubbleRecordFor(bubbleId) == null) {
       final record = _ensureBubbleState(
@@ -1327,16 +1289,16 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       bubbleId: bubbleId,
       backendId: normalized,
       inferenceConfig:
-          _inferenceConfigByBackend[normalized] ??
-          _backendEffectiveConfig(backend),
+          _backendConfigResource.value.inferenceConfigByBackendId[normalized] ??
+          backendEffectiveConfig(backend),
     ).execute(_context);
     _appendDebug(
       message: 'Selected backend changed.',
       details: <String>[
         'Backend: ${backend.label}',
-        if (_hasText(inferenceConfigForBubble(bubbleId)?.model))
+        if (hasText(inferenceConfigForBubble(bubbleId)?.model))
           'Model: ${inferenceConfigForBubble(bubbleId)!.model!}',
-        if (_hasText(inferenceConfigForBubble(bubbleId)?.reasoningEffort))
+        if (hasText(inferenceConfigForBubble(bubbleId)?.reasoningEffort))
           'Reasoning: ${inferenceConfigForBubble(bubbleId)!.reasoningEffort!}',
       ],
       nodeId: bubbleId,
@@ -1348,41 +1310,20 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     final String? model,
     final String? reasoningEffort,
   }) {
+    SetBubbleInferenceConfigCommand(
+      bubbleId: bubbleId,
+      model: model,
+      reasoningEffort: reasoningEffort,
+    ).execute(_context);
     final backend = backendForBubble(bubbleId);
-    if (backend == null) {
-      return;
-    }
-    final nextConfig = LiveEditCodexOptions.normalizeConfig(
-      LiveEditInferenceConfig(
-        model: _hasText(model) ? model!.trim() : null,
-        reasoningEffort: backend.id == 'codex_exec' && _hasText(reasoningEffort)
-            ? reasoningEffort!.trim()
-            : null,
-      ),
-    );
-    final bubble = _ensureBubbleState(
-      bubbleId,
-      selection:
-          _bubbleRecordFor(bubbleId)?.primarySelection ?? activeSelection,
-      selectedWidgets: _bubbleRecordFor(bubbleId)?.selectedWidgets,
-    );
-    final records = Map<String, LiveEditBubbleRecord>.from(
-      _bubbleResource.value.bubbleRecordsById,
-    );
-    records[bubbleId] = bubble.copyWith(
-      backendId: backend.id,
-      inferenceConfig: nextConfig,
-    );
-    _bubbleResource.value = _bubbleResource.value.copyWith(
-      bubbleRecordsById: records,
-    );
+    final config = inferenceConfigForBubble(bubbleId);
     _appendDebug(
       message: 'Inference config updated.',
       details: <String>[
-        'Backend: ${backend.label}',
-        'Model: ${nextConfig?.model ?? '(default)'}',
-        if (backend.id == 'codex_exec')
-          'Reasoning: ${nextConfig?.reasoningEffort ?? '(default)'}',
+        if (backend != null) 'Backend: ${backend.label}',
+        'Model: ${config?.model ?? '(default)'}',
+        if (backend?.id == 'codex_exec')
+          'Reasoning: ${config?.reasoningEffort ?? '(default)'}',
       ],
       nodeId: bubbleId,
     );
@@ -1400,7 +1341,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     final String? reasoningEffort,
   }) {
     final bubbleId = _bubbleIdForSelection(activeSelection);
-    if (_hasText(bubbleId)) {
+    if (hasText(bubbleId)) {
       setBubbleInferenceConfig(
         bubbleId: bubbleId!,
         model: model,
@@ -1408,30 +1349,19 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       );
       return;
     }
+    SetInferenceConfigCommand(
+      model: model,
+      reasoningEffort: reasoningEffort,
+    ).execute(_context);
     final backend = currentBackend;
-    if (backend == null) {
-      return;
-    }
-    final nextConfig = LiveEditCodexOptions.normalizeConfig(
-      LiveEditInferenceConfig(
-        model: _hasText(model) ? model!.trim() : null,
-        reasoningEffort: backend.id == 'codex_exec' && _hasText(reasoningEffort)
-            ? reasoningEffort!.trim()
-            : null,
-      ),
-    );
-    if (nextConfig == null) {
-      _inferenceConfigByBackend.remove(backend.id);
-    } else {
-      _inferenceConfigByBackend[backend.id] = nextConfig;
-    }
+    final config = currentInferenceConfig;
     _appendDebug(
       message: 'Inference config updated.',
       details: <String>[
-        'Backend: ${backend.label}',
-        'Model: ${nextConfig?.model ?? '(default)'}',
-        if (backend.id == 'codex_exec')
-          'Reasoning: ${nextConfig?.reasoningEffort ?? '(default)'}',
+        if (backend != null) 'Backend: ${backend.label}',
+        'Model: ${config?.model ?? '(default)'}',
+        if (backend?.id == 'codex_exec')
+          'Reasoning: ${config?.reasoningEffort ?? '(default)'}',
       ],
       nodeId: activeSelection?.nodeId,
     );
@@ -1439,18 +1369,8 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   }
 
   void setOverlayEnabled(final bool enabled) {
-    final sessionId = ensureSession();
-    _sessionService.setOverlay(sessionId: sessionId, enabled: enabled);
-    _context.applySessionUpdate(_sessionService.lastUpdate);
-    if (!enabled) {
-      _toolPresentationArmed = false;
-      SetEditModeCommand(editMode: LiveEditEditMode.inspect).execute(_context);
-      CollapsePanelCommand().execute(_context);
-      _bubbleResource.value = _bubbleResource.value.copyWith(
-        globalComposerText: '',
-        applyPhase: LiveEditApplyPhase.idle,
-      );
-    }
+    SetOverlayEnabledCommand(enabled: enabled).execute(_context);
+    if (!enabled) _toolPresentationArmed = false;
     notifyListeners();
   }
 
@@ -1465,13 +1385,17 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     notifyListeners();
   }
 
+  void expandPanel() => ExpandPanelCommand().execute(_context);
+
+  void collapsePanel() => CollapsePanelCommand().execute(_context);
+
   Future<void> showApprovalSheet(final BuildContext context) async {
     openAiBubble();
     await applyDraft(message: aiComposer);
   }
 
   String? stagedDraftSummaryForBubble(final String? bubbleId) {
-    if (!_hasText(bubbleId)) {
+    if (!hasText(bubbleId)) {
       return stagedDraftSummary;
     }
     final record = _bubbleRecordFor(bubbleId);
@@ -1480,13 +1404,13 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     final selection = record?.primarySelection;
     return changes
         .map((final d) => _describeDraftChangeFor(selection, d))
-        .where(_hasText)
+        .where(hasText)
         .join(' | ');
   }
 
   String? stagedRequestSummaryForBubble(final String? bubbleId) {
     final sections = <String>[
-      if (_hasText(stagedDraftSummaryForBubble(bubbleId)))
+      if (hasText(stagedDraftSummaryForBubble(bubbleId)))
         'Edits: ${stagedDraftSummaryForBubble(bubbleId)!}',
       if (instructionTextForBubble(bubbleId).trim().isNotEmpty)
         'Prompt: ${instructionTextForBubble(bubbleId).trim()}',
@@ -1525,7 +1449,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       UpdateAiComposerCommand(value: value).execute(_context);
 
   void updateBubbleComposer(final String bubbleId, final String value) {
-    if (!_hasText(bubbleId)) return;
+    if (!hasText(bubbleId)) return;
     UpdateBubbleComposerCommand(
       bubbleId: bubbleId,
       value: value,
@@ -1555,7 +1479,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       'editSurface': (surface ?? property.preferredEditSurface).wireName,
       'targetDomain': selection.targetDomain.wireName,
       'selectionNodeId': selection.nodeId,
-      if (_hasText('${property.meta['surfaceId'] ?? ''}'))
+      if (hasText('${property.meta['surfaceId'] ?? ''}'))
         'surfaceId': '${property.meta['surfaceId']}',
     };
     if (hasMultiSelection) {
@@ -1599,7 +1523,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       applyPhase: LiveEditApplyPhase.idle,
     );
     final bubbleId = _bubbleIdForSelection(selection);
-    if (_hasText(bubbleId)) {
+    if (hasText(bubbleId)) {
       final next = Set<LiveEditBubbleId>.from(
         _bubbleResource.value.resolvedBubbleIds,
       )..remove(bubbleId);
@@ -1613,7 +1537,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       instructionText: aiComposer,
       status: LiveEditBubbleStatus.editing,
     );
-    if (editMode == LiveEditEditMode.ai && !_hasText(aiComposer)) {
+    if (editMode == LiveEditEditMode.ai && !hasText(aiComposer)) {
       updateAiComposer(_defaultAiPrompt());
     }
     _appendDebug(
@@ -1621,7 +1545,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       details: <String>[
         'Value: $targetValue',
         'Preview: ${previewMode.wireName}',
-        if (_hasText(selection.source?.file))
+        if (hasText(selection.source?.file))
           'Source: ${selection.source!.file}${selection.source?.line == null ? '' : ':${selection.source!.line}'}',
       ],
       nodeId: bubbleId,
@@ -1655,7 +1579,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       surface: LiveEditEditSurface.aiBubble,
       defaultPrompt: _defaultAiPrompt(),
     ).execute(_context);
-    if (!_hasText(aiComposer)) {
+    if (!hasText(aiComposer)) {
       updateAiComposer(_defaultAiPrompt());
     }
     notifyListeners();
@@ -1671,162 +1595,24 @@ final class LiveEditOrchestrator extends ChangeNotifier {
         : <LiveEditSelection>[selection];
   }
 
-  void _appendActivity({
-    required final LiveEditActivityStep step,
-    required final String label,
-    required final String summary,
-    final List<String> details = const <String>[],
-    final bool inProgress = false,
-    final String? nodeId,
-    final String? errorText,
-  }) {
-    final bubbleId =
-        nodeId ?? activeBubbleId ?? _bubbleResource.value.pendingBubbleId;
-    if (!_hasText(bubbleId) || summary.trim().isEmpty) return;
-    final bubble = _ensureBubbleState(
-      bubbleId!,
-      selection:
-          _bubbleRecordFor(bubbleId)?.primarySelection ?? activeSelection,
-      selectedWidgets: _bubbleRecordFor(bubbleId)?.selectedWidgets,
-    );
-    final updated = bubble.copyWith(
-      activity: <LiveEditActivityEntry>[
-        ...bubble.activity,
-        LiveEditActivityEntry(
-          step: step,
-          label: label.trim(),
-          summary: summary.trim(),
-          details: details
-              .where((final item) => item.trim().isNotEmpty)
-              .toList(),
-          timestamp: DateTime.now().toUtc(),
-          nodeId: bubbleId,
-          inProgress: inProgress,
-          errorText: errorText,
-        ),
-      ],
-    );
-    final records = Map<String, LiveEditBubbleRecord>.from(
-      _bubbleResource.value.bubbleRecordsById,
-    );
-    records[bubbleId] = updated;
-    _bubbleResource.value = _bubbleResource.value.copyWith(
-      bubbleRecordsById: records,
-    );
-  }
-
   void _appendDebug({
     required final String message,
     final List<String> details = const <String>[],
     final String? nodeId,
   }) {
-    final bubbleId =
-        nodeId ?? activeBubbleId ?? _bubbleResource.value.pendingBubbleId;
-    if (!_hasText(bubbleId) || message.trim().isEmpty) return;
-    final bubble = _ensureBubbleState(
-      bubbleId!,
-      selection:
-          _bubbleRecordFor(bubbleId)?.primarySelection ?? activeSelection,
-      selectedWidgets: _bubbleRecordFor(bubbleId)?.selectedWidgets,
-    );
-    final updated = bubble.copyWith(
-      debugTimeline: <LiveEditTimelineEntry>[
-        ...bubble.debugTimeline,
-        LiveEditTimelineEntry(
-          role: 'debug',
-          message: message.trim(),
-          details: details
-              .where((final item) => item.trim().isNotEmpty)
-              .toList(),
-          timestamp: DateTime.now().toUtc(),
-          nodeId: bubbleId,
-        ),
-      ],
-    );
-    final records = Map<String, LiveEditBubbleRecord>.from(
-      _bubbleResource.value.bubbleRecordsById,
-    );
-    records[bubbleId] = updated;
-    _bubbleResource.value = _bubbleResource.value.copyWith(
-      bubbleRecordsById: records,
+    _bubbleStateService.appendDebug(
+      _context,
+      message: message,
+      details: details,
+      nodeId: nodeId ?? activeBubbleId ?? _bubbleResource.value.pendingBubbleId,
     );
   }
 
-  void _appendTimeline({
-    required final String role,
-    required final String message,
-    final List<String> details = const <String>[],
-    final String? nodeId,
-  }) {
-    final bubbleId =
-        nodeId ?? activeBubbleId ?? _bubbleResource.value.pendingBubbleId;
-    if (!_hasText(bubbleId) || message.trim().isEmpty) return;
-    final bubble = _ensureBubbleState(
-      bubbleId!,
-      selection:
-          _bubbleRecordFor(bubbleId)?.primarySelection ?? activeSelection,
-      selectedWidgets: _bubbleRecordFor(bubbleId)?.selectedWidgets,
-    );
-    final updated = bubble.copyWith(
-      history: <LiveEditTimelineEntry>[
-        ...bubble.history,
-        LiveEditTimelineEntry(
-          role: role,
-          message: message.trim(),
-          details: details
-              .where((final item) => item.trim().isNotEmpty)
-              .toList(),
-          timestamp: DateTime.now().toUtc(),
-          nodeId: bubbleId,
-        ),
-      ],
-    );
-    final records = Map<String, LiveEditBubbleRecord>.from(
-      _bubbleResource.value.bubbleRecordsById,
-    );
-    records[bubbleId] = updated;
-    _bubbleResource.value = _bubbleResource.value.copyWith(
-      bubbleRecordsById: records,
-    );
-  }
+  String? _bubbleIdForSelection(final LiveEditSelection? selection) =>
+      _bubbleStateService.bubbleIdForSelection(_context, selection);
 
-  LiveEditInferenceConfig? _backendEffectiveConfig(
-    final LiveEditAgentBackend backend,
-  ) {
-    final effective = backend.meta['effectiveInferenceConfig'];
-    if (effective is Map) {
-      return LiveEditCodexOptions.normalizeConfig(
-        LiveEditInferenceConfig.fromJson(
-          effective.map((final key, final value) => MapEntry('$key', value)),
-        ),
-      );
-    }
-    final defaults = backend.meta['defaultInferenceConfig'];
-    if (defaults is Map) {
-      return LiveEditCodexOptions.normalizeConfig(
-        LiveEditInferenceConfig.fromJson(
-          defaults.map((final key, final value) => MapEntry('$key', value)),
-        ),
-      );
-    }
-    return null;
-  }
-
-  String? _bubbleIdForSelection(final LiveEditSelection? selection) {
-    if (selection == null) {
-      return null;
-    }
-    final targetKey = _targetKeyForSelection(selection);
-    return _hasText(targetKey)
-        ? '${selection.targetDomain.wireName}::$targetKey'
-        : null;
-  }
-
-  LiveEditBubbleRecord? _bubbleRecordFor(final String? bubbleId) {
-    final resolved = _resolveBubbleId(bubbleId);
-    if (!_hasText(resolved)) return null;
-    return _bubbleResource.value.bubbleRecordsById[resolved!];
-  }
+  LiveEditBubbleRecord? _bubbleRecordFor(final String? bubbleId) =>
+      _bubbleStateService.bubbleRecordFor(_context, bubbleId);
 
   void _captureBubbleState({
     required final LiveEditSelection selection,
@@ -1835,40 +1621,23 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     final LiveEditBubbleStatus? status,
     final String? lastError,
   }) {
-    final bubbleId = _bubbleIdForSelection(selection);
-    if (!_hasText(bubbleId)) return;
-    final current = _bubbleRecordFor(bubbleId);
-    final record =
-        _ensureBubbleState(
-          bubbleId!,
-          selection: selection,
-          selectedWidgets: selectedWidgets,
-        ).copyWith(
-          primarySelection: selection,
-          selectedWidgets: selectedWidgets,
-          draftChanges: _draftChangesForActiveSelection(),
-          instructionText: instructionText ?? aiComposer,
-          status: status ?? (current?.status ?? LiveEditBubbleStatus.editing),
-          displayState:
-              current?.displayState ?? LiveEditBubbleDisplayState.expanded,
-          changedFiles: current?.changedFiles ?? const <String>[],
-          backendId: backendIdForBubble(bubbleId),
-          inferenceConfig: inferenceConfigForBubble(bubbleId),
-          executionPlan: current?.executionPlan,
-          lastError: lastError ?? current?.lastError,
-        );
-    final records = Map<String, LiveEditBubbleRecord>.from(
-      _bubbleResource.value.bubbleRecordsById,
-    );
-    records[bubbleId] = record;
-    _bubbleResource.value = _bubbleResource.value.copyWith(
-      bubbleRecordsById: records,
+    _bubbleStateService.captureBubbleState(
+      _context,
+      selection,
+      selectedWidgets,
+      instructionText: instructionText ?? aiComposer,
+      status: status,
+      lastError: lastError,
+      draftChanges: _draftChangesForActiveSelection(),
+      backendId: backendIdForBubble(_bubbleIdForSelection(selection)),
+      inferenceConfig:
+          inferenceConfigForBubble(_bubbleIdForSelection(selection)),
     );
   }
 
   void _captureCurrentBubbleState() {
     final bubbleId = activeBubbleId;
-    if (!_hasText(bubbleId) || activeSelection == null) return;
+    if (!hasText(bubbleId) || activeSelection == null) return;
     _captureBubbleState(
       selection: activeSelection!,
       selectedWidgets: _activeSelectedWidgets(),
@@ -1886,7 +1655,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       buffer.write('Update ${activeMultiSelection.length} selected widgets');
     } else if (selection != null) {
       buffer.write('Update ${selection.widgetType}');
-      if (_hasText(selection.source?.file)) {
+      if (hasText(selection.source?.file)) {
         buffer.write(' in ${selection.source!.file}');
         if (selection.source?.line != null) {
           buffer.write(':${selection.source!.line}');
@@ -1899,7 +1668,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
         buffer.write(' for $draftSummary');
       }
     }
-    if (_hasText(intentText)) {
+    if (hasText(intentText)) {
       if (buffer.isNotEmpty) {
         buffer.write('. ');
       }
@@ -1952,54 +1721,11 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     final String? bubbleId,
     final LiveEditRuntimeEvent event,
   ) {
-    final resolvedBubbleId =
-        bubbleId ?? activeBubbleId ?? _bubbleResource.value.pendingBubbleId;
-    final promptText = event.promptText?.trim();
-    if (_hasText(resolvedBubbleId) && _hasText(promptText)) {
-      final bubble = _ensureBubbleState(
-        resolvedBubbleId!,
-        selection:
-            _bubbleRecordFor(resolvedBubbleId)?.primarySelection ??
-            activeSelection,
-        selectedWidgets: _bubbleRecordFor(resolvedBubbleId)?.selectedWidgets,
-      );
-      final records = Map<String, LiveEditBubbleRecord>.from(
-        _bubbleResource.value.bubbleRecordsById,
-      );
-      records[resolvedBubbleId] = bubble.copyWith(debugPromptText: promptText);
-      _bubbleResource.value = _bubbleResource.value.copyWith(
-        bubbleRecordsById: records,
-      );
-    }
-    if (event.debugOnly || event.kind == LiveEditRuntimeEventKind.debug) {
-      _appendDebug(
-        message: event.message,
-        details: event.details,
-        nodeId: resolvedBubbleId,
-      );
-      return;
-    }
-    if (event.kind == LiveEditRuntimeEventKind.edit) {
-      _appendDebug(
-        message: event.message,
-        details: event.details,
-        nodeId: resolvedBubbleId,
-      );
-      return;
-    }
-    final translated = _translateRuntimeEvent(event.message, resolvedBubbleId);
-    _appendActivity(
-      step: translated.$1,
-      label: translated.$2,
-      summary: translated.$3,
-      details: event.details,
-      inProgress: translated.$4,
-      nodeId: resolvedBubbleId,
-    );
-    _appendDebug(
-      message: event.message,
-      details: event.details,
-      nodeId: resolvedBubbleId,
+    _bubbleStateService.emitEventForBubble(
+      _context,
+      bubbleId,
+      event,
+      getBackendLabel: backendLabelForBubble,
     );
   }
 
@@ -2007,21 +1733,13 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     final String bubbleId, {
     final LiveEditSelection? selection,
     final List<LiveEditSelection>? selectedWidgets,
-  }) {
-    final existing = _bubbleRecordFor(bubbleId);
-    if (existing != null) {
-      return existing;
-    }
-    final bubbleDomain = selection?.targetDomain ?? targetDomain;
-    final targetKey = _targetKeyForSelection(selection) ?? bubbleId;
-    return LiveEditBubbleRecord(
-      bubbleId: bubbleId,
-      targetDomain: bubbleDomain,
-      targetKey: targetKey,
-      primarySelection: selection,
-      selectedWidgets: selectedWidgets ?? const <LiveEditSelection>[],
-    );
-  }
+  }) =>
+      _bubbleStateService.ensureBubbleState(
+        _context,
+        bubbleId,
+        selection: selection,
+        selectedWidgets: selectedWidgets,
+      );
 
   String _failureSummary(final String error, {final String? bubbleId}) {
     final normalized = error.toLowerCase();
@@ -2042,43 +1760,21 @@ final class LiveEditOrchestrator extends ChangeNotifier {
 
   void _finalizeCurrentBubbleOnBlur({final String? nextNodeId}) {
     final bubbleId = activeBubbleId;
-    if (!_hasText(bubbleId) ||
+    if (!hasText(bubbleId) ||
         bubbleId == nextNodeId ||
         activeSelection == null) {
       return;
     }
-    _captureBubbleState(
-      selection: activeSelection!,
+    _bubbleStateService.finalizeCurrentBubbleOnBlur(
+      _context,
+      bubbleId: bubbleId,
+      nextNodeId: nextNodeId,
+      selection: activeSelection,
       selectedWidgets: _activeSelectedWidgets(),
       instructionText: aiComposer,
-      status:
-          _bubbleRecordFor(bubbleId)?.status ?? LiveEditBubbleStatus.editing,
       lastError: _bubbleResource.value.lastError,
+      keepPinned: _shouldKeepBubblePinned(bubbleId),
     );
-    if (_shouldKeepBubblePinned(bubbleId)) {
-      final bubble = _bubbleRecordFor(bubbleId);
-      if (bubble != null && bubbleId != null) {
-        final records = Map<String, LiveEditBubbleRecord>.from(
-          _bubbleResource.value.bubbleRecordsById,
-        );
-        records[bubbleId] = bubble.copyWith(
-          displayState: LiveEditBubbleDisplayState.minimized,
-        );
-        _bubbleResource.value = _bubbleResource.value.copyWith(
-          bubbleRecordsById: records,
-        );
-      }
-      return;
-    }
-    if (bubbleId != null) {
-      final records = Map<String, LiveEditBubbleRecord>.from(
-        _bubbleResource.value.bubbleRecordsById,
-      );
-      records.remove(bubbleId);
-      _bubbleResource.value = _bubbleResource.value.copyWith(
-        bubbleRecordsById: records,
-      );
-    }
   }
 
   LiveEditLayerViewState _layerViewStateFor(
@@ -2094,19 +1790,6 @@ final class LiveEditOrchestrator extends ChangeNotifier {
           !data.resolvedBubbleIds.contains(bubble.bubbleId) &&
           bubble.hasPendingApply,
     );
-  }
-
-  LiveEditBubbleId? _resolveBubbleId(final String? bubbleIdOrNodeId) {
-    final normalized = bubbleIdOrNodeId?.trim();
-    if (!_hasText(normalized)) return null;
-    final records = _bubbleResource.value.bubbleRecordsById;
-    if (records.containsKey(normalized)) return normalized;
-    for (final bubbleId in records.keys) {
-      if (bubbleId.endsWith('::$normalized')) {
-        return bubbleId;
-      }
-    }
-    return normalized;
   }
 
   String _resolveIntentText(final String? message) {
@@ -2126,20 +1809,8 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     return _defaultAiPrompt();
   }
 
-  void _restoreBubbleState(final String? bubbleId) {
-    if (!_hasText(bubbleId)) return;
-    final bubble = _bubbleRecordFor(bubbleId);
-    if (bubble == null) return;
-    final records = Map<String, LiveEditBubbleRecord>.from(
-      _bubbleResource.value.bubbleRecordsById,
-    );
-    records[bubbleId!] = bubble.copyWith(
-      displayState: LiveEditBubbleDisplayState.expanded,
-    );
-    _bubbleResource.value = _bubbleResource.value.copyWith(
-      bubbleRecordsById: records,
-    );
-  }
+  void _restoreBubbleState(final String? bubbleId) =>
+      _bubbleStateService.restoreBubbleState(_context, bubbleId);
 
   void _setError(final String error) {
     _setErrorForBubble(
@@ -2149,45 +1820,17 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   }
 
   void _setErrorForBubble(final String? bubbleId, final String error) {
-    var data = _bubbleResource.value.copyWith(
-      applyPhase: LiveEditApplyPhase.failed,
-      lastError: error,
+    _bubbleStateService.setErrorForBubble(
+      _context,
+      bubbleId,
+      error,
+      getBackendLabel: backendLabelForBubble,
     );
-    if (_hasText(bubbleId)) {
-      final activeBubble = data.bubbleRecordsById[bubbleId];
-      if (activeBubble != null) {
-        final records = Map<String, LiveEditBubbleRecord>.from(
-          data.bubbleRecordsById,
-        );
-        records[bubbleId!] = activeBubble.copyWith(
-          status: LiveEditBubbleStatus.failed,
-          displayState: LiveEditBubbleDisplayState.expanded,
-          lastError: error,
-        );
-        data = data.copyWith(bubbleRecordsById: records);
-      }
-    }
-    _bubbleResource.value = data;
-    final nodeId = bubbleId ?? activeBubbleId ?? data.pendingBubbleId;
-    _appendActivity(
-      step: LiveEditActivityStep.failed,
-      label: 'Failed',
-      summary: _failureSummary(error, bubbleId: bubbleId),
-      details: <String>[error],
-      nodeId: nodeId,
-      errorText: error,
-    );
-    _appendDebug(
-      message: 'Live-edit request failed.',
-      details: <String>[error],
-      nodeId: nodeId,
-    );
-    _appendTimeline(role: 'assistant', message: error, nodeId: nodeId);
     notifyListeners();
   }
 
   bool _shouldKeepBubblePinned(final String? nodeId) {
-    if (!_hasText(nodeId)) {
+    if (!hasText(nodeId)) {
       return false;
     }
     final bubble = _bubbleRecordFor(nodeId);
@@ -2196,10 +1839,10 @@ final class LiveEditOrchestrator extends ChangeNotifier {
           (final draft) => '${draft.targetValue}'.trim().isNotEmpty,
         ) ??
         false;
-    final hasInstruction = _hasText(bubble?.instructionText);
+    final hasInstruction = hasText(bubble?.instructionText);
     final primaryNodeId = bubble?.primarySelection?.nodeId;
     final hasMeaningfulNode =
-        _hasText(primaryNodeId) &&
+        hasText(primaryNodeId) &&
         _sessionService.isMeaningfulNode(
           primaryNodeId!,
           sessionId: activeSessionId,
@@ -2222,7 +1865,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     if (currentBubbleId != _lastSelectionIdentity) {
       _lastSelectionIdentity = currentBubbleId;
       final domain = _presentationLayer;
-      final bubble = _hasText(currentBubbleId)
+      final bubble = hasText(currentBubbleId)
           ? _ensureBubbleState(
               currentBubbleId!,
               selection: selection,
@@ -2273,7 +1916,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       _panelViewResource.value = _panelViewResource.value.copyWith(
         editMode: editMode,
       );
-      if (_hasText(currentBubbleId) && selection != null) {
+      if (hasText(currentBubbleId) && selection != null) {
         _captureBubbleState(
           selection: selection,
           selectedWidgets: _activeSelectedWidgets(),
@@ -2284,7 +1927,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       }
       if (selection != null &&
           activeProperty?.requiresAgentForPersistence == true &&
-          !_hasText(bubble?.instructionText)) {
+          !hasText(bubble?.instructionText)) {
         updateAiComposer(_defaultAiPrompt());
       }
       return;
@@ -2306,130 +1949,4 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     }
   }
 
-  String? _targetKeyForSelection(final LiveEditSelection? selection) {
-    if (selection == null) {
-      return null;
-    }
-    if (selection.selectionMode == LiveEditSelectionMode.multi &&
-        selection.selectedNodeIds.length > 1) {
-      final ordered =
-          selection.selectedNodeIds.where(_hasText).toList(growable: false)
-            ..sort();
-      if (ordered.isNotEmpty) {
-        return 'area:${ordered.join('|')}';
-      }
-    }
-    final nodeId = selection.nodeId.trim();
-    return _hasText(nodeId) ? nodeId : null;
-  }
-
-  (LiveEditActivityStep, String, String, bool) _translateRuntimeEvent(
-    final String message,
-    final String? bubbleId,
-  ) {
-    final backendLabel = backendLabelForBubble(bubbleId);
-    final normalized = message.toLowerCase();
-    if (normalized.contains('preparing') && normalized.contains('workspace')) {
-      return (
-        LiveEditActivityStep.readingSourceContext,
-        'Reading source context',
-        'Preparing the workspace and source context.',
-        true,
-      );
-    }
-    if (normalized.contains('source context')) {
-      return (
-        LiveEditActivityStep.readingSourceContext,
-        'Reading source context',
-        'Reading source context for the selected node.',
-        true,
-      );
-    }
-    if (normalized.contains('sending') ||
-        normalized.contains('resolve') ||
-        normalized.contains('generating proposal') ||
-        normalized.contains('direct apply') ||
-        normalized.contains('stream started') ||
-        normalized.contains('streamed output') ||
-        normalized.contains('reported progress') ||
-        normalized.contains('running codex exec') ||
-        normalized.contains('starting codex exec') ||
-        normalized.contains('running cursor-agent') ||
-        normalized.contains('starting cursor-agent')) {
-      return (
-        LiveEditActivityStep.generatingProposal,
-        'Applying with agent',
-        '$backendLabel is implementing this bubble change.',
-        true,
-      );
-    }
-    if (normalized.contains('stream completed')) {
-      return (
-        LiveEditActivityStep.generatingProposal,
-        'Applying with agent',
-        '$backendLabel finished streaming the agent response.',
-        true,
-      );
-    }
-    if ((normalized.contains('proposal') ||
-            normalized.contains('execution result') ||
-            normalized.contains('applied this bubble')) &&
-        (normalized.contains('returned') ||
-            normalized.contains('produced') ||
-            normalized.contains('received'))) {
-      return (
-        LiveEditActivityStep.applyingChanges,
-        'Applying',
-        '$backendLabel is writing the requested source changes.',
-        true,
-      );
-    }
-    if (normalized.contains('applying')) {
-      return (
-        LiveEditActivityStep.applyingChanges,
-        'Applying',
-        'Applying source changes for this node.',
-        true,
-      );
-    }
-    if (normalized.contains('finished') ||
-        normalized.contains('applied the patch') ||
-        normalized.contains('finished writing') ||
-        normalized.contains('source changes applied')) {
-      return (
-        LiveEditActivityStep.finished,
-        'Applied',
-        '$backendLabel finished writing the source changes.',
-        false,
-      );
-    }
-    return (
-      LiveEditActivityStep.preparingRequest,
-      'Preparing request',
-      message.trim(),
-      true,
-    );
-  }
-
-  static String? _resolveInitialBackendId({
-    required final List<LiveEditAgentBackend> availableBackends,
-    required final String? backendId,
-  }) {
-    final requested = backendId?.trim();
-    if (requested != null && requested.isNotEmpty) {
-      if (availableBackends.isEmpty ||
-          availableBackends.any((final backend) => backend.id == requested)) {
-        return requested;
-      }
-    }
-    if (availableBackends.isEmpty) {
-      return requested;
-    }
-    return availableBackends
-        .firstWhere(
-          (final backend) => backend.isDefault,
-          orElse: () => availableBackends.first,
-        )
-        .id;
-  }
 }
