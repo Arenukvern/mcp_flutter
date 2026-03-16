@@ -16,6 +16,7 @@ import 'package:xsoulspace_inference_core/xsoulspace_inference_core.dart';
 import 'live_edit_host.dart';
 import 'live_edit_orchestrator.dart';
 import 'live_edit_toolkit.dart';
+import 'live_edit_types.dart';
 
 const _liveEditTestModeFromDefine = bool.fromEnvironment('LIVE_EDIT_TEST_MODE');
 const _liveEditBackendIdFromDefine = String.fromEnvironment(

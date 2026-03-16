@@ -5,8 +5,9 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 
-import 'live_edit_controller.dart';
+import 'live_edit_controller_adapter.dart';
 import 'live_edit_orchestrator.dart';
+import 'live_edit_types.dart';
 import 'live_edit_overlay_theme.dart';
 
 double mathMax(final double left, final double right) =>
@@ -211,9 +212,8 @@ String _sourceLocationLabel(
 /// does not show direct property editing; when set (e.g. by
 /// [LiveEditPropertyEditPlugin.buildPropertyPanelSection]), the returned
 /// widget is shown under the "Properties" section title.
-typedef LiveEditPropertyPanelSectionBuilder = Widget Function(
-  LiveEditOrchestrator orchestrator,
-);
+typedef LiveEditPropertyPanelSectionBuilder =
+    Widget Function(LiveEditOrchestrator orchestrator);
 
 class FlutterLiveEditHost extends StatefulWidget {
   const FlutterLiveEditHost({

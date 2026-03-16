@@ -1,15 +1,18 @@
-// ignore_for_file: invalid_use_of_protected_member
+// ignore_for_file: invalid_use_of_protected_member, unused_element
 
 import 'dart:convert';
 import 'dart:ui' as ui;
 
-import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
 
-import 'live_edit_overlay_theme.dart';
+import '../live_edit_overlay_theme.dart';
+import '../resources/live_edit_draft.src.data.dart';
+import '../resources/live_edit_selection.src.data.dart';
+import '../resources/live_edit_session.src.data.dart';
+import 'live_edit_session_update.dart';
 
 bool _hasText(final String? value) => value != null && value.trim().isNotEmpty;
 
@@ -300,6 +303,10 @@ _SelectionCandidateMetadata _selectionMetadataForElement(
   final Element element, {
   final String? cachedNodeId,
   final Map<String, Object?>? cachedDetailsTree,
+  final List<LiveEditPropertyDescriptor> Function(
+    Element element,
+    LiveEditTargetDomain targetDomain,
+  )? propertyDescriptorProvider,
 }) {
   final nodeId =
       cachedNodeId ??
@@ -318,6 +325,7 @@ _SelectionCandidateMetadata _selectionMetadataForElement(
     session,
     element,
     targetDomain: session.targetDomain,
+    propertyDescriptorProvider: propertyDescriptorProvider,
   );
   final createdByLocalProject = detailsTree['createdByLocalProject'] == true;
   final hasProjectPathSignal = _looksProjectOwnedPath(source?.file);
@@ -454,9 +462,13 @@ List<LiveEditPropertyDescriptor> _selectionPropertyGroupsForElement(
   final _LiveEditSessionState session,
   final Element element, {
   required final LiveEditTargetDomain targetDomain,
+  final List<LiveEditPropertyDescriptor> Function(
+    Element element,
+    LiveEditTargetDomain targetDomain,
+  )? propertyDescriptorProvider,
 }) {
   if (targetDomain != LiveEditTargetDomain.toolScene) {
-    final provider = LiveEditController.instance._propertyDescriptorProvider;
+    final provider = propertyDescriptorProvider;
     if (provider != null) {
       return provider(element, targetDomain);
     }
@@ -464,7 +476,7 @@ List<LiveEditPropertyDescriptor> _selectionPropertyGroupsForElement(
   }
   final surfaceId = _toolSurfaceIdForElement(element);
   if (!_hasText(surfaceId)) {
-    final provider = LiveEditController.instance._propertyDescriptorProvider;
+    final provider = propertyDescriptorProvider;
     if (provider != null) {
       return provider(element, targetDomain);
     }
@@ -476,7 +488,7 @@ List<LiveEditPropertyDescriptor> _selectionPropertyGroupsForElement(
     sessionId: session.sessionId,
   );
   if (surfaceSelection == null) {
-    final provider = LiveEditController.instance._propertyDescriptorProvider;
+    final provider = propertyDescriptorProvider;
     if (provider != null) {
       return provider(element, targetDomain);
     }
@@ -505,6 +517,10 @@ int _preferredSelectionIndex({
   required final _LiveEditSessionState session,
   required final List<_ElementHit> hits,
   required final LiveEditSelectionPolicy selectionPolicy,
+  final List<LiveEditPropertyDescriptor> Function(
+    Element element,
+    LiveEditTargetDomain targetDomain,
+  )? propertyDescriptorProvider,
 }) {
   if (hits.isEmpty || selectionPolicy == LiveEditSelectionPolicy.deepest) {
     return 0;
@@ -514,7 +530,11 @@ int _preferredSelectionIndex({
   var bestRank = -1;
   for (var index = 0; index < hits.length; index += 1) {
     final hit = hits[index];
-    final metadata = _selectionMetadataForElement(session, hit.element);
+    final metadata = _selectionMetadataForElement(
+      session,
+      hit.element,
+      propertyDescriptorProvider: propertyDescriptorProvider,
+    );
     final widgetType = hit.element.widget.runtimeType.toString();
     final weakStructuralCandidate = _structuralWidgetTypes.contains(widgetType);
     var rank = 0;
@@ -887,6 +907,10 @@ LiveEditSelection _buildLightweightSelectionFromCache({
   required final _LiveEditSessionState session,
   required final _MarqueeCandidateCacheEntry entry,
   final bool includePropertyGroups = false,
+  final List<LiveEditPropertyDescriptor> Function(
+    Element element,
+    LiveEditTargetDomain targetDomain,
+  )? propertyDescriptorProvider,
 }) {
   final tracked = session.trackedSelections[entry.nodeId]?.selection;
   final propertyGroups =
@@ -896,6 +920,7 @@ LiveEditSelection _buildLightweightSelectionFromCache({
               session,
               entry.element,
               targetDomain: session.targetDomain,
+              propertyDescriptorProvider: propertyDescriptorProvider,
             )
           : const <LiveEditPropertyDescriptor>[]);
   return LiveEditSelection(
@@ -941,25 +966,24 @@ int? _viewIdForRenderObject(final RenderObject? renderObject) {
   return null;
 }
 
-final class LiveEditController extends ChangeNotifier {
-  LiveEditController._();
-
-  static final LiveEditController instance = LiveEditController._();
+final class LiveEditSessionService {
+  LiveEditSessionService({
+    final List<LiveEditPropertyDescriptor> Function(
+      Element element,
+      LiveEditTargetDomain targetDomain,
+    )? propertyDescriptorProvider,
+  }) : _propertyDescriptorProvider = propertyDescriptorProvider;
 
   final Map<String, _LiveEditSessionState> _sessions =
       <String, _LiveEditSessionState>{};
   String? _activeSessionId;
+  LiveEditSessionUpdate? _lastUpdate;
 
-  /// Set by [LiveEditPropertyEditPlugin] when the direct property edit feature
-  /// is used. When null, app-scene selections get no property groups.
   List<LiveEditPropertyDescriptor> Function(
     Element element,
     LiveEditTargetDomain targetDomain,
-  )?
-  _propertyDescriptorProvider;
+  )? _propertyDescriptorProvider;
 
-  /// When non-null, used for app-scene property descriptors. Set by the
-  /// direct property edit plugin; when null, app-scene gets no property groups.
   List<LiveEditPropertyDescriptor> Function(
     Element element,
     LiveEditTargetDomain targetDomain,
@@ -973,6 +997,46 @@ final class LiveEditController extends ChangeNotifier {
     value,
   ) {
     _propertyDescriptorProvider = value;
+  }
+
+  LiveEditSessionUpdate? get lastUpdate => _lastUpdate;
+
+  LiveEditSessionUpdate? _buildLastUpdate() {
+    final session = _activeSessionOrNull();
+    if (session == null) return null;
+    final sessionData = LiveEditSessionResourceData(
+      activeSessionId: _activeSessionId,
+      overlayVisible: session.overlayEnabled,
+      targetDomain: session.targetDomain,
+      sessionIds: _sessions.keys.toList(growable: false),
+    );
+    final layer = session.currentLayer;
+    final selectionLayer = (
+      session.sessionId,
+      session.targetDomain,
+      LiveEditSelectionLayerData(
+        selection: layer.selection,
+        hoverSelection: layer.hoverSelection,
+        marqueeRect: layer.marqueeRect,
+        marqueeSelections: List<LiveEditSelection>.from(layer.marqueeSelections),
+        multiSelections: List<LiveEditSelection>.from(layer.multiSelections),
+        selectionCandidates:
+            List<LiveEditSelectionCandidate>.from(layer.selectionCandidates),
+      ),
+    );
+    final draftLayer = (
+      session.sessionId,
+      session.targetDomain,
+      LiveEditDraftLayerData(
+        draftChanges: List<LiveEditDraftChange>.from(layer.draftChanges),
+        meaningfulNodeIds: Set<String>.from(layer.meaningfulNodeIds),
+      ),
+    );
+    return LiveEditSessionUpdate(
+      sessionData: sessionData,
+      selectionLayer: selectionLayer,
+      draftLayer: draftLayer,
+    );
   }
 
   _LiveEditLayerState _activeLayerOrNull() {
@@ -1095,7 +1159,7 @@ final class LiveEditController extends ChangeNotifier {
     layer.draftChanges.clear();
     layer.meaningfulNodeIds.remove(layer.selection?.nodeId);
     session.lastTouchedAt = DateTime.now().toUtc();
-    notifyListeners();
+    _lastUpdate = _buildLastUpdate();
     return <String, Object?>{
       'sessionId': session.sessionId,
       'discarded': true,
@@ -1119,7 +1183,7 @@ final class LiveEditController extends ChangeNotifier {
     );
     layer.meaningfulNodeIds.removeAll(normalized);
     session.lastTouchedAt = DateTime.now().toUtc();
-    notifyListeners();
+    _lastUpdate = _buildLastUpdate();
     return <String, Object?>{
       'sessionId': session.sessionId,
       'discarded': true,
@@ -1135,7 +1199,7 @@ final class LiveEditController extends ChangeNotifier {
     layer.draftChanges.clear();
     layer.originalExactValues.clear();
     session.lastTouchedAt = DateTime.now().toUtc();
-    notifyListeners();
+    _lastUpdate = _buildLastUpdate();
     return <String, Object?>{
       'sessionId': session.sessionId,
       'committed': true,
@@ -1163,7 +1227,7 @@ final class LiveEditController extends ChangeNotifier {
     });
     layer.meaningfulNodeIds.removeAll(normalized);
     session.lastTouchedAt = DateTime.now().toUtc();
-    notifyListeners();
+    _lastUpdate = _buildLastUpdate();
     return <String, Object?>{
       'sessionId': session.sessionId,
       'committed': true,
@@ -1215,7 +1279,7 @@ final class LiveEditController extends ChangeNotifier {
     if (_activeSessionId == session.sessionId) {
       _activeSessionId = _sessions.keys.isEmpty ? null : _sessions.keys.first;
     }
-    notifyListeners();
+    _lastUpdate = _buildLastUpdate();
     return <String, Object?>{
       'sessionId': session.sessionId,
       'ended': removed != null,
@@ -1364,7 +1428,7 @@ final class LiveEditController extends ChangeNotifier {
     session.hoverViewId = viewId;
     session.lastTouchedAt = DateTime.now().toUtc();
     if (!hoverUnchanged || !reuseHover) {
-      notifyListeners();
+      _lastUpdate = _buildLastUpdate();
     }
     return <String, Object?>{
       'sessionId': session.sessionId,
@@ -1387,7 +1451,7 @@ final class LiveEditController extends ChangeNotifier {
     session.hoverRootElement = null;
     session.hoverViewId = null;
     if (hadHover) {
-      notifyListeners();
+      _lastUpdate = _buildLastUpdate();
     }
     return <String, Object?>{'sessionId': session.sessionId, 'cleared': true};
   }
@@ -1449,6 +1513,7 @@ final class LiveEditController extends ChangeNotifier {
             session: session,
             hits: hits,
             selectionPolicy: selectionPolicy,
+            propertyDescriptorProvider: _propertyDescriptorProvider,
           );
     final selection = _setSelection(
       session: session,
@@ -1457,7 +1522,7 @@ final class LiveEditController extends ChangeNotifier {
     );
     session.multiSelections = <LiveEditSelection>[selection];
     _syncSelectionCandidates(session);
-    notifyListeners();
+    _lastUpdate = _buildLastUpdate();
     return <String, Object?>{
       'sessionId': session.sessionId,
       'targetDomain': resolvedDomain.wireName,
@@ -1480,7 +1545,7 @@ final class LiveEditController extends ChangeNotifier {
     session.marqueeRect = Rect.fromLTWH(x.toDouble(), y.toDouble(), 0, 0);
     session.marqueeHits = const <_ElementHit>[];
     session.marqueeSelections = const <LiveEditSelection>[];
-    notifyListeners();
+    _lastUpdate = _buildLastUpdate();
     return <String, Object?>{'sessionId': session.sessionId, 'started': true};
   }
 
@@ -1519,7 +1584,7 @@ final class LiveEditController extends ChangeNotifier {
     session.marqueeHits = ranked;
     session.marqueeSelections = previewSelections;
     if (shouldNotify) {
-      notifyListeners();
+      _lastUpdate = _buildLastUpdate();
     }
     return <String, Object?>{
       'sessionId': session.sessionId,
@@ -1538,7 +1603,7 @@ final class LiveEditController extends ChangeNotifier {
     session.marqueeStart = null;
     session.marqueeHits = const <_ElementHit>[];
     if (previewSelections.isEmpty || hits.isEmpty) {
-      notifyListeners();
+      _lastUpdate = _buildLastUpdate();
       return <String, Object?>{
         'sessionId': session.sessionId,
         'selected': false,
@@ -1565,7 +1630,7 @@ final class LiveEditController extends ChangeNotifier {
         );
         session.multiSelections = <LiveEditSelection>[committed];
         _syncSelectionCandidates(session);
-        notifyListeners();
+        _lastUpdate = _buildLastUpdate();
         return <String, Object?>{
           'sessionId': session.sessionId,
           'selected': true,
@@ -1636,7 +1701,7 @@ final class LiveEditController extends ChangeNotifier {
       session.lastTouchedAt = DateTime.now().toUtc();
     }
     _syncSelectionCandidates(session);
-    notifyListeners();
+    _lastUpdate = _buildLastUpdate();
     return <String, Object?>{
       'sessionId': session.sessionId,
       'selected': true,
@@ -1652,7 +1717,7 @@ final class LiveEditController extends ChangeNotifier {
     session.marqueeStart = null;
     session.marqueeHits = const <_ElementHit>[];
     session.marqueeSelections = const <LiveEditSelection>[];
-    notifyListeners();
+    _lastUpdate = _buildLastUpdate();
     return <String, Object?>{'sessionId': session.sessionId, 'cancelled': true};
   }
 
@@ -1715,7 +1780,7 @@ final class LiveEditController extends ChangeNotifier {
       layer.multiSelections = <LiveEditSelection>[selection];
     }
     _syncSelectionCandidates(session, requested: targetDomain);
-    notifyListeners();
+    _lastUpdate = _buildLastUpdate();
     return <String, Object?>{
       'sessionId': session.sessionId,
       'selected': true,
@@ -1749,7 +1814,7 @@ final class LiveEditController extends ChangeNotifier {
           layer.multiSelections = <LiveEditSelection>[selection];
         }
         _syncSelectionCandidates(session, requested: targetDomain);
-        notifyListeners();
+        _lastUpdate = _buildLastUpdate();
         return <String, Object?>{
           'sessionId': session.sessionId,
           'selected': true,
@@ -1778,7 +1843,7 @@ final class LiveEditController extends ChangeNotifier {
           active: true,
         ),
       ];
-      notifyListeners();
+      _lastUpdate = _buildLastUpdate();
       return <String, Object?>{
         'sessionId': session.sessionId,
         'selected': true,
@@ -1813,7 +1878,7 @@ final class LiveEditController extends ChangeNotifier {
       layer.multiSelections = <LiveEditSelection>[selection];
     }
     _syncSelectionCandidates(session, requested: targetDomain);
-    notifyListeners();
+    _lastUpdate = _buildLastUpdate();
     return <String, Object?>{
       'sessionId': session.sessionId,
       'selected': true,
@@ -1875,7 +1940,7 @@ final class LiveEditController extends ChangeNotifier {
     final session = _requireSession(sessionId);
     session.overlayEnabled = enabled;
     session.lastTouchedAt = DateTime.now().toUtc();
-    notifyListeners();
+    _lastUpdate = _buildLastUpdate();
     return <String, Object?>{
       'sessionId': session.sessionId,
       'overlayEnabled': session.overlayEnabled,
@@ -1901,7 +1966,7 @@ final class LiveEditController extends ChangeNotifier {
     );
     session.targetDomain = targetDomain;
     session.lastTouchedAt = DateTime.now().toUtc();
-    notifyListeners();
+    _lastUpdate = _buildLastUpdate();
     return <String, Object?>{
       'sessionId': sessionId,
       'active': true,
@@ -1925,7 +1990,7 @@ final class LiveEditController extends ChangeNotifier {
       session.hoverHitCandidates = const <_ElementHit>[];
     }
     session.lastTouchedAt = DateTime.now().toUtc();
-    notifyListeners();
+    _lastUpdate = _buildLastUpdate();
     return <String, Object?>{
       'sessionId': session.sessionId,
       'targetDomain': targetDomain.wireName,
@@ -2017,6 +2082,7 @@ final class LiveEditController extends ChangeNotifier {
           session: session,
           entry: entry,
           includePropertyGroups: includePropertyGroups,
+          propertyDescriptorProvider: _propertyDescriptorProvider,
         ),
       )
       .fold(<String, LiveEditSelection>{}, (final map, final selection) {
@@ -2162,7 +2228,7 @@ final class LiveEditController extends ChangeNotifier {
           ? const <LiveEditSelection>[]
           : <LiveEditSelection>[selection];
       session.lastTouchedAt = DateTime.now().toUtc();
-      notifyListeners();
+      _lastUpdate = _buildLastUpdate();
       return <String, Object?>{
         'sessionId': session.sessionId,
         'targetDomain': targetDomain.wireName,
@@ -2206,7 +2272,7 @@ final class LiveEditController extends ChangeNotifier {
       session.meaningfulNodeIds.add(change.nodeId);
     }
     session.lastTouchedAt = DateTime.now().toUtc();
-    notifyListeners();
+    _lastUpdate = _buildLastUpdate();
     if (appliedExact) {
       WidgetsBinding.instance.addPostFrameCallback((final _) {
         final currentSession = _sessions[session.sessionId];
@@ -2560,6 +2626,7 @@ final class LiveEditController extends ChangeNotifier {
       session,
       element,
       targetDomain: resolvedDomain,
+      propertyDescriptorProvider: _propertyDescriptorProvider,
     );
     final selection = LiveEditSelection(
       sessionId: session.sessionId,
@@ -2708,6 +2775,7 @@ final class LiveEditController extends ChangeNotifier {
             hit.element,
             cachedNodeId: nodeId,
             cachedDetailsTree: detailsTree,
+            propertyDescriptorProvider: _propertyDescriptorProvider,
           );
           final source = _selectionSourceForElement(
             session,

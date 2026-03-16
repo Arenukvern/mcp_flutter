@@ -2,8 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 import 'package:path/path.dart' as p;
 
-import 'live_edit_controller.dart';
+import 'commands/commands.dart';
+import 'live_edit_context.dart';
+import 'live_edit_controller_adapter.dart';
 import 'live_edit_overlay_theme.dart';
+import 'live_edit_types.dart';
+import 'resources/resources.dart';
+import 'services/services.dart';
 
 const Object _unsetValue = Object();
 List<LiveEditPropertyDescriptor> _commonEditableProperties(
@@ -48,290 +53,6 @@ double _maxDouble(final double left, final double right) =>
 double _minDouble(final double left, final double right) =>
     left < right ? left : right;
 
-typedef LiveEditApplyDraftDelegate =
-    Future<Map<String, Object?>> Function(LiveEditApplyDraftRequest request);
-
-typedef LiveEditBubbleId = String;
-
-typedef LiveEditRuntimeEventSink = void Function(LiveEditRuntimeEvent event);
-
-final class LiveEditActivityEntry {
-  const LiveEditActivityEntry({
-    required this.step,
-    required this.label,
-    required this.summary,
-    required this.timestamp,
-    this.nodeId,
-    this.details = const <String>[],
-    this.inProgress = false,
-    this.errorText,
-  });
-
-  final LiveEditActivityStep step;
-  final String label;
-  final String summary;
-  final DateTime timestamp;
-  final String? nodeId;
-  final List<String> details;
-  final bool inProgress;
-  final String? errorText;
-}
-
-enum LiveEditActivityStep {
-  promptReady,
-  draftReady,
-  preparingRequest,
-  readingSourceContext,
-  generatingProposal,
-  waitingForApproval,
-  applyingChanges,
-  finished,
-  failed,
-}
-
-final class LiveEditApplyDraftRequest {
-  const LiveEditApplyDraftRequest({
-    required this.sessionId,
-    this.draftChanges = const <LiveEditDraftChange>[],
-    this.bubbleId,
-    this.instructionText,
-    this.primarySelection,
-    this.selectedWidgets = const <LiveEditSelection>[],
-    this.sourceTargets = const <LiveEditSourceTarget>[],
-    this.stagedPropertyChanges = const <LiveEditDraftChange>[],
-    this.applyMode = LiveEditApplyMode.singleBubble,
-    this.selection,
-    this.proposalId,
-    this.backendId,
-    this.inferenceConfig,
-    this.workingDirectory,
-    this.intentText,
-    this.approve = false,
-    this.onEvent,
-  });
-
-  final String sessionId;
-  final List<LiveEditDraftChange> draftChanges;
-  final String? bubbleId;
-  final String? instructionText;
-  final LiveEditSelection? primarySelection;
-  final List<LiveEditSelection> selectedWidgets;
-  final List<LiveEditSourceTarget> sourceTargets;
-  final List<LiveEditDraftChange> stagedPropertyChanges;
-  final LiveEditApplyMode applyMode;
-  final LiveEditSelection? selection;
-  final String? proposalId;
-  final String? backendId;
-  final LiveEditInferenceConfig? inferenceConfig;
-  final String? workingDirectory;
-  final String? intentText;
-  final bool approve;
-  final LiveEditRuntimeEventSink? onEvent;
-
-  String? get effectiveBubbleId =>
-      bubbleId?.trim().isEmpty == true ? null : bubbleId?.trim();
-
-  String? get effectiveInstructionText =>
-      instructionText?.trim().isNotEmpty == true
-      ? instructionText!.trim()
-      : intentText?.trim().isNotEmpty == true
-      ? intentText!.trim()
-      : null;
-
-  LiveEditSelection? get effectivePrimarySelection =>
-      primarySelection ?? selection;
-
-  List<LiveEditSelection> get effectiveSelectedWidgets {
-    if (selectedWidgets.isNotEmpty) {
-      return selectedWidgets;
-    }
-    final primary = effectivePrimarySelection;
-    return primary == null
-        ? const <LiveEditSelection>[]
-        : <LiveEditSelection>[primary];
-  }
-
-  List<LiveEditDraftChange> get effectiveStagedPropertyChanges =>
-      stagedPropertyChanges.isNotEmpty ? stagedPropertyChanges : draftChanges;
-
-  Map<String, Object?> toJson() => <String, Object?>{
-    'sessionId': sessionId,
-    if (_hasText(effectiveBubbleId)) 'bubbleId': effectiveBubbleId,
-    if (_hasText(effectiveInstructionText))
-      'instructionText': effectiveInstructionText,
-    if (primarySelection != null)
-      'primarySelection': primarySelection!.toJson(),
-    if (selectedWidgets.isNotEmpty)
-      'selectedWidgets': selectedWidgets
-          .map((final selection) => selection.toJson())
-          .toList(growable: false),
-    if (sourceTargets.isNotEmpty)
-      'sourceTargets': sourceTargets
-          .map((final target) => target.toJson())
-          .toList(growable: false),
-    'stagedPropertyChanges': effectiveStagedPropertyChanges
-        .map((final change) => change.toJson())
-        .toList(growable: false),
-    'applyMode': applyMode.wireName,
-    'draftChanges': draftChanges
-        .map((final change) => change.toJson())
-        .toList(growable: false),
-    if (selection != null) 'selection': selection!.toJson(),
-    if (_hasText(proposalId)) 'proposalId': proposalId,
-    if (_hasText(backendId)) 'backendId': backendId,
-    if (inferenceConfig != null) 'inferenceConfig': inferenceConfig!.toJson(),
-    if (_hasText(workingDirectory)) 'workingDirectory': workingDirectory,
-    if (_hasText(intentText)) 'intentText': intentText,
-    'approve': approve,
-  };
-}
-
-enum LiveEditApplyPhase {
-  idle,
-  preparing,
-  awaitingApproval,
-  applying,
-  success,
-  failed,
-}
-
-final class LiveEditBubbleRecord {
-  const LiveEditBubbleRecord({
-    required this.bubbleId,
-    required this.targetDomain,
-    required this.targetKey,
-    this.primarySelection,
-    this.selectedWidgets = const <LiveEditSelection>[],
-    this.draftChanges = const <LiveEditDraftChange>[],
-    this.instructionText = '',
-    this.status = LiveEditBubbleStatus.editing,
-    this.displayState = LiveEditBubbleDisplayState.expanded,
-    this.changedFiles = const <String>[],
-    this.backendId,
-    this.inferenceConfig,
-    this.executionPlan,
-    this.lastError,
-    this.history = const <LiveEditTimelineEntry>[],
-    this.activity = const <LiveEditActivityEntry>[],
-    this.debugTimeline = const <LiveEditTimelineEntry>[],
-    this.debugPromptText,
-    this.bubbleDragOffset = Offset.zero,
-  });
-
-  final LiveEditBubbleId bubbleId;
-  final LiveEditTargetDomain targetDomain;
-  final String targetKey;
-  final LiveEditSelection? primarySelection;
-  final List<LiveEditSelection> selectedWidgets;
-  final List<LiveEditDraftChange> draftChanges;
-  final String instructionText;
-  final LiveEditBubbleStatus status;
-  final LiveEditBubbleDisplayState displayState;
-  final List<String> changedFiles;
-  final String? backendId;
-  final LiveEditInferenceConfig? inferenceConfig;
-  final LiveEditExecutionPlan? executionPlan;
-  final String? lastError;
-  final List<LiveEditTimelineEntry> history;
-  final List<LiveEditActivityEntry> activity;
-  final List<LiveEditTimelineEntry> debugTimeline;
-  final String? debugPromptText;
-  final Offset bubbleDragOffset;
-
-  bool get hasPendingApply =>
-      draftChanges.isNotEmpty ||
-      (status != LiveEditBubbleStatus.applied &&
-          instructionText.trim().isNotEmpty);
-
-  List<String> get nodeIds {
-    final nodes = <String>{
-      if (primarySelection != null) primarySelection!.nodeId,
-      ...selectedWidgets.map((final selection) => selection.nodeId),
-      ...draftChanges.map((final change) => change.nodeId),
-    };
-    return nodes.where(_hasText).toList(growable: false);
-  }
-
-  LiveEditBubbleRecord copyWith({
-    final LiveEditSelection? primarySelection,
-    final List<LiveEditSelection>? selectedWidgets,
-    final List<LiveEditDraftChange>? draftChanges,
-    final String? instructionText,
-    final LiveEditBubbleStatus? status,
-    final LiveEditBubbleDisplayState? displayState,
-    final List<String>? changedFiles,
-    final String? backendId,
-    final Object? inferenceConfig = _unsetValue,
-    final LiveEditExecutionPlan? executionPlan,
-    final Object? lastError = _unsetValue,
-    final List<LiveEditTimelineEntry>? history,
-    final List<LiveEditActivityEntry>? activity,
-    final List<LiveEditTimelineEntry>? debugTimeline,
-    final Object? debugPromptText = _unsetValue,
-    final Offset? bubbleDragOffset,
-  }) => LiveEditBubbleRecord(
-    bubbleId: bubbleId,
-    targetDomain: targetDomain,
-    targetKey: targetKey,
-    primarySelection: primarySelection ?? this.primarySelection,
-    selectedWidgets: selectedWidgets ?? this.selectedWidgets,
-    draftChanges: draftChanges ?? this.draftChanges,
-    instructionText: instructionText ?? this.instructionText,
-    status: status ?? this.status,
-    displayState: displayState ?? this.displayState,
-    changedFiles: changedFiles ?? this.changedFiles,
-    backendId: backendId ?? this.backendId,
-    inferenceConfig: identical(inferenceConfig, _unsetValue)
-        ? this.inferenceConfig
-        : inferenceConfig as LiveEditInferenceConfig?,
-    executionPlan: executionPlan ?? this.executionPlan,
-    lastError: identical(lastError, _unsetValue)
-        ? this.lastError
-        : lastError as String?,
-    history: history ?? this.history,
-    activity: activity ?? this.activity,
-    debugTimeline: debugTimeline ?? this.debugTimeline,
-    debugPromptText: identical(debugPromptText, _unsetValue)
-        ? this.debugPromptText
-        : debugPromptText as String?,
-    bubbleDragOffset: bubbleDragOffset ?? this.bubbleDragOffset,
-  );
-}
-
-enum LiveEditBubbleStatus { editing, waiting, needsApproval, applied, failed }
-
-final class LiveEditBubbleSummary {
-  const LiveEditBubbleSummary({
-    required this.bubbleId,
-    required this.targetDomain,
-    required this.targetKey,
-    required this.nodeId,
-    required this.label,
-    required this.status,
-    required this.active,
-    required this.displayState,
-    this.bounds,
-    this.sourceLabel,
-  });
-
-  final String bubbleId;
-  final LiveEditTargetDomain targetDomain;
-  final String targetKey;
-  final String nodeId;
-  final String label;
-  final LiveEditBubbleStatus status;
-  final bool active;
-  final LiveEditBubbleDisplayState displayState;
-  final LiveEditBounds? bounds;
-  final String? sourceLabel;
-}
-
-final class LiveEditLayerViewState {
-  LiveEditBubbleId? activeBubbleId;
-  String? activePropertyId;
-  LiveEditEditMode editMode = LiveEditEditMode.inspect;
-}
-
 final class LiveEditOrchestrator extends ChangeNotifier {
   LiveEditOrchestrator({
     final LiveEditController? controller,
@@ -341,18 +62,138 @@ final class LiveEditOrchestrator extends ChangeNotifier {
         const <LiveEditAgentBackend>[],
     this.workingDirectory,
     this.intentText,
-  }) : controller = controller ?? LiveEditController.instance,
-       _availableBackends = List<LiveEditAgentBackend>.unmodifiable(
+  }) : _availableBackends = List<LiveEditAgentBackend>.unmodifiable(
          availableBackends,
        ),
        _backendId = _resolveInitialBackendId(
          availableBackends: availableBackends,
          backendId: backendId,
        ) {
-    this.controller.addListener(_onControllerChanged);
+    _sessionResource = LiveEditSessionResource();
+    _selectionResource = LiveEditSelectionResource();
+    _draftResource = LiveEditDraftResource();
+    _bubbleResource = LiveEditBubbleResource();
+    _panelViewResource = LiveEditPanelViewResource();
+    _sessionService = LiveEditSessionService();
+    _applyService = LiveEditApplyService(
+      applyDraftDelegate: applyDraftDelegate,
+    );
+    _context = LiveEditContext(
+      sessionResource: _sessionResource,
+      selectionResource: _selectionResource,
+      draftResource: _draftResource,
+      bubbleResource: _bubbleResource,
+      panelViewResource: _panelViewResource,
+      sessionService: _sessionService,
+      applyService: _applyService,
+    );
+    _controller = LiveEditController(_context);
+    LiveEditOrchestrator.instance = this;
+    void onResourceChange() => notifyListeners();
+    _sessionResource.addListener(onResourceChange);
+    _selectionResource.addListener(onResourceChange);
+    _draftResource.addListener(onResourceChange);
+    _bubbleResource.addListener(onResourceChange);
+    _panelViewResource.addListener(onResourceChange);
   }
 
-  final LiveEditController controller;
+  late final LiveEditSessionResource _sessionResource;
+  late final LiveEditSelectionResource _selectionResource;
+  late final LiveEditDraftResource _draftResource;
+  late final LiveEditBubbleResource _bubbleResource;
+  late final LiveEditPanelViewResource _panelViewResource;
+  late final LiveEditSessionService _sessionService;
+  late final LiveEditApplyService _applyService;
+  late final LiveEditContext _context;
+  late final LiveEditController _controller;
+
+  LiveEditController get controller => _controller;
+
+  /// Property-edit plugin: delegate to session service.
+  set propertyDescriptorProvider(
+    final List<LiveEditPropertyDescriptor> Function(
+      Element element,
+      LiveEditTargetDomain targetDomain,
+    )?
+    value,
+  ) {
+    _sessionService.propertyDescriptorProvider = value;
+  }
+
+  /// MCP / toolkit: run command and return result map.
+  Map<String, Object?> startSession({
+    final String? requestedSessionId,
+    final LiveEditTargetDomain targetDomain = LiveEditTargetDomain.appScene,
+  }) => StartSessionCommand(
+    requestedSessionId: requestedSessionId,
+    targetDomain: targetDomain,
+  ).execute(_context);
+
+  Map<String, Object?> setOverlay({
+    required final bool enabled,
+    final String? sessionId,
+  }) => SetOverlayCommand(
+    sessionId: sessionId,
+    enabled: enabled,
+  ).execute(_context);
+
+  Map<String, Object?> getTree({
+    final String? sessionId,
+    final LiveEditTargetDomain? targetDomain,
+  }) => GetTreeCommand(
+    sessionId: sessionId,
+    targetDomain: targetDomain,
+  ).execute(_context);
+
+  Map<String, Object?> selectAtPoint({
+    required final int x,
+    required final int y,
+    final String? sessionId,
+    final int? viewId,
+    final LiveEditSelectionPolicy? selectionPolicy,
+    final LiveEditTargetDomain? targetDomain,
+  }) => SelectAtPointCommand(
+    sessionId: sessionId,
+    x: x,
+    y: y,
+    viewId: viewId,
+    selectionPolicy: selectionPolicy ?? LiveEditSelectionPolicy.deepest,
+    targetDomain: targetDomain,
+  ).execute(_context);
+
+  Map<String, Object?> getSelection({
+    final String? sessionId,
+    final LiveEditTargetDomain? targetDomain,
+  }) => GetSelectionCommand(
+    sessionId: sessionId,
+    targetDomain: targetDomain,
+  ).execute(_context);
+
+  /// MCP: update draft from a serialized change; returns result map.
+  Map<String, Object?> updateDraftFromChange({
+    required final LiveEditDraftChange change,
+    final String? sessionId,
+  }) => UpdateDraftCommand(
+    sessionId: sessionId,
+    change: change,
+  ).execute(_context);
+
+  Map<String, Object?> getDraft({
+    final String? sessionId,
+    final LiveEditTargetDomain? targetDomain,
+  }) => GetDraftCommand(
+    sessionId: sessionId,
+    targetDomain: targetDomain,
+  ).execute(_context);
+
+  Map<String, Object?> discardDraft({final String? sessionId}) =>
+      DiscardDraftCommand(sessionId: sessionId).execute(_context);
+
+  Map<String, Object?> endSession({final String? sessionId}) =>
+      EndSessionCommand(sessionId: sessionId).execute(_context);
+
+  static LiveEditOrchestrator? instance;
+
   final LiveEditApplyDraftDelegate? applyDraftDelegate;
   final String? workingDirectory;
   final String? intentText;
@@ -401,7 +242,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       _activeBubbleState?.draftChanges ?? _draftChangesForActiveSelection();
   LiveEditTargetDomain get activeLayer => targetDomain;
   List<LiveEditSelection> get activeMultiSelection =>
-      controller.multiSelectionForDomain(
+      _controller.multiSelectionForDomain(
         targetDomain: _presentationLayer,
         sessionId: activeSessionId,
       );
@@ -432,11 +273,11 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   LiveEditSelection? get activeSelection =>
       selectionByDomain(_presentationLayer);
   List<LiveEditSelectionCandidate> get activeSelectionCandidates =>
-      controller.selectionCandidatesForDomain(
+      _controller.selectionCandidatesForDomain(
         targetDomain: _presentationLayer,
         sessionId: activeSessionId,
       );
-  String? get activeSessionId => controller.activeSessionId;
+  String? get activeSessionId => _sessionResource.value.activeSessionId;
   List<LiveEditActivityEntry> get activityTimelineForActiveSelection =>
       List<LiveEditActivityEntry>.unmodifiable(
         _activeBubbleState?.activity ?? const <LiveEditActivityEntry>[],
@@ -657,7 +498,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       List<LiveEditTimelineEntry>.unmodifiable(
         _activeBubbleState?.history ?? const <LiveEditTimelineEntry>[],
       );
-  LiveEditSelection? get hoverSelection => controller.hoverSelection;
+  LiveEditSelection? get hoverSelection => _controller.hoverSelection;
   LiveEditTargetDomain get inactiveLayer =>
       targetDomain == LiveEditTargetDomain.appScene
       ? LiveEditTargetDomain.toolScene
@@ -671,12 +512,12 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       bubbleStatusForActiveSelection == LiveEditBubbleStatus.waiting;
   String? get lastError => _activeBubbleState?.lastError ?? _lastError;
   List<LiveEditSelection> get marqueePreviewSelections =>
-      controller.marqueeSelectionsForDomain(
+      _controller.marqueeSelectionsForDomain(
         targetDomain: _presentationLayer,
         sessionId: activeSessionId,
       );
 
-  Rect? get marqueeRect => controller.marqueeRectForDomain(
+  Rect? get marqueeRect => _controller.marqueeRectForDomain(
     targetDomain: _presentationLayer,
     sessionId: activeSessionId,
   );
@@ -686,7 +527,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       _pendingExecutionPlan != null &&
       _hasText(_pendingProposalId);
 
-  bool get overlayVisible => controller.overlayVisible;
+  bool get overlayVisible => _sessionResource.value.overlayVisible;
 
   LiveEditPanelDisplayMode get panelDisplayMode => _panelDisplayMode;
   Offset get panelDragOffset => _panelDragOffset;
@@ -739,8 +580,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     return sections.join('\n');
   }
 
-  LiveEditTargetDomain get targetDomain =>
-      controller.currentTargetDomain(sessionId: activeSessionId);
+  LiveEditTargetDomain get targetDomain => _sessionResource.value.targetDomain;
 
   LiveEditBubbleRecord? get _activeBubbleState =>
       _bubbleRecordFor(activeBubbleId);
@@ -941,7 +781,8 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   }
 
   void cancelMarquee() {
-    controller.cancelMarquee(sessionId: activeSessionId);
+    _sessionService.cancelMarquee(sessionId: activeSessionId);
+    _context.applySessionUpdate(_sessionService.lastUpdate);
     notifyListeners();
   }
 
@@ -978,7 +819,8 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     if (!_hasText(activeSessionId)) {
       return;
     }
-    controller.clearHover(sessionId: activeSessionId);
+    _sessionService.clearHover(sessionId: activeSessionId);
+    _context.applySessionUpdate(_sessionService.lastUpdate);
   }
 
   void collapsePanel() {
@@ -987,7 +829,8 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   }
 
   void commitMarquee() {
-    controller.commitMarquee(sessionId: activeSessionId);
+    _sessionService.commitMarquee(sessionId: activeSessionId);
+    _context.applySessionUpdate(_sessionService.lastUpdate);
     _restoreBubbleState(_bubbleIdForSelection(activeSelection));
     _syncSelectionState();
   }
@@ -1003,11 +846,12 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     final nextIndex = activeIndex < 0
         ? 0
         : (activeIndex + delta + candidates.length) % candidates.length;
-    controller.selectCandidate(
+    _sessionService.selectCandidate(
       sessionId: activeSessionId,
       index: nextIndex,
       targetDomain: _presentationLayer,
     );
+    _context.applySessionUpdate(_sessionService.lastUpdate);
     _restoreBubbleState(_bubbleIdForSelection(activeSelection));
     _syncSelectionState();
   }
@@ -1015,12 +859,12 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
-    controller.removeListener(_onControllerChanged);
+    if (instance == this) instance = null;
     super.dispose();
   }
 
   List<LiveEditDraftChange> draftsByDomain(final LiveEditTargetDomain domain) =>
-      controller.draftChangesForDomain(
+      _controller.draftChangesForDomain(
         targetDomain: domain,
         sessionId: activeSessionId,
       );
@@ -1075,7 +919,8 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     if (_hasText(current)) {
       return current!;
     }
-    final started = controller.startSession(targetDomain: targetDomain);
+    final started = _sessionService.startSession(targetDomain: targetDomain);
+    _context.applySessionUpdate(_sessionService.lastUpdate);
     return '${started['sessionId'] ?? ''}';
   }
 
@@ -1168,7 +1013,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   }) {
     final sessionId = ensureSession();
     final contentRoot = contentKey?.currentContext;
-    controller.hoverAtPoint(
+    _sessionService.hoverAtPoint(
       sessionId: sessionId,
       x: globalOffset.dx.round(),
       y: globalOffset.dy.round(),
@@ -1176,6 +1021,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       contentRoot: contentRoot is Element ? contentRoot : null,
       targetDomain: targetDomain,
     );
+    _context.applySessionUpdate(_sessionService.lastUpdate);
   }
 
   LiveEditInferenceConfig? inferenceConfigForBubble(final String? bubbleId) {
@@ -1332,26 +1178,28 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   }
 
   void selectCandidateAt(final int index) {
-    controller.selectCandidate(
+    _sessionService.selectCandidate(
       sessionId: activeSessionId,
       index: index,
       targetDomain: _presentationLayer,
     );
+    _context.applySessionUpdate(_sessionService.lastUpdate);
     _restoreBubbleState(_bubbleIdForSelection(activeSelection));
     _syncSelectionState();
   }
 
   void selectChildCandidate() {
-    controller.selectChild(
+    _sessionService.selectChild(
       sessionId: activeSessionId,
       targetDomain: _presentationLayer,
     );
+    _context.applySessionUpdate(_sessionService.lastUpdate);
     _restoreBubbleState(_bubbleIdForSelection(activeSelection));
     _syncSelectionState();
   }
 
   LiveEditSelection? selectionByDomain(final LiveEditTargetDomain domain) =>
-      controller.selectionForDomain(
+      _controller.selectionForDomain(
         targetDomain: domain,
         sessionId: activeSessionId,
       );
@@ -1366,7 +1214,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     _captureCurrentBubbleState();
     final sessionId = ensureSession();
     final contentRoot = contentKey?.currentContext;
-    controller.selectAtPoint(
+    _sessionService.selectAtPoint(
       sessionId: sessionId,
       x: globalOffset.dx.round(),
       y: globalOffset.dy.round(),
@@ -1375,6 +1223,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       contentRoot: contentRoot is Element ? contentRoot : null,
       targetDomain: targetDomain,
     );
+    _context.applySessionUpdate(_sessionService.lastUpdate);
     if (targetDomain == LiveEditTargetDomain.toolScene) {
       _toolPresentationArmed =
           selectionByDomain(LiveEditTargetDomain.toolScene) != null;
@@ -1392,10 +1241,11 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   }
 
   void selectParentCandidate() {
-    controller.selectParent(
+    _sessionService.selectParent(
       sessionId: activeSessionId,
       targetDomain: _presentationLayer,
     );
+    _context.applySessionUpdate(_sessionService.lastUpdate);
     _restoreBubbleState(_bubbleIdForSelection(activeSelection));
     _syncSelectionState();
   }
@@ -1413,11 +1263,12 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     final trackedNodeId = bubble?.primarySelection?.nodeId ?? nodeId;
     final bubbleDomain = bubble?.targetDomain ?? targetDomain;
     _toolPresentationArmed = bubbleDomain == LiveEditTargetDomain.toolScene;
-    controller.selectTrackedNode(
+    _sessionService.selectTrackedNode(
       sessionId: activeSessionId,
       nodeId: trackedNodeId,
       targetDomain: bubbleDomain,
     );
+    _context.applySessionUpdate(_sessionService.lastUpdate);
     _layerViewStateFor(bubbleDomain).activeBubbleId = resolvedBubbleId;
     _restoreBubbleState(resolvedBubbleId);
     if (_bubbleRecordFor(resolvedBubbleId) == null) {
@@ -1639,7 +1490,8 @@ final class LiveEditOrchestrator extends ChangeNotifier {
 
   void setOverlayEnabled(final bool enabled) {
     final sessionId = ensureSession();
-    controller.setOverlay(sessionId: sessionId, enabled: enabled);
+    _sessionService.setOverlay(sessionId: sessionId, enabled: enabled);
+    _context.applySessionUpdate(_sessionService.lastUpdate);
     if (!enabled) {
       _toolPresentationArmed = false;
       _editMode = LiveEditEditMode.inspect;
@@ -1653,7 +1505,8 @@ final class LiveEditOrchestrator extends ChangeNotifier {
 
   void setTargetDomain(final LiveEditTargetDomain domain) {
     final sessionId = ensureSession();
-    controller.setTargetDomain(sessionId: sessionId, targetDomain: domain);
+    _sessionService.setTargetDomain(sessionId: sessionId, targetDomain: domain);
+    _context.applySessionUpdate(_sessionService.lastUpdate);
     if (domain == LiveEditTargetDomain.toolScene) {
       _toolPresentationArmed = false;
     }
@@ -1693,11 +1546,12 @@ final class LiveEditOrchestrator extends ChangeNotifier {
 
   void startMarquee(final Offset globalOffset) {
     _captureCurrentBubbleState();
-    controller.startMarquee(
+    _sessionService.startMarquee(
       sessionId: ensureSession(),
       x: globalOffset.dx.round(),
       y: globalOffset.dy.round(),
     );
+    _context.applySessionUpdate(_sessionService.lastUpdate);
   }
 
   Future<void> submitAiPrompt() async {
@@ -1724,7 +1578,8 @@ final class LiveEditOrchestrator extends ChangeNotifier {
         _activeSelectedWidgets()
             .map((final item) => item.nodeId)
             .toList(growable: false);
-    controller.discardDraftNodes(sessionId: sessionId, nodeIds: nodeIds);
+    _sessionService.discardDraftNodes(sessionId: sessionId, nodeIds: nodeIds);
+    _context.applySessionUpdate(_sessionService.lastUpdate);
     if (_hasText(bubbleId)) {
       final preservedInstruction =
           _bubbleRecordFor(bubbleId)?.instructionText ?? '';
@@ -1824,7 +1679,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
         'surfaceId': '${property.meta['surfaceId']}',
     };
     if (hasMultiSelection) {
-      controller.updateDraftBatch(
+      _sessionService.updateDraftBatch(
         sessionId: sessionId,
         nodeIds: activeMultiSelection
             .map((final item) => item.nodeId)
@@ -1836,7 +1691,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
         meta: meta,
       );
     } else {
-      controller.updateDraft(
+      _sessionService.updateDraft(
         sessionId: sessionId,
         change: LiveEditDraftChange(
           nodeId: selection.nodeId,
@@ -1849,6 +1704,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
         ),
       );
     }
+    _context.applySessionUpdate(_sessionService.lastUpdate);
 
     _activePropertyId = property.id;
     _presentedLayerViewState.activePropertyId = property.id;
@@ -1893,12 +1749,13 @@ final class LiveEditOrchestrator extends ChangeNotifier {
 
   void updateMarquee(final Offset globalOffset, {final GlobalKey? contentKey}) {
     final contentRoot = contentKey?.currentContext;
-    controller.updateMarquee(
+    _sessionService.updateMarquee(
       sessionId: activeSessionId,
       x: globalOffset.dx.round(),
       y: globalOffset.dy.round(),
       contentRoot: contentRoot is Element ? contentRoot : null,
     );
+    _context.applySessionUpdate(_sessionService.lastUpdate);
   }
 
   Future<void> waitForProperty(
@@ -2241,7 +2098,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       );
       _pendingProposalId = null;
       final committedBubble = _bubbleRecordFor(bubbleId);
-      controller.commitDraftNodes(
+      _sessionService.commitDraftNodes(
         sessionId: sessionId,
         nodeIds:
             committedBubble?.nodeIds ??
@@ -2249,7 +2106,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
                 .map((final item) => item.nodeId)
                 .toList(growable: false),
       );
-      controller.showAppliedPreview(
+      _sessionService.showAppliedPreview(
         sessionId: sessionId,
         changes: draftChanges,
       );
@@ -2809,7 +2666,10 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     final primaryNodeId = bubble?.primarySelection?.nodeId;
     final hasMeaningfulNode =
         _hasText(primaryNodeId) &&
-        controller.isMeaningfulNode(primaryNodeId!, sessionId: activeSessionId);
+        _sessionService.isMeaningfulNode(
+          primaryNodeId!,
+          sessionId: activeSessionId,
+        );
     final status = bubble?.status;
     final hasPersistentStatus =
         status == LiveEditBubbleStatus.waiting ||
@@ -3035,40 +2895,4 @@ final class LiveEditOrchestrator extends ChangeNotifier {
         )
         .id;
   }
-}
-
-enum LiveEditPanelDisplayMode { rail, expanded }
-
-final class LiveEditRuntimeEvent {
-  const LiveEditRuntimeEvent({
-    required this.kind,
-    required this.message,
-    this.details = const <String>[],
-    this.promptText,
-    this.debugOnly = false,
-  });
-
-  final LiveEditRuntimeEventKind kind;
-  final String message;
-  final List<String> details;
-  final String? promptText;
-  final bool debugOnly;
-}
-
-enum LiveEditRuntimeEventKind { edit, codex, debug }
-
-final class LiveEditTimelineEntry {
-  const LiveEditTimelineEntry({
-    required this.role,
-    required this.message,
-    required this.timestamp,
-    this.nodeId,
-    this.details = const <String>[],
-  });
-
-  final String role;
-  final String message;
-  final DateTime timestamp;
-  final String? nodeId;
-  final List<String> details;
 }
