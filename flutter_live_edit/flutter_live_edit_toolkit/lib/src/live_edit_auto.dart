@@ -15,6 +15,7 @@ import 'package:xsoulspace_inference_core/xsoulspace_inference_core.dart';
 
 import 'live_edit_host.dart';
 import 'live_edit_orchestrator.dart';
+import 'live_edit_scope.dart';
 import 'live_edit_toolkit.dart';
 import 'live_edit_types.dart';
 
@@ -188,7 +189,7 @@ class FlutterLiveEditAutoHost extends StatelessWidget {
           agentService: _agentService,
           availableBackends: backends,
         ).apply;
-    return FlutterLiveEditHost(
+    final host = FlutterLiveEditHost(
       orchestrator: resolvedOrchestrator,
       applyDraftDelegate: resolvedOrchestrator == null ? defaultDelegate : null,
       backendId: resolvedOrchestrator == null ? resolvedConfig.backendId : null,
@@ -204,6 +205,17 @@ class FlutterLiveEditAutoHost extends StatelessWidget {
       buildPropertyPanelSection: buildPropertyPanelSection,
       child: child,
     );
+    if (resolvedOrchestrator == null) {
+      return LiveEditScope(
+        applyDraftDelegate: defaultDelegate,
+        backendId: resolvedConfig.backendId,
+        availableBackends: backends,
+        workingDirectory: resolvedConfig.hostWorkingDirectory,
+        intentText: resolvedConfig.hostIntentText,
+        child: host,
+      );
+    }
+    return host;
   }
 }
 

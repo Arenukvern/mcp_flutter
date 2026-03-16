@@ -18,6 +18,7 @@ final class SelectNodeCommand {
     this.preferHoverPreview = false,
     this.targetDomain,
     this.openBubbleOnSelect = false,
+    this.selectionPolicy = LiveEditSelectionPolicy.nearestProjectAncestor,
   });
 
   final int x;
@@ -27,12 +28,14 @@ final class SelectNodeCommand {
   final bool preferHoverPreview;
   final LiveEditTargetDomain? targetDomain;
   final bool openBubbleOnSelect;
+  final LiveEditSelectionPolicy selectionPolicy;
 
   Map<String, Object?> execute(final LiveEditContext context) {
     var sessionId = context.sessionResource.value.activeSessionId;
     if (sessionId == null || sessionId.isEmpty) {
       StartSessionCommand(
-        targetDomain: targetDomain ?? context.sessionResource.value.targetDomain,
+        targetDomain:
+            targetDomain ?? context.sessionResource.value.targetDomain,
       ).execute(context);
       sessionId = context.sessionResource.value.activeSessionId;
     }
@@ -44,7 +47,7 @@ final class SelectNodeCommand {
       targetDomain: targetDomain,
       contentRoot: contentRoot,
       preferHoverPreview: preferHoverPreview,
-      selectionPolicy: LiveEditSelectionPolicy.nearestProjectAncestor,
+      selectionPolicy: selectionPolicy,
     ).execute(context);
     runAfterSelectionChange(context, controller);
     if (openBubbleOnSelect &&

@@ -4,10 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_live_edit_agent/flutter_live_edit_agent.dart';
 import 'package:flutter_live_edit_toolkit/flutter_live_edit_toolkit.dart';
-import 'package:flutter_live_edit_toolkit/src/live_edit_overlay_theme.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:test_app/main.dart' as app;
+
+import 'live_edit_integration_harness.dart';
 
 void main() {
   final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -34,25 +35,29 @@ void main() {
         binding,
         harness,
       );
-      await _enableLiveEdit(tester, orchestrator);
+      final h = LiveEditIntegrationHarness(
+        orchestrator.context,
+        orchestrator.controller,
+      );
+      await _enableLiveEdit(tester, h);
 
       expect(_semanticsId('live_edit_test_target'), findsOneWidget);
       expect(_fixtureText(_fixtureOriginalText), findsOneWidget);
 
       await _roundTripFixtureText(
         tester,
-        orchestrator,
+        h,
         from: _fixtureOriginalText,
         to: _fixtureUpdatedText,
       );
       await _roundTripFixtureText(
         tester,
-        orchestrator,
+        h,
         from: _fixtureUpdatedText,
         to: _fixtureOriginalText,
       );
 
-      final selectionSource = orchestrator.activeSelection?.source?.file;
+      final selectionSource = h.activeSelection?.source?.file;
       expect(selectionSource, isNotNull);
       final mappedSourcePath = harness.mappedFileForSource(selectionSource!);
       expect(mappedSourcePath, isNotNull);
@@ -64,8 +69,8 @@ void main() {
         changedContents,
         isNot(equals(harness.originalContentsForSource(selectionSource))),
       );
-      expect(orchestrator.applyPhase, LiveEditApplyPhase.success);
-      expect(orchestrator.activeDraftChanges, isEmpty);
+      expect(h.applyPhase, LiveEditApplyPhase.success);
+      expect(h.activeDraftChanges, isEmpty);
     },
     timeout: const Timeout(Duration(minutes: 8)),
   );
@@ -83,15 +88,19 @@ void main() {
         binding,
         harness,
       );
-      await _enableLiveEdit(tester, orchestrator);
-      await _selectFixtureTarget(tester, orchestrator);
+      final h = LiveEditIntegrationHarness(
+        orchestrator.context,
+        orchestrator.controller,
+      );
+      await _enableLiveEdit(tester, h);
+      await _selectFixtureTarget(tester, h);
 
-      final appSelectionNodeId = orchestrator.activeSelection?.nodeId;
+      final appSelectionNodeId = h.activeSelection?.nodeId;
       expect(appSelectionNodeId, isNotNull);
 
-      await _roundTripToolAiBubbleColor(tester, orchestrator);
+      await _roundTripToolAiBubbleColor(tester, h);
 
-      final toolSelectionSource = orchestrator.activeSelection?.source?.file;
+      final toolSelectionSource = h.activeSelection?.source?.file;
       expect(toolSelectionSource, isNotNull);
       expect(
         _containsPath(
@@ -111,13 +120,10 @@ void main() {
       expect(changedContents, contains('backgroundColor'));
       expect(changedContents, contains('0xFFFFFBEB'));
 
-      orchestrator.setTargetDomain(LiveEditTargetDomain.appScene);
+      h.setTargetDomain(LiveEditTargetDomain.appScene);
       await tester.pumpAndSettle();
-      expect(
-        orchestrator.activeSelection?.targetDomain,
-        LiveEditTargetDomain.appScene,
-      );
-      expect(orchestrator.activeSelection?.nodeId, appSelectionNodeId);
+      expect(h.activeSelection?.targetDomain, LiveEditTargetDomain.appScene);
+      expect(h.activeSelection?.nodeId, appSelectionNodeId);
     },
     timeout: const Timeout(Duration(minutes: 8)),
   );
@@ -156,23 +162,21 @@ Finder _aiBubbleKey() => find.byKey(
 
 Future<void> _applyCurrentDraft(
   final WidgetTester tester,
-  final LiveEditOrchestrator orchestrator,
+  final LiveEditIntegrationHarness h,
 ) async {
-  final applyFuture = orchestrator.applyDraft(
-    message: orchestrator.canSubmitAiPrompt ? orchestrator.aiComposer : null,
+  final applyFuture = h.applyDraft(
+    message: h.canSubmitAiPrompt ? h.aiComposer : null,
   );
   await tester.pump();
   await _pumpUntil(
     tester,
-    () =>
-        orchestrator.applyPhase == LiveEditApplyPhase.success ||
-        orchestrator.lastError != null,
+    () => h.applyPhase == LiveEditApplyPhase.success || h.lastError != null,
     timeout: const Duration(minutes: 4),
   );
   await applyFuture;
-  expect(orchestrator.lastError, isNull);
+  expect(h.lastError, isNull);
   await tester.pumpAndSettle();
-  expect(orchestrator.currentActivity?.label, 'Applied');
+  expect(h.currentActivity?.label, 'Applied');
 }
 
 bool _containsPath(final String parent, final String child) {
@@ -200,23 +204,23 @@ void _copyShallowDirectory(
 
 Future<void> _enableLiveEdit(
   final WidgetTester tester,
-  final LiveEditOrchestrator orchestrator,
+  final LiveEditIntegrationHarness h,
 ) async {
   await tester.tap(find.widgetWithText(ActionChip, 'Live Edit'));
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 200));
   await _pumpUntil(
     tester,
-    () => orchestrator.overlayVisible,
+    () => h.overlayVisible,
     timeout: const Duration(seconds: 10),
   );
 }
 
 Future<void> _ensurePanelExpanded(
   final WidgetTester tester,
-  final LiveEditOrchestrator orchestrator,
+  final LiveEditIntegrationHarness h,
 ) async {
-  if (!orchestrator.panelExpanded) {
+  if (!h.panelExpanded) {
     await tester.tap(_semanticsId('live_edit_panel_expand_button'));
     await tester.pumpAndSettle();
   }
@@ -355,13 +359,13 @@ Future<void> _pumpUntil(
 
 Future<void> _pumpUntilActivityLabel(
   final WidgetTester tester,
-  final LiveEditOrchestrator orchestrator,
+  final LiveEditIntegrationHarness h,
   final String label, {
   required final Duration timeout,
 }) async {
   await _pumpUntil(
     tester,
-    () => orchestrator.currentActivity?.label == label,
+    () => h.currentActivity?.label == label,
     timeout: timeout,
   );
 }
@@ -484,73 +488,69 @@ LiveEditSourceTarget _rewriteSourceTarget({
 
 Future<void> _roundTripFixtureText(
   final WidgetTester tester,
-  final LiveEditOrchestrator orchestrator, {
+  final LiveEditIntegrationHarness h, {
   required final String from,
   required final String to,
 }) async {
   expect(_fixtureRenderedText(tester), from);
-  await _selectFixtureTarget(tester, orchestrator);
-  await _selectEditableFixtureCandidate(tester, orchestrator);
-  await _ensurePanelExpanded(tester, orchestrator);
-  expect(
-    orchestrator.activeSelection?.source?.file,
-    contains(_fixtureSourceBasename),
-  );
+  await _selectFixtureTarget(tester, h);
+  await _selectEditableFixtureCandidate(tester, h);
+  await _ensurePanelExpanded(tester, h);
+  expect(h.activeSelection?.source?.file, contains(_fixtureSourceBasename));
   print(
     '[agent-test] fixture selection '
-    'widget=${orchestrator.activeSelection?.widgetType} '
-    'render=${orchestrator.activeSelection?.renderObjectType} '
-    'node=${orchestrator.activeSelection?.nodeId} '
-    'properties=${orchestrator.activeSelection?.propertyGroups.map((final property) => '${property.id}:${property.kind.wireName}:${property.editable}').join(', ')}',
+    'widget=${h.activeSelection?.widgetType} '
+    'render=${h.activeSelection?.renderObjectType} '
+    'node=${h.activeSelection?.nodeId} '
+    'properties=${h.activeSelection?.propertyGroups.map((final property) => '${property.id}:${property.kind.wireName}:${property.editable}').join(', ')}',
   );
 
   final hasEditableStringProperty =
-      orchestrator.activeSelection?.propertyGroups.any(
+      h.activeSelection?.propertyGroups.any(
         (final property) =>
             property.editable && property.kind == LiveEditPropertyKind.string,
       ) ==
       true;
   if (hasEditableStringProperty) {
-    final textProperty = orchestrator.activeSelection!.propertyGroups
-        .firstWhere(
-          (final property) =>
-              property.editable && property.kind == LiveEditPropertyKind.string,
-        );
-    orchestrator.updateDraft(property: textProperty, targetValue: to);
+    final textProperty = h.activeSelection!.propertyGroups.firstWhere(
+      (final property) =>
+          property.editable && property.kind == LiveEditPropertyKind.string,
+    );
+    h.updateDraft(property: textProperty, targetValue: to);
     await tester.pumpAndSettle();
     print(
       '[agent-test] fixture draft changes='
-      '${orchestrator.activeDraftChanges.map((final change) => '${change.propertyId}=${change.targetValue}').join(', ')} '
+      '${h.activeDraftChanges.map((final change) => '${change.propertyId}=${change.targetValue}').join(', ')} '
       'rendered=${_fixtureRenderedText(tester)}',
     );
   } else {
-    OpenAiBubbleCommand(defaultPrompt: '').execute(orchestrator.context);
+    OpenAiBubbleCommand(defaultPrompt: '').execute(h.context);
     UpdateAiComposerCommand(
       value: "Change the displayed text from '$from' to '$to'.",
-    ).execute(orchestrator.context);
+    ).execute(h.context);
     await tester.pumpAndSettle();
   }
 
   expect(
-    orchestrator.activeDraftChanges.isNotEmpty ||
-        orchestrator.aiComposer.trim().isNotEmpty,
+    h.activeDraftChanges.isNotEmpty || h.aiComposer.trim().isNotEmpty,
     isTrue,
   );
   expect(_fixtureRenderedText(tester), to);
-  await _applyCurrentDraft(tester, orchestrator);
+  await _applyCurrentDraft(tester, h);
   expect(_fixtureRenderedText(tester), to);
 }
 
 Future<void> _roundTripToolAiBubbleColor(
   final WidgetTester tester,
-  final LiveEditOrchestrator orchestrator,
+  final LiveEditIntegrationHarness h,
 ) async {
-  await _selectToolAiBubble(tester, orchestrator);
-  await _ensurePanelExpanded(tester, orchestrator);
+  await _selectToolAiBubble(tester, h);
+  await _ensurePanelExpanded(tester, h);
 
   expect(_activeAiBubbleMaterial(tester).color, _bubbleOriginalColor);
-  final backgroundColorProperty = orchestrator.activeSelection!.propertyGroups
-      .firstWhere((final property) => property.id == 'backgroundColor');
+  final backgroundColorProperty = h.activeSelection!.propertyGroups.firstWhere(
+    (final property) => property.id == 'backgroundColor',
+  );
   final propertyId = _panelPropertyId(backgroundColorProperty.id);
   final propertyInput = find.descendant(
     of: _semanticsId('live_edit_property_input_$propertyId'),
@@ -561,24 +561,24 @@ Future<void> _roundTripToolAiBubbleColor(
   await tester.ensureVisible(propertyInput);
   await tester.enterText(propertyInput, '#112233');
   await tester.pump(const Duration(milliseconds: 300));
-  expect(orchestrator.activeDraftChanges, isNotEmpty);
+  expect(h.activeDraftChanges, isNotEmpty);
   expect(_activeAiBubbleMaterial(tester).color, _bubbleUpdatedColor);
-  await _applyCurrentDraft(tester, orchestrator);
+  await _applyCurrentDraft(tester, h);
   expect(_activeAiBubbleMaterial(tester).color, _bubbleUpdatedColor);
 
   await tester.enterText(propertyInput, '#FFFBEB');
   await tester.pump(const Duration(milliseconds: 300));
   expect(_activeAiBubbleMaterial(tester).color, _bubbleOriginalColor);
-  await _applyCurrentDraft(tester, orchestrator);
+  await _applyCurrentDraft(tester, h);
   expect(_activeAiBubbleMaterial(tester).color, _bubbleOriginalColor);
 }
 
 Future<void> _selectEditableFixtureCandidate(
   final WidgetTester tester,
-  final LiveEditOrchestrator orchestrator,
+  final LiveEditIntegrationHarness h,
 ) async {
   bool hasFixtureEditableSelection() {
-    final selection = orchestrator.activeSelection;
+    final selection = h.activeSelection;
     if (selection == null) {
       return false;
     }
@@ -594,12 +594,8 @@ Future<void> _selectEditableFixtureCandidate(
     return;
   }
 
-  for (
-    var index = 0;
-    index < orchestrator.activeSelectionCandidates.length;
-    index += 1
-  ) {
-    orchestrator.selectCandidateAt(index);
+  for (var index = 0; index < h.activeSelectionCandidates.length; index += 1) {
+    h.selectCandidateAt(index);
     await tester.pumpAndSettle();
     if (hasFixtureEditableSelection()) {
       return;
@@ -611,9 +607,9 @@ Future<void> _selectEditableFixtureCandidate(
 
 Future<void> _selectFixtureSourceCandidate(
   final WidgetTester tester,
-  final LiveEditOrchestrator orchestrator,
+  final LiveEditIntegrationHarness h,
 ) async {
-  final currentSelection = orchestrator.activeSelection;
+  final currentSelection = h.activeSelection;
   final currentSourceFile = currentSelection?.source?.file ?? '';
   final currentHasEditableString =
       currentSelection?.propertyGroups.any(
@@ -626,16 +622,16 @@ Future<void> _selectFixtureSourceCandidate(
     return;
   }
 
-  final candidates = orchestrator.activeSelectionCandidates;
+  final candidates = h.activeSelectionCandidates;
   for (var index = 0; index < candidates.length; index += 1) {
     final candidate = candidates[index];
     final sourceFile = candidate.source?.file ?? '';
     if (!sourceFile.contains(_fixtureSourceBasename)) {
       continue;
     }
-    orchestrator.selectCandidateAt(index);
+    h.selectCandidateAt(index);
     await tester.pumpAndSettle();
-    final selected = orchestrator.activeSelection;
+    final selected = h.activeSelection;
     final hasEditableString =
         selected?.propertyGroups.any(
           (final property) =>
@@ -653,7 +649,7 @@ Future<void> _selectFixtureSourceCandidate(
     if (!sourceFile.contains(_fixtureSourceBasename)) {
       continue;
     }
-    orchestrator.selectCandidateAt(index);
+    h.selectCandidateAt(index);
     await tester.pumpAndSettle();
     return;
   }
@@ -661,10 +657,10 @@ Future<void> _selectFixtureSourceCandidate(
 
 Future<void> _selectFixtureTarget(
   final WidgetTester tester,
-  final LiveEditOrchestrator orchestrator,
+  final LiveEditIntegrationHarness h,
 ) async {
   bool hasFixtureEditableSelection() {
-    final selection = orchestrator.activeSelection;
+    final selection = h.activeSelection;
     if (selection == null) {
       return false;
     }
@@ -679,21 +675,19 @@ Future<void> _selectFixtureTarget(
   await tester.tap(_fixtureText(_fixtureOriginalText), warnIfMissed: false);
   await tester.pump(const Duration(milliseconds: 300));
   if (!hasFixtureEditableSelection()) {
-    orchestrator.selectNode(
-      tester.getCenter(_fixtureText(_fixtureOriginalText)),
-    );
+    h.selectNode(tester.getCenter(_fixtureText(_fixtureOriginalText)));
     await _pumpUntil(
       tester,
-      () => orchestrator.activeSelection != null,
+      () => h.activeSelection != null,
       timeout: const Duration(seconds: 10),
     );
   }
 
   if (!hasFixtureEditableSelection()) {
     final fixtureCenter = tester.getCenter(_fixtureRichText());
-    orchestrator.hoverNode(fixtureCenter, deeperMode: true);
+    h.hoverNode(fixtureCenter, deeperMode: true);
     await tester.pumpAndSettle();
-    orchestrator.selectNode(
+    h.selectNode(
       fixtureCenter,
       preferHoverPreview: true,
       selectionPolicy: LiveEditSelectionPolicy.deepest,
@@ -704,31 +698,25 @@ Future<void> _selectFixtureTarget(
 
 Future<void> _selectToolAiBubble(
   final WidgetTester tester,
-  final LiveEditOrchestrator orchestrator,
+  final LiveEditIntegrationHarness h,
 ) async {
-  OpenAiBubbleCommand(defaultPrompt: '').execute(orchestrator.context);
+  OpenAiBubbleCommand(defaultPrompt: '').execute(h.context);
   await tester.pumpAndSettle();
   expect(_aiBubbleKey(), findsOneWidget);
 
   await tester.tap(find.widgetWithText(ChoiceChip, 'Tools'));
   await tester.pumpAndSettle();
 
-  expect(orchestrator.targetDomain, LiveEditTargetDomain.toolScene);
-  expect(
-    orchestrator.activeSelection?.targetDomain,
-    LiveEditTargetDomain.appScene,
-  );
+  expect(h.targetDomain, LiveEditTargetDomain.toolScene);
+  expect(h.activeSelection?.targetDomain, LiveEditTargetDomain.appScene);
   expect(_semanticsId('live_edit_ai_bubble'), findsOneWidget);
 
-  orchestrator.selectTrackedBubble(kLiveEditAiBubbleSurfaceId);
+  h.selectTrackedBubble(kLiveEditAiBubbleSurfaceId);
   await tester.pumpAndSettle();
 
-  expect(orchestrator.activeSelection, isNotNull);
-  expect(
-    orchestrator.activeSelection!.targetDomain,
-    LiveEditTargetDomain.toolScene,
-  );
-  expect(orchestrator.activeSelection!.nodeId, kLiveEditAiBubbleSurfaceId);
+  expect(h.activeSelection, isNotNull);
+  expect(h.activeSelection!.targetDomain, LiveEditTargetDomain.toolScene);
+  expect(h.activeSelection!.nodeId, kLiveEditAiBubbleSurfaceId);
 }
 
 Finder _semanticsId(final String id) => find.byWidgetPredicate(

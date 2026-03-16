@@ -8,6 +8,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:test_app/main.dart' as app;
 
+import 'live_edit_integration_harness.dart';
+
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -85,17 +87,21 @@ void main() {
       timeout: const Duration(seconds: 30),
     );
 
+    final h = LiveEditIntegrationHarness(
+      orchestrator.context,
+      orchestrator.controller,
+    );
     await tester.tap(find.widgetWithText(ActionChip, 'Live Edit'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
-    await _pumpUntil(tester, () => orchestrator.overlayVisible);
+    await _pumpUntil(tester, () => h.overlayVisible);
 
     final aboutHeading = _semanticsId('about_demo_heading');
     await tester.tap(aboutHeading, warnIfMissed: false);
     await tester.pumpAndSettle();
-    if (orchestrator.activeSelection == null) {
-      orchestrator.selectNode(tester.getCenter(aboutHeading));
-      await _pumpUntil(tester, () => orchestrator.activeSelection != null);
+    if (h.activeSelection == null) {
+      h.selectNode(tester.getCenter(aboutHeading));
+      await _pumpUntil(tester, () => h.activeSelection != null);
     }
     await tester.tap(_semanticsId('live_edit_panel_expand_button'));
     await tester.pumpAndSettle();
@@ -112,14 +118,11 @@ void main() {
     ).execute(orchestrator.context);
     await tester.pump(const Duration(milliseconds: 200));
 
-    await orchestrator.applyDraft(
+    await h.applyDraft(
       message: 'Rewrite the selected heading in a cleaner style.',
     );
     await tester.pumpAndSettle();
-    await _pumpUntil(
-      tester,
-      () => orchestrator.currentActivity?.label == 'Applied',
-    );
+    await _pumpUntil(tester, () => h.currentActivity?.label == 'Applied');
 
     expect(requests, hasLength(1));
     expect(requests.single.draftChanges, isEmpty);
@@ -127,8 +130,8 @@ void main() {
       requests.single.intentText,
       'Rewrite the selected heading in a cleaner style.',
     );
-    expect(orchestrator.pendingExecutionPlan, isNotNull);
-    expect(orchestrator.lastError, isNull);
+    expect(h.pendingExecutionPlan, isNotNull);
+    expect(h.lastError, isNull);
     expect(find.textContaining('No draft', findRichText: true), findsNothing);
   });
 
@@ -215,17 +218,21 @@ void main() {
       timeout: const Duration(seconds: 30),
     );
 
+    final h = LiveEditIntegrationHarness(
+      orchestrator.context,
+      orchestrator.controller,
+    );
     await tester.tap(find.widgetWithText(ActionChip, 'Live Edit'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
-    await _pumpUntil(tester, () => orchestrator.overlayVisible);
+    await _pumpUntil(tester, () => h.overlayVisible);
 
     final aboutHeading = _semanticsId('about_demo_heading');
     await tester.tap(aboutHeading, warnIfMissed: false);
     await tester.pumpAndSettle();
-    if (orchestrator.activeSelection == null) {
-      orchestrator.selectNode(tester.getCenter(aboutHeading));
-      await _pumpUntil(tester, () => orchestrator.activeSelection != null);
+    if (h.activeSelection == null) {
+      h.selectNode(tester.getCenter(aboutHeading));
+      await _pumpUntil(tester, () => h.activeSelection != null);
     }
 
     await tester.tap(_semanticsId('live_edit_panel_expand_button'));
@@ -236,14 +243,11 @@ void main() {
     ).execute(orchestrator.context);
     await tester.pumpAndSettle();
 
-    await orchestrator.submitAiPrompt();
+    await h.submitAiPrompt();
     await tester.pumpAndSettle();
-    await _pumpUntil(
-      tester,
-      () => orchestrator.debugPromptForActiveSelection != null,
-    );
+    await _pumpUntil(tester, () => h.debugPromptForActiveSelection != null);
 
-    if (!orchestrator.panelExpanded) {
+    if (!h.panelExpanded) {
       ExpandPanelCommand().execute(orchestrator.context);
       await tester.pumpAndSettle();
     }
@@ -284,18 +288,22 @@ void main() {
       timeout: const Duration(seconds: 30),
     );
 
+    final h = LiveEditIntegrationHarness(
+      orchestrator.context,
+      orchestrator.controller,
+    );
     await tester.tap(find.widgetWithText(ActionChip, 'Live Edit'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
-    await _pumpUntil(tester, () => orchestrator.overlayVisible);
+    await _pumpUntil(tester, () => h.overlayVisible);
 
-    final sessionId = orchestrator.ensureSession();
+    h.ensureSession();
     await tester.tap(find.text('About This Demo'), warnIfMissed: false);
     await tester.pumpAndSettle();
-    await _pumpUntil(tester, () => orchestrator.activeSelection != null);
+    await _pumpUntil(tester, () => h.activeSelection != null);
 
-    final promotedSelection = orchestrator.activeSelection!;
-    final promotedCandidates = orchestrator.activeSelectionCandidates;
+    final promotedSelection = h.activeSelection!;
+    final promotedCandidates = h.activeSelectionCandidates;
     expect(promotedSelection.widgetType, isNot('RichText'));
     expect(promotedSelection.source, isNotNull);
     expect(promotedSelection.source!.file, contains('lib/main.dart'));
@@ -309,24 +317,17 @@ void main() {
     expect(promotedCandidates.first.widgetType, 'RichText');
     expect(promotedCandidates.first.createdByLocalProject, isFalse);
 
-    final selectParentResult = orchestrator.controller.selectParent(
-      sessionId: sessionId,
-    );
+    final selectParentResult = h.selectParent();
     expect(selectParentResult['selected'], isTrue);
 
-    final selectChildResult = orchestrator.controller.selectChild(
-      sessionId: sessionId,
-    );
+    final selectChildResult = h.selectChild();
     expect(selectChildResult['selected'], isTrue);
     final childSelection =
         (selectChildResult['selection'] as Map<Object?, Object?>)
             .cast<String, Object?>();
     expect(childSelection['nodeId'], promotedSelection.nodeId);
 
-    final deepestResult = orchestrator.controller.selectCandidate(
-      sessionId: sessionId,
-      index: 0,
-    );
+    final deepestResult = h.selectCandidate(index: 0);
     expect(deepestResult['selected'], isTrue);
     final deepestSelection =
         (deepestResult['selection'] as Map<Object?, Object?>)
@@ -355,17 +356,21 @@ void main() {
       timeout: const Duration(seconds: 30),
     );
 
+    final h = LiveEditIntegrationHarness(
+      orchestrator.context,
+      orchestrator.controller,
+    );
     await tester.tap(find.widgetWithText(ActionChip, 'Live Edit'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
-    await _pumpUntil(tester, () => orchestrator.overlayVisible);
+    await _pumpUntil(tester, () => h.overlayVisible);
 
     final aboutHeading = _semanticsId('about_demo_heading');
     await tester.tap(aboutHeading, warnIfMissed: false);
     await tester.pumpAndSettle();
-    if (orchestrator.activeSelection == null) {
-      orchestrator.selectNode(tester.getCenter(aboutHeading));
-      await _pumpUntil(tester, () => orchestrator.activeSelection != null);
+    if (h.activeSelection == null) {
+      h.selectNode(tester.getCenter(aboutHeading));
+      await _pumpUntil(tester, () => h.activeSelection != null);
     }
 
     final bubbleBefore = tester.getTopLeft(
@@ -382,7 +387,7 @@ void main() {
     );
     expect(bubbleAfter.dx, closeTo(bubbleBefore.dx + 72, 3));
     expect(bubbleAfter.dy, closeTo(bubbleBefore.dy + 44, 3));
-    expect(orchestrator.marqueeRect, isNull);
+    expect(h.marqueeRect, isNull);
   });
 
   testWidgets(
@@ -405,10 +410,14 @@ void main() {
         timeout: const Duration(seconds: 30),
       );
 
+      final h = LiveEditIntegrationHarness(
+        orchestrator.context,
+        orchestrator.controller,
+      );
       await tester.tap(find.widgetWithText(ActionChip, 'Live Edit'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
-      await _pumpUntil(tester, () => orchestrator.overlayVisible);
+      await _pumpUntil(tester, () => h.overlayVisible);
 
       final dragStart =
           tester.getTopLeft(_semanticsId('counter_demo_icon')) -
@@ -426,7 +435,7 @@ void main() {
       await gesture.up();
       await tester.pumpAndSettle();
 
-      final widgetTypes = orchestrator.activeMultiSelection
+      final widgetTypes = h.activeMultiSelection
           .map((final selection) => selection.widgetType)
           .toSet();
       expect(widgetTypes, contains('Icon'));
@@ -440,13 +449,6 @@ void main() {
     },
   );
 }
-
-Finder _panelScrollable() => find
-    .descendant(
-      of: _semanticsId('live_edit_panel'),
-      matching: find.byType(Scrollable),
-    )
-    .first;
 
 Future<void> _pumpUntil(
   final WidgetTester tester,
