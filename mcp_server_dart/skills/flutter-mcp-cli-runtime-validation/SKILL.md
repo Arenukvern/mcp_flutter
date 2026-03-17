@@ -13,9 +13,10 @@ Use this skill when you need agent-style runtime validation through `flutter_mcp
 2. Run one CLI command:
 
 ```bash
-dart run mcp_server_dart/bin/flutter_mcp_cli.dart --save-images validate-runtime \
+dart run mcp_server_dart/bin/flutter_mcp_cli.dart --save-images --output-dir .flutter_mcp/runtime_validation validate-runtime \
   --target ws://127.0.0.1:8181/<token>/ws \
   --timeout-ms 10000 \
+  --post-reload-delay-ms 500 \
   --after-reload
 ```
 
@@ -52,6 +53,7 @@ Permission behavior for this flow:
 - Use `data.summary` as pass/fail status for automation.
 - Use `data.steps` for per-step evidence and retries.
 - Use `data.doctor.checks` to explain setup blockers.
+- Use `data.summary.screenshotFiles` for saved screenshot paths when `--save-images` is enabled.
 - When `--save-images` is enabled, read screenshot file URLs from step data.
 - For visual debugging reports, also run:
   - `exec --name capture_ui_snapshot --args '{"errorsCount":4,"compress":true,"includeViewDetails":true,"includeErrors":true}'`
@@ -61,7 +63,7 @@ Permission behavior for this flow:
 
 - If toolkit extensions are missing, stop and report instrumentation gap with exact fix:
   - add `mcp_toolkit` to app dependencies
-  - ensure `MCPToolkitBinding.instance..initialize()..initializeFlutterToolkit();` runs before `runApp`
+  - ensure `MCPToolkitBinding.instance.bootstrapFlutter(...)` or equivalent manual initialization runs before `runApp`
   - hot restart or rerun the app
 - If first explicit URI connect fails, retry is automatic for retryable connection errors.
 - If screenshots are blank, verify app window is visible and retry.

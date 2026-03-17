@@ -57,8 +57,11 @@ class MCPToolkitBinding extends MCPToolkitBindingBase
 
   MCPCallHandler? _selectAtPointHandler;
 
+  /// Custom handler used by select-at-point flows when the app wants to
+  /// override the default widget selection behavior.
   MCPCallHandler? get selectAtPointHandler => _selectAtPointHandler;
 
+  /// Registers a custom select-at-point handler.
   void setSelectAtPointHandler(final MCPCallHandler handler) {
     _selectAtPointHandler = handler;
   }
@@ -72,31 +75,51 @@ class MCPToolkitBinding extends MCPToolkitBindingBase
     final bool initializeFlutterToolkitEntries = true,
     final bool debugOnly = true,
   }) async {
-    await runZonedGuarded(
-      () async {
-        if (debugOnly && kReleaseMode) {
-          await runApp();
-          return;
-        }
+    final completer = Completer<void>();
+    final zoneErrorHandler = onZoneError ?? handleZoneError;
 
-        await (ensureInitialized?.call() ??
-            Future<void>.sync(WidgetsFlutterBinding.ensureInitialized));
+    unawaited(
+      runZonedGuarded(
+        () async {
+          try {
+            if (debugOnly && kReleaseMode) {
+              await runApp();
+              return;
+            }
 
-        if (!isInitialized) {
-          initialize();
-        }
+            await (ensureInitialized?.call() ??
+                Future<void>.sync(WidgetsFlutterBinding.ensureInitialized));
 
-        if (initializeFlutterToolkitEntries) {
-          await _addMissingEntries(getFlutterMcpToolkitEntries(binding: this));
-        }
-        if (additionalEntries.isNotEmpty) {
-          await _addMissingEntries(additionalEntries);
-        }
+            if (!isInitialized) {
+              initialize();
+            }
 
-        await runApp();
-      },
-      onZoneError ?? handleZoneError,
+            if (initializeFlutterToolkitEntries) {
+              await _addMissingEntries(
+                getFlutterMcpToolkitEntries(binding: this),
+              );
+            }
+            if (additionalEntries.isNotEmpty) {
+              await _addMissingEntries(additionalEntries);
+            }
+
+            await runApp();
+          } finally {
+            if (!completer.isCompleted) {
+              completer.complete();
+            }
+          }
+        },
+        (final error, final stackTrace) {
+          if (!completer.isCompleted) {
+            completer.complete();
+          }
+          zoneErrorHandler(error, stackTrace);
+        },
+      ),
     );
+
+    await completer.future;
   }
 
   @override

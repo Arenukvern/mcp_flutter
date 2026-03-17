@@ -10,6 +10,20 @@ This project now uses a shared core execution layer:
 
 The shared core module is available as `flutter_mcp_core` inside this package.
 
+## Golden Path
+
+Use this sequence first on macOS:
+
+1. Add `mcp_toolkit` to the app and call `MCPToolkitBinding.instance.bootstrapFlutter(...)`.
+2. Launch the app in debug mode.
+3. Run `flutter_mcp_cli validate-runtime`.
+4. Query dynamic entries in this order:
+   `listClientToolsAndResources`,
+   `runClientResource`,
+   `runClientTool`.
+
+Treat `exec` as expert mode. `validate-runtime` is the default first-pass proof command.
+
 ## CLI v3 Surface (Hard Cut)
 
 The CLI is now agent-first and exposes a canonical interface:
@@ -73,9 +87,10 @@ dart run bin/flutter_mcp_cli.dart exec --name get_screenshots --args '{"mode":"d
 dart run bin/flutter_mcp_cli.dart exec --name capture_ui_snapshot --args '{"screenshotMode":"auto","permissionPolicy":"auto_request_once"}'
 
 # one-command runtime validation (after app launch)
-dart run bin/flutter_mcp_cli.dart --save-images validate-runtime \
+dart run bin/flutter_mcp_cli.dart --save-images --output-dir .flutter_mcp/app validate-runtime \
   --target ws://127.0.0.1:8181/<token>/ws \
   --timeout-ms 10000 \
+  --post-reload-delay-ms 500 \
   --after-reload
 
 # optional: install bundled skill during runtime validation
@@ -90,6 +105,7 @@ CLI runtime gate for app inspection:
 - If missing, app-level screenshot/layout/error inspection is blocked until `mcp_toolkit` is installed, initialized, and the app is hot restarted or rerun.
 - If screenshots are blank, ensure app window is visible/foreground and retry `get_screenshots`.
 - If first explicit-URI connect times out, retry once and validate with `doctor --json --target <ws_uri> --timeout-ms 10000`.
+- When `--output-dir` is set, `validate-runtime` mirrors its JSON envelope to `<output-dir>/validate-runtime.json` and screenshot files are written under `<output-dir>/.mcp_screenshots/`.
 
 ## Visual Capture Permissions
 
@@ -108,6 +124,14 @@ Troubleshooting:
 - If macOS capture is denied, rerun `flutter_mcp_cli permissions status` first. If status is still `denied`, open System Settings from the CLI and grant Screen Recording to the terminal or client process you are using.
 - If `doctor --json` shows `visual_capture_truth_mode=flutter_layer` on macOS, you are not getting native window pixels yet.
 - If web capture fails with `desktop_window`, switch to `flutter_layer` or keep `auto`.
+- If post-reload capture fails once on macOS desktop-window mode, that is usually a host capture race rather than an app failure. `validate-runtime` retries those failures before returning red.
+
+Failure matrix:
+
+- `missing_mcp_toolkit_wiring`: app did not expose the required toolkit extensions. Fix app bootstrap and hot restart.
+- `bad_target_uri_or_unreachable_vm_service`: explicit target URI is wrong or the VM service is not reachable.
+- `permission_denied`: host capture backend lacks permission.
+- `host_capture_backend_instability`: native capture backend flaked during desktop-window capture, usually around reload.
 
 ## Migration (v2.x -> v3.0.0)
 
@@ -202,10 +226,10 @@ Selection-required errors are returned as structured JSON so agents can retry im
     ],
     "suggestedAction": "retry_with_connection_target",
     "example": {
-      "connection": {"targetId": "ws://127.0.0.1:8181/<token>/ws"}
+      "connection": { "targetId": "ws://127.0.0.1:8181/<token>/ws" }
     },
     "howToRetry": {
-      "connection": {"targetId": "ws://127.0.0.1:8181/<token>/ws"}
+      "connection": { "targetId": "ws://127.0.0.1:8181/<token>/ws" }
     }
   },
   "recovery": {
@@ -219,7 +243,7 @@ CLI one-shot and daemon calls use the same handshake semantics. For ambiguous mu
 
 ```json
 {
-  "connection": {"targetId": "ws://127.0.0.1:8181/<token>/ws"}
+  "connection": { "targetId": "ws://127.0.0.1:8181/<token>/ws" }
 }
 ```
 
@@ -356,7 +380,6 @@ For developers who want to contribute to the project or run the latest version d
 6. **🛠️ Add Flutter Inspector to your AI tool**
 
    # ⚠️ Resources Limitations ⚠️
-
    - Current server has problems with resources. If you see no resources in your AI tool, try to pass `--no-resources` as an argument.
 
    **Note for Local Development (GitHub Install):**
@@ -364,7 +387,6 @@ For developers who want to contribute to the project or run the latest version d
    If you installed the Flutter Inspector from GitHub and built it locally, you need to adjust the paths in the AI tool configurations to point to your local `build/flutter_inspector_mcp` file. Refer to the "Installation from GitHub" section for instructions on cloning and building the project.
 
    #### Cline Setup
-
    1. Add to your `.cline/config.json`:
       ```json
       {
@@ -400,7 +422,6 @@ For developers who want to contribute to the project or run the latest version d
    Note: fix path after installation.
 
    ##### Manual Setup
-
    1. Open Cursor's settings
    2. Go to the Features tab
    3. Under "Model Context Protocol", add the server:
@@ -429,7 +450,6 @@ For developers who want to contribute to the project or run the latest version d
    6. You're ready! Try commands like "Please get screenshot of my app"
 
    #### Claude Setup
-
    1. Add to your Claude configuration file:
       ```json
       {

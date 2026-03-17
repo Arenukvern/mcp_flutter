@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:dart_mcp/server.dart';
 import 'package:flutter_inspector_mcp_server/src/core/services/core_image_file_saver.dart';
 import 'package:test/test.dart';
 

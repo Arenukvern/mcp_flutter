@@ -1,7 +1,8 @@
-import 'dart:ui' as ui;
-import 'dart:convert';
+// ignore_for_file: invalid_use_of_protected_member
 
-import 'package:flutter/foundation.dart';
+import 'dart:convert';
+import 'dart:ui' as ui;
+
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
@@ -22,13 +23,6 @@ final class _TreeBuildState {
     visited++;
     return true;
   }
-}
-
-final class _HitResult {
-  _HitResult({required this.node, required this.ancestry});
-
-  final Map<String, Object?> node;
-  final List<Map<String, Object?>> ancestry;
 }
 
 mixin ViewIntrospectionService {
@@ -284,104 +278,18 @@ mixin ViewIntrospectionService {
     'height': rect.height,
   };
 
-  static _HitResult? _findHit(
-    final Map<String, Object?> node, {
-    required final ui.Offset point,
-    required final int? requestedViewId,
-    required final List<Map<String, Object?>> ancestry,
-  }) {
-    final viewId = _asInt(node['viewId']);
-    if (requestedViewId != null &&
-        viewId != null &&
-        viewId != requestedViewId) {
-      return null;
-    }
+  static double? _asDouble(final Object? value) => switch (value) {
+    final double v => v,
+    final int v => v.toDouble(),
+    final String v => double.tryParse(v),
+    _ => null,
+  };
 
-    final containsPoint = _nodeContainsPoint(node, point);
-    if (!containsPoint) {
-      return null;
-    }
-
-    final children = switch (node['children']) {
-      final List list => list,
-      _ => const <Object?>[],
-    };
-
-    for (var i = children.length - 1; i >= 0; i--) {
-      final child = children[i];
-      if (child is! Map) {
-        continue;
-      }
-      final childNode = child.cast<String, Object?>();
-      final childHit = _findHit(
-        childNode,
-        point: point,
-        requestedViewId: requestedViewId,
-        ancestry: [...ancestry, _compactNodeSummary(node)],
-      );
-      if (childHit != null) {
-        return childHit;
-      }
-    }
-
-    return _HitResult(node: node, ancestry: ancestry);
-  }
-
-  static bool _nodeContainsPoint(
-    final Map<String, Object?> node,
-    final ui.Offset point,
-  ) {
-    final bounds = switch (node['globalBounds']) {
-      final Map value => value.cast<String, Object?>(),
-      _ => null,
-    };
-    if (bounds == null) {
-      return false;
-    }
-
-    final left = _asDouble(bounds['left']);
-    final top = _asDouble(bounds['top']);
-    final right = _asDouble(bounds['right']);
-    final bottom = _asDouble(bounds['bottom']);
-    if (left == null || top == null || right == null || bottom == null) {
-      return false;
-    }
-
-    return point.dx >= left &&
-        point.dx <= right &&
-        point.dy >= top &&
-        point.dy <= bottom;
-  }
-
-  static Map<String, Object?> _compactNodeSummary(
-    final Map<String, Object?> node,
-  ) {
-    return {
-      'widgetType': node['widgetType'],
-      if (node['key'] != null) 'key': node['key'],
-      if (node['depth'] != null) 'depth': node['depth'],
-      if (node['viewId'] != null) 'viewId': node['viewId'],
-    };
-  }
-
-  static double? _asDouble(final Object? value) {
-    return switch (value) {
-      final double v => v,
-      final int v => v.toDouble(),
-      final num v => v.toDouble(),
-      final String v => double.tryParse(v),
-      _ => null,
-    };
-  }
-
-  static int? _asInt(final Object? value) {
-    return switch (value) {
-      final int v => v,
-      final num v => v.toInt(),
-      final String v => int.tryParse(v),
-      _ => null,
-    };
-  }
+  static int? _asInt(final Object? value) => switch (value) {
+    final int v => v,
+    final String v => int.tryParse(v),
+    _ => null,
+  };
 
   static RenderView? _selectRenderView({
     required final int? requestedViewId,
@@ -444,7 +352,7 @@ mixin ViewIntrospectionService {
     return {
       'renderObjectType': object.runtimeType.toString(),
       'widgetType': element?.widget.runtimeType.toString(),
-      if (element?.widget.key != null) 'key': '${element!.widget.key}',
+      if (element?.widget.key != null) 'key': '${element?.widget.key}',
       'viewId': _viewIdForRenderObject(object),
       'globalBounds': _globalBoundsForRenderObject(object),
       'semanticBounds': _semanticBoundsForRenderObject(object),

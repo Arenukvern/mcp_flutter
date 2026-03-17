@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 
@@ -37,7 +35,7 @@ void main() {
       );
 
       await binding.bootstrapFlutter(
-        ensureInitialized: () async {
+        ensureInitialized: () {
           ensured += 1;
         },
         additionalEntries: {diagnosticResource, mutatingTool},
@@ -60,7 +58,7 @@ void main() {
       );
 
       await binding.bootstrapFlutter(
-        ensureInitialized: () async {
+        ensureInitialized: () {
           ensured += 1;
         },
         onZoneError: (final error, final stackTrace) {

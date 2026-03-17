@@ -2369,175 +2369,6 @@ class _PanelDragHandle extends StatelessWidget {
   );
 }
 
-bool _hasBackendChoice(final LiveEditContext ctx) =>
-    ctx.backendConfigResource.value.availableBackends.length > 1;
-
-class _PanelRail extends StatelessWidget {
-  const _PanelRail({
-    required this.context,
-    required this.controller,
-    super.key,
-  });
-
-  final LiveEditContext context;
-  final LiveEditController controller;
-
-  @override
-  Widget build(final BuildContext buildContext) {
-    final theme = LiveEditOverlayThemeModel.instance.styleFor(
-      kLiveEditPanelRailSurfaceId,
-    );
-    final presentationDomain = selectPresentedLayer(context);
-    final sessionId = context.sessionResource.value.activeSessionId;
-    final activeSelection = selectSelectionForDomain(
-      context,
-      controller,
-      domain: presentationDomain,
-      sessionId: sessionId,
-    );
-    final activeBubbleId = selectActiveBubbleId(
-      context,
-      controller,
-      presentationDomain: presentationDomain,
-      sessionId: sessionId,
-    );
-    final bubbleStatus = selectBubbleStatusForBubble(context, activeBubbleId);
-    return Card(
-      color: theme.backgroundColor,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(theme.cornerRadius),
-        side: BorderSide(color: theme.borderColor),
-      ),
-      child: Semantics(
-        identifier: 'live_edit_panel_rail',
-        child: Padding(
-          padding: theme.padding,
-          child: Column(
-            children: <Widget>[
-              Semantics(
-                identifier: 'live_edit_panel_expand_button',
-                button: true,
-                child: IconButton(
-                  tooltip: 'Expand inspector',
-                  visualDensity: VisualDensity.compact,
-                  iconSize: 16,
-                  onPressed: () => ExpandPanelCommand().execute(context),
-                  icon: const Icon(Icons.chevron_left),
-                ),
-              ),
-              Transform.scale(
-                scale: 0.72,
-                child: Switch(
-                  value: selectDebugModeEnabled(context),
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  onChanged: (final v) =>
-                      SetDebugModeCommand(enabled: v).execute(context),
-                ),
-              ),
-              Text(
-                _hasBackendChoice(context)
-                    ? selectCurrentBackendLabel(
-                        context,
-                        controller,
-                        presentationDomain: presentationDomain,
-                        sessionId: sessionId,
-                      ).substring(0, 1).toUpperCase()
-                    : 'DBG',
-                style: TextStyle(
-                  fontSize: 9,
-                  fontWeight: FontWeight.w700,
-                  color: _hasBackendChoice(context)
-                      ? const Color(0xFF1D4ED8)
-                      : selectDebugModeEnabled(context)
-                      ? const Color(0xFF0F766E)
-                      : const Color(0xFF64748B),
-                ),
-              ),
-              if (_hasBackendChoice(context)) ...<Widget>[
-                const SizedBox(height: 6),
-                _BackendSwitcher(
-                  context: context,
-                  controller: controller,
-                  rail: true,
-                ),
-              ],
-              const SizedBox(height: 6),
-              if (activeSelection != null)
-                Column(
-                  children: <Widget>[
-                    _RailStatusDot(
-                      label: activeSelection.widgetType,
-                      status: bubbleStatus,
-                      active: true,
-                      targetDomain: selectTargetDomain(context),
-                      onTap: () => SelectTrackedBubbleCommand(
-                        bubbleId: activeBubbleId ?? activeSelection.nodeId,
-                        controller: controller,
-                      ).execute(context),
-                    ),
-                    const SizedBox(height: 4),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: Text(
-                        selectCurrentActivity(
-                              context,
-                              controller,
-                              presentationDomain: presentationDomain,
-                              sessionId: sessionId,
-                            )?.label ??
-                            _bubbleStatusLabel(bubbleStatus),
-                        style: const TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w700,
-                        ),
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              const SizedBox(height: 8),
-              Expanded(
-                child: ListView.separated(
-                  padding: const EdgeInsets.symmetric(horizontal: 6),
-                  itemBuilder: (final _, final index) {
-                    final summaries = selectBubbleSummaries(
-                      context,
-                      controller,
-                      presentationDomain: presentationDomain,
-                      sessionId: sessionId,
-                    );
-                    final summary = summaries[index];
-                    return _RailStatusDot(
-                      label: summary.label,
-                      status: summary.status,
-                      active: summary.active,
-                      targetDomain: summary.targetDomain,
-                      onTap: () => SelectTrackedBubbleCommand(
-                        bubbleId: summary.bubbleId,
-                        controller: controller,
-                      ).execute(context),
-                    );
-                  },
-                  separatorBuilder: (final _, final _) =>
-                      const SizedBox(height: 6),
-                  itemCount: selectBubbleSummaries(
-                    context,
-                    controller,
-                    presentationDomain: presentationDomain,
-                    sessionId: sessionId,
-                  ).length,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _PanelResizeHandle extends StatelessWidget {
   const _PanelResizeHandle({required this.onPanUpdate});
 
@@ -2607,6 +2438,16 @@ class _PanelSurface extends StatelessWidget {
     final surfaceId = panelExpanded
         ? kLiveEditPanelExpandedSurfaceId
         : kLiveEditPanelRailSurfaceId;
+    final railVm = railPanelViewModel ??
+        buildPanelViewModel(
+          context,
+          controller,
+          MediaQuery.sizeOf(buildContext),
+          buildToolingThemeData(),
+        );
+    final panelCb = panelCallbacks ?? ToolLayerPanelCallbacks(context: context);
+    final bubbleCb =
+        bubbleCallbacks ?? ToolLayerBubbleCallbacks(context: context, controller: controller);
     return KeyedSubtree(
       key: LiveEditOverlayThemeModel.instance.keyFor(surfaceId),
       child: panelExpanded
@@ -2616,19 +2457,11 @@ class _PanelSurface extends StatelessWidget {
               controller: controller,
               buildPropertyPanelSection: buildPropertyPanelSection,
             )
-          : (railPanelViewModel != null &&
-                panelCallbacks != null &&
-                bubbleCallbacks != null)
-          ? PanelRail(
+          : PanelRail(
               key: const ValueKey<String>('rail_panel'),
-              viewModel: railPanelViewModel!,
-              callbacks: panelCallbacks!,
-              bubbleCallbacks: bubbleCallbacks!,
-            )
-          : _PanelRail(
-              key: const ValueKey<String>('rail_panel'),
-              context: context,
-              controller: controller,
+              viewModel: railVm,
+              callbacks: panelCb,
+              bubbleCallbacks: bubbleCb,
             ),
     );
   }
@@ -2666,56 +2499,6 @@ class _PendingRequestCard extends StatelessWidget {
       ],
     ),
   );
-}
-
-class _PinnedBubblePill extends StatelessWidget {
-  const _PinnedBubblePill({
-    required this.context,
-    required this.controller,
-    required this.summary,
-    required this.viewportSize,
-  });
-
-  final LiveEditContext context;
-  final LiveEditController controller;
-  final LiveEditBubbleSummary summary;
-  final Size viewportSize;
-
-  @override
-  Widget build(final BuildContext buildContext) {
-    final bounds = summary.bounds;
-    if (bounds == null) {
-      return const SizedBox.shrink();
-    }
-    final left = mathMin(viewportSize.width - 28, mathMax(8, bounds.right + 6));
-    final top = mathMin(viewportSize.height - 28, mathMax(8, bounds.top));
-    return Positioned(
-      left: left,
-      top: top,
-      child: Semantics(
-        identifier: 'live_edit_pinned_bubble_${summary.nodeId}',
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(999),
-            onTap: () => SelectTrackedBubbleCommand(
-              bubbleId: summary.bubbleId,
-              controller: controller,
-            ).execute(context),
-            child: Container(
-              width: 18,
-              height: 18,
-              decoration: BoxDecoration(
-                color: _bubbleStatusColor(summary.status),
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 2),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class _PropertyActionColumn extends StatelessWidget {
@@ -3651,65 +3434,6 @@ class _PropertyPanel extends StatelessWidget {
     2 => 'Child',
     _ => 'Alt ${index + 1}',
   };
-}
-
-class _RailStatusDot extends StatelessWidget {
-  const _RailStatusDot({
-    required this.label,
-    required this.status,
-    required this.active,
-    required this.targetDomain,
-    required this.onTap,
-  });
-
-  final String label;
-  final LiveEditBubbleStatus status;
-  final bool active;
-  final LiveEditTargetDomain targetDomain;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(final BuildContext context) => Tooltip(
-    message:
-        '${_domainLabel(targetDomain)} • $label • ${_bubbleStatusLabel(status)}',
-    child: InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        width: 40,
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        decoration: BoxDecoration(
-          color: active ? const Color(0xFFE0F2FE) : const Color(0xFFF8FAFC),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: active ? const Color(0xFF0EA5E9) : const Color(0xFFE2E8F0),
-          ),
-        ),
-        child: Column(
-          children: <Widget>[
-            Container(
-              width: 10,
-              height: 10,
-              decoration: BoxDecoration(
-                color: _bubbleStatusColor(status),
-                shape: BoxShape.circle,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              label.isEmpty ? '?' : label[0].toUpperCase(),
-              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              _domainLabel(targetDomain)[0],
-              style: const TextStyle(fontSize: 8, color: Color(0xFF64748B)),
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
 }
 
 class _RenderHitTestExclusionScope extends RenderProxyBox {

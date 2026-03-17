@@ -40,10 +40,7 @@ Future<void> main(final List<String> args) async {
 
   final statePath = parsed.option(_stateFile) ?? _defaultStateFile;
   final stateRoot = _resolveStateRoot(statePath);
-  final outputDir = _resolveOutputDir(
-    parsed.option(_outputDir),
-    stateRoot: stateRoot,
-  );
+  final outputDir = _resolveOutputDir(parsed.option(_outputDir));
 
   final stateStore = StateStore(path: statePath);
   final bootstrapState = await _readBootstrapState(stateStore);
@@ -547,16 +544,17 @@ Future<CoreResult> _runValidateRuntime({
   final steps = <Map<String, Object?>>[];
   final resolvedTarget = <String, Object?>{
     'requestedUri': target,
-    'selectedUri': target ??
+    'selectedUri':
+        target ??
         executor.connectionContext.activeEndpoint?.display ??
         executor.connectionContext.stickyEndpoint?.display,
   };
 
   Future<CoreResult?> runStep(
     final String name,
-    final CoreCommand coreCommand,
-    {final bool Function(CoreResult result)? shouldRetry}
-  ) async {
+    final CoreCommand coreCommand, {
+    final bool Function(CoreResult result)? shouldRetry,
+  }) async {
     final executed = await _executeWithRetry(
       run: () => executor.execute(coreCommand),
       maxRetries: connectRetries,
@@ -614,11 +612,7 @@ Future<CoreResult> _runValidateRuntime({
       code:
           extensionFailure.error?.code ?? CoreErrorCode.getExtensionRpcsFailed,
       message: 'Runtime validation failed at get_extension_rpcs.',
-      details: {
-        'doctor': doctorData,
-        'steps': steps,
-        'target': resolvedTarget,
-      },
+      details: {'doctor': doctorData, 'steps': steps, 'target': resolvedTarget},
     );
   }
 
@@ -683,11 +677,7 @@ Future<CoreResult> _runValidateRuntime({
       code:
           viewDetailsFailure.error?.code ?? CoreErrorCode.getViewDetailsFailed,
       message: 'Runtime validation failed at get_view_details.',
-      details: {
-        'doctor': doctorData,
-        'steps': steps,
-        'target': resolvedTarget,
-      },
+      details: {'doctor': doctorData, 'steps': steps, 'target': resolvedTarget},
     );
   }
 
@@ -699,11 +689,7 @@ Future<CoreResult> _runValidateRuntime({
     return CoreResult.failure(
       code: appErrorsFailure.error?.code ?? CoreErrorCode.getAppErrorsFailed,
       message: 'Runtime validation failed at get_app_errors.',
-      details: {
-        'doctor': doctorData,
-        'steps': steps,
-        'target': resolvedTarget,
-      },
+      details: {'doctor': doctorData, 'steps': steps, 'target': resolvedTarget},
     );
   }
 
@@ -757,7 +743,10 @@ Future<CoreResult> _runValidateRuntime({
   final failedSteps = steps.where((final step) => step['ok'] != true).length;
   final requiredSorted = requiredExtensions.toList()..sort();
   final primaryCapture = _stepData(steps, 'capture_ui_snapshot');
-  final postReloadCapture = _stepData(steps, 'capture_ui_snapshot_after_reload');
+  final postReloadCapture = _stepData(
+    steps,
+    'capture_ui_snapshot_after_reload',
+  );
   return CoreResult.success(
     data: {
       'doctor': doctorData,
@@ -774,13 +763,14 @@ Future<CoreResult> _runValidateRuntime({
         'errorsCount': errorsCount,
         'visualCaptureCommand': 'capture_ui_snapshot',
         'requiredExtensions': requiredSorted,
-        'captureBackend': _captureBackend(primaryCapture) ??
+        'captureBackend':
+            _captureBackend(primaryCapture) ??
             _captureBackend(postReloadCapture),
-        'captureMode': _captureMode(primaryCapture) ?? _captureMode(postReloadCapture),
+        'captureMode':
+            _captureMode(primaryCapture) ?? _captureMode(postReloadCapture),
         'screenshotFiles': _screenshotFiles(steps),
         'retryCounts': {
-          for (final step in steps)
-            '${step['name']}': step['retries'] ?? 0,
+          for (final step in steps) '${step['name']}': step['retries'] ?? 0,
         },
         'skillInstallation': skillInstallData,
       },
@@ -1106,9 +1096,10 @@ Future<({CoreResult result, int attempts})> _executeWithRetry({
   var result = await run();
   while (!result.ok && retriesUsed < maxRetries) {
     final code = result.error?.code;
-    final retryable = shouldRetry?.call(result) ??
+    final retryable =
+        shouldRetry?.call(result) ??
         code == CoreErrorCode.connectFailed ||
-        code == CoreErrorCode.vmNotConnected;
+            code == CoreErrorCode.vmNotConnected;
     if (!retryable) {
       break;
     }
@@ -1275,13 +1266,7 @@ String _resolveStateRoot(final String statePath) {
   return parent;
 }
 
-String? _resolveOutputDir(final String? value, {required final String stateRoot}) {
-  final explicit = _nonEmptyOption(value);
-  if (explicit != null) {
-    return explicit;
-  }
-  return null;
-}
+String? _resolveOutputDir(final String? value) => _nonEmptyOption(value);
 
 Future<void> _writeResultArtifactIfNeeded({
   required final ArgResults topLevel,
@@ -1394,8 +1379,8 @@ String? _captureBackend(final Map<String, Object?>? stepData) {
 String? _captureMode(final Map<String, Object?>? stepData) {
   final screenshots = _screenshotEnvelope(stepData);
   return _nonEmptyOption(
-    '${stepData?['summary'] is Map ? (_asObject(stepData?['summary'])['actualMode'] ?? '') : ''}',
-  ) ??
+        '${stepData?['summary'] is Map ? (_asObject(stepData?['summary'])['actualMode'] ?? '') : ''}',
+      ) ??
       _nonEmptyOption(
         '${screenshots['actualMode'] ?? screenshots['captureMode'] ?? stepData?['actualMode'] ?? ''}',
       );
@@ -1429,8 +1414,9 @@ bool _shouldRetryPostReloadCapture(final CoreResult result) {
   if (code != CoreErrorCode.getScreenshotsFailed) {
     return false;
   }
-  final message = '${result.error?.message ?? ''} ${result.error?.details ?? ''}'
-      .toLowerCase();
+  final message =
+      '${result.error?.message ?? ''} ${result.error?.details ?? ''}'
+          .toLowerCase();
   return message.contains('screencapturekit') ||
       message.contains('desktop_window') ||
       message.contains('permission') ||
@@ -1440,8 +1426,9 @@ bool _shouldRetryPostReloadCapture(final CoreResult result) {
 
 String _captureFailureKind(final CoreResult result) {
   final code = result.error?.code;
-  final message = '${result.error?.message ?? ''} ${result.error?.details ?? ''}'
-      .toLowerCase();
+  final message =
+      '${result.error?.message ?? ''} ${result.error?.details ?? ''}'
+          .toLowerCase();
   if (message.contains('permission')) {
     return 'permission_denied';
   }
