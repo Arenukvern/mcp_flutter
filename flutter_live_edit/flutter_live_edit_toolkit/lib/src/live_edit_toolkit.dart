@@ -103,49 +103,6 @@ Set<MCPCallEntry> getFlutterLiveEditEntries() => <MCPCallEntry>{
   ),
   MCPCallEntry.tool(
     definition: MCPToolDefinition(
-      name: LiveEditRuntimeToolNames.selectAtPoint,
-      description:
-          'Select a live edit widget at global logical coordinates using an optional selection policy.',
-      inputSchema: ObjectSchema(
-        required: const <String>['x', 'y'],
-        properties: <String, Schema>{
-          'sessionId': StringSchema(),
-          'x': IntegerSchema(),
-          'y': IntegerSchema(),
-          'viewId': IntegerSchema(),
-          'selectionPolicy': StringSchema(),
-          'targetDomain': StringSchema(),
-        },
-      ),
-    ),
-    handler: (final request) {
-      final ctx = LiveEditRuntime.currentContext;
-      if (ctx == null) {
-        return MCPCallResult(
-          message: 'Live edit selection updated.',
-          parameters: _noContext(),
-        );
-      }
-      final result = SelectAtPointCommand(
-        sessionId: request['sessionId'],
-        x: _parseInt(request['x']),
-        y: _parseInt(request['y']),
-        viewId: _parseNullableInt(request['viewId']),
-        selectionPolicy: LiveEditSelectionPolicy.fromWire(
-          request['selectionPolicy'],
-        ),
-        targetDomain: request['targetDomain'] == null
-            ? null
-            : LiveEditTargetDomain.fromWire(request['targetDomain']),
-      ).execute(ctx);
-      return MCPCallResult(
-        message: 'Live edit selection updated.',
-        parameters: result,
-      );
-    },
-  ),
-  MCPCallEntry.tool(
-    definition: MCPToolDefinition(
       name: LiveEditRuntimeToolNames.getSelection,
       description: 'Get the currently selected live edit node.',
       inputSchema: ObjectSchema(
@@ -294,8 +251,42 @@ Set<MCPCallEntry> getFlutterLiveEditEntries() => <MCPCallEntry>{
 };
 
 extension FlutterLiveEditBindingExtension on MCPToolkitBinding {
-  void initializeFlutterLiveEditToolkit() =>
-      addEntries(entries: getFlutterLiveEditEntries());
+  Future<void> initializeFlutterLiveEditToolkit() async {
+    setSelectAtPointHandler((final request) {
+      final ctx = LiveEditRuntime.currentContext;
+      if (ctx == null) {
+        final x = _parseInt(request['x']);
+        final y = _parseInt(request['y']);
+        final viewId = _parseNullableInt(request['viewId']);
+        final payload = ViewIntrospectionService.inspectWidgetAtPoint(
+          x: x,
+          y: y,
+          viewId: viewId,
+        );
+        return MCPCallResult(
+          message: 'Widget inspection at point completed.',
+          parameters: payload,
+        );
+      }
+      final result = SelectAtPointCommand(
+        sessionId: request['sessionId'],
+        x: _parseInt(request['x']),
+        y: _parseInt(request['y']),
+        viewId: _parseNullableInt(request['viewId']),
+        selectionPolicy: LiveEditSelectionPolicy.fromWire(
+          request['selectionPolicy'],
+        ),
+        targetDomain: request['targetDomain'] == null
+            ? null
+            : LiveEditTargetDomain.fromWire(request['targetDomain']),
+      ).execute(ctx);
+      return MCPCallResult(
+        message: 'Live edit selection updated.',
+        parameters: result,
+      );
+    });
+    await addEntries(entries: getFlutterLiveEditEntries());
+  }
 }
 
 bool _parseBool(final Object? value) {

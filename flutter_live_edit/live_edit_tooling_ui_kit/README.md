@@ -1,14 +1,8 @@
 # live_edit_tooling_ui_kit
 
-A runnable Flutter app that shows the live-edit tool layer (bubble + panel) with prefilled data.
+Abstract bubble and panel widgets for the live-edit tool layer. View-model and callback driven; **no dependency on** `flutter_live_edit_toolkit`.
 
-**Purpose:** Run this app, connect live-edit (and MCP) to it, and iteratively improve the tooling UI. The same widget tree and semantics as in the main app, so selection (MCP / live-edit) targets the real bubble and panel widgets.
+- **Bubble:** view models and callbacks in `lib/src/bubble/`; widgets such as `PinnedBubblePill`.
+- **Panel:** view models and callbacks in `lib/src/panel/`; widgets such as `PanelRail`.
 
-## Run
-
-```bash
-cd flutter_live_edit/live_edit_tooling_ui_kit
-flutter run
-```
-
-On first frame the app enables the overlay, selects the target widget, opens the AI bubble, and expands the panel so the tool layer is visible and populated. You can then connect your MCP server and use live-edit tools to refine the bubble and panel UI.
+The toolkit composes these widgets and wires them to commands. The **runnable app** that uses this UI kit with live editing lives in the **`live_edit_tooling_ui_kit_playground`** package.

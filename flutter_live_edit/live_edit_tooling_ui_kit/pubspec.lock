@@ -41,22 +41,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.19.1"
-  dart_mcp:
-    dependency: transitive
-    description:
-      name: dart_mcp
-      sha256: "92a2ee1cca577ed54fa4f3d5ae0e80ce2dd61e1892e793bb4f951b30eab9c4b1"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.5.0"
-  equatable:
-    dependency: transitive
-    description:
-      name: equatable
-      sha256: "3e0141505477fd8ad55d6eb4e7776d3fe8430be8e497ccb1521370c3f21a3e2b"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.0.8"
   fake_async:
     dependency: transitive
     description:
@@ -78,24 +62,10 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.0.0"
-  flutter_live_edit_agent:
-    dependency: transitive
-    description:
-      path: "../flutter_live_edit_agent"
-      relative: true
-    source: path
-    version: "0.1.0"
   flutter_live_edit_core:
-    dependency: transitive
-    description:
-      path: "../flutter_live_edit_core"
-      relative: true
-    source: path
-    version: "0.1.0"
-  flutter_live_edit_toolkit:
     dependency: "direct main"
     description:
-      path: "../flutter_live_edit_toolkit"
+      path: "../flutter_live_edit_core"
       relative: true
     source: path
     version: "0.1.0"
@@ -104,30 +74,6 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  from_json_to_json:
-    dependency: transitive
-    description:
-      name: from_json_to_json
-      sha256: "31c0323d7d3ad03d40fbf2d81d1b7cbd87a6235c0d32d1a59a20f3862245fdca"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.4.0"
-  is_dart_empty_or_not:
-    dependency: transitive
-    description:
-      name: is_dart_empty_or_not
-      sha256: "1b3294a11fcf6987484a9d1928a47b858a459213eae2f779be092cfa362d5592"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.3.0"
-  json_rpc_2:
-    dependency: transitive
-    description:
-      name: json_rpc_2
-      sha256: "82dfd37d3b2e5030ae4729e1d7f5538cbc45eb1c73d618b9272931facac3bec1"
-      url: "https://pub.dev"
-    source: hosted
-    version: "4.1.0"
   leak_tracker:
     dependency: transitive
     description:
@@ -176,13 +122,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.13.0"
-  mcp_toolkit:
-    dependency: transitive
-    description:
-      path: "../../mcp_toolkit/mcp_toolkit"
-      relative: true
-    source: path
-    version: "3.0.0"
   meta:
     dependency: transitive
     description:
@@ -228,14 +167,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.4"
-  stream_transform:
-    dependency: transitive
-    description:
-      name: stream_transform
-      sha256: ad47125e588cfd37a9a7f86c7d6356dde8dfe89d071d293f80ca9e9273a33871
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.1.1"
   string_scanner:
     dependency: transitive
     description:
@@ -260,22 +191,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.7.9"
-  typed_data:
-    dependency: transitive
-    description:
-      name: typed_data
-      sha256: f9049c039ebfeb4cf7a7104a675823cd72dba8297f264b6637062516699fa006
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.4.0"
-  universal_io:
-    dependency: transitive
-    description:
-      name: universal_io
-      sha256: f63cbc48103236abf48e345e07a03ce5757ea86285ed313a6a032596ed9301e2
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.3.1"
   vector_math:
     dependency: transitive
     description:
@@ -292,27 +207,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "15.0.2"
-  xsoulspace_inference_codex_exec:
-    dependency: transitive
-    description:
-      path: "../../../../xs/dart_flutter_packages/pkgs/xsoulspace_inference_codex_exec"
-      relative: true
-    source: path
-    version: "0.1.0"
-  xsoulspace_inference_core:
-    dependency: transitive
-    description:
-      path: "../../../../xs/dart_flutter_packages/pkgs/xsoulspace_inference_core"
-      relative: true
-    source: path
-    version: "0.1.0"
-  xsoulspace_inference_cursor_agent:
-    dependency: transitive
-    description:
-      path: "../../../../xs/dart_flutter_packages/pkgs/xsoulspace_inference_cursor_agent"
-      relative: true
-    source: path
-    version: "0.1.0"
 sdks:
   dart: ">=3.10.0 <4.0.0"
   flutter: ">=3.18.0-18.0.pre.54"

@@ -46,8 +46,8 @@ Future<void> bootstrapFlutterLiveEditApp({
       }
       MCPToolkitBinding.instance
         ..initialize()
-        ..initializeFlutterToolkit()
-        ..initializeFlutterLiveEditToolkit();
+        ..initializeFlutterToolkit();
+      await MCPToolkitBinding.instance.initializeFlutterLiveEditToolkit();
 
       if (initializeApp != null) {
         await initializeApp();

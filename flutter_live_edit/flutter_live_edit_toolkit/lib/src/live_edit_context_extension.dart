@@ -9,7 +9,7 @@ extension LiveEditContextExtension on BuildContext {
   LiveEditContext? get liveEditContext => LiveEditScope.maybeOf(this)?.context;
 
   /// Runs [run] with the current [LiveEditContext]. No-op if no scope.
-  void runLiveEdit(void Function(LiveEditContext ctx) run) {
+  void runLiveEdit(final void Function(LiveEditContext ctx) run) {
     final ctx = liveEditContext;
     if (ctx != null) run(ctx);
   }

@@ -20,16 +20,27 @@ This package is designed to be transparent and easy to understand. It is built o
 
 To make it simple and customizable - it divided into groups of methods which acts as method handlers.
 
-For example, to add Flutter tools, you can use `initializeFlutterToolkit()` method like one below.
+For example, the default first-pass path is `bootstrapFlutter()`.
 
 All methods are available only in debug mode and wrapped in assert statements.
 
 ```dart
-MCPToolkitBinding.instance
-  // Initializes the Toolkit
-  ..initialize()
-  // Adds Flutter related methods to the MCP server
-  ..initializeFlutterToolkit();
+await MCPToolkitBinding.instance.bootstrapFlutter(
+  additionalEntries: {
+    MCPCallEntry.resource(
+      definition: MCPResourceDefinition(
+        name: 'app_runtime_status',
+        description: 'Read-only app diagnostics',
+        mimeType: 'application/json',
+      ),
+      handler: (final request) => MCPCallResult(
+        message: 'App runtime diagnostics',
+        parameters: {'ready': true},
+      ),
+    ),
+  },
+  runApp: () => runApp(const MyApp()),
+);
 ```
 
 App-side permission bridging is separate and opt-in:
@@ -97,31 +108,62 @@ addMcpTool(
     Then, run `flutter pub get` in your Flutter project's directory.
 
 2.  **Initialize in Your App**:
-    In your Flutter application's `main.dart` file (or equivalent entry point), initialize the bridge binding:
+    In your Flutter application's `main.dart` file, use the canonical bootstrap path:
 
     ```dart
     import 'package:flutter/material.dart';
-    import 'package:mcp_toolkit/mcp_toolkit.dart'; // Import the package
     import 'dart:async';
+    import 'package:mcp_toolkit/mcp_toolkit.dart';
 
     Future<void> main() async {
-      runZonedGuarded(
-        () async {
-          WidgetsFlutterBinding.ensureInitialized();
-          MCPToolkitBinding.instance
-            ..initialize() // Initializes the Toolkit
-            ..initializeFlutterToolkit(); // Adds Flutter related methods to the MCP server
-          runApp(const MyApp());
+      await MCPToolkitBinding.instance.bootstrapFlutter(
+        additionalEntries: {
+          MCPCallEntry.tool(
+            definition: MCPToolDefinition(
+              name: 'calculate_fibonacci',
+              description: 'Calculate the nth Fibonacci number',
+              inputSchema: ObjectSchema(
+                properties: {
+                  'n': IntegerSchema(description: 'Fibonacci position'),
+                },
+                required: ['n'],
+              ),
+            ),
+            handler: (final request) {
+              final n = int.tryParse(request['n'] ?? '0') ?? 0;
+              return MCPCallResult(
+                message: 'Calculated Fibonacci number for position $n',
+                parameters: {'result': fibonacci(n)},
+              );
+            },
+          ),
+          MCPCallEntry.resource(
+            definition: MCPResourceDefinition(
+              name: 'app_runtime_status',
+              description: 'Read-only runtime diagnostics',
+              mimeType: 'application/json',
+            ),
+            handler: (final request) => MCPCallResult(
+              message: 'Runtime diagnostics',
+              parameters: {'ready': true, 'screen': 'home'},
+            ),
+          ),
         },
-        (error, stack) {
-          // Optionally, you can also use the bridge's error handling for zone errors
-          MCPToolkitBinding.instance.handleZoneError(error, stack);
-        },
+        runApp: () => runApp(const MyApp()),
       );
     }
 
     // ... rest of your app code
     ```
+
+    `bootstrapFlutter()` does the boring parts in one place:
+    `WidgetsFlutterBinding.ensureInitialized()`,
+    `initialize()`,
+    `initializeFlutterToolkit()`,
+    optional app entry registration,
+    and zone error forwarding via `handleZoneError`.
+
+    Keep the older low-level calls only when you need custom startup choreography.
 
 3.  **Optional: Register an App-Side Permission Delegate**:
     Keep `initializeFlutterToolkit()` unchanged and add the permission bridge only if the app owns the relevant permission flow.
@@ -163,6 +205,19 @@ addMcpTool(
     `permissions_supported_kinds`, `permission_status`,
     `request_permission`, and `open_permission_settings`.
     Without a delegate, those entries are not exposed.
+
+## Golden Path
+
+1. Add `mcp_toolkit` to your app.
+2. Call `bootstrapFlutter(...)` in `main()`.
+3. Launch the app in debug mode.
+4. Run `flutter_mcp_cli validate-runtime`.
+5. Then use dynamic registry commands in this order:
+   `listClientToolsAndResources`,
+   `runClientResource`,
+   `runClientTool`.
+
+Use resources for read-only state, tools for actions, and prefer lowercase underscore names.
 
 ## Role in `mcp_flutter`
 

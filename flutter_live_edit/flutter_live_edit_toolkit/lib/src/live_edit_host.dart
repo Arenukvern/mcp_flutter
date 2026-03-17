@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
+import 'package:live_edit_tooling_ui_kit/live_edit_tooling_ui_kit.dart';
 
 import 'commands/commands.dart';
 import 'live_edit_backend_utils.dart';
@@ -12,6 +13,7 @@ import 'live_edit_controller_adapter.dart';
 import 'live_edit_orchestrator.dart';
 import 'live_edit_overlay_theme.dart';
 import 'live_edit_scope.dart';
+import 'live_edit_tool_layer_glue.dart';
 import 'live_edit_types.dart';
 import 'selectors/live_edit_selectors.dart';
 
@@ -264,29 +266,39 @@ class LiveEditToolLayer extends StatelessWidget {
       overlayTheme: overlayTheme,
       viewport: viewportSize,
     );
-    final presentationDomain = selectPresentedLayer(context);
-    final sessionId = context.sessionResource.value.activeSessionId;
-    final pinned = selectPinnedBubbleSummaries(
+    final theme = buildToolingThemeData();
+    final bubbleViewModel = buildBubbleLayerViewModel(
       context,
       controller,
-      presentationDomain: presentationDomain,
-      sessionId: sessionId,
+      viewportSize,
+      theme,
     );
+    final panelViewModel = buildPanelViewModel(
+      context,
+      controller,
+      viewportSize,
+      theme,
+    );
+    final bubbleCallbacks = ToolLayerBubbleCallbacks(
+      context: context,
+      controller: controller,
+    );
+    final panelCallbacks = ToolLayerPanelCallbacks(context: context);
     final expanded = selectExpandedBubbleSummaries(
       context,
       controller,
-      presentationDomain: presentationDomain,
-      sessionId: sessionId,
+      presentationDomain: selectPresentedLayer(context),
+      sessionId: context.sessionResource.value.activeSessionId,
     );
     return Stack(
       fit: StackFit.expand,
       children: <Widget>[
-        ...pinned.map(
-          (final summary) => _PinnedBubblePill(
-            context: context,
-            controller: controller,
+        ...bubbleViewModel.pinnedSummaries.map(
+          (final summary) => PinnedBubblePill(
             summary: summary,
             viewportSize: viewportSize,
+            callbacks: bubbleCallbacks,
+            theme: bubbleViewModel.theme,
           ),
         ),
         ...expanded.map(
@@ -306,6 +318,9 @@ class LiveEditToolLayer extends StatelessWidget {
             context: context,
             controller: controller,
             buildPropertyPanelSection: buildPropertyPanelSection,
+            railPanelViewModel: panelViewModel,
+            panelCallbacks: panelCallbacks,
+            bubbleCallbacks: bubbleCallbacks,
           ),
         ),
       ],
@@ -1377,11 +1392,17 @@ class _EditorPanelSurface extends StatelessWidget {
     required this.context,
     required this.controller,
     this.buildPropertyPanelSection,
+    this.railPanelViewModel,
+    this.panelCallbacks,
+    this.bubbleCallbacks,
   });
 
   final LiveEditContext context;
   final LiveEditController controller;
   final LiveEditPropertyPanelSectionBuilder? buildPropertyPanelSection;
+  final PanelViewModel? railPanelViewModel;
+  final PanelCallbacks? panelCallbacks;
+  final BubbleCallbacks? bubbleCallbacks;
 
   @override
   Widget build(final BuildContext buildContext) => Stack(
@@ -1391,6 +1412,9 @@ class _EditorPanelSurface extends StatelessWidget {
           context: context,
           controller: controller,
           buildPropertyPanelSection: buildPropertyPanelSection,
+          railPanelViewModel: railPanelViewModel,
+          panelCallbacks: panelCallbacks,
+          bubbleCallbacks: bubbleCallbacks,
         ),
       ),
       Positioned(
@@ -1443,7 +1467,7 @@ class _FlutterLiveEditHostState extends State<FlutterLiveEditHost> {
           _orchestrator!,
           _overlayTheme,
         ]),
-        builder: (final _, final __) => _buildBody(
+        builder: (final _, final _) => _buildBody(
           context,
           _orchestrator!.context,
           _orchestrator!.controller,
@@ -1468,7 +1492,7 @@ class _FlutterLiveEditHostState extends State<FlutterLiveEditHost> {
             data.backendConfigResource,
             _overlayTheme,
           ]),
-          builder: (final _, final __) =>
+          builder: (final _, final _) =>
               _buildBody(c, data.context, data.controller),
         );
       },
@@ -2496,7 +2520,7 @@ class _PanelRail extends StatelessWidget {
                       ).execute(context),
                     );
                   },
-                  separatorBuilder: (final _, final __) =>
+                  separatorBuilder: (final _, final _) =>
                       const SizedBox(height: 6),
                   itemCount: selectBubbleSummaries(
                     context,
@@ -2565,11 +2589,17 @@ class _PanelSurface extends StatelessWidget {
     required this.context,
     required this.controller,
     this.buildPropertyPanelSection,
+    this.railPanelViewModel,
+    this.panelCallbacks,
+    this.bubbleCallbacks,
   });
 
   final LiveEditContext context;
   final LiveEditController controller;
   final LiveEditPropertyPanelSectionBuilder? buildPropertyPanelSection;
+  final PanelViewModel? railPanelViewModel;
+  final PanelCallbacks? panelCallbacks;
+  final BubbleCallbacks? bubbleCallbacks;
 
   @override
   Widget build(final BuildContext buildContext) {
@@ -2585,6 +2615,15 @@ class _PanelSurface extends StatelessWidget {
               context: context,
               controller: controller,
               buildPropertyPanelSection: buildPropertyPanelSection,
+            )
+          : (railPanelViewModel != null &&
+                panelCallbacks != null &&
+                bubbleCallbacks != null)
+          ? PanelRail(
+              key: const ValueKey<String>('rail_panel'),
+              viewModel: railPanelViewModel!,
+              callbacks: panelCallbacks!,
+              bubbleCallbacks: bubbleCallbacks!,
             )
           : _PanelRail(
               key: const ValueKey<String>('rail_panel'),

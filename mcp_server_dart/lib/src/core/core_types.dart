@@ -20,6 +20,7 @@ final class CoreRuntimeConfiguration {
     this.flutterProjectDir,
     this.flutterDevice,
     this.stateRootDir,
+    this.outputDir,
   });
 
   final String vmHost;
@@ -32,4 +33,5 @@ final class CoreRuntimeConfiguration {
   final String? flutterProjectDir;
   final String? flutterDevice;
   final String? stateRootDir;
+  final String? outputDir;
 }

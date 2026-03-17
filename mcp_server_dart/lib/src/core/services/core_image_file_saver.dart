@@ -10,15 +10,15 @@ import 'package:path/path.dart' as path;
 
 /// Save screenshots as files for clients that prefer URL references.
 final class CoreImageFileSaver {
-  const CoreImageFileSaver({required this.logger, this.currentDirectory});
+  const CoreImageFileSaver({required this.logger, this.baseDirectory});
 
   static const temporalFolderName = '.mcp_screenshots';
 
   final CoreLogger logger;
-  final String? currentDirectory;
+  final String? baseDirectory;
 
   String get _temporalFolderPath {
-    final baseDir = currentDirectory ?? Directory.current.path;
+    final baseDir = baseDirectory ?? Directory.current.path;
     return path.join(baseDir, temporalFolderName);
   }
 

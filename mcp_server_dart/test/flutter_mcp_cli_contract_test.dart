@@ -36,6 +36,7 @@ void main() {
         );
         expect(global.contains('validate-runtime'), isTrue);
         expect(global.contains('batch'), isTrue);
+        expect(global.contains('--output-dir'), isTrue);
 
         final snapshotHelp = await _runCli(statePath, [
           'snapshot',
@@ -81,6 +82,7 @@ void main() {
           isTrue,
         );
         expect(validate.contains('--connect-retries <n>'), isTrue);
+        expect(validate.contains('--post-reload-delay-ms <n>'), isTrue);
         expect(validate.contains('--install-skill'), isTrue);
 
         final batchHelp = await _runCli(statePath, ['batch', '--help']);
@@ -317,6 +319,30 @@ void main() {
         );
       },
     );
+
+    test('validate-runtime mirrors result envelope to output dir', () async {
+      final outputDir = Directory('${tempDir.path}/artifacts');
+
+      final result = await _runCli(statePath, [
+        '--output-dir',
+        outputDir.path,
+        'validate-runtime',
+        '--target',
+        'ws://127.0.0.1:1/unreachable/ws',
+        '--timeout-ms',
+        '50',
+      ]);
+
+      expect(result.exitCode, isNonZero);
+
+      final artifact = File('${outputDir.path}/validate-runtime.json');
+      expect(artifact.existsSync(), isTrue);
+
+      final envelope =
+          jsonDecode(artifact.readAsStringSync()) as Map<String, dynamic>;
+      expect(envelope['ok'], isFalse);
+      expect((envelope['error'] as Map<String, dynamic>)['code'], isNotEmpty);
+    });
   });
 }
 

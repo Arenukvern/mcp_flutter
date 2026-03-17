@@ -40,6 +40,10 @@ Future<void> main(final List<String> args) async {
 
   final statePath = parsed.option(_stateFile) ?? _defaultStateFile;
   final stateRoot = _resolveStateRoot(statePath);
+  final outputDir = _resolveOutputDir(
+    parsed.option(_outputDir),
+    stateRoot: stateRoot,
+  );
 
   final stateStore = StateStore(path: statePath);
   final bootstrapState = await _readBootstrapState(stateStore);
@@ -86,12 +90,16 @@ Future<void> main(final List<String> args) async {
     flutterProjectDir: flutterProjectDir,
     flutterDevice: flutterDevice,
     stateRootDir: stateRoot,
+    outputDir: outputDir,
   );
 
   final executor = DefaultCoreCommandExecutor(
     connectionContext: connectionContext,
     portScanner: portScanner,
-    imageFileSaver: CoreImageFileSaver(logger: logger),
+    imageFileSaver: CoreImageFileSaver(
+      logger: logger,
+      baseDirectory: outputDir ?? stateRoot,
+    ),
     configuration: configuration,
     sessionManager: sessionManager,
   );
@@ -140,6 +148,11 @@ Future<void> main(final List<String> args) async {
   );
 
   _printInteractiveNarrativeIfNeeded(topLevel: command, result: result);
+  await _writeResultArtifactIfNeeded(
+    topLevel: command,
+    result: result,
+    outputDir: outputDir,
+  );
   io.stdout.writeln(jsonEncode(result.toEnvelopeJson()));
   await connectionContext.disconnect();
   io.exit(_resolveExitCode(topLevel: command, result: result));
@@ -480,6 +493,10 @@ Future<CoreResult> _runValidateRuntime({
     command.option('connect-retries'),
     fallback: _defaultValidateRuntimeConnectRetries,
   );
+  final postReloadDelayMs = _parseNonNegativeIntOption(
+    command.option('post-reload-delay-ms'),
+    fallback: _defaultValidateRuntimePostReloadDelayMs,
+  );
   final afterReload = command.flag('after-reload');
   final installSkill = command.flag('install-skill');
   final forceSkillInstall = command.flag('force-skill-install');
@@ -528,19 +545,28 @@ Future<CoreResult> _runValidateRuntime({
   }
 
   final steps = <Map<String, Object?>>[];
+  final resolvedTarget = <String, Object?>{
+    'requestedUri': target,
+    'selectedUri': target ??
+        executor.connectionContext.activeEndpoint?.display ??
+        executor.connectionContext.stickyEndpoint?.display,
+  };
 
   Future<CoreResult?> runStep(
     final String name,
     final CoreCommand coreCommand,
+    {final bool Function(CoreResult result)? shouldRetry}
   ) async {
     final executed = await _executeWithRetry(
       run: () => executor.execute(coreCommand),
       maxRetries: connectRetries,
+      shouldRetry: shouldRetry,
     );
     final result = executed.result;
     steps.add({
       'name': name,
       'attempts': executed.attempts,
+      'retries': executed.attempts - 1,
       'ok': result.ok,
       'data': result.data,
       'error': result.error?.toJson(),
@@ -566,9 +592,17 @@ Future<CoreResult> _runValidateRuntime({
         code: connectFailure.error?.code ?? CoreErrorCode.connectFailed,
         message:
             'Runtime validation failed: unable to connect to explicit target.',
-        details: {'doctor': doctorData, 'steps': steps},
+        details: {
+          'doctor': doctorData,
+          'steps': steps,
+          'target': resolvedTarget,
+          'failureKind': 'bad_target_uri_or_unreachable_vm_service',
+        },
       );
     }
+    resolvedTarget['selectedUri'] =
+        executor.connectionContext.activeEndpoint?.display ??
+        resolvedTarget['selectedUri'];
   }
 
   final extensionFailure = await runStep(
@@ -580,7 +614,11 @@ Future<CoreResult> _runValidateRuntime({
       code:
           extensionFailure.error?.code ?? CoreErrorCode.getExtensionRpcsFailed,
       message: 'Runtime validation failed at get_extension_rpcs.',
-      details: {'doctor': doctorData, 'steps': steps},
+      details: {
+        'doctor': doctorData,
+        'steps': steps,
+        'target': resolvedTarget,
+      },
     );
   }
 
@@ -605,7 +643,9 @@ Future<CoreResult> _runValidateRuntime({
           'Runtime validation failed: missing required toolkit extensions.',
       details: {
         'doctor': doctorData,
+        'target': resolvedTarget,
         'missingExtensions': missingExtensions,
+        'failureKind': 'missing_mcp_toolkit_wiring',
         'fix':
             'Install/initialize `mcp_toolkit` in the app, then hot restart or rerun.',
         'steps': steps,
@@ -625,7 +665,12 @@ Future<CoreResult> _runValidateRuntime({
     return CoreResult.failure(
       code: snapshotFailure.error?.code ?? CoreErrorCode.getScreenshotsFailed,
       message: 'Runtime validation failed at capture_ui_snapshot.',
-      details: {'doctor': doctorData, 'steps': steps},
+      details: {
+        'doctor': doctorData,
+        'steps': steps,
+        'target': resolvedTarget,
+        'failureKind': _captureFailureKind(snapshotFailure),
+      },
     );
   }
 
@@ -638,7 +683,11 @@ Future<CoreResult> _runValidateRuntime({
       code:
           viewDetailsFailure.error?.code ?? CoreErrorCode.getViewDetailsFailed,
       message: 'Runtime validation failed at get_view_details.',
-      details: {'doctor': doctorData, 'steps': steps},
+      details: {
+        'doctor': doctorData,
+        'steps': steps,
+        'target': resolvedTarget,
+      },
     );
   }
 
@@ -650,7 +699,11 @@ Future<CoreResult> _runValidateRuntime({
     return CoreResult.failure(
       code: appErrorsFailure.error?.code ?? CoreErrorCode.getAppErrorsFailed,
       message: 'Runtime validation failed at get_app_errors.',
-      details: {'doctor': doctorData, 'steps': steps},
+      details: {
+        'doctor': doctorData,
+        'steps': steps,
+        'target': resolvedTarget,
+      },
     );
   }
 
@@ -663,8 +716,16 @@ Future<CoreResult> _runValidateRuntime({
       return CoreResult.failure(
         code: reloadFailure.error?.code ?? CoreErrorCode.hotReloadFailed,
         message: 'Runtime validation failed at hot_reload_flutter.',
-        details: {'doctor': doctorData, 'steps': steps},
+        details: {
+          'doctor': doctorData,
+          'steps': steps,
+          'target': resolvedTarget,
+        },
       );
+    }
+
+    if (postReloadDelayMs > 0) {
+      await Future<void>.delayed(Duration(milliseconds: postReloadDelayMs));
     }
 
     final afterReloadSnapshotFailure = await runStep(
@@ -674,6 +735,7 @@ Future<CoreResult> _runValidateRuntime({
         includeErrors: false,
         permissionPolicy: PermissionPolicy.autoRequestOnce,
       ),
+      shouldRetry: _shouldRetryPostReloadCapture,
     );
     if (afterReloadSnapshotFailure != null) {
       return CoreResult.failure(
@@ -682,13 +744,20 @@ Future<CoreResult> _runValidateRuntime({
             CoreErrorCode.getScreenshotsFailed,
         message:
             'Runtime validation failed at post-reload capture_ui_snapshot.',
-        details: {'doctor': doctorData, 'steps': steps},
+        details: {
+          'doctor': doctorData,
+          'steps': steps,
+          'target': resolvedTarget,
+          'failureKind': _captureFailureKind(afterReloadSnapshotFailure),
+        },
       );
     }
   }
 
   final failedSteps = steps.where((final step) => step['ok'] != true).length;
   final requiredSorted = requiredExtensions.toList()..sort();
+  final primaryCapture = _stepData(steps, 'capture_ui_snapshot');
+  final postReloadCapture = _stepData(steps, 'capture_ui_snapshot_after_reload');
   return CoreResult.success(
     data: {
       'doctor': doctorData,
@@ -697,13 +766,22 @@ Future<CoreResult> _runValidateRuntime({
         'total': steps.length,
         'success': steps.length - failedSteps,
         'failed': failedSteps,
-        'target': target,
+        'target': resolvedTarget,
         'timeoutMs': timeoutMs,
         'connectRetries': connectRetries,
+        'postReloadDelayMs': postReloadDelayMs,
         'afterReload': afterReload,
         'errorsCount': errorsCount,
         'visualCaptureCommand': 'capture_ui_snapshot',
         'requiredExtensions': requiredSorted,
+        'captureBackend': _captureBackend(primaryCapture) ??
+            _captureBackend(postReloadCapture),
+        'captureMode': _captureMode(primaryCapture) ?? _captureMode(postReloadCapture),
+        'screenshotFiles': _screenshotFiles(steps),
+        'retryCounts': {
+          for (final step in steps)
+            '${step['name']}': step['retries'] ?? 0,
+        },
         'skillInstallation': skillInstallData,
       },
     },
@@ -1022,12 +1100,13 @@ bool _doctorHasCriticalFailures(final Map<String, Object?> doctorData) {
 Future<({CoreResult result, int attempts})> _executeWithRetry({
   required final Future<CoreResult> Function() run,
   required final int maxRetries,
+  final bool Function(CoreResult result)? shouldRetry,
 }) async {
   var retriesUsed = 0;
   var result = await run();
   while (!result.ok && retriesUsed < maxRetries) {
     final code = result.error?.code;
-    final retryable =
+    final retryable = shouldRetry?.call(result) ??
         code == CoreErrorCode.connectFailed ||
         code == CoreErrorCode.vmNotConnected;
     if (!retryable) {
@@ -1196,6 +1275,36 @@ String _resolveStateRoot(final String statePath) {
   return parent;
 }
 
+String? _resolveOutputDir(final String? value, {required final String stateRoot}) {
+  final explicit = _nonEmptyOption(value);
+  if (explicit != null) {
+    return explicit;
+  }
+  return null;
+}
+
+Future<void> _writeResultArtifactIfNeeded({
+  required final ArgResults topLevel,
+  required final CoreResult result,
+  required final String? outputDir,
+}) async {
+  if (outputDir == null) {
+    return;
+  }
+  if (topLevel.name != 'validate-runtime') {
+    return;
+  }
+
+  final directory = io.Directory(outputDir);
+  if (!directory.existsSync()) {
+    await directory.create(recursive: true);
+  }
+  final file = io.File('${directory.path}/validate-runtime.json');
+  await file.writeAsString(
+    const JsonEncoder.withIndent('  ').convert(result.toEnvelopeJson()),
+  );
+}
+
 void _printInteractiveNarrativeIfNeeded({
   required final ArgResults topLevel,
   required final CoreResult result,
@@ -1246,6 +1355,107 @@ Map<String, Object?> _asObject(final Object? value) {
     return value.cast<String, Object?>();
   }
   return const <String, Object?>{};
+}
+
+Map<String, Object?>? _stepData(
+  final List<Map<String, Object?>> steps,
+  final String name,
+) {
+  for (final step in steps) {
+    if ('${step['name']}' != name) {
+      continue;
+    }
+    final data = step['data'];
+    if (data is Map<String, Object?>) {
+      return data;
+    }
+    if (data is Map) {
+      return data.cast<String, Object?>();
+    }
+  }
+  return null;
+}
+
+Map<String, Object?> _screenshotEnvelope(final Map<String, Object?>? stepData) {
+  if (stepData == null) {
+    return const <String, Object?>{};
+  }
+  return _asObject(stepData['screenshots']);
+}
+
+String? _captureBackend(final Map<String, Object?>? stepData) {
+  final screenshots = _screenshotEnvelope(stepData);
+  final permission = _asObject(screenshots['permission']);
+  return _nonEmptyOption(
+    '${permission['backend'] ?? screenshots['backend'] ?? stepData?['backend'] ?? ''}',
+  );
+}
+
+String? _captureMode(final Map<String, Object?>? stepData) {
+  final screenshots = _screenshotEnvelope(stepData);
+  return _nonEmptyOption(
+    '${stepData?['summary'] is Map ? (_asObject(stepData?['summary'])['actualMode'] ?? '') : ''}',
+  ) ??
+      _nonEmptyOption(
+        '${screenshots['actualMode'] ?? screenshots['captureMode'] ?? stepData?['actualMode'] ?? ''}',
+      );
+}
+
+List<String> _screenshotFiles(final List<Map<String, Object?>> steps) {
+  final files = <String>[];
+  for (final step in steps) {
+    final stepData = _stepData(steps, '${step['name']}');
+    final screenshots = _screenshotEnvelope(stepData);
+    final fileUrls = screenshots['fileUrls'];
+    if (fileUrls is! List) {
+      continue;
+    }
+    for (final value in fileUrls) {
+      final stringValue = _nonEmptyOption('$value');
+      if (stringValue != null) {
+        files.add(stringValue);
+      }
+    }
+  }
+  return files;
+}
+
+bool _shouldRetryPostReloadCapture(final CoreResult result) {
+  final code = result.error?.code;
+  if (code == CoreErrorCode.connectFailed ||
+      code == CoreErrorCode.vmNotConnected) {
+    return true;
+  }
+  if (code != CoreErrorCode.getScreenshotsFailed) {
+    return false;
+  }
+  final message = '${result.error?.message ?? ''} ${result.error?.details ?? ''}'
+      .toLowerCase();
+  return message.contains('screencapturekit') ||
+      message.contains('desktop_window') ||
+      message.contains('permission') ||
+      message.contains('timeout') ||
+      message.contains('window');
+}
+
+String _captureFailureKind(final CoreResult result) {
+  final code = result.error?.code;
+  final message = '${result.error?.message ?? ''} ${result.error?.details ?? ''}'
+      .toLowerCase();
+  if (message.contains('permission')) {
+    return 'permission_denied';
+  }
+  if (code == CoreErrorCode.connectFailed ||
+      code == CoreErrorCode.vmNotConnected) {
+    return 'bad_target_uri_or_unreachable_vm_service';
+  }
+  if (code == CoreErrorCode.getScreenshotsFailed &&
+      (message.contains('screencapturekit') ||
+          message.contains('desktop_window') ||
+          message.contains('window'))) {
+    return 'host_capture_backend_instability';
+  }
+  return 'unknown_capture_failure';
 }
 
 String _globalUsage() {
@@ -1409,6 +1619,12 @@ final _argParser = ArgParser(allowTrailingOptions: false)
     _saveImagesToFiles,
     defaultsTo: false,
     help: 'Save screenshots to files and return file URLs',
+  )
+  ..addOption(
+    _outputDir,
+    help:
+        'Deterministic output root for CLI artifacts. Screenshot files are written to '
+        '<output-dir>/.mcp_screenshots and validate-runtime mirrors its JSON summary here.',
   )
   ..addOption(
     _logLevel,
@@ -1585,6 +1801,12 @@ final _argParser = ArgParser(allowTrailingOptions: false)
         help:
             'Retries for transient connect/vm_not_connected failures per step.',
       )
+      ..addOption(
+        'post-reload-delay-ms',
+        defaultsTo: '$_defaultValidateRuntimePostReloadDelayMs',
+        help:
+            'Optional settle delay before the post-reload visual capture step.',
+      )
       ..addFlag(
         'after-reload',
         defaultsTo: false,
@@ -1619,6 +1841,7 @@ const _defaultDoctorTimeoutMs = 2500;
 const _defaultValidateRuntimeTimeoutMs = 10000;
 const _defaultValidateRuntimeErrorsCount = 5;
 const _defaultValidateRuntimeConnectRetries = 1;
+const _defaultValidateRuntimePostReloadDelayMs = 0;
 const _runtimeValidationSkillName = 'flutter-mcp-cli-runtime-validation';
 
 final class _BatchStep {
@@ -1640,6 +1863,7 @@ const _imagesSupported = 'images';
 const _dumpsSupported = 'dumps';
 const _dynamicRegistrySupported = 'dynamics';
 const _saveImagesToFiles = 'save-images';
+const _outputDir = 'output-dir';
 const _logLevel = 'log-level';
 const _help = 'help';
 const _check = 'check';
@@ -1772,7 +1996,7 @@ Examples:
 
 String _usageValidateRuntime() =>
     '''
-Usage: flutter_mcp_cli validate-runtime [--target <ws_uri>] [--timeout-ms <n>] [--errors-count <n>] [--connect-retries <n>] [--after-reload] [--install-skill] [--skill-destination <dir>] [--force-skill-install]
+Usage: flutter_mcp_cli validate-runtime [--target <ws_uri>] [--timeout-ms <n>] [--errors-count <n>] [--connect-retries <n>] [--post-reload-delay-ms <n>] [--after-reload] [--install-skill] [--skill-destination <dir>] [--force-skill-install]
 
 Two-step agent flow:
   1) Start Flutter app in debug mode
@@ -1780,7 +2004,7 @@ Two-step agent flow:
 
 Examples:
   flutter_mcp_cli validate-runtime --target ws://127.0.0.1:8181/<token>/ws --timeout-ms 10000
-  flutter_mcp_cli --save-images validate-runtime --target ws://127.0.0.1:8181/<token>/ws --after-reload
+  flutter_mcp_cli --save-images --output-dir .mcp_outputs/arena_macos validate-runtime --target ws://127.0.0.1:8181/<token>/ws --after-reload
   flutter_mcp_cli validate-runtime --target ws://127.0.0.1:8181/<token>/ws --install-skill
 
   What it does:
@@ -1789,7 +2013,7 @@ Examples:
   - capture_ui_snapshot (screenshot-only mode for the visual gate)
   - get_view_details
   - get_app_errors
-  - optional hot_reload + capture_ui_snapshot
+  - optional hot_reload + delayed capture_ui_snapshot
 
 If toolkit extensions are missing, add `mcp_toolkit` to app dependencies and
 initialize `MCPToolkitBinding.instance..initialize()..initializeFlutterToolkit();`
@@ -1800,5 +2024,6 @@ For truthful `desktop_window` capture from the bare CLI, also pass global
 window capture can resolve the running Flutter app.
 
 Transient first-connect failures are retried automatically for connect/vm_not_connected errors.
+macOS desktop-window post-reload capture retries known host-capture races before failing.
 Optional skill installation copies mcp_server_dart/skills/$_runtimeValidationSkillName to \$CODEX_HOME/skills.
 ''';

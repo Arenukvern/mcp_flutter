@@ -31,9 +31,26 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Live Edit: ON'), findsOneWidget);
-    expect(find.text('Tap a widget'), findsOneWidget);
 
-    await tester.tap(find.text('About This Demo'), warnIfMissed: false);
+    // Panel may start collapsed (rail). Wait for rail then expand so we see the tap hint.
+    await tester.pumpAndSettle();
+    final expandCandidates = find.byIcon(Icons.chevron_left);
+    if (expandCandidates.evaluate().isNotEmpty) {
+      await tester.tap(expandCandidates.first);
+      await tester.pumpAndSettle();
+    }
+    expect(
+      find.text('Tap a widget').evaluate().isNotEmpty ||
+          find.text('Tap any widget in the app').evaluate().isNotEmpty,
+      isTrue,
+      reason: 'Panel should show tap hint when Live Edit is on',
+    );
+
+    // Select a widget in the app so the panel shows selection/draft UI.
+    await tester.tap(
+      find.text('Live Edit with AI agents for Flutter App'),
+      warnIfMissed: false,
+    );
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Draft changes:'), findsOneWidget);
@@ -298,7 +315,10 @@ void main() {
     await _pumpUntil(tester, () => h.overlayVisible);
 
     h.ensureSession();
-    await tester.tap(find.text('About This Demo'), warnIfMissed: false);
+    await tester.tap(
+      find.text('Live Edit with AI agents for Flutter App'),
+      warnIfMissed: false,
+    );
     await tester.pumpAndSettle();
     await _pumpUntil(tester, () => h.activeSelection != null);
 

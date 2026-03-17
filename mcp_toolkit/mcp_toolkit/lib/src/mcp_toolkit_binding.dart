@@ -3,11 +3,13 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 
 import 'mcp_models.dart';
 import 'mcp_toolkit_binding_base.dart';
 import 'mcp_toolkit_extensions.dart';
 import 'services/error_monitor.dart';
+import 'toolkits/flutter_mcp_toolkit.dart';
 
 /// Add a single MCP tool to the MCP toolkit.
 ///
@@ -53,6 +55,50 @@ class MCPToolkitBinding extends MCPToolkitBindingBase
   /// The singleton instance of the MCP Toolkit binding.
   static final instance = MCPToolkitBinding._();
 
+  MCPCallHandler? _selectAtPointHandler;
+
+  MCPCallHandler? get selectAtPointHandler => _selectAtPointHandler;
+
+  void setSelectAtPointHandler(final MCPCallHandler handler) {
+    _selectAtPointHandler = handler;
+  }
+
+  /// Canonical app bootstrap for Flutter hosts using MCP toolkit in debug.
+  Future<void> bootstrapFlutter({
+    required final FutureOr<void> Function() runApp,
+    final Iterable<MCPCallEntry> additionalEntries = const <MCPCallEntry>[],
+    final FutureOr<void> Function()? ensureInitialized,
+    final void Function(Object error, StackTrace stackTrace)? onZoneError,
+    final bool initializeFlutterToolkitEntries = true,
+    final bool debugOnly = true,
+  }) async {
+    await runZonedGuarded(
+      () async {
+        if (debugOnly && kReleaseMode) {
+          await runApp();
+          return;
+        }
+
+        await (ensureInitialized?.call() ??
+            Future<void>.sync(WidgetsFlutterBinding.ensureInitialized));
+
+        if (!isInitialized) {
+          initialize();
+        }
+
+        if (initializeFlutterToolkitEntries) {
+          await _addMissingEntries(getFlutterMcpToolkitEntries(binding: this));
+        }
+        if (additionalEntries.isNotEmpty) {
+          await _addMissingEntries(additionalEntries);
+        }
+
+        await runApp();
+      },
+      onZoneError ?? handleZoneError,
+    );
+  }
+
   @override
   void initialize({
     final String serviceExtensionName = kMCPServiceExtensionName,
@@ -79,6 +125,17 @@ class MCPToolkitBinding extends MCPToolkitBindingBase
       initializeServiceExtensions(errorMonitor: this, entries: entries);
       return true;
     }());
+  }
+
+  Future<void> _addMissingEntries(final Iterable<MCPCallEntry> entries) {
+    final existingKeys = allEntries.map((final entry) => entry.key).toSet();
+    final missingEntries = entries
+        .where((final entry) => !existingKeys.contains(entry.key))
+        .toSet();
+    if (missingEntries.isEmpty) {
+      return Future<void>.value();
+    }
+    return addEntries(entries: missingEntries);
   }
 
   /// Get all accumulated entries across all addEntries calls

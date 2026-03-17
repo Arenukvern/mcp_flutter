@@ -1,25 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 
-/// Example demonstrating how to register a Fibonacci calculator tool
-/// with the MCP toolkit for automatic discovery by the MCP server
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  // Initialize the MCP toolkit
-  MCPToolkitBinding.instance
-    ..initialize()
-    ..initializeFlutterToolkit();
-
-  // Register the Fibonacci calculator tool
-  await _registerFibonacciTool();
-
-  runApp(const FibonacciApp());
+  await MCPToolkitBinding.instance.bootstrapFlutter(
+    additionalEntries: _starterEntries,
+    runApp: () => runApp(const FibonacciApp()),
+  );
 }
 
-/// Register the Fibonacci calculator tool with the MCP toolkit
-Future<void> _registerFibonacciTool() async {
-  final fibonacciEntry = MCPCallEntry.tool(
+Set<MCPCallEntry> get _starterEntries => {
+  MCPCallEntry.tool(
     definition: MCPToolDefinition(
       name: 'calculate_fibonacci',
       description: 'Calculate the nth Fibonacci number and return the sequence',
@@ -61,13 +52,24 @@ Future<void> _registerFibonacciTool() async {
         },
       );
     },
-  );
-
-  // Register the tool - it will be automatically discovered by the MCP server
-  addMcpTool(fibonacciEntry);
-
-  debugPrint('✅ Fibonacci calculator tool registered with MCP toolkit');
-}
+  ),
+  MCPCallEntry.resource(
+    definition: MCPResourceDefinition(
+      name: 'app_runtime_status',
+      description: 'Read-only runtime diagnostics for the starter app',
+      mimeType: 'application/json',
+    ),
+    handler: (final request) => MCPCallResult(
+      message: 'Starter app runtime diagnostics',
+      parameters: {
+        'appName': 'Fibonacci MCP Tool',
+        'buildMode': kReleaseMode ? 'release' : 'debug',
+        'toolCount': 1,
+        'resourceCount': 1,
+      },
+    ),
+  ),
+};
 
 /// Calculate the nth Fibonacci number
 int _calculateFibonacci(final int n) {
@@ -99,7 +101,6 @@ List<int> _getFibonacciSequence(final int n) {
   return sequence;
 }
 
-/// Simple Flutter app that displays the Fibonacci tool status
 class FibonacciApp extends StatelessWidget {
   const FibonacciApp({super.key});
 

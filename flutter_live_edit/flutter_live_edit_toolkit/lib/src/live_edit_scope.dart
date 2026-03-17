@@ -14,8 +14,8 @@ import 'services/services.dart';
 /// Create once at the root of the live-edit subtree; children use [LiveEditScope.of](context).
 final class LiveEditScope extends StatefulWidget {
   const LiveEditScope({
-    super.key,
     required this.child,
+    super.key,
     this.applyDraftDelegate,
     this.backendId,
     this.availableBackends = const <LiveEditAgentBackend>[],

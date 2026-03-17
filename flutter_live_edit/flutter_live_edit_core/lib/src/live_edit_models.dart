@@ -1,6 +1,10 @@
 import 'dart:convert';
 
 import 'package:collection/collection.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
+
+part 'live_edit_models.freezed.dart';
+part 'live_edit_models.g.dart';
 
 const _mapEquality = MapEquality<String, Object?>();
 
@@ -109,78 +113,34 @@ LiveEditInferenceConfig? _parseInferenceConfig(final Object? value) {
 /// Alias for backward compatibility; prefer [LiveEditInferenceConfig].
 typedef LiveEditCodexConfig = LiveEditInferenceConfig;
 
-final class LiveEditAgentBackend {
-  const LiveEditAgentBackend({
-    required this.id,
-    required this.label,
-    required this.description,
-    required this.available,
-    this.isDefault = false,
-    this.meta = const <String, Object?>{},
-  });
+@Freezed(fromJson: true, toJson: true)
+class LiveEditAgentBackend with _$LiveEditAgentBackend {
+  const factory LiveEditAgentBackend({
+    required final String id,
+    required final String label,
+    required final String description,
+    required final bool available,
+    @Default(false) final bool isDefault,
+    @Default(<String, Object?>{}) final Map<String, Object?> meta,
+  }) = _LiveEditAgentBackend;
 
   factory LiveEditAgentBackend.fromJson(final Map<String, Object?> json) =>
-      LiveEditAgentBackend(
-        id: '${json['id'] ?? ''}',
-        label: '${json['label'] ?? ''}',
-        description: '${json['description'] ?? ''}',
-        available: json['available'] == true,
-        isDefault: json['isDefault'] == true,
-        meta: _asMap(json['meta']),
-      );
-
-  final String id;
-  final String label;
-  final String description;
-  final bool available;
-  final bool isDefault;
-  final Map<String, Object?> meta;
-
-  Map<String, Object?> toJson() => <String, Object?>{
-    'id': id,
-    'label': label,
-    'description': description,
-    'available': available,
-    'isDefault': isDefault,
-    'meta': meta,
-  };
+      _$LiveEditAgentBackendFromJson(json);
 }
 
-final class LiveEditBounds {
-  const LiveEditBounds({
-    required this.left,
-    required this.top,
-    required this.right,
-    required this.bottom,
-    required this.width,
-    required this.height,
-  });
+@Freezed(fromJson: true, toJson: true)
+class LiveEditBounds with _$LiveEditBounds {
+  const factory LiveEditBounds({
+    required final double left,
+    required final double top,
+    required final double right,
+    required final double bottom,
+    required final double width,
+    required final double height,
+  }) = _LiveEditBounds;
 
   factory LiveEditBounds.fromJson(final Map<String, Object?> json) =>
-      LiveEditBounds(
-        left: _asDouble(json['left']),
-        top: _asDouble(json['top']),
-        right: _asDouble(json['right']),
-        bottom: _asDouble(json['bottom']),
-        width: _asDouble(json['width']),
-        height: _asDouble(json['height']),
-      );
-
-  final double left;
-  final double top;
-  final double right;
-  final double bottom;
-  final double width;
-  final double height;
-
-  Map<String, Object?> toJson() => <String, Object?>{
-    'left': left,
-    'top': top,
-    'right': right,
-    'bottom': bottom,
-    'width': width,
-    'height': height,
-  };
+      _$LiveEditBoundsFromJson(json);
 }
 
 enum LiveEditBubbleDisplayState {
@@ -200,19 +160,15 @@ enum LiveEditBubbleDisplayState {
   }
 }
 
-final class LiveEditCodexModelOption {
-  const LiveEditCodexModelOption({required this.id, required this.label});
+@Freezed(fromJson: true, toJson: true)
+class LiveEditCodexModelOption with _$LiveEditCodexModelOption {
+  const factory LiveEditCodexModelOption({
+    required final String id,
+    required final String label,
+  }) = _LiveEditCodexModelOption;
 
   factory LiveEditCodexModelOption.fromJson(final Map<String, Object?> json) =>
-      LiveEditCodexModelOption(
-        id: '${json['id'] ?? ''}',
-        label: '${json['label'] ?? ''}',
-      );
-
-  final String id;
-  final String label;
-
-  Map<String, Object?> toJson() => <String, Object?>{'id': id, 'label': label};
+      _$LiveEditCodexModelOptionFromJson(json);
 }
 
 final class LiveEditCodexOptions {
@@ -248,45 +204,24 @@ final class LiveEditCodexOptions {
   }
 }
 
-final class LiveEditDraftChange {
-  const LiveEditDraftChange({
-    required this.nodeId,
-    required this.propertyId,
-    required this.targetValue,
-    this.previewMode = LiveEditPreviewMode.none,
-    this.confidence = 1,
-    this.intentText,
-    this.meta = const <String, Object?>{},
-  });
+double _confidenceFromJson(final Object? v) => _asDouble(v, fallback: 1);
+
+@Freezed(fromJson: true, toJson: true)
+class LiveEditDraftChange with _$LiveEditDraftChange {
+  const factory LiveEditDraftChange({
+    required final String nodeId,
+    required final String propertyId,
+    required final Object? targetValue,
+    @JsonKey(fromJson: _previewModeFromJson, toJson: _enumToWire)
+    @Default(LiveEditPreviewMode.none)
+    final LiveEditPreviewMode previewMode,
+    @JsonKey(fromJson: _confidenceFromJson) @Default(1) final double confidence,
+    final String? intentText,
+    @Default(<String, Object?>{}) final Map<String, Object?> meta,
+  }) = _LiveEditDraftChange;
 
   factory LiveEditDraftChange.fromJson(final Map<String, Object?> json) =>
-      LiveEditDraftChange(
-        nodeId: '${json['nodeId'] ?? ''}',
-        propertyId: '${json['propertyId'] ?? ''}',
-        targetValue: json['targetValue'],
-        previewMode: LiveEditPreviewMode.fromWire(json['previewMode']),
-        confidence: _asDouble(json['confidence'], fallback: 1),
-        intentText: _asNullableString(json['intentText']),
-        meta: _asMap(json['meta']),
-      );
-
-  final String nodeId;
-  final String propertyId;
-  final Object? targetValue;
-  final LiveEditPreviewMode previewMode;
-  final double confidence;
-  final String? intentText;
-  final Map<String, Object?> meta;
-
-  Map<String, Object?> toJson() => <String, Object?>{
-    'nodeId': nodeId,
-    'propertyId': propertyId,
-    'targetValue': targetValue,
-    'previewMode': previewMode.wireName,
-    'confidence': confidence,
-    if (intentText != null) 'intentText': intentText,
-    'meta': meta,
-  };
+      _$LiveEditDraftChangeFromJson(json);
 }
 
 enum LiveEditEditMode {
@@ -359,6 +294,9 @@ enum LiveEditApplyMode {
   }
 }
 
+String _agentInstructionFromJsonMap(final Map<String, Object?> json) =>
+    '${json['agentInstruction'] ?? json['shortAgentInstruction'] ?? ''}';
+
 final class LiveEditExecutionPlan {
   const LiveEditExecutionPlan({
     required this.proposalId,
@@ -373,21 +311,19 @@ final class LiveEditExecutionPlan {
     this.meta = const <String, Object?>{},
   });
 
-  factory LiveEditExecutionPlan.fromJson(
-    final Map<String, Object?> json,
-  ) => LiveEditExecutionPlan(
-    proposalId: '${json['proposalId'] ?? ''}',
-    title: '${json['title'] ?? ''}',
-    summary: '${json['summary'] ?? ''}',
-    selectedNode: '${json['selectedNode'] ?? ''}',
-    requestedChanges: _asStringList(json['requestedChanges']),
-    affectedFiles: _asStringList(json['affectedFiles']),
-    confidence: _asDouble(json['confidence']),
-    riskNotes: _asStringList(json['riskNotes']),
-    agentInstruction:
-        '${json['agentInstruction'] ?? json['shortAgentInstruction'] ?? ''}',
-    meta: _asMap(json['meta']),
-  );
+  factory LiveEditExecutionPlan.fromJson(final Map<String, Object?> json) =>
+      LiveEditExecutionPlan(
+        proposalId: '${json['proposalId'] ?? ''}',
+        title: '${json['title'] ?? ''}',
+        summary: '${json['summary'] ?? ''}',
+        selectedNode: '${json['selectedNode'] ?? ''}',
+        requestedChanges: _asStringList(json['requestedChanges']),
+        affectedFiles: _asStringList(json['affectedFiles']),
+        confidence: _asDouble(json['confidence']),
+        riskNotes: _asStringList(json['riskNotes']),
+        agentInstruction: _agentInstructionFromJsonMap(json),
+        meta: _asMap(json['meta']),
+      );
 
   final String proposalId;
   final String title;
@@ -410,45 +346,31 @@ final class LiveEditExecutionPlan {
     'confidence': confidence,
     'riskNotes': riskNotes,
     'agentInstruction': agentInstruction,
-    // Backward-compatible wire key during migration to condensed plan naming.
     'shortAgentInstruction': agentInstruction,
     'meta': meta,
   };
 }
 
-final class LiveEditFilePatch {
-  const LiveEditFilePatch({
-    required this.path,
-    required this.content,
-    required this.patch,
-    this.meta = const <String, Object?>{},
-  });
+@Freezed(fromJson: true, toJson: true)
+class LiveEditFilePatch with _$LiveEditFilePatch {
+  const factory LiveEditFilePatch({
+    required final String path,
+    required final String content,
+    required final String patch,
+    @Default(<String, Object?>{}) final Map<String, Object?> meta,
+  }) = _LiveEditFilePatch;
 
   factory LiveEditFilePatch.fromJson(final Map<String, Object?> json) =>
-      LiveEditFilePatch(
-        path: '${json['path'] ?? ''}',
-        content: '${json['content'] ?? ''}',
-        patch: '${json['patch'] ?? ''}',
-        meta: _asMap(json['meta']),
-      );
-
-  final String path;
-  final String content;
-  final String patch;
-  final Map<String, Object?> meta;
-
-  Map<String, Object?> toJson() => <String, Object?>{
-    'path': path,
-    'content': content,
-    'patch': patch,
-    'meta': meta,
-  };
+      _$LiveEditFilePatchFromJson(json);
 }
 
-/// Backend-agnostic inference config (model + optional reasoning effort).
-/// Codex uses both fields; Cursor and others use model only.
-final class LiveEditInferenceConfig {
-  const LiveEditInferenceConfig({this.model, this.reasoningEffort});
+@Freezed(fromJson: false, toJson: false)
+class LiveEditInferenceConfig with _$LiveEditInferenceConfig {
+  const factory LiveEditInferenceConfig({
+    final String? model,
+    final String? reasoningEffort,
+  }) = _LiveEditInferenceConfig;
+  const LiveEditInferenceConfig._();
 
   factory LiveEditInferenceConfig.fromJson(final Map<String, Object?> json) =>
       LiveEditInferenceConfig(
@@ -457,9 +379,6 @@ final class LiveEditInferenceConfig {
           _asNullableString(json['reasoningEffort']),
         ),
       );
-
-  final String? model;
-  final String? reasoningEffort;
 
   bool get isEmpty => model == null && reasoningEffort == null;
 
@@ -492,40 +411,24 @@ enum LiveEditRuntimeAction {
   }
 }
 
-final class LiveEditRuntimeRefreshResult {
-  const LiveEditRuntimeRefreshResult({
-    this.action = LiveEditRuntimeAction.none,
-    this.validation = const <String, Object?>{},
-    this.hotReload = const <String, Object?>{},
-    this.hotRestart = const <String, Object?>{},
-    this.validationRecovery = const <String, Object?>{},
-  });
+@Freezed(fromJson: true, toJson: true)
+class LiveEditRuntimeRefreshResult with _$LiveEditRuntimeRefreshResult {
+  const factory LiveEditRuntimeRefreshResult({
+    @JsonKey(fromJson: _runtimeActionFromJson, toJson: _enumToWire)
+    @Default(LiveEditRuntimeAction.none)
+    final LiveEditRuntimeAction action,
+    @Default(<String, Object?>{}) final Map<String, Object?> validation,
+    @Default(<String, Object?>{}) final Map<String, Object?> hotReload,
+    @Default(<String, Object?>{}) final Map<String, Object?> hotRestart,
+    @Default(<String, Object?>{}) final Map<String, Object?> validationRecovery,
+  }) = _LiveEditRuntimeRefreshResult;
+  const LiveEditRuntimeRefreshResult._();
 
   factory LiveEditRuntimeRefreshResult.fromJson(
     final Map<String, Object?> json,
-  ) => LiveEditRuntimeRefreshResult(
-    action: LiveEditRuntimeAction.fromWire(json['action']),
-    validation: _asMap(json['validation']),
-    hotReload: _asMap(json['hotReload']),
-    hotRestart: _asMap(json['hotRestart']),
-    validationRecovery: _asMap(json['validationRecovery']),
-  );
-
-  final LiveEditRuntimeAction action;
-  final Map<String, Object?> validation;
-  final Map<String, Object?> hotReload;
-  final Map<String, Object?> hotRestart;
-  final Map<String, Object?> validationRecovery;
+  ) => _$LiveEditRuntimeRefreshResultFromJson(json);
 
   bool get didRefresh => action != LiveEditRuntimeAction.none;
-
-  Map<String, Object?> toJson() => <String, Object?>{
-    'action': action.wireName,
-    'validation': validation,
-    'hotReload': hotReload,
-    'hotRestart': hotRestart,
-    'validationRecovery': validationRecovery,
-  };
 }
 
 enum LiveEditPreviewMode {
@@ -546,81 +449,39 @@ enum LiveEditPreviewMode {
   }
 }
 
-final class LiveEditPropertyDescriptor {
-  const LiveEditPropertyDescriptor({
-    required this.id,
-    required this.label,
-    required this.group,
-    required this.kind,
-    this.value,
-    this.options = const <String>[],
-    this.editable = false,
-    this.previewMode = LiveEditPreviewMode.none,
-    this.persistable = false,
-    this.canPreviewExactly = false,
-    this.requiresAgentForPersistence = false,
-    this.safeToAutoGroupInApply = false,
-    this.meta = const <String, Object?>{},
-  });
+@Freezed(fromJson: true, toJson: true)
+class LiveEditPropertyDescriptor with _$LiveEditPropertyDescriptor {
+  const factory LiveEditPropertyDescriptor({
+    required final String id,
+    required final String label,
+    @JsonKey(fromJson: _propertyGroupFromJson, toJson: _enumToWire)
+    required final LiveEditPropertyGroup group,
+    @JsonKey(fromJson: _propertyKindFromJson, toJson: _enumToWire)
+    required final LiveEditPropertyKind kind,
+    final Object? value,
+    @Default(<String>[]) final List<String> options,
+    @Default(false) final bool editable,
+    @JsonKey(fromJson: _previewModeFromJson, toJson: _enumToWire)
+    @Default(LiveEditPreviewMode.none)
+    final LiveEditPreviewMode previewMode,
+    @Default(false) final bool persistable,
+    @Default(false) final bool canPreviewExactly,
+    @Default(false) final bool requiresAgentForPersistence,
+    @Default(false) final bool safeToAutoGroupInApply,
+    @Default(<String, Object?>{}) final Map<String, Object?> meta,
+  }) = _LiveEditPropertyDescriptor;
+  const LiveEditPropertyDescriptor._();
 
   factory LiveEditPropertyDescriptor.fromJson(
     final Map<String, Object?> json,
-  ) => LiveEditPropertyDescriptor(
-    id: '${json['id'] ?? ''}',
-    label: '${json['label'] ?? ''}',
-    group: LiveEditPropertyGroup.fromWire(json['group']),
-    kind: LiveEditPropertyKind.fromWire(json['kind']),
-    value: json['value'],
-    options: _asStringList(json['options']),
-    editable: json['editable'] == true,
-    previewMode: LiveEditPreviewMode.fromWire(json['previewMode']),
-    persistable: json['persistable'] == true,
-    canPreviewExactly: json['canPreviewExactly'] == true,
-    requiresAgentForPersistence: json['requiresAgentForPersistence'] == true,
-    safeToAutoGroupInApply: json['safeToAutoGroupInApply'] == true,
-    meta: _asMap(json['meta']),
-  );
-
-  final String id;
-  final String label;
-  final LiveEditPropertyGroup group;
-  final LiveEditPropertyKind kind;
-  final Object? value;
-  final List<String> options;
-  final bool editable;
-  final LiveEditPreviewMode previewMode;
-  final bool persistable;
-  final bool canPreviewExactly;
-  final bool requiresAgentForPersistence;
-  final bool safeToAutoGroupInApply;
-  final Map<String, Object?> meta;
+  ) => _$LiveEditPropertyDescriptorFromJson(json);
 
   double get numericStep => _asDouble(meta['step'], fallback: 1);
-
   String get preferredEditor => '${meta['editor'] ?? ''}'.trim();
-
   LiveEditEditSurface get preferredEditSurface =>
       LiveEditEditSurface.fromWire(meta['editSurface']);
-
   bool get prefersMultiline => meta['multiline'] == true;
-
   String get selectionPresentation => '${meta['selectionUi'] ?? ''}'.trim();
-
-  Map<String, Object?> toJson() => <String, Object?>{
-    'id': id,
-    'label': label,
-    'group': group.wireName,
-    'kind': kind.wireName,
-    'value': value,
-    'options': options,
-    'editable': editable,
-    'previewMode': previewMode.wireName,
-    'persistable': persistable,
-    'canPreviewExactly': canPreviewExactly,
-    'requiresAgentForPersistence': requiresAgentForPersistence,
-    'safeToAutoGroupInApply': safeToAutoGroupInApply,
-    'meta': meta,
-  };
 }
 
 enum LiveEditPropertyGroup {
@@ -667,86 +528,51 @@ enum LiveEditPropertyKind {
   }
 }
 
-final class LiveEditResolutionProposal {
-  const LiveEditResolutionProposal({
-    required this.proposalId,
-    required this.backendId,
-    required this.summary,
-    required this.patch,
-    required this.changedFiles,
-    required this.filePatches,
-    required this.expectedRuntimeEffects,
-    required this.validationSteps,
-    this.warnings = const <String>[],
-    this.riskFlags = const <String>[],
-    this.meta = const <String, Object?>{},
-  });
+@Freezed(fromJson: true, toJson: true)
+class LiveEditResolutionProposal with _$LiveEditResolutionProposal {
+  const factory LiveEditResolutionProposal({
+    required final String proposalId,
+    required final String backendId,
+    required final String summary,
+    required final String patch,
+    required final List<String> changedFiles,
+    required final List<LiveEditFilePatch> filePatches,
+    required final List<String> expectedRuntimeEffects,
+    required final List<String> validationSteps,
+    @Default(<String>[]) final List<String> warnings,
+    @Default(<String>[]) final List<String> riskFlags,
+    @Default(<String, Object?>{}) final Map<String, Object?> meta,
+  }) = _LiveEditResolutionProposal;
 
   factory LiveEditResolutionProposal.fromJson(
     final Map<String, Object?> json,
-  ) => LiveEditResolutionProposal(
-    proposalId: '${json['proposalId'] ?? ''}',
-    backendId: '${json['backendId'] ?? ''}',
-    summary: '${json['summary'] ?? ''}',
-    patch: '${json['patch'] ?? ''}',
-    changedFiles: _asStringList(json['changedFiles']),
-    filePatches: _asList(json['filePatches'])
-        .whereType<Map>()
-        .map((final item) => LiveEditFilePatch.fromJson(_asMap(item)))
-        .toList(growable: false),
-    expectedRuntimeEffects: _asStringList(json['expectedRuntimeEffects']),
-    validationSteps: _asStringList(json['validationSteps']),
-    warnings: _asStringList(json['warnings']),
-    riskFlags: _asStringList(json['riskFlags']),
-    meta: _asMap(json['meta']),
-  );
-
-  final String proposalId;
-  final String backendId;
-  final String summary;
-  final String patch;
-  final List<String> changedFiles;
-  final List<LiveEditFilePatch> filePatches;
-  final List<String> expectedRuntimeEffects;
-  final List<String> validationSteps;
-  final List<String> warnings;
-  final List<String> riskFlags;
-  final Map<String, Object?> meta;
-
-  Map<String, Object?> toJson() => <String, Object?>{
-    'proposalId': proposalId,
-    'backendId': backendId,
-    'summary': summary,
-    'patch': patch,
-    'changedFiles': changedFiles,
-    'filePatches': filePatches.map((final patch) => patch.toJson()).toList(),
-    'expectedRuntimeEffects': expectedRuntimeEffects,
-    'validationSteps': validationSteps,
-    'warnings': warnings,
-    'riskFlags': riskFlags,
-    'meta': meta,
-  };
+  ) => _$LiveEditResolutionProposalFromJson(json);
 }
 
-final class LiveEditResolutionRequest {
-  const LiveEditResolutionRequest({
-    required this.sessionId,
-    required this.workingDirectory,
-    required this.draftChanges,
-    this.bubbleId,
-    this.instructionText,
-    this.primarySelection,
-    this.selectedWidgets = const <LiveEditSelection>[],
-    this.sourceTargets = const <LiveEditSourceTarget>[],
-    this.stagedPropertyChanges = const <LiveEditDraftChange>[],
-    this.applyMode = LiveEditApplyMode.singleBubble,
-    this.selection,
-    this.backendId,
-    this.inferenceConfig,
-    this.intentText,
-    this.evidence = const <String, Object?>{},
-    this.meta = const <String, Object?>{},
-  });
+@Freezed(fromJson: false, toJson: false)
+class LiveEditResolutionRequest with _$LiveEditResolutionRequest {
+  const factory LiveEditResolutionRequest({
+    required final String sessionId,
+    required final String workingDirectory,
+    required final List<LiveEditDraftChange> draftChanges,
+    final String? bubbleId,
+    final String? instructionText,
+    final LiveEditSelection? primarySelection,
+    @Default(<LiveEditSelection>[])
+    final List<LiveEditSelection> selectedWidgets,
+    @Default(<LiveEditSourceTarget>[])
+    final List<LiveEditSourceTarget> sourceTargets,
+    @Default(<LiveEditDraftChange>[])
+    final List<LiveEditDraftChange> stagedPropertyChanges,
+    @Default(LiveEditApplyMode.singleBubble) final LiveEditApplyMode applyMode,
+    final LiveEditSelection? selection,
+    final String? backendId,
+    final LiveEditInferenceConfig? inferenceConfig,
+    final String? intentText,
+    @Default(<String, Object?>{}) final Map<String, Object?> evidence,
+    @Default(<String, Object?>{}) final Map<String, Object?> meta,
+  }) = _LiveEditResolutionRequest;
+  const LiveEditResolutionRequest._();
 
   factory LiveEditResolutionRequest.fromJson(final Map<String, Object?> json) {
     final inferenceConfig = _parseInferenceConfig(
@@ -793,35 +619,13 @@ final class LiveEditResolutionRequest {
     );
   }
 
-  final String sessionId;
-  final String workingDirectory;
-  final List<LiveEditDraftChange> draftChanges;
-  final String? bubbleId;
-  final String? instructionText;
-  final LiveEditSelection? primarySelection;
-  final List<LiveEditSelection> selectedWidgets;
-  final List<LiveEditSourceTarget> sourceTargets;
-  final List<LiveEditDraftChange> stagedPropertyChanges;
-  final LiveEditApplyMode applyMode;
-  final LiveEditSelection? selection;
-  final String? backendId;
-  final LiveEditInferenceConfig? inferenceConfig;
-  final String? intentText;
-  final Map<String, Object?> evidence;
-  final Map<String, Object?> meta;
-
   String? get effectiveBubbleId => _asNullableString(bubbleId);
-
   String? get effectiveInstructionText =>
       _asNullableString(instructionText) ?? _asNullableString(intentText);
-
   LiveEditSelection? get effectivePrimarySelection =>
       primarySelection ?? selection;
-
   List<LiveEditSelection> get effectiveSelectedWidgets {
-    if (selectedWidgets.isNotEmpty) {
-      return selectedWidgets;
-    }
+    if (selectedWidgets.isNotEmpty) return selectedWidgets;
     final primary = effectivePrimarySelection;
     return primary == null
         ? const <LiveEditSelection>[]
@@ -839,20 +643,14 @@ final class LiveEditResolutionRequest {
     if (primarySelection != null)
       'primarySelection': primarySelection!.toJson(),
     if (selectedWidgets.isNotEmpty)
-      'selectedWidgets': selectedWidgets
-          .map((final selection) => selection.toJson())
-          .toList(),
+      'selectedWidgets': selectedWidgets.map((final s) => s.toJson()).toList(),
     if (sourceTargets.isNotEmpty)
-      'sourceTargets': sourceTargets
-          .map((final target) => target.toJson())
-          .toList(),
+      'sourceTargets': sourceTargets.map((final t) => t.toJson()).toList(),
     'stagedPropertyChanges': effectiveStagedPropertyChanges
-        .map((final change) => change.toJson())
+        .map((final c) => c.toJson())
         .toList(),
     'applyMode': applyMode.wireName,
-    'draftChanges': draftChanges
-        .map((final change) => change.toJson())
-        .toList(),
+    'draftChanges': draftChanges.map((final c) => c.toJson()).toList(),
     if (selection != null) 'selection': selection!.toJson(),
     if (backendId != null) 'backendId': backendId,
     if (inferenceConfig != null) 'inferenceConfig': inferenceConfig!.toJson(),
@@ -862,41 +660,19 @@ final class LiveEditResolutionRequest {
   };
 }
 
-final class LiveEditSourceTarget {
-  const LiveEditSourceTarget({
-    required this.nodeId,
-    required this.widgetType,
-    this.absolutePath,
-    this.workspacePath,
-    this.line,
-    this.column,
-  });
+@Freezed(fromJson: true, toJson: true)
+class LiveEditSourceTarget with _$LiveEditSourceTarget {
+  const factory LiveEditSourceTarget({
+    required final String nodeId,
+    required final String widgetType,
+    final String? absolutePath,
+    final String? workspacePath,
+    final int? line,
+    final int? column,
+  }) = _LiveEditSourceTarget;
 
   factory LiveEditSourceTarget.fromJson(final Map<String, Object?> json) =>
-      LiveEditSourceTarget(
-        nodeId: '${json['nodeId'] ?? ''}',
-        widgetType: '${json['widgetType'] ?? ''}',
-        absolutePath: _asNullableString(json['absolutePath']),
-        workspacePath: _asNullableString(json['workspacePath']),
-        line: _asNullableInt(json['line']),
-        column: _asNullableInt(json['column']),
-      );
-
-  final String nodeId;
-  final String widgetType;
-  final String? absolutePath;
-  final String? workspacePath;
-  final int? line;
-  final int? column;
-
-  Map<String, Object?> toJson() => <String, Object?>{
-    'nodeId': nodeId,
-    'widgetType': widgetType,
-    if (absolutePath != null) 'absolutePath': absolutePath,
-    if (workspacePath != null) 'workspacePath': workspacePath,
-    if (line != null) 'line': line,
-    if (column != null) 'column': column,
-  };
+      _$LiveEditSourceTargetFromJson(json);
 }
 
 final class LiveEditDirectApplyResult {
@@ -946,46 +722,24 @@ final class LiveEditDirectApplyResult {
     'validationSteps': validationSteps,
     if (runtimeRefresh != null) 'runtimeRefresh': runtimeRefresh!.toJson(),
     'meta': meta,
-    // Backward-compatible alias while older callers still expect proposalId.
     'proposalId': executionId,
   };
 }
 
-final class LiveEditResolutionResult {
-  const LiveEditResolutionResult({
-    required this.proposalId,
-    required this.status,
-    this.changedFiles = const <String>[],
-    this.validation = const <String, Object?>{},
-    this.warnings = const <String>[],
-    this.meta = const <String, Object?>{},
-  });
+@Freezed(fromJson: true, toJson: true)
+class LiveEditResolutionResult with _$LiveEditResolutionResult {
+  const factory LiveEditResolutionResult({
+    required final String proposalId,
+    @JsonKey(fromJson: _resolutionStatusFromJson, toJson: _enumToWire)
+    required final LiveEditResolutionStatus status,
+    @Default(<String>[]) final List<String> changedFiles,
+    @Default(<String, Object?>{}) final Map<String, Object?> validation,
+    @Default(<String>[]) final List<String> warnings,
+    @Default(<String, Object?>{}) final Map<String, Object?> meta,
+  }) = _LiveEditResolutionResult;
 
   factory LiveEditResolutionResult.fromJson(final Map<String, Object?> json) =>
-      LiveEditResolutionResult(
-        proposalId: '${json['proposalId'] ?? ''}',
-        status: LiveEditResolutionStatus.fromWire(json['status']),
-        changedFiles: _asStringList(json['changedFiles']),
-        validation: _asMap(json['validation']),
-        warnings: _asStringList(json['warnings']),
-        meta: _asMap(json['meta']),
-      );
-
-  final String proposalId;
-  final LiveEditResolutionStatus status;
-  final List<String> changedFiles;
-  final Map<String, Object?> validation;
-  final List<String> warnings;
-  final Map<String, Object?> meta;
-
-  Map<String, Object?> toJson() => <String, Object?>{
-    'proposalId': proposalId,
-    'status': status.wireName,
-    'changedFiles': changedFiles,
-    'validation': validation,
-    'warnings': warnings,
-    'meta': meta,
-  };
+      _$LiveEditResolutionResultFromJson(json);
 }
 
 enum LiveEditResolutionStatus {
@@ -1014,7 +768,7 @@ final class LiveEditRuntimeToolNames {
   static const String startSession = 'live_edit_runtime_start_session';
   static const String setOverlay = 'live_edit_runtime_set_overlay';
   static const String getTree = 'live_edit_runtime_get_tree';
-  static const String selectAtPoint = 'live_edit_runtime_select_at_point';
+  static const String selectAtPoint = 'select_widget_at_point';
   static const String getSelection = 'live_edit_runtime_get_selection';
   static const String updateDraft = 'live_edit_runtime_update_draft';
   static const String getDraft = 'live_edit_runtime_get_draft';
@@ -1022,140 +776,53 @@ final class LiveEditRuntimeToolNames {
   static const String endSession = 'live_edit_runtime_end_session';
 }
 
-final class LiveEditSelection {
-  const LiveEditSelection({
-    required this.sessionId,
-    required this.nodeId,
-    required this.widgetType,
-    required this.propertyGroups,
-    required this.rawNode,
-    this.targetDomain = LiveEditTargetDomain.appScene,
-    this.renderObjectType,
-    this.bounds,
-    this.source,
-    this.layoutContext = const <String, Object?>{},
-    this.parentChain = const <Map<String, Object?>>[],
-    this.detailsTree = const <String, Object?>{},
-    this.propertiesTree = const <String, Object?>{},
-    this.selectionMode = LiveEditSelectionMode.single,
-    this.selectedNodeIds = const <String>[],
-  });
+@Freezed(fromJson: true, toJson: true)
+class LiveEditSelection with _$LiveEditSelection {
+  const factory LiveEditSelection({
+    required final String sessionId,
+    required final String nodeId,
+    required final String widgetType,
+    @JsonKey(name: 'properties')
+    required final List<LiveEditPropertyDescriptor> propertyGroups,
+    @JsonKey(fromJson: _asMap) required final Map<String, Object?> rawNode,
+    @JsonKey(fromJson: _targetDomainFromJson, toJson: _enumToWire)
+    @Default(LiveEditTargetDomain.appScene)
+    final LiveEditTargetDomain targetDomain,
+    final String? renderObjectType,
+    final LiveEditBounds? bounds,
+    final LiveEditSourceLocation? source,
+    @Default(<String, Object?>{}) final Map<String, Object?> layoutContext,
+    @Default(<Map<String, Object?>>[])
+    final List<Map<String, Object?>> parentChain,
+    @Default(<String, Object?>{}) final Map<String, Object?> detailsTree,
+    @Default(<String, Object?>{}) final Map<String, Object?> propertiesTree,
+    @JsonKey(fromJson: _selectionModeFromJson, toJson: _enumToWire)
+    @Default(LiveEditSelectionMode.single)
+    final LiveEditSelectionMode selectionMode,
+    @Default(<String>[]) final List<String> selectedNodeIds,
+  }) = _LiveEditSelection;
 
   factory LiveEditSelection.fromJson(final Map<String, Object?> json) =>
-      LiveEditSelection(
-        sessionId: '${json['sessionId'] ?? ''}',
-        nodeId: '${json['nodeId'] ?? ''}',
-        widgetType: '${json['widgetType'] ?? ''}',
-        targetDomain: LiveEditTargetDomain.fromWire(json['targetDomain']),
-        renderObjectType: _asNullableString(json['renderObjectType']),
-        bounds: switch (json['bounds']) {
-          final Map value => LiveEditBounds.fromJson(_asMap(value)),
-          _ => null,
-        },
-        source: switch (json['source']) {
-          final Map value => LiveEditSourceLocation.fromJson(_asMap(value)),
-          _ => null,
-        },
-        propertyGroups: _asList(json['properties'])
-            .whereType<Map>()
-            .map(
-              (final item) => LiveEditPropertyDescriptor.fromJson(_asMap(item)),
-            )
-            .toList(growable: false),
-        layoutContext: _asMap(json['layoutContext']),
-        parentChain: _asList(
-          json['parentChain'],
-        ).whereType<Map>().map(_asMap).toList(growable: false),
-        detailsTree: _asMap(json['detailsTree']),
-        propertiesTree: _asMap(json['propertiesTree']),
-        rawNode: _asMap(json['rawNode']),
-        selectionMode: LiveEditSelectionMode.fromWire(json['selectionMode']),
-        selectedNodeIds: _asStringList(json['selectedNodeIds']),
-      );
-
-  final String sessionId;
-  final String nodeId;
-  final String widgetType;
-  final LiveEditTargetDomain targetDomain;
-  final String? renderObjectType;
-  final LiveEditBounds? bounds;
-  final LiveEditSourceLocation? source;
-  final List<LiveEditPropertyDescriptor> propertyGroups;
-  final Map<String, Object?> layoutContext;
-  final List<Map<String, Object?>> parentChain;
-  final Map<String, Object?> detailsTree;
-  final Map<String, Object?> propertiesTree;
-  final Map<String, Object?> rawNode;
-  final LiveEditSelectionMode selectionMode;
-  final List<String> selectedNodeIds;
-
-  Map<String, Object?> toJson() => <String, Object?>{
-    'sessionId': sessionId,
-    'nodeId': nodeId,
-    'widgetType': widgetType,
-    'targetDomain': targetDomain.wireName,
-    if (renderObjectType != null) 'renderObjectType': renderObjectType,
-    if (bounds != null) 'bounds': bounds!.toJson(),
-    if (source != null) 'source': source!.toJson(),
-    'properties': propertyGroups
-        .map((final property) => property.toJson())
-        .toList(),
-    'layoutContext': layoutContext,
-    'parentChain': parentChain,
-    'detailsTree': detailsTree,
-    'propertiesTree': propertiesTree,
-    'rawNode': rawNode,
-    'selectionMode': selectionMode.wireName,
-    'selectedNodeIds': selectedNodeIds,
-  };
+      _$LiveEditSelectionFromJson(json);
 }
 
-final class LiveEditSelectionCandidate {
-  const LiveEditSelectionCandidate({
-    required this.nodeId,
-    required this.widgetType,
-    required this.bounds,
-    required this.depth,
-    this.source,
-    this.createdByLocalProject = false,
-    this.active = false,
-  });
+int _depthFromJson(final Object? v) => _asNullableInt(v) ?? 0;
+
+@Freezed(fromJson: true, toJson: true)
+class LiveEditSelectionCandidate with _$LiveEditSelectionCandidate {
+  const factory LiveEditSelectionCandidate({
+    required final String nodeId,
+    required final String widgetType,
+    final LiveEditBounds? bounds,
+    @JsonKey(fromJson: _depthFromJson) @Default(0) final int depth,
+    final LiveEditSourceLocation? source,
+    @Default(false) final bool createdByLocalProject,
+    @Default(false) final bool active,
+  }) = _LiveEditSelectionCandidate;
 
   factory LiveEditSelectionCandidate.fromJson(
     final Map<String, Object?> json,
-  ) => LiveEditSelectionCandidate(
-    nodeId: '${json['nodeId'] ?? ''}',
-    widgetType: '${json['widgetType'] ?? ''}',
-    bounds: switch (json['bounds']) {
-      final Map value => LiveEditBounds.fromJson(_asMap(value)),
-      _ => null,
-    },
-    depth: _asNullableInt(json['depth']) ?? 0,
-    source: switch (json['source']) {
-      final Map value => LiveEditSourceLocation.fromJson(_asMap(value)),
-      _ => null,
-    },
-    createdByLocalProject: json['createdByLocalProject'] == true,
-    active: json['active'] == true,
-  );
-
-  final String nodeId;
-  final String widgetType;
-  final LiveEditBounds? bounds;
-  final int depth;
-  final LiveEditSourceLocation? source;
-  final bool createdByLocalProject;
-  final bool active;
-
-  Map<String, Object?> toJson() => <String, Object?>{
-    'nodeId': nodeId,
-    'widgetType': widgetType,
-    if (bounds != null) 'bounds': bounds!.toJson(),
-    'depth': depth,
-    if (source != null) 'source': source!.toJson(),
-    'createdByLocalProject': createdByLocalProject,
-    'active': active,
-  };
+  ) => _$LiveEditSelectionCandidateFromJson(json);
 }
 
 enum LiveEditSelectionMode {
@@ -1192,31 +859,42 @@ enum LiveEditSelectionPolicy {
   }
 }
 
-final class LiveEditSourceLocation {
-  const LiveEditSourceLocation({
-    required this.file,
-    this.line,
-    this.column,
-    this.sourceHint,
-  });
+// Enum JSON helpers for wireName/fromWire (used by @JsonKey in freezed classes).
+Object? _enumToWire(final e) => (e as dynamic).wireName;
+LiveEditBubbleDisplayState _bubbleDisplayStateFromJson(final Object? v) =>
+    LiveEditBubbleDisplayState.fromWire(v);
+LiveEditEditMode _editModeFromJson(final Object? v) =>
+    LiveEditEditMode.fromWire(v);
+LiveEditTargetDomain _targetDomainFromJson(final Object? v) =>
+    LiveEditTargetDomain.fromWire(v);
+LiveEditEditSurface _editSurfaceFromJson(final Object? v) =>
+    LiveEditEditSurface.fromWire(v);
+LiveEditApplyMode _applyModeFromJson(final Object? v) =>
+    LiveEditApplyMode.fromWire(v);
+LiveEditRuntimeAction _runtimeActionFromJson(final Object? v) =>
+    LiveEditRuntimeAction.fromWire(v);
+LiveEditPreviewMode _previewModeFromJson(final Object? v) =>
+    LiveEditPreviewMode.fromWire(v);
+LiveEditPropertyGroup _propertyGroupFromJson(final Object? v) =>
+    LiveEditPropertyGroup.fromWire(v);
+LiveEditPropertyKind _propertyKindFromJson(final Object? v) =>
+    LiveEditPropertyKind.fromWire(v);
+LiveEditResolutionStatus _resolutionStatusFromJson(final Object? v) =>
+    LiveEditResolutionStatus.fromWire(v);
+LiveEditSelectionMode _selectionModeFromJson(final Object? v) =>
+    LiveEditSelectionMode.fromWire(v);
+LiveEditSelectionPolicy _selectionPolicyFromJson(final Object? v) =>
+    LiveEditSelectionPolicy.fromWire(v);
+
+@Freezed(fromJson: true, toJson: true)
+class LiveEditSourceLocation with _$LiveEditSourceLocation {
+  const factory LiveEditSourceLocation({
+    required final String file,
+    final int? line,
+    final int? column,
+    final String? sourceHint,
+  }) = _LiveEditSourceLocation;
 
   factory LiveEditSourceLocation.fromJson(final Map<String, Object?> json) =>
-      LiveEditSourceLocation(
-        file: '${json['file'] ?? ''}',
-        line: _asNullableInt(json['line']),
-        column: _asNullableInt(json['column']),
-        sourceHint: _asNullableString(json['sourceHint']),
-      );
-
-  final String file;
-  final int? line;
-  final int? column;
-  final String? sourceHint;
-
-  Map<String, Object?> toJson() => <String, Object?>{
-    'file': file,
-    if (line != null) 'line': line,
-    if (column != null) 'column': column,
-    if (sourceHint != null) 'sourceHint': sourceHint,
-  };
+      _$LiveEditSourceLocationFromJson(json);
 }

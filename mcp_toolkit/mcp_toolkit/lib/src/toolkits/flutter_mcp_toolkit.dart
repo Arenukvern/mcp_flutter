@@ -16,12 +16,15 @@ import '../services/view_introspection_service.dart';
 /// view screenshots, and view details.
 ///
 /// [binding] is the MCP toolkit binding instance.
+const selectWidgetAtPointToolName = 'select_widget_at_point';
+
 Set<MCPCallEntry> getFlutterMcpToolkitEntries({
   required final MCPToolkitBinding binding,
 }) => {
   OnAppErrorsEntry(errorMonitor: binding),
   OnViewScreenshotsEntry(),
   OnViewDetailsEntry(),
+  OnSelectWidgetAtPointEntry(binding: binding),
   OnInspectWidgetAtPointEntry(),
 };
 
@@ -191,5 +194,61 @@ extension type const OnInspectWidgetAtPointEntry._(MCPCallEntry entry)
       ),
     );
     return OnInspectWidgetAtPointEntry._(entry);
+  }
+}
+
+extension type const OnSelectWidgetAtPointEntry._(MCPCallEntry entry)
+    implements MCPCallEntry {
+  factory OnSelectWidgetAtPointEntry({
+    required final MCPToolkitBinding binding,
+  }) {
+    final entry = MCPCallEntry.tool(
+      handler: (final parameters) {
+        final customHandler = binding.selectAtPointHandler;
+        if (customHandler != null) {
+          return customHandler(parameters);
+        }
+        final x = jsonDecodeInt(parameters['x']).whenZeroUse(0);
+        final y = jsonDecodeInt(parameters['y']).whenZeroUse(0);
+        final viewId = jsonDecodeInt(parameters['viewId']);
+        final payload = ViewIntrospectionService.inspectWidgetAtPoint(
+          x: x,
+          y: y,
+          viewId: viewId == 0 ? null : viewId,
+        );
+
+        return MCPCallResult(
+          message: 'Widget inspection at point completed.',
+          parameters: payload,
+        );
+      },
+      definition: MCPToolDefinition(
+        name: selectWidgetAtPointToolName,
+        description:
+            'Inspect or select a widget at global logical coordinates. '
+            'When live-edit is active, this selects a live-edit node; '
+            'otherwise it falls back to widget inspection.',
+        inputSchema: ObjectSchema(
+          required: ['x', 'y'],
+          properties: {
+            'sessionId': StringSchema(),
+            'x': IntegerSchema(description: 'Global logical X coordinate'),
+            'y': IntegerSchema(description: 'Global logical Y coordinate'),
+            'viewId': IntegerSchema(
+              description: 'Optional FlutterView id for multi-view apps',
+            ),
+            'selectionPolicy': StringSchema(
+              description:
+                  'Optional live-edit selection policy when selecting nodes',
+            ),
+            'targetDomain': StringSchema(
+              description:
+                  'Optional live-edit target domain, e.g. appScene or toolScene',
+            ),
+          },
+        ),
+      ),
+    );
+    return OnSelectWidgetAtPointEntry._(entry);
   }
 }

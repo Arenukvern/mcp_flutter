@@ -1,5 +1,7 @@
 import 'dart:ui' as ui;
+import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
@@ -54,32 +56,46 @@ mixin ViewIntrospectionService {
     required final int y,
     final int? viewId,
   }) {
-    final state = _TreeBuildState(maxNodes: _defaultMaxNodes);
-    final tree = _buildWidgetTree(state: state, maxDepth: _defaultMaxDepth);
     final point = ui.Offset(x.toDouble(), y.toDouble());
-    final hit = _findHit(
-      tree,
-      point: point,
+    final renderView = _selectRenderView(
       requestedViewId: viewId,
-      ancestry: const <Map<String, Object?>>[],
+      position: point,
     );
-
-    if (hit == null) {
+    if (renderView == null) {
       return {
         'hit': false,
         'point': {'x': x, 'y': y},
         if (viewId != null) 'viewId': viewId,
-        'summary': {'nodeCount': state.visited, 'truncated': state.truncated},
+        'summary': const <String, Object?>{},
+        'message': 'No Flutter render view is available for inspection.',
       };
     }
 
+    final hitTestResult = HitTestResult();
+    renderView.hitTest(hitTestResult, position: point);
+    final targets = hitTestResult.path
+        .map((final entry) => entry.target)
+        .whereType<RenderObject>()
+        .toList(growable: false);
+    final target = targets.isEmpty ? null : targets.first;
+    final element = (target?.debugCreator as DebugCreator?)?.element;
+    final summary = _selectedSummary(target);
+
     return {
-      'hit': true,
+      'hit': target != null,
       'point': {'x': x, 'y': y},
-      'node': hit.node,
-      'ancestry': hit.ancestry,
-      if (viewId != null) 'viewId': viewId,
-      'summary': {'nodeCount': state.visited, 'truncated': state.truncated},
+      'requestedViewId': viewId,
+      'viewId': renderView.flutterView.viewId,
+      'view': _viewSummary(renderView),
+      'summary': summary,
+      'selectedNode': summary,
+      'renderHitTargets': targets.take(8).map(_renderObjectSummary).toList(),
+      if (target != null) 'renderObject': _renderObjectSummary(target),
+      if (element != null) 'element': _elementSummary(element),
+      if (target != null) 'semantic': _semanticSummary(target),
+      'message': target == null
+          ? 'No widget matched ($x, $y).'
+          : 'Inspected widget at ($x, $y).',
     };
   }
 
@@ -365,5 +381,146 @@ mixin ViewIntrospectionService {
       final String v => int.tryParse(v),
       _ => null,
     };
+  }
+
+  static RenderView? _selectRenderView({
+    required final int? requestedViewId,
+    required final ui.Offset position,
+  }) {
+    final binding = WidgetsBinding.instance;
+    final renderViews = binding.renderViews.toList(growable: false);
+    if (renderViews.isEmpty) {
+      return null;
+    }
+
+    if (requestedViewId != null) {
+      for (final renderView in renderViews) {
+        if (renderView.flutterView.viewId == requestedViewId) {
+          return renderView;
+        }
+      }
+      return null;
+    }
+
+    for (final renderView in renderViews.reversed) {
+      final bounds = _globalBoundsForRenderObject(renderView);
+      if (_rectContainsPoint(bounds, position)) {
+        return renderView;
+      }
+    }
+
+    return renderViews.last;
+  }
+
+  static bool _rectContainsPoint(
+    final Map<String, Object?>? rect,
+    final ui.Offset point,
+  ) {
+    if (rect == null) {
+      return false;
+    }
+    final left = _asDouble(rect['left']);
+    final top = _asDouble(rect['top']);
+    final right = _asDouble(rect['right']);
+    final bottom = _asDouble(rect['bottom']);
+    if (left == null || top == null || right == null || bottom == null) {
+      return false;
+    }
+    return point.dx >= left &&
+        point.dx <= right &&
+        point.dy >= top &&
+        point.dy <= bottom;
+  }
+
+  static Map<String, Object?> _viewSummary(final RenderView renderView) => {
+    'viewId': renderView.flutterView.viewId,
+    'renderObjectType': renderView.runtimeType.toString(),
+    'globalBounds': _globalBoundsForRenderObject(renderView),
+    'semanticBounds': _semanticBoundsForRenderObject(renderView),
+  };
+
+  static Map<String, Object?> _renderObjectSummary(final RenderObject object) {
+    final element = (object.debugCreator as DebugCreator?)?.element;
+    return {
+      'renderObjectType': object.runtimeType.toString(),
+      'widgetType': element?.widget.runtimeType.toString(),
+      if (element?.widget.key != null) 'key': '${element!.widget.key}',
+      'viewId': _viewIdForRenderObject(object),
+      'globalBounds': _globalBoundsForRenderObject(object),
+      'semanticBounds': _semanticBoundsForRenderObject(object),
+      'sourceLocationHint': element == null
+          ? null
+          : _sourceLocationHintForElement(element),
+      'overflowFlags': _overflowFlagsForRenderObject(object),
+    };
+  }
+
+  static Map<String, Object?> _elementSummary(final Element element) => {
+    'widgetType': element.widget.runtimeType.toString(),
+    if (element.widget.key != null) 'key': '${element.widget.key}',
+    'renderObjectType': element.renderObject?.runtimeType.toString(),
+    'sourceLocationHint': _sourceLocationHintForElement(element),
+    if (_routeInfoForElement(element) case final route?) 'route': route,
+  };
+
+  static Map<String, Object?> _semanticSummary(final RenderObject object) {
+    final semantics = <String, Object?>{};
+    assert(() {
+      try {
+        final configuration = object.debugSemantics;
+        if (configuration == null) {
+          return true;
+        }
+        if (configuration.label.isNotEmpty) {
+          semantics['label'] = configuration.label;
+        }
+        if (configuration.value.isNotEmpty) {
+          semantics['value'] = configuration.value;
+        }
+        if (configuration.hint.isNotEmpty) {
+          semantics['hint'] = configuration.hint;
+        }
+      } on Exception {
+        // Best effort only in debug introspection.
+      }
+      return true;
+    }());
+    return semantics;
+  }
+
+  static Map<String, Object?> _selectedSummary(final RenderObject? target) {
+    if (target == null) {
+      return const <String, Object?>{};
+    }
+
+    const groupName = 'mcp_toolkit.inspect_widget_at_point';
+    final inspector = WidgetInspectorService.instance;
+    inspector.disposeGroup(groupName);
+    try {
+      inspector.setSelection(target, groupName);
+      final selection = inspector.getSelectedSummaryWidget(null, groupName);
+      return _decodeSummaryJson(selection);
+    } finally {
+      inspector.disposeGroup(groupName);
+    }
+  }
+
+  static Map<String, Object?> _decodeSummaryJson(final Object? raw) {
+    if (raw is Map<String, Object?>) {
+      return raw;
+    }
+    if (raw is Map) {
+      return raw.cast<String, Object?>();
+    }
+    if (raw is String && raw.isNotEmpty) {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map<String, Object?>) {
+        return decoded;
+      }
+      if (decoded is Map) {
+        return decoded.cast<String, Object?>();
+      }
+    }
+    return const <String, Object?>{};
   }
 }
