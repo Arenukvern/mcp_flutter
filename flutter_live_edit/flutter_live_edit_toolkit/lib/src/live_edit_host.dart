@@ -1,7 +1,4 @@
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 import 'package:live_edit_tooling_ui_kit/live_edit_tooling_ui_kit.dart';
@@ -10,6 +7,7 @@ import 'commands/commands.dart';
 import 'live_edit_backend_utils.dart';
 import 'live_edit_context.dart';
 import 'live_edit_controller_adapter.dart';
+import 'live_edit_host_overlay.dart';
 import 'live_edit_orchestrator.dart';
 import 'live_edit_overlay_theme.dart';
 import 'live_edit_scope.dart';
@@ -94,35 +92,6 @@ String _domainLabel(final LiveEditTargetDomain domain) => switch (domain) {
   LiveEditTargetDomain.appScene => 'App',
   LiveEditTargetDomain.toolScene => 'Tool',
 };
-
-void _drawDashedRect(final Canvas canvas, final Rect rect, final Paint paint) {
-  const dash = 8.0;
-  const gap = 4.0;
-  for (double x = rect.left; x < rect.right; x += dash + gap) {
-    canvas.drawLine(
-      Offset(x, rect.top),
-      Offset(mathMin(x + dash, rect.right), rect.top),
-      paint,
-    );
-    canvas.drawLine(
-      Offset(x, rect.bottom),
-      Offset(mathMin(x + dash, rect.right), rect.bottom),
-      paint,
-    );
-  }
-  for (double y = rect.top; y < rect.bottom; y += dash + gap) {
-    canvas.drawLine(
-      Offset(rect.left, y),
-      Offset(rect.left, mathMin(y + dash, rect.bottom)),
-      paint,
-    );
-    canvas.drawLine(
-      Offset(rect.right, y),
-      Offset(rect.right, mathMin(y + dash, rect.bottom)),
-      paint,
-    );
-  }
-}
 
 bool _hasText(final String? value) => value != null && value.trim().isNotEmpty;
 
@@ -579,7 +548,7 @@ class _AiBubbleBody extends StatelessWidget {
             !needsApprovalNow &&
             context.bubbleResource.value.applyPhase !=
                 LiveEditApplyPhase.success) ...<Widget>[
-          _PendingRequestCard(summary: stagedSummary!),
+          PendingRequestCard(summary: stagedSummary!),
           const SizedBox(height: 10),
         ],
         if (plan case final planValue?)
@@ -1322,63 +1291,11 @@ class _BubbleComposerSection extends StatelessWidget {
         ),
         if (_hasText(stagedSummary)) ...<Widget>[
           const SizedBox(height: 8),
-          _PendingRequestCard(summary: stagedSummary!),
+          PendingRequestCard(summary: stagedSummary!),
         ],
       ],
     );
   }
-}
-
-class _BubbleDragHandle extends StatelessWidget {
-  const _BubbleDragHandle({
-    required this.alignment,
-    required this.onPanUpdate,
-    this.semanticsId = 'live_edit_bubble_drag_handle',
-  });
-
-  final Alignment alignment;
-  final ValueChanged<DragUpdateDetails> onPanUpdate;
-  final String semanticsId;
-
-  @override
-  Widget build(final BuildContext context) => Semantics(
-    identifier: semanticsId,
-    child: GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onPanUpdate: onPanUpdate,
-      child: SizedBox(
-        height: 12,
-        child: Align(
-          alignment: alignment,
-          child: Container(
-            width: 28,
-            height: 3,
-            margin: const EdgeInsets.only(bottom: 8),
-            decoration: BoxDecoration(
-              color: const Color(0xFF94A3B8),
-              borderRadius: BorderRadius.circular(999),
-            ),
-          ),
-        ),
-      ),
-    ),
-  );
-}
-
-class _BubbleResizeHandle extends StatelessWidget {
-  const _BubbleResizeHandle({required this.onPanUpdate});
-
-  final ValueChanged<DragUpdateDetails> onPanUpdate;
-
-  @override
-  Widget build(final BuildContext context) => GestureDetector(
-    behavior: HitTestBehavior.opaque,
-    onPanUpdate: onPanUpdate,
-    child: const Padding(
-      padding: EdgeInsets.only(top: 6, left: 6),
-      child: Icon(Icons.open_in_full, size: 14, color: Color(0xFF64748B)),
-    ),
-  );
 }
 
 class _CycleCandidateIntent extends Intent {
@@ -1405,39 +1322,63 @@ class _EditorPanelSurface extends StatelessWidget {
   final BubbleCallbacks? bubbleCallbacks;
 
   @override
-  Widget build(final BuildContext buildContext) => Stack(
-    children: <Widget>[
-      Positioned.fill(
-        child: _PanelSurface(
-          context: context,
-          controller: controller,
-          buildPropertyPanelSection: buildPropertyPanelSection,
-          railPanelViewModel: railPanelViewModel,
-          panelCallbacks: panelCallbacks,
-          bubbleCallbacks: bubbleCallbacks,
+  Widget build(final BuildContext buildContext) {
+    final railVm =
+        railPanelViewModel ??
+        buildPanelViewModel(
+          context,
+          controller,
+          MediaQuery.sizeOf(buildContext),
+          buildToolingThemeData(),
+        );
+    final panelCb = panelCallbacks ?? ToolLayerPanelCallbacks(context: context);
+    final bubbleCb =
+        bubbleCallbacks ??
+        ToolLayerBubbleCallbacks(context: context, controller: controller);
+    return Stack(
+      children: <Widget>[
+        Positioned.fill(
+          child: KeyedSubtree(
+            key: LiveEditOverlayThemeModel.instance.keyFor(
+              selectPanelExpanded(context)
+                  ? kLiveEditPanelExpandedSurfaceId
+                  : kLiveEditPanelRailSurfaceId,
+            ),
+            child: PanelSurface(
+              viewModel: railVm,
+              callbacks: panelCb,
+              bubbleCallbacks: bubbleCb,
+              expandedChild: _PropertyPanel(
+                key: const ValueKey<String>('expanded_panel'),
+                context: context,
+                controller: controller,
+                buildPropertyPanelSection: buildPropertyPanelSection,
+              ),
+            ),
+          ),
         ),
-      ),
-      Positioned(
-        top: 6,
-        left: 0,
-        right: 0,
-        child: _PanelDragHandle(
-          onPanUpdate: (final details) =>
-              DragPanelCommand(delta: details.delta).execute(context),
+        Positioned(
+          top: 6,
+          left: 0,
+          right: 0,
+          child: PanelDragHandle(
+            onPanUpdate: (final details) =>
+                DragPanelCommand(delta: details.delta).execute(context),
+          ),
         ),
-      ),
-      Positioned(
-        right: 6,
-        bottom: 6,
-        child: _PanelResizeHandle(
-          onPanUpdate: (final details) => ResizePanelCommand(
-            width: selectPanelWidth(context) + details.delta.dx,
-            height: selectPanelHeight(context) + details.delta.dy,
-          ).execute(context),
+        Positioned(
+          right: 6,
+          bottom: 6,
+          child: PanelResizeHandle(
+            onPanUpdate: (final details) => ResizePanelCommand(
+              width: selectPanelWidth(context) + details.delta.dx,
+              height: selectPanelHeight(context) + details.delta.dy,
+            ).execute(context),
+          ),
         ),
-      ),
-    ],
-  );
+      ],
+    );
+  }
 }
 
 class _FlutterLiveEditHostState extends State<FlutterLiveEditHost> {
@@ -1551,7 +1492,7 @@ class _FlutterLiveEditHostState extends State<FlutterLiveEditHost> {
                   children: <Widget>[
                     KeyedSubtree(key: _contentKey, child: widget.child),
                     if (selectOverlayVisible(ctx))
-                      _LiveEditOverlay(
+                      LiveEditOverlay(
                         context: ctx,
                         controller: ctrl,
                         contentKey: _contentKey,
@@ -1624,43 +1565,6 @@ class _FlutterLiveEditHostState extends State<FlutterLiveEditHost> {
       _ownsOrchestrator = false;
     }
     // When orchestrator is null, host must be under LiveEditScope (checked in build).
-  }
-}
-
-class _HandleBar extends StatelessWidget {
-  const _HandleBar({required this.width});
-
-  final double width;
-
-  @override
-  Widget build(final BuildContext context) => Container(
-    width: width,
-    height: 3,
-    decoration: BoxDecoration(
-      color: const Color(0xFF94A3B8),
-      borderRadius: BorderRadius.circular(999),
-    ),
-  );
-}
-
-class _HitTestExclusionScope extends SingleChildRenderObjectWidget {
-  const _HitTestExclusionScope({
-    required this.excludedRects,
-    required super.child,
-  });
-
-  final List<Rect> excludedRects;
-
-  @override
-  RenderObject createRenderObject(final BuildContext context) =>
-      _RenderHitTestExclusionScope(excludedRects);
-
-  @override
-  void updateRenderObject(
-    final BuildContext context,
-    final _RenderHitTestExclusionScope renderObject,
-  ) {
-    renderObject.excludedRects = excludedRects;
   }
 }
 
@@ -1850,385 +1754,6 @@ class _LauncherChip extends StatelessWidget {
   }
 }
 
-class _LiveEditOverlay extends StatefulWidget {
-  const _LiveEditOverlay({
-    required this.context,
-    required this.controller,
-    required this.contentKey,
-    required this.targetDomain,
-    required this.interactive,
-    this.excludedRects = const <Rect>[],
-    this.openBubbleOnSelect = false,
-    this.orchestrator,
-  });
-
-  final LiveEditContext context;
-  final LiveEditController controller;
-  final GlobalKey contentKey;
-  final LiveEditTargetDomain targetDomain;
-  final bool interactive;
-  final List<Rect> excludedRects;
-  final bool openBubbleOnSelect;
-
-  /// When non-null, overlay uses orchestrator for pointer actions (legacy).
-  final LiveEditOrchestrator? orchestrator;
-
-  @override
-  State<_LiveEditOverlay> createState() => _LiveEditOverlayState();
-}
-
-class _LiveEditOverlayPainter extends CustomPainter {
-  const _LiveEditOverlayPainter({
-    required this.selection,
-    required this.hoverSelection,
-    required this.multiSelection,
-    required this.marqueeRect,
-    required this.deeperPickActive,
-    required this.draftChanges,
-  });
-
-  final LiveEditSelection? selection;
-  final LiveEditSelection? hoverSelection;
-  final List<LiveEditSelection> multiSelection;
-  final Rect? marqueeRect;
-  final bool deeperPickActive;
-  final List<LiveEditDraftChange> draftChanges;
-
-  @override
-  void paint(final Canvas canvas, final Size size) {
-    _paintHover(canvas);
-    _paintMultiSelection(canvas);
-    _paintMarquee(canvas);
-    final currentSelection = selection;
-    if (currentSelection == null || currentSelection.bounds == null) {
-      return;
-    }
-
-    final bounds = currentSelection.bounds!;
-    final baseRect = Rect.fromLTRB(
-      bounds.left,
-      bounds.top,
-      bounds.right,
-      bounds.bottom,
-    );
-    final selectionPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2
-      ..color = deeperPickActive
-          ? const Color(0xFF2563EB)
-          : const Color(0xFF00A77F);
-    canvas.drawRect(baseRect, selectionPaint);
-
-    final ghostRect = _ghostRectFromDrafts(baseRect);
-    if (ghostRect != null) {
-      final ghostPaint = Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2
-        ..color = const Color(0xFFFF7A18);
-      _drawDashedRect(canvas, ghostRect, ghostPaint);
-    }
-
-    final labelText = _buildLabelText();
-    if (labelText.isEmpty) {
-      return;
-    }
-
-    final paragraphBuilder =
-        ui.ParagraphBuilder(
-            ui.ParagraphStyle(fontSize: 12, fontWeight: FontWeight.w600),
-          )
-          ..pushStyle(ui.TextStyle(color: const Color(0xFF111827)))
-          ..addText(labelText);
-
-    final paragraph = paragraphBuilder.build()
-      ..layout(const ui.ParagraphConstraints(width: 260));
-    final labelRect = Rect.fromLTWH(
-      baseRect.left,
-      mathMax(0, baseRect.top - paragraph.height - 10),
-      paragraph.width + 12,
-      paragraph.height + 8,
-    );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(labelRect, const Radius.circular(10)),
-      Paint()..color = const Color(0xFFFDE68A),
-    );
-    canvas.drawParagraph(
-      paragraph,
-      Offset(labelRect.left + 6, labelRect.top + 4),
-    );
-  }
-
-  @override
-  bool shouldRepaint(final _LiveEditOverlayPainter oldDelegate) =>
-      oldDelegate.selection != selection ||
-      oldDelegate.hoverSelection != hoverSelection ||
-      oldDelegate.multiSelection != multiSelection ||
-      oldDelegate.marqueeRect != marqueeRect ||
-      oldDelegate.deeperPickActive != deeperPickActive ||
-      oldDelegate.draftChanges != draftChanges;
-
-  String _buildLabelText() {
-    if (draftChanges.isEmpty) {
-      return '';
-    }
-    return draftChanges
-        .map((final draft) => '${draft.propertyId}: ${draft.targetValue}')
-        .join(' | ');
-  }
-
-  Rect? _ghostRectFromDrafts(final Rect baseRect) {
-    double? width;
-    double? height;
-    for (final draft in draftChanges) {
-      if (draft.propertyId == 'width') {
-        width = _asDouble(draft.targetValue);
-      } else if (draft.propertyId == 'height') {
-        height = _asDouble(draft.targetValue);
-      }
-    }
-    if (width == null && height == null) {
-      return null;
-    }
-    return Rect.fromLTWH(
-      baseRect.left,
-      baseRect.top,
-      width ?? baseRect.width,
-      height ?? baseRect.height,
-    );
-  }
-
-  void _paintHover(final Canvas canvas) {
-    final hovered = hoverSelection?.bounds;
-    if (hovered == null) {
-      return;
-    }
-    final rect = Rect.fromLTRB(
-      hovered.left,
-      hovered.top,
-      hovered.right,
-      hovered.bottom,
-    );
-    canvas.drawRect(rect, Paint()..color = const Color(0x220EA5E9));
-    canvas.drawRect(
-      rect,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5
-        ..color = deeperPickActive
-            ? const Color(0xFF2563EB)
-            : const Color(0xFF0EA5E9),
-    );
-  }
-
-  void _paintMarquee(final Canvas canvas) {
-    final rect = marqueeRect;
-    if (rect == null) {
-      return;
-    }
-    canvas.drawRect(rect, Paint()..color = const Color(0x1A2563EB));
-    _drawDashedRect(
-      canvas,
-      rect,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5
-        ..color = const Color(0xFF2563EB),
-    );
-  }
-
-  void _paintMultiSelection(final Canvas canvas) {
-    if (multiSelection.length < 2) {
-      return;
-    }
-    final paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5
-      ..color = const Color(0xFFF97316);
-    for (final selection in multiSelection) {
-      final bounds = selection.bounds;
-      if (bounds == null) {
-        continue;
-      }
-      canvas.drawRect(
-        Rect.fromLTRB(bounds.left, bounds.top, bounds.right, bounds.bottom),
-        paint,
-      );
-    }
-  }
-}
-
-class _LiveEditOverlayState extends State<_LiveEditOverlay> {
-  static const double _dragThreshold = 8;
-  Offset? _pointerDown;
-  bool _dragging = false;
-
-  String? get _sessionId =>
-      widget.orchestrator?.context.sessionResource.value.activeSessionId ??
-      widget.context.sessionResource.value.activeSessionId;
-
-  List<LiveEditDraftChange> get _draftChangesForDomain =>
-      widget.controller.draftChangesForDomain(
-        targetDomain: widget.targetDomain,
-        sessionId: _sessionId,
-      );
-
-  LiveEditSelection? get _hoverForDomain =>
-      widget.controller.hoverSelectionForDomain(
-        targetDomain: widget.targetDomain,
-        sessionId: _sessionId,
-      );
-
-  Rect? get _marqueeRectForDomain => widget.controller.marqueeRectForDomain(
-    targetDomain: widget.targetDomain,
-    sessionId: _sessionId,
-  );
-
-  List<LiveEditSelection> get _marqueeSelectionsForDomain =>
-      widget.controller.marqueeSelectionsForDomain(
-        targetDomain: widget.targetDomain,
-        sessionId: _sessionId,
-      );
-
-  List<LiveEditSelection> get _multiSelectionForDomain =>
-      widget.controller.multiSelectionForDomain(
-        targetDomain: widget.targetDomain,
-        sessionId: _sessionId,
-      );
-
-  LiveEditSelection? get _selectionForDomain =>
-      widget.controller.selectionForDomain(
-        targetDomain: widget.targetDomain,
-        sessionId: _sessionId,
-      );
-
-  bool get _deeperPickEnabled =>
-      (widget.orchestrator?.context ?? widget.context)
-          .panelViewResource
-          .value
-          .deeperPickEnabled;
-
-  Element? get _contentRoot => widget.contentKey.currentContext is Element
-      ? widget.contentKey.currentContext! as Element
-      : null;
-
-  @override
-  Widget build(final BuildContext context) => Positioned.fill(
-    child: _HitTestExclusionScope(
-      excludedRects: widget.excludedRects,
-      child: Focus(
-        autofocus: true,
-        child: MouseRegion(
-          onHover: widget.interactive
-              ? (final event) {
-                  HoverAtPointCommand(
-                    x: event.position.dx.round(),
-                    y: event.position.dy.round(),
-                    contentRoot: _contentRoot,
-                    deeperMode: _deeperPickEnabled,
-                    targetDomain: widget.targetDomain,
-                  ).execute(widget.context);
-                }
-              : null,
-          onExit: widget.interactive
-              ? (_) => ClearHoverCommand().execute(widget.context)
-              : null,
-          child: IgnorePointer(
-            ignoring: !widget.interactive,
-            child: Listener(
-              behavior: HitTestBehavior.translucent,
-              onPointerDown: (final event) {
-                _pointerDown = event.position;
-                _dragging = false;
-                HoverAtPointCommand(
-                  x: event.position.dx.round(),
-                  y: event.position.dy.round(),
-                  contentRoot: _contentRoot,
-                  deeperMode: _deeperPickEnabled,
-                  targetDomain: widget.targetDomain,
-                ).execute(widget.context);
-              },
-              onPointerMove: (final event) {
-                final start = _pointerDown;
-                if (start == null) {
-                  HoverAtPointCommand(
-                    x: event.position.dx.round(),
-                    y: event.position.dy.round(),
-                    contentRoot: _contentRoot,
-                    deeperMode: _deeperPickEnabled,
-                    targetDomain: widget.targetDomain,
-                  ).execute(widget.context);
-                  return;
-                }
-                if (!_dragging &&
-                    (event.position - start).distance >= _dragThreshold) {
-                  _dragging = true;
-                  StartMarqueeCommand(
-                    x: start.dx.round(),
-                    y: start.dy.round(),
-                  ).execute(widget.context);
-                }
-                if (_dragging) {
-                  UpdateMarqueeCommand(
-                    x: event.position.dx.round(),
-                    y: event.position.dy.round(),
-                    contentRoot: _contentRoot,
-                  ).execute(widget.context);
-                  return;
-                }
-                HoverAtPointCommand(
-                  x: event.position.dx.round(),
-                  y: event.position.dy.round(),
-                  contentRoot: _contentRoot,
-                  deeperMode: _deeperPickEnabled,
-                  targetDomain: widget.targetDomain,
-                ).execute(widget.context);
-              },
-              onPointerUp: (final event) {
-                if (_dragging) {
-                  CommitMarqueeCommand(
-                    controller: widget.controller,
-                  ).execute(widget.context);
-                } else {
-                  SelectNodeCommand(
-                    x: event.position.dx.round(),
-                    y: event.position.dy.round(),
-                    controller: widget.controller,
-                    contentRoot: _contentRoot,
-                    preferHoverPreview: _deeperPickEnabled,
-                    targetDomain: widget.targetDomain,
-                    openBubbleOnSelect: widget.openBubbleOnSelect,
-                  ).execute(widget.context);
-                }
-                _pointerDown = null;
-                _dragging = false;
-              },
-              onPointerCancel: (_) {
-                if (_dragging) {
-                  CancelMarqueeCommand().execute(widget.context);
-                }
-                _pointerDown = null;
-                _dragging = false;
-              },
-              child: CustomPaint(
-                painter: _LiveEditOverlayPainter(
-                  selection: _selectionForDomain,
-                  hoverSelection: _hoverForDomain,
-                  multiSelection: _marqueeRectForDomain != null
-                      ? _marqueeSelectionsForDomain
-                      : _multiSelectionForDomain,
-                  marqueeRect: _marqueeRectForDomain,
-                  deeperPickActive: widget.interactive && _deeperPickEnabled,
-                  draftChanges: _draftChangesForDomain,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    ),
-  );
-}
-
 class _NumericEditor extends StatefulWidget {
   const _NumericEditor({
     required this.context,
@@ -2350,157 +1875,6 @@ class _NumericEditorState extends State<_NumericEditor> {
   }
 }
 
-class _PanelDragHandle extends StatelessWidget {
-  const _PanelDragHandle({required this.onPanUpdate});
-
-  final ValueChanged<DragUpdateDetails> onPanUpdate;
-
-  @override
-  Widget build(final BuildContext context) => Semantics(
-    identifier: 'live_edit_panel_drag_handle',
-    child: GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onPanUpdate: onPanUpdate,
-      child: const SizedBox(
-        height: 18,
-        child: Center(child: _HandleBar(width: 34)),
-      ),
-    ),
-  );
-}
-
-class _PanelResizeHandle extends StatelessWidget {
-  const _PanelResizeHandle({required this.onPanUpdate});
-
-  final ValueChanged<DragUpdateDetails> onPanUpdate;
-
-  @override
-  Widget build(final BuildContext context) => Semantics(
-    identifier: 'live_edit_panel_resize_handle',
-    child: GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onPanUpdate: onPanUpdate,
-      child: const Padding(
-        padding: EdgeInsets.only(top: 6, left: 6),
-        child: Icon(Icons.open_in_full, size: 14, color: Color(0xFF64748B)),
-      ),
-    ),
-  );
-}
-
-class _PanelSection extends StatelessWidget {
-  const _PanelSection({required this.title, required this.child});
-
-  final String title;
-  final Widget child;
-
-  @override
-  Widget build(final BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: 10),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF334155),
-          ),
-        ),
-        const SizedBox(height: 5),
-        child,
-      ],
-    ),
-  );
-}
-
-class _PanelSurface extends StatelessWidget {
-  const _PanelSurface({
-    required this.context,
-    required this.controller,
-    this.buildPropertyPanelSection,
-    this.railPanelViewModel,
-    this.panelCallbacks,
-    this.bubbleCallbacks,
-  });
-
-  final LiveEditContext context;
-  final LiveEditController controller;
-  final LiveEditPropertyPanelSectionBuilder? buildPropertyPanelSection;
-  final PanelViewModel? railPanelViewModel;
-  final PanelCallbacks? panelCallbacks;
-  final BubbleCallbacks? bubbleCallbacks;
-
-  @override
-  Widget build(final BuildContext buildContext) {
-    final panelExpanded = selectPanelExpanded(context);
-    final surfaceId = panelExpanded
-        ? kLiveEditPanelExpandedSurfaceId
-        : kLiveEditPanelRailSurfaceId;
-    final railVm = railPanelViewModel ??
-        buildPanelViewModel(
-          context,
-          controller,
-          MediaQuery.sizeOf(buildContext),
-          buildToolingThemeData(),
-        );
-    final panelCb = panelCallbacks ?? ToolLayerPanelCallbacks(context: context);
-    final bubbleCb =
-        bubbleCallbacks ?? ToolLayerBubbleCallbacks(context: context, controller: controller);
-    return KeyedSubtree(
-      key: LiveEditOverlayThemeModel.instance.keyFor(surfaceId),
-      child: panelExpanded
-          ? _PropertyPanel(
-              key: const ValueKey<String>('expanded_panel'),
-              context: context,
-              controller: controller,
-              buildPropertyPanelSection: buildPropertyPanelSection,
-            )
-          : PanelRail(
-              key: const ValueKey<String>('rail_panel'),
-              viewModel: railVm,
-              callbacks: panelCb,
-              bubbleCallbacks: bubbleCb,
-            ),
-    );
-  }
-}
-
-class _PendingRequestCard extends StatelessWidget {
-  const _PendingRequestCard({required this.summary});
-
-  final String summary;
-
-  @override
-  Widget build(final BuildContext context) => Container(
-    padding: const EdgeInsets.all(10),
-    decoration: BoxDecoration(
-      color: const Color(0xFFFFFBEB),
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: const Color(0xFFFDE68A)),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        const Text(
-          'Pending request',
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF92400E),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          summary,
-          style: const TextStyle(fontSize: 11, color: Color(0xFF78350F)),
-        ),
-      ],
-    ),
-  );
-}
-
 class _PropertyActionColumn extends StatelessWidget {
   const _PropertyActionColumn({
     required this.context,
@@ -2544,51 +1918,6 @@ class _PropertyActionColumn extends StatelessWidget {
       ],
     ],
   );
-}
-
-class _PropertyBadge extends StatelessWidget {
-  const _PropertyBadge({
-    required this.label,
-    required this.textColor,
-    required this.backgroundColor,
-    this.captureSurfaceKey = false,
-  });
-
-  final String label;
-  final Color textColor;
-  final Color backgroundColor;
-  final bool captureSurfaceKey;
-
-  @override
-  Widget build(final BuildContext context) {
-    final theme = LiveEditOverlayThemeModel.instance.styleFor(
-      kLiveEditStatusBadgeSurfaceId,
-    );
-    final badge = Container(
-      padding: theme.padding,
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(theme.cornerRadius),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: textColor,
-        ),
-      ),
-    );
-    if (!captureSurfaceKey) {
-      return badge;
-    }
-    return KeyedSubtree(
-      key: LiveEditOverlayThemeModel.instance.keyFor(
-        kLiveEditStatusBadgeSurfaceId,
-      ),
-      child: badge,
-    );
-  }
 }
 
 class _PropertyEditor extends StatelessWidget {
@@ -2746,6 +2075,9 @@ class _PropertyEditorCard extends StatelessWidget {
     final rowTheme = LiveEditOverlayThemeModel.instance.styleFor(
       kLiveEditPropertyEditorRowSurfaceId,
     );
+    final badgeTheme = LiveEditOverlayThemeModel.instance.styleFor(
+      kLiveEditStatusBadgeSurfaceId,
+    );
     final isActive =
         selectActivePropertyId(context, domain: presentationDomain) ==
         property.id;
@@ -2807,15 +2139,21 @@ class _PropertyEditorCard extends StatelessWidget {
                       spacing: 4,
                       runSpacing: 4,
                       children: <Widget>[
-                        _PropertyBadge(
+                        PropertyBadge(
                           label: _previewLabel(property),
                           textColor: _previewColor(property),
                           backgroundColor: _previewColor(
                             property,
                           ).withOpacity(0.12),
-                          captureSurfaceKey: isActive,
+                          surfaceKey: isActive
+                              ? LiveEditOverlayThemeModel.instance.keyFor(
+                                  kLiveEditStatusBadgeSurfaceId,
+                                )
+                              : null,
+                          padding: badgeTheme.padding,
+                          cornerRadius: badgeTheme.cornerRadius,
                         ),
-                        _PropertyBadge(
+                        PropertyBadge(
                           label: _persistLabel(property, context, controller),
                           textColor: property.requiresAgentForPersistence
                               ? const Color(0xFF7C2D12)
@@ -2823,6 +2161,8 @@ class _PropertyEditorCard extends StatelessWidget {
                           backgroundColor: property.requiresAgentForPersistence
                               ? const Color(0xFFFFEDD5)
                               : const Color(0xFFDBEAFE),
+                          padding: badgeTheme.padding,
+                          cornerRadius: badgeTheme.cornerRadius,
                         ),
                         if (selectHasDraftForProperty(
                           context,
@@ -2831,7 +2171,7 @@ class _PropertyEditorCard extends StatelessWidget {
                           presentationDomain: presentationDomain,
                           sessionId: sessionId,
                         ))
-                          _PropertyBadge(
+                          PropertyBadge(
                             label:
                                 selectIsPropertyWaiting(
                                   context,
@@ -2862,6 +2202,8 @@ class _PropertyEditorCard extends StatelessWidget {
                                 )
                                 ? const Color(0xFFDBEAFE)
                                 : const Color(0xFFCCFBF1),
+                            padding: badgeTheme.padding,
+                            cornerRadius: badgeTheme.cornerRadius,
                           ),
                       ],
                     ),
@@ -3132,7 +2474,7 @@ class _PropertyPanel extends StatelessWidget {
                   : ListView(
                       padding: const EdgeInsets.all(8),
                       children: <Widget>[
-                        _PanelSection(
+                        PanelSection(
                           title: 'Navigator',
                           child: Wrap(
                             spacing: 6,
@@ -3168,14 +2510,14 @@ class _PropertyPanel extends StatelessWidget {
                             ],
                           ),
                         ),
-                        _PanelSection(
+                        PanelSection(
                           title: 'Agent',
                           child: _InferenceConfigEditor(
                             context: context,
                             controller: controller,
                           ),
                         ),
-                        _PanelSection(
+                        PanelSection(
                           title: 'Selection',
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -3331,7 +2673,7 @@ class _PropertyPanel extends StatelessWidget {
                             ],
                           ),
                         ),
-                        _PanelSection(
+                        PanelSection(
                           title: 'Activity',
                           child: _AgentActivityPanel(
                             context: context,
@@ -3340,7 +2682,7 @@ class _PropertyPanel extends StatelessWidget {
                           ),
                         ),
                         if (buildPropertyPanelSection != null)
-                          _PanelSection(
+                          PanelSection(
                             title: 'Properties',
                             child:
                                 buildPropertyPanelSection!(
@@ -3349,7 +2691,7 @@ class _PropertyPanel extends StatelessWidget {
                                 ) ??
                                 const SizedBox.shrink(),
                           ),
-                        _PanelSection(
+                        PanelSection(
                           title: 'Thread',
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -3367,7 +2709,7 @@ class _PropertyPanel extends StatelessWidget {
                                 ),
                               )) ...<Widget>[
                                 const SizedBox(height: 6),
-                                _PendingRequestCard(
+                                PendingRequestCard(
                                   summary: selectStagedRequestSummary(
                                     context,
                                     controller,
@@ -3391,9 +2733,9 @@ class _PropertyPanel extends StatelessWidget {
                           ),
                         ),
                         if (selectDebugModeEnabled(context))
-                          _PanelSection(
+                          PanelSection(
                             title: 'Prompt',
-                            child: _SelectedPromptCard(
+                            child: SelectedPromptCard(
                               promptText: selectDebugPromptForActiveSelection(
                                 context,
                                 controller,
@@ -3403,7 +2745,7 @@ class _PropertyPanel extends StatelessWidget {
                             ),
                           ),
                         if (selectDebugModeEnabled(context))
-                          _PanelSection(
+                          PanelSection(
                             title: 'Debug Log',
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -3436,95 +2778,8 @@ class _PropertyPanel extends StatelessWidget {
   };
 }
 
-class _RenderHitTestExclusionScope extends RenderProxyBox {
-  _RenderHitTestExclusionScope(this._excludedRects);
-
-  List<Rect> _excludedRects;
-
-  set excludedRects(final List<Rect> value) {
-    if (_excludedRects.length == value.length) {
-      var changed = false;
-      for (var index = 0; index < value.length; index += 1) {
-        if (_excludedRects[index] != value[index]) {
-          changed = true;
-          break;
-        }
-      }
-      if (!changed) {
-        return;
-      }
-    }
-    _excludedRects = value;
-  }
-
-  @override
-  bool hitTest(
-    final BoxHitTestResult result, {
-    required final Offset position,
-  }) {
-    for (final rect in _excludedRects) {
-      if (rect.contains(position)) {
-        return false;
-      }
-    }
-    return super.hitTest(result, position: position);
-  }
-}
-
 class _SelectChildIntent extends Intent {
   const _SelectChildIntent();
-}
-
-class _SelectedPromptCard extends StatelessWidget {
-  const _SelectedPromptCard({required this.promptText});
-
-  final String? promptText;
-
-  @override
-  Widget build(final BuildContext context) {
-    final hasPrompt = _hasText(promptText);
-    return Semantics(
-      identifier: 'live_edit_selected_prompt',
-      child: ExpansionTile(
-        key: const PageStorageKey<String>('live_edit_selected_prompt_tile'),
-        tilePadding: EdgeInsets.zero,
-        childrenPadding: EdgeInsets.zero,
-        title: const Text(
-          'Agent request',
-          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
-        ),
-        subtitle: Text(
-          hasPrompt
-              ? 'Exact request sent to the agent for this bubble.'
-              : 'No agent request sent for this bubble yet.',
-          style: const TextStyle(fontSize: 10),
-        ),
-        children: <Widget>[
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-            ),
-            child: SelectionArea(
-              child: Text(
-                hasPrompt
-                    ? promptText!.trim()
-                    : 'No agent request sent for this bubble yet.',
-                style: const TextStyle(
-                  fontSize: 11,
-                  height: 1.35,
-                  color: Color(0xFF0F172A),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _SelectionBubble extends StatelessWidget {
@@ -3712,7 +2967,7 @@ class _SelectionBubble extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: <Widget>[
                         if (surfaceTheme.showDragHandle)
-                          _BubbleDragHandle(
+                          BubbleDragHandle(
                             alignment: autoPlacement.dx > bounds.left
                                 ? Alignment.centerLeft
                                 : Alignment.centerRight,
@@ -4015,7 +3270,7 @@ class _SelectionBubble extends StatelessWidget {
                     Positioned(
                       right: 6,
                       bottom: 6,
-                      child: _BubbleResizeHandle(
+                      child: BubbleResizeHandle(
                         onPanUpdate: (final details) {
                           ResizeBubbleCommand(
                             width: bubbleWidthVal + details.delta.dx,

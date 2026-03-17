@@ -34,11 +34,10 @@ class RailStatusDot extends StatelessWidget {
         _ => const Color(0xFF0F766E),
       };
 
-  static String _domainInitial(final LiveEditTargetDomain d) =>
-      switch (d) {
-        LiveEditTargetDomain.appScene => 'A',
-        LiveEditTargetDomain.toolScene => 'T',
-      };
+  static String _domainInitial(final LiveEditTargetDomain d) => switch (d) {
+    LiveEditTargetDomain.appScene => 'A',
+    LiveEditTargetDomain.toolScene => 'T',
+  };
 
   @override
   Widget build(final BuildContext context) {
@@ -47,9 +46,7 @@ class RailStatusDot extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(compact ? 10 : 4),
-        child: compact
-            ? _buildCompact()
-            : _buildHorizontal(),
+        child: compact ? _buildCompact() : _buildHorizontal(),
       ),
     );
     if (tooltipMessage != null && tooltipMessage!.isNotEmpty) {
