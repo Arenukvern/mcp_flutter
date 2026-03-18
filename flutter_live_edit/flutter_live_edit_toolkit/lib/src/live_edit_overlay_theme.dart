@@ -2,6 +2,8 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
+import 'package:from_json_to_json/from_json_to_json.dart';
+import 'package:is_dart_empty_or_not/is_dart_empty_or_not.dart';
 
 const String kLiveEditOverlayThemeSourcePath =
     'flutter_live_edit/flutter_live_edit_toolkit/lib/src/live_edit_overlay_theme.dart';
@@ -14,32 +16,6 @@ const String kLiveEditBackendSwitcherSurfaceId = 'backend_switcher';
 const String kLiveEditStatusBadgeSurfaceId = 'status_badge';
 const String kLiveEditPropertyEditorRowSurfaceId = 'property_editor_row';
 
-double _asDouble(final Object? value, {final double fallback = 0}) {
-  if (value is num) {
-    return value.toDouble();
-  }
-  return double.tryParse('$value') ?? fallback;
-}
-
-bool _asBool(final Object? value, {final bool fallback = false}) {
-  if (value is bool) {
-    return value;
-  }
-  final normalized = '$value'.trim().toLowerCase();
-  if (normalized == 'true' || normalized == '1' || normalized == 'yes') {
-    return true;
-  }
-  if (normalized == 'false' || normalized == '0' || normalized == 'no') {
-    return false;
-  }
-  return fallback;
-}
-
-String _colorHex(final Color color) {
-  final value = color.toARGB32();
-  return '#${value.toRadixString(16).padLeft(8, '0').toUpperCase()}';
-}
-
 Color _parseColor(final Object? value, final Color fallback) {
   final normalized = '$value'.trim();
   if (!normalized.startsWith('#')) {
@@ -51,24 +27,16 @@ Color _parseColor(final Object? value, final Color fallback) {
   return parsed == null ? fallback : Color(parsed);
 }
 
-Map<String, Object?> _edgeInsetsJson(final EdgeInsets value) =>
-    <String, Object?>{
-      'left': value.left,
-      'top': value.top,
-      'right': value.right,
-      'bottom': value.bottom,
-    };
-
 EdgeInsets _parseEdgeInsets(final Object? value, final EdgeInsets fallback) {
   if (value is Map) {
     final normalized = value.map(
       (final key, final nestedValue) => MapEntry('$key', nestedValue),
     );
     return EdgeInsets.fromLTRB(
-      _asDouble(normalized['left'], fallback: fallback.left),
-      _asDouble(normalized['top'], fallback: fallback.top),
-      _asDouble(normalized['right'], fallback: fallback.right),
-      _asDouble(normalized['bottom'], fallback: fallback.bottom),
+      jsonDecodeDouble(normalized['left']).whenZeroUse(fallback.left),
+      jsonDecodeDouble(normalized['top']).whenZeroUse(fallback.top),
+      jsonDecodeDouble(normalized['right']).whenZeroUse(fallback.right),
+      jsonDecodeDouble(normalized['bottom']).whenZeroUse(fallback.bottom),
     );
   }
   return fallback;
@@ -344,7 +312,6 @@ final class LiveEditOverlayThemeModel extends ChangeNotifier {
       source: const LiveEditSourceLocation(
         file: kLiveEditOverlayThemeSourcePath,
       ),
-      propertiesForWire: const <Object?>[],
       rawNode: <String, Object?>{
         'surfaceId': surfaceId,
         'componentKind': _componentKindFor(surfaceId),
@@ -413,27 +380,29 @@ final class LiveEditOverlayThemeModel extends ChangeNotifier {
     LiveEditOverlaySurfaceStyle next = current;
     switch (change.propertyId) {
       case 'width':
-        next = next.copyWith(width: _asDouble(change.targetValue));
+        next = next.copyWith(width: jsonDecodeDouble(change.targetValue));
       case 'height':
-        next = next.copyWith(height: _asDouble(change.targetValue));
+        next = next.copyWith(height: jsonDecodeDouble(change.targetValue));
       case 'x':
         _positions[surfaceId] = Offset(
-          _asDouble(change.targetValue),
+          jsonDecodeDouble(change.targetValue),
           positionFor(surfaceId).dy,
         );
       case 'y':
         _positions[surfaceId] = Offset(
           positionFor(surfaceId).dx,
-          _asDouble(change.targetValue),
+          jsonDecodeDouble(change.targetValue),
         );
       case 'cornerRadius':
-        next = next.copyWith(cornerRadius: _asDouble(change.targetValue));
+        next = next.copyWith(
+          cornerRadius: jsonDecodeDouble(change.targetValue),
+        );
       case 'padding':
         next = next.copyWith(
           padding: _parseEdgeInsets(change.targetValue, current.padding),
         );
       case 'gap':
-        next = next.copyWith(gap: _asDouble(change.targetValue));
+        next = next.copyWith(gap: jsonDecodeDouble(change.targetValue));
       case 'backgroundColor':
         next = next.copyWith(
           backgroundColor: _parseColor(
@@ -448,9 +417,13 @@ final class LiveEditOverlayThemeModel extends ChangeNotifier {
       case 'badgeTone':
         next = next.copyWith(badgeTone: '${change.targetValue}'.trim());
       case 'showDragHandle':
-        next = next.copyWith(showDragHandle: _asBool(change.targetValue));
+        next = next.copyWith(
+          showDragHandle: jsonDecodeBool(change.targetValue),
+        );
       case 'showResizeHandle':
-        next = next.copyWith(showResizeHandle: _asBool(change.targetValue));
+        next = next.copyWith(
+          showResizeHandle: jsonDecodeBool(change.targetValue),
+        );
       default:
         return false;
     }

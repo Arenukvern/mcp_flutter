@@ -105,18 +105,6 @@ final class LiveEditIntegrationHarness {
     await SubmitAiPromptCommand(controller: controller).execute(ctx);
   }
 
-  void updateDraft({
-    required final LiveEditPropertyDescriptor property,
-    required final Object? targetValue,
-    final LiveEditEditSurface? surface,
-  }) {
-    UpdateDraftFromUiCommand(
-      property: property,
-      targetValue: targetValue,
-      surface: surface,
-    ).execute(ctx);
-  }
-
   void selectCandidateAt(final int index) {
     SelectCandidateAtCommand(controller: controller, index: index).execute(ctx);
   }

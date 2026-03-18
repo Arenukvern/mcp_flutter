@@ -23,6 +23,7 @@ dependencies:
   vm_service: ^15.0.2
   xsoulspace_inference_core:
     path: ../../../../xs/dart_flutter_packages/pkgs/xsoulspace_inference_core
+  is_dart_empty_or_not: ^0.3.0
 
 dev_dependencies:
   flutter_test:

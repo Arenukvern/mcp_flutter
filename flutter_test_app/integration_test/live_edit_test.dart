@@ -142,7 +142,6 @@ void main() {
     await _pumpUntil(tester, () => h.currentActivity?.label == 'Applied');
 
     expect(requests, hasLength(1));
-    expect(requests.single.draftChanges, isEmpty);
     expect(
       requests.single.intentText,
       'Rewrite the selected heading in a cleaner style.',
@@ -174,11 +173,9 @@ void main() {
           primarySelection: request.effectivePrimarySelection,
           selectedWidgets: request.effectiveSelectedWidgets,
           sourceTargets: request.sourceTargets,
-          stagedPropertyChanges: request.effectiveStagedPropertyChanges,
           applyMode: request.applyMode,
           inferenceConfig: request.inferenceConfig,
           intentText: request.intentText,
-          draftChanges: request.draftChanges,
           selection: request.selection,
           meta: const <String, Object?>{
             'integrationTest': true,

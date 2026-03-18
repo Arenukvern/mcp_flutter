@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_live_edit_toolkit/flutter_live_edit_toolkit.dart';
 import 'package:flutter_live_edit_toolkit/src/live_edit_backend_utils.dart';
-import 'package:flutter_live_edit_toolkit/src/live_edit_overlay_theme.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 LiveEditTargetDomain _domain(final LiveEditOrchestrator o) =>
@@ -75,11 +74,9 @@ void main() {
 
   testWidgets('controller starts and ends session', (final tester) async {
     final o = LiveEditOrchestrator();
-    addTearDown(() => o.dispose());
+    addTearDown(o.dispose);
 
-    final started = StartSessionCommand(
-      targetDomain: LiveEditTargetDomain.appScene,
-    ).execute(o.context);
+    final started = StartSessionCommand().execute(o.context);
     final sessionId = started['sessionId']! as String;
 
     expect(sessionId, isNotEmpty);
@@ -453,10 +450,10 @@ void main() {
 
     await tester.tap(find.byType(ActionChip));
     await tester.pumpAndSettle();
-    final _pt = tester.getCenter(find.text('First'));
+    final pt = tester.getCenter(find.text('First'));
     SelectNodeCommand(
-      x: _pt.dx.toInt(),
-      y: _pt.dy.toInt(),
+      x: pt.dx.toInt(),
+      y: pt.dy.toInt(),
       controller: orchestrator.controller,
     ).execute(orchestrator.context);
     await tester.pumpAndSettle();
@@ -964,10 +961,10 @@ void main() {
 
     await tester.tap(find.byType(ActionChip));
     await tester.pumpAndSettle();
-    final _pt = tester.getCenter(find.text('Target'));
+    final pt = tester.getCenter(find.text('Target'));
     SelectNodeCommand(
-      x: _pt.dx.toInt(),
-      y: _pt.dy.toInt(),
+      x: pt.dx.toInt(),
+      y: pt.dy.toInt(),
       controller: orchestrator.controller,
     ).execute(orchestrator.context);
     await tester.pumpAndSettle();
@@ -1140,7 +1137,6 @@ void main() {
     await tester.tapAt(center);
     await tester.pumpAndSettle();
 
-    final selectedNodeId = _selection(orchestrator)!.nodeId;
     final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
     await gesture.addPointer();
     await gesture.moveTo(center);
@@ -1720,15 +1716,15 @@ void main() {
     'repeated marquee updates with same result do not churn listeners',
     (final tester) async {
       final o = LiveEditOrchestrator();
-      addTearDown(() => o.dispose());
+      addTearDown(o.dispose);
       await tester.pumpWidget(
         MaterialApp(
           home: FlutterLiveEditHost(
             orchestrator: o,
-            child: Scaffold(
+            child: const Scaffold(
               body: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: const <Widget>[
+                children: <Widget>[
                   Padding(padding: EdgeInsets.all(24), child: Text('First')),
                   Padding(padding: EdgeInsets.all(24), child: Text('Second')),
                 ],
@@ -1743,9 +1739,7 @@ void main() {
       o.addListener(handleNotification);
       addTearDown(() => o.removeListener(handleNotification));
 
-      final started = StartSessionCommand(
-        targetDomain: LiveEditTargetDomain.appScene,
-      ).execute(o.context);
+      final started = StartSessionCommand().execute(o.context);
       final sessionId = started['sessionId']! as String;
       SetOverlayCommand(enabled: true, sessionId: sessionId).execute(o.context);
 
@@ -1834,8 +1828,9 @@ void main() {
       orchestrator.controller,
       domain: _domain(orchestrator),
       sessionId: _sid(orchestrator),
-    ).isEmpty)
+    ).isEmpty) {
       return;
+    }
     final alphaNodeId = _selection(orchestrator)!.nodeId;
 
     final betaCenter = tester.getCenter(find.text('Beta'));
@@ -1906,10 +1901,10 @@ void main() {
     await tester.tapAt(tester.getCenter(find.text('Target')));
     await tester.pumpAndSettle();
     if (_selection(orchestrator) == null) {
-      final _pt = tester.getCenter(find.text('Target'));
+      final pt = tester.getCenter(find.text('Target'));
       SelectNodeCommand(
-        x: _pt.dx.toInt(),
-        y: _pt.dy.toInt(),
+        x: pt.dx.toInt(),
+        y: pt.dy.toInt(),
         controller: orchestrator.controller,
       ).execute(orchestrator.context);
       await tester.pumpAndSettle();
@@ -1920,18 +1915,19 @@ void main() {
       orchestrator.controller,
       domain: _domain(orchestrator),
       sessionId: _sid(orchestrator),
-    ).isEmpty)
+    ).isEmpty) {
       return;
+    }
 
     expect(_semanticsId('live_edit_bubble_done_button'), findsNothing);
 
     await ApplyDraftCommand().execute(orchestrator.context);
     await tester.pumpAndSettle();
     if (_selection(orchestrator) == null) {
-      final _pt = tester.getCenter(find.text('Target'));
+      final pt = tester.getCenter(find.text('Target'));
       SelectNodeCommand(
-        x: _pt.dx.toInt(),
-        y: _pt.dy.toInt(),
+        x: pt.dx.toInt(),
+        y: pt.dy.toInt(),
         controller: orchestrator.controller,
       ).execute(orchestrator.context);
       await tester.pumpAndSettle();
@@ -1979,10 +1975,10 @@ void main() {
     );
     expect(_semanticsId('live_edit_bubble_done_button'), findsNothing);
 
-    final _pt = tester.getCenter(find.text('Target'));
+    final pt = tester.getCenter(find.text('Target'));
     SelectNodeCommand(
-      x: _pt.dx.toInt(),
-      y: _pt.dy.toInt(),
+      x: pt.dx.toInt(),
+      y: pt.dy.toInt(),
       controller: orchestrator.controller,
     ).execute(orchestrator.context);
     await tester.pumpAndSettle();
@@ -2055,8 +2051,9 @@ void main() {
       orchestrator.controller,
       domain: _domain(orchestrator),
       sessionId: _sid(orchestrator),
-    ).isEmpty)
+    ).isEmpty) {
       return;
+    }
     expect(selectPanelExpanded(orchestrator.context), isTrue);
     expect(selectApplyPhase(orchestrator.context), LiveEditApplyPhase.idle);
     expect(
@@ -2218,13 +2215,15 @@ void main() {
       orchestrator.controller,
       domain: _domain(orchestrator),
       sessionId: _sid(orchestrator),
-    ).isEmpty)
+    ).isEmpty) {
       return;
+    }
     expect(requests, isEmpty);
     expect(find.text('Pending request'), findsWidgets);
 
-    UpdateAiComposerCommand(value: 'Update text from AI prompt.')
-        .execute(orchestrator.context);
+    UpdateAiComposerCommand(
+      value: 'Update text from AI prompt.',
+    ).execute(orchestrator.context);
     await tester.pumpAndSettle();
     await ApplyDraftCommand().execute(orchestrator.context);
     await tester.pumpAndSettle();
@@ -2310,9 +2309,12 @@ void main() {
       orchestrator.controller,
       domain: _domain(orchestrator),
       sessionId: _sid(orchestrator),
-    ).isEmpty)
+    ).isEmpty) {
       return;
-    UpdateAiComposerCommand(value: 'Apply with agent').execute(orchestrator.context);
+    }
+    UpdateAiComposerCommand(
+      value: 'Apply with agent',
+    ).execute(orchestrator.context);
     await tester.pumpAndSettle();
     await ApplyDraftCommand().execute(orchestrator.context);
     await tester.pumpAndSettle();
@@ -2390,8 +2392,9 @@ void main() {
       orchestrator.controller,
       domain: _domain(orchestrator),
       sessionId: _sid(orchestrator),
-    ).isEmpty)
+    ).isEmpty) {
       return;
+    }
     UpdateAiComposerCommand(
       value: 'Rewrite the tone to be more direct.',
     ).execute(orchestrator.context);
@@ -2442,10 +2445,10 @@ void main() {
 
     await tester.tap(find.byType(ActionChip));
     await tester.pumpAndSettle();
-    final _pt = tester.getCenter(find.text('Target'));
+    final pt = tester.getCenter(find.text('Target'));
     SelectNodeCommand(
-      x: _pt.dx.toInt(),
-      y: _pt.dy.toInt(),
+      x: pt.dx.toInt(),
+      y: pt.dy.toInt(),
       controller: orchestrator.controller,
     ).execute(orchestrator.context);
     await tester.pumpAndSettle();
@@ -2463,8 +2466,9 @@ void main() {
     await tester.pumpAndSettle();
 
     final promptWidget = tester.widget<TextField>(field);
-    final promptController = promptWidget.controller!;
-    promptController.selection = const TextSelection.collapsed(offset: 3);
+    promptWidget.controller?.selection = const TextSelection.collapsed(
+      offset: 3,
+    );
     await tester.pump();
 
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
@@ -2539,10 +2543,10 @@ void main() {
 
     await tester.tap(find.byType(ActionChip));
     await tester.pumpAndSettle();
-    final _pt = tester.getCenter(find.text('Target'));
+    final pt = tester.getCenter(find.text('Target'));
     SelectNodeCommand(
-      x: _pt.dx.toInt(),
-      y: _pt.dy.toInt(),
+      x: pt.dx.toInt(),
+      y: pt.dy.toInt(),
       controller: orchestrator.controller,
     ).execute(orchestrator.context);
     await tester.pumpAndSettle();
@@ -2609,8 +2613,9 @@ void main() {
         orchestrator.controller,
         domain: _domain(orchestrator),
         sessionId: _sid(orchestrator),
-      ).isEmpty)
+      ).isEmpty) {
         return;
+      }
       final selectedNodeId = _selection(orchestrator)?.nodeId;
       final propertyFieldFinder = _propertyInputField();
       if (propertyFieldFinder.evaluate().isEmpty) {
@@ -2625,8 +2630,9 @@ void main() {
       await tester.pumpAndSettle();
 
       final textField = tester.widget<TextField>(field);
-      final controller = textField.controller!;
-      controller.selection = const TextSelection.collapsed(offset: 6);
+      textField.controller?.selection = const TextSelection.collapsed(
+        offset: 6,
+      );
       await tester.pump();
 
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
@@ -2683,10 +2689,10 @@ void main() {
       await tester.tapAt(tester.getCenter(find.text('Target')));
       await tester.pumpAndSettle();
       if (_selection(orchestrator) == null) {
-        final _pt = tester.getCenter(find.text('Target'));
+        final pt = tester.getCenter(find.text('Target'));
         SelectNodeCommand(
-          x: _pt.dx.toInt(),
-          y: _pt.dy.toInt(),
+          x: pt.dx.toInt(),
+          y: pt.dy.toInt(),
           controller: orchestrator.controller,
         ).execute(orchestrator.context);
         await tester.pumpAndSettle();
@@ -2787,10 +2793,10 @@ Direct apply request:
     await tester.tapAt(tester.getCenter(find.text('First')));
     await tester.pumpAndSettle();
     if (_selection(orchestrator) == null) {
-      final _pt = tester.getCenter(find.text('First'));
+      final pt = tester.getCenter(find.text('First'));
       SelectNodeCommand(
-        x: _pt.dx.toInt(),
-        y: _pt.dy.toInt(),
+        x: pt.dx.toInt(),
+        y: pt.dy.toInt(),
         controller: orchestrator.controller,
       ).execute(orchestrator.context);
       await tester.pumpAndSettle();
@@ -2835,10 +2841,10 @@ Direct apply request:
       findsOneWidget,
     );
 
-    final _pt = tester.getCenter(find.text('Second'));
+    final pt = tester.getCenter(find.text('Second'));
     SelectNodeCommand(
-      x: _pt.dx.toInt(),
-      y: _pt.dy.toInt(),
+      x: pt.dx.toInt(),
+      y: pt.dy.toInt(),
       controller: orchestrator.controller,
     ).execute(orchestrator.context);
     await tester.pumpAndSettle();
@@ -2987,8 +2993,9 @@ Direct apply request:
       orchestrator.controller,
       domain: _domain(orchestrator),
       sessionId: _sid(orchestrator),
-    ).isEmpty)
+    ).isEmpty) {
       return;
+    }
     expect(find.byType(AlertDialog), findsNothing);
   });
 
@@ -3017,8 +3024,9 @@ Direct apply request:
       orchestrator.controller,
       domain: _domain(orchestrator),
       sessionId: _sid(orchestrator),
-    ).isEmpty)
+    ).isEmpty) {
       return;
+    }
     expect(_selection(orchestrator)?.nodeId, selection.nodeId);
   });
 }
@@ -3034,18 +3042,6 @@ Finder _aiPromptField() => find.byWidgetPredicate(
       widget is TextField &&
       widget.decoration?.hintText?.startsWith('Talk to ') == true,
 );
-
-Finder _bubblePromptField() => _semanticsId('live_edit_ai_prompt_field');
-
-Finder _panelCollapseButton() =>
-    _semanticsId('live_edit_panel_collapse_button');
-
-Finder _panelScrollable() => find
-    .descendant(
-      of: _semanticsId('live_edit_panel'),
-      matching: find.byType(Scrollable),
-    )
-    .first;
 
 Finder _propertyInputField() => find.byWidgetPredicate(
   (final widget) => widget is TextField && widget.style?.fontSize == 11,

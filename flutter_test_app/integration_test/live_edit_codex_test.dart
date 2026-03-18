@@ -338,11 +338,6 @@ String _packageRootFromSource(final String sourceFile) {
   return File(sourceFile).parent.path;
 }
 
-String _panelPropertyId(final String raw) => raw
-    .replaceAll(RegExp(r'[^a-zA-Z0-9]+'), '_')
-    .replaceAll(RegExp(r'^_+|_+$'), '')
-    .toLowerCase();
-
 Future<void> _pumpUntil(
   final WidgetTester tester,
   final bool Function() condition, {
@@ -357,19 +352,6 @@ Future<void> _pumpUntil(
     }
   }
   fail('Timed out waiting for integration condition.');
-}
-
-Future<void> _pumpUntilActivityLabel(
-  final WidgetTester tester,
-  final LiveEditIntegrationHarness h,
-  final String label, {
-  required final Duration timeout,
-}) async {
-  await _pumpUntil(
-    tester,
-    () => h.currentActivity?.label == label,
-    timeout: timeout,
-  );
 }
 
 String _relativePath({required final String root, required final String path}) {
@@ -566,38 +548,6 @@ Future<void> _selectEditableFixtureCandidate(
   }
 
   fail('Could not resolve an editable text candidate for the fixture target.');
-}
-
-Future<void> _selectFixtureSourceCandidate(
-  final WidgetTester tester,
-  final LiveEditIntegrationHarness h,
-) async {
-  final currentSelection = h.activeSelection;
-  final currentSourceFile = currentSelection?.source?.file ?? '';
-  if (currentSourceFile.contains(_fixtureSourceBasename)) {
-    return;
-  }
-
-  final candidates = h.activeSelectionCandidates;
-  for (var index = 0; index < candidates.length; index += 1) {
-    final sourceFile = candidates[index].source?.file ?? '';
-    if (!sourceFile.contains(_fixtureSourceBasename)) {
-      continue;
-    }
-    h.selectCandidateAt(index);
-    await tester.pumpAndSettle();
-    return;
-  }
-
-  for (var index = 0; index < candidates.length; index += 1) {
-    final sourceFile = candidates[index].source?.file ?? '';
-    if (!sourceFile.contains(_fixtureSourceBasename)) {
-      continue;
-    }
-    h.selectCandidateAt(index);
-    await tester.pumpAndSettle();
-    return;
-  }
 }
 
 Future<void> _selectFixtureTarget(
