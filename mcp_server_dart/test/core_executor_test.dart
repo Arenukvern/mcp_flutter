@@ -266,6 +266,11 @@ void main() {
         defaultPort: 8181,
         logger: logger,
         discoverPorts: () async => <int>[8181, 8182],
+        probeFlutterTarget:
+            (
+              final CoreEndpoint endpoint, {
+              required final Duration timeout,
+            }) async => true,
       );
 
       final localExecutor = DefaultCoreCommandExecutor(

@@ -59,7 +59,7 @@ final class CorePortScanner {
     _log(LoggingLevel.debug, 'Starting Unix port scan using lsof');
 
     final activePorts = <int>[];
-    final result = await Process.run('lsof', ['-i', '-P', '-n']);
+    final result = await Process.run('lsof', ['-nP', '-iTCP', '-sTCP:LISTEN']);
 
     if (result.exitCode != 0) {
       final errorMsg = 'lsof command failed with exit code ${result.exitCode}';
@@ -82,25 +82,12 @@ final class CorePortScanner {
       }
       dartProcessCount++;
 
-      final parts = line.split(RegExp(r'\s+'));
-      if (parts.length < 9) {
+      final port = parseListeningPortFromUnixLsofLine(line);
+      if (port == null) {
         _log(
           LoggingLevel.debug,
-          'Skipping malformed line: insufficient parts (${parts.length})',
+          'Skipping non-listening/non-local line: $line',
         );
-        continue;
-      }
-
-      final addressPart = parts[8];
-      final portMatch = RegExp(r':(\d+)$').firstMatch(addressPart);
-      if (portMatch == null) {
-        _log(LoggingLevel.debug, 'No port found in address: $addressPart');
-        continue;
-      }
-
-      final port = jsonDecodeInt(portMatch.group(1));
-      if (port.isZero) {
-        _log(LoggingLevel.debug, 'Invalid port number: ${portMatch.group(1)}');
         continue;
       }
 
@@ -114,6 +101,41 @@ final class CorePortScanner {
       'Unix scan completed: found $dartProcessCount Dart/Flutter processes, ${uniquePorts.length} unique ports',
     );
     return uniquePorts;
+  }
+
+  static int? parseListeningPortFromUnixLsofLine(final String line) {
+    final trimmed = line.trim();
+    if (trimmed.isEmpty) {
+      return null;
+    }
+
+    if (!trimmed.toLowerCase().contains('(listen)')) {
+      return null;
+    }
+
+    final listenMatch = RegExp(
+      r'\bTCP\s+(\S+)\s+\(LISTEN\)\s*$',
+    ).firstMatch(trimmed);
+    final endpoint = listenMatch?.group(1);
+    if (endpoint == null || endpoint.isEmpty || endpoint.contains('->')) {
+      return null;
+    }
+
+    return _extractPortFromEndpoint(endpoint);
+  }
+
+  static int? _extractPortFromEndpoint(final String endpoint) {
+    final portMatch = RegExp(r':(\d+)$').firstMatch(endpoint);
+    if (portMatch == null) {
+      return null;
+    }
+
+    final parsed = jsonDecodeInt(portMatch.group(1));
+    if (parsed.isZero || parsed < 0 || parsed > 65535) {
+      return null;
+    }
+
+    return parsed;
   }
 
   Future<List<int>> _scanForFlutterPortsWindows() async {

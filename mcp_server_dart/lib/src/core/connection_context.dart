@@ -4,6 +4,8 @@
 // ignore_for_file: avoid_catches_without_on_clauses, lines_longer_than_80_chars
 
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 
 import 'package:dart_mcp/server.dart';
 import 'package:dtd/dtd.dart';
@@ -172,6 +174,9 @@ final class EnsureConnectionResult {
   final Object? details;
 }
 
+typedef CoreFlutterTargetProbe =
+    Future<bool> Function(CoreEndpoint endpoint, {required Duration timeout});
+
 final class ConnectionContext {
   ConnectionContext({
     required this.defaultHost,
@@ -180,6 +185,7 @@ final class ConnectionContext {
     required this.discoverPorts,
     this.discoverMachineTargets,
     this.initialStickyEndpointUri,
+    this.probeFlutterTarget,
   }) {
     final rawSticky = initialStickyEndpointUri;
     if (rawSticky == null || rawSticky.isEmpty) {
@@ -201,6 +207,7 @@ final class ConnectionContext {
   final Future<List<FlutterMachineDiscoveryTarget>> Function()?
   discoverMachineTargets;
   final String? initialStickyEndpointUri;
+  final CoreFlutterTargetProbe? probeFlutterTarget;
 
   VmService? _vmService;
   WebSocketChannel? _vmChannel;
@@ -211,6 +218,9 @@ final class ConnectionContext {
 
   CoreConnectionMode _lastMode = CoreConnectionMode.auto;
   Map<String, Object?> _lastSelectionDiagnostics = const <String, Object?>{};
+  Map<String, Object?> _lastDiscoveryDiagnostics = const <String, Object?>{};
+  final Map<String, ({bool isFlutter, DateTime checkedAt})> _flutterProbeCache =
+      <String, ({bool isFlutter, DateTime checkedAt})>{};
 
   bool _wasConnected = false;
   bool _disconnectedSinceLastConnect = false;
@@ -226,6 +236,8 @@ final class ConnectionContext {
   CoreConnectionMode get lastMode => _lastMode;
   Map<String, Object?> get lastSelectionDiagnostics =>
       _lastSelectionDiagnostics;
+  Map<String, Object?> get lastDiscoveryDiagnostics =>
+      _lastDiscoveryDiagnostics;
 
   void setStickyEndpointFromUri(final String uri) {
     _stickyEndpoint = CoreEndpoint.fromUri(Uri.parse(uri));
@@ -340,56 +352,53 @@ final class ConnectionContext {
 
   Future<List<CoreConnectionTarget>> discoverTargets() async {
     final machineTargets = await _discoverMachineTargets();
-    final discoveredPorts = await _discoverPorts();
-    final sticky = _stickyEndpoint;
-    final current = _activeEndpoint;
-    final targetsById = <String, CoreConnectionTarget>{};
-    final machineHostPorts = <String>{};
-
-    void upsertTarget({
-      required final CoreEndpoint endpoint,
-      required final String discoverySource,
-      final String? dtdUri,
-    }) {
-      final canonicalTargetId = CoreConnectionTarget.buildTargetId(
-        vmServiceWsUri: endpoint.wsUri,
-      );
-      final nextTarget = CoreConnectionTarget(
-        targetId: canonicalTargetId,
-        host: endpoint.host,
-        port: endpoint.port,
-        endpoint: canonicalTargetId,
-        dtdUri: dtdUri,
-        discoverySource: discoverySource,
-        isSticky: sticky != null && _sameEndpointByTargetId(sticky, endpoint),
-        isCurrent:
-            current != null && _sameEndpointByTargetId(current, endpoint),
-      );
-
-      final existing = targetsById[canonicalTargetId];
-      if (existing == null) {
-        targetsById[canonicalTargetId] = nextTarget;
-        return;
-      }
-
-      if (existing.discoverySource ==
-              CoreConnectionTarget.machineDiscoverySource &&
-          discoverySource != CoreConnectionTarget.machineDiscoverySource) {
-        return;
-      }
-
-      targetsById[canonicalTargetId] = nextTarget;
+    final machineOnlyTargets = _buildMachineTargets(machineTargets);
+    if (machineOnlyTargets.isNotEmpty) {
+      _lastDiscoveryDiagnostics = {
+        'strategyUsed': 'machine_only',
+        'machineRawCount': machineTargets.length,
+        'machineValidCount': machineOnlyTargets.length,
+        'portRawCount': 0,
+        'portCandidateCount': 0,
+        'portFlutterCount': 0,
+        'portDroppedNonFlutterCount': 0,
+      };
+      return machineOnlyTargets;
     }
+
+    final discoveredPorts = await _discoverPorts();
+    final portCandidates = _buildPortScanTargets(discoveredPorts);
+    final flutterPortTargets = await _filterFlutterPortScanTargets(
+      portCandidates,
+    );
+
+    _lastDiscoveryDiagnostics = {
+      'strategyUsed': 'port_scan_flutter_filtered',
+      'machineRawCount': machineTargets.length,
+      'machineValidCount': machineOnlyTargets.length,
+      'portRawCount': discoveredPorts.length,
+      'portCandidateCount': portCandidates.length,
+      'portFlutterCount': flutterPortTargets.length,
+      'portDroppedNonFlutterCount':
+          portCandidates.length - flutterPortTargets.length,
+    };
+    return flutterPortTargets;
+  }
+
+  List<CoreConnectionTarget> _buildMachineTargets(
+    final List<FlutterMachineDiscoveryTarget> machineTargets,
+  ) {
+    final targetsById = <String, CoreConnectionTarget>{};
 
     for (final machineTarget in machineTargets) {
       try {
         final endpoint = CoreEndpoint.fromUri(machineTarget.vmServiceWsUri);
-        machineHostPorts.add(_hostPortKeyForEndpoint(endpoint));
-        upsertTarget(
+        final target = _buildTarget(
           endpoint: endpoint,
-          dtdUri: machineTarget.dtdUri?.toString(),
           discoverySource: CoreConnectionTarget.machineDiscoverySource,
+          dtdUri: machineTarget.dtdUri?.toString(),
         );
+        targetsById[target.targetId] = target;
       } on FormatException catch (e) {
         logger(
           LoggingLevel.debug,
@@ -399,21 +408,50 @@ final class ConnectionContext {
       }
     }
 
-    for (final discoveredPort in discoveredPorts) {
-      final endpoint = _endpointForDiscoveredPort(discoveredPort);
-      if (machineHostPorts.contains(_hostPortKeyForEndpoint(endpoint))) {
-        continue;
-      }
+    return _sortTargets(targetsById.values);
+  }
 
-      upsertTarget(
+  List<CoreConnectionTarget> _buildPortScanTargets(final List<int> ports) {
+    final targetsById = <String, CoreConnectionTarget>{};
+    for (final discoveredPort in ports) {
+      final endpoint = _endpointForDiscoveredPort(discoveredPort);
+      final target = _buildTarget(
         endpoint: endpoint,
         discoverySource: CoreConnectionTarget.portScanDiscoverySource,
       );
+      targetsById[target.targetId] = target;
     }
+    return _sortTargets(targetsById.values);
+  }
 
-    final targets = targetsById.values.toList()
+  CoreConnectionTarget _buildTarget({
+    required final CoreEndpoint endpoint,
+    required final String discoverySource,
+    final String? dtdUri,
+  }) {
+    final sticky = _stickyEndpoint;
+    final current = _activeEndpoint;
+    final canonicalTargetId = CoreConnectionTarget.buildTargetId(
+      vmServiceWsUri: endpoint.wsUri,
+    );
+    return CoreConnectionTarget(
+      targetId: canonicalTargetId,
+      host: endpoint.host,
+      port: endpoint.port,
+      endpoint: canonicalTargetId,
+      dtdUri: dtdUri,
+      discoverySource: discoverySource,
+      isSticky: sticky != null && _sameEndpointByTargetId(sticky, endpoint),
+      isCurrent: current != null && _sameEndpointByTargetId(current, endpoint),
+    );
+  }
+
+  List<CoreConnectionTarget> _sortTargets(
+    final Iterable<CoreConnectionTarget> targets,
+  ) {
+    final sorted = targets.toList()
       ..sort((final a, final b) => a.targetId.compareTo(b.targetId));
-    return targets;
+    return sorted;
   }
 
   Future<void> disconnect() async {
@@ -643,6 +681,7 @@ final class ConnectionContext {
             'targetIdLookupMiss': canonicalTargetId,
             'availableTargets': targets.map((final t) => t.toJson()).toList(),
             'stickyEndpoint': _stickyEndpoint?.display,
+            'discovery': _lastDiscoveryDiagnostics,
           },
         );
       }
@@ -654,6 +693,7 @@ final class ConnectionContext {
           'reason': 'target_not_found',
           'targetId': canonicalTargetId,
           'availableTargets': targets.map((final t) => t.toJson()).toList(),
+          'discovery': _lastDiscoveryDiagnostics,
         },
       );
     }
@@ -668,6 +708,7 @@ final class ConnectionContext {
         'decision': 'Used explicit targetId',
         'availableTargets': targets.map((final t) => t.toJson()).toList(),
         'stickyEndpoint': _stickyEndpoint?.display,
+        'discovery': _lastDiscoveryDiagnostics,
       },
     );
   }
@@ -693,6 +734,7 @@ final class ConnectionContext {
             'decision': 'Reused active connection',
             'availableTargets': targets.map((final t) => t.toJson()).toList(),
             'stickyEndpoint': _stickyEndpoint?.display,
+            'discovery': _lastDiscoveryDiagnostics,
           },
         );
       }
@@ -707,7 +749,11 @@ final class ConnectionContext {
       throw CoreConnectionException(
         reason: CoreConnectionFailureReason.noTargets,
         message: 'No debug targets discovered',
-        details: {'reason': 'no_targets', 'availableTargets': const []},
+        details: {
+          'reason': 'no_targets',
+          'availableTargets': const [],
+          'discovery': _lastDiscoveryDiagnostics,
+        },
       );
     }
 
@@ -748,6 +794,7 @@ final class ConnectionContext {
             : 'Auto-attached single discovered target',
         'availableTargets': targets.map((final t) => t.toJson()).toList(),
         'stickyEndpoint': _stickyEndpoint?.display,
+        'discovery': _lastDiscoveryDiagnostics,
       },
     );
   }
@@ -757,10 +804,16 @@ final class ConnectionContext {
   ) {
     final availableTargets = targets.map((final t) => t.toJson()).toList();
     final suggestedTarget = targets.first.targetId;
+    final shortlist = availableTargets
+        .take(_maxConnectionSelectionShortlist)
+        .toList();
 
     return {
       'reason': 'multiple_targets',
       'availableTargets': availableTargets,
+      'shortlist': shortlist,
+      'targetCount': availableTargets.length,
+      'discovery': _lastDiscoveryDiagnostics,
       'suggestedAction': 'retry_with_connection_target',
       'example': {
         'connection': {'targetId': suggestedTarget},
@@ -837,6 +890,197 @@ final class ConnectionContext {
     return normalizedPath != '/ws';
   }
 
+  Future<List<CoreConnectionTarget>> _filterFlutterPortScanTargets(
+    final List<CoreConnectionTarget> candidates,
+  ) async {
+    if (candidates.isEmpty) {
+      return const <CoreConnectionTarget>[];
+    }
+
+    final checks = await Future.wait(
+      candidates.map(_isFlutterPortScanTarget),
+      eagerError: false,
+    );
+
+    final flutterTargets = <CoreConnectionTarget>[];
+    for (var i = 0; i < candidates.length; i++) {
+      if (checks[i]) {
+        flutterTargets.add(candidates[i]);
+      }
+    }
+    return flutterTargets;
+  }
+
+  Future<bool> _isFlutterPortScanTarget(
+    final CoreConnectionTarget target,
+  ) async {
+    final now = DateTime.now().toUtc();
+    final cached = _flutterProbeCache[target.targetId];
+    if (cached != null &&
+        now.difference(cached.checkedAt) <= _portScanFlutterProbeCacheTtl) {
+      return cached.isFlutter;
+    }
+
+    bool isFlutter = false;
+    try {
+      final endpoint = CoreEndpoint.fromUri(Uri.parse(target.endpoint));
+      if (probeFlutterTarget != null) {
+        isFlutter = await probeFlutterTarget!(
+          endpoint,
+          timeout: _portScanFlutterProbeTimeout,
+        );
+      } else {
+        isFlutter = await _probeFlutterEndpoint(
+          endpoint,
+          timeout: _portScanFlutterProbeTimeout,
+        );
+      }
+    } catch (_) {
+      isFlutter = false;
+    }
+
+    _flutterProbeCache[target.targetId] = (
+      isFlutter: isFlutter,
+      checkedAt: now,
+    );
+    return isFlutter;
+  }
+
+  Future<bool> _probeFlutterEndpoint(
+    final CoreEndpoint endpoint, {
+    required final Duration timeout,
+  }) async {
+    final client = HttpClient();
+    try {
+      final httpBase = _vmServiceHttpBaseUri(endpoint);
+      final vmPayload = await _fetchVmServiceMap(
+        client: client,
+        uri: _vmServiceMethodUri(httpBase, 'getVM'),
+        timeout: timeout,
+      );
+      final isolates =
+          _extractResultMap(vmPayload)['isolates'] as List<Object?>? ??
+          const <Object?>[];
+
+      for (final isolateRef in isolates) {
+        if (isolateRef is! Map) {
+          continue;
+        }
+        final isolateId = isolateRef['id']?.toString();
+        if (isolateId == null || isolateId.isEmpty) {
+          continue;
+        }
+        final isolatePayload = await _fetchVmServiceMap(
+          client: client,
+          uri: _vmServiceMethodUri(
+            httpBase,
+            'getIsolate',
+            query: <String, String>{'isolateId': isolateId},
+          ),
+          timeout: timeout,
+        );
+        final extensionRPCs =
+            (_extractResultMap(isolatePayload)['extensionRPCs']
+                        as List<Object?>? ??
+                    const <Object?>[])
+                .map((final e) => '$e')
+                .toList(growable: false);
+        if (_hasFlutterExtensions(extensionRPCs)) {
+          return true;
+        }
+      }
+      return false;
+    } catch (_) {
+      return false;
+    } finally {
+      client.close(force: true);
+    }
+  }
+
+  bool _hasFlutterExtensions(final List<String> extensionRPCs) {
+    for (final extension in extensionRPCs) {
+      for (final prefix in _flutterExtensionPrefixes) {
+        if (extension.startsWith(prefix)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  Uri _vmServiceHttpBaseUri(final CoreEndpoint endpoint) {
+    final wsUri = endpoint.wsUri;
+    final pathSegments = wsUri.pathSegments.where((s) => s.isNotEmpty).toList();
+    if (pathSegments.isNotEmpty && pathSegments.last == 'ws') {
+      pathSegments.removeLast();
+    }
+    return Uri(
+      scheme: 'http',
+      host: wsUri.host,
+      port: wsUri.port,
+      pathSegments: pathSegments,
+    );
+  }
+
+  Uri _vmServiceMethodUri(
+    final Uri base,
+    final String method, {
+    final Map<String, String>? query,
+  }) {
+    final pathSegments = <String>[
+      ...base.pathSegments.where((s) => s.isNotEmpty),
+      method,
+    ];
+    return Uri(
+      scheme: base.scheme,
+      host: base.host,
+      port: base.port,
+      pathSegments: pathSegments,
+      queryParameters: query == null || query.isEmpty ? null : query,
+    );
+  }
+
+  Future<Map<String, Object?>> _fetchVmServiceMap({
+    required final HttpClient client,
+    required final Uri uri,
+    required final Duration timeout,
+  }) async {
+    final requestFuture = client.getUrl(uri);
+    final request = timeout == Duration.zero
+        ? await requestFuture
+        : await requestFuture.timeout(timeout);
+    final responseFuture = request.close();
+    final response = timeout == Duration.zero
+        ? await responseFuture
+        : await responseFuture.timeout(timeout);
+    if (response.statusCode != 200) {
+      throw StateError('VM service probe failed: ${response.statusCode} $uri');
+    }
+    final bodyFuture = response.transform(utf8.decoder).join();
+    final body = timeout == Duration.zero
+        ? await bodyFuture
+        : await bodyFuture.timeout(timeout);
+    final decoded = jsonDecode(body);
+    if (decoded is Map<String, Object?>) {
+      return decoded;
+    }
+    if (decoded is Map) {
+      return decoded.cast<String, Object?>();
+    }
+    throw StateError('VM service probe returned non-map payload: $uri');
+  }
+
+  Map<String, Object?> _extractResultMap(final Map<String, Object?> payload) {
+    final result = payload['result'];
+    if (result is Map<String, Object?>) {
+      return result;
+    }
+    if (result is Map) {
+      return result.cast<String, Object?>();
+    }
+    return payload;
+  }
+
   Future<List<int>> _discoverPorts() async {
     final discovered = (await discoverPorts().catchError(
       (_) => <int>[],
@@ -863,23 +1107,18 @@ final class ConnectionContext {
         CoreConnectionTarget.buildTargetId(vmServiceWsUri: b.wsUri);
   }
 
-  String _hostPortKeyForEndpoint(final CoreEndpoint endpoint) =>
-      '${_normalizeHostForPortDedup(endpoint.host)}:${endpoint.port}';
-
-  String _normalizeHostForPortDedup(final String host) {
-    final lower = host.toLowerCase();
-    if (lower == 'localhost' ||
-        lower == '127.0.0.1' ||
-        lower == '::1' ||
-        lower == '[::1]') {
-      return 'loopback';
-    }
-    return lower;
-  }
-
   static const Duration _connectionHealthCheckTimeout = Duration(
     milliseconds: 300,
   );
+  static const Duration _portScanFlutterProbeTimeout = Duration(
+    milliseconds: 350,
+  );
+  static const Duration _portScanFlutterProbeCacheTtl = Duration(seconds: 5);
+  static const int _maxConnectionSelectionShortlist = 8;
+  static const List<String> _flutterExtensionPrefixes = <String>[
+    'ext.flutter',
+    'ext.mcp.toolkit',
+  ];
 
   Future<bool> _isCurrentConnectionHealthy({
     required final Duration timeout,

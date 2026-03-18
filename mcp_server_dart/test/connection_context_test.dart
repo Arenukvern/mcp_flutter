@@ -34,6 +34,11 @@ void main() {
             final String logger = 'test',
           }) {},
       discoverPorts: () async => <int>[8181],
+      probeFlutterTarget:
+          (
+            final CoreEndpoint endpoint, {
+            required final Duration timeout,
+          }) async => true,
     );
 
     final targets = await context.discoverTargets();
@@ -65,7 +70,7 @@ void main() {
       );
 
       final targets = await context.discoverTargets();
-      expect(targets, hasLength(2));
+      expect(targets, hasLength(1));
 
       final machineTarget = targets.firstWhere(
         (final target) => target.port == 8181,
@@ -78,4 +83,38 @@ void main() {
       expect(machineTarget.dtdUri, equals('ws://127.0.0.1:8181/dtd'));
     },
   );
+
+  test('discoverTargets drops non-Flutter port-scan candidates', () async {
+    final context = ConnectionContext(
+      defaultHost: 'localhost',
+      defaultPort: 8181,
+      logger:
+          (
+            final LoggingLevel level,
+            final String message, {
+            final String logger = 'test',
+          }) {},
+      discoverPorts: () async => <int>[8181, 9001, 9100],
+      probeFlutterTarget:
+          (
+            final CoreEndpoint endpoint, {
+            required final Duration timeout,
+          }) async => endpoint.port == 8181,
+    );
+
+    final targets = await context.discoverTargets();
+    expect(targets, hasLength(1));
+    expect(targets.first.port, equals(8181));
+    expect(targets.first.discoverySource, equals('port_scan'));
+    expect(
+      context.lastDiscoveryDiagnostics['strategyUsed'],
+      equals('port_scan_flutter_filtered'),
+    );
+    expect(context.lastDiscoveryDiagnostics['portCandidateCount'], equals(3));
+    expect(context.lastDiscoveryDiagnostics['portFlutterCount'], equals(1));
+    expect(
+      context.lastDiscoveryDiagnostics['portDroppedNonFlutterCount'],
+      equals(2),
+    );
+  });
 }

@@ -357,6 +357,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
           'targets': targets.map((final target) => target.toJson()).toList(),
           'ports': ports,
           'count': targets.length,
+          'diagnostics': connectionContext.lastDiscoveryDiagnostics,
         },
       );
     } on Exception catch (e) {

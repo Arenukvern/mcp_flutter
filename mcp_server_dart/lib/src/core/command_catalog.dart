@@ -432,6 +432,7 @@ final class CommandCatalog {
             ),
             'ports': _arraySchema(items: _intSchema()),
             'count': _intSchema(),
+            'diagnostics': _objectSchema(additionalProperties: true),
           },
         ),
         requiresVm: false,

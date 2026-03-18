@@ -7,6 +7,7 @@ import 'dart:async';
 
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_inspector_mcp_server/src/base_server.dart';
+import 'package:flutter_inspector_mcp_server/src/core/services/core_port_scanner.dart';
 import 'package:flutter_inspector_mcp_server/src/mixins/port_scanner.dart';
 import 'package:stream_channel/stream_channel.dart';
 import 'package:test/test.dart';
@@ -84,6 +85,27 @@ void main() {
       // Should not throw even if system commands fail
       final ports = await portScanner.scanForFlutterPorts();
       expect(ports, isA<List<int>>());
+    });
+
+    test('Unix parser accepts LISTEN endpoint and extracts local port', () {
+      final port = CorePortScanner.parseListeningPortFromUnixLsofLine(
+        'dart 92061 anton 7u IPv4 0xcebc4c66aeefbfd5 0t0 TCP 127.0.0.1:61879 (LISTEN)',
+      );
+      expect(port, equals(61879));
+    });
+
+    test('Unix parser ignores ESTABLISHED remote destinations', () {
+      final port = CorePortScanner.parseListeningPortFromUnixLsofLine(
+        'dart 62006 anton 10u IPv6 0xb117fb2b05557122 0t0 TCP 10.8.1.1:56203->34.36.0.14:443 (ESTABLISHED)',
+      );
+      expect(port, isNull);
+    });
+
+    test('Unix parser ignores malformed/non-listen lines', () {
+      final port = CorePortScanner.parseListeningPortFromUnixLsofLine(
+        'dart malformed line with no tcp endpoint',
+      );
+      expect(port, isNull);
     });
   });
 }
