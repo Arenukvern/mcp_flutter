@@ -6,6 +6,30 @@ import '../selectors/live_edit_selectors.dart';
 import '../services/live_edit_bubble_state_service.dart';
 import 'update_ai_composer.cmd.dart';
 
+bool _sameNodeSet(
+  final List<LiveEditSelection> left,
+  final List<LiveEditSelection> right,
+) {
+  if (left.length != right.length) return false;
+  final leftIds = left.map((final item) => item.nodeId).toList()..sort();
+  final rightIds = right.map((final item) => item.nodeId).toList()..sort();
+  for (var index = 0; index < leftIds.length; index += 1) {
+    if (leftIds[index] != rightIds[index]) return false;
+  }
+  return true;
+}
+
+bool _sameSelectionIdentity(
+  final LiveEditSelection? left,
+  final LiveEditSelection? right,
+) {
+  if (identical(left, right)) return true;
+  if (left == null || right == null) return left == right;
+  return left.nodeId == right.nodeId &&
+      left.targetDomain == right.targetDomain &&
+      left.selectionMode == right.selectionMode;
+}
+
 void runAfterSelectionChange(
   final LiveEditContext context,
   final LiveEditController controller,
@@ -19,7 +43,6 @@ void runAfterSelectionChange(
     sessionId: sessionId,
   );
   final bubbleId = service.bubbleIdForSelection(context, activeSelection);
-  service.restoreBubbleState(context, bubbleId);
 
   final activeSelectedWidgets =
       controller
@@ -36,6 +59,22 @@ void runAfterSelectionChange(
       : (activeSelection != null
             ? <LiveEditSelection>[activeSelection]
             : const <LiveEditSelection>[]);
+  final unchangedSelectionState =
+      context.panelViewResource.value.lastSelectionIdentity == bubbleId &&
+      _sameSelectionIdentity(
+        activeSelection,
+        selectBubbleRecord(context, bubbleId)?.primarySelection,
+      ) &&
+      _sameNodeSet(
+        activeSelectedWidgets,
+        selectBubbleRecord(context, bubbleId)?.selectedWidgets ??
+            const <LiveEditSelection>[],
+      );
+  if (unchangedSelectionState) {
+    return;
+  }
+  service.restoreBubbleState(context, bubbleId);
+
   final draftChanges = selectDraftChangesForDomain(
     context,
     controller,

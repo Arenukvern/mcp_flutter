@@ -28,6 +28,14 @@ class _LiveEditToolingScreen extends StatefulWidget {
 class _LiveEditToolingScreenState extends State<_LiveEditToolingScreen> {
   bool _prefilled = false;
 
+  void _prefillPlayground(final LiveEditContext context) {
+    StartSessionCommand(
+      targetDomain: LiveEditTargetDomain.appScene,
+    ).execute(context);
+    SetOverlayEnabledCommand(enabled: true).execute(context);
+    ExpandPanelCommand().execute(context);
+  }
+
   @override
   Widget build(final BuildContext context) => LiveEditScope(
     child: Scaffold(
@@ -40,7 +48,7 @@ class _LiveEditToolingScreenState extends State<_LiveEditToolingScreen> {
             if (!_prefilled) {
               _prefilled = true;
               WidgetsBinding.instance.addPostFrameCallback((final _) {
-                PrefillToolingShowcaseCommand().execute(scope.context);
+                _prefillPlayground(scope.context);
               });
             }
             return LayoutBuilder(

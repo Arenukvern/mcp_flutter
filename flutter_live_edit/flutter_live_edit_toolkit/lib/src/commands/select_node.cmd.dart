@@ -8,6 +8,23 @@ import 'open_ai_bubble.cmd.dart';
 import 'select_at_point.cmd.dart';
 import 'start_session.cmd.dart';
 
+bool _sameSelectionIdentity(
+  final LiveEditSelection? left,
+  final LiveEditSelection? right,
+) {
+  if (identical(left, right)) return true;
+  if (left == null || right == null) return left == right;
+  final leftIds = List<String>.from(left.selectedNodeIds)..sort();
+  final rightIds = List<String>.from(right.selectedNodeIds)..sort();
+  return left.targetDomain == right.targetDomain &&
+      left.nodeId == right.nodeId &&
+      left.selectionMode == right.selectionMode &&
+      leftIds.length == rightIds.length &&
+      !leftIds.asMap().entries.any(
+        (final entry) => rightIds[entry.key] != entry.value,
+      );
+}
+
 /// Selects at point, syncs bubble state, optionally opens AI bubble.
 final class SelectNodeCommand {
   SelectNodeCommand({
@@ -40,6 +57,12 @@ final class SelectNodeCommand {
       sessionId = context.sessionResource.value.activeSessionId;
     }
     if (sessionId == null) return <String, Object?>{};
+    final resolvedDomain =
+        targetDomain ?? context.sessionResource.value.targetDomain;
+    final previousSelection = controller.selectionForDomain(
+      targetDomain: resolvedDomain,
+      sessionId: sessionId,
+    );
     SelectAtPointCommand(
       x: x,
       y: y,
@@ -49,18 +72,27 @@ final class SelectNodeCommand {
       preferHoverPreview: preferHoverPreview,
       selectionPolicy: selectionPolicy,
     ).execute(context);
+    final nextSelection = controller.selectionForDomain(
+      targetDomain: resolvedDomain,
+      sessionId: sessionId,
+    );
+    if (_sameSelectionIdentity(previousSelection, nextSelection)) {
+      return <String, Object?>{
+        'sessionId': sessionId,
+        'selectionChanged': false,
+      };
+    }
     runAfterSelectionChange(context, controller);
     if (openBubbleOnSelect &&
         context.sessionResource.value.activeSessionId != null) {
-      final domain = targetDomain ?? context.sessionResource.value.targetDomain;
       final selection = controller.selectionForDomain(
-        targetDomain: domain,
+        targetDomain: resolvedDomain,
         sessionId: sessionId,
       );
       if (selection != null) {
         OpenAiBubbleCommand(defaultPrompt: '').execute(context);
       }
     }
-    return <String, Object?>{'sessionId': sessionId};
+    return <String, Object?>{'sessionId': sessionId, 'selectionChanged': true};
   }
 }

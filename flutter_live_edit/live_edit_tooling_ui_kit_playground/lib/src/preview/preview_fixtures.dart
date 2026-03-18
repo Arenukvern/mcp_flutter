@@ -25,28 +25,28 @@ ToolingThemeData get previewTheme => ToolingThemeData(
 List<BubbleSummaryViewModel> previewBubbleSummaries(final Size viewportSize) {
   const domain = LiveEditTargetDomain.appScene;
   final bounds1 = LiveEditBounds(
-    left: viewportSize.width - 120,
-    top: 80,
-    right: viewportSize.width - 80,
-    bottom: 110,
-    width: 40,
-    height: 30,
+    left: 72,
+    top: 84,
+    right: 312,
+    bottom: 132,
+    width: 240,
+    height: 48,
   );
   final bounds2 = LiveEditBounds(
-    left: viewportSize.width - 120,
-    top: 130,
-    right: viewportSize.width - 80,
-    bottom: 160,
-    width: 40,
-    height: 30,
+    left: 72,
+    top: 168,
+    right: 372,
+    bottom: 312,
+    width: 300,
+    height: 144,
   );
   final bounds3 = LiveEditBounds(
-    left: viewportSize.width - 120,
-    top: 180,
-    right: viewportSize.width - 80,
-    bottom: 210,
-    width: 40,
-    height: 30,
+    left: 72,
+    top: 352,
+    right: 136,
+    bottom: 772,
+    width: 64,
+    height: 420,
   );
   return <BubbleSummaryViewModel>[
     BubbleSummaryViewModel(
@@ -107,13 +107,12 @@ BubbleLayerViewModel buildPreviewBubbleLayerViewModel(final Size viewportSize) {
 }
 
 /// Fixture [PanelViewModel] for the dumb surface (rail only, no context).
-PanelViewModel buildPreviewPanelViewModel(final Size viewportSize) {
+PanelViewModel buildPreviewPanelRailViewModel(final Size viewportSize) {
   const panelWidth = 64.0;
   const panelHeight = 420.0;
-  const margin = 16.0;
   return PanelViewModel(
     displayMode: ToolingPanelDisplayMode.rail,
-    placement: Offset(viewportSize.width - panelWidth - margin, margin),
+    placement: const Offset(72, 352),
     width: panelWidth,
     height: panelHeight,
     editMode: LiveEditEditMode.inspect,
@@ -129,6 +128,26 @@ PanelViewModel buildPreviewPanelViewModel(final Size viewportSize) {
     railTargetDomain: LiveEditTargetDomain.appScene,
   );
 }
+
+/// Fixture [PanelViewModel] for expanded panel showcase.
+PanelViewModel buildPreviewPanelExpandedViewModel(final Size viewportSize) =>
+    PanelViewModel(
+      displayMode: ToolingPanelDisplayMode.expanded,
+      placement: const Offset(164, 352),
+      width: 312,
+      height: 420,
+      editMode: LiveEditEditMode.ai,
+      theme: previewTheme,
+      railBubbleSummaries: previewBubbleSummaries(viewportSize),
+      railActiveBubbleId: 'preview-2',
+      railActiveLabel: 'Expanded panel',
+      railStatusLabel: 'editing',
+      railActivityLabel: 'Prompt ready',
+      railHasBackendChoice: true,
+      railBackendLabel: 'G',
+      railDebugEnabled: false,
+      railTargetDomain: LiveEditTargetDomain.appScene,
+    );
 
 /// Stub [BubbleCallbacks] for the dumb surface (no context/commands).
 final class PreviewBubbleCallbacks implements BubbleCallbacks {
