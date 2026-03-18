@@ -1789,487 +1789,6 @@ abstract class _LiveEditRuntimeRefreshResult
   get copyWith => throw _privateConstructorUsedError;
 }
 
-LiveEditPropertyDescriptor _$LiveEditPropertyDescriptorFromJson(
-  Map<String, dynamic> json,
-) {
-  return _LiveEditPropertyDescriptor.fromJson(json);
-}
-
-/// @nodoc
-mixin _$LiveEditPropertyDescriptor {
-  String get id => throw _privateConstructorUsedError;
-  String get label => throw _privateConstructorUsedError;
-  @JsonKey(fromJson: _propertyGroupFromJson, toJson: _enumToWire)
-  LiveEditPropertyGroup get group => throw _privateConstructorUsedError;
-  @JsonKey(fromJson: _propertyKindFromJson, toJson: _enumToWire)
-  LiveEditPropertyKind get kind => throw _privateConstructorUsedError;
-  Object? get value => throw _privateConstructorUsedError;
-  List<String> get options => throw _privateConstructorUsedError;
-  bool get editable => throw _privateConstructorUsedError;
-  @JsonKey(fromJson: _previewModeFromJson, toJson: _enumToWire)
-  LiveEditPreviewMode get previewMode => throw _privateConstructorUsedError;
-  bool get persistable => throw _privateConstructorUsedError;
-  bool get canPreviewExactly => throw _privateConstructorUsedError;
-  bool get requiresAgentForPersistence => throw _privateConstructorUsedError;
-  bool get safeToAutoGroupInApply => throw _privateConstructorUsedError;
-  Map<String, Object?> get meta => throw _privateConstructorUsedError;
-
-  /// Serializes this LiveEditPropertyDescriptor to a JSON map.
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-
-  /// Create a copy of LiveEditPropertyDescriptor
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  $LiveEditPropertyDescriptorCopyWith<LiveEditPropertyDescriptor>
-  get copyWith => throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $LiveEditPropertyDescriptorCopyWith<$Res> {
-  factory $LiveEditPropertyDescriptorCopyWith(
-    LiveEditPropertyDescriptor value,
-    $Res Function(LiveEditPropertyDescriptor) then,
-  ) =
-      _$LiveEditPropertyDescriptorCopyWithImpl<
-        $Res,
-        LiveEditPropertyDescriptor
-      >;
-  @useResult
-  $Res call({
-    String id,
-    String label,
-    @JsonKey(fromJson: _propertyGroupFromJson, toJson: _enumToWire)
-    LiveEditPropertyGroup group,
-    @JsonKey(fromJson: _propertyKindFromJson, toJson: _enumToWire)
-    LiveEditPropertyKind kind,
-    Object? value,
-    List<String> options,
-    bool editable,
-    @JsonKey(fromJson: _previewModeFromJson, toJson: _enumToWire)
-    LiveEditPreviewMode previewMode,
-    bool persistable,
-    bool canPreviewExactly,
-    bool requiresAgentForPersistence,
-    bool safeToAutoGroupInApply,
-    Map<String, Object?> meta,
-  });
-}
-
-/// @nodoc
-class _$LiveEditPropertyDescriptorCopyWithImpl<
-  $Res,
-  $Val extends LiveEditPropertyDescriptor
->
-    implements $LiveEditPropertyDescriptorCopyWith<$Res> {
-  _$LiveEditPropertyDescriptorCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  /// Create a copy of LiveEditPropertyDescriptor
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? id = null,
-    Object? label = null,
-    Object? group = null,
-    Object? kind = null,
-    Object? value = freezed,
-    Object? options = null,
-    Object? editable = null,
-    Object? previewMode = null,
-    Object? persistable = null,
-    Object? canPreviewExactly = null,
-    Object? requiresAgentForPersistence = null,
-    Object? safeToAutoGroupInApply = null,
-    Object? meta = null,
-  }) {
-    return _then(
-      _value.copyWith(
-            id: null == id
-                ? _value.id
-                : id // ignore: cast_nullable_to_non_nullable
-                      as String,
-            label: null == label
-                ? _value.label
-                : label // ignore: cast_nullable_to_non_nullable
-                      as String,
-            group: null == group
-                ? _value.group
-                : group // ignore: cast_nullable_to_non_nullable
-                      as LiveEditPropertyGroup,
-            kind: null == kind
-                ? _value.kind
-                : kind // ignore: cast_nullable_to_non_nullable
-                      as LiveEditPropertyKind,
-            value: freezed == value ? _value.value : value,
-            options: null == options
-                ? _value.options
-                : options // ignore: cast_nullable_to_non_nullable
-                      as List<String>,
-            editable: null == editable
-                ? _value.editable
-                : editable // ignore: cast_nullable_to_non_nullable
-                      as bool,
-            previewMode: null == previewMode
-                ? _value.previewMode
-                : previewMode // ignore: cast_nullable_to_non_nullable
-                      as LiveEditPreviewMode,
-            persistable: null == persistable
-                ? _value.persistable
-                : persistable // ignore: cast_nullable_to_non_nullable
-                      as bool,
-            canPreviewExactly: null == canPreviewExactly
-                ? _value.canPreviewExactly
-                : canPreviewExactly // ignore: cast_nullable_to_non_nullable
-                      as bool,
-            requiresAgentForPersistence: null == requiresAgentForPersistence
-                ? _value.requiresAgentForPersistence
-                : requiresAgentForPersistence // ignore: cast_nullable_to_non_nullable
-                      as bool,
-            safeToAutoGroupInApply: null == safeToAutoGroupInApply
-                ? _value.safeToAutoGroupInApply
-                : safeToAutoGroupInApply // ignore: cast_nullable_to_non_nullable
-                      as bool,
-            meta: null == meta
-                ? _value.meta
-                : meta // ignore: cast_nullable_to_non_nullable
-                      as Map<String, Object?>,
-          )
-          as $Val,
-    );
-  }
-}
-
-/// @nodoc
-abstract class _$$LiveEditPropertyDescriptorImplCopyWith<$Res>
-    implements $LiveEditPropertyDescriptorCopyWith<$Res> {
-  factory _$$LiveEditPropertyDescriptorImplCopyWith(
-    _$LiveEditPropertyDescriptorImpl value,
-    $Res Function(_$LiveEditPropertyDescriptorImpl) then,
-  ) = __$$LiveEditPropertyDescriptorImplCopyWithImpl<$Res>;
-  @override
-  @useResult
-  $Res call({
-    String id,
-    String label,
-    @JsonKey(fromJson: _propertyGroupFromJson, toJson: _enumToWire)
-    LiveEditPropertyGroup group,
-    @JsonKey(fromJson: _propertyKindFromJson, toJson: _enumToWire)
-    LiveEditPropertyKind kind,
-    Object? value,
-    List<String> options,
-    bool editable,
-    @JsonKey(fromJson: _previewModeFromJson, toJson: _enumToWire)
-    LiveEditPreviewMode previewMode,
-    bool persistable,
-    bool canPreviewExactly,
-    bool requiresAgentForPersistence,
-    bool safeToAutoGroupInApply,
-    Map<String, Object?> meta,
-  });
-}
-
-/// @nodoc
-class __$$LiveEditPropertyDescriptorImplCopyWithImpl<$Res>
-    extends
-        _$LiveEditPropertyDescriptorCopyWithImpl<
-          $Res,
-          _$LiveEditPropertyDescriptorImpl
-        >
-    implements _$$LiveEditPropertyDescriptorImplCopyWith<$Res> {
-  __$$LiveEditPropertyDescriptorImplCopyWithImpl(
-    _$LiveEditPropertyDescriptorImpl _value,
-    $Res Function(_$LiveEditPropertyDescriptorImpl) _then,
-  ) : super(_value, _then);
-
-  /// Create a copy of LiveEditPropertyDescriptor
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? id = null,
-    Object? label = null,
-    Object? group = null,
-    Object? kind = null,
-    Object? value = freezed,
-    Object? options = null,
-    Object? editable = null,
-    Object? previewMode = null,
-    Object? persistable = null,
-    Object? canPreviewExactly = null,
-    Object? requiresAgentForPersistence = null,
-    Object? safeToAutoGroupInApply = null,
-    Object? meta = null,
-  }) {
-    return _then(
-      _$LiveEditPropertyDescriptorImpl(
-        id: null == id
-            ? _value.id
-            : id // ignore: cast_nullable_to_non_nullable
-                  as String,
-        label: null == label
-            ? _value.label
-            : label // ignore: cast_nullable_to_non_nullable
-                  as String,
-        group: null == group
-            ? _value.group
-            : group // ignore: cast_nullable_to_non_nullable
-                  as LiveEditPropertyGroup,
-        kind: null == kind
-            ? _value.kind
-            : kind // ignore: cast_nullable_to_non_nullable
-                  as LiveEditPropertyKind,
-        value: freezed == value ? _value.value : value,
-        options: null == options
-            ? _value._options
-            : options // ignore: cast_nullable_to_non_nullable
-                  as List<String>,
-        editable: null == editable
-            ? _value.editable
-            : editable // ignore: cast_nullable_to_non_nullable
-                  as bool,
-        previewMode: null == previewMode
-            ? _value.previewMode
-            : previewMode // ignore: cast_nullable_to_non_nullable
-                  as LiveEditPreviewMode,
-        persistable: null == persistable
-            ? _value.persistable
-            : persistable // ignore: cast_nullable_to_non_nullable
-                  as bool,
-        canPreviewExactly: null == canPreviewExactly
-            ? _value.canPreviewExactly
-            : canPreviewExactly // ignore: cast_nullable_to_non_nullable
-                  as bool,
-        requiresAgentForPersistence: null == requiresAgentForPersistence
-            ? _value.requiresAgentForPersistence
-            : requiresAgentForPersistence // ignore: cast_nullable_to_non_nullable
-                  as bool,
-        safeToAutoGroupInApply: null == safeToAutoGroupInApply
-            ? _value.safeToAutoGroupInApply
-            : safeToAutoGroupInApply // ignore: cast_nullable_to_non_nullable
-                  as bool,
-        meta: null == meta
-            ? _value._meta
-            : meta // ignore: cast_nullable_to_non_nullable
-                  as Map<String, Object?>,
-      ),
-    );
-  }
-}
-
-/// @nodoc
-@JsonSerializable()
-class _$LiveEditPropertyDescriptorImpl extends _LiveEditPropertyDescriptor {
-  const _$LiveEditPropertyDescriptorImpl({
-    required this.id,
-    required this.label,
-    @JsonKey(fromJson: _propertyGroupFromJson, toJson: _enumToWire)
-    required this.group,
-    @JsonKey(fromJson: _propertyKindFromJson, toJson: _enumToWire)
-    required this.kind,
-    this.value,
-    final List<String> options = const <String>[],
-    this.editable = false,
-    @JsonKey(fromJson: _previewModeFromJson, toJson: _enumToWire)
-    this.previewMode = LiveEditPreviewMode.none,
-    this.persistable = false,
-    this.canPreviewExactly = false,
-    this.requiresAgentForPersistence = false,
-    this.safeToAutoGroupInApply = false,
-    final Map<String, Object?> meta = const <String, Object?>{},
-  }) : _options = options,
-       _meta = meta,
-       super._();
-
-  factory _$LiveEditPropertyDescriptorImpl.fromJson(
-    Map<String, dynamic> json,
-  ) => _$$LiveEditPropertyDescriptorImplFromJson(json);
-
-  @override
-  final String id;
-  @override
-  final String label;
-  @override
-  @JsonKey(fromJson: _propertyGroupFromJson, toJson: _enumToWire)
-  final LiveEditPropertyGroup group;
-  @override
-  @JsonKey(fromJson: _propertyKindFromJson, toJson: _enumToWire)
-  final LiveEditPropertyKind kind;
-  @override
-  final Object? value;
-  final List<String> _options;
-  @override
-  @JsonKey()
-  List<String> get options {
-    if (_options is EqualUnmodifiableListView) return _options;
-    // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(_options);
-  }
-
-  @override
-  @JsonKey()
-  final bool editable;
-  @override
-  @JsonKey(fromJson: _previewModeFromJson, toJson: _enumToWire)
-  final LiveEditPreviewMode previewMode;
-  @override
-  @JsonKey()
-  final bool persistable;
-  @override
-  @JsonKey()
-  final bool canPreviewExactly;
-  @override
-  @JsonKey()
-  final bool requiresAgentForPersistence;
-  @override
-  @JsonKey()
-  final bool safeToAutoGroupInApply;
-  final Map<String, Object?> _meta;
-  @override
-  @JsonKey()
-  Map<String, Object?> get meta {
-    if (_meta is EqualUnmodifiableMapView) return _meta;
-    // ignore: implicit_dynamic_type
-    return EqualUnmodifiableMapView(_meta);
-  }
-
-  @override
-  String toString() {
-    return 'LiveEditPropertyDescriptor(id: $id, label: $label, group: $group, kind: $kind, value: $value, options: $options, editable: $editable, previewMode: $previewMode, persistable: $persistable, canPreviewExactly: $canPreviewExactly, requiresAgentForPersistence: $requiresAgentForPersistence, safeToAutoGroupInApply: $safeToAutoGroupInApply, meta: $meta)';
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is _$LiveEditPropertyDescriptorImpl &&
-            (identical(other.id, id) || other.id == id) &&
-            (identical(other.label, label) || other.label == label) &&
-            (identical(other.group, group) || other.group == group) &&
-            (identical(other.kind, kind) || other.kind == kind) &&
-            const DeepCollectionEquality().equals(other.value, value) &&
-            const DeepCollectionEquality().equals(other._options, _options) &&
-            (identical(other.editable, editable) ||
-                other.editable == editable) &&
-            (identical(other.previewMode, previewMode) ||
-                other.previewMode == previewMode) &&
-            (identical(other.persistable, persistable) ||
-                other.persistable == persistable) &&
-            (identical(other.canPreviewExactly, canPreviewExactly) ||
-                other.canPreviewExactly == canPreviewExactly) &&
-            (identical(
-                  other.requiresAgentForPersistence,
-                  requiresAgentForPersistence,
-                ) ||
-                other.requiresAgentForPersistence ==
-                    requiresAgentForPersistence) &&
-            (identical(other.safeToAutoGroupInApply, safeToAutoGroupInApply) ||
-                other.safeToAutoGroupInApply == safeToAutoGroupInApply) &&
-            const DeepCollectionEquality().equals(other._meta, _meta));
-  }
-
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  int get hashCode => Object.hash(
-    runtimeType,
-    id,
-    label,
-    group,
-    kind,
-    const DeepCollectionEquality().hash(value),
-    const DeepCollectionEquality().hash(_options),
-    editable,
-    previewMode,
-    persistable,
-    canPreviewExactly,
-    requiresAgentForPersistence,
-    safeToAutoGroupInApply,
-    const DeepCollectionEquality().hash(_meta),
-  );
-
-  /// Create a copy of LiveEditPropertyDescriptor
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  @pragma('vm:prefer-inline')
-  _$$LiveEditPropertyDescriptorImplCopyWith<_$LiveEditPropertyDescriptorImpl>
-  get copyWith =>
-      __$$LiveEditPropertyDescriptorImplCopyWithImpl<
-        _$LiveEditPropertyDescriptorImpl
-      >(this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$LiveEditPropertyDescriptorImplToJson(this);
-  }
-}
-
-abstract class _LiveEditPropertyDescriptor extends LiveEditPropertyDescriptor {
-  const factory _LiveEditPropertyDescriptor({
-    required final String id,
-    required final String label,
-    @JsonKey(fromJson: _propertyGroupFromJson, toJson: _enumToWire)
-    required final LiveEditPropertyGroup group,
-    @JsonKey(fromJson: _propertyKindFromJson, toJson: _enumToWire)
-    required final LiveEditPropertyKind kind,
-    final Object? value,
-    final List<String> options,
-    final bool editable,
-    @JsonKey(fromJson: _previewModeFromJson, toJson: _enumToWire)
-    final LiveEditPreviewMode previewMode,
-    final bool persistable,
-    final bool canPreviewExactly,
-    final bool requiresAgentForPersistence,
-    final bool safeToAutoGroupInApply,
-    final Map<String, Object?> meta,
-  }) = _$LiveEditPropertyDescriptorImpl;
-  const _LiveEditPropertyDescriptor._() : super._();
-
-  factory _LiveEditPropertyDescriptor.fromJson(Map<String, dynamic> json) =
-      _$LiveEditPropertyDescriptorImpl.fromJson;
-
-  @override
-  String get id;
-  @override
-  String get label;
-  @override
-  @JsonKey(fromJson: _propertyGroupFromJson, toJson: _enumToWire)
-  LiveEditPropertyGroup get group;
-  @override
-  @JsonKey(fromJson: _propertyKindFromJson, toJson: _enumToWire)
-  LiveEditPropertyKind get kind;
-  @override
-  Object? get value;
-  @override
-  List<String> get options;
-  @override
-  bool get editable;
-  @override
-  @JsonKey(fromJson: _previewModeFromJson, toJson: _enumToWire)
-  LiveEditPreviewMode get previewMode;
-  @override
-  bool get persistable;
-  @override
-  bool get canPreviewExactly;
-  @override
-  bool get requiresAgentForPersistence;
-  @override
-  bool get safeToAutoGroupInApply;
-  @override
-  Map<String, Object?> get meta;
-
-  /// Create a copy of LiveEditPropertyDescriptor
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$LiveEditPropertyDescriptorImplCopyWith<_$LiveEditPropertyDescriptorImpl>
-  get copyWith => throw _privateConstructorUsedError;
-}
-
 LiveEditResolutionProposal _$LiveEditResolutionProposalFromJson(
   Map<String, dynamic> json,
 ) {
@@ -2736,16 +2255,12 @@ abstract class _LiveEditResolutionProposal
 mixin _$LiveEditResolutionRequest {
   String get sessionId => throw _privateConstructorUsedError;
   String get workingDirectory => throw _privateConstructorUsedError;
-  List<LiveEditDraftChange> get draftChanges =>
-      throw _privateConstructorUsedError;
   String? get bubbleId => throw _privateConstructorUsedError;
   String? get instructionText => throw _privateConstructorUsedError;
   LiveEditSelection? get primarySelection => throw _privateConstructorUsedError;
   List<LiveEditSelection> get selectedWidgets =>
       throw _privateConstructorUsedError;
   List<LiveEditSourceTarget> get sourceTargets =>
-      throw _privateConstructorUsedError;
-  List<LiveEditDraftChange> get stagedPropertyChanges =>
       throw _privateConstructorUsedError;
   LiveEditApplyMode get applyMode => throw _privateConstructorUsedError;
   LiveEditSelection? get selection => throw _privateConstructorUsedError;
@@ -2773,13 +2288,11 @@ abstract class $LiveEditResolutionRequestCopyWith<$Res> {
   $Res call({
     String sessionId,
     String workingDirectory,
-    List<LiveEditDraftChange> draftChanges,
     String? bubbleId,
     String? instructionText,
     LiveEditSelection? primarySelection,
     List<LiveEditSelection> selectedWidgets,
     List<LiveEditSourceTarget> sourceTargets,
-    List<LiveEditDraftChange> stagedPropertyChanges,
     LiveEditApplyMode applyMode,
     LiveEditSelection? selection,
     String? backendId,
@@ -2814,13 +2327,11 @@ class _$LiveEditResolutionRequestCopyWithImpl<
   $Res call({
     Object? sessionId = null,
     Object? workingDirectory = null,
-    Object? draftChanges = null,
     Object? bubbleId = freezed,
     Object? instructionText = freezed,
     Object? primarySelection = freezed,
     Object? selectedWidgets = null,
     Object? sourceTargets = null,
-    Object? stagedPropertyChanges = null,
     Object? applyMode = null,
     Object? selection = freezed,
     Object? backendId = freezed,
@@ -2839,10 +2350,6 @@ class _$LiveEditResolutionRequestCopyWithImpl<
                 ? _value.workingDirectory
                 : workingDirectory // ignore: cast_nullable_to_non_nullable
                       as String,
-            draftChanges: null == draftChanges
-                ? _value.draftChanges
-                : draftChanges // ignore: cast_nullable_to_non_nullable
-                      as List<LiveEditDraftChange>,
             bubbleId: freezed == bubbleId
                 ? _value.bubbleId
                 : bubbleId // ignore: cast_nullable_to_non_nullable
@@ -2863,10 +2370,6 @@ class _$LiveEditResolutionRequestCopyWithImpl<
                 ? _value.sourceTargets
                 : sourceTargets // ignore: cast_nullable_to_non_nullable
                       as List<LiveEditSourceTarget>,
-            stagedPropertyChanges: null == stagedPropertyChanges
-                ? _value.stagedPropertyChanges
-                : stagedPropertyChanges // ignore: cast_nullable_to_non_nullable
-                      as List<LiveEditDraftChange>,
             applyMode: null == applyMode
                 ? _value.applyMode
                 : applyMode // ignore: cast_nullable_to_non_nullable
@@ -2957,13 +2460,11 @@ abstract class _$$LiveEditResolutionRequestImplCopyWith<$Res>
   $Res call({
     String sessionId,
     String workingDirectory,
-    List<LiveEditDraftChange> draftChanges,
     String? bubbleId,
     String? instructionText,
     LiveEditSelection? primarySelection,
     List<LiveEditSelection> selectedWidgets,
     List<LiveEditSourceTarget> sourceTargets,
-    List<LiveEditDraftChange> stagedPropertyChanges,
     LiveEditApplyMode applyMode,
     LiveEditSelection? selection,
     String? backendId,
@@ -3001,13 +2502,11 @@ class __$$LiveEditResolutionRequestImplCopyWithImpl<$Res>
   $Res call({
     Object? sessionId = null,
     Object? workingDirectory = null,
-    Object? draftChanges = null,
     Object? bubbleId = freezed,
     Object? instructionText = freezed,
     Object? primarySelection = freezed,
     Object? selectedWidgets = null,
     Object? sourceTargets = null,
-    Object? stagedPropertyChanges = null,
     Object? applyMode = null,
     Object? selection = freezed,
     Object? backendId = freezed,
@@ -3026,10 +2525,6 @@ class __$$LiveEditResolutionRequestImplCopyWithImpl<$Res>
             ? _value.workingDirectory
             : workingDirectory // ignore: cast_nullable_to_non_nullable
                   as String,
-        draftChanges: null == draftChanges
-            ? _value._draftChanges
-            : draftChanges // ignore: cast_nullable_to_non_nullable
-                  as List<LiveEditDraftChange>,
         bubbleId: freezed == bubbleId
             ? _value.bubbleId
             : bubbleId // ignore: cast_nullable_to_non_nullable
@@ -3050,10 +2545,6 @@ class __$$LiveEditResolutionRequestImplCopyWithImpl<$Res>
             ? _value._sourceTargets
             : sourceTargets // ignore: cast_nullable_to_non_nullable
                   as List<LiveEditSourceTarget>,
-        stagedPropertyChanges: null == stagedPropertyChanges
-            ? _value._stagedPropertyChanges
-            : stagedPropertyChanges // ignore: cast_nullable_to_non_nullable
-                  as List<LiveEditDraftChange>,
         applyMode: null == applyMode
             ? _value.applyMode
             : applyMode // ignore: cast_nullable_to_non_nullable
@@ -3093,15 +2584,12 @@ class _$LiveEditResolutionRequestImpl extends _LiveEditResolutionRequest {
   const _$LiveEditResolutionRequestImpl({
     required this.sessionId,
     required this.workingDirectory,
-    required final List<LiveEditDraftChange> draftChanges,
     this.bubbleId,
     this.instructionText,
     this.primarySelection,
     final List<LiveEditSelection> selectedWidgets = const <LiveEditSelection>[],
     final List<LiveEditSourceTarget> sourceTargets =
         const <LiveEditSourceTarget>[],
-    final List<LiveEditDraftChange> stagedPropertyChanges =
-        const <LiveEditDraftChange>[],
     this.applyMode = LiveEditApplyMode.singleBubble,
     this.selection,
     this.backendId,
@@ -3109,10 +2597,8 @@ class _$LiveEditResolutionRequestImpl extends _LiveEditResolutionRequest {
     this.intentText,
     final Map<String, Object?> evidence = const <String, Object?>{},
     final Map<String, Object?> meta = const <String, Object?>{},
-  }) : _draftChanges = draftChanges,
-       _selectedWidgets = selectedWidgets,
+  }) : _selectedWidgets = selectedWidgets,
        _sourceTargets = sourceTargets,
-       _stagedPropertyChanges = stagedPropertyChanges,
        _evidence = evidence,
        _meta = meta,
        super._();
@@ -3121,14 +2607,6 @@ class _$LiveEditResolutionRequestImpl extends _LiveEditResolutionRequest {
   final String sessionId;
   @override
   final String workingDirectory;
-  final List<LiveEditDraftChange> _draftChanges;
-  @override
-  List<LiveEditDraftChange> get draftChanges {
-    if (_draftChanges is EqualUnmodifiableListView) return _draftChanges;
-    // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(_draftChanges);
-  }
-
   @override
   final String? bubbleId;
   @override
@@ -3151,16 +2629,6 @@ class _$LiveEditResolutionRequestImpl extends _LiveEditResolutionRequest {
     if (_sourceTargets is EqualUnmodifiableListView) return _sourceTargets;
     // ignore: implicit_dynamic_type
     return EqualUnmodifiableListView(_sourceTargets);
-  }
-
-  final List<LiveEditDraftChange> _stagedPropertyChanges;
-  @override
-  @JsonKey()
-  List<LiveEditDraftChange> get stagedPropertyChanges {
-    if (_stagedPropertyChanges is EqualUnmodifiableListView)
-      return _stagedPropertyChanges;
-    // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(_stagedPropertyChanges);
   }
 
   @override
@@ -3194,7 +2662,7 @@ class _$LiveEditResolutionRequestImpl extends _LiveEditResolutionRequest {
 
   @override
   String toString() {
-    return 'LiveEditResolutionRequest(sessionId: $sessionId, workingDirectory: $workingDirectory, draftChanges: $draftChanges, bubbleId: $bubbleId, instructionText: $instructionText, primarySelection: $primarySelection, selectedWidgets: $selectedWidgets, sourceTargets: $sourceTargets, stagedPropertyChanges: $stagedPropertyChanges, applyMode: $applyMode, selection: $selection, backendId: $backendId, inferenceConfig: $inferenceConfig, intentText: $intentText, evidence: $evidence, meta: $meta)';
+    return 'LiveEditResolutionRequest(sessionId: $sessionId, workingDirectory: $workingDirectory, bubbleId: $bubbleId, instructionText: $instructionText, primarySelection: $primarySelection, selectedWidgets: $selectedWidgets, sourceTargets: $sourceTargets, applyMode: $applyMode, selection: $selection, backendId: $backendId, inferenceConfig: $inferenceConfig, intentText: $intentText, evidence: $evidence, meta: $meta)';
   }
 
   @override
@@ -3206,10 +2674,6 @@ class _$LiveEditResolutionRequestImpl extends _LiveEditResolutionRequest {
                 other.sessionId == sessionId) &&
             (identical(other.workingDirectory, workingDirectory) ||
                 other.workingDirectory == workingDirectory) &&
-            const DeepCollectionEquality().equals(
-              other._draftChanges,
-              _draftChanges,
-            ) &&
             (identical(other.bubbleId, bubbleId) ||
                 other.bubbleId == bubbleId) &&
             (identical(other.instructionText, instructionText) ||
@@ -3223,10 +2687,6 @@ class _$LiveEditResolutionRequestImpl extends _LiveEditResolutionRequest {
             const DeepCollectionEquality().equals(
               other._sourceTargets,
               _sourceTargets,
-            ) &&
-            const DeepCollectionEquality().equals(
-              other._stagedPropertyChanges,
-              _stagedPropertyChanges,
             ) &&
             (identical(other.applyMode, applyMode) ||
                 other.applyMode == applyMode) &&
@@ -3247,13 +2707,11 @@ class _$LiveEditResolutionRequestImpl extends _LiveEditResolutionRequest {
     runtimeType,
     sessionId,
     workingDirectory,
-    const DeepCollectionEquality().hash(_draftChanges),
     bubbleId,
     instructionText,
     primarySelection,
     const DeepCollectionEquality().hash(_selectedWidgets),
     const DeepCollectionEquality().hash(_sourceTargets),
-    const DeepCollectionEquality().hash(_stagedPropertyChanges),
     applyMode,
     selection,
     backendId,
@@ -3279,13 +2737,11 @@ abstract class _LiveEditResolutionRequest extends LiveEditResolutionRequest {
   const factory _LiveEditResolutionRequest({
     required final String sessionId,
     required final String workingDirectory,
-    required final List<LiveEditDraftChange> draftChanges,
     final String? bubbleId,
     final String? instructionText,
     final LiveEditSelection? primarySelection,
     final List<LiveEditSelection> selectedWidgets,
     final List<LiveEditSourceTarget> sourceTargets,
-    final List<LiveEditDraftChange> stagedPropertyChanges,
     final LiveEditApplyMode applyMode,
     final LiveEditSelection? selection,
     final String? backendId,
@@ -3301,8 +2757,6 @@ abstract class _LiveEditResolutionRequest extends LiveEditResolutionRequest {
   @override
   String get workingDirectory;
   @override
-  List<LiveEditDraftChange> get draftChanges;
-  @override
   String? get bubbleId;
   @override
   String? get instructionText;
@@ -3312,8 +2766,6 @@ abstract class _LiveEditResolutionRequest extends LiveEditResolutionRequest {
   List<LiveEditSelection> get selectedWidgets;
   @override
   List<LiveEditSourceTarget> get sourceTargets;
-  @override
-  List<LiveEditDraftChange> get stagedPropertyChanges;
   @override
   LiveEditApplyMode get applyMode;
   @override
@@ -3955,8 +3407,7 @@ mixin _$LiveEditSelection {
   String get nodeId => throw _privateConstructorUsedError;
   String get widgetType => throw _privateConstructorUsedError;
   @JsonKey(name: 'properties')
-  List<LiveEditPropertyDescriptor> get propertyGroups =>
-      throw _privateConstructorUsedError;
+  List<Object?> get propertiesForWire => throw _privateConstructorUsedError;
   @JsonKey(fromJson: _asMap)
   Map<String, Object?> get rawNode => throw _privateConstructorUsedError;
   @JsonKey(fromJson: _targetDomainFromJson, toJson: _enumToWire)
@@ -3994,8 +3445,7 @@ abstract class $LiveEditSelectionCopyWith<$Res> {
     String sessionId,
     String nodeId,
     String widgetType,
-    @JsonKey(name: 'properties')
-    List<LiveEditPropertyDescriptor> propertyGroups,
+    @JsonKey(name: 'properties') List<Object?> propertiesForWire,
     @JsonKey(fromJson: _asMap) Map<String, Object?> rawNode,
     @JsonKey(fromJson: _targetDomainFromJson, toJson: _enumToWire)
     LiveEditTargetDomain targetDomain,
@@ -4033,7 +3483,7 @@ class _$LiveEditSelectionCopyWithImpl<$Res, $Val extends LiveEditSelection>
     Object? sessionId = null,
     Object? nodeId = null,
     Object? widgetType = null,
-    Object? propertyGroups = null,
+    Object? propertiesForWire = null,
     Object? rawNode = null,
     Object? targetDomain = null,
     Object? renderObjectType = freezed,
@@ -4060,10 +3510,10 @@ class _$LiveEditSelectionCopyWithImpl<$Res, $Val extends LiveEditSelection>
                 ? _value.widgetType
                 : widgetType // ignore: cast_nullable_to_non_nullable
                       as String,
-            propertyGroups: null == propertyGroups
-                ? _value.propertyGroups
-                : propertyGroups // ignore: cast_nullable_to_non_nullable
-                      as List<LiveEditPropertyDescriptor>,
+            propertiesForWire: null == propertiesForWire
+                ? _value.propertiesForWire
+                : propertiesForWire // ignore: cast_nullable_to_non_nullable
+                      as List<Object?>,
             rawNode: null == rawNode
                 ? _value.rawNode
                 : rawNode // ignore: cast_nullable_to_non_nullable
@@ -4155,8 +3605,7 @@ abstract class _$$LiveEditSelectionImplCopyWith<$Res>
     String sessionId,
     String nodeId,
     String widgetType,
-    @JsonKey(name: 'properties')
-    List<LiveEditPropertyDescriptor> propertyGroups,
+    @JsonKey(name: 'properties') List<Object?> propertiesForWire,
     @JsonKey(fromJson: _asMap) Map<String, Object?> rawNode,
     @JsonKey(fromJson: _targetDomainFromJson, toJson: _enumToWire)
     LiveEditTargetDomain targetDomain,
@@ -4195,7 +3644,7 @@ class __$$LiveEditSelectionImplCopyWithImpl<$Res>
     Object? sessionId = null,
     Object? nodeId = null,
     Object? widgetType = null,
-    Object? propertyGroups = null,
+    Object? propertiesForWire = null,
     Object? rawNode = null,
     Object? targetDomain = null,
     Object? renderObjectType = freezed,
@@ -4222,10 +3671,10 @@ class __$$LiveEditSelectionImplCopyWithImpl<$Res>
             ? _value.widgetType
             : widgetType // ignore: cast_nullable_to_non_nullable
                   as String,
-        propertyGroups: null == propertyGroups
-            ? _value._propertyGroups
-            : propertyGroups // ignore: cast_nullable_to_non_nullable
-                  as List<LiveEditPropertyDescriptor>,
+        propertiesForWire: null == propertiesForWire
+            ? _value._propertiesForWire
+            : propertiesForWire // ignore: cast_nullable_to_non_nullable
+                  as List<Object?>,
         rawNode: null == rawNode
             ? _value._rawNode
             : rawNode // ignore: cast_nullable_to_non_nullable
@@ -4283,7 +3732,7 @@ class _$LiveEditSelectionImpl implements _LiveEditSelection {
     required this.nodeId,
     required this.widgetType,
     @JsonKey(name: 'properties')
-    required final List<LiveEditPropertyDescriptor> propertyGroups,
+    final List<Object?> propertiesForWire = const <Object?>[],
     @JsonKey(fromJson: _asMap) required final Map<String, Object?> rawNode,
     @JsonKey(fromJson: _targetDomainFromJson, toJson: _enumToWire)
     this.targetDomain = LiveEditTargetDomain.appScene,
@@ -4298,7 +3747,7 @@ class _$LiveEditSelectionImpl implements _LiveEditSelection {
     @JsonKey(fromJson: _selectionModeFromJson, toJson: _enumToWire)
     this.selectionMode = LiveEditSelectionMode.single,
     final List<String> selectedNodeIds = const <String>[],
-  }) : _propertyGroups = propertyGroups,
+  }) : _propertiesForWire = propertiesForWire,
        _rawNode = rawNode,
        _layoutContext = layoutContext,
        _parentChain = parentChain,
@@ -4315,13 +3764,14 @@ class _$LiveEditSelectionImpl implements _LiveEditSelection {
   final String nodeId;
   @override
   final String widgetType;
-  final List<LiveEditPropertyDescriptor> _propertyGroups;
+  final List<Object?> _propertiesForWire;
   @override
   @JsonKey(name: 'properties')
-  List<LiveEditPropertyDescriptor> get propertyGroups {
-    if (_propertyGroups is EqualUnmodifiableListView) return _propertyGroups;
+  List<Object?> get propertiesForWire {
+    if (_propertiesForWire is EqualUnmodifiableListView)
+      return _propertiesForWire;
     // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(_propertyGroups);
+    return EqualUnmodifiableListView(_propertiesForWire);
   }
 
   final Map<String, Object?> _rawNode;
@@ -4392,7 +3842,7 @@ class _$LiveEditSelectionImpl implements _LiveEditSelection {
 
   @override
   String toString() {
-    return 'LiveEditSelection(sessionId: $sessionId, nodeId: $nodeId, widgetType: $widgetType, propertyGroups: $propertyGroups, rawNode: $rawNode, targetDomain: $targetDomain, renderObjectType: $renderObjectType, bounds: $bounds, source: $source, layoutContext: $layoutContext, parentChain: $parentChain, detailsTree: $detailsTree, propertiesTree: $propertiesTree, selectionMode: $selectionMode, selectedNodeIds: $selectedNodeIds)';
+    return 'LiveEditSelection(sessionId: $sessionId, nodeId: $nodeId, widgetType: $widgetType, propertiesForWire: $propertiesForWire, rawNode: $rawNode, targetDomain: $targetDomain, renderObjectType: $renderObjectType, bounds: $bounds, source: $source, layoutContext: $layoutContext, parentChain: $parentChain, detailsTree: $detailsTree, propertiesTree: $propertiesTree, selectionMode: $selectionMode, selectedNodeIds: $selectedNodeIds)';
   }
 
   @override
@@ -4406,8 +3856,8 @@ class _$LiveEditSelectionImpl implements _LiveEditSelection {
             (identical(other.widgetType, widgetType) ||
                 other.widgetType == widgetType) &&
             const DeepCollectionEquality().equals(
-              other._propertyGroups,
-              _propertyGroups,
+              other._propertiesForWire,
+              _propertiesForWire,
             ) &&
             const DeepCollectionEquality().equals(other._rawNode, _rawNode) &&
             (identical(other.targetDomain, targetDomain) ||
@@ -4447,7 +3897,7 @@ class _$LiveEditSelectionImpl implements _LiveEditSelection {
     sessionId,
     nodeId,
     widgetType,
-    const DeepCollectionEquality().hash(_propertyGroups),
+    const DeepCollectionEquality().hash(_propertiesForWire),
     const DeepCollectionEquality().hash(_rawNode),
     targetDomain,
     renderObjectType,
@@ -4483,8 +3933,7 @@ abstract class _LiveEditSelection implements LiveEditSelection {
     required final String sessionId,
     required final String nodeId,
     required final String widgetType,
-    @JsonKey(name: 'properties')
-    required final List<LiveEditPropertyDescriptor> propertyGroups,
+    @JsonKey(name: 'properties') final List<Object?> propertiesForWire,
     @JsonKey(fromJson: _asMap) required final Map<String, Object?> rawNode,
     @JsonKey(fromJson: _targetDomainFromJson, toJson: _enumToWire)
     final LiveEditTargetDomain targetDomain,
@@ -4511,7 +3960,7 @@ abstract class _LiveEditSelection implements LiveEditSelection {
   String get widgetType;
   @override
   @JsonKey(name: 'properties')
-  List<LiveEditPropertyDescriptor> get propertyGroups;
+  List<Object?> get propertiesForWire;
   @override
   @JsonKey(fromJson: _asMap)
   Map<String, Object?> get rawNode;

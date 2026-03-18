@@ -133,47 +133,6 @@ Map<String, dynamic> _$$LiveEditRuntimeRefreshResultImplToJson(
   'validationRecovery': instance.validationRecovery,
 };
 
-_$LiveEditPropertyDescriptorImpl _$$LiveEditPropertyDescriptorImplFromJson(
-  Map<String, dynamic> json,
-) => _$LiveEditPropertyDescriptorImpl(
-  id: json['id'] as String,
-  label: json['label'] as String,
-  group: _propertyGroupFromJson(json['group']),
-  kind: _propertyKindFromJson(json['kind']),
-  value: json['value'],
-  options:
-      (json['options'] as List<dynamic>?)?.map((e) => e as String).toList() ??
-      const <String>[],
-  editable: json['editable'] as bool? ?? false,
-  previewMode: json['previewMode'] == null
-      ? LiveEditPreviewMode.none
-      : _previewModeFromJson(json['previewMode']),
-  persistable: json['persistable'] as bool? ?? false,
-  canPreviewExactly: json['canPreviewExactly'] as bool? ?? false,
-  requiresAgentForPersistence:
-      json['requiresAgentForPersistence'] as bool? ?? false,
-  safeToAutoGroupInApply: json['safeToAutoGroupInApply'] as bool? ?? false,
-  meta: json['meta'] as Map<String, dynamic>? ?? const <String, Object?>{},
-);
-
-Map<String, dynamic> _$$LiveEditPropertyDescriptorImplToJson(
-  _$LiveEditPropertyDescriptorImpl instance,
-) => <String, dynamic>{
-  'id': instance.id,
-  'label': instance.label,
-  'group': _enumToWire(instance.group),
-  'kind': _enumToWire(instance.kind),
-  'value': instance.value,
-  'options': instance.options,
-  'editable': instance.editable,
-  'previewMode': _enumToWire(instance.previewMode),
-  'persistable': instance.persistable,
-  'canPreviewExactly': instance.canPreviewExactly,
-  'requiresAgentForPersistence': instance.requiresAgentForPersistence,
-  'safeToAutoGroupInApply': instance.safeToAutoGroupInApply,
-  'meta': instance.meta,
-};
-
 _$LiveEditResolutionProposalImpl _$$LiveEditResolutionProposalImplFromJson(
   Map<String, dynamic> json,
 ) => _$LiveEditResolutionProposalImpl(
@@ -275,11 +234,7 @@ _$LiveEditSelectionImpl _$$LiveEditSelectionImplFromJson(
   sessionId: json['sessionId'] as String,
   nodeId: json['nodeId'] as String,
   widgetType: json['widgetType'] as String,
-  propertyGroups: (json['properties'] as List<dynamic>)
-      .map(
-        (e) => LiveEditPropertyDescriptor.fromJson(e as Map<String, dynamic>),
-      )
-      .toList(),
+  propertiesForWire: json['properties'] as List<dynamic>? ?? const <Object?>[],
   rawNode: _asMap(json['rawNode']),
   targetDomain: json['targetDomain'] == null
       ? LiveEditTargetDomain.appScene
@@ -320,7 +275,7 @@ Map<String, dynamic> _$$LiveEditSelectionImplToJson(
   'sessionId': instance.sessionId,
   'nodeId': instance.nodeId,
   'widgetType': instance.widgetType,
-  'properties': instance.propertyGroups.map((e) => e.toJson()).toList(),
+  'properties': instance.propertiesForWire,
   'rawNode': instance.rawNode,
   'targetDomain': _enumToWire(instance.targetDomain),
   'renderObjectType': instance.renderObjectType,

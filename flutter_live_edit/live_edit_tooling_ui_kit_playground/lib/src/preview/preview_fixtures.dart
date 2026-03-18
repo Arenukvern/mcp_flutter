@@ -175,14 +175,5 @@ final class PreviewPanelCallbacks implements PanelCallbacks {
   void onDrag(final Offset delta) {}
 
   @override
-  void onFocusProperty(final String? propertyId) {}
-
-  @override
-  void onPropertyValueChanged(
-    final LiveEditPropertyDescriptor property,
-    final Object? value,
-  ) {}
-
-  @override
   void onToggleDebugMode(final bool enabled) {}
 }

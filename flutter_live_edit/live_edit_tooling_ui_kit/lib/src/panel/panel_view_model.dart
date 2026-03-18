@@ -15,8 +15,6 @@ final class PanelViewModel {
     required this.width,
     required this.height,
     required this.editMode,
-    this.activePropertyId,
-    this.propertyDescriptors = const <LiveEditPropertyDescriptor>[],
     this.theme,
     this.railBubbleSummaries = const <BubbleSummaryViewModel>[],
     this.railActiveBubbleId,
@@ -34,8 +32,6 @@ final class PanelViewModel {
   final double width;
   final double height;
   final LiveEditEditMode editMode;
-  final String? activePropertyId;
-  final List<LiveEditPropertyDescriptor> propertyDescriptors;
   final ToolingThemeData? theme;
   final List<BubbleSummaryViewModel> railBubbleSummaries;
   final String? railActiveBubbleId;

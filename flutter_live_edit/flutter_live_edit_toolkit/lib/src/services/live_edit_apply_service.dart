@@ -64,9 +64,7 @@ final class LiveEditApplyService {
         updatedBubbleRecord: updatedRecord,
         sessionId: request.sessionId,
         commitNodeIds: updatedRecord?.nodeIds,
-        showAppliedPreviewChanges: request.draftChanges.isNotEmpty
-            ? request.draftChanges
-            : null,
+        showAppliedPreviewChanges: null,
         resolvedBubbleIdsAdd: request.effectiveBubbleId != null
             ? <String>{request.effectiveBubbleId!}
             : null,

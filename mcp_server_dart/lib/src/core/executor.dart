@@ -1187,24 +1187,6 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       _map(draftResult.data)['draftChanges'],
     );
     final selection = _decodeSelection(_map(selectionResult.data)['selection']);
-    final propertyById = <String, LiveEditPropertyDescriptor>{
-      for (final property
-          in selection?.propertyGroups ?? const <LiveEditPropertyDescriptor>[])
-        property.id: property,
-    };
-
-    final exactPreviewPropertyIds = <String>[];
-    final pendingPropertyIds = <String>[];
-    for (final draft in draftChanges) {
-      final property = propertyById[draft.propertyId];
-      if (property != null &&
-          _looselyEquivalent(property.value, draft.targetValue)) {
-        exactPreviewPropertyIds.add(draft.propertyId);
-      } else {
-        pendingPropertyIds.add(draft.propertyId);
-      }
-    }
-
     return CoreResult.success(
       data: <String, Object?>{
         if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
@@ -1217,8 +1199,8 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
             .map((final change) => change.toJson())
             .toList(growable: false),
         'hasDraft': draftChanges.isNotEmpty,
-        'exactPreviewPropertyIds': exactPreviewPropertyIds,
-        'pendingPropertyIds': pendingPropertyIds,
+        'exactPreviewPropertyIds': <String>[],
+        'pendingPropertyIds': <String>[],
       },
     );
   }
@@ -1244,11 +1226,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
           'targetDomain': command.targetDomain,
         if (selection != null) 'nodeId': selection.nodeId,
         if (selection != null) 'widgetType': selection.widgetType,
-        'properties':
-            selection?.propertyGroups
-                .map((final property) => property.toJson())
-                .toList(growable: false) ??
-            const <Object?>[],
+        'properties': selection?.propertiesForWire ?? const <Object?>[],
         if (selection != null) 'selection': selection.toJson(),
       },
     );
@@ -1434,13 +1412,11 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       return draftResult;
     }
 
-    final draftData = _map(draftResult.data);
-    final draftChanges = _decodeDraftChanges(draftData['draftChanges']);
     final hasIntentText = _hasText(command.intentText);
-    if (draftChanges.isEmpty && !hasIntentText) {
+    if (!hasIntentText) {
       return CoreResult.failure(
         code: CoreErrorCode.invalidCommand,
-        message: 'No live edit draft changes are available for resolution',
+        message: 'No live edit prompt is available for resolution',
         details: <String, Object?>{'sessionId': sessionId},
       );
     }
@@ -1487,7 +1463,6 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     final request = LiveEditResolutionRequest(
       sessionId: sessionId!,
       workingDirectory: workingDirectory,
-      draftChanges: draftChanges,
       selection: selection,
       backendId: command.backendId,
       inferenceConfig: command.inferenceConfig,
@@ -1706,15 +1681,6 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       'changeJson': encodeLiveEditJson(command.change.toJson()),
     },
   );
-
-  bool _looselyEquivalent(final Object? left, final Object? right) {
-    final normalizedLeft = _normalizeComparableValue(left);
-    final normalizedRight = _normalizeComparableValue(right);
-    if (normalizedLeft is num && normalizedRight is num) {
-      return (normalizedLeft - normalizedRight).abs() < 0.001;
-    }
-    return normalizedLeft == normalizedRight;
-  }
 
   Map<String, Object?> _map(final Object? data) {
     if (data is Map<String, Object?>) {
@@ -2291,40 +2257,11 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
         'reason': 'selection_missing',
       };
     }
-
-    final propertyById = <String, LiveEditPropertyDescriptor>{
-      for (final property in selection.propertyGroups) property.id: property,
-    };
-    final matched = <String>[];
-    final mismatches = <Map<String, Object?>>[];
-    for (final draft in request.draftChanges) {
-      final property = propertyById[draft.propertyId];
-      if (property == null) {
-        mismatches.add(<String, Object?>{
-          'propertyId': draft.propertyId,
-          'reason': 'property_missing',
-          'expected': draft.targetValue,
-        });
-        continue;
-      }
-
-      if (_looselyEquivalent(property.value, draft.targetValue)) {
-        matched.add(draft.propertyId);
-        continue;
-      }
-
-      mismatches.add(<String, Object?>{
-        'propertyId': draft.propertyId,
-        'expected': draft.targetValue,
-        'actual': property.value,
-      });
-    }
-
     return <String, Object?>{
-      'validated': mismatches.isEmpty,
+      'validated': true,
       'nodeId': selection.nodeId,
-      'matchedProperties': matched,
-      'mismatches': mismatches,
+      'matchedProperties': <String>[],
+      'mismatches': <Map<String, Object?>>[],
     };
   }
 

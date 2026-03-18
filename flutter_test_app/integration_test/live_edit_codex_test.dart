@@ -419,7 +419,7 @@ List<String> _requestDebugDetails(
     'Reasoning: ${request.inferenceConfig!.reasoningEffort}',
   'Workspace: $workingDirectory',
   'Node: ${request.selection?.nodeId ?? '<none>'}',
-  'Drafts: ${request.draftChanges.length}',
+  'Drafts: 0',
   'Intent present: ${((request.intentText ?? '').trim().isNotEmpty)}',
 ];
 
@@ -449,7 +449,7 @@ LiveEditSelection _rewriteSelectionSource({
       column: source.column,
       sourceHint: source.sourceHint,
     ),
-    propertyGroups: selection.propertyGroups,
+    propertiesForWire: selection.propertiesForWire,
     layoutContext: selection.layoutContext,
     parentChain: selection.parentChain,
     detailsTree: selection.detailsTree,
@@ -503,40 +503,16 @@ Future<void> _roundTripFixtureText(
     '[agent-test] fixture selection '
     'widget=${h.activeSelection?.widgetType} '
     'render=${h.activeSelection?.renderObjectType} '
-    'node=${h.activeSelection?.nodeId} '
-    'properties=${h.activeSelection?.propertyGroups.map((final property) => '${property.id}:${property.kind.wireName}:${property.editable}').join(', ')}',
+    'node=${h.activeSelection?.nodeId}',
   );
 
-  final hasEditableStringProperty =
-      h.activeSelection?.propertyGroups.any(
-        (final property) =>
-            property.editable && property.kind == LiveEditPropertyKind.string,
-      ) ==
-      true;
-  if (hasEditableStringProperty) {
-    final textProperty = h.activeSelection!.propertyGroups.firstWhere(
-      (final property) =>
-          property.editable && property.kind == LiveEditPropertyKind.string,
-    );
-    h.updateDraft(property: textProperty, targetValue: to);
-    await tester.pumpAndSettle();
-    print(
-      '[agent-test] fixture draft changes='
-      '${h.activeDraftChanges.map((final change) => '${change.propertyId}=${change.targetValue}').join(', ')} '
-      'rendered=${_fixtureRenderedText(tester)}',
-    );
-  } else {
-    OpenAiBubbleCommand(defaultPrompt: '').execute(h.context);
-    UpdateAiComposerCommand(
-      value: "Change the displayed text from '$from' to '$to'.",
-    ).execute(h.context);
-    await tester.pumpAndSettle();
-  }
+  OpenAiBubbleCommand(defaultPrompt: '').execute(h.context);
+  UpdateAiComposerCommand(
+    value: "Change the displayed text from '$from' to '$to'.",
+  ).execute(h.context);
+  await tester.pumpAndSettle();
 
-  expect(
-    h.activeDraftChanges.isNotEmpty || h.aiComposer.trim().isNotEmpty,
-    isTrue,
-  );
+  expect(h.aiComposer.trim().isNotEmpty, isTrue);
   expect(_fixtureRenderedText(tester), to);
   await _applyCurrentDraft(tester, h);
   expect(_fixtureRenderedText(tester), to);
@@ -550,27 +526,18 @@ Future<void> _roundTripToolAiBubbleColor(
   await _ensurePanelExpanded(tester, h);
 
   expect(_activeAiBubbleMaterial(tester).color, _bubbleOriginalColor);
-  final backgroundColorProperty = h.activeSelection!.propertyGroups.firstWhere(
-    (final property) => property.id == 'backgroundColor',
-  );
-  final propertyId = _panelPropertyId(backgroundColorProperty.id);
-  final propertyInput = find.descendant(
-    of: _semanticsId('live_edit_property_input_$propertyId'),
-    matching: find.byType(TextField),
-  );
-  expect(propertyInput, findsOneWidget);
-
-  await tester.ensureVisible(propertyInput);
-  await tester.enterText(propertyInput, '#112233');
-  await tester.pump(const Duration(milliseconds: 300));
-  expect(h.activeDraftChanges, isNotEmpty);
-  expect(_activeAiBubbleMaterial(tester).color, _bubbleUpdatedColor);
+  OpenAiBubbleCommand(defaultPrompt: '').execute(h.context);
+  UpdateAiComposerCommand(
+    value: 'Change the Container backgroundColor to #112233',
+  ).execute(h.context);
+  await tester.pumpAndSettle();
   await _applyCurrentDraft(tester, h);
   expect(_activeAiBubbleMaterial(tester).color, _bubbleUpdatedColor);
 
-  await tester.enterText(propertyInput, '#FFFBEB');
-  await tester.pump(const Duration(milliseconds: 300));
-  expect(_activeAiBubbleMaterial(tester).color, _bubbleOriginalColor);
+  UpdateAiComposerCommand(
+    value: 'Change the Container backgroundColor back to #FFFBEB',
+  ).execute(h.context);
+  await tester.pumpAndSettle();
   await _applyCurrentDraft(tester, h);
   expect(_activeAiBubbleMaterial(tester).color, _bubbleOriginalColor);
 }
@@ -579,27 +546,21 @@ Future<void> _selectEditableFixtureCandidate(
   final WidgetTester tester,
   final LiveEditIntegrationHarness h,
 ) async {
-  bool hasFixtureEditableSelection() {
+  bool hasFixtureSourceSelection() {
     final selection = h.activeSelection;
-    if (selection == null) {
-      return false;
-    }
-    final hasEditableString = selection.propertyGroups.any(
-      (final property) =>
-          property.editable && property.kind == LiveEditPropertyKind.string,
-    );
+    if (selection == null) return false;
     final sourceFile = selection.source?.file ?? '';
-    return hasEditableString && sourceFile.contains(_fixtureSourceBasename);
+    return sourceFile.contains(_fixtureSourceBasename);
   }
 
-  if (hasFixtureEditableSelection()) {
+  if (hasFixtureSourceSelection()) {
     return;
   }
 
   for (var index = 0; index < h.activeSelectionCandidates.length; index += 1) {
     h.selectCandidateAt(index);
     await tester.pumpAndSettle();
-    if (hasFixtureEditableSelection()) {
+    if (hasFixtureSourceSelection()) {
       return;
     }
   }
@@ -613,36 +574,18 @@ Future<void> _selectFixtureSourceCandidate(
 ) async {
   final currentSelection = h.activeSelection;
   final currentSourceFile = currentSelection?.source?.file ?? '';
-  final currentHasEditableString =
-      currentSelection?.propertyGroups.any(
-        (final property) =>
-            property.editable && property.kind == LiveEditPropertyKind.string,
-      ) ==
-      true;
-  if (currentHasEditableString &&
-      currentSourceFile.contains(_fixtureSourceBasename)) {
+  if (currentSourceFile.contains(_fixtureSourceBasename)) {
     return;
   }
 
   final candidates = h.activeSelectionCandidates;
   for (var index = 0; index < candidates.length; index += 1) {
-    final candidate = candidates[index];
-    final sourceFile = candidate.source?.file ?? '';
+    final sourceFile = candidates[index].source?.file ?? '';
     if (!sourceFile.contains(_fixtureSourceBasename)) {
       continue;
     }
     h.selectCandidateAt(index);
     await tester.pumpAndSettle();
-    final selected = h.activeSelection;
-    final hasEditableString =
-        selected?.propertyGroups.any(
-          (final property) =>
-              property.editable && property.kind == LiveEditPropertyKind.string,
-        ) ==
-        true;
-    if (!hasEditableString) {
-      continue;
-    }
     return;
   }
 
@@ -661,22 +604,16 @@ Future<void> _selectFixtureTarget(
   final WidgetTester tester,
   final LiveEditIntegrationHarness h,
 ) async {
-  bool hasFixtureEditableSelection() {
+  bool hasFixtureSourceSelection() {
     final selection = h.activeSelection;
-    if (selection == null) {
-      return false;
-    }
-    final hasEditableString = selection.propertyGroups.any(
-      (final property) =>
-          property.editable && property.kind == LiveEditPropertyKind.string,
-    );
+    if (selection == null) return false;
     final sourceFile = selection.source?.file ?? '';
-    return hasEditableString && sourceFile.contains(_fixtureSourceBasename);
+    return sourceFile.contains(_fixtureSourceBasename);
   }
 
   await tester.tap(_fixtureText(_fixtureOriginalText), warnIfMissed: false);
   await tester.pump(const Duration(milliseconds: 300));
-  if (!hasFixtureEditableSelection()) {
+  if (!hasFixtureSourceSelection()) {
     h.selectNode(tester.getCenter(_fixtureText(_fixtureOriginalText)));
     await _pumpUntil(
       tester,
@@ -685,7 +622,7 @@ Future<void> _selectFixtureTarget(
     );
   }
 
-  if (!hasFixtureEditableSelection()) {
+  if (!hasFixtureSourceSelection()) {
     final fixtureCenter = tester.getCenter(_fixtureRichText());
     h.hoverNode(fixtureCenter, deeperMode: true);
     await tester.pumpAndSettle();
@@ -754,7 +691,7 @@ final class _LiveEditAgentIntegrationHarness {
     );
     print(
       '[agent-test] handle backend=${request.backendId ?? _agentBackendId} '
-      'approve=${request.approve} drafts=${request.draftChanges.length}',
+      'approve=${request.approve} drafts=0',
     );
     final workingDirectory = await _ensureWorkspaceForRequest(request);
     final backendId = request.backendId ?? _agentBackendId;
@@ -820,11 +757,9 @@ final class _LiveEditAgentIntegrationHarness {
           .whereType<LiveEditSelection>()
           .toList(growable: false),
       sourceTargets: rewrittenSourceTargets,
-      stagedPropertyChanges: request.effectiveStagedPropertyChanges,
       applyMode: request.applyMode,
       inferenceConfig: request.inferenceConfig,
       intentText: request.intentText,
-      draftChanges: request.draftChanges,
       selection: _rewriteSelection(request.selection),
       meta: <String, Object?>{
         'integrationTest': true,

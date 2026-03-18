@@ -10,8 +10,6 @@ final class SyncSelectionStateParams {
     required this.activeSelectedWidgets,
     required this.presentationLayer,
     required this.lastSelectionIdentity,
-    required this.effectiveProperties,
-    required this.activeProperty,
     required this.draftChanges,
     required this.getBackendIdForBubble,
     required this.getInferenceConfigForBubble,
@@ -23,8 +21,6 @@ final class SyncSelectionStateParams {
   final List<LiveEditSelection> activeSelectedWidgets;
   final LiveEditTargetDomain presentationLayer;
   final String? lastSelectionIdentity;
-  final List<LiveEditPropertyDescriptor> effectiveProperties;
-  final LiveEditPropertyDescriptor? activeProperty;
   final List<LiveEditDraftChange> draftChanges;
   final String? Function(String?) getBackendIdForBubble;
   final LiveEditInferenceConfig? Function(String?) getInferenceConfigForBubble;
@@ -167,18 +163,12 @@ final class LiveEditBubbleStateService {
                     LiveEditEditMode.ai
                 ? LiveEditEditMode.ai
                 : LiveEditEditMode.edit);
-      var activePropertyId =
+      final activePropertyId =
           ctx
               .bubbleResource
               .value
               .layerViewStateByDomain[domain]
-              ?.activePropertyId ??
-          params.activeProperty?.id;
-      if (selection != null &&
-          params.activeProperty?.requiresAgentForPersistence == true) {
-        editMode = LiveEditEditMode.ai;
-        activePropertyId = params.activeProperty?.id ?? activePropertyId;
-      }
+              ?.activePropertyId;
       final layerMap = Map<LiveEditTargetDomain, LiveEditLayerViewState>.from(
         ctx.bubbleResource.value.layerViewStateByDomain,
       );
@@ -212,27 +202,7 @@ final class LiveEditBubbleStateService {
           inferenceConfig: params.getInferenceConfigForBubble(currentBubbleId),
         );
       }
-      if (selection != null &&
-          params.activeProperty?.requiresAgentForPersistence == true &&
-          !_hasText(bubble?.instructionText)) {
-        params.updateAiComposer(params.defaultAiPrompt);
-      }
       return currentBubbleId;
-    }
-
-    final active = params.activeProperty;
-    if (active == null && selection != null) {
-      final properties = params.effectiveProperties;
-      final propId = properties.isEmpty ? null : properties.first.id;
-      final domain = params.presentationLayer;
-      final layerMap = Map<LiveEditTargetDomain, LiveEditLayerViewState>.from(
-        ctx.bubbleResource.value.layerViewStateByDomain,
-      );
-      layerMap[domain] = (layerMap[domain] ?? LiveEditLayerViewState())
-          .copyWith(activePropertyId: propId);
-      ctx.bubbleResource.value = ctx.bubbleResource.value.copyWith(
-        layerViewStateByDomain: layerMap,
-      );
     }
     return params.lastSelectionIdentity;
   }

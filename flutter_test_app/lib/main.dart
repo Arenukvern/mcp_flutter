@@ -3,7 +3,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_live_edit_property_edit/flutter_live_edit_property_edit.dart';
 import 'package:flutter_live_edit_toolkit/flutter_live_edit_toolkit.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 import 'package:provider/provider.dart';
@@ -187,9 +186,6 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  final _propertyPanelSectionBuilder = LiveEditPropertyEditPlugin.install();
-  final _isPropertyPanelEnabled = false;
-
   @override
   Widget build(final BuildContext context) {
     return MaterialApp(
@@ -202,9 +198,6 @@ class _MyAppState extends State<MyApp> {
         create: (final context) => CustomNotifier(),
         child: FlutterLiveEditAutoHost(
           config: _liveEditConfig,
-          buildPropertyPanelSection: _isPropertyPanelEnabled
-              ? _propertyPanelSectionBuilder
-              : null,
           child: const MCPDemoHomePage(),
         ),
       ),

@@ -18,30 +18,8 @@ double maxDouble(final double left, final double right) =>
 double minDouble(final double left, final double right) =>
     left < right ? left : right;
 
-List<LiveEditPropertyDescriptor> commonEditableProperties(
-  final List<LiveEditSelection> selections,
-) {
-  if (selections.isEmpty) {
-    return const <LiveEditPropertyDescriptor>[];
-  }
-  final base = selections.first.propertyGroups
-      .where((final property) => property.editable)
-      .toList(growable: false);
-  return base
-      .where(
-        (final property) => selections
-            .skip(1)
-            .every(
-              (final selection) => selection.propertyGroups.any(
-                (final candidate) =>
-                    candidate.id == property.id &&
-                    candidate.kind == property.kind &&
-                    candidate.editable,
-              ),
-            ),
-      )
-      .toList(growable: false);
-}
+List<Object?> commonEditableProperties(final List<LiveEditSelection> selections) =>
+    const <Object?>[];
 
 // --- Selectors (ctx + controller) ---
 
@@ -82,25 +60,12 @@ LiveEditBubbleId? selectActiveBubbleId(
   return selectBubbleIdForSelection(ctx, selection);
 }
 
-List<LiveEditPropertyDescriptor> selectEffectiveProperties(
+List<Object?> selectEffectiveProperties(
   final LiveEditContext ctx,
   final LiveEditController controller, {
   required final LiveEditTargetDomain domain,
   final String? sessionId,
-}) {
-  final multi = controller.multiSelectionForDomain(
-    targetDomain: domain,
-    sessionId: sessionId ?? ctx.sessionResource.value.activeSessionId,
-  );
-  if (multi.length > 1) {
-    return commonEditableProperties(multi);
-  }
-  final selection = controller.selectionForDomain(
-    targetDomain: domain,
-    sessionId: sessionId ?? ctx.sessionResource.value.activeSessionId,
-  );
-  return selection?.propertyGroups ?? const <LiveEditPropertyDescriptor>[];
-}
+}) => const <Object?>[];
 
 List<LiveEditSelection> selectMultiSelectionForDomain(
   final LiveEditContext ctx,
@@ -792,75 +757,26 @@ bool selectCanTriggerApplyForBubble(
 Object? selectEffectiveValueForProperty(
   final LiveEditContext ctx,
   final LiveEditController controller,
-  final LiveEditPropertyDescriptor property, {
+  final Object? property, {
   required final LiveEditTargetDomain presentationDomain,
   final String? sessionId,
-}) {
-  final draftChanges = selectDraftChangesForDomain(
-    ctx,
-    controller,
-    domain: presentationDomain,
-    sessionId: sessionId,
-  );
-  final draft = draftChanges
-      .where((final c) => c.propertyId == property.id)
-      .toList();
-  if (draft.isNotEmpty) return draft.last.targetValue;
-  final selection = selectSelectionForDomain(
-    ctx,
-    controller,
-    domain: presentationDomain,
-    sessionId: sessionId,
-  );
-  final groups = selection?.propertyGroups
-      .where((final p) => p.id == property.id)
-      .toList();
-  final group = groups != null && groups.isNotEmpty ? groups.first : null;
-  return group?.value ?? property.value;
-}
+}) => null;
 
 bool selectIsPropertyWaiting(
   final LiveEditContext ctx,
   final LiveEditController controller,
-  final LiveEditPropertyDescriptor property, {
+  final Object? property, {
   required final LiveEditTargetDomain presentationDomain,
   final String? sessionId,
-}) {
-  final data = ctx.bubbleResource.value;
-  final isWaiting =
-      selectBubbleStatusForBubble(
-        ctx,
-        selectActiveBubbleId(
-          ctx,
-          controller,
-          presentationDomain: presentationDomain,
-          sessionId: sessionId,
-        ),
-      ) ==
-      LiveEditBubbleStatus.waiting;
-  return isWaiting &&
-      selectActiveBubbleId(
-            ctx,
-            controller,
-            presentationDomain: presentationDomain,
-            sessionId: sessionId,
-          ) ==
-          data.pendingBubbleId &&
-      property.id == data.pendingPropertyId;
-}
+}) => false;
 
 bool selectHasDraftForProperty(
   final LiveEditContext ctx,
   final LiveEditController controller,
-  final LiveEditPropertyDescriptor property, {
+  final Object? property, {
   required final LiveEditTargetDomain presentationDomain,
   final String? sessionId,
-}) => selectDraftChangesForDomain(
-  ctx,
-  controller,
-  domain: presentationDomain,
-  sessionId: sessionId,
-).any((final d) => d.propertyId == property.id);
+}) => false;
 
 bool selectHasMultiSelection(
   final LiveEditContext ctx,
@@ -1061,31 +977,12 @@ String? selectActivePropertyId(
   required final LiveEditTargetDomain domain,
 }) => ctx.bubbleResource.value.layerViewStateByDomain[domain]?.activePropertyId;
 
-LiveEditPropertyDescriptor? selectActiveProperty(
+Object? selectActiveProperty(
   final LiveEditContext ctx,
   final LiveEditController controller, {
   required final LiveEditTargetDomain presentationDomain,
   final String? sessionId,
-}) {
-  final properties = selectEffectiveProperties(
-    ctx,
-    controller,
-    domain: presentationDomain,
-    sessionId: sessionId,
-  );
-  if (properties.isEmpty) return null;
-  final domain = selectPresentedLayer(ctx);
-  final activeId = selectActivePropertyId(ctx, domain: domain);
-  if (hasText(activeId)) {
-    for (final p in properties) {
-      if (p.id == activeId) return p;
-    }
-  }
-  for (final p in properties) {
-    if (p.editable) return p;
-  }
-  return properties.first;
-}
+}) => null;
 
 String _failureSummary(final String error, {required final String bubbleId}) =>
     error.length > 80 ? '${error.substring(0, 80)}…' : error;
@@ -1237,14 +1134,6 @@ bool selectHasAgentBackedDrafts(
     domain: presentationDomain,
     sessionId: sessionId,
   );
-  for (final draft in draftChanges) {
-    for (final property in selection.propertyGroups) {
-      if (property.id == draft.propertyId &&
-          property.requiresAgentForPersistence) {
-        return true;
-      }
-    }
-  }
   return false;
 }
 

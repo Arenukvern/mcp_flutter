@@ -710,44 +710,6 @@ final class _LiveEditAgentSessionState {
   final LiveEditInferenceConfig? inferenceConfig;
 }
 
-extension on LiveEditResolutionRequest {
-  LiveEditResolutionRequest copyWith({
-    final String? sessionId,
-    final String? workingDirectory,
-    final List<LiveEditDraftChange>? draftChanges,
-    final String? bubbleId,
-    final String? instructionText,
-    final LiveEditSelection? primarySelection,
-    final List<LiveEditSelection>? selectedWidgets,
-    final List<LiveEditSourceTarget>? sourceTargets,
-    final List<LiveEditDraftChange>? stagedPropertyChanges,
-    final LiveEditApplyMode? applyMode,
-    final LiveEditSelection? selection,
-    final String? backendId,
-    final LiveEditInferenceConfig? inferenceConfig,
-    final String? intentText,
-    final Map<String, Object?>? evidence,
-    final Map<String, Object?>? meta,
-  }) => LiveEditResolutionRequest(
-    sessionId: sessionId ?? this.sessionId,
-    workingDirectory: workingDirectory ?? this.workingDirectory,
-    draftChanges: draftChanges ?? this.draftChanges,
-    bubbleId: bubbleId ?? this.bubbleId,
-    instructionText: instructionText ?? this.instructionText,
-    primarySelection: primarySelection ?? this.primarySelection,
-    selectedWidgets: selectedWidgets ?? this.selectedWidgets,
-    sourceTargets: sourceTargets ?? this.sourceTargets,
-    stagedPropertyChanges: stagedPropertyChanges ?? this.stagedPropertyChanges,
-    applyMode: applyMode ?? this.applyMode,
-    selection: selection ?? this.selection,
-    backendId: backendId ?? this.backendId,
-    inferenceConfig: inferenceConfig ?? this.inferenceConfig,
-    intentText: intentText ?? this.intentText,
-    evidence: evidence ?? this.evidence,
-    meta: meta ?? this.meta,
-  );
-}
-
 extension on LiveEditDirectApplyResult {
   LiveEditDirectApplyResult copyWith({
     final String? executionId,

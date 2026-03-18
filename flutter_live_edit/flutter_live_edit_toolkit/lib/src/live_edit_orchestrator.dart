@@ -89,23 +89,6 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   /// Exposes context for running Commands (e.g. from UI or MCP).
   LiveEditContext get context => _context;
 
-  /// Property-edit plugin: delegate to session service.
-  List<LiveEditPropertyDescriptor> Function(
-    Element element,
-    LiveEditTargetDomain targetDomain,
-  )?
-  get propertyDescriptorProvider => _sessionService.propertyDescriptorProvider;
-
-  set propertyDescriptorProvider(
-    final List<LiveEditPropertyDescriptor> Function(
-      Element element,
-      LiveEditTargetDomain targetDomain,
-    )?
-    value,
-  ) {
-    _sessionService.propertyDescriptorProvider = value;
-  }
-
   final LiveEditApplyDraftDelegate? applyDraftDelegate;
   final String? workingDirectory;
   final String? intentText;

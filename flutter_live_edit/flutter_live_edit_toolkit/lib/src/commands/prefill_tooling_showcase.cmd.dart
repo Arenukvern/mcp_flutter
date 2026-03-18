@@ -27,16 +27,7 @@ final class PrefillToolingShowcaseCommand {
       sessionId: sessionId,
       nodeId: 'showcase_bubble',
       widgetType: 'SelectionBubble',
-      propertyGroups: <LiveEditPropertyDescriptor>[
-        const LiveEditPropertyDescriptor(
-          id: 'label',
-          label: 'Label',
-          group: LiveEditPropertyGroup.content,
-          kind: LiveEditPropertyKind.string,
-          value: 'Demo bubble',
-          editable: true,
-        ),
-      ],
+      propertiesForWire: const <Object?>[],
       rawNode: const <String, Object?>{'surfaceId': 'ai_bubble'},
       targetDomain: LiveEditTargetDomain.toolScene,
       bounds: const LiveEditBounds(

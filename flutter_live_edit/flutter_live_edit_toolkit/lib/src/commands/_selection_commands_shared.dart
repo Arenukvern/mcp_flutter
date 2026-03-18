@@ -36,18 +36,6 @@ void runAfterSelectionChange(
       : (activeSelection != null
             ? <LiveEditSelection>[activeSelection]
             : const <LiveEditSelection>[]);
-  final effectiveProperties = selectEffectiveProperties(
-    context,
-    controller,
-    domain: presentationLayer,
-    sessionId: sessionId,
-  );
-  final activeProperty = selectActiveProperty(
-    context,
-    controller,
-    presentationDomain: presentationLayer,
-    sessionId: sessionId,
-  );
   final draftChanges = selectDraftChangesForDomain(
     context,
     controller,
@@ -76,8 +64,6 @@ void runAfterSelectionChange(
       presentationLayer: presentationLayer,
       lastSelectionIdentity:
           context.panelViewResource.value.lastSelectionIdentity,
-      effectiveProperties: effectiveProperties,
-      activeProperty: activeProperty,
       draftChanges: draftChanges,
       getBackendIdForBubble: (final id) =>
           selectBackendIdForBubble(context, id),

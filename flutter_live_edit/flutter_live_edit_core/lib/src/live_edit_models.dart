@@ -450,85 +450,6 @@ enum LiveEditPreviewMode {
 }
 
 @Freezed(fromJson: true, toJson: true)
-class LiveEditPropertyDescriptor with _$LiveEditPropertyDescriptor {
-  const factory LiveEditPropertyDescriptor({
-    required final String id,
-    required final String label,
-    @JsonKey(fromJson: _propertyGroupFromJson, toJson: _enumToWire)
-    required final LiveEditPropertyGroup group,
-    @JsonKey(fromJson: _propertyKindFromJson, toJson: _enumToWire)
-    required final LiveEditPropertyKind kind,
-    final Object? value,
-    @Default(<String>[]) final List<String> options,
-    @Default(false) final bool editable,
-    @JsonKey(fromJson: _previewModeFromJson, toJson: _enumToWire)
-    @Default(LiveEditPreviewMode.none)
-    final LiveEditPreviewMode previewMode,
-    @Default(false) final bool persistable,
-    @Default(false) final bool canPreviewExactly,
-    @Default(false) final bool requiresAgentForPersistence,
-    @Default(false) final bool safeToAutoGroupInApply,
-    @Default(<String, Object?>{}) final Map<String, Object?> meta,
-  }) = _LiveEditPropertyDescriptor;
-  const LiveEditPropertyDescriptor._();
-
-  factory LiveEditPropertyDescriptor.fromJson(
-    final Map<String, Object?> json,
-  ) => _$LiveEditPropertyDescriptorFromJson(json);
-
-  double get numericStep => _asDouble(meta['step'], fallback: 1);
-  String get preferredEditor => '${meta['editor'] ?? ''}'.trim();
-  LiveEditEditSurface get preferredEditSurface =>
-      LiveEditEditSurface.fromWire(meta['editSurface']);
-  bool get prefersMultiline => meta['multiline'] == true;
-  String get selectionPresentation => '${meta['selectionUi'] ?? ''}'.trim();
-}
-
-enum LiveEditPropertyGroup {
-  layout('layout'),
-  style('style'),
-  content('content'),
-  diagnostics('diagnostics');
-
-  const LiveEditPropertyGroup(this.wireName);
-
-  final String wireName;
-
-  static LiveEditPropertyGroup fromWire(final Object? value) {
-    final normalized = '$value'.trim().toLowerCase();
-    return LiveEditPropertyGroup.values.firstWhere(
-      (final group) => group.wireName == normalized,
-      orElse: () => LiveEditPropertyGroup.diagnostics,
-    );
-  }
-}
-
-enum LiveEditPropertyKind {
-  integer('integer'),
-  number('number'),
-  string('string'),
-  boolean('boolean'),
-  color('color'),
-  enumValue('enum'),
-  edgeInsets('edge_insets'),
-  alignment('alignment'),
-  bounds('bounds'),
-  object('object');
-
-  const LiveEditPropertyKind(this.wireName);
-
-  final String wireName;
-
-  static LiveEditPropertyKind fromWire(final Object? value) {
-    final normalized = '$value'.trim().toLowerCase();
-    return LiveEditPropertyKind.values.firstWhere(
-      (final kind) => kind.wireName == normalized,
-      orElse: () => LiveEditPropertyKind.object,
-    );
-  }
-}
-
-@Freezed(fromJson: true, toJson: true)
 class LiveEditResolutionProposal with _$LiveEditResolutionProposal {
   const factory LiveEditResolutionProposal({
     required final String proposalId,
@@ -554,7 +475,6 @@ class LiveEditResolutionRequest with _$LiveEditResolutionRequest {
   const factory LiveEditResolutionRequest({
     required final String sessionId,
     required final String workingDirectory,
-    required final List<LiveEditDraftChange> draftChanges,
     final String? bubbleId,
     final String? instructionText,
     final LiveEditSelection? primarySelection,
@@ -562,8 +482,6 @@ class LiveEditResolutionRequest with _$LiveEditResolutionRequest {
     final List<LiveEditSelection> selectedWidgets,
     @Default(<LiveEditSourceTarget>[])
     final List<LiveEditSourceTarget> sourceTargets,
-    @Default(<LiveEditDraftChange>[])
-    final List<LiveEditDraftChange> stagedPropertyChanges,
     @Default(LiveEditApplyMode.singleBubble) final LiveEditApplyMode applyMode,
     final LiveEditSelection? selection,
     final String? backendId,
@@ -581,10 +499,6 @@ class LiveEditResolutionRequest with _$LiveEditResolutionRequest {
     return LiveEditResolutionRequest(
       sessionId: '${json['sessionId'] ?? ''}',
       workingDirectory: '${json['workingDirectory'] ?? ''}',
-      draftChanges: _asList(json['draftChanges'])
-          .whereType<Map>()
-          .map((final item) => LiveEditDraftChange.fromJson(_asMap(item)))
-          .toList(growable: false),
       bubbleId: _asNullableString(json['bubbleId']),
       instructionText: _asNullableString(
         json['instructionText'] ?? json['intentText'],
@@ -601,11 +515,6 @@ class LiveEditResolutionRequest with _$LiveEditResolutionRequest {
           .whereType<Map>()
           .map((final item) => LiveEditSourceTarget.fromJson(_asMap(item)))
           .toList(growable: false),
-      stagedPropertyChanges:
-          _asList(json['stagedPropertyChanges'] ?? json['draftChanges'])
-              .whereType<Map>()
-              .map((final item) => LiveEditDraftChange.fromJson(_asMap(item)))
-              .toList(growable: false),
       applyMode: LiveEditApplyMode.fromWire(json['applyMode']),
       selection: switch (json['selection']) {
         final Map value => LiveEditSelection.fromJson(_asMap(value)),
@@ -632,9 +541,6 @@ class LiveEditResolutionRequest with _$LiveEditResolutionRequest {
         : <LiveEditSelection>[primary];
   }
 
-  List<LiveEditDraftChange> get effectiveStagedPropertyChanges =>
-      stagedPropertyChanges.isNotEmpty ? stagedPropertyChanges : draftChanges;
-
   Map<String, Object?> toJson() => <String, Object?>{
     'sessionId': sessionId,
     'workingDirectory': workingDirectory,
@@ -646,11 +552,7 @@ class LiveEditResolutionRequest with _$LiveEditResolutionRequest {
       'selectedWidgets': selectedWidgets.map((final s) => s.toJson()).toList(),
     if (sourceTargets.isNotEmpty)
       'sourceTargets': sourceTargets.map((final t) => t.toJson()).toList(),
-    'stagedPropertyChanges': effectiveStagedPropertyChanges
-        .map((final c) => c.toJson())
-        .toList(),
     'applyMode': applyMode.wireName,
-    'draftChanges': draftChanges.map((final c) => c.toJson()).toList(),
     if (selection != null) 'selection': selection!.toJson(),
     if (backendId != null) 'backendId': backendId,
     if (inferenceConfig != null) 'inferenceConfig': inferenceConfig!.toJson(),
@@ -782,8 +684,8 @@ class LiveEditSelection with _$LiveEditSelection {
     required final String sessionId,
     required final String nodeId,
     required final String widgetType,
-    @JsonKey(name: 'properties')
-    required final List<LiveEditPropertyDescriptor> propertyGroups,
+    @JsonKey(name: 'properties') @Default(<Object?>[])
+    final List<Object?> propertiesForWire,
     @JsonKey(fromJson: _asMap) required final Map<String, Object?> rawNode,
     @JsonKey(fromJson: _targetDomainFromJson, toJson: _enumToWire)
     @Default(LiveEditTargetDomain.appScene)
@@ -802,8 +704,11 @@ class LiveEditSelection with _$LiveEditSelection {
     @Default(<String>[]) final List<String> selectedNodeIds,
   }) = _LiveEditSelection;
 
-  factory LiveEditSelection.fromJson(final Map<String, Object?> json) =>
-      _$LiveEditSelectionFromJson(json);
+  factory LiveEditSelection.fromJson(final Map<String, Object?> json) {
+    final map = Map<String, Object?>.from(json);
+    map['properties'] = const <Object?>[];
+    return _$LiveEditSelectionFromJson(map);
+  }
 }
 
 int _depthFromJson(final Object? v) => _asNullableInt(v) ?? 0;
@@ -875,10 +780,6 @@ LiveEditRuntimeAction _runtimeActionFromJson(final Object? v) =>
     LiveEditRuntimeAction.fromWire(v);
 LiveEditPreviewMode _previewModeFromJson(final Object? v) =>
     LiveEditPreviewMode.fromWire(v);
-LiveEditPropertyGroup _propertyGroupFromJson(final Object? v) =>
-    LiveEditPropertyGroup.fromWire(v);
-LiveEditPropertyKind _propertyKindFromJson(final Object? v) =>
-    LiveEditPropertyKind.fromWire(v);
 LiveEditResolutionStatus _resolutionStatusFromJson(final Object? v) =>
     LiveEditResolutionStatus.fromWire(v);
 LiveEditSelectionMode _selectionModeFromJson(final Object? v) =>

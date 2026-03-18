@@ -22,20 +22,6 @@ void main() {
         line: 42,
         column: 7,
       ),
-      propertyGroups: <LiveEditPropertyDescriptor>[
-        LiveEditPropertyDescriptor(
-          id: 'width',
-          label: 'Width',
-          group: LiveEditPropertyGroup.layout,
-          kind: LiveEditPropertyKind.number,
-          value: 100,
-          editable: true,
-          previewMode: LiveEditPreviewMode.ghost,
-          persistable: true,
-          requiresAgentForPersistence: true,
-          safeToAutoGroupInApply: true,
-        ),
-      ],
       layoutContext: <String, Object?>{'parent': 'Column'},
       rawNode: <String, Object?>{'widgetType': 'Container'},
     );
@@ -44,9 +30,8 @@ void main() {
 
     expect(decoded.sessionId, selection.sessionId);
     expect(decoded.nodeId, selection.nodeId);
-    expect(decoded.propertyGroups.single.id, 'width');
     expect(decoded.bounds?.width, 100);
-    expect(decoded.propertyGroups.single.requiresAgentForPersistence, isTrue);
+    expect(decoded.propertiesForWire, isEmpty);
   });
 
   test('resolution proposal serializes and deserializes', () {
@@ -113,7 +98,6 @@ void main() {
         <String, Object?>{
           'sessionId': 's1',
           'workingDirectory': '/wd',
-          'draftChanges': <Object?>[],
           'inferenceConfig': <String, Object?>{'model': 'gpt-5.4'},
         },
       );
@@ -122,7 +106,6 @@ void main() {
       final fromCodex = LiveEditResolutionRequest.fromJson(<String, Object?>{
         'sessionId': 's1',
         'workingDirectory': '/wd',
-        'draftChanges': <Object?>[],
         'codexConfig': <String, Object?>{'model': 'gpt-5.3-codex'},
       });
       expect(fromCodex.inferenceConfig?.model, 'gpt-5.3-codex');
@@ -130,7 +113,6 @@ void main() {
       const req = LiveEditResolutionRequest(
         sessionId: 's1',
         workingDirectory: '/wd',
-        draftChanges: [],
         inferenceConfig: LiveEditInferenceConfig(model: 'x'),
       );
       expect(req.toJson().containsKey('inferenceConfig'), isTrue);

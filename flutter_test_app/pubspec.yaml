@@ -37,8 +37,6 @@ dependencies:
     path: ../flutter_live_edit/flutter_live_edit_agent
   flutter_live_edit_core:
     path: ../flutter_live_edit/flutter_live_edit_core
-  flutter_live_edit_property_edit:
-    path: ../flutter_live_edit/flutter_live_edit_property_edit
   flutter_live_edit_toolkit:
     path: ../flutter_live_edit/flutter_live_edit_toolkit
   mcp_toolkit:

@@ -5,27 +5,15 @@ import '../live_edit_types.dart';
 
 /// Opens AI bubble: edit mode AI, panel expanded, clear apply error, set default prompt if empty.
 final class OpenAiBubbleCommand {
-  OpenAiBubbleCommand({this.property, this.defaultPrompt});
+  OpenAiBubbleCommand({this.defaultPrompt});
 
-  final LiveEditPropertyDescriptor? property;
   final String? defaultPrompt;
 
   void execute(final LiveEditContext context) {
     final domain = context.sessionResource.value.targetDomain;
     final bubbleData = context.bubbleResource.value;
-    var layerState = bubbleData.layerViewStateByDomain[domain];
+    final layerState = bubbleData.layerViewStateByDomain[domain];
     if (layerState == null) return;
-
-    if (property != null) {
-      final updated = Map<LiveEditTargetDomain, LiveEditLayerViewState>.from(
-        bubbleData.layerViewStateByDomain,
-      );
-      updated[domain] = layerState.copyWith(activePropertyId: property!.id);
-      context.bubbleResource.value = context.bubbleResource.value.copyWith(
-        layerViewStateByDomain: updated,
-      );
-      layerState = updated[domain]!;
-    }
 
     context.panelViewResource.value = context.panelViewResource.value.copyWith(
       editMode: LiveEditEditMode.ai,

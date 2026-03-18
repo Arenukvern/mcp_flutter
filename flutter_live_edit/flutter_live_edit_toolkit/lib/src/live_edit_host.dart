@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
@@ -14,12 +16,7 @@ import 'live_edit_scope.dart';
 import 'live_edit_tool_layer_glue.dart';
 import 'live_edit_types.dart';
 import 'selectors/live_edit_selectors.dart';
-
-double mathMax(final double left, final double right) =>
-    left > right ? left : right;
-
-double mathMin(final double left, final double right) =>
-    left < right ? left : right;
+import 'widgets/backend_switcher.dart';
 
 String _activityElapsedLabel(final LiveEditActivityEntry activity) {
   final elapsed = DateTime.now().toUtc().difference(activity.timestamp);
@@ -30,13 +27,6 @@ String _activityElapsedLabel(final LiveEditActivityEntry activity) {
     return '${elapsed.inSeconds}s ago';
   }
   return '${elapsed.inMinutes}m ago';
-}
-
-double _asDouble(final Object? value) {
-  if (value is num) {
-    return value.toDouble();
-  }
-  return double.tryParse('$value') ?? 0;
 }
 
 String _basename(final String value) {
@@ -65,29 +55,6 @@ String _bubbleStatusLabel(final LiveEditBubbleStatus status) =>
       LiveEditBubbleStatus.failed => 'Failed',
     };
 
-Object? _coerceValueForProperty(
-  final LiveEditPropertyDescriptor property,
-  final String value,
-) {
-  switch (property.kind) {
-    case LiveEditPropertyKind.integer:
-      return int.tryParse(value) ?? property.value;
-    case LiveEditPropertyKind.number:
-      return double.tryParse(value) ?? property.value;
-    case LiveEditPropertyKind.boolean:
-      final normalized = value.toLowerCase();
-      return normalized == 'true' || normalized == '1' || normalized == 'yes';
-    case LiveEditPropertyKind.string:
-    case LiveEditPropertyKind.color:
-    case LiveEditPropertyKind.enumValue:
-    case LiveEditPropertyKind.edgeInsets:
-    case LiveEditPropertyKind.alignment:
-    case LiveEditPropertyKind.bounds:
-    case LiveEditPropertyKind.object:
-      return value;
-  }
-}
-
 String _domainLabel(final LiveEditTargetDomain domain) => switch (domain) {
   LiveEditTargetDomain.appScene => 'App',
   LiveEditTargetDomain.toolScene => 'Tool',
@@ -105,56 +72,17 @@ Rect _panelRectForViewport({
       ? kLiveEditPanelExpandedSurfaceId
       : kLiveEditPanelRailSurfaceId;
   final panelSurfaceTheme = overlayTheme.styleFor(panelSurfaceId);
-  final panelWidth = mathMax(
+  final panelWidth = math.max(
     selectPanelWidth(ctx),
     overlayTheme.panelWidth(expanded: panelExpanded),
   );
-  final panelHeight = mathMax(
+  final panelHeight = math.max(
     selectPanelHeight(ctx),
     panelSurfaceTheme.height ?? selectPanelHeight(ctx),
   );
   final panelOffset = selectPanelPlacement(ctx, viewport);
   return Rect.fromLTWH(panelOffset.dx, panelOffset.dy, panelWidth, panelHeight);
 }
-
-String _persistLabel(
-  final LiveEditPropertyDescriptor property,
-  final LiveEditContext ctx,
-  final LiveEditController controller,
-) => property.requiresAgentForPersistence
-    ? selectCurrentBackendLabel(
-        ctx,
-        controller,
-        presentationDomain: selectPresentedLayer(ctx),
-      )
-    : property.persistable
-    ? 'Direct'
-    : 'Preview only';
-
-Color _previewColor(final LiveEditPropertyDescriptor property) {
-  if (property.requiresAgentForPersistence) {
-    return const Color(0xFF7C2D12);
-  }
-  if (property.canPreviewExactly) {
-    return const Color(0xFF065F46);
-  }
-  return const Color(0xFF92400E);
-}
-
-String _previewLabel(final LiveEditPropertyDescriptor property) {
-  if (property.requiresAgentForPersistence) {
-    return 'AI only';
-  }
-  if (property.canPreviewExactly) {
-    return 'Live';
-  }
-  return 'Preview';
-}
-
-String _semanticsId(final String value) => value
-    .replaceAll(RegExp('[^a-zA-Z0-9]+'), '_')
-    .replaceAll(RegExp(r'^_+|_+$'), '')
-    .toLowerCase();
 
 String _sourceLocationLabel(
   final LiveEditSourceLocation? source, {
@@ -174,13 +102,6 @@ String _sourceLocationLabel(
   return source.sourceHint?.trim() ?? '';
 }
 
-/// Builds the optional "Properties" panel section. When null, the panel
-/// does not show direct property editing; when set (e.g. by
-/// [LiveEditPropertyEditPlugin.buildPropertyPanelSection]), the returned
-/// widget is shown under the "Properties" section title.
-typedef LiveEditPropertyPanelSectionBuilder =
-    Widget? Function(LiveEditContext context, LiveEditController controller);
-
 class FlutterLiveEditHost extends StatefulWidget {
   const FlutterLiveEditHost({
     required this.child,
@@ -192,7 +113,6 @@ class FlutterLiveEditHost extends StatefulWidget {
     this.availableBackends = const <LiveEditAgentBackend>[],
     this.workingDirectory,
     this.intentText,
-    this.buildPropertyPanelSection,
     this.childIsToolLayer = false,
   });
 
@@ -204,7 +124,6 @@ class FlutterLiveEditHost extends StatefulWidget {
   final List<LiveEditAgentBackend> availableBackends;
   final String? workingDirectory;
   final String? intentText;
-  final LiveEditPropertyPanelSectionBuilder? buildPropertyPanelSection;
   final bool childIsToolLayer;
 
   @override
@@ -219,13 +138,11 @@ class LiveEditToolLayer extends StatelessWidget {
     required this.controller,
     required this.viewportSize,
     super.key,
-    this.buildPropertyPanelSection,
   });
 
   final LiveEditContext context;
   final LiveEditController controller;
   final Size viewportSize;
-  final LiveEditPropertyPanelSectionBuilder? buildPropertyPanelSection;
 
   @override
   Widget build(final BuildContext buildContext) {
@@ -286,7 +203,6 @@ class LiveEditToolLayer extends StatelessWidget {
           child: _EditorPanelSurface(
             context: context,
             controller: controller,
-            buildPropertyPanelSection: buildPropertyPanelSection,
             railPanelViewModel: panelViewModel,
             panelCallbacks: panelCallbacks,
             bubbleCallbacks: bubbleCallbacks,
@@ -628,13 +544,9 @@ class _AiComposer extends StatefulWidget {
 class _AiComposerState extends State<_AiComposer> {
   late final TextEditingController _controller;
 
-  String _composerText() {
-    final presentationDomain = selectPresentedLayer(widget.context);
-    final sessionId = widget.context.sessionResource.value.activeSessionId;
-    return widget.bubbleId != null
-        ? selectInstructionTextForBubble(widget.context, widget.bubbleId)
-        : (widget.context.bubbleResource.value.globalComposerText);
-  }
+  String _composerText() => widget.bubbleId != null
+      ? selectInstructionTextForBubble(widget.context, widget.bubbleId)
+      : (widget.context.bubbleResource.value.globalComposerText);
 
   @override
   Widget build(final BuildContext buildContext) {
@@ -1034,214 +946,6 @@ class _ApplyActions extends StatelessWidget {
   }
 }
 
-class _BackendSwitcher extends StatelessWidget {
-  const _BackendSwitcher({
-    required this.context,
-    required this.controller,
-    this.rail = false,
-    this.bubble = false,
-    this.bubbleId,
-  });
-
-  final LiveEditContext context;
-  final LiveEditController controller;
-  final bool rail;
-  final bool bubble;
-  final String? bubbleId;
-
-  @override
-  Widget build(final BuildContext buildContext) {
-    final presentationDomain = selectPresentedLayer(context);
-    final sessionId = context.sessionResource.value.activeSessionId;
-    final backends = context.backendConfigResource.value.availableBackends;
-    if (backends.length < 2) {
-      return const SizedBox.shrink();
-    }
-    final selected = bubbleId != null
-        ? (selectBackendIdForBubble(context, bubbleId) ??
-              selectCurrentBackendId(
-                context,
-                controller,
-                presentationDomain: presentationDomain,
-                sessionId: sessionId,
-              ))
-        : selectCurrentBackendId(
-            context,
-            controller,
-            presentationDomain: presentationDomain,
-            sessionId: sessionId,
-          );
-    final backendLabel = selectCurrentBackendLabel(
-      context,
-      controller,
-      presentationDomain: presentationDomain,
-      sessionId: sessionId,
-    );
-    if (rail) {
-      return PopupMenuButton<String>(
-        tooltip: 'Select backend',
-        onSelected: (final id) =>
-            SetBackendCommand(backendId: id).execute(context),
-        itemBuilder: (final _) => backends
-            .map(
-              (final backend) => PopupMenuItem<String>(
-                value: backend.id,
-                enabled: backend.available,
-                child: Text(
-                  backend.available
-                      ? backend.label
-                      : '${backend.label} offline',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: backend.available
-                        ? const Color(0xFF0F172A)
-                        : const Color(0xFF94A3B8),
-                    fontWeight: backend.id == selected
-                        ? FontWeight.w700
-                        : FontWeight.w500,
-                  ),
-                ),
-              ),
-            )
-            .toList(growable: false),
-        child: Semantics(
-          identifier: 'live_edit_backend_switcher_rail',
-          button: true,
-          child: Container(
-            width: 40,
-            padding: LiveEditOverlayThemeModel.instance
-                .styleFor(kLiveEditBackendSwitcherSurfaceId)
-                .padding,
-            decoration: BoxDecoration(
-              color: LiveEditOverlayThemeModel.instance
-                  .styleFor(kLiveEditBackendSwitcherSurfaceId)
-                  .backgroundColor,
-              borderRadius: BorderRadius.circular(
-                LiveEditOverlayThemeModel.instance
-                    .styleFor(kLiveEditBackendSwitcherSurfaceId)
-                    .cornerRadius,
-              ),
-              border: Border.all(
-                color: LiveEditOverlayThemeModel.instance
-                    .styleFor(kLiveEditBackendSwitcherSurfaceId)
-                    .borderColor,
-              ),
-            ),
-            child: Column(
-              children: <Widget>[
-                const Icon(Icons.sync_alt, size: 14),
-                const SizedBox(height: 4),
-                Text(
-                  backendLabel.isNotEmpty
-                      ? backendLabel.substring(0, 1).toUpperCase()
-                      : 'A',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-    if (bubble) {
-      return Semantics(
-        identifier: 'live_edit_bubble_backend_switcher',
-        child: Row(
-          children: <Widget>[
-            for (var index = 0; index < backends.length; index += 1)
-              Expanded(
-                child: Padding(
-                  padding: EdgeInsets.only(
-                    right: index == backends.length - 1 ? 0 : 6,
-                  ),
-                  child: ChoiceChip(
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    visualDensity: VisualDensity.compact,
-                    label: Text(
-                      backends[index].label,
-                      style: const TextStyle(fontSize: 11),
-                    ),
-                    selected: backends[index].id == selected,
-                    onSelected: backends[index].available
-                        ? (final value) {
-                            if (value) {
-                              if (bubbleId != null) {
-                                SetBubbleBackendCommand(
-                                  bubbleId: bubbleId!,
-                                  backendId: backends[index].id,
-                                ).execute(context);
-                              } else {
-                                SetBackendCommand(
-                                  backendId: backends[index].id,
-                                ).execute(context);
-                              }
-                            }
-                          }
-                        : null,
-                  ),
-                ),
-              ),
-          ],
-        ),
-      );
-    }
-    final surfaceTheme = LiveEditOverlayThemeModel.instance.styleFor(
-      kLiveEditBackendSwitcherSurfaceId,
-    );
-    final surfaceKey = LiveEditOverlayThemeModel.instance.keyFor(
-      kLiveEditBackendSwitcherSurfaceId,
-    );
-    return KeyedSubtree(
-      key: surfaceKey,
-      child: Semantics(
-        identifier: 'live_edit_backend_switcher',
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(
-              'Backend',
-              style: TextStyle(
-                color: rail ? Colors.white70 : const Color(0xFF64748B),
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: <Widget>[
-                for (final backend in backends)
-                  ChoiceChip(
-                    label: Text(
-                      backend.available
-                          ? backend.label
-                          : '${backend.label} offline',
-                      style: const TextStyle(fontSize: 11),
-                    ),
-                    selected: backend.id == selected,
-                    onSelected: backend.available
-                        ? (final value) {
-                            if (value) {
-                              SetBackendCommand(
-                                backendId: backend.id,
-                              ).execute(context);
-                            }
-                          }
-                        : null,
-                  ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _BubbleComposerSection extends StatelessWidget {
   const _BubbleComposerSection({
     required this.context,
@@ -1276,7 +980,7 @@ class _BubbleComposerSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        _BackendSwitcher(
+        BackendSwitcher(
           context: context,
           controller: controller,
           bubble: true,
@@ -1308,7 +1012,6 @@ class _EditorPanelSurface extends StatelessWidget {
   const _EditorPanelSurface({
     required this.context,
     required this.controller,
-    this.buildPropertyPanelSection,
     this.railPanelViewModel,
     this.panelCallbacks,
     this.bubbleCallbacks,
@@ -1316,7 +1019,6 @@ class _EditorPanelSurface extends StatelessWidget {
 
   final LiveEditContext context;
   final LiveEditController controller;
-  final LiveEditPropertyPanelSectionBuilder? buildPropertyPanelSection;
   final PanelViewModel? railPanelViewModel;
   final PanelCallbacks? panelCallbacks;
   final BubbleCallbacks? bubbleCallbacks;
@@ -1352,7 +1054,6 @@ class _EditorPanelSurface extends StatelessWidget {
                 key: const ValueKey<String>('expanded_panel'),
                 context: context,
                 controller: controller,
-                buildPropertyPanelSection: buildPropertyPanelSection,
               ),
             ),
           ),
@@ -1514,8 +1215,6 @@ class _FlutterLiveEditHostState extends State<FlutterLiveEditHost> {
                             context: ctx,
                             controller: ctrl,
                             viewportSize: constraints.biggest,
-                            buildPropertyPanelSection:
-                                widget.buildPropertyPanelSection,
                           ),
                         ),
                       ),
@@ -1754,553 +1453,15 @@ class _LauncherChip extends StatelessWidget {
   }
 }
 
-class _NumericEditor extends StatefulWidget {
-  const _NumericEditor({
-    required this.context,
-    required this.controller,
-    required this.property,
-    required this.surface,
-  });
-
-  final LiveEditContext context;
-  final LiveEditController controller;
-  final LiveEditPropertyDescriptor property;
-  final LiveEditEditSurface surface;
-
-  @override
-  State<_NumericEditor> createState() => _NumericEditorState();
-}
-
-class _NumericEditorState extends State<_NumericEditor> {
-  late final TextEditingController _controller;
-
-  @override
-  Widget build(final BuildContext buildContext) {
-    final presentationDomain = selectPresentedLayer(widget.context);
-    final sessionId = widget.context.sessionResource.value.activeSessionId;
-    final text =
-        '${selectEffectiveValueForProperty(widget.context, widget.controller, widget.property, presentationDomain: presentationDomain, sessionId: sessionId) ?? ''}';
-    final waiting = selectIsPropertyWaiting(
-      widget.context,
-      widget.controller,
-      widget.property,
-      presentationDomain: presentationDomain,
-      sessionId: sessionId,
-    );
-    if (_controller.text != text) {
-      _controller.value = TextEditingValue(
-        text: text,
-        selection: TextSelection.collapsed(offset: text.length),
-      );
-    }
-    return Row(
-      children: <Widget>[
-        IconButton(
-          visualDensity: VisualDensity.compact,
-          iconSize: 14,
-          onPressed: waiting
-              ? null
-              : () => _applyDelta(-widget.property.numericStep),
-          icon: const Icon(Icons.remove),
-        ),
-        Expanded(
-          child: TextField(
-            controller: _controller,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            autofocus: widget.surface == LiveEditEditSurface.inline,
-            enableInteractiveSelection: true,
-            enabled: !waiting,
-            style: const TextStyle(fontSize: 11),
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
-              isDense: true,
-              contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-            ),
-            onSubmitted: _submit,
-          ),
-        ),
-        IconButton(
-          visualDensity: VisualDensity.compact,
-          iconSize: 14,
-          onPressed: waiting
-              ? null
-              : () => _applyDelta(widget.property.numericStep),
-          icon: const Icon(Icons.add),
-        ),
-      ],
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController(text: '${widget.property.value ?? ''}');
-  }
-
-  void _applyDelta(final double delta) {
-    final presentationDomain = selectPresentedLayer(widget.context);
-    final sessionId = widget.context.sessionResource.value.activeSessionId;
-    final base = _asDouble(
-      selectEffectiveValueForProperty(
-        widget.context,
-        widget.controller,
-        widget.property,
-        presentationDomain: presentationDomain,
-        sessionId: sessionId,
-      ),
-    );
-    final next = base + delta;
-    final targetValue = widget.property.kind == LiveEditPropertyKind.integer
-        ? next.round()
-        : next;
-    UpdateDraftFromUiCommand(
-      property: widget.property,
-      targetValue: targetValue,
-      surface: widget.surface,
-    ).execute(widget.context);
-  }
-
-  void _submit(final String value) {
-    UpdateDraftFromUiCommand(
-      property: widget.property,
-      targetValue: _coerceValueForProperty(widget.property, value.trim()),
-      surface: widget.surface,
-    ).execute(widget.context);
-  }
-}
-
-class _PropertyActionColumn extends StatelessWidget {
-  const _PropertyActionColumn({
-    required this.context,
-    required this.controller,
-    required this.property,
-    required this.surface,
-  });
-
-  final LiveEditContext context;
-  final LiveEditController controller;
-  final LiveEditPropertyDescriptor property;
-  final LiveEditEditSurface surface;
-
-  @override
-  Widget build(final BuildContext buildContext) => Column(
-    mainAxisSize: MainAxisSize.min,
-    children: <Widget>[
-      if (surface == LiveEditEditSurface.panel) ...<Widget>[
-        IconButton(
-          visualDensity: VisualDensity.compact,
-          iconSize: 16,
-          onPressed: () {
-            if (property.requiresAgentForPersistence) {
-              OpenAiBubbleCommand(
-                property: property,
-                defaultPrompt: '',
-              ).execute(context);
-            } else {
-              FocusPropertyCommand(
-                property: property,
-                defaultPrompt: '',
-              ).execute(context);
-            }
-          },
-          icon: Icon(
-            property.requiresAgentForPersistence
-                ? Icons.smart_toy_outlined
-                : Icons.ads_click_outlined,
-          ),
-        ),
-      ],
-    ],
-  );
-}
-
-class _PropertyEditor extends StatelessWidget {
-  const _PropertyEditor({
-    required this.context,
-    required this.controller,
-    required this.property,
-    required this.surface,
-  });
-
-  final LiveEditContext context;
-  final LiveEditController controller;
-  final LiveEditPropertyDescriptor property;
-  final LiveEditEditSurface surface;
-
-  @override
-  Widget build(final BuildContext buildContext) {
-    final presentationDomain = selectPresentedLayer(context);
-    final sessionId = context.sessionResource.value.activeSessionId;
-    final waiting = selectIsPropertyWaiting(
-      context,
-      controller,
-      property,
-      presentationDomain: presentationDomain,
-      sessionId: sessionId,
-    );
-    if (!property.editable) {
-      return Text(
-        '${property.value ?? 'Not editable'}',
-        style: const TextStyle(fontSize: 11),
-      );
-    }
-    if (property.requiresAgentForPersistence &&
-        surface == LiveEditEditSurface.inline) {
-      return Row(
-        children: <Widget>[
-          const Expanded(
-            child: Text('Use Apply', style: TextStyle(fontSize: 11)),
-          ),
-          const SizedBox(width: 4),
-          OutlinedButton(
-            style: OutlinedButton.styleFrom(
-              visualDensity: VisualDensity.compact,
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            ),
-            onPressed: () => OpenAiBubbleCommand(
-              property: property,
-              defaultPrompt: '',
-            ).execute(context),
-            child: const Text('AI', style: TextStyle(fontSize: 11)),
-          ),
-        ],
-      );
-    }
-
-    if (property.kind == LiveEditPropertyKind.boolean) {
-      final current =
-          selectEffectiveValueForProperty(
-            context,
-            controller,
-            property,
-            presentationDomain: presentationDomain,
-            sessionId: sessionId,
-          ) ==
-          true;
-      return Align(
-        alignment: Alignment.centerLeft,
-        child: Switch(
-          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          value: current,
-          onChanged: waiting
-              ? null
-              : (final value) => UpdateDraftFromUiCommand(
-                  property: property,
-                  targetValue: value,
-                  surface: surface,
-                ).execute(context),
-        ),
-      );
-    }
-
-    if (property.options.isNotEmpty ||
-        property.kind == LiveEditPropertyKind.enumValue) {
-      return Wrap(
-        spacing: 4,
-        runSpacing: 4,
-        children: <Widget>[
-          for (final option in property.options)
-            ChoiceChip(
-              visualDensity: VisualDensity.compact,
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              labelStyle: const TextStyle(fontSize: 11),
-              label: Text(option),
-              selected:
-                  option ==
-                  '${selectEffectiveValueForProperty(context, controller, property, presentationDomain: presentationDomain, sessionId: sessionId)}',
-              onSelected: waiting
-                  ? null
-                  : (_) => UpdateDraftFromUiCommand(
-                      property: property,
-                      targetValue: option,
-                      surface: surface,
-                    ).execute(context),
-            ),
-        ],
-      );
-    }
-
-    if (property.kind == LiveEditPropertyKind.integer ||
-        property.kind == LiveEditPropertyKind.number) {
-      return _NumericEditor(
-        context: context,
-        controller: controller,
-        property: property,
-        surface: surface,
-      );
-    }
-
-    if (property.kind == LiveEditPropertyKind.string) {
-      final multiline =
-          property.prefersMultiline && surface == LiveEditEditSurface.panel;
-      return _TextValueEditor(
-        context: context,
-        controller: controller,
-        property: property,
-        surface: surface,
-        multiline: multiline,
-      );
-    }
-
-    return Text(
-      '${property.value ?? 'Unsupported inline editor'}',
-      style: const TextStyle(fontSize: 12),
-    );
-  }
-}
-
-class _PropertyEditorCard extends StatelessWidget {
-  const _PropertyEditorCard({
-    required this.context,
-    required this.controller,
-    required this.property,
-    required this.surface,
-  });
-
-  final LiveEditContext context;
-  final LiveEditController controller;
-  final LiveEditPropertyDescriptor property;
-  final LiveEditEditSurface surface;
-
-  @override
-  Widget build(final BuildContext buildContext) {
-    final presentationDomain = selectPresentedLayer(context);
-    final sessionId = context.sessionResource.value.activeSessionId;
-    final rowTheme = LiveEditOverlayThemeModel.instance.styleFor(
-      kLiveEditPropertyEditorRowSurfaceId,
-    );
-    final badgeTheme = LiveEditOverlayThemeModel.instance.styleFor(
-      kLiveEditStatusBadgeSurfaceId,
-    );
-    final isActive =
-        selectActivePropertyId(context, domain: presentationDomain) ==
-        property.id;
-    final disabled = !property.editable;
-    final effectiveValue = selectEffectiveValueForProperty(
-      context,
-      controller,
-      property,
-      presentationDomain: presentationDomain,
-      sessionId: sessionId,
-    );
-
-    final cardChild = Ink(
-      padding: rowTheme.padding,
-      decoration: BoxDecoration(
-        color: isActive ? rowTheme.backgroundColor : Colors.white,
-        borderRadius: BorderRadius.circular(rowTheme.cornerRadius),
-        border: Border.all(
-          color: isActive ? const Color(0xFF0EA5E9) : rowTheme.borderColor,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              SizedBox(
-                width: surface == LiveEditEditSurface.panel ? 78 : 96,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      property.label,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 11,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      _propertySubtitle(property, effectiveValue),
-                      style: const TextStyle(
-                        fontSize: 10,
-                        color: Color(0xFF475569),
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(width: rowTheme.gap),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    Wrap(
-                      spacing: 4,
-                      runSpacing: 4,
-                      children: <Widget>[
-                        PropertyBadge(
-                          label: _previewLabel(property),
-                          textColor: _previewColor(property),
-                          backgroundColor: _previewColor(
-                            property,
-                          ).withOpacity(0.12),
-                          surfaceKey: isActive
-                              ? LiveEditOverlayThemeModel.instance.keyFor(
-                                  kLiveEditStatusBadgeSurfaceId,
-                                )
-                              : null,
-                          padding: badgeTheme.padding,
-                          cornerRadius: badgeTheme.cornerRadius,
-                        ),
-                        PropertyBadge(
-                          label: _persistLabel(property, context, controller),
-                          textColor: property.requiresAgentForPersistence
-                              ? const Color(0xFF7C2D12)
-                              : const Color(0xFF1D4ED8),
-                          backgroundColor: property.requiresAgentForPersistence
-                              ? const Color(0xFFFFEDD5)
-                              : const Color(0xFFDBEAFE),
-                          padding: badgeTheme.padding,
-                          cornerRadius: badgeTheme.cornerRadius,
-                        ),
-                        if (selectHasDraftForProperty(
-                          context,
-                          controller,
-                          property,
-                          presentationDomain: presentationDomain,
-                          sessionId: sessionId,
-                        ))
-                          PropertyBadge(
-                            label:
-                                selectIsPropertyWaiting(
-                                  context,
-                                  controller,
-                                  property,
-                                  presentationDomain: presentationDomain,
-                                  sessionId: sessionId,
-                                )
-                                ? 'Waiting'
-                                : 'Dirty',
-                            textColor:
-                                selectIsPropertyWaiting(
-                                  context,
-                                  controller,
-                                  property,
-                                  presentationDomain: presentationDomain,
-                                  sessionId: sessionId,
-                                )
-                                ? const Color(0xFF1D4ED8)
-                                : const Color(0xFF0F766E),
-                            backgroundColor:
-                                selectIsPropertyWaiting(
-                                  context,
-                                  controller,
-                                  property,
-                                  presentationDomain: presentationDomain,
-                                  sessionId: sessionId,
-                                )
-                                ? const Color(0xFFDBEAFE)
-                                : const Color(0xFFCCFBF1),
-                            padding: badgeTheme.padding,
-                            cornerRadius: badgeTheme.cornerRadius,
-                          ),
-                      ],
-                    ),
-                    SizedBox(height: rowTheme.gap),
-                    if (surface == LiveEditEditSurface.panel)
-                      Semantics(
-                        identifier:
-                            'live_edit_property_input_${_semanticsId(property.id)}',
-                        child: _PropertyEditor(
-                          context: context,
-                          controller: controller,
-                          property: property,
-                          surface: surface,
-                        ),
-                      )
-                    else
-                      _PropertyEditor(
-                        context: context,
-                        controller: controller,
-                        property: property,
-                        surface: surface,
-                      ),
-                  ],
-                ),
-              ),
-              SizedBox(width: rowTheme.gap),
-              _PropertyActionColumn(
-                context: context,
-                controller: controller,
-                property: property,
-                surface: surface,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-
-    final card = InkWell(
-      onTap: disabled
-          ? null
-          : () {
-              if (surface == LiveEditEditSurface.aiBubble ||
-                  property.requiresAgentForPersistence) {
-                OpenAiBubbleCommand(
-                  property: property,
-                  defaultPrompt: '',
-                ).execute(context);
-              } else {
-                FocusPropertyCommand(
-                  property: property,
-                  defaultPrompt: '',
-                ).execute(context);
-              }
-            },
-      borderRadius: BorderRadius.circular(14),
-      child: surface == LiveEditEditSurface.panel
-          ? Semantics(
-              identifier: 'live_edit_property_${_semanticsId(property.id)}',
-              child: cardChild,
-            )
-          : cardChild,
-    );
-    if (surface == LiveEditEditSurface.panel && isActive) {
-      return KeyedSubtree(
-        key: LiveEditOverlayThemeModel.instance.keyFor(
-          kLiveEditPropertyEditorRowSurfaceId,
-        ),
-        child: card,
-      );
-    }
-    return card;
-  }
-
-  String _propertySubtitle(
-    final LiveEditPropertyDescriptor property,
-    final Object? value,
-  ) {
-    final resolved = '$value'.isEmpty ? 'unset' : '$value';
-    final editor = property.preferredEditor.isEmpty
-        ? property.kind.wireName
-        : property.preferredEditor;
-    return '$resolved • $editor';
-  }
-}
-
 class _PropertyPanel extends StatelessWidget {
   const _PropertyPanel({
     required this.context,
     required this.controller,
-    this.buildPropertyPanelSection,
     super.key,
   });
 
   final LiveEditContext context;
   final LiveEditController controller;
-  final LiveEditPropertyPanelSectionBuilder? buildPropertyPanelSection;
 
   List<LiveEditSelectionCandidate> get _visibleCandidates {
     final presentationDomain = selectPresentedLayer(context);
@@ -2408,7 +1569,7 @@ class _PropertyPanel extends StatelessWidget {
                             1) ...<Widget>[
                           const SizedBox(height: 6),
                           const SizedBox(height: 6),
-                          _BackendSwitcher(
+                          BackendSwitcher(
                             context: context,
                             controller: controller,
                           ),
@@ -2681,16 +1842,6 @@ class _PropertyPanel extends StatelessWidget {
                             dense: true,
                           ),
                         ),
-                        if (buildPropertyPanelSection != null)
-                          PanelSection(
-                            title: 'Properties',
-                            child:
-                                buildPropertyPanelSection!(
-                                  context,
-                                  controller,
-                                ) ??
-                                const SizedBox.shrink(),
-                          ),
                         PanelSection(
                           title: 'Thread',
                           child: Column(
@@ -3047,7 +2198,7 @@ class _SelectionBubble extends StatelessWidget {
                                                   presentationDomain,
                                               sessionId: sessionId,
                                             )
-                                        ? '${selectMultiSelectionForDomain(context, controller, domain: presentationDomain, sessionId: sessionId).length} widgets • ${selectActiveProperty(context, controller, presentationDomain: presentationDomain, sessionId: sessionId)?.label ?? 'shared'}'
+                                        ? '${selectMultiSelectionForDomain(context, controller, domain: presentationDomain, sessionId: sessionId).length} widgets • shared'
                                         : isActive &&
                                               selectHasMarqueePreview(
                                                 context,
@@ -3057,7 +2208,7 @@ class _SelectionBubble extends StatelessWidget {
                                                 sessionId: sessionId,
                                               )
                                         ? 'Drag selection preview • ${selectMarqueePreviewSelections(context, controller, presentationDomain: presentationDomain, sessionId: sessionId).length} hits'
-                                        : '${selection?.widgetType ?? summary?.label ?? '?'} • ${isActive ? (selectActiveProperty(context, controller, presentationDomain: presentationDomain, sessionId: sessionId)?.label ?? 'node') : 'node'}',
+                                        : '${selection?.widgetType ?? summary?.label ?? '?'} • node',
                                     style: const TextStyle(
                                       color: Color(0xFF475569),
                                       fontSize: 12,
@@ -3366,96 +2517,6 @@ class _SelectParentIntent extends Intent {
   const _SelectParentIntent();
 }
 
-class _TextValueEditor extends StatefulWidget {
-  const _TextValueEditor({
-    required this.context,
-    required this.controller,
-    required this.property,
-    required this.surface,
-    required this.multiline,
-  });
-
-  final LiveEditContext context;
-  final LiveEditController controller;
-  final LiveEditPropertyDescriptor property;
-  final LiveEditEditSurface surface;
-  final bool multiline;
-
-  @override
-  State<_TextValueEditor> createState() => _TextValueEditorState();
-}
-
-class _TextValueEditorState extends State<_TextValueEditor> {
-  late final TextEditingController _controller;
-
-  @override
-  Widget build(final BuildContext buildContext) {
-    final presentationDomain = selectPresentedLayer(widget.context);
-    final sessionId = widget.context.sessionResource.value.activeSessionId;
-    final text =
-        '${selectEffectiveValueForProperty(widget.context, widget.controller, widget.property, presentationDomain: presentationDomain, sessionId: sessionId) ?? ''}';
-    final waiting = selectIsPropertyWaiting(
-      widget.context,
-      widget.controller,
-      widget.property,
-      presentationDomain: presentationDomain,
-      sessionId: sessionId,
-    );
-    if (_controller.text != text) {
-      _controller.value = TextEditingValue(
-        text: text,
-        selection: TextSelection.collapsed(offset: text.length),
-      );
-    }
-    return TextField(
-      controller: _controller,
-      autofocus: widget.surface == LiveEditEditSurface.inline,
-      enableInteractiveSelection: true,
-      enabled: !waiting,
-      maxLines: widget.multiline ? 4 : 1,
-      minLines: widget.multiline ? 3 : 1,
-      style: const TextStyle(fontSize: 11),
-      decoration: InputDecoration(
-        border: const OutlineInputBorder(),
-        isDense: true,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        hintText: widget.multiline
-            ? 'Edit value here without leaving the panel'
-            : 'Edit inline',
-      ),
-      onChanged: (final value) {
-        UpdateDraftFromUiCommand(
-          property: widget.property,
-          targetValue: _coerceValueForProperty(widget.property, value.trim()),
-          surface: widget.surface,
-        ).execute(widget.context);
-      },
-      onSubmitted: _submit,
-      onEditingComplete: () => _submit(_controller.text),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController(text: '${widget.property.value ?? ''}');
-  }
-
-  void _submit(final String value) {
-    UpdateDraftFromUiCommand(
-      property: widget.property,
-      targetValue: _coerceValueForProperty(widget.property, value.trim()),
-      surface: widget.surface,
-    ).execute(widget.context);
-  }
-}
-
 class _TimelineBubble extends StatelessWidget {
   const _TimelineBubble({required this.entry, this.debug = false});
 
@@ -3549,28 +2610,13 @@ class _WaitingBubbleBody extends StatelessWidget {
     final plan = bubbleId != null
         ? selectExecutionPlanForBubble(context, bubbleId)
         : selectPendingExecutionPlan(context);
-    final property = selectActiveProperty(
-      context,
-      controller,
-      presentationDomain: presentationDomain,
-      sessionId: sessionId,
-    );
     final failure = status == LiveEditBubbleStatus.failed;
     final lastError = bubbleId != null
         ? selectLastErrorForBubble(context, bubbleId)
         : selectLastError(context);
     final record = selectBubbleRecord(context, bubbleId);
-    final draftChanges = selectDraftChangesForDomain(
-      context,
-      controller,
-      domain: presentationDomain,
-      sessionId: sessionId,
-    );
     final detailText = record != null
-        ? (plan?.summary ??
-              record.draftChanges
-                  .map((final d) => '${d.propertyId}=${d.targetValue}')
-                  .join(' • '))
+        ? (plan?.summary ?? '')
         : (selectCurrentActivity(
                 context,
                 controller,
@@ -3578,11 +2624,7 @@ class _WaitingBubbleBody extends StatelessWidget {
                 sessionId: sessionId,
               )?.summary ??
               plan?.summary ??
-              draftChanges
-                  .map(
-                    (final draft) => '${draft.propertyId}=${draft.targetValue}',
-                  )
-                  .join(' • '));
+              '');
     final backendLabel = selectCurrentBackendLabel(
       context,
       controller,
@@ -3612,7 +2654,7 @@ class _WaitingBubbleBody extends StatelessWidget {
                             presentationDomain: presentationDomain,
                             sessionId: sessionId,
                           )?.summary ??
-                          '$backendLabel is working on ${property?.label ?? 'this change'}.'),
+                          '$backendLabel is working on this change.'),
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,

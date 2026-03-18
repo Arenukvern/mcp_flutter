@@ -23,12 +23,10 @@ Map<String, Object?> resolutionRequestSummary(
   'bubbleId': request.effectiveBubbleId,
   'selectionNodeId': request.effectivePrimarySelection?.nodeId,
   'selectedWidgetCount': request.effectiveSelectedWidgets.length,
-  'draftChangeCount': request.effectiveStagedPropertyChanges.length,
+  'draftChangeCount': 0,
   'intentTextPresent': trimmedIntentText(request) != null,
   'applyMode': request.applyMode.wireName,
-  'requestMode': request.effectiveStagedPropertyChanges.isEmpty
-      ? 'prompt-only'
-      : 'draft-backed',
+  'requestMode': 'prompt-only',
   if (request.inferenceConfig?.model != null)
     'inferenceModel': request.inferenceConfig!.model,
   if (request.inferenceConfig?.reasoningEffort != null)
@@ -256,9 +254,7 @@ Map<String, Object?> summarizeSelection(
     'sessionId': selection.sessionId,
     'nodeId': selection.nodeId,
     'widgetType': selection.widgetType,
-    'properties': selection.propertyGroups
-        .map((final property) => property.toJson())
-        .toList(growable: false),
+    'properties': selection.propertiesForWire,
   };
   if (hasText(selection.renderObjectType)) {
     summary['renderObjectType'] = selection.renderObjectType;
@@ -327,9 +323,7 @@ Map<String, Object?> buildPromptRequest(
     'sessionId': request.sessionId,
     'applyMode': request.applyMode.wireName,
     'workingDirectory': request.workingDirectory,
-    'stagedPropertyChanges': request.effectiveStagedPropertyChanges
-        .map((final change) => change.toJson())
-        .toList(growable: false),
+    'stagedPropertyChanges': <Object?>[],
   };
   if (hasText(request.effectiveBubbleId)) {
     promptRequest['bubbleId'] = request.effectiveBubbleId;

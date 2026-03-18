@@ -40,15 +40,13 @@ final class ApplyDraftCommand {
     final selection = bubble?.primarySelection;
     final selectedWidgets =
         bubble?.selectedWidgets ?? const <LiveEditSelection>[];
-    final draftChanges = bubble?.draftChanges ?? const <LiveEditDraftChange>[];
 
     final resolvedIntent = _resolveIntent(
       message: message,
       instructionText: bubble?.instructionText,
       intentText: intentText,
-      draftChanges: draftChanges,
     );
-    if (draftChanges.isEmpty && !_hasText(resolvedIntent)) return;
+    if (!_hasText(resolvedIntent)) return;
 
     final backendId = bubble?.backendId?.trim().isNotEmpty == true
         ? bubble!.backendId
@@ -61,11 +59,7 @@ final class ApplyDraftCommand {
       primarySelection: selection,
       selectedWidgets: List<LiveEditSelection>.unmodifiable(selectedWidgets),
       sourceTargets: _sourceTargets(selectedWidgets, workingDirectory),
-      stagedPropertyChanges: List<LiveEditDraftChange>.unmodifiable(
-        draftChanges,
-      ),
       applyMode: applyMode,
-      draftChanges: List<LiveEditDraftChange>.unmodifiable(draftChanges),
       selection: selection,
       proposalId: bubbleData.pendingProposalId,
       backendId: backendId,
@@ -82,8 +76,6 @@ final class ApplyDraftCommand {
       applyPhase: LiveEditApplyPhase.preparing,
       lastError: null,
       pendingBubbleId: bid,
-      pendingPropertyId:
-          bubbleData.layerViewStateByDomain[domain]?.activePropertyId,
     );
     if (bubble != null) {
       final records = Map<String, LiveEditBubbleRecord>.from(
@@ -140,21 +132,13 @@ final class ApplyDraftCommand {
     required final String? message,
     required final String? instructionText,
     required final String? intentText,
-    required final List<LiveEditDraftChange> draftChanges,
-  }) {
-    final prompt = (message?.trim().isNotEmpty == true)
-        ? message!.trim()
-        : (instructionText?.trim().isNotEmpty == true
-              ? instructionText!.trim()
-              : (intentText?.trim().isNotEmpty == true
-                    ? intentText!.trim()
-                    : ''));
-    if (prompt.isEmpty || draftChanges.isEmpty) return prompt;
-    final draftSummary = draftChanges
-        .map((final d) => '- ${d.propertyId}: ${d.targetValue}')
-        .join('\n');
-    return '$prompt\n\nStaged fixes:\n$draftSummary';
-  }
+  }) => (message?.trim().isNotEmpty == true)
+      ? message!.trim()
+      : (instructionText?.trim().isNotEmpty == true
+            ? instructionText!.trim()
+            : (intentText?.trim().isNotEmpty == true
+                  ? intentText!.trim()
+                  : ''));
 
   List<LiveEditSourceTarget> _sourceTargets(
     final List<LiveEditSelection> selections,

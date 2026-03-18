@@ -163,7 +163,6 @@ class FlutterLiveEditAutoHost extends StatelessWidget {
     this.config,
     this.orchestrator,
     this.applyDraftDelegate,
-    this.buildPropertyPanelSection,
     final LiveEditAgentService? agentService,
   }) : _agentService = agentService ?? LiveEditAgentService();
 
@@ -171,7 +170,6 @@ class FlutterLiveEditAutoHost extends StatelessWidget {
   final FlutterLiveEditAutoConfig? config;
   final LiveEditOrchestrator? orchestrator;
   final LiveEditApplyDraftDelegate? applyDraftDelegate;
-  final LiveEditPropertyPanelSectionBuilder? buildPropertyPanelSection;
   final LiveEditAgentService _agentService;
 
   @override
@@ -202,7 +200,6 @@ class FlutterLiveEditAutoHost extends StatelessWidget {
       intentText: resolvedOrchestrator == null
           ? resolvedConfig.hostIntentText
           : null,
-      buildPropertyPanelSection: buildPropertyPanelSection,
       child: child,
     );
     if (resolvedOrchestrator == null) {
@@ -371,11 +368,9 @@ final class _FlutterLiveEditAutoDelegate {
       primarySelection: request.effectivePrimarySelection,
       selectedWidgets: request.effectiveSelectedWidgets,
       sourceTargets: request.sourceTargets,
-      stagedPropertyChanges: request.effectiveStagedPropertyChanges,
       applyMode: request.applyMode,
       inferenceConfig: request.inferenceConfig,
       intentText: request.intentText,
-      draftChanges: request.draftChanges,
       selection: request.selection,
       meta: <String, Object?>{
         if ((config.appId ?? '').trim().isNotEmpty) 'app': config.appId,
@@ -651,10 +646,6 @@ Future<LiveEditRuntimeRefreshResult> _refreshRuntimeAfterApply(
 }
 
 bool _shouldAutoRestartAfterApply(final LiveEditApplyDraftRequest request) {
-  if (request.draftChanges.isNotEmpty ||
-      request.effectiveStagedPropertyChanges.isNotEmpty) {
-    return false;
-  }
   if (request.effectivePrimarySelection != null ||
       request.effectiveSelectedWidgets.isNotEmpty ||
       request.selection != null ||
@@ -791,7 +782,6 @@ List<String> _liveEditRequestDebugDetails(
     'Reasoning: ${request.inferenceConfig!.reasoningEffort}',
   'Workspace: $workingDirectory',
   'Node: ${request.selection?.nodeId ?? '<none>'}',
-  'Drafts: ${request.draftChanges.length}',
   'Intent present: ${(request.intentText ?? '').trim().isNotEmpty}',
 ];
 

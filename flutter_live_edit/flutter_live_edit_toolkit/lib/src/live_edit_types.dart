@@ -49,13 +49,11 @@ enum LiveEditActivityStep {
 final class LiveEditApplyDraftRequest {
   const LiveEditApplyDraftRequest({
     required this.sessionId,
-    this.draftChanges = const <LiveEditDraftChange>[],
     this.bubbleId,
     this.instructionText,
     this.primarySelection,
     this.selectedWidgets = const <LiveEditSelection>[],
     this.sourceTargets = const <LiveEditSourceTarget>[],
-    this.stagedPropertyChanges = const <LiveEditDraftChange>[],
     this.applyMode = LiveEditApplyMode.singleBubble,
     this.selection,
     this.proposalId,
@@ -68,13 +66,11 @@ final class LiveEditApplyDraftRequest {
   });
 
   final String sessionId;
-  final List<LiveEditDraftChange> draftChanges;
   final String? bubbleId;
   final String? instructionText;
   final LiveEditSelection? primarySelection;
   final List<LiveEditSelection> selectedWidgets;
   final List<LiveEditSourceTarget> sourceTargets;
-  final List<LiveEditDraftChange> stagedPropertyChanges;
   final LiveEditApplyMode applyMode;
   final LiveEditSelection? selection;
   final String? proposalId;
@@ -106,9 +102,6 @@ final class LiveEditApplyDraftRequest {
         : <LiveEditSelection>[primary];
   }
 
-  List<LiveEditDraftChange> get effectiveStagedPropertyChanges =>
-      stagedPropertyChanges.isNotEmpty ? stagedPropertyChanges : draftChanges;
-
   Map<String, Object?> toJson() => <String, Object?>{
     'sessionId': sessionId,
     if (_hasText(effectiveBubbleId)) 'bubbleId': effectiveBubbleId,
@@ -124,13 +117,7 @@ final class LiveEditApplyDraftRequest {
       'sourceTargets': sourceTargets
           .map((final t) => t.toJson())
           .toList(growable: false),
-    'stagedPropertyChanges': effectiveStagedPropertyChanges
-        .map((final c) => c.toJson())
-        .toList(growable: false),
     'applyMode': applyMode.wireName,
-    'draftChanges': draftChanges
-        .map((final c) => c.toJson())
-        .toList(growable: false),
     if (selection != null) 'selection': selection!.toJson(),
     if (_hasText(proposalId)) 'proposalId': proposalId,
     if (_hasText(backendId)) 'backendId': backendId,
@@ -194,15 +181,13 @@ final class LiveEditBubbleRecord {
   final Offset bubbleDragOffset;
 
   bool get hasPendingApply =>
-      draftChanges.isNotEmpty ||
-      (status != LiveEditBubbleStatus.applied &&
-          instructionText.trim().isNotEmpty);
+      status != LiveEditBubbleStatus.applied &&
+      instructionText.trim().isNotEmpty;
 
   List<String> get nodeIds {
     final nodes = <String>{
       if (primarySelection != null) primarySelection!.nodeId,
       ...selectedWidgets.map((final s) => s.nodeId),
-      ...draftChanges.map((final c) => c.nodeId),
     };
     return nodes.where(_hasText).toList(growable: false);
   }

@@ -9,7 +9,6 @@ import 'live_edit_agent_utils.dart';
 /// Request validation. Package-private.
 
 bool hasResolveIntent(final LiveEditResolutionRequest request) =>
-    request.effectiveStagedPropertyChanges.isNotEmpty ||
     trimmedIntentText(request) != null;
 
 String? validateResolutionRequest(final LiveEditResolutionRequest request) {
@@ -18,7 +17,7 @@ String? validateResolutionRequest(final LiveEditResolutionRequest request) {
     return 'Live edit working directory is unavailable for source persistence.';
   }
   if (!hasResolveIntent(request)) {
-    return 'Live edit needs either draft changes or a prompt before the selected backend can resolve it.';
+    return 'Live edit needs a prompt before the selected backend can resolve it.';
   }
   final selection = request.effectivePrimarySelection;
   final source = selection?.source;

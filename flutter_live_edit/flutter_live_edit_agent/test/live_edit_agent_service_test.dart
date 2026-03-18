@@ -70,13 +70,7 @@ void main() {
           sessionId: 'session-cursor',
           backendId: 'cursor_agent',
           workingDirectory: tempDir.path,
-          draftChanges: const <LiveEditDraftChange>[
-            LiveEditDraftChange(
-              nodeId: 'node-1',
-              propertyId: 'width',
-              targetValue: 200,
-            ),
-          ],
+          intentText: 'Set width to 200',
         ),
       );
 
@@ -105,13 +99,7 @@ void main() {
             sessionId: 'session-cursor',
             backendId: 'cursor_agent',
             workingDirectory: tempDir.path,
-            draftChanges: const <LiveEditDraftChange>[
-              LiveEditDraftChange(
-                nodeId: 'node-1',
-                propertyId: 'width',
-                targetValue: 200,
-              ),
-            ],
+            intentText: 'Set width to 200',
             inferenceConfig: const LiveEditInferenceConfig(
               model: 'claude-3-5-sonnet',
             ),
@@ -175,13 +163,7 @@ void main() {
           LiveEditResolutionRequest(
             sessionId: 'session-codex',
             workingDirectory: tempDir.path,
-            draftChanges: const <LiveEditDraftChange>[
-              LiveEditDraftChange(
-                nodeId: 'node-1',
-                propertyId: 'width',
-                targetValue: 200,
-              ),
-            ],
+            intentText: 'Set width to 200',
           ),
         );
 
@@ -223,13 +205,7 @@ void main() {
         LiveEditResolutionRequest(
           sessionId: 'session-codex',
           workingDirectory: tempDir.path,
-          draftChanges: const <LiveEditDraftChange>[
-            LiveEditDraftChange(
-              nodeId: 'node-1',
-              propertyId: 'width',
-              targetValue: 200,
-            ),
-          ],
+          intentText: 'Set width to 200',
           inferenceConfig: const LiveEditInferenceConfig(
             model: 'gpt-5.4',
             reasoningEffort: 'high',
@@ -369,14 +345,7 @@ void main() {
         LiveEditResolutionRequest(
           sessionId: 'session-1',
           workingDirectory: tempDir.path,
-          draftChanges: const <LiveEditDraftChange>[
-            LiveEditDraftChange(
-              nodeId: 'node-1',
-              propertyId: 'width',
-              targetValue: 140,
-              previewMode: LiveEditPreviewMode.ghost,
-            ),
-          ],
+          intentText: 'Set width to 140',
         ),
       );
       expect(result.executionId, 'proposal-1');
@@ -402,13 +371,7 @@ void main() {
           sessionId: 'session-1',
           backendId: 'cursor_agent',
           workingDirectory: tempDir.path,
-          draftChanges: const <LiveEditDraftChange>[
-            LiveEditDraftChange(
-              nodeId: 'node-1',
-              propertyId: 'width',
-              targetValue: 140,
-            ),
-          ],
+          intentText: 'Set width to 140',
         ),
       );
 
@@ -436,14 +399,7 @@ void main() {
         LiveEditResolutionRequest(
           sessionId: 'session-persisted',
           workingDirectory: tempDir.path,
-          draftChanges: const <LiveEditDraftChange>[
-            LiveEditDraftChange(
-              nodeId: 'node-1',
-              propertyId: 'width',
-              targetValue: 140,
-              previewMode: LiveEditPreviewMode.ghost,
-            ),
-          ],
+          intentText: 'Set width to 140',
         ),
       );
 
@@ -489,27 +445,13 @@ void main() {
         LiveEditResolutionRequest(
           sessionId: 'session-plan',
           workingDirectory: tempDir.path,
-          draftChanges: const <LiveEditDraftChange>[
-            LiveEditDraftChange(
-              nodeId: 'node-1',
-              propertyId: 'width',
-              targetValue: 140,
-              confidence: 0.75,
-            ),
-          ],
+          intentText: 'Set width to 140',
           selection: LiveEditSelection(
             sessionId: 'session-plan',
             nodeId: 'node-1',
             widgetType: 'Container',
             source: LiveEditSourceLocation(file: sourceFile.path, line: 42),
-            propertyGroups: <LiveEditPropertyDescriptor>[
-              const LiveEditPropertyDescriptor(
-                id: 'width',
-                label: 'Width',
-                group: LiveEditPropertyGroup.layout,
-                kind: LiveEditPropertyKind.number,
-              ),
-            ],
+            propertiesForWire: const <Object?>[],
             rawNode: <String, Object?>{},
           ),
         ),
@@ -519,8 +461,8 @@ void main() {
 
       expect(plan.proposalId, proposal.proposalId);
       expect(plan.selectedNode, contains('Container'));
-      expect(plan.requestedChanges.single, contains('Width'));
-      expect(plan.agentInstruction, contains('width=140'));
+      expect(plan.requestedChanges.single, contains('Set width to 140'));
+      expect(plan.agentInstruction, contains('Set width to 140'));
     });
 
     test('builds execution plan for prompt-only live edit requests', () async {
@@ -543,13 +485,12 @@ void main() {
           sessionId: 'session-prompt-only',
           workingDirectory: tempDir.path,
           intentText: 'Rewrite the selected heading.',
-          draftChanges: const <LiveEditDraftChange>[],
           selection: LiveEditSelection(
             sessionId: 'session-prompt-only',
             nodeId: 'node-1',
             widgetType: 'Text',
             source: LiveEditSourceLocation(file: sourceFile.path, line: 1),
-            propertyGroups: const <LiveEditPropertyDescriptor>[],
+            propertiesForWire: const <Object?>[],
             rawNode: const <String, Object?>{},
           ),
         ),
@@ -570,7 +511,7 @@ void main() {
     });
 
     test(
-      'fails fast when resolve request has no drafts and no prompt',
+      'fails fast when resolve request has no prompt',
       () async {
         final tempDir = await Directory.systemTemp.createTemp(
           'live_edit_agent',
@@ -589,7 +530,6 @@ void main() {
             LiveEditResolutionRequest(
               sessionId: 'session-empty',
               workingDirectory: tempDir.path,
-              draftChanges: const <LiveEditDraftChange>[],
             ),
           ),
           throwsA(
@@ -602,7 +542,7 @@ void main() {
                 .having(
                   (final error) => error.message,
                   'message',
-                  contains('either draft changes or a prompt'),
+                  contains('a prompt'),
                 ),
           ),
         );
@@ -632,26 +572,12 @@ void main() {
             sessionId: 'session-combined',
             workingDirectory: tempDir.path,
             intentText: 'Rewrite the selected heading to sound more direct.',
-            draftChanges: const <LiveEditDraftChange>[
-              LiveEditDraftChange(
-                nodeId: 'node-1',
-                propertyId: 'text',
-                targetValue: 'Hello',
-              ),
-            ],
             selection: LiveEditSelection(
               sessionId: 'session-combined',
               nodeId: 'node-1',
               widgetType: 'Text',
               source: LiveEditSourceLocation(file: sourceFile.path, line: 1),
-              propertyGroups: const <LiveEditPropertyDescriptor>[
-                LiveEditPropertyDescriptor(
-                  id: 'text',
-                  label: 'Text',
-                  group: LiveEditPropertyGroup.content,
-                  kind: LiveEditPropertyKind.string,
-                ),
-              ],
+              propertiesForWire: const <Object?>[],
               rawNode: const <String, Object?>{},
             ),
           ),
@@ -659,13 +585,11 @@ void main() {
 
         final plan = service.buildExecutionPlan(proposal.proposalId);
 
-        expect(plan.requestedChanges, hasLength(2));
-        expect(plan.requestedChanges.first, contains('Text'));
+        expect(plan.requestedChanges, hasLength(1));
         expect(
-          plan.requestedChanges.last,
+          plan.requestedChanges.single,
           contains('Rewrite the selected heading to sound more direct.'),
         );
-        expect(plan.agentInstruction, contains('text=Hello'));
         expect(
           plan.agentInstruction,
           contains('Rewrite the selected heading to sound more direct.'),
@@ -697,14 +621,7 @@ void main() {
           LiveEditResolutionRequest(
             sessionId: 'session-compact',
             workingDirectory: tempDir.path,
-            draftChanges: const <LiveEditDraftChange>[
-              LiveEditDraftChange(
-                nodeId: 'node-1',
-                propertyId: 'crossAxisAlignment',
-                targetValue: 'start',
-                previewMode: LiveEditPreviewMode.exact,
-              ),
-            ],
+            intentText: 'Set crossAxisAlignment to start',
             selection: LiveEditSelection(
               sessionId: 'session-compact',
               nodeId: 'node-1',
@@ -715,19 +632,7 @@ void main() {
                 line: 42,
                 column: 7,
               ),
-              propertyGroups: const <LiveEditPropertyDescriptor>[
-                LiveEditPropertyDescriptor(
-                  id: 'crossAxisAlignment',
-                  label: 'Cross Axis',
-                  group: LiveEditPropertyGroup.layout,
-                  kind: LiveEditPropertyKind.enumValue,
-                  value: 'center',
-                  options: <String>['start', 'center', 'end'],
-                  editable: true,
-                  previewMode: LiveEditPreviewMode.exact,
-                  persistable: true,
-                ),
-              ],
+              propertiesForWire: const <Object?>[],
               layoutContext: const <String, Object?>{
                 'constraints': 'BoxConstraints(w=320.0, 0.0<=h<=Infinity)',
               },
@@ -783,13 +688,12 @@ void main() {
           sessionId: 'session-stream',
           workingDirectory: tempDir.path,
           intentText: 'Rewrite the selected heading.',
-          draftChanges: const <LiveEditDraftChange>[],
           selection: LiveEditSelection(
             sessionId: 'session-stream',
             nodeId: 'node-1',
             widgetType: 'Text',
             source: LiveEditSourceLocation(file: sourceFile.path, line: 1),
-            propertyGroups: const <LiveEditPropertyDescriptor>[],
+            propertiesForWire: const <Object?>[],
             rawNode: const <String, Object?>{},
           ),
         ),
@@ -829,13 +733,7 @@ void main() {
           LiveEditResolutionRequest(
             sessionId: 'session-fail',
             workingDirectory: tempDir.path,
-            draftChanges: const <LiveEditDraftChange>[
-              LiveEditDraftChange(
-                nodeId: 'node-1',
-                propertyId: 'width',
-                targetValue: 140,
-              ),
-            ],
+            intentText: 'Set width to 140',
           ),
         ),
         throwsA(
@@ -866,13 +764,7 @@ void main() {
           LiveEditResolutionRequest(
             sessionId: 'session-missing-source',
             workingDirectory: tempDir.path,
-            draftChanges: const <LiveEditDraftChange>[
-              LiveEditDraftChange(
-                nodeId: 'node-1',
-                propertyId: 'text',
-                targetValue: 'Updated',
-              ),
-            ],
+            intentText: 'Update text',
             selection: const LiveEditSelection(
               sessionId: 'session-missing-source',
               nodeId: 'node-1',
@@ -881,16 +773,8 @@ void main() {
                 file: '/tmp/outside_workspace.dart',
                 line: 12,
               ),
-              propertyGroups: <LiveEditPropertyDescriptor>[
-                LiveEditPropertyDescriptor(
-                  id: 'text',
-                  label: 'Text',
-                  group: LiveEditPropertyGroup.content,
-                  kind: LiveEditPropertyKind.string,
-                  editable: true,
-                ),
-              ],
-              rawNode: <String, Object?>{},
+              propertiesForWire: const <Object?>[],
+              rawNode: const <String, Object?>{},
             ),
           ),
         ),

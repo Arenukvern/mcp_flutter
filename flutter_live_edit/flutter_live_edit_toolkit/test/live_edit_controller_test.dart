@@ -919,27 +919,7 @@ void main() {
       ),
       'Cursor',
     );
-    if (selectEffectiveProperties(
-      orchestrator.context,
-      orchestrator.controller,
-      domain: _domain(orchestrator),
-      sessionId: _sid(orchestrator),
-    ).isEmpty)
-      return;
-
-    final editable = _selection(
-      orchestrator,
-    )!.propertyGroups.firstWhere((final property) => property.editable);
-    UpdateDraftFromUiCommand(
-      property: editable,
-      targetValue: 'Hello',
-    ).execute(orchestrator.context);
-    await tester.pumpAndSettle();
-    await ApplyDraftCommand().execute(orchestrator.context);
-    await tester.pumpAndSettle();
-
-    expect(requests, hasLength(1));
-    expect(requests.single.backendId, 'cursor_agent');
+    // Property edit removed: no direct property editing; skip apply check.
     expect(
       selectCurrentBackendLabel(
         orchestrator.context,
@@ -1856,21 +1836,6 @@ void main() {
       sessionId: _sid(orchestrator),
     ).isEmpty)
       return;
-    final property = _selection(
-      orchestrator,
-    )!.propertyGroups.firstWhere((final candidate) => candidate.editable);
-    final targetValue = switch (property.kind) {
-      LiveEditPropertyKind.boolean => !(property.value == true),
-      LiveEditPropertyKind.integer => 180,
-      LiveEditPropertyKind.number => 180.0,
-      _ when property.options.isNotEmpty => property.options.first,
-      _ => 'Changed',
-    };
-    UpdateDraftFromUiCommand(
-      property: property,
-      targetValue: targetValue,
-    ).execute(orchestrator.context);
-    await tester.pumpAndSettle();
     final alphaNodeId = _selection(orchestrator)!.nodeId;
 
     final betaCenter = tester.getCenter(find.text('Beta'));
@@ -1957,21 +1922,6 @@ void main() {
       sessionId: _sid(orchestrator),
     ).isEmpty)
       return;
-    final property = _selection(
-      orchestrator,
-    )!.propertyGroups.firstWhere((final candidate) => candidate.editable);
-    final targetValue = switch (property.kind) {
-      LiveEditPropertyKind.boolean => !(property.value == true),
-      LiveEditPropertyKind.integer => 140,
-      LiveEditPropertyKind.number => 140.0,
-      _ when property.options.isNotEmpty => property.options.first,
-      _ => 'Updated',
-    };
-    UpdateDraftFromUiCommand(
-      property: property,
-      targetValue: targetValue,
-    ).execute(orchestrator.context);
-    await tester.pumpAndSettle();
 
     expect(_semanticsId('live_edit_bubble_done_button'), findsNothing);
 
@@ -2100,7 +2050,6 @@ void main() {
     await tester.tap(_semanticsId('live_edit_panel_expand_button'));
     await tester.pumpAndSettle();
 
-    final selection = _selection(orchestrator)!;
     if (selectEffectiveProperties(
       orchestrator.context,
       orchestrator.controller,
@@ -2108,38 +2057,6 @@ void main() {
       sessionId: _sid(orchestrator),
     ).isEmpty)
       return;
-    final editable = selection.propertyGroups.firstWhere(
-      (final property) => property.editable,
-      orElse: () => const LiveEditPropertyDescriptor(
-        id: 'width',
-        label: 'Width',
-        group: LiveEditPropertyGroup.layout,
-        kind: LiveEditPropertyKind.number,
-        editable: true,
-        previewMode: LiveEditPreviewMode.ghost,
-        persistable: true,
-      ),
-    );
-
-    UpdateDraftFromUiCommand(
-      property: editable,
-      targetValue: 140,
-    ).execute(orchestrator.context);
-    await tester.pumpAndSettle();
-
-    const expectedValue = 140;
-    for (var i = 0; i < 50; i++) {
-      if (selectEffectiveValueForProperty(
-            orchestrator.context,
-            orchestrator.controller,
-            editable,
-            presentationDomain: _domain(orchestrator),
-            sessionId: _sid(orchestrator),
-          ) ==
-          expectedValue)
-        break;
-      await tester.pumpAndSettle();
-    }
     expect(selectPanelExpanded(orchestrator.context), isTrue);
     expect(selectApplyPhase(orchestrator.context), LiveEditApplyPhase.idle);
     expect(
@@ -2236,7 +2153,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(requests, hasLength(1));
-    expect(requests.single.draftChanges, isEmpty);
+    expect(requests.single.instructionText, isNull);
     expect(requests.single.intentText, 'Please rewrite this heading.');
     expect(selectPendingExecutionPlan(orchestrator.context), isNotNull);
     expect(
@@ -2303,52 +2220,16 @@ void main() {
       sessionId: _sid(orchestrator),
     ).isEmpty)
       return;
-    final editable = _selection(orchestrator)!.propertyGroups.firstWhere(
-      (final property) => property.editable,
-      orElse: () => const LiveEditPropertyDescriptor(
-        id: 'width',
-        label: 'Width',
-        group: LiveEditPropertyGroup.layout,
-        kind: LiveEditPropertyKind.number,
-        editable: true,
-        previewMode: LiveEditPreviewMode.ghost,
-        persistable: true,
-      ),
-    );
-
-    UpdateDraftFromUiCommand(
-      property: editable,
-      targetValue: 140,
-    ).execute(orchestrator.context);
-    await tester.pumpAndSettle();
-
     expect(requests, isEmpty);
-    expect(
-      selectDraftChangesForDomain(
-        orchestrator.context,
-        orchestrator.controller,
-        domain: _domain(orchestrator),
-        sessionId: _sid(orchestrator),
-      ),
-      isNotEmpty,
-    );
-    expect(
-      selectHistoryForActiveSelection(
-        orchestrator.context,
-        orchestrator.controller,
-        presentationDomain: _domain(orchestrator),
-        sessionId: _sid(orchestrator),
-      ),
-      isEmpty,
-    );
     expect(find.text('Pending request'), findsWidgets);
 
+    UpdateAiComposerCommand(value: 'Update text from AI prompt.')
+        .execute(orchestrator.context);
+    await tester.pumpAndSettle();
     await ApplyDraftCommand().execute(orchestrator.context);
     await tester.pumpAndSettle();
 
     expect(requests, hasLength(1));
-    expect(requests.single.draftChanges, isNotEmpty);
-    expect(requests.single.intentText, contains('Staged fixes:'));
     expect(
       selectHistoryForActiveSelection(
         orchestrator.context,
@@ -2356,16 +2237,7 @@ void main() {
         presentationDomain: _domain(orchestrator),
         sessionId: _sid(orchestrator),
       ),
-      hasLength(3),
-    );
-    expect(
-      selectHistoryForActiveSelection(
-        orchestrator.context,
-        orchestrator.controller,
-        presentationDomain: _domain(orchestrator),
-        sessionId: _sid(orchestrator),
-      ).first.role,
-      'user',
+      isNotEmpty,
     );
   });
 
@@ -2440,23 +2312,7 @@ void main() {
       sessionId: _sid(orchestrator),
     ).isEmpty)
       return;
-    final editable = _selection(orchestrator)!.propertyGroups.firstWhere(
-      (final property) => property.editable,
-      orElse: () => const LiveEditPropertyDescriptor(
-        id: 'width',
-        label: 'Width',
-        group: LiveEditPropertyGroup.layout,
-        kind: LiveEditPropertyKind.number,
-        editable: true,
-        previewMode: LiveEditPreviewMode.ghost,
-        persistable: true,
-      ),
-    );
-
-    UpdateDraftFromUiCommand(
-      property: editable,
-      targetValue: 140,
-    ).execute(orchestrator.context);
+    UpdateAiComposerCommand(value: 'Apply with agent').execute(orchestrator.context);
     await tester.pumpAndSettle();
     await ApplyDraftCommand().execute(orchestrator.context);
     await tester.pumpAndSettle();
@@ -2536,13 +2392,6 @@ void main() {
       sessionId: _sid(orchestrator),
     ).isEmpty)
       return;
-    final editable = _selection(
-      orchestrator,
-    )!.propertyGroups.firstWhere((final property) => property.editable);
-    UpdateDraftFromUiCommand(
-      property: editable,
-      targetValue: 'Hello',
-    ).execute(orchestrator.context);
     UpdateAiComposerCommand(
       value: 'Rewrite the tone to be more direct.',
     ).execute(orchestrator.context);
@@ -2552,23 +2401,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(requests, hasLength(1));
-    expect(requests.single.draftChanges, isNotEmpty);
     expect(
       requests.single.intentText,
-      allOf(
-        contains('Rewrite the tone to be more direct.'),
-        contains('Staged fixes:'),
-        contains('Hello'),
-      ),
-    );
-    expect(
-      selectHistoryForActiveSelection(
-        orchestrator.context,
-        orchestrator.controller,
-        presentationDomain: _domain(orchestrator),
-        sessionId: _sid(orchestrator),
-      ).first.message,
-      contains('Staged fixes:'),
+      contains('Rewrite the tone to be more direct.'),
     );
   });
 
@@ -2657,7 +2492,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(requests, hasLength(1));
-    expect(requests.single.draftChanges, isEmpty);
+    expect(requests.single.instructionText, isNull);
     expect(requests.single.intentText, 'Rewrite the selected text.');
     expect(requests.single.selection?.nodeId, isNotEmpty);
     expect(selectLastError(orchestrator.context), isNull);
@@ -2734,18 +2569,6 @@ void main() {
       'Rewrite the selected text.',
     );
 
-    FocusPropertyCommand(
-      property: const LiveEditPropertyDescriptor(
-        id: 'bounds',
-        label: 'Bounds',
-        group: LiveEditPropertyGroup.diagnostics,
-        kind: LiveEditPropertyKind.object,
-      ),
-      defaultPrompt: '',
-    ).execute(orchestrator.context);
-    await tester.pumpAndSettle();
-    expect(selectEditMode(orchestrator.context), isNot(LiveEditEditMode.ai));
-
     await ApplyDraftCommand().execute(orchestrator.context);
     await tester.pumpAndSettle();
 
@@ -2788,18 +2611,6 @@ void main() {
         sessionId: _sid(orchestrator),
       ).isEmpty)
         return;
-      final property = _selection(orchestrator)!.propertyGroups.firstWhere(
-        (final candidate) =>
-            candidate.editable &&
-            (candidate.kind == LiveEditPropertyKind.string ||
-                candidate.kind == LiveEditPropertyKind.integer ||
-                candidate.kind == LiveEditPropertyKind.number),
-      );
-      FocusPropertyCommand(
-        property: property,
-        defaultPrompt: '',
-      ).execute(orchestrator.context);
-      await tester.pumpAndSettle();
       final selectedNodeId = _selection(orchestrator)?.nodeId;
       final propertyFieldFinder = _propertyInputField();
       if (propertyFieldFinder.evaluate().isEmpty) {
@@ -3161,10 +2972,7 @@ Direct apply request:
 
     for (var index = 0; index < _candidates(orchestrator).length; index += 1) {
       final selection = _selection(orchestrator);
-      if (selection != null &&
-          selection.propertyGroups.any(
-            (final candidate) => candidate.editable,
-          )) {
+      if (selection != null && selection.propertiesForWire.isNotEmpty) {
         break;
       }
       SelectCandidateAtCommand(
@@ -3181,38 +2989,7 @@ Direct apply request:
       sessionId: _sid(orchestrator),
     ).isEmpty)
       return;
-    final property = _selection(
-      orchestrator,
-    )!.propertyGroups.firstWhere((final candidate) => candidate.editable);
-    FocusPropertyCommand(
-      property: property,
-      defaultPrompt: '',
-    ).execute(orchestrator.context);
-    await tester.pumpAndSettle();
-    final fallbackValue = switch (property.kind) {
-      LiveEditPropertyKind.boolean => !(property.value == true),
-      LiveEditPropertyKind.integer => 140,
-      LiveEditPropertyKind.number => 140.0,
-      _ when property.options.isNotEmpty => property.options.first,
-      _ => 'Retitled',
-    };
-    UpdateDraftFromUiCommand(
-      property: property,
-      targetValue: fallbackValue,
-      surface: LiveEditEditSurface.panel,
-    ).execute(orchestrator.context);
-    await tester.pumpAndSettle();
-
     expect(find.byType(AlertDialog), findsNothing);
-    expect(
-      selectDraftChangesForDomain(
-        orchestrator.context,
-        orchestrator.controller,
-        domain: _domain(orchestrator),
-        sessionId: _sid(orchestrator),
-      ),
-      isNotEmpty,
-    );
   });
 
   testWidgets('selection and active property persist across draft updates', (
@@ -3242,45 +3019,7 @@ Direct apply request:
       sessionId: _sid(orchestrator),
     ).isEmpty)
       return;
-    final property = selection.propertyGroups.firstWhere(
-      (final candidate) => candidate.editable,
-    );
-    final updatedValue = switch (property.kind) {
-      LiveEditPropertyKind.boolean => !(property.value == true),
-      LiveEditPropertyKind.integer => 144,
-      LiveEditPropertyKind.number => 144.0,
-      _ when property.options.isNotEmpty => property.options.first,
-      _ => 'Retitled',
-    };
-
-    FocusPropertyCommand(
-      property: property,
-      defaultPrompt: '',
-    ).execute(orchestrator.context);
-    UpdateDraftFromUiCommand(
-      property: property,
-      targetValue: updatedValue,
-      surface: LiveEditEditSurface.panel,
-    ).execute(orchestrator.context);
-    await tester.pumpAndSettle();
-
     expect(_selection(orchestrator)?.nodeId, selection.nodeId);
-    expect(
-      selectActivePropertyId(
-        orchestrator.context,
-        domain: selectPresentedLayer(orchestrator.context),
-      ),
-      property.id,
-    );
-    expect(
-      selectDraftChangesForDomain(
-        orchestrator.context,
-        orchestrator.controller,
-        domain: _domain(orchestrator),
-        sessionId: _sid(orchestrator),
-      ).single.propertyId,
-      property.id,
-    );
   });
 }
 

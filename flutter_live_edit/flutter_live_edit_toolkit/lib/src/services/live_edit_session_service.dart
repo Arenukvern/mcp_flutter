@@ -303,11 +303,6 @@ _SelectionCandidateMetadata _selectionMetadataForElement(
   final Element element, {
   final String? cachedNodeId,
   final Map<String, Object?>? cachedDetailsTree,
-  final List<LiveEditPropertyDescriptor> Function(
-    Element element,
-    LiveEditTargetDomain targetDomain,
-  )?
-  propertyDescriptorProvider,
 }) {
   final nodeId =
       cachedNodeId ??
@@ -322,12 +317,6 @@ _SelectionCandidateMetadata _selectionMetadataForElement(
         ),
       );
   final source = _extractSourceLocation(detailsTree, element);
-  final properties = _selectionPropertyGroupsForElement(
-    session,
-    element,
-    targetDomain: session.targetDomain,
-    propertyDescriptorProvider: propertyDescriptorProvider,
-  );
   final createdByLocalProject = detailsTree['createdByLocalProject'] == true;
   final hasProjectPathSignal = _looksProjectOwnedPath(source?.file);
   final hasProjectHintSignal =
@@ -335,44 +324,16 @@ _SelectionCandidateMetadata _selectionMetadataForElement(
       !hasProjectPathSignal &&
       _hasText(source?.sourceHint) &&
       !_looksFrameworkOwnedHint(source?.sourceHint);
-  final hasEditableStringProperty = properties.any(
-    (final property) =>
-        property.editable && property.kind == LiveEditPropertyKind.string,
-  );
-  final hasEditableProperty =
-      hasEditableStringProperty ||
-      properties.any((final property) => property.editable);
   return _SelectionCandidateMetadata(
     nodeId: nodeId,
     source: source,
     createdByLocalProject: createdByLocalProject,
     hasProjectPathSignal: hasProjectPathSignal,
     hasProjectHintSignal: hasProjectHintSignal,
-    hasEditableStringProperty: hasEditableStringProperty,
-    hasEditableProperty: hasEditableProperty,
+    hasEditableStringProperty: false,
+    hasEditableProperty: false,
   );
 }
-
-LiveEditPropertyDescriptor _copyPropertyDescriptor(
-  final LiveEditPropertyDescriptor descriptor, {
-  final Object? value,
-  final bool preserveValue = true,
-  final Map<String, Object?>? meta,
-}) => LiveEditPropertyDescriptor(
-  id: descriptor.id,
-  label: descriptor.label,
-  group: descriptor.group,
-  kind: descriptor.kind,
-  value: preserveValue ? descriptor.value : value,
-  options: descriptor.options,
-  editable: descriptor.editable,
-  previewMode: descriptor.previewMode,
-  persistable: descriptor.persistable,
-  canPreviewExactly: descriptor.canPreviewExactly,
-  requiresAgentForPersistence: descriptor.requiresAgentForPersistence,
-  safeToAutoGroupInApply: descriptor.safeToAutoGroupInApply,
-  meta: meta ?? descriptor.meta,
-);
 
 String? _toolSurfaceIdForElement(final Element element) =>
     LiveEditOverlayThemeModel.instance.surfaceIdForElement(element);
@@ -459,71 +420,10 @@ LiveEditSourceLocation? _selectionSourceForElement(
       );
 }
 
-List<LiveEditPropertyDescriptor> _selectionPropertyGroupsForElement(
-  final _LiveEditSessionState session,
-  final Element element, {
-  required final LiveEditTargetDomain targetDomain,
-  final List<LiveEditPropertyDescriptor> Function(
-    Element element,
-    LiveEditTargetDomain targetDomain,
-  )?
-  propertyDescriptorProvider,
-}) {
-  if (targetDomain != LiveEditTargetDomain.toolScene) {
-    final provider = propertyDescriptorProvider;
-    if (provider != null) {
-      return provider(element, targetDomain);
-    }
-    return const <LiveEditPropertyDescriptor>[];
-  }
-  final surfaceId = _toolSurfaceIdForElement(element);
-  if (!_hasText(surfaceId)) {
-    final provider = propertyDescriptorProvider;
-    if (provider != null) {
-      return provider(element, targetDomain);
-    }
-    return const <LiveEditPropertyDescriptor>[];
-  }
-  final overlayTheme = LiveEditOverlayThemeModel.instance;
-  final surfaceSelection = overlayTheme.selectionForSurface(
-    surfaceId: surfaceId!,
-    sessionId: session.sessionId,
-  );
-  if (surfaceSelection == null) {
-    final provider = propertyDescriptorProvider;
-    if (provider != null) {
-      return provider(element, targetDomain);
-    }
-    return const <LiveEditPropertyDescriptor>[];
-  }
-  final toolSelectionKind = overlayTheme.isSurfaceRootElement(element)
-      ? 'surface_root'
-      : 'surface_child';
-  return surfaceSelection.propertyGroups
-      .map(
-        (final property) => _copyPropertyDescriptor(
-          property,
-          meta: <String, Object?>{
-            ...property.meta,
-            'surfaceId': surfaceId,
-            'componentKind': overlayTheme.componentKindForSurface(surfaceId),
-            'toolSelectionKind': toolSelectionKind,
-            'toolWidgetType': element.widget.runtimeType.toString(),
-          },
-        ),
-      )
-      .toList(growable: false);
-}
-
 int _preferredSelectionIndex({
   required final _LiveEditSessionState session,
   required final List<_ElementHit> hits,
   required final LiveEditSelectionPolicy selectionPolicy,
-  final List<LiveEditPropertyDescriptor> Function(
-    Element element,
-    LiveEditTargetDomain targetDomain,
-  )?
-  propertyDescriptorProvider,
 }) {
   if (hits.isEmpty || selectionPolicy == LiveEditSelectionPolicy.deepest) {
     return 0;
@@ -536,26 +436,15 @@ int _preferredSelectionIndex({
     final metadata = _selectionMetadataForElement(
       session,
       hit.element,
-      propertyDescriptorProvider: propertyDescriptorProvider,
     );
     final widgetType = hit.element.widget.runtimeType.toString();
     final weakStructuralCandidate = _structuralWidgetTypes.contains(widgetType);
     var rank = 0;
-    if (metadata.hasStrongProjectOwnership &&
-        metadata.hasEditableStringProperty) {
-      rank = 90;
-    } else if (metadata.hasProjectHintSignal &&
-        metadata.hasEditableStringProperty) {
-      rank = 80;
-    } else if (metadata.hasStrongProjectOwnership) {
+    if (metadata.hasStrongProjectOwnership) {
       rank = 70;
-    } else if (metadata.hasEditableStringProperty && !weakStructuralCandidate) {
-      rank = 60;
-    } else if (metadata.hasProjectHintSignal &&
-        metadata.hasEditableProperty &&
-        !weakStructuralCandidate) {
-      rank = 50;
     } else if (metadata.hasProjectHintSignal && !weakStructuralCandidate) {
+      rank = 50;
+    } else if (!weakStructuralCandidate) {
       rank = 40;
     }
     if (rank > bestRank) {
@@ -855,8 +744,7 @@ LiveEditSelection _buildHoverSelection({
           detailsTree,
           targetDomain: targetDomain,
         ),
-    propertyGroups:
-        tracked?.propertyGroups ?? const <LiveEditPropertyDescriptor>[],
+    propertiesForWire: const <Object?>[],
     rawNode: rawNode,
   );
 }
@@ -869,7 +757,6 @@ bool _isHydratedSelection(final LiveEditSelection selection) =>
 LiveEditSelection _buildLightweightSelection({
   required final _LiveEditSessionState session,
   required final _ElementHit hit,
-  final bool includePropertyGroups = false,
 }) {
   final element = hit.element;
   final renderObject = _previewRenderObjectForElement(element);
@@ -877,15 +764,6 @@ LiveEditSelection _buildLightweightSelection({
       WidgetInspectorService.instance.toId(element, session.objectGroup) ??
       'live_edit_preview_${DateTime.now().microsecondsSinceEpoch}';
   final tracked = session.trackedSelections[nodeId]?.selection;
-  final propertyGroups =
-      tracked?.propertyGroups ??
-      (includePropertyGroups
-          ? _selectionPropertyGroupsForElement(
-              session,
-              element,
-              targetDomain: session.targetDomain,
-            )
-          : const <LiveEditPropertyDescriptor>[]);
   return LiveEditSelection(
     sessionId: session.sessionId,
     nodeId: nodeId,
@@ -901,7 +779,7 @@ LiveEditSelection _buildLightweightSelection({
           tracked?.detailsTree ?? const <String, Object?>{},
           targetDomain: session.targetDomain,
         ),
-    propertyGroups: propertyGroups,
+    propertiesForWire: const <Object?>[],
     rawNode: tracked?.rawNode ?? const <String, Object?>{},
   );
 }
@@ -909,24 +787,8 @@ LiveEditSelection _buildLightweightSelection({
 LiveEditSelection _buildLightweightSelectionFromCache({
   required final _LiveEditSessionState session,
   required final _MarqueeCandidateCacheEntry entry,
-  final bool includePropertyGroups = false,
-  final List<LiveEditPropertyDescriptor> Function(
-    Element element,
-    LiveEditTargetDomain targetDomain,
-  )?
-  propertyDescriptorProvider,
 }) {
   final tracked = session.trackedSelections[entry.nodeId]?.selection;
-  final propertyGroups =
-      tracked?.propertyGroups ??
-      (includePropertyGroups
-          ? _selectionPropertyGroupsForElement(
-              session,
-              entry.element,
-              targetDomain: session.targetDomain,
-              propertyDescriptorProvider: propertyDescriptorProvider,
-            )
-          : const <LiveEditPropertyDescriptor>[]);
   return LiveEditSelection(
     sessionId: session.sessionId,
     nodeId: entry.nodeId,
@@ -935,7 +797,7 @@ LiveEditSelection _buildLightweightSelectionFromCache({
     renderObjectType: entry.renderObject.runtimeType.toString(),
     bounds: entry.bounds,
     source: tracked?.source,
-    propertyGroups: propertyGroups,
+    propertiesForWire: const <Object?>[],
     rawNode: tracked?.rawNode ?? const <String, Object?>{},
   );
 }
@@ -971,39 +833,12 @@ int? _viewIdForRenderObject(final RenderObject? renderObject) {
 }
 
 final class LiveEditSessionService {
-  LiveEditSessionService({
-    final List<LiveEditPropertyDescriptor> Function(
-      Element element,
-      LiveEditTargetDomain targetDomain,
-    )?
-    propertyDescriptorProvider,
-  }) : _propertyDescriptorProvider = propertyDescriptorProvider;
+  LiveEditSessionService();
 
   final Map<String, _LiveEditSessionState> _sessions =
       <String, _LiveEditSessionState>{};
   String? _activeSessionId;
   LiveEditSessionUpdate? _lastUpdate;
-
-  List<LiveEditPropertyDescriptor> Function(
-    Element element,
-    LiveEditTargetDomain targetDomain,
-  )?
-  _propertyDescriptorProvider;
-
-  List<LiveEditPropertyDescriptor> Function(
-    Element element,
-    LiveEditTargetDomain targetDomain,
-  )?
-  get propertyDescriptorProvider => _propertyDescriptorProvider;
-  set propertyDescriptorProvider(
-    final List<LiveEditPropertyDescriptor> Function(
-      Element element,
-      LiveEditTargetDomain targetDomain,
-    )?
-    value,
-  ) {
-    _propertyDescriptorProvider = value;
-  }
 
   LiveEditSessionUpdate? get lastUpdate => _lastUpdate;
 
@@ -1037,7 +872,7 @@ final class LiveEditSessionService {
       session.sessionId,
       session.targetDomain,
       LiveEditDraftLayerData(
-        draftChanges: List<LiveEditDraftChange>.from(layer.draftChanges),
+        draftChanges: const <LiveEditDraftChange>[],
         meaningfulNodeIds: Set<String>.from(layer.meaningfulNodeIds),
       ),
     );
@@ -1062,7 +897,7 @@ final class LiveEditSessionService {
   }) => session.layerFor(requested ?? session.targetDomain);
 
   List<LiveEditDraftChange> get activeDraftChanges =>
-      List<LiveEditDraftChange>.unmodifiable(_activeLayerOrNull().draftChanges);
+      const <LiveEditDraftChange>[];
 
   LiveEditSelection? get activeSelection => _activeLayerOrNull().selection;
 
@@ -1134,12 +969,7 @@ final class LiveEditSessionService {
   List<LiveEditDraftChange> draftChangesForDomain({
     required final LiveEditTargetDomain targetDomain,
     final String? sessionId,
-  }) => List<LiveEditDraftChange>.unmodifiable(
-    _layerForRequest(
-      _requireSession(sessionId),
-      requested: targetDomain,
-    ).draftChanges,
-  );
+  }) => const <LiveEditDraftChange>[];
 
   List<LiveEditSelection> multiSelectionForDomain({
     required final LiveEditTargetDomain targetDomain,
@@ -1165,7 +995,6 @@ final class LiveEditSessionService {
     final session = _requireSession(sessionId);
     final layer = _layerForRequest(session);
     _revertExactPreview(session, layer: layer);
-    layer.draftChanges.clear();
     layer.meaningfulNodeIds.remove(layer.selection?.nodeId);
     session.lastTouchedAt = DateTime.now().toUtc();
     _lastUpdate = _buildLastUpdate();
@@ -1187,25 +1016,19 @@ final class LiveEditSessionService {
       return discardDraft(sessionId: session.sessionId);
     }
     _revertExactPreview(session, layer: layer, nodeIds: normalized);
-    layer.draftChanges.removeWhere(
-      (final draft) => normalized.contains(draft.nodeId),
-    );
     layer.meaningfulNodeIds.removeAll(normalized);
     session.lastTouchedAt = DateTime.now().toUtc();
     _lastUpdate = _buildLastUpdate();
     return <String, Object?>{
       'sessionId': session.sessionId,
       'discarded': true,
-      'draftChanges': layer.draftChanges
-          .map((final draft) => draft.toJson())
-          .toList(growable: false),
+      'draftChanges': const <Object?>[],
     };
   }
 
   Map<String, Object?> commitDraft({final String? sessionId}) {
     final session = _requireSession(sessionId);
     final layer = _layerForRequest(session);
-    layer.draftChanges.clear();
     layer.originalExactValues.clear();
     session.lastTouchedAt = DateTime.now().toUtc();
     _lastUpdate = _buildLastUpdate();
@@ -1226,9 +1049,6 @@ final class LiveEditSessionService {
     if (normalized.isEmpty) {
       return commitDraft(sessionId: session.sessionId);
     }
-    layer.draftChanges.removeWhere(
-      (final draft) => normalized.contains(draft.nodeId),
-    );
     layer.originalExactValues.removeWhere((final key, final _) {
       final separator = key.indexOf('::');
       final nodeId = separator < 0 ? key : key.substring(0, separator);
@@ -1240,9 +1060,7 @@ final class LiveEditSessionService {
     return <String, Object?>{
       'sessionId': session.sessionId,
       'committed': true,
-      'draftChanges': layer.draftChanges
-          .map((final draft) => draft.toJson())
-          .toList(growable: false),
+      'draftChanges': const <Object?>[],
     };
   }
 
@@ -1305,9 +1123,7 @@ final class LiveEditSessionService {
     return <String, Object?>{
       'sessionId': session.sessionId,
       'targetDomain': resolvedDomain.wireName,
-      'draftChanges': layer.draftChanges
-          .map((final draft) => draft.toJson())
-          .toList(),
+      'draftChanges': const <Object?>[],
     };
   }
 
@@ -1522,7 +1338,6 @@ final class LiveEditSessionService {
             session: session,
             hits: hits,
             selectionPolicy: selectionPolicy,
-            propertyDescriptorProvider: _propertyDescriptorProvider,
           );
     final selection = _setSelection(
       session: session,
@@ -1661,7 +1476,7 @@ final class LiveEditSessionService {
             renderObjectType: selection.renderObjectType,
             bounds: selection.bounds,
             source: selection.source,
-            propertyGroups: selection.propertyGroups,
+            propertiesForWire: selection.propertiesForWire,
             layoutContext: selection.layoutContext,
             parentChain: selection.parentChain,
             detailsTree: selection.detailsTree,
@@ -2081,17 +1896,14 @@ final class LiveEditSessionService {
 
   List<LiveEditSelection> _buildMarqueeSelections(
     final _LiveEditSessionState session,
-    final List<_ElementHit> hits, {
-    final bool includePropertyGroups = false,
-  }) => hits
+    final List<_ElementHit> hits,
+  ) => hits
       .map((final hit) => _resolveMarqueeCandidate(session, hit))
       .whereType<_MarqueeCandidateCacheEntry>()
       .map(
         (final entry) => _buildLightweightSelectionFromCache(
           session: session,
           entry: entry,
-          includePropertyGroups: includePropertyGroups,
-          propertyDescriptorProvider: _propertyDescriptorProvider,
         ),
       )
       .fold(<String, LiveEditSelection>{}, (final map, final selection) {
@@ -2207,16 +2019,6 @@ final class LiveEditSessionService {
           'reason': 'selection_mismatch',
         };
       }
-      final existingIndex = layer.draftChanges.indexWhere(
-        (final candidate) =>
-            candidate.nodeId == selectionNodeId &&
-            candidate.propertyId == change.propertyId,
-      );
-      if (existingIndex >= 0) {
-        layer.draftChanges[existingIndex] = change;
-      } else {
-        layer.draftChanges.add(change);
-      }
       final tracked = layer.trackedSelections[selectionNodeId];
       final selection =
           tracked != null &&
@@ -2243,9 +2045,7 @@ final class LiveEditSessionService {
         'targetDomain': targetDomain.wireName,
         'updated': true,
         'selection': selection?.toJson(),
-        'draftChanges': layer.draftChanges
-            .map((final draft) => draft.toJson())
-            .toList(),
+        'draftChanges': const <Object?>[],
         'appliedPreviewMode': LiveEditPreviewMode.exact.wireName,
       };
     }
@@ -2258,17 +2058,6 @@ final class LiveEditSessionService {
         'updated': false,
         'reason': 'selection_mismatch',
       };
-    }
-
-    final existingIndex = session.draftChanges.indexWhere(
-      (final candidate) =>
-          candidate.nodeId == change.nodeId &&
-          candidate.propertyId == change.propertyId,
-    );
-    if (existingIndex >= 0) {
-      session.draftChanges[existingIndex] = change;
-    } else {
-      session.draftChanges.add(change);
     }
 
     final appliedExact = _applyExactPreviewIfSupported(
@@ -2302,9 +2091,7 @@ final class LiveEditSessionService {
       'targetDomain': targetDomain.wireName,
       'updated': true,
       'selection': trackedSelection.toJson(),
-      'draftChanges': session.draftChanges
-          .map((final draft) => draft.toJson())
-          .toList(),
+      'draftChanges': const <Object?>[],
       'appliedPreviewMode': appliedExact
           ? LiveEditPreviewMode.exact.wireName
           : LiveEditPreviewMode.ghost.wireName,
@@ -2546,18 +2333,7 @@ final class LiveEditSessionService {
     final _LiveEditSessionState session,
     final LiveEditDraftChange change,
     final LiveEditSelection selection,
-  ) {
-    final property = selection.propertyGroups.firstWhere(
-      (final item) => item.id == change.propertyId,
-      orElse: () => LiveEditPropertyDescriptor(
-        id: change.propertyId,
-        label: change.propertyId,
-        group: LiveEditPropertyGroup.diagnostics,
-        kind: LiveEditPropertyKind.object,
-      ),
-    );
-    return '${property.value}' != '${change.targetValue}';
-  }
+  ) => false;
 
   int _resolvedHoverIndex({
     required final _LiveEditSessionState session,
@@ -2631,12 +2407,6 @@ final class LiveEditSessionService {
       detailsTree,
       targetDomain: resolvedDomain,
     );
-    final propertyGroups = _selectionPropertyGroupsForElement(
-      session,
-      element,
-      targetDomain: resolvedDomain,
-      propertyDescriptorProvider: _propertyDescriptorProvider,
-    );
     final selection = LiveEditSelection(
       sessionId: session.sessionId,
       nodeId: nodeId,
@@ -2645,7 +2415,7 @@ final class LiveEditSessionService {
       renderObjectType: renderObject?.runtimeType.toString(),
       bounds: _boundsForRenderObject(renderObject),
       source: source,
-      propertyGroups: propertyGroups,
+      propertiesForWire: const <Object?>[],
       layoutContext: _layoutContextForElement(element),
       parentChain: parentChain
           .whereType<Map>()
@@ -2784,7 +2554,6 @@ final class LiveEditSessionService {
             hit.element,
             cachedNodeId: nodeId,
             cachedDetailsTree: detailsTree,
-            propertyDescriptorProvider: _propertyDescriptorProvider,
           );
           final source = _selectionSourceForElement(
             session,
@@ -2911,8 +2680,6 @@ final class _LiveEditSessionState {
   Map<Element, _MarqueeCandidateCacheEntry> get marqueeCache =>
       currentLayer.marqueeCache;
 
-  List<LiveEditDraftChange> get draftChanges => currentLayer.draftChanges;
-
   Map<String, Object?> get originalExactValues =>
       currentLayer.originalExactValues;
 
@@ -2942,7 +2709,6 @@ final class _LiveEditLayerState {
   List<LiveEditSelection> multiSelections = const <LiveEditSelection>[];
   final Map<Element, _MarqueeCandidateCacheEntry> marqueeCache =
       <Element, _MarqueeCandidateCacheEntry>{};
-  final List<LiveEditDraftChange> draftChanges = <LiveEditDraftChange>[];
   final Map<String, Object?> originalExactValues = <String, Object?>{};
   final Set<String> meaningfulNodeIds = <String>{};
   final Map<String, _TrackedSelectionTarget> trackedSelections =

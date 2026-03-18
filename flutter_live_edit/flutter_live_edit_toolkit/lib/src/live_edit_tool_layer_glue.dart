@@ -278,15 +278,6 @@ final class ToolLayerPanelCallbacks implements PanelCallbacks {
       DragPanelCommand(delta: delta).execute(context);
 
   @override
-  void onFocusProperty(final String? propertyId) {}
-
-  @override
-  void onPropertyValueChanged(
-    final LiveEditPropertyDescriptor property,
-    final Object? value,
-  ) {}
-
-  @override
   void onToggleDebugMode(final bool enabled) =>
       SetDebugModeCommand(enabled: enabled).execute(context);
 }
