@@ -168,8 +168,8 @@ PanelViewModel buildPanelViewModel(
         currentActivity?.label ?? _bubbleStatusLabel(bubbleStatus),
     railHasBackendChoice: _hasBackendChoice(context),
     railBackendLabel: _hasBackendChoice(context)
-        ? (backendLabel.isNotEmpty
-              ? backendLabel.substring(0, 1).toUpperCase()
+        ? (hasText(backendLabel)
+              ? backendLabel!.substring(0, 1).toUpperCase()
               : 'DBG')
         : 'DBG',
     railDebugEnabled: selectDebugModeEnabled(context),

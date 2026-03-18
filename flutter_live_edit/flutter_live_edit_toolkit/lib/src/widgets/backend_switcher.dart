@@ -105,8 +105,8 @@ class BackendSwitcher extends StatelessWidget {
                 const Icon(Icons.sync_alt, size: 14),
                 const SizedBox(height: 4),
                 Text(
-                  backendLabel.isNotEmpty
-                      ? backendLabel.substring(0, 1).toUpperCase()
+                  hasText(backendLabel)
+                      ? backendLabel!.substring(0, 1).toUpperCase()
                       : 'A',
                   style: const TextStyle(
                     fontSize: 11,
