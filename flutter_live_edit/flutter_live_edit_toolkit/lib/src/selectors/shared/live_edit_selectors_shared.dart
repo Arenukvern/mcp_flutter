@@ -284,7 +284,11 @@ String selectInstructionTextForBubble(
   final String? bubbleId,
 ) {
   if (hasText(bubbleId)) {
-    return selectBubbleRecord(ctx, bubbleId)?.instructionText ?? '';
+    final bubble = selectBubbleRecord(ctx, bubbleId);
+    if (bubble != null) {
+      return bubble.instructionText;
+    }
+    return ctx.bubbleResource.value.globalComposerText;
   }
   final activeId = ctx
       .bubbleResource

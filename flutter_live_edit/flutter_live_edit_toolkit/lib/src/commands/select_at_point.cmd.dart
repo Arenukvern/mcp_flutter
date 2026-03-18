@@ -2,6 +2,8 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 
 import '../live_edit_context.dart';
+import '../live_edit_controller_adapter.dart';
+import '_selection_commands_shared.dart';
 
 /// Selects a widget at the given point.
 final class SelectAtPointCommand {
@@ -38,6 +40,7 @@ final class SelectAtPointCommand {
       targetDomain: targetDomain,
     );
     context.applySessionUpdate(context.sessionService.lastUpdate);
+    runAfterSelectionChange(context, LiveEditController(context));
     if (domain == LiveEditTargetDomain.toolScene) {
       context.panelViewResource.value = context.panelViewResource.value
           .copyWith(toolPresentationArmed: true);

@@ -4,6 +4,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_live_edit_toolkit/flutter_live_edit_toolkit.dart';
+import 'package:flutter_live_edit_toolkit/src/live_edit_auto_config.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 import 'package:provider/provider.dart';
 import 'package:test_app/change_notifier_example.dart';
@@ -418,7 +419,7 @@ class _MCPDemoHomePageState extends State<MCPDemoHomePage> {
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: const Text(
-          'MCP Toolkit Demo',
+          'MCP Toolkit Demo [RoundTrip A]',
           semanticsIdentifier: 'app_title_text',
         ),
         elevation: 2,

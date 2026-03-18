@@ -1,6 +1,7 @@
 import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 
 import '../live_edit_context.dart';
+import '../live_edit_controller_adapter.dart';
 import '../live_edit_types.dart';
 
 /// Removes active bubble from records, clears pending/apply state, resets panel and composer.
@@ -9,7 +10,15 @@ final class ResolveActiveBubbleCommand {
     final domain = context.sessionResource.value.targetDomain;
     final bubbleData = context.bubbleResource.value;
     final layerState = bubbleData.layerViewStateByDomain[domain];
-    final activeId = layerState?.activeBubbleId;
+    final activeId =
+        layerState?.activeBubbleId ??
+        context.bubbleStateService.bubbleIdForSelection(
+          context,
+          LiveEditController(context).selectionForDomain(
+            targetDomain: domain,
+            sessionId: context.sessionResource.value.activeSessionId,
+          ),
+        );
 
     var records = Map<String, LiveEditBubbleRecord>.from(
       bubbleData.bubbleRecordsById,

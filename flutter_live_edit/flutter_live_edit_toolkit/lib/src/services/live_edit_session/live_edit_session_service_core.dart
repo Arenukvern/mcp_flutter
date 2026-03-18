@@ -507,6 +507,7 @@ class _LiveEditSessionServiceCore {
             session: session,
             hits: hits,
             selectionPolicy: selectionPolicy,
+            targetDomain: resolvedDomain,
           );
     final selection = this._setSelection(
       session: session,

@@ -128,6 +128,7 @@ int _preferredSelectionIndex({
   required final _LiveEditSessionState session,
   required final List<_ElementHit> hits,
   required final LiveEditSelectionPolicy selectionPolicy,
+  required final LiveEditTargetDomain targetDomain,
 }) {
   if (hits.isEmpty || selectionPolicy == LiveEditSelectionPolicy.deepest) {
     return 0;
@@ -138,10 +139,16 @@ int _preferredSelectionIndex({
   for (var index = 0; index < hits.length; index += 1) {
     final hit = hits[index];
     final metadata = _selectionMetadataForElement(session, hit.element);
+    final sourceFile = metadata.source?.file;
+    final infrastructureHit =
+        targetDomain == LiveEditTargetDomain.appScene &&
+        _isLiveEditToolkitInfrastructurePath(sourceFile);
     final widgetType = hit.element.widget.runtimeType.toString();
     final weakStructuralCandidate = _structuralWidgetTypes.contains(widgetType);
     var rank = 0;
-    if (metadata.hasStrongProjectOwnership) {
+    if (infrastructureHit) {
+      rank = -100;
+    } else if (metadata.hasStrongProjectOwnership) {
       rank = 70;
     } else if (metadata.hasProjectHintSignal && !weakStructuralCandidate) {
       rank = 50;
@@ -154,6 +161,16 @@ int _preferredSelectionIndex({
     }
   }
   return bestIndex ?? 0;
+}
+
+bool _isLiveEditToolkitInfrastructurePath(final String? file) {
+  if (!_hasText(file)) {
+    return false;
+  }
+  final normalized = file!.replaceAll('\\', '/');
+  return normalized.contains(
+    '/flutter_live_edit/flutter_live_edit_toolkit/lib/src/',
+  );
 }
 
 bool _isUserAuthoredElement(
@@ -529,4 +546,3 @@ int? _viewIdForRenderObject(final RenderObject? renderObject) {
   }
   return null;
 }
-

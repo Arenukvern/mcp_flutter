@@ -33,7 +33,15 @@ final class ApplyDraftCommand {
     final domain = context.sessionResource.value.targetDomain;
     final bubbleData = context.bubbleResource.value;
     final activeId = bubbleData.layerViewStateByDomain[domain]?.activeBubbleId;
-    final bid = bubbleId ?? activeId;
+    final fallbackSelection = context.sessionService.selectionForDomain(
+      targetDomain: domain,
+      sessionId: sessionId,
+    );
+    final fallbackBubbleId = context.bubbleStateService.bubbleIdForSelection(
+      context,
+      fallbackSelection,
+    );
+    final bid = bubbleId ?? activeId ?? fallbackBubbleId;
     if (bid == null || bid.isEmpty) return;
 
     final bubble = bubbleData.bubbleRecordsById[bid];
