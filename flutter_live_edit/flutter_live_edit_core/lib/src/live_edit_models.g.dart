@@ -66,9 +66,9 @@ _$LiveEditDraftChangeImpl _$$LiveEditDraftChangeImplFromJson(
   nodeId: json['nodeId'] as String,
   propertyId: json['propertyId'] as String,
   targetValue: json['targetValue'],
-  previewMode: json['previewMode'] == null
-      ? LiveEditPreviewMode.none
-      : _previewModeFromJson(json['previewMode']),
+  previewMode:
+      $enumDecodeNullable(_$LiveEditPreviewModeEnumMap, json['previewMode']) ??
+      LiveEditPreviewMode.none,
   confidence: json['confidence'] == null
       ? 1
       : _confidenceFromJson(json['confidence']),
@@ -82,10 +82,16 @@ Map<String, dynamic> _$$LiveEditDraftChangeImplToJson(
   'nodeId': instance.nodeId,
   'propertyId': instance.propertyId,
   'targetValue': instance.targetValue,
-  'previewMode': _enumToWire(instance.previewMode),
+  'previewMode': _$LiveEditPreviewModeEnumMap[instance.previewMode]!,
   'confidence': instance.confidence,
   'intentText': instance.intentText,
   'meta': instance.meta,
+};
+
+const _$LiveEditPreviewModeEnumMap = {
+  LiveEditPreviewMode.exact: 'exact',
+  LiveEditPreviewMode.ghost: 'ghost',
+  LiveEditPreviewMode.none: 'none',
 };
 
 _$LiveEditFilePatchImpl _$$LiveEditFilePatchImplFromJson(
@@ -109,9 +115,9 @@ Map<String, dynamic> _$$LiveEditFilePatchImplToJson(
 _$LiveEditRuntimeRefreshResultImpl _$$LiveEditRuntimeRefreshResultImplFromJson(
   Map<String, dynamic> json,
 ) => _$LiveEditRuntimeRefreshResultImpl(
-  action: json['action'] == null
-      ? LiveEditRuntimeAction.none
-      : _runtimeActionFromJson(json['action']),
+  action:
+      $enumDecodeNullable(_$LiveEditRuntimeActionEnumMap, json['action']) ??
+      LiveEditRuntimeAction.none,
   validation:
       json['validation'] as Map<String, dynamic>? ?? const <String, Object?>{},
   hotReload:
@@ -126,11 +132,17 @@ _$LiveEditRuntimeRefreshResultImpl _$$LiveEditRuntimeRefreshResultImplFromJson(
 Map<String, dynamic> _$$LiveEditRuntimeRefreshResultImplToJson(
   _$LiveEditRuntimeRefreshResultImpl instance,
 ) => <String, dynamic>{
-  'action': _enumToWire(instance.action),
+  'action': _$LiveEditRuntimeActionEnumMap[instance.action]!,
   'validation': instance.validation,
   'hotReload': instance.hotReload,
   'hotRestart': instance.hotRestart,
   'validationRecovery': instance.validationRecovery,
+};
+
+const _$LiveEditRuntimeActionEnumMap = {
+  LiveEditRuntimeAction.none: 'none',
+  LiveEditRuntimeAction.hotReload: 'hotReload',
+  LiveEditRuntimeAction.hotRestart: 'hotRestart',
 };
 
 _$LiveEditResolutionProposalImpl _$$LiveEditResolutionProposalImplFromJson(
@@ -203,7 +215,7 @@ _$LiveEditResolutionResultImpl _$$LiveEditResolutionResultImplFromJson(
   Map<String, dynamic> json,
 ) => _$LiveEditResolutionResultImpl(
   proposalId: json['proposalId'] as String,
-  status: _resolutionStatusFromJson(json['status']),
+  status: $enumDecode(_$LiveEditResolutionStatusEnumMap, json['status']),
   changedFiles:
       (json['changedFiles'] as List<dynamic>?)
           ?.map((e) => e as String)
@@ -221,11 +233,19 @@ Map<String, dynamic> _$$LiveEditResolutionResultImplToJson(
   _$LiveEditResolutionResultImpl instance,
 ) => <String, dynamic>{
   'proposalId': instance.proposalId,
-  'status': _enumToWire(instance.status),
+  'status': _$LiveEditResolutionStatusEnumMap[instance.status]!,
   'changedFiles': instance.changedFiles,
   'validation': instance.validation,
   'warnings': instance.warnings,
   'meta': instance.meta,
+};
+
+const _$LiveEditResolutionStatusEnumMap = {
+  LiveEditResolutionStatus.proposed: 'proposed',
+  LiveEditResolutionStatus.accepted: 'accepted',
+  LiveEditResolutionStatus.rejected: 'rejected',
+  LiveEditResolutionStatus.applied: 'applied',
+  LiveEditResolutionStatus.failed: 'failed',
 };
 
 _$LiveEditSelectionImpl _$$LiveEditSelectionImplFromJson(
@@ -234,11 +254,14 @@ _$LiveEditSelectionImpl _$$LiveEditSelectionImplFromJson(
   sessionId: json['sessionId'] as String,
   nodeId: json['nodeId'] as String,
   widgetType: json['widgetType'] as String,
-  propertiesForWire: json['properties'] as List<dynamic>? ?? const <Object?>[],
   rawNode: _asMap(json['rawNode']),
-  targetDomain: json['targetDomain'] == null
-      ? LiveEditTargetDomain.appScene
-      : _targetDomainFromJson(json['targetDomain']),
+  propertiesForWire: json['properties'] as List<dynamic>? ?? const <Object?>[],
+  targetDomain:
+      $enumDecodeNullable(
+        _$LiveEditTargetDomainEnumMap,
+        json['targetDomain'],
+      ) ??
+      LiveEditTargetDomain.appScene,
   renderObjectType: json['renderObjectType'] as String?,
   bounds: json['bounds'] == null
       ? null
@@ -259,9 +282,12 @@ _$LiveEditSelectionImpl _$$LiveEditSelectionImplFromJson(
   propertiesTree:
       json['propertiesTree'] as Map<String, dynamic>? ??
       const <String, Object?>{},
-  selectionMode: json['selectionMode'] == null
-      ? LiveEditSelectionMode.single
-      : _selectionModeFromJson(json['selectionMode']),
+  selectionMode:
+      $enumDecodeNullable(
+        _$LiveEditSelectionModeEnumMap,
+        json['selectionMode'],
+      ) ??
+      LiveEditSelectionMode.single,
   selectedNodeIds:
       (json['selectedNodeIds'] as List<dynamic>?)
           ?.map((e) => e as String)
@@ -275,9 +301,9 @@ Map<String, dynamic> _$$LiveEditSelectionImplToJson(
   'sessionId': instance.sessionId,
   'nodeId': instance.nodeId,
   'widgetType': instance.widgetType,
-  'properties': instance.propertiesForWire,
   'rawNode': instance.rawNode,
-  'targetDomain': _enumToWire(instance.targetDomain),
+  'properties': instance.propertiesForWire,
+  'targetDomain': _$LiveEditTargetDomainEnumMap[instance.targetDomain]!,
   'renderObjectType': instance.renderObjectType,
   'bounds': instance.bounds?.toJson(),
   'source': instance.source?.toJson(),
@@ -285,8 +311,18 @@ Map<String, dynamic> _$$LiveEditSelectionImplToJson(
   'parentChain': instance.parentChain,
   'detailsTree': instance.detailsTree,
   'propertiesTree': instance.propertiesTree,
-  'selectionMode': _enumToWire(instance.selectionMode),
+  'selectionMode': _$LiveEditSelectionModeEnumMap[instance.selectionMode]!,
   'selectedNodeIds': instance.selectedNodeIds,
+};
+
+const _$LiveEditTargetDomainEnumMap = {
+  LiveEditTargetDomain.appScene: 'appScene',
+  LiveEditTargetDomain.toolScene: 'toolScene',
+};
+
+const _$LiveEditSelectionModeEnumMap = {
+  LiveEditSelectionMode.single: 'single',
+  LiveEditSelectionMode.multi: 'multi',
 };
 
 _$LiveEditSelectionCandidateImpl _$$LiveEditSelectionCandidateImplFromJson(

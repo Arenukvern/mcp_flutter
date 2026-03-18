@@ -212,9 +212,7 @@ class LiveEditDraftChange with _$LiveEditDraftChange {
     required final String nodeId,
     required final String propertyId,
     required final Object? targetValue,
-    @JsonKey(fromJson: _previewModeFromJson, toJson: _enumToWire)
-    @Default(LiveEditPreviewMode.none)
-    final LiveEditPreviewMode previewMode,
+    @Default(LiveEditPreviewMode.none) final LiveEditPreviewMode previewMode,
     @JsonKey(fromJson: _confidenceFromJson) @Default(1) final double confidence,
     final String? intentText,
     @Default(<String, Object?>{}) final Map<String, Object?> meta,
@@ -414,9 +412,7 @@ enum LiveEditRuntimeAction {
 @Freezed(fromJson: true, toJson: true)
 class LiveEditRuntimeRefreshResult with _$LiveEditRuntimeRefreshResult {
   const factory LiveEditRuntimeRefreshResult({
-    @JsonKey(fromJson: _runtimeActionFromJson, toJson: _enumToWire)
-    @Default(LiveEditRuntimeAction.none)
-    final LiveEditRuntimeAction action,
+    @Default(LiveEditRuntimeAction.none) final LiveEditRuntimeAction action,
     @Default(<String, Object?>{}) final Map<String, Object?> validation,
     @Default(<String, Object?>{}) final Map<String, Object?> hotReload,
     @Default(<String, Object?>{}) final Map<String, Object?> hotRestart,
@@ -632,7 +628,6 @@ final class LiveEditDirectApplyResult {
 class LiveEditResolutionResult with _$LiveEditResolutionResult {
   const factory LiveEditResolutionResult({
     required final String proposalId,
-    @JsonKey(fromJson: _resolutionStatusFromJson, toJson: _enumToWire)
     required final LiveEditResolutionStatus status,
     @Default(<String>[]) final List<String> changedFiles,
     @Default(<String, Object?>{}) final Map<String, Object?> validation,
@@ -684,10 +679,10 @@ class LiveEditSelection with _$LiveEditSelection {
     required final String sessionId,
     required final String nodeId,
     required final String widgetType,
-    @JsonKey(name: 'properties') @Default(<Object?>[])
-    final List<Object?> propertiesForWire,
     @JsonKey(fromJson: _asMap) required final Map<String, Object?> rawNode,
-    @JsonKey(fromJson: _targetDomainFromJson, toJson: _enumToWire)
+    @JsonKey(name: 'properties')
+    @Default(<Object?>[])
+    final List<Object?> propertiesForWire,
     @Default(LiveEditTargetDomain.appScene)
     final LiveEditTargetDomain targetDomain,
     final String? renderObjectType,
@@ -698,7 +693,6 @@ class LiveEditSelection with _$LiveEditSelection {
     final List<Map<String, Object?>> parentChain,
     @Default(<String, Object?>{}) final Map<String, Object?> detailsTree,
     @Default(<String, Object?>{}) final Map<String, Object?> propertiesTree,
-    @JsonKey(fromJson: _selectionModeFromJson, toJson: _enumToWire)
     @Default(LiveEditSelectionMode.single)
     final LiveEditSelectionMode selectionMode,
     @Default(<String>[]) final List<String> selectedNodeIds,
@@ -763,29 +757,6 @@ enum LiveEditSelectionPolicy {
     );
   }
 }
-
-// Enum JSON helpers for wireName/fromWire (used by @JsonKey in freezed classes).
-Object? _enumToWire(final e) => (e as dynamic).wireName;
-LiveEditBubbleDisplayState _bubbleDisplayStateFromJson(final Object? v) =>
-    LiveEditBubbleDisplayState.fromWire(v);
-LiveEditEditMode _editModeFromJson(final Object? v) =>
-    LiveEditEditMode.fromWire(v);
-LiveEditTargetDomain _targetDomainFromJson(final Object? v) =>
-    LiveEditTargetDomain.fromWire(v);
-LiveEditEditSurface _editSurfaceFromJson(final Object? v) =>
-    LiveEditEditSurface.fromWire(v);
-LiveEditApplyMode _applyModeFromJson(final Object? v) =>
-    LiveEditApplyMode.fromWire(v);
-LiveEditRuntimeAction _runtimeActionFromJson(final Object? v) =>
-    LiveEditRuntimeAction.fromWire(v);
-LiveEditPreviewMode _previewModeFromJson(final Object? v) =>
-    LiveEditPreviewMode.fromWire(v);
-LiveEditResolutionStatus _resolutionStatusFromJson(final Object? v) =>
-    LiveEditResolutionStatus.fromWire(v);
-LiveEditSelectionMode _selectionModeFromJson(final Object? v) =>
-    LiveEditSelectionMode.fromWire(v);
-LiveEditSelectionPolicy _selectionPolicyFromJson(final Object? v) =>
-    LiveEditSelectionPolicy.fromWire(v);
 
 @Freezed(fromJson: true, toJson: true)
 class LiveEditSourceLocation with _$LiveEditSourceLocation {

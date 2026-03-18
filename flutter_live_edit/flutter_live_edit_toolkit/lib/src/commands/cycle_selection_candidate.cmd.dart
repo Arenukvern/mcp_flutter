@@ -1,5 +1,3 @@
-import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
-
 import '../live_edit_context.dart';
 import '../live_edit_controller_adapter.dart';
 import '../selectors/live_edit_selectors.dart';

@@ -510,44 +510,39 @@ void main() {
       );
     });
 
-    test(
-      'fails fast when resolve request has no prompt',
-      () async {
-        final tempDir = await Directory.systemTemp.createTemp(
-          'live_edit_agent',
-        );
-        addTearDown(() => tempDir.delete(recursive: true));
+    test('fails fast when resolve request has no prompt', () async {
+      final tempDir = await Directory.systemTemp.createTemp('live_edit_agent');
+      addTearDown(() => tempDir.delete(recursive: true));
 
-        final service = LiveEditAgentService(
-          registry: LiveEditAgentRegistry(
-            clients: <String, InferenceClient>{'fake': _FakeInferenceClient()},
-            defaultBackendId: 'fake',
-          ),
-        );
+      final service = LiveEditAgentService(
+        registry: LiveEditAgentRegistry(
+          clients: <String, InferenceClient>{'fake': _FakeInferenceClient()},
+          defaultBackendId: 'fake',
+        ),
+      );
 
-        await expectLater(
-          () => service.resolve(
-            LiveEditResolutionRequest(
-              sessionId: 'session-empty',
-              workingDirectory: tempDir.path,
-            ),
+      await expectLater(
+        () => service.resolve(
+          LiveEditResolutionRequest(
+            sessionId: 'session-empty',
+            workingDirectory: tempDir.path,
           ),
-          throwsA(
-            isA<LiveEditAgentException>()
-                .having(
-                  (final error) => error.code,
-                  'code',
-                  'source_context_unavailable',
-                )
-                .having(
-                  (final error) => error.message,
-                  'message',
-                  contains('a prompt'),
-                ),
-          ),
-        );
-      },
-    );
+        ),
+        throwsA(
+          isA<LiveEditAgentException>()
+              .having(
+                (final error) => error.code,
+                'code',
+                'source_context_unavailable',
+              )
+              .having(
+                (final error) => error.message,
+                'message',
+                contains('a prompt'),
+              ),
+        ),
+      );
+    });
 
     test(
       'builds execution plan with staged edits and ai intent together',

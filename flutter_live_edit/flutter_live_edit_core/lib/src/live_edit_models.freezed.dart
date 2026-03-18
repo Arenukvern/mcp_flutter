@@ -759,7 +759,6 @@ mixin _$LiveEditDraftChange {
   String get nodeId => throw _privateConstructorUsedError;
   String get propertyId => throw _privateConstructorUsedError;
   Object? get targetValue => throw _privateConstructorUsedError;
-  @JsonKey(fromJson: _previewModeFromJson, toJson: _enumToWire)
   LiveEditPreviewMode get previewMode => throw _privateConstructorUsedError;
   @JsonKey(fromJson: _confidenceFromJson)
   double get confidence => throw _privateConstructorUsedError;
@@ -787,7 +786,6 @@ abstract class $LiveEditDraftChangeCopyWith<$Res> {
     String nodeId,
     String propertyId,
     Object? targetValue,
-    @JsonKey(fromJson: _previewModeFromJson, toJson: _enumToWire)
     LiveEditPreviewMode previewMode,
     @JsonKey(fromJson: _confidenceFromJson) double confidence,
     String? intentText,
@@ -866,7 +864,6 @@ abstract class _$$LiveEditDraftChangeImplCopyWith<$Res>
     String nodeId,
     String propertyId,
     Object? targetValue,
-    @JsonKey(fromJson: _previewModeFromJson, toJson: _enumToWire)
     LiveEditPreviewMode previewMode,
     @JsonKey(fromJson: _confidenceFromJson) double confidence,
     String? intentText,
@@ -935,7 +932,6 @@ class _$LiveEditDraftChangeImpl implements _LiveEditDraftChange {
     required this.nodeId,
     required this.propertyId,
     required this.targetValue,
-    @JsonKey(fromJson: _previewModeFromJson, toJson: _enumToWire)
     this.previewMode = LiveEditPreviewMode.none,
     @JsonKey(fromJson: _confidenceFromJson) this.confidence = 1,
     this.intentText,
@@ -952,7 +948,7 @@ class _$LiveEditDraftChangeImpl implements _LiveEditDraftChange {
   @override
   final Object? targetValue;
   @override
-  @JsonKey(fromJson: _previewModeFromJson, toJson: _enumToWire)
+  @JsonKey()
   final LiveEditPreviewMode previewMode;
   @override
   @JsonKey(fromJson: _confidenceFromJson)
@@ -1029,7 +1025,6 @@ abstract class _LiveEditDraftChange implements LiveEditDraftChange {
     required final String nodeId,
     required final String propertyId,
     required final Object? targetValue,
-    @JsonKey(fromJson: _previewModeFromJson, toJson: _enumToWire)
     final LiveEditPreviewMode previewMode,
     @JsonKey(fromJson: _confidenceFromJson) final double confidence,
     final String? intentText,
@@ -1046,7 +1041,6 @@ abstract class _LiveEditDraftChange implements LiveEditDraftChange {
   @override
   Object? get targetValue;
   @override
-  @JsonKey(fromJson: _previewModeFromJson, toJson: _enumToWire)
   LiveEditPreviewMode get previewMode;
   @override
   @JsonKey(fromJson: _confidenceFromJson)
@@ -1472,7 +1466,6 @@ LiveEditRuntimeRefreshResult _$LiveEditRuntimeRefreshResultFromJson(
 
 /// @nodoc
 mixin _$LiveEditRuntimeRefreshResult {
-  @JsonKey(fromJson: _runtimeActionFromJson, toJson: _enumToWire)
   LiveEditRuntimeAction get action => throw _privateConstructorUsedError;
   Map<String, Object?> get validation => throw _privateConstructorUsedError;
   Map<String, Object?> get hotReload => throw _privateConstructorUsedError;
@@ -1502,7 +1495,6 @@ abstract class $LiveEditRuntimeRefreshResultCopyWith<$Res> {
       >;
   @useResult
   $Res call({
-    @JsonKey(fromJson: _runtimeActionFromJson, toJson: _enumToWire)
     LiveEditRuntimeAction action,
     Map<String, Object?> validation,
     Map<String, Object?> hotReload,
@@ -1573,7 +1565,6 @@ abstract class _$$LiveEditRuntimeRefreshResultImplCopyWith<$Res>
   @override
   @useResult
   $Res call({
-    @JsonKey(fromJson: _runtimeActionFromJson, toJson: _enumToWire)
     LiveEditRuntimeAction action,
     Map<String, Object?> validation,
     Map<String, Object?> hotReload,
@@ -1637,7 +1628,6 @@ class __$$LiveEditRuntimeRefreshResultImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$LiveEditRuntimeRefreshResultImpl extends _LiveEditRuntimeRefreshResult {
   const _$LiveEditRuntimeRefreshResultImpl({
-    @JsonKey(fromJson: _runtimeActionFromJson, toJson: _enumToWire)
     this.action = LiveEditRuntimeAction.none,
     final Map<String, Object?> validation = const <String, Object?>{},
     final Map<String, Object?> hotReload = const <String, Object?>{},
@@ -1654,7 +1644,7 @@ class _$LiveEditRuntimeRefreshResultImpl extends _LiveEditRuntimeRefreshResult {
   ) => _$$LiveEditRuntimeRefreshResultImplFromJson(json);
 
   @override
-  @JsonKey(fromJson: _runtimeActionFromJson, toJson: _enumToWire)
+  @JsonKey()
   final LiveEditRuntimeAction action;
   final Map<String, Object?> _validation;
   @override
@@ -1755,7 +1745,6 @@ class _$LiveEditRuntimeRefreshResultImpl extends _LiveEditRuntimeRefreshResult {
 abstract class _LiveEditRuntimeRefreshResult
     extends LiveEditRuntimeRefreshResult {
   const factory _LiveEditRuntimeRefreshResult({
-    @JsonKey(fromJson: _runtimeActionFromJson, toJson: _enumToWire)
     final LiveEditRuntimeAction action,
     final Map<String, Object?> validation,
     final Map<String, Object?> hotReload,
@@ -1768,7 +1757,6 @@ abstract class _LiveEditRuntimeRefreshResult
       _$LiveEditRuntimeRefreshResultImpl.fromJson;
 
   @override
-  @JsonKey(fromJson: _runtimeActionFromJson, toJson: _enumToWire)
   LiveEditRuntimeAction get action;
   @override
   Map<String, Object?> get validation;
@@ -3079,7 +3067,6 @@ LiveEditResolutionResult _$LiveEditResolutionResultFromJson(
 /// @nodoc
 mixin _$LiveEditResolutionResult {
   String get proposalId => throw _privateConstructorUsedError;
-  @JsonKey(fromJson: _resolutionStatusFromJson, toJson: _enumToWire)
   LiveEditResolutionStatus get status => throw _privateConstructorUsedError;
   List<String> get changedFiles => throw _privateConstructorUsedError;
   Map<String, Object?> get validation => throw _privateConstructorUsedError;
@@ -3105,7 +3092,6 @@ abstract class $LiveEditResolutionResultCopyWith<$Res> {
   @useResult
   $Res call({
     String proposalId,
-    @JsonKey(fromJson: _resolutionStatusFromJson, toJson: _enumToWire)
     LiveEditResolutionStatus status,
     List<String> changedFiles,
     Map<String, Object?> validation,
@@ -3182,7 +3168,6 @@ abstract class _$$LiveEditResolutionResultImplCopyWith<$Res>
   @useResult
   $Res call({
     String proposalId,
-    @JsonKey(fromJson: _resolutionStatusFromJson, toJson: _enumToWire)
     LiveEditResolutionStatus status,
     List<String> changedFiles,
     Map<String, Object?> validation,
@@ -3252,7 +3237,6 @@ class __$$LiveEditResolutionResultImplCopyWithImpl<$Res>
 class _$LiveEditResolutionResultImpl implements _LiveEditResolutionResult {
   const _$LiveEditResolutionResultImpl({
     required this.proposalId,
-    @JsonKey(fromJson: _resolutionStatusFromJson, toJson: _enumToWire)
     required this.status,
     final List<String> changedFiles = const <String>[],
     final Map<String, Object?> validation = const <String, Object?>{},
@@ -3269,7 +3253,6 @@ class _$LiveEditResolutionResultImpl implements _LiveEditResolutionResult {
   @override
   final String proposalId;
   @override
-  @JsonKey(fromJson: _resolutionStatusFromJson, toJson: _enumToWire)
   final LiveEditResolutionStatus status;
   final List<String> _changedFiles;
   @override
@@ -3364,7 +3347,6 @@ class _$LiveEditResolutionResultImpl implements _LiveEditResolutionResult {
 abstract class _LiveEditResolutionResult implements LiveEditResolutionResult {
   const factory _LiveEditResolutionResult({
     required final String proposalId,
-    @JsonKey(fromJson: _resolutionStatusFromJson, toJson: _enumToWire)
     required final LiveEditResolutionStatus status,
     final List<String> changedFiles,
     final Map<String, Object?> validation,
@@ -3378,7 +3360,6 @@ abstract class _LiveEditResolutionResult implements LiveEditResolutionResult {
   @override
   String get proposalId;
   @override
-  @JsonKey(fromJson: _resolutionStatusFromJson, toJson: _enumToWire)
   LiveEditResolutionStatus get status;
   @override
   List<String> get changedFiles;
@@ -3406,11 +3387,10 @@ mixin _$LiveEditSelection {
   String get sessionId => throw _privateConstructorUsedError;
   String get nodeId => throw _privateConstructorUsedError;
   String get widgetType => throw _privateConstructorUsedError;
-  @JsonKey(name: 'properties')
-  List<Object?> get propertiesForWire => throw _privateConstructorUsedError;
   @JsonKey(fromJson: _asMap)
   Map<String, Object?> get rawNode => throw _privateConstructorUsedError;
-  @JsonKey(fromJson: _targetDomainFromJson, toJson: _enumToWire)
+  @JsonKey(name: 'properties')
+  List<Object?> get propertiesForWire => throw _privateConstructorUsedError;
   LiveEditTargetDomain get targetDomain => throw _privateConstructorUsedError;
   String? get renderObjectType => throw _privateConstructorUsedError;
   LiveEditBounds? get bounds => throw _privateConstructorUsedError;
@@ -3420,7 +3400,6 @@ mixin _$LiveEditSelection {
       throw _privateConstructorUsedError;
   Map<String, Object?> get detailsTree => throw _privateConstructorUsedError;
   Map<String, Object?> get propertiesTree => throw _privateConstructorUsedError;
-  @JsonKey(fromJson: _selectionModeFromJson, toJson: _enumToWire)
   LiveEditSelectionMode get selectionMode => throw _privateConstructorUsedError;
   List<String> get selectedNodeIds => throw _privateConstructorUsedError;
 
@@ -3445,9 +3424,8 @@ abstract class $LiveEditSelectionCopyWith<$Res> {
     String sessionId,
     String nodeId,
     String widgetType,
-    @JsonKey(name: 'properties') List<Object?> propertiesForWire,
     @JsonKey(fromJson: _asMap) Map<String, Object?> rawNode,
-    @JsonKey(fromJson: _targetDomainFromJson, toJson: _enumToWire)
+    @JsonKey(name: 'properties') List<Object?> propertiesForWire,
     LiveEditTargetDomain targetDomain,
     String? renderObjectType,
     LiveEditBounds? bounds,
@@ -3456,7 +3434,6 @@ abstract class $LiveEditSelectionCopyWith<$Res> {
     List<Map<String, Object?>> parentChain,
     Map<String, Object?> detailsTree,
     Map<String, Object?> propertiesTree,
-    @JsonKey(fromJson: _selectionModeFromJson, toJson: _enumToWire)
     LiveEditSelectionMode selectionMode,
     List<String> selectedNodeIds,
   });
@@ -3483,8 +3460,8 @@ class _$LiveEditSelectionCopyWithImpl<$Res, $Val extends LiveEditSelection>
     Object? sessionId = null,
     Object? nodeId = null,
     Object? widgetType = null,
-    Object? propertiesForWire = null,
     Object? rawNode = null,
+    Object? propertiesForWire = null,
     Object? targetDomain = null,
     Object? renderObjectType = freezed,
     Object? bounds = freezed,
@@ -3510,14 +3487,14 @@ class _$LiveEditSelectionCopyWithImpl<$Res, $Val extends LiveEditSelection>
                 ? _value.widgetType
                 : widgetType // ignore: cast_nullable_to_non_nullable
                       as String,
-            propertiesForWire: null == propertiesForWire
-                ? _value.propertiesForWire
-                : propertiesForWire // ignore: cast_nullable_to_non_nullable
-                      as List<Object?>,
             rawNode: null == rawNode
                 ? _value.rawNode
                 : rawNode // ignore: cast_nullable_to_non_nullable
                       as Map<String, Object?>,
+            propertiesForWire: null == propertiesForWire
+                ? _value.propertiesForWire
+                : propertiesForWire // ignore: cast_nullable_to_non_nullable
+                      as List<Object?>,
             targetDomain: null == targetDomain
                 ? _value.targetDomain
                 : targetDomain // ignore: cast_nullable_to_non_nullable
@@ -3605,9 +3582,8 @@ abstract class _$$LiveEditSelectionImplCopyWith<$Res>
     String sessionId,
     String nodeId,
     String widgetType,
-    @JsonKey(name: 'properties') List<Object?> propertiesForWire,
     @JsonKey(fromJson: _asMap) Map<String, Object?> rawNode,
-    @JsonKey(fromJson: _targetDomainFromJson, toJson: _enumToWire)
+    @JsonKey(name: 'properties') List<Object?> propertiesForWire,
     LiveEditTargetDomain targetDomain,
     String? renderObjectType,
     LiveEditBounds? bounds,
@@ -3616,7 +3592,6 @@ abstract class _$$LiveEditSelectionImplCopyWith<$Res>
     List<Map<String, Object?>> parentChain,
     Map<String, Object?> detailsTree,
     Map<String, Object?> propertiesTree,
-    @JsonKey(fromJson: _selectionModeFromJson, toJson: _enumToWire)
     LiveEditSelectionMode selectionMode,
     List<String> selectedNodeIds,
   });
@@ -3644,8 +3619,8 @@ class __$$LiveEditSelectionImplCopyWithImpl<$Res>
     Object? sessionId = null,
     Object? nodeId = null,
     Object? widgetType = null,
-    Object? propertiesForWire = null,
     Object? rawNode = null,
+    Object? propertiesForWire = null,
     Object? targetDomain = null,
     Object? renderObjectType = freezed,
     Object? bounds = freezed,
@@ -3671,14 +3646,14 @@ class __$$LiveEditSelectionImplCopyWithImpl<$Res>
             ? _value.widgetType
             : widgetType // ignore: cast_nullable_to_non_nullable
                   as String,
-        propertiesForWire: null == propertiesForWire
-            ? _value._propertiesForWire
-            : propertiesForWire // ignore: cast_nullable_to_non_nullable
-                  as List<Object?>,
         rawNode: null == rawNode
             ? _value._rawNode
             : rawNode // ignore: cast_nullable_to_non_nullable
                   as Map<String, Object?>,
+        propertiesForWire: null == propertiesForWire
+            ? _value._propertiesForWire
+            : propertiesForWire // ignore: cast_nullable_to_non_nullable
+                  as List<Object?>,
         targetDomain: null == targetDomain
             ? _value.targetDomain
             : targetDomain // ignore: cast_nullable_to_non_nullable
@@ -3731,10 +3706,9 @@ class _$LiveEditSelectionImpl implements _LiveEditSelection {
     required this.sessionId,
     required this.nodeId,
     required this.widgetType,
+    @JsonKey(fromJson: _asMap) required final Map<String, Object?> rawNode,
     @JsonKey(name: 'properties')
     final List<Object?> propertiesForWire = const <Object?>[],
-    @JsonKey(fromJson: _asMap) required final Map<String, Object?> rawNode,
-    @JsonKey(fromJson: _targetDomainFromJson, toJson: _enumToWire)
     this.targetDomain = LiveEditTargetDomain.appScene,
     this.renderObjectType,
     this.bounds,
@@ -3744,11 +3718,10 @@ class _$LiveEditSelectionImpl implements _LiveEditSelection {
         const <Map<String, Object?>>[],
     final Map<String, Object?> detailsTree = const <String, Object?>{},
     final Map<String, Object?> propertiesTree = const <String, Object?>{},
-    @JsonKey(fromJson: _selectionModeFromJson, toJson: _enumToWire)
     this.selectionMode = LiveEditSelectionMode.single,
     final List<String> selectedNodeIds = const <String>[],
-  }) : _propertiesForWire = propertiesForWire,
-       _rawNode = rawNode,
+  }) : _rawNode = rawNode,
+       _propertiesForWire = propertiesForWire,
        _layoutContext = layoutContext,
        _parentChain = parentChain,
        _detailsTree = detailsTree,
@@ -3764,6 +3737,15 @@ class _$LiveEditSelectionImpl implements _LiveEditSelection {
   final String nodeId;
   @override
   final String widgetType;
+  final Map<String, Object?> _rawNode;
+  @override
+  @JsonKey(fromJson: _asMap)
+  Map<String, Object?> get rawNode {
+    if (_rawNode is EqualUnmodifiableMapView) return _rawNode;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(_rawNode);
+  }
+
   final List<Object?> _propertiesForWire;
   @override
   @JsonKey(name: 'properties')
@@ -3774,17 +3756,8 @@ class _$LiveEditSelectionImpl implements _LiveEditSelection {
     return EqualUnmodifiableListView(_propertiesForWire);
   }
 
-  final Map<String, Object?> _rawNode;
   @override
-  @JsonKey(fromJson: _asMap)
-  Map<String, Object?> get rawNode {
-    if (_rawNode is EqualUnmodifiableMapView) return _rawNode;
-    // ignore: implicit_dynamic_type
-    return EqualUnmodifiableMapView(_rawNode);
-  }
-
-  @override
-  @JsonKey(fromJson: _targetDomainFromJson, toJson: _enumToWire)
+  @JsonKey()
   final LiveEditTargetDomain targetDomain;
   @override
   final String? renderObjectType;
@@ -3829,7 +3802,7 @@ class _$LiveEditSelectionImpl implements _LiveEditSelection {
   }
 
   @override
-  @JsonKey(fromJson: _selectionModeFromJson, toJson: _enumToWire)
+  @JsonKey()
   final LiveEditSelectionMode selectionMode;
   final List<String> _selectedNodeIds;
   @override
@@ -3842,7 +3815,7 @@ class _$LiveEditSelectionImpl implements _LiveEditSelection {
 
   @override
   String toString() {
-    return 'LiveEditSelection(sessionId: $sessionId, nodeId: $nodeId, widgetType: $widgetType, propertiesForWire: $propertiesForWire, rawNode: $rawNode, targetDomain: $targetDomain, renderObjectType: $renderObjectType, bounds: $bounds, source: $source, layoutContext: $layoutContext, parentChain: $parentChain, detailsTree: $detailsTree, propertiesTree: $propertiesTree, selectionMode: $selectionMode, selectedNodeIds: $selectedNodeIds)';
+    return 'LiveEditSelection(sessionId: $sessionId, nodeId: $nodeId, widgetType: $widgetType, rawNode: $rawNode, propertiesForWire: $propertiesForWire, targetDomain: $targetDomain, renderObjectType: $renderObjectType, bounds: $bounds, source: $source, layoutContext: $layoutContext, parentChain: $parentChain, detailsTree: $detailsTree, propertiesTree: $propertiesTree, selectionMode: $selectionMode, selectedNodeIds: $selectedNodeIds)';
   }
 
   @override
@@ -3855,11 +3828,11 @@ class _$LiveEditSelectionImpl implements _LiveEditSelection {
             (identical(other.nodeId, nodeId) || other.nodeId == nodeId) &&
             (identical(other.widgetType, widgetType) ||
                 other.widgetType == widgetType) &&
+            const DeepCollectionEquality().equals(other._rawNode, _rawNode) &&
             const DeepCollectionEquality().equals(
               other._propertiesForWire,
               _propertiesForWire,
             ) &&
-            const DeepCollectionEquality().equals(other._rawNode, _rawNode) &&
             (identical(other.targetDomain, targetDomain) ||
                 other.targetDomain == targetDomain) &&
             (identical(other.renderObjectType, renderObjectType) ||
@@ -3897,8 +3870,8 @@ class _$LiveEditSelectionImpl implements _LiveEditSelection {
     sessionId,
     nodeId,
     widgetType,
-    const DeepCollectionEquality().hash(_propertiesForWire),
     const DeepCollectionEquality().hash(_rawNode),
+    const DeepCollectionEquality().hash(_propertiesForWire),
     targetDomain,
     renderObjectType,
     bounds,
@@ -3933,9 +3906,8 @@ abstract class _LiveEditSelection implements LiveEditSelection {
     required final String sessionId,
     required final String nodeId,
     required final String widgetType,
-    @JsonKey(name: 'properties') final List<Object?> propertiesForWire,
     @JsonKey(fromJson: _asMap) required final Map<String, Object?> rawNode,
-    @JsonKey(fromJson: _targetDomainFromJson, toJson: _enumToWire)
+    @JsonKey(name: 'properties') final List<Object?> propertiesForWire,
     final LiveEditTargetDomain targetDomain,
     final String? renderObjectType,
     final LiveEditBounds? bounds,
@@ -3944,7 +3916,6 @@ abstract class _LiveEditSelection implements LiveEditSelection {
     final List<Map<String, Object?>> parentChain,
     final Map<String, Object?> detailsTree,
     final Map<String, Object?> propertiesTree,
-    @JsonKey(fromJson: _selectionModeFromJson, toJson: _enumToWire)
     final LiveEditSelectionMode selectionMode,
     final List<String> selectedNodeIds,
   }) = _$LiveEditSelectionImpl;
@@ -3959,13 +3930,12 @@ abstract class _LiveEditSelection implements LiveEditSelection {
   @override
   String get widgetType;
   @override
-  @JsonKey(name: 'properties')
-  List<Object?> get propertiesForWire;
-  @override
   @JsonKey(fromJson: _asMap)
   Map<String, Object?> get rawNode;
   @override
-  @JsonKey(fromJson: _targetDomainFromJson, toJson: _enumToWire)
+  @JsonKey(name: 'properties')
+  List<Object?> get propertiesForWire;
+  @override
   LiveEditTargetDomain get targetDomain;
   @override
   String? get renderObjectType;
@@ -3982,7 +3952,6 @@ abstract class _LiveEditSelection implements LiveEditSelection {
   @override
   Map<String, Object?> get propertiesTree;
   @override
-  @JsonKey(fromJson: _selectionModeFromJson, toJson: _enumToWire)
   LiveEditSelectionMode get selectionMode;
   @override
   List<String> get selectedNodeIds;

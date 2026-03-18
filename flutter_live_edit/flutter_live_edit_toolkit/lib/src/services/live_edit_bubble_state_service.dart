@@ -163,12 +163,11 @@ final class LiveEditBubbleStateService {
                     LiveEditEditMode.ai
                 ? LiveEditEditMode.ai
                 : LiveEditEditMode.edit);
-      final activePropertyId =
-          ctx
-              .bubbleResource
-              .value
-              .layerViewStateByDomain[domain]
-              ?.activePropertyId;
+      final activePropertyId = ctx
+          .bubbleResource
+          .value
+          .layerViewStateByDomain[domain]
+          ?.activePropertyId;
       final layerMap = Map<LiveEditTargetDomain, LiveEditLayerViewState>.from(
         ctx.bubbleResource.value.layerViewStateByDomain,
       );

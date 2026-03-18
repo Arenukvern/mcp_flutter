@@ -18,8 +18,9 @@ double maxDouble(final double left, final double right) =>
 double minDouble(final double left, final double right) =>
     left < right ? left : right;
 
-List<Object?> commonEditableProperties(final List<LiveEditSelection> selections) =>
-    const <Object?>[];
+List<Object?> commonEditableProperties(
+  final List<LiveEditSelection> selections,
+) => const <Object?>[];
 
 // --- Selectors (ctx + controller) ---
 

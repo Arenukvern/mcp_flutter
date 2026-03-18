@@ -433,10 +433,7 @@ int _preferredSelectionIndex({
   var bestRank = -1;
   for (var index = 0; index < hits.length; index += 1) {
     final hit = hits[index];
-    final metadata = _selectionMetadataForElement(
-      session,
-      hit.element,
-    );
+    final metadata = _selectionMetadataForElement(session, hit.element);
     final widgetType = hit.element.widget.runtimeType.toString();
     final weakStructuralCandidate = _structuralWidgetTypes.contains(widgetType);
     var rank = 0;
@@ -1901,10 +1898,8 @@ final class LiveEditSessionService {
       .map((final hit) => _resolveMarqueeCandidate(session, hit))
       .whereType<_MarqueeCandidateCacheEntry>()
       .map(
-        (final entry) => _buildLightweightSelectionFromCache(
-          session: session,
-          entry: entry,
-        ),
+        (final entry) =>
+            _buildLightweightSelectionFromCache(session: session, entry: entry),
       )
       .fold(<String, LiveEditSelection>{}, (final map, final selection) {
         map.putIfAbsent(selection.nodeId, () => selection);

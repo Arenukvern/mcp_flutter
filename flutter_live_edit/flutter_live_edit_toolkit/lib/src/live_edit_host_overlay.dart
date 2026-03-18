@@ -120,8 +120,12 @@ class _LiveEditOverlayPainter extends CustomPainter {
     if (currentSelection == null || currentSelection.bounds == null) return;
 
     final bounds = currentSelection.bounds!;
-    final baseRect =
-        Rect.fromLTRB(bounds.left, bounds.top, bounds.right, bounds.bottom);
+    final baseRect = Rect.fromLTRB(
+      bounds.left,
+      bounds.top,
+      bounds.right,
+      bounds.bottom,
+    );
     final selectionPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2
@@ -205,8 +209,12 @@ class _LiveEditOverlayPainter extends CustomPainter {
   void _paintHover(Canvas canvas) {
     final hovered = hoverSelection?.bounds;
     if (hovered == null) return;
-    final rect =
-        Rect.fromLTRB(hovered.left, hovered.top, hovered.right, hovered.bottom);
+    final rect = Rect.fromLTRB(
+      hovered.left,
+      hovered.top,
+      hovered.right,
+      hovered.bottom,
+    );
     canvas.drawRect(rect, Paint()..color = const Color(0x220EA5E9));
     canvas.drawRect(
       rect,
@@ -272,9 +280,9 @@ class _LiveEditOverlayState extends State<LiveEditOverlay> {
       );
 
   Rect? get _marqueeRectForDomain => widget.controller.marqueeRectForDomain(
-        targetDomain: widget.targetDomain,
-        sessionId: _sessionId,
-      );
+    targetDomain: widget.targetDomain,
+    sessionId: _sessionId,
+  );
 
   List<LiveEditSelection> get _marqueeSelectionsForDomain =>
       widget.controller.marqueeSelectionsForDomain(
@@ -306,121 +314,120 @@ class _LiveEditOverlayState extends State<LiveEditOverlay> {
 
   @override
   Widget build(BuildContext context) => Positioned.fill(
-        child: _HitTestExclusionScope(
-          excludedRects: widget.excludedRects,
-          child: Focus(
-            autofocus: true,
-            child: MouseRegion(
-              onHover: widget.interactive
-                  ? (final event) {
-                      HoverAtPointCommand(
-                        x: event.position.dx.round(),
-                        y: event.position.dy.round(),
-                        contentRoot: _contentRoot,
-                        deeperMode: _deeperPickEnabled,
-                        targetDomain: widget.targetDomain,
-                      ).execute(widget.context);
-                    }
-                  : null,
-              onExit: widget.interactive
-                  ? (_) => ClearHoverCommand().execute(widget.context)
-                  : null,
-              child: IgnorePointer(
-                ignoring: !widget.interactive,
-                child: Listener(
-                  behavior: HitTestBehavior.translucent,
-                  onPointerDown: (final event) {
-                    _pointerDown = event.position;
-                    _dragging = false;
-                    HoverAtPointCommand(
-                      x: event.position.dx.round(),
-                      y: event.position.dy.round(),
-                      contentRoot: _contentRoot,
-                      deeperMode: _deeperPickEnabled,
-                      targetDomain: widget.targetDomain,
-                    ).execute(widget.context);
-                  },
-                  onPointerMove: (final event) {
-                    final start = _pointerDown;
-                    if (start == null) {
-                      HoverAtPointCommand(
-                        x: event.position.dx.round(),
-                        y: event.position.dy.round(),
-                        contentRoot: _contentRoot,
-                        deeperMode: _deeperPickEnabled,
-                        targetDomain: widget.targetDomain,
-                      ).execute(widget.context);
-                      return;
-                    }
-                    if (!_dragging &&
-                        (event.position - start).distance >= _dragThreshold) {
-                      _dragging = true;
-                      StartMarqueeCommand(
-                        x: start.dx.round(),
-                        y: start.dy.round(),
-                      ).execute(widget.context);
-                    }
-                    if (_dragging) {
-                      UpdateMarqueeCommand(
-                        x: event.position.dx.round(),
-                        y: event.position.dy.round(),
-                        contentRoot: _contentRoot,
-                      ).execute(widget.context);
-                      return;
-                    }
-                    HoverAtPointCommand(
-                      x: event.position.dx.round(),
-                      y: event.position.dy.round(),
-                      contentRoot: _contentRoot,
-                      deeperMode: _deeperPickEnabled,
-                      targetDomain: widget.targetDomain,
-                    ).execute(widget.context);
-                  },
-                  onPointerUp: (final event) {
-                    if (_dragging) {
-                      CommitMarqueeCommand(
-                        controller: widget.controller,
-                      ).execute(widget.context);
-                    } else {
-                      SelectNodeCommand(
-                        x: event.position.dx.round(),
-                        y: event.position.dy.round(),
-                        controller: widget.controller,
-                        contentRoot: _contentRoot,
-                        preferHoverPreview: _deeperPickEnabled,
-                        targetDomain: widget.targetDomain,
-                        openBubbleOnSelect: widget.openBubbleOnSelect,
-                      ).execute(widget.context);
-                    }
-                    _pointerDown = null;
-                    _dragging = false;
-                  },
-                  onPointerCancel: (_) {
-                    if (_dragging) {
-                      CancelMarqueeCommand().execute(widget.context);
-                    }
-                    _pointerDown = null;
-                    _dragging = false;
-                  },
-                  child: CustomPaint(
-                    painter: _LiveEditOverlayPainter(
-                      selection: _selectionForDomain,
-                      hoverSelection: _hoverForDomain,
-                      multiSelection: _marqueeRectForDomain != null
-                          ? _marqueeSelectionsForDomain
-                          : _multiSelectionForDomain,
-                      marqueeRect: _marqueeRectForDomain,
-                      deeperPickActive:
-                          widget.interactive && _deeperPickEnabled,
-                      draftChanges: _draftChangesForDomain,
-                    ),
-                  ),
+    child: _HitTestExclusionScope(
+      excludedRects: widget.excludedRects,
+      child: Focus(
+        autofocus: true,
+        child: MouseRegion(
+          onHover: widget.interactive
+              ? (final event) {
+                  HoverAtPointCommand(
+                    x: event.position.dx.round(),
+                    y: event.position.dy.round(),
+                    contentRoot: _contentRoot,
+                    deeperMode: _deeperPickEnabled,
+                    targetDomain: widget.targetDomain,
+                  ).execute(widget.context);
+                }
+              : null,
+          onExit: widget.interactive
+              ? (_) => ClearHoverCommand().execute(widget.context)
+              : null,
+          child: IgnorePointer(
+            ignoring: !widget.interactive,
+            child: Listener(
+              behavior: HitTestBehavior.translucent,
+              onPointerDown: (final event) {
+                _pointerDown = event.position;
+                _dragging = false;
+                HoverAtPointCommand(
+                  x: event.position.dx.round(),
+                  y: event.position.dy.round(),
+                  contentRoot: _contentRoot,
+                  deeperMode: _deeperPickEnabled,
+                  targetDomain: widget.targetDomain,
+                ).execute(widget.context);
+              },
+              onPointerMove: (final event) {
+                final start = _pointerDown;
+                if (start == null) {
+                  HoverAtPointCommand(
+                    x: event.position.dx.round(),
+                    y: event.position.dy.round(),
+                    contentRoot: _contentRoot,
+                    deeperMode: _deeperPickEnabled,
+                    targetDomain: widget.targetDomain,
+                  ).execute(widget.context);
+                  return;
+                }
+                if (!_dragging &&
+                    (event.position - start).distance >= _dragThreshold) {
+                  _dragging = true;
+                  StartMarqueeCommand(
+                    x: start.dx.round(),
+                    y: start.dy.round(),
+                  ).execute(widget.context);
+                }
+                if (_dragging) {
+                  UpdateMarqueeCommand(
+                    x: event.position.dx.round(),
+                    y: event.position.dy.round(),
+                    contentRoot: _contentRoot,
+                  ).execute(widget.context);
+                  return;
+                }
+                HoverAtPointCommand(
+                  x: event.position.dx.round(),
+                  y: event.position.dy.round(),
+                  contentRoot: _contentRoot,
+                  deeperMode: _deeperPickEnabled,
+                  targetDomain: widget.targetDomain,
+                ).execute(widget.context);
+              },
+              onPointerUp: (final event) {
+                if (_dragging) {
+                  CommitMarqueeCommand(
+                    controller: widget.controller,
+                  ).execute(widget.context);
+                } else {
+                  SelectNodeCommand(
+                    x: event.position.dx.round(),
+                    y: event.position.dy.round(),
+                    controller: widget.controller,
+                    contentRoot: _contentRoot,
+                    preferHoverPreview: _deeperPickEnabled,
+                    targetDomain: widget.targetDomain,
+                    openBubbleOnSelect: widget.openBubbleOnSelect,
+                  ).execute(widget.context);
+                }
+                _pointerDown = null;
+                _dragging = false;
+              },
+              onPointerCancel: (_) {
+                if (_dragging) {
+                  CancelMarqueeCommand().execute(widget.context);
+                }
+                _pointerDown = null;
+                _dragging = false;
+              },
+              child: CustomPaint(
+                painter: _LiveEditOverlayPainter(
+                  selection: _selectionForDomain,
+                  hoverSelection: _hoverForDomain,
+                  multiSelection: _marqueeRectForDomain != null
+                      ? _marqueeSelectionsForDomain
+                      : _multiSelectionForDomain,
+                  marqueeRect: _marqueeRectForDomain,
+                  deeperPickActive: widget.interactive && _deeperPickEnabled,
+                  draftChanges: _draftChangesForDomain,
                 ),
               ),
             ),
           ),
         ),
-      );
+      ),
+    ),
+  );
 }
 
 class _RenderHitTestExclusionScope extends RenderProxyBox {
@@ -443,10 +450,7 @@ class _RenderHitTestExclusionScope extends RenderProxyBox {
   }
 
   @override
-  bool hitTest(
-    BoxHitTestResult result, {
-    required Offset position,
-  }) {
+  bool hitTest(BoxHitTestResult result, {required Offset position}) {
     for (final rect in _excludedRects) {
       if (rect.contains(position)) return false;
     }
