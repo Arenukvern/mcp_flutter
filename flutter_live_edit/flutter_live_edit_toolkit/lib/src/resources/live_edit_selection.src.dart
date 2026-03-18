@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 
 import 'live_edit_selection.src.data.dart';
 

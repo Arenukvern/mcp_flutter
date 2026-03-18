@@ -8,12 +8,11 @@ void main() {
     late DefaultCoreCommandExecutor executor;
 
     setUp(() {
-      final logger =
-          (
-            final LoggingLevel level,
-            final String message, {
-            final String logger = 'test',
-          }) {};
+      void logger(
+        final LoggingLevel level,
+        final String message, {
+        final String logger = 'test',
+      }) {}
 
       final context = ConnectionContext(
         defaultHost: 'localhost',
@@ -51,12 +50,11 @@ void main() {
     });
 
     test('desktop window screenshot mode succeeds without VM bridge', () async {
-      final logger =
-          (
-            final LoggingLevel level,
-            final String message, {
-            final String logger = 'test',
-          }) {};
+      void logger(
+        final LoggingLevel level,
+        final String message, {
+        final String logger = 'test',
+      }) {}
 
       final localExecutor = DefaultCoreCommandExecutor(
         connectionContext: ConnectionContext(
@@ -78,13 +76,14 @@ void main() {
           flutterProjectDir: '/tmp/sample_app',
           flutterDevice: 'macos',
         ),
-        desktopWindowScreenshotService: _FakeDesktopWindowScreenshotService(
-          result: const DesktopWindowScreenshotCapture(
-            images: <String>['AQID'],
-            captureMode: 'desktop_window',
-            metadata: <String, Object?>{'appName': 'sample_app'},
-          ),
-        ),
+        desktopWindowScreenshotService:
+            const _FakeDesktopWindowScreenshotService(
+              result: DesktopWindowScreenshotCapture(
+                images: <String>['AQID'],
+                captureMode: 'desktop_window',
+                metadata: <String, Object?>{'appName': 'sample_app'},
+              ),
+            ),
       );
 
       final result = await localExecutor.execute(
@@ -99,12 +98,11 @@ void main() {
     });
 
     test('desktop window screenshot mode surfaces capture failures', () async {
-      final logger =
-          (
-            final LoggingLevel level,
-            final String message, {
-            final String logger = 'test',
-          }) {};
+      void logger(
+        final LoggingLevel level,
+        final String message, {
+        final String logger = 'test',
+      }) {}
 
       final localExecutor = DefaultCoreCommandExecutor(
         connectionContext: ConnectionContext(
@@ -143,12 +141,11 @@ void main() {
     test(
       'desktop window screenshot mode preserves structured capture diagnostics',
       () async {
-        final logger =
-            (
-              final LoggingLevel level,
-              final String message, {
-              final String logger = 'test',
-            }) {};
+        void logger(
+          final LoggingLevel level,
+          final String message, {
+          final String logger = 'test',
+        }) {}
 
         final localExecutor = DefaultCoreCommandExecutor(
           connectionContext: ConnectionContext(
@@ -170,15 +167,17 @@ void main() {
             flutterProjectDir: '/tmp/sample_app',
             flutterDevice: 'macos',
           ),
-          desktopWindowScreenshotService: _FakeDesktopWindowScreenshotService(
-            error: const DesktopWindowCaptureException(
-              message: 'macOS desktop window capture failed: window_not_found',
-              details: <String, Object?>{
-                'visibleOwners': <String>['Codex'],
-                'allOwners': <String>['Codex', 'sample_app'],
-              },
-            ),
-          ),
+          desktopWindowScreenshotService:
+              const _FakeDesktopWindowScreenshotService(
+                error: DesktopWindowCaptureException(
+                  message:
+                      'macOS desktop window capture failed: window_not_found',
+                  details: <String, Object?>{
+                    'visibleOwners': <String>['Codex'],
+                    'allOwners': <String>['Codex', 'sample_app'],
+                  },
+                ),
+              ),
         );
 
         final result = await localExecutor.execute(
@@ -199,12 +198,11 @@ void main() {
     );
 
     test('auto-request surfaces actionable permission denial', () async {
-      final logger =
-          (
-            final LoggingLevel level,
-            final String message, {
-            final String logger = 'test',
-          }) {};
+      void logger(
+        final LoggingLevel level,
+        final String message, {
+        final String logger = 'test',
+      }) {}
 
       final localExecutor = DefaultCoreCommandExecutor(
         connectionContext: ConnectionContext(
@@ -257,12 +255,11 @@ void main() {
     });
 
     test('auto ambiguity returns connection_selection_required', () async {
-      final logger =
-          (
-            final LoggingLevel level,
-            final String message, {
-            final String logger = 'test',
-          }) {};
+      void logger(
+        final LoggingLevel level,
+        final String message, {
+        final String logger = 'test',
+      }) {}
 
       final context = ConnectionContext(
         defaultHost: 'localhost',
@@ -303,17 +300,16 @@ void main() {
       );
       expect(details?['example'], isA<Map<String, Object?>>());
       final available = (details?['availableTargets'] as List<Object?>?) ?? [];
-      final firstTarget = available.first as Map<String, Object?>;
+      final firstTarget = available.first! as Map<String, Object?>;
       expect(firstTarget['targetId'], startsWith('ws://'));
     });
 
     test('unknown targetId returns connect_failed target_not_found', () async {
-      final logger =
-          (
-            final LoggingLevel level,
-            final String message, {
-            final String logger = 'test',
-          }) {};
+      void logger(
+        final LoggingLevel level,
+        final String message, {
+        final String logger = 'test',
+      }) {}
 
       final context = ConnectionContext(
         defaultHost: 'localhost',
@@ -338,10 +334,7 @@ void main() {
       );
 
       final result = await localExecutor.execute(
-        const ConnectCommand(
-          mode: CoreConnectionMode.auto,
-          targetId: 'ws://localhost:9999/ws',
-        ),
+        const ConnectCommand(targetId: 'ws://localhost:9999/ws'),
       );
 
       expect(result.ok, isFalse);
@@ -354,12 +347,11 @@ void main() {
     test(
       'tokenized targetId bypasses discovery lookup and attempts direct connect',
       () async {
-        final logger =
-            (
-              final LoggingLevel level,
-              final String message, {
-              final String logger = 'test',
-            }) {};
+        void logger(
+          final LoggingLevel level,
+          final String message, {
+          final String logger = 'test',
+        }) {}
 
         final context = ConnectionContext(
           defaultHost: 'localhost',
@@ -384,10 +376,7 @@ void main() {
         );
 
         final result = await localExecutor.execute(
-          const ConnectCommand(
-            mode: CoreConnectionMode.auto,
-            targetId: 'ws://127.0.0.1:9999/token/ws',
-          ),
+          const ConnectCommand(targetId: 'ws://127.0.0.1:9999/token/ws'),
         );
 
         expect(result.ok, isFalse);
@@ -401,12 +390,11 @@ void main() {
     );
 
     test('legacy host:port targetId returns migration error', () async {
-      final logger =
-          (
-            final LoggingLevel level,
-            final String message, {
-            final String logger = 'test',
-          }) {};
+      void logger(
+        final LoggingLevel level,
+        final String message, {
+        final String logger = 'test',
+      }) {}
 
       final context = ConnectionContext(
         defaultHost: 'localhost',
@@ -431,10 +419,7 @@ void main() {
       );
 
       final result = await localExecutor.execute(
-        const ConnectCommand(
-          mode: CoreConnectionMode.auto,
-          targetId: 'localhost:8181',
-        ),
+        const ConnectCommand(targetId: 'localhost:8181'),
       );
 
       expect(result.ok, isFalse);

@@ -17,7 +17,6 @@ import 'package:path/path.dart' as p;
 /// - textDocument/definition for navigation
 /// - initialize/shutdown lifecycle
 /// {@endtemplate}
-@immutable
 final class DartLspClient {
   /// {@macro dart_lsp_client}
   DartLspClient({

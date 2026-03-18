@@ -53,18 +53,12 @@ final class LiveEditApplyService {
         executionPlan: executionPlan,
         lastError: null,
       );
-      final summary =
-          executionResult?.summary ??
-          (executionPlan != null
-              ? 'Applied bubble change to source.'
-              : 'Applied.');
       return LiveEditApplyResult(
         applyPhase: LiveEditApplyPhase.success,
         bubbleId: request.effectiveBubbleId,
         updatedBubbleRecord: updatedRecord,
         sessionId: request.sessionId,
         commitNodeIds: updatedRecord?.nodeIds,
-        showAppliedPreviewChanges: null,
         resolvedBubbleIdsAdd: request.effectiveBubbleId != null
             ? <String>{request.effectiveBubbleId!}
             : null,

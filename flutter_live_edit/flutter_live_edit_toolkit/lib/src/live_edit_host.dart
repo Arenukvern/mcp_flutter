@@ -1972,7 +1972,6 @@ class _SelectionBubble extends StatelessWidget {
     final Key bubbleKey;
     final pv = context.panelViewResource.value;
     final bubbleWidth = pv.bubbleWidth;
-    final bubbleHeight = pv.bubbleHeight;
     if (summary != null) {
       final record = selectBubbleRecord(context, summary.bubbleId);
       selection = record?.primarySelection;

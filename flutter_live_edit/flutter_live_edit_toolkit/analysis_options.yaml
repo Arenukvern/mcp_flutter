@@ -9,6 +9,7 @@
 # packages, and plugins designed to encourage good coding practices.
 analyzer:
   errors:
+    cascade_invocations: ignore
     lines_longer_than_80_chars: ignore
 include: package:xsoulspace_lints/library.yaml
 

@@ -189,7 +189,7 @@ LiveEditSourceLocation? _extractSourceLocation(
   assert(() {
     sourceHint = element.debugGetCreatorChain(8);
     return true;
-  }());
+  }(), 'sourceHint');
   if (sourceHint == null || sourceHint!.trim().isEmpty) {
     return null;
   }
@@ -470,7 +470,7 @@ bool _isUserAuthoredElement(
   assert(() {
     sourceHint = element.debugGetCreatorChain(8);
     return true;
-  }());
+  }(), 'sourceHint');
   return _hasText(sourceHint) && !_looksFrameworkOwnedHint(sourceHint);
 }
 
@@ -741,7 +741,6 @@ LiveEditSelection _buildHoverSelection({
           detailsTree,
           targetDomain: targetDomain,
         ),
-    propertiesForWire: const <Object?>[],
     rawNode: rawNode,
   );
 }
@@ -776,7 +775,6 @@ LiveEditSelection _buildLightweightSelection({
           tracked?.detailsTree ?? const <String, Object?>{},
           targetDomain: session.targetDomain,
         ),
-    propertiesForWire: const <Object?>[],
     rawNode: tracked?.rawNode ?? const <String, Object?>{},
   );
 }
@@ -794,7 +792,6 @@ LiveEditSelection _buildLightweightSelectionFromCache({
     renderObjectType: entry.renderObject.runtimeType.toString(),
     bounds: entry.bounds,
     source: tracked?.source,
-    propertiesForWire: const <Object?>[],
     rawNode: tracked?.rawNode ?? const <String, Object?>{},
   );
 }
@@ -869,7 +866,6 @@ final class LiveEditSessionService {
       session.sessionId,
       session.targetDomain,
       LiveEditDraftLayerData(
-        draftChanges: const <LiveEditDraftChange>[],
         meaningfulNodeIds: Set<String>.from(layer.meaningfulNodeIds),
       ),
     );
@@ -1116,7 +1112,7 @@ final class LiveEditSessionService {
   }) {
     final session = _requireSession(sessionId);
     final resolvedDomain = _resolveTargetDomain(session, targetDomain);
-    final layer = _layerForRequest(session, requested: resolvedDomain);
+    // final layer = _layerForRequest(session, requested: resolvedDomain);
     return <String, Object?>{
       'sessionId': session.sessionId,
       'targetDomain': resolvedDomain.wireName,
@@ -1658,7 +1654,6 @@ final class LiveEditSessionService {
           nodeId: surfaceSelection.nodeId,
           widgetType: surfaceSelection.widgetType,
           bounds: surfaceSelection.bounds,
-          depth: 0,
           source: surfaceSelection.source,
           createdByLocalProject: true,
           active: true,
@@ -2410,7 +2405,6 @@ final class LiveEditSessionService {
       renderObjectType: renderObject?.runtimeType.toString(),
       bounds: _boundsForRenderObject(renderObject),
       source: source,
-      propertiesForWire: const <Object?>[],
       layoutContext: _layoutContextForElement(element),
       parentChain: parentChain
           .whereType<Map>()

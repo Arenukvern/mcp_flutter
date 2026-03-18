@@ -1199,8 +1199,8 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
             .map((final change) => change.toJson())
             .toList(growable: false),
         'hasDraft': draftChanges.isNotEmpty,
-        'exactPreviewPropertyIds': <String>[],
-        'pendingPropertyIds': <String>[],
+        'exactPreviewPropertyIds': const <String>[],
+        'pendingPropertyIds': const <String>[],
       },
     );
   }
@@ -1728,40 +1728,6 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
 
     return true;
-  }
-
-  Object? _normalizeComparableValue(final Object? value) {
-    if (value is num) {
-      return value.toDouble();
-    }
-    if (value is bool) {
-      return value;
-    }
-    if (value is String) {
-      final trimmed = value.trim();
-      if (trimmed.isEmpty) {
-        return '';
-      }
-      final parsedNumber = num.tryParse(trimmed);
-      if (parsedNumber != null) {
-        return parsedNumber.toDouble();
-      }
-      return trimmed.toLowerCase();
-    }
-    if (value is Map) {
-      return jsonEncode(
-        value.map(
-          (final key, final nestedValue) =>
-              MapEntry('$key', _normalizeComparableValue(nestedValue)),
-        ),
-      );
-    }
-    if (value is List) {
-      return jsonEncode(
-        value.map(_normalizeComparableValue).toList(growable: false),
-      );
-    }
-    return value;
   }
 
   String _normalizeLiveEditSourceFile(final String file) {

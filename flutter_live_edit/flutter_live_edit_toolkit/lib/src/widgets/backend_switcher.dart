@@ -161,9 +161,6 @@ class BackendSwitcher extends StatelessWidget {
         ),
       );
     }
-    final surfaceTheme = LiveEditOverlayThemeModel.instance.styleFor(
-      kLiveEditBackendSwitcherSurfaceId,
-    );
     final surfaceKey = LiveEditOverlayThemeModel.instance.keyFor(
       kLiveEditBackendSwitcherSurfaceId,
     );

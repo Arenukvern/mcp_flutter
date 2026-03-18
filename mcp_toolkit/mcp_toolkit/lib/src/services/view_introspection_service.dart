@@ -59,7 +59,7 @@ mixin ViewIntrospectionService {
       return {
         'hit': false,
         'point': {'x': x, 'y': y},
-        if (viewId != null) 'viewId': viewId,
+        'viewId': ?viewId,
         'summary': const <String, Object?>{},
         'message': 'No Flutter render view is available for inspection.',
       };
@@ -150,9 +150,9 @@ mixin ViewIntrospectionService {
       if (renderObject != null) 'viewId': _viewIdForRenderObject(renderObject),
       'globalBounds': _globalBoundsForRenderObject(renderObject),
       'semanticBounds': _semanticBoundsForRenderObject(renderObject),
-      if (sourceLocationHint != null) 'sourceLocationHint': sourceLocationHint,
+      'sourceLocationHint': ?sourceLocationHint,
       'overflowFlags': _overflowFlagsForRenderObject(renderObject),
-      if (route != null) 'route': route,
+      'route': ?route,
       'children': children,
     };
   }
@@ -176,7 +176,7 @@ mixin ViewIntrospectionService {
   static int? _viewIdForRenderObject(final RenderObject renderObject) {
     RenderObject current = renderObject;
     while (current.parent is RenderObject) {
-      current = current.parent! as RenderObject;
+      current = current.parent!;
     }
 
     if (current is RenderView) {
@@ -368,7 +368,7 @@ mixin ViewIntrospectionService {
     if (element.widget.key != null) 'key': '${element.widget.key}',
     'renderObjectType': element.renderObject?.runtimeType.toString(),
     'sourceLocationHint': _sourceLocationHintForElement(element),
-    if (_routeInfoForElement(element) case final route?) 'route': route,
+    'route': ?_routeInfoForElement(element),
   };
 
   static Map<String, Object?> _semanticSummary(final RenderObject object) {

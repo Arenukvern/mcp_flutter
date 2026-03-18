@@ -208,37 +208,38 @@ List<LiveEditBubbleSummary> selectBubbleSummariesByDomain(
     presentationDomain: presentationDomain,
     sessionId: sessionId,
   );
-  final summaries = data.bubbleRecordsById.values
-      .where(
-        (final bubble) =>
-            bubble.targetDomain == domain &&
-            bubble.displayState == LiveEditBubbleDisplayState.minimized &&
-            !data.resolvedBubbleIds.contains(bubble.bubbleId),
-      )
-      .map((final bubble) {
-        final selection = bubble.primarySelection;
-        final source = selection?.source;
-        return LiveEditBubbleSummary(
-          bubbleId: bubble.bubbleId,
-          targetDomain: bubble.targetDomain,
-          targetKey: bubble.targetKey,
-          nodeId: selection?.nodeId ?? bubble.targetKey,
-          label: selection?.widgetType ?? bubble.targetKey,
-          status: bubble.status,
-          active: bubble.bubbleId == activeBubbleId,
-          displayState: bubble.displayState,
-          bounds: selection?.bounds,
-          sourceLabel: !hasText(source?.file)
-              ? null
-              : '${source!.file}${source.line == null ? '' : ':${source.line}'}',
-        );
-      })
-      .toList(growable: false);
-  summaries.sort((final left, final right) {
-    final activeScore = (right.active ? 1 : 0) - (left.active ? 1 : 0);
-    if (activeScore != 0) return activeScore;
-    return left.label.compareTo(right.label);
-  });
+  final summaries =
+      data.bubbleRecordsById.values
+          .where(
+            (final bubble) =>
+                bubble.targetDomain == domain &&
+                bubble.displayState == LiveEditBubbleDisplayState.minimized &&
+                !data.resolvedBubbleIds.contains(bubble.bubbleId),
+          )
+          .map((final bubble) {
+            final selection = bubble.primarySelection;
+            final source = selection?.source;
+            return LiveEditBubbleSummary(
+              bubbleId: bubble.bubbleId,
+              targetDomain: bubble.targetDomain,
+              targetKey: bubble.targetKey,
+              nodeId: selection?.nodeId ?? bubble.targetKey,
+              label: selection?.widgetType ?? bubble.targetKey,
+              status: bubble.status,
+              active: bubble.bubbleId == activeBubbleId,
+              displayState: bubble.displayState,
+              bounds: selection?.bounds,
+              sourceLabel: !hasText(source?.file)
+                  ? null
+                  : '${source!.file}${source.line == null ? '' : ':${source.line}'}',
+            );
+          })
+          .toList(growable: false)
+        ..sort((final left, final right) {
+          final activeScore = (right.active ? 1 : 0) - (left.active ? 1 : 0);
+          if (activeScore != 0) return activeScore;
+          return left.label.compareTo(right.label);
+        });
   return summaries;
 }
 
@@ -884,7 +885,7 @@ String? selectBackendIdForBubble(
 LiveEditTargetDomain selectPresentedLayer(final LiveEditContext ctx) {
   final domain = ctx.sessionResource.value.targetDomain;
   if (domain == LiveEditTargetDomain.toolScene &&
-      !(ctx.panelViewResource.value.toolPresentationArmed)) {
+      !ctx.panelViewResource.value.toolPresentationArmed) {
     return LiveEditTargetDomain.appScene;
   }
   return domain;
@@ -1013,9 +1014,9 @@ LiveEditActivityEntry? selectCurrentActivity(
       step: LiveEditActivityStep.failed,
       label: 'Failed',
       summary: _failureSummary(lastErr!, bubbleId: bubbleId!),
-      details: <String>[lastErr!],
+      details: <String>[lastErr],
       timestamp: now,
-      nodeId: bubbleId!,
+      nodeId: bubbleId,
       errorText: lastErr,
     );
   }
@@ -1026,7 +1027,7 @@ LiveEditActivityEntry? selectCurrentActivity(
       label: 'Applied',
       summary: 'Live-edit changes are applied for this node.',
       timestamp: now,
-      nodeId: bubbleId!,
+      nodeId: bubbleId,
     );
   }
   if (selectNeedsApproval(ctx)) {
@@ -1038,7 +1039,7 @@ LiveEditActivityEntry? selectCurrentActivity(
           ctx.bubbleResource.value.pendingExecutionPlan?.summary ??
           '$backendLabel is applying this bubble change.',
       timestamp: now,
-      nodeId: bubbleId!,
+      nodeId: bubbleId,
     );
   }
   if (selectDraftChangesForDomain(
@@ -1052,7 +1053,7 @@ LiveEditActivityEntry? selectCurrentActivity(
       label: 'Draft ready',
       summary: 'Draft changes are ready to send to $backendLabel.',
       timestamp: now,
-      nodeId: bubbleId!,
+      nodeId: bubbleId,
     );
   }
   if (selectCanTriggerApply(
@@ -1077,7 +1078,7 @@ LiveEditActivityEntry? selectCurrentActivity(
         label: 'Prompt ready',
         summary: 'AI prompt is ready to send to $backendLabel.',
         timestamp: now,
-        nodeId: bubbleId!,
+        nodeId: bubbleId,
       );
     }
   }
@@ -1142,8 +1143,8 @@ bool selectHasAgentBackedDrafts(
 String selectDefaultAiPrompt(
   final LiveEditContext ctx,
   final LiveEditController controller, {
-  final String? intentText,
   required final LiveEditTargetDomain presentationDomain,
+  final String? intentText,
   final String? sessionId,
 }) {
   final sessionId_ = sessionId ?? ctx.sessionResource.value.activeSessionId;
