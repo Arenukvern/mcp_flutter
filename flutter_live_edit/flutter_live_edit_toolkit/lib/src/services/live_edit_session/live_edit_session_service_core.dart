@@ -13,7 +13,7 @@ class _LiveEditSessionServiceCore {
   LiveEditSessionUpdate? get lastUpdate => _lastUpdate;
 
   LiveEditSessionUpdate? _buildLastUpdate() {
-    final session = this._activeSessionOrNull();
+    final session = _activeSessionOrNull();
     if (session == null) return null;
     final sessionData = LiveEditSessionResourceData(
       activeSessionId: _activeSessionId,
@@ -53,7 +53,7 @@ class _LiveEditSessionServiceCore {
   }
 
   _LiveEditLayerState _activeLayerOrNull() {
-    final session = this._activeSessionOrNull();
+    final session = _activeSessionOrNull();
     if (session == null) {
       return _LiveEditLayerState();
     }
@@ -91,21 +91,21 @@ class _LiveEditSessionServiceCore {
 
   String? get activeSessionId => _activeSessionId;
 
-  bool get overlayVisible => this._activeSessionOrNull()?.overlayEnabled ?? false;
+  bool get overlayVisible => _activeSessionOrNull()?.overlayEnabled ?? false;
 
   LiveEditTargetDomain currentTargetDomain({final String? sessionId}) =>
-      this._requireSession(sessionId).targetDomain;
+      _requireSession(sessionId).targetDomain;
 
   bool isMeaningfulNode(final String nodeId, {final String? sessionId}) =>
       _layerForRequest(
-        this._requireSession(sessionId),
+        _requireSession(sessionId),
       ).meaningfulNodeIds.contains(nodeId);
 
   LiveEditSelection? selectionForDomain({
     required final LiveEditTargetDomain targetDomain,
     final String? sessionId,
   }) => _layerForRequest(
-    this._requireSession(sessionId),
+    _requireSession(sessionId),
     requested: targetDomain,
   ).selection;
 
@@ -113,7 +113,7 @@ class _LiveEditSessionServiceCore {
     required final LiveEditTargetDomain targetDomain,
     final String? sessionId,
   }) => _layerForRequest(
-    this._requireSession(sessionId),
+    _requireSession(sessionId),
     requested: targetDomain,
   ).hoverSelection;
 
@@ -121,7 +121,7 @@ class _LiveEditSessionServiceCore {
     required final LiveEditTargetDomain targetDomain,
     final String? sessionId,
   }) => _layerForRequest(
-    this._requireSession(sessionId),
+    _requireSession(sessionId),
     requested: targetDomain,
   ).marqueeRect;
 
@@ -130,7 +130,7 @@ class _LiveEditSessionServiceCore {
     final String? sessionId,
   }) => List<LiveEditSelection>.unmodifiable(
     _layerForRequest(
-      this._requireSession(sessionId),
+      _requireSession(sessionId),
       requested: targetDomain,
     ).marqueeSelections,
   );
@@ -145,7 +145,7 @@ class _LiveEditSessionServiceCore {
     final String? sessionId,
   }) => List<LiveEditSelection>.unmodifiable(
     _layerForRequest(
-      this._requireSession(sessionId),
+      _requireSession(sessionId),
       requested: targetDomain,
     ).multiSelections,
   );
@@ -155,15 +155,15 @@ class _LiveEditSessionServiceCore {
     final String? sessionId,
   }) => List<LiveEditSelectionCandidate>.unmodifiable(
     _layerForRequest(
-      this._requireSession(sessionId),
+      _requireSession(sessionId),
       requested: targetDomain,
     ).selectionCandidates,
   );
 
   Map<String, Object?> discardDraft({final String? sessionId}) {
-    final session = this._requireSession(sessionId);
+    final session = _requireSession(sessionId);
     final layer = _layerForRequest(session);
-    this._revertExactPreview(session, layer: layer);
+    _revertExactPreview(session, layer: layer);
     layer.meaningfulNodeIds.remove(layer.selection?.nodeId);
     session.lastTouchedAt = DateTime.now().toUtc();
     _lastUpdate = _buildLastUpdate();
@@ -178,13 +178,13 @@ class _LiveEditSessionServiceCore {
     required final List<String> nodeIds,
     final String? sessionId,
   }) {
-    final session = this._requireSession(sessionId);
+    final session = _requireSession(sessionId);
     final layer = _layerForRequest(session);
     final normalized = nodeIds.where(_hasText).toSet();
     if (normalized.isEmpty) {
       return discardDraft(sessionId: session.sessionId);
     }
-    this._revertExactPreview(session, layer: layer, nodeIds: normalized);
+    _revertExactPreview(session, layer: layer, nodeIds: normalized);
     layer.meaningfulNodeIds.removeAll(normalized);
     session.lastTouchedAt = DateTime.now().toUtc();
     _lastUpdate = _buildLastUpdate();
@@ -196,7 +196,7 @@ class _LiveEditSessionServiceCore {
   }
 
   Map<String, Object?> commitDraft({final String? sessionId}) {
-    final session = this._requireSession(sessionId);
+    final session = _requireSession(sessionId);
     final layer = _layerForRequest(session);
     layer.originalExactValues.clear();
     session.lastTouchedAt = DateTime.now().toUtc();
@@ -212,7 +212,7 @@ class _LiveEditSessionServiceCore {
     required final List<String> nodeIds,
     final String? sessionId,
   }) {
-    final session = this._requireSession(sessionId);
+    final session = _requireSession(sessionId);
     final layer = _layerForRequest(session);
     final normalized = nodeIds.where(_hasText).toSet();
     if (normalized.isEmpty) {
@@ -237,7 +237,7 @@ class _LiveEditSessionServiceCore {
     required final List<LiveEditDraftChange> changes,
     final String? sessionId,
   }) {
-    final session = this._requireSession(sessionId);
+    final session = _requireSession(sessionId);
     final layer = _layerForRequest(session);
     if (changes.isEmpty) {
       return;
@@ -256,7 +256,7 @@ class _LiveEditSessionServiceCore {
         if (tracked == null) {
           continue;
         }
-        this._applyExactPreviewIfSupported(
+        _applyExactPreviewIfSupported(
           currentSession,
           change,
           layerOverride: layer,
@@ -268,9 +268,9 @@ class _LiveEditSessionServiceCore {
   }
 
   Map<String, Object?> endSession({final String? sessionId}) {
-    final session = this._requireSession(sessionId);
-    this._revertExactPreview(session, layer: session.appLayer);
-    this._revertExactPreview(session, layer: session.toolLayer);
+    final session = _requireSession(sessionId);
+    _revertExactPreview(session, layer: session.appLayer);
+    _revertExactPreview(session, layer: session.toolLayer);
     final removed = _sessions.remove(session.sessionId);
     if (_activeSessionId == session.sessionId) {
       _activeSessionId = _sessions.keys.isEmpty ? null : _sessions.keys.first;
@@ -286,8 +286,8 @@ class _LiveEditSessionServiceCore {
     final String? sessionId,
     final LiveEditTargetDomain? targetDomain,
   }) {
-    final session = this._requireSession(sessionId);
-    final resolvedDomain = this._resolveTargetDomain(session, targetDomain);
+    final session = _requireSession(sessionId);
+    final resolvedDomain = _resolveTargetDomain(session, targetDomain);
     // final layer = _layerForRequest(session, requested: resolvedDomain);
     return <String, Object?>{
       'sessionId': session.sessionId,
@@ -300,8 +300,8 @@ class _LiveEditSessionServiceCore {
     final String? sessionId,
     final LiveEditTargetDomain? targetDomain,
   }) {
-    final session = this._requireSession(sessionId);
-    final resolvedDomain = this._resolveTargetDomain(session, targetDomain);
+    final session = _requireSession(sessionId);
+    final resolvedDomain = _resolveTargetDomain(session, targetDomain);
     final layer = _layerForRequest(session, requested: resolvedDomain);
     final selection = layer.selection;
     return <String, Object?>{
@@ -323,8 +323,8 @@ class _LiveEditSessionServiceCore {
     final String? sessionId,
     final LiveEditTargetDomain? targetDomain,
   }) {
-    final session = this._requireSession(sessionId);
-    final resolvedDomain = this._resolveTargetDomain(session, targetDomain);
+    final session = _requireSession(sessionId);
+    final resolvedDomain = _resolveTargetDomain(session, targetDomain);
     if (resolvedDomain == LiveEditTargetDomain.toolScene) {
       session.lastTouchedAt = DateTime.now().toUtc();
       return <String, Object?>{
@@ -366,8 +366,8 @@ class _LiveEditSessionServiceCore {
     final Element? contentRoot,
     final LiveEditTargetDomain? targetDomain,
   }) {
-    final session = this._requireSession(sessionId);
-    final resolvedDomain = this._resolveTargetDomain(session, targetDomain);
+    final session = _requireSession(sessionId);
+    final resolvedDomain = _resolveTargetDomain(session, targetDomain);
     final root =
         (contentRoot != null && contentRoot.mounted ? contentRoot : null) ??
         WidgetsBinding.instance.rootElement;
@@ -433,7 +433,7 @@ class _LiveEditSessionServiceCore {
   }
 
   Map<String, Object?> clearHover({final String? sessionId}) {
-    final session = this._requireSession(sessionId);
+    final session = _requireSession(sessionId);
     final hadHover =
         session.hoverSelection != null ||
         session.hoverHitCandidates.isNotEmpty ||
@@ -461,8 +461,8 @@ class _LiveEditSessionServiceCore {
         LiveEditSelectionPolicy.deepest,
     final LiveEditTargetDomain? targetDomain,
   }) {
-    final session = this._requireSession(sessionId);
-    final resolvedDomain = this._resolveTargetDomain(session, targetDomain);
+    final session = _requireSession(sessionId);
+    final resolvedDomain = _resolveTargetDomain(session, targetDomain);
     final root =
         (contentRoot != null && contentRoot.mounted ? contentRoot : null) ??
         WidgetsBinding.instance.rootElement;
@@ -509,13 +509,31 @@ class _LiveEditSessionServiceCore {
             selectionPolicy: selectionPolicy,
             targetDomain: resolvedDomain,
           );
-    final selection = this._setSelection(
+    final hit = hits[selectedIndex];
+    final layer = _layerForRequest(session, requested: resolvedDomain);
+    if (layer.selectedElement != null &&
+        identical(layer.selectedElement, hit.element) &&
+        layer.selection != null &&
+        layer.multiSelections.length == 1) {
+      _lastUpdate = _buildLastUpdate();
+      return <String, Object?>{
+        'sessionId': session.sessionId,
+        'targetDomain': resolvedDomain.wireName,
+        'hit': true,
+        'point': <String, Object?>{'x': x, 'y': y},
+        'selection': layer.selection!.toJson(),
+        'selectionCandidates': session.selectionCandidates
+            .map((final candidate) => candidate.toJson())
+            .toList(growable: false),
+      };
+    }
+    final selection = _setSelection(
       session: session,
-      element: hits[selectedIndex].element,
-      ancestry: hits[selectedIndex].ancestry,
+      element: hit.element,
+      ancestry: hit.ancestry,
     );
     session.multiSelections = <LiveEditSelection>[selection];
-    this._syncSelectionCandidates(session);
+    _syncSelectionCandidates(session);
     _lastUpdate = _buildLastUpdate();
     return <String, Object?>{
       'sessionId': session.sessionId,

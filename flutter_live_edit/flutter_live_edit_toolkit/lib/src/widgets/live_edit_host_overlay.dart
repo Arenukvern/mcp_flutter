@@ -247,8 +247,14 @@ class _SelectionBubble extends StatelessWidget {
         ? kLiveEditAiBubbleSurfaceId
         : kLiveEditSelectionBubbleSurfaceId;
     final surfaceTheme = overlayTheme.styleFor(surfaceId);
-    final bubbleWidthVal = overlayTheme.selectionBubbleWidth(aiMode: aiMode);
-    final bubbleHeightVal = overlayTheme.selectionBubbleHeight(aiMode: aiMode);
+
+    /// Drag bar + resize grip; body uses remaining height up to [pv.bubbleHeight].
+    const aiBubbleVerticalChrome = 38.0;
+    final maxBubbleH = pv.bubbleHeight;
+    final chatContentMaxH = (maxBubbleH - aiBubbleVerticalChrome).clamp(
+      96.0,
+      920.0,
+    );
 
     final chatVm = buildChatBubbleViewModel(
       context,
@@ -263,17 +269,13 @@ class _SelectionBubble extends StatelessWidget {
     final useChatBody =
         status != LiveEditBubbleStatus.waiting &&
         status != LiveEditBubbleStatus.failed;
-    final effectiveHeight = useChatBody
-        ? ((!chatVm.showThinking || chatVm.messages.isEmpty)
-              ? 220.0
-              : overlayTheme.selectionBubbleHeight(aiMode: true))
-        : bubbleHeightVal;
     final radius = BorderRadius.circular(surfaceTheme.cornerRadius);
     final bubbleBody = useChatBody
         ? ChatBubbleSurface(
             viewModel: chatVm,
             callbacks: chatCb,
             autofocus: true,
+            maxContentHeight: chatContentMaxH,
           )
         : _WaitingBubbleBody(
             context: context,
@@ -293,7 +295,7 @@ class _SelectionBubble extends StatelessWidget {
                     ? 'live_edit_ai_bubble_${summary?.bubbleId ?? 'other'}'
                     : 'live_edit_selection_bubble_${summary?.bubbleId ?? 'other'}'),
           child: Container(
-            height: effectiveHeight,
+            constraints: BoxConstraints(maxHeight: maxBubbleH),
             decoration: BoxDecoration(
               borderRadius: radius,
               boxShadow: const <BoxShadow>[
@@ -323,6 +325,8 @@ class _SelectionBubble extends StatelessWidget {
                     ),
                   ),
                   child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: <Widget>[
                       _AiBubbleDragBar(
                         onPanUpdate: (final details) {
@@ -499,13 +503,13 @@ class _SelectionBubble extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                       ],
-                      Expanded(child: bubbleBody),
+                      bubbleBody,
                       if (surfaceTheme.showResizeHandle)
                         _AiBubbleResizeBar(
                           onPanUpdate: (final details) {
                             ResizeBubbleCommand(
-                              width: bubbleWidthVal + details.delta.dx,
-                              height: effectiveHeight + details.delta.dy,
+                              width: pv.bubbleWidth + details.delta.dx,
+                              height: pv.bubbleHeight + details.delta.dy,
                             ).execute(context);
                           },
                         ),

@@ -551,6 +551,7 @@ extension _LiveEditSessionServicePreview on _LiveEditSessionServiceCore {
     final targetDomain = _resolveTargetDomain(session, requested);
     final activeElement = layer.selectedElement;
     layer.selectionCandidates = layer.selectionHitCandidates.indexed
+        .take(12)
         .map((final entry) {
           final index = entry.$1;
           final hit = entry.$2;

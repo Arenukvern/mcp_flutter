@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import 'chat_bubble_callbacks.dart';
@@ -10,12 +12,16 @@ class ChatBubbleSurface extends StatefulWidget {
     required this.viewModel,
     required this.callbacks,
     this.autofocus = false,
+    /// When set (typically host bubble height minus drag/resize), layouts the
+    /// scrollable transcript and caps multiline input; grows with user resize.
+    this.maxContentHeight,
     super.key,
   });
 
   final ChatBubbleViewModel viewModel;
   final ChatBubbleCallbacks callbacks;
   final bool autofocus;
+  final double? maxContentHeight;
 
   @override
   State<ChatBubbleSurface> createState() => _ChatBubbleSurfaceState();
@@ -189,40 +195,53 @@ class _ChatBubbleSurfaceState extends State<ChatBubbleSurface> {
 
   // ── Messages ────────────────────────────────────────────────────────
 
-  Widget _buildMessages() {
+  List<ChatMessage> _visibleMessages() {
     final vm = widget.viewModel;
-    final visible = vm.showThinking
+    return vm.showThinking
         ? vm.messages
         : vm.messages
               .where((final m) => m.role != ChatMessageRole.thinking)
               .toList(growable: false);
+  }
+
+  Widget _buildMessages({required final double maxHeight}) {
+    final visible = _visibleMessages();
     if (visible.isEmpty) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(20),
-          child: Text(
-            'Ask the agent to change this element.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 12.5,
-              color: Color(0xFF94A3B8),
-              letterSpacing: -0.1,
+      return SizedBox(
+        height: math.min(72, math.max(36, maxHeight)),
+        child: const Center(
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Text(
+              'Ask the agent to change this element.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12.5,
+                color: Color(0xFF94A3B8),
+                letterSpacing: -0.1,
+              ),
             ),
           ),
         ),
       );
     }
-    return ListView.builder(
-      controller: _scrollController,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      itemCount: visible.length,
-      itemBuilder: (_, final i) => ChatMessageTile(message: visible[i]),
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: math.max(48, maxHeight)),
+      child: ListView.builder(
+        controller: _scrollController,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        itemCount: visible.length,
+        itemBuilder: (_, final i) => ChatMessageTile(message: visible[i]),
+      ),
     );
   }
 
   // ── Input bar ───────────────────────────────────────────────────────
 
-  Widget _buildInputBar() {
+  Widget _buildInputBar({
+    required final double maxFieldHeight,
+    required final int maxInputLines,
+  }) {
     final vm = widget.viewModel;
     final busy = vm.isBusy;
     return Container(
@@ -255,86 +274,137 @@ class _ChatBubbleSurfaceState extends State<ChatBubbleSurface> {
               ),
             ),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-          Expanded(
-            child: Semantics(
-              identifier: 'live_edit_ai_prompt_field',
-              child: TextField(
-                controller: _input,
-              autofocus: widget.autofocus,
-              enabled: !busy,
-              maxLines: 1,
-              style: const TextStyle(fontSize: 13, letterSpacing: -0.1),
-              decoration: InputDecoration(
-                hintText: 'ask changes..',
-                hintStyle: const TextStyle(
-                  fontSize: 13,
-                  color: Color(0xFFB0B8C4),
-                  letterSpacing: -0.1,
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 9,
-                ),
-                isDense: true,
-                filled: true,
-                fillColor: const Color(0x08000000),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(22),
-                  borderSide: BorderSide.none,
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(22),
-                  borderSide: const BorderSide(
-                    color: Color(0x18000000),
-                    width: 0.5,
-                  ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(22),
-                  borderSide: const BorderSide(
-                    color: Color(0xFF0D9488),
-                    width: 1,
+              Expanded(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: maxFieldHeight),
+                  child: Semantics(
+                    identifier: 'live_edit_ai_prompt_field',
+                    child: TextField(
+                      controller: _input,
+                      autofocus: widget.autofocus,
+                      enabled: !busy,
+                      minLines: 1,
+                      maxLines: maxInputLines,
+                      keyboardType: TextInputType.multiline,
+                      textInputAction: TextInputAction.newline,
+                      style: const TextStyle(fontSize: 13, letterSpacing: -0.1),
+                      decoration: InputDecoration(
+                        hintText: 'ask changes..',
+                        hintStyle: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFFB0B8C4),
+                          letterSpacing: -0.1,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 9,
+                        ),
+                        isDense: true,
+                        filled: true,
+                        fillColor: const Color(0x08000000),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(22),
+                          borderSide: BorderSide.none,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(22),
+                          borderSide: const BorderSide(
+                            color: Color(0x18000000),
+                            width: 0.5,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(22),
+                          borderSide: const BorderSide(
+                            color: Color(0xFF0D9488),
+                            width: 1,
+                          ),
+                        ),
+                      ),
+                      onChanged: widget.callbacks.onInputChanged,
+                      onSubmitted: (_) => _handleSend(),
+                    ),
                   ),
                 ),
               ),
-              onChanged: widget.callbacks.onInputChanged,
-              onSubmitted: (_) => _handleSend(),
-            ),
-            ),
-          ),
-          const SizedBox(width: 6),
-          Semantics(
-            identifier: 'live_edit_apply_button',
-            button: true,
-            child: _SendButton(busy: busy, onTap: _handleSend),
+              const SizedBox(width: 6),
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Semantics(
+                  identifier: 'live_edit_apply_button',
+                  button: true,
+                  child: _SendButton(busy: busy, onTap: _handleSend),
+                ),
+              ),
+            ],
           ),
         ],
       ),
-        ],
-      ),
+    );
+  }
+
+  Widget _buildLaidOutContent(final double maxH) {
+    final vm = widget.viewModel;
+    final hasBanner = _hasText(vm.appliedSummary);
+    const headerBlock = 46.0;
+    const divider = 1.0;
+    final bannerH = hasBanner ? 54.0 : 0.0;
+    final applyExtra =
+        (vm.canApplyAll && vm.applyAllCount > 0) ? 36.0 : 0.0;
+    final fixedTop = headerBlock + divider + bannerH;
+    final double inputFieldMax =
+        math.min(132.0, math.max(44.0, maxH * 0.42));
+    final int maxLines = math.min(
+      8,
+      math.max(1, (inputFieldMax / 21).floor()),
+    );
+    final inputColumnH = inputFieldMax + applyExtra;
+    double remaining = maxH - fixedTop - inputColumnH;
+    if (remaining < 28) {
+      remaining = 28;
+    }
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        _buildHeader(),
+        const Divider(height: 1, thickness: 0.5, color: Color(0x18000000)),
+        if (hasBanner) _buildAppliedBanner(),
+        if (vm.showThinking) _buildMessages(maxHeight: remaining) else const SizedBox.shrink(),
+        _buildInputBar(
+          maxFieldHeight: inputFieldMax,
+          maxInputLines: maxLines,
+        ),
+      ],
     );
   }
 
   // ── Build ───────────────────────────────────────────────────────────
 
   @override
-  Widget build(final BuildContext context) => Material(
-    type: MaterialType.transparency,
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        _buildHeader(),
-        const Divider(height: 1, thickness: 0.5, color: Color(0x18000000)),
-        if (_hasText(widget.viewModel.appliedSummary)) _buildAppliedBanner(),
-        if (widget.viewModel.showThinking)
-          Expanded(child: _buildMessages())
-        else
-          const SizedBox.shrink(),
-        _buildInputBar(),
-      ],
-    ),
-  );
+  Widget build(final BuildContext context) {
+    final cap = widget.maxContentHeight;
+    if (cap == null) {
+      return Material(
+        type: MaterialType.transparency,
+        child: SizedBox(
+          height: 260,
+          child: _buildLaidOutContent(260),
+        ),
+      );
+    }
+    return Material(
+      type: MaterialType.transparency,
+      child: LayoutBuilder(
+        builder: (final context, final c) {
+          final maxH = math.min(cap, c.maxHeight);
+          return _buildLaidOutContent(maxH);
+        },
+      ),
+    );
+  }
 }
 
 // ── Small private sub-widgets ──────────────────────────────────────────

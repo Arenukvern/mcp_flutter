@@ -157,7 +157,7 @@ final class LiveEditOverlayThemeModel extends ChangeNotifier {
           showResizeHandle: true,
         ),
         kLiveEditAiBubbleSurfaceId: const LiveEditOverlaySurfaceStyle(
-          width: 320,
+          width: 390,
           height: 280,
           cornerRadius: 14,
           padding: EdgeInsets.zero,
@@ -279,7 +279,7 @@ final class LiveEditOverlayThemeModel extends ChangeNotifier {
       (styleFor(
         aiMode ? kLiveEditAiBubbleSurfaceId : kLiveEditSelectionBubbleSurfaceId,
       ).width) ??
-      300;
+      390;
 
   double selectionBubbleHeight({required final bool aiMode}) =>
       (styleFor(

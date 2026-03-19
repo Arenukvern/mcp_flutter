@@ -8,7 +8,7 @@ final class LiveEditPanelViewResourceData {
   const LiveEditPanelViewResourceData({
     this.editMode = LiveEditEditMode.inspect,
     this.panelDisplayMode = LiveEditPanelDisplayMode.rail,
-    this.bubbleWidth = 300,
+    this.bubbleWidth = 390,
     this.bubbleHeight = 280,
     this.panelExpandedWidth = 312,
     this.panelExpandedHeight = 520,
