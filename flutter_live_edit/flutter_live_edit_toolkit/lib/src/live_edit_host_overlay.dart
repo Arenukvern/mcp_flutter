@@ -9,16 +9,20 @@ import 'live_edit_context.dart';
 import 'live_edit_controller_adapter.dart';
 import 'live_edit_orchestrator.dart';
 
-double _overlayMathMax(double a, double b) => a > b ? a : b;
+double _overlayMathMax(final double a, final double b) => a > b ? a : b;
 
-double _overlayMathMin(double a, double b) => a < b ? a : b;
+double _overlayMathMin(final double a, final double b) => a < b ? a : b;
 
-double _overlayAsDouble(Object? value) {
+double _overlayAsDouble(final Object? value) {
   if (value is num) return value.toDouble();
   return double.tryParse('$value') ?? 0;
 }
 
-void _overlayDrawDashedRect(Canvas canvas, Rect rect, Paint paint) {
+void _overlayDrawDashedRect(
+  final Canvas canvas,
+  final Rect rect,
+  final Paint paint,
+) {
   const dash = 8.0;
   const gap = 4.0;
   for (double x = rect.left; x < rect.right; x += dash + gap) {
@@ -56,13 +60,13 @@ class _HitTestExclusionScope extends SingleChildRenderObjectWidget {
   final List<Rect> excludedRects;
 
   @override
-  RenderObject createRenderObject(BuildContext context) =>
+  RenderObject createRenderObject(final BuildContext context) =>
       _RenderHitTestExclusionScope(excludedRects);
 
   @override
   void updateRenderObject(
-    BuildContext context,
-    _RenderHitTestExclusionScope renderObject,
+    final BuildContext context,
+    final _RenderHitTestExclusionScope renderObject,
   ) {
     renderObject.excludedRects = excludedRects;
   }
@@ -70,12 +74,12 @@ class _HitTestExclusionScope extends SingleChildRenderObjectWidget {
 
 class LiveEditOverlay extends StatefulWidget {
   const LiveEditOverlay({
-    super.key,
     required this.context,
     required this.controller,
     required this.contentKey,
     required this.targetDomain,
     required this.interactive,
+    super.key,
     this.excludedRects = const <Rect>[],
     this.openBubbleOnSelect = false,
     this.orchestrator,
@@ -112,7 +116,7 @@ class _LiveEditOverlayPainter extends CustomPainter {
   final List<LiveEditDraftChange> draftChanges;
 
   @override
-  void paint(Canvas canvas, Size size) {
+  void paint(final Canvas canvas, final Size size) {
     _paintHover(canvas);
     _paintMultiSelection(canvas);
     _paintMarquee(canvas);
@@ -172,7 +176,7 @@ class _LiveEditOverlayPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_LiveEditOverlayPainter oldDelegate) =>
+  bool shouldRepaint(final _LiveEditOverlayPainter oldDelegate) =>
       oldDelegate.selection != selection ||
       oldDelegate.hoverSelection != hoverSelection ||
       oldDelegate.multiSelection != multiSelection ||
@@ -187,7 +191,7 @@ class _LiveEditOverlayPainter extends CustomPainter {
         .join(' | ');
   }
 
-  Rect? _ghostRectFromDrafts(Rect baseRect) {
+  Rect? _ghostRectFromDrafts(final Rect baseRect) {
     double? width;
     double? height;
     for (final draft in draftChanges) {
@@ -206,7 +210,7 @@ class _LiveEditOverlayPainter extends CustomPainter {
     );
   }
 
-  void _paintHover(Canvas canvas) {
+  void _paintHover(final Canvas canvas) {
     final hovered = hoverSelection?.bounds;
     if (hovered == null) return;
     final rect = Rect.fromLTRB(
@@ -227,7 +231,7 @@ class _LiveEditOverlayPainter extends CustomPainter {
     );
   }
 
-  void _paintMarquee(Canvas canvas) {
+  void _paintMarquee(final Canvas canvas) {
     final rect = marqueeRect;
     if (rect == null) return;
     canvas.drawRect(rect, Paint()..color = const Color(0x1A2563EB));
@@ -241,7 +245,7 @@ class _LiveEditOverlayPainter extends CustomPainter {
     );
   }
 
-  void _paintMultiSelection(Canvas canvas) {
+  void _paintMultiSelection(final Canvas canvas) {
     if (multiSelection.length < 2) return;
     final paint = Paint()
       ..style = PaintingStyle.stroke
@@ -260,8 +264,24 @@ class _LiveEditOverlayPainter extends CustomPainter {
 
 class _LiveEditOverlayState extends State<LiveEditOverlay> {
   static const double _dragThreshold = 8;
+  static const Duration _marqueeThrottle = Duration(milliseconds: 50);
   Offset? _pointerDown;
   bool _dragging = false;
+  DateTime? _lastMarqueeUpdate;
+  int _pendingMarqueeX = 0;
+  int _pendingMarqueeY = 0;
+  bool _hasPendingMarquee = false;
+
+  void _flushMarqueeUpdate() {
+    if (!_hasPendingMarquee) return;
+    UpdateMarqueeCommand(
+      x: _pendingMarqueeX,
+      y: _pendingMarqueeY,
+      contentRoot: _contentRoot,
+    ).execute(widget.context);
+    _lastMarqueeUpdate = DateTime.now();
+    _hasPendingMarquee = false;
+  }
 
   String? get _sessionId =>
       widget.orchestrator?.context.sessionResource.value.activeSessionId ??
@@ -313,7 +333,7 @@ class _LiveEditOverlayState extends State<LiveEditOverlay> {
       : null;
 
   @override
-  Widget build(BuildContext context) => Positioned.fill(
+  Widget build(final BuildContext context) => Positioned.fill(
     child: _HitTestExclusionScope(
       excludedRects: widget.excludedRects,
       child: Focus(
@@ -369,11 +389,14 @@ class _LiveEditOverlayState extends State<LiveEditOverlay> {
                   ).execute(widget.context);
                 }
                 if (_dragging) {
-                  UpdateMarqueeCommand(
-                    x: event.position.dx.round(),
-                    y: event.position.dy.round(),
-                    contentRoot: _contentRoot,
-                  ).execute(widget.context);
+                  _pendingMarqueeX = event.position.dx.round();
+                  _pendingMarqueeY = event.position.dy.round();
+                  _hasPendingMarquee = true;
+                  final now = DateTime.now();
+                  if (_lastMarqueeUpdate == null ||
+                      now.difference(_lastMarqueeUpdate!) >= _marqueeThrottle) {
+                    _flushMarqueeUpdate();
+                  }
                   return;
                 }
                 HoverAtPointCommand(
@@ -386,6 +409,10 @@ class _LiveEditOverlayState extends State<LiveEditOverlay> {
               },
               onPointerUp: (final event) {
                 if (_dragging) {
+                  _pendingMarqueeX = event.position.dx.round();
+                  _pendingMarqueeY = event.position.dy.round();
+                  _hasPendingMarquee = true;
+                  _flushMarqueeUpdate();
                   CommitMarqueeCommand(
                     controller: widget.controller,
                   ).execute(widget.context);
@@ -435,7 +462,7 @@ class _RenderHitTestExclusionScope extends RenderProxyBox {
 
   List<Rect> _excludedRects;
 
-  set excludedRects(List<Rect> value) {
+  set excludedRects(final List<Rect> value) {
     if (_excludedRects.length == value.length) {
       var changed = false;
       for (var index = 0; index < value.length; index += 1) {
@@ -450,7 +477,10 @@ class _RenderHitTestExclusionScope extends RenderProxyBox {
   }
 
   @override
-  bool hitTest(BoxHitTestResult result, {required Offset position}) {
+  bool hitTest(
+    final BoxHitTestResult result, {
+    required final Offset position,
+  }) {
     for (final rect in _excludedRects) {
       if (rect.contains(position)) return false;
     }

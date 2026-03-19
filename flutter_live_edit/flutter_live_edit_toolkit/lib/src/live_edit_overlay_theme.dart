@@ -157,14 +157,14 @@ final class LiveEditOverlayThemeModel extends ChangeNotifier {
           showResizeHandle: true,
         ),
         kLiveEditAiBubbleSurfaceId: const LiveEditOverlaySurfaceStyle(
-          width: 300,
-          height: 340,
-          cornerRadius: 18,
-          padding: EdgeInsets.all(14),
-          gap: 10,
-          backgroundColor: Color(0xFFFFFBEB),
-          borderColor: Color(0xFFFCD34D),
-          badgeTone: 'amber',
+          width: 320,
+          height: 280,
+          cornerRadius: 14,
+          padding: EdgeInsets.zero,
+          gap: 0,
+          backgroundColor: Color(0xE6F8FAFC),
+          borderColor: Color(0x33000000),
+          badgeTone: 'slate',
           showDragHandle: true,
           showResizeHandle: true,
         ),
@@ -285,7 +285,7 @@ final class LiveEditOverlayThemeModel extends ChangeNotifier {
       (styleFor(
         aiMode ? kLiveEditAiBubbleSurfaceId : kLiveEditSelectionBubbleSurfaceId,
       ).height) ??
-      340;
+      220;
 
   double panelWidth({required final bool expanded}) =>
       (styleFor(

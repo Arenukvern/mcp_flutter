@@ -56,6 +56,13 @@ final class ApplyDraftCommand {
     );
     if (!_hasText(resolvedIntent)) return;
 
+    context.bubbleStateService.appendTimeline(
+      context,
+      role: 'user',
+      message: resolvedIntent,
+      nodeId: bid,
+    );
+
     final backendId = bubble?.backendId?.trim().isNotEmpty == true
         ? bubble!.backendId
         : globalBackendId;
@@ -91,6 +98,7 @@ final class ApplyDraftCommand {
       );
       records[bid] = bubble.copyWith(
         status: LiveEditBubbleStatus.waiting,
+        displayState: LiveEditBubbleDisplayState.minimized,
         lastError: null,
       );
       context.bubbleResource.value = context.bubbleResource.value.copyWith(
@@ -112,11 +120,12 @@ final class ApplyDraftCommand {
       pendingProposalId: result.pendingProposalId ?? newData.pendingProposalId,
     );
 
-    if (result.updatedBubbleRecord != null) {
+    final targetId = result.bubbleId ?? bid;
+    if (targetId.isNotEmpty && result.updatedBubbleRecord != null) {
       final records = Map<String, LiveEditBubbleRecord>.from(
         nextData.bubbleRecordsById,
       );
-      records[result.bubbleId!] = result.updatedBubbleRecord!;
+      records[targetId] = result.updatedBubbleRecord!;
       nextData = nextData.copyWith(bubbleRecordsById: records);
     }
 

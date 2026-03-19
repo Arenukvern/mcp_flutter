@@ -255,8 +255,7 @@ LiveEditBubbleRecord? selectBubbleRecord(
 Offset selectBubbleDragOffset(
   final LiveEditContext ctx,
   final String? bubbleId,
-) =>
-    selectBubbleRecord(ctx, bubbleId)?.bubbleDragOffset ?? Offset.zero;
+) => selectBubbleRecord(ctx, bubbleId)?.bubbleDragOffset ?? Offset.zero;
 
 List<LiveEditTimelineEntry> selectHistoryForBubble(
   final LiveEditContext ctx,
@@ -277,6 +276,29 @@ List<LiveEditTimelineEntry> selectHistoryForBubble(
     selectBubbleRecord(ctx, activeId)?.history ??
         const <LiveEditTimelineEntry>[],
   );
+}
+
+/// History + debugTimeline merged by timestamp for chat bubble display.
+List<LiveEditTimelineEntry> selectMergedTimelineForBubble(
+  final LiveEditContext ctx,
+  final String? bubbleId,
+) {
+  final bubble = hasText(bubbleId)
+      ? selectBubbleRecord(ctx, bubbleId)
+      : selectBubbleRecord(
+          ctx,
+          ctx
+              .bubbleResource
+              .value
+              .layerViewStateByDomain[ctx.sessionResource.value.targetDomain]
+              ?.activeBubbleId,
+        );
+  if (bubble == null) return const <LiveEditTimelineEntry>[];
+  final merged = <LiveEditTimelineEntry>[
+    ...bubble.history,
+    ...bubble.debugTimeline,
+  ]..sort((final a, final b) => a.timestamp.compareTo(b.timestamp));
+  return List<LiveEditTimelineEntry>.unmodifiable(merged);
 }
 
 String selectInstructionTextForBubble(

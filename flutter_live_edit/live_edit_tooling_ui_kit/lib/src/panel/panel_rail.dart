@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 
 import '../bubble/bubble_callbacks.dart';
 import '../common/rail_status_dot.dart';
@@ -52,57 +51,18 @@ class PanelRail extends StatelessWidget {
                   icon: const Icon(Icons.chevron_left),
                 ),
               ),
-              Transform.scale(
-                scale: 0.72,
-                child: Switch(
-                  value: viewModel.railDebugEnabled,
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  onChanged: callbacks.onToggleDebugMode,
-                ),
-              ),
-              Text(
-                viewModel.railBackendLabel,
-                style: TextStyle(
-                  fontSize: 9,
-                  fontWeight: FontWeight.w700,
-                  color: viewModel.railHasBackendChoice
-                      ? const Color(0xFF1D4ED8)
-                      : viewModel.railDebugEnabled
-                      ? const Color(0xFF0F766E)
-                      : const Color(0xFF64748B),
-                ),
-              ),
-              const SizedBox(height: 6),
-              if (viewModel.railActiveLabel != null)
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    RailStatusDot(
-                      label: viewModel.railActiveLabel!,
-                      statusLabel: viewModel.railStatusLabel,
-                      active: true,
-                      targetDomain:
-                          viewModel.railTargetDomain ??
-                          LiveEditTargetDomain.appScene,
-                      onTap: () => bubbleCallbacks.onSetActiveBubble(
-                        viewModel.railActiveBubbleId,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: Text(
-                        viewModel.railActivityLabel,
-                        style: const TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w700,
-                        ),
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
+              if (viewModel.railBackendSwitcherChild != null)
+                viewModel.railBackendSwitcherChild!
+              else
+                Text(
+                  viewModel.railBackendLabel,
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                    color: viewModel.railHasBackendChoice
+                        ? const Color(0xFF1D4ED8)
+                        : const Color(0xFF64748B),
+                  ),
                 ),
               const SizedBox(height: 8),
               Expanded(

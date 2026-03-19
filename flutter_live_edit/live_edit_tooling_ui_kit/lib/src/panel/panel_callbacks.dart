@@ -6,5 +6,4 @@ abstract interface class PanelCallbacks {
   void onCollapse();
   void onResize(double width, double height);
   void onDrag(Offset delta);
-  void onToggleDebugMode(bool enabled);
 }

@@ -119,13 +119,8 @@ PanelViewModel buildPreviewPanelRailViewModel(final Size viewportSize) {
     theme: previewTheme,
     railBubbleSummaries: previewBubbleSummaries(viewportSize),
     railActiveBubbleId: 'preview-1',
-    railActiveLabel: 'Container',
-    railStatusLabel: 'editing',
-    railActivityLabel: 'Draft ready',
-    railHasBackendChoice: true,
+    railHasBackendChoice: false,
     railBackendLabel: 'G',
-    railDebugEnabled: false,
-    railTargetDomain: LiveEditTargetDomain.appScene,
   );
 }
 
@@ -140,13 +135,8 @@ PanelViewModel buildPreviewPanelExpandedViewModel(final Size viewportSize) =>
       theme: previewTheme,
       railBubbleSummaries: previewBubbleSummaries(viewportSize),
       railActiveBubbleId: 'preview-2',
-      railActiveLabel: 'Expanded panel',
-      railStatusLabel: 'editing',
-      railActivityLabel: 'Prompt ready',
-      railHasBackendChoice: true,
+      railHasBackendChoice: false,
       railBackendLabel: 'G',
-      railDebugEnabled: false,
-      railTargetDomain: LiveEditTargetDomain.appScene,
     );
 
 /// Stub [BubbleCallbacks] for the dumb surface (no context/commands).
@@ -192,7 +182,4 @@ final class PreviewPanelCallbacks implements PanelCallbacks {
 
   @override
   void onDrag(final Offset delta) {}
-
-  @override
-  void onToggleDebugMode(final bool enabled) {}
 }

@@ -47,11 +47,11 @@ List<LiveEditBubbleSummary> selectBubbleSummariesByDomain(
             );
           })
           .toList(growable: false)
-    ..sort((final a, final b) {
-      final activeScore = (b.active ? 1 : 0) - (a.active ? 1 : 0);
-      if (activeScore != 0) return activeScore;
-      return a.label.compareTo(b.label);
-    });
+        ..sort((final a, final b) {
+          final activeScore = (b.active ? 1 : 0) - (a.active ? 1 : 0);
+          if (activeScore != 0) return activeScore;
+          return a.label.compareTo(b.label);
+        });
   return summaries;
 }
 
@@ -165,6 +165,75 @@ List<LiveEditBubbleSummary> selectExpandedBubbleSummaries(
       .toList(growable: false);
 }
 
+List<LiveEditBubbleSummary> selectAllNonResolvedBubbleSummariesByDomain(
+  final LiveEditContext ctx,
+  final LiveEditController controller,
+  final LiveEditTargetDomain domain, {
+  required final LiveEditTargetDomain presentationDomain,
+  final String? sessionId,
+}) {
+  final data = ctx.bubbleResource.value;
+  final activeBubbleId = selectActiveBubbleId(
+    ctx,
+    controller,
+    presentationDomain: presentationDomain,
+    sessionId: sessionId,
+  );
+  return data.bubbleRecordsById.values
+      .where(
+        (final bubble) =>
+            bubble.targetDomain == domain &&
+            !data.resolvedBubbleIds.contains(bubble.bubbleId),
+      )
+      .map((final bubble) {
+        final selection = bubble.primarySelection;
+        final source = selection?.source;
+        return LiveEditBubbleSummary(
+          bubbleId: bubble.bubbleId,
+          targetDomain: bubble.targetDomain,
+          targetKey: bubble.targetKey,
+          nodeId: selection?.nodeId ?? bubble.targetKey,
+          label: selection?.widgetType ?? bubble.targetKey,
+          status: bubble.status,
+          active: bubble.bubbleId == activeBubbleId,
+          displayState: bubble.displayState,
+          bounds: selection?.bounds,
+          sourceLabel: !hasText(source?.file)
+              ? null
+              : '${source!.file}${source.line == null ? '' : ':${source.line}'}',
+        );
+      })
+      .toList(growable: false)
+    ..sort((final a, final b) {
+      final activeScore = (b.active ? 1 : 0) - (a.active ? 1 : 0);
+      if (activeScore != 0) return activeScore;
+      return a.label.compareTo(b.label);
+    });
+}
+
+List<LiveEditBubbleSummary> selectAllNonResolvedBubbleSummaries(
+  final LiveEditContext ctx,
+  final LiveEditController controller, {
+  required final LiveEditTargetDomain presentationDomain,
+  final String? sessionId,
+}) {
+  final domain = ctx.sessionResource.value.targetDomain;
+  final inactive = domain == LiveEditTargetDomain.appScene
+      ? LiveEditTargetDomain.toolScene
+      : LiveEditTargetDomain.appScene;
+  return <LiveEditTargetDomain>[domain, inactive]
+      .expand(
+        (final d) => selectAllNonResolvedBubbleSummariesByDomain(
+          ctx,
+          controller,
+          d,
+          presentationDomain: presentationDomain,
+          sessionId: sessionId,
+        ),
+      )
+      .toList(growable: false);
+}
+
 bool selectHasAgentBackedDrafts(
   final LiveEditContext ctx,
   final LiveEditController controller, {
@@ -172,11 +241,13 @@ bool selectHasAgentBackedDrafts(
   final String? sessionId,
 }) {
   if (selectSelectionForDomain(
-    ctx,
-    controller,
-    domain: presentationDomain,
-    sessionId: sessionId,
-  ) == null) return false;
+        ctx,
+        controller,
+        domain: presentationDomain,
+        sessionId: sessionId,
+      ) ==
+      null)
+    return false;
   return false;
 }
 

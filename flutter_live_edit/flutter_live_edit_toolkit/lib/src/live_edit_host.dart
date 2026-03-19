@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -182,6 +183,8 @@ class LiveEditToolLayer extends StatelessWidget {
       presentationDomain: selectPresentedLayer(context),
       sessionId: context.sessionResource.value.activeSessionId,
     );
+    // Only show the active bubble (first in list, sorted by active).
+    final activeBubble = expanded.isEmpty ? null : expanded.first;
     return Stack(
       fit: StackFit.expand,
       children: <Widget>[
@@ -193,14 +196,13 @@ class LiveEditToolLayer extends StatelessWidget {
             theme: bubbleViewModel.theme,
           ),
         ),
-        ...expanded.map(
-          (final summary) => _SelectionBubble(
+        if (activeBubble != null)
+          _SelectionBubble(
             context: context,
             controller: controller,
             viewportSize: viewportSize,
-            bubbleSummary: summary,
+            bubbleSummary: activeBubble,
           ),
-        ),
         Positioned(
           left: panelRect.left,
           top: panelRect.top,
@@ -232,6 +234,7 @@ class _SelectChildIntent extends Intent {
 class _SelectParentIntent extends Intent {
   const _SelectParentIntent();
 }
+
 class _FlutterLiveEditHostState extends State<FlutterLiveEditHost> {
   LiveEditOrchestrator? _orchestrator;
   bool _ownsOrchestrator = false;

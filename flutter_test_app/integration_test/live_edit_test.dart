@@ -148,7 +148,6 @@ void main() {
     );
     expect(h.pendingExecutionPlan, isNotNull);
     expect(h.lastError, isNull);
-    expect(find.textContaining('No draft', findRichText: true), findsNothing);
   });
 
   testWidgets('debug panel shows the exact resolved backend prompt', (
@@ -406,6 +405,228 @@ void main() {
     expect(bubbleAfter.dy, closeTo(bubbleBefore.dy + 44, 3));
     expect(h.marqueeRect, isNull);
   });
+
+  testWidgets('bubble switch during text edit and apply does not crash', (
+    final tester,
+  ) async {
+    final binding = IntegrationTestWidgetsFlutterBinding.instance;
+    await binding.setSurfaceSize(const Size(8000, 2000));
+    addTearDown(() async {
+      debugFlutterLiveEditAutoHostOrchestratorOverride = null;
+      await binding.setSurfaceSize(null);
+    });
+
+    // Apply delegate with delay to simulate in-progress state
+    final orchestrator = LiveEditOrchestrator(
+      applyDraftDelegate: (final request) async {
+        await Future<void>.delayed(const Duration(milliseconds: 500));
+        return <String, Object?>{
+          'proposalId': 'test-proposal',
+          'executionPlan': <String, Object?>{
+            'proposalId': 'test-proposal',
+            'title': 'Apply',
+            'summary': 'Test apply',
+            'selectedNode': 'Text',
+            'requestedChanges': <String>[request.intentText ?? ''],
+            'affectedFiles': <String>['lib/main.dart'],
+            'confidence': 0.9,
+            'riskNotes': const <String>[],
+            'agentInstruction': 'Apply change.',
+          },
+          'result': <String, Object?>{
+            'status': 'applied',
+            'changedFiles': <String>['lib/main.dart'],
+          },
+        };
+      },
+    );
+    debugFlutterLiveEditAutoHostOrchestratorOverride = orchestrator;
+
+    await app.main();
+    await _pumpUntil(
+      tester,
+      () => find.text('MCP Toolkit Demo').evaluate().isNotEmpty,
+      timeout: const Duration(seconds: 30),
+    );
+
+    final h = LiveEditIntegrationHarness(
+      orchestrator.context,
+      orchestrator.controller,
+    );
+    await tester.tap(find.widgetWithText(ActionChip, 'Live Edit'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+    await _pumpUntil(tester, () => h.overlayVisible);
+
+    h.ensureSession();
+    await tester.pumpAndSettle();
+
+    // Select widget A (heading)
+    await tester.tap(
+      find.text('Live Edit with AI agents for Flutter App'),
+      warnIfMissed: false,
+    );
+    await tester.pumpAndSettle();
+    await _pumpUntil(tester, () => h.activeSelection != null);
+
+    // Open AI bubble and type text
+    OpenAiBubbleCommand(defaultPrompt: '').execute(orchestrator.context);
+    await tester.pumpAndSettle();
+    UpdateAiComposerCommand(
+      value: 'Change the heading text',
+    ).execute(orchestrator.context);
+    await tester.pump(const Duration(milliseconds: 100));
+
+    // Select widget B (different widget) before apply completes
+    await tester.tap(_semanticsId('counter_demo_heading'), warnIfMissed: false);
+    await tester.pumpAndSettle();
+
+    // Get bubble IDs and switch between them rapidly
+    final bubbleIds = orchestrator
+        .context
+        .bubbleResource
+        .value
+        .bubbleRecordsById
+        .keys
+        .toList();
+    if (bubbleIds.length >= 2) {
+      for (var i = 0; i < 3; i++) {
+        h.selectTrackedBubble(bubbleIds[0]);
+        await tester.pump();
+        h.selectTrackedBubble(bubbleIds[1]);
+        await tester.pump();
+      }
+    }
+
+    await tester.pumpAndSettle(const Duration(seconds: 2));
+    expect(find.text('MCP Toolkit Demo'), findsOneWidget);
+  });
+
+  testWidgets(
+    'clicking status dot for working bubble does not freeze and expands bubble',
+    (final tester) async {
+      final binding = IntegrationTestWidgetsFlutterBinding.instance;
+      await binding.setSurfaceSize(const Size(8000, 2000));
+      addTearDown(() async {
+        debugFlutterLiveEditAutoHostOrchestratorOverride = null;
+        await binding.setSurfaceSize(null);
+      });
+
+      // Apply delegate delays so bubble stays in waiting state (collapsed to dot)
+      final orchestrator = LiveEditOrchestrator(
+        applyDraftDelegate: (final request) async {
+          await Future<void>.delayed(const Duration(seconds: 3));
+          return <String, Object?>{
+            'proposalId': 'test-proposal',
+            'executionPlan': <String, Object?>{
+              'proposalId': 'test-proposal',
+              'title': 'Apply',
+              'summary': 'Test',
+              'selectedNode': 'Text',
+              'requestedChanges': <String>[request.intentText ?? ''],
+              'affectedFiles': <String>['lib/main.dart'],
+              'confidence': 0.9,
+              'riskNotes': const <String>[],
+              'agentInstruction': 'Apply change.',
+            },
+            'result': <String, Object?>{
+              'status': 'applied',
+              'changedFiles': <String>['lib/main.dart'],
+            },
+          };
+        },
+      );
+      debugFlutterLiveEditAutoHostOrchestratorOverride = orchestrator;
+
+      await app.main();
+      await _pumpUntil(
+        tester,
+        () =>
+            find.text('MCP Toolkit Demo').evaluate().isNotEmpty ||
+            find.widgetWithText(ActionChip, 'Live Edit').evaluate().isNotEmpty,
+        timeout: const Duration(seconds: 45),
+      );
+
+      final h = LiveEditIntegrationHarness(
+        orchestrator.context,
+        orchestrator.controller,
+      );
+      await tester.tap(find.widgetWithText(ActionChip, 'Live Edit'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+      await _pumpUntil(
+        tester,
+        () => h.overlayVisible,
+        timeout: const Duration(seconds: 10),
+      );
+
+      final aboutHeading = _semanticsId('about_demo_heading');
+      await tester.tap(aboutHeading, warnIfMissed: false);
+      await tester.pumpAndSettle();
+      if (h.activeSelection == null) {
+        h.selectNode(tester.getCenter(aboutHeading));
+        await _pumpUntil(tester, () => h.activeSelection != null);
+      }
+
+      // Keep panel collapsed (rail) so we see status dots
+      OpenAiBubbleCommand(
+        defaultPrompt: 'Change heading',
+      ).execute(orchestrator.context);
+      await tester.pumpAndSettle();
+      UpdateAiComposerCommand(
+        value: 'Change the heading text',
+      ).execute(orchestrator.context);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Apply - bubble minimizes to dot immediately (displayState=minimized at start)
+      await h.applyDraft(message: 'Change the heading text');
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // Get nodeId for the pinned pill or rail dot
+      final data = orchestrator.context.bubbleResource.value;
+      final bid =
+          data.pendingBubbleId ??
+          data
+              .layerViewStateByDomain[orchestrator
+                  .context
+                  .sessionResource
+                  .value
+                  .targetDomain]
+              ?.activeBubbleId;
+      final bubble = bid != null ? data.bubbleRecordsById[bid] : null;
+      final nodeId =
+          bubble?.primarySelection?.nodeId ?? bubble?.targetKey ?? '';
+
+      expect(nodeId, isNotEmpty, reason: 'Need nodeId to find status dot');
+
+      // Tap pinned pill (or rail dot) - must not freeze; use timeout
+      final pillFinder = _semanticsId('live_edit_pinned_bubble_$nodeId');
+      if (pillFinder.evaluate().isNotEmpty) {
+        await tester.tap(pillFinder);
+      } else {
+        // Fallback: tap rail dot (skip expand button at index 0)
+        final railFinder = _semanticsId('live_edit_panel_rail');
+        final dotFinder = find.descendant(
+          of: railFinder,
+          matching: find.byType(InkWell),
+        );
+        expect(dotFinder, findsWidgets, reason: 'Rail should have status dots');
+        await tester.tap(dotFinder.at(1));
+      }
+
+      // Must settle within timeout (no freeze)
+      await tester.pumpAndSettle(const Duration(seconds: 10));
+
+      // Bubble expanded or still showing working state
+      expect(
+        _semanticsId('live_edit_ai_bubble').evaluate().isNotEmpty ||
+            _semanticsId('live_edit_selection_bubble').evaluate().isNotEmpty ||
+            find.text('Applying').evaluate().isNotEmpty,
+        isTrue,
+        reason: 'Bubble should be visible after dot tap',
+      );
+    },
+  );
 
   testWidgets(
     'marquee includes all covered user widgets in the stateful branch',

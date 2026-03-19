@@ -12,7 +12,7 @@ final class ResizeBubbleCommand {
 
   void execute(final LiveEditContext context) {
     final w = width.clamp(260.0, 520.0);
-    final h = height.clamp(300.0, 520.0);
+    final h = height.clamp(200.0, 520.0);
     context.panelViewResource.value = context.panelViewResource.value.copyWith(
       bubbleWidth: w,
       bubbleHeight: h,

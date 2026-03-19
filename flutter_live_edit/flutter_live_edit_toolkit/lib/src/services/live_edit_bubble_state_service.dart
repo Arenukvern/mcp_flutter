@@ -63,9 +63,7 @@ final class LiveEditBubbleStateService {
     if (selection.selectionMode == LiveEditSelectionMode.multi &&
         selection.selectedNodeIds.length > 1) {
       final ordered =
-          selection.selectedNodeIds
-              .where((final id) => _hasText(id))
-              .toList(growable: false)
+          selection.selectedNodeIds.where(_hasText).toList(growable: false)
             ..sort();
       if (ordered.isNotEmpty) return 'area:${ordered.join('|')}';
     }
@@ -153,16 +151,11 @@ final class LiveEditBubbleStateService {
           : bubble?.status == LiveEditBubbleStatus.failed
           ? LiveEditApplyPhase.failed
           : LiveEditApplyPhase.idle;
-      var editMode = selection == null
+      // When there is a selection, use AI mode so the minimal chat bubble is
+      // the default view; when no selection, use inspect.
+      final editMode = selection == null
           ? LiveEditEditMode.inspect
-          : (ctx
-                        .bubbleResource
-                        .value
-                        .layerViewStateByDomain[domain]
-                        ?.editMode ==
-                    LiveEditEditMode.ai
-                ? LiveEditEditMode.ai
-                : LiveEditEditMode.edit);
+          : LiveEditEditMode.ai;
       final activePropertyId = ctx
           .bubbleResource
           .value
@@ -177,7 +170,31 @@ final class LiveEditBubbleStateService {
             editMode: editMode,
             activePropertyId: activePropertyId,
           );
+      // Minimize other expanded bubbles; remove empty ones when clicking away.
+      final records = Map<String, LiveEditBubbleRecord>.from(
+        ctx.bubbleResource.value.bubbleRecordsById,
+      );
+      final toMinimize = records.entries
+          .where(
+            (final e) =>
+                e.value.targetDomain == domain &&
+                e.value.displayState == LiveEditBubbleDisplayState.expanded &&
+                e.value.bubbleId != currentBubbleId,
+          )
+          .toList(growable: false);
+      for (final entry in toMinimize) {
+        final r = entry.value;
+        final isEmpty = r.instructionText.trim().isEmpty && r.history.isEmpty;
+        if (isEmpty) {
+          records.remove(entry.key);
+        } else {
+          records[entry.key] = r.copyWith(
+            displayState: LiveEditBubbleDisplayState.minimized,
+          );
+        }
+      }
       ctx.bubbleResource.value = ctx.bubbleResource.value.copyWith(
+        bubbleRecordsById: records,
         layerViewStateByDomain: layerMap,
         applyPhase: phase,
         pendingExecutionPlan: bubble?.executionPlan,
@@ -422,8 +439,8 @@ final class LiveEditBubbleStateService {
 
   String failureSummary(
     final String error, {
-    final String? bubbleId,
     required final String Function(String?) getBackendLabel,
+    final String? bubbleId,
   }) {
     final normalized = error.toLowerCase();
     if (normalized.contains('working directory') ||

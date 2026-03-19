@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 
@@ -93,8 +95,15 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   final String? workingDirectory;
   final String? intentText;
 
+  static const Duration _eventThrottle = Duration(milliseconds: 80);
+  final List<(String?, LiveEditRuntimeEvent)> _eventBuffer = [];
+  DateTime? _lastEventFlush;
+  Timer? _eventFlushTimer;
+
   @override
   void dispose() {
+    _eventFlushTimer?.cancel();
+    _eventFlushTimer = null;
     LiveEditRuntime.contextAccessor = null;
     super.dispose();
   }
@@ -103,11 +112,38 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     final String? bubbleId,
     final LiveEditRuntimeEvent event,
   ) {
-    _bubbleStateService.emitEventForBubble(
-      _context,
-      bubbleId,
-      event,
-      getBackendLabel: (final id) => backendLabelFromContext(_context, id),
-    );
+    _eventBuffer.add((bubbleId, event));
+    final now = DateTime.now();
+    if (_lastEventFlush == null ||
+        now.difference(_lastEventFlush!) >= _eventThrottle) {
+      _flushEventBuffer();
+    } else if (_eventFlushTimer == null || !_eventFlushTimer!.isActive) {
+      final remaining =
+          _eventThrottle.inMilliseconds -
+          now.difference(_lastEventFlush!).inMilliseconds;
+      _eventFlushTimer = Timer(
+        Duration(milliseconds: remaining > 0 ? remaining : 1),
+        _flushEventBuffer,
+      );
+    }
+  }
+
+  void _flushEventBuffer() {
+    _eventFlushTimer?.cancel();
+    _eventFlushTimer = null;
+    if (_eventBuffer.isEmpty) return;
+    final toProcess = List<(String?, LiveEditRuntimeEvent)>.from(_eventBuffer);
+    _eventBuffer.clear();
+    _lastEventFlush = DateTime.now();
+    String backendLabel(final String? id) =>
+        backendLabelFromContext(_context, id);
+    for (final (bid, evt) in toProcess) {
+      _bubbleStateService.emitEventForBubble(
+        _context,
+        bid,
+        evt,
+        getBackendLabel: backendLabel,
+      );
+    }
   }
 }

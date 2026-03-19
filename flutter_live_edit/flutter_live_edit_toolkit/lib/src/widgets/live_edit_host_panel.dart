@@ -190,164 +190,6 @@ class _AgentActivityPanel extends StatelessWidget {
   }
 }
 
-class _InferenceConfigEditor extends StatelessWidget {
-  const _InferenceConfigEditor({
-    required this.context,
-    required this.controller,
-  });
-
-  final LiveEditContext context;
-  final LiveEditController controller;
-
-  @override
-  Widget build(final BuildContext buildContext) {
-    final presentationDomain = selectPresentedLayer(context);
-    final sessionId = context.sessionResource.value.activeSessionId;
-    final backend = selectCurrentBackend(
-      context,
-      controller,
-      presentationDomain: presentationDomain,
-      sessionId: sessionId,
-    );
-    if (backend == null) {
-      return const Text(
-        'No backend selected.',
-        style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
-      );
-    }
-    final model =
-        selectCurrentModel(
-          context,
-          controller,
-          presentationDomain: presentationDomain,
-          sessionId: sessionId,
-        ) ??
-        '';
-    final reasoning = selectCurrentReasoningEffort(
-      context,
-      controller,
-      presentationDomain: presentationDomain,
-      sessionId: sessionId,
-    );
-    final freeform = selectCurrentBackendUsesFreeformModel(
-      context,
-      controller,
-      presentationDomain: presentationDomain,
-      sessionId: sessionId,
-    );
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(
-          'Backend: ${backend.label}',
-          style: const TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF0F172A),
-          ),
-        ),
-        const SizedBox(height: 8),
-        if (freeform)
-          Semantics(
-            identifier: 'live_edit_model_input',
-            child: TextFormField(
-              key: ValueKey<String>('model-${backend.id}'),
-              initialValue: model,
-              decoration: const InputDecoration(
-                labelText: 'Model',
-                hintText: 'auto',
-                isDense: true,
-                border: OutlineInputBorder(),
-              ),
-              style: const TextStyle(fontSize: 12),
-              onChanged: (final value) {
-                SetInferenceConfigCommand(model: value).execute(context);
-              },
-            ),
-          )
-        else
-          Semantics(
-            identifier: 'live_edit_model_dropdown',
-            child: DropdownButtonFormField<String>(
-              initialValue: model.isEmpty ? null : model,
-              isExpanded: true,
-              decoration: const InputDecoration(
-                labelText: 'Model',
-                isDense: true,
-                border: OutlineInputBorder(),
-              ),
-              items:
-                  selectCurrentSupportedModels(
-                        context,
-                        controller,
-                        presentationDomain: presentationDomain,
-                        sessionId: sessionId,
-                      )
-                      .map(
-                        (final option) => DropdownMenuItem<String>(
-                          value: option.id,
-                          child: Text(
-                            option.label,
-                            style: const TextStyle(fontSize: 12),
-                          ),
-                        ),
-                      )
-                      .toList(growable: false),
-              onChanged: (final value) {
-                if (value != null) {
-                  SetInferenceConfigCommand(
-                    model: value,
-                    reasoningEffort: reasoning,
-                  ).execute(context);
-                }
-              },
-            ),
-          ),
-        if (!freeform) ...<Widget>[
-          const SizedBox(height: 8),
-          Semantics(
-            identifier: 'live_edit_reasoning_dropdown',
-            child: DropdownButtonFormField<String>(
-              initialValue: reasoning,
-              isExpanded: true,
-              decoration: const InputDecoration(
-                labelText: 'Reasoning',
-                isDense: true,
-                border: OutlineInputBorder(),
-              ),
-              items:
-                  selectCurrentSupportedReasoningEfforts(
-                        context,
-                        controller,
-                        presentationDomain: presentationDomain,
-                        sessionId: sessionId,
-                      )
-                      .map(
-                        (final effort) => DropdownMenuItem<String>(
-                          value: effort,
-                          child: Text(
-                            effort,
-                            style: const TextStyle(fontSize: 12),
-                          ),
-                        ),
-                      )
-                      .toList(growable: false),
-              onChanged: (final value) {
-                if (value != null) {
-                  SetInferenceConfigCommand(
-                    model: model,
-                    reasoningEffort: value,
-                  ).execute(context);
-                }
-              },
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-}
-
 class _PropertyPanel extends StatelessWidget {
   const _PropertyPanel({
     required this.context,
@@ -362,14 +204,6 @@ class _PropertyPanel extends StatelessWidget {
   Widget build(final BuildContext buildContext) {
     final theme = LiveEditOverlayThemeModel.instance.styleFor(
       kLiveEditPanelExpandedSurfaceId,
-    );
-    final presentationDomain = selectPresentedLayer(context);
-    final sessionId = context.sessionResource.value.activeSessionId;
-    final selection = selectSelectionForDomain(
-      context,
-      controller,
-      domain: presentationDomain,
-      sessionId: sessionId,
     );
     final error = selectLastError(context);
 
@@ -390,95 +224,15 @@ class _PropertyPanel extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(10, 8, 8, 8),
               child: Row(
                 children: <Widget>[
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        const Text(
-                          'Live Edit',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 12,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          selection == null
-                              ? 'Tap a widget'
-                              : selectHasMultiSelection(
-                                  context,
-                                  controller,
-                                  presentationDomain: presentationDomain,
-                                  sessionId: sessionId,
-                                )
-                              ? '${selectMultiSelectionForDomain(context, controller, domain: presentationDomain, sessionId: sessionId).length} widgets • ${selectCurrentActivity(context, controller, presentationDomain: presentationDomain, sessionId: sessionId)?.label ?? _bubbleStatusLabel(selectBubbleStatusForBubble(context, selectActiveBubbleId(context, controller, presentationDomain: presentationDomain, sessionId: sessionId)))}'
-                              : '${selection.widgetType} • ${selectCurrentActivity(context, controller, presentationDomain: presentationDomain, sessionId: sessionId)?.label ?? _bubbleStatusLabel(selectBubbleStatusForBubble(context, selectActiveBubbleId(context, controller, presentationDomain: presentationDomain, sessionId: sessionId)))}',
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 11,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        if (selectDebugModeEnabled(context) &&
-                            _hasText(_sourceLocationLabel(selection?.source)))
-                          Text(
-                            _sourceLocationLabel(
-                              selection?.source,
-                              compact: true,
-                            ),
-                            style: const TextStyle(
-                              color: Colors.white54,
-                              fontSize: 10,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        if (selectDebugModeEnabled(context) &&
-                            !_hasText(_sourceLocationLabel(selection?.source)))
-                          const Text(
-                            'No concrete source context',
-                            style: TextStyle(
-                              color: Colors.white54,
-                              fontSize: 10,
-                            ),
-                          ),
-                        if (context
-                                .backendConfigResource
-                                .value
-                                .availableBackends
-                                .length >
-                            1) ...<Widget>[
-                          const SizedBox(height: 6),
-                          const SizedBox(height: 6),
-                          BackendSwitcher(
-                            context: context,
-                            controller: controller,
-                          ),
-                        ],
-                      ],
+                  const Expanded(
+                    child: Text(
+                      'Live Edit',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
+                      ),
                     ),
-                  ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      const Icon(
-                        Icons.bug_report_outlined,
-                        color: Colors.white70,
-                        size: 14,
-                      ),
-                      Transform.scale(
-                        scale: 0.72,
-                        child: Switch(
-                          value: selectDebugModeEnabled(context),
-                          materialTapTargetSize:
-                              MaterialTapTargetSize.shrinkWrap,
-                          onChanged: (final v) =>
-                              SetDebugModeCommand(enabled: v).execute(context),
-                        ),
-                      ),
-                    ],
                   ),
                   Semantics(
                     identifier: 'live_edit_panel_collapse_button',

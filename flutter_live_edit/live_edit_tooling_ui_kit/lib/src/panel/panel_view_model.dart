@@ -18,13 +18,9 @@ final class PanelViewModel {
     this.theme,
     this.railBubbleSummaries = const <BubbleSummaryViewModel>[],
     this.railActiveBubbleId,
-    this.railActiveLabel,
-    this.railStatusLabel = '',
-    this.railActivityLabel = '',
     this.railHasBackendChoice = false,
     this.railBackendLabel = 'DBG',
-    this.railDebugEnabled = false,
-    this.railTargetDomain,
+    this.railBackendSwitcherChild,
   });
 
   final ToolingPanelDisplayMode displayMode;
@@ -35,11 +31,9 @@ final class PanelViewModel {
   final ToolingThemeData? theme;
   final List<BubbleSummaryViewModel> railBubbleSummaries;
   final String? railActiveBubbleId;
-  final String? railActiveLabel;
-  final String railStatusLabel;
-  final String railActivityLabel;
   final bool railHasBackendChoice;
   final String railBackendLabel;
-  final bool railDebugEnabled;
-  final LiveEditTargetDomain? railTargetDomain;
+
+  /// Injected by host when multiple backends; replaces read-only label.
+  final Widget? railBackendSwitcherChild;
 }

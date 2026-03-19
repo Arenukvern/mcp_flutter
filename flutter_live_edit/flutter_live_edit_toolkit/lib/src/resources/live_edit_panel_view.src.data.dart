@@ -9,7 +9,7 @@ final class LiveEditPanelViewResourceData {
     this.editMode = LiveEditEditMode.inspect,
     this.panelDisplayMode = LiveEditPanelDisplayMode.rail,
     this.bubbleWidth = 300,
-    this.bubbleHeight = 340,
+    this.bubbleHeight = 280,
     this.panelExpandedWidth = 312,
     this.panelExpandedHeight = 520,
     this.panelRailWidth = 64,

@@ -230,7 +230,7 @@ class _CounterDemoSection extends StatelessWidget {
                 Semantics(
                   identifier: 'counter_demo_heading',
                   child: Text(
-                    'State Management Examples',
+                    'State Tools & MCP Toolkit',
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ),
@@ -375,7 +375,7 @@ class _HeaderSection extends StatelessWidget {
                 Semantics(
                   identifier: 'about_demo_heading',
                   child: Text(
-                    'Live Edit with AI agents for Flutter App',
+                    'MCP Toolkit',
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ),
