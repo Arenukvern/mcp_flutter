@@ -3,7 +3,7 @@
 
 import 'dart:io';
 
-import 'package:flutter_inspector_mcp_server/src/services/dart_lsp_client.dart';
+import 'package:flutter_inspector_mcp_server/src/shared_services/dart_lsp_client.dart';
 import 'package:logging/logging.dart';
 
 Future<void> main() async {

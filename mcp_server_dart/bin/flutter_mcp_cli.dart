@@ -200,7 +200,7 @@ Future<CoreResult> _runOneShot({
         final data = catalog.schema(name: name);
         return CoreResult.success(
           data: data,
-          meta: {'schemaVersion': kCommandCatalogSchemaVersion},
+          meta: const {'schemaVersion': kCommandCatalogSchemaVersion},
         );
 
       case 'capabilities':
@@ -209,7 +209,7 @@ Future<CoreResult> _runOneShot({
             .toJson();
         return CoreResult.success(
           data: data,
-          meta: {'schemaVersion': kCommandCatalogSchemaVersion},
+          meta: const {'schemaVersion': kCommandCatalogSchemaVersion},
         );
 
       case 'doctor':
@@ -816,10 +816,7 @@ Future<CoreResult> _runPermissionsCommand({
   final kind = parsePermissionKind(actionCommand.option('kind'));
   final result = switch (actionCommand.name) {
     'status' => await broker.status(kind: kind),
-    'request' => await broker.request(
-      kind: kind,
-      policy: PermissionPolicy.requestAlways,
-    ),
+    'request' => await broker.request(kind: kind),
     'open-settings' => await broker.openSettings(kind: kind),
     _ => null,
   };
@@ -846,15 +843,13 @@ Future<CoreResult?> _preconnectIfNeeded({
   required final SessionManager sessionManager,
   required final DefaultCoreCommandExecutor executor,
   final ConnectCommand? explicitConnectionOverride,
-}) {
-  return preconnectForExecution(
-    command: command,
-    executor: executor,
-    sessionManager: sessionManager,
-    explicitConnectionOverride: explicitConnectionOverride,
-    explicitVmServiceUri: parsed.option(_vmServiceUri),
-  );
-}
+}) => preconnectForExecution(
+  command: command,
+  executor: executor,
+  sessionManager: sessionManager,
+  explicitConnectionOverride: explicitConnectionOverride,
+  explicitVmServiceUri: parsed.option(_vmServiceUri),
+);
 
 Future<CoreResult> _executeExecCommand({
   required final ArgResults parsed,
@@ -973,14 +968,13 @@ List<_BatchStep> _parseBatchStepsJson(final String? value) {
       .toList(growable: false);
 }
 
-SafeWriteOptions _safeWriteOptionsFrom(final ArgResults command) {
-  return SafeWriteOptions(
-    check: command.flag(_check),
-    diff: command.flag(_diff),
-    backup: command.flag(_backup),
-    noOverwrite: command.flag(_noOverwrite),
-  );
-}
+SafeWriteOptions _safeWriteOptionsFrom(final ArgResults command) =>
+    SafeWriteOptions(
+      check: command.flag(_check),
+      diff: command.flag(_diff),
+      backup: command.flag(_backup),
+      noOverwrite: command.flag(_noOverwrite),
+    );
 
 bool _containsBlockedWrite(final Object? payload) {
   final map = switch (payload) {
@@ -1008,19 +1002,17 @@ bool _containsBlockedWrite(final Object? payload) {
   return false;
 }
 
-LoggingLevel _parseLogLevel(final String? level) {
-  return switch (level) {
-    'debug' => LoggingLevel.debug,
-    'info' => LoggingLevel.info,
-    'notice' => LoggingLevel.notice,
-    'warning' => LoggingLevel.warning,
-    'error' => LoggingLevel.error,
-    'critical' => LoggingLevel.critical,
-    'alert' => LoggingLevel.alert,
-    'emergency' => LoggingLevel.emergency,
-    _ => LoggingLevel.error,
-  };
-}
+LoggingLevel _parseLogLevel(final String? level) => switch (level) {
+  'debug' => LoggingLevel.debug,
+  'info' => LoggingLevel.info,
+  'notice' => LoggingLevel.notice,
+  'warning' => LoggingLevel.warning,
+  'error' => LoggingLevel.error,
+  'critical' => LoggingLevel.critical,
+  'alert' => LoggingLevel.alert,
+  'emergency' => LoggingLevel.emergency,
+  _ => LoggingLevel.error,
+};
 
 int _parsePositiveIntOption(
   final String? value, {
@@ -1248,14 +1240,13 @@ String? _nonEmptyOption(final String? value) {
   return trimmed.isEmpty ? null : trimmed;
 }
 
-CoreLogger _buildLogger(final LoggingLevel minimumLevel) {
-  return (final level, final message, {final logger = 'core'}) {
-    if (level.index < minimumLevel.index) {
-      return;
-    }
-    io.stderr.writeln('[${level.name}] [$logger] $message');
-  };
-}
+CoreLogger _buildLogger(final LoggingLevel minimumLevel) =>
+    (final level, final message, {final logger = 'core'}) {
+      if (level.index < minimumLevel.index) {
+        return;
+      }
+      io.stderr.writeln('[${level.name}] [$logger] $message');
+    };
 
 String _resolveStateRoot(final String statePath) {
   final file = io.File(statePath);
@@ -1448,10 +1439,10 @@ String _captureFailureKind(final CoreResult result) {
 String _globalUsage() {
   final buffer = StringBuffer()
     ..writeln('$kFlutterMcpCliName v$kFlutterMcpVersion')
-    ..writeln('')
+    ..writeln()
     ..writeln('Usage:')
     ..writeln('  flutter_mcp_cli [global options] <command> [command options]')
-    ..writeln('')
+    ..writeln()
     ..writeln('Commands:')
     ..writeln('  exec')
     ..writeln('  batch')
@@ -1464,10 +1455,10 @@ String _globalUsage() {
     ..writeln('  doctor')
     ..writeln('  permissions status|request|open-settings')
     ..writeln('  validate-runtime')
-    ..writeln('')
+    ..writeln()
     ..writeln('Global options:')
     ..writeln(_argParser.usage)
-    ..writeln('')
+    ..writeln()
     ..writeln(
       'Use `flutter_mcp_cli <command> --help` for contextual examples.',
     );
@@ -1601,10 +1592,9 @@ final _argParser = ArgParser(allowTrailingOptions: false)
     defaultsTo: true,
     help: 'Enable dynamic registry support',
   )
-  ..addFlag(_dumpsSupported, defaultsTo: false, help: 'Enable dump commands')
+  ..addFlag(_dumpsSupported, help: 'Enable dump commands')
   ..addFlag(
     _saveImagesToFiles,
-    defaultsTo: false,
     help: 'Save screenshots to files and return file URLs',
   )
   ..addOption(
@@ -1647,7 +1637,6 @@ final _argParser = ArgParser(allowTrailingOptions: false)
       )
       ..addFlag(
         'continue-on-error',
-        defaultsTo: false,
         help: 'Continue running remaining steps after a step fails.',
       ),
   )
@@ -1662,24 +1651,17 @@ final _argParser = ArgParser(allowTrailingOptions: false)
         _commandParser()
           ..addOption('name')
           ..addOption('args', defaultsTo: '{}')
-          ..addFlag(
-            _check,
-            defaultsTo: false,
-            help: 'Evaluate changes without writing files',
-          )
+          ..addFlag(_check, help: 'Evaluate changes without writing files')
           ..addFlag(
             _diff,
-            defaultsTo: false,
             help: 'Attach unified diff metadata per changed target',
           )
           ..addFlag(
             _backup,
-            defaultsTo: false,
             help: 'Create timestamped backups before replacing targets',
           )
           ..addFlag(
             _noOverwrite,
-            defaultsTo: false,
             help: 'Block writes when target already exists',
           ),
       )
@@ -1697,24 +1679,17 @@ final _argParser = ArgParser(allowTrailingOptions: false)
       _commandParser()
         ..addOption('from-snapshot')
         ..addOption('output')
-        ..addFlag(
-          _check,
-          defaultsTo: false,
-          help: 'Evaluate changes without writing files',
-        )
+        ..addFlag(_check, help: 'Evaluate changes without writing files')
         ..addFlag(
           _diff,
-          defaultsTo: false,
           help: 'Attach unified diff metadata per changed target',
         )
         ..addFlag(
           _backup,
-          defaultsTo: false,
           help: 'Create timestamped backups before replacing targets',
         )
         ..addFlag(
           _noOverwrite,
-          defaultsTo: false,
           help: 'Block writes when target already exists',
         ),
     ),
@@ -1722,7 +1697,7 @@ final _argParser = ArgParser(allowTrailingOptions: false)
   ..addCommand(
     'doctor',
     _commandParser()
-      ..addFlag('json', defaultsTo: false, help: 'Emit machine-readable JSON')
+      ..addFlag('json', help: 'Emit machine-readable JSON')
       ..addOption(
         'target',
         help:
@@ -1796,13 +1771,11 @@ final _argParser = ArgParser(allowTrailingOptions: false)
       )
       ..addFlag(
         'after-reload',
-        defaultsTo: false,
         help:
             'Also run hot_reload_flutter and capture one more screenshot after reload.',
       )
       ..addFlag(
         'install-skill',
-        defaultsTo: false,
         help:
             'Install bundled Codex runtime-validation skill before running checks.',
       )
@@ -1810,11 +1783,10 @@ final _argParser = ArgParser(allowTrailingOptions: false)
         'skill-destination',
         help:
             'Optional destination root for skill install '
-            '(defaults to \$CODEX_HOME/skills).',
+            r'(defaults to $CODEX_HOME/skills).',
       )
       ..addFlag(
         'force-skill-install',
-        defaultsTo: false,
         help: 'Replace existing skill directory when using --install-skill.',
       ),
   );

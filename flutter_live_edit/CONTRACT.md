@@ -12,13 +12,12 @@ Do not duplicate tool name literals in docs or other packages; import from core 
 
 ## Glossary: “property” and related terms
 
-| Term | Meaning | Not |
-|------|---------|-----|
-| **JSON Schema `properties`** | Standard schema keyword for object fields. | Widget “properties” in the Flutter sense. |
-| **Inspector `properties` / `propertiesTree`** | Serialized widget field values for **AI context** (see `LiveEditSelection`). | End-user property editing in the product UI. |
-| **`live_edit_get_property_panel`** | MCP command returning **read-only** normalized panel payload for the current selection (model context). | A property editor or direct mutation API. |
-| **`propertyId` (draft)** | Identifier tying a draft change to an inspector field in agent flows. | User-facing “property” branding in the PRD sense. |
-| **UI: `PropertyBadge` etc.** | Presentation labels in `live_edit_tooling_ui_kit`. | Product promise of manual field editing. |
+| Term                                          | Meaning                                                                                                 | Not                                               |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| **JSON Schema `properties`**                  | Standard schema keyword for object fields.                                                              | Widget “properties” in the Flutter sense.         |
+| **Inspector `properties` / `propertiesTree`** | Serialized widget field values for **AI context** (see `LiveEditSelection`).                            | End-user property editing in the product UI.      |
+| **`live_edit_get_property_panel`**            | MCP command returning **read-only** normalized panel payload for the current selection (model context). | A property editor or direct mutation API.         |
+| **`propertyId` (draft)**                      | Identifier tying a draft change to an inspector field in agent flows.                                   | User-facing “property” branding in the PRD sense. |
 
 ---
 
@@ -34,17 +33,17 @@ Full set: use `LiveEditMcpToolNames.allSorted` in tests or grep `LiveEditMcpTool
 
 Registered by **`flutter_live_edit_toolkit`** for calls **into the running isolate** via `getFlutterLiveEditEntries()`:
 
-| Logical action | Constant | Wire name |
-|----------------|----------|-----------|
-| Start session | `LiveEditRuntimeToolNames.startSession` | `live_edit_runtime_start_session` |
-| Set overlay | `LiveEditRuntimeToolNames.setOverlay` | `live_edit_runtime_set_overlay` |
-| Widget tree | `LiveEditRuntimeToolNames.getTree` | `live_edit_runtime_get_tree` |
+| Logical action  | Constant                                 | Wire name                                        |
+| --------------- | ---------------------------------------- | ------------------------------------------------ |
+| Start session   | `LiveEditRuntimeToolNames.startSession`  | `live_edit_runtime_start_session`                |
+| Set overlay     | `LiveEditRuntimeToolNames.setOverlay`    | `live_edit_runtime_set_overlay`                  |
+| Widget tree     | `LiveEditRuntimeToolNames.getTree`       | `live_edit_runtime_get_tree`                     |
 | Select at point | `LiveEditRuntimeToolNames.selectAtPoint` | `select_widget_at_point` (shared with inspector) |
-| Get selection | `LiveEditRuntimeToolNames.getSelection` | `live_edit_runtime_get_selection` |
-| Update draft | `LiveEditRuntimeToolNames.updateDraft` | `live_edit_runtime_update_draft` |
-| Get draft | `LiveEditRuntimeToolNames.getDraft` | `live_edit_runtime_get_draft` |
-| Discard draft | `LiveEditRuntimeToolNames.discardDraft` | `live_edit_runtime_discard_draft` |
-| End session | `LiveEditRuntimeToolNames.endSession` | `live_edit_runtime_end_session` |
+| Get selection   | `LiveEditRuntimeToolNames.getSelection`  | `live_edit_runtime_get_selection`                |
+| Update draft    | `LiveEditRuntimeToolNames.updateDraft`   | `live_edit_runtime_update_draft`                 |
+| Get draft       | `LiveEditRuntimeToolNames.getDraft`      | `live_edit_runtime_get_draft`                    |
+| Discard draft   | `LiveEditRuntimeToolNames.discardDraft`  | `live_edit_runtime_discard_draft`                |
+| End session     | `LiveEditRuntimeToolNames.endSession`    | `live_edit_runtime_end_session`                  |
 
 **Why two namespaces?** Server tools orchestrate session + agent + VM; runtime tools are the narrow bridge to app state. Names differ on purpose to avoid collisions and to make logs unambiguous. Unifying wire names would be a **semver** change for all MCP clients.
 
@@ -52,15 +51,15 @@ Registered by **`flutter_live_edit_toolkit`** for calls **into the running isola
 
 ## Mapping (overlap concepts)
 
-| Concept | Server tool (`LiveEditMcpToolNames`) | Runtime bridge (`LiveEditRuntimeToolNames`) |
-|---------|--------------------------------------|---------------------------------------------|
-| Session start | `live_edit_start_session` | `live_edit_runtime_start_session` |
-| Overlay | `live_edit_set_overlay` | `live_edit_runtime_set_overlay` |
-| Tree | `live_edit_get_tree` | `live_edit_runtime_get_tree` |
-| Selection | `live_edit_get_selection` | `live_edit_runtime_get_selection` |
-| Draft update/get/discard | `live_edit_update_draft`, `live_edit_get_draft`, `live_edit_discard_draft` | `live_edit_runtime_*` counterparts |
-| End session | `live_edit_end_session` | `live_edit_runtime_end_session` |
-| Select at point | `live_edit_select_at_point` | `select_widget_at_point` |
+| Concept                  | Server tool (`LiveEditMcpToolNames`)                                       | Runtime bridge (`LiveEditRuntimeToolNames`) |
+| ------------------------ | -------------------------------------------------------------------------- | ------------------------------------------- |
+| Session start            | `live_edit_start_session`                                                  | `live_edit_runtime_start_session`           |
+| Overlay                  | `live_edit_set_overlay`                                                    | `live_edit_runtime_set_overlay`             |
+| Tree                     | `live_edit_get_tree`                                                       | `live_edit_runtime_get_tree`                |
+| Selection                | `live_edit_get_selection`                                                  | `live_edit_runtime_get_selection`           |
+| Draft update/get/discard | `live_edit_update_draft`, `live_edit_get_draft`, `live_edit_discard_draft` | `live_edit_runtime_*` counterparts          |
+| End session              | `live_edit_end_session`                                                    | `live_edit_runtime_end_session`             |
+| Select at point          | `live_edit_select_at_point`                                                | `select_widget_at_point`                    |
 
 Server-only (no runtime twin in `LiveEditRuntimeToolNames`): prepare session, capabilities, candidates, active selection, property panel, edit mode, preview, backends, resolve, apply draft, accept/reject resolution, etc.
 

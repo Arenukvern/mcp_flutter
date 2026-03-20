@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_inspector_mcp_server/flutter_mcp_core.dart';
-import 'package:flutter_inspector_mcp_server/src/core/services/desktop_window_screenshot.dart';
+import 'package:flutter_inspector_mcp_server/src/capabilities/visual_capture/desktop_window_screenshot.dart';
 import 'package:test/test.dart';
 
 void main() {

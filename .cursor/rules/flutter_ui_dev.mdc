@@ -1,16 +1,16 @@
 ---
-description: Flutter widgets and concepts
-globs: *.dart
+description: when creating or modifing flutter widgets
 alwaysApply: false
 ---
+
 # Flutter widgets and concepts:
 
-   - Dart 3.7 syntax for null safety, pattern matching, and more
-   - Appropriate use of StatelessWidget, HookWidget (from flutter_hooks) or Stateful widgets
-   - Custom reusable widgets (use ui_kit) instead of methods
-   - Cupertino or Material Design as appropriate
-   - Proper error handling and async/await for asynchronous operations
-   - flutter_animate for animations
+- Dart 3.11 syntax for null safety, pattern matching, and more
+- Appropriate use of StatelessWidget, or Stateful widgets (NO riverpod)
+- Custom reusable widgets (use ui_kit) instead of methods
+- Cupertino or Material Design as appropriate
+- Proper error handling and async/await for asynchronous operations
+- flutter_animate for animations
 
 # Widget Composition Guidelines:
 
@@ -18,17 +18,18 @@ alwaysApply: false
    - Prefer fewer, more cohesive widgets over many tiny widgets
    - Extract new widget classes only when they are:
    - Reused in multiple places
-   - Complex enough to warrant separation (>50 lines)
+   - Complex enough to warrant separation (>10 lines)
    - Logically independent with clear boundaries
    - For simpler UIs, use a single widget with well-commented sections
 
 2. **Code Organization Hierarchy**:
    - First preference: Use comments to separate logical sections within a widget
-   - Second preference: Extract methods for complex sections (>20 && <50 lines)
+   - Second preference: Extract logical methods for complex sections (>10 && <30 lines)
    - Last preference: Create new widget classes
 
 3. **Comment-Based Structure**:
    - Use section comments to delineate logical UI parts:
+
    ```dart
    // Header section
    Column(

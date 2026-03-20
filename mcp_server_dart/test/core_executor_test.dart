@@ -1,6 +1,6 @@
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_inspector_mcp_server/flutter_mcp_core.dart';
-import 'package:flutter_inspector_mcp_server/src/core/services/desktop_window_screenshot.dart';
+import 'package:flutter_inspector_mcp_server/src/capabilities/visual_capture/desktop_window_screenshot.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -266,11 +266,8 @@ void main() {
         defaultPort: 8181,
         logger: logger,
         discoverPorts: () async => <int>[8181, 8182],
-        probeFlutterTarget:
-            (
-              final CoreEndpoint endpoint, {
-              required final Duration timeout,
-            }) async => true,
+        probeFlutterTarget: (final endpoint, {required final timeout}) async =>
+            true,
       );
 
       final localExecutor = DefaultCoreCommandExecutor(

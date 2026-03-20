@@ -1,10 +1,10 @@
 import 'dart:convert';
 
 import 'package:flutter_inspector_mcp_server/flutter_mcp_core.dart';
-import 'package:flutter_inspector_mcp_server/src/dynamic_registry/dynamic_registry_tools.dart';
-import 'package:flutter_inspector_mcp_server/src/mixins/handlers/connection_override.dart';
-import 'package:flutter_inspector_mcp_server/src/mixins/handlers/resource_handler.dart';
-import 'package:flutter_inspector_mcp_server/src/mixins/handlers/vm_tools_handler.dart';
+import 'package:flutter_inspector_mcp_server/src/capabilities/dynamic_registry/dynamic_registry_tools.dart';
+import 'package:flutter_inspector_mcp_server/src/shared_mixins/handlers/connection_override.dart';
+import 'package:flutter_inspector_mcp_server/src/shared_mixins/handlers/resource_handler.dart';
+import 'package:flutter_inspector_mcp_server/src/shared_mixins/handlers/vm_tools_handler.dart';
 import 'package:test/test.dart';
 
 void main() {

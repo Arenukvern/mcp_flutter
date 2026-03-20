@@ -7,8 +7,8 @@ import 'dart:async';
 
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_inspector_mcp_server/src/base_server.dart';
-import 'package:flutter_inspector_mcp_server/src/core/services/core_port_scanner.dart';
-import 'package:flutter_inspector_mcp_server/src/mixins/port_scanner.dart';
+import 'package:flutter_inspector_mcp_server/src/shared_core/services/core_port_scanner.dart';
+import 'package:flutter_inspector_mcp_server/src/shared_mixins/port_scanner.dart';
 import 'package:stream_channel/stream_channel.dart';
 import 'package:test/test.dart';
 

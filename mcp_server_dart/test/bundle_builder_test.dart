@@ -62,7 +62,7 @@ void main() {
       );
 
       expect(Directory(outputPath).existsSync(), isFalse);
-      final writes = (result['writeResults'] as List)
+      final writes = (result['writeResults']! as List)
           .cast<Map<String, Object?>>();
       expect(writes.single['status'], equals(SafeWriteStatus.added));
       expect(writes.single['wrote'], isFalse);
@@ -83,7 +83,7 @@ void main() {
           writeOptions: const SafeWriteOptions(noOverwrite: true),
         );
 
-        final writes = (result['writeResults'] as List)
+        final writes = (result['writeResults']! as List)
             .cast<Map<String, Object?>>();
         expect(writes.single['status'], equals(SafeWriteStatus.blocked));
         expect(writes.single['wrote'], isFalse);
@@ -100,7 +100,7 @@ void main() {
         fromSnapshot: 'baseline',
         outputDirectory: outputPath,
       );
-      final firstWrites = (first['writeResults'] as List)
+      final firstWrites = (first['writeResults']! as List)
           .cast<Map<String, Object?>>();
       expect(firstWrites.single['status'], equals(SafeWriteStatus.added));
 
@@ -108,7 +108,7 @@ void main() {
         fromSnapshot: 'baseline',
         outputDirectory: outputPath,
       );
-      final secondWrites = (second['writeResults'] as List)
+      final secondWrites = (second['writeResults']! as List)
           .cast<Map<String, Object?>>();
       expect(secondWrites.single['status'], equals(SafeWriteStatus.unchanged));
       expect(secondWrites.single['wrote'], isFalse);

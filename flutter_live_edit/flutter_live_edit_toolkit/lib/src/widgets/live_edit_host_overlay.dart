@@ -328,7 +328,9 @@ class _SelectionBubble extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: <Widget>[
-                      _AiBubbleDragBar(
+                      ToolingPanDragStrip(
+                        semanticsIdentifier: 'live_edit_bubble_drag_handle',
+                        hitHeight: 20,
                         onPanUpdate: (final details) {
                           if (summary != null) {
                             DragBubbleForCommand(
@@ -341,6 +343,7 @@ class _SelectionBubble extends StatelessWidget {
                             ).execute(context);
                           }
                         },
+                        indicator: const ToolingDragBar.slab(width: 36),
                       ),
                       if (!aiMode && isActive) ...[
                         Padding(
@@ -505,13 +508,17 @@ class _SelectionBubble extends StatelessWidget {
                       ],
                       bubbleBody,
                       if (surfaceTheme.showResizeHandle)
-                        _AiBubbleResizeBar(
+                        ToolingPanResizeCorner(
+                          semanticsIdentifier: 'live_edit_bubble_resize_handle',
+                          alignment: Alignment.bottomRight,
                           onPanUpdate: (final details) {
                             ResizeBubbleCommand(
                               width: pv.bubbleWidth + details.delta.dx,
                               height: pv.bubbleHeight + details.delta.dy,
                             ).execute(context);
                           },
+                          icon: Icons.open_in_full,
+                          padding: const EdgeInsets.only(right: 6, bottom: 4),
                         ),
                     ],
                   ),
@@ -530,58 +537,4 @@ class _SelectionBubble extends StatelessWidget {
     2 => 'Child',
     _ => 'Alt ${index + 1}',
   };
-}
-
-/// macOS-style drag bar for the AI chat bubble — full-width, subtle handle.
-class _AiBubbleDragBar extends StatelessWidget {
-  const _AiBubbleDragBar({required this.onPanUpdate});
-
-  final ValueChanged<DragUpdateDetails> onPanUpdate;
-
-  @override
-  Widget build(final BuildContext context) => GestureDetector(
-    behavior: HitTestBehavior.opaque,
-    onPanUpdate: onPanUpdate,
-    child: const SizedBox(
-      height: 20,
-      child: Center(child: _GrabHandle(width: 36)),
-    ),
-  );
-}
-
-/// macOS-style resize grip at bottom-right of the AI chat bubble.
-class _AiBubbleResizeBar extends StatelessWidget {
-  const _AiBubbleResizeBar({required this.onPanUpdate});
-
-  final ValueChanged<DragUpdateDetails> onPanUpdate;
-
-  @override
-  Widget build(final BuildContext context) => Align(
-    alignment: Alignment.bottomRight,
-    child: GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onPanUpdate: onPanUpdate,
-      child: const Padding(
-        padding: EdgeInsets.only(right: 6, bottom: 4),
-        child: Icon(Icons.drag_handle, size: 14, color: Color(0xFF94A3B8)),
-      ),
-    ),
-  );
-}
-
-/// Rounded grab handle indicator.
-class _GrabHandle extends StatelessWidget {
-  const _GrabHandle({required this.width});
-
-  final double width;
-
-  @override
-  Widget build(final BuildContext context) => Container(
-    width: width,
-    height: 4,
-    decoration: BoxDecoration(
-      color: const Color(0xFFCBD5E1),
-      borderRadius: BorderRadius.circular(2),
-    ),
-  );
 }

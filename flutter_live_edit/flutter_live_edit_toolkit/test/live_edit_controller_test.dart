@@ -739,13 +739,23 @@ void main() {
 
     await tester.tapAt(tester.getCenter(find.text('Second')));
     await tester.pumpAndSettle();
-    const bubbleWidth = 280.0;
-    const bubbleHeight = 120.0;
-    final secondPlacement = autoBubblePlacement(
-      bounds: _selection(orchestrator)!.bounds!,
-      viewport: _viewportSize(tester),
-      bubbleWidth: bubbleWidth,
-      bubbleHeight: bubbleHeight,
+    final overlayTheme = LiveEditOverlayThemeModel.instance;
+    final aiMode = selectEditMode(orchestrator.context) == LiveEditEditMode.ai;
+    final bw = overlayTheme.selectionBubbleWidth(aiMode: aiMode);
+    final bh = overlayTheme.selectionBubbleHeight(aiMode: aiMode);
+    final viewport = _viewportSize(tester);
+    final secondPlacement = clampBubblePlacement(
+      placement:
+          autoBubblePlacement(
+            bounds: _selection(orchestrator)!.bounds!,
+            viewport: viewport,
+            bubbleWidth: bw,
+            bubbleHeight: bh,
+          ) +
+          selectBubbleDragOffset(orchestrator.context, _bubbleId(orchestrator)),
+      viewport: viewport,
+      bubbleWidth: bw,
+      bubbleHeight: bh,
     );
     final secondDragged = tester.getTopLeft(_activeBubble(orchestrator));
     expect(secondDragged.dx, closeTo(secondPlacement.dx, 2));
@@ -776,10 +786,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.drag(
-      find.descendant(
-        of: _activeBubble(orchestrator),
-        matching: find.byIcon(Icons.open_in_full),
-      ),
+      _semanticsId('live_edit_bubble_resize_handle'),
       const Offset(80, 80),
     );
     await tester.pumpAndSettle();
@@ -800,11 +807,9 @@ void main() {
     expect(bubbleRect.top, greaterThanOrEqualTo(16));
     expect(bubbleRect.right, lessThanOrEqualTo(520 - 16));
     expect(bubbleRect.bottom, lessThanOrEqualTo(520 - 16));
-    expect(tester.getSize(_activeBubble(orchestrator)).width, greaterThan(300));
-    expect(
-      tester.getSize(_activeBubble(orchestrator)).height,
-      greaterThan(300),
-    );
+    final pv = orchestrator.context.panelViewResource.value;
+    expect(pv.bubbleWidth, greaterThan(300));
+    expect(pv.bubbleHeight, greaterThan(300));
   });
 
   testWidgets('right panel starts as collapsed rail', (final tester) async {

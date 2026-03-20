@@ -1,12 +1,9 @@
 import 'dart:convert';
 
-import 'package:collection/collection.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'live_edit_models.freezed.dart';
 part 'live_edit_models.g.dart';
-
-const _mapEquality = MapEquality<String, Object?>();
 
 List<Object?> decodeLiveEditJsonList(final String raw) {
   final decoded = jsonDecode(raw);
@@ -26,11 +23,6 @@ Map<String, Object?> decodeLiveEditJsonObject(final String raw) {
 
 String encodeLiveEditJson(final Map<String, Object?> value) =>
     jsonEncode(value);
-
-bool liveEditJsonMapsEqual(
-  final Map<String, Object?> left,
-  final Map<String, Object?> right,
-) => _mapEquality.equals(left, right);
 
 double _asDouble(final Object? value, {final double fallback = 0}) {
   if (value is num) {
