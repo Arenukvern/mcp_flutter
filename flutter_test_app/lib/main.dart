@@ -230,7 +230,7 @@ class _CounterDemoSection extends StatelessWidget {
                 Semantics(
                   identifier: 'counter_demo_heading',
                   child: Text(
-                    'State Tools & MCP Toolkit',
+                    'MCP State Management',
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ),

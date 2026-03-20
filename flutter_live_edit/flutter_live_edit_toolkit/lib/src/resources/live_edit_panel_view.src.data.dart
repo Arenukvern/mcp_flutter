@@ -3,6 +3,13 @@ import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 
 import '../live_edit_types.dart';
 
+/// Sentinel for [LiveEditPanelViewResourceData.copyWith] — omit `lastSelectionIdentity` to keep prior value.
+const _kOmitLastSelectionIdentity = _OmitLastSelectionIdentity();
+
+class _OmitLastSelectionIdentity {
+  const _OmitLastSelectionIdentity();
+}
+
 /// Panel and view preferences.
 final class LiveEditPanelViewResourceData {
   const LiveEditPanelViewResourceData({
@@ -51,7 +58,7 @@ final class LiveEditPanelViewResourceData {
     final bool? debugModeEnabled,
     final bool? deeperPickEnabled,
     final bool? toolPresentationArmed,
-    final String? lastSelectionIdentity,
+    final Object? lastSelectionIdentity = _kOmitLastSelectionIdentity,
   }) => LiveEditPanelViewResourceData(
     editMode: editMode ?? this.editMode,
     panelDisplayMode: panelDisplayMode ?? this.panelDisplayMode,
@@ -65,6 +72,9 @@ final class LiveEditPanelViewResourceData {
     debugModeEnabled: debugModeEnabled ?? this.debugModeEnabled,
     deeperPickEnabled: deeperPickEnabled ?? this.deeperPickEnabled,
     toolPresentationArmed: toolPresentationArmed ?? this.toolPresentationArmed,
-    lastSelectionIdentity: lastSelectionIdentity ?? this.lastSelectionIdentity,
+    lastSelectionIdentity:
+        identical(lastSelectionIdentity, _kOmitLastSelectionIdentity)
+        ? this.lastSelectionIdentity
+        : lastSelectionIdentity as String?,
   );
 }

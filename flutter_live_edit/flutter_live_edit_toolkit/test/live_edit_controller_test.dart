@@ -1955,6 +1955,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
+      orchestrator.context.panelViewResource.value.lastSelectionIdentity,
+      isNull,
+    );
+    expect(
       selectActiveBubbleResolved(
         orchestrator.context,
         orchestrator.controller,

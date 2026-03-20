@@ -768,7 +768,7 @@ final class CommandCatalog {
         ),
       ),
       CommandSpec(
-        name: 'live_edit_start_session',
+        name: LiveEditMcpToolNames.startSession,
         description:
             'Start or reuse a Flutter live-edit session in the running app.',
         inputSchema: _objectSchema(
@@ -791,7 +791,7 @@ final class CommandCatalog {
         ),
       ),
       CommandSpec(
-        name: 'live_edit_prepare_session',
+        name: LiveEditMcpToolNames.prepareSession,
         description:
             'Bootstrap a live-edit session, enable the overlay, and return capabilities plus backend readiness.',
         inputSchema: _objectSchema(
@@ -825,7 +825,7 @@ final class CommandCatalog {
         ),
       ),
       CommandSpec(
-        name: 'live_edit_set_overlay',
+        name: LiveEditMcpToolNames.setOverlay,
         description:
             'Enable or disable the live-edit overlay inside the running app.',
         inputSchema: _objectSchema(
@@ -845,7 +845,7 @@ final class CommandCatalog {
         ),
       ),
       CommandSpec(
-        name: 'live_edit_get_tree',
+        name: LiveEditMcpToolNames.getTree,
         description: 'Return the current live-edit widget summary tree.',
         inputSchema: _objectSchema(
           properties: {
@@ -867,7 +867,7 @@ final class CommandCatalog {
         ),
       ),
       CommandSpec(
-        name: 'live_edit_select_at_point',
+        name: LiveEditMcpToolNames.selectAtPoint,
         description:
             'Select a live-edit node at global logical coordinates using an optional selection policy.',
         inputSchema: _objectSchema(
@@ -905,7 +905,7 @@ final class CommandCatalog {
         ),
       ),
       CommandSpec(
-        name: 'live_edit_get_selection',
+        name: LiveEditMcpToolNames.getSelection,
         description: 'Return the current live-edit selection payload.',
         inputSchema: _objectSchema(
           properties: {
@@ -927,7 +927,7 @@ final class CommandCatalog {
         ),
       ),
       CommandSpec(
-        name: 'live_edit_get_capabilities',
+        name: LiveEditMcpToolNames.getCapabilities,
         description:
             'Return normalized live-edit runtime capabilities for the active session.',
         inputSchema: _objectSchema(
@@ -950,7 +950,7 @@ final class CommandCatalog {
         ),
       ),
       CommandSpec(
-        name: 'live_edit_get_selection_candidates',
+        name: LiveEditMcpToolNames.getSelectionCandidates,
         description:
             'Return the current live-edit selection candidate stack for the session.',
         inputSchema: _objectSchema(
@@ -973,7 +973,7 @@ final class CommandCatalog {
         ),
       ),
       CommandSpec(
-        name: 'live_edit_set_active_selection',
+        name: LiveEditMcpToolNames.setActiveSelection,
         description:
             'Promote one candidate node to become the active live-edit selection.',
         inputSchema: _objectSchema(
@@ -1000,7 +1000,7 @@ final class CommandCatalog {
         ),
       ),
       CommandSpec(
-        name: 'live_edit_get_property_panel',
+        name: LiveEditMcpToolNames.getPropertyPanel,
         description:
             'Return the normalized live-edit property panel for the current selection.',
         inputSchema: _objectSchema(properties: {'sessionId': _stringSchema()}),
@@ -1018,7 +1018,7 @@ final class CommandCatalog {
         ),
       ),
       CommandSpec(
-        name: 'live_edit_set_edit_mode',
+        name: LiveEditMcpToolNames.setEditMode,
         description:
             'Set the current live-edit overlay mode such as inspect or editing.',
         inputSchema: _objectSchema(
@@ -1044,7 +1044,7 @@ final class CommandCatalog {
         ),
       ),
       CommandSpec(
-        name: 'live_edit_get_preview_state',
+        name: LiveEditMcpToolNames.getPreviewState,
         description:
             'Return the current live-edit preview state, including exact versus draft-only status.',
         inputSchema: _objectSchema(
@@ -1067,7 +1067,7 @@ final class CommandCatalog {
         ),
       ),
       CommandSpec(
-        name: 'live_edit_update_draft',
+        name: LiveEditMcpToolNames.updateDraft,
         description: 'Update one draft property change for the active node.',
         inputSchema: _objectSchema(
           properties: {
@@ -1092,7 +1092,7 @@ final class CommandCatalog {
         ),
       ),
       CommandSpec(
-        name: 'live_edit_get_draft',
+        name: LiveEditMcpToolNames.getDraft,
         description: 'Return the current live-edit draft for the session.',
         inputSchema: _objectSchema(properties: {'sessionId': _stringSchema()}),
         outputSchema: _objectSchema(additionalProperties: true),
@@ -1104,7 +1104,7 @@ final class CommandCatalog {
         ),
       ),
       CommandSpec(
-        name: 'live_edit_discard_draft',
+        name: LiveEditMcpToolNames.discardDraft,
         description: 'Discard all current live-edit draft changes.',
         inputSchema: _objectSchema(properties: {'sessionId': _stringSchema()}),
         outputSchema: _objectSchema(additionalProperties: true),
@@ -1116,7 +1116,7 @@ final class CommandCatalog {
         ),
       ),
       CommandSpec(
-        name: 'live_edit_end_session',
+        name: LiveEditMcpToolNames.endSession,
         description: 'End the current live-edit session.',
         inputSchema: _objectSchema(properties: {'sessionId': _stringSchema()}),
         outputSchema: _objectSchema(additionalProperties: true),
@@ -1128,7 +1128,7 @@ final class CommandCatalog {
         ),
       ),
       CommandSpec(
-        name: 'live_edit_list_agent_backends',
+        name: LiveEditMcpToolNames.listAgentBackends,
         description: 'List server-side live-edit inference backends.',
         inputSchema: _objectSchema(),
         outputSchema: _objectSchema(
@@ -1144,7 +1144,7 @@ final class CommandCatalog {
         build: (final args) => const LiveEditListAgentBackendsCommand(),
       ),
       CommandSpec(
-        name: 'live_edit_get_agent_backend',
+        name: LiveEditMcpToolNames.getAgentBackend,
         description:
             'Return one live-edit backend by id or the active/default backend.',
         inputSchema: _objectSchema(
@@ -1163,7 +1163,7 @@ final class CommandCatalog {
         ),
       ),
       CommandSpec(
-        name: 'live_edit_set_agent_backend',
+        name: LiveEditMcpToolNames.setAgentBackend,
         description:
             'Set the active live-edit backend for one session on the server.',
         inputSchema: _objectSchema(
@@ -1196,7 +1196,7 @@ final class CommandCatalog {
         ),
       ),
       CommandSpec(
-        name: 'live_edit_resolve_draft',
+        name: LiveEditMcpToolNames.resolveDraft,
         description:
             'Resolve the current live-edit draft into a structured patch proposal.',
         inputSchema: _objectSchema(
@@ -1236,7 +1236,7 @@ final class CommandCatalog {
         ),
       ),
       CommandSpec(
-        name: 'live_edit_apply_draft',
+        name: LiveEditMcpToolNames.applyDraft,
         description:
             'Run a single live-edit transaction for resolve, compact plan review, and optional apply.',
         inputSchema: _objectSchema(
@@ -1278,7 +1278,7 @@ final class CommandCatalog {
         ),
       ),
       CommandSpec(
-        name: 'live_edit_accept_resolution',
+        name: LiveEditMcpToolNames.acceptResolution,
         description:
             'Apply a reviewed live-edit proposal, hot reload, and validate.',
         inputSchema: _objectSchema(
@@ -1309,7 +1309,7 @@ final class CommandCatalog {
         ),
       ),
       CommandSpec(
-        name: 'live_edit_reject_resolution',
+        name: LiveEditMcpToolNames.rejectResolution,
         description: 'Reject a pending live-edit resolution proposal.',
         inputSchema: _objectSchema(
           properties: {'proposalId': _stringSchema()},

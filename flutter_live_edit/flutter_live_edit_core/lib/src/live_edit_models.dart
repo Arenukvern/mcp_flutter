@@ -673,6 +673,67 @@ final class LiveEditRuntimeToolNames {
   static const String endSession = 'live_edit_runtime_end_session';
 }
 
+/// MCP tool names for the Flutter Inspector MCP server command catalog
+/// (`mcp_server_dart`).
+///
+/// Wire strings for `CommandSpec.name`, MCP `Tool.name`, and executor routing.
+/// In-app bridge tools use [LiveEditRuntimeToolNames] instead.
+final class LiveEditMcpToolNames {
+  const LiveEditMcpToolNames._();
+
+  static const String acceptResolution = 'live_edit_accept_resolution';
+  static const String applyDraft = 'live_edit_apply_draft';
+  static const String discardDraft = 'live_edit_discard_draft';
+  static const String endSession = 'live_edit_end_session';
+  static const String getAgentBackend = 'live_edit_get_agent_backend';
+  static const String getCapabilities = 'live_edit_get_capabilities';
+  static const String getDraft = 'live_edit_get_draft';
+  static const String getPreviewState = 'live_edit_get_preview_state';
+  static const String getPropertyPanel = 'live_edit_get_property_panel';
+  static const String getSelection = 'live_edit_get_selection';
+  static const String getSelectionCandidates =
+      'live_edit_get_selection_candidates';
+  static const String getTree = 'live_edit_get_tree';
+  static const String listAgentBackends = 'live_edit_list_agent_backends';
+  static const String prepareSession = 'live_edit_prepare_session';
+  static const String rejectResolution = 'live_edit_reject_resolution';
+  static const String resolveDraft = 'live_edit_resolve_draft';
+  static const String selectAtPoint = 'live_edit_select_at_point';
+  static const String setActiveSelection = 'live_edit_set_active_selection';
+  static const String setAgentBackend = 'live_edit_set_agent_backend';
+  static const String setEditMode = 'live_edit_set_edit_mode';
+  static const String setOverlay = 'live_edit_set_overlay';
+  static const String startSession = 'live_edit_start_session';
+  static const String updateDraft = 'live_edit_update_draft';
+
+  /// Sorted lexicographically; used by contract tests to detect drift.
+  static const List<String> allSorted = <String>[
+    acceptResolution,
+    applyDraft,
+    discardDraft,
+    endSession,
+    getAgentBackend,
+    getCapabilities,
+    getDraft,
+    getPreviewState,
+    getPropertyPanel,
+    getSelection,
+    getSelectionCandidates,
+    getTree,
+    listAgentBackends,
+    prepareSession,
+    rejectResolution,
+    resolveDraft,
+    selectAtPoint,
+    setActiveSelection,
+    setAgentBackend,
+    setEditMode,
+    setOverlay,
+    startSession,
+    updateDraft,
+  ];
+}
+
 @Freezed(fromJson: true, toJson: true)
 class LiveEditSelection with _$LiveEditSelection {
   const factory LiveEditSelection({

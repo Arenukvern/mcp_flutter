@@ -28,6 +28,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  test: ^1.26.0
   lints: ^6.1.0
   xsoulspace_lints: ^0.1.2
 

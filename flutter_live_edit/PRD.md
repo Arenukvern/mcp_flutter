@@ -1,5 +1,7 @@
 # Live Edit — Product Requirements & Constraints
 
+**Narrative summary:** [USER_STORY.md](USER_STORY.md) · **Tool names & glossary:** [CONTRACT.md](CONTRACT.md) · **Package boundaries:** [BOUNDARIES.md](BOUNDARIES.md)
+
 ## Philosophy
 
 - **Extremely minimalistic** — Only the flows below; no extra features.

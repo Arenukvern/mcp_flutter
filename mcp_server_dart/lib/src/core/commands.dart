@@ -239,7 +239,7 @@ final class LiveEditAcceptResolutionCommand extends CoreCommand {
   final String? workingDirectory;
 
   @override
-  String get name => 'live_edit_accept_resolution';
+  String get name => LiveEditMcpToolNames.acceptResolution;
 }
 
 final class LiveEditApplyDraftCommand extends CoreCommand {
@@ -262,7 +262,7 @@ final class LiveEditApplyDraftCommand extends CoreCommand {
   final bool approve;
 
   @override
-  String get name => 'live_edit_apply_draft';
+  String get name => LiveEditMcpToolNames.applyDraft;
 }
 
 final class LiveEditDiscardDraftCommand extends CoreCommand {
@@ -271,7 +271,7 @@ final class LiveEditDiscardDraftCommand extends CoreCommand {
   final String? sessionId;
 
   @override
-  String get name => 'live_edit_discard_draft';
+  String get name => LiveEditMcpToolNames.discardDraft;
 }
 
 final class LiveEditEndSessionCommand extends CoreCommand {
@@ -280,7 +280,7 @@ final class LiveEditEndSessionCommand extends CoreCommand {
   final String? sessionId;
 
   @override
-  String get name => 'live_edit_end_session';
+  String get name => LiveEditMcpToolNames.endSession;
 }
 
 final class LiveEditGetAgentBackendCommand extends CoreCommand {
@@ -290,7 +290,7 @@ final class LiveEditGetAgentBackendCommand extends CoreCommand {
   final String? backendId;
 
   @override
-  String get name => 'live_edit_get_agent_backend';
+  String get name => LiveEditMcpToolNames.getAgentBackend;
 }
 
 final class LiveEditGetCapabilitiesCommand extends CoreCommand {
@@ -300,7 +300,7 @@ final class LiveEditGetCapabilitiesCommand extends CoreCommand {
   final String? targetDomain;
 
   @override
-  String get name => 'live_edit_get_capabilities';
+  String get name => LiveEditMcpToolNames.getCapabilities;
 }
 
 final class LiveEditGetDraftCommand extends CoreCommand {
@@ -309,7 +309,7 @@ final class LiveEditGetDraftCommand extends CoreCommand {
   final String? sessionId;
 
   @override
-  String get name => 'live_edit_get_draft';
+  String get name => LiveEditMcpToolNames.getDraft;
 }
 
 final class LiveEditGetPreviewStateCommand extends CoreCommand {
@@ -319,7 +319,7 @@ final class LiveEditGetPreviewStateCommand extends CoreCommand {
   final String? targetDomain;
 
   @override
-  String get name => 'live_edit_get_preview_state';
+  String get name => LiveEditMcpToolNames.getPreviewState;
 }
 
 final class LiveEditGetPropertyPanelCommand extends CoreCommand {
@@ -329,7 +329,7 @@ final class LiveEditGetPropertyPanelCommand extends CoreCommand {
   final String? targetDomain;
 
   @override
-  String get name => 'live_edit_get_property_panel';
+  String get name => LiveEditMcpToolNames.getPropertyPanel;
 }
 
 final class LiveEditGetSelectionCandidatesCommand extends CoreCommand {
@@ -342,7 +342,7 @@ final class LiveEditGetSelectionCandidatesCommand extends CoreCommand {
   final String? targetDomain;
 
   @override
-  String get name => 'live_edit_get_selection_candidates';
+  String get name => LiveEditMcpToolNames.getSelectionCandidates;
 }
 
 final class LiveEditGetSelectionCommand extends CoreCommand {
@@ -352,7 +352,7 @@ final class LiveEditGetSelectionCommand extends CoreCommand {
   final String? targetDomain;
 
   @override
-  String get name => 'live_edit_get_selection';
+  String get name => LiveEditMcpToolNames.getSelection;
 }
 
 final class LiveEditGetTreeCommand extends CoreCommand {
@@ -362,14 +362,14 @@ final class LiveEditGetTreeCommand extends CoreCommand {
   final String? targetDomain;
 
   @override
-  String get name => 'live_edit_get_tree';
+  String get name => LiveEditMcpToolNames.getTree;
 }
 
 final class LiveEditListAgentBackendsCommand extends CoreCommand {
   const LiveEditListAgentBackendsCommand();
 
   @override
-  String get name => 'live_edit_list_agent_backends';
+  String get name => LiveEditMcpToolNames.listAgentBackends;
 }
 
 final class LiveEditPrepareSessionCommand extends CoreCommand {
@@ -388,7 +388,7 @@ final class LiveEditPrepareSessionCommand extends CoreCommand {
   final String? targetDomain;
 
   @override
-  String get name => 'live_edit_prepare_session';
+  String get name => LiveEditMcpToolNames.prepareSession;
 }
 
 final class LiveEditRejectResolutionCommand extends CoreCommand {
@@ -397,7 +397,7 @@ final class LiveEditRejectResolutionCommand extends CoreCommand {
   final String proposalId;
 
   @override
-  String get name => 'live_edit_reject_resolution';
+  String get name => LiveEditMcpToolNames.rejectResolution;
 }
 
 final class LiveEditResolveDraftCommand extends CoreCommand {
@@ -418,7 +418,7 @@ final class LiveEditResolveDraftCommand extends CoreCommand {
   final String? targetDomain;
 
   @override
-  String get name => 'live_edit_resolve_draft';
+  String get name => LiveEditMcpToolNames.resolveDraft;
 }
 
 final class LiveEditSelectAtPointCommand extends CoreCommand {
@@ -439,7 +439,7 @@ final class LiveEditSelectAtPointCommand extends CoreCommand {
   final String? targetDomain;
 
   @override
-  String get name => 'live_edit_select_at_point';
+  String get name => LiveEditMcpToolNames.selectAtPoint;
 }
 
 final class LiveEditSetActiveSelectionCommand extends CoreCommand {
@@ -456,7 +456,7 @@ final class LiveEditSetActiveSelectionCommand extends CoreCommand {
   final String? targetDomain;
 
   @override
-  String get name => 'live_edit_set_active_selection';
+  String get name => LiveEditMcpToolNames.setActiveSelection;
 }
 
 final class LiveEditSetAgentBackendCommand extends CoreCommand {
@@ -471,7 +471,7 @@ final class LiveEditSetAgentBackendCommand extends CoreCommand {
   final LiveEditInferenceConfig? inferenceConfig;
 
   @override
-  String get name => 'live_edit_set_agent_backend';
+  String get name => LiveEditMcpToolNames.setAgentBackend;
 }
 
 final class LiveEditSetEditModeCommand extends CoreCommand {
@@ -486,7 +486,7 @@ final class LiveEditSetEditModeCommand extends CoreCommand {
   final String? targetDomain;
 
   @override
-  String get name => 'live_edit_set_edit_mode';
+  String get name => LiveEditMcpToolNames.setEditMode;
 }
 
 final class LiveEditSetOverlayCommand extends CoreCommand {
@@ -496,7 +496,7 @@ final class LiveEditSetOverlayCommand extends CoreCommand {
   final bool enabled;
 
   @override
-  String get name => 'live_edit_set_overlay';
+  String get name => LiveEditMcpToolNames.setOverlay;
 }
 
 final class LiveEditStartSessionCommand extends CoreCommand {
@@ -506,7 +506,7 @@ final class LiveEditStartSessionCommand extends CoreCommand {
   final String? targetDomain;
 
   @override
-  String get name => 'live_edit_start_session';
+  String get name => LiveEditMcpToolNames.startSession;
 }
 
 final class LiveEditUpdateDraftCommand extends CoreCommand {
@@ -521,7 +521,7 @@ final class LiveEditUpdateDraftCommand extends CoreCommand {
   final String? targetDomain;
 
   @override
-  String get name => 'live_edit_update_draft';
+  String get name => LiveEditMcpToolNames.updateDraft;
 }
 
 final class RunClientResourceCommand extends CoreCommand {

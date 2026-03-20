@@ -12,6 +12,7 @@ class ChatBubbleSurface extends StatefulWidget {
     required this.viewModel,
     required this.callbacks,
     this.autofocus = false,
+
     /// When set (typically host bubble height minus drag/resize), layouts the
     /// scrollable transcript and caps multiline input; grows with user resize.
     this.maxContentHeight,
@@ -30,6 +31,7 @@ class ChatBubbleSurface extends StatefulWidget {
 class _ChatBubbleSurfaceState extends State<ChatBubbleSurface> {
   late final TextEditingController _input;
   final _scrollController = ScrollController();
+  bool _autoScrollQueued = false;
 
   @override
   void initState() {
@@ -50,7 +52,7 @@ class _ChatBubbleSurfaceState extends State<ChatBubbleSurface> {
       );
     }
     if (widget.viewModel.messages.length != old.viewModel.messages.length) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToEnd());
+      _queueAutoScrollToEnd();
     }
   }
 
@@ -66,20 +68,33 @@ class _ChatBubbleSurfaceState extends State<ChatBubbleSurface> {
     ),
     child: Text(
       widget.viewModel.appliedSummary!,
-      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF166534)),
+      style: const TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w700,
+        color: Color(0xFF166534),
+      ),
       maxLines: 2,
       overflow: TextOverflow.ellipsis,
     ),
   );
 
+  void _queueAutoScrollToEnd() {
+    if (_autoScrollQueued) return;
+    _autoScrollQueued = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _autoScrollQueued = false;
+      _scrollToEnd();
+    });
+  }
+
   void _scrollToEnd() {
-    if (_scrollController.hasClients) {
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 150),
-        curve: Curves.easeOut,
-      );
-    }
+    if (!_scrollController.hasClients) return;
+    final position = _scrollController.position;
+    final max = position.maxScrollExtent;
+    if ((max - position.pixels).abs() < 1) return;
+    // Streaming can emit many timeline updates per second; jumpTo avoids
+    // animation backlog that can lock the UI while a bubble is in progress.
+    _scrollController.jumpTo(max);
   }
 
   void _handleSend() {
@@ -167,14 +182,6 @@ class _ChatBubbleSurfaceState extends State<ChatBubbleSurface> {
                 'Draft changes: ${vm.draftCount}',
                 style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
               ),
-            )
-          else
-            const Padding(
-              padding: EdgeInsets.only(right: 8),
-              child: Text(
-                'No draft changes.',
-                style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
-              ),
             ),
           if (vm.canDiscard)
             Padding(
@@ -256,11 +263,17 @@ class _ChatBubbleSurfaceState extends State<ChatBubbleSurface> {
               child: GestureDetector(
                 onTap: () => widget.callbacks.onApplyAll(vm.applyAllCount),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFF0D9488).withOpacity(0.15),
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: const Color(0xFF0D9488), width: 0.5),
+                    border: Border.all(
+                      color: const Color(0xFF0D9488),
+                      width: 0.5,
+                    ),
                   ),
                   child: Text(
                     'Apply all (${vm.applyAllCount})',
@@ -351,15 +364,10 @@ class _ChatBubbleSurfaceState extends State<ChatBubbleSurface> {
     const headerBlock = 46.0;
     const divider = 1.0;
     final bannerH = hasBanner ? 54.0 : 0.0;
-    final applyExtra =
-        (vm.canApplyAll && vm.applyAllCount > 0) ? 36.0 : 0.0;
+    final applyExtra = (vm.canApplyAll && vm.applyAllCount > 0) ? 36.0 : 0.0;
     final fixedTop = headerBlock + divider + bannerH;
-    final double inputFieldMax =
-        math.min(132.0, math.max(44.0, maxH * 0.42));
-    final int maxLines = math.min(
-      8,
-      math.max(1, (inputFieldMax / 21).floor()),
-    );
+    final double inputFieldMax = math.min(132.0, math.max(44.0, maxH * 0.42));
+    final int maxLines = math.min(8, math.max(1, (inputFieldMax / 21).floor()));
     final inputColumnH = inputFieldMax + applyExtra;
     double remaining = maxH - fixedTop - inputColumnH;
     if (remaining < 28) {
@@ -372,11 +380,11 @@ class _ChatBubbleSurfaceState extends State<ChatBubbleSurface> {
         _buildHeader(),
         const Divider(height: 1, thickness: 0.5, color: Color(0x18000000)),
         if (hasBanner) _buildAppliedBanner(),
-        if (vm.showThinking) _buildMessages(maxHeight: remaining) else const SizedBox.shrink(),
-        _buildInputBar(
-          maxFieldHeight: inputFieldMax,
-          maxInputLines: maxLines,
-        ),
+        if (vm.showThinking)
+          _buildMessages(maxHeight: remaining)
+        else
+          const SizedBox.shrink(),
+        _buildInputBar(maxFieldHeight: inputFieldMax, maxInputLines: maxLines),
       ],
     );
   }
@@ -389,10 +397,7 @@ class _ChatBubbleSurfaceState extends State<ChatBubbleSurface> {
     if (cap == null) {
       return Material(
         type: MaterialType.transparency,
-        child: SizedBox(
-          height: 260,
-          child: _buildLaidOutContent(260),
-        ),
+        child: SizedBox(height: 260, child: _buildLaidOutContent(260)),
       );
     }
     return Material(
@@ -453,7 +458,11 @@ class _DiscardButton extends StatelessWidget {
       ),
       child: const Text(
         'Discard',
-        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: Color(0xFF64748B),
+        ),
       ),
     ),
   );

@@ -10,16 +10,14 @@ Playground for the live-edit tooling UI kit with a **two-layer separation**:
 - `lib/main.dart` – Live-edit mode: dumb surface as host child + wired tool layer overlay.
 - `lib/main_preview.dart` – Preview only: dumb surface only, no toolkit. Run: `flutter run -t lib/main_preview.dart`.
 
-## Getting Started
+## Contract scenarios (manual)
 
-This project is a starting point for a Flutter application.
+Use these after changes to `live_edit_tooling_ui_kit` or `flutter_live_edit_toolkit`:
 
-A few resources to get you started if this is your first Flutter project:
+1. **Preview-only** — `flutter run -t lib/main_preview.dart`: dumb surface renders; no overlay/toolkit errors.
+2. **Live-edit host** — `flutter run` (default `main.dart`): app boots with `LiveEditScope` + host; tool layer can be toggled per app wiring.
+3. **Bubble + panel chrome** — Fixture view models show bubble and panel; drag/resize handles respond (visual smoke).
+4. **Two-layer separation** — In live mode, preview widgets stay the host **child**; toolkit overlay does not replace preview layout unexpectedly.
+5. **Regression** — After toolkit changes, re-run (1) and (2) on one desktop target (macOS or web as available).
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Cross-links: [USER_STORY.md](../USER_STORY.md), [CONTRACT.md](../CONTRACT.md).

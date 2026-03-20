@@ -145,6 +145,10 @@ base mixin FlutterInspector
       _liveEditHandler.liveEditResolveDraft,
     );
     registerTool(
+      LiveEditHandler.liveEditApplyDraftTool,
+      _liveEditHandler.liveEditApplyDraft,
+    );
+    registerTool(
       LiveEditHandler.liveEditAcceptResolutionTool,
       _liveEditHandler.liveEditAcceptResolution,
     );

@@ -134,7 +134,10 @@ final class LiveEditBubbleStateService {
   ) {
     final selection = params.activeSelection;
     final currentBubbleId = bubbleIdForSelection(ctx, selection);
-    if (currentBubbleId != params.lastSelectionIdentity) {
+    final recordMissing =
+        _hasText(currentBubbleId) &&
+        ctx.bubbleResource.value.bubbleRecordsById[currentBubbleId] == null;
+    if (currentBubbleId != params.lastSelectionIdentity || recordMissing) {
       final domain = params.presentationLayer;
       final bubble = _hasText(currentBubbleId)
           ? ensureBubbleState(

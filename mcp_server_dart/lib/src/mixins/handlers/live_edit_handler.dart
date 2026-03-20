@@ -5,6 +5,7 @@ import 'dart:convert';
 
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_inspector_mcp_server/src/base_server.dart';
+import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 import 'package:flutter_inspector_mcp_server/src/core/command_catalog.dart';
 import 'package:flutter_inspector_mcp_server/src/core/error_codes.dart';
 import 'package:flutter_inspector_mcp_server/src/core/executor.dart';
@@ -17,13 +18,13 @@ class LiveEditHandler {
 
   static final _catalog = CommandCatalog.instance;
   static final liveEditStartSessionTool = _tool(
-    name: 'live_edit_start_session',
+    name: LiveEditMcpToolNames.startSession,
     fallbackDescription: 'Start or reuse a live edit session.',
     properties: {'sessionId': Schema.string(), 'targetDomain': Schema.string()},
   );
 
   static final liveEditPrepareSessionTool = _tool(
-    name: 'live_edit_prepare_session',
+    name: LiveEditMcpToolNames.prepareSession,
     fallbackDescription:
         'Prepare a live edit session, enable the overlay, and return readiness data.',
     properties: {
@@ -36,20 +37,20 @@ class LiveEditHandler {
   );
 
   static final liveEditSetOverlayTool = _tool(
-    name: 'live_edit_set_overlay',
+    name: LiveEditMcpToolNames.setOverlay,
     fallbackDescription: 'Enable or disable the live edit overlay.',
     properties: {'sessionId': Schema.string(), 'enabled': Schema.bool()},
     required: const <String>['enabled'],
   );
 
   static final liveEditGetTreeTool = _tool(
-    name: 'live_edit_get_tree',
+    name: LiveEditMcpToolNames.getTree,
     fallbackDescription: 'Get the live edit widget tree.',
     properties: {'sessionId': Schema.string(), 'targetDomain': Schema.string()},
   );
 
   static final liveEditSelectAtPointTool = _tool(
-    name: 'live_edit_select_at_point',
+    name: LiveEditMcpToolNames.selectAtPoint,
     fallbackDescription: 'Select a live edit node at global coordinates.',
     properties: {
       'sessionId': Schema.string(),
@@ -63,25 +64,25 @@ class LiveEditHandler {
   );
 
   static final liveEditGetSelectionTool = _tool(
-    name: 'live_edit_get_selection',
+    name: LiveEditMcpToolNames.getSelection,
     fallbackDescription: 'Get the current live edit selection.',
     properties: {'sessionId': Schema.string(), 'targetDomain': Schema.string()},
   );
 
   static final liveEditGetCapabilitiesTool = _tool(
-    name: 'live_edit_get_capabilities',
+    name: LiveEditMcpToolNames.getCapabilities,
     fallbackDescription: 'Get live edit runtime capabilities.',
     properties: {'sessionId': Schema.string(), 'targetDomain': Schema.string()},
   );
 
   static final liveEditGetSelectionCandidatesTool = _tool(
-    name: 'live_edit_get_selection_candidates',
+    name: LiveEditMcpToolNames.getSelectionCandidates,
     fallbackDescription: 'Get the current live edit selection candidates.',
     properties: {'sessionId': Schema.string(), 'targetDomain': Schema.string()},
   );
 
   static final liveEditSetActiveSelectionTool = _tool(
-    name: 'live_edit_set_active_selection',
+    name: LiveEditMcpToolNames.setActiveSelection,
     fallbackDescription:
         'Promote one candidate as the active live edit selection.',
     properties: {
@@ -93,13 +94,13 @@ class LiveEditHandler {
   );
 
   static final liveEditGetPropertyPanelTool = _tool(
-    name: 'live_edit_get_property_panel',
+    name: LiveEditMcpToolNames.getPropertyPanel,
     fallbackDescription: 'Get the current live edit property panel payload.',
     properties: {'sessionId': Schema.string(), 'targetDomain': Schema.string()},
   );
 
   static final liveEditSetEditModeTool = _tool(
-    name: 'live_edit_set_edit_mode',
+    name: LiveEditMcpToolNames.setEditMode,
     fallbackDescription: 'Set the live edit overlay mode.',
     properties: {
       'sessionId': Schema.string(),
@@ -110,13 +111,13 @@ class LiveEditHandler {
   );
 
   static final liveEditGetPreviewStateTool = _tool(
-    name: 'live_edit_get_preview_state',
+    name: LiveEditMcpToolNames.getPreviewState,
     fallbackDescription: 'Get the current live edit preview state.',
     properties: {'sessionId': Schema.string(), 'targetDomain': Schema.string()},
   );
 
   static final liveEditUpdateDraftTool = _tool(
-    name: 'live_edit_update_draft',
+    name: LiveEditMcpToolNames.updateDraft,
     fallbackDescription: 'Update one live edit draft change.',
     properties: {
       'sessionId': Schema.string(),
@@ -127,36 +128,36 @@ class LiveEditHandler {
   );
 
   static final liveEditGetDraftTool = _tool(
-    name: 'live_edit_get_draft',
+    name: LiveEditMcpToolNames.getDraft,
     fallbackDescription: 'Get the current live edit draft.',
     properties: {'sessionId': Schema.string()},
   );
 
   static final liveEditDiscardDraftTool = _tool(
-    name: 'live_edit_discard_draft',
+    name: LiveEditMcpToolNames.discardDraft,
     fallbackDescription: 'Discard the current live edit draft.',
     properties: {'sessionId': Schema.string()},
   );
 
   static final liveEditEndSessionTool = _tool(
-    name: 'live_edit_end_session',
+    name: LiveEditMcpToolNames.endSession,
     fallbackDescription: 'End the current live edit session.',
     properties: {'sessionId': Schema.string()},
   );
 
   static final liveEditListAgentBackendsTool = _tool(
-    name: 'live_edit_list_agent_backends',
+    name: LiveEditMcpToolNames.listAgentBackends,
     fallbackDescription: 'List available live edit agent backends.',
   );
 
   static final liveEditGetAgentBackendTool = _tool(
-    name: 'live_edit_get_agent_backend',
+    name: LiveEditMcpToolNames.getAgentBackend,
     fallbackDescription: 'Get the active or requested live edit backend.',
     properties: {'sessionId': Schema.string(), 'backendId': Schema.string()},
   );
 
   static final liveEditSetAgentBackendTool = _tool(
-    name: 'live_edit_set_agent_backend',
+    name: LiveEditMcpToolNames.setAgentBackend,
     fallbackDescription: 'Set the live edit backend for one session.',
     properties: {
       'sessionId': Schema.string(),
@@ -167,7 +168,7 @@ class LiveEditHandler {
   );
 
   static final liveEditResolveDraftTool = _tool(
-    name: 'live_edit_resolve_draft',
+    name: LiveEditMcpToolNames.resolveDraft,
     fallbackDescription: 'Resolve the current live edit draft into a proposal.',
     properties: {
       'sessionId': Schema.string(),
@@ -179,8 +180,23 @@ class LiveEditHandler {
     },
   );
 
+  static final liveEditApplyDraftTool = _tool(
+    name: LiveEditMcpToolNames.applyDraft,
+    fallbackDescription:
+        'Run a single live-edit transaction for resolve, compact plan review, and optional apply.',
+    properties: {
+      'sessionId': Schema.string(),
+      'backendId': Schema.string(),
+      'inferenceConfig': _inferenceConfigSchema(),
+      'workingDirectory': Schema.string(),
+      'intentText': Schema.string(),
+      'proposalId': Schema.string(),
+      'approve': Schema.bool(),
+    },
+  );
+
   static final liveEditAcceptResolutionTool = _tool(
-    name: 'live_edit_accept_resolution',
+    name: LiveEditMcpToolNames.acceptResolution,
     fallbackDescription: 'Apply a live edit proposal and validate it.',
     properties: {
       'proposalId': Schema.string(),
@@ -191,7 +207,7 @@ class LiveEditHandler {
   );
 
   static final liveEditRejectResolutionTool = _tool(
-    name: 'live_edit_reject_resolution',
+    name: LiveEditMcpToolNames.rejectResolution,
     fallbackDescription: 'Reject a live edit proposal.',
     properties: {'proposalId': Schema.string()},
     required: const <String>['proposalId'],
@@ -203,80 +219,83 @@ class LiveEditHandler {
 
   Future<CallToolResult> liveEditAcceptResolution(
     final CallToolRequest request,
-  ) => _executeNamed('live_edit_accept_resolution', request);
+  ) => _executeNamed(LiveEditMcpToolNames.acceptResolution, request);
+
+  Future<CallToolResult> liveEditApplyDraft(final CallToolRequest request) =>
+      _executeNamed(LiveEditMcpToolNames.applyDraft, request);
 
   Future<CallToolResult> liveEditDiscardDraft(final CallToolRequest request) =>
-      _executeNamed('live_edit_discard_draft', request);
+      _executeNamed(LiveEditMcpToolNames.discardDraft, request);
 
   Future<CallToolResult> liveEditEndSession(final CallToolRequest request) =>
-      _executeNamed('live_edit_end_session', request);
+      _executeNamed(LiveEditMcpToolNames.endSession, request);
 
   Future<CallToolResult> liveEditGetAgentBackend(
     final CallToolRequest request,
-  ) => _executeNamed('live_edit_get_agent_backend', request);
+  ) => _executeNamed(LiveEditMcpToolNames.getAgentBackend, request);
 
   Future<CallToolResult> liveEditGetCapabilities(
     final CallToolRequest request,
-  ) => _executeNamed('live_edit_get_capabilities', request);
+  ) => _executeNamed(LiveEditMcpToolNames.getCapabilities, request);
 
   Future<CallToolResult> liveEditGetDraft(final CallToolRequest request) =>
-      _executeNamed('live_edit_get_draft', request);
+      _executeNamed(LiveEditMcpToolNames.getDraft, request);
 
   Future<CallToolResult> liveEditGetPreviewState(
     final CallToolRequest request,
-  ) => _executeNamed('live_edit_get_preview_state', request);
+  ) => _executeNamed(LiveEditMcpToolNames.getPreviewState, request);
 
   Future<CallToolResult> liveEditGetPropertyPanel(
     final CallToolRequest request,
-  ) => _executeNamed('live_edit_get_property_panel', request);
+  ) => _executeNamed(LiveEditMcpToolNames.getPropertyPanel, request);
 
   Future<CallToolResult> liveEditGetSelection(final CallToolRequest request) =>
-      _executeNamed('live_edit_get_selection', request);
+      _executeNamed(LiveEditMcpToolNames.getSelection, request);
 
   Future<CallToolResult> liveEditGetSelectionCandidates(
     final CallToolRequest request,
-  ) => _executeNamed('live_edit_get_selection_candidates', request);
+  ) => _executeNamed(LiveEditMcpToolNames.getSelectionCandidates, request);
 
   Future<CallToolResult> liveEditGetTree(final CallToolRequest request) =>
-      _executeNamed('live_edit_get_tree', request);
+      _executeNamed(LiveEditMcpToolNames.getTree, request);
 
   Future<CallToolResult> liveEditListAgentBackends(
     final CallToolRequest request,
-  ) => _executeNamed('live_edit_list_agent_backends', request);
+  ) => _executeNamed(LiveEditMcpToolNames.listAgentBackends, request);
 
   Future<CallToolResult> liveEditPrepareSession(
     final CallToolRequest request,
-  ) => _executeNamed('live_edit_prepare_session', request);
+  ) => _executeNamed(LiveEditMcpToolNames.prepareSession, request);
 
   Future<CallToolResult> liveEditRejectResolution(
     final CallToolRequest request,
-  ) => _executeNamed('live_edit_reject_resolution', request);
+  ) => _executeNamed(LiveEditMcpToolNames.rejectResolution, request);
 
   Future<CallToolResult> liveEditResolveDraft(final CallToolRequest request) =>
-      _executeNamed('live_edit_resolve_draft', request);
+      _executeNamed(LiveEditMcpToolNames.resolveDraft, request);
 
   Future<CallToolResult> liveEditSelectAtPoint(final CallToolRequest request) =>
-      _executeNamed('live_edit_select_at_point', request);
+      _executeNamed(LiveEditMcpToolNames.selectAtPoint, request);
 
   Future<CallToolResult> liveEditSetActiveSelection(
     final CallToolRequest request,
-  ) => _executeNamed('live_edit_set_active_selection', request);
+  ) => _executeNamed(LiveEditMcpToolNames.setActiveSelection, request);
 
   Future<CallToolResult> liveEditSetAgentBackend(
     final CallToolRequest request,
-  ) => _executeNamed('live_edit_set_agent_backend', request);
+  ) => _executeNamed(LiveEditMcpToolNames.setAgentBackend, request);
 
   Future<CallToolResult> liveEditSetEditMode(final CallToolRequest request) =>
-      _executeNamed('live_edit_set_edit_mode', request);
+      _executeNamed(LiveEditMcpToolNames.setEditMode, request);
 
   Future<CallToolResult> liveEditSetOverlay(final CallToolRequest request) =>
-      _executeNamed('live_edit_set_overlay', request);
+      _executeNamed(LiveEditMcpToolNames.setOverlay, request);
 
   Future<CallToolResult> liveEditStartSession(final CallToolRequest request) =>
-      _executeNamed('live_edit_start_session', request);
+      _executeNamed(LiveEditMcpToolNames.startSession, request);
 
   Future<CallToolResult> liveEditUpdateDraft(final CallToolRequest request) =>
-      _executeNamed('live_edit_update_draft', request);
+      _executeNamed(LiveEditMcpToolNames.updateDraft, request);
 
   Future<CallToolResult> _executeNamed(
     final String name,
