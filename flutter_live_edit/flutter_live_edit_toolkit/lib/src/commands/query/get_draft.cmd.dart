@@ -1,1 +1,1 @@
-export '../get_draft.cmd.dart';
+export '../draft/get_draft.cmd.dart';

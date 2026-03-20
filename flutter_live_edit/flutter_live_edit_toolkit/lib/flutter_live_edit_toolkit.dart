@@ -2,7 +2,6 @@ export 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 
 /// Minimal integration surface — see `live_edit_facade.dart`.
 export 'live_edit_facade.dart';
-
 export 'src/commands/commands.dart';
 export 'src/live_edit_auto.dart';
 export 'src/live_edit_context.dart';

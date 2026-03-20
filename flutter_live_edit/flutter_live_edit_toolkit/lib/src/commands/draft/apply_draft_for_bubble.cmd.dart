@@ -1,18 +1,20 @@
 import '../../live_edit_context.dart';
-import '../draft/apply_draft.cmd.dart';
+import 'apply_draft.cmd.dart';
 
-/// Applies draft with approve flag (approval flow).
-final class ApproveBubbleCommand {
-  ApproveBubbleCommand({
-    this.bubbleId,
+/// Applies draft for a specific bubble id.
+final class ApplyDraftForBubbleCommand {
+  ApplyDraftForBubbleCommand({
+    required this.bubbleId,
     this.message,
+    this.approve = false,
     this.workingDirectory,
     this.intentText,
     this.globalBackendId,
   });
 
-  final String? bubbleId;
+  final String bubbleId;
   final String? message;
+  final bool approve;
   final String? workingDirectory;
   final String? intentText;
   final String? globalBackendId;
@@ -21,7 +23,7 @@ final class ApproveBubbleCommand {
     await ApplyDraftCommand(
       bubbleId: bubbleId,
       message: message,
-      approve: true,
+      approve: approve,
       workingDirectory: workingDirectory,
       intentText: intentText,
       globalBackendId: globalBackendId,

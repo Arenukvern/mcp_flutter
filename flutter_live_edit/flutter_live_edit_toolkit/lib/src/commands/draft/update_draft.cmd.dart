@@ -2,17 +2,17 @@ import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 
 import '../../live_edit_context.dart';
 
-/// Sets the target domain for the session.
-final class SetTargetDomainCommand {
-  SetTargetDomainCommand({required this.targetDomain, this.sessionId});
+/// Updates one draft change.
+final class UpdateDraftCommand {
+  UpdateDraftCommand({required this.change, this.sessionId});
 
   final String? sessionId;
-  final LiveEditTargetDomain targetDomain;
+  final LiveEditDraftChange change;
 
   Map<String, Object?> execute(final LiveEditContext context) {
-    final result = context.sessionService.setTargetDomain(
+    final result = context.sessionService.updateDraft(
       sessionId: sessionId,
-      targetDomain: targetDomain,
+      change: change,
     );
     context.applySessionUpdate(context.sessionService.lastUpdate);
     return result;

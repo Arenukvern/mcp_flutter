@@ -1,1 +1,1 @@
-export '../get_selection.cmd.dart';
+export '../selection/get_selection.cmd.dart';
