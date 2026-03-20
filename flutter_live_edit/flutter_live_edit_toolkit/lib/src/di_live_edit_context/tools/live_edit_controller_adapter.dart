@@ -2,7 +2,7 @@ import 'dart:ui' show Rect;
 
 import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 
-import 'live_edit_context.dart';
+import '../live_edit_context.dart';
 
 /// Exposes session/selection/draft data from [LiveEditContext] for host code
 /// that expects a "controller" with domain-scoped getters.

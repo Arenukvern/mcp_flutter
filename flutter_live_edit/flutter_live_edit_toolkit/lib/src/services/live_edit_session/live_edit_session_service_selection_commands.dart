@@ -9,7 +9,7 @@ extension _LiveEditSessionServiceSelectionCommands
     required final int y,
     final String? sessionId,
   }) {
-    final session = this._requireSession(sessionId);
+    final session = _requireSession(sessionId);
     session.marqueeStart = ui.Offset(x.toDouble(), y.toDouble());
     session.marqueeRect = Rect.fromLTWH(x.toDouble(), y.toDouble(), 0, 0);
     session.marqueeHits = const <_ElementHit>[];
@@ -25,7 +25,7 @@ extension _LiveEditSessionServiceSelectionCommands
     final int? viewId,
     final Element? contentRoot,
   }) {
-    final session = this._requireSession(sessionId);
+    final session = _requireSession(sessionId);
     final start = session.marqueeStart;
     final root =
         (contentRoot != null && contentRoot.mounted ? contentRoot : null) ??
@@ -65,7 +65,7 @@ extension _LiveEditSessionServiceSelectionCommands
   }
 
   Map<String, Object?> commitMarquee({final String? sessionId}) {
-    final session = this._requireSession(sessionId);
+    final session = _requireSession(sessionId);
     final previewSelections = session.marqueeSelections;
     final hits = session.marqueeHits;
     session.marqueeRect = null;
@@ -92,13 +92,13 @@ extension _LiveEditSessionServiceSelectionCommands
               selection.nodeId,
           orElse: () => hits.first,
         );
-        final committed = this._setSelection(
+        final committed = _setSelection(
           session: session,
           element: hit.element,
           ancestry: hit.ancestry,
         );
         session.multiSelections = <LiveEditSelection>[committed];
-        this._syncSelectionCandidates(session);
+        _syncSelectionCandidates(session);
         _lastUpdate = _buildLastUpdate();
         return <String, Object?>{
           'sessionId': session.sessionId,
@@ -149,7 +149,7 @@ extension _LiveEditSessionServiceSelectionCommands
     );
     final tracked = session.trackedSelections[activeNodeId];
     if (tracked != null) {
-      this._hydrateTrackedSelection(
+      _hydrateTrackedSelection(
         session: session,
         tracked: tracked,
         updateInspectorSelection: true,
@@ -169,7 +169,7 @@ extension _LiveEditSessionServiceSelectionCommands
       session.ancestry = activeHit.ancestry;
       session.lastTouchedAt = DateTime.now().toUtc();
     }
-    this._syncSelectionCandidates(session);
+    _syncSelectionCandidates(session);
     _lastUpdate = _buildLastUpdate();
     return <String, Object?>{
       'sessionId': session.sessionId,
@@ -181,7 +181,7 @@ extension _LiveEditSessionServiceSelectionCommands
   }
 
   Map<String, Object?> cancelMarquee({final String? sessionId}) {
-    final session = this._requireSession(sessionId);
+    final session = _requireSession(sessionId);
     session.marqueeRect = null;
     session.marqueeStart = null;
     session.marqueeHits = const <_ElementHit>[];
@@ -196,7 +196,7 @@ extension _LiveEditSessionServiceSelectionCommands
     final String? nodeId,
     final LiveEditTargetDomain? targetDomain,
   }) {
-    final session = this._requireSession(sessionId);
+    final session = _requireSession(sessionId);
     final layer = _layerForRequest(session, requested: targetDomain);
     final hits = layer.selectionHitCandidates;
     if (hits.isEmpty) {
@@ -233,13 +233,13 @@ extension _LiveEditSessionServiceSelectionCommands
         '';
     final tracked = layer.trackedSelections[hitNodeId];
     final selection = layer.multiSelections.length > 1 && tracked != null
-        ? this._hydrateTrackedSelection(
+        ? _hydrateTrackedSelection(
             session: session,
             tracked: tracked,
             updateInspectorSelection: true,
             targetDomain: targetDomain,
           )
-        : this._setSelection(
+        : _setSelection(
             session: session,
             element: hit.element,
             ancestry: hit.ancestry,
@@ -248,7 +248,7 @@ extension _LiveEditSessionServiceSelectionCommands
     if (layer.multiSelections.length <= 1) {
       layer.multiSelections = <LiveEditSelection>[selection];
     }
-    this._syncSelectionCandidates(session, requested: targetDomain);
+    _syncSelectionCandidates(session, requested: targetDomain);
     _lastUpdate = _buildLastUpdate();
     return <String, Object?>{
       'sessionId': session.sessionId,
@@ -265,15 +265,15 @@ extension _LiveEditSessionServiceSelectionCommands
     final String? sessionId,
     final LiveEditTargetDomain? targetDomain,
   }) {
-    final session = this._requireSession(sessionId);
-    final resolvedDomain = this._resolveTargetDomain(session, targetDomain);
+    final session = _requireSession(sessionId);
+    final resolvedDomain = _resolveTargetDomain(session, targetDomain);
     final layer = _layerForRequest(session, requested: targetDomain);
     if (resolvedDomain == LiveEditTargetDomain.toolScene) {
       final tracked = layer.trackedSelections[nodeId];
       if (tracked != null &&
           tracked.element.mounted &&
           tracked.element.renderObject != null) {
-        final selection = this._hydrateTrackedSelection(
+        final selection = _hydrateTrackedSelection(
           session: session,
           tracked: tracked,
           updateInspectorSelection: true,
@@ -282,7 +282,7 @@ extension _LiveEditSessionServiceSelectionCommands
         if (layer.multiSelections.length <= 1) {
           layer.multiSelections = <LiveEditSelection>[selection];
         }
-        this._syncSelectionCandidates(session, requested: targetDomain);
+        _syncSelectionCandidates(session, requested: targetDomain);
         _lastUpdate = _buildLastUpdate();
         return <String, Object?>{
           'sessionId': session.sessionId,
@@ -330,13 +330,13 @@ extension _LiveEditSessionServiceSelectionCommands
     }
     final trackedSelection = tracked.selection;
     final selection = _isHydratedSelection(trackedSelection)
-        ? this._setSelection(
+        ? _setSelection(
             session: session,
             element: tracked.element,
             ancestry: tracked.ancestry,
             targetDomain: targetDomain,
           )
-        : this._hydrateTrackedSelection(
+        : _hydrateTrackedSelection(
             session: session,
             tracked: tracked,
             updateInspectorSelection: true,
@@ -345,7 +345,7 @@ extension _LiveEditSessionServiceSelectionCommands
     if (layer.multiSelections.length <= 1) {
       layer.multiSelections = <LiveEditSelection>[selection];
     }
-    this._syncSelectionCandidates(session, requested: targetDomain);
+    _syncSelectionCandidates(session, requested: targetDomain);
     _lastUpdate = _buildLastUpdate();
     return <String, Object?>{
       'sessionId': session.sessionId,
@@ -358,7 +358,7 @@ extension _LiveEditSessionServiceSelectionCommands
     final String? sessionId,
     final LiveEditTargetDomain? targetDomain,
   }) {
-    final session = this._requireSession(sessionId);
+    final session = _requireSession(sessionId);
     final layer = _layerForRequest(session, requested: targetDomain);
     final activeIndex = layer.selectionCandidates.indexWhere(
       (final candidate) => candidate.active,
@@ -382,7 +382,7 @@ extension _LiveEditSessionServiceSelectionCommands
     final String? sessionId,
     final LiveEditTargetDomain? targetDomain,
   }) {
-    final session = this._requireSession(sessionId);
+    final session = _requireSession(sessionId);
     final layer = _layerForRequest(session, requested: targetDomain);
     final activeIndex = layer.selectionCandidates.indexWhere(
       (final candidate) => candidate.active,
@@ -405,7 +405,7 @@ extension _LiveEditSessionServiceSelectionCommands
     required final bool enabled,
     final String? sessionId,
   }) {
-    final session = this._requireSession(sessionId);
+    final session = _requireSession(sessionId);
     session.overlayEnabled = enabled;
     session.lastTouchedAt = DateTime.now().toUtc();
     _lastUpdate = _buildLastUpdate();
@@ -450,7 +450,7 @@ extension _LiveEditSessionServiceSelectionCommands
     required final LiveEditTargetDomain targetDomain,
     final String? sessionId,
   }) {
-    final session = this._requireSession(sessionId);
+    final session = _requireSession(sessionId);
     session.targetDomain = targetDomain;
     if (targetDomain == LiveEditTargetDomain.toolScene) {
       session.selectedElement = null;

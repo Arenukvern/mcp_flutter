@@ -3,15 +3,16 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 
-import 'live_edit_backend_utils.dart';
+import '../ai/backend/live_edit_backend_utils.dart';
+import '../live_edit_runtime.dart';
+import '../types/live_edit_types.dart';
+import '../resources/live_edit_backend_config.src.data.dart';
+import '../resources/resources.dart';
+import '../services/services.dart';
 import 'live_edit_context.dart';
-import 'live_edit_controller_adapter.dart';
-import 'live_edit_runtime.dart';
-import 'live_edit_types.dart';
-import 'resources/live_edit_backend_config.src.data.dart';
-import 'resources/resources.dart';
-import 'services/services.dart';
+import 'tools/live_edit_controller_adapter.dart';
 
+/// TODO: move classes to context and remove change notifier
 final class LiveEditOrchestrator extends ChangeNotifier {
   LiveEditOrchestrator({
     final LiveEditController? controller,

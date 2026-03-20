@@ -1,4 +1,4 @@
-import '../../live_edit_context.dart';
+import '../../di_live_edit_context/live_edit_context.dart';
 
 /// Enables or disables the live edit overlay.
 final class SetOverlayCommand {

@@ -167,7 +167,7 @@ bool _isLiveEditToolkitInfrastructurePath(final String? file) {
   if (!_hasText(file)) {
     return false;
   }
-  final normalized = file!.replaceAll('\\', '/');
+  final normalized = file!.replaceAll(r'\', '/');
   return normalized.contains(
     '/flutter_live_edit/flutter_live_edit_toolkit/lib/src/',
   );

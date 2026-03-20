@@ -1,7 +1,7 @@
 import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 
-import '../../live_edit_context.dart';
-import '../../live_edit_overlay_theme.dart';
+import '../../di_live_edit_context/live_edit_context.dart';
+import '../../ui_workbench/live_edit_overlay_theme.dart';
 
 /// Updates bubble dimensions in panel resource and overlay theme draft.
 final class ResizeBubbleCommand {

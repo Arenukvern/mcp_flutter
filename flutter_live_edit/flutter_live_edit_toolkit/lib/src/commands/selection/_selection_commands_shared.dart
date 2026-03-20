@@ -1,7 +1,7 @@
 import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 
-import '../../live_edit_context.dart';
-import '../../live_edit_controller_adapter.dart';
+import '../../di_live_edit_context/live_edit_context.dart';
+import '../../di_live_edit_context/tools/live_edit_controller_adapter.dart';
 import '../../selectors/live_edit_selectors.dart';
 import '../../services/live_edit_bubble_state_service.dart';
 import '../bubble/update_ai_composer.cmd.dart';

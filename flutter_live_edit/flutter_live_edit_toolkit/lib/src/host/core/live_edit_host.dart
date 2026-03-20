@@ -6,24 +6,24 @@ import 'package:flutter/services.dart';
 import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 import 'package:live_edit_tooling_ui_kit/live_edit_tooling_ui_kit.dart';
 
-import 'commands/commands.dart';
-import 'live_edit_backend_utils.dart';
-import 'live_edit_context.dart';
-import 'live_edit_controller_adapter.dart';
-import 'live_edit_host_overlay.dart';
-import 'live_edit_orchestrator.dart';
-import 'live_edit_overlay_theme.dart';
-import 'live_edit_scope.dart';
-import 'live_edit_tool_layer_glue.dart';
-import 'live_edit_types.dart';
-import 'selectors/live_edit_selectors.dart';
-import 'widgets/backend_switcher.dart';
+import '../../ai/backend/live_edit_backend_utils.dart';
+import '../../commands/commands.dart';
+import '../../di_live_edit_context/live_edit_context.dart';
+import '../../di_live_edit_context/live_edit_orchestrator.dart';
+import '../../di_live_edit_context/tools/live_edit_controller_adapter.dart';
+import '../../di_live_edit_context/live_edit_scope.dart';
+import '../../mcp_toolkit_tools/live_edit_tool_layer_glue.dart';
+import '../../types/live_edit_types.dart';
+import '../../selectors/live_edit_selectors.dart';
+import '../../ui_widgets/backend_switcher.dart';
+import '../../ui_workbench/live_edit_host_overlay.dart';
+import '../../ui_workbench/live_edit_overlay_theme.dart';
 
-part 'widgets/live_edit_host_bubbles.dart';
-part 'widgets/live_edit_host_bubbles_waiting.dart';
-part 'widgets/live_edit_host_overlay.dart';
-part 'widgets/live_edit_host_panel.dart';
-part 'widgets/live_edit_host_panel_body.dart';
+part '../../ui_widgets/live_edit_host_bubbles.dart';
+part '../../ui_widgets/live_edit_host_bubbles_waiting.dart';
+part '../../ui_widgets/live_edit_host_overlay.dart';
+part '../../ui_widgets/live_edit_host_panel.dart';
+part '../../ui_widgets/live_edit_host_panel_body.dart';
 
 String _activityElapsedLabel(final LiveEditActivityEntry activity) {
   final elapsed = DateTime.now().toUtc().difference(activity.timestamp);

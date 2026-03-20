@@ -1,4 +1,4 @@
-part of '../live_edit_host.dart';
+part of '../host/core/live_edit_host.dart';
 
 class _EditorPanelSurface extends StatelessWidget {
   const _EditorPanelSurface({

@@ -1,4 +1,4 @@
-import '../../live_edit_context.dart';
+import '../../di_live_edit_context/live_edit_context.dart';
 import 'apply_draft.cmd.dart';
 
 /// Applies draft for a specific bubble id.

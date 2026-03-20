@@ -1,10 +1,10 @@
 import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 
-import 'live_edit_types.dart';
-import 'resources/live_edit_draft.src.data.dart';
-import 'resources/live_edit_selection.src.data.dart';
-import 'resources/resources.dart';
-import 'services/services.dart';
+import '../resources/live_edit_draft.src.data.dart';
+import '../resources/live_edit_selection.src.data.dart';
+import '../resources/resources.dart';
+import '../services/services.dart';
+import '../types/live_edit_types.dart';
 
 /// Holds Resources and Services for Commands. Passed to [LiveEditCommand.execute].
 final class LiveEditContext {

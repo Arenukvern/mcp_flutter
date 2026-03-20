@@ -1,7 +1,7 @@
 import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 
-import '../../live_edit_context.dart';
-import '../../live_edit_types.dart';
+import '../../di_live_edit_context/live_edit_context.dart';
+import '../../types/live_edit_types.dart';
 import '../session/start_session.cmd.dart';
 import '../session/set_overlay_enabled.cmd.dart';
 import '../session/set_target_domain.cmd.dart';

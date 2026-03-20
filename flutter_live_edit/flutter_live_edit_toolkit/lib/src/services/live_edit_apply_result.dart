@@ -1,6 +1,6 @@
 import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 
-import '../live_edit_types.dart';
+import '../types/live_edit_types.dart';
 
 /// Result of [LiveEditApplyService.run]; Command applies this to Resources.
 final class LiveEditApplyResult {

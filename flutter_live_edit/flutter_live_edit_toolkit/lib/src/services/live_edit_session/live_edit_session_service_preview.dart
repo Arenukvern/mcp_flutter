@@ -7,7 +7,7 @@ extension _LiveEditSessionServicePreview on _LiveEditSessionServiceCore {
     required final LiveEditDraftChange change,
     final String? sessionId,
   }) {
-    final session = this._requireSession(sessionId);
+    final session = _requireSession(sessionId);
     final targetDomain = change.meta['targetDomain'] == null
         ? session.targetDomain
         : LiveEditTargetDomain.fromWire(change.meta['targetDomain']);
@@ -125,7 +125,7 @@ extension _LiveEditSessionServicePreview on _LiveEditSessionServiceCore {
     required final Map<String, Object?> meta,
     final String? sessionId,
   }) {
-    final session = this._requireSession(sessionId);
+    final session = _requireSession(sessionId);
     final updated = <Map<String, Object?>>[];
     for (final nodeId in nodeIds) {
       final result = updateDraft(
@@ -249,7 +249,7 @@ extension _LiveEditSessionServicePreview on _LiveEditSessionServiceCore {
         ? sessionId!.trim()
         : _activeSessionId;
     if (resolvedId == null) {
-      final started = this.startSession();
+      final started = startSession();
       return _sessions[started['sessionId']! as String]!;
     }
     return _sessions.putIfAbsent(

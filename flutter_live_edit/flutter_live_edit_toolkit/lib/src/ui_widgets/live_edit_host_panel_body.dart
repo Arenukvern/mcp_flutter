@@ -1,4 +1,4 @@
-part of '../live_edit_host.dart';
+part of '../host/core/live_edit_host.dart';
 
 class _PropertyPanelBody extends StatelessWidget {
   const _PropertyPanelBody({required this.context, required this.controller});

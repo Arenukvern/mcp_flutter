@@ -1,18 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 
-const _liveEditTestModeFromDefine = bool.fromEnvironment('LIVE_EDIT_TEST_MODE');
-const _liveEditBackendIdFromDefine = String.fromEnvironment(
-  'LIVE_EDIT_BACKEND',
-  defaultValue: 'codex_exec',
-);
-const _liveEditWorkingDirectoryFromDefine = String.fromEnvironment(
-  'LIVE_EDIT_WORKING_DIRECTORY',
-);
+import '../../envs.dart';
 
 final class FlutterLiveEditAutoConfig {
   const FlutterLiveEditAutoConfig({
-    this.backendId = _liveEditBackendIdFromDefine,
+    this.backendId = liveEditBackendIdFromDefine,
     this.workingDirectory,
     this.intentText,
     this.testMode = false,
@@ -31,10 +24,10 @@ final class FlutterLiveEditAutoConfig {
     final String? appId,
     final Map<String, Object?> meta = const <String, Object?>{},
   }) => FlutterLiveEditAutoConfig(
-    workingDirectory: _trimToNull(_liveEditWorkingDirectoryFromDefine),
+    workingDirectory: _trimToNull(liveEditWorkingDirectoryFromDefine),
     intentText: intentText,
     testMode:
-        _liveEditTestModeFromDefine ||
+        liveEditTestModeFromDefine ||
         (kIsWeb && Uri.base.queryParameters['live_edit_test_mode'] == '1'),
     availableBackends: availableBackends,
     enableRuntimeRefresh: enableRuntimeRefresh,

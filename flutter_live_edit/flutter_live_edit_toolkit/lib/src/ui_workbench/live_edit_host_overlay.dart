@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 
-import 'commands/commands.dart';
-import 'live_edit_context.dart';
-import 'live_edit_controller_adapter.dart';
-import 'live_edit_orchestrator.dart';
+import '../commands/commands.dart';
+import '../di_live_edit_context/live_edit_context.dart';
+import '../di_live_edit_context/tools/live_edit_controller_adapter.dart';
+import '../di_live_edit_context/live_edit_orchestrator.dart';
 
 double _overlayMathMax(final double a, final double b) => a > b ? a : b;
 

@@ -1,8 +1,8 @@
 import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 
-import '../../live_edit_backend_utils.dart';
-import '../../live_edit_context.dart';
-import '../../live_edit_controller_adapter.dart';
+import '../../ai/backend/live_edit_backend_utils.dart';
+import '../../di_live_edit_context/live_edit_context.dart';
+import '../../di_live_edit_context/tools/live_edit_controller_adapter.dart';
 import '../shared/live_edit_selectors_shared.dart';
 
 LiveEditAgentBackend? selectBackendForBubble(

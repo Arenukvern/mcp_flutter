@@ -10,10 +10,10 @@ import 'package:vm_service/vm_service.dart';
 import 'package:vm_service/vm_service_io.dart';
 import 'package:xsoulspace_inference_core/xsoulspace_inference_core.dart';
 
-import 'live_edit_auto_config.dart';
-import 'live_edit_types.dart';
+import '../../types/live_edit_types.dart';
+import 'flutter_live_edit_auto_host_config.dart';
 
-part 'live_edit_auto_delegate_helpers.dart';
+part 'flutter_live_edit_auto_host_delegate_helpers.dart';
 
 final class FlutterLiveEditAutoDelegate {
   FlutterLiveEditAutoDelegate({

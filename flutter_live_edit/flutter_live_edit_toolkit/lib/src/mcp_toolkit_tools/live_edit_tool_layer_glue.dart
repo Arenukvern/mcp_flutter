@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:live_edit_tooling_ui_kit/live_edit_tooling_ui_kit.dart';
 
-import 'commands/commands.dart';
-import 'live_edit_context.dart';
-import 'live_edit_controller_adapter.dart';
-import 'live_edit_overlay_theme.dart';
-import 'live_edit_types.dart';
-import 'selectors/live_edit_selectors.dart';
-import 'widgets/backend_switcher.dart';
+import '../commands/commands.dart';
+import '../di_live_edit_context/live_edit_context.dart';
+import '../di_live_edit_context/tools/live_edit_controller_adapter.dart';
+import '../types/live_edit_types.dart';
+import '../selectors/live_edit_selectors.dart';
+import '../ui_widgets/backend_switcher.dart';
+import '../ui_workbench/live_edit_overlay_theme.dart';
 
 String _bubbleStatusLabel(final LiveEditBubbleStatus status) =>
     switch (status) {

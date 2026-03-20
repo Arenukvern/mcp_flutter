@@ -1,5 +1,5 @@
-import '../../live_edit_context.dart';
-import '../../live_edit_types.dart';
+import '../../di_live_edit_context/live_edit_context.dart';
+import '../../types/live_edit_types.dart';
 
 /// Updates panel dimensions (expanded or rail based on current mode).
 final class ResizePanelCommand {

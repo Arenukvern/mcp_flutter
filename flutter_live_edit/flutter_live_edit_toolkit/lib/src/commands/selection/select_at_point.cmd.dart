@@ -1,8 +1,8 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 
-import '../../live_edit_context.dart';
-import '../../live_edit_controller_adapter.dart';
+import '../../di_live_edit_context/live_edit_context.dart';
+import '../../di_live_edit_context/tools/live_edit_controller_adapter.dart';
 import '_selection_commands_shared.dart';
 
 /// Selects a widget at the given point.

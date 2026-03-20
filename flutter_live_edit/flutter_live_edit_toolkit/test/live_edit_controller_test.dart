@@ -4,7 +4,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_live_edit_toolkit/flutter_live_edit_toolkit.dart';
-import 'package:flutter_live_edit_toolkit/src/live_edit_backend_utils.dart';
+import 'package:flutter_live_edit_toolkit/src/ai/backend/live_edit_backend_utils.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 LiveEditTargetDomain _domain(final LiveEditOrchestrator o) =>

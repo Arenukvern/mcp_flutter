@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart' show Offset;
 import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 
-import '../live_edit_types.dart';
+import '../types/live_edit_types.dart';
 
 /// Sentinel for [LiveEditPanelViewResourceData.copyWith] — omit `lastSelectionIdentity` to keep prior value.
 const _kOmitLastSelectionIdentity = _OmitLastSelectionIdentity();

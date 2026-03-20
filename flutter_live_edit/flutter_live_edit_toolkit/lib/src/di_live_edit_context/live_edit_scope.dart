@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 
-import 'live_edit_backend_utils.dart';
+import '../ai/backend/live_edit_backend_utils.dart';
 import 'live_edit_context.dart';
-import 'live_edit_controller_adapter.dart';
-import 'live_edit_runtime.dart';
-import 'live_edit_types.dart';
-import 'resources/live_edit_backend_config.src.data.dart';
-import 'resources/resources.dart';
-import 'services/services.dart';
+import 'tools/live_edit_controller_adapter.dart';
+import '../live_edit_runtime.dart';
+import '../types/live_edit_types.dart';
+import '../resources/live_edit_backend_config.src.data.dart';
+import '../resources/resources.dart';
+import '../services/services.dart';
 
 /// Provides [LiveEditContext] and [LiveEditController] to descendants via [LiveEditScope.of].
 /// Create once at the root of the live-edit subtree; children use [LiveEditScope.of](context).

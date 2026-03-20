@@ -1,4 +1,4 @@
-import '../../live_edit_context.dart';
+import '../../di_live_edit_context/live_edit_context.dart';
 
 /// Sets debug mode on/off.
 final class SetDebugModeCommand {

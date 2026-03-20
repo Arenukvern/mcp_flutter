@@ -1,4 +1,4 @@
-part of 'live_edit_auto_delegate.dart';
+part of 'flutter_live_edit_auto_host_delegate.dart';
 
 String? _resolveLiveEditWorkingDirectory(
   final LiveEditApplyDraftRequest request, {

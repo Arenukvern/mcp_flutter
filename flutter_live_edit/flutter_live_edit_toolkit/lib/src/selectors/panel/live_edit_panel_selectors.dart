@@ -2,9 +2,9 @@ import 'dart:ui' show Offset, Size;
 
 import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 
-import '../../live_edit_backend_utils.dart';
-import '../../live_edit_context.dart';
-import '../../live_edit_types.dart';
+import '../../ai/backend/live_edit_backend_utils.dart';
+import '../../di_live_edit_context/live_edit_context.dart';
+import '../../types/live_edit_types.dart';
 import '../shared/live_edit_selectors_shared.dart';
 
 bool selectOverlayVisible(final LiveEditContext ctx) =>
