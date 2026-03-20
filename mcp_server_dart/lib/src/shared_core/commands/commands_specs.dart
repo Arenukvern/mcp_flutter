@@ -1,15 +1,7 @@
 // Copyright (c) 2025, Flutter Inspector MCP Server authors.
 // Licensed under the MIT License.
 
-import 'package:flutter_inspector_mcp_server/src/capabilities/core/capabilities_model.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/commands/commands_catalogue.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/types/core_types.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/runtime_version.dart';
-import 'package:flutter_inspector_mcp_server/src/capabilities/visual_capture/visual_capture.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/vm_connections/connection_override.dart';
-import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
-
-typedef CoreCommandFactory = CoreCommand Function(Map<String, Object?> args);
+part of 'commands.dart';
 
 final class CommandCatalog {
   CommandCatalog._();
@@ -91,6 +83,7 @@ final class CommandCatalog {
         'resources': configuration.resourcesSupported,
         'images': configuration.imagesSupported,
         'dumps': configuration.dumpsSupported,
+        'liveEdit': configuration.liveEditSupported,
         'dynamicRegistry': configuration.dynamicRegistrySupported,
       },
       limits: {

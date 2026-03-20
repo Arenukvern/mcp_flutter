@@ -1,5 +1,8 @@
+export 'ai_providers/ai_providers.dart';
 export 'core/core.dart';
+export 'dart/dart.dart';
+export 'diagnostics/diagnostics.dart';
 export 'dynamic_registry/dynamic_registry.dart';
+export 'error_analysis/error_analysis.dart';
 export 'live_edit/live_edit.dart';
-export 'visual_capture/desktop_window_screenshot.dart';
-export 'visual_capture/screenshots.dart';
+export 'visual_capture/visual_capture.dart';

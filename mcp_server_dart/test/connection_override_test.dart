@@ -2,9 +2,9 @@ import 'dart:convert';
 
 import 'package:flutter_inspector_mcp_server/flutter_mcp_core.dart';
 import 'package:flutter_inspector_mcp_server/src/capabilities/dynamic_registry/dynamic_registry_tools.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_mixins/handlers/connection_override.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_mixins/handlers/resource_handler.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_mixins/handlers/vm_tools_handler.dart';
+import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_server/core/core.dart';
+import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_server/handlers/resource_handler.dart';
+import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_server/handlers/vm_tools_handler.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -101,7 +101,7 @@ void main() {
         CoreResult.failure(
           code: CoreErrorCode.connectionSelectionRequired,
           message: 'Multiple debug targets detected',
-          details: {
+          details: const {
             'reason': 'multiple_targets',
             'availableTargets': [
               {'targetId': 'ws://127.0.0.1:8181/abcd/ws'},
@@ -165,6 +165,6 @@ final class _RecordingExecutor implements CoreCommandExecutor {
   @override
   Future<CoreResult> execute(final CoreCommand command) async {
     lastCommand = command;
-    return CoreResult.success(data: {'ok': true});
+    return CoreResult.success(data: const {'ok': true});
   }
 }

@@ -121,14 +121,14 @@ List<LiveEditTimelineEntry> selectDebugTimelineForActiveSelection(
   final String? sessionId,
 }) => List<LiveEditTimelineEntry>.unmodifiable(
   selectBubbleRecord(
-    ctx,
-    selectActiveBubbleId(
-      ctx,
-      controller,
-      presentationDomain: presentationDomain,
-      sessionId: sessionId,
-    ),
-  )?.debugTimeline ??
+        ctx,
+        selectActiveBubbleId(
+          ctx,
+          controller,
+          presentationDomain: presentationDomain,
+          sessionId: sessionId,
+        ),
+      )?.debugTimeline ??
       const <LiveEditTimelineEntry>[],
 );
 

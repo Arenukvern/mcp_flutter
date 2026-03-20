@@ -4,9 +4,9 @@
 import 'dart:convert';
 
 import 'package:dart_mcp/server.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/error_codes.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/dynamic_gateway.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/results.dart';
+import 'package:flutter_inspector_mcp_server/src/shared_core/types/error_codes.dart';
+import 'package:flutter_inspector_mcp_server/src/capabilities/dynamic_registry/dynamic_gateway.dart';
+import 'package:flutter_inspector_mcp_server/src/shared_core/types/results.dart';
 import 'package:flutter_inspector_mcp_server/src/capabilities/dynamic_registry/dynamic_registry.dart';
 import 'package:flutter_inspector_mcp_server/src/capabilities/dynamic_registry/registry_discovery_service.dart';
 

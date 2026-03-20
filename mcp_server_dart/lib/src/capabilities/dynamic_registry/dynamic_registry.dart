@@ -6,14 +6,17 @@ import 'dart:convert';
 
 import 'package:dart_mcp/server.dart';
 import 'package:equatable/equatable.dart';
-import 'package:flutter_inspector_mcp_server/flutter_inspector_mcp_server.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/error_codes.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/results.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_mixins/mcp_toolkit_consts.dart';
+import 'package:flutter_inspector_mcp_server/flutter_mcp_server.dart';
+import 'package:flutter_inspector_mcp_server/src/shared_core/types/error_codes.dart';
+import 'package:flutter_inspector_mcp_server/src/shared_core/types/results.dart';
+import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_consts.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
 import 'package:is_dart_empty_or_not/is_dart_empty_or_not.dart';
 import 'package:meta/meta.dart';
 import 'package:vm_service/vm_service.dart';
+
+export 'dynamic_registry_tools.dart';
+export 'registry_discovery_service.dart';
 
 /// Entry for a dynamically registered tool - fully MCP compliant
 @immutable

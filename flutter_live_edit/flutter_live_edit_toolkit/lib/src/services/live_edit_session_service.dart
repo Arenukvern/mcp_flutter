@@ -35,20 +35,17 @@ final class LiveEditSessionService extends _LiveEditSessionServiceCore {
   Map<String, Object?> setOverlay({
     required final bool enabled,
     final String? sessionId,
-  }) => _LiveEditSessionServiceSelectionCommands(this).setOverlay(
-    enabled: enabled,
-    sessionId: sessionId,
-  );
+  }) => _LiveEditSessionServiceSelectionCommands(
+    this,
+  ).setOverlay(enabled: enabled, sessionId: sessionId);
 
   Map<String, Object?> startMarquee({
     required final int x,
     required final int y,
     final String? sessionId,
-  }) => _LiveEditSessionServiceSelectionCommands(this).startMarquee(
-    x: x,
-    y: y,
-    sessionId: sessionId,
-  );
+  }) => _LiveEditSessionServiceSelectionCommands(
+    this,
+  ).startMarquee(x: x, y: y, sessionId: sessionId);
 
   Map<String, Object?> updateMarquee({
     required final int x,
@@ -65,14 +62,14 @@ final class LiveEditSessionService extends _LiveEditSessionServiceCore {
   );
 
   Map<String, Object?> commitMarquee({final String? sessionId}) =>
-      _LiveEditSessionServiceSelectionCommands(this).commitMarquee(
-        sessionId: sessionId,
-      );
+      _LiveEditSessionServiceSelectionCommands(
+        this,
+      ).commitMarquee(sessionId: sessionId);
 
   Map<String, Object?> cancelMarquee({final String? sessionId}) =>
-      _LiveEditSessionServiceSelectionCommands(this).cancelMarquee(
-        sessionId: sessionId,
-      );
+      _LiveEditSessionServiceSelectionCommands(
+        this,
+      ).cancelMarquee(sessionId: sessionId);
 
   Map<String, Object?> selectCandidate({
     final String? sessionId,
@@ -99,34 +96,30 @@ final class LiveEditSessionService extends _LiveEditSessionServiceCore {
   Map<String, Object?> selectParent({
     final String? sessionId,
     final LiveEditTargetDomain? targetDomain,
-  }) => _LiveEditSessionServiceSelectionCommands(this).selectParent(
-    sessionId: sessionId,
-    targetDomain: targetDomain,
-  );
+  }) => _LiveEditSessionServiceSelectionCommands(
+    this,
+  ).selectParent(sessionId: sessionId, targetDomain: targetDomain);
 
   Map<String, Object?> selectChild({
     final String? sessionId,
     final LiveEditTargetDomain? targetDomain,
-  }) => _LiveEditSessionServiceSelectionCommands(this).selectChild(
-    sessionId: sessionId,
-    targetDomain: targetDomain,
-  );
+  }) => _LiveEditSessionServiceSelectionCommands(
+    this,
+  ).selectChild(sessionId: sessionId, targetDomain: targetDomain);
 
   Map<String, Object?> setTargetDomain({
     required final LiveEditTargetDomain targetDomain,
     final String? sessionId,
-  }) => _LiveEditSessionServiceSelectionCommands(this).setTargetDomain(
-    targetDomain: targetDomain,
-    sessionId: sessionId,
-  );
+  }) => _LiveEditSessionServiceSelectionCommands(
+    this,
+  ).setTargetDomain(targetDomain: targetDomain, sessionId: sessionId);
 
   Map<String, Object?> updateDraft({
     required final LiveEditDraftChange change,
     final String? sessionId,
-  }) => _LiveEditSessionServicePreview(this).updateDraft(
-    change: change,
-    sessionId: sessionId,
-  );
+  }) => _LiveEditSessionServicePreview(
+    this,
+  ).updateDraft(change: change, sessionId: sessionId);
 
   Map<String, Object?> updateDraftBatch({
     required final List<String> nodeIds,

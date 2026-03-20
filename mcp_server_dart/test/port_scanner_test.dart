@@ -6,9 +6,9 @@
 import 'dart:async';
 
 import 'package:dart_mcp/server.dart';
-import 'package:flutter_inspector_mcp_server/src/base_server.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/services/core_port_scanner.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_mixins/port_scanner.dart';
+import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_server/base_server.dart';
+import 'package:flutter_inspector_mcp_server/src/shared_core/vm_connections/core_port_scanner.dart';
+import 'package:flutter_inspector_mcp_server/src/shared_core/vm_connections/port_scanner.dart';
 import 'package:stream_channel/stream_channel.dart';
 import 'package:test/test.dart';
 
@@ -27,6 +27,7 @@ base class TestPortScannerServer extends BaseMCPToolkitServer {
           resourcesSupported: false,
           imagesSupported: false,
           dumpsSupported: false,
+          liveEditSupported: true,
           logLevel: 'error',
           environment: 'test',
           dynamicRegistrySupported: false,

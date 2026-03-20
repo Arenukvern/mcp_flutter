@@ -5,19 +5,18 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io' as io;
 
-import 'package:flutter_inspector_mcp_server/src/cli/bundle_builder.dart';
-import 'package:flutter_inspector_mcp_server/src/cli/snapshot_store.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/commands/commands_catalogue.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/commands/commands_specs.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/error_codes.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/executor.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/preconnect.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/results.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/runtime_version.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/safe_writes.dart';
-import 'package:flutter_inspector_mcp_server/src/cli/sessions/session_manager.dart';
+import 'package:flutter_inspector_mcp_server/src/cli/diagnostics/bundle_builder.dart';
+import 'package:flutter_inspector_mcp_server/src/cli/session/session_manager.dart';
+import 'package:flutter_inspector_mcp_server/src/cli/sessions_persistence/safe_writes.dart';
+import 'package:flutter_inspector_mcp_server/src/cli/sessions_persistence/snapshot_store.dart';
+import 'package:flutter_inspector_mcp_server/src/runtime_version.dart';
+import 'package:flutter_inspector_mcp_server/src/shared_core/command_executor.dart';
+import 'package:flutter_inspector_mcp_server/src/shared_core/commands/commands.dart';
 import 'package:flutter_inspector_mcp_server/src/shared_core/types/core_types.dart';
+import 'package:flutter_inspector_mcp_server/src/shared_core/types/error_codes.dart';
+import 'package:flutter_inspector_mcp_server/src/shared_core/types/results.dart';
 import 'package:flutter_inspector_mcp_server/src/shared_core/vm_connections/connection_override.dart';
+import 'package:flutter_inspector_mcp_server/src/shared_core/vm_connections/preconnect.dart';
 
 final class CliDaemonServer {
   CliDaemonServer({

@@ -36,15 +36,6 @@ String _activityElapsedLabel(final LiveEditActivityEntry activity) {
   return '${elapsed.inMinutes}m ago';
 }
 
-String _basename(final String value) {
-  final normalized = value.replaceAll(r'\', '/');
-  final slashIndex = normalized.lastIndexOf('/');
-  if (slashIndex < 0 || slashIndex + 1 >= normalized.length) {
-    return normalized;
-  }
-  return normalized.substring(slashIndex + 1);
-}
-
 Color _bubbleStatusColor(final LiveEditBubbleStatus status) => switch (status) {
   LiveEditBubbleStatus.editing => const Color(0xFF0F766E),
   LiveEditBubbleStatus.waiting => const Color(0xFF1D4ED8),
@@ -89,24 +80,6 @@ Rect _panelRectForViewport({
   );
   final panelOffset = selectPanelPlacement(ctx, viewport);
   return Rect.fromLTWH(panelOffset.dx, panelOffset.dy, panelWidth, panelHeight);
-}
-
-String _sourceLocationLabel(
-  final LiveEditSourceLocation? source, {
-  final bool compact = false,
-}) {
-  if (source == null) {
-    return '';
-  }
-  final file = source.file.trim();
-  if (file.isNotEmpty) {
-    final label = compact ? _basename(file) : file;
-    if (source.line != null) {
-      return '$label:${source.line}';
-    }
-    return label;
-  }
-  return source.sourceHint?.trim() ?? '';
 }
 
 class FlutterLiveEditHost extends StatefulWidget {

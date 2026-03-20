@@ -9,9 +9,7 @@ LiveEditAgentBackend? selectBackendForBubble(
   final LiveEditContext ctx,
   final String? bubbleId,
 ) {
-  final bubbleBackendId = selectBubbleRecord(ctx, bubbleId)
-      ?.backendId
-      ?.trim();
+  final bubbleBackendId = selectBubbleRecord(ctx, bubbleId)?.backendId?.trim();
   final globalId = ctx.backendConfigResource.value.globalBackendId?.trim();
   final backendId = hasText(bubbleBackendId) ? bubbleBackendId : globalId;
   if (!hasText(backendId)) return null;
@@ -27,7 +25,8 @@ String? selectBackendIdForBubble(
 ) {
   final bubbleBackendId = selectBubbleRecord(ctx, bubbleId)?.backendId?.trim();
   if (hasText(bubbleBackendId)) return bubbleBackendId;
-  final globalBackendId = ctx.backendConfigResource.value.globalBackendId?.trim();
+  final globalBackendId = ctx.backendConfigResource.value.globalBackendId
+      ?.trim();
   return hasText(globalBackendId) ? globalBackendId : null;
 }
 

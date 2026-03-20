@@ -4,7 +4,6 @@ part of '../live_edit_session_service.dart';
 
 extension _LiveEditSessionServiceSelectionCommands
     on _LiveEditSessionServiceCore {
-
   Map<String, Object?> startMarquee({
     required final int x,
     required final int y,
@@ -627,5 +626,4 @@ extension _LiveEditSessionServiceSelectionCommands
         )
         .toList(growable: false);
   }
-
 }

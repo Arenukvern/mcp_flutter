@@ -3,7 +3,6 @@
 part of '../live_edit_session_service.dart';
 
 extension _LiveEditSessionServicePreview on _LiveEditSessionServiceCore {
-
   Map<String, Object?> updateDraft({
     required final LiveEditDraftChange change,
     final String? sessionId,

@@ -63,10 +63,7 @@ class ToolingPanDragStrip extends StatelessWidget {
         height: hitHeight,
         child: Align(
           alignment: alignment,
-          child: Padding(
-            padding: indicatorMargin,
-            child: indicator,
-          ),
+          child: Padding(padding: indicatorMargin, child: indicator),
         ),
       ),
     );
@@ -109,8 +106,6 @@ class ToolingPanResizeCorner extends StatelessWidget {
     if (semanticsIdentifier != null) {
       grip = Semantics(identifier: semanticsIdentifier, child: grip);
     }
-    return alignment != null
-        ? Align(alignment: alignment!, child: grip)
-        : grip;
+    return alignment != null ? Align(alignment: alignment!, child: grip) : grip;
   }
 }

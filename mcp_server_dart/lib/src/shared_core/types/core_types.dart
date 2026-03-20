@@ -17,6 +17,7 @@ final class CoreRuntimeConfiguration {
     required this.dumpsSupported,
     required this.dynamicRegistrySupported,
     required this.saveImagesToFiles,
+    this.liveEditSupported = true,
     this.flutterProjectDir,
     this.flutterDevice,
     this.stateRootDir,
@@ -30,6 +31,7 @@ final class CoreRuntimeConfiguration {
   final bool dumpsSupported;
   final bool dynamicRegistrySupported;
   final bool saveImagesToFiles;
+  final bool liveEditSupported;
   final String? flutterProjectDir;
   final String? flutterDevice;
   final String? stateRootDir;

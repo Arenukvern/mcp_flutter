@@ -6,8 +6,10 @@ void main() {
     test('allSorted is lexicographically sorted and unique', () {
       final sorted = List<String>.from(LiveEditMcpToolNames.allSorted)..sort();
       expect(LiveEditMcpToolNames.allSorted, orderedEquals(sorted));
-      expect(LiveEditMcpToolNames.allSorted.toSet().length,
-          LiveEditMcpToolNames.allSorted.length);
+      expect(
+        LiveEditMcpToolNames.allSorted.toSet().length,
+        LiveEditMcpToolNames.allSorted.length,
+      );
     });
 
     test('every entry is the live_edit_ server namespace', () {

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_inspector_mcp_server/flutter_mcp_core.dart';
 import 'package:flutter_live_edit_agent/flutter_live_edit_agent.dart';
@@ -100,16 +102,25 @@ void main() {
     test(
       'apply draft reports hot reload failure without VM connection',
       () async {
+        final tmp = Directory.systemTemp.createTempSync('mcp_le_test');
+        addTearDown(() {
+          if (tmp.existsSync()) {
+            tmp.deleteSync(recursive: true);
+          }
+        });
+        final dartFile = File('${tmp.path}/main.dart')
+          ..writeAsStringSync('void main() {}\n');
+
         final proposal = await liveEditAgentService.resolve(
-          const LiveEditResolutionRequest(
+          LiveEditResolutionRequest(
             sessionId: 'session-1',
-            workingDirectory: '/tmp',
+            workingDirectory: tmp.path,
             intentText: 'Set width to 140',
             selection: LiveEditSelection(
               sessionId: 'session-1',
               nodeId: 'node-1',
               widgetType: 'Container',
-              source: LiveEditSourceLocation(file: '/tmp/main.dart', line: 42),
+              source: LiveEditSourceLocation(file: dartFile.path, line: 42),
               rawNode: <String, Object?>{},
             ),
           ),
@@ -118,7 +129,7 @@ void main() {
         final result = await executor.execute(
           LiveEditApplyDraftCommand(
             proposalId: proposal.proposalId,
-            workingDirectory: '/tmp',
+            workingDirectory: tmp.path,
           ),
         );
 

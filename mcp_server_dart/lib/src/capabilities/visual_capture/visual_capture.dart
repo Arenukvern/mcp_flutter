@@ -4,7 +4,7 @@
 import 'dart:convert';
 import 'dart:io' as io;
 
-import 'package:flutter_inspector_mcp_server/src/shared_core/dynamic_gateway.dart';
+import 'package:flutter_inspector_mcp_server/src/capabilities/dynamic_registry/dynamic_gateway.dart';
 import 'package:flutter_inspector_mcp_server/src/shared_core/types/core_types.dart';
 
 const screenshotModeAuto = 'auto';

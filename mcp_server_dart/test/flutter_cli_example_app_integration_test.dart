@@ -128,7 +128,7 @@ void main() {
           '{}',
         ]);
         expect(exts['ok'], isTrue);
-        final extList = ((exts['data'] as List).cast<String>());
+        final extList = (exts['data'] as List).cast<String>();
         expect(extList.any((final e) => e.startsWith('ext.flutter')), isTrue);
         expect(
           extList.any(
@@ -365,7 +365,7 @@ void main() {
         expect(backendSet['ok'], isTrue);
         final backendSetData = backendSet['data'] as Map<String, dynamic>;
         expect(
-          ((backendSetData['backend'] as Map)['id'] as String),
+          (backendSetData['backend'] as Map)['id'] as String,
           defaultBackendId,
         );
 
@@ -731,33 +731,6 @@ Future<({ProcessResult result, Map<String, dynamic> envelope})> _runCliRaw(
 
   final envelope = jsonDecode(stdoutText) as Map<String, dynamic>;
   return (result: result, envelope: envelope);
-}
-
-Future<List<Map<String, dynamic>>> _runCliWatch(final List<String> args) async {
-  final fullArgs = _buildCliArgs(args);
-  final result = await Process.run(
-    'dart',
-    fullArgs,
-    workingDirectory: _serverDirectory().path,
-  );
-
-  if (result.exitCode != 0) {
-    fail(
-      'CLI watch failed for args $args\nexit=${result.exitCode}\n'
-      'stdout=${result.stdout}\n'
-      'stderr=${result.stderr}',
-    );
-  }
-
-  final lines = (result.stdout as String)
-      .split('\n')
-      .map((final l) => l.trim())
-      .where((final l) => l.isNotEmpty)
-      .toList();
-
-  return lines
-      .map((final line) => jsonDecode(line) as Map<String, dynamic>)
-      .toList();
 }
 
 List<String> _buildCliArgs(final List<String> args) {

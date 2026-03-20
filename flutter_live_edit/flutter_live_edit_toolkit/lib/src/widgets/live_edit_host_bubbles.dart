@@ -155,4 +155,3 @@ class _BubbleComposerSection extends StatelessWidget {
     );
   }
 }
-

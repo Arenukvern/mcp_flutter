@@ -43,6 +43,7 @@ void main() {
       expect(result.ok, isTrue);
       final data = result.data! as Map<String, Object?>;
       expect(data['connected'], isFalse);
+      expect(data['liveEditSupported'], isTrue);
       expect(result.meta.containsKey('durationMs'), isTrue);
       expect(result.meta['schemaVersion'], equals('core-envelope/v1'));
       expect(result.meta['command'], equals('status'));
@@ -430,6 +431,47 @@ void main() {
       expect(details?['reason'], equals('invalid_target_id_legacy_host_port'));
       expect(details?['migrationHint'], isA<String>());
     });
+
+    test(
+      'live edit commands return disabled when liveEditSupported is false',
+      () async {
+        void logger(
+          final LoggingLevel level,
+          final String message, {
+          final String logger = 'test',
+        }) {}
+
+        final context = ConnectionContext(
+          defaultHost: 'localhost',
+          defaultPort: 8181,
+          logger: logger,
+          discoverPorts: () async => <int>[8181],
+        );
+
+        final localExecutor = DefaultCoreCommandExecutor(
+          connectionContext: context,
+          portScanner: CorePortScanner(logger: logger),
+          imageFileSaver: CoreImageFileSaver(logger: logger),
+          configuration: const CoreRuntimeConfiguration(
+            vmHost: 'localhost',
+            vmPort: 8181,
+            resourcesSupported: true,
+            imagesSupported: true,
+            dumpsSupported: false,
+            liveEditSupported: false,
+            dynamicRegistrySupported: false,
+            saveImagesToFiles: false,
+          ),
+        );
+
+        final result = await localExecutor.execute(
+          const LiveEditListAgentBackendsCommand(),
+        );
+
+        expect(result.ok, isFalse);
+        expect(result.error?.code, CoreErrorCode.liveEditDisabled);
+      },
+    );
   });
 }
 
@@ -482,7 +524,7 @@ final class _FakeDesktopWindowScreenshotService
   }) async {
     onCapture?.call(targetPid);
     if (error != null) {
-      throw error!;
+      throw Exception(error);
     }
     return result;
   }

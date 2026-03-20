@@ -5,6 +5,8 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
+import 'package:from_json_to_json/from_json_to_json.dart';
+import 'package:is_dart_empty_or_not/is_dart_empty_or_not.dart';
 
 import 'application_info.dart';
 
@@ -278,19 +280,6 @@ mixin ViewIntrospectionService {
     'height': rect.height,
   };
 
-  static double? _asDouble(final Object? value) => switch (value) {
-    final double v => v,
-    final int v => v.toDouble(),
-    final String v => double.tryParse(v),
-    _ => null,
-  };
-
-  static int? _asInt(final Object? value) => switch (value) {
-    final int v => v,
-    final String v => int.tryParse(v),
-    _ => null,
-  };
-
   static RenderView? _selectRenderView({
     required final int? requestedViewId,
     required final ui.Offset position,
@@ -327,11 +316,11 @@ mixin ViewIntrospectionService {
     if (rect == null) {
       return false;
     }
-    final left = _asDouble(rect['left']);
-    final top = _asDouble(rect['top']);
-    final right = _asDouble(rect['right']);
-    final bottom = _asDouble(rect['bottom']);
-    if (left == null || top == null || right == null || bottom == null) {
+    final left = jsonDecodeDouble(rect['left']);
+    final top = jsonDecodeDouble(rect['top']);
+    final right = jsonDecodeDouble(rect['right']);
+    final bottom = jsonDecodeDouble(rect['bottom']);
+    if (left.isZero || top.isZero || right.isZero || bottom.isZero) {
       return false;
     }
     return point.dx >= left &&

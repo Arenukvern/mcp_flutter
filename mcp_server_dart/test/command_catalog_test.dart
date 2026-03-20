@@ -29,8 +29,14 @@ void main() {
       expect(catalog.specFor('discover_debug_apps')!.mcpExposed, isTrue);
       expect(catalog.specFor('inspect_widget_at_point')!.mcpExposed, isTrue);
       expect(catalog.specFor('capture_ui_snapshot')!.mcpExposed, isTrue);
-      expect(catalog.specFor(LiveEditMcpToolNames.startSession)!.mcpExposed, isTrue);
-      expect(catalog.specFor(LiveEditMcpToolNames.resolveDraft)!.mcpExposed, isTrue);
+      expect(
+        catalog.specFor(LiveEditMcpToolNames.startSession)!.mcpExposed,
+        isTrue,
+      );
+      expect(
+        catalog.specFor(LiveEditMcpToolNames.resolveDraft)!.mcpExposed,
+        isTrue,
+      );
       expect(catalog.specFor('get_active_ports')!.mcpExposed, isFalse);
       expect(catalog.specFor('dynamicRegistryStats')!.mcpExposed, isFalse);
     });
@@ -69,7 +75,37 @@ void main() {
       expect(capabilities.schemaVersion, equals('command-catalog/v1'));
       expect(capabilities.providers['summaryProviders'], isNotNull);
       expect(capabilities.features['serve'], isTrue);
+      expect(capabilities.features['liveEdit'], isTrue);
       expect(capabilities.commands, isNotEmpty);
+    });
+
+    test('capabilities reflect liveEdit flag', () {
+      final on = catalog.capabilities(
+        configuration: const CoreRuntimeConfiguration(
+          vmHost: 'localhost',
+          vmPort: 8181,
+          resourcesSupported: true,
+          imagesSupported: true,
+          dumpsSupported: false,
+          dynamicRegistrySupported: true,
+          saveImagesToFiles: false,
+        ),
+      );
+      expect(on.features['liveEdit'], isTrue);
+
+      final off = catalog.capabilities(
+        configuration: const CoreRuntimeConfiguration(
+          vmHost: 'localhost',
+          vmPort: 8181,
+          resourcesSupported: true,
+          imagesSupported: true,
+          dumpsSupported: false,
+          liveEditSupported: false,
+          dynamicRegistrySupported: true,
+          saveImagesToFiles: false,
+        ),
+      );
+      expect(off.features['liveEdit'], isFalse);
     });
 
     test('rejects unknown keys when command schema is strict by default', () {
@@ -148,14 +184,17 @@ void main() {
     test(
       'builds live edit inference config payloads and normalizes middle',
       () {
-        final prepare = catalog.buildCommand(LiveEditMcpToolNames.prepareSession, {
-          'sessionId': 'live-session',
-          'backendId': 'codex_exec',
-          'inferenceConfig': {
-            'model': 'GPT-5.3-Codex',
-            'reasoningEffort': 'middle',
+        final prepare = catalog.buildCommand(
+          LiveEditMcpToolNames.prepareSession,
+          {
+            'sessionId': 'live-session',
+            'backendId': 'codex_exec',
+            'inferenceConfig': {
+              'model': 'GPT-5.3-Codex',
+              'reasoningEffort': 'middle',
+            },
           },
-        });
+        );
 
         expect(prepare, isA<LiveEditPrepareSessionCommand>());
         final config =
@@ -166,11 +205,14 @@ void main() {
     );
 
     test('parses codexConfig as backward compat for inferenceConfig', () {
-      final prepare = catalog.buildCommand(LiveEditMcpToolNames.prepareSession, {
-        'sessionId': 'live-session',
-        'backendId': 'codex_exec',
-        'codexConfig': {'model': 'GPT-5.4', 'reasoningEffort': 'high'},
-      });
+      final prepare = catalog.buildCommand(
+        LiveEditMcpToolNames.prepareSession,
+        {
+          'sessionId': 'live-session',
+          'backendId': 'codex_exec',
+          'codexConfig': {'model': 'GPT-5.4', 'reasoningEffort': 'high'},
+        },
+      );
       final config = (prepare as LiveEditPrepareSessionCommand).inferenceConfig;
       expect(config?.model, 'gpt-5.4');
       expect(config?.reasoningEffort, 'high');
@@ -185,12 +227,16 @@ void main() {
       expect(prepareSchema.containsKey('inferenceConfig'), isTrue);
 
       final resolveSchema =
-          catalog.specFor(LiveEditMcpToolNames.resolveDraft)!.inputSchema['properties']!
+          catalog
+                  .specFor(LiveEditMcpToolNames.resolveDraft)!
+                  .inputSchema['properties']!
               as Map<String, Object?>;
       expect(resolveSchema.containsKey('inferenceConfig'), isTrue);
 
       final applySchema =
-          catalog.specFor(LiveEditMcpToolNames.applyDraft)!.inputSchema['properties']!
+          catalog
+                  .specFor(LiveEditMcpToolNames.applyDraft)!
+                  .inputSchema['properties']!
               as Map<String, Object?>;
       expect(applySchema.containsKey('inferenceConfig'), isTrue);
     });
