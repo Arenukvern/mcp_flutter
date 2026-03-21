@@ -4,9 +4,7 @@
 import 'dart:io';
 
 import 'package:flutter_inspector_mcp_server/src/capabilities/live_edit/live_edit_host_bindings.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/commands/commands_catalogue.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/types/error_codes.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/types/results.dart';
+import 'package:flutter_inspector_mcp_server/src/shared_core/shared_core.dart';
 import 'package:flutter_live_edit_agent/flutter_live_edit_agent.dart';
 import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 
