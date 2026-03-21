@@ -9,6 +9,8 @@ environment:
 dependencies:
   flutter_live_edit_core:
     path: ../flutter_live_edit_core
+  from_json_to_json: ^0.4.0
+  is_dart_empty_or_not: ^0.3.0
   path: ^1.9.1
   xsoulspace_inference_codex_exec:
     path: ../../../../xs/dart_flutter_packages/pkgs/xsoulspace_inference_codex_exec

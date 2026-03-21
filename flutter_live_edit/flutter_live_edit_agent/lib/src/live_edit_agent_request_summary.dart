@@ -2,15 +2,15 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
-import 'package:path/path.dart' as p;
+import 'package:from_json_to_json/from_json_to_json.dart';
 
 import 'live_edit_agent_utils.dart';
 
 /// Request summarization and prompt building. Package-private.
 
 String? trimmedIntentText(final LiveEditResolutionRequest request) {
-  final value = request.effectiveInstructionText?.trim();
-  return (value == null || value.isEmpty) ? null : value;
+  final value = jsonDecodeString(request.effectiveInstructionText).trim();
+  return value.isEmpty ? null : value;
 }
 
 Map<String, Object?> resolutionRequestSummary(
@@ -42,14 +42,15 @@ List<LiveEditSourceTarget> sourceTargetsForRequest(
     final source = selection.source;
     if (source == null) continue;
     final normalizedPath = normalizeFilePath(source.file);
-    if (!hasText(normalizedPath)) continue;
-    final absolutePath = p.isAbsolute(normalizedPath!)
-        ? p.normalize(normalizedPath)
-        : p.normalize(p.join(request.workingDirectory, normalizedPath));
-    final workspacePath =
-        isWithinWorkspace(absolutePath, request.workingDirectory)
-        ? p.relative(absolutePath, from: request.workingDirectory)
-        : null;
+    final absolutePath = absolutePathInWorkspace(
+      normalizedPath,
+      request.workingDirectory,
+    );
+    if (absolutePath == null) continue;
+    final workspacePath = workspaceRelativePathIfInside(
+      absolutePath: absolutePath,
+      workingDirectory: request.workingDirectory,
+    );
     final key = workspacePath ?? absolutePath;
     deduped[key] = LiveEditSourceTarget(
       nodeId: selection.nodeId,
@@ -68,10 +69,11 @@ Map<String, Object?>? loadSourceExcerpt(
   required final String workingDirectory,
 }) {
   final normalizedPath = normalizeFilePath(source.file);
-  if (!hasText(normalizedPath)) return null;
-  final absolutePath = p.isAbsolute(normalizedPath!)
-      ? normalizedPath
-      : p.normalize(p.join(workingDirectory, normalizedPath));
+  final absolutePath = absolutePathInWorkspace(
+    normalizedPath,
+    workingDirectory,
+  );
+  if (absolutePath == null) return null;
   final file = File(absolutePath);
   if (!file.existsSync()) return null;
   try {
@@ -100,14 +102,14 @@ Map<String, Object?> summarizeSourceLocation(
 }) {
   final summary = Map<String, Object?>.from(source.toJson());
   final normalizedPath = normalizeFilePath(source.file);
-  if (hasText(normalizedPath)) {
-    summary['absolutePath'] = normalizedPath;
-    if (isWithinWorkspace(normalizedPath!, workingDirectory)) {
-      summary['workspacePath'] = p.relative(
-        normalizedPath,
-        from: workingDirectory,
-      );
-    }
+  final absolute = absolutePathInWorkspace(normalizedPath, workingDirectory);
+  if (absolute != null) {
+    summary['absolutePath'] = absolute;
+    final rel = workspaceRelativePathIfInside(
+      absolutePath: absolute,
+      workingDirectory: workingDirectory,
+    );
+    if (rel != null) summary['workspacePath'] = rel;
   }
   return summary;
 }
@@ -156,7 +158,7 @@ Map<String, Object?> summarizeInspectorNode(
   ]) {
     if (node.containsKey(key)) summary[key] = node[key];
   }
-  final creationLocation = normalizeMap(node['creationLocation']);
+  final creationLocation = jsonDecodeMapLoose(node['creationLocation']);
   if (creationLocation.isNotEmpty) {
     summary['creationLocation'] = compactMap(
       creationLocation,
@@ -165,7 +167,7 @@ Map<String, Object?> summarizeInspectorNode(
       maxStringChars: 180,
     );
   }
-  final properties = asMapList(node['properties']);
+  final properties = jsonDecodeMapListLoose(node['properties']);
   if (properties.isNotEmpty) {
     final propertySummaries = properties
         .take(4)
@@ -177,7 +179,7 @@ Map<String, Object?> summarizeInspectorNode(
       summary['propertyCount'] = properties.length;
     }
   }
-  final children = asMapList(node['children']);
+  final children = jsonDecodeMapListLoose(node['children']);
   if (children.isNotEmpty) {
     if (depth >= maxDepth) {
       summary['childCount'] = children.length;
@@ -207,7 +209,7 @@ List<Map<String, Object?>> summarizeParentChain(
   final summaries = parentChain
       .take(6)
       .map((final entry) {
-        final node = normalizeMap(entry['node']);
+        final node = jsonDecodeMapLoose(entry['node']);
         if (node.isNotEmpty) {
           return <String, Object?>{'node': summarizeInspectorNode(node)};
         }
@@ -227,7 +229,7 @@ List<Map<String, Object?>> summarizeParentChain(
 
 Map<String, Object?> summarizeEvidence(final Map<String, Object?> evidence) {
   final summary = <String, Object?>{};
-  final tree = normalizeMap(evidence['tree']);
+  final tree = jsonDecodeMapLoose(evidence['tree']);
   if (tree.isNotEmpty) {
     summary['tree'] = summarizeInspectorNode(tree, maxDepth: 2);
   }
@@ -350,8 +352,9 @@ Map<String, Object?> buildPromptRequest(
         .map((final t) => t.toJson())
         .toList(growable: false);
   }
-  if (hasText(request.backendId))
+  if (hasText(request.backendId)) {
     promptRequest['backendId'] = request.backendId;
+  }
   if (request.inferenceConfig != null) {
     promptRequest['inferenceConfig'] = request.inferenceConfig!.toJson();
   }

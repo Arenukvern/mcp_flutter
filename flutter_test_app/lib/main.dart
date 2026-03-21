@@ -374,7 +374,7 @@ class _HeaderSection extends StatelessWidget {
                 Semantics(
                   identifier: 'about_demo_heading',
                   child: Text(
-                    'MCP Toolkit',
+                    'Live Tool',
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ),

@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
+import 'package:from_json_to_json/from_json_to_json.dart';
+import 'package:is_dart_empty_or_not/is_dart_empty_or_not.dart';
 import 'package:path/path.dart' as p;
 import 'package:xsoulspace_inference_codex_exec/xsoulspace_inference_codex_exec.dart';
 import 'package:xsoulspace_inference_core/xsoulspace_inference_core.dart';
@@ -23,7 +25,7 @@ Map<String, Object?> _mergeErrorDetails(
     'request': request.toJson(),
   };
   if (details is Map) {
-    merged.addAll(normalizeMap(details));
+    merged.addAll(jsonDecodeMapLoose(details));
     return merged;
   }
   if (details != null) merged['rawDetails'] = details;
@@ -489,7 +491,7 @@ final class LiveEditAgentService {
           backendId: backendId,
         ),
         warnings: inferenceResult.warnings,
-        meta: normalizeMap(inferenceResult.meta),
+        meta: jsonDecodeMapLoose(inferenceResult.meta),
       );
     }
 
@@ -497,18 +499,20 @@ final class LiveEditAgentService {
     final response = inferenceResult.data!;
     final normalizedOutput = <String, Object?>{
       ...rawOutput,
-      'executionId': hasText('${rawOutput['executionId'] ?? ''}')
+      'executionId':
+          jsonDecodeString(rawOutput['executionId']).trim().isNotEmpty
           ? rawOutput['executionId']
           : rawOutput['proposalId'] ?? _generatedExecutionId(backendId),
       'backendId': backendId,
     };
     return LiveEditDirectApplyResult.fromJson(normalizedOutput).copyWith(
-      executionId: hasText('${normalizedOutput['executionId'] ?? ''}')
+      executionId:
+          jsonDecodeString(normalizedOutput['executionId']).trim().isNotEmpty
           ? '${normalizedOutput['executionId']}'
           : _generatedExecutionId(backendId),
       backendId: backendId,
       meta: <String, Object?>{
-        ...normalizeMap(rawOutput['meta']),
+        ...jsonDecodeMapLoose(rawOutput['meta']),
         ...response.meta,
         'inferenceMeta': inferenceResult.meta,
         'warnings': <String>[...response.warnings, ...inferenceResult.warnings],
@@ -572,13 +576,13 @@ final class LiveEditAgentService {
   (LiveEditResolutionRequest, String, LiveEditInferenceConfig?)
   _resolveRequestContext(final LiveEditResolutionRequest request) {
     final requestValidationError = validateResolutionRequest(request);
-    if (hasText(requestValidationError)) {
+    jsonDecodeString(requestValidationError).trim().onNotEmpty((final message) {
       throw LiveEditAgentException(
         code: 'source_context_unavailable',
-        message: requestValidationError!,
+        message: message,
         details: request.toJson(),
       );
-    }
+    });
     final backendId = registry.resolveBackendId(
       backendId: request.backendId,
       sessionId: request.sessionId,
@@ -619,9 +623,9 @@ final class LiveEditAgentService {
         return;
       }
 
-      final json = normalizeMap(decoded);
-      final proposalJson = normalizeMap(json['proposal']);
-      final requestJson = normalizeMap(json['request']);
+      final json = jsonDecodeMapLoose(decoded);
+      final proposalJson = jsonDecodeMapLoose(json['proposal']);
+      final requestJson = jsonDecodeMapLoose(json['request']);
       if (proposalJson.isEmpty || requestJson.isEmpty) {
         return;
       }
@@ -648,8 +652,7 @@ final class LiveEditAgentService {
     }
 
     try {
-      final directory = Directory(_storagePath);
-      directory.createSync(recursive: true);
+      Directory(_storagePath).createSync(recursive: true);
       final payload = <String, Object?>{
         'proposal': proposal.toJson(),
         'request': request.toJson(),
@@ -659,7 +662,7 @@ final class LiveEditAgentService {
         _proposalFilePath(proposalId),
       ).writeAsStringSync(jsonEncode(payload));
     } on FileSystemException {
-      // Proposal persistence is best-effort; in-process flow can still continue.
+      // Best-effort: in-process flow can still continue.
     }
   }
 

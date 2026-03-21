@@ -104,6 +104,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.4.4"
+  from_json_to_json:
+    dependency: "direct main"
+    description:
+      name: from_json_to_json
+      sha256: "31c0323d7d3ad03d40fbf2d81d1b7cbd87a6235c0d32d1a59a20f3862245fdca"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.4.0"
   frontend_server_client:
     dependency: transitive
     description:
@@ -144,6 +152,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.5"
+  is_dart_empty_or_not:
+    dependency: "direct main"
+    description:
+      name: is_dart_empty_or_not
+      sha256: "1b3294a11fcf6987484a9d1928a47b858a459213eae2f779be092cfa362d5592"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.3.0"
   json_annotation:
     dependency: transitive
     description:
