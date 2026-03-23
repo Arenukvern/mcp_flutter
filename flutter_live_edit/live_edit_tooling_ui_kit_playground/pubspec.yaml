@@ -9,15 +9,14 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  flutter_live_edit_core:
-    path: ../flutter_live_edit_core
   flutter_live_edit_toolkit:
     path: ../flutter_live_edit_toolkit
   live_edit_tooling_ui_kit:
     path: ../live_edit_tooling_ui_kit
 
 dev_dependencies:
-  flutter_lints: ^6.0.0
+  lints: ^6.1.0
+  xsoulspace_lints: ^0.1.2
   flutter_test:
     sdk: flutter
 

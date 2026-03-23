@@ -14,7 +14,7 @@ import '../../di_live_edit_context/tools/live_edit_controller_adapter.dart';
 import '../../di_live_edit_context/live_edit_scope.dart';
 import '../../mcp_toolkit_tools/live_edit_tool_layer_glue.dart';
 import '../../types/live_edit_types.dart';
-import '../../selectors/live_edit_selectors.dart';
+import '../../ui_selectors/live_edit_selectors.dart';
 import '../../ui_widgets/backend_switcher.dart';
 import '../../ui_workbench/live_edit_host_overlay.dart';
 import '../../ui_workbench/live_edit_overlay_theme.dart';

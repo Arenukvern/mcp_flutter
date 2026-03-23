@@ -33,10 +33,6 @@ dependencies:
   cupertino_icons: ^1.0.8
   flutter:
     sdk: flutter
-  flutter_live_edit_agent:
-    path: ../flutter_live_edit/flutter_live_edit_agent
-  flutter_live_edit_core:
-    path: ../flutter_live_edit/flutter_live_edit_core
   flutter_live_edit_toolkit:
     path: ../flutter_live_edit/flutter_live_edit_toolkit
   mcp_toolkit:

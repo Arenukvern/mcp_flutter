@@ -1,7 +1,7 @@
 import 'dart:io';
 
+import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
-import 'package:test/test.dart';
 
 /// Policy (5a): only auto/bootstrap files may import `flutter_live_edit_agent`.
 void main() {

@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_live_edit_agent/flutter_live_edit_agent.dart';
 import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
-import 'package:test/test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:xsoulspace_inference_codex_exec/xsoulspace_inference_codex_exec.dart';
 import 'package:xsoulspace_inference_core/xsoulspace_inference_core.dart';
 import 'package:xsoulspace_inference_cursor_agent/xsoulspace_inference_cursor_agent.dart';

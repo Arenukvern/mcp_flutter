@@ -12,6 +12,6 @@ export 'src/envs.dart';
 export 'src/host/host.dart';
 export 'src/live_edit_runtime.dart';
 export 'src/mcp_toolkit_tools/live_edit_toolkit.dart';
-export 'src/selectors/live_edit_selectors.dart';
+export 'src/ui_selectors/live_edit_selectors.dart';
 export 'src/types/live_edit_types.dart';
 export 'src/ui_workbench/live_edit_overlay_theme.dart';

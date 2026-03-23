@@ -1,6 +1,6 @@
 import '../../di_live_edit_context/live_edit_context.dart';
 import '../../di_live_edit_context/tools/live_edit_controller_adapter.dart';
-import '../../selectors/live_edit_selectors.dart';
+import '../../ui_selectors/live_edit_selectors.dart';
 import '../draft/apply_draft.cmd.dart';
 import '../backend/open_ai_bubble.cmd.dart';
 
