@@ -1,4 +1,4 @@
-import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
+import '../models/models.dart';
 
 /// Per-layer draft state.
 final class LiveEditDraftLayerData {

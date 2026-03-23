@@ -1,9 +1,9 @@
-import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
+import 'package:live_edit_tooling_ui_kit/live_edit_tooling_ui_kit.dart';
 
+import '../models/models.dart';
 import '../types/live_edit_types.dart';
+import '../ui_selectors/ui_selectors.dart';
 import 'live_edit_apply_result.dart';
-
-bool _hasText(final String? value) => value != null && value.trim().isNotEmpty;
 
 /// Runs the apply delegate and returns a result for Commands to apply to Resources.
 final class LiveEditApplyService {
@@ -26,7 +26,7 @@ final class LiveEditApplyService {
     try {
       final response = await applyDraftDelegate!(request);
       final error = _extractError(response);
-      if (_hasText(error)) {
+      if (hasText(error)) {
         return LiveEditApplyResult(
           applyPhase: LiveEditApplyPhase.failed,
           lastError: error,
@@ -78,9 +78,9 @@ final class LiveEditApplyService {
 
   String? _extractError(final Map<String, Object?> response) {
     final error = response['error'];
-    if (error is String && _hasText(error)) return error;
+    if (error is String && hasText(error)) return error;
     final message = response['message'];
-    if (message is String && _hasText(message)) return message;
+    if (message is String && hasText(message)) return message;
     return null;
   }
 

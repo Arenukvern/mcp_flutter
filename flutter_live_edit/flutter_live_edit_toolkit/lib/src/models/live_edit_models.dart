@@ -1,6 +1,9 @@
 import 'dart:convert';
 
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:from_json_to_json/from_json_to_json.dart';
+import 'package:is_dart_empty_or_not/is_dart_empty_or_not.dart';
+import 'package:live_edit_tooling_ui_kit/live_edit_tooling_ui_kit.dart';
 
 part 'live_edit_models.freezed.dart';
 part 'live_edit_models.g.dart';
@@ -24,22 +27,10 @@ Map<String, Object?> decodeLiveEditJsonObject(final String raw) {
 String encodeLiveEditJson(final Map<String, Object?> value) =>
     jsonEncode(value);
 
-double _asDouble(final Object? value, {final double fallback = 0}) {
-  if (value is num) {
-    return value.toDouble();
-  }
-  return double.tryParse('$value') ?? fallback;
-}
+double _asDouble(final Object? value, {final double fallback = 0}) =>
+    jsonDecodeDouble(value).whenZeroUse(fallback);
 
-List<Object?> _asList(final Object? value) {
-  if (value is List<Object?>) {
-    return value;
-  }
-  if (value is List) {
-    return value.cast<Object?>();
-  }
-  return const <Object?>[];
-}
+List<Object?> _asList(final Object? value) => jsonDecodeListAs(value);
 
 Map<String, Object?> _asMap(final Object? value) {
   if (value is Map<String, Object?>) {
@@ -106,7 +97,7 @@ LiveEditInferenceConfig? _parseInferenceConfig(final Object? value) {
 typedef LiveEditCodexConfig = LiveEditInferenceConfig;
 
 @Freezed(fromJson: true, toJson: true)
-class LiveEditAgentBackend with _$LiveEditAgentBackend {
+abstract class LiveEditAgentBackend with _$LiveEditAgentBackend {
   const factory LiveEditAgentBackend({
     required final String id,
     required final String label,
@@ -121,39 +112,7 @@ class LiveEditAgentBackend with _$LiveEditAgentBackend {
 }
 
 @Freezed(fromJson: true, toJson: true)
-class LiveEditBounds with _$LiveEditBounds {
-  const factory LiveEditBounds({
-    required final double left,
-    required final double top,
-    required final double right,
-    required final double bottom,
-    required final double width,
-    required final double height,
-  }) = _LiveEditBounds;
-
-  factory LiveEditBounds.fromJson(final Map<String, Object?> json) =>
-      _$LiveEditBoundsFromJson(json);
-}
-
-enum LiveEditBubbleDisplayState {
-  expanded('expanded'),
-  minimized('minimized');
-
-  const LiveEditBubbleDisplayState(this.wireName);
-
-  final String wireName;
-
-  static LiveEditBubbleDisplayState fromWire(final Object? value) {
-    final normalized = '$value'.trim().toLowerCase();
-    return LiveEditBubbleDisplayState.values.firstWhere(
-      (final state) => state.wireName == normalized,
-      orElse: () => LiveEditBubbleDisplayState.expanded,
-    );
-  }
-}
-
-@Freezed(fromJson: true, toJson: true)
-class LiveEditCodexModelOption with _$LiveEditCodexModelOption {
+abstract class LiveEditCodexModelOption with _$LiveEditCodexModelOption {
   const factory LiveEditCodexModelOption({
     required final String id,
     required final String label,
@@ -199,7 +158,7 @@ final class LiveEditCodexOptions {
 double _confidenceFromJson(final Object? v) => _asDouble(v, fallback: 1);
 
 @Freezed(fromJson: true, toJson: true)
-class LiveEditDraftChange with _$LiveEditDraftChange {
+abstract class LiveEditDraftChange with _$LiveEditDraftChange {
   const factory LiveEditDraftChange({
     required final String nodeId,
     required final String propertyId,
@@ -212,24 +171,6 @@ class LiveEditDraftChange with _$LiveEditDraftChange {
 
   factory LiveEditDraftChange.fromJson(final Map<String, Object?> json) =>
       _$LiveEditDraftChangeFromJson(json);
-}
-
-enum LiveEditEditMode {
-  inspect('inspect'),
-  edit('edit'),
-  ai('ai');
-
-  const LiveEditEditMode(this.wireName);
-
-  final String wireName;
-
-  static LiveEditEditMode fromWire(final Object? value) {
-    final normalized = '$value'.trim().toLowerCase();
-    return LiveEditEditMode.values.firstWhere(
-      (final mode) => mode.wireName == normalized,
-      orElse: () => LiveEditEditMode.inspect,
-    );
-  }
 }
 
 enum LiveEditTargetDomain {
@@ -342,7 +283,7 @@ final class LiveEditExecutionPlan {
 }
 
 @Freezed(fromJson: true, toJson: true)
-class LiveEditFilePatch with _$LiveEditFilePatch {
+abstract class LiveEditFilePatch with _$LiveEditFilePatch {
   const factory LiveEditFilePatch({
     required final String path,
     required final String content,
@@ -355,7 +296,7 @@ class LiveEditFilePatch with _$LiveEditFilePatch {
 }
 
 @Freezed(fromJson: false, toJson: false)
-class LiveEditInferenceConfig with _$LiveEditInferenceConfig {
+abstract class LiveEditInferenceConfig with _$LiveEditInferenceConfig {
   const factory LiveEditInferenceConfig({
     final String? model,
     final String? reasoningEffort,
@@ -402,7 +343,8 @@ enum LiveEditRuntimeAction {
 }
 
 @Freezed(fromJson: true, toJson: true)
-class LiveEditRuntimeRefreshResult with _$LiveEditRuntimeRefreshResult {
+abstract class LiveEditRuntimeRefreshResult
+    with _$LiveEditRuntimeRefreshResult {
   const factory LiveEditRuntimeRefreshResult({
     @Default(LiveEditRuntimeAction.none) final LiveEditRuntimeAction action,
     @Default(<String, Object?>{}) final Map<String, Object?> validation,
@@ -438,7 +380,7 @@ enum LiveEditPreviewMode {
 }
 
 @Freezed(fromJson: true, toJson: true)
-class LiveEditResolutionProposal with _$LiveEditResolutionProposal {
+abstract class LiveEditResolutionProposal with _$LiveEditResolutionProposal {
   const factory LiveEditResolutionProposal({
     required final String proposalId,
     required final String backendId,
@@ -459,7 +401,7 @@ class LiveEditResolutionProposal with _$LiveEditResolutionProposal {
 }
 
 @Freezed(fromJson: false, toJson: false)
-class LiveEditResolutionRequest with _$LiveEditResolutionRequest {
+abstract class LiveEditResolutionRequest with _$LiveEditResolutionRequest {
   const factory LiveEditResolutionRequest({
     required final String sessionId,
     required final String workingDirectory,
@@ -551,7 +493,7 @@ class LiveEditResolutionRequest with _$LiveEditResolutionRequest {
 }
 
 @Freezed(fromJson: true, toJson: true)
-class LiveEditSourceTarget with _$LiveEditSourceTarget {
+abstract class LiveEditSourceTarget with _$LiveEditSourceTarget {
   const factory LiveEditSourceTarget({
     required final String nodeId,
     required final String widgetType,
@@ -565,17 +507,18 @@ class LiveEditSourceTarget with _$LiveEditSourceTarget {
       _$LiveEditSourceTargetFromJson(json);
 }
 
-final class LiveEditDirectApplyResult {
-  const LiveEditDirectApplyResult({
-    required this.executionId,
-    required this.backendId,
-    required this.summary,
-    this.changedFiles = const <String>[],
-    this.warnings = const <String>[],
-    this.validationSteps = const <String>[],
-    this.runtimeRefresh,
-    this.meta = const <String, Object?>{},
-  });
+@Freezed(fromJson: true, toJson: true)
+abstract class LiveEditDirectApplyResult with _$LiveEditDirectApplyResult {
+  const factory LiveEditDirectApplyResult({
+    required final String executionId,
+    required final String backendId,
+    required final String summary,
+    @Default(<String>[]) final List<String> changedFiles,
+    @Default(<String>[]) final List<String> warnings,
+    @Default(<String>[]) final List<String> validationSteps,
+    final LiveEditRuntimeRefreshResult? runtimeRefresh,
+    @Default(<String, Object?>{}) final Map<String, Object?> meta,
+  }) = _LiveEditDirectApplyResult;
 
   factory LiveEditDirectApplyResult.fromJson(final Map<String, Object?> json) =>
       LiveEditDirectApplyResult(
@@ -593,31 +536,10 @@ final class LiveEditDirectApplyResult {
         },
         meta: _asMap(json['meta']),
       );
-
-  final String executionId;
-  final String backendId;
-  final String summary;
-  final List<String> changedFiles;
-  final List<String> warnings;
-  final List<String> validationSteps;
-  final LiveEditRuntimeRefreshResult? runtimeRefresh;
-  final Map<String, Object?> meta;
-
-  Map<String, Object?> toJson() => <String, Object?>{
-    'executionId': executionId,
-    'backendId': backendId,
-    'summary': summary,
-    'changedFiles': changedFiles,
-    'warnings': warnings,
-    'validationSteps': validationSteps,
-    if (runtimeRefresh != null) 'runtimeRefresh': runtimeRefresh!.toJson(),
-    'meta': meta,
-    'proposalId': executionId,
-  };
 }
 
 @Freezed(fromJson: true, toJson: true)
-class LiveEditResolutionResult with _$LiveEditResolutionResult {
+abstract class LiveEditResolutionResult with _$LiveEditResolutionResult {
   const factory LiveEditResolutionResult({
     required final String proposalId,
     required final LiveEditResolutionStatus status,
@@ -651,7 +573,7 @@ enum LiveEditResolutionStatus {
   }
 }
 
-final class LiveEditRuntimeToolNames {
+abstract class LiveEditRuntimeToolNames {
   const LiveEditRuntimeToolNames._();
 
   static const String startSession = 'live_edit_runtime_start_session';
@@ -727,7 +649,7 @@ final class LiveEditMcpToolNames {
 }
 
 @Freezed(fromJson: true, toJson: true)
-class LiveEditSelection with _$LiveEditSelection {
+abstract class LiveEditSelection with _$LiveEditSelection {
   const factory LiveEditSelection({
     required final String sessionId,
     required final String nodeId,
@@ -761,7 +683,7 @@ class LiveEditSelection with _$LiveEditSelection {
 int _depthFromJson(final Object? v) => _asNullableInt(v) ?? 0;
 
 @Freezed(fromJson: true, toJson: true)
-class LiveEditSelectionCandidate with _$LiveEditSelectionCandidate {
+abstract class LiveEditSelectionCandidate with _$LiveEditSelectionCandidate {
   const factory LiveEditSelectionCandidate({
     required final String nodeId,
     required final String widgetType,
@@ -812,7 +734,7 @@ enum LiveEditSelectionPolicy {
 }
 
 @Freezed(fromJson: true, toJson: true)
-class LiveEditSourceLocation with _$LiveEditSourceLocation {
+abstract class LiveEditSourceLocation with _$LiveEditSourceLocation {
   const factory LiveEditSourceLocation({
     required final String file,
     final int? line,

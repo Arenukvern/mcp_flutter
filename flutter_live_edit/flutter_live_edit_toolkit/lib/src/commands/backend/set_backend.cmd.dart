@@ -1,7 +1,6 @@
-import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
-
 import '../../ai/backend/live_edit_backend_utils.dart';
 import '../../di_live_edit_context/live_edit_context.dart';
+import '../../models/models.dart';
 
 /// Sets the global backend id and optionally stores effective inference config.
 final class SetBackendCommand {

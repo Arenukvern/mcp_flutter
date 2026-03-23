@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_live_edit_toolkit/flutter_live_edit_toolkit.dart';
 import 'package:flutter_live_edit_toolkit/src/ai/backend/live_edit_backend_utils.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:live_edit_tooling_ui_kit/live_edit_tooling_ui_kit.dart';
 
 LiveEditTargetDomain _domain(final LiveEditOrchestrator o) =>
     selectPresentedLayer(o.context);

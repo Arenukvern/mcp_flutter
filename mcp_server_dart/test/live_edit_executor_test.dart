@@ -2,8 +2,7 @@ import 'dart:io';
 
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_inspector_mcp_server/flutter_mcp_core.dart';
-import 'package:flutter_live_edit_agent/flutter_live_edit_agent.dart';
-import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
+import 'package:flutter_live_edit_toolkit/flutter_live_edit_toolkit.dart';
 import 'package:test/test.dart';
 import 'package:xsoulspace_inference_core/xsoulspace_inference_core.dart';
 

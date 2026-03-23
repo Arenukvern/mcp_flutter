@@ -2,12 +2,12 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 
 import '../commands/commands.dart';
 import '../di_live_edit_context/live_edit_context.dart';
-import '../di_live_edit_context/tools/live_edit_controller_adapter.dart';
 import '../di_live_edit_context/live_edit_orchestrator.dart';
+import '../di_live_edit_context/tools/live_edit_controller_adapter.dart';
+import '../models/models.dart';
 
 double _overlayMathMax(final double a, final double b) => a > b ? a : b;
 
@@ -123,7 +123,8 @@ class _LiveEditOverlayPainter extends CustomPainter {
     final currentSelection = selection;
     if (currentSelection == null || currentSelection.bounds == null) return;
 
-    final bounds = currentSelection.bounds!;
+    final bounds = currentSelection.bounds;
+    if (bounds == null) return;
     final baseRect = Rect.fromLTRB(
       bounds.left,
       bounds.top,

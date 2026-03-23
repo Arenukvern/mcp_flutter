@@ -1,6 +1,5 @@
-import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
-
 import '../../di_live_edit_context/live_edit_context.dart';
+import '../../models/models.dart';
 import '../draft/apply_draft.cmd.dart';
 
 /// Applies all bubbles (apply mode apply_all).

@@ -1,25 +1,22 @@
 import 'dart:ui' show Offset;
 
-import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
+import 'package:from_json_to_json/from_json_to_json.dart';
 
 import '../../di_live_edit_context/live_edit_context.dart';
 import '../../di_live_edit_context/tools/live_edit_controller_adapter.dart';
-import '../../types/live_edit_types.dart';
+import '../../models/models.dart';
 import '../../services/live_edit_bubble_state_service.dart';
+import '../../types/live_edit_types.dart';
 
 final _bubbleStateService = LiveEditBubbleStateService();
 
-bool hasText(final String? value) => value != null && value.trim().isNotEmpty;
+bool hasText(final String? value) => jsonDecodeString(value).trim().isNotEmpty;
 
 double maxDouble(final double left, final double right) =>
     left > right ? left : right;
 
 double minDouble(final double left, final double right) =>
     left < right ? left : right;
-
-List<Object?> commonEditableProperties(
-  final List<LiveEditSelection> selections,
-) => const <Object?>[];
 
 String? selectActiveSessionId(final LiveEditContext ctx) =>
     ctx.sessionResource.value.activeSessionId;

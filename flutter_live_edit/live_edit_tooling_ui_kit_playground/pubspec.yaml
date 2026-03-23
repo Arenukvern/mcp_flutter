@@ -1,5 +1,6 @@
 name: live_edit_tooling_ui_kit_playground
-description: Runnable app that uses the live-edit UI kit with live editing (scope, context, commands).
+description: Runnable app that uses the live-edit UI kit with live editing
+  (scope, context, commands).
 publish_to: none
 version: 0.1.0
 
@@ -15,10 +16,10 @@ dependencies:
     path: ../live_edit_tooling_ui_kit
 
 dev_dependencies:
-  lints: ^6.1.0
-  xsoulspace_lints: ^0.1.2
   flutter_test:
     sdk: flutter
+  lints: ^6.1.0
+  xsoulspace_lints: ^0.1.2
 
 flutter:
   uses-material-design: true

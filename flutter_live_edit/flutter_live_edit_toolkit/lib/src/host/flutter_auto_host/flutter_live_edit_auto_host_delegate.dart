@@ -3,13 +3,13 @@ import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter_live_edit_agent/flutter_live_edit_agent.dart';
-import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 import 'package:vm_service/utils.dart';
 import 'package:vm_service/vm_service.dart';
 import 'package:vm_service/vm_service_io.dart';
 import 'package:xsoulspace_inference_core/xsoulspace_inference_core.dart';
 
+import '../../ai/agent/live_edit_agent_service.dart';
+import '../../models/models.dart';
 import '../../types/live_edit_types.dart';
 import 'flutter_live_edit_auto_host_config.dart';
 

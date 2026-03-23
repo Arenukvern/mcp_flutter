@@ -11,7 +11,7 @@ import 'package:flutter_inspector_mcp_server/src/shared_core/commands/commands.d
 import 'package:flutter_inspector_mcp_server/src/shared_core/types/error_codes.dart';
 import 'package:flutter_inspector_mcp_server/src/shared_core/types/results.dart';
 import 'package:flutter_inspector_mcp_server/src/shared_core/vm_connections/vm_connections.dart';
-import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
+import 'package:flutter_live_edit_toolkit/flutter_live_edit_toolkit.dart';
 
 /// Thin MCP adapter for first-class live-edit commands.
 class LiveEditHandler {

@@ -1,7 +1,6 @@
-import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
-
 import '../../ai/backend/live_edit_backend_utils.dart';
 import '../../di_live_edit_context/live_edit_context.dart';
+import '../../models/models.dart';
 
 /// Sets available backends and resolves initial global backend id.
 final class SetAvailableBackendsCommand {

@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
 import 'package:is_dart_empty_or_not/is_dart_empty_or_not.dart';
 import 'package:path/path.dart' as p;
@@ -10,6 +9,8 @@ import 'package:xsoulspace_inference_codex_exec/xsoulspace_inference_codex_exec.
 import 'package:xsoulspace_inference_core/xsoulspace_inference_core.dart';
 import 'package:xsoulspace_inference_cursor_agent/xsoulspace_inference_cursor_agent.dart';
 
+import '../../models/models.dart';
+import '../../ui_selectors/ui_selectors.dart';
 import 'live_edit_agent_plan.dart';
 import 'live_edit_agent_request_summary.dart';
 import 'live_edit_agent_utils.dart';
@@ -496,7 +497,7 @@ final class LiveEditAgentService {
     }
 
     final rawOutput = Map<String, Object?>.from(inferenceResult.data!.output);
-    final response = inferenceResult.data!;
+    final response = inferenceResult.data;
     final normalizedOutput = <String, Object?>{
       ...rawOutput,
       'executionId':
@@ -513,12 +514,15 @@ final class LiveEditAgentService {
       backendId: backendId,
       meta: <String, Object?>{
         ...jsonDecodeMapLoose(rawOutput['meta']),
-        ...response.meta,
+        ...response?.meta ?? <String, Object?>{},
         'inferenceMeta': inferenceResult.meta,
-        'warnings': <String>[...response.warnings, ...inferenceResult.warnings],
+        'warnings': <String>[
+          ...response?.warnings ?? <String>[],
+          ...inferenceResult.warnings,
+        ],
       },
       warnings: <String>[
-        ...response.warnings,
+        ...response?.warnings ?? <String>[],
         ...inferenceResult.warnings,
         ...switch (rawOutput['warnings']) {
           final List warnings =>

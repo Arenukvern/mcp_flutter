@@ -5,8 +5,9 @@ import 'dart:io';
 
 import 'package:flutter_inspector_mcp_server/src/capabilities/live_edit/live_edit_host_bindings.dart';
 import 'package:flutter_inspector_mcp_server/src/shared_core/shared_core.dart';
-import 'package:flutter_live_edit_agent/flutter_live_edit_agent.dart';
-import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
+import 'package:flutter_live_edit_toolkit/flutter_live_edit_toolkit.dart';
+import 'package:from_json_to_json/from_json_to_json.dart';
+import 'package:live_edit_tooling_ui_kit/live_edit_tooling_ui_kit.dart';
 
 /// Executes [LiveEditCommand]s using the host for VM / hot reload / client tools.
 final class LiveEditCommandExecutor {
@@ -49,19 +50,8 @@ final class LiveEditCommandExecutor {
         final LiveEditRejectResolutionCommand c => _liveEditRejectResolution(c),
       };
 
-  List<Object?> _asObjectList(final Object? value) {
-    if (value is List<Object?>) {
-      return value;
-    }
-    if (value is List) {
-      return value.cast<Object?>();
-    }
-    return const <Object?>[];
-  }
-
   String? _firstNonEmpty(final String? first, final String? second) =>
       _stringOrNull(first) ?? _stringOrNull(second);
-  bool _hasText(final Object? value) => _stringOrNull(value) != null;
 
   String? _stringOrNull(final Object? value) {
     final normalized = '$value'.trim();
@@ -105,7 +95,7 @@ final class LiveEditCommandExecutor {
   }
 
   Future<CoreResult> _ensureLiveEditSessionId(final String? sessionId) async {
-    if (_hasText(sessionId)) {
+    if (hasText(sessionId)) {
       return CoreResult.success(
         data: <String, Object?>{'sessionId': sessionId!.trim()},
       );
@@ -185,7 +175,7 @@ final class LiveEditCommandExecutor {
       command.sessionId,
       request.sessionId,
     );
-    if (_hasText(discardSessionId)) {
+    if (hasText(discardSessionId)) {
       final discardResult = await _liveEditDiscardDraft(
         LiveEditDiscardDraftCommand(sessionId: discardSessionId),
       );
@@ -262,7 +252,7 @@ final class LiveEditCommandExecutor {
     String? proposalId = _stringOrNull(command.proposalId);
     CoreResult? resolveResult;
 
-    if (!_hasText(proposalId)) {
+    if (!hasText(proposalId)) {
       resolveResult = await _liveEditResolveDraft(
         LiveEditResolveDraftCommand(
           sessionId: command.sessionId,
@@ -279,7 +269,7 @@ final class LiveEditCommandExecutor {
       proposalId = _stringOrNull(proposal['proposalId']);
     }
 
-    if (!_hasText(proposalId)) {
+    if (!hasText(proposalId)) {
       return CoreResult.failure(
         code: CoreErrorCode.liveEditProposalNotFound,
         message: 'Live edit proposal id is unavailable for apply flow',
@@ -357,7 +347,7 @@ final class LiveEditCommandExecutor {
   ) => _runLiveEditRuntimeTool(
     LiveEditRuntimeToolNames.discardDraft,
     arguments: <String, Object?>{
-      if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
+      if (hasText(command.sessionId)) 'sessionId': command.sessionId,
     },
   );
 
@@ -366,7 +356,7 @@ final class LiveEditCommandExecutor {
   ) => _runLiveEditRuntimeTool(
     LiveEditRuntimeToolNames.endSession,
     arguments: <String, Object?>{
-      if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
+      if (hasText(command.sessionId)) 'sessionId': command.sessionId,
     },
   );
 
@@ -381,7 +371,7 @@ final class LiveEditCommandExecutor {
       return CoreResult.success(
         data: <String, Object?>{
           'backend': backend.toJson(),
-          if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
+          if (hasText(command.sessionId)) 'sessionId': command.sessionId,
         },
       );
     } on StateError catch (error) {
@@ -402,9 +392,8 @@ final class LiveEditCommandExecutor {
     final backend = _agent.getBackend(sessionId: command.sessionId);
     return CoreResult.success(
       data: <String, Object?>{
-        if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
-        if (_hasText(command.targetDomain))
-          'targetDomain': command.targetDomain,
+        if (hasText(command.sessionId)) 'sessionId': command.sessionId,
+        if (hasText(command.targetDomain)) 'targetDomain': command.targetDomain,
         'backend': backend.toJson(),
         'capabilities': const <String, Object?>{
           'overlay': true,
@@ -426,7 +415,7 @@ final class LiveEditCommandExecutor {
       _runLiveEditRuntimeTool(
         LiveEditRuntimeToolNames.getDraft,
         arguments: <String, Object?>{
-          if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
+          if (hasText(command.sessionId)) 'sessionId': command.sessionId,
         },
       );
 
@@ -456,9 +445,8 @@ final class LiveEditCommandExecutor {
     final selection = _decodeSelection(_map(selectionResult.data)['selection']);
     return CoreResult.success(
       data: <String, Object?>{
-        if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
-        if (_hasText(command.targetDomain))
-          'targetDomain': command.targetDomain,
+        if (hasText(command.sessionId)) 'sessionId': command.sessionId,
+        if (hasText(command.targetDomain)) 'targetDomain': command.targetDomain,
         'mode': _sessionModes[command.sessionId ?? ''] ?? 'inspect',
         'selectionAvailable': selection != null,
         if (selection != null) 'nodeId': selection.nodeId,
@@ -488,9 +476,8 @@ final class LiveEditCommandExecutor {
     final selection = _decodeSelection(_map(selectionResult.data)['selection']);
     return CoreResult.success(
       data: <String, Object?>{
-        if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
-        if (_hasText(command.targetDomain))
-          'targetDomain': command.targetDomain,
+        if (hasText(command.sessionId)) 'sessionId': command.sessionId,
+        if (hasText(command.targetDomain)) 'targetDomain': command.targetDomain,
         if (selection != null) 'nodeId': selection.nodeId,
         if (selection != null) 'widgetType': selection.widgetType,
         'properties': selection?.propertiesForWire ?? const <Object?>[],
@@ -504,8 +491,8 @@ final class LiveEditCommandExecutor {
   ) => _runLiveEditRuntimeTool(
     LiveEditRuntimeToolNames.getSelection,
     arguments: <String, Object?>{
-      if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
-      if (_hasText(command.targetDomain)) 'targetDomain': command.targetDomain,
+      if (hasText(command.sessionId)) 'sessionId': command.sessionId,
+      if (hasText(command.targetDomain)) 'targetDomain': command.targetDomain,
     },
   );
 
@@ -536,9 +523,8 @@ final class LiveEditCommandExecutor {
           ];
     return CoreResult.success(
       data: <String, Object?>{
-        if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
-        if (_hasText(command.targetDomain))
-          'targetDomain': command.targetDomain,
+        if (hasText(command.sessionId)) 'sessionId': command.sessionId,
+        if (hasText(command.targetDomain)) 'targetDomain': command.targetDomain,
         'activeNodeId': selection?.nodeId,
         'candidates': candidates,
       },
@@ -549,8 +535,8 @@ final class LiveEditCommandExecutor {
       _runLiveEditRuntimeTool(
         LiveEditRuntimeToolNames.getTree,
         arguments: <String, Object?>{
-          if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
-          if (_hasText(command.targetDomain))
+          if (hasText(command.sessionId)) 'sessionId': command.sessionId,
+          if (hasText(command.targetDomain))
             'targetDomain': command.targetDomain,
         },
       );
@@ -578,14 +564,14 @@ final class LiveEditCommandExecutor {
     }
 
     final sessionId = _stringOrNull(_map(sessionResult.data)['sessionId']);
-    if (!_hasText(sessionId)) {
+    if (!hasText(sessionId)) {
       return CoreResult.failure(
         code: CoreErrorCode.unexpectedExecutorError,
         message: 'Live edit session initialization did not return a session id',
       );
     }
 
-    if (_hasText(command.backendId) || command.inferenceConfig != null) {
+    if (hasText(command.backendId) || command.inferenceConfig != null) {
       final backendResult = await _liveEditSetAgentBackend(
         LiveEditSetAgentBackendCommand(
           sessionId: sessionId!,
@@ -629,9 +615,8 @@ final class LiveEditCommandExecutor {
     return CoreResult.success(
       data: <String, Object?>{
         'sessionId': sessionId,
-        if (_hasText(command.targetDomain))
-          'targetDomain': command.targetDomain,
-        if (_hasText(command.workingDirectory))
+        if (hasText(command.targetDomain)) 'targetDomain': command.targetDomain,
+        if (hasText(command.workingDirectory))
           'workingDirectory': command.workingDirectory,
         'overlay': _map(overlayResult.data),
         'capabilities': _map(capabilitiesResult.data),
@@ -664,7 +649,7 @@ final class LiveEditCommandExecutor {
     }
 
     final sessionId = _stringOrNull(_map(sessionIdResult.data)['sessionId']);
-    if (!_hasText(sessionId)) {
+    if (!hasText(sessionId)) {
       return CoreResult.failure(
         code: CoreErrorCode.invalidCommand,
         message: 'Live edit session id is unavailable',
@@ -678,7 +663,7 @@ final class LiveEditCommandExecutor {
       return draftResult;
     }
 
-    final hasIntentText = _hasText(command.intentText);
+    final hasIntentText = hasText(command.intentText);
     if (!hasIntentText) {
       return CoreResult.failure(
         code: CoreErrorCode.invalidCommand,
@@ -741,7 +726,7 @@ final class LiveEditCommandExecutor {
       return CoreResult.success(
         data: <String, Object?>{
           'sessionId': sessionId,
-          if (_hasText(command.targetDomain))
+          if (hasText(command.targetDomain))
             'targetDomain': command.targetDomain,
           'backend': backend.toJson(),
           'proposal': proposal.toJson(),
@@ -776,12 +761,12 @@ final class LiveEditCommandExecutor {
   ) => _runLiveEditRuntimeTool(
     LiveEditRuntimeToolNames.selectAtPoint,
     arguments: <String, Object?>{
-      if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
+      if (hasText(command.sessionId)) 'sessionId': command.sessionId,
       'x': command.x,
       'y': command.y,
       if (command.viewId != null) 'viewId': command.viewId,
       'selectionPolicy': command.selectionPolicy.wireName,
-      if (_hasText(command.targetDomain)) 'targetDomain': command.targetDomain,
+      if (hasText(command.targetDomain)) 'targetDomain': command.targetDomain,
     },
   );
 
@@ -799,12 +784,12 @@ final class LiveEditCommandExecutor {
     }
 
     final data = _map(candidatesResult.data);
-    final candidates = _asObjectList(data['candidates']);
+    final candidates = jsonDecodeListAs(data['candidates']);
     if (candidates.isEmpty) {
       return CoreResult.success(
         data: <String, Object?>{
-          if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
-          if (_hasText(command.targetDomain))
+          if (hasText(command.sessionId)) 'sessionId': command.sessionId,
+          if (hasText(command.targetDomain))
             'targetDomain': command.targetDomain,
           'activated': false,
           'reason': 'no_selection_candidates',
@@ -818,13 +803,12 @@ final class LiveEditCommandExecutor {
     final requestedNodeId = _stringOrNull(command.nodeId);
     final matchesIndex = requestedIndex == null || requestedIndex == 0;
     final matchesNode =
-        !_hasText(requestedNodeId) || requestedNodeId == first['nodeId'];
+        !hasText(requestedNodeId) || requestedNodeId == first['nodeId'];
 
     return CoreResult.success(
       data: <String, Object?>{
-        if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
-        if (_hasText(command.targetDomain))
-          'targetDomain': command.targetDomain,
+        if (hasText(command.sessionId)) 'sessionId': command.sessionId,
+        if (hasText(command.targetDomain)) 'targetDomain': command.targetDomain,
         'activated': matchesIndex && matchesNode,
         'activeNodeId': first['nodeId'],
         'selection': first['selection'],
@@ -875,7 +859,7 @@ final class LiveEditCommandExecutor {
     }
 
     final sessionId = _stringOrNull(_map(sessionResult.data)['sessionId']);
-    if (!_hasText(sessionId)) {
+    if (!hasText(sessionId)) {
       return CoreResult.failure(
         code: CoreErrorCode.unexpectedExecutorError,
         message: 'Live edit session initialization did not return a session id',
@@ -906,8 +890,7 @@ final class LiveEditCommandExecutor {
       data: <String, Object?>{
         'sessionId': sessionId,
         'mode': normalizedMode,
-        if (_hasText(command.targetDomain))
-          'targetDomain': command.targetDomain,
+        if (hasText(command.targetDomain)) 'targetDomain': command.targetDomain,
       },
     );
   }
@@ -917,7 +900,7 @@ final class LiveEditCommandExecutor {
   ) => _runLiveEditRuntimeTool(
     LiveEditRuntimeToolNames.setOverlay,
     arguments: <String, Object?>{
-      if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
+      if (hasText(command.sessionId)) 'sessionId': command.sessionId,
       'enabled': command.enabled,
     },
   );
@@ -927,8 +910,8 @@ final class LiveEditCommandExecutor {
   ) => _runLiveEditRuntimeTool(
     LiveEditRuntimeToolNames.startSession,
     arguments: <String, Object?>{
-      if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
-      if (_hasText(command.targetDomain)) 'targetDomain': command.targetDomain,
+      if (hasText(command.sessionId)) 'sessionId': command.sessionId,
+      if (hasText(command.targetDomain)) 'targetDomain': command.targetDomain,
     },
   );
 
@@ -937,8 +920,8 @@ final class LiveEditCommandExecutor {
   ) => _runLiveEditRuntimeTool(
     LiveEditRuntimeToolNames.updateDraft,
     arguments: <String, Object?>{
-      if (_hasText(command.sessionId)) 'sessionId': command.sessionId,
-      if (_hasText(command.targetDomain)) 'targetDomain': command.targetDomain,
+      if (hasText(command.sessionId)) 'sessionId': command.sessionId,
+      if (hasText(command.targetDomain)) 'targetDomain': command.targetDomain,
       'changeJson': encodeLiveEditJson(command.change.toJson()),
     },
   );
@@ -1029,7 +1012,7 @@ final class LiveEditCommandExecutor {
     }
 
     final sessionId = _firstNonEmpty(fallbackSessionId, request.sessionId);
-    if (_hasText(sessionId)) {
+    if (hasText(sessionId)) {
       final restartSession = await _liveEditStartSession(
         LiveEditStartSessionCommand(sessionId: sessionId),
       );
@@ -1091,7 +1074,7 @@ final class LiveEditCommandExecutor {
   }) async {
     final sessionId = _firstNonEmpty(fallbackSessionId, request.sessionId);
     final bounds = request.selection?.bounds;
-    if (!_hasText(sessionId) || bounds == null) {
+    if (!hasText(sessionId) || bounds == null) {
       return null;
     }
 
@@ -1130,7 +1113,7 @@ final class LiveEditCommandExecutor {
           if (selection != null) 'selectedWidgetType': selection.widgetType,
           if (selection?.source != null)
             'selectedSource': selection!.source!.toJson(),
-          if (_hasText(reason)) 'reason': reason,
+          if (hasText(reason)) 'reason': reason,
           if (result.ok) 'data': data,
           if (!result.ok) 'error': result.error?.toJson(),
         });
@@ -1183,10 +1166,10 @@ final class LiveEditCommandExecutor {
   }
 
   String _resolveWorkingDirectory(final String? workingDirectory) {
-    if (_hasText(workingDirectory)) {
+    if (hasText(workingDirectory)) {
       return workingDirectory!.trim();
     }
-    if (_hasText(_host.configuration.flutterProjectDir)) {
+    if (hasText(_host.configuration.flutterProjectDir)) {
       return _host.configuration.flutterProjectDir!.trim();
     }
     return Directory.current.path;
@@ -1202,12 +1185,13 @@ final class LiveEditCommandExecutor {
     }
 
     final data = _map(result.data);
+    final message = jsonDecodeString(data['message']);
     return CoreResult.success(
       data: _map(data['parameters']),
       meta: <String, Object?>{
         ...result.meta,
         'clientTool': toolName,
-        if (_hasText(data['message'])) 'clientMessage': '${data['message']}',
+        if (message.isNotEmpty) 'clientMessage': message,
       },
     );
   }
@@ -1217,7 +1201,7 @@ final class LiveEditCommandExecutor {
     required final String? fallbackSessionId,
   }) async {
     final sessionId = _firstNonEmpty(fallbackSessionId, request.sessionId);
-    if (!_hasText(sessionId)) {
+    if (!hasText(sessionId)) {
       return <String, Object?>{
         'validated': false,
         'reason': 'missing_session_id',
@@ -1259,7 +1243,7 @@ final class LiveEditCommandExecutor {
     while (DateTime.now().isBefore(deadline)) {
       final toolsResult = await _host.listClientToolsAndResources();
       if (toolsResult.ok) {
-        final tools = _asObjectList(_map(toolsResult.data)['tools']);
+        final tools = jsonDecodeListAs(_map(toolsResult.data)['tools']);
         final names = tools
             .whereType<Map>()
             .map((final entry) => '${entry['name'] ?? ''}')

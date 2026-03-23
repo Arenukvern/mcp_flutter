@@ -3,13 +3,13 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/widgets.dart';
-import 'package:flutter_live_edit_agent/flutter_live_edit_agent.dart';
-import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 
+import '../../ai/agent/live_edit_agent_service.dart';
 import '../../di_live_edit_context/live_edit_orchestrator.dart';
 import '../../di_live_edit_context/live_edit_scope.dart';
 import '../../mcp_toolkit_tools/live_edit_toolkit.dart';
+import '../../models/models.dart';
 import '../../types/live_edit_types.dart';
 import '../core/live_edit_host.dart';
 import 'flutter_live_edit_auto_host_config.dart';

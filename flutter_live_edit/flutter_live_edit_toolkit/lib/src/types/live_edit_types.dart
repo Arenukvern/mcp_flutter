@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart' show Offset;
-import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
+import 'package:live_edit_tooling_ui_kit/live_edit_tooling_ui_kit.dart';
+
+import '../models/models.dart';
 
 typedef LiveEditApplyDraftDelegate =
     Future<Map<String, Object?>> Function(LiveEditApplyDraftRequest request);

@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 
 import '../../envs.dart';
+import '../../models/models.dart';
 
 final class FlutterLiveEditAutoConfig {
   const FlutterLiveEditAutoConfig({

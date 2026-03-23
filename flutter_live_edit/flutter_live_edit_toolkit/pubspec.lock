@@ -582,10 +582,24 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.3"
+  xsoulspace_inference_codex_exec:
+    dependency: "direct main"
+    description:
+      path: "../../../../xs/dart_flutter_packages/pkgs/xsoulspace_inference_codex_exec"
+      relative: true
+    source: path
+    version: "0.1.0"
   xsoulspace_inference_core:
     dependency: "direct main"
     description:
       path: "../../../../xs/dart_flutter_packages/pkgs/xsoulspace_inference_core"
+      relative: true
+    source: path
+    version: "0.1.0"
+  xsoulspace_inference_cursor_agent:
+    dependency: "direct main"
+    description:
+      path: "../../../../xs/dart_flutter_packages/pkgs/xsoulspace_inference_cursor_agent"
       relative: true
     source: path
     version: "0.1.0"

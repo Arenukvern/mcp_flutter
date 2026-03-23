@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_live_edit_agent/flutter_live_edit_agent.dart';
 import 'package:flutter_live_edit_toolkit/flutter_live_edit_toolkit.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';

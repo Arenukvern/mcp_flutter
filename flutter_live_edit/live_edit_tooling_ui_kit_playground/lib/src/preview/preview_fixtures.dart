@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 import 'package:live_edit_tooling_ui_kit/live_edit_tooling_ui_kit.dart';
 
 /// Preview theme: minimal keys and status colors/labels matching toolkit glue.
-ToolingThemeData get previewTheme => ToolingThemeData(
-  keyForSurface: (final String id) => ValueKey<String>(id),
-  statusColors: const <String, Color>{
+ToolingThemeData get previewTheme => const ToolingThemeData(
+  keyForSurface: ValueKey<String>.new,
+  statusColors: <String, Color>{
     'editing': Color(0xFF0F766E),
     'waiting': Color(0xFF1D4ED8),
     'needsApproval': Color(0xFF92400E),
     'applied': Color(0xFF166534),
     'failed': Color(0xFFB91C1C),
   },
-  statusLabels: const <String, String>{
+  statusLabels: <String, String>{
     'editing': 'Draft ready',
     'waiting': 'Applying',
     'needsApproval': 'Applying',
@@ -23,8 +22,7 @@ ToolingThemeData get previewTheme => ToolingThemeData(
 
 /// Shared bubble summaries for both bubble layer and panel rail (consistent look).
 List<BubbleSummaryViewModel> previewBubbleSummaries(final Size viewportSize) {
-  const domain = LiveEditTargetDomain.appScene;
-  final bounds1 = LiveEditBounds(
+  const bounds1 = LiveEditBounds(
     left: 72,
     top: 84,
     right: 312,
@@ -32,7 +30,7 @@ List<BubbleSummaryViewModel> previewBubbleSummaries(final Size viewportSize) {
     width: 240,
     height: 48,
   );
-  final bounds2 = LiveEditBounds(
+  const bounds2 = LiveEditBounds(
     left: 72,
     top: 168,
     right: 372,
@@ -40,7 +38,7 @@ List<BubbleSummaryViewModel> previewBubbleSummaries(final Size viewportSize) {
     width: 300,
     height: 144,
   );
-  final bounds3 = LiveEditBounds(
+  const bounds3 = LiveEditBounds(
     left: 72,
     top: 352,
     right: 136,
@@ -49,9 +47,8 @@ List<BubbleSummaryViewModel> previewBubbleSummaries(final Size viewportSize) {
     height: 420,
   );
   return <BubbleSummaryViewModel>[
-    BubbleSummaryViewModel(
+    const BubbleSummaryViewModel(
       bubbleId: 'preview-1',
-      targetDomain: domain,
       targetKey: 'Container',
       nodeId: 'preview-1',
       label: 'Container',
@@ -61,9 +58,8 @@ List<BubbleSummaryViewModel> previewBubbleSummaries(final Size viewportSize) {
       bounds: bounds1,
       sourceLabel: 'lib/main.dart:12',
     ),
-    BubbleSummaryViewModel(
+    const BubbleSummaryViewModel(
       bubbleId: 'preview-2',
-      targetDomain: domain,
       targetKey: 'Text',
       nodeId: 'preview-2',
       label: 'Text',
@@ -72,9 +68,8 @@ List<BubbleSummaryViewModel> previewBubbleSummaries(final Size viewportSize) {
       displayState: LiveEditBubbleDisplayState.minimized,
       bounds: bounds2,
     ),
-    BubbleSummaryViewModel(
+    const BubbleSummaryViewModel(
       bubbleId: 'preview-3',
-      targetDomain: domain,
       targetKey: 'Column',
       nodeId: 'preview-3',
       label: 'Column',
@@ -94,14 +89,7 @@ BubbleLayerViewModel buildPreviewBubbleLayerViewModel(final Size viewportSize) {
     pinnedSummaries: summaries,
     expandedSummaries: const <BubbleSummaryViewModel>[],
     activeBubbleId: 'preview-1',
-    globalComposerText: '',
-    applyPhaseLabel: 'idle',
     currentBackendLabel: 'GPT',
-    activeBubbleDraftCount: 0,
-    activeBubbleStatusLabel: 'editing',
-    activeBubbleInstructionText: null,
-    activeBubbleLastError: null,
-    activeBubbleDragOffset: Offset.zero,
     theme: previewTheme,
   );
 }
@@ -119,7 +107,6 @@ PanelViewModel buildPreviewPanelRailViewModel(final Size viewportSize) {
     theme: previewTheme,
     railBubbleSummaries: previewBubbleSummaries(viewportSize),
     railActiveBubbleId: 'preview-1',
-    railHasBackendChoice: false,
     railBackendLabel: 'G',
   );
 }
@@ -135,7 +122,6 @@ PanelViewModel buildPreviewPanelExpandedViewModel(final Size viewportSize) =>
       theme: previewTheme,
       railBubbleSummaries: previewBubbleSummaries(viewportSize),
       railActiveBubbleId: 'preview-2',
-      railHasBackendChoice: false,
       railBackendLabel: 'G',
     );
 

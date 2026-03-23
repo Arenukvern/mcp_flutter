@@ -1,8 +1,9 @@
 import 'dart:ui' show Offset, Size;
 
-import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
+import 'package:live_edit_tooling_ui_kit/live_edit_tooling_ui_kit.dart';
 
 import '../../di_live_edit_context/live_edit_context.dart';
+import '../../models/models.dart';
 
 double _maxDouble(final double left, final double right) =>
     left > right ? left : right;

@@ -1,5 +1,4 @@
-import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
-
+import '../models/models.dart';
 import '../resources/live_edit_draft.src.data.dart';
 import '../resources/live_edit_selection.src.data.dart';
 import '../resources/resources.dart';

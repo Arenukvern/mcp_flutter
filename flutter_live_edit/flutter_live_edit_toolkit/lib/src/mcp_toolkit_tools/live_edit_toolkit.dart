@@ -1,8 +1,8 @@
-import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 
 import '../commands/commands.dart';
 import '../live_edit_runtime.dart';
+import '../models/models.dart';
 
 Map<String, Object?> _noContext() => <String, Object?>{
   'error': 'No live edit context',

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 
 import '../bubble/bubble_view_model.dart';
 import '../common/tooling_theme_data.dart';
+import '../models/models.dart';
 
 /// Display mode for the tooling panel (rail vs expanded).
 enum ToolingPanelDisplayMode { rail, expanded }

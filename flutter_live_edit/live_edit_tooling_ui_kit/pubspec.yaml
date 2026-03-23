@@ -1,5 +1,6 @@
 name: live_edit_tooling_ui_kit
-description: Abstract bubble and panel widgets for the live-edit tool layer; view-model and callback driven, no toolkit dependency.
+description: Abstract bubble and panel widgets for the live-edit tool layer;
+  view-model and callback driven, no toolkit dependency.
 publish_to: none
 version: 0.1.0
 
@@ -9,12 +10,16 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  freezed_annotation: ^3.1.0
 
 dev_dependencies:
-  lints: ^6.1.0
-  xsoulspace_lints: ^0.1.2
+  build_runner: ^2.13.1
   flutter_test:
     sdk: flutter
+  freezed: ^3.2.5
+  json_serializable: ^6.13.1
+  lints: ^6.1.0
+  xsoulspace_lints: ^0.1.2
 
 flutter:
   uses-material-design: true

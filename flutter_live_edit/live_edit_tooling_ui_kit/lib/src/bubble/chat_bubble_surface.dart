@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -100,7 +101,7 @@ class _ChatBubbleSurfaceState extends State<ChatBubbleSurface> {
   void _handleSend() {
     final text = _input.text.trim();
     if (text.isEmpty) return;
-    widget.callbacks.onSend(text);
+    unawaited(widget.callbacks.onSend(text));
     _input.clear();
     widget.callbacks.onInputChanged('');
   }
@@ -332,7 +333,6 @@ class _ChatBubbleSurfaceState extends State<ChatBubbleSurface> {
                           borderRadius: BorderRadius.circular(22),
                           borderSide: const BorderSide(
                             color: Color(0xFF0D9488),
-                            width: 1,
                           ),
                         ),
                       ),
@@ -366,7 +366,7 @@ class _ChatBubbleSurfaceState extends State<ChatBubbleSurface> {
     final bannerH = hasBanner ? 54.0 : 0.0;
     final applyExtra = (vm.canApplyAll && vm.applyAllCount > 0) ? 36.0 : 0.0;
     final fixedTop = headerBlock + divider + bannerH;
-    final double inputFieldMax = math.min(132.0, math.max(44.0, maxH * 0.42));
+    final double inputFieldMax = math.min(132, math.max(44, maxH * 0.42));
     final int maxLines = math.min(8, math.max(1, (inputFieldMax / 21).floor()));
     final inputColumnH = inputFieldMax + applyExtra;
     double remaining = maxH - fixedTop - inputColumnH;
@@ -479,8 +479,8 @@ class _CollapseButton extends StatelessWidget {
     child: Container(
       width: 26,
       height: 26,
-      decoration: BoxDecoration(
-        color: const Color(0xFF94A3B8),
+      decoration: const BoxDecoration(
+        color: Color(0xFF94A3B8),
         shape: BoxShape.circle,
       ),
       child: const Icon(Icons.minimize_rounded, size: 15, color: Colors.white),

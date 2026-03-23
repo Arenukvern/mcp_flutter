@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
 
+import '../../models/models.dart';
+import '../../ui_selectors/shared/live_edit_selectors_shared.dart';
 import 'live_edit_agent_utils.dart';
 
 /// Request summarization and prompt building. Package-private.

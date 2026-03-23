@@ -77,7 +77,6 @@ class PanelRail extends StatelessWidget {
                       label: s.label,
                       statusLabel: s.statusLabel,
                       active: s.active,
-                      targetDomain: s.targetDomain,
                       onTap: () =>
                           bubbleCallbacks.onSetActiveBubble(s.bubbleId),
                     );

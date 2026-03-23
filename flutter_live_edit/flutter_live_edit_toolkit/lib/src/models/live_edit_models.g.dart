@@ -6,9 +6,9 @@ part of 'live_edit_models.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$LiveEditAgentBackendImpl _$$LiveEditAgentBackendImplFromJson(
+_LiveEditAgentBackend _$LiveEditAgentBackendFromJson(
   Map<String, dynamic> json,
-) => _$LiveEditAgentBackendImpl(
+) => _LiveEditAgentBackend(
   id: json['id'] as String,
   label: json['label'] as String,
   description: json['description'] as String,
@@ -17,8 +17,8 @@ _$LiveEditAgentBackendImpl _$$LiveEditAgentBackendImplFromJson(
   meta: json['meta'] as Map<String, dynamic>? ?? const <String, Object?>{},
 );
 
-Map<String, dynamic> _$$LiveEditAgentBackendImplToJson(
-  _$LiveEditAgentBackendImpl instance,
+Map<String, dynamic> _$LiveEditAgentBackendToJson(
+  _LiveEditAgentBackend instance,
 ) => <String, dynamic>{
   'id': instance.id,
   'label': instance.label,
@@ -28,56 +28,37 @@ Map<String, dynamic> _$$LiveEditAgentBackendImplToJson(
   'meta': instance.meta,
 };
 
-_$LiveEditBoundsImpl _$$LiveEditBoundsImplFromJson(Map<String, dynamic> json) =>
-    _$LiveEditBoundsImpl(
-      left: (json['left'] as num).toDouble(),
-      top: (json['top'] as num).toDouble(),
-      right: (json['right'] as num).toDouble(),
-      bottom: (json['bottom'] as num).toDouble(),
-      width: (json['width'] as num).toDouble(),
-      height: (json['height'] as num).toDouble(),
-    );
-
-Map<String, dynamic> _$$LiveEditBoundsImplToJson(
-  _$LiveEditBoundsImpl instance,
-) => <String, dynamic>{
-  'left': instance.left,
-  'top': instance.top,
-  'right': instance.right,
-  'bottom': instance.bottom,
-  'width': instance.width,
-  'height': instance.height,
-};
-
-_$LiveEditCodexModelOptionImpl _$$LiveEditCodexModelOptionImplFromJson(
+_LiveEditCodexModelOption _$LiveEditCodexModelOptionFromJson(
   Map<String, dynamic> json,
-) => _$LiveEditCodexModelOptionImpl(
+) => _LiveEditCodexModelOption(
   id: json['id'] as String,
   label: json['label'] as String,
 );
 
-Map<String, dynamic> _$$LiveEditCodexModelOptionImplToJson(
-  _$LiveEditCodexModelOptionImpl instance,
+Map<String, dynamic> _$LiveEditCodexModelOptionToJson(
+  _LiveEditCodexModelOption instance,
 ) => <String, dynamic>{'id': instance.id, 'label': instance.label};
 
-_$LiveEditDraftChangeImpl _$$LiveEditDraftChangeImplFromJson(
-  Map<String, dynamic> json,
-) => _$LiveEditDraftChangeImpl(
-  nodeId: json['nodeId'] as String,
-  propertyId: json['propertyId'] as String,
-  targetValue: json['targetValue'],
-  previewMode:
-      $enumDecodeNullable(_$LiveEditPreviewModeEnumMap, json['previewMode']) ??
-      LiveEditPreviewMode.none,
-  confidence: json['confidence'] == null
-      ? 1
-      : _confidenceFromJson(json['confidence']),
-  intentText: json['intentText'] as String?,
-  meta: json['meta'] as Map<String, dynamic>? ?? const <String, Object?>{},
-);
+_LiveEditDraftChange _$LiveEditDraftChangeFromJson(Map<String, dynamic> json) =>
+    _LiveEditDraftChange(
+      nodeId: json['nodeId'] as String,
+      propertyId: json['propertyId'] as String,
+      targetValue: json['targetValue'],
+      previewMode:
+          $enumDecodeNullable(
+            _$LiveEditPreviewModeEnumMap,
+            json['previewMode'],
+          ) ??
+          LiveEditPreviewMode.none,
+      confidence: json['confidence'] == null
+          ? 1
+          : _confidenceFromJson(json['confidence']),
+      intentText: json['intentText'] as String?,
+      meta: json['meta'] as Map<String, dynamic>? ?? const <String, Object?>{},
+    );
 
-Map<String, dynamic> _$$LiveEditDraftChangeImplToJson(
-  _$LiveEditDraftChangeImpl instance,
+Map<String, dynamic> _$LiveEditDraftChangeToJson(
+  _LiveEditDraftChange instance,
 ) => <String, dynamic>{
   'nodeId': instance.nodeId,
   'propertyId': instance.propertyId,
@@ -94,27 +75,25 @@ const _$LiveEditPreviewModeEnumMap = {
   LiveEditPreviewMode.none: 'none',
 };
 
-_$LiveEditFilePatchImpl _$$LiveEditFilePatchImplFromJson(
-  Map<String, dynamic> json,
-) => _$LiveEditFilePatchImpl(
-  path: json['path'] as String,
-  content: json['content'] as String,
-  patch: json['patch'] as String,
-  meta: json['meta'] as Map<String, dynamic>? ?? const <String, Object?>{},
-);
+_LiveEditFilePatch _$LiveEditFilePatchFromJson(Map<String, dynamic> json) =>
+    _LiveEditFilePatch(
+      path: json['path'] as String,
+      content: json['content'] as String,
+      patch: json['patch'] as String,
+      meta: json['meta'] as Map<String, dynamic>? ?? const <String, Object?>{},
+    );
 
-Map<String, dynamic> _$$LiveEditFilePatchImplToJson(
-  _$LiveEditFilePatchImpl instance,
-) => <String, dynamic>{
-  'path': instance.path,
-  'content': instance.content,
-  'patch': instance.patch,
-  'meta': instance.meta,
-};
+Map<String, dynamic> _$LiveEditFilePatchToJson(_LiveEditFilePatch instance) =>
+    <String, dynamic>{
+      'path': instance.path,
+      'content': instance.content,
+      'patch': instance.patch,
+      'meta': instance.meta,
+    };
 
-_$LiveEditRuntimeRefreshResultImpl _$$LiveEditRuntimeRefreshResultImplFromJson(
+_LiveEditRuntimeRefreshResult _$LiveEditRuntimeRefreshResultFromJson(
   Map<String, dynamic> json,
-) => _$LiveEditRuntimeRefreshResultImpl(
+) => _LiveEditRuntimeRefreshResult(
   action:
       $enumDecodeNullable(_$LiveEditRuntimeActionEnumMap, json['action']) ??
       LiveEditRuntimeAction.none,
@@ -129,8 +108,8 @@ _$LiveEditRuntimeRefreshResultImpl _$$LiveEditRuntimeRefreshResultImplFromJson(
       const <String, Object?>{},
 );
 
-Map<String, dynamic> _$$LiveEditRuntimeRefreshResultImplToJson(
-  _$LiveEditRuntimeRefreshResultImpl instance,
+Map<String, dynamic> _$LiveEditRuntimeRefreshResultToJson(
+  _LiveEditRuntimeRefreshResult instance,
 ) => <String, dynamic>{
   'action': _$LiveEditRuntimeActionEnumMap[instance.action]!,
   'validation': instance.validation,
@@ -145,9 +124,9 @@ const _$LiveEditRuntimeActionEnumMap = {
   LiveEditRuntimeAction.hotRestart: 'hotRestart',
 };
 
-_$LiveEditResolutionProposalImpl _$$LiveEditResolutionProposalImplFromJson(
+_LiveEditResolutionProposal _$LiveEditResolutionProposalFromJson(
   Map<String, dynamic> json,
-) => _$LiveEditResolutionProposalImpl(
+) => _LiveEditResolutionProposal(
   proposalId: json['proposalId'] as String,
   backendId: json['backendId'] as String,
   summary: json['summary'] as String,
@@ -173,15 +152,15 @@ _$LiveEditResolutionProposalImpl _$$LiveEditResolutionProposalImplFromJson(
   meta: json['meta'] as Map<String, dynamic>? ?? const <String, Object?>{},
 );
 
-Map<String, dynamic> _$$LiveEditResolutionProposalImplToJson(
-  _$LiveEditResolutionProposalImpl instance,
+Map<String, dynamic> _$LiveEditResolutionProposalToJson(
+  _LiveEditResolutionProposal instance,
 ) => <String, dynamic>{
   'proposalId': instance.proposalId,
   'backendId': instance.backendId,
   'summary': instance.summary,
   'patch': instance.patch,
   'changedFiles': instance.changedFiles,
-  'filePatches': instance.filePatches.map((e) => e.toJson()).toList(),
+  'filePatches': instance.filePatches,
   'expectedRuntimeEffects': instance.expectedRuntimeEffects,
   'validationSteps': instance.validationSteps,
   'warnings': instance.warnings,
@@ -189,9 +168,9 @@ Map<String, dynamic> _$$LiveEditResolutionProposalImplToJson(
   'meta': instance.meta,
 };
 
-_$LiveEditSourceTargetImpl _$$LiveEditSourceTargetImplFromJson(
+_LiveEditSourceTarget _$LiveEditSourceTargetFromJson(
   Map<String, dynamic> json,
-) => _$LiveEditSourceTargetImpl(
+) => _LiveEditSourceTarget(
   nodeId: json['nodeId'] as String,
   widgetType: json['widgetType'] as String,
   absolutePath: json['absolutePath'] as String?,
@@ -200,8 +179,8 @@ _$LiveEditSourceTargetImpl _$$LiveEditSourceTargetImplFromJson(
   column: (json['column'] as num?)?.toInt(),
 );
 
-Map<String, dynamic> _$$LiveEditSourceTargetImplToJson(
-  _$LiveEditSourceTargetImpl instance,
+Map<String, dynamic> _$LiveEditSourceTargetToJson(
+  _LiveEditSourceTarget instance,
 ) => <String, dynamic>{
   'nodeId': instance.nodeId,
   'widgetType': instance.widgetType,
@@ -211,9 +190,49 @@ Map<String, dynamic> _$$LiveEditSourceTargetImplToJson(
   'column': instance.column,
 };
 
-_$LiveEditResolutionResultImpl _$$LiveEditResolutionResultImplFromJson(
+_LiveEditDirectApplyResult _$LiveEditDirectApplyResultFromJson(
   Map<String, dynamic> json,
-) => _$LiveEditResolutionResultImpl(
+) => _LiveEditDirectApplyResult(
+  executionId: json['executionId'] as String,
+  backendId: json['backendId'] as String,
+  summary: json['summary'] as String,
+  changedFiles:
+      (json['changedFiles'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const <String>[],
+  warnings:
+      (json['warnings'] as List<dynamic>?)?.map((e) => e as String).toList() ??
+      const <String>[],
+  validationSteps:
+      (json['validationSteps'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const <String>[],
+  runtimeRefresh: json['runtimeRefresh'] == null
+      ? null
+      : LiveEditRuntimeRefreshResult.fromJson(
+          json['runtimeRefresh'] as Map<String, dynamic>,
+        ),
+  meta: json['meta'] as Map<String, dynamic>? ?? const <String, Object?>{},
+);
+
+Map<String, dynamic> _$LiveEditDirectApplyResultToJson(
+  _LiveEditDirectApplyResult instance,
+) => <String, dynamic>{
+  'executionId': instance.executionId,
+  'backendId': instance.backendId,
+  'summary': instance.summary,
+  'changedFiles': instance.changedFiles,
+  'warnings': instance.warnings,
+  'validationSteps': instance.validationSteps,
+  'runtimeRefresh': instance.runtimeRefresh,
+  'meta': instance.meta,
+};
+
+_LiveEditResolutionResult _$LiveEditResolutionResultFromJson(
+  Map<String, dynamic> json,
+) => _LiveEditResolutionResult(
   proposalId: json['proposalId'] as String,
   status: $enumDecode(_$LiveEditResolutionStatusEnumMap, json['status']),
   changedFiles:
@@ -229,8 +248,8 @@ _$LiveEditResolutionResultImpl _$$LiveEditResolutionResultImplFromJson(
   meta: json['meta'] as Map<String, dynamic>? ?? const <String, Object?>{},
 );
 
-Map<String, dynamic> _$$LiveEditResolutionResultImplToJson(
-  _$LiveEditResolutionResultImpl instance,
+Map<String, dynamic> _$LiveEditResolutionResultToJson(
+  _LiveEditResolutionResult instance,
 ) => <String, dynamic>{
   'proposalId': instance.proposalId,
   'status': _$LiveEditResolutionStatusEnumMap[instance.status]!,
@@ -248,9 +267,9 @@ const _$LiveEditResolutionStatusEnumMap = {
   LiveEditResolutionStatus.failed: 'failed',
 };
 
-_$LiveEditSelectionImpl _$$LiveEditSelectionImplFromJson(
+_LiveEditSelection _$LiveEditSelectionFromJson(
   Map<String, dynamic> json,
-) => _$LiveEditSelectionImpl(
+) => _LiveEditSelection(
   sessionId: json['sessionId'] as String,
   nodeId: json['nodeId'] as String,
   widgetType: json['widgetType'] as String,
@@ -295,25 +314,24 @@ _$LiveEditSelectionImpl _$$LiveEditSelectionImplFromJson(
       const <String>[],
 );
 
-Map<String, dynamic> _$$LiveEditSelectionImplToJson(
-  _$LiveEditSelectionImpl instance,
-) => <String, dynamic>{
-  'sessionId': instance.sessionId,
-  'nodeId': instance.nodeId,
-  'widgetType': instance.widgetType,
-  'rawNode': instance.rawNode,
-  'properties': instance.propertiesForWire,
-  'targetDomain': _$LiveEditTargetDomainEnumMap[instance.targetDomain]!,
-  'renderObjectType': instance.renderObjectType,
-  'bounds': instance.bounds?.toJson(),
-  'source': instance.source?.toJson(),
-  'layoutContext': instance.layoutContext,
-  'parentChain': instance.parentChain,
-  'detailsTree': instance.detailsTree,
-  'propertiesTree': instance.propertiesTree,
-  'selectionMode': _$LiveEditSelectionModeEnumMap[instance.selectionMode]!,
-  'selectedNodeIds': instance.selectedNodeIds,
-};
+Map<String, dynamic> _$LiveEditSelectionToJson(_LiveEditSelection instance) =>
+    <String, dynamic>{
+      'sessionId': instance.sessionId,
+      'nodeId': instance.nodeId,
+      'widgetType': instance.widgetType,
+      'rawNode': instance.rawNode,
+      'properties': instance.propertiesForWire,
+      'targetDomain': _$LiveEditTargetDomainEnumMap[instance.targetDomain]!,
+      'renderObjectType': instance.renderObjectType,
+      'bounds': instance.bounds,
+      'source': instance.source,
+      'layoutContext': instance.layoutContext,
+      'parentChain': instance.parentChain,
+      'detailsTree': instance.detailsTree,
+      'propertiesTree': instance.propertiesTree,
+      'selectionMode': _$LiveEditSelectionModeEnumMap[instance.selectionMode]!,
+      'selectedNodeIds': instance.selectedNodeIds,
+    };
 
 const _$LiveEditTargetDomainEnumMap = {
   LiveEditTargetDomain.appScene: 'appScene',
@@ -325,9 +343,9 @@ const _$LiveEditSelectionModeEnumMap = {
   LiveEditSelectionMode.multi: 'multi',
 };
 
-_$LiveEditSelectionCandidateImpl _$$LiveEditSelectionCandidateImplFromJson(
+_LiveEditSelectionCandidate _$LiveEditSelectionCandidateFromJson(
   Map<String, dynamic> json,
-) => _$LiveEditSelectionCandidateImpl(
+) => _LiveEditSelectionCandidate(
   nodeId: json['nodeId'] as String,
   widgetType: json['widgetType'] as String,
   bounds: json['bounds'] == null
@@ -341,29 +359,29 @@ _$LiveEditSelectionCandidateImpl _$$LiveEditSelectionCandidateImplFromJson(
   active: json['active'] as bool? ?? false,
 );
 
-Map<String, dynamic> _$$LiveEditSelectionCandidateImplToJson(
-  _$LiveEditSelectionCandidateImpl instance,
+Map<String, dynamic> _$LiveEditSelectionCandidateToJson(
+  _LiveEditSelectionCandidate instance,
 ) => <String, dynamic>{
   'nodeId': instance.nodeId,
   'widgetType': instance.widgetType,
-  'bounds': instance.bounds?.toJson(),
+  'bounds': instance.bounds,
   'depth': instance.depth,
-  'source': instance.source?.toJson(),
+  'source': instance.source,
   'createdByLocalProject': instance.createdByLocalProject,
   'active': instance.active,
 };
 
-_$LiveEditSourceLocationImpl _$$LiveEditSourceLocationImplFromJson(
+_LiveEditSourceLocation _$LiveEditSourceLocationFromJson(
   Map<String, dynamic> json,
-) => _$LiveEditSourceLocationImpl(
+) => _LiveEditSourceLocation(
   file: json['file'] as String,
   line: (json['line'] as num?)?.toInt(),
   column: (json['column'] as num?)?.toInt(),
   sourceHint: json['sourceHint'] as String?,
 );
 
-Map<String, dynamic> _$$LiveEditSourceLocationImplToJson(
-  _$LiveEditSourceLocationImpl instance,
+Map<String, dynamic> _$LiveEditSourceLocationToJson(
+  _LiveEditSourceLocation instance,
 ) => <String, dynamic>{
   'file': instance.file,
   'line': instance.line,

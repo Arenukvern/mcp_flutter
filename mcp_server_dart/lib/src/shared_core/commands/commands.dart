@@ -5,7 +5,7 @@ import 'package:flutter_inspector_mcp_server/src/capabilities/visual_capture/vis
 import 'package:flutter_inspector_mcp_server/src/runtime_version.dart';
 import 'package:flutter_inspector_mcp_server/src/shared_core/types/core_types.dart';
 import 'package:flutter_inspector_mcp_server/src/shared_core/vm_connections/connection_override.dart';
-import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
+import 'package:flutter_live_edit_toolkit/flutter_live_edit_toolkit.dart';
 
 part 'commands_catalogue.dart';
 part 'commands_specs.dart';

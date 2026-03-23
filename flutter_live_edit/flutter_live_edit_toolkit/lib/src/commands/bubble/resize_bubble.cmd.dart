@@ -1,6 +1,7 @@
-import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
+import 'package:live_edit_tooling_ui_kit/live_edit_tooling_ui_kit.dart';
 
 import '../../di_live_edit_context/live_edit_context.dart';
+import '../../models/models.dart';
 import '../../ui_workbench/live_edit_overlay_theme.dart';
 
 /// Updates bubble dimensions in panel resource and overlay theme draft.

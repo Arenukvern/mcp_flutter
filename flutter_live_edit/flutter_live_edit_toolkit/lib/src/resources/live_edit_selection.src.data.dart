@@ -1,6 +1,6 @@
 import 'dart:ui' show Rect;
 
-import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
+import '../models/models.dart';
 
 /// Per-layer selection state (serializable; no Element references).
 final class LiveEditSelectionLayerData {

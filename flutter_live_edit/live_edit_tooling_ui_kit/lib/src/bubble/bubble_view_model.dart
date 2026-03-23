@@ -1,14 +1,30 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 
 import '../common/tooling_theme_data.dart';
+import '../models/models.dart';
+
+enum LiveEditBubbleDisplayState {
+  expanded('expanded'),
+  minimized('minimized');
+
+  const LiveEditBubbleDisplayState(this.wireName);
+
+  final String wireName;
+
+  static LiveEditBubbleDisplayState fromWire(final Object? value) {
+    final normalized = '$value'.trim().toLowerCase();
+    return LiveEditBubbleDisplayState.values.firstWhere(
+      (final state) => state.wireName == normalized,
+      orElse: () => LiveEditBubbleDisplayState.expanded,
+    );
+  }
+}
 
 /// Summary for a single bubble (pinned or expanded). UI kit uses primitives
 /// and core enums only; host maps from toolkit types.
 final class BubbleSummaryViewModel {
   const BubbleSummaryViewModel({
     required this.bubbleId,
-    required this.targetDomain,
     required this.targetKey,
     required this.nodeId,
     required this.label,
@@ -21,7 +37,6 @@ final class BubbleSummaryViewModel {
   });
 
   final String bubbleId;
-  final LiveEditTargetDomain targetDomain;
   final String targetKey;
   final String nodeId;
   final String label;
@@ -39,6 +54,7 @@ final class BubbleLayerViewModel {
     required this.viewportSize,
     required this.pinnedSummaries,
     required this.expandedSummaries,
+    required this.theme,
     this.activeBubbleId,
     this.globalComposerText = '',
     this.applyPhaseLabel = 'idle',
@@ -48,7 +64,6 @@ final class BubbleLayerViewModel {
     this.activeBubbleInstructionText,
     this.activeBubbleLastError,
     this.activeBubbleDragOffset = Offset.zero,
-    required this.theme,
   });
 
   final Size viewportSize;

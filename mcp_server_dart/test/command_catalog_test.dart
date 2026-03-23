@@ -1,5 +1,5 @@
 import 'package:flutter_inspector_mcp_server/flutter_mcp_core.dart';
-import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
+import 'package:flutter_live_edit_toolkit/flutter_live_edit_toolkit.dart';
 import 'package:test/test.dart';
 
 void main() {

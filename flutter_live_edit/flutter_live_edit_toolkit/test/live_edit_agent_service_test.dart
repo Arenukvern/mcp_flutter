@@ -1,7 +1,7 @@
 import 'dart:io';
 
-import 'package:flutter_live_edit_agent/flutter_live_edit_agent.dart';
-import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
+import 'package:flutter_live_edit_toolkit/src/ai/agent/live_edit_agent_service.dart';
+import 'package:flutter_live_edit_toolkit/src/models/models.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:xsoulspace_inference_codex_exec/xsoulspace_inference_codex_exec.dart';
 import 'package:xsoulspace_inference_core/xsoulspace_inference_core.dart';

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
 
 /// Status dot for the panel rail list. Presentational only.
 /// [compact] true: vertical rail style (dot, letter, domain initial).
@@ -9,7 +8,6 @@ class RailStatusDot extends StatelessWidget {
     required this.label,
     required this.statusLabel,
     required this.active,
-    required this.targetDomain,
     required this.onTap,
     this.tooltipMessage,
     this.compact = false,
@@ -19,7 +17,6 @@ class RailStatusDot extends StatelessWidget {
   final String label;
   final String statusLabel;
   final bool active;
-  final LiveEditTargetDomain targetDomain;
   final VoidCallback onTap;
   final String? tooltipMessage;
   final bool compact;
@@ -34,11 +31,6 @@ class RailStatusDot extends StatelessWidget {
         _ => const Color(0xFF0F766E),
       };
 
-  static String _domainInitial(final LiveEditTargetDomain d) => switch (d) {
-    LiveEditTargetDomain.appScene => 'A',
-    LiveEditTargetDomain.toolScene => 'T',
-  };
-
   @override
   Widget build(final BuildContext context) {
     final content = Material(
@@ -50,7 +42,7 @@ class RailStatusDot extends StatelessWidget {
       ),
     );
     if (tooltipMessage != null && tooltipMessage!.isNotEmpty) {
-      return Tooltip(message: tooltipMessage!, child: content);
+      return Tooltip(message: tooltipMessage, child: content);
     }
     return content;
   }
@@ -66,7 +58,7 @@ class RailStatusDot extends StatelessWidget {
           decoration: BoxDecoration(
             color: _statusColor(statusLabel),
             shape: BoxShape.circle,
-            border: active ? Border.all(color: Colors.white, width: 1) : null,
+            border: active ? Border.all(color: Colors.white) : null,
           ),
         ),
         const SizedBox(width: 6),
@@ -107,11 +99,6 @@ class RailStatusDot extends StatelessWidget {
         Text(
           label.isEmpty ? '?' : label[0].toUpperCase(),
           style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          _domainInitial(targetDomain),
-          style: const TextStyle(fontSize: 8, color: Color(0xFF64748B)),
         ),
       ],
     ),

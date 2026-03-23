@@ -1,7 +1,6 @@
 import 'dart:ui' show Rect;
 
-import 'package:flutter_live_edit_core/flutter_live_edit_core.dart';
-
+import '../../models/models.dart';
 import '../live_edit_context.dart';
 
 /// Exposes session/selection/draft data from [LiveEditContext] for host code
