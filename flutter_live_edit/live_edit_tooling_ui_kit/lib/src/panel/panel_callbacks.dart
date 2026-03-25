@@ -4,6 +4,6 @@ import 'package:flutter/material.dart';
 abstract interface class PanelCallbacks {
   void onExpand();
   void onCollapse();
-  void onResize(double width, double height);
-  void onDrag(Offset delta);
+  void onResize(final double width, final double height);
+  void onDrag(final Offset delta);
 }

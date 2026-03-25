@@ -1,4 +1,3 @@
-import 'package:dart_mcp/server.dart';
 import 'package:flutter_inspector_mcp_server/flutter_mcp_core.dart';
 import 'package:test/test.dart';
 
@@ -9,9 +8,9 @@ void main() {
       defaultPort: 8181,
       logger:
           (
-            final LoggingLevel level,
-            final String message, {
-            final String logger = 'test',
+            final level,
+            final message, {
+            final logger = 'test',
           }) {},
       discoverPorts: () async => <int>[],
       initialStickyEndpointUri: 'ws://127.0.0.1:8181/pHDrCFCDBwg=/ws',
@@ -29,15 +28,15 @@ void main() {
       defaultPort: 8181,
       logger:
           (
-            final LoggingLevel level,
-            final String message, {
-            final String logger = 'test',
+            final level,
+            final message, {
+            final logger = 'test',
           }) {},
       discoverPorts: () async => <int>[8181],
       probeFlutterTarget:
           (
-            final CoreEndpoint endpoint, {
-            required final Duration timeout,
+            final endpoint, {
+            required final timeout,
           }) async => true,
     );
 
@@ -56,9 +55,9 @@ void main() {
         defaultPort: 8181,
         logger:
             (
-              final LoggingLevel level,
-              final String message, {
-              final String logger = 'test',
+              final level,
+              final message, {
+              final logger = 'test',
             }) {},
         discoverPorts: () async => <int>[8181, 8182],
         discoverMachineTargets: () async => <FlutterMachineDiscoveryTarget>[
@@ -90,15 +89,15 @@ void main() {
       defaultPort: 8181,
       logger:
           (
-            final LoggingLevel level,
-            final String message, {
-            final String logger = 'test',
+            final level,
+            final message, {
+            final logger = 'test',
           }) {},
       discoverPorts: () async => <int>[8181, 9001, 9100],
       probeFlutterTarget:
           (
-            final CoreEndpoint endpoint, {
-            required final Duration timeout,
+            final endpoint, {
+            required final timeout,
           }) async => endpoint.port == 8181,
     );
 

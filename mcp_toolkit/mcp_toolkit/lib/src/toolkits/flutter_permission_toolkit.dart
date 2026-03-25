@@ -61,11 +61,15 @@ final class MCPPermissionResult {
 abstract interface class MCPPermissionDelegate {
   Iterable<String> listSupportedPermissionKinds();
 
-  FutureOr<MCPPermissionResult> getPermissionStatus({required String kind});
+  FutureOr<MCPPermissionResult> getPermissionStatus({
+    required final String kind,
+  });
 
-  FutureOr<MCPPermissionResult> requestPermission({required String kind});
+  FutureOr<MCPPermissionResult> requestPermission({required final String kind});
 
-  FutureOr<MCPPermissionResult> openPermissionSettings({required String kind});
+  FutureOr<MCPPermissionResult> openPermissionSettings({
+    required final String kind,
+  });
 }
 
 Set<MCPCallEntry> getFlutterMcpPermissionEntries({

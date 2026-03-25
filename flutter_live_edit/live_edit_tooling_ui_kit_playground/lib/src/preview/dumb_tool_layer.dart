@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:live_edit_tooling_ui_kit/live_edit_tooling_ui_kit.dart';
 
-import 'preview_fixtures.dart';
+import 'package:live_edit_tooling_ui_kit_playground/src/preview/preview_fixtures.dart';
 
 /// Dumb tool layer: bubble pills + panel rail built from fixture view models
 /// and stub callbacks. No [LiveEditScope], no context, no commands.
@@ -171,11 +171,11 @@ final class _DummyExpandedAiBubbleSurface extends StatelessWidget {
                 style: TextStyle(fontSize: 12, color: Color(0xFF475569)),
               ),
               const SizedBox(height: 10),
-              Wrap(
-                key: const ValueKey<String>('fixture:bubble:chips'),
+              const Wrap(
+                key: ValueKey<String>('fixture:bubble:chips'),
                 spacing: 6,
                 runSpacing: 6,
-                children: const <Widget>[
+                children: <Widget>[
                   Chip(
                     key: ValueKey<String>('fixture:bubble:chip_spacing'),
                     materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,

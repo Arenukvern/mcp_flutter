@@ -46,7 +46,6 @@ class _AiComposerState extends State<_AiComposer> {
           identifier: 'live_edit_ai_prompt_field',
           child: TextField(
             controller: _controller,
-            autofocus: false,
             enableInteractiveSelection: true,
             maxLines: 3,
             minLines: 2,

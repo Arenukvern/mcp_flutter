@@ -1,7 +1,8 @@
+import 'package:live_edit_tooling_ui_kit/live_edit_tooling_ui_kit.dart';
+
 import '../di_live_edit_context/live_edit_context.dart';
 import '../models/models.dart';
 import '../types/live_edit_types.dart';
-import 'package:live_edit_tooling_ui_kit/live_edit_tooling_ui_kit.dart';
 
 /// Parameters for [LiveEditBubbleStateService.syncSelectionState].
 final class SyncSelectionStateParams {
@@ -402,8 +403,9 @@ final class LiveEditBubbleStateService {
     required final String? lastError,
     required final bool keepPinned,
   }) {
-    if (!_hasText(bubbleId) || bubbleId == nextNodeId || selection == null)
+    if (!_hasText(bubbleId) || bubbleId == nextNodeId || selection == null) {
       return;
+    }
     captureBubbleState(
       ctx,
       selection,

@@ -1,8 +1,8 @@
 import '../../di_live_edit_context/live_edit_context.dart';
 import '../../di_live_edit_context/tools/live_edit_controller_adapter.dart';
 import '../../ui_selectors/ui_selectors.dart';
-import '../draft/apply_draft.cmd.dart';
 import '../backend/open_ai_bubble.cmd.dart';
+import '../draft/apply_draft.cmd.dart';
 
 /// Opens AI bubble with default prompt and applies draft with composer text.
 final class SubmitAiPromptCommand {

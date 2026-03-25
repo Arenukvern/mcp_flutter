@@ -52,7 +52,6 @@ void main() {
 
       final result = await broker.prepareForCapture(
         requestedMode: screenshotModeFlutterLayer,
-        policy: PermissionPolicy.checkOnly,
       );
 
       expect(result.actualMode, equals(screenshotModeFlutterLayer));
@@ -148,7 +147,7 @@ final class _FakeDynamicGateway implements CoreDynamicGateway {
         'status': PermissionStatus.granted.wireName,
         'backend': 'app_bridge',
         'capabilities': <String>[CaptureCapability.flutterLayer.wireName],
-        'supportedModes': <String>[screenshotModeFlutterLayer],
+        'supportedModes': const <String>[screenshotModeFlutterLayer],
         'truthMode': screenshotModeFlutterLayer,
       },
     },

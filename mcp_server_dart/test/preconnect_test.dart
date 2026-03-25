@@ -27,7 +27,6 @@ void main() {
         await store.write(
           const PersistedState(
             activeSessionId: 'stale-session',
-            sessions: <String, SessionState>{},
           ),
         );
 
@@ -120,7 +119,7 @@ void main() {
         expect(preconnect, isNotNull);
         expect(preconnect!.error?.code, equals(CoreErrorCode.connectFailed));
         expect(
-          (preconnect.error?.details as Map<String, Object?>)['reason'],
+          (preconnect.error!.details! as Map<String, Object?>)['reason'],
           equals('target_not_found'),
         );
       },
@@ -131,11 +130,10 @@ void main() {
 DefaultCoreCommandExecutor _buildExecutor({
   required final ConnectionContext context,
   required final SessionManager? sessionManager,
-}) {
-  return DefaultCoreCommandExecutor(
+}) => DefaultCoreCommandExecutor(
     connectionContext: context,
-    portScanner: CorePortScanner(logger: _noopLogger),
-    imageFileSaver: CoreImageFileSaver(logger: _noopLogger),
+    portScanner: const CorePortScanner(logger: _noopLogger),
+    imageFileSaver: const CoreImageFileSaver(logger: _noopLogger),
     configuration: const CoreRuntimeConfiguration(
       vmHost: 'localhost',
       vmPort: 8181,
@@ -147,7 +145,6 @@ DefaultCoreCommandExecutor _buildExecutor({
     ),
     sessionManager: sessionManager,
   );
-}
 
 void _noopLogger(
   final LoggingLevel level,

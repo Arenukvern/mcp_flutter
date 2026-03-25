@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 
 Future<void> main() async {

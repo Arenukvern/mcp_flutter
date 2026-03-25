@@ -83,6 +83,7 @@ class _WaitingBubbleBody extends StatelessWidget {
               _AgentActivityPanel(
                 context: context,
                 controller: controller,
+                dense: true,
                 bubbleId: bubbleId,
               ),
               const SizedBox(height: 8),

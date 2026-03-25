@@ -25,12 +25,11 @@ void main() {
       final store = SnapshotStore(snapshotsDir: snapshotsDir);
       final catalog = CommandCatalog.instance;
 
-      final logger =
-          (
-            final LoggingLevel level,
-            final String message, {
-            final String logger = 'test',
-          }) {};
+      void logger(
+        final LoggingLevel level,
+        final String message, {
+        final String logger = 'test',
+      }) {}
 
       final context = ConnectionContext(
         defaultHost: 'localhost',
@@ -66,7 +65,7 @@ void main() {
       );
 
       expect(snapshot['id'], equals('s1'));
-      final results = (snapshot['results'] as List)
+      final results = (snapshot['results']! as List)
           .cast<Map<String, Object?>>();
       expect(results.length, equals(1));
       expect(results.first['name'], equals('status'));
@@ -102,28 +101,27 @@ void main() {
       );
 
       final diff = await store.diffSnapshots(fromId: 'a', toId: 'b');
-      final changes = (diff['changes'] as List).cast<Map<String, Object?>>();
+      final changes = (diff['changes']! as List).cast<Map<String, Object?>>();
 
       expect(changes, isNotEmpty);
-      final paths = changes.map((final c) => c['path'] as String).toSet();
+      final paths = changes.map((final c) => c['path']! as String).toSet();
       expect(paths.contains(r'$.value.x'), isTrue);
       expect(paths.contains(r'$.value.list[1]'), isTrue);
       expect(paths.contains(r'$.value.extra'), isTrue);
 
-      final summary = diff['summary'] as Map<String, Object?>;
-      expect((summary['totalChanges'] as int) >= 3, isTrue);
+      final summary = diff['summary']! as Map<String, Object?>;
+      expect((summary['totalChanges']! as int) >= 3, isTrue);
     });
 
     test('honors per-step args.connection before step execution', () async {
       final store = SnapshotStore(snapshotsDir: snapshotsDir);
       final catalog = CommandCatalog.instance;
 
-      final logger =
-          (
-            final LoggingLevel level,
-            final String message, {
-            final String logger = 'test',
-          }) {};
+      void logger(
+        final LoggingLevel level,
+        final String message, {
+        final String logger = 'test',
+      }) {}
 
       final context = ConnectionContext(
         defaultHost: 'localhost',
@@ -163,16 +161,16 @@ void main() {
         },
       );
 
-      final results = (snapshot['results'] as List)
+      final results = (snapshot['results']! as List)
           .cast<Map<String, Object?>>();
       expect(results, hasLength(1));
 
-      final envelope = results.first['result'] as Map<String, Object?>;
+      final envelope = results.first['result']! as Map<String, Object?>;
       expect(envelope['ok'], isFalse);
-      final error = envelope['error'] as Map<String, Object?>;
+      final error = envelope['error']! as Map<String, Object?>;
       expect(error['code'], equals(CoreErrorCode.connectFailed));
       expect(
-        (error['details'] as Map<String, Object?>)['reason'],
+        (error['details']! as Map<String, Object?>)['reason'],
         equals('target_not_found'),
       );
     });
@@ -183,12 +181,11 @@ void main() {
         final store = SnapshotStore(snapshotsDir: snapshotsDir);
         final catalog = CommandCatalog.instance;
 
-        final logger =
-            (
-              final LoggingLevel level,
-              final String message, {
-              final String logger = 'test',
-            }) {};
+        void logger(
+          final LoggingLevel level,
+          final String message, {
+          final String logger = 'test',
+        }) {}
 
         final context = ConnectionContext(
           defaultHost: 'localhost',
@@ -224,7 +221,7 @@ void main() {
           writeOptions: const SafeWriteOptions(check: true, diff: true),
         );
 
-        final writes = (snapshot['writeResults'] as List)
+        final writes = (snapshot['writeResults']! as List)
             .cast<Map<String, Object?>>();
         expect(writes.single['status'], equals(SafeWriteStatus.added));
         expect(writes.single['wrote'], isFalse);
@@ -236,12 +233,11 @@ void main() {
     test('--no-overwrite blocks existing snapshot target', () async {
       final store = SnapshotStore(snapshotsDir: snapshotsDir);
       final catalog = CommandCatalog.instance;
-      final logger =
-          (
-            final LoggingLevel level,
-            final String message, {
-            final String logger = 'test',
-          }) {};
+      void logger(
+        final LoggingLevel level,
+        final String message, {
+        final String logger = 'test',
+      }) {}
       final context = ConnectionContext(
         defaultHost: 'localhost',
         defaultPort: 8181,
@@ -286,7 +282,7 @@ void main() {
         writeOptions: const SafeWriteOptions(noOverwrite: true),
       );
 
-      final writes = (snapshot['writeResults'] as List)
+      final writes = (snapshot['writeResults']! as List)
           .cast<Map<String, Object?>>();
       expect(writes.single['status'], equals(SafeWriteStatus.blocked));
       expect(writes.single['wrote'], isFalse);

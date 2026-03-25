@@ -301,7 +301,7 @@ void main() {
         );
         final backendSetData = _decodeToolJsonPayload(backendSet);
         expect(
-          ((backendSetData['backend'] as Map)['id'] as String),
+          (backendSetData['backend'] as Map)['id'] as String,
           defaultBackendId,
         );
 

@@ -73,7 +73,7 @@ void main() {
 
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
-      expect(() => managerB.acquire(), throwsA(isA<StateLockException>()));
+      expect(managerB.acquire, throwsA(isA<StateLockException>()));
 
       await hold;
     });

@@ -717,25 +717,3 @@ final class _LiveEditAgentSessionState {
   final String backendId;
   final LiveEditInferenceConfig? inferenceConfig;
 }
-
-extension on LiveEditDirectApplyResult {
-  LiveEditDirectApplyResult copyWith({
-    final String? executionId,
-    final String? backendId,
-    final String? summary,
-    final List<String>? changedFiles,
-    final List<String>? warnings,
-    final List<String>? validationSteps,
-    final LiveEditRuntimeRefreshResult? runtimeRefresh,
-    final Map<String, Object?>? meta,
-  }) => LiveEditDirectApplyResult(
-    executionId: executionId ?? this.executionId,
-    backendId: backendId ?? this.backendId,
-    summary: summary ?? this.summary,
-    changedFiles: changedFiles ?? this.changedFiles,
-    warnings: warnings ?? this.warnings,
-    validationSteps: validationSteps ?? this.validationSteps,
-    runtimeRefresh: runtimeRefresh ?? this.runtimeRefresh,
-    meta: meta ?? this.meta,
-  );
-}

@@ -3,7 +3,7 @@
 
 import 'package:flutter/material.dart';
 
-import 'src/preview/dumb_tool_layer.dart';
+import 'package:live_edit_tooling_ui_kit_playground/src/preview/dumb_tool_layer.dart';
 
 void main() => runApp(const PreviewOnlyApp());
 

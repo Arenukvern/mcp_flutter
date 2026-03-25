@@ -26,7 +26,7 @@ void main() {
       () async {
         final globalHelp = await _runCli(statePath, ['--help']);
         expect(globalHelp.exitCode, equals(0));
-        final global = (globalHelp.stdout as String);
+        final global = globalHelp.stdout as String;
         expect(global.contains('Usage:'), isTrue);
         expect(global.contains('snapshot create'), isTrue);
         expect(global.contains('doctor'), isTrue);
@@ -44,7 +44,7 @@ void main() {
           '--help',
         ]);
         expect(snapshotHelp.exitCode, equals(0));
-        final scoped = (snapshotHelp.stdout as String);
+        final scoped = snapshotHelp.stdout as String;
         expect(scoped.contains('snapshot create --name <id>'), isTrue);
         expect(scoped.contains('--check'), isTrue);
         expect(scoped.contains('--diff'), isTrue);
@@ -54,7 +54,7 @@ void main() {
 
         final doctorHelp = await _runCli(statePath, ['doctor', '--help']);
         expect(doctorHelp.exitCode, equals(0));
-        final doctor = (doctorHelp.stdout as String);
+        final doctor = doctorHelp.stdout as String;
         expect(
           doctor.contains(
             'doctor [--json] [--target <ws_uri>] [--timeout-ms <n>]',
@@ -67,7 +67,7 @@ void main() {
           '--help',
         ]);
         expect(permissionsHelp.exitCode, equals(0));
-        final permissions = (permissionsHelp.stdout as String);
+        final permissions = permissionsHelp.stdout as String;
         expect(permissions.contains('permissions status'), isTrue);
         expect(permissions.contains('open-settings'), isTrue);
 
@@ -76,7 +76,7 @@ void main() {
           '--help',
         ]);
         expect(validateHelp.exitCode, equals(0));
-        final validate = (validateHelp.stdout as String);
+        final validate = validateHelp.stdout as String;
         expect(
           validate.contains('validate-runtime [--target <ws_uri>]'),
           isTrue,
@@ -87,7 +87,7 @@ void main() {
 
         final batchHelp = await _runCli(statePath, ['batch', '--help']);
         expect(batchHelp.exitCode, equals(0));
-        final batch = (batchHelp.stdout as String);
+        final batch = batchHelp.stdout as String;
         expect(
           batch.contains('batch --steps <json> [--continue-on-error]'),
           isTrue,

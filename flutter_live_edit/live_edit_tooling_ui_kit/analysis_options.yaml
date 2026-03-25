@@ -11,8 +11,10 @@ analyzer:
   errors:
     cascade_invocations: ignore
     lines_longer_than_80_chars: ignore
+  exclude:
+    - '**/*.g.dart'
+    - '**/*.freezed.dart'
 include: package:xsoulspace_lints/library.yaml
-
 linter:
   # The lint rules applied to this project can be customized in the
   # section below to disable rules from the `package:flutter_lints/flutter.yaml`

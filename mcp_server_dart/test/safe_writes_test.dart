@@ -83,7 +83,7 @@ void main() {
       expect(diff!['format'], equals('unified'));
       expect(diff['target'], equals(targetPath));
 
-      final text = diff['text'] as String;
+      final text = diff['text']! as String;
       expect(text.contains('--- $targetPath (before)'), isTrue);
       expect(text.contains('+++ $targetPath (after)'), isTrue);
       expect(text.contains('-before'), isTrue);

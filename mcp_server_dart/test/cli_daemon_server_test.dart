@@ -87,7 +87,7 @@ void main() {
         events: events,
       );
       expect(
-        ((status['result'] as Map<String, dynamic>)['ok'] as bool),
+        (status['result'] as Map<String, dynamic>)['ok'] as bool,
         isTrue,
       );
 
@@ -125,7 +125,7 @@ void main() {
       );
 
       final watchId =
-          ((watchStart['result'] as Map<String, dynamic>)['watchId'] as String);
+          (watchStart['result'] as Map<String, dynamic>)['watchId'] as String;
       expect(watchId, isNotEmpty);
 
       final started = await _waitForEvent(

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_live_edit_toolkit/flutter_live_edit_toolkit.dart';
 
-import 'src/preview/dumb_tool_layer.dart';
+import 'package:live_edit_tooling_ui_kit_playground/src/preview/dumb_tool_layer.dart';
 
 void main() => runApp(const LiveEditToolingUiKitApp());
 
@@ -30,7 +30,7 @@ class _LiveEditToolingScreenState extends State<_LiveEditToolingScreen> {
 
   void _prefillPlayground(final LiveEditContext context) {
     StartSessionCommand(
-      targetDomain: LiveEditTargetDomain.appScene,
+      
     ).execute(context);
     SetOverlayEnabledCommand(enabled: true).execute(context);
     ExpandPanelCommand().execute(context);
@@ -40,8 +40,6 @@ class _LiveEditToolingScreenState extends State<_LiveEditToolingScreen> {
   Widget build(final BuildContext context) => LiveEditScope(
     child: Scaffold(
       body: FlutterLiveEditHost(
-        orchestrator: null,
-        childIsToolLayer: false,
         child: Builder(
           builder: (final ctx) {
             final scope = LiveEditScope.of(ctx);

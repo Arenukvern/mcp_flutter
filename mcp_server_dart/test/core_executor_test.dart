@@ -481,6 +481,8 @@ final class _FakeDesktopWindowScreenshotService
     this.result,
     this.error,
     this.permissionStatus = PermissionStatus.granted,
+    // TODO(arenukvern): remove or use
+    // ignore: unused_element_parameter
     this.onCapture,
   });
 

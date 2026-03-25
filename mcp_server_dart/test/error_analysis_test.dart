@@ -19,7 +19,7 @@ void main() {
       expect(causes.first['code'], equals('render_flex_overflow'));
       expect(causes.first['confidence'], greaterThan(0.9));
 
-      final evidence = (causes.first['evidence'] as List).cast<String>();
+      final evidence = (causes.first['evidence']! as List).cast<String>();
       expect(
         evidence.any((final line) => line.contains('RenderFlex overflowed')),
         isTrue,

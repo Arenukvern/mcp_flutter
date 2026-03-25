@@ -7,12 +7,12 @@ import 'dart:io' as io;
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_inspector_mcp_server/src/capabilities/dynamic_registry/dynamic_gateway.dart';
 import 'package:flutter_inspector_mcp_server/src/capabilities/visual_capture/visual_capture.dart';
+import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_consts.dart';
 import 'package:flutter_inspector_mcp_server/src/shared_core/command_executor.dart';
 import 'package:flutter_inspector_mcp_server/src/shared_core/commands/commands.dart';
 import 'package:flutter_inspector_mcp_server/src/shared_core/types/core_types.dart';
 import 'package:flutter_inspector_mcp_server/src/shared_core/types/error_codes.dart';
 import 'package:flutter_inspector_mcp_server/src/shared_core/vm_connections/connection_context.dart';
-import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_consts.dart';
 
 enum DoctorCheckStatus { pass, warn, fail }
 

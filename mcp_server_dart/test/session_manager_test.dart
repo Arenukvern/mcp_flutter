@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:dart_mcp/server.dart';
 import 'package:flutter_inspector_mcp_server/flutter_mcp_core.dart';
 import 'package:test/test.dart';
 
@@ -44,9 +43,9 @@ void main() {
         defaultPort: 8181,
         logger:
             (
-              final LoggingLevel level,
-              final String message, {
-              final String logger = 'test',
+              final level,
+              final message, {
+              final logger = 'test',
             }) {},
         discoverPorts: () async => <int>[8181],
       );
@@ -72,9 +71,9 @@ void main() {
         defaultPort: 8181,
         logger:
             (
-              final LoggingLevel level,
-              final String message, {
-              final String logger = 'test',
+              final level,
+              final message, {
+              final logger = 'test',
             }) {},
         discoverPorts: () async => <int>[8181],
       );

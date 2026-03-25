@@ -15,7 +15,6 @@ import 'tools/live_edit_controller_adapter.dart';
 /// TODO: move classes to context and remove change notifier
 final class LiveEditOrchestrator extends ChangeNotifier {
   LiveEditOrchestrator({
-    final LiveEditController? controller,
     this.applyDraftDelegate,
     final String? backendId,
     final List<LiveEditAgentBackend> availableBackends =

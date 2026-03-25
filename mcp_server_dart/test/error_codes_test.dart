@@ -28,9 +28,9 @@ void main() {
       expect(result.exitCode, equals(64));
 
       final envelope = result.toEnvelopeJson();
-      final error = envelope['error'] as Map<String, Object?>;
+      final error = envelope['error']! as Map<String, Object?>;
       expect(error['descriptor'], isA<Map<String, Object?>>());
-      final descriptor = error['descriptor'] as Map<String, Object?>;
+      final descriptor = error['descriptor']! as Map<String, Object?>;
       expect(descriptor['retryable'], isFalse);
       expect(descriptor['category'], equals('validation'));
       expect(descriptor['exitCode'], equals(64));

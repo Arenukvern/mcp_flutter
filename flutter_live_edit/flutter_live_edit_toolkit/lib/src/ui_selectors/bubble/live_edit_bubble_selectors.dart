@@ -247,8 +247,9 @@ bool selectHasAgentBackedDrafts(
         domain: presentationDomain,
         sessionId: sessionId,
       ) ==
-      null)
+      null) {
     return false;
+  }
   return false;
 }
 
