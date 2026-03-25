@@ -296,24 +296,27 @@ packages:
   xsoulspace_inference_codex_exec:
     dependency: transitive
     description:
-      path: "../../../../xs/dart_flutter_packages/pkgs/xsoulspace_inference_codex_exec"
-      relative: true
-    source: path
-    version: "0.1.0"
+      name: xsoulspace_inference_codex_exec
+      sha256: "1899053aa29d5544fe7cc33205e8762d9573c7b0273e6698301ff1c6eaedffc5"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.0-beta.1"
   xsoulspace_inference_core:
     dependency: transitive
     description:
-      path: "../../../../xs/dart_flutter_packages/pkgs/xsoulspace_inference_core"
-      relative: true
-    source: path
-    version: "0.1.0"
+      name: xsoulspace_inference_core
+      sha256: "3507a8ed478716a74ab871a8640448c1f40f2bdbe331537110c97ae51e15a97f"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.0-beta.1"
   xsoulspace_inference_cursor_agent:
     dependency: transitive
     description:
-      path: "../../../../xs/dart_flutter_packages/pkgs/xsoulspace_inference_cursor_agent"
-      relative: true
-    source: path
-    version: "0.1.0"
+      name: xsoulspace_inference_cursor_agent
+      sha256: "6321cacce160731188c14894868263efa0ff3408bbf1bc1e74b52e51e49ef612"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.0-beta.1"
   xsoulspace_lints:
     dependency: "direct dev"
     description:
