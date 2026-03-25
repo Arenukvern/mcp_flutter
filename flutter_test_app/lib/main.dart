@@ -418,7 +418,7 @@ class _MCPDemoHomePageState extends State<MCPDemoHomePage> {
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: const Text(
-          'MCP Toolkit Demo [RoundTrip A]',
+          'MCP Toolkit Demo',
           semanticsIdentifier: 'app_title_text',
         ),
         elevation: 2,

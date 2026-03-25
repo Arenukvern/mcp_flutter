@@ -1,8 +1,6 @@
 import 'package:from_json_to_json/from_json_to_json.dart';
 import 'package:path/path.dart' as p;
 
-import '../../ui_selectors/shared/live_edit_selectors_shared.dart';
-
 /// Package-private helpers for the live edit agent. Not exported.
 ///
 /// **Paths** — Turn user-facing file strings into absolute workspace paths.
@@ -10,6 +8,8 @@ import '../../ui_selectors/shared/live_edit_selectors_shared.dart';
 /// **JSON** — [jsonDecodeMapLoose] / [jsonDecodeMapListLoose] use
 /// `from_json_to_json` for map/list coercion like the rest of the repo;
 /// [compactJson] only shrinks blobs for model prompts (not wire codecs).
+
+bool _hasText(final String? value) => value != null && value.trim().isNotEmpty;
 
 String? normalizeFilePath(final String rawPath) {
   final uri = Uri.tryParse(rawPath);
@@ -35,7 +35,7 @@ String? absolutePathInWorkspace(
   final String? normalizedPath,
   final String workingDirectory,
 ) {
-  if (!hasText(normalizedPath)) return null;
+  if (!_hasText(normalizedPath)) return null;
   final path = normalizedPath!;
   return p.isAbsolute(path)
       ? p.normalize(path)

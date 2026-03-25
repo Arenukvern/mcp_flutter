@@ -40,7 +40,7 @@ dev_dependencies:
   lints: ^6.1.0
   test: ^1.30.0
   xsoulspace_inference_core:
-    path: ../../../xs/dart_flutter_packages/pkgs/xsoulspace_inference_core
+    path: ../../../../xs/storage_problem/dart_flutter_packages/pkgs/xsoulspace_inference_core
   xsoulspace_lints: ^0.1.2
 
 # dependency_overrides:

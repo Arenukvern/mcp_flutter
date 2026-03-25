@@ -10,11 +10,12 @@ import 'package:xsoulspace_inference_core/xsoulspace_inference_core.dart';
 import 'package:xsoulspace_inference_cursor_agent/xsoulspace_inference_cursor_agent.dart';
 
 import '../../models/models.dart';
-import '../../ui_selectors/ui_selectors.dart';
 import 'live_edit_agent_plan.dart';
 import 'live_edit_agent_request_summary.dart';
 import 'live_edit_agent_utils.dart';
 import 'live_edit_agent_validation.dart';
+
+bool _hasText(final String? value) => value != null && value.trim().isNotEmpty;
 
 Map<String, Object?> _mergeErrorDetails(
   final Object? details, {
@@ -351,7 +352,7 @@ final class LiveEditAgentService {
     final riskNotes = <String>{
       ...proposal.riskFlags,
       ...proposal.warnings,
-    }.where(hasText).toList(growable: false);
+    }.where(_hasText).toList(growable: false);
 
     return LiveEditExecutionPlan(
       proposalId: proposal.proposalId,

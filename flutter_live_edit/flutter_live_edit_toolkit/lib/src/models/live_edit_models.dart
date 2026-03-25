@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
 import 'package:is_dart_empty_or_not/is_dart_empty_or_not.dart';
-import 'package:live_edit_tooling_ui_kit/live_edit_tooling_ui_kit.dart';
+import 'package:live_edit_tooling_ui_kit/src/models/models.dart';
 
 part 'live_edit_models.freezed.dart';
 part 'live_edit_models.g.dart';

@@ -22,7 +22,7 @@ import 'package:flutter_inspector_mcp_server/src/shared_core/types/error_codes.d
 import 'package:flutter_inspector_mcp_server/src/shared_core/types/results.dart';
 import 'package:flutter_inspector_mcp_server/src/shared_core/vm_connections/connection_context.dart';
 import 'package:flutter_inspector_mcp_server/src/shared_core/vm_connections/core_port_scanner.dart';
-import 'package:flutter_live_edit_toolkit/flutter_live_edit_toolkit.dart';
+import 'package:flutter_live_edit_toolkit/src/ai/agent/live_edit_agent_service.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
 import 'package:is_dart_empty_or_not/is_dart_empty_or_not.dart';
 import 'package:vm_service/vm_service.dart';

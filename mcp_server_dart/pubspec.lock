@@ -579,21 +579,21 @@ packages:
   xsoulspace_inference_codex_exec:
     dependency: transitive
     description:
-      path: "../../../xs/dart_flutter_packages/pkgs/xsoulspace_inference_codex_exec"
+      path: "../../../../xs/storage_problem/dart_flutter_packages/pkgs/xsoulspace_inference_codex_exec"
       relative: true
     source: path
     version: "0.1.0"
   xsoulspace_inference_core:
     dependency: "direct dev"
     description:
-      path: "../../../xs/dart_flutter_packages/pkgs/xsoulspace_inference_core"
+      path: "../../../../xs/storage_problem/dart_flutter_packages/pkgs/xsoulspace_inference_core"
       relative: true
     source: path
     version: "0.1.0"
   xsoulspace_inference_cursor_agent:
     dependency: transitive
     description:
-      path: "../../../xs/dart_flutter_packages/pkgs/xsoulspace_inference_cursor_agent"
+      path: "../../../../xs/storage_problem/dart_flutter_packages/pkgs/xsoulspace_inference_cursor_agent"
       relative: true
     source: path
     version: "0.1.0"

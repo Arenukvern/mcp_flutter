@@ -4,10 +4,11 @@ import 'dart:io';
 import 'package:from_json_to_json/from_json_to_json.dart';
 
 import '../../models/models.dart';
-import '../../ui_selectors/shared/live_edit_selectors_shared.dart';
 import 'live_edit_agent_utils.dart';
 
 /// Request summarization and prompt building. Package-private.
+
+bool _hasText(final String? value) => value != null && value.trim().isNotEmpty;
 
 String? trimmedIntentText(final LiveEditResolutionRequest request) {
   final value = jsonDecodeString(request.effectiveInstructionText).trim();
@@ -259,7 +260,7 @@ Map<String, Object?> summarizeSelection(
     'widgetType': selection.widgetType,
     'properties': selection.propertiesForWire,
   };
-  if (hasText(selection.renderObjectType)) {
+  if (_hasText(selection.renderObjectType)) {
     summary['renderObjectType'] = selection.renderObjectType;
   }
   if (selection.bounds != null) {
@@ -299,7 +300,7 @@ List<Map<String, Object?>> summarizeSelectedWidgets(
         return <String, Object?>{
           'nodeId': selection.nodeId,
           'widgetType': selection.widgetType,
-          if (hasText(source?.file))
+          if (_hasText(source?.file))
             'source': summarizeSourceLocation(
               source!,
               workingDirectory: workingDirectory,
@@ -328,10 +329,10 @@ Map<String, Object?> buildPromptRequest(
     'workingDirectory': request.workingDirectory,
     'stagedPropertyChanges': <Object?>[],
   };
-  if (hasText(request.effectiveBubbleId)) {
+  if (_hasText(request.effectiveBubbleId)) {
     promptRequest['bubbleId'] = request.effectiveBubbleId;
   }
-  if (hasText(request.effectiveInstructionText)) {
+  if (_hasText(request.effectiveInstructionText)) {
     promptRequest['instructionText'] = request.effectiveInstructionText;
   }
   if (primarySelection != null) {
@@ -353,7 +354,7 @@ Map<String, Object?> buildPromptRequest(
         .map((final t) => t.toJson())
         .toList(growable: false);
   }
-  if (hasText(request.backendId)) {
+  if (_hasText(request.backendId)) {
     promptRequest['backendId'] = request.backendId;
   }
   if (request.inferenceConfig != null) {

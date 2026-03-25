@@ -22,11 +22,11 @@ dependencies:
   path: ^1.9.1
   vm_service: ^15.0.2
   xsoulspace_inference_codex_exec:
-    path: ../../../../xs/dart_flutter_packages/pkgs/xsoulspace_inference_codex_exec
+    path: ../../../../../xs/storage_problem/dart_flutter_packages/pkgs/xsoulspace_inference_codex_exec
   xsoulspace_inference_core:
-    path: ../../../../xs/dart_flutter_packages/pkgs/xsoulspace_inference_core
+    path: ../../../../../xs/storage_problem/dart_flutter_packages/pkgs/xsoulspace_inference_core
   xsoulspace_inference_cursor_agent:
-    path: ../../../../xs/dart_flutter_packages/pkgs/xsoulspace_inference_cursor_agent
+    path: ../../../../../xs/storage_problem/dart_flutter_packages/pkgs/xsoulspace_inference_cursor_agent
 dev_dependencies:
   build_runner: ^2.13.1
   flutter_test:

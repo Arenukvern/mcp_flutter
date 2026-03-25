@@ -1,7 +1,8 @@
 import 'package:path/path.dart' as p;
 
 import '../../models/models.dart';
-import '../../ui_selectors/ui_selectors.dart';
+
+bool _hasText(final String? value) => value != null && value.trim().isNotEmpty;
 
 /// Execution plan and instruction helpers. Package-private.
 
@@ -11,7 +12,7 @@ List<String> executionRequestedChanges(
 ) {
   final requestedChanges = <String>[];
   final intentText = request?.effectiveInstructionText?.trim();
-  if (hasText(intentText)) requestedChanges.add(intentText!);
+  if (_hasText(intentText)) requestedChanges.add(intentText!);
   return requestedChanges;
 }
 
@@ -23,9 +24,9 @@ String agentInstruction(
   final widgetType = request?.effectivePrimarySelection?.widgetType.trim();
   final summary = proposal.summary.trim();
   final parts = <String>[
-    if (hasText(widgetType)) 'Update $widgetType',
-    if (hasText(intentText)) 'for request: $intentText',
-    if (hasText(summary))
+    if (_hasText(widgetType)) 'Update $widgetType',
+    if (_hasText(intentText)) 'for request: $intentText',
+    if (_hasText(summary))
       'and persist the source change described as: $summary',
   ];
   return parts.join(' ').trim();
@@ -41,7 +42,7 @@ String selectedNodeLabel(final LiveEditSelection? selection) {
   final widgetType = selection.widgetType.trim();
   final file = selection.source?.file.trim() ?? '';
   final line = selection.source?.line;
-  if (hasText(file) && line != null) {
+  if (_hasText(file) && line != null) {
     return '$widgetType at ${p.basename(file)}:$line';
   }
   return widgetType.isEmpty ? 'Selected widget' : widgetType;
