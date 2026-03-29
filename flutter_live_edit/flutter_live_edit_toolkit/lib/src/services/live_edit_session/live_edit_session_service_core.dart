@@ -14,42 +14,506 @@ class _LiveEditSessionServiceCore {
 
   LiveEditSessionUpdate? _buildLastUpdate() {
     final session = _activeSessionOrNull();
-    if (session == null) return null;
     final sessionData = LiveEditSessionResourceData(
       activeSessionId: _activeSessionId,
-      overlayVisible: session.overlayEnabled,
-      targetDomain: session.targetDomain,
+      overlayVisible: session?.overlayEnabled ?? false,
+      targetDomain: session?.targetDomain ?? LiveEditTargetDomain.appScene,
       sessionIds: _sessions.keys.toList(growable: false),
-    );
-    final layer = session.currentLayer;
-    final selectionLayer = (
-      session.sessionId,
-      session.targetDomain,
-      LiveEditSelectionLayerData(
-        selection: layer.selection,
-        hoverSelection: layer.hoverSelection,
-        marqueeRect: layer.marqueeRect,
-        marqueeSelections: List<LiveEditSelection>.from(
-          layer.marqueeSelections,
-        ),
-        multiSelections: List<LiveEditSelection>.from(layer.multiSelections),
-        selectionCandidates: List<LiveEditSelectionCandidate>.from(
-          layer.selectionCandidates,
-        ),
-      ),
-    );
-    final draftLayer = (
-      session.sessionId,
-      session.targetDomain,
-      LiveEditDraftLayerData(
-        meaningfulNodeIds: Set<String>.from(layer.meaningfulNodeIds),
-      ),
     );
     return LiveEditSessionUpdate(
       sessionData: sessionData,
-      selectionLayer: selectionLayer,
-      draftLayer: draftLayer,
+      selectionStore: _buildSelectionStore(),
+      draftStore: _buildDraftStore(),
+      flowGraph: _buildFlowGraphUpdate(session),
     );
+  }
+
+  FlowGraphSnapshot? _buildFlowGraphUpdate(
+    final _LiveEditSessionState? session,
+  ) {
+    final snapshot = _buildFlowGraphSnapshot(session);
+    final previous = _lastUpdate?.flowGraph;
+    if (previous == null && _isEmptyFlowGraphSnapshot(snapshot)) {
+      return null;
+    }
+    if (_flowGraphSnapshotsMatch(previous, snapshot)) {
+      return null;
+    }
+    return snapshot;
+  }
+
+  FlowGraphSnapshot _buildFlowGraphSnapshot(
+    final _LiveEditSessionState? session,
+  ) {
+    if (session == null) {
+      return FlowGraphSnapshot.empty;
+    }
+    final screenSummaries = <String, Map<String, InteractionNodeSummary>>{};
+    final screenRouteIds = <String, String>{};
+    final screenSurfaceIds = <String, String>{};
+
+    void collectSelectionSummary(final InteractionNodeSummary summary) {
+      final screenId = summary.screenId?.trim();
+      if (!_hasText(screenId)) {
+        return;
+      }
+      final entries = screenSummaries.putIfAbsent(
+        screenId!,
+        () => <String, InteractionNodeSummary>{},
+      );
+      final selectionKey = summary.selectionKey.trim();
+      final summaryKey = _hasText(selectionKey) ? selectionKey : summary.nodeId;
+      if (!_hasText(summaryKey) || entries.containsKey(summaryKey)) {
+        return;
+      }
+      entries[summaryKey!] = summary;
+      final routeId = summary.routeId?.trim();
+      if (_hasText(routeId)) {
+        screenRouteIds.putIfAbsent(screenId, () => routeId!);
+      }
+      final surfaceId = summary.surfaceId?.trim();
+      if (_hasText(surfaceId)) {
+        screenSurfaceIds.putIfAbsent(screenId, () => surfaceId!);
+      }
+    }
+
+    void collectLayer(final _LiveEditLayerState layer) {
+      if (layer.selection != null) {
+        collectSelectionSummary(_buildSelectionSummary(layer.selection!));
+      }
+      if (layer.hoverSelection != null) {
+        collectSelectionSummary(_buildSelectionSummary(layer.hoverSelection!));
+      }
+      for (final selection in layer.multiSelections) {
+        collectSelectionSummary(_buildSelectionSummary(selection));
+      }
+      for (final selection in layer.marqueeSelections) {
+        collectSelectionSummary(_buildSelectionSummary(selection));
+      }
+    }
+
+    collectLayer(session.appLayer);
+    collectLayer(session.toolLayer);
+
+    if (screenSummaries.isEmpty) {
+      return FlowGraphSnapshot.empty;
+    }
+
+    final screenIds = screenSummaries.keys.toList(growable: false)..sort();
+    final screens = screenIds
+        .map(
+          (final screenId) => ScreenSnapshot(
+            screenId: screenId,
+            routeId: screenRouteIds[screenId] ?? screenId,
+            title: screenId,
+            surfaceId: screenSurfaceIds[screenId],
+            nodeSummaries: List<InteractionNodeSummary>.unmodifiable(
+              (screenSummaries[screenId]!.values.toList(growable: false)..sort(
+                (final a, final b) => a.selectionKey.compareTo(b.selectionKey),
+              )),
+            ),
+          ),
+        )
+        .toList(growable: false);
+    final routes =
+        screenRouteIds.entries
+            .map(
+              (final entry) => RouteSnapshot(
+                routeId: entry.value,
+                name: entry.value,
+                screenId: entry.key,
+              ),
+            )
+            .toList(growable: false)
+          ..sort((final a, final b) => a.routeId.compareTo(b.routeId));
+
+    return FlowGraphSnapshot(
+      screens: screens,
+      routes: routes,
+      focusedScreenId: _focusedFlowScreenId(session, screenIds),
+    );
+  }
+
+  bool _isEmptyFlowGraphSnapshot(final FlowGraphSnapshot snapshot) =>
+      snapshot.screens.isEmpty &&
+      snapshot.routes.isEmpty &&
+      snapshot.transitions.isEmpty &&
+      !_hasText(snapshot.focusedScreenId);
+
+  bool _flowGraphSnapshotsMatch(
+    final FlowGraphSnapshot? previous,
+    final FlowGraphSnapshot current,
+  ) {
+    if (previous == null) {
+      return false;
+    }
+    if (previous.focusedScreenId != current.focusedScreenId ||
+        previous.screens.length != current.screens.length ||
+        previous.routes.length != current.routes.length ||
+        previous.transitions.length != current.transitions.length) {
+      return false;
+    }
+    for (var index = 0; index < previous.screens.length; index += 1) {
+      if (jsonEncode(previous.screens[index].toJson()) !=
+          jsonEncode(current.screens[index].toJson())) {
+        return false;
+      }
+    }
+    for (var index = 0; index < previous.routes.length; index += 1) {
+      if (jsonEncode(previous.routes[index].toJson()) !=
+          jsonEncode(current.routes[index].toJson())) {
+        return false;
+      }
+    }
+    for (var index = 0; index < previous.transitions.length; index += 1) {
+      if (jsonEncode(previous.transitions[index].toJson()) !=
+          jsonEncode(current.transitions[index].toJson())) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  String? _focusedFlowScreenId(
+    final _LiveEditSessionState session,
+    final List<String> availableScreenIds,
+  ) {
+    String? firstScreenId(final _LiveEditLayerState layer) {
+      if (layer.selection != null) {
+        final screenId = _buildSelectionSummary(
+          layer.selection!,
+        ).screenId?.trim();
+        if (_hasText(screenId)) {
+          return screenId;
+        }
+      }
+      if (layer.hoverSelection != null) {
+        final screenId = _buildSelectionSummary(
+          layer.hoverSelection!,
+        ).screenId?.trim();
+        if (_hasText(screenId)) {
+          return screenId;
+        }
+      }
+      for (final selection in layer.multiSelections) {
+        final screenId = _buildSelectionSummary(selection).screenId?.trim();
+        if (_hasText(screenId)) {
+          return screenId;
+        }
+      }
+      for (final selection in layer.marqueeSelections) {
+        final screenId = _buildSelectionSummary(selection).screenId?.trim();
+        if (_hasText(screenId)) {
+          return screenId;
+        }
+      }
+      return null;
+    }
+
+    return firstScreenId(session.currentLayer) ??
+        firstScreenId(session.appLayer) ??
+        firstScreenId(session.toolLayer) ??
+        (availableScreenIds.isEmpty ? null : availableScreenIds.first);
+  }
+
+  LiveEditSelectionStore _buildSelectionStore() {
+    final sessions = <String, LiveEditSelectionSessionState>{};
+    for (final entry in _sessions.entries) {
+      sessions[entry.key] = LiveEditSelectionSessionState(
+        layers: <LiveEditTargetDomain, LiveEditSelectionLayerData>{
+          LiveEditTargetDomain.appScene: _buildSelectionLayerData(
+            entry.value.appLayer,
+          ),
+          LiveEditTargetDomain.toolScene: _buildSelectionLayerData(
+            entry.value.toolLayer,
+          ),
+        },
+      );
+    }
+    return LiveEditSelectionStore(sessions: sessions);
+  }
+
+  LiveEditDraftStore _buildDraftStore() {
+    final sessions = <String, LiveEditDraftSessionState>{};
+    for (final entry in _sessions.entries) {
+      sessions[entry.key] = LiveEditDraftSessionState(
+        layers: <LiveEditTargetDomain, LiveEditDraftLayerData>{
+          LiveEditTargetDomain.appScene: LiveEditDraftLayerData(
+            draftChanges: draftChangesForDomain(
+              targetDomain: LiveEditTargetDomain.appScene,
+              sessionId: entry.key,
+            ),
+            meaningfulNodeIds: Set<String>.from(
+              entry.value.appLayer.meaningfulNodeIds,
+            ),
+          ),
+          LiveEditTargetDomain.toolScene: LiveEditDraftLayerData(
+            draftChanges: draftChangesForDomain(
+              targetDomain: LiveEditTargetDomain.toolScene,
+              sessionId: entry.key,
+            ),
+            meaningfulNodeIds: Set<String>.from(
+              entry.value.toolLayer.meaningfulNodeIds,
+            ),
+          ),
+        },
+      );
+    }
+    return LiveEditDraftStore(sessions: sessions);
+  }
+
+  LiveEditSelectionLayerData _buildSelectionLayerData(
+    final _LiveEditLayerState layer,
+  ) {
+    final primarySelections = layer.multiSelections.length > 1
+        ? List<LiveEditSelection>.from(layer.multiSelections)
+        : (layer.selection == null
+              ? const <LiveEditSelection>[]
+              : <LiveEditSelection>[layer.selection!]);
+    final selectionSet = _buildInteractionSelectionSet(
+      layer,
+      primarySelections,
+    );
+    return LiveEditSelectionLayerData(
+      selection: layer.selection,
+      hoverSelection: layer.hoverSelection,
+      marqueeRect: layer.marqueeRect,
+      marqueeSelections: List<LiveEditSelection>.from(layer.marqueeSelections),
+      multiSelections: List<LiveEditSelection>.from(layer.multiSelections),
+      selectionCandidates: List<LiveEditSelectionCandidate>.from(
+        layer.selectionCandidates,
+      ),
+      selectionSet: selectionSet,
+      selectedNodeSummaries: primarySelections
+          .map(_buildSelectionSummary)
+          .toList(growable: false),
+      marqueeNodeSummaries: layer.marqueeSelections
+          .map(_buildSelectionSummary)
+          .toList(growable: false),
+      selectionCandidateSummaries: layer.selectionCandidates
+          .map(_buildSelectionCandidateSummary)
+          .toList(growable: false),
+    );
+  }
+
+  InteractionSelectionSet _buildInteractionSelectionSet(
+    final _LiveEditLayerState layer,
+    final List<LiveEditSelection> selections,
+  ) {
+    if (layer.selectionSet.isEmpty && selections.isEmpty) {
+      return InteractionSelectionSet.empty;
+    }
+    final memberKeys =
+        (layer.selectionSet.memberKeys.isNotEmpty
+                ? layer.selectionSet.memberKeys
+                : selections.map(
+                    (final item) =>
+                        _selectionKey(item) ?? _selectionNodeId(item) ?? '',
+                  ))
+            .where(_hasText)
+            .toList(growable: false);
+    if (memberKeys.isEmpty) {
+      return InteractionSelectionSet.empty;
+    }
+    final primaryKey =
+        layer.selectionSet.primaryKey ??
+        _selectionKey(layer.selection) ??
+        _selectionNodeId(layer.selection) ??
+        memberKeys.first;
+    return InteractionSelectionSet(
+      primaryKey: primaryKey,
+      memberKeys: memberKeys,
+      origin: switch (layer.selectionSet.origin) {
+        _SelectionSetOrigin.marquee => InteractionSelectionOrigin.marquee,
+        _SelectionSetOrigin.candidate => InteractionSelectionOrigin.hover,
+        _SelectionSetOrigin.surface => InteractionSelectionOrigin.command,
+        _ => InteractionSelectionOrigin.tap,
+      },
+      focusKind: memberKeys.length > 1
+          ? FlowFocusKind.selectionSet
+          : FlowFocusKind.node,
+    );
+  }
+
+  InteractionNodeSummary _buildSelectionSummary(
+    final LiveEditSelection selection,
+  ) {
+    final selectionJson =
+        _selectionJson(selection) ?? const <String, Object?>{};
+    final rawNode = _jsonObject(selectionJson['rawNode']);
+    final layoutContext = _jsonObject(selectionJson['layoutContext']);
+    final source = _selectionSource(selection);
+    final sourceFile = _sourceFile(source);
+    final sourceHint = _sourceHint(source);
+    return InteractionNodeSummary(
+      selectionKey:
+          _selectionKey(selection) ?? _selectionNodeId(selection) ?? '',
+      nodeId: _selectionNodeId(selection) ?? '',
+      widgetType:
+          _selectionWidgetType(selection) ??
+          _jsonString(selectionJson['widgetType']) ??
+          '',
+      bounds: _selectionBounds(selection),
+      routeId:
+          _jsonString(rawNode['routeId']) ??
+          _jsonString(layoutContext['routeId']),
+      screenId:
+          _jsonString(rawNode['screenId']) ??
+          _jsonString(layoutContext['screenId']),
+      surfaceId:
+          _jsonString(rawNode['surfaceId']) ??
+          _jsonString(layoutContext['surfaceId']),
+      source: source,
+      ownedByLocalProject: _hasText(sourceFile),
+      hasProjectSourceHint: _hasText(sourceHint) || _hasText(sourceFile),
+      actionable: _selectionProperties(selection).isNotEmpty,
+    );
+  }
+
+  InteractionNodeSummary _buildSelectionCandidateSummary(
+    final LiveEditSelectionCandidate candidate,
+  ) {
+    final candidateJson = _selectionCandidateJson(candidate);
+    final source = _selectionCandidateSource(candidate);
+    final sourceFile = _sourceFile(source);
+    final sourceHint = _sourceHint(source);
+    return InteractionNodeSummary(
+      selectionKey:
+          _selectionCandidateKey(candidate) ??
+          _selectionCandidateNodeId(candidate) ??
+          '',
+      nodeId: _selectionCandidateNodeId(candidate) ?? '',
+      widgetType:
+          _selectionCandidateWidgetType(candidate) ??
+          _jsonString(candidateJson['widgetType']) ??
+          '',
+      bounds: _selectionCandidateBounds(candidate),
+      routeId: _jsonString(candidateJson['routeId']),
+      screenId: _jsonString(candidateJson['screenId']),
+      surfaceId: _jsonString(candidateJson['surfaceId']),
+      source: source,
+      ownedByLocalProject:
+          _selectionCandidateCreatedByLocalProject(candidate) ||
+          candidateJson['createdByLocalProject'] == true,
+      hasProjectSourceHint: _hasText(sourceHint) || _hasText(sourceFile),
+      actionable: true,
+    );
+  }
+
+  String? _selectionNodeId(final LiveEditSelection? selection) =>
+      _jsonString(selection == null ? null : (selection as dynamic).nodeId);
+
+  String? _selectionKey(final LiveEditSelection? selection) {
+    final key = _jsonString(
+      selection == null ? null : (selection as dynamic).selectionKey,
+    );
+    return _hasText(key) ? key : _selectionNodeId(selection);
+  }
+
+  Map<String, Object?>? _selectionJson(final LiveEditSelection? selection) {
+    if (selection == null) {
+      return null;
+    }
+    return _jsonObject((selection as dynamic).toJson());
+  }
+
+  String? _selectionWidgetType(final LiveEditSelection? selection) =>
+      _jsonString(selection == null ? null : (selection as dynamic).widgetType);
+
+  LiveEditBounds? _selectionBounds(final LiveEditSelection? selection) =>
+      selection == null
+      ? null
+      : (selection as dynamic).bounds as LiveEditBounds?;
+
+  LiveEditSourceLocation? _selectionSource(
+    final LiveEditSelection? selection,
+  ) => selection == null
+      ? null
+      : (selection as dynamic).source as LiveEditSourceLocation?;
+
+  List<Object?> _selectionProperties(final LiveEditSelection? selection) =>
+      selection == null
+      ? const <Object?>[]
+      : _jsonList((selection as dynamic).propertiesForWire);
+
+  String? _selectionCandidateNodeId(
+    final LiveEditSelectionCandidate? candidate,
+  ) => _jsonString(candidate == null ? null : (candidate as dynamic).nodeId);
+
+  String? _selectionCandidateKey(final LiveEditSelectionCandidate? candidate) {
+    final key = _jsonString(
+      candidate == null ? null : (candidate as dynamic).selectionKey,
+    );
+    return _hasText(key) ? key : _selectionCandidateNodeId(candidate);
+  }
+
+  Map<String, Object?> _selectionCandidateJson(
+    final LiveEditSelectionCandidate candidate,
+  ) => _jsonObject((candidate as dynamic).toJson());
+
+  String? _selectionCandidateWidgetType(
+    final LiveEditSelectionCandidate? candidate,
+  ) =>
+      _jsonString(candidate == null ? null : (candidate as dynamic).widgetType);
+
+  LiveEditBounds? _selectionCandidateBounds(
+    final LiveEditSelectionCandidate? candidate,
+  ) => candidate == null
+      ? null
+      : (candidate as dynamic).bounds as LiveEditBounds?;
+
+  LiveEditSourceLocation? _selectionCandidateSource(
+    final LiveEditSelectionCandidate? candidate,
+  ) => candidate == null
+      ? null
+      : (candidate as dynamic).source as LiveEditSourceLocation?;
+
+  String? _sourceFile(final LiveEditSourceLocation? source) =>
+      _jsonString(source == null ? null : (source as dynamic).file);
+
+  String? _sourceHint(final LiveEditSourceLocation? source) =>
+      _jsonString(source == null ? null : (source as dynamic).sourceHint);
+
+  bool _selectionCandidateCreatedByLocalProject(
+    final LiveEditSelectionCandidate? candidate,
+  ) =>
+      candidate != null &&
+      ((candidate as dynamic).createdByLocalProject as bool? ?? false);
+
+  Map<String, Object?> _draftChangeMeta(final LiveEditDraftChange change) =>
+      _jsonObject((change as dynamic).meta);
+
+  String? _draftChangeNodeId(final LiveEditDraftChange change) =>
+      _jsonString((change as dynamic).nodeId);
+
+  Map<String, Object?> _jsonObject(final Object? value) {
+    if (value is Map<String, Object?>) {
+      return value;
+    }
+    if (value is Map) {
+      return value.map(
+        (final key, final nestedValue) => MapEntry('$key', nestedValue),
+      );
+    }
+    return const <String, Object?>{};
+  }
+
+  List<Object?> _jsonList(final Object? value) {
+    if (value is List<Object?>) {
+      return value;
+    }
+    if (value is List) {
+      return List<Object?>.from(value);
+    }
+    return const <Object?>[];
+  }
+
+  String? _jsonString(final Object? value) {
+    if (value == null) {
+      return null;
+    }
+    final resolved = '$value'.trim();
+    return resolved.isEmpty || resolved == 'null' ? null : resolved;
   }
 
   _LiveEditLayerState _activeLayerOrNull() {
@@ -164,7 +628,10 @@ class _LiveEditSessionServiceCore {
     final session = _requireSession(sessionId);
     final layer = _layerForRequest(session);
     _revertExactPreview(session, layer: layer);
-    layer.meaningfulNodeIds.remove(layer.selection?.nodeId);
+    final selectedNodeId = _selectionNodeId(layer.selection);
+    if (selectedNodeId != null) {
+      layer.meaningfulNodeIds.remove(selectedNodeId);
+    }
     session.lastTouchedAt = DateTime.now().toUtc();
     _lastUpdate = _buildLastUpdate();
     return <String, Object?>{
@@ -248,11 +715,14 @@ class _LiveEditSessionServiceCore {
         return;
       }
       for (final change in changes) {
+        final changeMeta = _draftChangeMeta(change);
+        final changeNodeId = _draftChangeNodeId(change);
+        if (!_hasText(changeNodeId)) {
+          continue;
+        }
         final tracked = currentSession
-            .layerFor(
-              LiveEditTargetDomain.fromWire(change.meta['targetDomain']),
-            )
-            .trackedSelections[change.nodeId];
+            .layerFor(LiveEditTargetDomain.fromWire(changeMeta['targetDomain']))
+            .trackedSelections[changeNodeId!];
         if (tracked == null) {
           continue;
         }
@@ -307,14 +777,15 @@ class _LiveEditSessionServiceCore {
     return <String, Object?>{
       'sessionId': session.sessionId,
       'targetDomain': resolvedDomain.wireName,
-      'selection': selection?.toJson(),
+      'selection': _selectionJson(selection),
       'hasSelection': selection != null,
-      'hoverSelection': layer.hoverSelection?.toJson(),
+      'hoverSelection': _selectionJson(layer.hoverSelection),
       'selectedNodeIds': layer.multiSelections
-          .map((final item) => item.nodeId)
+          .map(_selectionNodeId)
+          .whereType<String>()
           .toList(growable: false),
       'selectionCandidates': layer.selectionCandidates
-          .map((final candidate) => candidate.toJson())
+          .map(_selectionCandidateJson)
           .toList(growable: false),
     };
   }
@@ -330,7 +801,7 @@ class _LiveEditSessionServiceCore {
       return <String, Object?>{
         'sessionId': session.sessionId,
         'targetDomain': resolvedDomain.wireName,
-        'selectedNodeId': session.selection?.nodeId,
+        'selectedNodeId': _selectionNodeId(session.selection),
         'tree': LiveEditOverlayThemeModel.instance.buildTreeSnapshot(
           session.sessionId,
         ),
@@ -345,7 +816,7 @@ class _LiveEditSessionServiceCore {
     return <String, Object?>{
       'sessionId': session.sessionId,
       'targetDomain': resolvedDomain.wireName,
-      'selectedNodeId': session.selection?.nodeId,
+      'selectedNodeId': _selectionNodeId(session.selection),
       'tree': rawTree,
     };
   }
@@ -394,13 +865,14 @@ class _LiveEditSessionServiceCore {
             point: point,
             requestedViewId: viewId,
           );
+    final dedupedHits = _dedupeHitsBySelectionKey(session, hits);
     final nextPreviewIndex = _resolvedHoverIndex(
       session: session,
-      hits: hits,
+      hits: dedupedHits,
       deeperMode: deeperMode,
     );
     final previousHover = session.hoverSelection;
-    final nextHoverSelection = hits.isEmpty
+    final nextHoverSelection = dedupedHits.isEmpty
         ? null
         : reuseHover &&
               previousHover != null &&
@@ -408,13 +880,14 @@ class _LiveEditSessionServiceCore {
         ? previousHover
         : _buildHoverSelection(
             session: session,
-            element: hits[nextPreviewIndex].element,
+            element: dedupedHits[nextPreviewIndex].element,
             targetDomain: resolvedDomain,
           );
     final hoverUnchanged =
-        previousHover?.nodeId == nextHoverSelection?.nodeId &&
+        _selectionNodeId(previousHover) ==
+            _selectionNodeId(nextHoverSelection) &&
         session.hoverPreviewIndex == nextPreviewIndex;
-    session.hoverHitCandidates = hits;
+    session.hoverHitCandidates = dedupedHits;
     session.hoverPreviewIndex = nextPreviewIndex;
     session.hoverSelection = nextHoverSelection;
     session.hoverPoint = point;
@@ -428,7 +901,7 @@ class _LiveEditSessionServiceCore {
       'sessionId': session.sessionId,
       'hovered': session.hoverSelection != null,
       if (session.hoverSelection != null)
-        'selection': session.hoverSelection!.toJson(),
+        'selection': _selectionJson(session.hoverSelection),
     };
   }
 
@@ -492,7 +965,8 @@ class _LiveEditSessionServiceCore {
             point: point,
             requestedViewId: viewId,
           );
-    if (hits.isEmpty) {
+    final dedupedHits = _dedupeHitsBySelectionKey(session, hits);
+    if (dedupedHits.isEmpty) {
       return <String, Object?>{
         'sessionId': session.sessionId,
         'hit': false,
@@ -500,30 +974,30 @@ class _LiveEditSessionServiceCore {
       };
     }
 
-    session.selectionHitCandidates = hits;
+    session.selectionHitCandidates = dedupedHits;
     final selectedIndex = (preferHoverPreview && canReuseHover)
-        ? session.hoverPreviewIndex.clamp(0, hits.length - 1)
+        ? session.hoverPreviewIndex.clamp(0, dedupedHits.length - 1)
         : _preferredSelectionIndex(
             session: session,
-            hits: hits,
+            hits: dedupedHits,
             selectionPolicy: selectionPolicy,
             targetDomain: resolvedDomain,
           );
-    final hit = hits[selectedIndex];
+    final hit = dedupedHits[selectedIndex];
+    final hitSelectionKey = _selectionKeyForElement(session, hit.element);
     final layer = _layerForRequest(session, requested: resolvedDomain);
-    if (layer.selectedElement != null &&
-        identical(layer.selectedElement, hit.element) &&
+    if (layer.selectionSet.isSingle &&
+        layer.selectionSet.primaryKey == hitSelectionKey &&
         layer.selection != null &&
         layer.multiSelections.length == 1) {
-      _lastUpdate = _buildLastUpdate();
       return <String, Object?>{
         'sessionId': session.sessionId,
         'targetDomain': resolvedDomain.wireName,
         'hit': true,
         'point': <String, Object?>{'x': x, 'y': y},
-        'selection': layer.selection!.toJson(),
+        'selection': _selectionJson(layer.selection),
         'selectionCandidates': session.selectionCandidates
-            .map((final candidate) => candidate.toJson())
+            .map(_selectionCandidateJson)
             .toList(growable: false),
       };
     }
@@ -532,7 +1006,6 @@ class _LiveEditSessionServiceCore {
       element: hit.element,
       ancestry: hit.ancestry,
     );
-    session.multiSelections = <LiveEditSelection>[selection];
     _syncSelectionCandidates(session);
     _lastUpdate = _buildLastUpdate();
     return <String, Object?>{
@@ -540,9 +1013,9 @@ class _LiveEditSessionServiceCore {
       'targetDomain': resolvedDomain.wireName,
       'hit': true,
       'point': <String, Object?>{'x': x, 'y': y},
-      'selection': selection.toJson(),
+      'selection': _selectionJson(selection),
       'selectionCandidates': session.selectionCandidates
-          .map((final candidate) => candidate.toJson())
+          .map(_selectionCandidateJson)
           .toList(growable: false),
     };
   }

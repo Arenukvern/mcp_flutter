@@ -5,6 +5,8 @@ import 'package:from_json_to_json/from_json_to_json.dart';
 import 'package:is_dart_empty_or_not/is_dart_empty_or_not.dart';
 import 'package:live_edit_tooling_ui_kit/src/models/models.dart';
 
+import 'live_edit_interaction_models.dart';
+
 part 'live_edit_models.freezed.dart';
 part 'live_edit_models.g.dart';
 
@@ -93,6 +95,171 @@ LiveEditInferenceConfig? _parseInferenceConfig(final Object? value) {
   return null;
 }
 
+DraftTargetContext? _parseDraftTargetContext(final Object? value) {
+  if (value == null) {
+    return null;
+  }
+  if (value is Map<String, Object?>) {
+    return DraftTargetContext.fromJson(value);
+  }
+  if (value is Map) {
+    return DraftTargetContext.fromJson(
+      value.map(
+        (final key, final nestedValue) => MapEntry('$key', nestedValue),
+      ),
+    );
+  }
+  return null;
+}
+
+Map<String, Object?>? _draftTargetContextToJson(
+  final DraftTargetContext? value,
+) => value?.toJson();
+
+FlowSelectionIntent? _parseFlowSelectionIntent(final Object? value) {
+  if (value == null) {
+    return null;
+  }
+  if (value is Map<String, Object?>) {
+    return FlowSelectionIntent.fromJson(value);
+  }
+  if (value is Map) {
+    return FlowSelectionIntent.fromJson(
+      value.map(
+        (final key, final nestedValue) => MapEntry('$key', nestedValue),
+      ),
+    );
+  }
+  return null;
+}
+
+Map<String, Object?>? _flowSelectionIntentToJson(
+  final FlowSelectionIntent? value,
+) => value?.toJson();
+
+AgentContextEnvelope? _parseAgentContextEnvelope(final Object? value) {
+  if (value == null) {
+    return null;
+  }
+  if (value is Map<String, Object?>) {
+    return AgentContextEnvelope.fromJson(value);
+  }
+  if (value is Map) {
+    return AgentContextEnvelope.fromJson(
+      value.map(
+        (final key, final nestedValue) => MapEntry('$key', nestedValue),
+      ),
+    );
+  }
+  return null;
+}
+
+Map<String, Object?>? _agentContextEnvelopeToJson(
+  final AgentContextEnvelope? value,
+) => value?.toJson();
+
+Map<String, Object?> _normalizeDraftChangeJson(
+  final Map<String, Object?> json,
+) {
+  final normalized = Map<String, Object?>.from(json);
+  if (normalized['targetContext'] != null) {
+    return normalized;
+  }
+  final meta = _asMap(normalized['meta']);
+  final selectionKey = _asNullableString(
+    meta['selectionKey'] ?? meta['selectionNodeId'] ?? normalized['nodeId'],
+  );
+  if (selectionKey == null) {
+    return normalized;
+  }
+  normalized['targetContext'] = DraftTargetContext(
+    targetDomain: LiveEditTargetDomain.fromWire(meta['targetDomain']),
+    selectionKey: SelectionKey.fromJson(selectionKey),
+    screenId: _asNullableString(meta['screenId']),
+    routeId: _asNullableString(meta['routeId']),
+    surfaceId: _asNullableString(meta['surfaceId']),
+    transitionId: _asNullableString(meta['transitionId']),
+  ).toJson();
+  return normalized;
+}
+
+Map<String, Object?> _normalizeResolutionRequestJson(
+  final Map<String, Object?> json,
+) {
+  final normalized = Map<String, Object?>.from(json);
+  if (normalized['contextEnvelope'] != null) {
+    return normalized;
+  }
+  final meta = _asMap(normalized['meta']);
+  final evidence = _asMap(normalized['evidence']);
+  final selection = switch (normalized['primarySelection'] ??
+      normalized['selection']) {
+    final Map value => LiveEditSelection.fromJson(_asMap(value)),
+    _ => null,
+  };
+  final selectedWidgets = _asList(normalized['selectedWidgets'])
+      .whereType<Map>()
+      .map((final item) => LiveEditSelection.fromJson(_asMap(item)))
+      .toList(growable: false);
+  final sourceTargets = _asList(normalized['sourceTargets'])
+      .whereType<Map>()
+      .map((final item) => LiveEditSourceTarget.fromJson(_asMap(item)))
+      .toList(growable: false);
+  final screenId =
+      _asNullableString(meta['screenId']) ??
+      'screen:${LiveEditTargetDomain.fromWire(meta['targetDomain']).wireName}';
+  final focusSelection = selection == null
+      ? null
+      : InteractionSelectionSet(
+          primaryKey: selection.selectionKey,
+          memberKeys: selectedWidgets.isEmpty
+              ? <String>[selection.selectionKey]
+              : selectedWidgets
+                    .map((final item) => item.selectionKey)
+                    .toSet()
+                    .toList(growable: false),
+          origin: InteractionSelectionOrigin.command,
+          focusKind: InteractionFocusKind.selectionSet,
+        );
+  normalized['contextEnvelope'] = AgentContextEnvelope(
+    focus: FlowFocus(
+      currentScreenId: screenId,
+      activeSelectionSet: focusSelection,
+      userIntent: FlowSelectionIntent(
+        kind: FlowSelectionIntentKind.changeWidget,
+        fromSelectionKey: selection?.selectionKey,
+      ),
+    ),
+    screenSlice: selection == null
+        ? const <ScreenSnapshot>[]
+        : <ScreenSnapshot>[
+            ScreenSnapshot(
+              screenId: screenId,
+              routeId: _asNullableString(meta['routeId']) ?? screenId,
+              surfaceId: _asNullableString(meta['surfaceId']),
+              title: 'Current screen',
+              nodeSummaries: <InteractionNodeSummary>[
+                InteractionNodeSummary.fromSelection(selection),
+              ],
+            ),
+          ],
+    flowSlice: const <ObservedTransition>[],
+    sourceTargets: sourceTargets,
+    evidenceRefs: evidence.isEmpty
+        ? const <EvidenceRef>[]
+        : <EvidenceRef>[
+            EvidenceRef(
+              kind: 'legacy_evidence',
+              refId: 'legacy:evidence',
+              summary: 'Legacy evidence migrated into v2 envelope.',
+              compactSummary: evidence,
+            ),
+          ],
+    budget: const AgentContextBudget(),
+  ).toJson();
+  return normalized;
+}
+
 /// Alias for backward compatibility; prefer [LiveEditInferenceConfig].
 typedef LiveEditCodexConfig = LiveEditInferenceConfig;
 
@@ -166,11 +333,16 @@ abstract class LiveEditDraftChange with _$LiveEditDraftChange {
     @Default(LiveEditPreviewMode.none) final LiveEditPreviewMode previewMode,
     @JsonKey(fromJson: _confidenceFromJson) @Default(1) final double confidence,
     final String? intentText,
+    @JsonKey(
+      fromJson: _parseDraftTargetContext,
+      toJson: _draftTargetContextToJson,
+    )
+    final DraftTargetContext? targetContext,
     @Default(<String, Object?>{}) final Map<String, Object?> meta,
   }) = _LiveEditDraftChange;
 
   factory LiveEditDraftChange.fromJson(final Map<String, Object?> json) =>
-      _$LiveEditDraftChangeFromJson(json);
+      _$LiveEditDraftChangeFromJson(_normalizeDraftChangeJson(json));
 }
 
 enum LiveEditTargetDomain {
@@ -417,44 +589,61 @@ abstract class LiveEditResolutionRequest with _$LiveEditResolutionRequest {
     final String? backendId,
     final LiveEditInferenceConfig? inferenceConfig,
     final String? intentText,
+    @JsonKey(
+      fromJson: _parseFlowSelectionIntent,
+      toJson: _flowSelectionIntentToJson,
+    )
+    final FlowSelectionIntent? selectionIntent,
+    @JsonKey(
+      fromJson: _parseAgentContextEnvelope,
+      toJson: _agentContextEnvelopeToJson,
+    )
+    final AgentContextEnvelope? contextEnvelope,
     @Default(<String, Object?>{}) final Map<String, Object?> evidence,
     @Default(<String, Object?>{}) final Map<String, Object?> meta,
   }) = _LiveEditResolutionRequest;
   const LiveEditResolutionRequest._();
 
   factory LiveEditResolutionRequest.fromJson(final Map<String, Object?> json) {
+    final normalizedJson = _normalizeResolutionRequestJson(json);
     final inferenceConfig = _parseInferenceConfig(
-      json['inferenceConfig'] ?? json['codexConfig'],
+      normalizedJson['inferenceConfig'] ?? normalizedJson['codexConfig'],
     );
     return LiveEditResolutionRequest(
-      sessionId: '${json['sessionId'] ?? ''}',
-      workingDirectory: '${json['workingDirectory'] ?? ''}',
-      bubbleId: _asNullableString(json['bubbleId']),
+      sessionId: '${normalizedJson['sessionId'] ?? ''}',
+      workingDirectory: '${normalizedJson['workingDirectory'] ?? ''}',
+      bubbleId: _asNullableString(normalizedJson['bubbleId']),
       instructionText: _asNullableString(
-        json['instructionText'] ?? json['intentText'],
+        normalizedJson['instructionText'] ?? normalizedJson['intentText'],
       ),
-      primarySelection: switch (json['primarySelection']) {
+      primarySelection: switch (normalizedJson['primarySelection']) {
         final Map value => LiveEditSelection.fromJson(_asMap(value)),
         _ => null,
       },
-      selectedWidgets: _asList(json['selectedWidgets'])
+      selectedWidgets: _asList(normalizedJson['selectedWidgets'])
           .whereType<Map>()
           .map((final item) => LiveEditSelection.fromJson(_asMap(item)))
           .toList(growable: false),
-      sourceTargets: _asList(json['sourceTargets'])
+      sourceTargets: _asList(normalizedJson['sourceTargets'])
           .whereType<Map>()
           .map((final item) => LiveEditSourceTarget.fromJson(_asMap(item)))
           .toList(growable: false),
-      applyMode: LiveEditApplyMode.fromWire(json['applyMode']),
-      selection: switch (json['selection']) {
+      applyMode: LiveEditApplyMode.fromWire(normalizedJson['applyMode']),
+      selection: switch (normalizedJson['selection']) {
         final Map value => LiveEditSelection.fromJson(_asMap(value)),
         _ => null,
       },
-      backendId: _asNullableString(json['backendId']),
+      backendId: _asNullableString(normalizedJson['backendId']),
       inferenceConfig: inferenceConfig,
-      intentText: _asNullableString(json['intentText']),
-      evidence: _asMap(json['evidence']),
-      meta: _asMap(json['meta']),
+      intentText: _asNullableString(normalizedJson['intentText']),
+      selectionIntent: _parseFlowSelectionIntent(
+        normalizedJson['selectionIntent'],
+      ),
+      contextEnvelope: _parseAgentContextEnvelope(
+        normalizedJson['contextEnvelope'],
+      ),
+      evidence: _asMap(normalizedJson['evidence']),
+      meta: _asMap(normalizedJson['meta']),
     );
   }
 
@@ -487,6 +676,8 @@ abstract class LiveEditResolutionRequest with _$LiveEditResolutionRequest {
     if (backendId != null) 'backendId': backendId,
     if (inferenceConfig != null) 'inferenceConfig': inferenceConfig!.toJson(),
     if (intentText != null) 'intentText': intentText,
+    if (selectionIntent != null) 'selectionIntent': selectionIntent!.toJson(),
+    if (contextEnvelope != null) 'contextEnvelope': contextEnvelope!.toJson(),
     'evidence': evidence,
     'meta': meta,
   };
@@ -652,6 +843,7 @@ final class LiveEditMcpToolNames {
 abstract class LiveEditSelection with _$LiveEditSelection {
   const factory LiveEditSelection({
     required final String sessionId,
+    @JsonKey(defaultValue: '') @Default('') final String selectionKey,
     required final String nodeId,
     required final String widgetType,
     @JsonKey(fromJson: _asMap) required final Map<String, Object?> rawNode,
@@ -676,6 +868,8 @@ abstract class LiveEditSelection with _$LiveEditSelection {
   factory LiveEditSelection.fromJson(final Map<String, Object?> json) {
     final map = Map<String, Object?>.from(json);
     map['properties'] = const <Object?>[];
+    map['selectionKey'] =
+        _asNullableString(map['selectionKey'] ?? map['nodeId']) ?? '';
     return _$LiveEditSelectionFromJson(map);
   }
 }
@@ -685,6 +879,7 @@ int _depthFromJson(final Object? v) => _asNullableInt(v) ?? 0;
 @Freezed(fromJson: true, toJson: true)
 abstract class LiveEditSelectionCandidate with _$LiveEditSelectionCandidate {
   const factory LiveEditSelectionCandidate({
+    @JsonKey(defaultValue: '') @Default('') final String selectionKey,
     required final String nodeId,
     required final String widgetType,
     final LiveEditBounds? bounds,
@@ -696,7 +891,11 @@ abstract class LiveEditSelectionCandidate with _$LiveEditSelectionCandidate {
 
   factory LiveEditSelectionCandidate.fromJson(
     final Map<String, Object?> json,
-  ) => _$LiveEditSelectionCandidateFromJson(json);
+  ) => _$LiveEditSelectionCandidateFromJson(<String, Object?>{
+    ...json,
+    'selectionKey':
+        _asNullableString(json['selectionKey'] ?? json['nodeId']) ?? '',
+  });
 }
 
 enum LiveEditSelectionMode {

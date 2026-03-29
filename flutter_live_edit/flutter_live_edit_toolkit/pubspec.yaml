@@ -12,8 +12,8 @@ dependencies:
   flutter:
     sdk: flutter
   freezed_annotation: ^3.1.0
-  from_json_to_json: ^0.4.0
-  is_dart_empty_or_not: ^0.5.0
+  from_json_to_json: ^0.5.0
+  is_dart_empty_or_not: ^0.4.0
   json_annotation: ^4.11.0
   live_edit_tooling_ui_kit:
     path: ../live_edit_tooling_ui_kit
@@ -32,6 +32,10 @@ dev_dependencies:
   json_serializable: ^6.13.1
   lints: ^6.1.0
   xsoulspace_lints: ^0.1.2
+
+dependency_overrides:
+  is_dart_empty_or_not:
+    path: ../../packages/is_dart_empty_or_not
 
 flutter:
   uses-material-design: true

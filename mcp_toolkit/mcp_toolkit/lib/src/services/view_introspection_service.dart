@@ -320,7 +320,7 @@ mixin ViewIntrospectionService {
     final top = jsonDecodeDouble(rect['top']);
     final right = jsonDecodeDouble(rect['right']);
     final bottom = jsonDecodeDouble(rect['bottom']);
-    if (left.isZero || top.isZero || right.isZero || bottom.isZero) {
+    if (left == 0 || top == 0 || right == 0 || bottom == 0) {
       return false;
     }
     return point.dx >= left &&

@@ -17,23 +17,126 @@ class _PropertyPanelBody extends StatelessWidget {
       sessionId: sessionId,
     );
 
-    if (summaries.isEmpty) {
-      return const Center(
-        child: Text(
-          'Tap any widget in the app',
-          style: TextStyle(fontSize: 11),
-        ),
-      );
-    }
-
     return ListView(
       padding: const EdgeInsets.all(8),
       children: <Widget>[
+        PanelSection(
+          title: 'Agent',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              BackendSwitcher(context: context, controller: controller),
+              const SizedBox(height: 8),
+              if (selectCurrentBackendUsesFreeformModel(
+                context,
+                controller,
+                presentationDomain: presentationDomain,
+                sessionId: sessionId,
+              ))
+                Semantics(
+                  identifier: 'live_edit_model_input',
+                  child: TextFormField(
+                    initialValue:
+                        selectCurrentModel(
+                          context,
+                          controller,
+                          presentationDomain: presentationDomain,
+                          sessionId: sessionId,
+                        ) ??
+                        'auto',
+                    decoration: const InputDecoration(
+                      isDense: true,
+                      labelText: 'Model',
+                      border: OutlineInputBorder(),
+                    ),
+                    onChanged: (final value) {
+                      SetInferenceConfigCommand(model: value).execute(context);
+                    },
+                  ),
+                )
+              else ...<Widget>[
+                Semantics(
+                  identifier: 'live_edit_model_dropdown',
+                  child: DropdownButtonFormField<String>(
+                    isDense: true,
+                    initialValue: selectCurrentModel(
+                      context,
+                      controller,
+                      presentationDomain: presentationDomain,
+                      sessionId: sessionId,
+                    ),
+                    decoration: const InputDecoration(
+                      isDense: true,
+                      labelText: 'Model',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: selectCurrentSupportedModels(
+                      context,
+                      controller,
+                      presentationDomain: presentationDomain,
+                      sessionId: sessionId,
+                    ).map((final model) {
+                      return DropdownMenuItem<String>(
+                        value: model.id,
+                        child: Text(model.label),
+                      );
+                    }).toList(growable: false),
+                    onChanged: (final value) {
+                      SetInferenceConfigCommand(model: value).execute(context);
+                    },
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Semantics(
+                  identifier: 'live_edit_reasoning_dropdown',
+                  child: DropdownButtonFormField<String>(
+                    isDense: true,
+                    initialValue: selectCurrentReasoningEffort(
+                      context,
+                      controller,
+                      presentationDomain: presentationDomain,
+                      sessionId: sessionId,
+                    ),
+                    decoration: const InputDecoration(
+                      isDense: true,
+                      labelText: 'Reasoning',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: selectCurrentSupportedReasoningEfforts(
+                      context,
+                      controller,
+                      presentationDomain: presentationDomain,
+                      sessionId: sessionId,
+                    ).map((final effort) {
+                      return DropdownMenuItem<String>(
+                        value: effort,
+                        child: Text(effort),
+                      );
+                    }).toList(growable: false),
+                    onChanged: (final value) {
+                      SetInferenceConfigCommand(
+                        reasoningEffort: value,
+                      ).execute(context);
+                    },
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
         PanelSection(
           title: 'Navigator',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
+              if (summaries.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 4),
+                  child: Text(
+                    'Tap any widget in the app',
+                    style: TextStyle(fontSize: 11),
+                  ),
+                ),
               for (final summary in summaries)
                 ListTile(
                   dense: true,

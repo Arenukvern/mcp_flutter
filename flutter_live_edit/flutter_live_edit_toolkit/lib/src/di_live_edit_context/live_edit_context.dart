@@ -1,6 +1,4 @@
-import '../models/models.dart';
-import '../resources/live_edit_draft.src.data.dart';
-import '../resources/live_edit_selection.src.data.dart';
+import '../resources/live_edit_flow_graph.src.data.dart';
 import '../resources/resources.dart';
 import '../services/services.dart';
 import '../types/live_edit_types.dart';
@@ -11,6 +9,7 @@ final class LiveEditContext {
     required this.sessionResource,
     required this.selectionResource,
     required this.draftResource,
+    required this.flowGraphResource,
     required this.bubbleResource,
     required this.panelViewResource,
     required this.backendConfigResource,
@@ -23,6 +22,7 @@ final class LiveEditContext {
   final LiveEditSessionResource sessionResource;
   final LiveEditSelectionResource selectionResource;
   final LiveEditDraftResource draftResource;
+  final LiveEditFlowGraphResource flowGraphResource;
   final LiveEditBubbleResource bubbleResource;
   final LiveEditPanelViewResource panelViewResource;
   final LiveEditBackendConfigResource backendConfigResource;
@@ -41,32 +41,16 @@ final class LiveEditContext {
     if (update.sessionData != null) {
       sessionResource.value = update.sessionData!;
     }
-    if (update.selectionLayer != null) {
-      final (sessionId, domain, data) = update.selectionLayer!;
-      final state =
-          Map<
-            String,
-            Map<LiveEditTargetDomain, LiveEditSelectionLayerData>
-          >.from(selectionResource.value);
-      state[sessionId] =
-          Map<LiveEditTargetDomain, LiveEditSelectionLayerData>.from(
-            state[sessionId] ??
-                <LiveEditTargetDomain, LiveEditSelectionLayerData>{},
-          );
-      state[sessionId]![domain] = data;
-      selectionResource.value = state;
+    if (update.selectionStore != null) {
+      selectionResource.value = update.selectionStore!;
     }
-    if (update.draftLayer != null) {
-      final (sessionId, domain, data) = update.draftLayer!;
-      final state =
-          Map<String, Map<LiveEditTargetDomain, LiveEditDraftLayerData>>.from(
-            draftResource.value,
-          );
-      state[sessionId] = Map<LiveEditTargetDomain, LiveEditDraftLayerData>.from(
-        state[sessionId] ?? <LiveEditTargetDomain, LiveEditDraftLayerData>{},
+    if (update.draftStore != null) {
+      draftResource.value = update.draftStore!;
+    }
+    if (update.flowGraph != null) {
+      flowGraphResource.value = LiveEditFlowGraphResourceData.fromSnapshot(
+        update.flowGraph!,
       );
-      state[sessionId]![domain] = data;
-      draftResource.value = state;
     }
   }
 }

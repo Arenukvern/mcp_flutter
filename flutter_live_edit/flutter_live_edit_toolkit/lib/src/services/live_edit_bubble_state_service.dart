@@ -218,8 +218,8 @@ final class LiveEditBubbleStateService {
           status: bubble?.status,
           lastError: bubble?.lastError,
           draftChanges: params.draftChanges,
-          backendId: params.getBackendIdForBubble(currentBubbleId),
-          inferenceConfig: params.getInferenceConfigForBubble(currentBubbleId),
+          backendId: bubble?.backendId,
+          inferenceConfig: bubble?.inferenceConfig,
         );
       }
       return currentBubbleId;

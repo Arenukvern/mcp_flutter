@@ -8,7 +8,10 @@
 .build/
 .buildlog/
 .history
+.dart-tool/
+.dartServer
 .svn/
+.codex
 .swiftpm/
 migrate_working_dir/
 # IntelliJ related

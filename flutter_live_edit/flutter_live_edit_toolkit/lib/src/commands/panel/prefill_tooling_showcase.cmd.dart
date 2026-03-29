@@ -26,8 +26,10 @@ final class PrefillToolingShowcaseCommand {
     const bubbleId = 'showcase:tool-layer';
     final selection = LiveEditSelection(
       sessionId: sessionId,
+      selectionKey: 'showcase_bubble',
       nodeId: 'showcase_bubble',
       widgetType: 'SelectionBubble',
+      selectedNodeIds: const <String>['showcase_bubble'],
       rawNode: const <String, Object?>{'surfaceId': 'ai_bubble'},
       targetDomain: LiveEditTargetDomain.toolScene,
       bounds: const LiveEditBounds(

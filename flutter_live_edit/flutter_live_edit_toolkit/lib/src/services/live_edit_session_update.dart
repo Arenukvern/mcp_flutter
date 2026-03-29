@@ -7,23 +7,15 @@ import '../resources/live_edit_session.src.data.dart';
 final class LiveEditSessionUpdate {
   const LiveEditSessionUpdate({
     this.sessionData,
-    this.selectionLayer,
-    this.draftLayer,
+    this.selectionStore,
+    this.draftStore,
+    this.flowGraph = FlowGraphSnapshot.empty,
     this.rawResult,
   });
 
   final LiveEditSessionResourceData? sessionData;
-  final (
-    String sessionId,
-    LiveEditTargetDomain domain,
-    LiveEditSelectionLayerData data,
-  )?
-  selectionLayer;
-  final (
-    String sessionId,
-    LiveEditTargetDomain domain,
-    LiveEditDraftLayerData data,
-  )?
-  draftLayer;
+  final LiveEditSelectionStore? selectionStore;
+  final LiveEditDraftStore? draftStore;
+  final FlowGraphSnapshot? flowGraph;
   final Map<String, Object?>? rawResult;
 }

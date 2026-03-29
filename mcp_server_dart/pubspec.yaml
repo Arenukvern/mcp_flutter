@@ -22,8 +22,8 @@ dependencies:
   equatable: ^2.0.8
   flutter_live_edit_toolkit:
     path: ../flutter_live_edit/flutter_live_edit_toolkit
-  from_json_to_json: ^0.4.0
-  is_dart_empty_or_not: ^0.5.0
+  from_json_to_json: ^0.5.0
+  is_dart_empty_or_not: ^0.4.0
   json_rpc_2: ^4.1.0
   live_edit_tooling_ui_kit:
     path: ../flutter_live_edit/live_edit_tooling_ui_kit
@@ -41,8 +41,3 @@ dev_dependencies:
   test: ^1.31.0
   xsoulspace_inference_core: ^0.1.0-beta.1
   xsoulspace_lints: ^0.1.2
-
-# dependency_overrides:
-# Use local dart_mcp if available, otherwise use pub version
-# dart_mcp:
-#   path: ../dart_mcp

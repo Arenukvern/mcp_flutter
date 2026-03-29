@@ -14,6 +14,7 @@ extension _LiveEditSessionServiceSelectionCommands
     session.marqueeRect = Rect.fromLTWH(x.toDouble(), y.toDouble(), 0, 0);
     session.marqueeHits = const <_ElementHit>[];
     session.marqueeSelections = const <LiveEditSelection>[];
+    session.marqueeSelectionSet = const _SelectionSetState.empty();
     _lastUpdate = _buildLastUpdate();
     return <String, Object?>{'sessionId': session.sessionId, 'started': true};
   }
@@ -44,14 +45,23 @@ extension _LiveEditSessionServiceSelectionCommands
       results: hits,
       requestedViewId: viewId,
     );
-    final ranked = _sortMarqueeHits(session, hits);
+    final ranked = _sortMarqueeHits(session, _dedupeHitsBySelectionKey(session, hits));
     final previewSelections = _buildMarqueeSelections(session, ranked);
+    final marqueeSelectionSet = _selectionSetForKeys(
+      memberKeys: previewSelections.map((final selection) => selection.nodeId),
+      primaryKey: previewSelections.isEmpty ? null : previewSelections.first.nodeId,
+      origin: _SelectionSetOrigin.marquee,
+      focusKind: previewSelections.length > 1
+          ? _SelectionFocusKind.multi
+          : _SelectionFocusKind.single,
+    );
     final shouldNotify =
         session.marqueeRect != rect ||
         !_sameNodeIdSet(session.marqueeSelections, previewSelections);
     session.marqueeRect = rect;
     session.marqueeHits = ranked;
     session.marqueeSelections = previewSelections;
+    session.marqueeSelectionSet = marqueeSelectionSet;
     if (shouldNotify) {
       _lastUpdate = _buildLastUpdate();
     }
@@ -71,6 +81,7 @@ extension _LiveEditSessionServiceSelectionCommands
     session.marqueeRect = null;
     session.marqueeStart = null;
     session.marqueeHits = const <_ElementHit>[];
+    session.marqueeSelectionSet = const _SelectionSetState.empty();
     if (previewSelections.isEmpty || hits.isEmpty) {
       _lastUpdate = _buildLastUpdate();
       return <String, Object?>{
@@ -96,8 +107,8 @@ extension _LiveEditSessionServiceSelectionCommands
           session: session,
           element: hit.element,
           ancestry: hit.ancestry,
+          origin: _SelectionSetOrigin.marquee,
         );
-        session.multiSelections = <LiveEditSelection>[committed];
         _syncSelectionCandidates(session);
         _lastUpdate = _buildLastUpdate();
         return <String, Object?>{
@@ -110,12 +121,17 @@ extension _LiveEditSessionServiceSelectionCommands
     }
     final lightweightSelections = _buildMarqueeSelections(session, hits);
     final selectedNodeIds = lightweightSelections
-        .map((final selection) => selection.nodeId)
+        .map(
+          (final selection) => selection.selectionKey.isNotEmpty
+              ? selection.selectionKey
+              : selection.nodeId,
+        )
         .toList(growable: false);
     final selections = lightweightSelections
         .map(
           (final selection) => LiveEditSelection(
             sessionId: selection.sessionId,
+            selectionKey: selection.selectionKey,
             nodeId: selection.nodeId,
             widgetType: selection.widgetType,
             renderObjectType: selection.renderObjectType,
@@ -134,18 +150,26 @@ extension _LiveEditSessionServiceSelectionCommands
         .toList(growable: false);
     final activeHit = hits.first;
     final activeNodeId =
-        WidgetInspectorService.instance.toId(
-          activeHit.element,
-          session.objectGroup,
-        ) ??
-        selections.first.nodeId;
-    session.selectionHitCandidates = hits;
-    session.multiSelections = selections;
+        _selectionKeyForElement(session, activeHit.element);
+    session.selectionHitCandidates = _dedupeHitsBySelectionKey(session, hits);
     session.selectedElement = activeHit.element;
     session.ancestry = activeHit.ancestry;
-    session.selection = selections.firstWhere(
-      (final selection) => selection.nodeId == activeNodeId,
+    final activeSelection = selections.firstWhere(
+      (final selection) =>
+          (selection.selectionKey.isNotEmpty
+              ? selection.selectionKey
+              : selection.nodeId) ==
+          activeNodeId,
       orElse: () => selections.first,
+    );
+    _setSelectionSet(
+      session: session,
+      selections: selections,
+      primaryKey: activeSelection.selectionKey.isNotEmpty
+          ? activeSelection.selectionKey
+          : activeSelection.nodeId,
+      origin: _SelectionSetOrigin.marquee,
+      activeSelection: activeSelection,
     );
     final tracked = session.trackedSelections[activeNodeId];
     if (tracked != null) {
@@ -163,10 +187,7 @@ extension _LiveEditSessionServiceSelectionCommands
         selectionMode: LiveEditSelectionMode.multi,
         updateInspectorSelection: true,
       );
-      session.selection = hydrated;
       _replaceSelectionInMulti(session, hydrated);
-      session.selectedElement = activeHit.element;
-      session.ancestry = activeHit.ancestry;
       session.lastTouchedAt = DateTime.now().toUtc();
     }
     _syncSelectionCandidates(session);
@@ -175,7 +196,10 @@ extension _LiveEditSessionServiceSelectionCommands
       'sessionId': session.sessionId,
       'selected': true,
       'selectedNodeIds': session.multiSelections
-          .map((final item) => item.nodeId)
+          .map(
+            (final item) =>
+                item.selectionKey.isNotEmpty ? item.selectionKey : item.nodeId,
+          )
           .toList(growable: false),
     };
   }
@@ -198,7 +222,8 @@ extension _LiveEditSessionServiceSelectionCommands
   }) {
     final session = _requireSession(sessionId);
     final layer = _layerForRequest(session, requested: targetDomain);
-    final hits = layer.selectionHitCandidates;
+    final hits = _dedupeHitsBySelectionKey(session, layer.selectionHitCandidates);
+    layer.selectionHitCandidates = hits;
     if (hits.isEmpty) {
       return <String, Object?>{
         'sessionId': session.sessionId,
@@ -225,12 +250,7 @@ extension _LiveEditSessionServiceSelectionCommands
       };
     }
     final hit = hits[resolvedIndex];
-    final hitNodeId =
-        WidgetInspectorService.instance.toId(
-          hit.element,
-          session.objectGroup,
-        ) ??
-        '';
+    final hitNodeId = _selectionKeyForElement(session, hit.element);
     final tracked = layer.trackedSelections[hitNodeId];
     final selection = layer.multiSelections.length > 1 && tracked != null
         ? _hydrateTrackedSelection(
@@ -243,11 +263,9 @@ extension _LiveEditSessionServiceSelectionCommands
             session: session,
             element: hit.element,
             ancestry: hit.ancestry,
+            origin: _SelectionSetOrigin.candidate,
             targetDomain: targetDomain,
           );
-    if (layer.multiSelections.length <= 1) {
-      layer.multiSelections = <LiveEditSelection>[selection];
-    }
     _syncSelectionCandidates(session, requested: targetDomain);
     _lastUpdate = _buildLastUpdate();
     return <String, Object?>{
@@ -279,9 +297,6 @@ extension _LiveEditSessionServiceSelectionCommands
           updateInspectorSelection: true,
           targetDomain: targetDomain,
         );
-        if (layer.multiSelections.length <= 1) {
-          layer.multiSelections = <LiveEditSelection>[selection];
-        }
         _syncSelectionCandidates(session, requested: targetDomain);
         _lastUpdate = _buildLastUpdate();
         return <String, Object?>{
@@ -299,23 +314,37 @@ extension _LiveEditSessionServiceSelectionCommands
           'reason': 'tracked_node_unavailable',
         };
       }
-      layer.selection = surfaceSelection;
-      layer.multiSelections = <LiveEditSelection>[surfaceSelection];
+      final canonicalSelectionKey = surfaceSelection.selectionKey.isNotEmpty
+          ? surfaceSelection.selectionKey
+          : surfaceSelection.nodeId;
+      final normalizedSurfaceSelection = surfaceSelection.copyWith(
+        selectionMode: LiveEditSelectionMode.single,
+        selectedNodeIds: <String>[canonicalSelectionKey],
+      );
+      layer.selection = normalizedSurfaceSelection;
+      layer.selectionSet = _selectionSetForKeys(
+        memberKeys: <String>[canonicalSelectionKey],
+        primaryKey: canonicalSelectionKey,
+        origin: _SelectionSetOrigin.surface,
+      );
+      layer.multiSelections = <LiveEditSelection>[normalizedSurfaceSelection];
       layer.selectionCandidates = <LiveEditSelectionCandidate>[
         LiveEditSelectionCandidate(
-          nodeId: surfaceSelection.nodeId,
-          widgetType: surfaceSelection.widgetType,
-          bounds: surfaceSelection.bounds,
-          source: surfaceSelection.source,
+          selectionKey: normalizedSurfaceSelection.selectionKey,
+          nodeId: normalizedSurfaceSelection.nodeId,
+          widgetType: normalizedSurfaceSelection.widgetType,
+          bounds: normalizedSurfaceSelection.bounds,
+          source: normalizedSurfaceSelection.source,
           createdByLocalProject: true,
           active: true,
         ),
       ];
+      _assertSelectionSetInvariants(layer);
       _lastUpdate = _buildLastUpdate();
       return <String, Object?>{
         'sessionId': session.sessionId,
         'selected': true,
-        'selection': surfaceSelection.toJson(),
+        'selection': normalizedSurfaceSelection.toJson(),
       };
     }
     final tracked = layer.trackedSelections[nodeId];
@@ -334,6 +363,7 @@ extension _LiveEditSessionServiceSelectionCommands
             session: session,
             element: tracked.element,
             ancestry: tracked.ancestry,
+            origin: _SelectionSetOrigin.hydrate,
             targetDomain: targetDomain,
           )
         : _hydrateTrackedSelection(
@@ -342,9 +372,6 @@ extension _LiveEditSessionServiceSelectionCommands
             updateInspectorSelection: true,
             targetDomain: targetDomain,
           );
-    if (layer.multiSelections.length <= 1) {
-      layer.multiSelections = <LiveEditSelection>[selection];
-    }
     _syncSelectionCandidates(session, requested: targetDomain);
     _lastUpdate = _buildLastUpdate();
     return <String, Object?>{
@@ -488,12 +515,7 @@ extension _LiveEditSessionServiceSelectionCommands
     }
     final cached = session.marqueeCache[hit.element];
     final nodeId =
-        cached?.nodeId ??
-        WidgetInspectorService.instance.toId(
-          hit.element,
-          session.objectGroup,
-        ) ??
-        'live_edit_marquee_${session.sessionId}_${hit.element.hashCode}';
+        cached?.nodeId ?? _selectionKeyForElement(session, hit.element);
     final widgetType = hit.element.widget.runtimeType.toString();
     final entry = _MarqueeCandidateCacheEntry(
       element: hit.element,

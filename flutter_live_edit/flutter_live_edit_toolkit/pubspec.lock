@@ -270,11 +270,10 @@ packages:
   is_dart_empty_or_not:
     dependency: "direct main"
     description:
-      name: is_dart_empty_or_not
-      sha256: "1b3294a11fcf6987484a9d1928a47b858a459213eae2f779be092cfa362d5592"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.3.0"
+      path: "../../packages/is_dart_empty_or_not"
+      relative: true
+    source: path
+    version: "0.5.0"
   json_annotation:
     dependency: "direct main"
     description:

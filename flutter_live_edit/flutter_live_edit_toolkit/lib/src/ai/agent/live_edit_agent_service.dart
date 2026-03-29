@@ -581,13 +581,14 @@ final class LiveEditAgentService {
   (LiveEditResolutionRequest, String, LiveEditInferenceConfig?)
   _resolveRequestContext(final LiveEditResolutionRequest request) {
     final requestValidationError = validateResolutionRequest(request);
-    jsonDecodeString(requestValidationError).trim().onNotEmpty((final message) {
+    final validationMessage = jsonDecodeString(requestValidationError).trim();
+    if (validationMessage.isNotEmpty) {
       throw LiveEditAgentException(
         code: 'source_context_unavailable',
-        message: message,
+        message: validationMessage,
         details: request.toJson(),
       );
-    });
+    }
     final backendId = registry.resolveBackendId(
       backendId: request.backendId,
       sessionId: request.sessionId,

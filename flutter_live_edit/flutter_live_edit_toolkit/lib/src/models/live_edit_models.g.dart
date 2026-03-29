@@ -54,6 +54,7 @@ _LiveEditDraftChange _$LiveEditDraftChangeFromJson(Map<String, dynamic> json) =>
           ? 1
           : _confidenceFromJson(json['confidence']),
       intentText: json['intentText'] as String?,
+      targetContext: _parseDraftTargetContext(json['targetContext']),
       meta: json['meta'] as Map<String, dynamic>? ?? const <String, Object?>{},
     );
 
@@ -66,6 +67,7 @@ Map<String, dynamic> _$LiveEditDraftChangeToJson(
   'previewMode': _$LiveEditPreviewModeEnumMap[instance.previewMode]!,
   'confidence': instance.confidence,
   'intentText': instance.intentText,
+  'targetContext': _draftTargetContextToJson(instance.targetContext),
   'meta': instance.meta,
 };
 
@@ -271,6 +273,7 @@ _LiveEditSelection _$LiveEditSelectionFromJson(
   Map<String, dynamic> json,
 ) => _LiveEditSelection(
   sessionId: json['sessionId'] as String,
+  selectionKey: json['selectionKey'] as String? ?? '',
   nodeId: json['nodeId'] as String,
   widgetType: json['widgetType'] as String,
   rawNode: _asMap(json['rawNode']),
@@ -317,6 +320,7 @@ _LiveEditSelection _$LiveEditSelectionFromJson(
 Map<String, dynamic> _$LiveEditSelectionToJson(_LiveEditSelection instance) =>
     <String, dynamic>{
       'sessionId': instance.sessionId,
+      'selectionKey': instance.selectionKey,
       'nodeId': instance.nodeId,
       'widgetType': instance.widgetType,
       'rawNode': instance.rawNode,
@@ -346,6 +350,7 @@ const _$LiveEditSelectionModeEnumMap = {
 _LiveEditSelectionCandidate _$LiveEditSelectionCandidateFromJson(
   Map<String, dynamic> json,
 ) => _LiveEditSelectionCandidate(
+  selectionKey: json['selectionKey'] as String? ?? '',
   nodeId: json['nodeId'] as String,
   widgetType: json['widgetType'] as String,
   bounds: json['bounds'] == null
@@ -362,6 +367,7 @@ _LiveEditSelectionCandidate _$LiveEditSelectionCandidateFromJson(
 Map<String, dynamic> _$LiveEditSelectionCandidateToJson(
   _LiveEditSelectionCandidate instance,
 ) => <String, dynamic>{
+  'selectionKey': instance.selectionKey,
   'nodeId': instance.nodeId,
   'widgetType': instance.widgetType,
   'bounds': instance.bounds,

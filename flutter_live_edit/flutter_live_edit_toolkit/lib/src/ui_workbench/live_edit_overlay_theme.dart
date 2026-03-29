@@ -307,8 +307,10 @@ final class LiveEditOverlayThemeModel extends ChangeNotifier {
     }
     return LiveEditSelection(
       sessionId: sessionId,
+      selectionKey: surfaceId,
       nodeId: surfaceId,
       widgetType: surfaceId,
+      selectedNodeIds: <String>[surfaceId],
       targetDomain: LiveEditTargetDomain.toolScene,
       bounds: _boundsForKey(keyFor(surfaceId)),
       source: const LiveEditSourceLocation(

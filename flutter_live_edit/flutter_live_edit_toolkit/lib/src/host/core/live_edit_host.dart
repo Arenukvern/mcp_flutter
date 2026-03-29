@@ -216,6 +216,36 @@ class _FlutterLiveEditHostState extends State<FlutterLiveEditHost> {
   final LiveEditOverlayThemeModel _overlayTheme =
       LiveEditOverlayThemeModel.instance;
 
+  void _syncOrchestratorBinding() {
+    if (widget.orchestrator != null) {
+      if (_ownsOrchestrator && _orchestrator != null) {
+        _orchestrator!.dispose();
+      }
+      _orchestrator = widget.orchestrator;
+      _ownsOrchestrator = false;
+      return;
+    }
+    final scope = LiveEditScope.maybeOf(context);
+    if (scope != null) {
+      if (_ownsOrchestrator && _orchestrator != null) {
+        _orchestrator!.dispose();
+        _orchestrator = null;
+      }
+      _ownsOrchestrator = false;
+      return;
+    }
+    if (_orchestrator == null) {
+      _orchestrator = LiveEditOrchestrator(
+        applyDraftDelegate: widget.applyDraftDelegate,
+        backendId: widget.backendId,
+        availableBackends: widget.availableBackends,
+        workingDirectory: widget.workingDirectory,
+        intentText: widget.intentText,
+      );
+      _ownsOrchestrator = true;
+    }
+  }
+
   bool get _editableTextHasPrimaryFocus {
     final focus = FocusManager.instance.primaryFocus;
     final context = focus?.context;
@@ -357,6 +387,9 @@ class _FlutterLiveEditHostState extends State<FlutterLiveEditHost> {
   @override
   void didUpdateWidget(covariant final FlutterLiveEditHost oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (widget.orchestrator != oldWidget.orchestrator) {
+      _syncOrchestratorBinding();
+    }
     if (_orchestrator == null) return;
     if (widget.availableBackends != oldWidget.availableBackends) {
       SetAvailableBackendsCommand(
@@ -389,6 +422,11 @@ class _FlutterLiveEditHostState extends State<FlutterLiveEditHost> {
       _orchestrator = widget.orchestrator;
       _ownsOrchestrator = false;
     }
-    // When orchestrator is null, host must be under LiveEditScope (checked in build).
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _syncOrchestratorBinding();
   }
 }

@@ -83,14 +83,33 @@ bool _sameNodeIdSet(
   final List<LiveEditSelection> left,
   final List<LiveEditSelection> right,
 ) {
-  if (identical(left, right)) {
-    return true;
-  }
-  if (left.length != right.length) {
+  return _sameSelectionKeySet(
+    left.map((final selection) => selection.nodeId),
+    right.map((final selection) => selection.nodeId),
+  );
+}
+
+List<String> _canonicalSelectionKeys(final Iterable<String> keys) {
+  final normalized = keys
+      .map((final key) => key.trim())
+      .where((final key) => key.isNotEmpty)
+      .toSet()
+      .toList(growable: false)
+    ..sort();
+  return normalized;
+}
+
+bool _sameSelectionKeySet(
+  final Iterable<String> left,
+  final Iterable<String> right,
+) {
+  final leftKeys = _canonicalSelectionKeys(left);
+  final rightKeys = _canonicalSelectionKeys(right);
+  if (leftKeys.length != rightKeys.length) {
     return false;
   }
-  for (var index = 0; index < left.length; index += 1) {
-    if (left[index].nodeId != right[index].nodeId) {
+  for (var index = 0; index < leftKeys.length; index += 1) {
+    if (leftKeys[index] != rightKeys[index]) {
       return false;
     }
   }
@@ -255,6 +274,110 @@ final class _SelectionCandidateMetadata {
 
   bool get hasStrongProjectOwnership =>
       createdByLocalProject || hasProjectPathSignal;
+}
+
+String _selectionKeyForElement(
+  final _LiveEditSessionState session,
+  final Element element,
+) {
+  final inspectorKey = WidgetInspectorService.instance.toId(
+    element,
+    session.objectGroup,
+  );
+  if (_hasText(inspectorKey)) {
+    return inspectorKey!;
+  }
+  session.fallbackSelectionKeys.removeWhere(
+    (final candidate, final _) => !candidate.mounted,
+  );
+  return session.fallbackSelectionKeys.putIfAbsent(element, () {
+    session.fallbackSelectionKeyCounter += 1;
+    final sequence = session.fallbackSelectionKeyCounter.toString().padLeft(
+      6,
+      '0',
+    );
+    return 'live_edit_node_${session.sessionId}_$sequence';
+  });
+}
+
+List<_ElementHit> _dedupeHitsBySelectionKey(
+  final _LiveEditSessionState session,
+  final List<_ElementHit> hits,
+) {
+  if (hits.length < 2) {
+    return hits;
+  }
+  final deduped = <String, _ElementHit>{};
+  for (final hit in hits) {
+    deduped.putIfAbsent(
+      _selectionKeyForElement(session, hit.element),
+      () => hit,
+    );
+  }
+  return deduped.values.toList(growable: false);
+}
+
+_SelectionSetState _selectionSetForKeys({
+  required final Iterable<String> memberKeys,
+  final String? primaryKey,
+  required final _SelectionSetOrigin origin,
+  final _SelectionFocusKind? focusKind,
+}) {
+  final normalizedKeys = _canonicalSelectionKeys(memberKeys);
+  return _SelectionSetState(
+    primaryKey: primaryKey,
+    memberKeys: normalizedKeys,
+    origin: origin,
+    focusKind:
+        focusKind ??
+        (normalizedKeys.length > 1
+            ? _SelectionFocusKind.multi
+            : _SelectionFocusKind.single),
+  ).normalized(primaryKey: primaryKey);
+}
+
+void _assertSelectionSetInvariants(final _LiveEditLayerState layer) {
+  assert(() {
+    final selectionSet = layer.selectionSet.normalized();
+    if (selectionSet.isEmpty) {
+      if (layer.selection != null || layer.multiSelections.isNotEmpty) {
+        throw StateError('empty selection set must not keep active members');
+      }
+      return true;
+    }
+    final primaryKey = selectionSet.primaryKey;
+    if (primaryKey == null || !selectionSet.contains(primaryKey)) {
+      throw StateError('active selection key must belong to selection set');
+    }
+    if (selectionSet.isSingle && selectionSet.memberKeys.length != 1) {
+      throw StateError('single selection set must have exactly one member');
+    }
+    final activeSelection = layer.selection;
+    if (activeSelection != null) {
+      final activeSelectionKey = activeSelection.selectionKey.isNotEmpty
+          ? activeSelection.selectionKey
+          : activeSelection.nodeId;
+      if (activeSelectionKey != primaryKey) {
+        throw StateError('active selection must match primary selection key');
+      }
+      if (!_sameSelectionKeySet(
+        activeSelection.selectedNodeIds,
+        selectionSet.memberKeys,
+      )) {
+        throw StateError('selection ids must derive from selection set');
+      }
+    }
+    final candidateKeys = <String>{};
+    for (final candidate in layer.selectionCandidates) {
+      final candidateKey = candidate.selectionKey.isNotEmpty
+          ? candidate.selectionKey
+          : candidate.nodeId;
+      if (!candidateKeys.add(candidateKey)) {
+        throw StateError('candidate list keys must be unique within a frame');
+      }
+    }
+    return true;
+  }());
 }
 
 final class _MarqueeCandidateCacheEntry {

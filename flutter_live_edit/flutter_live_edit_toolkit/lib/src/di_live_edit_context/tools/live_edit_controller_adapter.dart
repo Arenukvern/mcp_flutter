@@ -15,11 +15,9 @@ final class LiveEditController {
     final String? sessionId,
   }) {
     final sid = sessionId ?? _context.sessionResource.value.activeSessionId;
-    if (sid == null) return const <LiveEditDraftChange>[];
-    final byDomain = _context.draftResource.value[sid];
-    if (byDomain == null) return const <LiveEditDraftChange>[];
-    return byDomain[targetDomain]?.draftChanges ??
-        const <LiveEditDraftChange>[];
+    return _context.draftResource.value
+        .layerFor(sid, targetDomain)
+        .draftChanges;
   }
 
   LiveEditSelection? hoverSelectionForDomain({
@@ -27,10 +25,9 @@ final class LiveEditController {
     final String? sessionId,
   }) {
     final sid = sessionId ?? _context.sessionResource.value.activeSessionId;
-    if (sid == null) return null;
-    final byDomain = _context.selectionResource.value[sid];
-    if (byDomain == null) return null;
-    return byDomain[targetDomain]?.hoverSelection;
+    return _context.selectionResource.value
+        .layerFor(sid, targetDomain)
+        .hoverSelection;
   }
 
   Rect? marqueeRectForDomain({
@@ -38,10 +35,9 @@ final class LiveEditController {
     final String? sessionId,
   }) {
     final sid = sessionId ?? _context.sessionResource.value.activeSessionId;
-    if (sid == null) return null;
-    final byDomain = _context.selectionResource.value[sid];
-    if (byDomain == null) return null;
-    return byDomain[targetDomain]?.marqueeRect;
+    return _context.selectionResource.value
+        .layerFor(sid, targetDomain)
+        .marqueeRect;
   }
 
   List<LiveEditSelection> marqueeSelectionsForDomain({
@@ -49,11 +45,9 @@ final class LiveEditController {
     final String? sessionId,
   }) {
     final sid = sessionId ?? _context.sessionResource.value.activeSessionId;
-    if (sid == null) return const <LiveEditSelection>[];
-    final byDomain = _context.selectionResource.value[sid];
-    if (byDomain == null) return const <LiveEditSelection>[];
-    return byDomain[targetDomain]?.marqueeSelections ??
-        const <LiveEditSelection>[];
+    return _context.selectionResource.value
+        .layerFor(sid, targetDomain)
+        .marqueeSelections;
   }
 
   List<LiveEditSelection> multiSelectionForDomain({
@@ -61,11 +55,9 @@ final class LiveEditController {
     final String? sessionId,
   }) {
     final sid = sessionId ?? _context.sessionResource.value.activeSessionId;
-    if (sid == null) return const <LiveEditSelection>[];
-    final byDomain = _context.selectionResource.value[sid];
-    if (byDomain == null) return const <LiveEditSelection>[];
-    return byDomain[targetDomain]?.multiSelections ??
-        const <LiveEditSelection>[];
+    return _context.selectionResource.value
+        .layerFor(sid, targetDomain)
+        .multiSelections;
   }
 
   LiveEditSelection? selectionForDomain({
@@ -73,10 +65,9 @@ final class LiveEditController {
     final String? sessionId,
   }) {
     final sid = sessionId ?? _context.sessionResource.value.activeSessionId;
-    if (sid == null) return null;
-    final byDomain = _context.selectionResource.value[sid];
-    if (byDomain == null) return null;
-    return byDomain[targetDomain]?.selection;
+    return _context.selectionResource.value
+        .layerFor(sid, targetDomain)
+        .selection;
   }
 
   LiveEditSelection? get hoverSelection => hoverSelectionForDomain(
@@ -94,10 +85,8 @@ final class LiveEditController {
     final String? sessionId,
   }) {
     final sid = sessionId ?? _context.sessionResource.value.activeSessionId;
-    if (sid == null) return const <LiveEditSelectionCandidate>[];
-    final byDomain = _context.selectionResource.value[sid];
-    if (byDomain == null) return const <LiveEditSelectionCandidate>[];
-    return byDomain[targetDomain]?.selectionCandidates ??
-        const <LiveEditSelectionCandidate>[];
+    return _context.selectionResource.value
+        .layerFor(sid, targetDomain)
+        .selectionCandidates;
   }
 }

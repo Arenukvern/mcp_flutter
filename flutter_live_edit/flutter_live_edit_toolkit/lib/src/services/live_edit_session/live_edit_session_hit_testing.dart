@@ -10,8 +10,7 @@ _SelectionCandidateMetadata _selectionMetadataForElement(
 }) {
   final nodeId =
       cachedNodeId ??
-      WidgetInspectorService.instance.toId(element, session.objectGroup) ??
-      'live_edit_candidate_${session.sessionId}_${element.hashCode}';
+      _selectionKeyForElement(session, element);
   final detailsTree =
       cachedDetailsTree ??
       _decodeObject(
@@ -432,9 +431,7 @@ LiveEditSelection _buildHoverSelection({
   required final LiveEditTargetDomain targetDomain,
 }) {
   final renderObject = _previewRenderObjectForElement(element);
-  final nodeId =
-      WidgetInspectorService.instance.toId(element, session.objectGroup) ??
-      'live_edit_hover_${DateTime.now().microsecondsSinceEpoch}';
+  final nodeId = _selectionKeyForElement(session, element);
   final tracked = session.trackedSelections[nodeId]?.selection;
   final detailsTree = tracked?.detailsTree ?? const <String, Object?>{};
   final surfaceId = _toolSurfaceIdForElement(element);
@@ -449,6 +446,7 @@ LiveEditSelection _buildHoverSelection({
           : const <String, Object?>{});
   return LiveEditSelection(
     sessionId: session.sessionId,
+    selectionKey: nodeId,
     nodeId: nodeId,
     widgetType: element.widget.runtimeType.toString(),
     targetDomain: targetDomain,
@@ -477,12 +475,11 @@ LiveEditSelection _buildLightweightSelection({
 }) {
   final element = hit.element;
   final renderObject = _previewRenderObjectForElement(element);
-  final nodeId =
-      WidgetInspectorService.instance.toId(element, session.objectGroup) ??
-      'live_edit_preview_${DateTime.now().microsecondsSinceEpoch}';
+  final nodeId = _selectionKeyForElement(session, element);
   final tracked = session.trackedSelections[nodeId]?.selection;
   return LiveEditSelection(
     sessionId: session.sessionId,
+    selectionKey: nodeId,
     nodeId: nodeId,
     widgetType: element.widget.runtimeType.toString(),
     targetDomain: session.targetDomain,
@@ -507,6 +504,7 @@ LiveEditSelection _buildLightweightSelectionFromCache({
   final tracked = session.trackedSelections[entry.nodeId]?.selection;
   return LiveEditSelection(
     sessionId: session.sessionId,
+    selectionKey: entry.nodeId,
     nodeId: entry.nodeId,
     widgetType: entry.widgetType,
     targetDomain: session.targetDomain,

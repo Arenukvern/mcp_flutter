@@ -271,6 +271,149 @@ extension _LiveEditSessionServicePreview on _LiveEditSessionServiceCore {
     return session.targetDomain;
   }
 
+  List<LiveEditSelection> _normalizeSelectionsForSet(
+    final Iterable<LiveEditSelection> selections,
+    final _SelectionSetState selectionSet,
+  ) {
+    final keyedSelections = <String, LiveEditSelection>{
+      for (final selection in selections)
+        (selection.selectionKey.isNotEmpty
+                ? selection.selectionKey
+                : selection.nodeId): selection,
+    };
+    final normalized = <LiveEditSelection>[];
+    final selectionMode = selectionSet.isSingle
+        ? LiveEditSelectionMode.single
+        : LiveEditSelectionMode.multi;
+    for (final key in selectionSet.memberKeys) {
+      final selection = keyedSelections[key];
+      if (selection == null) {
+        continue;
+      }
+      normalized.add(
+        selection.copyWith(
+          selectionMode: selectionMode,
+          selectedNodeIds: selectionSet.memberKeys,
+        ),
+      );
+    }
+    return normalized;
+  }
+
+  void _applySelectionSetState(
+    final _LiveEditLayerState layer,
+    final _SelectionSetState selectionSet, {
+    required final Iterable<LiveEditSelection> selections,
+    final LiveEditSelection? activeSelection,
+  }) {
+    layer.selectionSet = selectionSet.normalized();
+    layer.multiSelections = _normalizeSelectionsForSet(
+      selections,
+      layer.selectionSet,
+    );
+    layer.selection = activeSelection == null
+        ? null
+        : activeSelection.copyWith(
+            selectionMode: layer.selectionSet.isSingle
+                ? LiveEditSelectionMode.single
+                : LiveEditSelectionMode.multi,
+            selectedNodeIds: layer.selectionSet.memberKeys,
+          );
+    _assertSelectionSetInvariants(layer);
+  }
+
+  LiveEditSelection _setSingleSelection({
+    required final _LiveEditSessionState session,
+    required final Element element,
+    required final List<Map<String, Object?>> ancestry,
+    required final _SelectionSetOrigin origin,
+    final LiveEditTargetDomain? targetDomain,
+  }) {
+    final layer = _layerForRequest(session, requested: targetDomain);
+    if (layer.selectedElement != null && layer.selectedElement != element) {
+      _revertExactPreview(session, layer: layer);
+    }
+    final selectionKey = _selectionKeyForElement(session, element);
+    final selectionSet = _selectionSetForKeys(
+      memberKeys: <String>[selectionKey],
+      primaryKey: selectionKey,
+      origin: origin,
+    );
+    final selection = _buildSelection(
+      session: session,
+      element: element,
+      ancestry: ancestry,
+      selectedNodeIds: selectionSet.memberKeys,
+      selectionMode: LiveEditSelectionMode.single,
+      updateInspectorSelection: true,
+      targetDomain: targetDomain,
+    );
+    layer.selectedElement = element;
+    layer.ancestry = ancestry;
+    _applySelectionSetState(
+      layer,
+      selectionSet,
+      selections: <LiveEditSelection>[selection],
+      activeSelection: selection,
+    );
+    session.lastTouchedAt = DateTime.now().toUtc();
+    return layer.selection!;
+  }
+
+  void _setSelectionSet({
+    required final _LiveEditSessionState session,
+    required final Iterable<LiveEditSelection> selections,
+    required final String primaryKey,
+    required final _SelectionSetOrigin origin,
+    final LiveEditTargetDomain? targetDomain,
+    final LiveEditSelection? activeSelection,
+  }) {
+    final layer = _layerForRequest(session, requested: targetDomain);
+    final selectionSet = _selectionSetForKeys(
+      memberKeys: selections.map(
+        (final selection) => selection.selectionKey.isNotEmpty
+            ? selection.selectionKey
+            : selection.nodeId,
+      ),
+      primaryKey: primaryKey,
+      origin: origin,
+      focusKind: _SelectionFocusKind.multi,
+    );
+    _applySelectionSetState(
+      layer,
+      selectionSet,
+      selections: selections,
+      activeSelection: activeSelection,
+    );
+  }
+
+  LiveEditSelection _activateMemberWithinSelectionSet({
+    required final _LiveEditSessionState session,
+    required final LiveEditSelection selection,
+    required final Element element,
+    required final List<Map<String, Object?>> ancestry,
+    required final _SelectionSetOrigin origin,
+    final LiveEditTargetDomain? targetDomain,
+  }) {
+    final layer = _layerForRequest(session, requested: targetDomain);
+    final nextSelectionSet = layer.selectionSet.normalized(
+      primaryKey: selection.selectionKey.isNotEmpty
+          ? selection.selectionKey
+          : selection.nodeId,
+      origin: origin,
+    );
+    layer.selectedElement = element;
+    layer.ancestry = ancestry;
+    _applySelectionSetState(
+      layer,
+      nextSelectionSet,
+      selections: <LiveEditSelection>[...layer.multiSelections, selection],
+      activeSelection: selection,
+    );
+    session.lastTouchedAt = DateTime.now().toUtc();
+    return layer.selection!;
+  }
+
   void _revertExactPreview(
     final _LiveEditSessionState session, {
     required final _LiveEditLayerState layer,
@@ -386,9 +529,7 @@ extension _LiveEditSessionServicePreview on _LiveEditSessionServiceCore {
     final bool updateInspectorSelection = false,
     final LiveEditTargetDomain? targetDomain,
   }) {
-    final nodeId =
-        WidgetInspectorService.instance.toId(element, session.objectGroup) ??
-        'live_edit_node_${DateTime.now().microsecondsSinceEpoch}';
+    final nodeId = _selectionKeyForElement(session, element);
     final resolvedDomain = _resolveTargetDomain(session, targetDomain);
     if (updateInspectorSelection) {
       WidgetInspectorService.instance.setSelection(
@@ -427,6 +568,7 @@ extension _LiveEditSessionServicePreview on _LiveEditSessionServiceCore {
     );
     final selection = LiveEditSelection(
       sessionId: session.sessionId,
+      selectionKey: nodeId,
       nodeId: nodeId,
       widgetType: element.widget.runtimeType.toString(),
       targetDomain: resolvedDomain,
@@ -464,34 +606,15 @@ extension _LiveEditSessionServicePreview on _LiveEditSessionServiceCore {
     required final _LiveEditSessionState session,
     required final Element element,
     required final List<Map<String, Object?>> ancestry,
+    final _SelectionSetOrigin origin = _SelectionSetOrigin.hitTest,
     final LiveEditTargetDomain? targetDomain,
-  }) {
-    final layer = _layerForRequest(session, requested: targetDomain);
-    if (layer.selectedElement != null && layer.selectedElement != element) {
-      _revertExactPreview(session, layer: layer);
-    }
-
-    final selection = _buildSelection(
-      session: session,
-      element: element,
-      ancestry: ancestry,
-      selectedNodeIds: layer.multiSelections
-          .map((final item) => item.nodeId)
-          .toList(growable: false),
-      selectionMode: layer.multiSelections.length > 1
-          ? LiveEditSelectionMode.multi
-          : LiveEditSelectionMode.single,
-      updateInspectorSelection: true,
-      targetDomain: targetDomain,
-    );
-
-    layer.selectedElement = element;
-    layer.selection = selection;
-    layer.ancestry = ancestry;
-    layer.multiSelections = <LiveEditSelection>[selection];
-    session.lastTouchedAt = DateTime.now().toUtc();
-    return selection;
-  }
+  }) => _setSingleSelection(
+    session: session,
+    element: element,
+    ancestry: ancestry,
+    origin: origin,
+    targetDomain: targetDomain,
+  );
 
   void _replaceSelectionInMulti(
     final _LiveEditSessionState session,
@@ -499,18 +622,20 @@ extension _LiveEditSessionServicePreview on _LiveEditSessionServiceCore {
     final LiveEditTargetDomain? targetDomain,
   }) {
     final layer = _layerForRequest(session, requested: targetDomain);
-    final hasExisting = layer.multiSelections.any(
-      (final candidate) => candidate.nodeId == selection.nodeId,
+    final existingSelections = <LiveEditSelection>[
+      ...layer.multiSelections.where(
+        (final candidate) => candidate.nodeId != selection.nodeId,
+      ),
+      selection,
+    ];
+    _applySelectionSetState(
+      layer,
+      layer.selectionSet,
+      selections: existingSelections,
+      activeSelection: layer.selection?.nodeId == selection.nodeId
+          ? selection
+          : layer.selection,
     );
-    final nextSelections = layer.multiSelections
-        .map(
-          (final candidate) =>
-              candidate.nodeId == selection.nodeId ? selection : candidate,
-        )
-        .toList(growable: false);
-    layer.multiSelections = hasExisting
-        ? nextSelections
-        : <LiveEditSelection>[...nextSelections, selection];
   }
 
   LiveEditSelection _hydrateTrackedSelection({
@@ -520,9 +645,11 @@ extension _LiveEditSessionServicePreview on _LiveEditSessionServiceCore {
     final LiveEditTargetDomain? targetDomain,
   }) {
     final layer = _layerForRequest(session, requested: targetDomain);
-    final selectedNodeIds = layer.multiSelections
-        .map((final selection) => selection.nodeId)
-        .toList(growable: false);
+    final selectedNodeIds = layer.selectionSet.memberKeys.isEmpty
+        ? layer.multiSelections
+              .map((final selection) => selection.nodeId)
+              .toList(growable: false)
+        : layer.selectionSet.memberKeys;
     final hydrated = _buildSelection(
       session: session,
       element: tracked.element,
@@ -534,12 +661,14 @@ extension _LiveEditSessionServicePreview on _LiveEditSessionServiceCore {
       updateInspectorSelection: updateInspectorSelection,
       targetDomain: targetDomain,
     );
-    layer.selectedElement = tracked.element;
-    layer.selection = hydrated;
-    layer.ancestry = tracked.ancestry;
-    _replaceSelectionInMulti(session, hydrated, targetDomain: targetDomain);
-    session.lastTouchedAt = DateTime.now().toUtc();
-    return hydrated;
+    return _activateMemberWithinSelectionSet(
+      session: session,
+      selection: hydrated,
+      element: tracked.element,
+      ancestry: tracked.ancestry,
+      origin: _SelectionSetOrigin.hydrate,
+      targetDomain: targetDomain,
+    );
   }
 
   void _syncSelectionCandidates(
@@ -548,19 +677,19 @@ extension _LiveEditSessionServicePreview on _LiveEditSessionServiceCore {
   }) {
     final layer = _layerForRequest(session, requested: requested);
     final targetDomain = _resolveTargetDomain(session, requested);
-    final activeElement = layer.selectedElement;
-    layer.selectionCandidates = layer.selectionHitCandidates.indexed
+    final activeSelectionKey = layer.selectionSet.primaryKey;
+    final dedupedHits = _dedupeHitsBySelectionKey(
+      session,
+      layer.selectionHitCandidates,
+    );
+    layer.selectionHitCandidates = dedupedHits;
+    layer.selectionCandidates = dedupedHits.indexed
         .take(12)
         .map((final entry) {
           final index = entry.$1;
           final hit = entry.$2;
           final renderObject = _previewRenderObjectForElement(hit.element);
-          final nodeId =
-              WidgetInspectorService.instance.toId(
-                hit.element,
-                session.objectGroup,
-              ) ??
-              'live_edit_candidate_${session.sessionId}_$index';
+          final nodeId = _selectionKeyForElement(session, hit.element);
           final detailsTree = _decodeObject(
             WidgetInspectorService.instance.getDetailsSubtree(
               nodeId,
@@ -580,6 +709,7 @@ extension _LiveEditSessionServicePreview on _LiveEditSessionServiceCore {
             targetDomain: targetDomain,
           );
           return LiveEditSelectionCandidate(
+            selectionKey: nodeId,
             nodeId: nodeId,
             widgetType: hit.element.widget.runtimeType.toString(),
             bounds: _boundsForRenderObject(renderObject),
@@ -588,9 +718,10 @@ extension _LiveEditSessionServicePreview on _LiveEditSessionServiceCore {
             createdByLocalProject:
                 targetDomain == LiveEditTargetDomain.toolScene ||
                 metadata.createdByLocalProject,
-            active: identical(hit.element, activeElement),
+            active: nodeId == activeSelectionKey,
           );
         })
         .toList(growable: false);
+    _assertSelectionSetInvariants(layer);
   }
 }

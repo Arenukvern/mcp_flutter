@@ -25,6 +25,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     _sessionResource = LiveEditSessionResource();
     _selectionResource = LiveEditSelectionResource();
     _draftResource = LiveEditDraftResource();
+    _flowGraphResource = LiveEditFlowGraphResource();
     _bubbleResource = LiveEditBubbleResource();
     _panelViewResource = LiveEditPanelViewResource();
     final backends = List<LiveEditAgentBackend>.unmodifiable(availableBackends);
@@ -55,6 +56,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
       sessionResource: _sessionResource,
       selectionResource: _selectionResource,
       draftResource: _draftResource,
+      flowGraphResource: _flowGraphResource,
       bubbleResource: _bubbleResource,
       panelViewResource: _panelViewResource,
       backendConfigResource: _backendConfigResource,
@@ -69,6 +71,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     _sessionResource.addListener(onResourceChange);
     _selectionResource.addListener(onResourceChange);
     _draftResource.addListener(onResourceChange);
+    _flowGraphResource.addListener(onResourceChange);
     _bubbleResource.addListener(onResourceChange);
     _panelViewResource.addListener(onResourceChange);
     _backendConfigResource.addListener(onResourceChange);
@@ -77,6 +80,7 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   late final LiveEditSessionResource _sessionResource;
   late final LiveEditSelectionResource _selectionResource;
   late final LiveEditDraftResource _draftResource;
+  late final LiveEditFlowGraphResource _flowGraphResource;
   late final LiveEditBubbleResource _bubbleResource;
   late final LiveEditPanelViewResource _panelViewResource;
   late final LiveEditBackendConfigResource _backendConfigResource;

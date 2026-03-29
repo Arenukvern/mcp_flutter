@@ -15,11 +15,16 @@ final class SetBubbleBackendCommand {
   final LiveEditInferenceConfig? inferenceConfig;
 
   void execute(final LiveEditContext context) {
-    final bubble = context.bubbleResource.value.bubbleRecordsById[bubbleId];
-    if (bubble == null) return;
     final records = Map<String, LiveEditBubbleRecord>.from(
       context.bubbleResource.value.bubbleRecordsById,
     );
+    final bubble =
+        records[bubbleId] ??
+        LiveEditBubbleRecord(
+          bubbleId: bubbleId,
+          targetDomain: _targetDomainForBubbleId(bubbleId),
+          targetKey: _targetKeyForBubbleId(bubbleId),
+        );
     records[bubbleId] = bubble.copyWith(
       backendId: backendId,
       inferenceConfig: inferenceConfig,
@@ -28,4 +33,20 @@ final class SetBubbleBackendCommand {
       bubbleRecordsById: records,
     );
   }
+}
+
+LiveEditTargetDomain _targetDomainForBubbleId(final String bubbleId) {
+  final separatorIndex = bubbleId.indexOf('::');
+  final domainToken = separatorIndex < 0
+      ? bubbleId
+      : bubbleId.substring(0, separatorIndex);
+  return LiveEditTargetDomain.fromWire(domainToken);
+}
+
+String _targetKeyForBubbleId(final String bubbleId) {
+  final separatorIndex = bubbleId.indexOf('::');
+  if (separatorIndex < 0 || separatorIndex + 2 >= bubbleId.length) {
+    return bubbleId;
+  }
+  return bubbleId.substring(separatorIndex + 2);
 }

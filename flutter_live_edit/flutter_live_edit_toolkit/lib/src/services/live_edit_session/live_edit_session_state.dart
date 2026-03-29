@@ -20,6 +20,63 @@ final class _ElementHit {
   final bool edgeHit;
 }
 
+enum _SelectionSetOrigin {
+  unknown,
+  hitTest,
+  marquee,
+  candidate,
+  hydrate,
+  surface,
+}
+
+enum _SelectionFocusKind {
+  single,
+  multi,
+}
+
+final class _SelectionSetState {
+  const _SelectionSetState({
+    required this.primaryKey,
+    required this.memberKeys,
+    required this.origin,
+    required this.focusKind,
+  });
+
+  const _SelectionSetState.empty()
+      : primaryKey = null,
+        memberKeys = const <String>[],
+        origin = _SelectionSetOrigin.unknown,
+        focusKind = _SelectionFocusKind.single;
+
+  final String? primaryKey;
+  final List<String> memberKeys;
+  final _SelectionSetOrigin origin;
+  final _SelectionFocusKind focusKind;
+
+  bool get isEmpty => memberKeys.isEmpty;
+
+  bool get isSingle => memberKeys.length == 1;
+
+  bool contains(final String selectionKey) => memberKeys.contains(selectionKey);
+
+  _SelectionSetState normalized({
+    final String? primaryKey,
+    final _SelectionSetOrigin? origin,
+    final _SelectionFocusKind? focusKind,
+  }) {
+    final keys = _canonicalSelectionKeys(memberKeys);
+    final resolvedPrimary = _hasText(primaryKey) && keys.contains(primaryKey)
+        ? primaryKey!.trim()
+        : (keys.isEmpty ? null : keys.first);
+    return _SelectionSetState(
+      primaryKey: resolvedPrimary,
+      memberKeys: keys,
+      origin: origin ?? this.origin,
+      focusKind: focusKind ?? this.focusKind,
+    );
+  }
+}
+
 final class _LiveEditSessionState {
   _LiveEditSessionState({required this.sessionId, required this.objectGroup});
 
@@ -29,6 +86,8 @@ final class _LiveEditSessionState {
   bool overlayEnabled = false;
   final _LiveEditLayerState appLayer = _LiveEditLayerState();
   final _LiveEditLayerState toolLayer = _LiveEditLayerState();
+  final Map<Element, String> fallbackSelectionKeys = <Element, String>{};
+  int fallbackSelectionKeyCounter = 0;
   DateTime lastTouchedAt = DateTime.now().toUtc();
 
   _LiveEditLayerState layerFor(final LiveEditTargetDomain domain) =>
@@ -102,6 +161,14 @@ final class _LiveEditSessionState {
   set multiSelections(final List<LiveEditSelection> value) =>
       currentLayer.multiSelections = value;
 
+  _SelectionSetState get selectionSet => currentLayer.selectionSet;
+  set selectionSet(final _SelectionSetState value) =>
+      currentLayer.selectionSet = value;
+
+  _SelectionSetState get marqueeSelectionSet => currentLayer.marqueeSelectionSet;
+  set marqueeSelectionSet(final _SelectionSetState value) =>
+      currentLayer.marqueeSelectionSet = value;
+
   Map<Element, _MarqueeCandidateCacheEntry> get marqueeCache =>
       currentLayer.marqueeCache;
 
@@ -132,6 +199,8 @@ final class _LiveEditLayerState {
   List<_ElementHit> marqueeHits = const <_ElementHit>[];
   List<LiveEditSelection> marqueeSelections = const <LiveEditSelection>[];
   List<LiveEditSelection> multiSelections = const <LiveEditSelection>[];
+  _SelectionSetState selectionSet = const _SelectionSetState.empty();
+  _SelectionSetState marqueeSelectionSet = const _SelectionSetState.empty();
   final Map<Element, _MarqueeCandidateCacheEntry> marqueeCache =
       <Element, _MarqueeCandidateCacheEntry>{};
   final Map<String, Object?> originalExactValues = <String, Object?>{};

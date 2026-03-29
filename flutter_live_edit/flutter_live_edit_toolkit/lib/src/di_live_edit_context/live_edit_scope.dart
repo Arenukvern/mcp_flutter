@@ -53,6 +53,7 @@ final class LiveEditScopeData {
     required this.sessionResource,
     required this.selectionResource,
     required this.draftResource,
+    required this.flowGraphResource,
     required this.bubbleResource,
     required this.panelViewResource,
     required this.backendConfigResource,
@@ -63,6 +64,7 @@ final class LiveEditScopeData {
   final LiveEditSessionResource sessionResource;
   final LiveEditSelectionResource selectionResource;
   final LiveEditDraftResource draftResource;
+  final LiveEditFlowGraphResource flowGraphResource;
   final LiveEditBubbleResource bubbleResource;
   final LiveEditPanelViewResource panelViewResource;
   final LiveEditBackendConfigResource backendConfigResource;
@@ -72,6 +74,7 @@ class _LiveEditScopeState extends State<LiveEditScope> {
   late final LiveEditSessionResource _sessionResource;
   late final LiveEditSelectionResource _selectionResource;
   late final LiveEditDraftResource _draftResource;
+  late final LiveEditFlowGraphResource _flowGraphResource;
   late final LiveEditBubbleResource _bubbleResource;
   late final LiveEditPanelViewResource _panelViewResource;
   late final LiveEditBackendConfigResource _backendConfigResource;
@@ -88,6 +91,7 @@ class _LiveEditScopeState extends State<LiveEditScope> {
     _sessionResource = LiveEditSessionResource();
     _selectionResource = LiveEditSelectionResource();
     _draftResource = LiveEditDraftResource();
+    _flowGraphResource = LiveEditFlowGraphResource();
     _bubbleResource = LiveEditBubbleResource();
     _panelViewResource = LiveEditPanelViewResource();
     final backends = List<LiveEditAgentBackend>.unmodifiable(
@@ -127,6 +131,7 @@ class _LiveEditScopeState extends State<LiveEditScope> {
       sessionResource: _sessionResource,
       selectionResource: _selectionResource,
       draftResource: _draftResource,
+      flowGraphResource: _flowGraphResource,
       bubbleResource: _bubbleResource,
       panelViewResource: _panelViewResource,
       backendConfigResource: _backendConfigResource,
@@ -143,6 +148,7 @@ class _LiveEditScopeState extends State<LiveEditScope> {
       sessionResource: _sessionResource,
       selectionResource: _selectionResource,
       draftResource: _draftResource,
+      flowGraphResource: _flowGraphResource,
       bubbleResource: _bubbleResource,
       panelViewResource: _panelViewResource,
       backendConfigResource: _backendConfigResource,

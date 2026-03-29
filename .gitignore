@@ -9,6 +9,10 @@ yarn-error.log*
 /build/
 dist/
 *.tsbuildinfo
+.codex/engineering-loop
+.codex/specs
+.codex/runtime
+
 
 # IDE
 .idea/
