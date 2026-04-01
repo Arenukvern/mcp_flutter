@@ -262,7 +262,7 @@ class _FlutterLiveEditHostState extends State<FlutterLiveEditHost> {
     if (_orchestrator != null) {
       return AnimatedBuilder(
         animation: Listenable.merge(<Listenable>[
-          _orchestrator!,
+          _orchestrator!.batchNotifier,
           _overlayTheme,
         ]),
         builder: (final _, final _) => _buildBody(

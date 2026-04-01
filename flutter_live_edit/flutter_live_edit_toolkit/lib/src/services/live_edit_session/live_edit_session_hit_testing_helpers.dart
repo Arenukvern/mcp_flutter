@@ -317,22 +317,22 @@ List<_ElementHit> _dedupeHitsBySelectionKey(
   return deduped.values.toList(growable: false);
 }
 
-_SelectionSetState _selectionSetForKeys({
+InteractionSelectionSet _selectionSetForKeys({
   required final Iterable<String> memberKeys,
   final String? primaryKey,
-  required final _SelectionSetOrigin origin,
-  final _SelectionFocusKind? focusKind,
+  required final InteractionSelectionOrigin origin,
+  final InteractionFocusKind? focusKind,
 }) {
   final normalizedKeys = _canonicalSelectionKeys(memberKeys);
-  return _SelectionSetState(
+  return InteractionSelectionSet(
     primaryKey: primaryKey,
     memberKeys: normalizedKeys,
     origin: origin,
     focusKind:
         focusKind ??
         (normalizedKeys.length > 1
-            ? _SelectionFocusKind.multi
-            : _SelectionFocusKind.single),
+            ? InteractionFocusKind.selectionSet
+            : InteractionFocusKind.node),
   ).normalized(primaryKey: primaryKey);
 }
 
@@ -346,7 +346,7 @@ void _assertSelectionSetInvariants(final _LiveEditLayerState layer) {
       return true;
     }
     final primaryKey = selectionSet.primaryKey;
-    if (primaryKey == null || !selectionSet.contains(primaryKey)) {
+    if (primaryKey == null || !selectionSet.memberKeys.contains(primaryKey)) {
       throw StateError('active selection key must belong to selection set');
     }
     if (selectionSet.isSingle && selectionSet.memberKeys.length != 1) {

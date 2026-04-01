@@ -70,7 +70,7 @@ void main() {
           sessionId: 'session-cursor',
           backendId: 'cursor_agent',
           workingDirectory: tempDir.path,
-          intentText: 'Set width to 200',
+          instructionText: 'Set width to 200',
         ),
       );
 
@@ -99,7 +99,7 @@ void main() {
             sessionId: 'session-cursor',
             backendId: 'cursor_agent',
             workingDirectory: tempDir.path,
-            intentText: 'Set width to 200',
+            instructionText: 'Set width to 200',
             inferenceConfig: const LiveEditInferenceConfig(
               model: 'claude-3-5-sonnet',
             ),
@@ -163,7 +163,7 @@ void main() {
           LiveEditResolutionRequest(
             sessionId: 'session-codex',
             workingDirectory: tempDir.path,
-            intentText: 'Set width to 200',
+            instructionText: 'Set width to 200',
           ),
         );
 
@@ -205,7 +205,7 @@ void main() {
         LiveEditResolutionRequest(
           sessionId: 'session-codex',
           workingDirectory: tempDir.path,
-          intentText: 'Set width to 200',
+          instructionText: 'Set width to 200',
           inferenceConfig: const LiveEditInferenceConfig(
             model: 'gpt-5.4',
             reasoningEffort: 'high',
@@ -345,7 +345,7 @@ void main() {
         LiveEditResolutionRequest(
           sessionId: 'session-1',
           workingDirectory: tempDir.path,
-          intentText: 'Set width to 140',
+          instructionText: 'Set width to 140',
         ),
       );
       expect(result.executionId, 'proposal-1');
@@ -371,7 +371,7 @@ void main() {
           sessionId: 'session-1',
           backendId: 'cursor_agent',
           workingDirectory: tempDir.path,
-          intentText: 'Set width to 140',
+          instructionText: 'Set width to 140',
         ),
       );
 
@@ -399,7 +399,7 @@ void main() {
         LiveEditResolutionRequest(
           sessionId: 'session-persisted',
           workingDirectory: tempDir.path,
-          intentText: 'Set width to 140',
+          instructionText: 'Set width to 140',
         ),
       );
 
@@ -445,8 +445,8 @@ void main() {
         LiveEditResolutionRequest(
           sessionId: 'session-plan',
           workingDirectory: tempDir.path,
-          intentText: 'Set width to 140',
-          selection: LiveEditSelection(
+          instructionText: 'Set width to 140',
+          primarySelection: LiveEditSelection(
             sessionId: 'session-plan',
             nodeId: 'node-1',
             widgetType: 'Container',
@@ -483,8 +483,8 @@ void main() {
         LiveEditResolutionRequest(
           sessionId: 'session-prompt-only',
           workingDirectory: tempDir.path,
-          intentText: 'Rewrite the selected heading.',
-          selection: LiveEditSelection(
+          instructionText: 'Rewrite the selected heading.',
+          primarySelection: LiveEditSelection(
             sessionId: 'session-prompt-only',
             nodeId: 'node-1',
             widgetType: 'Text',
@@ -564,8 +564,8 @@ void main() {
           LiveEditResolutionRequest(
             sessionId: 'session-combined',
             workingDirectory: tempDir.path,
-            intentText: 'Rewrite the selected heading to sound more direct.',
-            selection: LiveEditSelection(
+            instructionText: 'Rewrite the selected heading to sound more direct.',
+            primarySelection: LiveEditSelection(
               sessionId: 'session-combined',
               nodeId: 'node-1',
               widgetType: 'Text',
@@ -613,8 +613,8 @@ void main() {
           LiveEditResolutionRequest(
             sessionId: 'session-compact',
             workingDirectory: tempDir.path,
-            intentText: 'Set crossAxisAlignment to start',
-            selection: LiveEditSelection(
+            instructionText: 'Set crossAxisAlignment to start',
+            primarySelection: LiveEditSelection(
               sessionId: 'session-compact',
               nodeId: 'node-1',
               widgetType: 'Column',
@@ -634,14 +634,6 @@ void main() {
               propertiesTree: verboseNode,
               rawNode: verboseNode,
             ),
-            evidence: <String, Object?>{
-              'tree': verboseNode,
-              'uiSnapshot': <String, Object?>{
-                'screenshots': <Object?>[
-                  <String, Object?>{'pngBase64': 'x' * 20000},
-                ],
-              },
-            },
           ),
         );
 
@@ -654,7 +646,7 @@ void main() {
         );
         expect(request.prompt, contains('"workspacePath": "lib/main.dart"'));
         expect(request.prompt, contains('"childrenTruncated"'));
-        expect(request.prompt, contains('<omitted large payload>'));
+        expect(request.prompt, contains('[truncated'));
       },
     );
 
@@ -678,8 +670,8 @@ void main() {
         LiveEditResolutionRequest(
           sessionId: 'session-stream',
           workingDirectory: tempDir.path,
-          intentText: 'Rewrite the selected heading.',
-          selection: LiveEditSelection(
+          instructionText: 'Rewrite the selected heading.',
+          primarySelection: LiveEditSelection(
             sessionId: 'session-stream',
             nodeId: 'node-1',
             widgetType: 'Text',
@@ -723,7 +715,7 @@ void main() {
           LiveEditResolutionRequest(
             sessionId: 'session-fail',
             workingDirectory: tempDir.path,
-            intentText: 'Set width to 140',
+            instructionText: 'Set width to 140',
           ),
         ),
         throwsA(
@@ -754,8 +746,8 @@ void main() {
           LiveEditResolutionRequest(
             sessionId: 'session-missing-source',
             workingDirectory: tempDir.path,
-            intentText: 'Update text',
-            selection: const LiveEditSelection(
+            instructionText: 'Update text',
+            primarySelection: const LiveEditSelection(
               sessionId: 'session-missing-source',
               nodeId: 'node-1',
               widgetType: 'Text',

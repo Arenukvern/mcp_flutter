@@ -712,12 +712,10 @@ final class LiveEditCommandExecutor {
     final request = LiveEditResolutionRequest(
       sessionId: sessionId!,
       workingDirectory: workingDirectory,
-      selection: selection,
+      primarySelection: selection,
       backendId: command.backendId,
       inferenceConfig: command.inferenceConfig,
-      intentText: command.intentText,
-      evidence: evidence,
-      meta: <String, Object?>{'treeSelectedNodeId': treeData['selectedNodeId']},
+      instructionText: command.intentText,
     );
 
     try {

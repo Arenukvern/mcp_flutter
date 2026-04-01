@@ -2,6 +2,7 @@ import '../resources/live_edit_flow_graph.src.data.dart';
 import '../resources/resources.dart';
 import '../services/services.dart';
 import '../types/live_edit_types.dart';
+import 'resource_throttle.dart';
 
 /// Holds Resources and Services for Commands. Passed to [LiveEditCommand.execute].
 final class LiveEditContext {
@@ -17,7 +18,12 @@ final class LiveEditContext {
     required this.applyService,
     required this.bubbleStateService,
     this.applyEventSink,
-  });
+  }) {
+    _flowGraphWriter = DebouncedResourceWriter<LiveEditFlowGraphResourceData>(
+      flowGraphResource,
+      delay: const Duration(milliseconds: 150),
+    );
+  }
 
   final LiveEditSessionResource sessionResource;
   final LiveEditSelectionResource selectionResource;
@@ -27,6 +33,8 @@ final class LiveEditContext {
   final LiveEditPanelViewResource panelViewResource;
   final LiveEditBackendConfigResource backendConfigResource;
   final LiveEditSessionService sessionService;
+  late final DebouncedResourceWriter<LiveEditFlowGraphResourceData>
+      _flowGraphWriter;
   final LiveEditApplyService applyService;
   final LiveEditBubbleStateService bubbleStateService;
 
@@ -48,8 +56,8 @@ final class LiveEditContext {
       draftResource.value = update.draftStore!;
     }
     if (update.flowGraph != null) {
-      flowGraphResource.value = LiveEditFlowGraphResourceData.fromSnapshot(
-        update.flowGraph!,
+      _flowGraphWriter.write(
+        LiveEditFlowGraphResourceData.fromSnapshot(update.flowGraph!),
       );
     }
   }

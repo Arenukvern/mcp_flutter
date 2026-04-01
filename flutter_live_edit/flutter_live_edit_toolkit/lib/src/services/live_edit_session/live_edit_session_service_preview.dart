@@ -8,14 +8,14 @@ extension _LiveEditSessionServicePreview on _LiveEditSessionServiceCore {
     final String? sessionId,
   }) {
     final session = _requireSession(sessionId);
-    final targetDomain = change.meta['targetDomain'] == null
+    final targetDomain = change.targetContext == null
         ? session.targetDomain
-        : LiveEditTargetDomain.fromWire(change.meta['targetDomain']);
+        : LiveEditTargetDomain.fromWire(change.targetContext!.targetDomain);
     final layer = _layerForRequest(session, requested: targetDomain);
     if (targetDomain == LiveEditTargetDomain.toolScene) {
       final selectionNodeId =
-          '${change.meta['selectionNodeId'] ?? change.nodeId}'.trim();
-      final surfaceId = '${change.meta['surfaceId'] ?? change.nodeId}'.trim();
+          change.targetContext?.selectionKey ?? change.nodeId;
+      final surfaceId = change.targetContext?.surfaceId ?? change.nodeId;
       final appliedChange = surfaceId == change.nodeId
           ? change
           : LiveEditDraftChange(
@@ -25,7 +25,7 @@ extension _LiveEditSessionServicePreview on _LiveEditSessionServiceCore {
               previewMode: change.previewMode,
               confidence: change.confidence,
               intentText: change.intentText,
-              meta: change.meta,
+              targetContext: change.targetContext,
             );
       final updated = LiveEditOverlayThemeModel.instance.applyDraft(
         appliedChange,
@@ -37,7 +37,7 @@ extension _LiveEditSessionServicePreview on _LiveEditSessionServiceCore {
           'reason': 'selection_mismatch',
         };
       }
-      final tracked = layer.trackedSelections[selectionNodeId];
+      final tracked = layer.trackedSelections.get(selectionNodeId);
       final selection =
           tracked != null &&
               tracked.element.mounted &&
@@ -69,7 +69,7 @@ extension _LiveEditSessionServicePreview on _LiveEditSessionServiceCore {
     }
     final trackedSelection = session.selection?.nodeId == change.nodeId
         ? session.selection
-        : session.trackedSelections[change.nodeId]?.selection;
+        : session.trackedSelections.get(change.nodeId)?.selection;
     if (trackedSelection == null) {
       return <String, Object?>{
         'sessionId': session.sessionId,
@@ -81,7 +81,7 @@ extension _LiveEditSessionServicePreview on _LiveEditSessionServiceCore {
     final appliedExact = _applyExactPreviewIfSupported(
       session,
       change,
-      elementOverride: session.trackedSelections[change.nodeId]?.element,
+      elementOverride: session.trackedSelections.get(change.nodeId)?.element,
       selectionOverride: trackedSelection,
     );
     if (_isMeaningfulChange(session, change, trackedSelection)) {
@@ -92,7 +92,7 @@ extension _LiveEditSessionServicePreview on _LiveEditSessionServiceCore {
     if (appliedExact) {
       WidgetsBinding.instance.addPostFrameCallback((final _) {
         final currentSession = _sessions[session.sessionId];
-        final trackedElement = currentSession?.trackedSelections[change.nodeId];
+        final trackedElement = currentSession?.trackedSelections.get(change.nodeId);
         if (currentSession == null || trackedElement == null) {
           return;
         }
@@ -122,7 +122,7 @@ extension _LiveEditSessionServicePreview on _LiveEditSessionServiceCore {
     required final Object? targetValue,
     required final LiveEditPreviewMode previewMode,
     required final String intentText,
-    required final Map<String, Object?> meta,
+    final DraftTargetContext? targetContext,
     final String? sessionId,
   }) {
     final session = _requireSession(sessionId);
@@ -137,7 +137,7 @@ extension _LiveEditSessionServicePreview on _LiveEditSessionServiceCore {
           previewMode: previewMode,
           confidence: 0.9,
           intentText: intentText,
-          meta: meta,
+          targetContext: targetContext,
         ),
       );
       if (result['updated'] == true) {
@@ -273,7 +273,7 @@ extension _LiveEditSessionServicePreview on _LiveEditSessionServiceCore {
 
   List<LiveEditSelection> _normalizeSelectionsForSet(
     final Iterable<LiveEditSelection> selections,
-    final _SelectionSetState selectionSet,
+    final InteractionSelectionSet selectionSet,
   ) {
     final keyedSelections = <String, LiveEditSelection>{
       for (final selection in selections)
@@ -302,7 +302,7 @@ extension _LiveEditSessionServicePreview on _LiveEditSessionServiceCore {
 
   void _applySelectionSetState(
     final _LiveEditLayerState layer,
-    final _SelectionSetState selectionSet, {
+    final InteractionSelectionSet selectionSet, {
     required final Iterable<LiveEditSelection> selections,
     final LiveEditSelection? activeSelection,
   }) {
@@ -326,7 +326,7 @@ extension _LiveEditSessionServicePreview on _LiveEditSessionServiceCore {
     required final _LiveEditSessionState session,
     required final Element element,
     required final List<Map<String, Object?>> ancestry,
-    required final _SelectionSetOrigin origin,
+    required final InteractionSelectionOrigin origin,
     final LiveEditTargetDomain? targetDomain,
   }) {
     final layer = _layerForRequest(session, requested: targetDomain);
@@ -364,7 +364,7 @@ extension _LiveEditSessionServicePreview on _LiveEditSessionServiceCore {
     required final _LiveEditSessionState session,
     required final Iterable<LiveEditSelection> selections,
     required final String primaryKey,
-    required final _SelectionSetOrigin origin,
+    required final InteractionSelectionOrigin origin,
     final LiveEditTargetDomain? targetDomain,
     final LiveEditSelection? activeSelection,
   }) {
@@ -377,7 +377,7 @@ extension _LiveEditSessionServicePreview on _LiveEditSessionServiceCore {
       ),
       primaryKey: primaryKey,
       origin: origin,
-      focusKind: _SelectionFocusKind.multi,
+      focusKind: InteractionFocusKind.selectionSet,
     );
     _applySelectionSetState(
       layer,
@@ -392,7 +392,7 @@ extension _LiveEditSessionServicePreview on _LiveEditSessionServiceCore {
     required final LiveEditSelection selection,
     required final Element element,
     required final List<Map<String, Object?>> ancestry,
-    required final _SelectionSetOrigin origin,
+    required final InteractionSelectionOrigin origin,
     final LiveEditTargetDomain? targetDomain,
   }) {
     final layer = _layerForRequest(session, requested: targetDomain);
@@ -427,7 +427,7 @@ extension _LiveEditSessionServicePreview on _LiveEditSessionServiceCore {
       if (nodeIds != null && !nodeIds.contains(parts.first)) {
         continue;
       }
-      final tracked = layer.trackedSelections[parts.first];
+      final tracked = layer.trackedSelections.get(parts.first);
       final element = tracked?.element;
       if (element == null || !element.mounted) {
         continue;
@@ -594,11 +594,11 @@ extension _LiveEditSessionServicePreview on _LiveEditSessionServiceCore {
       selectionMode: selectionMode,
       selectedNodeIds: selectedNodeIds,
     );
-    layer.trackedSelections[nodeId] = _TrackedSelectionTarget(
+    layer.trackedSelections.put(nodeId, _TrackedSelectionTarget(
       element: element,
       ancestry: ancestry,
       selection: selection,
-    );
+    ));
     return selection;
   }
 
@@ -606,7 +606,7 @@ extension _LiveEditSessionServicePreview on _LiveEditSessionServiceCore {
     required final _LiveEditSessionState session,
     required final Element element,
     required final List<Map<String, Object?>> ancestry,
-    final _SelectionSetOrigin origin = _SelectionSetOrigin.hitTest,
+    final InteractionSelectionOrigin origin = InteractionSelectionOrigin.tap,
     final LiveEditTargetDomain? targetDomain,
   }) => _setSingleSelection(
     session: session,
@@ -666,7 +666,7 @@ extension _LiveEditSessionServicePreview on _LiveEditSessionServiceCore {
       selection: hydrated,
       element: tracked.element,
       ancestry: tracked.ancestry,
-      origin: _SelectionSetOrigin.hydrate,
+      origin: InteractionSelectionOrigin.command,
       targetDomain: targetDomain,
     );
   }

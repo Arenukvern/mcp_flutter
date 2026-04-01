@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 
 import '../ai/backend/live_edit_backend_utils.dart';
 import '../live_edit_runtime.dart';
@@ -10,10 +10,10 @@ import '../resources/resources.dart';
 import '../services/services.dart';
 import '../types/live_edit_types.dart';
 import 'live_edit_context.dart';
+import 'live_edit_batch_notifier.dart';
 import 'tools/live_edit_controller_adapter.dart';
 
-/// TODO: move classes to context and remove change notifier
-final class LiveEditOrchestrator extends ChangeNotifier {
+final class LiveEditOrchestrator {
   LiveEditOrchestrator({
     this.applyDraftDelegate,
     final String? backendId,
@@ -67,14 +67,15 @@ final class LiveEditOrchestrator extends ChangeNotifier {
     );
     _controller = LiveEditController(_context);
     LiveEditRuntime.contextAccessor = () => _context;
-    void onResourceChange() => notifyListeners();
-    _sessionResource.addListener(onResourceChange);
-    _selectionResource.addListener(onResourceChange);
-    _draftResource.addListener(onResourceChange);
-    _flowGraphResource.addListener(onResourceChange);
-    _bubbleResource.addListener(onResourceChange);
-    _panelViewResource.addListener(onResourceChange);
-    _backendConfigResource.addListener(onResourceChange);
+    _batchNotifier = LiveEditBatchNotifier(<Listenable>[
+      _sessionResource,
+      _selectionResource,
+      _draftResource,
+      _flowGraphResource,
+      _bubbleResource,
+      _panelViewResource,
+      _backendConfigResource,
+    ]);
   }
 
   late final LiveEditSessionResource _sessionResource;
@@ -89,11 +90,15 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   late final LiveEditApplyService _applyService;
   late final LiveEditContext _context;
   late final LiveEditController _controller;
+  late final LiveEditBatchNotifier _batchNotifier;
 
   LiveEditController get controller => _controller;
 
   /// Exposes context for running Commands (e.g. from UI or MCP).
   LiveEditContext get context => _context;
+
+  /// Aggregated notifier for widgets that need to rebuild on any resource change.
+  LiveEditBatchNotifier get batchNotifier => _batchNotifier;
 
   final LiveEditApplyDraftDelegate? applyDraftDelegate;
   final String? workingDirectory;
@@ -104,12 +109,11 @@ final class LiveEditOrchestrator extends ChangeNotifier {
   DateTime? _lastEventFlush;
   Timer? _eventFlushTimer;
 
-  @override
   void dispose() {
     _eventFlushTimer?.cancel();
     _eventFlushTimer = null;
+    _batchNotifier.dispose();
     LiveEditRuntime.contextAccessor = null;
-    super.dispose();
   }
 
   void _emitEventForBubble(

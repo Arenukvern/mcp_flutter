@@ -23,16 +23,17 @@ final class ResizeBubbleCommand {
     final surfaceId = editMode == LiveEditEditMode.ai
         ? kLiveEditAiBubbleSurfaceId
         : kLiveEditSelectionBubbleSurfaceId;
+    final toolContext = DraftTargetContext(
+      targetDomain: LiveEditTargetDomain.toolScene,
+      surfaceId: surfaceId,
+    );
     LiveEditOverlayThemeModel.instance.applyDraft(
       LiveEditDraftChange(
         nodeId: surfaceId,
         propertyId: 'width',
         targetValue: w,
         previewMode: LiveEditPreviewMode.exact,
-        meta: <String, Object?>{
-          'surfaceId': surfaceId,
-          'targetDomain': LiveEditTargetDomain.toolScene.wireName,
-        },
+        targetContext: toolContext,
       ),
     );
     LiveEditOverlayThemeModel.instance.applyDraft(
@@ -41,10 +42,7 @@ final class ResizeBubbleCommand {
         propertyId: 'height',
         targetValue: h,
         previewMode: LiveEditPreviewMode.exact,
-        meta: <String, Object?>{
-          'surfaceId': surfaceId,
-          'targetDomain': LiveEditTargetDomain.toolScene.wireName,
-        },
+        targetContext: toolContext,
       ),
     );
   }

@@ -360,16 +360,6 @@ Map<String, Object?> buildPromptRequest(
   if (request.inferenceConfig != null) {
     promptRequest['inferenceConfig'] = request.inferenceConfig!.toJson();
   }
-  if (request.evidence.isNotEmpty) {
-    promptRequest['evidence'] = summarizeEvidence(request.evidence);
-  }
-  if (request.meta.isNotEmpty) {
-    promptRequest['meta'] = compactMap(
-      request.meta,
-      maxDepth: 1,
-      maxListItems: 6,
-    );
-  }
   return promptRequest;
 }
 

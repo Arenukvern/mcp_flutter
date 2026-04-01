@@ -136,9 +136,6 @@ final class SelectionKey {
     if (value is String) {
       return value.trim();
     }
-    if (value is Map) {
-      return _asString(_asMap(value)['value']);
-    }
     return _asString(value);
   }
 

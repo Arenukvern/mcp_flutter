@@ -792,7 +792,6 @@ final class CommandCatalog {
             'sessionId': _stringSchema(),
             'backendId': _stringSchema(),
             'inferenceConfig': _inferenceConfigSchema(),
-            'codexConfig': _inferenceConfigSchema(),
             'workingDirectory': _stringSchema(),
             'targetDomain': _stringSchema(),
           },
@@ -1164,7 +1163,6 @@ final class CommandCatalog {
             'sessionId': _stringSchema(),
             'backendId': _stringSchema(),
             'inferenceConfig': _inferenceConfigSchema(),
-            'codexConfig': _inferenceConfigSchema(),
           },
           required: const <String>['sessionId', 'backendId'],
         ),
@@ -1197,7 +1195,6 @@ final class CommandCatalog {
             'sessionId': _stringSchema(),
             'backendId': _stringSchema(),
             'inferenceConfig': _inferenceConfigSchema(),
-            'codexConfig': _inferenceConfigSchema(),
             'workingDirectory': _stringSchema(),
             'intentText': _stringSchema(),
             'targetDomain': _stringSchema(),
@@ -1237,7 +1234,6 @@ final class CommandCatalog {
             'sessionId': _stringSchema(),
             'backendId': _stringSchema(),
             'inferenceConfig': _inferenceConfigSchema(),
-            'codexConfig': _inferenceConfigSchema(),
             'workingDirectory': _stringSchema(),
             'intentText': _stringSchema(),
             'proposalId': _stringSchema(),
@@ -1485,8 +1481,7 @@ final class CommandCatalog {
     final Map<String, Object?> args,
   ) {
     final value =
-        _findArg(args, 'inferenceConfig', alias: 'inference-config') ??
-        _findArg(args, 'codexConfig', alias: 'codex-config');
+        _findArg(args, 'inferenceConfig', alias: 'inference-config');
     if (value == null) return null;
     final map = value is Map<String, Object?>
         ? value

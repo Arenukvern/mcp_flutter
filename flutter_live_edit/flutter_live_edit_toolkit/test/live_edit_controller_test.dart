@@ -1742,8 +1742,8 @@ void main() {
 
       var notifications = 0;
       void handleNotification() => notifications += 1;
-      o.addListener(handleNotification);
-      addTearDown(() => o.removeListener(handleNotification));
+      o.batchNotifier.addListener(handleNotification);
+      addTearDown(() => o.batchNotifier.removeListener(handleNotification));
 
       final started = StartSessionCommand().execute(o.context);
       final sessionId = started['sessionId']! as String;
@@ -2161,7 +2161,7 @@ void main() {
 
     expect(requests, hasLength(1));
     expect(requests.single.instructionText, isNull);
-    expect(requests.single.intentText, 'Please rewrite this heading.');
+    expect(requests.single.instructionText, 'Please rewrite this heading.');
     expect(selectPendingExecutionPlan(orchestrator.context), isNotNull);
     expect(
       selectCurrentActivity(
@@ -2415,7 +2415,7 @@ void main() {
 
     expect(requests, hasLength(1));
     expect(
-      requests.single.intentText,
+      requests.single.instructionText,
       contains('Rewrite the tone to be more direct.'),
     );
   });
@@ -2507,8 +2507,8 @@ void main() {
 
     expect(requests, hasLength(1));
     expect(requests.single.instructionText, isNull);
-    expect(requests.single.intentText, 'Rewrite the selected text.');
-    expect(requests.single.selection?.nodeId, isNotEmpty);
+    expect(requests.single.instructionText, 'Rewrite the selected text.');
+    expect(requests.single.primarySelection?.nodeId, isNotEmpty);
     expect(selectLastError(orchestrator.context), isNull);
     expect(selectEditMode(orchestrator.context), LiveEditEditMode.ai);
   });
@@ -2587,7 +2587,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(requests, hasLength(2));
-    expect(requests.last.intentText, 'Rewrite the selected text.');
+    expect(requests.last.instructionText, 'Rewrite the selected text.');
     expect(selectLastError(orchestrator.context), isNull);
     expect(selectEditMode(orchestrator.context), LiveEditEditMode.ai);
     expect(selectPendingExecutionPlan(orchestrator.context), isNotNull);

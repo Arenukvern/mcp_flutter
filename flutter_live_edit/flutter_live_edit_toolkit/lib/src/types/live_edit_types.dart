@@ -57,12 +57,9 @@ final class LiveEditApplyDraftRequest {
     this.selectedWidgets = const <LiveEditSelection>[],
     this.sourceTargets = const <LiveEditSourceTarget>[],
     this.applyMode = LiveEditApplyMode.singleBubble,
-    this.selection,
-    this.proposalId,
     this.backendId,
     this.inferenceConfig,
     this.workingDirectory,
-    this.intentText,
     this.approve = false,
     this.onEvent,
   });
@@ -74,12 +71,9 @@ final class LiveEditApplyDraftRequest {
   final List<LiveEditSelection> selectedWidgets;
   final List<LiveEditSourceTarget> sourceTargets;
   final LiveEditApplyMode applyMode;
-  final LiveEditSelection? selection;
-  final String? proposalId;
   final String? backendId;
   final LiveEditInferenceConfig? inferenceConfig;
   final String? workingDirectory;
-  final String? intentText;
   final bool approve;
   final LiveEditRuntimeEventSink? onEvent;
 
@@ -89,16 +83,13 @@ final class LiveEditApplyDraftRequest {
   String? get effectiveInstructionText =>
       instructionText?.trim().isNotEmpty == true
       ? instructionText!.trim()
-      : intentText?.trim().isNotEmpty == true
-      ? intentText!.trim()
       : null;
 
-  LiveEditSelection? get effectivePrimarySelection =>
-      primarySelection ?? selection;
+  LiveEditSelection? get effectivePrimarySelection => primarySelection;
 
   List<LiveEditSelection> get effectiveSelectedWidgets {
     if (selectedWidgets.isNotEmpty) return selectedWidgets;
-    final primary = effectivePrimarySelection;
+    final primary = primarySelection;
     return primary == null
         ? const <LiveEditSelection>[]
         : <LiveEditSelection>[primary];
@@ -120,12 +111,9 @@ final class LiveEditApplyDraftRequest {
           .map((final t) => t.toJson())
           .toList(growable: false),
     'applyMode': applyMode.wireName,
-    if (selection != null) 'selection': selection!.toJson(),
-    if (_hasText(proposalId)) 'proposalId': proposalId,
     if (_hasText(backendId)) 'backendId': backendId,
     if (inferenceConfig != null) 'inferenceConfig': inferenceConfig!.toJson(),
     if (_hasText(workingDirectory)) 'workingDirectory': workingDirectory,
-    if (_hasText(intentText)) 'intentText': intentText,
     'approve': approve,
   };
 }

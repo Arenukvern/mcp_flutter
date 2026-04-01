@@ -151,8 +151,8 @@ final class FlutterLiveEditAutoDelegate {
         message: 'Dispatching resolve request.',
         details: <String>[
           ...debugDetails,
-          if ((request.intentText ?? '').trim().isNotEmpty)
-            'Intent: ${request.intentText!.trim()}',
+          if ((request.instructionText ?? '').trim().isNotEmpty)
+            'Intent: ${request.instructionText!.trim()}',
         ],
         debugOnly: true,
       ),
@@ -169,13 +169,6 @@ final class FlutterLiveEditAutoDelegate {
       sourceTargets: request.sourceTargets,
       applyMode: request.applyMode,
       inferenceConfig: request.inferenceConfig,
-      intentText: request.intentText,
-      selection: request.selection,
-      meta: <String, Object?>{
-        if ((config.appId ?? '').trim().isNotEmpty) 'app': config.appId,
-        'driver': 'flutter_live_edit_auto_host',
-        ...config.meta,
-      },
     );
     final promptText = agentService.buildResolvedPrompt(resolutionRequest);
     request.onEvent?.call(

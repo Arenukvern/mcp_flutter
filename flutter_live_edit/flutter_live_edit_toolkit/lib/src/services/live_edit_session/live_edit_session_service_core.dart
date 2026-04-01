@@ -323,12 +323,7 @@ class _LiveEditSessionServiceCore {
     return InteractionSelectionSet(
       primaryKey: primaryKey,
       memberKeys: memberKeys,
-      origin: switch (layer.selectionSet.origin) {
-        _SelectionSetOrigin.marquee => InteractionSelectionOrigin.marquee,
-        _SelectionSetOrigin.candidate => InteractionSelectionOrigin.hover,
-        _SelectionSetOrigin.surface => InteractionSelectionOrigin.command,
-        _ => InteractionSelectionOrigin.tap,
-      },
+      origin: layer.selectionSet.origin,
       focusKind: memberKeys.length > 1
           ? FlowFocusKind.selectionSet
           : FlowFocusKind.node,
@@ -401,90 +396,66 @@ class _LiveEditSessionServiceCore {
   }
 
   String? _selectionNodeId(final LiveEditSelection? selection) =>
-      _jsonString(selection == null ? null : (selection as dynamic).nodeId);
+      _jsonString(selection?.nodeId);
 
   String? _selectionKey(final LiveEditSelection? selection) {
-    final key = _jsonString(
-      selection == null ? null : (selection as dynamic).selectionKey,
-    );
+    final key = _jsonString(selection?.selectionKey);
     return _hasText(key) ? key : _selectionNodeId(selection);
   }
 
-  Map<String, Object?>? _selectionJson(final LiveEditSelection? selection) {
-    if (selection == null) {
-      return null;
-    }
-    return _jsonObject((selection as dynamic).toJson());
-  }
+  Map<String, Object?>? _selectionJson(final LiveEditSelection? selection) =>
+      selection == null ? null : _jsonObject(selection.toJson());
 
   String? _selectionWidgetType(final LiveEditSelection? selection) =>
-      _jsonString(selection == null ? null : (selection as dynamic).widgetType);
+      _jsonString(selection?.widgetType);
 
   LiveEditBounds? _selectionBounds(final LiveEditSelection? selection) =>
-      selection == null
-      ? null
-      : (selection as dynamic).bounds as LiveEditBounds?;
+      selection?.bounds;
 
   LiveEditSourceLocation? _selectionSource(
     final LiveEditSelection? selection,
-  ) => selection == null
-      ? null
-      : (selection as dynamic).source as LiveEditSourceLocation?;
+  ) => selection?.source;
 
   List<Object?> _selectionProperties(final LiveEditSelection? selection) =>
-      selection == null
-      ? const <Object?>[]
-      : _jsonList((selection as dynamic).propertiesForWire);
+      selection == null ? const <Object?>[] : _jsonList(selection.propertiesForWire);
 
   String? _selectionCandidateNodeId(
     final LiveEditSelectionCandidate? candidate,
-  ) => _jsonString(candidate == null ? null : (candidate as dynamic).nodeId);
+  ) => _jsonString(candidate?.nodeId);
 
   String? _selectionCandidateKey(final LiveEditSelectionCandidate? candidate) {
-    final key = _jsonString(
-      candidate == null ? null : (candidate as dynamic).selectionKey,
-    );
+    final key = _jsonString(candidate?.selectionKey);
     return _hasText(key) ? key : _selectionCandidateNodeId(candidate);
   }
 
   Map<String, Object?> _selectionCandidateJson(
     final LiveEditSelectionCandidate candidate,
-  ) => _jsonObject((candidate as dynamic).toJson());
+  ) => _jsonObject(candidate.toJson());
 
   String? _selectionCandidateWidgetType(
     final LiveEditSelectionCandidate? candidate,
-  ) =>
-      _jsonString(candidate == null ? null : (candidate as dynamic).widgetType);
+  ) => _jsonString(candidate?.widgetType);
 
   LiveEditBounds? _selectionCandidateBounds(
     final LiveEditSelectionCandidate? candidate,
-  ) => candidate == null
-      ? null
-      : (candidate as dynamic).bounds as LiveEditBounds?;
+  ) => candidate?.bounds;
 
   LiveEditSourceLocation? _selectionCandidateSource(
     final LiveEditSelectionCandidate? candidate,
-  ) => candidate == null
-      ? null
-      : (candidate as dynamic).source as LiveEditSourceLocation?;
+  ) => candidate?.source;
 
   String? _sourceFile(final LiveEditSourceLocation? source) =>
-      _jsonString(source == null ? null : (source as dynamic).file);
+      _jsonString(source?.file);
 
   String? _sourceHint(final LiveEditSourceLocation? source) =>
-      _jsonString(source == null ? null : (source as dynamic).sourceHint);
+      _jsonString(source?.sourceHint);
 
   bool _selectionCandidateCreatedByLocalProject(
     final LiveEditSelectionCandidate? candidate,
-  ) =>
-      candidate != null &&
-      ((candidate as dynamic).createdByLocalProject as bool? ?? false);
-
-  Map<String, Object?> _draftChangeMeta(final LiveEditDraftChange change) =>
-      _jsonObject((change as dynamic).meta);
+  ) => candidate?.createdByLocalProject ?? false;
 
   String? _draftChangeNodeId(final LiveEditDraftChange change) =>
-      _jsonString((change as dynamic).nodeId);
+      _jsonString(change.nodeId);
 
   Map<String, Object?> _jsonObject(final Object? value) {
     if (value is Map<String, Object?>) {
@@ -715,14 +686,16 @@ class _LiveEditSessionServiceCore {
         return;
       }
       for (final change in changes) {
-        final changeMeta = _draftChangeMeta(change);
         final changeNodeId = _draftChangeNodeId(change);
         if (!_hasText(changeNodeId)) {
           continue;
         }
+        final targetDomain = change.targetContext == null
+            ? currentSession.targetDomain
+            : LiveEditTargetDomain.fromWire(change.targetContext!.targetDomain);
         final tracked = currentSession
-            .layerFor(LiveEditTargetDomain.fromWire(changeMeta['targetDomain']))
-            .trackedSelections[changeNodeId!];
+            .layerFor(targetDomain)
+            .trackedSelections.get(changeNodeId!);
         if (tracked == null) {
           continue;
         }

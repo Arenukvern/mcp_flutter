@@ -177,7 +177,7 @@ bool _isUserAuthoredElement(
   final Element element,
   final String nodeId,
 ) {
-  final tracked = session.trackedSelections[nodeId]?.selection;
+  final tracked = session.trackedSelections.get(nodeId)?.selection;
   final trackedSource = tracked?.source;
   if (_looksProjectOwnedPath(trackedSource?.file)) {
     return true;
@@ -432,7 +432,7 @@ LiveEditSelection _buildHoverSelection({
 }) {
   final renderObject = _previewRenderObjectForElement(element);
   final nodeId = _selectionKeyForElement(session, element);
-  final tracked = session.trackedSelections[nodeId]?.selection;
+  final tracked = session.trackedSelections.get(nodeId)?.selection;
   final detailsTree = tracked?.detailsTree ?? const <String, Object?>{};
   final surfaceId = _toolSurfaceIdForElement(element);
   final rawNode =
@@ -476,7 +476,7 @@ LiveEditSelection _buildLightweightSelection({
   final element = hit.element;
   final renderObject = _previewRenderObjectForElement(element);
   final nodeId = _selectionKeyForElement(session, element);
-  final tracked = session.trackedSelections[nodeId]?.selection;
+  final tracked = session.trackedSelections.get(nodeId)?.selection;
   return LiveEditSelection(
     sessionId: session.sessionId,
     selectionKey: nodeId,
@@ -501,7 +501,7 @@ LiveEditSelection _buildLightweightSelectionFromCache({
   required final _LiveEditSessionState session,
   required final _MarqueeCandidateCacheEntry entry,
 }) {
-  final tracked = session.trackedSelections[entry.nodeId]?.selection;
+  final tracked = session.trackedSelections.get(entry.nodeId)?.selection;
   return LiveEditSelection(
     sessionId: session.sessionId,
     selectionKey: entry.nodeId,

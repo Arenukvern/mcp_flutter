@@ -76,12 +76,9 @@ final class ApplyDraftCommand {
       selectedWidgets: List<LiveEditSelection>.unmodifiable(selectedWidgets),
       sourceTargets: _sourceTargets(selectedWidgets, workingDirectory),
       applyMode: applyMode,
-      selection: selection,
-      proposalId: bubbleData.pendingProposalId,
       backendId: backendId,
       inferenceConfig: bubble?.inferenceConfig,
       workingDirectory: workingDirectory,
-      intentText: resolvedIntent,
       approve: approve,
       onEvent: context.applyEventSink != null
           ? (final e) => context.applyEventSink!(bid, e)

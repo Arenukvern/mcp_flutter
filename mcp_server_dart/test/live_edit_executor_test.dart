@@ -115,8 +115,8 @@ void main() {
           LiveEditResolutionRequest(
             sessionId: 'session-1',
             workingDirectory: tmp.path,
-            intentText: 'Set width to 140',
-            selection: LiveEditSelection(
+            instructionText: 'Set width to 140',
+            primarySelection: LiveEditSelection(
               sessionId: 'session-1',
               nodeId: 'node-1',
               widgetType: 'Container',

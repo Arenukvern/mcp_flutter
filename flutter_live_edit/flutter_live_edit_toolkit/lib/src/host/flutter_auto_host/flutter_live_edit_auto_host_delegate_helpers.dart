@@ -12,7 +12,7 @@ String? _resolveLiveEditWorkingDirectory(
   if (configured != null) {
     return configured;
   }
-  final inferred = _workingDirectoryFromSelection(request.selection);
+  final inferred = _workingDirectoryFromSelection(request.primarySelection);
   if (inferred != null) {
     return inferred;
   }
@@ -162,7 +162,6 @@ Future<LiveEditRuntimeRefreshResult> _refreshRuntimeAfterApply(
 bool _shouldAutoRestartAfterApply(final LiveEditApplyDraftRequest request) {
   if (request.effectivePrimarySelection != null ||
       request.effectiveSelectedWidgets.isNotEmpty ||
-      request.selection != null ||
       request.sourceTargets.isNotEmpty) {
     return false;
   }
@@ -295,8 +294,8 @@ List<String> _liveEditRequestDebugDetails(
   if ((request.inferenceConfig?.reasoningEffort ?? '').trim().isNotEmpty)
     'Reasoning: ${request.inferenceConfig!.reasoningEffort}',
   'Workspace: $workingDirectory',
-  'Node: ${request.selection?.nodeId ?? '<none>'}',
-  'Intent present: ${(request.intentText ?? '').trim().isNotEmpty}',
+  'Node: ${request.primarySelection?.nodeId ?? '<none>'}',
+  'Intent present: ${(request.instructionText ?? '').trim().isNotEmpty}',
 ];
 
 void _emitInferenceStreamEvent(

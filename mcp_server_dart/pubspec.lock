@@ -161,10 +161,10 @@ packages:
     dependency: "direct main"
     description:
       name: from_json_to_json
-      sha256: "31c0323d7d3ad03d40fbf2d81d1b7cbd87a6235c0d32d1a59a20f3862245fdca"
+      sha256: a29219df65cd20b1b17be8141ee51b3103d1cd95b192b7512139f3ae44775f49
       url: "https://pub.dev"
     source: hosted
-    version: "0.4.0"
+    version: "0.5.0"
   frontend_server_client:
     dependency: transitive
     description:
@@ -217,10 +217,10 @@ packages:
     dependency: "direct main"
     description:
       name: is_dart_empty_or_not
-      sha256: "1b3294a11fcf6987484a9d1928a47b858a459213eae2f779be092cfa362d5592"
+      sha256: "1454632c2b961175d4c2807310713cbcbd054a51e63c545dc86c3eb9b2b061b0"
       url: "https://pub.dev"
     source: hosted
-    version: "0.3.0"
+    version: "0.4.0"
   json_annotation:
     dependency: transitive
     description:

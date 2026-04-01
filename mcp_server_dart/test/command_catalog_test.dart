@@ -204,20 +204,6 @@ void main() {
       },
     );
 
-    test('parses codexConfig as backward compat for inferenceConfig', () {
-      final prepare = catalog.buildCommand(
-        LiveEditMcpToolNames.prepareSession,
-        {
-          'sessionId': 'live-session',
-          'backendId': 'codex_exec',
-          'codexConfig': {'model': 'GPT-5.4', 'reasoningEffort': 'high'},
-        },
-      );
-      final config = (prepare as LiveEditPrepareSessionCommand).inferenceConfig;
-      expect(config?.model, 'gpt-5.4');
-      expect(config?.reasoningEffort, 'high');
-    });
-
     test('exposes inferenceConfig in live edit command schemas', () {
       final prepareSchema =
           catalog

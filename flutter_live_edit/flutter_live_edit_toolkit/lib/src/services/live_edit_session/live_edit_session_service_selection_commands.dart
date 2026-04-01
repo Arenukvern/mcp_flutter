@@ -14,7 +14,7 @@ extension _LiveEditSessionServiceSelectionCommands
     session.marqueeRect = Rect.fromLTWH(x.toDouble(), y.toDouble(), 0, 0);
     session.marqueeHits = const <_ElementHit>[];
     session.marqueeSelections = const <LiveEditSelection>[];
-    session.marqueeSelectionSet = const _SelectionSetState.empty();
+    session.marqueeSelectionSet = InteractionSelectionSet.empty;
     _lastUpdate = _buildLastUpdate();
     return <String, Object?>{'sessionId': session.sessionId, 'started': true};
   }
@@ -50,10 +50,10 @@ extension _LiveEditSessionServiceSelectionCommands
     final marqueeSelectionSet = _selectionSetForKeys(
       memberKeys: previewSelections.map((final selection) => selection.nodeId),
       primaryKey: previewSelections.isEmpty ? null : previewSelections.first.nodeId,
-      origin: _SelectionSetOrigin.marquee,
+      origin: InteractionSelectionOrigin.marquee,
       focusKind: previewSelections.length > 1
-          ? _SelectionFocusKind.multi
-          : _SelectionFocusKind.single,
+          ? InteractionFocusKind.selectionSet
+          : InteractionFocusKind.node,
     );
     final shouldNotify =
         session.marqueeRect != rect ||
@@ -81,7 +81,7 @@ extension _LiveEditSessionServiceSelectionCommands
     session.marqueeRect = null;
     session.marqueeStart = null;
     session.marqueeHits = const <_ElementHit>[];
-    session.marqueeSelectionSet = const _SelectionSetState.empty();
+    session.marqueeSelectionSet = InteractionSelectionSet.empty;
     if (previewSelections.isEmpty || hits.isEmpty) {
       _lastUpdate = _buildLastUpdate();
       return <String, Object?>{
@@ -91,7 +91,7 @@ extension _LiveEditSessionServiceSelectionCommands
     }
     if (previewSelections.length == 1) {
       final selection = previewSelections.first;
-      final tracked = session.trackedSelections[selection.nodeId];
+      final tracked = session.trackedSelections.get(selection.nodeId);
       if (tracked == null) {
         final hit = hits.firstWhere(
           (final candidate) =>
@@ -107,7 +107,7 @@ extension _LiveEditSessionServiceSelectionCommands
           session: session,
           element: hit.element,
           ancestry: hit.ancestry,
-          origin: _SelectionSetOrigin.marquee,
+          origin: InteractionSelectionOrigin.marquee,
         );
         _syncSelectionCandidates(session);
         _lastUpdate = _buildLastUpdate();
@@ -168,10 +168,10 @@ extension _LiveEditSessionServiceSelectionCommands
       primaryKey: activeSelection.selectionKey.isNotEmpty
           ? activeSelection.selectionKey
           : activeSelection.nodeId,
-      origin: _SelectionSetOrigin.marquee,
+      origin: InteractionSelectionOrigin.marquee,
       activeSelection: activeSelection,
     );
-    final tracked = session.trackedSelections[activeNodeId];
+    final tracked = session.trackedSelections.get(activeNodeId);
     if (tracked != null) {
       _hydrateTrackedSelection(
         session: session,
@@ -251,7 +251,7 @@ extension _LiveEditSessionServiceSelectionCommands
     }
     final hit = hits[resolvedIndex];
     final hitNodeId = _selectionKeyForElement(session, hit.element);
-    final tracked = layer.trackedSelections[hitNodeId];
+    final tracked = layer.trackedSelections.get(hitNodeId);
     final selection = layer.multiSelections.length > 1 && tracked != null
         ? _hydrateTrackedSelection(
             session: session,
@@ -263,7 +263,7 @@ extension _LiveEditSessionServiceSelectionCommands
             session: session,
             element: hit.element,
             ancestry: hit.ancestry,
-            origin: _SelectionSetOrigin.candidate,
+            origin: InteractionSelectionOrigin.hover,
             targetDomain: targetDomain,
           );
     _syncSelectionCandidates(session, requested: targetDomain);
@@ -287,7 +287,7 @@ extension _LiveEditSessionServiceSelectionCommands
     final resolvedDomain = _resolveTargetDomain(session, targetDomain);
     final layer = _layerForRequest(session, requested: targetDomain);
     if (resolvedDomain == LiveEditTargetDomain.toolScene) {
-      final tracked = layer.trackedSelections[nodeId];
+      final tracked = layer.trackedSelections.get(nodeId);
       if (tracked != null &&
           tracked.element.mounted &&
           tracked.element.renderObject != null) {
@@ -325,7 +325,7 @@ extension _LiveEditSessionServiceSelectionCommands
       layer.selectionSet = _selectionSetForKeys(
         memberKeys: <String>[canonicalSelectionKey],
         primaryKey: canonicalSelectionKey,
-        origin: _SelectionSetOrigin.surface,
+        origin: InteractionSelectionOrigin.command,
       );
       layer.multiSelections = <LiveEditSelection>[normalizedSurfaceSelection];
       layer.selectionCandidates = <LiveEditSelectionCandidate>[
@@ -347,7 +347,7 @@ extension _LiveEditSessionServiceSelectionCommands
         'selection': normalizedSurfaceSelection.toJson(),
       };
     }
-    final tracked = layer.trackedSelections[nodeId];
+    final tracked = layer.trackedSelections.get(nodeId);
     if (tracked == null ||
         !tracked.element.mounted ||
         tracked.element.renderObject == null) {
@@ -363,7 +363,7 @@ extension _LiveEditSessionServiceSelectionCommands
             session: session,
             element: tracked.element,
             ancestry: tracked.ancestry,
-            origin: _SelectionSetOrigin.hydrate,
+            origin: InteractionSelectionOrigin.command,
             targetDomain: targetDomain,
           )
         : _hydrateTrackedSelection(
