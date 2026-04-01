@@ -12,7 +12,9 @@ class _LiveEditSessionServiceCore {
 
   LiveEditSessionUpdate? get lastUpdate => _lastUpdate;
 
-  LiveEditSessionUpdate? _buildLastUpdate() {
+  LiveEditSessionUpdate? _buildLastUpdate({
+    final bool includeFlowGraph = true,
+  }) {
     final session = _activeSessionOrNull();
     final sessionData = LiveEditSessionResourceData(
       activeSessionId: _activeSessionId,
@@ -24,7 +26,7 @@ class _LiveEditSessionServiceCore {
       sessionData: sessionData,
       selectionStore: _buildSelectionStore(),
       draftStore: _buildDraftStore(),
-      flowGraph: _buildFlowGraphUpdate(session),
+      flowGraph: includeFlowGraph ? _buildFlowGraphUpdate(session) : null,
     );
   }
 
@@ -54,26 +56,28 @@ class _LiveEditSessionServiceCore {
 
     void collectSelectionSummary(final InteractionNodeSummary summary) {
       final screenId = summary.screenId?.trim();
-      if (!_hasText(screenId)) {
+      if (screenId == null || screenId.isEmpty) {
         return;
       }
       final entries = screenSummaries.putIfAbsent(
-        screenId!,
+        screenId,
         () => <String, InteractionNodeSummary>{},
       );
       final selectionKey = summary.selectionKey.trim();
-      final summaryKey = _hasText(selectionKey) ? selectionKey : summary.nodeId;
-      if (!_hasText(summaryKey) || entries.containsKey(summaryKey)) {
+      final summaryKey = selectionKey.isNotEmpty
+          ? selectionKey
+          : summary.nodeId;
+      if (summaryKey.isEmpty || entries.containsKey(summaryKey)) {
         return;
       }
-      entries[summaryKey!] = summary;
+      entries[summaryKey] = summary;
       final routeId = summary.routeId?.trim();
-      if (_hasText(routeId)) {
-        screenRouteIds.putIfAbsent(screenId, () => routeId!);
+      if (routeId != null && routeId.isNotEmpty) {
+        screenRouteIds.putIfAbsent(screenId, () => routeId);
       }
       final surfaceId = summary.surfaceId?.trim();
-      if (_hasText(surfaceId)) {
-        screenSurfaceIds.putIfAbsent(screenId, () => surfaceId!);
+      if (surfaceId != null && surfaceId.isNotEmpty) {
+        screenSurfaceIds.putIfAbsent(screenId, () => surfaceId);
       }
     }
 
@@ -154,24 +158,81 @@ class _LiveEditSessionServiceCore {
       return false;
     }
     for (var index = 0; index < previous.screens.length; index += 1) {
-      if (jsonEncode(previous.screens[index].toJson()) !=
-          jsonEncode(current.screens[index].toJson())) {
+      if (!_screensMatch(previous.screens[index], current.screens[index])) {
         return false;
       }
     }
     for (var index = 0; index < previous.routes.length; index += 1) {
-      if (jsonEncode(previous.routes[index].toJson()) !=
-          jsonEncode(current.routes[index].toJson())) {
+      if (!_routesMatch(previous.routes[index], current.routes[index])) {
         return false;
       }
     }
     for (var index = 0; index < previous.transitions.length; index += 1) {
-      if (jsonEncode(previous.transitions[index].toJson()) !=
-          jsonEncode(current.transitions[index].toJson())) {
+      if (!_transitionsMatch(
+        previous.transitions[index],
+        current.transitions[index],
+      )) {
         return false;
       }
     }
     return true;
+  }
+
+  bool _screensMatch(final ScreenSnapshot lhs, final ScreenSnapshot rhs) {
+    if (lhs.screenId != rhs.screenId ||
+        lhs.routeId != rhs.routeId ||
+        lhs.title != rhs.title ||
+        lhs.surfaceId != rhs.surfaceId ||
+        lhs.nodeSummaries.length != rhs.nodeSummaries.length) {
+      return false;
+    }
+    for (var index = 0; index < lhs.nodeSummaries.length; index += 1) {
+      if (!_nodeSummariesMatch(
+        lhs.nodeSummaries[index],
+        rhs.nodeSummaries[index],
+      )) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  bool _nodeSummariesMatch(
+    final InteractionNodeSummary lhs,
+    final InteractionNodeSummary rhs,
+  ) {
+    return lhs.selectionKey == rhs.selectionKey &&
+        lhs.nodeId == rhs.nodeId &&
+        lhs.widgetType == rhs.widgetType &&
+        lhs.bounds == rhs.bounds &&
+        lhs.routeId == rhs.routeId &&
+        lhs.screenId == rhs.screenId &&
+        lhs.surfaceId == rhs.surfaceId &&
+        lhs.source == rhs.source &&
+        lhs.ownedByLocalProject == rhs.ownedByLocalProject &&
+        lhs.hasProjectSourceHint == rhs.hasProjectSourceHint &&
+        lhs.actionable == rhs.actionable &&
+        lhs.structural == rhs.structural;
+  }
+
+  bool _routesMatch(final RouteSnapshot lhs, final RouteSnapshot rhs) {
+    return lhs.routeId == rhs.routeId &&
+        lhs.name == rhs.name &&
+        lhs.screenId == rhs.screenId &&
+        lhs.presentationKind == rhs.presentationKind &&
+        lhs.isActive == rhs.isActive;
+  }
+
+  bool _transitionsMatch(
+    final ObservedTransition lhs,
+    final ObservedTransition rhs,
+  ) {
+    return lhs.transitionId == rhs.transitionId &&
+        lhs.kind == rhs.kind &&
+        lhs.fromScreenId == rhs.fromScreenId &&
+        lhs.toScreenId == rhs.toScreenId &&
+        lhs.selectionKey == rhs.selectionKey &&
+        lhs.routeId == rhs.routeId;
   }
 
   String? _focusedFlowScreenId(
@@ -417,7 +478,9 @@ class _LiveEditSessionServiceCore {
   ) => selection?.source;
 
   List<Object?> _selectionProperties(final LiveEditSelection? selection) =>
-      selection == null ? const <Object?>[] : _jsonList(selection.propertiesForWire);
+      selection == null
+      ? const <Object?>[]
+      : _jsonList(selection.propertiesForWire);
 
   String? _selectionCandidateNodeId(
     final LiveEditSelectionCandidate? candidate,
@@ -695,7 +758,8 @@ class _LiveEditSessionServiceCore {
             : LiveEditTargetDomain.fromWire(change.targetContext!.targetDomain);
         final tracked = currentSession
             .layerFor(targetDomain)
-            .trackedSelections.get(changeNodeId!);
+            .trackedSelections
+            .get(changeNodeId!);
         if (tracked == null) {
           continue;
         }

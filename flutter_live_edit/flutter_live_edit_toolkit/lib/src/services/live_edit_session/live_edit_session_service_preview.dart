@@ -57,7 +57,7 @@ extension _LiveEditSessionServicePreview on _LiveEditSessionServiceCore {
           ? const <LiveEditSelection>[]
           : <LiveEditSelection>[selection];
       session.lastTouchedAt = DateTime.now().toUtc();
-      _lastUpdate = _buildLastUpdate();
+      _lastUpdate = _buildLastUpdate(includeFlowGraph: false);
       return <String, Object?>{
         'sessionId': session.sessionId,
         'targetDomain': targetDomain.wireName,
@@ -88,11 +88,13 @@ extension _LiveEditSessionServicePreview on _LiveEditSessionServiceCore {
       session.meaningfulNodeIds.add(change.nodeId);
     }
     session.lastTouchedAt = DateTime.now().toUtc();
-    _lastUpdate = _buildLastUpdate();
+    _lastUpdate = _buildLastUpdate(includeFlowGraph: false);
     if (appliedExact) {
       WidgetsBinding.instance.addPostFrameCallback((final _) {
         final currentSession = _sessions[session.sessionId];
-        final trackedElement = currentSession?.trackedSelections.get(change.nodeId);
+        final trackedElement = currentSession?.trackedSelections.get(
+          change.nodeId,
+        );
         if (currentSession == null || trackedElement == null) {
           return;
         }
@@ -279,7 +281,8 @@ extension _LiveEditSessionServicePreview on _LiveEditSessionServiceCore {
       for (final selection in selections)
         (selection.selectionKey.isNotEmpty
                 ? selection.selectionKey
-                : selection.nodeId): selection,
+                : selection.nodeId):
+            selection,
     };
     final normalized = <LiveEditSelection>[];
     final selectionMode = selectionSet.isSingle
@@ -594,11 +597,14 @@ extension _LiveEditSessionServicePreview on _LiveEditSessionServiceCore {
       selectionMode: selectionMode,
       selectedNodeIds: selectedNodeIds,
     );
-    layer.trackedSelections.put(nodeId, _TrackedSelectionTarget(
-      element: element,
-      ancestry: ancestry,
-      selection: selection,
-    ));
+    layer.trackedSelections.put(
+      nodeId,
+      _TrackedSelectionTarget(
+        element: element,
+        ancestry: ancestry,
+        selection: selection,
+      ),
+    );
     return selection;
   }
 
