@@ -21,6 +21,64 @@ Do not duplicate tool name literals in docs or other packages; import from core 
 
 ---
 
+## Protocol v2 (normalized transaction model)
+
+`flutter_live_edit_toolkit/lib/src/models/live_edit_models.dart` defines
+`LiveEditTransactionV2` and related types, with schema contracts in
+`LiveEditSchemas.protocolV2Transaction` and
+`LiveEditSchemas.protocolV2TransportEvent`.
+
+v2 is normalized into explicit pipeline stages:
+
+1. `intent`
+2. `target`
+3. `patch`
+4. `validation`
+5. `apply`
+6. `rollback`
+
+The pipeline is represented by `LiveEditEditGraphV2` (node/dependency graph)
+and can be consumed as denormalized UI projections:
+
+- `LiveEditUiProjectionV2.pointToBubble` for point->bubble interaction
+- `LiveEditUiProjectionV2.timeline` for timeline/event rendering
+
+### Target addressing domains
+
+v2 target addressing explicitly supports:
+
+- `screen`
+- `widget`
+- `animation`
+- `state`
+
+through `LiveEditTargetAddressV2.kind`.
+
+### Compatibility path from point->bubble flow
+
+`LiveEditProtocolV2Compatibility.fromLegacyResolutionRequest(...)` maps
+existing `LiveEditResolutionRequest` payloads into v2 transactions with
+`compatibilityMode = point_bubble_v1`.
+
+### Conflict and rollback semantics
+
+`LiveEditProtocolV2Resolver.detectConflict(...)` currently defines two default
+conflict kinds:
+
+- `stale_base_revision` when incoming base revision is behind current revision
+- `overlapping_target` when concurrent in-flight transactions address the same
+  target path
+
+`LiveEditProtocolV2Resolver.shouldRollback(...)` applies rollback policy by
+transaction policy:
+
+- `on_conflict`
+- `on_validation_failure`
+- `never`
+- `manual`
+
+---
+
 ## Namespace A — MCP server (`live_edit_*`)
 
 Exposed by **Flutter Inspector MCP Server** (`mcp_server_dart`): same strings as `LiveEditMcpToolNames` in core. These commands run **through the server executor** (VM connection, `LiveEditAgentService` on the server for resolve/apply, etc.).
