@@ -84,7 +84,7 @@ void main() {
             'title': 'Apply live edit',
             'summary': 'Persist the selected heading text from the AI prompt.',
             'selectedNode': 'Text',
-            'requestedChanges': <String>[request.intentText ?? ''],
+            'requestedChanges': <String>[request.instructionText ?? ''],
             'affectedFiles': <String>['lib/main.dart'],
             'confidence': 0.88,
             'riskNotes': const <String>[],
@@ -145,7 +145,7 @@ void main() {
 
     expect(requests, hasLength(1));
     expect(
-      requests.single.intentText,
+      requests.single.instructionText,
       'Rewrite the selected heading in a cleaner style.',
     );
     expect(h.lastError, isNull);
@@ -175,12 +175,6 @@ void main() {
           sourceTargets: request.sourceTargets,
           applyMode: request.applyMode,
           inferenceConfig: request.inferenceConfig,
-          intentText: request.intentText,
-          selection: request.selection,
-          meta: const <String, Object?>{
-            'integrationTest': true,
-            'driver': 'live_edit_test',
-          },
         );
         final promptText = agentService.buildResolvedPrompt(resolutionRequest);
         request.onEvent?.call(
@@ -198,7 +192,7 @@ void main() {
             'title': 'Apply this bubble change',
             'summary': 'Persist the selected heading text from the AI prompt.',
             'selectedNode': 'Text',
-            'requestedChanges': <String>[request.intentText ?? ''],
+            'requestedChanges': <String>[request.instructionText ?? ''],
             'affectedFiles': <String>['lib/main.dart'],
             'confidence': 0.88,
             'riskNotes': const <String>[],
@@ -414,7 +408,7 @@ void main() {
             'title': 'Apply',
             'summary': 'Test apply',
             'selectedNode': 'Text',
-            'requestedChanges': <String>[request.intentText ?? ''],
+            'requestedChanges': <String>[request.instructionText ?? ''],
             'affectedFiles': <String>['lib/main.dart'],
             'confidence': 0.9,
             'riskNotes': const <String>[],
