@@ -364,14 +364,20 @@ void main() {
       ),
     );
 
+    // Use fixed pump counts instead of pumpAndSettle — each software-rendered
+    // frame with the full overlay widget tree takes ~3 minutes of real CPU time,
+    // and pumpAndSettle tries 6000+ frames before its 10-minute fake timeout.
+    // The command execution is synchronous so 2-4 pumps are sufficient.
     await tester.tap(find.byType(ActionChip));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump();
 
     final gesture = await tester.startGesture(const Offset(24, 56));
     await gesture.moveTo(const Offset(200, 140));
     await tester.pump();
     await gesture.up();
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump();
 
     final marqueeBubbleId = selectActiveBubbleId(
       orchestrator.context,
@@ -394,16 +400,20 @@ void main() {
     UpdateAiComposerCommand(
       value: 'Grouped prompt',
     ).execute(orchestrator.context);
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump();
 
     await tester.tapAt(tester.getCenter(find.text('Other')));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump();
 
     final secondGesture = await tester.startGesture(const Offset(24, 56));
     await secondGesture.moveTo(const Offset(200, 140));
     await tester.pump();
     await secondGesture.up();
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump();
+    await tester.pump();
 
     expect(
       selectActiveBubbleId(

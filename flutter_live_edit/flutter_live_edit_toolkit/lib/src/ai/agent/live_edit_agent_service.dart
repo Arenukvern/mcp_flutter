@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
+
 import 'package:from_json_to_json/from_json_to_json.dart';
 import 'package:is_dart_empty_or_not/is_dart_empty_or_not.dart';
 import 'package:path/path.dart' as p;
@@ -88,7 +90,7 @@ final class LiveEditAgentRegistry {
         'codex_exec': codexClient,
         'cursor_agent': cursorClient,
       },
-      defaultBackendId: Platform.environment['LIVE_EDIT_BACKEND'],
+      defaultBackendId: kIsWeb ? null : Platform.environment['LIVE_EDIT_BACKEND'],
     );
   }
 
@@ -242,7 +244,7 @@ final class LiveEditAgentRegistry {
       id: backendId,
       label: _backendLabel(backendId),
       description: _backendDescription(backendId),
-      available: client.isAvailable,
+      available: kIsWeb ? false : client.isAvailable,
       isDefault: backendId == _defaultBackendId,
       meta: meta,
     );
@@ -289,7 +291,7 @@ final class LiveEditAgentService {
   }) : registry = registry ?? LiveEditAgentRegistry.withDefaults(),
        _storagePath =
            storagePath ??
-           p.join(Directory.systemTemp.path, 'flutter_live_edit_agent');
+           (kIsWeb ? '' : p.join(Directory.systemTemp.path, 'flutter_live_edit_agent'));
 
   final LiveEditAgentRegistry registry;
   final String _storagePath;
