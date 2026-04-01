@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_live_edit_toolkit/flutter_live_edit_toolkit.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -601,6 +600,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
       await _pumpUntil(tester, () => h.overlayVisible);
 
+      h.ensureSession();
+      await tester.pump(const Duration(milliseconds: 200));
+
       final dragStart =
           tester.getTopLeft(_semanticsId('counter_demo_icon')) -
           const Offset(8, 8);
@@ -609,12 +611,17 @@ void main() {
             _semanticsId('stateful_counter_increment_button'),
           ) +
           const Offset(8, 8);
-      final gesture = await tester.startGesture(
-        dragStart,
-        kind: PointerDeviceKind.mouse,
-      );
-      await gesture.moveTo(dragEnd);
-      await gesture.up();
+      StartMarqueeCommand(
+        x: dragStart.dx.round(),
+        y: dragStart.dy.round(),
+      ).execute(orchestrator.context);
+      UpdateMarqueeCommand(
+        x: dragEnd.dx.round(),
+        y: dragEnd.dy.round(),
+      ).execute(orchestrator.context);
+      CommitMarqueeCommand(
+        controller: orchestrator.controller,
+      ).execute(orchestrator.context);
       await _pumpUntil(
         tester,
         () => h.activeMultiSelection.isNotEmpty,
