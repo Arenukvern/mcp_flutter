@@ -318,18 +318,20 @@ void main() {
 
     final selectChildResult = h.selectChild();
     expect(selectChildResult['selected'], isTrue);
-    final childSelection =
-        (selectChildResult['selection'] as Map<Object?, Object?>)
-            .cast<String, Object?>();
-    expect(childSelection['nodeId'], promotedSelection.nodeId);
+    final childSelection = _decodeSelectionFromResult(
+      selectChildResult,
+      actionName: 'selectChild',
+    );
+    expect(childSelection.nodeId, promotedSelection.nodeId);
 
     final deepestResult = h.selectCandidate(index: 0);
     expect(deepestResult['selected'], isTrue);
-    final deepestSelection =
-        (deepestResult['selection'] as Map<Object?, Object?>)
-            .cast<String, Object?>();
-    expect(deepestSelection['nodeId'], promotedCandidates.first.nodeId);
-    expect(deepestSelection['nodeId'], isNot(promotedSelection.nodeId));
+    final deepestSelection = _decodeSelectionFromResult(
+      deepestResult,
+      actionName: 'selectCandidate',
+    );
+    expect(deepestSelection.nodeId, promotedCandidates.first.nodeId);
+    expect(deepestSelection.nodeId, isNot(promotedSelection.nodeId));
   });
 
   testWidgets('bubble header drag repositions the live edit bubble', (
@@ -641,6 +643,105 @@ void main() {
       expect(widgetTypes, isNot(contains('Container')));
     },
   );
+}
+
+LiveEditSelection _decodeSelectionFromResult(
+  final Map<String, Object?> result, {
+  required final String actionName,
+}) {
+  final rawSelection = result['selection'];
+  if (rawSelection is! Map<Object?, Object?>) {
+    fail(
+      '$actionName returned an invalid selection payload type: '
+      '${rawSelection.runtimeType}. Full result: $result',
+    );
+  }
+  final selectionJson = <String, Object?>{};
+  for (final entry in rawSelection.entries) {
+    final key = entry.key;
+    if (key is! String) {
+      fail(
+        '$actionName returned a non-string selection key: '
+        '$key (${key.runtimeType}). Full result: $result',
+      );
+    }
+    selectionJson[key] = entry.value;
+  }
+  final targetDomain = selectionJson['targetDomain'];
+  if (targetDomain != null && targetDomain is! String) {
+    final wireName = _tryReadWireName(targetDomain);
+    if (wireName != null) {
+      selectionJson['targetDomain'] = wireName;
+    }
+  }
+  final selectionMode = selectionJson['selectionMode'];
+  if (selectionMode != null && selectionMode is! String) {
+    final wireName = _tryReadWireName(selectionMode);
+    if (wireName != null) {
+      selectionJson['selectionMode'] = wireName;
+    }
+  }
+  final bounds = selectionJson['bounds'];
+  if (bounds != null) {
+    selectionJson['bounds'] = _coerceObjectToJsonMap(
+      value: bounds,
+      actionName: actionName,
+      fieldName: 'bounds',
+      result: result,
+    );
+  }
+  final source = selectionJson['source'];
+  if (source != null) {
+    selectionJson['source'] = _coerceObjectToJsonMap(
+      value: source,
+      actionName: actionName,
+      fieldName: 'source',
+      result: result,
+    );
+  }
+  try {
+    return LiveEditSelection.fromJson(selectionJson);
+  } on Object catch (error) {
+    fail(
+      '$actionName returned an undecodable selection payload: '
+      '$error. Payload: $selectionJson',
+    );
+  }
+}
+
+Map<String, Object?> _coerceObjectToJsonMap({
+  required final Object value,
+  required final String actionName,
+  required final String fieldName,
+  required final Map<String, Object?> result,
+}) {
+  if (value is Map) {
+    return Map<String, Object?>.from(value);
+  }
+  try {
+    final encoded = (value as dynamic).toJson();
+    if (encoded is Map) {
+      return Map<String, Object?>.from(encoded);
+    }
+  } on Object catch (error) {
+    fail(
+      '$actionName returned an invalid $fieldName payload: '
+      '$error. Full result: $result',
+    );
+  }
+  fail(
+    '$actionName returned an invalid $fieldName payload type: '
+    '${value.runtimeType}. Full result: $result',
+  );
+}
+
+String? _tryReadWireName(final Object value) {
+  try {
+    final wireName = (value as dynamic).wireName;
+    return wireName is String ? wireName : null;
+  } on Object {
+    return null;
+  }
 }
 
 Future<void> _pumpUntil(
