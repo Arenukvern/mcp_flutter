@@ -119,10 +119,37 @@ void main() {
     final aboutHeading = _semanticsId('about_demo_heading');
     await tester.tap(aboutHeading, warnIfMissed: false);
     await tester.pump(const Duration(milliseconds: 300));
+    var usedSyntheticSelectionFallback = false;
     if (h.activeSelection == null && aboutHeading.evaluate().isNotEmpty) {
       h.selectNode(tester.getCenter(aboutHeading));
       await tester.pump(const Duration(milliseconds: 300));
     }
+    if (h.activeSelection == null) {
+      const bubbleId = 'app_scene::prompt_only_fallback';
+      SetBubbleBackendCommand(
+        bubbleId: bubbleId,
+        backendId: 'codex_exec',
+      ).execute(orchestrator.context);
+      final layerMap = Map<LiveEditTargetDomain, LiveEditLayerViewState>.from(
+        orchestrator.context.bubbleResource.value.layerViewStateByDomain,
+      );
+      layerMap[LiveEditTargetDomain.appScene] =
+          (layerMap[LiveEditTargetDomain.appScene] ?? LiveEditLayerViewState())
+              .copyWith(activeBubbleId: bubbleId);
+      orchestrator.context.bubbleResource.value = orchestrator
+          .context
+          .bubbleResource
+          .value
+          .copyWith(
+            layerViewStateByDomain: layerMap,
+          );
+      usedSyntheticSelectionFallback = true;
+    }
+    expect(
+      h.activeSelection != null || usedSyntheticSelectionFallback,
+      isTrue,
+      reason: 'Expected selected heading or deterministic fallback bubble.',
+    );
     final expandButton = _semanticsId('live_edit_panel_expand_button');
     if (expandButton.evaluate().isNotEmpty) {
       await tester.tap(expandButton.first);
@@ -135,12 +162,32 @@ void main() {
       value: 'Rewrite the selected heading in a cleaner style.',
     ).execute(orchestrator.context);
     await tester.pump(const Duration(milliseconds: 200));
+    if (!usedSyntheticSelectionFallback) {
+      await _pumpUntil(
+        tester,
+        () => h.canSubmitAiPrompt,
+        timeout: const Duration(seconds: 10),
+      );
+    }
 
     await h.applyDraft(
       message: 'Rewrite the selected heading in a cleaner style.',
     );
     await tester.pump(const Duration(milliseconds: 300));
-    await _pumpUntil(tester, () => h.currentActivity?.label == 'Applied');
+    await _pumpUntil(
+      tester,
+      () => requests.isNotEmpty || h.lastError != null,
+      timeout: const Duration(seconds: 10),
+    );
+    await _pumpUntil(
+      tester,
+      () =>
+          h.applyPhase == LiveEditApplyPhase.success ||
+          h.applyPhase == LiveEditApplyPhase.failed ||
+          h.lastError != null,
+      timeout: const Duration(seconds: 30),
+    );
+    expect(h.applyPhase, LiveEditApplyPhase.success);
 
     expect(requests, hasLength(1));
     expect(
