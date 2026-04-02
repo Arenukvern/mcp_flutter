@@ -579,6 +579,7 @@ void main() {
       final binding = IntegrationTestWidgetsFlutterBinding.instance;
       await binding.setSurfaceSize(const Size(8000, 2000));
       addTearDown(() async {
+        debugFlutterLiveEditAutoHostOrchestratorOverride?.dispose();
         debugFlutterLiveEditAutoHostOrchestratorOverride = null;
         await binding.setSurfaceSize(null);
       });
