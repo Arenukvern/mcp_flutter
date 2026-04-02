@@ -38,7 +38,7 @@ class _LiveEditSessionServiceCore {
     if (previous == null && _isEmptyFlowGraphSnapshot(snapshot)) {
       return null;
     }
-    if (_flowGraphSnapshotsMatch(previous, snapshot)) {
+    if (flowGraphSnapshotsMatch(previous, snapshot)) {
       return null;
     }
     return snapshot;
@@ -143,97 +143,6 @@ class _LiveEditSessionServiceCore {
       snapshot.routes.isEmpty &&
       snapshot.transitions.isEmpty &&
       !_hasText(snapshot.focusedScreenId);
-
-  bool _flowGraphSnapshotsMatch(
-    final FlowGraphSnapshot? previous,
-    final FlowGraphSnapshot current,
-  ) {
-    if (previous == null) {
-      return false;
-    }
-    if (previous.focusedScreenId != current.focusedScreenId ||
-        previous.screens.length != current.screens.length ||
-        previous.routes.length != current.routes.length ||
-        previous.transitions.length != current.transitions.length) {
-      return false;
-    }
-    for (var index = 0; index < previous.screens.length; index += 1) {
-      if (!_screensMatch(previous.screens[index], current.screens[index])) {
-        return false;
-      }
-    }
-    for (var index = 0; index < previous.routes.length; index += 1) {
-      if (!_routesMatch(previous.routes[index], current.routes[index])) {
-        return false;
-      }
-    }
-    for (var index = 0; index < previous.transitions.length; index += 1) {
-      if (!_transitionsMatch(
-        previous.transitions[index],
-        current.transitions[index],
-      )) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  bool _screensMatch(final ScreenSnapshot lhs, final ScreenSnapshot rhs) {
-    if (lhs.screenId != rhs.screenId ||
-        lhs.routeId != rhs.routeId ||
-        lhs.title != rhs.title ||
-        lhs.surfaceId != rhs.surfaceId ||
-        lhs.nodeSummaries.length != rhs.nodeSummaries.length) {
-      return false;
-    }
-    for (var index = 0; index < lhs.nodeSummaries.length; index += 1) {
-      if (!_nodeSummariesMatch(
-        lhs.nodeSummaries[index],
-        rhs.nodeSummaries[index],
-      )) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  bool _nodeSummariesMatch(
-    final InteractionNodeSummary lhs,
-    final InteractionNodeSummary rhs,
-  ) {
-    return lhs.selectionKey == rhs.selectionKey &&
-        lhs.nodeId == rhs.nodeId &&
-        lhs.widgetType == rhs.widgetType &&
-        lhs.bounds == rhs.bounds &&
-        lhs.routeId == rhs.routeId &&
-        lhs.screenId == rhs.screenId &&
-        lhs.surfaceId == rhs.surfaceId &&
-        lhs.source == rhs.source &&
-        lhs.ownedByLocalProject == rhs.ownedByLocalProject &&
-        lhs.hasProjectSourceHint == rhs.hasProjectSourceHint &&
-        lhs.actionable == rhs.actionable &&
-        lhs.structural == rhs.structural;
-  }
-
-  bool _routesMatch(final RouteSnapshot lhs, final RouteSnapshot rhs) {
-    return lhs.routeId == rhs.routeId &&
-        lhs.name == rhs.name &&
-        lhs.screenId == rhs.screenId &&
-        lhs.presentationKind == rhs.presentationKind &&
-        lhs.isActive == rhs.isActive;
-  }
-
-  bool _transitionsMatch(
-    final ObservedTransition lhs,
-    final ObservedTransition rhs,
-  ) {
-    return lhs.transitionId == rhs.transitionId &&
-        lhs.kind == rhs.kind &&
-        lhs.fromScreenId == rhs.fromScreenId &&
-        lhs.toScreenId == rhs.toScreenId &&
-        lhs.selectionKey == rhs.selectionKey &&
-        lhs.routeId == rhs.routeId;
-  }
 
   String? _focusedFlowScreenId(
     final _LiveEditSessionState session,
@@ -394,10 +303,8 @@ class _LiveEditSessionServiceCore {
   InteractionNodeSummary _buildSelectionSummary(
     final LiveEditSelection selection,
   ) {
-    final selectionJson =
-        _selectionJson(selection) ?? const <String, Object?>{};
-    final rawNode = _jsonObject(selectionJson['rawNode']);
-    final layoutContext = _jsonObject(selectionJson['layoutContext']);
+    final rawNode = selection.rawNode;
+    final layoutContext = selection.layoutContext;
     final source = _selectionSource(selection);
     final sourceFile = _sourceFile(source);
     final sourceHint = _sourceHint(source);
@@ -405,10 +312,7 @@ class _LiveEditSessionServiceCore {
       selectionKey:
           _selectionKey(selection) ?? _selectionNodeId(selection) ?? '',
       nodeId: _selectionNodeId(selection) ?? '',
-      widgetType:
-          _selectionWidgetType(selection) ??
-          _jsonString(selectionJson['widgetType']) ??
-          '',
+      widgetType: _selectionWidgetType(selection) ?? '',
       bounds: _selectionBounds(selection),
       routeId:
           _jsonString(rawNode['routeId']) ??
@@ -429,7 +333,6 @@ class _LiveEditSessionServiceCore {
   InteractionNodeSummary _buildSelectionCandidateSummary(
     final LiveEditSelectionCandidate candidate,
   ) {
-    final candidateJson = _selectionCandidateJson(candidate);
     final source = _selectionCandidateSource(candidate);
     final sourceFile = _sourceFile(source);
     final sourceHint = _sourceHint(source);
@@ -439,22 +342,27 @@ class _LiveEditSessionServiceCore {
           _selectionCandidateNodeId(candidate) ??
           '',
       nodeId: _selectionCandidateNodeId(candidate) ?? '',
-      widgetType:
-          _selectionCandidateWidgetType(candidate) ??
-          _jsonString(candidateJson['widgetType']) ??
-          '',
+      widgetType: _selectionCandidateWidgetType(candidate) ?? '',
       bounds: _selectionCandidateBounds(candidate),
-      routeId: _jsonString(candidateJson['routeId']),
-      screenId: _jsonString(candidateJson['screenId']),
-      surfaceId: _jsonString(candidateJson['surfaceId']),
+      routeId: null,
+      screenId: null,
+      surfaceId: null,
       source: source,
-      ownedByLocalProject:
-          _selectionCandidateCreatedByLocalProject(candidate) ||
-          candidateJson['createdByLocalProject'] == true,
+      ownedByLocalProject: _selectionCandidateCreatedByLocalProject(candidate),
       hasProjectSourceHint: _hasText(sourceHint) || _hasText(sourceFile),
       actionable: true,
     );
   }
+
+  @visibleForTesting
+  InteractionNodeSummary debugSelectionSummaryForTesting(
+    final LiveEditSelection selection,
+  ) => _buildSelectionSummary(selection);
+
+  @visibleForTesting
+  InteractionNodeSummary debugSelectionCandidateSummaryForTesting(
+    final LiveEditSelectionCandidate candidate,
+  ) => _buildSelectionCandidateSummary(candidate);
 
   String? _selectionNodeId(final LiveEditSelection? selection) =>
       _jsonString(selection?.nodeId);
@@ -478,9 +386,7 @@ class _LiveEditSessionServiceCore {
   ) => selection?.source;
 
   List<Object?> _selectionProperties(final LiveEditSelection? selection) =>
-      selection == null
-      ? const <Object?>[]
-      : _jsonList(selection.propertiesForWire);
+      selection?.propertiesForWire ?? const <Object?>[];
 
   String? _selectionCandidateNodeId(
     final LiveEditSelectionCandidate? candidate,
