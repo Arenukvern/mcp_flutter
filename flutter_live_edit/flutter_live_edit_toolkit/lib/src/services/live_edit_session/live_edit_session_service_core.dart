@@ -456,6 +456,25 @@ class _LiveEditSessionServiceCore {
     return resolved.isEmpty || resolved == 'null' ? null : resolved;
   }
 
+  String _parseRequiredSessionId(final Object? value) {
+    if (value is! String) {
+      throw StateError(
+        'Expected startSession() to return string sessionId, got ${value.runtimeType}.',
+      );
+    }
+    final sessionId = value.trim();
+    if (sessionId.isEmpty) {
+      throw StateError(
+        'Expected startSession() to return non-empty sessionId.',
+      );
+    }
+    return sessionId;
+  }
+
+  @visibleForTesting
+  String debugParseRequiredSessionIdForTesting(final Object? value) =>
+      _parseRequiredSessionId(value);
+
   _LiveEditLayerState _activeLayerOrNull() {
     final session = _activeSessionOrNull();
     if (session == null) {

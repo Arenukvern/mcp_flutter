@@ -252,7 +252,14 @@ extension _LiveEditSessionServicePreview on _LiveEditSessionServiceCore {
         : _activeSessionId;
     if (resolvedId == null) {
       final started = startSession();
-      return _sessions[started['sessionId']! as String]!;
+      final startedSessionId = _parseRequiredSessionId(started['sessionId']);
+      final startedSession = _sessions[startedSessionId];
+      if (startedSession == null) {
+        throw StateError(
+          'startSession() returned sessionId "$startedSessionId" that is not tracked.',
+        );
+      }
+      return startedSession;
     }
     return _sessions.putIfAbsent(
       resolvedId,

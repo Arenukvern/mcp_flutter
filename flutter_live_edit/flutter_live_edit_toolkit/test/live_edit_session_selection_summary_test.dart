@@ -97,4 +97,34 @@ void main() {
       expect(summary.actionable, isTrue);
     });
   });
+
+  group('LiveEditSessionService session bootstrap parsing', () {
+    test('parses non-empty string session id', () {
+      final service = LiveEditSessionService();
+
+      final sessionId = service.debugParseRequiredSessionIdForTesting(
+        ' session-123 ',
+      );
+
+      expect(sessionId, 'session-123');
+    });
+
+    test('throws when session id is not a string', () {
+      final service = LiveEditSessionService();
+
+      expect(
+        () => service.debugParseRequiredSessionIdForTesting(42),
+        throwsA(isA<StateError>()),
+      );
+    });
+
+    test('throws when session id is empty after trim', () {
+      final service = LiveEditSessionService();
+
+      expect(
+        () => service.debugParseRequiredSessionIdForTesting('   '),
+        throwsA(isA<StateError>()),
+      );
+    });
+  });
 }
