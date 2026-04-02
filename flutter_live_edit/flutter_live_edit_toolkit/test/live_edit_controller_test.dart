@@ -2192,8 +2192,180 @@ void main() {
         presentationDomain: _domain(orchestrator),
         sessionId: _sid(orchestrator),
       )?.label,
-      'Applied',
+      'Preview ready',
     );
+  });
+
+  testWidgets('plan preview requires explicit apply approval', (
+    final tester,
+  ) async {
+    final requests = <LiveEditApplyDraftRequest>[];
+    final orchestrator = LiveEditOrchestrator(
+      applyDraftDelegate: (final request) async {
+        requests.add(request);
+        final executionPlan = <String, Object?>{
+          'proposalId': 'proposal-preview',
+          'title': 'Apply live edit',
+          'summary': 'Preview the requested text update.',
+          'selectedNode': 'Text',
+          'requestedChanges': <String>['Rewrite selected text'],
+          'affectedFiles': <String>['lib/main.dart'],
+          'confidence': 0.86,
+          'riskNotes': const <String>[],
+          'agentInstruction': 'Rewrite the selected text widget.',
+        };
+        if (!request.approve) {
+          return <String, Object?>{
+            'proposalId': 'proposal-preview',
+            'executionPlan': executionPlan,
+          };
+        }
+        return <String, Object?>{
+          'proposalId': 'proposal-preview',
+          'executionPlan': executionPlan,
+          'executionResult': <String, Object?>{
+            'executionId': 'proposal-preview',
+            'backendId': 'codex_exec',
+            'summary': 'Applied previewed changes.',
+            'changedFiles': <String>['lib/main.dart'],
+            'warnings': const <String>[],
+            'validationSteps': const <String>[],
+          },
+        };
+      },
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: FlutterLiveEditHost(
+          orchestrator: orchestrator,
+          child: const Scaffold(body: Center(child: Text('Target'))),
+        ),
+      ),
+    );
+
+    await tester.tap(find.byType(ActionChip));
+    await tester.pumpAndSettle();
+    await tester.tapAt(tester.getCenter(find.text('Target')));
+    await tester.pumpAndSettle();
+
+    OpenAiBubbleCommand(defaultPrompt: '').execute(orchestrator.context);
+    UpdateAiComposerCommand(
+      value: 'Please rewrite this heading.',
+    ).execute(orchestrator.context);
+    await tester.pumpAndSettle();
+
+    await SubmitAiPromptCommand(
+      controller: orchestrator.controller,
+    ).execute(orchestrator.context);
+    await tester.pumpAndSettle();
+
+    expect(requests, hasLength(1));
+    expect(requests.single.approve, isFalse);
+    expect(selectApplyPhase(orchestrator.context), LiveEditApplyPhase.awaitingApproval);
+    expect(
+      selectBubbleStatusForBubble(orchestrator.context, _bubbleId(orchestrator)),
+      LiveEditBubbleStatus.needsApproval,
+    );
+    expect(_semanticsId('live_edit_preview_apply_button'), findsOneWidget);
+
+    await tester.tap(_semanticsId('live_edit_preview_apply_button'));
+    await tester.pumpAndSettle();
+
+    expect(requests, hasLength(2));
+    expect(requests.last.approve, isTrue);
+    expect(selectApplyPhase(orchestrator.context), LiveEditApplyPhase.success);
+    expect(
+      selectBubbleStatusForBubble(orchestrator.context, _bubbleId(orchestrator)),
+      LiveEditBubbleStatus.applied,
+    );
+    expect(_semanticsId('live_edit_preview_apply_button'), findsNothing);
+    expect(_semanticsId('live_edit_rollback_button'), findsOneWidget);
+  });
+
+  testWidgets('rollback returns applied bubble to editable state', (
+    final tester,
+  ) async {
+    final orchestrator = LiveEditOrchestrator(
+      applyDraftDelegate: (final request) async => <String, Object?>{
+        'proposalId': 'proposal-rollback',
+        'executionPlan': <String, Object?>{
+          'proposalId': 'proposal-rollback',
+          'title': 'Apply live edit',
+          'summary': 'Apply text changes.',
+          'selectedNode': 'Text',
+          'requestedChanges': <String>['Rewrite selected text'],
+          'affectedFiles': <String>['lib/main.dart'],
+          'confidence': 0.9,
+          'riskNotes': const <String>[],
+          'agentInstruction': 'Apply text changes.',
+        },
+        'executionResult': <String, Object?>{
+          'executionId': 'proposal-rollback',
+          'backendId': 'codex_exec',
+          'summary': 'Applied text changes.',
+          'changedFiles': <String>['lib/main.dart'],
+          'warnings': const <String>[],
+          'validationSteps': const <String>[],
+        },
+      },
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: FlutterLiveEditHost(
+          orchestrator: orchestrator,
+          child: const Scaffold(body: Center(child: Text('Target'))),
+        ),
+      ),
+    );
+
+    await tester.tap(find.byType(ActionChip));
+    await tester.pumpAndSettle();
+    await tester.tapAt(tester.getCenter(find.text('Target')));
+    await tester.pumpAndSettle();
+
+    OpenAiBubbleCommand(defaultPrompt: '').execute(orchestrator.context);
+    UpdateAiComposerCommand(value: 'Rewrite this text.').execute(orchestrator.context);
+    await tester.pumpAndSettle();
+
+    await SubmitAiPromptCommand(
+      controller: orchestrator.controller,
+    ).execute(orchestrator.context);
+    await tester.pumpAndSettle();
+
+    expect(selectApplyPhase(orchestrator.context), LiveEditApplyPhase.success);
+    expect(
+      selectBubbleStatusForBubble(orchestrator.context, _bubbleId(orchestrator)),
+      LiveEditBubbleStatus.applied,
+    );
+    expect(_semanticsId('live_edit_rollback_button'), findsOneWidget);
+
+    await tester.tap(_semanticsId('live_edit_rollback_button'));
+    await tester.pumpAndSettle();
+
+    expect(
+      selectBubbleStatusForBubble(orchestrator.context, _bubbleId(orchestrator)),
+      LiveEditBubbleStatus.editing,
+    );
+    expect(selectApplyPhase(orchestrator.context), LiveEditApplyPhase.rollbackDone);
+    expect(
+      selectCurrentActivity(
+        orchestrator.context,
+        orchestrator.controller,
+        presentationDomain: _domain(orchestrator),
+        sessionId: _sid(orchestrator),
+      )?.label,
+      'Rolled back',
+    );
+    expect(
+      selectExecutionPlanForBubble(
+        orchestrator.context,
+        _bubbleId(orchestrator),
+      ),
+      isNull,
+    );
+    expect(_semanticsId('live_edit_rollback_button'), findsNothing);
   });
 
   testWidgets('direct property edits stay local until apply', (

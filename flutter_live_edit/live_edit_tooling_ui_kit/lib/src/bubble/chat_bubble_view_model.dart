@@ -23,9 +23,12 @@ final class ChatBubbleViewModel {
     this.inputText = '',
     this.isBusy = false,
     this.canDiscard = false,
+    this.canApplyPreview = false,
+    this.canRollback = false,
     this.canApplyAll = false,
     this.applyAllCount = 0,
     this.draftCount = 0,
+    this.previewSummary,
     this.appliedSummary,
   });
 
@@ -36,8 +39,11 @@ final class ChatBubbleViewModel {
   final String inputText;
   final bool isBusy;
   final bool canDiscard;
+  final bool canApplyPreview;
+  final bool canRollback;
   final bool canApplyAll;
   final int applyAllCount;
   final int draftCount;
+  final String? previewSummary;
   final String? appliedSummary;
 }

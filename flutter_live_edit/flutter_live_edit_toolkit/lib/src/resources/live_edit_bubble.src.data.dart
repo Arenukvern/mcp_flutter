@@ -37,10 +37,10 @@ final class LiveEditBubbleResourceData {
     final Map<LiveEditTargetDomain, LiveEditLayerViewState>?
     layerViewStateByDomain,
     final LiveEditApplyPhase? applyPhase,
-    final LiveEditExecutionPlan? pendingExecutionPlan,
-    final String? pendingProposalId,
-    final String? pendingBubbleId,
-    final String? pendingPropertyId,
+    final Object? pendingExecutionPlan = _unset,
+    final Object? pendingProposalId = _unset,
+    final Object? pendingBubbleId = _unset,
+    final Object? pendingPropertyId = _unset,
     final Object? lastError = _unset,
     final Set<String>? resolvedBubbleIds,
     final String? globalComposerText,
@@ -49,10 +49,18 @@ final class LiveEditBubbleResourceData {
     layerViewStateByDomain:
         layerViewStateByDomain ?? this.layerViewStateByDomain,
     applyPhase: applyPhase ?? this.applyPhase,
-    pendingExecutionPlan: pendingExecutionPlan ?? this.pendingExecutionPlan,
-    pendingProposalId: pendingProposalId ?? this.pendingProposalId,
-    pendingBubbleId: pendingBubbleId ?? this.pendingBubbleId,
-    pendingPropertyId: pendingPropertyId ?? this.pendingPropertyId,
+    pendingExecutionPlan: identical(pendingExecutionPlan, _unset)
+        ? this.pendingExecutionPlan
+        : pendingExecutionPlan as LiveEditExecutionPlan?,
+    pendingProposalId: identical(pendingProposalId, _unset)
+        ? this.pendingProposalId
+        : pendingProposalId as String?,
+    pendingBubbleId: identical(pendingBubbleId, _unset)
+        ? this.pendingBubbleId
+        : pendingBubbleId as String?,
+    pendingPropertyId: identical(pendingPropertyId, _unset)
+        ? this.pendingPropertyId
+        : pendingPropertyId as String?,
     lastError: identical(lastError, _unset)
         ? this.lastError
         : lastError as String?,

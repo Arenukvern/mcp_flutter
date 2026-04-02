@@ -23,6 +23,8 @@ String _applyPhaseLabel(final LiveEditApplyPhase phase) => switch (phase) {
   LiveEditApplyPhase.preparing => 'preparing',
   LiveEditApplyPhase.awaitingApproval => 'awaitingApproval',
   LiveEditApplyPhase.applying => 'applying',
+  LiveEditApplyPhase.rollbackInProgress => 'rollbackInProgress',
+  LiveEditApplyPhase.rollbackDone => 'rollbackDone',
   LiveEditApplyPhase.success => 'success',
   LiveEditApplyPhase.failed => 'failed',
 };
@@ -182,7 +184,7 @@ ToolingThemeData buildToolingThemeData() {
     statusLabels: const <String, String>{
       'editing': 'Draft ready',
       'waiting': 'Applying',
-      'needsApproval': 'Applying',
+      'needsApproval': 'Preview ready',
       'applied': 'Applied',
       'failed': 'Failed',
     },
@@ -281,6 +283,15 @@ ChatBubbleViewModel buildChatBubbleViewModel(
   final inputText = bubbleId != null
       ? selectInstructionTextForBubble(ctx, bubbleId)
       : ctx.bubbleResource.value.globalComposerText;
+  final activeId =
+      bubbleId ??
+      selectActiveBubbleId(
+        ctx,
+        controller,
+        presentationDomain: presentationDomain,
+        sessionId: sessionId,
+      );
+  final status = selectBubbleStatusForBubble(ctx, activeId);
   final busy = selectIsApplyingBusy(ctx);
   final canApply = bubbleId != null
       ? (selectCanTriggerApplyForBubble(
@@ -298,6 +309,14 @@ ChatBubbleViewModel buildChatBubbleViewModel(
               sessionId: sessionId,
             ) &&
             !busy);
+  final canRollback = bubbleId != null
+      ? selectCanRollbackForBubble(ctx, bubbleId)
+      : selectCanRollback(
+          ctx,
+          controller,
+          presentationDomain: presentationDomain,
+          sessionId: sessionId,
+        );
   final draftCount = bubbleId != null
       ? (selectBubbleRecord(ctx, bubbleId)?.draftChanges.length ?? 0)
       : selectDraftChangesForDomain(
@@ -309,18 +328,15 @@ ChatBubbleViewModel buildChatBubbleViewModel(
   final canApplyAll = selectCanApplyAllBubbles(ctx);
   final applyAllCount = selectPendingBubbleCount(ctx);
   final record = bubbleId != null ? selectBubbleRecord(ctx, bubbleId) : null;
-  final activeId =
-      bubbleId ??
-      selectActiveBubbleId(
-        ctx,
-        controller,
-        presentationDomain: presentationDomain,
-        sessionId: sessionId,
-      );
-  final status = selectBubbleStatusForBubble(ctx, activeId);
   final plan = bubbleId != null
       ? selectExecutionPlanForBubble(ctx, bubbleId)
       : selectPendingExecutionPlan(ctx);
+  final needsApproval = bubbleId != null
+      ? selectNeedsApprovalForBubble(ctx, bubbleId)
+      : selectNeedsApproval(ctx);
+  final previewSummary = needsApproval
+      ? (plan?.summary ?? 'Review the suggested changes before applying.')
+      : null;
   final summary = bubbleId != null
       ? ((record?.instructionText ?? '').trim().isNotEmpty
             ? 'Applied live-edit changes.'
@@ -354,10 +370,13 @@ ChatBubbleViewModel buildChatBubbleViewModel(
     showThinking: selectDebugModeEnabled(ctx),
     inputText: inputText,
     isBusy: busy,
-    canDiscard: canApply,
+    canDiscard: canApply && status != LiveEditBubbleStatus.applied,
+    canApplyPreview: needsApproval && !busy,
+    canRollback: canRollback,
     canApplyAll: canApplyAll,
     applyAllCount: applyAllCount,
     draftCount: draftCount,
+    previewSummary: previewSummary,
     appliedSummary: appliedSummary,
   );
 }
@@ -436,6 +455,16 @@ final class ToolLayerChatBubbleCallbacks implements ChatBubbleCallbacks {
 
   @override
   void onDiscard() => UndoDraftCommand().execute(context);
+
+  @override
+  void onApplyPreview() => ApproveBubbleCommand(
+    bubbleId: bubbleId,
+    globalBackendId: context.backendConfigResource.value.globalBackendId,
+  ).execute(context);
+
+  @override
+  void onRollback() =>
+      RollbackAppliedBubbleCommand(bubbleId: bubbleId).execute(context);
 
   @override
   void onApplyAll(final int count) => ApplyAllBubblesCommand().execute(context);

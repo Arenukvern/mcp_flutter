@@ -7,5 +7,7 @@ abstract interface class ChatBubbleCallbacks {
   void onCollapse();
   void onDone();
   void onDiscard();
+  void onApplyPreview();
+  void onRollback();
   void onApplyAll(final int count);
 }

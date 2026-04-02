@@ -41,6 +41,27 @@ final class LiveEditApplyService {
       final executionResult = _decodeExecutionResult(
         response['executionResult'] ?? response['result'],
       );
+      final proposalId = _extractProposalId(
+        response,
+        executionPlan: executionPlan,
+        executionResult: executionResult,
+      );
+      if (!request.approve && executionPlan != null && executionResult == null) {
+        final previewRecord = currentBubbleRecord?.copyWith(
+          status: LiveEditBubbleStatus.needsApproval,
+          displayState: LiveEditBubbleDisplayState.expanded,
+          executionPlan: executionPlan,
+          lastError: null,
+        );
+        return LiveEditApplyResult(
+          applyPhase: LiveEditApplyPhase.awaitingApproval,
+          bubbleId: request.effectiveBubbleId,
+          updatedBubbleRecord: previewRecord,
+          pendingExecutionPlan: executionPlan,
+          pendingProposalId:
+              proposalId ?? request.effectiveBubbleId ?? request.sessionId,
+        );
+      }
       final changedFiles =
           executionResult?.changedFiles ??
           executionPlan?.affectedFiles ??
@@ -48,7 +69,7 @@ final class LiveEditApplyService {
       final updatedRecord = currentBubbleRecord?.copyWith(
         draftChanges: const <LiveEditDraftChange>[],
         status: LiveEditBubbleStatus.applied,
-        displayState: LiveEditBubbleDisplayState.minimized,
+        displayState: LiveEditBubbleDisplayState.expanded,
         changedFiles: changedFiles,
         executionPlan: executionPlan,
         lastError: null,
@@ -59,9 +80,6 @@ final class LiveEditApplyService {
         updatedBubbleRecord: updatedRecord,
         sessionId: request.sessionId,
         commitNodeIds: updatedRecord?.nodeIds,
-        resolvedBubbleIdsAdd: request.effectiveBubbleId != null
-            ? <String>{request.effectiveBubbleId!}
-            : null,
       );
     } on Exception catch (e) {
       return LiveEditApplyResult(
@@ -100,6 +118,24 @@ final class LiveEditApplyService {
         (final key, final nested) => MapEntry('$key', nested),
       );
       return LiveEditDirectApplyResult.fromJson(normalized);
+    }
+    return null;
+  }
+
+  String? _extractProposalId(
+    final Map<String, Object?> response, {
+    required final LiveEditExecutionPlan? executionPlan,
+    required final LiveEditDirectApplyResult? executionResult,
+  }) {
+    final topLevel = response['proposalId'];
+    if (topLevel is String && hasText(topLevel)) {
+      return topLevel.trim();
+    }
+    if (hasText(executionResult?.executionId)) {
+      return executionResult!.executionId;
+    }
+    if (hasText(executionPlan?.proposalId)) {
+      return executionPlan!.proposalId;
     }
     return null;
   }

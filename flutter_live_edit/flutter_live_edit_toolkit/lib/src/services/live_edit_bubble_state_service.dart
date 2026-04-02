@@ -150,6 +150,8 @@ final class LiveEditBubbleStateService {
           : null;
       final phase = bubble?.status == LiveEditBubbleStatus.waiting
           ? LiveEditApplyPhase.preparing
+          : bubble?.status == LiveEditBubbleStatus.needsApproval
+          ? LiveEditApplyPhase.awaitingApproval
           : bubble?.status == LiveEditBubbleStatus.applied
           ? LiveEditApplyPhase.success
           : bubble?.status == LiveEditBubbleStatus.failed

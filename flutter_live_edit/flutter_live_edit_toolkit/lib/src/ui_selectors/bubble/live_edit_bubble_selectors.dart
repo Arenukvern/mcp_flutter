@@ -307,6 +307,26 @@ LiveEditActivityEntry? selectCurrentActivity(
   final bubble = selectBubbleRecord(ctx, bubbleId);
   final timeline = bubble?.activity;
 
+  if (applyPhase == LiveEditApplyPhase.rollbackInProgress) {
+    return LiveEditActivityEntry(
+      step: LiveEditActivityStep.rollbackInProgress,
+      label: 'Rolling back',
+      summary: 'Rolling back the last applied change.',
+      timestamp: now,
+      nodeId: bubbleId,
+      inProgress: true,
+    );
+  }
+  if (applyPhase == LiveEditApplyPhase.rollbackDone) {
+    if (timeline != null && timeline.isNotEmpty) return timeline.last;
+    return LiveEditActivityEntry(
+      step: LiveEditActivityStep.rollbackDone,
+      label: 'Rolled back',
+      summary: 'Rollback completed and the bubble is editable again.',
+      timestamp: now,
+      nodeId: bubbleId,
+    );
+  }
   if (applyPhase == LiveEditApplyPhase.failed && hasText(lastErr)) {
     return LiveEditActivityEntry(
       step: LiveEditActivityStep.failed,
@@ -331,11 +351,11 @@ LiveEditActivityEntry? selectCurrentActivity(
   if (selectNeedsApproval(ctx)) {
     if (timeline != null && timeline.isNotEmpty) return timeline.last;
     return LiveEditActivityEntry(
-      step: LiveEditActivityStep.applyingChanges,
-      label: 'Applying',
+      step: LiveEditActivityStep.waitingForApproval,
+      label: 'Preview ready',
       summary:
           ctx.bubbleResource.value.pendingExecutionPlan?.summary ??
-          '$backendLabel is applying this bubble change.',
+          'Review the proposed change, then apply or discard.',
       timestamp: now,
       nodeId: bubbleId,
     );

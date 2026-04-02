@@ -79,6 +79,26 @@ class _ChatBubbleSurfaceState extends State<ChatBubbleSurface> {
     ),
   );
 
+  Widget _buildPreviewBanner() => Container(
+    margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+    decoration: BoxDecoration(
+      color: const Color(0xFFFFFBEB),
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: const Color(0xFFFCD34D)),
+    ),
+    child: Text(
+      widget.viewModel.previewSummary!,
+      style: const TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w700,
+        color: Color(0xFF92400E),
+      ),
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+    ),
+  );
+
   void _queueAutoScrollToEnd() {
     if (_autoScrollQueued) return;
     _autoScrollQueued = true;
@@ -191,6 +211,24 @@ class _ChatBubbleSurfaceState extends State<ChatBubbleSurface> {
                 identifier: 'live_edit_discard_button',
                 button: true,
                 child: _DiscardButton(onTap: cb.onDiscard),
+              ),
+            ),
+          if (vm.canApplyPreview)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Semantics(
+                identifier: 'live_edit_preview_apply_button',
+                button: true,
+                child: _ApplyPreviewButton(onTap: cb.onApplyPreview),
+              ),
+            ),
+          if (vm.canRollback)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Semantics(
+                identifier: 'live_edit_rollback_button',
+                button: true,
+                child: _RollbackButton(onTap: cb.onRollback),
               ),
             ),
           _CollapseButton(onTap: cb.onCollapse),
@@ -360,7 +398,9 @@ class _ChatBubbleSurfaceState extends State<ChatBubbleSurface> {
 
   Widget _buildLaidOutContent(final double maxH) {
     final vm = widget.viewModel;
-    final hasBanner = _hasText(vm.appliedSummary);
+    final hasPreviewBanner = _hasText(vm.previewSummary);
+    final hasAppliedBanner = _hasText(vm.appliedSummary);
+    final hasBanner = hasPreviewBanner || hasAppliedBanner;
     const headerBlock = 46.0;
     const divider = 1.0;
     final bannerH = hasBanner ? 54.0 : 0.0;
@@ -379,7 +419,10 @@ class _ChatBubbleSurfaceState extends State<ChatBubbleSurface> {
       children: <Widget>[
         _buildHeader(),
         const Divider(height: 1, thickness: 0.5, color: Color(0x18000000)),
-        if (hasBanner) _buildAppliedBanner(),
+        if (hasPreviewBanner)
+          _buildPreviewBanner()
+        else if (hasAppliedBanner)
+          _buildAppliedBanner(),
         if (vm.showThinking)
           _buildMessages(maxHeight: remaining)
         else
@@ -462,6 +505,58 @@ class _DiscardButton extends StatelessWidget {
           fontSize: 11,
           fontWeight: FontWeight.w600,
           color: Color(0xFF64748B),
+        ),
+      ),
+    ),
+  );
+}
+
+class _ApplyPreviewButton extends StatelessWidget {
+  const _ApplyPreviewButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(final BuildContext context) => GestureDetector(
+    onTap: onTap,
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFCD34D).withOpacity(0.25),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: const Text(
+        'Apply',
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFF92400E),
+        ),
+      ),
+    ),
+  );
+}
+
+class _RollbackButton extends StatelessWidget {
+  const _RollbackButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(final BuildContext context) => GestureDetector(
+    onTap: onTap,
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFB91C1C).withOpacity(0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: const Text(
+        'Rollback',
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFFB91C1C),
         ),
       ),
     ),

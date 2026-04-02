@@ -6,6 +6,7 @@ export 'drag_bubble.cmd.dart';
 export 'drag_bubble_for.cmd.dart';
 export 'hide_bubble.cmd.dart';
 export 'open_ai_bubble.cmd.dart';
+export 'rollback_applied_bubble.cmd.dart';
 export 'resize_bubble.cmd.dart';
 export 'resolve_active_bubble.cmd.dart';
 export 'select_tracked_bubble.cmd.dart';

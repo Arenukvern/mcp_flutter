@@ -25,6 +25,9 @@ final class UndoDraftCommand {
 
     var newBubbleData = bubbleData.copyWith(
       applyPhase: LiveEditApplyPhase.idle,
+      pendingExecutionPlan: null,
+      pendingProposalId: null,
+      pendingBubbleId: null,
       lastError: null,
     );
 
@@ -35,9 +38,17 @@ final class UndoDraftCommand {
       records[activeId] = bubble.copyWith(
         draftChanges: const <LiveEditDraftChange>[],
         status: LiveEditBubbleStatus.editing,
+        changedFiles: const <String>[],
+        executionPlan: null,
         lastError: null,
       );
-      newBubbleData = newBubbleData.copyWith(bubbleRecordsById: records);
+      final resolvedBubbleIds = Set<String>.from(
+        newBubbleData.resolvedBubbleIds,
+      )..remove(activeId);
+      newBubbleData = newBubbleData.copyWith(
+        bubbleRecordsById: records,
+        resolvedBubbleIds: resolvedBubbleIds,
+      );
     }
 
     context.bubbleResource.value = newBubbleData;

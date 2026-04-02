@@ -44,6 +44,8 @@ enum LiveEditActivityStep {
   generatingProposal,
   waitingForApproval,
   applyingChanges,
+  rollbackInProgress,
+  rollbackDone,
   finished,
   failed,
 }
@@ -123,6 +125,8 @@ enum LiveEditApplyPhase {
   preparing,
   awaitingApproval,
   applying,
+  rollbackInProgress,
+  rollbackDone,
   success,
   failed,
 }
@@ -192,7 +196,7 @@ final class LiveEditBubbleRecord {
     final List<String>? changedFiles,
     final String? backendId,
     final Object? inferenceConfig = _unsetValue,
-    final LiveEditExecutionPlan? executionPlan,
+    final Object? executionPlan = _unsetValue,
     final Object? lastError = _unsetValue,
     final List<LiveEditTimelineEntry>? history,
     final List<LiveEditActivityEntry>? activity,
@@ -214,7 +218,9 @@ final class LiveEditBubbleRecord {
     inferenceConfig: identical(inferenceConfig, _unsetValue)
         ? this.inferenceConfig
         : inferenceConfig as LiveEditInferenceConfig?,
-    executionPlan: executionPlan ?? this.executionPlan,
+    executionPlan: identical(executionPlan, _unsetValue)
+        ? this.executionPlan
+        : executionPlan as LiveEditExecutionPlan?,
     lastError: identical(lastError, _unsetValue)
         ? this.lastError
         : lastError as String?,

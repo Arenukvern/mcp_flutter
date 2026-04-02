@@ -110,12 +110,18 @@ final class ApplyDraftCommand {
     );
 
     final newData = context.bubbleResource.value;
+    final shouldKeepPending =
+        result.applyPhase == LiveEditApplyPhase.awaitingApproval;
     var nextData = newData.copyWith(
       applyPhase: result.applyPhase,
       lastError: result.lastError,
-      pendingExecutionPlan:
-          result.pendingExecutionPlan ?? newData.pendingExecutionPlan,
-      pendingProposalId: result.pendingProposalId ?? newData.pendingProposalId,
+      pendingExecutionPlan: shouldKeepPending
+          ? (result.pendingExecutionPlan ?? newData.pendingExecutionPlan)
+          : null,
+      pendingProposalId: shouldKeepPending
+          ? (result.pendingProposalId ?? newData.pendingProposalId)
+          : null,
+      pendingBubbleId: shouldKeepPending ? (result.bubbleId ?? bid) : null,
     );
 
     final targetId = result.bubbleId ?? bid;

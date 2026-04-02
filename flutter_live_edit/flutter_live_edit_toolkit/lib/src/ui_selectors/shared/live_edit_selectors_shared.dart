@@ -99,7 +99,8 @@ bool selectNeedsApproval(final LiveEditContext ctx) =>
 bool selectIsApplyingBusy(final LiveEditContext ctx) {
   final phase = ctx.bubbleResource.value.applyPhase;
   return phase == LiveEditApplyPhase.preparing ||
-      phase == LiveEditApplyPhase.applying;
+      phase == LiveEditApplyPhase.applying ||
+      phase == LiveEditApplyPhase.rollbackInProgress;
 }
 
 bool selectActiveBubbleResolved(
@@ -453,6 +454,34 @@ bool selectCanTriggerApplyForBubble(
       !selectIsApplyingBusy(ctx);
   return needsApproval || hasDraftChanges || canSubmitAiPrompt;
 }
+
+bool selectCanRollbackForBubble(
+  final LiveEditContext ctx,
+  final String? bubbleId,
+) {
+  if (!hasText(bubbleId)) return false;
+  final bubble = selectBubbleRecord(ctx, bubbleId);
+  if (bubble == null) return false;
+  final phase = selectApplyPhase(ctx);
+  if (phase == LiveEditApplyPhase.rollbackInProgress) return false;
+  return bubble.status == LiveEditBubbleStatus.applied &&
+      hasText(bubble.executionPlan?.proposalId);
+}
+
+bool selectCanRollback(
+  final LiveEditContext ctx,
+  final LiveEditController controller, {
+  required final LiveEditTargetDomain presentationDomain,
+  final String? sessionId,
+}) => selectCanRollbackForBubble(
+  ctx,
+  selectActiveBubbleId(
+    ctx,
+    controller,
+    presentationDomain: presentationDomain,
+    sessionId: sessionId,
+  ),
+);
 
 String? selectLastErrorForBubble(
   final LiveEditContext ctx,

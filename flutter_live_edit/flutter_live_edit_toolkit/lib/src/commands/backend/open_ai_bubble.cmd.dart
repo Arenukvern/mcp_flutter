@@ -34,7 +34,8 @@ final class OpenAiBubbleCommand {
     final phase = newBubbleData.applyPhase;
     final notBusy =
         phase != LiveEditApplyPhase.preparing &&
-        phase != LiveEditApplyPhase.applying;
+        phase != LiveEditApplyPhase.applying &&
+        phase != LiveEditApplyPhase.rollbackInProgress;
     if (notBusy) {
       newBubbleData = newBubbleData.copyWith(
         applyPhase: LiveEditApplyPhase.idle,
