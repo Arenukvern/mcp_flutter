@@ -11,6 +11,7 @@ import 'services/error_monitor.dart';
 /// A mixin that adds MCP Toolkit extensions to a binding.
 mixin MCPToolkitExtensions on MCPToolkitBindingBase {
   var _debugServiceExtensionsRegistered = false;
+  final _registeredEntryKeys = <String>{};
 
   /// Accumulated entries from all addEntries calls
   final _allEntries = <MCPCallEntry>{};
@@ -62,8 +63,14 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
         ..clear()
         ..addAll(uniqueEntries);
 
-      // Register individual service extensions for each entry in this batch
+      // Register individual service extensions for each entry in this batch.
+      // A Dart VM extension name can only be registered once per process.
+      // Broad integration runs boot the app multiple times in one process,
+      // so duplicate keys must be ignored to keep teardown deterministic.
       for (final entry in entries) {
+        if (!_registeredEntryKeys.add(entry.key)) {
+          continue;
+        }
         registerServiceExtension(
           name: entry.key,
           callback: (final parameters) async => entry.value.handler(parameters),
