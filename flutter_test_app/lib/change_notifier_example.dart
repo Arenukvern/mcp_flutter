@@ -2,8 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 import 'package:provider/provider.dart';
 
+var _customNotifierToolRegistered = false;
+
 class CustomNotifier with ChangeNotifier {
   CustomNotifier() {
+    if (_customNotifierToolRegistered) {
+      return;
+    }
+    _customNotifierToolRegistered = true;
     // to see this tool in MCP tools, if you use Cursor
     // use --await-dnd flag (see more https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_server_dart/README.md#L197)
     // This will force MCP to wait for connection to the Dart VM server.

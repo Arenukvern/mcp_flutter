@@ -12,12 +12,17 @@ import 'package:test_app/stateful_widget_example.dart';
 
 final FlutterLiveEditAutoConfig _liveEditConfig =
     FlutterLiveEditAutoConfig.fromEnvironment(appId: 'test_app');
+var _initialEntriesRegistered = false;
+var _delayedEntriesRegistered = false;
+var _appUiStateToolRegistered = false;
 
-Future<void> main() async {
+Future<void> main({final bool enableDelayedMcpRegistration = true}) async {
   await bootstrapFlutterLiveEditApp(
     config: _liveEditConfig,
     registerInitialEntries: _registerInitialMCPTools,
-    registerDelayedEntries: _registerDelayedMCPTools,
+    registerDelayedEntries: enableDelayedMcpRegistration
+        ? _registerDelayedMCPTools
+        : null,
     runApp: () => runApp(const MyApp()),
   );
 }
@@ -53,6 +58,9 @@ Map<String, dynamic> _getUserPreferences(final String category) {
 }
 
 Future<void> _registerDelayedMCPTools() async {
+  if (_delayedEntriesRegistered) {
+    return;
+  }
   final binding = MCPToolkitBinding.instance;
 
   final preferencesEntry = MCPCallEntry.tool(
@@ -79,10 +87,14 @@ Future<void> _registerDelayedMCPTools() async {
   );
 
   await binding.addEntries(entries: {preferencesEntry});
+  _delayedEntriesRegistered = true;
   print('Delayed MCP tools registered - demonstrating auto-registration');
 }
 
 Future<void> _registerInitialMCPTools() async {
+  if (_initialEntriesRegistered) {
+    return;
+  }
   final binding = MCPToolkitBinding.instance;
   await Future.delayed(const Duration(seconds: 1));
 
@@ -130,6 +142,7 @@ Future<void> _registerInitialMCPTools() async {
   );
 
   await binding.addEntries(entries: {fibonacciEntry, appStateEntry});
+  _initialEntriesRegistered = true;
   print('Initial MCP tools and resources registered');
 }
 
@@ -454,6 +467,10 @@ class _MCPDemoHomePageState extends State<MCPDemoHomePage> {
   }
 
   void _initializeMCPIntegration() {
+    if (_appUiStateToolRegistered) {
+      return;
+    }
+    _appUiStateToolRegistered = true;
     addMcpTool(
       MCPCallEntry.tool(
         handler: (final request) {

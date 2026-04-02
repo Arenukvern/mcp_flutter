@@ -33,10 +33,13 @@ Future<void> bootstrapFlutterLiveEditApp({
       if (kIsWeb && resolvedConfig.enableWebSemantics) {
         SemanticsBinding.instance.ensureSemantics();
       }
-      MCPToolkitBinding.instance
-        ..initialize()
-        ..initializeFlutterToolkit();
-      await MCPToolkitBinding.instance.initializeFlutterLiveEditToolkit();
+      final binding = MCPToolkitBinding.instance;
+      if (!binding.isInitialized) {
+        binding
+          ..initialize()
+          ..initializeFlutterToolkit();
+        await binding.initializeFlutterLiveEditToolkit();
+      }
 
       if (initializeApp != null) {
         await initializeApp();

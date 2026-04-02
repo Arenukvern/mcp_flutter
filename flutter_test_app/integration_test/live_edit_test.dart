@@ -9,15 +9,26 @@ import 'package:test_app/main.dart' as app;
 import 'live_edit_integration_harness.dart';
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+
+  tearDownAll(() async {
+    debugFlutterLiveEditAutoHostOrchestratorOverride?.dispose();
+    debugFlutterLiveEditAutoHostOrchestratorOverride = null;
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+  });
 
   testWidgets('Live Edit toggle shows overlay and panel', (tester) async {
     // Use a large surface so the intentional overflow Row in the app doesn't break layout.
     final binding = IntegrationTestWidgetsFlutterBinding.instance;
     await binding.setSurfaceSize(const Size(8000, 2000));
-    addTearDown(() => binding.setSurfaceSize(null));
+    addTearDown(() async {
+      debugFlutterLiveEditAutoHostOrchestratorOverride?.dispose();
+      debugFlutterLiveEditAutoHostOrchestratorOverride = null;
+      await _safeResetSurfaceSize(binding);
+    });
+    debugFlutterLiveEditAutoHostOrchestratorOverride = LiveEditOrchestrator();
 
-    await app.main();
+    await app.main(enableDelayedMcpRegistration: false);
     await _pumpUntil(
       tester,
       () => find.text('MCP Toolkit Demo').evaluate().isNotEmpty,
@@ -68,8 +79,9 @@ void main() {
     final binding = IntegrationTestWidgetsFlutterBinding.instance;
     await binding.setSurfaceSize(const Size(8000, 2000));
     addTearDown(() async {
+      debugFlutterLiveEditAutoHostOrchestratorOverride?.dispose();
       debugFlutterLiveEditAutoHostOrchestratorOverride = null;
-      await binding.setSurfaceSize(null);
+      await _safeResetSurfaceSize(binding);
     });
 
     final requests = <LiveEditApplyDraftRequest>[];
@@ -98,7 +110,7 @@ void main() {
     );
     debugFlutterLiveEditAutoHostOrchestratorOverride = orchestrator;
 
-    await app.main();
+    await app.main(enableDelayedMcpRegistration: false);
     await _pumpUntil(
       tester,
       () => find.text('MCP Toolkit Demo').evaluate().isNotEmpty,
@@ -203,8 +215,9 @@ void main() {
     final binding = IntegrationTestWidgetsFlutterBinding.instance;
     await binding.setSurfaceSize(const Size(8000, 2000));
     addTearDown(() async {
+      debugFlutterLiveEditAutoHostOrchestratorOverride?.dispose();
       debugFlutterLiveEditAutoHostOrchestratorOverride = null;
-      await binding.setSurfaceSize(null);
+      await _safeResetSurfaceSize(binding);
     });
 
     final agentService = LiveEditAgentService();
@@ -265,7 +278,7 @@ void main() {
     );
     debugFlutterLiveEditAutoHostOrchestratorOverride = orchestrator;
 
-    await app.main();
+    await app.main(enableDelayedMcpRegistration: false);
     await _pumpUntil(
       tester,
       () => find.text('MCP Toolkit Demo').evaluate().isNotEmpty,
@@ -317,14 +330,15 @@ void main() {
     final binding = IntegrationTestWidgetsFlutterBinding.instance;
     await binding.setSurfaceSize(const Size(8000, 2000));
     addTearDown(() async {
+      debugFlutterLiveEditAutoHostOrchestratorOverride?.dispose();
       debugFlutterLiveEditAutoHostOrchestratorOverride = null;
-      await binding.setSurfaceSize(null);
+      await _safeResetSurfaceSize(binding);
     });
 
     final orchestrator = LiveEditOrchestrator();
     debugFlutterLiveEditAutoHostOrchestratorOverride = orchestrator;
 
-    await app.main();
+    await app.main(enableDelayedMcpRegistration: false);
     await _pumpUntil(
       tester,
       () => find.text('MCP Toolkit Demo').evaluate().isNotEmpty,
@@ -387,14 +401,15 @@ void main() {
     final binding = IntegrationTestWidgetsFlutterBinding.instance;
     await binding.setSurfaceSize(const Size(8000, 2000));
     addTearDown(() async {
+      debugFlutterLiveEditAutoHostOrchestratorOverride?.dispose();
       debugFlutterLiveEditAutoHostOrchestratorOverride = null;
-      await binding.setSurfaceSize(null);
+      await _safeResetSurfaceSize(binding);
     });
 
     final orchestrator = LiveEditOrchestrator();
     debugFlutterLiveEditAutoHostOrchestratorOverride = orchestrator;
 
-    await app.main();
+    await app.main(enableDelayedMcpRegistration: false);
     await _pumpUntil(
       tester,
       () => find.text('MCP Toolkit Demo').evaluate().isNotEmpty,
@@ -441,8 +456,9 @@ void main() {
     final binding = IntegrationTestWidgetsFlutterBinding.instance;
     await binding.setSurfaceSize(const Size(8000, 2000));
     addTearDown(() async {
+      debugFlutterLiveEditAutoHostOrchestratorOverride?.dispose();
       debugFlutterLiveEditAutoHostOrchestratorOverride = null;
-      await binding.setSurfaceSize(null);
+      await _safeResetSurfaceSize(binding);
     });
 
     // Apply delegate with delay to simulate in-progress state
@@ -471,7 +487,7 @@ void main() {
     );
     debugFlutterLiveEditAutoHostOrchestratorOverride = orchestrator;
 
-    await app.main();
+    await app.main(enableDelayedMcpRegistration: false);
     await _pumpUntil(
       tester,
       () => find.text('MCP Toolkit Demo').evaluate().isNotEmpty,
@@ -538,14 +554,15 @@ void main() {
     final binding = IntegrationTestWidgetsFlutterBinding.instance;
     await binding.setSurfaceSize(const Size(8000, 2000));
     addTearDown(() async {
+      debugFlutterLiveEditAutoHostOrchestratorOverride?.dispose();
       debugFlutterLiveEditAutoHostOrchestratorOverride = null;
-      await binding.setSurfaceSize(null);
+      await _safeResetSurfaceSize(binding);
     });
 
     final orchestrator = LiveEditOrchestrator();
     debugFlutterLiveEditAutoHostOrchestratorOverride = orchestrator;
 
-    await app.main();
+    await app.main(enableDelayedMcpRegistration: false);
     await _pumpUntil(
       tester,
       () => find.text('MCP Toolkit Demo').evaluate().isNotEmpty,
@@ -628,13 +645,13 @@ void main() {
       addTearDown(() async {
         debugFlutterLiveEditAutoHostOrchestratorOverride?.dispose();
         debugFlutterLiveEditAutoHostOrchestratorOverride = null;
-        await binding.setSurfaceSize(null);
+        await _safeResetSurfaceSize(binding);
       });
 
       final orchestrator = LiveEditOrchestrator();
       debugFlutterLiveEditAutoHostOrchestratorOverride = orchestrator;
 
-      await app.main();
+      await app.main(enableDelayedMcpRegistration: false);
       await _pumpUntil(
         tester,
         () => find.text('MCP Toolkit Demo').evaluate().isNotEmpty,
@@ -754,6 +771,16 @@ LiveEditSelection _decodeSelectionFromResult(
       '$actionName returned an undecodable selection payload: '
       '$error. Payload: $selectionJson',
     );
+  }
+}
+
+Future<void> _safeResetSurfaceSize(
+  final IntegrationTestWidgetsFlutterBinding binding,
+) async {
+  try {
+    await binding.setSurfaceSize(null);
+  } on AssertionError {
+    // In broad multi-file runs, teardown may race outside active test scope.
   }
 }
 
