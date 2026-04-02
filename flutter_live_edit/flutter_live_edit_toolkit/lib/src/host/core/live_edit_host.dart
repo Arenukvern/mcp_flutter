@@ -48,7 +48,7 @@ String _bubbleStatusLabel(final LiveEditBubbleStatus status) =>
     switch (status) {
       LiveEditBubbleStatus.editing => 'Draft ready',
       LiveEditBubbleStatus.waiting => 'Applying',
-      LiveEditBubbleStatus.needsApproval => 'Applying',
+      LiveEditBubbleStatus.needsApproval => 'Preview ready',
       LiveEditBubbleStatus.applied => 'Applied',
       LiveEditBubbleStatus.failed => 'Failed',
     };

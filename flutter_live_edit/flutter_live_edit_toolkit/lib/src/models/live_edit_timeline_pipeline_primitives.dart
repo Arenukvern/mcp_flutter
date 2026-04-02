@@ -70,6 +70,19 @@ List<String> _normalizeTokens(final Iterable<Object?> values) {
   return List<String>.unmodifiable(normalized);
 }
 
+List<String> _uniqueTokensInOrder(final Iterable<Object?> values) {
+  final seen = <String>{};
+  final normalized = <String>[];
+  for (final value in values) {
+    final token = _asString(value);
+    if (token.isEmpty || !seen.add(token)) {
+      continue;
+    }
+    normalized.add(token);
+  }
+  return List<String>.unmodifiable(normalized);
+}
+
 List<String> _pathSegments(final String path) => path
     .split('/')
     .map((final segment) => segment.trim())
@@ -892,8 +905,7 @@ final class LiveEditTimelinePipelinePrimitivesV2 {
         groupedByMember.putIfAbsent(member, () => group);
       }
     }
-    final routeOrder = graph.routes.toList(growable: false)
-      ..sort((final lhs, final rhs) => lhs.routeId.compareTo(rhs.routeId));
+    final routeOrder = graph.routes.toList(growable: false);
     final screenById = <String, ScreenSnapshot>{
       for (final screen in graph.screens)
         if (screen.screenId.trim().isNotEmpty) screen.screenId.trim(): screen,
@@ -910,7 +922,7 @@ final class LiveEditTimelinePipelinePrimitivesV2 {
             !routeOrder.any((final route) => route.screenId.trim() == screenId),
       ),
     ];
-    final uniqueScreenIds = _normalizeTokens(orderedScreenIds);
+    final uniqueScreenIds = _uniqueTokensInOrder(orderedScreenIds);
     final screenNodes = <LiveEditCanvasScreenNodeV2>[
       for (var index = 0; index < uniqueScreenIds.length; index += 1)
         _buildScreenNode(
