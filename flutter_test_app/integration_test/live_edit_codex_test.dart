@@ -399,9 +399,9 @@ List<String> _requestDebugDetails(
   if ((request.inferenceConfig?.reasoningEffort ?? '').trim().isNotEmpty)
     'Reasoning: ${request.inferenceConfig!.reasoningEffort}',
   'Workspace: $workingDirectory',
-  'Node: ${request.selection?.nodeId ?? '<none>'}',
+  'Node: ${request.effectivePrimarySelection?.nodeId ?? '<none>'}',
   'Drafts: 0',
-  'Intent present: ${((request.intentText ?? '').trim().isNotEmpty)}',
+  'Instruction present: ${((request.effectiveInstructionText ?? '').trim().isNotEmpty)}',
 ];
 
 String _resolvedWorkingDirectory() => _agentWorkingDirectoryDefine.isNotEmpty
@@ -667,8 +667,8 @@ final class _LiveEditAgentIntegrationHarness {
         message: 'Resolve request dispatched.',
         details: <String>[
           ...debugDetails,
-          if ((request.intentText ?? '').trim().isNotEmpty)
-            'Intent: ${request.intentText!.trim()}',
+          if ((request.effectiveInstructionText ?? '').trim().isNotEmpty)
+            'Instruction: ${request.effectiveInstructionText}',
         ],
         debugOnly: true,
       ),
@@ -708,13 +708,6 @@ final class _LiveEditAgentIntegrationHarness {
       sourceTargets: rewrittenSourceTargets,
       applyMode: request.applyMode,
       inferenceConfig: request.inferenceConfig,
-      intentText: request.intentText,
-      selection: _rewriteSelection(request.selection),
-      meta: <String, Object?>{
-        'integrationTest': true,
-        'driver': 'flutter_integration_test',
-        'backendId': backendId,
-      },
     );
     final promptText = service.buildResolvedPrompt(resolutionRequest);
     request.onEvent?.call(
@@ -885,7 +878,6 @@ final class _LiveEditAgentIntegrationHarness {
     for (final selection in request.effectiveSelectedWidgets) {
       await _ensureMappedSelection(selection);
     }
-    await _ensureMappedSelection(request.selection);
     return _workspaceRoot ?? _resolvedWorkingDirectory();
   }
 
