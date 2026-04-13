@@ -9,7 +9,7 @@ import 'package:test_app/main.dart' as app;
 import 'live_edit_integration_harness.dart';
 
 void main() {
-  final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   tearDownAll(() async {
     debugFlutterLiveEditAutoHostOrchestratorOverride?.dispose();
