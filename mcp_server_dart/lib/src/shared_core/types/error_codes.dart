@@ -89,9 +89,15 @@ abstract final class CoreErrorCode {
 
   static const snapshotNotFound = 'snapshot_not_found';
   static const snapshotInvalid = 'snapshot_invalid';
+  static const staleSnapshot = 'stale_snapshot';
   static const bundleBuildFailed = 'bundle_build_failed';
   static const writeBlocked = 'write_blocked';
   static const doctorCriticalFailed = 'doctor_critical_failed';
+
+  static const interactionFailed = 'interaction_failed';
+  static const semanticSnapshotFailed = 'semantic_snapshot_failed';
+  static const evaluateExpressionFailed = 'evaluate_expression_failed';
+  static const getRecentLogsFailed = 'get_recent_logs_failed';
 
   static const unknown = 'unknown_error';
 }
@@ -371,6 +377,13 @@ const Map<String, CoreErrorDescriptor> _descriptorMap =
         exitCode: 65,
         httpLikeStatus: 422,
       ),
+      CoreErrorCode.staleSnapshot: CoreErrorDescriptor(
+        code: CoreErrorCode.staleSnapshot,
+        category: CoreErrorCategory.state,
+        retryable: true,
+        exitCode: 65,
+        httpLikeStatus: 409,
+      ),
       CoreErrorCode.bundleBuildFailed: CoreErrorDescriptor(
         code: CoreErrorCode.bundleBuildFailed,
         category: CoreErrorCategory.io,
@@ -391,6 +404,34 @@ const Map<String, CoreErrorDescriptor> _descriptorMap =
         retryable: true,
         exitCode: 1,
         httpLikeStatus: 503,
+      ),
+      CoreErrorCode.interactionFailed: CoreErrorDescriptor(
+        code: CoreErrorCode.interactionFailed,
+        category: CoreErrorCategory.execution,
+        retryable: true,
+        exitCode: 69,
+        httpLikeStatus: 500,
+      ),
+      CoreErrorCode.semanticSnapshotFailed: CoreErrorDescriptor(
+        code: CoreErrorCode.semanticSnapshotFailed,
+        category: CoreErrorCategory.execution,
+        retryable: true,
+        exitCode: 69,
+        httpLikeStatus: 500,
+      ),
+      CoreErrorCode.evaluateExpressionFailed: CoreErrorDescriptor(
+        code: CoreErrorCode.evaluateExpressionFailed,
+        category: CoreErrorCategory.execution,
+        retryable: true,
+        exitCode: 69,
+        httpLikeStatus: 500,
+      ),
+      CoreErrorCode.getRecentLogsFailed: CoreErrorDescriptor(
+        code: CoreErrorCode.getRecentLogsFailed,
+        category: CoreErrorCategory.execution,
+        retryable: true,
+        exitCode: 69,
+        httpLikeStatus: 500,
       ),
       CoreErrorCode.unknown: CoreErrorDescriptor(
         code: CoreErrorCode.unknown,

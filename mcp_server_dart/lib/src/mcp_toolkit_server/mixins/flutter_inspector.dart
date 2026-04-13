@@ -8,6 +8,7 @@ import 'dart:async';
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_server/base_server.dart';
 import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_server/handlers/debug_tools_handler.dart';
+import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_server/handlers/interaction_handler.dart';
 import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_server/handlers/live_edit_handler.dart';
 import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_server/handlers/resource_handler.dart';
 import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_server/handlers/vm_tools_handler.dart';
@@ -29,6 +30,10 @@ base mixin FlutterInspector
     executor: coreCommandExecutor,
   );
   late final _liveEditHandler = LiveEditHandler(
+    server: this,
+    executor: coreCommandExecutor,
+  );
+  late final _interactionHandler = InteractionHandler(
     server: this,
     executor: coreCommandExecutor,
   );
@@ -67,6 +72,49 @@ base mixin FlutterInspector
       ResourceHandler.captureUiSnapshotTool,
       _resourceHandler.captureUiSnapshot,
     );
+
+    // Register interaction tools
+    registerTool(
+      InteractionHandler.semanticSnapshotTool,
+      _interactionHandler.semanticSnapshot,
+    );
+    registerTool(
+      InteractionHandler.tapWidgetTool,
+      _interactionHandler.tapWidget,
+    );
+    registerTool(
+      InteractionHandler.enterTextTool,
+      _interactionHandler.enterText,
+    );
+    registerTool(
+      InteractionHandler.scrollTool,
+      _interactionHandler.scroll,
+    );
+    registerTool(
+      InteractionHandler.longPressTool,
+      _interactionHandler.longPress,
+    );
+    registerTool(
+      InteractionHandler.swipeTool,
+      _interactionHandler.swipe,
+    );
+    registerTool(
+      InteractionHandler.dragTool,
+      _interactionHandler.drag,
+    );
+    registerTool(
+      InteractionHandler.hotReloadAndCaptureTool,
+      _interactionHandler.hotReloadAndCapture,
+    );
+    registerTool(
+      InteractionHandler.evaluateDartExpressionTool,
+      _interactionHandler.evaluateDartExpression,
+    );
+    registerTool(
+      InteractionHandler.getRecentLogsTool,
+      _interactionHandler.getRecentLogs,
+    );
+
     if (configuration.liveEditSupported) {
       log(
         LoggingLevel.debug,

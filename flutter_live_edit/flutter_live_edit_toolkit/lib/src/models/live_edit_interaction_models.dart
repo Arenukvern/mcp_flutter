@@ -1,5 +1,6 @@
-import 'package:flutter/foundation.dart';
-import 'package:live_edit_tooling_ui_kit/live_edit_tooling_ui_kit.dart';
+import 'package:collection/collection.dart';
+import 'package:live_edit_tooling_ui_kit/src/models/models.dart';
+import 'package:meta/meta.dart';
 
 import 'live_edit_models.dart';
 
@@ -265,7 +266,7 @@ final class InteractionSelectionSet {
     }
     final left = memberKeys.toList()..sort();
     final right = other.memberKeys.toList()..sort();
-    return listEquals(left, right);
+    return const ListEquality<String>().equals(left, right);
   }
 
   InteractionSelectionSet normalized({

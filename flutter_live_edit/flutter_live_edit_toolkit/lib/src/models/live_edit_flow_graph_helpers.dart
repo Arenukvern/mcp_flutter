@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:live_edit_tooling_ui_kit/live_edit_tooling_ui_kit.dart';
+import 'package:live_edit_tooling_ui_kit/src/models/models.dart';
 
 import 'live_edit_interaction_models.dart';
 import 'live_edit_models.dart';

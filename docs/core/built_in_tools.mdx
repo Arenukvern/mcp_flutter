@@ -23,6 +23,37 @@ Notes:
 `get_active_ports` remains available in CLI for low-level workflows, but
 `discover_debug_apps` is the preferred API for agent-driven target selection.
 
+### Interaction Tools (drive the app like a user)
+
+These tools let an AI agent interact with the running Flutter app the way a real user would. The interaction model mirrors Playwright MCP: get a compact semantic snapshot first, then use the returned `ref` strings to target specific widgets.
+
+- **`semantic_snapshot`**: Returns a compact accessibility tree of interactive widgets only (buttons, fields, switches, etc.) with stable `ref` strings (`s_0`, `s_1`, ...). Call this *before* any interaction tool. Refs are scoped to the most recent snapshot.
+- **`tap_widget`**: Tap a widget by `ref`.
+- **`enter_text`**: Tap a text field by `ref`, focus it, and type the given text.
+- **`scroll`**: Scroll in `up` / `down` / `left` / `right` from a ref or screen center, with configurable `distance`.
+- **`long_press`**: Long-press a widget by `ref`.
+- **`swipe`**: Swipe in a direction from a ref or screen center.
+- **`drag`**: Drag from `fromRef` to `toRef`.
+
+### Tight Edit/Preview Cycle
+
+- **`hot_reload_and_capture`**: Hot reload then immediately capture screenshot + semantic snapshot + errors in a single response. Designed for the AI iteration loop: edit code → call this tool → see what changed.
+
+### Runtime Introspection
+
+- **`evaluate_dart_expression`**: Evaluate a Dart expression in the running app isolate (e.g. `MyClass.instance.value`). Lets agents inspect runtime state without requiring developers to pre-register custom tools.
+- **`get_recent_logs`**: Retrieve recent `print()` / `debugPrint()` output from the running app.
+
+### Typical Agent Workflow
+
+```
+1. semantic_snapshot              → returns refs s_0..s_N for interactive widgets
+2. tap_widget(ref: "s_3")         → tap the "Submit" button
+3. semantic_snapshot              → fresh refs after navigation
+4. enter_text(ref: "s_2", text)   → fill a field
+5. hot_reload_and_capture         → after a code edit, see new state
+```
+
 ### CLI Parity Quick Check
 
 CLI and MCP use the same shared command catalog/executor. You can verify quickly:

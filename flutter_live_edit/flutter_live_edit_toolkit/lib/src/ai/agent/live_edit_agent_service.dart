@@ -2,8 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
-
 import 'package:from_json_to_json/from_json_to_json.dart';
 import 'package:is_dart_empty_or_not/is_dart_empty_or_not.dart';
 import 'package:path/path.dart' as p;
@@ -16,6 +14,14 @@ import 'live_edit_agent_plan.dart';
 import 'live_edit_agent_request_summary.dart';
 import 'live_edit_agent_utils.dart';
 import 'live_edit_agent_validation.dart';
+
+// Private kIsWeb shim so this file can be imported into a dart-only build
+// (mcp_server_dart) without pulling in package:flutter/foundation.dart, which
+// transitively references dart:ui types that break `dart compile exe`. Kept
+// private to avoid colliding with Flutter's public kIsWeb in Flutter builds.
+// Same identity trick Flutter itself uses: on web int and double are the same
+// type, so `identical(0, 0.0)` is true; on VM they differ.
+const bool _kIsWeb = identical(0, 0.0);
 
 bool _hasText(final String? value) => value != null && value.trim().isNotEmpty;
 
@@ -90,7 +96,7 @@ final class LiveEditAgentRegistry {
         'codex_exec': codexClient,
         'cursor_agent': cursorClient,
       },
-      defaultBackendId: kIsWeb ? null : Platform.environment['LIVE_EDIT_BACKEND'],
+      defaultBackendId: _kIsWeb ? null : Platform.environment['LIVE_EDIT_BACKEND'],
     );
   }
 
@@ -244,7 +250,7 @@ final class LiveEditAgentRegistry {
       id: backendId,
       label: _backendLabel(backendId),
       description: _backendDescription(backendId),
-      available: kIsWeb ? false : client.isAvailable,
+      available: _kIsWeb ? false : client.isAvailable,
       isDefault: backendId == _defaultBackendId,
       meta: meta,
     );
@@ -291,7 +297,7 @@ final class LiveEditAgentService {
   }) : registry = registry ?? LiveEditAgentRegistry.withDefaults(),
        _storagePath =
            storagePath ??
-           (kIsWeb ? '' : p.join(Directory.systemTemp.path, 'flutter_live_edit_agent'));
+           (_kIsWeb ? '' : p.join(Directory.systemTemp.path, 'flutter_live_edit_agent'));
 
   final LiveEditAgentRegistry registry;
   final String _storagePath;

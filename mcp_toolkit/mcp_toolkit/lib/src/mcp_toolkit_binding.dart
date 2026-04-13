@@ -9,6 +9,7 @@ import 'mcp_models.dart';
 import 'mcp_toolkit_binding_base.dart';
 import 'mcp_toolkit_extensions.dart';
 import 'services/error_monitor.dart';
+import 'services/log_capture_service.dart';
 import 'toolkits/flutter_mcp_toolkit.dart';
 
 /// Add a single MCP tool to the MCP toolkit.
@@ -133,6 +134,7 @@ class MCPToolkitBinding extends MCPToolkitBindingBase
         'MCP Toolkit should only be initialized in debug mode',
       );
       attachToFlutterError();
+      LogCaptureService.install();
       return true;
     }());
 

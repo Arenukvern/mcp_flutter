@@ -87,3 +87,129 @@ final class CaptureUiSnapshotCommand extends CoreCommand {
   @override
   String get name => 'capture_ui_snapshot';
 }
+
+final class SemanticSnapshotCommand extends CoreCommand {
+  const SemanticSnapshotCommand();
+
+  @override
+  String get name => 'semantic_snapshot';
+}
+
+final class TapWidgetCommand extends CoreCommand {
+  const TapWidgetCommand({required this.ref, this.snapshotId});
+
+  final String ref;
+  final int? snapshotId;
+
+  @override
+  String get name => 'tap_widget';
+}
+
+final class EnterTextCommand extends CoreCommand {
+  const EnterTextCommand({
+    required this.ref,
+    required this.text,
+    this.snapshotId,
+  });
+
+  final String ref;
+  final String text;
+  final int? snapshotId;
+
+  @override
+  String get name => 'enter_text';
+}
+
+final class ScrollCommand extends CoreCommand {
+  const ScrollCommand({
+    required this.direction,
+    this.ref,
+    this.distance = 300,
+    this.snapshotId,
+  });
+
+  final String? ref;
+  final String direction;
+  final double distance;
+  final int? snapshotId;
+
+  @override
+  String get name => 'scroll';
+}
+
+final class LongPressCommand extends CoreCommand {
+  const LongPressCommand({required this.ref, this.snapshotId});
+
+  final String ref;
+  final int? snapshotId;
+
+  @override
+  String get name => 'long_press';
+}
+
+final class SwipeCommand extends CoreCommand {
+  const SwipeCommand({
+    required this.direction,
+    this.ref,
+    this.distance = 300,
+    this.snapshotId,
+  });
+
+  final String direction;
+  final String? ref;
+  final double distance;
+  final int? snapshotId;
+
+  @override
+  String get name => 'swipe';
+}
+
+final class DragCommand extends CoreCommand {
+  const DragCommand({
+    required this.fromRef,
+    required this.toRef,
+    this.snapshotId,
+  });
+
+  final String fromRef;
+  final String toRef;
+  final int? snapshotId;
+
+  @override
+  String get name => 'drag';
+}
+
+final class HotReloadAndCaptureCommand extends CoreCommand {
+  const HotReloadAndCaptureCommand({
+    this.compress = true,
+    this.includeSemantics = true,
+    this.includeErrors = true,
+    this.errorsCount = 4,
+  });
+
+  final bool compress;
+  final bool includeSemantics;
+  final bool includeErrors;
+  final int errorsCount;
+
+  @override
+  String get name => 'hot_reload_and_capture';
+}
+
+final class EvaluateDartExpressionCommand extends CoreCommand {
+  const EvaluateDartExpressionCommand({required this.expression});
+
+  final String expression;
+
+  @override
+  String get name => 'evaluate_dart_expression';
+}
+
+final class GetRecentLogsCommand extends CoreCommand {
+  const GetRecentLogsCommand({this.count = 50});
+
+  final int count;
+
+  @override
+  String get name => 'get_recent_logs';
+}

@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:meta/meta.dart';
 
 import 'live_edit_interaction_models.dart';
 import 'live_edit_models.dart';

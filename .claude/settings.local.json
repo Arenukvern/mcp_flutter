@@ -17,7 +17,30 @@
       "Bash(pkill -f \"flutter test\")",
       "Bash(ps -p 69705 -o pid,etime,pcpu)",
       "Bash(while ps:*)",
-      "Bash(xargs -I{} ps -p {} -o pid,etime,pcpu)"
+      "Bash(xargs -I{} ps -p {} -o pid,etime,pcpu)",
+      "Bash(xargs cat:*)",
+      "WebSearch",
+      "Bash(dart pub:*)",
+      "Bash(dart analyze:*)",
+      "Bash(awk NR==196{print length\\($0\\), $0}:*)",
+      "Bash(flutter pub:*)",
+      "Bash(flutter analyze:*)",
+      "Bash(dart compile:*)",
+      "WebFetch(domain:api.flutter.dev)",
+      "Bash(python3 /tmp/trace3.py /Users/antonio/mcp/cline/mcp_flutter/flutter_live_edit/flutter_live_edit_toolkit/lib/src/models/live_edit_timeline_pipeline_primitives.dart)",
+      "Bash(fvm flutter:*)",
+      "Bash(/tmp/flutter_mcp_cli_test schema:*)",
+      "Bash(flutter devices:*)",
+      "Bash(flutter run:*)",
+      "Bash(tee /tmp/flutter_app.log)",
+      "Bash(/tmp/flutter_mcp_cli_test exec:*)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('ok:', d['ok']\\); data=d['data']; print\\('snapshot_id:', data.get\\('snapshot_id'\\)\\); print\\('node count:', data.get\\('nodeCount'\\) or len\\(data.get\\('nodes', []\\)\\)\\); nodes = data.get\\('nodes', []\\); print\\('truncated:', data.get\\('truncated'\\)\\); print\\('sample nodes:'\\); [print\\(f'  ref={n.get\\(\\\\\"ref\\\\\"\\)} type={n.get\\(\\\\\"type\\\\\"\\)} label={n.get\\(\\\\\"label\\\\\"\\)[:50] if n.get\\(\\\\\"label\\\\\"\\) else None}'\\) for n in nodes[:10]]\")",
+      "Read(//tmp/**)",
+      "Bash(python3 -c \"import sys,json,re; s=sys.stdin.read\\(\\); d=json.loads\\(s\\); nodes=d['data']['nodes']; [print\\(f'{n[\\\\\"ref\\\\\"]}: {n.get\\(\\\\\"label\\\\\",\\\\\"\\\\\"\\)[:80]}'\\) for n in nodes if 'Tools created' in n.get\\('label',''\\) or 'Register' in n.get\\('label',''\\)]\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); data=d['data']; print\\('ok:', d['ok']\\); print\\('hotReload.success:', data.get\\('hotReload',{}\\).get\\('success'\\)\\); print\\('screenshot has images:', 'images' in data.get\\('screenshot',{}\\)\\); print\\('semantics.snapshot_id:', data.get\\('semantics',{}\\).get\\('snapshot_id'\\)\\); print\\('errors keys:', list\\(data.get\\('errors',{}\\).keys\\(\\)\\)[:3]\\)\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); nodes=d['data']['nodes']; [print\\(f'{n[\\\\\"ref\\\\\"]}: {n.get\\(\\\\\"label\\\\\",\\\\\"\\\\\"\\)[:80]}'\\) for n in nodes if 'StatefulWidget' in n.get\\('label',''\\) or 'ChangeNotifier' in n.get\\('label',''\\)]\")",
+      "Bash(pkill -f \"test_app.app\")",
+      "Bash(pkill -f \"flutter run -d macos\")"
     ]
   }
 }

@@ -644,6 +644,271 @@ final class CommandCatalog {
         ),
       ),
       CommandSpec(
+        name: 'semantic_snapshot',
+        description:
+            'Get compact semantic tree of interactive widgets with stable refs '
+            'usable by interaction tools (tap_widget, enter_text, etc.). '
+            'Call this before any interaction tool to get fresh refs.',
+        inputSchema: _objectSchema(),
+        outputSchema: _objectSchema(additionalProperties: true),
+        requiresVm: true,
+        supportsWatch: true,
+        mcpExposed: true,
+        build: (final args) => const SemanticSnapshotCommand(),
+      ),
+      CommandSpec(
+        name: 'tap_widget',
+        description:
+            'Tap a widget identified by ref from semantic_snapshot. '
+            'Refs are session-scoped to the most recent semantic_snapshot call.',
+        inputSchema: _objectSchema(
+          properties: {
+            'ref': _stringSchema(
+              description: 'Widget ref from semantic_snapshot (e.g. "s_0").',
+            ),
+            'snapshotId': _intSchema(
+              description:
+                  'Optional: snapshot_id returned by most recent '
+                  'semantic_snapshot. If provided and stale, the call fails '
+                  'with stale_snapshot.',
+            ),
+          },
+          required: const <String>['ref'],
+        ),
+        outputSchema: _objectSchema(additionalProperties: true),
+        requiresVm: true,
+        supportsWatch: false,
+        mcpExposed: true,
+        build: (final args) => TapWidgetCommand(
+          ref: _stringArg(args, 'ref', fallback: ''),
+          snapshotId: _nullableIntArg(args, 'snapshotId', alias: 'snapshot-id'),
+        ),
+      ),
+      CommandSpec(
+        name: 'enter_text',
+        description:
+            'Enter text into a text field identified by ref from '
+            'semantic_snapshot. Taps the field to focus before typing.',
+        inputSchema: _objectSchema(
+          properties: {
+            'ref': _stringSchema(description: 'Text field ref.'),
+            'text': _stringSchema(description: 'Text to enter.'),
+            'snapshotId': _intSchema(
+              description:
+                  'Optional: snapshot_id returned by most recent '
+                  'semantic_snapshot. If provided and stale, the call fails '
+                  'with stale_snapshot.',
+            ),
+          },
+          required: const <String>['ref', 'text'],
+        ),
+        outputSchema: _objectSchema(additionalProperties: true),
+        requiresVm: true,
+        supportsWatch: false,
+        mcpExposed: true,
+        build: (final args) => EnterTextCommand(
+          ref: _stringArg(args, 'ref', fallback: ''),
+          text: _stringArg(args, 'text', fallback: ''),
+          snapshotId: _nullableIntArg(args, 'snapshotId', alias: 'snapshot-id'),
+        ),
+      ),
+      CommandSpec(
+        name: 'scroll',
+        description:
+            'Scroll in a direction from a ref or from center of screen.',
+        inputSchema: _objectSchema(
+          properties: {
+            'direction': _stringSchema(
+              enumValues: const <String>['up', 'down', 'left', 'right'],
+            ),
+            'ref': _stringSchema(description: 'Optional ref to scroll from.'),
+            'distance': _intSchema(defaultValue: 300),
+            'snapshotId': _intSchema(
+              description:
+                  'Optional: snapshot_id returned by most recent '
+                  'semantic_snapshot. If provided and stale, the call fails '
+                  'with stale_snapshot.',
+            ),
+          },
+          required: const <String>['direction'],
+        ),
+        outputSchema: _objectSchema(additionalProperties: true),
+        requiresVm: true,
+        supportsWatch: false,
+        mcpExposed: true,
+        build: (final args) {
+          final distance = _nullableIntArg(args, 'distance');
+          return ScrollCommand(
+            direction: _stringArg(args, 'direction', fallback: 'down'),
+            ref: _nullableStringArg(args, 'ref'),
+            distance: (distance ?? 300).toDouble(),
+            snapshotId: _nullableIntArg(
+              args,
+              'snapshotId',
+              alias: 'snapshot-id',
+            ),
+          );
+        },
+      ),
+      CommandSpec(
+        name: 'long_press',
+        description: 'Long-press a widget identified by ref.',
+        inputSchema: _objectSchema(
+          properties: {
+            'ref': _stringSchema(description: 'Widget ref.'),
+            'snapshotId': _intSchema(
+              description:
+                  'Optional: snapshot_id returned by most recent '
+                  'semantic_snapshot. If provided and stale, the call fails '
+                  'with stale_snapshot.',
+            ),
+          },
+          required: const <String>['ref'],
+        ),
+        outputSchema: _objectSchema(additionalProperties: true),
+        requiresVm: true,
+        supportsWatch: false,
+        mcpExposed: true,
+        build: (final args) => LongPressCommand(
+          ref: _stringArg(args, 'ref', fallback: ''),
+          snapshotId: _nullableIntArg(args, 'snapshotId', alias: 'snapshot-id'),
+        ),
+      ),
+      CommandSpec(
+        name: 'swipe',
+        description:
+            'Swipe in a direction from a ref or from center of screen.',
+        inputSchema: _objectSchema(
+          properties: {
+            'direction': _stringSchema(
+              enumValues: const <String>['up', 'down', 'left', 'right'],
+            ),
+            'ref': _stringSchema(description: 'Optional ref to swipe from.'),
+            'distance': _intSchema(defaultValue: 300),
+            'snapshotId': _intSchema(
+              description:
+                  'Optional: snapshot_id returned by most recent '
+                  'semantic_snapshot. If provided and stale, the call fails '
+                  'with stale_snapshot.',
+            ),
+          },
+          required: const <String>['direction'],
+        ),
+        outputSchema: _objectSchema(additionalProperties: true),
+        requiresVm: true,
+        supportsWatch: false,
+        mcpExposed: true,
+        build: (final args) {
+          final distance = _nullableIntArg(args, 'distance');
+          return SwipeCommand(
+            direction: _stringArg(args, 'direction', fallback: 'up'),
+            ref: _nullableStringArg(args, 'ref'),
+            distance: (distance ?? 300).toDouble(),
+            snapshotId: _nullableIntArg(
+              args,
+              'snapshotId',
+              alias: 'snapshot-id',
+            ),
+          );
+        },
+      ),
+      CommandSpec(
+        name: 'drag',
+        description:
+            'Drag from one widget to another, identified by refs.',
+        inputSchema: _objectSchema(
+          properties: {
+            'fromRef': _stringSchema(description: 'Source widget ref.'),
+            'toRef': _stringSchema(description: 'Target widget ref.'),
+            'snapshotId': _intSchema(
+              description:
+                  'Optional: snapshot_id returned by most recent '
+                  'semantic_snapshot. If provided and stale, the call fails '
+                  'with stale_snapshot.',
+            ),
+          },
+          required: const <String>['fromRef', 'toRef'],
+        ),
+        outputSchema: _objectSchema(additionalProperties: true),
+        requiresVm: true,
+        supportsWatch: false,
+        mcpExposed: true,
+        build: (final args) => DragCommand(
+          fromRef: _stringArg(args, 'fromRef', fallback: ''),
+          toRef: _stringArg(args, 'toRef', fallback: ''),
+          snapshotId: _nullableIntArg(args, 'snapshotId', alias: 'snapshot-id'),
+        ),
+      ),
+      CommandSpec(
+        name: 'hot_reload_and_capture',
+        description:
+            'Hot reload then capture screenshot + semantic snapshot + errors '
+            'in a single call. Tight edit-preview cycle for AI iteration.',
+        inputSchema: _objectSchema(
+          properties: {
+            'compress': _boolSchema(defaultValue: true),
+            'includeSemantics': _boolSchema(defaultValue: true),
+            'includeErrors': _boolSchema(defaultValue: true),
+            'errorsCount': _intSchema(defaultValue: 4),
+          },
+        ),
+        outputSchema: _objectSchema(additionalProperties: true),
+        requiresVm: true,
+        supportsWatch: false,
+        mcpExposed: true,
+        build: (final args) => HotReloadAndCaptureCommand(
+          compress: _boolArg(args, 'compress', fallback: true),
+          includeSemantics: _boolArg(
+            args,
+            'includeSemantics',
+            alias: 'include-semantics',
+            fallback: true,
+          ),
+          includeErrors: _boolArg(
+            args,
+            'includeErrors',
+            alias: 'include-errors',
+            fallback: true,
+          ),
+          errorsCount: _intArg(args, 'errorsCount', fallback: 4),
+        ),
+      ),
+      CommandSpec(
+        name: 'evaluate_dart_expression',
+        description:
+            'Evaluate a Dart expression in the running app isolate. '
+            'Returns the result of the expression as text.',
+        inputSchema: _objectSchema(
+          properties: {
+            'expression': _stringSchema(
+              description: 'Dart expression (e.g. "MyClass.instance.value").',
+            ),
+          },
+          required: const <String>['expression'],
+        ),
+        outputSchema: _objectSchema(additionalProperties: true),
+        requiresVm: true,
+        supportsWatch: false,
+        mcpExposed: true,
+        build: (final args) => EvaluateDartExpressionCommand(
+          expression: _stringArg(args, 'expression', fallback: ''),
+        ),
+      ),
+      CommandSpec(
+        name: 'get_recent_logs',
+        description:
+            'Get recent print() and debugPrint() output from the running app.',
+        inputSchema: _objectSchema(
+          properties: {'count': _intSchema(defaultValue: 50)},
+        ),
+        outputSchema: _objectSchema(additionalProperties: true),
+        requiresVm: true,
+        supportsWatch: true,
+        mcpExposed: true,
+        build: (final args) =>
+            GetRecentLogsCommand(count: _intArg(args, 'count', fallback: 50)),
+      ),
+      CommandSpec(
         name: 'debug_dump_layer_tree',
         description: 'Run ext.flutter.debugDumpLayerTree.',
         inputSchema: _objectSchema(),
@@ -1451,9 +1716,13 @@ final class CommandCatalog {
     return _strictIntArg(value: value, key: key);
   }
 
-  static Map<String, Object?> _intSchema({final Object? defaultValue}) => {
+  static Map<String, Object?> _intSchema({
+    final Object? defaultValue,
+    final String? description,
+  }) => {
     'type': 'integer',
     'default': ?defaultValue,
+    'description': ?description,
   };
 
   static Map<String, Object?> _mapArg(

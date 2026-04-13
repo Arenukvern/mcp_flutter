@@ -9,6 +9,7 @@ import '../mcp_toolkit_binding.dart';
 import '../services/error_monitor.dart';
 import '../services/screenshot_service.dart';
 import '../services/view_introspection_service.dart';
+import 'interaction_toolkit.dart';
 
 /// Returns a set of MCPCallEntry objects for the Flutter MCP Toolkit.
 ///
@@ -26,6 +27,7 @@ Set<MCPCallEntry> getFlutterMcpToolkitEntries({
   OnViewDetailsEntry(),
   OnSelectWidgetAtPointEntry(binding: binding),
   OnInspectWidgetAtPointEntry(),
+  ...getInteractionToolkitEntries(),
 };
 
 /// Extension on [MCPToolkitBinding] to initialize the Flutter MCP Toolkit.
