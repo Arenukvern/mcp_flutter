@@ -315,7 +315,9 @@ class _SelectionBubble extends StatelessWidget {
               borderRadius: radius,
               child: BackdropFilter(
                 filter: ui.ImageFilter.blur(sigmaX: 40, sigmaY: 40),
-                child: DecoratedBox(
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: DecoratedBox(
                   decoration: BoxDecoration(
                     color: surfaceTheme.backgroundColor,
                     borderRadius: radius,
@@ -522,6 +524,7 @@ class _SelectionBubble extends StatelessWidget {
                         ),
                     ],
                   ),
+                ),
                 ),
               ),
             ),

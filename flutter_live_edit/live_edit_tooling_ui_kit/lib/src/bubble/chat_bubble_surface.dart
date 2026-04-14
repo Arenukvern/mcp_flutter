@@ -142,71 +142,83 @@ class _ChatBubbleSurfaceState extends State<ChatBubbleSurface> {
       padding: const EdgeInsets.fromLTRB(14, 2, 8, 2),
       child: Row(
         children: <Widget>[
-          for (final b in vm.backends) ...<Widget>[
-            _BackendTab(
-              label: b.label,
-              active: b.id == vm.activeBackendId,
-              onTap: () => cb.onBackendChanged(b.id),
-            ),
-            if (b != vm.backends.last)
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 3),
-                child: Text(
-                  '|',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Color(0xFFCBD5E1),
-                    fontWeight: FontWeight.w300,
-                  ),
-                ),
-              ),
-          ],
-          const SizedBox(width: 10),
-          GestureDetector(
-            onTap: () => cb.onToggleThinking(!vm.showThinking),
-            child: AnimatedOpacity(
-              opacity: vm.showThinking ? 1.0 : 0.45,
-              duration: const Duration(milliseconds: 150),
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
-                  Text(
-                    'thinking',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w400,
-                      letterSpacing: -0.1,
-                      color: vm.showThinking
-                          ? const Color(0xFF0D9488)
-                          : const Color(0xFF64748B),
+                  for (final b in vm.backends) ...<Widget>[
+                    _BackendTab(
+                      label: b.label,
+                      active: b.id == vm.activeBackendId,
+                      onTap: () => cb.onBackendChanged(b.id),
+                    ),
+                    if (b != vm.backends.last)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 3),
+                        child: Text(
+                          '|',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Color(0xFFCBD5E1),
+                            fontWeight: FontWeight.w300,
+                          ),
+                        ),
+                      ),
+                  ],
+                  const SizedBox(width: 10),
+                  GestureDetector(
+                    onTap: () => cb.onToggleThinking(!vm.showThinking),
+                    child: AnimatedOpacity(
+                      opacity: vm.showThinking ? 1.0 : 0.45,
+                      duration: const Duration(milliseconds: 150),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          Text(
+                            'thinking',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w400,
+                              letterSpacing: -0.1,
+                              color: vm.showThinking
+                                  ? const Color(0xFF0D9488)
+                                  : const Color(0xFF64748B),
+                            ),
+                          ),
+                          const SizedBox(width: 3),
+                          Icon(
+                            vm.showThinking
+                                ? Icons.visibility_rounded
+                                : Icons.visibility_off_outlined,
+                            size: 13,
+                            color: vm.showThinking
+                                ? const Color(0xFF0D9488)
+                                : const Color(0xFF64748B),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 3),
-                  Icon(
-                    vm.showThinking
-                        ? Icons.visibility_rounded
-                        : Icons.visibility_off_outlined,
-                    size: 13,
-                    color: vm.showThinking
-                        ? const Color(0xFF0D9488)
-                        : const Color(0xFF64748B),
-                  ),
+                  if (vm.draftCount > 0)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 8),
+                      child: Text(
+                        'Draft changes: ${vm.draftCount}',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
           ),
-          const Spacer(),
-          if (vm.draftCount > 0)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: Text(
-                'Draft changes: ${vm.draftCount}',
-                style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
-              ),
-            ),
           if (vm.canDiscard)
             Padding(
-              padding: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.only(left: 8),
               child: Semantics(
                 identifier: 'live_edit_discard_button',
                 button: true,
@@ -215,7 +227,7 @@ class _ChatBubbleSurfaceState extends State<ChatBubbleSurface> {
             ),
           if (vm.canApplyPreview)
             Padding(
-              padding: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.only(left: 8),
               child: Semantics(
                 identifier: 'live_edit_preview_apply_button',
                 button: true,
@@ -224,13 +236,14 @@ class _ChatBubbleSurfaceState extends State<ChatBubbleSurface> {
             ),
           if (vm.canRollback)
             Padding(
-              padding: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.only(left: 8),
               child: Semantics(
                 identifier: 'live_edit_rollback_button',
                 button: true,
                 child: _RollbackButton(onTap: cb.onRollback),
               ),
             ),
+          const SizedBox(width: 8),
           _CollapseButton(onTap: cb.onCollapse),
           const SizedBox(width: 8),
           _DoneButton(onTap: cb.onDone),

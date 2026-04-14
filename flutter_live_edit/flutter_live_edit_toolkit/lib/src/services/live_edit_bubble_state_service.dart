@@ -157,11 +157,16 @@ final class LiveEditBubbleStateService {
           : bubble?.status == LiveEditBubbleStatus.failed
           ? LiveEditApplyPhase.failed
           : LiveEditApplyPhase.idle;
-      // When there is a selection, use AI mode so the minimal chat bubble is
-      // the default view; when no selection, use inspect.
+      // Fresh selection starts in inspect mode (shows hide button, candidate
+      // chips, property panel). Only stay in AI mode if the bubble already
+      // has an active chat session (history or instruction text).
+      final hasAiContent =
+          bubble != null &&
+          (bubble.history.isNotEmpty ||
+              bubble.instructionText.trim().isNotEmpty);
       final editMode = selection == null
           ? LiveEditEditMode.inspect
-          : LiveEditEditMode.ai;
+          : (hasAiContent ? LiveEditEditMode.ai : LiveEditEditMode.inspect);
       final activePropertyId = ctx
           .bubbleResource
           .value

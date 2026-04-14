@@ -115,7 +115,14 @@
       "Bash(rtk proxy *)",
       "Bash(stat -f \"%Sm %N\" -t \"%Y-%m-%d\" .codex/engineering-loop/*.json .codex/specs/*.md .codex/*.md flutter_live_edit/*.md)",
       "Bash(git mv *)",
-      "Bash(git rm *)"
+      "Bash(git rm *)",
+      "Bash(find /Users/antonio/mcp/cline/mcp_flutter/flutter_live_edit -name \"*.dart\" -type f -exec wc -l {} +)",
+      "Bash(grep -E \"\\\\.dart$\")",
+      "Bash(wait *)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:dragselect.com)",
+      "WebFetch(domain:tldraw.dev)",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ]
   }
 }

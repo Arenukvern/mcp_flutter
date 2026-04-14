@@ -58,6 +58,7 @@ class _PropertyPanelBody extends StatelessWidget {
                 Semantics(
                   identifier: 'live_edit_model_dropdown',
                   child: DropdownButtonFormField<String>(
+                    isExpanded: true,
                     initialValue: selectCurrentModel(
                       context,
                       controller,
@@ -78,7 +79,10 @@ class _PropertyPanelBody extends StatelessWidget {
                             )
                             .map((final model) => DropdownMenuItem<String>(
                                 value: model.id,
-                                child: Text(model.label),
+                                child: Text(
+                                  model.label,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ))
                             .toList(growable: false),
                     onChanged: (final value) {
@@ -90,6 +94,7 @@ class _PropertyPanelBody extends StatelessWidget {
                 Semantics(
                   identifier: 'live_edit_reasoning_dropdown',
                   child: DropdownButtonFormField<String>(
+                    isExpanded: true,
                     initialValue: selectCurrentReasoningEffort(
                       context,
                       controller,
@@ -110,7 +115,10 @@ class _PropertyPanelBody extends StatelessWidget {
                             )
                             .map((final effort) => DropdownMenuItem<String>(
                                 value: effort,
-                                child: Text(effort),
+                                child: Text(
+                                  effort,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ))
                             .toList(growable: false),
                     onChanged: (final value) {

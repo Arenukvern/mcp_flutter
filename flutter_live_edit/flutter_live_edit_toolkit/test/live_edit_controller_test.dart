@@ -3111,19 +3111,36 @@ Direct apply request:
     'debug source and technical details stay hidden until debug mode',
     (final tester) async {
       final orchestrator = LiveEditOrchestrator(
-        applyDraftDelegate: (final request) async => <String, Object?>{
-          'proposalId': 'proposal-ai-only',
-          'executionPlan': <String, Object?>{
+        applyDraftDelegate: (final request) async {
+          request.onEvent?.call(
+            const LiveEditRuntimeEvent(
+              kind: LiveEditRuntimeEventKind.codex,
+              message: 'Codex diagnostic.',
+              details: <String>['Code: inference.debug'],
+            ),
+          );
+          return <String, Object?>{
             'proposalId': 'proposal-ai-only',
-            'title': 'Apply live edit',
-            'summary': 'Persist the requested text update.',
-            'selectedNode': 'Text',
-            'requestedChanges': <String>['Update text from AI prompt'],
-            'affectedFiles': <String>['lib/main.dart'],
-            'confidence': 0.8,
-            'riskNotes': const <String>[],
-            'agentInstruction': 'Update the selected text widget.',
-          },
+            'executionPlan': <String, Object?>{
+              'proposalId': 'proposal-ai-only',
+              'title': 'Apply live edit',
+              'summary': 'Persist the requested text update.',
+              'selectedNode': 'Text',
+              'requestedChanges': <String>['Update text from AI prompt'],
+              'affectedFiles': <String>['lib/main.dart'],
+              'confidence': 0.8,
+              'riskNotes': const <String>[],
+              'agentInstruction': 'Update the selected text widget.',
+            },
+            'executionResult': <String, Object?>{
+              'executionId': 'proposal-ai-only',
+              'backendId': 'codex_exec',
+              'summary': 'Updated the selected text widget.',
+              'changedFiles': <String>['lib/main.dart'],
+              'warnings': const <String>[],
+              'validationSteps': const <String>[],
+            },
+          };
         },
       );
 

@@ -134,55 +134,33 @@ class _AgentActivityPanel extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ],
-          if (selectDebugModeEnabled(context) ||
-              details.isNotEmpty) ...<Widget>[
+          if (selectDebugModeEnabled(context) && details.isNotEmpty) ...<Widget>[
             const SizedBox(height: 4),
-            if (selectDebugModeEnabled(context))
-              ExpansionTile(
-                tilePadding: EdgeInsets.zero,
-                childrenPadding: EdgeInsets.zero,
-                title: const Text(
-                  'Technical details',
-                  style: TextStyle(fontSize: 10, color: Color(0xFF334155)),
-                ),
-                children: <Widget>[
-                  if (details.isEmpty)
-                    const Align(
-                      alignment: Alignment.centerLeft,
-                      child: Padding(
-                        padding: EdgeInsets.only(bottom: 4),
-                        child: Text(
-                          'No technical details yet.',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: Color(0xFF334155),
-                          ),
-                        ),
-                      ),
-                    ),
-                  for (final detail in details)
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
-                        child: Text(
-                          detail,
-                          style: const TextStyle(
-                            fontSize: 10,
-                            color: Color(0xFF334155),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              )
-            else if (details.isNotEmpty)
-              Text(
-                details.first,
-                style: const TextStyle(fontSize: 10, color: Color(0xFF334155)),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+            ExpansionTile(
+              initiallyExpanded: true,
+              tilePadding: EdgeInsets.zero,
+              childrenPadding: EdgeInsets.zero,
+              title: const Text(
+                'Technical details',
+                style: TextStyle(fontSize: 10, color: Color(0xFF334155)),
               ),
+              children: <Widget>[
+                for (final detail in details)
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Text(
+                        detail,
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: Color(0xFF334155),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ],
         ],
       ),
