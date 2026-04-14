@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:from_json_to_json/from_json_to_json.dart';
 import 'package:is_dart_empty_or_not/is_dart_empty_or_not.dart';
@@ -11,6 +12,7 @@ import 'package:xsoulspace_inference_cursor_agent/xsoulspace_inference_cursor_ag
 
 import '../../models/models.dart';
 import '../backend/claude_code_inference_client.dart';
+import '../backend/claude_mcp_config.dart';
 import 'live_edit_agent_plan.dart';
 import 'live_edit_agent_request_summary.dart';
 import 'live_edit_agent_utils.dart';
@@ -336,6 +338,11 @@ final class LiveEditAgentService {
   final Map<String, LiveEditResolutionStatus> _proposalStatus =
       <String, LiveEditResolutionStatus>{};
 
+  /// Claude Code session id per bubble id. Populated on first run and reused
+  /// on subsequent `executeDirectApply` calls so Claude can `--resume` the
+  /// same conversation thread per bubble.
+  final Map<String, String> _claudeSessionIds = <String, String>{};
+
   Future<LiveEditResolutionResult> applyProposal(
     final String proposalId, {
     required final String workingDirectory,
@@ -513,6 +520,34 @@ final class LiveEditAgentService {
             effectiveInferenceConfig!.reasoningEffort;
       }
     }
+
+    void Function()? mcpConfigCleanup;
+    final claudeWarnings = <String>[];
+    if (backendId == 'claude_code' && !_kIsWeb) {
+      final handle = writeClaudeMcpConfig(
+        workingDirectory: resolvedRequest.workingDirectory,
+      );
+      mcpConfigCleanup = handle.cleanup;
+      if (handle.configPath != null) {
+        metadata['claudeMcpConfigPath'] = handle.configPath;
+      }
+      if (handle.warning != null) {
+        claudeWarnings.add(handle.warning!);
+      }
+
+      final bubbleId = resolvedRequest.effectiveBubbleId;
+      if (bubbleId != null) {
+        final existing = _claudeSessionIds[bubbleId];
+        if (existing != null) {
+          metadata['claudeResumeSessionId'] = existing;
+        } else {
+          final fresh = _generateUuidV4();
+          _claudeSessionIds[bubbleId] = fresh;
+          metadata['claudeSessionId'] = fresh;
+        }
+      }
+    }
+
     final inferenceRequest = InferenceRequest(
       prompt: prompt,
       outputSchema: LiveEditSchemas.directApplyExecution,
@@ -520,13 +555,18 @@ final class LiveEditAgentService {
       metadata: metadata,
     );
 
-    final inferenceResult = client.supportsStructuredTextStreaming
-        ? await _resolveViaStreamingClient(
-            client: client,
-            request: inferenceRequest,
-            onStreamEvent: onStreamEvent,
-          )
-        : await client.infer(inferenceRequest);
+    final InferenceResult<InferenceResponse> inferenceResult;
+    try {
+      inferenceResult = client.supportsStructuredTextStreaming
+          ? await _resolveViaStreamingClient(
+              client: client,
+              request: inferenceRequest,
+              onStreamEvent: onStreamEvent,
+            )
+          : await client.infer(inferenceRequest);
+    } finally {
+      mcpConfigCleanup?.call();
+    }
     if (!inferenceResult.success || inferenceResult.data == null) {
       throw LiveEditAgentException(
         code: inferenceResult.error?.code ?? 'inference_failed',
@@ -536,7 +576,7 @@ final class LiveEditAgentService {
           request: resolvedRequest,
           backendId: backendId,
         ),
-        warnings: inferenceResult.warnings,
+        warnings: <String>[...claudeWarnings, ...inferenceResult.warnings],
         meta: jsonDecodeMapLoose(inferenceResult.meta),
       );
     }
@@ -562,11 +602,13 @@ final class LiveEditAgentService {
         ...response?.meta ?? <String, Object?>{},
         'inferenceMeta': inferenceResult.meta,
         'warnings': <String>[
+          ...claudeWarnings,
           ...response?.warnings ?? <String>[],
           ...inferenceResult.warnings,
         ],
       },
       warnings: <String>[
+        ...claudeWarnings,
         ...response?.warnings ?? <String>[],
         ...inferenceResult.warnings,
         ...switch (rawOutput['warnings']) {
@@ -654,6 +696,23 @@ final class LiveEditAgentService {
 
   String _generatedExecutionId(final String backendId) =>
       'live_edit_${DateTime.now().millisecondsSinceEpoch}_$backendId';
+
+  static final Random _uuidRandom = Random.secure();
+
+  static String _generateUuidV4() {
+    final bytes = List<int>.generate(
+      16,
+      (final _) => _uuidRandom.nextInt(256),
+    );
+    bytes[6] = (bytes[6] & 0x0F) | 0x40; // version 4
+    bytes[8] = (bytes[8] & 0x3F) | 0x80; // variant 10
+    String hex(final int start, final int end) => bytes
+        .sublist(start, end)
+        .map((final b) => b.toRadixString(16).padLeft(2, '0'))
+        .join();
+    return '${hex(0, 4)}-${hex(4, 6)}-${hex(6, 8)}-'
+        '${hex(8, 10)}-${hex(10, 16)}';
+  }
 
   void _hydrateProposalState(final String proposalId) {
     if (_proposals.containsKey(proposalId) &&

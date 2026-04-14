@@ -225,6 +225,16 @@ final class ConnectionContext {
   bool _wasConnected = false;
   bool _disconnectedSinceLastConnect = false;
 
+  /// Single-flight gate shared by [hotReload] and [hotRestart].
+  ///
+  /// The VM can only safely reload one set of sources at a time; concurrent
+  /// callers (e.g. two live-edit bubbles applying in parallel) must wait for
+  /// an in-progress reload instead of issuing a second one. [ConnectionContext]
+  /// is per VM-service target, so a single future is sufficient here — the
+  /// per-`targetId` `Map<String, Future<…>>` exists implicitly as "one entry
+  /// per ConnectionContext instance".
+  Future<Map<String, dynamic>?>? _pendingReloadOrRestart;
+
   /// Callback invoked when a previously disconnected context reconnects.
   void Function()? onReconnected;
 
@@ -1228,7 +1238,27 @@ final class ConnectionContext {
     return null;
   }
 
-  Future<Map<String, dynamic>?> hotReload({final bool force = false}) async {
+  Future<Map<String, dynamic>?> hotReload({final bool force = false}) {
+    final pending = _pendingReloadOrRestart;
+    if (pending != null) return pending;
+    final completer = Completer<Map<String, dynamic>?>();
+    _pendingReloadOrRestart = completer.future;
+    unawaited(
+      _runHotReload(force: force).then(completer.complete).catchError((
+        final Object e,
+        final StackTrace s,
+      ) {
+        completer.completeError(e, s);
+      }).whenComplete(() {
+        if (identical(_pendingReloadOrRestart, completer.future)) {
+          _pendingReloadOrRestart = null;
+        }
+      }),
+    );
+    return completer.future;
+  }
+
+  Future<Map<String, dynamic>?> _runHotReload({required final bool force}) async {
     final vmService = _vmService;
     if (vmService == null) {
       return {'error': 'VM service not connected'};
@@ -1287,7 +1317,27 @@ final class ConnectionContext {
     }
   }
 
-  Future<Map<String, dynamic>?> hotRestart() async {
+  Future<Map<String, dynamic>?> hotRestart() {
+    final pending = _pendingReloadOrRestart;
+    if (pending != null) return pending;
+    final completer = Completer<Map<String, dynamic>?>();
+    _pendingReloadOrRestart = completer.future;
+    unawaited(
+      _runHotRestart().then(completer.complete).catchError((
+        final Object e,
+        final StackTrace s,
+      ) {
+        completer.completeError(e, s);
+      }).whenComplete(() {
+        if (identical(_pendingReloadOrRestart, completer.future)) {
+          _pendingReloadOrRestart = null;
+        }
+      }),
+    );
+    return completer.future;
+  }
+
+  Future<Map<String, dynamic>?> _runHotRestart() async {
     final vmService = _vmService;
     if (vmService == null) {
       return {'error': 'VM service not connected'};

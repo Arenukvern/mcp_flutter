@@ -78,8 +78,10 @@ class _LiveEditScopeState extends State<LiveEditScope> {
   late final LiveEditBubbleResource _bubbleResource;
   late final LiveEditPanelViewResource _panelViewResource;
   late final LiveEditBackendConfigResource _backendConfigResource;
+  late final LiveEditInFlightResource _inFlightResource;
   late final LiveEditSessionService _sessionService;
   late final LiveEditApplyService _applyService;
+  late final LiveEditWorktreeService _worktreeService;
   late final LiveEditBubbleStateService _bubbleStateService;
   late final LiveEditContext _context;
   late final LiveEditController _controller;
@@ -94,6 +96,7 @@ class _LiveEditScopeState extends State<LiveEditScope> {
     _flowGraphResource = LiveEditFlowGraphResource();
     _bubbleResource = LiveEditBubbleResource();
     _panelViewResource = LiveEditPanelViewResource();
+    _inFlightResource = LiveEditInFlightResource();
     final backends = List<LiveEditAgentBackend>.unmodifiable(
       widget.availableBackends,
     );
@@ -117,6 +120,7 @@ class _LiveEditScopeState extends State<LiveEditScope> {
     _applyService = LiveEditApplyService(
       applyDraftDelegate: widget.applyDraftDelegate,
     );
+    _worktreeService = LiveEditWorktreeService();
     _bubbleStateService = LiveEditBubbleStateService();
     void onBubbleEvent(final String? bubbleId, final LiveEditRuntimeEvent ev) {
       _bubbleStateService.emitEventForBubble(
@@ -135,10 +139,13 @@ class _LiveEditScopeState extends State<LiveEditScope> {
       bubbleResource: _bubbleResource,
       panelViewResource: _panelViewResource,
       backendConfigResource: _backendConfigResource,
+      inFlightResource: _inFlightResource,
       sessionService: _sessionService,
       applyService: _applyService,
       bubbleStateService: _bubbleStateService,
       applyEventSink: onBubbleEvent,
+      worktreeService: _worktreeService,
+      mainWorkingDirectory: widget.workingDirectory,
     );
     _controller = LiveEditController(_context);
     LiveEditRuntime.contextAccessor = () => _context;

@@ -3,3 +3,4 @@ export 'live_edit_apply_service.dart';
 export 'live_edit_bubble_state_service.dart';
 export 'live_edit_session_service.dart';
 export 'live_edit_session_update.dart';
+export 'live_edit_worktree_service.dart';

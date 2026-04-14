@@ -4,6 +4,7 @@ import '../models/models.dart';
 import '../types/live_edit_types.dart';
 import '../ui_selectors/ui_selectors.dart';
 import 'live_edit_apply_result.dart';
+import 'live_edit_worktree_service.dart';
 
 /// Runs the apply delegate and returns a result for Commands to apply to Resources.
 final class LiveEditApplyService {
@@ -93,6 +94,127 @@ final class LiveEditApplyService {
       );
     }
   }
+
+  /// Worktree-routed variant of [run].
+  ///
+  /// Allocates (or reuses) a worktree for [request.bubbleId] via
+  /// [worktreeService], rewrites the request's `workingDirectory` to the
+  /// worktree path, invokes the apply delegate there, then merges the
+  /// resulting branch back into [mainWorkingDirectory].
+  ///
+  /// Decision policy: callers should use [shouldUseWorktree] to decide
+  /// whether to route through this method or the plain [run] — single
+  /// in-flight bubbles stay on the main tree for instant hot reload.
+  ///
+  /// Merge conflicts are NOT resolved here. On a conflict the underlying
+  /// apply result is still returned (writes succeeded in the worktree),
+  /// with [LiveEditApplyResult.lastError] populated so the orchestrator
+  /// can surface it. The worktree is NOT abandoned on conflict so a user
+  /// can inspect it; callers own cleanup.
+  Future<LiveEditApplyResult> applyViaWorktree(
+    final LiveEditApplyDraftRequest request, {
+    required final LiveEditWorktreeService worktreeService,
+    required final String mainWorkingDirectory,
+    final LiveEditBubbleRecord? currentBubbleRecord,
+  }) async {
+    final bubbleId = request.effectiveBubbleId ?? request.sessionId;
+    final LiveEditWorktreeHandle handle;
+    try {
+      handle = await worktreeService.allocate(
+        bubbleId: bubbleId,
+        mainWorkingDirectory: mainWorkingDirectory,
+      );
+    } on Exception catch (e) {
+      return LiveEditApplyResult(
+        applyPhase: LiveEditApplyPhase.failed,
+        lastError: 'Worktree allocation failed: $e',
+        bubbleId: request.effectiveBubbleId,
+        updatedBubbleRecord: currentBubbleRecord?.copyWith(
+          status: LiveEditBubbleStatus.failed,
+          lastError: 'Worktree allocation failed: $e',
+        ),
+      );
+    }
+
+    final rerouted = _withWorkingDirectory(request, handle.worktreePath);
+    final applyResult = await run(
+      rerouted,
+      currentBubbleRecord: currentBubbleRecord,
+    );
+
+    if (applyResult.applyPhase != LiveEditApplyPhase.success) {
+      // Preview/approval, failure, etc. — no commits to merge yet.
+      return applyResult;
+    }
+
+    final merge = await worktreeService.mergeInto(
+      handle: handle,
+      mainWorkingDirectory: mainWorkingDirectory,
+    );
+    // Freezed 3.x generates an abstract (non-sealed) base class, so the
+    // analyzer can't prove exhaustiveness of a switch expression. Use
+    // explicit type checks instead.
+    if (merge is LiveEditMergeResultClean) {
+      // Clean merge: reclaim the worktree. Swallow abandon errors — the
+      // apply itself succeeded and a stale worktree is recoverable.
+      try {
+        await worktreeService.abandon(handle);
+      } on Object {
+        // best-effort cleanup
+      }
+      return applyResult;
+    }
+    if (merge is LiveEditMergeResultConflict) {
+      // Leave worktree in place so the user (or a retry pass) can inspect.
+      return _withError(
+        applyResult,
+        'Merge conflict in ${merge.files.length} file(s): '
+        '${merge.files.join(', ')}',
+      );
+    }
+    if (merge is LiveEditMergeResultFailed) {
+      return _withError(applyResult, 'Merge failed: ${merge.stderr}');
+    }
+    return applyResult;
+  }
+
+  LiveEditApplyResult _withError(
+    final LiveEditApplyResult base,
+    final String error,
+  ) => LiveEditApplyResult(
+    applyPhase: base.applyPhase,
+    lastError: error,
+    bubbleId: base.bubbleId,
+    updatedBubbleRecord: base.updatedBubbleRecord?.copyWith(
+      status: LiveEditBubbleStatus.failed,
+      lastError: error,
+    ),
+    sessionId: base.sessionId,
+    commitNodeIds: base.commitNodeIds,
+    showAppliedPreviewChanges: base.showAppliedPreviewChanges,
+    pendingExecutionPlan: base.pendingExecutionPlan,
+    pendingProposalId: base.pendingProposalId,
+    resolvedBubbleIdsAdd: base.resolvedBubbleIdsAdd,
+  );
+
+  /// Returns a copy of [request] with [workingDirectory] swapped in.
+  LiveEditApplyDraftRequest _withWorkingDirectory(
+    final LiveEditApplyDraftRequest request,
+    final String workingDirectory,
+  ) => LiveEditApplyDraftRequest(
+    sessionId: request.sessionId,
+    bubbleId: request.bubbleId,
+    instructionText: request.instructionText,
+    primarySelection: request.primarySelection,
+    selectedWidgets: request.selectedWidgets,
+    sourceTargets: request.sourceTargets,
+    applyMode: request.applyMode,
+    backendId: request.backendId,
+    inferenceConfig: request.inferenceConfig,
+    workingDirectory: workingDirectory,
+    approve: request.approve,
+    onEvent: request.onEvent,
+  );
 
   String? _extractError(final Map<String, Object?> response) {
     final error = response['error'];

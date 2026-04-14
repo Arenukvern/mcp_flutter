@@ -252,6 +252,7 @@ abstract class LiveEditDraftChange with _$LiveEditDraftChange {
       toJson: _draftTargetContextToJson,
     )
     final DraftTargetContext? targetContext,
+    @Default(<String, Object?>{}) final Map<String, Object?> meta,
   }) = _LiveEditDraftChange;
 
   factory LiveEditDraftChange.fromJson(final Map<String, Object?> json) =>
@@ -1805,4 +1806,91 @@ final class LiveEditProtocolV2Compatibility {
       if (selection.source != null) 'source': selection.source!.toJson(),
     },
   );
+}
+
+/// Handle describing an allocated git worktree for a Live Edit bubble.
+///
+/// Produced by [LiveEditWorktreeService.allocate]. The handle is the only
+/// safe reference the caller should use when merging back or abandoning the
+/// worktree; `worktreePath` is checked against the service's allocation
+/// registry before any destructive `git worktree remove` runs.
+@Freezed(fromJson: true, toJson: true)
+abstract class LiveEditWorktreeHandle with _$LiveEditWorktreeHandle {
+  const factory LiveEditWorktreeHandle({
+    required final String bubbleId,
+    required final String branch,
+    required final String worktreePath,
+  }) = _LiveEditWorktreeHandle;
+
+  factory LiveEditWorktreeHandle.fromJson(final Map<String, Object?> json) =>
+      _$LiveEditWorktreeHandleFromJson(json);
+}
+
+/// Outcome of merging a bubble's worktree branch back into the main working
+/// directory. `clean` = fast-forward / no-ff without conflicts. `conflict`
+/// carries the paths reported by `git merge` (one per line of the
+/// `UU`/`AA`/`DD` status). `failed` is anything else (transport, non-merge
+/// error) and preserves the stderr text for diagnostics.
+@Freezed(fromJson: true, toJson: true)
+abstract class LiveEditMergeResult with _$LiveEditMergeResult {
+  const factory LiveEditMergeResult.clean() = LiveEditMergeResultClean;
+
+  const factory LiveEditMergeResult.conflict({
+    @Default(<String>[]) final List<String> files,
+  }) = LiveEditMergeResultConflict;
+
+  const factory LiveEditMergeResult.failed({required final String stderr}) =
+      LiveEditMergeResultFailed;
+
+  factory LiveEditMergeResult.fromJson(final Map<String, Object?> json) =>
+      _$LiveEditMergeResultFromJson(json);
+}
+
+/// Lifecycle status of an in-flight AI bubble run.
+///
+/// Multiple bubbles may execute agents concurrently. [running] denotes an
+/// active run with no overlapping target path, [blockedOnOverlap] means the
+/// bubble is queued because another running bubble owns an overlapping
+/// [LiveEditInFlightRecord.targetPath]. [completed] and [failed] are terminal
+/// states carried briefly until the orchestrator unregisters the record.
+enum LiveEditInFlightStatus {
+  running('running'),
+  blockedOnOverlap('blocked_on_overlap'),
+  completed('completed'),
+  failed('failed');
+
+  const LiveEditInFlightStatus(this.wireName);
+
+  final String wireName;
+
+  static LiveEditInFlightStatus fromWire(final Object? value) {
+    final normalized = '$value'.trim().toLowerCase();
+    return LiveEditInFlightStatus.values.firstWhere(
+      (final status) => status.wireName == normalized,
+      orElse: () => LiveEditInFlightStatus.running,
+    );
+  }
+}
+
+/// Snapshot of a single in-flight bubble run.
+///
+/// [targetPath] is the logical widget-subtree path (e.g. source file or widget
+/// id chain) the orchestrator considers "owned" by this run. Overlap detection
+/// uses prefix matching in either direction. [filePaths] lists the workspace
+/// files the run expects to touch (advisory — used by selectors/UI). [meta]
+/// carries free-form bookkeeping such as
+/// `{'collidesWith': <bubbleId>}` when status is [LiveEditInFlightStatus.blockedOnOverlap].
+@Freezed(fromJson: true, toJson: true)
+abstract class LiveEditInFlightRecord with _$LiveEditInFlightRecord {
+  const factory LiveEditInFlightRecord({
+    required final String bubbleId,
+    final String? targetPath,
+    @Default(<String>[]) final List<String> filePaths,
+    @Default(LiveEditInFlightStatus.running)
+    final LiveEditInFlightStatus status,
+    @Default(<String, Object?>{}) final Map<String, Object?> meta,
+  }) = _LiveEditInFlightRecord;
+
+  factory LiveEditInFlightRecord.fromJson(final Map<String, Object?> json) =>
+      _$LiveEditInFlightRecordFromJson(json);
 }

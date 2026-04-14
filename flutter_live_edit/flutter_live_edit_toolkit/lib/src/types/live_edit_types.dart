@@ -152,6 +152,7 @@ final class LiveEditBubbleRecord {
     this.debugTimeline = const <LiveEditTimelineEntry>[],
     this.debugPromptText,
     this.bubbleDragOffset = Offset.zero,
+    this.claudeSessionId,
   });
 
   final LiveEditBubbleId bubbleId;
@@ -173,6 +174,11 @@ final class LiveEditBubbleRecord {
   final List<LiveEditTimelineEntry> debugTimeline;
   final String? debugPromptText;
   final Offset bubbleDragOffset;
+
+  /// Persistent Claude Code session id (v4 UUID) reused across `resolve()`
+  /// calls on the same bubble so conversations survive re-runs. `null` until
+  /// the first Claude-backed run on this bubble has created one.
+  final String? claudeSessionId;
 
   bool get hasPendingApply =>
       status != LiveEditBubbleStatus.applied &&
@@ -203,6 +209,7 @@ final class LiveEditBubbleRecord {
     final List<LiveEditTimelineEntry>? debugTimeline,
     final Object? debugPromptText = _unsetValue,
     final Offset? bubbleDragOffset,
+    final Object? claudeSessionId = _unsetValue,
   }) => LiveEditBubbleRecord(
     bubbleId: bubbleId,
     targetDomain: targetDomain,
@@ -231,6 +238,9 @@ final class LiveEditBubbleRecord {
         ? this.debugPromptText
         : debugPromptText as String?,
     bubbleDragOffset: bubbleDragOffset ?? this.bubbleDragOffset,
+    claudeSessionId: identical(claudeSessionId, _unsetValue)
+        ? this.claudeSessionId
+        : claudeSessionId as String?,
   );
 }
 

@@ -36,6 +36,7 @@ class ClaudeCodeInferenceClient
     this.maxTimeoutRetries = 0,
     this.maxTransientRetries = 1,
     this.killGracePeriod = const Duration(milliseconds: 300),
+    this.enableSessionPersistence = false,
   }) : assert(maxOutputBytes > 0),
        assert(maxAttempts > 0),
        assert(maxTimeoutRetries >= 0),
@@ -62,6 +63,12 @@ class ClaudeCodeInferenceClient
   final int maxTimeoutRetries;
   final int maxTransientRetries;
   final Duration killGracePeriod;
+
+  /// When `false` (Option-A default) each invocation passes
+  /// `--no-session-persistence` so Claude Code doesn't write a session file
+  /// per run. Option B flips this on and threads `--session-id`/`--resume`
+  /// so bubbles become stateful conversations.
+  final bool enableSessionPersistence;
 
   @override
   String get id => 'claude_code';
@@ -347,7 +354,7 @@ class ClaudeCodeInferenceClient
       'binary_path': binaryPath,
       'attempt_count': attempts.length,
       'execution_timeout_ms': executionTimeout.inMilliseconds,
-      'permission_mode': permissionMode,
+      'permission_mode': _resolvePermissionMode(request) ?? permissionMode,
       'attempts': attempts.map((final run) => run.toSummary()).toList(),
       if (_hasText(model)) 'model': model,
       if (_hasText(reasoningEffort)) 'reasoning_effort': reasoningEffort,
@@ -440,16 +447,57 @@ class ClaudeCodeInferenceClient
     final reasoningEffort = _resolveReasoningEffort(request);
     final schemaJson = jsonEncode(request.outputSchema);
 
+    final mcpConfigPath = _metadataString(
+      request,
+      'claudeMcpConfigPath',
+    );
+    final newSessionId = _metadataString(request, 'claudeSessionId');
+    final resumeSessionId = _metadataString(
+      request,
+      'claudeResumeSessionId',
+    );
+    if (newSessionId != null && resumeSessionId != null) {
+      throw ArgumentError(
+        'claudeSessionId and claudeResumeSessionId are mutually exclusive.',
+      );
+    }
+    if (newSessionId != null && !_isValidUuidV4(newSessionId)) {
+      throw ArgumentError(
+        'claudeSessionId must be a v4 UUID string, got "$newSessionId".',
+      );
+    }
+    if (resumeSessionId != null && !_isValidUuidV4(resumeSessionId)) {
+      throw ArgumentError(
+        'claudeResumeSessionId must be a v4 UUID string, '
+        'got "$resumeSessionId".',
+      );
+    }
+    final permissionOverride = _resolvePermissionMode(request);
+    final effectivePermissionMode = permissionOverride ?? permissionMode;
+    final sessionPersistence =
+        enableSessionPersistence ||
+        mcpConfigPath != null ||
+        newSessionId != null ||
+        resumeSessionId != null;
+
     final args = <String>[
       '-p',
+      if (!sessionPersistence) '--no-session-persistence',
       '--output-format',
       'json',
       '--json-schema',
       schemaJson,
       '--permission-mode',
-      permissionMode,
+      effectivePermissionMode,
       '--add-dir',
       request.workingDirectory,
+      if (mcpConfigPath != null) ...<String>[
+        '--mcp-config',
+        mcpConfigPath,
+        '--strict-mcp-config',
+      ],
+      if (newSessionId != null) ...<String>['--session-id', newSessionId],
+      if (resumeSessionId != null) ...<String>['--resume', resumeSessionId],
       if (_hasText(model)) ...<String>['--model', model!],
       if (_hasText(reasoningEffort)) ...<String>['--effort', reasoningEffort!],
       ...extraArgs,
@@ -645,6 +693,41 @@ class ClaudeCodeInferenceClient
       'middle' => 'medium',
       _ => trimmed,
     };
+  }
+
+  static const Set<String> _validPermissionModes = <String>{
+    'acceptEdits',
+    'plan',
+    'bypassPermissions',
+    'default',
+    'dontAsk',
+    'auto',
+  };
+
+  static final RegExp _uuidV4Pattern = RegExp(
+    r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-'
+    r'[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$',
+  );
+
+  bool _isValidUuidV4(final String value) => _uuidV4Pattern.hasMatch(value);
+
+  String? _metadataString(final InferenceRequest request, final String key) {
+    final raw = request.metadata[key];
+    if (raw == null) return null;
+    final value = '$raw'.trim();
+    return value.isEmpty ? null : value;
+  }
+
+  String? _resolvePermissionMode(final InferenceRequest request) {
+    final override = _metadataString(request, 'claudePermissionMode');
+    if (override == null) return null;
+    if (!_validPermissionModes.contains(override)) {
+      throw ArgumentError(
+        'Invalid claudePermissionMode "$override"; '
+        'expected one of ${_validPermissionModes.toList()..sort()}.',
+      );
+    }
+    return override;
   }
 
   bool _isTransientFailure(final _ClaudeRunResult result) {

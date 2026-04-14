@@ -1074,7 +1074,7 @@ final class LiveEditCommandExecutor {
     required final String? fallbackSessionId,
   }) async {
     final sessionId = _firstNonEmpty(fallbackSessionId, request.sessionId);
-    final bounds = request.selection?.bounds;
+    final bounds = request.primarySelection?.bounds;
     if (!hasText(sessionId) || bounds == null) {
       return null;
     }
@@ -1100,7 +1100,7 @@ final class LiveEditCommandExecutor {
         final reason = _stringOrNull(data['reason']);
         final selection = _decodeSelection(data['selection']);
         final matched = _matchesRequestedLiveEditSelection(
-          requested: request.selection,
+          requested: request.primarySelection,
           actual: selection,
           hit: hit,
         );

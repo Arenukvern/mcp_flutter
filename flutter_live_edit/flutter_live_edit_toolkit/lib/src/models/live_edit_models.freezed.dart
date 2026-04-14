@@ -578,12 +578,12 @@ $LiveEditDraftChangeCopyWith<LiveEditDraftChange> get copyWith => _$LiveEditDraf
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is LiveEditDraftChange&&(identical(other.nodeId, nodeId) || other.nodeId == nodeId)&&(identical(other.propertyId, propertyId) || other.propertyId == propertyId)&&const DeepCollectionEquality().equals(other.targetValue, targetValue)&&(identical(other.previewMode, previewMode) || other.previewMode == previewMode)&&(identical(other.confidence, confidence) || other.confidence == confidence)&&(identical(other.intentText, intentText) || other.intentText == intentText)&&const DeepCollectionEquality().equals(other.targetContext, targetContext)&&const DeepCollectionEquality().equals(other.meta, meta));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LiveEditDraftChange&&(identical(other.nodeId, nodeId) || other.nodeId == nodeId)&&(identical(other.propertyId, propertyId) || other.propertyId == propertyId)&&const DeepCollectionEquality().equals(other.targetValue, targetValue)&&(identical(other.previewMode, previewMode) || other.previewMode == previewMode)&&(identical(other.confidence, confidence) || other.confidence == confidence)&&(identical(other.intentText, intentText) || other.intentText == intentText)&&(identical(other.targetContext, targetContext) || other.targetContext == targetContext)&&const DeepCollectionEquality().equals(other.meta, meta));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,nodeId,propertyId,const DeepCollectionEquality().hash(targetValue),previewMode,confidence,intentText,const DeepCollectionEquality().hash(targetContext),const DeepCollectionEquality().hash(meta));
+int get hashCode => Object.hash(runtimeType,nodeId,propertyId,const DeepCollectionEquality().hash(targetValue),previewMode,confidence,intentText,targetContext,const DeepCollectionEquality().hash(meta));
 
 @override
 String toString() {
@@ -796,12 +796,12 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _LiveEditDraftChange&&(identical(other.nodeId, nodeId) || other.nodeId == nodeId)&&(identical(other.propertyId, propertyId) || other.propertyId == propertyId)&&const DeepCollectionEquality().equals(other.targetValue, targetValue)&&(identical(other.previewMode, previewMode) || other.previewMode == previewMode)&&(identical(other.confidence, confidence) || other.confidence == confidence)&&(identical(other.intentText, intentText) || other.intentText == intentText)&&const DeepCollectionEquality().equals(other.targetContext, targetContext)&&const DeepCollectionEquality().equals(other._meta, _meta));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _LiveEditDraftChange&&(identical(other.nodeId, nodeId) || other.nodeId == nodeId)&&(identical(other.propertyId, propertyId) || other.propertyId == propertyId)&&const DeepCollectionEquality().equals(other.targetValue, targetValue)&&(identical(other.previewMode, previewMode) || other.previewMode == previewMode)&&(identical(other.confidence, confidence) || other.confidence == confidence)&&(identical(other.intentText, intentText) || other.intentText == intentText)&&(identical(other.targetContext, targetContext) || other.targetContext == targetContext)&&const DeepCollectionEquality().equals(other._meta, _meta));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,nodeId,propertyId,const DeepCollectionEquality().hash(targetValue),previewMode,confidence,intentText,const DeepCollectionEquality().hash(targetContext),const DeepCollectionEquality().hash(_meta));
+int get hashCode => Object.hash(runtimeType,nodeId,propertyId,const DeepCollectionEquality().hash(targetValue),previewMode,confidence,intentText,targetContext,const DeepCollectionEquality().hash(_meta));
 
 @override
 String toString() {
@@ -2024,7 +2024,7 @@ as Map<String, Object?>,
 /// @nodoc
 mixin _$LiveEditResolutionRequest {
 
- String get sessionId; String get workingDirectory; String? get bubbleId; String? get instructionText; LiveEditSelection? get primarySelection; List<LiveEditSelection> get selectedWidgets; List<LiveEditSourceTarget> get sourceTargets; LiveEditApplyMode get applyMode; LiveEditSelection? get selection; String? get backendId; LiveEditInferenceConfig? get inferenceConfig; String? get intentText;@JsonKey(fromJson: _parseFlowSelectionIntent, toJson: _flowSelectionIntentToJson) FlowSelectionIntent? get selectionIntent;@JsonKey(fromJson: _parseAgentContextEnvelope, toJson: _agentContextEnvelopeToJson) AgentContextEnvelope? get contextEnvelope; Map<String, Object?> get evidence; Map<String, Object?> get meta;
+ String get sessionId; String get workingDirectory; String? get bubbleId; String? get instructionText; LiveEditSelection? get primarySelection; List<LiveEditSelection> get selectedWidgets; List<LiveEditSourceTarget> get sourceTargets; LiveEditApplyMode get applyMode; String? get backendId; LiveEditInferenceConfig? get inferenceConfig;@JsonKey(fromJson: _parseFlowSelectionIntent, toJson: _flowSelectionIntentToJson) FlowSelectionIntent? get selectionIntent;@JsonKey(fromJson: _parseAgentContextEnvelope, toJson: _agentContextEnvelopeToJson) AgentContextEnvelope? get contextEnvelope;
 /// Create a copy of LiveEditResolutionRequest
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -2035,16 +2035,16 @@ $LiveEditResolutionRequestCopyWith<LiveEditResolutionRequest> get copyWith => _$
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is LiveEditResolutionRequest&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.workingDirectory, workingDirectory) || other.workingDirectory == workingDirectory)&&(identical(other.bubbleId, bubbleId) || other.bubbleId == bubbleId)&&(identical(other.instructionText, instructionText) || other.instructionText == instructionText)&&(identical(other.primarySelection, primarySelection) || other.primarySelection == primarySelection)&&const DeepCollectionEquality().equals(other.selectedWidgets, selectedWidgets)&&const DeepCollectionEquality().equals(other.sourceTargets, sourceTargets)&&(identical(other.applyMode, applyMode) || other.applyMode == applyMode)&&(identical(other.selection, selection) || other.selection == selection)&&(identical(other.backendId, backendId) || other.backendId == backendId)&&(identical(other.inferenceConfig, inferenceConfig) || other.inferenceConfig == inferenceConfig)&&(identical(other.intentText, intentText) || other.intentText == intentText)&&const DeepCollectionEquality().equals(other.selectionIntent, selectionIntent)&&const DeepCollectionEquality().equals(other.contextEnvelope, contextEnvelope)&&const DeepCollectionEquality().equals(other.evidence, evidence)&&const DeepCollectionEquality().equals(other.meta, meta));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LiveEditResolutionRequest&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.workingDirectory, workingDirectory) || other.workingDirectory == workingDirectory)&&(identical(other.bubbleId, bubbleId) || other.bubbleId == bubbleId)&&(identical(other.instructionText, instructionText) || other.instructionText == instructionText)&&(identical(other.primarySelection, primarySelection) || other.primarySelection == primarySelection)&&const DeepCollectionEquality().equals(other.selectedWidgets, selectedWidgets)&&const DeepCollectionEquality().equals(other.sourceTargets, sourceTargets)&&(identical(other.applyMode, applyMode) || other.applyMode == applyMode)&&(identical(other.backendId, backendId) || other.backendId == backendId)&&(identical(other.inferenceConfig, inferenceConfig) || other.inferenceConfig == inferenceConfig)&&(identical(other.selectionIntent, selectionIntent) || other.selectionIntent == selectionIntent)&&(identical(other.contextEnvelope, contextEnvelope) || other.contextEnvelope == contextEnvelope));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,sessionId,workingDirectory,bubbleId,instructionText,primarySelection,const DeepCollectionEquality().hash(selectedWidgets),const DeepCollectionEquality().hash(sourceTargets),applyMode,selection,backendId,inferenceConfig,intentText,const DeepCollectionEquality().hash(selectionIntent),const DeepCollectionEquality().hash(contextEnvelope),const DeepCollectionEquality().hash(evidence),const DeepCollectionEquality().hash(meta));
+int get hashCode => Object.hash(runtimeType,sessionId,workingDirectory,bubbleId,instructionText,primarySelection,const DeepCollectionEquality().hash(selectedWidgets),const DeepCollectionEquality().hash(sourceTargets),applyMode,backendId,inferenceConfig,selectionIntent,contextEnvelope);
 
 @override
 String toString() {
-  return 'LiveEditResolutionRequest(sessionId: $sessionId, workingDirectory: $workingDirectory, bubbleId: $bubbleId, instructionText: $instructionText, primarySelection: $primarySelection, selectedWidgets: $selectedWidgets, sourceTargets: $sourceTargets, applyMode: $applyMode, selection: $selection, backendId: $backendId, inferenceConfig: $inferenceConfig, intentText: $intentText, selectionIntent: $selectionIntent, contextEnvelope: $contextEnvelope, evidence: $evidence, meta: $meta)';
+  return 'LiveEditResolutionRequest(sessionId: $sessionId, workingDirectory: $workingDirectory, bubbleId: $bubbleId, instructionText: $instructionText, primarySelection: $primarySelection, selectedWidgets: $selectedWidgets, sourceTargets: $sourceTargets, applyMode: $applyMode, backendId: $backendId, inferenceConfig: $inferenceConfig, selectionIntent: $selectionIntent, contextEnvelope: $contextEnvelope)';
 }
 
 
@@ -2055,11 +2055,11 @@ abstract mixin class $LiveEditResolutionRequestCopyWith<$Res>  {
   factory $LiveEditResolutionRequestCopyWith(LiveEditResolutionRequest value, $Res Function(LiveEditResolutionRequest) _then) = _$LiveEditResolutionRequestCopyWithImpl;
 @useResult
 $Res call({
- String sessionId, String workingDirectory, String? bubbleId, String? instructionText, LiveEditSelection? primarySelection, List<LiveEditSelection> selectedWidgets, List<LiveEditSourceTarget> sourceTargets, LiveEditApplyMode applyMode, LiveEditSelection? selection, String? backendId, LiveEditInferenceConfig? inferenceConfig, String? intentText,@JsonKey(fromJson: _parseFlowSelectionIntent, toJson: _flowSelectionIntentToJson) FlowSelectionIntent? selectionIntent,@JsonKey(fromJson: _parseAgentContextEnvelope, toJson: _agentContextEnvelopeToJson) AgentContextEnvelope? contextEnvelope, Map<String, Object?> evidence, Map<String, Object?> meta
+ String sessionId, String workingDirectory, String? bubbleId, String? instructionText, LiveEditSelection? primarySelection, List<LiveEditSelection> selectedWidgets, List<LiveEditSourceTarget> sourceTargets, LiveEditApplyMode applyMode, String? backendId, LiveEditInferenceConfig? inferenceConfig,@JsonKey(fromJson: _parseFlowSelectionIntent, toJson: _flowSelectionIntentToJson) FlowSelectionIntent? selectionIntent,@JsonKey(fromJson: _parseAgentContextEnvelope, toJson: _agentContextEnvelopeToJson) AgentContextEnvelope? contextEnvelope
 });
 
 
-$LiveEditSelectionCopyWith<$Res>? get primarySelection;$LiveEditSelectionCopyWith<$Res>? get selection;$LiveEditInferenceConfigCopyWith<$Res>? get inferenceConfig;
+$LiveEditSelectionCopyWith<$Res>? get primarySelection;$LiveEditInferenceConfigCopyWith<$Res>? get inferenceConfig;
 
 }
 /// @nodoc
@@ -2072,7 +2072,7 @@ class _$LiveEditResolutionRequestCopyWithImpl<$Res>
 
 /// Create a copy of LiveEditResolutionRequest
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? sessionId = null,Object? workingDirectory = null,Object? bubbleId = freezed,Object? instructionText = freezed,Object? primarySelection = freezed,Object? selectedWidgets = null,Object? sourceTargets = null,Object? applyMode = null,Object? selection = freezed,Object? backendId = freezed,Object? inferenceConfig = freezed,Object? intentText = freezed,Object? selectionIntent = freezed,Object? contextEnvelope = freezed,Object? evidence = null,Object? meta = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? sessionId = null,Object? workingDirectory = null,Object? bubbleId = freezed,Object? instructionText = freezed,Object? primarySelection = freezed,Object? selectedWidgets = null,Object? sourceTargets = null,Object? applyMode = null,Object? backendId = freezed,Object? inferenceConfig = freezed,Object? selectionIntent = freezed,Object? contextEnvelope = freezed,}) {
   return _then(_self.copyWith(
 sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
 as String,workingDirectory: null == workingDirectory ? _self.workingDirectory : workingDirectory // ignore: cast_nullable_to_non_nullable
@@ -2082,15 +2082,11 @@ as String?,primarySelection: freezed == primarySelection ? _self.primarySelectio
 as LiveEditSelection?,selectedWidgets: null == selectedWidgets ? _self.selectedWidgets : selectedWidgets // ignore: cast_nullable_to_non_nullable
 as List<LiveEditSelection>,sourceTargets: null == sourceTargets ? _self.sourceTargets : sourceTargets // ignore: cast_nullable_to_non_nullable
 as List<LiveEditSourceTarget>,applyMode: null == applyMode ? _self.applyMode : applyMode // ignore: cast_nullable_to_non_nullable
-as LiveEditApplyMode,selection: freezed == selection ? _self.selection : selection // ignore: cast_nullable_to_non_nullable
-as LiveEditSelection?,backendId: freezed == backendId ? _self.backendId : backendId // ignore: cast_nullable_to_non_nullable
+as LiveEditApplyMode,backendId: freezed == backendId ? _self.backendId : backendId // ignore: cast_nullable_to_non_nullable
 as String?,inferenceConfig: freezed == inferenceConfig ? _self.inferenceConfig : inferenceConfig // ignore: cast_nullable_to_non_nullable
-as LiveEditInferenceConfig?,intentText: freezed == intentText ? _self.intentText : intentText // ignore: cast_nullable_to_non_nullable
-as String?,selectionIntent: freezed == selectionIntent ? _self.selectionIntent : selectionIntent // ignore: cast_nullable_to_non_nullable
+as LiveEditInferenceConfig?,selectionIntent: freezed == selectionIntent ? _self.selectionIntent : selectionIntent // ignore: cast_nullable_to_non_nullable
 as FlowSelectionIntent?,contextEnvelope: freezed == contextEnvelope ? _self.contextEnvelope : contextEnvelope // ignore: cast_nullable_to_non_nullable
-as AgentContextEnvelope?,evidence: null == evidence ? _self.evidence : evidence // ignore: cast_nullable_to_non_nullable
-as Map<String, Object?>,meta: null == meta ? _self.meta : meta // ignore: cast_nullable_to_non_nullable
-as Map<String, Object?>,
+as AgentContextEnvelope?,
   ));
 }
 /// Create a copy of LiveEditResolutionRequest
@@ -2104,18 +2100,6 @@ $LiveEditSelectionCopyWith<$Res>? get primarySelection {
 
   return $LiveEditSelectionCopyWith<$Res>(_self.primarySelection!, (value) {
     return _then(_self.copyWith(primarySelection: value));
-  });
-}/// Create a copy of LiveEditResolutionRequest
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$LiveEditSelectionCopyWith<$Res>? get selection {
-    if (_self.selection == null) {
-    return null;
-  }
-
-  return $LiveEditSelectionCopyWith<$Res>(_self.selection!, (value) {
-    return _then(_self.copyWith(selection: value));
   });
 }/// Create a copy of LiveEditResolutionRequest
 /// with the given fields replaced by the non-null parameter values.
@@ -2211,10 +2195,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String sessionId,  String workingDirectory,  String? bubbleId,  String? instructionText,  LiveEditSelection? primarySelection,  List<LiveEditSelection> selectedWidgets,  List<LiveEditSourceTarget> sourceTargets,  LiveEditApplyMode applyMode,  LiveEditSelection? selection,  String? backendId,  LiveEditInferenceConfig? inferenceConfig,  String? intentText, @JsonKey(fromJson: _parseFlowSelectionIntent, toJson: _flowSelectionIntentToJson)  FlowSelectionIntent? selectionIntent, @JsonKey(fromJson: _parseAgentContextEnvelope, toJson: _agentContextEnvelopeToJson)  AgentContextEnvelope? contextEnvelope,  Map<String, Object?> evidence,  Map<String, Object?> meta)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String sessionId,  String workingDirectory,  String? bubbleId,  String? instructionText,  LiveEditSelection? primarySelection,  List<LiveEditSelection> selectedWidgets,  List<LiveEditSourceTarget> sourceTargets,  LiveEditApplyMode applyMode,  String? backendId,  LiveEditInferenceConfig? inferenceConfig, @JsonKey(fromJson: _parseFlowSelectionIntent, toJson: _flowSelectionIntentToJson)  FlowSelectionIntent? selectionIntent, @JsonKey(fromJson: _parseAgentContextEnvelope, toJson: _agentContextEnvelopeToJson)  AgentContextEnvelope? contextEnvelope)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _LiveEditResolutionRequest() when $default != null:
-return $default(_that.sessionId,_that.workingDirectory,_that.bubbleId,_that.instructionText,_that.primarySelection,_that.selectedWidgets,_that.sourceTargets,_that.applyMode,_that.selection,_that.backendId,_that.inferenceConfig,_that.intentText,_that.selectionIntent,_that.contextEnvelope,_that.evidence,_that.meta);case _:
+return $default(_that.sessionId,_that.workingDirectory,_that.bubbleId,_that.instructionText,_that.primarySelection,_that.selectedWidgets,_that.sourceTargets,_that.applyMode,_that.backendId,_that.inferenceConfig,_that.selectionIntent,_that.contextEnvelope);case _:
   return orElse();
 
 }
@@ -2232,10 +2216,10 @@ return $default(_that.sessionId,_that.workingDirectory,_that.bubbleId,_that.inst
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String sessionId,  String workingDirectory,  String? bubbleId,  String? instructionText,  LiveEditSelection? primarySelection,  List<LiveEditSelection> selectedWidgets,  List<LiveEditSourceTarget> sourceTargets,  LiveEditApplyMode applyMode,  LiveEditSelection? selection,  String? backendId,  LiveEditInferenceConfig? inferenceConfig,  String? intentText, @JsonKey(fromJson: _parseFlowSelectionIntent, toJson: _flowSelectionIntentToJson)  FlowSelectionIntent? selectionIntent, @JsonKey(fromJson: _parseAgentContextEnvelope, toJson: _agentContextEnvelopeToJson)  AgentContextEnvelope? contextEnvelope,  Map<String, Object?> evidence,  Map<String, Object?> meta)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String sessionId,  String workingDirectory,  String? bubbleId,  String? instructionText,  LiveEditSelection? primarySelection,  List<LiveEditSelection> selectedWidgets,  List<LiveEditSourceTarget> sourceTargets,  LiveEditApplyMode applyMode,  String? backendId,  LiveEditInferenceConfig? inferenceConfig, @JsonKey(fromJson: _parseFlowSelectionIntent, toJson: _flowSelectionIntentToJson)  FlowSelectionIntent? selectionIntent, @JsonKey(fromJson: _parseAgentContextEnvelope, toJson: _agentContextEnvelopeToJson)  AgentContextEnvelope? contextEnvelope)  $default,) {final _that = this;
 switch (_that) {
 case _LiveEditResolutionRequest():
-return $default(_that.sessionId,_that.workingDirectory,_that.bubbleId,_that.instructionText,_that.primarySelection,_that.selectedWidgets,_that.sourceTargets,_that.applyMode,_that.selection,_that.backendId,_that.inferenceConfig,_that.intentText,_that.selectionIntent,_that.contextEnvelope,_that.evidence,_that.meta);case _:
+return $default(_that.sessionId,_that.workingDirectory,_that.bubbleId,_that.instructionText,_that.primarySelection,_that.selectedWidgets,_that.sourceTargets,_that.applyMode,_that.backendId,_that.inferenceConfig,_that.selectionIntent,_that.contextEnvelope);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -2252,10 +2236,10 @@ return $default(_that.sessionId,_that.workingDirectory,_that.bubbleId,_that.inst
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String sessionId,  String workingDirectory,  String? bubbleId,  String? instructionText,  LiveEditSelection? primarySelection,  List<LiveEditSelection> selectedWidgets,  List<LiveEditSourceTarget> sourceTargets,  LiveEditApplyMode applyMode,  LiveEditSelection? selection,  String? backendId,  LiveEditInferenceConfig? inferenceConfig,  String? intentText, @JsonKey(fromJson: _parseFlowSelectionIntent, toJson: _flowSelectionIntentToJson)  FlowSelectionIntent? selectionIntent, @JsonKey(fromJson: _parseAgentContextEnvelope, toJson: _agentContextEnvelopeToJson)  AgentContextEnvelope? contextEnvelope,  Map<String, Object?> evidence,  Map<String, Object?> meta)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String sessionId,  String workingDirectory,  String? bubbleId,  String? instructionText,  LiveEditSelection? primarySelection,  List<LiveEditSelection> selectedWidgets,  List<LiveEditSourceTarget> sourceTargets,  LiveEditApplyMode applyMode,  String? backendId,  LiveEditInferenceConfig? inferenceConfig, @JsonKey(fromJson: _parseFlowSelectionIntent, toJson: _flowSelectionIntentToJson)  FlowSelectionIntent? selectionIntent, @JsonKey(fromJson: _parseAgentContextEnvelope, toJson: _agentContextEnvelopeToJson)  AgentContextEnvelope? contextEnvelope)?  $default,) {final _that = this;
 switch (_that) {
 case _LiveEditResolutionRequest() when $default != null:
-return $default(_that.sessionId,_that.workingDirectory,_that.bubbleId,_that.instructionText,_that.primarySelection,_that.selectedWidgets,_that.sourceTargets,_that.applyMode,_that.selection,_that.backendId,_that.inferenceConfig,_that.intentText,_that.selectionIntent,_that.contextEnvelope,_that.evidence,_that.meta);case _:
+return $default(_that.sessionId,_that.workingDirectory,_that.bubbleId,_that.instructionText,_that.primarySelection,_that.selectedWidgets,_that.sourceTargets,_that.applyMode,_that.backendId,_that.inferenceConfig,_that.selectionIntent,_that.contextEnvelope);case _:
   return null;
 
 }
@@ -2267,7 +2251,7 @@ return $default(_that.sessionId,_that.workingDirectory,_that.bubbleId,_that.inst
 
 
 class _LiveEditResolutionRequest extends LiveEditResolutionRequest {
-  const _LiveEditResolutionRequest({required this.sessionId, required this.workingDirectory, this.bubbleId, this.instructionText, this.primarySelection, final  List<LiveEditSelection> selectedWidgets = const <LiveEditSelection>[], final  List<LiveEditSourceTarget> sourceTargets = const <LiveEditSourceTarget>[], this.applyMode = LiveEditApplyMode.singleBubble, this.selection, this.backendId, this.inferenceConfig, this.intentText, @JsonKey(fromJson: _parseFlowSelectionIntent, toJson: _flowSelectionIntentToJson) this.selectionIntent, @JsonKey(fromJson: _parseAgentContextEnvelope, toJson: _agentContextEnvelopeToJson) this.contextEnvelope, final  Map<String, Object?> evidence = const <String, Object?>{}, final  Map<String, Object?> meta = const <String, Object?>{}}): _selectedWidgets = selectedWidgets,_sourceTargets = sourceTargets,_evidence = evidence,_meta = meta,super._();
+  const _LiveEditResolutionRequest({required this.sessionId, required this.workingDirectory, this.bubbleId, this.instructionText, this.primarySelection, final  List<LiveEditSelection> selectedWidgets = const <LiveEditSelection>[], final  List<LiveEditSourceTarget> sourceTargets = const <LiveEditSourceTarget>[], this.applyMode = LiveEditApplyMode.singleBubble, this.backendId, this.inferenceConfig, @JsonKey(fromJson: _parseFlowSelectionIntent, toJson: _flowSelectionIntentToJson) this.selectionIntent, @JsonKey(fromJson: _parseAgentContextEnvelope, toJson: _agentContextEnvelopeToJson) this.contextEnvelope}): _selectedWidgets = selectedWidgets,_sourceTargets = sourceTargets,super._();
   
 
 @override final  String sessionId;
@@ -2290,26 +2274,10 @@ class _LiveEditResolutionRequest extends LiveEditResolutionRequest {
 }
 
 @override@JsonKey() final  LiveEditApplyMode applyMode;
-@override final  LiveEditSelection? selection;
 @override final  String? backendId;
 @override final  LiveEditInferenceConfig? inferenceConfig;
-@override final  String? intentText;
 @override@JsonKey(fromJson: _parseFlowSelectionIntent, toJson: _flowSelectionIntentToJson) final  FlowSelectionIntent? selectionIntent;
 @override@JsonKey(fromJson: _parseAgentContextEnvelope, toJson: _agentContextEnvelopeToJson) final  AgentContextEnvelope? contextEnvelope;
- final  Map<String, Object?> _evidence;
-@override@JsonKey() Map<String, Object?> get evidence {
-  if (_evidence is EqualUnmodifiableMapView) return _evidence;
-  // ignore: implicit_dynamic_type
-  return EqualUnmodifiableMapView(_evidence);
-}
-
- final  Map<String, Object?> _meta;
-@override@JsonKey() Map<String, Object?> get meta {
-  if (_meta is EqualUnmodifiableMapView) return _meta;
-  // ignore: implicit_dynamic_type
-  return EqualUnmodifiableMapView(_meta);
-}
-
 
 /// Create a copy of LiveEditResolutionRequest
 /// with the given fields replaced by the non-null parameter values.
@@ -2321,16 +2289,16 @@ _$LiveEditResolutionRequestCopyWith<_LiveEditResolutionRequest> get copyWith => 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _LiveEditResolutionRequest&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.workingDirectory, workingDirectory) || other.workingDirectory == workingDirectory)&&(identical(other.bubbleId, bubbleId) || other.bubbleId == bubbleId)&&(identical(other.instructionText, instructionText) || other.instructionText == instructionText)&&(identical(other.primarySelection, primarySelection) || other.primarySelection == primarySelection)&&const DeepCollectionEquality().equals(other._selectedWidgets, _selectedWidgets)&&const DeepCollectionEquality().equals(other._sourceTargets, _sourceTargets)&&(identical(other.applyMode, applyMode) || other.applyMode == applyMode)&&(identical(other.selection, selection) || other.selection == selection)&&(identical(other.backendId, backendId) || other.backendId == backendId)&&(identical(other.inferenceConfig, inferenceConfig) || other.inferenceConfig == inferenceConfig)&&(identical(other.intentText, intentText) || other.intentText == intentText)&&const DeepCollectionEquality().equals(other.selectionIntent, selectionIntent)&&const DeepCollectionEquality().equals(other.contextEnvelope, contextEnvelope)&&const DeepCollectionEquality().equals(other._evidence, _evidence)&&const DeepCollectionEquality().equals(other._meta, _meta));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _LiveEditResolutionRequest&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.workingDirectory, workingDirectory) || other.workingDirectory == workingDirectory)&&(identical(other.bubbleId, bubbleId) || other.bubbleId == bubbleId)&&(identical(other.instructionText, instructionText) || other.instructionText == instructionText)&&(identical(other.primarySelection, primarySelection) || other.primarySelection == primarySelection)&&const DeepCollectionEquality().equals(other._selectedWidgets, _selectedWidgets)&&const DeepCollectionEquality().equals(other._sourceTargets, _sourceTargets)&&(identical(other.applyMode, applyMode) || other.applyMode == applyMode)&&(identical(other.backendId, backendId) || other.backendId == backendId)&&(identical(other.inferenceConfig, inferenceConfig) || other.inferenceConfig == inferenceConfig)&&(identical(other.selectionIntent, selectionIntent) || other.selectionIntent == selectionIntent)&&(identical(other.contextEnvelope, contextEnvelope) || other.contextEnvelope == contextEnvelope));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,sessionId,workingDirectory,bubbleId,instructionText,primarySelection,const DeepCollectionEquality().hash(_selectedWidgets),const DeepCollectionEquality().hash(_sourceTargets),applyMode,selection,backendId,inferenceConfig,intentText,const DeepCollectionEquality().hash(selectionIntent),const DeepCollectionEquality().hash(contextEnvelope),const DeepCollectionEquality().hash(_evidence),const DeepCollectionEquality().hash(_meta));
+int get hashCode => Object.hash(runtimeType,sessionId,workingDirectory,bubbleId,instructionText,primarySelection,const DeepCollectionEquality().hash(_selectedWidgets),const DeepCollectionEquality().hash(_sourceTargets),applyMode,backendId,inferenceConfig,selectionIntent,contextEnvelope);
 
 @override
 String toString() {
-  return 'LiveEditResolutionRequest(sessionId: $sessionId, workingDirectory: $workingDirectory, bubbleId: $bubbleId, instructionText: $instructionText, primarySelection: $primarySelection, selectedWidgets: $selectedWidgets, sourceTargets: $sourceTargets, applyMode: $applyMode, selection: $selection, backendId: $backendId, inferenceConfig: $inferenceConfig, intentText: $intentText, selectionIntent: $selectionIntent, contextEnvelope: $contextEnvelope, evidence: $evidence, meta: $meta)';
+  return 'LiveEditResolutionRequest(sessionId: $sessionId, workingDirectory: $workingDirectory, bubbleId: $bubbleId, instructionText: $instructionText, primarySelection: $primarySelection, selectedWidgets: $selectedWidgets, sourceTargets: $sourceTargets, applyMode: $applyMode, backendId: $backendId, inferenceConfig: $inferenceConfig, selectionIntent: $selectionIntent, contextEnvelope: $contextEnvelope)';
 }
 
 
@@ -2341,11 +2309,11 @@ abstract mixin class _$LiveEditResolutionRequestCopyWith<$Res> implements $LiveE
   factory _$LiveEditResolutionRequestCopyWith(_LiveEditResolutionRequest value, $Res Function(_LiveEditResolutionRequest) _then) = __$LiveEditResolutionRequestCopyWithImpl;
 @override @useResult
 $Res call({
- String sessionId, String workingDirectory, String? bubbleId, String? instructionText, LiveEditSelection? primarySelection, List<LiveEditSelection> selectedWidgets, List<LiveEditSourceTarget> sourceTargets, LiveEditApplyMode applyMode, LiveEditSelection? selection, String? backendId, LiveEditInferenceConfig? inferenceConfig, String? intentText,@JsonKey(fromJson: _parseFlowSelectionIntent, toJson: _flowSelectionIntentToJson) FlowSelectionIntent? selectionIntent,@JsonKey(fromJson: _parseAgentContextEnvelope, toJson: _agentContextEnvelopeToJson) AgentContextEnvelope? contextEnvelope, Map<String, Object?> evidence, Map<String, Object?> meta
+ String sessionId, String workingDirectory, String? bubbleId, String? instructionText, LiveEditSelection? primarySelection, List<LiveEditSelection> selectedWidgets, List<LiveEditSourceTarget> sourceTargets, LiveEditApplyMode applyMode, String? backendId, LiveEditInferenceConfig? inferenceConfig,@JsonKey(fromJson: _parseFlowSelectionIntent, toJson: _flowSelectionIntentToJson) FlowSelectionIntent? selectionIntent,@JsonKey(fromJson: _parseAgentContextEnvelope, toJson: _agentContextEnvelopeToJson) AgentContextEnvelope? contextEnvelope
 });
 
 
-@override $LiveEditSelectionCopyWith<$Res>? get primarySelection;@override $LiveEditSelectionCopyWith<$Res>? get selection;@override $LiveEditInferenceConfigCopyWith<$Res>? get inferenceConfig;
+@override $LiveEditSelectionCopyWith<$Res>? get primarySelection;@override $LiveEditInferenceConfigCopyWith<$Res>? get inferenceConfig;
 
 }
 /// @nodoc
@@ -2358,7 +2326,7 @@ class __$LiveEditResolutionRequestCopyWithImpl<$Res>
 
 /// Create a copy of LiveEditResolutionRequest
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? sessionId = null,Object? workingDirectory = null,Object? bubbleId = freezed,Object? instructionText = freezed,Object? primarySelection = freezed,Object? selectedWidgets = null,Object? sourceTargets = null,Object? applyMode = null,Object? selection = freezed,Object? backendId = freezed,Object? inferenceConfig = freezed,Object? intentText = freezed,Object? selectionIntent = freezed,Object? contextEnvelope = freezed,Object? evidence = null,Object? meta = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? sessionId = null,Object? workingDirectory = null,Object? bubbleId = freezed,Object? instructionText = freezed,Object? primarySelection = freezed,Object? selectedWidgets = null,Object? sourceTargets = null,Object? applyMode = null,Object? backendId = freezed,Object? inferenceConfig = freezed,Object? selectionIntent = freezed,Object? contextEnvelope = freezed,}) {
   return _then(_LiveEditResolutionRequest(
 sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
 as String,workingDirectory: null == workingDirectory ? _self.workingDirectory : workingDirectory // ignore: cast_nullable_to_non_nullable
@@ -2368,15 +2336,11 @@ as String?,primarySelection: freezed == primarySelection ? _self.primarySelectio
 as LiveEditSelection?,selectedWidgets: null == selectedWidgets ? _self._selectedWidgets : selectedWidgets // ignore: cast_nullable_to_non_nullable
 as List<LiveEditSelection>,sourceTargets: null == sourceTargets ? _self._sourceTargets : sourceTargets // ignore: cast_nullable_to_non_nullable
 as List<LiveEditSourceTarget>,applyMode: null == applyMode ? _self.applyMode : applyMode // ignore: cast_nullable_to_non_nullable
-as LiveEditApplyMode,selection: freezed == selection ? _self.selection : selection // ignore: cast_nullable_to_non_nullable
-as LiveEditSelection?,backendId: freezed == backendId ? _self.backendId : backendId // ignore: cast_nullable_to_non_nullable
+as LiveEditApplyMode,backendId: freezed == backendId ? _self.backendId : backendId // ignore: cast_nullable_to_non_nullable
 as String?,inferenceConfig: freezed == inferenceConfig ? _self.inferenceConfig : inferenceConfig // ignore: cast_nullable_to_non_nullable
-as LiveEditInferenceConfig?,intentText: freezed == intentText ? _self.intentText : intentText // ignore: cast_nullable_to_non_nullable
-as String?,selectionIntent: freezed == selectionIntent ? _self.selectionIntent : selectionIntent // ignore: cast_nullable_to_non_nullable
+as LiveEditInferenceConfig?,selectionIntent: freezed == selectionIntent ? _self.selectionIntent : selectionIntent // ignore: cast_nullable_to_non_nullable
 as FlowSelectionIntent?,contextEnvelope: freezed == contextEnvelope ? _self.contextEnvelope : contextEnvelope // ignore: cast_nullable_to_non_nullable
-as AgentContextEnvelope?,evidence: null == evidence ? _self._evidence : evidence // ignore: cast_nullable_to_non_nullable
-as Map<String, Object?>,meta: null == meta ? _self._meta : meta // ignore: cast_nullable_to_non_nullable
-as Map<String, Object?>,
+as AgentContextEnvelope?,
   ));
 }
 
@@ -2391,18 +2355,6 @@ $LiveEditSelectionCopyWith<$Res>? get primarySelection {
 
   return $LiveEditSelectionCopyWith<$Res>(_self.primarySelection!, (value) {
     return _then(_self.copyWith(primarySelection: value));
-  });
-}/// Create a copy of LiveEditResolutionRequest
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$LiveEditSelectionCopyWith<$Res>? get selection {
-    if (_self.selection == null) {
-    return null;
-  }
-
-  return $LiveEditSelectionCopyWith<$Res>(_self.selection!, (value) {
-    return _then(_self.copyWith(selection: value));
   });
 }/// Create a copy of LiveEditResolutionRequest
 /// with the given fields replaced by the non-null parameter values.
@@ -4327,6 +4279,955 @@ as String,line: freezed == line ? _self.line : line // ignore: cast_nullable_to_
 as int?,column: freezed == column ? _self.column : column // ignore: cast_nullable_to_non_nullable
 as int?,sourceHint: freezed == sourceHint ? _self.sourceHint : sourceHint // ignore: cast_nullable_to_non_nullable
 as String?,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$LiveEditWorktreeHandle {
+
+ String get bubbleId; String get branch; String get worktreePath;
+/// Create a copy of LiveEditWorktreeHandle
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$LiveEditWorktreeHandleCopyWith<LiveEditWorktreeHandle> get copyWith => _$LiveEditWorktreeHandleCopyWithImpl<LiveEditWorktreeHandle>(this as LiveEditWorktreeHandle, _$identity);
+
+  /// Serializes this LiveEditWorktreeHandle to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LiveEditWorktreeHandle&&(identical(other.bubbleId, bubbleId) || other.bubbleId == bubbleId)&&(identical(other.branch, branch) || other.branch == branch)&&(identical(other.worktreePath, worktreePath) || other.worktreePath == worktreePath));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,bubbleId,branch,worktreePath);
+
+@override
+String toString() {
+  return 'LiveEditWorktreeHandle(bubbleId: $bubbleId, branch: $branch, worktreePath: $worktreePath)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $LiveEditWorktreeHandleCopyWith<$Res>  {
+  factory $LiveEditWorktreeHandleCopyWith(LiveEditWorktreeHandle value, $Res Function(LiveEditWorktreeHandle) _then) = _$LiveEditWorktreeHandleCopyWithImpl;
+@useResult
+$Res call({
+ String bubbleId, String branch, String worktreePath
+});
+
+
+
+
+}
+/// @nodoc
+class _$LiveEditWorktreeHandleCopyWithImpl<$Res>
+    implements $LiveEditWorktreeHandleCopyWith<$Res> {
+  _$LiveEditWorktreeHandleCopyWithImpl(this._self, this._then);
+
+  final LiveEditWorktreeHandle _self;
+  final $Res Function(LiveEditWorktreeHandle) _then;
+
+/// Create a copy of LiveEditWorktreeHandle
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? bubbleId = null,Object? branch = null,Object? worktreePath = null,}) {
+  return _then(_self.copyWith(
+bubbleId: null == bubbleId ? _self.bubbleId : bubbleId // ignore: cast_nullable_to_non_nullable
+as String,branch: null == branch ? _self.branch : branch // ignore: cast_nullable_to_non_nullable
+as String,worktreePath: null == worktreePath ? _self.worktreePath : worktreePath // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [LiveEditWorktreeHandle].
+extension LiveEditWorktreeHandlePatterns on LiveEditWorktreeHandle {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _LiveEditWorktreeHandle value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _LiveEditWorktreeHandle() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _LiveEditWorktreeHandle value)  $default,){
+final _that = this;
+switch (_that) {
+case _LiveEditWorktreeHandle():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _LiveEditWorktreeHandle value)?  $default,){
+final _that = this;
+switch (_that) {
+case _LiveEditWorktreeHandle() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String bubbleId,  String branch,  String worktreePath)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _LiveEditWorktreeHandle() when $default != null:
+return $default(_that.bubbleId,_that.branch,_that.worktreePath);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String bubbleId,  String branch,  String worktreePath)  $default,) {final _that = this;
+switch (_that) {
+case _LiveEditWorktreeHandle():
+return $default(_that.bubbleId,_that.branch,_that.worktreePath);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String bubbleId,  String branch,  String worktreePath)?  $default,) {final _that = this;
+switch (_that) {
+case _LiveEditWorktreeHandle() when $default != null:
+return $default(_that.bubbleId,_that.branch,_that.worktreePath);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _LiveEditWorktreeHandle implements LiveEditWorktreeHandle {
+  const _LiveEditWorktreeHandle({required this.bubbleId, required this.branch, required this.worktreePath});
+  factory _LiveEditWorktreeHandle.fromJson(Map<String, dynamic> json) => _$LiveEditWorktreeHandleFromJson(json);
+
+@override final  String bubbleId;
+@override final  String branch;
+@override final  String worktreePath;
+
+/// Create a copy of LiveEditWorktreeHandle
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$LiveEditWorktreeHandleCopyWith<_LiveEditWorktreeHandle> get copyWith => __$LiveEditWorktreeHandleCopyWithImpl<_LiveEditWorktreeHandle>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$LiveEditWorktreeHandleToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _LiveEditWorktreeHandle&&(identical(other.bubbleId, bubbleId) || other.bubbleId == bubbleId)&&(identical(other.branch, branch) || other.branch == branch)&&(identical(other.worktreePath, worktreePath) || other.worktreePath == worktreePath));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,bubbleId,branch,worktreePath);
+
+@override
+String toString() {
+  return 'LiveEditWorktreeHandle(bubbleId: $bubbleId, branch: $branch, worktreePath: $worktreePath)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$LiveEditWorktreeHandleCopyWith<$Res> implements $LiveEditWorktreeHandleCopyWith<$Res> {
+  factory _$LiveEditWorktreeHandleCopyWith(_LiveEditWorktreeHandle value, $Res Function(_LiveEditWorktreeHandle) _then) = __$LiveEditWorktreeHandleCopyWithImpl;
+@override @useResult
+$Res call({
+ String bubbleId, String branch, String worktreePath
+});
+
+
+
+
+}
+/// @nodoc
+class __$LiveEditWorktreeHandleCopyWithImpl<$Res>
+    implements _$LiveEditWorktreeHandleCopyWith<$Res> {
+  __$LiveEditWorktreeHandleCopyWithImpl(this._self, this._then);
+
+  final _LiveEditWorktreeHandle _self;
+  final $Res Function(_LiveEditWorktreeHandle) _then;
+
+/// Create a copy of LiveEditWorktreeHandle
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? bubbleId = null,Object? branch = null,Object? worktreePath = null,}) {
+  return _then(_LiveEditWorktreeHandle(
+bubbleId: null == bubbleId ? _self.bubbleId : bubbleId // ignore: cast_nullable_to_non_nullable
+as String,branch: null == branch ? _self.branch : branch // ignore: cast_nullable_to_non_nullable
+as String,worktreePath: null == worktreePath ? _self.worktreePath : worktreePath // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+LiveEditMergeResult _$LiveEditMergeResultFromJson(
+  Map<String, dynamic> json
+) {
+        switch (json['runtimeType']) {
+                  case 'clean':
+          return LiveEditMergeResultClean.fromJson(
+            json
+          );
+                case 'conflict':
+          return LiveEditMergeResultConflict.fromJson(
+            json
+          );
+                case 'failed':
+          return LiveEditMergeResultFailed.fromJson(
+            json
+          );
+        
+          default:
+            throw CheckedFromJsonException(
+  json,
+  'runtimeType',
+  'LiveEditMergeResult',
+  'Invalid union type "${json['runtimeType']}"!'
+);
+        }
+      
+}
+
+/// @nodoc
+mixin _$LiveEditMergeResult {
+
+
+
+  /// Serializes this LiveEditMergeResult to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LiveEditMergeResult);
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'LiveEditMergeResult()';
+}
+
+
+}
+
+/// @nodoc
+class $LiveEditMergeResultCopyWith<$Res>  {
+$LiveEditMergeResultCopyWith(LiveEditMergeResult _, $Res Function(LiveEditMergeResult) __);
+}
+
+
+/// Adds pattern-matching-related methods to [LiveEditMergeResult].
+extension LiveEditMergeResultPatterns on LiveEditMergeResult {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( LiveEditMergeResultClean value)?  clean,TResult Function( LiveEditMergeResultConflict value)?  conflict,TResult Function( LiveEditMergeResultFailed value)?  failed,required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case LiveEditMergeResultClean() when clean != null:
+return clean(_that);case LiveEditMergeResultConflict() when conflict != null:
+return conflict(_that);case LiveEditMergeResultFailed() when failed != null:
+return failed(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( LiveEditMergeResultClean value)  clean,required TResult Function( LiveEditMergeResultConflict value)  conflict,required TResult Function( LiveEditMergeResultFailed value)  failed,}){
+final _that = this;
+switch (_that) {
+case LiveEditMergeResultClean():
+return clean(_that);case LiveEditMergeResultConflict():
+return conflict(_that);case LiveEditMergeResultFailed():
+return failed(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( LiveEditMergeResultClean value)?  clean,TResult? Function( LiveEditMergeResultConflict value)?  conflict,TResult? Function( LiveEditMergeResultFailed value)?  failed,}){
+final _that = this;
+switch (_that) {
+case LiveEditMergeResultClean() when clean != null:
+return clean(_that);case LiveEditMergeResultConflict() when conflict != null:
+return conflict(_that);case LiveEditMergeResultFailed() when failed != null:
+return failed(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  clean,TResult Function( List<String> files)?  conflict,TResult Function( String stderr)?  failed,required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case LiveEditMergeResultClean() when clean != null:
+return clean();case LiveEditMergeResultConflict() when conflict != null:
+return conflict(_that.files);case LiveEditMergeResultFailed() when failed != null:
+return failed(_that.stderr);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  clean,required TResult Function( List<String> files)  conflict,required TResult Function( String stderr)  failed,}) {final _that = this;
+switch (_that) {
+case LiveEditMergeResultClean():
+return clean();case LiveEditMergeResultConflict():
+return conflict(_that.files);case LiveEditMergeResultFailed():
+return failed(_that.stderr);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  clean,TResult? Function( List<String> files)?  conflict,TResult? Function( String stderr)?  failed,}) {final _that = this;
+switch (_that) {
+case LiveEditMergeResultClean() when clean != null:
+return clean();case LiveEditMergeResultConflict() when conflict != null:
+return conflict(_that.files);case LiveEditMergeResultFailed() when failed != null:
+return failed(_that.stderr);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class LiveEditMergeResultClean implements LiveEditMergeResult {
+  const LiveEditMergeResultClean({final  String? $type}): $type = $type ?? 'clean';
+  factory LiveEditMergeResultClean.fromJson(Map<String, dynamic> json) => _$LiveEditMergeResultCleanFromJson(json);
+
+
+
+@JsonKey(name: 'runtimeType')
+final String $type;
+
+
+
+@override
+Map<String, dynamic> toJson() {
+  return _$LiveEditMergeResultCleanToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LiveEditMergeResultClean);
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'LiveEditMergeResult.clean()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
+@JsonSerializable()
+
+class LiveEditMergeResultConflict implements LiveEditMergeResult {
+  const LiveEditMergeResultConflict({final  List<String> files = const <String>[], final  String? $type}): _files = files,$type = $type ?? 'conflict';
+  factory LiveEditMergeResultConflict.fromJson(Map<String, dynamic> json) => _$LiveEditMergeResultConflictFromJson(json);
+
+ final  List<String> _files;
+@JsonKey() List<String> get files {
+  if (_files is EqualUnmodifiableListView) return _files;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_files);
+}
+
+
+@JsonKey(name: 'runtimeType')
+final String $type;
+
+
+/// Create a copy of LiveEditMergeResult
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$LiveEditMergeResultConflictCopyWith<LiveEditMergeResultConflict> get copyWith => _$LiveEditMergeResultConflictCopyWithImpl<LiveEditMergeResultConflict>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$LiveEditMergeResultConflictToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LiveEditMergeResultConflict&&const DeepCollectionEquality().equals(other._files, _files));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_files));
+
+@override
+String toString() {
+  return 'LiveEditMergeResult.conflict(files: $files)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $LiveEditMergeResultConflictCopyWith<$Res> implements $LiveEditMergeResultCopyWith<$Res> {
+  factory $LiveEditMergeResultConflictCopyWith(LiveEditMergeResultConflict value, $Res Function(LiveEditMergeResultConflict) _then) = _$LiveEditMergeResultConflictCopyWithImpl;
+@useResult
+$Res call({
+ List<String> files
+});
+
+
+
+
+}
+/// @nodoc
+class _$LiveEditMergeResultConflictCopyWithImpl<$Res>
+    implements $LiveEditMergeResultConflictCopyWith<$Res> {
+  _$LiveEditMergeResultConflictCopyWithImpl(this._self, this._then);
+
+  final LiveEditMergeResultConflict _self;
+  final $Res Function(LiveEditMergeResultConflict) _then;
+
+/// Create a copy of LiveEditMergeResult
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? files = null,}) {
+  return _then(LiveEditMergeResultConflict(
+files: null == files ? _self._files : files // ignore: cast_nullable_to_non_nullable
+as List<String>,
+  ));
+}
+
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class LiveEditMergeResultFailed implements LiveEditMergeResult {
+  const LiveEditMergeResultFailed({required this.stderr, final  String? $type}): $type = $type ?? 'failed';
+  factory LiveEditMergeResultFailed.fromJson(Map<String, dynamic> json) => _$LiveEditMergeResultFailedFromJson(json);
+
+ final  String stderr;
+
+@JsonKey(name: 'runtimeType')
+final String $type;
+
+
+/// Create a copy of LiveEditMergeResult
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$LiveEditMergeResultFailedCopyWith<LiveEditMergeResultFailed> get copyWith => _$LiveEditMergeResultFailedCopyWithImpl<LiveEditMergeResultFailed>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$LiveEditMergeResultFailedToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LiveEditMergeResultFailed&&(identical(other.stderr, stderr) || other.stderr == stderr));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,stderr);
+
+@override
+String toString() {
+  return 'LiveEditMergeResult.failed(stderr: $stderr)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $LiveEditMergeResultFailedCopyWith<$Res> implements $LiveEditMergeResultCopyWith<$Res> {
+  factory $LiveEditMergeResultFailedCopyWith(LiveEditMergeResultFailed value, $Res Function(LiveEditMergeResultFailed) _then) = _$LiveEditMergeResultFailedCopyWithImpl;
+@useResult
+$Res call({
+ String stderr
+});
+
+
+
+
+}
+/// @nodoc
+class _$LiveEditMergeResultFailedCopyWithImpl<$Res>
+    implements $LiveEditMergeResultFailedCopyWith<$Res> {
+  _$LiveEditMergeResultFailedCopyWithImpl(this._self, this._then);
+
+  final LiveEditMergeResultFailed _self;
+  final $Res Function(LiveEditMergeResultFailed) _then;
+
+/// Create a copy of LiveEditMergeResult
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? stderr = null,}) {
+  return _then(LiveEditMergeResultFailed(
+stderr: null == stderr ? _self.stderr : stderr // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$LiveEditInFlightRecord {
+
+ String get bubbleId; String? get targetPath; List<String> get filePaths; LiveEditInFlightStatus get status; Map<String, Object?> get meta;
+/// Create a copy of LiveEditInFlightRecord
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$LiveEditInFlightRecordCopyWith<LiveEditInFlightRecord> get copyWith => _$LiveEditInFlightRecordCopyWithImpl<LiveEditInFlightRecord>(this as LiveEditInFlightRecord, _$identity);
+
+  /// Serializes this LiveEditInFlightRecord to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LiveEditInFlightRecord&&(identical(other.bubbleId, bubbleId) || other.bubbleId == bubbleId)&&(identical(other.targetPath, targetPath) || other.targetPath == targetPath)&&const DeepCollectionEquality().equals(other.filePaths, filePaths)&&(identical(other.status, status) || other.status == status)&&const DeepCollectionEquality().equals(other.meta, meta));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,bubbleId,targetPath,const DeepCollectionEquality().hash(filePaths),status,const DeepCollectionEquality().hash(meta));
+
+@override
+String toString() {
+  return 'LiveEditInFlightRecord(bubbleId: $bubbleId, targetPath: $targetPath, filePaths: $filePaths, status: $status, meta: $meta)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $LiveEditInFlightRecordCopyWith<$Res>  {
+  factory $LiveEditInFlightRecordCopyWith(LiveEditInFlightRecord value, $Res Function(LiveEditInFlightRecord) _then) = _$LiveEditInFlightRecordCopyWithImpl;
+@useResult
+$Res call({
+ String bubbleId, String? targetPath, List<String> filePaths, LiveEditInFlightStatus status, Map<String, Object?> meta
+});
+
+
+
+
+}
+/// @nodoc
+class _$LiveEditInFlightRecordCopyWithImpl<$Res>
+    implements $LiveEditInFlightRecordCopyWith<$Res> {
+  _$LiveEditInFlightRecordCopyWithImpl(this._self, this._then);
+
+  final LiveEditInFlightRecord _self;
+  final $Res Function(LiveEditInFlightRecord) _then;
+
+/// Create a copy of LiveEditInFlightRecord
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? bubbleId = null,Object? targetPath = freezed,Object? filePaths = null,Object? status = null,Object? meta = null,}) {
+  return _then(_self.copyWith(
+bubbleId: null == bubbleId ? _self.bubbleId : bubbleId // ignore: cast_nullable_to_non_nullable
+as String,targetPath: freezed == targetPath ? _self.targetPath : targetPath // ignore: cast_nullable_to_non_nullable
+as String?,filePaths: null == filePaths ? _self.filePaths : filePaths // ignore: cast_nullable_to_non_nullable
+as List<String>,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as LiveEditInFlightStatus,meta: null == meta ? _self.meta : meta // ignore: cast_nullable_to_non_nullable
+as Map<String, Object?>,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [LiveEditInFlightRecord].
+extension LiveEditInFlightRecordPatterns on LiveEditInFlightRecord {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _LiveEditInFlightRecord value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _LiveEditInFlightRecord() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _LiveEditInFlightRecord value)  $default,){
+final _that = this;
+switch (_that) {
+case _LiveEditInFlightRecord():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _LiveEditInFlightRecord value)?  $default,){
+final _that = this;
+switch (_that) {
+case _LiveEditInFlightRecord() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String bubbleId,  String? targetPath,  List<String> filePaths,  LiveEditInFlightStatus status,  Map<String, Object?> meta)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _LiveEditInFlightRecord() when $default != null:
+return $default(_that.bubbleId,_that.targetPath,_that.filePaths,_that.status,_that.meta);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String bubbleId,  String? targetPath,  List<String> filePaths,  LiveEditInFlightStatus status,  Map<String, Object?> meta)  $default,) {final _that = this;
+switch (_that) {
+case _LiveEditInFlightRecord():
+return $default(_that.bubbleId,_that.targetPath,_that.filePaths,_that.status,_that.meta);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String bubbleId,  String? targetPath,  List<String> filePaths,  LiveEditInFlightStatus status,  Map<String, Object?> meta)?  $default,) {final _that = this;
+switch (_that) {
+case _LiveEditInFlightRecord() when $default != null:
+return $default(_that.bubbleId,_that.targetPath,_that.filePaths,_that.status,_that.meta);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _LiveEditInFlightRecord implements LiveEditInFlightRecord {
+  const _LiveEditInFlightRecord({required this.bubbleId, this.targetPath, final  List<String> filePaths = const <String>[], this.status = LiveEditInFlightStatus.running, final  Map<String, Object?> meta = const <String, Object?>{}}): _filePaths = filePaths,_meta = meta;
+  factory _LiveEditInFlightRecord.fromJson(Map<String, dynamic> json) => _$LiveEditInFlightRecordFromJson(json);
+
+@override final  String bubbleId;
+@override final  String? targetPath;
+ final  List<String> _filePaths;
+@override@JsonKey() List<String> get filePaths {
+  if (_filePaths is EqualUnmodifiableListView) return _filePaths;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_filePaths);
+}
+
+@override@JsonKey() final  LiveEditInFlightStatus status;
+ final  Map<String, Object?> _meta;
+@override@JsonKey() Map<String, Object?> get meta {
+  if (_meta is EqualUnmodifiableMapView) return _meta;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableMapView(_meta);
+}
+
+
+/// Create a copy of LiveEditInFlightRecord
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$LiveEditInFlightRecordCopyWith<_LiveEditInFlightRecord> get copyWith => __$LiveEditInFlightRecordCopyWithImpl<_LiveEditInFlightRecord>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$LiveEditInFlightRecordToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _LiveEditInFlightRecord&&(identical(other.bubbleId, bubbleId) || other.bubbleId == bubbleId)&&(identical(other.targetPath, targetPath) || other.targetPath == targetPath)&&const DeepCollectionEquality().equals(other._filePaths, _filePaths)&&(identical(other.status, status) || other.status == status)&&const DeepCollectionEquality().equals(other._meta, _meta));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,bubbleId,targetPath,const DeepCollectionEquality().hash(_filePaths),status,const DeepCollectionEquality().hash(_meta));
+
+@override
+String toString() {
+  return 'LiveEditInFlightRecord(bubbleId: $bubbleId, targetPath: $targetPath, filePaths: $filePaths, status: $status, meta: $meta)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$LiveEditInFlightRecordCopyWith<$Res> implements $LiveEditInFlightRecordCopyWith<$Res> {
+  factory _$LiveEditInFlightRecordCopyWith(_LiveEditInFlightRecord value, $Res Function(_LiveEditInFlightRecord) _then) = __$LiveEditInFlightRecordCopyWithImpl;
+@override @useResult
+$Res call({
+ String bubbleId, String? targetPath, List<String> filePaths, LiveEditInFlightStatus status, Map<String, Object?> meta
+});
+
+
+
+
+}
+/// @nodoc
+class __$LiveEditInFlightRecordCopyWithImpl<$Res>
+    implements _$LiveEditInFlightRecordCopyWith<$Res> {
+  __$LiveEditInFlightRecordCopyWithImpl(this._self, this._then);
+
+  final _LiveEditInFlightRecord _self;
+  final $Res Function(_LiveEditInFlightRecord) _then;
+
+/// Create a copy of LiveEditInFlightRecord
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? bubbleId = null,Object? targetPath = freezed,Object? filePaths = null,Object? status = null,Object? meta = null,}) {
+  return _then(_LiveEditInFlightRecord(
+bubbleId: null == bubbleId ? _self.bubbleId : bubbleId // ignore: cast_nullable_to_non_nullable
+as String,targetPath: freezed == targetPath ? _self.targetPath : targetPath // ignore: cast_nullable_to_non_nullable
+as String?,filePaths: null == filePaths ? _self._filePaths : filePaths // ignore: cast_nullable_to_non_nullable
+as List<String>,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as LiveEditInFlightStatus,meta: null == meta ? _self._meta : meta // ignore: cast_nullable_to_non_nullable
+as Map<String, Object?>,
   ));
 }
 

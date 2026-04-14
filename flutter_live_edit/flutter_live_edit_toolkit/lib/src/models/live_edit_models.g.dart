@@ -394,3 +394,85 @@ Map<String, dynamic> _$LiveEditSourceLocationToJson(
   'column': instance.column,
   'sourceHint': instance.sourceHint,
 };
+
+_LiveEditWorktreeHandle _$LiveEditWorktreeHandleFromJson(
+  Map<String, dynamic> json,
+) => _LiveEditWorktreeHandle(
+  bubbleId: json['bubbleId'] as String,
+  branch: json['branch'] as String,
+  worktreePath: json['worktreePath'] as String,
+);
+
+Map<String, dynamic> _$LiveEditWorktreeHandleToJson(
+  _LiveEditWorktreeHandle instance,
+) => <String, dynamic>{
+  'bubbleId': instance.bubbleId,
+  'branch': instance.branch,
+  'worktreePath': instance.worktreePath,
+};
+
+LiveEditMergeResultClean _$LiveEditMergeResultCleanFromJson(
+  Map<String, dynamic> json,
+) => LiveEditMergeResultClean($type: json['runtimeType'] as String?);
+
+Map<String, dynamic> _$LiveEditMergeResultCleanToJson(
+  LiveEditMergeResultClean instance,
+) => <String, dynamic>{'runtimeType': instance.$type};
+
+LiveEditMergeResultConflict _$LiveEditMergeResultConflictFromJson(
+  Map<String, dynamic> json,
+) => LiveEditMergeResultConflict(
+  files:
+      (json['files'] as List<dynamic>?)?.map((e) => e as String).toList() ??
+      const <String>[],
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$LiveEditMergeResultConflictToJson(
+  LiveEditMergeResultConflict instance,
+) => <String, dynamic>{'files': instance.files, 'runtimeType': instance.$type};
+
+LiveEditMergeResultFailed _$LiveEditMergeResultFailedFromJson(
+  Map<String, dynamic> json,
+) => LiveEditMergeResultFailed(
+  stderr: json['stderr'] as String,
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$LiveEditMergeResultFailedToJson(
+  LiveEditMergeResultFailed instance,
+) => <String, dynamic>{
+  'stderr': instance.stderr,
+  'runtimeType': instance.$type,
+};
+
+_LiveEditInFlightRecord _$LiveEditInFlightRecordFromJson(
+  Map<String, dynamic> json,
+) => _LiveEditInFlightRecord(
+  bubbleId: json['bubbleId'] as String,
+  targetPath: json['targetPath'] as String?,
+  filePaths:
+      (json['filePaths'] as List<dynamic>?)?.map((e) => e as String).toList() ??
+      const <String>[],
+  status:
+      $enumDecodeNullable(_$LiveEditInFlightStatusEnumMap, json['status']) ??
+      LiveEditInFlightStatus.running,
+  meta: json['meta'] as Map<String, dynamic>? ?? const <String, Object?>{},
+);
+
+Map<String, dynamic> _$LiveEditInFlightRecordToJson(
+  _LiveEditInFlightRecord instance,
+) => <String, dynamic>{
+  'bubbleId': instance.bubbleId,
+  'targetPath': instance.targetPath,
+  'filePaths': instance.filePaths,
+  'status': _$LiveEditInFlightStatusEnumMap[instance.status]!,
+  'meta': instance.meta,
+};
+
+const _$LiveEditInFlightStatusEnumMap = {
+  LiveEditInFlightStatus.running: 'running',
+  LiveEditInFlightStatus.blockedOnOverlap: 'blockedOnOverlap',
+  LiveEditInFlightStatus.completed: 'completed',
+  LiveEditInFlightStatus.failed: 'failed',
+};

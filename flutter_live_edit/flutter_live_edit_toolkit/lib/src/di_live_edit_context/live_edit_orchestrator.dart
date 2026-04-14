@@ -28,6 +28,7 @@ final class LiveEditOrchestrator {
     _flowGraphResource = LiveEditFlowGraphResource();
     _bubbleResource = LiveEditBubbleResource();
     _panelViewResource = LiveEditPanelViewResource();
+    _inFlightResource = LiveEditInFlightResource();
     final backends = List<LiveEditAgentBackend>.unmodifiable(availableBackends);
     final configByBackend = <String, LiveEditInferenceConfig>{};
     for (final backend in backends) {
@@ -51,6 +52,7 @@ final class LiveEditOrchestrator {
     _applyService = LiveEditApplyService(
       applyDraftDelegate: applyDraftDelegate,
     );
+    _worktreeService = LiveEditWorktreeService();
     _bubbleStateService = LiveEditBubbleStateService();
     _context = LiveEditContext(
       sessionResource: _sessionResource,
@@ -60,10 +62,13 @@ final class LiveEditOrchestrator {
       bubbleResource: _bubbleResource,
       panelViewResource: _panelViewResource,
       backendConfigResource: _backendConfigResource,
+      inFlightResource: _inFlightResource,
       sessionService: _sessionService,
       applyService: _applyService,
       bubbleStateService: _bubbleStateService,
       applyEventSink: _emitEventForBubble,
+      worktreeService: _worktreeService,
+      mainWorkingDirectory: workingDirectory,
     );
     _controller = LiveEditController(_context);
     LiveEditRuntime.contextAccessor = () => _context;
@@ -75,6 +80,7 @@ final class LiveEditOrchestrator {
       _bubbleResource,
       _panelViewResource,
       _backendConfigResource,
+      _inFlightResource,
     ]);
   }
 
@@ -85,9 +91,11 @@ final class LiveEditOrchestrator {
   late final LiveEditBubbleResource _bubbleResource;
   late final LiveEditPanelViewResource _panelViewResource;
   late final LiveEditBackendConfigResource _backendConfigResource;
+  late final LiveEditInFlightResource _inFlightResource;
   late final LiveEditBubbleStateService _bubbleStateService;
   late final LiveEditSessionService _sessionService;
   late final LiveEditApplyService _applyService;
+  late final LiveEditWorktreeService _worktreeService;
   late final LiveEditContext _context;
   late final LiveEditController _controller;
   late final LiveEditBatchNotifier _batchNotifier;
