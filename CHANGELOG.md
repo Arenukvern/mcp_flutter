@@ -53,6 +53,18 @@
   reveals content below), so the Tier 1 path succeeds on real Flutter
   scrollables at the top of their range.
 
+### Flutter Web interaction support
+
+- `tap_widget`, `long_press`, `enter_text`, `scroll`, `swipe`, and `drag`
+  now work on Flutter Web. Tier 1 (semantic actions) is unchanged; the
+  Tier 2 fallback dispatches real browser `PointerEvent`s / `WheelEvent`s
+  on `document.elementFromPoint` of the widget's cached global centre,
+  letting the browser's gesture arena and scroll physics handle the
+  gesture natively. Web success responses return `via: "web_pointer_events"`.
+  Implementation uses a conditional import (`web_pointer_dispatch_stub.dart`
+  vs. `web_pointer_dispatch_web.dart`) so `dart compile exe` of
+  `mcp_server_dart` stays clean of web-only dependencies.
+
 ## 3.0.0
 
 Strict hard-cut release across the monorepo.

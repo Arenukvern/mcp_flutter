@@ -4,12 +4,22 @@
 
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 import 'semantic_snapshot_service.dart';
+// Conditional import: resolves to the web implementation whenever
+// `dart.library.js_interop` is available (Flutter Web), and to the stub on
+// every other target — including Dart VM / mobile / desktop and, crucially,
+// `dart compile exe` builds of `mcp_server_dart` which depend on this
+// package. The stub is a pure Dart file with no web-only imports; the web
+// implementation is behind the conditional guard and never included on
+// non-web targets.
+import 'web_pointer_dispatch_stub.dart'
+    if (dart.library.js_interop) 'web_pointer_dispatch_web.dart';
 
 /// A service that drives the running Flutter app using a two-tier strategy:
 ///
@@ -165,6 +175,7 @@ mixin GestureInteractionService {
         await _dispatchTap(center);
         await _waitFrame();
         await Future<void>.delayed(const Duration(milliseconds: 100));
+        }
       }
       final focused = FocusManager.instance.primaryFocus;
       final context = focused?.context;
@@ -278,6 +289,21 @@ mixin GestureInteractionService {
     }
     final origin = start ?? _screenCenter();
     final scrollDelta = _scrollDelta(direction, distance);
+    if (kIsWeb) {
+      if (!WebPointerDispatch.available) {
+        return _webNotSupported(ref: ref, action: 'scroll_$direction');
+      }
+      await WebPointerDispatch.dispatchScroll(origin, scrollDelta);
+      return <String, Object?>{
+        'success': true,
+        'via': 'web_pointer_events',
+        'action': 'scroll',
+        'direction': direction,
+        'distance': distance,
+        'at': _offsetToMap(origin),
+        'scrollDelta': _offsetToMap(scrollDelta),
+      };
+    }
     await _dispatchScrollSignal(origin, scrollDelta);
     return <String, Object?>{
       'success': true,
@@ -385,6 +411,21 @@ mixin GestureInteractionService {
     }
 
     final end = start + _directionDelta(direction, distance);
+    if (kIsWeb) {
+      if (!WebPointerDispatch.available) {
+        return _webNotSupported(ref: ref, action: 'swipe');
+      }
+      await WebPointerDispatch.dispatchSwipe(start, end);
+      return <String, Object?>{
+        'success': true,
+        'via': 'web_pointer_events',
+        'action': 'swipe',
+        'direction': direction,
+        'distance': distance,
+        'from': _offsetToMap(start),
+        'to': _offsetToMap(end),
+      };
+    }
     await _dispatchSwipe(start, end);
     return <String, Object?>{
       'success': true,
@@ -409,6 +450,21 @@ mixin GestureInteractionService {
     final to = SemanticSnapshotService.resolveCenter(toRef);
     if (to == null) {
       return _refNotFound(toRef);
+    }
+    if (kIsWeb) {
+      if (!WebPointerDispatch.available) {
+        return _webNotSupported(ref: fromRef, action: 'drag');
+      }
+      await WebPointerDispatch.dispatchDrag(from, to, steps: 12);
+      return <String, Object?>{
+        'success': true,
+        'via': 'web_pointer_events',
+        'action': 'drag',
+        'fromRef': fromRef,
+        'toRef': toRef,
+        'from': _offsetToMap(from),
+        'to': _offsetToMap(to),
+      };
     }
     await _dispatchDrag(from, to, steps: 12);
     return <String, Object?>{
@@ -623,6 +679,48 @@ mixin GestureInteractionService {
         'x': o.dx.roundToDouble(),
         'y': o.dy.roundToDouble(),
       };
+
+  /// Structured failure envelope for gestures that can't be fulfilled on
+  /// Flutter Web because the platform requires browser-native dispatch and
+  /// the `WebPointerDispatch` implementation isn't available (either the
+  /// conditional import resolved to the stub or it wasn't bundled).
+  ///
+  /// Reachable in two cases:
+  ///   1. A Tier 2 dispatch path needs `WebPointerDispatch` but
+  ///      [WebPointerDispatch.available] is `false` — indicates a broken
+  ///      web build.
+  ///   2. An action with no Tier 1 equivalent (swipe, drag) or an action
+  ///      whose Tier 1 didn't match (no ref semantic action hit for
+  ///      scroll, no tap semantic action for tap, etc.) reached the web
+  ///      fallback gate.
+  static Map<String, Object?> _webNotSupported({
+    required final String? ref,
+    required final String action,
+  }) {
+    const baseHint =
+        'On Flutter Web, Tier 2 pointer-event synthesis is routed through '
+        'the browser PointerEvent / WheelEvent API. '
+        'If you are seeing this error, the web dispatcher was not '
+        'available at runtime. Call semantic_snapshot and pick a ref '
+        'whose "actions" array includes the action you need '
+        '(e.g. tap, scrollUp). If no widget exposes that action, wrap '
+        'the target with a Semantics widget that sets the appropriate '
+        'flag / callback.';
+    const swipeDragHint =
+        'swipe and drag have no Tier 1 semantic-action equivalent. '
+        'They are unavailable on web today unless the web pointer '
+        'dispatcher is bundled; use ref-scoped scroll or tap instead.';
+    final hint = (action == 'swipe' || action == 'drag')
+        ? swipeDragHint
+        : baseHint;
+    return <String, Object?>{
+      'success': false,
+      ?'ref': ref,
+      'action': action,
+      'error': 'web_not_supported',
+      'hint': hint,
+    };
+  }
 
   static Map<String, Object?> _refNotFound(final String ref) =>
       <String, Object?>{

@@ -103,6 +103,7 @@ flutter_mcp_cli exec --name hot_reload_and_capture \
 - **Widgets without semantics are invisible to the snapshot.** A raw `GestureDetector` without a `Semantics` wrapper won't appear. Reach it via `inspect_widget_at_point` + Tier 2 pointer events.
 - **Custom text input routes bypass the fallback.** Text fields that don't use `EditableText` (e.g. custom platform views) can't be filled via `userUpdateTextEditingValue`; expose `SemanticsAction.setText` or set the value directly with `evaluate_dart_expression`.
 - **Semantics tree is primed at `MCPToolkitBinding.initialize()` time** (debug mode only, negligible overhead). The first `semantic_snapshot` is synchronous; cold-path callers that skip the binding still work via an awaited frame.
+- **Flutter Web:** Tier 1 (semantic actions) runs unchanged. Tier 2 (pointer-event synthesis) on web is routed through the browser's native `PointerEvent` / `WheelEvent` API — dispatched on `document.elementFromPoint` at the target's cached global centre — instead of `GestureBinding.handlePointerEvent`. This lets `tap`, `long_press`, `swipe`, `drag`, and wheel-based `scroll` work naturally with the browser's gesture arena and scroll physics. Widgets that only listen to Flutter's synthetic `PointerDeviceKind.touch` events (rare) won't respond — wrap those with a `Semantics` node that exposes the appropriate action instead.
 
 ### CLI Parity Quick Check
 

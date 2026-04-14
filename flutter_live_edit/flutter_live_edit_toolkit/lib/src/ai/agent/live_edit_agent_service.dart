@@ -10,6 +10,7 @@ import 'package:xsoulspace_inference_core/xsoulspace_inference_core.dart';
 import 'package:xsoulspace_inference_cursor_agent/xsoulspace_inference_cursor_agent.dart';
 
 import '../../models/models.dart';
+import '../backend/claude_code_inference_client.dart';
 import 'live_edit_agent_plan.dart';
 import 'live_edit_agent_request_summary.dart';
 import 'live_edit_agent_utils.dart';
@@ -91,10 +92,17 @@ final class LiveEditAgentRegistry {
       executionTimeout: const Duration(minutes: 6),
       maxTimeoutRetries: 0,
     );
+    final claudeCodeClient = ClaudeCodeInferenceClient(
+      defaultModel: 'sonnet',
+      defaultReasoningEffort: 'medium',
+      executionTimeout: const Duration(minutes: 6),
+      maxTimeoutRetries: 0,
+    );
     return LiveEditAgentRegistry(
       clients: <String, InferenceClient>{
         'codex_exec': codexClient,
         'cursor_agent': cursorClient,
+        'claude_code': claudeCodeClient,
       },
       defaultBackendId: _kIsWeb ? null : Platform.environment['LIVE_EDIT_BACKEND'],
     );
@@ -197,6 +205,16 @@ final class LiveEditAgentRegistry {
             reasoningEffort: defaultReasoningEffort,
           ),
         ),
+      ClaudeCodeInferenceClient(
+        :final defaultModel,
+        :final defaultReasoningEffort,
+      ) =>
+        LiveEditCodexOptions.normalizeConfig(
+          LiveEditInferenceConfig(
+            model: defaultModel,
+            reasoningEffort: defaultReasoningEffort,
+          ),
+        ),
       _ => null,
     };
   }
@@ -245,6 +263,12 @@ final class LiveEditAgentRegistry {
           .toList(growable: false);
       meta['supportedReasoningEfforts'] =
           LiveEditCodexOptions.supportedReasoningEfforts;
+    } else if (backendId == 'claude_code') {
+      meta['supportedModels'] = LiveEditClaudeCodeOptions.supportedModels
+          .map((final model) => model.toJson())
+          .toList(growable: false);
+      meta['supportedReasoningEfforts'] =
+          LiveEditClaudeCodeOptions.supportedReasoningEfforts;
     }
     return LiveEditAgentBackend(
       id: backendId,
@@ -261,18 +285,22 @@ final class LiveEditAgentRegistry {
         'codex_exec' => 'OpenAI Codex CLI backend using `codex exec`.',
         'cursor_agent' =>
           'Cursor Agent CLI backend using `cursor-agent --print`.',
+        'claude_code' =>
+          'Anthropic Claude Code CLI backend using `claude --print`.',
         _ => 'Inference backend `$backendId`.',
       };
 
   static String _backendLabel(final String backendId) => switch (backendId) {
     'codex_exec' => 'Codex',
     'cursor_agent' => 'Cursor',
+    'claude_code' => 'Claude Code',
     _ => backendId,
   };
 
   static String? _binaryName(final InferenceClient client) => switch (client) {
     CodexExecInferenceClient(:final binaryName) => binaryName,
     CursorAgentInferenceClient(:final binaryName) => binaryName,
+    ClaudeCodeInferenceClient(:final binaryName) => binaryName,
     _ => null,
   };
 
@@ -474,6 +502,14 @@ final class LiveEditAgentService {
       }
       if (effectiveInferenceConfig?.reasoningEffort != null) {
         metadata['codexExecReasoningEffort'] =
+            effectiveInferenceConfig!.reasoningEffort;
+      }
+    } else if (backendId == 'claude_code') {
+      if (effectiveInferenceConfig?.model != null) {
+        metadata['claudeCodeModel'] = effectiveInferenceConfig!.model;
+      }
+      if (effectiveInferenceConfig?.reasoningEffort != null) {
+        metadata['claudeCodeEffort'] =
             effectiveInferenceConfig!.reasoningEffort;
       }
     }

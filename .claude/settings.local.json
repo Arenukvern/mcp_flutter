@@ -72,7 +72,29 @@
       "Bash(export WS=$\\(/tmp/flutter_mcp_cli exec --name discover_debug_apps --args '{}' 2>&1)",
       "Bash(export WS='ws://127.0.0.1:63069/OT-bYQK-E6o=/ws')",
       "Bash(export WS='ws://127.0.0.1:63069/OT-bYQK-E6o=/ws' echo \"=== Scroll ref=s_6 direction=down, then snapshot ===\" /tmp/flutter_mcp_cli exec --name scroll --args \"{\\\\\"ref\\\\\":\\\\\"s_6\\\\\",\\\\\"direction\\\\\":\\\\\"down\\\\\",\\\\\"connection\\\\\":{\\\\\"targetId\\\\\":\\\\\"$WS\\\\\"}}\" /tmp/flutter_mcp_cli exec --name semantic_snapshot --args \"{\\\\\"connection\\\\\":{\\\\\"targetId\\\\\":\\\\\"$WS\\\\\"}}\")",
-      "Bash(dart test:*)"
+      "Bash(dart test:*)",
+      "Bash(timeout 110 flutter build web --no-pub --source-maps)",
+      "Bash(flutter build:*)",
+      "Bash(claude --version)",
+      "Bash(pkill -f \"flutter run\")",
+      "Bash(export WS='ws://127.0.0.1:50575/B7YbRPPiFAE=/ws')",
+      "Bash(python3 -c \"import sys,json;d=json.load\\(sys.stdin\\);print\\('ok:',d.get\\('ok'\\),'err:',d.get\\('error',{}\\).get\\('code'\\) if d.get\\('error'\\) else None\\)\")",
+      "Bash(export WS='ws://127.0.0.1:51347/M4bcPSZoeUw=/ws')",
+      "Bash(python3 -c \"import sys,json;print\\('toggle:',json.load\\(sys.stdin\\)['data']['result']\\)\")",
+      "Bash(python3 -c \"import sys,json;d=json.load\\(sys.stdin\\)['data'];print\\('via:',d.get\\('via'\\)\\)\")",
+      "Bash(export WS='ws://127.0.0.1:52414/pphdRGvAmVQ=/ws')",
+      "Bash(python3 -c \"import sys,json;print\\(json.load\\(sys.stdin\\)['data']\\)\")",
+      "Bash(/tmp/flutter_mcp_cli list:*)",
+      "Bash(/tmp/flutter_mcp_cli capabilities:*)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); tools=d.get\\('data',{}\\).get\\('tools',[]\\) or d.get\\('data',{}\\).get\\('capabilities',{}\\).get\\('tools',[]\\); print\\('\\\\n'.join\\([t.get\\('name'\\) if isinstance\\(t,dict\\) else str\\(t\\) for t in tools]\\)[:3000]\\)\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); nodes=d.get\\('data',{}\\).get\\('nodes',[]\\); [print\\(n.get\\('ref'\\), n.get\\('label',''\\)[:30], n.get\\('bounds'\\)\\) for n in nodes[:3]]\")",
+      "Bash(kill 88860)",
+      "Bash(pkill -f \"flutter run.*chrome\")",
+      "Bash(pkill -f \"flutter_tools.snapshot run\")",
+      "Bash(xargs kill:*)",
+      "Bash(git checkout:*)",
+      "Bash(export WS='ws://127.0.0.1:53904/exG-ohVlopU=/ws')",
+      "Bash(python3 -c \"import sys,json;d=json.load\\(sys.stdin\\);print\\('reload:',d['data'].get\\('report',{}\\)\\)\")"
     ]
   }
 }

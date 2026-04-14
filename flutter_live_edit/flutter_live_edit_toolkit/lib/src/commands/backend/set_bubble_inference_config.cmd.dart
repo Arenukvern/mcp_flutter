@@ -19,11 +19,12 @@ final class SetBubbleInferenceConfigCommand {
     if (bubble == null) return;
     final backendId = bubble.backendId;
     if (backendId == null || backendId.isEmpty) return;
+    const structuredIds = <String>{'codex_exec', 'claude_code'};
     final nextConfig = LiveEditCodexOptions.normalizeConfig(
       LiveEditInferenceConfig(
         model: model?.trim().isNotEmpty == true ? model!.trim() : null,
         reasoningEffort:
-            backendId == 'codex_exec' &&
+            structuredIds.contains(backendId) &&
                 (reasoningEffort?.trim().isNotEmpty == true)
             ? reasoningEffort!.trim()
             : null,

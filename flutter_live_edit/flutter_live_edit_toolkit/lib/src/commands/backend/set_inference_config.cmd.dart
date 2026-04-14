@@ -21,11 +21,12 @@ final class SetInferenceConfigCommand {
       }
     }
     if (backend == null) return;
+    const structuredIds = <String>{'codex_exec', 'claude_code'};
     final nextConfig = LiveEditCodexOptions.normalizeConfig(
       LiveEditInferenceConfig(
         model: model?.trim().isNotEmpty == true ? model!.trim() : null,
         reasoningEffort:
-            backend.id == 'codex_exec' &&
+            structuredIds.contains(backend.id) &&
                 (reasoningEffort?.trim().isNotEmpty == true)
             ? reasoningEffort!.trim()
             : null,

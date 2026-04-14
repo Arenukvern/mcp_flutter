@@ -149,6 +149,25 @@ bool selectCurrentBackendUsesFreeformModel(
     )?.id ==
     'cursor_agent';
 
+const Set<String> _structuredBackendIds = <String>{
+  'codex_exec',
+  'claude_code',
+};
+
+List<LiveEditCodexModelOption> _fallbackSupportedModels(final String id) =>
+    switch (id) {
+      'codex_exec' => LiveEditCodexOptions.supportedModels,
+      'claude_code' => LiveEditClaudeCodeOptions.supportedModels,
+      _ => const <LiveEditCodexModelOption>[],
+    };
+
+List<String> _fallbackSupportedReasoningEfforts(final String id) =>
+    switch (id) {
+      'codex_exec' => LiveEditCodexOptions.supportedReasoningEfforts,
+      'claude_code' => LiveEditClaudeCodeOptions.supportedReasoningEfforts,
+      _ => const <String>[],
+    };
+
 List<LiveEditCodexModelOption> selectCurrentSupportedModels(
   final LiveEditContext ctx,
   final LiveEditController controller, {
@@ -161,11 +180,11 @@ List<LiveEditCodexModelOption> selectCurrentSupportedModels(
     presentationDomain: presentationDomain,
     sessionId: sessionId,
   );
-  if (backend == null || backend.id != 'codex_exec') {
+  if (backend == null || !_structuredBackendIds.contains(backend.id)) {
     return const <LiveEditCodexModelOption>[];
   }
   final models = backend.meta['supportedModels'];
-  if (models is! List) return LiveEditCodexOptions.supportedModels;
+  if (models is! List) return _fallbackSupportedModels(backend.id);
   return models
       .whereType<Map>()
       .map(
@@ -188,10 +207,10 @@ List<String> selectCurrentSupportedReasoningEfforts(
     presentationDomain: presentationDomain,
     sessionId: sessionId,
   );
-  if (backend == null || backend.id != 'codex_exec') {
+  if (backend == null || !_structuredBackendIds.contains(backend.id)) {
     return const <String>[];
   }
   final efforts = backend.meta['supportedReasoningEfforts'];
-  if (efforts is! List) return LiveEditCodexOptions.supportedReasoningEfforts;
+  if (efforts is! List) return _fallbackSupportedReasoningEfforts(backend.id);
   return efforts.map((final item) => '$item').toList(growable: false);
 }

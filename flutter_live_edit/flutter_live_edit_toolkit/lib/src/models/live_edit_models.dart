@@ -217,6 +217,25 @@ final class LiveEditCodexOptions {
   }
 }
 
+/// Model/effort options for the Claude Code CLI backend.
+final class LiveEditClaudeCodeOptions {
+  const LiveEditClaudeCodeOptions._();
+
+  static const List<LiveEditCodexModelOption> supportedModels =
+      <LiveEditCodexModelOption>[
+        LiveEditCodexModelOption(id: 'opus', label: 'Claude Opus'),
+        LiveEditCodexModelOption(id: 'sonnet', label: 'Claude Sonnet'),
+        LiveEditCodexModelOption(id: 'haiku', label: 'Claude Haiku'),
+      ];
+
+  static const List<String> supportedReasoningEfforts = <String>[
+    'low',
+    'medium',
+    'high',
+    'max',
+  ];
+}
+
 double _confidenceFromJson(final Object? v) => _asDouble(v, fallback: 1);
 
 @Freezed(fromJson: true, toJson: true)
