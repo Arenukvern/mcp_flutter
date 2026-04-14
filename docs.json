@@ -53,6 +53,10 @@
           "href": "/guides/debugging_workflow"
         },
         {
+          "title": "Interaction Cookbook",
+          "href": "/guides/interaction_cookbook"
+        },
+        {
           "title": "Creating Dynamic Tools",
           "href": "/guides/creating_dynamic_tools"
         },

@@ -44,7 +44,9 @@ Safe-write flags for write-producing commands:
 - `bundle create`: `--check --diff --backup --no-overwrite`
 
 `exec` targets commands in the shared `CommandCatalog`:
-`connect`, `session_start`, `session_exec`, `session_end`, `diagnose`, `watch`, `explain_errors`, `status`, `discover_debug_apps`, `get_vm`, `get_extension_rpcs`, `hot_reload_flutter`, `hot_restart_flutter`, `get_active_ports`, `get_app_errors`, `get_screenshots`, `get_view_details`, `inspect_widget_at_point`, `capture_ui_snapshot`, `debug_dump_layer_tree`, `debug_dump_semantics_tree`, `debug_dump_render_tree`, `debug_dump_focus_tree`, `listClientToolsAndResources`, `runClientTool`, `runClientResource`, `dynamicRegistryStats`.
+`connect`, `session_start`, `session_exec`, `session_end`, `diagnose`, `watch`, `explain_errors`, `status`, `discover_debug_apps`, `get_vm`, `get_extension_rpcs`, `hot_reload_flutter`, `hot_restart_flutter`, `get_active_ports`, `get_app_errors`, `get_screenshots`, `get_view_details`, `inspect_widget_at_point`, `capture_ui_snapshot`, `debug_dump_layer_tree`, `debug_dump_semantics_tree`, `debug_dump_render_tree`, `debug_dump_focus_tree`, `listClientToolsAndResources`, `runClientTool`, `runClientResource`, `dynamicRegistryStats`, `semantic_snapshot`, `tap_widget`, `long_press`, `enter_text`, `scroll`, `swipe`, `drag`, `hot_reload_and_capture`, `evaluate_dart_expression`, `get_recent_logs`.
+
+Interaction tools (`semantic_snapshot` → `tap_widget` / `enter_text` / `scroll` / `swipe` / `long_press` / `drag`) follow a Playwright-style ref model: take a snapshot, then pass `ref: "s_N"` (and optional `snapshotId` for staleness detection) into the interaction tool. `hot_reload_and_capture` fuses reload + screenshot + fresh snapshot + errors. `evaluate_dart_expression` runs an ad-hoc Dart expression against the app's root library. See [docs/core/built_in_tools.mdx](../docs/core/built_in_tools.mdx) for the full surface and a golden path.
 
 CLI runs the same shared command catalog/executor as MCP. Preferred debugging path:
 `discover_debug_apps` -> `capture_ui_snapshot` -> `inspect_widget_at_point`.

@@ -20,3 +20,10 @@ check-contracts:
 .PHONY: release-artifacts
 release-artifacts:
 	cd $(CURDIR) && bash tool/release/build_release_artifacts.sh
+
+# Run the flutter_test_app showcase on macOS and print the canonical VM URI
+# once the app is ready. Blocks the terminal so the agent can copy the URI
+# into subsequent CLI calls (`--args '{"connection":{"targetId":"<uri>"}}'`).
+.PHONY: showcase
+showcase:
+	@bash $(CURDIR)/scripts/run_showcase.sh

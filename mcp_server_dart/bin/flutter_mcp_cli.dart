@@ -151,7 +151,13 @@ Future<void> main(final List<String> args) async {
     result: result,
     outputDir: outputDir,
   );
-  io.stdout.writeln(jsonEncode(result.toEnvelopeJson()));
+  final prettyPrintEnvelope = command.name == 'exec' && command.flag('pretty');
+  final envelopeJson = result.toEnvelopeJson();
+  io.stdout.writeln(
+    prettyPrintEnvelope
+        ? const JsonEncoder.withIndent('  ').convert(envelopeJson)
+        : jsonEncode(envelopeJson),
+  );
   await connectionContext.disconnect();
   io.exit(_resolveExitCode(topLevel: command, result: result));
 }
@@ -1629,6 +1635,13 @@ final _argParser = ArgParser(allowTrailingOptions: false)
             '{"connection":{"uri":"ws://127.0.0.1:8181/<token>/ws"}}. '
             'targetId also works when copied from discover_debug_apps/availableTargets. '
             'Never pass host:port as targetId.',
+      )
+      ..addFlag(
+        'pretty',
+        help:
+            'Pretty-print the response envelope with 2-space indentation '
+            'instead of single-line JSON. Intended for humans reading the '
+            'output; agents should keep the default compact form.',
       ),
   )
   ..addCommand(
@@ -1838,14 +1851,19 @@ const _backup = 'backup';
 const _noOverwrite = 'no-overwrite';
 
 String _usageExec() => '''
-Usage: flutter_mcp_cli exec --name <command> [--args <json>]
+Usage: flutter_mcp_cli exec --name <command> [--args <json>] [--pretty]
 
 Examples:
   flutter_mcp_cli exec --name status --args '{}'
+  flutter_mcp_cli exec --name status --args '{}' --pretty
   flutter_mcp_cli exec --name get_vm --args '{"connection":{"uri":"ws://127.0.0.1:8181/<token>/ws"}}'
   flutter_mcp_cli exec --name get_extension_rpcs --args '{}'
   flutter_mcp_cli exec --name get_screenshots --args '{}'
   flutter_mcp_cli exec --name get_view_details --args '{}'
+
+Notes:
+  --pretty prints the response envelope with 2-space indentation.
+  Agents should keep the default compact form.
 
 CLI-first runtime validation sequence:
   1) get_extension_rpcs -> confirm ext.mcp.toolkit.app_errors/view_details/view_screenshots/inspect_widget_at_point

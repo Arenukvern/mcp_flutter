@@ -91,6 +91,23 @@ Run this sequence after preflight succeeds:
 
 Use before/after snapshot bundles as proof that runtime changes took effect.
 
+### Interaction Loop (agent drives the app)
+
+For tasks that require operating the UI rather than just observing it, use the
+Playwright-style interaction loop:
+
+1. `semantic_snapshot` — returns `s_0..s_N` refs and a `snapshot_id`.
+2. `tap_widget` / `enter_text` / `scroll` / `swipe` / `long_press` / `drag`
+   — act on a ref. Pass `snapshotId` from step 1 to get a structured
+   `stale_snapshot` error if the tree has changed.
+3. `evaluate_dart_expression` — read app state directly
+   (e.g. `AgentState.instance.counter`).
+4. `hot_reload_and_capture` — after a code edit, get reload status +
+   screenshot + fresh semantic snapshot + errors in one response.
+
+Copy-paste recipes for the common cases live in
+[Interaction cookbook](/guides/interaction_cookbook).
+
 ## Step 7. Resolve Common Runtime Challenges
 
 If tool calls fail with `connection_selection_required`, retry with `arguments.connection.targetId` or exact `arguments.connection.uri` from Flutter machine `app.debugPort.wsUri`.

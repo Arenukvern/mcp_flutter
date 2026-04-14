@@ -273,6 +273,10 @@ mixin SemanticSnapshotService {
     if (data.hasAction(SemanticsAction.increase)) return true;
     if (data.hasAction(SemanticsAction.decrease)) return true;
     if (data.hasAction(SemanticsAction.setText)) return true;
+    if (data.hasAction(SemanticsAction.scrollUp)) return true;
+    if (data.hasAction(SemanticsAction.scrollDown)) return true;
+    if (data.hasAction(SemanticsAction.scrollLeft)) return true;
+    if (data.hasAction(SemanticsAction.scrollRight)) return true;
 
     return false;
   }
@@ -289,6 +293,12 @@ mixin SemanticSnapshotService {
     if (data.hasFlag(SemanticsFlag.isImage)) return 'image';
     if (data.hasAction(SemanticsAction.tap)) return 'tappable';
     if (data.hasAction(SemanticsAction.longPress)) return 'longPressable';
+    if (data.hasAction(SemanticsAction.scrollUp) ||
+        data.hasAction(SemanticsAction.scrollDown) ||
+        data.hasAction(SemanticsAction.scrollLeft) ||
+        data.hasAction(SemanticsAction.scrollRight)) {
+      return 'scrollable';
+    }
     if (data.label.isNotEmpty) return 'text';
     return 'widget';
   }

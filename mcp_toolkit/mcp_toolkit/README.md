@@ -84,10 +84,12 @@ addMcpTool(
 );
 ```
 
-- **VM Service Extensions**: Registers a set of custom VM service extensions (e.g., `ext.mcp.toolkit.app_errors`, `ext.mcp.toolkit.view_screenshots`, `ext.mcp.toolkit.view_details`).
+- **VM Service Extensions**: Registers a set of custom VM service extensions (e.g., `ext.mcp.toolkit.app_errors`, `ext.mcp.toolkit.view_screenshots`, `ext.mcp.toolkit.view_details`, `ext.mcp.toolkit.semantic_snapshot`, `ext.mcp.toolkit.tap_widget`, …).
 - **Error Reporting**: Captures and makes available runtime errors from the Flutter application.
 - **Screenshot Capability**: Allows external tools to request screenshots of the application's views.
 - **Application Details**: Provides a mechanism to fetch basic details about the application's views.
+- **Semantic Snapshot + Gestures** (`SemanticSnapshotService`, `GestureInteractionService`): Compact JSON snapshot of interactive widgets with stable refs, plus ref-driven `tap`/`long_press`/`enter_text`/`scroll`/`swipe`/`drag` using a two-tier (semantic-action → pointer-event) dispatch.
+- **Log Capture** (`LogCaptureService`): Ring buffer of recent `print`/`debugPrint` output surfaced via `get_recent_logs`.
 - **Optional Permission Bridge**: Lets the app expose permission status/request/open-settings handlers only when you register a delegate.
 
 ## Integration

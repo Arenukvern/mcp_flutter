@@ -1,5 +1,58 @@
 ## Unreleased
 
+### Playwright-style interaction layer
+
+- New interaction tools that let an AI agent drive a running Flutter app the
+  way a user does:
+  - `semantic_snapshot` returns a compact JSON accessibility tree of
+    interactive widgets with stable `ref` strings (`s_0`, `s_1`, ...) and a
+    monotonically incrementing `snapshot_id`.
+  - `tap_widget`, `long_press`, `enter_text`, `scroll`, `swipe`, and `drag`
+    target widgets by `ref`. Each tool uses a two-tier dispatch: semantic
+    actions first (`SemanticsOwner.performAction`), then synthetic pointer
+    events via `GestureBinding.instance.handlePointerEvent` when no semantic
+    action is available. Responses include a `via` field
+    (`semantic_action` | `pointer_events` | `editable_state` | `pointer_scroll_event`).
+  - All interaction tools accept an optional `snapshotId`; if it doesn't
+    match the current snapshot the call returns a `stale_snapshot` envelope
+    with `providedSnapshotId` and `currentSnapshotId`.
+  - `scroll` direction follows the Playwright convention
+    (direction = which content to reveal).
+  - `enter_text` falls back to `EditableTextState.userUpdateTextEditingValue`
+    so `TextInputFormatter`s and `onChanged` fire correctly.
+- `hot_reload_and_capture` fuses hot reload, screenshot, semantic snapshot,
+  and app errors into a single response for the agent edit/preview loop.
+- `evaluate_dart_expression` runs a Dart expression against the root library
+  in the running isolate (e.g. `AgentState.instance.counter`) and returns
+  `{result, kind, classRef}`.
+- `get_recent_logs` exposes a 200-entry ring buffer of recent
+  `print`/`debugPrint` output captured from the running app.
+
+### Showcase redesign
+
+- `flutter_test_app` rebuilt as a single-page showcase (`ShowcaseScreen`)
+  where every interaction tool has a named target with a Semantics
+  identifier (`greeting_input_field`, `feature_toggle_switch`,
+  `brightness_slider`, `scroll_demo_list`, `hot_reload_marker`,
+  `emit_log_button`, `trigger_error_button`, `last_log_display`, ...).
+- Integration-test identifiers
+  (`about_demo_heading`, `counter_demo_heading`, `counter_demo_icon`,
+  `stateful_counter_increment_button`, `live_edit_test_target`)
+  are preserved.
+- `AgentState` singleton lets agents read and mutate showcase state from
+  `evaluate_dart_expression`.
+
+### Snapshot and gesture fixes
+
+- `semantic_snapshot` now surfaces scrollable nodes (widgets that advertise
+  `scrollUp/Down/Left/Right`) so agents can pass an explicit `ref` to
+  `scroll` for the deterministic semantic-action path.
+- `scroll` direction-to-`SemanticsAction` mapping realigned with the
+  Playwright "direction = reveal" convention:
+  `direction: "down"` now maps to `SemanticsAction.scrollUp` (finger up,
+  reveals content below), so the Tier 1 path succeeds on real Flutter
+  scrollables at the top of their range.
+
 ## 3.0.0
 
 Strict hard-cut release across the monorepo.

@@ -113,6 +113,27 @@ See more details about command line options in [mcp_server_dart README](mcp_serv
 - `capture_ui_snapshot` [Tool] - Captures screenshots + view details + app errors in one evidence bundle.
 - `discover_debug_apps` [Tool] - Preferred target discovery API with canonical websocket URIs.
 
+### Interaction Tools (drive the app like a user) 🆕
+
+A Playwright-style layer lets agents operate the running Flutter app:
+
+- `semantic_snapshot` [Tool] — Compact accessibility tree of interactive widgets with stable `ref` strings (`s_0`, `s_1`, …) and a monotonic `snapshot_id`. Call this before every interaction.
+- `tap_widget`, `long_press`, `enter_text`, `scroll`, `swipe`, `drag` [Tool] — Target widgets by `ref`. Each call uses a two-tier dispatch: semantic actions first, pointer events as fallback. Response includes a `via` field so you can tell which path ran.
+- `hot_reload_and_capture` [Tool] — Hot reload, screenshot, fresh semantic snapshot, and app errors in a single response. Designed for the edit → see-what-changed loop.
+- `evaluate_dart_expression` [Tool] — Run a Dart expression in the app isolate (e.g. `AgentState.instance.counter`) to read state without pre-registering a tool.
+- `get_recent_logs` [Tool] — Retrieves the last 200 `print`/`debugPrint` entries from the running app.
+
+Typical agent workflow:
+
+```
+semantic_snapshot                    → get refs s_0..s_N + snapshot_id
+tap_widget(ref, snapshotId)          → act; stale_snapshot if tree changed
+evaluate_dart_expression(...)        → read app state directly
+hot_reload_and_capture               → after a code edit, see the result
+```
+
+See [Built-in tools](docs/core/built_in_tools.mdx) for the full catalog + a golden path that runs against `flutter_test_app`.
+
 CLI parity check (same shared core logic as MCP):
 
 ```bash

@@ -357,7 +357,7 @@ class _ToggleSection extends StatelessWidget {
           ),
           Semantics(
             identifier: 'feature_toggle_switch',
-            toggled: state.toggle,
+            onTap: () => state.toggle = !state.toggle,
             child: Switch.adaptive(
               value: state.toggle,
               activeTrackColor: _kAccent,
@@ -404,6 +404,8 @@ class _SlideSection extends StatelessWidget {
                     ),
                     child: Slider(
                       value: state.slider,
+                      min: 0,
+                      max: 100,
                       onChanged: (final value) => state.slider = value,
                     ),
                   ),

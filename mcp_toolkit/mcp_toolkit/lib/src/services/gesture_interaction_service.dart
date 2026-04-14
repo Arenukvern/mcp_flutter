@@ -172,11 +172,20 @@ mixin GestureInteractionService {
     }
 
     if (editable == null) {
+      final refType = _classifyForHint(node);
       return <String, Object?>{
         'success': false,
         'ref': ref,
         'action': 'enter_text',
         'error': 'no_editable_state',
+        'hint':
+            refType == null
+                ? 'The ref does not point to a text field. Call '
+                    'semantic_snapshot and pick a node with '
+                    'type: "textField" (check the node\'s "type" field).'
+                : 'Ref "$ref" is a "$refType", not a text field. Call '
+                    'semantic_snapshot and pick a node with '
+                    'type: "textField".',
       };
     }
 
@@ -279,6 +288,22 @@ mixin GestureInteractionService {
       'at': _offsetToMap(origin),
       'scrollDelta': _offsetToMap(scrollDelta),
     };
+  }
+
+  /// Best-effort classification of [node]'s widget type, used only to produce
+  /// a helpful hint when `enter_text` can't find an editable state. Returns
+  /// null when the node's flags don't suggest a specific type.
+  static String? _classifyForHint(final SemanticsNode node) {
+    final data = node.getSemanticsData();
+    if (data.hasFlag(SemanticsFlag.isTextField)) return 'textField';
+    if (data.hasFlag(SemanticsFlag.isButton)) return 'button';
+    if (data.hasFlag(SemanticsFlag.isSlider)) return 'slider';
+    if (data.hasFlag(SemanticsFlag.hasToggledState)) return 'switch';
+    if (data.hasFlag(SemanticsFlag.hasCheckedState)) return 'checkbox';
+    if (data.hasFlag(SemanticsFlag.isHeader)) return 'header';
+    if (data.hasFlag(SemanticsFlag.isImage)) return 'image';
+    if (data.hasFlag(SemanticsFlag.isLink)) return 'link';
+    return null;
   }
 
   /// Return the [EditableTextState] whose render box overlaps [rect] — or,
@@ -515,13 +540,18 @@ mixin GestureInteractionService {
   // Utilities
   // ---------------------------------------------------------------------------
 
-  /// Map a cardinal direction to a matching scroll semantic action.
+  /// Map a user-facing direction (Playwright convention: direction = which
+  /// content the agent wants to reveal) to Flutter's [SemanticsAction].
+  ///
+  /// Flutter's `SemanticsAction.scrollUp` corresponds to a finger moving up —
+  /// i.e. the content scrolls up and content below is revealed. So to reveal
+  /// content *below*, the agent's `direction: "down"` maps to `scrollUp`.
   static SemanticsAction? _scrollActionFor(final String direction) =>
       switch (direction.toLowerCase()) {
-        'up' => SemanticsAction.scrollUp,
-        'down' => SemanticsAction.scrollDown,
-        'left' => SemanticsAction.scrollLeft,
-        'right' => SemanticsAction.scrollRight,
+        'down' => SemanticsAction.scrollUp,
+        'up' => SemanticsAction.scrollDown,
+        'right' => SemanticsAction.scrollLeft,
+        'left' => SemanticsAction.scrollRight,
         _ => null,
       };
 

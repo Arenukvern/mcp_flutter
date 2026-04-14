@@ -31,11 +31,11 @@ void main() {
     await app.main(enableDelayedMcpRegistration: false);
     await _pumpUntil(
       tester,
-      () => find.text('MCP Toolkit Demo').evaluate().isNotEmpty,
+      () => find.text('MCP Flutter').evaluate().isNotEmpty,
       timeout: const Duration(seconds: 30),
     );
 
-    expect(find.text('MCP Toolkit Demo'), findsOneWidget);
+    expect(find.text('MCP Flutter'), findsOneWidget);
 
     // Tap Live Edit chip (ActionChip at bottom-left; avoid panel "Live Edit" header).
     await tester.tap(find.widgetWithText(ActionChip, 'Live Edit'));
@@ -113,7 +113,7 @@ void main() {
     await app.main(enableDelayedMcpRegistration: false);
     await _pumpUntil(
       tester,
-      () => find.text('MCP Toolkit Demo').evaluate().isNotEmpty,
+      () => find.text('MCP Flutter').evaluate().isNotEmpty,
       timeout: const Duration(seconds: 30),
     );
 
@@ -281,7 +281,7 @@ void main() {
     await app.main(enableDelayedMcpRegistration: false);
     await _pumpUntil(
       tester,
-      () => find.text('MCP Toolkit Demo').evaluate().isNotEmpty,
+      () => find.text('MCP Flutter').evaluate().isNotEmpty,
       timeout: const Duration(seconds: 30),
     );
 
@@ -341,7 +341,7 @@ void main() {
     await app.main(enableDelayedMcpRegistration: false);
     await _pumpUntil(
       tester,
-      () => find.text('MCP Toolkit Demo').evaluate().isNotEmpty,
+      () => find.text('MCP Flutter').evaluate().isNotEmpty,
       timeout: const Duration(seconds: 30),
     );
 
@@ -363,7 +363,7 @@ void main() {
     final promotedCandidates = h.activeSelectionCandidates;
     expect(promotedSelection.widgetType, isNot('RichText'));
     expect(promotedSelection.source, isNotNull);
-    expect(promotedSelection.source!.file, contains('lib/main.dart'));
+    expect(promotedSelection.source!.file, contains('lib/showcase_screen.dart'));
     expect(promotedCandidates, isNotEmpty);
 
     final promotedIndex = promotedCandidates.indexWhere(
@@ -412,7 +412,7 @@ void main() {
     await app.main(enableDelayedMcpRegistration: false);
     await _pumpUntil(
       tester,
-      () => find.text('MCP Toolkit Demo').evaluate().isNotEmpty,
+      () => find.text('MCP Flutter').evaluate().isNotEmpty,
       timeout: const Duration(seconds: 30),
     );
 
@@ -490,7 +490,7 @@ void main() {
     await app.main(enableDelayedMcpRegistration: false);
     await _pumpUntil(
       tester,
-      () => find.text('MCP Toolkit Demo').evaluate().isNotEmpty,
+      () => find.text('MCP Flutter').evaluate().isNotEmpty,
       timeout: const Duration(seconds: 30),
     );
 
@@ -544,7 +544,7 @@ void main() {
     }
 
     await tester.pump(const Duration(seconds: 2));
-    expect(find.text('MCP Toolkit Demo'), findsOneWidget);
+    expect(find.text('MCP Flutter'), findsOneWidget);
   });
 
   // TODO(agents): Re-enable once macOS integration deadlock is fixed.
@@ -565,7 +565,7 @@ void main() {
     await app.main(enableDelayedMcpRegistration: false);
     await _pumpUntil(
       tester,
-      () => find.text('MCP Toolkit Demo').evaluate().isNotEmpty,
+      () => find.text('MCP Flutter').evaluate().isNotEmpty,
       timeout: const Duration(seconds: 30),
     );
 
@@ -634,7 +634,7 @@ void main() {
           _semanticsId('live_edit_ai_bubble').evaluate().isNotEmpty,
       timeout: const Duration(seconds: 10),
     );
-    expect(find.text('MCP Toolkit Demo'), findsOneWidget);
+    expect(find.text('MCP Flutter'), findsOneWidget);
   }, skip: true);
 
   testWidgets(
@@ -654,7 +654,7 @@ void main() {
       await app.main(enableDelayedMcpRegistration: false);
       await _pumpUntil(
         tester,
-        () => find.text('MCP Toolkit Demo').evaluate().isNotEmpty,
+        () => find.text('MCP Flutter').evaluate().isNotEmpty,
         timeout: const Duration(seconds: 30),
       );
 
@@ -700,8 +700,10 @@ void main() {
           .toSet();
       expect(widgetTypes, contains('Icon'));
       expect(widgetTypes, contains('Text'));
-      expect(widgetTypes, contains('ElevatedButton'));
-      expect(widgetTypes, contains('StatefulCounterWidget'));
+      // Showcase uses TextButton for the Increment control; the previous
+      // ElevatedButton / StatefulCounterWidget shells were removed in the
+      // single-page redesign.
+      expect(widgetTypes, contains('TextButton'));
       expect(widgetTypes, isNot(contains('Row')));
       expect(widgetTypes, isNot(contains('Column')));
       expect(widgetTypes, isNot(contains('Padding')));
