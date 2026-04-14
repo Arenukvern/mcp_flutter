@@ -15,11 +15,6 @@ dependencies:
   from_json_to_json: ^0.5.0
   is_dart_empty_or_not: ^0.4.0
   universal_io: ^2.3.1
-  # Used only by `web_pointer_dispatch_web.dart`, which is conditionally
-  # imported when `dart.library.js_interop` is available (Flutter Web).
-  # Non-web builds pull in `web_pointer_dispatch_stub.dart` instead and
-  # never touch this dependency.
-  web: ^1.1.0
 
 dev_dependencies:
   flutter_test:

@@ -2,6 +2,7 @@
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_live_edit_toolkit/flutter_live_edit_toolkit.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
@@ -163,10 +164,16 @@ class MyApp extends StatelessWidget {
       useMaterial3: true,
       scaffoldBackgroundColor: const Color(0xFFFAFAFA),
     ),
-    home: FlutterLiveEditAutoHost(
-      config: _liveEditConfig,
-      child: _HomeRoute(testMode: _liveEditConfig.testMode),
-    ),
+    // FlutterLiveEditAutoHost reaches into `dart:io` (Directory.systemTemp) on
+    // init, which throws UnsupportedOperation on web and leaves the whole app
+    // subtree replaced by an error widget (breaking the showcase + semantics).
+    // Skip it on web until live-edit grows a web-safe worktree service.
+    home: kIsWeb
+        ? _HomeRoute(testMode: _liveEditConfig.testMode)
+        : FlutterLiveEditAutoHost(
+            config: _liveEditConfig,
+            child: _HomeRoute(testMode: _liveEditConfig.testMode),
+          ),
   );
 }
 

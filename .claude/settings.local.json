@@ -98,7 +98,16 @@
       "Bash(python3 -c \"import sys,json;d=json.load\\(sys.stdin\\);print\\('reload:',d['data'].get\\('report',d['data']\\)\\)\")",
       "Bash(awk '/^  static/{n++;sub\\(/^[ \\\\t]+static /,\"\"\\); sub\\(/[ \\\\t].*$/,\"\"\\); print NR\":\"$0}' /Users/antonio/mcp/cline/mcp_flutter/mcp_toolkit/mcp_toolkit/lib/src/services/gesture_interaction_service.dart)",
       "Bash(export WS='ws://127.0.0.1:55289/iklysakZyE0=/ws')",
-      "Bash(make build:*)"
+      "Bash(make build:*)",
+      "Bash(pkill -f \"test_app\")",
+      "Bash(export WS='ws://127.0.0.1:55466/IehTBrax1A4=/ws')",
+      "Bash(python3 -c \"import sys,json;d=json.load\\(sys.stdin\\);print\\('get_vm ok:',d.get\\('ok'\\)\\)\")",
+      "Bash(export WS='ws://127.0.0.1:56082/RPfVfHhox3I=/ws')",
+      "Bash(python3 -c \"import sys,json;d=json.load\\(sys.stdin\\)['data'];print\\('  via:',d.get\\('via'\\)\\)\")",
+      "Bash(export WS='ws://127.0.0.1:56469/lBZp-LStsr0=/ws' /tmp/flutter_mcp_cli exec --name get_vm --args \"{\\\\\"connection\\\\\":{\\\\\"uri\\\\\":\\\\\"$WS\\\\\",\\\\\"forceReconnect\\\\\":true}}\" 2)",
+      "Bash(export WS='ws://127.0.0.1:56469/lBZp-LStsr0=/ws')",
+      "Bash(python3 -c \"import sys,json;d=json.load\\(sys.stdin\\)['data'];print\\('  result:',d.get\\('result',''\\)[:80]\\)\")",
+      "Bash(bash:*)"
     ]
   }
 }

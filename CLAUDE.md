@@ -21,7 +21,7 @@ for the AI-agent runbook.
 ## Commands
 
 ```bash
-make install              # cd mcp_server_dart && pub get + compile
+make install              # cd mcp_server_dart && make setup (pub get + deps)
 make build                # compile mcp_server_dart binaries to build/
 make showcase             # run flutter_test_app on macOS, print VM URI (blocks)
 make check-contracts      # SDK parity + error code + docs drift checks
@@ -34,7 +34,8 @@ Per-package: `cd mcp_server_dart && make compile` produces
 ## v3.0 Gotchas (non-obvious)
 
 - **Preflight first**: run `flutter_mcp_cli doctor --json` before any VM-dependent
-  automation — parses env, ports, and app reachability.
+  automation — parses env, ports, and app reachability. Binary is
+  `mcp_server_dart/build/flutter_mcp_cli` after `make build`.
 - **Safe-write flags** on snapshot/bundle commands: `--check --diff --backup --no-overwrite`
   (atomic write/publish). Don't skip these in automation.
 - **Error envelope contract**: errors are `{code, message, details, descriptor, recovery}`.

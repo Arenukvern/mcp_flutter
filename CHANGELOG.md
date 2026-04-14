@@ -55,15 +55,37 @@
 
 ### Flutter Web interaction support
 
-- `tap_widget`, `long_press`, `enter_text`, `scroll`, `swipe`, and `drag`
-  now work on Flutter Web. Tier 1 (semantic actions) is unchanged; the
-  Tier 2 fallback dispatches real browser `PointerEvent`s / `WheelEvent`s
-  on `document.elementFromPoint` of the widget's cached global centre,
-  letting the browser's gesture arena and scroll physics handle the
-  gesture natively. Web success responses return `via: "web_pointer_events"`.
-  Implementation uses a conditional import (`web_pointer_dispatch_stub.dart`
-  vs. `web_pointer_dispatch_web.dart`) so `dart compile exe` of
-  `mcp_server_dart` stays clean of web-only dependencies.
+Interaction tools are Tier 1 first on web and degrade predictably when
+Tier 1 isn't available:
+
+- `semantic_snapshot`, `evaluate_dart_expression`, `get_recent_logs`,
+  `hot_reload_flutter`, and `hot_reload_and_capture` work unchanged on web.
+- `tap_widget`, `long_press`, and `scroll` (with ref) work when the target
+  node exposes the matching `SemanticsAction`. The action shows up in the
+  node's `actions` array in `semantic_snapshot`.
+- `enter_text` works via `SemanticsAction.setText` or the
+  `EditableTextState.userUpdateTextEditingValue` fallback (both work on
+  web).
+- `swipe(ref, direction)` on web redirects to the matching scroll semantic
+  action when `ref` is a scrollable that exposes it; success responses
+  return `via: "semantic_action_fallback"` with a `note` field explaining
+  the redirect.
+- `scroll` without a ref walks the semantics tree for a matching scrollable
+  and uses Tier 1.
+- When no Tier 1 path exists (tap / long-press on nodes without the
+  matching action, swipe on a non-scrollable or no-ref target, drag,
+  scroll without any scrollable in tree), web returns a structured
+  `web_gesture_not_supported` envelope with a `hint` pointing the agent at
+  the right workaround (snapshot for a different ref, add a `Semantics`
+  wrapper, or use `evaluate_dart_expression`). This replaces an earlier
+  experimental approach that tried to synthesise browser `PointerEvent`s
+  directly — those never reached Flutter's gesture arena cleanly and
+  produced silent no-ops, so the implementation was removed.
+
+Internal: the `flutter_test_app` showcase now skips its
+`FlutterLiveEditAutoHost` wrapper on web, because the live-edit worktree
+service reaches into `dart:io` (`Directory.systemTemp`) in `initState`
+and would otherwise replace the whole showcase with an error widget.
 
 ## 3.0.0
 

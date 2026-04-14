@@ -4,6 +4,7 @@
 
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -67,6 +68,23 @@ mixin GestureInteractionService {
         'error': 'no_bounds_for_ref',
       };
     }
+    if (kIsWeb) {
+      // Tier 2 on web: pointer synthesis doesn't reach the browser gesture
+      // arena. Tap that reached here had no SemanticsAction.tap — return a
+      // structured failure so the agent knows to expose tap semantics.
+      return <String, Object?>{
+        'success': false,
+        'ref': ref,
+        'action': 'tap',
+        'error': 'web_gesture_not_supported',
+        'hint':
+            'tap on Flutter Web requires the target ref to expose '
+            'SemanticsAction.tap. Check the node\'s "actions" in '
+            'semantic_snapshot; if absent, add a Semantics(onTap: ...) '
+            'wrapper. The Tier 2 pointer fallback does not drive the '
+            'browser gesture arena.',
+      };
+    }
     await _dispatchTap(center);
     return <String, Object?>{
       'success': true,
@@ -107,6 +125,23 @@ mixin GestureInteractionService {
         'ref': ref,
         'action': 'long_press',
         'error': 'no_bounds_for_ref',
+      };
+    }
+    if (kIsWeb) {
+      // Pointer synthesis via GestureBinding doesn't reach the browser
+      // gesture arena on web. Return a structured failure rather than
+      // dispatch an event that has no observable effect.
+      return <String, Object?>{
+        'success': false,
+        'ref': ref,
+        'action': 'long_press',
+        'error': 'web_gesture_not_supported',
+        'hint':
+            'long_press on Flutter Web requires the target ref to expose '
+            'SemanticsAction.longPress. Check the node\'s "actions" in '
+            'semantic_snapshot; if absent, add a Semantics(onLongPress: ...) '
+            'wrapper or handle the interaction a different way (for example '
+            'call evaluate_dart_expression to mutate app state directly).',
       };
     }
     await _dispatchLongPress(center);
@@ -278,6 +313,22 @@ mixin GestureInteractionService {
     }
     final origin = start ?? _screenCenter();
     final scrollDelta = _scrollDelta(direction, distance);
+    if (kIsWeb) {
+      // PointerScrollEvent routed through GestureBinding doesn't reach the
+      // Flutter Web engine's wheel handler either. Return a structured
+      // failure so the agent re-snapshots to find a scrollable ref.
+      return <String, Object?>{
+        'success': false,
+        if (ref != null) 'ref': ref,
+        'action': 'scroll_$direction',
+        'error': 'web_gesture_not_supported',
+        'hint':
+            'scroll on Flutter Web requires a ref whose "actions" include '
+            'the matching scroll action. Call semantic_snapshot, find a '
+            'node with actions scrollUp / scrollDown, and pass its ref to '
+            'scroll(ref, direction).',
+      };
+    }
     await _dispatchScrollSignal(origin, scrollDelta);
     return <String, Object?>{
       'success': true,
@@ -384,6 +435,48 @@ mixin GestureInteractionService {
       start = _screenCenter();
     }
 
+    // On Flutter Web, synthetic pointer events fed to
+    // GestureBinding.handlePointerEvent don't drive real scroll physics —
+    // the browser owns that pipeline. If [ref] is a scrollable that
+    // exposes the matching scroll action, redirect to the Tier 1 semantic
+    // action path. Otherwise return a structured failure so the agent can
+    // pick a different strategy (typically `scroll(ref, direction)`).
+    if (kIsWeb) {
+      if (ref != null) {
+        final scrollAction = _scrollActionFor(direction);
+        if (scrollAction != null) {
+          final node = SemanticSnapshotService.resolveRef(ref);
+          final owner = SemanticSnapshotService.semanticsOwner;
+          if (node != null &&
+              owner != null &&
+              node.getSemanticsData().hasAction(scrollAction)) {
+            owner.performAction(node.id, scrollAction);
+            await _waitFrame();
+            return <String, Object?>{
+              'success': true,
+              'ref': ref,
+              'via': 'semantic_action_fallback',
+              'action': 'swipe_$direction',
+              'note':
+                  'On web, swipe redirected to SemanticsAction.scroll because '
+                  'pointer synthesis does not drive browser scroll physics.',
+            };
+          }
+        }
+      }
+      return <String, Object?>{
+        'success': false,
+        if (ref != null) 'ref': ref,
+        'action': 'swipe',
+        'error': 'web_gesture_not_supported',
+        'hint':
+            'swipe on Flutter Web requires a scrollable ref whose "actions" '
+            'include the matching scroll action (scrollUp / scrollDown / '
+            'scrollLeft / scrollRight). Use semantic_snapshot to locate one, '
+            'then prefer scroll(ref, direction) directly. Pointer-event '
+            'synthesis cannot drive Flutter Web scroll physics.',
+      };
+    }
     final end = start + _directionDelta(direction, distance);
     await _dispatchSwipe(start, end);
     return <String, Object?>{
@@ -409,6 +502,24 @@ mixin GestureInteractionService {
     final to = SemanticSnapshotService.resolveCenter(toRef);
     if (to == null) {
       return _refNotFound(toRef);
+    }
+    if (kIsWeb) {
+      // Drag has no Tier 1 semantic equivalent. Pointer synthesis via
+      // GestureBinding doesn't reach Flutter Web's gesture arena, so we
+      // return a structured failure rather than fake success.
+      return <String, Object?>{
+        'success': false,
+        'fromRef': fromRef,
+        'toRef': toRef,
+        'action': 'drag',
+        'error': 'web_gesture_not_supported',
+        'hint':
+            'drag is not supported on Flutter Web. There is no semantic-'
+            'action equivalent, and pointer-event synthesis does not drive '
+            'the browser gesture arena. If the intent is scrolling, use '
+            'scroll(ref, direction). If the intent is a picker / reorder, '
+            'mutate state directly via evaluate_dart_expression.',
+      };
     }
     await _dispatchDrag(from, to, steps: 12);
     return <String, Object?>{
