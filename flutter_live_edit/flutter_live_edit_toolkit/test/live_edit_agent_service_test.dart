@@ -564,7 +564,8 @@ void main() {
           LiveEditResolutionRequest(
             sessionId: 'session-combined',
             workingDirectory: tempDir.path,
-            instructionText: 'Rewrite the selected heading to sound more direct.',
+            instructionText:
+                'Rewrite the selected heading to sound more direct.',
             primarySelection: LiveEditSelection(
               sessionId: 'session-combined',
               nodeId: 'node-1',

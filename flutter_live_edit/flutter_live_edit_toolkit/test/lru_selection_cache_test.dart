@@ -1,6 +1,5 @@
-import 'package:flutter_test/flutter_test.dart';
-
 import 'package:flutter_live_edit_toolkit/src/services/live_edit_session/lru_selection_cache.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('LruSelectionCache', () {
@@ -46,7 +45,7 @@ void main() {
     test('isMounted callback evicts stale entry and returns null', () {
       final cache = LruSelectionCache<String>();
       cache.put('x', 'stale');
-      final result = cache.get('x', isMounted: (v) => v != 'stale');
+      final result = cache.get('x', isMounted: (final v) => v != 'stale');
       expect(result, isNull);
       // Entry was removed
       expect(cache.get('x'), isNull);

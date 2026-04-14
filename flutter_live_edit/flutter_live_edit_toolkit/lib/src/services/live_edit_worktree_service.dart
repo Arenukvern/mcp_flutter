@@ -125,20 +125,15 @@ class LiveEditWorktreeService {
   }) async {
     final mergeResult = await _runGit(
       workingDirectory: mainWorkingDirectory,
-      arguments: <String>[
-        'merge',
-        '--no-ff',
-        '--no-edit',
-        handle.branch,
-      ],
+      arguments: <String>['merge', '--no-ff', '--no-edit', handle.branch],
     );
 
     if (mergeResult.exitCode == 0) {
       return const LiveEditMergeResult.clean();
     }
 
-    final combined =
-        '${mergeResult.stdout}\n${mergeResult.stderr}'.toLowerCase();
+    final combined = '${mergeResult.stdout}\n${mergeResult.stderr}'
+        .toLowerCase();
     final looksLikeConflict =
         combined.contains('conflict') || combined.contains('merge failed');
     if (looksLikeConflict) {
@@ -192,9 +187,7 @@ class LiveEditWorktreeService {
   /// contains `gitdir:` referencing the main repo.
   bool _worktreeLooksAlive(final String worktreePath) {
     if (!Directory(worktreePath).existsSync()) return false;
-    final dotGit = FileSystemEntity.typeSync(
-      p.join(worktreePath, '.git'),
-    );
+    final dotGit = FileSystemEntity.typeSync(p.join(worktreePath, '.git'));
     return dotGit != FileSystemEntityType.notFound;
   }
 
@@ -203,11 +196,7 @@ class LiveEditWorktreeService {
   ) async {
     final result = await _runGit(
       workingDirectory: mainWorkingDirectory,
-      arguments: <String>[
-        'diff',
-        '--name-only',
-        '--diff-filter=U',
-      ],
+      arguments: <String>['diff', '--name-only', '--diff-filter=U'],
       allowFailure: true,
     );
     if (result.exitCode != 0) {

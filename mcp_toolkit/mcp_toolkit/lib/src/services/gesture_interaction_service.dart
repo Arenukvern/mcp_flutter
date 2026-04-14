@@ -96,9 +96,7 @@ mixin GestureInteractionService {
   }
 
   /// Long-press the widget identified by [ref].
-  static Future<Map<String, Object?>> longPressAtRef(
-    final String ref,
-  ) async {
+  static Future<Map<String, Object?>> longPressAtRef(final String ref) async {
     final node = SemanticSnapshotService.resolveRef(ref);
     if (node == null) {
       return _refNotFound(ref);
@@ -213,14 +211,13 @@ mixin GestureInteractionService {
         'ref': ref,
         'action': 'enter_text',
         'error': 'no_editable_state',
-        'hint':
-            refType == null
-                ? 'The ref does not point to a text field. Call '
-                    'semantic_snapshot and pick a node with '
-                    'type: "textField" (check the node\'s "type" field).'
-                : 'Ref "$ref" is a "$refType", not a text field. Call '
-                    'semantic_snapshot and pick a node with '
-                    'type: "textField".',
+        'hint': refType == null
+            ? 'The ref does not point to a text field. Call '
+                  'semantic_snapshot and pick a node with '
+                  'type: "textField" (check the node\'s "type" field).'
+            : 'Ref "$ref" is a "$refType", not a text field. Call '
+                  'semantic_snapshot and pick a node with '
+                  'type: "textField".',
       };
     }
 
@@ -319,7 +316,7 @@ mixin GestureInteractionService {
       // failure so the agent re-snapshots to find a scrollable ref.
       return <String, Object?>{
         'success': false,
-        if (ref != null) 'ref': ref,
+        'ref': ?ref,
         'action': 'scroll_$direction',
         'error': 'web_gesture_not_supported',
         'hint':
@@ -466,7 +463,7 @@ mixin GestureInteractionService {
       }
       return <String, Object?>{
         'success': false,
-        if (ref != null) 'ref': ref,
+        'ref': ?ref,
         'action': 'swipe',
         'error': 'web_gesture_not_supported',
         'hint':
@@ -543,17 +540,14 @@ mixin GestureInteractionService {
     binding.handlePointerEvent(
       PointerDownEvent(
         pointer: pointer,
-        kind: PointerDeviceKind.touch,
         position: position,
         timeStamp: _now(),
-        buttons: kPrimaryButton,
       ),
     );
     await Future<void>.delayed(const Duration(milliseconds: 50));
     binding.handlePointerEvent(
       PointerUpEvent(
         pointer: pointer,
-        kind: PointerDeviceKind.touch,
         position: position,
         timeStamp: _now(),
       ),
@@ -567,10 +561,8 @@ mixin GestureInteractionService {
     binding.handlePointerEvent(
       PointerDownEvent(
         pointer: pointer,
-        kind: PointerDeviceKind.touch,
         position: position,
         timeStamp: _now(),
-        buttons: kPrimaryButton,
       ),
     );
     // Hold well past kLongPressTimeout (500 ms).
@@ -578,7 +570,6 @@ mixin GestureInteractionService {
     binding.handlePointerEvent(
       PointerUpEvent(
         pointer: pointer,
-        kind: PointerDeviceKind.touch,
         position: position,
         timeStamp: _now(),
       ),
@@ -597,10 +588,8 @@ mixin GestureInteractionService {
     binding.handlePointerEvent(
       PointerDownEvent(
         pointer: pointer,
-        kind: PointerDeviceKind.touch,
         position: from,
         timeStamp: _now(),
-        buttons: kPrimaryButton,
       ),
     );
 
@@ -613,11 +602,9 @@ mixin GestureInteractionService {
       binding.handlePointerEvent(
         PointerMoveEvent(
           pointer: pointer,
-          kind: PointerDeviceKind.touch,
           position: pos,
           delta: pos - last,
           timeStamp: _now(),
-          buttons: kPrimaryButton,
         ),
       );
       last = pos;
@@ -626,7 +613,6 @@ mixin GestureInteractionService {
     binding.handlePointerEvent(
       PointerUpEvent(
         pointer: pointer,
-        kind: PointerDeviceKind.touch,
         position: to,
         timeStamp: _now(),
       ),
@@ -639,13 +625,12 @@ mixin GestureInteractionService {
   static Future<void> _dispatchSwipe(
     final ui.Offset from,
     final ui.Offset to,
-  ) =>
-      _dispatchDrag(
-        from,
-        to,
-        steps: 8,
-        perStep: const Duration(milliseconds: 8),
-      );
+  ) => _dispatchDrag(
+    from,
+    to,
+    steps: 8,
+    perStep: const Duration(milliseconds: 8),
+  );
 
   // ---------------------------------------------------------------------------
   // Utilities
@@ -690,14 +675,16 @@ mixin GestureInteractionService {
   /// [PointerScrollEvent]. Unlike pointer-drag deltas, scroll-event deltas
   /// already follow the "direction content moves" convention directly —
   /// `scrollDelta.dy > 0` scrolls content *up* and reveals content below.
-  static ui.Offset _scrollDelta(final String direction, final double distance) =>
-      switch (direction.toLowerCase()) {
-        'up' => ui.Offset(0, -distance),
-        'down' => ui.Offset(0, distance),
-        'left' => ui.Offset(-distance, 0),
-        'right' => ui.Offset(distance, 0),
-        _ => ui.Offset(0, distance),
-      };
+  static ui.Offset _scrollDelta(
+    final String direction,
+    final double distance,
+  ) => switch (direction.toLowerCase()) {
+    'up' => ui.Offset(0, -distance),
+    'down' => ui.Offset(0, distance),
+    'left' => ui.Offset(-distance, 0),
+    'right' => ui.Offset(distance, 0),
+    _ => ui.Offset(0, distance),
+  };
 
   /// Map a direction string to a pointer-delta.
   ///
@@ -730,10 +717,7 @@ mixin GestureInteractionService {
   }
 
   static Map<String, Object?> _offsetToMap(final ui.Offset o) =>
-      <String, Object?>{
-        'x': o.dx.roundToDouble(),
-        'y': o.dy.roundToDouble(),
-      };
+      <String, Object?>{'x': o.dx.roundToDouble(), 'y': o.dy.roundToDouble()};
 
   static Map<String, Object?> _refNotFound(final String ref) =>
       <String, Object?>{

@@ -86,22 +86,13 @@ base mixin FlutterInspector
       InteractionHandler.enterTextTool,
       _interactionHandler.enterText,
     );
-    registerTool(
-      InteractionHandler.scrollTool,
-      _interactionHandler.scroll,
-    );
+    registerTool(InteractionHandler.scrollTool, _interactionHandler.scroll);
     registerTool(
       InteractionHandler.longPressTool,
       _interactionHandler.longPress,
     );
-    registerTool(
-      InteractionHandler.swipeTool,
-      _interactionHandler.swipe,
-    );
-    registerTool(
-      InteractionHandler.dragTool,
-      _interactionHandler.drag,
-    );
+    registerTool(InteractionHandler.swipeTool, _interactionHandler.swipe);
+    registerTool(InteractionHandler.dragTool, _interactionHandler.drag);
     registerTool(
       InteractionHandler.hotReloadAndCaptureTool,
       _interactionHandler.hotReloadAndCapture,

@@ -1,4 +1,3 @@
-import '../resources/live_edit_flow_graph.src.data.dart';
 import '../resources/resources.dart';
 import '../services/services.dart';
 import '../types/live_edit_types.dart';
@@ -38,7 +37,7 @@ final class LiveEditContext {
   final LiveEditInFlightResource inFlightResource;
   final LiveEditSessionService sessionService;
   late final DebouncedResourceWriter<LiveEditFlowGraphResourceData>
-      _flowGraphWriter;
+  _flowGraphWriter;
   final LiveEditApplyService applyService;
   final LiveEditBubbleStateService bubbleStateService;
 

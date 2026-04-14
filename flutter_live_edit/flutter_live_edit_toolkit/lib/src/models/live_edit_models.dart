@@ -730,10 +730,7 @@ final class LiveEditMcpToolNames {
 abstract class LiveEditSelection with _$LiveEditSelection {
   const factory LiveEditSelection({
     required final String sessionId,
-    @JsonKey(defaultValue: '') @Default('') final String selectionKey,
-    required final String nodeId,
-    required final String widgetType,
-    @JsonKey(fromJson: _asMap) required final Map<String, Object?> rawNode,
+    required final String nodeId, required final String widgetType, @JsonKey(fromJson: _asMap) required final Map<String, Object?> rawNode, @JsonKey(defaultValue: '') @Default('') final String selectionKey,
     @JsonKey(name: 'properties')
     @Default(<Object?>[])
     final List<Object?> propertiesForWire,
@@ -766,9 +763,7 @@ int _depthFromJson(final Object? v) => _asNullableInt(v) ?? 0;
 @Freezed(fromJson: true, toJson: true)
 abstract class LiveEditSelectionCandidate with _$LiveEditSelectionCandidate {
   const factory LiveEditSelectionCandidate({
-    @JsonKey(defaultValue: '') @Default('') final String selectionKey,
-    required final String nodeId,
-    required final String widgetType,
+    required final String nodeId, required final String widgetType, @JsonKey(defaultValue: '') @Default('') final String selectionKey,
     final LiveEditBounds? bounds,
     @JsonKey(fromJson: _depthFromJson) @Default(0) final int depth,
     final LiveEditSourceLocation? source,

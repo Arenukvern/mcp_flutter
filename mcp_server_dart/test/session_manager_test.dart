@@ -41,12 +41,7 @@ void main() {
       final context = ConnectionContext(
         defaultHost: 'localhost',
         defaultPort: 8181,
-        logger:
-            (
-              final level,
-              final message, {
-              final logger = 'test',
-            }) {},
+        logger: (final level, final message, {final logger = 'test'}) {},
         discoverPorts: () async => <int>[8181],
       );
 
@@ -69,12 +64,7 @@ void main() {
       final context = ConnectionContext(
         defaultHost: 'localhost',
         defaultPort: 8181,
-        logger:
-            (
-              final level,
-              final message, {
-              final logger = 'test',
-            }) {},
+        logger: (final level, final message, {final logger = 'test'}) {},
         discoverPorts: () async => <int>[8181],
       );
 

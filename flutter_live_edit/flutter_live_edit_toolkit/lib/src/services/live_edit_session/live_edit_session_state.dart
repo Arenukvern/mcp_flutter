@@ -20,7 +20,6 @@ final class _ElementHit {
   final bool edgeHit;
 }
 
-
 final class _LiveEditSessionState {
   _LiveEditSessionState({required this.sessionId, required this.objectGroup});
 
@@ -109,7 +108,8 @@ final class _LiveEditSessionState {
   set selectionSet(final InteractionSelectionSet value) =>
       currentLayer.selectionSet = value;
 
-  InteractionSelectionSet get marqueeSelectionSet => currentLayer.marqueeSelectionSet;
+  InteractionSelectionSet get marqueeSelectionSet =>
+      currentLayer.marqueeSelectionSet;
   set marqueeSelectionSet(final InteractionSelectionSet value) =>
       currentLayer.marqueeSelectionSet = value;
 

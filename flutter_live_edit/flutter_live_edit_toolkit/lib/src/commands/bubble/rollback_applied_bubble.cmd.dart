@@ -1,7 +1,6 @@
 import 'package:live_edit_tooling_ui_kit/live_edit_tooling_ui_kit.dart';
 
 import '../../di_live_edit_context/live_edit_context.dart';
-import '../../models/models.dart';
 import '../../types/live_edit_types.dart';
 
 bool _hasText(final String? value) => value != null && value.trim().isNotEmpty;
@@ -15,7 +14,8 @@ final class RollbackAppliedBubbleCommand {
   void execute(final LiveEditContext context) {
     final domain = context.sessionResource.value.targetDomain;
     final bubbleData = context.bubbleResource.value;
-    final activeId = bubbleId ?? bubbleData.layerViewStateByDomain[domain]?.activeBubbleId;
+    final activeId =
+        bubbleId ?? bubbleData.layerViewStateByDomain[domain]?.activeBubbleId;
     final resolvedId = context.bubbleStateService.resolveBubbleId(
       context,
       activeId,
@@ -90,7 +90,6 @@ final class RollbackAppliedBubbleCommand {
       step: LiveEditActivityStep.rollbackDone,
       label: 'Rolled back',
       summary: 'Rollback completed for $txLabel.',
-      inProgress: false,
       nodeId: resolvedId,
     );
     context.bubbleStateService.appendTimeline(

@@ -817,8 +817,7 @@ final class CommandCatalog {
       ),
       CommandSpec(
         name: 'drag',
-        description:
-            'Drag from one widget to another, identified by refs.',
+        description: 'Drag from one widget to another, identified by refs.',
         inputSchema: _objectSchema(
           properties: {
             'fromRef': _stringSchema(description: 'Source widget ref.'),
@@ -1752,8 +1751,7 @@ final class CommandCatalog {
   static LiveEditInferenceConfig? _nullableInferenceConfigArg(
     final Map<String, Object?> args,
   ) {
-    final value =
-        _findArg(args, 'inferenceConfig', alias: 'inference-config');
+    final value = _findArg(args, 'inferenceConfig', alias: 'inference-config');
     if (value == null) return null;
     final map = value is Map<String, Object?>
         ? value

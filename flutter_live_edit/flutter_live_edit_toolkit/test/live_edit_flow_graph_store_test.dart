@@ -6,7 +6,7 @@ void main() {
   test('indexes graph content for read-only selectors', () {
     const primaryKey = 'inspector:node-1';
     const secondaryKey = 'inspector:node-2';
-    final snapshot = FlowGraphSnapshot(
+    const snapshot = FlowGraphSnapshot(
       screens: <ScreenSnapshot>[
         ScreenSnapshot(
           screenId: 'screen-home',
@@ -14,7 +14,7 @@ void main() {
           title: 'Home',
           surfaceId: 'surface-home',
           nodeSummaries: <InteractionNodeSummary>[
-            const InteractionNodeSummary(
+            InteractionNodeSummary(
               selectionKey: primaryKey,
               nodeId: 'node-1',
               widgetType: 'Scaffold',
@@ -29,7 +29,7 @@ void main() {
           routeId: 'route-settings',
           title: 'Settings',
           nodeSummaries: <InteractionNodeSummary>[
-            const InteractionNodeSummary(
+            InteractionNodeSummary(
               selectionKey: secondaryKey,
               nodeId: 'node-2',
               widgetType: 'ListView',
@@ -39,7 +39,7 @@ void main() {
           ],
         ),
       ],
-      routes: const <RouteSnapshot>[
+      routes: <RouteSnapshot>[
         RouteSnapshot(
           routeId: 'route-home',
           name: '/home',
@@ -52,7 +52,7 @@ void main() {
           isActive: false,
         ),
       ],
-      transitions: const <ObservedTransition>[
+      transitions: <ObservedTransition>[
         ObservedTransition(
           transitionId: 'transition-next',
           kind: 'tap',

@@ -77,11 +77,7 @@ ClaudeMcpConfigHandle writeClaudeMcpConfig({
 }
 
 String? _resolveInspectorBinary(final String workingDirectory) {
-  final suffix = p.join(
-    'mcp_server_dart',
-    'build',
-    'flutter_inspector_mcp',
-  );
+  final suffix = p.join('mcp_server_dart', 'build', 'flutter_inspector_mcp');
   var current = Directory(workingDirectory).absolute;
   // Walk upward with a hard cap in case of symlink loops.
   for (var depth = 0; depth < 24; depth++) {

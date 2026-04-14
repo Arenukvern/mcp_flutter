@@ -8,9 +8,7 @@ _SelectionCandidateMetadata _selectionMetadataForElement(
   final String? cachedNodeId,
   final Map<String, Object?>? cachedDetailsTree,
 }) {
-  final nodeId =
-      cachedNodeId ??
-      _selectionKeyForElement(session, element);
+  final nodeId = cachedNodeId ?? _selectionKeyForElement(session, element);
   final detailsTree =
       cachedDetailsTree ??
       _decodeObject(

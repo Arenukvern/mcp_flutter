@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter_test/flutter_test.dart';
-
 import 'package:flutter_live_edit_toolkit/src/di_live_edit_context/resource_throttle.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('DebouncedResourceWriter', () {

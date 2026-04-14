@@ -30,7 +30,7 @@ class InteractionHandler {
     description: _description(
       'semantic_snapshot',
       'Get compact semantic tree of interactive widgets with refs usable '
-      'by interaction tools (tap_widget, enter_text, etc.)',
+          'by interaction tools (tap_widget, enter_text, etc.)',
     ),
     inputSchema: strictToolInputSchema(),
   );
@@ -40,8 +40,8 @@ class InteractionHandler {
     description: _description(
       'tap_widget',
       'Tap a widget identified by ref from semantic_snapshot. '
-      'Call semantic_snapshot immediately before to get fresh refs. '
-      'Pass snapshot_id to detect staleness.',
+          'Call semantic_snapshot immediately before to get fresh refs. '
+          'Pass snapshot_id to detect staleness.',
     ),
     inputSchema: strictToolInputSchema(
       required: ['ref'],
@@ -63,8 +63,8 @@ class InteractionHandler {
     description: _description(
       'enter_text',
       'Enter text into a text field identified by ref from semantic_snapshot. '
-      'Call semantic_snapshot immediately before to get fresh refs. '
-      'Pass snapshot_id to detect staleness.',
+          'Call semantic_snapshot immediately before to get fresh refs. '
+          'Pass snapshot_id to detect staleness.',
     ),
     inputSchema: strictToolInputSchema(
       required: ['ref', 'text'],
@@ -87,8 +87,8 @@ class InteractionHandler {
     description: _description(
       'scroll',
       'Scroll in a direction from a ref or from center of screen. '
-      'Call semantic_snapshot immediately before to get fresh refs. '
-      'Pass snapshot_id to detect staleness.',
+          'Call semantic_snapshot immediately before to get fresh refs. '
+          'Pass snapshot_id to detect staleness.',
     ),
     inputSchema: strictToolInputSchema(
       required: ['direction'],
@@ -96,9 +96,7 @@ class InteractionHandler {
         'direction': Schema.string(
           description: 'Scroll direction: up, down, left, right',
         ),
-        'ref': Schema.string(
-          description: 'Optional ref to scroll from',
-        ),
+        'ref': Schema.string(description: 'Optional ref to scroll from'),
         'distance': Schema.num(
           description: 'Scroll distance in logical pixels (default: 300)',
         ),
@@ -116,15 +114,13 @@ class InteractionHandler {
     description: _description(
       'long_press',
       'Long press a widget identified by ref from semantic_snapshot. '
-      'Call semantic_snapshot immediately before to get fresh refs. '
-      'Pass snapshot_id to detect staleness.',
+          'Call semantic_snapshot immediately before to get fresh refs. '
+          'Pass snapshot_id to detect staleness.',
     ),
     inputSchema: strictToolInputSchema(
       required: ['ref'],
       properties: {
-        'ref': Schema.string(
-          description: 'Widget ref from semantic_snapshot',
-        ),
+        'ref': Schema.string(description: 'Widget ref from semantic_snapshot'),
         'snapshotId': Schema.int(
           description:
               'Optional: snapshot_id from most recent semantic_snapshot. '
@@ -139,8 +135,8 @@ class InteractionHandler {
     description: _description(
       'swipe',
       'Swipe in a direction from a ref or center of screen. '
-      'Call semantic_snapshot immediately before to get fresh refs. '
-      'Pass snapshot_id to detect staleness.',
+          'Call semantic_snapshot immediately before to get fresh refs. '
+          'Pass snapshot_id to detect staleness.',
     ),
     inputSchema: strictToolInputSchema(
       required: ['direction'],
@@ -148,9 +144,7 @@ class InteractionHandler {
         'direction': Schema.string(
           description: 'Swipe direction: up, down, left, right',
         ),
-        'ref': Schema.string(
-          description: 'Optional ref to swipe from',
-        ),
+        'ref': Schema.string(description: 'Optional ref to swipe from'),
         'distance': Schema.num(
           description: 'Swipe distance in logical pixels (default: 300)',
         ),
@@ -168,9 +162,9 @@ class InteractionHandler {
     description: _description(
       'drag',
       'Drag from one widget to another, identified by refs '
-      'from semantic_snapshot. '
-      'Call semantic_snapshot immediately before to get fresh refs. '
-      'Pass snapshot_id to detect staleness.',
+          'from semantic_snapshot. '
+          'Call semantic_snapshot immediately before to get fresh refs. '
+          'Pass snapshot_id to detect staleness.',
     ),
     inputSchema: strictToolInputSchema(
       required: ['fromRef', 'toRef'],
@@ -191,7 +185,7 @@ class InteractionHandler {
     description: _description(
       'hot_reload_and_capture',
       'Hot reload then capture screenshot + semantic snapshot + errors '
-      'in one call. Tight edit-preview cycle.',
+          'in one call. Tight edit-preview cycle.',
     ),
     inputSchema: strictToolInputSchema(
       properties: {
@@ -216,7 +210,7 @@ class InteractionHandler {
     description: _description(
       'evaluate_dart_expression',
       'Evaluate a Dart expression in the running app isolate. '
-      'Returns the result of the expression.',
+          'Returns the result of the expression.',
     ),
     inputSchema: strictToolInputSchema(
       required: ['expression'],
@@ -247,9 +241,7 @@ class InteractionHandler {
 
   // --- Handler methods ---
 
-  Future<CallToolResult> semanticSnapshot(
-    final CallToolRequest request,
-  ) async {
+  Future<CallToolResult> semanticSnapshot(final CallToolRequest request) async {
     final connectError = await applyConnectionOverride(
       request: request,
       executor: executor,
@@ -546,5 +538,4 @@ class InteractionHandler {
       content: [TextContent(text: jsonEncode(result.data))],
     );
   }
-
 }

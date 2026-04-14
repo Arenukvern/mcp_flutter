@@ -6,8 +6,7 @@ final mcpToolkitExtKeys = (
   inspectWidgetAtPoint:
       '$mcpToolkitExt.${mcpToolkitExtNames.inspectWidgetAtPoint}',
   registerDynamics: '$mcpToolkitExt.${mcpToolkitExtNames.registerDynamics}',
-  semanticSnapshot:
-      '$mcpToolkitExt.${mcpToolkitExtNames.semanticSnapshot}',
+  semanticSnapshot: '$mcpToolkitExt.${mcpToolkitExtNames.semanticSnapshot}',
   tapWidget: '$mcpToolkitExt.${mcpToolkitExtNames.tapWidget}',
   enterText: '$mcpToolkitExt.${mcpToolkitExtNames.enterText}',
   scroll: '$mcpToolkitExt.${mcpToolkitExtNames.scroll}',

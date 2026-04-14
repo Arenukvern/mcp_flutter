@@ -11,7 +11,7 @@ void main() {
         graph: graph,
         actions: <LiveEditCanvasActionV2>[
           LiveEditCanvasActionV2.wrapSelection(
-            screenIds: <String>['product', 'home'],
+            screenIds: const <String>['product', 'home'],
           ),
         ],
       );
@@ -50,7 +50,7 @@ void main() {
         graph: graph,
         actions: <LiveEditCanvasActionV2>[
           LiveEditCanvasActionV2.wrapSelection(
-            screenIds: <String>['home', 'product'],
+            screenIds: const <String>['home', 'product'],
           ),
         ],
       );
@@ -222,13 +222,13 @@ void main() {
   });
 }
 
-FlowGraphSnapshot _fixtureFlowGraph() => FlowGraphSnapshot(
+FlowGraphSnapshot _fixtureFlowGraph() => const FlowGraphSnapshot(
   screens: <ScreenSnapshot>[
     ScreenSnapshot(
       screenId: 'home',
       routeId: 'route-home',
       title: 'Home',
-      nodeSummaries: const <InteractionNodeSummary>[
+      nodeSummaries: <InteractionNodeSummary>[
         InteractionNodeSummary(
           selectionKey: 'inspector:cta-button',
           nodeId: 'node-home-cta',
@@ -242,7 +242,7 @@ FlowGraphSnapshot _fixtureFlowGraph() => FlowGraphSnapshot(
       screenId: 'product',
       routeId: 'route-product',
       title: 'Product',
-      nodeSummaries: const <InteractionNodeSummary>[
+      nodeSummaries: <InteractionNodeSummary>[
         InteractionNodeSummary(
           selectionKey: 'inspector:product-card',
           nodeId: 'node-product-card',
@@ -256,7 +256,7 @@ FlowGraphSnapshot _fixtureFlowGraph() => FlowGraphSnapshot(
       screenId: 'cart',
       routeId: 'route-cart',
       title: 'Cart',
-      nodeSummaries: const <InteractionNodeSummary>[
+      nodeSummaries: <InteractionNodeSummary>[
         InteractionNodeSummary(
           selectionKey: 'inspector:cart-root',
           nodeId: 'node-cart-root',
@@ -267,7 +267,7 @@ FlowGraphSnapshot _fixtureFlowGraph() => FlowGraphSnapshot(
       ],
     ),
   ],
-  routes: const <RouteSnapshot>[
+  routes: <RouteSnapshot>[
     RouteSnapshot(routeId: 'route-home', name: '/home', screenId: 'home'),
     RouteSnapshot(
       routeId: 'route-product',
@@ -276,7 +276,7 @@ FlowGraphSnapshot _fixtureFlowGraph() => FlowGraphSnapshot(
     ),
     RouteSnapshot(routeId: 'route-cart', name: '/cart', screenId: 'cart'),
   ],
-  transitions: const <ObservedTransition>[
+  transitions: <ObservedTransition>[
     ObservedTransition(
       transitionId: 'transition-home-product',
       kind: 'tap',

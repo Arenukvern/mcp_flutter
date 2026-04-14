@@ -253,9 +253,7 @@ class _TapSection extends StatelessWidget {
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
                 ),
-                shape: const StadiumBorder(
-                  side: BorderSide(color: _kAccent),
-                ),
+                shape: const StadiumBorder(side: BorderSide(color: _kAccent)),
               ),
               child: const Text('Increment'),
             ),
@@ -457,10 +455,7 @@ class _ScrollSection extends StatelessWidget {
             separatorBuilder: (final _, final _) =>
                 const Divider(height: 1, color: _kFaint),
             itemBuilder: (final context, final index) => Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 4,
-                vertical: 16,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 16),
               child: Text(
                 'Item ${index + 1}',
                 style: const TextStyle(
@@ -524,18 +519,12 @@ class _DebugSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          _debugRow(
-            'AgentState.instance.counter',
-            '${state.counter}',
-          ),
+          _debugRow('AgentState.instance.counter', '${state.counter}'),
           _debugRow(
             'AgentState.instance.greeting',
             state.greeting.isEmpty ? '""' : '"${state.greeting}"',
           ),
-          _debugRow(
-            'AgentState.instance.toggle',
-            '${state.toggle}',
-          ),
+          _debugRow('AgentState.instance.toggle', '${state.toggle}'),
           _debugRow(
             'AgentState.instance.slider',
             state.slider.round().toString(),
@@ -584,12 +573,7 @@ class _DebugSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.baseline,
       textBaseline: TextBaseline.alphabetic,
       children: <Widget>[
-        Expanded(
-          child: Text(
-            expr,
-            style: _kHint,
-          ),
-        ),
+        Expanded(child: Text(expr, style: _kHint)),
         Text(
           value,
           style: const TextStyle(
@@ -628,10 +612,7 @@ class _Footer extends StatelessWidget {
       alignment: Alignment.centerLeft,
       child: Semantics(
         identifier: 'live_edit_test_target',
-        child: Text(
-          '$entries MCP entries registered.',
-          style: _kHint,
-        ),
+        child: Text('$entries MCP entries registered.', style: _kHint),
       ),
     );
   }

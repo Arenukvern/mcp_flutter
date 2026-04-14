@@ -82,20 +82,19 @@ bool _intersectsRect(final LiveEditBounds bounds, final Rect rect) =>
 bool _sameNodeIdSet(
   final List<LiveEditSelection> left,
   final List<LiveEditSelection> right,
-) {
-  return _sameSelectionKeySet(
+) => _sameSelectionKeySet(
     left.map((final selection) => selection.nodeId),
     right.map((final selection) => selection.nodeId),
   );
-}
 
 List<String> _canonicalSelectionKeys(final Iterable<String> keys) {
-  final normalized = keys
-      .map((final key) => key.trim())
-      .where((final key) => key.isNotEmpty)
-      .toSet()
-      .toList(growable: false)
-    ..sort();
+  final normalized =
+      keys
+          .map((final key) => key.trim())
+          .where((final key) => key.isNotEmpty)
+          .toSet()
+          .toList(growable: false)
+        ..sort();
   return normalized;
 }
 
@@ -319,8 +318,7 @@ List<_ElementHit> _dedupeHitsBySelectionKey(
 
 InteractionSelectionSet _selectionSetForKeys({
   required final Iterable<String> memberKeys,
-  final String? primaryKey,
-  required final InteractionSelectionOrigin origin,
+  required final InteractionSelectionOrigin origin, final String? primaryKey,
   final InteractionFocusKind? focusKind,
 }) {
   final normalizedKeys = _canonicalSelectionKeys(memberKeys);

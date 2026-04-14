@@ -153,10 +153,7 @@ mixin SemanticSnapshotService {
 
     final nodes = <Map<String, Object?>>[];
 
-    void walk(
-      final SemanticsNode node,
-      final List<String>? parentChildRefs,
-    ) {
+    void walk(final SemanticsNode node, final List<String>? parentChildRefs) {
       if (counter >= maxNodes) {
         truncated = true;
         return;

@@ -1244,21 +1244,23 @@ final class ConnectionContext {
     final completer = Completer<Map<String, dynamic>?>();
     _pendingReloadOrRestart = completer.future;
     unawaited(
-      _runHotReload(force: force).then(completer.complete).catchError((
-        final Object e,
-        final StackTrace s,
-      ) {
-        completer.completeError(e, s);
-      }).whenComplete(() {
-        if (identical(_pendingReloadOrRestart, completer.future)) {
-          _pendingReloadOrRestart = null;
-        }
-      }),
+      _runHotReload(force: force)
+          .then(completer.complete)
+          .catchError((final Object e, final StackTrace s) {
+            completer.completeError(e, s);
+          })
+          .whenComplete(() {
+            if (identical(_pendingReloadOrRestart, completer.future)) {
+              _pendingReloadOrRestart = null;
+            }
+          }),
     );
     return completer.future;
   }
 
-  Future<Map<String, dynamic>?> _runHotReload({required final bool force}) async {
+  Future<Map<String, dynamic>?> _runHotReload({
+    required final bool force,
+  }) async {
     final vmService = _vmService;
     if (vmService == null) {
       return {'error': 'VM service not connected'};
@@ -1323,16 +1325,16 @@ final class ConnectionContext {
     final completer = Completer<Map<String, dynamic>?>();
     _pendingReloadOrRestart = completer.future;
     unawaited(
-      _runHotRestart().then(completer.complete).catchError((
-        final Object e,
-        final StackTrace s,
-      ) {
-        completer.completeError(e, s);
-      }).whenComplete(() {
-        if (identical(_pendingReloadOrRestart, completer.future)) {
-          _pendingReloadOrRestart = null;
-        }
-      }),
+      _runHotRestart()
+          .then(completer.complete)
+          .catchError((final Object e, final StackTrace s) {
+            completer.completeError(e, s);
+          })
+          .whenComplete(() {
+            if (identical(_pendingReloadOrRestart, completer.future)) {
+              _pendingReloadOrRestart = null;
+            }
+          }),
     );
     return completer.future;
   }

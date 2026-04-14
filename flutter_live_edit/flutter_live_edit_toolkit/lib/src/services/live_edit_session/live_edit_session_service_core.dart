@@ -112,9 +112,9 @@ class _LiveEditSessionServiceCore {
             title: screenId,
             surfaceId: screenSurfaceIds[screenId],
             nodeSummaries: List<InteractionNodeSummary>.unmodifiable(
-              (screenSummaries[screenId]!.values.toList(growable: false)..sort(
+              screenSummaries[screenId]!.values.toList(growable: false)..sort(
                 (final a, final b) => a.selectionKey.compareTo(b.selectionKey),
-              )),
+              ),
             ),
           ),
         )
@@ -344,9 +344,6 @@ class _LiveEditSessionServiceCore {
       nodeId: _selectionCandidateNodeId(candidate) ?? '',
       widgetType: _selectionCandidateWidgetType(candidate) ?? '',
       bounds: _selectionCandidateBounds(candidate),
-      routeId: null,
-      screenId: null,
-      surfaceId: null,
       source: source,
       ownedByLocalProject: _selectionCandidateCreatedByLocalProject(candidate),
       hasProjectSourceHint: _hasText(sourceHint) || _hasText(sourceFile),

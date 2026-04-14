@@ -6,7 +6,7 @@ void main() {
   group('LiveEditSessionService selection summaries', () {
     test('selection summary prefers rawNode values over layoutContext', () {
       final service = LiveEditSessionService();
-      final selection = LiveEditSelection(
+      const selection = LiveEditSelection(
         sessionId: 'session-1',
         selectionKey: ' key-1 ',
         nodeId: ' node-1 ',
@@ -21,11 +21,11 @@ void main() {
           'screenId': 'screen-from-layout',
           'surfaceId': 'surface-from-layout',
         },
-        source: const LiveEditSourceLocation(
+        source: LiveEditSourceLocation(
           file: 'lib/main.dart',
           sourceHint: 'app',
         ),
-        propertiesForWire: const <Object?>[
+        propertiesForWire: <Object?>[
           <String, Object?>{'id': 'color'},
         ],
       );
@@ -47,13 +47,12 @@ void main() {
       'selection summary falls back to layoutContext when rawNode is empty',
       () {
         final service = LiveEditSessionService();
-        final selection = LiveEditSelection(
+        const selection = LiveEditSelection(
           sessionId: 'session-2',
-          selectionKey: '',
           nodeId: 'node-2',
           widgetType: 'Text',
-          rawNode: const <String, Object?>{'routeId': '   ', 'screenId': null},
-          layoutContext: const <String, Object?>{
+          rawNode: <String, Object?>{'routeId': '   ', 'screenId': null},
+          layoutContext: <String, Object?>{
             'routeId': 'route-from-layout',
             'screenId': 'screen-from-layout',
             'surfaceId': 'surface-from-layout',
@@ -74,11 +73,10 @@ void main() {
 
     test('candidate summary uses typed candidate fields', () {
       final service = LiveEditSessionService();
-      final candidate = LiveEditSelectionCandidate(
-        selectionKey: '',
+      const candidate = LiveEditSelectionCandidate(
         nodeId: ' node-candidate ',
         widgetType: ' GestureDetector ',
-        source: const LiveEditSourceLocation(file: 'lib/view.dart'),
+        source: LiveEditSourceLocation(file: 'lib/view.dart'),
         createdByLocalProject: true,
       );
 

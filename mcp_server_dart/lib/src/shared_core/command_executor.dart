@@ -1033,9 +1033,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
         data: {
           'expression': command.expression,
           'result':
-              instanceRef.valueAsString ??
-              instanceRef.classRef?.name ??
-              'null',
+              instanceRef.valueAsString ?? instanceRef.classRef?.name ?? 'null',
           'kind': instanceRef.kind,
           'classRef': instanceRef.classRef?.name,
         },
@@ -1048,9 +1046,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
   }
 
-  Future<CoreResult> _getRecentLogs(
-    final GetRecentLogsCommand command,
-  ) async {
+  Future<CoreResult> _getRecentLogs(final GetRecentLogsCommand command) async {
     final ensureFailure = await _ensureVmConnected();
     if (ensureFailure != null) return ensureFailure;
 

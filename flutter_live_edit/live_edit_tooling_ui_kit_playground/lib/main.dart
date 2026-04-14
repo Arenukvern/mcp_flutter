@@ -29,9 +29,7 @@ class _LiveEditToolingScreenState extends State<_LiveEditToolingScreen> {
   bool _prefilled = false;
 
   void _prefillPlayground(final LiveEditContext context) {
-    StartSessionCommand(
-      
-    ).execute(context);
+    StartSessionCommand().execute(context);
     SetOverlayEnabledCommand(enabled: true).execute(context);
     ExpandPanelCommand().execute(context);
   }

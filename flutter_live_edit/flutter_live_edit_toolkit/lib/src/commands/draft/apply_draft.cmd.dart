@@ -125,11 +125,11 @@ final class ApplyDraftCommand {
     final runningCount = inFlightSnapshot.recordsByBubbleId.values
         .where(
           (final r) =>
-              r.bubbleId != bid &&
-              r.status == LiveEditInFlightStatus.running,
+              r.bubbleId != bid && r.status == LiveEditInFlightStatus.running,
         )
         .length;
-    final useWorktree = _canUseWorktree(context) &&
+    final useWorktree =
+        _canUseWorktree(context) &&
         shouldUseWorktree(
           inFlightCount: runningCount + 1,
           bubbleTargetsOverlap: overlap,

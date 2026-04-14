@@ -47,7 +47,9 @@ final class LiveEditApplyService {
         executionPlan: executionPlan,
         executionResult: executionResult,
       );
-      if (!request.approve && executionPlan != null && executionResult == null) {
+      if (!request.approve &&
+          executionPlan != null &&
+          executionResult == null) {
         final previewRecord = currentBubbleRecord?.copyWith(
           status: LiveEditBubbleStatus.needsApproval,
           displayState: LiveEditBubbleDisplayState.expanded,

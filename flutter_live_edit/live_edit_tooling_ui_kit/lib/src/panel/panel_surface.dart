@@ -22,11 +22,12 @@ class PanelSurface extends StatelessWidget {
   final Widget expandedChild;
 
   @override
-  Widget build(final BuildContext context) => viewModel.displayMode == ToolingPanelDisplayMode.expanded
-        ? expandedChild
-        : PanelRail(
-            viewModel: viewModel,
-            callbacks: callbacks,
-            bubbleCallbacks: bubbleCallbacks,
-          );
+  Widget build(final BuildContext context) =>
+      viewModel.displayMode == ToolingPanelDisplayMode.expanded
+      ? expandedChild
+      : PanelRail(
+          viewModel: viewModel,
+          callbacks: callbacks,
+          bubbleCallbacks: bubbleCallbacks,
+        );
 }

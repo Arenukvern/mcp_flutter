@@ -4,7 +4,6 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:from_json_to_json/from_json_to_json.dart';
-import 'package:is_dart_empty_or_not/is_dart_empty_or_not.dart';
 import 'package:path/path.dart' as p;
 import 'package:xsoulspace_inference_codex_exec/xsoulspace_inference_codex_exec.dart';
 import 'package:xsoulspace_inference_core/xsoulspace_inference_core.dart';
@@ -97,8 +96,6 @@ final class LiveEditAgentRegistry {
     final claudeCodeClient = ClaudeCodeInferenceClient(
       defaultModel: 'sonnet',
       defaultReasoningEffort: 'medium',
-      executionTimeout: const Duration(minutes: 6),
-      maxTimeoutRetries: 0,
     );
     return LiveEditAgentRegistry(
       clients: <String, InferenceClient>{
@@ -106,7 +103,9 @@ final class LiveEditAgentRegistry {
         'cursor_agent': cursorClient,
         'claude_code': claudeCodeClient,
       },
-      defaultBackendId: _kIsWeb ? null : Platform.environment['LIVE_EDIT_BACKEND'],
+      defaultBackendId: _kIsWeb
+          ? null
+          : Platform.environment['LIVE_EDIT_BACKEND'],
     );
   }
 
@@ -276,7 +275,7 @@ final class LiveEditAgentRegistry {
       id: backendId,
       label: _backendLabel(backendId),
       description: _backendDescription(backendId),
-      available: _kIsWeb ? false : client.isAvailable,
+      available: !_kIsWeb && client.isAvailable,
       isDefault: backendId == _defaultBackendId,
       meta: meta,
     );
@@ -327,7 +326,9 @@ final class LiveEditAgentService {
   }) : registry = registry ?? LiveEditAgentRegistry.withDefaults(),
        _storagePath =
            storagePath ??
-           (_kIsWeb ? '' : p.join(Directory.systemTemp.path, 'flutter_live_edit_agent'));
+           (_kIsWeb
+               ? ''
+               : p.join(Directory.systemTemp.path, 'flutter_live_edit_agent'));
 
   final LiveEditAgentRegistry registry;
   final String _storagePath;
@@ -700,10 +701,7 @@ final class LiveEditAgentService {
   static final Random _uuidRandom = Random.secure();
 
   static String _generateUuidV4() {
-    final bytes = List<int>.generate(
-      16,
-      (final _) => _uuidRandom.nextInt(256),
-    );
+    final bytes = List<int>.generate(16, (final _) => _uuidRandom.nextInt(256));
     bytes[6] = (bytes[6] & 0x0F) | 0x40; // version 4
     bytes[8] = (bytes[8] & 0x3F) | 0x80; // variant 10
     String hex(final int start, final int end) => bytes

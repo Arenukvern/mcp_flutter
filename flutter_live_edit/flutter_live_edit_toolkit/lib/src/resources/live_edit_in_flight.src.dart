@@ -6,7 +6,6 @@ import 'live_edit_in_flight.src.data.dart';
 /// overlapping widget-subtree edits across parallel bubbles.
 final class LiveEditInFlightResource
     extends ValueNotifier<LiveEditInFlightResourceData> {
-  LiveEditInFlightResource([
-    final LiveEditInFlightResourceData? initialValue,
-  ]) : super(initialValue ?? LiveEditInFlightResourceData.initial);
+  LiveEditInFlightResource([final LiveEditInFlightResourceData? initialValue])
+    : super(initialValue ?? LiveEditInFlightResourceData.initial);
 }

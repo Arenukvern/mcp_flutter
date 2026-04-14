@@ -152,9 +152,7 @@ void main() {
           .context
           .bubbleResource
           .value
-          .copyWith(
-            layerViewStateByDomain: layerMap,
-          );
+          .copyWith(layerViewStateByDomain: layerMap);
       usedSyntheticSelectionFallback = true;
     }
     expect(
@@ -363,7 +361,10 @@ void main() {
     final promotedCandidates = h.activeSelectionCandidates;
     expect(promotedSelection.widgetType, isNot('RichText'));
     expect(promotedSelection.source, isNotNull);
-    expect(promotedSelection.source!.file, contains('lib/showcase_screen.dart'));
+    expect(
+      promotedSelection.source!.file,
+      contains('lib/showcase_screen.dart'),
+    );
     expect(promotedCandidates, isNotEmpty);
 
     final promotedIndex = promotedCandidates.indexWhere(

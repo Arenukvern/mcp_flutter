@@ -86,10 +86,7 @@ void main() {
         process: process!,
         events: events,
       );
-      expect(
-        (status['result'] as Map<String, dynamic>)['ok'] as bool,
-        isTrue,
-      );
+      expect((status['result'] as Map<String, dynamic>)['ok'] as bool, isTrue);
 
       final vmFailure = await _sendRequest(
         id: 4,

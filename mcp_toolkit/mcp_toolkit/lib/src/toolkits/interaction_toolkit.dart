@@ -58,8 +58,7 @@ extension type OnSemanticSnapshotEntry._(MCPCallEntry entry)
 /// {@template on_tap_widget_entry}
 /// Taps the widget identified by a semantic ref.
 /// {@endtemplate}
-extension type OnTapWidgetEntry._(MCPCallEntry entry)
-    implements MCPCallEntry {
+extension type OnTapWidgetEntry._(MCPCallEntry entry) implements MCPCallEntry {
   /// {@macro on_tap_widget_entry}
   factory OnTapWidgetEntry() {
     final entry = MCPCallEntry.tool(
@@ -82,8 +81,7 @@ extension type OnTapWidgetEntry._(MCPCallEntry entry)
               'ok': false,
               'error': 'stale_snapshot',
               'providedSnapshotId': snapshotId,
-              'currentSnapshotId':
-                  SemanticSnapshotService.currentSnapshotId,
+              'currentSnapshotId': SemanticSnapshotService.currentSnapshotId,
             },
           );
         }
@@ -108,8 +106,7 @@ extension type OnTapWidgetEntry._(MCPCallEntry entry)
               description: 'Semantic ref string (e.g. "s_0")',
             ),
             'snapshotId': IntegerSchema(
-              description:
-                  'Optional snapshot_id - if stale, returns error',
+              description: 'Optional snapshot_id - if stale, returns error',
             ),
           },
         ),
@@ -126,8 +123,7 @@ extension type OnTapWidgetEntry._(MCPCallEntry entry)
 /// {@template on_enter_text_entry}
 /// Enters text into a text field identified by a semantic ref.
 /// {@endtemplate}
-extension type OnEnterTextEntry._(MCPCallEntry entry)
-    implements MCPCallEntry {
+extension type OnEnterTextEntry._(MCPCallEntry entry) implements MCPCallEntry {
   /// {@macro on_enter_text_entry}
   factory OnEnterTextEntry() {
     final entry = MCPCallEntry.tool(
@@ -151,8 +147,7 @@ extension type OnEnterTextEntry._(MCPCallEntry entry)
               'ok': false,
               'error': 'stale_snapshot',
               'providedSnapshotId': snapshotId,
-              'currentSnapshotId':
-                  SemanticSnapshotService.currentSnapshotId,
+              'currentSnapshotId': SemanticSnapshotService.currentSnapshotId,
             },
           );
         }
@@ -180,12 +175,9 @@ extension type OnEnterTextEntry._(MCPCallEntry entry)
             'ref': StringSchema(
               description: 'Semantic ref of the text field (e.g. "s_2")',
             ),
-            'text': StringSchema(
-              description: 'Text to enter into the field',
-            ),
+            'text': StringSchema(description: 'Text to enter into the field'),
             'snapshotId': IntegerSchema(
-              description:
-                  'Optional snapshot_id - if stale, returns error',
+              description: 'Optional snapshot_id - if stale, returns error',
             ),
           },
         ),
@@ -221,8 +213,7 @@ extension type OnScrollEntry._(MCPCallEntry entry) implements MCPCallEntry {
               'ok': false,
               'error': 'stale_snapshot',
               'providedSnapshotId': snapshotId,
-              'currentSnapshotId':
-                  SemanticSnapshotService.currentSnapshotId,
+              'currentSnapshotId': SemanticSnapshotService.currentSnapshotId,
             },
           );
         }
@@ -249,8 +240,7 @@ extension type OnScrollEntry._(MCPCallEntry entry) implements MCPCallEntry {
           required: ['direction'],
           properties: {
             'direction': StringSchema(
-              description:
-                  'Direction to scroll: up, down, left, right',
+              description: 'Direction to scroll: up, down, left, right',
             ),
             'ref': StringSchema(
               description:
@@ -258,12 +248,10 @@ extension type OnScrollEntry._(MCPCallEntry entry) implements MCPCallEntry {
                   '(defaults to screen centre)',
             ),
             'distance': StringSchema(
-              description:
-                  'Distance in logical pixels (default 300)',
+              description: 'Distance in logical pixels (default 300)',
             ),
             'snapshotId': IntegerSchema(
-              description:
-                  'Optional snapshot_id - if stale, returns error',
+              description: 'Optional snapshot_id - if stale, returns error',
             ),
           },
         ),
@@ -280,8 +268,7 @@ extension type OnScrollEntry._(MCPCallEntry entry) implements MCPCallEntry {
 /// {@template on_long_press_entry}
 /// Long-presses the widget identified by a semantic ref.
 /// {@endtemplate}
-extension type OnLongPressEntry._(MCPCallEntry entry)
-    implements MCPCallEntry {
+extension type OnLongPressEntry._(MCPCallEntry entry) implements MCPCallEntry {
   /// {@macro on_long_press_entry}
   factory OnLongPressEntry() {
     final entry = MCPCallEntry.tool(
@@ -304,8 +291,7 @@ extension type OnLongPressEntry._(MCPCallEntry entry)
               'ok': false,
               'error': 'stale_snapshot',
               'providedSnapshotId': snapshotId,
-              'currentSnapshotId':
-                  SemanticSnapshotService.currentSnapshotId,
+              'currentSnapshotId': SemanticSnapshotService.currentSnapshotId,
             },
           );
         }
@@ -331,8 +317,7 @@ extension type OnLongPressEntry._(MCPCallEntry entry)
               description: 'Semantic ref string (e.g. "s_0")',
             ),
             'snapshotId': IntegerSchema(
-              description:
-                  'Optional snapshot_id - if stale, returns error',
+              description: 'Optional snapshot_id - if stale, returns error',
             ),
           },
         ),
@@ -368,8 +353,7 @@ extension type OnSwipeEntry._(MCPCallEntry entry) implements MCPCallEntry {
               'ok': false,
               'error': 'stale_snapshot',
               'providedSnapshotId': snapshotId,
-              'currentSnapshotId':
-                  SemanticSnapshotService.currentSnapshotId,
+              'currentSnapshotId': SemanticSnapshotService.currentSnapshotId,
             },
           );
         }
@@ -395,8 +379,7 @@ extension type OnSwipeEntry._(MCPCallEntry entry) implements MCPCallEntry {
           required: ['direction'],
           properties: {
             'direction': StringSchema(
-              description:
-                  'Direction to swipe: up, down, left, right',
+              description: 'Direction to swipe: up, down, left, right',
             ),
             'ref': StringSchema(
               description:
@@ -404,12 +387,10 @@ extension type OnSwipeEntry._(MCPCallEntry entry) implements MCPCallEntry {
                   '(defaults to screen centre)',
             ),
             'distance': StringSchema(
-              description:
-                  'Distance in logical pixels (default 300)',
+              description: 'Distance in logical pixels (default 300)',
             ),
             'snapshotId': IntegerSchema(
-              description:
-                  'Optional snapshot_id - if stale, returns error',
+              description: 'Optional snapshot_id - if stale, returns error',
             ),
           },
         ),
@@ -435,8 +416,7 @@ extension type OnDragEntry._(MCPCallEntry entry) implements MCPCallEntry {
         final toRef = parameters['toRef'] ?? '';
         if (fromRef.isEmpty || toRef.isEmpty) {
           return MCPCallResult(
-            message:
-                'Missing required parameter(s) "fromRef" and/or "toRef".',
+            message: 'Missing required parameter(s) "fromRef" and/or "toRef".',
             parameters: <String, dynamic>{'success': false},
           );
         }
@@ -451,8 +431,7 @@ extension type OnDragEntry._(MCPCallEntry entry) implements MCPCallEntry {
               'ok': false,
               'error': 'stale_snapshot',
               'providedSnapshotId': snapshotId,
-              'currentSnapshotId':
-                  SemanticSnapshotService.currentSnapshotId,
+              'currentSnapshotId': SemanticSnapshotService.currentSnapshotId,
             },
           );
         }
@@ -483,8 +462,7 @@ extension type OnDragEntry._(MCPCallEntry entry) implements MCPCallEntry {
               description: 'Semantic ref of the drag destination',
             ),
             'snapshotId': IntegerSchema(
-              description:
-                  'Optional snapshot_id - if stale, returns error',
+              description: 'Optional snapshot_id - if stale, returns error',
             ),
           },
         ),

@@ -20,9 +20,7 @@ import 'package:xsoulspace_inference_core/xsoulspace_inference_core.dart';
 /// The prompt is passed on stdin (mirrors the Codex client pattern so large
 /// prompts don't run into ARG_MAX).
 class ClaudeCodeInferenceClient
-    implements
-        InferenceClient,
-        StructuredTextStreamingInferenceClient {
+    implements InferenceClient, StructuredTextStreamingInferenceClient {
   ClaudeCodeInferenceClient({
     this.binaryName = 'claude',
     this.environment,
@@ -180,7 +178,12 @@ class ClaudeCodeInferenceClient
         timeoutRetriesLeft--;
         const warning = 'Retrying claude exec after timeout.';
         warnings.add(warning);
-        _emitWarning(onEvent, warning, attempt: attemptIndex, isTransient: true);
+        _emitWarning(
+          onEvent,
+          warning,
+          attempt: attemptIndex,
+          isTransient: true,
+        );
         _emitLifecycle(
           onEvent,
           InferenceStructuredTextLifecycleState.retrying,
@@ -194,7 +197,12 @@ class ClaudeCodeInferenceClient
         transientRetriesLeft--;
         const warning = 'Retrying claude exec after transient failure.';
         warnings.add(warning);
-        _emitWarning(onEvent, warning, attempt: attemptIndex, isTransient: true);
+        _emitWarning(
+          onEvent,
+          warning,
+          attempt: attemptIndex,
+          isTransient: true,
+        );
         _emitLifecycle(
           onEvent,
           InferenceStructuredTextLifecycleState.retrying,
@@ -285,8 +293,7 @@ class ClaudeCodeInferenceClient
     if (rawResult is! String || rawResult.trim().isEmpty) {
       final result = InferenceResult<InferenceResponse>.fail(
         code: 'claude_code_result_missing',
-        message:
-            'claude exec JSON envelope missing string "result" field',
+        message: 'claude exec JSON envelope missing string "result" field',
         details: <String, dynamic>{
           'envelope_keys': envelope.keys.toList(),
           if (envelope['subtype'] != null) 'subtype': envelope['subtype'],
@@ -325,7 +332,7 @@ class ClaudeCodeInferenceClient
     }
 
     final schemaValidation = validateJsonAgainstSchema(
-      value: parsed.data!,
+      value: parsed.data,
       schema: request.outputSchema,
     );
     if (!schemaValidation.success) {
@@ -447,15 +454,9 @@ class ClaudeCodeInferenceClient
     final reasoningEffort = _resolveReasoningEffort(request);
     final schemaJson = jsonEncode(request.outputSchema);
 
-    final mcpConfigPath = _metadataString(
-      request,
-      'claudeMcpConfigPath',
-    );
+    final mcpConfigPath = _metadataString(request, 'claudeMcpConfigPath');
     final newSessionId = _metadataString(request, 'claudeSessionId');
-    final resumeSessionId = _metadataString(
-      request,
-      'claudeResumeSessionId',
-    );
+    final resumeSessionId = _metadataString(request, 'claudeResumeSessionId');
     if (newSessionId != null && resumeSessionId != null) {
       throw ArgumentError(
         'claudeSessionId and claudeResumeSessionId are mutually exclusive.',
@@ -509,8 +510,6 @@ class ClaudeCodeInferenceClient
       args,
       workingDirectory: request.workingDirectory,
       environment: environment,
-      includeParentEnvironment: true,
-      runInShell: false,
     );
     executionControl?.attach(process);
 
@@ -567,7 +566,7 @@ class ClaudeCodeInferenceClient
         .listen(
           (final chunk) =>
               handleChunk(InferenceStructuredTextRawChannel.stdout, chunk),
-          onDone: () => stdoutDone.complete(),
+          onDone: stdoutDone.complete,
           onError: (final Object error, final StackTrace stackTrace) {
             stdoutBuffer.write('$error');
             if (!stdoutDone.isCompleted) stdoutDone.complete();
@@ -579,7 +578,7 @@ class ClaudeCodeInferenceClient
         .listen(
           (final chunk) =>
               handleChunk(InferenceStructuredTextRawChannel.stderr, chunk),
-          onDone: () => stderrDone.complete(),
+          onDone: stderrDone.complete,
           onError: (final Object error, final StackTrace stackTrace) {
             stderrBuffer.write('$error');
             if (!stderrDone.isCompleted) stderrDone.complete();
@@ -705,7 +704,7 @@ class ClaudeCodeInferenceClient
   };
 
   static final RegExp _uuidV4Pattern = RegExp(
-    r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-'
+    '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-'
     r'[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$',
   );
 

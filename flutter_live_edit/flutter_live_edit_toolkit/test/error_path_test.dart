@@ -1,6 +1,5 @@
-import 'package:flutter_test/flutter_test.dart';
-
 import 'package:flutter_live_edit_toolkit/src/models/models.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('LiveEditDraftChange v2 deserialization', () {
@@ -48,8 +47,10 @@ void main() {
       expect(roundTripped.nodeId, original.nodeId);
       expect(roundTripped.propertyId, original.propertyId);
       expect(roundTripped.targetValue, original.targetValue);
-      expect(roundTripped.targetContext?.targetDomain,
-          original.targetContext?.targetDomain);
+      expect(
+        roundTripped.targetContext?.targetDomain,
+        original.targetContext?.targetDomain,
+      );
     });
   });
 
@@ -68,7 +69,7 @@ void main() {
     });
 
     test('effectiveInstructionText reads instructionText only', () {
-      final req = LiveEditResolutionRequest(
+      const req = LiveEditResolutionRequest(
         sessionId: 's',
         bubbleId: 'b',
         workingDirectory: '/tmp',
@@ -78,13 +79,13 @@ void main() {
     });
 
     test('effectivePrimarySelection reads primarySelection only', () {
-      final selection = LiveEditSelection(
+      const selection = LiveEditSelection(
         sessionId: 's',
         nodeId: 'node-1',
         widgetType: 'Text',
-        rawNode: const <String, Object?>{},
+        rawNode: <String, Object?>{},
       );
-      final req = LiveEditResolutionRequest(
+      const req = LiveEditResolutionRequest(
         sessionId: 's',
         bubbleId: 'b',
         workingDirectory: '/tmp',
@@ -94,7 +95,7 @@ void main() {
     });
 
     test('toJson does not emit v1 aliases', () {
-      final req = LiveEditResolutionRequest(
+      const req = LiveEditResolutionRequest(
         sessionId: 's',
         bubbleId: 'b',
         workingDirectory: '/tmp',
@@ -129,7 +130,7 @@ void main() {
 
     test('normalized with members produces primary key', () {
       final set = InteractionSelectionSet(
-        memberKeys: ['b', 'a'],
+        memberKeys: const ['b', 'a'],
         origin: InteractionSelectionOrigin.tap,
       );
       expect(set.primaryKey, isNotNull);
@@ -138,7 +139,7 @@ void main() {
 
     test('origin is preserved', () {
       final set = InteractionSelectionSet(
-        memberKeys: ['x'],
+        memberKeys: const ['x'],
         origin: InteractionSelectionOrigin.marquee,
       );
       expect(set.origin, InteractionSelectionOrigin.marquee);

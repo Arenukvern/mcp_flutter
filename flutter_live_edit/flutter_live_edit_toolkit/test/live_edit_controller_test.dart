@@ -2262,9 +2262,15 @@ void main() {
 
     expect(requests, hasLength(1));
     expect(requests.single.approve, isFalse);
-    expect(selectApplyPhase(orchestrator.context), LiveEditApplyPhase.awaitingApproval);
     expect(
-      selectBubbleStatusForBubble(orchestrator.context, _bubbleId(orchestrator)),
+      selectApplyPhase(orchestrator.context),
+      LiveEditApplyPhase.awaitingApproval,
+    );
+    expect(
+      selectBubbleStatusForBubble(
+        orchestrator.context,
+        _bubbleId(orchestrator),
+      ),
       LiveEditBubbleStatus.needsApproval,
     );
     expect(_semanticsId('live_edit_preview_apply_button'), findsOneWidget);
@@ -2276,7 +2282,10 @@ void main() {
     expect(requests.last.approve, isTrue);
     expect(selectApplyPhase(orchestrator.context), LiveEditApplyPhase.success);
     expect(
-      selectBubbleStatusForBubble(orchestrator.context, _bubbleId(orchestrator)),
+      selectBubbleStatusForBubble(
+        orchestrator.context,
+        _bubbleId(orchestrator),
+      ),
       LiveEditBubbleStatus.applied,
     );
     expect(_semanticsId('live_edit_preview_apply_button'), findsNothing);
@@ -2326,7 +2335,9 @@ void main() {
     await tester.pumpAndSettle();
 
     OpenAiBubbleCommand(defaultPrompt: '').execute(orchestrator.context);
-    UpdateAiComposerCommand(value: 'Rewrite this text.').execute(orchestrator.context);
+    UpdateAiComposerCommand(
+      value: 'Rewrite this text.',
+    ).execute(orchestrator.context);
     await tester.pumpAndSettle();
 
     await SubmitAiPromptCommand(
@@ -2336,7 +2347,10 @@ void main() {
 
     expect(selectApplyPhase(orchestrator.context), LiveEditApplyPhase.success);
     expect(
-      selectBubbleStatusForBubble(orchestrator.context, _bubbleId(orchestrator)),
+      selectBubbleStatusForBubble(
+        orchestrator.context,
+        _bubbleId(orchestrator),
+      ),
       LiveEditBubbleStatus.applied,
     );
     expect(_semanticsId('live_edit_rollback_button'), findsOneWidget);
@@ -2345,10 +2359,16 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      selectBubbleStatusForBubble(orchestrator.context, _bubbleId(orchestrator)),
+      selectBubbleStatusForBubble(
+        orchestrator.context,
+        _bubbleId(orchestrator),
+      ),
       LiveEditBubbleStatus.editing,
     );
-    expect(selectApplyPhase(orchestrator.context), LiveEditApplyPhase.rollbackDone);
+    expect(
+      selectApplyPhase(orchestrator.context),
+      LiveEditApplyPhase.rollbackDone,
+    );
     expect(
       selectCurrentActivity(
         orchestrator.context,

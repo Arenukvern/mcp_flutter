@@ -196,12 +196,6 @@ typedef FlowFocusKind = InteractionFocusKind;
 
 @immutable
 final class InteractionSelectionSet {
-  const InteractionSelectionSet._raw({
-    required this.primaryKey,
-    required this.memberKeys,
-    required this.origin,
-    required this.focusKind,
-  });
 
   factory InteractionSelectionSet({
     final Object? primaryKey,
@@ -228,6 +222,12 @@ final class InteractionSelectionSet {
       focusKind: focusKind,
     );
   }
+  const InteractionSelectionSet._raw({
+    required this.primaryKey,
+    required this.memberKeys,
+    required this.origin,
+    required this.focusKind,
+  });
 
   factory InteractionSelectionSet.fromJson(final Map<String, Object?> json) =>
       InteractionSelectionSet(
@@ -593,8 +593,7 @@ enum FlowSelectionIntentKind {
 
   final String wireName;
 
-  static FlowSelectionIntentKind fromWire(final Object? value) {
-    return switch (_normalizeWireToken(value)) {
+  static FlowSelectionIntentKind fromWire(final Object? value) => switch (_normalizeWireToken(value)) {
       'widget_change' ||
       'change_widget' ||
       'changewidget' => FlowSelectionIntentKind.changeWidget,
@@ -609,7 +608,6 @@ enum FlowSelectionIntentKind {
       'changeoutcome' => FlowSelectionIntentKind.changeOutcome,
       _ => FlowSelectionIntentKind.changeWidget,
     };
-  }
 }
 
 @immutable
@@ -648,15 +646,6 @@ final class FlowSelectionIntent {
 
 @immutable
 final class DraftTargetContext {
-  const DraftTargetContext._raw({
-    required this.targetDomain,
-    required this.selectionKey,
-    required this.screenId,
-    required this.routeId,
-    required this.surfaceId,
-    required this.transitionId,
-    required this.sourceTargets,
-  });
 
   factory DraftTargetContext({
     final Object? targetDomain,
@@ -675,6 +664,15 @@ final class DraftTargetContext {
     transitionId: _asNullableString(transitionId),
     sourceTargets: _jsonMapsFromIterable(sourceTargets),
   );
+  const DraftTargetContext._raw({
+    required this.targetDomain,
+    required this.selectionKey,
+    required this.screenId,
+    required this.routeId,
+    required this.surfaceId,
+    required this.transitionId,
+    required this.sourceTargets,
+  });
 
   factory DraftTargetContext.fromJson(final Map<String, Object?> json) =>
       DraftTargetContext(
@@ -792,12 +790,6 @@ final class AgentContextBudget {
 
 @immutable
 final class FlowFocus {
-  const FlowFocus._raw({
-    required this.currentScreenId,
-    required this.activeSelectionSet,
-    required this.transitionId,
-    required this.userIntent,
-  });
 
   factory FlowFocus({
     final String? currentScreenId,
@@ -813,6 +805,12 @@ final class FlowFocus {
     transitionId: _asNullableString(transitionId),
     userIntent: userIntent ?? intent,
   );
+  const FlowFocus._raw({
+    required this.currentScreenId,
+    required this.activeSelectionSet,
+    required this.transitionId,
+    required this.userIntent,
+  });
 
   factory FlowFocus.fromJson(final Map<String, Object?> json) => FlowFocus(
     currentScreenId: _asNullableString(
@@ -852,14 +850,6 @@ final class FlowFocus {
 
 @immutable
 final class AgentContextEnvelope {
-  const AgentContextEnvelope._raw({
-    required this.focus,
-    required this.screenSlice,
-    required this.flowSlice,
-    required this.sourceTargets,
-    required this.evidenceRefs,
-    required this.budget,
-  });
 
   factory AgentContextEnvelope({
     required final FlowFocus focus,
@@ -876,6 +866,14 @@ final class AgentContextEnvelope {
     evidenceRefs: _evidenceRefsFromIterable(evidenceRefs),
     budget: budget,
   );
+  const AgentContextEnvelope._raw({
+    required this.focus,
+    required this.screenSlice,
+    required this.flowSlice,
+    required this.sourceTargets,
+    required this.evidenceRefs,
+    required this.budget,
+  });
 
   factory AgentContextEnvelope.fromJson(final Map<String, Object?> json) =>
       AgentContextEnvelope(

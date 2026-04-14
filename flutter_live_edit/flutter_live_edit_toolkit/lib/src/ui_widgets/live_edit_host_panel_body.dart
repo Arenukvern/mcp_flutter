@@ -58,7 +58,6 @@ class _PropertyPanelBody extends StatelessWidget {
                 Semantics(
                   identifier: 'live_edit_model_dropdown',
                   child: DropdownButtonFormField<String>(
-                    isDense: true,
                     initialValue: selectCurrentModel(
                       context,
                       controller,
@@ -70,17 +69,18 @@ class _PropertyPanelBody extends StatelessWidget {
                       labelText: 'Model',
                       border: OutlineInputBorder(),
                     ),
-                    items: selectCurrentSupportedModels(
-                      context,
-                      controller,
-                      presentationDomain: presentationDomain,
-                      sessionId: sessionId,
-                    ).map((final model) {
-                      return DropdownMenuItem<String>(
-                        value: model.id,
-                        child: Text(model.label),
-                      );
-                    }).toList(growable: false),
+                    items:
+                        selectCurrentSupportedModels(
+                              context,
+                              controller,
+                              presentationDomain: presentationDomain,
+                              sessionId: sessionId,
+                            )
+                            .map((final model) => DropdownMenuItem<String>(
+                                value: model.id,
+                                child: Text(model.label),
+                              ))
+                            .toList(growable: false),
                     onChanged: (final value) {
                       SetInferenceConfigCommand(model: value).execute(context);
                     },
@@ -90,7 +90,6 @@ class _PropertyPanelBody extends StatelessWidget {
                 Semantics(
                   identifier: 'live_edit_reasoning_dropdown',
                   child: DropdownButtonFormField<String>(
-                    isDense: true,
                     initialValue: selectCurrentReasoningEffort(
                       context,
                       controller,
@@ -102,17 +101,18 @@ class _PropertyPanelBody extends StatelessWidget {
                       labelText: 'Reasoning',
                       border: OutlineInputBorder(),
                     ),
-                    items: selectCurrentSupportedReasoningEfforts(
-                      context,
-                      controller,
-                      presentationDomain: presentationDomain,
-                      sessionId: sessionId,
-                    ).map((final effort) {
-                      return DropdownMenuItem<String>(
-                        value: effort,
-                        child: Text(effort),
-                      );
-                    }).toList(growable: false),
+                    items:
+                        selectCurrentSupportedReasoningEfforts(
+                              context,
+                              controller,
+                              presentationDomain: presentationDomain,
+                              sessionId: sessionId,
+                            )
+                            .map((final effort) => DropdownMenuItem<String>(
+                                value: effort,
+                                child: Text(effort),
+                              ))
+                            .toList(growable: false),
                     onChanged: (final value) {
                       SetInferenceConfigCommand(
                         reasoningEffort: value,

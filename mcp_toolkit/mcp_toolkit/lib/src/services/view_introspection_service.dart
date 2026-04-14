@@ -6,7 +6,6 @@ import 'dart:ui' as ui;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
-import 'package:is_dart_empty_or_not/is_dart_empty_or_not.dart';
 
 import 'application_info.dart';
 

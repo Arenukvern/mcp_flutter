@@ -149,10 +149,7 @@ bool selectCurrentBackendUsesFreeformModel(
     )?.id ==
     'cursor_agent';
 
-const Set<String> _structuredBackendIds = <String>{
-  'codex_exec',
-  'claude_code',
-};
+const Set<String> _structuredBackendIds = <String>{'codex_exec', 'claude_code'};
 
 List<LiveEditCodexModelOption> _fallbackSupportedModels(final String id) =>
     switch (id) {

@@ -46,16 +46,6 @@ double _asDouble(final Object? value, {final double fallback = 0}) {
   return double.tryParse(_asString(value)) ?? fallback;
 }
 
-int _asInt(final Object? value, {final int fallback = 0}) {
-  if (value is int) {
-    return value;
-  }
-  if (value is num) {
-    return value.toInt();
-  }
-  return int.tryParse(_asString(value)) ?? fallback;
-}
-
 List<String> _normalizeTokens(final Iterable<Object?> values) {
   final seen = <String>{};
   final normalized = <String>[];
@@ -956,7 +946,7 @@ final class LiveEditTimelinePipelinePrimitivesV2 {
     );
     final validSelection =
         state.selectionScreenIds
-            .where((final screenId) => screenById.containsKey(screenId))
+            .where(screenById.containsKey)
             .toList(growable: false)
           ..sort();
     return LiveEditCanvasProjectionV2(
@@ -990,7 +980,7 @@ final class LiveEditTimelinePipelinePrimitivesV2 {
     required final List<LiveEditCanvasScreenNodeV2> screenNodes,
     required final List<LiveEditCanvasGroupNodeV2> groupNodes,
   }) {
-    final hasFocusNode = (final String? nodeId) =>
+    bool hasFocusNode(final String? nodeId) =>
         nodeId != null &&
         (screenNodes.any((final node) => node.nodeId == nodeId) ||
             groupNodes.any((final node) => node.nodeId == nodeId));

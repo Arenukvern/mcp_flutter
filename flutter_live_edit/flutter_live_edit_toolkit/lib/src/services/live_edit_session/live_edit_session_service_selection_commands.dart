@@ -45,11 +45,16 @@ extension _LiveEditSessionServiceSelectionCommands
       results: hits,
       requestedViewId: viewId,
     );
-    final ranked = _sortMarqueeHits(session, _dedupeHitsBySelectionKey(session, hits));
+    final ranked = _sortMarqueeHits(
+      session,
+      _dedupeHitsBySelectionKey(session, hits),
+    );
     final previewSelections = _buildMarqueeSelections(session, ranked);
     final marqueeSelectionSet = _selectionSetForKeys(
       memberKeys: previewSelections.map((final selection) => selection.nodeId),
-      primaryKey: previewSelections.isEmpty ? null : previewSelections.first.nodeId,
+      primaryKey: previewSelections.isEmpty
+          ? null
+          : previewSelections.first.nodeId,
       origin: InteractionSelectionOrigin.marquee,
       focusKind: previewSelections.length > 1
           ? InteractionFocusKind.selectionSet
@@ -149,8 +154,7 @@ extension _LiveEditSessionServiceSelectionCommands
         )
         .toList(growable: false);
     final activeHit = hits.first;
-    final activeNodeId =
-        _selectionKeyForElement(session, activeHit.element);
+    final activeNodeId = _selectionKeyForElement(session, activeHit.element);
     session.selectionHitCandidates = _dedupeHitsBySelectionKey(session, hits);
     session.selectedElement = activeHit.element;
     session.ancestry = activeHit.ancestry;
@@ -222,7 +226,10 @@ extension _LiveEditSessionServiceSelectionCommands
   }) {
     final session = _requireSession(sessionId);
     final layer = _layerForRequest(session, requested: targetDomain);
-    final hits = _dedupeHitsBySelectionKey(session, layer.selectionHitCandidates);
+    final hits = _dedupeHitsBySelectionKey(
+      session,
+      layer.selectionHitCandidates,
+    );
     layer.selectionHitCandidates = hits;
     if (hits.isEmpty) {
       return <String, Object?>{
