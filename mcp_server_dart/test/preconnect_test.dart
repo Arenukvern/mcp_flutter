@@ -33,6 +33,8 @@ void main() {
           defaultPort: 8181,
           logger: _noopLogger,
           discoverPorts: () async => <int>[8181, 8182],
+          probeFlutterTarget:
+              (final endpoint, {required final timeout}) async => true,
         );
 
         final manager = SessionManager(

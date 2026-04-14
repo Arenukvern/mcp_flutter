@@ -108,7 +108,14 @@
       "Bash(export WS='ws://127.0.0.1:56469/lBZp-LStsr0=/ws')",
       "Bash(python3 -c \"import sys,json;d=json.load\\(sys.stdin\\)['data'];print\\('  result:',d.get\\('result',''\\)[:80]\\)\")",
       "Bash(bash:*)",
-      "Bash(echo \"exit=$?\")"
+      "Bash(echo \"exit=$?\")",
+      "Bash(flutter --version)",
+      "Bash(flutter test *)",
+      "Bash(python3 -c ' *)",
+      "Bash(rtk proxy *)",
+      "Bash(stat -f \"%Sm %N\" -t \"%Y-%m-%d\" .codex/engineering-loop/*.json .codex/specs/*.md .codex/*.md flutter_live_edit/*.md)",
+      "Bash(git mv *)",
+      "Bash(git rm *)"
     ]
   }
 }

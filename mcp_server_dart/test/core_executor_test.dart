@@ -526,7 +526,8 @@ final class _FakeDesktopWindowScreenshotService
   }) async {
     onCapture?.call(targetPid);
     if (error != null) {
-      throw Exception(error);
+      // ignore: only_throw_errors
+      throw error!;
     }
     return result;
   }
