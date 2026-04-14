@@ -40,7 +40,17 @@
       "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); data=d['data']; print\\('ok:', d['ok']\\); print\\('hotReload.success:', data.get\\('hotReload',{}\\).get\\('success'\\)\\); print\\('screenshot has images:', 'images' in data.get\\('screenshot',{}\\)\\); print\\('semantics.snapshot_id:', data.get\\('semantics',{}\\).get\\('snapshot_id'\\)\\); print\\('errors keys:', list\\(data.get\\('errors',{}\\).keys\\(\\)\\)[:3]\\)\")",
       "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); nodes=d['data']['nodes']; [print\\(f'{n[\\\\\"ref\\\\\"]}: {n.get\\(\\\\\"label\\\\\",\\\\\"\\\\\"\\)[:80]}'\\) for n in nodes if 'StatefulWidget' in n.get\\('label',''\\) or 'ChangeNotifier' in n.get\\('label',''\\)]\")",
       "Bash(pkill -f \"test_app.app\")",
-      "Bash(pkill -f \"flutter run -d macos\")"
+      "Bash(pkill -f \"flutter run -d macos\")",
+      "Bash(tee /tmp/flutter_app2.log)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(d['data']['targets'][0]['targetId']\\)\")",
+      "Bash(python3 -c ':*)",
+      "Bash(python3 /tmp/parse_snap.py)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\)['data']; print\\(f\\\\\"  hotReload={d.get\\('hotReload',{}\\).get\\('success'\\)} semantics.snapshot_id={d.get\\('semantics',{}\\).get\\('snapshot_id'\\)} errors keys={list\\(d.get\\('errors',{}\\).keys\\(\\)\\)[:3]}\\\\\"\\)\")",
+      "Bash(python3)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\)['data']; print\\(f\\\\\"  toggle = {d.get\\('result'\\)}\\\\\"\\)\")",
+      "Bash(tee /tmp/flutter_app3.log)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\)['data']; print\\(f\\\\\"  greeting = {d.get\\('result'\\)}\\\\\"\\)\")",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\)['data']; print\\(f\\\\\"│  error={d.get\\('error'\\)} provided={d.get\\('providedSnapshotId'\\)} current={d.get\\('currentSnapshotId'\\)}\\\\\"\\)\")"
     ]
   }
 }

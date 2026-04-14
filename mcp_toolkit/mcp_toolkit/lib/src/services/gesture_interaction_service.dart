@@ -149,27 +149,28 @@ mixin GestureInteractionService {
       }
     }
 
-    // Fallback: focus by tapping, then drive the EditableTextState directly.
-    final center = SemanticSnapshotService.resolveCenter(ref);
-    if (center != null) {
-      await _dispatchTap(center);
-      await _waitFrame();
-      // Extra settle so the focus/keyboard machinery attaches.
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+    // Fallback: locate the EditableTextState whose render object overlaps
+    // the ref's bounds and drive it directly. This avoids relying on focus,
+    // which is not always set by synthetic taps (especially on desktop).
+    final bounds = SemanticSnapshotService.resolveBounds(ref);
+    EditableTextState? editable = bounds == null
+        ? null
+        : _findEditableInRect(bounds);
+
+    // If the tree search didn't find one, tap to focus and try the focused
+    // element as a last resort.
+    if (editable == null) {
+      final center = SemanticSnapshotService.resolveCenter(ref);
+      if (center != null) {
+        await _dispatchTap(center);
+        await _waitFrame();
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+      }
+      final focused = FocusManager.instance.primaryFocus;
+      final context = focused?.context;
+      editable = context?.findAncestorStateOfType<EditableTextState>();
     }
 
-    final focused = FocusManager.instance.primaryFocus;
-    final context = focused?.context;
-    if (context == null) {
-      return <String, Object?>{
-        'success': false,
-        'ref': ref,
-        'action': 'enter_text',
-        'error': 'no_focused_element',
-      };
-    }
-
-    final editable = context.findAncestorStateOfType<EditableTextState>();
     if (editable == null) {
       return <String, Object?>{
         'success': false,
@@ -197,9 +198,20 @@ mixin GestureInteractionService {
 
   /// Scroll from [ref] (or screen centre) in [direction].
   ///
-  /// [direction] is one of `up`, `down`, `left`, `right`. Tries the matching
-  /// semantic scroll action first when a [ref] is supplied, otherwise falls
-  /// back to a multi-step pointer drag.
+  /// [direction] is one of `up`, `down`, `left`, `right`. Describes which
+  /// content should be revealed (matches Playwright / user language):
+  ///
+  /// * `down` — reveal content below (finger swipes up)
+  /// * `up`   — reveal content above (finger swipes down)
+  ///
+  /// Dispatch order:
+  /// 1. If [ref] is given and the node exposes the matching scroll action,
+  ///    use `SemanticsOwner.performAction` (Tier 1).
+  /// 2. If no [ref] is given, walk the semantics tree looking for the first
+  ///    scrollable that exposes the matching action, and dispatch there.
+  ///    This works on desktop where synthetic touch drags don't trigger
+  ///    scroll physics.
+  /// 3. Fallback: multi-step pointer drag from screen centre.
   static Future<Map<String, Object?>> scroll({
     required final String direction,
     final String? ref,
@@ -227,28 +239,105 @@ mixin GestureInteractionService {
       }
     }
 
-    ui.Offset start;
-    if (ref != null) {
-      final center = SemanticSnapshotService.resolveCenter(ref);
-      if (center == null) {
-        return _refNotFound(ref);
+    // No ref — try to auto-find a scrollable in the semantics tree.
+    if (ref == null && action != null) {
+      final owner = SemanticSnapshotService.semanticsOwner;
+      final root = owner?.rootSemanticsNode;
+      if (owner != null && root != null) {
+        final target = _findScrollableFor(root, action);
+        if (target != null) {
+          owner.performAction(target.id, action);
+          await _waitFrame();
+          return <String, Object?>{
+            'success': true,
+            'via': 'semantic_action',
+            'action': 'scroll_$direction',
+            'targetNodeId': target.id,
+          };
+        }
       }
-      start = center;
-    } else {
-      start = _screenCenter();
     }
 
-    final end = start + _directionDelta(direction, distance);
-    await _dispatchDrag(start, end);
+    // Desktop-friendly fallback: PointerScrollEvent (mouse-wheel-style).
+    // This is how Flutter on macOS/Linux/Windows actually scrolls; synthetic
+    // touch drags don't always drive scroll physics on desktop.
+    final start = ref != null
+        ? SemanticSnapshotService.resolveCenter(ref)
+        : _screenCenter();
+    if (start == null && ref != null) {
+      return _refNotFound(ref);
+    }
+    final origin = start ?? _screenCenter();
+    final scrollDelta = _scrollDelta(direction, distance);
+    await _dispatchScrollSignal(origin, scrollDelta);
     return <String, Object?>{
       'success': true,
-      'via': 'pointer_events',
+      'via': 'pointer_scroll_event',
       'action': 'scroll',
       'direction': direction,
       'distance': distance,
-      'from': _offsetToMap(start),
-      'to': _offsetToMap(end),
+      'at': _offsetToMap(origin),
+      'scrollDelta': _offsetToMap(scrollDelta),
     };
+  }
+
+  /// Return the [EditableTextState] whose render box overlaps [rect] — or,
+  /// if only one editable is on screen, just return that one.
+  ///
+  /// Lets enter_text find the right field without depending on focus,
+  /// which synthetic taps don't reliably transfer on desktop.
+  static EditableTextState? _findEditableInRect(final ui.Rect rect) {
+    final centre = rect.center;
+    final editables = <EditableTextState>[];
+    EditableTextState? spatialMatch;
+
+    void visit(final Element element) {
+      final state = element is StatefulElement ? element.state : null;
+      if (state is EditableTextState) {
+        editables.add(state);
+        if (spatialMatch == null) {
+          final renderObject = element.renderObject;
+          if (renderObject is RenderBox && renderObject.hasSize) {
+            final origin = renderObject.localToGlobal(ui.Offset.zero);
+            final bounds = origin & renderObject.size;
+            if (bounds.contains(centre) || bounds.overlaps(rect)) {
+              spatialMatch = state;
+            }
+          }
+        }
+      }
+      element.visitChildElements(visit);
+    }
+
+    final root = WidgetsBinding.instance.rootElement;
+    if (root != null) visit(root);
+
+    if (spatialMatch != null) return spatialMatch;
+    if (editables.length == 1) return editables.first;
+    return null;
+  }
+
+  /// Walk the semantics tree depth-first and return the first node that
+  /// advertises [action]. Returns `null` if none is found.
+  static SemanticsNode? _findScrollableFor(
+    final SemanticsNode root,
+    final SemanticsAction action,
+  ) {
+    SemanticsNode? result;
+    void visit(final SemanticsNode node) {
+      if (result != null) return;
+      if (node.getSemanticsData().hasAction(action)) {
+        result = node;
+        return;
+      }
+      node.visitChildren((final child) {
+        visit(child);
+        return result == null;
+      });
+    }
+
+    visit(root);
+    return result;
   }
 
   /// Swipe from [ref] (or screen centre) in [direction].
@@ -436,15 +525,55 @@ mixin GestureInteractionService {
         _ => null,
       };
 
-  /// Map a direction string to an [Offset] delta.
+  /// Dispatch a single [PointerScrollEvent] (signal event) at [position].
+  ///
+  /// This is the desktop-native scroll path — equivalent to a trackpad swipe
+  /// or mouse-wheel tick. Flutter routes this through `PointerSignalResolver`
+  /// and scroll physics pick it up the same way real wheel input does.
+  static Future<void> _dispatchScrollSignal(
+    final ui.Offset position,
+    final ui.Offset scrollDelta,
+  ) async {
+    final binding = GestureBinding.instance;
+    binding.handlePointerEvent(
+      PointerScrollEvent(
+        position: position,
+        scrollDelta: scrollDelta,
+        timeStamp: _now(),
+      ),
+    );
+    await _waitFrame();
+  }
+
+  /// Convert a user-facing direction to a scroll delta for
+  /// [PointerScrollEvent]. Unlike pointer-drag deltas, scroll-event deltas
+  /// already follow the "direction content moves" convention directly —
+  /// `scrollDelta.dy > 0` scrolls content *up* and reveals content below.
+  static ui.Offset _scrollDelta(final String direction, final double distance) =>
+      switch (direction.toLowerCase()) {
+        'up' => ui.Offset(0, -distance),
+        'down' => ui.Offset(0, distance),
+        'left' => ui.Offset(-distance, 0),
+        'right' => ui.Offset(distance, 0),
+        _ => ui.Offset(0, distance),
+      };
+
+  /// Map a direction string to a pointer-delta.
+  ///
+  /// `direction` describes which way the *content* should move — i.e. which
+  /// content the user wants to reveal. This matches Playwright's convention
+  /// and how users talk about scrolling ("scroll down to see the footer").
+  ///
+  /// To reveal content below (direction=down), the finger swipes *up*
+  /// (negative y). Hence the inversion from the name to the delta.
   static ui.Offset _directionDelta(
     final String direction,
     final double distance,
   ) => switch (direction.toLowerCase()) {
-    'up' => ui.Offset(0, -distance),
-    'down' => ui.Offset(0, distance),
-    'left' => ui.Offset(-distance, 0),
-    'right' => ui.Offset(distance, 0),
+    'up' => ui.Offset(0, distance), // reveal content above → finger down
+    'down' => ui.Offset(0, -distance), // reveal content below → finger up
+    'left' => ui.Offset(distance, 0), // reveal content left → finger right
+    'right' => ui.Offset(-distance, 0), // reveal content right → finger left
     _ => ui.Offset(0, -distance),
   };
 

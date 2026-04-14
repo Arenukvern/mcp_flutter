@@ -10,6 +10,7 @@ import 'mcp_toolkit_binding_base.dart';
 import 'mcp_toolkit_extensions.dart';
 import 'services/error_monitor.dart';
 import 'services/log_capture_service.dart';
+import 'services/semantic_snapshot_service.dart';
 import 'toolkits/flutter_mcp_toolkit.dart';
 
 /// Add a single MCP tool to the MCP toolkit.
@@ -135,6 +136,7 @@ class MCPToolkitBinding extends MCPToolkitBindingBase
       );
       attachToFlutterError();
       LogCaptureService.install();
+      SemanticSnapshotService.primeSemanticsTree();
       return true;
     }());
 

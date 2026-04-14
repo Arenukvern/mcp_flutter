@@ -715,7 +715,9 @@ final class CommandCatalog {
       CommandSpec(
         name: 'scroll',
         description:
-            'Scroll in a direction from a ref or from center of screen.',
+            'Scroll to reveal content in a direction. "down" reveals content '
+            'below (finger swipes up); "up" reveals content above. Matches '
+            'Playwright and user language ("scroll down to see the footer").',
         inputSchema: _objectSchema(
           properties: {
             'direction': _stringSchema(
@@ -777,7 +779,8 @@ final class CommandCatalog {
       CommandSpec(
         name: 'swipe',
         description:
-            'Swipe in a direction from a ref or from center of screen.',
+            'Swipe to reveal content in a direction (higher pointer velocity '
+            'than scroll; used for flings). "down" reveals content below.',
         inputSchema: _objectSchema(
           properties: {
             'direction': _stringSchema(

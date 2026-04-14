@@ -53,23 +53,41 @@ mixin SemanticSnapshotService {
     return binding.pipelineOwner.semanticsOwner;
   }
 
+  /// Enable the semantics tree at app startup so the first
+  /// [buildSemanticSnapshot] call returns a populated tree without having to
+  /// wait for a frame. Called from [MCPToolkitBinding.initialize].
+  ///
+  /// No-op under [TestWidgetsFlutterBinding]: the test harness asserts that
+  /// every [SemanticsHandle] is disposed before a test ends, and priming at
+  /// bootstrap retains one for the whole process.
+  static void primeSemanticsTree() {
+    if (_isInFlutterTest()) return;
+    _semanticsHandle ??= WidgetsBinding.instance.ensureSemantics();
+  }
+
+  static bool _isInFlutterTest() {
+    try {
+      final binding = WidgetsBinding.instance;
+      return binding.runtimeType.toString().contains('Test');
+    } on Object {
+      return false;
+    }
+  }
+
   /// Build a compact semantic snapshot of the current UI.
   ///
   /// Returns a map suitable for JSON serialisation with keys `snapshot_id`,
   /// `nodes`, `nodeCount`, and `truncated`.
   ///
-  /// Async because `ensureSemantics()` schedules the tree build for the next
-  /// frame — on the very first call the tree isn't yet populated, so we
-  /// await a frame before walking it.
+  /// Async so we can await a frame on the (rare) cold path where the
+  /// semantics tree hasn't been primed yet — e.g. if
+  /// [MCPToolkitBinding.initialize] didn't run for some reason.
   static Future<Map<String, Object?>> buildSemanticSnapshot() async {
-    // Ensure the semantics tree is built. Keep the handle alive for the
-    // life of the app so subsequent calls see a live tree.
     final binding = WidgetsBinding.instance;
     final wasEnabled = _semanticsHandle != null;
     _semanticsHandle ??= binding.ensureSemantics();
     if (!wasEnabled) {
-      // First enable — schedule a frame and wait for it to complete so the
-      // semantics tree is actually populated before we walk it.
+      // Cold path only: give Flutter a frame to actually populate the tree.
       binding.scheduleFrame();
       await binding.endOfFrame;
     }
