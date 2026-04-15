@@ -13,7 +13,8 @@ import '../resources/live_edit_draft.src.data.dart';
 import '../resources/live_edit_selection.src.data.dart';
 import '../resources/live_edit_session.src.data.dart';
 import '../ui_workbench/live_edit_overlay_theme.dart';
-import 'live_edit_session/lru_selection_cache.dart';
+import 'hit_testing/hit_test_service.dart';
+import 'hit_testing/lru_selection_cache.dart';
 import 'live_edit_session_update.dart';
 
 part 'live_edit_session/live_edit_session_hit_testing.dart';

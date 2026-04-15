@@ -1,4 +1,4 @@
-import 'package:flutter_live_edit_toolkit/src/services/live_edit_session/lru_selection_cache.dart';
+import 'package:flutter_live_edit_toolkit/src/services/hit_testing/lru_selection_cache.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

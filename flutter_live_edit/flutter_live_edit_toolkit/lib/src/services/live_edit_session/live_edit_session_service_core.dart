@@ -3,12 +3,18 @@
 part of '../live_edit_session_service.dart';
 
 class _LiveEditSessionServiceCore {
-  _LiveEditSessionServiceCore();
+  _LiveEditSessionServiceCore({final HitTestService? hitTestService})
+    : hitTestService = hitTestService ?? const DefaultHitTestService();
 
   final Map<String, _LiveEditSessionState> _sessions =
       <String, _LiveEditSessionState>{};
   String? _activeSessionId;
   LiveEditSessionUpdate? _lastUpdate;
+
+  /// Pure hit-testing surface. Phase 0 — the session service delegates
+  /// raw hit testing through this interface so later phases can swap it
+  /// or drive it from the selection state machine directly.
+  final HitTestService hitTestService;
 
   LiveEditSessionUpdate? get lastUpdate => _lastUpdate;
 

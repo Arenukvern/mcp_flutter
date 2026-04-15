@@ -2,6 +2,22 @@
 
 part of '../live_edit_session_service.dart';
 
+/// Phase 0: legacy `part of` helpers delegate raw element hit-testing to
+/// the extracted [HitTestService]. The adapter below converts the
+/// interface's public [HitTestCandidate] back into the session service's
+/// private [_ElementHit] so existing call sites keep working.
+const HitTestService _kDefaultHitTestService = DefaultHitTestService();
+
+_ElementHit _elementHitFromCandidate(final HitTestCandidate candidate) =>
+    _ElementHit(
+      element: candidate.element,
+      renderObject: candidate.renderObject,
+      ancestry: candidate.ancestry,
+      depth: candidate.depth,
+      parentElement: candidate.parentElement,
+      edgeHit: candidate.edgeHit,
+    );
+
 _SelectionCandidateMetadata _selectionMetadataForElement(
   final _LiveEditSessionState session,
   final Element element, {
@@ -247,54 +263,10 @@ List<_ElementHit> _nativeElementHitCandidates(
   final Element root, {
   required final ui.Offset point,
   required final int? requestedViewId,
-}) {
-  final rootRenderObject = _previewRenderObjectForElement(root);
-  if (rootRenderObject == null) {
-    return const <_ElementHit>[];
-  }
-  final rootViewId = _viewIdForRenderObject(rootRenderObject);
-  if (requestedViewId != null &&
-      rootViewId != null &&
-      rootViewId != requestedViewId) {
-    return const <_ElementHit>[];
-  }
-
-  final regularHits = <RenderObject>[];
-  final edgeHits = <RenderObject>[];
-  _nativeHitTestHelper(
-    regularHits,
-    edgeHits,
-    point,
-    rootRenderObject,
-    rootRenderObject.getTransformTo(null),
-  );
-  regularHits.sort(
-    (final left, final right) =>
-        _semanticArea(left).compareTo(_semanticArea(right)),
-  );
-  final ordered = <RenderObject>{...edgeHits, ...regularHits}.toList();
-  final results = <_ElementHit>[];
-  for (final renderObject in ordered) {
-    final debugCreator = renderObject.debugCreator;
-    if (debugCreator is! DebugCreator) {
-      continue;
-    }
-    final element = debugCreator.element;
-    if (!element.mounted || !_isVisibleCandidate(element)) {
-      continue;
-    }
-    results.add(
-      _ElementHit(
-        element: element,
-        renderObject: renderObject,
-        ancestry: _ancestryForElement(element),
-        depth: _depthForElement(element),
-        edgeHit: edgeHits.contains(renderObject),
-      ),
-    );
-  }
-  return results;
-}
+}) => _kDefaultHitTestService
+    .hitTestAtPoint(root: root, point: point, requestedViewId: requestedViewId)
+    .map(_elementHitFromCandidate)
+    .toList(growable: false);
 
 List<Map<String, Object?>> _ancestryForElement(final Element element) {
   final ancestry = <Map<String, Object?>>[];
@@ -336,45 +308,15 @@ void _collectElementsIntersectingRect(
   required final Rect rect,
   required final List<_ElementHit> results,
   required final int? requestedViewId,
-  final List<Map<String, Object?>> ancestry = const <Map<String, Object?>>[],
-  final Element? parentElement,
 }) {
-  final renderObject = root.renderObject;
-  final bounds = _boundsForRenderObject(renderObject);
-  if (bounds == null || !_intersectsRect(bounds, rect)) {
-    return;
+  final hits = _kDefaultHitTestService.hitTestInRect(
+    root: root,
+    rect: rect,
+    requestedViewId: requestedViewId,
+  );
+  for (final hit in hits) {
+    results.add(_elementHitFromCandidate(hit));
   }
-  final viewId = _viewIdForRenderObject(renderObject);
-  if (requestedViewId != null && viewId != null && viewId != requestedViewId) {
-    return;
-  }
-  if (_isVisibleCandidate(root)) {
-    results.add(
-      _ElementHit(
-        element: root,
-        renderObject: renderObject!,
-        ancestry: ancestry,
-        depth: ancestry.length,
-        parentElement: parentElement,
-      ),
-    );
-  }
-  root.visitChildElements((final child) {
-    _collectElementsIntersectingRect(
-      child,
-      rect: rect,
-      results: results,
-      requestedViewId: requestedViewId,
-      ancestry: <Map<String, Object?>>[
-        ...ancestry,
-        <String, Object?>{
-          'widgetType': root.widget.runtimeType.toString(),
-          'renderObjectType': renderObject?.runtimeType.toString(),
-        },
-      ],
-      parentElement: root,
-    );
-  });
 }
 
 Map<String, Object?> _layoutContextForElement(final Element element) {
