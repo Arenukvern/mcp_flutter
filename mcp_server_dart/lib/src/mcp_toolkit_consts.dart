@@ -15,6 +15,9 @@ final mcpToolkitExtKeys = (
   drag: '$mcpToolkitExt.${mcpToolkitExtNames.drag}',
   getRecentLogs: '$mcpToolkitExt.${mcpToolkitExtNames.getRecentLogs}',
   waitFor: '$mcpToolkitExt.${mcpToolkitExtNames.waitFor}',
+  pressKey: '$mcpToolkitExt.${mcpToolkitExtNames.pressKey}',
+  handleDialog: '$mcpToolkitExt.${mcpToolkitExtNames.handleDialog}',
+  navigate: '$mcpToolkitExt.${mcpToolkitExtNames.navigate}',
 );
 
 final allMcpToolkitExtNames = {
@@ -32,6 +35,9 @@ final allMcpToolkitExtNames = {
   mcpToolkitExtNames.drag,
   mcpToolkitExtNames.getRecentLogs,
   mcpToolkitExtNames.waitFor,
+  mcpToolkitExtNames.pressKey,
+  mcpToolkitExtNames.handleDialog,
+  mcpToolkitExtNames.navigate,
 };
 
 const mcpToolkitExtNames = (
@@ -49,4 +55,7 @@ const mcpToolkitExtNames = (
   drag: 'drag',
   getRecentLogs: 'get_recent_logs',
   waitFor: 'wait_for',
+  pressKey: 'press_key',
+  handleDialog: 'handle_dialog',
+  navigate: 'navigate',
 );

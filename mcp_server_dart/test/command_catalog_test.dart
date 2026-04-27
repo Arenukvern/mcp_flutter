@@ -286,5 +286,32 @@ void main() {
       expect(wc.predicate['kind'], 'time');
       expect(wc.timeoutMs, 1000);
     });
+
+    test('press_key, handle_dialog, navigate commands are registered', () {
+      for (final name in ['press_key', 'handle_dialog', 'navigate']) {
+        final spec = catalog.specFor(name);
+        expect(spec, isNotNull, reason: '$name spec missing');
+        expect(spec!.mcpExposed, isTrue, reason: '$name not mcpExposed');
+      }
+
+      final pk = catalog.buildCommand('press_key', {
+        'key': 'Enter',
+        'shift': true,
+      }) as PressKeyCommand;
+      expect(pk.key, 'Enter');
+      expect(pk.shift, isTrue);
+
+      final hd = catalog.buildCommand('handle_dialog', {
+        'action': 'dismiss',
+      }) as HandleDialogCommand;
+      expect(hd.action, 'dismiss');
+
+      final nv = catalog.buildCommand('navigate', {
+        'action': 'push',
+        'route': '/settings',
+      }) as NavigateCommand;
+      expect(nv.action, 'push');
+      expect(nv.route, '/settings');
+    });
   });
 }

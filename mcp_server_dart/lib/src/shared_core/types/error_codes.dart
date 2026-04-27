@@ -102,6 +102,11 @@ abstract final class CoreErrorCode {
   static const waitTimeout = 'wait_timeout';
   static const waitForFailed = 'wait_for_failed';
 
+  static const pressKeyFailed = 'press_key_failed';
+  static const handleDialogFailed = 'handle_dialog_failed';
+  static const navigateFailed = 'navigate_failed';
+  static const navigatorNotRegistered = 'navigator_not_registered';
+
   static const unknown = 'unknown_error';
 }
 
@@ -449,6 +454,34 @@ const Map<String, CoreErrorDescriptor> _descriptorMap =
         retryable: true,
         exitCode: 69,
         httpLikeStatus: 500,
+      ),
+      CoreErrorCode.pressKeyFailed: CoreErrorDescriptor(
+        code: CoreErrorCode.pressKeyFailed,
+        category: CoreErrorCategory.execution,
+        retryable: true,
+        exitCode: 69,
+        httpLikeStatus: 500,
+      ),
+      CoreErrorCode.handleDialogFailed: CoreErrorDescriptor(
+        code: CoreErrorCode.handleDialogFailed,
+        category: CoreErrorCategory.execution,
+        retryable: true,
+        exitCode: 69,
+        httpLikeStatus: 500,
+      ),
+      CoreErrorCode.navigateFailed: CoreErrorDescriptor(
+        code: CoreErrorCode.navigateFailed,
+        category: CoreErrorCategory.execution,
+        retryable: true,
+        exitCode: 69,
+        httpLikeStatus: 500,
+      ),
+      CoreErrorCode.navigatorNotRegistered: CoreErrorDescriptor(
+        code: CoreErrorCode.navigatorNotRegistered,
+        category: CoreErrorCategory.execution,
+        retryable: false,
+        exitCode: 64,
+        httpLikeStatus: 400,
       ),
       CoreErrorCode.unknown: CoreErrorDescriptor(
         code: CoreErrorCode.unknown,

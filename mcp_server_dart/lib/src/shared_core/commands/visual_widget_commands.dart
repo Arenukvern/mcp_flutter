@@ -231,3 +231,54 @@ final class WaitForCommand extends CoreCommand {
   @override
   String get name => 'wait_for';
 }
+
+final class PressKeyCommand extends CoreCommand {
+  const PressKeyCommand({
+    required this.key,
+    this.ctrl = false,
+    this.shift = false,
+    this.alt = false,
+    this.meta = false,
+  });
+
+  /// Key name. Accepted: Enter, Escape, Tab, Backspace, Delete, Space,
+  /// ArrowUp/Down/Left/Right, single ASCII chars (a..z, 0..9).
+  final String key;
+  final bool ctrl;
+  final bool shift;
+  final bool alt;
+  final bool meta;
+
+  @override
+  String get name => 'press_key';
+}
+
+final class HandleDialogCommand extends CoreCommand {
+  const HandleDialogCommand({required this.action});
+
+  /// Currently only `'dismiss'` is supported.
+  final String action;
+
+  @override
+  String get name => 'handle_dialog';
+}
+
+final class NavigateCommand extends CoreCommand {
+  const NavigateCommand({
+    required this.action,
+    this.route,
+    this.arguments,
+  });
+
+  /// One of: `'push'`, `'pop'`, `'popUntil'`.
+  final String action;
+
+  /// Required for `'push'` and `'popUntil'`. Ignored for `'pop'`.
+  final String? route;
+
+  /// Optional. Used only for `'push'`.
+  final Map<String, Object?>? arguments;
+
+  @override
+  String get name => 'navigate';
+}

@@ -373,6 +373,24 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     EvaluateDartExpressionCommand() => _evaluateDartExpression(command),
     GetRecentLogsCommand() => _getRecentLogs(command),
     WaitForCommand() => _waitFor(command),
+    PressKeyCommand() => Future.value(
+      CoreResult.failure(
+        code: CoreErrorCode.pressKeyFailed,
+        message: 'press_key is registered but not yet implemented',
+      ),
+    ),
+    HandleDialogCommand() => Future.value(
+      CoreResult.failure(
+        code: CoreErrorCode.handleDialogFailed,
+        message: 'handle_dialog is registered but not yet implemented',
+      ),
+    ),
+    NavigateCommand() => Future.value(
+      CoreResult.failure(
+        code: CoreErrorCode.navigateFailed,
+        message: 'navigate is registered but not yet implemented',
+      ),
+    ),
     DebugDumpLayerTreeCommand() => _debugDumpLayerTree(),
     DebugDumpSemanticsTreeCommand() => _debugDumpSemanticsTree(),
     DebugDumpRenderTreeCommand() => _debugDumpRenderTree(),

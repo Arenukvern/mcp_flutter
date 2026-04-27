@@ -941,6 +941,84 @@ final class CommandCatalog {
         ),
       ),
       CommandSpec(
+        name: 'press_key',
+        description:
+            'Synthesize a keyboard key press (down + up). Accepted keys: '
+            'Enter, Escape, Tab, Backspace, Delete, Space, ArrowUp/Down/'
+            'Left/Right, and single ASCII chars (a-z, 0-9). Optional '
+            'modifiers: ctrl, shift, alt, meta.',
+        inputSchema: _objectSchema(
+          required: const ['key'],
+          properties: {
+            'key': _stringSchema(),
+            'ctrl': _boolSchema(),
+            'shift': _boolSchema(),
+            'alt': _boolSchema(),
+            'meta': _boolSchema(),
+          },
+        ),
+        outputSchema: _objectSchema(additionalProperties: true),
+        requiresVm: true,
+        supportsWatch: false,
+        mcpExposed: true,
+        build: (final args) => PressKeyCommand(
+          key: _stringArg(args, 'key', fallback: ''),
+          ctrl: _boolArg(args, 'ctrl', fallback: false),
+          shift: _boolArg(args, 'shift', fallback: false),
+          alt: _boolArg(args, 'alt', fallback: false),
+          meta: _boolArg(args, 'meta', fallback: false),
+        ),
+      ),
+      CommandSpec(
+        name: 'handle_dialog',
+        description:
+            'Dismiss the topmost popup/dialog route on the registered '
+            'Navigator. Currently only action="dismiss" is supported. '
+            'Requires the app to register a navigator key via '
+            'MCPToolkitBinding.instance.setNavigatorKey(key).',
+        inputSchema: _objectSchema(
+          required: const ['action'],
+          properties: {
+            'action': _stringSchema(),
+          },
+        ),
+        outputSchema: _objectSchema(additionalProperties: true),
+        requiresVm: true,
+        supportsWatch: false,
+        mcpExposed: true,
+        build: (final args) => HandleDialogCommand(
+          action: _stringArg(args, 'action', fallback: 'dismiss'),
+        ),
+      ),
+      CommandSpec(
+        name: 'navigate',
+        description:
+            'Drive the registered Navigator: push a named route, pop the '
+            'topmost route, or popUntil a named route. Requires '
+            'MCPToolkitBinding.instance.setNavigatorKey(key) on the app.',
+        inputSchema: _objectSchema(
+          required: const ['action'],
+          properties: {
+            'action': _stringSchema(),
+            'route': _stringSchema(),
+            'arguments': _objectSchema(additionalProperties: true),
+          },
+        ),
+        outputSchema: _objectSchema(additionalProperties: true),
+        requiresVm: true,
+        supportsWatch: false,
+        mcpExposed: true,
+        build: (final args) => NavigateCommand(
+          action: _stringArg(args, 'action', fallback: 'push'),
+          route: _stringArg(args, 'route', fallback: '').isEmpty
+              ? null
+              : _stringArg(args, 'route', fallback: ''),
+          arguments: _mapArg(args, 'arguments').isEmpty
+              ? null
+              : _mapArg(args, 'arguments'),
+        ),
+      ),
+      CommandSpec(
         name: 'debug_dump_layer_tree',
         description: 'Run ext.flutter.debugDumpLayerTree.',
         inputSchema: _objectSchema(),
