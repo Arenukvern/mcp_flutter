@@ -266,6 +266,61 @@ class InteractionHandler {
     ),
   );
 
+  static final pressKeyTool = Tool(
+    name: 'press_key',
+    description: _description(
+      'press_key',
+      'Synthesize a keyboard key press (down+up). '
+          'Accepted keys: Enter, Escape, Tab, Backspace, Delete, Space, '
+          'ArrowUp/Down/Left/Right, single ASCII chars (a-z, 0-9). '
+          'Optional modifiers: ctrl, shift, alt, meta.',
+    ),
+    inputSchema: strictToolInputSchema(
+      required: ['key'],
+      properties: {
+        'key': Schema.string(),
+        'ctrl': Schema.bool(),
+        'shift': Schema.bool(),
+        'alt': Schema.bool(),
+        'meta': Schema.bool(),
+      },
+    ),
+  );
+
+  static final handleDialogTool = Tool(
+    name: 'handle_dialog',
+    description: _description(
+      'handle_dialog',
+      'Dismiss the topmost popup/dialog route on the registered Navigator. '
+          'Currently only action="dismiss" is supported. '
+          'Requires MCPToolkitBinding.instance.setNavigatorKey(key) on the app.',
+    ),
+    inputSchema: strictToolInputSchema(
+      required: ['action'],
+      properties: {
+        'action': Schema.string(description: 'Currently must be "dismiss"'),
+      },
+    ),
+  );
+
+  static final navigateTool = Tool(
+    name: 'navigate',
+    description: _description(
+      'navigate',
+      'Drive the registered Navigator: action=push|pop|popUntil. '
+          'push and popUntil require route. push accepts arguments map. '
+          'Requires MCPToolkitBinding.instance.setNavigatorKey(key) on the app.',
+    ),
+    inputSchema: strictToolInputSchema(
+      required: ['action'],
+      properties: {
+        'action': Schema.string(),
+        'route': Schema.string(),
+        'arguments': Schema.object(additionalProperties: true),
+      },
+    ),
+  );
+
   // --- Handler methods ---
 
   Future<CallToolResult> semanticSnapshot(final CallToolRequest request) async {
@@ -590,6 +645,80 @@ class InteractionHandler {
     );
     if (!result.ok) {
       return toCallToolErrorResult(result, prefix: 'wait_for failed');
+    }
+    return CallToolResult(
+      content: [TextContent(text: jsonEncode(result.data))],
+    );
+  }
+
+  Future<CallToolResult> pressKey(final CallToolRequest request) async {
+    final connectError = await applyConnectionOverride(
+      request: request,
+      executor: executor,
+    );
+    if (connectError != null) {
+      return toCallToolErrorResult(connectError, prefix: 'Failed to connect');
+    }
+
+    final args = request.arguments ?? const {};
+    final result = await executor.execute(PressKeyCommand(
+      key: jsonDecodeString(args['key']),
+      ctrl: jsonDecodeBool(args['ctrl']),
+      shift: jsonDecodeBool(args['shift']),
+      alt: jsonDecodeBool(args['alt']),
+      meta: jsonDecodeBool(args['meta']),
+    ));
+    if (!result.ok) {
+      return toCallToolErrorResult(result, prefix: 'press_key failed');
+    }
+    return CallToolResult(
+      content: [TextContent(text: jsonEncode(result.data))],
+    );
+  }
+
+  Future<CallToolResult> handleDialog(final CallToolRequest request) async {
+    final connectError = await applyConnectionOverride(
+      request: request,
+      executor: executor,
+    );
+    if (connectError != null) {
+      return toCallToolErrorResult(connectError, prefix: 'Failed to connect');
+    }
+
+    final args = request.arguments ?? const {};
+    final result = await executor.execute(HandleDialogCommand(
+      action: jsonDecodeString(args['action']).whenEmptyUse('dismiss'),
+    ));
+    if (!result.ok) {
+      return toCallToolErrorResult(result, prefix: 'handle_dialog failed');
+    }
+    return CallToolResult(
+      content: [TextContent(text: jsonEncode(result.data))],
+    );
+  }
+
+  Future<CallToolResult> navigate(final CallToolRequest request) async {
+    final connectError = await applyConnectionOverride(
+      request: request,
+      executor: executor,
+    );
+    if (connectError != null) {
+      return toCallToolErrorResult(connectError, prefix: 'Failed to connect');
+    }
+
+    final args = request.arguments ?? const {};
+    final route = jsonDecodeString(args['route']);
+    final argsMapRaw = args['arguments'];
+    final arguments = argsMapRaw is Map
+        ? Map<String, Object?>.from(argsMapRaw)
+        : null;
+    final result = await executor.execute(NavigateCommand(
+      action: jsonDecodeString(args['action']).whenEmptyUse('push'),
+      route: route.isEmpty ? null : route,
+      arguments: arguments == null || arguments.isEmpty ? null : arguments,
+    ));
+    if (!result.ok) {
+      return toCallToolErrorResult(result, prefix: 'navigate failed');
     }
     return CallToolResult(
       content: [TextContent(text: jsonEncode(result.data))],

@@ -109,6 +109,18 @@ base mixin FlutterInspector
       InteractionHandler.waitForTool,
       _interactionHandler.waitFor,
     );
+    registerTool(
+      InteractionHandler.pressKeyTool,
+      _interactionHandler.pressKey,
+    );
+    registerTool(
+      InteractionHandler.handleDialogTool,
+      _interactionHandler.handleDialog,
+    );
+    registerTool(
+      InteractionHandler.navigateTool,
+      _interactionHandler.navigate,
+    );
 
     if (configuration.liveEditSupported) {
       log(

@@ -373,24 +373,9 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     EvaluateDartExpressionCommand() => _evaluateDartExpression(command),
     GetRecentLogsCommand() => _getRecentLogs(command),
     WaitForCommand() => _waitFor(command),
-    PressKeyCommand() => Future.value(
-      CoreResult.failure(
-        code: CoreErrorCode.pressKeyFailed,
-        message: 'press_key is registered but not yet implemented',
-      ),
-    ),
-    HandleDialogCommand() => Future.value(
-      CoreResult.failure(
-        code: CoreErrorCode.handleDialogFailed,
-        message: 'handle_dialog is registered but not yet implemented',
-      ),
-    ),
-    NavigateCommand() => Future.value(
-      CoreResult.failure(
-        code: CoreErrorCode.navigateFailed,
-        message: 'navigate is registered but not yet implemented',
-      ),
-    ),
+    PressKeyCommand() => _pressKey(command),
+    HandleDialogCommand() => _handleDialog(command),
+    NavigateCommand() => _navigate(command),
     DebugDumpLayerTreeCommand() => _debugDumpLayerTree(),
     DebugDumpSemanticsTreeCommand() => _debugDumpSemanticsTree(),
     DebugDumpRenderTreeCommand() => _debugDumpRenderTree(),
@@ -1121,6 +1106,101 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       return CoreResult.failure(
         code: CoreErrorCode.waitForFailed,
         message: 'Failed to execute wait_for: $e',
+      );
+    }
+  }
+
+  Future<CoreResult> _pressKey(final PressKeyCommand command) async {
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) return ensureFailure;
+
+    try {
+      final result = await connectionContext.callFlutterExtension(
+        mcpToolkitExtKeys.pressKey,
+        args: {
+          'key': command.key,
+          'ctrl': command.ctrl,
+          'shift': command.shift,
+          'alt': command.alt,
+          'meta': command.meta,
+        },
+      );
+      final data = _map(result.json);
+      if (data['success'] != true) {
+        return CoreResult.failure(
+          code: data['error'] == 'navigator_not_registered'
+              ? CoreErrorCode.navigatorNotRegistered
+              : CoreErrorCode.pressKeyFailed,
+          message: 'press_key failed: ${data['error']}',
+          details: data,
+        );
+      }
+      return CoreResult.success(data: data);
+    } on Exception catch (e) {
+      return CoreResult.failure(
+        code: CoreErrorCode.pressKeyFailed,
+        message: 'Failed to execute press_key: $e',
+      );
+    }
+  }
+
+  Future<CoreResult> _handleDialog(final HandleDialogCommand command) async {
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) return ensureFailure;
+
+    try {
+      final result = await connectionContext.callFlutterExtension(
+        mcpToolkitExtKeys.handleDialog,
+        args: {'action': command.action},
+      );
+      final data = _map(result.json);
+      if (data['success'] != true) {
+        return CoreResult.failure(
+          code: data['error'] == 'navigator_not_registered'
+              ? CoreErrorCode.navigatorNotRegistered
+              : CoreErrorCode.handleDialogFailed,
+          message: 'handle_dialog failed: ${data['error']}',
+          details: data,
+        );
+      }
+      return CoreResult.success(data: data);
+    } on Exception catch (e) {
+      return CoreResult.failure(
+        code: CoreErrorCode.handleDialogFailed,
+        message: 'Failed to execute handle_dialog: $e',
+      );
+    }
+  }
+
+  Future<CoreResult> _navigate(final NavigateCommand command) async {
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) return ensureFailure;
+
+    try {
+      final result = await connectionContext.callFlutterExtension(
+        mcpToolkitExtKeys.navigate,
+        args: {
+          'action': command.action,
+          if (command.route != null) 'route': command.route,
+          if (command.arguments != null)
+            'arguments': jsonEncode(command.arguments),
+        },
+      );
+      final data = _map(result.json);
+      if (data['success'] != true) {
+        return CoreResult.failure(
+          code: data['error'] == 'navigator_not_registered'
+              ? CoreErrorCode.navigatorNotRegistered
+              : CoreErrorCode.navigateFailed,
+          message: 'navigate failed: ${data['error']}',
+          details: data,
+        );
+      }
+      return CoreResult.success(data: data);
+    } on Exception catch (e) {
+      return CoreResult.failure(
+        code: CoreErrorCode.navigateFailed,
+        message: 'Failed to execute navigate: $e',
       );
     }
   }
