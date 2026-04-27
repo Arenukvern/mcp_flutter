@@ -89,6 +89,28 @@ void main() {
       expect(after - before, lessThanOrEqualTo(1));
     },
   );
+
+  testWidgets(
+    'wait_for noText predicate matches once substring disappears',
+    (final tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(home: Scaffold(body: _DelayedClear())),
+      );
+      await tester.pump();
+
+      final waitFuture = WaitPredicateService.waitFor(
+        predicate: const {'kind': 'noText', 'text': 'Loading'},
+        timeoutMs: 2000,
+      );
+
+      for (var i = 0; i < 30; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+
+      final result = await waitFuture;
+      expect(result['matched'], isTrue);
+    },
+  );
 }
 
 class _DelayedText extends StatefulWidget {
@@ -111,4 +133,25 @@ class _DelayedTextState extends State<_DelayedText> {
 
   @override
   Widget build(final BuildContext context) => Center(child: Text(_label));
+}
+
+class _DelayedClear extends StatefulWidget {
+  const _DelayedClear();
+  @override
+  State<_DelayedClear> createState() => _DelayedClearState();
+}
+
+class _DelayedClearState extends State<_DelayedClear> {
+  bool _showLoading = true;
+  @override
+  void initState() {
+    super.initState();
+    Future<void>.delayed(const Duration(milliseconds: 200), () {
+      if (mounted) setState(() => _showLoading = false);
+    });
+  }
+  @override
+  Widget build(final BuildContext context) => Center(
+        child: _showLoading ? const Text('Loading') : const SizedBox.shrink(),
+      );
 }

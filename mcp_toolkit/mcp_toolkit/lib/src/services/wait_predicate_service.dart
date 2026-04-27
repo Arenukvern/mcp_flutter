@@ -66,6 +66,9 @@ class WaitPredicateService {
       case 'text':
         final needle = (predicate['text'] as String?) ?? '';
         return needle.isNotEmpty && _snapshotContainsText(snapshot, needle);
+      case 'noText':
+        final needle = (predicate['text'] as String?) ?? '';
+        return needle.isNotEmpty && !_snapshotContainsText(snapshot, needle);
       default:
         return false;
     }
