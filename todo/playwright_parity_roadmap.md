@@ -46,7 +46,7 @@ that's a separate project.
 | Priority | Sub-plan                                | Size           | Why this tier                                                       |
 | -------- | --------------------------------------- | -------------- | ------------------------------------------------------------------- |
 | **P0** ✅ | `wait_for` *(shipped 2026-04-27)*       | Design-heavy   | Single tool that changes the feel of every other tool. Solo plan.   |
-| **P1**   | Keyboard + dialog + navigate            | Small batch    | Mechanical once snapshot/gesture infra exists. Bundle as one plan.  |
+| **P1** ✅ | Keyboard + dialog + navigate *(shipped 2026-04-27)* | Small batch    | Mechanical once snapshot/gesture infra exists. Bundle as one plan.  |
 | **P2**   | Form ergonomics + hover                 | Small batch    | Token wins (`fill_form`, `select_option`) + desktop/web (`hover`).  |
 | **P3**   | Network introspection                   | Architecturally heavy | Toolkit-side `HttpOverrides` + ring buffer + opt-in flag.    |
 | **P4**   | Consolidation pass (conditional)        | Refactor       | Only if usage data shows mis-selection.                             |
