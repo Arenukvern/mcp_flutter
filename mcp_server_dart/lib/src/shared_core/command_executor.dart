@@ -1081,12 +1081,20 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
         },
       );
       final data = _map(result.json);
-      // Toolkit returns matched: false on timeout — promote to a structured
-      // failure so the MCP error envelope kicks in.
-      if (data['matched'] == false) {
+      final matched = data['matched'];
+      // Treat anything other than literal `true` as a failure — the toolkit
+      // writes bool literals, but a coerced wire value (string/int/null)
+      // could otherwise slip through to the success path with a malformed
+      // payload. Distinguish: matched==false → expected timeout; otherwise
+      // bucket as waitForFailed (server/transport bug).
+      if (matched != true) {
         return CoreResult.failure(
-          code: CoreErrorCode.waitTimeout,
-          message: 'wait_for timed out after ${data['elapsedMs']}ms',
+          code: matched == false
+              ? CoreErrorCode.waitTimeout
+              : CoreErrorCode.waitForFailed,
+          message: matched == false
+              ? 'wait_for timed out after ${data['elapsedMs']}ms'
+              : 'wait_for returned malformed payload (matched=$matched)',
           details: data,
         );
       }
