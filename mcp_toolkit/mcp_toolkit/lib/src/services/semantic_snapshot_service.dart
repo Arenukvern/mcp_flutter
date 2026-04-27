@@ -280,8 +280,14 @@ mixin SemanticSnapshotService {
   // Helpers
   // ---------------------------------------------------------------------------
 
-  /// Compute the global rect of a [SemanticsNode] by accumulating
-  /// transforms up the parent chain.
+  /// Compute the global rect of a [SemanticsNode] in **logical
+  /// (Flutter-space) pixels**.
+  ///
+  /// The accumulated transform up the parent chain produces physical-pixel
+  /// coordinates because one of the ancestor `SemanticsNode`s carries the
+  /// engine's device-pixel-ratio scaling. We divide by the snapshot view's
+  /// DPR so synthesized pointer events (taps, hovers, drags) land on the
+  /// widget instead of missing it by a factor of DPR on Retina / mobile.
   static ui.Rect _globalRect(final SemanticsNode node) {
     var rect = node.rect;
     SemanticsNode? current = node;
@@ -291,7 +297,16 @@ mixin SemanticSnapshotService {
       }
       current = current.parent;
     }
-    return rect;
+    final renderViews = WidgetsBinding.instance.renderViews;
+    if (renderViews.isEmpty) return rect;
+    final dpr = renderViews.first.flutterView.devicePixelRatio;
+    if (dpr == 1.0) return rect;
+    return ui.Rect.fromLTRB(
+      rect.left / dpr,
+      rect.top / dpr,
+      rect.right / dpr,
+      rect.bottom / dpr,
+    );
   }
 
   /// Returns `true` when a semantics node is interactive or carries a

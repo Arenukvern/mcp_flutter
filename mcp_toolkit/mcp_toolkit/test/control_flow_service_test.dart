@@ -205,15 +205,6 @@ void main() {
 
   testWidgets('hover triggers MouseRegion.onEnter on the targeted widget',
       (final tester) async {
-    // The default test viewport is 800x600 logical px with DPR=3.0, but
-    // SemanticSnapshotService.resolveCenter accumulates the root's DPR
-    // transform and returns physical-pixel coords. Production runs at the
-    // device's actual DPR where the same code path works for tap/enter/etc.,
-    // so this is a latent cross-gesture issue separate from hover. Override
-    // DPR so the hover hits the widget at logical coordinates.
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.resetDevicePixelRatio);
-
     var entered = false;
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(

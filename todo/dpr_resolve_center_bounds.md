@@ -1,6 +1,20 @@
 # Latent DPR bug — `resolveCenter` / `resolveBounds` return physical-pixel coords
 
-**Status:** open. Discovered while shipping P2 hover (commit `e798554` on `live-edit-v2-plannig`, 2026-04-27). Spawned as a follow-up task chip; this file durably records the bug for any agent picking up the work.
+**Status:** ✅ fixed 2026-04-28 on `live-edit-v2-plannig`. Discovered while shipping P2 hover (commit `e798554`, 2026-04-27).
+
+## Resolution (2026-04-28)
+
+`SemanticSnapshotService._globalRect` now divides the accumulated rect by the snapshot view's `devicePixelRatio` before returning. The naive "skip the root SemanticsNode's transform" approach was tried first but failed empirically: the DPR scaling lives on a non-root ancestor (depth=3 in a `MaterialApp/Scaffold/Center` tree, with the actual root at depth=4 having a null transform). A pre-fix diagnostic walked the parent chain at DPR=3.0 and showed the `[3,3,1]` scale matrix four levels above the leaf — confirming divide-by-DPR is the only robust option.
+
+DPR is read from `WidgetsBinding.instance.renderViews.first.flutterView.devicePixelRatio` — the same view the snapshot walks (`_buildSnapshotBody` uses `renderViews.first.owner`), so multi-view setups stay correct.
+
+Acceptance criteria met:
+1. ✅ `resolveCenter(ref)` returns logical coords on any DPR.
+2. ✅ The `tester.view.devicePixelRatio = 1.0` workaround in `control_flow_service_test.dart` was removed; hover test passes at the test binding's default DPR=3.0.
+3. ✅ Regression test added at `mcp_toolkit/mcp_toolkit/test/semantic_snapshot_dpr_test.dart` — parameterized across DPR=1.0/2.0/3.0, asserts `resolveCenter`/`resolveBounds` agree (≤1 logical px) with `tester.getCenter`/`tester.getRect`.
+4. ✅ Full `flutter test` of `mcp_toolkit/mcp_toolkit` passes — 26/26.
+
+## Original report (preserved)
 
 ## Bug
 
