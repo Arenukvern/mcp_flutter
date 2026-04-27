@@ -34,11 +34,36 @@ class WaitPredicateService {
     final deadline = Duration(milliseconds: timeoutMs);
 
     Map<String, Object?>? lastSnapshot;
+    String? lastSerialised;
+    var stableFrames = 0;
+    final stableWindowMs =
+        (predicate['stableWindowMs'] as num?)?.toInt() ?? 250;
+    // Convert ms -> required consecutive stable frames at ~60fps.
+    final requiredStableFrames =
+        (stableWindowMs / 16).ceil().clamp(1, 9999);
+
     while (stopwatch.elapsed < deadline) {
       final snapshot = await SemanticSnapshotService.peekSemanticSnapshot();
       lastSnapshot = snapshot;
-      if (_evaluate(predicate, snapshot)) {
-        // Bump the public id once on success.
+
+      if (kind == 'stable') {
+        final serialised = _serialiseNodes(snapshot);
+        if (lastSerialised != null && serialised == lastSerialised) {
+          stableFrames++;
+          if (stableFrames >= requiredStableFrames) {
+            final finalSnapshot =
+                await SemanticSnapshotService.buildSemanticSnapshot();
+            return _successWithSnapshot(
+              predicate,
+              stopwatch.elapsedMilliseconds,
+              finalSnapshot,
+            );
+          }
+        } else {
+          stableFrames = 0;
+          lastSerialised = serialised;
+        }
+      } else if (_evaluate(predicate, snapshot)) {
         final finalSnapshot =
             await SemanticSnapshotService.buildSemanticSnapshot();
         return _successWithSnapshot(
@@ -47,6 +72,7 @@ class WaitPredicateService {
           finalSnapshot,
         );
       }
+
       await binding.endOfFrame;
     }
 
@@ -134,4 +160,11 @@ class WaitPredicateService {
     if (lastSnapshot != null && lastSnapshot['snapshot_id'] is int)
       'lastSnapshotId': lastSnapshot['snapshot_id'],
   };
+
+  /// Mutable per-call scratch space for predicates that need history.
+  static String _serialiseNodes(final Map<String, Object?> snapshot) {
+    final nodes = snapshot['nodes'];
+    if (nodes is! List) return '';
+    return nodes.map((final n) => n.toString()).join('|');
+  }
 }

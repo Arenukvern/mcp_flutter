@@ -111,6 +111,35 @@ void main() {
       expect(result['matched'], isTrue);
     },
   );
+
+  testWidgets(
+    'wait_for stable predicate matches once UI stops changing',
+    (final tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(home: Scaffold(body: Text('static'))),
+      );
+      await tester.pump();
+
+      // Kick off the wait without awaiting — the loop awaits endOfFrame.
+      final waitFuture = WaitPredicateService.waitFor(
+        predicate: const {'kind': 'stable', 'stableWindowMs': 100},
+        timeoutMs: 2000,
+      );
+
+      // Drive enough frames to cross the stable window. requiredStableFrames
+      // = ceil(100/16) = 7. Under the test binding, each loop iteration also
+      // calls peekSemanticSnapshot which awaits an extra cold-path frame
+      // (handle is acquired+disposed per call), so each iter consumes ~2
+      // frames. Pump 20 to be safe.
+      for (var i = 0; i < 20; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+
+      final result = await waitFuture;
+      expect(result['matched'], isTrue);
+      expect(result['snapshot_id'], isA<int>());
+    },
+  );
 }
 
 class _DelayedText extends StatefulWidget {
