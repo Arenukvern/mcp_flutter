@@ -74,6 +74,19 @@ mixin SemanticSnapshotService {
     }
   }
 
+  /// Test-only: dispose the retained semantics handle so the
+  /// `TestWidgetsFlutterBinding` end-of-test handle audit passes.
+  ///
+  /// Call from a `tearDown` block in any test that triggers a snapshot.
+  @visibleForTesting
+  static void debugDisposeForTesting() {
+    _semanticsHandle?.dispose();
+    _semanticsHandle = null;
+    _lastRefMap = <String, SemanticsNode>{};
+    _lastBoundsMap = <String, ui.Rect>{};
+    _lastCenterMap = <String, ui.Offset>{};
+  }
+
   /// Build a compact semantic snapshot of the current UI.
   ///
   /// Returns a map suitable for JSON serialisation with keys `snapshot_id`,
@@ -82,7 +95,18 @@ mixin SemanticSnapshotService {
   /// Async so we can await a frame on the (rare) cold path where the
   /// semantics tree hasn't been primed yet — e.g. if
   /// [MCPToolkitBinding.initialize] didn't run for some reason.
-  static Future<Map<String, Object?>> buildSemanticSnapshot() async {
+  static Future<Map<String, Object?>> buildSemanticSnapshot() =>
+      _buildSnapshot(incrementId: true);
+
+  /// Internal: read the snapshot without bumping the public id stream.
+  /// Used by `WaitPredicateService` while polling so callers' outstanding
+  /// snapshotIds remain valid.
+  static Future<Map<String, Object?>> peekSemanticSnapshot() =>
+      _buildSnapshot(incrementId: false);
+
+  static Future<Map<String, Object?>> _buildSnapshot({
+    required final bool incrementId,
+  }) async {
     final binding = WidgetsBinding.instance;
     final wasEnabled = _semanticsHandle != null;
     _semanticsHandle ??= binding.ensureSemantics();
@@ -96,7 +120,7 @@ mixin SemanticSnapshotService {
     final boundsMap = <String, ui.Rect>{};
     final centerMap = <String, ui.Offset>{};
 
-    final snapshotId = ++_snapshotCounter;
+    final snapshotId = incrementId ? ++_snapshotCounter : _snapshotCounter;
 
     SemanticsNode? root;
     try {
