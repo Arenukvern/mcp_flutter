@@ -911,6 +911,42 @@ final class CommandCatalog {
             GetRecentLogsCommand(count: _intArg(args, 'count', fallback: 50)),
       ),
       CommandSpec(
+        name: 'wait_for',
+        description:
+            'Block until a UI predicate matches or a timeout elapses, then '
+            'return a fresh semantic snapshot. Predicate kinds: text, noText, '
+            'time, stable. Replaces sleep+snapshot polling loops.',
+        inputSchema: _objectSchema(
+          required: const ['predicate'],
+          properties: {
+            'predicate': _objectSchema(additionalProperties: true),
+            // Default 5000, max 30000. `_intSchema` doesn't take a maximum,
+            // so use a raw map. The toolkit also enforces the ceiling — this
+            // gives a server-side reject instead of round-trip-then-reject.
+            'timeoutMs': const <String, Object?>{
+              'type': 'integer',
+              'default': 5000,
+              'maximum': 30000,
+              'minimum': 1,
+            },
+          },
+        ),
+        outputSchema: _objectSchema(additionalProperties: true),
+        requiresVm: true,
+        supportsWatch: false,
+        mcpExposed: true,
+        build: (final args) {
+          final raw = args['predicate'];
+          final predicate = raw is Map<String, Object?>
+              ? raw
+              : (raw is Map ? raw.cast<String, Object?>() : <String, Object?>{});
+          return WaitForCommand(
+            predicate: predicate,
+            timeoutMs: _intArg(args, 'timeoutMs', fallback: 5000),
+          );
+        },
+      ),
+      CommandSpec(
         name: 'debug_dump_layer_tree',
         description: 'Run ext.flutter.debugDumpLayerTree.',
         inputSchema: _objectSchema(),

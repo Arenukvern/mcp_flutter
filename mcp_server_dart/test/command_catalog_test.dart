@@ -266,5 +266,25 @@ void main() {
               as Map<String, Object?>;
       expect(connectSchema.containsKey('connection'), isFalse);
     });
+
+    test('wait_for command is registered with predicate + timeout schema', () {
+      final spec = catalog.specFor('wait_for');
+      expect(spec, isNotNull);
+      expect(spec!.mcpExposed, isTrue);
+
+      final props =
+          spec.inputSchema['properties']! as Map<String, Object?>;
+      expect(props.containsKey('predicate'), isTrue);
+      expect(props.containsKey('timeoutMs'), isTrue);
+
+      final cmd = catalog.buildCommand('wait_for', {
+        'predicate': {'kind': 'time', 'ms': 100},
+        'timeoutMs': 1000,
+      });
+      expect(cmd, isA<WaitForCommand>());
+      final wc = cmd as WaitForCommand;
+      expect(wc.predicate['kind'], 'time');
+      expect(wc.timeoutMs, 1000);
+    });
   });
 }

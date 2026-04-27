@@ -213,3 +213,21 @@ final class GetRecentLogsCommand extends CoreCommand {
   @override
   String get name => 'get_recent_logs';
 }
+
+final class WaitForCommand extends CoreCommand {
+  const WaitForCommand({
+    required this.predicate,
+    this.timeoutMs = 5000,
+  });
+
+  /// Free-form map echoed back to the toolkit. Shape per `kind`:
+  ///   {kind: 'time', ms: int}
+  ///   {kind: 'text', text: String}
+  ///   {kind: 'noText', text: String}
+  ///   {kind: 'stable', stableWindowMs: int}
+  final Map<String, Object?> predicate;
+  final int timeoutMs;
+
+  @override
+  String get name => 'wait_for';
+}

@@ -14,6 +14,7 @@ final mcpToolkitExtKeys = (
   swipe: '$mcpToolkitExt.${mcpToolkitExtNames.swipe}',
   drag: '$mcpToolkitExt.${mcpToolkitExtNames.drag}',
   getRecentLogs: '$mcpToolkitExt.${mcpToolkitExtNames.getRecentLogs}',
+  waitFor: '$mcpToolkitExt.${mcpToolkitExtNames.waitFor}',
 );
 
 final allMcpToolkitExtNames = {
@@ -30,6 +31,7 @@ final allMcpToolkitExtNames = {
   mcpToolkitExtNames.swipe,
   mcpToolkitExtNames.drag,
   mcpToolkitExtNames.getRecentLogs,
+  mcpToolkitExtNames.waitFor,
 };
 
 const mcpToolkitExtNames = (
@@ -46,4 +48,5 @@ const mcpToolkitExtNames = (
   swipe: 'swipe',
   drag: 'drag',
   getRecentLogs: 'get_recent_logs',
+  waitFor: 'wait_for',
 );

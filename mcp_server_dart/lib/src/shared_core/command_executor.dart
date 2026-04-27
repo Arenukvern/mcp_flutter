@@ -372,6 +372,12 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     HotReloadAndCaptureCommand() => _hotReloadAndCapture(command),
     EvaluateDartExpressionCommand() => _evaluateDartExpression(command),
     GetRecentLogsCommand() => _getRecentLogs(command),
+    WaitForCommand() => Future.value(
+      CoreResult.failure(
+        code: CoreErrorCode.waitForFailed,
+        message: 'wait_for is registered but not yet implemented',
+      ),
+    ),
     DebugDumpLayerTreeCommand() => _debugDumpLayerTree(),
     DebugDumpSemanticsTreeCommand() => _debugDumpSemanticsTree(),
     DebugDumpRenderTreeCommand() => _debugDumpRenderTree(),

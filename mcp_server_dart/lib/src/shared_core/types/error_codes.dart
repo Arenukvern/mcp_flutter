@@ -99,6 +99,9 @@ abstract final class CoreErrorCode {
   static const evaluateExpressionFailed = 'evaluate_expression_failed';
   static const getRecentLogsFailed = 'get_recent_logs_failed';
 
+  static const waitTimeout = 'wait_timeout';
+  static const waitForFailed = 'wait_for_failed';
+
   static const unknown = 'unknown_error';
 }
 
@@ -428,6 +431,20 @@ const Map<String, CoreErrorDescriptor> _descriptorMap =
       ),
       CoreErrorCode.getRecentLogsFailed: CoreErrorDescriptor(
         code: CoreErrorCode.getRecentLogsFailed,
+        category: CoreErrorCategory.execution,
+        retryable: true,
+        exitCode: 69,
+        httpLikeStatus: 500,
+      ),
+      CoreErrorCode.waitTimeout: CoreErrorDescriptor(
+        code: CoreErrorCode.waitTimeout,
+        category: CoreErrorCategory.execution,
+        retryable: true,
+        exitCode: 69,
+        httpLikeStatus: 408,
+      ),
+      CoreErrorCode.waitForFailed: CoreErrorDescriptor(
+        code: CoreErrorCode.waitForFailed,
         category: CoreErrorCategory.execution,
         retryable: true,
         exitCode: 69,
