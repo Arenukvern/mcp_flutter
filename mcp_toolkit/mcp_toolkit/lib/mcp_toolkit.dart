@@ -21,6 +21,7 @@ export 'src/services/gesture_interaction_service.dart';
 export 'src/services/log_capture_service.dart';
 export 'src/services/semantic_snapshot_service.dart';
 export 'src/services/view_introspection_service.dart';
+export 'src/services/wait_predicate_service.dart';
 export 'src/toolkits/flutter_mcp_toolkit.dart';
 export 'src/toolkits/flutter_permission_toolkit.dart';
 export 'src/toolkits/interaction_toolkit.dart';
