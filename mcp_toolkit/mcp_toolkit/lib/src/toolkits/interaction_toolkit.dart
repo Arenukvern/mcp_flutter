@@ -22,6 +22,7 @@ Set<MCPCallEntry> getInteractionToolkitEntries() => {
   OnWaitForEntry(),
   OnPressKeyEntry(),
   OnHandleDialogEntry(),
+  OnNavigateEntry(),
 };
 
 // ---------------------------------------------------------------------------
@@ -674,5 +675,56 @@ extension type OnHandleDialogEntry._(MCPCallEntry entry)
       ),
     );
     return OnHandleDialogEntry._(entry);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Navigate
+// ---------------------------------------------------------------------------
+
+/// {@template on_navigate_entry}
+/// Drive the registered Navigator: push a named route, pop the topmost
+/// route, or popUntil a named route.
+/// {@endtemplate}
+extension type OnNavigateEntry._(MCPCallEntry entry) implements MCPCallEntry {
+  /// {@macro on_navigate_entry}
+  factory OnNavigateEntry() {
+    final entry = MCPCallEntry.tool(
+      handler: (final parameters) async {
+        final action = jsonDecodeString(parameters['action']);
+        final route = jsonDecodeString(parameters['route']);
+        final argsRaw = parameters['arguments'];
+        final arguments = argsRaw == null || argsRaw.isEmpty
+            ? null
+            : jsonDecodeMap(argsRaw);
+        final result = await ControlFlowService.navigate(
+          action: action,
+          route: route.isEmpty ? null : route,
+          arguments: arguments,
+        );
+        return MCPCallResult(
+          message: result['success'] == true
+              ? 'navigate $action ok.'
+              : 'navigate failed: ${result['error']}.',
+          parameters: result,
+        );
+      },
+      definition: MCPToolDefinition(
+        name: 'navigate',
+        description:
+            'Drive the registered Navigator. action=push|pop|popUntil. '
+            'push/popUntil require route. push accepts arguments. '
+            'Requires MCPToolkitBinding.instance.setNavigatorKey(key).',
+        inputSchema: ObjectSchema(
+          properties: {
+            'action': StringSchema(),
+            'route': StringSchema(),
+            'arguments': ObjectSchema(),
+          },
+          required: const ['action'],
+        ),
+      ),
+    );
+    return OnNavigateEntry._(entry);
   }
 }

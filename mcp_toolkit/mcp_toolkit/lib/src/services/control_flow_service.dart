@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
@@ -162,5 +164,92 @@ class ControlFlowService {
       'success': popped,
       'routeName': route.settings.name,
     };
+  }
+
+  // -------------------------------------------------------------------------
+  // navigate
+  // -------------------------------------------------------------------------
+
+  static Future<Map<String, Object?>> navigate({
+    required final String action,
+    final String? route,
+    final Map<String, Object?>? arguments,
+  }) async {
+    // Precheck only: the navigator key must be registered. We resolve
+    // `currentState` lazily inside the arms that need it so the `default`
+    // arm (unknown_action) reports the correct error even when no widget
+    // tree is mounted yet (e.g. unit tests that don't pump a MaterialApp).
+    final key = MCPToolkitBinding.instance.navigatorKey;
+    if (key == null) {
+      return <String, Object?>{
+        'success': false,
+        'error': 'navigator_not_registered',
+      };
+    }
+    final navState = key.currentState;
+
+    switch (action) {
+      case 'push':
+        if (route == null || route.isEmpty) {
+          return <String, Object?>{
+            'success': false,
+            'error': 'missing_route',
+            'action': action,
+          };
+        }
+        if (navState == null) {
+          return <String, Object?>{
+            'success': false,
+            'error': 'navigator_not_registered',
+          };
+        }
+        // Don't await: `pushNamed` resolves only when the route is popped,
+        // so awaiting deadlocks until the next pop. Fire-and-forget the
+        // push; the caller's pump/pumpAndSettle drives the navigation.
+        unawaited(navState.pushNamed<Object?>(route, arguments: arguments));
+        return <String, Object?>{
+          'success': true,
+          'action': 'push',
+          'route': route,
+        };
+      case 'pop':
+        if (navState == null) {
+          return <String, Object?>{
+            'success': false,
+            'error': 'navigator_not_registered',
+          };
+        }
+        final popped = await navState.maybePop();
+        return <String, Object?>{
+          'success': popped,
+          'action': 'pop',
+        };
+      case 'popUntil':
+        if (route == null || route.isEmpty) {
+          return <String, Object?>{
+            'success': false,
+            'error': 'missing_route',
+            'action': action,
+          };
+        }
+        if (navState == null) {
+          return <String, Object?>{
+            'success': false,
+            'error': 'navigator_not_registered',
+          };
+        }
+        navState.popUntil(ModalRoute.withName(route));
+        return <String, Object?>{
+          'success': true,
+          'action': 'popUntil',
+          'route': route,
+        };
+      default:
+        return <String, Object?>{
+          'success': false,
+          'error': 'unknown_action',
+          'action': action,
+        };
+    }
   }
 }

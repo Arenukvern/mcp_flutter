@@ -124,4 +124,78 @@ void main() {
     expect(result['success'], isFalse);
     expect(result['error'], 'navigator_not_registered');
   });
+
+  // -----------------------------------------------------------------------
+  // navigate
+  // -----------------------------------------------------------------------
+
+  testWidgets('navigate push pushes the named route', (final tester) async {
+    final navKey = GlobalKey<NavigatorState>();
+    MCPToolkitBinding.instance.setNavigatorKey(navKey);
+
+    await tester.pumpWidget(MaterialApp(
+      navigatorKey: navKey,
+      routes: {
+        '/': (final _) => const Scaffold(body: Text('home')),
+        '/settings': (final _) => const Scaffold(body: Text('settings page')),
+      },
+    ));
+    await tester.pumpAndSettle();
+
+    final result = await ControlFlowService.navigate(
+      action: 'push',
+      route: '/settings',
+    );
+    await tester.pumpAndSettle();
+
+    expect(result['success'], isTrue);
+    expect(find.text('settings page'), findsOneWidget);
+
+    MCPToolkitBinding.instance.setNavigatorKey(null);
+  });
+
+  testWidgets('navigate pop returns to previous route', (final tester) async {
+    final navKey = GlobalKey<NavigatorState>();
+    MCPToolkitBinding.instance.setNavigatorKey(navKey);
+
+    await tester.pumpWidget(MaterialApp(
+      navigatorKey: navKey,
+      routes: {
+        '/': (final _) => const Scaffold(body: Text('home')),
+        '/inner': (final _) => const Scaffold(body: Text('inner page')),
+      },
+    ));
+    await tester.pumpAndSettle();
+
+    navKey.currentState!.pushNamed('/inner');
+    await tester.pumpAndSettle();
+    expect(find.text('inner page'), findsOneWidget);
+
+    final result = await ControlFlowService.navigate(action: 'pop');
+    await tester.pumpAndSettle();
+
+    expect(result['success'], isTrue);
+    expect(find.text('home'), findsOneWidget);
+
+    MCPToolkitBinding.instance.setNavigatorKey(null);
+  });
+
+  test('navigate fails fast when no navigator registered', () async {
+    MCPToolkitBinding.instance.setNavigatorKey(null);
+    final result = await ControlFlowService.navigate(
+      action: 'push',
+      route: '/x',
+    );
+    expect(result['success'], isFalse);
+    expect(result['error'], 'navigator_not_registered');
+  });
+
+  test('navigate rejects unknown action', () async {
+    final navKey = GlobalKey<NavigatorState>();
+    MCPToolkitBinding.instance.setNavigatorKey(navKey);
+    final result = await ControlFlowService.navigate(action: 'teleport');
+    expect(result['success'], isFalse);
+    expect(result['error'], 'unknown_action');
+    MCPToolkitBinding.instance.setNavigatorKey(null);
+  });
 }
