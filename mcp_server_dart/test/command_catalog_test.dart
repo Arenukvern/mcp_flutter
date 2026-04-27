@@ -313,5 +313,28 @@ void main() {
       expect(nv.action, 'push');
       expect(nv.route, '/settings');
     });
+
+    test('fill_form, hover commands are registered', () {
+      for (final name in ['fill_form', 'hover']) {
+        final spec = catalog.specFor(name);
+        expect(spec, isNotNull, reason: '$name spec missing');
+        expect(spec!.mcpExposed, isTrue, reason: '$name not mcpExposed');
+      }
+
+      final ff = catalog.buildCommand('fill_form', {
+        'fields': <Map<String, Object?>>[
+          {'ref': 's_0', 'text': 'alice'},
+          {'ref': 's_1', 'text': 'bob'},
+        ],
+      }) as FillFormCommand;
+      expect(ff.fields, hasLength(2));
+      expect(ff.fields.first['ref'], 's_0');
+      expect(ff.fields.first['text'], 'alice');
+
+      final hv = catalog.buildCommand('hover', {
+        'ref': 's_3',
+      }) as HoverCommand;
+      expect(hv.ref, 's_3');
+    });
   });
 }

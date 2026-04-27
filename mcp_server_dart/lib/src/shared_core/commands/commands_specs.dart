@@ -1019,6 +1019,84 @@ final class CommandCatalog {
         ),
       ),
       CommandSpec(
+        name: 'fill_form',
+        description:
+            'Batch text entry: enters text into multiple fields in one '
+            'tool call. Stops on first failure (partial form is worse '
+            'than a clean error). Each field requires a fresh ref from '
+            'semantic_snapshot. Optional snapshotId is checked against '
+            'the first field only — refs that change mid-batch will '
+            'surface as a stale_snapshot error from the per-field '
+            'enter_text dispatch.',
+        inputSchema: _objectSchema(
+          required: const ['fields'],
+          properties: {
+            'fields': const <String, Object?>{
+              'type': 'array',
+              'items': <String, Object?>{
+                'type': 'object',
+                'required': <String>['ref', 'text'],
+                'properties': <String, Object?>{
+                  'ref': <String, Object?>{'type': 'string'},
+                  'text': <String, Object?>{'type': 'string'},
+                },
+              },
+            },
+            'snapshotId': _intSchema(),
+          },
+        ),
+        outputSchema: _objectSchema(additionalProperties: true),
+        requiresVm: true,
+        supportsWatch: false,
+        mcpExposed: true,
+        build: (final args) {
+          final raw = args['fields'];
+          final list = raw is List
+              ? raw
+                  .whereType<Object?>()
+                  .map<Map<String, Object?>>((final e) {
+                    if (e is Map<String, Object?>) return e;
+                    if (e is Map) return e.cast<String, Object?>();
+                    return const <String, Object?>{};
+                  })
+                  .toList(growable: false)
+              : const <Map<String, Object?>>[];
+          final snapshotIdRaw = _intArg(args, 'snapshotId', fallback: 0);
+          return FillFormCommand(
+            fields: list,
+            snapshotId: snapshotIdRaw == 0 ? null : snapshotIdRaw,
+          );
+        },
+      ),
+      CommandSpec(
+        name: 'hover',
+        description:
+            'Synthesize a mouse hover at the centre of a widget identified '
+            'by a semantic snapshot ref. Drives MouseRegion.onEnter/onExit '
+            'and listeners on PointerHoverEvent. Requires a desktop or web '
+            'host (mobile platforms have no hover concept). '
+            'Call semantic_snapshot immediately before to get fresh refs. '
+            'Pass snapshot_id to detect staleness.',
+        inputSchema: _objectSchema(
+          required: const ['ref'],
+          properties: {
+            'ref': _stringSchema(),
+            'snapshotId': _intSchema(),
+          },
+        ),
+        outputSchema: _objectSchema(additionalProperties: true),
+        requiresVm: true,
+        supportsWatch: false,
+        mcpExposed: true,
+        build: (final args) {
+          final snapshotIdRaw = _intArg(args, 'snapshotId', fallback: 0);
+          return HoverCommand(
+            ref: _stringArg(args, 'ref', fallback: ''),
+            snapshotId: snapshotIdRaw == 0 ? null : snapshotIdRaw,
+          );
+        },
+      ),
+      CommandSpec(
         name: 'debug_dump_layer_tree',
         description: 'Run ext.flutter.debugDumpLayerTree.',
         inputSchema: _objectSchema(),

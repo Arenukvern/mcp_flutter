@@ -376,6 +376,18 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     PressKeyCommand() => _pressKey(command),
     HandleDialogCommand() => _handleDialog(command),
     NavigateCommand() => _navigate(command),
+    FillFormCommand() => Future.value(
+      CoreResult.failure(
+        code: CoreErrorCode.fillFormFailed,
+        message: 'fill_form is registered but not yet implemented',
+      ),
+    ),
+    HoverCommand() => Future.value(
+      CoreResult.failure(
+        code: CoreErrorCode.hoverFailed,
+        message: 'hover is registered but not yet implemented',
+      ),
+    ),
     DebugDumpLayerTreeCommand() => _debugDumpLayerTree(),
     DebugDumpSemanticsTreeCommand() => _debugDumpSemanticsTree(),
     DebugDumpRenderTreeCommand() => _debugDumpRenderTree(),

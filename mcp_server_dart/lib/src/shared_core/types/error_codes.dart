@@ -107,6 +107,9 @@ abstract final class CoreErrorCode {
   static const navigateFailed = 'navigate_failed';
   static const navigatorNotRegistered = 'navigator_not_registered';
 
+  static const fillFormFailed = 'fill_form_failed';
+  static const hoverFailed = 'hover_failed';
+
   static const unknown = 'unknown_error';
 }
 
@@ -485,6 +488,20 @@ const Map<String, CoreErrorDescriptor> _descriptorMap =
         retryable: false,
         exitCode: 64,
         httpLikeStatus: 400,
+      ),
+      CoreErrorCode.fillFormFailed: CoreErrorDescriptor(
+        code: CoreErrorCode.fillFormFailed,
+        category: CoreErrorCategory.execution,
+        retryable: true,
+        exitCode: 69,
+        httpLikeStatus: 500,
+      ),
+      CoreErrorCode.hoverFailed: CoreErrorDescriptor(
+        code: CoreErrorCode.hoverFailed,
+        category: CoreErrorCategory.execution,
+        retryable: true,
+        exitCode: 69,
+        httpLikeStatus: 500,
       ),
       CoreErrorCode.unknown: CoreErrorDescriptor(
         code: CoreErrorCode.unknown,

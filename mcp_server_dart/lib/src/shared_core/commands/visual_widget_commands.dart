@@ -282,3 +282,24 @@ final class NavigateCommand extends CoreCommand {
   @override
   String get name => 'navigate';
 }
+
+final class FillFormCommand extends CoreCommand {
+  const FillFormCommand({required this.fields, this.snapshotId});
+
+  /// Each field is `{ref: String, text: String}`. Stop on first failure.
+  final List<Map<String, Object?>> fields;
+  final int? snapshotId;
+
+  @override
+  String get name => 'fill_form';
+}
+
+final class HoverCommand extends CoreCommand {
+  const HoverCommand({required this.ref, this.snapshotId});
+
+  final String ref;
+  final int? snapshotId;
+
+  @override
+  String get name => 'hover';
+}
