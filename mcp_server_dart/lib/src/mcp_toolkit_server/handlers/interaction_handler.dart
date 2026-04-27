@@ -239,6 +239,33 @@ class InteractionHandler {
     ),
   );
 
+  static final waitForTool = Tool(
+    name: 'wait_for',
+    description: _description(
+      'wait_for',
+      'Wait for a UI predicate (text/noText/time/stable) and return a fresh '
+          'semantic snapshot. Replaces sleep+snapshot polling. '
+          'Default timeout 5000ms, max 30000ms.',
+    ),
+    inputSchema: strictToolInputSchema(
+      required: ['predicate'],
+      properties: {
+        'predicate': Schema.object(
+          additionalProperties: true,
+          description:
+              'Predicate map. Shapes: '
+              '{kind:"time", ms:int} | '
+              '{kind:"text", text:String} | '
+              '{kind:"noText", text:String} | '
+              '{kind:"stable", stableWindowMs:int}',
+        ),
+        'timeoutMs': Schema.int(
+          description: 'Timeout in ms (default 5000, max 30000)',
+        ),
+      },
+    ),
+  );
+
   // --- Handler methods ---
 
   Future<CallToolResult> semanticSnapshot(final CallToolRequest request) async {
@@ -534,6 +561,36 @@ class InteractionHandler {
       return toCallToolErrorResult(result, prefix: 'Failed to get logs');
     }
 
+    return CallToolResult(
+      content: [TextContent(text: jsonEncode(result.data))],
+    );
+  }
+
+  Future<CallToolResult> waitFor(final CallToolRequest request) async {
+    final connectError = await applyConnectionOverride(
+      request: request,
+      executor: executor,
+    );
+    if (connectError != null) {
+      return toCallToolErrorResult(connectError, prefix: 'Failed to connect');
+    }
+
+    final args = request.arguments ?? const {};
+    final predicateRaw = args['predicate'];
+    final predicate = predicateRaw is Map
+        ? Map<String, Object?>.from(predicateRaw)
+        : <String, Object?>{};
+    final timeoutMs = jsonDecodeInt(args['timeoutMs']);
+
+    final result = await executor.execute(
+      WaitForCommand(
+        predicate: predicate,
+        timeoutMs: timeoutMs == 0 ? 5000 : timeoutMs,
+      ),
+    );
+    if (!result.ok) {
+      return toCallToolErrorResult(result, prefix: 'wait_for failed');
+    }
     return CallToolResult(
       content: [TextContent(text: jsonEncode(result.data))],
     );

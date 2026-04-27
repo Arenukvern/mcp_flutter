@@ -105,6 +105,10 @@ base mixin FlutterInspector
       InteractionHandler.getRecentLogsTool,
       _interactionHandler.getRecentLogs,
     );
+    registerTool(
+      InteractionHandler.waitForTool,
+      _interactionHandler.waitFor,
+    );
 
     if (configuration.liveEditSupported) {
       log(

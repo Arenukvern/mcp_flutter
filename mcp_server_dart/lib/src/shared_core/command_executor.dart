@@ -372,12 +372,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     HotReloadAndCaptureCommand() => _hotReloadAndCapture(command),
     EvaluateDartExpressionCommand() => _evaluateDartExpression(command),
     GetRecentLogsCommand() => _getRecentLogs(command),
-    WaitForCommand() => Future.value(
-      CoreResult.failure(
-        code: CoreErrorCode.waitForFailed,
-        message: 'wait_for is registered but not yet implemented',
-      ),
-    ),
+    WaitForCommand() => _waitFor(command),
     DebugDumpLayerTreeCommand() => _debugDumpLayerTree(),
     DebugDumpSemanticsTreeCommand() => _debugDumpSemanticsTree(),
     DebugDumpRenderTreeCommand() => _debugDumpRenderTree(),
@@ -1066,6 +1061,40 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       return CoreResult.failure(
         code: CoreErrorCode.getRecentLogsFailed,
         message: 'Failed to get recent logs: $e',
+      );
+    }
+  }
+
+  Future<CoreResult> _waitFor(final WaitForCommand command) async {
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) return ensureFailure;
+
+    try {
+      final result = await connectionContext.callFlutterExtension(
+        mcpToolkitExtKeys.waitFor,
+        args: {
+          // Extension RPC args are stringly-typed; the toolkit-side handler
+          // calls `jsonDecodeMap` on this. See `OnWaitForEntry` in
+          // mcp_toolkit/.../toolkits/interaction_toolkit.dart.
+          'predicate': jsonEncode(command.predicate),
+          'timeoutMs': command.timeoutMs,
+        },
+      );
+      final data = _map(result.json);
+      // Toolkit returns matched: false on timeout — promote to a structured
+      // failure so the MCP error envelope kicks in.
+      if (data['matched'] == false) {
+        return CoreResult.failure(
+          code: CoreErrorCode.waitTimeout,
+          message: 'wait_for timed out after ${data['elapsedMs']}ms',
+          details: data,
+        );
+      }
+      return CoreResult.success(data: data);
+    } on Exception catch (e) {
+      return CoreResult.failure(
+        code: CoreErrorCode.waitForFailed,
+        message: 'Failed to execute wait_for: $e',
       );
     }
   }
