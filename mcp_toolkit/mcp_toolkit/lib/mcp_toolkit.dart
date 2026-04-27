@@ -16,6 +16,7 @@ export 'src/mcp_models.dart';
 export 'src/mcp_toolkit_binding.dart';
 export 'src/mcp_toolkit_binding_base.dart';
 export 'src/mcp_toolkit_extensions.dart';
+export 'src/services/control_flow_service.dart';
 export 'src/services/error_monitor.dart';
 export 'src/services/gesture_interaction_service.dart';
 export 'src/services/log_capture_service.dart';

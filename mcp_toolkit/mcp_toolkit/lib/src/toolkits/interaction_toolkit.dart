@@ -2,6 +2,7 @@ import 'package:dart_mcp/client.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
 
 import '../mcp_models.dart';
+import '../services/control_flow_service.dart';
 import '../services/gesture_interaction_service.dart';
 import '../services/log_capture_service.dart';
 import '../services/semantic_snapshot_service.dart';
@@ -19,6 +20,7 @@ Set<MCPCallEntry> getInteractionToolkitEntries() => {
   OnDragEntry(),
   OnGetRecentLogsEntry(),
   OnWaitForEntry(),
+  OnPressKeyEntry(),
 };
 
 // ---------------------------------------------------------------------------
@@ -564,5 +566,62 @@ extension type OnWaitForEntry._(MCPCallEntry entry) implements MCPCallEntry {
       ),
     );
     return OnWaitForEntry._(entry);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Press key
+// ---------------------------------------------------------------------------
+
+/// {@template on_press_key_entry}
+/// Synthesize a keyboard key press (down + up) with optional modifiers.
+/// Reaches Focus widgets, Shortcuts, Actions, and Tab traversal. Does NOT
+/// trigger `TextField.onSubmitted` or IME composition (those go through
+/// the `flutter/textinput` channel) — use `tap_widget` on the submit
+/// button instead.
+/// {@endtemplate}
+extension type OnPressKeyEntry._(MCPCallEntry entry) implements MCPCallEntry {
+  /// {@macro on_press_key_entry}
+  factory OnPressKeyEntry() {
+    final entry = MCPCallEntry.tool(
+      handler: (final parameters) async {
+        final key = jsonDecodeString(parameters['key']);
+        final result = await ControlFlowService.pressKey(
+          key: key,
+          ctrl: jsonDecodeBool(parameters['ctrl']),
+          shift: jsonDecodeBool(parameters['shift']),
+          alt: jsonDecodeBool(parameters['alt']),
+          meta: jsonDecodeBool(parameters['meta']),
+        );
+        return MCPCallResult(
+          message: result['success'] == true
+              ? 'press_key dispatched: $key.'
+              : 'press_key failed: ${result['error']}.',
+          parameters: result,
+        );
+      },
+      definition: MCPToolDefinition(
+        name: 'press_key',
+        description:
+            'Synthesize a keyboard key press (down+up). '
+            'Accepted keys: Enter, Escape, Tab, Backspace, Delete, Space, '
+            'ArrowUp/Down/Left/Right, single ASCII chars (a-z, 0-9). '
+            'Optional modifiers: ctrl, shift, alt, meta. '
+            'Reaches Focus widgets / Shortcuts / Actions / Tab traversal. '
+            'Does NOT trigger TextField.onSubmitted (use tap_widget on the '
+            'submit button instead) or IME composition.',
+        inputSchema: ObjectSchema(
+          properties: {
+            'key': StringSchema(),
+            'ctrl': BooleanSchema(),
+            'shift': BooleanSchema(),
+            'alt': BooleanSchema(),
+            'meta': BooleanSchema(),
+          },
+          required: const ['key'],
+        ),
+      ),
+    );
+    return OnPressKeyEntry._(entry);
   }
 }
