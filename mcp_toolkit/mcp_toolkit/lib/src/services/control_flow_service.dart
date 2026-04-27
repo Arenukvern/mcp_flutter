@@ -129,4 +129,38 @@ class ControlFlowService {
       'meta': meta,
     };
   }
+
+  // -------------------------------------------------------------------------
+  // handle_dialog
+  // -------------------------------------------------------------------------
+
+  static Future<Map<String, Object?>> dismissDialog() async {
+    final navState = MCPToolkitBinding.instance.navigatorKey?.currentState;
+    if (navState == null) {
+      return <String, Object?>{
+        'success': false,
+        'error': 'navigator_not_registered',
+      };
+    }
+
+    Route<Object?>? topRoute;
+    navState.popUntil((final r) {
+      topRoute ??= r;
+      return true;
+    });
+    final route = topRoute;
+    if (route is! PopupRoute) {
+      return <String, Object?>{
+        'success': false,
+        'error': 'no_popup_route',
+        'topRouteName': route?.settings.name,
+      };
+    }
+
+    final popped = await navState.maybePop();
+    return <String, Object?>{
+      'success': popped,
+      'routeName': route.settings.name,
+    };
+  }
 }

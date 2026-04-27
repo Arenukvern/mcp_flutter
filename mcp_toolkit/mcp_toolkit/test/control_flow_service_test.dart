@@ -57,4 +57,71 @@ void main() {
     expect(result['success'], isFalse);
     expect(result['error'], 'unknown_key');
   });
+
+  // -----------------------------------------------------------------------
+  // handle_dialog
+  // -----------------------------------------------------------------------
+
+  testWidgets('handle_dialog dismiss pops the topmost AlertDialog',
+      (final tester) async {
+    final navKey = GlobalKey<NavigatorState>();
+    MCPToolkitBinding.instance.setNavigatorKey(navKey);
+
+    await tester.pumpWidget(MaterialApp(
+      navigatorKey: navKey,
+      home: Builder(
+        builder: (final context) => Scaffold(
+          body: Center(
+            child: ElevatedButton(
+              onPressed: () => showDialog<void>(
+                context: context,
+                builder: (final _) => const AlertDialog(
+                  title: Text('Confirm?'),
+                ),
+              ),
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      ),
+    ));
+
+    // Open the dialog.
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    expect(find.byType(AlertDialog), findsOneWidget);
+
+    final result = await ControlFlowService.dismissDialog();
+    await tester.pumpAndSettle();
+
+    expect(result['success'], isTrue);
+    expect(find.byType(AlertDialog), findsNothing);
+
+    MCPToolkitBinding.instance.setNavigatorKey(null);
+  });
+
+  testWidgets(
+      'handle_dialog dismiss returns failure when no dialog is showing',
+      (final tester) async {
+    final navKey = GlobalKey<NavigatorState>();
+    MCPToolkitBinding.instance.setNavigatorKey(navKey);
+
+    await tester.pumpWidget(
+      MaterialApp(navigatorKey: navKey, home: const Scaffold()),
+    );
+
+    final result = await ControlFlowService.dismissDialog();
+    expect(result['success'], isFalse);
+    expect(result['error'], 'no_popup_route');
+
+    MCPToolkitBinding.instance.setNavigatorKey(null);
+  });
+
+  test('handle_dialog dismiss fails fast when no navigator registered',
+      () async {
+    MCPToolkitBinding.instance.setNavigatorKey(null);
+    final result = await ControlFlowService.dismissDialog();
+    expect(result['success'], isFalse);
+    expect(result['error'], 'navigator_not_registered');
+  });
 }

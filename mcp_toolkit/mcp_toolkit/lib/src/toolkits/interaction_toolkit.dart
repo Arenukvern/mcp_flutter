@@ -21,6 +21,7 @@ Set<MCPCallEntry> getInteractionToolkitEntries() => {
   OnGetRecentLogsEntry(),
   OnWaitForEntry(),
   OnPressKeyEntry(),
+  OnHandleDialogEntry(),
 };
 
 // ---------------------------------------------------------------------------
@@ -623,5 +624,55 @@ extension type OnPressKeyEntry._(MCPCallEntry entry) implements MCPCallEntry {
       ),
     );
     return OnPressKeyEntry._(entry);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Handle dialog
+// ---------------------------------------------------------------------------
+
+/// {@template on_handle_dialog_entry}
+/// Dismiss the topmost popup/dialog route on the registered Navigator.
+/// {@endtemplate}
+extension type OnHandleDialogEntry._(MCPCallEntry entry)
+    implements MCPCallEntry {
+  /// {@macro on_handle_dialog_entry}
+  factory OnHandleDialogEntry() {
+    final entry = MCPCallEntry.tool(
+      handler: (final parameters) async {
+        final action = jsonDecodeString(parameters['action']);
+        if (action != 'dismiss') {
+          return MCPCallResult(
+            message: 'handle_dialog: unsupported action "$action".',
+            parameters: <String, Object?>{
+              'success': false,
+              'error': 'unsupported_action',
+              'action': action,
+            },
+          );
+        }
+        final result = await ControlFlowService.dismissDialog();
+        return MCPCallResult(
+          message: result['success'] == true
+              ? 'Dialog dismissed.'
+              : 'handle_dialog failed: ${result['error']}.',
+          parameters: result,
+        );
+      },
+      definition: MCPToolDefinition(
+        name: 'handle_dialog',
+        description:
+            'Dismiss the topmost popup/dialog route on the registered '
+            'Navigator. Currently only action="dismiss" is supported. '
+            'Requires MCPToolkitBinding.instance.setNavigatorKey(key).',
+        inputSchema: ObjectSchema(
+          properties: {
+            'action': StringSchema(),
+          },
+          required: const ['action'],
+        ),
+      ),
+    );
+    return OnHandleDialogEntry._(entry);
   }
 }
