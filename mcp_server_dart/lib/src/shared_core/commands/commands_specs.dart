@@ -920,9 +920,9 @@ final class CommandCatalog {
           required: const ['predicate'],
           properties: {
             'predicate': _objectSchema(additionalProperties: true),
-            // Default 5000, max 30000. `_intSchema` doesn't take a maximum,
-            // so use a raw map. The toolkit also enforces the ceiling — this
-            // gives a server-side reject instead of round-trip-then-reject.
+            // Default 5000, max 30000. Schema advertises the ceiling for
+            // clients/MCP introspection; the toolkit is the actual enforcer
+            // (`_intArg` does not validate against `maximum`).
             'timeoutMs': const <String, Object?>{
               'type': 'integer',
               'default': 5000,
@@ -935,16 +935,10 @@ final class CommandCatalog {
         requiresVm: true,
         supportsWatch: false,
         mcpExposed: true,
-        build: (final args) {
-          final raw = args['predicate'];
-          final predicate = raw is Map<String, Object?>
-              ? raw
-              : (raw is Map ? raw.cast<String, Object?>() : <String, Object?>{});
-          return WaitForCommand(
-            predicate: predicate,
-            timeoutMs: _intArg(args, 'timeoutMs', fallback: 5000),
-          );
-        },
+        build: (final args) => WaitForCommand(
+          predicate: _mapArg(args, 'predicate'),
+          timeoutMs: _intArg(args, 'timeoutMs', fallback: 5000),
+        ),
       ),
       CommandSpec(
         name: 'debug_dump_layer_tree',
