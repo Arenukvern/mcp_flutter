@@ -478,7 +478,10 @@ const Map<String, CoreErrorDescriptor> _descriptorMap =
       ),
       CoreErrorCode.navigatorNotRegistered: CoreErrorDescriptor(
         code: CoreErrorCode.navigatorNotRegistered,
-        category: CoreErrorCategory.execution,
+        // `validation` mirrors `connectionSelectionRequired` precedent: a
+        // client-side configuration mistake that needs the caller to fix
+        // their app code (register a navigator key) — not a server bug.
+        category: CoreErrorCategory.validation,
         retryable: false,
         exitCode: 64,
         httpLikeStatus: 400,
