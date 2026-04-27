@@ -121,6 +121,14 @@ base mixin FlutterInspector
       InteractionHandler.navigateTool,
       _interactionHandler.navigate,
     );
+    registerTool(
+      InteractionHandler.fillFormTool,
+      _interactionHandler.fillForm,
+    );
+    registerTool(
+      InteractionHandler.hoverTool,
+      _interactionHandler.hover,
+    );
 
     if (configuration.liveEditSupported) {
       log(

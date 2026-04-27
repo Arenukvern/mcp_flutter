@@ -321,6 +321,50 @@ class InteractionHandler {
     ),
   );
 
+  static final fillFormTool = Tool(
+    name: 'fill_form',
+    description: _description(
+      'fill_form',
+      'Batch text entry: enters text into multiple fields in one call. '
+          'Stops on first failure. Each field: {ref, text}. Pass snapshotId '
+          'to validate against the most recent semantic_snapshot (checked '
+          'on the first field only).',
+    ),
+    inputSchema: strictToolInputSchema(
+      required: ['fields'],
+      properties: {
+        'fields': Schema.list(
+          items: Schema.object(
+            additionalProperties: false,
+            properties: {
+              'ref': Schema.string(),
+              'text': Schema.string(),
+            },
+            required: ['ref', 'text'],
+          ),
+        ),
+        'snapshotId': Schema.int(),
+      },
+    ),
+  );
+
+  static final hoverTool = Tool(
+    name: 'hover',
+    description: _description(
+      'hover',
+      'Synthesize a mouse hover at the centre of a widget by semantic ref. '
+          'Drives MouseRegion.onEnter/onExit. Desktop/web only — mobile has '
+          'no hover concept. Pass snapshotId for staleness detection.',
+    ),
+    inputSchema: strictToolInputSchema(
+      required: ['ref'],
+      properties: {
+        'ref': Schema.string(),
+        'snapshotId': Schema.int(),
+      },
+    ),
+  );
+
   // --- Handler methods ---
 
   Future<CallToolResult> semanticSnapshot(final CallToolRequest request) async {
@@ -719,6 +763,63 @@ class InteractionHandler {
     ));
     if (!result.ok) {
       return toCallToolErrorResult(result, prefix: 'navigate failed');
+    }
+    return CallToolResult(
+      content: [TextContent(text: jsonEncode(result.data))],
+    );
+  }
+
+  Future<CallToolResult> fillForm(final CallToolRequest request) async {
+    final connectError = await applyConnectionOverride(
+      request: request,
+      executor: executor,
+    );
+    if (connectError != null) {
+      return toCallToolErrorResult(connectError, prefix: 'Failed to connect');
+    }
+
+    final args = request.arguments ?? const {};
+    final fieldsRaw = args['fields'];
+    final fields = fieldsRaw is List
+        ? fieldsRaw
+            .map<Map<String, Object?>>((final e) {
+              if (e is Map<String, Object?>) return e;
+              if (e is Map) return e.cast<String, Object?>();
+              return const <String, Object?>{};
+            })
+            .toList(growable: false)
+        : const <Map<String, Object?>>[];
+    final snapshotIdRaw = jsonDecodeInt(args['snapshotId']);
+    final result = await executor.execute(FillFormCommand(
+      fields: fields,
+      snapshotId: snapshotIdRaw == 0 ? null : snapshotIdRaw,
+    ));
+    if (!result.ok) {
+      return toCallToolErrorResult(result, prefix: 'fill_form failed');
+    }
+    return CallToolResult(
+      content: [TextContent(text: jsonEncode(result.data))],
+    );
+  }
+
+  Future<CallToolResult> hover(final CallToolRequest request) async {
+    final connectError = await applyConnectionOverride(
+      request: request,
+      executor: executor,
+    );
+    if (connectError != null) {
+      return toCallToolErrorResult(connectError, prefix: 'Failed to connect');
+    }
+
+    final args = request.arguments ?? const {};
+    final ref = jsonDecodeString(args['ref']);
+    final snapshotIdRaw = jsonDecodeInt(args['snapshotId']);
+    final result = await executor.execute(HoverCommand(
+      ref: ref,
+      snapshotId: snapshotIdRaw == 0 ? null : snapshotIdRaw,
+    ));
+    if (!result.ok) {
+      return toCallToolErrorResult(result, prefix: 'hover failed');
     }
     return CallToolResult(
       content: [TextContent(text: jsonEncode(result.data))],

@@ -376,18 +376,8 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     PressKeyCommand() => _pressKey(command),
     HandleDialogCommand() => _handleDialog(command),
     NavigateCommand() => _navigate(command),
-    FillFormCommand() => Future.value(
-      CoreResult.failure(
-        code: CoreErrorCode.fillFormFailed,
-        message: 'fill_form is registered but not yet implemented',
-      ),
-    ),
-    HoverCommand() => Future.value(
-      CoreResult.failure(
-        code: CoreErrorCode.hoverFailed,
-        message: 'hover is registered but not yet implemented',
-      ),
-    ),
+    FillFormCommand() => _fillForm(command),
+    HoverCommand() => _hover(command),
     DebugDumpLayerTreeCommand() => _debugDumpLayerTree(),
     DebugDumpSemanticsTreeCommand() => _debugDumpSemanticsTree(),
     DebugDumpRenderTreeCommand() => _debugDumpRenderTree(),
@@ -1213,6 +1203,88 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       return CoreResult.failure(
         code: CoreErrorCode.navigateFailed,
         message: 'Failed to execute navigate: $e',
+      );
+    }
+  }
+
+  Future<CoreResult> _fillForm(final FillFormCommand command) async {
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) return ensureFailure;
+
+    if (command.fields.isEmpty) {
+      return CoreResult.failure(
+        code: CoreErrorCode.fillFormFailed,
+        message: 'fill_form: fields list is empty',
+      );
+    }
+
+    final results = <Map<String, Object?>>[];
+    for (var i = 0; i < command.fields.length; i++) {
+      final field = command.fields[i];
+      final ref = field['ref'];
+      final text = field['text'];
+      if (ref is! String || ref.isEmpty || text is! String) {
+        return CoreResult.failure(
+          code: CoreErrorCode.fillFormFailed,
+          message: 'fill_form: field $i missing ref/text',
+          details: {'failedAt': i, 'field': field, 'results': results},
+        );
+      }
+
+      // Apply snapshotId on the first field only — subsequent fields
+      // would re-validate against the same id, so just trust the chain.
+      final result = await _enterText(EnterTextCommand(
+        ref: ref,
+        text: text,
+        snapshotId: i == 0 ? command.snapshotId : null,
+      ));
+      results.add(_map(result.data));
+      if (!result.ok) {
+        return CoreResult.failure(
+          code: CoreErrorCode.fillFormFailed,
+          message: 'fill_form: field $i (ref=$ref) failed',
+          details: {
+            'failedAt': i,
+            'failedRef': ref,
+            'results': results,
+            'underlyingError': result.error?.code,
+          },
+        );
+      }
+    }
+
+    return CoreResult.success(data: <String, Object?>{
+      'success': true,
+      'fieldCount': command.fields.length,
+      'results': results,
+    });
+  }
+
+  Future<CoreResult> _hover(final HoverCommand command) async {
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) return ensureFailure;
+
+    try {
+      final result = await connectionContext.callFlutterExtension(
+        mcpToolkitExtKeys.hover,
+        args: {
+          'ref': command.ref,
+          if (command.snapshotId != null) 'snapshotId': command.snapshotId,
+        },
+      );
+      final data = _map(result.json);
+      if (data['success'] != true) {
+        return CoreResult.failure(
+          code: CoreErrorCode.hoverFailed,
+          message: 'hover failed: ${data['error']}',
+          details: data,
+        );
+      }
+      return CoreResult.success(data: data);
+    } on Exception catch (e) {
+      return CoreResult.failure(
+        code: CoreErrorCode.hoverFailed,
+        message: 'Failed to execute hover: $e',
       );
     }
   }
