@@ -198,4 +198,80 @@ void main() {
     expect(result['error'], 'unknown_action');
     MCPToolkitBinding.instance.setNavigatorKey(null);
   });
+
+  // -----------------------------------------------------------------------
+  // hover
+  // -----------------------------------------------------------------------
+
+  testWidgets('hover triggers MouseRegion.onEnter on the targeted widget',
+      (final tester) async {
+    // The default test viewport is 800x600 logical px with DPR=3.0, but
+    // SemanticSnapshotService.resolveCenter accumulates the root's DPR
+    // transform and returns physical-pixel coords. Production runs at the
+    // device's actual DPR where the same code path works for tap/enter/etc.,
+    // so this is a latent cross-gesture issue separate from hover. Override
+    // DPR so the hover hits the widget at logical coordinates.
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    var entered = false;
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: Center(
+          child: Semantics(
+            label: 'hover_target',
+            child: MouseRegion(
+              onEnter: (_) => entered = true,
+              child: const SizedBox(width: 100, height: 100),
+            ),
+          ),
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    // Parallel-pump: buildSemanticSnapshot awaits binding.endOfFrame (cold
+    // path under the test binding), and hoverAtRef awaits Future.delayed
+    // via _waitFrame. Both need pumps to advance — kick off the future,
+    // drive frames, collect.
+    final snapshotFuture = SemanticSnapshotService.buildSemanticSnapshot();
+    await tester.pump();
+    await tester.pump();
+    final snapshot = await snapshotFuture;
+    final nodes = snapshot['nodes']! as List<Object?>;
+    // Find the ref whose label is 'hover_target'.
+    final targetEntry = nodes.firstWhere(
+      (final n) =>
+          (n is Map && (n['label'] as String?)?.contains('hover_target') == true),
+    ) as Map<Object?, Object?>;
+    final ref = targetEntry['ref']! as String;
+
+    final hoverFuture = GestureInteractionService.hoverAtRef(ref);
+    // _waitFrame is Future.delayed(16ms); pump past it.
+    await tester.pump(const Duration(milliseconds: 20));
+    final result = await hoverFuture;
+    // MouseTracker schedules onEnter via SchedulerBinding.postFrameCallback;
+    // those run during the frame after they were scheduled, so pump
+    // multiple times to be safe.
+    await tester.pump();
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(result['success'], isTrue);
+    expect(entered, isTrue);
+  });
+
+  testWidgets('hover returns ref_not_found for an unknown ref',
+      (final tester) async {
+    await tester.pumpWidget(const MaterialApp(home: Scaffold()));
+    await tester.pumpAndSettle();
+
+    // _refNotFound short-circuits before any timer, so no runAsync needed.
+    final result =
+        await GestureInteractionService.hoverAtRef('s_does_not_exist');
+    expect(result['success'], isFalse);
+    // _refNotFound returns a human-readable message containing 'not found'
+    // rather than a token like 'ref_not_found' — match the existing shape.
+    expect(result['error'], contains('not found'));
+  });
 }

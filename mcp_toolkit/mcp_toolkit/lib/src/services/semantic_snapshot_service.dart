@@ -125,11 +125,13 @@ mixin SemanticSnapshotService {
     } finally {
       if (isTestBinding) {
         handle.dispose();
-        // Clear cached maps so resolveRef/Bounds/Center don't return stale
-        // entries for previous tests.
-        _lastRefMap = const <String, SemanticsNode>{};
-        _lastBoundsMap = const <String, ui.Rect>{};
-        _lastCenterMap = const <String, ui.Offset>{};
+        // Note: do NOT clear _lastRefMap/_lastBoundsMap/_lastCenterMap here.
+        // _buildSnapshotBody's success paths already overwrite them with the
+        // fresh snapshot's contents, and clearing in this finally happens
+        // synchronously before the awaiter sees the result — which would make
+        // any within-test "build snapshot then resolveRef" flow (every
+        // gesture-after-snapshot test) fail. The next snapshot call overwrites
+        // stale entries on its own, so cross-test isolation is preserved.
       }
     }
   }

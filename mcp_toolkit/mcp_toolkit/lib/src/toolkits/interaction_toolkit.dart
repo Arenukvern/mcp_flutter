@@ -23,6 +23,7 @@ Set<MCPCallEntry> getInteractionToolkitEntries() => {
   OnPressKeyEntry(),
   OnHandleDialogEntry(),
   OnNavigateEntry(),
+  OnHoverEntry(),
 };
 
 // ---------------------------------------------------------------------------
@@ -726,5 +727,73 @@ extension type OnNavigateEntry._(MCPCallEntry entry) implements MCPCallEntry {
       ),
     );
     return OnNavigateEntry._(entry);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Hover
+// ---------------------------------------------------------------------------
+
+/// {@template on_hover_entry}
+/// Synthesize a mouse hover at the centre of a widget identified by ref.
+/// Drives MouseRegion.onEnter/onExit. Requires a desktop or web host
+/// (mobile platforms have no hover concept).
+/// {@endtemplate}
+extension type OnHoverEntry._(MCPCallEntry entry) implements MCPCallEntry {
+  /// {@macro on_hover_entry}
+  factory OnHoverEntry() {
+    final entry = MCPCallEntry.tool(
+      handler: (final parameters) async {
+        final ref = jsonDecodeString(parameters['ref']);
+        if (ref.isEmpty) {
+          return MCPCallResult(
+            message: 'Missing required parameter "ref".',
+            parameters: const <String, Object?>{
+              'success': false,
+              'error': 'missing_ref',
+            },
+          );
+        }
+        final snapshotIdRaw = jsonDecodeInt(parameters['snapshotId']);
+        final snapshotId = snapshotIdRaw == 0 ? null : snapshotIdRaw;
+        if (snapshotId != null &&
+            snapshotId != SemanticSnapshotService.currentSnapshotId) {
+          return MCPCallResult(
+            message:
+                'Snapshot is stale. Call semantic_snapshot to get fresh refs.',
+            parameters: <String, Object?>{
+              'ok': false,
+              'error': 'stale_snapshot',
+              'providedSnapshotId': snapshotId,
+              'currentSnapshotId': SemanticSnapshotService.currentSnapshotId,
+            },
+          );
+        }
+        final result = await GestureInteractionService.hoverAtRef(ref);
+        return MCPCallResult(
+          message: result['success'] == true
+              ? 'Hovered widget at ref "$ref".'
+              : 'hover failed: ${result['error']}.',
+          parameters: result,
+        );
+      },
+      definition: MCPToolDefinition(
+        name: 'hover',
+        description:
+            'Synthesize a mouse hover at the centre of a widget identified '
+            'by a semantic ref. Drives MouseRegion.onEnter/onExit and '
+            'listeners on PointerHoverEvent. Desktop/web only — mobile '
+            'has no hover concept. Call semantic_snapshot immediately '
+            'before to get fresh refs.',
+        inputSchema: ObjectSchema(
+          required: const ['ref'],
+          properties: {
+            'ref': StringSchema(),
+            'snapshotId': IntegerSchema(),
+          },
+        ),
+      ),
+    );
+    return OnHoverEntry._(entry);
   }
 }

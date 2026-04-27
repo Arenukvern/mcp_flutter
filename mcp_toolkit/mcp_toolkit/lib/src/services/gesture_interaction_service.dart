@@ -530,6 +530,69 @@ mixin GestureInteractionService {
     };
   }
 
+  /// Synthesize a mouse hover at the centre of the widget identified by
+  /// [ref]. Drives `MouseRegion.onEnter`/`onExit` via the framework's
+  /// mouse tracker (which computes enter/exit transitions from position
+  /// changes).
+  ///
+  /// Primes the tracker with an off-screen hover first so the target hover
+  /// is unambiguously a position change — without priming, a single hover
+  /// at the target may not produce an enter transition if the tracker's
+  /// last-known position is unset or already over the target.
+  static Future<Map<String, Object?>> hoverAtRef(final String ref) async {
+    final node = SemanticSnapshotService.resolveRef(ref);
+    if (node == null) {
+      return _refNotFound(ref);
+    }
+    final centre = SemanticSnapshotService.resolveCenter(ref);
+    if (centre == null) {
+      return _refNotFound(ref);
+    }
+
+    final binding = GestureBinding.instance;
+    // Register the device first — MouseTracker only tracks hover events from
+    // pointers that announced themselves via PointerAddedEvent; otherwise the
+    // hover may be filtered out and MouseRegion.onEnter never fires.
+    const pointer = 1;
+    binding.handlePointerEvent(
+      PointerAddedEvent(
+        pointer: pointer,
+        position: const ui.Offset(-100, -100),
+        kind: PointerDeviceKind.mouse,
+        timeStamp: _now(),
+      ),
+    );
+    // Prime: hover off-screen first so the target hover is a clean
+    // position change. Reuses pointer id so the mouse tracker treats
+    // them as the same logical mouse.
+    binding.handlePointerEvent(
+      PointerHoverEvent(
+        pointer: pointer,
+        position: const ui.Offset(-100, -100),
+        kind: PointerDeviceKind.mouse,
+        timeStamp: _now(),
+      ),
+    );
+    binding.handlePointerEvent(
+      PointerHoverEvent(
+        pointer: pointer,
+        position: centre,
+        kind: PointerDeviceKind.mouse,
+        timeStamp: _now(),
+      ),
+    );
+    await _waitFrame();
+
+    return <String, Object?>{
+      'success': true,
+      'ref': ref,
+      'position': <String, Object?>{
+        'dx': centre.dx,
+        'dy': centre.dy,
+      },
+    };
+  }
+
   // ---------------------------------------------------------------------------
   // Pointer dispatch helpers (tier 2)
   // ---------------------------------------------------------------------------
