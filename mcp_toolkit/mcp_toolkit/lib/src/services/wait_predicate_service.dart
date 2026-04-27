@@ -128,6 +128,7 @@ class WaitPredicateService {
     'matched': false,
     'predicate': predicate,
     'elapsedMs': elapsedMs,
-    if (lastSnapshot != null) 'lastSnapshot': lastSnapshot,
+    if (lastSnapshot != null && lastSnapshot['snapshot_id'] is int)
+      'lastSnapshotId': lastSnapshot['snapshot_id'],
   };
 }

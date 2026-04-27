@@ -60,11 +60,6 @@ void main() {
       expect(result['matched'], isTrue);
       expect(result['snapshot_id'], isA<int>());
       expect(result['nodes'], isA<List<Object?>>());
-
-      // Dispose the static SemanticsHandle so the test binding's
-      // end-of-test handle audit passes. (addTearDown runs *after* the
-      // audit, so we dispose inline.)
-      SemanticSnapshotService.debugDisposeForTesting();
     },
   );
 
@@ -92,8 +87,6 @@ void main() {
       expect(result['matched'], isTrue);
       // At most one increment for the final snapshot we returned.
       expect(after - before, lessThanOrEqualTo(1));
-
-      SemanticSnapshotService.debugDisposeForTesting();
     },
   );
 }

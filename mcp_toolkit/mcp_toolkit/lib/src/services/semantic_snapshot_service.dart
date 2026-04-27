@@ -74,19 +74,6 @@ mixin SemanticSnapshotService {
     }
   }
 
-  /// Test-only: dispose the retained semantics handle so the
-  /// `TestWidgetsFlutterBinding` end-of-test handle audit passes.
-  ///
-  /// Call from a `tearDown` block in any test that triggers a snapshot.
-  @visibleForTesting
-  static void debugDisposeForTesting() {
-    _semanticsHandle?.dispose();
-    _semanticsHandle = null;
-    _lastRefMap = <String, SemanticsNode>{};
-    _lastBoundsMap = <String, ui.Rect>{};
-    _lastCenterMap = <String, ui.Offset>{};
-  }
-
   /// Build a compact semantic snapshot of the current UI.
   ///
   /// Returns a map suitable for JSON serialisation with keys `snapshot_id`,
@@ -108,14 +95,48 @@ mixin SemanticSnapshotService {
     required final bool incrementId,
   }) async {
     final binding = WidgetsBinding.instance;
-    final wasEnabled = _semanticsHandle != null;
-    _semanticsHandle ??= binding.ensureSemantics();
-    if (!wasEnabled) {
-      // Cold path only: give Flutter a frame to actually populate the tree.
-      binding.scheduleFrame();
-      await binding.endOfFrame;
+    final isTestBinding = _isInFlutterTest();
+
+    // Acquire a SemanticsHandle. In production we cache it for the app
+    // lifetime so subsequent snapshots are cheap and avoid the cold-frame
+    // wait. Under TestWidgetsFlutterBinding we acquire+dispose per call so
+    // the binding's end-of-test handle audit passes (and stale ref/bounds/
+    // center caches don't leak between tests).
+    final SemanticsHandle handle;
+    final bool isCold;
+    if (isTestBinding) {
+      handle = binding.ensureSemantics();
+      isCold = true;
+    } else {
+      final wasEnabled = _semanticsHandle != null;
+      _semanticsHandle ??= binding.ensureSemantics();
+      handle = _semanticsHandle!;
+      isCold = !wasEnabled;
     }
 
+    try {
+      if (isCold) {
+        // Cold path only: give Flutter a frame to actually populate the tree.
+        binding.scheduleFrame();
+        await binding.endOfFrame;
+      }
+
+      return await _buildSnapshotBody(incrementId: incrementId);
+    } finally {
+      if (isTestBinding) {
+        handle.dispose();
+        // Clear cached maps so resolveRef/Bounds/Center don't return stale
+        // entries for previous tests.
+        _lastRefMap = const <String, SemanticsNode>{};
+        _lastBoundsMap = const <String, ui.Rect>{};
+        _lastCenterMap = const <String, ui.Offset>{};
+      }
+    }
+  }
+
+  static Future<Map<String, Object?>> _buildSnapshotBody({
+    required final bool incrementId,
+  }) async {
     final refMap = <String, SemanticsNode>{};
     final boundsMap = <String, ui.Rect>{};
     final centerMap = <String, ui.Offset>{};
