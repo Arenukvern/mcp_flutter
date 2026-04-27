@@ -1238,8 +1238,17 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
         text: text,
         snapshotId: i == 0 ? command.snapshotId : null,
       ));
-      results.add(_map(result.data));
-      if (!result.ok) {
+      final fieldData = _map(result.data);
+      results.add(fieldData);
+      // `_enterText` always returns CoreResult.success regardless of
+      // toolkit-side failure — so a transport error (`!result.ok`) AND a
+      // toolkit-side failure (`fieldData['success'] == false` /
+      // `fieldData['ok'] == false`) both count as "stop the batch."
+      // Toolkit emits `success: false` for missing args and `ok: false`
+      // for stale_snapshot — accept either shape.
+      final toolkitOk = !(fieldData['success'] == false ||
+          fieldData['ok'] == false);
+      if (!result.ok || !toolkitOk) {
         return CoreResult.failure(
           code: CoreErrorCode.fillFormFailed,
           message: 'fill_form: field $i (ref=$ref) failed',
@@ -1247,7 +1256,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
             'failedAt': i,
             'failedRef': ref,
             'results': results,
-            'underlyingError': result.error?.code,
+            'underlyingError': result.error?.code ?? fieldData['error'],
           },
         );
       }
