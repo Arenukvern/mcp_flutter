@@ -68,6 +68,29 @@ class MCPToolkitBinding extends MCPToolkitBindingBase
     _selectAtPointHandler = handler;
   }
 
+  GlobalKey<NavigatorState>? _navigatorKey;
+
+  /// The app's root [NavigatorState] key, when registered via
+  /// [setNavigatorKey].
+  ///
+  /// Consumed by tools that need to drive route changes or interact with
+  /// active modal routes — currently `handle_dialog` and `navigate`. When
+  /// `null`, those tools fail with the `navigator_not_registered` error
+  /// code so callers know the host app has not opted in.
+  GlobalKey<NavigatorState>? get navigatorKey => _navigatorKey;
+
+  /// Registers (or clears, when [key] is `null`) the root [GlobalKey]
+  /// attached to the app's `Navigator`.
+  ///
+  /// Host apps opt in by passing the same key supplied to
+  /// `MaterialApp.navigatorKey` / `WidgetsApp.navigatorKey`. The
+  /// `handle_dialog` and `navigate` tools read [navigatorKey] to locate the
+  /// current [NavigatorState]; without registration they return the
+  /// `navigator_not_registered` error.
+  void setNavigatorKey(final GlobalKey<NavigatorState>? key) {
+    _navigatorKey = key;
+  }
+
   /// Canonical app bootstrap for Flutter hosts using MCP toolkit in debug.
   Future<void> bootstrapFlutter({
     required final FutureOr<void> Function() runApp,
