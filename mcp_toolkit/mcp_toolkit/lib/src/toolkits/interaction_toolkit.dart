@@ -5,6 +5,7 @@ import '../mcp_models.dart';
 import '../services/gesture_interaction_service.dart';
 import '../services/log_capture_service.dart';
 import '../services/semantic_snapshot_service.dart';
+import '../services/wait_predicate_service.dart';
 
 /// Returns the set of MCP entries for the interaction toolkit:
 /// semantic snapshot, gestures, and log capture.
@@ -17,6 +18,7 @@ Set<MCPCallEntry> getInteractionToolkitEntries() => {
   OnSwipeEntry(),
   OnDragEntry(),
   OnGetRecentLogsEntry(),
+  OnWaitForEntry(),
 };
 
 // ---------------------------------------------------------------------------
@@ -513,5 +515,54 @@ extension type OnGetRecentLogsEntry._(MCPCallEntry entry)
       ),
     );
     return OnGetRecentLogsEntry._(entry);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Wait for predicate
+// ---------------------------------------------------------------------------
+
+/// {@template on_wait_for_entry}
+/// Block until a UI predicate holds or a timeout elapses, then return a
+/// fresh semantic snapshot. Eliminates sleep+snapshot polling loops.
+/// {@endtemplate}
+extension type OnWaitForEntry._(MCPCallEntry entry) implements MCPCallEntry {
+  /// {@macro on_wait_for_entry}
+  factory OnWaitForEntry() {
+    final entry = MCPCallEntry.tool(
+      handler: (final parameters) async {
+        final predicate = Map<String, Object?>.from(
+          jsonDecodeMap(parameters['predicate'] ?? '{}'),
+        );
+        final timeoutMs = jsonDecodeInt(parameters['timeoutMs'] ?? '5000');
+        final result = await WaitPredicateService.waitFor(
+          predicate: predicate,
+          timeoutMs: timeoutMs == 0 ? 5000 : timeoutMs,
+        );
+        return MCPCallResult(
+          message: result['matched'] == true
+              ? 'wait_for matched after ${result['elapsedMs']}ms.'
+              : 'wait_for timed out after ${result['elapsedMs']}ms.',
+          parameters: result,
+        );
+      },
+      definition: MCPToolDefinition(
+        name: 'wait_for',
+        description:
+            'Wait for a UI predicate (text/noText/time/stable) and return a '
+            'fresh semantic snapshot. Default timeout 5000ms, max 30000ms.',
+        inputSchema: ObjectSchema(
+          properties: {
+            'predicate': ObjectSchema(),
+            'timeoutMs': IntegerSchema(
+              minimum: 1,
+              maximum: 30000,
+            ),
+          },
+          required: const ['predicate'],
+        ),
+      ),
+    );
+    return OnWaitForEntry._(entry);
   }
 }
