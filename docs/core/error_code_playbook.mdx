@@ -59,6 +59,25 @@ Use this table as the source-of-truth contract for emitted `code` values.
 | `bundle_build_failed` | bundles | Bundle creation/publish failed. | true | 74 | `flutter_mcp_cli doctor --json` |
 | `write_blocked` | safe writes | Write blocked by `--no-overwrite`. | false | 73 | `Retry without --no-overwrite or choose a new --output/--name.` |
 | `doctor_critical_failed` | doctor | One or more critical doctor checks failed. | true | 1 | `flutter_mcp_cli doctor --json` |
+| `visual_capture_unsupported` | toolkit bridge | Visual capture is not supported on this target/mode. | false | 78 | `flutter_mcp_cli permissions status && flutter_mcp_cli doctor --json` |
+| `stale_snapshot` | interaction layer | Provided `snapshotId` does not match the current snapshot. | true | 65 | `flutter_mcp_cli exec --name semantic_snapshot --args '{}'` |
+| `semantic_snapshot_failed` | interaction layer | `semantic_snapshot` execution failed. | true | 69 | `flutter_mcp_cli doctor --json` |
+| `interaction_failed` | interaction layer | Tap/scroll/swipe/drag/long_press/enter_text execution failed. | true | 69 | `flutter_mcp_cli doctor --json` |
+| `evaluate_expression_failed` | interaction layer | `evaluate_dart_expression` execution failed. | true | 69 | `flutter_mcp_cli doctor --json` |
+| `get_recent_logs_failed` | interaction layer | `get_recent_logs` retrieval failed. | true | 69 | `flutter_mcp_cli doctor --json` |
+| `wait_timeout` | wait_for | Predicate did not match before `timeoutMs` elapsed. | true | 69 | `flutter_mcp_cli exec --name semantic_snapshot --args '{}'` |
+| `wait_for_failed` | wait_for | `wait_for` execution failed (malformed predicate or toolkit error). | true | 69 | `flutter_mcp_cli schema --name wait_for` |
+| `press_key_failed` | control flow | `press_key` execution failed. | true | 69 | `flutter_mcp_cli schema --name press_key` |
+| `handle_dialog_failed` | control flow | `dismiss_dialog` execution failed. | true | 69 | `flutter_mcp_cli doctor --json` |
+| `navigate_failed` | control flow | `navigate` push/pop/popUntil failed. | true | 69 | `flutter_mcp_cli schema --name navigate` |
+| `navigator_not_registered` | control flow | `navigate` called but the app did not register a `GlobalKey<NavigatorState>` via `MCPToolkitBinding.setNavigatorKey`. | false | 64 | Register a navigator key in the host app and retry. |
+| `fill_form_failed` | interaction layer | `fill_form` orchestration failed (transport or per-field toolkit failure). | true | 69 | `flutter_mcp_cli schema --name fill_form` |
+| `hover_failed` | interaction layer | `hover` execution failed. | true | 69 | `flutter_mcp_cli doctor --json` |
+| `live_edit_backend_failed` | live edit | Configured live-edit backend failed during resolution. | true | 69 | `flutter_mcp_cli exec --name live_edit_list_agent_backends --args '{}'` |
+| `live_edit_proposal_not_found` | live edit | Referenced live-edit proposal id does not exist. | false | 66 | `flutter_mcp_cli exec --name live_edit_resolve_draft --args '{"sessionId":"<live_edit_session>"}'` |
+| `live_edit_apply_failed` | live edit | Patch could not be applied (file path or write permission). | false | 74 | `flutter_mcp_cli schema --name live_edit_accept_resolution` |
+| `live_edit_validation_failed` | live edit | Patch applied but runtime validation did not match the draft intent. | false | 65 | `flutter_mcp_cli exec --name live_edit_get_selection --args '{"sessionId":"<live_edit_session>"}'` |
+| `live_edit_disabled` | live edit | Live-edit feature is disabled in runtime config. | false | 64 | Enable live-edit in runtime config and retry. |
 | `unknown_error` | fallback | Unknown code fallback. | false | 70 | `flutter_mcp_cli doctor --json` |
 
 ## Notes

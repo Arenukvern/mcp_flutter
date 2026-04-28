@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-ERROR_CODES_FILE="$ROOT_DIR/mcp_server_dart/lib/src/core/error_codes.dart"
+ERROR_CODES_FILE="$ROOT_DIR/mcp_server_dart/lib/src/shared_core/types/error_codes.dart"
 PLAYBOOK_FILE="$ROOT_DIR/docs/core/error_code_playbook.mdx"
 
 if [[ ! -f "$PLAYBOOK_FILE" ]]; then
