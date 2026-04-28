@@ -28,6 +28,8 @@ dependencies:
   live_edit_tooling_ui_kit:
     path: ../flutter_live_edit/live_edit_tooling_ui_kit
   logging: ^1.3.0
+  mcp_capability_kernel:
+    path: ../mcp_capability_kernel
   meta: ^1.17.0
   path: ^1.9.1
   process: ^5.0.5
