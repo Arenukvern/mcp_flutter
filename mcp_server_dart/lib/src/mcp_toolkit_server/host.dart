@@ -31,7 +31,7 @@ final class McpHost {
     final prefix = '${capability.id}_';
     try {
       await capability.register(ctx);
-    } catch (_) {
+    } on Object catch (_) {
       // Roll back any tools registered before the throw.
       _tools.removeWhere(
         (final fullName, _) => fullName.startsWith(prefix),
@@ -82,7 +82,7 @@ final class McpHost {
     for (final loaded in _capabilities.values) {
       try {
         await loaded.capability.dispose();
-      } catch (e) {
+      } on Object catch (e) {
         errors.add(e);
       }
     }
