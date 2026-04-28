@@ -27,15 +27,21 @@ final class McpHost {
       );
     }
 
-    final loaded = _LoadedCapability(capability);
-    _capabilities[capability.id] = loaded;
-
     final ctx = _HostCapabilityContext(host: this, capability: capability);
+    final prefix = '${capability.id}_';
     try {
       await capability.register(ctx);
+    } catch (_) {
+      // Roll back any tools registered before the throw.
+      _tools.removeWhere(
+        (final fullName, _) => fullName.startsWith(prefix),
+      );
+      rethrow;
     } finally {
       ctx.sealed = true;
     }
+    // Commit on success only.
+    _capabilities[capability.id] = _LoadedCapability(capability);
   }
 
   void _registerTool({
@@ -72,11 +78,21 @@ final class McpHost {
   }
 
   Future<void> dispose() async {
+    final errors = <Object>[];
     for (final loaded in _capabilities.values) {
-      await loaded.capability.dispose();
+      try {
+        await loaded.capability.dispose();
+      } catch (e) {
+        errors.add(e);
+      }
     }
     _capabilities.clear();
     _tools.clear();
+    if (errors.isNotEmpty) {
+      throw StateError(
+        'One or more capabilities threw during dispose: $errors',
+      );
+    }
   }
 }
 
@@ -116,6 +132,9 @@ final class _HostCapabilityContext implements CapabilityContext {
   @override
   void registerResource(final ResourceRegistration registration) {
     _ensureNotSealed();
+    // T8 wires resource dispatch; until then, this always throws after the
+    // seal check, intentionally — capabilities should not register resources
+    // in this PR's snapshot.
     throw UnimplementedError('registerResource not yet wired (tracked for T8).');
   }
 

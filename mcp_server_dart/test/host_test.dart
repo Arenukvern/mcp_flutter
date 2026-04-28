@@ -38,6 +38,25 @@ final class _FakeCapability implements Capability {
   Future<void> dispose() async {}
 }
 
+final class _DisposeTrackingCapability implements Capability {
+  _DisposeTrackingCapability({required this.id, required this.onDispose});
+
+  @override
+  final String id;
+  @override
+  String get description => 'tracking';
+  @override
+  String get version => '0.0.0';
+
+  final void Function() onDispose;
+
+  @override
+  Future<void> register(final CapabilityContext context) async {}
+
+  @override
+  Future<void> dispose() async => onDispose();
+}
+
 final class _CapturingCapability implements Capability {
   _CapturingCapability(this._capture);
   final void Function(CapabilityContext context) _capture;
@@ -114,6 +133,110 @@ void main() {
         () => capturedContext.require<DynamicRegistryBridge>(),
         throwsA(isA<HostServiceUnavailableError>()),
       );
+    });
+
+    test('registerTool after register() returns throws StateError', () async {
+      late CapabilityContext escapedCtx;
+      final cap = _CapturingCapability((final ctx) => escapedCtx = ctx);
+      final host = McpHost();
+      await host.registerCapability(cap);
+      expect(
+        () => escapedCtx.registerTool(
+          ToolRegistration(
+            name: 'late',
+            description: 'd',
+            inputSchema: const {'type': 'object'},
+            handler: (_) async =>
+                CallToolResult(content: [TextContent(text: 'ok')]),
+          ),
+        ),
+        throwsA(isA<StateError>()),
+      );
+    });
+
+    test('registerResource after register() returns throws StateError',
+        () async {
+      late CapabilityContext escapedCtx;
+      final cap = _CapturingCapability((final ctx) => escapedCtx = ctx);
+      final host = McpHost();
+      await host.registerCapability(cap);
+      // Note: registerResource currently throws UnimplementedError after the
+      // seal check. We assert the seal fires FIRST (StateError before
+      // UnimplementedError).
+      expect(
+        () => escapedCtx.registerResource(
+          ResourceRegistration(
+            uri: 'fake://x',
+            name: 'x',
+            description: 'x',
+            mimeType: 'text/plain',
+            handler: (_) async => ReadResourceResult(contents: const []),
+          ),
+        ),
+        throwsA(isA<StateError>()),
+      );
+    });
+
+    test('failed registration leaves no partial state; retry is clean',
+        () async {
+      final host = McpHost();
+
+      // First attempt: pre-prefixed name fails.
+      await expectLater(
+        host.registerCapability(
+          _FakeCapability(id: 'core', tools: ['core_bad']),
+        ),
+        throwsA(isA<PrePrefixedToolNameError>()),
+      );
+
+      // Confirm no leak: tools are empty, capability not retained.
+      expect(host.toolNames, isEmpty);
+
+      // Retry with same id and a clean tool set must succeed (would throw
+      // CapabilityAlreadyRegisteredError if the failed attempt had leaked).
+      await host.registerCapability(
+        _FakeCapability(id: 'core', tools: ['tap_widget']),
+      );
+      expect(host.toolNames, contains('core_tap_widget'));
+    });
+
+    test('partial tools rolled back when later registration throws', () async {
+      final host = McpHost();
+      await expectLater(
+        host.registerCapability(
+          _FakeCapability(id: 'core', tools: ['good_one', 'core_bad']),
+        ),
+        throwsA(isA<PrePrefixedToolNameError>()),
+      );
+      // The first tool was registered, then the second threw. Roll back must
+      // have removed the first.
+      expect(host.toolNames, isEmpty);
+    });
+
+    test('dispose isolates per-capability failures and clears state', () async {
+      final host = McpHost();
+      final disposed = <String>[];
+      await host.registerCapability(
+        _DisposeTrackingCapability(id: 'a', onDispose: () => disposed.add('a')),
+      );
+      await host.registerCapability(
+        _DisposeTrackingCapability(
+          id: 'b',
+          onDispose: () {
+            disposed.add('b');
+            throw StateError('b failed');
+          },
+        ),
+      );
+      await host.registerCapability(
+        _DisposeTrackingCapability(id: 'c', onDispose: () => disposed.add('c')),
+      );
+
+      await expectLater(host.dispose(), throwsA(isA<StateError>()));
+      // All three were attempted, even though b threw.
+      expect(disposed, containsAll(<String>['a', 'b', 'c']));
+      // State is cleared even after the throw.
+      expect(host.toolNames, isEmpty);
     });
   });
 }

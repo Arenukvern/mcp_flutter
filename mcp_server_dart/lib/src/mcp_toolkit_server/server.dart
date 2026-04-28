@@ -287,10 +287,13 @@ Connect to a running Flutter app on debug mode to use these features.
 ''',
        ) {
     if (configuration.useCapabilityKernel) {
+      // T4/T5 will register CoreCapability + LiveEditCapability here. They
+      // also need to extend this construction with a services map containing
+      // VmServiceClient, HotReloadCoordinator, and DynamicRegistryBridge
+      // implementations — `McpHost(services: {VmServiceClient: ..., ...})`.
+      // Without those, capabilities calling `ctx.require<T>()` will throw
+      // HostServiceUnavailableError.
       _host = McpHost();
-      // Capability registration is empty for T2. Capabilities will be
-      // registered in T4/T5. The host exists; it just has nothing
-      // registered yet.
     }
   }
 
@@ -301,10 +304,12 @@ Connect to a running Flutter app on debug mode to use these features.
   }) =>
       MCPToolkitServer.fromStreamChannel(channel, configuration: configuration);
 
-  /// The capability kernel host. Non-null only when
-  /// [VMServiceConfigurationRecord.useCapabilityKernel] is `true`.
-  /// Null when the legacy static registration path is active (the default).
-  /// T4/T5 will register capabilities into this host.
+  /// The capability host registry, populated when
+  /// `--use-capability-kernel` is on. Null otherwise.
+  ///
+  /// T4/T5: call [McpHost.registerCapability] on this to load capabilities.
+  /// You may need to construct a new `McpHost(services: ...)` upstream of
+  /// this getter if your capabilities require host services.
   McpHost? get capabilityHost => _host;
   McpHost? _host;
 
