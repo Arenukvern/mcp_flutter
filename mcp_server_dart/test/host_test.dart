@@ -105,7 +105,7 @@ void main() {
       final host = McpHost();
       late CapabilityContext capturedContext;
 
-      final cap = _CapturingCapability((ctx) {
+      final cap = _CapturingCapability((final ctx) {
         capturedContext = ctx;
       });
 

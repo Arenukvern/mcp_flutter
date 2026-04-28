@@ -40,6 +40,7 @@ Future<void> main(final List<String> args) async {
         flutterDiscoveryTimeoutMs:
             int.tryParse(parsedArgs.option(flutterDiscoveryTimeoutMs) ?? '') ??
             defaultFlutterDiscoveryTimeoutMs,
+        useCapabilityKernel: parsedArgs.flag(useCapabilityKernel),
       );
       final server = MCPToolkitServer.fromStreamChannel(
         StreamChannel.withCloseGuarantee(io.stdin, io.stdout)
@@ -181,7 +182,13 @@ final argParser = ArgParser(allowTrailingOptions: false)
     defaultsTo: defaultEnvironment,
     help: 'Environment mode (development|production)',
   )
-  ..addFlag(help, abbr: 'h', help: 'Show usage text');
+  ..addFlag(help, abbr: 'h', help: 'Show usage text')
+  ..addFlag(
+    useCapabilityKernel,
+    help:
+        'EXPERIMENTAL: route tool registrations through mcp_capability_kernel. '
+        'When off, the legacy static registration path is used.',
+  );
 
 const defaultHost = 'localhost';
 const defaultPort = 8181;
@@ -203,3 +210,4 @@ const flutterProjectDir = 'flutter-project-dir';
 const flutterDevice = 'flutter-device';
 const flutterDiscoveryTimeoutMs = 'flutter-discovery-timeout-ms';
 const defaultFlutterDiscoveryTimeoutMs = 2500;
+const useCapabilityKernel = 'use-capability-kernel';

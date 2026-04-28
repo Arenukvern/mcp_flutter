@@ -7,6 +7,7 @@ import 'dart:async';
 
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_server/base_server.dart';
+import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_server/host.dart';
 import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_server/mixins/dynamic_registry_integration.dart';
 import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_server/mixins/flutter_inspector.dart';
 import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_server/mixins/vm_service_support.dart';
@@ -284,7 +285,14 @@ void registerAIWidgetInspector() { // Helper function for organization
 Connect to a running Flutter app on debug mode to use these features.
 ''' : ''}
 ''',
-       );
+       ) {
+    if (configuration.useCapabilityKernel) {
+      _host = McpHost();
+      // Capability registration is empty for T2. Capabilities will be
+      // registered in T4/T5. The host exists; it just has nothing
+      // registered yet.
+    }
+  }
 
   /// Create and connect a Flutter Inspector MCP Server
   factory MCPToolkitServer.connect(
@@ -292,6 +300,13 @@ Connect to a running Flutter app on debug mode to use these features.
     required final VMServiceConfigurationRecord configuration,
   }) =>
       MCPToolkitServer.fromStreamChannel(channel, configuration: configuration);
+
+  /// The capability kernel host. Non-null only when
+  /// [VMServiceConfigurationRecord.useCapabilityKernel] is `true`.
+  /// Null when the legacy static registration path is active (the default).
+  /// T4/T5 will register capabilities into this host.
+  McpHost? get capabilityHost => _host;
+  McpHost? _host;
 
   @override
   FutureOr<InitializeResult> initialize(final InitializeRequest request) async {
