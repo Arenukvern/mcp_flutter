@@ -1085,25 +1085,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
           'timeoutMs': command.timeoutMs,
         },
       );
-      final data = _map(result.json);
-      final matched = data['matched'];
-      // Treat anything other than literal `true` as a failure — the toolkit
-      // writes bool literals, but a coerced wire value (string/int/null)
-      // could otherwise slip through to the success path with a malformed
-      // payload. Distinguish: matched==false → expected timeout; otherwise
-      // bucket as waitForFailed (server/transport bug).
-      if (matched != true) {
-        return CoreResult.failure(
-          code: matched == false
-              ? CoreErrorCode.waitTimeout
-              : CoreErrorCode.waitForFailed,
-          message: matched == false
-              ? 'wait_for timed out after ${data['elapsedMs']}ms'
-              : 'wait_for returned malformed payload (matched=$matched)',
-          details: data,
-        );
-      }
-      return CoreResult.success(data: data);
+      return routeWaitForResponse(_map(result.json));
     } on Exception catch (e) {
       return CoreResult.failure(
         code: CoreErrorCode.waitForFailed,
@@ -1718,4 +1700,27 @@ final class _DesktopCaptureResolution {
   final Map<String, Object?>? data;
   final String? errorMessage;
   final Map<String, Object?> errorDetails;
+}
+
+/// Route the toolkit's `wait_for` extension response to a [CoreResult].
+///
+/// Treats anything other than literal `true` for the `matched` field as a
+/// failure: `matched == false` is an expected predicate timeout
+/// (`wait_timeout`); any other shape (null / string / int / coerced wire
+/// value) is a malformed-payload bug bucketed as `wait_for_failed`. Public
+/// so the routing can be exercised in tests without a live VM.
+CoreResult routeWaitForResponse(final Map<String, Object?> data) {
+  final matched = data['matched'];
+  if (matched != true) {
+    return CoreResult.failure(
+      code: matched == false
+          ? CoreErrorCode.waitTimeout
+          : CoreErrorCode.waitForFailed,
+      message: matched == false
+          ? 'wait_for timed out after ${data['elapsedMs']}ms'
+          : 'wait_for returned malformed payload (matched=$matched)',
+      details: data,
+    );
+  }
+  return CoreResult.success(data: data);
 }

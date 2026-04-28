@@ -161,6 +161,19 @@ class WaitPredicateService {
       'lastSnapshotId': lastSnapshot['snapshot_id'],
   };
 
+  /// Test-only surface for the timeout response shape.
+  ///
+  /// The integration path through [waitFor] is hard to drive deterministically
+  /// in `testWidgets` (the deadline check uses a real-time [Stopwatch] which
+  /// does not advance under fake-async pumps). Exposing the pure builder lets
+  /// tests lock the wire field name (`lastSnapshotId`, not `lastSnapshot`)
+  /// without flaky timing.
+  static Map<String, Object?> buildTimeoutResponseForTesting({
+    required final Map<String, Object?> predicate,
+    required final int elapsedMs,
+    final Map<String, Object?>? lastSnapshot,
+  }) => _timeoutWithSnapshot(predicate, elapsedMs, lastSnapshot);
+
   /// Mutable per-call scratch space for predicates that need history.
   static String _serialiseNodes(final Map<String, Object?> snapshot) {
     final nodes = snapshot['nodes'];
