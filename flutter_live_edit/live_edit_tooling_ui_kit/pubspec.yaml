@@ -11,6 +11,8 @@ dependencies:
   flutter:
     sdk: flutter
   freezed_annotation: ^3.1.0
+  live_edit_models:
+    path: ../live_edit_models
 
 dev_dependencies:
   build_runner: ^2.13.1

@@ -16,6 +16,8 @@ dependencies:
   is_dart_empty_or_not: ^0.4.0
   json_annotation: ^4.11.0
   meta: ^1.15.0
+  live_edit_models:
+    path: ../live_edit_models
   live_edit_tooling_ui_kit:
     path: ../live_edit_tooling_ui_kit
   mcp_toolkit:

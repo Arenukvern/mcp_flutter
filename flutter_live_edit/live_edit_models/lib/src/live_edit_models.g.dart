@@ -273,10 +273,10 @@ _LiveEditSelection _$LiveEditSelectionFromJson(
   Map<String, dynamic> json,
 ) => _LiveEditSelection(
   sessionId: json['sessionId'] as String,
-  selectionKey: json['selectionKey'] as String? ?? '',
   nodeId: json['nodeId'] as String,
   widgetType: json['widgetType'] as String,
   rawNode: _asMap(json['rawNode']),
+  selectionKey: json['selectionKey'] as String? ?? '',
   propertiesForWire: json['properties'] as List<dynamic>? ?? const <Object?>[],
   targetDomain:
       $enumDecodeNullable(
@@ -320,10 +320,10 @@ _LiveEditSelection _$LiveEditSelectionFromJson(
 Map<String, dynamic> _$LiveEditSelectionToJson(_LiveEditSelection instance) =>
     <String, dynamic>{
       'sessionId': instance.sessionId,
-      'selectionKey': instance.selectionKey,
       'nodeId': instance.nodeId,
       'widgetType': instance.widgetType,
       'rawNode': instance.rawNode,
+      'selectionKey': instance.selectionKey,
       'properties': instance.propertiesForWire,
       'targetDomain': _$LiveEditTargetDomainEnumMap[instance.targetDomain]!,
       'renderObjectType': instance.renderObjectType,
@@ -350,9 +350,9 @@ const _$LiveEditSelectionModeEnumMap = {
 _LiveEditSelectionCandidate _$LiveEditSelectionCandidateFromJson(
   Map<String, dynamic> json,
 ) => _LiveEditSelectionCandidate(
-  selectionKey: json['selectionKey'] as String? ?? '',
   nodeId: json['nodeId'] as String,
   widgetType: json['widgetType'] as String,
+  selectionKey: json['selectionKey'] as String? ?? '',
   bounds: json['bounds'] == null
       ? null
       : LiveEditBounds.fromJson(json['bounds'] as Map<String, dynamic>),
@@ -367,9 +367,9 @@ _LiveEditSelectionCandidate _$LiveEditSelectionCandidateFromJson(
 Map<String, dynamic> _$LiveEditSelectionCandidateToJson(
   _LiveEditSelectionCandidate instance,
 ) => <String, dynamic>{
-  'selectionKey': instance.selectionKey,
   'nodeId': instance.nodeId,
   'widgetType': instance.widgetType,
+  'selectionKey': instance.selectionKey,
   'bounds': instance.bounds,
   'depth': instance.depth,
   'source': instance.source,
