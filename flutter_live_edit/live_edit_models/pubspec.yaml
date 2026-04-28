@@ -1,0 +1,25 @@
+name: live_edit_models
+description: >-
+  Pure-Dart models shared between flutter_live_edit_toolkit, live_edit_tooling_ui_kit,
+  and the server-side mcp_capability_live_edit. Contains zero Flutter imports.
+publish_to: none
+version: 0.1.0
+
+environment:
+  sdk: ^3.11.0
+
+dependencies:
+  collection: ^1.19.1
+  freezed_annotation: ^3.1.0
+  from_json_to_json: ^0.5.0
+  is_dart_empty_or_not: ^0.4.0
+  json_annotation: ^4.11.0
+  meta: ^1.17.0
+
+dev_dependencies:
+  build_runner: ^2.13.1
+  freezed: ^3.2.5
+  json_serializable: ^6.13.1
+  lints: ^6.1.0
+  test: ^1.25.0
+  xsoulspace_lints: ^0.1.2

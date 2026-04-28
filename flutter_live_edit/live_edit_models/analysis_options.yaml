@@ -1,0 +1,19 @@
+# This file configures the analyzer, which statically analyzes Dart code to
+# check for errors, warnings, and lints.
+#
+# The issues identified by the analyzer are surfaced in the UI of Dart-enabled
+# IDEs (https://dart.dev/tools#ides-and-editors). The analyzer can also be
+# invoked from the command line by running `dart analyze`.
+
+analyzer:
+  errors:
+    cascade_invocations: ignore
+    lines_longer_than_80_chars: ignore
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+include: package:xsoulspace_lints/library.yaml
+linter:
+  rules:
+    # avoid_print: false
+    # prefer_single_quotes: true
