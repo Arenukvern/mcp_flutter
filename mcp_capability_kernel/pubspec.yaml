@@ -1,0 +1,18 @@
+name: mcp_capability_kernel
+description: >-
+  Contracts package for composable MCP capability units. Defines the Capability
+  interface, CapabilityContext, and HostService family. Pure Dart; no Flutter,
+  no transport.
+publish_to: none
+version: 0.1.0
+
+environment:
+  sdk: ^3.11.0
+
+dependencies:
+  dart_mcp: ^0.5.0
+  meta: ^1.17.0
+
+dev_dependencies:
+  test: ^1.25.0
+  lints: ^6.1.0
