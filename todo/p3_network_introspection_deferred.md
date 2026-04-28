@@ -1,6 +1,6 @@
-# P3 — Network introspection design
+# P3 — Network introspection design (DEFERRED)
 
-**Status:** approved 2026-04-28. Branch: `live-edit-v2-plannig`.
+**Status:** design approved 2026-04-28, then deferred by the user. The spec is fully concrete and implementation-ready; when resumed, feed this file into the writing-plans skill directly. Branch off whichever line is current at resume.
 
 ## Goal
 
