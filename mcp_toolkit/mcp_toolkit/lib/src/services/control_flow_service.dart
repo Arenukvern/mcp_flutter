@@ -145,6 +145,10 @@ class ControlFlowService {
       };
     }
 
+    // `popUntil` visits routes from topmost to bottommost. Capturing the
+    // first visited route gives us the current top without actually
+    // popping anything (the sentinel-true predicate aborts the pop loop
+    // immediately).
     Route<Object?>? topRoute;
     navState.popUntil((final r) {
       topRoute ??= r;
@@ -206,7 +210,19 @@ class ControlFlowService {
         // Don't await: `pushNamed` resolves only when the route is popped,
         // so awaiting deadlocks until the next pop. Fire-and-forget the
         // push; the caller's pump/pumpAndSettle drives the navigation.
-        unawaited(navState.pushNamed<Object?>(route, arguments: arguments));
+        // Attach a catchError so an unknown-route exception (or any
+        // navigation error) surfaces as a debug log instead of an
+        // unhandled future, which would otherwise be swallowed silently.
+        unawaited(
+          navState
+              .pushNamed<Object?>(route, arguments: arguments)
+              .catchError((final Object error, final StackTrace stack) {
+            debugPrint(
+              '[MCPToolkit] navigate push failed for route "$route": $error',
+            );
+            return null;
+          }),
+        );
         return <String, Object?>{
           'success': true,
           'action': 'push',
@@ -236,6 +252,25 @@ class ControlFlowService {
           return <String, Object?>{
             'success': false,
             'error': 'navigator_not_registered',
+          };
+        }
+        // Walk the stack non-destructively first using the `popUntil`
+        // sentinel pattern (predicate returns `true` so nothing is popped).
+        // Without this guard, calling `popUntil` with a route name that
+        // is not in the stack would pop every route until the navigator
+        // is empty — catastrophic for the host app.
+        final routeNames = <String?>[];
+        navState.popUntil((final r) {
+          routeNames.add(r.settings.name);
+          return true;
+        });
+        if (!routeNames.contains(route)) {
+          return <String, Object?>{
+            'success': false,
+            'error': 'route_not_in_stack',
+            'action': 'popUntil',
+            'route': route,
+            'currentRoutes': routeNames,
           };
         }
         navState.popUntil(ModalRoute.withName(route));

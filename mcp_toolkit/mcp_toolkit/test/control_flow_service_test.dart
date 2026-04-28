@@ -58,6 +58,51 @@ void main() {
     expect(result['error'], 'unknown_key');
   });
 
+  testWidgets(
+    'press_key Ctrl+S dispatches a Shortcuts/Intent/Action handler',
+    (final tester) async {
+      // Validates the two-pass dispatch (HardwareKeyboard.handleKeyEvent +
+      // KeyEventManager.keyMessageHandler) for a modifier+key combo. A
+      // chord goes through the Shortcuts → Intent → Action pipeline
+      // installed at the top of the focus tree by the Shortcuts widget.
+      var saveInvoked = 0;
+      final saveIntent = const _SaveIntent();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Shortcuts(
+            shortcuts: <ShortcutActivator, Intent>{
+              const SingleActivator(LogicalKeyboardKey.keyS, control: true):
+                  saveIntent,
+            },
+            child: Actions(
+              actions: <Type, Action<Intent>>{
+                _SaveIntent: CallbackAction<_SaveIntent>(
+                  onInvoke: (final _) {
+                    saveInvoked++;
+                    return null;
+                  },
+                ),
+              },
+              child: Focus(
+                autofocus: true,
+                child: const SizedBox(width: 100, height: 100),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final result =
+          await ControlFlowService.pressKey(key: 's', ctrl: true);
+      await tester.pump();
+
+      expect(result['success'], isTrue);
+      expect(result['ctrl'], isTrue);
+      expect(saveInvoked, 1);
+    },
+  );
+
   // -----------------------------------------------------------------------
   // handle_dialog
   // -----------------------------------------------------------------------
@@ -199,6 +244,42 @@ void main() {
     MCPToolkitBinding.instance.setNavigatorKey(null);
   });
 
+  testWidgets(
+    'navigate popUntil rejects a route not in the stack instead of '
+    'popping everything',
+    (final tester) async {
+      final navKey = GlobalKey<NavigatorState>();
+      MCPToolkitBinding.instance.setNavigatorKey(navKey);
+
+      await tester.pumpWidget(MaterialApp(
+        navigatorKey: navKey,
+        routes: {
+          '/': (final _) => const Scaffold(body: Text('home')),
+          '/inner': (final _) => const Scaffold(body: Text('inner page')),
+        },
+      ));
+      await tester.pumpAndSettle();
+
+      navKey.currentState!.pushNamed('/inner');
+      await tester.pumpAndSettle();
+
+      final result = await ControlFlowService.navigate(
+        action: 'popUntil',
+        route: '/does_not_exist',
+      );
+      await tester.pumpAndSettle();
+
+      expect(result['success'], isFalse);
+      expect(result['error'], 'route_not_in_stack');
+      expect(result['route'], '/does_not_exist');
+      expect(result['currentRoutes'], isA<List<Object?>>());
+      // Both routes must still be on the stack — nothing was popped.
+      expect(find.text('inner page'), findsOneWidget);
+
+      MCPToolkitBinding.instance.setNavigatorKey(null);
+    },
+  );
+
   // -----------------------------------------------------------------------
   // hover
   // -----------------------------------------------------------------------
@@ -265,4 +346,8 @@ void main() {
     // rather than a token like 'ref_not_found' — match the existing shape.
     expect(result['error'], contains('not found'));
   });
+}
+
+class _SaveIntent extends Intent {
+  const _SaveIntent();
 }
