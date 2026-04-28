@@ -5,7 +5,7 @@
 /// resources) that can be loaded into a host (server or CLI). Capabilities
 /// register their surface through a [CapabilityContext] supplied by the host;
 /// the kernel applies a `<capabilityId>_` prefix to all exposed names.
-library mcp_capability_kernel;
+library;
 
 export 'src/capability.dart';
 export 'src/capability_config.dart';
