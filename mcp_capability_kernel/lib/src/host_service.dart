@@ -1,4 +1,6 @@
 // mcp_capability_kernel/lib/src/host_service.dart
+import 'package:meta/meta.dart';
+
 /// Marker interface for host-provided services that capabilities can require.
 ///
 /// Capabilities resolve services through [CapabilityContext.require] at
@@ -16,7 +18,7 @@ abstract interface class HostService {}
 abstract interface class DynamicRegistryBridge implements HostService {
   /// Reserve a namespace. Throws [StateError] if the namespace is already
   /// claimed by a different capability.
-  void claim({required String namespace});
+  void claim({required final String namespace});
 }
 
 /// Read-only access to the running Flutter app's VM service. Capabilities
@@ -37,6 +39,7 @@ abstract interface class HotReloadCoordinator implements HostService {
 }
 
 /// Result of [HotReloadCoordinator.reload].
+@immutable
 final class HotReloadResult {
   const HotReloadResult({required this.success, this.message});
   final bool success;

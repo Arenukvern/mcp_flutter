@@ -1,6 +1,5 @@
 // mcp_capability_kernel/test/validators_test.dart
-import 'package:mcp_capability_kernel/src/kernel_errors.dart';
-import 'package:mcp_capability_kernel/src/validators.dart';
+import 'package:mcp_capability_kernel/mcp_capability_kernel.dart';
 import 'package:test/test.dart';
 
 void main() {
