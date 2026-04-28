@@ -6,9 +6,8 @@ import 'dart:io';
 import 'package:flutter_inspector_mcp_server/src/capabilities/live_edit/live_edit_host_bindings.dart';
 import 'package:flutter_inspector_mcp_server/src/shared_core/shared_core.dart';
 import 'package:flutter_live_edit_toolkit/src/ai/agent/live_edit_agent_service.dart';
-import 'package:flutter_live_edit_toolkit/src/models/live_edit_models.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
-import 'package:live_edit_tooling_ui_kit/src/models/models.dart';
+import 'package:live_edit_models/live_edit_models.dart';
 
 bool hasText(final String? value) => value != null && value.trim().isNotEmpty;
 

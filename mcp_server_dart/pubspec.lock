@@ -245,6 +245,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.1.0"
+  live_edit_models:
+    dependency: "direct main"
+    description:
+      path: "../flutter_live_edit/live_edit_models"
+      relative: true
+    source: path
+    version: "0.1.0"
   live_edit_tooling_ui_kit:
     dependency: "direct main"
     description:
