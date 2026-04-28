@@ -155,179 +155,6 @@ void main() {
         expect(inspectData['hit'], isA<bool>());
         expect(inspectData['summary'], isA<Map>());
 
-        await _waitForClientTool(
-          harness,
-          toolName: 'live_edit_runtime_start_session',
-        );
-
-        final liveEditStart = await harness.request(
-          method: 'tools/call',
-          params: {
-            'name': 'live_edit_start_session',
-            'arguments': {'sessionId': 'live-edit-mcp'},
-          },
-        );
-        final liveEditStartData = _decodeToolJsonPayload(liveEditStart);
-        expect(liveEditStartData['sessionId'], 'live-edit-mcp');
-
-        final liveEditTree = await harness.request(
-          method: 'tools/call',
-          params: {
-            'name': 'live_edit_get_tree',
-            'arguments': {'sessionId': 'live-edit-mcp'},
-          },
-        );
-        final liveEditTreeData = _decodeToolJsonPayload(liveEditTree);
-        expect(liveEditTreeData['tree'], isNotNull);
-
-        Map<String, dynamic>? selection;
-        Map<String, dynamic>? editableProperty;
-        for (final point in _liveEditProbePoints) {
-          final liveEditSelect = await harness.request(
-            method: 'tools/call',
-            params: {
-              'name': 'live_edit_select_at_point',
-              'arguments': {
-                'sessionId': 'live-edit-mcp',
-                'x': point['x'],
-                'y': point['y'],
-              },
-            },
-          );
-          final liveEditSelectData = _decodeToolJsonPayload(liveEditSelect);
-          if (liveEditSelectData['hit'] != true) {
-            continue;
-          }
-          final candidateSelection = (liveEditSelectData['selection'] as Map)
-              .cast<String, dynamic>();
-          final candidateProperty = _pickEditableProperty(candidateSelection);
-          if (candidateProperty != null) {
-            selection = candidateSelection;
-            editableProperty = candidateProperty;
-            break;
-          }
-        }
-        expect(selection, isNotNull, reason: 'No editable live-edit selection');
-        expect(
-          editableProperty,
-          isNotNull,
-          reason: 'No editable live-edit property found at probe points',
-        );
-
-        final liveEditSelection = await harness.request(
-          method: 'tools/call',
-          params: {
-            'name': 'live_edit_get_selection',
-            'arguments': {'sessionId': 'live-edit-mcp'},
-          },
-        );
-        final liveEditSelectionData = _decodeToolJsonPayload(liveEditSelection);
-        expect(liveEditSelectionData['hasSelection'], isTrue);
-
-        final liveEditOverlay = await harness.request(
-          method: 'tools/call',
-          params: {
-            'name': 'live_edit_set_overlay',
-            'arguments': {'sessionId': 'live-edit-mcp', 'enabled': true},
-          },
-        );
-        final liveEditOverlayData = _decodeToolJsonPayload(liveEditOverlay);
-        expect(liveEditOverlayData['overlayEnabled'], isTrue);
-
-        final liveEditUpdate = await harness.request(
-          method: 'tools/call',
-          params: {
-            'name': 'live_edit_update_draft',
-            'arguments': {
-              'sessionId': 'live-edit-mcp',
-              'change': {
-                'nodeId': selection!['nodeId'],
-                'propertyId': editableProperty!['id'],
-                'targetValue': _draftTargetValue(editableProperty),
-                'previewMode': editableProperty['previewMode'],
-                'confidence': 0.8,
-              },
-            },
-          },
-        );
-        final liveEditUpdateData = _decodeToolJsonPayload(liveEditUpdate);
-        expect(liveEditUpdateData['updated'], isTrue);
-
-        final liveEditDraft = await harness.request(
-          method: 'tools/call',
-          params: {
-            'name': 'live_edit_get_draft',
-            'arguments': {'sessionId': 'live-edit-mcp'},
-          },
-        );
-        final liveEditDraftData = _decodeToolJsonPayload(liveEditDraft);
-        expect(
-          (liveEditDraftData['draftChanges'] as List?) ?? const [],
-          isNotEmpty,
-        );
-
-        final backendList = await harness.request(
-          method: 'tools/call',
-          params: {
-            'name': 'live_edit_list_agent_backends',
-            'arguments': <String, Object?>{},
-          },
-        );
-        final backendListData = _decodeToolJsonPayload(backendList);
-        final defaultBackendId = '${backendListData['defaultBackendId'] ?? ''}'
-            .trim();
-        expect(defaultBackendId, isNotEmpty);
-        expect((backendListData['backends'] as List?) ?? const [], isNotEmpty);
-
-        final backendGet = await harness.request(
-          method: 'tools/call',
-          params: {
-            'name': 'live_edit_get_agent_backend',
-            'arguments': {'sessionId': 'live-edit-mcp'},
-          },
-        );
-        final backendGetData = _decodeToolJsonPayload(backendGet);
-        expect(backendGetData['backend'], isA<Map>());
-
-        final backendSet = await harness.request(
-          method: 'tools/call',
-          params: {
-            'name': 'live_edit_set_agent_backend',
-            'arguments': {
-              'sessionId': 'live-edit-mcp',
-              'backendId': defaultBackendId,
-            },
-          },
-        );
-        final backendSetData = _decodeToolJsonPayload(backendSet);
-        expect(
-          (backendSetData['backend'] as Map)['id'] as String,
-          defaultBackendId,
-        );
-
-        final liveEditDiscard = await harness.request(
-          method: 'tools/call',
-          params: {
-            'name': 'live_edit_discard_draft',
-            'arguments': {'sessionId': 'live-edit-mcp'},
-          },
-        );
-        final liveEditDiscardData = _decodeToolJsonPayload(liveEditDiscard);
-        expect(
-          ((liveEditDiscardData['draftChanges'] as List?) ?? const []).isEmpty,
-          isTrue,
-        );
-
-        final liveEditEnd = await harness.request(
-          method: 'tools/call',
-          params: {
-            'name': 'live_edit_end_session',
-            'arguments': {'sessionId': 'live-edit-mcp'},
-          },
-        );
-        final liveEditEndData = _decodeToolJsonPayload(liveEditEnd);
-        expect(liveEditEndData['ended'], isTrue);
-
         final dynamicList = await harness.request(
           method: 'tools/call',
           params: {
@@ -412,11 +239,6 @@ void main() {
 
 String? _globalVmServiceWsUri;
 
-const List<Map<String, int>> _liveEditProbePoints = <Map<String, int>>[
-  <String, int>{'x': 180, 'y': 400},
-  <String, int>{'x': 150, 'y': 320},
-  <String, int>{'x': 120, 'y': 220},
-];
 
 Directory _serverDirectory() => Directory.current;
 
@@ -520,43 +342,6 @@ Map<String, dynamic>? _tryDecodeJsonMap(final String value) {
   }
 }
 
-Map<String, dynamic>? _pickEditableProperty(
-  final Map<String, dynamic> selection,
-) {
-  final properties = (selection['properties'] as List?) ?? const [];
-  for (final property in properties.whereType<Map>()) {
-    final map = property.cast<String, dynamic>();
-    if (map['editable'] == true) {
-      return map;
-    }
-  }
-  return null;
-}
-
-Object? _draftTargetValue(final Map<String, dynamic> property) {
-  if (property['value'] != null) {
-    return property['value'];
-  }
-
-  final kind = '${property['kind'] ?? ''}';
-  switch (kind) {
-    case 'boolean':
-      return false;
-    case 'integer':
-    case 'number':
-      return 0;
-    case 'string':
-      return '';
-    case 'enum':
-      final options = (property['options'] as List?) ?? const [];
-      if (options.isNotEmpty) {
-        return options.first;
-      }
-      return '';
-    default:
-      return null;
-  }
-}
 
 Future<Map<String, dynamic>> _callToolUntilSuccess({
   required final _McpHarness harness,
@@ -585,38 +370,6 @@ Future<Map<String, dynamic>> _callToolUntilSuccess({
   return lastResponse ?? <String, dynamic>{};
 }
 
-Future<void> _waitForClientTool(
-  final _McpHarness harness, {
-  required final String toolName,
-}) async {
-  final start = DateTime.now();
-  const timeout = Duration(seconds: 60);
-
-  while (DateTime.now().difference(start) < timeout) {
-    final response = await harness.request(
-      method: 'tools/call',
-      params: {
-        'name': 'listClientToolsAndResources',
-        'arguments': {
-          'connection': {'uri': _globalVmServiceWsUri},
-        },
-      },
-    );
-    final data = _decodeToolJsonPayload(response, useLastText: true);
-    final tools = (data['tools'] as List?) ?? const [];
-    final names = tools
-        .whereType<Map>()
-        .map((final entry) => '${entry['name'] ?? ''}')
-        .toSet();
-    if (names.contains(toolName)) {
-      return;
-    }
-
-    await Future.delayed(const Duration(seconds: 2));
-  }
-
-  fail('Dynamic tool $toolName did not appear in time');
-}
 
 final class _McpHarness {
   _McpHarness._({

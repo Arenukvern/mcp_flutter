@@ -56,7 +56,6 @@ base mixin VMServiceSupport on BaseMCPToolkitServer {
           resourcesSupported: configuration.resourcesSupported,
           imagesSupported: configuration.imagesSupported,
           dumpsSupported: configuration.dumpsSupported,
-          liveEditSupported: configuration.liveEditSupported,
           dynamicRegistrySupported: configuration.dynamicRegistrySupported,
           saveImagesToFiles: configuration.saveImagesToFiles,
         ),

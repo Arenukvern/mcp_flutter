@@ -287,7 +287,7 @@ Connect to a running Flutter app on debug mode to use these features.
 ''',
        ) {
     if (configuration.useCapabilityKernel) {
-      // T4/T5 will register CoreCapability + LiveEditCapability here. They
+      // T4/T5 will register CoreCapability here. They
       // also need to extend this construction with a services map containing
       // VmServiceClient, HotReloadCoordinator, and DynamicRegistryBridge
       // implementations — `McpHost(services: {VmServiceClient: ..., ...})`.

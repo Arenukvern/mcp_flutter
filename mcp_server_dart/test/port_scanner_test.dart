@@ -27,7 +27,6 @@ base class TestPortScannerServer extends BaseMCPToolkitServer {
           resourcesSupported: false,
           imagesSupported: false,
           dumpsSupported: false,
-          liveEditSupported: true,
           logLevel: 'error',
           environment: 'test',
           dynamicRegistrySupported: false,

@@ -27,7 +27,6 @@ Future<void> main(final List<String> args) async {
         resourcesSupported: parsedArgs.flag(resourcesSupported),
         imagesSupported: parsedArgs.flag(imagesSupported),
         dumpsSupported: parsedArgs.flag(dumpsSupported),
-        liveEditSupported: parsedArgs.flag(liveEditSupported),
         logLevel: parsedArgs.option(logLevel) ?? defaultLogLevel,
         environment: parsedArgs.option(environment) ?? defaultEnvironment,
         dynamicRegistrySupported: parsedArgs.flag(dynamicRegistrySupported),
@@ -141,11 +140,6 @@ final argParser = ArgParser(allowTrailingOptions: false)
   )
   ..addFlag(dumpsSupported, help: 'Enable debug dump operations')
   ..addFlag(
-    liveEditSupported,
-    defaultsTo: true,
-    help: 'Expose live edit MCP tools and command execution',
-  )
-  ..addFlag(
     saveImagesToFiles,
     help:
         'Save captured images as files in temporal folder instead of'
@@ -199,7 +193,6 @@ const dartVMPort = 'dart-vm-port';
 const resourcesSupported = 'resources';
 const imagesSupported = 'images';
 const dumpsSupported = 'dumps';
-const liveEditSupported = 'live-edit';
 const logLevel = 'log-level';
 const environment = 'environment';
 const help = 'help';

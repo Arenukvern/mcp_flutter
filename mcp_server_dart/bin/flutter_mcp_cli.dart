@@ -82,7 +82,6 @@ Future<void> main(final List<String> args) async {
     resourcesSupported: parsed.flag(_resourcesSupported),
     imagesSupported: parsed.flag(_imagesSupported),
     dumpsSupported: parsed.flag(_dumpsSupported),
-    liveEditSupported: parsed.flag(_liveEditSupported),
     dynamicRegistrySupported: parsed.flag(_dynamicRegistrySupported),
     saveImagesToFiles: parsed.flag(_saveImagesToFiles),
     flutterProjectDir: flutterProjectDir,
@@ -1601,11 +1600,6 @@ final _argParser = ArgParser(allowTrailingOptions: false)
   )
   ..addFlag(_dumpsSupported, help: 'Enable dump commands')
   ..addFlag(
-    _liveEditSupported,
-    defaultsTo: true,
-    help: 'Enable live edit commands and agent flows',
-  )
-  ..addFlag(
     _saveImagesToFiles,
     help: 'Save screenshots to files and return file URLs',
   )
@@ -1839,7 +1833,6 @@ const _stateFile = 'state-file';
 const _resourcesSupported = 'resources';
 const _imagesSupported = 'images';
 const _dumpsSupported = 'dumps';
-const _liveEditSupported = 'live-edit';
 const _dynamicRegistrySupported = 'dynamics';
 const _saveImagesToFiles = 'save-images';
 const _outputDir = 'output-dir';

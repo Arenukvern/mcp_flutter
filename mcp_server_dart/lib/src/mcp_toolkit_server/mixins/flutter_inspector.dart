@@ -9,7 +9,6 @@ import 'package:dart_mcp/server.dart';
 import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_server/base_server.dart';
 import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_server/handlers/debug_tools_handler.dart';
 import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_server/handlers/interaction_handler.dart';
-import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_server/handlers/live_edit_handler.dart';
 import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_server/handlers/resource_handler.dart';
 import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_server/handlers/vm_tools_handler.dart';
 import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_server/mixins/vm_service_support.dart';
@@ -26,10 +25,6 @@ base mixin FlutterInspector
     executor: coreCommandExecutor,
   );
   late final _resourceHandler = ResourceHandler(
-    server: this,
-    executor: coreCommandExecutor,
-  );
-  late final _liveEditHandler = LiveEditHandler(
     server: this,
     executor: coreCommandExecutor,
   );
@@ -130,105 +125,6 @@ base mixin FlutterInspector
       _interactionHandler.hover,
     );
 
-    if (configuration.liveEditSupported) {
-      log(
-        LoggingLevel.debug,
-        'Registering live edit tools',
-        logger: 'FlutterInspector',
-      );
-      registerTool(
-        LiveEditHandler.liveEditStartSessionTool,
-        _liveEditHandler.liveEditStartSession,
-      );
-      registerTool(
-        LiveEditHandler.liveEditPrepareSessionTool,
-        _liveEditHandler.liveEditPrepareSession,
-      );
-      registerTool(
-        LiveEditHandler.liveEditSetOverlayTool,
-        _liveEditHandler.liveEditSetOverlay,
-      );
-      registerTool(
-        LiveEditHandler.liveEditGetTreeTool,
-        _liveEditHandler.liveEditGetTree,
-      );
-      registerTool(
-        LiveEditHandler.liveEditSelectAtPointTool,
-        _liveEditHandler.liveEditSelectAtPoint,
-      );
-      registerTool(
-        LiveEditHandler.liveEditGetSelectionTool,
-        _liveEditHandler.liveEditGetSelection,
-      );
-      registerTool(
-        LiveEditHandler.liveEditGetCapabilitiesTool,
-        _liveEditHandler.liveEditGetCapabilities,
-      );
-      registerTool(
-        LiveEditHandler.liveEditGetSelectionCandidatesTool,
-        _liveEditHandler.liveEditGetSelectionCandidates,
-      );
-      registerTool(
-        LiveEditHandler.liveEditSetActiveSelectionTool,
-        _liveEditHandler.liveEditSetActiveSelection,
-      );
-      registerTool(
-        LiveEditHandler.liveEditGetPropertyPanelTool,
-        _liveEditHandler.liveEditGetPropertyPanel,
-      );
-      registerTool(
-        LiveEditHandler.liveEditSetEditModeTool,
-        _liveEditHandler.liveEditSetEditMode,
-      );
-      registerTool(
-        LiveEditHandler.liveEditGetPreviewStateTool,
-        _liveEditHandler.liveEditGetPreviewState,
-      );
-      registerTool(
-        LiveEditHandler.liveEditUpdateDraftTool,
-        _liveEditHandler.liveEditUpdateDraft,
-      );
-      registerTool(
-        LiveEditHandler.liveEditGetDraftTool,
-        _liveEditHandler.liveEditGetDraft,
-      );
-      registerTool(
-        LiveEditHandler.liveEditDiscardDraftTool,
-        _liveEditHandler.liveEditDiscardDraft,
-      );
-      registerTool(
-        LiveEditHandler.liveEditEndSessionTool,
-        _liveEditHandler.liveEditEndSession,
-      );
-      registerTool(
-        LiveEditHandler.liveEditListAgentBackendsTool,
-        _liveEditHandler.liveEditListAgentBackends,
-      );
-      registerTool(
-        LiveEditHandler.liveEditGetAgentBackendTool,
-        _liveEditHandler.liveEditGetAgentBackend,
-      );
-      registerTool(
-        LiveEditHandler.liveEditSetAgentBackendTool,
-        _liveEditHandler.liveEditSetAgentBackend,
-      );
-      registerTool(
-        LiveEditHandler.liveEditResolveDraftTool,
-        _liveEditHandler.liveEditResolveDraft,
-      );
-      registerTool(
-        LiveEditHandler.liveEditApplyDraftTool,
-        _liveEditHandler.liveEditApplyDraft,
-      );
-      registerTool(
-        LiveEditHandler.liveEditAcceptResolutionTool,
-        _liveEditHandler.liveEditAcceptResolution,
-      );
-      registerTool(
-        LiveEditHandler.liveEditRejectResolutionTool,
-        _liveEditHandler.liveEditRejectResolution,
-      );
-    }
 
     // Register debug dump tools
     if (configuration.dumpsSupported) {

@@ -8,8 +8,6 @@ import 'package:flutter_inspector_mcp_server/src/capabilities/ai_providers/error
 import 'package:flutter_inspector_mcp_server/src/capabilities/diagnostics/diagnostics_bundle.dart';
 import 'package:flutter_inspector_mcp_server/src/capabilities/dynamic_registry/dynamic_gateway.dart';
 import 'package:flutter_inspector_mcp_server/src/capabilities/error_analysis/error_analysis.dart';
-import 'package:flutter_inspector_mcp_server/src/capabilities/live_edit/live_edit_command_executor.dart';
-import 'package:flutter_inspector_mcp_server/src/capabilities/live_edit/live_edit_host_bindings.dart';
 import 'package:flutter_inspector_mcp_server/src/capabilities/visual_capture/core_image_file_saver.dart';
 import 'package:flutter_inspector_mcp_server/src/capabilities/visual_capture/desktop_window_screenshot.dart';
 import 'package:flutter_inspector_mcp_server/src/capabilities/visual_capture/visual_capture.dart';
@@ -22,7 +20,6 @@ import 'package:flutter_inspector_mcp_server/src/shared_core/types/error_codes.d
 import 'package:flutter_inspector_mcp_server/src/shared_core/types/results.dart';
 import 'package:flutter_inspector_mcp_server/src/shared_core/vm_connections/connection_context.dart';
 import 'package:flutter_inspector_mcp_server/src/shared_core/vm_connections/core_port_scanner.dart';
-import 'package:flutter_live_edit_toolkit/src/ai/agent/live_edit_agent_service.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
 import 'package:is_dart_empty_or_not/is_dart_empty_or_not.dart';
 import 'package:vm_service/vm_service.dart';
@@ -61,7 +58,6 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     final ErrorCauseAnalyzer? errorCauseAnalyzer,
     final Map<String, ErrorSummaryProvider>? summaryProviders,
     final Future<void> Function(int pid)? activateMacOsTargetPid,
-    final LiveEditAgentService? liveEditAgentService,
   }) : _dynamicGateway = dynamicGateway,
        _desktopWindowScreenshotService =
            desktopWindowScreenshotService ??
@@ -74,14 +70,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
            <String, ErrorSummaryProvider>{
              'none': const NoopErrorSummaryProvider(),
              'openai': OpenAiErrorSummaryProvider(),
-           } {
-    _liveEditExecutor = configuration.liveEditSupported
-        ? LiveEditCommandExecutor(
-            host: _ExecutorLiveEditBindings(this),
-            agentService: liveEditAgentService,
-          )
-        : null;
-  }
+           };
 
   final ConnectionContext connectionContext;
   final CorePortScanner portScanner;
@@ -95,7 +84,6 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
   final Future<void> Function(int pid) _activateMacOsTargetPid;
 
   CoreDynamicGateway? _dynamicGateway;
-  LiveEditCommandExecutor? _liveEditExecutor;
 
   Iterable<VisualCapturePlatformAdapter> get visualCaptureAdapters sync* {
     if (_desktopWindowScreenshotService
@@ -385,14 +373,6 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     ListClientToolsAndResourcesCommand() => _listClientToolsAndResources(),
     RunClientToolCommand() => _runClientTool(command),
     RunClientResourceCommand() => _runClientResource(command),
-    final LiveEditCommand c =>
-      _liveEditExecutor?.execute(c) ??
-          Future.value(
-            CoreResult.failure(
-              code: CoreErrorCode.liveEditDisabled,
-              message: 'Live edit support is disabled',
-            ),
-          ),
     DynamicRegistryStatsCommand() => _dynamicRegistryStats(command),
   };
 
@@ -1467,7 +1447,6 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       'stickyEndpoint': connectionContext.stickyEndpoint?.display,
       'mode': connectionContext.lastMode.name,
       'dynamicRegistrySupported': configuration.dynamicRegistrySupported,
-      'liveEditSupported': configuration.liveEditSupported,
       'sessionsEnabled': sessionManager != null,
     },
   );
@@ -1565,25 +1544,6 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     );
   }
 
-  Future<bool> _waitForFlutterIsolateAfterRestart({
-    final Duration timeout = const Duration(seconds: 10),
-    final Duration pollInterval = const Duration(milliseconds: 250),
-  }) async {
-    final deadline = DateTime.now().add(timeout);
-    while (DateTime.now().isBefore(deadline)) {
-      try {
-        final isolate = await connectionContext.getFlutterIsolate();
-        if (isolate?.id != null) {
-          return true;
-        }
-      } on StateError {
-        // Keep retrying until timeout while the isolate comes back.
-      }
-      await Future<void>.delayed(pollInterval);
-    }
-    return false;
-  }
-
   Future<CoreResult> _watchSnapshot(final WatchCommand command) async {
     if (_isSessionControlCommand(command.command)) {
       return CoreResult.failure(
@@ -1644,51 +1604,6 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
   };
 }
 
-final class _ExecutorLiveEditBindings implements LiveEditHostBindings {
-  _ExecutorLiveEditBindings(this._executor);
-
-  final DefaultCoreCommandExecutor _executor;
-
-  @override
-  CoreRuntimeConfiguration get configuration => _executor.configuration;
-
-  @override
-  Future<CoreResult> captureUiSnapshotForLiveEdit() =>
-      _executor._captureUiSnapshot(
-        const CaptureUiSnapshotCommand(
-          includeViewDetails: false,
-          includeErrors: false,
-        ),
-      );
-
-  @override
-  Future<CoreResult> hotReload({final bool force = false}) =>
-      _executor._hotReload(HotReloadFlutterCommand(force: force));
-
-  @override
-  Future<CoreResult> hotRestart() => _executor._hotRestart();
-
-  @override
-  Future<CoreResult> listClientToolsAndResources() =>
-      _executor._listClientToolsAndResources();
-
-  @override
-  Future<CoreResult> runClientTool(
-    final String toolName, {
-    final Map<String, Object?> arguments = const <String, Object?>{},
-  }) => _executor._runClientTool(
-    RunClientToolCommand(toolName: toolName, arguments: arguments),
-  );
-
-  @override
-  Future<bool> waitForFlutterIsolateAfterRestart({
-    final Duration timeout = const Duration(seconds: 10),
-    final Duration pollInterval = const Duration(milliseconds: 250),
-  }) => _executor._waitForFlutterIsolateAfterRestart(
-    timeout: timeout,
-    pollInterval: pollInterval,
-  );
-}
 
 final class _DesktopCaptureResolution {
   const _DesktopCaptureResolution({
