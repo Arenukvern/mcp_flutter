@@ -2092,12 +2092,22 @@ Future<int> _runInitSubcommand(final ArgResults command) async {
       scope == 'user'
           ? (io.Platform.environment['HOME'] ?? io.Directory.current.path)
           : io.Directory.current.path;
-  return runInit(
-    target: target,
-    modeOverride: mode,
-    outputRoot: outputRoot,
-    scopeIsUserHome: scope == 'user',
-  );
+  try {
+    return await runInit(
+      target: target,
+      modeOverride: mode,
+      outputRoot: outputRoot,
+      scopeIsUserHome: scope == 'user',
+    );
+  } on StateError catch (e) {
+    io.stderr.writeln(e.message);
+    io.stderr.writeln(
+      'Hint: pass --mode mcp or --mode cli to skip auto-detection. '
+      "If you've already run install.sh, restart your shell or "
+      r'`source ~/.zshrc` so $PATH picks up the binary.',
+    );
+    return 64;
+  }
 }
 
 Future<int> _runCodegenInitSubcommand(final ArgResults command) async {
