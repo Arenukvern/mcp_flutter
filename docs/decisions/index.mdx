@@ -1,0 +1,35 @@
+# Decisions
+
+Architectural decision records (ADRs) for this project. Each ADR captures a single
+decision: the context that forced it, what we chose, and what changed
+afterwards. ADRs are append-only; if a decision is later reversed, a new ADR
+supersedes the old one and the old one is left in place with a note.
+
+These are written for future maintainers and contributors who need to know
+*why* the codebase looks the way it does. They are not user-facing — the
+day-to-day docs live under [Core Reference](/core/project_architecture) and
+[For AI Agents](/ai_agents/overview).
+
+## Index
+
+| ID  | Title | Status | Shipped |
+| --- | --- | --- | --- |
+| [0001](/decisions/0001_capability_kernel_and_tool_prefix) | Capability kernel and tool-name prefix model | Accepted | v3.0.0 |
+| [0002](/decisions/0002_v3_scope_and_consolidation_deferrals) | v3.0.0 scope cuts and tool-consolidation deferrals | Accepted | v3.0.0 |
+| [0003](/decisions/0003_p0_wait_for_design) | P0 — `wait_for` design | Accepted | v3.0.0 |
+| [0004](/decisions/0004_p1_keyboard_dialog_navigate) | P1 — keyboard, dialog, and navigate decisions | Accepted | v3.0.0 |
+| [0005](/decisions/0005_p2_fill_form_hover_select_option) | P2 — `fill_form`, `hover`, and the `select_option` drop | Accepted | v3.0.0 |
+
+## Format
+
+Each ADR has the same shape:
+
+- **Status** — proposed, accepted, deprecated, or superseded by another ADR.
+- **Context** — the problem and constraints at the time of the decision.
+- **Decision** — what we did, in one or two paragraphs.
+- **Consequences** — what changed, what's now hard or easy, what we paid.
+- **Notes** — load-bearing details future readers will need (e.g.
+  non-obvious post-implementation findings).
+
+ADRs are short on purpose. The full deliberation lives in git history; the ADR
+is the compressed answer.

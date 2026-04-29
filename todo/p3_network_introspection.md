@@ -1,6 +1,13 @@
-# P3 — Network introspection design (DEFERRED)
+# P3 — Network introspection design
 
-**Status:** design approved 2026-04-28, then deferred by the user. The spec is fully concrete and implementation-ready; when resumed, feed this file into the writing-plans skill directly. Branch off whichever line is current at resume.
+> **Status:** deferred. Design approved 2026-04-28; spec is fully concrete and
+> implementation-ready. When resumed, feed this file into
+> `superpowers:writing-plans` directly. Branch off whichever line is current
+> at resume.
+>
+> **Why deferred:** the audit ([ADR 0002](../docs/decisions/0002_v3_scope_and_consolidation_deferrals.mdx))
+> kept v3.0.0 to Playwright-parity P0–P2 + the capability kernel. Network
+> introspection didn't make the cut; nothing about the design has changed.
 
 ## Goal
 

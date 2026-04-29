@@ -1,0 +1,104 @@
+# ADR 0002 — v3.0.0 scope and tool-consolidation deferrals
+
+- **Status:** Accepted
+- **Shipped:** v3.0.0 (release date: 2026-04-29)
+- **Sources:** `todo/v3_release_audit_2026-04-28.md`, `todo/playwright_parity_audit.md`, `todo/p4_consolidation_research_2026-04-28.md` (now superseded by this ADR)
+
+## Context
+
+The `live-edit-v2-plannig` branch had three independent efforts in flight:
+
+1. Playwright-parity tool roadmap (P0/P1/P2 — `wait_for`, keyboard/dialog/navigate, `fill_form`/`hover`).
+2. Tool-surface inversion / capability kernel ([ADR 0001](/decisions/0001_capability_kernel_and_tool_prefix)).
+3. Live-edit selection state-machine refactor.
+
+Only the parity slice and the kernel were ready to ship. Continuing to bundle
+them with live-edit would have delayed v3.0.0 indefinitely.
+
+Separately, post-shipping the parity tools, three "consolidation candidates"
+showed up in the audit — pairs/triples of tools whose parameter shapes looked
+similar enough that an LLM might mis-select. The question was whether to
+collapse them now (breaking change while we have one) or wait for evidence.
+
+## Decision
+
+**Release scope.** v3.0.0 = Playwright parity P0–P2 + the DPR coordinate fix +
+the capability-kernel cut from ADR 0001. Live-edit and the selection
+state-machine refactor ship later as a separate capability (see
+[`todo/live_edit_reintegration.md`](https://github.com/Arenukvern/mcp_flutter/blob/main/todo/live_edit_reintegration.md)).
+
+**Live-edit excision.** `flutter_live_edit/` and all its consumers were
+removed from v3.0.0 (commits `d0a11c9`, `2cea690`). This eliminated
+`mcp_server_dart`'s static Flutter dependency and the
+`uses-material-design` warning class.
+
+**Tool-surface inversion.** The original sequencing's T3/T5/T7 (live-edit
+shaped) were dropped along with the live-edit packages. T1/T2/T4/T6/T8/T9/T10
+shipped as the v3.0.0 capability kernel.
+
+**Tool consolidation: defer all three candidates.**
+
+| Candidate | Decision | Reason |
+| --- | --- | --- |
+| `tap_widget` + `long_press` + `hover` → `tap(ref, mode=…)` | **Defer** | No evidence of mis-selection. Each tool has 1 incoming caller (verified via GitNexus). The verb-named API is more discoverable than a `mode` enum. The `hover` platform caveat ("Desktop/web only") is more prominent as a tool description than as a mode-parameter doc. |
+| `scroll` + `swipe` → `gesture(ref, kind, direction, distance)` | **Do not consolidate** | Behavioural divergence makes the shared shape harmful. `scroll` uses the semantic `scrollUp/Down/Left/Right` action via `SemanticsOwner.performAction`; `swipe` is a synthesized finger drag (`PointerDownEvent → moves → PointerUpEvent`). The shared parameter shape would *encourage* the agent to think of them as variants when they aren't — a regression in API truthfulness. |
+| `get_recent_logs` + future `get_network_requests` + future `get_errors` → `observe(kind=…)` | **Defer** | Designing the dispatcher API before two of three inputs exist is YAGNI. Revisit only after [P3 network](https://github.com/Arenukvern/mcp_flutter/blob/main/todo/p3_network_introspection.md) ships and errors-as-tool is on the roadmap. |
+
+**Capability gaps left open.**
+
+| Capability | Status | Reason |
+| --- | --- | --- |
+| `network_requests` | Deferred | Spec ready ([`todo/p3_network_introspection.md`](https://github.com/Arenukvern/mcp_flutter/blob/main/todo/p3_network_introspection.md)). Awaiting prioritisation. |
+| `select_option` | Deferred | Expressible as `tap_widget → wait_for(text=label) → tap_widget` post-P0. A wrapper saves zero round-trips because `wait_for` already returns the snapshot in its payload. |
+| `file_upload` | Park as design candidate | Apps using `file_picker` are unreachable (`file_picker` is not a dep anywhere in the repo). Wide design surface (wire shape: inline base64 vs server-read path; bridging the platform-channel mock; permissions). Don't take on without a host-app driver. |
+| `navigate_back` | Deferred | Thin wrapper over `Navigator.pop`; bundle with any future Navigator-shaped revisit. |
+| `resize` | Deferred | Desktop/web responsive testing; low priority. |
+| `tabs` / `close` | Not applicable | Flutter session model has no tabs concept. |
+
+## Consequences
+
+**The "~47 tools" framing is misleading.** It conflated surfaces the LLM
+rarely sees together. The Playwright parity comparison only makes sense
+against the **always-on core**:
+
+| Surface | When loaded |
+| --- | --- |
+| Always-on core | every session |
+| Live-edit (separate vertical) | not shipped in v3.0.0 |
+| Debug dumps | `--dumps` opt-in (token-heavy) |
+| Resources-as-tools fallback | `--no-resources` mode |
+| Dynamic registry (app-registered) | per-app, registered at runtime |
+
+The actual delta vs. Playwright (~21 tools) is count-comparable. The interesting
+question is *coverage* and *clarity of contract*, not headline count.
+
+**The moat — features Playwright doesn't have, do not dilute these:**
+
+- `core_hot_reload_and_capture` — fused edit/preview cycle.
+- `core_evaluate_dart_expression` — runtime introspection via VM service.
+- `core_semantic_snapshot` staleness sentinel (`snapshot_id` + `stale_snapshot`
+  error code) — explicit contract Playwright lacks.
+- Dynamic tool registration (app-side registry) — apps inject their own tools
+  at runtime, surfaced via `listClientToolsAndResources`.
+- Resource path: `visual://localhost/...` URIs alongside tools.
+
+**Re-evaluation triggers for the deferred consolidations:**
+
+1. Real session transcripts that show selection confusion (e.g. agent calls
+   `long_press` immediately after `tap_widget` failed on the same ref).
+2. Downstream agent prompts that have to enumerate "use X for A, Y for B" —
+   evidence the descriptions alone are insufficient.
+3. User feedback that the LLM keeps picking the wrong tool.
+
+None of these data sources existed when this decision was made. Don't
+re-litigate without one of them.
+
+## Notes
+
+- GitNexus blast radius for Set A consolidation (if ever taken): each gesture
+  method has exactly 1 incoming MCPCallEntry caller. The 7-place wire
+  registration pattern means consolidation touches ~3 commands → 1, ~150 LoC
+  delta, mechanical. **Cost is small if/when we do it.**
+- The audit row for set B (`scroll`/`swipe`) should be removed from any future
+  "consolidation candidates" list, not just deferred — the behavioural split
+  makes the shared shape wrong, period.
