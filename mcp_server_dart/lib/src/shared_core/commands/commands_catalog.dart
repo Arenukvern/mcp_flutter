@@ -1,7 +1,11 @@
 // Copyright (c) 2025, Flutter Inspector MCP Server authors.
 // Licensed under the MIT License.
 
-part of 'commands.dart';
+// Server-side command catalog: schema builders, arg parsers, command factory.
+// Pure command classes live in mcp_shared_core/lib/src/commands/core_commands.dart.
+
+import 'package:mcp_shared_core/mcp_shared_core.dart';
+
 
 final class CommandCatalog {
   CommandCatalog._();
