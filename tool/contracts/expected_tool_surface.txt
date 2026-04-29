@@ -1,0 +1,34 @@
+# Expected MCP tool surface after T8 (the cut).
+#
+# Locked surface for default config: --use-capability-kernel=on (default in
+# v3.0.0), no --dumps, no --no-resources. Resources path registers visual
+# resources via addResource (not in this list).
+#
+# This file is consumed by tool_surface_snapshot_test.dart. To update:
+# 1. Verify the change is intended (a tool was added, removed, or renamed).
+# 2. Update both this file and the test's assertions in lockstep.
+# 3. Re-run `cd mcp_server_dart && flutter test`.
+core_capture_ui_snapshot
+core_connect_debug_app
+core_discover_debug_apps
+core_drag
+core_enter_text
+core_fill_form
+core_get_app_errors
+core_get_extension_rpcs
+core_get_recent_logs
+core_get_screenshots
+core_get_view_details
+core_get_vm
+core_handle_dialog
+core_hot_reload_flutter
+core_hover
+core_inspect_widget_at_point
+core_long_press
+core_navigate
+core_press_key
+core_scroll
+core_semantic_snapshot
+core_swipe
+core_tap_widget
+core_wait_for
