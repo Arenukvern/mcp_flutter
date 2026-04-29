@@ -106,15 +106,18 @@ void main() {
             .whereType<Map>()
             .map((final tool) => '${tool['name']}')
             .toSet();
-        expect(toolNames.contains('discover_debug_apps'), isTrue);
-        expect(toolNames.contains('capture_ui_snapshot'), isTrue);
-        expect(toolNames.contains('inspect_widget_at_point'), isTrue);
+        // T8: tools surface under the "core_" capability prefix; the
+        // dynamic-registry host machinery (runClientResource) stays
+        // unprefixed.
+        expect(toolNames.contains('core_discover_debug_apps'), isTrue);
+        expect(toolNames.contains('core_capture_ui_snapshot'), isTrue);
+        expect(toolNames.contains('core_inspect_widget_at_point'), isTrue);
         expect(toolNames.contains('runClientResource'), isTrue);
 
         final discover = await harness.request(
           method: 'tools/call',
           params: {
-            'name': 'discover_debug_apps',
+            'name': 'core_discover_debug_apps',
             'arguments': <String, Object?>{},
           },
         );
@@ -123,7 +126,7 @@ void main() {
 
         final capture = await _callToolUntilSuccess(
           harness: harness,
-          name: 'capture_ui_snapshot',
+          name: 'core_capture_ui_snapshot',
           arguments: {
             'connection': {'uri': _globalVmServiceWsUri},
             'errorsCount': 3,
@@ -143,7 +146,7 @@ void main() {
         final inspect = await harness.request(
           method: 'tools/call',
           params: {
-            'name': 'inspect_widget_at_point',
+            'name': 'core_inspect_widget_at_point',
             'arguments': {
               'x': 120,
               'y': 220,
