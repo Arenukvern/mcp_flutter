@@ -10,6 +10,7 @@ library;
 export 'src/capability.dart';
 export 'src/capability_config.dart';
 export 'src/capability_context.dart';
+export 'src/command_runner.dart';
 export 'src/host_service.dart';
 export 'src/kernel_errors.dart';
 export 'src/resource_registration.dart';

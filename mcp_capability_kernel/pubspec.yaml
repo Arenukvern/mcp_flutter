@@ -11,6 +11,8 @@ environment:
 
 dependencies:
   dart_mcp: ^0.5.0
+  mcp_shared_core:
+    path: ../mcp_shared_core
   meta: ^1.17.0
 
 dev_dependencies:
