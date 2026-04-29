@@ -3,8 +3,6 @@ import 'dart:convert';
 import 'package:flutter_inspector_mcp_server/flutter_mcp_core.dart';
 import 'package:flutter_inspector_mcp_server/src/capabilities/dynamic_registry/dynamic_registry_tools.dart';
 import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_server/core/core.dart';
-import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_server/handlers/resource_handler.dart';
-import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_server/handlers/vm_tools_handler.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -124,20 +122,11 @@ void main() {
   });
 
   group('connection tool schema', () {
-    test('vm and resource tool schemas require nested connection object', () {
-      final vmSchema = VMToolsHandler.getVmTool.inputSchema;
-      expect(vmSchema.additionalProperties, isFalse);
-      expect(vmSchema.properties?.containsKey('connection'), isTrue);
-      expect(vmSchema.properties?.containsKey('host'), isFalse);
-      expect(vmSchema.properties?.containsKey('port'), isFalse);
-      expect(vmSchema.properties?.containsKey('uri'), isFalse);
-
-      final appErrorsSchema = ResourceHandler.getAppErrorsTool.inputSchema;
-      expect(appErrorsSchema.additionalProperties, isFalse);
-      expect(appErrorsSchema.properties?.containsKey('connection'), isTrue);
-      expect(appErrorsSchema.properties?.containsKey('host'), isFalse);
-      expect(appErrorsSchema.properties?.containsKey('port'), isFalse);
-    });
+    // The vm/resource tool schemas previously asserted here now live in
+    // mcp_capability_core's per-tool tests (core_get_vm,
+    // core_get_app_errors, etc.) and are pinned by the locked surface in
+    // tool/contracts/expected_tool_surface.txt. The legacy handler classes
+    // were deleted in T9.
 
     test('dynamic registry schemas include optional connection', () {
       final listSchema =

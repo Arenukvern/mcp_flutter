@@ -40,7 +40,6 @@ Future<void> main(final List<String> args) async {
         flutterDiscoveryTimeoutMs:
             int.tryParse(parsedArgs.option(flutterDiscoveryTimeoutMs) ?? '') ??
             defaultFlutterDiscoveryTimeoutMs,
-        useCapabilityKernel: parsedArgs.flag(useCapabilityKernel),
       );
       final server = MCPToolkitServer.fromStreamChannel(
         StreamChannel.withCloseGuarantee(io.stdin, io.stdout)
@@ -65,9 +64,7 @@ Future<void> main(final List<String> args) async {
             ),
         configuration: configuration,
       );
-      if (configuration.useCapabilityKernel) {
-        await server.capabilityHost!.registerCapability(const CoreCapability());
-      }
+      await server.capabilityHost.registerCapability(const CoreCapability());
       await server.handleSetLevel(
         SetLevelRequest(
           level: switch (configuration.logLevel) {
@@ -180,17 +177,7 @@ final argParser = ArgParser(allowTrailingOptions: false)
     defaultsTo: defaultEnvironment,
     help: 'Environment mode (development|production)',
   )
-  ..addFlag(help, abbr: 'h', help: 'Show usage text')
-  ..addFlag(
-    useCapabilityKernel,
-    defaultsTo: true,
-    help:
-        'Route tool registrations through mcp_capability_kernel and expose '
-        'tools under the "core_" capability prefix (default in v3.0.0). '
-        'Pass --no-use-capability-kernel to fall back to the legacy '
-        'unprefixed registration path; this fallback exists only as a '
-        'safety net and will be removed in a follow-up.',
-  );
+  ..addFlag(help, abbr: 'h', help: 'Show usage text');
 
 const defaultHost = 'localhost';
 const defaultPort = 8181;
@@ -211,4 +198,3 @@ const flutterProjectDir = 'flutter-project-dir';
 const flutterDevice = 'flutter-device';
 const flutterDiscoveryTimeoutMs = 'flutter-discovery-timeout-ms';
 const defaultFlutterDiscoveryTimeoutMs = 2500;
-const useCapabilityKernel = 'use-capability-kernel';

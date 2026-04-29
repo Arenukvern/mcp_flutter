@@ -288,29 +288,22 @@ Connect to a running Flutter app on debug mode to use these features.
 ''' : ''}
 ''',
        ) {
-    // NOTE: `--use-capability-kernel` is on by default in v3.0.0. When users
-    // opt out via --no-use-capability-kernel, `_host` is null and
-    // [capabilityHost] returns null — no [HostService] registrations exist
-    // and capabilities that call `context.require<CommandRunner>()` outside
-    // this gate will throw [HostServiceUnavailableError] at runtime.
-    if (configuration.useCapabilityKernel) {
-      _host = McpHost(
-        services: <Type, HostService>{
-          CommandRunner: DefaultCommandRunner(executor: coreCommandExecutor),
+    _host = McpHost(
+      services: <Type, HostService>{
+        CommandRunner: DefaultCommandRunner(executor: coreCommandExecutor),
+      },
+      config: CapabilityConfig(
+        values: <String, Object?>{
+          'dumps_supported': configuration.dumpsSupported,
+          'resources_supported': configuration.resourcesSupported,
+          'images_supported': configuration.imagesSupported,
         },
-        config: CapabilityConfig(
-          values: <String, Object?>{
-            'dumps_supported': configuration.dumpsSupported,
-            'resources_supported': configuration.resourcesSupported,
-            'images_supported': configuration.imagesSupported,
-          },
-        ),
-        dispatchBridge: DartMcpDispatchBridge(
-          publish: registerTool,
-          unpublish: unregisterTool,
-        ),
-      );
-    }
+      ),
+      dispatchBridge: DartMcpDispatchBridge(
+        publish: registerTool,
+        unpublish: unregisterTool,
+      ),
+    );
   }
 
   /// Create and connect a Flutter Inspector MCP Server
@@ -320,16 +313,10 @@ Connect to a running Flutter app on debug mode to use these features.
   }) =>
       MCPToolkitServer.fromStreamChannel(channel, configuration: configuration);
 
-  /// The capability host registry, populated when `--use-capability-kernel` is
-  /// on (default in v3.0.0). Returns null only when users explicitly pass
-  /// `--no-use-capability-kernel`.
-  ///
-  /// **Important:** All capabilities that use [CommandRunner] (i.e., any
-  /// capability that calls `context.require<CommandRunner>()`) require this
-  /// to be non-null. Check non-null before calling
-  /// [McpHost.registerCapability].
-  McpHost? get capabilityHost => _host;
-  McpHost? _host;
+  /// The capability host registry. Always populated; capabilities are
+  /// registered into it via [McpHost.registerCapability] (see [main]).
+  McpHost get capabilityHost => _host;
+  late final McpHost _host;
 
   @override
   FutureOr<InitializeResult> initialize(final InitializeRequest request) async {

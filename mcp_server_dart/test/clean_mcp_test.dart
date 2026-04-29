@@ -110,11 +110,9 @@ void main() {
               .map((final tool) => tool['name']?.toString() ?? '')
               .toSet();
 
-          // T8: capability kernel is on by default; tools surface under the
-          // "core_" capability prefix. hot_restart_flutter is intentionally
-          // not migrated to core_* (legacy-only; reachable via
-          // --no-use-capability-kernel).
+          // v3.0.0: tools surface under the "core_" capability prefix.
           expect(names.contains('core_hot_reload_flutter'), isTrue);
+          expect(names.contains('core_hot_restart_flutter'), isTrue);
           expect(names.contains('core_get_vm'), isTrue);
           expect(names.contains('core_get_extension_rpcs'), isTrue);
           expect(names.contains('core_discover_debug_apps'), isTrue);

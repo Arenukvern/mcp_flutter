@@ -34,7 +34,6 @@ base class TestPortScannerServer extends BaseMCPToolkitServer {
           flutterProjectDir: null,
           flutterDevice: null,
           flutterDiscoveryTimeoutMs: 2500,
-          useCapabilityKernel: false,
         ),
         implementation: Implementation(
           name: 'test-port-scanner',
