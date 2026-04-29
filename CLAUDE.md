@@ -49,15 +49,14 @@ Run one test by name: `flutter test path/to/x_test.dart --plain-name "exact name
 
 ## v3.0 Gotchas (non-obvious)
 
-- **MCP tool names are prefixed.** The capability kernel ships on by default
-  (`--use-capability-kernel=true`); every MCP tool surfaces as
-  `core_<name>` (e.g. `core_tap_widget`, `core_hot_reload_and_capture`).
-  Legacy unprefixed names return `tool_not_found`. The dynamic-registry
-  host trio (`listClientToolsAndResources`, `runClientTool`,
+- **MCP tool names are prefixed.** The capability kernel is the only
+  registration path; every MCP tool surfaces as `core_<name>`
+  (e.g. `core_tap_widget`, `core_hot_reload_and_capture`). Legacy
+  unprefixed names return `tool_not_found`. The dynamic-registry host
+  trio (`listClientToolsAndResources`, `runClientTool`,
   `runClientResource`) stays unprefixed. CLI catalog names are unchanged
   (`flutter_mcp_cli exec --name <unprefixed>`). Locked surface lives in
-  `tool/contracts/expected_tool_surface.txt`. To opt back to the legacy
-  surface temporarily: `--no-use-capability-kernel`.
+  `tool/contracts/expected_tool_surface.txt`.
 - **Preflight first**: run `flutter_mcp_cli doctor --json` before any VM-dependent
   automation — parses env, ports, and app reachability. Binary is
   `mcp_server_dart/build/flutter_mcp_cli` after `make build`.

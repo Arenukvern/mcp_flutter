@@ -17,7 +17,9 @@ MARKET_FILE="$ROOT_DIR/.claude-plugin/marketplace.json"
 fail() { echo "plugin-surfaces: $*" >&2; exit 1; }
 ok()   { echo "plugin-surfaces: $*"; }
 
-# 1. Required files
+# 1. Required files. flutter_mcp_plugin/commands/ is intentionally empty in
+# v3.0.0 — the live-edit slash command was excised with the live-edit
+# packages. New commands can be added back here without contract changes.
 required_files=(
   "$PLUGIN_DIR/.claude-plugin/plugin.json"
   "$PLUGIN_DIR/.mcp.json"
@@ -26,7 +28,6 @@ required_files=(
   "$PLUGIN_DIR/EXPECTED_SERVER_VERSION"
   "$PLUGIN_DIR/skills/flutter-mcp/SKILL.md"
   "$PLUGIN_DIR/skills/custom-toolkit-tools/SKILL.md"
-  "$PLUGIN_DIR/commands/flutter-live-edit.md"
   "$PLUGIN_DIR/agents/flutter-inspector.md"
   "$MARKET_FILE"
 )
@@ -65,9 +66,8 @@ done <<EOF
 $PLUGIN_DIR/skills/flutter-mcp/SKILL.md|yes
 $PLUGIN_DIR/skills/custom-toolkit-tools/SKILL.md|yes
 $PLUGIN_DIR/agents/flutter-inspector.md|yes
-$PLUGIN_DIR/commands/flutter-live-edit.md|no
 EOF
-ok "frontmatter valid in skills/command/agent"
+ok "frontmatter valid in skills/agent"
 
 # 4. .mcp.json registers flutter-inspector
 if ! grep -q '"flutter-inspector"' "$PLUGIN_DIR/.mcp.json"; then
@@ -108,8 +108,8 @@ tool_names=(
 )
 for tool in "${tool_names[@]}"; do
   # Must appear in skill docs (promised to agents).
-  if ! grep -Rq -- "$tool" "$PLUGIN_DIR/skills" "$PLUGIN_DIR/commands" "$PLUGIN_DIR/agents"; then
-    fail "tool '$tool' not mentioned in plugin skills/commands/agents"
+  if ! grep -Rq -- "$tool" "$PLUGIN_DIR/skills" "$PLUGIN_DIR/agents"; then
+    fail "tool '$tool' not mentioned in plugin skills/agents"
   fi
   # Must exist in the locked tool surface (snapshot file).
   if ! grep -qx -- "$tool" "$SURFACE_FILE"; then

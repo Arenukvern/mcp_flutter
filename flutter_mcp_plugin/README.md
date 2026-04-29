@@ -9,7 +9,6 @@ This plugin bundles:
 | **MCP server** (`.mcp.json`) | Registers the `flutter-inspector` MCP server so tools like `core_semantic_snapshot`, `core_tap_widget`, `core_hot_reload_and_capture`, `core_inspect_widget_at_point` are callable from any session. (v3.0.0+ surfaces tools under the `core_` capability prefix; legacy unprefixed names return `tool_not_found`.) |
 | **Skill: `flutter-mcp`** | Teaches Claude when and how to use the server — preflight, snapshot/tap/enter loop, error envelope, permissions. |
 | **Skill: `custom-toolkit-tools`** | Teaches Claude how to register app-specific tools from inside the Flutter app via `MCPCallEntry` + `addEntries`. Use when built-in tools aren't enough. |
-| **Command: `/flutter-live-edit`** | One-call kickoff for a live-edit session (preflight → connect → baseline → edit loop). |
 | **Agent: `flutter-inspector`** | Specialist subagent for Flutter runtime work. Auto-invoked when the user references a running Flutter debug app or a VM service URI. |
 
 ## Prerequisites

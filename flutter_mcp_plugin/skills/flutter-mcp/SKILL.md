@@ -62,7 +62,7 @@ Common codes and recovery:
 
 ## Visual QA
 
-- Before/after screenshots are the proof artifact for any UI claim. Capture before, edit, `core_hot_reload_and_capture`, compare.
+- Before/after screenshots are the proof artifact for any UI claim. Capture before with `core_capture_ui_snapshot` (or one of the `visual://localhost/...` resources), edit, `core_hot_reload_and_capture`, compare.
 - For each reported visual issue, attach coordinate + `core_inspect_widget_at_point` output.
 - Map defects to source via `core_get_app_errors` top stack frame (`file`, `line`, `column`) when available.
 - Do **not** use `core_debug_dump_*` unless explicitly requested (server must be started with `--dumps`; high token cost).

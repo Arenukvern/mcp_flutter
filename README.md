@@ -164,12 +164,6 @@ The same targeting object is supported in CLI v3 one-shot `exec --args`, daemon 
 
 📚 Please see more in [MCP_RPC_DESCRIPTION](MCP_RPC_DESCRIPTION.md)
 
-## Live Edit Overlay
-
-The live edit overlay shows a selection bubble and inspector panel above app content. You inspect and edit app widgets in the main app.
-
-To develop or refine the tooling UI (bubble, panel, property rows, chips), use the **live_edit_tooling_ui_kit** app: it runs the same tool layer with prefilled data so you can connect live-edit and iteratively improve those widgets.
-
 ## 🔒 Security
 
 Generally, since you use MCP server to connect to Flutter app in Debug Mode, it should be safe to use. However, I still recommend to review how it works in [ARCHITECTURE.md](ARCHITECTURE.md), how it can be modified to improve security if needed.
