@@ -9,12 +9,12 @@ for the AI-agent runbook.
 
 ## Repository Layout (monorepo)
 
-- `mcp_server_dart/` — MCP server + `flutter_mcp_cli` binary. Primary build target.
+- `mcp_server_dart/` — MCP server + `flutter-mcp-toolkit` binary. Primary build target.
 - `mcp_toolkit/mcp_toolkit/` — Dart package integrated into Flutter apps; registers
   VM service extensions (`ext.mcp.toolkit.*`) and supports dynamic tool registration.
 - `flutter_test_app/` — Showcase/example Flutter app used for e2e testing.
 - `mcp_capability_kernel/` — kernel contracts (Capability, ToolRegistration, CapabilityContext, host-service registry).
-- `mcp_capability_core/` — the `core` capability — all 27 + 4-dump MCP tools.
+- `mcp_capability_core/` — the `fmt` capability (class `CoreCapability`, MCP id `fmt`) — all 27 + 4-dump MCP tools.
 - `mcp_shared_core/` — pure-Dart command catalog + connection-override types shared by server, CLI, and capability_core.
 - `maestro/`, `tool/contracts/`, `tool/release/` — test flows, contract checks, release scripts.
 - `docs/` — audience-first MDX docs (humans + AI agents).
@@ -31,7 +31,7 @@ make inspect              # launch MCP inspector against built server
 ```
 
 Per-package: `cd mcp_server_dart && make compile` produces
-`build/flutter_inspector_mcp` and `build/flutter_mcp_cli`.
+`build/flutter-mcp-toolkit-server` and `build/flutter-mcp-toolkit`.
 
 ### Tests
 
@@ -50,16 +50,16 @@ Run one test by name: `flutter test path/to/x_test.dart --plain-name "exact name
 ## v3.0 Gotchas (non-obvious)
 
 - **MCP tool names are prefixed.** The capability kernel is the only
-  registration path; every MCP tool surfaces as `core_<name>`
-  (e.g. `core_tap_widget`, `core_hot_reload_and_capture`). Legacy
+  registration path; every MCP tool surfaces as `fmt_<name>`
+  (e.g. `fmt_tap_widget`, `fmt_hot_reload_and_capture`). Legacy
   unprefixed names return `tool_not_found`. The dynamic-registry host
   trio (`listClientToolsAndResources`, `runClientTool`,
   `runClientResource`) stays unprefixed. CLI catalog names are unchanged
-  (`flutter_mcp_cli exec --name <unprefixed>`). Locked surface lives in
+  (`flutter-mcp-toolkit exec --name <unprefixed>`). Locked surface lives in
   `tool/contracts/expected_tool_surface.txt`.
-- **Preflight first**: run `flutter_mcp_cli doctor --json` before any VM-dependent
+- **Preflight first**: run `flutter-mcp-toolkit doctor --json` before any VM-dependent
   automation — parses env, ports, and app reachability. Binary is
-  `mcp_server_dart/build/flutter_mcp_cli` after `make build`.
+  `mcp_server_dart/build/flutter-mcp-toolkit` after `make build`.
 - **Safe-write flags** on snapshot/bundle commands: `--check --diff --backup --no-overwrite`
   (atomic write/publish). Don't skip these in automation.
 - **Error envelope contract**: errors are `{code, message, details, descriptor, recovery}`.
