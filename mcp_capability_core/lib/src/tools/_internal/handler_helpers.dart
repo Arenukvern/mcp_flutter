@@ -95,3 +95,28 @@ bool boolArgOrFalse(final Object? raw) {
   if (raw is bool) return raw;
   return false;
 }
+
+/// Returns the bool value of [raw], or [defaultValue] if absent/non-bool.
+/// Mirrors legacy behaviour where some args (e.g. compress, includeErrors)
+/// default to true and the wire payload may either omit the key or pass
+/// "false" as a string.
+@internal
+bool boolArgOrDefault(final Object? raw, {required final bool defaultValue}) {
+  if (raw is bool) return raw;
+  if (raw is String) return raw.toLowerCase() != 'false';
+  return defaultValue;
+}
+
+/// Returns the int value of [raw] coerced to int, or [defaultValue] if
+/// absent / non-numeric / zero. The "zero ⇒ default" rule matches legacy
+/// `whenZeroUse` semantics for fields like `errorsCount`.
+@internal
+int intArgOrDefault(final Object? raw, {required final int defaultValue}) {
+  final v = switch (raw) {
+    final int v => v,
+    final num v when v == v.toInt() => v.toInt(),
+    _ => null,
+  };
+  if (v == null || v == 0) return defaultValue;
+  return v;
+}

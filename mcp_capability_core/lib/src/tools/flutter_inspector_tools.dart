@@ -12,8 +12,8 @@ import '_internal/handler_helpers.dart';
 
 /// Registers Flutter inspector tools with the host through [context].
 ///
-/// Registers: hot_reload_flutter, connect_debug_app, discover_debug_apps,
-/// get_vm, get_extension_rpcs.
+/// Registers: hot_reload_flutter, hot_restart_flutter, connect_debug_app,
+/// discover_debug_apps, get_vm, get_extension_rpcs.
 void registerFlutterInspectorTools(final CapabilityContext context) {
   final runner = context.require<CommandRunner>();
 
@@ -50,6 +50,30 @@ void registerFlutterInspectorTools(final CapabilityContext context) {
             ],
           ),
         );
+      },
+    ),
+  );
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // hot_restart_flutter
+  //
+  // Full-restart equivalent of hot_reload_flutter; app state is NOT preserved.
+  // ─────────────────────────────────────────────────────────────────────────
+  context.registerTool(
+    ToolRegistration(
+      name: 'hot_restart_flutter',
+      description:
+          'Hot restarts the Flutter app (full restart; state not preserved).',
+      inputSchema: <String, Object?>{
+        'type': 'object',
+        'additionalProperties': false,
+        'properties': <String, Object?>{
+          'connection': connectionOverrideJsonSchema(),
+        },
+      },
+      handler: (final request) async {
+        final args = request.arguments ?? const <String, Object?>{};
+        return runCommand(runner, args, const HotRestartFlutterCommand());
       },
     ),
   );

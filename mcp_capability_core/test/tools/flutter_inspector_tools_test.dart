@@ -75,18 +75,82 @@ void main() {
   // Registration
   // =========================================================================
   group('flutter_inspector_tools — registration', () {
-    test('registers all 5 tools', () {
+    test('registers all 6 tools', () {
       final ctx = _registeredCtx();
       expect(
         ctx.registeredToolNames,
         containsAll(<String>[
           'hot_reload_flutter',
+          'hot_restart_flutter',
           'connect_debug_app',
           'discover_debug_apps',
           'get_vm',
           'get_extension_rpcs',
         ]),
       );
+    });
+  });
+
+  // =========================================================================
+  // hot_restart_flutter
+  // =========================================================================
+  group('flutter_inspector_tools — hot_restart_flutter', () {
+    test('schema: only connection; additionalProperties false', () {
+      final ctx = _registeredCtx();
+      _expectBaseSchema(
+        ctx.registrationFor('hot_restart_flutter')!.inputSchema,
+      );
+    });
+
+    test('handler executes HotRestartFlutterCommand', () async {
+      final runner = FakeCommandRunner()
+        ..nextExecuteResult = CoreResult.success(data: {'type': 'Restarted'});
+      final ctx = _registeredCtx(runner: runner);
+      final result = await ctx.registrationFor('hot_restart_flutter')!.handler(
+        CallToolRequest(
+          name: 'hot_restart_flutter',
+          arguments: const <String, Object?>{},
+        ),
+      );
+      expect(result.isError, isNot(true));
+      expect(runner.executedCommands.single, isA<HotRestartFlutterCommand>());
+    });
+
+    test('handler short-circuits on override failure', () async {
+      final runner = FakeCommandRunner()
+        ..nextOverrideResult = CoreResult.failure(
+          code: CoreErrorCode.connectFailed,
+          message: 'no connection',
+        );
+      final ctx = _registeredCtx(runner: runner);
+      final result = await ctx.registrationFor('hot_restart_flutter')!.handler(
+        CallToolRequest(
+          name: 'hot_restart_flutter',
+          arguments: const <String, Object?>{},
+        ),
+      );
+      expect(result.isError, isTrue);
+      expect(runner.executedCommands, isEmpty);
+    });
+
+    test('returns 5-key error envelope on execute failure', () async {
+      final runner = FakeCommandRunner()
+        ..nextExecuteResult = CoreResult.failure(
+          code: CoreErrorCode.hotRestartFailed,
+          message: 'hot restart failed',
+        );
+      final ctx = _registeredCtx(runner: runner);
+      final result = await ctx.registrationFor('hot_restart_flutter')!.handler(
+        CallToolRequest(
+          name: 'hot_restart_flutter',
+          arguments: const <String, Object?>{},
+        ),
+      );
+      expect(result.isError, isTrue);
+      final json =
+          jsonDecode((result.content.first as TextContent).text)
+              as Map<String, Object?>;
+      _expectEnvelopeKeys(json);
     });
   });
 

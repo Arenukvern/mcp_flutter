@@ -50,12 +50,15 @@ void main() {
     test('other tools are registered regardless of dumps_supported', () async {
       final alwaysPresent = <String>[
         'hot_reload_flutter',
+        'hot_restart_flutter',
         'connect_debug_app',
         'discover_debug_apps',
         'get_vm',
         'get_extension_rpcs',
         'tap_widget',
         'enter_text',
+        'evaluate_dart_expression',
+        'hot_reload_and_capture',
         'semantic_snapshot',
         'get_view_details',
         'get_app_errors',

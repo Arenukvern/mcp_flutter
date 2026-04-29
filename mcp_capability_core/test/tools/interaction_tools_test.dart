@@ -899,4 +899,212 @@ void main() {
       expect(json['code'], equals(CoreErrorCode.interactionFailed));
     });
   });
+
+  // =========================================================================
+  // evaluate_dart_expression
+  // =========================================================================
+  group('interaction tools — evaluate_dart_expression', () {
+    test('registers evaluate_dart_expression', () {
+      final ctx = _registeredCtx();
+      expect(
+        ctx.registeredToolNames,
+        contains('evaluate_dart_expression'),
+      );
+    });
+
+    test('schema: additionalProperties false, required [expression]', () {
+      final ctx = _registeredCtx();
+      final schema =
+          ctx.registrationFor('evaluate_dart_expression')!.inputSchema;
+      expect(schema['additionalProperties'], isFalse);
+      expect(schema['required'], equals(<String>['expression']));
+      final props = schema['properties'] as Map<String, Object?>;
+      expect(
+        (props['expression'] as Map<String, Object?>)['type'],
+        'string',
+      );
+      expect(props.containsKey('connection'), isTrue);
+    });
+
+    test(
+        'handler builds EvaluateDartExpressionCommand with the provided expression',
+        () async {
+      final runner = FakeCommandRunner()
+        ..nextExecuteResult = CoreResult.success(data: {'value': '42'});
+      final ctx = _registeredCtx(runner: runner);
+      final result = await ctx
+          .registrationFor('evaluate_dart_expression')!
+          .handler(
+        CallToolRequest(
+          name: 'evaluate_dart_expression',
+          arguments: const <String, Object?>{'expression': '1 + 1'},
+        ),
+      );
+      expect(result.isError, isNot(true));
+      final cmd = runner.executedCommands.single
+          as EvaluateDartExpressionCommand;
+      expect(cmd.expression, '1 + 1');
+    });
+
+    test('handler short-circuits on override failure', () async {
+      final runner = FakeCommandRunner()
+        ..nextOverrideResult = CoreResult.failure(
+          code: CoreErrorCode.connectFailed,
+          message: 'no connection',
+        );
+      final ctx = _registeredCtx(runner: runner);
+      final result = await ctx
+          .registrationFor('evaluate_dart_expression')!
+          .handler(
+        CallToolRequest(
+          name: 'evaluate_dart_expression',
+          arguments: const <String, Object?>{'expression': 'noop'},
+        ),
+      );
+      expect(result.isError, isTrue);
+      expect(runner.executedCommands, isEmpty);
+    });
+
+    test('returns 5-key error envelope on execute failure', () async {
+      final runner = FakeCommandRunner()
+        ..nextExecuteResult = CoreResult.failure(
+          code: CoreErrorCode.evaluateExpressionFailed,
+          message: 'compile error',
+        );
+      final ctx = _registeredCtx(runner: runner);
+      final result = await ctx
+          .registrationFor('evaluate_dart_expression')!
+          .handler(
+        CallToolRequest(
+          name: 'evaluate_dart_expression',
+          arguments: const <String, Object?>{'expression': '<<bogus>>'},
+        ),
+      );
+      expect(result.isError, isTrue);
+      final json =
+          jsonDecode((result.content.first as TextContent).text)
+              as Map<String, Object?>;
+      _expectEnvelopeKeys(json);
+    });
+  });
+
+  // =========================================================================
+  // hot_reload_and_capture
+  // =========================================================================
+  group('interaction tools — hot_reload_and_capture', () {
+    test('registers hot_reload_and_capture', () {
+      final ctx = _registeredCtx();
+      expect(
+        ctx.registeredToolNames,
+        contains('hot_reload_and_capture'),
+      );
+    });
+
+    test(
+        'schema: additionalProperties false, includes optional bool/int knobs',
+        () {
+      final ctx = _registeredCtx();
+      final schema = ctx.registrationFor('hot_reload_and_capture')!.inputSchema;
+      expect(schema['additionalProperties'], isFalse);
+      expect(schema.containsKey('required'), isFalse);
+      final props = schema['properties'] as Map<String, Object?>;
+      expect((props['compress'] as Map<String, Object?>)['type'], 'boolean');
+      expect(
+        (props['includeSemantics'] as Map<String, Object?>)['type'],
+        'boolean',
+      );
+      expect(
+        (props['includeErrors'] as Map<String, Object?>)['type'],
+        'boolean',
+      );
+      expect(
+        (props['errorsCount'] as Map<String, Object?>)['type'],
+        'integer',
+      );
+      expect(props.containsKey('connection'), isTrue);
+    });
+
+    test('handler defaults: compress=true, includeSemantics=true, includeErrors=true, errorsCount=4',
+        () async {
+      final runner = FakeCommandRunner()
+        ..nextExecuteResult = CoreResult.success(data: {'screenshots': []});
+      final ctx = _registeredCtx(runner: runner);
+      await ctx.registrationFor('hot_reload_and_capture')!.handler(
+        CallToolRequest(
+          name: 'hot_reload_and_capture',
+          arguments: const <String, Object?>{},
+        ),
+      );
+      final cmd =
+          runner.executedCommands.single as HotReloadAndCaptureCommand;
+      expect(cmd.compress, isTrue);
+      expect(cmd.includeSemantics, isTrue);
+      expect(cmd.includeErrors, isTrue);
+      expect(cmd.errorsCount, 4);
+    });
+
+    test('handler honours explicit overrides for all four knobs', () async {
+      final runner = FakeCommandRunner()
+        ..nextExecuteResult = CoreResult.success(data: {'screenshots': []});
+      final ctx = _registeredCtx(runner: runner);
+      await ctx.registrationFor('hot_reload_and_capture')!.handler(
+        CallToolRequest(
+          name: 'hot_reload_and_capture',
+          arguments: const <String, Object?>{
+            'compress': false,
+            'includeSemantics': false,
+            'includeErrors': false,
+            'errorsCount': 9,
+          },
+        ),
+      );
+      final cmd =
+          runner.executedCommands.single as HotReloadAndCaptureCommand;
+      expect(cmd.compress, isFalse);
+      expect(cmd.includeSemantics, isFalse);
+      expect(cmd.includeErrors, isFalse);
+      expect(cmd.errorsCount, 9);
+    });
+
+    test('handler short-circuits on override failure', () async {
+      final runner = FakeCommandRunner()
+        ..nextOverrideResult = CoreResult.failure(
+          code: CoreErrorCode.connectFailed,
+          message: 'no connection',
+        );
+      final ctx = _registeredCtx(runner: runner);
+      final result = await ctx
+          .registrationFor('hot_reload_and_capture')!
+          .handler(
+        CallToolRequest(
+          name: 'hot_reload_and_capture',
+          arguments: const <String, Object?>{},
+        ),
+      );
+      expect(result.isError, isTrue);
+      expect(runner.executedCommands, isEmpty);
+    });
+
+    test('returns 5-key error envelope on execute failure', () async {
+      final runner = FakeCommandRunner()
+        ..nextExecuteResult = CoreResult.failure(
+          code: CoreErrorCode.hotReloadFailed,
+          message: 'reload failed',
+        );
+      final ctx = _registeredCtx(runner: runner);
+      final result = await ctx
+          .registrationFor('hot_reload_and_capture')!
+          .handler(
+        CallToolRequest(
+          name: 'hot_reload_and_capture',
+          arguments: const <String, Object?>{},
+        ),
+      );
+      expect(result.isError, isTrue);
+      final json =
+          jsonDecode((result.content.first as TextContent).text)
+              as Map<String, Object?>;
+      _expectEnvelopeKeys(json);
+    });
+  });
 }

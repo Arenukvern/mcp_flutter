@@ -2,7 +2,7 @@
 //
 // Verifies that:
 //   - McpHost + CoreCapability registration produces the expected prefixed
-//     tool surface (24 tools with dumps_supported=false, 28 with it true).
+//     tool surface (27 tools with dumps_supported=false, 31 with it true).
 //   - CapabilityConfig values flow from McpHost construction through the
 //     CapabilityContext to CoreCapability's conditional registration logic.
 //   - The DartMcpDispatchBridge publishes prefixed names to the dart_mcp
@@ -24,15 +24,16 @@ McpHost _makeHost({final bool dumpsSupported = false}) => McpHost(
   ),
 );
 
-// All 24 non-dump tool bare names registered by CoreCapability.
+// All 27 non-dump tool bare names registered by CoreCapability.
 const _nonDumpToolNames = <String>[
-  // flutter_inspector_tools (5)
+  // flutter_inspector_tools (6)
   'core_hot_reload_flutter',
+  'core_hot_restart_flutter',
   'core_connect_debug_app',
   'core_discover_debug_apps',
   'core_get_vm',
   'core_get_extension_rpcs',
-  // interaction_tools (8)
+  // interaction_tools (10)
   'core_tap_widget',
   'core_enter_text',
   'core_scroll',
@@ -41,6 +42,8 @@ const _nonDumpToolNames = <String>[
   'core_drag',
   'core_hover',
   'core_press_key',
+  'core_evaluate_dart_expression',
+  'core_hot_reload_and_capture',
   // navigation_tools (2)
   'core_handle_dialog',
   'core_navigate',
@@ -81,12 +84,12 @@ void main() {
       expect(
         names,
         containsAll(_nonDumpToolNames),
-        reason: 'All 24 non-dump tools must be present with dumps_supported=false',
+        reason: 'All 27 non-dump tools must be present with dumps_supported=false',
       );
       expect(
         names.length,
-        equals(24),
-        reason: 'Exactly 24 tools when dumps_supported=false',
+        equals(27),
+        reason: 'Exactly 27 tools when dumps_supported=false',
       );
       for (final dumpName in _dumpToolNames) {
         expect(
@@ -98,7 +101,7 @@ void main() {
     });
 
     test(
-        'dumps_supported=true: 28 tools registered; all 4 dump tool names present',
+        'dumps_supported=true: 31 tools registered; all 4 dump tool names present',
         () async {
       final host = _makeHost(dumpsSupported: true);
       await host.registerCapability(const CoreCapability());
@@ -108,7 +111,7 @@ void main() {
       expect(
         names,
         containsAll(_nonDumpToolNames),
-        reason: 'All 24 non-dump tools must be present',
+        reason: 'All 27 non-dump tools must be present',
       );
       expect(
         names,
@@ -117,8 +120,8 @@ void main() {
       );
       expect(
         names.length,
-        equals(28),
-        reason: 'Exactly 28 tools when dumps_supported=true',
+        equals(31),
+        reason: 'Exactly 31 tools when dumps_supported=true',
       );
     });
 
@@ -158,7 +161,7 @@ void main() {
 
       final publishedNames = published.map((final t) => t.name).toSet();
       expect(publishedNames, containsAll(_nonDumpToolNames));
-      expect(publishedNames.length, equals(24));
+      expect(publishedNames.length, equals(27));
       // Sanity: the legacy unprefixed names are NOT what the kernel publishes.
       expect(publishedNames, isNot(contains('tap_widget')));
       expect(publishedNames, isNot(contains('enter_text')));

@@ -6,7 +6,7 @@ import '_internal/handler_helpers.dart';
 
 /// Registers Playwright-parity interaction tools with the host through
 /// [context]. Registers: tap_widget, enter_text, scroll, long_press, swipe,
-/// drag, hover, press_key.
+/// drag, hover, press_key, evaluate_dart_expression, hot_reload_and_capture.
 void registerInteractionTools(final CapabilityContext context) {
   final runner = context.require<CommandRunner>();
 
@@ -345,6 +345,104 @@ void registerInteractionTools(final CapabilityContext context) {
             shift: shift,
             alt: alt,
             meta: meta,
+          ),
+        );
+      },
+    ),
+  );
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // evaluate_dart_expression
+  //
+  // Run an arbitrary Dart expression in the running app's main isolate and
+  // return its evaluated value. Required arg: `expression`.
+  // ─────────────────────────────────────────────────────────────────────────
+  context.registerTool(
+    ToolRegistration(
+      name: 'evaluate_dart_expression',
+      description:
+          'Evaluate a Dart expression in the running app isolate. '
+          'Returns the result of the expression as text.',
+      inputSchema: <String, Object?>{
+        'type': 'object',
+        'additionalProperties': false,
+        'required': <String>['expression'],
+        'properties': <String, Object?>{
+          'expression': <String, Object?>{
+            'type': 'string',
+            'description':
+                'Dart expression to evaluate (e.g. "MyClass.instance.value").',
+          },
+          'connection': connectionOverrideJsonSchema(),
+        },
+      },
+      handler: (final request) async {
+        final args = request.arguments ?? const <String, Object?>{};
+        final expression = stringArgOrNull(args['expression']) ?? '';
+        return runCommand(
+          runner,
+          args,
+          EvaluateDartExpressionCommand(expression: expression),
+        );
+      },
+    ),
+  );
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // hot_reload_and_capture
+  //
+  // Tight edit-preview cycle for AI iteration: hot reload, then capture
+  // screenshot + semantic snapshot + errors in one response. All four
+  // optional args default to "include": compress=true, includeSemantics=true,
+  // includeErrors=true, errorsCount=4.
+  // ─────────────────────────────────────────────────────────────────────────
+  context.registerTool(
+    ToolRegistration(
+      name: 'hot_reload_and_capture',
+      description:
+          'Hot reload then capture screenshot + semantic snapshot + errors '
+          'in a single call. Tight edit-preview cycle for AI iteration.',
+      inputSchema: <String, Object?>{
+        'type': 'object',
+        'additionalProperties': false,
+        'properties': <String, Object?>{
+          'compress': <String, Object?>{
+            'type': 'boolean',
+            'description': 'Compress screenshots (default: true).',
+          },
+          'includeSemantics': <String, Object?>{
+            'type': 'boolean',
+            'description': 'Include semantic snapshot (default: true).',
+          },
+          'includeErrors': <String, Object?>{
+            'type': 'boolean',
+            'description': 'Include app errors (default: true).',
+          },
+          'errorsCount': <String, Object?>{
+            'type': 'integer',
+            'description': 'Number of errors to include (default: 4).',
+          },
+          'connection': connectionOverrideJsonSchema(),
+        },
+      },
+      handler: (final request) async {
+        final args = request.arguments ?? const <String, Object?>{};
+        final compress =
+            boolArgOrDefault(args['compress'], defaultValue: true);
+        final includeSemantics =
+            boolArgOrDefault(args['includeSemantics'], defaultValue: true);
+        final includeErrors =
+            boolArgOrDefault(args['includeErrors'], defaultValue: true);
+        final errorsCount =
+            intArgOrDefault(args['errorsCount'], defaultValue: 4);
+        return runCommand(
+          runner,
+          args,
+          HotReloadAndCaptureCommand(
+            compress: compress,
+            includeSemantics: includeSemantics,
+            includeErrors: includeErrors,
+            errorsCount: errorsCount,
           ),
         );
       },
