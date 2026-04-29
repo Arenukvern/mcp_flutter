@@ -11,7 +11,7 @@ environment:
 
 executables:
   flutter-mcp-toolkit: flutter_mcp_toolkit
-  flutter-mcp-toolkit-server: main
+  flutter-mcp-toolkit-server: flutter_mcp_toolkit_server
 
 dependencies:
   args: ^2.7.0
