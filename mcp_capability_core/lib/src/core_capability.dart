@@ -17,7 +17,7 @@ final class CoreCapability implements Capability {
   const CoreCapability();
 
   @override
-  String get id => 'core';
+  String get id => 'fmt';
 
   @override
   String get description =>
