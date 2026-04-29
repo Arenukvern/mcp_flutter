@@ -92,27 +92,30 @@ if ! grep -q '"source"[[:space:]]*:[[:space:]]*"\./flutter_mcp_plugin"' "$MARKET
 fi
 ok "plugin.json <-> marketplace.json names aligned"
 
-# 7. Skills reference MCP tool names that exist in the server source.
-# We check the key tools each skill promises; a rename in lib/ without updating
-# the skill is drift we want to catch.
+# 7. Skills reference MCP tool names (post-T8: prefixed `core_*`) that exist
+# in the locked tool surface. Catches: plugin docs forgetting to prepend
+# `core_`, or referencing a tool that was removed from the capability surface.
+SURFACE_FILE="$ROOT_DIR/tool/contracts/expected_tool_surface.txt"
+[[ -f "$SURFACE_FILE" ]] || fail "expected_tool_surface.txt not found"
+
 tool_names=(
-  "semantic_snapshot"
-  "capture_ui_snapshot"
-  "hot_reload_and_capture"
-  "inspect_widget_at_point"
-  "tap_widget"
-  "enter_text"
+  "core_semantic_snapshot"
+  "core_capture_ui_snapshot"
+  "core_hot_reload_and_capture"
+  "core_inspect_widget_at_point"
+  "core_tap_widget"
+  "core_enter_text"
 )
 for tool in "${tool_names[@]}"; do
-  # Must appear in skill docs (promised to agents)
+  # Must appear in skill docs (promised to agents).
   if ! grep -Rq -- "$tool" "$PLUGIN_DIR/skills" "$PLUGIN_DIR/commands" "$PLUGIN_DIR/agents"; then
     fail "tool '$tool' not mentioned in plugin skills/commands/agents"
   fi
-  # Must exist in server source (not silently renamed)
-  if ! grep -Rq -- "$tool" "$ROOT_DIR/mcp_server_dart/lib" "$ROOT_DIR/mcp_server_dart/bin" 2>/dev/null; then
-    fail "tool '$tool' referenced by plugin but not found in mcp_server_dart/{lib,bin} — rename?"
+  # Must exist in the locked tool surface (snapshot file).
+  if ! grep -qx -- "$tool" "$SURFACE_FILE"; then
+    fail "tool '$tool' referenced by plugin but not in expected_tool_surface.txt"
   fi
 done
-ok "referenced MCP tool names exist in server source"
+ok "referenced MCP tool names ($(echo "${tool_names[*]}" | wc -w | tr -d ' ') checked) exist in locked surface"
 
 echo "Plugin surfaces check passed."

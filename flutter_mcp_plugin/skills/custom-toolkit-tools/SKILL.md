@@ -7,9 +7,9 @@ description: Use this skill when the agent needs to expose app-specific function
 
 Use this skill when a generic MCP tool (screenshot, snapshot, tap) is not enough and you need app-specific introspection or actions — e.g. "give me the current cart total", "force the feature flag X", "dump the Riverpod graph for provider Y". These are registered **inside the Flutter app** at runtime and surface to the agent via the dynamic registry.
 
-## When to register a custom tool (vs. `evaluate_dart_expression`)
+## When to register a custom tool (vs. `core_evaluate_dart_expression`)
 
-- **Prefer `evaluate_dart_expression`** for one-off reads of plain values. No app change required.
+- **Prefer `core_evaluate_dart_expression`** for one-off reads of plain values. No app change required.
 - **Register a custom tool** when the operation is:
   - Reused across sessions (worth a stable `name` + schema).
   - Too complex to express as a single expression (needs assembly, async, multiple calls).
@@ -82,7 +82,7 @@ If you (the agent) are adding a tool to the user's app on their behalf:
 2. Put the registration in a dedicated file (e.g. `lib/mcp_tools/<domain>_tools.dart`) with one `registerXTools()` function called from bootstrap.
 3. Write the schema tight (`additionalProperties: false`, explicit `required`).
 4. After adding, do a hot **restart**, then `listClientToolsAndResources` to confirm the tool is live before you try to call it.
-5. If the user is iterating, keep the handler pure where possible — easier to test with `evaluate_dart_expression` in parallel.
+5. If the user is iterating, keep the handler pure where possible — easier to test with `core_evaluate_dart_expression` in parallel.
 
 ## Common traps
 

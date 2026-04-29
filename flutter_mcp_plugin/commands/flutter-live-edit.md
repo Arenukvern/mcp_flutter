@@ -24,13 +24,13 @@ Optional VM service URI can be passed as the first argument (e.g. `/flutter-live
 
    If any are missing, stop and report the instrumentation gap (see the `flutter-mcp` skill for the exact fix).
 
-4. **Baseline capture.** Run `capture_ui_snapshot` with `{"errorsCount":4,"compress":true,"includeViewDetails":true,"includeErrors":true}`. Save the screenshot path and snapshot_id.
+4. **Baseline capture.** Run `core_capture_ui_snapshot` with `{"errorsCount":4,"compress":true,"includeViewDetails":true,"includeErrors":true}`. Save the screenshot path and snapshot_id.
 
 5. **Announce readiness.** Report to the user: target URI, baseline screenshot path, and any pre-existing errors. Then ask what they want to edit or inspect.
 
 6. **Edit loop** (after user instruction):
    - Make the code change.
-   - `hot_reload_and_capture` — returns reload status + fresh screenshot + snapshot + errors.
+   - `core_hot_reload_and_capture` — returns reload status + fresh screenshot + snapshot + errors.
    - If errors regressed, surface the top stack frame (`file:line:col`) before proposing a fix.
    - Compare before/after screenshots and describe the visual delta in one or two sentences.
 
