@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "flutter-mcp-toolkit": {
+      "command": "flutter-mcp-toolkit-server",
+      "args": ["--dart-vm-port", "8181"],
+      "env": {}
+    }
+  }
+}
