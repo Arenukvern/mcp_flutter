@@ -311,7 +311,7 @@ Future<bool> _runServerTest(
     // Start the MCP server process
     serverProcess = await Process.start('dart', [
       'run',
-      'bin/main.dart',
+      'bin/flutter_mcp_toolkit_server.dart',
     ], workingDirectory: Directory.current.path);
 
     // Set up request controller for sending to server's stdin

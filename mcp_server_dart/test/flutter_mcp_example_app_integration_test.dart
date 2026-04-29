@@ -664,7 +664,7 @@ final class _McpHarness {
   }) async {
     final process = await Process.start('dart', [
       'run',
-      'bin/main.dart',
+      'bin/flutter_mcp_toolkit_server.dart',
       '--dart-vm-host=localhost',
       '--dart-vm-port=8181',
       '--resources',

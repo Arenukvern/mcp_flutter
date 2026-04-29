@@ -40,7 +40,7 @@ echo -e "${GREEN}✅ Prerequisites check passed${NC}"
 echo -e "${YELLOW}Building MCP server executable...${NC}"
 cd "$MCP_SERVER_DIR"
 
-if dart compile exe bin/main.dart -o "$EXECUTABLE_NAME"; then
+if dart compile exe bin/flutter_mcp_toolkit_server.dart -o "$EXECUTABLE_NAME"; then
     chmod +x "$EXECUTABLE_NAME"
     echo -e "${GREEN}✅ Executable built successfully: $MCP_SERVER_DIR/$EXECUTABLE_NAME${NC}"
 else
