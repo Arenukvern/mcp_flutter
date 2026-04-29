@@ -1,9 +1,8 @@
 // mcp_capability_core/lib/src/tools/interaction_tools.dart
-import 'dart:convert';
-
-import 'package:dart_mcp/server.dart';
 import 'package:mcp_capability_kernel/mcp_capability_kernel.dart';
 import 'package:mcp_shared_core/mcp_shared_core.dart';
+
+import '_internal/handler_helpers.dart';
 
 /// Registers Playwright-parity interaction tools with the host through
 /// [context]. Registers: tap_widget, enter_text, scroll, long_press, swipe,
@@ -38,9 +37,9 @@ void registerInteractionTools(final CapabilityContext context) {
       },
       handler: (final request) async {
         final args = request.arguments ?? const <String, Object?>{};
-        final ref = _stringArgOrNull(args['ref']) ?? '';
-        final snapshotId = _intArgOrNull(args['snapshotId']);
-        return _runCommand(
+        final ref = stringArgOrNull(args['ref']) ?? '';
+        final snapshotId = intArgOrNull(args['snapshotId']);
+        return runCommand(
           runner,
           args,
           TapWidgetCommand(ref: ref, snapshotId: snapshotId),
@@ -80,10 +79,10 @@ void registerInteractionTools(final CapabilityContext context) {
       },
       handler: (final request) async {
         final args = request.arguments ?? const <String, Object?>{};
-        final ref = _stringArgOrNull(args['ref']) ?? '';
-        final text = _stringArgOrNull(args['text']) ?? '';
-        final snapshotId = _intArgOrNull(args['snapshotId']);
-        return _runCommand(
+        final ref = stringArgOrNull(args['ref']) ?? '';
+        final text = stringArgOrNull(args['text']) ?? '';
+        final snapshotId = intArgOrNull(args['snapshotId']);
+        return runCommand(
           runner,
           args,
           EnterTextCommand(ref: ref, text: text, snapshotId: snapshotId),
@@ -128,11 +127,11 @@ void registerInteractionTools(final CapabilityContext context) {
       },
       handler: (final request) async {
         final args = request.arguments ?? const <String, Object?>{};
-        final direction = _stringArgOrNull(args['direction']) ?? 'down';
-        final ref = _stringArgOrNull(args['ref']);
-        final distance = _doubleArgOrDefault(args['distance'], 300.0);
-        final snapshotId = _intArgOrNull(args['snapshotId']);
-        return _runCommand(
+        final direction = stringArgOrNull(args['direction']) ?? 'down';
+        final ref = stringArgOrNull(args['ref']);
+        final distance = doubleArgOrDefault(args['distance'], 300.0);
+        final snapshotId = intArgOrNull(args['snapshotId']);
+        return runCommand(
           runner,
           args,
           ScrollCommand(
@@ -171,9 +170,9 @@ void registerInteractionTools(final CapabilityContext context) {
       },
       handler: (final request) async {
         final args = request.arguments ?? const <String, Object?>{};
-        final ref = _stringArgOrNull(args['ref']) ?? '';
-        final snapshotId = _intArgOrNull(args['snapshotId']);
-        return _runCommand(
+        final ref = stringArgOrNull(args['ref']) ?? '';
+        final snapshotId = intArgOrNull(args['snapshotId']);
+        return runCommand(
           runner,
           args,
           LongPressCommand(ref: ref, snapshotId: snapshotId),
@@ -217,11 +216,11 @@ void registerInteractionTools(final CapabilityContext context) {
       },
       handler: (final request) async {
         final args = request.arguments ?? const <String, Object?>{};
-        final direction = _stringArgOrNull(args['direction']) ?? 'up';
-        final ref = _stringArgOrNull(args['ref']);
-        final distance = _doubleArgOrDefault(args['distance'], 300.0);
-        final snapshotId = _intArgOrNull(args['snapshotId']);
-        return _runCommand(
+        final direction = stringArgOrNull(args['direction']) ?? 'up';
+        final ref = stringArgOrNull(args['ref']);
+        final distance = doubleArgOrDefault(args['distance'], 300.0);
+        final snapshotId = intArgOrNull(args['snapshotId']);
+        return runCommand(
           runner,
           args,
           SwipeCommand(
@@ -264,10 +263,10 @@ void registerInteractionTools(final CapabilityContext context) {
       },
       handler: (final request) async {
         final args = request.arguments ?? const <String, Object?>{};
-        final fromRef = _stringArgOrNull(args['fromRef']) ?? '';
-        final toRef = _stringArgOrNull(args['toRef']) ?? '';
-        final snapshotId = _intArgOrNull(args['snapshotId']);
-        return _runCommand(
+        final fromRef = stringArgOrNull(args['fromRef']) ?? '';
+        final toRef = stringArgOrNull(args['toRef']) ?? '';
+        final snapshotId = intArgOrNull(args['snapshotId']);
+        return runCommand(
           runner,
           args,
           DragCommand(fromRef: fromRef, toRef: toRef, snapshotId: snapshotId),
@@ -298,9 +297,9 @@ void registerInteractionTools(final CapabilityContext context) {
       },
       handler: (final request) async {
         final args = request.arguments ?? const <String, Object?>{};
-        final ref = _stringArgOrNull(args['ref']) ?? '';
-        final snapshotId = _intArgOrNull(args['snapshotId']);
-        return _runCommand(
+        final ref = stringArgOrNull(args['ref']) ?? '';
+        final snapshotId = intArgOrNull(args['snapshotId']);
+        return runCommand(
           runner,
           args,
           HoverCommand(ref: ref, snapshotId: snapshotId),
@@ -332,12 +331,12 @@ void registerInteractionTools(final CapabilityContext context) {
       },
       handler: (final request) async {
         final args = request.arguments ?? const <String, Object?>{};
-        final key = _stringArgOrNull(args['key']) ?? '';
-        final ctrl = _boolArgOrFalse(args['ctrl']);
-        final shift = _boolArgOrFalse(args['shift']);
-        final alt = _boolArgOrFalse(args['alt']);
-        final meta = _boolArgOrFalse(args['meta']);
-        return _runCommand(
+        final key = stringArgOrNull(args['key']) ?? '';
+        final ctrl = boolArgOrFalse(args['ctrl']);
+        final shift = boolArgOrFalse(args['shift']);
+        final alt = boolArgOrFalse(args['alt']);
+        final meta = boolArgOrFalse(args['meta']);
+        return runCommand(
           runner,
           args,
           PressKeyCommand(
@@ -353,77 +352,3 @@ void registerInteractionTools(final CapabilityContext context) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Execution helpers — copy-pasteable template for T4-B tool migrations.
-// ---------------------------------------------------------------------------
-
-/// Standard envelope-preserving execution flow for capability tool handlers.
-///
-/// Apply per-call connection override → execute the command → translate the
-/// CoreResult to a CallToolResult. Override failure short-circuits to the
-/// error envelope. Use [onSuccess] for tools whose success payload is not a
-/// JSON object (e.g., binary screenshot tools that need ImageContent).
-Future<CallToolResult> _runCommand(
-  final CommandRunner runner,
-  final Map<String, Object?> arguments,
-  final CoreCommand command, {
-  final CallToolResult Function(Object? data)? onSuccess,
-}) async {
-  final overrideError = await runner.applyConnectionOverride(arguments);
-  if (overrideError != null) return _toErrorResult(overrideError);
-  final result = await runner.execute(command);
-  if (!result.ok) return _toErrorResult(result);
-  return onSuccess != null
-      ? onSuccess(result.data)
-      : CallToolResult(
-          content: [TextContent(text: jsonEncode(result.data))],
-        );
-}
-
-/// Serialises a [CoreResult] failure to a structured MCP error result.
-///
-/// The text content is the JSON-encoded [CoreError] envelope:
-/// `{code, message, details, descriptor, recovery}` — the shape that MCP
-/// clients parse.
-CallToolResult _toErrorResult(final CoreResult result) => CallToolResult(
-  isError: true,
-  content: [TextContent(text: jsonEncode(result.toErrorEnvelopeJson()))],
-);
-
-// ---------------------------------------------------------------------------
-// Argument coercion helpers.
-// ---------------------------------------------------------------------------
-
-/// Returns the string value of [raw] trimmed, or null if absent/non-string.
-String? _stringArgOrNull(final Object? raw) {
-  if (raw is! String) return null;
-  final trimmed = raw.trim();
-  return trimmed.isEmpty ? null : trimmed;
-}
-
-/// Returns the int value of [raw], or null if absent, non-numeric, or zero.
-///
-/// Zero is treated as absent for legacy parity (`snapshotId == 0` means "not
-/// provided" in the wire protocol).
-int? _intArgOrNull(final Object? raw) {
-  final value = switch (raw) {
-    final int v => v,
-    final num v when v == v.toInt() => v.toInt(),
-    _ => null,
-  };
-  if (value == null || value == 0) return null;
-  return value;
-}
-
-/// Returns the double value of [raw], or [defaultValue] if absent/non-numeric.
-double _doubleArgOrDefault(final Object? raw, final double defaultValue) {
-  if (raw == null) return defaultValue;
-  if (raw is num) return raw.toDouble();
-  return defaultValue;
-}
-
-/// Returns the bool value of [raw], or false if absent/non-bool.
-bool _boolArgOrFalse(final Object? raw) {
-  if (raw is bool) return raw;
-  return false;
-}
