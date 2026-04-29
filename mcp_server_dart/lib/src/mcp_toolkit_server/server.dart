@@ -300,6 +300,13 @@ Connect to a running Flutter app on debug mode to use these features.
         services: <Type, HostService>{
           CommandRunner: DefaultCommandRunner(executor: coreCommandExecutor),
         },
+        config: CapabilityConfig(
+          values: <String, Object?>{
+            'dumps_supported': configuration.dumpsSupported,
+            'resources_supported': configuration.resourcesSupported,
+            'images_supported': configuration.imagesSupported,
+          },
+        ),
       );
     }
   }

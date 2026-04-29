@@ -3,6 +3,27 @@ import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_server/host.dart';
 import 'package:mcp_capability_kernel/mcp_capability_kernel.dart';
 import 'package:test/test.dart';
 
+// Capability that captures the CapabilityConfig it sees during register().
+final class _ConfigCapturingCapability implements Capability {
+  _ConfigCapturingCapability(this._onConfig);
+  final void Function(CapabilityConfig config) _onConfig;
+
+  @override
+  String get id => 'cfg';
+  @override
+  String get description => 'config capturing';
+  @override
+  String get version => '0.0.0';
+
+  @override
+  Future<void> register(final CapabilityContext context) async {
+    _onConfig(context.config);
+  }
+
+  @override
+  Future<void> dispose() async {}
+}
+
 final class _FakeCapability implements Capability {
   _FakeCapability({
     required this.id,
@@ -237,6 +258,33 @@ void main() {
       expect(disposed, containsAll(<String>['a', 'b', 'c']));
       // State is cleared even after the throw.
       expect(host.toolNames, isEmpty);
+    });
+
+    test('capability sees config values when McpHost is constructed with config',
+        () async {
+      CapabilityConfig? captured;
+      final host = McpHost(
+        config: CapabilityConfig(
+          values: <String, Object?>{'dumps_supported': true},
+        ),
+      );
+      await host.registerCapability(
+        _ConfigCapturingCapability((final cfg) => captured = cfg),
+      );
+      expect(captured, isNotNull);
+      expect(captured!.getBool('dumps_supported'), isTrue);
+    });
+
+    test('capability sees empty config when McpHost is constructed with no config',
+        () async {
+      CapabilityConfig? captured;
+      final host = McpHost();
+      await host.registerCapability(
+        _ConfigCapturingCapability((final cfg) => captured = cfg),
+      );
+      expect(captured, isNotNull);
+      // Default: no values set → getBool returns defaultValue (false).
+      expect(captured!.getBool('dumps_supported'), isFalse);
     });
   });
 }

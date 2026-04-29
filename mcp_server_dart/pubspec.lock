@@ -233,6 +233,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.12.19"
+  mcp_capability_core:
+    dependency: "direct main"
+    description:
+      path: "../mcp_capability_core"
+      relative: true
+    source: path
+    version: "0.1.0"
   mcp_capability_kernel:
     dependency: "direct main"
     description:

@@ -192,6 +192,13 @@ packages:
       relative: true
     source: path
     version: "0.1.0"
+  mcp_shared_core:
+    dependency: "direct main"
+    description:
+      path: "../mcp_shared_core"
+      relative: true
+    source: path
+    version: "0.1.0"
   meta:
     dependency: "direct main"
     description:

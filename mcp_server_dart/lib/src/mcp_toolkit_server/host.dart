@@ -9,10 +9,14 @@ import 'package:mcp_capability_kernel/mcp_capability_kernel.dart';
 /// Per-host registry of loaded [Capability] instances and the tools/resources
 /// they registered.
 final class McpHost {
-  McpHost({final Map<Type, HostService>? services})
-    : _services = services ?? const <Type, HostService>{};
+  McpHost({
+    final Map<Type, HostService>? services,
+    final CapabilityConfig? config,
+  }) : _services = services ?? const <Type, HostService>{},
+       _config = config ?? const CapabilityConfig();
 
   final Map<Type, HostService> _services;
+  final CapabilityConfig _config;
   final Map<String, _LoadedCapability> _capabilities =
       <String, _LoadedCapability>{};
   final Map<String, _RegisteredTool> _tools = <String, _RegisteredTool>{};
@@ -118,7 +122,7 @@ final class _HostCapabilityContext implements CapabilityContext {
   String get capabilityId => capability.id;
 
   @override
-  CapabilityConfig get config => const CapabilityConfig();
+  CapabilityConfig get config => host._config;
 
   @override
   void registerTool(final ToolRegistration registration) {

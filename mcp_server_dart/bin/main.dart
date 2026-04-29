@@ -9,6 +9,7 @@ import 'package:args/args.dart';
 import 'package:async/async.dart';
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_inspector_mcp_server/flutter_mcp_server.dart';
+import 'package:mcp_capability_core/mcp_capability_core.dart';
 import 'package:stream_channel/stream_channel.dart';
 
 Future<void> main(final List<String> args) async {
@@ -64,6 +65,9 @@ Future<void> main(final List<String> args) async {
             ),
         configuration: configuration,
       );
+      if (configuration.useCapabilityKernel) {
+        await server.capabilityHost!.registerCapability(const CoreCapability());
+      }
       await server.handleSetLevel(
         SetLevelRequest(
           level: switch (configuration.logLevel) {

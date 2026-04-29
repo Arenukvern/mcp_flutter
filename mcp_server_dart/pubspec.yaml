@@ -24,6 +24,8 @@ dependencies:
   is_dart_empty_or_not: ^0.4.0
   json_rpc_2: ^4.1.0
   logging: ^1.3.0
+  mcp_capability_core:
+    path: ../mcp_capability_core
   mcp_capability_kernel:
     path: ../mcp_capability_kernel
   mcp_shared_core:
