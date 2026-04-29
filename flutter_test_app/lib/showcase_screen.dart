@@ -160,6 +160,12 @@ class _Section extends StatelessWidget {
         Semantics(
           identifier: headingSemanticsId,
           header: true,
+          // Make the heading its own semantic container so the next-sibling
+          // body widget (toggle row, slider, list, ...) can't fold its
+          // interactive node into the heading. Without this, the toggle in
+          // _ToggleSection would surface as role:"header" + actions:["tap"]
+          // instead of role:"switch".
+          container: true,
           child: Text(heading, style: _kHeading),
         ),
         const SizedBox(height: 20),
