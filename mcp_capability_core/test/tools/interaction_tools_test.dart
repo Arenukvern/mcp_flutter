@@ -4,37 +4,11 @@ import 'dart:convert';
 import 'package:dart_mcp/server.dart';
 import 'package:mcp_capability_core/src/tools/interaction_tools.dart';
 import 'package:mcp_capability_kernel/mcp_capability_kernel.dart';
+import 'package:mcp_capability_kernel/testing.dart';
 import 'package:mcp_shared_core/mcp_shared_core.dart';
 import 'package:test/test.dart';
 
 import '../_test_helpers.dart';
-
-// ---------------------------------------------------------------------------
-// Fake CommandRunner for unit tests.
-// ---------------------------------------------------------------------------
-
-final class _FakeCommandRunner implements CommandRunner {
-  final List<CoreCommand> executedCommands = <CoreCommand>[];
-  final List<Map<String, Object?>?> overrideArguments =
-      <Map<String, Object?>?>[];
-
-  CoreResult nextExecuteResult = CoreResult.success(data: {'tapped': true});
-  CoreResult? nextOverrideResult; // null = no error
-
-  @override
-  Future<CoreResult> execute(final CoreCommand command) async {
-    executedCommands.add(command);
-    return nextExecuteResult;
-  }
-
-  @override
-  Future<CoreResult?> applyConnectionOverride(
-    final Map<String, Object?>? arguments,
-  ) async {
-    overrideArguments.add(arguments);
-    return nextOverrideResult;
-  }
-}
 
 void main() {
   group('interaction tools — tap_widget', () {
@@ -42,7 +16,7 @@ void main() {
       final ctx = FakeCapabilityContext(
         capabilityId: 'core',
         services: <Type, HostService>{
-          CommandRunner: _FakeCommandRunner(),
+          CommandRunner: FakeCommandRunner(),
         },
       );
       registerInteractionTools(ctx);
@@ -59,7 +33,7 @@ void main() {
       final ctx = FakeCapabilityContext(
         capabilityId: 'core',
         services: <Type, HostService>{
-          CommandRunner: _FakeCommandRunner(),
+          CommandRunner: FakeCommandRunner(),
         },
       );
       registerInteractionTools(ctx);
@@ -79,7 +53,7 @@ void main() {
       final ctx = FakeCapabilityContext(
         capabilityId: 'core',
         services: <Type, HostService>{
-          CommandRunner: _FakeCommandRunner(),
+          CommandRunner: FakeCommandRunner(),
         },
       );
       registerInteractionTools(ctx);
@@ -98,7 +72,7 @@ void main() {
     });
 
     test('tap_widget handler delegates to CommandRunner.execute', () async {
-      final fakeRunner = _FakeCommandRunner();
+      final fakeRunner = FakeCommandRunner();
       final ctx = FakeCapabilityContext(
         capabilityId: 'core',
         services: <Type, HostService>{CommandRunner: fakeRunner},
@@ -123,7 +97,7 @@ void main() {
     });
 
     test('tap_widget handler omits snapshotId when not provided', () async {
-      final fakeRunner = _FakeCommandRunner();
+      final fakeRunner = FakeCommandRunner();
       final ctx = FakeCapabilityContext(
         capabilityId: 'core',
         services: <Type, HostService>{CommandRunner: fakeRunner},
@@ -143,7 +117,7 @@ void main() {
 
     test('tap_widget handler treats snapshotId == 0 as absent (legacy parity)',
         () async {
-      final fakeRunner = _FakeCommandRunner();
+      final fakeRunner = FakeCommandRunner();
       final ctx = FakeCapabilityContext(
         capabilityId: 'core',
         services: <Type, HostService>{CommandRunner: fakeRunner},
@@ -162,7 +136,7 @@ void main() {
 
     test('tap_widget handler calls applyConnectionOverride before execute',
         () async {
-      final fakeRunner = _FakeCommandRunner();
+      final fakeRunner = FakeCommandRunner();
       final ctx = FakeCapabilityContext(
         capabilityId: 'core',
         services: <Type, HostService>{CommandRunner: fakeRunner},
@@ -182,7 +156,7 @@ void main() {
 
     test('tap_widget handler short-circuits on connection override failure',
         () async {
-      final fakeRunner = _FakeCommandRunner()
+      final fakeRunner = FakeCommandRunner()
         ..nextOverrideResult = CoreResult.failure(
           code: CoreErrorCode.connectFailed,
           message: 'No app running on port 9999',
@@ -210,13 +184,14 @@ void main() {
       final json = jsonDecode(text) as Map<String, Object?>;
       expect(json['code'], equals(CoreErrorCode.connectFailed));
       expect(json.containsKey('message'), isTrue);
+      expect(json.containsKey('details'), isTrue);
       expect(json.containsKey('descriptor'), isTrue);
       expect(json.containsKey('recovery'), isTrue);
     });
 
     test('tap_widget handler returns structured error envelope on execute failure',
         () async {
-      final fakeRunner = _FakeCommandRunner()
+      final fakeRunner = FakeCommandRunner()
         ..nextExecuteResult = CoreResult.failure(
           code: CoreErrorCode.interactionFailed,
           message: 'Widget not found',
@@ -238,6 +213,7 @@ void main() {
       final json = jsonDecode(text) as Map<String, Object?>;
       expect(json['code'], equals(CoreErrorCode.interactionFailed));
       expect(json['message'], equals('Widget not found'));
+      expect(json.containsKey('details'), isTrue);
       expect(json.containsKey('descriptor'), isTrue);
       expect(json.containsKey('recovery'), isTrue);
     });
