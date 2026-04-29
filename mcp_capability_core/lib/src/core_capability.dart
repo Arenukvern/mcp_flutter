@@ -1,11 +1,13 @@
 // mcp_capability_core/lib/src/core_capability.dart
 import 'package:mcp_capability_kernel/mcp_capability_kernel.dart';
 
+import 'tools/form_tools.dart';
 import 'tools/inspection_tools.dart';
 import 'tools/interaction_tools.dart';
 import 'tools/log_tools.dart';
 import 'tools/navigation_tools.dart';
 import 'tools/semantic_tools.dart';
+import 'tools/wait_tools.dart';
 
 /// The core MCP capability for Flutter inspection and Playwright-parity
 /// interaction.
@@ -29,6 +31,8 @@ final class CoreCapability implements Capability {
     registerLogTools(context);
     registerSemanticTools(context);
     registerInspectionTools(context);
+    registerWaitTools(context);
+    registerFormTools(context);
   }
 
   @override
