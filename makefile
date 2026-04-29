@@ -28,3 +28,8 @@ release-artifacts:
 .PHONY: showcase
 showcase:
 	@bash $(CURDIR)/scripts/run_showcase.sh
+
+.PHONY: sync-skills
+sync-skills:
+	dart run mcp_server_dart/tool/build_skill_assets.dart
+	@echo "OK: skill assets regenerated"

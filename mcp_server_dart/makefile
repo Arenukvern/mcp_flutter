@@ -62,3 +62,7 @@ docker-help:
 	@echo "  make docker-clean       - Remove Docker images"
 	@echo ""
 	@echo "For more details, see DOCKER.md"
+
+.PHONY: sync-skills
+sync-skills:
+	cd .. && dart run mcp_server_dart/tool/build_skill_assets.dart
