@@ -4,7 +4,9 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 # CoreErrorCode moved to mcp_shared_core — this is the canonical source of truth.
 ERROR_CODES_FILE="$ROOT_DIR/mcp_shared_core/lib/src/types/error_codes.dart"
-PLAYBOOK_FILE="$ROOT_DIR/docs/core/error_code_playbook.mdx"
+# Playbook content lives in the debug skill body (v3.0.0+). The deleted
+# docs/core/error_code_playbook.mdx is superseded — its content migrated here.
+PLAYBOOK_FILE="$ROOT_DIR/plugin/skills/flutter-mcp-toolkit-debug/SKILL.md"
 
 if [[ ! -f "$PLAYBOOK_FILE" ]]; then
   echo "Missing playbook file: $PLAYBOOK_FILE" >&2
