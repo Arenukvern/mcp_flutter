@@ -2,29 +2,28 @@
 
 import 'dart:async';
 
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:flutter_live_edit_toolkit/flutter_live_edit_toolkit.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 import 'package:test_app/agent_state.dart';
-import 'package:test_app/live_edit_codex_fixture.dart';
 import 'package:test_app/showcase_screen.dart';
-
-final FlutterLiveEditAutoConfig _liveEditConfig =
-    FlutterLiveEditAutoConfig.fromEnvironment(appId: 'test_app');
 
 var _initialEntriesRegistered = false;
 var _delayedEntriesRegistered = false;
 
 Future<void> main({final bool enableDelayedMcpRegistration = true}) async {
-  await bootstrapFlutterLiveEditApp(
-    config: _liveEditConfig,
-    registerInitialEntries: _registerInitialMCPTools,
-    registerDelayedEntries: enableDelayedMcpRegistration
-        ? _registerDelayedMCPTools
-        : null,
-    runApp: () => runApp(const MyApp()),
-  );
+  WidgetsFlutterBinding.ensureInitialized();
+  MCPToolkitBinding.instance
+    ..initialize()
+    ..initializeFlutterToolkit();
+
+  await _registerInitialMCPTools();
+  if (enableDelayedMcpRegistration) {
+    // Mirror the previous bootstrap timing: a brief delay so a remote
+    // observer can witness the dynamic-registry update event.
+    Future.delayed(const Duration(seconds: 2), _registerDelayedMCPTools);
+  }
+
+  runApp(const MyApp());
 }
 
 // ---- MCP tool registrations (kept from previous demo) ------------------------
@@ -164,40 +163,6 @@ class MyApp extends StatelessWidget {
       useMaterial3: true,
       scaffoldBackgroundColor: const Color(0xFFFAFAFA),
     ),
-    // FlutterLiveEditAutoHost reaches into `dart:io` (Directory.systemTemp) on
-    // init, which throws UnsupportedOperation on web and leaves the whole app
-    // subtree replaced by an error widget (breaking the showcase + semantics).
-    // Skip it on web until live-edit grows a web-safe worktree service.
-    home: kIsWeb
-        ? _HomeRoute(testMode: _liveEditConfig.testMode)
-        : FlutterLiveEditAutoHost(
-            config: _liveEditConfig,
-            child: _HomeRoute(testMode: _liveEditConfig.testMode),
-          ),
+    home: const ShowcaseScreen(),
   );
-}
-
-class _HomeRoute extends StatelessWidget {
-  const _HomeRoute({required this.testMode});
-
-  final bool testMode;
-
-  @override
-  Widget build(final BuildContext context) {
-    if (!testMode) return const ShowcaseScreen();
-    // Test mode: keep the codex fixture reachable above the showcase so
-    // live-edit integration tests keep finding their fixed anchors.
-    return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
-      body: Column(
-        children: const <Widget>[
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-            child: LiveEditCodexFixture(),
-          ),
-          Expanded(child: ShowcaseScreen()),
-        ],
-      ),
-    );
-  }
 }

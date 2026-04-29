@@ -205,7 +205,9 @@ void main() {
         expect(inspectData['hit'], isA<bool>());
         expect(inspectData['summary'], isA<Map>());
 
-        final dynamicList = await _waitForDynamicTool('get_app_ui_state');
+        final dynamicList = await _waitForDynamicTool(
+          'get_agent_showcase_state',
+        );
         expect(dynamicList['ok'], isTrue);
         final dynamicData = dynamicList['data'] as Map<String, dynamic>;
         final appStateResourceUri = _findResourceUri(
@@ -219,7 +221,7 @@ void main() {
           '--name',
           'runClientTool',
           '--args',
-          '{"toolName":"get_app_ui_state","arguments":{}}',
+          '{"toolName":"get_agent_showcase_state","arguments":{}}',
         ]);
         expect(runTool['ok'], isTrue);
 
@@ -237,16 +239,27 @@ void main() {
         expect('${resourceData['mimeType'] ?? ''}'.trim(), isNotEmpty);
         final decodedResource = _tryDecodeJsonMap(content);
         expect(decodedResource, isNotNull);
+        // Showcase AgentState.snapshot() keys (post-v3.0.0 cleanup of the
+        // flutter_test_app to drop flutter_live_edit_toolkit deps).
+        final agentSnapshotKeys = <String>[
+          'counter',
+          'greeting',
+          'toggle',
+          'slider',
+          'lastLog',
+        ];
         final parameters = decodedResource!['parameters'];
         if (parameters is Map) {
           final params = parameters.cast<String, dynamic>();
           expect(
-            params.containsKey('appName') || params.containsKey('isConnected'),
+            agentSnapshotKeys.any(params.containsKey),
             isTrue,
+            reason:
+                'expected at least one of $agentSnapshotKeys in parameters',
           );
         } else {
           expect(
-            decodedResource.containsKey('appName') ||
+            agentSnapshotKeys.any(decodedResource.containsKey) ||
                 decodedResource.containsKey('message'),
             isTrue,
           );
@@ -322,13 +335,16 @@ void main() {
           '{"count":4,"includeSummary":false}',
         ]);
         expect(explain['ok'], isTrue);
+        // The simplified showcase has no auto-firing fixture errors. Just
+        // assert the envelope shape is valid (causes is a list, possibly
+        // empty). A specific cause code (e.g. render_flex_overflow) used to
+        // be expected here when the live-edit codex fixture was wired in;
+        // that fixture is gone in v3.0.0.
         final causes =
-            ((explain['data'] as Map<String, dynamic>)['causes'] as List)
+            (((explain['data'] as Map<String, dynamic>)['causes'] as List?) ??
+                    const [])
                 .cast<Map<String, dynamic>>();
-        expect(
-          causes.any((final cause) => cause['code'] == 'render_flex_overflow'),
-          isTrue,
-        );
+        expect(causes, isA<List<Map<String, dynamic>>>());
 
         final sessionEnd = await _runCli([
           'exec',
@@ -347,6 +363,195 @@ void main() {
           '{}',
         ]);
         expect(hotReload['ok'], isTrue);
+      },
+    );
+
+    test(
+      'every catalog command exec\'s against the live showcase',
+      skip: runIntegration ? false : 'Set RUN_FLUTTER_CLI_INTEGRATION=1 to run',
+      timeout: const Timeout(Duration(minutes: 12)),
+      () async {
+        // Wire-surface smoke for every CLI catalog command. Like its MCP
+        // counterpart, this asserts that exec dispatches and returns a
+        // well-formed envelope — `ok: true` for tools that can succeed
+        // standalone, `ok: false` with an error envelope for tools that
+        // need preconditions the showcase doesn't satisfy (e.g. no dialog
+        // open for handle_dialog). Both shapes prove wiring.
+        Future<Map<String, dynamic>> exec(
+          final String name,
+          final Object args, {
+          final bool requireOk = false,
+        }) async {
+          final raw = await _runCliRaw([
+            'exec',
+            '--name',
+            name,
+            '--args',
+            args is String ? args : jsonEncode(args),
+          ]);
+          expect(
+            raw.envelope.containsKey('ok'),
+            isTrue,
+            reason: '$name envelope missing top-level ok field',
+          );
+          if (requireOk) {
+            expect(
+              raw.envelope['ok'],
+              isTrue,
+              reason: '$name expected ok=true, got: ${raw.envelope}',
+            );
+          }
+          return raw.envelope;
+        }
+
+        final connection = {'uri': _globalVmServiceWsUri};
+        final connArgs = jsonEncode({'connection': connection});
+
+        // 1. semantic_snapshot — must succeed; provides refs.
+        final snap = await exec(
+          'semantic_snapshot',
+          connArgs,
+          requireOk: true,
+        );
+        final snapData = snap['data'] as Map<String, dynamic>;
+        final refs = ((snapData['nodes'] as List?) ?? const [])
+            .whereType<Map>()
+            .map((final n) => '${n['ref'] ?? ''}')
+            .where((final r) => r.isNotEmpty)
+            .toList();
+        expect(refs, isNotEmpty);
+        final snapshotId = snapData['snapshot_id'] as int?;
+        final firstRef = refs.first;
+        final secondRef = refs.length > 1 ? refs[1] : firstRef;
+
+        // 2. inspector / VM / discovery — must succeed.
+        await exec('get_vm', '{}', requireOk: true);
+        await exec('get_extension_rpcs', '{}', requireOk: true);
+        await exec('discover_debug_apps', '{}', requireOk: true);
+        await exec('get_app_errors', {'count': 1}, requireOk: true);
+        await exec('get_view_details', '{}', requireOk: true);
+        await exec(
+          'get_screenshots',
+          {
+            'connection': connection,
+            'compress': true,
+            'mode': 'flutter_layer',
+          },
+          requireOk: true,
+        );
+        await exec(
+          'capture_ui_snapshot',
+          {
+            'connection': connection,
+            'errorsCount': 1,
+            'compress': true,
+            'includeViewDetails': true,
+            'includeErrors': true,
+            'screenshotMode': 'flutter_layer',
+          },
+          requireOk: true,
+        );
+        await exec('inspect_widget_at_point', {
+          'x': 120,
+          'y': 220,
+          'connection': connection,
+        }, requireOk: true);
+
+        // 3. interaction layer.
+        await exec('tap_widget', {
+          'ref': firstRef,
+          if (snapshotId != null) 'snapshotId': snapshotId,
+          'connection': connection,
+        });
+        await exec('long_press', {
+          'ref': firstRef,
+          if (snapshotId != null) 'snapshotId': snapshotId,
+          'connection': connection,
+        });
+        await exec('enter_text', {
+          'ref': firstRef,
+          'text': 'hi',
+          if (snapshotId != null) 'snapshotId': snapshotId,
+          'connection': connection,
+        });
+        await exec('scroll', {
+          'direction': 'down',
+          if (snapshotId != null) 'snapshotId': snapshotId,
+          'connection': connection,
+        });
+        await exec('swipe', {
+          'direction': 'up',
+          if (snapshotId != null) 'snapshotId': snapshotId,
+          'connection': connection,
+        });
+        await exec('drag', {
+          'fromRef': firstRef,
+          'toRef': secondRef,
+          if (snapshotId != null) 'snapshotId': snapshotId,
+          'connection': connection,
+        });
+        await exec('hover', {
+          'ref': firstRef,
+          if (snapshotId != null) 'snapshotId': snapshotId,
+          'connection': connection,
+        });
+        await exec('press_key', {
+          'key': 'Tab',
+          'connection': connection,
+        });
+
+        // 4. control flow.
+        await exec('handle_dialog', {
+          'action': 'dismiss',
+          'connection': connection,
+        });
+        await exec('navigate', {
+          'action': 'pop',
+          'connection': connection,
+        });
+
+        // 5. wait / forms.
+        await exec(
+          'wait_for',
+          {
+            'predicate': {'kind': 'time', 'ms': 50},
+            'connection': connection,
+          },
+          requireOk: true,
+        );
+        await exec('fill_form', {
+          'fields': <Map<String, Object?>>[
+            {'ref': firstRef, 'text': 'a'},
+          ],
+          if (snapshotId != null) 'snapshotId': snapshotId,
+          'connection': connection,
+        });
+
+        // 6. logs + runtime introspection.
+        await exec(
+          'get_recent_logs',
+          {'connection': connection, 'count': 5},
+          requireOk: true,
+        );
+        await exec(
+          'evaluate_dart_expression',
+          {'expression': '1 + 1', 'connection': connection},
+          requireOk: true,
+        );
+
+        // 7. hot_reload_and_capture — must succeed.
+        await exec(
+          'hot_reload_and_capture',
+          {'connection': connection, 'errorsCount': 1},
+          requireOk: true,
+        );
+
+        // 8. hot_restart_flutter LAST (destructive — resets app state).
+        await exec(
+          'hot_restart_flutter',
+          '{}',
+          requireOk: true,
+        );
       },
     );
   });
