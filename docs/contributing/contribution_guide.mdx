@@ -27,6 +27,18 @@ We welcome contributions to the Flutter MCP Toolkit! Please feel free to submit 
     dart test
     ```
 
+### Editing skills
+
+Skill bodies are the canonical source of AI-agent guidance, located in
+`plugin/skills/<skill-id>/SKILL.md`. After editing any skill:
+
+```bash
+make sync-skills   # regenerates mcp_server_dart/lib/src/skill_assets.g.dart
+```
+
+CI fails if the generated file is out of sync with `plugin/`. Commit both the
+`SKILL.md` change and the regenerated `skill_assets.g.dart`.
+
 ### Pull Requests
 
 Before submitting a pull request, please make sure that:
