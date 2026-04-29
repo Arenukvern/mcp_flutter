@@ -6,6 +6,25 @@
 
 Strict hard-cut release focused on reliability and machine contracts.
 
+### BREAKING: MCP tool names now carry the `core_` capability prefix
+
+All MCP tools surface as `core_<bare-name>` (e.g. `core_tap_widget`,
+`core_hot_reload_and_capture`). Legacy unprefixed names return
+`tool_not_found`. The CLI catalog (`flutter_mcp_cli exec --name <name>`)
+keeps the bare names — only the MCP wire surface changed. Dynamic-registry
+host tools and `visual://` resource URIs are unchanged.
+
+The server composes its tool surface from `Capability` instances loaded
+into an `McpHost` registry; the host applies the prefix and forwards every
+registration to `dart_mcp`'s `ToolsSupport` via `DartMcpDispatchBridge`.
+The locked v3.0.0 surface lives at
+`tool/contracts/expected_tool_surface.txt` and is enforced by
+`test/tool_surface_snapshot_test.dart`.
+
+See the root `CHANGELOG.md` for the full v2→v3 rename table.
+
+### Other v3.0.0 changes
+
 - Added `flutter_mcp_cli doctor [--json] [--target <path>] [--timeout-ms <n>]`.
 - Added safe-write flags for `snapshot create` and `bundle create`:
   `--check`, `--diff`, `--backup`, `--no-overwrite`.

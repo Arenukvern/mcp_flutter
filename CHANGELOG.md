@@ -1,4 +1,72 @@
-## Unreleased
+## 3.0.0
+
+### BREAKING: MCP tool names are now prefixed by capability id
+
+All MCP tools surface under the `core_` capability prefix. Calls to legacy
+unprefixed names return `tool_not_found`. The CLI catalog vocabulary is
+unchanged — `flutter_mcp_cli exec --name <name>` still uses the bare
+names.
+
+| v2 (legacy) | v3 (MCP `tools/call` name) |
+| --- | --- |
+| `tap_widget` | `core_tap_widget` |
+| `enter_text` | `core_enter_text` |
+| `scroll` | `core_scroll` |
+| `long_press` | `core_long_press` |
+| `swipe` | `core_swipe` |
+| `drag` | `core_drag` |
+| `hover` | `core_hover` |
+| `press_key` | `core_press_key` |
+| `semantic_snapshot` | `core_semantic_snapshot` |
+| `wait_for` | `core_wait_for` |
+| `fill_form` | `core_fill_form` |
+| `navigate` | `core_navigate` |
+| `handle_dialog` | `core_handle_dialog` |
+| `connect_debug_app` | `core_connect_debug_app` |
+| `discover_debug_apps` | `core_discover_debug_apps` |
+| `get_vm` | `core_get_vm` |
+| `get_extension_rpcs` | `core_get_extension_rpcs` |
+| `hot_reload_flutter` | `core_hot_reload_flutter` |
+| `hot_restart_flutter` | `core_hot_restart_flutter` |
+| `hot_reload_and_capture` | `core_hot_reload_and_capture` |
+| `evaluate_dart_expression` | `core_evaluate_dart_expression` |
+| `get_recent_logs` | `core_get_recent_logs` |
+| `get_view_details` | `core_get_view_details` |
+| `get_app_errors` | `core_get_app_errors` |
+| `get_screenshots` | `core_get_screenshots` |
+| `capture_ui_snapshot` | `core_capture_ui_snapshot` |
+| `inspect_widget_at_point` | `core_inspect_widget_at_point` |
+| `debug_dump_layer_tree` (`--dumps`) | `core_debug_dump_layer_tree` |
+| `debug_dump_semantics_tree` (`--dumps`) | `core_debug_dump_semantics_tree` |
+| `debug_dump_render_tree` (`--dumps`) | `core_debug_dump_render_tree` |
+| `debug_dump_focus_tree` (`--dumps`) | `core_debug_dump_focus_tree` |
+
+The dynamic-registry host trio
+(`listClientToolsAndResources`, `runClientTool`, `runClientResource`)
+stays **unprefixed** — it is server machinery, not part of the capability
+surface. Resource URIs (`visual://localhost/...`) are also unchanged.
+
+**Why.** The server now composes its tool surface from
+[`Capability`](mcp_capability_kernel/lib/src/capability.dart) instances
+loaded into an `McpHost` registry. Each capability registers its tools by
+bare name; the host applies the `<capabilityId>_` prefix and bridges the
+registration to `dart_mcp`'s `ToolsSupport`. This makes additional
+capabilities composable in v3.x without renaming churn — see
+[ARCHITECTURE.md](ARCHITECTURE.md) "MCP Server Layer (Dart-based)".
+
+The locked v3.0.0 surface is checked in at
+[`tool/contracts/expected_tool_surface.txt`](tool/contracts/expected_tool_surface.txt)
+and pinned by
+[`mcp_server_dart/test/tool_surface_snapshot_test.dart`](mcp_server_dart/test/tool_surface_snapshot_test.dart).
+
+### Removed
+
+- `flutter_live_edit/` packages and the live-edit tool surface have been
+  excised from the v3.0.0 release. Five `live_edit_*` error codes
+  (`live_edit_backend_failed`, `live_edit_proposal_not_found`,
+  `live_edit_apply_failed`, `live_edit_validation_failed`,
+  `live_edit_disabled`) are no longer emitted. Re-integration is tracked
+  in `todo/selection_state_machine.md`.
 
 ### Playwright-style interaction layer
 
