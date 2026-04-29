@@ -5,12 +5,10 @@
 //     tool surface (24 tools with dumps_supported=false, 28 with it true).
 //   - CapabilityConfig values flow from McpHost construction through the
 //     CapabilityContext to CoreCapability's conditional registration logic.
-//
-// This test does NOT go through MCPToolkitServer or dart_mcp dispatch;
-// that plumbing belongs to T5/T8. The observable invariant here is the
-// host tool registry, which is the single source of truth the server will
-// delegate to once the dispatch layer is wired.
+//   - The DartMcpDispatchBridge publishes prefixed names to the dart_mcp
+//     side and the legacy unprefixed surface is gated off (T8 cut).
 
+import 'package:dart_mcp/server.dart' as dart_mcp;
 import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_server/host.dart';
 import 'package:mcp_capability_core/mcp_capability_core.dart';
 import 'package:mcp_capability_kernel/mcp_capability_kernel.dart';
@@ -135,6 +133,37 @@ void main() {
           reason: 'Every tool must carry the "core_" capability prefix',
         );
       }
+    });
+
+    test(
+        'dispatch bridge publishes prefixed names; legacy unprefixed are absent',
+        () async {
+      // The cut codified: when capabilities register tools, they are exposed
+      // to dart_mcp under the prefixed name. Legacy unprefixed names never
+      // reach dart_mcp through the kernel — they would have to be registered
+      // by the legacy mixin path, which T8 gates off.
+      final published = <dart_mcp.Tool>[];
+      final unpublished = <String>[];
+      final host = McpHost(
+        services: <Type, HostService>{CommandRunner: FakeCommandRunner()},
+        config: CapabilityConfig(
+          values: const <String, Object?>{'dumps_supported': false},
+        ),
+        dispatchBridge: DartMcpDispatchBridge(
+          publish: (final tool, final _) => published.add(tool),
+          unpublish: unpublished.add,
+        ),
+      );
+      await host.registerCapability(const CoreCapability());
+
+      final publishedNames = published.map((final t) => t.name).toSet();
+      expect(publishedNames, containsAll(_nonDumpToolNames));
+      expect(publishedNames.length, equals(24));
+      // Sanity: the legacy unprefixed names are NOT what the kernel publishes.
+      expect(publishedNames, isNot(contains('tap_widget')));
+      expect(publishedNames, isNot(contains('enter_text')));
+      // No double-publish, and unpublish hasn't fired.
+      expect(unpublished, isEmpty);
     });
   });
 }

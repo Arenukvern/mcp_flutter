@@ -4,7 +4,28 @@
 // ignore_for_file: public_member_api_docs
 import 'dart:async';
 
+import 'package:dart_mcp/server.dart' as dart_mcp;
 import 'package:mcp_capability_kernel/mcp_capability_kernel.dart';
+
+/// Bridge contract used by [McpHost] to publish prefixed capability tools to
+/// `dart_mcp`'s [dart_mcp.ToolsSupport]. Production wiring passes the
+/// [MCPToolkitServer] itself; tests can pass a fake.
+typedef DartMcpToolPublisher = void Function(
+  dart_mcp.Tool tool,
+  FutureOr<dart_mcp.CallToolResult> Function(dart_mcp.CallToolRequest) impl,
+);
+
+/// Counterpart to [DartMcpToolPublisher] used by [McpHost] to roll back
+/// publications when a capability's [Capability.register] throws partway.
+typedef DartMcpToolUnpublisher = void Function(String name);
+
+/// Bundle of publish + unpublish hooks. Either both must be provided or
+/// neither — passing only one defeats rollback.
+final class DartMcpDispatchBridge {
+  const DartMcpDispatchBridge({required this.publish, required this.unpublish});
+  final DartMcpToolPublisher publish;
+  final DartMcpToolUnpublisher unpublish;
+}
 
 /// Per-host registry of loaded [Capability] instances and the tools/resources
 /// they registered.
@@ -12,11 +33,14 @@ final class McpHost {
   McpHost({
     final Map<Type, HostService>? services,
     final CapabilityConfig? config,
+    final DartMcpDispatchBridge? dispatchBridge,
   }) : _services = services ?? const <Type, HostService>{},
-       _config = config ?? const CapabilityConfig();
+       _config = config ?? const CapabilityConfig(),
+       _bridge = dispatchBridge;
 
   final Map<Type, HostService> _services;
   final CapabilityConfig _config;
+  final DartMcpDispatchBridge? _bridge;
   final Map<String, _LoadedCapability> _capabilities =
       <String, _LoadedCapability>{};
   final Map<String, _RegisteredTool> _tools = <String, _RegisteredTool>{};
@@ -36,10 +60,14 @@ final class McpHost {
     try {
       await capability.register(ctx);
     } on Object catch (_) {
-      // Roll back any tools registered before the throw.
-      _tools.removeWhere(
-        (final fullName, _) => fullName.startsWith(prefix),
-      );
+      // Roll back any tools registered before the throw, including from
+      // dart_mcp dispatch (so partial publication can't survive the failure).
+      final unpublish = _bridge?.unpublish;
+      _tools.removeWhere((final fullName, _) {
+        if (!fullName.startsWith(prefix)) return false;
+        if (unpublish != null) unpublish(fullName);
+        return true;
+      });
       rethrow;
     } finally {
       ctx.sealed = true;
@@ -69,6 +97,18 @@ final class McpHost {
       capabilityId: capabilityId,
       registration: registration,
     );
+    final bridge = _bridge;
+    if (bridge != null) {
+      bridge.publish(
+        dart_mcp.Tool(
+          name: fullName,
+          description: registration.description,
+          inputSchema:
+              dart_mcp.ObjectSchema.fromMap(registration.inputSchema),
+        ),
+        registration.handler,
+      );
+    }
   }
 
   T _require<T extends HostService>() {
@@ -91,6 +131,12 @@ final class McpHost {
       }
     }
     _capabilities.clear();
+    final unpublish = _bridge?.unpublish;
+    if (unpublish != null) {
+      for (final fullName in _tools.keys) {
+        unpublish(fullName);
+      }
+    }
     _tools.clear();
     if (errors.isNotEmpty) {
       throw StateError(

@@ -307,6 +307,10 @@ Connect to a running Flutter app on debug mode to use these features.
             'images_supported': configuration.imagesSupported,
           },
         ),
+        dispatchBridge: DartMcpDispatchBridge(
+          publish: registerTool,
+          unpublish: unregisterTool,
+        ),
       );
     }
   }

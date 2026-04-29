@@ -41,6 +41,26 @@ base mixin FlutterInspector
       logger: 'FlutterInspector',
     );
 
+    // T8: when --use-capability-kernel is on, the kernel publishes the
+    // prefixed `core_*` tool surface via DartMcpDispatchBridge. Legacy
+    // unprefixed tool registrations are suppressed here to avoid duplicate
+    // logical exposure. Resources (addResource below) are NOT gated — the
+    // kernel does not yet publish resources (T9+), and the legacy resource
+    // surface is host-side machinery the cut intentionally preserves.
+    if (configuration.useCapabilityKernel) {
+      log(
+        LoggingLevel.debug,
+        'Capability kernel active; skipping legacy tool registrations',
+        logger: 'FlutterInspector',
+      );
+      // Smart registration of resources (or fallback resource-as-tools) still
+      // runs below; the kernel cut covers tools only.
+      if (configuration.resourcesSupported) {
+        _registerResources();
+      }
+      return super.initialize(request);
+    }
+
     // Register core tools
     log(
       LoggingLevel.debug,
