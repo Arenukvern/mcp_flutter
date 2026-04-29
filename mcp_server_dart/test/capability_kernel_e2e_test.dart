@@ -27,48 +27,48 @@ McpHost _makeHost({final bool dumpsSupported = false}) => McpHost(
 // All 27 non-dump tool bare names registered by CoreCapability.
 const _nonDumpToolNames = <String>[
   // flutter_inspector_tools (6)
-  'core_hot_reload_flutter',
-  'core_hot_restart_flutter',
-  'core_connect_debug_app',
-  'core_discover_debug_apps',
-  'core_get_vm',
-  'core_get_extension_rpcs',
+  'fmt_hot_reload_flutter',
+  'fmt_hot_restart_flutter',
+  'fmt_connect_debug_app',
+  'fmt_discover_debug_apps',
+  'fmt_get_vm',
+  'fmt_get_extension_rpcs',
   // interaction_tools (10)
-  'core_tap_widget',
-  'core_enter_text',
-  'core_scroll',
-  'core_long_press',
-  'core_swipe',
-  'core_drag',
-  'core_hover',
-  'core_press_key',
-  'core_evaluate_dart_expression',
-  'core_hot_reload_and_capture',
+  'fmt_tap_widget',
+  'fmt_enter_text',
+  'fmt_scroll',
+  'fmt_long_press',
+  'fmt_swipe',
+  'fmt_drag',
+  'fmt_hover',
+  'fmt_press_key',
+  'fmt_evaluate_dart_expression',
+  'fmt_hot_reload_and_capture',
   // navigation_tools (2)
-  'core_handle_dialog',
-  'core_navigate',
+  'fmt_handle_dialog',
+  'fmt_navigate',
   // log_tools (1)
-  'core_get_recent_logs',
+  'fmt_get_recent_logs',
   // semantic_tools (1)
-  'core_semantic_snapshot',
+  'fmt_semantic_snapshot',
   // inspection_tools (5)
-  'core_get_view_details',
-  'core_inspect_widget_at_point',
-  'core_get_app_errors',
-  'core_get_screenshots',
-  'core_capture_ui_snapshot',
+  'fmt_get_view_details',
+  'fmt_inspect_widget_at_point',
+  'fmt_get_app_errors',
+  'fmt_get_screenshots',
+  'fmt_capture_ui_snapshot',
   // wait_tools (1)
-  'core_wait_for',
+  'fmt_wait_for',
   // form_tools (1)
-  'core_fill_form',
+  'fmt_fill_form',
 ];
 
 // The 4 dump tool names that appear only when dumps_supported=true.
 const _dumpToolNames = <String>[
-  'core_debug_dump_layer_tree',
-  'core_debug_dump_semantics_tree',
-  'core_debug_dump_render_tree',
-  'core_debug_dump_focus_tree',
+  'fmt_debug_dump_layer_tree',
+  'fmt_debug_dump_semantics_tree',
+  'fmt_debug_dump_render_tree',
+  'fmt_debug_dump_focus_tree',
 ];
 
 void main() {
@@ -125,15 +125,15 @@ void main() {
       );
     });
 
-    test('all prefixed tool names start with "core_"', () async {
+    test('all prefixed tool names start with "fmt_"', () async {
       final host = _makeHost(dumpsSupported: true);
       await host.registerCapability(const CoreCapability());
 
       for (final name in host.toolNames) {
         expect(
           name,
-          startsWith('core_'),
-          reason: 'Every tool must carry the "core_" capability prefix',
+          startsWith('fmt_'),
+          reason: 'Every tool must carry the "fmt_" capability prefix',
         );
       }
     });

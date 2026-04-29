@@ -106,18 +106,18 @@ void main() {
             .whereType<Map>()
             .map((final tool) => '${tool['name']}')
             .toSet();
-        // T8: tools surface under the "core_" capability prefix; the
+        // T8: tools surface under the "fmt_" capability prefix; the
         // dynamic-registry host machinery (runClientResource) stays
         // unprefixed.
-        expect(toolNames.contains('core_discover_debug_apps'), isTrue);
-        expect(toolNames.contains('core_capture_ui_snapshot'), isTrue);
-        expect(toolNames.contains('core_inspect_widget_at_point'), isTrue);
+        expect(toolNames.contains('fmt_discover_debug_apps'), isTrue);
+        expect(toolNames.contains('fmt_capture_ui_snapshot'), isTrue);
+        expect(toolNames.contains('fmt_inspect_widget_at_point'), isTrue);
         expect(toolNames.contains('runClientResource'), isTrue);
 
         final discover = await harness.request(
           method: 'tools/call',
           params: {
-            'name': 'core_discover_debug_apps',
+            'name': 'fmt_discover_debug_apps',
             'arguments': <String, Object?>{},
           },
         );
@@ -126,7 +126,7 @@ void main() {
 
         final capture = await _callToolUntilSuccess(
           harness: harness,
-          name: 'core_capture_ui_snapshot',
+          name: 'fmt_capture_ui_snapshot',
           arguments: {
             'connection': {'uri': _globalVmServiceWsUri},
             'errorsCount': 3,
@@ -146,7 +146,7 @@ void main() {
         final inspect = await harness.request(
           method: 'tools/call',
           params: {
-            'name': 'core_inspect_widget_at_point',
+            'name': 'fmt_inspect_widget_at_point',
             'arguments': {
               'x': 120,
               'y': 220,
@@ -254,7 +254,7 @@ void main() {
     );
 
     test(
-      'every core_* MCP tool dispatches against the live showcase',
+      'every fmt_* MCP tool dispatches against the live showcase',
       skip: runIntegration ? false : 'Set RUN_FLUTTER_MCP_INTEGRATION=1 to run',
       timeout: const Timeout(Duration(minutes: 12)),
       () async {
@@ -326,7 +326,7 @@ void main() {
 
         // 1. semantic_snapshot — must succeed; provides refs for interaction
         // tools below.
-        final snapResp = await dispatch('core_semantic_snapshot', {
+        final snapResp = await dispatch('fmt_semantic_snapshot', {
           'connection': connection,
         });
         final snapData = _decodeToolJsonPayload(snapResp);
@@ -343,23 +343,23 @@ void main() {
         final snapshotId = snapData['snapshot_id'] as int?;
 
         // 2. inspector / VM tools — all should succeed.
-        await dispatch('core_get_vm', {'connection': connection});
-        await dispatch('core_get_extension_rpcs', {'connection': connection});
-        await dispatch('core_discover_debug_apps', {'connection': connection});
-        await dispatch('core_connect_debug_app', {'connection': connection});
+        await dispatch('fmt_get_vm', {'connection': connection});
+        await dispatch('fmt_get_extension_rpcs', {'connection': connection});
+        await dispatch('fmt_discover_debug_apps', {'connection': connection});
+        await dispatch('fmt_connect_debug_app', {'connection': connection});
 
         // 3. inspection / capture tools.
-        await dispatch('core_get_view_details', {'connection': connection});
-        await dispatch('core_get_app_errors', {
+        await dispatch('fmt_get_view_details', {'connection': connection});
+        await dispatch('fmt_get_app_errors', {
           'connection': connection,
           'count': 1,
         });
-        await dispatch('core_get_screenshots', {
+        await dispatch('fmt_get_screenshots', {
           'connection': connection,
           'compress': true,
           'mode': 'flutter_layer',
         });
-        await dispatch('core_capture_ui_snapshot', {
+        await dispatch('fmt_capture_ui_snapshot', {
           'connection': connection,
           'errorsCount': 2,
           'compress': true,
@@ -367,7 +367,7 @@ void main() {
           'includeErrors': true,
           'screenshotMode': 'flutter_layer',
         });
-        await dispatch('core_inspect_widget_at_point', {
+        await dispatch('fmt_inspect_widget_at_point', {
           'x': 120,
           'y': 220,
           'connection': connection,
@@ -375,12 +375,12 @@ void main() {
 
         // 4. interaction layer — refs come from the snapshot above.
         final firstRef = refs.first;
-        await dispatch('core_tap_widget', {
+        await dispatch('fmt_tap_widget', {
           'ref': firstRef,
           if (snapshotId != null) 'snapshotId': snapshotId,
           'connection': connection,
         });
-        await dispatch('core_long_press', {
+        await dispatch('fmt_long_press', {
           'ref': firstRef,
           if (snapshotId != null) 'snapshotId': snapshotId,
           'connection': connection,
@@ -389,18 +389,18 @@ void main() {
         // exposes `greeting_input_field` as one of the early refs. Schema
         // validation succeeds either way; if the runtime says "not editable"
         // we still get a structured error envelope (acceptable).
-        await dispatch('core_enter_text', {
+        await dispatch('fmt_enter_text', {
           'ref': firstRef,
           'text': 'hello',
           if (snapshotId != null) 'snapshotId': snapshotId,
           'connection': connection,
         });
-        await dispatch('core_scroll', {
+        await dispatch('fmt_scroll', {
           'direction': 'down',
           if (snapshotId != null) 'snapshotId': snapshotId,
           'connection': connection,
         });
-        await dispatch('core_swipe', {
+        await dispatch('fmt_swipe', {
           'direction': 'up',
           if (snapshotId != null) 'snapshotId': snapshotId,
           'connection': connection,
@@ -408,18 +408,18 @@ void main() {
         // drag needs two refs; if showcase only has one, reuse it (the call
         // returns a structured no-op or error which still validates wiring).
         final secondRef = refs.length > 1 ? refs[1] : firstRef;
-        await dispatch('core_drag', {
+        await dispatch('fmt_drag', {
           'fromRef': firstRef,
           'toRef': secondRef,
           if (snapshotId != null) 'snapshotId': snapshotId,
           'connection': connection,
         });
-        await dispatch('core_hover', {
+        await dispatch('fmt_hover', {
           'ref': firstRef,
           if (snapshotId != null) 'snapshotId': snapshotId,
           'connection': connection,
         });
-        await dispatch('core_press_key', {
+        await dispatch('fmt_press_key', {
           'key': 'Tab',
           'connection': connection,
         });
@@ -427,21 +427,21 @@ void main() {
         // 5. control flow — handle_dialog will likely error (no dialog open),
         // navigate may push/pop depending on showcase routes. Both still
         // exercise dispatch.
-        await dispatch('core_handle_dialog', {
+        await dispatch('fmt_handle_dialog', {
           'action': 'dismiss',
           'connection': connection,
         });
-        await dispatch('core_navigate', {
+        await dispatch('fmt_navigate', {
           'action': 'pop',
           'connection': connection,
         });
 
         // 6. wait / forms — wait_for has a fast-time predicate.
-        await dispatch('core_wait_for', {
+        await dispatch('fmt_wait_for', {
           'predicate': {'kind': 'time', 'ms': 50},
           'connection': connection,
         });
-        await dispatch('core_fill_form', {
+        await dispatch('fmt_fill_form', {
           'fields': <Map<String, Object?>>[
             {'ref': firstRef, 'text': 'a'},
           ],
@@ -450,28 +450,28 @@ void main() {
         });
 
         // 7. logs + runtime introspection.
-        await dispatch('core_get_recent_logs', {
+        await dispatch('fmt_get_recent_logs', {
           'connection': connection,
           'count': 5,
         });
-        await dispatch('core_evaluate_dart_expression', {
+        await dispatch('fmt_evaluate_dart_expression', {
           'expression': '1 + 1',
           'connection': connection,
         });
 
         // 8. fused edit/preview — runs hot reload + capture.
-        await dispatch('core_hot_reload_and_capture', {
+        await dispatch('fmt_hot_reload_and_capture', {
           'connection': connection,
           'errorsCount': 2,
         });
 
         // 9. hot reload — non-destructive.
-        await dispatch('core_hot_reload_flutter', {'connection': connection});
+        await dispatch('fmt_hot_reload_flutter', {'connection': connection});
 
         // 10. hot restart — destructive (resets app state). MUST run last.
         // After this call, refs/snapshot are stale and other tools may not
         // behave as expected — acceptable since this is the final assertion.
-        await dispatch('core_hot_restart_flutter', {'connection': connection});
+        await dispatch('fmt_hot_restart_flutter', {'connection': connection});
       },
     );
   });
@@ -480,33 +480,33 @@ void main() {
 /// Locked v3.0.0 default-config tool surface (no `--dumps`). Mirrors
 /// `tool/contracts/expected_tool_surface.txt`.
 const _expectedCoreTools = <String>{
-  'core_capture_ui_snapshot',
-  'core_connect_debug_app',
-  'core_discover_debug_apps',
-  'core_drag',
-  'core_enter_text',
-  'core_evaluate_dart_expression',
-  'core_fill_form',
-  'core_get_app_errors',
-  'core_get_extension_rpcs',
-  'core_get_recent_logs',
-  'core_get_screenshots',
-  'core_get_view_details',
-  'core_get_vm',
-  'core_handle_dialog',
-  'core_hot_reload_and_capture',
-  'core_hot_reload_flutter',
-  'core_hot_restart_flutter',
-  'core_hover',
-  'core_inspect_widget_at_point',
-  'core_long_press',
-  'core_navigate',
-  'core_press_key',
-  'core_scroll',
-  'core_semantic_snapshot',
-  'core_swipe',
-  'core_tap_widget',
-  'core_wait_for',
+  'fmt_capture_ui_snapshot',
+  'fmt_connect_debug_app',
+  'fmt_discover_debug_apps',
+  'fmt_drag',
+  'fmt_enter_text',
+  'fmt_evaluate_dart_expression',
+  'fmt_fill_form',
+  'fmt_get_app_errors',
+  'fmt_get_extension_rpcs',
+  'fmt_get_recent_logs',
+  'fmt_get_screenshots',
+  'fmt_get_view_details',
+  'fmt_get_vm',
+  'fmt_handle_dialog',
+  'fmt_hot_reload_and_capture',
+  'fmt_hot_reload_flutter',
+  'fmt_hot_restart_flutter',
+  'fmt_hover',
+  'fmt_inspect_widget_at_point',
+  'fmt_long_press',
+  'fmt_navigate',
+  'fmt_press_key',
+  'fmt_scroll',
+  'fmt_semantic_snapshot',
+  'fmt_swipe',
+  'fmt_tap_widget',
+  'fmt_wait_for',
 };
 
 String? _globalVmServiceWsUri;

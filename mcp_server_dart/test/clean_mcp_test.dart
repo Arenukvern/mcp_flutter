@@ -110,14 +110,14 @@ void main() {
               .map((final tool) => tool['name']?.toString() ?? '')
               .toSet();
 
-          // v3.0.0: tools surface under the "core_" capability prefix.
-          expect(names.contains('core_hot_reload_flutter'), isTrue);
-          expect(names.contains('core_hot_restart_flutter'), isTrue);
-          expect(names.contains('core_get_vm'), isTrue);
-          expect(names.contains('core_get_extension_rpcs'), isTrue);
-          expect(names.contains('core_discover_debug_apps'), isTrue);
-          expect(names.contains('core_inspect_widget_at_point'), isTrue);
-          expect(names.contains('core_capture_ui_snapshot'), isTrue);
+          // v3.0.0: tools surface under the "fmt_" capability prefix.
+          expect(names.contains('fmt_hot_reload_flutter'), isTrue);
+          expect(names.contains('fmt_hot_restart_flutter'), isTrue);
+          expect(names.contains('fmt_get_vm'), isTrue);
+          expect(names.contains('fmt_get_extension_rpcs'), isTrue);
+          expect(names.contains('fmt_discover_debug_apps'), isTrue);
+          expect(names.contains('fmt_inspect_widget_at_point'), isTrue);
+          expect(names.contains('fmt_capture_ui_snapshot'), isTrue);
         } finally {
           await responseSubscription.cancel();
         }
