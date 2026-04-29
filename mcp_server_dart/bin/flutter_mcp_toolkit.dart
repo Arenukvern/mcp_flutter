@@ -7,6 +7,10 @@ import 'dart:io' as io;
 import 'package:args/args.dart';
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_inspector_mcp_server/flutter_mcp_core.dart';
+import 'package:flutter_inspector_mcp_server/src/cli/init_command.dart';
+import 'package:flutter_inspector_mcp_server/src/cli/init_mode.dart';
+import 'package:flutter_inspector_mcp_server/src/cli/init_target.dart';
+import 'package:flutter_inspector_mcp_server/src/cli/codegen_init_command.dart';
 
 Future<void> main(final List<String> args) async {
   late final ArgResults parsed;
@@ -33,6 +37,13 @@ Future<void> main(final List<String> args) async {
   if (helpPath != null) {
     io.stdout.writeln(_usageForCommand(helpPath));
     io.exit(0);
+  }
+
+  if (parsed.command?.name == 'init') {
+    io.exit(await _runInitSubcommand(parsed.command!));
+  }
+  if (parsed.command?.name == 'codegen-init') {
+    io.exit(await _runCodegenInitSubcommand(parsed.command!));
   }
 
   final logLevel = _parseLogLevel(parsed.option(_logLevel));
@@ -1461,6 +1472,8 @@ String _globalUsage() {
     ..writeln('  doctor')
     ..writeln('  permissions status|request|open-settings')
     ..writeln('  validate-runtime')
+    ..writeln('  init')
+    ..writeln('  codegen-init')
     ..writeln()
     ..writeln('Global options:')
     ..writeln(_argParser.usage)
@@ -1490,6 +1503,8 @@ String _usageForCommand(final List<String> commandPath) {
     'permissions request' => _usagePermissions(),
     'permissions open-settings' => _usagePermissions(),
     'validate-runtime' => _usageValidateRuntime(),
+    'init' => _usageInit(),
+    'codegen-init' => _usageCodegenInit(),
     _ => _globalUsage(),
   };
 }
@@ -1802,6 +1817,37 @@ final _argParser = ArgParser(allowTrailingOptions: false)
         'force-skill-install',
         help: 'Replace existing skill directory when using --install-skill.',
       ),
+  )
+  ..addCommand(
+    'init',
+    _commandParser()
+      ..addOption(
+        'mode',
+        allowed: ['mcp', 'cli', 'auto'],
+        defaultsTo: 'auto',
+        help: 'Skill rendering mode (mcp uses MCP tool calls, cli uses '
+            'flutter-mcp-toolkit exec). auto detects from environment.',
+      )
+      ..addOption(
+        'scope',
+        allowed: ['project', 'user'],
+        defaultsTo: 'project',
+        help: 'Install scope: project (./) or user (\$HOME).',
+      ),
+  )
+  ..addCommand(
+    'codegen-init',
+    _commandParser()
+      ..addFlag(
+        'print-only',
+        defaultsTo: true,
+        help: 'Print snippet to stdout, do not edit main.dart.',
+      )
+      ..addFlag(
+        'pub-add',
+        defaultsTo: true,
+        help: 'Run "flutter pub add flutter_mcp_toolkit" first.',
+      ),
   );
 
 const _defaultHost = 'localhost';
@@ -2004,3 +2050,60 @@ Transient first-connect failures are retried automatically for connect/vm_not_co
 macOS desktop-window post-reload capture retries known host-capture races before failing.
 Optional skill installation copies mcp_server_dart/skills/$_runtimeValidationSkillName to \$CODEX_HOME/skills.
 ''';
+
+String _usageInit() => '''
+Usage: flutter-mcp-toolkit init <claude-code|cursor|codex|cline|agents-skills|all> [--mode mcp|cli|auto] [--scope project|user]
+
+Examples:
+  flutter-mcp-toolkit init claude-code
+  flutter-mcp-toolkit init claude-code --mode cli
+  flutter-mcp-toolkit init all --mode mcp --scope user
+
+Installs flutter-mcp-toolkit skills and MCP server config for an AI agent.
+''';
+
+String _usageCodegenInit() => '''
+Usage: flutter-mcp-toolkit codegen-init [--no-print-only] [--no-pub-add]
+
+Examples:
+  flutter-mcp-toolkit codegen-init
+  flutter-mcp-toolkit codegen-init --no-pub-add
+
+Adds flutter_mcp_toolkit to a Flutter app and emits boilerplate for main.dart.
+''';
+
+Future<int> _runInitSubcommand(final ArgResults command) async {
+  if (command.rest.isEmpty) {
+    io.stderr.writeln(
+      'Usage: flutter-mcp-toolkit init <claude-code|cursor|codex|cline|agents-skills|all>',
+    );
+    return 64;
+  }
+  final InitTarget target;
+  try {
+    target = InitTarget.parse(command.rest.first);
+  } on ArgumentError catch (e) {
+    io.stderr.writeln(e.message);
+    return 64;
+  }
+  final mode = InitMode.parse(command.option('mode'));
+  final scope = command.option('scope') ?? 'project';
+  final outputRoot =
+      scope == 'user'
+          ? (io.Platform.environment['HOME'] ?? io.Directory.current.path)
+          : io.Directory.current.path;
+  return runInit(
+    target: target,
+    modeOverride: mode,
+    outputRoot: outputRoot,
+    scopeIsUserHome: scope == 'user',
+  );
+}
+
+Future<int> _runCodegenInitSubcommand(final ArgResults command) async {
+  return runCodegenInit(
+    projectRoot: io.Directory.current.path,
+    printSnippetOnly: command.flag('print-only'),
+    runPubAdd: command.flag('pub-add'),
+  );
+}
