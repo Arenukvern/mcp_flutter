@@ -6,11 +6,11 @@
 
 Strict hard-cut release focused on reliability and machine contracts.
 
-### BREAKING: MCP tool names now carry the `core_` capability prefix
+### BREAKING: MCP tool names now carry the `fmt_` capability prefix
 
-All MCP tools surface as `core_<bare-name>` (e.g. `core_tap_widget`,
-`core_hot_reload_and_capture`). Legacy unprefixed names return
-`tool_not_found`. The CLI catalog (`flutter_mcp_cli exec --name <name>`)
+All MCP tools surface as `fmt_<bare-name>` (e.g. `fmt_tap_widget`,
+`fmt_hot_reload_and_capture`). Legacy unprefixed names return
+`tool_not_found`. The CLI catalog (`flutter-mcp-toolkit exec --name <name>`)
 keeps the bare names — only the MCP wire surface changed. Dynamic-registry
 host tools and `visual://` resource URIs are unchanged.
 
@@ -25,7 +25,7 @@ See the root `CHANGELOG.md` for the full v2→v3 rename table.
 
 ### Other v3.0.0 changes
 
-- Added `flutter_mcp_cli doctor [--json] [--target <path>] [--timeout-ms <n>]`.
+- Added `flutter-mcp-toolkit doctor [--json] [--target <path>] [--timeout-ms <n>]`.
 - Added safe-write flags for `snapshot create` and `bundle create`:
   `--check`, `--diff`, `--backup`, `--no-overwrite`.
 - Replaced destructive bundle overwrite flow with staged atomic publish.
