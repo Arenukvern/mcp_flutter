@@ -288,6 +288,13 @@ Connect to a running Flutter app on debug mode to use these features.
 ''' : ''}
 ''',
        ) {
+    // NOTE: `--use-capability-kernel` (configuration.useCapabilityKernel) is
+    // REQUIRED for any capability that resolves [CommandRunner] via
+    // `context.require<CommandRunner>()`. When this flag is false (the default
+    // in v3.0.0 until T8), `_host` is null and [capabilityHost] returns null,
+    // meaning no [HostService] registrations exist. Capabilities that call
+    // `context.require<CommandRunner>()` outside this gate will throw
+    // [HostServiceUnavailableError] at runtime — they will not silently succeed.
     if (configuration.useCapabilityKernel) {
       _host = McpHost(
         services: <Type, HostService>{
@@ -304,12 +311,15 @@ Connect to a running Flutter app on debug mode to use these features.
   }) =>
       MCPToolkitServer.fromStreamChannel(channel, configuration: configuration);
 
-  /// The capability host registry, populated when
-  /// `--use-capability-kernel` is on. Null otherwise.
+  /// The capability host registry, populated when `--use-capability-kernel` is
+  /// on. Returns null otherwise (default in v3.0.0 until T8).
+  ///
+  /// **Important:** All capabilities that use [CommandRunner] (i.e., any
+  /// capability that calls `context.require<CommandRunner>()`) require this
+  /// to be non-null. Pass `--use-capability-kernel` when starting the server,
+  /// or check non-null before calling [McpHost.registerCapability].
   ///
   /// T4/T5: call [McpHost.registerCapability] on this to load capabilities.
-  /// You may need to construct a new `McpHost(services: ...)` upstream of
-  /// this getter if your capabilities require host services.
   McpHost? get capabilityHost => _host;
   McpHost? _host;
 
