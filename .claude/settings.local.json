@@ -122,7 +122,12 @@
       "WebFetch(domain:github.com)",
       "WebFetch(domain:dragselect.com)",
       "WebFetch(domain:tldraw.dev)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(kill 25935 51499 34233)",
+      "Bash(echo \"PID=$!\")",
+      "Bash(git -C /Users/antonio/mcp/cline/mcp_flutter mv flutter_live_edit/flutter_live_edit_toolkit/lib/src/services/live_edit_session/lru_selection_cache.dart flutter_live_edit/flutter_live_edit_toolkit/lib/src/services/hit_testing/lru_selection_cache.dart)",
+      "Bash(kill 84681)",
+      "Bash(kill 18136)"
     ]
   }
 }

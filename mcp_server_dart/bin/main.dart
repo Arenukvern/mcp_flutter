@@ -183,9 +183,13 @@ final argParser = ArgParser(allowTrailingOptions: false)
   ..addFlag(help, abbr: 'h', help: 'Show usage text')
   ..addFlag(
     useCapabilityKernel,
+    defaultsTo: true,
     help:
-        'EXPERIMENTAL: route tool registrations through mcp_capability_kernel. '
-        'When off, the legacy static registration path is used.',
+        'Route tool registrations through mcp_capability_kernel and expose '
+        'tools under the "core_" capability prefix (default in v3.0.0). '
+        'Pass --no-use-capability-kernel to fall back to the legacy '
+        'unprefixed registration path; this fallback exists only as a '
+        'safety net and will be removed in a follow-up.',
   );
 
 const defaultHost = 'localhost';
