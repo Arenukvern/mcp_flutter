@@ -5,7 +5,8 @@
 All MCP tools surface under the `core_` capability prefix. Calls to legacy
 unprefixed names return `tool_not_found`. The CLI catalog vocabulary is
 unchanged — `flutter_mcp_cli exec --name <name>` still uses the bare
-names.
+names. See [docs/start_here/migration_v2_to_v3.mdx](docs/start_here/migration_v2_to_v3.mdx)
+for the smallest-possible-diff guide.
 
 | v2 (legacy) | v3 (MCP `tools/call` name) |
 | --- | --- |
