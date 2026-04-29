@@ -14,7 +14,7 @@ usage() {
   cat <<USAGE
 Usage: ./install.sh [--version <semver|vSemver>] [--install-dir <path>] [--repo <owner/name>] [--base-url <url>]
 
-Installs flutter_mcp_cli and flutter_inspector_mcp_server from GitHub release artifacts.
+Installs flutter-mcp-toolkit and flutter-mcp-toolkit-server from GitHub release artifacts.
 USAGE
 }
 
@@ -153,30 +153,37 @@ tar -C "$work_dir" -xzf "$work_dir/$archive"
 package_dir="$work_dir/flutter_mcp_${version_no_prefix}_${triple}"
 
 mkdir -p "$INSTALL_DIR"
-install -m 0755 "$package_dir/bin/flutter_mcp_cli" "$INSTALL_DIR/flutter_mcp_cli"
+install -m 0755 "$package_dir/bin/flutter-mcp-toolkit" "$INSTALL_DIR/flutter-mcp-toolkit"
 install -m 0755 \
-  "$package_dir/bin/flutter_inspector_mcp_server" \
-  "$INSTALL_DIR/flutter_inspector_mcp_server"
+  "$package_dir/bin/flutter-mcp-toolkit-server" \
+  "$INSTALL_DIR/flutter-mcp-toolkit-server"
 
 echo "Installed binaries to $INSTALL_DIR"
-"$INSTALL_DIR/flutter_mcp_cli" --help >/dev/null
+"$INSTALL_DIR/flutter-mcp-toolkit" --help >/dev/null
 
 if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
   shell_name="$(basename "${SHELL:-sh}")"
   rc_file="$HOME/.profile"
   case "$shell_name" in
     zsh)
-      rc_file="$HOME/.zshrc"
+      rc_file="${ZDOTDIR:-$HOME}/.zshrc"
       ;;
     bash)
       rc_file="$HOME/.bashrc"
       ;;
   esac
 
-  echo ""
-  echo "PATH update required. Run this command:"
-  echo "echo 'export PATH=\"$INSTALL_DIR:\$PATH\"' >> $rc_file && export PATH=\"$INSTALL_DIR:\$PATH\""
+  if [[ -f "$rc_file" ]] && ! grep -q "$INSTALL_DIR" "$rc_file"; then
+    echo "" >> "$rc_file"
+    echo "export PATH=\"$INSTALL_DIR:\$PATH\"" >> "$rc_file"
+    echo ""
+    echo "Added $INSTALL_DIR to PATH in $rc_file (restart your shell or run: source $rc_file)"
+  else
+    echo ""
+    echo "PATH update required. Run this command:"
+    echo "echo 'export PATH=\"$INSTALL_DIR:\$PATH\"' >> $rc_file && export PATH=\"$INSTALL_DIR:\$PATH\""
+  fi
 fi
 
-echo "Install complete: flutter_mcp_cli ${version_no_prefix}"
-echo "Smoke test command: $INSTALL_DIR/flutter_mcp_cli --help"
+echo "Install complete: flutter-mcp-toolkit ${version_no_prefix}"
+echo "Smoke test command: $INSTALL_DIR/flutter-mcp-toolkit --help"
