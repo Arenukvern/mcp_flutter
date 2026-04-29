@@ -54,11 +54,12 @@ Use MCP server when you need:
 - tool invocation from chat/editor agents
 - mixed workflows with screenshots, app errors, and dynamic tools during conversation
 
-Example (conceptual):
+Example (conceptual). MCP tool names carry the `core_` capability prefix
+(v3.0.0+); the CLI catalog uses unprefixed names.
 
 ```json
 {
-  "name": "get_app_errors",
+  "name": "core_get_app_errors",
   "arguments": {}
 }
 ```

@@ -4,6 +4,8 @@ The Flutter MCP Toolkit comes with a set of pre-built tools and resources for co
 
 Notes:
 
+- All MCP tool names below surface under the **`core_` capability prefix** (v3.0.0+). Call them as `core_tap_widget`, `core_hot_reload_and_capture`, etc. The prose lists below show the bare name for readability, but every `tools/call` MUST use the prefixed name. Legacy unprefixed names return `tool_not_found`.
+- The CLI (`flutter_mcp_cli exec --name <name>`) takes the unprefixed catalog name — the CLI uses the shared command catalog directly and is not subject to the MCP capability prefix.
 - VM-dependent tools/resources resolve connection on demand. Startup does not force choosing a VM target.
 - If VM service is unavailable, the tool returns an error payload.
 - If multiple debug targets are discovered and no sticky/explicit target is available, the tool returns `connection_selection_required`.
@@ -11,23 +13,27 @@ Notes:
 
 ### Core Tools
 
-- **`connect_debug_app`**: Explicitly select/connect a debug target.
-- **`discover_debug_apps`**: List active debug targets with canonical websocket URIs.
-- **`hot_reload_flutter`**: Performs a hot reload of the Flutter app.
-- **`hot_restart_flutter`**: Performs a hot restart of the Flutter app.
-- **`get_vm`**: Returns information about the Dart VM.
-- **`get_extension_rpcs`**: Lists the available extension RPCs in the Flutter app.
-- **`capture_ui_snapshot`**: Captures screenshots + view details + app errors in one bundle.
-- **`inspect_widget_at_point`**: Resolves global (x,y) to the deepest widget/render node.
+(Bare names; MCP surface adds the `core_` prefix.)
+
+- **`connect_debug_app`** → `core_connect_debug_app`: Explicitly select/connect a debug target.
+- **`discover_debug_apps`** → `core_discover_debug_apps`: List active debug targets with canonical websocket URIs.
+- **`hot_reload_flutter`** → `core_hot_reload_flutter`: Performs a hot reload of the Flutter app.
+- **`hot_restart_flutter`** → `core_hot_restart_flutter`: Performs a hot restart of the Flutter app.
+- **`get_vm`** → `core_get_vm`: Returns information about the Dart VM.
+- **`get_extension_rpcs`** → `core_get_extension_rpcs`: Lists the available extension RPCs in the Flutter app.
+- **`capture_ui_snapshot`** → `core_capture_ui_snapshot`: Captures screenshots + view details + app errors in one bundle.
+- **`inspect_widget_at_point`** → `core_inspect_widget_at_point`: Resolves global (x,y) to the deepest widget/render node.
 
 `get_active_ports` remains available in CLI for low-level workflows, but
-`discover_debug_apps` is the preferred API for agent-driven target selection.
+`core_discover_debug_apps` is the preferred MCP tool for agent-driven target selection.
 
 ### Interaction Tools (drive the app like a user)
 
 These tools let an AI agent interact with the running Flutter app the way a real user would. The interaction model mirrors Playwright MCP: get a compact semantic snapshot first, then use the returned `ref` strings to target specific widgets.
 
 Every interaction tool uses a **two-tier dispatch**. Tier 1 invokes `SemanticsOwner.performAction` and directly runs the widget's registered handler (bypassing hit-testing, timing, and pointer-event synthesis). Tier 2 falls back to synthetic pointer events via `GestureBinding.instance.handlePointerEvent` when no matching semantic action is available. The response includes a `via` field (`semantic_action` | `pointer_events` | `editable_state`) so agents can tell which path was taken.
+
+(MCP names: prefix each with `core_`.)
 
 - **`semantic_snapshot`**: Returns a compact accessibility tree of interactive widgets only (buttons, fields, switches, sliders, etc.) with stable `ref` strings (`s_0`, `s_1`, ...) and a `snapshot_id` (monotonically incrementing int). Call this *before* any interaction tool. Refs are valid only against the most recent snapshot.
 - **`tap_widget`**: Tap a widget by `ref`. Tier 1 via `SemanticsAction.tap` when the widget exposes `onTap`.
@@ -48,19 +54,19 @@ All interaction tools accept an optional `snapshotId` argument. If it's provided
 - **`evaluate_dart_expression`**: Evaluate a Dart expression in the running app isolate against the root library (e.g. `AgentState.instance.counter`). Returns `{result, kind, classRef}`. Lets agents inspect runtime state without requiring developers to pre-register custom tools.
 - **`get_recent_logs`**: Retrieve recent `print()` / `debugPrint()` output from the running app (ring buffer, 200 entries).
 
-### Typical Agent Workflow
+### Typical Agent Workflow (MCP `tools/call` names)
 
 ```
-1. semantic_snapshot              → returns refs s_0..s_N and snapshot_id
-2. tap_widget(ref: "s_3",         → tap the "Submit" button via SemanticsAction.tap;
-               snapshotId: <id>)     stale_snapshot if the tree has changed
-3. semantic_snapshot              → fresh refs after navigation
-4. enter_text(ref: "s_2",
-              text: "hello")      → fill a field (formatters + onChanged fire)
-5. evaluate_dart_expression       → read app state directly
+1. core_semantic_snapshot           → returns refs s_0..s_N and snapshot_id
+2. core_tap_widget(ref: "s_3",      → tap the "Submit" button via SemanticsAction.tap;
+                   snapshotId: <id>)   stale_snapshot if the tree has changed
+3. core_semantic_snapshot           → fresh refs after navigation
+4. core_enter_text(ref: "s_2",
+                   text: "hello")   → fill a field (formatters + onChanged fire)
+5. core_evaluate_dart_expression    → read app state directly
    ("AgentState.instance.counter")
-6. hot_reload_and_capture         → after a code edit, see screenshot +
-                                    semantics + errors in one round trip
+6. core_hot_reload_and_capture      → after a code edit, see screenshot +
+                                      semantics + errors in one round trip
 ```
 
 ### Golden Path (run against `flutter_test_app`)
@@ -125,7 +131,7 @@ All VM-dependent tools accept an optional nested `connection` object in `argumen
 
 ```json
 {
-  "name": "get_vm",
+  "name": "core_get_vm",
   "arguments": {
     "connection": {
       "targetId": "ws://127.0.0.1:59490/<token>/ws"
@@ -191,11 +197,11 @@ When multiple targets exist and no sticky/explicit target resolves ambiguity, th
 
 ### Hot Restart Tool Usage
 
-The server now provides a dedicated hot restart tool for situations where hot reload isn't sufficient (for example after adding service extensions or when the app state is corrupted):
+The server provides a dedicated hot restart tool for situations where hot reload isn't sufficient (for example after adding service extensions or when the app state is corrupted):
 
 ```json
 {
-  "name": "hot_restart_flutter",
+  "name": "core_hot_restart_flutter",
   "arguments": {}
 }
 ```
@@ -211,6 +217,8 @@ Expected result:
 ### Debug Dump Tools
 
 These tools are disabled by default and can be enabled with the `--dumps` flag.
+MCP names: `core_debug_dump_layer_tree`, `core_debug_dump_semantics_tree`,
+`core_debug_dump_render_tree`, `core_debug_dump_focus_tree`.
 
 - **`debug_dump_layer_tree`**: Dumps the layer tree.
 - **`debug_dump_semantics_tree`**: Dumps the semantics tree.

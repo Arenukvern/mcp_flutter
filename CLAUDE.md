@@ -13,12 +13,12 @@ for the AI-agent runbook.
 - `mcp_toolkit/mcp_toolkit/` — Dart package integrated into Flutter apps; registers
   VM service extensions (`ext.mcp.toolkit.*`) and supports dynamic tool registration.
 - `flutter_test_app/` — Showcase/example Flutter app used for e2e testing.
-- `flutter_live_edit/` — Live-edit overlay toolkit + `live_edit_tooling_ui_kit`
-  app for iterating on bubble/panel/chip widgets in isolation. See
-  `flutter_live_edit/README.md` for the current 3-package layout.
+- `mcp_capability_kernel/` — kernel contracts (Capability, ToolRegistration, CapabilityContext, host-service registry).
+- `mcp_capability_core/` — the `core` capability — all 27 + 4-dump MCP tools.
+- `mcp_shared_core/` — pure-Dart command catalog + connection-override types shared by server, CLI, and capability_core.
 - `maestro/`, `tool/contracts/`, `tool/release/` — test flows, contract checks, release scripts.
 - `docs/` — audience-first MDX docs (humans + AI agents).
-- `todo/` — planning + design docs for in-flight work (e.g. `selection_state_machine.md`).
+- `todo/` — planning + design docs for in-flight work and deferred follow-ups.
 
 ## Commands
 
@@ -38,7 +38,9 @@ Per-package: `cd mcp_server_dart && make compile` produces
 ```bash
 cd mcp_server_dart                       && flutter test
 cd mcp_toolkit/mcp_toolkit               && flutter test
-cd flutter_live_edit/flutter_live_edit_toolkit && flutter test
+cd mcp_capability_kernel                 && dart test
+cd mcp_capability_core                   && dart test
+cd mcp_shared_core                       && dart test
 ```
 
 Each package must be `cd`'d into — tests run per-package, not repo-wide.
@@ -47,6 +49,15 @@ Run one test by name: `flutter test path/to/x_test.dart --plain-name "exact name
 
 ## v3.0 Gotchas (non-obvious)
 
+- **MCP tool names are prefixed.** The capability kernel ships on by default
+  (`--use-capability-kernel=true`); every MCP tool surfaces as
+  `core_<name>` (e.g. `core_tap_widget`, `core_hot_reload_and_capture`).
+  Legacy unprefixed names return `tool_not_found`. The dynamic-registry
+  host trio (`listClientToolsAndResources`, `runClientTool`,
+  `runClientResource`) stays unprefixed. CLI catalog names are unchanged
+  (`flutter_mcp_cli exec --name <unprefixed>`). Locked surface lives in
+  `tool/contracts/expected_tool_surface.txt`. To opt back to the legacy
+  surface temporarily: `--no-use-capability-kernel`.
 - **Preflight first**: run `flutter_mcp_cli doctor --json` before any VM-dependent
   automation — parses env, ports, and app reachability. Binary is
   `mcp_server_dart/build/flutter_mcp_cli` after `make build`.
@@ -57,19 +68,13 @@ Run one test by name: `flutter test path/to/x_test.dart --plain-name "exact name
 - **Strict schemas**: `additionalProperties: false` by default — unknown params reject.
 - **Dump RPCs disabled** by default (token cost); opt in with `--dumps`.
 - **`uses-material-design` warnings** when running tests in `mcp_server_dart` come from
-  transitive Flutter deps (`live_edit_tooling_ui_kit`, `mcp_toolkit`) — benign, ignore.
+  transitive Flutter deps (`mcp_toolkit`) — benign, ignore.
 
 ## Connection model
 
 - VM Service port defaults to **8181** (override: `--dart-vm-port`).
 - MCP transport is **stdio** — no inbound network port.
 - Target app must run in **debug mode**; `mcp_toolkit` must be initialized.
-
-## Live-edit UI iteration
-
-To refine bubble/panel/chip widgets without a full connect cycle, run the
-`live_edit_tooling_ui_kit` app — it renders the tool layer with prefilled data.
-Main hit-testing domain is `appScene` (see ARCHITECTURE.md "Live Edit Overlay").
 
 ## Conventions
 

@@ -73,11 +73,6 @@ Use this table as the source-of-truth contract for emitted `code` values.
 | `navigator_not_registered` | control flow | `navigate` called but the app did not register a `GlobalKey<NavigatorState>` via `MCPToolkitBinding.setNavigatorKey`. | false | 64 | Register a navigator key in the host app and retry. |
 | `fill_form_failed` | interaction layer | `fill_form` orchestration failed (transport or per-field toolkit failure). | true | 69 | `flutter_mcp_cli schema --name fill_form` |
 | `hover_failed` | interaction layer | `hover` execution failed. | true | 69 | `flutter_mcp_cli doctor --json` |
-| `live_edit_backend_failed` | live edit | Configured live-edit backend failed during resolution. | true | 69 | `flutter_mcp_cli exec --name live_edit_list_agent_backends --args '{}'` |
-| `live_edit_proposal_not_found` | live edit | Referenced live-edit proposal id does not exist. | false | 66 | `flutter_mcp_cli exec --name live_edit_resolve_draft --args '{"sessionId":"<live_edit_session>"}'` |
-| `live_edit_apply_failed` | live edit | Patch could not be applied (file path or write permission). | false | 74 | `flutter_mcp_cli schema --name live_edit_accept_resolution` |
-| `live_edit_validation_failed` | live edit | Patch applied but runtime validation did not match the draft intent. | false | 65 | `flutter_mcp_cli exec --name live_edit_get_selection --args '{"sessionId":"<live_edit_session>"}'` |
-| `live_edit_disabled` | live edit | Live-edit feature is disabled in runtime config. | false | 64 | Enable live-edit in runtime config and retry. |
 | `unknown_error` | fallback | Unknown code fallback. | false | 70 | `flutter_mcp_cli doctor --json` |
 
 ## Notes

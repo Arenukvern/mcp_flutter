@@ -81,14 +81,15 @@ This unified architecture supports:
 ### 3. MCP Server Layer (Dart-based)
 
 **Location**: `mcp_server_dart/`
-**Purpose**: Protocol translation, request handling, and dynamic registry management
+**Purpose**: Protocol translation, request handling, capability registration, and dynamic registry management
 **Key Features**:
 
 - JSON-RPC to VM Service Protocol translation
 - Request routing and validation
 - Error handling and logging
 - Connection management
-- Dynamic Registry: Manages runtime-registered tools and resources
+- **Capability kernel** (v3.0.0+): the server hosts an `McpHost` registry into which `Capability` instances register prefixed tools (e.g. `core_tap_widget`). The host wires each registration to dart_mcp's `ToolsSupport` via a `DartMcpDispatchBridge`. The legacy unprefixed registration mixin is gated off by default and reachable only with `--no-use-capability-kernel`. See `mcp_capability_kernel/` (contracts) and `mcp_capability_core/` (the `core` capability shipping all 27 + 4-dump tools).
+- Dynamic Registry: Manages runtime-registered tools and resources (forwarded from the running Flutter app via `addMcpTool`). The dispatch trio `listClientToolsAndResources` / `runClientTool` / `runClientResource` is host machinery and stays unprefixed.
 - Event-Driven Discovery: Real-time tool detection via DTD events
 
 ### 4. AI Assistant Integration Layer
@@ -145,11 +146,12 @@ This unified architecture supports:
 
 ## Live Edit Overlay Architecture
 
-The live edit toolkit uses a single editing domain in the main app:
-
-- **appScene**: Hit-testing is rooted in the real app content subtree. Selection, hover, and candidate traversal operate on app widgets. The overlay draws the selection bubble and inspector panel above the app.
-
-To iteratively improve the tooling UI (bubble, panel, chips), run the **live_edit_tooling_ui_kit** app: it renders the same tool layer with prefilled data so you can connect live-edit (and MCP) and refine those widgets in place.
+> **Removed in v3.0.0.** The live-edit overlay package and its
+> `live_edit_tooling_ui_kit` playground were excised from the v3.0.0
+> release scope (see `todo/v3_release_audit_2026-04-28.md`). Design notes
+> for re-integration live in `todo/selection_state_machine.md` and
+> `todo/tool_surface_inversion.md` (live-edit references). This section
+> is preserved as a placeholder for the planned v3.1.0 reintroduction.
 
 ## Protocol Details
 

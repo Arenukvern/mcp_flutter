@@ -90,9 +90,16 @@ See more details about command line options in [mcp_server_dart README](mcp_serv
 
 ## 🎯 AI Agent Tools
 
+> **v3.0.0 tool naming.** All MCP tools surface under the `core_` capability
+> prefix (`core_tap_widget`, `core_hot_reload_and_capture`, ...). The bare
+> names below are the catalog/CLI names; the MCP `tools/call` names add the
+> `core_` prefix. Legacy unprefixed MCP names return `tool_not_found`. The
+> dynamic-registry host tools (`listClientToolsAndResources`, `runClientTool`,
+> `runClientResource`) stay unprefixed.
+
 ### Core Flutter Tools
 
-- `get_app_errors` [Resource|Tool] - Retrieves precise and condensed error information from your Flutter app
+- `core_get_app_errors` [Resource|Tool] - Retrieves precise and condensed error information from your Flutter app
   **Usage**:
   - Uses only short description of the error. Should filter duplicate errors, to avoid flooding Agent context window with the same errors.
   - Uses Error Monitor to capture Dart VM errors. All errors captured in Flutter app, and then available by request from MCP server.
@@ -103,33 +110,33 @@ See more details about command line options in [mcp_server_dart README](mcp_serv
   🚧 Android, 🤔 Windows, 🤔 Linux, ❌ Web
   [See issue](https://github.com/Arenukvern/mcp_flutter/issues/23)
 
-- `get_screenshots` [Resource|Tool] - Captures screenshots of the running application.
+- `core_get_screenshots` [Resource|Tool] - Captures screenshots of the running application.
   **Configuration**:
   - Enable with `--images` flag
   - Will use PNG compression to optimize image size.
 
-- `get_view_details` [Resource|Tool] - Returns view metrics and widget-tree inspection payloads (bounds, route/source hints).
-- `inspect_widget_at_point` [Tool] - Maps global `(x,y)` coordinates to the deepest widget/render node.
-- `capture_ui_snapshot` [Tool] - Captures screenshots + view details + app errors in one evidence bundle.
-- `discover_debug_apps` [Tool] - Preferred target discovery API with canonical websocket URIs.
+- `core_get_view_details` [Resource|Tool] - Returns view metrics and widget-tree inspection payloads (bounds, route/source hints).
+- `core_inspect_widget_at_point` [Tool] - Maps global `(x,y)` coordinates to the deepest widget/render node.
+- `core_capture_ui_snapshot` [Tool] - Captures screenshots + view details + app errors in one evidence bundle.
+- `core_discover_debug_apps` [Tool] - Preferred target discovery API with canonical websocket URIs.
 
 ### Interaction Tools (drive the app like a user) 🆕
 
 A Playwright-style layer lets agents operate the running Flutter app:
 
-- `semantic_snapshot` [Tool] — Compact accessibility tree of interactive widgets with stable `ref` strings (`s_0`, `s_1`, …) and a monotonic `snapshot_id`. Call this before every interaction.
-- `tap_widget`, `long_press`, `enter_text`, `scroll`, `swipe`, `drag` [Tool] — Target widgets by `ref`. Each call uses a two-tier dispatch: semantic actions first, pointer events as fallback. Response includes a `via` field so you can tell which path ran.
-- `hot_reload_and_capture` [Tool] — Hot reload, screenshot, fresh semantic snapshot, and app errors in a single response. Designed for the edit → see-what-changed loop.
-- `evaluate_dart_expression` [Tool] — Run a Dart expression in the app isolate (e.g. `AgentState.instance.counter`) to read state without pre-registering a tool.
-- `get_recent_logs` [Tool] — Retrieves the last 200 `print`/`debugPrint` entries from the running app.
+- `core_semantic_snapshot` [Tool] — Compact accessibility tree of interactive widgets with stable `ref` strings (`s_0`, `s_1`, …) and a monotonic `snapshot_id`. Call this before every interaction.
+- `core_tap_widget`, `core_long_press`, `core_enter_text`, `core_scroll`, `core_swipe`, `core_drag` [Tool] — Target widgets by `ref`. Each call uses a two-tier dispatch: semantic actions first, pointer events as fallback. Response includes a `via` field so you can tell which path ran.
+- `core_hot_reload_and_capture` [Tool] — Hot reload, screenshot, fresh semantic snapshot, and app errors in a single response. Designed for the edit → see-what-changed loop.
+- `core_evaluate_dart_expression` [Tool] — Run a Dart expression in the app isolate (e.g. `AgentState.instance.counter`) to read state without pre-registering a tool.
+- `core_get_recent_logs` [Tool] — Retrieves the last 200 `print`/`debugPrint` entries from the running app.
 
 Typical agent workflow:
 
 ```
-semantic_snapshot                    → get refs s_0..s_N + snapshot_id
-tap_widget(ref, snapshotId)          → act; stale_snapshot if tree changed
-evaluate_dart_expression(...)        → read app state directly
-hot_reload_and_capture               → after a code edit, see the result
+core_semantic_snapshot                    → get refs s_0..s_N + snapshot_id
+core_tap_widget(ref, snapshotId)          → act; stale_snapshot if tree changed
+core_evaluate_dart_expression(...)        → read app state directly
+core_hot_reload_and_capture               → after a code edit, see the result
 ```
 
 See [Built-in tools](docs/core/built_in_tools.mdx) for the full catalog + a golden path that runs against `flutter_test_app`.
