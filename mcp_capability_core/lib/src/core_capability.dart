@@ -2,6 +2,7 @@
 import 'package:mcp_capability_kernel/mcp_capability_kernel.dart';
 
 import 'tools/debug_dump_tools.dart';
+import 'tools/flutter_inspector_tools.dart';
 import 'tools/form_tools.dart';
 import 'tools/inspection_tools.dart';
 import 'tools/interaction_tools.dart';
@@ -27,6 +28,7 @@ final class CoreCapability implements Capability {
 
   @override
   Future<void> register(final CapabilityContext context) async {
+    registerFlutterInspectorTools(context);
     registerInteractionTools(context);
     registerNavigationTools(context);
     registerLogTools(context);
