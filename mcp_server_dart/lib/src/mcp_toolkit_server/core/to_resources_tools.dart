@@ -29,17 +29,7 @@ String formatCoreErrorForMcp(
   required final String prefix,
 }) {
   final _ = prefix;
-  final error = result.error;
-  if (error == null) {
-    return jsonEncode(
-      CoreResult.failure(
-        code: CoreErrorCode.unknown,
-        message: 'Unknown error',
-      ).error?.toJson(),
-    );
-  }
-
-  return jsonEncode(error.toJson());
+  return jsonEncode(result.toErrorEnvelopeJson());
 }
 
 ObjectSchema strictToolInputSchema({

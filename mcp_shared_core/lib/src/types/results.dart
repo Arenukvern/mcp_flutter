@@ -89,4 +89,15 @@ final class CoreResult {
     'error': error?.toJson(),
     'meta': meta,
   };
+
+  /// Returns the failure envelope JSON shape `{code, message, details,
+  /// descriptor, recovery}`. If this result is a success, returns the same
+  /// shape filled with [CoreErrorCode.unknown] / "Unknown error" — callers
+  /// should check [ok] first.
+  Map<String, Object?> toErrorEnvelopeJson() =>
+      error?.toJson() ??
+      CoreError(
+        code: CoreErrorCode.unknown,
+        message: 'Unknown error',
+      ).toJson();
 }
