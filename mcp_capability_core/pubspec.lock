@@ -146,7 +146,7 @@ packages:
     source: hosted
     version: "1.0.5"
   is_dart_empty_or_not:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: is_dart_empty_or_not
       sha256: "1454632c2b961175d4c2807310713cbcbd054a51e63c545dc86c3eb9b2b061b0"
