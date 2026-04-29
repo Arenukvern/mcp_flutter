@@ -14,25 +14,13 @@
 import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_server/host.dart';
 import 'package:mcp_capability_core/mcp_capability_core.dart';
 import 'package:mcp_capability_kernel/mcp_capability_kernel.dart';
-import 'package:mcp_shared_core/mcp_shared_core.dart';
+import 'package:mcp_capability_kernel/testing.dart';
 import 'package:test/test.dart';
 
-/// Minimal in-process [CommandRunner] for tests: always returns success,
-/// records nothing. CoreCapability tools resolve this during registration.
-final class _FakeCommandRunner implements CommandRunner {
-  @override
-  Future<CoreResult> execute(final CoreCommand command) async =>
-      CoreResult.success();
 
-  @override
-  Future<CoreResult?> applyConnectionOverride(
-    final Map<String, Object?>? arguments,
-  ) async => null;
-}
-
-/// Helper: build a [McpHost] with a [_FakeCommandRunner] and the given config.
+/// Helper: build a [McpHost] with a [FakeCommandRunner] and the given config.
 McpHost _makeHost({final bool dumpsSupported = false}) => McpHost(
-  services: <Type, HostService>{CommandRunner: _FakeCommandRunner()},
+  services: <Type, HostService>{CommandRunner: FakeCommandRunner()},
   config: CapabilityConfig(
     values: <String, Object?>{'dumps_supported': dumpsSupported},
   ),
