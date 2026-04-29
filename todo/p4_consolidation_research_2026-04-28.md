@@ -98,7 +98,7 @@ GitNexus `query` for `file_picker` returns no real results — `file_picker` is 
 
 ### 2b. `select_option` — ➖ deferred (correctly)
 
-[Audit row](todo/playwright_parity_audit.md:84) and [P2 plan](docs/superpowers/plans/2026-04-27-p2-fill-form-hover.md): the gap is real but a wrapper saves zero round-trips post-P0.
+See `todo/playwright_parity_audit.md` ("Still missing vs. Playwright after v3.0.0"): the gap is real but a wrapper saves zero round-trips post-P0.
 
 ```
 tap_widget(refOfDropdown)

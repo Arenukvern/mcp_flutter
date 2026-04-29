@@ -192,8 +192,8 @@ Per the interaction-layer project memory:
 - `mcp_server_dart/lib/src/mcp_toolkit_consts.dart` — two extension-name constants.
 - `mcp_server_dart/lib/src/mcp_toolkit_server/mixins/flutter_inspector.dart` — register both tools.
 - `docs/core/error_code_playbook.mdx` — playbook entries for both new codes.
-- `todo/playwright_parity_audit.md` — flip the network row to ✅.
-- `todo/playwright_parity_roadmap.md` — flip P3 to shipped.
+- `todo/playwright_parity_audit.md` — move the `network_requests` row out of "Still missing" once shipped.
+- `CHANGELOG.md` — add a P3 section under the next version when shipped.
 
 ## Risks / open follow-ups
 
