@@ -92,19 +92,19 @@ if ! grep -q '"source"[[:space:]]*:[[:space:]]*"\./flutter_mcp_plugin"' "$MARKET
 fi
 ok "plugin.json <-> marketplace.json names aligned"
 
-# 7. Skills reference MCP tool names (post-T8: prefixed `core_*`) that exist
+# 7. Skills reference MCP tool names (v3.0.0: prefixed `fmt_*`) that exist
 # in the locked tool surface. Catches: plugin docs forgetting to prepend
-# `core_`, or referencing a tool that was removed from the capability surface.
+# `fmt_`, or referencing a tool that was removed from the capability surface.
 SURFACE_FILE="$ROOT_DIR/tool/contracts/expected_tool_surface.txt"
 [[ -f "$SURFACE_FILE" ]] || fail "expected_tool_surface.txt not found"
 
 tool_names=(
-  "core_semantic_snapshot"
-  "core_capture_ui_snapshot"
-  "core_hot_reload_and_capture"
-  "core_inspect_widget_at_point"
-  "core_tap_widget"
-  "core_enter_text"
+  "fmt_semantic_snapshot"
+  "fmt_capture_ui_snapshot"
+  "fmt_hot_reload_and_capture"
+  "fmt_inspect_widget_at_point"
+  "fmt_tap_widget"
+  "fmt_enter_text"
 )
 for tool in "${tool_names[@]}"; do
   # Must appear in skill docs (promised to agents).

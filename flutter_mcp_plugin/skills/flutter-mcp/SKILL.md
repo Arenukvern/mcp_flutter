@@ -32,20 +32,20 @@ If missing, stop and report the instrumentation gap — do **not** guess:
 
 ## Tool naming (v3.0.0+)
 
-All MCP tools surface under the `core_` capability prefix
-(`core_tap_widget`, `core_hot_reload_and_capture`, etc.). The prefix is
+All MCP tools surface under the `fmt_` capability prefix
+(`fmt_tap_widget`, `fmt_hot_reload_and_capture`, etc.). The prefix is
 mandatory in `tools/call`. Skill-local references below use the bare name
-for readability — when invoking, prepend `core_`. The dynamic-registry
+for readability — when invoking, prepend `fmt_`. The dynamic-registry
 host tools (`listClientToolsAndResources`, `runClientTool`,
 `runClientResource`) stay unprefixed — they are server machinery, not part
 of the capability surface.
 
 ## Interaction loop (Playwright-style)
 
-1. `core_semantic_snapshot` → returns `s_0..s_N` refs + `snapshot_id`.
-2. `core_tap_widget` / `core_enter_text` / `core_scroll` / `core_swipe` / `core_long_press` / `core_drag` — act on a ref. **Always pass `snapshotId`** — you get a structured `stale_snapshot` error if the tree moved, instead of a silent wrong tap.
-3. `core_evaluate_dart_expression` — read state directly (e.g. `AgentState.instance.counter`).
-4. `core_hot_reload_and_capture` — after a code edit, returns reload status + screenshot + fresh snapshot + errors in one response. Prefer this over manual reload + separate capture.
+1. `fmt_semantic_snapshot` → returns `s_0..s_N` refs + `snapshot_id`.
+2. `fmt_tap_widget` / `fmt_enter_text` / `fmt_scroll` / `fmt_swipe` / `fmt_long_press` / `fmt_drag` — act on a ref. **Always pass `snapshotId`** — you get a structured `stale_snapshot` error if the tree moved, instead of a silent wrong tap.
+3. `fmt_evaluate_dart_expression` — read state directly (e.g. `AgentState.instance.counter`).
+4. `fmt_hot_reload_and_capture` — after a code edit, returns reload status + screenshot + fresh snapshot + errors in one response. Prefer this over manual reload + separate capture.
 
 ## Error envelope contract
 
@@ -55,17 +55,17 @@ Common codes and recovery:
 
 - `connection_selection_required` — retry with `arguments.connection.targetId` or exact `arguments.connection.uri` from `app.debugPort.wsUri`.
 - `target_not_found` — refresh targets, then prefer exact `arguments.connection.uri`.
-- `stale_snapshot` — call `core_semantic_snapshot` again, then retry the action with the new `snapshot_id`.
-- `tool_not_found` — confirm the prefixed name (`core_<tool>`); v3.0.0 dropped legacy unprefixed names.
+- `stale_snapshot` — call `fmt_semantic_snapshot` again, then retry the action with the new `snapshot_id`.
+- `tool_not_found` — confirm the prefixed name (`fmt_<tool>`); v3.0.0 dropped legacy unprefixed names.
 - Empty screenshot output — verify the server was not started with `--no-images`.
 - Missing view resource/tool — verify the server was not started with `--no-resources`.
 
 ## Visual QA
 
-- Before/after screenshots are the proof artifact for any UI claim. Capture before with `core_capture_ui_snapshot` (or one of the `visual://localhost/...` resources), edit, `core_hot_reload_and_capture`, compare.
-- For each reported visual issue, attach coordinate + `core_inspect_widget_at_point` output.
-- Map defects to source via `core_get_app_errors` top stack frame (`file`, `line`, `column`) when available.
-- Do **not** use `core_debug_dump_*` unless explicitly requested (server must be started with `--dumps`; high token cost).
+- Before/after screenshots are the proof artifact for any UI claim. Capture before with `fmt_capture_ui_snapshot` (or one of the `visual://localhost/...` resources), edit, `fmt_hot_reload_and_capture`, compare.
+- For each reported visual issue, attach coordinate + `fmt_inspect_widget_at_point` output.
+- Map defects to source via `fmt_get_app_errors` top stack frame (`file`, `line`, `column`) when available.
+- Do **not** use `fmt_debug_dump_*` unless explicitly requested (server must be started with `--dumps`; high token cost).
 
 ## Permissions (macOS)
 
