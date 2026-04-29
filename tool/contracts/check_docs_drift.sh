@@ -7,7 +7,7 @@ run_cli_help() {
   local -a args=("$@")
   (
     cd "$ROOT_DIR/mcp_server_dart"
-    HOME=/tmp DART_SUPPRESS_ANALYTICS=true dart run bin/flutter_mcp_cli.dart "${args[@]}"
+    HOME=/tmp DART_SUPPRESS_ANALYTICS=true dart run bin/flutter_mcp_toolkit.dart "${args[@]}"
   )
 }
 

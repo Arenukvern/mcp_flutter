@@ -5,7 +5,7 @@
 #
 # Typical agent use:
 #   make showcase                 # in one terminal
-#   flutter_mcp_cli exec --name semantic_snapshot \
+#   flutter-mcp-toolkit exec --name semantic_snapshot \
 #     --args '{"connection":{"targetId":"<uri from this script>"}}'
 
 set -u
@@ -53,7 +53,7 @@ printf "[showcase] Dart VM Service:  %s\n" "${vm_uri}"
 printf "[showcase] canonical WS URI: %s\n" "${ws_uri}"
 printf "\n"
 printf "  export WS='%s'\n" "${ws_uri}"
-printf "  flutter_mcp_cli exec --name semantic_snapshot \\\\\n"
+printf "  flutter-mcp-toolkit exec --name semantic_snapshot \\\\\n"
 printf "    --args \"{\\\"connection\\\":{\\\"targetId\\\":\\\"\$WS\\\"}}\"\n"
 printf "\n"
 printf "[showcase] app is running. Press r for hot reload, q to quit.\n\n"
