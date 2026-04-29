@@ -1,6 +1,7 @@
 // mcp_capability_core/lib/src/core_capability.dart
 import 'package:mcp_capability_kernel/mcp_capability_kernel.dart';
 
+import 'tools/debug_dump_tools.dart';
 import 'tools/form_tools.dart';
 import 'tools/inspection_tools.dart';
 import 'tools/interaction_tools.dart';
@@ -33,6 +34,9 @@ final class CoreCapability implements Capability {
     registerInspectionTools(context);
     registerWaitTools(context);
     registerFormTools(context);
+    if (context.config.getBool('dumps_supported', defaultValue: false)) {
+      registerDebugDumpTools(context);
+    }
   }
 
   @override
