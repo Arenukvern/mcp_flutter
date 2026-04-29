@@ -514,8 +514,8 @@ Map<String, Object?> recoveryForErrorCode(
     return {
       'summary': 'Select an explicit VM target and retry the command.',
       'fix_command': firstTarget == null
-          ? """flutter_mcp_cli exec --name discover_debug_apps --args '{}'"""
-          : 'flutter_mcp_cli exec --name get_vm --args '
+          ? """flutter-mcp-toolkit exec --name discover_debug_apps --args '{}'"""
+          : 'flutter-mcp-toolkit exec --name get_vm --args '
                 '\'{"connection":{"targetId":"$firstTarget"}}\'',
     };
   }
@@ -529,35 +529,35 @@ _defaultRecoveryMap = <String, Map<String, Object?>>{
   CoreErrorCode.connectFailed: <String, Object?>{
     'summary': 'Retry with an explicit VM URI target.',
     'fix_command':
-        'flutter_mcp_cli exec --name get_vm --args '
+        'flutter-mcp-toolkit exec --name get_vm --args '
         '\'{"connection":{"uri":"ws://127.0.0.1:8181/<token>/ws"}}\'',
   },
   CoreErrorCode.vmNotConnected: <String, Object?>{
     'summary': 'Connect to a running debug target before issuing VM commands.',
-    'fix_command': """flutter_mcp_cli exec --name status --args '{}'""",
+    'fix_command': """flutter-mcp-toolkit exec --name status --args '{}'""",
   },
   CoreErrorCode.invalidCommand: <String, Object?>{
     'summary': 'Validate command name, arguments, and schema types.',
-    'fix_command': '''flutter_mcp_cli schema --name <command_name>''',
+    'fix_command': '''flutter-mcp-toolkit schema --name <command_name>''',
   },
   CoreErrorCode.dynamicRegistryDisabled: <String, Object?>{
     'summary': 'Enable dynamic registry support before dynamic tool calls.',
-    'fix_command': "flutter_mcp_cli --dynamics exec --name status --args '{}'",
+    'fix_command': "flutter-mcp-toolkit --dynamics exec --name status --args '{}'",
   },
   CoreErrorCode.visualCapturePermissionDenied: <String, Object?>{
     'summary':
         'Grant Screen Recording or open settings before retrying truthful capture.',
-    'fix_command': 'flutter_mcp_cli permissions open-settings',
+    'fix_command': 'flutter-mcp-toolkit permissions open-settings',
   },
   CoreErrorCode.visualCaptureUnsupported: <String, Object?>{
     'summary': 'Use a supported target or capture mode.',
     'fix_command':
-        'flutter_mcp_cli permissions status && flutter_mcp_cli doctor --json',
+        'flutter-mcp-toolkit permissions status && flutter-mcp-toolkit doctor --json',
   },
   CoreErrorCode.snapshotNotFound: <String, Object?>{
     'summary': 'Create the snapshot before referencing it.',
     'fix_command':
-        """flutter_mcp_cli snapshot create --name <snapshot_id> --args '{}'""",
+        """flutter-mcp-toolkit snapshot create --name <snapshot_id> --args '{}'""",
   },
   CoreErrorCode.writeBlocked: <String, Object?>{
     'summary': 'Target exists and overwrite is disabled.',
@@ -565,10 +565,10 @@ _defaultRecoveryMap = <String, Map<String, Object?>>{
   },
   CoreErrorCode.doctorCriticalFailed: <String, Object?>{
     'summary': 'Resolve critical environment checks before continuing.',
-    'fix_command': '''flutter_mcp_cli doctor --json''',
+    'fix_command': '''flutter-mcp-toolkit doctor --json''',
   },
   CoreErrorCode.unknown: <String, Object?>{
     'summary': 'Inspect error details and retry once prerequisites are fixed.',
-    'fix_command': '''flutter_mcp_cli doctor --json''',
+    'fix_command': '''flutter-mcp-toolkit doctor --json''',
   },
 };

@@ -1539,7 +1539,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       details: <String, Object?>{
         'permission': permission.toJson(),
         if (permission.canOpenSettings)
-          'suggestedAction': 'flutter_mcp_cli permissions open-settings',
+          'suggestedAction': 'flutter-mcp-toolkit permissions open-settings',
       },
     );
   }

@@ -10,8 +10,8 @@ environment:
   sdk: ^3.11.0
 
 executables:
-  flutter_inspector_mcp_server: main
-  flutter_mcp_cli: flutter_mcp_cli
+  flutter-mcp-toolkit: flutter_mcp_toolkit
+  flutter-mcp-toolkit-server: main
 
 dependencies:
   args: ^2.7.0

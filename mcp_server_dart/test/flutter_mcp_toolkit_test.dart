@@ -4,12 +4,12 @@ import 'dart:io';
 import 'package:test/test.dart';
 
 void main() {
-  group('flutter_mcp_cli v3 one-shot', () {
+  group('flutter-mcp-toolkit v3 one-shot', () {
     late Directory tempDir;
     late String statePath;
 
     setUp(() {
-      tempDir = Directory.systemTemp.createTempSync('flutter_mcp_cli_v3_');
+      tempDir = Directory.systemTemp.createTempSync('flutter-mcp-toolkit_v3_');
       statePath = '${tempDir.path}/state.json';
     });
 
@@ -346,7 +346,7 @@ void main() {
 Future<ProcessResult> _runCli(final String statePath, final List<String> args) {
   final fullArgs = <String>[
     'run',
-    'bin/flutter_mcp_cli.dart',
+    'bin/flutter_mcp_toolkit.dart',
     '--state-file',
     statePath,
     ...args,

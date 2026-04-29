@@ -261,7 +261,7 @@ final class DoctorRunner {
             critical: true,
             diagnostic: 'No Flutter debug targets discovered.',
             fixCommand:
-                'Start a Flutter app in debug mode and retry `flutter_mcp_cli doctor`.',
+                'Start a Flutter app in debug mode and retry `flutter-mcp-toolkit doctor`.',
           );
         }
         selectedTarget = targets.first.targetId;
@@ -340,7 +340,7 @@ final class DoctorRunner {
         diagnostic:
             'Visual capture backend ${result.backend} (owner: ${result.owner.wireName}; capabilities: $capabilityNames).',
         fixCommand:
-            'Use `flutter_mcp_cli permissions status` to inspect capture support for the selected target.',
+            'Use `flutter-mcp-toolkit permissions status` to inspect capture support for the selected target.',
       );
     } on Object catch (error) {
       logger(
@@ -383,7 +383,7 @@ final class DoctorRunner {
         diagnostic:
             'Visual capture permission status: ${result.status.wireName} (${result.backend}).',
         fixCommand: result.canOpenSettings
-            ? 'Run `flutter_mcp_cli permissions open-settings` or retry a capture command with auto-request enabled.'
+            ? 'Run `flutter-mcp-toolkit permissions open-settings` or retry a capture command with auto-request enabled.'
             : 'Permission is not required or not supported on this target.',
       );
     } on Object catch (error) {
@@ -398,7 +398,7 @@ final class DoctorRunner {
         critical: false,
         diagnostic: 'Visual capture permission probe failed: $error',
         fixCommand:
-            'Use `flutter_mcp_cli permissions status` for a direct permission check after fixing the host adapter.',
+            'Use `flutter-mcp-toolkit permissions status` for a direct permission check after fixing the host adapter.',
       );
     }
   }
@@ -628,7 +628,7 @@ final class DoctorRunner {
               'Failed to read extension RPCs: '
               '${result.error?.message ?? 'unknown error'}',
           fixCommand:
-              'Run `flutter_mcp_cli exec --name get_extension_rpcs --args "{}"`. '
+              'Run `flutter-mcp-toolkit exec --name get_extension_rpcs --args "{}"`. '
               'If unavailable, install and initialize mcp_toolkit, then hot restart '
               'or rerun the app in debug mode.',
         );

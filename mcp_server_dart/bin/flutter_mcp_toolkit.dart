@@ -1447,7 +1447,7 @@ String _globalUsage() {
     ..writeln('$kFlutterMcpCliName v$kFlutterMcpVersion')
     ..writeln()
     ..writeln('Usage:')
-    ..writeln('  flutter_mcp_cli [global options] <command> [command options]')
+    ..writeln('  flutter-mcp-toolkit [global options] <command> [command options]')
     ..writeln()
     ..writeln('Commands:')
     ..writeln('  exec')
@@ -1466,7 +1466,7 @@ String _globalUsage() {
     ..writeln(_argParser.usage)
     ..writeln()
     ..writeln(
-      'Use `flutter_mcp_cli <command> --help` for contextual examples.',
+      'Use `flutter-mcp-toolkit <command> --help` for contextual examples.',
     );
   return buffer.toString();
 }
@@ -1844,15 +1844,15 @@ const _backup = 'backup';
 const _noOverwrite = 'no-overwrite';
 
 String _usageExec() => '''
-Usage: flutter_mcp_cli exec --name <command> [--args <json>] [--pretty]
+Usage: flutter-mcp-toolkit exec --name <command> [--args <json>] [--pretty]
 
 Examples:
-  flutter_mcp_cli exec --name status --args '{}'
-  flutter_mcp_cli exec --name status --args '{}' --pretty
-  flutter_mcp_cli exec --name get_vm --args '{"connection":{"uri":"ws://127.0.0.1:8181/<token>/ws"}}'
-  flutter_mcp_cli exec --name get_extension_rpcs --args '{}'
-  flutter_mcp_cli exec --name get_screenshots --args '{}'
-  flutter_mcp_cli exec --name get_view_details --args '{}'
+  flutter-mcp-toolkit exec --name status --args '{}'
+  flutter-mcp-toolkit exec --name status --args '{}' --pretty
+  flutter-mcp-toolkit exec --name get_vm --args '{"connection":{"uri":"ws://127.0.0.1:8181/<token>/ws"}}'
+  flutter-mcp-toolkit exec --name get_extension_rpcs --args '{}'
+  flutter-mcp-toolkit exec --name get_screenshots --args '{}'
+  flutter-mcp-toolkit exec --name get_view_details --args '{}'
 
 Notes:
   --pretty prints the response envelope with 2-space indentation.
@@ -1868,12 +1868,12 @@ If connection_selection_required appears:
 ''';
 
 String _usageBatch() => '''
-Usage: flutter_mcp_cli batch --steps <json> [--continue-on-error]
+Usage: flutter-mcp-toolkit batch --steps <json> [--continue-on-error]
 
 Examples:
-  flutter_mcp_cli batch --steps '[{"name":"status"},{"name":"status"}]'
-  flutter_mcp_cli batch --steps '[{"name":"discover_debug_apps"},{"name":"capture_ui_snapshot","args":{"compress":true}}]'
-  flutter_mcp_cli batch --continue-on-error --steps '[{"name":"status"},{"name":"unknown_command"}]'
+  flutter-mcp-toolkit batch --steps '[{"name":"status"},{"name":"status"}]'
+  flutter-mcp-toolkit batch --steps '[{"name":"discover_debug_apps"},{"name":"capture_ui_snapshot","args":{"compress":true}}]'
+  flutter-mcp-toolkit batch --continue-on-error --steps '[{"name":"status"},{"name":"unknown_command"}]'
 
 Each step reuses the same command catalog and preconnect flow as `exec`.
 Use this when you want one CLI startup and one target selection path for a
@@ -1881,74 +1881,74 @@ small deterministic command sequence.
 ''';
 
 String _usageSchema() => '''
-Usage: flutter_mcp_cli schema [--name <command>]
+Usage: flutter-mcp-toolkit schema [--name <command>]
 
 Examples:
-  flutter_mcp_cli schema
-  flutter_mcp_cli schema --name get_vm
+  flutter-mcp-toolkit schema
+  flutter-mcp-toolkit schema --name get_vm
 ''';
 
 String _usageCapabilities() => '''
-Usage: flutter_mcp_cli capabilities
+Usage: flutter-mcp-toolkit capabilities
 
 Examples:
-  flutter_mcp_cli capabilities
+  flutter-mcp-toolkit capabilities
 ''';
 
 String _usageServe() => '''
-Usage: flutter_mcp_cli serve
+Usage: flutter-mcp-toolkit serve
 
 Examples:
-  flutter_mcp_cli serve
+  flutter-mcp-toolkit serve
 ''';
 
 String _usageSnapshot() => '''
 Usage:
-  flutter_mcp_cli snapshot create ...
-  flutter_mcp_cli snapshot diff ...
+  flutter-mcp-toolkit snapshot create ...
+  flutter-mcp-toolkit snapshot diff ...
 
 Examples:
-  flutter_mcp_cli snapshot create --name baseline --args '{"commands":[{"name":"status","args":{}}]}'
-  flutter_mcp_cli snapshot diff --from baseline --to current
+  flutter-mcp-toolkit snapshot create --name baseline --args '{"commands":[{"name":"status","args":{}}]}'
+  flutter-mcp-toolkit snapshot diff --from baseline --to current
 ''';
 
 String _usageSnapshotCreate() => '''
-Usage: flutter_mcp_cli snapshot create --name <id> [--args <json>] [--check] [--diff] [--backup] [--no-overwrite]
+Usage: flutter-mcp-toolkit snapshot create --name <id> [--args <json>] [--check] [--diff] [--backup] [--no-overwrite]
 
 Examples:
-  flutter_mcp_cli snapshot create --name baseline --args '{"commands":[{"name":"status","args":{}}]}'
-  flutter_mcp_cli snapshot create --name baseline --check --diff
+  flutter-mcp-toolkit snapshot create --name baseline --args '{"commands":[{"name":"status","args":{}}]}'
+  flutter-mcp-toolkit snapshot create --name baseline --check --diff
 ''';
 
 String _usageSnapshotDiff() => '''
-Usage: flutter_mcp_cli snapshot diff --from <id> --to <id>
+Usage: flutter-mcp-toolkit snapshot diff --from <id> --to <id>
 
 Examples:
-  flutter_mcp_cli snapshot diff --from baseline --to after_fix
+  flutter-mcp-toolkit snapshot diff --from baseline --to after_fix
 ''';
 
 String _usageBundle() => '''
 Usage:
-  flutter_mcp_cli bundle create ...
+  flutter-mcp-toolkit bundle create ...
 
 Examples:
-  flutter_mcp_cli bundle create --from-snapshot baseline --output .flutter_mcp/bundles/baseline
+  flutter-mcp-toolkit bundle create --from-snapshot baseline --output .flutter_mcp/bundles/baseline
 ''';
 
 String _usageBundleCreate() => '''
-Usage: flutter_mcp_cli bundle create --from-snapshot <id> [--output <dir>] [--check] [--diff] [--backup] [--no-overwrite]
+Usage: flutter-mcp-toolkit bundle create --from-snapshot <id> [--output <dir>] [--check] [--diff] [--backup] [--no-overwrite]
 
 Examples:
-  flutter_mcp_cli bundle create --from-snapshot baseline --output ./bundle_out
-  flutter_mcp_cli bundle create --from-snapshot baseline --check --diff
+  flutter-mcp-toolkit bundle create --from-snapshot baseline --output ./bundle_out
+  flutter-mcp-toolkit bundle create --from-snapshot baseline --check --diff
 ''';
 
 String _usageDoctor() => '''
-Usage: flutter_mcp_cli doctor [--json] [--target <ws_uri>] [--timeout-ms <n>]
+Usage: flutter-mcp-toolkit doctor [--json] [--target <ws_uri>] [--timeout-ms <n>]
 
 Examples:
-  flutter_mcp_cli doctor
-  flutter_mcp_cli doctor --json --target ws://127.0.0.1:8181/<token>/ws --timeout-ms 4000
+  flutter-mcp-toolkit doctor
+  flutter-mcp-toolkit doctor --json --target ws://127.0.0.1:8181/<token>/ws --timeout-ms 4000
 
 Doctor checks include:
   - VM reachability
@@ -1961,28 +1961,28 @@ until app instrumentation is fixed and app is hot restarted or rerun.
 
 String _usagePermissions() => '''
 Usage:
-  flutter_mcp_cli permissions status [--kind visual_capture]
-  flutter_mcp_cli permissions request [--kind visual_capture]
-  flutter_mcp_cli permissions open-settings [--kind visual_capture]
+  flutter-mcp-toolkit permissions status [--kind visual_capture]
+  flutter-mcp-toolkit permissions request [--kind visual_capture]
+  flutter-mcp-toolkit permissions open-settings [--kind visual_capture]
 
 Examples:
-  flutter_mcp_cli permissions status
-  flutter_mcp_cli permissions request
-  flutter_mcp_cli permissions open-settings
+  flutter-mcp-toolkit permissions status
+  flutter-mcp-toolkit permissions request
+  flutter-mcp-toolkit permissions open-settings
 ''';
 
 String _usageValidateRuntime() =>
     '''
-Usage: flutter_mcp_cli validate-runtime [--target <ws_uri>] [--timeout-ms <n>] [--errors-count <n>] [--connect-retries <n>] [--post-reload-delay-ms <n>] [--after-reload] [--install-skill] [--skill-destination <dir>] [--force-skill-install]
+Usage: flutter-mcp-toolkit validate-runtime [--target <ws_uri>] [--timeout-ms <n>] [--errors-count <n>] [--connect-retries <n>] [--post-reload-delay-ms <n>] [--after-reload] [--install-skill] [--skill-destination <dir>] [--force-skill-install]
 
 Two-step agent flow:
   1) Start Flutter app in debug mode
   2) Run this command
 
 Examples:
-  flutter_mcp_cli validate-runtime --target ws://127.0.0.1:8181/<token>/ws --timeout-ms 10000
-  flutter_mcp_cli --save-images --output-dir .mcp_outputs/arena_macos validate-runtime --target ws://127.0.0.1:8181/<token>/ws --after-reload
-  flutter_mcp_cli validate-runtime --target ws://127.0.0.1:8181/<token>/ws --install-skill
+  flutter-mcp-toolkit validate-runtime --target ws://127.0.0.1:8181/<token>/ws --timeout-ms 10000
+  flutter-mcp-toolkit --save-images --output-dir .mcp_outputs/arena_macos validate-runtime --target ws://127.0.0.1:8181/<token>/ws --after-reload
+  flutter-mcp-toolkit validate-runtime --target ws://127.0.0.1:8181/<token>/ws --install-skill
 
   What it does:
   - doctor preflight (including mcp_toolkit extension gate)

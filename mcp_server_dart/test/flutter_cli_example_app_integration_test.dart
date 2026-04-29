@@ -8,7 +8,7 @@ void main() {
   final runIntegration =
       Platform.environment['RUN_FLUTTER_CLI_INTEGRATION'] == '1';
 
-  group('flutter_mcp_cli with flutter_test_app', () {
+  group('flutter-mcp-toolkit with flutter_test_app', () {
     late Process flutterProcess;
     late StreamSubscription<String> stdoutSub;
     late StreamSubscription<String> stderrSub;
@@ -19,7 +19,7 @@ void main() {
       if (!runIntegration) return;
 
       stateDir = Directory.systemTemp.createTempSync(
-        'flutter_mcp_cli_integration_',
+        'flutter_mcp_toolkit_integration_',
       );
       _stateFilePath = '${stateDir.path}/state.json';
 
@@ -707,7 +707,7 @@ Future<({ProcessResult result, Map<String, dynamic> envelope})> _runCliRaw(
 }
 
 List<String> _buildCliArgs(final List<String> args) {
-  final fullArgs = <String>['run', 'bin/flutter_mcp_cli.dart'];
+  final fullArgs = <String>['run', 'bin/flutter_mcp_toolkit.dart'];
 
   final statePath = _stateFilePath;
   if (statePath != null && statePath.isNotEmpty) {

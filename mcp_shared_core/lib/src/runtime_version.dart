@@ -10,5 +10,5 @@ const kCommandCatalogSchemaVersion = 'command-catalog/v1';
 const kCoreEnvelopeSchemaVersion = 'core-envelope/v1';
 const kFlutterMcpProtocolVersion = 'flutter-mcp-cli/3.0';
 
-const kFlutterMcpCliName = 'flutter_mcp_cli';
+const kFlutterMcpCliName = 'flutter-mcp-toolkit';
 const kFlutterMcpServerImplementationName = 'flutter-inspector';
