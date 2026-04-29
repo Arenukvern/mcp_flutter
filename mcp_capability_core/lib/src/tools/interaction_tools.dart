@@ -106,7 +106,6 @@ void registerInteractionTools(final CapabilityContext context) {
         'properties': <String, Object?>{
           'direction': <String, Object?>{
             'type': 'string',
-            'enum': <String>['up', 'down', 'left', 'right'],
             'description': 'Scroll direction: up, down, left, right.',
           },
           'ref': <String, Object?>{
@@ -114,8 +113,7 @@ void registerInteractionTools(final CapabilityContext context) {
             'description': 'Optional ref to scroll from.',
           },
           'distance': <String, Object?>{
-            'type': 'integer',
-            'default': 300,
+            'type': 'number',
             'description': 'Scroll distance in logical pixels (default: 300).',
           },
           'snapshotId': <String, Object?>{
@@ -197,7 +195,6 @@ void registerInteractionTools(final CapabilityContext context) {
         'properties': <String, Object?>{
           'direction': <String, Object?>{
             'type': 'string',
-            'enum': <String>['up', 'down', 'left', 'right'],
             'description': 'Swipe direction: up, down, left, right.',
           },
           'ref': <String, Object?>{
@@ -205,8 +202,7 @@ void registerInteractionTools(final CapabilityContext context) {
             'description': 'Optional ref to swipe from.',
           },
           'distance': <String, Object?>{
-            'type': 'integer',
-            'default': 300,
+            'type': 'number',
             'description': 'Swipe distance in logical pixels (default: 300).',
           },
           'snapshotId': <String, Object?>{
