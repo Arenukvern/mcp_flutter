@@ -16,6 +16,8 @@ dependencies:
   is_dart_empty_or_not: ^0.4.0
   mcp_capability_kernel:
     path: ../mcp_capability_kernel
+  mcp_shared_core:
+    path: ../mcp_shared_core
   meta: ^1.17.0
   vm_service: ^15.0.2
 
