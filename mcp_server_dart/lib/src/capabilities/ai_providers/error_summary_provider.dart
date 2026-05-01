@@ -5,11 +5,7 @@ import 'dart:convert';
 import 'dart:io' as io;
 
 /// Lifecycle of a summarization attempt (wire values: ok, skipped, failed).
-enum ErrorSummaryStatus {
-  ok,
-  skipped,
-  failed,
-}
+enum ErrorSummaryStatus { ok, skipped, failed }
 
 /// Result of a summarization attempt; providers must not throw for expected paths.
 final class ErrorSummaryOutcome {
@@ -20,12 +16,7 @@ final class ErrorSummaryOutcome {
     this.safeDetail,
   });
 
-  final ErrorSummaryStatus status;
-  final String? text;
-  final String? reasonCode;
-  final String? safeDetail;
-
-  static ErrorSummaryOutcome okText(final String text) {
+  factory ErrorSummaryOutcome.okText(final String text) {
     final t = text.trim();
     if (t.isEmpty) {
       return ErrorSummaryOutcome.failed(
@@ -33,33 +24,31 @@ final class ErrorSummaryOutcome {
         safeDetail: 'Summary text was empty.',
       );
     }
-    return ErrorSummaryOutcome(
-      status: ErrorSummaryStatus.ok,
-      text: t,
-      reasonCode: null,
-      safeDetail: null,
-    );
+    return ErrorSummaryOutcome(status: ErrorSummaryStatus.ok, text: t);
   }
 
-  static ErrorSummaryOutcome skipped({
+  factory ErrorSummaryOutcome.skipped({
     required final String reasonCode,
     final String? safeDetail,
   }) => ErrorSummaryOutcome(
     status: ErrorSummaryStatus.skipped,
-    text: null,
     reasonCode: reasonCode,
     safeDetail: safeDetail,
   );
 
-  static ErrorSummaryOutcome failed({
+  factory ErrorSummaryOutcome.failed({
     required final String reasonCode,
     final String? safeDetail,
   }) => ErrorSummaryOutcome(
     status: ErrorSummaryStatus.failed,
-    text: null,
     reasonCode: reasonCode,
     safeDetail: safeDetail,
   );
+
+  final ErrorSummaryStatus status;
+  final String? text;
+  final String? reasonCode;
+  final String? safeDetail;
 }
 
 /// Gating + defensive catch for `explain_errors` summarization (unit-tested).
@@ -147,8 +136,7 @@ final class OpenAiErrorSummaryProvider implements ErrorSummaryProvider {
   Future<ErrorSummaryOutcome> summarize({
     required final List<Map<String, Object?>> errors,
     required final List<Map<String, Object?>> causes,
-  }) =>
-      _summarizer.summarize(errors: errors, causes: causes);
+  }) => _summarizer.summarize(errors: errors, causes: causes);
 }
 
 final class _OpenAiResponsesSummarizer {
