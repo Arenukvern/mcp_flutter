@@ -109,7 +109,7 @@ void main() {
     final tester,
   ) async {
     final navKey = GlobalKey<NavigatorState>();
-    MCPToolkitBinding.instance.setNavigatorKey(navKey);
+    MCPToolkitBinding.instance.navigatorKey = navKey;
 
     await tester.pumpWidget(
       MaterialApp(
@@ -142,14 +142,14 @@ void main() {
     expect(result['success'], isTrue);
     expect(find.byType(AlertDialog), findsNothing);
 
-    MCPToolkitBinding.instance.setNavigatorKey(null);
+    MCPToolkitBinding.instance.navigatorKey = null;
   });
 
   testWidgets(
     'handle_dialog dismiss returns failure when no dialog is showing',
     (final tester) async {
       final navKey = GlobalKey<NavigatorState>();
-      MCPToolkitBinding.instance.setNavigatorKey(navKey);
+      MCPToolkitBinding.instance.navigatorKey = navKey;
 
       await tester.pumpWidget(
         MaterialApp(navigatorKey: navKey, home: const Scaffold()),
@@ -159,14 +159,14 @@ void main() {
       expect(result['success'], isFalse);
       expect(result['error'], 'no_popup_route');
 
-      MCPToolkitBinding.instance.setNavigatorKey(null);
+      MCPToolkitBinding.instance.navigatorKey = null;
     },
   );
 
   test(
     'handle_dialog dismiss fails fast when no navigator registered',
     () async {
-      MCPToolkitBinding.instance.setNavigatorKey(null);
+      MCPToolkitBinding.instance.navigatorKey = null;
       final result = await ControlFlowService.dismissDialog();
       expect(result['success'], isFalse);
       expect(result['error'], 'navigator_not_registered');
@@ -179,7 +179,7 @@ void main() {
 
   testWidgets('navigate push pushes the named route', (final tester) async {
     final navKey = GlobalKey<NavigatorState>();
-    MCPToolkitBinding.instance.setNavigatorKey(navKey);
+    MCPToolkitBinding.instance.navigatorKey = navKey;
 
     await tester.pumpWidget(
       MaterialApp(
@@ -201,12 +201,12 @@ void main() {
     expect(result['success'], isTrue);
     expect(find.text('settings page'), findsOneWidget);
 
-    MCPToolkitBinding.instance.setNavigatorKey(null);
+    MCPToolkitBinding.instance.navigatorKey = null;
   });
 
   testWidgets('navigate pop returns to previous route', (final tester) async {
     final navKey = GlobalKey<NavigatorState>();
-    MCPToolkitBinding.instance.setNavigatorKey(navKey);
+    MCPToolkitBinding.instance.navigatorKey = navKey;
 
     await tester.pumpWidget(
       MaterialApp(
@@ -229,11 +229,11 @@ void main() {
     expect(result['success'], isTrue);
     expect(find.text('home'), findsOneWidget);
 
-    MCPToolkitBinding.instance.setNavigatorKey(null);
+    MCPToolkitBinding.instance.navigatorKey = null;
   });
 
   test('navigate fails fast when no navigator registered', () async {
-    MCPToolkitBinding.instance.setNavigatorKey(null);
+    MCPToolkitBinding.instance.navigatorKey = null;
     final result = await ControlFlowService.navigate(
       action: 'push',
       route: '/x',
@@ -244,17 +244,17 @@ void main() {
 
   test('navigate rejects unknown action', () async {
     final navKey = GlobalKey<NavigatorState>();
-    MCPToolkitBinding.instance.setNavigatorKey(navKey);
+    MCPToolkitBinding.instance.navigatorKey = navKey;
     final result = await ControlFlowService.navigate(action: 'teleport');
     expect(result['success'], isFalse);
     expect(result['error'], 'unknown_action');
-    MCPToolkitBinding.instance.setNavigatorKey(null);
+    MCPToolkitBinding.instance.navigatorKey = null;
   });
 
   testWidgets('navigate popUntil rejects a route not in the stack instead of '
       'popping everything', (final tester) async {
     final navKey = GlobalKey<NavigatorState>();
-    MCPToolkitBinding.instance.setNavigatorKey(navKey);
+    MCPToolkitBinding.instance.navigatorKey = navKey;
 
     await tester.pumpWidget(
       MaterialApp(
@@ -283,7 +283,7 @@ void main() {
     // Both routes must still be on the stack — nothing was popped.
     expect(find.text('inner page'), findsOneWidget);
 
-    MCPToolkitBinding.instance.setNavigatorKey(null);
+    MCPToolkitBinding.instance.navigatorKey = null;
   });
 
   // -----------------------------------------------------------------------

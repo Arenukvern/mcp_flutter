@@ -80,7 +80,7 @@ void main() {
       try {
         flutterProcess.stdin.writeln('q');
         await flutterProcess.exitCode.timeout(const Duration(seconds: 20));
-      } catch (_) {
+      } on Exception catch (_) {
         flutterProcess.kill(ProcessSignal.sigkill);
       }
 
@@ -635,7 +635,7 @@ Map<String, dynamic>? _tryDecodeJsonMap(final String value) {
       return decoded.cast<String, dynamic>();
     }
     return null;
-  } catch (_) {
+  } on Object catch (_) {
     return null;
   }
 }

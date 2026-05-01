@@ -62,12 +62,13 @@ class ControlFlowService {
       };
     }
 
-    // Dispatch in two passes so both modern and legacy paths see the event:
+    // Dispatch in two passes so both keyboard state and the focus tree see
+    // the event:
     //
     //  1. `HardwareKeyboard.handleKeyEvent` updates pressed-key state and
     //     notifies its listeners (Shortcuts, Actions, etc.).
-    //  2. `KeyEventManager.keyMessageHandler` is the function `FocusManager`
-    //     installs to walk the focus tree and call each `Focus.onKeyEvent`.
+    //  2. `KeyEventManager.keyMessageHandler` forwards to the same handler
+    //     `FocusManager` registers so each `Focus.onKeyEvent` runs.
     //     Calling it directly bypasses `handleKeyData`'s pairing buffer
     //     (which waits for a matching legacy raw event that we don't send).
     //
@@ -76,6 +77,7 @@ class ControlFlowService {
     // events. Pressing Enter via this tool will not submit a TextField —
     // use `tap_widget` on the submit button instead.
     final keyboard = HardwareKeyboard.instance;
+    // ignore: deprecated_member_use
     final keyManager = ServicesBinding.instance.keyEventManager;
     final modifiers = <LogicalKeyboardKey>[
       if (ctrl) LogicalKeyboardKey.controlLeft,
@@ -102,7 +104,6 @@ class ControlFlowService {
     }) {
       final event = makeEvent(isDown: isDown, k: k);
       keyboard.handleKeyEvent(event);
-      // ignore: invalid_use_of_visible_for_testing_member
       keyManager.keyMessageHandler?.call(KeyMessage(<KeyEvent>[event], null));
     }
 
@@ -131,6 +132,7 @@ class ControlFlowService {
   // handle_dialog
   // -------------------------------------------------------------------------
 
+  /// Dismisses the topmost [PopupRoute] via [Navigator.maybePop].
   static Future<Map<String, Object?>> dismissDialog() async {
     final navState = MCPToolkitBinding.instance.navigatorKey?.currentState;
     if (navState == null) {
@@ -169,6 +171,7 @@ class ControlFlowService {
   // navigate
   // -------------------------------------------------------------------------
 
+  /// Performs [Navigator] actions: `push`, `pop`, or `popUntil` [route].
   static Future<Map<String, Object?>> navigate({
     required final String action,
     final String? route,

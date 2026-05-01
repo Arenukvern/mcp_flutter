@@ -26,10 +26,12 @@ final class _TreeBuildState {
   }
 }
 
+/// Builds structured widget-tree payloads for MCP view introspection tools.
 mixin ViewIntrospectionService {
   static const int _defaultMaxNodes = 2500;
   static const int _defaultMaxDepth = 40;
 
+  /// Widget tree plus multi-view metrics for the `view_details` MCP tool.
   static Map<String, Object?> buildViewDetailsPayload() {
     final viewMetrics = ApplicationInfo.getViewsInformation();
     final state = _TreeBuildState(maxNodes: _defaultMaxNodes);
@@ -46,6 +48,7 @@ mixin ViewIntrospectionService {
     };
   }
 
+  /// Hit-tests [RenderView]s at logical ([x], [y]) and summarizes selection.
   static Map<String, Object?> inspectWidgetAtPoint({
     required final int x,
     required final int y,
@@ -214,7 +217,7 @@ mixin ViewIntrospectionService {
         creatorChain = null;
       }
       return true;
-    }());
+    }(), 'creator chain is optional; failures fall back to diagnostics');
     if (creatorChain != null && creatorChain!.trim().isNotEmpty) {
       return creatorChain!.trim();
     }
@@ -380,7 +383,7 @@ mixin ViewIntrospectionService {
         // Best effort only in debug introspection.
       }
       return true;
-    }());
+    }(), 'semantic summary is best-effort in debug mode');
     return semantics;
   }
 
@@ -390,8 +393,7 @@ mixin ViewIntrospectionService {
     }
 
     const groupName = 'mcp_toolkit.inspect_widget_at_point';
-    final inspector = WidgetInspectorService.instance;
-    inspector.disposeGroup(groupName);
+    final inspector = WidgetInspectorService.instance..disposeGroup(groupName);
     try {
       inspector.setSelection(target, groupName);
       final selection = inspector.getSelectedSummaryWidget(null, groupName);

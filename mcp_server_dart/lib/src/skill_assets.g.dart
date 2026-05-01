@@ -611,14 +611,14 @@ Wait for a UI predicate; returns fresh semantic snapshot. Predicates: `{kind:"te
 Returns: fresh semantic snapshot — Failures: `timeout`, `invalid_predicate`
 
 ### navigate
-Drive the registered Navigator. Requires `MCPToolkitBinding.instance.setNavigatorKey(key)` in the app. `action` • string • required (`push|pop|popUntil`). `route` • string • required for push/popUntil. `arguments` • object • optional (for push). `connection` • object • optional.
+Drive the registered Navigator. Requires `MCPToolkitBinding.instance.navigatorKey = key` in the app. `action` • string • required (`push|pop|popUntil`). `route` • string • required for push/popUntil. `arguments` • object • optional (for push). `connection` • object • optional.
 ```json
 {"name": "navigate", "arguments": {"action": "push", "route": "/profile", "arguments": {"userId": "42"}}}
 ```
 Returns: `{"action": "push", "route": "/profile"}` — Failures: `navigator_not_configured`, `route_not_found`
 
 ### handle_dialog
-Dismiss the topmost popup/dialog route. Only `action: "dismiss"` supported. Requires `setNavigatorKey` in the app. `action` • string • required (must be `"dismiss"`). `connection` • object • optional.
+Dismiss the topmost popup/dialog route. Only `action: "dismiss"` supported. Requires `navigatorKey = key` on `MCPToolkitBinding.instance` in the app. `action` • string • required (must be `"dismiss"`). `connection` • object • optional.
 ```json
 {"name": "handle_dialog", "arguments": {"action": "dismiss"}}
 ```
@@ -986,8 +986,8 @@ Every failure returns `{code, message, details, descriptor, recovery}`. Always r
 
 ### `navigatorNotRegistered` (`navigator_not_registered`)
 **Means:** `navigate` was called but the app did not register a `GlobalKey<NavigatorState>`. Not retryable.
-**Causes:** `MCPToolkitBinding.setNavigatorKey()` was never called in the host app.
-**Recovery:** add `MCPToolkitBinding.setNavigatorKey(navigatorKey)` to the app's `main.dart` and hot restart.
+**Causes:** `MCPToolkitBinding.instance.navigatorKey` was never set in the host app.
+**Recovery:** assign `MCPToolkitBinding.instance.navigatorKey = navigatorKey` in the app's `main.dart` and hot restart.
 
 ### `fillFormFailed` (`fill_form_failed`)
 **Means:** `fill_form` orchestration failed (transport or per-field error).

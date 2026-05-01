@@ -946,9 +946,9 @@ final class CommandCatalog {
         name: 'press_key',
         description:
             'Synthesize a keyboard key press (down + up). Accepted keys: '
-            'Enter, Escape, Tab, Backspace, Delete, Space, ArrowUp/Down/'
-            'Left/Right, and single ASCII chars (a-z, 0-9). Optional '
-            'modifiers: ctrl, shift, alt, meta.',
+            'Enter, Escape, Tab, Backspace, Delete, Space, '
+            'ArrowUp/Down/Left/Right, and single ASCII chars (a-z, 0-9). '
+            'Optional modifiers: ctrl, shift, alt, meta.',
         inputSchema: _objectSchema(
           required: const ['key'],
           properties: {
@@ -977,7 +977,7 @@ final class CommandCatalog {
             'Dismiss the topmost popup/dialog route on the registered '
             'Navigator. Currently only action="dismiss" is supported. '
             'Requires the app to register a navigator key via '
-            'MCPToolkitBinding.instance.setNavigatorKey(key).',
+            'MCPToolkitBinding.instance.navigatorKey = key',
         inputSchema: _objectSchema(
           required: const ['action'],
           properties: {'action': _stringSchema()},
@@ -995,7 +995,7 @@ final class CommandCatalog {
         description:
             'Drive the registered Navigator: push a named route, pop the '
             'topmost route, or popUntil a named route. Requires '
-            'MCPToolkitBinding.instance.setNavigatorKey(key) on the app.',
+            'MCPToolkitBinding.instance.navigatorKey = key on the app.',
         inputSchema: _objectSchema(
           required: const ['action'],
           properties: {

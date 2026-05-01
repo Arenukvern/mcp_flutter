@@ -18,7 +18,7 @@ void registerNavigationTools(final CapabilityContext context) {
       description:
           'Dismiss the topmost popup/dialog route on the registered Navigator. '
           'Currently only action="dismiss" is supported. '
-          'Requires MCPToolkitBinding.instance.setNavigatorKey(key) on the app.',
+          'Requires MCPToolkitBinding.instance.navigatorKey = key on the app.',
       inputSchema: <String, Object?>{
         'type': 'object',
         'additionalProperties': false,
@@ -45,7 +45,7 @@ void registerNavigationTools(final CapabilityContext context) {
       description:
           'Drive the registered Navigator: action=push|pop|popUntil. '
           'push and popUntil require route. push accepts arguments map. '
-          'Requires MCPToolkitBinding.instance.setNavigatorKey(key) on the app.',
+          'Requires MCPToolkitBinding.instance.navigatorKey = key on the app.',
       inputSchema: <String, Object?>{
         'type': 'object',
         'additionalProperties': false,

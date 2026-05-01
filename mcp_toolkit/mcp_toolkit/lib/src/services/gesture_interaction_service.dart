@@ -14,9 +14,10 @@ import 'semantic_snapshot_service.dart';
 
 /// A service that drives the running Flutter app using a two-tier strategy:
 ///
-/// 1. **Tier 1 (primary)** — Semantic actions via [SemanticsOwner.performAction].
-///    This bypasses hit-testing entirely and directly invokes the handler
-///    registered by the widget via `SemanticsConfiguration.onTap` / etc.
+/// 1. **Tier 1 (primary)** — Semantic actions via
+///    [SemanticsOwner.performAction]. This bypasses hit-testing entirely and
+///    directly invokes the handler registered by the widget via
+///    `SemanticsConfiguration.onTap` / etc.
 /// 2. **Tier 2 (fallback)** — Synthetic pointer events for gestures that have
 ///    no semantic equivalent (drag, swipe) or when the target node does not
 ///    expose the desired semantic action.
@@ -343,14 +344,15 @@ mixin GestureInteractionService {
   /// null when the node's flags don't suggest a specific type.
   static String? _classifyForHint(final SemanticsNode node) {
     final data = node.getSemanticsData();
-    if (data.hasFlag(SemanticsFlag.isTextField)) return 'textField';
-    if (data.hasFlag(SemanticsFlag.isButton)) return 'button';
-    if (data.hasFlag(SemanticsFlag.isSlider)) return 'slider';
-    if (data.hasFlag(SemanticsFlag.hasToggledState)) return 'switch';
-    if (data.hasFlag(SemanticsFlag.hasCheckedState)) return 'checkbox';
-    if (data.hasFlag(SemanticsFlag.isHeader)) return 'header';
-    if (data.hasFlag(SemanticsFlag.isImage)) return 'image';
-    if (data.hasFlag(SemanticsFlag.isLink)) return 'link';
+    final f = data.flagsCollection;
+    if (f.isTextField) return 'textField';
+    if (f.isButton) return 'button';
+    if (f.isSlider) return 'slider';
+    if (f.isToggled != ui.Tristate.none) return 'switch';
+    if (f.isChecked != ui.CheckedState.none) return 'checkbox';
+    if (f.isHeader) return 'header';
+    if (f.isImage) return 'image';
+    if (f.isLink) return 'link';
     return null;
   }
 
@@ -511,9 +513,9 @@ mixin GestureInteractionService {
         'action': 'drag',
         'error': 'web_gesture_not_supported',
         'hint':
-            'drag is not supported on Flutter Web. There is no semantic-'
-            'action equivalent, and pointer-event synthesis does not drive '
-            'the browser gesture arena. If the intent is scrolling, use '
+            'drag is not supported on Flutter Web. There is no semantic-action '
+            'equivalent, and pointer-event synthesis does not drive the '
+            'browser gesture arena. If the intent is scrolling, use '
             'scroll(ref, direction). If the intent is a picker / reorder, '
             'mutate state directly via evaluate_dart_expression.',
       };
@@ -549,38 +551,38 @@ mixin GestureInteractionService {
       return _refNotFound(ref);
     }
 
-    final binding = GestureBinding.instance;
     // Register the device first — MouseTracker only tracks hover events from
     // pointers that announced themselves via PointerAddedEvent; otherwise the
     // hover may be filtered out and MouseRegion.onEnter never fires.
     const pointer = 1;
-    binding.handlePointerEvent(
-      PointerAddedEvent(
-        pointer: pointer,
-        position: const ui.Offset(-100, -100),
-        kind: PointerDeviceKind.mouse,
-        timeStamp: _now(),
-      ),
-    );
-    // Prime: hover off-screen first so the target hover is a clean
-    // position change. Reuses pointer id so the mouse tracker treats
-    // them as the same logical mouse.
-    binding.handlePointerEvent(
-      PointerHoverEvent(
-        pointer: pointer,
-        position: const ui.Offset(-100, -100),
-        kind: PointerDeviceKind.mouse,
-        timeStamp: _now(),
-      ),
-    );
-    binding.handlePointerEvent(
-      PointerHoverEvent(
-        pointer: pointer,
-        position: centre,
-        kind: PointerDeviceKind.mouse,
-        timeStamp: _now(),
-      ),
-    );
+    GestureBinding.instance
+      ..handlePointerEvent(
+        PointerAddedEvent(
+          pointer: pointer,
+          position: const ui.Offset(-100, -100),
+          kind: PointerDeviceKind.mouse,
+          timeStamp: _now(),
+        ),
+      )
+      // Prime: hover off-screen first so the target hover is a clean
+      // position change. Reuses pointer id so the mouse tracker treats
+      // them as the same logical mouse.
+      ..handlePointerEvent(
+        PointerHoverEvent(
+          pointer: pointer,
+          position: const ui.Offset(-100, -100),
+          kind: PointerDeviceKind.mouse,
+          timeStamp: _now(),
+        ),
+      )
+      ..handlePointerEvent(
+        PointerHoverEvent(
+          pointer: pointer,
+          position: centre,
+          kind: PointerDeviceKind.mouse,
+          timeStamp: _now(),
+        ),
+      );
     await _waitFrame();
 
     return <String, Object?>{
@@ -696,8 +698,7 @@ mixin GestureInteractionService {
     final ui.Offset position,
     final ui.Offset scrollDelta,
   ) async {
-    final binding = GestureBinding.instance;
-    binding.handlePointerEvent(
+    GestureBinding.instance.handlePointerEvent(
       PointerScrollEvent(
         position: position,
         scrollDelta: scrollDelta,
@@ -771,8 +772,7 @@ mixin GestureInteractionService {
   static Duration _now() {
     final elapsed = _clock.elapsed;
     if (elapsed <= _timeBase) {
-      _timeBase = _timeBase + const Duration(microseconds: 1);
-      return _timeBase;
+      return _timeBase = _timeBase + const Duration(microseconds: 1);
     }
     _timeBase = elapsed;
     return elapsed;

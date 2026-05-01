@@ -9,14 +9,14 @@ void main() {
       expect(binding.navigatorKey, isNull);
     });
 
-    test('setNavigatorKey stores the key for later retrieval', () {
+    test('navigatorKey setter stores the key for later retrieval', () {
       final binding = MCPToolkitBinding.instance;
       final key = GlobalKey<NavigatorState>();
       try {
-        binding.setNavigatorKey(key);
+        binding.navigatorKey = key;
         expect(binding.navigatorKey, same(key));
       } finally {
-        binding.setNavigatorKey(null);
+        binding.navigatorKey = null;
       }
       expect(binding.navigatorKey, isNull);
     });

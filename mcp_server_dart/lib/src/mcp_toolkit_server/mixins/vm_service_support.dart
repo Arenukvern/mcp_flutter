@@ -86,8 +86,9 @@ base mixin VMServiceSupport on BaseMCPToolkitServer {
   ConnectionContext get connectionContext => _connectionContext;
 
   /// Install/replace the dynamic command gateway used by core executor.
+  // ignore: use_setters_to_change_properties
   void attachDynamicGateway(final CoreDynamicGateway? gateway) {
-    _coreCommandExecutor.setDynamicGateway(gateway);
+    _coreCommandExecutor.dynamicGateway = gateway;
   }
 
   /// Get the current VM service instance.

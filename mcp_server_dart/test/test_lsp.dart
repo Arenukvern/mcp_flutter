@@ -1,5 +1,6 @@
 #!/usr/bin/env dart
 // Test script for the Dart LSP client
+// ignore_for_file: avoid_print
 
 import 'dart:io';
 
@@ -77,7 +78,7 @@ void main() {
     }
 
     logger.info('Test completed successfully!');
-  } catch (e, stackTrace) {
+  } on Object catch (e, stackTrace) {
     logger.severe('Error: $e', e, stackTrace);
     exit(1);
   } finally {

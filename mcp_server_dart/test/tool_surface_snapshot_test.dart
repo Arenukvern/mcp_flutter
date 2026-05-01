@@ -67,7 +67,6 @@ void main() {
   });
 }
 
-String _resolveExpectedFile() {
-  // Tests run with cwd = mcp_server_dart/. Walk one up to repo root.
-  return '${Directory.current.parent.path}/tool/contracts/expected_tool_surface.txt';
-}
+// Tests run with cwd = mcp_server_dart/. Walk one up to repo root.
+String _resolveExpectedFile() =>
+    '${Directory.current.parent.path}/tool/contracts/expected_tool_surface.txt';

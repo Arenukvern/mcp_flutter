@@ -2,6 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+// MCP harness constructs streams in start() and tears them down in dispose();
+// the analyzer cannot connect those scopes.
+// ignore_for_file: cancel_subscriptions, close_sinks
+
 import 'package:test/test.dart';
 
 void main() {
@@ -66,7 +70,7 @@ void main() {
       try {
         flutterProcess.stdin.writeln('q');
         await flutterProcess.exitCode.timeout(const Duration(seconds: 20));
-      } catch (_) {
+      } on Exception catch (_) {
         flutterProcess.kill(ProcessSignal.sigkill);
       }
 
@@ -608,7 +612,7 @@ Map<String, dynamic>? _tryDecodeJsonMap(final String value) {
       return decoded.cast<String, dynamic>();
     }
     return null;
-  } catch (_) {
+  } on Object catch (_) {
     return null;
   }
 }
@@ -645,6 +649,7 @@ final class _McpHarness {
     required this.process,
     required this.requestController,
     required this.responses,
+    required this.stdinSub,
     required this.stdoutSub,
     required this.stderrSub,
   });
@@ -652,6 +657,7 @@ final class _McpHarness {
   final Process process;
   final StreamController<String> requestController;
   final List<Map<String, dynamic>> responses;
+  final StreamSubscription<String> stdinSub;
   final StreamSubscription<Map<String, dynamic>> stdoutSub;
   final StreamSubscription<String> stderrSub;
   int _nextId = 1;
@@ -670,7 +676,7 @@ final class _McpHarness {
     ], workingDirectory: workingDirectory);
 
     final requestController = StreamController<String>();
-    requestController.stream
+    final stdinSub = requestController.stream
         .map((final request) => '$request\n')
         .listen(process.stdin.write);
 
@@ -694,6 +700,7 @@ final class _McpHarness {
       process: process,
       requestController: requestController,
       responses: responses,
+      stdinSub: stdinSub,
       stdoutSub: stdoutSub,
       stderrSub: stderrSub,
     );
@@ -702,7 +709,7 @@ final class _McpHarness {
   Future<Map<String, dynamic>> request({
     required final String method,
     final Map<String, Object?>? params,
-  }) async {
+  }) {
     final id = _nextId++;
     final requestEnvelope = <String, Object?>{
       'jsonrpc': '2.0',
@@ -736,13 +743,17 @@ final class _McpHarness {
   }
 
   Future<void> dispose() async {
+    await stdinSub.cancel();
     await requestController.close();
     await stdoutSub.cancel();
     await stderrSub.cancel();
+    try {
+      await process.stdin.close();
+    } on Object catch (_) {}
     process.kill();
     try {
       await process.exitCode.timeout(const Duration(seconds: 8));
-    } catch (_) {
+    } on TimeoutException catch (_) {
       process.kill(ProcessSignal.sigkill);
     }
   }

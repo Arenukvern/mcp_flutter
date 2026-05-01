@@ -53,14 +53,13 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     required this.portScanner,
     required this.imageFileSaver,
     required this.configuration,
-    final CoreDynamicGateway? dynamicGateway,
+    this.dynamicGateway,
     final DesktopWindowScreenshotService? desktopWindowScreenshotService,
     this.sessionManager,
     final ErrorCauseAnalyzer? errorCauseAnalyzer,
     final Map<String, ErrorSummaryProvider>? summaryProviders,
     final Future<void> Function(int pid)? activateMacOsTargetPid,
-  }) : _dynamicGateway = dynamicGateway,
-       _desktopWindowScreenshotService =
+  }) : _desktopWindowScreenshotService =
            desktopWindowScreenshotService ??
            MacOsDesktopWindowScreenshotService(),
        _errorCauseAnalyzer = errorCauseAnalyzer ?? const ErrorCauseAnalyzer(),
@@ -79,12 +78,12 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
   final CoreRuntimeConfiguration configuration;
   final SessionManager? sessionManager;
 
+  CoreDynamicGateway? dynamicGateway;
+
   final ErrorCauseAnalyzer _errorCauseAnalyzer;
   final Map<String, ErrorSummaryProvider> _summaryProviders;
   final DesktopWindowScreenshotService _desktopWindowScreenshotService;
   final Future<void> Function(int pid) _activateMacOsTargetPid;
-
-  CoreDynamicGateway? _dynamicGateway;
 
   Iterable<VisualCapturePlatformAdapter> get visualCaptureAdapters sync* {
     if (_desktopWindowScreenshotService
@@ -112,10 +111,6 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
         command.name,
       );
     }
-  }
-
-  void setDynamicGateway(final CoreDynamicGateway? gateway) {
-    _dynamicGateway = gateway;
   }
 
   List<Map<String, Object?>> _buildImageSummaries(
@@ -388,7 +383,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
 
     final gateway =
-        _dynamicGateway ??
+        dynamicGateway ??
         VmExtensionDynamicGateway(connectionContext: connectionContext);
 
     final ensureFailure = await _ensureVmConnected();
@@ -1281,7 +1276,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
 
     final gateway =
-        _dynamicGateway ??
+        dynamicGateway ??
         VmExtensionDynamicGateway(connectionContext: connectionContext);
 
     final ensureFailure = await _ensureVmConnected();
@@ -1349,7 +1344,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
 
     final gateway =
-        _dynamicGateway ??
+        dynamicGateway ??
         VmExtensionDynamicGateway(connectionContext: connectionContext);
 
     final ensureFailure = await _ensureVmConnected();
@@ -1367,7 +1362,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
 
     final gateway =
-        _dynamicGateway ??
+        dynamicGateway ??
         VmExtensionDynamicGateway(connectionContext: connectionContext);
 
     final ensureFailure = await _ensureVmConnected();
@@ -1523,7 +1518,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
 
   VisualCaptureBroker _visualCaptureBroker() => VisualCaptureBroker(
     configuration: configuration,
-    dynamicGateway: _dynamicGateway,
+    dynamicGateway: dynamicGateway,
     adapters: visualCaptureAdapters,
   );
 

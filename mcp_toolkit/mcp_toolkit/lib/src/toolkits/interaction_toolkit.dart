@@ -663,7 +663,7 @@ extension type OnHandleDialogEntry._(MCPCallEntry entry)
         description:
             'Dismiss the topmost popup/dialog route on the registered '
             'Navigator. Currently only action="dismiss" is supported. '
-            'Requires MCPToolkitBinding.instance.setNavigatorKey(key).',
+            'Requires MCPToolkitBinding.instance.navigatorKey = key.',
         inputSchema: ObjectSchema(
           properties: {'action': StringSchema()},
           required: const ['action'],
@@ -710,7 +710,7 @@ extension type OnNavigateEntry._(MCPCallEntry entry) implements MCPCallEntry {
         description:
             'Drive the registered Navigator. action=push|pop|popUntil. '
             'push/popUntil require route. push accepts arguments. '
-            'Requires MCPToolkitBinding.instance.setNavigatorKey(key).',
+            'Requires MCPToolkitBinding.instance.navigatorKey = key.',
         inputSchema: ObjectSchema(
           properties: {
             'action': StringSchema(),

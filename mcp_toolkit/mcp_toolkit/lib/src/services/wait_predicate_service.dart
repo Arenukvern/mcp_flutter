@@ -17,6 +17,7 @@ import 'semantic_snapshot_service.dart';
 class WaitPredicateService {
   const WaitPredicateService._();
 
+  /// Blocks until [predicate] matches or [timeoutMs] elapses.
   static Future<Map<String, Object?>> waitFor({
     required final Map<String, Object?> predicate,
     final int timeoutMs = 5000,

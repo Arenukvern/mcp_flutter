@@ -25,18 +25,7 @@ final class CoreEndpoint {
     this.wsPath = '/ws',
   });
 
-  final String host;
-  final int port;
-  final String wsPath;
-
-  Uri get wsUri {
-    final normalizedPath = wsPath.startsWith('/') ? wsPath : '/$wsPath';
-    return Uri(scheme: 'ws', host: host, port: port, path: normalizedPath);
-  }
-
-  String get display => wsUri.toString();
-
-  static CoreEndpoint fromUri(final Uri uri) {
+  factory CoreEndpoint.fromUri(final Uri uri) {
     final normalizedHost = uri.host.isEmpty ? 'localhost' : uri.host;
     final normalizedPort = uri.hasPort ? uri.port : 0;
     if (normalizedPort <= 0) {
@@ -49,6 +38,17 @@ final class CoreEndpoint {
       wsPath: normalizedPath,
     );
   }
+
+  final String host;
+  final int port;
+  final String wsPath;
+
+  Uri get wsUri {
+    final normalizedPath = wsPath.startsWith('/') ? wsPath : '/$wsPath';
+    return Uri(scheme: 'ws', host: host, port: port, path: normalizedPath);
+  }
+
+  String get display => wsUri.toString();
 
   @override
   bool operator ==(final Object other) =>

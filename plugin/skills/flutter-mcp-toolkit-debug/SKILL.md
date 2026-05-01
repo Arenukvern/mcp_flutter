@@ -299,8 +299,8 @@ Every failure returns `{code, message, details, descriptor, recovery}`. Always r
 
 ### `navigatorNotRegistered` (`navigator_not_registered`)
 **Means:** `navigate` was called but the app did not register a `GlobalKey<NavigatorState>`. Not retryable.
-**Causes:** `MCPToolkitBinding.setNavigatorKey()` was never called in the host app.
-**Recovery:** add `MCPToolkitBinding.setNavigatorKey(navigatorKey)` to the app's `main.dart` and hot restart.
+**Causes:** `MCPToolkitBinding.instance.navigatorKey` was never set in the host app.
+**Recovery:** assign `MCPToolkitBinding.instance.navigatorKey = navigatorKey` in the app's `main.dart` and hot restart.
 
 ### `fillFormFailed` (`fill_form_failed`)
 **Means:** `fill_form` orchestration failed (transport or per-field error).

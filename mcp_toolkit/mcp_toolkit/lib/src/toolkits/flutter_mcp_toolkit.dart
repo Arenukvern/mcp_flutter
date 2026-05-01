@@ -17,8 +17,11 @@ import 'interaction_toolkit.dart';
 /// view screenshots, and view details.
 ///
 /// [binding] is the MCP toolkit binding instance.
+
+/// Public name of the `select_widget_at_point` MCP tool.
 const selectWidgetAtPointToolName = 'select_widget_at_point';
 
+/// MCP tool entries for Flutter screenshots, errors, views, and interactions.
 Set<MCPCallEntry> getFlutterMcpToolkitEntries({
   required final MCPToolkitBinding binding,
 }) => {
@@ -199,8 +202,11 @@ extension type const OnInspectWidgetAtPointEntry._(MCPCallEntry entry)
   }
 }
 
+/// MCP tool entry that delegates to [MCPToolkitBinding.selectAtPointHandler]
+/// when set, otherwise inspects the widget at (x, y).
 extension type const OnSelectWidgetAtPointEntry._(MCPCallEntry entry)
     implements MCPCallEntry {
+  /// Creates the select-at-point tool backed by [binding].
   factory OnSelectWidgetAtPointEntry({
     required final MCPToolkitBinding binding,
   }) {
@@ -245,7 +251,8 @@ extension type const OnSelectWidgetAtPointEntry._(MCPCallEntry entry)
             ),
             'targetDomain': StringSchema(
               description:
-                  'Optional live-edit target domain, e.g. appScene or toolScene',
+                  'Optional live-edit target domain '
+                  '(e.g. appScene or toolScene)',
             ),
           },
         ),
