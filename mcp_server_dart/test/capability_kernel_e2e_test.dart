@@ -1,10 +1,10 @@
 // End-to-end wiring test for the capability kernel flag-on path.
 //
 // Verifies that:
-//   - McpHost + CoreCapability registration produces the expected prefixed
+//   - McpHost + FmtCapability registration produces the expected prefixed
 //     tool surface (27 tools with dumps_supported=false, 31 with it true).
 //   - CapabilityConfig values flow from McpHost construction through the
-//     CapabilityContext to CoreCapability's conditional registration logic.
+//     CapabilityContext to FmtCapability's conditional registration logic.
 //   - The DartMcpDispatchBridge publishes prefixed names to the dart_mcp
 //     side and the legacy unprefixed surface is gated off (T8 cut).
 
@@ -24,7 +24,7 @@ McpHost _makeHost({final bool dumpsSupported = false}) => McpHost(
   ),
 );
 
-// All 27 non-dump tool bare names registered by CoreCapability.
+// All 27 non-dump tool bare names registered by FmtCapability.
 const _nonDumpToolNames = <String>[
   // flutter_inspector_tools (6)
   'fmt_hot_reload_flutter',
@@ -72,12 +72,12 @@ const _dumpToolNames = <String>[
 ];
 
 void main() {
-  group('capability kernel e2e — CoreCapability wiring', () {
+  group('capability kernel e2e — FmtCapability wiring', () {
     test(
         'dumps_supported=false: 24 tools registered; no dump tool names present',
         () async {
       final host = _makeHost(dumpsSupported: false);
-      await host.registerCapability(const CoreCapability());
+      await host.registerCapability(const FmtCapability());
 
       final names = host.toolNames.toSet();
 
@@ -104,7 +104,7 @@ void main() {
         'dumps_supported=true: 31 tools registered; all 4 dump tool names present',
         () async {
       final host = _makeHost(dumpsSupported: true);
-      await host.registerCapability(const CoreCapability());
+      await host.registerCapability(const FmtCapability());
 
       final names = host.toolNames.toSet();
 
@@ -127,7 +127,7 @@ void main() {
 
     test('all prefixed tool names start with "fmt_"', () async {
       final host = _makeHost(dumpsSupported: true);
-      await host.registerCapability(const CoreCapability());
+      await host.registerCapability(const FmtCapability());
 
       for (final name in host.toolNames) {
         expect(
@@ -157,7 +157,7 @@ void main() {
           unpublish: unpublished.add,
         ),
       );
-      await host.registerCapability(const CoreCapability());
+      await host.registerCapability(const FmtCapability());
 
       final publishedNames = published.map((final t) => t.name).toSet();
       expect(publishedNames, containsAll(_nonDumpToolNames));

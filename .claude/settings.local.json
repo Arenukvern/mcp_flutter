@@ -127,7 +127,13 @@
       "Bash(echo \"PID=$!\")",
       "Bash(git -C /Users/antonio/mcp/cline/mcp_flutter mv flutter_live_edit/flutter_live_edit_toolkit/lib/src/services/live_edit_session/lru_selection_cache.dart flutter_live_edit/flutter_live_edit_toolkit/lib/src/services/hit_testing/lru_selection_cache.dart)",
       "Bash(kill 84681)",
-      "Bash(kill 18136)"
+      "Bash(kill 18136)",
+      "Bash(gitnexus analyze *)",
+      "mcp__gitnexus__detect_changes",
+      "mcp__gitnexus__query",
+      "mcp__gitnexus__context",
+      "mcp__gitnexus__impact",
+      "mcp__gitnexus__rename"
     ]
   }
 }

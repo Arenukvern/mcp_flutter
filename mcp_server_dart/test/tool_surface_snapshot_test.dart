@@ -32,7 +32,7 @@ void main() {
         unpublish: (_) {},
       ),
     );
-    await host.registerCapability(const CoreCapability());
+    await host.registerCapability(const FmtCapability());
 
     final actual = published.map((final t) => t.name).toSet();
 

@@ -81,8 +81,8 @@ migration window by years.
 **What changed:**
 - `mcp_server_dart`'s static dep tree contains zero Flutter packages.
   `uses-material-design` warnings in server builds disappeared.
-- All MCP tool names from the bundled core capability are prefixed: `tap_widget` → `core_tap_widget`,
-  `hot_reload_and_capture` → `core_hot_reload_and_capture`, etc. Unprefixed
+- All MCP tool names from the bundled `fmt` capability are prefixed: `tap_widget` → `fmt_tap_widget`,
+  `hot_reload_and_capture` → `fmt_hot_reload_and_capture`, etc. Unprefixed
   names return `tool_not_found`. The locked surface is in
   [`tool/contracts/expected_tool_surface.txt`](https://github.com/Arenukvern/mcp_flutter/blob/main/tool/contracts/expected_tool_surface.txt).
 - The dynamic-registry host trio (`listClientToolsAndResources`,

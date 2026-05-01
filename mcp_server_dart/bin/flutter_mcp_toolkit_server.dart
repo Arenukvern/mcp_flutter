@@ -64,7 +64,7 @@ Future<void> main(final List<String> args) async {
             ),
         configuration: configuration,
       );
-      await server.capabilityHost.registerCapability(const CoreCapability());
+      await server.capabilityHost.registerCapability(const FmtCapability());
       await server.handleSetLevel(
         SetLevelRequest(
           level: switch (configuration.logLevel) {

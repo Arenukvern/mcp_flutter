@@ -1,119 +1,268 @@
 ## 3.0.0
 
-### BREAKING: MCP tool names are now prefixed by capability id
+Major release. Three pillars:
 
-All MCP tools surface under the `core_` capability prefix. Calls to legacy
-unprefixed names return `tool_not_found`. The CLI catalog vocabulary is
-unchanged — `flutter_mcp_cli exec --name <name>` still uses the bare
-names. See [docs/start_here/migration_v2_to_v3.mdx](docs/start_here/migration_v2_to_v3.mdx)
-for the smallest-possible-diff guide.
-
-| v2 (legacy) | v3 (MCP `tools/call` name) |
-| --- | --- |
-| `tap_widget` | `core_tap_widget` |
-| `enter_text` | `core_enter_text` |
-| `scroll` | `core_scroll` |
-| `long_press` | `core_long_press` |
-| `swipe` | `core_swipe` |
-| `drag` | `core_drag` |
-| `hover` | `core_hover` |
-| `press_key` | `core_press_key` |
-| `semantic_snapshot` | `core_semantic_snapshot` |
-| `wait_for` | `core_wait_for` |
-| `fill_form` | `core_fill_form` |
-| `navigate` | `core_navigate` |
-| `handle_dialog` | `core_handle_dialog` |
-| `connect_debug_app` | `core_connect_debug_app` |
-| `discover_debug_apps` | `core_discover_debug_apps` |
-| `get_vm` | `core_get_vm` |
-| `get_extension_rpcs` | `core_get_extension_rpcs` |
-| `hot_reload_flutter` | `core_hot_reload_flutter` |
-| `hot_restart_flutter` | `core_hot_restart_flutter` |
-| `hot_reload_and_capture` | `core_hot_reload_and_capture` |
-| `evaluate_dart_expression` | `core_evaluate_dart_expression` |
-| `get_recent_logs` | `core_get_recent_logs` |
-| `get_view_details` | `core_get_view_details` |
-| `get_app_errors` | `core_get_app_errors` |
-| `get_screenshots` | `core_get_screenshots` |
-| `capture_ui_snapshot` | `core_capture_ui_snapshot` |
-| `inspect_widget_at_point` | `core_inspect_widget_at_point` |
-| `debug_dump_layer_tree` (`--dumps`) | `core_debug_dump_layer_tree` |
-| `debug_dump_semantics_tree` (`--dumps`) | `core_debug_dump_semantics_tree` |
-| `debug_dump_render_tree` (`--dumps`) | `core_debug_dump_render_tree` |
-| `debug_dump_focus_tree` (`--dumps`) | `core_debug_dump_focus_tree` |
-
-The dynamic-registry host trio
-(`listClientToolsAndResources`, `runClientTool`, `runClientResource`)
-stays **unprefixed** — it is server machinery, not part of the capability
-surface. Resource URIs (`visual://localhost/...`) are also unchanged.
-
-**Why.** The server now composes its tool surface from
-[`Capability`](mcp_capability_kernel/lib/src/capability.dart) instances
-loaded into an `McpHost` registry. Each capability registers its tools by
-bare name; the host applies the `<capabilityId>_` prefix and bridges the
-registration to `dart_mcp`'s `ToolsSupport`. This makes additional
-capabilities composable in v3.x without renaming churn — see
-[ARCHITECTURE.md](ARCHITECTURE.md) "MCP Server Layer (Dart-based)".
+1. **Capability kernel** — the server's tool surface is now composed from
+   `Capability` instances registered into an `McpHost`. The kernel applies
+   the capability prefix and bridges into `dart_mcp`'s `ToolsSupport`.
+2. **Playwright-style interaction layer** — 27 prefixed tools that let an
+   AI agent drive a running Flutter app the way a user does, with semantic
+   refs and a snapshot/staleness contract.
+3. **Plugin-first install** — a Claude Code marketplace plugin bundles
+   skills, agent, and MCP server into one `install.sh` step; CLI gains
+   `init <agent>` for Cursor / Codex / etc.
 
 The locked v3.0.0 surface is checked in at
 [`tool/contracts/expected_tool_surface.txt`](tool/contracts/expected_tool_surface.txt)
 and pinned by
 [`mcp_server_dart/test/tool_surface_snapshot_test.dart`](mcp_server_dart/test/tool_surface_snapshot_test.dart).
 
-### Removed
+### BREAKING
 
-- `flutter_live_edit/` packages and the live-edit tool surface have been
-  excised from the v3.0.0 release. Five `live_edit_*` error codes
-  (`live_edit_backend_failed`, `live_edit_proposal_not_found`,
-  `live_edit_apply_failed`, `live_edit_validation_failed`,
-  `live_edit_disabled`) are no longer emitted. Re-integration is tracked
-  in `todo/selection_state_machine.md`.
+#### MCP tool names are now prefixed by capability id
 
-### Playwright-style interaction layer
+All MCP tools surface under the `fmt_` capability prefix (Flutter MCP
+Toolkit). Calls to legacy unprefixed names return `tool_not_found`. The
+CLI catalog vocabulary is unchanged — `flutter-mcp-toolkit exec --name <name>`
+still uses the bare names. See
+[docs/start_here/migration_v2_to_v3.mdx](docs/start_here/migration_v2_to_v3.mdx)
+for the smallest-possible-diff guide.
 
-- New interaction tools that let an AI agent drive a running Flutter app the
-  way a user does:
+| v2 (legacy) | v3 (MCP `tools/call` name) |
+| --- | --- |
+| `tap_widget` | `fmt_tap_widget` |
+| `enter_text` | `fmt_enter_text` |
+| `scroll` | `fmt_scroll` |
+| `long_press` | `fmt_long_press` |
+| `swipe` | `fmt_swipe` |
+| `drag` | `fmt_drag` |
+| `hover` | `fmt_hover` |
+| `press_key` | `fmt_press_key` |
+| `semantic_snapshot` | `fmt_semantic_snapshot` |
+| `wait_for` | `fmt_wait_for` |
+| `fill_form` | `fmt_fill_form` |
+| `navigate` | `fmt_navigate` |
+| `handle_dialog` | `fmt_handle_dialog` |
+| `connect_debug_app` | `fmt_connect_debug_app` |
+| `discover_debug_apps` | `fmt_discover_debug_apps` |
+| `get_vm` | `fmt_get_vm` |
+| `get_extension_rpcs` | `fmt_get_extension_rpcs` |
+| `hot_reload_flutter` | `fmt_hot_reload_flutter` |
+| `hot_restart_flutter` | `fmt_hot_restart_flutter` |
+| `hot_reload_and_capture` | `fmt_hot_reload_and_capture` |
+| `evaluate_dart_expression` | `fmt_evaluate_dart_expression` |
+| `get_recent_logs` | `fmt_get_recent_logs` |
+| `get_view_details` | `fmt_get_view_details` |
+| `get_app_errors` | `fmt_get_app_errors` |
+| `get_screenshots` | `fmt_get_screenshots` |
+| `capture_ui_snapshot` | `fmt_capture_ui_snapshot` |
+| `inspect_widget_at_point` | `fmt_inspect_widget_at_point` |
+| `debug_dump_layer_tree` (`--dumps`) | `fmt_debug_dump_layer_tree` |
+| `debug_dump_semantics_tree` (`--dumps`) | `fmt_debug_dump_semantics_tree` |
+| `debug_dump_render_tree` (`--dumps`) | `fmt_debug_dump_render_tree` |
+| `debug_dump_focus_tree` (`--dumps`) | `fmt_debug_dump_focus_tree` |
+
+The dynamic-registry host trio
+(`listClientToolsAndResources`, `runClientTool`, `runClientResource`)
+stays **unprefixed** — it is server machinery, not part of the capability
+surface. Resource URIs (`visual://localhost/...`) are also unchanged.
+
+#### Server and CLI binaries renamed
+
+- `flutter_inspector_mcp` → **`flutter-mcp-toolkit-server`** (the MCP server).
+- `flutter_mcp_cli` → **`flutter-mcp-toolkit`** (the CLI).
+- The MCP `serverInfo.name` advertised on initialize is now
+  `flutter-mcp-toolkit-server`.
+
+Update any `mcpServers` config entry, shell alias, Docker invocation, or
+CI script that referenced the old names. The new root `install.sh`
+updates `PATH` for you on first run.
+
+#### Strict wire surface
+
+- All MCP tool/resource errors emit a single envelope:
+  `code`, `message`, `details`, `descriptor`, `recovery`. Code paths that
+  parsed top-level `category` / `retryable` / `exitCode` must read
+  `error.descriptor` instead.
+- Typed parsing hard cut: no string-encoded object/list/bool coercions.
+- Tool argument schemas default to `additionalProperties: false` unless
+  explicitly opened.
+- `connection.targetId` now requires full VM websocket URIs
+  (`ws://.../ws`). Legacy `host:port` ids are rejected with migration
+  guidance to URI ids or `connection.uri`.
+- Top-level `host` / `port` / `uri` aliases on tool arguments are
+  rejected; pass them inside the nested `connection` object.
+
+### Added
+
+#### Capability kernel
+
+- `mcp_capability_kernel/` — pure-Dart contracts: `Capability`,
+  `CapabilityContext`, `HostService`, `CommandRunner`, prefix validators,
+  and a testing library shipping `FakeCommandRunner` /
+  `FakeCapabilityContext`.
+- `mcp_capability_core/` — the bundled `fmt` capability. Registers all 27
+  Playwright-style tools plus 4 `--dumps` tools when
+  `dumps_supported=true`. No Flutter dependency on the server side.
+- `mcp_shared_core/` — pure-Dart command hierarchy
+  (`CoreCommand`, `CoreResult.toErrorEnvelopeJson`) and value types
+  shared between server, CLI, and capability core.
+- `McpHost` registry on the server applies the `<capabilityId>_` prefix
+  with collision enforcement. `DartMcpDispatchBridge` publishes prefixed
+  tools into `dart_mcp`'s `ToolsSupport`.
+
+#### Playwright-style interaction layer
+
+- New interaction tools that let an AI agent drive a running Flutter app
+  the way a user does:
   - `semantic_snapshot` returns a compact JSON accessibility tree of
-    interactive widgets with stable `ref` strings (`s_0`, `s_1`, ...) and a
-    monotonically incrementing `snapshot_id`.
-  - `tap_widget`, `long_press`, `enter_text`, `scroll`, `swipe`, and `drag`
-    target widgets by `ref`. Each tool uses a two-tier dispatch: semantic
-    actions first (`SemanticsOwner.performAction`), then synthetic pointer
-    events via `GestureBinding.instance.handlePointerEvent` when no semantic
-    action is available. Responses include a `via` field
-    (`semantic_action` | `pointer_events` | `editable_state` | `pointer_scroll_event`).
+    interactive widgets with stable `ref` strings (`s_0`, `s_1`, ...) and
+    a monotonically incrementing `snapshot_id`.
+  - `tap_widget`, `long_press`, `enter_text`, `scroll`, `swipe`, and
+    `drag` target widgets by `ref`. Each tool uses a two-tier dispatch:
+    semantic actions first (`SemanticsOwner.performAction`), then
+    synthetic pointer events via
+    `GestureBinding.instance.handlePointerEvent` when no semantic action
+    is available. Responses include a `via` field
+    (`semantic_action` | `pointer_events` | `editable_state` |
+    `pointer_scroll_event`).
   - All interaction tools accept an optional `snapshotId`; if it doesn't
-    match the current snapshot the call returns a `stale_snapshot` envelope
-    with `providedSnapshotId` and `currentSnapshotId`.
+    match the current snapshot the call returns a `stale_snapshot`
+    envelope with `providedSnapshotId` and `currentSnapshotId`.
   - `scroll` direction follows the Playwright convention
     (direction = which content to reveal).
-  - `enter_text` falls back to `EditableTextState.userUpdateTextEditingValue`
-    so `TextInputFormatter`s and `onChanged` fire correctly.
-- `hot_reload_and_capture` fuses hot reload, screenshot, semantic snapshot,
-  and app errors into a single response for the agent edit/preview loop.
-- `evaluate_dart_expression` runs a Dart expression against the root library
-  in the running isolate (e.g. `AgentState.instance.counter`) and returns
-  `{result, kind, classRef}`.
+  - `enter_text` falls back to
+    `EditableTextState.userUpdateTextEditingValue` so
+    `TextInputFormatter`s and `onChanged` fire correctly.
+- `hot_reload_and_capture` fuses hot reload, screenshot, semantic
+  snapshot, and app errors into a single response for the agent
+  edit/preview loop.
+- `evaluate_dart_expression` runs a Dart expression against the root
+  library in the running isolate (e.g. `AgentState.instance.counter`)
+  and returns `{result, kind, classRef}`.
 - `get_recent_logs` exposes a 200-entry ring buffer of recent
-  `print`/`debugPrint` output captured from the running app.
+  `print` / `debugPrint` output captured from the running app.
 
-### Showcase redesign
+#### `flutter-mcp-toolkit init <agent>`
+
+- New `init` subcommand auto-detects mode and writes per-target skills,
+  agent files, and manifests for Claude Code, Cursor, Codex, and other
+  supported agents in one call.
+- `codegen-init` emits the Flutter `main.dart` snippet that bootstraps
+  the toolkit on the app side (`MCPToolkitBinding.initialize() / initializeFlutterToolkit()`).
+- Replaces the per-agent manual setup docs that shipped in v2.
+
+#### Claude Code marketplace plugin (`flutter_mcp_plugin/`)
+
+- Plugin manifest, `.mcp.json`, `install.sh`, `EXPECTED_SERVER_VERSION`,
+  and a marketplace entry under `.claude-plugin/marketplace.json`.
+- Five skills shipped: `setup`, `control`, `debug`, `inspect`, `guide`.
+- `flutter-inspector` agent.
+- Cursor (`.cursor-plugin/`) and Codex (`.codex-plugin/`) plugin
+  manifests.
+- Skill bodies are bundled into the server (`skill_assets.g.dart`) so
+  the CLI can ship them as part of `init`. `make sync-skills`
+  regenerates; CI fails PRs that don't.
+
+#### Showcase redesign
 
 - `flutter_test_app` rebuilt as a single-page showcase (`ShowcaseScreen`)
-  where every interaction tool has a named target with a Semantics
+  where every interaction tool has a named target with a `Semantics`
   identifier (`greeting_input_field`, `feature_toggle_switch`,
   `brightness_slider`, `scroll_demo_list`, `hot_reload_marker`,
   `emit_log_button`, `trigger_error_button`, `last_log_display`, ...).
 - Integration-test identifiers
   (`about_demo_heading`, `counter_demo_heading`, `counter_demo_icon`,
-  `stateful_counter_increment_button`, `live_edit_test_target`)
-  are preserved.
-- `AgentState` singleton lets agents read and mutate showcase state from
-  `evaluate_dart_expression`.
+  `stateful_counter_increment_button`) are preserved.
+- `AgentState` singleton lets agents read and mutate showcase state
+  through `evaluate_dart_expression`.
+- Section heading semantics are isolated for cleaner snapshots.
 
-### Snapshot and gesture fixes
+#### Install and release
 
-- `semantic_snapshot` now surfaces scrollable nodes (widgets that advertise
+- Root `install.sh` for one-command install/upgrade on `darwin-arm64`,
+  `darwin-x64`, `linux-x64`. Updates `PATH`.
+- Release artifact builder with tarball + checksum generation:
+  `tool/release/build_release_artifacts.sh`.
+- Tagged release workflow:
+  `.github/workflows/release.yml`.
+
+#### Contract quality gates (`make check-contracts`)
+
+- `tool/contracts/check_sdk_parity.sh` — Docker base image vs `pubspec`.
+- `tool/contracts/check_error_code_playbook.sh` — error-code surface
+  coverage.
+- `tool/contracts/check_docs_drift.sh` — CLI help vs docs.
+- `tool/contracts/check_plugin_surfaces.sh` — plugin manifest shape.
+- `tool/contracts/check_tool_prefix.sh` — single canonical prefix across
+  every shipped doc; CHANGELOG migration table covers all 27 tools.
+- CI: `.github/workflows/contract_gates.yml`.
+- macOS integration smoke runner:
+  `tool/integration/classify_macos_integration_run.sh`.
+
+#### CLI safety + observability
+
+- `flutter-mcp-toolkit doctor [--json] [--target <path>] [--timeout-ms <n>]`
+  for CI preflight before VM-dependent operations.
+- Safe-write flags for `snapshot create` and `bundle create`:
+  `--check`, `--diff`, `--backup`, `--no-overwrite`. Bundle publishing
+  is now staged and atomic; the destructive pre-delete is gone.
+- Connection UX:
+  - Startup stays non-blocking when multiple targets are present.
+  - First VM-dependent call auto-attaches when target resolution is
+    unambiguous; ambiguity surfaces as `connection_selection_required`
+    with `availableTargets` and retry guidance.
+  - Optional strict nested `connection` object across every
+    VM-dependent MCP tool and dynamic-registry tool.
+  - Resource URI query-based connection targeting (`targetId`, `mode`,
+    `host`, `port`, `uri`, `forceReconnect`).
+- Flutter web auto-discovery:
+  - Machine discovery via `flutter attach --machine` with optional
+    project / device context.
+  - Merged machine + port-scan discovery using URI-id selection
+    payloads.
+- Runtime discovery flags for the CLI and MCP server:
+  - `--flutter-project-dir`
+  - `--flutter-device`
+  - `--flutter-discovery-timeout-ms`
+- CLI / daemon alignment:
+  - `exec --args` and daemon `command/execute` / `watch/start` accept
+    the same optional `params.args.connection`.
+  - `snapshot create` supports per-step
+    `args.commands[i].args.connection`.
+  - Preconnect no longer returns synthetic `vm_not_connected` for
+    ambiguous multi-target paths; ambiguity surfaces as
+    `connection_selection_required`.
+  - Explicit requested-session attach stays strict; implicit stale
+    active-session attach falls back to auto target resolution.
+  - `connect` and `session_start` reject mixed native selector args
+    with nested `connection`.
+
+### Changed
+
+- The `--use-capability-kernel` flag is gone; the kernel is the only
+  registration path. The legacy unprefixed registration mixin was
+  deleted in T9.
+- README rewritten around the four-step install
+  (`install.sh` → `init <agent>` → run app → call tools).
+- ARCHITECTURE.md rewritten around the capability kernel and the
+  shared-core packages. New ADRs in `docs/decisions/`:
+  - `0001_capability_kernel_and_tool_prefix.mdx`
+  - `0002_v3_scope_and_consolidation_deferrals.mdx`
+- Docs reorganized under `docs/start_here/`, `docs/decisions/`,
+  `docs/ai_agents/`, `docs/superpowers/`, `docs/guides/`.
+- Dockerfile pinned to `dart:3.11.0-sdk`.
+
+### Fixed
+
+- `resolveCenter` / `resolveBounds` return logical (not physical)
+  coordinates — DPR fix that unblocked tap / long-press on high-DPI
+  screens.
+- `fill_form` actually stops on first toolkit-side failure.
+- `wait_for` timeout payload shape pinned by tests; malformed payloads
+  route correctly.
+- `popUntil` guard and bad-route logging in the toolkit.
+- `semantic_snapshot` surfaces scrollable nodes (widgets that advertise
   `scrollUp/Down/Left/Right`) so agents can pass an explicit `ref` to
   `scroll` for the deterministic semantic-action path.
 - `scroll` direction-to-`SemanticsAction` mapping realigned with the
@@ -128,108 +277,71 @@ Interaction tools are Tier 1 first on web and degrade predictably when
 Tier 1 isn't available:
 
 - `semantic_snapshot`, `evaluate_dart_expression`, `get_recent_logs`,
-  `hot_reload_flutter`, and `hot_reload_and_capture` work unchanged on web.
-- `tap_widget`, `long_press`, and `scroll` (with ref) work when the target
-  node exposes the matching `SemanticsAction`. The action shows up in the
-  node's `actions` array in `semantic_snapshot`.
+  `hot_reload_flutter`, and `hot_reload_and_capture` work unchanged on
+  web.
+- `tap_widget`, `long_press`, and `scroll` (with ref) work when the
+  target node exposes the matching `SemanticsAction`. The action shows
+  up in the node's `actions` array in `semantic_snapshot`.
 - `enter_text` works via `SemanticsAction.setText` or the
   `EditableTextState.userUpdateTextEditingValue` fallback (both work on
   web).
-- `swipe(ref, direction)` on web redirects to the matching scroll semantic
-  action when `ref` is a scrollable that exposes it; success responses
-  return `via: "semantic_action_fallback"` with a `note` field explaining
-  the redirect.
-- `scroll` without a ref walks the semantics tree for a matching scrollable
-  and uses Tier 1.
+- `swipe(ref, direction)` on web redirects to the matching scroll
+  semantic action when `ref` is a scrollable that exposes it; success
+  responses return `via: "semantic_action_fallback"` with a `note`
+  field explaining the redirect.
+- `scroll` without a ref walks the semantics tree for a matching
+  scrollable and uses Tier 1.
 - When no Tier 1 path exists (tap / long-press on nodes without the
   matching action, swipe on a non-scrollable or no-ref target, drag,
   scroll without any scrollable in tree), web returns a structured
-  `web_gesture_not_supported` envelope with a `hint` pointing the agent at
-  the right workaround (snapshot for a different ref, add a `Semantics`
-  wrapper, or use `evaluate_dart_expression`). This replaces an earlier
-  experimental approach that tried to synthesise browser `PointerEvent`s
-  directly — those never reached Flutter's gesture arena cleanly and
-  produced silent no-ops, so the implementation was removed.
+  `web_gesture_not_supported` envelope with a `hint` pointing the agent
+  at the right workaround (snapshot for a different ref, add a
+  `Semantics` wrapper, or use `evaluate_dart_expression`).
 
-Internal: the `flutter_test_app` showcase now skips its
-`FlutterLiveEditAutoHost` wrapper on web, because the live-edit worktree
-service reaches into `dart:io` (`Directory.systemTemp`) in `initState`
-and would otherwise replace the whole showcase with an error widget.
+### Removed
 
-## 3.0.0
+- Per-agent manual setup docs — superseded by
+  `flutter-mcp-toolkit init <agent>`.
+- Manual install / client-setup docs — superseded by `install.sh` +
+  `init`.
+- `docs/core/built_in_tools` and `docs/core/error_code_playbook` —
+  migrated into the plugin's `debug` and `guide` skills.
+- `docs/getting_started/` and `docs/troubleshooting/` — content moved
+  under `docs/start_here/`.
+- `memory-bank/` legacy AI memory directory.
+- `mcp_toolkit/devtools_mcp_extension/`.
 
-Strict hard-cut release across the monorepo.
+### Deferred (post-3.0.0)
 
-### Hard-cut contracts
-
-- Added `flutter_mcp_cli doctor [--json] [--target <path>] [--timeout-ms <n>]`.
-- Added safe-write flags for `snapshot create` and `bundle create`:
-  `--check`, `--diff`, `--backup`, `--no-overwrite`.
-- Removed destructive bundle pre-delete behavior. Directory publishing is now staged and atomic.
-- Standardized all MCP tool/resource errors to one JSON envelope:
-  `code`, `message`, `details`, `descriptor`, `recovery`.
-- Enforced typed parsing hard cut: no string-encoded object/list/bool coercions.
-- Enforced schema strictness default: `additionalProperties: false` unless explicitly opened.
-- Unified runtime/build protocol version metadata from a single source.
-
-### Install and release
-
-- Added root `install.sh` for one-command install/upgrade on `darwin-arm64`, `darwin-x64`, `linux-x64`.
-- Added release artifact builder script with tarball + checksum generation:
-  `tool/release/build_release_artifacts.sh`.
-- Added tagged release workflow for build, smoke, and publish:
-  `.github/workflows/release.yml`.
-
-### Contract quality gates
-
-- Added docs/help drift gate:
-  `tool/contracts/check_docs_drift.sh`.
-- Added error-code playbook coverage gate:
-  `tool/contracts/check_error_code_playbook.sh`.
-- Added SDK parity gate (Docker base image vs `pubspec`):
-  `tool/contracts/check_sdk_parity.sh`.
-- Added CI contract workflow:
-  `.github/workflows/contract_gates.yml`.
+- Network introspection — see
+  [todo/p3_network_introspection.md](todo/p3_network_introspection.md).
+- `select_option` form action.
+- P4 consolidation set A / C from the audit.
 
 ### Version alignment
 
 - `mcp_server_dart`: `3.0.0`
 - `mcp_toolkit`: `3.0.0`
 
-### Migration: v2.x -> v3.0.0
+### Migration: v2.x → v3.0.0
 
-- Replace any error parsing that expects top-level `category/retryable/exitCode` with `error.descriptor`.
+- Add `fmt_` to every MCP `tools/call` name. See
+  [docs/start_here/migration_v2_to_v3.mdx](docs/start_here/migration_v2_to_v3.mdx).
+- Update binary names in your `mcpServers` config and any wrapper
+  scripts: `flutter_inspector_mcp` → `flutter-mcp-toolkit-server`,
+  `flutter_mcp_cli` → `flutter-mcp-toolkit`.
+- Replace error parsing that expected top-level `category` /
+  `retryable` / `exitCode` with reads against `error.descriptor`.
 - Stop sending string-encoded typed values; pass real JSON types only.
-- For write-producing commands, prefer `--check --diff` first in automation.
-- If overwrite must be blocked, set `--no-overwrite` and handle `write_blocked`.
-- Use `flutter_mcp_cli doctor --json` in CI preflight before VM-dependent operations.
-
-### mcp_server_dart
-
-- connection UX redesign for VM-dependent calls:
-  - startup stays non-blocking and does not fail when multiple targets are present
-  - first VM-dependent call auto-attaches only when target resolution is unambiguous
-  - ambiguous cases now return `connection_selection_required` with `availableTargets` and retry guidance
-- added optional strict nested `connection` object support across VM-dependent MCP tools and dynamic registry tools
-- added resource URI query-based connection targeting (`targetId`, `mode`, `host`, `port`, `uri`, `forceReconnect`)
-- strict input schemas now reject legacy flat connection aliases (`host`, `port`, `uri`) at top-level tool arguments
-- target identity migration (hard break):
-  - `connection.targetId` now uses full VM websocket URI IDs (`ws://.../ws`)
-  - legacy `host:port` `targetId` values are rejected with migration guidance to URI IDs or `connection.uri`
-- Flutter web auto discovery:
-  - added machine discovery via `flutter attach --machine` with optional project/device context
-  - merged machine + port-scan discovery with URI-ID selection payloads
-- added runtime discovery flags for CLI and MCP server:
-  - `--flutter-project-dir`
-  - `--flutter-device`
-  - `--flutter-discovery-timeout-ms`
-- CLI v2 and daemon alignment:
-  - one-shot `exec --args` now supports optional strict nested `connection` targeting for VM-dependent execution
-  - daemon `command/execute` and `watch/start` accept the same optional `params.args.connection` contract
-  - `snapshot create` supports per-step `args.commands[i].args.connection` targeting
-  - preconnect no longer returns synthetic `vm_not_connected` for ambiguous multi-target paths; ambiguity now surfaces as `connection_selection_required`
-  - explicit requested session attach remains strict; implicit stale active-session attach falls back to auto target resolution
-  - `connect` and `session_start` reject mixed native selector args with nested `connection`
+- Switch any `targetId` of the form `host:port` to the full
+  `ws://.../ws` URI, or pass `connection.uri`.
+- Move top-level `host` / `port` / `uri` arguments into the nested
+  `connection` object.
+- For write-producing commands, prefer `--check --diff` first in
+  automation. If overwrite must be blocked, set `--no-overwrite` and
+  handle `write_blocked`.
+- Use `flutter-mcp-toolkit doctor --json` in CI preflight before
+  VM-dependent operations.
 
 ## 2.6.1
 

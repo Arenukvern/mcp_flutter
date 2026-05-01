@@ -1,5 +1,5 @@
-// mcp_capability_core/test/core_capability_test.dart
-import 'package:mcp_capability_core/src/core_capability.dart';
+// mcp_capability_core/test/fmt_capability_test.dart
+import 'package:mcp_capability_core/src/fmt_capability.dart';
 import 'package:mcp_capability_kernel/mcp_capability_kernel.dart';
 import 'package:mcp_capability_kernel/testing.dart';
 import 'package:test/test.dart';
@@ -28,10 +28,10 @@ FakeCapabilityContext _makeCtx({bool dumpsSupported = false}) {
 }
 
 void main() {
-  group('CoreCapability.register — dumps_supported gating', () {
+  group('FmtCapability.register — dumps_supported gating', () {
     test('dumps_supported=false: dump tools are NOT registered', () async {
       final ctx = _makeCtx(dumpsSupported: false);
-      await const CoreCapability().register(ctx);
+      await const FmtCapability().register(ctx);
       for (final name in _dumpToolNames) {
         expect(
           ctx.registeredToolNames,
@@ -43,7 +43,7 @@ void main() {
 
     test('dumps_supported=true: all 4 dump tools ARE registered', () async {
       final ctx = _makeCtx(dumpsSupported: true);
-      await const CoreCapability().register(ctx);
+      await const FmtCapability().register(ctx);
       expect(ctx.registeredToolNames, containsAll(_dumpToolNames));
     });
 
@@ -71,7 +71,7 @@ void main() {
 
       for (final dumps in [false, true]) {
         final ctx = _makeCtx(dumpsSupported: dumps);
-        await const CoreCapability().register(ctx);
+        await const FmtCapability().register(ctx);
         expect(
           ctx.registeredToolNames,
           containsAll(alwaysPresent),

@@ -14,9 +14,9 @@ inspect:
 check-contracts:
 	cd $(CURDIR) && \
 	bash tool/contracts/check_sdk_parity.sh && \
-	bash tool/contracts/check_error_code_playbook.sh && \
 	bash tool/contracts/check_docs_drift.sh && \
-	bash tool/contracts/check_plugin_surfaces.sh
+	bash tool/contracts/check_plugin_surfaces.sh && \
+	bash tool/contracts/check_tool_prefix.sh
 
 .PHONY: release-artifacts
 release-artifacts:

@@ -1,4 +1,4 @@
-// mcp_capability_core/lib/src/core_capability.dart
+// mcp_capability_core/lib/src/fmt_capability.dart
 import 'package:mcp_capability_kernel/mcp_capability_kernel.dart';
 
 import 'tools/debug_dump_tools.dart';
@@ -11,17 +11,18 @@ import 'tools/navigation_tools.dart';
 import 'tools/semantic_tools.dart';
 import 'tools/wait_tools.dart';
 
-/// The core MCP capability for Flutter inspection and Playwright-parity
-/// interaction.
-final class CoreCapability implements Capability {
-  const CoreCapability();
+/// The Flutter MCP Toolkit (`fmt`) capability — Flutter inspection and
+/// Playwright-parity interaction. The capability id `'fmt'` is the user-facing
+/// MCP tool prefix (e.g. `fmt_tap_widget`).
+final class FmtCapability implements Capability {
+  const FmtCapability();
 
   @override
   String get id => 'fmt';
 
   @override
   String get description =>
-      'Core Flutter inspector — interaction, inspection, hot reload, diagnostics.';
+      'Flutter MCP Toolkit — interaction, inspection, hot reload, diagnostics.';
 
   @override
   String get version => '3.0.0';

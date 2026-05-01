@@ -12,7 +12,7 @@ import '_internal/handler_helpers.dart';
 /// Registers: debug_dump_layer_tree, debug_dump_semantics_tree,
 /// debug_dump_render_tree, debug_dump_focus_tree.
 ///
-/// These tools are heavy operations. The [CoreCapability] gates registration
+/// These tools are heavy operations. The [FmtCapability] gates registration
 /// on `context.config.getBool('dumps_supported', defaultValue: false)` so they
 /// are only exposed when the host has opted in (matching the legacy server's
 /// `--dumps` flag behaviour).

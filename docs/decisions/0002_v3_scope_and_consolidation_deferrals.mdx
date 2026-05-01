@@ -74,9 +74,9 @@ question is *coverage* and *clarity of contract*, not headline count.
 
 **The moat — features Playwright doesn't have, do not dilute these:**
 
-- `core_hot_reload_and_capture` — fused edit/preview cycle.
-- `core_evaluate_dart_expression` — runtime introspection via VM service.
-- `core_semantic_snapshot` staleness sentinel (`snapshot_id` + `stale_snapshot`
+- `fmt_hot_reload_and_capture` — fused edit/preview cycle.
+- `fmt_evaluate_dart_expression` — runtime introspection via VM service.
+- `fmt_semantic_snapshot` staleness sentinel (`snapshot_id` + `stale_snapshot`
   error code) — explicit contract Playwright lacks.
 - Dynamic tool registration (app-side registry) — apps inject their own tools
   at runtime, surfaced via `listClientToolsAndResources`.
