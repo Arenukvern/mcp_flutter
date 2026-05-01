@@ -1,16 +1,16 @@
 {
-  "name": "mcp-flutter",
+  "name": "flutter-mcp-toolkit",
   "owner": {
     "name": "Arenukvern",
     "url": "https://github.com/Arenukvern/mcp_flutter"
   },
   "plugins": [
     {
-      "name": "flutter-mcp",
+      "name": "flutter-mcp-toolkit",
       "source": "./flutter_mcp_plugin",
       "description": "Flutter MCP toolkit for Claude Code: inspect, live-edit, and interact with running Flutter apps via the Dart VM Service.",
       "version": "0.1.0",
-      "keywords": ["flutter", "dart", "mcp", "live-edit", "vm-service", "inspector"]
+      "keywords": ["flutter", "dart", "mcp", "mcp-toolkit", "vm-service", "inspector"]
     }
   ]
 }
