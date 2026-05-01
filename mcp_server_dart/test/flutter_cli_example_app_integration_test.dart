@@ -219,7 +219,7 @@ void main() {
         final runTool = await _runCli([
           'exec',
           '--name',
-          'runClientTool',
+          'fmt_client_tool',
           '--args',
           '{"toolName":"get_agent_showcase_state","arguments":{}}',
         ]);
@@ -228,7 +228,7 @@ void main() {
         final runResource = await _runCli([
           'exec',
           '--name',
-          'runClientResource',
+          'fmt_client_resource',
           '--args',
           jsonEncode({'resourceUri': appStateResourceUri}),
         ]);
@@ -584,7 +584,7 @@ Future<Map<String, dynamic>> _waitForDynamicTool(final String toolName) async {
     final result = await _runCli([
       'exec',
       '--name',
-      'listClientToolsAndResources',
+      'fmt_list_client_tools_and_resources',
       '--args',
       '{}',
     ]);

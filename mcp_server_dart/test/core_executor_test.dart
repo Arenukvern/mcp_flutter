@@ -97,6 +97,60 @@ void main() {
       expect(data['images'], equals(const <String>['AQID']));
     });
 
+    test(
+      'desktop window screenshot forwards vm pid into capture service',
+      () async {
+        void logger(
+          final LoggingLevel level,
+          final String message, {
+          final String logger = 'test',
+        }) {}
+
+        final context = ConnectionContext(
+          defaultHost: 'localhost',
+          defaultPort: 8181,
+          logger: logger,
+          discoverPorts: () async => <int>[8181],
+        );
+        context.debugConnectedVmPidOverride = 90001;
+        addTearDown(() => context.debugConnectedVmPidOverride = null);
+
+        int? capturedPid;
+        final localExecutor = DefaultCoreCommandExecutor(
+          connectionContext: context,
+          portScanner: CorePortScanner(logger: logger),
+          imageFileSaver: CoreImageFileSaver(logger: logger),
+          configuration: const CoreRuntimeConfiguration(
+            vmHost: 'localhost',
+            vmPort: 8181,
+            resourcesSupported: true,
+            imagesSupported: true,
+            dumpsSupported: false,
+            dynamicRegistrySupported: false,
+            saveImagesToFiles: false,
+            flutterProjectDir: '/tmp/sample_app',
+            flutterDevice: 'macos',
+          ),
+          desktopWindowScreenshotService: _FakeDesktopWindowScreenshotService(
+            result: const DesktopWindowScreenshotCapture(
+              images: <String>['AQID'],
+              captureMode: 'desktop_window',
+              metadata: <String, Object?>{'appName': 'sample_app'},
+            ),
+            onCapture: (final pid) => capturedPid = pid,
+          ),
+          activateMacOsTargetPid: (_) async {},
+        );
+
+        final result = await localExecutor.execute(
+          const GetScreenshotsCommand(mode: ScreenshotMode.desktopWindow),
+        );
+
+        expect(result.ok, isTrue);
+        expect(capturedPid, equals(90001));
+      },
+    );
+
     test('desktop window screenshot mode surfaces capture failures', () async {
       void logger(
         final LoggingLevel level,
@@ -439,8 +493,6 @@ final class _FakeDesktopWindowScreenshotService
     this.result,
     this.error,
     this.permissionStatus = PermissionStatus.granted,
-    // TODO(arenukvern): remove or use
-    // ignore: unused_element_parameter
     this.onCapture,
   });
 

@@ -97,7 +97,7 @@ This MCP server is verified by [MseeP.ai](https://mseep.ai).
 3. **Dynamic Tools Not Appearing**
    - Ensure `flutter_mcp_toolkit` package is properly initialized in your Flutter app
    - Check that tools are registered using `MCPToolkitBinding.instance.addEntries()`
-   - Use `listClientToolsAndResources` to verify registration
+   - Use `fmt_list_client_tools_and_resources` to verify registration
    - Hot reload your Flutter app after adding new tools
 
 The Flutter MCP Server is registered with Smithery's registry, making it discoverable and usable by other AI tools through a standardized interface.

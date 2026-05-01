@@ -7,8 +7,8 @@ void main() {
   // returned physical-pixel coordinates because _globalRect accumulated the
   // root SemanticsNode's device-pixel-ratio transform. With DPR>1 (Retina,
   // most modern phones), synthesized pointer events sent at the resolved
-  // center missed the widget by a factor of DPR. See
-  // TODO(user): document root cause in todo/dpr_resolve_center_bounds.md.
+  // center missed the widget by a factor of DPR. Root cause and fix:
+  // ../../../todo/dpr_resolve_center_bounds.md.
   for (final dpr in const <double>[1, 2, 3]) {
     testWidgets('resolveCenter returns logical coords at DPR=$dpr', (
       final tester,

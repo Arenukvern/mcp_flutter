@@ -89,7 +89,7 @@ This unified architecture supports:
 - Error handling and logging
 - Connection management
 - **Capability kernel** (v3.0.0+): the server hosts an `McpHost` registry into which `Capability` instances register prefixed tools (e.g. `fmt_tap_widget`). The host wires each registration to dart_mcp's `ToolsSupport` via a `DartMcpDispatchBridge`. The legacy unprefixed registration mixin is gated off by default and reachable only with `--no-use-capability-kernel`. See `mcp_capability_kernel/` (contracts) and `mcp_capability_core/` (the `fmt` capability shipping all 27 + 4-dump tools).
-- Dynamic Registry: Manages runtime-registered tools and resources (forwarded from the running Flutter app via `addMcpTool`). The dispatch trio `listClientToolsAndResources` / `runClientTool` / `runClientResource` is host machinery and stays unprefixed.
+- Dynamic Registry: Manages runtime-registered tools and resources (forwarded from the running Flutter app via `addMcpTool`). The dispatch trio `fmt_list_client_tools_and_resources` / `fmt_client_tool` / `fmt_client_resource` is host machinery registered with the same `fmt_` names as the rest of the MCP tool surface.
 - Event-Driven Discovery: Real-time tool detection via DTD events
 
 ### 4. AI Assistant Integration Layer
@@ -136,12 +136,12 @@ This unified architecture supports:
 2. **Discovery**:
 
    ```
-   AI Assistant -> listClientToolsAndResources -> MCP Server Dart -> Dynamic Registry
+   AI Assistant -> fmt_list_client_tools_and_resources -> MCP Server Dart -> Dynamic Registry
    ```
 
 3. **Execution**:
    ```
-   AI Assistant -> runClientTool -> MCP Server Dart -> Dynamic Registry -> Flutter App
+   AI Assistant -> fmt_client_tool -> MCP Server Dart -> Dynamic Registry -> Flutter App
    ```
 
 ## Live Edit Overlay Architecture
@@ -283,7 +283,7 @@ Flutter App Tool Registration -> DTD Event -> Discovery Service -> Registry Upda
 1. **Registration**: Flutter app calls `addEntries()`
 2. **Discovery**: DTD event triggers server-side discovery
 3. **Availability**: Tool becomes available via MCP protocol
-4. **Execution**: AI assistant can call tool via `runClientTool`
+4. **Execution**: AI assistant can call tool via `fmt_client_tool`
 5. **Cleanup**: Hot reload or app restart clears registry
 
 ## Troubleshooting
@@ -307,7 +307,7 @@ Flutter App Tool Registration -> DTD Event -> Discovery Service -> Registry Upda
    - Ensure `mcp_toolkit` is properly initialized
    - Check DTD event streaming
    - Verify tool schema compliance
-   - Use `listClientToolsAndResources` for debugging
+   - Use `fmt_list_client_tools_and_resources` for debugging
 
 ## Further Reading
 

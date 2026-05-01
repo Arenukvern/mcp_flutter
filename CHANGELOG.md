@@ -23,8 +23,9 @@ and pinned by
 
 All MCP tools surface under the `fmt_` capability prefix (Flutter MCP
 Toolkit). Calls to legacy unprefixed names return `tool_not_found`. The
-CLI catalog vocabulary is unchanged — `flutter-mcp-toolkit exec --name <name>`
-still uses the bare names. See
+CLI catalog vocabulary stays bare for intrinsic tools — `flutter-mcp-toolkit exec --name tap_widget`
+still works; MCP publishes `fmt_tap_widget`. Dynamic-registry commands use
+their full `fmt_*` spelling in both CLI and MCP. See
 [docs/start_here/migration_v2_to_v3.mdx](docs/start_here/migration_v2_to_v3.mdx)
 for the smallest-possible-diff guide.
 
@@ -61,11 +62,14 @@ for the smallest-possible-diff guide.
 | `debug_dump_semantics_tree` (`--dumps`) | `fmt_debug_dump_semantics_tree` |
 | `debug_dump_render_tree` (`--dumps`) | `fmt_debug_dump_render_tree` |
 | `debug_dump_focus_tree` (`--dumps`) | `fmt_debug_dump_focus_tree` |
+| `listClientToolsAndResources` | `fmt_list_client_tools_and_resources` |
+| `runClientTool` | `fmt_client_tool` |
+| `runClientResource` | `fmt_client_resource` |
 
 The dynamic-registry host trio
-(`listClientToolsAndResources`, `runClientTool`, `runClientResource`)
-stays **unprefixed** — it is server machinery, not part of the capability
-surface. Resource URIs (`visual://localhost/...`) are also unchanged.
+(`fmt_list_client_tools_and_resources`, `fmt_client_tool`, `fmt_client_resource`)
+uses the same `fmt_*` names on MCP and in `exec --name`. Resource URIs
+(`visual://localhost/...`) are unchanged.
 
 #### Server and CLI binaries renamed
 
@@ -421,9 +425,9 @@ Thank you [@rednikisfun](https://github.com/rednikisfun) for [raising issue for 
 
 2. MCP Tools for Dynamic Registry (part of Dynamic Tools Registration)
 
-- `listClientToolsAndResources` - Discover all dynamically registered tools and resources if they are not listed in the AI Assistant (Cursor, Cline, Copilot, Roo Code etc..)
-- `runClientTool` - Execute custom tools registered by Flutter applications
-- `runClientResource` - Read custom resources registered by Flutter applications
+- `fmt_list_client_tools_and_resources` - Discover all dynamically registered tools and resources if they are not listed in the AI Assistant (Cursor, Cline, Copilot, Roo Code etc..)
+- `fmt_client_tool` - Execute custom tools registered by Flutter applications
+- `fmt_client_resource` - Read custom resources registered by Flutter applications
 - `getRegistryStats` - Get statistics about the dynamic registry (debug mode only)
 
 ### 📦 Migration Guide

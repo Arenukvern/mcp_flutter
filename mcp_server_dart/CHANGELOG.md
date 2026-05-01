@@ -2,6 +2,13 @@
 
 ## [unreleased]
 
+### Changed
+
+- Renamed dynamic-registry MCP tools for consistent `fmt_` naming:
+  `listClientToolsAndResources` → `fmt_list_client_tools_and_resources`,
+  `runClientTool` → `fmt_client_tool`, `runClientResource` → `fmt_client_resource`
+  (same strings for `flutter-mcp-toolkit exec --name`).
+
 ## [3.0.0]
 
 Strict hard-cut release focused on reliability and machine contracts.
@@ -11,8 +18,10 @@ Strict hard-cut release focused on reliability and machine contracts.
 All MCP tools surface as `fmt_<bare-name>` (e.g. `fmt_tap_widget`,
 `fmt_hot_reload_and_capture`). Legacy unprefixed names return
 `tool_not_found`. The CLI catalog (`flutter-mcp-toolkit exec --name <name>`)
-keeps the bare names — only the MCP wire surface changed. Dynamic-registry
-host tools and `visual://` resource URIs are unchanged.
+keeps the bare names for intrinsic tools — only the MCP wire surface adds
+`fmt_` there. Dynamic-registry host tools use `fmt_list_client_tools_and_resources`,
+`fmt_client_tool`, and `fmt_client_resource` on both MCP and CLI. `visual://`
+resource URIs are unchanged.
 
 The server composes its tool surface from `Capability` instances loaded
 into an `McpHost` registry; the host applies the prefix and forwards every
@@ -54,7 +63,7 @@ See the root `CHANGELOG.md` for the full v2→v3 rename table.
   `targetId`, `mode`, `host`, `port`, `uri`, `forceReconnect`
 - `connect_debug_app` now accepts the same `connection` object contract
 - dynamic registry parity:
-  - added optional `connection` to `listClientToolsAndResources`, `runClientTool`, `runClientResource`
+  - added optional `connection` to `fmt_list_client_tools_and_resources`, `fmt_client_tool`, `fmt_client_resource`
   - unified pre-connect flow and ambiguity/error semantics
 - resource read targeting now supports URI query params:
   `targetId`, `mode`, `host`, `port`, `uri`, `forceReconnect`

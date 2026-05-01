@@ -110,13 +110,12 @@ void main() {
             .whereType<Map>()
             .map((final tool) => '${tool['name']}')
             .toSet();
-        // T8: tools surface under the "fmt_" capability prefix; the
-        // dynamic-registry host machinery (runClientResource) stays
-        // unprefixed.
+        // T8: tools surface under the "fmt_" capability prefix, including
+        // dynamic-registry host machinery.
         expect(toolNames.contains('fmt_discover_debug_apps'), isTrue);
         expect(toolNames.contains('fmt_capture_ui_snapshot'), isTrue);
         expect(toolNames.contains('fmt_inspect_widget_at_point'), isTrue);
-        expect(toolNames.contains('runClientResource'), isTrue);
+        expect(toolNames.contains('fmt_client_resource'), isTrue);
 
         final discover = await harness.request(
           method: 'tools/call',
@@ -165,7 +164,7 @@ void main() {
         final dynamicList = await harness.request(
           method: 'tools/call',
           params: {
-            'name': 'listClientToolsAndResources',
+            'name': 'fmt_list_client_tools_and_resources',
             'arguments': {
               'connection': {'uri': _globalVmServiceWsUri},
             },
@@ -184,7 +183,7 @@ void main() {
         final runResource = await harness.request(
           method: 'tools/call',
           params: {
-            'name': 'runClientResource',
+            'name': 'fmt_client_resource',
             'arguments': {
               'resourceUri': appStateResourceUri,
               'connection': {'uri': _globalVmServiceWsUri},

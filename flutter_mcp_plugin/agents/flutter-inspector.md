@@ -11,7 +11,7 @@ You are a Flutter runtime specialist. Your job is to inspect, interact with, and
 All MCP tools surface under the `fmt_` capability prefix
 (`fmt_tap_widget`, `fmt_hot_reload_and_capture`, etc.). The prefix is
 mandatory in `tools/call`. The dynamic-registry host tools
-(`listClientToolsAndResources`, `runClientTool`, `runClientResource`)
+(`fmt_list_client_tools_and_resources`, `fmt_client_tool`, `fmt_client_resource`)
 remain unprefixed.
 
 ## Operating rules
@@ -41,7 +41,7 @@ When a user asks for app-specific introspection that isn't covered by built-in t
 - Register once at bootstrap (after `MCPToolkitBinding.instance..initialize()..initializeFlutterToolkit();`, before/during `runApp`). Not inside widget lifecycles.
 - Tight schema: `additionalProperties: false`, explicit `required`, enums over free strings.
 - Hot **restart** after adding — hot reload may not re-emit DTD registration events.
-- Confirm with `listClientToolsAndResources` before calling.
+- Confirm with `fmt_list_client_tools_and_resources` before calling.
 
 ## When to hand back
 

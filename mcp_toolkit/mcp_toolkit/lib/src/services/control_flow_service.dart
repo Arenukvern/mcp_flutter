@@ -45,7 +45,50 @@ class ControlFlowService {
     return null;
   }
 
-  /// Synthesize a key-down + key-up via [HardwareKeyboard].
+  /// Synthesizes key-down and key-up sequences for the MCP `press_key` tool.
+  ///
+  /// ## Two-phase dispatch
+  ///
+  /// Each logical key transition calls:
+  ///
+  /// 1. [HardwareKeyboard.handleKeyEvent] — updates pressed-key state and runs
+  ///    [HardwareKeyboard] handlers (e.g. pieces of the shortcut system that
+  ///    listen here).
+  /// 2. The global `KeyEventManager.keyMessageHandler`, which under a normal
+  ///    [WidgetsBinding] is the callback registered by [FocusManager] so the
+  ///    focus chain receives [Focus.onKeyEvent] / [Shortcuts] routing. We
+  ///    invoke whatever handler is installed (not hard-coded to
+  ///    [FocusManager]) so apps that legitimately patch the handler still work.
+  ///
+  /// `KeyMessage` is built with `rawEvent: null` so only the [KeyEvent] path
+  /// runs inside `FocusManager.handleKeyMessage`; that matches solitary
+  /// synthesized events in the framework's own dispatch path.
+  ///
+  /// ## Deprecation (no public replacement yet)
+  ///
+  /// `KeyMessage`, `KeyEventManager`, and
+  /// `ServicesBinding.instance.keyEventManager` are deprecated with no
+  /// substitute until the legacy RawKeyEvent pipeline is removed. Official
+  /// context:
+  ///
+  /// * Migration guide (app code Raw → KeyEvent):
+  ///   https://docs.flutter.dev/release/breaking-changes/key-event-migration
+  /// * Phase-2 dispatch (why [HardwareKeyboard] handlers and
+  ///   `KeyEventManager.keyMessageHandler` are parallel):
+  ///   https://api.flutter.dev/flutter/services/KeyEventManager/keyMessageHandler.html
+  /// * Removal tracking: https://github.com/flutter/flutter/issues/136419
+  /// * Deprecation PR: https://github.com/flutter/flutter/pull/136677
+  ///
+  /// Framework registration still uses
+  /// `ServicesBinding.instance.keyEventManager` until RawKeyEvent goes away;
+  /// see `FocusManager.registerGlobalHandlers` TODO in the Flutter SDK
+  /// (`hardware_keyboard.dart` / `focus_manager.dart`).
+  ///
+  /// ## Limitation
+  ///
+  /// [TextField.onSubmitted] is driven by the text-input channel
+  /// ([TextInputAction.done]), not this path. Use `tap_widget` on the submit
+  /// control when you need submission semantics.
   static Future<Map<String, Object?>> pressKey({
     required final String key,
     final bool ctrl = false,
@@ -62,20 +105,6 @@ class ControlFlowService {
       };
     }
 
-    // Dispatch in two passes so both keyboard state and the focus tree see
-    // the event:
-    //
-    //  1. `HardwareKeyboard.handleKeyEvent` updates pressed-key state and
-    //     notifies its listeners (Shortcuts, Actions, etc.).
-    //  2. `KeyEventManager.keyMessageHandler` forwards to the same handler
-    //     `FocusManager` registers so each `Focus.onKeyEvent` runs.
-    //     Calling it directly bypasses `handleKeyData`'s pairing buffer
-    //     (which waits for a matching legacy raw event that we don't send).
-    //
-    // KNOWN LIMITATION: `TextField.onSubmitted` goes through the
-    // `flutter/textinput` channel (`TextInputAction.done`), not raw key
-    // events. Pressing Enter via this tool will not submit a TextField —
-    // use `tap_widget` on the submit button instead.
     final keyboard = HardwareKeyboard.instance;
     // ignore: deprecated_member_use
     final keyManager = ServicesBinding.instance.keyEventManager;

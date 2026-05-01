@@ -8,6 +8,10 @@ import 'package:mcp_toolkit/mcp_toolkit.dart';
 void main() {
   // -----------------------------------------------------------------------
   // press_key
+  //
+  // Implementation notes and upstream deprecation context live on
+  // [ControlFlowService.pressKey] (dartdoc), including links to
+  // docs.flutter.dev, api.flutter.dev, and flutter/flutter issues.
   // -----------------------------------------------------------------------
 
   testWidgets('press_key Enter is observed by the focused Focus widget', (

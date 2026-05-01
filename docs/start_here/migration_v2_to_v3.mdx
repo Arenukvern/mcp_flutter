@@ -9,9 +9,11 @@ v2 client running again.
 
 - Add `fmt_` to the front of every MCP `tools/call` name. That's it for
   90% of clients.
-- The CLI catalog (`flutter-mcp-toolkit exec --name <name>`) is **unchanged**.
-- The dynamic-registry host trio (`listClientToolsAndResources`,
-  `runClientTool`, `runClientResource`) is **unchanged**.
+- The CLI catalog (`flutter-mcp-toolkit exec --name <name>`) is **unchanged**
+  for intrinsic tools (`tap_widget`, `get_vm`, …): bare catalog names still
+  map to `fmt_*` MCP tools. Dynamic-registry commands use their full
+  `fmt_*` spelling in both CLI and MCP (`fmt_list_client_tools_and_resources`,
+  `fmt_client_tool`, `fmt_client_resource`).
 - Resource URIs (`visual://localhost/...`) are **unchanged**.
 
 If you see `tool_not_found`, prepend `fmt_` to the tool name.
@@ -59,6 +61,9 @@ prefixed `fmt_`.
 | `debug_dump_semantics_tree` *(--dumps)* | `fmt_debug_dump_semantics_tree` |
 | `debug_dump_render_tree` *(--dumps)* | `fmt_debug_dump_render_tree` |
 | `debug_dump_focus_tree` *(--dumps)* | `fmt_debug_dump_focus_tree` |
+| `listClientToolsAndResources` | `fmt_list_client_tools_and_resources` |
+| `runClientTool` | `fmt_client_tool` |
+| `runClientResource` | `fmt_client_resource` |
 
 The locked v3.0 surface is checked in at
 [`tool/contracts/expected_tool_surface.txt`](https://github.com/Arenukvern/mcp_flutter/blob/main/tool/contracts/expected_tool_surface.txt)
@@ -98,9 +103,9 @@ for a future minor release.
 - **CLI commands.** `flutter-mcp-toolkit exec --name tap_widget --args ...`
   works exactly as in v2. The CLI uses the catalog vocabulary directly,
   not the MCP wire surface.
-- **Dynamic-registry host tools.** `listClientToolsAndResources`,
-  `runClientTool`, `runClientResource` are server machinery — not part of
-  the capability surface — so they stay unprefixed.
+- **Dynamic-registry host tools.** These use the same `fmt_*` names on MCP
+  and in `exec --name`: `fmt_list_client_tools_and_resources`,
+  `fmt_client_tool`, `fmt_client_resource`.
 - **VM service extension names.** `ext.mcp.toolkit.app_errors` and friends
   are still emitted by `mcp_toolkit` exactly as before.
 

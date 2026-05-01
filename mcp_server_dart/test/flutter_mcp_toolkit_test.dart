@@ -4,6 +4,10 @@ import 'dart:io';
 import 'package:test/test.dart';
 
 void main() {
+  // Each case shells out to `dart run bin/flutter_mcp_toolkit.dart`, which
+  // JIT-compiles this package. Under CPU contention (CI / agent hosts) a
+  // single invocation can exceed the default 30s test timeout even though
+  // the child process is healthy — raise the ceiling for the whole group.
   group('flutter-mcp-toolkit v3 one-shot', () {
     late Directory tempDir;
     late String statePath;
@@ -181,7 +185,7 @@ void main() {
         final result = await _runCli(statePath, [
           'exec',
           '--name',
-          'runClientTool',
+          'fmt_client_tool',
           '--args',
           '{"toolName":"example_tool","arguments":"{}"}',
         ]);
@@ -340,7 +344,7 @@ void main() {
         expect(File('$bundleDir/manifest.json').existsSync(), isTrue);
       },
     );
-  });
+  }, timeout: const Timeout(Duration(minutes: 2)));
 }
 
 Future<ProcessResult> _runCli(final String statePath, final List<String> args) {

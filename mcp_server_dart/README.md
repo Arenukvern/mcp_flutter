@@ -18,9 +18,9 @@ Use this sequence first on macOS:
 2. Launch the app in debug mode.
 3. Run `flutter-mcp-toolkit validate-runtime`.
 4. Query dynamic entries in this order:
-   `listClientToolsAndResources`,
-   `runClientResource`,
-   `runClientTool`.
+   `fmt_list_client_tools_and_resources`,
+   `fmt_client_tool`,
+   `fmt_client_resource`.
 
 Treat `exec` as expert mode. `validate-runtime` is the default first-pass proof command.
 
@@ -46,12 +46,12 @@ Safe-write flags for write-producing commands:
 `exec` targets commands in the shared `CommandCatalog` (these are the
 unprefixed catalog names; the CLI is not subject to the MCP capability
 prefix):
-`connect`, `session_start`, `session_exec`, `session_end`, `diagnose`, `watch`, `explain_errors`, `status`, `discover_debug_apps`, `get_vm`, `get_extension_rpcs`, `hot_reload_flutter`, `hot_restart_flutter`, `get_active_ports`, `get_app_errors`, `get_screenshots`, `get_view_details`, `inspect_widget_at_point`, `capture_ui_snapshot`, `debug_dump_layer_tree`, `debug_dump_semantics_tree`, `debug_dump_render_tree`, `debug_dump_focus_tree`, `listClientToolsAndResources`, `runClientTool`, `runClientResource`, `dynamicRegistryStats`, `semantic_snapshot`, `tap_widget`, `long_press`, `enter_text`, `scroll`, `swipe`, `drag`, `hot_reload_and_capture`, `evaluate_dart_expression`, `get_recent_logs`.
+`connect`, `session_start`, `session_exec`, `session_end`, `diagnose`, `watch`, `explain_errors`, `status`, `discover_debug_apps`, `get_vm`, `get_extension_rpcs`, `hot_reload_flutter`, `hot_restart_flutter`, `get_active_ports`, `get_app_errors`, `get_screenshots`, `get_view_details`, `inspect_widget_at_point`, `capture_ui_snapshot`, `debug_dump_layer_tree`, `debug_dump_semantics_tree`, `debug_dump_render_tree`, `debug_dump_focus_tree`, `fmt_list_client_tools_and_resources`, `fmt_client_tool`, `fmt_client_resource`, `dynamicRegistryStats`, `semantic_snapshot`, `tap_widget`, `long_press`, `enter_text`, `scroll`, `swipe`, `drag`, `hot_reload_and_capture`, `evaluate_dart_expression`, `get_recent_logs`.
 
 > **MCP names**. When invoked via MCP `tools/call`, every catalog tool above
 > surfaces under the `fmt_` capability prefix (e.g. `fmt_tap_widget`,
 > `fmt_hot_reload_and_capture`). The dynamic-registry host trio
-> (`listClientToolsAndResources`, `runClientTool`, `runClientResource`) and
+> (`fmt_list_client_tools_and_resources`, `fmt_client_tool`, `fmt_client_resource`) and
 > `dynamicRegistryStats` stay unprefixed in MCP. CLI examples below use the
 > catalog name unchanged.
 
@@ -281,7 +281,7 @@ Notes:
 - If `targetId` lookup misses but URI is a full tokenized VM path (`/<token>/ws`), server attempts direct connect fallback.
 - CLI `exec --args` and daemon `command/execute` / `watch/start` accept the same optional nested `connection` object.
 - `connect_debug_app` accepts the same `connection` shape.
-- Dynamic registry tools (`listClientToolsAndResources`, `runClientTool`, `runClientResource`) accept the same optional `connection`.
+- Dynamic registry tools (`fmt_list_client_tools_and_resources`, `fmt_client_tool`, `fmt_client_resource`) accept the same optional `connection`.
 - Resource reads also support query targeting: `targetId`, `mode`, `host`, `port`, `uri`, `forceReconnect`.
 - Flat top-level connection aliases like `host`/`port`/`uri` in tool arguments are intentionally rejected by strict schemas.
 - For `connect` and `session_start`, native selector args (`mode`, `targetId`, `host`, `port`, `uri`, `force`) cannot be mixed with nested `connection`.

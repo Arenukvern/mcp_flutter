@@ -85,11 +85,12 @@ migration window by years.
   `hot_reload_and_capture` → `fmt_hot_reload_and_capture`, etc. Unprefixed
   names return `tool_not_found`. The locked surface is in
   [`tool/contracts/expected_tool_surface.txt`](https://github.com/Arenukvern/mcp_flutter/blob/main/tool/contracts/expected_tool_surface.txt).
-- The dynamic-registry host trio (`listClientToolsAndResources`,
-  `runClientTool`, `runClientResource`) stays unprefixed — it lives in the
-  reserved `app` namespace.
-- CLI catalog names are unchanged (`flutter_mcp_cli exec --name <unprefixed>`)
-  — the prefix is an MCP-boundary concern, not a CLI one.
+- The dynamic-registry host trio is exposed as `fmt_list_client_tools_and_resources`,
+  `fmt_client_tool`, and `fmt_client_resource` on MCP and in the CLI catalog,
+  matching the `fmt_` naming used in `tools/list`.
+- CLI catalog names remain bare for intrinsic fmt tools (`flutter_mcp_cli exec --name tap_widget`, …);
+  the MCP kernel still publishes those as `fmt_tap_widget`. Dynamic-registry
+  commands are the exception: their catalog name already includes the `fmt_` prefix.
 - `mcp_server_dart` and `flutter_mcp_cli` became thin shells. Their default
   `main.dart` registers the bundled capability set; power users write their
   own `main.dart` to compose a different set.

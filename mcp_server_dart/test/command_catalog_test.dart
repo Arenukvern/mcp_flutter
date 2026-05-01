@@ -13,7 +13,7 @@ void main() {
       expect(names.contains('hot_reload_flutter'), isTrue);
       expect(names.contains('session_start'), isTrue);
       expect(names.contains('session_exec'), isTrue);
-      expect(names.contains('runClientTool'), isTrue);
+      expect(names.contains('fmt_client_tool'), isTrue);
       expect(names.contains('discover_debug_apps'), isTrue);
       expect(names.contains('inspect_widget_at_point'), isTrue);
       expect(names.contains('capture_ui_snapshot'), isTrue);
@@ -94,6 +94,17 @@ void main() {
       final command = catalog.buildCommand('get_app_errors', {'count': 5});
       expect(command, isA<GetAppErrorsCommand>());
       expect((command as GetAppErrorsCommand).count, equals(5));
+    });
+
+    test('explain_errors parses allowExternalSummary alias', () {
+      final command = catalog.buildCommand('explain_errors', {
+        'allow-external-summary': true,
+        'summaryProvider': 'openai',
+      });
+      expect(command, isA<ExplainErrorsCommand>());
+      final explain = command as ExplainErrorsCommand;
+      expect(explain.allowExternalSummary, isTrue);
+      expect(explain.summaryProvider, equals('openai'));
     });
 
     test('parses screenshot permission policy fields', () {

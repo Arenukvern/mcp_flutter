@@ -288,6 +288,9 @@ mixin SemanticSnapshotService {
   /// engine's device-pixel-ratio scaling. We divide by the snapshot view's
   /// DPR so synthesized pointer events (taps, hovers, drags) land on the
   /// widget instead of missing it by a factor of DPR on Retina / mobile.
+  ///
+  /// Longer write-up (symptom, root cause, regression test): repository root
+  /// `todo/dpr_resolve_center_bounds.md`.
   static ui.Rect _globalRect(final SemanticsNode node) {
     var rect = node.rect;
     SemanticsNode? current = node;

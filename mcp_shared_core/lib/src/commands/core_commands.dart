@@ -184,11 +184,16 @@ final class ExplainErrorsCommand extends CoreCommand {
     this.count = 4,
     this.includeSummary = true,
     this.summaryProvider = 'none',
+    this.allowExternalSummary = false,
   });
 
   final int count;
   final bool includeSummary;
   final String summaryProvider;
+
+  /// When true, allows sending error diagnostics to providers that process
+  /// data off-device (e.g. OpenAI). Default false.
+  final bool allowExternalSummary;
 
   @override
   String get name => 'explain_errors';
@@ -539,7 +544,7 @@ final class ListClientToolsAndResourcesCommand extends CoreCommand {
   const ListClientToolsAndResourcesCommand();
 
   @override
-  String get name => 'listClientToolsAndResources';
+  String get name => 'fmt_list_client_tools_and_resources';
 }
 
 final class RunClientResourceCommand extends CoreCommand {
@@ -548,7 +553,7 @@ final class RunClientResourceCommand extends CoreCommand {
   final String resourceUri;
 
   @override
-  String get name => 'runClientResource';
+  String get name => 'fmt_client_resource';
 }
 
 final class RunClientToolCommand extends CoreCommand {
@@ -561,5 +566,5 @@ final class RunClientToolCommand extends CoreCommand {
   final Map<String, Object?> arguments;
 
   @override
-  String get name => 'runClientTool';
+  String get name => 'fmt_client_tool';
 }

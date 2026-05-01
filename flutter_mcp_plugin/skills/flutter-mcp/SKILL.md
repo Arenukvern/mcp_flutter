@@ -35,10 +35,9 @@ If missing, stop and report the instrumentation gap — do **not** guess:
 All MCP tools surface under the `fmt_` capability prefix
 (`fmt_tap_widget`, `fmt_hot_reload_and_capture`, etc.). The prefix is
 mandatory in `tools/call`. Skill-local references below use the bare name
-for readability — when invoking, prepend `fmt_`. The dynamic-registry
-host tools (`listClientToolsAndResources`, `runClientTool`,
-`runClientResource`) stay unprefixed — they are server machinery, not part
-of the capability surface.
+for readability — when invoking, prepend `fmt_`. Dynamic-registry host
+tools (`fmt_list_client_tools_and_resources`, `fmt_client_tool`,
+`fmt_client_resource`) use the same prefix for a single consistent surface.
 
 ## Interaction loop (Playwright-style)
 

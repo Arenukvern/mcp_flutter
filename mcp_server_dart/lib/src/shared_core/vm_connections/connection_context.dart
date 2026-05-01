@@ -239,6 +239,35 @@ final class ConnectionContext {
   void Function()? onReconnected;
 
   VmService? get vmService => _vmService;
+
+  /// When non-null and positive, [resolveConnectedVmPid] returns this value
+  /// without querying [vmService]. For tests only.
+  @visibleForTesting
+  int? debugConnectedVmPidOverride;
+
+  /// VM process id for the active service connection, or null if unknown.
+  Future<int?> resolveConnectedVmPid() async {
+    final override = debugConnectedVmPidOverride;
+    if (override != null) {
+      return override > 0 ? override : null;
+    }
+
+    final service = _vmService;
+    if (service == null) {
+      return null;
+    }
+    try {
+      final vm = await service.getVM();
+      final pid = vm.pid;
+      if (pid is int && pid > 0) {
+        return pid;
+      }
+      return int.tryParse('$pid');
+    } on Object {
+      return null;
+    }
+  }
+
   DartToolingDaemon? get dartToolingDaemon => _dartToolingDaemon;
   bool get isConnected => _vmService != null;
   CoreEndpoint? get activeEndpoint => _activeEndpoint;

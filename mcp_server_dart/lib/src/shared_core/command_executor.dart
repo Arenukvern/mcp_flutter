@@ -241,22 +241,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
   }
 
-  Future<int?> _connectedVmPid() async {
-    final vmService = connectionContext.vmService;
-    if (vmService == null) {
-      return null;
-    }
-    try {
-      final vm = await vmService.getVM();
-      final pid = vm.pid;
-      if (pid is int && pid > 0) {
-        return pid;
-      }
-      return int.tryParse('$pid');
-    } on Object {
-      return null;
-    }
-  }
+  Future<int?> _connectedVmPid() => connectionContext.resolveConnectedVmPid();
 
   Future<CoreResult> _debugDump(final String extensionName) async {
     final ensureFailure = await _ensureVmConnected();
@@ -454,17 +439,22 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
         );
       }
 
-      String? summary;
-      if (command.includeSummary) {
-        summary = await provider.summarize(errors: errors, causes: causes);
-      }
+      final summaryOutcome = await resolveExplainErrorsSummary(
+        includeSummary: command.includeSummary,
+        allowExternalSummary: command.allowExternalSummary,
+        provider: provider,
+        summarize: () => provider.summarize(errors: errors, causes: causes),
+      );
 
       return CoreResult.success(
         data: {
           'message': message,
           'errors': errors,
           'causes': causes,
-          'summary': summary,
+          'summary': summaryOutcome.text,
+          'summaryStatus': summaryOutcome.status.name,
+          'summaryReason': summaryOutcome.reasonCode,
+          'summaryDetail': summaryOutcome.safeDetail,
           'summaryProvider': provider.id,
         },
       );

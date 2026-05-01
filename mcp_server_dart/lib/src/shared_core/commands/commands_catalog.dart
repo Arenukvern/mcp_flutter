@@ -352,12 +352,15 @@ final class CommandCatalog {
       CommandSpec(
         name: 'explain_errors',
         description:
-            'Classify recent Flutter errors with deterministic causes.',
+            'Classify recent Flutter errors with deterministic causes. '
+            'Optional AI summary: summaryProvider `openai` sends diagnostics to OpenAI; '
+            'set allowExternalSummary to true to consent.',
         inputSchema: _objectSchema(
           properties: {
             'count': _intSchema(defaultValue: 4),
             'includeSummary': _boolSchema(defaultValue: true),
             'summaryProvider': _stringSchema(defaultValue: 'none'),
+            'allowExternalSummary': _boolSchema(defaultValue: false),
           },
         ),
         outputSchema: _objectSchema(
@@ -366,6 +369,10 @@ final class CommandCatalog {
             'errors': _arraySchema(items: _objectSchema()),
             'causes': _arraySchema(items: _objectSchema()),
             'summary': _stringSchema(nullable: true),
+            'summaryStatus': _stringSchema(),
+            'summaryReason': _stringSchema(nullable: true),
+            'summaryDetail': _stringSchema(nullable: true),
+            'summaryProvider': _stringSchema(),
           },
         ),
         requiresVm: true,
@@ -384,6 +391,12 @@ final class CommandCatalog {
             'summaryProvider',
             alias: 'summary-provider',
             fallback: 'none',
+          ),
+          allowExternalSummary: _boolArg(
+            args,
+            'allowExternalSummary',
+            alias: 'allow-external-summary',
+            fallback: false,
           ),
         ),
       ),
@@ -1134,7 +1147,7 @@ final class CommandCatalog {
         build: (final args) => const DebugDumpFocusTreeCommand(),
       ),
       CommandSpec(
-        name: 'listClientToolsAndResources',
+        name: 'fmt_list_client_tools_and_resources',
         description: 'List app-registered dynamic tools and resources.',
         inputSchema: _objectSchema(),
         outputSchema: _objectSchema(
@@ -1151,7 +1164,7 @@ final class CommandCatalog {
         build: (final args) => const ListClientToolsAndResourcesCommand(),
       ),
       CommandSpec(
-        name: 'runClientTool',
+        name: 'fmt_client_tool',
         description: 'Execute one dynamic tool by name.',
         inputSchema: _objectSchema(
           properties: {
@@ -1180,7 +1193,7 @@ final class CommandCatalog {
         ),
       ),
       CommandSpec(
-        name: 'runClientResource',
+        name: 'fmt_client_resource',
         description: 'Read one dynamic resource by URI.',
         inputSchema: _objectSchema(
           properties: {'resourceUri': _stringSchema()},

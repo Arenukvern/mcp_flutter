@@ -1,6 +1,6 @@
 ---
 name: custom-toolkit-tools
-description: Use this skill when the agent needs to expose app-specific functionality to itself by registering custom MCP tools from inside the Flutter app via mcp_toolkit's dynamic registry (MCPCallEntry / addEntries). Covers schema design, registration timing, hot-reload behavior, and surfacing via listClientToolsAndResources / runClientTool.
+description: Use this skill when the agent needs to expose app-specific functionality to itself by registering custom MCP tools from inside the Flutter app via mcp_toolkit's dynamic registry (MCPCallEntry / addEntries). Covers schema design, registration timing, hot-reload behavior, and surfacing via fmt_list_client_tools_and_resources / fmt_client_tool.
 ---
 
 # Custom MCP Toolkit Tools (Dynamic Registry)
@@ -63,8 +63,8 @@ The server enforces strict schemas. Mirror its defaults in your tool:
 
 ## Tool discovery from the agent side
 
-1. `listClientToolsAndResources` — enumerates what the running app has registered.
-2. `runClientTool --name <name> --args '<json>'` — invoke it.
+1. `fmt_list_client_tools_and_resources` — enumerates what the running app has registered.
+2. `fmt_client_tool --name <name> --args '<json>'` — invoke it.
 3. If a tool is expected but missing: check that `addEntries` ran (log it), then hot **restart** — reload does not always re-emit DTD registration events.
 
 ## Lifecycle gotchas
@@ -81,7 +81,7 @@ If you (the agent) are adding a tool to the user's app on their behalf:
 1. Add the `mcp_toolkit` dep if missing.
 2. Put the registration in a dedicated file (e.g. `lib/mcp_tools/<domain>_tools.dart`) with one `registerXTools()` function called from bootstrap.
 3. Write the schema tight (`additionalProperties: false`, explicit `required`).
-4. After adding, do a hot **restart**, then `listClientToolsAndResources` to confirm the tool is live before you try to call it.
+4. After adding, do a hot **restart**, then `fmt_list_client_tools_and_resources` to confirm the tool is live before you try to call it.
 5. If the user is iterating, keep the handler pure where possible — easier to test with `core_evaluate_dart_expression` in parallel.
 
 ## Common traps

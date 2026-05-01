@@ -119,7 +119,7 @@ Important:
 - Full tokenized URI `targetId` values are accepted. If discovery cannot resolve them, the server attempts direct connect using that URI.
 - Tool input schemas are strict: flat aliases like `arguments.port`, `arguments.host`, and `arguments.uri` are rejected.
 - `connect_debug_app` accepts the same `connection` object.
-- Dynamic registry tools (`listClientToolsAndResources`, `runClientTool`, `runClientResource`) also accept optional `connection`.
+- Dynamic registry tools (`fmt_list_client_tools_and_resources`, `fmt_client_tool`, `fmt_client_resource`) also accept optional `connection`.
 - CLI one-shot `exec --args`, daemon `command/execute`, and daemon `watch/start` accept the same nested `connection` object contract.
 - `snapshot/create` supports per-step `args.commands[i].args.connection`.
 - `connect` and `session_start` reject mixed native selector fields and nested `connection` in the same args object.

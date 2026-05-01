@@ -857,7 +857,7 @@ Every failure returns `{code, message, details, descriptor, recovery}`. Always r
 
 ### `missingToolName` (`missing_tool_name`)
 **Means:** a dynamic tool call was made without providing a tool name. Not retryable.
-**Recovery:** include `tool_name` parameter in the call; `flutter-mcp-toolkit schema --name runClientTool`.
+**Recovery:** include `tool_name` parameter in the call; `flutter-mcp-toolkit schema --name fmt_client_tool`.
 
 ### `dynamicToolFailed` (`dynamic_tool_failed`)
 **Means:** invocation of a dynamic tool failed.
@@ -865,7 +865,7 @@ Every failure returns `{code, message, details, descriptor, recovery}`. Always r
 
 ### `missingResourceUri` (`missing_resource_uri`)
 **Means:** a dynamic resource read was called without a URI. Not retryable.
-**Recovery:** include `uri` parameter; `flutter-mcp-toolkit schema --name runClientResource`.
+**Recovery:** include `uri` parameter; `flutter-mcp-toolkit schema --name fmt_client_resource`.
 
 ### `dynamicResourceFailed` (`dynamic_resource_failed`)
 **Means:** reading a dynamic resource failed.

@@ -12,7 +12,7 @@ The dynamic registry feature provides excellent foundations for AI agent workflo
 
 ### Current Limitation
 
-`listClientToolsAndResources` provides basic tool definitions but lacks runtime context.
+`fmt_list_client_tools_and_resources` provides basic tool definitions but lacks runtime context.
 
 ### Suggested Enhancement
 

@@ -215,9 +215,9 @@ addMcpTool(
 3. Launch the app in debug mode.
 4. Run `flutter_mcp_cli validate-runtime`.
 5. Then use dynamic registry commands in this order:
-   `listClientToolsAndResources`,
-   `runClientResource`,
-   `runClientTool`.
+   `fmt_list_client_tools_and_resources`,
+   `fmt_client_resource`,
+   `fmt_client_tool`.
 
 Use resources for read-only state, tools for actions, and prefer lowercase underscore names.
 
