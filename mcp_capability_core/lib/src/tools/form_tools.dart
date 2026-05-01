@@ -47,12 +47,12 @@ void registerFormTools(final CapabilityContext context) {
         final fieldsRaw = args['fields'];
         final fields = fieldsRaw is List
             ? fieldsRaw
-                .map<Map<String, Object?>>((final e) {
-                  if (e is Map<String, Object?>) return e;
-                  if (e is Map) return e.cast<String, Object?>();
-                  return const <String, Object?>{};
-                })
-                .toList(growable: false)
+                  .map<Map<String, Object?>>((final e) {
+                    if (e is Map<String, Object?>) return e;
+                    if (e is Map) return e.cast<String, Object?>();
+                    return const <String, Object?>{};
+                  })
+                  .toList(growable: false)
             : const <Map<String, Object?>>[];
         final snapshotId = intArgOrNull(args['snapshotId']);
         return runCommand(

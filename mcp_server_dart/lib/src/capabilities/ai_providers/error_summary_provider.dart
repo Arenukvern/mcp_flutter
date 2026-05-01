@@ -26,7 +26,7 @@ final class NoopErrorSummaryProvider implements ErrorSummaryProvider {
   }) async => null;
 }
 
-// TODO: refactor - split provider and summarization
+// TODO(arenukvern): refactor - split provider and summarization
 final class OpenAiErrorSummaryProvider implements ErrorSummaryProvider {
   OpenAiErrorSummaryProvider({
     final String? apiKey,

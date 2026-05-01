@@ -82,18 +82,19 @@ void main() {
   // debug_dump_layer_tree
   // =========================================================================
   group('debug_dump_tools — debug_dump_layer_tree', () {
-    test('schema: no required, additionalProperties false, connection present',
-        () {
-      final ctx = _registeredCtx();
-      _expectDumpSchema(
-        ctx.registrationFor('debug_dump_layer_tree')!.inputSchema,
-      );
-    });
+    test(
+      'schema: no required, additionalProperties false, connection present',
+      () {
+        final ctx = _registeredCtx();
+        _expectDumpSchema(
+          ctx.registrationFor('debug_dump_layer_tree')!.inputSchema,
+        );
+      },
+    );
 
     test('handler executes DebugDumpLayerTreeCommand', () async {
       final runner = FakeCommandRunner()
-        ..nextExecuteResult =
-            CoreResult.success(data: {'tree': 'layer data'});
+        ..nextExecuteResult = CoreResult.success(data: {'tree': 'layer data'});
       final ctx = _registeredCtx(runner: runner);
       final reg = ctx.registrationFor('debug_dump_layer_tree')!;
       final result = await reg.handler(
@@ -116,12 +117,14 @@ void main() {
           message: 'no connection',
         );
       final ctx = _registeredCtx(runner: runner);
-      final result = await ctx.registrationFor('debug_dump_layer_tree')!.handler(
-        CallToolRequest(
-          name: 'debug_dump_layer_tree',
-          arguments: const <String, Object?>{},
-        ),
-      );
+      final result = await ctx
+          .registrationFor('debug_dump_layer_tree')!
+          .handler(
+            CallToolRequest(
+              name: 'debug_dump_layer_tree',
+              arguments: const <String, Object?>{},
+            ),
+          );
       expect(result.isError, isTrue);
       expect(runner.executedCommands, isEmpty);
     });
@@ -133,15 +136,18 @@ void main() {
           message: 'dump failed',
         );
       final ctx = _registeredCtx(runner: runner);
-      final result = await ctx.registrationFor('debug_dump_layer_tree')!.handler(
-        CallToolRequest(
-          name: 'debug_dump_layer_tree',
-          arguments: const <String, Object?>{},
-        ),
-      );
+      final result = await ctx
+          .registrationFor('debug_dump_layer_tree')!
+          .handler(
+            CallToolRequest(
+              name: 'debug_dump_layer_tree',
+              arguments: const <String, Object?>{},
+            ),
+          );
       expect(result.isError, isTrue);
       final json =
-          jsonDecode((result.content.first as TextContent).text) as Map<String, Object?>;
+          jsonDecode((result.content.first as TextContent).text)
+              as Map<String, Object?>;
       _expectEnvelopeKeys(json);
     });
   });
@@ -150,18 +156,21 @@ void main() {
   // debug_dump_semantics_tree
   // =========================================================================
   group('debug_dump_tools — debug_dump_semantics_tree', () {
-    test('schema: no required, additionalProperties false, connection present',
-        () {
-      final ctx = _registeredCtx();
-      _expectDumpSchema(
-        ctx.registrationFor('debug_dump_semantics_tree')!.inputSchema,
-      );
-    });
+    test(
+      'schema: no required, additionalProperties false, connection present',
+      () {
+        final ctx = _registeredCtx();
+        _expectDumpSchema(
+          ctx.registrationFor('debug_dump_semantics_tree')!.inputSchema,
+        );
+      },
+    );
 
     test('handler executes DebugDumpSemanticsTreeCommand', () async {
       final runner = FakeCommandRunner()
-        ..nextExecuteResult =
-            CoreResult.success(data: {'tree': 'semantics data'});
+        ..nextExecuteResult = CoreResult.success(
+          data: {'tree': 'semantics data'},
+        );
       final ctx = _registeredCtx(runner: runner);
       final reg = ctx.registrationFor('debug_dump_semantics_tree')!;
       await reg.handler(
@@ -183,13 +192,14 @@ void main() {
           message: 'no connection',
         );
       final ctx = _registeredCtx(runner: runner);
-      final result =
-          await ctx.registrationFor('debug_dump_semantics_tree')!.handler(
-        CallToolRequest(
-          name: 'debug_dump_semantics_tree',
-          arguments: const <String, Object?>{},
-        ),
-      );
+      final result = await ctx
+          .registrationFor('debug_dump_semantics_tree')!
+          .handler(
+            CallToolRequest(
+              name: 'debug_dump_semantics_tree',
+              arguments: const <String, Object?>{},
+            ),
+          );
       expect(result.isError, isTrue);
       expect(runner.executedCommands, isEmpty);
     });
@@ -201,16 +211,18 @@ void main() {
           message: 'dump failed',
         );
       final ctx = _registeredCtx(runner: runner);
-      final result =
-          await ctx.registrationFor('debug_dump_semantics_tree')!.handler(
-        CallToolRequest(
-          name: 'debug_dump_semantics_tree',
-          arguments: const <String, Object?>{},
-        ),
-      );
+      final result = await ctx
+          .registrationFor('debug_dump_semantics_tree')!
+          .handler(
+            CallToolRequest(
+              name: 'debug_dump_semantics_tree',
+              arguments: const <String, Object?>{},
+            ),
+          );
       expect(result.isError, isTrue);
       final json =
-          jsonDecode((result.content.first as TextContent).text) as Map<String, Object?>;
+          jsonDecode((result.content.first as TextContent).text)
+              as Map<String, Object?>;
       _expectEnvelopeKeys(json);
     });
   });
@@ -219,18 +231,19 @@ void main() {
   // debug_dump_render_tree
   // =========================================================================
   group('debug_dump_tools — debug_dump_render_tree', () {
-    test('schema: no required, additionalProperties false, connection present',
-        () {
-      final ctx = _registeredCtx();
-      _expectDumpSchema(
-        ctx.registrationFor('debug_dump_render_tree')!.inputSchema,
-      );
-    });
+    test(
+      'schema: no required, additionalProperties false, connection present',
+      () {
+        final ctx = _registeredCtx();
+        _expectDumpSchema(
+          ctx.registrationFor('debug_dump_render_tree')!.inputSchema,
+        );
+      },
+    );
 
     test('handler executes DebugDumpRenderTreeCommand', () async {
       final runner = FakeCommandRunner()
-        ..nextExecuteResult =
-            CoreResult.success(data: {'tree': 'render data'});
+        ..nextExecuteResult = CoreResult.success(data: {'tree': 'render data'});
       final ctx = _registeredCtx(runner: runner);
       final reg = ctx.registrationFor('debug_dump_render_tree')!;
       await reg.handler(
@@ -239,10 +252,7 @@ void main() {
           arguments: const <String, Object?>{},
         ),
       );
-      expect(
-        runner.executedCommands.first,
-        isA<DebugDumpRenderTreeCommand>(),
-      );
+      expect(runner.executedCommands.first, isA<DebugDumpRenderTreeCommand>());
     });
 
     test('handler short-circuits on override failure', () async {
@@ -252,13 +262,14 @@ void main() {
           message: 'no connection',
         );
       final ctx = _registeredCtx(runner: runner);
-      final result =
-          await ctx.registrationFor('debug_dump_render_tree')!.handler(
-        CallToolRequest(
-          name: 'debug_dump_render_tree',
-          arguments: const <String, Object?>{},
-        ),
-      );
+      final result = await ctx
+          .registrationFor('debug_dump_render_tree')!
+          .handler(
+            CallToolRequest(
+              name: 'debug_dump_render_tree',
+              arguments: const <String, Object?>{},
+            ),
+          );
       expect(result.isError, isTrue);
       expect(runner.executedCommands, isEmpty);
     });
@@ -270,16 +281,18 @@ void main() {
           message: 'dump failed',
         );
       final ctx = _registeredCtx(runner: runner);
-      final result =
-          await ctx.registrationFor('debug_dump_render_tree')!.handler(
-        CallToolRequest(
-          name: 'debug_dump_render_tree',
-          arguments: const <String, Object?>{},
-        ),
-      );
+      final result = await ctx
+          .registrationFor('debug_dump_render_tree')!
+          .handler(
+            CallToolRequest(
+              name: 'debug_dump_render_tree',
+              arguments: const <String, Object?>{},
+            ),
+          );
       expect(result.isError, isTrue);
       final json =
-          jsonDecode((result.content.first as TextContent).text) as Map<String, Object?>;
+          jsonDecode((result.content.first as TextContent).text)
+              as Map<String, Object?>;
       _expectEnvelopeKeys(json);
     });
   });
@@ -288,18 +301,19 @@ void main() {
   // debug_dump_focus_tree
   // =========================================================================
   group('debug_dump_tools — debug_dump_focus_tree', () {
-    test('schema: no required, additionalProperties false, connection present',
-        () {
-      final ctx = _registeredCtx();
-      _expectDumpSchema(
-        ctx.registrationFor('debug_dump_focus_tree')!.inputSchema,
-      );
-    });
+    test(
+      'schema: no required, additionalProperties false, connection present',
+      () {
+        final ctx = _registeredCtx();
+        _expectDumpSchema(
+          ctx.registrationFor('debug_dump_focus_tree')!.inputSchema,
+        );
+      },
+    );
 
     test('handler executes DebugDumpFocusTreeCommand', () async {
       final runner = FakeCommandRunner()
-        ..nextExecuteResult =
-            CoreResult.success(data: {'tree': 'focus data'});
+        ..nextExecuteResult = CoreResult.success(data: {'tree': 'focus data'});
       final ctx = _registeredCtx(runner: runner);
       final reg = ctx.registrationFor('debug_dump_focus_tree')!;
       await reg.handler(
@@ -308,10 +322,7 @@ void main() {
           arguments: const <String, Object?>{},
         ),
       );
-      expect(
-        runner.executedCommands.first,
-        isA<DebugDumpFocusTreeCommand>(),
-      );
+      expect(runner.executedCommands.first, isA<DebugDumpFocusTreeCommand>());
     });
 
     test('handler short-circuits on override failure', () async {
@@ -321,13 +332,14 @@ void main() {
           message: 'no connection',
         );
       final ctx = _registeredCtx(runner: runner);
-      final result =
-          await ctx.registrationFor('debug_dump_focus_tree')!.handler(
-        CallToolRequest(
-          name: 'debug_dump_focus_tree',
-          arguments: const <String, Object?>{},
-        ),
-      );
+      final result = await ctx
+          .registrationFor('debug_dump_focus_tree')!
+          .handler(
+            CallToolRequest(
+              name: 'debug_dump_focus_tree',
+              arguments: const <String, Object?>{},
+            ),
+          );
       expect(result.isError, isTrue);
       expect(runner.executedCommands, isEmpty);
     });
@@ -339,16 +351,18 @@ void main() {
           message: 'dump failed',
         );
       final ctx = _registeredCtx(runner: runner);
-      final result =
-          await ctx.registrationFor('debug_dump_focus_tree')!.handler(
-        CallToolRequest(
-          name: 'debug_dump_focus_tree',
-          arguments: const <String, Object?>{},
-        ),
-      );
+      final result = await ctx
+          .registrationFor('debug_dump_focus_tree')!
+          .handler(
+            CallToolRequest(
+              name: 'debug_dump_focus_tree',
+              arguments: const <String, Object?>{},
+            ),
+          );
       expect(result.isError, isTrue);
       final json =
-          jsonDecode((result.content.first as TextContent).text) as Map<String, Object?>;
+          jsonDecode((result.content.first as TextContent).text)
+              as Map<String, Object?>;
       _expectEnvelopeKeys(json);
     });
   });

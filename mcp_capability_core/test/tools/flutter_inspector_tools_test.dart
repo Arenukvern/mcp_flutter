@@ -106,12 +106,14 @@ void main() {
       final runner = FakeCommandRunner()
         ..nextExecuteResult = CoreResult.success(data: {'type': 'Restarted'});
       final ctx = _registeredCtx(runner: runner);
-      final result = await ctx.registrationFor('hot_restart_flutter')!.handler(
-        CallToolRequest(
-          name: 'hot_restart_flutter',
-          arguments: const <String, Object?>{},
-        ),
-      );
+      final result = await ctx
+          .registrationFor('hot_restart_flutter')!
+          .handler(
+            CallToolRequest(
+              name: 'hot_restart_flutter',
+              arguments: const <String, Object?>{},
+            ),
+          );
       expect(result.isError, isNot(true));
       expect(runner.executedCommands.single, isA<HotRestartFlutterCommand>());
     });
@@ -123,12 +125,14 @@ void main() {
           message: 'no connection',
         );
       final ctx = _registeredCtx(runner: runner);
-      final result = await ctx.registrationFor('hot_restart_flutter')!.handler(
-        CallToolRequest(
-          name: 'hot_restart_flutter',
-          arguments: const <String, Object?>{},
-        ),
-      );
+      final result = await ctx
+          .registrationFor('hot_restart_flutter')!
+          .handler(
+            CallToolRequest(
+              name: 'hot_restart_flutter',
+              arguments: const <String, Object?>{},
+            ),
+          );
       expect(result.isError, isTrue);
       expect(runner.executedCommands, isEmpty);
     });
@@ -140,12 +144,14 @@ void main() {
           message: 'hot restart failed',
         );
       final ctx = _registeredCtx(runner: runner);
-      final result = await ctx.registrationFor('hot_restart_flutter')!.handler(
-        CallToolRequest(
-          name: 'hot_restart_flutter',
-          arguments: const <String, Object?>{},
-        ),
-      );
+      final result = await ctx
+          .registrationFor('hot_restart_flutter')!
+          .handler(
+            CallToolRequest(
+              name: 'hot_restart_flutter',
+              arguments: const <String, Object?>{},
+            ),
+          );
       expect(result.isError, isTrue);
       final json =
           jsonDecode((result.content.first as TextContent).text)
@@ -174,62 +180,74 @@ void main() {
       );
     });
 
-    test('handler executes HotReloadFlutterCommand with force=false by default',
-        () async {
-      final runner = FakeCommandRunner()
-        ..nextExecuteResult =
-            CoreResult.success(data: {'type': 'ReloadReport'});
-      final ctx = _registeredCtx(runner: runner);
-      await ctx.registrationFor('hot_reload_flutter')!.handler(
-        CallToolRequest(
-          name: 'hot_reload_flutter',
-          arguments: const <String, Object?>{},
-        ),
-      );
-      expect(runner.executedCommands.first, isA<HotReloadFlutterCommand>());
-      final cmd = runner.executedCommands.first as HotReloadFlutterCommand;
-      expect(cmd.force, isFalse);
-    });
+    test(
+      'handler executes HotReloadFlutterCommand with force=false by default',
+      () async {
+        final runner = FakeCommandRunner()
+          ..nextExecuteResult = CoreResult.success(
+            data: {'type': 'ReloadReport'},
+          );
+        final ctx = _registeredCtx(runner: runner);
+        await ctx
+            .registrationFor('hot_reload_flutter')!
+            .handler(
+              CallToolRequest(
+                name: 'hot_reload_flutter',
+                arguments: const <String, Object?>{},
+              ),
+            );
+        expect(runner.executedCommands.first, isA<HotReloadFlutterCommand>());
+        final cmd = runner.executedCommands.first as HotReloadFlutterCommand;
+        expect(cmd.force, isFalse);
+      },
+    );
 
     test('handler passes force=true when provided', () async {
       final runner = FakeCommandRunner()
-        ..nextExecuteResult =
-            CoreResult.success(data: {'type': 'ReloadReport'});
+        ..nextExecuteResult = CoreResult.success(
+          data: {'type': 'ReloadReport'},
+        );
       final ctx = _registeredCtx(runner: runner);
-      await ctx.registrationFor('hot_reload_flutter')!.handler(
-        CallToolRequest(
-          name: 'hot_reload_flutter',
-          arguments: const <String, Object?>{'force': true},
-        ),
-      );
+      await ctx
+          .registrationFor('hot_reload_flutter')!
+          .handler(
+            CallToolRequest(
+              name: 'hot_reload_flutter',
+              arguments: const <String, Object?>{'force': true},
+            ),
+          );
       final cmd = runner.executedCommands.first as HotReloadFlutterCommand;
       expect(cmd.force, isTrue);
     });
 
-    test('success yields 2 TextContent items, first is "Hot reload completed"',
-        () async {
-      final runner = FakeCommandRunner()
-        ..nextExecuteResult =
-            CoreResult.success(data: {'type': 'ReloadReport'});
-      final ctx = _registeredCtx(runner: runner);
-      final result =
-          await ctx.registrationFor('hot_reload_flutter')!.handler(
-        CallToolRequest(
-          name: 'hot_reload_flutter',
-          arguments: const <String, Object?>{},
-        ),
-      );
-      expect(result.isError, isNot(true));
-      expect(result.content.length, 2);
-      expect(
-        (result.content.first as TextContent).text,
-        'Hot reload completed',
-      );
-      final decoded =
-          jsonDecode((result.content[1] as TextContent).text)
-              as Map<String, Object?>;
-      expect(decoded['type'], 'ReloadReport');
-    });
+    test(
+      'success yields 2 TextContent items, first is "Hot reload completed"',
+      () async {
+        final runner = FakeCommandRunner()
+          ..nextExecuteResult = CoreResult.success(
+            data: {'type': 'ReloadReport'},
+          );
+        final ctx = _registeredCtx(runner: runner);
+        final result = await ctx
+            .registrationFor('hot_reload_flutter')!
+            .handler(
+              CallToolRequest(
+                name: 'hot_reload_flutter',
+                arguments: const <String, Object?>{},
+              ),
+            );
+        expect(result.isError, isNot(true));
+        expect(result.content.length, 2);
+        expect(
+          (result.content.first as TextContent).text,
+          'Hot reload completed',
+        );
+        final decoded =
+            jsonDecode((result.content[1] as TextContent).text)
+                as Map<String, Object?>;
+        expect(decoded['type'], 'ReloadReport');
+      },
+    );
 
     test('handler short-circuits on override failure', () async {
       final runner = FakeCommandRunner()
@@ -238,13 +256,14 @@ void main() {
           message: 'no connection',
         );
       final ctx = _registeredCtx(runner: runner);
-      final result =
-          await ctx.registrationFor('hot_reload_flutter')!.handler(
-        CallToolRequest(
-          name: 'hot_reload_flutter',
-          arguments: const <String, Object?>{},
-        ),
-      );
+      final result = await ctx
+          .registrationFor('hot_reload_flutter')!
+          .handler(
+            CallToolRequest(
+              name: 'hot_reload_flutter',
+              arguments: const <String, Object?>{},
+            ),
+          );
       expect(result.isError, isTrue);
       expect(runner.executedCommands, isEmpty);
     });
@@ -256,13 +275,14 @@ void main() {
           message: 'hot reload failed',
         );
       final ctx = _registeredCtx(runner: runner);
-      final result =
-          await ctx.registrationFor('hot_reload_flutter')!.handler(
-        CallToolRequest(
-          name: 'hot_reload_flutter',
-          arguments: const <String, Object?>{},
-        ),
-      );
+      final result = await ctx
+          .registrationFor('hot_reload_flutter')!
+          .handler(
+            CallToolRequest(
+              name: 'hot_reload_flutter',
+              arguments: const <String, Object?>{},
+            ),
+          );
       expect(result.isError, isTrue);
       final json =
           jsonDecode((result.content.first as TextContent).text)
@@ -275,48 +295,55 @@ void main() {
   // connect_debug_app
   // =========================================================================
   group('flutter_inspector_tools — connect_debug_app', () {
-    test('schema: connection only, additionalProperties false, no required', () {
-      final ctx = _registeredCtx();
-      _expectBaseSchema(
-        ctx.registrationFor('connect_debug_app')!.inputSchema,
-      );
-      // Only 'connection' in properties
-      final props =
-          ctx.registrationFor('connect_debug_app')!.inputSchema['properties']
-              as Map<String, Object?>;
-      expect(props.keys.toList(), ['connection']);
-    });
+    test(
+      'schema: connection only, additionalProperties false, no required',
+      () {
+        final ctx = _registeredCtx();
+        _expectBaseSchema(
+          ctx.registrationFor('connect_debug_app')!.inputSchema,
+        );
+        // Only 'connection' in properties
+        final props =
+            ctx.registrationFor('connect_debug_app')!.inputSchema['properties']
+                as Map<String, Object?>;
+        expect(props.keys.toList(), ['connection']);
+      },
+    );
 
     test(
-        'handler dispatches ConnectCommand directly — no applyConnectionOverride call',
-        () async {
-      final runner = FakeCommandRunner()
-        ..nextExecuteResult =
-            CoreResult.success(data: {'connected': true});
-      final ctx = _registeredCtx(runner: runner);
-      await ctx.registrationFor('connect_debug_app')!.handler(
-        CallToolRequest(
-          name: 'connect_debug_app',
-          arguments: const <String, Object?>{},
-        ),
-      );
-      // Must have executed ConnectCommand but NOT called applyConnectionOverride
-      expect(runner.executedCommands.first, isA<ConnectCommand>());
-      expect(runner.callLog, equals(['execute']));
-    });
+      'handler dispatches ConnectCommand directly — no applyConnectionOverride call',
+      () async {
+        final runner = FakeCommandRunner()
+          ..nextExecuteResult = CoreResult.success(data: {'connected': true});
+        final ctx = _registeredCtx(runner: runner);
+        await ctx
+            .registrationFor('connect_debug_app')!
+            .handler(
+              CallToolRequest(
+                name: 'connect_debug_app',
+                arguments: const <String, Object?>{},
+              ),
+            );
+        // Must have executed ConnectCommand but NOT called applyConnectionOverride
+        expect(runner.executedCommands.first, isA<ConnectCommand>());
+        expect(runner.callLog, equals(['execute']));
+      },
+    );
 
     test('handler returns success data as JSON', () async {
       final runner = FakeCommandRunner()
-        ..nextExecuteResult =
-            CoreResult.success(data: {'endpoint': 'ws://127.0.0.1:8181/ws'});
+        ..nextExecuteResult = CoreResult.success(
+          data: {'endpoint': 'ws://127.0.0.1:8181/ws'},
+        );
       final ctx = _registeredCtx(runner: runner);
-      final result =
-          await ctx.registrationFor('connect_debug_app')!.handler(
-        CallToolRequest(
-          name: 'connect_debug_app',
-          arguments: const <String, Object?>{},
-        ),
-      );
+      final result = await ctx
+          .registrationFor('connect_debug_app')!
+          .handler(
+            CallToolRequest(
+              name: 'connect_debug_app',
+              arguments: const <String, Object?>{},
+            ),
+          );
       expect(result.isError, isNot(true));
       final decoded =
           jsonDecode((result.content.first as TextContent).text)
@@ -331,13 +358,14 @@ void main() {
           message: 'connection failed',
         );
       final ctx = _registeredCtx(runner: runner);
-      final result =
-          await ctx.registrationFor('connect_debug_app')!.handler(
-        CallToolRequest(
-          name: 'connect_debug_app',
-          arguments: const <String, Object?>{},
-        ),
-      );
+      final result = await ctx
+          .registrationFor('connect_debug_app')!
+          .handler(
+            CallToolRequest(
+              name: 'connect_debug_app',
+              arguments: const <String, Object?>{},
+            ),
+          );
       expect(result.isError, isTrue);
       final json =
           jsonDecode((result.content.first as TextContent).text)
@@ -348,13 +376,14 @@ void main() {
     test('returns error on malformed connection argument', () async {
       final runner = FakeCommandRunner();
       final ctx = _registeredCtx(runner: runner);
-      final result =
-          await ctx.registrationFor('connect_debug_app')!.handler(
-        CallToolRequest(
-          name: 'connect_debug_app',
-          arguments: const <String, Object?>{'connection': 'not-an-object'},
-        ),
-      );
+      final result = await ctx
+          .registrationFor('connect_debug_app')!
+          .handler(
+            CallToolRequest(
+              name: 'connect_debug_app',
+              arguments: const <String, Object?>{'connection': 'not-an-object'},
+            ),
+          );
       expect(result.isError, isTrue);
       // No execute call — parse error short-circuits
       expect(runner.executedCommands, isEmpty);
@@ -365,28 +394,36 @@ void main() {
   // discover_debug_apps
   // =========================================================================
   group('flutter_inspector_tools — discover_debug_apps', () {
-    test('schema: connection only, additionalProperties false, no required', () {
-      final ctx = _registeredCtx();
-      _expectBaseSchema(
-        ctx.registrationFor('discover_debug_apps')!.inputSchema,
-      );
-    });
-
-    test('handler dispatches DiscoverDebugAppsCommand — no override call', () async {
-      final runner = FakeCommandRunner()
-        ..nextExecuteResult = CoreResult.success(
-          data: {'targets': [], 'count': 0},
+    test(
+      'schema: connection only, additionalProperties false, no required',
+      () {
+        final ctx = _registeredCtx();
+        _expectBaseSchema(
+          ctx.registrationFor('discover_debug_apps')!.inputSchema,
         );
-      final ctx = _registeredCtx(runner: runner);
-      await ctx.registrationFor('discover_debug_apps')!.handler(
-        CallToolRequest(
-          name: 'discover_debug_apps',
-          arguments: const <String, Object?>{},
-        ),
-      );
-      expect(runner.executedCommands.first, isA<DiscoverDebugAppsCommand>());
-      expect(runner.callLog, equals(['execute']));
-    });
+      },
+    );
+
+    test(
+      'handler dispatches DiscoverDebugAppsCommand — no override call',
+      () async {
+        final runner = FakeCommandRunner()
+          ..nextExecuteResult = CoreResult.success(
+            data: {'targets': [], 'count': 0},
+          );
+        final ctx = _registeredCtx(runner: runner);
+        await ctx
+            .registrationFor('discover_debug_apps')!
+            .handler(
+              CallToolRequest(
+                name: 'discover_debug_apps',
+                arguments: const <String, Object?>{},
+              ),
+            );
+        expect(runner.executedCommands.first, isA<DiscoverDebugAppsCommand>());
+        expect(runner.callLog, equals(['execute']));
+      },
+    );
 
     test('handler returns success data as JSON', () async {
       final runner = FakeCommandRunner()
@@ -394,13 +431,14 @@ void main() {
           data: {'targets': [], 'count': 0, 'ports': []},
         );
       final ctx = _registeredCtx(runner: runner);
-      final result =
-          await ctx.registrationFor('discover_debug_apps')!.handler(
-        CallToolRequest(
-          name: 'discover_debug_apps',
-          arguments: const <String, Object?>{},
-        ),
-      );
+      final result = await ctx
+          .registrationFor('discover_debug_apps')!
+          .handler(
+            CallToolRequest(
+              name: 'discover_debug_apps',
+              arguments: const <String, Object?>{},
+            ),
+          );
       expect(result.isError, isNot(true));
       final decoded =
           jsonDecode((result.content.first as TextContent).text)
@@ -415,13 +453,14 @@ void main() {
           message: 'discovery failed',
         );
       final ctx = _registeredCtx(runner: runner);
-      final result =
-          await ctx.registrationFor('discover_debug_apps')!.handler(
-        CallToolRequest(
-          name: 'discover_debug_apps',
-          arguments: const <String, Object?>{},
-        ),
-      );
+      final result = await ctx
+          .registrationFor('discover_debug_apps')!
+          .handler(
+            CallToolRequest(
+              name: 'discover_debug_apps',
+              arguments: const <String, Object?>{},
+            ),
+          );
       expect(result.isError, isTrue);
       final json =
           jsonDecode((result.content.first as TextContent).text)
@@ -434,19 +473,28 @@ void main() {
   // get_vm
   // =========================================================================
   group('flutter_inspector_tools — get_vm', () {
-    test('schema: connection only, additionalProperties false, no required', () {
-      final ctx = _registeredCtx();
-      _expectBaseSchema(ctx.registrationFor('get_vm')!.inputSchema);
-    });
+    test(
+      'schema: connection only, additionalProperties false, no required',
+      () {
+        final ctx = _registeredCtx();
+        _expectBaseSchema(ctx.registrationFor('get_vm')!.inputSchema);
+      },
+    );
 
     test('handler executes GetVmCommand', () async {
       final runner = FakeCommandRunner()
-        ..nextExecuteResult =
-            CoreResult.success(data: {'type': 'VM', 'version': '3.x'});
+        ..nextExecuteResult = CoreResult.success(
+          data: {'type': 'VM', 'version': '3.x'},
+        );
       final ctx = _registeredCtx(runner: runner);
-      await ctx.registrationFor('get_vm')!.handler(
-        CallToolRequest(name: 'get_vm', arguments: const <String, Object?>{}),
-      );
+      await ctx
+          .registrationFor('get_vm')!
+          .handler(
+            CallToolRequest(
+              name: 'get_vm',
+              arguments: const <String, Object?>{},
+            ),
+          );
       expect(runner.executedCommands.first, isA<GetVmCommand>());
     });
 
@@ -457,21 +505,32 @@ void main() {
           message: 'no connection',
         );
       final ctx = _registeredCtx(runner: runner);
-      final result = await ctx.registrationFor('get_vm')!.handler(
-        CallToolRequest(name: 'get_vm', arguments: const <String, Object?>{}),
-      );
+      final result = await ctx
+          .registrationFor('get_vm')!
+          .handler(
+            CallToolRequest(
+              name: 'get_vm',
+              arguments: const <String, Object?>{},
+            ),
+          );
       expect(result.isError, isTrue);
       expect(runner.executedCommands, isEmpty);
     });
 
     test('handler returns success data as JSON', () async {
       final runner = FakeCommandRunner()
-        ..nextExecuteResult =
-            CoreResult.success(data: {'type': 'VM', 'pid': 42});
+        ..nextExecuteResult = CoreResult.success(
+          data: {'type': 'VM', 'pid': 42},
+        );
       final ctx = _registeredCtx(runner: runner);
-      final result = await ctx.registrationFor('get_vm')!.handler(
-        CallToolRequest(name: 'get_vm', arguments: const <String, Object?>{}),
-      );
+      final result = await ctx
+          .registrationFor('get_vm')!
+          .handler(
+            CallToolRequest(
+              name: 'get_vm',
+              arguments: const <String, Object?>{},
+            ),
+          );
       expect(result.isError, isNot(true));
       final decoded =
           jsonDecode((result.content.first as TextContent).text)
@@ -486,9 +545,14 @@ void main() {
           message: 'get_vm failed',
         );
       final ctx = _registeredCtx(runner: runner);
-      final result = await ctx.registrationFor('get_vm')!.handler(
-        CallToolRequest(name: 'get_vm', arguments: const <String, Object?>{}),
-      );
+      final result = await ctx
+          .registrationFor('get_vm')!
+          .handler(
+            CallToolRequest(
+              name: 'get_vm',
+              arguments: const <String, Object?>{},
+            ),
+          );
       expect(result.isError, isTrue);
       final json =
           jsonDecode((result.content.first as TextContent).text)
@@ -502,37 +566,38 @@ void main() {
   // =========================================================================
   group('flutter_inspector_tools — get_extension_rpcs', () {
     test(
-        'schema: isolateId, isRawResponse, connection present; additionalProperties false',
-        () {
-      final ctx = _registeredCtx();
-      _expectBaseSchema(
-        ctx.registrationFor('get_extension_rpcs')!.inputSchema,
-        extraProps: ['isolateId', 'isRawResponse'],
-      );
-      final props =
-          ctx.registrationFor('get_extension_rpcs')!.inputSchema['properties']
-              as Map<String, Object?>;
-      expect(
-        (props['isolateId'] as Map<String, Object?>)['type'],
-        'string',
-      );
-      expect(
-        (props['isRawResponse'] as Map<String, Object?>)['type'],
-        'boolean',
-      );
-    });
+      'schema: isolateId, isRawResponse, connection present; additionalProperties false',
+      () {
+        final ctx = _registeredCtx();
+        _expectBaseSchema(
+          ctx.registrationFor('get_extension_rpcs')!.inputSchema,
+          extraProps: ['isolateId', 'isRawResponse'],
+        );
+        final props =
+            ctx.registrationFor('get_extension_rpcs')!.inputSchema['properties']
+                as Map<String, Object?>;
+        expect((props['isolateId'] as Map<String, Object?>)['type'], 'string');
+        expect(
+          (props['isRawResponse'] as Map<String, Object?>)['type'],
+          'boolean',
+        );
+      },
+    );
 
     test('handler executes GetExtensionRpcsCommand', () async {
       final runner = FakeCommandRunner()
-        ..nextExecuteResult =
-            CoreResult.success(data: ['ext.flutter.inspector']);
+        ..nextExecuteResult = CoreResult.success(
+          data: ['ext.flutter.inspector'],
+        );
       final ctx = _registeredCtx(runner: runner);
-      await ctx.registrationFor('get_extension_rpcs')!.handler(
-        CallToolRequest(
-          name: 'get_extension_rpcs',
-          arguments: const <String, Object?>{},
-        ),
-      );
+      await ctx
+          .registrationFor('get_extension_rpcs')!
+          .handler(
+            CallToolRequest(
+              name: 'get_extension_rpcs',
+              arguments: const <String, Object?>{},
+            ),
+          );
       expect(runner.executedCommands.first, isA<GetExtensionRpcsCommand>());
     });
 
@@ -543,34 +608,37 @@ void main() {
           message: 'no connection',
         );
       final ctx = _registeredCtx(runner: runner);
-      final result =
-          await ctx.registrationFor('get_extension_rpcs')!.handler(
-        CallToolRequest(
-          name: 'get_extension_rpcs',
-          arguments: const <String, Object?>{},
-        ),
-      );
+      final result = await ctx
+          .registrationFor('get_extension_rpcs')!
+          .handler(
+            CallToolRequest(
+              name: 'get_extension_rpcs',
+              arguments: const <String, Object?>{},
+            ),
+          );
       expect(result.isError, isTrue);
       expect(runner.executedCommands, isEmpty);
     });
 
     test('handler ignores vestigial isolateId / isRawResponse args', () async {
       final runner = FakeCommandRunner()
-        ..nextExecuteResult =
-            CoreResult.success(data: ['ext.flutter.inspector']);
+        ..nextExecuteResult = CoreResult.success(
+          data: ['ext.flutter.inspector'],
+        );
       final ctx = _registeredCtx(runner: runner);
       // Passing isolateId and isRawResponse: they must be accepted (no error)
       // and the executor receives GetExtensionRpcsCommand (ignores the args).
-      final result =
-          await ctx.registrationFor('get_extension_rpcs')!.handler(
-        CallToolRequest(
-          name: 'get_extension_rpcs',
-          arguments: const <String, Object?>{
-            'isolateId': 'isolates/1',
-            'isRawResponse': true,
-          },
-        ),
-      );
+      final result = await ctx
+          .registrationFor('get_extension_rpcs')!
+          .handler(
+            CallToolRequest(
+              name: 'get_extension_rpcs',
+              arguments: const <String, Object?>{
+                'isolateId': 'isolates/1',
+                'isRawResponse': true,
+              },
+            ),
+          );
       expect(result.isError, isNot(true));
       expect(runner.executedCommands.first, isA<GetExtensionRpcsCommand>());
     });
@@ -582,13 +650,14 @@ void main() {
           message: 'get_extension_rpcs failed',
         );
       final ctx = _registeredCtx(runner: runner);
-      final result =
-          await ctx.registrationFor('get_extension_rpcs')!.handler(
-        CallToolRequest(
-          name: 'get_extension_rpcs',
-          arguments: const <String, Object?>{},
-        ),
-      );
+      final result = await ctx
+          .registrationFor('get_extension_rpcs')!
+          .handler(
+            CallToolRequest(
+              name: 'get_extension_rpcs',
+              arguments: const <String, Object?>{},
+            ),
+          );
       expect(result.isError, isTrue);
       final json =
           jsonDecode((result.content.first as TextContent).text)

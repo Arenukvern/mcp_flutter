@@ -5,12 +5,33 @@ import 'package:dart_mcp/client.dart';
 import '../mcp_models.dart';
 import '../mcp_toolkit_binding.dart';
 
+/// {@template flutter_permission_supported_kinds_resource}
+/// The resource name for the supported permission kinds.
+/// {@endtemplate}
 const flutterPermissionSupportedKindsResource = 'permissions_supported_kinds';
+
+/// {@template flutter_permission_status_tool}
+/// The tool name for the permission status.
+/// {@endtemplate}
 const flutterPermissionStatusTool = 'permission_status';
+
+/// {@template flutter_permission_request_tool}
+/// The tool name for the permission request.
+/// {@endtemplate}
 const flutterPermissionRequestTool = 'request_permission';
+
+/// {@template flutter_permission_open_settings_tool}
+/// The tool name for the permission open settings.
+/// {@endtemplate}
 const flutterPermissionOpenSettingsTool = 'open_permission_settings';
 
+/// {@template mcp_permission_result}
+/// MCP Permission Result.
+/// {@endtemplate}
 final class MCPPermissionResult {
+  /// {@template mcp_permission_result}
+  /// MCP Permission Result.
+  /// {@endtemplate}
   const MCPPermissionResult({
     required this.kind,
     required this.status,
@@ -27,20 +48,74 @@ final class MCPPermissionResult {
     this.canOpenSettings = false,
   });
 
+  /// {@template kind}
+  /// The kind of permission.
+  /// {@endtemplate}
   final String kind;
+
+  /// {@template status}
+  /// The status of the permission.
+  /// {@endtemplate}
   final String status;
+
+  /// {@template owner}
+  /// The owner of the permission.
+  /// {@endtemplate}
   final String owner;
+
+  /// {@template backend}
+  /// The backend of the permission.
+  /// {@endtemplate}
   final String backend;
+
+  /// {@template capabilities}
+  /// The capabilities of the permission.
+  /// {@endtemplate}
   final List<String> capabilities;
+
+  /// {@template supported_modes}
+  /// The supported modes of the permission.
+  /// {@endtemplate}
   final List<String> supportedModes;
+
+  /// {@template actual_mode}
+  /// The actual mode of the permission.
+  /// {@endtemplate}
   final String? actualMode;
+
+  /// {@template truth_mode}
+  /// The truth mode of the permission.
+  /// {@endtemplate}
   final String? truthMode;
+
+  /// {@template fallback_reason}
+  /// The fallback reason of the permission.
+  /// {@endtemplate}
   final String? fallbackReason;
+
+  /// {@template message}
+  /// The message of the permission.
+  /// {@endtemplate}
   final String? message;
+
+  /// {@template details}
+  /// The details of the permission.
+  /// {@endtemplate}
   final Map<String, Object?> details;
+
+  /// {@template can_request}
+  /// Whether the permission can be requested.
+  /// {@endtemplate}
   final bool canRequest;
+
+  /// {@template can_open_settings}
+  /// Whether the permission can be opened in settings.
+  /// {@endtemplate}
   final bool canOpenSettings;
 
+  /// {@template to_json}
+  /// Convert the permission result to a JSON object.
+  /// {@endtemplate}
   Map<String, dynamic> toJson() => <String, dynamic>{
     'kind': kind,
     'status': status,
@@ -58,20 +133,37 @@ final class MCPPermissionResult {
   };
 }
 
+/// {@template mcp_permission_delegate}
+/// MCP Permission Delegate.
+/// {@endtemplate}
 abstract interface class MCPPermissionDelegate {
+  /// {@template list_supported_permission_kinds}
+  /// List the supported permission kinds.
+  /// {@endtemplate}
   Iterable<String> listSupportedPermissionKinds();
 
+  /// {@template get_permission_status}
+  /// Get the status of a permission.
+  /// {@endtemplate}
   FutureOr<MCPPermissionResult> getPermissionStatus({
     required final String kind,
   });
 
+  /// {@template request_permission}
+  /// Request a permission.
+  /// {@endtemplate}
   FutureOr<MCPPermissionResult> requestPermission({required final String kind});
 
+  /// {@template open_permission_settings}
+  /// Open the permission settings.
+  /// {@endtemplate}
   FutureOr<MCPPermissionResult> openPermissionSettings({
     required final String kind,
   });
 }
 
+/// Returns a set of MCPCallEntry objects for
+/// the Flutter MCP Permission Toolkit.
 Set<MCPCallEntry> getFlutterMcpPermissionEntries({
   required final MCPPermissionDelegate delegate,
 }) => <MCPCallEntry>{
@@ -81,7 +173,13 @@ Set<MCPCallEntry> getFlutterMcpPermissionEntries({
   _PermissionOpenSettingsEntry(delegate: delegate),
 };
 
+/// {@template initialize_flutter_permission_toolkit}
+/// Initialize the Flutter MCP Permission Toolkit.
+/// {@endtemplate}
 extension MCPToolkitPermissionBindingExtension on MCPToolkitBinding {
+  /// {@template initialize_flutter_permission_toolkit}
+  /// Initialize the Flutter MCP Permission Toolkit.
+  /// {@endtemplate}
   void initializeFlutterPermissionToolkit({
     required final MCPPermissionDelegate delegate,
   }) => unawaited(

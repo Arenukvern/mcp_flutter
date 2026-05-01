@@ -141,8 +141,7 @@ void main() {
       expect(spec, isNotNull);
       expect(spec!.mcpExposed, isTrue);
 
-      final props =
-          spec.inputSchema['properties']! as Map<String, Object?>;
+      final props = spec.inputSchema['properties']! as Map<String, Object?>;
       expect(props.containsKey('predicate'), isTrue);
       expect(props.containsKey('timeoutMs'), isTrue);
 
@@ -163,22 +162,23 @@ void main() {
         expect(spec!.mcpExposed, isTrue, reason: '$name not mcpExposed');
       }
 
-      final pk = catalog.buildCommand('press_key', {
-        'key': 'Enter',
-        'shift': true,
-      }) as PressKeyCommand;
+      final pk =
+          catalog.buildCommand('press_key', {'key': 'Enter', 'shift': true})
+              as PressKeyCommand;
       expect(pk.key, 'Enter');
       expect(pk.shift, isTrue);
 
-      final hd = catalog.buildCommand('handle_dialog', {
-        'action': 'dismiss',
-      }) as HandleDialogCommand;
+      final hd =
+          catalog.buildCommand('handle_dialog', {'action': 'dismiss'})
+              as HandleDialogCommand;
       expect(hd.action, 'dismiss');
 
-      final nv = catalog.buildCommand('navigate', {
-        'action': 'push',
-        'route': '/settings',
-      }) as NavigateCommand;
+      final nv =
+          catalog.buildCommand('navigate', {
+                'action': 'push',
+                'route': '/settings',
+              })
+              as NavigateCommand;
       expect(nv.action, 'push');
       expect(nv.route, '/settings');
     });
@@ -190,19 +190,19 @@ void main() {
         expect(spec!.mcpExposed, isTrue, reason: '$name not mcpExposed');
       }
 
-      final ff = catalog.buildCommand('fill_form', {
-        'fields': <Map<String, Object?>>[
-          {'ref': 's_0', 'text': 'alice'},
-          {'ref': 's_1', 'text': 'bob'},
-        ],
-      }) as FillFormCommand;
+      final ff =
+          catalog.buildCommand('fill_form', {
+                'fields': <Map<String, Object?>>[
+                  {'ref': 's_0', 'text': 'alice'},
+                  {'ref': 's_1', 'text': 'bob'},
+                ],
+              })
+              as FillFormCommand;
       expect(ff.fields, hasLength(2));
       expect(ff.fields.first['ref'], 's_0');
       expect(ff.fields.first['text'], 'alice');
 
-      final hv = catalog.buildCommand('hover', {
-        'ref': 's_3',
-      }) as HoverCommand;
+      final hv = catalog.buildCommand('hover', {'ref': 's_3'}) as HoverCommand;
       expect(hv.ref, 's_3');
     });
   });

@@ -11,8 +11,8 @@ final class FakeCapabilityContext implements CapabilityContext {
     required this.capabilityId,
     final Map<Type, HostService>? services,
     final CapabilityConfig? config,
-  })  : _services = services ?? const <Type, HostService>{},
-        _config = config ?? const CapabilityConfig();
+  }) : _services = services ?? const <Type, HostService>{},
+       _config = config ?? const CapabilityConfig();
 
   @override
   final String capabilityId;

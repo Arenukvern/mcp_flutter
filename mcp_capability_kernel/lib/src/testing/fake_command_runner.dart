@@ -7,10 +7,7 @@ import '../command_runner.dart';
 /// (in invocation order) and returns the configurable values
 /// [nextOverrideResult] / [nextExecuteResult].
 final class FakeCommandRunner implements CommandRunner {
-  FakeCommandRunner({
-    this.nextOverrideResult,
-    this.nextExecuteResult,
-  });
+  FakeCommandRunner({this.nextOverrideResult, this.nextExecuteResult});
 
   /// What `applyConnectionOverride` returns next. null = no override
   /// (default). Non-null = short-circuit failure.

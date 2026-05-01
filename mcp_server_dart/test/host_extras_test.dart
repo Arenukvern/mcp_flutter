@@ -25,9 +25,8 @@ final class _PingCapability implements Capability {
         name: 'pong',
         description: 'replies pong',
         inputSchema: const {'type': 'object'},
-        handler: (_) async => CallToolResult(
-          content: [TextContent(text: 'pong')],
-        ),
+        handler: (_) async =>
+            CallToolResult(content: [TextContent(text: 'pong')]),
       ),
     );
   }
@@ -80,43 +79,47 @@ void main() {
       expect(host.toolNames, isEmpty);
     });
 
-    test('dispatch bridge publishes prefixed tools and unpublishes on dispose',
-        () async {
-      final published = <String>[];
-      final unpublished = <String>[];
-      final host = McpHost(
-        dispatchBridge: DartMcpDispatchBridge(
-          publish: (final tool, final _) => published.add(tool.name),
-          unpublish: unpublished.add,
-        ),
-      );
-      await host.registerCapability(_PingCapability());
-      expect(published, equals(<String>['ping_pong']));
-      expect(unpublished, isEmpty);
+    test(
+      'dispatch bridge publishes prefixed tools and unpublishes on dispose',
+      () async {
+        final published = <String>[];
+        final unpublished = <String>[];
+        final host = McpHost(
+          dispatchBridge: DartMcpDispatchBridge(
+            publish: (final tool, final _) => published.add(tool.name),
+            unpublish: unpublished.add,
+          ),
+        );
+        await host.registerCapability(_PingCapability());
+        expect(published, equals(<String>['ping_pong']));
+        expect(unpublished, isEmpty);
 
-      await host.dispose();
-      expect(unpublished, equals(<String>['ping_pong']));
-    });
+        await host.dispose();
+        expect(unpublished, equals(<String>['ping_pong']));
+      },
+    );
 
-    test('dispatch bridge unpublishes when capability register throws',
-        () async {
-      final published = <String>[];
-      final unpublished = <String>[];
-      final host = McpHost(
-        dispatchBridge: DartMcpDispatchBridge(
-          publish: (final tool, final _) => published.add(tool.name),
-          unpublish: unpublished.add,
-        ),
-      );
-      await expectLater(
-        host.registerCapability(
-          _DualToolCapability(tools: ['a', 'b'], failOnLast: true),
-        ),
-        throwsA(isA<StateError>()),
-      );
-      expect(published, equals(<String>['core_a', 'core_b']));
-      expect(unpublished, equals(<String>['core_a', 'core_b']));
-      expect(host.toolNames, isEmpty);
-    });
+    test(
+      'dispatch bridge unpublishes when capability register throws',
+      () async {
+        final published = <String>[];
+        final unpublished = <String>[];
+        final host = McpHost(
+          dispatchBridge: DartMcpDispatchBridge(
+            publish: (final tool, final _) => published.add(tool.name),
+            unpublish: unpublished.add,
+          ),
+        );
+        await expectLater(
+          host.registerCapability(
+            _DualToolCapability(tools: ['a', 'b'], failOnLast: true),
+          ),
+          throwsA(isA<StateError>()),
+        );
+        expect(published, equals(<String>['core_a', 'core_b']));
+        expect(unpublished, equals(<String>['core_a', 'core_b']));
+        expect(host.toolNames, isEmpty);
+      },
+    );
   });
 }

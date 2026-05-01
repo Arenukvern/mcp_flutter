@@ -92,19 +92,14 @@ class ControlFlowService {
     }) {
       final physical = PhysicalKeyboardKey(k.keyId);
       return isDown
-          ? KeyDownEvent(
-              physicalKey: physical,
-              logicalKey: k,
-              timeStamp: stamp,
-            )
-          : KeyUpEvent(
-              physicalKey: physical,
-              logicalKey: k,
-              timeStamp: stamp,
-            );
+          ? KeyDownEvent(physicalKey: physical, logicalKey: k, timeStamp: stamp)
+          : KeyUpEvent(physicalKey: physical, logicalKey: k, timeStamp: stamp);
     }
 
-    void send({required final bool isDown, required final LogicalKeyboardKey k}) {
+    void send({
+      required final bool isDown,
+      required final LogicalKeyboardKey k,
+    }) {
       final event = makeEvent(isDown: isDown, k: k);
       keyboard.handleKeyEvent(event);
       // ignore: invalid_use_of_visible_for_testing_member
@@ -214,9 +209,10 @@ class ControlFlowService {
         // navigation error) surfaces as a debug log instead of an
         // unhandled future, which would otherwise be swallowed silently.
         unawaited(
-          navState
-              .pushNamed<Object?>(route, arguments: arguments)
-              .catchError((final Object error, final StackTrace stack) {
+          navState.pushNamed<Object?>(route, arguments: arguments).catchError((
+            final Object error,
+            final StackTrace stack,
+          ) {
             debugPrint(
               '[MCPToolkit] navigate push failed for route "$route": $error',
             );
@@ -236,10 +232,7 @@ class ControlFlowService {
           };
         }
         final popped = await navState.maybePop();
-        return <String, Object?>{
-          'success': popped,
-          'action': 'pop',
-        };
+        return <String, Object?>{'success': popped, 'action': 'pop'};
       case 'popUntil':
         if (route == null || route.isEmpty) {
           return <String, Object?>{

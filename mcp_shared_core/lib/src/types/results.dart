@@ -96,8 +96,5 @@ final class CoreResult {
   /// should check [ok] first.
   Map<String, Object?> toErrorEnvelopeJson() =>
       error?.toJson() ??
-      CoreError(
-        code: CoreErrorCode.unknown,
-        message: 'Unknown error',
-      ).toJson();
+      CoreError(code: CoreErrorCode.unknown, message: 'Unknown error').toJson();
 }

@@ -6,19 +6,23 @@ void main() {
     final catalog = CommandCatalog.instance;
 
     test('round-trips arbitrary timeoutMs', () {
-      final cmd = catalog.buildCommand('wait_for', {
-        'predicate': {'kind': 'text', 'text': 'foo'},
-        'timeoutMs': 12345,
-      }) as WaitForCommand;
+      final cmd =
+          catalog.buildCommand('wait_for', {
+                'predicate': {'kind': 'text', 'text': 'foo'},
+                'timeoutMs': 12345,
+              })
+              as WaitForCommand;
       expect(cmd.timeoutMs, 12345);
       expect(cmd.predicate['kind'], 'text');
       expect(cmd.predicate['text'], 'foo');
     });
 
     test('default timeoutMs is 5000 when omitted', () {
-      final cmd = catalog.buildCommand('wait_for', {
-        'predicate': {'kind': 'time', 'ms': 10},
-      }) as WaitForCommand;
+      final cmd =
+          catalog.buildCommand('wait_for', {
+                'predicate': {'kind': 'time', 'ms': 10},
+              })
+              as WaitForCommand;
       expect(cmd.timeoutMs, 5000);
     });
   });
@@ -47,9 +51,7 @@ void main() {
     });
 
     test('matched missing routes to wait_for_failed (malformed)', () {
-      final result = routeWaitForResponse({
-        'elapsedMs': 100,
-      });
+      final result = routeWaitForResponse({'elapsedMs': 100});
       expect(result.ok, isFalse);
       expect(result.error!.code, CoreErrorCode.waitForFailed);
       expect(result.error!.message, contains('malformed'));
@@ -68,10 +70,7 @@ void main() {
     });
 
     test('matched as null routes to wait_for_failed', () {
-      final result = routeWaitForResponse({
-        'matched': null,
-        'elapsedMs': 100,
-      });
+      final result = routeWaitForResponse({'matched': null, 'elapsedMs': 100});
       expect(result.ok, isFalse);
       expect(result.error!.code, CoreErrorCode.waitForFailed);
     });

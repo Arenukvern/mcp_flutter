@@ -1,5 +1,5 @@
 // mcp_server_dart/lib/src/cli/init_mode_detector.dart
-import 'init_mode.dart';
+import 'package:flutter_inspector_mcp_server/src/cli/init_mode.dart';
 
 InitMode detectMode({
   required final bool binaryOnPath,

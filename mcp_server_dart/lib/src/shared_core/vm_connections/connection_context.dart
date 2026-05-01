@@ -1246,9 +1246,7 @@ final class ConnectionContext {
     unawaited(
       _runHotReload(force: force)
           .then(completer.complete)
-          .catchError((final Object e, final StackTrace s) {
-            completer.completeError(e, s);
-          })
+          .catchError(completer.completeError)
           .whenComplete(() {
             if (identical(_pendingReloadOrRestart, completer.future)) {
               _pendingReloadOrRestart = null;
@@ -1327,9 +1325,7 @@ final class ConnectionContext {
     unawaited(
       _runHotRestart()
           .then(completer.complete)
-          .catchError((final Object e, final StackTrace s) {
-            completer.completeError(e, s);
-          })
+          .catchError(completer.completeError)
           .whenComplete(() {
             if (identical(_pendingReloadOrRestart, completer.future)) {
               _pendingReloadOrRestart = null;

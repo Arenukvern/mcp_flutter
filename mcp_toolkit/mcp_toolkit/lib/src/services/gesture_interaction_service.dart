@@ -586,10 +586,7 @@ mixin GestureInteractionService {
     return <String, Object?>{
       'success': true,
       'ref': ref,
-      'position': <String, Object?>{
-        'dx': centre.dx,
-        'dy': centre.dy,
-      },
+      'position': <String, Object?>{'dx': centre.dx, 'dy': centre.dy},
     };
   }
 
@@ -601,19 +598,11 @@ mixin GestureInteractionService {
     final binding = GestureBinding.instance;
     final pointer = _nextPointerId++;
     binding.handlePointerEvent(
-      PointerDownEvent(
-        pointer: pointer,
-        position: position,
-        timeStamp: _now(),
-      ),
+      PointerDownEvent(pointer: pointer, position: position, timeStamp: _now()),
     );
     await Future<void>.delayed(const Duration(milliseconds: 50));
     binding.handlePointerEvent(
-      PointerUpEvent(
-        pointer: pointer,
-        position: position,
-        timeStamp: _now(),
-      ),
+      PointerUpEvent(pointer: pointer, position: position, timeStamp: _now()),
     );
     await _waitFrame();
   }
@@ -622,20 +611,12 @@ mixin GestureInteractionService {
     final binding = GestureBinding.instance;
     final pointer = _nextPointerId++;
     binding.handlePointerEvent(
-      PointerDownEvent(
-        pointer: pointer,
-        position: position,
-        timeStamp: _now(),
-      ),
+      PointerDownEvent(pointer: pointer, position: position, timeStamp: _now()),
     );
     // Hold well past kLongPressTimeout (500 ms).
     await Future<void>.delayed(const Duration(milliseconds: 600));
     binding.handlePointerEvent(
-      PointerUpEvent(
-        pointer: pointer,
-        position: position,
-        timeStamp: _now(),
-      ),
+      PointerUpEvent(pointer: pointer, position: position, timeStamp: _now()),
     );
     await _waitFrame();
   }
@@ -649,11 +630,7 @@ mixin GestureInteractionService {
     final binding = GestureBinding.instance;
     final pointer = _nextPointerId++;
     binding.handlePointerEvent(
-      PointerDownEvent(
-        pointer: pointer,
-        position: from,
-        timeStamp: _now(),
-      ),
+      PointerDownEvent(pointer: pointer, position: from, timeStamp: _now()),
     );
 
     final dx = (to.dx - from.dx) / steps;
@@ -674,11 +651,7 @@ mixin GestureInteractionService {
     }
 
     binding.handlePointerEvent(
-      PointerUpEvent(
-        pointer: pointer,
-        position: to,
-        timeStamp: _now(),
-      ),
+      PointerUpEvent(pointer: pointer, position: to, timeStamp: _now()),
     );
     await _waitFrame();
   }

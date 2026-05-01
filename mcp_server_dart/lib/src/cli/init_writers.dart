@@ -1,10 +1,12 @@
 // mcp_server_dart/lib/src/cli/init_writers.dart
 import 'dart:io';
-import 'init_target.dart';
-import 'init_mode.dart';
-import 'mode_prelude.dart';
-import '../skill_assets.g.dart';
 
+import 'package:flutter_inspector_mcp_server/src/cli/init_mode.dart';
+import 'package:flutter_inspector_mcp_server/src/cli/init_target.dart';
+import 'package:flutter_inspector_mcp_server/src/cli/mode_prelude.dart';
+import 'package:flutter_inspector_mcp_server/src/skill_assets.g.dart';
+
+// ignore: avoid_classes_with_only_static_members
 class InitWriters {
   static void writeFor({
     required final InitTarget target,
@@ -44,7 +46,11 @@ class InitWriters {
     }
   }
 
-  static void _writeSkillFile(final String path, final SkillAsset s, final InitMode mode) {
+  static void _writeSkillFile(
+    final String path,
+    final SkillAsset s,
+    final InitMode mode,
+  ) {
     final dir = Directory(File(path).parent.path);
     if (!dir.existsSync()) dir.createSync(recursive: true);
     final body = renderModePrelude(_reassemble(s), mode);
@@ -64,8 +70,9 @@ class InitWriters {
   static void _writeCursor(final String root, final InitMode mode) {
     final base = '$root/.cursor/plugins/local/flutter-mcp-toolkit';
     Directory('$base/.cursor-plugin').createSync(recursive: true);
-    File('$base/.cursor-plugin/plugin.json')
-        .writeAsStringSync(SkillAssets.cursorPluginManifest);
+    File(
+      '$base/.cursor-plugin/plugin.json',
+    ).writeAsStringSync(SkillAssets.cursorPluginManifest);
     File('$base/mcp.json').writeAsStringSync(SkillAssets.mcpServerConfig);
     for (final s in SkillAssets.skills) {
       _writeSkillFile('$base/skills/${s.id}/SKILL.md', s, mode);
@@ -75,8 +82,9 @@ class InitWriters {
   static void _writeCodex(final String root, final InitMode mode) {
     final base = '$root/.codex/plugins/cache/local/flutter-mcp-toolkit/local';
     Directory('$base/.codex-plugin').createSync(recursive: true);
-    File('$base/.codex-plugin/plugin.json')
-        .writeAsStringSync(SkillAssets.codexPluginManifest);
+    File(
+      '$base/.codex-plugin/plugin.json',
+    ).writeAsStringSync(SkillAssets.codexPluginManifest);
     File('$base/mcp.json').writeAsStringSync(SkillAssets.mcpServerConfig);
     for (final s in SkillAssets.skills) {
       _writeSkillFile('$base/skills/${s.id}/SKILL.md', s, mode);

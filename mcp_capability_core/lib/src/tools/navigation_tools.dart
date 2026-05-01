@@ -34,11 +34,7 @@ void registerNavigationTools(final CapabilityContext context) {
       handler: (final request) async {
         final args = request.arguments ?? const <String, Object?>{};
         final action = stringArgOrNull(args['action']) ?? 'dismiss';
-        return runCommand(
-          runner,
-          args,
-          HandleDialogCommand(action: action),
-        );
+        return runCommand(runner, args, HandleDialogCommand(action: action));
       },
     ),
   );
@@ -78,8 +74,9 @@ void registerNavigationTools(final CapabilityContext context) {
           NavigateCommand(
             action: action,
             route: route,
-            arguments:
-                arguments == null || arguments.isEmpty ? null : arguments,
+            arguments: arguments == null || arguments.isEmpty
+                ? null
+                : arguments,
           ),
         );
       },

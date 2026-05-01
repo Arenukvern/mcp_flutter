@@ -20,8 +20,8 @@ void main() {
     final host = McpHost(
       services: <Type, HostService>{CommandRunner: FakeCommandRunner()},
       // Default v3.0.0 config: dumps off, resources on, images on.
-      config: CapabilityConfig(
-        values: const <String, Object?>{
+      config: const CapabilityConfig(
+        values: <String, Object?>{
           'dumps_supported': false,
           'resources_supported': true,
           'images_supported': true,

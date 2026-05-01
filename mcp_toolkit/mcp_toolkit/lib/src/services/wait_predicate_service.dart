@@ -39,8 +39,7 @@ class WaitPredicateService {
     final stableWindowMs =
         (predicate['stableWindowMs'] as num?)?.toInt() ?? 250;
     // Convert ms -> required consecutive stable frames at ~60fps.
-    final requiredStableFrames =
-        (stableWindowMs / 16).ceil().clamp(1, 9999);
+    final requiredStableFrames = (stableWindowMs / 16).ceil().clamp(1, 9999);
 
     while (stopwatch.elapsed < deadline) {
       final snapshot = await SemanticSnapshotService.peekSemanticSnapshot();

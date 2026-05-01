@@ -7,9 +7,17 @@
 import '../visual_capture/permission_types.dart';
 
 export '../visual_capture/permission_types.dart'
-    show PermissionPolicy, PermissionStatus, PermissionKind, PermissionOwner,
-        CaptureCapability, parsePermissionPolicy, parsePermissionKind,
-        screenshotModeAuto, screenshotModeFlutterLayer, screenshotModeDesktopWindow,
+    show
+        PermissionPolicy,
+        PermissionStatus,
+        PermissionKind,
+        PermissionOwner,
+        CaptureCapability,
+        parsePermissionPolicy,
+        parsePermissionKind,
+        screenshotModeAuto,
+        screenshotModeFlutterLayer,
+        screenshotModeDesktopWindow,
         PermissionBrokerResult;
 
 typedef CoreCommandFactory = CoreCommand Function(Map<String, Object?> args);
@@ -398,10 +406,7 @@ final class GetRecentLogsCommand extends CoreCommand {
 }
 
 final class WaitForCommand extends CoreCommand {
-  const WaitForCommand({
-    required this.predicate,
-    this.timeoutMs = 5000,
-  });
+  const WaitForCommand({required this.predicate, this.timeoutMs = 5000});
 
   final Map<String, Object?> predicate;
   final int timeoutMs;
@@ -439,11 +444,7 @@ final class HandleDialogCommand extends CoreCommand {
 }
 
 final class NavigateCommand extends CoreCommand {
-  const NavigateCommand({
-    required this.action,
-    this.route,
-    this.arguments,
-  });
+  const NavigateCommand({required this.action, this.route, this.arguments});
 
   final String action;
   final String? route;

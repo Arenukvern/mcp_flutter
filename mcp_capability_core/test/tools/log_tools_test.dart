@@ -69,23 +69,24 @@ void main() {
       expect(props.containsKey('connection'), isTrue);
     });
 
-    test('get_recent_logs handler builds GetRecentLogsCommand with count',
-        () async {
-      final runner = FakeCommandRunner()
-        ..nextExecuteResult =
-            CoreResult.success(data: ['log line 1']);
-      final ctx = _registeredCtx(runner: runner);
-      final reg = ctx.registrationFor('get_recent_logs')!;
-      await reg.handler(
-        CallToolRequest(
-          name: 'get_recent_logs',
-          arguments: const <String, Object?>{'count': 25},
-        ),
-      );
-      expect(runner.executedCommands, hasLength(1));
-      final cmd = runner.executedCommands.first as GetRecentLogsCommand;
-      expect(cmd.count, 25);
-    });
+    test(
+      'get_recent_logs handler builds GetRecentLogsCommand with count',
+      () async {
+        final runner = FakeCommandRunner()
+          ..nextExecuteResult = CoreResult.success(data: ['log line 1']);
+        final ctx = _registeredCtx(runner: runner);
+        final reg = ctx.registrationFor('get_recent_logs')!;
+        await reg.handler(
+          CallToolRequest(
+            name: 'get_recent_logs',
+            arguments: const <String, Object?>{'count': 25},
+          ),
+        );
+        expect(runner.executedCommands, hasLength(1));
+        final cmd = runner.executedCommands.first as GetRecentLogsCommand;
+        expect(cmd.count, 25);
+      },
+    );
 
     test('get_recent_logs count defaults to 50 when not provided', () async {
       final runner = FakeCommandRunner()
@@ -102,44 +103,48 @@ void main() {
       expect(cmd.count, 50);
     });
 
-    test('get_recent_logs handler short-circuits on override failure', () async {
-      final runner = FakeCommandRunner()
-        ..nextOverrideResult = CoreResult.failure(
-          code: CoreErrorCode.connectFailed,
-          message: 'no connection',
+    test(
+      'get_recent_logs handler short-circuits on override failure',
+      () async {
+        final runner = FakeCommandRunner()
+          ..nextOverrideResult = CoreResult.failure(
+            code: CoreErrorCode.connectFailed,
+            message: 'no connection',
+          );
+        final ctx = _registeredCtx(runner: runner);
+        final reg = ctx.registrationFor('get_recent_logs')!;
+        final result = await reg.handler(
+          CallToolRequest(
+            name: 'get_recent_logs',
+            arguments: const <String, Object?>{},
+          ),
         );
-      final ctx = _registeredCtx(runner: runner);
-      final reg = ctx.registrationFor('get_recent_logs')!;
-      final result = await reg.handler(
-        CallToolRequest(
-          name: 'get_recent_logs',
-          arguments: const <String, Object?>{},
-        ),
-      );
-      expect(result.isError, isTrue);
-      expect(runner.executedCommands, isEmpty);
-    });
+        expect(result.isError, isTrue);
+        expect(runner.executedCommands, isEmpty);
+      },
+    );
 
     test(
-        'get_recent_logs handler returns 5-key error envelope on execute failure',
-        () async {
-      final runner = FakeCommandRunner()
-        ..nextExecuteResult = CoreResult.failure(
-          code: CoreErrorCode.interactionFailed,
-          message: 'logs failed',
+      'get_recent_logs handler returns 5-key error envelope on execute failure',
+      () async {
+        final runner = FakeCommandRunner()
+          ..nextExecuteResult = CoreResult.failure(
+            code: CoreErrorCode.interactionFailed,
+            message: 'logs failed',
+          );
+        final ctx = _registeredCtx(runner: runner);
+        final reg = ctx.registrationFor('get_recent_logs')!;
+        final result = await reg.handler(
+          CallToolRequest(
+            name: 'get_recent_logs',
+            arguments: const <String, Object?>{},
+          ),
         );
-      final ctx = _registeredCtx(runner: runner);
-      final reg = ctx.registrationFor('get_recent_logs')!;
-      final result = await reg.handler(
-        CallToolRequest(
-          name: 'get_recent_logs',
-          arguments: const <String, Object?>{},
-        ),
-      );
-      expect(result.isError, isTrue);
-      final text = (result.content.first as TextContent).text;
-      final json = jsonDecode(text) as Map<String, Object?>;
-      _expectEnvelopeKeys(json);
-    });
+        expect(result.isError, isTrue);
+        final text = (result.content.first as TextContent).text;
+        final json = jsonDecode(text) as Map<String, Object?>;
+        _expectEnvelopeKeys(json);
+      },
+    );
   });
 }

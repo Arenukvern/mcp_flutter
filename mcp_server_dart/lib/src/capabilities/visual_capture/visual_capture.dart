@@ -741,9 +741,7 @@ PermissionBrokerResult _permissionResultFromJson({
   }
 
   final supportedModes = <String>{};
-  for (final value in _asStringList(payload['supportedModes'])) {
-    supportedModes.add(value);
-  }
+  _asStringList(payload['supportedModes']).forEach(supportedModes.add);
 
   return PermissionBrokerResult(
     kind: kind,

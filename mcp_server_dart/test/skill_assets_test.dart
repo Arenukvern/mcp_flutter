@@ -1,6 +1,6 @@
 // mcp_server_dart/test/skill_assets_test.dart
-import 'package:test/test.dart';
 import 'package:flutter_inspector_mcp_server/src/skill_assets.g.dart';
+import 'package:test/test.dart';
 
 void main() {
   group('SkillAssets', () {
@@ -28,14 +28,17 @@ void main() {
     });
 
     test('skill ids match the expected list', () {
-      final ids = SkillAssets.skills.map((s) => s.id).toSet();
-      expect(ids, equals({
-        'flutter-mcp-toolkit-guide',
-        'flutter-mcp-toolkit-setup',
-        'flutter-mcp-toolkit-inspect',
-        'flutter-mcp-toolkit-control',
-        'flutter-mcp-toolkit-debug',
-      }));
+      final ids = SkillAssets.skills.map((final s) => s.id).toSet();
+      expect(
+        ids,
+        equals({
+          'flutter-mcp-toolkit-guide',
+          'flutter-mcp-toolkit-setup',
+          'flutter-mcp-toolkit-inspect',
+          'flutter-mcp-toolkit-control',
+          'flutter-mcp-toolkit-debug',
+        }),
+      );
     });
 
     test('plugin manifests are bundled', () {

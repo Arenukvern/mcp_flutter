@@ -1,9 +1,10 @@
 // mcp_server_dart/test/cli/init_command_test.dart
 import 'dart:io';
-import 'package:test/test.dart';
+
 import 'package:flutter_inspector_mcp_server/src/cli/init_command.dart';
 import 'package:flutter_inspector_mcp_server/src/cli/init_mode.dart';
 import 'package:flutter_inspector_mcp_server/src/cli/init_target.dart';
+import 'package:test/test.dart';
 
 void main() {
   late Directory tmp;
@@ -18,7 +19,9 @@ void main() {
       scopeIsUserHome: false,
     );
     expect(exitCode, 0);
-    final f = File('${tmp.path}/.claude/skills/flutter-mcp-toolkit/flutter-mcp-toolkit-guide/SKILL.md');
+    final f = File(
+      '${tmp.path}/.claude/skills/flutter-mcp-toolkit/flutter-mcp-toolkit-guide/SKILL.md',
+    );
     expect(f.existsSync(), isTrue);
     final c = f.readAsStringSync();
     expect(c, contains('fmt_'));
@@ -33,9 +36,27 @@ void main() {
       scopeIsUserHome: false,
     );
     expect(exitCode, 0);
-    expect(File('${tmp.path}/.claude/skills/flutter-mcp-toolkit/flutter-mcp-toolkit-guide/SKILL.md').existsSync(), isTrue);
-    expect(File('${tmp.path}/.cursor/plugins/local/flutter-mcp-toolkit/.cursor-plugin/plugin.json').existsSync(), isTrue);
-    expect(File('${tmp.path}/.codex/plugins/cache/local/flutter-mcp-toolkit/local/.codex-plugin/plugin.json').existsSync(), isTrue);
-    expect(File('${tmp.path}/.clinerules/flutter-mcp-toolkit-guide.md').existsSync(), isTrue);
+    expect(
+      File(
+        '${tmp.path}/.claude/skills/flutter-mcp-toolkit/flutter-mcp-toolkit-guide/SKILL.md',
+      ).existsSync(),
+      isTrue,
+    );
+    expect(
+      File(
+        '${tmp.path}/.cursor/plugins/local/flutter-mcp-toolkit/.cursor-plugin/plugin.json',
+      ).existsSync(),
+      isTrue,
+    );
+    expect(
+      File(
+        '${tmp.path}/.codex/plugins/cache/local/flutter-mcp-toolkit/local/.codex-plugin/plugin.json',
+      ).existsSync(),
+      isTrue,
+    );
+    expect(
+      File('${tmp.path}/.clinerules/flutter-mcp-toolkit-guide.md').existsSync(),
+      isTrue,
+    );
   });
 }

@@ -1,9 +1,10 @@
 // mcp_server_dart/test/cli/init_writers_test.dart
 import 'dart:io';
-import 'package:test/test.dart';
-import 'package:flutter_inspector_mcp_server/src/cli/init_target.dart';
+
 import 'package:flutter_inspector_mcp_server/src/cli/init_mode.dart';
+import 'package:flutter_inspector_mcp_server/src/cli/init_target.dart';
 import 'package:flutter_inspector_mcp_server/src/cli/init_writers.dart';
+import 'package:test/test.dart';
 
 void main() {
   late Directory tmp;
@@ -11,20 +12,25 @@ void main() {
   tearDown(() => tmp.deleteSync(recursive: true));
 
   group('InitWriters', () {
-    test('Claude Code writes skills under .claude/skills/flutter-mcp-toolkit/', () {
-      InitWriters.writeFor(
-        target: InitTarget.claudeCode,
-        mode: InitMode.mcp,
-        outputRoot: tmp.path,
-        scopeIsUserHome: false,
-      );
-      final f = File('${tmp.path}/.claude/skills/flutter-mcp-toolkit/flutter-mcp-toolkit-guide/SKILL.md');
-      expect(f.existsSync(), isTrue);
-      final content = f.readAsStringSync();
-      expect(content, contains('name: flutter-mcp-toolkit-guide'));
-      expect(content, isNot(contains('<!-- @FMT_MODE_PRELUDE -->')));
-      expect(content, contains('fmt_'));
-    });
+    test(
+      'Claude Code writes skills under .claude/skills/flutter-mcp-toolkit/',
+      () {
+        InitWriters.writeFor(
+          target: InitTarget.claudeCode,
+          mode: InitMode.mcp,
+          outputRoot: tmp.path,
+          scopeIsUserHome: false,
+        );
+        final f = File(
+          '${tmp.path}/.claude/skills/flutter-mcp-toolkit/flutter-mcp-toolkit-guide/SKILL.md',
+        );
+        expect(f.existsSync(), isTrue);
+        final content = f.readAsStringSync();
+        expect(content, contains('name: flutter-mcp-toolkit-guide'));
+        expect(content, isNot(contains('<!-- @FMT_MODE_PRELUDE -->')));
+        expect(content, contains('fmt_'));
+      },
+    );
 
     test('Cursor writes the whole plugin dir under .cursor/plugins/local/', () {
       InitWriters.writeFor(
@@ -33,9 +39,13 @@ void main() {
         outputRoot: tmp.path,
         scopeIsUserHome: false,
       );
-      final manifest = File('${tmp.path}/.cursor/plugins/local/flutter-mcp-toolkit/.cursor-plugin/plugin.json');
+      final manifest = File(
+        '${tmp.path}/.cursor/plugins/local/flutter-mcp-toolkit/.cursor-plugin/plugin.json',
+      );
       expect(manifest.existsSync(), isTrue);
-      final skill = File('${tmp.path}/.cursor/plugins/local/flutter-mcp-toolkit/skills/flutter-mcp-toolkit-guide/SKILL.md');
+      final skill = File(
+        '${tmp.path}/.cursor/plugins/local/flutter-mcp-toolkit/skills/flutter-mcp-toolkit-guide/SKILL.md',
+      );
       expect(skill.existsSync(), isTrue);
     });
 
@@ -46,7 +56,9 @@ void main() {
         outputRoot: tmp.path,
         scopeIsUserHome: false,
       );
-      final manifest = File('${tmp.path}/.codex/plugins/cache/local/flutter-mcp-toolkit/local/.codex-plugin/plugin.json');
+      final manifest = File(
+        '${tmp.path}/.codex/plugins/cache/local/flutter-mcp-toolkit/local/.codex-plugin/plugin.json',
+      );
       expect(manifest.existsSync(), isTrue);
       final mp = File('${tmp.path}/.agents/plugins/marketplace.json');
       expect(mp.existsSync(), isTrue);
@@ -72,21 +84,29 @@ void main() {
         outputRoot: tmp.path,
         scopeIsUserHome: false,
       );
-      final f = File('${tmp.path}/.agents/skills/flutter-mcp-toolkit-guide/SKILL.md');
+      final f = File(
+        '${tmp.path}/.agents/skills/flutter-mcp-toolkit-guide/SKILL.md',
+      );
       expect(f.existsSync(), isTrue);
     });
 
     test('writes are idempotent (re-running is safe)', () {
       InitWriters.writeFor(
-        target: InitTarget.claudeCode, mode: InitMode.mcp,
-        outputRoot: tmp.path, scopeIsUserHome: false,
+        target: InitTarget.claudeCode,
+        mode: InitMode.mcp,
+        outputRoot: tmp.path,
+        scopeIsUserHome: false,
       );
       InitWriters.writeFor(
-        target: InitTarget.claudeCode, mode: InitMode.mcp,
-        outputRoot: tmp.path, scopeIsUserHome: false,
+        target: InitTarget.claudeCode,
+        mode: InitMode.mcp,
+        outputRoot: tmp.path,
+        scopeIsUserHome: false,
       );
       // No exception, file still readable.
-      final f = File('${tmp.path}/.claude/skills/flutter-mcp-toolkit/flutter-mcp-toolkit-guide/SKILL.md');
+      final f = File(
+        '${tmp.path}/.claude/skills/flutter-mcp-toolkit/flutter-mcp-toolkit-guide/SKILL.md',
+      );
       expect(f.existsSync(), isTrue);
     });
   });

@@ -20,6 +20,27 @@ final class SessionState {
     this.uri,
   });
 
+  factory SessionState.fromJson(final Map<String, Object?> json) =>
+      SessionState(
+        id: '${json['id'] ?? ''}',
+        endpoint: '${json['endpoint'] ?? ''}',
+        createdAt:
+            DateTime.tryParse('${json['createdAt'] ?? ''}')?.toUtc() ??
+            DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
+        lastUsedAt:
+            DateTime.tryParse('${json['lastUsedAt'] ?? ''}')?.toUtc() ??
+            DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
+        mode: '${json['mode'] ?? 'auto'}',
+        host: json['host']?.toString(),
+        port: switch (json['port']) {
+          final int v => v,
+          final num v => v.toInt(),
+          final String v => int.tryParse(v),
+          _ => null,
+        },
+        uri: json['uri']?.toString(),
+      );
+
   final String id;
   final String endpoint;
   final DateTime createdAt;
@@ -51,26 +72,6 @@ final class SessionState {
     'port': port,
     'uri': uri,
   };
-
-  static SessionState fromJson(final Map<String, Object?> json) => SessionState(
-    id: '${json['id'] ?? ''}',
-    endpoint: '${json['endpoint'] ?? ''}',
-    createdAt:
-        DateTime.tryParse('${json['createdAt'] ?? ''}')?.toUtc() ??
-        DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
-    lastUsedAt:
-        DateTime.tryParse('${json['lastUsedAt'] ?? ''}')?.toUtc() ??
-        DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
-    mode: '${json['mode'] ?? 'auto'}',
-    host: json['host']?.toString(),
-    port: switch (json['port']) {
-      final int v => v,
-      final num v => v.toInt(),
-      final String v => int.tryParse(v),
-      _ => null,
-    },
-    uri: json['uri']?.toString(),
-  );
 }
 
 final class PersistedState {
@@ -81,6 +82,38 @@ final class PersistedState {
     this.stickyEndpoint,
     this.lastMode,
   });
+
+  factory PersistedState.fromJson(final Map<String, Object?> json) {
+    final rawSessions = json['sessions'];
+    final sessions = <String, SessionState>{};
+    if (rawSessions is Map) {
+      for (final entry in rawSessions.entries) {
+        final key = '${entry.key}';
+        final value = entry.value;
+        if (value is Map<String, Object?>) {
+          sessions[key] = SessionState.fromJson(value);
+        } else if (value is Map) {
+          sessions[key] = SessionState.fromJson(value.cast<String, Object?>());
+        }
+      }
+    }
+
+    final rawVersion = json['schemaVersion'];
+    final schemaVersion = switch (rawVersion) {
+      final int v => v,
+      final num v => v.toInt(),
+      final String v => int.tryParse(v) ?? 1,
+      _ => 1,
+    };
+
+    return PersistedState(
+      schemaVersion: schemaVersion,
+      activeSessionId: json['activeSessionId']?.toString(),
+      stickyEndpoint: json['stickyEndpoint']?.toString(),
+      lastMode: json['lastMode']?.toString(),
+      sessions: sessions,
+    );
+  }
 
   final int schemaVersion;
   final String? activeSessionId;
@@ -126,38 +159,6 @@ final class PersistedState {
       (final key, final value) => MapEntry(key, value.toJson()),
     ),
   };
-
-  static PersistedState fromJson(final Map<String, Object?> json) {
-    final rawSessions = json['sessions'];
-    final sessions = <String, SessionState>{};
-    if (rawSessions is Map) {
-      for (final entry in rawSessions.entries) {
-        final key = '${entry.key}';
-        final value = entry.value;
-        if (value is Map<String, Object?>) {
-          sessions[key] = SessionState.fromJson(value);
-        } else if (value is Map) {
-          sessions[key] = SessionState.fromJson(value.cast<String, Object?>());
-        }
-      }
-    }
-
-    final rawVersion = json['schemaVersion'];
-    final schemaVersion = switch (rawVersion) {
-      final int v => v,
-      final num v => v.toInt(),
-      final String v => int.tryParse(v) ?? 1,
-      _ => 1,
-    };
-
-    return PersistedState(
-      schemaVersion: schemaVersion,
-      activeSessionId: json['activeSessionId']?.toString(),
-      stickyEndpoint: json['stickyEndpoint']?.toString(),
-      lastMode: json['lastMode']?.toString(),
-      sessions: sessions,
-    );
-  }
 }
 
 final class StateStore {

@@ -427,14 +427,19 @@ void registerInteractionTools(final CapabilityContext context) {
       },
       handler: (final request) async {
         final args = request.arguments ?? const <String, Object?>{};
-        final compress =
-            boolArgOrDefault(args['compress'], defaultValue: true);
-        final includeSemantics =
-            boolArgOrDefault(args['includeSemantics'], defaultValue: true);
-        final includeErrors =
-            boolArgOrDefault(args['includeErrors'], defaultValue: true);
-        final errorsCount =
-            intArgOrDefault(args['errorsCount'], defaultValue: 4);
+        final compress = boolArgOrDefault(args['compress'], defaultValue: true);
+        final includeSemantics = boolArgOrDefault(
+          args['includeSemantics'],
+          defaultValue: true,
+        );
+        final includeErrors = boolArgOrDefault(
+          args['includeErrors'],
+          defaultValue: true,
+        );
+        final errorsCount = intArgOrDefault(
+          args['errorsCount'],
+          defaultValue: 4,
+        );
         return runCommand(
           runner,
           args,
@@ -449,4 +454,3 @@ void registerInteractionTools(final CapabilityContext context) {
     ),
   );
 }
-

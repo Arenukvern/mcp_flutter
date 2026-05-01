@@ -559,10 +559,7 @@ extension type OnWaitForEntry._(MCPCallEntry entry) implements MCPCallEntry {
         inputSchema: ObjectSchema(
           properties: {
             'predicate': ObjectSchema(),
-            'timeoutMs': IntegerSchema(
-              minimum: 1,
-              maximum: 30000,
-            ),
+            'timeoutMs': IntegerSchema(minimum: 1, maximum: 30000),
           },
           required: const ['predicate'],
         ),
@@ -668,9 +665,7 @@ extension type OnHandleDialogEntry._(MCPCallEntry entry)
             'Navigator. Currently only action="dismiss" is supported. '
             'Requires MCPToolkitBinding.instance.setNavigatorKey(key).',
         inputSchema: ObjectSchema(
-          properties: {
-            'action': StringSchema(),
-          },
+          properties: {'action': StringSchema()},
           required: const ['action'],
         ),
       ),
@@ -787,10 +782,7 @@ extension type OnHoverEntry._(MCPCallEntry entry) implements MCPCallEntry {
             'before to get fresh refs.',
         inputSchema: ObjectSchema(
           required: const ['ref'],
-          properties: {
-            'ref': StringSchema(),
-            'snapshotId': IntegerSchema(),
-          },
+          properties: {'ref': StringSchema(), 'snapshotId': IntegerSchema()},
         ),
       ),
     );

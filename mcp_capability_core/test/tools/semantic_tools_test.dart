@@ -58,94 +58,102 @@ void main() {
       expect(ctx.registeredToolNames, contains('semantic_snapshot'));
     });
 
-    test('semantic_snapshot schema: additionalProperties false, no required',
-        () {
-      final ctx = _registeredCtx();
-      final schema = ctx.registrationFor('semantic_snapshot')!.inputSchema;
-      expect(schema['type'], 'object');
-      expect(schema['additionalProperties'], isFalse);
-      expect(schema.containsKey('required'), isFalse);
-      final props = schema['properties'] as Map<String, Object?>;
-      expect(props.containsKey('connection'), isTrue);
-    });
-
-    test('semantic_snapshot handler delegates to CommandRunner.execute',
-        () async {
-      final snapshotData = <String, Object?>{'nodes': [], 'snapshotId': 1};
-      final runner = FakeCommandRunner()
-        ..nextExecuteResult = CoreResult.success(data: snapshotData);
-      final ctx = _registeredCtx(runner: runner);
-      final reg = ctx.registrationFor('semantic_snapshot')!;
-      final result = await reg.handler(
-        CallToolRequest(
-          name: 'semantic_snapshot',
-          arguments: const <String, Object?>{},
-        ),
-      );
-      expect(result.isError, isNot(true));
-      expect(runner.executedCommands, hasLength(1));
-      expect(runner.executedCommands.first, isA<SemanticSnapshotCommand>());
-      final text = (result.content.first as TextContent).text;
-      final json = jsonDecode(text) as Map<String, Object?>;
-      expect(json['snapshotId'], 1);
-    });
+    test(
+      'semantic_snapshot schema: additionalProperties false, no required',
+      () {
+        final ctx = _registeredCtx();
+        final schema = ctx.registrationFor('semantic_snapshot')!.inputSchema;
+        expect(schema['type'], 'object');
+        expect(schema['additionalProperties'], isFalse);
+        expect(schema.containsKey('required'), isFalse);
+        final props = schema['properties'] as Map<String, Object?>;
+        expect(props.containsKey('connection'), isTrue);
+      },
+    );
 
     test(
-        'semantic_snapshot handler calls applyConnectionOverride before execute',
-        () async {
-      final runner = FakeCommandRunner()
-        ..nextExecuteResult = CoreResult.success(data: {});
-      final ctx = _registeredCtx(runner: runner);
-      final reg = ctx.registrationFor('semantic_snapshot')!;
-      await reg.handler(
-        CallToolRequest(
-          name: 'semantic_snapshot',
-          arguments: const <String, Object?>{},
-        ),
-      );
-      expect(runner.callLog.first, 'applyConnectionOverride');
-      expect(runner.callLog[1], 'execute');
-    });
-
-    test('semantic_snapshot handler short-circuits on override failure',
-        () async {
-      final runner = FakeCommandRunner()
-        ..nextOverrideResult = CoreResult.failure(
-          code: CoreErrorCode.connectFailed,
-          message: 'no connection',
+      'semantic_snapshot handler delegates to CommandRunner.execute',
+      () async {
+        final snapshotData = <String, Object?>{'nodes': [], 'snapshotId': 1};
+        final runner = FakeCommandRunner()
+          ..nextExecuteResult = CoreResult.success(data: snapshotData);
+        final ctx = _registeredCtx(runner: runner);
+        final reg = ctx.registrationFor('semantic_snapshot')!;
+        final result = await reg.handler(
+          CallToolRequest(
+            name: 'semantic_snapshot',
+            arguments: const <String, Object?>{},
+          ),
         );
-      final ctx = _registeredCtx(runner: runner);
-      final reg = ctx.registrationFor('semantic_snapshot')!;
-      final result = await reg.handler(
-        CallToolRequest(
-          name: 'semantic_snapshot',
-          arguments: const <String, Object?>{},
-        ),
-      );
-      expect(result.isError, isTrue);
-      expect(runner.executedCommands, isEmpty);
-    });
+        expect(result.isError, isNot(true));
+        expect(runner.executedCommands, hasLength(1));
+        expect(runner.executedCommands.first, isA<SemanticSnapshotCommand>());
+        final text = (result.content.first as TextContent).text;
+        final json = jsonDecode(text) as Map<String, Object?>;
+        expect(json['snapshotId'], 1);
+      },
+    );
 
     test(
-        'semantic_snapshot handler returns 5-key error envelope on execute failure',
-        () async {
-      final runner = FakeCommandRunner()
-        ..nextExecuteResult = CoreResult.failure(
-          code: CoreErrorCode.interactionFailed,
-          message: 'snapshot failed',
+      'semantic_snapshot handler calls applyConnectionOverride before execute',
+      () async {
+        final runner = FakeCommandRunner()
+          ..nextExecuteResult = CoreResult.success(data: {});
+        final ctx = _registeredCtx(runner: runner);
+        final reg = ctx.registrationFor('semantic_snapshot')!;
+        await reg.handler(
+          CallToolRequest(
+            name: 'semantic_snapshot',
+            arguments: const <String, Object?>{},
+          ),
         );
-      final ctx = _registeredCtx(runner: runner);
-      final reg = ctx.registrationFor('semantic_snapshot')!;
-      final result = await reg.handler(
-        CallToolRequest(
-          name: 'semantic_snapshot',
-          arguments: const <String, Object?>{},
-        ),
-      );
-      expect(result.isError, isTrue);
-      final text = (result.content.first as TextContent).text;
-      final json = jsonDecode(text) as Map<String, Object?>;
-      _expectEnvelopeKeys(json);
-    });
+        expect(runner.callLog.first, 'applyConnectionOverride');
+        expect(runner.callLog[1], 'execute');
+      },
+    );
+
+    test(
+      'semantic_snapshot handler short-circuits on override failure',
+      () async {
+        final runner = FakeCommandRunner()
+          ..nextOverrideResult = CoreResult.failure(
+            code: CoreErrorCode.connectFailed,
+            message: 'no connection',
+          );
+        final ctx = _registeredCtx(runner: runner);
+        final reg = ctx.registrationFor('semantic_snapshot')!;
+        final result = await reg.handler(
+          CallToolRequest(
+            name: 'semantic_snapshot',
+            arguments: const <String, Object?>{},
+          ),
+        );
+        expect(result.isError, isTrue);
+        expect(runner.executedCommands, isEmpty);
+      },
+    );
+
+    test(
+      'semantic_snapshot handler returns 5-key error envelope on execute failure',
+      () async {
+        final runner = FakeCommandRunner()
+          ..nextExecuteResult = CoreResult.failure(
+            code: CoreErrorCode.interactionFailed,
+            message: 'snapshot failed',
+          );
+        final ctx = _registeredCtx(runner: runner);
+        final reg = ctx.registrationFor('semantic_snapshot')!;
+        final result = await reg.handler(
+          CallToolRequest(
+            name: 'semantic_snapshot',
+            arguments: const <String, Object?>{},
+          ),
+        );
+        expect(result.isError, isTrue);
+        final text = (result.content.first as TextContent).text;
+        final json = jsonDecode(text) as Map<String, Object?>;
+        _expectEnvelopeKeys(json);
+      },
+    );
   });
 }

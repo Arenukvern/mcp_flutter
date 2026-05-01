@@ -12,7 +12,7 @@ void main() {
 
     test('snippet is plain Dart that parses', () {
       // Smoke check: braces balance, no obvious typos
-      final s = CodegenSnippets.flutterMainInit;
+      const s = CodegenSnippets.flutterMainInit;
       expect('{'.allMatches(s).length, equals('}'.allMatches(s).length));
     });
   });

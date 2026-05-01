@@ -10,10 +10,11 @@ import 'package:mcp_capability_kernel/mcp_capability_kernel.dart';
 /// Bridge contract used by [McpHost] to publish prefixed capability tools to
 /// `dart_mcp`'s [dart_mcp.ToolsSupport]. Production wiring passes the
 /// [MCPToolkitServer] itself; tests can pass a fake.
-typedef DartMcpToolPublisher = void Function(
-  dart_mcp.Tool tool,
-  FutureOr<dart_mcp.CallToolResult> Function(dart_mcp.CallToolRequest) impl,
-);
+typedef DartMcpToolPublisher =
+    void Function(
+      dart_mcp.Tool tool,
+      FutureOr<dart_mcp.CallToolResult> Function(dart_mcp.CallToolRequest) impl,
+    );
 
 /// Counterpart to [DartMcpToolPublisher] used by [McpHost] to roll back
 /// publications when a capability's [Capability.register] throws partway.
@@ -80,18 +81,13 @@ final class McpHost {
     required final String capabilityId,
     required final ToolRegistration registration,
   }) {
-    validateBareToolName(
-      capabilityId: capabilityId,
-      name: registration.name,
-    );
+    validateBareToolName(capabilityId: capabilityId, name: registration.name);
     final fullName = applyPrefix(
       capabilityId: capabilityId,
       name: registration.name,
     );
     if (_tools.containsKey(fullName)) {
-      throw ToolNameCollisionError(
-        'Tool "$fullName" registered twice.',
-      );
+      throw ToolNameCollisionError('Tool "$fullName" registered twice.');
     }
     _tools[fullName] = _RegisteredTool(
       capabilityId: capabilityId,
@@ -103,8 +99,7 @@ final class McpHost {
         dart_mcp.Tool(
           name: fullName,
           description: registration.description,
-          inputSchema:
-              dart_mcp.ObjectSchema.fromMap(registration.inputSchema),
+          inputSchema: dart_mcp.ObjectSchema.fromMap(registration.inputSchema),
         ),
         registration.handler,
       );
@@ -133,9 +128,7 @@ final class McpHost {
     _capabilities.clear();
     final unpublish = _bridge?.unpublish;
     if (unpublish != null) {
-      for (final fullName in _tools.keys) {
-        unpublish(fullName);
-      }
+      _tools.keys.forEach(unpublish);
     }
     _tools.clear();
     if (errors.isNotEmpty) {
@@ -173,10 +166,7 @@ final class _HostCapabilityContext implements CapabilityContext {
   @override
   void registerTool(final ToolRegistration registration) {
     _ensureNotSealed();
-    host._registerTool(
-      capabilityId: capability.id,
-      registration: registration,
-    );
+    host._registerTool(capabilityId: capability.id, registration: registration);
   }
 
   @override
@@ -185,7 +175,9 @@ final class _HostCapabilityContext implements CapabilityContext {
     // T8 wires resource dispatch; until then, this always throws after the
     // seal check, intentionally — capabilities should not register resources
     // in this PR's snapshot.
-    throw UnimplementedError('registerResource not yet wired (tracked for T8).');
+    throw UnimplementedError(
+      'registerResource not yet wired (tracked for T8).',
+    );
   }
 
   @override

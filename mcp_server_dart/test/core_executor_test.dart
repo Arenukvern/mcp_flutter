@@ -430,7 +430,6 @@ void main() {
       expect(details?['reason'], equals('invalid_target_id_legacy_host_port'));
       expect(details?['migrationHint'], isA<String>());
     });
-
   });
 }
 

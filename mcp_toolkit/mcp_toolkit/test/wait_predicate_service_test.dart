@@ -9,22 +9,19 @@ void main() {
   // `tester.pump(duration)` that would advance fake time, deadlocking.
   // Snapshot-derived predicates (Tasks 3+) will use `testWidgets` with the
   // parallel-pump pattern instead.
-  test(
-    'wait_for time predicate resolves after the requested delay',
-    () async {
-      final stopwatch = Stopwatch()..start();
-      final result = await WaitPredicateService.waitFor(
-        predicate: const {'kind': 'time', 'ms': 100},
-        timeoutMs: 1000,
-      );
-      stopwatch.stop();
+  test('wait_for time predicate resolves after the requested delay', () async {
+    final stopwatch = Stopwatch()..start();
+    final result = await WaitPredicateService.waitFor(
+      predicate: const {'kind': 'time', 'ms': 100},
+      timeoutMs: 1000,
+    );
+    stopwatch.stop();
 
-      expect(result['matched'], isTrue);
-      expect(result['elapsedMs'], isA<int>());
-      expect(stopwatch.elapsedMilliseconds, greaterThanOrEqualTo(100));
-      expect((result['predicate']! as Map)['kind'], 'time');
-    },
-  );
+    expect(result['matched'], isTrue);
+    expect(result['elapsedMs'], isA<int>());
+    expect(stopwatch.elapsedMilliseconds, greaterThanOrEqualTo(100));
+    expect((result['predicate']! as Map)['kind'], 'time');
+  });
 
   test('wait_for time predicate echoes ms in the predicate field', () async {
     final result = await WaitPredicateService.waitFor(
@@ -90,54 +87,53 @@ void main() {
     },
   );
 
-  testWidgets(
-    'wait_for noText predicate matches once substring disappears',
-    (final tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(home: Scaffold(body: _DelayedClear())),
-      );
-      await tester.pump();
+  testWidgets('wait_for noText predicate matches once substring disappears', (
+    final tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: Scaffold(body: _DelayedClear())),
+    );
+    await tester.pump();
 
-      final waitFuture = WaitPredicateService.waitFor(
-        predicate: const {'kind': 'noText', 'text': 'Loading'},
-        timeoutMs: 2000,
-      );
+    final waitFuture = WaitPredicateService.waitFor(
+      predicate: const {'kind': 'noText', 'text': 'Loading'},
+      timeoutMs: 2000,
+    );
 
-      for (var i = 0; i < 30; i++) {
-        await tester.pump(const Duration(milliseconds: 50));
-      }
+    for (var i = 0; i < 30; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
 
-      final result = await waitFuture;
-      expect(result['matched'], isTrue);
-    },
-  );
+    final result = await waitFuture;
+    expect(result['matched'], isTrue);
+  });
 
-  test(
-    'wait_for timeout payload emits lastSnapshotId, not lastSnapshot',
-    () {
-      // Plan decision #5: on timeout the response carries the integer
-      // `lastSnapshotId` (a pointer to the most recent peeked snapshot)
-      // rather than the entire snapshot payload, so the wire response
-      // stays small. This test is a direct shape check on the pure
-      // builder — driving the full waitFor loop deterministically under
-      // testWidgets is impractical because the deadline check uses a
-      // real-time Stopwatch that does not advance under fake-async pumps.
-      final result = WaitPredicateService.buildTimeoutResponseForTesting(
-        predicate: const {'kind': 'text', 'text': 'never_appears'},
-        elapsedMs: 50,
-        lastSnapshot: const <String, Object?>{
-          'snapshot_id': 7,
-          'nodes': <Object?>[],
-        },
-      );
-      expect(result['matched'], isFalse);
-      expect(result['elapsedMs'], 50);
-      expect(result['lastSnapshotId'], 7);
-      expect(result.containsKey('lastSnapshot'), isFalse,
-          reason: 'timeout payload must not include the full snapshot');
-      expect((result['predicate']! as Map)['kind'], 'text');
-    },
-  );
+  test('wait_for timeout payload emits lastSnapshotId, not lastSnapshot', () {
+    // Plan decision #5: on timeout the response carries the integer
+    // `lastSnapshotId` (a pointer to the most recent peeked snapshot)
+    // rather than the entire snapshot payload, so the wire response
+    // stays small. This test is a direct shape check on the pure
+    // builder — driving the full waitFor loop deterministically under
+    // testWidgets is impractical because the deadline check uses a
+    // real-time Stopwatch that does not advance under fake-async pumps.
+    final result = WaitPredicateService.buildTimeoutResponseForTesting(
+      predicate: const {'kind': 'text', 'text': 'never_appears'},
+      elapsedMs: 50,
+      lastSnapshot: const <String, Object?>{
+        'snapshot_id': 7,
+        'nodes': <Object?>[],
+      },
+    );
+    expect(result['matched'], isFalse);
+    expect(result['elapsedMs'], 50);
+    expect(result['lastSnapshotId'], 7);
+    expect(
+      result.containsKey('lastSnapshot'),
+      isFalse,
+      reason: 'timeout payload must not include the full snapshot',
+    );
+    expect((result['predicate']! as Map)['kind'], 'text');
+  });
 
   test(
     'wait_for timeout payload omits lastSnapshotId when no snapshot peeked',
@@ -151,34 +147,33 @@ void main() {
     },
   );
 
-  testWidgets(
-    'wait_for stable predicate matches once UI stops changing',
-    (final tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(home: Scaffold(body: Text('static'))),
-      );
-      await tester.pump();
+  testWidgets('wait_for stable predicate matches once UI stops changing', (
+    final tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: Scaffold(body: Text('static'))),
+    );
+    await tester.pump();
 
-      // Kick off the wait without awaiting — the loop awaits endOfFrame.
-      final waitFuture = WaitPredicateService.waitFor(
-        predicate: const {'kind': 'stable', 'stableWindowMs': 100},
-        timeoutMs: 2000,
-      );
+    // Kick off the wait without awaiting — the loop awaits endOfFrame.
+    final waitFuture = WaitPredicateService.waitFor(
+      predicate: const {'kind': 'stable', 'stableWindowMs': 100},
+      timeoutMs: 2000,
+    );
 
-      // Drive enough frames to cross the stable window. requiredStableFrames
-      // = ceil(100/16) = 7. Under the test binding, each loop iteration also
-      // calls peekSemanticSnapshot which awaits an extra cold-path frame
-      // (handle is acquired+disposed per call), so each iter consumes ~2
-      // frames. Pump 20 to be safe.
-      for (var i = 0; i < 20; i++) {
-        await tester.pump(const Duration(milliseconds: 50));
-      }
+    // Drive enough frames to cross the stable window. requiredStableFrames
+    // = ceil(100/16) = 7. Under the test binding, each loop iteration also
+    // calls peekSemanticSnapshot which awaits an extra cold-path frame
+    // (handle is acquired+disposed per call), so each iter consumes ~2
+    // frames. Pump 20 to be safe.
+    for (var i = 0; i < 20; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
 
-      final result = await waitFuture;
-      expect(result['matched'], isTrue);
-      expect(result['snapshot_id'], isA<int>());
-    },
-  );
+    final result = await waitFuture;
+    expect(result['matched'], isTrue);
+    expect(result['snapshot_id'], isA<int>());
+  });
 }
 
 class _DelayedText extends StatefulWidget {
@@ -218,8 +213,9 @@ class _DelayedClearState extends State<_DelayedClear> {
       if (mounted) setState(() => _showLoading = false);
     });
   }
+
   @override
   Widget build(final BuildContext context) => Center(
-        child: _showLoading ? const Text('Loading') : const SizedBox.shrink(),
-      );
+    child: _showLoading ? const Text('Loading') : const SizedBox.shrink(),
+  );
 }

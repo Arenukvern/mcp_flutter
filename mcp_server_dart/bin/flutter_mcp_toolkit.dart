@@ -7,10 +7,10 @@ import 'dart:io' as io;
 import 'package:args/args.dart';
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_inspector_mcp_server/flutter_mcp_core.dart';
+import 'package:flutter_inspector_mcp_server/src/cli/codegen_init_command.dart';
 import 'package:flutter_inspector_mcp_server/src/cli/init_command.dart';
 import 'package:flutter_inspector_mcp_server/src/cli/init_mode.dart';
 import 'package:flutter_inspector_mcp_server/src/cli/init_target.dart';
-import 'package:flutter_inspector_mcp_server/src/cli/codegen_init_command.dart';
 
 Future<void> main(final List<String> args) async {
   late final ArgResults parsed;
@@ -305,6 +305,7 @@ Future<CoreResult> _runOneShot({
             );
           }
           return CoreResult.success(data: bundle);
+          // ignore: avoid_catching_errors
         } on ArgumentError catch (e) {
           return CoreResult.failure(
             code: CoreErrorCode.snapshotNotFound,
@@ -323,6 +324,7 @@ Future<CoreResult> _runOneShot({
           message: 'Unsupported top-level command: ${topLevel.name}',
         );
     }
+    // ignore: avoid_catching_errors
   } on ArgumentError catch (e) {
     return CoreResult.failure(
       code: CoreErrorCode.invalidCommand,
@@ -468,6 +470,7 @@ Future<CoreResult> _runSnapshotCommand({
       try {
         final diff = await snapshotStore.diffSnapshots(fromId: from, toId: to);
         return CoreResult.success(data: diff);
+        // ignore: avoid_catching_errors
       } on ArgumentError catch (e) {
         return CoreResult.failure(
           code: CoreErrorCode.snapshotNotFound,
@@ -900,6 +903,7 @@ Future<CoreResult> _executeExecCommand({
     }
 
     return executor.execute(command);
+    // ignore: avoid_catching_errors
   } on ArgumentError catch (e) {
     return CoreResult.failure(
       code: CoreErrorCode.invalidCommand,
@@ -1458,7 +1462,9 @@ String _globalUsage() {
     ..writeln('$kFlutterMcpCliName v$kFlutterMcpVersion')
     ..writeln()
     ..writeln('Usage:')
-    ..writeln('  flutter-mcp-toolkit [global options] <command> [command options]')
+    ..writeln(
+      '  flutter-mcp-toolkit [global options] <command> [command options]',
+    )
     ..writeln()
     ..writeln('Commands:')
     ..writeln('  exec')
@@ -1825,14 +1831,15 @@ final _argParser = ArgParser(allowTrailingOptions: false)
         'mode',
         allowed: ['mcp', 'cli', 'auto'],
         defaultsTo: 'auto',
-        help: 'Skill rendering mode (mcp uses MCP tool calls, cli uses '
+        help:
+            'Skill rendering mode (mcp uses MCP tool calls, cli uses '
             'flutter-mcp-toolkit exec). auto detects from environment.',
       )
       ..addOption(
         'scope',
         allowed: ['project', 'user'],
         defaultsTo: 'project',
-        help: 'Install scope: project (./) or user (\$HOME).',
+        help: r'Install scope: project (./) or user ($HOME).',
       ),
   )
   ..addCommand(
@@ -2082,16 +2089,16 @@ Future<int> _runInitSubcommand(final ArgResults command) async {
   final InitTarget target;
   try {
     target = InitTarget.parse(command.rest.first);
+    // ignore: avoid_catching_errors
   } on ArgumentError catch (e) {
     io.stderr.writeln(e.message);
     return 64;
   }
   final mode = InitMode.parse(command.option('mode'));
   final scope = command.option('scope') ?? 'project';
-  final outputRoot =
-      scope == 'user'
-          ? (io.Platform.environment['HOME'] ?? io.Directory.current.path)
-          : io.Directory.current.path;
+  final outputRoot = scope == 'user'
+      ? (io.Platform.environment['HOME'] ?? io.Directory.current.path)
+      : io.Directory.current.path;
   try {
     return await runInit(
       target: target,
@@ -2099,6 +2106,7 @@ Future<int> _runInitSubcommand(final ArgResults command) async {
       outputRoot: outputRoot,
       scopeIsUserHome: scope == 'user',
     );
+    // ignore: avoid_catching_errors
   } on StateError catch (e) {
     io.stderr.writeln(e.message);
     io.stderr.writeln(
@@ -2110,10 +2118,9 @@ Future<int> _runInitSubcommand(final ArgResults command) async {
   }
 }
 
-Future<int> _runCodegenInitSubcommand(final ArgResults command) async {
-  return runCodegenInit(
-    projectRoot: io.Directory.current.path,
-    printSnippetOnly: command.flag('print-only'),
-    runPubAdd: command.flag('pub-add'),
-  );
-}
+Future<int> _runCodegenInitSubcommand(final ArgResults command) =>
+    runCodegenInit(
+      projectRoot: io.Directory.current.path,
+      printSnippetOnly: command.flag('print-only'),
+      runPubAdd: command.flag('pub-add'),
+    );

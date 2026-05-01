@@ -1,9 +1,10 @@
 // mcp_server_dart/lib/src/cli/init_command.dart
 import 'dart:io';
-import 'init_mode.dart';
-import 'init_target.dart';
-import 'init_writers.dart';
-import 'init_mode_detector.dart';
+
+import 'package:flutter_inspector_mcp_server/src/cli/init_mode.dart';
+import 'package:flutter_inspector_mcp_server/src/cli/init_mode_detector.dart';
+import 'package:flutter_inspector_mcp_server/src/cli/init_target.dart';
+import 'package:flutter_inspector_mcp_server/src/cli/init_writers.dart';
 
 Future<int> runInit({
   required final InitTarget target,
@@ -29,10 +30,9 @@ Future<int> runInit({
 }
 
 bool _binaryOnPath(final String name) {
-  final result = Process.runSync(
-    Platform.isWindows ? 'where' : 'which',
-    [name],
-  );
+  final result = Process.runSync(Platform.isWindows ? 'where' : 'which', [
+    name,
+  ]);
   return result.exitCode == 0;
 }
 
@@ -42,7 +42,8 @@ bool _isMcpServerRegistered(final InitTarget target, final String outputRoot) {
   switch (target) {
     case InitTarget.claudeCode:
       final f = File('$outputRoot/.claude/mcp.json');
-      return f.existsSync() && f.readAsStringSync().contains('flutter-mcp-toolkit');
+      return f.existsSync() &&
+          f.readAsStringSync().contains('flutter-mcp-toolkit');
     case InitTarget.cursor:
     case InitTarget.codex:
     case InitTarget.cline:

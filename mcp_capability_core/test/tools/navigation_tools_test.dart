@@ -58,53 +58,58 @@ void main() {
       expect(ctx.registeredToolNames, contains('handle_dialog'));
     });
 
-    test('handle_dialog schema: additionalProperties false, required [action]',
-        () {
-      final ctx = _registeredCtx();
-      final schema = ctx.registrationFor('handle_dialog')!.inputSchema;
-      expect(schema['type'], 'object');
-      expect(schema['additionalProperties'], isFalse);
-      final required = schema['required'] as List;
-      expect(required, contains('action'));
-      final props = schema['properties'] as Map<String, Object?>;
-      expect((props['action']! as Map<String, Object?>)['type'], 'string');
-      expect(props.containsKey('connection'), isTrue);
-    });
+    test(
+      'handle_dialog schema: additionalProperties false, required [action]',
+      () {
+        final ctx = _registeredCtx();
+        final schema = ctx.registrationFor('handle_dialog')!.inputSchema;
+        expect(schema['type'], 'object');
+        expect(schema['additionalProperties'], isFalse);
+        final required = schema['required'] as List;
+        expect(required, contains('action'));
+        final props = schema['properties'] as Map<String, Object?>;
+        expect((props['action']! as Map<String, Object?>)['type'], 'string');
+        expect(props.containsKey('connection'), isTrue);
+      },
+    );
 
-    test('handle_dialog handler builds HandleDialogCommand with action',
-        () async {
-      final runner = FakeCommandRunner()
-        ..nextExecuteResult =
-            CoreResult.success(data: {'dismissed': true});
-      final ctx = _registeredCtx(runner: runner);
-      final reg = ctx.registrationFor('handle_dialog')!;
-      final result = await reg.handler(
-        CallToolRequest(
-          name: 'handle_dialog',
-          arguments: const <String, Object?>{'action': 'dismiss'},
-        ),
-      );
-      expect(result.isError, isNot(true));
-      expect(runner.executedCommands, hasLength(1));
-      final cmd = runner.executedCommands.first as HandleDialogCommand;
-      expect(cmd.action, 'dismiss');
-    });
+    test(
+      'handle_dialog handler builds HandleDialogCommand with action',
+      () async {
+        final runner = FakeCommandRunner()
+          ..nextExecuteResult = CoreResult.success(data: {'dismissed': true});
+        final ctx = _registeredCtx(runner: runner);
+        final reg = ctx.registrationFor('handle_dialog')!;
+        final result = await reg.handler(
+          CallToolRequest(
+            name: 'handle_dialog',
+            arguments: const <String, Object?>{'action': 'dismiss'},
+          ),
+        );
+        expect(result.isError, isNot(true));
+        expect(runner.executedCommands, hasLength(1));
+        final cmd = runner.executedCommands.first as HandleDialogCommand;
+        expect(cmd.action, 'dismiss');
+      },
+    );
 
-    test('handle_dialog action defaults to "dismiss" when not provided',
-        () async {
-      final runner = FakeCommandRunner()
-        ..nextExecuteResult = CoreResult.success(data: {});
-      final ctx = _registeredCtx(runner: runner);
-      final reg = ctx.registrationFor('handle_dialog')!;
-      await reg.handler(
-        CallToolRequest(
-          name: 'handle_dialog',
-          arguments: const <String, Object?>{},
-        ),
-      );
-      final cmd = runner.executedCommands.first as HandleDialogCommand;
-      expect(cmd.action, 'dismiss');
-    });
+    test(
+      'handle_dialog action defaults to "dismiss" when not provided',
+      () async {
+        final runner = FakeCommandRunner()
+          ..nextExecuteResult = CoreResult.success(data: {});
+        final ctx = _registeredCtx(runner: runner);
+        final reg = ctx.registrationFor('handle_dialog')!;
+        await reg.handler(
+          CallToolRequest(
+            name: 'handle_dialog',
+            arguments: const <String, Object?>{},
+          ),
+        );
+        final cmd = runner.executedCommands.first as HandleDialogCommand;
+        expect(cmd.action, 'dismiss');
+      },
+    );
 
     test('handle_dialog handler short-circuits on override failure', () async {
       final runner = FakeCommandRunner()
@@ -125,26 +130,27 @@ void main() {
     });
 
     test(
-        'handle_dialog handler returns 5-key error envelope on execute failure',
-        () async {
-      final runner = FakeCommandRunner()
-        ..nextExecuteResult = CoreResult.failure(
-          code: CoreErrorCode.interactionFailed,
-          message: 'dialog failed',
+      'handle_dialog handler returns 5-key error envelope on execute failure',
+      () async {
+        final runner = FakeCommandRunner()
+          ..nextExecuteResult = CoreResult.failure(
+            code: CoreErrorCode.interactionFailed,
+            message: 'dialog failed',
+          );
+        final ctx = _registeredCtx(runner: runner);
+        final reg = ctx.registrationFor('handle_dialog')!;
+        final result = await reg.handler(
+          CallToolRequest(
+            name: 'handle_dialog',
+            arguments: const <String, Object?>{'action': 'dismiss'},
+          ),
         );
-      final ctx = _registeredCtx(runner: runner);
-      final reg = ctx.registrationFor('handle_dialog')!;
-      final result = await reg.handler(
-        CallToolRequest(
-          name: 'handle_dialog',
-          arguments: const <String, Object?>{'action': 'dismiss'},
-        ),
-      );
-      expect(result.isError, isTrue);
-      final text = (result.content.first as TextContent).text;
-      final json = jsonDecode(text) as Map<String, Object?>;
-      _expectEnvelopeKeys(json);
-    });
+        expect(result.isError, isTrue);
+        final text = (result.content.first as TextContent).text;
+        final json = jsonDecode(text) as Map<String, Object?>;
+        _expectEnvelopeKeys(json);
+      },
+    );
   });
 
   // =========================================================================
@@ -174,8 +180,7 @@ void main() {
 
     test('navigate handler builds NavigateCommand with all args', () async {
       final runner = FakeCommandRunner()
-        ..nextExecuteResult =
-            CoreResult.success(data: {'navigated': true});
+        ..nextExecuteResult = CoreResult.success(data: {'navigated': true});
       final ctx = _registeredCtx(runner: runner);
       final reg = ctx.registrationFor('navigate')!;
       await reg.handler(
@@ -200,10 +205,7 @@ void main() {
       final ctx = _registeredCtx(runner: runner);
       final reg = ctx.registrationFor('navigate')!;
       await reg.handler(
-        CallToolRequest(
-          name: 'navigate',
-          arguments: const <String, Object?>{},
-        ),
+        CallToolRequest(name: 'navigate', arguments: const <String, Object?>{}),
       );
       final cmd = runner.executedCommands.first as NavigateCommand;
       expect(cmd.action, 'push');
@@ -229,28 +231,30 @@ void main() {
       expect(runner.executedCommands, isEmpty);
     });
 
-    test('navigate handler returns 5-key error envelope on execute failure',
-        () async {
-      final runner = FakeCommandRunner()
-        ..nextExecuteResult = CoreResult.failure(
-          code: CoreErrorCode.navigateFailed,
-          message: 'navigate failed',
+    test(
+      'navigate handler returns 5-key error envelope on execute failure',
+      () async {
+        final runner = FakeCommandRunner()
+          ..nextExecuteResult = CoreResult.failure(
+            code: CoreErrorCode.navigateFailed,
+            message: 'navigate failed',
+          );
+        final ctx = _registeredCtx(runner: runner);
+        final reg = ctx.registrationFor('navigate')!;
+        final result = await reg.handler(
+          CallToolRequest(
+            name: 'navigate',
+            arguments: const <String, Object?>{
+              'action': 'push',
+              'route': '/home',
+            },
+          ),
         );
-      final ctx = _registeredCtx(runner: runner);
-      final reg = ctx.registrationFor('navigate')!;
-      final result = await reg.handler(
-        CallToolRequest(
-          name: 'navigate',
-          arguments: const <String, Object?>{
-            'action': 'push',
-            'route': '/home',
-          },
-        ),
-      );
-      expect(result.isError, isTrue);
-      final text = (result.content.first as TextContent).text;
-      final json = jsonDecode(text) as Map<String, Object?>;
-      _expectEnvelopeKeys(json);
-    });
+        expect(result.isError, isTrue);
+        final text = (result.content.first as TextContent).text;
+        final json = jsonDecode(text) as Map<String, Object?>;
+        _expectEnvelopeKeys(json);
+      },
+    );
   });
 }

@@ -19,7 +19,7 @@ import 'package:stream_channel/stream_channel.dart';
 // ignore: do_not_use_environment
 const kDebugMode = bool.fromEnvironment('kDebugMode');
 
-// TODO: refactor heavily prompt - use FAQ + memory palace format
+// TODO(arenukvern): refactor heavily prompt - use FAQ + memory palace format
 /// Flutter Inspector MCP Server
 ///
 /// Provides tools and resources for Flutter app inspection and debugging

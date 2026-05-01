@@ -38,9 +38,7 @@ Future<CallToolResult> runCommand(
   if (!result.ok) return toErrorResult(result);
   return onSuccess != null
       ? onSuccess(result.data)
-      : CallToolResult(
-          content: [TextContent(text: jsonEncode(result.data))],
-        );
+      : CallToolResult(content: [TextContent(text: jsonEncode(result.data))]);
 }
 
 /// Serialises a [CoreResult] failure to a structured MCP error result.

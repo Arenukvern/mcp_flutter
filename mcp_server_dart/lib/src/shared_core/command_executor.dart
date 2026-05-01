@@ -28,6 +28,7 @@ Future<void> _defaultActivateMacOsTargetPid(final int pid) async {
   try {
     await Process.run('swift', <String>[
       '-e',
+      // ignore: no_adjacent_strings_in_list
       'import AppKit; import Foundation; '
           'let pid = pid_t($pid); '
           'guard let app = NSRunningApplication(processIdentifier: pid) '
@@ -1195,11 +1196,13 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
 
       // Apply snapshotId on the first field only — subsequent fields
       // would re-validate against the same id, so just trust the chain.
-      final result = await _enterText(EnterTextCommand(
-        ref: ref,
-        text: text,
-        snapshotId: i == 0 ? command.snapshotId : null,
-      ));
+      final result = await _enterText(
+        EnterTextCommand(
+          ref: ref,
+          text: text,
+          snapshotId: i == 0 ? command.snapshotId : null,
+        ),
+      );
       final fieldData = _map(result.data);
       results.add(fieldData);
       // `_enterText` always returns CoreResult.success regardless of
@@ -1208,8 +1211,8 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       // `fieldData['ok'] == false`) both count as "stop the batch."
       // Toolkit emits `success: false` for missing args and `ok: false`
       // for stale_snapshot — accept either shape.
-      final toolkitOk = !(fieldData['success'] == false ||
-          fieldData['ok'] == false);
+      final toolkitOk =
+          !(fieldData['success'] == false || fieldData['ok'] == false);
       if (!result.ok || !toolkitOk) {
         return CoreResult.failure(
           code: CoreErrorCode.fillFormFailed,
@@ -1224,11 +1227,13 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       }
     }
 
-    return CoreResult.success(data: <String, Object?>{
-      'success': true,
-      'fieldCount': command.fields.length,
-      'results': results,
-    });
+    return CoreResult.success(
+      data: <String, Object?>{
+        'success': true,
+        'fieldCount': command.fields.length,
+        'results': results,
+      },
+    );
   }
 
   Future<CoreResult> _hover(final HoverCommand command) async {
@@ -1603,7 +1608,6 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     'permission': permission.toJson(),
   };
 }
-
 
 final class _DesktopCaptureResolution {
   const _DesktopCaptureResolution({

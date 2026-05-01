@@ -83,8 +83,7 @@ void registerInspectionTools(final CapabilityContext context) {
         'properties': <String, Object?>{
           'count': <String, Object?>{
             'type': 'integer',
-            'description':
-                'Number of recent errors to retrieve (default: 4).',
+            'description': 'Number of recent errors to retrieve (default: 4).',
           },
           'connection': connectionOverrideJsonSchema(),
         },
@@ -219,8 +218,7 @@ void registerInspectionTools(final CapabilityContext context) {
         'properties': <String, Object?>{
           'errorsCount': <String, Object?>{
             'type': 'integer',
-            'description':
-                'Number of recent errors to include (default: 4).',
+            'description': 'Number of recent errors to include (default: 4).',
           },
           'compress': <String, Object?>{
             'type': 'boolean',
@@ -271,9 +269,7 @@ void registerInspectionTools(final CapabilityContext context) {
             includeViewDetails: includeViewDetails,
             includeErrors: includeErrors,
             screenshotMode: parseScreenshotMode(args['screenshotMode']),
-            permissionPolicy: parsePermissionPolicy(
-              args['permissionPolicy'],
-            ),
+            permissionPolicy: parsePermissionPolicy(args['permissionPolicy']),
           ),
         );
       },

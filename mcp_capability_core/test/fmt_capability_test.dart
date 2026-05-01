@@ -16,13 +16,9 @@ const _dumpToolNames = <String>[
 FakeCapabilityContext _makeCtx({bool dumpsSupported = false}) {
   return FakeCapabilityContext(
     capabilityId: 'core',
-    services: <Type, HostService>{
-      CommandRunner: FakeCommandRunner(),
-    },
+    services: <Type, HostService>{CommandRunner: FakeCommandRunner()},
     config: CapabilityConfig(
-      values: <String, Object?>{
-        'dumps_supported': dumpsSupported,
-      },
+      values: <String, Object?>{'dumps_supported': dumpsSupported},
     ),
   );
 }

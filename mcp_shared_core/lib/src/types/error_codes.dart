@@ -542,7 +542,8 @@ _defaultRecoveryMap = <String, Map<String, Object?>>{
   },
   CoreErrorCode.dynamicRegistryDisabled: <String, Object?>{
     'summary': 'Enable dynamic registry support before dynamic tool calls.',
-    'fix_command': "flutter-mcp-toolkit --dynamics exec --name status --args '{}'",
+    'fix_command':
+        "flutter-mcp-toolkit --dynamics exec --name status --args '{}'",
   },
   CoreErrorCode.visualCapturePermissionDenied: <String, Object?>{
     'summary':

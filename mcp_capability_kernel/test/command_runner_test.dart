@@ -25,25 +25,31 @@ void main() {
       expect(runner.executedCommands.first, isA<TapWidgetCommand>());
     });
 
-    test('applyConnectionOverride returns null when no connection key', () async {
-      final runner = FakeCommandRunner();
-      final result = await runner.applyConnectionOverride({'ref': 's_0'});
-      expect(result, isNull);
-    });
+    test(
+      'applyConnectionOverride returns null when no connection key',
+      () async {
+        final runner = FakeCommandRunner();
+        final result = await runner.applyConnectionOverride({'ref': 's_0'});
+        expect(result, isNull);
+      },
+    );
 
-    test('applyConnectionOverride returns failure CoreResult when set', () async {
-      final runner = FakeCommandRunner()
-        ..nextOverrideResult = CoreResult.failure(
-          code: CoreErrorCode.connectFailed,
-          message: 'test failure',
-        );
-      final result = await runner.applyConnectionOverride({
-        'connection': {'port': 9999},
-      });
-      expect(result, isNotNull);
-      expect(result!.ok, isFalse);
-      expect(result.error?.code, equals(CoreErrorCode.connectFailed));
-    });
+    test(
+      'applyConnectionOverride returns failure CoreResult when set',
+      () async {
+        final runner = FakeCommandRunner()
+          ..nextOverrideResult = CoreResult.failure(
+            code: CoreErrorCode.connectFailed,
+            message: 'test failure',
+          );
+        final result = await runner.applyConnectionOverride({
+          'connection': {'port': 9999},
+        });
+        expect(result, isNotNull);
+        expect(result!.ok, isFalse);
+        expect(result.error?.code, equals(CoreErrorCode.connectFailed));
+      },
+    );
 
     test('execute returns failure CoreResult when set', () async {
       final runner = FakeCommandRunner()
@@ -66,10 +72,7 @@ void main() {
       final runner = FakeCommandRunner();
       await runner.applyConnectionOverride({'ref': 's_0'});
       await runner.execute(const TapWidgetCommand(ref: 's_0'));
-      expect(
-        runner.callLog,
-        equals(['applyConnectionOverride', 'execute']),
-      );
+      expect(runner.callLog, equals(['applyConnectionOverride', 'execute']));
     });
   });
 }

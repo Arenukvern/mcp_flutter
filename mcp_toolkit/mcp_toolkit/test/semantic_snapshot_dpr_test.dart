@@ -9,9 +9,10 @@ void main() {
   // most modern phones), synthesized pointer events sent at the resolved
   // center missed the widget by a factor of DPR. See
   // todo/dpr_resolve_center_bounds.md.
-  for (final dpr in const <double>[1.0, 2.0, 3.0]) {
-    testWidgets('resolveCenter returns logical coords at DPR=$dpr',
-        (final tester) async {
+  for (final dpr in const <double>[1, 2, 3]) {
+    testWidgets('resolveCenter returns logical coords at DPR=$dpr', (
+      final tester,
+    ) async {
       tester.view.devicePixelRatio = dpr;
       addTearDown(tester.view.resetDevicePixelRatio);
 
@@ -22,11 +23,7 @@ void main() {
             body: Center(
               child: Semantics(
                 label: 'dpr_target',
-                child: SizedBox(
-                  key: key,
-                  width: 80,
-                  height: 40,
-                ),
+                child: SizedBox(key: key, width: 80, height: 40),
               ),
             ),
           ),
@@ -40,9 +37,7 @@ void main() {
       final snapshot = await snapshotFuture;
 
       final nodes = (snapshot['nodes']! as List).cast<Map<String, Object?>>();
-      final node = nodes.firstWhere(
-        (final n) => n['label'] == 'dpr_target',
-      );
+      final node = nodes.firstWhere((final n) => n['label'] == 'dpr_target');
       final ref = node['ref']! as String;
 
       final resolvedCenter = SemanticSnapshotService.resolveCenter(ref);

@@ -16,7 +16,7 @@ enum InitTarget {
     throw ArgumentError.value(
       input,
       'target',
-      'Unknown init target. Valid: ${InitTarget.values.map((t) => t.canonicalName).join(", ")}',
+      'Unknown init target. Valid: ${InitTarget.values.map((final t) => t.canonicalName).join(", ")}',
     );
   }
 }

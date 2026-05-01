@@ -6,7 +6,6 @@
 
 import 'package:mcp_shared_core/mcp_shared_core.dart';
 
-
 final class CommandCatalog {
   CommandCatalog._();
 
@@ -981,9 +980,7 @@ final class CommandCatalog {
             'MCPToolkitBinding.instance.setNavigatorKey(key).',
         inputSchema: _objectSchema(
           required: const ['action'],
-          properties: {
-            'action': _stringSchema(),
-          },
+          properties: {'action': _stringSchema()},
         ),
         outputSchema: _objectSchema(additionalProperties: true),
         requiresVm: true,
@@ -1056,13 +1053,13 @@ final class CommandCatalog {
           final raw = args['fields'];
           final list = raw is List
               ? raw
-                  .whereType<Object?>()
-                  .map<Map<String, Object?>>((final e) {
-                    if (e is Map<String, Object?>) return e;
-                    if (e is Map) return e.cast<String, Object?>();
-                    return const <String, Object?>{};
-                  })
-                  .toList(growable: false)
+                    .whereType<Object?>()
+                    .map<Map<String, Object?>>((final e) {
+                      if (e is Map<String, Object?>) return e;
+                      if (e is Map) return e.cast<String, Object?>();
+                      return const <String, Object?>{};
+                    })
+                    .toList(growable: false)
               : const <Map<String, Object?>>[];
           final snapshotIdRaw = _intArg(args, 'snapshotId', fallback: 0);
           return FillFormCommand(
@@ -1082,10 +1079,7 @@ final class CommandCatalog {
             'Pass snapshot_id to detect staleness.',
         inputSchema: _objectSchema(
           required: const ['ref'],
-          properties: {
-            'ref': _stringSchema(),
-            'snapshotId': _intSchema(),
-          },
+          properties: {'ref': _stringSchema(), 'snapshotId': _intSchema()},
         ),
         outputSchema: _objectSchema(additionalProperties: true),
         requiresVm: true,

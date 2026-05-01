@@ -1,7 +1,7 @@
 // Copyright (c) 2025, Flutter Inspector MCP Server authors.
 // Licensed under the MIT License.
 
-// ignore_for_file: lines_longer_than_80_chars
+// ignore_for_file: avoid_catches_without_on_clauses, lines_longer_than_80_chars
 
 import 'dart:async';
 

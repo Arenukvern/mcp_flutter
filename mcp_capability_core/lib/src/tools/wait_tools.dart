@@ -53,10 +53,7 @@ void registerWaitTools(final CapabilityContext context) {
         return runCommand(
           runner,
           args,
-          WaitForCommand(
-            predicate: predicate,
-            timeoutMs: timeoutMsRaw ?? 5000,
-          ),
+          WaitForCommand(predicate: predicate, timeoutMs: timeoutMsRaw ?? 5000),
         );
       },
     ),

@@ -25,10 +25,7 @@ final class _ConfigCapturingCapability implements Capability {
 }
 
 final class _FakeCapability implements Capability {
-  _FakeCapability({
-    required this.id,
-    required this.tools,
-  });
+  _FakeCapability({required this.id, required this.tools});
 
   @override
   final String id;
@@ -47,9 +44,8 @@ final class _FakeCapability implements Capability {
           name: name,
           description: 'fake tool $name',
           inputSchema: const {'type': 'object'},
-          handler: (_) async => CallToolResult(
-            content: [TextContent(text: 'ok')],
-          ),
+          handler: (_) async =>
+              CallToolResult(content: [TextContent(text: 'ok')]),
         ),
       );
     }
@@ -175,51 +171,55 @@ void main() {
       );
     });
 
-    test('registerResource after register() returns throws StateError',
-        () async {
-      late CapabilityContext escapedCtx;
-      final cap = _CapturingCapability((final ctx) => escapedCtx = ctx);
-      final host = McpHost();
-      await host.registerCapability(cap);
-      // Note: registerResource currently throws UnimplementedError after the
-      // seal check. We assert the seal fires FIRST (StateError before
-      // UnimplementedError).
-      expect(
-        () => escapedCtx.registerResource(
-          ResourceRegistration(
-            uri: 'fake://x',
-            name: 'x',
-            description: 'x',
-            mimeType: 'text/plain',
-            handler: (_) async => ReadResourceResult(contents: const []),
+    test(
+      'registerResource after register() returns throws StateError',
+      () async {
+        late CapabilityContext escapedCtx;
+        final cap = _CapturingCapability((final ctx) => escapedCtx = ctx);
+        final host = McpHost();
+        await host.registerCapability(cap);
+        // Note: registerResource currently throws UnimplementedError after the
+        // seal check. We assert the seal fires FIRST (StateError before
+        // UnimplementedError).
+        expect(
+          () => escapedCtx.registerResource(
+            ResourceRegistration(
+              uri: 'fake://x',
+              name: 'x',
+              description: 'x',
+              mimeType: 'text/plain',
+              handler: (_) async => ReadResourceResult(contents: const []),
+            ),
           ),
-        ),
-        throwsA(isA<StateError>()),
-      );
-    });
+          throwsA(isA<StateError>()),
+        );
+      },
+    );
 
-    test('failed registration leaves no partial state; retry is clean',
-        () async {
-      final host = McpHost();
+    test(
+      'failed registration leaves no partial state; retry is clean',
+      () async {
+        final host = McpHost();
 
-      // First attempt: pre-prefixed name fails.
-      await expectLater(
-        host.registerCapability(
-          _FakeCapability(id: 'core', tools: ['core_bad']),
-        ),
-        throwsA(isA<PrePrefixedToolNameError>()),
-      );
+        // First attempt: pre-prefixed name fails.
+        await expectLater(
+          host.registerCapability(
+            _FakeCapability(id: 'core', tools: ['core_bad']),
+          ),
+          throwsA(isA<PrePrefixedToolNameError>()),
+        );
 
-      // Confirm no leak: tools are empty, capability not retained.
-      expect(host.toolNames, isEmpty);
+        // Confirm no leak: tools are empty, capability not retained.
+        expect(host.toolNames, isEmpty);
 
-      // Retry with same id and a clean tool set must succeed (would throw
-      // CapabilityAlreadyRegisteredError if the failed attempt had leaked).
-      await host.registerCapability(
-        _FakeCapability(id: 'core', tools: ['tap_widget']),
-      );
-      expect(host.toolNames, contains('core_tap_widget'));
-    });
+        // Retry with same id and a clean tool set must succeed (would throw
+        // CapabilityAlreadyRegisteredError if the failed attempt had leaked).
+        await host.registerCapability(
+          _FakeCapability(id: 'core', tools: ['tap_widget']),
+        );
+        expect(host.toolNames, contains('core_tap_widget'));
+      },
+    );
 
     test('partial tools rolled back when later registration throws', () async {
       final host = McpHost();
@@ -260,31 +260,35 @@ void main() {
       expect(host.toolNames, isEmpty);
     });
 
-    test('capability sees config values when McpHost is constructed with config',
-        () async {
-      CapabilityConfig? captured;
-      final host = McpHost(
-        config: CapabilityConfig(
-          values: <String, Object?>{'dumps_supported': true},
-        ),
-      );
-      await host.registerCapability(
-        _ConfigCapturingCapability((final cfg) => captured = cfg),
-      );
-      expect(captured, isNotNull);
-      expect(captured!.getBool('dumps_supported'), isTrue);
-    });
+    test(
+      'capability sees config values when McpHost is constructed with config',
+      () async {
+        CapabilityConfig? captured;
+        final host = McpHost(
+          config: const CapabilityConfig(
+            values: <String, Object?>{'dumps_supported': true},
+          ),
+        );
+        await host.registerCapability(
+          _ConfigCapturingCapability((final cfg) => captured = cfg),
+        );
+        expect(captured, isNotNull);
+        expect(captured!.getBool('dumps_supported'), isTrue);
+      },
+    );
 
-    test('capability sees empty config when McpHost is constructed with no config',
-        () async {
-      CapabilityConfig? captured;
-      final host = McpHost();
-      await host.registerCapability(
-        _ConfigCapturingCapability((final cfg) => captured = cfg),
-      );
-      expect(captured, isNotNull);
-      // Default: no values set → getBool returns defaultValue (false).
-      expect(captured!.getBool('dumps_supported'), isFalse);
-    });
+    test(
+      'capability sees empty config when McpHost is constructed with no config',
+      () async {
+        CapabilityConfig? captured;
+        final host = McpHost();
+        await host.registerCapability(
+          _ConfigCapturingCapability((final cfg) => captured = cfg),
+        );
+        expect(captured, isNotNull);
+        // Default: no values set → getBool returns defaultValue (false).
+        expect(captured!.getBool('dumps_supported'), isFalse);
+      },
+    );
   });
 }

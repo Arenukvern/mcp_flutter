@@ -1,6 +1,8 @@
 // Copyright (c) 2025, Flutter Inspector MCP Server authors.
 // Licensed under the MIT License.
 
+// ignore_for_file: avoid_catching_errors
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io' as io;

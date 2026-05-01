@@ -254,8 +254,7 @@ void main() {
           expect(
             agentSnapshotKeys.any(params.containsKey),
             isTrue,
-            reason:
-                'expected at least one of $agentSnapshotKeys in parameters',
+            reason: 'expected at least one of $agentSnapshotKeys in parameters',
           );
         } else {
           expect(
@@ -367,7 +366,7 @@ void main() {
     );
 
     test(
-      'every catalog command exec\'s against the live showcase',
+      "every catalog command exec's against the live showcase",
       skip: runIntegration ? false : 'Set RUN_FLUTTER_CLI_INTEGRATION=1 to run',
       timeout: const Timeout(Duration(minutes: 12)),
       () async {
@@ -387,7 +386,7 @@ void main() {
             '--name',
             name,
             '--args',
-            args is String ? args : jsonEncode(args),
+            if (args is String) args else jsonEncode(args),
           ]);
           expect(
             raw.envelope.containsKey('ok'),
@@ -408,11 +407,7 @@ void main() {
         final connArgs = jsonEncode({'connection': connection});
 
         // 1. semantic_snapshot — must succeed; provides refs.
-        final snap = await exec(
-          'semantic_snapshot',
-          connArgs,
-          requireOk: true,
-        );
+        final snap = await exec('semantic_snapshot', connArgs, requireOk: true);
         final snapData = snap['data'] as Map<String, dynamic>;
         final refs = ((snapData['nodes'] as List?) ?? const [])
             .whereType<Map>()
@@ -430,27 +425,19 @@ void main() {
         await exec('discover_debug_apps', '{}', requireOk: true);
         await exec('get_app_errors', {'count': 1}, requireOk: true);
         await exec('get_view_details', '{}', requireOk: true);
-        await exec(
-          'get_screenshots',
-          {
-            'connection': connection,
-            'compress': true,
-            'mode': 'flutter_layer',
-          },
-          requireOk: true,
-        );
-        await exec(
-          'capture_ui_snapshot',
-          {
-            'connection': connection,
-            'errorsCount': 1,
-            'compress': true,
-            'includeViewDetails': true,
-            'includeErrors': true,
-            'screenshotMode': 'flutter_layer',
-          },
-          requireOk: true,
-        );
+        await exec('get_screenshots', {
+          'connection': connection,
+          'compress': true,
+          'mode': 'flutter_layer',
+        }, requireOk: true);
+        await exec('capture_ui_snapshot', {
+          'connection': connection,
+          'errorsCount': 1,
+          'compress': true,
+          'includeViewDetails': true,
+          'includeErrors': true,
+          'screenshotMode': 'flutter_layer',
+        }, requireOk: true);
         await exec('inspect_widget_at_point', {
           'x': 120,
           'y': 220,
@@ -460,98 +447,81 @@ void main() {
         // 3. interaction layer.
         await exec('tap_widget', {
           'ref': firstRef,
-          if (snapshotId != null) 'snapshotId': snapshotId,
+          'snapshotId': ?snapshotId,
           'connection': connection,
         });
         await exec('long_press', {
           'ref': firstRef,
-          if (snapshotId != null) 'snapshotId': snapshotId,
+          'snapshotId': ?snapshotId,
           'connection': connection,
         });
         await exec('enter_text', {
           'ref': firstRef,
           'text': 'hi',
-          if (snapshotId != null) 'snapshotId': snapshotId,
+          'snapshotId': ?snapshotId,
           'connection': connection,
         });
         await exec('scroll', {
           'direction': 'down',
-          if (snapshotId != null) 'snapshotId': snapshotId,
+          'snapshotId': ?snapshotId,
           'connection': connection,
         });
         await exec('swipe', {
           'direction': 'up',
-          if (snapshotId != null) 'snapshotId': snapshotId,
+          'snapshotId': ?snapshotId,
           'connection': connection,
         });
         await exec('drag', {
           'fromRef': firstRef,
           'toRef': secondRef,
-          if (snapshotId != null) 'snapshotId': snapshotId,
+          'snapshotId': ?snapshotId,
           'connection': connection,
         });
         await exec('hover', {
           'ref': firstRef,
-          if (snapshotId != null) 'snapshotId': snapshotId,
+          'snapshotId': ?snapshotId,
           'connection': connection,
         });
-        await exec('press_key', {
-          'key': 'Tab',
-          'connection': connection,
-        });
+        await exec('press_key', {'key': 'Tab', 'connection': connection});
 
         // 4. control flow.
         await exec('handle_dialog', {
           'action': 'dismiss',
           'connection': connection,
         });
-        await exec('navigate', {
-          'action': 'pop',
-          'connection': connection,
-        });
+        await exec('navigate', {'action': 'pop', 'connection': connection});
 
         // 5. wait / forms.
-        await exec(
-          'wait_for',
-          {
-            'predicate': {'kind': 'time', 'ms': 50},
-            'connection': connection,
-          },
-          requireOk: true,
-        );
+        await exec('wait_for', {
+          'predicate': {'kind': 'time', 'ms': 50},
+          'connection': connection,
+        }, requireOk: true);
         await exec('fill_form', {
           'fields': <Map<String, Object?>>[
             {'ref': firstRef, 'text': 'a'},
           ],
-          if (snapshotId != null) 'snapshotId': snapshotId,
+          'snapshotId': ?snapshotId,
           'connection': connection,
         });
 
         // 6. logs + runtime introspection.
-        await exec(
-          'get_recent_logs',
-          {'connection': connection, 'count': 5},
-          requireOk: true,
-        );
-        await exec(
-          'evaluate_dart_expression',
-          {'expression': '1 + 1', 'connection': connection},
-          requireOk: true,
-        );
+        await exec('get_recent_logs', {
+          'connection': connection,
+          'count': 5,
+        }, requireOk: true);
+        await exec('evaluate_dart_expression', {
+          'expression': '1 + 1',
+          'connection': connection,
+        }, requireOk: true);
 
         // 7. hot_reload_and_capture — must succeed.
-        await exec(
-          'hot_reload_and_capture',
-          {'connection': connection, 'errorsCount': 1},
-          requireOk: true,
-        );
+        await exec('hot_reload_and_capture', {
+          'connection': connection,
+          'errorsCount': 1,
+        }, requireOk: true);
 
         // 8. hot_restart_flutter LAST (destructive — resets app state).
-        await exec(
-          'hot_restart_flutter',
-          '{}',
-          requireOk: true,
-        );
+        await exec('hot_restart_flutter', '{}', requireOk: true);
       },
     );
   });
@@ -669,7 +639,6 @@ Map<String, dynamic>? _tryDecodeJsonMap(final String value) {
     return null;
   }
 }
-
 
 Future<Map<String, dynamic>> _runCli(final List<String> args) async {
   final raw = await _runCliRaw(args);

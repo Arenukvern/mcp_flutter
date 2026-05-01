@@ -377,12 +377,12 @@ void main() {
         final firstRef = refs.first;
         await dispatch('fmt_tap_widget', {
           'ref': firstRef,
-          if (snapshotId != null) 'snapshotId': snapshotId,
+          'snapshotId': ?snapshotId,
           'connection': connection,
         });
         await dispatch('fmt_long_press', {
           'ref': firstRef,
-          if (snapshotId != null) 'snapshotId': snapshotId,
+          'snapshotId': ?snapshotId,
           'connection': connection,
         });
         // enter_text needs a TextField ref — try the first ref; the showcase
@@ -392,17 +392,17 @@ void main() {
         await dispatch('fmt_enter_text', {
           'ref': firstRef,
           'text': 'hello',
-          if (snapshotId != null) 'snapshotId': snapshotId,
+          'snapshotId': ?snapshotId,
           'connection': connection,
         });
         await dispatch('fmt_scroll', {
           'direction': 'down',
-          if (snapshotId != null) 'snapshotId': snapshotId,
+          'snapshotId': ?snapshotId,
           'connection': connection,
         });
         await dispatch('fmt_swipe', {
           'direction': 'up',
-          if (snapshotId != null) 'snapshotId': snapshotId,
+          'snapshotId': ?snapshotId,
           'connection': connection,
         });
         // drag needs two refs; if showcase only has one, reuse it (the call
@@ -411,12 +411,12 @@ void main() {
         await dispatch('fmt_drag', {
           'fromRef': firstRef,
           'toRef': secondRef,
-          if (snapshotId != null) 'snapshotId': snapshotId,
+          'snapshotId': ?snapshotId,
           'connection': connection,
         });
         await dispatch('fmt_hover', {
           'ref': firstRef,
-          if (snapshotId != null) 'snapshotId': snapshotId,
+          'snapshotId': ?snapshotId,
           'connection': connection,
         });
         await dispatch('fmt_press_key', {
@@ -445,7 +445,7 @@ void main() {
           'fields': <Map<String, Object?>>[
             {'ref': firstRef, 'text': 'a'},
           ],
-          if (snapshotId != null) 'snapshotId': snapshotId,
+          'snapshotId': ?snapshotId,
           'connection': connection,
         });
 
@@ -510,7 +510,6 @@ const _expectedCoreTools = <String>{
 };
 
 String? _globalVmServiceWsUri;
-
 
 Directory _serverDirectory() => Directory.current;
 
@@ -614,7 +613,6 @@ Map<String, dynamic>? _tryDecodeJsonMap(final String value) {
   }
 }
 
-
 Future<Map<String, dynamic>> _callToolUntilSuccess({
   required final _McpHarness harness,
   required final String name,
@@ -641,7 +639,6 @@ Future<Map<String, dynamic>> _callToolUntilSuccess({
 
   return lastResponse ?? <String, dynamic>{};
 }
-
 
 final class _McpHarness {
   _McpHarness._({

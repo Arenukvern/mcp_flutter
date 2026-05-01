@@ -30,13 +30,19 @@ void main() {
         final result = parseConnectionOverrideArguments(
           arguments: {
             'ref': 's_0',
-            'connection': {'targetId': 'ws://127.0.0.1:8181/token/ws', 'mode': 'auto'},
+            'connection': {
+              'targetId': 'ws://127.0.0.1:8181/token/ws',
+              'mode': 'auto',
+            },
           },
         );
         expect(result.error, isNull);
         expect(result.connectionProvided, isTrue);
-        expect(result.sanitizedArgs.containsKey('connection'), isFalse,
-            reason: 'connection key should be stripped from sanitizedArgs');
+        expect(
+          result.sanitizedArgs.containsKey('connection'),
+          isFalse,
+          reason: 'connection key should be stripped from sanitizedArgs',
+        );
         expect(result.sanitizedArgs['ref'], equals('s_0'));
         final cmd = result.preconnectCommand;
         expect(cmd, isNotNull);
@@ -45,29 +51,28 @@ void main() {
       },
     );
 
-    test('valid connection {mode: manual, host, port} → parses to ConnectCommand',
-        () {
-      final result = parseConnectionOverrideArguments(
-        arguments: {
-          'connection': {'mode': 'manual', 'host': 'localhost', 'port': 9999},
-        },
-      );
-      expect(result.error, isNull);
-      expect(result.connectionProvided, isTrue);
-      final cmd = result.preconnectCommand;
-      expect(cmd, isNotNull);
-      expect(cmd!.mode, equals(CoreConnectionMode.manual));
-      expect(cmd.host, equals('localhost'));
-      expect(cmd.port, equals(9999));
-    });
+    test(
+      'valid connection {mode: manual, host, port} → parses to ConnectCommand',
+      () {
+        final result = parseConnectionOverrideArguments(
+          arguments: {
+            'connection': {'mode': 'manual', 'host': 'localhost', 'port': 9999},
+          },
+        );
+        expect(result.error, isNull);
+        expect(result.connectionProvided, isTrue);
+        final cmd = result.preconnectCommand;
+        expect(cmd, isNotNull);
+        expect(cmd!.mode, equals(CoreConnectionMode.manual));
+        expect(cmd.host, equals('localhost'));
+        expect(cmd.port, equals(9999));
+      },
+    );
 
     test('valid connection {mode: uri, uri} → parses to ConnectCommand', () {
       final result = parseConnectionOverrideArguments(
         arguments: {
-          'connection': {
-            'mode': 'uri',
-            'uri': 'ws://127.0.0.1:8181/token/ws',
-          },
+          'connection': {'mode': 'uri', 'uri': 'ws://127.0.0.1:8181/token/ws'},
         },
       );
       expect(result.error, isNull);
@@ -97,17 +102,23 @@ void main() {
     });
 
     // 4. Unknown field — rejected.
-    test('connection with unknown field → structured error naming the field', () {
-      final result = parseConnectionOverrideArguments(
-        arguments: {
-          'connection': {'targetId': 'ws://127.0.0.1:8181/token/ws', 'bogus': true},
-        },
-      );
-      expect(result.error, isNotNull);
-      expect(result.error!.error?.code, equals(CoreErrorCode.invalidCommand));
-      final msg = result.error!.error?.message ?? '';
-      expect(msg, contains('bogus'));
-    });
+    test(
+      'connection with unknown field → structured error naming the field',
+      () {
+        final result = parseConnectionOverrideArguments(
+          arguments: {
+            'connection': {
+              'targetId': 'ws://127.0.0.1:8181/token/ws',
+              'bogus': true,
+            },
+          },
+        );
+        expect(result.error, isNotNull);
+        expect(result.error!.error?.code, equals(CoreErrorCode.invalidCommand));
+        final msg = result.error!.error?.message ?? '';
+        expect(msg, contains('bogus'));
+      },
+    );
 
     // 5. Negative port — rejected.
     test('connection with port: -1 → structured error', () {
@@ -166,7 +177,10 @@ void main() {
     test('connection.forceReconnect: true → accepted', () {
       final result = parseConnectionOverrideArguments(
         arguments: {
-          'connection': {'targetId': 'ws://127.0.0.1:8181/token/ws', 'forceReconnect': true},
+          'connection': {
+            'targetId': 'ws://127.0.0.1:8181/token/ws',
+            'forceReconnect': true,
+          },
         },
       );
       expect(result.error, isNull);

@@ -1,6 +1,8 @@
 // Copyright (c) 2025, Flutter Inspector MCP Server authors.
 // Licensed under the MIT License.
 
+// ignore_for_file: avoid_catches_without_on_clauses
+
 import 'dart:convert';
 
 import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_consts.dart';
