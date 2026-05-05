@@ -1,6 +1,7 @@
 // mcp_server_dart/test/cli/codegen_init_command_test.dart
 import 'dart:io';
-import 'package:flutter_inspector_mcp_server/src/cli/codegen_init_command.dart';
+
+import 'package:flutter_mcp_toolkit_server/src/cli/codegen_init_command.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -10,7 +11,7 @@ void main() {
     File('${tmp.path}/pubspec.yaml').writeAsStringSync('''
 name: my_flutter_app
 environment:
-  sdk: ">=3.0.0"
+  sdk: ">=3.11.0"
 dependencies:
   flutter:
     sdk: flutter

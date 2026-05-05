@@ -1,8 +1,8 @@
 // Copyright (c) 2025, Flutter Inspector MCP Server authors.
 // Licensed under the MIT License.
 
-import 'package:flutter_inspector_mcp_server/src/shared_core/commands/commands.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/types/results.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/commands/commands.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/types/results.dart';
 
 typedef CoreExecuteFn = Future<CoreResult> Function(CoreCommand command);
 

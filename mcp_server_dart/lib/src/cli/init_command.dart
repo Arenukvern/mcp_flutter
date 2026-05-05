@@ -1,10 +1,10 @@
 // mcp_server_dart/lib/src/cli/init_command.dart
 import 'dart:io';
 
-import 'package:flutter_inspector_mcp_server/src/cli/init_mode.dart';
-import 'package:flutter_inspector_mcp_server/src/cli/init_mode_detector.dart';
-import 'package:flutter_inspector_mcp_server/src/cli/init_target.dart';
-import 'package:flutter_inspector_mcp_server/src/cli/init_writers.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/init_mode.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/init_mode_detector.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/init_target.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/init_writers.dart';
 
 Future<int> runInit({
   required final InitTarget target,

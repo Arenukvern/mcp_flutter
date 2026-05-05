@@ -1,5 +1,5 @@
 // mcp_server_dart/test/cli/codegen_snippets_test.dart
-import 'package:flutter_inspector_mcp_server/src/cli/codegen_snippets.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/codegen_snippets.dart';
 import 'package:test/test.dart';
 
 void main() {

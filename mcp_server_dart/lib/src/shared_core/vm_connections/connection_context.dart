@@ -9,9 +9,9 @@ import 'dart:io';
 
 import 'package:dart_mcp/server.dart';
 import 'package:dtd/dtd.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/commands/commands.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/types/types.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/vm_connections/flutter_tool_machine_discovery.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/commands/commands.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/types/types.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/vm_connections/flutter_tool_machine_discovery.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
 import 'package:meta/meta.dart';
 import 'package:vm_service/vm_service.dart';

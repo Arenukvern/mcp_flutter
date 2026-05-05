@@ -3,12 +3,12 @@
 
 import 'dart:math';
 
-import 'package:flutter_inspector_mcp_server/src/cli/session/state_lock_manager.dart';
-import 'package:flutter_inspector_mcp_server/src/cli/session/state_store.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/commands/commands.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/types/error_codes.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/types/results.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/vm_connections/connection_context.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/session/state_lock_manager.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/session/state_store.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/commands/commands.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/types/error_codes.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/types/results.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/vm_connections/connection_context.dart';
 
 final class SessionManager {
   SessionManager({required this.connectionContext, required this.stateStore});

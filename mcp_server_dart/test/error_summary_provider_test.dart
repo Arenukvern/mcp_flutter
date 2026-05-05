@@ -1,4 +1,4 @@
-import 'package:flutter_inspector_mcp_server/src/capabilities/ai_providers/error_summary_provider.dart';
+import 'package:flutter_mcp_toolkit_server/src/capabilities/ai_providers/error_summary_provider.dart';
 import 'package:test/test.dart';
 
 void main() {

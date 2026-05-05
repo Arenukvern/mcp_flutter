@@ -1,6 +1,7 @@
 // mcp_server_dart/lib/src/cli/codegen_init_command.dart
 import 'dart:io';
-import 'package:flutter_inspector_mcp_server/src/cli/codegen_snippets.dart';
+
+import 'package:flutter_mcp_toolkit_server/src/cli/codegen_snippets.dart';
 
 Future<int> runCodegenInit({
   required final String projectRoot,

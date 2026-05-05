@@ -1,4 +1,4 @@
-import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_server/base_server.dart';
+import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/base_server.dart';
 
 String buildMcpToolkitServerInstructions(
   final VMServiceConfigurationRecord configuration,

@@ -7,14 +7,14 @@ import 'dart:async';
 
 import 'package:dart_mcp/server.dart';
 import 'package:dtd/dtd.dart';
-import 'package:flutter_inspector_mcp_server/src/capabilities/dynamic_registry/dynamic_gateway.dart';
-import 'package:flutter_inspector_mcp_server/src/capabilities/visual_capture/core_image_file_saver.dart';
-import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_server/base_server.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/command_executor.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/types/core_types.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/vm_connections/connection_context.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/vm_connections/core_port_scanner.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/vm_connections/flutter_tool_machine_discovery.dart';
+import 'package:flutter_mcp_toolkit_server/src/capabilities/dynamic_registry/dynamic_gateway.dart';
+import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/core_image_file_saver.dart';
+import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/base_server.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/command_executor.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/types/core_types.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/vm_connections/connection_context.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/vm_connections/core_port_scanner.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/vm_connections/flutter_tool_machine_discovery.dart';
 import 'package:vm_service/vm_service.dart';
 
 /// Mixin that exposes VM service lifecycle but delegates implementation to core.

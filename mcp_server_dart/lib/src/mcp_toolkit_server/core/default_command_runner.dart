@@ -2,8 +2,8 @@
 // Copyright (c) 2025, Flutter Inspector MCP Server authors.
 // Licensed under the MIT License.
 
-import 'package:flutter_inspector_mcp_server/src/shared_core/command_executor.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/vm_connections/connection_override.dart'
+import 'package:flutter_mcp_toolkit_server/src/shared_core/command_executor.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/vm_connections/connection_override.dart'
     as core_connection_override;
 import 'package:mcp_capability_kernel/mcp_capability_kernel.dart';
 import 'package:mcp_shared_core/mcp_shared_core.dart';

@@ -4,7 +4,7 @@ repository: https://github.com/Arenukvern/mcp_flutter/tree/main/mcp_toolkit/mcp_
 version: 3.0.0
 
 environment:
-  sdk: ">=3.10.0 <4.0.0"
+  sdk: ">=3.11.0 <4.0.0"
 
 dependencies:
   collection: ^1.19.1

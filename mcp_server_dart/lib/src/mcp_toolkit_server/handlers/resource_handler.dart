@@ -4,11 +4,11 @@
 import 'dart:convert';
 
 import 'package:dart_mcp/server.dart';
-import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_server/base_server.dart';
-import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_server/core/to_resources_tools.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/command_executor.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/commands/commands.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/vm_connections/vm_connections.dart';
+import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/base_server.dart';
+import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/core/to_resources_tools.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/command_executor.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/commands/commands.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/vm_connections/vm_connections.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
 import 'package:is_dart_empty_or_not/is_dart_empty_or_not.dart';
 

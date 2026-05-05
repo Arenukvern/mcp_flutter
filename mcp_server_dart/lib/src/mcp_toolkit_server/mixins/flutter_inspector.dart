@@ -4,9 +4,9 @@
 import 'dart:async';
 
 import 'package:dart_mcp/server.dart';
-import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_server/base_server.dart';
-import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_server/handlers/resource_handler.dart';
-import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_server/mixins/vm_service_support.dart';
+import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/base_server.dart';
+import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/handlers/resource_handler.dart';
+import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/mixins/vm_service_support.dart';
 
 /// Mix this in to any MCPServer to back the Flutter Inspector resource
 /// surface (`visual://localhost/...`). All MCP **tools** are published by

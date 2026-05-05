@@ -1,4 +1,4 @@
-import 'package:flutter_inspector_mcp_server/src/cli/init_mode.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/init_mode.dart';
 import 'package:test/test.dart';
 
 void main() {

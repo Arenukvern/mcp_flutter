@@ -5,7 +5,7 @@
 // Transport-coupled helpers (ObjectSchema, applyConnectionOverride) stay here.
 
 import 'package:dart_mcp/server.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/command_executor.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/command_executor.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
 import 'package:mcp_shared_core/mcp_shared_core.dart';
 

@@ -8,7 +8,7 @@ import 'dart:io' as io;
 import 'package:args/args.dart';
 import 'package:async/async.dart';
 import 'package:dart_mcp/server.dart';
-import 'package:flutter_inspector_mcp_server/flutter_mcp_server.dart';
+import 'package:flutter_mcp_toolkit_server/flutter_mcp_server.dart';
 import 'package:mcp_capability_core/mcp_capability_core.dart';
 import 'package:stream_channel/stream_channel.dart';
 

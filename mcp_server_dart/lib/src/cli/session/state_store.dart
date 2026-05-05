@@ -4,8 +4,8 @@
 import 'dart:convert';
 import 'dart:io' as io;
 
-import 'package:flutter_inspector_mcp_server/src/cli/session/state_lock_manager.dart';
-import 'package:flutter_inspector_mcp_server/src/cli/sessions_persistence/safe_writes.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/session/state_lock_manager.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/sessions_persistence/safe_writes.dart';
 import 'package:path/path.dart' as p;
 
 final class SessionState {

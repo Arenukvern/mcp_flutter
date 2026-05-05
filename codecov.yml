@@ -26,4 +26,3 @@ ignore:
   - "**/*.freezed.dart"
   - "mcp_server_dart/test/**"
   - "mcp_server_dart/tool/**"
-  - "mcp_server_dart/experiments/**"

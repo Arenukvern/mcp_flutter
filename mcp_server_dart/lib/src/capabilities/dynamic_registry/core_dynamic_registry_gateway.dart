@@ -4,10 +4,10 @@
 import 'dart:convert';
 
 import 'package:dart_mcp/server.dart';
-import 'package:flutter_inspector_mcp_server/src/capabilities/dynamic_registry/dynamic_gateway.dart';
-import 'package:flutter_inspector_mcp_server/src/capabilities/dynamic_registry/dynamic_registry.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/types/error_codes.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/types/results.dart';
+import 'package:flutter_mcp_toolkit_server/src/capabilities/dynamic_registry/dynamic_gateway.dart';
+import 'package:flutter_mcp_toolkit_server/src/capabilities/dynamic_registry/dynamic_registry.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/types/error_codes.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/types/results.dart';
 
 /// Dynamic gateway backed by the live in-process registry used by MCP server.
 final class RegistryBackedDynamicGateway implements CoreDynamicGateway {

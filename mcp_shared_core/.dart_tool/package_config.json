@@ -298,5 +298,7 @@
   ],
   "generator": "pub",
   "generatorVersion": "3.11.0",
+  "flutterRoot": "file:///Users/antonio/fvm/versions/3.41.1",
+  "flutterVersion": "3.41.1",
   "pubCache": "file:///Users/antonio/.pub-cache"
 }

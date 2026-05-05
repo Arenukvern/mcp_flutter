@@ -6,7 +6,7 @@
 import 'dart:io';
 
 import 'package:dart_mcp/server.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/types/core_types.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/types/core_types.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
 import 'package:is_dart_empty_or_not/is_dart_empty_or_not.dart';
 

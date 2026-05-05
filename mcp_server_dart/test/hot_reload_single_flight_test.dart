@@ -8,7 +8,7 @@
 // callers share the same [Future] rather than each issuing an independent
 // reload.
 
-import 'package:flutter_inspector_mcp_server/flutter_mcp_core.dart';
+import 'package:flutter_mcp_toolkit_server/flutter_mcp_core.dart';
 import 'package:test/test.dart';
 
 ConnectionContext _makeContext() => ConnectionContext(

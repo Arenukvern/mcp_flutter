@@ -9,7 +9,7 @@
 //     side and the legacy unprefixed surface is gated off (T8 cut).
 
 import 'package:dart_mcp/server.dart' as dart_mcp;
-import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_server/host.dart';
+import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/host.dart';
 import 'package:mcp_capability_core/mcp_capability_core.dart';
 import 'package:mcp_capability_kernel/mcp_capability_kernel.dart';
 import 'package:mcp_capability_kernel/testing.dart';

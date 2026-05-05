@@ -7,10 +7,10 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:dart_mcp/server.dart';
-import 'package:flutter_inspector_mcp_server/src/capabilities/dynamic_registry/dynamic_registry.dart';
-import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_server/core/core.dart';
-import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_server/server.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/shared_core.dart';
+import 'package:flutter_mcp_toolkit_server/src/capabilities/dynamic_registry/dynamic_registry.dart';
+import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/core/core.dart';
+import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/server.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/shared_core.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
 import 'package:is_dart_empty_or_not/is_dart_empty_or_not.dart';
 import 'package:meta/meta.dart';

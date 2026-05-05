@@ -18,7 +18,6 @@ build/
 *.md
 !README.md
 docs/
-experiments/
 
 # Test files
 test/

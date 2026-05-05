@@ -6,11 +6,11 @@ import 'dart:io' as io;
 
 import 'package:args/args.dart';
 import 'package:dart_mcp/server.dart';
-import 'package:flutter_inspector_mcp_server/flutter_mcp_core.dart';
-import 'package:flutter_inspector_mcp_server/src/cli/codegen_init_command.dart';
-import 'package:flutter_inspector_mcp_server/src/cli/init_command.dart';
-import 'package:flutter_inspector_mcp_server/src/cli/init_mode.dart';
-import 'package:flutter_inspector_mcp_server/src/cli/init_target.dart';
+import 'package:flutter_mcp_toolkit_server/flutter_mcp_core.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/codegen_init_command.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/init_command.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/init_mode.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/init_target.dart';
 
 Future<void> main(final List<String> args) async {
   late final ArgResults parsed;

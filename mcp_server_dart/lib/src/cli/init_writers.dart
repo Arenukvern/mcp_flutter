@@ -1,10 +1,10 @@
 // mcp_server_dart/lib/src/cli/init_writers.dart
 import 'dart:io';
 
-import 'package:flutter_inspector_mcp_server/src/cli/init_mode.dart';
-import 'package:flutter_inspector_mcp_server/src/cli/init_target.dart';
-import 'package:flutter_inspector_mcp_server/src/cli/mode_prelude.dart';
-import 'package:flutter_inspector_mcp_server/src/skill_assets.g.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/init_mode.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/init_target.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/mode_prelude.dart';
+import 'package:flutter_mcp_toolkit_server/src/skill_assets.g.dart';
 
 // ignore: avoid_classes_with_only_static_members
 class InitWriters {

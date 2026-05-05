@@ -7,13 +7,13 @@ import 'dart:convert';
 import 'dart:io' as io;
 
 import 'package:collection/collection.dart';
-import 'package:flutter_inspector_mcp_server/src/cli/sessions_persistence/safe_writes.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/command_executor.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/commands/commands.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/types/error_codes.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/types/results.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/vm_connections/connection_override.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/vm_connections/preconnect.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/sessions_persistence/safe_writes.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/command_executor.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/commands/commands.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/types/error_codes.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/types/results.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/vm_connections/connection_override.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/vm_connections/preconnect.dart';
 
 final class SnapshotStore {
   SnapshotStore({required this.snapshotsDir});

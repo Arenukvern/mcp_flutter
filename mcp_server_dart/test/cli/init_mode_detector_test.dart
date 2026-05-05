@@ -1,6 +1,6 @@
 // mcp_server_dart/test/cli/init_mode_detector_test.dart
-import 'package:flutter_inspector_mcp_server/src/cli/init_mode.dart';
-import 'package:flutter_inspector_mcp_server/src/cli/init_mode_detector.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/init_mode.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/init_mode_detector.dart';
 import 'package:test/test.dart';
 
 void main() {

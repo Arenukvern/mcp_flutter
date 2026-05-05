@@ -1,9 +1,9 @@
 // mcp_server_dart/test/cli/init_writers_test.dart
 import 'dart:io';
 
-import 'package:flutter_inspector_mcp_server/src/cli/init_mode.dart';
-import 'package:flutter_inspector_mcp_server/src/cli/init_target.dart';
-import 'package:flutter_inspector_mcp_server/src/cli/init_writers.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/init_mode.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/init_target.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/init_writers.dart';
 import 'package:test/test.dart';
 
 void main() {
