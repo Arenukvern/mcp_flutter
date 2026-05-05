@@ -4,25 +4,22 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter_inspector_mcp_server/src/capabilities/ai_providers/error_summary_provider.dart';
-import 'package:flutter_inspector_mcp_server/src/capabilities/diagnostics/diagnostics_bundle.dart';
-import 'package:flutter_inspector_mcp_server/src/capabilities/dynamic_registry/dynamic_gateway.dart';
-import 'package:flutter_inspector_mcp_server/src/capabilities/error_analysis/error_analysis.dart';
-import 'package:flutter_inspector_mcp_server/src/capabilities/live_edit/live_edit_command_executor.dart';
-import 'package:flutter_inspector_mcp_server/src/capabilities/live_edit/live_edit_host_bindings.dart';
-import 'package:flutter_inspector_mcp_server/src/capabilities/visual_capture/core_image_file_saver.dart';
-import 'package:flutter_inspector_mcp_server/src/capabilities/visual_capture/desktop_window_screenshot.dart';
-import 'package:flutter_inspector_mcp_server/src/capabilities/visual_capture/visual_capture.dart';
-import 'package:flutter_inspector_mcp_server/src/cli/session/session_manager.dart';
-import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_consts.dart';
-import 'package:flutter_inspector_mcp_server/src/runtime_version.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/commands/commands.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/types/core_types.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/types/error_codes.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/types/results.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/vm_connections/connection_context.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/vm_connections/core_port_scanner.dart';
-import 'package:flutter_live_edit_toolkit/src/ai/agent/live_edit_agent_service.dart';
+import 'package:flutter_mcp_toolkit_server/src/capabilities/ai_providers/error_summary_provider.dart';
+import 'package:flutter_mcp_toolkit_server/src/capabilities/diagnostics/diagnostics_bundle.dart';
+import 'package:flutter_mcp_toolkit_server/src/capabilities/dynamic_registry/dynamic_gateway.dart';
+import 'package:flutter_mcp_toolkit_server/src/capabilities/error_analysis/error_analysis.dart';
+import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/core_image_file_saver.dart';
+import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/desktop_window_screenshot.dart';
+import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/visual_capture.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/session/session_manager.dart';
+import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_consts.dart';
+import 'package:flutter_mcp_toolkit_server/src/runtime_version.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/commands/commands.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/types/core_types.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/types/error_codes.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/types/results.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/vm_connections/connection_context.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/vm_connections/core_port_scanner.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
 import 'package:is_dart_empty_or_not/is_dart_empty_or_not.dart';
 import 'package:vm_service/vm_service.dart';
@@ -31,6 +28,7 @@ Future<void> _defaultActivateMacOsTargetPid(final int pid) async {
   try {
     await Process.run('swift', <String>[
       '-e',
+      // ignore: no_adjacent_strings_in_list
       'import AppKit; import Foundation; '
           'let pid = pid_t($pid); '
           'guard let app = NSRunningApplication(processIdentifier: pid) '
@@ -55,15 +53,13 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     required this.portScanner,
     required this.imageFileSaver,
     required this.configuration,
-    final CoreDynamicGateway? dynamicGateway,
+    this.dynamicGateway,
     final DesktopWindowScreenshotService? desktopWindowScreenshotService,
     this.sessionManager,
     final ErrorCauseAnalyzer? errorCauseAnalyzer,
     final Map<String, ErrorSummaryProvider>? summaryProviders,
     final Future<void> Function(int pid)? activateMacOsTargetPid,
-    final LiveEditAgentService? liveEditAgentService,
-  }) : _dynamicGateway = dynamicGateway,
-       _desktopWindowScreenshotService =
+  }) : _desktopWindowScreenshotService =
            desktopWindowScreenshotService ??
            MacOsDesktopWindowScreenshotService(),
        _errorCauseAnalyzer = errorCauseAnalyzer ?? const ErrorCauseAnalyzer(),
@@ -74,14 +70,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
            <String, ErrorSummaryProvider>{
              'none': const NoopErrorSummaryProvider(),
              'openai': OpenAiErrorSummaryProvider(),
-           } {
-    _liveEditExecutor = configuration.liveEditSupported
-        ? LiveEditCommandExecutor(
-            host: _ExecutorLiveEditBindings(this),
-            agentService: liveEditAgentService,
-          )
-        : null;
-  }
+           };
 
   final ConnectionContext connectionContext;
   final CorePortScanner portScanner;
@@ -89,13 +78,12 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
   final CoreRuntimeConfiguration configuration;
   final SessionManager? sessionManager;
 
+  CoreDynamicGateway? dynamicGateway;
+
   final ErrorCauseAnalyzer _errorCauseAnalyzer;
   final Map<String, ErrorSummaryProvider> _summaryProviders;
   final DesktopWindowScreenshotService _desktopWindowScreenshotService;
   final Future<void> Function(int pid) _activateMacOsTargetPid;
-
-  CoreDynamicGateway? _dynamicGateway;
-  LiveEditCommandExecutor? _liveEditExecutor;
 
   Iterable<VisualCapturePlatformAdapter> get visualCaptureAdapters sync* {
     if (_desktopWindowScreenshotService
@@ -123,10 +111,6 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
         command.name,
       );
     }
-  }
-
-  void setDynamicGateway(final CoreDynamicGateway? gateway) {
-    _dynamicGateway = gateway;
   }
 
   List<Map<String, Object?>> _buildImageSummaries(
@@ -257,22 +241,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
   }
 
-  Future<int?> _connectedVmPid() async {
-    final vmService = connectionContext.vmService;
-    if (vmService == null) {
-      return null;
-    }
-    try {
-      final vm = await vmService.getVM();
-      final pid = vm.pid;
-      if (pid is int && pid > 0) {
-        return pid;
-      }
-      return int.tryParse('$pid');
-    } on Object {
-      return null;
-    }
-  }
+  Future<int?> _connectedVmPid() => connectionContext.resolveConnectedVmPid();
 
   Future<CoreResult> _debugDump(final String extensionName) async {
     final ensureFailure = await _ensureVmConnected();
@@ -362,6 +331,22 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     GetViewDetailsCommand() => _getViewDetails(),
     InspectWidgetAtPointCommand() => _inspectWidgetAtPoint(command),
     CaptureUiSnapshotCommand() => _captureUiSnapshot(command),
+    SemanticSnapshotCommand() => _semanticSnapshot(),
+    TapWidgetCommand() => _tapWidget(command),
+    EnterTextCommand() => _enterText(command),
+    ScrollCommand() => _scroll(command),
+    LongPressCommand() => _longPress(command),
+    SwipeCommand() => _swipe(command),
+    DragCommand() => _drag(command),
+    HotReloadAndCaptureCommand() => _hotReloadAndCapture(command),
+    EvaluateDartExpressionCommand() => _evaluateDartExpression(command),
+    GetRecentLogsCommand() => _getRecentLogs(command),
+    WaitForCommand() => _waitFor(command),
+    PressKeyCommand() => _pressKey(command),
+    HandleDialogCommand() => _handleDialog(command),
+    NavigateCommand() => _navigate(command),
+    FillFormCommand() => _fillForm(command),
+    HoverCommand() => _hover(command),
     DebugDumpLayerTreeCommand() => _debugDumpLayerTree(),
     DebugDumpSemanticsTreeCommand() => _debugDumpSemanticsTree(),
     DebugDumpRenderTreeCommand() => _debugDumpRenderTree(),
@@ -369,14 +354,6 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     ListClientToolsAndResourcesCommand() => _listClientToolsAndResources(),
     RunClientToolCommand() => _runClientTool(command),
     RunClientResourceCommand() => _runClientResource(command),
-    final LiveEditCommand c =>
-      _liveEditExecutor?.execute(c) ??
-          Future.value(
-            CoreResult.failure(
-              code: CoreErrorCode.liveEditDisabled,
-              message: 'Live edit support is disabled',
-            ),
-          ),
     DynamicRegistryStatsCommand() => _dynamicRegistryStats(command),
   };
 
@@ -391,7 +368,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
 
     final gateway =
-        _dynamicGateway ??
+        dynamicGateway ??
         VmExtensionDynamicGateway(connectionContext: connectionContext);
 
     final ensureFailure = await _ensureVmConnected();
@@ -462,17 +439,22 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
         );
       }
 
-      String? summary;
-      if (command.includeSummary) {
-        summary = await provider.summarize(errors: errors, causes: causes);
-      }
+      final summaryOutcome = await resolveExplainErrorsSummary(
+        includeSummary: command.includeSummary,
+        allowExternalSummary: command.allowExternalSummary,
+        provider: provider,
+        summarize: () => provider.summarize(errors: errors, causes: causes),
+      );
 
       return CoreResult.success(
         data: {
           'message': message,
           'errors': errors,
           'causes': causes,
-          'summary': summary,
+          'summary': summaryOutcome.text,
+          'summaryStatus': summaryOutcome.status.name,
+          'summaryReason': summaryOutcome.reasonCode,
+          'summaryDetail': summaryOutcome.safeDetail,
           'summaryProvider': provider.id,
         },
       );
@@ -757,6 +739,517 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
   }
 
+  Future<CoreResult> _semanticSnapshot() async {
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) return ensureFailure;
+
+    try {
+      final result = await connectionContext.callFlutterExtension(
+        mcpToolkitExtKeys.semanticSnapshot,
+      );
+      return CoreResult.success(data: _map(result.json));
+    } on Exception catch (e) {
+      return CoreResult.failure(
+        code: CoreErrorCode.semanticSnapshotFailed,
+        message: 'Failed to get semantic snapshot: $e',
+      );
+    }
+  }
+
+  Future<CoreResult> _tapWidget(final TapWidgetCommand command) async {
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) return ensureFailure;
+
+    try {
+      final result = await connectionContext.callFlutterExtension(
+        mcpToolkitExtKeys.tapWidget,
+        args: {
+          'ref': command.ref,
+          if (command.snapshotId != null) 'snapshotId': command.snapshotId,
+        },
+      );
+      return CoreResult.success(data: _map(result.json));
+    } on Exception catch (e) {
+      return CoreResult.failure(
+        code: CoreErrorCode.interactionFailed,
+        message: 'Failed to tap widget: $e',
+      );
+    }
+  }
+
+  Future<CoreResult> _enterText(final EnterTextCommand command) async {
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) return ensureFailure;
+
+    try {
+      final result = await connectionContext.callFlutterExtension(
+        mcpToolkitExtKeys.enterText,
+        args: {
+          'ref': command.ref,
+          'text': command.text,
+          if (command.snapshotId != null) 'snapshotId': command.snapshotId,
+        },
+      );
+      return CoreResult.success(data: _map(result.json));
+    } on Exception catch (e) {
+      return CoreResult.failure(
+        code: CoreErrorCode.interactionFailed,
+        message: 'Failed to enter text: $e',
+      );
+    }
+  }
+
+  Future<CoreResult> _scroll(final ScrollCommand command) async {
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) return ensureFailure;
+
+    try {
+      final result = await connectionContext.callFlutterExtension(
+        mcpToolkitExtKeys.scroll,
+        args: {
+          'direction': command.direction,
+          if (command.ref != null) 'ref': command.ref,
+          'distance': command.distance,
+          if (command.snapshotId != null) 'snapshotId': command.snapshotId,
+        },
+      );
+      return CoreResult.success(data: _map(result.json));
+    } on Exception catch (e) {
+      return CoreResult.failure(
+        code: CoreErrorCode.interactionFailed,
+        message: 'Failed to scroll: $e',
+      );
+    }
+  }
+
+  Future<CoreResult> _longPress(final LongPressCommand command) async {
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) return ensureFailure;
+
+    try {
+      final result = await connectionContext.callFlutterExtension(
+        mcpToolkitExtKeys.longPress,
+        args: {
+          'ref': command.ref,
+          if (command.snapshotId != null) 'snapshotId': command.snapshotId,
+        },
+      );
+      return CoreResult.success(data: _map(result.json));
+    } on Exception catch (e) {
+      return CoreResult.failure(
+        code: CoreErrorCode.interactionFailed,
+        message: 'Failed to long press: $e',
+      );
+    }
+  }
+
+  Future<CoreResult> _swipe(final SwipeCommand command) async {
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) return ensureFailure;
+
+    try {
+      final result = await connectionContext.callFlutterExtension(
+        mcpToolkitExtKeys.swipe,
+        args: {
+          'direction': command.direction,
+          if (command.ref != null) 'ref': command.ref,
+          'distance': command.distance,
+          if (command.snapshotId != null) 'snapshotId': command.snapshotId,
+        },
+      );
+      return CoreResult.success(data: _map(result.json));
+    } on Exception catch (e) {
+      return CoreResult.failure(
+        code: CoreErrorCode.interactionFailed,
+        message: 'Failed to swipe: $e',
+      );
+    }
+  }
+
+  Future<CoreResult> _drag(final DragCommand command) async {
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) return ensureFailure;
+
+    try {
+      final result = await connectionContext.callFlutterExtension(
+        mcpToolkitExtKeys.drag,
+        args: {
+          'fromRef': command.fromRef,
+          'toRef': command.toRef,
+          if (command.snapshotId != null) 'snapshotId': command.snapshotId,
+        },
+      );
+      return CoreResult.success(data: _map(result.json));
+    } on Exception catch (e) {
+      return CoreResult.failure(
+        code: CoreErrorCode.interactionFailed,
+        message: 'Failed to drag: $e',
+      );
+    }
+  }
+
+  Future<CoreResult> _hotReloadAndCapture(
+    final HotReloadAndCaptureCommand command,
+  ) async {
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) return ensureFailure;
+
+    // Step 1: Hot reload
+    final reloadResult = await connectionContext.hotReload();
+    final reloadSuccess =
+        reloadResult != null && !reloadResult.containsKey('error');
+
+    // Step 2: Wait for frame to settle
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+
+    // Step 3: Capture screenshot
+    Map<String, Object?> screenshotData = {};
+    try {
+      final screenshotResult = await connectionContext.callFlutterExtension(
+        mcpToolkitExtKeys.viewScreenshots,
+        args: {'compress': command.compress},
+      );
+      screenshotData = _map(screenshotResult.json);
+    } on Exception catch (e) {
+      screenshotData = {'error': 'Screenshot failed: $e'};
+    }
+
+    // Step 4: Semantic snapshot (if requested)
+    Map<String, Object?> semanticsData = {};
+    if (command.includeSemantics) {
+      try {
+        final semanticsResult = await connectionContext.callFlutterExtension(
+          mcpToolkitExtKeys.semanticSnapshot,
+        );
+        semanticsData = _map(semanticsResult.json);
+      } on Exception catch (e) {
+        semanticsData = {'error': 'Semantic snapshot failed: $e'};
+      }
+    }
+
+    // Step 5: App errors (if requested)
+    Map<String, Object?> errorsData = {};
+    if (command.includeErrors) {
+      try {
+        final errorsResult = await connectionContext.callFlutterExtension(
+          mcpToolkitExtKeys.appErrors,
+          args: {'count': command.errorsCount},
+        );
+        errorsData = _map(errorsResult.json);
+      } on Exception catch (e) {
+        errorsData = {'error': 'Error capture failed: $e'};
+      }
+    }
+
+    return CoreResult.success(
+      data: {
+        'hotReload': {
+          'success': reloadSuccess,
+          if (reloadResult != null) ...reloadResult,
+        },
+        'screenshot': screenshotData,
+        if (command.includeSemantics) 'semantics': semanticsData,
+        if (command.includeErrors) 'errors': errorsData,
+        'timestamp': DateTime.now().toUtc().toIso8601String(),
+      },
+    );
+  }
+
+  Future<CoreResult> _evaluateDartExpression(
+    final EvaluateDartExpressionCommand command,
+  ) async {
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) return ensureFailure;
+
+    try {
+      final isolate = await connectionContext.getFlutterIsolate();
+      if (isolate?.id == null) {
+        return CoreResult.failure(
+          code: CoreErrorCode.evaluateExpressionFailed,
+          message: 'No Flutter isolate found',
+        );
+      }
+
+      final vmService = connectionContext.vmService;
+      if (vmService == null) {
+        return CoreResult.failure(
+          code: CoreErrorCode.evaluateExpressionFailed,
+          message: 'VM service not connected',
+        );
+      }
+
+      final isolateObj = await vmService.getIsolate(isolate!.id!);
+      final rootLib = isolateObj.rootLib;
+      if (rootLib?.id == null) {
+        return CoreResult.failure(
+          code: CoreErrorCode.evaluateExpressionFailed,
+          message: 'Could not find root library for evaluation',
+        );
+      }
+
+      final result = await vmService.evaluate(
+        isolate.id!,
+        rootLib!.id!,
+        command.expression,
+      );
+
+      if (result is ErrorRef) {
+        return CoreResult.failure(
+          code: CoreErrorCode.evaluateExpressionFailed,
+          message: 'Expression evaluation error: ${result.message}',
+        );
+      }
+
+      final instanceRef = result as InstanceRef;
+      return CoreResult.success(
+        data: {
+          'expression': command.expression,
+          'result':
+              instanceRef.valueAsString ?? instanceRef.classRef?.name ?? 'null',
+          'kind': instanceRef.kind,
+          'classRef': instanceRef.classRef?.name,
+        },
+      );
+    } on Exception catch (e) {
+      return CoreResult.failure(
+        code: CoreErrorCode.evaluateExpressionFailed,
+        message: 'Failed to evaluate expression: $e',
+      );
+    }
+  }
+
+  Future<CoreResult> _getRecentLogs(final GetRecentLogsCommand command) async {
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) return ensureFailure;
+
+    try {
+      final result = await connectionContext.callFlutterExtension(
+        mcpToolkitExtKeys.getRecentLogs,
+        args: {'count': command.count},
+      );
+      return CoreResult.success(data: _map(result.json));
+    } on Exception catch (e) {
+      return CoreResult.failure(
+        code: CoreErrorCode.getRecentLogsFailed,
+        message: 'Failed to get recent logs: $e',
+      );
+    }
+  }
+
+  Future<CoreResult> _waitFor(final WaitForCommand command) async {
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) return ensureFailure;
+
+    try {
+      final result = await connectionContext.callFlutterExtension(
+        mcpToolkitExtKeys.waitFor,
+        args: {
+          // Extension RPC args are stringly-typed; the toolkit-side handler
+          // calls `jsonDecodeMap` on this. See `OnWaitForEntry` in
+          // mcp_toolkit/.../toolkits/interaction_toolkit.dart.
+          'predicate': jsonEncode(command.predicate),
+          'timeoutMs': command.timeoutMs,
+        },
+      );
+      return routeWaitForResponse(_map(result.json));
+    } on Exception catch (e) {
+      return CoreResult.failure(
+        code: CoreErrorCode.waitForFailed,
+        message: 'Failed to execute wait_for: $e',
+      );
+    }
+  }
+
+  Future<CoreResult> _pressKey(final PressKeyCommand command) async {
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) return ensureFailure;
+
+    try {
+      final result = await connectionContext.callFlutterExtension(
+        mcpToolkitExtKeys.pressKey,
+        args: {
+          'key': command.key,
+          'ctrl': command.ctrl,
+          'shift': command.shift,
+          'alt': command.alt,
+          'meta': command.meta,
+        },
+      );
+      final data = _map(result.json);
+      if (data['success'] != true) {
+        return CoreResult.failure(
+          code: data['error'] == 'navigator_not_registered'
+              ? CoreErrorCode.navigatorNotRegistered
+              : CoreErrorCode.pressKeyFailed,
+          message: 'press_key failed: ${data['error']}',
+          details: data,
+        );
+      }
+      return CoreResult.success(data: data);
+    } on Exception catch (e) {
+      return CoreResult.failure(
+        code: CoreErrorCode.pressKeyFailed,
+        message: 'Failed to execute press_key: $e',
+      );
+    }
+  }
+
+  Future<CoreResult> _handleDialog(final HandleDialogCommand command) async {
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) return ensureFailure;
+
+    try {
+      final result = await connectionContext.callFlutterExtension(
+        mcpToolkitExtKeys.handleDialog,
+        args: {'action': command.action},
+      );
+      final data = _map(result.json);
+      if (data['success'] != true) {
+        return CoreResult.failure(
+          code: data['error'] == 'navigator_not_registered'
+              ? CoreErrorCode.navigatorNotRegistered
+              : CoreErrorCode.handleDialogFailed,
+          message: 'handle_dialog failed: ${data['error']}',
+          details: data,
+        );
+      }
+      return CoreResult.success(data: data);
+    } on Exception catch (e) {
+      return CoreResult.failure(
+        code: CoreErrorCode.handleDialogFailed,
+        message: 'Failed to execute handle_dialog: $e',
+      );
+    }
+  }
+
+  Future<CoreResult> _navigate(final NavigateCommand command) async {
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) return ensureFailure;
+
+    try {
+      final result = await connectionContext.callFlutterExtension(
+        mcpToolkitExtKeys.navigate,
+        args: {
+          'action': command.action,
+          if (command.route != null) 'route': command.route,
+          if (command.arguments != null)
+            'arguments': jsonEncode(command.arguments),
+        },
+      );
+      final data = _map(result.json);
+      if (data['success'] != true) {
+        return CoreResult.failure(
+          code: data['error'] == 'navigator_not_registered'
+              ? CoreErrorCode.navigatorNotRegistered
+              : CoreErrorCode.navigateFailed,
+          message: 'navigate failed: ${data['error']}',
+          details: data,
+        );
+      }
+      return CoreResult.success(data: data);
+    } on Exception catch (e) {
+      return CoreResult.failure(
+        code: CoreErrorCode.navigateFailed,
+        message: 'Failed to execute navigate: $e',
+      );
+    }
+  }
+
+  Future<CoreResult> _fillForm(final FillFormCommand command) async {
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) return ensureFailure;
+
+    if (command.fields.isEmpty) {
+      return CoreResult.failure(
+        code: CoreErrorCode.fillFormFailed,
+        message: 'fill_form: fields list is empty',
+      );
+    }
+
+    final results = <Map<String, Object?>>[];
+    for (var i = 0; i < command.fields.length; i++) {
+      final field = command.fields[i];
+      final ref = field['ref'];
+      final text = field['text'];
+      if (ref is! String || ref.isEmpty || text is! String) {
+        return CoreResult.failure(
+          code: CoreErrorCode.fillFormFailed,
+          message: 'fill_form: field $i missing ref/text',
+          details: {'failedAt': i, 'field': field, 'results': results},
+        );
+      }
+
+      // Apply snapshotId on the first field only — subsequent fields
+      // would re-validate against the same id, so just trust the chain.
+      final result = await _enterText(
+        EnterTextCommand(
+          ref: ref,
+          text: text,
+          snapshotId: i == 0 ? command.snapshotId : null,
+        ),
+      );
+      final fieldData = _map(result.data);
+      results.add(fieldData);
+      // `_enterText` always returns CoreResult.success regardless of
+      // toolkit-side failure — so a transport error (`!result.ok`) AND a
+      // toolkit-side failure (`fieldData['success'] == false` /
+      // `fieldData['ok'] == false`) both count as "stop the batch."
+      // Toolkit emits `success: false` for missing args and `ok: false`
+      // for stale_snapshot — accept either shape.
+      final toolkitOk =
+          !(fieldData['success'] == false || fieldData['ok'] == false);
+      if (!result.ok || !toolkitOk) {
+        return CoreResult.failure(
+          code: CoreErrorCode.fillFormFailed,
+          message: 'fill_form: field $i (ref=$ref) failed',
+          details: {
+            'failedAt': i,
+            'failedRef': ref,
+            'results': results,
+            'underlyingError': result.error?.code ?? fieldData['error'],
+          },
+        );
+      }
+    }
+
+    return CoreResult.success(
+      data: <String, Object?>{
+        'success': true,
+        'fieldCount': command.fields.length,
+        'results': results,
+      },
+    );
+  }
+
+  Future<CoreResult> _hover(final HoverCommand command) async {
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) return ensureFailure;
+
+    try {
+      final result = await connectionContext.callFlutterExtension(
+        mcpToolkitExtKeys.hover,
+        args: {
+          'ref': command.ref,
+          if (command.snapshotId != null) 'snapshotId': command.snapshotId,
+        },
+      );
+      final data = _map(result.json);
+      if (data['success'] != true) {
+        return CoreResult.failure(
+          code: CoreErrorCode.hoverFailed,
+          message: 'hover failed: ${data['error']}',
+          details: data,
+        );
+      }
+      return CoreResult.success(data: data);
+    } on Exception catch (e) {
+      return CoreResult.failure(
+        code: CoreErrorCode.hoverFailed,
+        message: 'Failed to execute hover: $e',
+      );
+    }
+  }
+
   bool _isSessionControlCommand(final CoreCommand command) =>
       command is SessionStartCommand ||
       command is SessionExecCommand ||
@@ -773,7 +1266,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
 
     final gateway =
-        _dynamicGateway ??
+        dynamicGateway ??
         VmExtensionDynamicGateway(connectionContext: connectionContext);
 
     final ensureFailure = await _ensureVmConnected();
@@ -841,7 +1334,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
 
     final gateway =
-        _dynamicGateway ??
+        dynamicGateway ??
         VmExtensionDynamicGateway(connectionContext: connectionContext);
 
     final ensureFailure = await _ensureVmConnected();
@@ -859,7 +1352,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
 
     final gateway =
-        _dynamicGateway ??
+        dynamicGateway ??
         VmExtensionDynamicGateway(connectionContext: connectionContext);
 
     final ensureFailure = await _ensureVmConnected();
@@ -944,7 +1437,6 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       'stickyEndpoint': connectionContext.stickyEndpoint?.display,
       'mode': connectionContext.lastMode.name,
       'dynamicRegistrySupported': configuration.dynamicRegistrySupported,
-      'liveEditSupported': configuration.liveEditSupported,
       'sessionsEnabled': sessionManager != null,
     },
   );
@@ -1016,7 +1508,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
 
   VisualCaptureBroker _visualCaptureBroker() => VisualCaptureBroker(
     configuration: configuration,
-    dynamicGateway: _dynamicGateway,
+    dynamicGateway: dynamicGateway,
     adapters: visualCaptureAdapters,
   );
 
@@ -1037,28 +1529,9 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       details: <String, Object?>{
         'permission': permission.toJson(),
         if (permission.canOpenSettings)
-          'suggestedAction': 'flutter_mcp_cli permissions open-settings',
+          'suggestedAction': 'flutter-mcp-toolkit permissions open-settings',
       },
     );
-  }
-
-  Future<bool> _waitForFlutterIsolateAfterRestart({
-    final Duration timeout = const Duration(seconds: 10),
-    final Duration pollInterval = const Duration(milliseconds: 250),
-  }) async {
-    final deadline = DateTime.now().add(timeout);
-    while (DateTime.now().isBefore(deadline)) {
-      try {
-        final isolate = await connectionContext.getFlutterIsolate();
-        if (isolate?.id != null) {
-          return true;
-        }
-      } on StateError {
-        // Keep retrying until timeout while the isolate comes back.
-      }
-      await Future<void>.delayed(pollInterval);
-    }
-    return false;
   }
 
   Future<CoreResult> _watchSnapshot(final WatchCommand command) async {
@@ -1121,52 +1594,6 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
   };
 }
 
-final class _ExecutorLiveEditBindings implements LiveEditHostBindings {
-  _ExecutorLiveEditBindings(this._executor);
-
-  final DefaultCoreCommandExecutor _executor;
-
-  @override
-  CoreRuntimeConfiguration get configuration => _executor.configuration;
-
-  @override
-  Future<CoreResult> captureUiSnapshotForLiveEdit() =>
-      _executor._captureUiSnapshot(
-        const CaptureUiSnapshotCommand(
-          includeViewDetails: false,
-          includeErrors: false,
-        ),
-      );
-
-  @override
-  Future<CoreResult> hotReload({final bool force = false}) =>
-      _executor._hotReload(HotReloadFlutterCommand(force: force));
-
-  @override
-  Future<CoreResult> hotRestart() => _executor._hotRestart();
-
-  @override
-  Future<CoreResult> listClientToolsAndResources() =>
-      _executor._listClientToolsAndResources();
-
-  @override
-  Future<CoreResult> runClientTool(
-    final String toolName, {
-    final Map<String, Object?> arguments = const <String, Object?>{},
-  }) => _executor._runClientTool(
-    RunClientToolCommand(toolName: toolName, arguments: arguments),
-  );
-
-  @override
-  Future<bool> waitForFlutterIsolateAfterRestart({
-    final Duration timeout = const Duration(seconds: 10),
-    final Duration pollInterval = const Duration(milliseconds: 250),
-  }) => _executor._waitForFlutterIsolateAfterRestart(
-    timeout: timeout,
-    pollInterval: pollInterval,
-  );
-}
-
 final class _DesktopCaptureResolution {
   const _DesktopCaptureResolution({
     this.data,
@@ -1177,4 +1604,27 @@ final class _DesktopCaptureResolution {
   final Map<String, Object?>? data;
   final String? errorMessage;
   final Map<String, Object?> errorDetails;
+}
+
+/// Route the toolkit's `wait_for` extension response to a [CoreResult].
+///
+/// Treats anything other than literal `true` for the `matched` field as a
+/// failure: `matched == false` is an expected predicate timeout
+/// (`wait_timeout`); any other shape (null / string / int / coerced wire
+/// value) is a malformed-payload bug bucketed as `wait_for_failed`. Public
+/// so the routing can be exercised in tests without a live VM.
+CoreResult routeWaitForResponse(final Map<String, Object?> data) {
+  final matched = data['matched'];
+  if (matched != true) {
+    return CoreResult.failure(
+      code: matched == false
+          ? CoreErrorCode.waitTimeout
+          : CoreErrorCode.waitForFailed,
+      message: matched == false
+          ? 'wait_for timed out after ${data['elapsedMs']}ms'
+          : 'wait_for returned malformed payload (matched=$matched)',
+      details: data,
+    );
+  }
+  return CoreResult.success(data: data);
 }

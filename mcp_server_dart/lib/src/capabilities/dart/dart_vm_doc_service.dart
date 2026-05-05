@@ -1,10 +1,12 @@
 // Copyright (c) 2025, Flutter Inspector MCP Server authors.
 // Licensed under the MIT License.
 
+// ignore_for_file: avoid_catches_without_on_clauses
+
 import 'dart:async';
 import 'dart:io'; // Added for File
 
-import 'package:flutter_inspector_mcp_server/src/capabilities/dart/dart_lsp_client.dart';
+import 'package:flutter_mcp_toolkit_server/src/capabilities/dart/dart_lsp_client.dart';
 import 'package:logging/logging.dart';
 import 'package:meta/meta.dart';
 import 'package:vm_service/vm_service.dart';

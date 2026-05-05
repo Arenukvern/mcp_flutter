@@ -1,9 +1,10 @@
 #!/usr/bin/env dart
 // Test script for the Dart LSP client
+// ignore_for_file: avoid_print
 
 import 'dart:io';
 
-import 'package:flutter_inspector_mcp_server/src/capabilities/dart/dart_lsp_client.dart';
+import 'package:flutter_mcp_toolkit_server/src/capabilities/dart/dart_lsp_client.dart';
 import 'package:logging/logging.dart';
 
 Future<void> main() async {
@@ -77,7 +78,7 @@ void main() {
     }
 
     logger.info('Test completed successfully!');
-  } catch (e, stackTrace) {
+  } on Object catch (e, stackTrace) {
     logger.severe('Error: $e', e, stackTrace);
     exit(1);
   } finally {

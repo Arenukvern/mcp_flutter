@@ -4,7 +4,7 @@
 import 'dart:convert';
 import 'dart:io' as io;
 
-import 'package:flutter_inspector_mcp_server/src/cli/sessions_persistence/session_persistence.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/sessions_persistence/session_persistence.dart';
 
 final class BundleBuilder {
   BundleBuilder({

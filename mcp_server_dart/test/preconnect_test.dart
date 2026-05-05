@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:dart_mcp/server.dart';
-import 'package:flutter_inspector_mcp_server/flutter_mcp_core.dart';
+import 'package:flutter_mcp_toolkit_server/flutter_mcp_core.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -25,9 +25,7 @@ void main() {
       () async {
         final store = StateStore(path: statePath);
         await store.write(
-          const PersistedState(
-            activeSessionId: 'stale-session',
-          ),
+          const PersistedState(activeSessionId: 'stale-session'),
         );
 
         final context = ConnectionContext(
@@ -35,6 +33,8 @@ void main() {
           defaultPort: 8181,
           logger: _noopLogger,
           discoverPorts: () async => <int>[8181, 8182],
+          probeFlutterTarget:
+              (final endpoint, {required final timeout}) async => true,
         );
 
         final manager = SessionManager(
@@ -131,20 +131,20 @@ DefaultCoreCommandExecutor _buildExecutor({
   required final ConnectionContext context,
   required final SessionManager? sessionManager,
 }) => DefaultCoreCommandExecutor(
-    connectionContext: context,
-    portScanner: const CorePortScanner(logger: _noopLogger),
-    imageFileSaver: const CoreImageFileSaver(logger: _noopLogger),
-    configuration: const CoreRuntimeConfiguration(
-      vmHost: 'localhost',
-      vmPort: 8181,
-      resourcesSupported: true,
-      imagesSupported: true,
-      dumpsSupported: false,
-      dynamicRegistrySupported: false,
-      saveImagesToFiles: false,
-    ),
-    sessionManager: sessionManager,
-  );
+  connectionContext: context,
+  portScanner: const CorePortScanner(logger: _noopLogger),
+  imageFileSaver: const CoreImageFileSaver(logger: _noopLogger),
+  configuration: const CoreRuntimeConfiguration(
+    vmHost: 'localhost',
+    vmPort: 8181,
+    resourcesSupported: true,
+    imagesSupported: true,
+    dumpsSupported: false,
+    dynamicRegistrySupported: false,
+    saveImagesToFiles: false,
+  ),
+  sessionManager: sessionManager,
+);
 
 void _noopLogger(
   final LoggingLevel level,

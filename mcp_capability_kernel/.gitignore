@@ -1,0 +1,6 @@
+# Dart/Pub related
+**/doc/api/
+.dart_tool/
+.pub-cache/
+.pub/
+/build/

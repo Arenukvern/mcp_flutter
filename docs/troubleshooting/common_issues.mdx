@@ -5,8 +5,8 @@
    - Ensure your Flutter app is running in debug mode
    - Verify the port matches in both Flutter app and MCP server
    - Check if the port is not being used by another process
-   - Run `flutter_mcp_cli doctor --json` for preflight diagnostics
-   - Run `flutter_mcp_cli exec --name get_extension_rpcs --args '{}'` before app-level inspection
+   - Run `flutter-mcp-toolkit doctor --json` for preflight diagnostics
+   - Run `flutter-mcp-toolkit exec --name get_extension_rpcs --args '{}'` before app-level inspection
    - Safest selector: use `arguments.connection.uri` and paste exact Flutter machine `app.debugPort.wsUri`
    - If you get `connection_selection_required`, retry with `arguments.connection.targetId` using one URI from `availableTargets` (or call `connect_debug_app` first)
    - Do not use `host:port` for `targetId`; use full VM websocket URI or `arguments.connection.uri`
@@ -20,7 +20,7 @@
 3. **Dynamic Tools Not Appearing**
    - Ensure `mcp_toolkit` package is properly initialized in your Flutter app
    - Check that tools are registered using `MCPToolkitBinding.instance.addEntries()`
-   - Use `listClientToolsAndResources` to verify registration
+   - Use `fmt_list_client_tools_and_resources` to verify registration
    - Hot reload your Flutter app after adding new tools
 
 4. **Missing `mcp_toolkit` Extensions (`Cannot Plug Into App`)**
@@ -34,7 +34,7 @@
 
    - Ensure server runs with images enabled (`--images`)
    - Keep app window visible and foreground; minimized/headless windows can produce blank captures
-   - Retry with `flutter_mcp_cli exec --name get_screenshots --args '{}'`
+   - Retry with `flutter-mcp-toolkit exec --name get_screenshots --args '{}'`
 
 6. **`connection_selection_required` Errors**
 
@@ -51,4 +51,4 @@
 
    - Some environments need longer than the default connect timeout for first handshake.
    - Retry the same command once with exact tokenized URI.
-   - Verify with `flutter_mcp_cli doctor --json --target <ws_uri> --timeout-ms 10000`.
+   - Verify with `flutter-mcp-toolkit doctor --json --target <ws_uri> --timeout-ms 10000`.

@@ -22,13 +22,13 @@ MCP transport is `stdin/stdout` (no inbound MCP TCP port).
 | `--environment` | The environment mode. Can be `development` or `production`. Defaults to `production`. |
 | `-h`, `--help` | Show the usage text. |
 
-CLI note: `flutter_mcp_cli` has a separate `--log-level` default of `error`.
+CLI note: `flutter-mcp-toolkit` has a separate `--log-level` default of `error`.
 
 ## v3 Reliability Commands
 
 - Preflight diagnostics:
-  - `flutter_mcp_cli doctor --json`
-  - `flutter_mcp_cli doctor --json --target ws://127.0.0.1:8181/<token>/ws --timeout-ms 4000`
+  - `flutter-mcp-toolkit doctor --json`
+  - `flutter-mcp-toolkit doctor --json --target ws://127.0.0.1:8181/<token>/ws --timeout-ms 4000`
 - Safe write controls for `snapshot create` and `bundle create`:
   - `--check` (no writes)
   - `--diff` (unified diff metadata)
@@ -53,42 +53,14 @@ For VM-dependent operations, the server resolves target in this order:
 
 ### Per-Request `connection` Object
 
-VM-dependent tool calls support optional `arguments.connection`:
+VM-dependent tool calls use optional `arguments.connection`. On **MCP**
+`tools/call`, the tool **`name`** must use the v3 **`fmt_`** prefix (e.g.
+`fmt_get_vm`). The **CLI** still uses bare catalog names:
+`flutter-mcp-toolkit exec --name get_vm --args '...'`.
 
 ```json
 {
-  "name": "debug_dump_render_tree",
-  "arguments": {
-    "connection": {
-      "targetId": "ws://127.0.0.1:59490/<token>/ws"
-    }
-  }
-}
-```
-
-Supported fields:
-
-- `targetId` (full VM websocket URI)
-- `mode`: `auto`, `manual`, or `uri`
-- `host`
-- `port`
-- `uri`
-- `forceReconnect`
-
-### Zero-Mistake Rules
-
-Use these in order:
-
-1. **Safest**: set `connection.uri` to the exact `app.debugPort.wsUri` value from Flutter machine output.
-2. If you use `connection.targetId`, copy it exactly from `discover_debug_apps` / `availableTargets`.
-3. Never use plain `host:port` as `targetId` (rejected).
-4. If you get `target_not_found` with `targetId`, retry with `connection.uri` using exact `app.debugPort.wsUri`.
-
-Examples:
-
-```json
-{
-  "name": "get_vm",
+  "name": "fmt_get_vm",
   "arguments": {
     "connection": {
       "mode": "manual",
@@ -101,16 +73,32 @@ Examples:
 
 ```json
 {
-  "name": "get_vm",
+  "name": "fmt_debug_dump_render_tree",
   "arguments": {
     "connection": {
-      "mode": "uri",
-      "uri": "ws://127.0.0.1:8181/<token>/ws",
-      "forceReconnect": true
+      "targetId": "ws://127.0.0.1:59490/<token>/ws"
     }
   }
 }
 ```
+
+Supported `connection` fields:
+
+- `targetId` (full VM websocket URI)
+- `mode`: `auto`, `manual`, or `uri`
+- `host`
+- `port`
+- `uri`
+- `forceReconnect`
+
+### Zero-Mistake Rules
+
+1. **Safest**: set `connection.uri` to the exact `app.debugPort.wsUri` value from Flutter machine output.
+2. If you use `connection.targetId`, copy it exactly from `discover_debug_apps` / `availableTargets`.
+3. Never use plain `host:port` as `targetId` (rejected).
+4. If you get `target_not_found` with `targetId`, retry with `connection.uri` using exact `app.debugPort.wsUri`.
+
+v2 → v3 migration (MCP tool names, binaries, `mcpServers` keys): [Migrating from v2.x to v3.0](/start_here/migration_v2_to_v3).
 
 Important:
 
@@ -118,8 +106,8 @@ Important:
 - `connection.uri` is the most robust selector because it preserves tokenized VM paths exactly.
 - Full tokenized URI `targetId` values are accepted. If discovery cannot resolve them, the server attempts direct connect using that URI.
 - Tool input schemas are strict: flat aliases like `arguments.port`, `arguments.host`, and `arguments.uri` are rejected.
-- `connect_debug_app` accepts the same `connection` object.
-- Dynamic registry tools (`listClientToolsAndResources`, `runClientTool`, `runClientResource`) also accept optional `connection`.
+- `connect_debug_app` (MCP: **`fmt_connect_debug_app`**) accepts the same `connection` object.
+- Dynamic registry tools (`fmt_list_client_tools_and_resources`, `fmt_client_tool`, `fmt_client_resource`) also accept optional `connection`.
 - CLI one-shot `exec --args`, daemon `command/execute`, and daemon `watch/start` accept the same nested `connection` object contract.
 - `snapshot/create` supports per-step `args.commands[i].args.connection`.
 - `connect` and `session_start` reject mixed native selector fields and nested `connection` in the same args object.

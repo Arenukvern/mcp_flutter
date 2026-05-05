@@ -1,6 +1,6 @@
 import 'package:dart_mcp/server.dart';
-import 'package:flutter_inspector_mcp_server/flutter_mcp_core.dart';
-import 'package:flutter_inspector_mcp_server/src/capabilities/visual_capture/desktop_window_screenshot.dart';
+import 'package:flutter_mcp_toolkit_server/flutter_mcp_core.dart';
+import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/desktop_window_screenshot.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -43,7 +43,6 @@ void main() {
       expect(result.ok, isTrue);
       final data = result.data! as Map<String, Object?>;
       expect(data['connected'], isFalse);
-      expect(data['liveEditSupported'], isTrue);
       expect(result.meta.containsKey('durationMs'), isTrue);
       expect(result.meta['schemaVersion'], equals('core-envelope/v1'));
       expect(result.meta['command'], equals('status'));
@@ -97,6 +96,60 @@ void main() {
       expect(data['appName'], equals('sample_app'));
       expect(data['images'], equals(const <String>['AQID']));
     });
+
+    test(
+      'desktop window screenshot forwards vm pid into capture service',
+      () async {
+        void logger(
+          final LoggingLevel level,
+          final String message, {
+          final String logger = 'test',
+        }) {}
+
+        final context = ConnectionContext(
+          defaultHost: 'localhost',
+          defaultPort: 8181,
+          logger: logger,
+          discoverPorts: () async => <int>[8181],
+        );
+        context.debugConnectedVmPidOverride = 90001;
+        addTearDown(() => context.debugConnectedVmPidOverride = null);
+
+        int? capturedPid;
+        final localExecutor = DefaultCoreCommandExecutor(
+          connectionContext: context,
+          portScanner: CorePortScanner(logger: logger),
+          imageFileSaver: CoreImageFileSaver(logger: logger),
+          configuration: const CoreRuntimeConfiguration(
+            vmHost: 'localhost',
+            vmPort: 8181,
+            resourcesSupported: true,
+            imagesSupported: true,
+            dumpsSupported: false,
+            dynamicRegistrySupported: false,
+            saveImagesToFiles: false,
+            flutterProjectDir: '/tmp/sample_app',
+            flutterDevice: 'macos',
+          ),
+          desktopWindowScreenshotService: _FakeDesktopWindowScreenshotService(
+            result: const DesktopWindowScreenshotCapture(
+              images: <String>['AQID'],
+              captureMode: 'desktop_window',
+              metadata: <String, Object?>{'appName': 'sample_app'},
+            ),
+            onCapture: (final pid) => capturedPid = pid,
+          ),
+          activateMacOsTargetPid: (_) async {},
+        );
+
+        final result = await localExecutor.execute(
+          const GetScreenshotsCommand(mode: ScreenshotMode.desktopWindow),
+        );
+
+        expect(result.ok, isTrue);
+        expect(capturedPid, equals(90001));
+      },
+    );
 
     test('desktop window screenshot mode surfaces capture failures', () async {
       void logger(
@@ -431,47 +484,6 @@ void main() {
       expect(details?['reason'], equals('invalid_target_id_legacy_host_port'));
       expect(details?['migrationHint'], isA<String>());
     });
-
-    test(
-      'live edit commands return disabled when liveEditSupported is false',
-      () async {
-        void logger(
-          final LoggingLevel level,
-          final String message, {
-          final String logger = 'test',
-        }) {}
-
-        final context = ConnectionContext(
-          defaultHost: 'localhost',
-          defaultPort: 8181,
-          logger: logger,
-          discoverPorts: () async => <int>[8181],
-        );
-
-        final localExecutor = DefaultCoreCommandExecutor(
-          connectionContext: context,
-          portScanner: CorePortScanner(logger: logger),
-          imageFileSaver: CoreImageFileSaver(logger: logger),
-          configuration: const CoreRuntimeConfiguration(
-            vmHost: 'localhost',
-            vmPort: 8181,
-            resourcesSupported: true,
-            imagesSupported: true,
-            dumpsSupported: false,
-            liveEditSupported: false,
-            dynamicRegistrySupported: false,
-            saveImagesToFiles: false,
-          ),
-        );
-
-        final result = await localExecutor.execute(
-          const LiveEditListAgentBackendsCommand(),
-        );
-
-        expect(result.ok, isFalse);
-        expect(result.error?.code, CoreErrorCode.liveEditDisabled);
-      },
-    );
   });
 }
 
@@ -481,8 +493,6 @@ final class _FakeDesktopWindowScreenshotService
     this.result,
     this.error,
     this.permissionStatus = PermissionStatus.granted,
-    // TODO(arenukvern): remove or use
-    // ignore: unused_element_parameter
     this.onCapture,
   });
 
@@ -526,7 +536,8 @@ final class _FakeDesktopWindowScreenshotService
   }) async {
     onCapture?.call(targetPid);
     if (error != null) {
-      throw Exception(error);
+      // ignore: only_throw_errors
+      throw error!;
     }
     return result;
   }

@@ -1,22 +1,24 @@
 // Copyright (c) 2025, Flutter Inspector MCP Server authors.
 // Licensed under the MIT License.
 
+// ignore_for_file: avoid_catching_errors
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io' as io;
 
-import 'package:flutter_inspector_mcp_server/src/cli/diagnostics/bundle_builder.dart';
-import 'package:flutter_inspector_mcp_server/src/cli/session/session_manager.dart';
-import 'package:flutter_inspector_mcp_server/src/cli/sessions_persistence/safe_writes.dart';
-import 'package:flutter_inspector_mcp_server/src/cli/sessions_persistence/snapshot_store.dart';
-import 'package:flutter_inspector_mcp_server/src/runtime_version.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/command_executor.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/commands/commands.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/types/core_types.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/types/error_codes.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/types/results.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/vm_connections/connection_override.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/vm_connections/preconnect.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/diagnostics/bundle_builder.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/session/session_manager.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/sessions_persistence/safe_writes.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/sessions_persistence/snapshot_store.dart';
+import 'package:flutter_mcp_toolkit_server/src/runtime_version.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/command_executor.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/commands/commands.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/types/core_types.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/types/error_codes.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/types/results.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/vm_connections/connection_override.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/vm_connections/preconnect.dart';
 
 final class CliDaemonServer {
   CliDaemonServer({

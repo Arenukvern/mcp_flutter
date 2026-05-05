@@ -9,9 +9,9 @@ import 'dart:io';
 
 import 'package:dart_mcp/server.dart';
 import 'package:dtd/dtd.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/commands/commands.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/types/types.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/vm_connections/flutter_tool_machine_discovery.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/commands/commands.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/types/types.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/vm_connections/flutter_tool_machine_discovery.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
 import 'package:meta/meta.dart';
 import 'package:vm_service/vm_service.dart';
@@ -25,18 +25,7 @@ final class CoreEndpoint {
     this.wsPath = '/ws',
   });
 
-  final String host;
-  final int port;
-  final String wsPath;
-
-  Uri get wsUri {
-    final normalizedPath = wsPath.startsWith('/') ? wsPath : '/$wsPath';
-    return Uri(scheme: 'ws', host: host, port: port, path: normalizedPath);
-  }
-
-  String get display => wsUri.toString();
-
-  static CoreEndpoint fromUri(final Uri uri) {
+  factory CoreEndpoint.fromUri(final Uri uri) {
     final normalizedHost = uri.host.isEmpty ? 'localhost' : uri.host;
     final normalizedPort = uri.hasPort ? uri.port : 0;
     if (normalizedPort <= 0) {
@@ -49,6 +38,17 @@ final class CoreEndpoint {
       wsPath: normalizedPath,
     );
   }
+
+  final String host;
+  final int port;
+  final String wsPath;
+
+  Uri get wsUri {
+    final normalizedPath = wsPath.startsWith('/') ? wsPath : '/$wsPath';
+    return Uri(scheme: 'ws', host: host, port: port, path: normalizedPath);
+  }
+
+  String get display => wsUri.toString();
 
   @override
   bool operator ==(final Object other) =>
@@ -225,10 +225,49 @@ final class ConnectionContext {
   bool _wasConnected = false;
   bool _disconnectedSinceLastConnect = false;
 
+  /// Single-flight gate shared by [hotReload] and [hotRestart].
+  ///
+  /// The VM can only safely reload one set of sources at a time; concurrent
+  /// callers (e.g. two live-edit bubbles applying in parallel) must wait for
+  /// an in-progress reload instead of issuing a second one. [ConnectionContext]
+  /// is per VM-service target, so a single future is sufficient here — the
+  /// per-`targetId` `Map<String, Future<…>>` exists implicitly as "one entry
+  /// per ConnectionContext instance".
+  Future<Map<String, dynamic>?>? _pendingReloadOrRestart;
+
   /// Callback invoked when a previously disconnected context reconnects.
   void Function()? onReconnected;
 
   VmService? get vmService => _vmService;
+
+  /// When non-null and positive, [resolveConnectedVmPid] returns this value
+  /// without querying [vmService]. For tests only.
+  @visibleForTesting
+  int? debugConnectedVmPidOverride;
+
+  /// VM process id for the active service connection, or null if unknown.
+  Future<int?> resolveConnectedVmPid() async {
+    final override = debugConnectedVmPidOverride;
+    if (override != null) {
+      return override > 0 ? override : null;
+    }
+
+    final service = _vmService;
+    if (service == null) {
+      return null;
+    }
+    try {
+      final vm = await service.getVM();
+      final pid = vm.pid;
+      if (pid is int && pid > 0) {
+        return pid;
+      }
+      return int.tryParse('$pid');
+    } on Object {
+      return null;
+    }
+  }
+
   DartToolingDaemon? get dartToolingDaemon => _dartToolingDaemon;
   bool get isConnected => _vmService != null;
   CoreEndpoint? get activeEndpoint => _activeEndpoint;
@@ -1228,7 +1267,27 @@ final class ConnectionContext {
     return null;
   }
 
-  Future<Map<String, dynamic>?> hotReload({final bool force = false}) async {
+  Future<Map<String, dynamic>?> hotReload({final bool force = false}) {
+    final pending = _pendingReloadOrRestart;
+    if (pending != null) return pending;
+    final completer = Completer<Map<String, dynamic>?>();
+    _pendingReloadOrRestart = completer.future;
+    unawaited(
+      _runHotReload(force: force)
+          .then(completer.complete)
+          .catchError(completer.completeError)
+          .whenComplete(() {
+            if (identical(_pendingReloadOrRestart, completer.future)) {
+              _pendingReloadOrRestart = null;
+            }
+          }),
+    );
+    return completer.future;
+  }
+
+  Future<Map<String, dynamic>?> _runHotReload({
+    required final bool force,
+  }) async {
     final vmService = _vmService;
     if (vmService == null) {
       return {'error': 'VM service not connected'};
@@ -1287,7 +1346,25 @@ final class ConnectionContext {
     }
   }
 
-  Future<Map<String, dynamic>?> hotRestart() async {
+  Future<Map<String, dynamic>?> hotRestart() {
+    final pending = _pendingReloadOrRestart;
+    if (pending != null) return pending;
+    final completer = Completer<Map<String, dynamic>?>();
+    _pendingReloadOrRestart = completer.future;
+    unawaited(
+      _runHotRestart()
+          .then(completer.complete)
+          .catchError(completer.completeError)
+          .whenComplete(() {
+            if (identical(_pendingReloadOrRestart, completer.future)) {
+              _pendingReloadOrRestart = null;
+            }
+          }),
+    );
+    return completer.future;
+  }
+
+  Future<Map<String, dynamic>?> _runHotRestart() async {
     final vmService = _vmService;
     if (vmService == null) {
       return {'error': 'VM service not connected'};

@@ -5,7 +5,7 @@ import 'dart:io';
 import 'package:test/test.dart';
 
 void main() {
-  group('flutter_mcp_cli serve', () {
+  group('flutter-mcp-toolkit serve', () {
     late Directory tempDir;
     late String statePath;
     Process? process;
@@ -18,7 +18,7 @@ void main() {
 
       process = await Process.start('dart', [
         'run',
-        'bin/flutter_mcp_cli.dart',
+        'bin/flutter_mcp_toolkit.dart',
         '--state-file',
         statePath,
         'serve',
@@ -86,10 +86,7 @@ void main() {
         process: process!,
         events: events,
       );
-      expect(
-        (status['result'] as Map<String, dynamic>)['ok'] as bool,
-        isTrue,
-      );
+      expect((status['result'] as Map<String, dynamic>)['ok'] as bool, isTrue);
 
       final vmFailure = await _sendRequest(
         id: 4,

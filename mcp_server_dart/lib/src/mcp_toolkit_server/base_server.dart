@@ -10,7 +10,6 @@ typedef VMServiceConfigurationRecord = ({
   bool resourcesSupported,
   bool imagesSupported,
   bool dumpsSupported,
-  bool liveEditSupported,
   bool dynamicRegistrySupported,
   String logLevel,
   String environment,

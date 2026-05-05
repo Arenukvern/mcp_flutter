@@ -1,8 +1,8 @@
 // Copyright (c) 2025, Flutter Inspector MCP Server authors.
 // Licensed under the MIT License.
 
-import 'package:flutter_inspector_mcp_server/src/capabilities/visual_capture/core_image_file_saver.dart';
-import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_server/base_server.dart';
+import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/core_image_file_saver.dart';
+import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/base_server.dart';
 
 /// Compatibility wrapper around the shared core image file saver.
 class ImageFileSaver {

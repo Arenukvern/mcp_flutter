@@ -1,1 +1,1 @@
-export 'debug_tools_handler.dart';
+export 'resource_handler.dart';

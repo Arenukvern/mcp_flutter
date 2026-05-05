@@ -1,17 +1,69 @@
 // Copyright (c) 2025, Flutter Inspector MCP Server authors.
 // Licensed under the MIT License.
-import 'package:flutter_inspector_mcp_server/src/capabilities/core/capabilities_model.dart';
-import 'package:flutter_inspector_mcp_server/src/capabilities/visual_capture/visual_capture.dart';
-import 'package:flutter_inspector_mcp_server/src/runtime_version.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/types/core_types.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/vm_connections/connection_override.dart';
-import 'package:flutter_live_edit_toolkit/src/models/live_edit_models.dart';
 
-part 'commands_catalogue.dart';
-part 'commands_specs.dart';
-part 'core_command.dart';
-part 'debug_commands.dart';
-part 'dynamic_registry_commands.dart';
-part 'live_edit_commands.dart';
-part 'session_commands.dart';
-part 'visual_widget_commands.dart';
+// ignore_for_file: combinators_ordering
+
+// CoreCommand sealed hierarchy re-exported from mcp_shared_core.
+// CommandCatalog and CommandSpec remain server-only (they build input schemas
+// and dispatch logic, not pure value types).
+export 'package:mcp_shared_core/mcp_shared_core.dart'
+    show
+        // Core sealed class + factory typedef
+        CoreCommand,
+        CoreCommandFactory,
+        CoreConnectionMode,
+        // Connection commands
+        ConnectCommand,
+        SessionStartCommand,
+        SessionEndCommand,
+        SessionExecCommand,
+        // Basic VM commands
+        StatusCommand,
+        GetVmCommand,
+        GetExtensionRpcsCommand,
+        GetActivePortsCommand,
+        GetAppErrorsCommand,
+        HotReloadFlutterCommand,
+        HotRestartFlutterCommand,
+        WatchCommand,
+        ExplainErrorsCommand,
+        // Visual / widget commands
+        ScreenshotMode,
+        parseScreenshotMode,
+        GetViewDetailsCommand,
+        GetScreenshotsCommand,
+        InspectWidgetAtPointCommand,
+        CaptureUiSnapshotCommand,
+        SemanticSnapshotCommand,
+        TapWidgetCommand,
+        EnterTextCommand,
+        ScrollCommand,
+        LongPressCommand,
+        SwipeCommand,
+        DragCommand,
+        HotReloadAndCaptureCommand,
+        EvaluateDartExpressionCommand,
+        GetRecentLogsCommand,
+        WaitForCommand,
+        PressKeyCommand,
+        HandleDialogCommand,
+        NavigateCommand,
+        FillFormCommand,
+        HoverCommand,
+        // Debug commands
+        DebugDumpFocusTreeCommand,
+        DebugDumpLayerTreeCommand,
+        DebugDumpRenderTreeCommand,
+        DebugDumpSemanticsTreeCommand,
+        DiagnoseCommand,
+        DiscoverDebugAppsCommand,
+        DynamicRegistryStatsCommand,
+        // Dynamic registry commands
+        ListClientToolsAndResourcesCommand,
+        RunClientResourceCommand,
+        RunClientToolCommand;
+
+// Server-only: CommandCatalog and CommandSpec — live here because they
+// depend on transport-coupled helpers (schema builders, arg parsers) and
+// import visual_capture.dart for PermissionPolicy schema population.
+export 'commands_catalog.dart';

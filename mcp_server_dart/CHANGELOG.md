@@ -2,11 +2,41 @@
 
 ## [unreleased]
 
+### Changed
+
+- `validate-runtime`: after a failed host `desktop_window` screenshot (`get_screenshots_failed`, retryable), automatically retries `capture_ui_snapshot` with `flutter_layer`. Summary includes `captureFallbackUsed` when the retry succeeds.
+- Global `--vm-service-uri` is accepted as the VM target for `validate-runtime` (and warns if both `--target` and `--vm-service-uri` differ; `--target` wins).
+- Renamed dynamic-registry MCP tools for consistent `fmt_` naming:
+  `listClientToolsAndResources` → `fmt_list_client_tools_and_resources`,
+  `runClientTool` → `fmt_client_tool`, `runClientResource` → `fmt_client_resource`
+  (same strings for `flutter-mcp-toolkit exec --name`).
+
 ## [3.0.0]
 
 Strict hard-cut release focused on reliability and machine contracts.
 
-- Added `flutter_mcp_cli doctor [--json] [--target <path>] [--timeout-ms <n>]`.
+### BREAKING: MCP tool names now carry the `fmt_` capability prefix
+
+All MCP tools surface as `fmt_<bare-name>` (e.g. `fmt_tap_widget`,
+`fmt_hot_reload_and_capture`). Legacy unprefixed names return
+`tool_not_found`. The CLI catalog (`flutter-mcp-toolkit exec --name <name>`)
+keeps the bare names for intrinsic tools — only the MCP wire surface adds
+`fmt_` there. Dynamic-registry host tools use `fmt_list_client_tools_and_resources`,
+`fmt_client_tool`, and `fmt_client_resource` on both MCP and CLI. `visual://`
+resource URIs are unchanged.
+
+The server composes its tool surface from `Capability` instances loaded
+into an `McpHost` registry; the host applies the prefix and forwards every
+registration to `dart_mcp`'s `ToolsSupport` via `DartMcpDispatchBridge`.
+The locked v3.0.0 surface lives at
+`tool/contracts/expected_tool_surface.txt` and is enforced by
+`test/tool_surface_snapshot_test.dart`.
+
+See the root `CHANGELOG.md` for the full v2→v3 rename table.
+
+### Other v3.0.0 changes
+
+- Added `flutter-mcp-toolkit doctor [--json] [--target <path>] [--timeout-ms <n>]`.
 - Added safe-write flags for `snapshot create` and `bundle create`:
   `--check`, `--diff`, `--backup`, `--no-overwrite`.
 - Replaced destructive bundle overwrite flow with staged atomic publish.
@@ -35,7 +65,7 @@ Strict hard-cut release focused on reliability and machine contracts.
   `targetId`, `mode`, `host`, `port`, `uri`, `forceReconnect`
 - `connect_debug_app` now accepts the same `connection` object contract
 - dynamic registry parity:
-  - added optional `connection` to `listClientToolsAndResources`, `runClientTool`, `runClientResource`
+  - added optional `connection` to `fmt_list_client_tools_and_resources`, `fmt_client_tool`, `fmt_client_resource`
   - unified pre-connect flow and ambiguity/error semantics
 - resource read targeting now supports URI query params:
   `targetId`, `mode`, `host`, `port`, `uri`, `forceReconnect`

@@ -28,12 +28,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Dart SDK
-        uses: dart-lang/setup-dart@v1
+      - name: Setup Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
 
       - name: Install mcp_server_dart dependencies
         working-directory: mcp_server_dart
-        run: dart pub get
+        run: flutter pub get
 
       - name: Build release artifacts
         env:

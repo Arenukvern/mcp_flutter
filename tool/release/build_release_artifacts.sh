@@ -18,7 +18,7 @@ usage() {
   cat <<USAGE
 Usage: tool/release/build_release_artifacts.sh [--version <semver>] [--triple <darwin-arm64|darwin-x64|linux-x64>] [--clean]
 
-Builds release tarballs for flutter_mcp_cli and flutter_inspector_mcp_server.
+Builds release tarballs for flutter-mcp-toolkit and flutter-mcp-toolkit-server.
 Generates SHA-256 checksums at dist/release/checksums.txt.
 USAGE
 }
@@ -103,8 +103,8 @@ for triple in "${TRIPLES[@]}"; do
   rm -rf "$stage_dir" "$archive_path"
   mkdir -p "$stage_dir/bin"
 
-  compile_binary "bin/flutter_mcp_cli.dart" "$stage_dir/bin/flutter_mcp_cli" "$target_os" "$target_arch"
-  compile_binary "bin/main.dart" "$stage_dir/bin/flutter_inspector_mcp_server" "$target_os" "$target_arch"
+  compile_binary "bin/flutter_mcp_toolkit.dart" "$stage_dir/bin/flutter-mcp-toolkit" "$target_os" "$target_arch"
+  compile_binary "bin/flutter_mcp_toolkit_server.dart" "$stage_dir/bin/flutter-mcp-toolkit-server" "$target_os" "$target_arch"
 
   cp "$ROOT_DIR/LICENSE" "$stage_dir/LICENSE"
 
@@ -112,8 +112,8 @@ for triple in "${TRIPLES[@]}"; do
 
   smoke_dir="$(mktemp -d)"
   tar -C "$smoke_dir" -xzf "$archive_path"
-  "$smoke_dir/$package_name/bin/flutter_mcp_cli" --help >/dev/null
-  "$smoke_dir/$package_name/bin/flutter_inspector_mcp_server" --help >/dev/null
+  "$smoke_dir/$package_name/bin/flutter-mcp-toolkit" --help >/dev/null
+  "$smoke_dir/$package_name/bin/flutter-mcp-toolkit-server" --help >/dev/null
   rm -rf "$smoke_dir"
 
   rm -rf "$stage_dir"

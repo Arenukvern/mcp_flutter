@@ -110,13 +110,14 @@ void main() {
               .map((final tool) => tool['name']?.toString() ?? '')
               .toSet();
 
-          expect(names.contains('hot_reload_flutter'), isTrue);
-          expect(names.contains('hot_restart_flutter'), isTrue);
-          expect(names.contains('get_vm'), isTrue);
-          expect(names.contains('get_extension_rpcs'), isTrue);
-          expect(names.contains('discover_debug_apps'), isTrue);
-          expect(names.contains('inspect_widget_at_point'), isTrue);
-          expect(names.contains('capture_ui_snapshot'), isTrue);
+          // v3.0.0: tools surface under the "fmt_" capability prefix.
+          expect(names.contains('fmt_hot_reload_flutter'), isTrue);
+          expect(names.contains('fmt_hot_restart_flutter'), isTrue);
+          expect(names.contains('fmt_get_vm'), isTrue);
+          expect(names.contains('fmt_get_extension_rpcs'), isTrue);
+          expect(names.contains('fmt_discover_debug_apps'), isTrue);
+          expect(names.contains('fmt_inspect_widget_at_point'), isTrue);
+          expect(names.contains('fmt_capture_ui_snapshot'), isTrue);
         } finally {
           await responseSubscription.cancel();
         }
@@ -310,7 +311,7 @@ Future<bool> _runServerTest(
     // Start the MCP server process
     serverProcess = await Process.start('dart', [
       'run',
-      'bin/main.dart',
+      'bin/flutter_mcp_toolkit_server.dart',
     ], workingDirectory: Directory.current.path);
 
     // Set up request controller for sending to server's stdin

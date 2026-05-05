@@ -259,7 +259,7 @@ curl -X POST http://localhost:3535/mcp/call \
 # List registered tools
 curl -X POST http://localhost:3535/mcp/call \
   -H "Content-Type: application/json" \
-  -d '{"method":"tools/call","params":{"name":"listClientToolsAndResources"}}'
+  -d '{"method":"tools/call","params":{"name":"fmt_list_client_tools_and_resources"}}'
 ```
 
 ## References

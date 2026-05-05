@@ -21,15 +21,15 @@ This rule provides AI agents with comprehensive instructions for creating, manag
 2. **Generate** → Create Dart code with MCPCallEntry
 3. **Integrate** → Add code to Flutter app
 4. **Register** → Execute addMcpTool() call
-5. **Discover** → Use listClientToolsAndResources
-6. **Execute** → Run via runClientTool
+5. **Discover** → Use fmt_list_client_tools_and_resources
+6. **Execute** → Run via fmt_client_tool
 
 ## AI Agent Workflow
 
 ### Phase 1: Discovery and Assessment
 
 ```
-1. listClientToolsAndResources → Check existing dynamic tools
+1. fmt_list_client_tools_and_resources → Check existing dynamic tools
 2. get_view_details → Understand current app state
 3. get_screenshots → Visual context for debugging needs
 ```
@@ -153,10 +153,10 @@ When direct integration isn't possible, provide:
 ### Phase 4: Activation and Verification
 
 ```
-1. hot_reload_flutter → Apply changes without restart
-2. listClientToolsAndResources → Verify tool registration
-3. runClientTool → Test tool execution
-4. get_view_errors → Check for any issues
+1. fmt_hot_reload_flutter → Apply changes without restart
+2. fmt_list_client_tools_and_resources → Verify tool registration
+3. fmt_client_tool → Test tool execution
+4. fmt_get_view_errors → Check for any issues
 ```
 
 ## Common Tool Patterns
@@ -317,7 +317,7 @@ handler: (params) {
 ### Debugging Commands
 
 ```
-1. listClientToolsAndResources → Verify registration
+1. fmt_list_client_tools_and_resources → Verify registration
 2. get_extension_rpcs → Check MCP toolkit availability
 3. get_vm → Verify VM service connection
 4. get_view_errors → Check for runtime errors
@@ -395,9 +395,9 @@ final liveStateResource = MCPCallEntry.resource(
 
 The MCP server automatically discovers and exposes dynamic tools through:
 
-- **listClientToolsAndResources**: Lists all registered tools/resources
-- **runClientTool**: Executes registered tools
-- **runClientResource**: Accesses registered resources
+- **fmt_list_client_tools_and_resources**: Lists all registered tools/resources
+- **fmt_client_tool**: Executes registered tools
+- **fmt_client_resource**: Accesses registered resources
 
 Tools are available immediately after registration without server restart.
 
@@ -474,8 +474,8 @@ void main() {
 }
 
 // 3. Usage via MCP
-// listClientToolsAndResources → verify 'inspect_network_requests' appears
-// runClientTool → {"toolName": "inspect_network_requests", "arguments": {"url": "api.example.com"}}
+// fmt_list_client_tools_and_resources → verify 'inspect_network_requests' appears
+// fmt_client_tool → {"toolName": "inspect_network_requests", "arguments": {"url": "api.example.com"}}
 ```
 
 This rule enables AI agents to create powerful, runtime-configurable debugging tools that integrate seamlessly with the Flutter Inspector MCP Server.

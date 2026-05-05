@@ -1,5 +1,4 @@
-import 'package:flutter_inspector_mcp_server/flutter_mcp_core.dart';
-import 'package:flutter_live_edit_toolkit/src/models/live_edit_models.dart';
+import 'package:flutter_mcp_toolkit_server/flutter_mcp_core.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -14,29 +13,16 @@ void main() {
       expect(names.contains('hot_reload_flutter'), isTrue);
       expect(names.contains('session_start'), isTrue);
       expect(names.contains('session_exec'), isTrue);
-      expect(names.contains('runClientTool'), isTrue);
+      expect(names.contains('fmt_client_tool'), isTrue);
       expect(names.contains('discover_debug_apps'), isTrue);
       expect(names.contains('inspect_widget_at_point'), isTrue);
       expect(names.contains('capture_ui_snapshot'), isTrue);
-      expect(names.contains(LiveEditMcpToolNames.startSession), isTrue);
-      expect(names.contains(LiveEditMcpToolNames.updateDraft), isTrue);
-      expect(names.contains(LiveEditMcpToolNames.resolveDraft), isTrue);
-      expect(names.contains(LiveEditMcpToolNames.applyDraft), isTrue);
-      expect(names.contains(LiveEditMcpToolNames.acceptResolution), isTrue);
     });
 
     test('marks high-signal and low-signal MCP exposure explicitly', () {
       expect(catalog.specFor('discover_debug_apps')!.mcpExposed, isTrue);
       expect(catalog.specFor('inspect_widget_at_point')!.mcpExposed, isTrue);
       expect(catalog.specFor('capture_ui_snapshot')!.mcpExposed, isTrue);
-      expect(
-        catalog.specFor(LiveEditMcpToolNames.startSession)!.mcpExposed,
-        isTrue,
-      );
-      expect(
-        catalog.specFor(LiveEditMcpToolNames.resolveDraft)!.mcpExposed,
-        isTrue,
-      );
       expect(catalog.specFor('get_active_ports')!.mcpExposed, isFalse);
       expect(catalog.specFor('dynamicRegistryStats')!.mcpExposed, isFalse);
     });
@@ -75,37 +61,7 @@ void main() {
       expect(capabilities.schemaVersion, equals('command-catalog/v1'));
       expect(capabilities.providers['summaryProviders'], isNotNull);
       expect(capabilities.features['serve'], isTrue);
-      expect(capabilities.features['liveEdit'], isTrue);
       expect(capabilities.commands, isNotEmpty);
-    });
-
-    test('capabilities reflect liveEdit flag', () {
-      final on = catalog.capabilities(
-        configuration: const CoreRuntimeConfiguration(
-          vmHost: 'localhost',
-          vmPort: 8181,
-          resourcesSupported: true,
-          imagesSupported: true,
-          dumpsSupported: false,
-          dynamicRegistrySupported: true,
-          saveImagesToFiles: false,
-        ),
-      );
-      expect(on.features['liveEdit'], isTrue);
-
-      final off = catalog.capabilities(
-        configuration: const CoreRuntimeConfiguration(
-          vmHost: 'localhost',
-          vmPort: 8181,
-          resourcesSupported: true,
-          imagesSupported: true,
-          dumpsSupported: false,
-          liveEditSupported: false,
-          dynamicRegistrySupported: true,
-          saveImagesToFiles: false,
-        ),
-      );
-      expect(off.features['liveEdit'], isFalse);
     });
 
     test('rejects unknown keys when command schema is strict by default', () {
@@ -140,91 +96,15 @@ void main() {
       expect((command as GetAppErrorsCommand).count, equals(5));
     });
 
-    test('live edit catalog names match flutter_live_edit_core contract', () {
-      final liveEditInCatalog = catalog.commands
-          .map((final c) => c.name)
-          .where((final n) => n.startsWith('live_edit_'))
-          .toSet();
-      expect(liveEditInCatalog, LiveEditMcpToolNames.allSorted.toSet());
-    });
-
-    test('builds live edit draft commands from structured payloads', () {
-      final command = catalog.buildCommand(LiveEditMcpToolNames.updateDraft, {
-        'sessionId': 'live-session',
-        'change': {
-          'nodeId': 'node-1',
-          'propertyId': 'width',
-          'targetValue': 140,
-          'previewMode': 'ghost',
-          'confidence': 0.9,
-        },
+    test('explain_errors parses allowExternalSummary alias', () {
+      final command = catalog.buildCommand('explain_errors', {
+        'allow-external-summary': true,
+        'summaryProvider': 'openai',
       });
-
-      expect(command, isA<LiveEditUpdateDraftCommand>());
-      final update = command as LiveEditUpdateDraftCommand;
-      expect(update.sessionId, 'live-session');
-      expect(update.change.nodeId, 'node-1');
-      expect(update.change.propertyId, 'width');
-      expect(update.change.targetValue, 140);
-      expect(update.change.previewMode, LiveEditPreviewMode.ghost);
-    });
-
-    test('live edit select-at-point keeps deepest policy when omitted', () {
-      final command = catalog.buildCommand(LiveEditMcpToolNames.selectAtPoint, {
-        'sessionId': 'live-session',
-        'x': 120,
-        'y': 240,
-      });
-
-      expect(command, isA<LiveEditSelectAtPointCommand>());
-      final select = command as LiveEditSelectAtPointCommand;
-      expect(select.selectionPolicy, LiveEditSelectionPolicy.deepest);
-    });
-
-    test(
-      'builds live edit inference config payloads and normalizes middle',
-      () {
-        final prepare = catalog.buildCommand(
-          LiveEditMcpToolNames.prepareSession,
-          {
-            'sessionId': 'live-session',
-            'backendId': 'codex_exec',
-            'inferenceConfig': {
-              'model': 'GPT-5.3-Codex',
-              'reasoningEffort': 'middle',
-            },
-          },
-        );
-
-        expect(prepare, isA<LiveEditPrepareSessionCommand>());
-        final config =
-            (prepare as LiveEditPrepareSessionCommand).inferenceConfig;
-        expect(config?.model, 'gpt-5.3-codex');
-        expect(config?.reasoningEffort, 'medium');
-      },
-    );
-
-    test('exposes inferenceConfig in live edit command schemas', () {
-      final prepareSchema =
-          catalog
-                  .specFor(LiveEditMcpToolNames.prepareSession)!
-                  .inputSchema['properties']!
-              as Map<String, Object?>;
-      expect(prepareSchema.containsKey('inferenceConfig'), isTrue);
-
-      final resolveSchema =
-          catalog
-                  .specFor(LiveEditMcpToolNames.resolveDraft)!
-                  .inputSchema['properties']!
-              as Map<String, Object?>;
-      expect(resolveSchema.containsKey('inferenceConfig'), isTrue);
-
-      final applySchema =
-          catalog
-                  .specFor(LiveEditMcpToolNames.applyDraft)!
-                  .inputSchema['properties']!
-              as Map<String, Object?>;
-      expect(applySchema.containsKey('inferenceConfig'), isTrue);
+      expect(command, isA<ExplainErrorsCommand>());
+      final explain = command as ExplainErrorsCommand;
+      expect(explain.allowExternalSummary, isTrue);
+      expect(explain.summaryProvider, equals('openai'));
     });
 
     test('parses screenshot permission policy fields', () {
@@ -265,6 +145,76 @@ void main() {
           catalog.specFor('connect')!.inputSchema['properties']!
               as Map<String, Object?>;
       expect(connectSchema.containsKey('connection'), isFalse);
+    });
+
+    test('wait_for command is registered with predicate + timeout schema', () {
+      final spec = catalog.specFor('wait_for');
+      expect(spec, isNotNull);
+      expect(spec!.mcpExposed, isTrue);
+
+      final props = spec.inputSchema['properties']! as Map<String, Object?>;
+      expect(props.containsKey('predicate'), isTrue);
+      expect(props.containsKey('timeoutMs'), isTrue);
+
+      final cmd = catalog.buildCommand('wait_for', {
+        'predicate': {'kind': 'time', 'ms': 100},
+        'timeoutMs': 1000,
+      });
+      expect(cmd, isA<WaitForCommand>());
+      final wc = cmd as WaitForCommand;
+      expect(wc.predicate['kind'], 'time');
+      expect(wc.timeoutMs, 1000);
+    });
+
+    test('press_key, handle_dialog, navigate commands are registered', () {
+      for (final name in ['press_key', 'handle_dialog', 'navigate']) {
+        final spec = catalog.specFor(name);
+        expect(spec, isNotNull, reason: '$name spec missing');
+        expect(spec!.mcpExposed, isTrue, reason: '$name not mcpExposed');
+      }
+
+      final pk =
+          catalog.buildCommand('press_key', {'key': 'Enter', 'shift': true})
+              as PressKeyCommand;
+      expect(pk.key, 'Enter');
+      expect(pk.shift, isTrue);
+
+      final hd =
+          catalog.buildCommand('handle_dialog', {'action': 'dismiss'})
+              as HandleDialogCommand;
+      expect(hd.action, 'dismiss');
+
+      final nv =
+          catalog.buildCommand('navigate', {
+                'action': 'push',
+                'route': '/settings',
+              })
+              as NavigateCommand;
+      expect(nv.action, 'push');
+      expect(nv.route, '/settings');
+    });
+
+    test('fill_form, hover commands are registered', () {
+      for (final name in ['fill_form', 'hover']) {
+        final spec = catalog.specFor(name);
+        expect(spec, isNotNull, reason: '$name spec missing');
+        expect(spec!.mcpExposed, isTrue, reason: '$name not mcpExposed');
+      }
+
+      final ff =
+          catalog.buildCommand('fill_form', {
+                'fields': <Map<String, Object?>>[
+                  {'ref': 's_0', 'text': 'alice'},
+                  {'ref': 's_1', 'text': 'bob'},
+                ],
+              })
+              as FillFormCommand;
+      expect(ff.fields, hasLength(2));
+      expect(ff.fields.first['ref'], 's_0');
+      expect(ff.fields.first['text'], 'alice');
+
+      final hv = catalog.buildCommand('hover', {'ref': 's_3'}) as HoverCommand;
+      expect(hv.ref, 's_3');
     });
   });
 }

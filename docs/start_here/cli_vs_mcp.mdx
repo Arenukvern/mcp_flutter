@@ -2,10 +2,14 @@
 
 Both interfaces are valid and both execute the same core command catalog.
 
-- `flutter_mcp_cli`: direct command-line interface for scripts, CI, snapshots, and deterministic automation.
-- `flutter_inspector_mcp` (MCP server): assistant-facing interface over MCP for Codex/Claude/Cursor workflows.
+- `flutter-mcp-toolkit`: direct command-line interface for scripts, CI, snapshots, and deterministic automation.
+- `flutter-mcp-toolkit-server` (MCP server): assistant-facing interface over MCP for Codex/Claude/Cursor workflows.
 
 Recommended default: start with CLI, then layer MCP client workflows on top.
+
+> If you're not sure whether to use CLI or MCP mode, run
+> `flutter-mcp-toolkit init <your-agent>` and let it auto-detect. Override
+> with `--mode mcp` or `--mode cli` if needed.
 
 ## Why We Have Both
 
@@ -18,7 +22,7 @@ Internally they share the same execution core, so behavior and command semantics
 
 ## Quick Difference Table
 
-| Topic | CLI (`flutter_mcp_cli`) | MCP Server (`flutter_inspector_mcp`) |
+| Topic | CLI (`flutter-mcp-toolkit`) | MCP Server (`flutter-mcp-toolkit-server`) |
 | --- | --- | --- |
 | Primary user | developers, CI, automation scripts | AI assistants and agent chat clients |
 | Interface | terminal commands / JSON args | MCP tools/resources via client |
@@ -40,7 +44,7 @@ Use CLI when you need:
 Example:
 
 ```bash
-dart run mcp_server_dart/bin/flutter_mcp_cli.dart exec --name get_vm --args '{}'
+dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart exec --name get_vm --args '{}'
 ```
 
 Need command patterns you can copy quickly?
@@ -54,11 +58,12 @@ Use MCP server when you need:
 - tool invocation from chat/editor agents
 - mixed workflows with screenshots, app errors, and dynamic tools during conversation
 
-Example (conceptual):
+Example (conceptual). MCP tool names carry the `fmt_` capability prefix
+(v3.0.0+); the CLI catalog uses unprefixed names.
 
 ```json
 {
-  "name": "get_app_errors",
+  "name": "fmt_get_app_errors",
   "arguments": {}
 }
 ```

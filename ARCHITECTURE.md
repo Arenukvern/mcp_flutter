@@ -67,7 +67,7 @@ This unified architecture supports:
 
 ### 2. MCP Toolkit Layer (In-App Service Extensions)
 
-**Location**: `mcp_toolkit/mcp_toolkit/` (as a Dart package integrated into the Flutter Application)
+**Location**: `mcp_toolkit/` (as a Dart package integrated into the Flutter Application)
 **Purpose**: Exposes Flutter-specific functionalities to external tools (like AI assistants via the MCP/Forwarding server) through custom Dart VM Service extensions.
 **Key Features**:
 
@@ -81,14 +81,15 @@ This unified architecture supports:
 ### 3. MCP Server Layer (Dart-based)
 
 **Location**: `mcp_server_dart/`
-**Purpose**: Protocol translation, request handling, and dynamic registry management
+**Purpose**: Protocol translation, request handling, capability registration, and dynamic registry management
 **Key Features**:
 
 - JSON-RPC to VM Service Protocol translation
 - Request routing and validation
 - Error handling and logging
 - Connection management
-- Dynamic Registry: Manages runtime-registered tools and resources
+- **Capability kernel** (v3.0.0+): the server hosts an `McpHost` registry into which `Capability` instances register prefixed tools (e.g. `fmt_tap_widget`). The host wires each registration to dart_mcp's `ToolsSupport` via a `DartMcpDispatchBridge`. The legacy unprefixed registration mixin is gated off by default and reachable only with `--no-use-capability-kernel`. See `mcp_capability_kernel/` (contracts) and `mcp_capability_core/` (the `fmt` capability shipping all 27 + 4-dump tools).
+- Dynamic Registry: Manages runtime-registered tools and resources (forwarded from the running Flutter app via `addMcpTool`). The dispatch trio `fmt_list_client_tools_and_resources` / `fmt_client_tool` / `fmt_client_resource` is host machinery registered with the same `fmt_` names as the rest of the MCP tool surface.
 - Event-Driven Discovery: Real-time tool detection via DTD events
 
 ### 4. AI Assistant Integration Layer
@@ -135,21 +136,22 @@ This unified architecture supports:
 2. **Discovery**:
 
    ```
-   AI Assistant -> listClientToolsAndResources -> MCP Server Dart -> Dynamic Registry
+   AI Assistant -> fmt_list_client_tools_and_resources -> MCP Server Dart -> Dynamic Registry
    ```
 
 3. **Execution**:
    ```
-   AI Assistant -> runClientTool -> MCP Server Dart -> Dynamic Registry -> Flutter App
+   AI Assistant -> fmt_client_tool -> MCP Server Dart -> Dynamic Registry -> Flutter App
    ```
 
 ## Live Edit Overlay Architecture
 
-The live edit toolkit uses a single editing domain in the main app:
-
-- **appScene**: Hit-testing is rooted in the real app content subtree. Selection, hover, and candidate traversal operate on app widgets. The overlay draws the selection bubble and inspector panel above the app.
-
-To iteratively improve the tooling UI (bubble, panel, chips), run the **live_edit_tooling_ui_kit** app: it renders the same tool layer with prefilled data so you can connect live-edit (and MCP) and refine those widgets in place.
+> **Removed in v3.0.0.** The live-edit overlay package and its
+> `live_edit_tooling_ui_kit` playground were excised from the v3.0.0
+> release scope (see `todo/v3_release_audit_2026-04-28.md`). Design notes
+> for re-integration live in `todo/selection_state_machine.md` and
+> `todo/tool_surface_inversion.md` (live-edit references). This section
+> is preserved as a placeholder for the planned v3.1.0 reintroduction.
 
 ## Protocol Details
 
@@ -281,7 +283,7 @@ Flutter App Tool Registration -> DTD Event -> Discovery Service -> Registry Upda
 1. **Registration**: Flutter app calls `addEntries()`
 2. **Discovery**: DTD event triggers server-side discovery
 3. **Availability**: Tool becomes available via MCP protocol
-4. **Execution**: AI assistant can call tool via `runClientTool`
+4. **Execution**: AI assistant can call tool via `fmt_client_tool`
 5. **Cleanup**: Hot reload or app restart clears registry
 
 ## Troubleshooting
@@ -305,7 +307,7 @@ Flutter App Tool Registration -> DTD Event -> Discovery Service -> Registry Upda
    - Ensure `mcp_toolkit` is properly initialized
    - Check DTD event streaming
    - Verify tool schema compliance
-   - Use `listClientToolsAndResources` for debugging
+   - Use `fmt_list_client_tools_and_resources` for debugging
 
 ## Further Reading
 

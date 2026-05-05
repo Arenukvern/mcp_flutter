@@ -1,8 +1,8 @@
 // Copyright (c) 2025, Flutter Inspector MCP Server authors.
 // Licensed under the MIT License.
 
-import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_server/base_server.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/vm_connections/core_port_scanner.dart';
+import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/base_server.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/vm_connections/core_port_scanner.dart';
 
 /// Compatibility wrapper around the shared core port scanner.
 class PortScanner {

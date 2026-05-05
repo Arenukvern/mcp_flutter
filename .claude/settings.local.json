@@ -1,23 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "Bash(sed -i '' 's/          selection: LiveEditSelection\\(/          primarySelection: LiveEditSelection\\(/g' /Users/antonio/mcp/cline/mcp_flutter/flutter_live_edit/flutter_live_edit_toolkit/test/live_edit_agent_service_test.dart)",
-      "Bash(sed -i '' 's/            selection: LiveEditSelection\\(/            primarySelection: LiveEditSelection\\(/g' /Users/antonio/mcp/cline/mcp_flutter/flutter_live_edit/flutter_live_edit_toolkit/test/live_edit_agent_service_test.dart)",
-      "mcp__Claude_Preview__preview_start",
-      "Bash(ps -p 91680 -o pid,etime,pcpu)",
-      "Bash(ps -p 91818 -o pid,etime,pcpu)",
-      "Bash(kill 91818 91680)",
-      "Bash(ps -p 26075 -o pid,etime,pcpu)",
-      "Bash(while pgrep:*)",
-      "Bash(do sleep:*)",
-      "Bash(done)",
-      "Read(//private/tmp/**)",
-      "Bash(flutter test:*)",
-      "Bash(pkill -f flutter_tester)",
-      "Bash(pkill -f \"flutter test\")",
-      "Bash(ps -p 69705 -o pid,etime,pcpu)",
-      "Bash(while ps:*)",
-      "Bash(xargs -I{} ps -p {} -o pid,etime,pcpu)"
+      "Bash(gitnexus analyze *)",
+      "mcp__gitnexus__detect_changes",
+      "mcp__gitnexus__query",
+      "mcp__gitnexus__context",
+      "mcp__gitnexus__impact",
+      "mcp__gitnexus__rename"
     ]
   }
 }

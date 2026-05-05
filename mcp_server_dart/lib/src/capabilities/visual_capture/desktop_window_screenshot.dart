@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter_inspector_mcp_server/src/capabilities/visual_capture/visual_capture.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/types/core_types.dart';
+import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/visual_capture.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/types/core_types.dart';
 import 'package:path/path.dart' as path;
 
 part 'desktop_window_capture_swift.dart';

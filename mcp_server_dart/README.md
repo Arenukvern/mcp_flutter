@@ -1,12 +1,16 @@
 # MCP Toolkit Server (Dart)
 
+## Migrating from v2.x
+
+Tool names on MCP are prefixed with **`fmt_`**, binaries and `mcpServers` keys were renamed — see **[Migrating from v2.x to v3.0](../docs/start_here/migration_v2_to_v3.mdx)**.
+
 ## Architecture
 
 This project now uses a shared core execution layer:
 
-1. `flutter_mcp_cli` is the canonical command surface (connect, inspect, execute, diagnostics).
-2. `flutter_inspector_mcp_server` is a thin MCP protocol adapter that maps MCP tool/resource calls to the same core executor.
-3. Existing MCP tool/resource names remain stable. VM-dependent tool inputs now use a strict nested `connection` object for target selection.
+1. `flutter-mcp-toolkit` is the canonical command surface (connect, inspect, execute, diagnostics).
+2. `flutter-mcp-toolkit-server` is a thin MCP protocol adapter that maps MCP tool/resource calls to the same core executor.
+3. **MCP `tools/list` names** use the **`fmt_`** capability prefix; **CLI `exec --name`** uses bare catalog names. Resource URIs are unchanged.
 
 The shared core module is available as `flutter_mcp_core` inside this package.
 
@@ -16,11 +20,11 @@ Use this sequence first on macOS:
 
 1. Add `mcp_toolkit` to the app and call `MCPToolkitBinding.instance.bootstrapFlutter(...)`.
 2. Launch the app in debug mode.
-3. Run `flutter_mcp_cli validate-runtime`.
+3. Run `flutter-mcp-toolkit validate-runtime`.
 4. Query dynamic entries in this order:
-   `listClientToolsAndResources`,
-   `runClientResource`,
-   `runClientTool`.
+   `fmt_list_client_tools_and_resources`,
+   `fmt_client_tool`,
+   `fmt_client_resource`.
 
 Treat `exec` as expert mode. `validate-runtime` is the default first-pass proof command.
 
@@ -43,8 +47,19 @@ Safe-write flags for write-producing commands:
 - `snapshot create`: `--check --diff --backup --no-overwrite`
 - `bundle create`: `--check --diff --backup --no-overwrite`
 
-`exec` targets commands in the shared `CommandCatalog`:
-`connect`, `session_start`, `session_exec`, `session_end`, `diagnose`, `watch`, `explain_errors`, `status`, `discover_debug_apps`, `get_vm`, `get_extension_rpcs`, `hot_reload_flutter`, `hot_restart_flutter`, `get_active_ports`, `get_app_errors`, `get_screenshots`, `get_view_details`, `inspect_widget_at_point`, `capture_ui_snapshot`, `debug_dump_layer_tree`, `debug_dump_semantics_tree`, `debug_dump_render_tree`, `debug_dump_focus_tree`, `listClientToolsAndResources`, `runClientTool`, `runClientResource`, `dynamicRegistryStats`.
+`exec` targets commands in the shared `CommandCatalog` (these are the
+unprefixed catalog names; the CLI is not subject to the MCP capability
+prefix):
+`connect`, `session_start`, `session_exec`, `session_end`, `diagnose`, `watch`, `explain_errors`, `status`, `discover_debug_apps`, `get_vm`, `get_extension_rpcs`, `hot_reload_flutter`, `hot_restart_flutter`, `get_active_ports`, `get_app_errors`, `get_screenshots`, `get_view_details`, `inspect_widget_at_point`, `capture_ui_snapshot`, `debug_dump_layer_tree`, `debug_dump_semantics_tree`, `debug_dump_render_tree`, `debug_dump_focus_tree`, `fmt_list_client_tools_and_resources`, `fmt_client_tool`, `fmt_client_resource`, `dynamicRegistryStats`, `semantic_snapshot`, `tap_widget`, `long_press`, `enter_text`, `scroll`, `swipe`, `drag`, `hot_reload_and_capture`, `evaluate_dart_expression`, `get_recent_logs`.
+
+> **MCP names**. When invoked via MCP `tools/call`, every catalog tool above
+> surfaces under the `fmt_` capability prefix (e.g. `fmt_tap_widget`,
+> `fmt_hot_reload_and_capture`). The dynamic-registry host trio
+> (`fmt_list_client_tools_and_resources`, `fmt_client_tool`, `fmt_client_resource`) and
+> `dynamicRegistryStats` stay unprefixed in MCP. CLI examples below use the
+> catalog name unchanged.
+
+Interaction tools (catalog names: `semantic_snapshot` → `tap_widget` / `enter_text` / `scroll` / `swipe` / `long_press` / `drag`) follow a Playwright-style ref model: take a snapshot, then pass `ref: "s_N"` (and optional `snapshotId` for staleness detection) into the interaction tool. `hot_reload_and_capture` fuses reload + screenshot + fresh snapshot + errors. `evaluate_dart_expression` runs an ad-hoc Dart expression against the app's root library. See [docs/core/built_in_tools.mdx](../docs/core/built_in_tools.mdx) for the full surface and a golden path.
 
 CLI runs the same shared command catalog/executor as MCP. Preferred debugging path:
 `discover_debug_apps` -> `capture_ui_snapshot` -> `inspect_widget_at_point`.
@@ -54,47 +69,51 @@ CLI runs the same shared command catalog/executor as MCP. Preferred debugging pa
 
 ```bash
 # introspection
-dart run bin/flutter_mcp_cli.dart schema
-dart run bin/flutter_mcp_cli.dart capabilities
+dart run bin/flutter_mcp_toolkit.dart schema
+dart run bin/flutter_mcp_toolkit.dart capabilities
 
 # one-shot execution (machine envelope)
-dart run bin/flutter_mcp_cli.dart exec --name status --args '{}'
-dart run bin/flutter_mcp_cli.dart exec --name get_vm --args '{}'
-dart run bin/flutter_mcp_cli.dart exec --name get_vm --args '{"connection":{"targetId":"ws://127.0.0.1:8181/<token>/ws"}}'
-dart run bin/flutter_mcp_cli.dart exec --name discover_debug_apps --args '{}'
-dart run bin/flutter_mcp_cli.dart exec --name capture_ui_snapshot --args '{"connection":{"targetId":"ws://127.0.0.1:8181/<token>/ws"}}'
-dart run bin/flutter_mcp_cli.dart exec --name inspect_widget_at_point --args '{"x":120,"y":220,"connection":{"targetId":"ws://127.0.0.1:8181/<token>/ws"}}'
+dart run bin/flutter_mcp_toolkit.dart exec --name status --args '{}'
+dart run bin/flutter_mcp_toolkit.dart exec --name get_vm --args '{}'
+dart run bin/flutter_mcp_toolkit.dart exec --name get_vm --args '{"connection":{"targetId":"ws://127.0.0.1:8181/<token>/ws"}}'
+dart run bin/flutter_mcp_toolkit.dart exec --name discover_debug_apps --args '{}'
+dart run bin/flutter_mcp_toolkit.dart exec --name capture_ui_snapshot --args '{"connection":{"targetId":"ws://127.0.0.1:8181/<token>/ws"}}'
+dart run bin/flutter_mcp_toolkit.dart exec --name inspect_widget_at_point --args '{"x":120,"y":220,"connection":{"targetId":"ws://127.0.0.1:8181/<token>/ws"}}'
 
 # session lifecycle
-dart run bin/flutter_mcp_cli.dart exec --name session_start --args '{"mode":"uri","uri":"ws://127.0.0.1:8181/<token>/ws"}'
-dart run bin/flutter_mcp_cli.dart exec --name session_exec --args '{"command":"get_app_errors","arguments":{"count":4}}'
-dart run bin/flutter_mcp_cli.dart exec --name session_end --args '{}'
+dart run bin/flutter_mcp_toolkit.dart exec --name session_start --args '{"mode":"uri","uri":"ws://127.0.0.1:8181/<token>/ws"}'
+dart run bin/flutter_mcp_toolkit.dart exec --name session_exec --args '{"command":"get_app_errors","arguments":{"count":4}}'
+dart run bin/flutter_mcp_toolkit.dart exec --name session_end --args '{}'
 
 # reproducible artifacts
-dart run bin/flutter_mcp_cli.dart snapshot create --name baseline --args '{"commands":[{"name":"status","args":{}}]}' --check --diff
-dart run bin/flutter_mcp_cli.dart snapshot diff --from baseline --to after_fix
-dart run bin/flutter_mcp_cli.dart bundle create --from-snapshot baseline --backup
+dart run bin/flutter_mcp_toolkit.dart snapshot create --name baseline --args '{"commands":[{"name":"status","args":{}}]}' --check --diff
+dart run bin/flutter_mcp_toolkit.dart snapshot diff --from baseline --to after_fix
+dart run bin/flutter_mcp_toolkit.dart bundle create --from-snapshot baseline --backup
 
 # environment preflight
-dart run bin/flutter_mcp_cli.dart doctor --json
-dart run bin/flutter_mcp_cli.dart permissions status
-dart run bin/flutter_mcp_cli.dart permissions request
-dart run bin/flutter_mcp_cli.dart permissions open-settings
-dart run bin/flutter_mcp_cli.dart exec --name get_extension_rpcs --args '{}'
+dart run bin/flutter_mcp_toolkit.dart doctor --json
+dart run bin/flutter_mcp_toolkit.dart permissions status
+dart run bin/flutter_mcp_toolkit.dart permissions request
+dart run bin/flutter_mcp_toolkit.dart permissions open-settings
+dart run bin/flutter_mcp_toolkit.dart exec --name get_extension_rpcs --args '{}'
 
 # explicit capture policy/mode
-dart run bin/flutter_mcp_cli.dart exec --name get_screenshots --args '{"mode":"desktop_window","permissionPolicy":"auto_request_once"}'
-dart run bin/flutter_mcp_cli.dart exec --name capture_ui_snapshot --args '{"screenshotMode":"auto","permissionPolicy":"auto_request_once"}'
+dart run bin/flutter_mcp_toolkit.dart exec --name get_screenshots --args '{"mode":"desktop_window","permissionPolicy":"auto_request_once"}'
+dart run bin/flutter_mcp_toolkit.dart exec --name capture_ui_snapshot --args '{"screenshotMode":"auto","permissionPolicy":"auto_request_once"}'
 
 # one-command runtime validation (after app launch)
-dart run bin/flutter_mcp_cli.dart --save-images --output-dir .flutter_mcp/app validate-runtime \
+dart run bin/flutter_mcp_toolkit.dart --save-images --output-dir .flutter_mcp/app validate-runtime \
   --target ws://127.0.0.1:8181/<token>/ws \
   --timeout-ms 10000 \
   --post-reload-delay-ms 500 \
   --after-reload
 
+# same, using global VM URI (equivalent to --target when only one is passed)
+dart run bin/flutter_mcp_toolkit.dart --vm-service-uri ws://127.0.0.1:8181/<token>/ws validate-runtime \
+  --timeout-ms 10000
+
 # optional: install bundled skill during runtime validation
-dart run bin/flutter_mcp_cli.dart validate-runtime \
+dart run bin/flutter_mcp_toolkit.dart validate-runtime \
   --target ws://127.0.0.1:8181/<token>/ws \
   --install-skill
 ```
@@ -106,12 +125,13 @@ CLI runtime gate for app inspection:
 - If screenshots are blank, ensure app window is visible/foreground and retry `get_screenshots`.
 - If first explicit-URI connect times out, retry once and validate with `doctor --json --target <ws_uri> --timeout-ms 10000`.
 - When `--output-dir` is set, `validate-runtime` mirrors its JSON envelope to `<output-dir>/validate-runtime.json` and screenshot files are written under `<output-dir>/.mcp_screenshots/`.
+- `validate-runtime` tries host `desktop_window` first when `auto` selects it; if that screenshot step fails with a retryable `get_screenshots_failed`, it retries once with `flutter_layer`. Check `data.summary.captureFallbackUsed` in the JSON envelope.
 
 ## Visual Capture Permissions
 
 - `doctor` stays read-only. It now reports `visual_capture_backend`, `visual_capture_permission`, `visual_capture_truth_mode`, and `app_permission_bridge`.
 - Interactive CLI capture flows default to `auto_request_once` for `exec get_screenshots`, `exec capture_ui_snapshot`, and `validate-runtime`. Raw command schemas still default to `check_only`.
-- macOS truthful capture is `desktop_window`. Screen Recording permission belongs to the host process running `flutter_mcp_cli`, not the Flutter app. Use `permissions request` for the native prompt and `permissions open-settings` after a denial.
+- macOS truthful capture is `desktop_window`. Screen Recording permission belongs to the host process running `flutter-mcp-toolkit`, not the Flutter app. Use `permissions request` for the native prompt and `permissions open-settings` after a denial.
 - Web has no OS permission flow. `flutter_layer` is the supported path, `desktop_window` is unsupported, and `auto` resolves to `flutter_layer`.
 - App-owned capture targets such as iOS/Android/Linux must have a reachable VM
   target selected before `permissions` or `doctor` can verify bridge-backed
@@ -121,10 +141,10 @@ CLI runtime gate for app inspection:
 
 Troubleshooting:
 
-- If macOS capture is denied, rerun `flutter_mcp_cli permissions status` first. If status is still `denied`, open System Settings from the CLI and grant Screen Recording to the terminal or client process you are using.
+- If macOS capture is denied, rerun `flutter-mcp-toolkit permissions status` first. If status is still `denied`, open System Settings from the CLI and grant Screen Recording to the terminal or client process you are using.
 - If `doctor --json` shows `visual_capture_truth_mode=flutter_layer` on macOS, you are not getting native window pixels yet.
 - If web capture fails with `desktop_window`, switch to `flutter_layer` or keep `auto`.
-- If post-reload capture fails once on macOS desktop-window mode, that is usually a host capture race rather than an app failure. `validate-runtime` retries those failures before returning red.
+- If post-reload capture fails once on macOS desktop-window mode, that is usually a host capture race rather than an app failure. `validate-runtime` retries those failures before returning red, and may also retry with `flutter_layer` after a failed `desktop_window` screenshot.
 
 Failure matrix:
 
@@ -139,7 +159,7 @@ Failure matrix:
 - Typed arguments are strict. String-encoded booleans/objects/lists/integers now fail validation.
 - For write-producing automation, run with `--check --diff` before actual writes.
 - Handle `write_blocked` explicitly when using `--no-overwrite`.
-- Add `flutter_mcp_cli doctor --json` as preflight before VM-dependent execution.
+- Add `flutter-mcp-toolkit doctor --json` as preflight before VM-dependent execution.
 
 ### Machine Envelope
 
@@ -234,7 +254,7 @@ Selection-required errors are returned as structured JSON so agents can retry im
   },
   "recovery": {
     "summary": "Select an explicit VM target and retry the command.",
-    "fix_command": "flutter_mcp_cli exec --name discover_debug_apps --args '{}'"
+    "fix_command": "flutter-mcp-toolkit exec --name discover_debug_apps --args '{}'"
   }
 }
 ```
@@ -270,7 +290,7 @@ Notes:
 - If `targetId` lookup misses but URI is a full tokenized VM path (`/<token>/ws`), server attempts direct connect fallback.
 - CLI `exec --args` and daemon `command/execute` / `watch/start` accept the same optional nested `connection` object.
 - `connect_debug_app` accepts the same `connection` shape.
-- Dynamic registry tools (`listClientToolsAndResources`, `runClientTool`, `runClientResource`) accept the same optional `connection`.
+- Dynamic registry tools (`fmt_list_client_tools_and_resources`, `fmt_client_tool`, `fmt_client_resource`) accept the same optional `connection`.
 - Resource reads also support query targeting: `targetId`, `mode`, `host`, `port`, `uri`, `forceReconnect`.
 - Flat top-level connection aliases like `host`/`port`/`uri` in tool arguments are intentionally rejected by strict schemas.
 - For `connect` and `session_start`, native selector args (`mode`, `targetId`, `host`, `port`, `uri`, `force`) cannot be mixed with nested `connection`.
@@ -372,32 +392,34 @@ For developers who want to contribute to the project or run the latest version d
 5. **Start your Flutter app in debug mode**
 
    ```bash
-   flutter run --debug --host-vmservice-port=8182 --dds-port=8181 --enable-vm-service
+   flutter run --debug --machine --host-vmservice-port=8181 -d macos
    ```
 
-   Then prefer explicit URI targeting with exact `app.debugPort.wsUri` in `arguments.connection.uri`.
+   Adjust `-d` for your device. Prefer the exact **`app.debugPort.wsUri`** from machine output in `arguments.connection.uri` or `connection.targetId`.
 
-6. **🛠️ Add Flutter Inspector to your AI tool**
+6. **🛠️ Add Flutter MCP Toolkit to your AI client**
 
-   # ⚠️ Resources Limitations ⚠️
-   - Current server has problems with resources. If you see no resources in your AI tool, try to pass `--no-resources` as an argument.
+   Use registry key **`flutter-mcp-toolkit`** under `mcpServers` (canonical). The key **`flutter-inspector`** is **legacy** but still accepted if your config predates the rename. That string is **only** a `mcpServers` id — it is **not** the Claude Code subagent name. The bundled runtime subagent is **`flutter-mcp-toolkit-runtime`** (`plugin/agents/flutter-mcp-toolkit-runtime.md`).
+
+   Recommended server args: `--resources`, `--images`, `--dynamics` (defaults are on for resources/images; `--dynamics` enables the dynamic registry).
 
    **Note for Local Development (GitHub Install):**
 
-   If you installed the Flutter Inspector from GitHub and built it locally, you need to adjust the paths in the AI tool configurations to point to your local `build/flutter_inspector_mcp` file. Refer to the "Installation from GitHub" section for instructions on cloning and building the project.
+   If you installed from GitHub and built locally, point `command` at `mcp_server_dart/build/flutter-mcp-toolkit-server`. See **Installation from GitHub** above.
 
    #### Cline Setup
    1. Add to your `.cline/config.json`:
       ```json
       {
         "mcpServers": {
-          "flutter-inspector": {
-            "command": "/path/to/your/cloned/mcp_flutter/mcp_server_dart/build/flutter_inspector_mcp",
+          "flutter-mcp-toolkit": {
+            "command": "/path/to/your/cloned/mcp_flutter/mcp_server_dart/build/flutter-mcp-toolkit-server",
             "args": [
               "--dart-vm-host=localhost",
               "--dart-vm-port=8181",
-              "--no-resources",
-              "--images"
+              "--resources",
+              "--images",
+              "--dynamics"
             ],
             "env": {},
             "disabled": false,
@@ -407,19 +429,19 @@ For developers who want to contribute to the project or run the latest version d
       }
       ```
    2. Restart Cline
-   3. The Flutter inspector will be automatically available in your conversations
-   4. You're ready! Try commands like "Please get screenshot of my app"
+   3. The Flutter MCP toolkit tools will be available in your conversations
+   4. Try: "Please get a screenshot of my app" (MCP tools use the `fmt_` prefix, e.g. `fmt_get_screenshots`)
 
    #### Cursor Setup
 
    ##### Badge
 
-   You can use this badge to add Flutter Inspector to Cursor:
+   Install the server (edit the path in Cursor after clicking):
 
-   [![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/install-mcp?name=flutter-inspector&config=eyJjb21tYW5kIjoiL3BhdGgvdG8veW91ci9jbG9uZWQvbWNwX2ZsdXR0ZXIvbWNwX3NlcnZlcl9kYXJ0L2J1aWxkL2ZsdXR0ZXJfaW5zcGVjdG9yX21jcCAtLWRhcnQtdm0taG9zdD1sb2NhbGhvc3QgLS1kYXJ0LXZtLXBvcnQ9ODE4MSAtLW5vLXJlc291cmNlcyAtLWltYWdlcyIsImVudiI6e30sImRpc2FibGVkIjpmYWxzZX0%3D)
-   <!-- to update use: https://docs.cursor.com/deeplinks#markdown -->
+   [![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/install-mcp?name=flutter-mcp-toolkit&config=eyJjb21tYW5kIjoiL3BhdGgvdG8veW91ci9jbG9uZWQvbWNwX2ZsdXR0ZXIvbWNwX3NlcnZlcl9kYXJ0L2J1aWxkL2ZsdXR0ZXItbWNwLXRvb2xraXQtc2VydmVyIiwiYXJncyI6WyItLWRhcnQtdm0taG9zdD1sb2NhbGhvc3QiLCItLWRhcnQtdm0tcG9ydD04MTgxIiwiLS1yZXNvdXJjZXMiLCItLWltYWdlcyIsIi0tZHluYW1pY3MiXSwiZW52Ijp7fSwiZGlzYWJsZWQiOmZhbHNlfQ%3D%3D)
+   <!-- Regenerate: https://docs.cursor.com/deeplinks#markdown — config must reference flutter-mcp-toolkit-server -->
 
-   Note: fix path after installation.
+   Note: fix `command` path after installation.
 
    ##### Manual Setup
    1. Open Cursor's settings
@@ -429,13 +451,14 @@ For developers who want to contribute to the project or run the latest version d
       ```json
       {
         "mcpServers": {
-          "flutter-inspector": {
-            "command": "/path/to/your/cloned/mcp_flutter/mcp_server_dart/build/flutter_inspector_mcp",
+          "flutter-mcp-toolkit": {
+            "command": "/path/to/your/cloned/mcp_flutter/mcp_server_dart/build/flutter-mcp-toolkit-server",
             "args": [
               "--dart-vm-host=localhost",
               "--dart-vm-port=8181",
-              "--no-resources",
-              "--images"
+              "--resources",
+              "--images",
+              "--dynamics"
             ],
             "env": {},
             "disabled": false,
@@ -447,20 +470,21 @@ For developers who want to contribute to the project or run the latest version d
 
    4. Restart Cursor
    5. Open Agent Panel (cmd + L on macOS)
-   6. You're ready! Try commands like "Please get screenshot of my app"
+   6. Tool calls use **`fmt_*`** names on the MCP wire (e.g. `fmt_capture_ui_snapshot`).
 
    #### Claude Setup
    1. Add to your Claude configuration file:
       ```json
       {
         "mcpServers": {
-          "flutter-inspector": {
-            "command": "/path/to/your/cloned/mcp_flutter/mcp_server_dart/build/flutter_inspector_mcp",
+          "flutter-mcp-toolkit": {
+            "command": "/path/to/your/cloned/mcp_flutter/mcp_server_dart/build/flutter-mcp-toolkit-server",
             "args": [
               "--dart-vm-host=localhost",
               "--dart-vm-port=8181",
               "--resources",
-              "--images"
+              "--images",
+              "--dynamics"
             ],
             "env": {},
             "disabled": false,
@@ -470,15 +494,15 @@ For developers who want to contribute to the project or run the latest version d
       }
       ```
    2. Restart Claude
-   3. The Flutter inspector tools will be automatically available
-   4. You're ready! Try commands like "Please get screenshot of my app"
+   3. The Flutter MCP toolkit tools will be available
+   4. Try: "Please get screenshot of my app"
 
 # Development
 
 ### Command Line Options
 
 ```bash
-./build/flutter_inspector_mcp [options]
+./build/flutter-mcp-toolkit-server [options]
 
 Options:
   --dart-vm-host                Host for Dart VM connection (default: localhost)
@@ -519,5 +543,5 @@ This mode is useful when:
 2. Run the MCP server:
 
    ```bash
-   ./build/flutter_inspector_mcp
+   ./build/flutter-mcp-toolkit-server
    ```

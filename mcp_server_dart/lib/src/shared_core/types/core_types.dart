@@ -3,37 +3,10 @@
 
 import 'package:dart_mcp/server.dart';
 
+// CoreRuntimeConfiguration re-exported from mcp_shared_core.
+export 'package:mcp_shared_core/mcp_shared_core.dart'
+    show CoreRuntimeConfiguration;
+
 /// Logging callback used by the shared core module.
 typedef CoreLogger =
     void Function(LoggingLevel level, String message, {String logger});
-
-/// Runtime configuration shared by MCP wrapper and CLI.
-final class CoreRuntimeConfiguration {
-  const CoreRuntimeConfiguration({
-    required this.vmHost,
-    required this.vmPort,
-    required this.resourcesSupported,
-    required this.imagesSupported,
-    required this.dumpsSupported,
-    required this.dynamicRegistrySupported,
-    required this.saveImagesToFiles,
-    this.liveEditSupported = true,
-    this.flutterProjectDir,
-    this.flutterDevice,
-    this.stateRootDir,
-    this.outputDir,
-  });
-
-  final String vmHost;
-  final int vmPort;
-  final bool resourcesSupported;
-  final bool imagesSupported;
-  final bool dumpsSupported;
-  final bool dynamicRegistrySupported;
-  final bool saveImagesToFiles;
-  final bool liveEditSupported;
-  final String? flutterProjectDir;
-  final String? flutterDevice;
-  final String? stateRootDir;
-  final String? outputDir;
-}

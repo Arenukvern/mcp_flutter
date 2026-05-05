@@ -8,7 +8,7 @@ void main() {
   final runIntegration =
       Platform.environment['RUN_FLUTTER_CLI_INTEGRATION'] == '1';
 
-  group('flutter_mcp_cli with flutter_test_app', () {
+  group('flutter-mcp-toolkit with flutter_test_app', () {
     late Process flutterProcess;
     late StreamSubscription<String> stdoutSub;
     late StreamSubscription<String> stderrSub;
@@ -19,7 +19,7 @@ void main() {
       if (!runIntegration) return;
 
       stateDir = Directory.systemTemp.createTempSync(
-        'flutter_mcp_cli_integration_',
+        'flutter_mcp_toolkit_integration_',
       );
       _stateFilePath = '${stateDir.path}/state.json';
 
@@ -80,7 +80,7 @@ void main() {
       try {
         flutterProcess.stdin.writeln('q');
         await flutterProcess.exitCode.timeout(const Duration(seconds: 20));
-      } catch (_) {
+      } on Exception catch (_) {
         flutterProcess.kill(ProcessSignal.sigkill);
       }
 
@@ -205,196 +205,9 @@ void main() {
         expect(inspectData['hit'], isA<bool>());
         expect(inspectData['summary'], isA<Map>());
 
-        final liveEditSession = await _runCli([
-          'exec',
-          '--name',
-          'live_edit_start_session',
-          '--args',
-          jsonEncode({'sessionId': 'live-edit-cli'}),
-        ]);
-        expect(liveEditSession['ok'], isTrue);
-        expect(
-          (liveEditSession['data'] as Map<String, dynamic>)['sessionId'],
-          'live-edit-cli',
+        final dynamicList = await _waitForDynamicTool(
+          'get_agent_showcase_state',
         );
-
-        final liveEditTree = await _runCli([
-          'exec',
-          '--name',
-          'live_edit_get_tree',
-          '--args',
-          jsonEncode({'sessionId': 'live-edit-cli'}),
-        ]);
-        expect(liveEditTree['ok'], isTrue);
-        final liveEditTreeData = liveEditTree['data'] as Map<String, dynamic>;
-        expect(liveEditTreeData['tree'], isNotNull);
-
-        Map<String, dynamic>? selection;
-        Map<String, dynamic>? editableProperty;
-        for (final point in _liveEditProbePoints) {
-          final liveEditSelect = await _runCli([
-            'exec',
-            '--name',
-            'live_edit_select_at_point',
-            '--args',
-            jsonEncode({
-              'sessionId': 'live-edit-cli',
-              'x': point['x'],
-              'y': point['y'],
-            }),
-          ]);
-          expect(liveEditSelect['ok'], isTrue);
-          final liveEditSelectData =
-              liveEditSelect['data'] as Map<String, dynamic>;
-          if (liveEditSelectData['hit'] != true) {
-            continue;
-          }
-          final candidateSelection = (liveEditSelectData['selection'] as Map)
-              .cast<String, dynamic>();
-          final candidateProperty = _pickEditableProperty(candidateSelection);
-          if (candidateProperty != null) {
-            selection = candidateSelection;
-            editableProperty = candidateProperty;
-            break;
-          }
-        }
-        expect(selection, isNotNull, reason: 'No editable live-edit selection');
-        expect(
-          editableProperty,
-          isNotNull,
-          reason: 'No editable live-edit property found at probe points',
-        );
-
-        final liveEditSelection = await _runCli([
-          'exec',
-          '--name',
-          'live_edit_get_selection',
-          '--args',
-          jsonEncode({'sessionId': 'live-edit-cli'}),
-        ]);
-        expect(liveEditSelection['ok'], isTrue);
-        final liveEditSelectionData =
-            liveEditSelection['data'] as Map<String, dynamic>;
-        expect(liveEditSelectionData['hasSelection'], isTrue);
-
-        final liveEditOverlay = await _runCli([
-          'exec',
-          '--name',
-          'live_edit_set_overlay',
-          '--args',
-          jsonEncode({'sessionId': 'live-edit-cli', 'enabled': true}),
-        ]);
-        expect(liveEditOverlay['ok'], isTrue);
-        expect(
-          (liveEditOverlay['data'] as Map<String, dynamic>)['overlayEnabled'],
-          isTrue,
-        );
-
-        final liveEditUpdate = await _runCli([
-          'exec',
-          '--name',
-          'live_edit_update_draft',
-          '--args',
-          jsonEncode({
-            'sessionId': 'live-edit-cli',
-            'change': {
-              'nodeId': selection!['nodeId'],
-              'propertyId': editableProperty!['id'],
-              'targetValue': _draftTargetValue(editableProperty),
-              'previewMode': editableProperty['previewMode'],
-              'confidence': 0.8,
-            },
-          }),
-        ]);
-        expect(liveEditUpdate['ok'], isTrue);
-        final liveEditUpdateData =
-            liveEditUpdate['data'] as Map<String, dynamic>;
-        expect(liveEditUpdateData['updated'], isTrue);
-
-        final liveEditDraft = await _runCli([
-          'exec',
-          '--name',
-          'live_edit_get_draft',
-          '--args',
-          jsonEncode({'sessionId': 'live-edit-cli'}),
-        ]);
-        expect(liveEditDraft['ok'], isTrue);
-        final draftChanges =
-            ((liveEditDraft['data'] as Map<String, dynamic>)['draftChanges']
-                    as List)
-                .cast<Object?>();
-        expect(draftChanges, isNotEmpty);
-
-        final backendList = await _runCli([
-          'exec',
-          '--name',
-          'live_edit_list_agent_backends',
-          '--args',
-          '{}',
-        ]);
-        expect(backendList['ok'], isTrue);
-        final backendListData = backendList['data'] as Map<String, dynamic>;
-        final backends = (backendListData['backends'] as List)
-            .whereType<Map>()
-            .map((final entry) => entry.cast<String, dynamic>())
-            .toList();
-        expect(backends, isNotEmpty);
-        final defaultBackendId =
-            backendListData['defaultBackendId'] as String? ?? '';
-        expect(defaultBackendId, isNotEmpty);
-
-        final backendGet = await _runCli([
-          'exec',
-          '--name',
-          'live_edit_get_agent_backend',
-          '--args',
-          jsonEncode({'sessionId': 'live-edit-cli'}),
-        ]);
-        expect(backendGet['ok'], isTrue);
-
-        final backendSet = await _runCli([
-          'exec',
-          '--name',
-          'live_edit_set_agent_backend',
-          '--args',
-          jsonEncode({
-            'sessionId': 'live-edit-cli',
-            'backendId': defaultBackendId,
-          }),
-        ]);
-        expect(backendSet['ok'], isTrue);
-        final backendSetData = backendSet['data'] as Map<String, dynamic>;
-        expect(
-          (backendSetData['backend'] as Map)['id'] as String,
-          defaultBackendId,
-        );
-
-        final liveEditDiscard = await _runCli([
-          'exec',
-          '--name',
-          'live_edit_discard_draft',
-          '--args',
-          jsonEncode({'sessionId': 'live-edit-cli'}),
-        ]);
-        expect(liveEditDiscard['ok'], isTrue);
-        expect(
-          ((liveEditDiscard['data'] as Map<String, dynamic>)['draftChanges']
-                  as List)
-              .isEmpty,
-          isTrue,
-        );
-
-        final liveEditEnd = await _runCli([
-          'exec',
-          '--name',
-          'live_edit_end_session',
-          '--args',
-          jsonEncode({'sessionId': 'live-edit-cli'}),
-        ]);
-        expect(liveEditEnd['ok'], isTrue);
-        expect((liveEditEnd['data'] as Map<String, dynamic>)['ended'], isTrue);
-
-        final dynamicList = await _waitForDynamicTool('get_app_ui_state');
         expect(dynamicList['ok'], isTrue);
         final dynamicData = dynamicList['data'] as Map<String, dynamic>;
         final appStateResourceUri = _findResourceUri(
@@ -406,16 +219,16 @@ void main() {
         final runTool = await _runCli([
           'exec',
           '--name',
-          'runClientTool',
+          'fmt_client_tool',
           '--args',
-          '{"toolName":"get_app_ui_state","arguments":{}}',
+          '{"toolName":"get_agent_showcase_state","arguments":{}}',
         ]);
         expect(runTool['ok'], isTrue);
 
         final runResource = await _runCli([
           'exec',
           '--name',
-          'runClientResource',
+          'fmt_client_resource',
           '--args',
           jsonEncode({'resourceUri': appStateResourceUri}),
         ]);
@@ -426,16 +239,26 @@ void main() {
         expect('${resourceData['mimeType'] ?? ''}'.trim(), isNotEmpty);
         final decodedResource = _tryDecodeJsonMap(content);
         expect(decodedResource, isNotNull);
+        // Showcase AgentState.snapshot() keys (post-v3.0.0 cleanup of the
+        // flutter_test_app to drop flutter_live_edit_toolkit deps).
+        final agentSnapshotKeys = <String>[
+          'counter',
+          'greeting',
+          'toggle',
+          'slider',
+          'lastLog',
+        ];
         final parameters = decodedResource!['parameters'];
         if (parameters is Map) {
           final params = parameters.cast<String, dynamic>();
           expect(
-            params.containsKey('appName') || params.containsKey('isConnected'),
+            agentSnapshotKeys.any(params.containsKey),
             isTrue,
+            reason: 'expected at least one of $agentSnapshotKeys in parameters',
           );
         } else {
           expect(
-            decodedResource.containsKey('appName') ||
+            agentSnapshotKeys.any(decodedResource.containsKey) ||
                 decodedResource.containsKey('message'),
             isTrue,
           );
@@ -511,13 +334,16 @@ void main() {
           '{"count":4,"includeSummary":false}',
         ]);
         expect(explain['ok'], isTrue);
+        // The simplified showcase has no auto-firing fixture errors. Just
+        // assert the envelope shape is valid (causes is a list, possibly
+        // empty). A specific cause code (e.g. render_flex_overflow) used to
+        // be expected here when the live-edit codex fixture was wired in;
+        // that fixture is gone in v3.0.0.
         final causes =
-            ((explain['data'] as Map<String, dynamic>)['causes'] as List)
+            (((explain['data'] as Map<String, dynamic>)['causes'] as List?) ??
+                    const [])
                 .cast<Map<String, dynamic>>();
-        expect(
-          causes.any((final cause) => cause['code'] == 'render_flex_overflow'),
-          isTrue,
-        );
+        expect(causes, isA<List<Map<String, dynamic>>>());
 
         final sessionEnd = await _runCli([
           'exec',
@@ -538,17 +364,171 @@ void main() {
         expect(hotReload['ok'], isTrue);
       },
     );
+
+    test(
+      "every catalog command exec's against the live showcase",
+      skip: runIntegration ? false : 'Set RUN_FLUTTER_CLI_INTEGRATION=1 to run',
+      timeout: const Timeout(Duration(minutes: 12)),
+      () async {
+        // Wire-surface smoke for every CLI catalog command. Like its MCP
+        // counterpart, this asserts that exec dispatches and returns a
+        // well-formed envelope — `ok: true` for tools that can succeed
+        // standalone, `ok: false` with an error envelope for tools that
+        // need preconditions the showcase doesn't satisfy (e.g. no dialog
+        // open for handle_dialog). Both shapes prove wiring.
+        Future<Map<String, dynamic>> exec(
+          final String name,
+          final Object args, {
+          final bool requireOk = false,
+        }) async {
+          final raw = await _runCliRaw([
+            'exec',
+            '--name',
+            name,
+            '--args',
+            if (args is String) args else jsonEncode(args),
+          ]);
+          expect(
+            raw.envelope.containsKey('ok'),
+            isTrue,
+            reason: '$name envelope missing top-level ok field',
+          );
+          if (requireOk) {
+            expect(
+              raw.envelope['ok'],
+              isTrue,
+              reason: '$name expected ok=true, got: ${raw.envelope}',
+            );
+          }
+          return raw.envelope;
+        }
+
+        final connection = {'uri': _globalVmServiceWsUri};
+        final connArgs = jsonEncode({'connection': connection});
+
+        // 1. semantic_snapshot — must succeed; provides refs.
+        final snap = await exec('semantic_snapshot', connArgs, requireOk: true);
+        final snapData = snap['data'] as Map<String, dynamic>;
+        final refs = ((snapData['nodes'] as List?) ?? const [])
+            .whereType<Map>()
+            .map((final n) => '${n['ref'] ?? ''}')
+            .where((final r) => r.isNotEmpty)
+            .toList();
+        expect(refs, isNotEmpty);
+        final snapshotId = snapData['snapshot_id'] as int?;
+        final firstRef = refs.first;
+        final secondRef = refs.length > 1 ? refs[1] : firstRef;
+
+        // 2. inspector / VM / discovery — must succeed.
+        await exec('get_vm', '{}', requireOk: true);
+        await exec('get_extension_rpcs', '{}', requireOk: true);
+        await exec('discover_debug_apps', '{}', requireOk: true);
+        await exec('get_app_errors', {'count': 1}, requireOk: true);
+        await exec('get_view_details', '{}', requireOk: true);
+        await exec('get_screenshots', {
+          'connection': connection,
+          'compress': true,
+          'mode': 'flutter_layer',
+        }, requireOk: true);
+        await exec('capture_ui_snapshot', {
+          'connection': connection,
+          'errorsCount': 1,
+          'compress': true,
+          'includeViewDetails': true,
+          'includeErrors': true,
+          'screenshotMode': 'flutter_layer',
+        }, requireOk: true);
+        await exec('inspect_widget_at_point', {
+          'x': 120,
+          'y': 220,
+          'connection': connection,
+        }, requireOk: true);
+
+        // 3. interaction layer.
+        await exec('tap_widget', {
+          'ref': firstRef,
+          'snapshotId': ?snapshotId,
+          'connection': connection,
+        });
+        await exec('long_press', {
+          'ref': firstRef,
+          'snapshotId': ?snapshotId,
+          'connection': connection,
+        });
+        await exec('enter_text', {
+          'ref': firstRef,
+          'text': 'hi',
+          'snapshotId': ?snapshotId,
+          'connection': connection,
+        });
+        await exec('scroll', {
+          'direction': 'down',
+          'snapshotId': ?snapshotId,
+          'connection': connection,
+        });
+        await exec('swipe', {
+          'direction': 'up',
+          'snapshotId': ?snapshotId,
+          'connection': connection,
+        });
+        await exec('drag', {
+          'fromRef': firstRef,
+          'toRef': secondRef,
+          'snapshotId': ?snapshotId,
+          'connection': connection,
+        });
+        await exec('hover', {
+          'ref': firstRef,
+          'snapshotId': ?snapshotId,
+          'connection': connection,
+        });
+        await exec('press_key', {'key': 'Tab', 'connection': connection});
+
+        // 4. control flow.
+        await exec('handle_dialog', {
+          'action': 'dismiss',
+          'connection': connection,
+        });
+        await exec('navigate', {'action': 'pop', 'connection': connection});
+
+        // 5. wait / forms.
+        await exec('wait_for', {
+          'predicate': {'kind': 'time', 'ms': 50},
+          'connection': connection,
+        }, requireOk: true);
+        await exec('fill_form', {
+          'fields': <Map<String, Object?>>[
+            {'ref': firstRef, 'text': 'a'},
+          ],
+          'snapshotId': ?snapshotId,
+          'connection': connection,
+        });
+
+        // 6. logs + runtime introspection.
+        await exec('get_recent_logs', {
+          'connection': connection,
+          'count': 5,
+        }, requireOk: true);
+        await exec('evaluate_dart_expression', {
+          'expression': '1 + 1',
+          'connection': connection,
+        }, requireOk: true);
+
+        // 7. hot_reload_and_capture — must succeed.
+        await exec('hot_reload_and_capture', {
+          'connection': connection,
+          'errorsCount': 1,
+        }, requireOk: true);
+
+        // 8. hot_restart_flutter LAST (destructive — resets app state).
+        await exec('hot_restart_flutter', '{}', requireOk: true);
+      },
+    );
   });
 }
 
 String? _globalVmServiceWsUri;
 String? _stateFilePath;
-
-const List<Map<String, int>> _liveEditProbePoints = <Map<String, int>>[
-  <String, int>{'x': 180, 'y': 400},
-  <String, int>{'x': 150, 'y': 320},
-  <String, int>{'x': 120, 'y': 220},
-];
 
 Directory _serverDirectory() => Directory.current;
 
@@ -604,7 +584,7 @@ Future<Map<String, dynamic>> _waitForDynamicTool(final String toolName) async {
     final result = await _runCli([
       'exec',
       '--name',
-      'listClientToolsAndResources',
+      'fmt_list_client_tools_and_resources',
       '--args',
       '{}',
     ]);
@@ -655,46 +635,8 @@ Map<String, dynamic>? _tryDecodeJsonMap(final String value) {
       return decoded.cast<String, dynamic>();
     }
     return null;
-  } catch (_) {
+  } on Object catch (_) {
     return null;
-  }
-}
-
-Map<String, dynamic>? _pickEditableProperty(
-  final Map<String, dynamic> selection,
-) {
-  final properties = (selection['properties'] as List?) ?? const [];
-  for (final property in properties.whereType<Map>()) {
-    final map = property.cast<String, dynamic>();
-    if (map['editable'] == true) {
-      return map;
-    }
-  }
-  return null;
-}
-
-Object? _draftTargetValue(final Map<String, dynamic> property) {
-  if (property['value'] != null) {
-    return property['value'];
-  }
-
-  final kind = '${property['kind'] ?? ''}';
-  switch (kind) {
-    case 'boolean':
-      return false;
-    case 'integer':
-    case 'number':
-      return 0;
-    case 'string':
-      return '';
-    case 'enum':
-      final options = (property['options'] as List?) ?? const [];
-      if (options.isNotEmpty) {
-        return options.first;
-      }
-      return '';
-    default:
-      return null;
   }
 }
 
@@ -734,7 +676,7 @@ Future<({ProcessResult result, Map<String, dynamic> envelope})> _runCliRaw(
 }
 
 List<String> _buildCliArgs(final List<String> args) {
-  final fullArgs = <String>['run', 'bin/flutter_mcp_cli.dart'];
+  final fullArgs = <String>['run', 'bin/flutter_mcp_toolkit.dart'];
 
   final statePath = _stateFilePath;
   if (statePath != null && statePath.isNotEmpty) {

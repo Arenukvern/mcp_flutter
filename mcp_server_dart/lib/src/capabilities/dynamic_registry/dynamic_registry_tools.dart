@@ -7,10 +7,10 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:dart_mcp/server.dart';
-import 'package:flutter_inspector_mcp_server/src/capabilities/dynamic_registry/dynamic_registry.dart';
-import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_server/core/core.dart';
-import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_server/server.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/shared_core.dart';
+import 'package:flutter_mcp_toolkit_server/src/capabilities/dynamic_registry/dynamic_registry.dart';
+import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/core/core.dart';
+import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/server.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/shared_core.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
 import 'package:is_dart_empty_or_not/is_dart_empty_or_not.dart';
 import 'package:meta/meta.dart';
@@ -28,12 +28,12 @@ final class DynamicRegistryTools {
   static const _setupWorkflowText =
       'To create new tools/resources: 1) Generate MCPCallEntry.tool() or MCPCallEntry.resource() with handler and definition, '
       '2) Add to Flutter app (in main.dart, widget tree, or state management like provider/riverpod) using addMcpTool(), '
-      '3) Use listClientToolsAndResources to verify the tool is registered, '
+      '3) Use fmt_list_client_tools_and_resources to verify the tool is registered, '
       '4) Hot reload the app to activate. '
-      '5) Use runClientTool to execute the tool. ';
+      '5) Use fmt_client_tool to execute the tool. ';
 
   static const _exactMatchingText =
-      'Names/URIs must match exactly what appears in listClientToolsAndResources. ';
+      'Names/URIs must match exactly what appears in fmt_list_client_tools_and_resources. ';
 
   static const _schemaComplianceText =
       "Arguments should conform to the tool's inputSchema requirements. ";
@@ -47,13 +47,13 @@ final class DynamicRegistryTools {
       'See server instructions for detailed examples of creating custom MCPCallEntry definitions.';
 
   static final listClientToolsAndResources = Tool(
-    name: 'listClientToolsAndResources',
+    name: 'fmt_list_client_tools_and_resources',
     description: _listClientToolsAndResourcesDescription,
     inputSchema: strictToolInputSchema(),
   );
 
   static final runClientTool = Tool(
-    name: 'runClientTool',
+    name: 'fmt_client_tool',
     description:
         'Execute a specific dynamically registered tool from the Flutter application. '
         'Use this to run debugging tools, inspect app state, take screenshots, analyze errors, or execute custom tools. '
@@ -67,7 +67,7 @@ final class DynamicRegistryTools {
       properties: {
         'toolName': Schema.string(
           description:
-              'Exact name of the tool to execute (from listClientToolsAndResources)',
+              'Exact name of the tool to execute (from fmt_list_client_tools_and_resources)',
         ),
         'arguments': Schema.object(
           description:
@@ -79,7 +79,7 @@ final class DynamicRegistryTools {
   );
 
   static final runClientResource = Tool(
-    name: 'runClientResource',
+    name: 'fmt_client_resource',
     description:
         'Read content from a dynamically registered resource in the Flutter application. '
         'Resources provide structured data like app state, view details, or configuration information. '
@@ -93,7 +93,7 @@ final class DynamicRegistryTools {
       properties: {
         'resourceUri': Schema.string(
           description:
-              'Exact URI of the resource to read (from listClientToolsAndResources)',
+              'Exact URI of the resource to read (from fmt_list_client_tools_and_resources)',
         ),
       },
     ),

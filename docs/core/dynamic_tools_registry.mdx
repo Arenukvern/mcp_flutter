@@ -58,11 +58,11 @@ Register entries with addEntries(...)
 Server discovers dynamic entries via VM/DTD
   |
   v
-AI calls listClientToolsAndResources
+AI calls fmt_list_client_tools_and_resources
   |
-  +--> runClientTool(toolName, arguments)
+  +--> fmt_client_tool(toolName, arguments)
   |
-  +--> runClientResource(resourceUri)
+  +--> fmt_client_resource(resourceUri)
 ```
 
 ## Minimal Correct Setup
@@ -154,7 +154,7 @@ Future<void> registerConfigResource() async {
 
 ```json
 {
-  "name": "listClientToolsAndResources",
+  "name": "fmt_list_client_tools_and_resources",
   "arguments": {}
 }
 ```
@@ -163,7 +163,7 @@ Future<void> registerConfigResource() async {
 
 ```json
 {
-  "name": "runClientTool",
+  "name": "fmt_client_tool",
   "arguments": {
     "toolName": "say_hello",
     "arguments": {"name": "Anton"}
@@ -175,7 +175,7 @@ Future<void> registerConfigResource() async {
 
 ```json
 {
-  "name": "runClientResource",
+  "name": "fmt_client_resource",
   "arguments": {
     "resourceUri": "visual://localhost/app/config"
   }
@@ -190,7 +190,7 @@ Retry with explicit nested `connection`:
 
 ```json
 {
-  "name": "runClientTool",
+  "name": "fmt_client_tool",
   "arguments": {
     "toolName": "say_hello",
     "arguments": {"name": "Anton"},
@@ -227,8 +227,8 @@ Rules that prevent most issues:
 | Symptom | Likely cause | Fix |
 | --- | --- | --- |
 | Tool/resource not visible | Entry not registered or client cached old tool list | Ensure `addEntries(...)` executes, then reload MCP server/client if needed |
-| `tool not found` | Name mismatch | Copy exact `toolName` from `listClientToolsAndResources` |
-| `resource not found` | URI mismatch | Copy exact `resourceUri` from `listClientToolsAndResources` |
+| `tool not found` | Name mismatch | Copy exact `toolName` from `fmt_list_client_tools_and_resources` |
+| `resource not found` | URI mismatch | Copy exact `resourceUri` from `fmt_list_client_tools_and_resources` |
 | `connection_selection_required` | Multiple debug targets | Retry with `arguments.connection.targetId` |
 | Unexpectedly large responses | Handler returns verbose payload | Return summary fields and only required details |
 
@@ -238,5 +238,5 @@ Rules that prevent most issues:
 - [ ] `initializeFlutterToolkit()` is called (if needed)
 - [ ] dynamic entries are registered via `addEntries(...)`
 - [ ] names/descriptions/schemas are explicit
-- [ ] dynamic entries are verified via `listClientToolsAndResources`
+- [ ] dynamic entries are verified via `fmt_list_client_tools_and_resources`
 - [ ] multi-target retries include explicit `connection.targetId`

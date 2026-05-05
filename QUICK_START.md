@@ -27,6 +27,7 @@ The old long-form quick-start content was intentionally split into focused docs 
 
 ## v2.x to v3.0.0 Hard Cut
 
-- Run preflight before VM-dependent automation: `flutter_mcp_cli doctor --json`.
+- **Migration guide:** [docs/start_here/migration_v2_to_v3.mdx](docs/start_here/migration_v2_to_v3.mdx) — `fmt_*` MCP tools, **`flutter-mcp-toolkit-server`**, **`mcpServers` key `flutter-mcp-toolkit`**, `validate-runtime` targeting.
+- Run preflight before VM-dependent automation: `flutter-mcp-toolkit doctor --json`.
 - Update parsers to read error descriptor fields from `error.descriptor`.
 - Use safe write flags (`--check --diff --backup --no-overwrite`) for snapshot/bundle flows.

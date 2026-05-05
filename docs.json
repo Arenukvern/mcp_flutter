@@ -41,16 +41,12 @@
       "group": "For Humans",
       "pages": [
         {
-          "title": "Manual Installation",
-          "href": "/getting_started/manual_installation"
-        },
-        {
-          "title": "Manual Client Setup",
-          "href": "/getting_started/manual_client_setup"
-        },
-        {
           "title": "Debugging Workflow",
           "href": "/guides/debugging_workflow"
+        },
+        {
+          "title": "Interaction Cookbook",
+          "href": "/guides/interaction_cookbook"
         },
         {
           "title": "Creating Dynamic Tools",
@@ -74,24 +70,8 @@
           "href": "/ai_agents/execution_playbook"
         },
         {
-          "title": "Codex Setup",
-          "href": "/ai_agents/codex"
-        },
-        {
-          "title": "Cursor Setup",
-          "href": "/ai_agents/cursor"
-        },
-        {
-          "title": "Claude Setup",
-          "href": "/ai_agents/claude"
-        },
-        {
           "title": "AI Troubleshooting",
           "href": "/ai_agents/troubleshooting"
-        },
-        {
-          "title": "AI-Assisted Installation",
-          "href": "/getting_started/llm_install_files"
         }
       ]
     },
@@ -109,14 +89,35 @@
         {
           "title": "Dynamic Tool Registry",
           "href": "/core/dynamic_tools_registry"
+        }
+      ]
+    },
+    {
+      "group": "Decisions",
+      "pages": [
+        {
+          "title": "Overview",
+          "href": "/decisions"
         },
         {
-          "title": "Built-in Tools",
-          "href": "/core/built_in_tools"
+          "title": "0001 — Capability kernel + tool prefix",
+          "href": "/decisions/0001_capability_kernel_and_tool_prefix"
         },
         {
-          "title": "Error Code Playbook",
-          "href": "/core/error_code_playbook"
+          "title": "0002 — v3.0.0 scope and consolidation deferrals",
+          "href": "/decisions/0002_v3_scope_and_consolidation_deferrals"
+        },
+        {
+          "title": "0003 — P0 wait_for design",
+          "href": "/decisions/0003_p0_wait_for_design"
+        },
+        {
+          "title": "0004 — P1 keyboard, dialog, navigate",
+          "href": "/decisions/0004_p1_keyboard_dialog_navigate"
+        },
+        {
+          "title": "0005 — P2 fill_form, hover, select_option drop",
+          "href": "/decisions/0005_p2_fill_form_hover_select_option"
         }
       ]
     },

@@ -1,19 +1,19 @@
 // Copyright (c) 2025, Flutter Inspector MCP Server authors.
 // Licensed under the MIT License.
 
-// ignore_for_file: lines_longer_than_80_chars
+// ignore_for_file: avoid_catches_without_on_clauses, lines_longer_than_80_chars
 
 import 'dart:async';
 
 import 'package:dart_mcp/server.dart';
-import 'package:flutter_inspector_mcp_server/src/capabilities/dynamic_registry/core_dynamic_registry_gateway.dart';
-import 'package:flutter_inspector_mcp_server/src/capabilities/dynamic_registry/dynamic_registry.dart';
-import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_server/base_server.dart';
-import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_server/core/to_resources_tools.dart';
-import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_server/server.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/types/error_codes.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/types/results.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/vm_connections/connection_override.dart';
+import 'package:flutter_mcp_toolkit_server/src/capabilities/dynamic_registry/core_dynamic_registry_gateway.dart';
+import 'package:flutter_mcp_toolkit_server/src/capabilities/dynamic_registry/dynamic_registry.dart';
+import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/base_server.dart';
+import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/core/to_resources_tools.dart';
+import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/server.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/types/error_codes.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/types/results.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/vm_connections/connection_override.dart';
 import 'package:meta/meta.dart';
 
 /// Mixin that integrates dynamic registry with MCP server infrastructure

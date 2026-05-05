@@ -35,3 +35,4 @@ mcp_server_dart/flutter_inspector_mcp
 
 # Agentic Executables project hub (regenerate with scripts/ae_live_edit_know.sh)
 .ae_hub/
+.gitnexus

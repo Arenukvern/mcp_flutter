@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:flutter_inspector_mcp_server/flutter_mcp_core.dart';
+import 'package:flutter_mcp_toolkit_server/flutter_mcp_core.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -41,12 +41,7 @@ void main() {
       final context = ConnectionContext(
         defaultHost: 'localhost',
         defaultPort: 8181,
-        logger:
-            (
-              final level,
-              final message, {
-              final logger = 'test',
-            }) {},
+        logger: (final level, final message, {final logger = 'test'}) {},
         discoverPorts: () async => <int>[8181],
       );
 
@@ -69,12 +64,7 @@ void main() {
       final context = ConnectionContext(
         defaultHost: 'localhost',
         defaultPort: 8181,
-        logger:
-            (
-              final level,
-              final message, {
-              final logger = 'test',
-            }) {},
+        logger: (final level, final message, {final logger = 'test'}) {},
         discoverPorts: () async => <int>[8181],
       );
 

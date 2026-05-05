@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter_inspector_mcp_server/flutter_mcp_core.dart';
+import 'package:flutter_mcp_toolkit_server/flutter_mcp_core.dart';
 import 'package:test/test.dart';
 
 void main() {

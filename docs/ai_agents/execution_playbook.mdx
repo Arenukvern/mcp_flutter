@@ -1,103 +1,21 @@
-# AI Agent Execution Playbook
+---
+title: AI Agent Execution Playbook
+description: This guide moved into the flutter-mcp-toolkit plugin.
+---
 
-Use this when you are an agent performing install/config steps end to end and validating a live app (not test-only validation).
+# AI Agent Execution Playbook (moved)
 
-## Inputs To Collect First
-
-- `[MCP_SERVER_BASE_PATH]`: absolute directory where repo should be cloned.
-- `[FLUTTER_APP_PATH]`: absolute Flutter app path to instrument.
-
-Do not start cloning or editing until both paths are confirmed.
-
-## Step 1. Clone And Build
+The execution playbook is now the **`flutter-mcp-toolkit-setup`** skill, shipped
+inside the plugin. To install it for your agent, run:
 
 ```bash
-cd [MCP_SERVER_BASE_PATH]
-git clone https://github.com/Arenukvern/mcp_flutter
-cd mcp_flutter
-make install
+flutter-mcp-toolkit init claude-code   # or: cursor | codex | cline | all
 ```
 
-Expected binary:
+This installs the `flutter-mcp-toolkit-{guide,setup,inspect,control,debug}`
+skills into your agent's expected location. The setup skill covers preflight
+(`flutter-mcp-toolkit doctor`), connection troubleshooting, and the full CLI
+surface.
 
-- `[MCP_SERVER_BASE_PATH]/mcp_flutter/mcp_server_dart/build/flutter_inspector_mcp`
-
-## Step 2. Add Toolkit To Flutter App
-
-```bash
-cd [FLUTTER_APP_PATH]
-flutter pub add mcp_toolkit
-flutter pub get
-```
-
-In `main.dart`, initialize toolkit and error forwarding:
-
-```dart
-MCPToolkitBinding.instance
-  ..initialize()
-  ..initializeFlutterToolkit();
-
-MCPToolkitBinding.instance.handleZoneError(error, stack);
-```
-
-## Step 3. Run Flutter In Debug Mode
-
-```bash
-flutter run --debug --host-vmservice-port=8182 --dds-port=8181 --enable-vm-service
-```
-
-## Step 4. Configure Client
-
-Pick one guide:
-
-- [Codex](/ai_agents/codex)
-- [Cursor](/ai_agents/cursor)
-- [Claude](/ai_agents/claude)
-
-## Step 5. Preflight: Confirm App Instrumentation
-
-Before asking for screenshots/layout/errors, verify that the app exposes toolkit service extensions.
-
-Ask the assistant to run:
-
-1. "List available MCP tools for flutter-inspector"
-2. "Get extension RPCs from the connected Flutter app"
-
-Required extension RPCs:
-
-- `ext.mcp.toolkit.app_errors`
-- `ext.mcp.toolkit.view_details`
-- `ext.mcp.toolkit.view_screenshots`
-- `ext.mcp.toolkit.inspect_widget_at_point`
-
-If these are missing, do not continue app-level inspection.
-
-- Re-check that `mcp_toolkit` is installed in `pubspec.yaml`.
-- Re-check `MCPToolkitBinding.instance..initialize()..initializeFlutterToolkit();`.
-- Hot restart the Flutter app and retry `get_extension_rpcs`.
-
-If the app cannot be modified (for example third-party binary or restricted environment), report clearly that Flutter MCP cannot plug into this app and skip screenshot/layout/error claims.
-
-## Step 6. Validate Like A Runtime Agent
-
-Run this sequence after preflight succeeds:
-
-1. "Discover debug apps and confirm target URI"
-2. "Capture UI snapshot bundle (`capture_ui_snapshot`)"
-3. "Inspect widget at specific coordinates (`inspect_widget_at_point`)"
-4. "Get app errors and map top stack frame to source"
-5. After any code edit: "Hot reload and capture another UI snapshot"
-6. Optional when server was started with `--dumps`: "Dump render tree"
-
-Use before/after snapshot bundles as proof that runtime changes took effect.
-
-## Step 7. Resolve Common Runtime Challenges
-
-If tool calls fail with `connection_selection_required`, retry with `arguments.connection.targetId` or exact `arguments.connection.uri` from Flutter machine `app.debugPort.wsUri`.
-
-Also handle:
-
-- `target_not_found`: refresh targets, then prefer exact `arguments.connection.uri`.
-- Empty screenshot output: verify server was not started with `--no-images`.
-- Missing view resource/tool: verify server was not started with `--no-resources`.
-- App not reachable: confirm Flutter app is running in debug mode with VM service enabled.
+For a quick orientation without installing, browse the source skills:
+[plugin/skills/](https://github.com/Arenukvern/flutter-mcp-toolkit/tree/main/plugin/skills).

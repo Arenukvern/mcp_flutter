@@ -1,0 +1,11 @@
+{
+  "name": "flutter-mcp-toolkit",
+  "version": "3.0.0",
+  "description": "Inspect and drive a running Flutter app from your AI assistant — semantic snapshot, tap, scroll, type, hot-reload, debug.",
+  "author": "Arenukvern",
+  "homepage": "https://github.com/Arenukvern/flutter-mcp-toolkit",
+  "repository": "https://github.com/Arenukvern/flutter-mcp-toolkit",
+  "license": "MIT",
+  "skills": "./skills",
+  "mcpServers": "./mcp.json"
+}

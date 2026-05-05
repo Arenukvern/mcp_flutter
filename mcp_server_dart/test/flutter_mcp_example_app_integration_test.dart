@@ -2,6 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+// MCP harness constructs streams in start() and tears them down in dispose();
+// the analyzer cannot connect those scopes.
+// ignore_for_file: cancel_subscriptions, close_sinks
+
 import 'package:test/test.dart';
 
 void main() {
@@ -66,7 +70,7 @@ void main() {
       try {
         flutterProcess.stdin.writeln('q');
         await flutterProcess.exitCode.timeout(const Duration(seconds: 20));
-      } catch (_) {
+      } on Exception catch (_) {
         flutterProcess.kill(ProcessSignal.sigkill);
       }
 
@@ -106,15 +110,17 @@ void main() {
             .whereType<Map>()
             .map((final tool) => '${tool['name']}')
             .toSet();
-        expect(toolNames.contains('discover_debug_apps'), isTrue);
-        expect(toolNames.contains('capture_ui_snapshot'), isTrue);
-        expect(toolNames.contains('inspect_widget_at_point'), isTrue);
-        expect(toolNames.contains('runClientResource'), isTrue);
+        // T8: tools surface under the "fmt_" capability prefix, including
+        // dynamic-registry host machinery.
+        expect(toolNames.contains('fmt_discover_debug_apps'), isTrue);
+        expect(toolNames.contains('fmt_capture_ui_snapshot'), isTrue);
+        expect(toolNames.contains('fmt_inspect_widget_at_point'), isTrue);
+        expect(toolNames.contains('fmt_client_resource'), isTrue);
 
         final discover = await harness.request(
           method: 'tools/call',
           params: {
-            'name': 'discover_debug_apps',
+            'name': 'fmt_discover_debug_apps',
             'arguments': <String, Object?>{},
           },
         );
@@ -123,7 +129,7 @@ void main() {
 
         final capture = await _callToolUntilSuccess(
           harness: harness,
-          name: 'capture_ui_snapshot',
+          name: 'fmt_capture_ui_snapshot',
           arguments: {
             'connection': {'uri': _globalVmServiceWsUri},
             'errorsCount': 3,
@@ -143,7 +149,7 @@ void main() {
         final inspect = await harness.request(
           method: 'tools/call',
           params: {
-            'name': 'inspect_widget_at_point',
+            'name': 'fmt_inspect_widget_at_point',
             'arguments': {
               'x': 120,
               'y': 220,
@@ -155,183 +161,10 @@ void main() {
         expect(inspectData['hit'], isA<bool>());
         expect(inspectData['summary'], isA<Map>());
 
-        await _waitForClientTool(
-          harness,
-          toolName: 'live_edit_runtime_start_session',
-        );
-
-        final liveEditStart = await harness.request(
-          method: 'tools/call',
-          params: {
-            'name': 'live_edit_start_session',
-            'arguments': {'sessionId': 'live-edit-mcp'},
-          },
-        );
-        final liveEditStartData = _decodeToolJsonPayload(liveEditStart);
-        expect(liveEditStartData['sessionId'], 'live-edit-mcp');
-
-        final liveEditTree = await harness.request(
-          method: 'tools/call',
-          params: {
-            'name': 'live_edit_get_tree',
-            'arguments': {'sessionId': 'live-edit-mcp'},
-          },
-        );
-        final liveEditTreeData = _decodeToolJsonPayload(liveEditTree);
-        expect(liveEditTreeData['tree'], isNotNull);
-
-        Map<String, dynamic>? selection;
-        Map<String, dynamic>? editableProperty;
-        for (final point in _liveEditProbePoints) {
-          final liveEditSelect = await harness.request(
-            method: 'tools/call',
-            params: {
-              'name': 'live_edit_select_at_point',
-              'arguments': {
-                'sessionId': 'live-edit-mcp',
-                'x': point['x'],
-                'y': point['y'],
-              },
-            },
-          );
-          final liveEditSelectData = _decodeToolJsonPayload(liveEditSelect);
-          if (liveEditSelectData['hit'] != true) {
-            continue;
-          }
-          final candidateSelection = (liveEditSelectData['selection'] as Map)
-              .cast<String, dynamic>();
-          final candidateProperty = _pickEditableProperty(candidateSelection);
-          if (candidateProperty != null) {
-            selection = candidateSelection;
-            editableProperty = candidateProperty;
-            break;
-          }
-        }
-        expect(selection, isNotNull, reason: 'No editable live-edit selection');
-        expect(
-          editableProperty,
-          isNotNull,
-          reason: 'No editable live-edit property found at probe points',
-        );
-
-        final liveEditSelection = await harness.request(
-          method: 'tools/call',
-          params: {
-            'name': 'live_edit_get_selection',
-            'arguments': {'sessionId': 'live-edit-mcp'},
-          },
-        );
-        final liveEditSelectionData = _decodeToolJsonPayload(liveEditSelection);
-        expect(liveEditSelectionData['hasSelection'], isTrue);
-
-        final liveEditOverlay = await harness.request(
-          method: 'tools/call',
-          params: {
-            'name': 'live_edit_set_overlay',
-            'arguments': {'sessionId': 'live-edit-mcp', 'enabled': true},
-          },
-        );
-        final liveEditOverlayData = _decodeToolJsonPayload(liveEditOverlay);
-        expect(liveEditOverlayData['overlayEnabled'], isTrue);
-
-        final liveEditUpdate = await harness.request(
-          method: 'tools/call',
-          params: {
-            'name': 'live_edit_update_draft',
-            'arguments': {
-              'sessionId': 'live-edit-mcp',
-              'change': {
-                'nodeId': selection!['nodeId'],
-                'propertyId': editableProperty!['id'],
-                'targetValue': _draftTargetValue(editableProperty),
-                'previewMode': editableProperty['previewMode'],
-                'confidence': 0.8,
-              },
-            },
-          },
-        );
-        final liveEditUpdateData = _decodeToolJsonPayload(liveEditUpdate);
-        expect(liveEditUpdateData['updated'], isTrue);
-
-        final liveEditDraft = await harness.request(
-          method: 'tools/call',
-          params: {
-            'name': 'live_edit_get_draft',
-            'arguments': {'sessionId': 'live-edit-mcp'},
-          },
-        );
-        final liveEditDraftData = _decodeToolJsonPayload(liveEditDraft);
-        expect(
-          (liveEditDraftData['draftChanges'] as List?) ?? const [],
-          isNotEmpty,
-        );
-
-        final backendList = await harness.request(
-          method: 'tools/call',
-          params: {
-            'name': 'live_edit_list_agent_backends',
-            'arguments': <String, Object?>{},
-          },
-        );
-        final backendListData = _decodeToolJsonPayload(backendList);
-        final defaultBackendId = '${backendListData['defaultBackendId'] ?? ''}'
-            .trim();
-        expect(defaultBackendId, isNotEmpty);
-        expect((backendListData['backends'] as List?) ?? const [], isNotEmpty);
-
-        final backendGet = await harness.request(
-          method: 'tools/call',
-          params: {
-            'name': 'live_edit_get_agent_backend',
-            'arguments': {'sessionId': 'live-edit-mcp'},
-          },
-        );
-        final backendGetData = _decodeToolJsonPayload(backendGet);
-        expect(backendGetData['backend'], isA<Map>());
-
-        final backendSet = await harness.request(
-          method: 'tools/call',
-          params: {
-            'name': 'live_edit_set_agent_backend',
-            'arguments': {
-              'sessionId': 'live-edit-mcp',
-              'backendId': defaultBackendId,
-            },
-          },
-        );
-        final backendSetData = _decodeToolJsonPayload(backendSet);
-        expect(
-          (backendSetData['backend'] as Map)['id'] as String,
-          defaultBackendId,
-        );
-
-        final liveEditDiscard = await harness.request(
-          method: 'tools/call',
-          params: {
-            'name': 'live_edit_discard_draft',
-            'arguments': {'sessionId': 'live-edit-mcp'},
-          },
-        );
-        final liveEditDiscardData = _decodeToolJsonPayload(liveEditDiscard);
-        expect(
-          ((liveEditDiscardData['draftChanges'] as List?) ?? const []).isEmpty,
-          isTrue,
-        );
-
-        final liveEditEnd = await harness.request(
-          method: 'tools/call',
-          params: {
-            'name': 'live_edit_end_session',
-            'arguments': {'sessionId': 'live-edit-mcp'},
-          },
-        );
-        final liveEditEndData = _decodeToolJsonPayload(liveEditEnd);
-        expect(liveEditEndData['ended'], isTrue);
-
         final dynamicList = await harness.request(
           method: 'tools/call',
           params: {
-            'name': 'listClientToolsAndResources',
+            'name': 'fmt_list_client_tools_and_resources',
             'arguments': {
               'connection': {'uri': _globalVmServiceWsUri},
             },
@@ -350,7 +183,7 @@ void main() {
         final runResource = await harness.request(
           method: 'tools/call',
           params: {
-            'name': 'runClientResource',
+            'name': 'fmt_client_resource',
             'arguments': {
               'resourceUri': appStateResourceUri,
               'connection': {'uri': _globalVmServiceWsUri},
@@ -361,16 +194,31 @@ void main() {
         expect(resourceText.trim(), isNotEmpty);
         final decodedResource = _tryDecodeJsonMap(resourceText);
         expect(decodedResource, isNotNull);
+        // The showcase's AgentState.snapshot() exposes counter, greeting,
+        // toggle, slider, lastLog. Accept either an envelope-shaped
+        // {parameters: {...}} payload or a raw snapshot map; either way
+        // require at least one of those keys to be present (proof the
+        // dynamic resource read forwarded the live state).
+        final agentSnapshotKeys = <String>[
+          'counter',
+          'greeting',
+          'toggle',
+          'slider',
+          'lastLog',
+        ];
         final parameters = decodedResource!['parameters'];
         if (parameters is Map) {
           final params = parameters.cast<String, dynamic>();
           expect(
-            params.containsKey('appName') || params.containsKey('isConnected'),
+            agentSnapshotKeys.any(params.containsKey),
             isTrue,
+            reason:
+                'expected at least one of $agentSnapshotKeys in '
+                'parameters, got: ${params.keys.toList()}',
           );
         } else {
           expect(
-            decodedResource.containsKey('appName') ||
+            agentSnapshotKeys.any(decodedResource.containsKey) ||
                 decodedResource.containsKey('message'),
             isTrue,
           );
@@ -407,16 +255,264 @@ void main() {
         }
       },
     );
+
+    test(
+      'every fmt_* MCP tool dispatches against the live showcase',
+      skip: runIntegration ? false : 'Set RUN_FLUTTER_MCP_INTEGRATION=1 to run',
+      timeout: const Timeout(Duration(minutes: 12)),
+      () async {
+        // This test asserts wire-surface correctness: every prefixed tool can
+        // be called and returns a well-formed JSON-RPC envelope. Tools that
+        // cannot succeed against the showcase (no dialog open for
+        // handle_dialog, no scrollable for scroll-without-ref, etc.) are
+        // allowed to return a *structured* error envelope — the cut still
+        // counts because dispatch and schema validation succeeded. We
+        // distinguish that from transport-level errors (which would show up
+        // as `response['error']` rather than `response['result']`).
+        final harness = await _McpHarness.start(
+          workingDirectory: _serverDirectory().path,
+        );
+        addTearDown(harness.dispose);
+
+        await harness.request(
+          method: 'initialize',
+          params: {
+            'protocolVersion': '2024-11-05',
+            'capabilities': {
+              'roots': {'listChanged': true},
+              'sampling': {},
+            },
+            'clientInfo': {'name': 'all-tools-smoke', 'version': '1.0.0'},
+          },
+        );
+
+        // Sanity: tools/list must contain every prefixed tool from the
+        // locked surface (excluding `--dumps` ones since the harness does
+        // not pass --dumps).
+        final toolsList = await harness.request(method: 'tools/list');
+        final names = ((toolsList['result'] as Map)['tools'] as List)
+            .whereType<Map>()
+            .map((final t) => '${t['name']}')
+            .toSet();
+        for (final expected in _expectedCoreTools) {
+          expect(
+            names,
+            contains(expected),
+            reason:
+                '$expected must be present in tools/list under default config',
+          );
+        }
+
+        final connection = {'uri': _globalVmServiceWsUri};
+
+        // Helper: call by name, assert wire-shape, accept structured error.
+        Future<Map<String, dynamic>> dispatch(
+          final String name,
+          final Map<String, Object?> arguments,
+        ) async {
+          final response = await harness.request(
+            method: 'tools/call',
+            params: {'name': name, 'arguments': arguments},
+          );
+          expect(
+            response['error'],
+            isNull,
+            reason: '$name dispatch produced a JSON-RPC transport error',
+          );
+          expect(
+            response['result'],
+            isA<Map>(),
+            reason: '$name response missing result',
+          );
+          return response;
+        }
+
+        // 1. semantic_snapshot — must succeed; provides refs for interaction
+        // tools below.
+        final snapResp = await dispatch('fmt_semantic_snapshot', {
+          'connection': connection,
+        });
+        final snapData = _decodeToolJsonPayload(snapResp);
+        final refs = ((snapData['nodes'] as List?) ?? const [])
+            .whereType<Map>()
+            .map((final n) => '${n['ref'] ?? ''}')
+            .where((final r) => r.isNotEmpty)
+            .toList();
+        expect(
+          refs,
+          isNotEmpty,
+          reason: 'showcase must expose at least one interactive ref',
+        );
+        final snapshotId = snapData['snapshot_id'] as int?;
+
+        // 2. inspector / VM tools — all should succeed.
+        await dispatch('fmt_get_vm', {'connection': connection});
+        await dispatch('fmt_get_extension_rpcs', {'connection': connection});
+        await dispatch('fmt_discover_debug_apps', {'connection': connection});
+        await dispatch('fmt_connect_debug_app', {'connection': connection});
+
+        // 3. inspection / capture tools.
+        await dispatch('fmt_get_view_details', {'connection': connection});
+        await dispatch('fmt_get_app_errors', {
+          'connection': connection,
+          'count': 1,
+        });
+        await dispatch('fmt_get_screenshots', {
+          'connection': connection,
+          'compress': true,
+          'mode': 'flutter_layer',
+        });
+        await dispatch('fmt_capture_ui_snapshot', {
+          'connection': connection,
+          'errorsCount': 2,
+          'compress': true,
+          'includeViewDetails': true,
+          'includeErrors': true,
+          'screenshotMode': 'flutter_layer',
+        });
+        await dispatch('fmt_inspect_widget_at_point', {
+          'x': 120,
+          'y': 220,
+          'connection': connection,
+        });
+
+        // 4. interaction layer — refs come from the snapshot above.
+        final firstRef = refs.first;
+        await dispatch('fmt_tap_widget', {
+          'ref': firstRef,
+          'snapshotId': ?snapshotId,
+          'connection': connection,
+        });
+        await dispatch('fmt_long_press', {
+          'ref': firstRef,
+          'snapshotId': ?snapshotId,
+          'connection': connection,
+        });
+        // enter_text needs a TextField ref — try the first ref; the showcase
+        // exposes `greeting_input_field` as one of the early refs. Schema
+        // validation succeeds either way; if the runtime says "not editable"
+        // we still get a structured error envelope (acceptable).
+        await dispatch('fmt_enter_text', {
+          'ref': firstRef,
+          'text': 'hello',
+          'snapshotId': ?snapshotId,
+          'connection': connection,
+        });
+        await dispatch('fmt_scroll', {
+          'direction': 'down',
+          'snapshotId': ?snapshotId,
+          'connection': connection,
+        });
+        await dispatch('fmt_swipe', {
+          'direction': 'up',
+          'snapshotId': ?snapshotId,
+          'connection': connection,
+        });
+        // drag needs two refs; if showcase only has one, reuse it (the call
+        // returns a structured no-op or error which still validates wiring).
+        final secondRef = refs.length > 1 ? refs[1] : firstRef;
+        await dispatch('fmt_drag', {
+          'fromRef': firstRef,
+          'toRef': secondRef,
+          'snapshotId': ?snapshotId,
+          'connection': connection,
+        });
+        await dispatch('fmt_hover', {
+          'ref': firstRef,
+          'snapshotId': ?snapshotId,
+          'connection': connection,
+        });
+        await dispatch('fmt_press_key', {
+          'key': 'Tab',
+          'connection': connection,
+        });
+
+        // 5. control flow — handle_dialog will likely error (no dialog open),
+        // navigate may push/pop depending on showcase routes. Both still
+        // exercise dispatch.
+        await dispatch('fmt_handle_dialog', {
+          'action': 'dismiss',
+          'connection': connection,
+        });
+        await dispatch('fmt_navigate', {
+          'action': 'pop',
+          'connection': connection,
+        });
+
+        // 6. wait / forms — wait_for has a fast-time predicate.
+        await dispatch('fmt_wait_for', {
+          'predicate': {'kind': 'time', 'ms': 50},
+          'connection': connection,
+        });
+        await dispatch('fmt_fill_form', {
+          'fields': <Map<String, Object?>>[
+            {'ref': firstRef, 'text': 'a'},
+          ],
+          'snapshotId': ?snapshotId,
+          'connection': connection,
+        });
+
+        // 7. logs + runtime introspection.
+        await dispatch('fmt_get_recent_logs', {
+          'connection': connection,
+          'count': 5,
+        });
+        await dispatch('fmt_evaluate_dart_expression', {
+          'expression': '1 + 1',
+          'connection': connection,
+        });
+
+        // 8. fused edit/preview — runs hot reload + capture.
+        await dispatch('fmt_hot_reload_and_capture', {
+          'connection': connection,
+          'errorsCount': 2,
+        });
+
+        // 9. hot reload — non-destructive.
+        await dispatch('fmt_hot_reload_flutter', {'connection': connection});
+
+        // 10. hot restart — destructive (resets app state). MUST run last.
+        // After this call, refs/snapshot are stale and other tools may not
+        // behave as expected — acceptable since this is the final assertion.
+        await dispatch('fmt_hot_restart_flutter', {'connection': connection});
+      },
+    );
   });
 }
 
-String? _globalVmServiceWsUri;
+/// Locked v3.0.0 default-config tool surface (no `--dumps`). Mirrors
+/// `tool/contracts/expected_tool_surface.txt`.
+const _expectedCoreTools = <String>{
+  'fmt_capture_ui_snapshot',
+  'fmt_connect_debug_app',
+  'fmt_discover_debug_apps',
+  'fmt_drag',
+  'fmt_enter_text',
+  'fmt_evaluate_dart_expression',
+  'fmt_fill_form',
+  'fmt_get_app_errors',
+  'fmt_get_extension_rpcs',
+  'fmt_get_recent_logs',
+  'fmt_get_screenshots',
+  'fmt_get_view_details',
+  'fmt_get_vm',
+  'fmt_handle_dialog',
+  'fmt_hot_reload_and_capture',
+  'fmt_hot_reload_flutter',
+  'fmt_hot_restart_flutter',
+  'fmt_hover',
+  'fmt_inspect_widget_at_point',
+  'fmt_long_press',
+  'fmt_navigate',
+  'fmt_press_key',
+  'fmt_scroll',
+  'fmt_semantic_snapshot',
+  'fmt_swipe',
+  'fmt_tap_widget',
+  'fmt_wait_for',
+};
 
-const List<Map<String, int>> _liveEditProbePoints = <Map<String, int>>[
-  <String, int>{'x': 180, 'y': 400},
-  <String, int>{'x': 150, 'y': 320},
-  <String, int>{'x': 120, 'y': 220},
-];
+String? _globalVmServiceWsUri;
 
 Directory _serverDirectory() => Directory.current;
 
@@ -515,46 +611,8 @@ Map<String, dynamic>? _tryDecodeJsonMap(final String value) {
       return decoded.cast<String, dynamic>();
     }
     return null;
-  } catch (_) {
+  } on Object catch (_) {
     return null;
-  }
-}
-
-Map<String, dynamic>? _pickEditableProperty(
-  final Map<String, dynamic> selection,
-) {
-  final properties = (selection['properties'] as List?) ?? const [];
-  for (final property in properties.whereType<Map>()) {
-    final map = property.cast<String, dynamic>();
-    if (map['editable'] == true) {
-      return map;
-    }
-  }
-  return null;
-}
-
-Object? _draftTargetValue(final Map<String, dynamic> property) {
-  if (property['value'] != null) {
-    return property['value'];
-  }
-
-  final kind = '${property['kind'] ?? ''}';
-  switch (kind) {
-    case 'boolean':
-      return false;
-    case 'integer':
-    case 'number':
-      return 0;
-    case 'string':
-      return '';
-    case 'enum':
-      final options = (property['options'] as List?) ?? const [];
-      if (options.isNotEmpty) {
-        return options.first;
-      }
-      return '';
-    default:
-      return null;
   }
 }
 
@@ -585,44 +643,12 @@ Future<Map<String, dynamic>> _callToolUntilSuccess({
   return lastResponse ?? <String, dynamic>{};
 }
 
-Future<void> _waitForClientTool(
-  final _McpHarness harness, {
-  required final String toolName,
-}) async {
-  final start = DateTime.now();
-  const timeout = Duration(seconds: 60);
-
-  while (DateTime.now().difference(start) < timeout) {
-    final response = await harness.request(
-      method: 'tools/call',
-      params: {
-        'name': 'listClientToolsAndResources',
-        'arguments': {
-          'connection': {'uri': _globalVmServiceWsUri},
-        },
-      },
-    );
-    final data = _decodeToolJsonPayload(response, useLastText: true);
-    final tools = (data['tools'] as List?) ?? const [];
-    final names = tools
-        .whereType<Map>()
-        .map((final entry) => '${entry['name'] ?? ''}')
-        .toSet();
-    if (names.contains(toolName)) {
-      return;
-    }
-
-    await Future.delayed(const Duration(seconds: 2));
-  }
-
-  fail('Dynamic tool $toolName did not appear in time');
-}
-
 final class _McpHarness {
   _McpHarness._({
     required this.process,
     required this.requestController,
     required this.responses,
+    required this.stdinSub,
     required this.stdoutSub,
     required this.stderrSub,
   });
@@ -630,6 +656,7 @@ final class _McpHarness {
   final Process process;
   final StreamController<String> requestController;
   final List<Map<String, dynamic>> responses;
+  final StreamSubscription<String> stdinSub;
   final StreamSubscription<Map<String, dynamic>> stdoutSub;
   final StreamSubscription<String> stderrSub;
   int _nextId = 1;
@@ -639,7 +666,7 @@ final class _McpHarness {
   }) async {
     final process = await Process.start('dart', [
       'run',
-      'bin/main.dart',
+      'bin/flutter_mcp_toolkit_server.dart',
       '--dart-vm-host=localhost',
       '--dart-vm-port=8181',
       '--resources',
@@ -648,7 +675,7 @@ final class _McpHarness {
     ], workingDirectory: workingDirectory);
 
     final requestController = StreamController<String>();
-    requestController.stream
+    final stdinSub = requestController.stream
         .map((final request) => '$request\n')
         .listen(process.stdin.write);
 
@@ -672,6 +699,7 @@ final class _McpHarness {
       process: process,
       requestController: requestController,
       responses: responses,
+      stdinSub: stdinSub,
       stdoutSub: stdoutSub,
       stderrSub: stderrSub,
     );
@@ -680,7 +708,7 @@ final class _McpHarness {
   Future<Map<String, dynamic>> request({
     required final String method,
     final Map<String, Object?>? params,
-  }) async {
+  }) {
     final id = _nextId++;
     final requestEnvelope = <String, Object?>{
       'jsonrpc': '2.0',
@@ -714,13 +742,17 @@ final class _McpHarness {
   }
 
   Future<void> dispose() async {
+    await stdinSub.cancel();
     await requestController.close();
     await stdoutSub.cancel();
     await stderrSub.cancel();
+    try {
+      await process.stdin.close();
+    } on Object catch (_) {}
     process.kill();
     try {
       await process.exitCode.timeout(const Duration(seconds: 8));
-    } catch (_) {
+    } on TimeoutException catch (_) {
       process.kill(ProcessSignal.sigkill);
     }
   }

@@ -8,7 +8,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:dart_mcp/server.dart';
-import 'package:flutter_inspector_mcp_server/src/shared_core/types/core_types.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/types/core_types.dart';
 
 final class FlutterMachineDiscoveryTarget {
   const FlutterMachineDiscoveryTarget({

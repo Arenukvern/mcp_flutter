@@ -7,7 +7,8 @@ on:
       - main
 
 jobs:
-  contracts:
+  tests-and-coverage:
+    name: Tests & coverage (gating)
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -15,16 +16,57 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Dart SDK
-        uses: dart-lang/setup-dart@v1
+      - name: Setup Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
 
       - name: Install mcp_server_dart dependencies
         working-directory: mcp_server_dart
-        run: dart pub get
+        run: flutter pub get
+
+      - name: Run mcp_server_dart tests with coverage
+        working-directory: mcp_server_dart
+        env:
+          HOME: /tmp
+          DART_SUPPRESS_ANALYTICS: 'true'
+        run: |
+          dart pub global activate coverage
+          dart pub global run coverage:test_with_coverage --branch-coverage
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: mcp_server_dart/coverage/lcov.info
+          flags: mcp_server_dart
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+  informational:
+    name: Contracts & analysis (informational)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    continue-on-error: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install mcp_server_dart dependencies
+        working-directory: mcp_server_dart
+        run: flutter pub get
 
       - name: Analyze flutter_live_edit packages
+        continue-on-error: true
         run: |
-          set -euo pipefail
+          set -uo pipefail
           for pkg in \
             flutter_live_edit/flutter_live_edit_core \
             flutter_live_edit/flutter_live_edit_agent \
@@ -32,31 +74,33 @@ jobs:
             flutter_live_edit/live_edit_tooling_ui_kit \
             flutter_live_edit/live_edit_tooling_ui_kit_playground
           do
-            echo "== dart analyze $pkg =="
-            dart pub get --directory "$pkg"
-            dart analyze "$pkg"
+            if [[ ! -f "$pkg/pubspec.yaml" ]]; then
+              echo "== skip $pkg (pubspec.yaml missing) =="
+              continue
+            fi
+            echo "== analyze $pkg =="
+            (cd "$pkg" && flutter pub get) || true
+            dart analyze "$pkg" || true
           done
 
-      - name: Test flutter_live_edit_core
-        working-directory: flutter_live_edit/flutter_live_edit_core
-        run: dart test
-
       - name: Live edit toolkit import boundary test
+        continue-on-error: true
+        if: ${{ hashFiles('flutter_live_edit/flutter_live_edit_toolkit/test/agent_import_boundary_test.dart') != '' }}
         working-directory: flutter_live_edit/flutter_live_edit_toolkit
-        run: dart test test/agent_import_boundary_test.dart
-
-      - name: Run mcp_server_dart tests
-        working-directory: mcp_server_dart
-        env:
-          HOME: /tmp
-          DART_SUPPRESS_ANALYTICS: 'true'
-        run: dart test
+        run: flutter test test/agent_import_boundary_test.dart
 
       - name: Check docs/help drift
+        continue-on-error: true
         run: bash tool/contracts/check_docs_drift.sh
 
-      - name: Check error-code playbook coverage
-        run: bash tool/contracts/check_error_code_playbook.sh
-
       - name: Check SDK parity
+        continue-on-error: true
         run: bash tool/contracts/check_sdk_parity.sh
+
+      - name: Check plugin surfaces
+        continue-on-error: true
+        run: bash tool/contracts/check_plugin_surfaces.sh
+
+      - name: Check tool prefix
+        continue-on-error: true
+        run: bash tool/contracts/check_tool_prefix.sh

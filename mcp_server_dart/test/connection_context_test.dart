@@ -1,4 +1,4 @@
-import 'package:flutter_inspector_mcp_server/flutter_mcp_core.dart';
+import 'package:flutter_mcp_toolkit_server/flutter_mcp_core.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -6,12 +6,7 @@ void main() {
     final context = ConnectionContext(
       defaultHost: 'localhost',
       defaultPort: 8181,
-      logger:
-          (
-            final level,
-            final message, {
-            final logger = 'test',
-          }) {},
+      logger: (final level, final message, {final logger = 'test'}) {},
       discoverPorts: () async => <int>[],
       initialStickyEndpointUri: 'ws://127.0.0.1:8181/pHDrCFCDBwg=/ws',
     );
@@ -26,18 +21,10 @@ void main() {
     final context = ConnectionContext(
       defaultHost: 'localhost',
       defaultPort: 8181,
-      logger:
-          (
-            final level,
-            final message, {
-            final logger = 'test',
-          }) {},
+      logger: (final level, final message, {final logger = 'test'}) {},
       discoverPorts: () async => <int>[8181],
-      probeFlutterTarget:
-          (
-            final endpoint, {
-            required final timeout,
-          }) async => true,
+      probeFlutterTarget: (final endpoint, {required final timeout}) async =>
+          true,
     );
 
     final targets = await context.discoverTargets();
@@ -53,12 +40,7 @@ void main() {
       final context = ConnectionContext(
         defaultHost: 'localhost',
         defaultPort: 8181,
-        logger:
-            (
-              final level,
-              final message, {
-              final logger = 'test',
-            }) {},
+        logger: (final level, final message, {final logger = 'test'}) {},
         discoverPorts: () async => <int>[8181, 8182],
         discoverMachineTargets: () async => <FlutterMachineDiscoveryTarget>[
           FlutterMachineDiscoveryTarget(
@@ -87,18 +69,10 @@ void main() {
     final context = ConnectionContext(
       defaultHost: 'localhost',
       defaultPort: 8181,
-      logger:
-          (
-            final level,
-            final message, {
-            final logger = 'test',
-          }) {},
+      logger: (final level, final message, {final logger = 'test'}) {},
       discoverPorts: () async => <int>[8181, 9001, 9100],
-      probeFlutterTarget:
-          (
-            final endpoint, {
-            required final timeout,
-          }) async => endpoint.port == 8181,
+      probeFlutterTarget: (final endpoint, {required final timeout}) async =>
+          endpoint.port == 8181,
     );
 
     final targets = await context.discoverTargets();

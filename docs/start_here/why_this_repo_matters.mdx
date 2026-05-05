@@ -13,11 +13,30 @@ Generic MCP or Dart-only tooling can expose low-level VM data, but real Flutter 
 
 ## What This Repo Adds
 
-- A Dart MCP server focused on Flutter workflows.
-- A CLI (`flutter_mcp_cli`) for deterministic automation, snapshots, and CI.
-- `mcp_toolkit` for in-app extensions.
+- A Dart MCP server (`flutter-mcp-toolkit-server`) focused on Flutter workflows.
+- A CLI (`flutter-mcp-toolkit`) for deterministic automation, snapshots, and CI.
+- `flutter_mcp_toolkit` package for in-app extensions.
 - Dynamic tool/resource registration from the running app.
 - Target-resolution and retry guidance for multi-app debug sessions.
+
+## Get started in 4 steps
+
+```bash
+# 1. Install the binary
+curl -fsSL https://raw.githubusercontent.com/Arenukvern/flutter-mcp-toolkit/main/install.sh | bash
+
+# 2. Add the toolkit to your Flutter app
+cd my-flutter-app
+flutter-mcp-toolkit codegen-init   # adds flutter_mcp_toolkit + emits main.dart snippet
+
+# 3. Install skills for your AI agent
+flutter-mcp-toolkit init claude-code   # or: cursor | codex | cline | all
+
+# 4. Run the app
+flutter run --debug
+```
+
+That's it. Your AI agent can now inspect and drive the running app.
 
 ## Relationship To Official Dart MCP Server
 

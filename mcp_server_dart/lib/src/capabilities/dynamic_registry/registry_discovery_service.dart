@@ -1,13 +1,15 @@
 // Copyright (c) 2025, Flutter Inspector MCP Server authors.
 // Licensed under the MIT License.
 
+// ignore_for_file: avoid_catches_without_on_clauses
+
 import 'dart:async';
 
 import 'package:dart_mcp/server.dart';
 import 'package:dtd/dtd.dart';
-import 'package:flutter_inspector_mcp_server/flutter_mcp_server.dart';
-import 'package:flutter_inspector_mcp_server/src/capabilities/dynamic_registry/dynamic_registry.dart';
-import 'package:flutter_inspector_mcp_server/src/mcp_toolkit_consts.dart';
+import 'package:flutter_mcp_toolkit_server/flutter_mcp_server.dart';
+import 'package:flutter_mcp_toolkit_server/src/capabilities/dynamic_registry/dynamic_registry.dart';
+import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_consts.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
 import 'package:rx/constructors.dart';
 import 'package:rx/converters.dart';
@@ -34,7 +36,6 @@ final class RegistryDiscoveryService {
   Future<void> dispose() async {
     try {
       await _discoverySubscription?.cancel();
-      // ignore: avoid_catches_without_on_clauses
     } catch (e, stackTrace) {
       logger.log(
         LoggingLevel.warning,
