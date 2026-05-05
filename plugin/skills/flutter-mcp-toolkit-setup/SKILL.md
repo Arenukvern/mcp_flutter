@@ -107,9 +107,11 @@ flutter-mcp-toolkit permissions request --kind visual_capture
 **Port conflicts**: VM service defaults to 8181. Override if another process holds it:
 
 ```bash
-flutter run --debug --host-vmservice-port=8182 --dds-port=8183 --enable-vm-service
-flutter-mcp-toolkit --dart-vm-port 8183 doctor --json
+flutter run --debug --host-vmservice-port=8182 -d macos
+flutter-mcp-toolkit --dart-vm-port 8182 doctor --json
 ```
+
+Use `flutter run --machine` and copy `app.debugPort.wsUri` when you need the exact websocket URI (recommended for `validate-runtime` and `exec`).
 
 **Flutter app not in debug mode**: Release/profile builds don't expose the VM service. Always use `flutter run --debug`.
 
@@ -146,6 +148,10 @@ The binary is `flutter-mcp-toolkit` (built to `mcp_server_dart/build/`).
 | `codegen-init` | Add toolkit dependency and emit `main.dart` boilerplate | `flutter-mcp-toolkit codegen-init` |
 
 Global flags (before the subcommand): `--dart-vm-port <n>`, `--dart-vm-host <host>`, `--vm-service-uri <ws_uri>`, `--log-level <level>`, `--dumps`, `-h/--help`.
+
+**`validate-runtime` targeting:** `--vm-service-uri` applies the same way as `--target` when you omit `--target`. If both are set and differ, `--target` wins (stderr warning).
+
+**`validate-runtime` screenshots:** the first capture uses `auto` (often `desktop_window` on macOS). If that step fails with a retryable `get_screenshots_failed`, the CLI retries once with `flutter_layer`. On success, `data.summary.captureFallbackUsed` is `true` in the JSON envelope.
 
 ---
 

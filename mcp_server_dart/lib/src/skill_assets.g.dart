@@ -20,7 +20,7 @@ class SkillAssets {
     SkillAsset(
       id: 'flutter-mcp-toolkit-guide',
       frontmatter: r'''name: flutter-mcp-toolkit-guide
-description: Entry point for inspecting or driving a running Flutter app from your AI assistant — routes to the right task skill (inspect / control / debug) and runs preflight.''',
+description: Entry point for inspecting or driving a running Flutter app from your AI assistant — routes to the right task skill (inspect / control / debug / custom app surfaces) and runs preflight.''',
       body: r'''
 <!-- @FMT_MODE_PRELUDE -->
 
@@ -31,6 +31,7 @@ from this conversation. Examples:
 - "Tap the login button in my app"
 - "Why is the home screen blank?"
 - "Take a screenshot and tell me what's broken"
+- "Expose my cart / flags / internal state to the agent via MCP"
 
 If the user is asking about Flutter concepts unrelated to a running app
 (architecture questions, package selection), this skill does not apply.
@@ -54,6 +55,7 @@ Always run `flutter-mcp-toolkit doctor --json` first. Parse the output:
 | Read state ("what's on screen?", "show me errors", "screenshot") | `flutter-mcp-toolkit-inspect` |
 | Drive UI ("tap X", "type into Y", "scroll to Z", "hot reload") | `flutter-mcp-toolkit-control` |
 | Diagnose ("why is X failing?", "show recent logs", "evaluate expression") | `flutter-mcp-toolkit-debug` |
+| Register app-specific MCP tools/resources (`MCPCallEntry`, `bootstrapFlutter` `additionalEntries`) | `flutter-mcp-toolkit-custom-tools` |
 
 If the task spans more than one (e.g. "tap the button and show me what
 changed"), load `inspect` AND `control`. Skills are additive.
@@ -66,7 +68,7 @@ tools or shelling out to the CLI.
 
 ## Tool taxonomy reference
 
-The 27 tools in this toolkit fall into these categories. The full list with
+The core toolkit tools fall into these categories. The full list with
 parameter shapes lives in the task skills.
 
 - **Inspection (read-only):** `discover_debug_apps`, `get_app_errors`,
@@ -79,6 +81,10 @@ parameter shapes lives in the task skills.
   `hot_reload_and_capture`. → `flutter-mcp-toolkit-control`.
 - **Debug:** `get_recent_logs`, `evaluate_dart_expression`. →
   `flutter-mcp-toolkit-debug`.
+- **Dynamic registry (app-defined):** after registration in the Flutter app,
+  list with `list_client_tools_and_resources`, then `client_tool` /
+  `client_resource` — wire names as **`fmt_*`** when calling MCP. →
+  `flutter-mcp-toolkit-custom-tools`.
 
 ## When in doubt
 
@@ -197,9 +203,11 @@ flutter-mcp-toolkit permissions request --kind visual_capture
 **Port conflicts**: VM service defaults to 8181. Override if another process holds it:
 
 ```bash
-flutter run --debug --host-vmservice-port=8182 --dds-port=8183 --enable-vm-service
-flutter-mcp-toolkit --dart-vm-port 8183 doctor --json
+flutter run --debug --host-vmservice-port=8182 -d macos
+flutter-mcp-toolkit --dart-vm-port 8182 doctor --json
 ```
+
+Use `flutter run --machine` and copy `app.debugPort.wsUri` when you need the exact websocket URI (recommended for `validate-runtime` and `exec`).
 
 **Flutter app not in debug mode**: Release/profile builds don't expose the VM service. Always use `flutter run --debug`.
 
@@ -236,6 +244,10 @@ The binary is `flutter-mcp-toolkit` (built to `mcp_server_dart/build/`).
 | `codegen-init` | Add toolkit dependency and emit `main.dart` boilerplate | `flutter-mcp-toolkit codegen-init` |
 
 Global flags (before the subcommand): `--dart-vm-port <n>`, `--dart-vm-host <host>`, `--vm-service-uri <ws_uri>`, `--log-level <level>`, `--dumps`, `-h/--help`.
+
+**`validate-runtime` targeting:** `--vm-service-uri` applies the same way as `--target` when you omit `--target`. If both are set and differ, `--target` wins (stderr warning).
+
+**`validate-runtime` screenshots:** the first capture uses `auto` (often `desktop_window` on macOS). If that step fails with a retryable `get_screenshots_failed`, the CLI retries once with `flutter_layer`. On success, `data.summary.captureFallbackUsed` is `true` in the JSON envelope.
 
 ---
 
@@ -826,8 +838,11 @@ Every failure returns `{code, message, details, descriptor, recovery}`. Always r
 **Recovery:** `flutter-mcp-toolkit doctor --json`
 
 ### `getScreenshotsFailed` (`get_screenshots_failed`)
-**Means:** screenshot capture failed.
-**Recovery:** `flutter-mcp-toolkit doctor --json` — check `visual_capture_permission_denied` separately.
+**Means:** screenshot capture failed (wrong mode, host window not available, Simulator window race, etc.).
+**Recovery:**
+1. `flutter-mcp-toolkit doctor --json` — check `visual_capture_permission_denied` separately.
+2. For **MCP / `exec`**, retry `get_screenshots` or `capture_ui_snapshot` with `screenshotMode: flutter_layer` when `desktop_window` or host capture is flaky (macOS unfocused window, iOS Simulator).
+3. For **`validate-runtime`**, a `flutter_layer` retry runs automatically after a failed host `desktop_window` attempt; read `data.summary.captureFallbackUsed` in the result envelope.
 
 ### `visualCapturePermissionDenied` (`visual_capture_permission_denied`)
 **Means:** macOS Screen Recording permission is not granted.
@@ -1003,6 +1018,332 @@ Every failure returns `{code, message, details, descriptor, recovery}`. Always r
 ''',
       relativePath: 'skills/flutter-mcp-toolkit-debug/SKILL.md',
     ),
+    SkillAsset(
+      id: 'flutter-mcp-toolkit-custom-tools',
+      frontmatter: r'''name: flutter-mcp-toolkit-custom-tools
+description: Use this skill when the agent exposes app-specific surfaces by registering custom MCP tools and resources inside the Flutter app (mcp_toolkit dynamic registry — MCPCallEntry, bootstrapFlutter additionalEntries / addEntries). Covers tool vs resource vs evaluate-expression, Map-based handlers, schema strictness, discovery via fmt_list_client_tools_and_resources, fmt_client_tool, fmt_client_resource, and lifecycle pitfalls.''',
+      body: r'''
+<!-- @FMT_MODE_PRELUDE -->
+
+# Custom MCP Toolkit Tools & Resources (Dynamic Registry)
+
+Use this when bundled MCP tools (screenshot, semantic snapshot, tap, …) are not enough and you need **app-specific** read surfaces or actions — e.g. cart totals, feature flags, curated debug snapshots of internal state. Entries are registered **in the Flutter process** and exposed to the agent through the **dynamic registry**.
+
+## Pick the right primitive
+
+| Need | Use |
+|------|-----|
+| One-off read of a simple value | **`fmt_evaluate_dart_expression`** (no app code change). |
+| Stable **read-only** payload (diagnostics, JSON snapshot, “current route”) | **`MCPCallEntry.resource`** + **`fmt_client_resource`**. Prefer resources when the contract is “GET-like” and idempotent. |
+| Parameterized or mutating action, or reusable named operation | **`MCPCallEntry.tool`** + **`fmt_client_tool`**. |
+
+## Handler signature (tools and resources)
+
+[`MCPCallHandler`](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_toolkit/mcp_toolkit/lib/src/mcp_models.dart) is `FutureOr<MCPCallResult> Function(ServiceExtensionRequestMap request)` where **`ServiceExtensionRequestMap` is `Map<String, String>`**.
+
+- Tool arguments arrive as **string values** keyed by schema property names — mirror the README pattern: `request['n']`, `request['userId']`, then parse (`int.tryParse`, `double.tryParse`, `jsonDecode` for nested blobs if the wire format sends JSON-as-string).
+- Do **not** use `request.arguments` — that is not the app-side API.
+
+## Minimal tool registration
+
+```dart
+import 'package:mcp_toolkit/mcp_toolkit.dart';
+
+final tool = MCPCallEntry.tool(
+  handler: (request) async {
+    final userId = request['userId'] ?? '';
+    final cart = CartRepository.instance.forUser(userId);
+    return MCPCallResult(
+      message: 'ok',
+      parameters: {
+        'total': cart.total,
+        'items': cart.items.map((i) => i.toJson()).toList(),
+      },
+    );
+  },
+  definition: MCPToolDefinition(
+    name: 'cart_get_snapshot',
+    description: 'Return current cart total and items for a user.',
+    inputSchema: {
+      'type': 'object',
+      'additionalProperties': false,
+      'properties': {
+        'userId': {'type': 'string'},
+      },
+      'required': ['userId'],
+    },
+  ),
+);
+
+await MCPToolkitBinding.instance.addEntries(entries: {tool});
+```
+
+Prefer **`MCPToolkitBinding.instance.bootstrapFlutter(additionalEntries: { ... }, runApp: ...)`** so tools/resources register in one place with zone/error setup — same entries shape as above.
+
+Register **after** `initialize()` / **`bootstrapFlutter`** wiring, **once** at bootstrap — not inside `build`, not per-widget `initState`.
+
+## Custom resources
+
+Resources are for **read-only** MCP surfaces: diagnostics, config summaries, or JSON blobs the agent polls without treating them as imperative actions.
+
+```dart
+MCPCallEntry.resource(
+  definition: MCPResourceDefinition(
+    name: 'app_cart_digest',
+    description: 'Compact cart summary for agents (read-only).',
+    mimeType: 'application/json',
+  ),
+  handler: (request) async => MCPCallResult(
+    message: 'Cart digest',
+    parameters: {
+      'itemCount': CartRepository.instance.visibleCount,
+      'currency': CartRepository.instance.currencyCode,
+    },
+  ),
+),
+```
+
+- **`name`** must be `snake_case` (letters, digits, underscores). [`resourceUri`](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_toolkit/mcp_toolkit/lib/src/mcp_models.dart) maps it to a **`visual://localhost/...`** URI (underscore segments become path segments). Agents consume it via **`fmt_client_resource`** using that URI / listing from **`fmt_list_client_tools_and_resources`**.
+- Set **`mimeType`** honestly (`application/json` vs `text/plain`) so clients know how to interpret payloads.
+
+## Schema rules (tools)
+
+The MCP server enforces strict JSON Schema:
+
+- Prefer **`additionalProperties: false`** unless you intentionally accept arbitrary keys. Unknown keys **fail validation** — good for catching agent typos.
+- Mark **`required`** for anything the handler reads unconditionally.
+- Prefer primitives and **`enum`** over unconstrained strings.
+- **`parameters`** in **`MCPCallResult`** must be JSON-serializable; non-serializable objects degrade to **`toString()`**.
+
+## Discovery from the agent side
+
+1. **`fmt_list_client_tools_and_resources`** — enumerate app-registered tools and resources.
+2. **`fmt_client_tool`** — invoke a tool by name with JSON args (CLI: `flutter-mcp-toolkit exec --name fmt_client_tool --args '...'` per your transport).
+3. **`fmt_client_resource`** — fetch a registered resource (URI from listing / `resourceUri` convention).
+
+If something should appear but does not: confirm **`addEntries`** completed (**`await`**), then hot **restart** — reload does not always replay discovery cleanly.
+
+## Lifecycle gotchas
+
+- **Hot reload** + **`addEntries`** from widget code → duplicate registrations. Register once in **`main()` / bootstrap**, not in **`build`**.
+- **Hot restart** clears VM state; registrations tied to **`bootstrapFlutter`** / **`main`** run again on boot — correct pattern survives restart.
+- **Debug mode only** — release builds do not expose these VM service extensions.
+- **Naming**: flat global namespace per app — prefix tools/resources (`cart_`, `flags_`, `nav_`) to avoid collisions with builtins or other domains.
+
+## When the agent authors surfaces for the user’s app
+
+1. Ensure **`mcp_toolkit`** is in **`pubspec.yaml`**.
+2. Add **`lib/mcp_tools/<domain>_surfaces.dart`** exporting **`registerXSurfaces()`** that returns **`Set<MCPCallEntry>`** or performs **`addEntries`** once.
+3. Wire **`registerXSurfaces()`** from **`bootstrapFlutter(..., additionalEntries: ...)`** or call **`addEntries`** immediately after **`initializeFlutterToolkit`** inside **`bootstrapFlutter`**’s chain — **never** from **`StatefulWidget` lifecycle**.
+4. Tight schemas (**`additionalProperties: false`**, explicit **`required`**).
+5. Hot **restart**, then **`fmt_list_client_tools_and_resources`** before first **`fmt_client_tool`** / **`fmt_client_resource`** call.
+
+## Safety and scope
+
+- Treat handlers as **powerful debug hooks**: avoid exposing secrets, full databases, or unchecked filesystem/network IO.
+- Keep handlers thin: delegate to domain/services already used by the app (same DI/getters), **don’t** duplicate business logic in MCP-only paths unless intentional.
+
+## Common traps
+
+- **`request.arguments`** — wrong shape; use **`request['key']`** on **`Map<String, String>`**.
+- Missing **`await`** on **`addEntries`** → race before discovery lists your surface.
+- Returning **`Future`** instances inside **`parameters`** → useless serialization; **`await`** inside the handler.
+- **`inputSchema`** out of sync with the handler → agents trust the schema; update both.
+
+## Related
+
+- Driving the live app (snapshot / tap / reload): **`flutter-mcp-toolkit-guide`** → **`flutter-mcp-toolkit-inspect`** / **`flutter-mcp-toolkit-control`**.
+- Repository **`ARCHITECTURE.md`** → “Dynamic Registry Architecture”.
+''',
+      relativePath: 'skills/flutter-mcp-toolkit-custom-tools/SKILL.md',
+    ),
+    SkillAsset(
+      id: 'flutter-mcp',
+      frontmatter: r'''name: flutter-mcp
+description: Use this skill whenever inspecting, interacting with, or live-editing a running Flutter app via the Flutter MCP toolkit server (`mcpServers` key **`flutter-mcp-toolkit`**, or legacy **`flutter-inspector`**). Covers preflight, snapshot/tap/enter/scroll loop, hot-reload validation, and error envelope parsing.''',
+      body: r'''
+<!-- @FMT_MODE_PRELUDE -->
+
+# Flutter MCP
+
+Golden path for agents driving a live Flutter app via the **`flutter-mcp-toolkit`** MCP server entry. Older configs may use the legacy **`flutter-inspector`** `mcpServers` registry id for the same binary (that id is **not** the Claude subagent **`flutter-mcp-toolkit-runtime`**).
+
+## When to use
+
+- User references a running Flutter app (debug mode) and wants to inspect, screenshot, interact with, or hot-reload it.
+- User pastes a VM service URI (`ws://127.0.0.1:8181/.../ws`) or mentions port 8181.
+- You need runtime proof (before/after screenshots) that a code edit took effect.
+
+## Preflight (always first)
+
+Before any VM-dependent call:
+
+1. Call `doctor` (or run `flutter-mcp-toolkit doctor --json`) — parses env, ports, app reachability.
+2. Confirm required toolkit extensions exist on the target:
+   - `ext.mcp.toolkit.app_errors`
+   - `ext.mcp.toolkit.view_details`
+   - `ext.mcp.toolkit.view_screenshots`
+   - `ext.mcp.toolkit.inspect_widget_at_point`
+
+If missing, stop and report the instrumentation gap — do **not** guess:
+
+- Add `mcp_toolkit` to `pubspec.yaml`.
+- Ensure `MCPToolkitBinding.instance..initialize()..initializeFlutterToolkit();` runs before `runApp`.
+- Hot **restart** (not reload) — reload is often insufficient for extension registration.
+
+## Tool naming (v3.0.0+)
+
+All MCP tools surface under the `fmt_` capability prefix
+(`fmt_tap_widget`, `fmt_hot_reload_and_capture`, etc.). The prefix is
+mandatory in `tools/call`. Skill-local references below use the bare name
+for readability — when invoking, prepend `fmt_`. Dynamic-registry host
+tools (`fmt_list_client_tools_and_resources`, `fmt_client_tool`,
+`fmt_client_resource`) use the same prefix for a single consistent surface.
+
+## Interaction loop (Playwright-style)
+
+1. `fmt_semantic_snapshot` → returns `s_0..s_N` refs + `snapshot_id`.
+2. `fmt_tap_widget` / `fmt_enter_text` / `fmt_scroll` / `fmt_swipe` / `fmt_long_press` / `fmt_drag` — act on a ref. **Always pass `snapshotId`** — you get a structured `stale_snapshot` error if the tree moved, instead of a silent wrong tap.
+3. `fmt_evaluate_dart_expression` — read state directly (e.g. `AgentState.instance.counter`).
+4. `fmt_hot_reload_and_capture` — after a code edit, returns reload status + screenshot + fresh snapshot + errors in one response. Prefer this over manual reload + separate capture.
+
+## Error envelope contract
+
+Errors are `{code, message, details, descriptor, recovery}`. Parse `error.descriptor` (not the top-level object) for the machine-readable shape. Strict schemas default to `additionalProperties: false` — unknown params reject.
+
+Common codes and recovery:
+
+- `connection_selection_required` — retry with `arguments.connection.targetId` or exact `arguments.connection.uri` from `app.debugPort.wsUri`.
+- `target_not_found` — refresh targets, then prefer exact `arguments.connection.uri`.
+- `stale_snapshot` — call `fmt_semantic_snapshot` again, then retry the action with the new `snapshot_id`.
+- `tool_not_found` — confirm the prefixed name (`fmt_<tool>`); v3.0.0 dropped legacy unprefixed names.
+- Empty screenshot output — verify the server was not started with `--no-images`.
+- Missing view resource/tool — verify the server was not started with `--no-resources`.
+
+## Visual QA
+
+- Before/after screenshots are the proof artifact for any UI claim. Capture before with `fmt_capture_ui_snapshot` (or one of the `visual://localhost/...` resources), edit, `fmt_hot_reload_and_capture`, compare.
+- For each reported visual issue, attach coordinate + `fmt_inspect_widget_at_point` output.
+- Map defects to source via `fmt_get_app_errors` top stack frame (`file`, `line`, `column`) when available.
+- Do **not** use `fmt_debug_dump_*` unless explicitly requested (server must be started with `--dumps`; high token cost).
+
+## Permissions (macOS)
+
+Screen Recording permission belongs to the process running `flutter-mcp-toolkit` (or the MCP server host). If visual capture is denied:
+
+```bash
+flutter-mcp-toolkit permissions status
+flutter-mcp-toolkit permissions request
+flutter-mcp-toolkit permissions open-settings
+```
+
+## Non-modifiable apps
+
+If the target app cannot be instrumented (third-party binary, restricted env), report flutter-mcp as unavailable for that app. Do **not** claim screenshot/layout/error inspection success.
+
+## Related
+
+- For the dynamic-tools side (registering custom MCP tools from inside the Flutter app), see the `flutter-mcp-toolkit-custom-tools` skill.
+- For routing across setup / inspect / control / debug skills, see `flutter-mcp-toolkit-guide`.
+''',
+      relativePath: 'skills/flutter-mcp/SKILL.md',
+    ),
+    SkillAsset(
+      id: 'flutter-mcp-cli-runtime-validation',
+      frontmatter: r'''name: flutter-mcp-cli-runtime-validation
+description: Run Flutter MCP runtime validation from CLI in two steps (launch app, then run validate-runtime), including toolkit-extension gating, screenshot/layout capture, app error collection, optional reload verification, and retry handling for transient first-connect failures.''',
+      body: r'''
+<!-- @FMT_MODE_PRELUDE -->
+
+# Flutter MCP CLI Runtime Validation
+
+Use this skill when you need agent-style runtime validation through `flutter-mcp-toolkit` with minimal operator steps.
+
+## Two-Step Flow
+
+1. Launch the Flutter app in debug mode.
+2. Run one CLI command:
+
+```bash
+dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart --save-images --output-dir .flutter_mcp/runtime_validation validate-runtime \
+  --target ws://127.0.0.1:8181/<token>/ws \
+  --timeout-ms 10000 \
+  --post-reload-delay-ms 500 \
+  --after-reload
+```
+
+Optional skill install in the same command:
+
+```bash
+dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart validate-runtime \
+  --target ws://127.0.0.1:8181/<token>/ws \
+  --install-skill
+```
+
+Permission behavior for this flow:
+
+- `validate-runtime` stays read/write only for visual capture and defaults to `auto_request_once`.
+- `doctor` remains read-only.
+- On macOS, Screen Recording permission belongs to the host process running `flutter-mcp-toolkit`.
+- On web, `flutter_layer` is the only supported truth path and no OS permission prompt is expected.
+- If the first `capture_ui_snapshot` attempt uses host `desktop_window` and fails (common on macOS when the window is not foregrounded, or for iOS Simulator), `validate-runtime` automatically retries once with `flutter_layer`.
+- You may pass the VM URI as global `--vm-service-uri` instead of `validate-runtime --target` when only one URI is needed.
+
+## What `validate-runtime` Must Prove
+
+- Doctor preflight passes critical checks.
+- Required toolkit extensions exist:
+  - `ext.mcp.toolkit.app_errors`
+  - `ext.mcp.toolkit.view_details`
+  - `ext.mcp.toolkit.view_screenshots`
+  - `ext.mcp.toolkit.inspect_widget_at_point`
+- Screenshot capture works.
+- View details (layout metadata) are available.
+- App errors are retrievable.
+- If `--after-reload` is enabled, post-reload screenshot also works.
+
+## Output Handling
+
+- Use `data.summary` as pass/fail status for automation.
+- Use `data.summary.captureFallbackUsed` to see whether the `flutter_layer` retry succeeded after a failed `desktop_window` attempt.
+- Use `data.steps` for per-step evidence and retries.
+- Use `data.doctor.checks` to explain setup blockers.
+- Use `data.summary.screenshotFiles` for saved screenshot paths when `--save-images` is enabled.
+- When `--save-images` is enabled, read screenshot file URLs from step data.
+- For visual debugging reports, also run:
+  - `exec --name capture_ui_snapshot --args '{"errorsCount":4,"compress":true,"includeViewDetails":true,"includeErrors":true}'`
+  - `exec --name inspect_widget_at_point --args '{"x":<int>,"y":<int>}'`
+
+## Failure Rules
+
+- If toolkit extensions are missing, stop and report instrumentation gap with exact fix:
+  - add `mcp_toolkit` to app dependencies
+  - ensure `MCPToolkitBinding.instance.bootstrapFlutter(...)` or equivalent manual initialization runs before `runApp`
+  - hot restart or rerun the app
+- If first explicit URI connect fails, retry is automatic for retryable connection errors.
+- If screenshots are blank, verify app window is visible and retry.
+- If macOS visual capture is denied, use:
+  - `dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart permissions status`
+  - `dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart permissions request`
+  - `dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart permissions open-settings`
+- If app cannot be instrumented, do not claim screenshot/layout/error inspection success.
+
+## Visual QA + Source Mapping Rules
+
+- Always compare before/after screenshot evidence around changes.
+- For each reported visual issue, provide coordinate + `inspect_widget_at_point` output.
+- Map defects to source using `get_app_errors` top stack frame (`file`, `line`, `column`) when available.
+- Do not use `debug_dump_*` unless explicitly requested.
+
+## Challenge Cases (Always Call Out Explicitly)
+
+- No running debug app: `doctor` critical failure on `vm_target_reachable`; request app launch before continuing.
+- Wrong target URI/token: treat as connection mismatch and retry with exact `app.debugPort.wsUri`.
+- Toolkit added but still missing extensions: hot reload is often insufficient, require hot restart/full rerun.
+- Non-modifiable app (cannot add toolkit): report inspection as unavailable instead of guessing.
+''',
+      relativePath: 'skills/flutter-mcp-cli-runtime-validation/SKILL.md',
+    ),
   ];
 
   static const String cursorPluginManifest = r'''{
@@ -1027,8 +1368,14 @@ Every failure returns `{code, message, details, descriptor, recovery}`. Always r
   static const String mcpServerConfig = r'''{
   "mcpServers": {
     "flutter-mcp-toolkit": {
-      "command": "flutter-mcp-toolkit-server",
-      "args": ["--dart-vm-port", "8181"],
+      "command": "${FLUTTER_MCP_BIN:-flutter-mcp-toolkit-server}",
+      "args": [
+        "--dart-vm-host=localhost",
+        "--dart-vm-port=8181",
+        "--resources",
+        "--images",
+        "--dynamics"
+      ],
       "env": {}
     }
   }

@@ -1,6 +1,6 @@
 ---
 name: flutter-mcp-toolkit-guide
-description: Entry point for inspecting or driving a running Flutter app from your AI assistant — routes to the right task skill (inspect / control / debug) and runs preflight.
+description: Entry point for inspecting or driving a running Flutter app from your AI assistant — routes to the right task skill (inspect / control / debug / custom app surfaces) and runs preflight.
 ---
 
 <!-- @FMT_MODE_PRELUDE -->
@@ -12,6 +12,7 @@ from this conversation. Examples:
 - "Tap the login button in my app"
 - "Why is the home screen blank?"
 - "Take a screenshot and tell me what's broken"
+- "Expose my cart / flags / internal state to the agent via MCP"
 
 If the user is asking about Flutter concepts unrelated to a running app
 (architecture questions, package selection), this skill does not apply.
@@ -35,6 +36,7 @@ Always run `flutter-mcp-toolkit doctor --json` first. Parse the output:
 | Read state ("what's on screen?", "show me errors", "screenshot") | `flutter-mcp-toolkit-inspect` |
 | Drive UI ("tap X", "type into Y", "scroll to Z", "hot reload") | `flutter-mcp-toolkit-control` |
 | Diagnose ("why is X failing?", "show recent logs", "evaluate expression") | `flutter-mcp-toolkit-debug` |
+| Register app-specific MCP tools/resources (`MCPCallEntry`, `bootstrapFlutter` `additionalEntries`) | `flutter-mcp-toolkit-custom-tools` |
 
 If the task spans more than one (e.g. "tap the button and show me what
 changed"), load `inspect` AND `control`. Skills are additive.
@@ -47,7 +49,7 @@ tools or shelling out to the CLI.
 
 ## Tool taxonomy reference
 
-The 27 tools in this toolkit fall into these categories. The full list with
+The core toolkit tools fall into these categories. The full list with
 parameter shapes lives in the task skills.
 
 - **Inspection (read-only):** `discover_debug_apps`, `get_app_errors`,
@@ -60,6 +62,10 @@ parameter shapes lives in the task skills.
   `hot_reload_and_capture`. → `flutter-mcp-toolkit-control`.
 - **Debug:** `get_recent_logs`, `evaluate_dart_expression`. →
   `flutter-mcp-toolkit-debug`.
+- **Dynamic registry (app-defined):** after registration in the Flutter app,
+  list with `list_client_tools_and_resources`, then `client_tool` /
+  `client_resource` — wire names as **`fmt_*`** when calling MCP. →
+  `flutter-mcp-toolkit-custom-tools`.
 
 ## When in doubt
 

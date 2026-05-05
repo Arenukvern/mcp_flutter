@@ -1,6 +1,6 @@
 # flutter-mcp-toolkit Plugin & Skill Bundle — Design
 
-- **Status:** Draft
+- **Status:** Draft (runtime-validation §3.6 + MCP key policy updated 2026-05-05)
 - **Date:** 2026-04-29
 - **Owner:** @arenukvern
 - **Targets release:** v3.0.0
@@ -12,7 +12,7 @@
 
 - **7 manual steps** from `git clone` to first AI tool call.
 - **4 separate doc paths** for Cursor / Codex / Claude / Cline, each maintained independently.
-- **Branding drift**: `mcp_flutter`, `mcp_toolkit`, `flutter_inspector_mcp`, `flutter_mcp_cli` appear interchangeably.
+- **Branding drift**: `mcp_flutter`, `mcp_toolkit`, `flutter_inspector_mcp`, `flutter_mcp_cli` (legacy CLI name, now `flutter-mcp-toolkit`) appear interchangeably.
 - **No source-of-truth for AI-agent guidance** — `docs/ai_agents/` is markdown that agents only read if a human points them at it.
 - **CLI vs MCP** is a forked path the user must understand and configure manually.
 
@@ -146,6 +146,34 @@ Two layers:
 - `tool/build_skill_assets.dart` reads `plugin/` at CLI build time and bakes contents into `lib/src/skill_assets.g.dart` as Dart string constants.
 - `flutter-mcp-toolkit init <agent>` substitutes the prelude into bundled bodies and writes to the target's expected path. Single binary, works offline, no network fetch, version-locked to the binary.
 
+### 3.6 Runtime validation CLI (`validate-runtime`)
+
+The `flutter-mcp-toolkit validate-runtime` subcommand is the preferred one-shot smoke test (toolkit extensions, capture, view details, app errors; optional post–hot-reload capture) instead of hand-rolled `exec` sequences.
+
+**Target resolution (implementation contract):**
+
+- Effective VM websocket URI = `validate-runtime --target <ws_uri>` when set; otherwise global **`--vm-service-uri <ws_uri>`** when set (same string shape as `app.debugPort.wsUri` from `flutter run --machine`).
+- If **both** `--target` and `--vm-service-uri` are set and **differ**, **`--target` wins** and the CLI emits a **stderr warning** that `--vm-service-uri` was ignored.
+
+**Visual capture gate:**
+
+1. **Primary:** `capture_ui_snapshot` with `screenshotMode: auto`, `permissionPolicy: auto_request_once`, with view-details and errors omitted for the gate step only.
+2. **Fallback:** If that step fails with `get_screenshots_failed`, the descriptor is **retryable**, and the failure is classified as host **`desktop_window`** capture (message substring and/or `permission.actualMode` / `requestedMode` in error `details`), run **`capture_ui_snapshot_flutter_layer`** once with `screenshotMode: flutter_layer`, same permission policy.
+3. **Post-reload:** With `--after-reload`, the same **auto then `flutter_layer` fallback** applies to **`capture_ui_snapshot_after_reload`** / **`capture_ui_snapshot_after_reload_flutter_layer`**, in addition to existing transient **post-reload** retries (`_shouldRetryPostReloadCapture`).
+
+**Success envelope:**
+
+- `data.summary.captureFallbackUsed` is **`true`** when a `*_flutter_layer` step completed successfully after the primary capture step failed.
+- `data.summary.captureMode`, `captureBackend`, and `screenshotFiles` reflect the **winning** attempt (successful fallback overrides failed primary for summary fields).
+
+**Doc parity:** `mcp_server_dart/README.md`, `plugin/skills/flutter-mcp-toolkit-setup/SKILL.md`, and `plugin/skills/flutter-mcp-cli-runtime-validation/SKILL.md` track this behavior.
+
+### 3.7 MCP server registry key (`mcpServers` in client JSON)
+
+- **Canonical** key for new configs: **`flutter-mcp-toolkit`** — matches the product / binary family and avoids confusion with the optional **`flutter-mcp-toolkit-runtime`** *agent* in Claude Code (legacy MCP key **`flutter-inspector`** is unrelated to that agent id).
+- **Legacy** key **`flutter-inspector`** remains valid for existing user configs and older Cursor deeplinks; `tool/contracts/check_plugin_surfaces.sh` accepts **either** key but requires the **`command`** to reference **`flutter-mcp-toolkit-server`** (or `${FLUTTER_MCP_BIN:-flutter-mcp-toolkit-server}`).
+- Shipped **`plugin/mcp.json`** uses the canonical key.
+
 ## 4. User Flows
 
 ### 4.1 Human Setup Flow (4 steps)
@@ -185,6 +213,8 @@ Decision row: "long IDs in install/discovery surfaces, short prefix in MCP hot p
 | MCP tool prefix (every call) | `fmt_` (e.g. `fmt_tap_widget`) |
 | CLI binary | `flutter-mcp-toolkit` |
 | Server binary | `flutter-mcp-toolkit-server` |
+| MCP `mcpServers` key (client JSON) | **`flutter-mcp-toolkit`** (canonical); **`flutter-inspector`** (legacy, still accepted by contract checks) |
+| Claude Code runtime subagent (`plugin/agents/…`) | **`flutter-mcp-toolkit-runtime`** (`flutter-mcp-toolkit-runtime.md`) |
 | Pub package | `flutter_mcp_toolkit` (snake_case Pub norm) |
 
 ## 6. Migration
@@ -195,7 +225,9 @@ Decision row: "long IDs in install/discovery surfaces, short prefix in MCP hot p
 |---|---|---|
 | MCP tool prefix `core_*` | `fmt_*` | `mcp_capability_kernel` prefix constant + `tool/contracts/expected_tool_surface.txt`; snapshot test enforces |
 | `flutter_inspector_mcp` (binary) | `flutter-mcp-toolkit-server` | Makefile, `bin/`, `install.sh` checksums |
-| `flutter_mcp_cli` (binary) | `flutter-mcp-toolkit` | Same, plus add `codegen-init` and `init <agent>` subcommands |
+| `flutter_mcp_cli` (binary, legacy) | `flutter-mcp-toolkit` | Same, plus add `codegen-init` and `init <agent>` subcommands |
+| MCP key `flutter-inspector` | `flutter-mcp-toolkit` (new installs) | Shipped `plugin/mcp.json`; contract accepts both keys |
+| Claude subagent `flutter-inspector` (file / id) | `flutter-mcp-toolkit-runtime` | `plugin/agents/flutter-mcp-toolkit-runtime.md`; disambiguates from legacy MCP key |
 | `mcp_flutter` (GitHub repo) | `flutter-mcp-toolkit` | `gh repo rename`; auto-redirects |
 | `mcp_toolkit` (Pub) | `flutter_mcp_toolkit` | New publish; old name kept as deprecated alias for one minor version |
 | `CorePrefix` (capability kernel constant) | `FmtPrefix` | Kernel's existing tested rename path |

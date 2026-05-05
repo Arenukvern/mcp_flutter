@@ -4,7 +4,7 @@
 
 **Goal:** Rename the MCP tool prefix `core_*` → `fmt_*`, the CLI binary `flutter_mcp_cli` → `flutter-mcp-toolkit`, and the MCP server binary `flutter_inspector_mcp` → `flutter-mcp-toolkit-server`, with snapshot tests enforcing the new surface.
 
-**Architecture:** The tool prefix comes from `CoreCapability.id` (`mcp_capability_core/lib/src/core_capability.dart`). The kernel constructs MCP tool names as `<capability_id>_<tool_name>`. Renaming `id` from `'core'` to `'fmt'` flips the prefix everywhere atomically. Binary renames are Makefile + `install.sh` checksum updates.
+**Architecture:** The tool prefix comes from `CoreCapability.id` (`mcp_capability_core/lib/src/core_capability.dart`). The kernel constructs MCP tool names as `<capability_id>_<tool_name>`. Renaming `id` from `'core'` to `'fmt'` flips the prefix everywhere atomically. Binary renames are `makefile` + `install.sh` checksum updates.
 
 **Tech Stack:** Dart, Make, shell.
 
@@ -24,10 +24,10 @@
 - `mcp_capability_core/lib/src/core_capability.dart` — id `'core'` → `'fmt'`; consider class rename
 - `tool/contracts/expected_tool_surface.txt` — bulk `core_` → `fmt_` (27 entries)
 - `mcp_server_dart/test/tool_surface_snapshot_test.dart` — verify new prefix
-- `mcp_server_dart/Makefile` — binary names
+- `mcp_server_dart/makefile` — binary names
 - `mcp_server_dart/pubspec.yaml` — `executables` block
 - `install.sh` — binary names + checksums
-- `Makefile` (root) — top-level passthrough names if any
+- Root `makefile` — top-level passthrough names if any
 - All test/source files that reference `core_*` tool names — bulk update
 - `CLAUDE.md` — references to `core_*` and old binary names
 - `mcp_capability_core/lib/mcp_capability_core.dart` — export rename if class renamed
@@ -47,7 +47,7 @@ grep -rn "core_" \
   --include="*.txt" \
   --include="*.md" \
   --include="*.mdx" \
-  --include="Makefile" \
+  --include="makefile" \
   --include="*.sh" \
   --exclude-dir=build \
   --exclude-dir=.dart_tool \
@@ -63,7 +63,7 @@ Run:
 ```bash
 grep -rn "flutter_mcp_cli\|flutter_inspector_mcp" \
   --include="*.dart" --include="*.sh" --include="*.md" --include="*.mdx" \
-  --include="Makefile" --include="*.yaml" --include="*.json" \
+  --include="makefile" --include="*.yaml" --include="*.json" \
   --exclude-dir=build --exclude-dir=.dart_tool \
   > /tmp/binary_inventory.txt
 wc -l /tmp/binary_inventory.txt
@@ -261,15 +261,17 @@ git commit -m "test: update tool-name string literals core_ → fmt_"
 
 ---
 
-## Task 7: Rename `flutter_mcp_cli` binary → `flutter-mcp-toolkit`
+## Task 7: Rename `flutter_mcp_cli` binary → `flutter-mcp-toolkit` *(completed in v3.0.0)*
 
-**Files:**
-- Modify: `mcp_server_dart/Makefile`
-- Modify: `mcp_server_dart/pubspec.yaml`
-- Modify: `mcp_server_dart/bin/flutter_mcp_cli.dart` (rename file)
-- Modify: `Makefile` (root) if it references the binary
+**Files (current repo state):**
+- `mcp_server_dart/makefile` — emits `build/flutter-mcp-toolkit`
+- `mcp_server_dart/pubspec.yaml` — `executables` block
+- `mcp_server_dart/bin/flutter_mcp_toolkit.dart` — CLI entry (renamed from legacy `flutter_mcp_cli.dart`)
+- Root `makefile` if it references the binary
 
-- [ ] **Step 7.1: Rename the bin entry-point Dart file**
+- [ ] **Step 7.1: Rename the bin entry-point Dart file** *(historical — already applied)*
+
+The live entry point is `mcp_server_dart/bin/flutter_mcp_toolkit.dart`. When replaying history:
 
 ```bash
 git mv mcp_server_dart/bin/flutter_mcp_cli.dart \
@@ -288,13 +290,13 @@ executables:
 
 (Replace `<existing-server-entry-point>` with whatever the current value is; see Task 8 for the server-side rename which fills this in.)
 
-- [ ] **Step 7.3: Update `mcp_server_dart/Makefile`**
+- [ ] **Step 7.3: Update `mcp_server_dart/makefile`**
 
-Find every reference to `flutter_mcp_cli` in `mcp_server_dart/Makefile` — typically `dart compile exe bin/flutter_mcp_cli.dart -o build/flutter_mcp_cli` becomes `dart compile exe bin/flutter_mcp_toolkit.dart -o build/flutter-mcp-toolkit`.
+Find every legacy reference to `flutter_mcp_cli` in `mcp_server_dart/makefile` — typically `dart compile exe bin/flutter_mcp_cli.dart -o build/flutter_mcp_cli` became `dart compile exe bin/flutter_mcp_toolkit.dart -o build/flutter-mcp-toolkit`.
 
-- [ ] **Step 7.4: Update root Makefile if applicable**
+- [ ] **Step 7.4: Update root makefile if applicable**
 
-Run: `grep -n flutter_mcp_cli Makefile`
+Run: `grep -n flutter_mcp_cli makefile Makefile 2>/dev/null || true`
 Update any matches.
 
 - [ ] **Step 7.5: Build**
@@ -319,7 +321,7 @@ git commit -m "build: rename CLI binary flutter_mcp_cli → flutter-mcp-toolkit"
 ## Task 8: Rename `flutter_inspector_mcp` server binary → `flutter-mcp-toolkit-server`
 
 **Files:**
-- Modify: `mcp_server_dart/Makefile`
+- Modify: `mcp_server_dart/makefile`
 - Modify: `mcp_server_dart/pubspec.yaml`
 - Modify: `mcp_server_dart/bin/flutter_inspector_mcp.dart` (rename)
 
@@ -346,7 +348,7 @@ executables:
   flutter-mcp-toolkit-server: flutter_mcp_toolkit_server
 ```
 
-- [ ] **Step 8.4: Update `mcp_server_dart/Makefile`**
+- [ ] **Step 8.4: Update `mcp_server_dart/makefile`**
 
 Replace every `flutter_inspector_mcp` (or current name) with `flutter-mcp-toolkit-server` for output paths and `flutter_mcp_toolkit_server` for source paths.
 
@@ -546,7 +548,7 @@ Expected: ~13 commits.
 
 **Placeholders:** Task 9 SHA256 step uses `TBD-RELEASE` deliberately — that placeholder is by design until Plan D's release-build pipeline fills it. This is documented intent, not unfilled-spec.
 
-**TDD discipline:** The snapshot test (Task 2) is the failing test for the prefix rename; Task 4's id change makes it pass. Tasks 7-8 (binary renames) are build-config changes verified by smoke tests rather than unit tests — appropriate trade-off (no test framework for "Makefile produces a binary at this path"; the smoke is the test).
+**TDD discipline:** The snapshot test (Task 2) is the failing test for the prefix rename; Task 4's id change makes it pass. Tasks 7-8 (binary renames) are build-config changes verified by smoke tests rather than unit tests — appropriate trade-off (no test framework for "`makefile` produces a binary at this path"; the smoke is the test).
 
 **Independence:** Plan C does not consume Plan A's `SkillAssets` and does not produce inputs Plan B depends on at compile time (Plan B's prelude string `fmt_` is hardcoded). True parallel execution with Plan A is safe.
 

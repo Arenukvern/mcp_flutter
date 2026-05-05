@@ -4,6 +4,8 @@
 
 ### Changed
 
+- `validate-runtime`: after a failed host `desktop_window` screenshot (`get_screenshots_failed`, retryable), automatically retries `capture_ui_snapshot` with `flutter_layer`. Summary includes `captureFallbackUsed` when the retry succeeds.
+- Global `--vm-service-uri` is accepted as the VM target for `validate-runtime` (and warns if both `--target` and `--vm-service-uri` differ; `--target` wins).
 - Renamed dynamic-registry MCP tools for consistent `fmt_` naming:
   `listClientToolsAndResources` → `fmt_list_client_tools_and_resources`,
   `runClientTool` → `fmt_client_tool`, `runClientResource` → `fmt_client_resource`

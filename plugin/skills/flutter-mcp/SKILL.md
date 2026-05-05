@@ -1,11 +1,13 @@
 ---
 name: flutter-mcp
-description: Use this skill whenever inspecting, interacting with, or live-editing a running Flutter app via the flutter-inspector MCP server. Covers preflight, snapshot/tap/enter/scroll loop, hot-reload validation, and error envelope parsing.
+description: Use this skill whenever inspecting, interacting with, or live-editing a running Flutter app via the Flutter MCP toolkit server (`mcpServers` key **`flutter-mcp-toolkit`**, or legacy **`flutter-inspector`**). Covers preflight, snapshot/tap/enter/scroll loop, hot-reload validation, and error envelope parsing.
 ---
+
+<!-- @FMT_MODE_PRELUDE -->
 
 # Flutter MCP
 
-Golden path for agents driving a live Flutter app via the `flutter-inspector` MCP server.
+Golden path for agents driving a live Flutter app via the **`flutter-mcp-toolkit`** MCP server entry. Older configs may use the legacy **`flutter-inspector`** `mcpServers` registry id for the same binary (that id is **not** the Claude subagent **`flutter-mcp-toolkit-runtime`**).
 
 ## When to use
 
@@ -17,7 +19,7 @@ Golden path for agents driving a live Flutter app via the `flutter-inspector` MC
 
 Before any VM-dependent call:
 
-1. Call `doctor` (or run `flutter_mcp_cli doctor --json`) — parses env, ports, app reachability.
+1. Call `doctor` (or run `flutter-mcp-toolkit doctor --json`) — parses env, ports, app reachability.
 2. Confirm required toolkit extensions exist on the target:
    - `ext.mcp.toolkit.app_errors`
    - `ext.mcp.toolkit.view_details`
@@ -68,12 +70,12 @@ Common codes and recovery:
 
 ## Permissions (macOS)
 
-Screen Recording permission belongs to the process running `flutter_mcp_cli` (or the MCP server host). If visual capture is denied:
+Screen Recording permission belongs to the process running `flutter-mcp-toolkit` (or the MCP server host). If visual capture is denied:
 
 ```bash
-flutter_mcp_cli permissions status
-flutter_mcp_cli permissions request
-flutter_mcp_cli permissions open-settings
+flutter-mcp-toolkit permissions status
+flutter-mcp-toolkit permissions request
+flutter-mcp-toolkit permissions open-settings
 ```
 
 ## Non-modifiable apps
@@ -82,5 +84,5 @@ If the target app cannot be instrumented (third-party binary, restricted env), r
 
 ## Related
 
-- For the dynamic-tools side (registering custom MCP tools from inside the Flutter app), see the `custom-toolkit-tools` skill.
-- For a guided live-edit refinement session, use the `/flutter-live-edit` command.
+- For the dynamic-tools side (registering custom MCP tools from inside the Flutter app), see the `flutter-mcp-toolkit-custom-tools` skill.
+- For routing across setup / inspect / control / debug skills, see `flutter-mcp-toolkit-guide`.

@@ -18,6 +18,29 @@ v2 client running again.
 
 If you see `tool_not_found`, prepend `fmt_` to the tool name.
 
+**Config quick reference:** use MCP server binary **`flutter-mcp-toolkit-server`**, registry key **`flutter-mcp-toolkit`** under `mcpServers` (legacy **`flutter-inspector`** still works). Copy-paste examples: [mcp_server_dart README](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_server_dart/README.md) (Cline / Cursor / Claude sections).
+
+> **`flutter-inspector`** above means only the **legacy `mcpServers` object key**. The Claude Code subagent definition in this repo is **`flutter-mcp-toolkit-runtime`** (`plugin/agents/flutter-mcp-toolkit-runtime.md`), not `flutter-inspector`.
+
+## Binaries and `mcpServers` registry keys
+
+| Surface | v2.x (legacy) | v3.0 (current) |
+| --- | --- | --- |
+| CLI binary | `flutter_mcp_cli` | **`flutter-mcp-toolkit`** |
+| MCP server binary | `flutter_inspector_mcp` | **`flutter-mcp-toolkit-server`** |
+| JSON key in `mcpServers` | often `flutter-inspector` | **`flutter-mcp-toolkit`** (canonical); **`flutter-inspector`** still accepted |
+
+After `make build`, binaries live under `mcp_server_dart/build/`. The canonical [plugin `mcp.json`](https://github.com/Arenukvern/mcp_flutter/blob/main/plugin/mcp.json) shows recommended `args` (`--resources`, `--images`, `--dynamics`) and `${FLUTTER_MCP_BIN:-flutter-mcp-toolkit-server}` for the server command.
+
+## `validate-runtime` and VM targeting (CLI)
+
+The smoke test is **`flutter-mcp-toolkit validate-runtime`**:
+
+- Pass **`--target ws://…`** (exact `app.debugPort.wsUri` from `flutter run --machine`), **or** global **`--vm-service-uri`** when `--target` is omitted. If both differ, **`--target` wins** (warning on stderr).
+- If host **`desktop_window`** screenshot fails, the CLI **retries once** with **`flutter_layer`**. Inspect **`data.summary.captureFallbackUsed`** in the JSON result.
+
+Details: [mcp_server_dart README — validate-runtime](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_server_dart/README.md).
+
 ## What changed
 
 ### MCP tool names are prefixed
@@ -103,6 +126,7 @@ for a future minor release.
 - **CLI commands.** `flutter-mcp-toolkit exec --name tap_widget --args ...`
   works exactly as in v2. The CLI uses the catalog vocabulary directly,
   not the MCP wire surface.
+- **`validate-runtime` CLI** — still the one-command smoke test; current CLI also accepts global **`--vm-service-uri`** when `--target` is omitted and **retries `flutter_layer`** after a failed host `desktop_window` capture ([above](#validate-runtime-and-vm-targeting-cli)).
 - **Dynamic-registry host tools.** These use the same `fmt_*` names on MCP
   and in `exec --name`: `fmt_list_client_tools_and_resources`,
   `fmt_client_tool`, `fmt_client_resource`.
@@ -170,9 +194,11 @@ removed when the legacy path was deleted in T9.
 
 ### Plugin / agent guides recommend v2 names
 
-Update to the v3 names. The bundled `flutter_mcp_plugin/skills/` and
-`flutter_mcp_plugin/commands/` directories were updated as part of the
-v3.0 release; if you have a fork or a vendored copy, refresh it.
+Update to the v3 names. The bundled `plugin/skills/` tree tracks v3; if you have a fork or a vendored copy, refresh it.
+
+### MCP config still uses `flutter-inspector` or `flutter_inspector_mcp`
+
+Rename the `mcpServers` entry to **`flutter-mcp-toolkit`** and set **`command`** to **`…/build/flutter-mcp-toolkit-server`** (see [migration guide — Binaries](#binaries-and-mcpservers-registry-keys)). Keeping **`flutter-inspector`** as the key is still valid but legacy.
 
 ### CI tests now break on snapshot diffs
 

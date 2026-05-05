@@ -88,10 +88,10 @@ migration window by years.
 - The dynamic-registry host trio is exposed as `fmt_list_client_tools_and_resources`,
   `fmt_client_tool`, and `fmt_client_resource` on MCP and in the CLI catalog,
   matching the `fmt_` naming used in `tools/list`.
-- CLI catalog names remain bare for intrinsic fmt tools (`flutter_mcp_cli exec --name tap_widget`, …);
+- CLI catalog names remain bare for intrinsic fmt tools (`flutter-mcp-toolkit exec --name tap_widget`, …);
   the MCP kernel still publishes those as `fmt_tap_widget`. Dynamic-registry
   commands are the exception: their catalog name already includes the `fmt_` prefix.
-- `mcp_server_dart` and `flutter_mcp_cli` became thin shells. Their default
+- `mcp_server_dart` and `flutter-mcp-toolkit` became thin shells. Their default
   `main.dart` registers the bundled capability set; power users write their
   own `main.dart` to compose a different set.
 
@@ -113,7 +113,7 @@ migration window by years.
 ## Open follow-ups (optional v3.x)
 
 - Capability-level configuration via a config file (today: CLI flags only).
-- A `flutter_mcp_cli capabilities list` subcommand.
+- A `flutter-mcp-toolkit capabilities list` subcommand.
 - `DynamicRegistryBridge` host service interface — designed but not yet
   implemented; planned alongside live-edit re-integration.
 

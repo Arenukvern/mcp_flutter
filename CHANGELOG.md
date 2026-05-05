@@ -1,3 +1,19 @@
+## [Unreleased]
+
+### Plugin layout
+
+- Renamed bundled Cursor/Codex skill **`custom-toolkit-tools`** → **`flutter-mcp-toolkit-custom-tools`** (directory `plugin/skills/…`, frontmatter `name`, and `SkillAssets` id). Update any prompts or automation that referenced the old skill id; run `make sync-skills` after pulling.
+- Renamed Claude subagent file `plugin/agents/flutter-inspector.md` → `plugin/agents/flutter-mcp-toolkit-runtime.md` with `name: flutter-mcp-toolkit-runtime` so the agent aligns with `flutter-mcp-toolkit-*` surfaces and no longer shares a slug with the legacy MCP `mcpServers` key **`flutter-inspector`**.
+- **Consolidated:** Claude Code marketplace, Cursor/Codex manifests, MCP config, installer, version pin, `flutter-mcp` + `flutter-mcp-cli-runtime-validation` skills, and the `flutter-mcp-toolkit-runtime` agent now live under **`plugin/`** only. [`.claude-plugin/marketplace.json`](.claude-plugin/marketplace.json) `source` is **`./plugin`**. Removed the duplicate **`flutter_mcp_plugin/`** tree.
+- `plugin/` (Claude / Cursor / Codex marketplace): canonical **`plugin/mcp.json`** uses MCP key **`flutter-mcp-toolkit`**; `tool/contracts/check_plugin_surfaces.sh` accepts **`flutter-mcp-toolkit`** or legacy **`flutter-inspector`** and requires **`flutter-mcp-toolkit-server`** in `command`.
+
+### Docs
+
+- Install/migration docs (`llm_install.md`, `mcp_server_dart/README.md`, `docs/start_here/migration_v2_to_v3.mdx`), plugin spec §5–§6.1, and `plugin/skills/flutter-mcp/SKILL.md`: clarify **`flutter-inspector`** as legacy **`mcpServers`** id vs Claude subagent **`flutter-mcp-toolkit-runtime`**; regenerated `skill_assets.g.dart`.
+- Plugin skills (`plugin/skills/…`): `validate-runtime` now documents `--vm-service-uri`, automatic `flutter_layer` retry after failed `desktop_window` capture, and `captureFallbackUsed`; port-conflict example uses current `flutter run` flags. binaries, `mcpServers` keys, `validate-runtime`, links to canonical configs.
+- [mcp_server_dart/README.md](mcp_server_dart/README.md): Cline / Cursor / Claude examples use **`flutter-mcp-toolkit`** + updated Cursor deeplink; removed stale `--no-resources` / `flutter_inspector_mcp` guidance.
+- `mcp_toolkit` package README: golden-path note for `validate-runtime` targeting / fallback.
+
 ## 3.0.0
 
 Major release. Three pillars:
@@ -156,14 +172,12 @@ updates `PATH` for you on first run.
   the toolkit on the app side (`MCPToolkitBinding.initialize() / initializeFlutterToolkit()`).
 - Replaces the per-agent manual setup docs that shipped in v2.
 
-#### Claude Code marketplace plugin (`flutter_mcp_plugin/`)
+#### Claude Code marketplace plugin (`plugin/`)
 
-- Plugin manifest, `.mcp.json`, `install.sh`, `EXPECTED_SERVER_VERSION`,
+- Plugin manifests (`.claude-plugin/`, `.cursor-plugin/`, `.codex-plugin/`), `mcp.json`, `install.sh`, `EXPECTED_SERVER_VERSION`,
   and a marketplace entry under `.claude-plugin/marketplace.json`.
-- Five skills shipped: `setup`, `control`, `debug`, `inspect`, `guide`.
-- `flutter-inspector` agent.
-- Cursor (`.cursor-plugin/`) and Codex (`.codex-plugin/`) plugin
-  manifests.
+- Skills shipped include `flutter-mcp-toolkit-{guide,setup,inspect,control,debug}`, `flutter-mcp-toolkit-custom-tools`, `flutter-mcp`, and `flutter-mcp-cli-runtime-validation`.
+- `flutter-mcp-toolkit-runtime` agent.
 - Skill bodies are bundled into the server (`skill_assets.g.dart`) so
   the CLI can ship them as part of `init`. `make sync-skills`
   regenerates; CI fails PRs that don't.
@@ -437,8 +451,8 @@ Thank you [@rednikisfun](https://github.com/rednikisfun) for [raising issue for 
    ```json
    {
      "mcpServers": {
-       "flutter-inspector": {
-         "command": "/path/to/mcp_flutter/mcp_server_dart/build/flutter_inspector_mcp",
+       "flutter-mcp-toolkit": {
+         "command": "/path/to/mcp_flutter/mcp_server_dart/build/flutter-mcp-toolkit-server",
          "args": [
            "--dart-vm-host=localhost",
            "--dart-vm-port=8181",

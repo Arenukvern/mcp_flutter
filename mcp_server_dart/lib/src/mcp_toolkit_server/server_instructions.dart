@@ -18,6 +18,8 @@ This server provides Flutter app inspection/debugging tools and dynamic runtime 
 - get_extension_rpcs: List available extension RPCs in the Flutter app
 - inspect_widget_at_point: Map screenshot coordinates to widget/render node
 - capture_ui_snapshot: Capture screenshots + layout + errors in one bundle
+  (on macOS / iOS Simulator, if host `desktop_window` capture fails, use
+  `screenshotMode: flutter_layer` in tool args for a reliable Flutter-layer shot)
 
 ${configuration.dumpsSupported ? '''
 **Debug Dump Tools (Heavy Operations - Use Sparingly):**

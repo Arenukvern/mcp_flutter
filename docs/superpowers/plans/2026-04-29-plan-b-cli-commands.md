@@ -6,7 +6,7 @@
 
 **Architecture:** Two new CLI commands consume the bundled `SkillAssets` from Plan A. `init` substitutes the mode prelude into each skill body and writes per-target output. `codegen-init` runs `flutter pub add` + emits a boilerplate snippet (or edits `main.dart` if a recognized template is detected).
 
-**Tech Stack:** Dart, `args` package (already used by `flutter_mcp_cli`), Dart `Process` API for `flutter pub`.
+**Tech Stack:** Dart, `args` package (already used by `flutter-mcp-toolkit`), Dart `Process` API for `flutter pub`.
 
 **Spec reference:** `docs/superpowers/specs/2026-04-29-flutter-mcp-toolkit-plugin-design.md` §3.3, §3.4, §4.1.
 
@@ -33,7 +33,7 @@
 - `mcp_server_dart/lib/src/cli/codegen_snippets.dart`
 
 **Modify:**
-- `mcp_server_dart/bin/flutter_mcp_cli.dart` (or wherever the CLI subcommand router lives) — add `init` and `codegen-init` subcommands
+- `mcp_server_dart/bin/flutter_mcp_toolkit.dart` — add `init` and `codegen-init` subcommands (or wherever the CLI subcommand router lives)
 
 ---
 
@@ -790,7 +790,7 @@ git commit -m "feat(cli): runInit dispatches to per-target writers"
 ## Task 10: Wire `init` into the CLI binary
 
 **Files:**
-- Modify: `mcp_server_dart/bin/flutter_mcp_cli.dart` (or current main entry point — verify path with `grep -l "ArgParser" mcp_server_dart/bin/`)
+- Modify: `mcp_server_dart/bin/flutter_mcp_toolkit.dart` (or current main entry point — verify path with `grep -l "ArgParser" mcp_server_dart/bin/`)
 
 - [ ] **Step 10.1: Find the CLI entry point**
 
@@ -801,7 +801,7 @@ Run: `grep -l "ArgParser\|CommandRunner" mcp_server_dart/bin/ mcp_server_dart/li
 In the entry point, register a new subcommand:
 
 ```dart
-// In bin/flutter_mcp_cli.dart (or wherever subcommands are registered)
+// In bin/flutter_mcp_toolkit.dart (or wherever subcommands are registered)
 import 'package:mcp_server_dart/src/cli/init_command.dart';
 import 'package:mcp_server_dart/src/cli/init_mode.dart';
 import 'package:mcp_server_dart/src/cli/init_target.dart';
@@ -857,17 +857,17 @@ Expected: build succeeds.
 
 - [ ] **Step 10.4: Smoke test `init`**
 
-Run: `cd /tmp && mkdir init_smoke && cd init_smoke && /Users/antonio/mcp/cline/mcp_flutter/mcp_server_dart/build/flutter_mcp_cli init claude-code --mode cli && find . -name "SKILL.md"`
+Run: `cd /tmp && mkdir init_smoke && cd init_smoke && /Users/antonio/mcp/cline/mcp_flutter/mcp_server_dart/build/flutter-mcp-toolkit init claude-code --mode cli && find . -name "SKILL.md"`
 Expected: 5 SKILL.md files printed.
 
-(Note: binary is still named `flutter_mcp_cli` until Plan C renames it.)
+(The CLI binary is `flutter-mcp-toolkit`; Plan C / v3.0.0 completed the rename from the legacy `flutter_mcp_cli` name.)
 
 Cleanup: `rm -rf /tmp/init_smoke`.
 
 - [ ] **Step 10.5: Commit**
 
 ```bash
-git add mcp_server_dart/bin/flutter_mcp_cli.dart  # or whichever path
+git add mcp_server_dart/bin/flutter_mcp_toolkit.dart  # or whichever path
 git commit -m "feat(cli): expose 'init' subcommand"
 ```
 
@@ -1114,14 +1114,14 @@ name: smoke
 environment: { sdk: ">=3.0.0" }
 dependencies: { flutter: { sdk: flutter } }
 EOF
-/Users/antonio/mcp/cline/mcp_flutter/mcp_server_dart/build/flutter_mcp_cli codegen-init --no-pub-add
+/Users/antonio/mcp/cline/mcp_flutter/mcp_server_dart/build/flutter-mcp-toolkit codegen-init --no-pub-add
 ```
 Expected: snippet printed, exit 0. Cleanup: `rm -rf /tmp/cgi_smoke`.
 
 - [ ] **Step 13.3: Commit**
 
 ```bash
-git add mcp_server_dart/bin/flutter_mcp_cli.dart  # or wherever
+git add mcp_server_dart/bin/flutter_mcp_toolkit.dart  # or wherever
 git commit -m "feat(cli): expose 'codegen-init' subcommand"
 ```
 
@@ -1136,7 +1136,7 @@ Expected: All tests pass, including new `cli/*_test.dart`.
 
 - [ ] **Step 14.2: Confirm new subcommands listed in `--help`**
 
-Run: `mcp_server_dart/build/flutter_mcp_cli --help`
+Run: `mcp_server_dart/build/flutter-mcp-toolkit --help`
 Expected: `init`, `codegen-init` appear.
 
 - [ ] **Step 14.3: Mark Plan B complete**

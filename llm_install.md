@@ -40,7 +40,9 @@ make install
 
 Expected binary:
 
-- `[MCP_SERVER_BASE_PATH]/mcp_flutter/mcp_server_dart/build/flutter_inspector_mcp`
+- `[MCP_SERVER_BASE_PATH]/mcp_flutter/mcp_server_dart/build/flutter-mcp-toolkit-server`
+
+v2 → v3 (MCP `fmt_*` names, `mcpServers` keys): [docs/start_here/migration_v2_to_v3.mdx](docs/start_here/migration_v2_to_v3.mdx).
 
 ## 3. Add Toolkit To Flutter App
 
@@ -63,12 +65,16 @@ MCPToolkitBinding.instance.handleZoneError(error, stack);
 ## 4. Run Flutter In Debug Mode
 
 ```bash
-flutter run --debug --host-vmservice-port=8182 --dds-port=8181 --enable-vm-service --disable-service-auth-codes
+flutter run --debug --machine --host-vmservice-port=8181 -d macos
 ```
+
+(Adjust `-d` for your device; use `app.debugPort.wsUri` from machine output for explicit MCP connections.)
 
 ## 5. Configure The AI Client
 
-Pick one and merge a `flutter-inspector` server entry (do not delete existing servers):
+Pick one and merge a **`flutter-mcp-toolkit`** server entry under `mcpServers` (do not delete existing servers). The legacy key **`flutter-inspector`** still works if your config predates the rename.
+
+> **IDs:** **`flutter-inspector`** in `mcpServers` is only the **legacy registry key** for this server. The optional Claude Code subagent shipped in the repo plugin is **`flutter-mcp-toolkit-runtime`** (`plugin/agents/flutter-mcp-toolkit-runtime.md`) — not `flutter-inspector`.
 
 - Codex: [docs/ai_agents/codex.mdx](docs/ai_agents/codex.mdx)
 - Cursor: [docs/ai_agents/cursor.mdx](docs/ai_agents/cursor.mdx)
@@ -78,7 +84,7 @@ Pick one and merge a `flutter-inspector` server entry (do not delete existing se
 
 Run these checks in the assistant:
 
-1. List tools from `flutter-inspector`
+1. List tools from **`flutter-mcp-toolkit`** (or **`flutter-inspector`** if that is your registry key)
 2. Get extension RPCs and verify:
    - `ext.mcp.toolkit.app_errors`
    - `ext.mcp.toolkit.view_details`

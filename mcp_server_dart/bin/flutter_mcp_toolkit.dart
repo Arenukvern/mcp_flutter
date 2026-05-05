@@ -251,6 +251,7 @@ Future<CoreResult> _runOneShot({
 
       case 'validate-runtime':
         return _runValidateRuntime(
+          parsed: parsed,
           command: topLevel,
           executor: executor,
           doctorRunner: doctorRunner,
@@ -492,6 +493,7 @@ Future<CoreResult> _runSnapshotCommand({
 }
 
 Future<CoreResult> _runValidateRuntime({
+  required final ArgResults parsed,
   required final ArgResults command,
   required final DefaultCoreCommandExecutor executor,
   required final DoctorRunner doctorRunner,
@@ -501,7 +503,10 @@ Future<CoreResult> _runValidateRuntime({
     fallback: _defaultValidateRuntimeTimeoutMs,
   );
   final timeout = Duration(milliseconds: timeoutMs);
-  final target = _nonEmptyOption(command.option('target'));
+  final target = _resolveValidateRuntimeTarget(
+    command: command,
+    parsed: parsed,
+  );
   final errorsCount = _parsePositiveIntOption(
     command.option('errors-count'),
     fallback: _defaultValidateRuntimeErrorsCount,
@@ -667,7 +672,7 @@ Future<CoreResult> _runValidateRuntime({
     );
   }
 
-  final snapshotFailure = await runStep(
+  CoreResult? snapshotFailure = await runStep(
     'capture_ui_snapshot',
     const CaptureUiSnapshotCommand(
       includeViewDetails: false,
@@ -675,6 +680,18 @@ Future<CoreResult> _runValidateRuntime({
       permissionPolicy: PermissionPolicy.autoRequestOnce,
     ),
   );
+  if (snapshotFailure != null &&
+      _eligibleForFlutterLayerCaptureRetry(snapshotFailure)) {
+    snapshotFailure = await runStep(
+      'capture_ui_snapshot_flutter_layer',
+      const CaptureUiSnapshotCommand(
+        includeViewDetails: false,
+        includeErrors: false,
+        permissionPolicy: PermissionPolicy.autoRequestOnce,
+        screenshotMode: ScreenshotMode.flutterLayer,
+      ),
+    );
+  }
   if (snapshotFailure != null) {
     return CoreResult.failure(
       code: snapshotFailure.error?.code ?? CoreErrorCode.getScreenshotsFailed,
@@ -734,7 +751,7 @@ Future<CoreResult> _runValidateRuntime({
       await Future<void>.delayed(Duration(milliseconds: postReloadDelayMs));
     }
 
-    final afterReloadSnapshotFailure = await runStep(
+    CoreResult? afterReloadSnapshotFailure = await runStep(
       'capture_ui_snapshot_after_reload',
       const CaptureUiSnapshotCommand(
         includeViewDetails: false,
@@ -743,6 +760,19 @@ Future<CoreResult> _runValidateRuntime({
       ),
       shouldRetry: _shouldRetryPostReloadCapture,
     );
+    if (afterReloadSnapshotFailure != null &&
+        _eligibleForFlutterLayerCaptureRetry(afterReloadSnapshotFailure)) {
+      afterReloadSnapshotFailure = await runStep(
+        'capture_ui_snapshot_after_reload_flutter_layer',
+        const CaptureUiSnapshotCommand(
+          includeViewDetails: false,
+          includeErrors: false,
+          permissionPolicy: PermissionPolicy.autoRequestOnce,
+          screenshotMode: ScreenshotMode.flutterLayer,
+        ),
+        shouldRetry: _shouldRetryPostReloadCapture,
+      );
+    }
     if (afterReloadSnapshotFailure != null) {
       return CoreResult.failure(
         code:
@@ -762,11 +792,17 @@ Future<CoreResult> _runValidateRuntime({
 
   final failedSteps = steps.where((final step) => step['ok'] != true).length;
   final requiredSorted = requiredExtensions.toList()..sort();
-  final primaryCapture = _stepData(steps, 'capture_ui_snapshot');
-  final postReloadCapture = _stepData(
+  final primaryCapture = _effectiveValidateRuntimeCaptureData(
     steps,
-    'capture_ui_snapshot_after_reload',
+    primary: 'capture_ui_snapshot',
+    flutterLayerFallback: 'capture_ui_snapshot_flutter_layer',
   );
+  final postReloadCapture = _effectiveValidateRuntimeCaptureData(
+    steps,
+    primary: 'capture_ui_snapshot_after_reload',
+    flutterLayerFallback: 'capture_ui_snapshot_after_reload_flutter_layer',
+  );
+  final captureFallbackUsed = _validateRuntimeUsedFlutterLayerFallback(steps);
   return CoreResult.success(
     data: {
       'doctor': doctorData,
@@ -783,6 +819,7 @@ Future<CoreResult> _runValidateRuntime({
         'errorsCount': errorsCount,
         'visualCaptureCommand': 'capture_ui_snapshot',
         'requiredExtensions': requiredSorted,
+        'captureFallbackUsed': captureFallbackUsed,
         'captureBackend':
             _captureBackend(primaryCapture) ??
             _captureBackend(postReloadCapture),
@@ -1137,7 +1174,11 @@ CoreResult _installBundledSkill({
       message:
           'Bundled skill "$skillName" was not found in this repository layout.',
       details: {
-        'expected': ['mcp_server_dart/skills/$skillName', 'skills/$skillName'],
+        'expected': [
+          'plugin/skills/$skillName',
+          'mcp_server_dart/skills/$skillName',
+          'skills/$skillName',
+        ],
       },
     );
   }
@@ -1183,7 +1224,9 @@ CoreResult _installBundledSkill({
 
 io.Directory? _resolveBundledSkillSource(final String skillName) {
   final scriptDir = io.File(io.Platform.script.toFilePath()).parent;
+  final repoRoot = scriptDir.parent.parent;
   final candidates = <io.Directory>[
+    io.Directory('${repoRoot.path}/plugin/skills/$skillName'),
     io.Directory('${scriptDir.parent.path}/skills/$skillName'),
     io.Directory('mcp_server_dart/skills/$skillName'),
     io.Directory('skills/$skillName'),
@@ -1318,7 +1361,8 @@ void _printInteractiveNarrativeIfNeeded({
       return;
     case 'validate-runtime':
       io.stdout.writeln(
-        'validate-runtime: visual capture uses capture_ui_snapshot with auto-request-once when the selected target supports it.',
+        'validate-runtime: visual capture tries auto mode first, then '
+        'flutter_layer if desktop_window host capture fails.',
       );
       return;
     case 'permissions':
@@ -1415,6 +1459,92 @@ List<String> _screenshotFiles(final List<Map<String, Object?>> steps) {
     }
   }
   return files;
+}
+
+String? _resolveValidateRuntimeTarget({
+  required final ArgResults command,
+  required final ArgResults parsed,
+}) {
+  final fromCommand = _nonEmptyOption(command.option('target'));
+  final fromGlobal = _nonEmptyOption(parsed.option(_vmServiceUri));
+  if (fromCommand != null &&
+      fromGlobal != null &&
+      fromCommand != fromGlobal) {
+    io.stderr.writeln(
+      '[WARN] flutter-mcp-toolkit: --target and --vm-service-uri differ; '
+      'using --target.',
+    );
+    return fromCommand;
+  }
+  return fromCommand ?? fromGlobal;
+}
+
+bool _eligibleForFlutterLayerCaptureRetry(final CoreResult result) {
+  if (result.ok) {
+    return false;
+  }
+  if (result.error?.code != CoreErrorCode.getScreenshotsFailed) {
+    return false;
+  }
+  if (result.error?.resolvedDescriptor.retryable != true) {
+    return false;
+  }
+  final message = (result.error?.message ?? '').toLowerCase();
+  if (message.contains('desktop window') ||
+      message.contains('desktop_window') ||
+      message.contains('screencapturekit')) {
+    return true;
+  }
+  final details = result.error?.details;
+  if (details is! Map) {
+    return false;
+  }
+  final permission = _asObject(_asObject(details)['permission']);
+  final actual = '${permission['actualMode'] ?? ''}'.toLowerCase();
+  final requested = '${permission['requestedMode'] ?? ''}'.toLowerCase();
+  return actual == 'desktop_window' || requested == 'desktop_window';
+}
+
+Map<String, Object?>? _stepPayloadIfOk(
+  final List<Map<String, Object?>> steps,
+  final String name,
+) {
+  for (final step in steps) {
+    if ('${step['name']}' != name || step['ok'] != true) {
+      continue;
+    }
+    final data = step['data'];
+    if (data is Map<String, Object?>) {
+      return data;
+    }
+    if (data is Map) {
+      return data.cast<String, Object?>();
+    }
+  }
+  return null;
+}
+
+Map<String, Object?>? _effectiveValidateRuntimeCaptureData(
+  final List<Map<String, Object?>> steps, {
+  required final String primary,
+  required final String flutterLayerFallback,
+}) =>
+    _stepPayloadIfOk(steps, flutterLayerFallback) ??
+    _stepPayloadIfOk(steps, primary);
+
+bool _validateRuntimeUsedFlutterLayerFallback(
+  final List<Map<String, Object?>> steps,
+) {
+  for (final step in steps) {
+    final name = '${step['name']}';
+    if (!name.contains('flutter_layer')) {
+      continue;
+    }
+    if (step['ok'] == true) {
+      return true;
+    }
+  }
+  return false;
 }
 
 bool _shouldRetryPostReloadCapture(final CoreResult result) {
@@ -1582,6 +1712,8 @@ final _argParser = ArgParser(allowTrailingOptions: false)
         'Optional full VM service websocket URI '
         '(e.g. ws://127.0.0.1:8181/<token>/ws). '
         'Paste app.debugPort.wsUri exactly. '
+        'Also used as validate-runtime / doctor --target when '
+        '--target is omitted. '
         'Applied after args.connection and before session attach.',
   )
   ..addOption(
@@ -2034,16 +2166,17 @@ Two-step agent flow:
 
 Examples:
   flutter-mcp-toolkit validate-runtime --target ws://127.0.0.1:8181/<token>/ws --timeout-ms 10000
+  flutter-mcp-toolkit --vm-service-uri ws://127.0.0.1:8181/<token>/ws validate-runtime --timeout-ms 10000
   flutter-mcp-toolkit --save-images --output-dir .mcp_outputs/arena_macos validate-runtime --target ws://127.0.0.1:8181/<token>/ws --after-reload
   flutter-mcp-toolkit validate-runtime --target ws://127.0.0.1:8181/<token>/ws --install-skill
 
   What it does:
   - doctor preflight (including mcp_toolkit extension gate)
   - get_extension_rpcs
-  - capture_ui_snapshot (screenshot-only mode for the visual gate)
+  - capture_ui_snapshot (auto mode; retries once with flutter_layer if host desktop_window capture fails)
   - get_view_details
   - get_app_errors
-  - optional hot_reload + delayed capture_ui_snapshot
+  - optional hot_reload + delayed capture_ui_snapshot (same fallback)
 
 If toolkit extensions are missing, add `mcp_toolkit` to app dependencies and
 initialize `MCPToolkitBinding.instance..initialize()..initializeFlutterToolkit();`

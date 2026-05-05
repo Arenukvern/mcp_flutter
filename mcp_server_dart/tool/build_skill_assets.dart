@@ -14,6 +14,9 @@ const expectedSkillIds = [
   'flutter-mcp-toolkit-inspect',
   'flutter-mcp-toolkit-control',
   'flutter-mcp-toolkit-debug',
+  'flutter-mcp-toolkit-custom-tools',
+  'flutter-mcp',
+  'flutter-mcp-cli-runtime-validation',
 ];
 
 void main() {

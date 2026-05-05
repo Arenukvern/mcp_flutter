@@ -40,6 +40,7 @@ That's it. Your AI agent can now inspect and drive the running app.
 
 ## Documentation
 
+- **[Migrating v2 → v3](docs/start_here/migration_v2_to_v3.mdx)** — `fmt_*` MCP tools, binaries, client config keys, `validate-runtime`.
 - **[Why this repo matters](docs/start_here/why_this_repo_matters.mdx)** — what it is, why it exists.
 - **[CLI vs MCP](docs/start_here/cli_vs_mcp.mdx)** — pick the right mode.
 - **[Feature map](docs/start_here/feature_map.mdx)** — the 27 tools.

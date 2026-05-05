@@ -139,8 +139,11 @@ Every failure returns `{code, message, details, descriptor, recovery}`. Always r
 **Recovery:** `flutter-mcp-toolkit doctor --json`
 
 ### `getScreenshotsFailed` (`get_screenshots_failed`)
-**Means:** screenshot capture failed.
-**Recovery:** `flutter-mcp-toolkit doctor --json` — check `visual_capture_permission_denied` separately.
+**Means:** screenshot capture failed (wrong mode, host window not available, Simulator window race, etc.).
+**Recovery:**
+1. `flutter-mcp-toolkit doctor --json` — check `visual_capture_permission_denied` separately.
+2. For **MCP / `exec`**, retry `get_screenshots` or `capture_ui_snapshot` with `screenshotMode: flutter_layer` when `desktop_window` or host capture is flaky (macOS unfocused window, iOS Simulator).
+3. For **`validate-runtime`**, a `flutter_layer` retry runs automatically after a failed host `desktop_window` attempt; read `data.summary.captureFallbackUsed` in the result envelope.
 
 ### `visualCapturePermissionDenied` (`visual_capture_permission_denied`)
 **Means:** macOS Screen Recording permission is not granted.

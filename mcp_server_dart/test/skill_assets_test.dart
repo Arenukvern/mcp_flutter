@@ -4,8 +4,8 @@ import 'package:test/test.dart';
 
 void main() {
   group('SkillAssets', () {
-    test('exposes 5 skill bodies', () {
-      expect(SkillAssets.skills.length, equals(5));
+    test('exposes 8 skill bodies', () {
+      expect(SkillAssets.skills.length, equals(8));
     });
 
     test('each skill has the required fields', () {
@@ -37,6 +37,9 @@ void main() {
           'flutter-mcp-toolkit-inspect',
           'flutter-mcp-toolkit-control',
           'flutter-mcp-toolkit-debug',
+          'flutter-mcp-toolkit-custom-tools',
+          'flutter-mcp',
+          'flutter-mcp-cli-runtime-validation',
         }),
       );
     });

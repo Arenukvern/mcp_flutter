@@ -138,7 +138,7 @@ No args. Returns `{ok: true, data: {cleared: <int>}}`.
 Two new codes added to `CoreErrorCode` and the playbook:
 
 - **`network_capture_failed`** — execution, retryable, exit 69, http 500.
-  - Recovery: `flutter_mcp_cli doctor --json`.
+  - Recovery: `flutter-mcp-toolkit doctor --json`.
 - **`network_capture_not_installed`** — validation, non-retryable, exit 64, http 400.
   - Toolkit returns a sentinel `{installed: false}` when the get/clear extension RPCs are reached but the host app never called `getNetworkCaptureEntries(...)`. Server translates to this error.
   - Recovery message: `Add getNetworkCaptureEntries() to your bootstrapFlutter(additionalEntries: ...) call to enable HTTP capture.`

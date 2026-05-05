@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
-# Validate flutter_mcp_plugin/ surfaces:
+# Validate plugin/ surfaces (Cursor, Codex, Claude Code marketplace):
 # - required files exist
-# - skill/command/agent files have parseable frontmatter with required fields
-# - .mcp.json registers flutter-inspector
+# - skill/agent files have parseable frontmatter with required fields
+# - mcp.json registers the toolkit server under canonical key flutter-mcp-toolkit
+#   OR legacy key flutter-inspector (user migration); command must be
+#   flutter-mcp-toolkit-server (or FLUTTER_MCP_BIN defaulting to that name)
 # - plugin version pin matches repo VERSION
 # - marketplace manifest points at the plugin dir
 #
@@ -11,24 +13,25 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-PLUGIN_DIR="$ROOT_DIR/flutter_mcp_plugin"
+PLUGIN_DIR="$ROOT_DIR/plugin"
 MARKET_FILE="$ROOT_DIR/.claude-plugin/marketplace.json"
 
 fail() { echo "plugin-surfaces: $*" >&2; exit 1; }
 ok()   { echo "plugin-surfaces: $*"; }
 
-# 1. Required files. flutter_mcp_plugin/commands/ is intentionally empty in
-# v3.0.0 — the live-edit slash command was excised with the live-edit
-# packages. New commands can be added back here without contract changes.
+# 1. Required files
 required_files=(
   "$PLUGIN_DIR/.claude-plugin/plugin.json"
-  "$PLUGIN_DIR/.mcp.json"
+  "$PLUGIN_DIR/.cursor-plugin/plugin.json"
+  "$PLUGIN_DIR/.codex-plugin/plugin.json"
+  "$PLUGIN_DIR/mcp.json"
   "$PLUGIN_DIR/README.md"
   "$PLUGIN_DIR/install.sh"
   "$PLUGIN_DIR/EXPECTED_SERVER_VERSION"
   "$PLUGIN_DIR/skills/flutter-mcp/SKILL.md"
-  "$PLUGIN_DIR/skills/custom-toolkit-tools/SKILL.md"
-  "$PLUGIN_DIR/agents/flutter-inspector.md"
+  "$PLUGIN_DIR/skills/flutter-mcp-cli-runtime-validation/SKILL.md"
+  "$PLUGIN_DIR/skills/flutter-mcp-toolkit-custom-tools/SKILL.md"
+  "$PLUGIN_DIR/agents/flutter-mcp-toolkit-runtime.md"
   "$MARKET_FILE"
 )
 for f in "${required_files[@]}"; do
@@ -64,16 +67,21 @@ while IFS='|' read -r file need_name; do
   [[ "$result" == "ok" ]] || fail "frontmatter issue ($result) in ${file#$ROOT_DIR/}"
 done <<EOF
 $PLUGIN_DIR/skills/flutter-mcp/SKILL.md|yes
-$PLUGIN_DIR/skills/custom-toolkit-tools/SKILL.md|yes
-$PLUGIN_DIR/agents/flutter-inspector.md|yes
+$PLUGIN_DIR/skills/flutter-mcp-cli-runtime-validation/SKILL.md|yes
+$PLUGIN_DIR/skills/flutter-mcp-toolkit-custom-tools/SKILL.md|yes
+$PLUGIN_DIR/agents/flutter-mcp-toolkit-runtime.md|yes
 EOF
 ok "frontmatter valid in skills/agent"
 
-# 4. .mcp.json registers flutter-inspector
-if ! grep -q '"flutter-inspector"' "$PLUGIN_DIR/.mcp.json"; then
-  fail ".mcp.json does not register 'flutter-inspector'"
+# 4. mcp.json: canonical or legacy server id + correct binary
+mcp_json="$PLUGIN_DIR/mcp.json"
+if ! grep -qE '"flutter-mcp-toolkit"|"flutter-inspector"' "$mcp_json"; then
+  fail "mcp.json must register mcpServers key 'flutter-mcp-toolkit' (canonical) or 'flutter-inspector' (legacy)"
 fi
-ok ".mcp.json registers flutter-inspector"
+if ! grep -q 'flutter-mcp-toolkit-server' "$mcp_json"; then
+  fail "mcp.json command must reference flutter-mcp-toolkit-server (see plugin/README.md)"
+fi
+ok "mcp.json registers toolkit server (flutter-mcp-toolkit or legacy flutter-inspector key)"
 
 # 5. Version pin matches repo VERSION
 repo_version="$(tr -d '[:space:]' < "$ROOT_DIR/VERSION")"
@@ -83,14 +91,16 @@ if [[ "$repo_version" != "$pin_version" ]]; then
 fi
 ok "version pin matches repo VERSION ($repo_version)"
 
-# 6. plugin.json name matches source dir name used in marketplace
-if ! grep -q '"name"[[:space:]]*:[[:space:]]*"flutter-mcp"' "$PLUGIN_DIR/.claude-plugin/plugin.json"; then
-  fail "plugin.json 'name' is not 'flutter-mcp'"
+# 6. Claude + Cursor + Codex plugin.json name is flutter-mcp-toolkit
+for manifest in "$PLUGIN_DIR/.claude-plugin/plugin.json" "$PLUGIN_DIR/.cursor-plugin/plugin.json" "$PLUGIN_DIR/.codex-plugin/plugin.json"; do
+  if ! grep -q '"name"[[:space:]]*:[[:space:]]*"flutter-mcp-toolkit"' "$manifest"; then
+    fail "$(basename "$(dirname "$manifest")")/plugin.json 'name' is not 'flutter-mcp-toolkit'"
+  fi
+done
+if ! grep -q '"source"[[:space:]]*:[[:space:]]*"\./plugin"' "$MARKET_FILE"; then
+  fail "marketplace.json does not point 'source' at ./plugin"
 fi
-if ! grep -q '"source"[[:space:]]*:[[:space:]]*"\./flutter_mcp_plugin"' "$MARKET_FILE"; then
-  fail "marketplace.json does not point 'source' at ./flutter_mcp_plugin"
-fi
-ok "plugin.json <-> marketplace.json names aligned"
+ok "plugin manifests <-> marketplace.json aligned"
 
 # 7. Skills reference MCP tool names (v3.0.0: prefixed `fmt_*`) that exist
 # in the locked tool surface. Catches: plugin docs forgetting to prepend

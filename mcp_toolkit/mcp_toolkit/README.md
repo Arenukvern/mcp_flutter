@@ -213,13 +213,22 @@ addMcpTool(
 1. Add `mcp_toolkit` to your app.
 2. Call `bootstrapFlutter(...)` in `main()`.
 3. Launch the app in debug mode.
-4. Run `flutter_mcp_cli validate-runtime`.
+4. Run `flutter-mcp-toolkit validate-runtime` (pass `--target` or global `--vm-service-uri` with `app.debugPort.wsUri`; host `desktop_window` failures retry once with `flutter_layer` — see `data.summary.captureFallbackUsed`).
 5. Then use dynamic registry commands in this order:
    `fmt_list_client_tools_and_resources`,
    `fmt_client_resource`,
    `fmt_client_tool`.
 
 Use resources for read-only state, tools for actions, and prefer lowercase underscore names.
+
+### Agent authoring (skills)
+
+End-user docs for AI assistants live in the **`mcp_flutter`** repo:
+
+- Cursor / Codex plugin (`plugin/skills/`): start with **`flutter-mcp-toolkit-guide`**, then **`flutter-mcp-toolkit-custom-tools`** when registering **`MCPCallEntry`** tools or resources from app code.
+- Claude Code marketplace plugin (`plugin/skills/`): **`flutter-mcp`** for driving the app; **`flutter-mcp-toolkit-custom-tools`** for the same registration workflow.
+
+Run `make sync-skills` after editing plugin skills so `mcp_server_dart/lib/src/skill_assets.g.dart` stays in sync.
 
 ## Role in `mcp_flutter`
 
