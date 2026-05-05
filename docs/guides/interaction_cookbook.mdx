@@ -1,0 +1,114 @@
+# Interaction Cookbook
+
+Copy-paste recipes for driving a running Flutter app from an agent using the
+Playwright-style interaction layer. Every example assumes:
+
+```bash
+WS='ws://127.0.0.1:8181/<token>/ws'   # from `discover_debug_apps`
+CLI='flutter-mcp-toolkit'              # the built CLI binary
+```
+
+All interaction tools run against the shared command catalog and take the
+usual nested `connection` object for targeting.
+
+## 1. Tap a button
+
+```bash
+# 1. Snapshot → get refs for every interactive widget on screen.
+$CLI exec --name semantic_snapshot \
+  --args "{\"connection\":{\"targetId\":\"$WS\"}}"
+
+# 2. Tap the ref you want. Pass snapshotId to detect staleness.
+$CLI exec --name tap_widget \
+  --args "{\"ref\":\"s_1\",\"snapshotId\":4,\"connection\":{\"targetId\":\"$WS\"}}"
+```
+
+The response includes `via: "semantic_action"` when Tier 1 succeeded
+(`SemanticsOwner.performAction`) or `via: "pointer_events"` when it fell back
+to synthetic taps.
+
+## 2. Fill a form field
+
+```bash
+# ref comes from a previous semantic_snapshot call.
+$CLI exec --name enter_text \
+  --args "{\"ref\":\"s_3\",\"text\":\"hello\",\"connection\":{\"targetId\":\"$WS\"}}"
+```
+
+`enter_text` prefers `SemanticsAction.setText` and falls back to driving
+`EditableTextState.userUpdateTextEditingValue` directly. `TextInputFormatter`s
+and `onChanged` fire correctly.
+
+## 3. Scroll to reveal more content
+
+```bash
+# Pass a scrollable ref for the deterministic semantic-action path.
+$CLI exec --name scroll \
+  --args "{\"ref\":\"s_6\",\"direction\":\"down\",\"connection\":{\"targetId\":\"$WS\"}}"
+
+# Without a ref, scroll dispatches a PointerScrollEvent at screen centre
+# (desktop-friendly wheel path).
+$CLI exec --name scroll \
+  --args "{\"direction\":\"down\",\"distance\":400,\"connection\":{\"targetId\":\"$WS\"}}"
+
+# Re-snapshot — off-screen widgets are only in the tree after they scroll in.
+$CLI exec --name semantic_snapshot \
+  --args "{\"connection\":{\"targetId\":\"$WS\"}}"
+```
+
+Direction follows the Playwright convention: `direction: "down"` reveals
+content below (the finger swipes up).
+
+## 4. Read runtime state without registering a tool
+
+```bash
+$CLI exec --name evaluate_dart_expression \
+  --args "{\"expression\":\"AgentState.instance.counter\",\"connection\":{\"targetId\":\"$WS\"}}"
+```
+
+Evaluates in the app's root library and returns `{result, kind, classRef}`.
+Useful for asserting "did the tap I just issued actually update state?"
+without waiting for a visual diff.
+
+## 5. Edit → hot reload → see what changed
+
+```bash
+# After editing a Dart file:
+$CLI exec --name hot_reload_and_capture \
+  --args "{\"connection\":{\"targetId\":\"$WS\"}}"
+```
+
+Returns a single response with `hotReload` report, fresh `screenshot`, fresh
+`semantics` (new `snapshot_id`), and any app `errors` raised during reassembly.
+One round trip replaces the classic "reload, then snapshot, then errors" chain.
+
+## Staleness handshake
+
+Every interaction tool accepts an optional `snapshotId`. If it doesn't match
+the server's current snapshot the call returns:
+
+```json
+{
+  "ok": false,
+  "error": "stale_snapshot",
+  "providedSnapshotId": 4,
+  "currentSnapshotId": 7,
+  "message": "Snapshot is stale. Call semantic_snapshot to get fresh refs."
+}
+```
+
+Handle by re-issuing `semantic_snapshot`, remapping refs, then retrying.
+
+## Known limits (quick reference)
+
+- Refs only resolve against the most recent snapshot.
+- Off-screen widgets aren't in the snapshot until they scroll into view.
+- Scroll by `ref` is the most reliable path — no-ref scroll uses a
+  `PointerScrollEvent` that a full-screen overlay can swallow.
+- Widgets without `Semantics` are invisible to the snapshot; reach them via
+  `inspect_widget_at_point` + Tier 2 pointer events.
+- Platform views / custom text input can't be filled through
+  `userUpdateTextEditingValue`; use `evaluate_dart_expression` to set state
+  directly.
+
+See [Built-in tools](/core/built_in_tools) for the complete tool surface.

@@ -1,57 +1,25 @@
-## 🔧 Configuration Options
+# Configuration (Entry)
 
-### Environment Variables (`.env`)
+This root file is now a short entry point.
 
-```bash
-# will be used for direct connections to the dart vm
-DART_VM_PORT=8181
-DART_VM_HOST=localhost
+Canonical configuration docs live in MDX:
 
-# will be used for this MCP server
-MCP_SERVER_PORT=3535
-MCP_SERVER_HOST=localhost
+- Full MCP + CLI flags and connection contracts: [docs/core/mcp_configuration.mdx](docs/core/mcp_configuration.mdx)
 
-# Logging configuration
-LOG_LEVEL=critical
+- Error envelope + code contract: [docs/core/error_code_playbook.mdx](docs/core/error_code_playbook.mdx)
+- CLI vs MCP decision guide: [docs/start_here/cli_vs_mcp.mdx](docs/start_here/cli_vs_mcp.mdx)
+- CLI command recipes (CI + local): [docs/start_here/cli_quick_recipes.mdx](docs/start_here/cli_quick_recipes.mdx)
+- AI-agent setup flow: [docs/ai_agents/execution_playbook.mdx](docs/ai_agents/execution_playbook.mdx)
 
-# Development configuration
-NODE_ENV=development
+## Migration
+- **Migrating from v2.x:** [docs/start_here/migration_v2_to_v3.mdx](docs/start_here/migration_v2_to_v3.mdx)
 
-# Resources configuration
-RESOURCES_SUPPORTED=true
-```
+## Why this changed
 
-### Command Line Arguments
+Configuration content was moved to audience-first docs to avoid duplication and keep one source of truth.
 
-```bash
---port, -p     # Server port
---stdio        # Run in stdio mode (default: true)
---resources    # Enable resources support (default: true)
---log-level    # Set logging level (debug, info, notice, warning, error, critical, alert, emergency) according to https://spec.modelcontextprotocol.io/specification/2025-03-26/server/utilities/logging/#log-levels
---help         # Show help
-```
+For v3 automation safety:
 
-## Port Configuration
-
-All Flutter Inspector tools automatically connect to the default Flutter debug port (8181). You only need to specify a port if:
-
-- You're running Flutter on a different port
-- You have multiple Flutter instances running
-- You've configured a custom debug port
-
-Example usage:
-
-```json
-// Default port (8181)
-{
-  "name": "debug_dump_render_tree"
-}
-
-// Custom port
-{
-  "name": "debug_dump_render_tree",
-  "arguments": {
-    "port": 8182
-  }
-}
-```
+- Run `flutter-mcp-toolkit doctor --json` before VM-dependent workflows.
+- Use safe write flags on snapshot/bundle commands:
+  `--check`, `--diff`, `--backup`, `--no-overwrite`.

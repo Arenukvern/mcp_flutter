@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "flutter-test-app",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "cd flutter_test_app && flutter run -d chrome --debug --web-port=8182"],
+      "port": 8182
+    },
+    {
+      "name": "devtools-mcp-extension",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "cd mcp_toolkit/devtools_mcp_extension && flutter run --debug --web-port=3434"],
+      "port": 3434
+    },
+    {
+      "name": "mcp-server-debug",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "cd mcp_server_dart && dart run bin/main.dart --dart-vm-host=localhost --dart-vm-port=8181 --log-level=debug"],
+      "port": 8181
+    }
+  ]
+}

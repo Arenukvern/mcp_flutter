@@ -1,0 +1,26 @@
+name: mcp_capability_core
+description: >-
+  Core MCP capability — Playwright-parity interaction tools, inspection,
+  diagnostics, hot-reload coordination. Server-side glue only; depends on
+  no Flutter packages.
+publish_to: none
+version: 0.1.0
+
+environment:
+  sdk: ^3.11.0
+
+dependencies:
+  collection: ^1.19.1
+  dart_mcp: ^0.5.0
+  from_json_to_json: ^0.5.0
+  is_dart_empty_or_not: ^0.4.0
+  mcp_capability_kernel:
+    path: ../mcp_capability_kernel
+  mcp_shared_core:
+    path: ../mcp_shared_core
+  meta: ^1.17.0
+  vm_service: ^15.0.2
+
+dev_dependencies:
+  lints: ^6.1.0
+  test: ^1.25.0

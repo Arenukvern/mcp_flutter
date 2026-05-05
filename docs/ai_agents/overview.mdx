@@ -1,0 +1,31 @@
+---
+title: AI Agent Setup
+description: One-command install for Claude Code, Cursor, Codex, and Cline.
+---
+
+# AI Agent Setup
+
+`flutter-mcp-toolkit` ships as a plugin with five task-focused skills:
+
+| Skill | Purpose |
+|---|---|
+| `flutter-mcp-toolkit-guide` | Entry point — routes to the right skill |
+| `flutter-mcp-toolkit-setup` | Install verification + preflight |
+| `flutter-mcp-toolkit-inspect` | Read app state |
+| `flutter-mcp-toolkit-control` | Drive UI |
+| `flutter-mcp-toolkit-debug` | Diagnose problems |
+
+## Install for your agent
+
+```bash
+flutter-mcp-toolkit init claude-code   # or: cursor | codex | cline | agents-skills | all
+```
+
+This writes the skills + plugin manifest + MCP server registration to your
+agent's expected path. The `init` command auto-detects whether to use MCP or
+CLI mode; override with `--mode mcp|cli|auto`.
+
+## Browse the skills
+
+The canonical source is in [plugin/skills/](https://github.com/Arenukvern/flutter-mcp-toolkit/tree/main/plugin/skills).
+Skills are markdown — readable without an agent.

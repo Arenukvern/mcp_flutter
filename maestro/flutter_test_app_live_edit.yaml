@@ -1,0 +1,43 @@
+# Live Edit e2e: start example app at http://127.0.0.1:3000 then run: maestro test maestro/flutter_test_app_live_edit.yaml
+url: http://127.0.0.1:3000/?live_edit_test_mode=1
+---
+- launchApp
+- assertVisible: "MCP Toolkit Demo"
+- assertVisible: "Live Edit Test Target"
+- tapOn:
+      id: "live_edit_launcher_chip"
+      retryTapIfNoChange: true
+- assertVisible: "Live Edit: ON"
+- assertVisible: "Tap a widget to select"
+- tapOn:
+      text: "Live Edit Test Target"
+      retryTapIfNoChange: true
+- assertVisible:
+      id: "live_edit_selection_bubble"
+- assertVisible:
+      id: "live_edit_candidate_chip_0"
+- assertNotVisible: "Cancel"
+- tapOn:
+      id: "live_edit_property_text"
+      retryTapIfNoChange: true
+- tapOn:
+      id: "live_edit_property_input_text"
+      retryTapIfNoChange: true
+- inputText: " Updated by Maestro"
+- assertVisible: "Draft changes: 1"
+- assertVisible:
+      id: "live_edit_ai_bubble"
+- tapOn:
+      id: "live_edit_ai_prompt_field"
+      retryTapIfNoChange: true
+- inputText: " Persist through deterministic Maestro demo delegate."
+- tapOn:
+      id: "live_edit_apply_button"
+      retryTapIfNoChange: true
+- assertVisible: "Persist the inline live-edit changes for Maestro."
+- assertVisible: "Applied live-edit changes."
+- assertVisible: "No draft changes."
+- tapOn:
+      id: "live_edit_launcher_chip"
+      retryTapIfNoChange: true
+- assertVisible: "Live Edit"

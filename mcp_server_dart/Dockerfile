@@ -1,5 +1,5 @@
 # Build stage
-FROM dart:3.7.0-sdk AS build
+FROM dart:3.11.0-sdk AS build
 
 WORKDIR /app
 

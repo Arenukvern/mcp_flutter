@@ -1,22 +1,22 @@
 {
   "mcpServers": {
-    "flutter-inspector": {
-      "command": "/absolute/path/to/flutter_inspector_mcp",
+    "flutter-mcp-toolkit": {
+      "command": "/absolute/path/to/mcp_server_dart/build/flutter-mcp-toolkit-server",
       "args": [
         "--dart-vm-host=localhost",
         "--dart-vm-port=8181",
-        "--no-resources",
+        "--resources",
         "--images"
       ],
       "env": {},
       "disabled": false
     },
-    "flutter-inspector-files": {
-      "command": "/absolute/path/to/flutter_inspector_mcp",
+    "flutter-mcp-toolkit-files": {
+      "command": "/absolute/path/to/mcp_server_dart/build/flutter-mcp-toolkit-server",
       "args": [
         "--dart-vm-host=localhost",
         "--dart-vm-port=8181",
-        "--no-resources",
+        "--resources",
         "--images",
         "--save-images"
       ],

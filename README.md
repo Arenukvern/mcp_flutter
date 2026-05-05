@@ -1,8 +1,8 @@
 <div align="center">
 
-# MCP Server + Flutter MCP Toolkit
+# flutter-mcp-toolkit
 
-_For AI-Powered Development_
+_Inspect and drive a running Flutter app from your AI assistant._
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Flutter](https://img.shields.io/badge/Flutter-3.x-blue.svg)](https://flutter.dev)
@@ -12,102 +12,66 @@ _For AI-Powered Development_
 
 </div>
 
-<a href="https://glama.ai/mcp/servers/qnu3f0fa20">
-<img width="380" height="200" src="https://glama.ai/mcp/servers/qnu3f0fa20/badge" alt="Flutter Inspector Server MCP server" />
-</a>
-
-🔍 Model Context Protocol (MCP) server that connects your Flutter apps with AI coding assistants like Cursor, Claude, Cline, Windsurf, RooCode or any other AI assistant that supports MCP server
-
-<!-- Media -->
+`flutter-mcp-toolkit` is a Dart MCP server + Flutter package that lets AI
+assistants (Claude Code, Cursor, Codex, Cline) take (semantic snapshots, tap
+widgets, type into forms, hot-reload, and read logs from a Flutter app) or create its own tools and resources at runtime using MCP Toolkit —
+without leaving the conversation.
 
 ![View Screenshots](docs/view_screenshots.gif)
 
-<!-- End of Media -->
+## Get started in 4 steps
 
-## 📖 Documentation
+```bash
+# 1. Install the binary
+curl -fsSL https://raw.githubusercontent.com/Arenukvern/mcp_flutter/main/install.sh | bash
 
-- [Quick Start](QUICK_START.md)
-- [Configuration](CONFIGURATION.md)
+# 2. Add the toolkit to your Flutter app
+cd my-flutter-app
+flutter-mcp-toolkit codegen-init   # adds flutter_mcp_toolkit + emits main.dart snippet
 
-> [!NOTE]
-> There is official [MCP Server for Flutter from Flutter team](https://github.com/dart-lang/ai/tree/main/pkgs/dart_mcp_server) which exposes Dart tooling.
->
-> The **main goal of this project** is to bring power of MCP server tools by creating them in Flutter app, using **dynamic MCP tools registration** . See how it works in [short YouTube video](https://www.youtube.com/watch?v=Qog3x2VcO98). See [Quick Start](QUICK_START.md) for more details. See [original motivation](https://github.com/Arenukvern/mcp_flutter/blob/main/CHANGELOG.md#210) behind the idea.
->
-> Also, secondary goal is to stabilize and polish tools which are useful in development (so it would be specifically targeted for AI Assistants, for example: it will return not only the errors, but prompt for AI how to work with that error) [see more in MCP_RPC_DESCRIPTION.md](MCP_RPC_DESCRIPTION.md)
->
-> Please share your feedback, ideas and suggestions in issues!
->
-> Hope it will be useful for you,
->
-> Have a nice day!
+# 3. Install skills for your AI agent
+flutter-mcp-toolkit init claude-code   # or: cursor | codex | cline | all
 
-**Major Difference of this MCP server from official Dart MCP Server:**
+# 4. Run
+flutter run --debug
+```
 
-- **Dynamic Tools Registration**: Flutter apps can now register custom tools at the MCP server. See how it works in [short YouTube video](https://www.youtube.com/watch?v=Qog3x2VcO98). See [Dynamic Tools Registration Docs](https://github.com/Arenukvern/mcp_flutter/blob/main/QUICK_START.md#dynamic-tools-registration) for more details.
+That's it. Your AI agent can now inspect and drive the running app.
 
-## 🎉 v2.6.0 released! 🎉
+## Documentation
 
-BREAKING CHANGES:
+- **[Migrating v2 → v3](docs/start_here/migration_v2_to_v3.mdx)** — `fmt_*` MCP tools, binaries, client config keys, `validate-runtime`.
+- **[Why this repo matters](docs/start_here/why_this_repo_matters.mdx)** — what it is, why it exists.
+- **[CLI vs MCP](docs/start_here/cli_vs_mcp.mdx)** — pick the right mode.
+- **[Feature map](docs/start_here/feature_map.mdx)** — the 27 tools.
+- **[AI agent setup](docs/ai_agents/overview.mdx)** — for non-Claude Code agents.
+- **[Architecture](ARCHITECTURE.md)** — for contributors.
+- **[Quick Start](QUICK_START.md)**, **[Configuration](CONFIGURATION.md)**, **[MCP RPC description](MCP_RPC_DESCRIPTION.md)**
 
-- Dart SDK updated to 3.10.0 with all dependencies updated to the latest versions
+## What it does
 
-- now VM service auto-reconnect when Flutter app restarts. Huge thank you to [@jkitching](https://github.com/jkitching) for PR! https://github.com/Arenukvern/mcp_flutter/pull/73
+The toolkit exposes 27 MCP tools (under the `fmt_*` capability prefix) across four categories:
 
-- dockerfile for MCP Server - not tested.
-  Huge thank you to [@arslanmit](https://github.com/arslanmit) for PR with Dockerfile! https://github.com/Arenukvern/mcp_flutter/pull/64
+- **Inspection** — semantic snapshot, view details, errors, screenshots, VM info
+- **Interaction** — tap, scroll, type, fill forms, hot-reload, navigate, wait_for
+- **Debug** — recent logs, evaluate Dart expressions
+- **Lifecycle** — discover apps, hot-reload, hot-restart
 
-See more details in [CHANGELOG.md](CHANGELOG.md).
+See the `flutter-mcp-toolkit-{guide,inspect,control,debug}` skills for the full
+reference (installed by `flutter-mcp-toolkit init`).
 
-## ⚠️ WARNING
+### Dynamic Tools Registration
 
-Dump RPC methods (like `dump_render_tree`), may cause huge amount of tokens usage or overload context. Therefore now they are disabled by default, but can be enabled via `--dumps` flag.
+Flutter apps can register custom tools and resources at runtime. See how it
+works in this [short YouTube video](https://www.youtube.com/watch?v=Qog3x2VcO98).
+The same `arguments.connection` targeting is supported by the CLI's `exec`,
+`batch`, daemon `command/execute`, daemon `watch/start`, and snapshot step args.
 
-See more details about command line options in [mcp_server_dart README](mcp_server_dart/README.md).
+## ⚠️ Note on Dump RPCs
 
-## 🚀 Getting Started
-
-- (Experimental) You can try to install MCP server and configure it using your AI Agent. Use the following prompt: `Please install MCP server using this link: https://github.com/Arenukvern/mcp_flutter/blob/main/llm_install.md`
-
-- with Cursor: https://www.youtube.com/watch?v=pyDHaI81uts
-- with VSCode + Cline: use prompt `Please install MCP server using this link: https://github.com/Arenukvern/mcp_flutter/blob/main/llm_install.md`
-
-- Quick Start is available in [QUICK_START.md](QUICK_START.md)
-- Configuration options are available in [CONFIGURATION.md](CONFIGURATION.md)
-
-## 🎯 AI Agent Tools
-
-### Core Flutter Tools
-
-- `get_app_errors` [Resource|Tool] - Retrieves precise and condensed error information from your Flutter app
-  **Usage**:
-
-  - Uses only short description of the error. Should filter duplicate errors, to avoid flooding Agent context window with the same errors.
-  - Uses Error Monitor to capture Dart VM errors. All errors captured in Flutter app, and then available by request from MCP server.
-
-  **Tested on**:
-  ✅ macOS, ✅ iOS
-  **Not tested on**:
-  🚧 Android, 🤔 Windows, 🤔 Linux, ❌ Web
-  [See issue](https://github.com/Arenukvern/mcp_flutter/issues/23)
-
-- `view_screenshot` [Resource|Tool] - Captures screenshots of the running application.
-  **Configuration**:
-
-  - Enable with `--images` flag
-  - Will use PNG compression to optimize image size.
-
-- `get_view_details` [Resource|Tool] - size of screen, pixel ratio. May unlock ability for an Agent to use widget selection. Will return details about each view in the app.
-
-### Dynamic Tools Registration 🆕
-
-**Dynamic Registration Features:**
-
-Flutter apps can now register custom tools and resources at runtime. See how it works in [short YouTube video](https://www.youtube.com/watch?v=Qog3x2VcO98). See [Dynamic Tools Registration Docs](#dynamic-tools-registration-🆕) for more details.
-
-All tools default to using port 8181 if no port is specified. You can override this by providing a specific port number.
-
-📚 Please see more in [MCP_RPC_DESCRIPTION](MCP_RPC_DESCRIPTION.md)
+Dump RPC methods (like `dump_render_tree`) can produce huge token output and
+are disabled by default. Enable with `--dumps`. See
+[mcp_server_dart README](mcp_server_dart/README.md) for the full flag surface.
 
 ## 🔒 Security
 
@@ -120,21 +84,21 @@ This MCP server is verified by [MseeP.ai](https://mseep.ai).
 ## 🔧 Troubleshooting
 
 1. **Connection Issues**
-
    - Ensure your Flutter app is running in debug mode
    - Verify the port matches in both Flutter app and MCP server
    - Check if the port is not being used by another process
+   - Safest explicit targeting: use `arguments.connection.uri` and paste exact Flutter machine `app.debugPort.wsUri`
+   - If response includes `connection_selection_required`, retry with `arguments.connection.targetId` using one URI from `availableTargets` (or set `arguments.connection.uri` directly)
 
 2. **AI Tool Not Detecting Inspector**
-
    - Restart the AI tool after configuration changes
    - Verify the configuration JSON syntax
    - Check the tool's logs for connection errors
 
 3. **Dynamic Tools Not Appearing**
-   - Ensure `mcp_toolkit` package is properly initialized in your Flutter app
+   - Ensure `flutter_mcp_toolkit` package is properly initialized in your Flutter app
    - Check that tools are registered using `MCPToolkitBinding.instance.addEntries()`
-   - Use `listClientToolsAndResources` to verify registration
+   - Use `fmt_list_client_tools_and_resources` to verify registration
    - Hot reload your Flutter app after adding new tools
 
 The Flutter MCP Server is registered with Smithery's registry, making it discoverable and usable by other AI tools through a standardized interface.
@@ -144,9 +108,9 @@ The Flutter MCP Server is registered with Smithery's registry, making it discove
 ```
 ┌─────────────────┐     ┌───────────────────────┐     ┌─────────────────┐
 │                 │     │  Flutter App with     │     │                 │
-│  Flutter App    │<--->│  mcp_toolkit (VM Svc.  │<--->│ MCP Server Dart │
-│  (Debug Mode)   │     │  Extensions + Dynamic │     │                 │
-│                 │     │  Tool Registration)   │     │                 │
+│  Flutter App    │<--->│  flutter_mcp_toolkit  │<--->│ flutter-mcp-    │
+│  (Debug Mode)   │     │  (VM Svc. Extensions  │     │ toolkit-server  │
+│                 │     │  + Dynamic Tools)     │     │                 │
 └─────────────────┘     └───────────────────────┘     └─────────────────┘
 ```
 

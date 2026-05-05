@@ -1,0 +1,29 @@
+name: skill-assets-drift
+
+on:
+  pull_request:
+    paths:
+      - 'plugin/**'
+      - 'mcp_server_dart/lib/src/skill_assets.g.dart'
+      - 'mcp_server_dart/tool/build_skill_assets.dart'
+  push:
+    branches: [main]
+
+jobs:
+  check-drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Install deps
+        run: cd mcp_server_dart && dart pub get
+      - name: Regenerate skill assets
+        run: dart run mcp_server_dart/tool/build_skill_assets.dart
+      - name: Verify no drift
+        run: |
+          if ! git diff --exit-code mcp_server_dart/lib/src/skill_assets.g.dart; then
+            echo "::error::skill_assets.g.dart is out of sync with plugin/. Run 'make sync-skills' and commit the result."
+            exit 1
+          fi

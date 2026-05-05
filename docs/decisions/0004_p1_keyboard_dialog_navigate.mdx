@@ -1,0 +1,135 @@
+# ADR 0004 — P1: keyboard, dialog, navigate
+
+- **Status:** Accepted
+- **Shipped:** v3.0.0
+- **Sources:** `docs/superpowers/plans/2026-04-27-p1-keyboard-dialog-navigate.md` (deleted in commit `20c2e14`; recoverable from git history)
+
+## Context
+
+Three Playwright-parity gaps remained after [P0 `wait_for`](/decisions/0003_p0_wait_for_design):
+
+- No way to send keyboard input (Enter, Escape, Tab, arrows) to the app.
+- No way to dismiss dialogs / popups.
+- No way to drive the Navigator (push / pop / popUntil).
+
+Each one has its own surface and concerns, but they share enough infrastructure
+that a single bundle saved a round of registration work.
+
+## Decision
+
+Three MCP tools — `press_key`, `handle_dialog`, `navigate` — sharing one new
+toolkit service file (`control_flow_service.dart`) and one new opt-in
+app-binding API (Navigator key registration). All follow the
+[`wait_for` blueprint](/decisions/0003_p0_wait_for_design): one VM-service
+extension per tool, server forwards via `callFlutterExtension`, toolkit-side
+service does the work.
+
+`MCPToolkitBinding` gains a `setNavigatorKey(GlobalKey<NavigatorState>)`
+setter, mirroring the existing `setSelectAtPointHandler` precedent. Apps
+must register a key for `handle_dialog` and `navigate` to work; `press_key`
+requires no registration. A new typed error `navigator_not_registered` (HTTP
+400, non-retryable — caller must fix their app code) covers the missing-key
+path.
+
+### `press_key` — dual-path key dispatch
+
+**Single-path APIs do NOT reach `Focus.onKeyEvent` under the test binding.**
+The shipped implementation uses **both**:
+
+1. `HardwareKeyboard.instance.handleKeyEvent(KeyDownEvent/KeyUpEvent)` —
+   updates pressed-key state and notifies HardwareKeyboard listeners
+   (Shortcuts, Actions).
+2. `ServicesBinding.instance.keyEventManager.keyMessageHandler?.call(KeyMessage([event], null))` —
+   invokes the FocusManager-installed handler that walks the focus tree.
+
+`handleKeyData`'s pairing buffer is bypassed because we don't send a matching
+legacy raw event.
+
+**Limitation: `TextField.onSubmitted` is unreachable.** It goes through the
+`flutter/textinput` channel (`TextInputAction.done`), not key events. The tool
+description tells users to `tap_widget` the submit button instead.
+
+#### Key-name vocabulary
+
+Accepted strings: `'Enter'`, `'Escape'`, `'Tab'`, `'Backspace'`, `'Delete'`,
+`'Space'`, `'ArrowUp'`, `'ArrowDown'`, `'ArrowLeft'`, `'ArrowRight'`, plus
+single ASCII chars (`'a'`–`'z'`, `'0'`–`'9'`). Mapped to `LogicalKeyboardKey`
+constants via a static `_keyMap`. Anything else returns
+`press_key_failed` with `unknown_key` detail.
+
+#### Modifiers
+
+Optional bool args: `ctrl`, `shift`, `alt`, `meta`. When set, send the
+modifier-key down events first, then the main key, then up in reverse order
+(mirrors a real user).
+
+### `handle_dialog` — `dismiss` only
+
+Only `dismiss` is first-class. `accept` was dropped — it's a thin wrapper
+over `wait_for → tap_widget`, and the whole point of `wait_for` returning
+the snapshot was to avoid those round-trips.
+
+`dismiss` calls `Navigator.pop` on the registered navigator's topmost route;
+returns `{popped: true, routeName: ...}` on success. Returns a structured
+failure if no popup-class route is on top or no navigator is registered.
+
+### `navigate` — push / pop / popUntil
+
+Three actions, all requiring a registered navigator key:
+
+| Action | Implementation | Note |
+| --- | --- | --- |
+| `push` | `unawaited(pushNamed(route, arguments))` | `pushNamed`'s Future only resolves on pop, not on display, so awaiting it deadlocks. |
+| `pop` | `maybePop()` | |
+| `popUntil` | `popUntil(ModalRoute.withName(route))` | |
+
+Args use the action enum — no kind union, just `action: String`. Precheck
+only on `navigatorKey == null` (not `currentState == null`); `currentState`
+may be null transiently before the navigator is mounted. `unknown_action`
+should be reported as `unknown_action`, not `navigator_not_registered`.
+
+### Wire format
+
+Same as `wait_for`: extension RPC args are stringly-typed. Server
+`_pressKey`/etc. call `jsonEncode` on any nested map (none expected for these
+tools — args are scalars/strings/bools). Toolkit decodes via
+`jsonDecodeBool`/`jsonDecodeString`/`jsonDecodeInt` per arg.
+
+## Consequences
+
+**What changed:**
+- Three new MCP tools shipped (`press_key`, `handle_dialog`, `navigate`).
+- New `MCPToolkitBinding.setNavigatorKey(...)` API. Apps that want
+  `handle_dialog`/`navigate` must register their navigator key during
+  bootstrap.
+- New error code `navigator_not_registered` — non-retryable, app-config
+  problem.
+- New `control_flow_service.dart` toolkit file becomes the home for any
+  future "control flow" primitive (focus management, lifecycle).
+
+**What we paid:**
+- The `press_key` dual-path approach is a deliberate departure from "use the
+  public API"; we documented why because future Flutter versions might
+  consolidate the path and break us.
+- `TextField.onSubmitted` is genuinely unreachable. Documented in the tool
+  description but it's a paper cut for agents that don't read it.
+
+## Notes
+
+**Test pattern (different from `wait_for`).** None of these tools need
+`wait_for`'s parallel-pump pattern. They're synchronous: act →
+`tester.pump()` → assert. `press_key`, `handle_dialog`, and `navigate` all
+need `testWidgets` (focus tree / Navigator). No `Future.delayed` deadlock
+risk because the implementations don't await user-time delays.
+
+**Why `pushNamed` is fire-and-forget.** `pushNamed`'s returned Future
+resolves when the pushed route is *popped*, not when it's shown. Awaiting
+it inside `_navigate` would deadlock until the user popped the route. Hence
+`unawaited(...)`.
+
+## Related work
+
+- Built on the [`wait_for` blueprint](/decisions/0003_p0_wait_for_design).
+- [P2 ADR 0005](/decisions/0005_p2_fill_form_hover_select_option) reused
+  the same registration pattern again (and used the same logic that killed
+  `accept` in `handle_dialog` to kill `select_option`).

@@ -3,17 +3,21 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-
+.maestro
+.flutter_mcp
 # Build output
 /build/
 dist/
 *.tsbuildinfo
+.codex/engineering-loop
+.codex/specs
+.codex/runtime
+
 
 # IDE
 .idea/
 *.swp
 *.swo
-flutter_live_edit
 .mcp_screenshots
 .maestro
 .flutter_mcp
@@ -21,9 +25,14 @@ mcp_server_dart/.mcp_screenshots
 # OS
 .DS_Store
 Thumbs.db
-
+.mcp_screenshots
 # Environment
 .env
 .env.local
 .env.*.local
 mcp_server_dart/flutter_inspector_mcp
+.web_probe_machine.log
+
+# Agentic Executables project hub (regenerate with scripts/ae_live_edit_know.sh)
+.ae_hub/
+.gitnexus

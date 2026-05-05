@@ -1,0 +1,9 @@
+[
+  {
+    "label": "Debug Flutter App",
+    "adapter": "Dart",
+    "type": "flutter",
+    "program": "flutter_test_app/lib/main.dart",
+    "args": ["--web-port=8182", "-d", "macos"]
+  }
+]

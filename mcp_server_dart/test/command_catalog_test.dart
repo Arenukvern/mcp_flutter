@@ -1,0 +1,220 @@
+import 'package:flutter_mcp_toolkit_server/flutter_mcp_core.dart';
+import 'package:test/test.dart';
+
+void main() {
+  group('CommandCatalog', () {
+    final catalog = CommandCatalog.instance;
+
+    test('contains expected core commands', () {
+      final names = catalog.commands.map((final c) => c.name).toSet();
+
+      expect(names.contains('status'), isTrue);
+      expect(names.contains('get_vm'), isTrue);
+      expect(names.contains('hot_reload_flutter'), isTrue);
+      expect(names.contains('session_start'), isTrue);
+      expect(names.contains('session_exec'), isTrue);
+      expect(names.contains('fmt_client_tool'), isTrue);
+      expect(names.contains('discover_debug_apps'), isTrue);
+      expect(names.contains('inspect_widget_at_point'), isTrue);
+      expect(names.contains('capture_ui_snapshot'), isTrue);
+    });
+
+    test('marks high-signal and low-signal MCP exposure explicitly', () {
+      expect(catalog.specFor('discover_debug_apps')!.mcpExposed, isTrue);
+      expect(catalog.specFor('inspect_widget_at_point')!.mcpExposed, isTrue);
+      expect(catalog.specFor('capture_ui_snapshot')!.mcpExposed, isTrue);
+      expect(catalog.specFor('get_active_ports')!.mcpExposed, isFalse);
+      expect(catalog.specFor('dynamicRegistryStats')!.mcpExposed, isFalse);
+    });
+
+    test('every command has input and output schemas', () {
+      for (final command in catalog.commands) {
+        expect(command.inputSchema['type'], equals('object'));
+        expect(command.outputSchema, isA<Map<String, Object?>>());
+        expect(command.description.isNotEmpty, isTrue);
+      }
+    });
+
+    test('buildCommand supports canonical argument keys', () {
+      final command = catalog.buildCommand('hot_reload_flutter', {
+        'force': true,
+      });
+
+      expect(command, isA<HotReloadFlutterCommand>());
+      expect((command as HotReloadFlutterCommand).force, isTrue);
+    });
+
+    test('capabilities expose feature and provider model', () {
+      final capabilities = catalog.capabilities(
+        configuration: const CoreRuntimeConfiguration(
+          vmHost: 'localhost',
+          vmPort: 8181,
+          resourcesSupported: true,
+          imagesSupported: true,
+          dumpsSupported: false,
+          dynamicRegistrySupported: true,
+          saveImagesToFiles: false,
+        ),
+      );
+
+      expect(capabilities.protocolVersion, equals(kFlutterMcpProtocolVersion));
+      expect(capabilities.schemaVersion, equals('command-catalog/v1'));
+      expect(capabilities.providers['summaryProviders'], isNotNull);
+      expect(capabilities.features['serve'], isTrue);
+      expect(capabilities.commands, isNotEmpty);
+    });
+
+    test('rejects unknown keys when command schema is strict by default', () {
+      expect(
+        () => catalog.buildCommand('status', {'unexpected': true}),
+        throwsA(
+          isA<ArgumentError>().having(
+            (final error) => error.message,
+            'message',
+            contains('Unknown argument key'),
+          ),
+        ),
+      );
+    });
+
+    test('rejects string-encoded booleans where bool is required', () {
+      expect(
+        () => catalog.buildCommand('hot_reload_flutter', {'force': 'true'}),
+        throwsA(
+          isA<ArgumentError>().having(
+            (final error) => error.message,
+            'message',
+            contains('expected boolean'),
+          ),
+        ),
+      );
+    });
+
+    test('accepts correctly typed payloads', () {
+      final command = catalog.buildCommand('get_app_errors', {'count': 5});
+      expect(command, isA<GetAppErrorsCommand>());
+      expect((command as GetAppErrorsCommand).count, equals(5));
+    });
+
+    test('explain_errors parses allowExternalSummary alias', () {
+      final command = catalog.buildCommand('explain_errors', {
+        'allow-external-summary': true,
+        'summaryProvider': 'openai',
+      });
+      expect(command, isA<ExplainErrorsCommand>());
+      final explain = command as ExplainErrorsCommand;
+      expect(explain.allowExternalSummary, isTrue);
+      expect(explain.summaryProvider, equals('openai'));
+    });
+
+    test('parses screenshot permission policy fields', () {
+      final command = catalog.buildCommand('get_screenshots', {
+        'mode': 'auto',
+        'permissionPolicy': 'auto_request_once',
+      });
+
+      expect(command, isA<GetScreenshotsCommand>());
+      expect(
+        (command as GetScreenshotsCommand).permissionPolicy,
+        equals(PermissionPolicy.autoRequestOnce),
+      );
+    });
+
+    test('adds optional connection schema for VM and wrapper commands', () {
+      final getVmSchema =
+          catalog.specFor('get_vm')!.inputSchema['properties']!
+              as Map<String, Object?>;
+      expect(getVmSchema.containsKey('connection'), isTrue);
+
+      final watchSchema =
+          catalog.specFor('watch')!.inputSchema['properties']!
+              as Map<String, Object?>;
+      expect(watchSchema.containsKey('connection'), isTrue);
+
+      final sessionExecSchema =
+          catalog.specFor('session_exec')!.inputSchema['properties']!
+              as Map<String, Object?>;
+      expect(sessionExecSchema.containsKey('connection'), isTrue);
+
+      final statusSchema =
+          catalog.specFor('status')!.inputSchema['properties']!
+              as Map<String, Object?>;
+      expect(statusSchema.containsKey('connection'), isFalse);
+
+      final connectSchema =
+          catalog.specFor('connect')!.inputSchema['properties']!
+              as Map<String, Object?>;
+      expect(connectSchema.containsKey('connection'), isFalse);
+    });
+
+    test('wait_for command is registered with predicate + timeout schema', () {
+      final spec = catalog.specFor('wait_for');
+      expect(spec, isNotNull);
+      expect(spec!.mcpExposed, isTrue);
+
+      final props = spec.inputSchema['properties']! as Map<String, Object?>;
+      expect(props.containsKey('predicate'), isTrue);
+      expect(props.containsKey('timeoutMs'), isTrue);
+
+      final cmd = catalog.buildCommand('wait_for', {
+        'predicate': {'kind': 'time', 'ms': 100},
+        'timeoutMs': 1000,
+      });
+      expect(cmd, isA<WaitForCommand>());
+      final wc = cmd as WaitForCommand;
+      expect(wc.predicate['kind'], 'time');
+      expect(wc.timeoutMs, 1000);
+    });
+
+    test('press_key, handle_dialog, navigate commands are registered', () {
+      for (final name in ['press_key', 'handle_dialog', 'navigate']) {
+        final spec = catalog.specFor(name);
+        expect(spec, isNotNull, reason: '$name spec missing');
+        expect(spec!.mcpExposed, isTrue, reason: '$name not mcpExposed');
+      }
+
+      final pk =
+          catalog.buildCommand('press_key', {'key': 'Enter', 'shift': true})
+              as PressKeyCommand;
+      expect(pk.key, 'Enter');
+      expect(pk.shift, isTrue);
+
+      final hd =
+          catalog.buildCommand('handle_dialog', {'action': 'dismiss'})
+              as HandleDialogCommand;
+      expect(hd.action, 'dismiss');
+
+      final nv =
+          catalog.buildCommand('navigate', {
+                'action': 'push',
+                'route': '/settings',
+              })
+              as NavigateCommand;
+      expect(nv.action, 'push');
+      expect(nv.route, '/settings');
+    });
+
+    test('fill_form, hover commands are registered', () {
+      for (final name in ['fill_form', 'hover']) {
+        final spec = catalog.specFor(name);
+        expect(spec, isNotNull, reason: '$name spec missing');
+        expect(spec!.mcpExposed, isTrue, reason: '$name not mcpExposed');
+      }
+
+      final ff =
+          catalog.buildCommand('fill_form', {
+                'fields': <Map<String, Object?>>[
+                  {'ref': 's_0', 'text': 'alice'},
+                  {'ref': 's_1', 'text': 'bob'},
+                ],
+              })
+              as FillFormCommand;
+      expect(ff.fields, hasLength(2));
+      expect(ff.fields.first['ref'], 's_0');
+      expect(ff.fields.first['text'], 'alice');
+
+      final hv = catalog.buildCommand('hover', {'ref': 's_3'}) as HoverCommand;
+      expect(hv.ref, 's_3');
+    });
+  });
+}

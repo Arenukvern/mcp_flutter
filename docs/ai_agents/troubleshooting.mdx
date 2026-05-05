@@ -1,0 +1,103 @@
+# AI Agent Troubleshooting
+
+## Cannot Plug Into App (`mcp_toolkit` Missing/Inactive)
+
+Symptoms:
+
+- `get_extension_rpcs` does not include:
+  - `ext.mcp.toolkit.app_errors`
+  - `ext.mcp.toolkit.view_details`
+  - `ext.mcp.toolkit.view_screenshots`
+  - `ext.mcp.toolkit.inspect_widget_at_point`
+- `get_screenshots`, `get_view_details`, or `get_app_errors` fail even though VM connection works.
+
+Fix:
+
+1. Ensure app dependency: `flutter pub add mcp_toolkit`
+2. Ensure initialization runs before `runApp`:
+
+```dart
+MCPToolkitBinding.instance
+  ..initialize()
+  ..initializeFlutterToolkit();
+```
+
+3. Restart app in debug mode and re-run `get_extension_rpcs`.
+4. Retry runtime tools only after extension RPCs appear.
+
+If the app cannot be modified, state that Flutter MCP cannot attach toolkit extensions to this app and do not claim screenshot/layout/error inspection succeeded.
+
+## `connection_selection_required`
+
+Cause: multiple debug targets found.
+
+Fix:
+
+1. Read `availableTargets` from the response.
+2. Retry with:
+
+```json
+{
+  "arguments": {
+    "connection": {
+      "targetId": "ws://127.0.0.1:59490/<token>/ws"
+    }
+  }
+}
+```
+
+## `target_not_found` (with `connection.targetId`)
+
+Cause: `targetId` does not match discovered targets for this moment.
+
+Fix:
+
+1. Prefer `connection.uri` with exact machine `app.debugPort.wsUri`.
+2. Or refresh `discover_debug_apps` / `availableTargets` and copy one `targetId` exactly.
+3. Never use plain `host:port` as `targetId`.
+
+Example retry:
+
+```json
+{
+  "arguments": {
+    "connection": {
+      "uri": "ws://127.0.0.1:59490/<token>/ws"
+    }
+  }
+}
+```
+
+## No Tools Showing In Client
+
+- Restart the AI client after MCP config changes.
+- Ensure JSON syntax is valid.
+- Verify `command` points to existing compiled binary.
+- Confirm Flutter app is running in debug mode.
+- Run `flutter-mcp-toolkit doctor --json` to check environment prerequisites.
+
+## Screenshots Missing
+
+- Ensure `--images` is enabled.
+- For clients with limited resource support, use `--no-resources` and call tool variants.
+- For file-based image workflows (for example RooCode), use `--save-images`.
+- Verify toolkit extension `ext.mcp.toolkit.view_screenshots` is present.
+
+## View/Layout Details Missing
+
+- Ensure `--resources` is enabled (or call `get_view_details` tool variant).
+- Verify toolkit extension `ext.mcp.toolkit.view_details` is present.
+- If multiple apps are running, pin target with `arguments.connection.uri`.
+- Retry after hot restart if the app was just instrumented.
+
+## Coordinate Inspection Missing
+
+- Verify toolkit extension `ext.mcp.toolkit.inspect_widget_at_point` is present.
+- Retry with explicit target selection (`arguments.connection.targetId` or `arguments.connection.uri`).
+- Confirm provided `x` and `y` are global logical coordinates.
+
+## Dynamic Tools Not Appearing
+
+- Verify `MCPToolkitBinding.instance.addEntries(...)` is called.
+- Hot reload or restart the Flutter app.
+- Use `fmt_list_client_tools_and_resources` to verify registration.

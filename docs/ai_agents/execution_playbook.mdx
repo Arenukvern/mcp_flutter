@@ -1,0 +1,21 @@
+---
+title: AI Agent Execution Playbook
+description: This guide moved into the flutter-mcp-toolkit plugin.
+---
+
+# AI Agent Execution Playbook (moved)
+
+The execution playbook is now the **`flutter-mcp-toolkit-setup`** skill, shipped
+inside the plugin. To install it for your agent, run:
+
+```bash
+flutter-mcp-toolkit init claude-code   # or: cursor | codex | cline | all
+```
+
+This installs the `flutter-mcp-toolkit-{guide,setup,inspect,control,debug}`
+skills into your agent's expected location. The setup skill covers preflight
+(`flutter-mcp-toolkit doctor`), connection troubleshooting, and the full CLI
+surface.
+
+For a quick orientation without installing, browse the source skills:
+[plugin/skills/](https://github.com/Arenukvern/flutter-mcp-toolkit/tree/main/plugin/skills).

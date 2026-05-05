@@ -1,0 +1,116 @@
+# ADR 0005 — P2: `fill_form`, `hover`, and the `select_option` drop
+
+- **Status:** Accepted
+- **Shipped:** v3.0.0
+- **Sources:** `docs/superpowers/plans/2026-04-27-p2-fill-form-hover.md` (deleted in commit `20c2e14`; recoverable from git history)
+
+## Context
+
+P2 of the Playwright-parity roadmap originally listed three tools:
+`fill_form`, `select_option`, and `hover`.
+
+After [P0 `wait_for`](/decisions/0003_p0_wait_for_design) shipped, the
+`select_option` shape became questionable — `wait_for` already returned a
+fresh snapshot in its payload, which collapsed the round-trip math `select_option`
+was supposed to save.
+
+## Decision
+
+**Drop `select_option`.** Same logic that killed `handle_dialog accept` in
+[P1](/decisions/0004_p1_keyboard_dialog_navigate): post-`wait_for`, the
+equivalent flow is
+
+```
+tap_widget(dropdown)
+  → wait_for(text='option')   // returns the fresh snapshot
+  → tap_widget(item)
+```
+
+Three tool calls. A wrapper saves zero round-trips because `wait_for`
+already returns the snapshot. And a `select_option` implementation would
+need Flutter-version-specific dropdown logic (`DropdownMenu` vs.
+`DropdownButton` vs. custom popup pickers) that's not worth the maintenance
+surface for zero functional gain.
+
+This brought P2 from 3 tools / 6 tasks to 2 tools / 5 tasks — back to the
+"small batch" the roadmap originally promised.
+
+**Ship `fill_form` and `hover`** — both follow the
+[`wait_for` blueprint](/decisions/0003_p0_wait_for_design) for registration.
+
+### `fill_form` — server-side orchestration
+
+`_fillForm` is a server-side loop. Each field calls the existing
+`_enterText` executor (which itself does `_ensureVmConnected` +
+`callFlutterExtension('ext.mcp.toolkit.enter_text', ...)`). **No new toolkit
+code, no new wire format, no `OnFillFormEntry`.** Reuses tested code.
+
+| Concern | Decision |
+| --- | --- |
+| Failure semantics | Stop on first failure. Return `{success, results, failedAt, failedRef}`. Partial form is worse than a clean error pointing at the bad field. |
+| Snapshot staleness | Optional `snapshotId` for the whole batch. If the *first* field returns `stale_snapshot`, fail the batch. Don't re-validate per field. |
+| Connection check overhead | Happens once per `_enterText` call. Fast-path is cheap (already-connected returns immediately) — not worth refactoring. |
+
+### `hover` — synthesized pointer-hover event
+
+`hoverAtRef(ref)` lives on `GestureInteractionService`. Synthesizes a
+`PointerHoverEvent` at the widget's center via the existing tier-2
+`GestureBinding.instance.handlePointerEvent` path (same path as
+`_dispatchTap` etc.). No semantic-action equivalent for hover, so no tier-1
+fallback.
+
+**Mouse-tracker priming gotcha.** `MouseTracker` computes `MouseRegion.onEnter`/`onExit`
+from *position changes*. A single `PointerHoverEvent` at the target may not
+trigger `onEnter` if the tracker's last-known position is already over the
+widget (or unset). The implementation **fires a priming hover at
+`Offset(-100, -100)` first**, then the target hover. Reuses `pointer: 1` for
+both events so the tracker treats them as the same logical mouse.
+
+### No new app-binding API
+
+Unlike [P1's `setNavigatorKey`](/decisions/0004_p1_keyboard_dialog_navigate),
+neither `fill_form` nor `hover` requires app-side opt-in.
+
+### Wire format asymmetry
+
+- Server `_fillForm` does **not** call an extension RPC — it loops
+  `_enterText` directly. So no toolkit-side `OnFillFormEntry` and no
+  `mcpToolkitExtKeys.fillForm` constant.
+- Server `_hover` calls `mcpToolkitExtKeys.hover` with `{ref}` (string, no
+  encoding needed).
+
+## Consequences
+
+**What changed:**
+- Two new MCP tools shipped (`fill_form`, `hover`).
+- New error codes: `fillFormFailed`, `hoverFailed`.
+- `fill_form` becomes the canonical pattern for "batch a server-side loop
+  over an existing per-item executor" — no toolkit-side change needed when
+  the per-item already exists.
+- `select_option` officially deferred (see [ADR 0002](/decisions/0002_v3_scope_and_consolidation_deferrals)
+  for the deferral list).
+
+**What we paid:**
+- The hover priming hack is fragile-looking but verifiable: the test asserts
+  `MouseRegion.onEnter` fires. If a future Flutter version changes the
+  `MouseTracker` semantics, the test will catch it.
+- Agents asking for `select_option` will get `tool_not_found` and have to
+  learn the `tap → wait_for → tap` idiom. Documented in the audit row.
+
+## Notes
+
+**Why hover doesn't have a semantic-action tier.** `tap_widget` falls back
+through three tiers (semantics action → gesture detector → pointer event)
+because each tier has a different reach. Hover has no semantics-action
+equivalent in Flutter — `MouseRegion` only listens at the pointer-event
+layer. Hence the single tier-2 path.
+
+**Test pattern.** Both tools use `testWidgets` with the act-then-pump pattern
+(no parallel-pump needed — neither awaits user-time delays internally). The
+hover test asserts a `MouseRegion.onEnter` callback fired.
+
+## Related work
+
+- Re-evaluation triggers for the deferred consolidations (including
+  `select_option` if usage data ever justifies it) live in
+  [ADR 0002](/decisions/0002_v3_scope_and_consolidation_deferrals).

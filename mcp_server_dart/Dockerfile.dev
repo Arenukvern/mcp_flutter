@@ -3,7 +3,7 @@
 # Build: docker build -f Dockerfile.dev -t mcp_server:dev .
 # Run: docker run -i mcp_server:dev
 
-FROM dart:3.7.0-sdk
+FROM dart:3.11.0-sdk
 
 WORKDIR /app
 
@@ -36,4 +36,3 @@ ENTRYPOINT ["/usr/bin/tini", "--"]
 
 # Run via dart VM (not compiled) for easier debugging
 CMD ["dart", "run", "bin/main.dart", "--resources", "--images", "--log-level=debug"]
-

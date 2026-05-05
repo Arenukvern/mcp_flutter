@@ -1,32 +1,82 @@
 {
   "name": "Flutter MCP Toolkit",
-  "description": "Documentation for the MCP Server and Flutter Toolkit for AI-Powered Development.",
+  "description": "Audience-first documentation for Flutter MCP Toolkit: human docs and AI agent docs.",
   "github": "https://github.com/Arenukvern/mcp_flutter",
   "$schema": "https://docs.page/schema.json",
   "sidebar": [
     {
-      "group": "Getting Started",
+      "group": "Start Here",
       "pages": [
         {
           "title": "Overview",
           "href": "/"
         },
         {
-          "title": "LLM Auto Install Files",
-          "href": "/getting_started/llm_install_files"
+          "title": "Why This Repo Matters",
+          "href": "/start_here/why_this_repo_matters"
         },
         {
-          "title": "Manual Installation",
-          "href": "/getting_started/manual_installation"
+          "title": "Feature Map",
+          "href": "/start_here/feature_map"
         },
         {
-          "title": "Manual Client Setup",
-          "href": "/getting_started/manual_client_setup"
+          "title": "Docs Map",
+          "href": "/start_here/docs_map"
+        },
+        {
+          "title": "CLI vs MCP",
+          "href": "/start_here/cli_vs_mcp"
+        },
+        {
+          "title": "CLI Quick Recipes",
+          "href": "/start_here/cli_quick_recipes"
+        },
+        {
+          "title": "Video Walkthroughs",
+          "href": "/start_here/video_walkthroughs"
         }
       ]
     },
     {
-      "group": "Core Concepts",
+      "group": "For Humans",
+      "pages": [
+        {
+          "title": "Debugging Workflow",
+          "href": "/guides/debugging_workflow"
+        },
+        {
+          "title": "Interaction Cookbook",
+          "href": "/guides/interaction_cookbook"
+        },
+        {
+          "title": "Creating Dynamic Tools",
+          "href": "/guides/creating_dynamic_tools"
+        },
+        {
+          "title": "Common Issues",
+          "href": "/troubleshooting/common_issues"
+        }
+      ]
+    },
+    {
+      "group": "For AI Agents",
+      "pages": [
+        {
+          "title": "AI Agent Overview",
+          "href": "/ai_agents/overview"
+        },
+        {
+          "title": "Execution Playbook",
+          "href": "/ai_agents/execution_playbook"
+        },
+        {
+          "title": "AI Troubleshooting",
+          "href": "/ai_agents/troubleshooting"
+        }
+      ]
+    },
+    {
+      "group": "Core Reference",
       "pages": [
         {
           "title": "Architecture",
@@ -39,36 +89,35 @@
         {
           "title": "Dynamic Tool Registry",
           "href": "/core/dynamic_tools_registry"
-        },
-        {
-          "title": "Built-in Tools",
-          "href": "/core/built_in_tools"
         }
       ]
     },
     {
-      "group": "Guides",
+      "group": "Decisions",
       "pages": [
         {
-          "title": "Creating Dynamic Tools",
-          "href": "/guides/creating_dynamic_tools"
+          "title": "Overview",
+          "href": "/decisions"
         },
         {
-          "title": "Debugging Workflow",
-          "href": "/guides/debugging_workflow"
-        }
-      ]
-    },
-    {
-      "group": "Troubleshooting",
-      "pages": [
-        {
-          "title": "Common Issues",
-          "href": "/troubleshooting/common_issues"
+          "title": "0001 — Capability kernel + tool prefix",
+          "href": "/decisions/0001_capability_kernel_and_tool_prefix"
         },
         {
-          "title": "Claude Code Issues",
-          "href": "/troubleshooting/claude_code_issues"
+          "title": "0002 — v3.0.0 scope and consolidation deferrals",
+          "href": "/decisions/0002_v3_scope_and_consolidation_deferrals"
+        },
+        {
+          "title": "0003 — P0 wait_for design",
+          "href": "/decisions/0003_p0_wait_for_design"
+        },
+        {
+          "title": "0004 — P1 keyboard, dialog, navigate",
+          "href": "/decisions/0004_p1_keyboard_dialog_navigate"
+        },
+        {
+          "title": "0005 — P2 fill_form, hover, select_option drop",
+          "href": "/decisions/0005_p2_fill_form_hover_select_option"
         }
       ]
     },

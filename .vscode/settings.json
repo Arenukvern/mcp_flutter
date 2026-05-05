@@ -8,5 +8,6 @@
     "toolkits",
     "Upserts",
     "venv"
-  ]
+  ],
+  "markdown.validate.enabled": true
 }
