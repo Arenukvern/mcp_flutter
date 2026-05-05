@@ -384,7 +384,7 @@ BREAKING CHANGES:
 
 ## 2.4.0
 
-- mcp_toolkit: ^0.3.0 with breaking changes, see [mcp_toolkit/mcp_toolkit/CHANGELOG.md](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_toolkit/mcp_toolkit/CHANGELOG.md)
+- mcp_toolkit: ^0.3.0 with breaking changes, see [mcp_toolkit/CHANGELOG.md](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_toolkit/CHANGELOG.md)
 
 ## 2.3.1
 

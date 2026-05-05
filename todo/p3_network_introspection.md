@@ -157,7 +157,7 @@ Per the interaction-layer project memory:
 
 ## Tests
 
-### Toolkit-side (`mcp_toolkit/mcp_toolkit/test/network_capture_service_test.dart`)
+### Toolkit-side (`mcp_toolkit/test/network_capture_service_test.dart`)
 - Ring buffer trims to `maxRequests` (push N+1, expect N most recent).
 - Default redacted headers replaced with `<redacted>`; case-insensitive matching.
 - `extraRedactedHeaders` augments defaults.
@@ -183,16 +183,16 @@ Per the interaction-layer project memory:
 ## Concrete edits & deltas
 
 ### New files
-- `mcp_toolkit/mcp_toolkit/lib/src/services/network_capture_service.dart`
-- `mcp_toolkit/mcp_toolkit/lib/src/toolkits/network_capture_toolkit.dart`
-- `mcp_toolkit/mcp_toolkit/test/network_capture_service_test.dart`
-- `mcp_toolkit/mcp_toolkit/test/network_capture_toolkit_test.dart`
+- `mcp_toolkit/lib/src/services/network_capture_service.dart`
+- `mcp_toolkit/lib/src/toolkits/network_capture_toolkit.dart`
+- `mcp_toolkit/test/network_capture_service_test.dart`
+- `mcp_toolkit/test/network_capture_toolkit_test.dart`
 - `mcp_server_dart/lib/src/shared_core/commands/network_commands.dart`
 - `mcp_server_dart/lib/src/mcp_toolkit_server/handlers/network_handler.dart`
 - `mcp_server_dart/test/network_commands_test.dart`
 
 ### Modified files
-- `mcp_toolkit/mcp_toolkit/lib/mcp_toolkit.dart` — export the new toolkit + service.
+- `mcp_toolkit/lib/mcp_toolkit.dart` — export the new toolkit + service.
 - `mcp_server_dart/lib/src/shared_core/commands/commands_specs.dart` — two specs.
 - `mcp_server_dart/lib/src/shared_core/command_executor.dart` — two dispatch cases + executor methods + `routeNetworkRequestsResponse` helper.
 - `mcp_server_dart/lib/src/shared_core/types/error_codes.dart` — two codes + descriptors.

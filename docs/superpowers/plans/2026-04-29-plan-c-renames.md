@@ -248,7 +248,7 @@ cd mcp_server_dart && flutter test
 cd ../mcp_capability_core && dart test
 cd ../mcp_capability_kernel && dart test
 cd ../mcp_shared_core && dart test
-cd ../mcp_toolkit/mcp_toolkit && flutter test
+cd ../mcp_toolkit && flutter test
 ```
 Expected: all green.
 
@@ -511,7 +511,7 @@ cd mcp_server_dart && flutter test
 cd ../mcp_capability_core && dart test
 cd ../mcp_capability_kernel && dart test
 cd ../mcp_shared_core && dart test
-cd ../mcp_toolkit/mcp_toolkit && flutter test
+cd ../mcp_toolkit && flutter test
 ```
 Expected: all green.
 

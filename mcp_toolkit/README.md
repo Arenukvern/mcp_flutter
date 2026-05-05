@@ -1,6 +1,6 @@
 # MCP Toolkit for Flutter
 
-[![Pub Version](https://img.shields.io/badge/version-3.0.0-blue)](https://github.com/Arenukvern/mcp_flutter/tree/main/mcp_toolkit/mcp_toolkit)
+[![Pub Version](https://img.shields.io/badge/version-3.0.0-blue)](https://github.com/Arenukvern/mcp_flutter/tree/main/mcp_toolkit)
 
 > [!NOTE]
 > This is not official package - it's a personal project.

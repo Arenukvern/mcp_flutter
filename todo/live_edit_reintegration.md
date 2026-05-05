@@ -202,7 +202,7 @@ payload is the image — strokes are not serialized.
 ## Definition of done
 
 - `flutter test` green in `mcp_capability_live_edit`, `flutter_live_edit_toolkit`,
-  `mcp_server_dart`, `mcp_toolkit/mcp_toolkit`.
+  `mcp_server_dart`, `mcp_toolkit`.
 - `live_edit_session_service_core.dart` < 300 LOC.
 - No `_sameHoverRequest` / hover-cache / reuse guards left in the codebase.
 - `LiveEditSketchAnnotation` serializes round-trip; the live-edit auto-delegate

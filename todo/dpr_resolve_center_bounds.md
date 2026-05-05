@@ -19,11 +19,11 @@ Using those physical numbers for `GestureBinding` / `TestGesture` injection with
 
 `_globalRect` still accumulates transforms the same way, then **divides LTRB by `WidgetsBinding.instance.renderViews.first.flutterView.devicePixelRatio`** when DPR ≠ 1, so cached bounds and centers stay in **logical Flutter space** and match `resolveCenter` / `resolveBounds` consumers (`GestureInteractionService`, tests).
 
-Implementation: `mcp_toolkit/mcp_toolkit/lib/src/services/semantic_snapshot_service.dart` (`_globalRect`).
+Implementation: `mcp_toolkit/lib/src/services/semantic_snapshot_service.dart` (`_globalRect`).
 
 ## Regression test
 
-`mcp_toolkit/mcp_toolkit/test/semantic_snapshot_dpr_test.dart` pumps at DPR 1, 2, and 3 and asserts snapshot-resolved center and bounds match `tester.getCenter` / `tester.getRect` within tolerance.
+`mcp_toolkit/test/semantic_snapshot_dpr_test.dart` pumps at DPR 1, 2, and 3 and asserts snapshot-resolved center and bounds match `tester.getCenter` / `tester.getRect` within tolerance.
 
 ## Notes
 

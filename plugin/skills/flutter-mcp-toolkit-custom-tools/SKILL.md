@@ -19,7 +19,7 @@ Use this when bundled MCP tools (screenshot, semantic snapshot, tap, …) are no
 
 ## Handler signature (tools and resources)
 
-[`MCPCallHandler`](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_toolkit/mcp_toolkit/lib/src/mcp_models.dart) is `FutureOr<MCPCallResult> Function(ServiceExtensionRequestMap request)` where **`ServiceExtensionRequestMap` is `Map<String, String>`**.
+[`MCPCallHandler`](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_toolkit/lib/src/mcp_models.dart) is `FutureOr<MCPCallResult> Function(ServiceExtensionRequestMap request)` where **`ServiceExtensionRequestMap` is `Map<String, String>`**.
 
 - Tool arguments arrive as **string values** keyed by schema property names — mirror the README pattern: `request['n']`, `request['userId']`, then parse (`int.tryParse`, `double.tryParse`, `jsonDecode` for nested blobs if the wire format sends JSON-as-string).
 - Do **not** use `request.arguments` — that is not the app-side API.
@@ -83,7 +83,7 @@ MCPCallEntry.resource(
 ),
 ```
 
-- **`name`** must be `snake_case` (letters, digits, underscores). [`resourceUri`](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_toolkit/mcp_toolkit/lib/src/mcp_models.dart) maps it to a **`visual://localhost/...`** URI (underscore segments become path segments). Agents consume it via **`fmt_client_resource`** using that URI / listing from **`fmt_list_client_tools_and_resources`**.
+- **`name`** must be `snake_case` (letters, digits, underscores). [`resourceUri`](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_toolkit/lib/src/mcp_models.dart) maps it to a **`visual://localhost/...`** URI (underscore segments become path segments). Agents consume it via **`fmt_client_resource`** using that URI / listing from **`fmt_list_client_tools_and_resources`**.
 - Set **`mimeType`** honestly (`application/json` vs `text/plain`) so clients know how to interpret payloads.
 
 ## Schema rules (tools)
