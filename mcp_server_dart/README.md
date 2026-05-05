@@ -59,7 +59,7 @@ prefix):
 > `dynamicRegistryStats` stay unprefixed in MCP. CLI examples below use the
 > catalog name unchanged.
 
-Interaction tools (catalog names: `semantic_snapshot` → `tap_widget` / `enter_text` / `scroll` / `swipe` / `long_press` / `drag`) follow a Playwright-style ref model: take a snapshot, then pass `ref: "s_N"` (and optional `snapshotId` for staleness detection) into the interaction tool. `hot_reload_and_capture` fuses reload + screenshot + fresh snapshot + errors. `evaluate_dart_expression` runs an ad-hoc Dart expression against the app's root library. See [docs/core/built_in_tools.mdx](../docs/core/built_in_tools.mdx) for the full surface and a golden path.
+Interaction tools (catalog names: `semantic_snapshot` → `tap_widget` / `enter_text` / `scroll` / `swipe` / `long_press` / `drag`) follow a Playwright-style ref model: take a snapshot, then pass `ref: "s_N"` (and optional `snapshotId` for staleness detection) into the interaction tool. `hot_reload_and_capture` fuses reload + screenshot + fresh snapshot + errors. `evaluate_dart_expression` runs an ad-hoc Dart expression against the app's root library. See [docs/start_here/cli_quick_recipes.mdx](../docs/start_here/cli_quick_recipes.mdx) and [docs/guides/interaction_cookbook.mdx](../docs/guides/interaction_cookbook.mdx) for the full surface and golden paths.
 
 CLI runs the same shared command catalog/executor as MCP. Preferred debugging path:
 `discover_debug_apps` -> `capture_ui_snapshot` -> `inspect_widget_at_point`.
@@ -182,7 +182,7 @@ One-shot commands return one JSON envelope with stable fields:
 Failures use one strict envelope in `error`:
 `code`, `message`, `details`, `descriptor` (`category`, `retryable`, `exitCode`, `httpLikeStatus`), `recovery`.
 
-The full contract table is documented in [docs/core/error_code_playbook.mdx](../docs/core/error_code_playbook.mdx).
+The full contract table is documented in [docs/ai_agents/troubleshooting.mdx](../docs/ai_agents/troubleshooting.mdx).
 
 ### Daemon Protocol
 

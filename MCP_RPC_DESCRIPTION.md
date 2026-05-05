@@ -4,7 +4,7 @@ This root file is now a short entry point.
 
 Canonical MCP surface docs live in MDX:
 
-- Built-in tools/resources: [docs/core/built_in_tools.mdx](docs/core/built_in_tools.mdx)
+- Built-in tools/resources (CLI command patterns): [docs/start_here/cli_quick_recipes.mdx](docs/start_here/cli_quick_recipes.mdx)
 - Dynamic tools/resources from Flutter app: [docs/core/dynamic_tools_registry.mdx](docs/core/dynamic_tools_registry.mdx)
 - Connection targeting and retry model: [docs/core/mcp_configuration.mdx](docs/core/mcp_configuration.mdx)
 - CLI vs MCP usage guidance: [docs/start_here/cli_vs_mcp.mdx](docs/start_here/cli_vs_mcp.mdx)

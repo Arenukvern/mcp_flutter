@@ -4,11 +4,8 @@ This is the canonical agent-facing install runbook for MCP Flutter.
 
 ## New Documentation Structure
 
-- AI agent docs hub: [docs/ai_agents/overview.mdx](docs/ai_agents/overview.mdx)
+- AI agent docs hub (includes `flutter-mcp-toolkit init <agent>` wiring): [docs/ai_agents/overview.mdx](docs/ai_agents/overview.mdx)
 - Agent execution playbook: [docs/ai_agents/execution_playbook.mdx](docs/ai_agents/execution_playbook.mdx)
-- Codex setup: [docs/ai_agents/codex.mdx](docs/ai_agents/codex.mdx)
-- Cursor setup: [docs/ai_agents/cursor.mdx](docs/ai_agents/cursor.mdx)
-- Claude setup: [docs/ai_agents/claude.mdx](docs/ai_agents/claude.mdx)
 - AI troubleshooting: [docs/ai_agents/troubleshooting.mdx](docs/ai_agents/troubleshooting.mdx)
 - CLI vs MCP decision guide: [docs/start_here/cli_vs_mcp.mdx](docs/start_here/cli_vs_mcp.mdx)
 
@@ -76,9 +73,7 @@ Pick one and merge a **`flutter-mcp-toolkit`** server entry under `mcpServers` (
 
 > **IDs:** **`flutter-inspector`** in `mcpServers` is only the **legacy registry key** for this server. The optional Claude Code subagent shipped in the repo plugin is **`flutter-mcp-toolkit-runtime`** (`plugin/agents/flutter-mcp-toolkit-runtime.md`) — not `flutter-inspector`.
 
-- Codex: [docs/ai_agents/codex.mdx](docs/ai_agents/codex.mdx)
-- Cursor: [docs/ai_agents/cursor.mdx](docs/ai_agents/cursor.mdx)
-- Claude: [docs/ai_agents/claude.mdx](docs/ai_agents/claude.mdx)
+- Codex / Cursor / Claude: [docs/ai_agents/overview.mdx](docs/ai_agents/overview.mdx)
 
 ## 6. Validate
 

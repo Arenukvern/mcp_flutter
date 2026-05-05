@@ -5,9 +5,9 @@ This repository now uses audience-first docs.
 ## Choose Your Path
 
 - One-command binary install (macOS/Linux): `curl -fsSL https://raw.githubusercontent.com/Arenukvern/mcp_flutter/main/install.sh | bash`
-- Human setup (manual): [docs/getting_started/manual_installation.mdx](docs/getting_started/manual_installation.mdx)
-- Human client config: [docs/getting_started/manual_client_setup.mdx](docs/getting_started/manual_client_setup.mdx)
-- AI-assisted setup: [docs/getting_started/llm_install_files.mdx](docs/getting_started/llm_install_files.mdx)
+- Human setup (manual): [docs/ai_agents/execution_playbook.mdx](docs/ai_agents/execution_playbook.mdx)
+- Human client config: [docs/ai_agents/execution_playbook.mdx](docs/ai_agents/execution_playbook.mdx)
+- AI-assisted setup: [docs/ai_agents/overview.mdx](docs/ai_agents/overview.mdx)
 - AI agent runbook: [docs/ai_agents/execution_playbook.mdx](docs/ai_agents/execution_playbook.mdx)
 
 ## Understand The Architecture First
