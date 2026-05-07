@@ -12,10 +12,7 @@ _Inspect and drive a running Flutter app from your AI assistant._
 
 </div>
 
-`flutter-mcp-toolkit` is a Dart MCP server + Flutter package that lets AI
-assistants (Claude Code, Cursor, Codex, Cline) take (semantic snapshots, tap
-widgets, type into forms, hot-reload, and read logs from a Flutter app) or create its own tools and resources at runtime using MCP Toolkit —
-without leaving the conversation.
+`flutter-mcp-toolkit` is a Dart MCP server + Flutter package that lets AI Agents (Codex, Zed, Cursor, Intent, Claude Code, Cline, etc..) take (semantic snapshots, tap widgets, type into forms, hot-reload, and read logs from a Flutter app) or create __its own tools and resources at runtime__ using MCP Toolkit — without leaving the conversation.
 
 ![View Screenshots](docs/view_screenshots.gif)
 
