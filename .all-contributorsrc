@@ -139,6 +139,16 @@
       "contributions": [
         "maintenance"
       ]
+    },
+    {
+      "login": "tekboxs",
+      "name": "Miguel Casagrande",
+      "avatar_url": "https://avatars.githubusercontent.com/u/64443719?v=4",
+      "profile": "https://github.com/tekboxs",
+      "contributions": [
+        "code",
+        "maintenance"
+      ]
     }
   ]
 }
