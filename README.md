@@ -43,7 +43,7 @@ That's it. Your AI agent can now inspect and drive the running app.
 - **[Why this repo matters](docs/start_here/why_this_repo_matters.mdx)** — what it is, why it exists.
 - **[CLI vs MCP](docs/start_here/cli_vs_mcp.mdx)** — pick the right mode.
 - **[Feature map](docs/start_here/feature_map.mdx)** — the 27 tools.
-- **[AI agent setup](docs/ai_agents/overview.mdx)** — for non-Claude Code agents.
+- **[AI agent setup](docs/ai_agents/overview.mdx)** - for AI Agents.
 - **[Architecture](ARCHITECTURE.md)** — for contributors.
 - **[Quick Start](QUICK_START.md)**, **[Configuration](CONFIGURATION.md)**, **[MCP RPC description](MCP_RPC_DESCRIPTION.md)**
 
