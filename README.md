@@ -12,7 +12,8 @@ _Inspect and drive a running Flutter app from your AI assistant._
 
 </div>
 
-`flutter-mcp-toolkit` is a Dart MCP server + Flutter package that lets AI Agents (Codex, Zed, Cursor, Intent, Claude Code, Cline, etc..) take (semantic snapshots, tap widgets, type into forms, hot-reload, and read logs from a Flutter app) or create __its own tools and resources at runtime__ using MCP Toolkit — without leaving the conversation.
+`flutter-mcp-toolkit` is a Dart MCP server + Flutter package that lets AI Agents (Codex, Zed, Cursor, Intent, Claude Code, Cline, etc..) take (semantic snapshots, tap widgets, type into forms, hot-reload, and read logs from a Flutter app) or create __its own tools and resources at runtime__ using MCP Toolkit — without leaving the conversation and work with Flutter apps in closed feedback loop - see example of it described in [OpenAI Agentic Harness](https://openai.com/index/harness-engineering/).
+
 
 ![View Screenshots](docs/view_screenshots.gif)
 
@@ -64,6 +65,11 @@ Flutter apps can register custom tools and resources at runtime. See how it
 works in this [short YouTube video](https://www.youtube.com/watch?v=Qog3x2VcO98).
 The same `arguments.connection` targeting is supported by the CLI's `exec`,
 `batch`, daemon `command/execute`, daemon `watch/start`, and snapshot step args.
+
+
+> [!NOTE]
+> There is official [MCP Server for Flutter from Flutter team](https://github.com/dart-lang/ai/tree/main/pkgs/dart_mcp_server) which exposes Dart tooling.
+> The **main goal of this project** is to bring power of MCP server tools by creating them in Flutter app, using **dynamic MCP tools registration** and close feedback loop for AI Agent. See how it works in [short YouTube video](https://www.youtube.com/watch?v=Qog3x2VcO98). See [Quick Start](https://docs.page/arenukvern/mcp_flutter) for more details. See [original motivation](https://github.com/Arenukvern/mcp_flutter/blob/main/CHANGELOG.md#210) behind the idea.
 
 ## ⚠️ Note on Dump RPCs
 
