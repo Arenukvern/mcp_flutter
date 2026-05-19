@@ -5,6 +5,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Release binaries: drop `darwin-x64` (Intel Mac). macOS releases are Apple Silicon (`darwin-arm64`) only; `linux-x64` unchanged.
+
 ## [3.0.4] - 2026-05-19
 
 ### Fixed

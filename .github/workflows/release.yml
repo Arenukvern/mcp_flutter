@@ -16,8 +16,6 @@ jobs:
         include:
           - triple: darwin-arm64
             runner: macos-14
-          - triple: darwin-x64
-            runner: macos-14
           - triple: linux-x64
             runner: ubuntu-latest
 

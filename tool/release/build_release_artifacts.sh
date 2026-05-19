@@ -16,7 +16,7 @@ CLEAN=0
 
 usage() {
   cat <<USAGE
-Usage: tool/release/build_release_artifacts.sh [--version <semver>] [--triple <darwin-arm64|darwin-x64|linux-x64>] [--clean]
+Usage: tool/release/build_release_artifacts.sh [--version <semver>] [--triple <darwin-arm64|linux-x64>] [--clean]
 
 Builds release tarballs for flutter-mcp-toolkit and flutter-mcp-toolkit-server.
 Generates SHA-256 checksums at dist/release/checksums.txt.
@@ -50,7 +50,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ ${#TRIPLES[@]} -eq 0 ]]; then
-  TRIPLES=(darwin-arm64 darwin-x64 linux-x64)
+  TRIPLES=(darwin-arm64 linux-x64)
 fi
 
 if [[ "$CLEAN" -eq 1 ]]; then
@@ -58,14 +58,31 @@ if [[ "$CLEAN" -eq 1 ]]; then
 fi
 mkdir -p "$DIST_DIR"
 
+assert_host_can_build() {
+  local triple="$1"
+  local host_os host_arch
+  host_os="$(uname -s)"
+  host_arch="$(uname -m)"
+
+  case "$triple" in
+    darwin-arm64)
+      if [[ "$host_os" == "Darwin" && "$host_arch" == "x86_64" ]]; then
+        cat >&2 <<EOF
+darwin-arm64 requires an Apple Silicon macOS host.
+Dart does not support macos/arm64 cross-compilation from Intel Macs.
+Use macos-14 (or newer arm64) in CI, or build on an arm64 Mac locally.
+EOF
+        exit 1
+      fi
+      ;;
+  esac
+}
+
 resolve_target() {
   local triple="$1"
   case "$triple" in
     darwin-arm64)
       echo "macos arm64"
-      ;;
-    darwin-x64)
-      echo "macos x64"
       ;;
     linux-x64)
       echo "linux x64"
@@ -94,6 +111,7 @@ compile_binary() {
 }
 
 for triple in "${TRIPLES[@]}"; do
+  assert_host_can_build "$triple"
   read -r target_os target_arch <<<"$(resolve_target "$triple")"
 
   package_name="flutter_mcp_${VERSION}_${triple}"

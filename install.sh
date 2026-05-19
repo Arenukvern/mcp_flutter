@@ -86,7 +86,15 @@ case "$arch" in
 esac
 
 triple="${platform}-${normalized_arch}"
-if [[ "$triple" != "darwin-arm64" && "$triple" != "darwin-x64" && "$triple" != "linux-x64" ]]; then
+if [[ "$triple" == "darwin-x64" ]]; then
+  cat >&2 <<EOF
+Intel Mac (x86_64) is not supported.
+Published macOS binaries are Apple Silicon (arm64) only.
+Install from source with Flutter/Dart, or use an Apple Silicon Mac.
+EOF
+  exit 1
+fi
+if [[ "$triple" != "darwin-arm64" && "$triple" != "linux-x64" ]]; then
   echo "No published artifacts for $triple." >&2
   exit 1
 fi
