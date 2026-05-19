@@ -1,31 +1,115 @@
 ---
 title: AI Agent Setup
-description: One-command install for Claude Code, Cursor, Codex, and Cline.
+description: Install flutter-mcp-toolkit skills and MCP wiring for Claude Code, Cursor, Codex, Cline, and the open skills ecosystem.
 ---
 
 # AI Agent Setup
 
-`flutter-mcp-toolkit` ships as a plugin with five task-focused skills:
+`flutter-mcp-toolkit` ships **eight** agent skills (task guides + runtime golden path + CLI validation). Canonical source: [`plugin/skills/`](https://github.com/Arenukvern/mcp_flutter/tree/main/plugin/skills) (also exposed at repo root as [`skills/`](https://github.com/Arenukvern/mcp_flutter/tree/main/skills) for [`npx skills`](https://www.npmjs.com/package/skills) discovery).
 
 | Skill | Purpose |
 |---|---|
-| `flutter-mcp-toolkit-guide` | Entry point — routes to the right skill |
+| `flutter-mcp-toolkit-guide` | Entry point — routes to the right task skill |
 | `flutter-mcp-toolkit-setup` | Install verification + preflight |
 | `flutter-mcp-toolkit-inspect` | Read app state |
 | `flutter-mcp-toolkit-control` | Drive UI |
 | `flutter-mcp-toolkit-debug` | Diagnose problems |
+| `flutter-mcp-toolkit-custom-tools` | Register dynamic MCP tools in the Flutter app |
+| `flutter-mcp` | Golden-path runtime loop (snapshot → act → hot-reload) |
+| `flutter-mcp-cli-runtime-validation` | CLI `validate-runtime` smoke test |
 
-## Install for your agent
+## Install methods (pick one)
+
+Skills teach the agent **how** to use the toolkit. You still need the **MCP server binary** and **`mcp_toolkit` in your Flutter app** — see [Get started](../../README.md) steps 1–2 and 4.
+
+| Method | Skills | MCP server config | Best for |
+|---|---|---|---|
+| **`flutter-mcp-toolkit init`** | Yes | Yes (plugin + `mcp.json`) | One command per agent; recommended default |
+| **`npx skills add`** | Yes | No — configure MCP separately | Open ecosystem ([skills.sh](https://skills.sh)), any supported agent |
+| **Claude marketplace** | Yes (via plugin) | Yes (`plugin/install.sh`) | Claude Code plugin install |
+| **Manual `mcpServers` JSON** | No | Yes only | Advanced / legacy — prefer `init` first |
+
+`init all` installs for **claude-code, cursor, codex, and cline** only. For the cross-agent `.agents/skills/` layout, use `init agents-skills` or `npx skills`.
+
+## Install for your agent (`flutter-mcp-toolkit init`)
 
 ```bash
 flutter-mcp-toolkit init claude-code   # or: cursor | codex | cline | agents-skills | all
 ```
 
-This writes the skills + plugin manifest + MCP server registration to your
-agent's expected path. The `init` command auto-detects whether to use MCP or
-CLI mode; override with `--mode mcp|cli|auto`.
+This writes skills + plugin manifest + MCP server registration to the agent's expected path. The `init` command auto-detects MCP vs CLI mode; override with `--mode mcp|cli|auto`.
+
+```bash
+flutter-mcp-toolkit init cursor --scope user   # user-global Cursor plugin
+flutter-mcp-toolkit init agents-skills -y      # .agents/skills/ (Cursor, Cline, Codex, Copilot, …)
+```
+
+### Per-target output paths
+
+| Target | Skills location | Also writes |
+|---|---|---|
+| `claude-code` | `.claude/skills/flutter-mcp-toolkit/<id>/SKILL.md` | — |
+| `cursor` | `.cursor/plugins/local/flutter-mcp-toolkit/skills/<id>/` | `mcp.json`, plugin manifest |
+| `codex` | `.codex/plugins/cache/local/flutter-mcp-toolkit/local/skills/<id>/` | marketplace + `mcp.json` |
+| `cline` | `.clinerules/<id>.md` | — |
+| `agents-skills` | `.agents/skills/<id>/SKILL.md` | — |
+
+## Install via `npx skills` (open agent skills ecosystem)
+
+The [`skills`](https://www.npmjs.com/package/skills) CLI (Vercel [vercel-labs/skills](https://github.com/vercel-labs/skills)) installs `SKILL.md` bundles from this GitHub repo into your agent's skills directory. It does **not** register the MCP server — run `flutter-mcp-toolkit init <agent>` afterward if you need `mcp.json`, or add `mcpServers` manually ([`mcp_server_dart/README`](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_server_dart/README.md)).
+
+```bash
+# Preview all skills in this repo
+npx skills add Arenukvern/mcp_flutter --list
+
+# Install the entry + setup skills for Cursor (project scope)
+npx skills add Arenukvern/mcp_flutter \
+  --skill flutter-mcp-toolkit-guide \
+  --skill flutter-mcp-toolkit-setup \
+  -a cursor -y
+
+# Install all skills for Claude Code (global)
+npx skills add Arenukvern/mcp_flutter -g -a claude-code -y
+
+# Cross-agent layout (.agents/skills/) — same tree as `init agents-skills`
+npx skills add Arenukvern/mcp_flutter -a cursor -a cline -y
+```
+
+Discover more community skills at **[skills.sh](https://skills.sh)**. Pin the CLI in CI with `npx skills@latest` if needed.
+
+### Team lockfile (reproducible installs)
+
+After the first `npx skills add`, the CLI writes `.skills.json` and `skills-lock.json`. Commit those in your app repo so everyone gets the same skill versions.
+
+Example manifest (copy from [`.skills.json.example`](https://github.com/Arenukvern/mcp_flutter/blob/main/.skills.json.example) or generate via install):
+
+```json
+{
+  "skills": [
+    {
+      "name": "flutter-mcp-toolkit-guide",
+      "remote": "Arenukvern/mcp_flutter",
+      "version": "latest"
+    }
+  ]
+}
+```
+
+CI restore (experimental API — check [skills CLI README](https://www.npmjs.com/package/skills) for current command names):
+
+```yaml
+- name: Restore AI agent skills
+  run: npx skills@latest experimental_install
+```
+
+## Claude Code marketplace
+
+```bash
+bash plugin/install.sh   # after server binary is on PATH or FLUTTER_MCP_BIN is set
+```
+
+Marketplace entry: [`.claude-plugin/marketplace.json`](https://github.com/Arenukvern/mcp_flutter/blob/main/.claude-plugin/marketplace.json) → `./plugin`.
 
 ## Browse the skills
 
-The canonical source is in [plugin/skills/](https://github.com/Arenukvern/flutter-mcp-toolkit/tree/main/plugin/skills).
-Skills are markdown — readable without an agent.
+Skills are plain Markdown — readable without an agent. Edit under `plugin/skills/<id>/SKILL.md`, then run `make sync-skills` before committing (regenerates the embedded bundle in `mcp_server_dart`).

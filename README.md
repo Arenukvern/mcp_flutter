@@ -28,7 +28,8 @@ cd my-flutter-app
 flutter-mcp-toolkit codegen-init   # adds flutter_mcp_toolkit + emits main.dart snippet
 
 # 3. Install skills for your AI agent
-flutter-mcp-toolkit init claude-code   # or: cursor | codex | cline | all
+flutter-mcp-toolkit init claude-code   # or: cursor | codex | cline | agents-skills | all
+# Alternative (skills only): npx skills add Arenukvern/mcp_flutter -a cursor -y
 
 # 4. Run
 flutter run --debug
@@ -57,7 +58,8 @@ The toolkit exposes 27 MCP tools (under the `fmt_*` capability prefix) across fo
 - **Lifecycle** — discover apps, hot-reload, hot-restart
 
 See the `flutter-mcp-toolkit-{guide,inspect,control,debug}` skills for the full
-reference (installed by `flutter-mcp-toolkit init`).
+reference (installed by `flutter-mcp-toolkit init` or `npx skills add Arenukvern/mcp_flutter`).
+Install options: [AI agent setup](docs/ai_agents/overview.mdx).
 
 ### Dynamic Tools Registration
 

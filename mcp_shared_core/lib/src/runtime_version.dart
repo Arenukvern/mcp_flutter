@@ -3,12 +3,12 @@
 // Licensed under the MIT License.
 
 /// Single source of truth for runtime and protocol version metadata.
-const kFlutterMcpVersion = '3.0.0';
-const kFlutterMcpMajorVersion = 3;
+const kFlutterMcpVersion = '3.0.1'; // x-release-please-version
+const kFlutterMcpMajorVersion = 3; // x-release-please-major
 
 const kCommandCatalogSchemaVersion = 'command-catalog/v1';
 const kCoreEnvelopeSchemaVersion = 'core-envelope/v1';
-const kFlutterMcpProtocolVersion = 'flutter-mcp-toolkit/3.0';
+const kFlutterMcpProtocolVersion = 'flutter-mcp-toolkit/3.0'; // x-release-please-major
 
 const kFlutterMcpCliName = 'flutter-mcp-toolkit';
 const kFlutterMcpServerImplementationName = 'flutter-mcp-toolkit-server';

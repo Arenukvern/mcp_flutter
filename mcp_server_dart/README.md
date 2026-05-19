@@ -399,6 +399,22 @@ For developers who want to contribute to the project or run the latest version d
 
 6. **🛠️ Add Flutter MCP Toolkit to your AI client**
 
+   **Recommended (skills + MCP config):**
+
+   ```bash
+   flutter-mcp-toolkit init claude-code   # or: cursor | codex | cline | agents-skills
+   ```
+
+   **Skills only** via the open [Agent Skills](https://agentskills.io) ecosystem:
+
+   ```bash
+   npx skills add Arenukvern/mcp_flutter -a cursor -y
+   ```
+
+   See [docs/ai_agents/overview.mdx](../docs/ai_agents/overview.mdx) for install paths, lockfiles, and [skills.sh](https://skills.sh).
+
+   **Manual `mcpServers` JSON** (advanced — use if `init` is not an option):
+
    Use registry key **`flutter-mcp-toolkit`** under `mcpServers` (canonical). The key **`flutter-inspector`** is **legacy** but still accepted if your config predates the rename. That string is **only** a `mcpServers` id — it is **not** the Claude Code subagent name. The bundled runtime subagent is **`flutter-mcp-toolkit-runtime`** (`plugin/agents/flutter-mcp-toolkit-runtime.md`).
 
    Recommended server args: `--resources`, `--images`, `--dynamics` (defaults are on for resources/images; `--dynamics` enables the dynamic registry).

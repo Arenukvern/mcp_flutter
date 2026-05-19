@@ -69,9 +69,12 @@ jobs:
           cd dist/release
           sha256sum *.tar.gz > checksums.txt
 
+      # Release notes come from release-please (Release PR merge). This job
+      # only attaches binaries — do not set body/body_path here.
       - name: Publish GitHub release assets
         uses: softprops/action-gh-release@v2
         with:
+          name: ${{ github.ref_name }}
           files: |
             dist/release/*.tar.gz
             dist/release/checksums.txt

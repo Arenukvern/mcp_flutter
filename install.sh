@@ -2,8 +2,8 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-VERSION_SOURCE_FILE="$ROOT_DIR/mcp_server_dart/lib/src/core/runtime_version.dart"
-DEFAULT_VERSION="$(sed -nE "s/^const kFlutterMcpVersion = '([^']+)';/\1/p" "$VERSION_SOURCE_FILE")"
+VERSION_SOURCE_FILE="$ROOT_DIR/mcp_shared_core/lib/src/runtime_version.dart"
+DEFAULT_VERSION="$(sed -nE "s/^const kFlutterMcpVersion = '([^']+)';.*$/\1/p" "$VERSION_SOURCE_FILE")"
 
 REPO="${FLUTTER_MCP_REPO:-Arenukvern/mcp_flutter}"
 VERSION="${FLUTTER_MCP_VERSION:-$DEFAULT_VERSION}"

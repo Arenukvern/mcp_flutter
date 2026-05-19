@@ -3,9 +3,9 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 DIST_DIR="${DIST_DIR:-$ROOT_DIR/dist/release}"
-VERSION_SOURCE_FILE="$ROOT_DIR/mcp_server_dart/lib/src/core/runtime_version.dart"
+VERSION_SOURCE_FILE="$ROOT_DIR/mcp_shared_core/lib/src/runtime_version.dart"
 
-VERSION="${VERSION:-$(sed -nE "s/^const kFlutterMcpVersion = '([^']+)';/\1/p" "$VERSION_SOURCE_FILE")}"
+VERSION="${VERSION:-$(sed -nE "s/^const kFlutterMcpVersion = '([^']+)';.*$/\1/p" "$VERSION_SOURCE_FILE")}"
 if [[ -z "$VERSION" ]]; then
   echo "Failed to resolve release version from $VERSION_SOURCE_FILE" >&2
   exit 1

@@ -69,11 +69,23 @@ flutter run --debug --machine --host-vmservice-port=8181 -d macos
 
 ## 5. Configure The AI Client
 
-Pick one and merge a **`flutter-mcp-toolkit`** server entry under `mcpServers` (do not delete existing servers). The legacy key **`flutter-inspector`** still works if your config predates the rename.
+**Preferred:** install skills + MCP wiring in one step:
+
+```bash
+flutter-mcp-toolkit init claude-code   # or: cursor | codex | cline | agents-skills
+```
+
+**Skills only** (open ecosystem — add MCP config separately):
+
+```bash
+npx skills add Arenukvern/mcp_flutter -a cursor -y
+```
+
+Full install matrix: [docs/ai_agents/overview.mdx](docs/ai_agents/overview.mdx).
+
+**Manual fallback:** merge a **`flutter-mcp-toolkit`** server entry under `mcpServers` (do not delete existing servers). The legacy key **`flutter-inspector`** still works if your config predates the rename.
 
 > **IDs:** **`flutter-inspector`** in `mcpServers` is only the **legacy registry key** for this server. The optional Claude Code subagent shipped in the repo plugin is **`flutter-mcp-toolkit-runtime`** (`plugin/agents/flutter-mcp-toolkit-runtime.md`) — not `flutter-inspector`.
-
-- Codex / Cursor / Claude: [docs/ai_agents/overview.mdx](docs/ai_agents/overview.mdx)
 
 ## 6. Validate
 

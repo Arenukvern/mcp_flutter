@@ -39,6 +39,40 @@ make sync-skills   # regenerates mcp_server_dart/lib/src/skill_assets.g.dart
 CI fails if the generated file is out of sync with `plugin/`. Commit both the
 `SKILL.md` change and the regenerated `skill_assets.g.dart`.
 
+Repo root [`skills/`](/skills) symlinks to `plugin/skills/` so [`npx skills`](https://www.npmjs.com/package/skills) discovers bundles without a recursive search. End-user install docs live in [AI agent overview](/ai_agents/overview); team lockfile template: [`.skills.json.example`](https://github.com/Arenukvern/mcp_flutter/blob/main/.skills.json.example).
+
+Maintainers: use bundled skill **`flutter-mcp-toolkit-repo-maintainer`** (local: `.cursor/skills/flutter-mcp-toolkit-repo-maintainer`) for releases and docs.
+
+### Commit messages
+
+Use [Conventional Commits](https://www.conventionalcommits.org/) so
+[release-please](https://github.com/googleapis/release-please) can build the
+changelog and version bumps:
+
+- `feat:` — new capability (minor bump)
+- `fix:` — bug fix (patch bump)
+- `docs:` — documentation (patch bump when it is the only change in a release)
+- `perf:` — performance improvement
+- `chore:` / `refactor:` / `test:` — usually hidden in the generated changelog
+
+Example: `feat: add fmt_wait_for_stable_snapshot tool`.
+
+### Releases
+
+Releases are automated on `main` via **release-please**:
+
+1. Merge PRs to `main` with conventional commit titles.
+2. release-please opens or updates a **Release PR** (e.g. `chore: release 3.0.1`) with `CHANGELOG.md`, [`VERSION`](https://github.com/Arenukvern/mcp_flutter/blob/main/VERSION), pubspecs, plugin pins, and runtime version updates.
+3. Review the Release PR, then merge it.
+4. release-please creates the `vX.Y.Z` tag and GitHub release **with changelog notes**.
+5. [`.github/workflows/release.yml`](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/release.yml) runs on the tag and attaches `flutter_mcp_*` tarballs + `checksums.txt`.
+
+Pending work belongs under `## [Unreleased]` in [CHANGELOG.md](https://github.com/Arenukvern/mcp_flutter/blob/main/CHANGELOG.md). release-please promotes that section when the Release PR merges.
+
+Config: [`release-please-config.json`](https://github.com/Arenukvern/mcp_flutter/blob/main/release-please-config.json), [`.release-please-manifest.json`](https://github.com/Arenukvern/mcp_flutter/blob/main/.release-please-manifest.json).
+
+Run `make check-contracts` locally — it includes `check_version_sync.sh` to ensure every version file matches root `VERSION`.
+
 ### Pull Requests
 
 Before submitting a pull request, please make sure that:

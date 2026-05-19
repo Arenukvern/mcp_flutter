@@ -169,6 +169,8 @@ flutter-mcp-toolkit init all --mode cli      # install for every detected agent 
 
 Mode auto-detects (MCP if registered, else CLI). Override with `--mode mcp|cli|auto`.
 
+**Alternative (skills only, open ecosystem):** `npx skills add Arenukvern/mcp_flutter -a cursor -y` installs the same `SKILL.md` bundles via [skills.sh](https://skills.sh); it does not write `mcp.json` — run `init` afterward or configure `mcpServers` manually. See [AI agent overview](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/ai_agents/overview.mdx).
+
 ---
 
 ### `codegen-init`

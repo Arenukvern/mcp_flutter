@@ -2,7 +2,13 @@
 
 Single source of truth for the shippable plugin: **Cursor**, **Codex**, and **Claude Code** marketplace layouts, MCP registration, skills, and the optional installer.
 
-End users typically install via the CLI (`flutter-mcp-toolkit init <agent>`), which materializes files from the embedded skill bundle generated from this directory.
+End users can install via:
+
+1. **`flutter-mcp-toolkit init <agent>`** — skills + MCP config (recommended)
+2. **`npx skills add Arenukvern/mcp_flutter`** — skills only ([open skills ecosystem](https://skills.sh)); see [docs/ai_agents/overview.mdx](../docs/ai_agents/overview.mdx)
+3. **Claude marketplace** — `bash plugin/install.sh` after the server binary is on `PATH`
+
+All paths materialize from the embedded skill bundle generated from this directory (`make sync-skills`).
 
 ## Layout
 
@@ -13,7 +19,7 @@ End users typically install via the CLI (`flutter-mcp-toolkit init <agent>`), wh
 - `install.sh` — prerequisite check (Dart, server binary version pin, optional CLI)
 - `EXPECTED_SERVER_VERSION` — must match repo root `VERSION`
 - `agents/flutter-mcp-toolkit-runtime.md` — Claude specialist agent definition
-- `skills/` — task skills plus `flutter-mcp` (golden-path runtime) and `flutter-mcp-cli-runtime-validation` (CLI validate-runtime)
+- `skills/` — task skills plus `flutter-mcp` (golden-path runtime) and `flutter-mcp-cli-runtime-validation` (CLI validate-runtime). Repo root [`skills/`](../skills) is a symlink here for `npx skills` discovery.
 
 ## Editing skills
 

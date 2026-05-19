@@ -9,13 +9,15 @@ The execution playbook is now the **`flutter-mcp-toolkit-setup`** skill, shipped
 inside the plugin. To install it for your agent, run:
 
 ```bash
-flutter-mcp-toolkit init claude-code   # or: cursor | codex | cline | all
+flutter-mcp-toolkit init claude-code   # or: cursor | codex | cline | agents-skills | all
 ```
 
-This installs the `flutter-mcp-toolkit-{guide,setup,inspect,control,debug}`
+Alternative (skills only): `npx skills add Arenukvern/mcp_flutter -y` — see [AI agent overview](/ai_agents/overview).
+
+This installs the `flutter-mcp-toolkit-{guide,setup,inspect,control,debug,...}`
 skills into your agent's expected location. The setup skill covers preflight
 (`flutter-mcp-toolkit doctor`), connection troubleshooting, and the full CLI
 surface.
 
 For a quick orientation without installing, browse the source skills:
-[plugin/skills/](https://github.com/Arenukvern/flutter-mcp-toolkit/tree/main/plugin/skills).
+[plugin/skills/](https://github.com/Arenukvern/mcp_flutter/tree/main/plugin/skills) (repo root [`skills/`](https://github.com/Arenukvern/mcp_flutter/tree/main/skills) symlink for `npx skills`).

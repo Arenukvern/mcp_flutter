@@ -17,6 +17,7 @@ const expectedSkillIds = [
   'flutter-mcp-toolkit-custom-tools',
   'flutter-mcp',
   'flutter-mcp-cli-runtime-validation',
+  'flutter-mcp-toolkit-repo-maintainer',
 ];
 
 void main() {

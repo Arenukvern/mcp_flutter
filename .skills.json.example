@@ -1,0 +1,44 @@
+{
+  "skills": [
+    {
+      "name": "flutter-mcp-toolkit-guide",
+      "remote": "Arenukvern/mcp_flutter",
+      "version": "latest"
+    },
+    {
+      "name": "flutter-mcp-toolkit-setup",
+      "remote": "Arenukvern/mcp_flutter",
+      "version": "latest"
+    },
+    {
+      "name": "flutter-mcp-toolkit-inspect",
+      "remote": "Arenukvern/mcp_flutter",
+      "version": "latest"
+    },
+    {
+      "name": "flutter-mcp-toolkit-control",
+      "remote": "Arenukvern/mcp_flutter",
+      "version": "latest"
+    },
+    {
+      "name": "flutter-mcp-toolkit-debug",
+      "remote": "Arenukvern/mcp_flutter",
+      "version": "latest"
+    },
+    {
+      "name": "flutter-mcp-toolkit-custom-tools",
+      "remote": "Arenukvern/mcp_flutter",
+      "version": "latest"
+    },
+    {
+      "name": "flutter-mcp",
+      "remote": "Arenukvern/mcp_flutter",
+      "version": "latest"
+    },
+    {
+      "name": "flutter-mcp-cli-runtime-validation",
+      "remote": "Arenukvern/mcp_flutter",
+      "version": "latest"
+    }
+  ]
+}

@@ -1,4 +1,24 @@
-## 3.0.0
+# Changelog
+
+## [Unreleased]
+
+## [3.0.1] - 2026-05-19
+
+### Added
+
+- Open Agent Skills ecosystem: repo-root [`skills/`](skills/) symlink to [`plugin/skills/`](plugin/skills/), [`.skills.json.example`](.skills.json.example), and install docs in [docs/ai_agents/overview.mdx](docs/ai_agents/overview.mdx) (`npx skills add Arenukvern/mcp_flutter`, [skills.sh](https://skills.sh), team lockfile / CI restore).
+- Claude marketplace plugin discovery: `skills` entry in [.claude-plugin/marketplace.json](.claude-plugin/marketplace.json).
+- Maintainer skill `flutter-mcp-toolkit-repo-maintainer` for releases, CHANGELOG, and docs (bundled + `.cursor/skills/`).
+
+### Documentation
+
+- Install method matrix and per-agent paths in overview; pointers in README, QUICK_START, llm_install, plugin README, mcp_server_dart README, docs_map, cli_vs_mcp, cli_quick_recipes, contribution_guide, execution_playbook, and `flutter-mcp-toolkit-setup` skill (regenerated via `make sync-skills`).
+
+### Changed
+
+- Release automation: [release-please](https://github.com/googleapis/release-please) on `main` (Release PR → tag → changelog GitHub release); [`.github/workflows/release.yml`](.github/workflows/release.yml) attaches binaries only. Version sync gate: `tool/contracts/check_version_sync.sh`.
+
+## [3.0.0]
 
 Major release. Three pillars:
 

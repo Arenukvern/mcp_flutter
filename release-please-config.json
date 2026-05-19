@@ -1,0 +1,39 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "packages": {
+    ".": {
+      "release-type": "simple",
+      "package-name": "flutter-mcp-toolkit",
+      "changelog-path": "CHANGELOG.md",
+      "version-file": "VERSION",
+      "include-component-in-tag": false,
+      "pull-request-title-pattern": "chore${scope}: release ${version}",
+      "changelog-sections": [
+        { "type": "feat", "section": "Features" },
+        { "type": "fix", "section": "Bug Fixes" },
+        { "type": "perf", "section": "Performance" },
+        { "type": "docs", "section": "Documentation" },
+        { "type": "chore", "section": "Miscellaneous", "hidden": true },
+        { "type": "refactor", "section": "Miscellaneous", "hidden": true },
+        { "type": "test", "section": "Miscellaneous", "hidden": true }
+      ],
+      "extra-files": [
+        "plugin/EXPECTED_SERVER_VERSION",
+        {
+          "type": "json",
+          "path": "plugin/.cursor-plugin/plugin.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
+          "path": "plugin/.codex-plugin/plugin.json",
+          "jsonpath": "$.version"
+        },
+        "mcp_shared_core/lib/src/runtime_version.dart",
+        "mcp_capability_core/lib/src/fmt_capability.dart",
+        "mcp_server_dart/pubspec.yaml",
+        "mcp_toolkit/pubspec.yaml"
+      ]
+    }
+  }
+}
