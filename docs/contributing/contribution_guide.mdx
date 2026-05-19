@@ -75,7 +75,9 @@ Pending work belongs under `## [Unreleased]` in [CHANGELOG.md](https://github.co
 
 Config: [`release-please-config.json`](https://github.com/Arenukvern/mcp_flutter/blob/main/release-please-config.json), [`.release-please-manifest.json`](https://github.com/Arenukvern/mcp_flutter/blob/main/.release-please-manifest.json).
 
-Run `make check-contracts` locally — it includes `check_version_sync.sh` (version pins) and `check_skill_assets_drift.sh` (regenerated `skill_assets.g.dart` matches `plugin/`). After release-please bumps `plugin/*-plugin/plugin.json`, run `make sync-skills` before pushing.
+Run `make check-contracts` locally — it includes `check_version_sync.sh` (version pins) and `check_skill_assets_drift.sh` (regenerated `skill_assets.g.dart` matches `plugin/`).
+
+On **Release PRs**, [`.github/workflows/release_pr_sync_skills.yml`](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/release_pr_sync_skills.yml) auto-commits `skill_assets.g.dart` when drift is detected; the **skill-assets-drift** check must still pass before merge. If automation did not run, run `make sync-skills` locally and push.
 
 ### Pull Requests
 

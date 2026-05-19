@@ -1,0 +1,118 @@
+# Regenerates skill_assets.g.dart on release-please PRs and pushes when plugin/
+# manifests drift from the embedded bundle (release-please bumps plugin JSON only).
+name: Release PR — sync skill assets
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: release-pr-sync-skills-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  detect-release-pr:
+    runs-on: ubuntu-latest
+    outputs:
+      is_release_pr: ${{ steps.check.outputs.is_release_pr }}
+    steps:
+      - id: check
+        name: Detect release-please PR
+        run: |
+          title="${{ github.event.pull_request.title }}"
+          head="${{ github.head_ref }}"
+          if [[ "$head" == release-please--* ]] || [[ "$title" == *": release "* ]]; then
+            echo "is_release_pr=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_release_pr=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  auto-sync-skills:
+    needs: detect-release-pr
+    if: needs.detect-release-pr.outputs.is_release_pr == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Install deps
+        run: cd mcp_server_dart && dart pub get
+
+      - name: Regenerate skill assets
+        run: dart run mcp_server_dart/tool/build_skill_assets.dart
+
+      - name: Commit and push if changed
+        run: |
+          if git diff --quiet -- mcp_server_dart/lib/src/skill_assets.g.dart; then
+            echo "skill_assets.g.dart already in sync"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add mcp_server_dart/lib/src/skill_assets.g.dart
+          git commit -m "chore: sync skill_assets.g.dart for release PR"
+          git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
+
+  release-pr-checklist-comment:
+    needs: detect-release-pr
+    if: >-
+      needs.detect-release-pr.outputs.is_release_pr == 'true' &&
+      github.event.action == 'opened'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        env:
+          WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/workflows/release_pr_sync_skills.yml
+        with:
+          script: |
+            const marker = '<!-- release-pr-skill-assets-checklist -->';
+            const pr = context.payload.pull_request;
+            const body = `${marker}
+            ## Release PR — skill assets
+
+            release-please bumps \`plugin/*-plugin/plugin.json\` but not the generated \`skill_assets.g.dart\` bundle.
+
+            **Automatic:** [Release PR — sync skill assets](${process.env.WORKFLOW_URL}) commits \`skill_assets.g.dart\` when drift is detected on this PR.
+
+            **Manual (if automation did not run):**
+            \`\`\`bash
+            make sync-skills
+            git add mcp_server_dart/lib/src/skill_assets.g.dart
+            git commit -m "chore: sync skill_assets.g.dart for release PR"
+            git push
+            \`\`\`
+
+            **Required check:** \`skill-assets-drift\` must pass before merge.
+            `;
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+            });
+            const existing = comments.find((c) => c.body?.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                body,
+              });
+            }

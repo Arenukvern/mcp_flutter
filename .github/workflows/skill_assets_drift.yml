@@ -1,5 +1,9 @@
 name: skill-assets-drift
 
+permissions:
+  contents: read
+  pull-requests: write
+
 on:
   pull_request:
     paths:
@@ -10,6 +14,7 @@ on:
       - 'mcp_server_dart/lib/src/skill_assets.g.dart'
       - 'mcp_server_dart/tool/build_skill_assets.dart'
       - 'tool/contracts/check_skill_assets_drift.sh'
+      - '.github/workflows/release_pr_sync_skills.yml'
   push:
     branches: [main]
 
@@ -26,8 +31,54 @@ jobs:
       - name: Regenerate skill assets
         run: dart run mcp_server_dart/tool/build_skill_assets.dart
       - name: Verify no drift
+        id: verify
         run: |
           if ! git diff --exit-code mcp_server_dart/lib/src/skill_assets.g.dart; then
             echo "::error::skill_assets.g.dart is out of sync with plugin/. Run 'make sync-skills' and commit the result."
             exit 1
           fi
+
+      - name: Comment on Release PR (drift)
+        if: >-
+          failure() && (
+            startsWith(github.head_ref, 'release-please--') ||
+            contains(github.event.pull_request.title, ': release ')
+          )
+        uses: actions/github-script@v7
+        env:
+          WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/workflows/release_pr_sync_skills.yml
+        with:
+          script: |
+            const marker = '<!-- skill-assets-drift-failure -->';
+            const pr = context.payload.pull_request;
+            const body = `${marker}
+            ## skill-assets-drift failed
+
+            \`skill_assets.g.dart\` is out of sync with \`plugin/\` (common after release-please bumps plugin manifests).
+
+            1. Wait for [Release PR — sync skill assets](${process.env.WORKFLOW_URL}) to push a fix commit on this branch, **or**
+            2. Run locally: \`make sync-skills\`, commit \`mcp_server_dart/lib/src/skill_assets.g.dart\`, and push.
+
+            Re-run the **skill-assets-drift** check after the sync commit lands.
+            `;
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+            });
+            const existing = comments.find((c) => c.body?.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                body,
+              });
+            }

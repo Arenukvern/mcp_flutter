@@ -66,7 +66,7 @@ flowchart LR
 
 1. Merge PRs to `main` with conventional commits.
 2. Wait for **Release PR** from [release-please.yml](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/release-please.yml).
-3. On the Release PR branch, run `make sync-skills` and commit `skill_assets.g.dart` if CI **skill-assets-drift** fails (release-please bumps `plugin/*-plugin/plugin.json` but not the generated bundle).
+3. **skill assets:** [release_pr_sync_skills.yml](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/release_pr_sync_skills.yml) auto-commits `skill_assets.g.dart` on Release PRs when drift is detected; posts a checklist comment on PR open. If **skill-assets-drift** still fails, run `make sync-skills` locally and push (release-please bumps `plugin/*-plugin/plugin.json` but not the generated bundle).
 4. Review VERSION, CHANGELOG, pubspecs, plugin pins in that PR → merge.
 5. release-please creates `vX.Y.Z` + GitHub release notes.
 6. [release.yml](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/release.yml) attaches `flutter_mcp_*` tarballs (does not overwrite release body).

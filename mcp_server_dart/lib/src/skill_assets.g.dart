@@ -1414,7 +1414,7 @@ flowchart LR
 
 1. Merge PRs to `main` with conventional commits.
 2. Wait for **Release PR** from [release-please.yml](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/release-please.yml).
-3. On the Release PR branch, run `make sync-skills` and commit `skill_assets.g.dart` if CI **skill-assets-drift** fails (release-please bumps `plugin/*-plugin/plugin.json` but not the generated bundle).
+3. **skill assets:** [release_pr_sync_skills.yml](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/release_pr_sync_skills.yml) auto-commits `skill_assets.g.dart` on Release PRs when drift is detected; posts a checklist comment on PR open. If **skill-assets-drift** still fails, run `make sync-skills` locally and push (release-please bumps `plugin/*-plugin/plugin.json` but not the generated bundle).
 4. Review VERSION, CHANGELOG, pubspecs, plugin pins in that PR → merge.
 5. release-please creates `vX.Y.Z` + GitHub release notes.
 6. [release.yml](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/release.yml) attaches `flutter_mcp_*` tarballs (does not overwrite release body).
@@ -1470,8 +1470,11 @@ Avoid duplicating install tables in README — link to overview.
   static const String cursorPluginManifest = r'''{
   "name": "flutter-mcp-toolkit",
   "description": "Flutter MCP toolkit: inspect and drive debug apps (semantic snapshot, tap, hot-reload) and register custom MCP tools and resources at runtime from your Flutter app or game via mcp_toolkit — closed agent feedback loop.",
-  "version": "3.0.4",
-  "author": { "name": "Arenukvern", "url": "https://github.com/Arenukvern/mcp_flutter" },
+  "version": "3.0.5",
+  "author": {
+    "name": "Arenukvern",
+    "url": "https://github.com/Arenukvern/mcp_flutter"
+  },
   "homepage": "https://github.com/Arenukvern/mcp_flutter",
   "repository": "https://github.com/Arenukvern/mcp_flutter",
   "license": "MIT",
@@ -1491,7 +1494,7 @@ Avoid duplicating install tables in README — link to overview.
 ''';
   static const String codexPluginManifest = r'''{
   "name": "flutter-mcp-toolkit",
-  "version": "3.0.4",
+  "version": "3.0.5",
   "description": "Flutter MCP toolkit: inspect and drive debug apps (semantic snapshot, tap, hot-reload) and register custom MCP tools and resources at runtime from your Flutter app or game via mcp_toolkit — closed agent feedback loop.",
   "author": {
     "name": "Arenukvern",
@@ -1520,7 +1523,10 @@ Avoid duplicating install tables in README — link to overview.
     "longDescription": "flutter-mcp-toolkit is a Dart MCP server plus Flutter package (mcp_toolkit) for AI-assisted Flutter development in debug mode. Built-in: 27 fmt_* MCP tools and bundled agent skills. Dynamic registry: register app-specific tools and resources at runtime with addMcpTool / MCPCallEntry; agents discover via fmt_list_client_tools_and_resources and invoke via fmt_client_tool / fmt_client_resource. Requires debug app with mcp_toolkit and flutter-mcp-toolkit-server on PATH. Complements official Dart MCP.",
     "developerName": "Arenukvern",
     "category": "Developer Tools",
-    "capabilities": ["Read", "Write"],
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
     "websiteURL": "https://github.com/Arenukvern/mcp_flutter",
     "privacyPolicyURL": "https://github.com/Arenukvern/mcp_flutter/blob/main/LICENSE",
     "termsOfServiceURL": "https://github.com/Arenukvern/mcp_flutter/blob/main/LICENSE",
@@ -1531,7 +1537,9 @@ Avoid duplicating install tables in README — link to overview.
     "brandColor": "#02569B",
     "composerIcon": "./assets/icon.png",
     "logo": "./assets/logo.png",
-    "screenshots": ["./assets/screenshot-1.png"]
+    "screenshots": [
+      "./assets/screenshot-1.png"
+    ]
   }
 }
 ''';
