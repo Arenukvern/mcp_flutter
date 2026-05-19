@@ -2,24 +2,62 @@
 
 Single source of truth for the shippable plugin: **Cursor**, **Codex**, and **Claude Code** marketplace layouts, MCP registration, skills, and the optional installer.
 
-End users can install via:
+## What this plugin ships
+
+Three layers (not “MCP server only”):
+
+```text
+AI agent
+    │
+    ├─► flutter-mcp-toolkit-server (27 fmt_* tools: inspect, control, debug)
+    │
+    └─► fmt_list_client_tools_and_resources / fmt_client_tool / fmt_client_resource
+              │
+              ▼ VM Service extensions (ext.mcp.toolkit.*)
+        Flutter app (debug) + mcp_toolkit
+              │
+              └─► MCPCallEntry.tool / .resource registered via addMcpTool
+```
+
+- **Static tools** — semantic snapshot, tap, scroll, hot-reload, errors, etc.
+- **Dynamic registry** — your app or game defines custom tools/resources at runtime; see [Dynamic tool registry](../docs/core/dynamic_tools_registry.mdx) and [Creating dynamic tools](../docs/guides/creating_dynamic_tools.mdx).
+- **`plugin/mcp.json`** passes `--dynamics` so the server bridges the in-app registry.
+
+## End-user install
 
 1. **`flutter-mcp-toolkit init <agent>`** — skills + MCP config (recommended)
 2. **`npx skills add Arenukvern/mcp_flutter`** — skills only ([open skills ecosystem](https://skills.sh)); see [docs/ai_agents/overview.mdx](../docs/ai_agents/overview.mdx)
-3. **Claude marketplace** — `bash plugin/install.sh` after the server binary is on `PATH`
+3. **Claude git marketplace** — `/plugin marketplace add Arenukvern/mcp_flutter`
+4. **Codex git marketplace** — `codex plugin marketplace add Arenukvern/mcp_flutter`
 
 All paths materialize from the embedded skill bundle generated from this directory (`make sync-skills`).
+
+## Bundled skills (8)
+
+| Skill | Purpose |
+|-------|---------|
+| `flutter-mcp-toolkit-guide` | Entry router |
+| `flutter-mcp-toolkit-setup` | Install / doctor |
+| `flutter-mcp-toolkit-inspect` | Read app state |
+| `flutter-mcp-toolkit-control` | Drive UI |
+| `flutter-mcp-toolkit-debug` | Diagnose failures |
+| **`flutter-mcp-toolkit-custom-tools`** | **Register dynamic MCP tools/resources in the app** |
+| `flutter-mcp` | Golden-path runtime loop |
+| `flutter-mcp-cli-runtime-validation` | CLI `validate-runtime` |
+
+Store listing copy: [docs/ai_agents/marketplace_copy.yaml](../docs/ai_agents/marketplace_copy.yaml).
 
 ## Layout
 
 - `.cursor-plugin/plugin.json` — Cursor plugin manifest
-- `.codex-plugin/plugin.json` — Codex plugin manifest
+- `.codex-plugin/plugin.json` — Codex plugin manifest (+ `interface` for directory)
 - `.claude-plugin/plugin.json` — Claude Code plugin manifest
-- `mcp.json` — MCP server registration (`${FLUTTER_MCP_BIN:-flutter-mcp-toolkit-server}`); consumed by Cursor, Codex, and Claude-oriented flows
-- `install.sh` — prerequisite check (Dart, server binary version pin, optional CLI)
+- `mcp.json` — MCP server (`${FLUTTER_MCP_BIN:-flutter-mcp-toolkit-server}`, `--dynamics`)
+- `install.sh` — prerequisite check (Dart, server binary version pin)
 - `EXPECTED_SERVER_VERSION` — must match repo root `VERSION`
-- `agents/flutter-mcp-toolkit-runtime.md` — Claude specialist agent definition
-- `skills/` — task skills plus `flutter-mcp` (golden-path runtime) and `flutter-mcp-cli-runtime-validation` (CLI validate-runtime). Repo root [`skills/`](../skills) is a symlink here for `npx skills` discovery.
+- `agents/flutter-mcp-toolkit-runtime.md` — Claude specialist agent
+- `assets/` — store icons/screenshots (see [assets/README.md](assets/README.md))
+- `skills/` — skill bodies; repo root [`skills/`](../skills) symlinks here for `npx skills`
 
 ## Editing skills
 
@@ -33,4 +71,6 @@ Repo [`.claude-plugin/marketplace.json`](../.claude-plugin/marketplace.json) poi
 bash plugin/install.sh
 ```
 
-Instrument the target Flutter app with `mcp_toolkit` and run in debug with a fixed VM service port as described in the main repo README.
+Instrument the target Flutter app with `mcp_toolkit` (debug only) and run with VM service enabled as described in the main repo README.
+
+Maintainers: [marketplace submission runbook](../docs/contributing/marketplace_submission_runbook.mdx).

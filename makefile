@@ -17,6 +17,7 @@ check-contracts:
 	bash tool/contracts/check_docs_drift.sh && \
 	bash tool/contracts/check_plugin_surfaces.sh && \
 	bash tool/contracts/check_version_sync.sh && \
+	bash tool/contracts/check_changelog_markdown.sh && \
 	bash tool/contracts/check_tool_prefix.sh
 
 .PHONY: release-artifacts

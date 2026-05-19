@@ -1379,6 +1379,8 @@ release-please on `main`; use manual steps only when the Release PR path is bloc
 | [mcp_toolkit/pubspec.yaml](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_toolkit/pubspec.yaml) | `version:` |
 | [plugin/.cursor-plugin/plugin.json](https://github.com/Arenukvern/mcp_flutter/blob/main/plugin/.cursor-plugin/plugin.json) | `version` |
 | [plugin/.codex-plugin/plugin.json](https://github.com/Arenukvern/mcp_flutter/blob/main/plugin/.codex-plugin/plugin.json) | `version` |
+| [plugin/.claude-plugin/plugin.json](https://github.com/Arenukvern/mcp_flutter/blob/main/plugin/.claude-plugin/plugin.json) | `version` |
+| [.claude-plugin/marketplace.json](https://github.com/Arenukvern/mcp_flutter/blob/main/.claude-plugin/marketplace.json) | `plugins[0].version` |
 | [.release-please-manifest.json](https://github.com/Arenukvern/mcp_flutter/blob/main/.release-please-manifest.json) | `"."` key |
 
 After edits: `make check-contracts` (includes `check_version_sync.sh`).
@@ -1388,6 +1390,14 @@ After edits: `make check-contracts` (includes `check_version_sync.sh`).
 1. Add user-facing notes under `## [Unreleased]` in [CHANGELOG.md](https://github.com/Arenukvern/mcp_flutter/blob/main/CHANGELOG.md) (Keep a Changelog sections: Added, Changed, Fixed, Documentation).
 2. Use conventional commit titles on `main` (`feat:`, `fix:`, `docs:`) so release-please can aggregate.
 3. Do **not** edit the plan file in `.cursor/plans/`.
+
+### Markdown lint (MD052)
+
+Keep a Changelog **requires** version headings like `## [3.0.1]`. Linters treat `[3.0.1]` as an undefined **reference link** (MD052: "No link definition found").
+
+- **Do not remove** the file-top `<!-- markdownlint-disable MD052 -->` in CHANGELOG.md (release-please must keep it when prepending sections).
+- In bullet text, use **backticks** for code identifiers: `` `MCPCallEntry.resourceUri` ``, not `[MCPCallEntry.resourceUri]`.
+- Before merge: `bash tool/contracts/check_changelog_markdown.sh` (also in `make check-contracts`).
 
 ## Automated release (preferred)
 
@@ -1429,6 +1439,9 @@ Build artifacts locally: `make release-artifacts` or `bash tool/release/build_re
 | `npx skills` + lockfile | overview § Install via `npx skills`; [.skills.json.example](https://github.com/Arenukvern/mcp_flutter/blob/main/.skills.json.example) |
 | Contributor / releases | [docs/contributing/contribution_guide.mdx](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/contributing/contribution_guide.mdx) |
 | Plugin layout | [plugin/README.md](https://github.com/Arenukvern/mcp_flutter/blob/main/plugin/README.md) |
+| Marketplace copy SSOT | [docs/ai_agents/marketplace_copy.yaml](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/ai_agents/marketplace_copy.yaml) |
+| Distribution / stores | [docs/ai_agents/marketplace_distribution.mdx](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/ai_agents/marketplace_distribution.mdx) |
+| Store submission runbook | [docs/contributing/marketplace_submission_runbook.mdx](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/contributing/marketplace_submission_runbook.mdx) |
 | Skill bodies | `plugin/skills/<id>/SKILL.md` → `make sync-skills` |
 
 Avoid duplicating install tables in README — link to overview.
@@ -1452,21 +1465,70 @@ Avoid duplicating install tables in README — link to overview.
 
   static const String cursorPluginManifest = r'''{
   "name": "flutter-mcp-toolkit",
-  "description": "Inspect and drive a running Flutter app from your AI assistant — semantic snapshot, tap, scroll, type, hot-reload, debug.",
-  "version": "3.0.1",
-  "author": { "name": "Arenukvern" }
+  "description": "Flutter MCP toolkit: inspect and drive debug apps (semantic snapshot, tap, hot-reload) and register custom MCP tools and resources at runtime from your Flutter app or game via mcp_toolkit — closed agent feedback loop.",
+  "version": "3.0.2",
+  "author": { "name": "Arenukvern", "url": "https://github.com/Arenukvern/mcp_flutter" },
+  "homepage": "https://github.com/Arenukvern/mcp_flutter",
+  "repository": "https://github.com/Arenukvern/mcp_flutter",
+  "license": "MIT",
+  "keywords": [
+    "flutter",
+    "dart",
+    "mcp",
+    "mcp-toolkit",
+    "vm-service",
+    "inspector",
+    "live-edit",
+    "dynamic-tools",
+    "runtime-tools",
+    "game-debug"
+  ]
 }
 ''';
   static const String codexPluginManifest = r'''{
   "name": "flutter-mcp-toolkit",
-  "version": "3.0.1",
-  "description": "Inspect and drive a running Flutter app from your AI assistant — semantic snapshot, tap, scroll, type, hot-reload, debug.",
-  "author": "Arenukvern",
-  "homepage": "https://github.com/Arenukvern/flutter-mcp-toolkit",
-  "repository": "https://github.com/Arenukvern/flutter-mcp-toolkit",
+  "version": "3.0.2",
+  "description": "Flutter MCP toolkit: inspect and drive debug apps (semantic snapshot, tap, hot-reload) and register custom MCP tools and resources at runtime from your Flutter app or game via mcp_toolkit — closed agent feedback loop.",
+  "author": {
+    "name": "Arenukvern",
+    "url": "https://github.com/Arenukvern/mcp_flutter"
+  },
+  "homepage": "https://github.com/Arenukvern/mcp_flutter",
+  "repository": "https://github.com/Arenukvern/mcp_flutter",
   "license": "MIT",
+  "keywords": [
+    "flutter",
+    "dart",
+    "mcp",
+    "mcp-toolkit",
+    "vm-service",
+    "inspector",
+    "live-edit",
+    "dynamic-tools",
+    "runtime-tools",
+    "game-debug"
+  ],
   "skills": "./skills",
-  "mcpServers": "./mcp.json"
+  "mcpServers": "./mcp.json",
+  "interface": {
+    "displayName": "Flutter MCP Toolkit",
+    "shortDescription": "Inspect, drive, and extend Flutter debug apps via MCP — including runtime custom tools.",
+    "longDescription": "flutter-mcp-toolkit is a Dart MCP server plus Flutter package (mcp_toolkit) for AI-assisted Flutter development in debug mode. Built-in: 27 fmt_* MCP tools and bundled agent skills. Dynamic registry: register app-specific tools and resources at runtime with addMcpTool / MCPCallEntry; agents discover via fmt_list_client_tools_and_resources and invoke via fmt_client_tool / fmt_client_resource. Requires debug app with mcp_toolkit and flutter-mcp-toolkit-server on PATH. Complements official Dart MCP.",
+    "developerName": "Arenukvern",
+    "category": "Developer Tools",
+    "capabilities": ["Read", "Write"],
+    "websiteURL": "https://github.com/Arenukvern/mcp_flutter",
+    "privacyPolicyURL": "https://github.com/Arenukvern/mcp_flutter/blob/main/LICENSE",
+    "termsOfServiceURL": "https://github.com/Arenukvern/mcp_flutter/blob/main/LICENSE",
+    "defaultPrompt": [
+      "Use flutter-mcp-toolkit to capture a semantic snapshot of my running Flutter app and list any app errors.",
+      "Register a custom MCP tool in my Flutter app for cart state, then discover it with fmt_list_client_tools_and_resources and call it."
+    ],
+    "brandColor": "#02569B",
+    "composerIcon": "./assets/icon.png",
+    "logo": "./assets/logo.png",
+    "screenshots": ["./assets/screenshot-1.png"]
+  }
 }
 ''';
   static const String mcpServerConfig = r'''{

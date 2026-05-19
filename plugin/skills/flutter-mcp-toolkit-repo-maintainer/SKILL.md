@@ -31,6 +31,8 @@ release-please on `main`; use manual steps only when the Release PR path is bloc
 | [mcp_toolkit/pubspec.yaml](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_toolkit/pubspec.yaml) | `version:` |
 | [plugin/.cursor-plugin/plugin.json](https://github.com/Arenukvern/mcp_flutter/blob/main/plugin/.cursor-plugin/plugin.json) | `version` |
 | [plugin/.codex-plugin/plugin.json](https://github.com/Arenukvern/mcp_flutter/blob/main/plugin/.codex-plugin/plugin.json) | `version` |
+| [plugin/.claude-plugin/plugin.json](https://github.com/Arenukvern/mcp_flutter/blob/main/plugin/.claude-plugin/plugin.json) | `version` |
+| [.claude-plugin/marketplace.json](https://github.com/Arenukvern/mcp_flutter/blob/main/.claude-plugin/marketplace.json) | `plugins[0].version` |
 | [.release-please-manifest.json](https://github.com/Arenukvern/mcp_flutter/blob/main/.release-please-manifest.json) | `"."` key |
 
 After edits: `make check-contracts` (includes `check_version_sync.sh`).
@@ -40,6 +42,14 @@ After edits: `make check-contracts` (includes `check_version_sync.sh`).
 1. Add user-facing notes under `## [Unreleased]` in [CHANGELOG.md](https://github.com/Arenukvern/mcp_flutter/blob/main/CHANGELOG.md) (Keep a Changelog sections: Added, Changed, Fixed, Documentation).
 2. Use conventional commit titles on `main` (`feat:`, `fix:`, `docs:`) so release-please can aggregate.
 3. Do **not** edit the plan file in `.cursor/plans/`.
+
+### Markdown lint (MD052)
+
+Keep a Changelog **requires** version headings like `## [3.0.1]`. Linters treat `[3.0.1]` as an undefined **reference link** (MD052: "No link definition found").
+
+- **Do not remove** the file-top `<!-- markdownlint-disable MD052 -->` in CHANGELOG.md (release-please must keep it when prepending sections).
+- In bullet text, use **backticks** for code identifiers: `` `MCPCallEntry.resourceUri` ``, not `[MCPCallEntry.resourceUri]`.
+- Before merge: `bash tool/contracts/check_changelog_markdown.sh` (also in `make check-contracts`).
 
 ## Automated release (preferred)
 
@@ -81,6 +91,9 @@ Build artifacts locally: `make release-artifacts` or `bash tool/release/build_re
 | `npx skills` + lockfile | overview § Install via `npx skills`; [.skills.json.example](https://github.com/Arenukvern/mcp_flutter/blob/main/.skills.json.example) |
 | Contributor / releases | [docs/contributing/contribution_guide.mdx](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/contributing/contribution_guide.mdx) |
 | Plugin layout | [plugin/README.md](https://github.com/Arenukvern/mcp_flutter/blob/main/plugin/README.md) |
+| Marketplace copy SSOT | [docs/ai_agents/marketplace_copy.yaml](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/ai_agents/marketplace_copy.yaml) |
+| Distribution / stores | [docs/ai_agents/marketplace_distribution.mdx](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/ai_agents/marketplace_distribution.mdx) |
+| Store submission runbook | [docs/contributing/marketplace_submission_runbook.mdx](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/contributing/marketplace_submission_runbook.mdx) |
 | Skill bodies | `plugin/skills/<id>/SKILL.md` → `make sync-skills` |
 
 Avoid duplicating install tables in README — link to overview.

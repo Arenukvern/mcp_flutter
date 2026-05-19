@@ -22,6 +22,7 @@ dist/
 .maestro
 .flutter_mcp
 mcp_server_dart/.mcp_screenshots
+plugin/assets/.capture/
 # OS
 .DS_Store
 Thumbs.db

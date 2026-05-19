@@ -29,6 +29,16 @@
           "path": "plugin/.codex-plugin/plugin.json",
           "jsonpath": "$.version"
         },
+        {
+          "type": "json",
+          "path": "plugin/.claude-plugin/plugin.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
+          "path": ".claude-plugin/marketplace.json",
+          "jsonpath": "$.plugins[0].version"
+        },
         "mcp_shared_core/lib/src/runtime_version.dart",
         "mcp_capability_core/lib/src/fmt_capability.dart",
         "mcp_server_dart/pubspec.yaml",

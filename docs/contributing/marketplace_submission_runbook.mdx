@@ -1,0 +1,112 @@
+---
+title: Marketplace submission runbook
+description: Step-by-step guide to publish flutter-mcp-toolkit to Claude Code, Cursor, Codex, and open MCP/skill catalogs.
+---
+
+# Marketplace submission runbook
+
+Execute **after** merging marketplace-prep changes and cutting a release with synced versions.
+
+## Prerequisites (all platforms)
+
+1. `make check-contracts` passes on `main`.
+2. GitHub release `vX.Y.Z` includes `flutter_mcp_*` tarballs.
+3. Add real images under [plugin/assets/](https://github.com/Arenukvern/mcp_flutter/tree/main/plugin/assets) per [plugin/assets/README.md](https://github.com/Arenukvern/mcp_flutter/blob/main/plugin/assets/README.md).
+4. Smoke test:
+   - Debug app with `mcp_toolkit` running.
+   - Register a sample `MCPCallEntry.tool`.
+   - Call `fmt_list_client_tools_and_resources` → see your tool.
+   - Call `fmt_client_tool` with your tool name.
+
+Copy for forms: [docs/ai_agents/marketplace_copy.yaml](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/ai_agents/marketplace_copy.yaml).
+
+---
+
+## Claude Code (official catalog)
+
+1. Open [platform.claude.com/plugins/submit](https://platform.claude.com/plugins/submit) (or [claude.ai/settings/plugins/submit](https://claude.ai/settings/plugins/submit)).
+2. **Repository:** `https://github.com/Arenukvern/mcp_flutter`
+3. **Plugin path:** `./plugin` (marketplace: `.claude-plugin/marketplace.json`)
+4. **Short description:** paste `short_description` from `marketplace_copy.yaml`.
+5. **Long description:** paste `long_description`; emphasize:
+   - 27 built-in `fmt_*` tools
+   - **Dynamic registry** — `addMcpTool` / `MCPCallEntry` in the Flutter app
+   - Skill `flutter-mcp-toolkit-custom-tools`
+6. **Keywords:** from `marketplace_copy.yaml`.
+7. **Security:** paste `security_notes` bullets.
+8. **Fallback for users today:** document git marketplace:
+   ```bash
+   /plugin marketplace add Arenukvern/mcp_flutter
+   /plugin install flutter-mcp-toolkit@Arenukvern-mcp_flutter
+   bash plugin/install.sh
+   ```
+
+If review is delayed, git marketplace remains the supported install path ([distribution doc](/ai_agents/marketplace_distribution)).
+
+---
+
+## Cursor Marketplace
+
+1. Read [Cursor plugin reference](https://cursor.com/docs/reference/plugins) and [cursor/plugins](https://github.com/cursor/plugins) examples.
+2. Verify local install:
+   ```bash
+   flutter-mcp-toolkit init cursor
+   ```
+   Confirm `.cursor/plugins/local/flutter-mcp-toolkit/` contains skills, `mcp.json`, `.cursor-plugin/plugin.json`.
+3. Open [cursor.com/marketplace](https://cursor.com/marketplace) → **Publish** (or follow Cursor’s current partner/PR process if the UI directs you to `cursor/plugins`).
+4. Submit package rooted at [plugin/](https://github.com/Arenukvern/mcp_flutter/tree/main/plugin):
+   - MCP: `mcp.json` (`flutter-mcp-toolkit-server`, `--dynamics`)
+   - **8 skills** including `flutter-mcp-toolkit-custom-tools`
+   - Subagent: `agents/flutter-mcp-toolkit-runtime.md` (optional listing)
+5. **Listing copy:** use `short_description` + dynamic-registry bullets from `marketplace_copy.yaml`.
+6. **Assets:** `plugin/assets/logo.png`, `screenshot-1.png` (see assets README).
+7. Optional: MCP install deeplink in [mcp_server_dart/README](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_server_dart/README.md) — regenerate from [Cursor deeplink docs](https://cursor.com/docs/deeplinks) if server args change.
+
+---
+
+## Codex Plugin Directory
+
+1. Confirm [plugin/.codex-plugin/plugin.json](https://github.com/Arenukvern/mcp_flutter/blob/main/plugin/.codex-plugin/plugin.json) has full `interface` metadata and asset paths.
+2. Test git marketplace:
+   ```bash
+   codex plugin marketplace add Arenukvern/mcp_flutter
+   ```
+   Install from Codex plugin directory UI; enable MCP server `flutter-mcp-toolkit`.
+3. **Official public directory:** OpenAI documents self-serve publish as **coming soon** — monitor [Build plugins](https://developers.openai.com/codex/plugins/build) § “Publish official public plugins”.
+4. Until open, primary path is git marketplace + `flutter-mcp-toolkit init codex`.
+5. **Team repos:** optional `$REPO_ROOT/.agents/plugins/marketplace.json` (see Codex docs); `init codex` writes user-local marketplace entry.
+6. **Assets:** required paths in `interface` — add PNGs under `plugin/assets/` before submit.
+
+---
+
+## Open catalogs (no formal plugin store)
+
+### skills.sh / `npx skills`
+
+- Repo root [`skills/`](https://github.com/Arenukvern/mcp_flutter/tree/main/skills) symlinks to `plugin/skills/`.
+- Verify: `npx skills add Arenukvern/mcp_flutter --list`
+- No extra submission; discovery is GitHub + skills.sh indexing.
+
+### Smithery
+
+- Listing: [smithery.ai/server/@Arenukvern/mcp_flutter](https://smithery.ai/server/@Arenukvern/mcp_flutter)
+- After each release: update description to mention dynamic registry + v3 binary name `flutter-mcp-toolkit-server`.
+
+### MseeP
+
+- Listing: [mseep.ai](https://mseep.ai/app/03aa0f2d-4ef7-40ae-93de-c7b87e0ac32d)
+- Same post-release refresh as Smithery.
+
+### Cline
+
+- No central store. Users run `flutter-mcp-toolkit init cline`.
+- Document in app README; link [AI agent overview](/ai_agents/overview).
+
+---
+
+## Post-submission checklist
+
+- [ ] README “Install from marketplaces” links match live store URLs
+- [ ] `CHANGELOG.md` notes store availability when listings go live
+- [ ] `plugin/EXPECTED_SERVER_VERSION` matches latest GitHub release
+- [ ] Smithery/MseeP descriptions mention custom runtime tools

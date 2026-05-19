@@ -35,7 +35,20 @@ flutter-mcp-toolkit init claude-code   # or: cursor | codex | cline | agents-ski
 flutter run --debug
 ```
 
-That's it. Your AI agent can now inspect and drive the running app.
+That's it. Your AI agent can now inspect and drive the running app — and your app can expose **custom MCP tools at runtime** (see [Dynamic Tools Registration](#dynamic-tools-registration) below).
+
+## Install from marketplaces
+
+| Platform | Command / link |
+|----------|----------------|
+| **Any agent (recommended)** | `flutter-mcp-toolkit init <agent>` — see [AI agent setup](docs/ai_agents/overview.mdx) |
+| **Claude Code (git catalog)** | `/plugin marketplace add Arenukvern/mcp_flutter` then install `flutter-mcp-toolkit` |
+| **Codex (git catalog)** | `codex plugin marketplace add Arenukvern/mcp_flutter` |
+| **Cursor (local plugin)** | `flutter-mcp-toolkit init cursor` |
+| **Skills only** | `npx skills add Arenukvern/mcp_flutter -a <agent> -y` (add MCP via `init` or manual JSON) |
+| **MCP registries** | [Smithery](https://smithery.ai/server/@Arenukvern/mcp_flutter), [MseeP](https://mseep.ai/app/03aa0f2d-4ef7-40ae-93de-c7b87e0ac32d) |
+
+Maintainers submitting to official stores: [marketplace submission runbook](docs/contributing/marketplace_submission_runbook.mdx). Full matrix: [marketplace distribution](docs/ai_agents/marketplace_distribution.mdx).
 
 ## Documentation
 
@@ -45,6 +58,7 @@ That's it. Your AI agent can now inspect and drive the running app.
 - **[CLI vs MCP](docs/start_here/cli_vs_mcp.mdx)** — pick the right mode.
 - **[Feature map](docs/start_here/feature_map.mdx)** — the 27 tools.
 - **[AI agent setup](docs/ai_agents/overview.mdx)** - for AI Agents.
+- **[Marketplace distribution](docs/ai_agents/marketplace_distribution.mdx)** — Claude, Cursor, Codex, skills.sh.
 - **[Architecture](ARCHITECTURE.md)** — for contributors.
 - **[Quick Start](QUICK_START.md)**, **[Configuration](CONFIGURATION.md)**, **[MCP RPC description](MCP_RPC_DESCRIPTION.md)**
 

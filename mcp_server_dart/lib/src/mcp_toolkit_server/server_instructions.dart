@@ -52,6 +52,7 @@ ${configuration.dynamicRegistrySupported ? '''
 5. Verification: re-run `fmt_list_client_tools_and_resources` after reload/restart.
 
 For detailed dynamic/tool-creation flows, rely on skill docs to avoid prompt duplication:
+- flutter-mcp-toolkit-custom-tools (register MCPCallEntry / addMcpTool in the app)
 - flutter-mcp-toolkit-debug
 - flutter-mcp-toolkit-control
 ''' : ''}

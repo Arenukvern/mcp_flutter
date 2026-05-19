@@ -102,6 +102,25 @@ if ! grep -q '"source"[[:space:]]*:[[:space:]]*"\./plugin"' "$MARKET_FILE"; then
 fi
 ok "plugin manifests <-> marketplace.json aligned"
 
+# 6b. Marketplace descriptions mention dynamic/custom tools (positioning guard)
+check_description_mentions_dynamic() {
+  local file="$1"
+  local desc
+  desc="$(sed -nE 's/.*"description"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/p' "$file" | head -1)"
+  if echo "$desc" | grep -qiE 'dynamic|custom'; then
+    return 0
+  fi
+  fail "description in ${file#$ROOT_DIR/} must mention dynamic or custom tools (see docs/ai_agents/marketplace_copy.yaml)"
+}
+for manifest in \
+  "$PLUGIN_DIR/.claude-plugin/plugin.json" \
+  "$PLUGIN_DIR/.cursor-plugin/plugin.json" \
+  "$PLUGIN_DIR/.codex-plugin/plugin.json" \
+  "$MARKET_FILE"; do
+  check_description_mentions_dynamic "$manifest"
+done
+ok "plugin/marketplace descriptions mention dynamic or custom tools"
+
 # 7. Skills reference MCP tool names (v3.0.0: prefixed `fmt_*`) that exist
 # in the locked tool surface. Catches: plugin docs forgetting to prepend
 # `fmt_`, or referencing a tool that was removed from the capability surface.

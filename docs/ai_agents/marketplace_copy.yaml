@@ -1,0 +1,68 @@
+# Maintainer SSOT for plugin / marketplace descriptions.
+# Copy into plugin manifests and store submission forms; keep in sync manually.
+
+short_description: >-
+  Flutter MCP toolkit: inspect and drive debug apps (semantic snapshot, tap,
+  hot-reload) and register custom MCP tools and resources at runtime from your
+  Flutter app or game via mcp_toolkit — closed agent feedback loop.
+
+long_description: |
+  flutter-mcp-toolkit is a Dart MCP server plus Flutter package (mcp_toolkit)
+  for AI-assisted Flutter development in debug mode.
+
+  Built-in surface:
+  - 27 fmt_* MCP tools for inspection, UI control, debugging, and lifecycle
+  - Bundled agent skills (flutter-mcp-toolkit-*, flutter-mcp,
+    flutter-mcp-toolkit-custom-tools)
+
+  Dynamic registry (key differentiator):
+  - Register app-specific tools and resources at runtime with addMcpTool /
+    MCPCallEntry in your Flutter app or game
+  - Agents discover via fmt_list_client_tools_and_resources and invoke via
+    fmt_client_tool / fmt_client_resource
+  - Building blocks for domain-specific debug surfaces (cart state, feature
+    flags, game telemetry) without rebuilding the MCP server
+
+  Prerequisites:
+  - flutter-mcp-toolkit-server on PATH (or FLUTTER_MCP_BIN)
+  - Target app runs in debug with mcp_toolkit initialized
+  - Complements official Dart MCP; see docs/start_here/why_this_repo_matters
+
+keywords:
+  - flutter
+  - dart
+  - mcp
+  - mcp-toolkit
+  - vm-service
+  - inspector
+  - live-edit
+  - dynamic-tools
+  - runtime-tools
+  - game-debug
+  - semantic-snapshot
+  - hot-reload
+
+capabilities:
+  - Read
+  - Write
+
+category: Developer Tools
+
+repository: https://github.com/Arenukvern/mcp_flutter
+homepage: https://github.com/Arenukvern/mcp_flutter
+docs: https://docs.page/arenukvern/mcp_flutter
+license: MIT
+
+security_notes:
+  - Debug-mode only; do not enable mcp_toolkit in release builds
+  - MCP server connects to local VM Service (localhost by default)
+  - Custom tools run in your app process with your app's privileges
+  - Review dynamic tool handlers before exposing sensitive state
+
+default_prompts:
+  - >-
+    Use flutter-mcp-toolkit to capture a semantic snapshot of my running Flutter
+    app and list any app errors.
+  - >-
+    Register a custom MCP tool in my Flutter app for cart state, then discover
+    it with fmt_list_client_tools_and_resources and call it.

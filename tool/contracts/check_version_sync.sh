@@ -46,12 +46,19 @@ fmt_capability_version="$(
 
 for manifest in \
   "$ROOT_DIR/plugin/.cursor-plugin/plugin.json" \
-  "$ROOT_DIR/plugin/.codex-plugin/plugin.json"; do
+  "$ROOT_DIR/plugin/.codex-plugin/plugin.json" \
+  "$ROOT_DIR/plugin/.claude-plugin/plugin.json"; do
   manifest_version="$(
     sed -nE 's/.*"version"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/p' "$manifest" | head -1
   )"
   [[ "$manifest_version" == "$repo_version" ]] ||
     fail "$(basename "$(dirname "$manifest")") version ($manifest_version) != VERSION ($repo_version)"
 done
+
+marketplace_version="$(
+  sed -nE 's/.*"version"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/p' "$ROOT_DIR/.claude-plugin/marketplace.json" | head -1
+)"
+[[ "$marketplace_version" == "$repo_version" ]] ||
+  fail ".claude-plugin/marketplace.json plugins[0].version ($marketplace_version) != VERSION ($repo_version)"
 
 ok "all version touchpoints match VERSION ($repo_version)"

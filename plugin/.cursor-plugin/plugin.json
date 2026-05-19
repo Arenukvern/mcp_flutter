@@ -1,6 +1,21 @@
 {
   "name": "flutter-mcp-toolkit",
-  "description": "Inspect and drive a running Flutter app from your AI assistant — semantic snapshot, tap, scroll, type, hot-reload, debug.",
-  "version": "3.0.1",
-  "author": { "name": "Arenukvern" }
+  "description": "Flutter MCP toolkit: inspect and drive debug apps (semantic snapshot, tap, hot-reload) and register custom MCP tools and resources at runtime from your Flutter app or game via mcp_toolkit — closed agent feedback loop.",
+  "version": "3.0.2",
+  "author": { "name": "Arenukvern", "url": "https://github.com/Arenukvern/mcp_flutter" },
+  "homepage": "https://github.com/Arenukvern/mcp_flutter",
+  "repository": "https://github.com/Arenukvern/mcp_flutter",
+  "license": "MIT",
+  "keywords": [
+    "flutter",
+    "dart",
+    "mcp",
+    "mcp-toolkit",
+    "vm-service",
+    "inspector",
+    "live-edit",
+    "dynamic-tools",
+    "runtime-tools",
+    "game-debug"
+  ]
 }

@@ -1,0 +1,87 @@
+---
+title: Marketplace distribution
+description: How flutter-mcp-toolkit reaches Claude Code, Cursor, Codex, Cline, and open skills catalogs — including the dynamic registry differentiator.
+---
+
+# Marketplace distribution
+
+`flutter-mcp-toolkit` is **not** only bundled skills plus a static MCP server. It ships three layers:
+
+1. **Host MCP** — `flutter-mcp-toolkit-server` with 27 `fmt_*` tools (inspect, control, debug).
+2. **In-app toolkit** — `mcp_toolkit` in your Flutter app (debug only).
+3. **Dynamic registry** — your app registers custom tools/resources at runtime (`addMcpTool`, `MCPCallEntry`); agents use `fmt_list_client_tools_and_resources`, `fmt_client_tool`, `fmt_client_resource`.
+
+Copy for store listings lives in [marketplace_copy.yaml](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/ai_agents/marketplace_copy.yaml).
+
+## Distribution matrix
+
+| Channel | Skills | MCP server | Dynamic registry story |
+|---------|--------|------------|------------------------|
+| `flutter-mcp-toolkit init <agent>` | Yes | Yes (`plugin/mcp.json`, `--dynamics`) | Skill `flutter-mcp-toolkit-custom-tools` |
+| `npx skills add Arenukvern/mcp_flutter` | Yes | No — add MCP separately | Same skill if installed |
+| Claude git marketplace | Yes (plugin) | Yes | `/plugin marketplace add Arenukvern/mcp_flutter` |
+| Codex git marketplace | Yes (plugin) | Yes | `codex plugin marketplace add Arenukvern/mcp_flutter` |
+| Cursor local plugin | Yes | Yes | `init cursor` → `.cursor/plugins/local/...` |
+| Cline | Yes (flat rules) | Manual MCP JSON | `init cline` |
+| [skills.sh](https://skills.sh) | Yes | Manual | Community discovery |
+| [Smithery](https://smithery.ai/server/@Arenukvern/mcp_flutter) | N/A | MCP registry | Update listing after releases |
+| [MseeP](https://mseep.ai/app/03aa0f2d-4ef7-40ae-93de-c7b87e0ac32d) | N/A | MCP registry | Same |
+
+## Claude Code
+
+```bash
+# Git marketplace (works today)
+/plugin marketplace add Arenukvern/mcp_flutter
+/plugin install flutter-mcp-toolkit@Arenukvern-mcp_flutter
+
+# Prerequisite check after binary on PATH
+bash plugin/install.sh
+```
+
+Catalog: [.claude-plugin/marketplace.json](https://github.com/Arenukvern/mcp_flutter/blob/main/.claude-plugin/marketplace.json) → `./plugin`.
+
+Official Anthropic catalog: submit via [platform.claude.com/plugins/submit](https://platform.claude.com/plugins/submit) — see [submission runbook](/contributing/marketplace_submission_runbook).
+
+## Cursor
+
+```bash
+flutter-mcp-toolkit init cursor
+# or user-global:
+flutter-mcp-toolkit init cursor --scope user
+```
+
+Installs `.cursor/plugins/local/flutter-mcp-toolkit/` with skills, `mcp.json`, and `.cursor-plugin/plugin.json`.
+
+Public directory: [cursor.com/marketplace](https://cursor.com/marketplace) — see [submission runbook](/contributing/marketplace_submission_runbook).
+
+## Codex
+
+```bash
+flutter-mcp-toolkit init codex
+# or add git marketplace:
+codex plugin marketplace add Arenukvern/mcp_flutter
+```
+
+`init codex` also registers a local entry in `~/.agents/plugins/marketplace.json`.
+
+Official Plugin Directory self-serve publish is **coming soon** (OpenAI docs); use git marketplace until then.
+
+## Open skills (`npx skills`)
+
+```bash
+npx skills add Arenukvern/mcp_flutter -a cursor -y
+```
+
+Does **not** write `mcp.json`. Run `flutter-mcp-toolkit init <agent>` afterward or configure `mcpServers` manually.
+
+## Prerequisites (all channels)
+
+1. `flutter-mcp-toolkit-server` on `PATH` (or `FLUTTER_MCP_BIN`).
+2. Target Flutter app in **debug** with `mcp_toolkit` initialized.
+3. For custom tools: register `MCPCallEntry` in app code; see [Dynamic tool registry](/core/dynamic_tools_registry) and skill `flutter-mcp-toolkit-custom-tools`.
+
+## Maintainers
+
+- Plugin tree: [plugin/README.md](https://github.com/Arenukvern/mcp_flutter/blob/main/plugin/README.md)
+- Store submission steps: [marketplace_submission_runbook.mdx](/contributing/marketplace_submission_runbook)
+- Version pins: `make check-contracts`

@@ -1,6 +1,33 @@
 # Changelog
 
+<!-- markdownlint-disable MD052 -->
+<!-- Keep a Changelog version headings use [3.0.1] brackets; MD052 treats them as reference links. -->
+
 ## [Unreleased]
+
+## [3.0.2] - 2026-05-19
+
+### Added
+
+- Marketplace distribution docs: [marketplace_copy.yaml](docs/ai_agents/marketplace_copy.yaml) (listing SSOT), [marketplace_distribution.mdx](docs/ai_agents/marketplace_distribution.mdx), and [marketplace_submission_runbook.mdx](docs/contributing/marketplace_submission_runbook.mdx) (Claude, Cursor, Codex, skills.sh, Smithery, MseeP).
+- Plugin store assets under [plugin/assets/](plugin/assets/): `original_logo.png`, `icon.png` (256), `logo.png` (512), `screenshot-1.png`, `screenshot-2.png`, plus capture/regeneration notes in [plugin/assets/README.md](plugin/assets/README.md).
+- Codex `interface` metadata in [plugin/.codex-plugin/plugin.json](plugin/.codex-plugin/plugin.json) (display copy, legal URLs, asset paths).
+- CI: `check_changelog_markdown.sh` wired into `make check-contracts` (Keep a Changelog / MD052).
+
+### Changed
+
+- Plugin and marketplace descriptions now emphasize the **dynamic registry** (custom MCP tools/resources at runtime via `mcp_toolkit`), not only static inspect/control MCP tools.
+- Claude plugin and marketplace versions included in release-please and `check_version_sync.sh` (with Cursor/Codex).
+- Codex plugin `homepage` / `repository` point at `Arenukvern/mcp_flutter` (was separate `flutter-mcp-toolkit` repo URL).
+- README: **Install from marketplaces** section; [plugin/README.md](plugin/README.md) documents static + dynamic architecture and all eight bundled skills.
+- `check_plugin_surfaces.sh` fails if marketplace/plugin descriptions omit dynamic/custom positioning.
+- MCP server instructions reference skill `flutter-mcp-toolkit-custom-tools` for dynamic tool flows.
+- Maintainer skill `flutter-mcp-toolkit-repo-maintainer` documents marketplace copy, distribution, and submission runbook.
+
+### Documentation
+
+- [docs/ai_agents/overview.mdx](docs/ai_agents/overview.mdx): three-layer model (host MCP, in-app toolkit, dynamic registry); Cursor/Codex git marketplace install.
+- [docs/start_here/docs_map.mdx](docs/start_here/docs_map.mdx) and [contribution_guide.mdx](docs/contributing/contribution_guide.mdx) link marketplace docs.
 
 ## [3.0.1] - 2026-05-19
 
@@ -411,7 +438,7 @@ BREAKING CHANGES:
 
 ## 2.3.0
 
-- perf: added more checks for [MCPCallEntry.resourceUri] for MCPToolkit package (MCPToolkit updated to v0.2.3)
+- perf: added more checks for `MCPCallEntry.resourceUri` for MCPToolkit package (MCPToolkit updated to v0.2.3)
 
 ## mcp_server_dart
 
@@ -422,7 +449,7 @@ BREAKING CHANGES:
 - added section for RooCode in QUICK_START.md
 - disabled resources support by default for RooCode and Cline setups (for unknown reason it doesn't work)
 
-- Huge thank you to [cosystudio](https://github.com/cosystudio) for raising, researching and (describing issues)[https://github.com/Arenukvern/mcp_flutter/issues/53] with RooCode MCP server.
+- Huge thank you to [cosystudio](https://github.com/cosystudio) for raising, researching and [describing issues](https://github.com/Arenukvern/mcp_flutter/issues/53) with RooCode MCP server.
 
 ## 2.2.2
 

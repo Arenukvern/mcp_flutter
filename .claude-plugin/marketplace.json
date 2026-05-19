@@ -8,9 +8,20 @@
     {
       "name": "flutter-mcp-toolkit",
       "source": "./plugin",
-      "description": "Flutter MCP toolkit for Claude Code: inspect, live-edit, and interact with running Flutter apps via the Dart VM Service.",
-      "version": "0.1.0",
-      "keywords": ["flutter", "dart", "mcp", "mcp-toolkit", "vm-service", "inspector"],
+      "description": "Flutter MCP toolkit: inspect and drive debug apps (semantic snapshot, tap, hot-reload) and register custom MCP tools and resources at runtime from your Flutter app or game via mcp_toolkit — closed agent feedback loop.",
+      "version": "3.0.2",
+      "keywords": [
+        "flutter",
+        "dart",
+        "mcp",
+        "mcp-toolkit",
+        "vm-service",
+        "inspector",
+        "live-edit",
+        "dynamic-tools",
+        "runtime-tools",
+        "game-debug"
+      ],
       "skills": ["./skills"]
     }
   ]

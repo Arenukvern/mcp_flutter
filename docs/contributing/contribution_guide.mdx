@@ -43,6 +43,8 @@ Repo root [`skills/`](/skills) symlinks to `plugin/skills/` so [`npx skills`](ht
 
 Maintainers: use bundled skill **`flutter-mcp-toolkit-repo-maintainer`** (local: `.cursor/skills/flutter-mcp-toolkit-repo-maintainer`) for releases and docs.
 
+Marketplace listing copy: [marketplace_copy.yaml](/ai_agents/marketplace_copy.yaml). Submitting to Claude/Cursor/Codex stores: [marketplace submission runbook](/contributing/marketplace_submission_runbook).
+
 ### Commit messages
 
 Use [Conventional Commits](https://www.conventionalcommits.org/) so
@@ -68,6 +70,8 @@ Releases are automated on `main` via **release-please**:
 5. [`.github/workflows/release.yml`](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/release.yml) runs on the tag and attaches `flutter_mcp_*` tarballs + `checksums.txt`.
 
 Pending work belongs under `## [Unreleased]` in [CHANGELOG.md](https://github.com/Arenukvern/mcp_flutter/blob/main/CHANGELOG.md). release-please promotes that section when the Release PR merges.
+
+**CHANGELOG markdown:** version headings use `[3.0.1]` brackets (Keep a Changelog); the file disables MD052 at the top. In bullets, wrap code symbols in backticks — never `[Type.member]` without a URL.
 
 Config: [`release-please-config.json`](https://github.com/Arenukvern/mcp_flutter/blob/main/release-please-config.json), [`.release-please-manifest.json`](https://github.com/Arenukvern/mcp_flutter/blob/main/.release-please-manifest.json).
 
