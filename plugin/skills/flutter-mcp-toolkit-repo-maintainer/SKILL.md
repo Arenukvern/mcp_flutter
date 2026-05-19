@@ -36,8 +36,9 @@ release-please on `main`; use manual steps only when the Release PR path is bloc
 | [plugin/.claude-plugin/plugin.json](https://github.com/Arenukvern/mcp_flutter/blob/main/plugin/.claude-plugin/plugin.json) | `version` |
 | [.claude-plugin/marketplace.json](https://github.com/Arenukvern/mcp_flutter/blob/main/.claude-plugin/marketplace.json) | `plugins[0].version` |
 | [.release-please-manifest.json](https://github.com/Arenukvern/mcp_flutter/blob/main/.release-please-manifest.json) | `"."` key |
+| [mcp_server_dart/lib/src/skill_assets.g.dart](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_server_dart/lib/src/skill_assets.g.dart) | **generated** — embeds `plugin/.cursor-plugin/plugin.json`, `plugin/.codex-plugin/plugin.json`, `plugin/mcp.json`, and all `plugin/skills/*/SKILL.md` |
 
-After edits: `make check-contracts` (includes `check_version_sync.sh`).
+After any version bump in `plugin/*-plugin/plugin.json` or edit under `plugin/skills/`: run `make sync-skills`, then `make check-contracts` (includes `check_version_sync.sh` and `check_skill_assets_drift.sh`).
 
 ## Changelog workflow
 
@@ -65,9 +66,10 @@ flowchart LR
 
 1. Merge PRs to `main` with conventional commits.
 2. Wait for **Release PR** from [release-please.yml](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/release-please.yml).
-3. Review VERSION, CHANGELOG, pubspecs, plugin pins in that PR → merge.
-4. release-please creates `vX.Y.Z` + GitHub release notes.
-5. [release.yml](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/release.yml) attaches `flutter_mcp_*` tarballs (does not overwrite release body).
+3. On the Release PR branch, run `make sync-skills` and commit `skill_assets.g.dart` if CI **skill-assets-drift** fails (release-please bumps `plugin/*-plugin/plugin.json` but not the generated bundle).
+4. Review VERSION, CHANGELOG, pubspecs, plugin pins in that PR → merge.
+5. release-please creates `vX.Y.Z` + GitHub release notes.
+6. [release.yml](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/release.yml) attaches `flutter_mcp_*` tarballs (does not overwrite release body).
 
 Config: [release-please-config.json](https://github.com/Arenukvern/mcp_flutter/blob/main/release-please-config.json).
 
@@ -78,7 +80,7 @@ Use when release-please is unavailable or you must ship from a branch:
 1. Move `## [Unreleased]` bullets into `## [X.Y.Z]` (add date), leave empty `## [Unreleased]`.
 2. Bump all version touchpoints above to `X.Y.Z`.
 3. Update `.release-please-manifest.json` `"."` to `X.Y.Z`.
-4. `make sync-skills` if any `plugin/skills/*/SKILL.md` changed.
+4. `make sync-skills` (required whenever plugin manifests or skills change — release-please bumps plugin JSON but not `skill_assets.g.dart`).
 5. `make check-contracts`
 6. Commit: `chore: release X.Y.Z`
 7. Tag: `git tag vX.Y.Z` and push tag (triggers binary workflow).
@@ -109,6 +111,6 @@ Avoid duplicating install tables in README — link to overview.
 ## Pre-merge checklist
 
 - [ ] `make check-contracts`
-- [ ] `make sync-skills` if `plugin/skills/` changed
+- [ ] `make sync-skills` if `plugin/skills/` or `plugin/*-plugin/plugin.json` changed
 - [ ] CHANGELOG `[Unreleased]` updated for user-visible changes
 - [ ] No secrets in committed configs

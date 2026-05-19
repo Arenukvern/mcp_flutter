@@ -4,8 +4,12 @@ on:
   pull_request:
     paths:
       - 'plugin/**'
+      - 'VERSION'
+      - 'release-please-config.json'
+      - '.release-please-manifest.json'
       - 'mcp_server_dart/lib/src/skill_assets.g.dart'
       - 'mcp_server_dart/tool/build_skill_assets.dart'
+      - 'tool/contracts/check_skill_assets_drift.sh'
   push:
     branches: [main]
 

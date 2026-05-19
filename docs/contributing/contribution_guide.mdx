@@ -75,7 +75,7 @@ Pending work belongs under `## [Unreleased]` in [CHANGELOG.md](https://github.co
 
 Config: [`release-please-config.json`](https://github.com/Arenukvern/mcp_flutter/blob/main/release-please-config.json), [`.release-please-manifest.json`](https://github.com/Arenukvern/mcp_flutter/blob/main/.release-please-manifest.json).
 
-Run `make check-contracts` locally — it includes `check_version_sync.sh` to ensure every version file matches root `VERSION`.
+Run `make check-contracts` locally — it includes `check_version_sync.sh` (version pins) and `check_skill_assets_drift.sh` (regenerated `skill_assets.g.dart` matches `plugin/`). After release-please bumps `plugin/*-plugin/plugin.json`, run `make sync-skills` before pushing.
 
 ### Pull Requests
 
