@@ -5,6 +5,13 @@
 
 ## [Unreleased]
 
+## [3.0.3] - 2026-05-19
+
+### Fixed
+
+- `flutter-mcp-toolkit init` skill writers failed when bundled skill `flutter-mcp-toolkit-repo-maintainer` lacked the required `<!-- @FMT_MODE_PRELUDE -->` marker; marker restored and `skill_assets.g.dart` regenerated.
+- CLI daemon integration test forces `get_vm` to fail via an explicit invalid VM target so structured-error assertions stay deterministic when a local Flutter debug app is auto-discovered.
+
 ## [3.0.2] - 2026-05-19
 
 ### Added

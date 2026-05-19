@@ -7,6 +7,8 @@ description: >-
   npx skills and flutter-mcp-toolkit init.
 ---
 
+<!-- @FMT_MODE_PRELUDE -->
+
 # flutter-mcp-toolkit repo maintainer
 
 Golden path for **this repository** (not end-user Flutter apps). Prefer

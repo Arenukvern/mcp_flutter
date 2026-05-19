@@ -91,7 +91,12 @@ void main() {
       final vmFailure = await _sendRequest(
         id: 4,
         method: 'command/execute',
-        params: {'name': 'get_vm', 'args': const <String, Object?>{}},
+        params: {
+          'name': 'get_vm',
+          'args': {
+            'connection': {'targetId': 'ws://localhost:9999/ws'},
+          },
+        },
         process: process!,
         events: events,
       );

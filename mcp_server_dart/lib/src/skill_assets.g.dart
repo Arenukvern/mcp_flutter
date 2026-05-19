@@ -1355,6 +1355,8 @@ description: >-
   release-please, sync-skills, check-contracts, or updating install/docs for
   npx skills and flutter-mcp-toolkit init.''',
       body: r'''
+<!-- @FMT_MODE_PRELUDE -->
+
 # flutter-mcp-toolkit repo maintainer
 
 Golden path for **this repository** (not end-user Flutter apps). Prefer
@@ -1466,7 +1468,7 @@ Avoid duplicating install tables in README — link to overview.
   static const String cursorPluginManifest = r'''{
   "name": "flutter-mcp-toolkit",
   "description": "Flutter MCP toolkit: inspect and drive debug apps (semantic snapshot, tap, hot-reload) and register custom MCP tools and resources at runtime from your Flutter app or game via mcp_toolkit — closed agent feedback loop.",
-  "version": "3.0.2",
+  "version": "3.0.3",
   "author": { "name": "Arenukvern", "url": "https://github.com/Arenukvern/mcp_flutter" },
   "homepage": "https://github.com/Arenukvern/mcp_flutter",
   "repository": "https://github.com/Arenukvern/mcp_flutter",
@@ -1487,7 +1489,7 @@ Avoid duplicating install tables in README — link to overview.
 ''';
   static const String codexPluginManifest = r'''{
   "name": "flutter-mcp-toolkit",
-  "version": "3.0.2",
+  "version": "3.0.3",
   "description": "Flutter MCP toolkit: inspect and drive debug apps (semantic snapshot, tap, hot-reload) and register custom MCP tools and resources at runtime from your Flutter app or game via mcp_toolkit — closed agent feedback loop.",
   "author": {
     "name": "Arenukvern",
