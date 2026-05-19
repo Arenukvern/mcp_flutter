@@ -5,6 +5,12 @@
 
 ## [Unreleased]
 
+## [3.0.4] - 2026-05-19
+
+### Fixed
+
+- docs.page site configuration: logo, favicon, social preview image, Flutter brand theme (`#02569B`), header and anchor links, SEO defaults, and content settings in `docs.json` with assets under `docs/assets/`.
+
 ## [3.0.3] - 2026-05-19
 
 ### Fixed

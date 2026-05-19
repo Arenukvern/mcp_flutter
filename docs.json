@@ -1,8 +1,65 @@
 {
-  "name": "Flutter MCP Toolkit",
-  "description": "Audience-first documentation for Flutter MCP Toolkit: human docs and AI agent docs.",
-  "github": "https://github.com/Arenukvern/mcp_flutter",
   "$schema": "https://docs.page/schema.json",
+  "name": "Flutter MCP Toolkit",
+  "description": "MCP server and Flutter package for AI-assisted debugging: semantic snapshots, UI control, hot reload, and runtime custom MCP tools.",
+  "github": "https://github.com/Arenukvern/mcp_flutter",
+  "logo": {
+    "light": "/assets/logo.png",
+    "dark": "/assets/logo.png"
+  },
+  "favicon": "/assets/favicon.png",
+  "socialPreview": "/assets/social-preview.png",
+  "theme": {
+    "defaultTheme": "light",
+    "primary": "#02569B"
+  },
+  "header": {
+    "showName": true,
+    "showThemeToggle": true,
+    "showGitHubCard": true,
+    "links": [
+      {
+        "title": "GitHub",
+        "href": "https://github.com/Arenukvern/mcp_flutter"
+      },
+      {
+        "title": "Get started",
+        "href": "/ai_agents/execution_playbook",
+        "cta": true
+      }
+    ]
+  },
+  "anchors": [
+    {
+      "icon": "github",
+      "title": "GitHub",
+      "href": "https://github.com/Arenukvern/mcp_flutter"
+    },
+    {
+      "icon": "book-open",
+      "title": "Smithery",
+      "href": "https://smithery.ai/server/@Arenukvern/mcp_flutter"
+    }
+  ],
+  "social": {
+    "github": "Arenukvern",
+    "website": "https://github.com/Arenukvern/mcp_flutter"
+  },
+  "seo": {
+    "noindex": false
+  },
+  "variables": {
+    "version": "3.0.4",
+    "repo": "https://github.com/Arenukvern/mcp_flutter",
+    "docs": "https://docs.page/arenukvern/mcp_flutter"
+  },
+  "content": {
+    "headerDepth": 3,
+    "zoomImages": true,
+    "automaticallyInferNextPrevious": true,
+    "showPageTitle": true,
+    "showPageImage": true
+  },
   "sidebar": [
     {
       "group": "Start Here",
