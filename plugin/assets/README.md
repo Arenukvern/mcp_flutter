@@ -17,7 +17,7 @@ dart run bin/flutter_mcp_toolkit.dart exec \
   --name fmt_list_client_tools_and_resources --args '{}' --vm-service-uri '<ws_uri>'
 ```
 
-Icons: derived from `original_logo.png` via `sips -z` (256 / 512). Keep `original_logo.png` as source of truth.
+Icons: derived from `original_logo.png` via `sips -z` (256 / 512). Keep `original_logo.png` as source of truth. The original logo was generated with Gemini (nano-banana).
 
 ## How to capture screenshots
 
