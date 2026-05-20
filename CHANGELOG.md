@@ -12,6 +12,12 @@
 
 ## [Unreleased]
 
+## [3.0.6] - 2026-05-20
+
+### Fixed
+
+- Root `install.sh` supports `curl ... | bash` and installs outside a git clone: safe `BASH_SOURCE` under `set -u`, optional default version from repo `VERSION` / `runtime_version.dart`, GitHub `releases/latest` fallback, and clear usage when version cannot be resolved.
+
 ### Changed
 
 - Release binaries: drop `darwin-x64` (Intel Mac). macOS releases are Apple Silicon (`darwin-arm64`) only; `linux-x64` unchanged.

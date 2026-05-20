@@ -1,9 +1,23 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-VERSION_SOURCE_FILE="$ROOT_DIR/mcp_shared_core/lib/src/runtime_version.dart"
-DEFAULT_VERSION="$(sed -nE "s/^const kFlutterMcpVersion = '([^']+)';.*$/\1/p" "$VERSION_SOURCE_FILE")"
+ROOT_DIR=""
+if [[ -n "${BASH_SOURCE[0]:-}" ]]; then
+  ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+fi
+
+DEFAULT_VERSION=""
+if [[ -n "$ROOT_DIR" ]]; then
+  if [[ -f "$ROOT_DIR/VERSION" ]]; then
+    DEFAULT_VERSION="$(tr -d '[:space:]' < "$ROOT_DIR/VERSION" 2>/dev/null || true)"
+  fi
+  if [[ -z "$DEFAULT_VERSION" ]]; then
+    VERSION_SOURCE_FILE="$ROOT_DIR/mcp_shared_core/lib/src/runtime_version.dart"
+    if [[ -f "$VERSION_SOURCE_FILE" ]]; then
+      DEFAULT_VERSION="$(sed -nE "s/^const kFlutterMcpVersion = '([^']+)';.*$/\1/p" "$VERSION_SOURCE_FILE" 2>/dev/null || true)"
+    fi
+  fi
+fi
 
 REPO="${FLUTTER_MCP_REPO:-Arenukvern/mcp_flutter}"
 VERSION="${FLUTTER_MCP_VERSION:-$DEFAULT_VERSION}"
@@ -13,9 +27,24 @@ BASE_URL="${FLUTTER_MCP_BASE_URL:-}"
 usage() {
   cat <<USAGE
 Usage: ./install.sh [--version <semver|vSemver>] [--install-dir <path>] [--repo <owner/name>] [--base-url <url>]
+       curl -fsSL https://raw.githubusercontent.com/${REPO}/main/install.sh | bash -s -- [--version <semver>]
 
 Installs flutter-mcp-toolkit and flutter-mcp-toolkit-server from GitHub release artifacts.
+
+When run from a git clone, version defaults to the repo VERSION file (or runtime_version.dart).
+When piped from curl without --version, the latest GitHub release is used if available.
+Override with FLUTTER_MCP_VERSION or --version.
 USAGE
+}
+
+resolve_latest_release_version() {
+  local api_url="https://api.github.com/repos/${REPO}/releases/latest"
+  local body tag
+  command -v curl >/dev/null 2>&1 || return 1
+  body="$(curl -fsSL "$api_url" 2>/dev/null)" || return 1
+  tag="$(sed -nE 's/.*"tag_name"[[:space:]]*:[[:space:]]*"v?([^"]+)".*/\1/p' <<<"$body" | head -n1)"
+  [[ -n "$tag" ]] || return 1
+  printf '%s' "$tag"
 }
 
 while [[ $# -gt 0 ]]; do
@@ -49,7 +78,21 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ -z "$VERSION" ]]; then
-  echo "Unable to resolve install version." >&2
+  VERSION="$(resolve_latest_release_version || true)"
+fi
+
+if [[ -z "$VERSION" ]]; then
+  cat >&2 <<EOF
+Unable to resolve install version.
+
+Specify a version explicitly, for example:
+  curl -fsSL https://raw.githubusercontent.com/${REPO}/main/install.sh | bash -s -- --version v3.0.4
+
+Or from a git clone:
+  ./install.sh
+  FLUTTER_MCP_VERSION=3.0.4 ./install.sh
+EOF
+  usage >&2
   exit 1
 fi
 
