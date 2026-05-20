@@ -157,6 +157,7 @@ mixin SemanticSnapshotService {
           'nodes': const <Object?>[],
           'nodeCount': 0,
           'truncated': false,
+          'interactionSurface': 'empty',
           'message': 'No render views available.',
         };
       }
@@ -170,6 +171,7 @@ mixin SemanticSnapshotService {
           'nodes': const <Object?>[],
           'nodeCount': 0,
           'truncated': false,
+          'interactionSurface': 'empty',
           'message': 'No pipeline owner available.',
         };
       }
@@ -187,10 +189,10 @@ mixin SemanticSnapshotService {
         'nodes': const <Object?>[],
         'nodeCount': 0,
         'truncated': false,
+        'interactionSurface': 'game_canvas',
         'message':
-            'Semantics tree unavailable. '
-            'Ensure SemanticsBinding is enabled '
-            '(e.g. wrap with Semantics).',
+            'Semantics tree unavailable (common for raw canvas/game UIs). '
+            'Use evaluate_dart_expression and screenshots instead of tap-by-ref.',
       };
     }
 
@@ -273,7 +275,19 @@ mixin SemanticSnapshotService {
       'nodes': nodes,
       'nodeCount': nodes.length,
       'truncated': truncated,
+      'interactionSurface': _classifyInteractionSurface(nodes.length),
     };
+  }
+
+  /// How agents should interact with this app's visible surface.
+  ///
+  /// - [flutter_widgets]: semantics expose tappable refs (normal Material/Cupertino).
+  /// - [hybrid]: semantics exist but no interactive refs (custom painters + chrome).
+  /// - [game_canvas]: no semantics tree (raw canvas / game loop).
+  /// - [empty]: no render surface.
+  static String _classifyInteractionSurface(final int interactiveNodeCount) {
+    if (interactiveNodeCount > 0) return 'flutter_widgets';
+    return 'hybrid';
   }
 
   // ---------------------------------------------------------------------------

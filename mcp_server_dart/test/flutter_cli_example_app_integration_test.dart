@@ -116,6 +116,23 @@ void main() {
         ]);
         expect(connect['ok'], isTrue);
 
+        final doctor = await _runCli([
+          '--vm-service-uri',
+          _globalVmServiceWsUri!,
+          'doctor',
+          '--json',
+          '--timeout-ms',
+          '10000',
+        ]);
+        expect(doctor['ok'], isTrue);
+        final doctorData = doctor['data'] as Map<String, dynamic>;
+        expect(doctorData['target'], _globalVmServiceWsUri);
+        final doctorChecks = (doctorData['checks'] as List).cast<Map>();
+        final vmCheck = doctorChecks.firstWhere(
+          (final c) => c['id'] == 'vm_target_reachable',
+        );
+        expect(vmCheck['status'], 'pass');
+
         final vm = await _runCli(['exec', '--name', 'get_vm', '--args', '{}']);
         expect(vm['ok'], isTrue);
         expect((vm['data'] as Map<String, dynamic>)['isolates'], isNotNull);
@@ -415,6 +432,7 @@ void main() {
             .where((final r) => r.isNotEmpty)
             .toList();
         expect(refs, isNotEmpty);
+        expect(snapData['interactionSurface'], 'flutter_widgets');
         final snapshotId = snapData['snapshot_id'] as int?;
         final firstRef = refs.first;
         final secondRef = refs.length > 1 ? refs[1] : firstRef;
@@ -494,6 +512,11 @@ void main() {
         // 5. wait / forms.
         await exec('wait_for', {
           'predicate': {'kind': 'time', 'ms': 50},
+          'connection': connection,
+        }, requireOk: true);
+        await exec('wait_for', {
+          'predicate': {'kind': 'noError'},
+          'timeoutMs': 2000,
           'connection': connection,
         }, requireOk: true);
         await exec('fill_form', {

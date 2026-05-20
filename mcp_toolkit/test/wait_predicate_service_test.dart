@@ -147,6 +147,29 @@ void main() {
     },
   );
 
+  testWidgets(
+    'wait_for noError predicate matches when error monitor is empty',
+    (final tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(home: Scaffold(body: Text('ok'))),
+      );
+      await tester.pump();
+
+      final waitFuture = WaitPredicateService.waitFor(
+        predicate: const {'kind': 'noError'},
+        timeoutMs: 2000,
+      );
+
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+
+      final result = await waitFuture;
+      expect(result['matched'], isTrue);
+      expect(result['snapshot_id'], isA<int>());
+    },
+  );
+
   testWidgets('wait_for stable predicate matches once UI stops changing', (
     final tester,
   ) async {

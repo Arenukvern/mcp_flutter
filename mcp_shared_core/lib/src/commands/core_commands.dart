@@ -393,9 +393,16 @@ final class HotReloadAndCaptureCommand extends CoreCommand {
 }
 
 final class EvaluateDartExpressionCommand extends CoreCommand {
-  const EvaluateDartExpressionCommand({required this.expression});
+  const EvaluateDartExpressionCommand({
+    required this.expression,
+    this.libraryUri,
+  });
 
   final String expression;
+
+  /// Optional isolate library URI (e.g. `package:myapp/main.dart`).
+  /// When omitted, evaluates against the root library.
+  final String? libraryUri;
 
   @override
   String get name => 'evaluate_dart_expression';

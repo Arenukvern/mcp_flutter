@@ -235,7 +235,7 @@ Future<CoreResult> _runOneShot({
           fallback: _defaultDoctorTimeoutMs,
         );
         final data = await doctorRunner.run(
-          target: _nonEmptyOption(topLevel.option('target')),
+          target: _resolveVmTargetUri(command: topLevel, parsed: parsed),
           timeout: Duration(milliseconds: timeoutMs),
         );
         return CoreResult.success(data: data);
@@ -503,10 +503,7 @@ Future<CoreResult> _runValidateRuntime({
     fallback: _defaultValidateRuntimeTimeoutMs,
   );
   final timeout = Duration(milliseconds: timeoutMs);
-  final target = _resolveValidateRuntimeTarget(
-    command: command,
-    parsed: parsed,
-  );
+  final target = _resolveVmTargetUri(command: command, parsed: parsed);
   final errorsCount = _parsePositiveIntOption(
     command.option('errors-count'),
     fallback: _defaultValidateRuntimeErrorsCount,
@@ -1461,15 +1458,16 @@ List<String> _screenshotFiles(final List<Map<String, Object?>> steps) {
   return files;
 }
 
-String? _resolveValidateRuntimeTarget({
+/// Resolves the VM websocket URI for [doctor] and [validate-runtime].
+///
+/// Subcommand `--target` wins over global `--vm-service-uri` when both differ.
+String? _resolveVmTargetUri({
   required final ArgResults command,
   required final ArgResults parsed,
 }) {
   final fromCommand = _nonEmptyOption(command.option('target'));
   final fromGlobal = _nonEmptyOption(parsed.option(_vmServiceUri));
-  if (fromCommand != null &&
-      fromGlobal != null &&
-      fromCommand != fromGlobal) {
+  if (fromCommand != null && fromGlobal != null && fromCommand != fromGlobal) {
     io.stderr.writeln(
       '[WARN] flutter-mcp-toolkit: --target and --vm-service-uri differ; '
       'using --target.',

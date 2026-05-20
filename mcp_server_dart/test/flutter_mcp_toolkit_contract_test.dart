@@ -289,6 +289,34 @@ void main() {
     });
 
     test(
+      'doctor uses global --vm-service-uri when subcommand --target is omitted',
+      () async {
+        final result = await _runCli(statePath, [
+          '--vm-service-uri',
+          'ws://127.0.0.1:1/unreachable/ws',
+          'doctor',
+          '--json',
+          '--timeout-ms',
+          '50',
+        ]);
+
+        expect(result.exitCode, isNonZero);
+
+        final envelope =
+            jsonDecode((result.stdout as String).trim())
+                as Map<String, dynamic>;
+        expect(envelope['ok'], isTrue);
+
+        final data = envelope['data'] as Map<String, dynamic>;
+        expect(data['target'], equals('ws://127.0.0.1:1/unreachable/ws'));
+
+        final checks = (data['checks'] as List).cast<Map<String, dynamic>>();
+        final byId = {for (final check in checks) check['id'] as String: check};
+        expect(byId['vm_target_reachable']!['status'], equals('fail'));
+      },
+    );
+
+    test(
       'doctor reports app-owned bridge checks as connection-blocked when target is unreachable',
       () async {
         final result = await _runCli(statePath, [

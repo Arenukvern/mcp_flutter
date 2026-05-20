@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 
+import '../mcp_toolkit_binding.dart';
 import 'semantic_snapshot_service.dart';
 
 /// Service that blocks until a UI predicate holds or a timeout elapses.
@@ -12,6 +13,7 @@ import 'semantic_snapshot_service.dart';
 ///   - `noText`:  {kind: 'noText', text: String} — substring absent.
 ///   - `stable`:  {kind: 'stable', stableWindowMs: int} — no semantic change
 ///                for the stable window.
+///   - `noError`: {kind: 'noError'} — Flutter error monitor has no entries.
 ///
 /// Implemented incrementally — see plan tasks 2–5.
 class WaitPredicateService {
@@ -29,6 +31,28 @@ class WaitPredicateService {
       final ms = (predicate['ms'] as num?)?.toInt() ?? 0;
       await Future<void>.delayed(Duration(milliseconds: ms));
       return _successNoSnapshot(predicate, stopwatch.elapsedMilliseconds);
+    }
+
+    if (kind == 'noError') {
+      final binding = WidgetsBinding.instance;
+      final deadline = Duration(milliseconds: timeoutMs);
+      while (stopwatch.elapsed < deadline) {
+        if (_errorMonitorIsEmpty()) {
+          final finalSnapshot =
+              await SemanticSnapshotService.buildSemanticSnapshot();
+          return _successWithSnapshot(
+            predicate,
+            stopwatch.elapsedMilliseconds,
+            finalSnapshot,
+          );
+        }
+        await binding.endOfFrame;
+      }
+      return _timeoutWithSnapshot(
+        predicate,
+        stopwatch.elapsedMilliseconds,
+        await SemanticSnapshotService.peekSemanticSnapshot(),
+      );
     }
 
     final binding = WidgetsBinding.instance;
@@ -175,6 +199,14 @@ class WaitPredicateService {
   }) => _timeoutWithSnapshot(predicate, elapsedMs, lastSnapshot);
 
   /// Mutable per-call scratch space for predicates that need history.
+  static bool _errorMonitorIsEmpty() {
+    try {
+      return MCPToolkitBinding.instance.errors.isEmpty;
+    } on Object {
+      return true;
+    }
+  }
+
   static String _serialiseNodes(final Map<String, Object?> snapshot) {
     final nodes = snapshot['nodes'];
     if (nodes is! List) return '';
