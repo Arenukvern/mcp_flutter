@@ -16,7 +16,7 @@ import 'package:is_dart_empty_or_not/is_dart_empty_or_not.dart';
 ///
 /// The MCP tool surface (`fmt_get_app_errors`, `fmt_get_screenshots`,
 /// `fmt_get_view_details`, `fmt_inspect_widget_at_point`,
-/// `fmt_capture_ui_snapshot`) is registered by `mcp_capability_core` and
+/// `fmt_capture_ui_snapshot`) is registered by `flutter_mcp_toolkit_capability_core` and
 /// does not pass through this class. This handler exists only to back the
 /// `addResource(...)` registrations the kernel does not yet publish.
 class ResourceHandler {

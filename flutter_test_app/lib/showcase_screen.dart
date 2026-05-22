@@ -232,45 +232,63 @@ class _TapSection extends StatelessWidget {
       hint:
           'Try: semantic_snapshot → tap_widget(ref). '
           'The tap dispatches through SemanticsAction.tap.',
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: <Widget>[
-          Semantics(
-            identifier: 'counter_demo_icon',
-            child: const SizedBox(
-              width: 44,
-              height: 44,
-              child: Icon(Icons.add_circle_outline, color: _kAccent, size: 28),
-            ),
-          ),
-          const SizedBox(width: 24),
-          Semantics(
-            identifier: 'stateful_counter_increment_button',
-            button: true,
-            child: TextButton(
-              onPressed: state.increment,
-              style: TextButton.styleFrom(
-                foregroundColor: _kAccent,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 12,
+      child: Semantics(
+        explicitChildNodes: true,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: <Widget>[
+            Semantics(
+              identifier: 'counter_demo_icon',
+              child: const SizedBox(
+                width: 44,
+                height: 44,
+                child: Icon(
+                  Icons.add_circle_outline,
+                  color: _kAccent,
+                  size: 28,
                 ),
-                textStyle: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                ),
-                shape: const StadiumBorder(side: BorderSide(color: _kAccent)),
               ),
-              child: const Text('Increment'),
             ),
-          ),
-          const Spacer(),
-          Semantics(
-            identifier: 'counter_value_display',
-            label: 'Counter value: ${state.counter}',
-            child: Text('${state.counter}', style: _kValue),
-          ),
-        ],
+            const SizedBox(width: 24),
+            Semantics(
+              identifier: 'stateful_counter_increment_button',
+              button: true,
+              onTap: state.increment,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: state.increment,
+                  customBorder: const StadiumBorder(),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: _kAccent),
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: const Text(
+                      'Increment',
+                      style: TextStyle(
+                        color: _kAccent,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const Spacer(),
+            Semantics(
+              identifier: 'counter_value_display',
+              label: 'Counter value',
+              value: '${state.counter}',
+              child: Text('${state.counter}', style: _kValue),
+            ),
+          ],
+        ),
       ),
     );
   }

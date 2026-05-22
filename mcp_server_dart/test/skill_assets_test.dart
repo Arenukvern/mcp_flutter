@@ -45,6 +45,11 @@ void main() {
       );
     });
 
+    test('hyperframes-video is not in default init bundle', () {
+      final ids = SkillAssets.skills.map((final s) => s.id).toSet();
+      expect(ids.contains('hyperframes-video'), isFalse);
+    });
+
     test('plugin manifests are bundled', () {
       expect(SkillAssets.cursorPluginManifest, contains('flutter-mcp-toolkit'));
       expect(SkillAssets.codexPluginManifest, contains('flutter-mcp-toolkit'));

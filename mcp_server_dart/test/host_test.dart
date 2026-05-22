@@ -1,6 +1,6 @@
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/host.dart';
-import 'package:mcp_capability_kernel/mcp_capability_kernel.dart';
+import 'package:flutter_mcp_toolkit_capability_kernel/flutter_mcp_toolkit_capability_kernel.dart';
 import 'package:test/test.dart';
 
 // Capability that captures the CapabilityConfig it sees during register().

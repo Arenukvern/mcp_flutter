@@ -4,7 +4,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .maestro
-.flutter_mcp
+/.flutter_mcp
 # Build output
 /build/
 dist/
@@ -12,7 +12,7 @@ dist/
 .codex/engineering-loop
 .codex/specs
 .codex/runtime
-
+.dart_tool
 
 # IDE
 .idea/
@@ -20,7 +20,6 @@ dist/
 *.swo
 .mcp_screenshots
 .maestro
-.flutter_mcp
 mcp_server_dart/.mcp_screenshots
 plugin/assets/.capture/
 # OS
@@ -37,3 +36,7 @@ mcp_server_dart/flutter_inspector_mcp
 # Agentic Executables project hub (regenerate with scripts/ae_live_edit_know.sh)
 .ae_hub/
 .gitnexus
+
+# Sibling repos (not part of this tree — clone separately)
+# ../flutter_harness
+# ../flutter_mcp_video

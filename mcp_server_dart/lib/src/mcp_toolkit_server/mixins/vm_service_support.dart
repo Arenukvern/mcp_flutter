@@ -58,6 +58,8 @@ base mixin VMServiceSupport on BaseMCPToolkitServer {
           dumpsSupported: configuration.dumpsSupported,
           dynamicRegistrySupported: configuration.dynamicRegistrySupported,
           saveImagesToFiles: configuration.saveImagesToFiles,
+          flutterProjectDir: configuration.flutterProjectDir,
+          flutterDevice: configuration.flutterDevice,
         ),
       );
 

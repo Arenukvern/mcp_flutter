@@ -9,9 +9,9 @@ import 'dart:io';
 
 import 'package:dart_mcp/server.dart' as dart_mcp;
 import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/host.dart';
-import 'package:mcp_capability_core/mcp_capability_core.dart';
-import 'package:mcp_capability_kernel/mcp_capability_kernel.dart';
-import 'package:mcp_capability_kernel/testing.dart';
+import 'package:flutter_mcp_toolkit_capability_core/flutter_mcp_toolkit_capability_core.dart';
+import 'package:flutter_mcp_toolkit_capability_kernel/flutter_mcp_toolkit_capability_kernel.dart';
+import 'package:flutter_mcp_toolkit_capability_kernel/testing.dart';
 import 'package:test/test.dart';
 
 void main() {

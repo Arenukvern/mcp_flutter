@@ -14,7 +14,7 @@ import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/mixins/flutter
 import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/mixins/vm_service_support.dart';
 import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/server_instructions.dart';
 import 'package:flutter_mcp_toolkit_server/src/runtime_version.dart';
-import 'package:mcp_capability_kernel/mcp_capability_kernel.dart';
+import 'package:flutter_mcp_toolkit_capability_kernel/flutter_mcp_toolkit_capability_kernel.dart';
 import 'package:stream_channel/stream_channel.dart';
 
 // Keep this prompt concise; detailed troubleshooting and control workflows live

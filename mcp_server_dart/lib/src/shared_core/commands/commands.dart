@@ -3,10 +3,10 @@
 
 // ignore_for_file: combinators_ordering
 
-// CoreCommand sealed hierarchy re-exported from mcp_shared_core.
+// CoreCommand sealed hierarchy re-exported from flutter_mcp_toolkit_core.
 // CommandCatalog and CommandSpec remain server-only (they build input schemas
 // and dispatch logic, not pure value types).
-export 'package:mcp_shared_core/mcp_shared_core.dart'
+export 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart'
     show
         // Core sealed class + factory typedef
         CoreCommand,

@@ -10,7 +10,7 @@ import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/mixins/vm_serv
 
 /// Mix this in to any MCPServer to back the Flutter Inspector resource
 /// surface (`visual://localhost/...`). All MCP **tools** are published by
-/// `mcp_capability_core` via the capability kernel — this mixin no longer
+/// `flutter_mcp_toolkit_capability_core` via the capability kernel — this mixin no longer
 /// registers any tool. It exists solely to keep the resource registrations
 /// alive until the kernel grows resource publication.
 base mixin FlutterInspector

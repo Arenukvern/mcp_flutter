@@ -1,15 +1,15 @@
 // Copyright (c) 2025, Flutter Inspector MCP Server authors.
 // Licensed under the MIT License.
 
-// Pure connection-override parsing re-exported from mcp_shared_core.
+// Pure connection-override parsing re-exported from flutter_mcp_toolkit_core.
 // Transport-coupled helpers (ObjectSchema, applyConnectionOverride) stay here.
 
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/command_executor.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
-import 'package:mcp_shared_core/mcp_shared_core.dart';
+import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 
-export 'package:mcp_shared_core/mcp_shared_core.dart'
+export 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart'
     show
         ConnectionArgsResolution,
         connectionOverrideJsonSchema,
@@ -18,7 +18,7 @@ export 'package:mcp_shared_core/mcp_shared_core.dart'
         withOptionalConnectionOverrideSchema;
 
 /// dart_mcp ObjectSchema for the connection override field.
-/// Uses [ObjectSchema] (transport type) so stays here, not in mcp_shared_core.
+/// Uses [ObjectSchema] (transport type) so stays here, not in flutter_mcp_toolkit_core.
 final ObjectSchema connectionObjectSchema = ObjectSchema(
   properties: {
     'targetId': Schema.string(

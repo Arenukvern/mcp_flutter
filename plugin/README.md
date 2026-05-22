@@ -32,7 +32,7 @@ AI agent
 
 All paths materialize from the embedded skill bundle generated from this directory (`make sync-skills`).
 
-## Bundled skills (8)
+## Bundled skills (11)
 
 | Skill | Purpose |
 |-------|---------|
@@ -44,12 +44,18 @@ All paths materialize from the embedded skill bundle generated from this directo
 | **`flutter-mcp-toolkit-custom-tools`** | **Register dynamic MCP tools/resources in the app** |
 | `flutter-mcp` | Golden-path runtime loop |
 | `flutter-mcp-cli-runtime-validation` | CLI `validate-runtime` |
+| `flutter-mcp-toolkit-repo-maintainer` | Release / repo maintenance |
+| **`flutter-mcp-semantic-test`** | **HS lint / run / Maestro adapter** |
+| **`flutter-mcp-capture`** | **HS capture bundles + hyperframes-v1 emit stub** |
+
+**Optional (not in default init):** `hyperframes-video` — promo/HyperFrames pipeline; gather tools in [`tools/frame-gather/`](../../tools/frame-gather/) — [skill](skills/hyperframes-video/SKILL.md)
 
 Store listing copy: [docs/ai_agents/marketplace_copy.yaml](../docs/ai_agents/marketplace_copy.yaml).
 
 ## Layout
 
 - `.cursor-plugin/plugin.json` — Cursor plugin manifest
+- `hyperframes-cursor-plugin/plugin.json` — optional promo-only Cursor plugin (still requires `heygen-com/hyperframes` skills)
 - `.codex-plugin/plugin.json` — Codex plugin manifest (+ `interface` for directory)
 - `.claude-plugin/plugin.json` — Claude Code plugin manifest
 - `mcp.json` — MCP server (`${FLUTTER_MCP_BIN:-flutter-mcp-toolkit-server}`, `--dynamics`)

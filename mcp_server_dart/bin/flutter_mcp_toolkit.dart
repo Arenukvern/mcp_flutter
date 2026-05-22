@@ -45,7 +45,6 @@ Future<void> main(final List<String> args) async {
   if (parsed.command?.name == 'codegen-init') {
     io.exit(await _runCodegenInitSubcommand(parsed.command!));
   }
-
   final logLevel = _parseLogLevel(parsed.option(_logLevel));
   final logger = _buildLogger(logLevel);
 
@@ -1467,9 +1466,7 @@ String? _resolveValidateRuntimeTarget({
 }) {
   final fromCommand = _nonEmptyOption(command.option('target'));
   final fromGlobal = _nonEmptyOption(parsed.option(_vmServiceUri));
-  if (fromCommand != null &&
-      fromGlobal != null &&
-      fromCommand != fromGlobal) {
+  if (fromCommand != null && fromGlobal != null && fromCommand != fromGlobal) {
     io.stderr.writeln(
       '[WARN] flutter-mcp-toolkit: --target and --vm-service-uri differ; '
       'using --target.',

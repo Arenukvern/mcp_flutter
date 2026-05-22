@@ -5,7 +5,7 @@
 import 'dart:async';
 
 import 'package:dart_mcp/server.dart' as dart_mcp;
-import 'package:mcp_capability_kernel/mcp_capability_kernel.dart';
+import 'package:flutter_mcp_toolkit_capability_kernel/flutter_mcp_toolkit_capability_kernel.dart';
 
 /// Bridge contract used by [McpHost] to publish prefixed capability tools to
 /// `dart_mcp`'s [dart_mcp.ToolsSupport]. Production wiring passes the

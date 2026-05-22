@@ -5,8 +5,8 @@
 import 'package:flutter_mcp_toolkit_server/src/shared_core/command_executor.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/vm_connections/connection_override.dart'
     as core_connection_override;
-import 'package:mcp_capability_kernel/mcp_capability_kernel.dart';
-import 'package:mcp_shared_core/mcp_shared_core.dart';
+import 'package:flutter_mcp_toolkit_capability_kernel/flutter_mcp_toolkit_capability_kernel.dart';
+import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 
 /// Server-side [CommandRunner] implementation that delegates to
 /// [DefaultCoreCommandExecutor].

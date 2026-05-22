@@ -1,9 +1,0 @@
-url: http://127.0.0.1:3000
----
-- launchApp
-- assertVisible: "MCP Toolkit Demo"
-- tapOn:
-    text: "Register New Tool"
-    retryTapIfNoChange: true
-- assertVisible:
-    text: "Tools created: 1"

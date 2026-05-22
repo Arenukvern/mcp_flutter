@@ -192,14 +192,14 @@ updates `PATH` for you on first run.
 
 #### Capability kernel
 
-- `mcp_capability_kernel/` — pure-Dart contracts: `Capability`,
+- `flutter_mcp_toolkit_capability_kernel/` — pure-Dart contracts: `Capability`,
   `CapabilityContext`, `HostService`, `CommandRunner`, prefix validators,
   and a testing library shipping `FakeCommandRunner` /
   `FakeCapabilityContext`.
-- `mcp_capability_core/` — the bundled `fmt` capability. Registers all 27
+- `flutter_mcp_toolkit_capability_core/` — the bundled `fmt` capability. Registers all 27
   Playwright-style tools plus 4 `--dumps` tools when
   `dumps_supported=true`. No Flutter dependency on the server side.
-- `mcp_shared_core/` — pure-Dart command hierarchy
+- `flutter_mcp_toolkit_core/` — pure-Dart command hierarchy
   (`CoreCommand`, `CoreResult.toErrorEnvelopeJson`) and value types
   shared between server, CLI, and capability core.
 - `McpHost` registry on the server applies the `<capabilityId>_` prefix

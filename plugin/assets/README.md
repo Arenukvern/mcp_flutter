@@ -4,6 +4,8 @@
 |------|------|---------|
 | `icon.png` | 256×256 | Codex `interface.composerIcon` |
 | `logo.png` | 512×512 | Codex `interface.logo`, Cursor listing |
+| `mascot_collaborative_weaver.png` | — | Transparent bird mascot (promo journey lanes) |
+| `original_logo.png` | — | Full logo artwork (promo cold-open / CTA) |
 | `screenshot-1.png` | 1280×800 | Live `flutter_test_app` capture (`validate-runtime`, flutter_layer) |
 | `screenshot-2.png` | 1280×800 | Live `fmt_list_client_tools_and_resources` output (21 tools) |
 
@@ -18,6 +20,16 @@ dart run bin/flutter_mcp_toolkit.dart exec \
 ```
 
 Icons: derived from `original_logo.png` via `sips -z` (256 / 512). Keep `original_logo.png` as source of truth. The original logo was generated with Gemini (nano-banana).
+
+**Promo sync** (`assets/brand/` are symlinks — edit files in `plugin/assets/` only):
+
+```bash
+# Mascot needs transparency for promo (source PNG may be RGB-only):
+npx hyperframes remove-background plugin/assets/mascot_collaborative_weaver.png \
+  -o /tmp/mascot-transparent.png
+mv /tmp/mascot-transparent.png plugin/assets/mascot_collaborative_weaver.png
+# logo-full.png symlink → original_logo.png — update original_logo.png in place
+```
 
 ## How to capture screenshots
 

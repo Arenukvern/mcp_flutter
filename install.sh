@@ -12,7 +12,7 @@ if [[ -n "$ROOT_DIR" ]]; then
     DEFAULT_VERSION="$(tr -d '[:space:]' < "$ROOT_DIR/VERSION" 2>/dev/null || true)"
   fi
   if [[ -z "$DEFAULT_VERSION" ]]; then
-    VERSION_SOURCE_FILE="$ROOT_DIR/mcp_shared_core/lib/src/runtime_version.dart"
+    VERSION_SOURCE_FILE="$ROOT_DIR/flutter_mcp_toolkit_core/lib/src/runtime_version.dart"
     if [[ -f "$VERSION_SOURCE_FILE" ]]; then
       DEFAULT_VERSION="$(sed -nE "s/^const kFlutterMcpVersion = '([^']+)';.*$/\1/p" "$VERSION_SOURCE_FILE" 2>/dev/null || true)"
     fi

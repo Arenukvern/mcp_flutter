@@ -5,7 +5,7 @@
 > `superpowers:writing-plans` directly. Branch off whichever line is current
 > at resume.
 >
-> **Why deferred:** the audit ([ADR 0002](../docs/decisions/0002_v3_scope_and_consolidation_deferrals.mdx))
+> **Why deferred:** the audit ([ADR 0002](../decisions/0002_v3_scope_and_consolidation_deferrals.mdx))
 > kept v3.0.0 to Playwright-parity P0–P2 + the capability kernel. Network
 > introspection didn't make the cut; nothing about the design has changed.
 

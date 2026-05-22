@@ -51,6 +51,14 @@ mixin GestureInteractionService {
       if (owner != null) {
         owner.performAction(node.id, SemanticsAction.tap);
         await _waitFrame();
+        // Desktop: performAction alone often skips Material button callbacks.
+        if (!kIsWeb) {
+          final center = SemanticSnapshotService.resolveCenter(ref);
+          if (center != null) {
+            await _dispatchTap(center);
+            await _waitFrame();
+          }
+        }
         return <String, Object?>{
           'success': true,
           'ref': ref,
@@ -600,11 +608,21 @@ mixin GestureInteractionService {
     final binding = GestureBinding.instance;
     final pointer = _nextPointerId++;
     binding.handlePointerEvent(
-      PointerDownEvent(pointer: pointer, position: position, timeStamp: _now()),
+      PointerDownEvent(
+        pointer: pointer,
+        position: position,
+        kind: PointerDeviceKind.mouse,
+        timeStamp: _now(),
+      ),
     );
     await Future<void>.delayed(const Duration(milliseconds: 50));
     binding.handlePointerEvent(
-      PointerUpEvent(pointer: pointer, position: position, timeStamp: _now()),
+      PointerUpEvent(
+        pointer: pointer,
+        position: position,
+        kind: PointerDeviceKind.mouse,
+        timeStamp: _now(),
+      ),
     );
     await _waitFrame();
   }
@@ -613,12 +631,22 @@ mixin GestureInteractionService {
     final binding = GestureBinding.instance;
     final pointer = _nextPointerId++;
     binding.handlePointerEvent(
-      PointerDownEvent(pointer: pointer, position: position, timeStamp: _now()),
+      PointerDownEvent(
+        pointer: pointer,
+        position: position,
+        kind: PointerDeviceKind.mouse,
+        timeStamp: _now(),
+      ),
     );
     // Hold well past kLongPressTimeout (500 ms).
     await Future<void>.delayed(const Duration(milliseconds: 600));
     binding.handlePointerEvent(
-      PointerUpEvent(pointer: pointer, position: position, timeStamp: _now()),
+      PointerUpEvent(
+        pointer: pointer,
+        position: position,
+        kind: PointerDeviceKind.mouse,
+        timeStamp: _now(),
+      ),
     );
     await _waitFrame();
   }

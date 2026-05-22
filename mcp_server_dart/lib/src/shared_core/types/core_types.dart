@@ -3,8 +3,8 @@
 
 import 'package:dart_mcp/server.dart';
 
-// CoreRuntimeConfiguration re-exported from mcp_shared_core.
-export 'package:mcp_shared_core/mcp_shared_core.dart'
+// CoreRuntimeConfiguration re-exported from flutter_mcp_toolkit_core.
+export 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart'
     show CoreRuntimeConfiguration;
 
 /// Logging callback used by the shared core module.

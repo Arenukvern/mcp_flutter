@@ -39,8 +39,8 @@
           "path": ".claude-plugin/marketplace.json",
           "jsonpath": "$.plugins[0].version"
         },
-        "mcp_shared_core/lib/src/runtime_version.dart",
-        "mcp_capability_core/lib/src/fmt_capability.dart",
+        "flutter_mcp_toolkit_core/lib/src/runtime_version.dart",
+        "flutter_mcp_toolkit_capability_core/lib/src/fmt_capability.dart",
         "mcp_server_dart/pubspec.yaml",
         "mcp_toolkit/pubspec.yaml"
       ]

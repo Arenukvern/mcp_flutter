@@ -27,8 +27,8 @@ release-please on `main`; use manual steps only when the Release PR path is bloc
 |------|--------|
 | [VERSION](https://github.com/Arenukvern/mcp_flutter/blob/main/VERSION) | repo pin |
 | [plugin/EXPECTED_SERVER_VERSION](https://github.com/Arenukvern/mcp_flutter/blob/main/plugin/EXPECTED_SERVER_VERSION) | installer pin |
-| [mcp_shared_core/lib/src/runtime_version.dart](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_shared_core/lib/src/runtime_version.dart) | `kFlutterMcpVersion` (`x-release-please-version`) |
-| [mcp_capability_core/lib/src/fmt_capability.dart](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_capability_core/lib/src/fmt_capability.dart) | `version` getter |
+| [flutter_mcp_toolkit_core/lib/src/runtime_version.dart](https://github.com/Arenukvern/mcp_flutter/blob/main/flutter_mcp_toolkit_core/lib/src/runtime_version.dart) | `kFlutterMcpVersion` (`x-release-please-version`) |
+| [flutter_mcp_toolkit_capability_core/lib/src/fmt_capability.dart](https://github.com/Arenukvern/mcp_flutter/blob/main/flutter_mcp_toolkit_capability_core/lib/src/fmt_capability.dart) | `version` getter |
 | [mcp_server_dart/pubspec.yaml](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_server_dart/pubspec.yaml) | `version:` |
 | [mcp_toolkit/pubspec.yaml](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_toolkit/pubspec.yaml) | `version:` |
 | [plugin/.cursor-plugin/plugin.json](https://github.com/Arenukvern/mcp_flutter/blob/main/plugin/.cursor-plugin/plugin.json) | `version` |
@@ -39,6 +39,8 @@ release-please on `main`; use manual steps only when the Release PR path is bloc
 | [mcp_server_dart/lib/src/skill_assets.g.dart](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_server_dart/lib/src/skill_assets.g.dart) | **generated** — embeds `plugin/.cursor-plugin/plugin.json`, `plugin/.codex-plugin/plugin.json`, `plugin/mcp.json`, and all `plugin/skills/*/SKILL.md` |
 
 After any version bump in `plugin/*-plugin/plugin.json` or edit under `plugin/skills/`: run `make sync-skills`, then `make check-contracts` (includes `check_version_sync.sh` and `check_skill_assets_drift.sh`).
+
+**Harness / video (separate repos):** [flutter_harness](https://github.com/Arenukvern/flutter_harness), [flutter_mcp_video](https://github.com/Arenukvern/flutter_mcp_video) — not maintained in this plugin tree. Three-repo layout: [flutter_harness/docs/RELATED_REPOS.md](https://github.com/Arenukvern/flutter_harness/blob/main/docs/RELATED_REPOS.md).
 
 ## Changelog workflow
 
@@ -107,6 +109,12 @@ Avoid duplicating install tables in README — link to overview.
 - Canonical skills: `plugin/skills/` (repo root `skills/` → symlink for `npx skills`).
 - New bundled skill: add `plugin/skills/<id>/SKILL.md`, append `id` to `expectedSkillIds` in [build_skill_assets.dart](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_server_dart/tool/build_skill_assets.dart), run `make sync-skills`.
 - Local Cursor copy: `.cursor/skills/<id>/` may symlink to `plugin/skills/<id>/`.
+
+### HyperFrames promo (flutter_mcp_video repo)
+
+Video skill and projects live in **[flutter_mcp_video](https://github.com/Arenukvern/flutter_mcp_video)** (`skills/hyperframes-video/`, `projects/video-projects/<id>/`). Not bundled in toolkit `make sync-skills`.
+
+When shipping a promo there: edit the video repo; run `bash tool/check_doc_paths.sh` in that repo before merge. Toolkit repo only hosts shared brand assets under `plugin/assets/` (symlink targets for v7-weaver).
 
 ## Pre-merge checklist
 

@@ -19,7 +19,8 @@ check-contracts:
 	bash tool/contracts/check_version_sync.sh && \
 	bash tool/contracts/check_skill_assets_drift.sh && \
 	bash tool/contracts/check_changelog_markdown.sh && \
-	bash tool/contracts/check_tool_prefix.sh
+	bash tool/contracts/check_tool_prefix.sh && \
+	bash tool/contracts/check_repo_split_paths.sh
 
 .PHONY: release-artifacts
 release-artifacts:
@@ -36,3 +37,13 @@ showcase:
 sync-skills:
 	dart run mcp_server_dart/tool/build_skill_assets.dart
 	@echo "OK: skill assets regenerated"
+
+.PHONY: check-harness
+check-harness:
+	@test -d ../flutter_harness || (echo "Clone flutter_harness next to mcp_flutter" && exit 1)
+	FLUTTER_MCP_TOOLKIT_ROOT="$(CURDIR)" bash ../flutter_harness/tool/harness/check_hs_fixtures.sh
+
+.PHONY: test-harness
+test-harness:
+	@test -d ../flutter_harness || (echo "Clone flutter_harness next to mcp_flutter" && exit 1)
+	cd ../flutter_harness && dart test

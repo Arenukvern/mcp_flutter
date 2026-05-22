@@ -1,0 +1,7 @@
+.dart_tool/
+build/
+doc/api/
+*.iml
+.idea/
+.vscode/
+pubspec_overrides.yaml

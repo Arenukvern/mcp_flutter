@@ -1,6 +1,6 @@
 # Live-edit re-integration — plan
 
-> **Status:** deferred. The capability kernel shipped in v3.0.0 ([ADR 0001](../docs/decisions/0001_capability_kernel_and_tool_prefix.mdx))
+> **Status:** deferred. The capability kernel shipped in v3.0.0 ([ADR 0001](../decisions/0001_capability_kernel_and_tool_prefix.mdx))
 > as the carrier; live-edit itself was excised pending this re-integration.
 > Resume by feeding this file into `superpowers:writing-plans`.
 >
@@ -61,7 +61,7 @@ else lives where the data lives — in the running Flutter app.
 - `live_edit_models` extraction (originally T3): the package has to be reborn
   before `mcp_capability_live_edit` can re-import it.
 - `DynamicRegistryBridge` host service interface — designed but not yet
-  implemented in the kernel ([ADR 0001](../docs/decisions/0001_capability_kernel_and_tool_prefix.mdx)
+  implemented in the kernel ([ADR 0001](../decisions/0001_capability_kernel_and_tool_prefix.mdx)
   notes it as planned alongside this work). Required for the dynamic-registry
   surface to span both `core` and `live_edit`.
 
@@ -69,7 +69,7 @@ else lives where the data lives — in the running Flutter app.
 All tools surface as `live_edit_<name>` (e.g. `live_edit_set_overlay`,
 `live_edit_get_tree`). The kernel applies the prefix; the capability passes
 bare names. No deprecation aliases for the pre-v3 unprefixed names — see
-[ADR 0001](../docs/decisions/0001_capability_kernel_and_tool_prefix.mdx)
+[ADR 0001](../decisions/0001_capability_kernel_and_tool_prefix.mdx)
 on hard cuts.
 
 ---

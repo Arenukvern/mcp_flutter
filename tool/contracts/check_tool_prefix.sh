@@ -62,8 +62,8 @@ SHIPPED_DOCS=(
   "$ROOT_DIR/README.md"
   "$ROOT_DIR/ARCHITECTURE.md"
   "$ROOT_DIR/docs/start_here/migration_v2_to_v3.mdx"
-  "$ROOT_DIR/docs/decisions/0001_capability_kernel_and_tool_prefix.mdx"
-  "$ROOT_DIR/docs/decisions/0002_v3_scope_and_consolidation_deferrals.mdx"
+  "$ROOT_DIR/decisions/0001_capability_kernel_and_tool_prefix.mdx"
+  "$ROOT_DIR/decisions/0002_v3_scope_and_consolidation_deferrals.mdx"
 )
 
 # Use ripgrep when available, fall back to grep -E.

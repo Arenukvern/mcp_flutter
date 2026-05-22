@@ -18,6 +18,7 @@ const expectedSkillIds = [
   'flutter-mcp',
   'flutter-mcp-cli-runtime-validation',
   'flutter-mcp-toolkit-repo-maintainer',
+  // Harness + video skills live in flutter_harness/ and flutter_mcp_video/ (see docs/NORTH_STAR.md)
 ];
 
 void main() {

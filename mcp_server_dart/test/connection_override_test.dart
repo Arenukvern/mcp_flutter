@@ -123,7 +123,7 @@ void main() {
 
   group('connection tool schema', () {
     // The vm/resource tool schemas previously asserted here now live in
-    // mcp_capability_core's per-tool tests (fmt_get_vm,
+    // flutter_mcp_toolkit_capability_core's per-tool tests (fmt_get_vm,
     // fmt_get_app_errors, etc.) and are pinned by the locked surface in
     // tool/contracts/expected_tool_surface.txt. The legacy handler classes
     // were deleted in T9.

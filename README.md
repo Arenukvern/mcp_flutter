@@ -37,6 +37,17 @@ flutter run --debug
 
 That's it. Your AI agent can now inspect and drive the running app — and your app can expose **custom MCP tools at runtime** (see [Dynamic Tools Registration](#dynamic-tools-registration) below).
 
+## Related repositories
+
+This repo is **Flutter MCP Toolkit only** (MCP server, `fmt_*`, dynamic tools, plugin skills).
+
+| Repo | Purpose |
+|------|---------|
+| **[flutter_harness](https://github.com/Arenukvern/flutter_harness)** | HS scripts, Maestro adapters, `flutter-harness` CLI |
+| **[flutter_mcp_video](https://github.com/Arenukvern/flutter_mcp_video)** | HyperFrames promo / video projects (optional) |
+
+See [flutter_harness/docs/RELATED_REPOS.md](https://github.com/Arenukvern/flutter_harness/blob/main/docs/RELATED_REPOS.md) (three-repo layout).
+
 ## Install from marketplaces
 
 | Platform | Command / link |
