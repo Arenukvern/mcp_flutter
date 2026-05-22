@@ -979,17 +979,27 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       }
 
       final isolateObj = await vmService.getIsolate(isolate!.id!);
-      final rootLib = isolateObj.rootLib;
-      if (rootLib?.id == null) {
+      final libraryId = await _resolveEvaluationLibraryId(
+        vmService: vmService,
+        isolate: isolateObj,
+        requestedLibraryUri: command.libraryUri,
+      );
+      if (libraryId == null) {
         return CoreResult.failure(
           code: CoreErrorCode.evaluateExpressionFailed,
-          message: 'Could not find root library for evaluation',
+          message: command.libraryUri == null
+              ? 'Could not find root library for evaluation'
+              : 'Could not find library for URI: ${command.libraryUri}',
+          details: <String, Object?>{
+            'errorKind': 'library_not_found',
+            if (command.libraryUri != null) 'libraryUri': command.libraryUri,
+          },
         );
       }
 
       final result = await vmService.evaluate(
         isolate.id!,
-        rootLib!.id!,
+        libraryId,
         command.expression,
       );
 
@@ -997,6 +1007,10 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
         return CoreResult.failure(
           code: CoreErrorCode.evaluateExpressionFailed,
           message: 'Expression evaluation error: ${result.message}',
+          details: <String, Object?>{
+            'errorKind': 'compilation',
+            'vmMessage': result.message,
+          },
         );
       }
 
@@ -1014,8 +1028,35 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       return CoreResult.failure(
         code: CoreErrorCode.evaluateExpressionFailed,
         message: 'Failed to evaluate expression: $e',
+        details: const <String, Object?>{'errorKind': 'transport'},
       );
     }
+  }
+
+  Future<String?> _resolveEvaluationLibraryId({
+    required final VmService vmService,
+    required final Isolate isolate,
+    required final String? requestedLibraryUri,
+  }) async {
+    final normalizedUri = requestedLibraryUri?.trim();
+    if (normalizedUri == null || normalizedUri.isEmpty) {
+      return isolate.rootLib?.id;
+    }
+
+    final libraries = isolate.libraries ?? const <LibraryRef>[];
+    for (final library in libraries) {
+      if (library.uri == normalizedUri) {
+        return library.id;
+      }
+    }
+
+    final loaded = await vmService.getIsolate(isolate.id!);
+    for (final library in loaded.libraries ?? const <LibraryRef>[]) {
+      if (library.uri == normalizedUri) {
+        return library.id;
+      }
+    }
+    return null;
   }
 
   Future<CoreResult> _getRecentLogs(final GetRecentLogsCommand command) async {
@@ -1567,6 +1608,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     final int durationMs,
     final String commandName,
   ) {
+    final recovery = connectionContext.takePendingRecovery();
     final nextMeta = <String, Object?>{
       ...result.meta,
       'schemaVersion': kCoreEnvelopeSchemaVersion,
@@ -1576,6 +1618,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       'endpoint': connectionContext.activeEndpoint?.display,
       'mode': connectionContext.lastMode.name,
       'selectionDiagnostics': connectionContext.lastSelectionDiagnostics,
+      'recovery': ?recovery,
     };
     return result.withMeta(nextMeta);
   }

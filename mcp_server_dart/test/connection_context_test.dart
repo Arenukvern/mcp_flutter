@@ -65,6 +65,30 @@ void main() {
     },
   );
 
+  test('ensureConnectedWithPolicy enriches vm_not_connected details', () async {
+    final context = ConnectionContext(
+      defaultHost: 'localhost',
+      defaultPort: 8181,
+      logger: (final level, final message, {final logger = 'test'}) {},
+      discoverPorts: () async => <int>[],
+      discoverMachineTargets: () async => <FlutterMachineDiscoveryTarget>[],
+      initialStickyEndpointUri: 'ws://127.0.0.1:8181/old-token/ws',
+    );
+
+    final ensure = await context.ensureConnectedWithPolicy(
+      timeout: const Duration(milliseconds: 50),
+    );
+    expect(ensure.connected, isFalse);
+    expect(ensure.code, equals('vm_not_connected'));
+
+    final details = ensure.details! as Map<String, Object?>;
+    expect(
+      details['stickyEndpoint'],
+      equals('ws://127.0.0.1:8181/old-token/ws'),
+    );
+    expect(details['suggestedActions'], isA<List>());
+  });
+
   test('discoverTargets drops non-Flutter port-scan candidates', () async {
     final context = ConnectionContext(
       defaultHost: 'localhost',

@@ -554,8 +554,8 @@ extension type OnWaitForEntry._(MCPCallEntry entry) implements MCPCallEntry {
       definition: MCPToolDefinition(
         name: 'wait_for',
         description:
-            'Wait for a UI predicate (text/noText/time/stable) and return a '
-            'fresh semantic snapshot. Default timeout 5000ms, max 30000ms.',
+            'Wait for a UI predicate (text/noText/time/stable/noError) and '
+            'return a fresh semantic snapshot. Default timeout 5000ms, max 30000ms.',
         inputSchema: ObjectSchema(
           properties: {
             'predicate': ObjectSchema(),

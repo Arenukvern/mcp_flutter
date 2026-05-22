@@ -157,21 +157,37 @@ final class EnsureConnectionResult {
     this.code,
     this.message,
     this.details,
+    this.recovery,
   });
 
-  const EnsureConnectionResult.success()
-    : this._(connected: true, code: null, message: null, details: null);
+  const EnsureConnectionResult.success({final Map<String, Object?>? recovery})
+    : this._(
+        connected: true,
+        code: null,
+        message: null,
+        details: null,
+        recovery: recovery,
+      );
 
   const EnsureConnectionResult.failure({
     required final String code,
     required final String message,
     final Object? details,
-  }) : this._(connected: false, code: code, message: message, details: details);
+  }) : this._(
+         connected: false,
+         code: code,
+         message: message,
+         details: details,
+         recovery: null,
+       );
 
   final bool connected;
   final String? code;
   final String? message;
   final Object? details;
+
+  /// Set when [ensureConnectedWithPolicy] re-attached after a dropped session.
+  final Map<String, Object?>? recovery;
 }
 
 typedef CoreFlutterTargetProbe =
@@ -224,6 +240,7 @@ final class ConnectionContext {
 
   bool _wasConnected = false;
   bool _disconnectedSinceLastConnect = false;
+  Map<String, Object?>? _pendingRecovery;
 
   /// Single-flight gate shared by [hotReload] and [hotRestart].
   ///
@@ -278,6 +295,13 @@ final class ConnectionContext {
   Map<String, Object?> get lastDiscoveryDiagnostics =>
       _lastDiscoveryDiagnostics;
 
+  /// Consumes and clears recovery metadata from the last successful re-attach.
+  Map<String, Object?>? takePendingRecovery() {
+    final recovery = _pendingRecovery;
+    _pendingRecovery = null;
+    return recovery;
+  }
+
   void setStickyEndpointFromUri(final String uri) {
     _stickyEndpoint = CoreEndpoint.fromUri(Uri.parse(uri));
   }
@@ -318,6 +342,9 @@ final class ConnectionContext {
 
     final shouldNotifyReconnect =
         _wasConnected && _disconnectedSinceLastConnect;
+    final previousEndpoint = shouldNotifyReconnect
+        ? (_activeEndpoint?.display ?? _stickyEndpoint?.display)
+        : null;
 
     await disconnect();
     await _connectToEndpoint(endpoint, timeout: timeout);
@@ -330,6 +357,11 @@ final class ConnectionContext {
     _disconnectedSinceLastConnect = false;
 
     if (shouldNotifyReconnect) {
+      _pendingRecovery = <String, Object?>{
+        'reattachedTo': endpoint.display,
+        'previousEndpoint': ?previousEndpoint,
+        'decision': diagnostics['decision'],
+      };
       onReconnected?.call();
     }
 
@@ -337,6 +369,7 @@ final class ConnectionContext {
       'connected': true,
       'reusedConnection': false,
       'endpoint': endpoint.display,
+      if (shouldNotifyReconnect) 'recovery': _pendingRecovery,
       ...diagnostics,
     };
   }
@@ -356,21 +389,28 @@ final class ConnectionContext {
     }
 
     try {
-      await connect(timeout: timeout);
-      return const EnsureConnectionResult.success();
+      final connectResult = await connect(timeout: timeout);
+      final recovery = connectResult['recovery'];
+      return EnsureConnectionResult.success(
+        recovery: recovery is Map<String, Object?>
+            ? recovery
+            : recovery is Map
+            ? recovery.cast<String, Object?>()
+            : _pendingRecovery,
+      );
     } on CoreConnectionException catch (e) {
       if (e.reason == CoreConnectionFailureReason.multipleTargets) {
         return EnsureConnectionResult.failure(
           code: CoreErrorCode.connectionSelectionRequired,
           message: e.message,
-          details: e.details,
+          details: _enrichConnectionFailureDetails(e.details),
         );
       }
 
       return EnsureConnectionResult.failure(
         code: CoreErrorCode.vmNotConnected,
         message: 'VM service not connected',
-        details: e.details,
+        details: _enrichConnectionFailureDetails(e.details),
       );
     } catch (e) {
       logger(
@@ -378,11 +418,31 @@ final class ConnectionContext {
         'Failed to ensure connection: $e',
         logger: 'ConnectionContext',
       );
-      return const EnsureConnectionResult.failure(
+      return EnsureConnectionResult.failure(
         code: CoreErrorCode.vmNotConnected,
         message: 'VM service not connected',
+        details: _enrichConnectionFailureDetails(null),
       );
     }
+  }
+
+  Map<String, Object?> _enrichConnectionFailureDetails(final Object? details) {
+    final base = switch (details) {
+      final Map<String, Object?> value => Map<String, Object?>.from(value),
+      final Map value => value.cast<String, Object?>(),
+      _ => <String, Object?>{},
+    };
+    return {
+      ...base,
+      'stickyEndpoint': _stickyEndpoint?.display,
+      'discovery': _lastDiscoveryDiagnostics,
+      'suggestedActions': <String>[
+        'Run discover_debug_apps and pass connection.targetId explicitly.',
+        'After hot restart, use the new app.debugPort.wsUri (token changes).',
+        if (discoverMachineTargets != null)
+          'Pass --flutter-project-dir so machine discovery can find the app.',
+      ],
+    };
   }
 
   Future<bool> ensureConnected({

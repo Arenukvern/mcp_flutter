@@ -12,6 +12,24 @@
 
 ## [Unreleased]
 
+## [3.0.7] - 2026-05-20
+
+### Fixed
+
+- `doctor` now honors global `--vm-service-uri` when subcommand `--target` is omitted (same resolution as `validate-runtime`).
+- `vm_not_connected` responses include `stickyEndpoint`, discovery diagnostics, and `suggestedActions` for faster recovery after hot restart.
+- Re-attach after a dropped VM session surfaces `meta.recovery` (`reattachedTo`, `previousEndpoint`, `decision`).
+
+### Added
+
+- `semantic_snapshot` returns `interactionSurface` (`flutter_widgets`, `hybrid`, `game_canvas`, `empty`) so agents know when tap-by-ref will not work.
+- `evaluate_dart_expression` accepts optional `libraryUri` and returns `details.errorKind` (`compilation`, `library_not_found`, `transport`).
+- `wait_for` predicate kind `noError` — waits until the app error monitor is empty.
+
+### Documentation
+
+- `flutter-mcp-toolkit-setup` and `flutter-mcp-toolkit-inspect` skills: doctor triage, `batch` inspect recipe, `flutter_layer` screenshots, `interactionSurface` guidance (regenerated `skill_assets.g.dart`).
+
 ## [3.0.6] - 2026-05-20
 
 ### Fixed

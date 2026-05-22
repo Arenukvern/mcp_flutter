@@ -900,6 +900,12 @@ final class CommandCatalog {
             'expression': _stringSchema(
               description: 'Dart expression (e.g. "MyClass.instance.value").',
             ),
+            'libraryUri': _stringSchema(
+              nullable: true,
+              description:
+                  'Optional library URI for evaluation scope '
+                  '(e.g. package:myapp/main.dart). Defaults to root library.',
+            ),
           },
           required: const <String>['expression'],
         ),
@@ -909,6 +915,7 @@ final class CommandCatalog {
         mcpExposed: true,
         build: (final args) => EvaluateDartExpressionCommand(
           expression: _stringArg(args, 'expression', fallback: ''),
+          libraryUri: _nullableStringArg(args, 'libraryUri'),
         ),
       ),
       CommandSpec(
@@ -930,7 +937,7 @@ final class CommandCatalog {
         description:
             'Block until a UI predicate matches or a timeout elapses, then '
             'return a fresh semantic snapshot. Predicate kinds: text, noText, '
-            'time, stable. Replaces sleep+snapshot polling loops.',
+            'time, stable, noError. Replaces sleep+snapshot polling loops.',
         inputSchema: _objectSchema(
           required: const ['predicate'],
           properties: {

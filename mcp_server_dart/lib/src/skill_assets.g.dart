@@ -106,6 +106,7 @@ description: Verify the flutter-mcp-toolkit install, run doctor preflight, troub
 ## When to use
 
 Use this skill when:
+
 - First-time install: `flutter-mcp-toolkit` is not yet on PATH.
 - `doctor --json` returns any check with `"status": "fail"`.
 - MCP server fails to connect or tools return `vm_not_connected` / `connect_failed`.
@@ -142,58 +143,79 @@ Always run doctor before any VM-dependent command:
 flutter-mcp-toolkit doctor --json
 ```
 
-Flags: `--target <ws_uri>` (test a specific URI), `--timeout-ms <n>` (default: 2500).
+Flags: `--target <ws_uri>` (test a specific URI), global `--vm-service-uri <ws_uri>` (same as `--target` when omitted on `doctor`), `--timeout-ms <n>` (default: 2500).
+
+```bash
+# Global URI works for doctor (same as validate-runtime)
+flutter-mcp-toolkit --vm-service-uri 'ws://127.0.0.1:8181/<token>/ws' doctor --json
+```
 
 Sample green output:
 
 ```json
 {
-  "summary": { "status": "ok", "criticalFailures": 0 },
+  "summary": { "criticalFailures": 0 },
   "checks": [
-    { "id": "vm_reachability", "status": "pass", "critical": true },
+    { "id": "vm_target_reachable", "status": "pass", "critical": true },
     { "id": "mcp_toolkit_extensions", "status": "pass", "critical": true },
-    { "id": "dynamic_registry", "status": "pass", "critical": false }
+    { "id": "dynamic_registry_available", "status": "pass", "critical": false }
   ]
 }
 ```
 
-Read `error.descriptor` (not top-level) for retry policy and exit codes. `recovery.fix_command` is always present — run it directly.
+**Triage:** `criticalFailures > 0` means VM/setup is blocked — not that every tool is broken. `dynamic_registry_available: pass` with `vm_target_reachable: fail` usually means a stale URI after hot restart; run `discover_debug_apps` and pass the new `targetId`.
+
+Read `error.descriptor` (not top-level) for retry policy and exit codes. Each check includes `fix_command` — run it directly.
 
 ---
 
 ## Recover by error code
 
 ### `binary_not_found`
+
 Binary missing or not on PATH. Rebuild and add to PATH:
+
 ```bash
 cd /path/to/mcp_flutter && make build
 export PATH="$PATH:/path/to/mcp_flutter/mcp_server_dart/build"
 ```
 
 ### `vm_not_connected`
-Flutter app not running or connection URI not resolved:
+
+Flutter app not running, stale token after restart, or URI not resolved:
+
 ```bash
+flutter-mcp-toolkit exec --name discover_debug_apps --args '{}'
 flutter-mcp-toolkit exec --name status --args '{}'
-flutter-mcp-toolkit doctor --json
+flutter-mcp-toolkit doctor --json --target ws://127.0.0.1:8181/<new-token>/ws
 ```
 
+After a successful auto re-attach, `meta.recovery.reattachedTo` shows the new endpoint.
+
 ### `connect_failed`
+
 Wrong port, app not started, or stale token. Pass explicit URI from `app.debugPort.wsUri`:
+
 ```bash
 flutter-mcp-toolkit exec --name get_vm --args '{"connection":{"uri":"ws://127.0.0.1:8181/<token>/ws"}}'
 ```
 
 ### `connection_selection_required`
+
 Multiple debug targets detected. List with `discover_debug_apps`, then pass the chosen URI from `details.availableTargets` explicitly to `get_vm`.
 
 ### `hot_reload_failed`
+
 Dart compilation error or VM disconnected. Check errors, fix, then retry:
+
 ```bash
 flutter-mcp-toolkit exec --name get_app_errors --args '{}'
 ```
 
 ### `visual_capture_unsupported`
+
 macOS screen recording permission not granted or unsupported platform:
+
 ```bash
 flutter-mcp-toolkit permissions request --kind visual_capture
 ```
@@ -227,27 +249,27 @@ flutter-mcp-toolkit doctor --json --target ws://127.0.0.1:8181/<token>/ws
 
 The binary is `flutter-mcp-toolkit` (built to `mcp_server_dart/build/`).
 
-| Subcommand | Purpose | Minimal example |
-|---|---|---|
-| `exec` | Run a single named command against the VM | `flutter-mcp-toolkit exec --name get_vm --args '{}'` |
-| `batch` | Run multiple commands in one call | `flutter-mcp-toolkit batch --steps '[{"name":"get_vm"},{"name":"status"}]'` |
-| `schema` | Print the JSON schema for a named command | `flutter-mcp-toolkit schema --name hot_reload_flutter` |
-| `capabilities` | List all registered capabilities | `flutter-mcp-toolkit capabilities` |
-| `serve` | Start the MCP server (stdio transport) | `flutter-mcp-toolkit serve` |
-| `snapshot create` | Capture and save a named snapshot | `flutter-mcp-toolkit snapshot create --name baseline --args '{}'` |
-| `snapshot diff` | Diff two snapshots | `flutter-mcp-toolkit snapshot diff --from baseline --to current` |
-| `bundle create` | Package a snapshot into a publishable bundle | `flutter-mcp-toolkit bundle create --from-snapshot baseline --output ./out` |
-| `doctor` | Run preflight checks (VM + toolkit + registry) | `flutter-mcp-toolkit doctor --json` |
-| `permissions status` | Check a permission (e.g. visual_capture) | `flutter-mcp-toolkit permissions status --kind visual_capture` |
-| `permissions request` | Request a permission | `flutter-mcp-toolkit permissions request --kind visual_capture` |
-| `permissions open-settings` | Open OS settings for a permission | `flutter-mcp-toolkit permissions open-settings --kind visual_capture` |
-| `validate-runtime` | End-to-end VM + toolkit + capture smoke test | `flutter-mcp-toolkit validate-runtime --target ws://127.0.0.1:8181/<token>/ws` |
-| `init <agent>` | Install skills + MCP server config for an AI agent | `flutter-mcp-toolkit init claude-code` |
-| `codegen-init` | Add toolkit dependency and emit `main.dart` boilerplate | `flutter-mcp-toolkit codegen-init` |
+| Subcommand                  | Purpose                                                 | Minimal example                                                                |
+| --------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `exec`                      | Run a single named command against the VM               | `flutter-mcp-toolkit exec --name get_vm --args '{}'`                           |
+| `batch`                     | Run multiple commands in one call                       | `flutter-mcp-toolkit batch --steps '[{"name":"get_vm"},{"name":"status"}]'`    |
+| `schema`                    | Print the JSON schema for a named command               | `flutter-mcp-toolkit schema --name hot_reload_flutter`                         |
+| `capabilities`              | List all registered capabilities                        | `flutter-mcp-toolkit capabilities`                                             |
+| `serve`                     | Start the MCP server (stdio transport)                  | `flutter-mcp-toolkit serve`                                                    |
+| `snapshot create`           | Capture and save a named snapshot                       | `flutter-mcp-toolkit snapshot create --name baseline --args '{}'`              |
+| `snapshot diff`             | Diff two snapshots                                      | `flutter-mcp-toolkit snapshot diff --from baseline --to current`               |
+| `bundle create`             | Package a snapshot into a publishable bundle            | `flutter-mcp-toolkit bundle create --from-snapshot baseline --output ./out`    |
+| `doctor`                    | Run preflight checks (VM + toolkit + registry)          | `flutter-mcp-toolkit doctor --json`                                            |
+| `permissions status`        | Check a permission (e.g. visual_capture)                | `flutter-mcp-toolkit permissions status --kind visual_capture`                 |
+| `permissions request`       | Request a permission                                    | `flutter-mcp-toolkit permissions request --kind visual_capture`                |
+| `permissions open-settings` | Open OS settings for a permission                       | `flutter-mcp-toolkit permissions open-settings --kind visual_capture`          |
+| `validate-runtime`          | End-to-end VM + toolkit + capture smoke test            | `flutter-mcp-toolkit validate-runtime --target ws://127.0.0.1:8181/<token>/ws` |
+| `init <agent>`              | Install skills + MCP server config for an AI agent      | `flutter-mcp-toolkit init claude-code`                                         |
+| `codegen-init`              | Add toolkit dependency and emit `main.dart` boilerplate | `flutter-mcp-toolkit codegen-init`                                             |
 
 Global flags (before the subcommand): `--dart-vm-port <n>`, `--dart-vm-host <host>`, `--vm-service-uri <ws_uri>`, `--log-level <level>`, `--dumps`, `-h/--help`.
 
-**`validate-runtime` targeting:** `--vm-service-uri` applies the same way as `--target` when you omit `--target`. If both are set and differ, `--target` wins (stderr warning).
+**VM targeting:** Global `--vm-service-uri` applies to `doctor` and `validate-runtime` when subcommand `--target` is omitted. If both are set and differ, `--target` wins (stderr warning).
 
 **`validate-runtime` screenshots:** the first capture uses `auto` (often `desktop_window` on macOS). If that step fails with a retryable `get_screenshots_failed`, the CLI retries once with `flutter_layer`. On success, `data.summary.captureFallbackUsed` is `true` in the JSON envelope.
 
@@ -309,26 +331,48 @@ Use this skill for read-only state inspection of a running Flutter app: what is 
 
 ## Recipes
 
+### Fast inspect cycle (prefer `batch`)
+
+```bash
+flutter-mcp-toolkit batch --steps '[
+  {"name":"semantic_snapshot"},
+  {"name":"get_app_errors","args":{"count":5}},
+  {"name":"get_screenshots","args":{"screenshotMode":"flutter_layer","compress":true}}
+]'
+```
+
+Use `screenshotMode: flutter_layer` on macOS to avoid Screen Recording permission failures.
+
 ### Snapshot the visible UI
+
 1. Call `semantic_snapshot()`.
-2. Each interactive node has a stable `ref` (`s_0`, `s_1`, …) and the response includes a `snapshot_id`.
-3. Pass refs to interaction tools; pass `snapshot_id` to detect staleness.
+2. Read `interactionSurface`: `flutter_widgets` (tap-by-ref works), `hybrid` (sparse semantics), `game_canvas` (use `evaluate_dart_expression` + screenshots).
+3. Each interactive node has a stable `ref` (`s_0`, `s_1`, …) and the response includes a `snapshot_id`.
+4. Pass refs to interaction tools; pass `snapshot_id` to detect staleness.
+
+### After a code edit
+
+Prefer `hot_reload_and_capture` over separate reload + snapshot + screenshot calls.
 
 ### Find an error by message
+
 1. Call `get_app_errors(count: 10)`.
 2. Inspect the `errors` array — each entry has message, stack trace, and timestamp.
 3. Match on message text to find the source.
 
 ### List debug-mode apps
+
 1. Call `discover_debug_apps()`.
 2. Read the `targetId` (canonical WebSocket URI) for each active target.
 3. Pass the chosen URI as `connection.targetId` on subsequent tool calls.
 
 ### Get widget at coordinates
+
 1. Call `inspect_widget_at_point(x: 200, y: 400)`.
 2. The response identifies the deepest widget and render node at those global logical pixel coordinates.
 
 ### Save a screenshot to a file
+
 1. Call `get_screenshots()`.
 2. If `meta.fileUrls` is non-empty, screenshots are on disk at those paths. Otherwise the response contains base64 `ImageContent` blocks — extract and write manually.
 3. To force file output, configure an images output directory on the server before calling.
@@ -336,30 +380,40 @@ Use this skill for read-only state inspection of a running Flutter app: what is 
 ## Tool reference
 
 ### discover_debug_apps
+
 List all active Flutter debug targets with canonical WebSocket URIs.
+
 - `connection` (object, optional) — accepted by schema, ignored by executor; discovery is always local.
 
 ```
 discover_debug_apps()
 ```
+
 Returns: `{"targets": [{"targetId": "ws://127.0.0.1:8181/<token>/ws", "host": "...", "port": 8181}]}`
+
 - `vm_service_unavailable` — no debug-mode Flutter process found.
 - `tool_not_found` — binary predates v3.0.0; run `make build`.
 
 ### get_app_errors
+
 Retrieve the most recent application errors from the Dart VM.
+
 - `count` (integer, optional, default: 4) — number of errors to return.
 - `connection` (object, optional) — connection override.
 
 ```
 get_app_errors(count: 5)
 ```
+
 Returns: `{"message": "2 errors found", "errors": [{"message": "...", "stack": "..."}]}`
+
 - `vm_service_unavailable` — app not reachable.
 - `connection_selection_required` — multiple targets; supply `connection.targetId`.
 
 ### get_screenshots
+
 Capture screenshots of all views.
+
 - `compress` (boolean, optional, default: true) — compress PNG output.
 - `mode` (string, optional, default: `auto`) — `auto`, `flutter_layer`, or `desktop_window`.
 - `permissionPolicy` (string, optional, default: `check_only`) — `check_only`, `auto_request_once`, or `request_always`.
@@ -368,34 +422,46 @@ Capture screenshots of all views.
 ```
 get_screenshots(mode: "flutter_layer", compress: false)
 ```
+
 Returns: `ImageContent` blocks (base64 PNG) when no output dir configured, or `TextContent` URL refs + `meta.fileUrls` when file output is enabled.
+
 - `permission_denied` — retry with `permissionPolicy: "auto_request_once"`.
 - `vm_service_unavailable` — app not reachable.
 
 ### get_view_details
+
 Get dimensions, device pixel ratio, and display ID for all views.
+
 - `connection` (object, optional) — connection override.
 
 ```
 get_view_details()
 ```
+
 Returns: `{"views": [{"id": 0, "width": 1280, "height": 800, "devicePixelRatio": 2.0}]}`
+
 - `vm_service_unavailable` — app not running.
 - `connection_selection_required` — multiple targets; supply `connection.targetId`.
 
 ### get_vm
+
 Return Dart VM metadata: version, isolates list, pid, and architecture.
+
 - `connection` (object, optional) — connection override.
 
 ```
 get_vm()
 ```
+
 Returns: `{"type": "VM", "name": "vm", "version": "3.x.x", "isolates": [...]}`
+
 - `vm_service_unavailable` — app not reachable.
 - `connection_selection_required` — multiple targets active.
 
 ### get_extension_rpcs
+
 List all registered VM service extension RPCs in the running app.
+
 - `isolateId` (string, optional) — schema-declared but not read by executor; checks all isolates when omitted.
 - `isRawResponse` (boolean, optional) — schema-declared but not read by executor.
 - `connection` (object, optional) — connection override.
@@ -403,23 +469,31 @@ List all registered VM service extension RPCs in the running app.
 ```
 get_extension_rpcs()
 ```
+
 Returns: `{"extensionRPCs": ["ext.flutter.inspector.getRootWidget", "ext.mcp.toolkit.semantic_snapshot"]}`
+
 - `vm_service_unavailable` — app not running.
 - `connection_selection_required` — multiple targets.
 
 ### semantic_snapshot
+
 Return a compact accessibility tree of interactive widgets with stable `ref` strings and a `snapshot_id`.
+
 - `connection` (object, optional) — connection override.
 
 ```
 semantic_snapshot()
 ```
+
 Returns: `{"snapshot_id": 3, "nodes": [{"ref": "s_0", "label": "Increment", "actions": ["tap"]}]}`
+
 - `vm_service_unavailable` — app not running or `MCPToolkitBinding.initialize()` not called.
 - `connection_selection_required` — multiple targets; supply `connection.targetId`.
 
 ### inspect_widget_at_point
+
 Identify the deepest widget and render node at a global logical coordinate.
+
 - `x` (integer, required) — global logical X coordinate.
 - `y` (integer, required) — global logical Y coordinate.
 - `viewId` (integer, optional) — FlutterView ID for multi-view apps.
@@ -428,12 +502,16 @@ Identify the deepest widget and render node at a global logical coordinate.
 ```
 inspect_widget_at_point(x: 200, y: 400)
 ```
+
 Returns: `{"widget": {"type": "ElevatedButton", "rect": {"left": 180, "top": 380, "right": 280, "bottom": 420}}}`
+
 - `vm_service_unavailable` — app not reachable.
 - `invalid_argument` — coordinates out of view bounds.
 
 ### capture_ui_snapshot
+
 Capture screenshots, view details, and app errors in one bundled response.
+
 - `errorsCount` (integer, optional, default: 4) — errors to include.
 - `compress` (boolean, optional, default: true) — compress screenshots.
 - `includeViewDetails` (boolean, optional, default: true) — include view data.
@@ -445,18 +523,24 @@ Capture screenshots, view details, and app errors in one bundled response.
 ```
 capture_ui_snapshot(errorsCount: 2, includeViewDetails: false)
 ```
+
 Returns: single `TextContent` JSON block with `screenshots`, `viewDetails`, and `errors` keys.
+
 - `vm_service_unavailable` — app not running.
 - `permission_denied` — retry with `permissionPolicy: "auto_request_once"`.
 
 ### connect_debug_app
+
 Explicitly select and connect to a Flutter debug VM target. Use when multiple apps are running or to pin a specific target for the session.
+
 - `connection` (object, optional) — pass `connection.targetId` with a WebSocket URI from `discover_debug_apps`.
 
 ```
 connect_debug_app(connection: {targetId: "ws://127.0.0.1:8181/<token>/ws"})
 ```
+
 Returns: `{"connected": true, "targetId": "ws://127.0.0.1:8181/<token>/ws", "isolates": [...]}`
+
 - `target_not_found` — URI doesn't match a running app; re-run `discover_debug_apps` for the exact URI.
 - `connection_failed` — VM refused connection; verify the app is still running in debug mode.
 ''',
@@ -1480,7 +1564,7 @@ When shipping a promo there: edit the video repo; run `bash tool/check_doc_paths
   static const String cursorPluginManifest = r'''{
   "name": "flutter-mcp-toolkit",
   "description": "Flutter MCP toolkit: inspect and drive debug apps (semantic snapshot, tap, hot-reload) and register custom MCP tools and resources at runtime from your Flutter app or game via mcp_toolkit — closed agent feedback loop.",
-  "version": "3.0.6",
+  "version": "3.0.7",
   "author": {
     "name": "Arenukvern",
     "url": "https://github.com/Arenukvern/mcp_flutter"
@@ -1504,7 +1588,7 @@ When shipping a promo there: edit the video repo; run `bash tool/check_doc_paths
 ''';
   static const String codexPluginManifest = r'''{
   "name": "flutter-mcp-toolkit",
-  "version": "3.0.6",
+  "version": "3.0.7",
   "description": "Flutter MCP toolkit: inspect and drive debug apps (semantic snapshot, tap, hot-reload) and register custom MCP tools and resources at runtime from your Flutter app or game via mcp_toolkit — closed agent feedback loop.",
   "author": {
     "name": "Arenukvern",

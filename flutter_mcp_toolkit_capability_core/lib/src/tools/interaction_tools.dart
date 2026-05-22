@@ -373,6 +373,12 @@ void registerInteractionTools(final CapabilityContext context) {
             'description':
                 'Dart expression to evaluate (e.g. "MyClass.instance.value").',
           },
+          'libraryUri': <String, Object?>{
+            'type': 'string',
+            'description':
+                'Optional library URI for evaluation scope '
+                '(e.g. package:myapp/main.dart). Defaults to root library.',
+          },
           'connection': connectionOverrideJsonSchema(),
         },
       },
@@ -382,7 +388,10 @@ void registerInteractionTools(final CapabilityContext context) {
         return runCommand(
           runner,
           args,
-          EvaluateDartExpressionCommand(expression: expression),
+          EvaluateDartExpressionCommand(
+            expression: expression,
+            libraryUri: stringArgOrNull(args['libraryUri']),
+          ),
         );
       },
     ),

@@ -34,7 +34,8 @@ void registerWaitTools(final CapabilityContext context) {
                 '{kind:"time", ms:int} | '
                 '{kind:"text", text:String} | '
                 '{kind:"noText", text:String} | '
-                '{kind:"stable", stableWindowMs:int}',
+                '{kind:"stable", stableWindowMs:int}, '
+                '{kind:"noError"}',
           },
           'timeoutMs': <String, Object?>{
             'type': 'integer',

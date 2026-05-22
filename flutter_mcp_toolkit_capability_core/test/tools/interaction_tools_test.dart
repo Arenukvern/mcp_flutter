@@ -1027,6 +1027,30 @@ void main() {
         final cmd =
             runner.executedCommands.single as EvaluateDartExpressionCommand;
         expect(cmd.expression, '1 + 1');
+        expect(cmd.libraryUri, isNull);
+      },
+    );
+
+    test(
+      'handler forwards optional libraryUri to EvaluateDartExpressionCommand',
+      () async {
+        final runner = FakeCommandRunner()
+          ..nextExecuteResult = CoreResult.success(data: {'value': '42'});
+        final ctx = _registeredCtx(runner: runner);
+        await ctx
+            .registrationFor('evaluate_dart_expression')!
+            .handler(
+              CallToolRequest(
+                name: 'evaluate_dart_expression',
+                arguments: const <String, Object?>{
+                  'expression': 'x',
+                  'libraryUri': 'package:app/main.dart',
+                },
+              ),
+            );
+        final cmd =
+            runner.executedCommands.single as EvaluateDartExpressionCommand;
+        expect(cmd.libraryUri, 'package:app/main.dart');
       },
     );
 
