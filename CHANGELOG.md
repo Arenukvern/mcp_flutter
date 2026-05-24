@@ -3,12 +3,6 @@
 <!-- markdownlint-disable MD052 -->
 <!-- Keep a Changelog version headings use [3.0.1] brackets; MD052 treats them as reference links. -->
 
-## [3.0.5](https://github.com/Arenukvern/mcp_flutter/compare/v3.0.4...v3.0.5) (2026-05-19)
-
-### Bug Fixes
-
-- readme ([b95e8b3](https://github.com/Arenukvern/mcp_flutter/commit/b95e8b3d25c5529e21c79a3b06ebd97524573671))
-
 ## [Unreleased]
 
 ## [3.0.7] - 2026-05-20
@@ -38,6 +32,12 @@
 ### Changed
 
 - Release binaries: drop `darwin-x64` (Intel Mac). macOS releases are Apple Silicon (`darwin-arm64`) only; `linux-x64` unchanged.
+
+## [3.0.5](https://github.com/Arenukvern/mcp_flutter/compare/v3.0.4...v3.0.5) (2026-05-19)
+
+### Bug Fixes
+
+- readme ([b95e8b3](https://github.com/Arenukvern/mcp_flutter/commit/b95e8b3d25c5529e21c79a3b06ebd97524573671))
 
 ## [3.0.4] - 2026-05-19
 
