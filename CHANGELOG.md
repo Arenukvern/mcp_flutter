@@ -3,6 +3,19 @@
 <!-- markdownlint-disable MD052 -->
 <!-- Keep a Changelog version headings use [3.0.1] brackets; MD052 treats them as reference links. -->
 
+## [3.1.0](https://github.com/Arenukvern/mcp_flutter/compare/v3.0.7...v3.1.0) (2026-05-24)
+
+
+### Features
+
+* **promo:** consolidate promo branch work ([eca2764](https://github.com/Arenukvern/mcp_flutter/commit/eca27649a9bae41e990844575feab5b699f85a03))
+
+
+### Bug Fixes
+
+* changelog ([fbdcf74](https://github.com/Arenukvern/mcp_flutter/commit/fbdcf74e68132476b47dcceabfd5d1655ef3fbca))
+* promo ([54d981c](https://github.com/Arenukvern/mcp_flutter/commit/54d981c2192e308c645faa5fcd09cfda2a9e6bfc))
+
 ## [Unreleased]
 
 ## [3.0.7] - 2026-05-20
