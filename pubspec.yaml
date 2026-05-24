@@ -4,7 +4,7 @@ environment:
   sdk: ^3.11.0
 
 workspace:
-  - flutter_mcp_toolkit_core
-  - flutter_mcp_toolkit_capability_kernel
-  - flutter_mcp_toolkit_capability_core
+  - packages/core
+  - packages/server_capability_kernel
+  - packages/server_capability_core
   - mcp_server_dart

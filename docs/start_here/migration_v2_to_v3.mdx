@@ -24,10 +24,10 @@ If you see `tool_not_found`, prepend `fmt_` to the tool name.
 
 ## Binaries and `mcpServers` registry keys
 
-| Surface | v2.x (legacy) | v3.0 (current) |
-| --- | --- | --- |
-| CLI binary | `flutter_mcp_cli` | **`flutter-mcp-toolkit`** |
-| MCP server binary | `flutter_inspector_mcp` | **`flutter-mcp-toolkit-server`** |
+| Surface                  | v2.x (legacy)             | v3.0 (current)                                                                |
+| ------------------------ | ------------------------- | ----------------------------------------------------------------------------- |
+| CLI binary               | `flutter_mcp_cli`         | **`flutter-mcp-toolkit`**                                                     |
+| MCP server binary        | `flutter_inspector_mcp`   | **`flutter-mcp-toolkit-server`**                                              |
 | JSON key in `mcpServers` | often `flutter-inspector` | **`flutter-mcp-toolkit`** (canonical); **`flutter-inspector`** still accepted |
 
 After `make build`, binaries live under `mcp_server_dart/build/`. The canonical [plugin `mcp.json`](https://github.com/Arenukvern/mcp_flutter/blob/main/plugin/mcp.json) shows recommended `args` (`--resources`, `--images`, `--dynamics`) and `${FLUTTER_MCP_BIN:-flutter-mcp-toolkit-server}` for the server command.
@@ -51,42 +51,42 @@ and the kernel applies the `<capabilityId>_` prefix before publishing to
 `tools/list`. Today there is one capability — `fmt` — so every tool is
 prefixed `fmt_`.
 
-| v2.x | v3.0 |
-| --- | --- |
-| `tap_widget` | `fmt_tap_widget` |
-| `enter_text` | `fmt_enter_text` |
-| `scroll` | `fmt_scroll` |
-| `long_press` | `fmt_long_press` |
-| `swipe` | `fmt_swipe` |
-| `drag` | `fmt_drag` |
-| `hover` | `fmt_hover` |
-| `press_key` | `fmt_press_key` |
-| `semantic_snapshot` | `fmt_semantic_snapshot` |
-| `wait_for` | `fmt_wait_for` |
-| `fill_form` | `fmt_fill_form` |
-| `navigate` | `fmt_navigate` |
-| `handle_dialog` | `fmt_handle_dialog` |
-| `connect_debug_app` | `fmt_connect_debug_app` |
-| `discover_debug_apps` | `fmt_discover_debug_apps` |
-| `get_vm` | `fmt_get_vm` |
-| `get_extension_rpcs` | `fmt_get_extension_rpcs` |
-| `hot_reload_flutter` | `fmt_hot_reload_flutter` |
-| `hot_restart_flutter` | `fmt_hot_restart_flutter` |
-| `hot_reload_and_capture` | `fmt_hot_reload_and_capture` |
-| `evaluate_dart_expression` | `fmt_evaluate_dart_expression` |
-| `get_recent_logs` | `fmt_get_recent_logs` |
-| `get_view_details` | `fmt_get_view_details` |
-| `get_app_errors` | `fmt_get_app_errors` |
-| `get_screenshots` | `fmt_get_screenshots` |
-| `capture_ui_snapshot` | `fmt_capture_ui_snapshot` |
-| `inspect_widget_at_point` | `fmt_inspect_widget_at_point` |
-| `debug_dump_layer_tree` *(--dumps)* | `fmt_debug_dump_layer_tree` |
-| `debug_dump_semantics_tree` *(--dumps)* | `fmt_debug_dump_semantics_tree` |
-| `debug_dump_render_tree` *(--dumps)* | `fmt_debug_dump_render_tree` |
-| `debug_dump_focus_tree` *(--dumps)* | `fmt_debug_dump_focus_tree` |
-| `listClientToolsAndResources` | `fmt_list_client_tools_and_resources` |
-| `runClientTool` | `fmt_client_tool` |
-| `runClientResource` | `fmt_client_resource` |
+| v2.x                                    | v3.0                                  |
+| --------------------------------------- | ------------------------------------- |
+| `tap_widget`                            | `fmt_tap_widget`                      |
+| `enter_text`                            | `fmt_enter_text`                      |
+| `scroll`                                | `fmt_scroll`                          |
+| `long_press`                            | `fmt_long_press`                      |
+| `swipe`                                 | `fmt_swipe`                           |
+| `drag`                                  | `fmt_drag`                            |
+| `hover`                                 | `fmt_hover`                           |
+| `press_key`                             | `fmt_press_key`                       |
+| `semantic_snapshot`                     | `fmt_semantic_snapshot`               |
+| `wait_for`                              | `fmt_wait_for`                        |
+| `fill_form`                             | `fmt_fill_form`                       |
+| `navigate`                              | `fmt_navigate`                        |
+| `handle_dialog`                         | `fmt_handle_dialog`                   |
+| `connect_debug_app`                     | `fmt_connect_debug_app`               |
+| `discover_debug_apps`                   | `fmt_discover_debug_apps`             |
+| `get_vm`                                | `fmt_get_vm`                          |
+| `get_extension_rpcs`                    | `fmt_get_extension_rpcs`              |
+| `hot_reload_flutter`                    | `fmt_hot_reload_flutter`              |
+| `hot_restart_flutter`                   | `fmt_hot_restart_flutter`             |
+| `hot_reload_and_capture`                | `fmt_hot_reload_and_capture`          |
+| `evaluate_dart_expression`              | `fmt_evaluate_dart_expression`        |
+| `get_recent_logs`                       | `fmt_get_recent_logs`                 |
+| `get_view_details`                      | `fmt_get_view_details`                |
+| `get_app_errors`                        | `fmt_get_app_errors`                  |
+| `get_screenshots`                       | `fmt_get_screenshots`                 |
+| `capture_ui_snapshot`                   | `fmt_capture_ui_snapshot`             |
+| `inspect_widget_at_point`               | `fmt_inspect_widget_at_point`         |
+| `debug_dump_layer_tree` _(--dumps)_     | `fmt_debug_dump_layer_tree`           |
+| `debug_dump_semantics_tree` _(--dumps)_ | `fmt_debug_dump_semantics_tree`       |
+| `debug_dump_render_tree` _(--dumps)_    | `fmt_debug_dump_render_tree`          |
+| `debug_dump_focus_tree` _(--dumps)_     | `fmt_debug_dump_focus_tree`           |
+| `listClientToolsAndResources`           | `fmt_list_client_tools_and_resources` |
+| `runClientTool`                         | `fmt_client_tool`                     |
+| `runClientResource`                     | `fmt_client_resource`                 |
 
 The locked v3.0 surface is checked in at
 [`tool/contracts/expected_tool_surface.txt`](https://github.com/Arenukvern/mcp_flutter/blob/main/tool/contracts/expected_tool_surface.txt)
@@ -180,9 +180,10 @@ with `fmt_`.
 See
 [`ARCHITECTURE.md`](https://github.com/Arenukvern/mcp_flutter/blob/main/ARCHITECTURE.md)
 "MCP Server Layer (Dart-based)" and the kernel sources at
-[`flutter_mcp_toolkit_capability_kernel/`](https://github.com/Arenukvern/mcp_flutter/tree/main/flutter_mcp_toolkit_capability_kernel)
-+ [`flutter_mcp_toolkit_capability_core/`](https://github.com/Arenukvern/mcp_flutter/tree/main/flutter_mcp_toolkit_capability_core)
-for the full picture.
+[`packages/server_capability_kernel/`](https://github.com/Arenukvern/mcp_flutter/tree/main/packages/server_capability_kernel)
+
+- [`packages/server_capability_core/`](https://github.com/Arenukvern/mcp_flutter/tree/main/packages/server_capability_core)
+  for the full picture.
 
 ## Troubleshooting
 

@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 // Server-side command catalog: schema builders, arg parsers, command factory.
-// Pure command classes live in flutter_mcp_toolkit_core/lib/src/commands/core_commands.dart.
+// Pure command classes live in packages/core/lib/src/commands/core_commands.dart.
 
 import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 

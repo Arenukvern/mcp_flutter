@@ -245,24 +245,8 @@ Full vocabulary: [promo-motion-vocabulary.md](../skills/hyperframes-video/refere
 
 ---
 
-## 10. Application
 
-| Surface | Spec |
-|---------|------|
-| Release promo (v7) | [flutter_mcp_video](https://github.com/Arenukvern/flutter_mcp_video) `projects/video-projects/v7-weaver-release/promo-spec.md` |
-| Look extension | [flutter_mcp_video](https://github.com/Arenukvern/flutter_mcp_video) `skills/hyperframes-video/references/weaver-design-system.md` |
-| Layer stack per scene | canvas → wash → circuit fade → brand layer (logo watermark, PCB plaque) → props + phones → caption rail → subtitles |
-| Subtitle safe area | bottom 200px; subtitles render above `y=880` |
-
-**Promo symlinks (video repo):** `flutter_mcp_video/projects/video-projects/v7-weaver-release/assets/brand/{mascot,logo-full}.png` → **this** `plugin/assets/` in toolkit repo. Master is always the symlink target — never copy.
-
-**Critique flow:** subagents + hyperframes-video skill `references/cinema-publish-checklist.md` in **flutter_mcp_video** repo before render.
-
-Archive (v6 baseline): promo-lessons · checkpoint-v6-cinematic in **flutter_mcp_video** `skills/hyperframes-video/references/`.
-
----
-
-## 11. Asset pipeline
+## 10. Asset pipeline
 
 | File | Role | Regeneration |
 |------|------|-------------|
@@ -271,6 +255,3 @@ Archive (v6 baseline): promo-lessons · checkpoint-v6-cinematic in **flutter_mcp
 | `logo.png` | Marketplace logo | `sips -z <H> <W> original_logo.png --out logo.png` |
 | `icon.png` | Marketplace icon | `sips -z 256 256 original_logo.png --out icon.png` |
 | `screenshot-{1,2}.png` | Marketplace screenshots | Plugin UI captures |
-| Promo symlinks | `flutter_mcp_video/.../v7-weaver-release/assets/brand/` → this folder | `ln -s` to toolkit `plugin/assets/<file>` when sibling clone |
-
-After editing brand tokens in `brand-v7-shared.css` (v7 project in **flutter_mcp_video**), run `python3 scripts/inline_brand_css.py` from that project dir, then `npm run check`.

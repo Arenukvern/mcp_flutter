@@ -89,7 +89,7 @@ This unified architecture supports:
 - Request routing and validation
 - Error handling and logging
 - Connection management
-- **Capability kernel** (v3.0.0+): the server hosts an `McpHost` registry into which `Capability` instances register prefixed tools (e.g. `fmt_tap_widget`). The host wires each registration to dart_mcp's `ToolsSupport` via a `DartMcpDispatchBridge`. The legacy unprefixed registration mixin is gated off by default and reachable only with `--no-use-capability-kernel`. See `flutter_mcp_toolkit_capability_kernel/` (contracts) and `flutter_mcp_toolkit_capability_core/` (the `fmt` capability shipping all 27 + 4-dump tools).
+- **Capability kernel** (v3.0.0+): the server hosts an `McpHost` registry into which `Capability` instances register prefixed tools (e.g. `fmt_tap_widget`). The host wires each registration to dart_mcp's `ToolsSupport` via a `DartMcpDispatchBridge`. The legacy unprefixed registration mixin is gated off by default and reachable only with `--no-use-capability-kernel`. See `packages/server_capability_kernel/` (contracts) and `packages/server_capability_core/` (the `fmt` capability shipping all 27 + 4-dump tools).
 - Dynamic Registry: Manages runtime-registered tools and resources (forwarded from the running Flutter app via `addMcpTool`). The dispatch trio `fmt_list_client_tools_and_resources` / `fmt_client_tool` / `fmt_client_resource` is host machinery registered with the same `fmt_` names as the rest of the MCP tool surface.
 - Event-Driven Discovery: Real-time tool detection via DTD events
 

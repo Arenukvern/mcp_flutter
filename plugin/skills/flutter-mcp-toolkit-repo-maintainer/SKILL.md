@@ -23,20 +23,20 @@ release-please on `main`; use manual steps only when the Release PR path is bloc
 
 ## Version touchpoints (must match root `VERSION`)
 
-| File | Field |
-|------|--------|
-| [VERSION](https://github.com/Arenukvern/mcp_flutter/blob/main/VERSION) | repo pin |
-| [plugin/EXPECTED_SERVER_VERSION](https://github.com/Arenukvern/mcp_flutter/blob/main/plugin/EXPECTED_SERVER_VERSION) | installer pin |
-| [flutter_mcp_toolkit_core/lib/src/runtime_version.dart](https://github.com/Arenukvern/mcp_flutter/blob/main/flutter_mcp_toolkit_core/lib/src/runtime_version.dart) | `kFlutterMcpVersion` (`x-release-please-version`) |
-| [flutter_mcp_toolkit_capability_core/lib/src/fmt_capability.dart](https://github.com/Arenukvern/mcp_flutter/blob/main/flutter_mcp_toolkit_capability_core/lib/src/fmt_capability.dart) | `version` getter |
-| [mcp_server_dart/pubspec.yaml](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_server_dart/pubspec.yaml) | `version:` |
-| [mcp_toolkit/pubspec.yaml](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_toolkit/pubspec.yaml) | `version:` |
-| [plugin/.cursor-plugin/plugin.json](https://github.com/Arenukvern/mcp_flutter/blob/main/plugin/.cursor-plugin/plugin.json) | `version` |
-| [plugin/.codex-plugin/plugin.json](https://github.com/Arenukvern/mcp_flutter/blob/main/plugin/.codex-plugin/plugin.json) | `version` |
-| [plugin/.claude-plugin/plugin.json](https://github.com/Arenukvern/mcp_flutter/blob/main/plugin/.claude-plugin/plugin.json) | `version` |
-| [.claude-plugin/marketplace.json](https://github.com/Arenukvern/mcp_flutter/blob/main/.claude-plugin/marketplace.json) | `plugins[0].version` |
-| [.release-please-manifest.json](https://github.com/Arenukvern/mcp_flutter/blob/main/.release-please-manifest.json) | `"."` key |
-| [mcp_server_dart/lib/src/skill_assets.g.dart](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_server_dart/lib/src/skill_assets.g.dart) | **generated** — embeds `plugin/.cursor-plugin/plugin.json`, `plugin/.codex-plugin/plugin.json`, `plugin/mcp.json`, and all `plugin/skills/*/SKILL.md` |
+| File                                                                                                                                                                           | Field                                                                                                                                                 |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [VERSION](https://github.com/Arenukvern/mcp_flutter/blob/main/VERSION)                                                                                                         | repo pin                                                                                                                                              |
+| [plugin/EXPECTED_SERVER_VERSION](https://github.com/Arenukvern/mcp_flutter/blob/main/plugin/EXPECTED_SERVER_VERSION)                                                           | installer pin                                                                                                                                         |
+| [packages/core/lib/src/runtime_version.dart](https://github.com/Arenukvern/mcp_flutter/blob/main/packages/core/lib/src/runtime_version.dart)                                   | `kFlutterMcpVersion` (`x-release-please-version`)                                                                                                     |
+| [packages/server_capability_core/lib/src/fmt_capability.dart](https://github.com/Arenukvern/mcp_flutter/blob/main/packages/server_capability_core/lib/src/fmt_capability.dart) | `version` getter                                                                                                                                      |
+| [mcp_server_dart/pubspec.yaml](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_server_dart/pubspec.yaml)                                                               | `version:`                                                                                                                                            |
+| [mcp_toolkit/pubspec.yaml](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_toolkit/pubspec.yaml)                                                                       | `version:`                                                                                                                                            |
+| [plugin/.cursor-plugin/plugin.json](https://github.com/Arenukvern/mcp_flutter/blob/main/plugin/.cursor-plugin/plugin.json)                                                     | `version`                                                                                                                                             |
+| [plugin/.codex-plugin/plugin.json](https://github.com/Arenukvern/mcp_flutter/blob/main/plugin/.codex-plugin/plugin.json)                                                       | `version`                                                                                                                                             |
+| [plugin/.claude-plugin/plugin.json](https://github.com/Arenukvern/mcp_flutter/blob/main/plugin/.claude-plugin/plugin.json)                                                     | `version`                                                                                                                                             |
+| [.claude-plugin/marketplace.json](https://github.com/Arenukvern/mcp_flutter/blob/main/.claude-plugin/marketplace.json)                                                         | `plugins[0].version`                                                                                                                                  |
+| [.release-please-manifest.json](https://github.com/Arenukvern/mcp_flutter/blob/main/.release-please-manifest.json)                                                             | `"."` key                                                                                                                                             |
+| [mcp_server_dart/lib/src/skill_assets.g.dart](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_server_dart/lib/src/skill_assets.g.dart)                                 | **generated** — embeds `plugin/.cursor-plugin/plugin.json`, `plugin/.codex-plugin/plugin.json`, `plugin/mcp.json`, and all `plugin/skills/*/SKILL.md` |
 
 After any version bump in `plugin/*-plugin/plugin.json` or edit under `plugin/skills/`: run `make sync-skills`, then `make check-contracts` (includes `check_version_sync.sh` and `check_skill_assets_drift.sh`).
 
@@ -91,16 +91,16 @@ Build artifacts locally: `make release-artifacts` or `bash tool/release/build_re
 
 ## Docs map (single sources of truth)
 
-| Topic | Canonical doc |
-|-------|----------------|
-| End-user agent install | [docs/ai_agents/overview.mdx](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/ai_agents/overview.mdx) |
-| `npx skills` + lockfile | overview § Install via `npx skills`; [.skills.json.example](https://github.com/Arenukvern/mcp_flutter/blob/main/.skills.json.example) |
-| Contributor / releases | [docs/contributing/contribution_guide.mdx](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/contributing/contribution_guide.mdx) |
-| Plugin layout | [plugin/README.md](https://github.com/Arenukvern/mcp_flutter/blob/main/plugin/README.md) |
-| Marketplace copy SSOT | [docs/ai_agents/marketplace_copy.yaml](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/ai_agents/marketplace_copy.yaml) |
-| Distribution / stores | [docs/ai_agents/marketplace_distribution.mdx](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/ai_agents/marketplace_distribution.mdx) |
+| Topic                    | Canonical doc                                                                                                                                                    |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| End-user agent install   | [docs/ai_agents/overview.mdx](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/ai_agents/overview.mdx)                                                   |
+| `npx skills` + lockfile  | overview § Install via `npx skills`; [.skills.json.example](https://github.com/Arenukvern/mcp_flutter/blob/main/.skills.json.example)                            |
+| Contributor / releases   | [docs/contributing/contribution_guide.mdx](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/contributing/contribution_guide.mdx)                         |
+| Plugin layout            | [plugin/README.md](https://github.com/Arenukvern/mcp_flutter/blob/main/plugin/README.md)                                                                         |
+| Marketplace copy SSOT    | [docs/ai_agents/marketplace_copy.yaml](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/ai_agents/marketplace_copy.yaml)                                 |
+| Distribution / stores    | [docs/ai_agents/marketplace_distribution.mdx](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/ai_agents/marketplace_distribution.mdx)                   |
 | Store submission runbook | [docs/contributing/marketplace_submission_runbook.mdx](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/contributing/marketplace_submission_runbook.mdx) |
-| Skill bodies | `plugin/skills/<id>/SKILL.md` → `make sync-skills` |
+| Skill bodies             | `plugin/skills/<id>/SKILL.md` → `make sync-skills`                                                                                                               |
 
 Avoid duplicating install tables in README — link to overview.
 

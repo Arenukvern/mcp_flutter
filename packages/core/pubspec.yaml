@@ -1,0 +1,27 @@
+name: flutter_mcp_toolkit_core
+description: >-
+  Pure-Dart shared types for Flutter MCP Toolkit — command envelopes, result
+  types, error codes, connection overrides, and capability models. No Flutter or
+  transport dependencies.
+version: 0.1.0
+license: MIT
+repository: https://github.com/Arenukvern/mcp_flutter/tree/main/packages/core
+issue_tracker: https://github.com/Arenukvern/mcp_flutter/issues
+documentation: https://github.com/Arenukvern/mcp_flutter/tree/main/packages/core#readme
+
+environment:
+  sdk: ">=3.11.0 <4.0.0"
+resolution: workspace
+
+dependencies:
+  meta: ^1.17.0
+
+dev_dependencies:
+  lints: ^6.1.0
+  test: ^1.31.1
+
+topics:
+  - mcp
+  - flutter
+  - dart
+  - debugging

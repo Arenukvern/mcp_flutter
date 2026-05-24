@@ -23,17 +23,3 @@
 
 - **Ship:** `install.sh` → `flutter-mcp-toolkit` + `flutter-mcp-toolkit-server`.
 - **pub.dev:** `mcp_toolkit` for Flutter apps; kernel/core packages deferred.
-
-## Local dev with harness
-
-```bash
-# Toolkit (this repo)
-cd mcp_server_dart && dart test
-
-# Harness (sibling clone)
-cd ../flutter_harness
-cp pubspec_overrides.yaml.example pubspec_overrides.yaml   # path → this repo
-dart pub get && dart test
-export FLUTTER_MCP_TOOLKIT_ROOT="$(cd ../mcp_flutter && pwd)"
-bash tool/harness/check_hs_fixtures.sh
-```

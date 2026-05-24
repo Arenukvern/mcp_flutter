@@ -5,10 +5,9 @@
 
 ## [3.0.5](https://github.com/Arenukvern/mcp_flutter/compare/v3.0.4...v3.0.5) (2026-05-19)
 
-
 ### Bug Fixes
 
-* readme ([b95e8b3](https://github.com/Arenukvern/mcp_flutter/commit/b95e8b3d25c5529e21c79a3b06ebd97524573671))
+- readme ([b95e8b3](https://github.com/Arenukvern/mcp_flutter/commit/b95e8b3d25c5529e21c79a3b06ebd97524573671))
 
 ## [Unreleased]
 
@@ -138,42 +137,42 @@ their full `fmt_*` spelling in both CLI and MCP. See
 [docs/start_here/migration_v2_to_v3.mdx](docs/start_here/migration_v2_to_v3.mdx)
 for the smallest-possible-diff guide.
 
-| v2 (legacy) | v3 (MCP `tools/call` name) |
-| --- | --- |
-| `tap_widget` | `fmt_tap_widget` |
-| `enter_text` | `fmt_enter_text` |
-| `scroll` | `fmt_scroll` |
-| `long_press` | `fmt_long_press` |
-| `swipe` | `fmt_swipe` |
-| `drag` | `fmt_drag` |
-| `hover` | `fmt_hover` |
-| `press_key` | `fmt_press_key` |
-| `semantic_snapshot` | `fmt_semantic_snapshot` |
-| `wait_for` | `fmt_wait_for` |
-| `fill_form` | `fmt_fill_form` |
-| `navigate` | `fmt_navigate` |
-| `handle_dialog` | `fmt_handle_dialog` |
-| `connect_debug_app` | `fmt_connect_debug_app` |
-| `discover_debug_apps` | `fmt_discover_debug_apps` |
-| `get_vm` | `fmt_get_vm` |
-| `get_extension_rpcs` | `fmt_get_extension_rpcs` |
-| `hot_reload_flutter` | `fmt_hot_reload_flutter` |
-| `hot_restart_flutter` | `fmt_hot_restart_flutter` |
-| `hot_reload_and_capture` | `fmt_hot_reload_and_capture` |
-| `evaluate_dart_expression` | `fmt_evaluate_dart_expression` |
-| `get_recent_logs` | `fmt_get_recent_logs` |
-| `get_view_details` | `fmt_get_view_details` |
-| `get_app_errors` | `fmt_get_app_errors` |
-| `get_screenshots` | `fmt_get_screenshots` |
-| `capture_ui_snapshot` | `fmt_capture_ui_snapshot` |
-| `inspect_widget_at_point` | `fmt_inspect_widget_at_point` |
-| `debug_dump_layer_tree` (`--dumps`) | `fmt_debug_dump_layer_tree` |
-| `debug_dump_semantics_tree` (`--dumps`) | `fmt_debug_dump_semantics_tree` |
-| `debug_dump_render_tree` (`--dumps`) | `fmt_debug_dump_render_tree` |
-| `debug_dump_focus_tree` (`--dumps`) | `fmt_debug_dump_focus_tree` |
-| `listClientToolsAndResources` | `fmt_list_client_tools_and_resources` |
-| `runClientTool` | `fmt_client_tool` |
-| `runClientResource` | `fmt_client_resource` |
+| v2 (legacy)                             | v3 (MCP `tools/call` name)            |
+| --------------------------------------- | ------------------------------------- |
+| `tap_widget`                            | `fmt_tap_widget`                      |
+| `enter_text`                            | `fmt_enter_text`                      |
+| `scroll`                                | `fmt_scroll`                          |
+| `long_press`                            | `fmt_long_press`                      |
+| `swipe`                                 | `fmt_swipe`                           |
+| `drag`                                  | `fmt_drag`                            |
+| `hover`                                 | `fmt_hover`                           |
+| `press_key`                             | `fmt_press_key`                       |
+| `semantic_snapshot`                     | `fmt_semantic_snapshot`               |
+| `wait_for`                              | `fmt_wait_for`                        |
+| `fill_form`                             | `fmt_fill_form`                       |
+| `navigate`                              | `fmt_navigate`                        |
+| `handle_dialog`                         | `fmt_handle_dialog`                   |
+| `connect_debug_app`                     | `fmt_connect_debug_app`               |
+| `discover_debug_apps`                   | `fmt_discover_debug_apps`             |
+| `get_vm`                                | `fmt_get_vm`                          |
+| `get_extension_rpcs`                    | `fmt_get_extension_rpcs`              |
+| `hot_reload_flutter`                    | `fmt_hot_reload_flutter`              |
+| `hot_restart_flutter`                   | `fmt_hot_restart_flutter`             |
+| `hot_reload_and_capture`                | `fmt_hot_reload_and_capture`          |
+| `evaluate_dart_expression`              | `fmt_evaluate_dart_expression`        |
+| `get_recent_logs`                       | `fmt_get_recent_logs`                 |
+| `get_view_details`                      | `fmt_get_view_details`                |
+| `get_app_errors`                        | `fmt_get_app_errors`                  |
+| `get_screenshots`                       | `fmt_get_screenshots`                 |
+| `capture_ui_snapshot`                   | `fmt_capture_ui_snapshot`             |
+| `inspect_widget_at_point`               | `fmt_inspect_widget_at_point`         |
+| `debug_dump_layer_tree` (`--dumps`)     | `fmt_debug_dump_layer_tree`           |
+| `debug_dump_semantics_tree` (`--dumps`) | `fmt_debug_dump_semantics_tree`       |
+| `debug_dump_render_tree` (`--dumps`)    | `fmt_debug_dump_render_tree`          |
+| `debug_dump_focus_tree` (`--dumps`)     | `fmt_debug_dump_focus_tree`           |
+| `listClientToolsAndResources`           | `fmt_list_client_tools_and_resources` |
+| `runClientTool`                         | `fmt_client_tool`                     |
+| `runClientResource`                     | `fmt_client_resource`                 |
 
 The dynamic-registry host trio
 (`fmt_list_client_tools_and_resources`, `fmt_client_tool`, `fmt_client_resource`)
@@ -210,14 +209,14 @@ updates `PATH` for you on first run.
 
 #### Capability kernel
 
-- `flutter_mcp_toolkit_capability_kernel/` — pure-Dart contracts: `Capability`,
+- `packages/server_capability_kernel/` — pure-Dart contracts: `Capability`,
   `CapabilityContext`, `HostService`, `CommandRunner`, prefix validators,
   and a testing library shipping `FakeCommandRunner` /
   `FakeCapabilityContext`.
-- `flutter_mcp_toolkit_capability_core/` — the bundled `fmt` capability. Registers all 27
+- `packages/server_capability_core/` — the bundled `fmt` capability. Registers all 27
   Playwright-style tools plus 4 `--dumps` tools when
   `dumps_supported=true`. No Flutter dependency on the server side.
-- `flutter_mcp_toolkit_core/` — pure-Dart command hierarchy
+- `packages/core/` — pure-Dart command hierarchy
   (`CoreCommand`, `CoreResult.toErrorEnvelopeJson`) and value types
   shared between server, CLI, and capability core.
 - `McpHost` registry on the server applies the `<capabilityId>_` prefix

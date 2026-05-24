@@ -2,7 +2,7 @@
 
 - **Status:** Accepted
 - **Shipped:** v3.0.0
-- **Authoritative source:** [`flutter_mcp_toolkit_capability_kernel/lib/`](https://github.com/Arenukvern/mcp_flutter/tree/main/flutter_mcp_toolkit_capability_kernel/lib)
+- **Authoritative source:** [`packages/server_capability_kernel/lib/`](https://github.com/Arenukvern/mcp_flutter/tree/main/packages/server_capability_kernel/lib)
 
 ## Context
 
@@ -79,6 +79,7 @@ migration window by years.
 ## Consequences
 
 **What changed:**
+
 - `mcp_server_dart`'s static dep tree contains zero Flutter packages.
   `uses-material-design` warnings in server builds disappeared.
 - All MCP tool names from the bundled `fmt` capability are prefixed: `tap_widget` → `fmt_tap_widget`,
@@ -96,6 +97,7 @@ migration window by years.
   own `main.dart` to compose a different set.
 
 **What we paid:**
+
 - Every existing client-side configuration referencing a tool by name had to
   be updated. v3.0.0 ships the breaking change without a shim.
 - Future capability work (live-edit re-integration, network introspection)
