@@ -248,6 +248,16 @@ final class GetScreenshotsCommand extends CoreCommand {
   String get name => 'get_screenshots';
 }
 
+final class FocusWindowCommand extends CoreCommand {
+  const FocusWindowCommand({this.targetPid});
+
+  /// Optional VM process id; resolved from the connection when omitted.
+  final int? targetPid;
+
+  @override
+  String get name => 'focus_window';
+}
+
 final class InspectWidgetAtPointCommand extends CoreCommand {
   const InspectWidgetAtPointCommand({
     required this.x,

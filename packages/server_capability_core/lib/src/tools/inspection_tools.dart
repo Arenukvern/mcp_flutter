@@ -275,6 +275,34 @@ void registerInspectionTools(final CapabilityContext context) {
       },
     ),
   );
+
+  context.registerTool(
+    ToolRegistration(
+      name: 'focus_window',
+      description:
+          'Focus the host macOS app window or iOS Simulator before desktop capture.',
+      inputSchema: <String, Object?>{
+        'type': 'object',
+        'additionalProperties': false,
+        'properties': <String, Object?>{
+          'targetPid': <String, Object?>{
+            'type': 'integer',
+            'description':
+                'Optional VM process id (defaults to the connected VM).',
+          },
+          'connection': connectionOverrideJsonSchema(),
+        },
+      },
+      handler: (final request) async {
+        final args = request.arguments ?? const <String, Object?>{};
+        return runCommand(
+          runner,
+          args,
+          FocusWindowCommand(targetPid: intArgOrNull(args['targetPid'])),
+        );
+      },
+    ),
+  );
 }
 
 // ---------------------------------------------------------------------------

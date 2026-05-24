@@ -1,0 +1,59 @@
+# ADR 0007 — Web headful tab capture (proposed)
+
+- **Status:** Proposed
+- **Related:** [ADR 0006](/decisions/0006_platform_view_capture_routing)
+
+## Context
+
+Flutter web targets use `WebVisualCapturePlatformAdapter`: only
+`flutter_layer` is supported; `desktop_window` is unsupported. `HtmlElementView`,
+iframes, and WebGL/canvas content often appear as black holes in layer captures
+— the same class of problem ADR 0006 solves on macOS via host window pixels.
+
+Agents running `flutter run -d chrome` need a truthful screenshot path without
+assuming a broken renderer.
+
+## Options investigated
+
+| Approach                              | Mechanism                                                                                                                             | Pros                                                                                        | Cons                                                                                 |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| **A. macOS SCK on Chrome window**     | Extend `MacOsDesktopWindowScreenshotService` for `device: chrome` — candidates `Google Chrome`, `Chromium`, match window by title/PID | Reuses ScreenCaptureKit, `focus`, and `desktop_capture_recovery`; same MCP modes as desktop | macOS host only; ambiguous with multiple Chrome windows; not Linux/Windows CI        |
+| **B. Chrome DevTools Protocol (CDP)** | Parse browser debug port from `flutter run` output; MCP server calls `Page.captureScreenshot` over WebSocket                          | True tab pixels including DOM/canvas; works headless or headful                             | New port-discovery contract; security boundary (localhost); extra dependency surface |
+| **C. Playwright / Puppeteer sidecar** | External process attaches to browser                                                                                                  | Mature selectors and waits                                                                  | Heavy ops; second runtime; misaligned with single-binary CLI                         |
+| **D. App / extension bridge**         | `mcp_toolkit` JS interop or DevTools extension screenshot                                                                             | Accurate for embedded DOM when app cooperates                                               | Not generic; requires per-app wiring                                                 |
+
+## Decision (proposed)
+
+**Defer implementation.** Document options here; ship no web host capture in
+this pass.
+
+**Recommended sequencing when prioritized:**
+
+1. **Phase A** — Option A on macOS only (mirror iOS Simulator host capture):
+   lowest lift, reuses ADR 0006 recovery and `captureHints` upgrade for
+   `device: chrome` when `flutterDevice` is `chrome`/`web` and host is macOS.
+
+2. **Phase B** — Option B (CDP) for Linux/Windows hosts and precise tab
+   selection when multiple targets run.
+
+3. **Defer** C and D unless a concrete host-app driver appears.
+
+Until then, web troubleshooting remains: use `flutter_layer`, read
+`captureHints.platformViewsDetected`, and treat black regions as platform-view
+limits — not app rendering failures.
+
+## Consequences
+
+- Web `validate-runtime` may still pass with misleading `flutter_layer` PNGs
+  when `HtmlElementView` is present.
+- Agents on macOS _could_ get truthful pixels quickly via Phase A without
+  new protocols.
+
+## Notes
+
+- `chrome` and `web` already map to `effectivePlatform: web` in
+  `VisualCaptureBroker`.
+- Flutter may expose `--web-browser-debugging-port`; CDP Phase B should parse
+  machine/CLI discovery output rather than hard-code ports.
+- Headless web (`chrome` without window) is out of scope for Option A; CDP
+  remains the fit there.

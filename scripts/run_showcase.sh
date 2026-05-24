@@ -4,9 +4,14 @@
 # foreground so `flutter r` / `R` / `q` still work interactively.
 #
 # Typical agent use:
-#   make showcase                 # in one terminal
+#   make showcase-stop          # end stray instances first
+#   make showcase               # in one terminal
 #   flutter-mcp-toolkit exec --name semantic_snapshot \
 #     --args '{"connection":{"targetId":"<uri from this script>"}}'
+#
+# The showcase includes a Capture section with a real AppKitView (macOS).
+# For desktop_window screenshots / validate-runtime, grant Screen Recording
+# to the terminal or IDE running flutter-mcp-toolkit on this Mac.
 
 set -u
 set -o pipefail
@@ -14,22 +19,30 @@ set -o pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "${here}/.." && pwd)"
 app_dir="${repo_root}/flutter_test_app"
+showcase_dir="${repo_root}/.showcase"
+pid_file="${showcase_dir}/flutter.pid"
+app_log="${showcase_dir}/flutter_app.log"
 
-log_dir="$(mktemp -d -t flutter_showcase.XXXXXX)"
-app_log="${log_dir}/flutter_app.log"
-trap 'printf "\n[showcase] log retained at %s\n" "${app_log}"' EXIT
+stop_running_showcase() {
+  bash "${here}/stop_showcase.sh"
+}
+
+trap 'stop_running_showcase; printf "\n[showcase] log retained at %s\n" "${app_log}"' EXIT INT TERM
+
+mkdir -p "${showcase_dir}"
+stop_running_showcase
 
 printf "[showcase] running flutter test app on macOS…\n"
 printf "[showcase] logs → %s\n\n" "${app_log}"
 
 cd "${app_dir}"
 
-# Kick off the app in the background so we can poll the log for readiness.
+# Log to file; stream to terminal for interactive use.
 flutter run -d macos --debug 2>&1 | tee "${app_log}" &
 flutter_pid=$!
+echo "${flutter_pid}" > "${pid_file}"
 
-# Clean up the flutter process if this script is interrupted.
-trap 'kill ${flutter_pid} 2>/dev/null || true; printf "\n[showcase] stopped (pid %s)\n" "${flutter_pid}"' INT TERM
+printf "[showcase] flutter pid %s (also in %s)\n" "${flutter_pid}" "${pid_file}"
 
 # Wait up to 180s for the VM service endpoint to appear in the log.
 vm_uri=""
@@ -56,6 +69,7 @@ printf "  export WS='%s'\n" "${ws_uri}"
 printf "  flutter-mcp-toolkit exec --name semantic_snapshot \\\\\n"
 printf "    --args \"{\\\"connection\\\":{\\\"targetId\\\":\\\"\$WS\\\"}}\"\n"
 printf "\n"
-printf "[showcase] app is running. Press r for hot reload, q to quit.\n\n"
+printf "[showcase] app is running. Press r for hot reload, q to quit.\n"
+printf "[showcase] to stop from another terminal: make showcase-stop\n\n"
 
 wait "${flutter_pid}"

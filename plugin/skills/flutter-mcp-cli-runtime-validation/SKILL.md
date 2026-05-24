@@ -36,7 +36,7 @@ Permission behavior for this flow:
 - `doctor` remains read-only.
 - On macOS, Screen Recording permission belongs to the host process running `flutter-mcp-toolkit`.
 - On web, `flutter_layer` is the only supported truth path and no OS permission prompt is expected.
-- If the first `capture_ui_snapshot` attempt uses host `desktop_window` and fails (common on macOS when the window is not foregrounded, or for iOS Simulator), `validate-runtime` automatically retries once with `flutter_layer`.
+- Executor recovery retries host capture once (`desktopCaptureRetried` in screenshot payloads). When `captureHints.platformViewsDetected` is true, validate-runtime does not fall back to `flutter_layer`. Otherwise it may retry once with `flutter_layer` after a failed host capture.
 - You may pass the VM URI as global `--vm-service-uri` instead of `validate-runtime --target` when only one URI is needed.
 
 ## What `validate-runtime` Must Prove
@@ -55,7 +55,8 @@ Permission behavior for this flow:
 ## Output Handling
 
 - Use `data.summary` as pass/fail status for automation.
-- Use `data.summary.captureFallbackUsed` to see whether the `flutter_layer` retry succeeded after a failed `desktop_window` attempt.
+- Use `data.summary.capturePlatformViewsDetected` and `captureFocusAttempted` for platform-view routing.
+- Use `data.summary.captureFallbackUsed` to see whether a `flutter_layer` retry ran (skipped when platform views were detected).
 - Use `data.steps` for per-step evidence and retries.
 - Use `data.doctor.checks` to explain setup blockers.
 - Use `data.summary.screenshotFiles` for saved screenshot paths when `--save-images` is enabled.

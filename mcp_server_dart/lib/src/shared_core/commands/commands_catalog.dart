@@ -569,6 +569,25 @@ final class CommandCatalog {
         ),
       ),
       CommandSpec(
+        name: 'focus_window',
+        description:
+            'Bring the host app or iOS Simulator window to the foreground before desktop capture.',
+        inputSchema: _objectSchema(
+          properties: {
+            'targetPid': _intSchema(
+              description: 'Optional VM process id (defaults to connected VM).',
+            ),
+          },
+        ),
+        outputSchema: _objectSchema(additionalProperties: true),
+        requiresVm: false,
+        supportsWatch: false,
+        mcpExposed: true,
+        build: (final args) => FocusWindowCommand(
+          targetPid: _nullableIntArg(args, 'targetPid'),
+        ),
+      ),
+      CommandSpec(
         name: 'get_view_details',
         description:
             'Read detailed Flutter view metrics and widget tree information.',

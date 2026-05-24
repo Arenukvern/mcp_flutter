@@ -7,6 +7,8 @@ import 'dart:io' as io;
 import 'package:args/args.dart';
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_mcp_toolkit_server/flutter_mcp_core.dart';
+import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/desktop_capture_recovery.dart';
+import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/platform_view_hints.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/codegen_init_command.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/init_command.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/init_mode.dart';
@@ -668,6 +670,18 @@ Future<CoreResult> _runValidateRuntime({
     );
   }
 
+  var capturePlatformViewsDetected = false;
+  var captureFocusAttempted = false;
+
+  final viewDetailsProbe = await runStep(
+    'get_view_details_capture_probe',
+    const GetViewDetailsCommand(),
+  );
+  if (viewDetailsProbe == null) {
+    final probeData = _stepPayloadIfOk(steps, 'get_view_details_capture_probe');
+    capturePlatformViewsDetected = _platformViewsDetectedInPayload(probeData);
+  }
+
   CoreResult? snapshotFailure = await runStep(
     'capture_ui_snapshot',
     const CaptureUiSnapshotCommand(
@@ -676,7 +690,13 @@ Future<CoreResult> _runValidateRuntime({
       permissionPolicy: PermissionPolicy.autoRequestOnce,
     ),
   );
+  capturePlatformViewsDetected =
+      capturePlatformViewsDetected || _captureHintsPlatformViewsDetected(steps);
+  captureFocusAttempted = _desktopCaptureRetriedInSteps(steps);
   if (snapshotFailure != null &&
+      !shouldSkipFlutterLayerFallback(_platformViewHintsFromDetected(
+        capturePlatformViewsDetected,
+      )) &&
       _eligibleForFlutterLayerCaptureRetry(snapshotFailure)) {
     snapshotFailure = await runStep(
       'capture_ui_snapshot_flutter_layer',
@@ -756,7 +776,12 @@ Future<CoreResult> _runValidateRuntime({
       ),
       shouldRetry: _shouldRetryPostReloadCapture,
     );
+    captureFocusAttempted =
+        captureFocusAttempted || _desktopCaptureRetriedInSteps(steps);
     if (afterReloadSnapshotFailure != null &&
+        !shouldSkipFlutterLayerFallback(_platformViewHintsFromDetected(
+          capturePlatformViewsDetected,
+        )) &&
         _eligibleForFlutterLayerCaptureRetry(afterReloadSnapshotFailure)) {
       afterReloadSnapshotFailure = await runStep(
         'capture_ui_snapshot_after_reload_flutter_layer',
@@ -816,6 +841,8 @@ Future<CoreResult> _runValidateRuntime({
         'visualCaptureCommand': 'capture_ui_snapshot',
         'requiredExtensions': requiredSorted,
         'captureFallbackUsed': captureFallbackUsed,
+        'capturePlatformViewsDetected': capturePlatformViewsDetected,
+        'captureFocusAttempted': captureFocusAttempted,
         'captureBackend':
             _captureBackend(primaryCapture) ??
             _captureBackend(postReloadCapture),
@@ -1357,8 +1384,9 @@ void _printInteractiveNarrativeIfNeeded({
       return;
     case 'validate-runtime':
       io.stdout.writeln(
-        'validate-runtime: visual capture tries auto mode first, then '
-        'flutter_layer if desktop_window host capture fails.',
+        'validate-runtime: visual capture tries auto mode first; executor '
+        'recovery retries host capture once (desktopCaptureRetried). When '
+        'platform views are detected, flutter_layer fallback is skipped.',
       );
       return;
     case 'permissions':
@@ -1474,6 +1502,84 @@ String? _resolveVmTargetUri({
     return fromCommand;
   }
   return fromCommand ?? fromGlobal;
+}
+
+bool _captureHintsPlatformViewsDetected(
+  final List<Map<String, Object?>> steps,
+) {
+  for (final step in steps) {
+    if (step['ok'] != true) {
+      continue;
+    }
+    final data = step['data'];
+    if (data is! Map) {
+      continue;
+    }
+    final screenshots = data['screenshots'];
+    if (screenshots is Map) {
+      final hints = screenshots['captureHints'];
+      if (hints is Map && hints['platformViewsDetected'] == true) {
+        return true;
+      }
+    }
+    final hints = data['captureHints'];
+    if (hints is Map && hints['platformViewsDetected'] == true) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool _desktopCaptureRetriedInSteps(final List<Map<String, Object?>> steps) {
+  for (final step in steps) {
+    final name = '${step['name']}';
+    if (!name.contains('capture_ui_snapshot') || step['ok'] != true) {
+      continue;
+    }
+    final data = step['data'];
+    if (data is! Map) {
+      continue;
+    }
+    final map = data is Map<String, Object?>
+        ? data
+        : data.cast<String, Object?>();
+    final screenshots = map['screenshots'];
+    if (screenshots is Map) {
+      final shotMap = screenshots is Map<String, Object?>
+          ? screenshots
+          : screenshots.cast<String, Object?>();
+      if (shotMap['desktopCaptureRetried'] == true) {
+        return true;
+      }
+    }
+    if (map['desktopCaptureRetried'] == true) {
+      return true;
+    }
+  }
+  return false;
+}
+
+PlatformViewHints _platformViewHintsFromDetected(final bool detected) =>
+    PlatformViewHints(
+      platformViewsDetected: detected,
+      matches: const <PlatformViewMatch>[],
+      recommendedMode: detected ? kCaptureHintRecommendedDesktopWindow : null,
+      warning: detected ? kPlatformViewWarning : null,
+    );
+
+bool _platformViewsDetectedInPayload(final Map<String, Object?>? payload) {
+  if (payload == null) {
+    return false;
+  }
+  final hints = payload['captureHints'];
+  if (hints is Map && hints['platformViewsDetected'] == true) {
+    return true;
+  }
+  final tree = payload['widgetTree'];
+  if (tree is Map) {
+    return detectPlatformViews(tree).platformViewsDetected;
+  }
+  return false;
 }
 
 bool _eligibleForFlutterLayerCaptureRetry(final CoreResult result) {

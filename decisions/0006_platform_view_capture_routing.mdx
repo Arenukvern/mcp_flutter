@@ -1,0 +1,78 @@
+# ADR 0006 — Platform-view capture routing
+
+- **Status:** Accepted
+- **Shipped:** Unreleased (post platform-view capture work)
+
+## Context
+
+`flutter_layer` screenshots composite only the Flutter layer tree via
+`layer.addToScene`. Native platform views (`AndroidView`, `UiKitView`,
+`HtmlElementView`, `PlatformViewLink`) and many external textures render as
+empty or black regions in those PNGs even when the on-screen UI is correct.
+
+Agents and `validate-runtime` treated such captures as rendering bugs. Host
+`desktop_window` capture (ScreenCaptureKit on macOS) is the truthful path, but
+routing was inconsistent: iOS Simulator targets never used host capture, and
+`validate-runtime` fell back to `flutter_layer` after a failed desktop attempt.
+
+## Decision
+
+1. **Detection** — Walk `get_view_details` / `view_screenshots` widget trees
+   for strong platform-view types (and weak `Texture` hints). Expose stable
+   `captureHints` JSON (`platformViewsDetected`, `matches`, `recommendedMode`,
+   `warning`).
+
+2. **Auto upgrade** — When `mode: auto`, platform views are detected, and the
+   macOS host can capture (`macos` or `ios` Simulator), resolve to
+   `desktop_window` before `prepareForCapture`.
+
+3. **Warnings** — When the caller forces `flutter_layer` but platform views are
+   present, attach `warnings`, `captureHints`, and `suggestedAction` without
+   blocking the request.
+
+4. **Host capture** — On macOS host, `desktop_window` supports macOS app bundles
+   and iOS Simulator windows (`Simulator` candidate + VM PID). Swift helper
+   exposes `focus` (NSRunningApplication + Simulator AppleScript) before
+   `capture`.
+
+5. **Recovery** — Single module
+   [`desktop_capture_recovery.dart`](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_server_dart/lib/src/capabilities/visual_capture/desktop_capture_recovery.dart):
+   one extra `focus` + `capture` cycle after a retryable desktop failure when
+   platform views are detected or mode is explicitly `desktop_window`. Metadata:
+   `desktopCaptureRetried`, `desktopCaptureRecovery`.
+
+6. **validate-runtime** — Do not fall back to `flutter_layer` when
+   `capturePlatformViewsDetected` is true. Report `captureFocusAttempted` from
+   executor recovery metadata (not duplicate `focus_window` CLI steps).
+
+7. **Tool** — `focus_window` / `fmt_focus_window` for explicit foregrounding.
+
+Detector logic lives in `packages/core` and is duplicated in `mcp_toolkit` to
+avoid workspace dependency pins on `test_api`.
+
+## Consequences
+
+**Easier**
+
+- Agents see explicit hints instead of debugging fake blank UI.
+- macOS Simulator Metal/WGPU-style apps can use host pixels without a custom
+  app bridge.
+
+**Harder**
+
+- `auto` / `flutter_layer` screenshot paths may call `view_details` once per
+  request (extra VM round-trip).
+- Screen Recording permission still applies to the host CLI process, not the
+  Flutter app.
+
+**Paid**
+
+- Duplicated `platform_view_hints` in `mcp_toolkit` until workspace deps allow
+  a single shared import.
+
+## Notes
+
+- `Texture` alone sets `platformViewsDetected: false` but still appears in
+  `matches` with `confidence: low`.
+- Black-pixel analysis in PNGs is intentionally deferred.
+- Web headful tab capture is tracked in [ADR 0007](/decisions/0007_web_headful_tab_capture).

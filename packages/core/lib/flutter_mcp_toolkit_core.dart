@@ -9,3 +9,4 @@ export 'src/types/error_codes.dart';
 export 'src/types/results.dart';
 export 'src/types/runtime_configuration.dart';
 export 'src/visual_capture/permission_types.dart';
+export 'src/visual_capture/platform_view_hints.dart';

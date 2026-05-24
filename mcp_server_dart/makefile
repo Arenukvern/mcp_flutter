@@ -20,7 +20,7 @@ inspect-verbose:
 .PHONY: cleanup
 cleanup:
 	@echo "🧹 Cleaning up background processes..."
-	@pkill -f flutter-mcp-toolkit-server || true
+	@bash ../scripts/stop_showcase.sh
 	@echo "✅ Cleanup complete"
 
 # Docker targets

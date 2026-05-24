@@ -42,6 +42,56 @@ void main() {
       expect(capture, isNull);
     });
 
+    test('ios on macOS host uses simulator candidates and focus', () async {
+      if (!Platform.isMacOS) {
+        return;
+      }
+      final tempDir = await Directory.systemTemp.createTemp('mcp_ios_capture');
+      addTearDown(() async {
+        if (tempDir.existsSync()) {
+          await tempDir.delete(recursive: true);
+        }
+      });
+
+      final commands = <String>[];
+      String? compiledBinary;
+      final service = MacOsDesktopWindowScreenshotService(
+        runProcess: (final executable, final arguments) async {
+          if (executable == 'swiftc') {
+            compiledBinary = arguments.last;
+            return ProcessResult(0, 0, '', '');
+          }
+          expect(executable, equals(compiledBinary));
+          commands.add(arguments.first);
+          if (arguments.first == 'focus') {
+            return ProcessResult(0, 0, jsonEncode(<String, Object?>{'ok': true}), '');
+          }
+          return ProcessResult(
+            0,
+            0,
+            jsonEncode(<String, Object?>{
+              'ok': true,
+              'pngBase64': base64Encode(<int>[9, 9, 9]),
+              'windowCaptureVisibility': 'on_screen',
+            }),
+            '',
+          );
+        },
+      );
+
+      final capture = await service.capture(
+        projectDir: tempDir.path,
+        device: 'ios',
+        compress: true,
+        targetPid: 4411,
+        cacheDir: tempDir.path,
+      );
+
+      expect(capture, isNotNull);
+      expect(commands, equals(<String>['focus', 'capture']));
+      expect(commands.last, 'capture');
+    });
+
     test('captures base64 PNG payload from swift helper output', () async {
       final tempDir = await Directory.systemTemp.createTemp(
         'mcp_window_capture',
@@ -58,6 +108,7 @@ void main() {
       File('${bundleDir.path}/sample_app').writeAsStringSync('');
 
       String? compiledBinary;
+      final commands = <String>[];
 
       final service = MacOsDesktopWindowScreenshotService(
         runProcess: (final executable, final arguments) async {
@@ -66,6 +117,10 @@ void main() {
             return ProcessResult(1, 0, '', '');
           }
           expect(executable, equals(compiledBinary));
+          commands.add(arguments.first);
+          if (arguments.first == 'focus') {
+            return ProcessResult(1, 0, jsonEncode(<String, Object?>{'ok': true}), '');
+          }
           expect(arguments.first, equals('capture'));
           expect(arguments[1], equals('--pid'));
           expect(arguments[2], equals('98223'));
@@ -114,6 +169,7 @@ void main() {
         equals('offscreen_or_hidden'),
       );
       expect(compiledBinary, isNotNull);
+      expect(commands, equals(<String>['focus', 'capture']));
     });
 
     test(
@@ -133,12 +189,15 @@ void main() {
         )..createSync(recursive: true);
         File('${bundleDir.path}/sample_app').writeAsStringSync('');
 
-        late final String helperSourcePath;
+        String? helperSourcePath;
         final service = MacOsDesktopWindowScreenshotService(
           runProcess: (final executable, final arguments) async {
             if (executable == 'swiftc') {
               helperSourcePath = arguments[1];
               return ProcessResult(1, 0, '', '');
+            }
+            if (arguments.first == 'focus') {
+              return ProcessResult(1, 0, jsonEncode(<String, Object?>{'ok': true}), '');
             }
             final payload = <String, Object?>{
               'ok': true,
@@ -169,7 +228,7 @@ void main() {
           cacheDir: tempDir.path,
         );
 
-        final helperSource = File(helperSourcePath).readAsStringSync();
+        final helperSource = File(helperSourcePath!).readAsStringSync();
         expect(helperSource, contains('FileHandle.standardOutput.write(data)'));
         expect(helperSource, contains('Foundation.exit(0)'));
       },

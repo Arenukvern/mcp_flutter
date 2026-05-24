@@ -109,6 +109,52 @@ func permissionStatusPayload(_ status: String, message: String) {
     ])
 }
 
+func activateSimulatorApp() {
+    let source = """
+    tell application "Simulator" to activate
+    """
+    if let script = NSAppleScript(source: source) {
+        var error: NSDictionary?
+        _ = script.executeAndReturnError(&error)
+    }
+}
+
+@MainActor
+func focusWindow(candidates: Set<String>, expectedPid: Int32?) async {
+    _ = NSApplication.shared
+
+    if let expectedPid {
+        if let app = NSRunningApplication(processIdentifier: expectedPid) {
+            _ = app.activate(options: [.activateAllWindows, .activateIgnoringOtherApps])
+            let owner = app.localizedName ?? ""
+            if owner.lowercased().contains("simulator") {
+                activateSimulatorApp()
+            }
+            emit([
+                "ok": true,
+                "activatedPid": Int(expectedPid),
+                "owner": owner,
+            ])
+            return
+        }
+    }
+
+    if candidates.contains("simulator") || candidates.isEmpty {
+        activateSimulatorApp()
+        emit([
+            "ok": true,
+            "activated": "simulator",
+        ])
+        return
+    }
+
+    emit([
+        "ok": false,
+        "error": "focus_target_not_found",
+        "details": ["candidates": Array(candidates).sorted()],
+    ])
+}
+
 func openSettings() {
     guard let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") else {
         emit([
@@ -287,6 +333,21 @@ struct VisualCaptureHelper {
             )
         case "open-settings":
             openSettings()
+        case "focus":
+            var expectedPid: Int32?
+            var candidates = Set<String>()
+            var index = 1
+            while index < args.count {
+                let argument = args[index]
+                if argument == "--pid", index + 1 < args.count {
+                    expectedPid = Int32(args[index + 1])
+                    index += 2
+                    continue
+                }
+                candidates.insert(argument.lowercased())
+                index += 1
+            }
+            await focusWindow(candidates: candidates, expectedPid: expectedPid)
         case "capture":
             var expectedPid: Int32?
             var candidates = Set<String>()

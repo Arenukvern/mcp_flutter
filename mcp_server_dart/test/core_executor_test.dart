@@ -139,7 +139,6 @@ void main() {
             ),
             onCapture: (final pid) => capturedPid = pid,
           ),
-          activateMacOsTargetPid: (_) async {},
         );
 
         final result = await localExecutor.execute(
@@ -525,6 +524,13 @@ final class _FakeDesktopWindowScreenshotService
   @override
   bool supportsPlatform(final String effectivePlatform) =>
       effectivePlatform == 'macos';
+
+  @override
+  Future<Map<String, Object?>> focus({
+    required final String device,
+    final int? targetPid,
+    final String? cacheDir,
+  }) async => <String, Object?>{'ok': true};
 
   @override
   Future<DesktopWindowScreenshotCapture?> capture({

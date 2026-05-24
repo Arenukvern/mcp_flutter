@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 import 'package:test_app/agent_state.dart';
+import 'package:test_app/platform_view_showcase.dart';
 
 /// Showcase page for MCP Flutter — a single-page demonstration of every
 /// built-in interaction tool.
@@ -51,6 +52,8 @@ class _ShowcaseScreenState extends State<ShowcaseScreen> {
                 ),
                 children: const <Widget>[
                   _Header(),
+                  SizedBox(height: 56),
+                  _CaptureSection(),
                   SizedBox(height: 64),
                   _TapSection(),
                   SizedBox(height: 56),
@@ -523,6 +526,23 @@ class _IterateSection extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _CaptureSection extends StatelessWidget {
+  const _CaptureSection();
+
+  @override
+  Widget build(final BuildContext context) {
+    return const _Section(
+      label: 'Capture',
+      heading: 'Native view for screenshot routing',
+      headingSemanticsId: 'capture_section_heading',
+      hint:
+          'get_view_details → captureHints; get_screenshots mode:auto → '
+          'desktop_window on macOS host (Screen Recording permission required).',
+      child: ShowcasePlatformViewPanel(),
     );
   }
 }

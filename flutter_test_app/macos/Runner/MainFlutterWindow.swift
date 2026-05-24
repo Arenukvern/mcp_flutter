@@ -10,6 +10,12 @@ class MainFlutterWindow: NSWindow {
 
     RegisterGeneratedPlugins(registry: flutterViewController)
 
+    let registrar = flutterViewController.registrar(forPlugin: "ShowcasePlatformView")
+    registrar.register(
+      ShowcasePlatformViewFactory(),
+      withId: "showcase.platform.stub"
+    )
+
     super.awakeFromNib()
   }
 }

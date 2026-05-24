@@ -4,6 +4,8 @@ import 'dart:io';
 
 import 'package:test/test.dart';
 
+import 'support/showcase_cleanup.dart';
+
 void main() {
   final runIntegration =
       Platform.environment['RUN_FLUTTER_CLI_INTEGRATION'] == '1';
@@ -17,6 +19,9 @@ void main() {
 
     setUpAll(() async {
       if (!runIntegration) return;
+
+      await stopShowcaseProcesses();
+      await waitForPortFree(8181);
 
       stateDir = Directory.systemTemp.createTempSync(
         'flutter_mcp_toolkit_integration_',
@@ -77,15 +82,11 @@ void main() {
     tearDownAll(() async {
       if (!runIntegration) return;
 
-      try {
-        flutterProcess.stdin.writeln('q');
-        await flutterProcess.exitCode.timeout(const Duration(seconds: 20));
-      } on Exception catch (_) {
-        flutterProcess.kill(ProcessSignal.sigkill);
-      }
-
-      await stdoutSub.cancel();
-      await stderrSub.cancel();
+      await stopLaunchedFlutterProcess(
+        flutterProcess,
+        stdoutSub: stdoutSub,
+        stderrSub: stderrSub,
+      );
       _globalVmServiceWsUri = null;
       _stateFilePath = null;
       if (stateDir.existsSync()) {

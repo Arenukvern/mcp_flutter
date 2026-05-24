@@ -262,6 +262,14 @@ final class ConnectionContext {
   @visibleForTesting
   int? debugConnectedVmPidOverride;
 
+  /// Test-only: when set, view_details scan uses this payload without VM I/O.
+  @visibleForTesting
+  Map<String, Object?>? debugViewDetailsPayload;
+
+  /// Test-only: when set, view_screenshots uses this payload without VM I/O.
+  @visibleForTesting
+  Map<String, Object?>? debugViewScreenshotsPayload;
+
   /// VM process id for the active service connection, or null if unknown.
   Future<int?> resolveConnectedVmPid() async {
     final override = debugConnectedVmPidOverride;

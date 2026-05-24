@@ -8,6 +8,7 @@ import 'package:flutter/widgets.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
 
 import 'application_info.dart';
+import 'platform_view_hints.dart';
 
 final class _TreeBuildState {
   _TreeBuildState({required this.maxNodes});
@@ -29,7 +30,8 @@ final class _TreeBuildState {
 /// Builds structured widget-tree payloads for MCP view introspection tools.
 mixin ViewIntrospectionService {
   static const int _defaultMaxNodes = 2500;
-  static const int _defaultMaxDepth = 40;
+  /// MaterialApp / router scaffolding can exceed 40 levels before route content.
+  static const int _defaultMaxDepth = 96;
 
   /// Widget tree plus multi-view metrics for the `view_details` MCP tool.
   static Map<String, Object?> buildViewDetailsPayload() {
@@ -37,13 +39,17 @@ mixin ViewIntrospectionService {
     final state = _TreeBuildState(maxNodes: _defaultMaxNodes);
     final tree = _buildWidgetTree(state: state, maxDepth: _defaultMaxDepth);
 
+    final captureHints = _captureHintsFromLiveElements();
+
     return {
       'details': viewMetrics.map((final view) => view.toJson()).toList(),
       'widgetTree': tree,
+      'captureHints': captureHints.toCaptureHintsJson(),
       'summary': {
         'viewCount': viewMetrics.length,
         'nodeCount': state.visited,
         'truncated': state.truncated,
+        'platformViewsDetected': captureHints.platformViewsDetected,
       },
     };
   }
@@ -95,6 +101,35 @@ mixin ViewIntrospectionService {
           ? 'No widget matched ($x, $y).'
           : 'Inspected widget at ($x, $y).',
     };
+  }
+
+  /// Full element walk for [captureHints] (no depth cap; tree JSON stays bounded).
+  static PlatformViewHints _captureHintsFromLiveElements() {
+    final root = WidgetsBinding.instance.rootElement;
+    if (root == null) {
+      return PlatformViewHints.none;
+    }
+    final matches = <PlatformViewMatch>[];
+    var visited = 0;
+    const maxVisit = 8000;
+
+    void visit(final Element element, final int depth) {
+      if (visited >= maxVisit) {
+        return;
+      }
+      visited++;
+      accumulatePlatformViewSignals(
+        widgetType: element.widget.runtimeType.toString(),
+        renderObjectType: element.renderObject?.runtimeType.toString(),
+        depth: depth,
+        globalBounds: _globalBoundsForRenderObject(element.renderObject),
+        matches: matches,
+      );
+      element.visitChildElements((final child) => visit(child, depth + 1));
+    }
+
+    visit(root, 0);
+    return platformViewHintsFromMatches(matches);
   }
 
   static Map<String, Object?> _buildWidgetTree({

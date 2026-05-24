@@ -15,6 +15,7 @@ fmt_drag
 fmt_enter_text
 fmt_evaluate_dart_expression
 fmt_fill_form
+fmt_focus_window
 fmt_get_app_errors
 fmt_get_extension_rpcs
 fmt_get_recent_logs

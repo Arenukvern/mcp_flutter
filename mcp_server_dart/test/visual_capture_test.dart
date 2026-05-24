@@ -1,7 +1,46 @@
+import 'dart:io';
+
 import 'package:flutter_mcp_toolkit_server/flutter_mcp_core.dart';
+import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/desktop_window_screenshot.dart';
 import 'package:test/test.dart';
 
 void main() {
+  test('macOS host broker offers desktop_window for ios simulator targets', () async {
+    if (!Platform.isMacOS) {
+      return;
+    }
+
+    final broker = VisualCaptureBroker(
+      configuration: const CoreRuntimeConfiguration(
+        vmHost: 'localhost',
+        vmPort: 8181,
+        resourcesSupported: true,
+        imagesSupported: true,
+        dumpsSupported: false,
+        dynamicRegistrySupported: true,
+        saveImagesToFiles: false,
+        flutterDevice: 'ios',
+      ),
+      adapters: <VisualCapturePlatformAdapter>[
+        MacOsDesktopWindowScreenshotService(
+          runProcess: (_, final __) async => ProcessResult(
+            0,
+            0,
+            '{"ok":true,"status":"granted"}',
+            '',
+          ),
+        ),
+      ],
+    );
+
+    final prepared = await broker.prepareForCapture(
+      requestedMode: screenshotModeAuto,
+      policy: PermissionPolicy.checkOnly,
+    );
+
+    expect(prepared.actualMode, screenshotModeDesktopWindow);
+    expect(prepared.supportedModes, contains(screenshotModeDesktopWindow));
+  });
   test('app bridge metadata wins over placeholder adapter metadata', () async {
     final broker = VisualCaptureBroker(
       configuration: const CoreRuntimeConfiguration(

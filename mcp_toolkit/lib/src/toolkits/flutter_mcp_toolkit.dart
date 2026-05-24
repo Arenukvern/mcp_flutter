@@ -106,12 +106,17 @@ extension type OnViewScreenshotsEntry._(MCPCallEntry entry)
         final images = await ScreenshotService.takeScreenshots(
           compress: compress,
         );
+        final tree = ViewIntrospectionService.buildViewDetailsPayload();
+        final captureHints = tree['captureHints'];
         return MCPCallResult(
           message:
               'Screenshots taken for each view. '
               'If you find visual errors, you can try to request errors '
               'to get more information with stack trace',
-          parameters: {'images': images},
+          parameters: {
+            'images': images,
+            if (captureHints != null) 'captureHints': captureHints,
+          },
         );
       },
       definition: MCPToolDefinition(

@@ -5,6 +5,34 @@
 
 ## [Unreleased]
 
+### Added
+
+- Platform-view-aware visual capture: widget-tree `captureHints` detect `AndroidView` / `UiKitView` / `AppKitView` / `HtmlElementView` / `PlatformViewLink` (and weak `Texture` hints).
+- macOS showcase `AppKitView` panel (`showcase.platform.stub` native factory) for true-positive integration capture routing tests.
+- `ConnectionContext.debugViewDetailsPayload` / `debugViewScreenshotsPayload` test seams for hermetic executor capture-flow tests.
+- `get_screenshots` / `capture_ui_snapshot` with `mode: auto` upgrade to `desktop_window` when platform views are detected on a macOS host.
+- `flutter_layer` captures attach `warnings` and `captureHints` when platform views are present.
+- macOS host `desktop_window` capture for **iOS Simulator** targets (Simulator window + VM PID).
+- Swift visual-capture helper `focus` command; `focus_window` MCP tool (`fmt_focus_window`).
+- `validate-runtime` skips `flutter_layer` fallback when platform views are detected; executor recovery handles focus+capture retry (`capturePlatformViewsDetected`, `captureFocusAttempted`, `desktopCaptureRetried`).
+- Shared [`desktop_capture_recovery`](mcp_server_dart/lib/src/capabilities/visual_capture/desktop_capture_recovery.dart) dedupes host capture retry (no duplicate `focus_window` steps in validate-runtime).
+
+### Added
+
+- `scripts/stop_showcase.sh` and `make showcase-stop` to tear down stray `test_app` / `flutter run` / port `8181` / MCP server processes before showcase or integration runs.
+- Showcase logs and PID under `.showcase/`; `run_showcase.sh` stops previous instances on start and on exit.
+
+### Fixed
+
+- `get_view_details` `captureHints` use a full element-tree scan (widget-tree JSON remains depth-capped); showcase `AppKitView` is detected reliably.
+- Executor `_hintsFromPayload` trusts app-embedded `captureHints` instead of re-parsing a truncated widget tree.
+- Live integration tests decode MCP `CoreError`-only tool failures and assert `auto` → `desktop_window` routing when host capture is unavailable.
+
+### Documentation
+
+- README, debug skill, and CLI runtime-validation skill updated for platform-view capture routing.
+- ADR [0006](decisions/0006_platform_view_capture_routing.mdx) (accepted), ADR [0007](decisions/0007_web_headful_tab_capture.mdx) (proposed web headful investigation).
+
 ## [3.0.7] - 2026-05-20
 
 ### Fixed

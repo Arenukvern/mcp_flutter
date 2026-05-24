@@ -32,6 +32,7 @@ export 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart'
         parseScreenshotMode,
         GetViewDetailsCommand,
         GetScreenshotsCommand,
+        FocusWindowCommand,
         InspectWidgetAtPointCommand,
         CaptureUiSnapshotCommand,
         SemanticSnapshotCommand,

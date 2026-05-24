@@ -8,6 +8,12 @@ import 'dart:io';
 
 import 'package:test/test.dart';
 
+import 'support/showcase_cleanup.dart';
+
+// Integration tests require `RUN_FLUTTER_MCP_INTEGRATION=1` and a running
+// flutter_test_app on macOS (`make showcase` or scripts/run_showcase.sh) with
+// the ShowcasePlatformViewFactory registered for capture routing asserts.
+
 void main() {
   final runIntegration =
       Platform.environment['RUN_FLUTTER_MCP_INTEGRATION'] == '1';
@@ -20,6 +26,9 @@ void main() {
 
     setUpAll(() async {
       if (!runIntegration) return;
+
+      await stopShowcaseProcesses();
+      await waitForPortFree(8181);
 
       final appDir = _appDirectory();
       final pubGet = await Process.run('flutter', [
@@ -67,15 +76,11 @@ void main() {
     tearDownAll(() async {
       if (!runIntegration) return;
 
-      try {
-        flutterProcess.stdin.writeln('q');
-        await flutterProcess.exitCode.timeout(const Duration(seconds: 20));
-      } on Exception catch (_) {
-        flutterProcess.kill(ProcessSignal.sigkill);
-      }
-
-      await flutterStdoutSub.cancel();
-      await flutterStderrSub.cancel();
+      await stopLaunchedFlutterProcess(
+        flutterProcess,
+        stdoutSub: flutterStdoutSub,
+        stderrSub: flutterStderrSub,
+      );
       _globalVmServiceWsUri = null;
     });
 
@@ -352,15 +357,78 @@ void main() {
         await dispatch('fmt_connect_debug_app', {'connection': connection});
 
         // 3. inspection / capture tools.
-        await dispatch('fmt_get_view_details', {'connection': connection});
-        await dispatch('fmt_get_app_errors', {
+        final viewDetailsResp = await dispatch('fmt_get_view_details', {
           'connection': connection,
-          'count': 1,
         });
-        await dispatch('fmt_get_screenshots', {
+        final viewDetailsData = _decodeToolJsonPayload(viewDetailsResp);
+        expect(viewDetailsData['captureHints'], isA<Map>());
+        final captureHints =
+            viewDetailsData['captureHints'] as Map<String, dynamic>;
+        if (Platform.isMacOS) {
+          expect(
+            captureHints['platformViewsDetected'],
+            isTrue,
+            reason:
+                'showcase AppKitView panel should register platform view hints',
+          );
+        } else {
+          expect(captureHints['platformViewsDetected'], isA<bool>());
+        }
+
+        final autoScreenshots = await dispatch('fmt_get_screenshots', {
+          'connection': connection,
+          'compress': true,
+          'mode': 'auto',
+          'permissionPolicy': 'auto_request_once',
+        });
+        final autoEnvelope = _decodeToolEnvelope(autoScreenshots);
+        final autoPermission =
+            (autoEnvelope['errorDetails'] as Map?)?['permission'];
+        final autoRequestedMode =
+            autoEnvelope['requestedMode'] ??
+            (autoPermission is Map ? autoPermission['requestedMode'] : null);
+        expect(autoRequestedMode ?? 'auto', 'auto');
+        if (Platform.isMacOS) {
+          final autoActualMode =
+              autoEnvelope['actualMode'] ??
+              autoEnvelope['captureMode'] ??
+              (autoPermission is Map ? autoPermission['actualMode'] : null);
+          if (autoEnvelope['ok'] == true) {
+            expect(autoActualMode, 'desktop_window');
+          } else {
+            // Routing must still upgrade; host capture may fail without Screen Recording.
+            final details =
+                autoEnvelope['errorDetails'] as Map<String, dynamic>?;
+            expect(details, isNotNull);
+            final hints = details!['captureHints'] as Map<String, dynamic>?;
+            expect(hints?['platformViewsDetected'], isTrue);
+            final permission = details['permission'] as Map<String, dynamic>?;
+            expect(permission?['actualMode'], 'desktop_window');
+          }
+        } else {
+          expect(autoEnvelope['actualMode'], isA<String>());
+          if (captureHints['platformViewsDetected'] == true) {
+            expect(autoEnvelope['actualMode'], 'desktop_window');
+          }
+        }
+
+        final flutterLayerScreenshots = await dispatch('fmt_get_screenshots', {
           'connection': connection,
           'compress': true,
           'mode': 'flutter_layer',
+        });
+        final layerResult = flutterLayerScreenshots['result'] as Map;
+        final layerContent = (layerResult['content'] as List?) ?? const [];
+        expect(layerContent, isNotEmpty);
+        if (Platform.isMacOS) {
+          // Binary success returns ImageContent only; platform-view warning is
+          // asserted on captureHints from get_view_details above.
+          expect(captureHints['warning'], isNotNull);
+        }
+
+        await dispatch('fmt_get_app_errors', {
+          'connection': connection,
+          'count': 1,
         });
         await dispatch('fmt_capture_ui_snapshot', {
           'connection': connection,
@@ -494,6 +562,7 @@ const _expectedCoreTools = <String>{
   'fmt_get_extension_rpcs',
   'fmt_get_recent_logs',
   'fmt_get_screenshots',
+  'fmt_focus_window',
   'fmt_get_view_details',
   'fmt_get_vm',
   'fmt_handle_dialog',
@@ -538,7 +607,17 @@ Map<String, dynamic> _decodeToolJsonPayload(
   final Map<String, dynamic> response, {
   final bool useLastText = false,
 }) {
-  final content = _extractToolContent(response);
+  final envelope = _decodeToolEnvelope(response, useLastText: useLastText);
+  expect(envelope['ok'], isTrue, reason: '${envelope['errorCode']}');
+  return envelope;
+}
+
+/// Decodes MCP tool JSON without failing on structured error envelopes.
+Map<String, dynamic> _decodeToolEnvelope(
+  final Map<String, dynamic> response, {
+  final bool useLastText = false,
+}) {
+  final content = _extractToolContentAllowingError(response);
   final textNodes = content
       .where((final c) => '${c['type']}' == 'text')
       .map((final c) => '${c['text'] ?? ''}')
@@ -548,7 +627,42 @@ Map<String, dynamic> _decodeToolJsonPayload(
   final selectedText = useLastText ? textNodes.last : textNodes.first;
   final decoded = _tryDecodeJsonMap(selectedText);
   expect(decoded, isNotNull);
-  return decoded!;
+  final envelope = decoded!;
+  // MCP tool errors serialize CoreError only: {code, message, details, ...}.
+  if (envelope['ok'] != true &&
+      envelope['code'] is String &&
+      envelope['message'] is String) {
+    final details = envelope['details'];
+    final permission = details is Map ? details['permission'] : null;
+    return <String, dynamic>{
+      'ok': false,
+      'errorCode': envelope['code'],
+      'errorDetails': details,
+      'requestedMode': permission is Map ? permission['requestedMode'] : null,
+      'actualMode': permission is Map ? permission['actualMode'] : null,
+    };
+  }
+  if (envelope['ok'] == true) {
+    return <String, dynamic>{
+      'ok': true,
+      ...?envelope['data'] as Map<String, dynamic>?,
+    };
+  }
+  if (envelope['ok'] == false) {
+    final error = envelope['error'] as Map<String, dynamic>?;
+    return <String, dynamic>{
+      'ok': false,
+      'errorCode': error?['code'],
+      'errorDetails': error?['details'],
+      'requestedMode': (error?['details'] as Map?)?['permission'] is Map
+          ? ((error!['details'] as Map)['permission'] as Map)['requestedMode']
+          : null,
+      'actualMode': (error?['details'] as Map?)?['permission'] is Map
+          ? ((error!['details'] as Map)['permission'] as Map)['actualMode']
+          : null,
+    };
+  }
+  return <String, dynamic>{'ok': true, ...envelope};
 }
 
 String _decodeFirstToolText(final Map<String, dynamic> response) {
@@ -564,7 +678,12 @@ String _decodeFirstToolText(final Map<String, dynamic> response) {
 
 List<Map<String, dynamic>> _extractToolContent(
   final Map<String, dynamic> response,
-) {
+) => _extractToolContentAllowingError(response, failOnToolError: true);
+
+List<Map<String, dynamic>> _extractToolContentAllowingError(
+  final Map<String, dynamic> response, {
+  final bool failOnToolError = false,
+}) {
   expect(response['error'], isNull);
   final result = response['result'] as Map<String, dynamic>;
   final isError = result['isError'] as bool?;
@@ -572,7 +691,7 @@ List<Map<String, dynamic>> _extractToolContent(
       .whereType<Map>()
       .map((final entry) => entry.cast<String, dynamic>())
       .toList();
-  if (isError == true) {
+  if (isError == true && failOnToolError) {
     final errorText = content
         .map((final entry) => '${entry['text'] ?? entry['data'] ?? entry}')
         .join('\n')

@@ -29,9 +29,12 @@ release-artifacts:
 # Run the flutter_test_app showcase on macOS and print the canonical VM URI
 # once the app is ready. Blocks the terminal so the agent can copy the URI
 # into subsequent CLI calls (`--args '{"connection":{"targetId":"<uri>"}}'`).
-.PHONY: showcase
+.PHONY: showcase showcase-stop
 showcase:
 	@bash $(CURDIR)/scripts/run_showcase.sh
+
+showcase-stop:
+	@bash $(CURDIR)/scripts/stop_showcase.sh
 
 .PHONY: sync-skills
 sync-skills:

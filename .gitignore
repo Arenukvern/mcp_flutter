@@ -37,6 +37,9 @@ mcp_server_dart/flutter_inspector_mcp
 .ae_hub/
 .gitnexus
 
+# Local showcase PID/log (scripts/run_showcase.sh)
+.showcase/
+
 # Sibling repos (not part of this tree — clone separately)
 # ../flutter_harness
 # ../flutter_mcp_video

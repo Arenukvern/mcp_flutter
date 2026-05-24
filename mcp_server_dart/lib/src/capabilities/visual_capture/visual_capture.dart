@@ -319,10 +319,11 @@ final class VisualCaptureBroker {
   }) : _adapters = <VisualCapturePlatformAdapter>[
          if (adapters != null) ...adapters,
          const WebVisualCapturePlatformAdapter(),
-         const UnsupportedUntilAppBridgeVisualCapturePlatformAdapter(
-           platforms: <String>{'ios'},
-           backend: 'ios_app_bridge',
-         ),
+         if (!io.Platform.isMacOS)
+           const UnsupportedUntilAppBridgeVisualCapturePlatformAdapter(
+             platforms: <String>{'ios'},
+             backend: 'ios_app_bridge',
+           ),
          const UnsupportedUntilAppBridgeVisualCapturePlatformAdapter(
            platforms: <String>{'android'},
            backend: 'android_app_bridge',

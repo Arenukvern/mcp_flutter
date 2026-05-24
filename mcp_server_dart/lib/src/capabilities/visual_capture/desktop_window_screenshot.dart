@@ -19,6 +19,12 @@ abstract interface class DesktopWindowScreenshotService {
     final int? targetPid,
     final String? cacheDir,
   });
+
+  Future<Map<String, Object?>> focus({
+    required final String device,
+    final int? targetPid,
+    final String? cacheDir,
+  });
 }
 
 final class DesktopWindowScreenshotCapture {
@@ -85,8 +91,12 @@ final class MacOsDesktopWindowScreenshotService
   String get truthMode => screenshotModeDesktopWindow;
 
   @override
-  bool supportsPlatform(final String effectivePlatform) =>
-      effectivePlatform == 'macos';
+  bool supportsPlatform(final String effectivePlatform) {
+    if (effectivePlatform == 'macos') {
+      return true;
+    }
+    return effectivePlatform == 'ios' && Platform.isMacOS;
+  }
 
   @override
   Future<PermissionBrokerResult> status({
@@ -143,6 +153,33 @@ final class MacOsDesktopWindowScreenshotService
   }
 
   @override
+  Future<Map<String, Object?>> focus({
+    required final String device,
+    final int? targetPid,
+    final String? cacheDir,
+  }) async {
+    if (!_supportsHostDevice(device)) {
+      return <String, Object?>{
+        'ok': false,
+        'message': 'Window focus is only available on macOS host targets.',
+      };
+    }
+
+    final candidates = _windowCandidates(
+      projectDir: '',
+      device: device,
+    );
+    return _runHelper(
+      command: 'focus',
+      cacheDir: cacheDir,
+      trailing: <String>[
+        if (targetPid != null) ...<String>['--pid', '$targetPid'],
+        ...candidates,
+      ],
+    );
+  }
+
+  @override
   Future<DesktopWindowScreenshotCapture?> capture({
     required final String projectDir,
     required final String device,
@@ -150,14 +187,19 @@ final class MacOsDesktopWindowScreenshotService
     final int? targetPid,
     final String? cacheDir,
   }) async {
-    if (device != 'macos') {
+    if (!_supportsHostDevice(device)) {
       return null;
     }
 
-    final appNames = inferMacOsAppCandidates(projectDir: projectDir);
+    final appNames = _windowCandidates(
+      projectDir: projectDir,
+      device: device,
+    );
     if (appNames.isEmpty) {
       return null;
     }
+
+    await focus(device: device, targetPid: targetPid, cacheDir: cacheDir);
 
     final payload = await _runHelper(
       command: 'capture',
@@ -296,6 +338,28 @@ String? _cacheDir(final String? stateRootDir) {
   }
   return value;
 }
+
+bool _supportsHostDevice(final String device) {
+  if (device == 'macos') {
+    return Platform.isMacOS;
+  }
+  if (device == 'ios') {
+    return Platform.isMacOS;
+  }
+  return false;
+}
+
+List<String> _windowCandidates({
+  required final String projectDir,
+  required final String device,
+}) {
+  if (device == 'ios') {
+    return inferIosSimulatorCandidates();
+  }
+  return inferMacOsAppCandidates(projectDir: projectDir);
+}
+
+List<String> inferIosSimulatorCandidates() => const <String>['simulator'];
 
 List<String> inferMacOsAppCandidates({required final String projectDir}) {
   final candidates = <String>{};
