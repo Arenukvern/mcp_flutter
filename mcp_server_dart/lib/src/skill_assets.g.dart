@@ -950,7 +950,7 @@ Every failure returns `{code, message, details, descriptor, recovery}`. Always r
 **Recovery:**
 
 1. `flutter-mcp-toolkit doctor --json` — check `visual_capture_permission_denied` separately.
-2. Check `captureHints.platformViewsDetected` on `get_view_details` or screenshot payloads. Detectors include `UiKitView`, `AppKitView`, `AndroidView`, and `HtmlElementView`. Black holes in `flutter_layer` PNGs usually mean native platform views — use `desktop_window` or `auto` on macOS host (including iOS Simulator). The repo showcase (`make showcase-stop` then `make showcase`) exposes a macOS `AppKitView` in its Capture section for routing smoke tests. Run `make showcase-stop` before starting another showcase or integration run to avoid orphaned `test_app` windows.
+2. Check `captureHints` on `get_view_details` or screenshot payloads. Strong signals (`platformViewsDetected`): `UiKitView`, `AppKitView`, `AndroidView`, `HtmlElementView` — use `desktop_window` or `auto` on macOS host (macOS app, iOS Simulator, or Chrome/web). Weak signals (`weakSignalsDetected`): `Texture` only — prefer `desktop_window` on macOS host but `auto` does not upgrade. WGPU/custom engines without platform views: set `MCPToolkitBinding.captureHintsContributor` in the app. Image-only `get_screenshots` tools also return routing JSON in `meta` and a leading text block. Showcase: `make showcase-stop` then `make showcase` (macOS `AppKitView` Capture section).
 3. Run `focus_window` (MCP: `fmt_focus_window`) then retry `get_screenshots` with `mode: desktop_window`.
 4. For **`validate-runtime`**, executor recovery retries focus+capture once (`desktopCaptureRetried`). When platform views are detected, validate-runtime does not fall back to `flutter_layer`. Read `capturePlatformViewsDetected`, `captureFocusAttempted`, and `captureFallbackUsed` in `data.summary`.
 
@@ -1438,7 +1438,7 @@ Permission behavior for this flow:
 - `validate-runtime` stays read/write only for visual capture and defaults to `auto_request_once`.
 - `doctor` remains read-only.
 - On macOS, Screen Recording permission belongs to the host process running `flutter-mcp-toolkit`.
-- On web, `flutter_layer` is the only supported truth path and no OS permission prompt is expected.
+- On web: macOS host can use `desktop_window` (Chrome window via ScreenCaptureKit); other hosts use `flutter_layer` only. Check `captureHints.weakSignalsDetected` for `Texture`-only apps.
 - Executor recovery retries host capture once (`desktopCaptureRetried` in screenshot payloads). When `captureHints.platformViewsDetected` is true, validate-runtime does not fall back to `flutter_layer`. Otherwise it may retry once with `flutter_layer` after a failed host capture.
 - You may pass the VM URI as global `--vm-service-uri` instead of `validate-runtime --target` when only one URI is needed.
 

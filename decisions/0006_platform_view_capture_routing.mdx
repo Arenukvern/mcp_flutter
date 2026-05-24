@@ -72,7 +72,10 @@ avoid workspace dependency pins on `test_api`.
 
 ## Notes
 
-- `Texture` alone sets `platformViewsDetected: false` but still appears in
-  `matches` with `confidence: low`.
+- `Texture` alone sets `weakSignalsDetected: true`, `recommendedMode:
+desktop_window`, and a soft warning — but `platformViewsDetected` stays
+  `false` (no `auto` upgrade, no validate-runtime fallback skip).
+- Apps without platform-view widgets can set `MCPToolkitBinding.captureHintsContributor`
+  to assert hybrid/GPU rendering (`platformViewsDetected: true`).
 - Black-pixel analysis in PNGs is intentionally deferred.
 - Web headful tab capture is tracked in [ADR 0007](/decisions/0007_web_headful_tab_capture).

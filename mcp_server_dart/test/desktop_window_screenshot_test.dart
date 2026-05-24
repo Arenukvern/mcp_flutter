@@ -32,11 +32,11 @@ void main() {
   });
 
   group('MacOsDesktopWindowScreenshotService', () {
-    test('returns null for non-macos devices', () async {
+    test('returns null for unsupported host devices', () async {
       final service = MacOsDesktopWindowScreenshotService();
       final capture = await service.capture(
         projectDir: Directory.systemTemp.path,
-        device: 'web',
+        device: 'android',
         compress: true,
       );
       expect(capture, isNull);
@@ -64,7 +64,12 @@ void main() {
           expect(executable, equals(compiledBinary));
           commands.add(arguments.first);
           if (arguments.first == 'focus') {
-            return ProcessResult(0, 0, jsonEncode(<String, Object?>{'ok': true}), '');
+            return ProcessResult(
+              0,
+              0,
+              jsonEncode(<String, Object?>{'ok': true}),
+              '',
+            );
           }
           return ProcessResult(
             0,
@@ -90,6 +95,65 @@ void main() {
       expect(capture, isNotNull);
       expect(commands, equals(<String>['focus', 'capture']));
       expect(commands.last, 'capture');
+    });
+
+    test('chrome on macOS host uses browser candidates and focus', () async {
+      if (!Platform.isMacOS) {
+        return;
+      }
+      final tempDir = await Directory.systemTemp.createTemp(
+        'mcp_chrome_capture',
+      );
+      addTearDown(() async {
+        if (tempDir.existsSync()) {
+          await tempDir.delete(recursive: true);
+        }
+      });
+
+      final commands = <String>[];
+      String? compiledBinary;
+      final service = MacOsDesktopWindowScreenshotService(
+        runProcess: (final executable, final arguments) async {
+          if (executable == 'swiftc') {
+            compiledBinary = arguments.last;
+            return ProcessResult(0, 0, '', '');
+          }
+          expect(executable, equals(compiledBinary));
+          commands.add(arguments.first);
+          if (arguments.first == 'focus') {
+            expect(
+              arguments,
+              containsAll(<String>['google chrome', 'chromium', 'chrome']),
+            );
+            return ProcessResult(
+              0,
+              0,
+              jsonEncode(<String, Object?>{'ok': true}),
+              '',
+            );
+          }
+          return ProcessResult(
+            0,
+            0,
+            jsonEncode(<String, Object?>{
+              'ok': true,
+              'pngBase64': base64Encode(<int>[8, 8, 8]),
+              'windowCaptureVisibility': 'on_screen',
+            }),
+            '',
+          );
+        },
+      );
+
+      final capture = await service.capture(
+        projectDir: tempDir.path,
+        device: 'chrome',
+        compress: true,
+        cacheDir: tempDir.path,
+      );
+
+      expect(capture, isNotNull);
+      expect(commands, equals(<String>['focus', 'capture']));
     });
 
     test('captures base64 PNG payload from swift helper output', () async {
@@ -119,7 +183,12 @@ void main() {
           expect(executable, equals(compiledBinary));
           commands.add(arguments.first);
           if (arguments.first == 'focus') {
-            return ProcessResult(1, 0, jsonEncode(<String, Object?>{'ok': true}), '');
+            return ProcessResult(
+              1,
+              0,
+              jsonEncode(<String, Object?>{'ok': true}),
+              '',
+            );
           }
           expect(arguments.first, equals('capture'));
           expect(arguments[1], equals('--pid'));
@@ -197,7 +266,12 @@ void main() {
               return ProcessResult(1, 0, '', '');
             }
             if (arguments.first == 'focus') {
-              return ProcessResult(1, 0, jsonEncode(<String, Object?>{'ok': true}), '');
+              return ProcessResult(
+                1,
+                0,
+                jsonEncode(<String, Object?>{'ok': true}),
+                '',
+              );
             }
             final payload = <String, Object?>{
               'ok': true,

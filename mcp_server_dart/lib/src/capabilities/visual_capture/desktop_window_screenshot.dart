@@ -92,10 +92,16 @@ final class MacOsDesktopWindowScreenshotService
 
   @override
   bool supportsPlatform(final String effectivePlatform) {
+    if (!Platform.isMacOS) {
+      return false;
+    }
     if (effectivePlatform == 'macos') {
       return true;
     }
-    return effectivePlatform == 'ios' && Platform.isMacOS;
+    if (effectivePlatform == 'ios') {
+      return true;
+    }
+    return effectivePlatform == 'web';
   }
 
   @override
@@ -165,10 +171,7 @@ final class MacOsDesktopWindowScreenshotService
       };
     }
 
-    final candidates = _windowCandidates(
-      projectDir: '',
-      device: device,
-    );
+    final candidates = _windowCandidates(projectDir: '', device: device);
     return _runHelper(
       command: 'focus',
       cacheDir: cacheDir,
@@ -191,10 +194,7 @@ final class MacOsDesktopWindowScreenshotService
       return null;
     }
 
-    final appNames = _windowCandidates(
-      projectDir: projectDir,
-      device: device,
-    );
+    final appNames = _windowCandidates(projectDir: projectDir, device: device);
     if (appNames.isEmpty) {
       return null;
     }
@@ -340,14 +340,23 @@ String? _cacheDir(final String? stateRootDir) {
 }
 
 bool _supportsHostDevice(final String device) {
-  if (device == 'macos') {
-    return Platform.isMacOS;
+  if (!Platform.isMacOS) {
+    return false;
   }
-  if (device == 'ios') {
-    return Platform.isMacOS;
+  switch (device) {
+    case 'macos':
+    case 'ios':
+    case 'chrome':
+    case 'web':
+    case 'web-server':
+      return true;
+    default:
+      return false;
   }
-  return false;
 }
+
+bool _isWebHostDevice(final String device) =>
+    device == 'chrome' || device == 'web' || device == 'web-server';
 
 List<String> _windowCandidates({
   required final String projectDir,
@@ -356,10 +365,19 @@ List<String> _windowCandidates({
   if (device == 'ios') {
     return inferIosSimulatorCandidates();
   }
+  if (_isWebHostDevice(device)) {
+    return inferChromeWindowCandidates();
+  }
   return inferMacOsAppCandidates(projectDir: projectDir);
 }
 
 List<String> inferIosSimulatorCandidates() => const <String>['simulator'];
+
+List<String> inferChromeWindowCandidates() => const <String>[
+  'google chrome',
+  'chromium',
+  'chrome',
+];
 
 List<String> inferMacOsAppCandidates({required final String projectDir}) {
   final candidates = <String>{};

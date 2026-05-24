@@ -68,6 +68,9 @@ void main() {
 
       final hints = detectPlatformViews(tree);
       expect(hints.platformViewsDetected, isFalse);
+      expect(hints.weakSignalsDetected, isTrue);
+      expect(hints.recommendedMode, kCaptureHintRecommendedDesktopWindow);
+      expect(hints.warning, kWeakTextureWarning);
       expect(hints.matches.single.confidence, 'low');
     });
 
@@ -130,6 +133,25 @@ void main() {
       expect(merged['captureHints'], isA<Map<String, Object?>>());
       expect(merged['warnings'], contains('extra'));
       expect(merged['warnings'], contains(kPlatformViewWarning));
+      expect(merged['suggestedAction'], isNotNull);
+    });
+
+    test('adds captureHints for weak Texture signals', () {
+      final hints = detectPlatformViews(<String, Object?>{
+        'widgetType': 'Column',
+        'children': <Object?>[
+          <String, Object?>{'widgetType': 'Texture', 'children': const []},
+        ],
+      });
+      final merged = mergeCaptureHintMetadata(
+        data: <String, Object?>{'images': <String>[]},
+        hints: hints,
+      );
+
+      final captureHints = merged['captureHints']! as Map<String, Object?>;
+      expect(captureHints['weakSignalsDetected'], isTrue);
+      expect(captureHints['platformViewsDetected'], isFalse);
+      expect(merged['warnings'], contains(kWeakTextureWarning));
       expect(merged['suggestedAction'], isNotNull);
     });
   });

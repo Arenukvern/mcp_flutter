@@ -107,60 +107,61 @@ void main() {
       },
     );
 
-    test('auto upgrades to desktop_window when UiKitView in debug payload', () async {
-      void logger(
-        final LoggingLevel level,
-        final String message, {
-        final String logger = 'test',
-      }) {}
+    test(
+      'auto upgrades to desktop_window when UiKitView in debug payload',
+      () async {
+        void logger(
+          final LoggingLevel level,
+          final String message, {
+          final String logger = 'test',
+        }) {}
 
-      final context = ConnectionContext(
-        defaultHost: 'localhost',
-        defaultPort: 8181,
-        logger: logger,
-        discoverPorts: () async => <int>[8181],
-      );
-      context.debugViewDetailsPayload = _uiKitViewDebugPayload();
-      addTearDown(() => context.debugViewDetailsPayload = null);
+        final context = ConnectionContext(
+          defaultHost: 'localhost',
+          defaultPort: 8181,
+          logger: logger,
+          discoverPorts: () async => <int>[8181],
+        );
+        context.debugViewDetailsPayload = _uiKitViewDebugPayload();
+        addTearDown(() => context.debugViewDetailsPayload = null);
 
-      final executor = DefaultCoreCommandExecutor(
-        connectionContext: context,
-        portScanner: CorePortScanner(logger: logger),
-        imageFileSaver: CoreImageFileSaver(logger: logger),
-        configuration: const CoreRuntimeConfiguration(
-          vmHost: 'localhost',
-          vmPort: 8181,
-          resourcesSupported: true,
-          imagesSupported: true,
-          dumpsSupported: false,
-          dynamicRegistrySupported: false,
-          saveImagesToFiles: false,
-          flutterProjectDir: '/tmp/sample_app',
-          flutterDevice: 'macos',
-        ),
-        desktopWindowScreenshotService: const _SuccessFakeAdapter(),
-      );
+        final executor = DefaultCoreCommandExecutor(
+          connectionContext: context,
+          portScanner: CorePortScanner(logger: logger),
+          imageFileSaver: CoreImageFileSaver(logger: logger),
+          configuration: const CoreRuntimeConfiguration(
+            vmHost: 'localhost',
+            vmPort: 8181,
+            resourcesSupported: true,
+            imagesSupported: true,
+            dumpsSupported: false,
+            dynamicRegistrySupported: false,
+            saveImagesToFiles: false,
+            flutterProjectDir: '/tmp/sample_app',
+            flutterDevice: 'macos',
+          ),
+          desktopWindowScreenshotService: const _SuccessFakeAdapter(),
+        );
 
-      final result = await executor.execute(
-        const GetScreenshotsCommand(mode: ScreenshotMode.auto),
-      );
+        final result = await executor.execute(const GetScreenshotsCommand());
 
-      expect(result.ok, isTrue);
-      final data = result.data! as Map<String, Object?>;
-      expect(data['requestedMode'], 'auto');
-      expect(data['actualMode'], 'desktop_window');
-      expect(data['captureMode'], 'desktop_window');
-      expect(data['captureHints'], isA<Map<String, Object?>>());
-      final hints = data['captureHints']! as Map<String, Object?>;
-      expect(hints['platformViewsDetected'], isTrue);
-      final warnings = data['warnings'] as List<dynamic>?;
-      expect(
-        warnings?.any(
-          (final w) => '$w'.contains('upgraded to desktop_window'),
-        ),
-        isTrue,
-      );
-    });
+        expect(result.ok, isTrue);
+        final data = result.data! as Map<String, Object?>;
+        expect(data['requestedMode'], 'auto');
+        expect(data['actualMode'], 'desktop_window');
+        expect(data['captureMode'], 'desktop_window');
+        expect(data['captureHints'], isA<Map<String, Object?>>());
+        final hints = data['captureHints']! as Map<String, Object?>;
+        expect(hints['platformViewsDetected'], isTrue);
+        final warnings = data['warnings'] as List<dynamic>?;
+        expect(
+          warnings?.any(
+            (final w) => '$w'.contains('upgraded to desktop_window'),
+          ),
+          isTrue,
+        );
+      },
+    );
 
     test('flutter_layer with platform views attaches warnings', () async {
       void logger(
@@ -219,6 +220,72 @@ void main() {
       expect(data['captureHints'], isA<Map<String, Object?>>());
     });
 
+    test('flutter_layer with Texture only attaches weak warnings', () async {
+      void logger(
+        final LoggingLevel level,
+        final String message, {
+        final String logger = 'test',
+      }) {}
+
+      final context = ConnectionContext(
+        defaultHost: 'localhost',
+        defaultPort: 8181,
+        logger: logger,
+        discoverPorts: () async => <int>[8181],
+      );
+      context.debugViewDetailsPayload = <String, Object?>{
+        'widgetTree': <String, Object?>{
+          'widgetType': 'Column',
+          'children': <Object?>[
+            <String, Object?>{
+              'widgetType': 'Texture',
+              'children': const <Object?>[],
+            },
+          ],
+        },
+      };
+      context.debugViewScreenshotsPayload = const <String, Object?>{
+        'images': <String>['AQID'],
+      };
+      addTearDown(() {
+        context.debugViewDetailsPayload = null;
+        context.debugViewScreenshotsPayload = null;
+      });
+
+      final executor = DefaultCoreCommandExecutor(
+        connectionContext: context,
+        portScanner: CorePortScanner(logger: logger),
+        imageFileSaver: CoreImageFileSaver(logger: logger),
+        configuration: const CoreRuntimeConfiguration(
+          vmHost: 'localhost',
+          vmPort: 8181,
+          resourcesSupported: true,
+          imagesSupported: true,
+          dumpsSupported: false,
+          dynamicRegistrySupported: false,
+          saveImagesToFiles: false,
+          flutterProjectDir: '/tmp/sample_app',
+          flutterDevice: 'macos',
+        ),
+        desktopWindowScreenshotService: const _FlutterLayerCapableFakeAdapter(),
+      );
+
+      final result = await executor.execute(
+        const GetScreenshotsCommand(mode: ScreenshotMode.flutterLayer),
+      );
+
+      expect(result.ok, isTrue);
+      final data = result.data! as Map<String, Object?>;
+      expect(data['captureMode'], screenshotModeFlutterLayer);
+      expect(data['desktopCaptureRetried'], isNull);
+      expect(data['actualMode'], isNot(equals('desktop_window')));
+      final hints = data['captureHints']! as Map<String, Object?>;
+      expect(hints['weakSignalsDetected'], isTrue);
+      expect(hints['platformViewsDetected'], isFalse);
+      final warnings = data['warnings'] as List<dynamic>?;
+      expect(warnings?.any((final w) => '$w'.contains('Texture')), isTrue);
+    });
+
     test(
       'desktop failure with platform views puts captureHints in error details',
       () async {
@@ -255,9 +322,7 @@ void main() {
           desktopWindowScreenshotService: const _AlwaysFailFakeAdapter(),
         );
 
-        final result = await executor.execute(
-          const GetScreenshotsCommand(mode: ScreenshotMode.auto),
-        );
+        final result = await executor.execute(const GetScreenshotsCommand());
 
         expect(result.ok, isFalse);
         expect(result.data, isNull);

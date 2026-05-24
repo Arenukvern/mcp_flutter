@@ -20,6 +20,7 @@ export 'src/services/control_flow_service.dart';
 export 'src/services/error_monitor.dart';
 export 'src/services/gesture_interaction_service.dart';
 export 'src/services/log_capture_service.dart';
+export 'src/services/platform_view_hints.dart';
 export 'src/services/semantic_snapshot_service.dart';
 export 'src/services/view_introspection_service.dart';
 export 'src/services/wait_predicate_service.dart';

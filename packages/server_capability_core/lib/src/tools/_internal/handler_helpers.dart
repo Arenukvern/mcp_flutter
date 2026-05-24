@@ -118,3 +118,25 @@ int intArgOrDefault(final Object? raw, {required final int defaultValue}) {
   if (v == null || v == 0) return defaultValue;
   return v;
 }
+
+/// Routing metadata from screenshot payloads for MCP image-only tool responses.
+@internal
+Map<String, Object?> screenshotRoutingSummary(final Map<String, Object?> data) {
+  final summary = <String, Object?>{};
+  for (final key in <String>[
+    'captureHints',
+    'warnings',
+    'suggestedAction',
+    'requestedMode',
+    'actualMode',
+    'captureMode',
+    'desktopCaptureRetried',
+    'desktopCaptureRecovery',
+  ]) {
+    final value = data[key];
+    if (value != null) {
+      summary[key] = value;
+    }
+  }
+  return summary;
+}

@@ -610,7 +610,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     try {
       final images = jsonDecodeListAs<String>(extensionJson['images']);
       final extensionHints = _hintsFromPayload(extensionJson);
-      final mergedHints = hints.platformViewsDetected ? hints : extensionHints;
+      final mergedHints = hints.hasCaptureRoutingHints ? hints : extensionHints;
 
       Map<String, Object?> payload;
       if (!configuration.saveImagesToFiles) {
@@ -734,7 +734,11 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       return false;
     }
     final device = configuration.flutterDevice;
-    return device == 'macos' || device == 'ios';
+    return device == 'macos' ||
+        device == 'ios' ||
+        device == 'chrome' ||
+        device == 'web' ||
+        device == 'web-server';
   }
 
   Map<String, Object?> _withCaptureHints({
@@ -756,10 +760,10 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
         'Bring the app or Simulator window to the foreground and retry.',
       );
     }
-    final shouldWarn = forceFlutterLayerWarning && hints.platformViewsDetected;
+    final shouldWarn = forceFlutterLayerWarning && hints.hasCaptureRoutingHints;
     return mergeCaptureHintMetadata(
       data: data,
-      hints: shouldWarn || hints.platformViewsDetected
+      hints: shouldWarn || hints.hasCaptureRoutingHints
           ? hints
           : PlatformViewHints.none,
       extraWarnings: extraWarnings,

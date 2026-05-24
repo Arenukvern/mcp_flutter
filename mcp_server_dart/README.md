@@ -122,7 +122,7 @@ CLI runtime gate for app inspection:
 
 - Require `ext.mcp.toolkit.app_errors`, `ext.mcp.toolkit.view_details`, `ext.mcp.toolkit.view_screenshots`, and `ext.mcp.toolkit.inspect_widget_at_point` from `get_extension_rpcs`.
 - If missing, app-level screenshot/layout/error inspection is blocked until `mcp_toolkit` is installed, initialized, and the app is hot restarted or rerun.
-- If screenshots show a **black rectangle** where a map/camera/web view should be, check `captureHints.platformViewsDetected` on `get_view_details` or screenshot payloads. Use `mode: desktop_window` (or keep `auto`, which upgrades on macOS host) instead of `flutter_layer`.
+- If screenshots show a **black rectangle** where a map/camera/web view should be, check `captureHints` on `get_view_details` or screenshot payloads (`platformViewsDetected` or `weakSignalsDetected`). Use `mode: desktop_window` (or keep `auto`, which upgrades on macOS host when strong signals are present) instead of `flutter_layer`.
 - Host capture runs one automatic focus+capture recovery cycle on retryable failures (`desktopCaptureRetried` in the payload). You can also call `focus_window` then retry `get_screenshots` with `desktop_window`.
 - If first explicit-URI connect times out, retry once and validate with `doctor --json --target <ws_uri> --timeout-ms 10000`.
 - When `--output-dir` is set, `validate-runtime` mirrors its JSON envelope to `<output-dir>/validate-runtime.json` and screenshot files are written under `<output-dir>/.mcp_screenshots/`.
@@ -132,10 +132,11 @@ CLI runtime gate for app inspection:
 
 - `doctor` stays read-only. It now reports `visual_capture_backend`, `visual_capture_permission`, `visual_capture_truth_mode`, and `app_permission_bridge`.
 - Interactive CLI capture flows default to `auto_request_once` for `exec get_screenshots`, `exec capture_ui_snapshot`, and `validate-runtime`. Raw command schemas still default to `check_only`.
-- macOS truthful capture is `desktop_window` (including **iOS Simulator** on a Mac host). Screen Recording permission belongs to the host process running `flutter-mcp-toolkit`, not the Flutter app. Use `permissions request` for the native prompt and `permissions open-settings` after a denial.
-- `get_view_details` and `view_screenshots` include `captureHints` when native platform views are detected (`AndroidView`, `UiKitView`, `AppKitView`, `HtmlElementView`, `PlatformViewLink`; `Texture` is a weak hint).
+- macOS truthful capture is `desktop_window` (including **iOS Simulator** and **Chrome / web** on a Mac host). Screen Recording permission belongs to the host process running `flutter-mcp-toolkit`, not the Flutter app. Use `permissions request` for the native prompt and `permissions open-settings` after a denial.
+- `get_view_details` and `view_screenshots` include `captureHints` when native platform views are detected (`AndroidView`, `UiKitView`, `AppKitView`, `HtmlElementView`, `PlatformViewLink`). `Texture` sets `weakSignalsDetected` with a soft warning (no `auto` upgrade). Hybrid engines without platform views can use `MCPToolkitBinding.captureHintsContributor` in the app.
+- Image-only `get_screenshots` MCP responses include routing metadata in `meta` and a leading JSON text block when `captureHints` / `warnings` are present.
 - For a macOS true-positive routing smoke test, run `make showcase-stop` then `make showcase` (or `scripts/run_showcase.sh`) and use the showcase **Capture** section (`AppKitView` + native factory). Use `make showcase-stop` before a new run to avoid orphaned `test_app` windows.
-- Web has no OS permission flow. `flutter_layer` is the supported path, `desktop_window` is unsupported, and `auto` resolves to `flutter_layer`. See [ADR 0007](../decisions/0007_web_headful_tab_capture.mdx) for proposed headful tab capture.
+- Web on a **macOS host**: `desktop_window` captures the Chrome window (largest match when multiple windows exist). Other hosts: `flutter_layer` only. See [ADR 0007](../decisions/0007_web_headful_tab_capture.mdx) for CDP follow-up (Phase B).
 - App-owned capture targets such as iOS/Android/Linux must have a reachable VM
   target selected before `permissions` or `doctor` can verify bridge-backed
   permission tools/resources. Use `--target <ws_uri>` or the global

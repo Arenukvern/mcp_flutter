@@ -16,6 +16,10 @@
 - Swift visual-capture helper `focus` command; `focus_window` MCP tool (`fmt_focus_window`).
 - `validate-runtime` skips `flutter_layer` fallback when platform views are detected; executor recovery handles focus+capture retry (`capturePlatformViewsDetected`, `captureFocusAttempted`, `desktopCaptureRetried`).
 - Shared [`desktop_capture_recovery`](mcp_server_dart/lib/src/capabilities/visual_capture/desktop_capture_recovery.dart) dedupes host capture retry (no duplicate `focus_window` steps in validate-runtime).
+- Weak `Texture` tier: `captureHints.weakSignalsDetected` + `recommendedMode: desktop_window` advisory without `auto` upgrade; distinct `flutter_layer` warning.
+- `MCPToolkitBinding.captureHintsContributor` for WGPU/custom-engine apps without platform-view widgets (`mcp_toolkit` depends on `flutter_mcp_toolkit_core` via path).
+- `get_screenshots` image-only MCP responses include routing metadata in `meta` and a leading JSON `TextContent` block.
+- macOS host `desktop_window` capture for **Chrome / web** targets (ScreenCaptureKit on browser window; ADR 0007 Phase A).
 
 ### Added
 
@@ -27,11 +31,12 @@
 - `get_view_details` `captureHints` use a full element-tree scan (widget-tree JSON remains depth-capped); showcase `AppKitView` is detected reliably.
 - Executor `_hintsFromPayload` trusts app-embedded `captureHints` instead of re-parsing a truncated widget tree.
 - Live integration tests decode MCP `CoreError`-only tool failures and assert `auto` → `desktop_window` routing when host capture is unavailable.
+- Executor preserves weak `captureHints` on `flutter_layer` success (not only `platformViewsDetected`).
 
 ### Documentation
 
-- README, debug skill, and CLI runtime-validation skill updated for platform-view capture routing.
-- ADR [0006](decisions/0006_platform_view_capture_routing.mdx) (accepted), ADR [0007](decisions/0007_web_headful_tab_capture.mdx) (proposed web headful investigation).
+- README, debug skill, and CLI runtime-validation skill updated for platform-view capture routing, weak Texture tier, `captureHintsContributor`, and macOS Chrome host capture.
+- ADR [0006](decisions/0006_platform_view_capture_routing.mdx) (accepted), ADR [0007](decisions/0007_web_headful_tab_capture.mdx) Phase A accepted (macOS Chrome host capture).
 
 ## [3.0.7] - 2026-05-20
 

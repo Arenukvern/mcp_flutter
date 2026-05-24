@@ -10,6 +10,7 @@ import 'mcp_toolkit_binding_base.dart';
 import 'mcp_toolkit_extensions.dart';
 import 'services/error_monitor.dart';
 import 'services/log_capture_service.dart';
+import 'services/platform_view_hints.dart';
 import 'services/semantic_snapshot_service.dart';
 import 'toolkits/flutter_mcp_toolkit.dart';
 
@@ -58,6 +59,18 @@ class MCPToolkitBinding extends MCPToolkitBindingBase
   static final instance = MCPToolkitBinding._();
 
   MCPCallHandler? _selectAtPointHandler;
+  PlatformViewHints Function()? _captureHintsContributor;
+
+  /// Optional override for hybrid / GPU apps without platform-view widgets.
+  ///
+  /// Return hints with [PlatformViewHints.platformViewsDetected] true when
+  /// `flutter_layer` screenshots omit pixels (WGPU, Metal, Vulkan, etc.).
+  PlatformViewHints Function()? get captureHintsContributor =>
+      _captureHintsContributor;
+
+  set captureHintsContributor(final PlatformViewHints Function()? contributor) {
+    _captureHintsContributor = contributor;
+  }
 
   /// Custom handler used by select-at-point flows when the app wants to
   /// override the default widget selection behavior.

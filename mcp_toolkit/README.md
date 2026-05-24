@@ -91,6 +91,20 @@ addMcpTool(
 - **Semantic Snapshot + Gestures** (`SemanticSnapshotService`, `GestureInteractionService`): Compact JSON snapshot of interactive widgets with stable refs, plus ref-driven `tap`/`long_press`/`enter_text`/`scroll`/`swipe`/`drag` using a two-tier (semantic-action → pointer-event) dispatch.
 - **Log Capture** (`LogCaptureService`): Ring buffer of recent `print`/`debugPrint` output surfaced via `get_recent_logs`.
 - **Optional Permission Bridge**: Lets the app expose permission status/request/open-settings handlers only when you register a delegate.
+- **Capture hints for hybrid rendering**: `view_details` and `view_screenshots` expose `captureHints` when native platform views or external `Texture` widgets are detected. Apps that render via WGPU/Metal/Vulkan without platform views can opt in:
+
+```dart
+MCPToolkitBinding.instance.captureHintsContributor = () {
+  return const PlatformViewHints(
+    platformViewsDetected: true,
+    matches: [],
+    recommendedMode: kCaptureHintRecommendedDesktopWindow,
+    warning: kPlatformViewWarning,
+  );
+};
+```
+
+Import `PlatformViewHints` and constants from `package:mcp_toolkit/mcp_toolkit.dart` (re-exported from `flutter_mcp_toolkit_core`).
 
 ## Integration
 

@@ -9,6 +9,10 @@ const String kCaptureHintRecommendedDesktopWindow = 'desktop_window';
 const String kPlatformViewWarning =
     'Native platform view detected. flutter_layer omits embedded pixels.';
 
+const String kWeakTextureWarning =
+    'External Texture detected; flutter_layer may omit GPU/canvas pixels. '
+    'Prefer desktop_window on macOS host.';
+
 const _strongWidgetSuffixes = <String>{
   'AndroidView',
   'UiKitView',
@@ -59,9 +63,11 @@ final class PlatformViewHints {
     required this.matches,
     required this.recommendedMode,
     required this.warning,
+    this.weakSignalsDetected = false,
   });
 
   final bool platformViewsDetected;
+  final bool weakSignalsDetected;
   final List<PlatformViewMatch> matches;
   final String? recommendedMode;
   final String? warning;
@@ -73,8 +79,12 @@ final class PlatformViewHints {
     warning: null,
   );
 
+  bool get hasCaptureRoutingHints =>
+      platformViewsDetected || weakSignalsDetected;
+
   Map<String, Object?> toCaptureHintsJson() => <String, Object?>{
     'platformViewsDetected': platformViewsDetected,
+    if (weakSignalsDetected) 'weakSignalsDetected': true,
     'matches': matches.map((final m) => m.toJson()).toList(growable: false),
     if (recommendedMode != null) 'recommendedMode': recommendedMode,
     if (warning != null) 'warning': warning,
@@ -89,19 +99,98 @@ PlatformViewHints platformViewHintsFromMatches(
     return PlatformViewHints.none;
   }
   final hasStrong = matches.any((final m) => m.confidence == 'high');
-  return PlatformViewHints(
-    platformViewsDetected: hasStrong,
-    matches: matches,
-    recommendedMode: hasStrong ? kCaptureHintRecommendedDesktopWindow : null,
-    warning: hasStrong ? kPlatformViewWarning : null,
-  );
+  final hasWeak = matches.any((final m) => m.confidence == 'low');
+  if (hasStrong) {
+    return PlatformViewHints(
+      platformViewsDetected: true,
+      matches: matches,
+      recommendedMode: kCaptureHintRecommendedDesktopWindow,
+      warning: kPlatformViewWarning,
+    );
+  }
+  if (hasWeak) {
+    return PlatformViewHints(
+      platformViewsDetected: false,
+      weakSignalsDetected: true,
+      matches: matches,
+      recommendedMode: kCaptureHintRecommendedDesktopWindow,
+      warning: kWeakTextureWarning,
+    );
+  }
+  return PlatformViewHints.none;
+}
+
+/// Records platform-view signals for one widget/render pair.
+void accumulatePlatformViewSignals({
+  required final String? widgetType,
+  required final String? renderObjectType,
+  required final int depth,
+  required final List<PlatformViewMatch> matches,
+  final Map<String, Object?>? globalBounds,
+}) {
+  final strongWidget =
+      widgetType != null && _matchesSuffix(widgetType, _strongWidgetSuffixes);
+  final strongRender = renderObjectType != null &&
+      _matchesSuffix(renderObjectType, _strongRenderSuffixes);
+  if (strongWidget || strongRender) {
+    matches.add(
+      PlatformViewMatch(
+        widgetType: widgetType ?? renderObjectType ?? 'unknown',
+        depth: depth,
+        confidence: 'high',
+        renderObjectType: renderObjectType,
+        globalBounds: globalBounds,
+      ),
+    );
+  } else if (widgetType != null &&
+      _matchesSuffix(widgetType, _weakWidgetSuffixes)) {
+    matches.add(
+      PlatformViewMatch(
+        widgetType: widgetType,
+        depth: depth,
+        confidence: 'low',
+        renderObjectType: renderObjectType,
+        globalBounds: globalBounds,
+      ),
+    );
+  }
+}
+
+/// Merges auto-detected [detected] hints with an optional app [contributor].
+PlatformViewHints mergePlatformViewHints({
+  required final PlatformViewHints detected,
+  final PlatformViewHints? contributor,
+}) {
+  if (contributor == null) {
+    return detected;
+  }
+  final matches = <PlatformViewMatch>[
+    ...detected.matches,
+    ...contributor.matches,
+  ];
+  final merged = platformViewHintsFromMatches(matches);
+  if (contributor.platformViewsDetected) {
+    return PlatformViewHints(
+      platformViewsDetected: true,
+      matches: matches,
+      recommendedMode:
+          contributor.recommendedMode ??
+          merged.recommendedMode ??
+          kCaptureHintRecommendedDesktopWindow,
+      warning: contributor.warning ?? merged.warning ?? kPlatformViewWarning,
+      weakSignalsDetected: merged.weakSignalsDetected,
+    );
+  }
+  return merged;
 }
 
 /// Parses app-embedded `captureHints` from `get_view_details` (authoritative when present).
 PlatformViewHints platformViewHintsFromCaptureHintsJson(
   final Map<String, Object?> json,
 ) {
-  if (json['platformViewsDetected'] != true) {
+  final platformViewsDetected = json['platformViewsDetected'] == true;
+  final weakSignalsDetected = json['weakSignalsDetected'] == true;
+  if (!platformViewsDetected && !weakSignalsDetected) {
     return PlatformViewHints.none;
   }
   final matches = <PlatformViewMatch>[];
@@ -132,7 +221,24 @@ PlatformViewHints platformViewHintsFromCaptureHintsJson(
       ),
     );
   }
-  return platformViewHintsFromMatches(matches);
+  final fromMatches = platformViewHintsFromMatches(matches);
+  if (platformViewsDetected) {
+    return PlatformViewHints(
+      platformViewsDetected: true,
+      matches: fromMatches.matches,
+      recommendedMode:
+          fromMatches.recommendedMode ?? kCaptureHintRecommendedDesktopWindow,
+      warning: fromMatches.warning ?? kPlatformViewWarning,
+    );
+  }
+  return PlatformViewHints(
+    platformViewsDetected: false,
+    weakSignalsDetected: true,
+    matches: fromMatches.matches,
+    recommendedMode:
+        fromMatches.recommendedMode ?? kCaptureHintRecommendedDesktopWindow,
+    warning: fromMatches.warning ?? kWeakTextureWarning,
+  );
 }
 
 /// Detects native platform views in a [widgetTree] map from `get_view_details`.
@@ -152,33 +258,13 @@ void _walkWidgetTree(
     return;
   }
 
-  final widgetType = _typeName(map['widgetType']);
-  final renderType = _typeName(map['renderObjectType']);
-  final bounds = _boundsMap(map['globalBounds']);
-
-  final strongWidget = widgetType != null && _matchesSuffix(widgetType, _strongWidgetSuffixes);
-  final strongRender = renderType != null && _matchesSuffix(renderType, _strongRenderSuffixes);
-  if (strongWidget || strongRender) {
-    matches.add(
-      PlatformViewMatch(
-        widgetType: widgetType ?? renderType ?? 'unknown',
-        depth: depth,
-        confidence: 'high',
-        renderObjectType: renderType,
-        globalBounds: bounds,
-      ),
-    );
-  } else if (widgetType != null && _matchesSuffix(widgetType, _weakWidgetSuffixes)) {
-    matches.add(
-      PlatformViewMatch(
-        widgetType: widgetType,
-        depth: depth,
-        confidence: 'low',
-        renderObjectType: renderType,
-        globalBounds: bounds,
-      ),
-    );
-  }
+  accumulatePlatformViewSignals(
+    widgetType: _typeName(map['widgetType']),
+    renderObjectType: _typeName(map['renderObjectType']),
+    depth: depth,
+    globalBounds: _boundsMap(map['globalBounds']),
+    matches: matches,
+  );
 
   final children = map['children'];
   if (children is! List) {
@@ -234,14 +320,16 @@ Map<String, Object?> mergeCaptureHintMetadata({
 }) {
   final warnings = <String>[
     ...extraWarnings,
-    if (hints.warning != null && hints.platformViewsDetected) hints.warning!,
+    if (hints.warning != null && hints.hasCaptureRoutingHints) hints.warning!,
   ];
   return <String, Object?>{
     ...data,
-    if (hints.platformViewsDetected) 'captureHints': hints.toCaptureHintsJson(),
+    if (hints.hasCaptureRoutingHints)
+      'captureHints': hints.toCaptureHintsJson(),
     if (warnings.isNotEmpty) 'warnings': warnings,
-    if (hints.platformViewsDetected)
-      'suggestedAction':
-          'Use mode desktop_window or ensure Simulator/app window is foreground.',
+    if (hints.hasCaptureRoutingHints)
+      'suggestedAction': hints.platformViewsDetected
+          ? 'Use mode desktop_window or ensure Simulator/app window is foreground.'
+          : 'Consider mode desktop_window on macOS host for external Texture pixels.',
   };
 }

@@ -184,15 +184,18 @@ void registerInspectionTools(final CapabilityContext context) {
                     .toList(),
               );
             }
-            // Binary mode: return ImageContent blocks.
+            // Binary mode: images plus routing metadata for agents.
             final images = _stringList(map['images']);
+            final routing = screenshotRoutingSummary(map);
             return CallToolResult(
-              content: images
-                  .map(
-                    (final image) =>
-                        ImageContent(data: image, mimeType: 'image/png'),
-                  )
-                  .toList(),
+              meta: routing.isEmpty ? null : Meta.fromMap(routing),
+              content: [
+                if (routing.isNotEmpty) TextContent(text: jsonEncode(routing)),
+                ...images.map(
+                  (final image) =>
+                      ImageContent(data: image, mimeType: 'image/png'),
+                ),
+              ],
             );
           },
         );

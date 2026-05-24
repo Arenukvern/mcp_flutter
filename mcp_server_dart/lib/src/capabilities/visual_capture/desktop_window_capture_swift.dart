@@ -119,6 +119,26 @@ func activateSimulatorApp() {
     }
 }
 
+func activateChromeApp() {
+    let source = """
+    tell application "Google Chrome" to activate
+    """
+    if let script = NSAppleScript(source: source) {
+        var error: NSDictionary?
+        _ = script.executeAndReturnError(&error)
+    }
+}
+
+func isChromeCandidateSet(_ candidates: Set<String>) -> Bool {
+    for candidate in candidates {
+        let normalized = normalizeOwnerName(candidate)
+        if normalized.contains("chrome") || normalized.contains("chromium") {
+            return true
+        }
+    }
+    return false
+}
+
 @MainActor
 func focusWindow(candidates: Set<String>, expectedPid: Int32?) async {
     _ = NSApplication.shared
@@ -129,6 +149,9 @@ func focusWindow(candidates: Set<String>, expectedPid: Int32?) async {
             let owner = app.localizedName ?? ""
             if owner.lowercased().contains("simulator") {
                 activateSimulatorApp()
+            } else if owner.lowercased().contains("chrome") ||
+                owner.lowercased().contains("chromium") {
+                activateChromeApp()
             }
             emit([
                 "ok": true,
@@ -144,6 +167,15 @@ func focusWindow(candidates: Set<String>, expectedPid: Int32?) async {
         emit([
             "ok": true,
             "activated": "simulator",
+        ])
+        return
+    }
+
+    if isChromeCandidateSet(candidates) {
+        activateChromeApp()
+        emit([
+            "ok": true,
+            "activated": "chrome",
         ])
         return
     }

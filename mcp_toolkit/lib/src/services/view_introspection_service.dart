@@ -30,16 +30,21 @@ final class _TreeBuildState {
 /// Builds structured widget-tree payloads for MCP view introspection tools.
 mixin ViewIntrospectionService {
   static const int _defaultMaxNodes = 2500;
+
   /// MaterialApp / router scaffolding can exceed 40 levels before route content.
   static const int _defaultMaxDepth = 96;
 
   /// Widget tree plus multi-view metrics for the `view_details` MCP tool.
-  static Map<String, Object?> buildViewDetailsPayload() {
+  static Map<String, Object?> buildViewDetailsPayload({
+    final PlatformViewHints Function()? captureHintsContributor,
+  }) {
     final viewMetrics = ApplicationInfo.getViewsInformation();
     final state = _TreeBuildState(maxNodes: _defaultMaxNodes);
     final tree = _buildWidgetTree(state: state, maxDepth: _defaultMaxDepth);
 
-    final captureHints = _captureHintsFromLiveElements();
+    final captureHints = _captureHintsFromLiveElements(
+      captureHintsContributor: captureHintsContributor,
+    );
 
     return {
       'details': viewMetrics.map((final view) => view.toJson()).toList(),
@@ -104,7 +109,9 @@ mixin ViewIntrospectionService {
   }
 
   /// Full element walk for [captureHints] (no depth cap; tree JSON stays bounded).
-  static PlatformViewHints _captureHintsFromLiveElements() {
+  static PlatformViewHints _captureHintsFromLiveElements({
+    final PlatformViewHints Function()? captureHintsContributor,
+  }) {
     final root = WidgetsBinding.instance.rootElement;
     if (root == null) {
       return PlatformViewHints.none;
@@ -129,7 +136,11 @@ mixin ViewIntrospectionService {
     }
 
     visit(root, 0);
-    return platformViewHintsFromMatches(matches);
+    final detected = platformViewHintsFromMatches(matches);
+    return mergePlatformViewHints(
+      detected: detected,
+      contributor: captureHintsContributor?.call(),
+    );
   }
 
   static Map<String, Object?> _buildWidgetTree({

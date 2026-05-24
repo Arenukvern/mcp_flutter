@@ -26,8 +26,8 @@ Set<MCPCallEntry> getFlutterMcpToolkitEntries({
   required final MCPToolkitBinding binding,
 }) => {
   OnAppErrorsEntry(errorMonitor: binding),
-  OnViewScreenshotsEntry(),
-  OnViewDetailsEntry(),
+  OnViewScreenshotsEntry(binding: binding),
+  OnViewDetailsEntry(binding: binding),
   OnSelectWidgetAtPointEntry(binding: binding),
   OnInspectWidgetAtPointEntry(),
   ...getInteractionToolkitEntries(),
@@ -99,24 +99,23 @@ extension type OnAppErrorsEntry._(MCPCallEntry entry) implements MCPCallEntry {
 extension type OnViewScreenshotsEntry._(MCPCallEntry entry)
     implements MCPCallEntry {
   /// {@macro on_view_screenshots_entry}
-  factory OnViewScreenshotsEntry() {
+  factory OnViewScreenshotsEntry({required final MCPToolkitBinding binding}) {
     final entry = MCPCallEntry.tool(
       handler: (final parameters) async {
         final compress = jsonDecodeBool(parameters['compress']);
         final images = await ScreenshotService.takeScreenshots(
           compress: compress,
         );
-        final tree = ViewIntrospectionService.buildViewDetailsPayload();
+        final tree = ViewIntrospectionService.buildViewDetailsPayload(
+          captureHintsContributor: binding.captureHintsContributor,
+        );
         final captureHints = tree['captureHints'];
         return MCPCallResult(
           message:
               'Screenshots taken for each view. '
               'If you find visual errors, you can try to request errors '
               'to get more information with stack trace',
-          parameters: {
-            'images': images,
-            if (captureHints != null) 'captureHints': captureHints,
-          },
+          parameters: {'images': images, 'captureHints': ?captureHints},
         );
       },
       definition: MCPToolDefinition(
@@ -143,10 +142,12 @@ extension type OnViewScreenshotsEntry._(MCPCallEntry entry)
 extension type const OnViewDetailsEntry._(MCPCallEntry entry)
     implements MCPCallEntry {
   /// {@macro on_view_details_entry}
-  factory OnViewDetailsEntry() {
+  factory OnViewDetailsEntry({required final MCPToolkitBinding binding}) {
     final entry = MCPCallEntry.tool(
       handler: (final parameters) {
-        final payload = ViewIntrospectionService.buildViewDetailsPayload();
+        final payload = ViewIntrospectionService.buildViewDetailsPayload(
+          captureHintsContributor: binding.captureHintsContributor,
+        );
         return MCPCallResult(
           message: 'Detailed information for Flutter views and widget tree.',
           parameters: payload,

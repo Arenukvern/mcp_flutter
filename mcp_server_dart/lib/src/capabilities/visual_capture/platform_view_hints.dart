@@ -8,6 +8,8 @@ export 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart'
         detectPlatformViews,
         kCaptureHintRecommendedDesktopWindow,
         kPlatformViewWarning,
+        kWeakTextureWarning,
         mergeCaptureHintMetadata,
+        mergePlatformViewHints,
         platformViewHintsFromCaptureHintsJson,
         platformViewHintsFromMatches;

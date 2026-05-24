@@ -126,16 +126,31 @@ class ResourceHandler {
     }
 
     final images = jsonDecodeListAs<String>(data['images']);
+    final routing = <String, Object?>{
+      if (data['captureHints'] != null) 'captureHints': data['captureHints'],
+      if (data['warnings'] != null) 'warnings': data['warnings'],
+      if (data['suggestedAction'] != null)
+        'suggestedAction': data['suggestedAction'],
+      if (data['actualMode'] != null) 'actualMode': data['actualMode'],
+      if (data['captureMode'] != null) 'captureMode': data['captureMode'],
+    };
     return ReadResourceResult(
-      contents: images
-          .map(
-            (final image) => BlobResourceContents(
-              uri: request.uri,
-              blob: image,
-              mimeType: 'image/png',
-            ),
-          )
-          .toList(),
+      meta: routing.isEmpty ? null : Meta.fromMap(routing),
+      contents: [
+        if (routing.isNotEmpty)
+          TextResourceContents(
+            uri: request.uri,
+            text: jsonEncode(routing),
+            mimeType: 'application/json',
+          ),
+        ...images.map(
+          (final image) => BlobResourceContents(
+            uri: request.uri,
+            blob: image,
+            mimeType: 'image/png',
+          ),
+        ),
+      ],
     );
   }
 
