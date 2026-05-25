@@ -8,7 +8,7 @@
 |------|------|
 | [Design](../specs/2026-05-25-agentkit-design.md) | Architecture |
 | [Phase 5 hardening](../specs/2026-05-25-agentkit-phase5-hardening-design.md) | Docs + runtime + codegen pilot (done) |
-| Phase 6 pre-extract (TBD) | Complete in-repo before split |
+| [Phase 6 pre-extract](../specs/2026-05-26-agentkit-pre-extract-completion-design.md) | Bar D — hard cut, Swift/XML, migration CLI/MCP |
 
 **Tracker:** [../tracker/agentkit-rollout.yaml](../tracker/agentkit-rollout.yaml)
 
@@ -23,7 +23,7 @@
 | **3** | [archive/phase3](archive/2026-05-25-agentkit-phase3.md) | done | WebMCP, Gemma example, manifest JSON |
 | **4** | [closure phase4](../closure/2026-05-25-agentkit-phase4-registry-resources.md) | done | Registry-backed resources + hot-sync |
 | **5** | [hardening spec](../specs/2026-05-25-agentkit-phase5-hardening-design.md) | done | 5-A docs, 5-B runtime, 5-C codegen pilot |
-| **6** | TBD | pending | **Pre-extract completion** — wire, migrate, remove shims |
+| **6** | [spec](../specs/2026-05-26-agentkit-pre-extract-completion-design.md) | pending | Bar D: hard cut, Swift/XML, migration tools, skills |
 
 Closures: [../closure/](../closure/).
 
@@ -61,4 +61,4 @@ Closures: [../closure/](../closure/).
 
 ## Current action
 
-**Phase 6:** Brainstorm and write [pre-extract completion spec](../specs/) — then implementation plan. Do not start monorepo extract until Phase 6 gate passes.
+**Phase 6:** Spec approved (Bar D). Implement per [phase6 plan](2026-05-26-agentkit-phase6-pre-extract.md) when published. No monorepo extract until `complete_in_repo` gate.

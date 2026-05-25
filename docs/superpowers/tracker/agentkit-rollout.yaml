@@ -124,17 +124,29 @@ phases:
         completed_at: 2026-05-26
 
   - id: phase6
-    title: Pre-extract completion (wire, migrate, de-stub)
+    title: Pre-extract completion (Bar D — hard cut + Swift/XML + migration tools)
     spec: docs/superpowers/specs/2026-05-26-agentkit-pre-extract-completion-design.md
+    plan: docs/superpowers/plans/2026-05-26-agentkit-phase6-pre-extract.md
     status: pending
-    blocked_by: user_approval_of_phase6_spec
+    bar: D # B strict + Swift/XML; skip Gemma product only; hard cut MCPCallEntry
+    sub_phases:
+      - { id: 6a, title: Server registry completeness, status: pending }
+      - { id: 6b, title: MCPCallEntry hard cut + in-repo migration, status: pending }
+      - { id: 6c, title: Server @AgentTool codegen (one fmt_*), status: pending }
+      - { id: 6d, title: Swift + XML platform emitters + CLI, status: pending }
+      - { id: 6e, title: Contract tests, status: pending }
+      - { id: 6f, title: Migration CLI + MCP tool + docs, status: pending }
+      - { id: 6g, title: Skills + skill_assets, status: pending }
+      - { id: 6h, title: Shim removal + complete_in_repo gate, status: pending }
     exit_criteria:
-      - No dual-publish or undocumented registry bypass on MCP server hot path
-      - flutter_test_app and primary examples use AgentCallEntry (legacy bridge documented)
-      - Skills and server_instructions teach AgentCallEntry
-      - Public shims removed or semver-gated with migration note
-      - Contract tests registry vs MCP for fmt and dynamic sample
+      - MCPCallEntry removed from public API; all in-repo sites use AgentCallEntry
+      - CHANGELOG and migration_agentkit_phase6 doc published
+      - flutter-mcp-toolkit migrate agent-entries + fmt_migrate_agent_entries (report/apply)
+      - One fmt_* tool via server codegen; registry-backed errors resource template
+      - Swift and XML emitter tests pass; CLI codegen manifest subcommand
+      - Contract tests fmt + dynamic + resource
+      - Skills updated; no MCPCallEntry in skill bodies except migration before examples
       - program.status complete_in_repo
     non_goals:
+      - flutter_gemma product wiring
       - Standalone monorepo extract (phase7)
-      - Gemma flutter_gemma product app unless rescoped
