@@ -122,3 +122,19 @@ phases:
         title: Authoring and optional codegen
         status: done
         completed_at: 2026-05-26
+
+  - id: phase6
+    title: Pre-extract completion (wire, migrate, de-stub)
+    spec: docs/superpowers/specs/2026-05-26-agentkit-pre-extract-completion-design.md
+    status: pending
+    blocked_by: user_approval_of_phase6_spec
+    exit_criteria:
+      - No dual-publish or undocumented registry bypass on MCP server hot path
+      - flutter_test_app and primary examples use AgentCallEntry (legacy bridge documented)
+      - Skills and server_instructions teach AgentCallEntry
+      - Public shims removed or semver-gated with migration note
+      - Contract tests registry vs MCP for fmt and dynamic sample
+      - program.status complete_in_repo
+    non_goals:
+      - Standalone monorepo extract (phase7)
+      - Gemma flutter_gemma product app unless rescoped
