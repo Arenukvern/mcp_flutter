@@ -13,6 +13,8 @@ import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/deskt
 import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/desktop_window_screenshot.dart';
 import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/platform_view_hints.dart';
 import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/visual_capture.dart';
+import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/web_browser_screenshot.dart';
+import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/web_cdp_discovery.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/session/session_manager.dart';
 import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_consts.dart';
 import 'package:flutter_mcp_toolkit_server/src/runtime_version.dart';
@@ -43,9 +45,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     this.sessionManager,
     final ErrorCauseAnalyzer? errorCauseAnalyzer,
     final Map<String, ErrorSummaryProvider>? summaryProviders,
-  }) : _desktopWindowScreenshotService =
-           desktopWindowScreenshotService ??
-           MacOsDesktopWindowScreenshotService(),
+  }) : _desktopWindowScreenshotServiceOverride = desktopWindowScreenshotService,
        _errorCauseAnalyzer = errorCauseAnalyzer ?? const ErrorCauseAnalyzer(),
        _summaryProviders =
            summaryProviders ??
@@ -64,7 +64,21 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
 
   final ErrorCauseAnalyzer _errorCauseAnalyzer;
   final Map<String, ErrorSummaryProvider> _summaryProviders;
-  final DesktopWindowScreenshotService _desktopWindowScreenshotService;
+  final DesktopWindowScreenshotService? _desktopWindowScreenshotServiceOverride;
+
+  DesktopWindowScreenshotService get _desktopWindowScreenshotService =>
+      _desktopWindowScreenshotServiceOverride ??
+      _createDesktopWindowScreenshotService();
+
+  DesktopWindowScreenshotService _createDesktopWindowScreenshotService() {
+    if (isWebFlutterDevice(configuration.flutterDevice)) {
+      return WebBrowserScreenshotService(
+        configuration: configuration,
+        connectionContext: connectionContext,
+      );
+    }
+    return MacOsDesktopWindowScreenshotService();
+  }
 
   Iterable<VisualCapturePlatformAdapter> get visualCaptureAdapters sync* {
     if (_desktopWindowScreenshotService
@@ -535,7 +549,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     final effectiveMode = resolveEffectiveScreenshotMode(
       requested: command.mode,
       hints: hints,
-      hostDesktopCaptureViable: _hostDesktopCaptureViable(),
+      hostDesktopCaptureViable: await _hostTruthCaptureViable(),
     );
 
     final permission = await _visualCaptureBroker().prepareForCapture(
@@ -734,11 +748,32 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       return false;
     }
     final device = configuration.flutterDevice;
-    return device == 'macos' ||
-        device == 'ios' ||
-        device == 'chrome' ||
-        device == 'web' ||
-        device == 'web-server';
+    return device == 'macos' || device == 'ios';
+  }
+
+  Future<bool> _hostTruthCaptureViable() async {
+    if (_hostDesktopCaptureViable()) {
+      return true;
+    }
+    if (!isWebFlutterDevice(configuration.flutterDevice)) {
+      return false;
+    }
+    final stickyPort = connectionContext.stickyBrowserDebugPort;
+    final target = stickyPort == null
+        ? null
+        : CoreConnectionTarget(
+            targetId: 'sticky-web-cdp',
+            host: '127.0.0.1',
+            port: stickyPort,
+            endpoint: '127.0.0.1:$stickyPort',
+            isSticky: true,
+            isCurrent: connectionContext.isConnected,
+            browserDebugPort: stickyPort,
+          );
+    return isWebCdpCaptureViable(
+      configuration: configuration,
+      connectionTarget: target,
+    );
   }
 
   Map<String, Object?> _withCaptureHints({
@@ -1663,9 +1698,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     final targetPid = await _connectedVmPid();
     final explicitDesktop =
         mode == ScreenshotMode.desktopWindow ||
-        (mode == ScreenshotMode.auto &&
-            hints.platformViewsDetected &&
-            _hostDesktopCaptureViable());
+        (mode == ScreenshotMode.auto && hints.platformViewsDetected);
     final recovery = await captureDesktopWithRecovery(
       service: _desktopWindowScreenshotService,
       projectDir: projectDir ?? '',

@@ -9,9 +9,11 @@
 #   flutter-mcp-toolkit exec --name semantic_snapshot \
 #     --args '{"connection":{"targetId":"<uri from this script>"}}'
 #
-# The showcase includes a Capture section with a real AppKitView (macOS).
-# For desktop_window screenshots / validate-runtime, grant Screen Recording
-# to the terminal or IDE running flutter-mcp-toolkit on this Mac.
+# The showcase includes a Capture section with a native platform view:
+#   macOS — AppKitView + Swift factory (this script)
+#   web   — flutter run -d chrome --web-port=8080 (HtmlElementView; CDP capture)
+# For macOS desktop_window / validate-runtime, grant Screen Recording to the
+# terminal or IDE running flutter-mcp-toolkit. Web uses CDP tab capture (ADR 0007).
 
 set -u
 set -o pipefail

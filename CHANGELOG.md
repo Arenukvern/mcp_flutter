@@ -8,35 +8,33 @@
 ### Added
 
 - Platform-view-aware visual capture: widget-tree `captureHints` detect `AndroidView` / `UiKitView` / `AppKitView` / `HtmlElementView` / `PlatformViewLink` (and weak `Texture` hints).
-- macOS showcase `AppKitView` panel (`showcase.platform.stub` native factory) for true-positive integration capture routing tests.
-- `ConnectionContext.debugViewDetailsPayload` / `debugViewScreenshotsPayload` test seams for hermetic executor capture-flow tests.
-- `get_screenshots` / `capture_ui_snapshot` with `mode: auto` upgrade to `desktop_window` when platform views are detected on a macOS host.
+- macOS showcase `AppKitView` panel (`showcase.platform.stub` native factory) and **web** `HtmlElementView` via conditional imports (`platform_view_showcase_{stub,macos,web}.dart`, `registerShowcasePlatformView()` in `main()`).
+- `ConnectionContext.debugViewDetailsPayload` / `debugViewScreenshotsPayload` test seams; `CoreConnectionTarget.browserDebugPort` for sticky Chrome CDP discovery.
+- `get_screenshots` / `capture_ui_snapshot` with `mode: auto` upgrade to `desktop_window` when platform views are detected and host truth capture is viable (macOS, iOS Simulator, or web CDP/SCK).
 - `flutter_layer` captures attach `warnings` and `captureHints` when platform views are present.
 - macOS host `desktop_window` capture for **iOS Simulator** targets (Simulator window + VM PID).
+- Web tab capture ([ADR 0007](decisions/0007_web_headful_tab_capture.mdx)): `WebBrowserScreenshotService` — **macOS SCK → Chrome CDP → `flutter_layer`**; `Page.captureScreenshot`; discovery via sticky port, `--web-browser-debugging-port`, process scan, `/json/list`; metadata `captureBackend: cdp` | `macos_host`.
+- CLI global flags `--web-browser-debugging-port`, `--web-port`; hermetic tests `web_cdp_*_test.dart`; opt-in `RUN_WEB_CDP_INTEGRATION=1`.
 - Swift visual-capture helper `focus` command; `focus_window` MCP tool (`fmt_focus_window`).
 - `validate-runtime` skips `flutter_layer` fallback when platform views are detected; executor recovery handles focus+capture retry (`capturePlatformViewsDetected`, `captureFocusAttempted`, `desktopCaptureRetried`).
 - Shared [`desktop_capture_recovery`](mcp_server_dart/lib/src/capabilities/visual_capture/desktop_capture_recovery.dart) dedupes host capture retry (no duplicate `focus_window` steps in validate-runtime).
 - Weak `Texture` tier: `captureHints.weakSignalsDetected` + `recommendedMode: desktop_window` advisory without `auto` upgrade; distinct `flutter_layer` warning.
 - `MCPToolkitBinding.captureHintsContributor` for WGPU/custom-engine apps without platform-view widgets (`mcp_toolkit` depends on `flutter_mcp_toolkit_core` via path).
 - `get_screenshots` image-only MCP responses include routing metadata in `meta` and a leading JSON `TextContent` block.
-- macOS host `desktop_window` capture for **Chrome / web** targets (ScreenCaptureKit on browser window; ADR 0007 Phase A).
-
-### Added
-
-- `scripts/stop_showcase.sh` and `make showcase-stop` to tear down stray `test_app` / `flutter run` / port `8181` / MCP server processes before showcase or integration runs.
-- Showcase logs and PID under `.showcase/`; `run_showcase.sh` stops previous instances on start and on exit.
+- `scripts/stop_showcase.sh` and `make showcase-stop`; showcase logs/PID under `.showcase/`; `run_showcase.sh` stops previous instances on start and exit.
 
 ### Fixed
 
-- `get_view_details` `captureHints` use a full element-tree scan (widget-tree JSON remains depth-capped); showcase `AppKitView` is detected reliably.
+- `get_view_details` `captureHints` use a full element-tree scan (widget-tree JSON remains depth-capped); showcase platform views detected reliably on macOS and web.
 - Executor `_hintsFromPayload` trusts app-embedded `captureHints` instead of re-parsing a truncated widget tree.
 - Live integration tests decode MCP `CoreError`-only tool failures and assert `auto` → `desktop_window` routing when host capture is unavailable.
 - Executor preserves weak `captureHints` on `flutter_layer` success (not only `platformViewsDetected`).
+- Web showcase no longer throws `unregistered_view_type` for `showcase.platform.stub` (`defaultTargetPlatform` on Mac host no longer selects `AppKitView` on web builds).
 
 ### Documentation
 
-- README, debug skill, and CLI runtime-validation skill updated for platform-view capture routing, weak Texture tier, `captureHintsContributor`, and macOS Chrome host capture.
-- ADR [0006](decisions/0006_platform_view_capture_routing.mdx) (accepted), ADR [0007](decisions/0007_web_headful_tab_capture.mdx) Phase A accepted (macOS Chrome host capture).
+- ADR [0006](decisions/0006_platform_view_capture_routing.mdx), [0007](decisions/0007_web_headful_tab_capture.mdx) (Phase A + B shipped); decision indexes updated.
+- `mcp_server_dart/README.md`, debug/runtime-validation skills, `flutter_test_app/README.md`, `run_showcase.sh` comments aligned with web CDP and dual-platform showcase.
 
 ## [3.0.7] - 2026-05-20
 

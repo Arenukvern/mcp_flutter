@@ -135,8 +135,8 @@ CLI runtime gate for app inspection:
 - macOS truthful capture is `desktop_window` (including **iOS Simulator** and **Chrome / web** on a Mac host). Screen Recording permission belongs to the host process running `flutter-mcp-toolkit`, not the Flutter app. Use `permissions request` for the native prompt and `permissions open-settings` after a denial.
 - `get_view_details` and `view_screenshots` include `captureHints` when native platform views are detected (`AndroidView`, `UiKitView`, `AppKitView`, `HtmlElementView`, `PlatformViewLink`). `Texture` sets `weakSignalsDetected` with a soft warning (no `auto` upgrade). Hybrid engines without platform views can use `MCPToolkitBinding.captureHintsContributor` in the app.
 - Image-only `get_screenshots` MCP responses include routing metadata in `meta` and a leading JSON text block when `captureHints` / `warnings` are present.
-- For a macOS true-positive routing smoke test, run `make showcase-stop` then `make showcase` (or `scripts/run_showcase.sh`) and use the showcase **Capture** section (`AppKitView` + native factory). Use `make showcase-stop` before a new run to avoid orphaned `test_app` windows.
-- Web on a **macOS host**: `desktop_window` captures the Chrome window (largest match when multiple windows exist). Other hosts: `flutter_layer` only. See [ADR 0007](../decisions/0007_web_headful_tab_capture.mdx) for CDP follow-up (Phase B).
+- Showcase **Capture** section: `AppKitView` on macOS (`make showcase`), `HtmlElementView` on web (`flutter run -d chrome`). Use `make showcase-stop` before a new macOS run.
+- Web (`chrome` / `web` / `web-server`): `desktop_window` uses **macOS ScreenCaptureKit → Chrome CDP** (`Page.captureScreenshot`) → `flutter_layer`. Global flags: `--web-browser-debugging-port`, `--web-port`. Opt-in live test: `RUN_WEB_CDP_INTEGRATION=1 dart test test/web_cdp_integration_test.dart`. See [ADR 0007](../decisions/0007_web_headful_tab_capture.mdx).
 - App-owned capture targets such as iOS/Android/Linux must have a reachable VM
   target selected before `permissions` or `doctor` can verify bridge-backed
   permission tools/resources. Use `--target <ws_uri>` or the global
@@ -147,7 +147,7 @@ Troubleshooting:
 
 - If macOS capture is denied, rerun `flutter-mcp-toolkit permissions status` first. If status is still `denied`, open System Settings from the CLI and grant Screen Recording to the terminal or client process you are using.
 - If `doctor --json` shows `visual_capture_truth_mode=flutter_layer` on macOS, you are not getting native window pixels yet.
-- If web capture fails with `desktop_window`, switch to `flutter_layer` or keep `auto`.
+- If web `desktop_window` fails and no platform views are detected, use `flutter_layer` or pass `--web-browser-debugging-port` from Chrome’s `--remote-debugging-port`. When `captureHints.platformViewsDetected` is true, `auto` / `validate-runtime` do not silently fall back to `flutter_layer`.
 - If post-reload capture fails once on macOS desktop-window mode, that is usually a host capture race rather than an app failure. `validate-runtime` retries those failures before returning red, and may also retry with `flutter_layer` after a failed `desktop_window` screenshot.
 
 Failure matrix:

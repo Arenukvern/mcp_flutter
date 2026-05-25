@@ -35,7 +35,7 @@ Permission behavior for this flow:
 - `validate-runtime` stays read/write only for visual capture and defaults to `auto_request_once`.
 - `doctor` remains read-only.
 - On macOS, Screen Recording permission belongs to the host process running `flutter-mcp-toolkit`.
-- On web: macOS host can use `desktop_window` (Chrome window via ScreenCaptureKit); other hosts use `flutter_layer` only. Check `captureHints.weakSignalsDetected` for `Texture`-only apps.
+- On web: `desktop_window` uses macOS ScreenCaptureKit then Chrome CDP (`Page.captureScreenshot`); Linux/Windows use CDP when remote debugging is reachable. Pass `--web-browser-debugging-port` if discovery fails. With platform views detected, `validate-runtime` does not fall back to `flutter_layer` after a successful `desktop_window` capture. Check `captureHints.weakSignalsDetected` for `Texture`-only apps.
 - Executor recovery retries host capture once (`desktopCaptureRetried` in screenshot payloads). When `captureHints.platformViewsDetected` is true, validate-runtime does not fall back to `flutter_layer`. Otherwise it may retry once with `flutter_layer` after a failed host capture.
 - You may pass the VM URI as global `--vm-service-uri` instead of `validate-runtime --target` when only one URI is needed.
 

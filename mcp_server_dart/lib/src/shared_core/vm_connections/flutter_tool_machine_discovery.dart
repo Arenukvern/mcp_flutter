@@ -14,20 +14,26 @@ final class FlutterMachineDiscoveryTarget {
   const FlutterMachineDiscoveryTarget({
     required this.vmServiceWsUri,
     this.dtdUri,
+    this.browserDebugPort,
     this.sourceEvent,
   });
 
   final Uri vmServiceWsUri;
   final Uri? dtdUri;
+
+  /// Chrome `--remote-debugging-port` when emitted by `flutter run --machine`.
+  final int? browserDebugPort;
   final String? sourceEvent;
 
   FlutterMachineDiscoveryTarget copyWith({
     final Uri? vmServiceWsUri,
     final Uri? dtdUri,
+    final int? browserDebugPort,
     final String? sourceEvent,
   }) => FlutterMachineDiscoveryTarget(
     vmServiceWsUri: vmServiceWsUri ?? this.vmServiceWsUri,
     dtdUri: dtdUri ?? this.dtdUri,
+    browserDebugPort: browserDebugPort ?? this.browserDebugPort,
     sourceEvent: sourceEvent ?? this.sourceEvent,
   );
 }
@@ -37,11 +43,13 @@ final class FlutterMachineEventData {
     this.eventName,
     this.vmServiceWsUri,
     this.dtdUri,
+    this.browserDebugPort,
   });
 
   final String? eventName;
   final Uri? vmServiceWsUri;
   final Uri? dtdUri;
+  final int? browserDebugPort;
 }
 
 typedef FlutterAttachArgumentsBuilder = List<String> Function({String? device});
@@ -123,6 +131,7 @@ final class FlutterToolMachineDiscovery {
       final parsed = parseMachineEvent(decoded);
       final vmUri = parsed.vmServiceWsUri;
       final dtdUri = parsed.dtdUri;
+      final browserDebugPort = parsed.browserDebugPort;
 
       if (dtdUri != null) {
         final dtdHostPort = _hostPortKey(dtdUri);
@@ -144,10 +153,12 @@ final class FlutterToolMachineDiscovery {
           ? FlutterMachineDiscoveryTarget(
               vmServiceWsUri: vmUri,
               dtdUri: linkedDtd,
+              browserDebugPort: browserDebugPort,
               sourceEvent: parsed.eventName,
             )
           : existing.copyWith(
               dtdUri: existing.dtdUri ?? linkedDtd,
+              browserDebugPort: existing.browserDebugPort ?? browserDebugPort,
               sourceEvent: existing.sourceEvent ?? parsed.eventName,
             );
 
@@ -271,11 +282,44 @@ final class FlutterToolMachineDiscovery {
       ]),
     );
 
+    final browserDebugPort = _parseBrowserDebugPort(payload);
+
     return FlutterMachineEventData(
       eventName: eventName,
       vmServiceWsUri: vmUri,
       dtdUri: dtdUri,
+      browserDebugPort: browserDebugPort,
     );
+  }
+
+  static int? _parseBrowserDebugPort(final Map<String, Object?> payload) {
+    final candidates = <Object?>[
+      _objectAtPath(payload, const <String>['params', 'port']),
+      _stringAtPath(payload, const <String>['params', 'port']),
+      _stringAtPath(payload, const <String>['params', 'browserDebugPort']),
+      _stringAtPath(payload, const <String>['params', 'chromeDebugPort']),
+      _stringAtPath(payload, const <String>['params', 'debugPort', 'port']),
+      _stringAtPath(payload, const <String>[
+        'params',
+        'app',
+        'debugPort',
+        'port',
+      ]),
+      _stringAtPath(payload, const <String>['port']),
+    ];
+    for (final value in candidates) {
+      if (value is int && value > 0) {
+        return value;
+      }
+      if (value is num && value > 0) {
+        return value.toInt();
+      }
+      final parsed = int.tryParse('$value');
+      if (parsed != null && parsed > 0) {
+        return parsed;
+      }
+    }
+    return null;
   }
 
   static FlutterMachineDiscoveryTarget? parseProcessDiscoveryLine(
@@ -440,6 +484,20 @@ final class FlutterToolMachineDiscovery {
       // Ignore non-JSON or malformed machine lines.
     }
     return null;
+  }
+
+  static Object? _objectAtPath(final Object? root, final List<String> path) {
+    Object? current = root;
+    for (final segment in path) {
+      if (current is! Map) {
+        return null;
+      }
+      if (!current.containsKey(segment)) {
+        return null;
+      }
+      current = current[segment];
+    }
+    return current;
   }
 
   static String? _stringAtPath(final Object? root, final List<String> path) {

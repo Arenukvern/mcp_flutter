@@ -541,7 +541,7 @@ class _CaptureSection extends StatelessWidget {
       headingSemanticsId: 'capture_section_heading',
       hint:
           'get_view_details → captureHints; get_screenshots mode:auto → '
-          'desktop_window on macOS host (Screen Recording permission required).',
+          'desktop_window (macOS Screen Recording or web CDP tab capture).',
       child: ShowcasePlatformViewPanel(),
     );
   }

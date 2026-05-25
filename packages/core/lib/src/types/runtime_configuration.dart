@@ -19,6 +19,8 @@ final class CoreRuntimeConfiguration {
     this.flutterDevice,
     this.stateRootDir,
     this.outputDir,
+    this.webBrowserDebuggingPort,
+    this.webPort,
   });
 
   final String vmHost;
@@ -32,4 +34,10 @@ final class CoreRuntimeConfiguration {
   final String? flutterDevice;
   final String? stateRootDir;
   final String? outputDir;
+
+  /// Chrome remote-debugging-port override for web CDP capture (Phase B).
+  final int? webBrowserDebuggingPort;
+
+  /// Flutter `--web-port` hint for selecting the matching CDP page target.
+  final int? webPort;
 }

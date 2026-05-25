@@ -1,0 +1,15 @@
+[
+  {
+    "event": "app.debugPort",
+    "params": {
+      "wsUri": "ws://127.0.0.1:59490/ws",
+      "port": 50541
+    }
+  },
+  {
+    "event": "app.devTools",
+    "params": {
+      "uri": "http://127.0.0.1:9100?uri=ws://127.0.0.1:59490/ws"
+    }
+  }
+]

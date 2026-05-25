@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_mcp_toolkit_server/flutter_mcp_core.dart';
 import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/desktop_window_screenshot.dart';
+import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/web_browser_screenshot.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -59,9 +60,21 @@ void main() {
           flutterDevice: 'chrome',
         ),
         adapters: <VisualCapturePlatformAdapter>[
-          MacOsDesktopWindowScreenshotService(
-            runProcess: (_, final _) async =>
-                ProcessResult(0, 0, '{"ok":true,"status":"granted"}', ''),
+          WebBrowserScreenshotService(
+            configuration: const CoreRuntimeConfiguration(
+              vmHost: 'localhost',
+              vmPort: 8181,
+              resourcesSupported: true,
+              imagesSupported: true,
+              dumpsSupported: false,
+              dynamicRegistrySupported: true,
+              saveImagesToFiles: false,
+              flutterDevice: 'chrome',
+            ),
+            macHost: MacOsDesktopWindowScreenshotService(
+              runProcess: (_, final _) async =>
+                  ProcessResult(0, 0, '{"ok":true,"status":"granted"}', ''),
+            ),
           ),
         ],
       );

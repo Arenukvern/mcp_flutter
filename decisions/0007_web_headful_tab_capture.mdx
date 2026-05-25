@@ -1,13 +1,13 @@
 # ADR 0007 — Web headful tab capture
 
-- **Status:** Accepted (Phase A shipped)
+- **Status:** Accepted (Phase A shipped; Phase B shipped)
 - **Related:** [ADR 0006](/decisions/0006_platform_view_capture_routing)
 
 ## Context
 
-Flutter web targets use `WebVisualCapturePlatformAdapter` for permission metadata;
-on a **macOS host**, `MacOsDesktopWindowScreenshotService` now also handles
-`effectivePlatform: web` so `desktop_window` / `auto` can capture the Chrome window.
+Flutter web targets use `WebBrowserScreenshotService` (composite adapter) for
+`desktop_window` / `auto`: **macOS ScreenCaptureKit → Chrome CDP → `flutter_layer`**.
+`MacOsDesktopWindowScreenshotService` no longer claims `effectivePlatform: web`.
 
 `HtmlElementView`, iframes, and WebGL/canvas content often appear as black holes in
 `flutter_layer` captures — the same class of problem ADR 0006 solves via host pixels.
@@ -28,15 +28,36 @@ assuming a broken renderer.
 
 **Phase A (shipped):** Option A on macOS only — mirror iOS Simulator host capture.
 
-- `supportsPlatform('web')` on macOS host.
-- Window candidates: `google chrome`, `chromium`, `chrome` (owner + title match).
+- `MacOsDesktopWindowScreenshotService` captures Chrome windows on macOS host
+  (candidates: `google chrome`, `chromium`, `chrome`).
 - Swift `activateChromeApp()` before capture when browser candidates are used.
 - `auto` + `captureHints` from ADR 0006 apply (`HtmlElementView` strong signal).
 
-**Phase B (deferred):** Option B (CDP) for Linux/Windows hosts and precise tab
-selection when multiple Chrome windows run.
+**Phase B (shipped):** Option B (CDP) as fallback after macOS SCK and primary on
+Linux/Windows hosts.
+
+- Chain: **macOS SCK → CDP → `flutter_layer`** (same MCP modes; metadata
+  `captureBackend: cdp` or `macos_host`).
+- Discovery order (see §Phase B discovery contract).
+- Localhost-only CDP endpoints; optional CLI `--web-browser-debugging-port`.
 
 **Defer** C and D unless a concrete host-app driver appears.
+
+## Phase B discovery contract
+
+Flutter `flutter run --machine` may emit `app.debugPort` with VM `wsUri`; Chrome
+`--remote-debugging-port` is **not** reliably present in machine JSON today.
+Discovery therefore uses:
+
+1. **Sticky** `CoreConnectionTarget.browserDebugPort` when machine/attach emits it.
+2. **CLI** `--web-browser-debugging-port` on `flutter-mcp-toolkit`.
+3. **Process scan** — parse `--remote-debugging-port=N` from `ps` (Chrome/Chromium).
+4. **HTTP verify** — `GET http://127.0.0.1:{port}/json/list`, select `type: page`,
+   prefer URL matching `--web-port` / `localhost`.
+
+`web-server` without a debuggable browser stays on `flutter_layer` with `captureHints`.
+
+Re-discovery runs on retryable CDP failures (`target_not_found`, `websocket_failed`).
 
 ## Consequences
 
@@ -49,11 +70,11 @@ selection when multiple Chrome windows run.
 
 - Multiple Chrome windows: largest eligible window wins; agents may need to focus
   the correct tab manually or use `focus_window` before capture.
-- Linux/Windows web hosts still rely on `flutter_layer` until Phase B.
+- Linux/Windows web hosts use CDP when Chrome remote debugging is reachable.
 
 ## Notes
 
-- Headless web (`chrome` without a visible window) is out of scope for Phase A;
-  CDP remains the fit there.
-- Flutter may expose `--web-browser-debugging-port`; CDP Phase B should parse
-  machine/CLI discovery output rather than hard-code ports.
+- Headless web (`chrome` without a visible window) uses CDP (Phase B), not SCK.
+- CLI flags: `--web-browser-debugging-port`, `--web-port` (page target selection).
+- Showcase app registers `showcase.platform.stub` on web via conditional imports
+  (`platform_view_showcase_{stub,macos,web}.dart`) for `HtmlElementView` routing demos.

@@ -98,10 +98,7 @@ final class MacOsDesktopWindowScreenshotService
     if (effectivePlatform == 'macos') {
       return true;
     }
-    if (effectivePlatform == 'ios') {
-      return true;
-    }
-    return effectivePlatform == 'web';
+    return effectivePlatform == 'ios';
   }
 
   @override

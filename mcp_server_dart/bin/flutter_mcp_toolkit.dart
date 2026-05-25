@@ -100,6 +100,10 @@ Future<void> main(final List<String> args) async {
     flutterDevice: flutterDevice,
     stateRootDir: stateRoot,
     outputDir: outputDir,
+    webBrowserDebuggingPort: int.tryParse(
+      parsed.option(_webBrowserDebuggingPort) ?? '',
+    ),
+    webPort: int.tryParse(parsed.option(_webPort) ?? ''),
   );
 
   final executor = DefaultCoreCommandExecutor(
@@ -694,9 +698,9 @@ Future<CoreResult> _runValidateRuntime({
       capturePlatformViewsDetected || _captureHintsPlatformViewsDetected(steps);
   captureFocusAttempted = _desktopCaptureRetriedInSteps(steps);
   if (snapshotFailure != null &&
-      !shouldSkipFlutterLayerFallback(_platformViewHintsFromDetected(
-        capturePlatformViewsDetected,
-      )) &&
+      !shouldSkipFlutterLayerFallback(
+        _platformViewHintsFromDetected(capturePlatformViewsDetected),
+      ) &&
       _eligibleForFlutterLayerCaptureRetry(snapshotFailure)) {
     snapshotFailure = await runStep(
       'capture_ui_snapshot_flutter_layer',
@@ -779,9 +783,9 @@ Future<CoreResult> _runValidateRuntime({
     captureFocusAttempted =
         captureFocusAttempted || _desktopCaptureRetriedInSteps(steps);
     if (afterReloadSnapshotFailure != null &&
-        !shouldSkipFlutterLayerFallback(_platformViewHintsFromDetected(
-          capturePlatformViewsDetected,
-        )) &&
+        !shouldSkipFlutterLayerFallback(
+          _platformViewHintsFromDetected(capturePlatformViewsDetected),
+        ) &&
         _eligibleForFlutterLayerCaptureRetry(afterReloadSnapshotFailure)) {
       afterReloadSnapshotFailure = await runStep(
         'capture_ui_snapshot_after_reload_flutter_layer',
@@ -1839,6 +1843,16 @@ final _argParser = ArgParser(allowTrailingOptions: false)
         '(flutter attach --machine)',
   )
   ..addOption(
+    _webBrowserDebuggingPort,
+    help:
+        'Chrome remote-debugging-port override for web CDP capture when '
+        'auto-discovery fails (flutter run -d chrome).',
+  )
+  ..addOption(
+    _webPort,
+    help: 'Flutter --web-port hint for selecting the matching CDP page target.',
+  )
+  ..addOption(
     _stateFile,
     defaultsTo: _defaultStateFile,
     help: 'Path to persisted CLI state file',
@@ -2117,6 +2131,8 @@ const _vmServiceUri = 'vm-service-uri';
 const _flutterProjectDir = 'flutter-project-dir';
 const _flutterDevice = 'flutter-device';
 const _flutterDiscoveryTimeoutMs = 'flutter-discovery-timeout-ms';
+const _webBrowserDebuggingPort = 'web-browser-debugging-port';
+const _webPort = 'web-port';
 const _stateFile = 'state-file';
 const _resourcesSupported = 'resources';
 const _imagesSupported = 'images';

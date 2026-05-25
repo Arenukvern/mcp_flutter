@@ -22,8 +22,9 @@ routing was inconsistent: iOS Simulator targets never used host capture, and
    `captureHints` JSON (`platformViewsDetected`, `matches`, `recommendedMode`,
    `warning`).
 
-2. **Auto upgrade** — When `mode: auto`, platform views are detected, and the
-   macOS host can capture (`macos` or `ios` Simulator), resolve to
+2. **Auto upgrade** — When `mode: auto`, platform views are detected, and host
+   truth capture is viable (macOS app, iOS Simulator, or web via SCK/CDP per
+   [ADR 0007](/decisions/0007_web_headful_tab_capture)), resolve to
    `desktop_window` before `prepareForCapture`.
 
 3. **Warnings** — When the caller forces `flutter_layer` but platform views are
@@ -78,4 +79,6 @@ desktop_window`, and a soft warning — but `platformViewsDetected` stays
 - Apps without platform-view widgets can set `MCPToolkitBinding.captureHintsContributor`
   to assert hybrid/GPU rendering (`platformViewsDetected: true`).
 - Black-pixel analysis in PNGs is intentionally deferred.
-- Web headful tab capture is tracked in [ADR 0007](/decisions/0007_web_headful_tab_capture).
+- Web tab capture (SCK + CDP) is [ADR 0007](/decisions/0007_web_headful_tab_capture).
+  `flutter_test_app` exposes `HtmlElementView` on web and `AppKitView` on macOS
+  for showcase routing smoke tests.

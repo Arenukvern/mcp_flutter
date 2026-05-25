@@ -5,6 +5,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 import 'package:test_app/agent_state.dart';
+import 'package:test_app/platform_view_showcase.dart';
 import 'package:test_app/showcase_screen.dart';
 
 var _initialEntriesRegistered = false;
@@ -12,6 +13,7 @@ var _delayedEntriesRegistered = false;
 
 Future<void> main({final bool enableDelayedMcpRegistration = true}) async {
   WidgetsFlutterBinding.ensureInitialized();
+  registerShowcasePlatformView();
   MCPToolkitBinding.instance
     ..initialize()
     ..initializeFlutterToolkit();

@@ -70,6 +70,7 @@ final class CoreConnectionTarget {
     required this.isSticky,
     required this.isCurrent,
     this.dtdUri,
+    this.browserDebugPort,
     this.discoverySource = _portScanSource,
   });
 
@@ -80,6 +81,7 @@ final class CoreConnectionTarget {
   final bool isSticky;
   final bool isCurrent;
   final String? dtdUri;
+  final int? browserDebugPort;
   final String discoverySource;
 
   static const String machineDiscoverySource = _machineSource;
@@ -119,6 +121,7 @@ final class CoreConnectionTarget {
     'port': port,
     'endpoint': endpoint,
     if (dtdUri != null) 'dtdUri': dtdUri,
+    if (browserDebugPort != null) 'browserDebugPort': browserDebugPort,
     'discoverySource': discoverySource,
     'isSticky': isSticky,
     'isCurrent': isCurrent,
@@ -231,6 +234,7 @@ final class ConnectionContext {
 
   CoreEndpoint? _activeEndpoint;
   CoreEndpoint? _stickyEndpoint;
+  int? _stickyBrowserDebugPort;
 
   CoreConnectionMode _lastMode = CoreConnectionMode.auto;
   Map<String, Object?> _lastSelectionDiagnostics = const <String, Object?>{};
@@ -297,6 +301,7 @@ final class ConnectionContext {
   bool get isConnected => _vmService != null;
   CoreEndpoint? get activeEndpoint => _activeEndpoint;
   CoreEndpoint? get stickyEndpoint => _stickyEndpoint;
+  int? get stickyBrowserDebugPort => _stickyBrowserDebugPort;
   CoreConnectionMode get lastMode => _lastMode;
   Map<String, Object?> get lastSelectionDiagnostics =>
       _lastSelectionDiagnostics;
@@ -358,6 +363,7 @@ final class ConnectionContext {
     await _connectToEndpoint(endpoint, timeout: timeout);
 
     _stickyEndpoint = endpoint;
+    _stickyBrowserDebugPort = resolution.browserDebugPort;
     _activeEndpoint = endpoint;
     _lastMode = mode;
     _lastSelectionDiagnostics = diagnostics;
@@ -504,6 +510,7 @@ final class ConnectionContext {
           endpoint: endpoint,
           discoverySource: CoreConnectionTarget.machineDiscoverySource,
           dtdUri: machineTarget.dtdUri?.toString(),
+          browserDebugPort: machineTarget.browserDebugPort,
         );
         targetsById[target.targetId] = target;
       } on FormatException catch (e) {
@@ -535,6 +542,7 @@ final class ConnectionContext {
     required final CoreEndpoint endpoint,
     required final String discoverySource,
     final String? dtdUri,
+    final int? browserDebugPort,
   }) {
     final sticky = _stickyEndpoint;
     final current = _activeEndpoint;
@@ -547,6 +555,7 @@ final class ConnectionContext {
       port: endpoint.port,
       endpoint: canonicalTargetId,
       dtdUri: dtdUri,
+      browserDebugPort: browserDebugPort,
       discoverySource: discoverySource,
       isSticky: sticky != null && _sameEndpointByTargetId(sticky, endpoint),
       isCurrent: current != null && _sameEndpointByTargetId(current, endpoint),
@@ -660,7 +669,13 @@ final class ConnectionContext {
     _disconnectedSinceLastConnect = true;
   }
 
-  Future<({CoreEndpoint endpoint, Map<String, Object?> diagnostics})>
+  Future<
+    ({
+      CoreEndpoint endpoint,
+      Map<String, Object?> diagnostics,
+      int? browserDebugPort,
+    })
+  >
   _resolveEndpoint({
     required final CoreConnectionMode mode,
     final String? targetId,
@@ -695,6 +710,7 @@ final class ConnectionContext {
         }
         return (
           endpoint: endpoint,
+          browserDebugPort: _stickyBrowserDebugPort,
           diagnostics: {
             'mode': mode.name,
             'selectedTargetId': CoreConnectionTarget.buildTargetId(
@@ -721,6 +737,7 @@ final class ConnectionContext {
         );
         return (
           endpoint: endpoint,
+          browserDebugPort: _stickyBrowserDebugPort,
           diagnostics: {
             'mode': mode.name,
             'selectedTargetId': CoreConnectionTarget.buildTargetId(
@@ -744,7 +761,13 @@ final class ConnectionContext {
     }
   }
 
-  Future<({CoreEndpoint endpoint, Map<String, Object?> diagnostics})>
+  Future<
+    ({
+      CoreEndpoint endpoint,
+      Map<String, Object?> diagnostics,
+      int? browserDebugPort,
+    })
+  >
   _resolveByTargetId(
     final String targetId, {
     required final CoreConnectionMode mode,
@@ -774,6 +797,7 @@ final class ConnectionContext {
         final endpoint = CoreEndpoint.fromUri(parsedTargetUri);
         return (
           endpoint: endpoint,
+          browserDebugPort: _stickyBrowserDebugPort,
           diagnostics: {
             'mode': mode.name,
             'selectedTargetId': CoreConnectionTarget.buildTargetId(
@@ -808,6 +832,7 @@ final class ConnectionContext {
     final endpoint = CoreEndpoint.fromUri(Uri.parse(selected.endpoint));
     return (
       endpoint: endpoint,
+      browserDebugPort: selected.browserDebugPort,
       diagnostics: {
         'mode': mode.name,
         'selectedTargetId': selected.targetId,
@@ -820,7 +845,13 @@ final class ConnectionContext {
     );
   }
 
-  Future<({CoreEndpoint endpoint, Map<String, Object?> diagnostics})>
+  Future<
+    ({
+      CoreEndpoint endpoint,
+      Map<String, Object?> diagnostics,
+      int? browserDebugPort,
+    })
+  >
   _resolveAutoEndpoint() async {
     final active = _activeEndpoint;
     if (isConnected && active != null) {
@@ -834,6 +865,7 @@ final class ConnectionContext {
         );
         return (
           endpoint: active,
+          browserDebugPort: _stickyBrowserDebugPort,
           diagnostics: {
             'mode': CoreConnectionMode.auto.name,
             'selectedTargetId': selectedTargetId,
@@ -892,6 +924,7 @@ final class ConnectionContext {
     final endpoint = CoreEndpoint.fromUri(Uri.parse(selected.endpoint));
     return (
       endpoint: endpoint,
+      browserDebugPort: selected.browserDebugPort,
       diagnostics: {
         'mode': CoreConnectionMode.auto.name,
         'selectedTargetId': selected.targetId,

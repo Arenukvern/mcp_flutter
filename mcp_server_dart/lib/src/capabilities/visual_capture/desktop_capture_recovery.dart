@@ -3,6 +3,7 @@
 
 import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/desktop_window_screenshot.dart';
+import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/web_cdp_client.dart';
 
 /// Result of a desktop capture attempt, optionally after one recovery cycle.
 final class DesktopCaptureRecoveryResult {
@@ -69,7 +70,13 @@ bool isRetryableDesktopCaptureFailure({
       text.contains('unavailable')) {
     return true;
   }
-  return error is DesktopWindowCaptureException;
+  if (error is DesktopWindowCaptureException) {
+    return true;
+  }
+  if (error is WebCdpCaptureException) {
+    return isRetryableWebCdpFailure(error);
+  }
+  return false;
 }
 
 /// Runs host desktop capture with at most one extra focus+capture recovery cycle.
@@ -156,6 +163,12 @@ Future<DesktopCaptureRecoveryResult> _attemptCapture({
     return DesktopCaptureRecoveryResult(
       errorMessage: 'Desktop window screenshot failed: $e',
       errorDetails: e.details,
+      failure: e,
+    );
+  } on WebCdpCaptureException catch (e) {
+    return DesktopCaptureRecoveryResult(
+      errorMessage: e.message,
+      errorDetails: <String, Object?>{'code': e.code, ...e.details},
       failure: e,
     );
   } on Object catch (e) {
