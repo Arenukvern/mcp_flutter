@@ -106,7 +106,7 @@ agentkit/
 ├── agentkit_codegen/      # @AgentTool, build_runner, agent_manifest.json
 ├── agentkit_testing/      # Fakes, contract harness
 ├── agentkit_mcp/          # Only package importing dart_mcp
-├── agentkit_webmcp/       # navigator.modelContext (web + stub)
+├── agentkit_webmcp/       # navigator.modelContext (browser); VM uses test fakes
 ├── agentkit_gemma/        # flutter_gemma bridge (optional dependency)
 ├── agentkit_apple/        # Phase 3: Swift from manifest
 └── agentkit_android/      # Phase 3: XML from manifest
@@ -418,7 +418,7 @@ abstract interface class AgentAdapter {
 | Adapter | attach | watchesRegistry | Notes |
 |---------|--------|-----------------|-------|
 | `agentkit_mcp` | Publish tools/resources to `dart_mcp` | yes | Maps `AgentResult` ↔ `CallToolResult` |
-| `agentkit_webmcp` | `navigator.modelContext.registerTool` | yes | Feature-detect; stub on VM |
+| `agentkit_webmcp` | `navigator.modelContext.registerTool` | yes | Feature-detect; in-memory fake on VM/tests |
 | `agentkit_gemma` | Build `tools` for `createChat` | yes | `FunctionCallResponse` → `registry.invoke` |
 | `agentkit_apple` / `android` | N/A (build-time) | no | Reads `agent_manifest.json` |
 

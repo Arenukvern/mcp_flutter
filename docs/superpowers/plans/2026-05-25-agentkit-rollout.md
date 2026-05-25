@@ -1,84 +1,64 @@
 # Agentkit Program Rollout
 
-> **For agentic workers:** Run the [Self-Closing Implementation Loop](../agentkit-self-closing-loop.md) until tracker `program.status` reflects the active milestone. Phases 1–4 are **done**; Phase 5 hardening is tracked separately.
+> **For agentic workers:** Use [tracker](../tracker/agentkit-rollout.yaml) for machine state. Phases 1–5 are **done**. Pre-extract completion is **Phase 6** (spec pending).
 
-**Goal:** Implement the [agentkit design spec](../specs/2026-05-25-agentkit-design.md) through registry-backed MCP (Phases 1–4), then harden via [Phase 5 hardening spec](../specs/2026-05-25-agentkit-phase5-hardening-design.md).
+**Goal:** Finish agentkit **inside mcp_flutter** (real wiring, no stubs, migration complete), then extract to a standalone repo.
 
-**Tracker (machine state):** [../tracker/agentkit-rollout.yaml](../tracker/agentkit-rollout.yaml)
+| Spec | Role |
+|------|------|
+| [Design](../specs/2026-05-25-agentkit-design.md) | Architecture |
+| [Phase 5 hardening](../specs/2026-05-25-agentkit-phase5-hardening-design.md) | Docs + runtime + codegen pilot (done) |
+| Phase 6 pre-extract (TBD) | Complete in-repo before split |
+
+**Tracker:** [../tracker/agentkit-rollout.yaml](../tracker/agentkit-rollout.yaml)
 
 ---
 
 ## Phase map
 
-| Phase | Plan / spec | Status | Exit (summary) |
-|-------|-------------|--------|----------------|
-| **1** | [phase1](2026-05-25-agentkit-phase1.md) | `done` | Registry invoke path; packages; MCP/CLI unchanged; codegen annotations-only |
-| **2** | [phase2](2026-05-25-agentkit-phase2.md) | `done` | Kernel without `dart_mcp`; adapter-owned publish; dynamic registry intents |
-| **3** | [phase3](2026-05-25-agentkit-phase3.md) | `done` | WebMCP + Gemma adapters shipped; native manifest codegen started; split/shims deferred |
-| **4** | [phase4 closure](../closure/2026-05-25-agentkit-phase4-registry-resources.md) | `done` | Registry-backed `registerResource`; dynamic resources; WebMCP hot-sync |
-| **5** | [phase5 hardening](../specs/2026-05-25-agentkit-phase5-hardening-design.md) | `in_progress` | **5-A** docs hygiene `done`; **5-B** runtime consolidation; **5-C** authoring/codegen |
+| Phase | Doc | Status | Summary |
+|-------|-----|--------|---------|
+| **1** | [archive/phase1](archive/2026-05-25-agentkit-phase1.md) | done | Registry, packages, client DX |
+| **2** | [archive/phase2](archive/2026-05-25-agentkit-phase2.md) | done | Kernel without `dart_mcp` |
+| **3** | [archive/phase3](archive/2026-05-25-agentkit-phase3.md) | done | WebMCP, Gemma example, manifest JSON |
+| **4** | [closure phase4](../closure/2026-05-25-agentkit-phase4-registry-resources.md) | done | Registry-backed resources + hot-sync |
+| **5** | [hardening spec](../specs/2026-05-25-agentkit-phase5-hardening-design.md) | done | 5-A docs, 5-B runtime, 5-C codegen pilot |
+| **6** | TBD | pending | **Pre-extract completion** — wire, migrate, remove shims |
 
-Closure reports: [../closure/](../closure/) (phase1–4).
-
----
-
-## Self-closing loop (summary)
-
-1. **Implementer** executes the active phase plan or hardening sub-phase.
-2. **Closer** runs phase gate → writes closure report.
-3. **If fail:** Closer regenerates **same** phase plan (v+1) with fix tasks; return to step 1.
-4. **If pass:** Closer marks phase `done`, sets next `active_phase`; return to step 1.
-5. **Milestone stop:** Phases 1–4 gates passed → `program.status: complete_milestone`. Phase 5 sub-phases use the hardening spec until B/C gates pass or work is deferred with tracker notes.
-
-Full protocol: [../agentkit-self-closing-loop.md](../agentkit-self-closing-loop.md)
+Closures: [../closure/](../closure/).
 
 ---
 
-## Closer invocation (when to run)
+## Program status
 
-| Trigger | Action |
-|---------|--------|
-| Implementer says "phase done" | Run Closer gate — do not trust without verification |
-| All phase plan checkboxes `[x]` | Run Closer gate |
-| CI failed on agentkit paths | Run Closer gate with `fail`; regenerate repair plan |
-| User says "close phase N" | Run Closer gate for phase N |
-| Phase 5 sub-phase done | Update tracker `phase5` sub-phase status; optional closure note |
+- **Phases 1–5:** Gates passed on `feat/agentkit-phase1-3`.
+- **`program.status`:** `complete_milestone` — in-repo delivery; see tracker `deferred_work`.
+- **Extract:** Blocked until Phase 6 exit criteria pass (no standalone repo until then).
 
 ---
 
-## Design spec coverage (program-level)
+## Self-closing loop
 
-Phases 1–4 delivered the table below. Phase 5-B/C close remaining gaps (codegen generator, runtime consolidation, expanded native docs).
-
-| Design area | Status (phases 1–4) |
-|-------------|---------------------|
-| Two-layer authoring (descriptor + registration) | done |
-| Client DX (envelope, wire, lazy install, builder) | done |
-| Multi-adapter `AgentRuntime` | done (MCP, WebMCP, Gemma example-only) |
-| MCP via `agentkit_mcp` only | done |
-| Dynamic registry as intents | done |
-| `agentkit_webmcp`, `agentkit_gemma` | done (adapters shipped; Gemma example-only) |
-| Apple/Android manifest codegen | started |
-| Registry-backed resources + hot-sync | done (phase 4) |
-| `dart_mcp` ecosystem alignment | done (kernel decoupled) |
-| Optional `@AgentTool` codegen generator | deferred → Phase 5-C |
-| Standalone repo split / shim removal | deferred → tracker `deferred_work` |
+[agentkit-self-closing-loop.md](../agentkit-self-closing-loop.md) — Closer runs verification; implementer executes active plan/spec.
 
 ---
 
-## Artifacts produced by the loop
+## Design coverage (1–5)
 
-| Artifact | Producer |
-|----------|----------|
-| Phase implementation plans | Closer (initial + next phase) / Implementer (task updates) |
-| Closure reports | Closer |
-| `tracker/agentkit-rollout.yaml` | Closer |
-| Phase 5 hardening spec | Architecture / Implementer (5-A) |
-| Code & tests | Implementer (phases 1–4 done; 5-B/C pending) |
+| Area | Status |
+|------|--------|
+| Registry invoke (tools + static resources) | done |
+| `AgentRuntime` + `McpPublishAdapter` attach | done (5-B) |
+| Dynamic registry intents + hot-sync | done |
+| `agentkit_codegen` pilot | done (5-C; not full product codegen) |
+| `MCPCallEntry` → `AgentCallEntry` migration | **partial** — bridge only |
+| Resource templates via registry | **exception** — `addResourceTemplate` for `app/errors/{count}` |
+| Skills/docs teach `AgentCallEntry` | **pending** → Phase 6 |
+| Public shim removal | **pending** → Phase 6 |
+| Standalone repo | **after Phase 6** |
 
 ---
 
 ## Current action
 
-**Phase 5-A (documentation & program hygiene):** complete.  
-**Next step:** Implementer runs **Phase 5-B** per [2026-05-25-agentkit-phase5-hardening-design.md](../specs/2026-05-25-agentkit-phase5-hardening-design.md) — runtime consolidation (code changes allowed; Closer gate when done).
+**Phase 6:** Brainstorm and write [pre-extract completion spec](../specs/) — then implementation plan. Do not start monorepo extract until Phase 6 gate passes.

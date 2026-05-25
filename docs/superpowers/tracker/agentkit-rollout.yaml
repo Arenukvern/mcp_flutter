@@ -8,8 +8,9 @@ program:
   rollout_doc: docs/superpowers/plans/2026-05-25-agentkit-rollout.md
   self_closing_loop: docs/superpowers/agentkit-self-closing-loop.md
   hardening_spec: docs/superpowers/specs/2026-05-25-agentkit-phase5-hardening-design.md
-  status: complete_milestone # pending | in_progress | complete_milestone | complete | blocked
-  active_phase: phase5
+  status: pre_extract_pending # complete_milestone until phase6 gate; then complete_in_repo; extract is phase7
+  active_phase: phase6
+  next_spec: docs/superpowers/specs/2026-05-26-agentkit-pre-extract-completion-design.md
   deferred_work:
     - Standalone agentkit monorepo split from mcp_flutter consumer
     - Public re-export shim removal after deprecation window
@@ -20,7 +21,7 @@ program:
 phases:
   - id: phase1
     title: Core in mcp_flutter workspace
-    plan: docs/superpowers/plans/2026-05-25-agentkit-phase1.md
+    plan: docs/superpowers/plans/archive/2026-05-25-agentkit-phase1.md
     plan_revision: v1
     status: done # pending | in_progress | done | failed_gate
     design_section: Migration phases / Phase 1
@@ -45,7 +46,7 @@ phases:
 
   - id: phase2
     title: Decouple host from dart_mcp
-    plan: docs/superpowers/plans/2026-05-25-agentkit-phase2.md
+    plan: docs/superpowers/plans/archive/2026-05-25-agentkit-phase2.md
     plan_revision: v1
     status: done
     design_section: Migration phases / Phase 2
@@ -63,7 +64,7 @@ phases:
 
   - id: phase3
     title: Multi-adapter shipping (in-repo)
-    plan: docs/superpowers/plans/2026-05-25-agentkit-phase3.md
+    plan: docs/superpowers/plans/archive/2026-05-25-agentkit-phase3.md
     plan_revision: v1
     status: done
     design_section: Migration phases / Phase 3
