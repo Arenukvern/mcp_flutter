@@ -1,6 +1,6 @@
 # Agentkit Design Specification
 
-**Status:** Draft — pending user review  
+**Status:** Approved (2026-05-25)  
 **Date:** 2026-05-25  
 **Authors:** Architecture brainstorm (mcp_flutter → agentkit evolution)
 
