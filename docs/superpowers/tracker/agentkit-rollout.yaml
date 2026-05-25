@@ -1,0 +1,67 @@
+# Agentkit program tracker — updated by Closer agent after each phase gate.
+# Design spec: docs/superpowers/specs/2026-05-25-agentkit-design.md
+# Loop playbook: docs/superpowers/agentkit-self-closing-loop.md
+
+program:
+  id: agentkit
+  design_spec: docs/superpowers/specs/2026-05-25-agentkit-design.md
+  rollout_doc: docs/superpowers/plans/2026-05-25-agentkit-rollout.md
+  self_closing_loop: docs/superpowers/agentkit-self-closing-loop.md
+  status: in_progress # pending | in_progress | complete | blocked
+  active_phase: phase1
+
+phases:
+  - id: phase1
+    title: Core in mcp_flutter workspace
+    plan: docs/superpowers/plans/2026-05-25-agentkit-phase1.md
+    plan_revision: v1
+    status: pending # pending | in_progress | done | failed_gate
+    design_section: Migration phases / Phase 1
+    exit_criteria:
+      - All static server tools invoke via AgentRegistry
+      - External MCP and CLI contracts unchanged
+      - agentkit_schema and agentkit_core packages exist with tests
+      - Client DX helpers specified in design spec implemented or deferred with note
+    validation:
+      - dart test packages/agentkit_schema
+      - dart test packages/agentkit_core
+      - dart test packages/agentkit_testing
+      - dart test packages/server_capability_kernel
+      - cd mcp_server_dart && dart test
+      - dart analyze packages/agentkit_schema packages/agentkit_core mcp_toolkit
+      - cd mcp_server_dart && dart run bin/flutter_mcp_cli.dart schema --name fmt_wait
+      - cd mcp_server_dart && dart run bin/flutter_mcp_cli.dart capabilities
+    closure_report: null # docs/superpowers/closure/YYYY-MM-DD-agentkit-phase1.md
+    last_gate: null # pass | fail
+    last_gate_at: null
+
+  - id: phase2
+    title: Decouple host from dart_mcp
+    plan: docs/superpowers/plans/2026-05-25-agentkit-phase2.md
+    plan_revision: null
+    status: pending
+    design_section: Migration phases / Phase 2
+    exit_criteria:
+      - McpHost registry-only; McpAgentAdapter owns dart_mcp publish
+      - DynamicRegistry stores RegisteredAgentIntent not dart_mcp.Tool
+      - server_capability_kernel has zero dart_mcp imports
+    validation: [] # populated when phase2 plan is generated
+    closure_report: null
+    last_gate: null
+    last_gate_at: null
+
+  - id: phase3
+    title: agentkit repo split and multi-adapter shipping
+    plan: docs/superpowers/plans/2026-05-25-agentkit-phase3.md
+    plan_revision: null
+    status: pending
+    design_section: Migration phases / Phase 3
+    exit_criteria:
+      - agentkit monorepo split from mcp_flutter consumer
+      - agentkit_webmcp and agentkit_gemma shipped
+      - agentkit_apple and agentkit_android manifest codegen started
+      - Public shims removed after deprecation window
+    validation: []
+    closure_report: null
+    last_gate: null
+    last_gate_at: null

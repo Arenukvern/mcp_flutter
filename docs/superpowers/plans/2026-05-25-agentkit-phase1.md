@@ -13,6 +13,8 @@
 > **Spec revision (2026-05-25):** Authoring uses `AgentCallEntry` / `@AgentTool`. Registry stores **`RegisteredAgentIntent`** (descriptor + executor), not author-implemented `AgentIntent`. Use `AgentIntentDescriptor` for adapter serialization. See spec section *Investigation: AgentIntent vs declarative authoring*.
 >
 > **Client DX (ecsly):** `AgentResult.envelope`, `AgentWireArgs`, `AgentModule.fromEntries`, `AgentClientInstall.once` — spec section *Client DX patterns (ecsly-derived)*.
+>
+> **Self-closing loop:** Implementer completes tasks → **Closer** runs [Phase Gate](../agentkit-self-closing-loop.md#phase-gate-checklist-closer) (Task 13). Do not advance to Phase 2 until tracker marks `phase1: done`. Program: [rollout](2026-05-25-agentkit-rollout.md).
 
 ---
 
@@ -756,14 +758,49 @@ Expected: tool still listed; schema unchanged.
 
 `flutter_mcp_toolkit_contract_test.dart` passes.
 
-- [ ] **Step 4: Update design spec status to Implemented (Phase 1)**
+- [ ] **Step 4: Record outputs** — paste test/analyze summaries into handoff for Closer (Implementer does not mark program complete).
+
+---
+
+## Task 13: Phase Gate — Closer only (self-closing loop)
+
+> **REQUIRED SUB-SKILL:** `verification-before-completion`, then `writing-plans` if regenerating.  
+> **Playbook:** [agentkit-self-closing-loop.md](../agentkit-self-closing-loop.md)
+
+**Files:**
+- Create: `docs/superpowers/closure/YYYY-MM-DD-agentkit-phase1.md`
+- Modify: `docs/superpowers/tracker/agentkit-rollout.yaml`
+- Modify (on fail): this plan file — bump `Plan revision` to v2+ with **Fix:** tasks only
+- Create (on pass): `docs/superpowers/plans/2026-05-25-agentkit-phase2.md` via writing-plans
+
+- [ ] **Step 1: Run ALL validation commands** from [tracker](../tracker/agentkit-rollout.yaml) `phases[phase1].validation` plus Task 12 commands. Fresh run; capture exit codes.
+
+- [ ] **Step 2: Spec coverage audit** — fill checklist below with `pass` | `fail` | `partial` and file evidence per row.
+
+- [ ] **Step 3: Write closure report** at `docs/superpowers/closure/YYYY-MM-DD-agentkit-phase1.md` with verdict `pass` or `fail`.
+
+- [ ] **Step 4a: If `fail`** — Regenerate this plan (v+1): keep completed `[x]` tasks; add **Fix:** tasks for each gap; link closure report. Set tracker `phase1.status: failed_gate`. **Do not** create Phase 2 plan. Stop for Implementer.
+
+- [ ] **Step 4b: If `pass`** — Update tracker: `phase1.status: done`, `phase1.last_gate: pass`, `program.active_phase: phase2`. Generate [phase2 plan](2026-05-25-agentkit-phase2.md) from design spec Phase 2 using writing-plans. Commit tracker + closure + phase2 plan.
+
+- [ ] **Step 5: Handoff message** — State active phase, plan path, and whether Implementer should continue same phase or start next.
+
+**Closer prompt (copy):**
+
+```text
+You are the Closer for agentkit phase1. Do not implement features.
+Follow docs/superpowers/agentkit-self-closing-loop.md Task 13 and Phase Gate checklist.
+Verify, write closure report, update tracker, regenerate phase1 plan (fail) or phase2 plan (pass).
+```
 
 ---
 
 ## Spec coverage checklist (Phase 1)
 
-| Spec requirement | Task |
-|------------------|------|
+> Closer marks **Status** column during Task 13 (Implementer leaves blank).
+
+| Spec requirement | Task | Status | Evidence |
+|------------------|------|--------|----------|
 | `agentkit_schema` | Task 1 |
 | `agentkit_core` registry/runtime | Tasks 2–5 |
 | Hand-written `AgentCallEntry` | Tasks 4, 9 |

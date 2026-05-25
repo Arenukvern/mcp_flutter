@@ -606,6 +606,24 @@ final class AgentRuntime {
 
 ---
 
+## Self-closing implementation loop
+
+Agentkit work uses a **self-closing** agent pair so phases do not stall on unverified “done” claims:
+
+| Role | Responsibility |
+|------|----------------|
+| **Implementer** | Execute the active [phase plan](plans/2026-05-25-agentkit-phase1.md) tasks |
+| **Closer** | Verify exit criteria, audit spec coverage, write closure report; **regenerate** the same phase plan on failure or the **next** phase plan on success |
+
+Repeat until [rollout tracker](tracker/agentkit-rollout.yaml) sets `program.status: complete`.
+
+**Playbook:** [agentkit-self-closing-loop.md](agentkit-self-closing-loop.md)  
+**Program overview:** [plans/2026-05-25-agentkit-rollout.md](plans/2026-05-25-agentkit-rollout.md)
+
+Phase 2 and Phase 3 implementation plans are **not** written upfront — the Closer generates them after the previous phase gate passes.
+
+---
+
 ## Migration phases
 
 ### Phase 1 — Core in mcp_flutter workspace (4–6 weeks)

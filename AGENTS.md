@@ -99,3 +99,17 @@ To check whether embeddings exist, inspect `.gitnexus/meta.json` — the `stats.
 | Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
 
 <!-- gitnexus:end -->
+
+## Agentkit program (spec-driven)
+
+When implementing the **agentkit** migration, use the self-closing loop — do not mark phases complete without the Closer gate:
+
+| Doc | Role |
+|-----|------|
+| `docs/superpowers/specs/2026-05-25-agentkit-design.md` | Source of truth |
+| `docs/superpowers/plans/2026-05-25-agentkit-rollout.md` | Program overview |
+| `docs/superpowers/tracker/agentkit-rollout.yaml` | Active phase + status |
+| `docs/superpowers/agentkit-self-closing-loop.md` | Implementer + **Closer** protocol |
+| `docs/superpowers/plans/2026-05-25-agentkit-phase1.md` | Active plan until tracker advances |
+
+**Closer** verifies, writes `docs/superpowers/closure/`, regenerates the same phase plan on failure or the next phase plan on success, until `program.status: complete`.
