@@ -97,16 +97,10 @@ void main() {
         ..nextExecuteResult = CoreResult.success(data: {'tree': 'layer data'});
       final ctx = _registeredCtx(runner: runner);
       final reg = ctx.registrationFor('debug_dump_layer_tree')!;
-      final result = await reg.handler(
-        CallToolRequest(
-          name: 'debug_dump_layer_tree',
-          arguments: const <String, Object?>{},
-        ),
-      );
-      expect(result.isError, isNot(true));
+      final result = await reg.handler(const <String, Object?>{});
+      expect(result.ok, isTrue);
       expect(runner.executedCommands.first, isA<DebugDumpLayerTreeCommand>());
-      final text = (result.content.first as TextContent).text;
-      final decoded = jsonDecode(text) as Map<String, Object?>;
+      final decoded = agentResultPayload(result);
       expect(decoded['tree'], 'layer data');
     });
 
@@ -119,13 +113,8 @@ void main() {
       final ctx = _registeredCtx(runner: runner);
       final result = await ctx
           .registrationFor('debug_dump_layer_tree')!
-          .handler(
-            CallToolRequest(
-              name: 'debug_dump_layer_tree',
-              arguments: const <String, Object?>{},
-            ),
-          );
-      expect(result.isError, isTrue);
+          .handler(const <String, Object?>{});
+      expect(result.ok, isFalse);
       expect(runner.executedCommands, isEmpty);
     });
 
@@ -138,15 +127,10 @@ void main() {
       final ctx = _registeredCtx(runner: runner);
       final result = await ctx
           .registrationFor('debug_dump_layer_tree')!
-          .handler(
-            CallToolRequest(
-              name: 'debug_dump_layer_tree',
-              arguments: const <String, Object?>{},
-            ),
-          );
-      expect(result.isError, isTrue);
+          .handler(const <String, Object?>{});
+      expect(result.ok, isFalse);
       final json =
-          jsonDecode((result.content.first as TextContent).text)
+          agentResultPayload(result)
               as Map<String, Object?>;
       _expectEnvelopeKeys(json);
     });
@@ -173,12 +157,7 @@ void main() {
         );
       final ctx = _registeredCtx(runner: runner);
       final reg = ctx.registrationFor('debug_dump_semantics_tree')!;
-      await reg.handler(
-        CallToolRequest(
-          name: 'debug_dump_semantics_tree',
-          arguments: const <String, Object?>{},
-        ),
-      );
+      await reg.handler(const <String, Object?>{});
       expect(
         runner.executedCommands.first,
         isA<DebugDumpSemanticsTreeCommand>(),
@@ -194,13 +173,8 @@ void main() {
       final ctx = _registeredCtx(runner: runner);
       final result = await ctx
           .registrationFor('debug_dump_semantics_tree')!
-          .handler(
-            CallToolRequest(
-              name: 'debug_dump_semantics_tree',
-              arguments: const <String, Object?>{},
-            ),
-          );
-      expect(result.isError, isTrue);
+          .handler(const <String, Object?>{});
+      expect(result.ok, isFalse);
       expect(runner.executedCommands, isEmpty);
     });
 
@@ -213,15 +187,10 @@ void main() {
       final ctx = _registeredCtx(runner: runner);
       final result = await ctx
           .registrationFor('debug_dump_semantics_tree')!
-          .handler(
-            CallToolRequest(
-              name: 'debug_dump_semantics_tree',
-              arguments: const <String, Object?>{},
-            ),
-          );
-      expect(result.isError, isTrue);
+          .handler(const <String, Object?>{});
+      expect(result.ok, isFalse);
       final json =
-          jsonDecode((result.content.first as TextContent).text)
+          agentResultPayload(result)
               as Map<String, Object?>;
       _expectEnvelopeKeys(json);
     });
@@ -246,12 +215,7 @@ void main() {
         ..nextExecuteResult = CoreResult.success(data: {'tree': 'render data'});
       final ctx = _registeredCtx(runner: runner);
       final reg = ctx.registrationFor('debug_dump_render_tree')!;
-      await reg.handler(
-        CallToolRequest(
-          name: 'debug_dump_render_tree',
-          arguments: const <String, Object?>{},
-        ),
-      );
+      await reg.handler(const <String, Object?>{});
       expect(runner.executedCommands.first, isA<DebugDumpRenderTreeCommand>());
     });
 
@@ -264,13 +228,8 @@ void main() {
       final ctx = _registeredCtx(runner: runner);
       final result = await ctx
           .registrationFor('debug_dump_render_tree')!
-          .handler(
-            CallToolRequest(
-              name: 'debug_dump_render_tree',
-              arguments: const <String, Object?>{},
-            ),
-          );
-      expect(result.isError, isTrue);
+          .handler(const <String, Object?>{});
+      expect(result.ok, isFalse);
       expect(runner.executedCommands, isEmpty);
     });
 
@@ -283,15 +242,10 @@ void main() {
       final ctx = _registeredCtx(runner: runner);
       final result = await ctx
           .registrationFor('debug_dump_render_tree')!
-          .handler(
-            CallToolRequest(
-              name: 'debug_dump_render_tree',
-              arguments: const <String, Object?>{},
-            ),
-          );
-      expect(result.isError, isTrue);
+          .handler(const <String, Object?>{});
+      expect(result.ok, isFalse);
       final json =
-          jsonDecode((result.content.first as TextContent).text)
+          agentResultPayload(result)
               as Map<String, Object?>;
       _expectEnvelopeKeys(json);
     });
@@ -316,12 +270,7 @@ void main() {
         ..nextExecuteResult = CoreResult.success(data: {'tree': 'focus data'});
       final ctx = _registeredCtx(runner: runner);
       final reg = ctx.registrationFor('debug_dump_focus_tree')!;
-      await reg.handler(
-        CallToolRequest(
-          name: 'debug_dump_focus_tree',
-          arguments: const <String, Object?>{},
-        ),
-      );
+      await reg.handler(const <String, Object?>{});
       expect(runner.executedCommands.first, isA<DebugDumpFocusTreeCommand>());
     });
 
@@ -334,13 +283,8 @@ void main() {
       final ctx = _registeredCtx(runner: runner);
       final result = await ctx
           .registrationFor('debug_dump_focus_tree')!
-          .handler(
-            CallToolRequest(
-              name: 'debug_dump_focus_tree',
-              arguments: const <String, Object?>{},
-            ),
-          );
-      expect(result.isError, isTrue);
+          .handler(const <String, Object?>{});
+      expect(result.ok, isFalse);
       expect(runner.executedCommands, isEmpty);
     });
 
@@ -353,15 +297,10 @@ void main() {
       final ctx = _registeredCtx(runner: runner);
       final result = await ctx
           .registrationFor('debug_dump_focus_tree')!
-          .handler(
-            CallToolRequest(
-              name: 'debug_dump_focus_tree',
-              arguments: const <String, Object?>{},
-            ),
-          );
-      expect(result.isError, isTrue);
+          .handler(const <String, Object?>{});
+      expect(result.ok, isFalse);
       final json =
-          jsonDecode((result.content.first as TextContent).text)
+          agentResultPayload(result)
               as Map<String, Object?>;
       _expectEnvelopeKeys(json);
     });

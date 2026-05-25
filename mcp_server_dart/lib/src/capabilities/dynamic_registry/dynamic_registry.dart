@@ -6,6 +6,9 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:agentkit_core/agentkit_core.dart';
+import 'package:agentkit_mcp/agentkit_mcp.dart';
+import 'package:agentkit_schema/agentkit_schema.dart';
 import 'package:dart_mcp/server.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_mcp_toolkit_server/flutter_mcp_server.dart';
@@ -20,17 +23,19 @@ import 'package:vm_service/vm_service.dart';
 export 'dynamic_registry_tools.dart';
 export 'registry_discovery_service.dart';
 
-/// Entry for a dynamically registered tool - fully MCP compliant
+/// Entry for a dynamically registered tool — [RegisteredAgentIntent] + MCP [Tool].
 @immutable
 final class DynamicToolEntry with EquatableMixin {
-  const DynamicToolEntry({required this.tool});
+  const DynamicToolEntry({required this.intent, required this.tool});
 
+  final RegisteredAgentIntent intent;
   final Tool tool;
+
   @override
   bool? get stringify => true;
 
   @override
-  List<Object?> get props => [tool];
+  List<Object?> get props => [intent.descriptor.qualifiedName, tool.name];
 }
 
 /// Entry for a dynamically registered resource - fully MCP compliant
@@ -183,7 +188,8 @@ final class DynamicRegistry {
   void registerTool(final Tool tool, final DynamicAppId appId) {
     verifyAppConnection(appId);
 
-    final entry = DynamicToolEntry(tool: tool);
+    final intent = _intentForTool(tool: tool, appId: appId);
+    final entry = DynamicToolEntry(intent: intent, tool: tool);
 
     _tools[tool.name] = entry;
     _lastActivity = DateTime.now();
@@ -325,8 +331,8 @@ final class DynamicRegistry {
   /// Check if a resource is dynamically registered (for MCP resource routing)
   bool isDynamicResource(final String uri) => getResourceEntry(uri) != null;
 
-  /// Forward MCP tool call to the appropriate Flutter app
-  /// Returns null if tool not found, otherwise forwards the call
+  /// Forward MCP tool call via stored [RegisteredAgentIntent].
+  /// Returns null if tool not found.
   Future<CallToolResult?> forwardToolCall(
     final String toolName,
     final Map<String, Object?>? arguments,
@@ -337,73 +343,85 @@ final class DynamicRegistry {
     }
 
     updateAppActivity();
+    final agentResult = await entry.intent.execute(
+      AgentInvocation(
+        descriptor: entry.intent.descriptor,
+        arguments: arguments ?? const <String, Object?>{},
+      ),
+    );
+    return agentResultToMcpResult(agentResult);
+  }
 
+  RegisteredAgentIntent _intentForTool({
+    required final Tool tool,
+    required final DynamicAppId appId,
+  }) {
+    final namespace = appId.isEmpty ? 'app' : appId;
+    return RegisteredAgentIntent(
+      descriptor: AgentIntentDescriptor(
+        namespace: namespace,
+        name: tool.name,
+        description: tool.description ?? '',
+        kind: AgentIntentKind.tool,
+        inputSchema: _inputSchemaMap(tool),
+      ),
+      execute: (final invocation) => _invokeDynamicTool(
+        toolName: tool.name,
+        arguments: invocation.arguments,
+      ),
+    );
+  }
+
+  Future<AgentResult> _invokeDynamicTool({
+    required final String toolName,
+    required final AgentArguments arguments,
+  }) async {
     try {
       final vmService = this.vmService;
       if (vmService == null) {
-        logger.log(
-          LoggingLevel.warning,
-          'Cannot forward tool call: VM service not available',
-          logger: 'DynamicRegistry',
-        );
-        return CallToolResult(
-          content: [
-            TextContent(
-              text: jsonEncode(
-                CoreResult.failure(
-                  code: CoreErrorCode.vmNotConnected,
-                  message: 'VM service not available for tool forwarding',
-                ).error?.toJson(),
-              ),
-            ),
-          ],
-          isError: true,
+        return AgentResult.failure(
+          code: CoreErrorCode.vmNotConnected,
+          message: 'VM service not available for tool forwarding',
         );
       }
 
-      // Call the tool's specific service extension
       final response = await server.callFlutterExtension(
-        '$mcpToolkitExt.${entry.tool.name}',
-        args: arguments ?? {},
+        '$mcpToolkitExt.$toolName',
+        args: arguments,
       );
 
-      // Parse the response from the Flutter app
       final data = jsonDecodeMap(response.json);
       final message = jsonDecodeString(
         data['message'],
       ).whenEmptyUse('Tool executed successfully');
-      final resultParameters = jsonDecodeMap(data);
+      final resultParameters = jsonDecodeMap(data)..remove('message');
 
-      return CallToolResult(
-        content: [
-          TextContent(text: message),
-          TextContent(text: jsonEncode(resultParameters..remove('message'))),
+      return AgentResult.success(
+        message: message,
+        data: resultParameters,
+        artifacts: [
+          AgentArtifact.text(message),
+          if (resultParameters.isNotEmpty)
+            AgentArtifact.text(jsonEncode(resultParameters)),
         ],
-        isError: false,
       );
     } on Exception catch (e, stackTrace) {
       logger.log(
         LoggingLevel.error,
-        'Failed to forward tool call to ${entry.tool.name}: $e'
+        'Failed to forward tool call to $toolName: $e'
         'stackTrace: $stackTrace',
         logger: 'DynamicRegistry',
       );
 
-      return CallToolResult(
-        content: [
-          TextContent(
-            text: jsonEncode(
-              CoreResult.failure(
-                code: CoreErrorCode.dynamicToolFailed,
-                message: 'Error forwarding tool call: $e',
-              ).error?.toJson(),
-            ),
-          ),
-        ],
-        isError: true,
+      return AgentResult.failure(
+        code: CoreErrorCode.dynamicToolFailed,
+        message: 'Error forwarding tool call: $e',
       );
     }
   }
+
+  static Map<String, Object?> _inputSchemaMap(final Tool tool) =>
+      const <String, Object?>{'type': 'object', 'additionalProperties': true};
 
   /// Forward MCP resource read to the appropriate Flutter app
   /// Returns null if resource not found, otherwise forwards the read

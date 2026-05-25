@@ -80,13 +80,8 @@ void main() {
           ..nextExecuteResult = CoreResult.success(data: {'dismissed': true});
         final ctx = _registeredCtx(runner: runner);
         final reg = ctx.registrationFor('handle_dialog')!;
-        final result = await reg.handler(
-          CallToolRequest(
-            name: 'handle_dialog',
-            arguments: const <String, Object?>{'action': 'dismiss'},
-          ),
-        );
-        expect(result.isError, isNot(true));
+        final result = await reg.handler(const <String, Object?>{'action': 'dismiss'});
+        expect(result.ok, isTrue);
         expect(runner.executedCommands, hasLength(1));
         final cmd = runner.executedCommands.first as HandleDialogCommand;
         expect(cmd.action, 'dismiss');
@@ -100,12 +95,7 @@ void main() {
           ..nextExecuteResult = CoreResult.success(data: {});
         final ctx = _registeredCtx(runner: runner);
         final reg = ctx.registrationFor('handle_dialog')!;
-        await reg.handler(
-          CallToolRequest(
-            name: 'handle_dialog',
-            arguments: const <String, Object?>{},
-          ),
-        );
+        await reg.handler(const <String, Object?>{});
         final cmd = runner.executedCommands.first as HandleDialogCommand;
         expect(cmd.action, 'dismiss');
       },
@@ -119,13 +109,8 @@ void main() {
         );
       final ctx = _registeredCtx(runner: runner);
       final reg = ctx.registrationFor('handle_dialog')!;
-      final result = await reg.handler(
-        CallToolRequest(
-          name: 'handle_dialog',
-          arguments: const <String, Object?>{'action': 'dismiss'},
-        ),
-      );
-      expect(result.isError, isTrue);
+      final result = await reg.handler(const <String, Object?>{'action': 'dismiss'});
+      expect(result.ok, isFalse);
       expect(runner.executedCommands, isEmpty);
     });
 
@@ -139,15 +124,9 @@ void main() {
           );
         final ctx = _registeredCtx(runner: runner);
         final reg = ctx.registrationFor('handle_dialog')!;
-        final result = await reg.handler(
-          CallToolRequest(
-            name: 'handle_dialog',
-            arguments: const <String, Object?>{'action': 'dismiss'},
-          ),
-        );
-        expect(result.isError, isTrue);
-        final text = (result.content.first as TextContent).text;
-        final json = jsonDecode(text) as Map<String, Object?>;
+        final result = await reg.handler(const <String, Object?>{'action': 'dismiss'});
+        expect(result.ok, isFalse);
+        final json = agentResultPayload(result);
         _expectEnvelopeKeys(json);
       },
     );
@@ -183,16 +162,11 @@ void main() {
         ..nextExecuteResult = CoreResult.success(data: {'navigated': true});
       final ctx = _registeredCtx(runner: runner);
       final reg = ctx.registrationFor('navigate')!;
-      await reg.handler(
-        CallToolRequest(
-          name: 'navigate',
-          arguments: const <String, Object?>{
+      await reg.handler(const <String, Object?>{
             'action': 'push',
             'route': '/details',
             'arguments': {'id': 42},
-          },
-        ),
-      );
+          });
       final cmd = runner.executedCommands.first as NavigateCommand;
       expect(cmd.action, 'push');
       expect(cmd.route, '/details');
@@ -204,9 +178,7 @@ void main() {
         ..nextExecuteResult = CoreResult.success(data: {});
       final ctx = _registeredCtx(runner: runner);
       final reg = ctx.registrationFor('navigate')!;
-      await reg.handler(
-        CallToolRequest(name: 'navigate', arguments: const <String, Object?>{}),
-      );
+      await reg.handler(const <String, Object?>{});
       final cmd = runner.executedCommands.first as NavigateCommand;
       expect(cmd.action, 'push');
       expect(cmd.route, isNull);
@@ -221,13 +193,8 @@ void main() {
         );
       final ctx = _registeredCtx(runner: runner);
       final reg = ctx.registrationFor('navigate')!;
-      final result = await reg.handler(
-        CallToolRequest(
-          name: 'navigate',
-          arguments: const <String, Object?>{'action': 'pop'},
-        ),
-      );
-      expect(result.isError, isTrue);
+      final result = await reg.handler(const <String, Object?>{'action': 'pop'});
+      expect(result.ok, isFalse);
       expect(runner.executedCommands, isEmpty);
     });
 
@@ -241,18 +208,12 @@ void main() {
           );
         final ctx = _registeredCtx(runner: runner);
         final reg = ctx.registrationFor('navigate')!;
-        final result = await reg.handler(
-          CallToolRequest(
-            name: 'navigate',
-            arguments: const <String, Object?>{
+        final result = await reg.handler(const <String, Object?>{
               'action': 'push',
               'route': '/home',
-            },
-          ),
-        );
-        expect(result.isError, isTrue);
-        final text = (result.content.first as TextContent).text;
-        final json = jsonDecode(text) as Map<String, Object?>;
+            });
+        expect(result.ok, isFalse);
+        final json = agentResultPayload(result);
         _expectEnvelopeKeys(json);
       },
     );

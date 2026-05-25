@@ -1,3 +1,4 @@
+import 'package:agentkit_schema/agentkit_schema.dart';
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/host.dart';
 import 'package:flutter_mcp_toolkit_capability_kernel/flutter_mcp_toolkit_capability_kernel.dart';
@@ -44,8 +45,9 @@ final class _FakeCapability implements Capability {
           name: name,
           description: 'fake tool $name',
           inputSchema: const {'type': 'object'},
-          handler: (_) async =>
-              CallToolResult(content: [TextContent(text: 'ok')]),
+          handler: (_) async => AgentResult.success(
+            data: <String, Object?>{'text': 'ok'},
+          ),
         ),
       );
     }
@@ -164,7 +166,7 @@ void main() {
             description: 'd',
             inputSchema: const {'type': 'object'},
             handler: (_) async =>
-                CallToolResult(content: [TextContent(text: 'ok')]),
+                AgentResult.success(data: <String, Object?>{'text': 'ok'}),
           ),
         ),
         throwsA(isA<StateError>()),

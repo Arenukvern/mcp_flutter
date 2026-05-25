@@ -134,15 +134,10 @@ void main() {
         final ctx = _registeredCtx(runner: fakeRunner);
         await ctx
             .registrationFor('wait_for')!
-            .handler(
-              CallToolRequest(
-                name: 'wait_for',
-                arguments: <String, Object?>{
+            .handler(<String, Object?>{
                   'predicate': {'kind': 'text', 'text': 'Submit'},
                   'timeoutMs': 8000,
-                },
-              ),
-            );
+                });
         expect(fakeRunner.executedCommands, hasLength(1));
         final cmd = fakeRunner.executedCommands.first as WaitForCommand;
         expect(cmd.predicate, equals({'kind': 'text', 'text': 'Submit'}));
@@ -155,14 +150,9 @@ void main() {
       final ctx = _registeredCtx(runner: fakeRunner);
       await ctx
           .registrationFor('wait_for')!
-          .handler(
-            CallToolRequest(
-              name: 'wait_for',
-              arguments: <String, Object?>{
+          .handler(<String, Object?>{
                 'predicate': {'kind': 'stable', 'stableWindowMs': 200},
-              },
-            ),
-          );
+              });
       final cmd = fakeRunner.executedCommands.first as WaitForCommand;
       expect(
         cmd.timeoutMs,
@@ -179,15 +169,10 @@ void main() {
         final ctx = _registeredCtx(runner: fakeRunner);
         await ctx
             .registrationFor('wait_for')!
-            .handler(
-              CallToolRequest(
-                name: 'wait_for',
-                arguments: <String, Object?>{
+            .handler(<String, Object?>{
                   'predicate': {'kind': 'time', 'ms': 100},
                   'timeoutMs': 0,
-                },
-              ),
-            );
+                });
         final cmd = fakeRunner.executedCommands.first as WaitForCommand;
         expect(cmd.timeoutMs, equals(5000));
       },
@@ -202,12 +187,7 @@ void main() {
         // be defensive.
         await ctx
             .registrationFor('wait_for')!
-            .handler(
-              CallToolRequest(
-                name: 'wait_for',
-                arguments: <String, Object?>{'predicate': 'not-a-map'},
-              ),
-            );
+            .handler(<String, Object?>{'predicate': 'not-a-map'});
         final cmd = fakeRunner.executedCommands.first as WaitForCommand;
         expect(cmd.predicate, isEmpty);
       },
@@ -222,7 +202,7 @@ void main() {
       };
       await ctx
           .registrationFor('wait_for')!
-          .handler(CallToolRequest(name: 'wait_for', arguments: args));
+          .handler(args);
       expect(fakeRunner.overrideArguments, hasLength(1));
       expect(fakeRunner.overrideArguments.first, equals(args));
       expect(fakeRunner.executedCommands, hasLength(1));
@@ -243,17 +223,11 @@ void main() {
         final ctx = _registeredCtx(runner: fakeRunner);
         final result = await ctx
             .registrationFor('wait_for')!
-            .handler(
-              CallToolRequest(
-                name: 'wait_for',
-                arguments: <String, Object?>{
+            .handler(<String, Object?>{
                   'predicate': {'kind': 'text', 'text': 'Done'},
-                },
-              ),
-            );
-        expect(result.isError, isNot(true));
-        final text = (result.content.first as TextContent).text;
-        final json = jsonDecode(text) as Map<String, Object?>;
+                });
+        expect(result.ok, isTrue);
+        final json = agentResultPayload(result);
         expect(json['matched'], isTrue);
         expect(json['elapsedMs'], equals(312));
       },
@@ -269,18 +243,12 @@ void main() {
       final ctx = _registeredCtx(runner: fakeRunner);
       final result = await ctx
           .registrationFor('wait_for')!
-          .handler(
-            CallToolRequest(
-              name: 'wait_for',
-              arguments: <String, Object?>{
+          .handler(<String, Object?>{
                 'predicate': {'kind': 'text', 'text': 'Never'},
                 'timeoutMs': 5000,
-              },
-            ),
-          );
-      expect(result.isError, isTrue);
-      final text = (result.content.first as TextContent).text;
-      final json = jsonDecode(text) as Map<String, Object?>;
+              });
+      expect(result.ok, isFalse);
+      final json = agentResultPayload(result);
       expect(json['code'], equals(CoreErrorCode.waitTimeout));
       _expectEnvelopeKeys(json);
     });
@@ -296,17 +264,11 @@ void main() {
         final ctx = _registeredCtx(runner: fakeRunner);
         final result = await ctx
             .registrationFor('wait_for')!
-            .handler(
-              CallToolRequest(
-                name: 'wait_for',
-                arguments: <String, Object?>{
+            .handler(<String, Object?>{
                   'predicate': {'kind': 'text', 'text': 'X'},
-                },
-              ),
-            );
-        expect(result.isError, isTrue);
-        final text = (result.content.first as TextContent).text;
-        final json = jsonDecode(text) as Map<String, Object?>;
+                });
+        expect(result.ok, isFalse);
+        final json = agentResultPayload(result);
         expect(json['code'], equals(CoreErrorCode.waitForFailed));
         _expectEnvelopeKeys(json);
       },
@@ -323,19 +285,13 @@ void main() {
         final ctx = _registeredCtx(runner: fakeRunner);
         final result = await ctx
             .registrationFor('wait_for')!
-            .handler(
-              CallToolRequest(
-                name: 'wait_for',
-                arguments: <String, Object?>{
+            .handler(<String, Object?>{
                   'predicate': {'kind': 'time', 'ms': 100},
                   'connection': {'port': 9999},
-                },
-              ),
-            );
+                });
         expect(fakeRunner.executedCommands, isEmpty);
-        expect(result.isError, isTrue);
-        final text = (result.content.first as TextContent).text;
-        final json = jsonDecode(text) as Map<String, Object?>;
+        expect(result.ok, isFalse);
+        final json = agentResultPayload(result);
         expect(json['code'], equals(CoreErrorCode.connectFailed));
         _expectEnvelopeKeys(json);
       },

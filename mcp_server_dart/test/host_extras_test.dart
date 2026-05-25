@@ -5,6 +5,7 @@
 // independent capability instance and doesn't need the rollback/seal
 // machinery tested in host_test.dart).
 
+import 'package:agentkit_schema/agentkit_schema.dart';
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/host.dart';
 import 'package:flutter_mcp_toolkit_capability_kernel/flutter_mcp_toolkit_capability_kernel.dart';
@@ -25,8 +26,9 @@ final class _PingCapability implements Capability {
         name: 'pong',
         description: 'replies pong',
         inputSchema: const {'type': 'object'},
-        handler: (_) async =>
-            CallToolResult(content: [TextContent(text: 'pong')]),
+        handler: (_) async => AgentResult.success(
+          data: <String, Object?>{'text': 'pong'},
+        ),
       ),
     );
   }
@@ -55,8 +57,9 @@ final class _DualToolCapability implements Capability {
           name: tools[i],
           description: 'd',
           inputSchema: const {'type': 'object'},
-          handler: (_) async =>
-              CallToolResult(content: [TextContent(text: 'ok')]),
+        handler: (_) async => AgentResult.success(
+          data: <String, Object?>{'text': 'ok'},
+        ),
         ),
       );
     }

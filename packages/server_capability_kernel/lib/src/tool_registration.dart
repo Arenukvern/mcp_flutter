@@ -1,6 +1,9 @@
 // packages/server_capability_kernel/lib/src/tool_registration.dart
-import 'package:dart_mcp/server.dart';
+import 'package:agentkit_schema/agentkit_schema.dart';
 import 'package:meta/meta.dart';
+
+/// Handler for a capability tool — transport-agnostic [AgentResult].
+typedef ToolHandler = Future<AgentResult> Function(AgentArguments arguments);
 
 /// A tool the capability wants the host to expose.
 ///
@@ -18,5 +21,5 @@ final class ToolRegistration {
   final String name;
   final String description;
   final Map<String, Object?> inputSchema;
-  final Future<CallToolResult> Function(CallToolRequest request) handler;
+  final ToolHandler handler;
 }

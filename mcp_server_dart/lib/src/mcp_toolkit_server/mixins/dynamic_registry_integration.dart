@@ -219,13 +219,18 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
     }
 
     final appId = DynamicAppId(sourceApp);
+    final toolkitServer = this as MCPToolkitServer;
 
-    // Register in the dynamic registry
     registry.registerTool(tool, appId);
+    final entry = registry.getToolEntry(tool.name);
+    if (entry != null) {
+      toolkitServer.capabilityHost.agentRegistry.register(
+        entry.intent,
+        qualifiedNameOverride: tool.name,
+      );
+    }
 
-    // Register as a standard MCP tool that forwards to the dynamic registry
     try {
-      final toolkitServer = this as MCPToolkitServer;
       registerTool(tool, (final request) async {
         final ensure = await toolkitServer.connectionContext
             .ensureConnectedWithPolicy();
@@ -357,10 +362,11 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
     if (registry == null) return;
 
     final hadContent = registry.getAppEntries();
+    final toolkitServer = this as MCPToolkitServer;
 
-    // Unregister from MCP framework first
     for (final entry in hadContent.tools) {
       try {
+        toolkitServer.capabilityHost.agentRegistry.unregister(entry.tool.name);
         unregisterTool(entry.tool.name);
       } catch (e, stackTrace) {
         log(

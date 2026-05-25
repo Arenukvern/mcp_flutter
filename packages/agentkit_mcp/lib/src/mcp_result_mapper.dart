@@ -37,10 +37,11 @@ CallToolResult agentResultToMcpResult(final AgentResult result) {
     );
   }
   if (result.artifacts.isNotEmpty) {
+    final meta = result.data['meta'];
     return CallToolResult(
+      meta: meta is Map<String, Object?> ? Meta.fromMap(meta) : null,
       content: [
-        for (final artifact in result.artifacts)
-          if (artifact.text != null) TextContent(text: artifact.text!),
+        for (final artifact in result.artifacts) _contentFromArtifact(artifact),
       ],
     );
   }
@@ -51,11 +52,20 @@ CallToolResult agentResultToMcpResult(final AgentResult result) {
   return CallToolResult(content: [TextContent(text: jsonEncode(result.data))]);
 }
 
+Content _contentFromArtifact(final AgentArtifact artifact) {
+  if (artifact.mimeType.startsWith('image/') && artifact.text != null) {
+    return ImageContent(data: artifact.text!, mimeType: artifact.mimeType);
+  }
+  return TextContent(text: artifact.text ?? '');
+}
+
 List<AgentArtifact> _artifactsFromContent(final CallToolResult result) {
   final artifacts = <AgentArtifact>[];
   for (final block in result.content) {
     if (block is TextContent) {
       artifacts.add(AgentArtifact.text(block.text));
+    } else if (block is ImageContent) {
+      artifacts.add(AgentArtifact.text(block.data, mimeType: block.mimeType));
     }
   }
   return artifacts;
@@ -75,6 +85,12 @@ List<Map<String, Object?>> _contentMaps(final CallToolResult result) =>
         .map((final block) {
           if (block is TextContent) {
             return <String, Object?>{'type': 'text', 'text': block.text};
+          }
+          if (block is ImageContent) {
+            return <String, Object?>{
+              'type': 'image',
+              'mimeType': block.mimeType,
+            };
           }
           return <String, Object?>{
             'type': block.runtimeType.toString(),

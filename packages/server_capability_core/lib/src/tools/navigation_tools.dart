@@ -31,8 +31,7 @@ void registerNavigationTools(final CapabilityContext context) {
           'connection': connectionOverrideJsonSchema(),
         },
       },
-      handler: (final request) async {
-        final args = request.arguments ?? const <String, Object?>{};
+      handler: (final args) async {
         final action = stringArgOrNull(args['action']) ?? 'dismiss';
         return runCommand(runner, args, HandleDialogCommand(action: action));
       },
@@ -60,8 +59,7 @@ void registerNavigationTools(final CapabilityContext context) {
           'connection': connectionOverrideJsonSchema(),
         },
       },
-      handler: (final request) async {
-        final args = request.arguments ?? const <String, Object?>{};
+      handler: (final args) async {
         final action = stringArgOrNull(args['action']) ?? 'push';
         final route = stringArgOrNull(args['route']);
         final argsMapRaw = args['arguments'];

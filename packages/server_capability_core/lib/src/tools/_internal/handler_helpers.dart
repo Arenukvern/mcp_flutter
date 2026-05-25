@@ -10,7 +10,7 @@ library;
 
 import 'dart:convert';
 
-import 'package:dart_mcp/server.dart';
+import 'package:agentkit_schema/agentkit_schema.dart';
 import 'package:meta/meta.dart';
 import 'package:flutter_mcp_toolkit_capability_kernel/flutter_mcp_toolkit_capability_kernel.dart';
 import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
@@ -22,34 +22,35 @@ import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 /// Standard envelope-preserving execution flow for capability tool handlers.
 ///
 /// Apply per-call connection override → execute the command → translate the
-/// CoreResult to a CallToolResult. Override failure short-circuits to the
+/// [CoreResult] to an [AgentResult]. Override failure short-circuits to the
 /// error envelope. Use [onSuccess] for tools whose success payload is not a
-/// JSON object (e.g., binary screenshot tools that need ImageContent).
+/// plain JSON object (e.g. screenshot tools with image artifacts).
 @internal
-Future<CallToolResult> runCommand(
+Future<AgentResult> runCommand(
   final CommandRunner runner,
   final Map<String, Object?> arguments,
   final CoreCommand command, {
-  final CallToolResult Function(Object? data)? onSuccess,
+  final AgentResult Function(Object? data)? onSuccess,
 }) async {
   final overrideError = await runner.applyConnectionOverride(arguments);
-  if (overrideError != null) return toErrorResult(overrideError);
+  if (overrideError != null) return agentErrorFromCore(overrideError);
   final result = await runner.execute(command);
-  if (!result.ok) return toErrorResult(result);
+  if (!result.ok) return agentErrorFromCore(result);
   return onSuccess != null
       ? onSuccess(result.data)
-      : CallToolResult(content: [TextContent(text: jsonEncode(result.data))]);
+      : AgentResult.success(
+          data: result.data is Map<String, Object?>
+              ? Map<String, Object?>.from(result.data! as Map)
+              : <String, Object?>{'payload': result.data},
+        );
 }
 
-/// Serialises a [CoreResult] failure to a structured MCP error result.
-///
-/// The text content is the JSON-encoded [CoreError] envelope:
-/// `{code, message, details, descriptor, recovery}` — the shape that MCP
-/// clients parse.
+/// Serialises a [CoreResult] failure to a structured [AgentResult].
 @internal
-CallToolResult toErrorResult(final CoreResult result) => CallToolResult(
-  isError: true,
-  content: [TextContent(text: jsonEncode(result.toErrorEnvelopeJson()))],
+AgentResult agentErrorFromCore(final CoreResult result) => AgentResult.failure(
+  code: result.error?.code ?? 'core_error',
+  message: result.error?.message ?? 'Command failed',
+  details: result.toErrorEnvelopeJson(),
 );
 
 // ---------------------------------------------------------------------------

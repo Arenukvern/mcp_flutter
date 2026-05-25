@@ -44,8 +44,7 @@ void registerWaitTools(final CapabilityContext context) {
           'connection': connectionOverrideJsonSchema(),
         },
       },
-      handler: (final request) async {
-        final args = request.arguments ?? const <String, Object?>{};
+      handler: (final args) async {
         final predicateRaw = args['predicate'];
         final predicate = predicateRaw is Map
             ? Map<String, Object?>.from(predicateRaw)

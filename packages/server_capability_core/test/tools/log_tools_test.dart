@@ -76,12 +76,7 @@ void main() {
           ..nextExecuteResult = CoreResult.success(data: ['log line 1']);
         final ctx = _registeredCtx(runner: runner);
         final reg = ctx.registrationFor('get_recent_logs')!;
-        await reg.handler(
-          CallToolRequest(
-            name: 'get_recent_logs',
-            arguments: const <String, Object?>{'count': 25},
-          ),
-        );
+        await reg.handler(const <String, Object?>{'count': 25});
         expect(runner.executedCommands, hasLength(1));
         final cmd = runner.executedCommands.first as GetRecentLogsCommand;
         expect(cmd.count, 25);
@@ -93,12 +88,7 @@ void main() {
         ..nextExecuteResult = CoreResult.success(data: []);
       final ctx = _registeredCtx(runner: runner);
       final reg = ctx.registrationFor('get_recent_logs')!;
-      await reg.handler(
-        CallToolRequest(
-          name: 'get_recent_logs',
-          arguments: const <String, Object?>{},
-        ),
-      );
+      await reg.handler(const <String, Object?>{});
       final cmd = runner.executedCommands.first as GetRecentLogsCommand;
       expect(cmd.count, 50);
     });
@@ -113,13 +103,8 @@ void main() {
           );
         final ctx = _registeredCtx(runner: runner);
         final reg = ctx.registrationFor('get_recent_logs')!;
-        final result = await reg.handler(
-          CallToolRequest(
-            name: 'get_recent_logs',
-            arguments: const <String, Object?>{},
-          ),
-        );
-        expect(result.isError, isTrue);
+        final result = await reg.handler(const <String, Object?>{});
+        expect(result.ok, isFalse);
         expect(runner.executedCommands, isEmpty);
       },
     );
@@ -134,15 +119,9 @@ void main() {
           );
         final ctx = _registeredCtx(runner: runner);
         final reg = ctx.registrationFor('get_recent_logs')!;
-        final result = await reg.handler(
-          CallToolRequest(
-            name: 'get_recent_logs',
-            arguments: const <String, Object?>{},
-          ),
-        );
-        expect(result.isError, isTrue);
-        final text = (result.content.first as TextContent).text;
-        final json = jsonDecode(text) as Map<String, Object?>;
+        final result = await reg.handler(const <String, Object?>{});
+        expect(result.ok, isFalse);
+        final json = agentResultPayload(result);
         _expectEnvelopeKeys(json);
       },
     );

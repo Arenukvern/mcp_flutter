@@ -8,7 +8,7 @@ program:
   rollout_doc: docs/superpowers/plans/2026-05-25-agentkit-rollout.md
   self_closing_loop: docs/superpowers/agentkit-self-closing-loop.md
   status: in_progress # pending | in_progress | complete | blocked
-  active_phase: phase2
+  active_phase: phase3
 
 phases:
   - id: phase1
@@ -39,7 +39,7 @@ phases:
     title: Decouple host from dart_mcp
     plan: docs/superpowers/plans/2026-05-25-agentkit-phase2.md
     plan_revision: v1
-    status: in_progress
+    status: done
     design_section: Migration phases / Phase 2
     exit_criteria:
       - McpHost registry-only; McpAgentAdapter owns dart_mcp publish
@@ -49,15 +49,15 @@ phases:
       - dart test packages/agentkit_mcp
       - cd mcp_server_dart && dart test test/agent_registry_host_test.dart test/host_test.dart
       - dart analyze packages/agentkit_mcp mcp_server_dart/lib/src/mcp_toolkit_server/host.dart
-    closure_report: null
-    last_gate: null
-    last_gate_at: null
+    closure_report: docs/superpowers/closure/2026-05-25-agentkit-phase2.md
+    last_gate: pass
+    last_gate_at: 2026-05-25
 
   - id: phase3
     title: agentkit repo split and multi-adapter shipping
     plan: docs/superpowers/plans/2026-05-25-agentkit-phase3.md
     plan_revision: v1-stub
-    status: pending
+    status: in_progress
     design_section: Migration phases / Phase 3
     exit_criteria:
       - agentkit monorepo split from mcp_flutter consumer

@@ -4,7 +4,7 @@
 
 import 'dart:convert';
 
-import 'package:dart_mcp/server.dart';
+import 'package:agentkit_schema/agentkit_schema.dart';
 import 'package:flutter_mcp_toolkit_capability_kernel/flutter_mcp_toolkit_capability_kernel.dart';
 import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 
@@ -36,17 +36,16 @@ void registerFlutterInspectorTools(final CapabilityContext context) {
           'connection': connectionOverrideJsonSchema(),
         },
       },
-      handler: (final request) async {
-        final args = request.arguments ?? const <String, Object?>{};
+      handler: (final args) async {
         final force = boolArgOrFalse(args['force']);
         return runCommand(
           runner,
           args,
           HotReloadFlutterCommand(force: force),
-          onSuccess: (final data) => CallToolResult(
-            content: [
-              TextContent(text: 'Hot reload completed'),
-              TextContent(text: jsonEncode(data)),
+          onSuccess: (final data) => AgentResult.success(
+            artifacts: [
+              AgentArtifact.text('Hot reload completed'),
+              AgentArtifact.text(jsonEncode(data)),
             ],
           ),
         );
@@ -71,8 +70,7 @@ void registerFlutterInspectorTools(final CapabilityContext context) {
           'connection': connectionOverrideJsonSchema(),
         },
       },
-      handler: (final request) async {
-        final args = request.arguments ?? const <String, Object?>{};
+      handler: (final args) async {
         return runCommand(runner, args, const HotRestartFlutterCommand());
       },
     ),
@@ -98,19 +96,20 @@ void registerFlutterInspectorTools(final CapabilityContext context) {
           'connection': connectionOverrideJsonSchema(),
         },
       },
-      handler: (final request) async {
-        final args = request.arguments ?? const <String, Object?>{};
+      handler: (final args) async {
         final parsed = parseConnectionOverrideArguments(
           arguments: args,
           fallbackToAuto: true,
         );
         final parseError = parsed.error;
-        if (parseError != null) return toErrorResult(parseError);
+        if (parseError != null) return agentErrorFromCore(parseError);
         final command = parsed.preconnectCommand ?? const ConnectCommand();
         final result = await runner.execute(command);
-        if (!result.ok) return toErrorResult(result);
-        return CallToolResult(
-          content: [TextContent(text: jsonEncode(result.data))],
+        if (!result.ok) return agentErrorFromCore(result);
+        return AgentResult.success(
+          data: result.data is Map<String, Object?>
+              ? Map<String, Object?>.from(result.data! as Map)
+              : <String, Object?>{'payload': result.data},
         );
       },
     ),
@@ -134,11 +133,13 @@ void registerFlutterInspectorTools(final CapabilityContext context) {
           'connection': connectionOverrideJsonSchema(),
         },
       },
-      handler: (final request) async {
+      handler: (final args) async {
         final result = await runner.execute(const DiscoverDebugAppsCommand());
-        if (!result.ok) return toErrorResult(result);
-        return CallToolResult(
-          content: [TextContent(text: jsonEncode(result.data))],
+        if (!result.ok) return agentErrorFromCore(result);
+        return AgentResult.success(
+          data: result.data is Map<String, Object?>
+              ? Map<String, Object?>.from(result.data! as Map)
+              : <String, Object?>{'payload': result.data},
         );
       },
     ),
@@ -159,8 +160,7 @@ void registerFlutterInspectorTools(final CapabilityContext context) {
           'connection': connectionOverrideJsonSchema(),
         },
       },
-      handler: (final request) async {
-        final args = request.arguments ?? const <String, Object?>{};
+      handler: (final args) async {
         return runCommand(runner, args, const GetVmCommand());
       },
     ),
@@ -196,8 +196,7 @@ void registerFlutterInspectorTools(final CapabilityContext context) {
           'connection': connectionOverrideJsonSchema(),
         },
       },
-      handler: (final request) async {
-        final args = request.arguments ?? const <String, Object?>{};
+      handler: (final args) async {
         return runCommand(runner, args, const GetExtensionRpcsCommand());
       },
     ),

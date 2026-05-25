@@ -146,18 +146,13 @@ void main() {
         final ctx = _registeredCtx(runner: fakeRunner);
         await ctx
             .registrationFor('fill_form')!
-            .handler(
-              CallToolRequest(
-                name: 'fill_form',
-                arguments: <String, Object?>{
+            .handler(<String, Object?>{
                   'fields': <Object?>[
                     {'ref': 'tf_0', 'text': 'Alice'},
                     {'ref': 'tf_1', 'text': 'alice@example.com'},
                   ],
                   'snapshotId': 7,
-                },
-              ),
-            );
+                });
         expect(fakeRunner.executedCommands, hasLength(1));
         final cmd = fakeRunner.executedCommands.first as FillFormCommand;
         expect(cmd.fields, hasLength(2));
@@ -175,16 +170,11 @@ void main() {
       final ctx = _registeredCtx(runner: fakeRunner);
       await ctx
           .registrationFor('fill_form')!
-          .handler(
-            CallToolRequest(
-              name: 'fill_form',
-              arguments: <String, Object?>{
+          .handler(<String, Object?>{
                 'fields': <Object?>[
                   {'ref': 'tf_0', 'text': 'Bob'},
                 ],
-              },
-            ),
-          );
+              });
       final cmd = fakeRunner.executedCommands.first as FillFormCommand;
       expect(cmd.snapshotId, isNull);
     });
@@ -194,17 +184,12 @@ void main() {
       final ctx = _registeredCtx(runner: fakeRunner);
       await ctx
           .registrationFor('fill_form')!
-          .handler(
-            CallToolRequest(
-              name: 'fill_form',
-              arguments: <String, Object?>{
+          .handler(<String, Object?>{
                 'fields': <Object?>[
                   {'ref': 'tf_0', 'text': 'Bob'},
                 ],
                 'snapshotId': 0,
-              },
-            ),
-          );
+              });
       final cmd = fakeRunner.executedCommands.first as FillFormCommand;
       expect(cmd.snapshotId, isNull);
     });
@@ -217,12 +202,7 @@ void main() {
         // Schema validation would normally block this; handler must be defensive.
         await ctx
             .registrationFor('fill_form')!
-            .handler(
-              CallToolRequest(
-                name: 'fill_form',
-                arguments: <String, Object?>{'fields': 'not-a-list'},
-              ),
-            );
+            .handler(<String, Object?>{'fields': 'not-a-list'});
         final cmd = fakeRunner.executedCommands.first as FillFormCommand;
         expect(cmd.fields, isEmpty);
       },
@@ -239,7 +219,7 @@ void main() {
       };
       await ctx
           .registrationFor('fill_form')!
-          .handler(CallToolRequest(name: 'fill_form', arguments: args));
+          .handler(args);
       expect(fakeRunner.overrideArguments, hasLength(1));
       expect(fakeRunner.overrideArguments.first, equals(args));
       expect(fakeRunner.executedCommands, hasLength(1));
@@ -265,20 +245,14 @@ void main() {
       final ctx = _registeredCtx(runner: fakeRunner);
       final result = await ctx
           .registrationFor('fill_form')!
-          .handler(
-            CallToolRequest(
-              name: 'fill_form',
-              arguments: <String, Object?>{
+          .handler(<String, Object?>{
                 'fields': <Object?>[
                   {'ref': 'tf_0', 'text': 'Alice'},
                   {'ref': 'tf_1', 'text': 'alice@example.com'},
                 ],
-              },
-            ),
-          );
-      expect(result.isError, isNot(true));
-      final text = (result.content.first as TextContent).text;
-      final json = jsonDecode(text) as Map<String, Object?>;
+              });
+      expect(result.ok, isTrue);
+      final json = agentResultPayload(result);
       expect(json['success'], isTrue);
       expect(json['fieldCount'], equals(2));
     });
@@ -301,20 +275,14 @@ void main() {
       final ctx = _registeredCtx(runner: fakeRunner);
       final result = await ctx
           .registrationFor('fill_form')!
-          .handler(
-            CallToolRequest(
-              name: 'fill_form',
-              arguments: <String, Object?>{
+          .handler(<String, Object?>{
                 'fields': <Object?>[
                   {'ref': 'tf_0', 'text': 'Alice'},
                   {'ref': 'tf_1', 'text': 'bad-ref'},
                 ],
-              },
-            ),
-          );
-      expect(result.isError, isTrue);
-      final text = (result.content.first as TextContent).text;
-      final json = jsonDecode(text) as Map<String, Object?>;
+              });
+      expect(result.ok, isFalse);
+      final json = agentResultPayload(result);
       expect(json['code'], equals(CoreErrorCode.fillFormFailed));
       _expectEnvelopeKeys(json);
       // Envelope details are JSON-encoded inside the error envelope;
@@ -334,21 +302,15 @@ void main() {
         final ctx = _registeredCtx(runner: fakeRunner);
         final result = await ctx
             .registrationFor('fill_form')!
-            .handler(
-              CallToolRequest(
-                name: 'fill_form',
-                arguments: <String, Object?>{
+            .handler(<String, Object?>{
                   'fields': <Object?>[
                     {'ref': 'tf_0', 'text': 'X'},
                   ],
                   'connection': {'port': 9999},
-                },
-              ),
-            );
+                });
         expect(fakeRunner.executedCommands, isEmpty);
-        expect(result.isError, isTrue);
-        final text = (result.content.first as TextContent).text;
-        final json = jsonDecode(text) as Map<String, Object?>;
+        expect(result.ok, isFalse);
+        final json = agentResultPayload(result);
         expect(json['code'], equals(CoreErrorCode.connectFailed));
         _expectEnvelopeKeys(json);
       },

@@ -108,13 +108,8 @@ void main() {
       final ctx = _registeredCtx(runner: runner);
       final result = await ctx
           .registrationFor('hot_restart_flutter')!
-          .handler(
-            CallToolRequest(
-              name: 'hot_restart_flutter',
-              arguments: const <String, Object?>{},
-            ),
-          );
-      expect(result.isError, isNot(true));
+          .handler(const <String, Object?>{});
+      expect(result.ok, isTrue);
       expect(runner.executedCommands.single, isA<HotRestartFlutterCommand>());
     });
 
@@ -127,13 +122,8 @@ void main() {
       final ctx = _registeredCtx(runner: runner);
       final result = await ctx
           .registrationFor('hot_restart_flutter')!
-          .handler(
-            CallToolRequest(
-              name: 'hot_restart_flutter',
-              arguments: const <String, Object?>{},
-            ),
-          );
-      expect(result.isError, isTrue);
+          .handler(const <String, Object?>{});
+      expect(result.ok, isFalse);
       expect(runner.executedCommands, isEmpty);
     });
 
@@ -146,15 +136,10 @@ void main() {
       final ctx = _registeredCtx(runner: runner);
       final result = await ctx
           .registrationFor('hot_restart_flutter')!
-          .handler(
-            CallToolRequest(
-              name: 'hot_restart_flutter',
-              arguments: const <String, Object?>{},
-            ),
-          );
-      expect(result.isError, isTrue);
+          .handler(const <String, Object?>{});
+      expect(result.ok, isFalse);
       final json =
-          jsonDecode((result.content.first as TextContent).text)
+          agentResultPayload(result)
               as Map<String, Object?>;
       _expectEnvelopeKeys(json);
     });
@@ -190,12 +175,7 @@ void main() {
         final ctx = _registeredCtx(runner: runner);
         await ctx
             .registrationFor('hot_reload_flutter')!
-            .handler(
-              CallToolRequest(
-                name: 'hot_reload_flutter',
-                arguments: const <String, Object?>{},
-              ),
-            );
+            .handler(const <String, Object?>{});
         expect(runner.executedCommands.first, isA<HotReloadFlutterCommand>());
         final cmd = runner.executedCommands.first as HotReloadFlutterCommand;
         expect(cmd.force, isFalse);
@@ -210,12 +190,7 @@ void main() {
       final ctx = _registeredCtx(runner: runner);
       await ctx
           .registrationFor('hot_reload_flutter')!
-          .handler(
-            CallToolRequest(
-              name: 'hot_reload_flutter',
-              arguments: const <String, Object?>{'force': true},
-            ),
-          );
+          .handler(const <String, Object?>{'force': true});
       final cmd = runner.executedCommands.first as HotReloadFlutterCommand;
       expect(cmd.force, isTrue);
     });
@@ -230,21 +205,12 @@ void main() {
         final ctx = _registeredCtx(runner: runner);
         final result = await ctx
             .registrationFor('hot_reload_flutter')!
-            .handler(
-              CallToolRequest(
-                name: 'hot_reload_flutter',
-                arguments: const <String, Object?>{},
-              ),
-            );
-        expect(result.isError, isNot(true));
-        expect(result.content.length, 2);
-        expect(
-          (result.content.first as TextContent).text,
-          'Hot reload completed',
-        );
+            .handler(const <String, Object?>{});
+        expect(result.ok, isTrue);
+        expect(result.artifacts.length, 2);
+        expect(result.artifacts.first.text, 'Hot reload completed');
         final decoded =
-            jsonDecode((result.content[1] as TextContent).text)
-                as Map<String, Object?>;
+            jsonDecode(result.artifacts[1].text!) as Map<String, Object?>;
         expect(decoded['type'], 'ReloadReport');
       },
     );
@@ -258,13 +224,8 @@ void main() {
       final ctx = _registeredCtx(runner: runner);
       final result = await ctx
           .registrationFor('hot_reload_flutter')!
-          .handler(
-            CallToolRequest(
-              name: 'hot_reload_flutter',
-              arguments: const <String, Object?>{},
-            ),
-          );
-      expect(result.isError, isTrue);
+          .handler(const <String, Object?>{});
+      expect(result.ok, isFalse);
       expect(runner.executedCommands, isEmpty);
     });
 
@@ -277,15 +238,10 @@ void main() {
       final ctx = _registeredCtx(runner: runner);
       final result = await ctx
           .registrationFor('hot_reload_flutter')!
-          .handler(
-            CallToolRequest(
-              name: 'hot_reload_flutter',
-              arguments: const <String, Object?>{},
-            ),
-          );
-      expect(result.isError, isTrue);
+          .handler(const <String, Object?>{});
+      expect(result.ok, isFalse);
       final json =
-          jsonDecode((result.content.first as TextContent).text)
+          agentResultPayload(result)
               as Map<String, Object?>;
       _expectEnvelopeKeys(json);
     });
@@ -318,12 +274,7 @@ void main() {
         final ctx = _registeredCtx(runner: runner);
         await ctx
             .registrationFor('connect_debug_app')!
-            .handler(
-              CallToolRequest(
-                name: 'connect_debug_app',
-                arguments: const <String, Object?>{},
-              ),
-            );
+            .handler(const <String, Object?>{});
         // Must have executed ConnectCommand but NOT called applyConnectionOverride
         expect(runner.executedCommands.first, isA<ConnectCommand>());
         expect(runner.callLog, equals(['execute']));
@@ -338,15 +289,10 @@ void main() {
       final ctx = _registeredCtx(runner: runner);
       final result = await ctx
           .registrationFor('connect_debug_app')!
-          .handler(
-            CallToolRequest(
-              name: 'connect_debug_app',
-              arguments: const <String, Object?>{},
-            ),
-          );
-      expect(result.isError, isNot(true));
+          .handler(const <String, Object?>{});
+      expect(result.ok, isTrue);
       final decoded =
-          jsonDecode((result.content.first as TextContent).text)
+          agentResultPayload(result)
               as Map<String, Object?>;
       expect(decoded['endpoint'], 'ws://127.0.0.1:8181/ws');
     });
@@ -360,15 +306,10 @@ void main() {
       final ctx = _registeredCtx(runner: runner);
       final result = await ctx
           .registrationFor('connect_debug_app')!
-          .handler(
-            CallToolRequest(
-              name: 'connect_debug_app',
-              arguments: const <String, Object?>{},
-            ),
-          );
-      expect(result.isError, isTrue);
+          .handler(const <String, Object?>{});
+      expect(result.ok, isFalse);
       final json =
-          jsonDecode((result.content.first as TextContent).text)
+          agentResultPayload(result)
               as Map<String, Object?>;
       _expectEnvelopeKeys(json);
     });
@@ -378,13 +319,8 @@ void main() {
       final ctx = _registeredCtx(runner: runner);
       final result = await ctx
           .registrationFor('connect_debug_app')!
-          .handler(
-            CallToolRequest(
-              name: 'connect_debug_app',
-              arguments: const <String, Object?>{'connection': 'not-an-object'},
-            ),
-          );
-      expect(result.isError, isTrue);
+          .handler(const <String, Object?>{'connection': 'not-an-object'});
+      expect(result.ok, isFalse);
       // No execute call — parse error short-circuits
       expect(runner.executedCommands, isEmpty);
     });
@@ -414,12 +350,7 @@ void main() {
         final ctx = _registeredCtx(runner: runner);
         await ctx
             .registrationFor('discover_debug_apps')!
-            .handler(
-              CallToolRequest(
-                name: 'discover_debug_apps',
-                arguments: const <String, Object?>{},
-              ),
-            );
+            .handler(const <String, Object?>{});
         expect(runner.executedCommands.first, isA<DiscoverDebugAppsCommand>());
         expect(runner.callLog, equals(['execute']));
       },
@@ -433,15 +364,10 @@ void main() {
       final ctx = _registeredCtx(runner: runner);
       final result = await ctx
           .registrationFor('discover_debug_apps')!
-          .handler(
-            CallToolRequest(
-              name: 'discover_debug_apps',
-              arguments: const <String, Object?>{},
-            ),
-          );
-      expect(result.isError, isNot(true));
+          .handler(const <String, Object?>{});
+      expect(result.ok, isTrue);
       final decoded =
-          jsonDecode((result.content.first as TextContent).text)
+          agentResultPayload(result)
               as Map<String, Object?>;
       expect(decoded['count'], 0);
     });
@@ -455,15 +381,10 @@ void main() {
       final ctx = _registeredCtx(runner: runner);
       final result = await ctx
           .registrationFor('discover_debug_apps')!
-          .handler(
-            CallToolRequest(
-              name: 'discover_debug_apps',
-              arguments: const <String, Object?>{},
-            ),
-          );
-      expect(result.isError, isTrue);
+          .handler(const <String, Object?>{});
+      expect(result.ok, isFalse);
       final json =
-          jsonDecode((result.content.first as TextContent).text)
+          agentResultPayload(result)
               as Map<String, Object?>;
       _expectEnvelopeKeys(json);
     });
@@ -489,12 +410,7 @@ void main() {
       final ctx = _registeredCtx(runner: runner);
       await ctx
           .registrationFor('get_vm')!
-          .handler(
-            CallToolRequest(
-              name: 'get_vm',
-              arguments: const <String, Object?>{},
-            ),
-          );
+          .handler(const <String, Object?>{});
       expect(runner.executedCommands.first, isA<GetVmCommand>());
     });
 
@@ -507,13 +423,8 @@ void main() {
       final ctx = _registeredCtx(runner: runner);
       final result = await ctx
           .registrationFor('get_vm')!
-          .handler(
-            CallToolRequest(
-              name: 'get_vm',
-              arguments: const <String, Object?>{},
-            ),
-          );
-      expect(result.isError, isTrue);
+          .handler(const <String, Object?>{});
+      expect(result.ok, isFalse);
       expect(runner.executedCommands, isEmpty);
     });
 
@@ -525,15 +436,10 @@ void main() {
       final ctx = _registeredCtx(runner: runner);
       final result = await ctx
           .registrationFor('get_vm')!
-          .handler(
-            CallToolRequest(
-              name: 'get_vm',
-              arguments: const <String, Object?>{},
-            ),
-          );
-      expect(result.isError, isNot(true));
+          .handler(const <String, Object?>{});
+      expect(result.ok, isTrue);
       final decoded =
-          jsonDecode((result.content.first as TextContent).text)
+          agentResultPayload(result)
               as Map<String, Object?>;
       expect(decoded['pid'], 42);
     });
@@ -547,15 +453,10 @@ void main() {
       final ctx = _registeredCtx(runner: runner);
       final result = await ctx
           .registrationFor('get_vm')!
-          .handler(
-            CallToolRequest(
-              name: 'get_vm',
-              arguments: const <String, Object?>{},
-            ),
-          );
-      expect(result.isError, isTrue);
+          .handler(const <String, Object?>{});
+      expect(result.ok, isFalse);
       final json =
-          jsonDecode((result.content.first as TextContent).text)
+          agentResultPayload(result)
               as Map<String, Object?>;
       _expectEnvelopeKeys(json);
     });
@@ -592,12 +493,7 @@ void main() {
       final ctx = _registeredCtx(runner: runner);
       await ctx
           .registrationFor('get_extension_rpcs')!
-          .handler(
-            CallToolRequest(
-              name: 'get_extension_rpcs',
-              arguments: const <String, Object?>{},
-            ),
-          );
+          .handler(const <String, Object?>{});
       expect(runner.executedCommands.first, isA<GetExtensionRpcsCommand>());
     });
 
@@ -610,13 +506,8 @@ void main() {
       final ctx = _registeredCtx(runner: runner);
       final result = await ctx
           .registrationFor('get_extension_rpcs')!
-          .handler(
-            CallToolRequest(
-              name: 'get_extension_rpcs',
-              arguments: const <String, Object?>{},
-            ),
-          );
-      expect(result.isError, isTrue);
+          .handler(const <String, Object?>{});
+      expect(result.ok, isFalse);
       expect(runner.executedCommands, isEmpty);
     });
 
@@ -630,16 +521,11 @@ void main() {
       // and the executor receives GetExtensionRpcsCommand (ignores the args).
       final result = await ctx
           .registrationFor('get_extension_rpcs')!
-          .handler(
-            CallToolRequest(
-              name: 'get_extension_rpcs',
-              arguments: const <String, Object?>{
+          .handler(const <String, Object?>{
                 'isolateId': 'isolates/1',
                 'isRawResponse': true,
-              },
-            ),
-          );
-      expect(result.isError, isNot(true));
+              });
+      expect(result.ok, isTrue);
       expect(runner.executedCommands.first, isA<GetExtensionRpcsCommand>());
     });
 
@@ -652,15 +538,10 @@ void main() {
       final ctx = _registeredCtx(runner: runner);
       final result = await ctx
           .registrationFor('get_extension_rpcs')!
-          .handler(
-            CallToolRequest(
-              name: 'get_extension_rpcs',
-              arguments: const <String, Object?>{},
-            ),
-          );
-      expect(result.isError, isTrue);
+          .handler(const <String, Object?>{});
+      expect(result.ok, isFalse);
       final json =
-          jsonDecode((result.content.first as TextContent).text)
+          agentResultPayload(result)
               as Map<String, Object?>;
       _expectEnvelopeKeys(json);
     });

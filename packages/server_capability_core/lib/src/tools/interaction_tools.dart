@@ -35,8 +35,7 @@ void registerInteractionTools(final CapabilityContext context) {
           'connection': connectionOverrideJsonSchema(),
         },
       },
-      handler: (final request) async {
-        final args = request.arguments ?? const <String, Object?>{};
+      handler: (final args) async {
         final ref = stringArgOrNull(args['ref']) ?? '';
         final snapshotId = intArgOrNull(args['snapshotId']);
         return runCommand(
@@ -77,8 +76,7 @@ void registerInteractionTools(final CapabilityContext context) {
           'connection': connectionOverrideJsonSchema(),
         },
       },
-      handler: (final request) async {
-        final args = request.arguments ?? const <String, Object?>{};
+      handler: (final args) async {
         final ref = stringArgOrNull(args['ref']) ?? '';
         final text = stringArgOrNull(args['text']) ?? '';
         final snapshotId = intArgOrNull(args['snapshotId']);
@@ -125,8 +123,7 @@ void registerInteractionTools(final CapabilityContext context) {
           'connection': connectionOverrideJsonSchema(),
         },
       },
-      handler: (final request) async {
-        final args = request.arguments ?? const <String, Object?>{};
+      handler: (final args) async {
         final direction = stringArgOrNull(args['direction']) ?? 'down';
         final ref = stringArgOrNull(args['ref']);
         final distance = doubleArgOrDefault(args['distance'], 300.0);
@@ -168,8 +165,7 @@ void registerInteractionTools(final CapabilityContext context) {
           'connection': connectionOverrideJsonSchema(),
         },
       },
-      handler: (final request) async {
-        final args = request.arguments ?? const <String, Object?>{};
+      handler: (final args) async {
         final ref = stringArgOrNull(args['ref']) ?? '';
         final snapshotId = intArgOrNull(args['snapshotId']);
         return runCommand(
@@ -214,8 +210,7 @@ void registerInteractionTools(final CapabilityContext context) {
           'connection': connectionOverrideJsonSchema(),
         },
       },
-      handler: (final request) async {
-        final args = request.arguments ?? const <String, Object?>{};
+      handler: (final args) async {
         final direction = stringArgOrNull(args['direction']) ?? 'up';
         final ref = stringArgOrNull(args['ref']);
         final distance = doubleArgOrDefault(args['distance'], 300.0);
@@ -261,8 +256,7 @@ void registerInteractionTools(final CapabilityContext context) {
           'connection': connectionOverrideJsonSchema(),
         },
       },
-      handler: (final request) async {
-        final args = request.arguments ?? const <String, Object?>{};
+      handler: (final args) async {
         final fromRef = stringArgOrNull(args['fromRef']) ?? '';
         final toRef = stringArgOrNull(args['toRef']) ?? '';
         final snapshotId = intArgOrNull(args['snapshotId']);
@@ -295,8 +289,7 @@ void registerInteractionTools(final CapabilityContext context) {
           'connection': connectionOverrideJsonSchema(),
         },
       },
-      handler: (final request) async {
-        final args = request.arguments ?? const <String, Object?>{};
+      handler: (final args) async {
         final ref = stringArgOrNull(args['ref']) ?? '';
         final snapshotId = intArgOrNull(args['snapshotId']);
         return runCommand(
@@ -329,8 +322,7 @@ void registerInteractionTools(final CapabilityContext context) {
           'connection': connectionOverrideJsonSchema(),
         },
       },
-      handler: (final request) async {
-        final args = request.arguments ?? const <String, Object?>{};
+      handler: (final args) async {
         final key = stringArgOrNull(args['key']) ?? '';
         final ctrl = boolArgOrFalse(args['ctrl']);
         final shift = boolArgOrFalse(args['shift']);
@@ -382,8 +374,7 @@ void registerInteractionTools(final CapabilityContext context) {
           'connection': connectionOverrideJsonSchema(),
         },
       },
-      handler: (final request) async {
-        final args = request.arguments ?? const <String, Object?>{};
+      handler: (final args) async {
         final expression = stringArgOrNull(args['expression']) ?? '';
         return runCommand(
           runner,
@@ -434,8 +425,7 @@ void registerInteractionTools(final CapabilityContext context) {
           'connection': connectionOverrideJsonSchema(),
         },
       },
-      handler: (final request) async {
-        final args = request.arguments ?? const <String, Object?>{};
+      handler: (final args) async {
         final compress = boolArgOrDefault(args['compress'], defaultValue: true);
         final includeSemantics = boolArgOrDefault(
           args['includeSemantics'],

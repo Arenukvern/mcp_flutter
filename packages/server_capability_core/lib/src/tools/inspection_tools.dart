@@ -4,7 +4,7 @@
 
 import 'dart:convert';
 
-import 'package:dart_mcp/server.dart';
+import 'package:agentkit_schema/agentkit_schema.dart';
 import 'package:flutter_mcp_toolkit_capability_kernel/flutter_mcp_toolkit_capability_kernel.dart';
 import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 
@@ -27,8 +27,7 @@ void registerInspectionTools(final CapabilityContext context) {
           'connection': connectionOverrideJsonSchema(),
         },
       },
-      handler: (final request) async {
-        final args = request.arguments ?? const <String, Object?>{};
+      handler: (final args) async {
         return runCommand(runner, args, const GetViewDetailsCommand());
       },
     ),
@@ -59,8 +58,7 @@ void registerInspectionTools(final CapabilityContext context) {
           'connection': connectionOverrideJsonSchema(),
         },
       },
-      handler: (final request) async {
-        final args = request.arguments ?? const <String, Object?>{};
+      handler: (final args) async {
         final x = intArgOrNull(args['x']) ?? 0;
         final y = intArgOrNull(args['y']) ?? 0;
         final viewId = intArgOrNull(args['viewId']);
@@ -88,8 +86,7 @@ void registerInspectionTools(final CapabilityContext context) {
           'connection': connectionOverrideJsonSchema(),
         },
       },
-      handler: (final request) async {
-        final args = request.arguments ?? const <String, Object?>{};
+      handler: (final args) async {
         final countRaw = intArgOrNull(args['count']);
         final count = countRaw ?? 4;
         return runCommand(
@@ -101,11 +98,12 @@ void registerInspectionTools(final CapabilityContext context) {
             final map = _asMap(data);
             final message = _stringFromMap(map, 'message') ?? 'No errors found';
             final errors = _errorsList(map['errors']);
-            return CallToolResult(
-              content: [
-                TextContent(text: message),
+            return AgentResult.success(
+              message: message,
+              artifacts: [
+                AgentArtifact.text(message),
                 ...errors.map(
-                  (final error) => TextContent(text: jsonEncode(error)),
+                  (final error) => AgentArtifact.text(jsonEncode(error)),
                 ),
               ],
             );
@@ -157,8 +155,7 @@ void registerInspectionTools(final CapabilityContext context) {
           'connection': connectionOverrideJsonSchema(),
         },
       },
-      handler: (final request) async {
-        final args = request.arguments ?? const <String, Object?>{};
+      handler: (final args) async {
         final compress = _boolArg(args['compress'], defaultValue: true);
         return runCommand(
           runner,
@@ -173,12 +170,12 @@ void registerInspectionTools(final CapabilityContext context) {
             final fileUrls = _stringList(map['fileUrls']);
             if (fileUrls.isNotEmpty) {
               // URL-based mode: return text references + meta.
-              return CallToolResult(
-                meta: Meta.fromMap({'fileUrls': fileUrls}),
-                content: fileUrls
+              return AgentResult.success(
+                data: <String, Object?>{'meta': <String, Object?>{'fileUrls': fileUrls}},
+                artifacts: fileUrls
                     .map(
-                      (final url) => TextContent(
-                        text: 'Analyse with vision image by URL $url',
+                      (final url) => AgentArtifact.text(
+                        'Analyse with vision image by URL $url',
                       ),
                     )
                     .toList(),
@@ -187,13 +184,16 @@ void registerInspectionTools(final CapabilityContext context) {
             // Binary mode: images plus routing metadata for agents.
             final images = _stringList(map['images']);
             final routing = screenshotRoutingSummary(map);
-            return CallToolResult(
-              meta: routing.isEmpty ? null : Meta.fromMap(routing),
-              content: [
-                if (routing.isNotEmpty) TextContent(text: jsonEncode(routing)),
+            return AgentResult.success(
+              data: routing.isEmpty
+                  ? const <String, Object?>{}
+                  : <String, Object?>{'meta': routing},
+              artifacts: [
+                if (routing.isNotEmpty)
+                  AgentArtifact.text(jsonEncode(routing)),
                 ...images.map(
                   (final image) =>
-                      ImageContent(data: image, mimeType: 'image/png'),
+                      AgentArtifact.text(image, mimeType: 'image/png'),
                 ),
               ],
             );
@@ -251,8 +251,7 @@ void registerInspectionTools(final CapabilityContext context) {
           'connection': connectionOverrideJsonSchema(),
         },
       },
-      handler: (final request) async {
-        final args = request.arguments ?? const <String, Object?>{};
+      handler: (final args) async {
         final errorsCount = intArgOrNull(args['errorsCount']) ?? 4;
         final compress = _boolArg(args['compress'], defaultValue: true);
         final includeViewDetails = _boolArg(
@@ -296,8 +295,7 @@ void registerInspectionTools(final CapabilityContext context) {
           'connection': connectionOverrideJsonSchema(),
         },
       },
-      handler: (final request) async {
-        final args = request.arguments ?? const <String, Object?>{};
+      handler: (final args) async {
         return runCommand(
           runner,
           args,

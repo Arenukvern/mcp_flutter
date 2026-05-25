@@ -25,8 +25,7 @@ void registerSemanticTools(final CapabilityContext context) {
           'connection': connectionOverrideJsonSchema(),
         },
       },
-      handler: (final request) async {
-        final args = request.arguments ?? const <String, Object?>{};
+      handler: (final args) async {
         return runCommand(runner, args, const SemanticSnapshotCommand());
       },
     ),

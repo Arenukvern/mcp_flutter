@@ -14,7 +14,7 @@ environment:
 resolution: workspace
 
 dependencies:
-  dart_mcp: ^0.5.0
+  agentkit_schema:
   flutter_mcp_toolkit_core:
   meta: ^1.17.0
 

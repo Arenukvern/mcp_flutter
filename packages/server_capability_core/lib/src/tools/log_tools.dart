@@ -28,8 +28,7 @@ void registerLogTools(final CapabilityContext context) {
           'connection': connectionOverrideJsonSchema(),
         },
       },
-      handler: (final request) async {
-        final args = request.arguments ?? const <String, Object?>{};
+      handler: (final args) async {
         final countRaw = intArgOrNull(args['count']);
         final count = countRaw ?? 50;
         return runCommand(runner, args, GetRecentLogsCommand(count: count));

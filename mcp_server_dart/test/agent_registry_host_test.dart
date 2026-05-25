@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:agentkit_core/agentkit_core.dart';
 import 'package:dart_mcp/server.dart';
+import 'package:agentkit_schema/agentkit_schema.dart';
 import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/host.dart';
 import 'package:flutter_mcp_toolkit_capability_kernel/flutter_mcp_toolkit_capability_kernel.dart';
 import 'package:test/test.dart';
@@ -23,8 +24,8 @@ final class _RegistryProbeCapability implements Capability {
         name: 'ping',
         description: 'ping',
         inputSchema: const {'type': 'object'},
-        handler: (_) async => CallToolResult(
-          content: [TextContent(text: 'legacy')],
+        handler: (final args) async => AgentResult.success(
+          data: <String, Object?>{'text': 'legacy'},
         ),
       ),
     );
