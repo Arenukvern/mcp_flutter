@@ -52,7 +52,9 @@ Non-goals for B:
 
 ---
 
-## Sub-phase C — Authoring & codegen (pending)
+## Sub-phase C — Authoring & codegen (done)
+
+**Status:** Done (2026-05-26)
 
 Goals:
 
@@ -60,6 +62,15 @@ Goals:
 - Client/server symmetry documented in design spec (hand-written + codegen both first-class).
 - Example: one hand-written and one generated tool in `flutter_test_app` or toolkit example.
 - Apple/Android manifest codegen: expand from “started” to documented author workflow.
+
+Checklist (5-C):
+
+- [x] `AgentToolGenerator` + `build.yaml` in `agentkit_codegen`
+- [x] Test fixture + `build_test` coverage
+- [x] `@Deprecated` on `MCPCallEntry`; `toAgentCallEntry()` bridge
+- [x] `mcp_toolkit/example/agent_call_entry_starter.dart`
+- [x] `agentkit_apple` / `agentkit_android` README author workflows
+- [x] Closure report + tracker 5c done
 
 Non-goals for C:
 
@@ -87,6 +98,7 @@ Non-goals for C:
 | Program complete vs milestone | `complete_milestone` + `deferred_work` | Phases 1–4 gates passed; split/shims/codegen generator remain |
 | WebMCP / Gemma naming | “Adapter shipped”, not “stub” | Packages and tests exist; Gemma is example-only by policy |
 | Codegen in Phase 1 closure | Annotations-only | Generator belongs in Phase 5-C, not retroactive Phase 1 failure |
+| Phase 5-C codegen | Pilot in `agentkit_codegen` test fixture | Server/flutter_test_app codegen deferred; hand-written path first-class |
 | Phase 4 in tracker | Separate `phase4` row | Registry resources / hot-sync is distinct from Phase 3 adapter ship |
 | No Dart edits in 5-A | Docs/yaml only | Reduces risk; B/C own code changes |
 

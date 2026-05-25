@@ -175,6 +175,9 @@ extension type const MCPResourceDefinition._(MCPDefinition _definition)
 /// Contains a method name and a handler for the call, with optional
 /// tool and resource definitions for automatic MCP server registration.
 ///
+/// Prefer [AgentCallEntry] for new app tools (exported from `agentkit_core`
+/// via this package). [MCPCallEntry] remains for the MCP service-extension
+/// bridge until a future major version.
 /// {@endtemplate}
 ///
 /// {@macro mcp_tool_definition}
@@ -184,6 +187,10 @@ extension type const MCPResourceDefinition._(MCPDefinition _definition)
 /// {@macro mcp_resource_definition}
 ///
 ///
+@Deprecated(
+  'Use AgentCallEntry from agentkit_core (exported by mcp_toolkit). '
+  'MCPCallEntry remains for MCP service-extension bridge compatibility.',
+)
 extension type const MCPCallEntry._(_MCPCallEntryRecord entry)
     implements _MCPCallEntryRecord {
   /// {@macro mcp_call_entry}

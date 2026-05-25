@@ -1,5 +1,5 @@
 name: agentkit_codegen
-description: Optional @AgentTool annotations and codegen (Phase 1 pilot / Phase 3 expand).
+description: Optional @AgentTool annotations and build_runner codegen (Phase 5-C pilot).
 version: 0.1.0
 publish_to: none
 environment:
@@ -7,8 +7,14 @@ environment:
 resolution: workspace
 
 dependencies:
+  agentkit_core:
+  agentkit_schema:
+  analyzer: ^8.0.0
+  build: ^4.0.0
   meta: ^1.17.0
+  source_gen: ^4.0.0
 
 dev_dependencies:
+  build_runner: ^2.15.0
   lints: ^6.1.0
   test: ^1.31.1

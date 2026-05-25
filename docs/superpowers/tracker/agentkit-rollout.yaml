@@ -14,8 +14,8 @@ program:
     - Standalone agentkit monorepo split from mcp_flutter consumer
     - Public re-export shim removal after deprecation window
     - Gemma product wiring (flutter_gemma in example/shipping app; agentkit_gemma stays example-only)
-    - Optional @AgentTool build_runner generator (Phase 5-C)
-    - Expanded Apple/Android manifest author workflow (Phase 5-C)
+    - Server capability @AgentTool codegen in server_capability_core (pilot is client/test-only)
+    - Swift/XML platform emitters (manifest JSON + docs only in 5-C)
 
 phases:
   - id: phase1
@@ -107,7 +107,7 @@ phases:
   - id: phase5
     title: Hardening (docs, runtime, authoring)
     spec: docs/superpowers/specs/2026-05-25-agentkit-phase5-hardening-design.md
-    status: in_progress
+    status: complete_milestone
     sub_phases:
       - id: 5a
         title: Documentation and program hygiene
@@ -119,4 +119,5 @@ phases:
         completed_at: 2026-05-26
       - id: 5c
         title: Authoring and optional codegen
-        status: pending
+        status: done
+        completed_at: 2026-05-26

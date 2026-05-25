@@ -1,12 +1,12 @@
-/// Marks a method or class as an agent tool for optional codegen.
+/// Marks a top-level function as an agent tool for optional codegen.
 class AgentTool {
   const AgentTool({
-    this.name,
+    required this.name,
     this.description = '',
     this.namespace = 'app',
   });
 
-  final String? name;
+  final String name;
   final String description;
   final String namespace;
 }

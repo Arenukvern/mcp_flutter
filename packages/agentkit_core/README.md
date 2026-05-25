@@ -7,7 +7,7 @@ Transport-agnostic agent intent registry and runtime for Flutter MCP Toolkit.
 | Style | Server | Client (`mcp_toolkit`) |
 |-------|--------|------------------------|
 | Hand-written | `ToolRegistration` / `ResourceRegistration` via capability kernel | `AgentCallEntry` + `AgentModuleFromEntries` |
-| Codegen (optional) | `@AgentTool` (Phase 1 pilot) | Same annotations (optional) |
+| Codegen (optional) | `@AgentTool` + build_runner pilot | Same annotations (optional) |
 
 Authors define **descriptors + executors**; they do not implement a public `AgentIntent` interface. The registry stores `RegisteredAgentIntent` (descriptor + `execute`).
 
