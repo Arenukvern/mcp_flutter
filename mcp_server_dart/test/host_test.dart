@@ -190,7 +190,7 @@ void main() {
               name: 'x',
               description: 'x',
               mimeType: 'text/plain',
-              handler: (_) async => ReadResourceResult(contents: const []),
+              handler: (_) async => AgentResult.success(),
             ),
           ),
           throwsA(isA<StateError>()),

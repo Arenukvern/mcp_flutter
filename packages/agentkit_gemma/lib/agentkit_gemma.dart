@@ -1,3 +1,3 @@
 library;
 
-export 'src/gemma_adapter_stub.dart';
+export 'src/gemma_publish_adapter.dart';

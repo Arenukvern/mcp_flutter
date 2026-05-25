@@ -1,6 +1,6 @@
 name: agentkit_apple
-description: Apple platform manifest codegen for agentkit (Phase 3 stub).
-version: 0.0.1-stub
+description: Apple platform manifest codegen for agentkit.
+version: 0.1.0
 publish_to: none
 environment:
   sdk: ">=3.11.0 <4.0.0"
@@ -12,3 +12,4 @@ dependencies:
 
 dev_dependencies:
   lints: ^6.1.0
+  test: ^1.31.1

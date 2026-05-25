@@ -16,3 +16,24 @@ RegisteredAgentIntent toolRegistrationToRegistration({
     execute: (final invocation) => registration.handler(invocation.arguments),
   );
 }
+
+RegisteredAgentIntent resourceRegistrationToRegistration({
+  required final String capabilityId,
+  required final ResourceRegistration registration,
+}) {
+  return RegisteredAgentIntent(
+    descriptor: AgentIntentDescriptor(
+      namespace: capabilityId,
+      name: registration.name,
+      description: registration.description,
+      kind: AgentIntentKind.resource,
+      inputSchema: const <String, Object?>{'type': 'object'},
+      resourceUri: registration.uri,
+      mimeType: registration.mimeType,
+    ),
+    execute: (final invocation) {
+      final uri = invocation.arguments['uri'];
+      return registration.handler(uri is String ? uri : registration.uri);
+    },
+  );
+}

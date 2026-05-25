@@ -1,3 +1,3 @@
 library;
 
-export 'src/webmcp_adapter_stub.dart';
+export 'src/webmcp_publish_adapter.dart';

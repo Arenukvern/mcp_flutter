@@ -1,4 +1,3 @@
 library;
 
-/// Phase 3 — generates App Intents / Shortcuts manifests from registry descriptors.
-void agentkitAppleCodegenPlaceholder() {}
+export 'src/agent_manifest_generator.dart';

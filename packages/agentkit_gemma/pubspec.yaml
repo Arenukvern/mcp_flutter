@@ -1,6 +1,6 @@
 name: agentkit_gemma
-description: flutter_gemma adapter for agentkit (Phase 3 stub).
-version: 0.0.1-stub
+description: On-device Gemma function-calling adapter for agentkit.
+version: 0.1.0
 publish_to: none
 environment:
   sdk: ">=3.11.0 <4.0.0"
@@ -8,6 +8,7 @@ resolution: workspace
 
 dependencies:
   agentkit_core:
+  agentkit_schema:
   meta: ^1.17.0
 
 dev_dependencies:

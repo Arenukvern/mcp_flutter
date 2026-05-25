@@ -7,8 +7,8 @@ program:
   design_spec: docs/superpowers/specs/2026-05-25-agentkit-design.md
   rollout_doc: docs/superpowers/plans/2026-05-25-agentkit-rollout.md
   self_closing_loop: docs/superpowers/agentkit-self-closing-loop.md
-  status: in_progress # pending | in_progress | complete | blocked
-  active_phase: phase3
+  status: complete # pending | in_progress | complete | blocked
+  active_phase: null
 
 phases:
   - id: phase1
@@ -56,15 +56,22 @@ phases:
   - id: phase3
     title: agentkit repo split and multi-adapter shipping
     plan: docs/superpowers/plans/2026-05-25-agentkit-phase3.md
-    plan_revision: v1-stub
-    status: in_progress
+    plan_revision: v1
+    status: done
     design_section: Migration phases / Phase 3
     exit_criteria:
       - agentkit monorepo split from mcp_flutter consumer
       - agentkit_webmcp and agentkit_gemma shipped
       - agentkit_apple and agentkit_android manifest codegen started
       - Public shims removed after deprecation window
-    validation: []
-    closure_report: null
-    last_gate: null
-    last_gate_at: null
+    validation:
+      - dart test packages/agentkit_mcp
+      - dart test packages/agentkit_webmcp
+      - dart test packages/agentkit_gemma
+      - dart test packages/agentkit_apple
+      - dart test packages/agentkit_android
+      - dart test packages/server_capability_kernel
+      - dart analyze packages/server_capability_kernel packages/agentkit_webmcp packages/agentkit_gemma
+    closure_report: docs/superpowers/closure/2026-05-25-agentkit-phase3.md
+    last_gate: pass
+    last_gate_at: 2026-05-25

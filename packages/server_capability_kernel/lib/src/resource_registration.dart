@@ -1,6 +1,9 @@
 // packages/server_capability_kernel/lib/src/resource_registration.dart
-import 'package:dart_mcp/server.dart';
+import 'package:agentkit_schema/agentkit_schema.dart';
 import 'package:meta/meta.dart';
+
+/// Handler for a capability resource read — transport-agnostic [AgentResult].
+typedef ResourceHandler = Future<AgentResult> Function(String uri);
 
 /// A resource the capability wants the host to expose.
 ///
@@ -21,6 +24,5 @@ final class ResourceRegistration {
   final String name;
   final String description;
   final String mimeType;
-  final Future<ReadResourceResult> Function(ReadResourceRequest request)
-  handler;
+  final ResourceHandler handler;
 }
