@@ -32,9 +32,9 @@
 
 ## Program summary
 
-Phases 1–3 delivered transport-agnostic registry, MCP decoupling, multi-adapter stubs (WebMCP, Gemma), and native manifest JSON generators. **mcp_flutter** remains the consumer workspace.
+Phases 1–3 delivered transport-agnostic registry, MCP decoupling, shipped multi-adapter packages (`agentkit_webmcp` with `WebMcpPublishAdapter`; `agentkit_gemma` example-only with `GemmaPublishAdapter`), and native manifest JSON generators. **mcp_flutter** remains the consumer workspace.
 
 ## Handoff
 
-- **Program status:** `complete` (in-repo milestone)
+- **Program status:** `complete_milestone` (in-repo; Phase 5 hardening tracked separately)
 - **Follow-up:** Extract `packages/agentkit_*` to standalone repo; wire `flutter_gemma` in example app; host `registerResource` via registry (T8).

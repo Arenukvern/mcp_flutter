@@ -1,5 +1,7 @@
 # Agentkit Phase 3 Implementation Plan
 
+> **Historical — phase complete; see [tracker](../tracker/agentkit-rollout.yaml) and [Phase 5 hardening spec](../specs/2026-05-25-agentkit-phase5-hardening-design.md).**
+
 > **Status:** Done (in-repo milestone, 2026-05-25). Closure: `docs/superpowers/closure/2026-05-25-agentkit-phase3.md`
 
 **Goal:** Multi-adapter shipping, transport-free kernel resources, native manifest codegen starters.

@@ -21,12 +21,12 @@
 | `agentkit_schema` | pass | `packages/agentkit_schema/` |
 | `agentkit_core` registry/runtime | pass | `InMemoryAgentRegistry`, `AgentRuntime` |
 | Hand-written `AgentCallEntry` | pass | `agent_call_entry.dart`, tests |
-| Optional codegen | partial | `agentkit_codegen` annotations only; no build_runner generator |
+| Optional codegen | partial (by design) | `agentkit_codegen` **annotations-only**; no `build_runner` generator until Phase 5-C |
 | Bridge `ToolRegistration` | pass | `agentkit_mcp/lib/src/agent_bridge.dart` |
 | MCP invoke via registry | pass | `host.dart`, `agent_registry_host_test.dart` |
 | `fmt_*` prefix preserved | pass | existing `applyPrefix` |
 | Client DX (ecsly) | pass | envelope, `AgentWireArgs`, `AgentClientInstall.once` |
-| Multi-adapter runtime | partial | `AgentAdapter` + Phase 3 stubs (`webmcp`, `gemma`) |
+| Multi-adapter runtime | partial | `AgentAdapter` in core; WebMCP/Gemma adapters shipped in Phase 3 (Gemma example-only) |
 | `agentkit_mcp` extract | partial | shipped early on this branch (Phase 2 overlap) |
 
 ## Deferrals (acceptable for Phase 1)
@@ -41,4 +41,4 @@
 
 - **Active phase:** phase2  
 - **Plan:** `docs/superpowers/plans/2026-05-25-agentkit-phase2.md`  
-- **Implementer:** complete Phase 2 remaining tasks; Phase 3 stubs exist for webmcp/gemma/apple/android
+- **Implementer:** complete Phase 2 remaining tasks; Phase 3 ships webmcp/gemma/apple/android packages (adapters + manifest codegen starters)

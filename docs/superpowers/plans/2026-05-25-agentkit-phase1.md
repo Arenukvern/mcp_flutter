@@ -1,5 +1,7 @@
 # Agentkit Phase 1 Implementation Plan
 
+> **Historical — phase complete; see [tracker](../tracker/agentkit-rollout.yaml) and [Phase 5 hardening spec](../specs/2026-05-25-agentkit-phase5-hardening-design.md).**
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Introduce transport-agnostic `agentkit_schema` + `agentkit_core` inside the mcp_flutter workspace, route all static MCP tool invocations through `AgentRegistry.invoke`, and add hand-written + optional-codegen authoring paths without breaking external MCP/CLI contracts.

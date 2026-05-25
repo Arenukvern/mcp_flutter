@@ -1,5 +1,7 @@
 # Agentkit Phase 2 Implementation Plan
 
+> **Historical — phase complete; see [tracker](../tracker/agentkit-rollout.yaml) and [Phase 5 hardening spec](../specs/2026-05-25-agentkit-phase5-hardening-design.md).**
+
 > **Status:** Done (2026-05-25). Closure: `docs/superpowers/closure/2026-05-25-agentkit-phase2.md`
 
 **Goal:** Extract MCP publish into `agentkit_mcp`, make `McpHost` registry-centric, and remove `dart_mcp` from capability tool registration.

@@ -7,8 +7,15 @@ program:
   design_spec: docs/superpowers/specs/2026-05-25-agentkit-design.md
   rollout_doc: docs/superpowers/plans/2026-05-25-agentkit-rollout.md
   self_closing_loop: docs/superpowers/agentkit-self-closing-loop.md
-  status: complete # pending | in_progress | complete | blocked
-  active_phase: null
+  hardening_spec: docs/superpowers/specs/2026-05-25-agentkit-phase5-hardening-design.md
+  status: complete_milestone # pending | in_progress | complete_milestone | complete | blocked
+  active_phase: phase5
+  deferred_work:
+    - Standalone agentkit monorepo split from mcp_flutter consumer
+    - Public re-export shim removal after deprecation window
+    - Gemma product wiring (flutter_gemma in example/shipping app; agentkit_gemma stays example-only)
+    - Optional @AgentTool build_runner generator (Phase 5-C)
+    - Expanded Apple/Android manifest author workflow (Phase 5-C)
 
 phases:
   - id: phase1
@@ -22,6 +29,7 @@ phases:
       - External MCP and CLI contracts unchanged
       - agentkit_schema and agentkit_core packages exist with tests
       - Client DX helpers specified in design spec implemented or deferred with note
+      - agentkit_codegen annotations-only (no build_runner generator in phase 1)
     validation:
       - dart test packages/agentkit_schema
       - dart test packages/agentkit_core
@@ -54,16 +62,17 @@ phases:
     last_gate_at: 2026-05-25
 
   - id: phase3
-    title: agentkit repo split and multi-adapter shipping
+    title: Multi-adapter shipping (in-repo)
     plan: docs/superpowers/plans/2026-05-25-agentkit-phase3.md
     plan_revision: v1
     status: done
     design_section: Migration phases / Phase 3
     exit_criteria:
-      - agentkit monorepo split from mcp_flutter consumer
-      - agentkit_webmcp and agentkit_gemma shipped
+      - agentkit monorepo split from mcp_flutter consumer (deferred; in-repo path deps OK)
+      - agentkit_webmcp adapter shipped with tests (WebMcpPublishAdapter; not a stub)
+      - agentkit_gemma example-only adapter shipped with tests (no flutter_gemma product wiring)
       - agentkit_apple and agentkit_android manifest codegen started
-      - Public shims removed after deprecation window
+      - Public shims removed after deprecation window (deferred)
     validation:
       - dart test packages/agentkit_mcp
       - dart test packages/agentkit_webmcp
@@ -94,3 +103,19 @@ phases:
     closure_report: docs/superpowers/closure/2026-05-25-agentkit-phase4-registry-resources.md
     last_gate: pass
     last_gate_at: 2026-05-25
+
+  - id: phase5
+    title: Hardening (docs, runtime, authoring)
+    spec: docs/superpowers/specs/2026-05-25-agentkit-phase5-hardening-design.md
+    status: in_progress
+    sub_phases:
+      - id: 5a
+        title: Documentation and program hygiene
+        status: done
+        completed_at: 2026-05-26
+      - id: 5b
+        title: Runtime consolidation
+        status: pending
+      - id: 5c
+        title: Authoring and optional codegen
+        status: pending
