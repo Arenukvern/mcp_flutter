@@ -101,7 +101,7 @@ ToolRegistration bridge (Phase 1)
 
 ```text
 agentkit/
-├── agentkit_schema/       # InputSchema, validation, AgentResult
+├── agentkit_schema/       # InputSchema, validation, AgentResult, envelope, AgentWireArgs
 ├── agentkit_core/         # Intent, Registry, Runtime, Module, Adapter
 ├── agentkit_codegen/      # @AgentTool, build_runner, agent_manifest.json
 ├── agentkit_testing/      # Fakes, contract harness
@@ -174,6 +174,217 @@ Future<AgentResult> loyaltyPoints(
 | Native Siri / Shortcuts export | Codegen manifest (required for that surface) |
 
 **No path is “second class.”** Pub examples show both; `flutter-mcp-toolkit init` can scaffold either template.
+
+### Path 3 — Builder function + dependency injection (recommended for Flutter apps)
+
+Validated in **ecsly** (`spark_physics_ecs`, `arena_sandbox`, `vfx_lab`): a pure Dart function returns `Set<AgentCallEntry>` with **injected readers/updaters**, not widget/state access inside handlers.
+
+```dart
+typedef SparkSnapshotReader = Map<String, Object?> Function();
+
+Set<AgentCallEntry> buildSparkAgentEntries({
+  required SparkSnapshotReader readSnapshot,
+  required SparkControlUpdater applyControls,
+}) => {
+  AgentCallEntry.resource(
+    namespace: 'app',
+    name: 'spark_runtime_snapshot',
+    description: 'Read-only runtime snapshot.',
+    inputSchema: const {'type': 'object', 'properties': {}},
+    handler: (_) => AgentResult.envelope(
+      kind: 'spark_runtime_snapshot',
+      snapshot: readSnapshot(),
+    ),
+  ),
+  // ...
+};
+
+// Module wrapper for AgentRuntime / MCPToolkitBinding
+final appModule = AgentModule.fromEntries(
+  id: 'spark',
+  build: () => buildSparkAgentEntries(
+    readSnapshot: host.readMcpSnapshot,
+    applyControls: host.applyMcpControls,
+  ),
+);
+```
+
+**Why:** Handlers stay thin; **unit tests** call `buildSparkAgentEntries` with fakes — no `MCPToolkitBinding`, no VM (see ecsly `spark_mcp_extensions_test.dart`).
+
+| ecsly pattern | agentkit API |
+|---------------|--------------|
+| `buildSparkMcpEntries(...)` | `Set<AgentCallEntry> buildXAgentEntries({...})` |
+| `addEntries(entries: ...)` | `AgentModule.fromEntries` + `MCPToolkitBinding.addEntries` (Phase 1 shim) |
+| `getFlutterMcpToolkitEntries(binding:)` | `ToolkitBuiltinAgentModule` composed with app module |
+
+---
+
+## Client DX patterns (ecsly-derived)
+
+Production usage in `~/xs/ecsly` prototypes informs first-class client helpers in **`agentkit_schema`** and **`mcp_toolkit`** (re-export). These are **not** required for protocol correctness; they reduce copy-paste and agent confusion.
+
+### 1. Response envelope (`AgentResult.envelope`)
+
+Apps repeatedly wrap payloads with `schema_version`, `kind`, `tool_name`, `snapshot`, and (for resources) MCP-shaped `resource` / `contents` blocks.
+
+```dart
+// agentkit_schema
+extension AgentResultEnvelope on AgentResult {
+  static AgentResult envelope({
+    required String kind,
+    required Map<String, Object?> snapshot,
+    String message = 'ok',
+    int schemaVersion = 1,
+    Map<String, Object?>? extra,
+  }) => AgentResult.success(
+    message: message,
+    data: {
+      'schema_version': schemaVersion,
+      'kind': kind,
+      'tool_name': kind,
+      'snapshot': snapshot,
+      'snapshot_json': jsonEncode(snapshot),
+      if (extra != null) ...extra,
+    },
+  );
+
+  static AgentResult resourceEnvelope({
+    required String resourceName,
+    required Map<String, Object?> snapshot,
+    String mimeType = 'application/json',
+  }) {
+    final uri = AgentIntentDescriptor.resourceUriForName(resourceName);
+    final text = jsonEncode(snapshot);
+    return AgentResult.success(
+      message: '$resourceName snapshot.',
+      data: {
+        'schema_version': 1,
+        'kind': resourceName,
+        'resource_name': resourceName,
+        'resource_uri': uri,
+        'mimeType': mimeType,
+        'snapshot': snapshot,
+        'snapshot_json': text,
+        'resource': {'uri': uri, 'mimeType': mimeType, 'text': text},
+        'contents': [
+          {'uri': uri, 'mimeType': mimeType, 'text': text},
+        ],
+      },
+    );
+  }
+}
+```
+
+**Rule:** Compute `resource_uri` once on the descriptor; envelope helpers must not re-derive URIs differently than `AgentIntentDescriptor.resourceUriForName`.
+
+### 2. Wire parsers (`AgentWireArgs`)
+
+Flutter VM service extensions deliver tool arguments as **`Map<String, String>`** (not typed JSON). Every ecsly handler reimplements `_readOptionalBool`, `_readOptionalInt`, etc.
+
+```dart
+// agentkit_schema — parses ServiceExtension wire map
+extension type const AgentWireArgs(Map<String, String> _raw) {
+  String? string(String key) => _raw[key]?.trim().isEmpty == true ? null : _raw[key]?.trim();
+  bool? bool_(String key) { /* true/false/1/0/yes/no */ }
+  int? int_(String key) => int.tryParse(_raw[key]?.trim() ?? '');
+  double? double_(String key) => double.tryParse(_raw[key]?.trim() ?? '');
+  Map<String, Object?>? jsonObject(String key) { /* jsonDecode when present */ }
+}
+
+// Hand-written handler: parse once, call typed app API
+handler: (args) async {
+  final wire = AgentWireArgs(args);
+  final snapshot = applyControls(
+    viewMode: wire.string('viewMode'),
+    strictEnabled: wire.bool_('strictEnabled'),
+    ...
+  );
+  return AgentResult.envelope(kind: 'spark_set_parity_controls', snapshot: snapshot, extra: {...});
+}
+```
+
+Codegen path maps `@AgentParam` types directly; hand-written and builder paths use `AgentWireArgs` at the boundary.
+
+### 3. Lazy / deferred client install (`AgentClientInstall`)
+
+Registration timing varies by app:
+
+| Pattern | When | Example (ecsly) |
+|---------|------|------------------|
+| Early `main` | Before `runApp`, static deps | `arena_sandbox` |
+| `bootstrapFlutter` | Zone + toolkit + optional entries | `gltf_playground` |
+| Post-init / post-bridge | World or render runtime ready | `spark_physics_ecs` (`initState` → `_installMcpToolkitEntries`) |
+| Bundled only | Default toolkit entries | `vfx_lab` |
+
+```dart
+// mcp_toolkit (re-export agentkit_core helper)
+final class AgentClientInstall {
+  AgentClientInstall._();
+  static Future<void> once({
+    required Future<Set<AgentCallEntry>> Function() buildEntries,
+    Future<void> Function(Set<AgentCallEntry> entries)? register,
+  }) async {
+    if (kReleaseMode || _done) return;
+    _done = true;
+    try {
+      final entries = await buildEntries();
+      await (register ?? MCPToolkitBinding.instance.addEntries)(entries: entries);
+    } on Object {
+      _done = false;
+      rethrow;
+    }
+  }
+  static bool _done = false;
+}
+```
+
+**Rules (document in DX_FAQ):**
+
+- Never register inside `build()` or per-frame.
+- Prefer **one** install per process; use `once` guard.
+- If state is not ready at `main`, use builder + `AgentClientInstall.once` after first frame or world attach.
+
+### 4. Compose builtin + app modules
+
+```dart
+await MCPToolkitBinding.instance.bootstrapFlutter(
+  additionalEntries: () => {
+    ...ToolkitBuiltinAgentEntries(binding: MCPToolkitBinding.instance),
+    ...buildMyAppAgentEntries(readSnapshot: _readSnapshot),
+  },
+  runApp: () => runApp(const MyApp()),
+);
+```
+
+`AgentRuntime` server-side equivalent: `modules: [FmtAgentModule(), AppAgentModule.fromEntries(...)]`.
+
+### 5. Entry testing without Flutter (`agentkit_testing`)
+
+Mirror ecsly `spark_mcp_extensions_test.dart`:
+
+```dart
+test('tool echoes controls', () async {
+  final entries = buildSparkAgentEntries(
+    readSnapshot: () => {'phase': 'playing'},
+    applyControls: ({viewMode}) => {'view_mode': viewMode},
+  );
+  final entry = entries.byName('spark_set_parity_controls');
+  final result = await entry.invokeWire({'viewMode': 'composite'});
+  expect(result.data['snapshot']['view_mode'], 'composite');
+});
+```
+
+Helpers: `entries.byName`, `invokeWire(Map<String, String>)`, golden checks on `schema_version` / `resource_uri`.
+
+### Client authoring decision guide (extended)
+
+| Situation | Recommended path |
+|-----------|------------------|
+| ECS / game host with late world attach | **Builder** + `AgentClientInstall.once` |
+| Single diagnostics resource at startup | Builder or inline `AgentCallEntry.resource` in `main` |
+| Many tools, typed params | Optional `@AgentTool` codegen |
+| Branded typed constructors | Extension type wrapping `AgentCallEntry` (mcp_toolkit style) |
+| Agent-stable JSON | Always use `AgentResult.envelope` / `resourceEnvelope` |
 
 ---
 
@@ -282,6 +493,10 @@ final class AgentIntentDescriptor {
 
   String get qualifiedName => '${namespace}_$name';
   String get effectiveMethodName => methodName ?? name;
+
+  /// Same rule as MCPCallEntry.resourceUri: `visual://localhost/a/b/c`.
+  static String resourceUriForName(String name) =>
+      'visual://localhost/${name.split('_').join('/')}';
 }
 ```
 
@@ -356,6 +571,26 @@ abstract interface class AgentModule {
   Future<void> register(AgentRegistry registry);
   Future<void> dispose();
 }
+
+/// ecsly-style: pure builder → entries → registrations
+final class AgentModuleFromEntries implements AgentModule {
+  AgentModuleFromEntries({
+    required this.id,
+    required this.buildEntries,
+  });
+  final String id;
+  final Set<AgentCallEntry> Function() buildEntries;
+
+  factory AgentModule.fromEntries({
+    required String id,
+    required Set<AgentCallEntry> Function() build,
+  }) => AgentModuleFromEntries(id: id, buildEntries: build);
+
+  @override
+  Future<void> register(AgentRegistry registry) async {
+    registerAll(registry, buildEntries());
+  }
+}
 ```
 
 ### AgentRuntime
@@ -379,7 +614,8 @@ final class AgentRuntime {
 - Bridge `ToolRegistration` → `AgentIntent`; MCP handlers call `registry.invoke` only.
 - Introduce `AgentCallEntry`; deprecate `MCPCallEntry` with export alias.
 - Optional codegen pilot: one `fmt_*` tool + **one optional client tool example** in `flutter_test_app`.
-- Tests: registry-only + MCP parity contract.
+- Client DX: `AgentResult.envelope`, `AgentWireArgs`, `AgentModule.fromEntries`, `AgentClientInstall.once` in `agentkit_schema` / `mcp_toolkit`.
+- Tests: registry-only + MCP parity contract + **entry builder tests** (ecsly spark pattern).
 
 **Exit:** All static server tools invoke via registry; external MCP/CLI unchanged.
 
@@ -403,8 +639,9 @@ final class AgentRuntime {
 
 ## Error handling and testing
 
-- **Single envelope:** `AgentResult` aligned with `CoreResult`; adapters map at boundary.
+- **Single envelope:** `AgentResult` aligned with `CoreResult`; adapters map at boundary. Client apps use **`AgentResult.envelope`** for agent-stable JSON (ecsly `schema_version` / `kind` / `snapshot`).
 - **Unit tests:** Registry validate/invoke/collision without transport.
+- **Entry tests:** `buildXAgentEntries` + `agentkit_testing.invokeWire` without `MCPToolkitBinding` (ecsly `spark_mcp_extensions_test.dart`).
 - **Contract tests:** Same args → same `AgentResult` via registry, MCP adapter, Gemma adapter.
 - **Regression:** Existing `core_executor_test`, capability registration, dynamic registry integration.
 
@@ -421,6 +658,7 @@ final class AgentRuntime {
 | Gemma | `agentkit_gemma` optional adapter |
 | Native | Build-time manifest from codegen; not runtime attach |
 | Compatibility | Preserve `fmt_*` MCP names and CLI commands |
+| Client DX | Builder + `AgentModule.fromEntries`, `AgentResult.envelope`, `AgentWireArgs`, `AgentClientInstall.once` (ecsly-validated) |
 
 ---
 
@@ -472,3 +710,4 @@ So readers could reasonably infer: *“I declare tools by implementing `AgentInt
 - [flutter_gemma](https://pub.dev/packages/flutter_gemma) — On-device Gemma + function calling
 - [WebMCP / navigator.modelContext](https://docs.mcp-b.ai/explanation/webmcp/standard-api)
 - mcp_flutter: `McpHost`, `ToolRegistration`, `MCPCallEntry`, `CoreCommandExecutor`
+- ecsly: `prototypes/spark_physics_ecs/lib/spark/spark_mcp_extensions.dart`, `spark_mcp_extensions_test.dart`, `arena_sandbox/example/lib/main.dart`, `vfx_lab/example/lib/main.dart`

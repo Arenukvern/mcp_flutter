@@ -11,6 +11,8 @@
 **Design spec:** `docs/superpowers/specs/2026-05-25-agentkit-design.md`
 
 > **Spec revision (2026-05-25):** Authoring uses `AgentCallEntry` / `@AgentTool`. Registry stores **`RegisteredAgentIntent`** (descriptor + executor), not author-implemented `AgentIntent`. Use `AgentIntentDescriptor` for adapter serialization. See spec section *Investigation: AgentIntent vs declarative authoring*.
+>
+> **Client DX (ecsly):** `AgentResult.envelope`, `AgentWireArgs`, `AgentModule.fromEntries`, `AgentClientInstall.once` — spec section *Client DX patterns (ecsly-derived)*.
 
 ---
 
@@ -18,7 +20,7 @@
 
 | File / package | Responsibility |
 |----------------|----------------|
-| `packages/agentkit_schema/` | `AgentResult`, `InputSchema`, JSON-schema validation |
+| `packages/agentkit_schema/` | `AgentResult`, `envelope`, `AgentWireArgs`, `InputSchema`, validation |
 | `packages/agentkit_core/` | `AgentIntentDescriptor`, `RegisteredAgentIntent`, `AgentRegistry`, `AgentRuntime`, `AgentAdapter`, `AgentCallEntry` |
 | `packages/agentkit_codegen/` | `@AgentTool`, `@AgentParam`, generator pilot |
 | `packages/agentkit_testing/` | `FakeAgentAdapter`, registry contract helpers |
@@ -26,6 +28,8 @@
 | `mcp_server_dart/lib/src/mcp_toolkit_server/agent_registry_host.dart` | Registry owned by server; dual-write |
 | `mcp_server_dart/lib/src/mcp_toolkit_server/mcp_result_mapper.dart` | `AgentResult` ↔ `CallToolResult` |
 | `mcp_toolkit/lib/src/agent_call_entry.dart` | Client hand-written entries |
+| `mcp_toolkit/lib/src/agent_client_install.dart` | `AgentClientInstall.once` (ecsly lazy install) |
+| `packages/agentkit_core/lib/src/module/agent_module_from_entries.dart` | `AgentModule.fromEntries` builder pattern |
 | `mcp_toolkit/lib/src/mcp_models.dart` | `typedef MCPCallEntry = AgentCallEntry` alias period |
 | `flutter_test_app/lib/agent_tools/` | Optional client `@AgentTool` example |
 
@@ -320,6 +324,34 @@ test('duplicate qualified name throws', () {
 ```bash
 cd packages/agentkit_core && dart test
 git commit -m "feat(agentkit): add InMemoryAgentRegistry"
+```
+
+---
+
+## Task 1b: Client DX helpers (`agentkit_schema` + `mcp_toolkit`)
+
+**Files:**
+- Create: `packages/agentkit_schema/lib/src/agent_result_envelope.dart`
+- Create: `packages/agentkit_schema/lib/src/agent_wire_args.dart`
+- Create: `packages/agentkit_core/lib/src/module/agent_module_from_entries.dart`
+- Create: `mcp_toolkit/lib/src/agent_client_install.dart`
+- Create: `packages/agentkit_schema/test/agent_wire_args_test.dart`
+- Create: `packages/agentkit_schema/test/agent_result_envelope_test.dart`
+
+- [ ] **Step 1: `AgentWireArgs`** — `bool_`, `int_`, `string`, `jsonObject` per design spec
+
+- [ ] **Step 2: `AgentResult.envelope` + `resourceEnvelope`** — use `AgentIntentDescriptor.resourceUriForName`
+
+- [ ] **Step 3: `AgentModule.fromEntries`** — wraps `buildEntries()` → `registerAll`
+
+- [ ] **Step 4: `AgentClientInstall.once`** — `kReleaseMode` guard, idempotent flag, reset on failure
+
+- [ ] **Step 5: Tests** — wire bool parsing; envelope contains `schema_version`, `resource_uri`
+
+- [ ] **Step 6: Commit**
+
+```bash
+git commit -m "feat(agentkit): add ecsly client DX helpers (envelope, wire, lazy install)"
 ```
 
 ---
@@ -743,6 +775,8 @@ Expected: tool still listed; schema unchanged.
 | No `dart_mcp` removal from kernel yet | Deferred Phase 2 |
 | Multi-adapter runtime | `AgentRuntime` + `AgentAdapter` stub only; full MCP adapter extract Phase 2 |
 | `CoreCommand` separate | Documented; no change to executor in Phase 1 |
+| Client DX (ecsly) | Task 1b: envelope, `AgentWireArgs`, `fromEntries`, `AgentClientInstall.once` |
+| Builder + entry tests | Task 4 + Task 1b; optional spark-style example in `flutter_test_app` |
 
 ---
 
