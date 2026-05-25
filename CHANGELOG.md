@@ -5,6 +5,8 @@
 
 ## [Unreleased]
 
+## [3.1.0] - 2026-05-25
+
 ### Added
 
 - Platform-view-aware visual capture: widget-tree `captureHints` detect `AndroidView` / `UiKitView` / `AppKitView` / `HtmlElementView` / `PlatformViewLink` (and weak `Texture` hints).
