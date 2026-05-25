@@ -13,9 +13,10 @@
 |------|----------|--------------|------|
 | **Implementer** | `executing-plans` or `subagent-driven-development` | Yes | Task checkboxes in active phase plan |
 | **Closer** | `verification-before-completion`, `writing-plans`, `receiving-code-review` | No (may edit plans/docs only) | Phase gate, plan regeneration, rollout tracker |
-| **Foreman** (optional) | `engineering-loop` | Dispatches workers | Multi-slice parallel work inside a phase |
 
 **Rule:** The same agent must not Implement and Close the same phase without a **fresh context** (new session or explicit handoff). Closer treats Implementer claims as untrusted until verified.
+
+**Parallel tasks inside a phase:** Use `dispatching-parallel-agents` + `subagent-driven-development` (one subagent per disjoint task slice). Do **not** use `engineering-loop` — it is not part of this program.
 
 ---
 
@@ -189,12 +190,12 @@ REQUIRED: verification-before-completion + writing-plans.
 6. Repeat until tracker program.status is complete.
 ```
 
-### Foreman (optional, large phase)
+### Parallel implementers (optional, disjoint tasks)
 
 ```text
-Use engineering-loop with --spec docs/superpowers/specs/2026-05-25-agentkit-design.md
-and phase plan docs/superpowers/plans/<phase-plan>.md as compile input.
-Dispatch implementer workers per task slice. After slice batch, invoke Closer gate for partial checklist.
+Split the active phase plan into disjoint tasks (no overlapping file paths).
+Dispatch one subagent per task via subagent-driven-development.
+When the batch finishes, run the Closer gate once — do not claim partial completion without verification.
 ```
 
 ---
@@ -223,3 +224,4 @@ Dispatch implementer workers per task slice. After slice batch, invoke Closer ga
 | Passed gate | Regenerate **next** phase plan from design spec |
 | Completion | Tracker `program.status: complete` only after final phase gate |
 | Evidence | Closure markdown + command output tables required |
+| Orchestration | Implementer + Closer only — **no** `engineering-loop` |
