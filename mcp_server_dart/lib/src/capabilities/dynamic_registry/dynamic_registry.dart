@@ -14,7 +14,6 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_mcp_toolkit_server/flutter_mcp_server.dart';
 import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_consts.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/types/error_codes.dart';
-import 'package:flutter_mcp_toolkit_server/src/shared_core/types/results.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
 import 'package:is_dart_empty_or_not/is_dart_empty_or_not.dart';
 import 'package:meta/meta.dart';
@@ -38,18 +37,19 @@ final class DynamicToolEntry with EquatableMixin {
   List<Object?> get props => [intent.descriptor.qualifiedName, tool.name];
 }
 
-/// Entry for a dynamically registered resource - fully MCP compliant
+/// Entry for a dynamically registered resource — intent + MCP [Resource].
 @immutable
 final class DynamicResourceEntry with EquatableMixin {
-  const DynamicResourceEntry({required this.resource});
+  const DynamicResourceEntry({required this.intent, required this.resource});
 
+  final RegisteredAgentIntent intent;
   final Resource resource;
 
   @override
   bool? get stringify => true;
 
   @override
-  List<Object?> get props => [resource];
+  List<Object?> get props => [intent.descriptor.effectiveResourceUri, resource.uri];
 }
 
 /// A string that represents a dynamic app id.
@@ -229,7 +229,8 @@ final class DynamicRegistry {
   void registerResource(final Resource resource, final DynamicAppId appId) {
     verifyAppConnection(appId);
 
-    final entry = DynamicResourceEntry(resource: resource);
+    final intent = _intentForResource(resource: resource, appId: appId);
+    final entry = DynamicResourceEntry(intent: intent, resource: resource);
 
     _resources[resource.uri] = entry;
 
@@ -420,54 +421,52 @@ final class DynamicRegistry {
     }
   }
 
-  static Map<String, Object?> _inputSchemaMap(final Tool tool) =>
-      const <String, Object?>{'type': 'object', 'additionalProperties': true};
+  RegisteredAgentIntent _intentForResource({
+    required final Resource resource,
+    required final DynamicAppId appId,
+  }) {
+    final namespace = appId.isEmpty ? 'app' : appId;
+    return RegisteredAgentIntent(
+      descriptor: AgentIntentDescriptor(
+        namespace: namespace,
+        name: resource.name,
+        description: resource.description ?? '',
+        kind: AgentIntentKind.resource,
+        inputSchema: const <String, Object?>{'type': 'object'},
+        resourceUri: resource.uri,
+        mimeType: resource.mimeType,
+      ),
+      execute: (final invocation) => _invokeDynamicResource(
+        resource: resource,
+        requestedUri:
+            invocation.arguments['uri'] as String? ?? resource.uri,
+      ),
+    );
+  }
 
-  /// Forward MCP resource read to the appropriate Flutter app
-  /// Returns null if resource not found, otherwise forwards the read
-  Future<ReadResourceResult?> forwardResourceRead(
-    final String resourceUri,
-  ) async {
-    final entry = getResourceEntry(resourceUri);
-    if (entry == null) {
-      return null;
-    }
-
-    updateAppActivity();
-
+  Future<AgentResult> _invokeDynamicResource({
+    required final Resource resource,
+    required final String requestedUri,
+  }) async {
     try {
       final vmService = this.vmService;
       if (vmService == null) {
-        logger.log(
-          LoggingLevel.warning,
-          'Cannot forward resource read: VM service not available',
-          logger: 'DynamicRegistry',
-        );
-        return ReadResourceResult(
-          contents: [
-            TextResourceContents(
-              uri: resourceUri,
-              text: jsonEncode(
-                CoreResult.failure(
-                  code: CoreErrorCode.vmNotConnected,
-                  message: 'VM service not available for resource forwarding',
-                ).error?.toJson(),
-              ),
-            ),
-          ],
+        return AgentResult.failure(
+          code: CoreErrorCode.vmNotConnected,
+          message: 'VM service not available for resource forwarding',
         );
       }
 
       logger.log(
         LoggingLevel.info,
-        'Forwarding resource read ${entry.resource.uri} to Flutter app',
+        'Forwarding resource read ${resource.uri} to Flutter app',
         logger: 'DynamicRegistry',
       );
 
-      final parsedResourceUri = Uri.parse(entry.resource.uri);
+      final parsedResourceUri = Uri.parse(resource.uri);
       final candidates = _resourceExtensionCandidates(
         parsed: parsedResourceUri,
-        fallbackName: entry.resource.name,
+        fallbackName: resource.name,
       );
 
       Map<String, Object?>? data;
@@ -476,7 +475,7 @@ final class DynamicRegistry {
         try {
           final response = await server.callFlutterExtension(
             '$mcpToolkitExt.$candidate',
-            args: {'uri': entry.resource.uri},
+            args: {'uri': resource.uri},
           );
           data = jsonDecodeMap(response.json);
           break;
@@ -490,40 +489,44 @@ final class DynamicRegistry {
 
       if (data == null) {
         throw StateError(
-          'No matching dynamic resource extension for ${entry.resource.uri}. '
+          'No matching dynamic resource extension for ${resource.uri}. '
           'Last error: $lastUnknownMethodError',
         );
       }
 
       final mimeType = jsonDecodeString(
         data['mimeType'],
-      ).whenEmptyUse(entry.resource.mimeType ?? 'application/json');
+      ).whenEmptyUse(resource.mimeType ?? 'application/json');
 
       if (jsonDecodeBool(data['isBlob'])) {
         final blob = jsonDecodeString(data['blob']);
         if (blob.isNotEmpty) {
-          return ReadResourceResult(
-            contents: [
-              BlobResourceContents(
-                uri: resourceUri,
-                blob: blob,
-                mimeType: mimeType,
-              ),
-            ],
+          return readResourceResultToAgentResult(
+            ReadResourceResult(
+              contents: [
+                BlobResourceContents(
+                  uri: requestedUri,
+                  blob: blob,
+                  mimeType: mimeType,
+                ),
+              ],
+            ),
           );
         }
       }
 
       final content = jsonDecodeString(data['content']);
       if (content.isNotEmpty) {
-        return ReadResourceResult(
-          contents: [
-            TextResourceContents(
-              uri: resourceUri,
-              text: content,
-              mimeType: mimeType,
-            ),
-          ],
+        return readResourceResultToAgentResult(
+          ReadResourceResult(
+            contents: [
+              TextResourceContents(
+                uri: requestedUri,
+                text: content,
+                mimeType: mimeType,
+              ),
+            ],
+          ),
         );
       }
 
@@ -539,37 +542,52 @@ final class DynamicRegistry {
         if (payload.isNotEmpty) 'parameters': payload,
       };
 
-      return ReadResourceResult(
-        contents: [
-          TextResourceContents(
-            uri: resourceUri,
-            text: jsonEncode(normalizedPayload),
-            mimeType: 'application/json',
-          ),
-        ],
+      return readResourceResultToAgentResult(
+        ReadResourceResult(
+          contents: [
+            TextResourceContents(
+              uri: requestedUri,
+              text: jsonEncode(normalizedPayload),
+              mimeType: 'application/json',
+            ),
+          ],
+        ),
       );
-    } catch (e, stackTrace) {
+    } on Exception catch (e, stackTrace) {
       logger.log(
         LoggingLevel.error,
-        'Failed to forward resource read to ${entry.resource.uri}: $e'
+        'Failed to forward resource read to ${resource.uri}: $e'
         'stackTrace: $stackTrace',
         logger: 'DynamicRegistry',
       );
 
-      return ReadResourceResult(
-        contents: [
-          TextResourceContents(
-            uri: resourceUri,
-            text: jsonEncode(
-              CoreResult.failure(
-                code: CoreErrorCode.dynamicResourceFailed,
-                message: 'Error forwarding resource read: $e',
-              ).error?.toJson(),
-            ),
-          ),
-        ],
+      return AgentResult.failure(
+        code: CoreErrorCode.dynamicResourceFailed,
+        message: 'Error forwarding resource read: $e',
       );
     }
+  }
+
+  static Map<String, Object?> _inputSchemaMap(final Tool tool) =>
+      const <String, Object?>{'type': 'object', 'additionalProperties': true};
+
+  /// Forward MCP resource read via stored [RegisteredAgentIntent].
+  Future<ReadResourceResult?> forwardResourceRead(
+    final String resourceUri,
+  ) async {
+    final entry = getResourceEntry(resourceUri);
+    if (entry == null) {
+      return null;
+    }
+
+    updateAppActivity();
+    final agentResult = await entry.intent.execute(
+      AgentInvocation(
+        descriptor: entry.intent.descriptor,
+        arguments: <String, Object?>{'uri': resourceUri},
+      ),
+    );
+    return agentResultToReadResourceResult(agentResult, uri: resourceUri);
   }
 
   /// Get tools and resources for the current app

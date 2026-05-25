@@ -3,10 +3,14 @@
 
 import 'dart:async';
 
+import 'package:agentkit_mcp/agentkit_mcp.dart';
 import 'package:dart_mcp/server.dart';
+import 'package:flutter_mcp_toolkit_capability_kernel/flutter_mcp_toolkit_capability_kernel.dart';
 import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/base_server.dart';
-import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/handlers/resource_handler.dart';
+import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/handlers/resource_handler.dart'
+    as inspector_resources;
 import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/mixins/vm_service_support.dart';
+import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/server.dart';
 
 /// Mix this in to any MCPServer to back the Flutter Inspector resource
 /// surface (`visual://localhost/...`). All MCP **tools** are published by
@@ -15,10 +19,12 @@ import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/mixins/vm_serv
 /// alive until the kernel grows resource publication.
 base mixin FlutterInspector
     on BaseMCPToolkitServer, ToolsSupport, ResourcesSupport, VMServiceSupport {
-  late final _resourceHandler = ResourceHandler(
+  late final _resourceHandler = inspector_resources.ResourceHandler(
     server: this,
     executor: coreCommandExecutor,
   );
+
+  MCPToolkitServer get _toolkitServer => this as MCPToolkitServer;
 
   @override
   FutureOr<InitializeResult> initialize(final InitializeRequest request) {
@@ -51,17 +57,16 @@ base mixin FlutterInspector
     return super.initialize(request);
   }
 
-  /// Register the `visual://localhost/...` resource surface.
+  /// Register the `visual://localhost/...` resource surface via [AgentRegistry].
   void _registerResources() {
-    final latestAppErrorSrc = Resource(
-      uri: 'visual://localhost/app/errors/latest',
-      name: 'Latest Application Error',
-      mimeType: 'application/json',
-      description: 'Get the most recent application error from Dart VM',
-    );
-    addResource(
-      latestAppErrorSrc,
-      (final request) =>
+    _registerRegistryResource(
+      resource: Resource(
+        uri: 'visual://localhost/app/errors/latest',
+        name: 'Latest Application Error',
+        mimeType: 'application/json',
+        description: 'Get the most recent application error from Dart VM',
+      ),
+      read: (final request) =>
           _resourceHandler.handleAppErrorsResource(request, count: 1),
     );
 
@@ -79,29 +84,46 @@ base mixin FlutterInspector
     );
 
     if (configuration.imagesSupported) {
-      final screenshotsResource = Resource(
-        uri: 'visual://localhost/view/screenshots',
-        name: 'Screenshots',
-        mimeType: 'image/png',
-        description:
-            'Get screenshots of all views in the application. '
-            'Returns base64 encoded images.',
-      );
-      addResource(
-        screenshotsResource,
-        _resourceHandler.handleScreenshotsResource,
+      _registerRegistryResource(
+        resource: Resource(
+          uri: 'visual://localhost/view/screenshots',
+          name: 'Screenshots',
+          mimeType: 'image/png',
+          description:
+              'Get screenshots of all views in the application. '
+              'Returns base64 encoded images.',
+        ),
+        read: _resourceHandler.handleScreenshotsResource,
       );
     }
 
-    final viewDetailsResource = Resource(
-      uri: 'visual://localhost/view/details',
-      name: 'View Details',
-      mimeType: 'application/json',
-      description: 'Get details for all views in the application.',
+    _registerRegistryResource(
+      resource: Resource(
+        uri: 'visual://localhost/view/details',
+        name: 'View Details',
+        mimeType: 'application/json',
+        description: 'Get details for all views in the application.',
+      ),
+      read: _resourceHandler.handleViewDetailsResource,
     );
-    addResource(
-      viewDetailsResource,
-      _resourceHandler.handleViewDetailsResource,
+  }
+
+  void _registerRegistryResource({
+    required final Resource resource,
+    required final Future<ReadResourceResult> Function(ReadResourceRequest request)
+    read,
+  }) {
+    _toolkitServer.capabilityHost.registerPublishedResource(
+      capabilityId: 'visual',
+      registration: ResourceRegistration(
+        uri: resource.uri,
+        name: resource.name,
+        description: resource.description ?? '',
+        mimeType: resource.mimeType ?? 'application/json',
+        handler: (final uri) async => readResourceResultToAgentResult(
+          await read(ReadResourceRequest(uri: uri)),
+        ),
+      ),
     );
   }
 

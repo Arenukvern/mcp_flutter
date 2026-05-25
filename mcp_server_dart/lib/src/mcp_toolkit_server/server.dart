@@ -48,6 +48,8 @@ final class MCPToolkitServer extends BaseMCPToolkitServer
       dispatchBridge: DartMcpDispatchBridge(
         publish: registerTool,
         unpublish: unregisterTool,
+        publishResource: addResource,
+        unpublishResource: removeResource,
       ),
     );
   }

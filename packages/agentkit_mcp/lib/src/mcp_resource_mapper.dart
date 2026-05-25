@@ -3,6 +3,43 @@ import 'dart:convert';
 import 'package:agentkit_schema/agentkit_schema.dart';
 import 'package:dart_mcp/server.dart';
 
+AgentResult readResourceResultToAgentResult(final ReadResourceResult result) {
+  final artifacts = <AgentArtifact>[];
+  final contents = <Map<String, Object?>>[];
+  for (final block in result.contents) {
+    if (block is TextResourceContents) {
+      artifacts.add(
+        AgentArtifact.text(
+          block.text,
+          mimeType: block.mimeType ?? 'application/json',
+        ),
+      );
+      contents.add(<String, Object?>{
+        'type': 'text',
+        'uri': block.uri,
+        'mimeType': block.mimeType,
+        'text': block.text,
+      });
+    } else if (block is BlobResourceContents) {
+      artifacts.add(
+        AgentArtifact.text(
+          block.blob,
+          mimeType: block.mimeType ?? 'application/octet-stream',
+        ),
+      );
+      contents.add(<String, Object?>{
+        'type': 'blob',
+        'uri': block.uri,
+        'mimeType': block.mimeType,
+      });
+    }
+  }
+  return AgentResult.success(
+    data: <String, Object?>{'contents': contents},
+    artifacts: artifacts,
+  );
+}
+
 ReadResourceResult agentResultToReadResourceResult(
   final AgentResult result, {
   required final String uri,
@@ -50,6 +87,26 @@ ReadResourceResult agentResultToReadResourceResult(
     if (contents.isNotEmpty) {
       return ReadResourceResult(contents: contents);
     }
+  }
+
+  if (result.artifacts.isNotEmpty) {
+    return ReadResourceResult(
+      contents: [
+        for (final artifact in result.artifacts)
+          if (artifact.mimeType.startsWith('image/') && artifact.text != null)
+            BlobResourceContents(
+              uri: uri,
+              mimeType: artifact.mimeType,
+              blob: artifact.text!,
+            )
+          else
+            TextResourceContents(
+              uri: uri,
+              mimeType: artifact.mimeType,
+              text: artifact.text ?? '',
+            ),
+      ],
+    );
   }
 
   final resource = result.data['resource'];

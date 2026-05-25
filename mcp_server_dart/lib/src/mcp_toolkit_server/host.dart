@@ -22,12 +22,30 @@ typedef DartMcpToolPublisher =
 /// publications when a capability's [Capability.register] throws partway.
 typedef DartMcpToolUnpublisher = void Function(String name);
 
+typedef DartMcpResourcePublisher =
+    void Function(
+      dart_mcp.Resource resource,
+      FutureOr<dart_mcp.ReadResourceResult> Function(
+        dart_mcp.ReadResourceRequest request,
+      )
+      impl,
+    );
+
+typedef DartMcpResourceUnpublisher = void Function(String uri);
+
 /// Bundle of publish + unpublish hooks. Either both must be provided or
 /// neither — passing only one defeats rollback.
 final class DartMcpDispatchBridge {
-  const DartMcpDispatchBridge({required this.publish, required this.unpublish});
+  const DartMcpDispatchBridge({
+    required this.publish,
+    required this.unpublish,
+    this.publishResource,
+    this.unpublishResource,
+  });
   final DartMcpToolPublisher publish;
   final DartMcpToolUnpublisher unpublish;
+  final DartMcpResourcePublisher? publishResource;
+  final DartMcpResourceUnpublisher? unpublishResource;
 }
 
 /// Per-host registry of loaded [Capability] instances and the tools/resources
@@ -43,8 +61,10 @@ final class McpHost {
        _mcpPublish = dispatchBridge == null
            ? null
            : McpPublishAdapter(
-               publish: dispatchBridge.publish,
-               unpublish: dispatchBridge.unpublish,
+               publishTool: dispatchBridge.publish,
+               unpublishTool: dispatchBridge.unpublish,
+               publishResource: dispatchBridge.publishResource,
+               unpublishResource: dispatchBridge.unpublishResource,
              );
 
   final Map<Type, HostService> _services;
@@ -54,8 +74,11 @@ final class McpHost {
   final Map<String, _LoadedCapability> _capabilities =
       <String, _LoadedCapability>{};
   final Map<String, _RegisteredTool> _tools = <String, _RegisteredTool>{};
+  final Map<String, _RegisteredResource> _resources =
+      <String, _RegisteredResource>{};
 
   Iterable<String> get toolNames => _tools.keys;
+  Iterable<String> get resourceUris => _resources.keys;
 
   Future<void> registerCapability(final Capability capability) async {
     validateCapabilityId(capability.id);
@@ -73,7 +96,14 @@ final class McpHost {
       final publish = _mcpPublish;
       _tools.removeWhere((final fullName, _) {
         if (!fullName.startsWith(prefix)) return false;
-        publish?.unpublishTool(registry: agentRegistry, fullName: fullName);
+        publish?.unpublishRegistryTool(
+          registry: agentRegistry,
+          fullName: fullName,
+        );
+        return true;
+      });
+      _resources.removeWhere((final uri, _) {
+        publish?.unpublishRegistryResource(registry: agentRegistry, uri: uri);
         return true;
       });
       rethrow;
@@ -81,6 +111,14 @@ final class McpHost {
       ctx.sealed = true;
     }
     _capabilities[capability.id] = _LoadedCapability(capability);
+  }
+
+  /// Publish a static resource (e.g. Flutter Inspector `visual://` surface).
+  void registerPublishedResource({
+    required final String capabilityId,
+    required final ResourceRegistration registration,
+  }) {
+    _registerResource(capabilityId: capabilityId, registration: registration);
   }
 
   void _registerTool({
@@ -116,6 +154,33 @@ final class McpHost {
     }
   }
 
+  void _registerResource({
+    required final String capabilityId,
+    required final ResourceRegistration registration,
+  }) {
+    if (_resources.containsKey(registration.uri)) {
+      throw StateError('Resource "${registration.uri}" registered twice.');
+    }
+    _resources[registration.uri] = _RegisteredResource(
+      capabilityId: capabilityId,
+      registration: registration,
+    );
+    _mcpPublish?.publishCapabilityResource(
+      registry: agentRegistry,
+      capabilityId: capabilityId,
+      registration: registration,
+    );
+    if (_mcpPublish == null) {
+      agentRegistry.register(
+        resourceRegistrationToRegistration(
+          capabilityId: capabilityId,
+          registration: registration,
+        ),
+        qualifiedNameOverride: registration.uri,
+      );
+    }
+  }
+
   T _require<T extends HostService>() {
     final service = _services[T];
     if (service == null) {
@@ -138,6 +203,7 @@ final class McpHost {
     _capabilities.clear();
     _mcpPublish?.unpublishAll(registry: agentRegistry);
     _tools.clear();
+    _resources.clear();
     if (errors.isNotEmpty) {
       throw StateError(
         'One or more capabilities threw during dispose: $errors',
@@ -155,6 +221,12 @@ final class _RegisteredTool {
   _RegisteredTool({required this.capabilityId, required this.registration});
   final String capabilityId;
   final ToolRegistration registration;
+}
+
+final class _RegisteredResource {
+  _RegisteredResource({required this.capabilityId, required this.registration});
+  final String capabilityId;
+  final ResourceRegistration registration;
 }
 
 final class _HostCapabilityContext implements CapabilityContext {
@@ -179,8 +251,9 @@ final class _HostCapabilityContext implements CapabilityContext {
   @override
   void registerResource(final ResourceRegistration registration) {
     _ensureNotSealed();
-    throw UnimplementedError(
-      'registerResource not yet wired (tracked for T8).',
+    host._registerResource(
+      capabilityId: capability.id,
+      registration: registration,
     );
   }
 

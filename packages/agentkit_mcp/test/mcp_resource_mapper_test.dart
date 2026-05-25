@@ -17,6 +17,29 @@ void main() {
     expect(read.contents.first, isA<TextResourceContents>());
   });
 
+  test(
+    'readResourceResultToAgentResult round-trips via agentResultToReadResourceResult',
+    () {
+      const uri = 'visual://localhost/app/errors';
+      final original = ReadResourceResult(
+        contents: [
+          TextResourceContents(
+            uri: uri,
+            mimeType: 'application/json',
+            text: '{"count":1}',
+          ),
+        ],
+      );
+      final agent = readResourceResultToAgentResult(original);
+      expect(agent.ok, isTrue);
+
+      final roundTrip = agentResultToReadResourceResult(agent, uri: uri);
+      expect(roundTrip.contents, hasLength(1));
+      final text = (roundTrip.contents.first as TextResourceContents).text;
+      expect(text, '{"count":1}');
+    },
+  );
+
   test('agentResultToReadResourceResult maps failure', () {
     final read = agentResultToReadResourceResult(
       AgentResult.failure(code: 'x', message: 'failed'),

@@ -292,12 +292,17 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
 
     final appId = DynamicAppId(sourceApp);
 
-    // Register in the dynamic registry
     registry.registerResource(resource, appId);
+    final toolkitServer = this as MCPToolkitServer;
+    final resourceEntry = registry.getResourceEntry(resource.uri);
+    if (resourceEntry != null) {
+      toolkitServer.capabilityHost.agentRegistry.register(
+        resourceEntry.intent,
+        qualifiedNameOverride: resource.uri,
+      );
+    }
 
-    // Register as a standard MCP resource that forwards to the dynamic registry
     try {
-      final toolkitServer = this as MCPToolkitServer;
       addResource(resource, (final request) async {
         final connectError = await applyConnectionOverrideFromResourceUri(
           resourceUri: request.uri,
@@ -380,6 +385,9 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
 
     for (final entry in hadContent.resources) {
       try {
+        toolkitServer.capabilityHost.agentRegistry.unregister(
+          entry.resource.uri,
+        );
         removeResource(entry.resource.uri);
       } catch (e, stackTrace) {
         log(

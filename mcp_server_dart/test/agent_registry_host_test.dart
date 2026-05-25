@@ -66,4 +66,63 @@ void main() {
     expect(result.ok, isFalse);
     expect(result.code, 'intent_not_found');
   });
+
+  test(
+    'registerPublishedResource registers in agentRegistry and can be invoked',
+    () async {
+      const uri = 'visual://localhost/errors';
+      final publishedResources =
+          <
+            String,
+            FutureOr<ReadResourceResult> Function(ReadResourceRequest)
+          >{};
+      final host = McpHost(
+        dispatchBridge: DartMcpDispatchBridge(
+          publish: (_, __) {},
+          unpublish: (_) {},
+          publishResource: (final resource, final impl) {
+            publishedResources[resource.uri] = impl;
+          },
+          unpublishResource: (_) {},
+        ),
+      );
+
+      host.registerPublishedResource(
+        capabilityId: 'inspector',
+        registration: ResourceRegistration(
+          uri: uri,
+          name: 'errors',
+          description: 'app errors',
+          mimeType: 'application/json',
+          handler: (_) async => AgentResult.success(
+            data: <String, Object?>{
+              'contents': [
+                <String, Object?>{
+                  'type': 'text',
+                  'text': '{"count":0}',
+                  'mimeType': 'application/json',
+                },
+              ],
+            },
+          ),
+        ),
+      );
+
+      expect(host.resourceUris, contains(uri));
+      expect(publishedResources, contains(uri));
+
+      final direct = await host.agentRegistry.invoke(
+        uri,
+        <String, Object?>{'uri': uri},
+      );
+      expect(direct.ok, isTrue);
+
+      final mcpRead = await publishedResources[uri]!(
+        ReadResourceRequest(uri: uri),
+      );
+      expect(mcpRead.contents, isNotEmpty);
+      final text = (mcpRead.contents.first as TextResourceContents).text;
+      expect(text, '{"count":0}');
+    },
+  );
 }

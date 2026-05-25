@@ -75,3 +75,22 @@ phases:
     closure_report: docs/superpowers/closure/2026-05-25-agentkit-phase3.md
     last_gate: pass
     last_gate_at: 2026-05-25
+
+  - id: phase4
+    title: Registry-backed MCP resources and hot-sync
+    plan: docs/superpowers/closure/2026-05-25-agentkit-phase4-registry-resources.md
+    plan_revision: v1
+    status: done
+    design_section: Migration phases / Phase 3 follow-up (T8 registerResource)
+    exit_criteria:
+      - McpHost registerResource publishes via AgentRegistry and McpPublishAdapter
+      - DynamicRegistry resources use RegisteredAgentIntent and sync to agentRegistry
+      - Flutter Inspector static visual resources via registerPublishedResource
+      - WebMcpPublishAdapter hot-syncs tools on registry events
+    validation:
+      - dart test packages/agentkit_mcp
+      - dart test packages/agentkit_webmcp
+      - cd mcp_server_dart && dart test test/host_test.dart test/agent_registry_host_test.dart
+    closure_report: docs/superpowers/closure/2026-05-25-agentkit-phase4-registry-resources.md
+    last_gate: pass
+    last_gate_at: 2026-05-25
