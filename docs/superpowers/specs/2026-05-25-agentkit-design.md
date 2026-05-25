@@ -8,7 +8,7 @@
 
 ## Summary
 
-Evolve the Flutter MCP Toolkit’s tightly coupled tool/resource registry into **agentkit**: a transport-agnostic agent intent platform. A central **AgentRegistry** holds declarative **AgentIntent** definitions; multiple **AgentAdapter**s (MCP, WebMCP, Gemma, future native) attach to the same registry simultaneously. **mcp_flutter** remains the debug/runtime product built on agentkit.
+Evolve the Flutter MCP Toolkit’s tightly coupled tool/resource registry into **agentkit**: a transport-agnostic agent intent platform. Authors declare tools via **`AgentCallEntry` / `@AgentTool`**; a central **AgentRegistry** holds **`RegisteredAgentIntent`** (descriptor + executor). Multiple **AgentAdapter**s (MCP, WebMCP, Gemma, future native) attach to the same registry simultaneously. **mcp_flutter** remains the debug/runtime product built on agentkit.
 
 **Authoring model (approved):** Hand-written and codegen are both first-class everywhere — server, host, **and Flutter client**. Codegen is **optional** on the client; teams choose per tool.
 
@@ -61,19 +61,39 @@ Evolve the Flutter MCP Toolkit’s tightly coupled tool/resource registry into *
    (fmt, app, custom)
 ```
 
-### Core types
+### Core types (two layers — authoring vs runtime)
+
+The spec previously conflated **declarative authoring** with **`AgentIntent`**, which looked like a class app developers must implement. They must not. The model is two layers:
+
+| Layer | Types | Who authors them |
+|-------|--------|------------------|
+| **Authoring** (declarative) | `AgentCallEntry`, `@AgentTool`, `AgentIntentDescriptor` | App and capability developers |
+| **Runtime** (registry) | `RegisteredAgentIntent` (descriptor + executor) | Framework only — from `toRegistration()`, codegen, or bridges |
+
+```text
+AgentCallEntry / @AgentTool
+        │  toRegistration() / codegen
+        ▼
+RegisteredAgentIntent  ──stored in──►  AgentRegistry
+        ▲
+ToolRegistration bridge (Phase 1)
+```
 
 | Type | Responsibility |
 |------|----------------|
-| `AgentIntent` | Schema + metadata + `execute(AgentInvocation)` |
+| `AgentIntentDescriptor` | Immutable metadata + `InputSchema` (no `execute`) |
+| `AgentCallEntry` | Extension-type authoring bundle → produces registration |
+| `RegisteredAgentIntent` | Descriptor + `AgentExecutor` callback; registry unit |
 | `AgentModule` | `register(AgentRegistry)` — composable bundle |
 | `AgentRegistry` | Register, qualify names, validate, invoke, event stream |
-| `AgentRuntime` | Run modules then attach adapters |
-| `AgentAdapter` | Mirror registry to one external surface |
+| `AgentRuntime` | Modules → registry; adapters attach |
+| `AgentAdapter` | Reads descriptors; invokes via registry |
 
-**Composition over inheritance:** Product code uses `AgentModule`, `AgentCallEntry` sets, and optional `@AgentTool` codegen — not subclasses of `AgentIntent`.
+**Composition over inheritance:** Authors compose `Set<AgentCallEntry>` and `AgentModule` lists. They never `implements AgentIntent` or `implements RegisteredAgentIntent`.
 
-**Qualified names:** `{namespace}_{name}` (e.g. `fmt_tap_widget`). Namespace `app` reserved for dynamic Flutter app tools.
+**Qualified names:** `{namespace}_{name}` (e.g. `fmt_tap_widget`). Namespace `app` reserved for dynamic Flutter app tools. There is no separate `id` field on descriptors — use `namespace` (equals legacy capability id, e.g. `fmt`).
+
+**VM / service extension:** Authoring may set `methodName` when it differs from surfaced tool `name` (same rule as `MCPMethodName` vs `MCPToolDefinition.name` today). Defaults to `name`.
 
 ---
 
@@ -129,7 +149,7 @@ extension type const CartTotalEntry._(AgentCallEntry entry) implements AgentCall
 
 ### Path 2 — Codegen (optional everywhere)
 
-`@AgentTool` + `build_runner` generates `AgentIntent` impl, JSON Schema, and manifest entries.
+`@AgentTool` + `build_runner` generates a `RegisteredAgentIntent` factory + JSON Schema + manifest entries (not a type authors subclass).
 
 **Best for:**
 
@@ -227,22 +247,90 @@ User → Gemma → FunctionCallResponse
 
 ## Interface sketches (agentkit_core)
 
-### AgentIntent
+> **Note:** `AgentIntent` was renamed/split in this revision to match declarative authoring. See [Investigation: AgentIntent vs declarative authoring](#investigation-agentintent-vs-declarative-authoring) below.
+
+### AgentIntentDescriptor (declarative metadata)
 
 ```dart
 enum AgentIntentKind { tool, resource }
 
-abstract interface class AgentIntent {
-  String get id;
-  String get namespace;
-  String get name;
-  String get description;
-  AgentIntentKind get kind;
-  InputSchema get inputSchema;
-  String? get resourceUriTemplate;
-  String? get mimeType;
-  void validate(AgentArguments arguments);
-  Future<AgentResult> execute(AgentInvocation invocation);
+@immutable
+final class AgentIntentDescriptor {
+  const AgentIntentDescriptor({
+    required this.namespace,
+    required this.name,
+    required this.description,
+    required this.kind,
+    required this.inputSchema,
+    this.methodName,
+    this.resourceUri,
+    this.mimeType,
+  });
+
+  final String namespace;
+  final String name;
+  final String description;
+  final AgentIntentKind kind;
+  final InputSchema inputSchema;
+
+  /// VM service extension suffix; defaults to [name] when null.
+  final String? methodName;
+
+  /// Resource URI for [AgentIntentKind.resource]; computed when null.
+  final String? resourceUri;
+  final String? mimeType;
+
+  String get qualifiedName => '${namespace}_$name';
+  String get effectiveMethodName => methodName ?? name;
+}
+```
+
+### RegisteredAgentIntent (runtime — framework only)
+
+```dart
+typedef AgentExecutor = Future<AgentResult> Function(AgentInvocation invocation);
+
+@immutable
+final class AgentInvocation {
+  const AgentInvocation({
+    required this.descriptor,
+    required this.arguments,
+    this.correlationId,
+  });
+  final AgentIntentDescriptor descriptor;
+  final AgentArguments arguments;
+  final String? correlationId;
+}
+
+/// Registry-stored unit. Authors do not implement this type.
+final class RegisteredAgentIntent {
+  RegisteredAgentIntent({
+    required this.descriptor,
+    required AgentExecutor execute,
+    void Function(AgentArguments args)? validate,
+  }) : _execute = execute,
+       _validate = validate ?? ((_) {});
+
+  final AgentIntentDescriptor descriptor;
+  final AgentExecutor _execute;
+  final void Function(AgentArguments arguments) _validate;
+
+  String get qualifiedName => descriptor.qualifiedName;
+  void validate(AgentArguments arguments) => _validate(arguments);
+  Future<AgentResult> execute(AgentInvocation invocation) => _execute(invocation);
+}
+```
+
+### AgentCallEntry → registration (authoring)
+
+```dart
+extension type const AgentCallEntry._(/* record: descriptor fields + handler */) {
+  factory AgentCallEntry.tool({...});
+
+  RegisteredAgentIntent toRegistration() => RegisteredAgentIntent(
+    descriptor: AgentIntentDescriptor(...),
+    execute: (inv) => handler(inv.arguments),
+  );
 }
 ```
 
@@ -251,10 +339,10 @@ abstract interface class AgentIntent {
 ```dart
 abstract interface class AgentRegistry {
   String qualify({required String namespace, required String name});
-  void register(AgentIntent intent, {String? qualifiedNameOverride});
+  void register(RegisteredAgentIntent intent, {String? qualifiedNameOverride});
   void unregister(String qualifiedName);
-  AgentIntent? get(String qualifiedName);
-  Iterable<AgentIntent> list({String? namespace});
+  RegisteredAgentIntent? get(String qualifiedName);
+  Iterable<AgentIntentDescriptor> listDescriptors({String? namespace});
   Future<AgentResult> invoke(String qualifiedName, AgentArguments arguments, {...});
   Stream<AgentRegistryEvent> get events;
 }
@@ -327,12 +415,45 @@ final class AgentRuntime {
 | Topic | Decision |
 |-------|----------|
 | Authoring | Hand-written + codegen both first-class; **codegen optional on client and server** |
-| Structure | `AgentModule` + `AgentCallEntry` composition; no intent inheritance |
+| Structure | `AgentModule` + `AgentCallEntry` composition; `RegisteredAgentIntent` is framework-internal |
 | Multi-surface | `AgentRuntime` + multiple `AgentAdapter`s on one registry |
 | MCP | `dart_mcp` only in `agentkit_mcp` |
 | Gemma | `agentkit_gemma` optional adapter |
 | Native | Build-time manifest from codegen; not runtime attach |
 | Compatibility | Preserve `fmt_*` MCP names and CLI commands |
+
+---
+
+## Investigation: AgentIntent vs declarative authoring
+
+### What was inconsistent
+
+| Issue | Spec said | Problem |
+|-------|-----------|---------|
+| Authoring API | `AgentCallEntry` extension types, `@AgentTool` on functions | Declarative, compositional |
+| Runtime API | `abstract interface class AgentIntent` with 10 members + `execute` | Looks like the type authors **implement** — contradicts “not subclasses of AgentIntent” |
+| Codegen output | “generates `AgentIntent` impl” | Implies inheritance / `implements` |
+| Identity | `id` + `namespace` + `name` | `AgentCallEntry` examples only use `namespace` + `name`; `id` duplicated capability id |
+| Resources | `resourceUriTemplate` in sketch, `resourceUri` in plan | Naming drift |
+| MCP parity | `MCPCallEntry` keys by `MCPMethodName` | Flat `namespace`/`name` in sketches dropped `methodName` |
+
+So readers could reasonably infer: *“I declare tools by implementing `AgentIntent`”* — the opposite of Option C.
+
+### Resolution (approved model)
+
+1. **`AgentIntentDescriptor`** — pure declarative metadata (what adapters serialize to MCP / WebMCP / Gemma / manifest).
+2. **`RegisteredAgentIntent`** — descriptor + executor; only the registry holds these.
+3. **`AgentCallEntry` / `@AgentTool`** — authoring; convert once at `register()` time.
+4. **Drop author-facing `AgentIntent` interface** — avoids inheritance pressure; adapters use `listDescriptors()` + `invoke()`.
+5. **Single identity key** — `namespace` + `name` → `qualifiedName`; `namespace` replaces legacy `Capability.id` / redundant `id`.
+6. **`methodName`** — optional on descriptor for VM extensions when ≠ tool `name`.
+
+### What stays the same
+
+- Registry validate + invoke pipeline
+- Multi-adapter attachment to one registry
+- Phase 1 bridge from `ToolRegistration` builds `RegisteredAgentIntent`
+- `CoreCommand` remains separate from tool descriptors
 
 ---
 

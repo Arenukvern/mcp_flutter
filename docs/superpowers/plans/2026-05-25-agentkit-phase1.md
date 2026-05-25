@@ -10,6 +10,8 @@
 
 **Design spec:** `docs/superpowers/specs/2026-05-25-agentkit-design.md`
 
+> **Spec revision (2026-05-25):** Authoring uses `AgentCallEntry` / `@AgentTool`. Registry stores **`RegisteredAgentIntent`** (descriptor + executor), not author-implemented `AgentIntent`. Use `AgentIntentDescriptor` for adapter serialization. See spec section *Investigation: AgentIntent vs declarative authoring*.
+
 ---
 
 ## File map (Phase 1)
@@ -17,7 +19,7 @@
 | File / package | Responsibility |
 |----------------|----------------|
 | `packages/agentkit_schema/` | `AgentResult`, `InputSchema`, JSON-schema validation |
-| `packages/agentkit_core/` | `AgentIntent`, `AgentRegistry`, `AgentRuntime`, `AgentAdapter`, `AgentCallEntry` |
+| `packages/agentkit_core/` | `AgentIntentDescriptor`, `RegisteredAgentIntent`, `AgentRegistry`, `AgentRuntime`, `AgentAdapter`, `AgentCallEntry` |
 | `packages/agentkit_codegen/` | `@AgentTool`, `@AgentParam`, generator pilot |
 | `packages/agentkit_testing/` | `FakeAgentAdapter`, registry contract helpers |
 | `packages/server_capability_kernel/lib/src/agent_bridge.dart` | `toolRegistrationToIntent`, qualify helpers |
@@ -180,7 +182,7 @@ git commit -m "feat(agentkit): add agentkit_schema package"
 
 ---
 
-## Task 2: `agentkit_core` — intents and naming
+## Task 2: `agentkit_core` — descriptors, registrations, naming
 
 **Files:**
 - Create: `packages/agentkit_core/pubspec.yaml`
@@ -222,50 +224,25 @@ String qualifyName({required String namespace, required String name}) {
 }
 ```
 
-- [ ] **Step 3: Define `AgentIntent` + `CallableAgentIntent`**
+- [ ] **Step 3: Define `AgentIntentDescriptor` + `RegisteredAgentIntent`**
+
+Per approved spec — **no** `abstract interface class AgentIntent` for authors.
 
 ```dart
-enum AgentIntentKind { tool, resource }
-
-abstract interface class AgentIntent {
-  String get id;
-  String get namespace;
-  String get name;
-  String get description;
-  AgentIntentKind get kind;
-  InputSchema get inputSchema;
-  String? get resourceUri;
-  String? get mimeType;
-  void validate(AgentArguments arguments);
-  Future<AgentResult> execute(AgentInvocation invocation);
-}
+@immutable
+final class AgentIntentDescriptor { /* namespace, name, description, kind, inputSchema, methodName?, resourceUri?, mimeType? */ }
 
 @immutable
 final class AgentInvocation {
-  const AgentInvocation({
-    required this.intent,
-    required this.arguments,
-    this.correlationId,
-  });
-  final AgentIntent intent;
+  final AgentIntentDescriptor descriptor;
   final AgentArguments arguments;
-  final String? correlationId;
 }
 
-final class CallableAgentIntent implements AgentIntent {
-  CallableAgentIntent({
-    required this.id,
-    required this.namespace,
-    required this.name,
-    required this.description,
-    required this.kind,
-    required this.inputSchema,
-    required Future<AgentResult> Function(AgentInvocation) executeFn,
-    this.resourceUri,
-    this.mimeType,
-  });
-  // fields + validate delegates to schema_validator
-  // execute => executeFn(invocation)
+final class RegisteredAgentIntent {
+  RegisteredAgentIntent({required this.descriptor, required AgentExecutor execute, ...});
+  final AgentIntentDescriptor descriptor;
+  String get qualifiedName => descriptor.qualifiedName;
+  Future<AgentResult> execute(AgentInvocation invocation);
 }
 ```
 
@@ -286,7 +263,7 @@ test('qualifyName prefixes namespace', () {
 ```bash
 cd packages/agentkit_core && dart test && cd ../..
 git add packages/agentkit_core pubspec.yaml
-git commit -m "feat(agentkit): add AgentIntent and naming"
+git commit -m "feat(agentkit): add descriptor, RegisteredAgentIntent, naming"
 ```
 
 ---
@@ -304,10 +281,8 @@ git commit -m "feat(agentkit): add AgentIntent and naming"
 ```dart
 test('invoke runs intent handler', () async {
   final registry = InMemoryAgentRegistry();
-  registry.register(CallableAgentIntent(
-    id: 'demo',
-    namespace: 'demo',
-    name: 'echo',
+  registry.register(RegisteredAgentIntent(
+    descriptor: AgentIntentDescriptor(namespace: 'demo', name: 'echo', ...),
     description: 'echo',
     kind: AgentIntentKind.tool,
     inputSchema: const {'type': 'object', 'properties': {}},
@@ -323,11 +298,11 @@ test('invoke runs intent handler', () async {
 
 - [ ] **Step 2: Implement registry**
 
-Storage: `Map<String, AgentIntent>`. On `register`, emit `IntentRegistered(qualifiedName)`. On collision, throw `AgentIntentCollisionError`. `invoke`:
+Storage: `Map<String, RegisteredAgentIntent>`. On `register`, emit `IntentRegistered(qualifiedName)`. On collision, throw `AgentIntentCollisionError`. `invoke`:
 
-1. Resolve intent
-2. `intent.validate(arguments)`
-3. `intent.execute(AgentInvocation(...))`
+1. Resolve registration
+2. `registration.validate(arguments)`
+3. `registration.execute(AgentInvocation(descriptor: registration.descriptor, arguments: ...))`
 
 - [ ] **Step 3: Failing test — collision**
 
@@ -377,27 +352,29 @@ extension type const AgentCallEntry._(MapEntry<String, _AgentCallEntryValue> _en
     mimeType: null,
   )));
 
-  AgentIntent toIntent({required String id}) => CallableAgentIntent(
-    id: id,
-    namespace: value.namespace,
-    name: _entry.key,
-    description: value.description,
-    kind: value.kind,
-    inputSchema: value.inputSchema,
-    executeFn: (inv) => value.handler(inv.arguments),
-    resourceUri: value.resourceUri,
-    mimeType: value.mimeType,
+  RegisteredAgentIntent toRegistration() => RegisteredAgentIntent(
+    descriptor: AgentIntentDescriptor(
+      namespace: value.namespace,
+      name: _entry.key,
+      description: value.description,
+      kind: value.kind,
+      inputSchema: value.inputSchema,
+      methodName: value.methodName,
+      resourceUri: value.resourceUri,
+      mimeType: value.mimeType,
+    ),
+    execute: (inv) => value.handler(inv.arguments),
   );
 }
 
-void registerAll(AgentRegistry registry, Iterable<AgentCallEntry> entries, {required String id}) {
+void registerAll(AgentRegistry registry, Iterable<AgentCallEntry> entries) {
   for (final entry in entries) {
-    registry.register(entry.toIntent(id: id));
+    registry.register(entry.toRegistration());
   }
 }
 ```
 
-- [ ] **Step 2: Test `toIntent` qualified name**
+- [ ] **Step 2: Test `toRegistration` qualified name**
 
 - [ ] **Step 3: Commit**
 
@@ -450,7 +427,7 @@ Order: `modules.register` → `adapters.attach`. `stop()` reverses.
 
 ---
 
-## Task 6: Bridge `ToolRegistration` → `AgentIntent`
+## Task 6: Bridge `ToolRegistration` → `RegisteredAgentIntent`
 
 **Files:**
 - Create: `packages/server_capability_kernel/lib/src/agent_bridge.dart`
@@ -470,25 +447,24 @@ dependencies:
 - [ ] **Step 2: Implement bridge**
 
 ```dart
-AgentIntent toolRegistrationToIntent({
+RegisteredAgentIntent toolRegistrationToRegistration({
   required String capabilityId,
   required ToolRegistration registration,
 }) {
-  final namespace = capabilityId;
   final qualified = applyPrefix(capabilityId: capabilityId, name: registration.name);
-  return CallableAgentIntent(
-    id: capabilityId,
-    namespace: namespace,
-    name: registration.name,
-    description: registration.description,
-    kind: AgentIntentKind.tool,
-    inputSchema: registration.inputSchema,
-    executeFn: (inv) async {
-      final request = CallToolRequest(
+  return RegisteredAgentIntent(
+    descriptor: AgentIntentDescriptor(
+      namespace: capabilityId,
+      name: registration.name,
+      description: registration.description,
+      kind: AgentIntentKind.tool,
+      inputSchema: registration.inputSchema,
+    ),
+    execute: (inv) async {
+      final mcpResult = await registration.handler(CallToolRequest(
         name: qualified,
         arguments: inv.arguments,
-      );
-      final mcpResult = await registration.handler(request);
+      ));
       return mcpResultToAgentResult(mcpResult);
     },
   );
@@ -534,7 +510,7 @@ final class McpHost {
 In `_registerTool`, after storing `_RegisteredTool`:
 
 ```dart
-agentRegistry.register(toolRegistrationToIntent(
+agentRegistry.register(toolRegistrationToRegistration(
   capabilityId: capabilityId,
   registration: registration,
 ));
@@ -557,7 +533,7 @@ bridge.publish(
 
 **Important:** Remove direct call to `registration.handler` from MCP path to avoid double execution. The bridged `CallableAgentIntent` in registry must NOT call `registration.handler` when MCP path uses registry — use two intents or a flag:
 
-**Preferred Phase 1 approach:** `CallableAgentIntent` executeFn calls the **business** handler only once:
+**Preferred Phase 1 approach:** `RegisteredAgentIntent` executor calls the **business** handler only once:
 
 - Extract handler body to `Future<AgentResult> Function(AgentArguments)` at bridge time by wrapping existing MCP handler without re-entering registry.
 
@@ -668,7 +644,7 @@ class AgentParam {
 
 For each `@AgentTool` function, emit:
 
-- `CallableAgentIntent get $nameIntent => ...`
+- `RegisteredAgentIntent get $nameRegistration => ...`
 - `const inputSchema = {...}` from parameters (String, int, bool, optional)
 
 Use `package:source_gen` + `build_runner`. Start with **one parameter type set**; expand in Phase 2.
