@@ -17,7 +17,6 @@
 
 1. **App:** `addMcpTool()` (preferred).
 2. **Host:** new `Capability` wired in server `main`.
-3. **Files:** HS via **flutter-harness** CLI (other repo).
 
 ## Distribution
 
