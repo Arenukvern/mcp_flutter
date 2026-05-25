@@ -115,7 +115,8 @@ phases:
         completed_at: 2026-05-26
       - id: 5b
         title: Runtime consolidation
-        status: pending
+        status: done
+        completed_at: 2026-05-26
       - id: 5c
         title: Authoring and optional codegen
         status: pending

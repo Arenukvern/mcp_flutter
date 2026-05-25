@@ -16,7 +16,7 @@ final class InMemoryAgentRegistry implements AgentRegistry {
   final Map<String, RegisteredAgentIntent> _intents =
       <String, RegisteredAgentIntent>{};
   final StreamController<AgentRegistryEvent> _events =
-      StreamController<AgentRegistryEvent>.broadcast();
+      StreamController<AgentRegistryEvent>.broadcast(sync: true);
 
   @override
   Stream<AgentRegistryEvent> get events => _events.stream;

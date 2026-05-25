@@ -36,9 +36,9 @@ Checklist (5-A):
 
 ---
 
-## Sub-phase B — Runtime consolidation (pending)
+## Sub-phase B — Runtime consolidation (done)
 
-Goals:
+**Status:** Done (2026-05-26)
 
 - Single clear attach path for `AgentRuntime` in `mcp_server_dart` / toolkit host (reduce duplicate registration bridges).
 - Confirm dynamic registry ↔ registry hot-sync coverage for tools and resources (build on Phase 4).

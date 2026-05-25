@@ -87,7 +87,7 @@ void main() {
         ),
       );
 
-      host.registerPublishedResource(
+      await host.registerPublishedResource(
         capabilityId: 'inspector',
         registration: ResourceRegistration(
           uri: uri,

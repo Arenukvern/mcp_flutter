@@ -57,19 +57,27 @@ final class McpHost {
     final DartMcpDispatchBridge? dispatchBridge,
   }) : _services = services ?? const <Type, HostService>{},
        _config = config ?? const CapabilityConfig(),
-       agentRegistry = InMemoryAgentRegistry(),
-       _mcpPublish = dispatchBridge == null
-           ? null
-           : McpPublishAdapter(
-               publishTool: dispatchBridge.publish,
-               unpublishTool: dispatchBridge.unpublish,
-               publishResource: dispatchBridge.publishResource,
-               unpublishResource: dispatchBridge.unpublishResource,
-             );
+       agentRegistry = InMemoryAgentRegistry() {
+    if (dispatchBridge != null) {
+      _mcpPublish = McpPublishAdapter(
+        publishTool: dispatchBridge.publish,
+        unpublishTool: dispatchBridge.unpublish,
+        publishResource: dispatchBridge.publishResource,
+        unpublishResource: dispatchBridge.unpublishResource,
+      );
+      _runtime = AgentRuntime(
+        registry: agentRegistry,
+        adapters: <AgentAdapter>[_mcpPublish!],
+      );
+      _runtimeReady = _runtime!.start();
+    }
+  }
 
   final Map<Type, HostService> _services;
   final CapabilityConfig _config;
-  final McpPublishAdapter? _mcpPublish;
+  McpPublishAdapter? _mcpPublish;
+  AgentRuntime? _runtime;
+  Future<void>? _runtimeReady;
   final AgentRegistry agentRegistry;
   final Map<String, _LoadedCapability> _capabilities =
       <String, _LoadedCapability>{};
@@ -80,7 +88,12 @@ final class McpHost {
   Iterable<String> get toolNames => _tools.keys;
   Iterable<String> get resourceUris => _resources.keys;
 
+  Future<void> _ensureRuntimeStarted() async {
+    await (_runtimeReady ?? Future<void>.value());
+  }
+
   Future<void> registerCapability(final Capability capability) async {
+    await _ensureRuntimeStarted();
     validateCapabilityId(capability.id);
     if (_capabilities.containsKey(capability.id)) {
       throw CapabilityAlreadyRegisteredError(
@@ -114,10 +127,11 @@ final class McpHost {
   }
 
   /// Publish a static resource (e.g. Flutter Inspector `visual://` surface).
-  void registerPublishedResource({
+  Future<void> registerPublishedResource({
     required final String capabilityId,
     required final ResourceRegistration registration,
-  }) {
+  }) async {
+    await _ensureRuntimeStarted();
     _registerResource(capabilityId: capabilityId, registration: registration);
   }
 
@@ -201,7 +215,7 @@ final class McpHost {
       }
     }
     _capabilities.clear();
-    _mcpPublish?.unpublishAll(registry: agentRegistry);
+    await _runtime?.stop();
     _tools.clear();
     _resources.clear();
     if (errors.isNotEmpty) {

@@ -94,17 +94,6 @@ final class McpPublishAdapter implements AgentAdapter {
       ),
       qualifiedNameOverride: fullName,
     );
-    _publishToolIntent(
-      registry: registry,
-      key: fullName,
-      descriptor: AgentIntentDescriptor(
-        namespace: capabilityId,
-        name: registration.name,
-        description: registration.description,
-        kind: AgentIntentKind.tool,
-        inputSchema: registration.inputSchema,
-      ),
-    );
   }
 
   void publishCapabilityResource({
@@ -118,12 +107,6 @@ final class McpPublishAdapter implements AgentAdapter {
         registration: registration,
       ),
       qualifiedNameOverride: registration.uri,
-    );
-    _publishResourceIntent(
-      registry: registry,
-      key: registration.uri,
-      registration: registration,
-      descriptor: null,
     );
   }
 

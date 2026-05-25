@@ -17,6 +17,8 @@ Authors define **descriptors + executors**; they do not implement a public `Agen
 MCP CallToolRequest → AgentRegistry.invoke → AgentResult → CallToolResult
 ```
 
+The Flutter MCP server uses `McpHost`, which owns an `AgentRuntime` with `McpPublishAdapter` as the sole MCP attach path: registry registration drives MCP publish via `IntentRegistered` events, and `runtime.stop()` on host dispose.
+
 MCP publish lives in `agentkit_mcp` (`McpPublishAdapter`). WebMCP and Gemma use parallel adapters on the same registry:
 
 ```dart

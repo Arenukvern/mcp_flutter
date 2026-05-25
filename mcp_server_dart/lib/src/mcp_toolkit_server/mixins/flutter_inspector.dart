@@ -27,7 +27,7 @@ base mixin FlutterInspector
   MCPToolkitServer get _toolkitServer => this as MCPToolkitServer;
 
   @override
-  FutureOr<InitializeResult> initialize(final InitializeRequest request) {
+  FutureOr<InitializeResult> initialize(final InitializeRequest request) async {
     log(
       LoggingLevel.info,
       'Initializing Flutter Inspector resources',
@@ -40,7 +40,7 @@ base mixin FlutterInspector
         'Registering Flutter resources',
         logger: 'FlutterInspector',
       );
-      _registerResources();
+      await _registerResources();
     } else {
       log(
         LoggingLevel.debug,
@@ -58,8 +58,8 @@ base mixin FlutterInspector
   }
 
   /// Register the `visual://localhost/...` resource surface via [AgentRegistry].
-  void _registerResources() {
-    _registerRegistryResource(
+  Future<void> _registerResources() async {
+    await _registerRegistryResource(
       resource: Resource(
         uri: 'visual://localhost/app/errors/latest',
         name: 'Latest Application Error',
@@ -70,6 +70,9 @@ base mixin FlutterInspector
           _resourceHandler.handleAppErrorsResource(request, count: 1),
     );
 
+    // Phase 5-B exception: parameterized `app/errors/{count}` stays a direct
+    // MCP resource template (no AgentRegistry intent) until template codegen
+    // lands in Phase 5-C. See phase5 hardening spec Section B.
     final appErrorsResource = ResourceTemplate(
       uriTemplate: 'visual://localhost/app/errors/{count}',
       name: 'Application Errors',
@@ -84,7 +87,7 @@ base mixin FlutterInspector
     );
 
     if (configuration.imagesSupported) {
-      _registerRegistryResource(
+      await _registerRegistryResource(
         resource: Resource(
           uri: 'visual://localhost/view/screenshots',
           name: 'Screenshots',
@@ -97,7 +100,7 @@ base mixin FlutterInspector
       );
     }
 
-    _registerRegistryResource(
+    await _registerRegistryResource(
       resource: Resource(
         uri: 'visual://localhost/view/details',
         name: 'View Details',
@@ -108,12 +111,12 @@ base mixin FlutterInspector
     );
   }
 
-  void _registerRegistryResource({
+  Future<void> _registerRegistryResource({
     required final Resource resource,
     required final Future<ReadResourceResult> Function(ReadResourceRequest request)
     read,
-  }) {
-    _toolkitServer.capabilityHost.registerPublishedResource(
+  }) async {
+    await _toolkitServer.capabilityHost.registerPublishedResource(
       capabilityId: 'visual',
       registration: ResourceRegistration(
         uri: resource.uri,
