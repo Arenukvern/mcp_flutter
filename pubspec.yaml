@@ -5,6 +5,15 @@ environment:
 
 workspace:
   - packages/core
+  - packages/agentkit_schema
+  - packages/agentkit_core
+  - packages/agentkit_mcp
+  - packages/agentkit_codegen
+  - packages/agentkit_webmcp
+  - packages/agentkit_gemma
+  - packages/agentkit_apple
+  - packages/agentkit_android
+  - packages/agentkit_testing
   - packages/server_capability_kernel
   - packages/server_capability_core
   - mcp_server_dart

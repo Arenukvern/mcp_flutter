@@ -1,0 +1,1 @@
+enum AgentIntentKind { tool, resource }

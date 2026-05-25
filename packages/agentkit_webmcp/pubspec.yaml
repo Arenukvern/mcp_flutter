@@ -1,0 +1,15 @@
+name: agentkit_webmcp
+description: WebMCP adapter for agentkit (Phase 3 stub).
+version: 0.0.1-stub
+publish_to: none
+environment:
+  sdk: ">=3.11.0 <4.0.0"
+resolution: workspace
+
+dependencies:
+  agentkit_core:
+  meta: ^1.17.0
+
+dev_dependencies:
+  lints: ^6.1.0
+  test: ^1.31.1

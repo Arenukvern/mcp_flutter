@@ -1,19 +1,46 @@
 # Agentkit Phase 3 Implementation Plan
 
-> **Status:** Placeholder — **do not implement** until Closer generates this plan after Phase 2 gate `pass`.
+> **Status:** Stub packages landed on `feat/agentkit-phase1-3`; full implementation after Phase 2 gate.
 
-**Prerequisite:** `docs/superpowers/tracker/agentkit-rollout.yaml` → `phases[phase2].status: done`
+**Goal:** Split agentkit for external consumption; ship WebMCP and Gemma adapters; start native manifest codegen.
 
-**How this file is created:** Closer agent after Phase 2 gate `pass` — see [self-closing loop](../agentkit-self-closing-loop.md).
+## Stub packages (this branch)
 
-**Expected scope (from design spec):**
+| Package | Status |
+|---------|--------|
+| `agentkit_webmcp` | `WebMcpAgentAdapter` interface stub |
+| `agentkit_gemma` | `GemmaAgentAdapter` interface stub |
+| `agentkit_apple` | codegen placeholder |
+| `agentkit_android` | codegen placeholder |
+| `agentkit_codegen` | `@AgentTool` / `@AgentParam` annotations |
 
-- Split `agentkit` monorepo; `mcp_flutter` consumes published packages
-- Ship `agentkit_webmcp`, `agentkit_gemma`
-- Start `agentkit_apple` / `agentkit_android` manifest codegen
-- Remove public shims after deprecation window
-- Set `program.status: complete` when gate passes
+## Remaining tasks
+
+### Task 1: Repo split
+
+- [ ] Extract `packages/agentkit_*` to standalone repo
+- [ ] Path / version dependency from `mcp_flutter` consumer
+
+### Task 2: WebMCP adapter
+
+- [ ] Implement `WebMcpAgentAdapter.attach` — publish registry descriptors to WebMCP
+
+### Task 3: Gemma adapter
+
+- [ ] Map intents to on-device tool definitions for `flutter_gemma`
+
+### Task 4: Native codegen
+
+- [ ] `agentkit_apple` — App Intents manifest from descriptors
+- [ ] `agentkit_android` — shortcuts / App Actions manifest
+
+### Task 5: Deprecation shims
+
+- [ ] Remove legacy MCP-only registration paths after window
 
 ---
 
-*Replace this placeholder with the full task-by-task plan when Phase 2 closes.*
+## Key design decisions
+
+- Stubs prove workspace layout before split
+- All adapters share one `AgentRegistry` (multi-adapter design spec)

@@ -4,6 +4,8 @@
 // ignore_for_file: public_member_api_docs
 import 'dart:async';
 
+import 'package:agentkit_core/agentkit_core.dart';
+import 'package:agentkit_mcp/agentkit_mcp.dart';
 import 'package:dart_mcp/server.dart' as dart_mcp;
 import 'package:flutter_mcp_toolkit_capability_kernel/flutter_mcp_toolkit_capability_kernel.dart';
 
@@ -37,11 +39,18 @@ final class McpHost {
     final DartMcpDispatchBridge? dispatchBridge,
   }) : _services = services ?? const <Type, HostService>{},
        _config = config ?? const CapabilityConfig(),
-       _bridge = dispatchBridge;
+       agentRegistry = InMemoryAgentRegistry(),
+       _mcpPublish = dispatchBridge == null
+           ? null
+           : McpPublishAdapter(
+               publish: dispatchBridge.publish,
+               unpublish: dispatchBridge.unpublish,
+             );
 
   final Map<Type, HostService> _services;
   final CapabilityConfig _config;
-  final DartMcpDispatchBridge? _bridge;
+  final McpPublishAdapter? _mcpPublish;
+  final AgentRegistry agentRegistry;
   final Map<String, _LoadedCapability> _capabilities =
       <String, _LoadedCapability>{};
   final Map<String, _RegisteredTool> _tools = <String, _RegisteredTool>{};
@@ -61,19 +70,16 @@ final class McpHost {
     try {
       await capability.register(ctx);
     } on Object catch (_) {
-      // Roll back any tools registered before the throw, including from
-      // dart_mcp dispatch (so partial publication can't survive the failure).
-      final unpublish = _bridge?.unpublish;
+      final publish = _mcpPublish;
       _tools.removeWhere((final fullName, _) {
         if (!fullName.startsWith(prefix)) return false;
-        if (unpublish != null) unpublish(fullName);
+        publish?.unpublishTool(registry: agentRegistry, fullName: fullName);
         return true;
       });
       rethrow;
     } finally {
       ctx.sealed = true;
     }
-    // Commit on success only.
     _capabilities[capability.id] = _LoadedCapability(capability);
   }
 
@@ -93,15 +99,19 @@ final class McpHost {
       capabilityId: capabilityId,
       registration: registration,
     );
-    final bridge = _bridge;
-    if (bridge != null) {
-      bridge.publish(
-        dart_mcp.Tool(
-          name: fullName,
-          description: registration.description,
-          inputSchema: dart_mcp.ObjectSchema.fromMap(registration.inputSchema),
+    _mcpPublish?.publishCapabilityTool(
+      registry: agentRegistry,
+      capabilityId: capabilityId,
+      registration: registration,
+      fullName: fullName,
+    );
+    if (_mcpPublish == null) {
+      agentRegistry.register(
+        toolRegistrationToRegistration(
+          capabilityId: capabilityId,
+          registration: registration,
         ),
-        registration.handler,
+        qualifiedNameOverride: fullName,
       );
     }
   }
@@ -126,10 +136,7 @@ final class McpHost {
       }
     }
     _capabilities.clear();
-    final unpublish = _bridge?.unpublish;
-    if (unpublish != null) {
-      _tools.keys.forEach(unpublish);
-    }
+    _mcpPublish?.unpublishAll(registry: agentRegistry);
     _tools.clear();
     if (errors.isNotEmpty) {
       throw StateError(
@@ -172,9 +179,6 @@ final class _HostCapabilityContext implements CapabilityContext {
   @override
   void registerResource(final ResourceRegistration registration) {
     _ensureNotSealed();
-    // T8 wires resource dispatch; until then, this always throws after the
-    // seal check, intentionally — capabilities should not register resources
-    // in this PR's snapshot.
     throw UnimplementedError(
       'registerResource not yet wired (tracked for T8).',
     );
