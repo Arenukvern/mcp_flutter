@@ -149,4 +149,10 @@ phases:
       - program.status complete_in_repo
     non_goals:
       - flutter_gemma product wiring
+      - HarmonyOS NEXT / Intents Kit / hadss_intents
       - Standalone monorepo extract (phase7)
+    platform_decisions:
+      emitters: option_1_own_agentkit_platform
+      web_bootstrap: C_js_and_dart_interop
+      web_priority: highest_within_6d
+      xiaomi_huawei: android_shortcuts_xml_only

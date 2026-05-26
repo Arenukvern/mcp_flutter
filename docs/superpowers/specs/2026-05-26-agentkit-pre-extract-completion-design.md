@@ -27,6 +27,8 @@ Phase 6 finishes agentkit **inside mcp_flutter** so the codebase matches the app
 | Public re-export shim removal (semver bump) | |
 | **Migration:** CHANGELOG + migration guide + **CLI** + **MCP tool** | |
 | **Skills:** new migration skill + update custom-tools / debug / repo-maintainer | |
+| **`agentkit_platform`:** own emitters + sync (no manual copy) | HarmonyOS NEXT / Intents Kit |
+| **Web (priority):** WebMCP runtime + PWA manifest emitters | |
 
 ---
 
@@ -93,23 +95,76 @@ Phase 6 does **not** redesign this graph; it removes bypasses, completes emitter
 
 ---
 
-### 6d — Platform emitters (Swift + XML)
+### 6d — Platform sync (`agentkit_platform`, own emitters — Option 1)
 
-**Goals**
+**Principle:** `agent_manifest.json` is canonical. **`codegen sync`** writes into the Flutter project tree; **`init agentkit-platform`** injects Gradle/Xcode/`index.html` hooks once. No manual copy into Xcode or Android Studio.
 
-- Extend `agentkit_apple`:
-  - `generateSwiftAppIntents(...)` (or CLI-driven file writer) emitting compilable Swift stub(s) from manifest JSON—not only JSON.
-- Extend `agentkit_android`:
-  - `generateAndroidShortcutsXml(...)` emitting valid shortcuts XML fragment or file.
-- CLI subcommand(s), e.g. `flutter-mcp-toolkit codegen manifest --platform apple|android --input agent_manifest.json --output <path>`.
-- Unit tests: golden or snapshot strings for minimal descriptor set.
+**Package:** `packages/agentkit_platform/` — emitters, `AgentPlatformBuilder` (build_runner), CLI sync, thin `agentkit_platform` Flutter plugin (URI / invoke route).
 
-**Non-goals**
+#### Platform scope
 
-- Full App Store / Play Console submission automation
-- Xcode/Gradle project mutation (emit artifacts only)
+| Platform | Emitter / adapter | Notes |
+|----------|-------------------|--------|
+| **Web** (highest priority) | See below — dual surface | WebMCP + PWA manifest |
+| **Android** | `AndroidShortcutsXmlEmitter` | Covers **Xiaomi HyperOS**, Huawei **Android APK**, stock Android — same `shortcuts.xml`; OEM quirks = docs only |
+| **iOS** | `AppleSwiftAppIntentsEmitter` | Compile-time Swift; Xcode Run Script |
+| **macOS** | Same Swift emitter → `macos/Runner/Generated/` | App Intents on desktop where supported |
+| **Linux** | `LinuxDesktopEntryEmitter` + xdg register script | `x-scheme-handler` + `.desktop` |
+| **Windows** | `WindowsProtocolEmitter` | MSIX `protocol_activation` and/or registry script |
+| **HarmonyOS NEXT** | — | **Out of scope** (skip entirely) |
+
+#### Web — dual bootstrap (**decision C**)
+
+Web has **two** agent surfaces; both map to the same Dart handlers:
+
+1. **WebMCP (runtime, primary for in-browser agents)**  
+   - API: `navigator.modelContext.registerTool` / `unregisterTool` (W3C CG draft; Chrome 146+).  
+   - Existing: `agentkit_webmcp` / `WebMcpPublishAdapter` + registry hot-sync.  
+   - **Generated:** `web/agentkit_webmcp.generated.js` — registers all tools on load with feature-detect (`'modelContext' in navigator`).  
+   - **Use when:** static pages, non-Flutter web, or explicit JS bootstrap in `index.html`.
+
+2. **Dart bootstrap (Flutter web apps)**  
+   - **`dart:js_interop`** (or package `web`) from `main()` / `AgentClientInstall` web path: calls `registerTool` for each `AgentCallEntry` after registry is ready.  
+   - **Use when:** standard Flutter web; keeps tooling in Dart only.
+
+3. **PWA manifest (build-time, OS install surface)**  
+   - **`WebManifestEmitter`:** patch `web/manifest.json` with `shortcuts[]` and `protocol_handlers[]` per tool (e.g. `url: "/agent/invoke?name=app_cart_total"`).  
+   - Flutter route reads query → same handler as WebMCP `execute`.  
+   - Complements WebMCP; does not replace it (agents in Chrome discover runtime tools, not manifest).
+
+**One-time init:** snippet in `web/index.html` loads JS bundle; `flutter-mcp-toolkit init agentkit-platform` documents both paths.
+
+#### Native mobile / desktop
+
+- **Apple:** Swift `AppIntent` + `AppShortcutsProvider` + `AgentKitNativeBridge.swift` → deep link `agentkit://invoke/<qualifiedName>` or plugin channel.  
+- **Android:** `res/xml/agentkit_shortcuts.xml` + manifest meta-data; Gradle `preBuild` runs `codegen sync --platform android`.  
+- **Linux / Windows:** packaging files + `app_links` / protocol registration; plugin dispatches to Dart.
+
+#### CLI
+
+```bash
+flutter-mcp-toolkit codegen sync --platform web,android,ios,macos,linux,windows
+flutter-mcp-toolkit codegen sync --check   # CI drift gate
+flutter-mcp-toolkit init agentkit-platform # one-time hooks
+```
+
+#### Validation
+
+- Golden tests per emitter (web manifest JSON, JS bundle shape, XML, Swift snippet).  
+- `dart test packages/agentkit_platform`  
+- Example Flutter app: web build registers tools in DevTools / `modelContextTesting` where available.
+
+**Non-goals (6d)**
+
+- HarmonyOS NEXT, Intents Kit, ArkTS bridges, `hadss_intents` integration  
+- Full Xcode/Gradle project scaffolding beyond hook injection  
+- App Store / Play submission automation  
+- Gemma / `flutter_gemma` product wiring  
+
+**OEM note (Xiaomi / Huawei Android):** no separate emitter; optional `docs/platform-notes/android-oem.md` for HyperOS background/autostart only.
 
 ---
+
 
 ### 6e — Contract & integration tests
 
@@ -200,6 +255,10 @@ dart analyze packages/agentkit_* mcp_toolkit mcp_server_dart
 | Migration MCP tool | Report-only default; `apply` explicit |
 | Semver | Major `mcp_toolkit` bump minimum |
 | Extract | **Phase 7** only after 6h gate |
+| Platform emitters | **Option 1** — own emitters in `agentkit_platform` |
+| Web bootstrap | **C** — generated JS + Dart `js_interop` path |
+| HarmonyOS NEXT | **Skipped** — not in Phase 6 or 7 prerequisite |
+| Xiaomi / Huawei | **Android emitter only** — same XML as AOSP |
 
 ---
 
@@ -210,7 +269,8 @@ dart analyze packages/agentkit_* mcp_toolkit mcp_server_dart
 | Client API | `mcp_toolkit/lib/src/mcp_models.dart`, `mcp_call_entry_bridge.dart` (delete), binding, toolkits, `agent_client_install.dart` |
 | Test app | `flutter_test_app/lib/**` |
 | Server | `flutter_inspector.dart`, `dynamic_registry_integration.dart`, capability core codegen |
-| Emitters | `packages/agentkit_apple/`, `packages/agentkit_android/` |
+| Platform sync | `packages/agentkit_platform/`, `packages/agentkit_apple/`, `packages/agentkit_android/`, `packages/agentkit_webmcp/` |
+| Web artifacts | `web/manifest.json`, `web/agentkit_webmcp.generated.js`, `web/index.html` snippet |
 | CLI | `mcp_server_dart/bin/flutter_mcp_toolkit.dart`, `lib/src/cli/migrate_agent_entries_command.dart` |
 | MCP migrate tool | new capability or `server_capability_core` command |
 | Docs | `CHANGELOG.md`, `docs/start_here/migration_agentkit_phase6.md` |
@@ -233,9 +293,13 @@ dart analyze packages/agentkit_* mcp_toolkit mcp_server_dart
 | Merge bar | D = B + Swift/XML, skip Gemma only |
 | MCPCallEntry | Remove entirely |
 | Migration | CLI + MCP + docs + skills |
+| Web bootstrap | **C** — JS generated bundle + Dart interop |
+| HarmonyOS NEXT | **Skipped** |
 
 ---
 
 ## Approval
 
-Bar **D** approved by user 2026-05-26. Next artifact: [implementation plan](../plans/2026-05-26-agentkit-phase6-pre-extract.md) via writing-plans skill.
+Bar **D** approved 2026-05-26. Platform **Option 1** + Web **C** + skip HarmonyOS NEXT approved 2026-05-26.
+
+**Implementation plan:** [2026-05-26-agentkit-phase6-pre-extract.md](../plans/2026-05-26-agentkit-phase6-pre-extract.md) (update 6d tasks to match this section).

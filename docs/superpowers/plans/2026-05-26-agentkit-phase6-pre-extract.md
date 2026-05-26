@@ -18,7 +18,10 @@
 | Migration | CLI `migrate agent-entries` + MCP `fmt_migrate_agent_entries` |
 | Semver | Major mcp_toolkit bump; CHANGELOG migration section |
 | Gemma | No product work |
-| Swift/XML | Real emitters + CLI `codegen manifest` |
+| Swift/XML | Real emitters + CLI `codegen sync` |
+| Web | Dual bootstrap **C** (JS + Dart); PWA manifest; highest priority within 6d |
+| Platforms | web, android, ios, macos, linux, windows — **no HarmonyOS NEXT** |
+| Emitters | Own (`agentkit_platform`); Option 1 |
 
 ---
 
@@ -70,19 +73,35 @@
 
 ---
 
-## Task 4: 6d — Swift + XML emitters
+## Task 4: 6d — Platform sync (`agentkit_platform`) — Web first
 
 **Files:**
-- Modify: `packages/agentkit_apple/lib/src/` — add `swift_app_intents_emitter.dart`
-- Modify: `packages/agentkit_android/lib/src/` — add `shortcuts_xml_emitter.dart`
-- Modify: `mcp_server_dart/bin/flutter_mcp_toolkit.dart` — `codegen manifest` subcommand
-- Test: `packages/agentkit_apple/test/`, `packages/agentkit_android/test/`
+- Create: `packages/agentkit_platform/` (emitters, builder, plugin stub)
+- Create: `web/agentkit_webmcp.generated.js` generator; `WebManifestEmitter`
+- Modify: `packages/agentkit_apple/`, `packages/agentkit_android/` — move or delegate to platform package
+- Modify: `mcp_toolkit` — web `main()` optional Dart WebMCP bootstrap via `js_interop`
+- Modify: `mcp_server_dart/bin/flutter_mcp_toolkit.dart` — `codegen sync`, `init agentkit-platform`
+- Test: golden tests per platform; `agentkit_webmcp` integration test with fake `modelContext`
 
-- [ ] **Step 1:** Failing golden tests for minimal descriptor → Swift/XML strings
-- [ ] **Step 2:** Implement emitters from manifest JSON or descriptor list
-- [ ] **Step 3:** CLI subcommand writes stdout or `--output`
-- [ ] **Step 4:** README updates in apple/android packages
-- [ ] **Step 5:** Commit
+### 6d-web (do first)
+
+- [ ] **Step 1:** `agentkit_platform` package scaffold + manifest schema version
+- [ ] **Step 2:** `WebManifestEmitter` → patches `shortcuts` + `protocol_handlers` in `web/manifest.json`
+- [ ] **Step 3:** `WebMcpJsEmitter` → `web/agentkit_webmcp.generated.js` + `index.html` inject snippet
+- [ ] **Step 4:** Dart path: `AgentWebMcpBootstrap.registerFromEntries(Set<AgentCallEntry>)` using `js_interop`
+- [ ] **Step 5:** Flutter web route `/agent/invoke` → shared handler; test on VM + golden JS/manifest
+- [ ] **Step 6:** Commit `feat(agentkit): web platform sync (WebMCP JS + manifest + Dart path)`
+
+### 6d-native
+
+- [ ] **Step 7:** `AndroidShortcutsXmlEmitter` + Gradle hook template (Xiaomi/Huawei = same XML)
+- [ ] **Step 8:** `AppleSwiftAppIntentsEmitter` (ios + macos paths) + Xcode Run Script template
+- [ ] **Step 9:** `LinuxDesktopEntryEmitter` + `WindowsProtocolEmitter`
+- [ ] **Step 10:** `agentkit_platform` plugin — `agentkit://invoke` via `app_links`
+- [ ] **Step 11:** `codegen sync --check` in CI; `docs/platform-notes/android-oem.md` optional
+- [ ] **Step 12:** Commit `feat(agentkit): native platform sync emitters`
+
+**Explicitly skip:** HarmonyOS NEXT, `hadss_intents`, ArkTS emitters.
 
 ---
 
