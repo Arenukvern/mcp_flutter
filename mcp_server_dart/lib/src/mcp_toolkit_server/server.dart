@@ -50,6 +50,7 @@ final class MCPToolkitServer extends BaseMCPToolkitServer
         unpublish: unregisterTool,
         publishResource: addResource,
         unpublishResource: removeResource,
+        publishResourceTemplate: addResourceTemplate,
       ),
     );
   }

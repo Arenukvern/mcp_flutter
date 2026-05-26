@@ -66,3 +66,32 @@ RegisteredAgentIntent resourceRegistrationToRegistration({
     },
   );
 }
+
+RegisteredAgentIntent resourceTemplateRegistrationToRegistration({
+  required final String capabilityId,
+  required final ResourceTemplateRegistration registration,
+}) {
+  return RegisteredAgentIntent(
+    descriptor: AgentIntentDescriptor(
+      namespace: capabilityId,
+      name: registration.name,
+      description: registration.description,
+      kind: AgentIntentKind.resource,
+      inputSchema: const <String, Object?>{
+        'type': 'object',
+        'properties': {
+          'uri': {'type': 'string'},
+          'count': {'type': 'string'},
+        },
+      },
+      resourceUri: registration.uriTemplate,
+      mimeType: registration.mimeType,
+    ),
+    execute: (final invocation) {
+      final uri = invocation.arguments['uri'];
+      return registration.handler(
+        uri is String ? uri : registration.uriTemplate,
+      );
+    },
+  );
+}

@@ -62,7 +62,7 @@ base mixin FlutterInspector
     await _registerRegistryResource(
       resource: Resource(
         uri: 'visual://localhost/app/errors/latest',
-        name: 'Latest Application Error',
+        name: 'latest_application_error',
         mimeType: 'application/json',
         description: 'Get the most recent application error from Dart VM',
       ),
@@ -70,27 +70,23 @@ base mixin FlutterInspector
           _resourceHandler.handleAppErrorsResource(request, count: 1),
     );
 
-    // Phase 5-B exception: parameterized `app/errors/{count}` stays a direct
-    // MCP resource template (no AgentRegistry intent) until template codegen
-    // lands in Phase 5-C. See phase5 hardening spec Section B.
-    final appErrorsResource = ResourceTemplate(
-      uriTemplate: 'visual://localhost/app/errors/{count}',
-      name: 'Application Errors',
-      mimeType: 'application/json',
-      description:
-          'Get a specified number of latest application errors from Dart VM. '
-          'Limit to 4 or fewer for performance.',
-    );
-    addResourceTemplate(
-      appErrorsResource,
-      _resourceHandler.handleAppErrorsResource,
+    await _registerRegistryResourceTemplate(
+      template: ResourceTemplate(
+        uriTemplate: 'visual://localhost/app/errors/{count}',
+        name: 'application_errors',
+        mimeType: 'application/json',
+        description:
+            'Get a specified number of latest application errors from Dart VM. '
+            'Limit to 4 or fewer for performance.',
+      ),
+      read: _resourceHandler.handleAppErrorsResource,
     );
 
     if (configuration.imagesSupported) {
       await _registerRegistryResource(
         resource: Resource(
           uri: 'visual://localhost/view/screenshots',
-          name: 'Screenshots',
+          name: 'screenshots',
           mimeType: 'image/png',
           description:
               'Get screenshots of all views in the application. '
@@ -103,7 +99,7 @@ base mixin FlutterInspector
     await _registerRegistryResource(
       resource: Resource(
         uri: 'visual://localhost/view/details',
-        name: 'View Details',
+        name: 'view_details',
         mimeType: 'application/json',
         description: 'Get details for all views in the application.',
       ),
@@ -123,6 +119,25 @@ base mixin FlutterInspector
         name: resource.name,
         description: resource.description ?? '',
         mimeType: resource.mimeType ?? 'application/json',
+        handler: (final uri) async => readResourceResultToAgentResult(
+          await read(ReadResourceRequest(uri: uri)),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _registerRegistryResourceTemplate({
+    required final ResourceTemplate template,
+    required final Future<ReadResourceResult> Function(ReadResourceRequest request)
+    read,
+  }) async {
+    await _toolkitServer.capabilityHost.registerPublishedResourceTemplate(
+      capabilityId: 'visual',
+      registration: ResourceTemplateRegistration(
+        uriTemplate: template.uriTemplate,
+        name: template.name,
+        description: template.description ?? '',
+        mimeType: template.mimeType ?? 'application/json',
         handler: (final uri) async => readResourceResultToAgentResult(
           await read(ReadResourceRequest(uri: uri)),
         ),

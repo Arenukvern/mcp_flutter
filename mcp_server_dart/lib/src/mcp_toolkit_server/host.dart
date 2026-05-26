@@ -33,6 +33,15 @@ typedef DartMcpResourcePublisher =
 
 typedef DartMcpResourceUnpublisher = void Function(String uri);
 
+typedef DartMcpResourceTemplatePublisher =
+    void Function(
+      dart_mcp.ResourceTemplate template,
+      FutureOr<dart_mcp.ReadResourceResult?> Function(
+        dart_mcp.ReadResourceRequest request,
+      )
+      impl,
+    );
+
 /// Bundle of publish + unpublish hooks. Either both must be provided or
 /// neither — passing only one defeats rollback.
 final class DartMcpDispatchBridge {
@@ -41,11 +50,13 @@ final class DartMcpDispatchBridge {
     required this.unpublish,
     this.publishResource,
     this.unpublishResource,
+    this.publishResourceTemplate,
   });
   final DartMcpToolPublisher publish;
   final DartMcpToolUnpublisher unpublish;
   final DartMcpResourcePublisher? publishResource;
   final DartMcpResourceUnpublisher? unpublishResource;
+  final DartMcpResourceTemplatePublisher? publishResourceTemplate;
 }
 
 /// Per-host registry of loaded [Capability] instances and the tools/resources
@@ -64,6 +75,7 @@ final class McpHost {
         unpublishTool: dispatchBridge.unpublish,
         publishResource: dispatchBridge.publishResource,
         unpublishResource: dispatchBridge.unpublishResource,
+        publishResourceTemplate: dispatchBridge.publishResourceTemplate,
       );
       _runtime = AgentRuntime(
         registry: agentRegistry,
@@ -84,9 +96,12 @@ final class McpHost {
   final Map<String, _RegisteredTool> _tools = <String, _RegisteredTool>{};
   final Map<String, _RegisteredResource> _resources =
       <String, _RegisteredResource>{};
+  final Map<String, _RegisteredResourceTemplate> _resourceTemplates =
+      <String, _RegisteredResourceTemplate>{};
 
   Iterable<String> get toolNames => _tools.keys;
   Iterable<String> get resourceUris => _resources.keys;
+  Iterable<String> get resourceTemplateUris => _resourceTemplates.keys;
 
   Future<void> _ensureRuntimeStarted() async {
     await (_runtimeReady ?? Future<void>.value());
@@ -119,6 +134,13 @@ final class McpHost {
         publish?.unpublishRegistryResource(registry: agentRegistry, uri: uri);
         return true;
       });
+      _resourceTemplates.removeWhere((final uriTemplate, _) {
+        publish?.unpublishRegistryResourceTemplate(
+          registry: agentRegistry,
+          uriTemplate: uriTemplate,
+        );
+        return true;
+      });
       rethrow;
     } finally {
       ctx.sealed = true;
@@ -133,6 +155,18 @@ final class McpHost {
   }) async {
     await _ensureRuntimeStarted();
     _registerResource(capabilityId: capabilityId, registration: registration);
+  }
+
+  /// Publish a parameterized resource template via [AgentRegistry].
+  Future<void> registerPublishedResourceTemplate({
+    required final String capabilityId,
+    required final ResourceTemplateRegistration registration,
+  }) async {
+    await _ensureRuntimeStarted();
+    _registerResourceTemplate(
+      capabilityId: capabilityId,
+      registration: registration,
+    );
   }
 
   void _registerTool({
@@ -195,6 +229,35 @@ final class McpHost {
     }
   }
 
+  void _registerResourceTemplate({
+    required final String capabilityId,
+    required final ResourceTemplateRegistration registration,
+  }) {
+    if (_resourceTemplates.containsKey(registration.uriTemplate)) {
+      throw StateError(
+        'Resource template "${registration.uriTemplate}" registered twice.',
+      );
+    }
+    _resourceTemplates[registration.uriTemplate] = _RegisteredResourceTemplate(
+      capabilityId: capabilityId,
+      registration: registration,
+    );
+    _mcpPublish?.publishCapabilityResourceTemplate(
+      registry: agentRegistry,
+      capabilityId: capabilityId,
+      registration: registration,
+    );
+    if (_mcpPublish == null) {
+      agentRegistry.register(
+        resourceTemplateRegistrationToRegistration(
+          capabilityId: capabilityId,
+          registration: registration,
+        ),
+        qualifiedNameOverride: registration.uriTemplate,
+      );
+    }
+  }
+
   T _require<T extends HostService>() {
     final service = _services[T];
     if (service == null) {
@@ -218,6 +281,7 @@ final class McpHost {
     await _runtime?.stop();
     _tools.clear();
     _resources.clear();
+    _resourceTemplates.clear();
     if (errors.isNotEmpty) {
       throw StateError(
         'One or more capabilities threw during dispose: $errors',
@@ -241,6 +305,15 @@ final class _RegisteredResource {
   _RegisteredResource({required this.capabilityId, required this.registration});
   final String capabilityId;
   final ResourceRegistration registration;
+}
+
+final class _RegisteredResourceTemplate {
+  _RegisteredResourceTemplate({
+    required this.capabilityId,
+    required this.registration,
+  });
+  final String capabilityId;
+  final ResourceTemplateRegistration registration;
 }
 
 final class _HostCapabilityContext implements CapabilityContext {

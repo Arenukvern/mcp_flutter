@@ -7,6 +7,7 @@ import 'package:flutter_mcp_toolkit_capability_kernel/flutter_mcp_toolkit_capabi
 import 'agent_bridge.dart';
 import 'mcp_resource_mapper.dart';
 import 'mcp_result_mapper.dart';
+import 'uri_template.dart';
 
 typedef McpToolPublisher =
     void Function(
@@ -24,6 +25,12 @@ typedef McpResourcePublisher =
 
 typedef McpResourceUnpublisher = void Function(String uri);
 
+typedef McpResourceTemplatePublisher =
+    void Function(
+      ResourceTemplate template,
+      FutureOr<ReadResourceResult?> Function(ReadResourceRequest request) impl,
+    );
+
 /// Publishes registry-backed tools and resources to dart_mcp.
 final class McpPublishAdapter implements AgentAdapter {
   McpPublishAdapter({
@@ -31,15 +38,18 @@ final class McpPublishAdapter implements AgentAdapter {
     required this.unpublishTool,
     this.publishResource,
     this.unpublishResource,
+    this.publishResourceTemplate,
   });
 
   final McpToolPublisher publishTool;
   final McpToolUnpublisher unpublishTool;
   final McpResourcePublisher? publishResource;
   final McpResourceUnpublisher? unpublishResource;
+  final McpResourceTemplatePublisher? publishResourceTemplate;
 
   final Set<String> _publishedTools = <String>{};
   final Set<String> _publishedResources = <String>{};
+  final Set<String> _publishedResourceTemplates = <String>{};
   StreamSubscription<AgentRegistryEvent>? _events;
   AgentRegistry? _registry;
 
@@ -110,6 +120,20 @@ final class McpPublishAdapter implements AgentAdapter {
     );
   }
 
+  void publishCapabilityResourceTemplate({
+    required final AgentRegistry registry,
+    required final String capabilityId,
+    required final ResourceTemplateRegistration registration,
+  }) {
+    registry.register(
+      resourceTemplateRegistrationToRegistration(
+        capabilityId: capabilityId,
+        registration: registration,
+      ),
+      qualifiedNameOverride: registration.uriTemplate,
+    );
+  }
+
   void unpublishRegistryTool({
     required final AgentRegistry registry,
     required final String fullName,
@@ -131,6 +155,19 @@ final class McpPublishAdapter implements AgentAdapter {
     for (final uri in _publishedResources.toList()) {
       unpublishRegistryResource(registry: registry, uri: uri);
     }
+    for (final uriTemplate in _publishedResourceTemplates.toList()) {
+      unpublishRegistryResourceTemplate(
+        registry: registry,
+        uriTemplate: uriTemplate,
+      );
+    }
+  }
+
+  void unpublishRegistryResourceTemplate({
+    required final AgentRegistry registry,
+    required final String uriTemplate,
+  }) {
+    _unpublishKey(uriTemplate, registry);
   }
 
   void _syncDescriptor(
@@ -142,13 +179,22 @@ final class McpPublishAdapter implements AgentAdapter {
     if (descriptor.kind == AgentIntentKind.tool) {
       if (_publishedTools.contains(key)) return;
       _publishToolIntent(registry: registry, key: key, descriptor: descriptor);
-    } else if (publishResource != null) {
+    } else if (publishResource != null || publishResourceTemplate != null) {
       if (_publishedResources.contains(key)) return;
-      _publishResourceIntent(
-        registry: registry,
-        key: key,
-        descriptor: descriptor,
-      );
+      if (_publishedResourceTemplates.contains(key)) return;
+      if (descriptor.resourceUri?.contains('{') ?? false) {
+        _publishResourceTemplateIntent(
+          registry: registry,
+          key: key,
+          descriptor: descriptor,
+        );
+      } else {
+        _publishResourceIntent(
+          registry: registry,
+          key: key,
+          descriptor: descriptor,
+        );
+      }
     }
   }
 
@@ -210,6 +256,38 @@ final class McpPublishAdapter implements AgentAdapter {
     _publishedResources.add(key);
   }
 
+  void _publishResourceTemplateIntent({
+    required final AgentRegistry registry,
+    required final String key,
+    ResourceTemplateRegistration? registration,
+    AgentIntentDescriptor? descriptor,
+  }) {
+    final publish = publishResourceTemplate;
+    if (publish == null) return;
+    final uriTemplate = registration?.uriTemplate ?? descriptor!.resourceUri!;
+    publish(
+      ResourceTemplate(
+        uriTemplate: uriTemplate,
+        name: registration?.name ?? descriptor!.name,
+        description: registration?.description ?? descriptor!.description,
+        mimeType:
+            registration?.mimeType ?? descriptor!.mimeType ?? 'application/json',
+      ),
+      (final request) async {
+        final params = matchUriTemplate(uriTemplate, request.uri);
+        if (params == null) return null;
+        return agentResultToReadResourceResult(
+          await registry.invoke(
+            key,
+            <String, Object?>{'uri': request.uri, ...params},
+          ),
+          uri: request.uri,
+        );
+      },
+    );
+    _publishedResourceTemplates.add(key);
+  }
+
   void _unpublishKey(final String key, final AgentRegistry registry) {
     registry.unregister(key);
     if (_publishedTools.remove(key)) {
@@ -217,6 +295,9 @@ final class McpPublishAdapter implements AgentAdapter {
     }
     if (_publishedResources.remove(key)) {
       unpublishResource?.call(key);
+    }
+    if (_publishedResourceTemplates.remove(key)) {
+      // dart_mcp has no removeResourceTemplate; registry unregister is enough.
     }
   }
 
