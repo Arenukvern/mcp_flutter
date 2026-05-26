@@ -18,19 +18,23 @@
 ];
   for (var i = 0; i < tools.length; i += 1) {
     var tool = tools[i];
-    nav.modelContext.registerTool({
-      name: tool.name,
-      description: tool.description,
-      inputSchema: tool.inputSchema,
-      execute: function (args) {
-        return global.fetch(invokePath + '?name=' + encodeURIComponent(tool.name), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(args || {}),
-        }).then(function (response) {
-          return response.json();
-        });
-      },
-    });
+    try {
+      nav.modelContext.registerTool({
+        name: tool.name,
+        description: tool.description,
+        inputSchema: tool.inputSchema,
+        execute: function (args) {
+          return global.fetch(invokePath + '?name=' + encodeURIComponent(tool.name), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(args || {}),
+          }).then(function (response) {
+            return response.json();
+          });
+        },
+      });
+    } catch (e) {
+      // Hot restart / Dart bootstrap may have registered the same name.
+    }
   }
 })(typeof globalThis !== 'undefined' ? globalThis : window);

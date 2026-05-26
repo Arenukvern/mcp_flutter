@@ -52,6 +52,10 @@ context.registerTool(
 
 Pilot: `lib/src/tools/codegen/get_recent_logs_tool.dart` → `get_recent_logs`.
 
+Additional `fmt_*` tools via `@AgentTool` are **pilot-only** until a second tool
+passes low blast-radius review; prefer hand-written `ToolRegistration` for new
+server tools. Operator migration uses hand-written `fmt_migrate_agent_entries`.
+
 ## Monorepo development
 
 `pubspec_overrides.yaml` resolves sibling packages from local paths (not published).

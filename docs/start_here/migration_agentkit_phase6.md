@@ -1,8 +1,7 @@
 # Agentkit Phase 6 — MCPCallEntry → AgentCallEntry migration
 
-Phase 6 removes the dual authoring path. **Phase 6b** deletes `MCPCallEntry` from
-`mcp_toolkit`; **Phase 6f** adds operator tools so you can migrate app code ahead of
-that hard cut.
+Phase 6 removed the dual authoring path. **`MCPCallEntry` is deleted** from
+`mcp_toolkit`; use **`AgentCallEntry`** and the operator tools below for straggler repos.
 
 ## TL;DR
 
@@ -59,16 +58,30 @@ The migrator is **text-based**, not a full analyzer rewrite:
 4. **Bootstrap APIs** — `addMcpTool`, `MCPToolkitBinding.addEntries`, and
    `agent_client_install` accept **`AgentCallEntry` only** (Phase 6b hard cut).
 
-## MCP tool (TODO)
+## MCP tool
 
-`fmt_migrate_agent_entries` — report-only migration over host paths (`files[]` or
-`projectRoot`), optional `apply: true`. Planned for a follow-up slice; use the CLI
-for now.
+`fmt_migrate_agent_entries` — report-only by default (`projectRoot` required);
+set `apply: true` to rewrite files on the host. CLI equivalent:
+`flutter-mcp-toolkit migrate agent-entries`.
+
+## Platform hooks (native + web)
+
+One-time project setup (dogfood: [flutter_test_app/AGENTKIT_PLATFORM.md](../../flutter_test_app/AGENTKIT_PLATFORM.md)):
+
+```bash
+flutter-mcp-toolkit init agentkit-platform --project-dir path/to/flutter_app
+flutter-mcp-toolkit codegen sync --platform web,android,ios,macos,linux,windows \
+  --project-dir path/to/flutter_app
+```
+
+CI drift: add `--check` to both commands (also in `make check-contracts`).
 
 ## Related docs
 
 - [Phase 6 spec](../superpowers/specs/2026-05-26-agentkit-pre-extract-completion-design.md)
-- [Phase 6 plan](../superpowers/plans/2026-05-26-agentkit-phase6-pre-extract.md)
+- [What's next](../superpowers/WHATS_NEXT.md) — forward index
+- [Phase 7 extract](../superpowers/plans/2026-05-27-agentkit-phase7-extract.md) — active extract work
+- [Integration completion plan](../superpowers/plans/archive/2026-05-26-agentkit-integration-completion-next.md) — archived (complete 2026-05-27)
 - [v2 → v3 migration](./migration_v2_to_v3.mdx) — server-side `fmt_` prefix (unchanged)
 
 ## Validation
@@ -76,7 +89,5 @@ for now.
 ```bash
 cd mcp_server_dart && dart test test/migrate_agent_entries_test.dart
 flutter-mcp-toolkit migrate agent-entries --check path/to/your_app/lib
+flutter-mcp-toolkit init agentkit-platform --check --project-dir path/to/flutter_app
 ```
-
-After Phase 6b lands, `MCPCallEntry` and the bridge are removed; this CLI remains
-for any straggler repos until the major `mcp_toolkit` release is fully adopted.

@@ -1,0 +1,23 @@
+name: agentkit_schema
+description: PRE-RELEASE — Transport-agnostic agent result envelopes and JSON Schema validation.
+version: 0.1.0
+license: MIT
+repository: https://github.com/Arenukvern/mcp_flutter/tree/main/agentkit/packages/agentkit_schema
+issue_tracker: https://github.com/Arenukvern/mcp_flutter/issues
+homepage: https://github.com/Arenukvern/mcp_flutter/tree/main/agentkit/packages/agentkit_schema
+topics:
+  - mcp
+  - agents
+  - dart
+
+environment:
+  sdk: ">=3.11.0 <4.0.0"
+resolution: workspace
+
+dependencies:
+  meta: ^1.17.0
+
+dev_dependencies:
+  xsoulspace_lints: ^0.1.2
+  lints: ^6.1.0
+  test: ^1.31.1

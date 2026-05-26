@@ -5,16 +5,29 @@ environment:
 
 workspace:
   - packages/core
-  - packages/agentkit_schema
-  - packages/agentkit_core
-  - packages/agentkit_mcp
-  - packages/agentkit_codegen
-  - packages/agentkit_webmcp
-  - packages/agentkit_gemma
-  - packages/agentkit_apple
-  - packages/agentkit_android
-  - packages/agentkit_platform
-  - packages/agentkit_testing
   - packages/server_capability_kernel
   - packages/server_capability_core
   - mcp_server_dart
+
+# Until Phase 7.4 publish + 7.5 cutover, force local agentkit for all consumers.
+dependency_overrides:
+  agentkit_schema:
+    path: agentkit/packages/agentkit_schema
+  agentkit_core:
+    path: agentkit/packages/agentkit_core
+  agentkit_mcp:
+    path: agentkit/packages/agentkit_mcp
+  agentkit_codegen:
+    path: agentkit/packages/agentkit_codegen
+  agentkit_webmcp:
+    path: agentkit/packages/agentkit_webmcp
+  agentkit_gemma:
+    path: agentkit/packages/agentkit_gemma
+  agentkit_apple:
+    path: agentkit/packages/agentkit_apple
+  agentkit_android:
+    path: agentkit/packages/agentkit_android
+  agentkit_platform:
+    path: agentkit/packages/agentkit_platform
+  agentkit_testing:
+    path: agentkit/packages/agentkit_testing

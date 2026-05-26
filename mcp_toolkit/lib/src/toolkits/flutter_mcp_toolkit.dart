@@ -109,10 +109,7 @@ extension type OnViewScreenshotsEntry._(AgentCallEntry entry)
         final images = await ScreenshotService.takeScreenshots(
           compress: compress,
         );
-        final tree = ViewIntrospectionService.buildViewDetailsPayload(
-          captureHintsContributor: binding.captureHintsContributor,
-        );
-        final captureHints = tree['captureHints'];
+        final captureHints = binding.captureHintsContributor?.call();
         return MCPCallResult(
           message:
               'Screenshots taken for each view. '

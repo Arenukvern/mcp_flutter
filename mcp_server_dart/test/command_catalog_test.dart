@@ -44,6 +44,19 @@ void main() {
       expect((command as HotReloadFlutterCommand).force, isTrue);
     });
 
+    test('buildCommand resolves fmt_ prefix to bare exec names', () {
+      final bare = catalog.buildCommand('get_recent_logs', {});
+      final prefixed = catalog.buildCommand('fmt_get_recent_logs', {});
+      expect(bare.runtimeType, prefixed.runtimeType);
+    });
+
+    test('buildCommand resolves bare names to fmt_ catalog entries', () {
+      expect(
+        catalog.buildCommand('client_tool', {'toolName': 'x', 'arguments': {}}),
+        isA<RunClientToolCommand>(),
+      );
+    });
+
     test('capabilities expose feature and provider model', () {
       final capabilities = catalog.capabilities(
         configuration: const CoreRuntimeConfiguration(

@@ -30,7 +30,12 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
-    </application>
+    <!-- agentkit-platform: begin -->
+<meta-data
+    android:name="android.app.shortcuts"
+    android:resource="@xml/agentkit_shortcuts" />
+<!-- agentkit-platform: end -->
+</application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and
          https://developer.android.com/reference/android/content/Intent#ACTION_PROCESS_TEXT.

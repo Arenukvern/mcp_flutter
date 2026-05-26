@@ -1,6 +1,12 @@
 # Agentkit program tracker — updated by Closer agent after each phase gate.
 # Design spec: docs/superpowers/specs/2026-05-25-agentkit-design.md
 # Loop playbook: docs/superpowers/agentkit-self-closing-loop.md
+#
+# Package paths: libraries live under agentkit/packages/ since Phase 7.1 (2026-05-27).
+# Historical validation blocks below use pre-extract paths; re-run with:
+#   make check-agentkit-integration
+#   make dogfood-eval-static   # or make dogfood-eval with WS_URI
+#   cd agentkit && make test && make analyze
 
 program:
   id: agentkit
@@ -8,19 +14,31 @@ program:
   rollout_doc: docs/superpowers/plans/2026-05-25-agentkit-rollout.md
   self_closing_loop: docs/superpowers/agentkit-self-closing-loop.md
   hardening_spec: docs/superpowers/specs/2026-05-25-agentkit-phase5-hardening-design.md
-  status: complete_in_repo_integrated
+  status: complete_in_repo_product
+  product_gate: pass
   integration_gate: pass
   integration_phase: done
+  integration_hardening_complete: true
   active_phase: null
-  next_spec: docs/superpowers/specs/2026-05-26-agentkit-pre-extract-completion-design.md
+  active_work_plan: docs/superpowers/plans/2026-05-27-agentkit-phase7-extract.md
+  next_spec: docs/superpowers/plans/2026-05-27-agentkit-phase7-extract.md
   closure_report: docs/superpowers/closure/2026-05-26-agentkit-program-complete-in-repo.md
   integration_closure: docs/superpowers/closure/2026-05-26-agentkit-integration-complete.md
+  product_closure: docs/superpowers/closure/2026-05-26-agentkit-product-complete-in-repo.md
+  integration_completion_plan: docs/superpowers/plans/archive/2026-05-26-agentkit-integration-completion-next.md
+  ci_gates:
+    local: make check-contracts
+    github:
+      gating: .github/workflows/agentkit_eval.yml — job agentkit-static (make dogfood-eval-static)
+      weekly: agentkit_eval.yml — job agentkit-weekly (agentkit package test matrix + static battery)
+      informational: contract_gates.yml — codegen sync --check (continue-on-error)
+      gating_integration: .github/workflows/agentkit_eval.yml — job agentkit-integration (make check-agentkit-integration)
+      gap: make check-contracts (version sync, changelog) not on every PR
   deferred_work:
-    - Standalone agentkit monorepo split from mcp_flutter consumer (phase7)
-    - agentkit_platform Flutter plugin (agentkit://invoke via app_links)
-    - fmt_migrate_agent_entries MCP tool (CLI migrate shipped in 6f; MCP report-only deferred)
-    - init agentkit-platform CLI (hook injection; templates in agentkit_platform)
-    - generateWebAgentManifest wired from registry (manifest manual / codegen sync today)
+    - Phase 7.4 publish to pub.dev (--execute) then 7.5 hosted cutover then 7.7 integration on hosted
+    - Visual reconstruct maintenance only — checkpoint protocol (see plans/2026-05-26-visual-reconstruct-next.md)
+    - generateWebAgentManifest wired from live registry (manifest manual + codegen sync today)
+    - Second fmt_* @AgentTool codegen beyond pilot (documented in server_capability_core README)
     - Gemma product wiring (flutter_gemma in example/shipping app; agentkit_gemma stays example-only)
     - HarmonyOS NEXT / Intents Kit / hadss_intents
 
@@ -132,7 +150,7 @@ phases:
   - id: phase6
     title: Pre-extract completion (Bar D)
     spec: docs/superpowers/specs/2026-05-26-agentkit-pre-extract-completion-design.md
-    plan: docs/superpowers/plans/2026-05-26-agentkit-phase6-pre-extract.md
+    plan: docs/superpowers/plans/archive/2026-05-26-agentkit-phase6-pre-extract.md
     status: done
     bar: D
     last_gate: pass
@@ -165,7 +183,7 @@ phases:
       - Native + web platform emitters; CLI codegen sync
       - Contract tests fmt + dynamic + resource
       - Skills updated; grep gate for MCPCallEntry
-      - program.status complete_in_repo
+      - program.status complete_in_repo (phase 6 gate; product status is phase 8)
     non_goals:
       - flutter_gemma product wiring
       - HarmonyOS NEXT
@@ -178,5 +196,39 @@ phases:
 
   - id: phase7
     title: Standalone agentkit monorepo extract
-    status: pending
-    blocked_by: phase6
+    status: in_progress
+    blocked_by: phase8
+    sub_phases:
+      - { id: 7.1, title: Workspace scaffold + package move, status: done, last_gate_at: 2026-05-27 }
+      - { id: 7.2, title: Consumer path deps (no mcp_flutter workspace), status: done, last_gate_at: 2026-05-27 }
+      - { id: 7.3, title: Pub.dev metadata + dry-run, status: done, last_gate_at: 2026-05-27 }
+      - { id: 7.4, title: Publish to pub.dev, status: pending, notes: run publish_all.sh --execute }
+      - { id: 7.5, title: Hosted consumer cutover, status: pending, blocked_by: 7.4 }
+      - { id: 7.6, title: Publish automation, status: done, last_gate_at: 2026-05-27 }
+      - { id: 7.7, title: Integration on hosted versions, status: pending, blocked_by: 7.5 }
+    plan: docs/superpowers/plans/2026-05-27-agentkit-phase7-extract.md
+    spec: docs/superpowers/specs/2026-05-25-agentkit-design.md
+    adr: decisions/0009-agentkit-extract.mdx
+    validation:
+      - cd agentkit && make test
+      - cd agentkit && make analyze
+      - make check-agentkit-integration
+      - make publish-agentkit-dry-run
+      - make dogfood-eval-static
+      - make dogfood-eval   # requires WS_URI from make web-showcase
+
+  - id: phase8
+    title: In-repo product completion
+    spec: docs/superpowers/specs/2026-05-26-agentkit-pre-extract-completion-design.md
+    status: done
+    last_gate: pass
+    last_gate_at: 2026-05-26
+    closure_report: docs/superpowers/closure/2026-05-26-agentkit-product-complete-in-repo.md
+    exit_criteria:
+      - init agentkit-platform with --check
+      - agentkit_platform plugin + app_links dogfood
+      - codegen sync --check in CI
+      - fmt_migrate_agent_entries shipped
+      - agentkit_testing Client DX pattern
+      - MCPCallEntry grep gate green
+      - program.status complete_in_repo_product

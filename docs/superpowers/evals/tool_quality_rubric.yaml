@@ -1,0 +1,208 @@
+# Machine-readable rubric for MCP / agentkit tool quality dogfood evals.
+# Consumed by: tool/evals/run_dogfood_eval.sh, agents, Closer gates.
+# Human overview: docs/superpowers/evals/README.md
+
+version: 1
+name: mcp_agentkit_tool_quality
+description: >
+  Scores flutter-mcp-toolkit + agentkit integration on flutter_test_app.
+  Designed for iterative runs: each battery produces comparable dimension scores.
+
+max_score: 100
+pass_threshold: 80
+warn_threshold: 90
+
+dimensions:
+  connectivity:
+    weight: 20
+    pass_min: 16
+    description: VM/WebSocket reachability, toolkit extensions, dynamic registry.
+    signals:
+      - check: validate_runtime.doctor.vm_target_reachable
+        critical: true
+      - check: validate_runtime.doctor.mcp_toolkit_extensions
+        critical: true
+      - check: validate_runtime.doctor.dynamic_registry_available
+        critical: false
+    iteration_fields:
+      - connectivity_score
+      - vm_target_reachable
+      - extensions_ok
+      - extensions_diagnostic
+      - dynamic_registry_tools
+
+  schema_validity:
+    weight: 10
+    pass_min: 8
+    description: Tool surface contracts, JSON envelopes, doctor check shape.
+    signals:
+      - check: validate_runtime.envelope.ok
+        critical: true
+      - check: validate_runtime.steps.schema
+        critical: false
+      - check: contracts.expected_tool_surface
+        critical: false
+        note: Run via make check-contracts outside battery when gating releases.
+    iteration_fields:
+      - schema_validity_score
+      - validate_runtime_ok
+
+  handler_correctness:
+    weight: 20
+    pass_min: 16
+    description: Exec/MCP handlers return expected payloads; no silent step failures.
+    signals:
+      - check: validate_runtime.data.summary.ok
+        critical: true
+      - check: validate_runtime.steps_failed
+        critical: true
+      - check: agentkit_testing.entry_invoke
+        critical: false
+        optional: true
+    iteration_fields:
+      - handler_correctness_score
+      - steps_failed
+      - extra_exec
+
+  capture_quality:
+    weight: 10
+    pass_min: 8
+    description: Screenshot/layout capture truth; backend matches target platform.
+    signals:
+      - check: validate_runtime.capture_ui_snapshot
+        critical: true
+      - check: validate_runtime.summary.captureBackend
+        critical: false
+      - warning: visual_capture_truth_mode
+        deduct: 2
+    iteration_fields:
+      - capture_quality_score
+      - capture_ok
+      - capture_step
+      - captureBackend
+      - capturePlatformViewsDetected
+
+  visual_fidelity:
+    weight: 10
+    pass_min: 8
+    description: >
+      Warm-path guild compare — capture on /visual-reconstruct vs
+      flutter_test_app golden. Canonical: warm_path_direct.hs.yaml with
+      DOGFOOD_VISUAL=1 and screenshot_mode flutter_layer (Chrome :8080).
+    signals:
+      - check: harness.visual_reconstruct_warm_path
+        critical: false
+        note: >
+          flutter_harness harness/examples/visual_reconstruct/warm_path_direct.hs.yaml
+          (not warm_path.hs.yaml); app DOGFOOD_VISUAL=1; verdict pass + checkpoint autonomous;
+          copy to eval_runs/<id>/visual_verdict.yaml.
+      - check: visual_reconstruct.compare_cli
+        critical: false
+        note: Fallback when harness root missing; same golden + default_guild profile.
+      - warning: visual_fidelity_skipped
+        deduct: 10
+    iteration_fields:
+      - visual_fidelity_score
+      - visual_compare_pass
+      - visual_guild_weighted_score
+      - visual_verdict_path
+      - visual_harness_exit
+
+  webmcp_parity:
+    weight: 10
+    pass_min: 8
+    description: Web agent manifest, CDP capture, fmt_ vs bare exec naming parity.
+    signals:
+      - check: codegen_sync.web
+        critical: true
+      - check: validate_runtime.web_browser_capture
+        critical: false
+        when_device: chrome
+      - warning: exec_fmt_prefix_confusion
+        deduct: 3
+    iteration_fields:
+      - webmcp_parity_score
+      - web_manifest_ok
+
+  agentkit_authoring:
+    weight: 10
+    pass_min: 8
+    description: Platform hooks, codegen drift, AgentCallEntry migration hygiene.
+    signals:
+      - check: init_agentkit_platform.check
+        critical: true
+      - check: codegen_sync.all_platforms
+        critical: true
+      - check: migrate_agent_entries.check
+        critical: true
+    iteration_fields:
+      - agentkit_authoring_score
+      - agentkit_hooks_ok
+      - codegen_sync_ok
+      - init_platform_ok
+      - migrate_entries_ok
+
+  docs_truth:
+    weight: 10
+    pass_min: 8
+    description: Operator docs match CLI flags, doctor copy, and observed behavior.
+    signals:
+      - check: tool.contracts.check_docs_drift
+        critical: false
+        note: Optional extended gate; not in default battery.
+      - warning: doctor_copy_mismatch
+        deduct: 5
+      - recommendation: from fix_recommendations
+    iteration_fields:
+      - docs_truth_score
+      - warnings
+
+# Fields every iteration block should carry (dogfood + eval_run snapshots).
+per_iteration_tracking:
+  required:
+    - iteration
+    - score
+    - ran_at
+    - device
+    - dimension_scores
+    - errors
+    - warnings
+  optional:
+    - flags
+    - focus
+    - ws_uri
+    - artifacts
+    - extra_exec
+
+# Aggregated across iterations (tracker tail).
+program_summary_tracking:
+  required:
+    - best_score
+    - worst_score
+    - mean_score
+    - iterations_count
+    - recurring_errors
+    - recurring_warnings
+    - fix_recommendations
+    - verdict
+  verdict_values:
+    - pass
+    - pass_with_warnings
+    - fail
+    - blocked_no_runtime
+
+# Legacy dogfood weights (iterations 1–4); mapped into dimensions for comparison.
+legacy_scoring:
+  max_per_iteration: 100
+  weights:
+    validate_runtime_ok: 40
+    doctor_critical_pass: 15
+    toolkit_extensions: 20
+    capture_evidence: 15
+    agentkit_hooks: 10
+  maps_to_dimensions:
+    validate_runtime_ok: [schema_validity, handler_correctness]
+    doctor_critical_pass: [connectivity]
+    toolkit_extensions: [connectivity]
+    capture_evidence: [capture_quality, visual_fidelity]
+    agentkit_hooks: [agentkit_authoring]

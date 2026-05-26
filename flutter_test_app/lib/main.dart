@@ -2,11 +2,16 @@
 
 import 'dart:async';
 
+import 'package:agentkit_platform/agentkit_platform_flutter.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
+import 'package:test_app/agent_dogfood_entries.dart';
+import 'package:test_app/agent_web_mcp_dogfood.dart';
 import 'package:test_app/agent_state.dart';
 import 'package:test_app/platform_view_showcase.dart';
 import 'package:test_app/showcase_screen.dart';
+import 'package:test_app/visual_reconstruct_screen.dart';
 
 var _initialEntriesRegistered = false;
 var _delayedEntriesRegistered = false;
@@ -19,6 +24,15 @@ Future<void> main({final bool enableDelayedMcpRegistration = true}) async {
     ..initializeFlutterToolkit();
 
   await _registerInitialMCPTools();
+  if (!kIsWeb) {
+    unawaited(
+      AgentkitInvokeLinkListener(
+        onQualifiedName: (final name) {
+          debugPrint('agentkit invoke: $name');
+        },
+      ).start(),
+    );
+  }
   if (enableDelayedMcpRegistration) {
     // Mirror the previous bootstrap timing: a brief delay so a remote
     // observer can witness the dynamic-registry update event.
@@ -111,9 +125,18 @@ Future<void> _registerInitialMCPTools() async {
     ),
   );
 
+  final dogfoodEntries = buildAgentDogfoodEntries();
   await binding.addEntries(
-    entries: {fibonacciEntry, appStateEntry, agentStateEntry},
+    entries: {
+      fibonacciEntry,
+      appStateEntry,
+      agentStateEntry,
+      ...dogfoodEntries,
+    },
   );
+  if (kIsWeb) {
+    await wireWebMcpPublishAdapterDogfood(dogfoodEntries);
+  }
   print('Initial MCP tools and resources registered');
 }
 
@@ -154,6 +177,10 @@ Future<void> _registerDelayedMCPTools() async {
 
 // ---- App ---------------------------------------------------------------------
 
+/// When true (e.g. `--dart-define=DOGFOOD_VISUAL=true`), boot on the visual
+/// reconstruct fixture for warm-path guild compare without HS navigation.
+const _dogfoodVisual = bool.fromEnvironment('DOGFOOD_VISUAL');
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -169,6 +196,10 @@ class MyApp extends StatelessWidget {
       useMaterial3: true,
       scaffoldBackgroundColor: const Color(0xFFFAFAFA),
     ),
-    home: const ShowcaseScreen(),
+    routes: {
+      '/': (_) => const ShowcaseScreen(),
+      '/visual-reconstruct': (_) => const VisualReconstructScreen(),
+    },
+    initialRoute: _dogfoodVisual ? '/visual-reconstruct' : '/',
   );
 }

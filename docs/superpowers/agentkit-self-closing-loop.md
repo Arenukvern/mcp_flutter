@@ -20,7 +20,17 @@
 
 ---
 
-## Loop (until `program.status == complete`)
+## Program status ladder
+
+| Status | Meaning |
+|--------|---------|
+| `complete_in_repo` | Phase 6 Bar D gate (registry cut, emitters, migration CLI) |
+| `complete_in_repo_product` | Phase 8 product gate (init, plugin, `fmt_migrate`, dogfood CI) — **current in-repo ceiling** |
+| Phase 7 extract | Standalone monorepo + pub.dev — **in progress** (7.1–7.3, 7.6 done; 7.4–7.5, 7.7 pending — see [tracker](tracker/agentkit-rollout.yaml)) |
+
+Do not treat closure footers using `complete_in_repo_integrated` as tracker values.
+
+## Loop (until in-repo product + optional extract)
 
 ```text
 ┌─────────────────────────────────────────────────────────────┐
@@ -64,14 +74,13 @@ Run every command listed in the phase plan **Task N: exit verification** and in 
 
 ```bash
 cd /Users/anton/mcp/mcp_flutter
-dart test packages/agentkit_schema
-dart test packages/agentkit_core
-dart test packages/agentkit_testing
-dart test packages/server_capability_kernel
+make check-agentkit-integration
+cd agentkit && make test && make analyze
 cd mcp_server_dart && dart test
-dart analyze packages/agentkit_schema packages/agentkit_core mcp_toolkit
 cd mcp_server_dart && dart run bin/flutter_mcp_cli.dart schema --name fmt_wait
 cd mcp_server_dart && dart run bin/flutter_mcp_cli.dart capabilities
+make dogfood-eval-static
+# Runtime dogfood (optional): make web-showcase → export WS_URI → make dogfood-eval
 ```
 
 Add phase-specific commands when the plan introduces them.

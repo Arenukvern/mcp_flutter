@@ -29,6 +29,7 @@ fmt_hot_restart_flutter
 fmt_hover
 fmt_inspect_widget_at_point
 fmt_long_press
+fmt_migrate_agent_entries
 fmt_navigate
 fmt_press_key
 fmt_scroll

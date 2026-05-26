@@ -100,21 +100,25 @@ ToolRegistration bridge (Phase 1)
 ## Package layout
 
 ```text
-agentkit/
-├── agentkit_schema/       # InputSchema, validation, AgentResult, envelope, AgentWireArgs
-├── agentkit_core/         # Intent, Registry, Runtime, Module, Adapter
-├── agentkit_codegen/      # @AgentTool, build_runner, agent_manifest.json
-├── agentkit_testing/      # Fakes, contract harness
-├── agentkit_mcp/          # Only package importing dart_mcp
-├── agentkit_webmcp/       # navigator.modelContext (browser); VM uses test fakes
-├── agentkit_gemma/        # flutter_gemma bridge (optional dependency)
-├── agentkit_apple/        # Phase 3: Swift from manifest
-└── agentkit_android/      # Phase 3: XML from manifest
+agentkit/                          # Standalone workspace (Phase 7 extract)
+├── pubspec.yaml                   # workspace root
+└── packages/
+    ├── agentkit_schema/          # InputSchema, validation, AgentResult, envelope
+    ├── agentkit_core/            # Intent, Registry, Runtime, Module, Adapter
+    ├── agentkit_codegen/          # @AgentTool, build_runner, agent_manifest.json
+    ├── agentkit_testing/          # Fakes, contract harness
+    ├── agentkit_mcp/              # Only package importing dart_mcp
+    ├── agentkit_webmcp/           # navigator.modelContext (browser)
+    ├── agentkit_gemma/            # flutter_gemma bridge (optional)
+    ├── agentkit_apple/            # Swift from manifest
+    ├── agentkit_android/          # XML from manifest
+    └── agentkit_platform/         # Emitters, plugin, WebMCP bootstrap
 
-mcp_flutter/ (consumer, then sibling repo)
+mcp_flutter/ (consumer monorepo)
 ├── mcp_server_dart
-├── packages/ (capability core/kernel → agentkit modules)
-└── mcp_toolkit (client SDK)
+├── packages/server_capability_*   # capability kernel/core (path → agentkit/*)
+├── mcp_toolkit                    # client SDK (path → agentkit/*)
+└── flutter_test_app               # dogfood app
 ```
 
 ---
@@ -612,10 +616,10 @@ Agentkit work uses a **self-closing** agent pair so phases do not stall on unver
 
 | Role | Responsibility |
 |------|----------------|
-| **Implementer** | Execute the active [phase plan](plans/2026-05-25-agentkit-phase1.md) tasks |
+| **Implementer** | Execute [active work plan](plans/2026-05-27-agentkit-phase7-extract.md) per [tracker](tracker/agentkit-rollout.yaml); see [WHATS_NEXT](WHATS_NEXT.md) |
 | **Closer** | Verify exit criteria, audit spec coverage, write closure report; **regenerate** the same phase plan on failure or the **next** phase plan on success |
 
-Repeat until [rollout tracker](tracker/agentkit-rollout.yaml) sets `program.status: complete`.
+Repeat until [rollout tracker](tracker/agentkit-rollout.yaml) sets `program.status: complete_in_repo_product` (in-repo product); Phase 7 extract is separate.
 
 **Playbook:** [agentkit-self-closing-loop.md](agentkit-self-closing-loop.md)  
 **Program overview:** [plans/2026-05-25-agentkit-rollout.md](plans/2026-05-25-agentkit-rollout.md)

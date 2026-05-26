@@ -104,3 +104,10 @@ jobs:
       - name: Check tool prefix
         continue-on-error: true
         run: bash tool/contracts/check_tool_prefix.sh
+
+      - name: Agentkit platform codegen drift (flutter_test_app)
+        run: |
+          cd mcp_server_dart && flutter pub get
+          dart run bin/flutter_mcp_toolkit.dart codegen sync \
+            --platform web,android,ios,macos,linux,windows \
+            --project-dir ../flutter_test_app --check

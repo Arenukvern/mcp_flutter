@@ -613,7 +613,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
           args: {'compress': command.compress},
         );
         extensionJson = _map(result.json);
-      } on Exception catch (e) {
+      } on Object catch (e) {
         return CoreResult.failure(
           code: CoreErrorCode.getScreenshotsFailed,
           message: 'Failed to get screenshots: $e',
@@ -724,7 +724,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
         mcpToolkitExtKeys.viewDetails,
       );
       return _hintsFromPayload(_map(result.json));
-    } on Exception {
+    } on Object {
       return PlatformViewHints.none;
     }
   }

@@ -42,3 +42,20 @@ android {
 flutter {
     source = "../.."
 }
+
+// agentkit-platform: begin
+tasks.named("preBuild").configure {
+    doFirst {
+        exec {
+            workingDir = rootProject.layout.projectDirectory.dir("../../").asFile
+            commandLine(
+                "flutter-mcp-toolkit",
+                "codegen",
+                "sync",
+                "--platform",
+                "android",
+            )
+        }
+    }
+}
+// agentkit-platform: end

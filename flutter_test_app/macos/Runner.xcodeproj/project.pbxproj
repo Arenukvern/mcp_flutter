@@ -238,6 +238,7 @@
 			buildConfigurationList = 33CC10FB2044A3C60003C045 /* Build configuration list for PBXNativeTarget "Runner" */;
 			buildPhases = (
 				2CA556FD50FEC9BFEBE6C57C /* [CP] Check Pods Manifest.lock */,
+				A7F3E91B2C4D5E6F8A9B0C1D /* Agentkit Codegen */,
 				33CC10E92044A3C60003C045 /* Sources */,
 				33CC10EA2044A3C60003C045 /* Frameworks */,
 				33CC10EB2044A3C60003C045 /* Resources */,
@@ -325,6 +326,22 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		A7F3E91B2C4D5E6F8A9B0C1D /* Agentkit Codegen */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Agentkit Codegen";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# agentkit-platform: begin\nbash \"$SRCROOT/agentkit_codegen.sh\"\n# agentkit-platform: end\n";
+			showEnvVarsInLog = 0;
+		};
 		2CA556FD50FEC9BFEBE6C57C /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;

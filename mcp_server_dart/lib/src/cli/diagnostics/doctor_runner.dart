@@ -420,22 +420,29 @@ final class DoctorRunner {
         requestedMode: screenshotModeAuto,
       );
       final actualMode = result.actualMode ?? 'unavailable';
-      final status = switch (broker.effectivePlatform) {
-        'macos' when actualMode == screenshotModeDesktopWindow =>
-          DoctorCheckStatus.pass,
-        'web' when actualMode == screenshotModeFlutterLayer =>
-          DoctorCheckStatus.pass,
+      final platform = broker.effectivePlatform;
+      final status = switch ((platform, actualMode)) {
+        ('macos', screenshotModeDesktopWindow) => DoctorCheckStatus.pass,
+        ('web', screenshotModeFlutterLayer) => DoctorCheckStatus.pass,
+        ('web', screenshotModeDesktopWindow) => DoctorCheckStatus.pass,
         _ => DoctorCheckStatus.warn,
+      };
+      final diagnostic = switch ((platform, actualMode)) {
+        ('web', screenshotModeDesktopWindow) =>
+          'Web visual capture uses Chrome CDP ($screenshotModeDesktopWindow); '
+          'expected for web_browser backend (not native window pixels).',
+        _ =>
+          'Visual truth path requested $screenshotModeAuto -> actual $actualMode'
+          '${result.fallbackReason == null ? '' : ' (${result.fallbackReason})'}.',
       };
       return _check(
         id: 'visual_capture_truth_mode',
         status: status,
         critical: false,
-        diagnostic:
-            'Visual truth path requested $screenshotModeAuto -> actual $actualMode'
-            '${result.fallbackReason == null ? '' : ' (${result.fallbackReason})'}.',
-        fixCommand:
-            'Grant capture permission or adjust the target/capture mode before relying on visual assertions.',
+        diagnostic: diagnostic,
+        fixCommand: platform == 'web' && actualMode == screenshotModeDesktopWindow
+            ? 'No action needed for web_browser CDP capture; use --flutter-device chrome in validate-runtime.'
+            : 'Grant capture permission or adjust the target/capture mode before relying on visual assertions.',
       );
     } on Object catch (error) {
       logger(

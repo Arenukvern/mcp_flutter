@@ -1,6 +1,6 @@
 # Agentkit Phase 6 — Pre-extract completion (design)
 
-**Status:** Approved (2026-05-26)  
+**Status:** Delivered in-repo (2026-05-26); Bar **D** met.  
 **Bar:** **D** — Strict (**B**) + Swift/XML emitters; **skip Gemma product only**; **hard cut** on legacy APIs with documented migration + CLI/MCP migration tools + updated skills.  
 **Branch policy:** All work on `feat/agentkit-phase1-3` (or successor) until gate passes; **no standalone repo extract until Phase 7.**
 
@@ -11,6 +11,8 @@
 ## Summary
 
 Phase 6 finishes agentkit **inside mcp_flutter** so the codebase matches the approved design spec: one registry invoke path, no lingering `MCPCallEntry` public API, real platform emitters, contract tests, and operator-facing migration. After the Phase 6 gate (`program.status: complete_in_repo`), Phase 7 may extract packages to a standalone monorepo.
+
+**Phase 8 (in-repo product, 2026-05-26):** Operator tools deferred from the phase 6 narrative shipped in a follow-up gate — `init agentkit-platform`, `agentkit_platform` Flutter plugin + `app_links`, `fmt_migrate_agent_entries`, CI `codegen sync --check` on `flutter_test_app`. Tracker: `phase8` → `program.status: complete_in_repo_product`. See [product closure](../closure/2026-05-26-agentkit-product-complete-in-repo.md).
 
 ---
 
@@ -99,7 +101,7 @@ Phase 6 does **not** redesign this graph; it removes bypasses, completes emitter
 
 **Principle:** `agent_manifest.json` is canonical. **`codegen sync`** writes into the Flutter project tree; **`init agentkit-platform`** injects Gradle/Xcode/`index.html` hooks once. No manual copy into Xcode or Android Studio.
 
-**Package:** `packages/agentkit_platform/` — emitters, `AgentPlatformBuilder` (build_runner), CLI sync, thin `agentkit_platform` Flutter plugin (URI / invoke route).
+**Package:** `agentkit/packages/agentkit_platform/` — emitters, `AgentPlatformBuilder` (build_runner), CLI sync, thin `agentkit_platform` Flutter plugin (URI / invoke route).
 
 #### Platform scope
 
@@ -151,7 +153,7 @@ flutter-mcp-toolkit init agentkit-platform # one-time hooks
 #### Validation
 
 - Golden tests per emitter (web manifest JSON, JS bundle shape, XML, Swift snippet).  
-- `dart test packages/agentkit_platform`  
+- `cd agentkit && dart test packages/agentkit_platform`  
 - Example Flutter app: web build registers tools in DevTools / `modelContextTesting` where available.
 
 **Non-goals (6d)**
@@ -234,12 +236,9 @@ flutter-mcp-toolkit init agentkit-platform # one-time hooks
 **Validation (full gate)**
 
 ```bash
-dart test packages/agentkit_schema packages/agentkit_core packages/agentkit_testing
-dart test packages/agentkit_mcp packages/agentkit_webmcp packages/agentkit_apple packages/agentkit_android packages/agentkit_codegen
-dart test packages/server_capability_kernel
-cd mcp_server_dart && dart test
-dart analyze packages/agentkit_* mcp_toolkit mcp_server_dart
-# Optional: flutter-mcp-toolkit migrate agent-entries --check on flutter_test_app
+make check-agentkit-integration
+make dogfood-eval-static
+# Runtime: make web-showcase → export WS_URI → make dogfood-eval
 ```
 
 ---
@@ -269,7 +268,7 @@ dart analyze packages/agentkit_* mcp_toolkit mcp_server_dart
 | Client API | `mcp_toolkit/lib/src/mcp_models.dart`, `mcp_call_entry_bridge.dart` (delete), binding, toolkits, `agent_client_install.dart` |
 | Test app | `flutter_test_app/lib/**` |
 | Server | `flutter_inspector.dart`, `dynamic_registry_integration.dart`, capability core codegen |
-| Platform sync | `packages/agentkit_platform/`, `packages/agentkit_apple/`, `packages/agentkit_android/`, `packages/agentkit_webmcp/` |
+| Platform sync | `agentkit/packages/agentkit_platform/`, `agentkit/packages/agentkit_apple/`, `agentkit/packages/agentkit_android/`, `agentkit/packages/agentkit_webmcp/` |
 | Web artifacts | `web/manifest.json`, `web/agentkit_webmcp.generated.js`, `web/index.html` snippet |
 | CLI | `mcp_server_dart/bin/flutter_mcp_toolkit.dart`, `lib/src/cli/migrate_agent_entries_command.dart` |
 | MCP migrate tool | new capability or `server_capability_core` command |
@@ -302,4 +301,4 @@ dart analyze packages/agentkit_* mcp_toolkit mcp_server_dart
 
 Bar **D** approved 2026-05-26. Platform **Option 1** + Web **C** + skip HarmonyOS NEXT approved 2026-05-26.
 
-**Implementation plan:** [2026-05-26-agentkit-phase6-pre-extract.md](../plans/2026-05-26-agentkit-phase6-pre-extract.md) (update 6d tasks to match this section).
+**Implementation plan (archived):** [2026-05-26-agentkit-phase6-pre-extract.md](../plans/archive/2026-05-26-agentkit-phase6-pre-extract.md). **Forward work:** [WHATS_NEXT](../WHATS_NEXT.md) · [Phase 7 extract](../plans/2026-05-27-agentkit-phase7-extract.md). Integration hardening (archived): [integration completion plan](../plans/archive/2026-05-26-agentkit-integration-completion-next.md).

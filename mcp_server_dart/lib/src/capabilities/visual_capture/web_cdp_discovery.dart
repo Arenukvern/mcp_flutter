@@ -46,8 +46,9 @@ Future<List<int>> discoverChromeDebugPortsFromProcesses() async {
     return const <int>[];
   }
   try {
+    // macOS truncates `args` without -ww; Chrome command lines exceed the limit.
     final result = Platform.isMacOS
-        ? await Process.run('ps', const <String>['-eo', 'args'])
+        ? await Process.run('ps', const <String>['-ww', '-eo', 'args'])
         : await Process.run('ps', const <String>['-eo', 'args']);
     if (result.exitCode != 0) {
       return const <int>[];

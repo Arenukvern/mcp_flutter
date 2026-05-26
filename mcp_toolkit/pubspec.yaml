@@ -6,11 +6,11 @@ environment:
   sdk: ">=3.11.0 <4.0.0"
 dependencies:
   agentkit_core:
-    path: ../packages/agentkit_core
+    path: ../agentkit/packages/agentkit_core
   agentkit_schema:
-    path: ../packages/agentkit_schema
+    path: ../agentkit/packages/agentkit_schema
   agentkit_platform:
-    path: ../packages/agentkit_platform
+    path: ../agentkit/packages/agentkit_platform
   collection: ^1.19.1
   dart_mcp: ^0.5.0
   flutter_mcp_toolkit_core:
@@ -23,9 +23,9 @@ dependencies:
   universal_io: ^2.3.1
 dependency_overrides:
   agentkit_core:
-    path: ../packages/agentkit_core
+    path: ../agentkit/packages/agentkit_core
   agentkit_schema:
-    path: ../packages/agentkit_schema
+    path: ../agentkit/packages/agentkit_schema
 dev_dependencies:
   flutter_test:
     sdk: flutter

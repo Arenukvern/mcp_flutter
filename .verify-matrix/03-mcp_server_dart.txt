@@ -1,0 +1,353 @@
+00:00 +0: loading test/codegen_fmt_tool_host_test.dart
+00:00 +0: test/codegen_fmt_tool_host_test.dart: McpHost registry invokes fmt_get_recent_logs from @AgentTool codegen
+00:00 +1: test/agent_registry_host_test.dart: MCP publish invokes AgentRegistry not handler directly
+00:00 +2: test/agent_registry_host_test.dart: registry invoke returns failure when tool missing
+00:00 +3: test/agent_registry_host_test.dart: registerPublishedResource registers in agentRegistry and can be invoked
+00:00 +4: test/platform_view_hints_test.dart: re-exports core detector for server consumers
+00:00 +5: test/tool_surface_snapshot_test.dart: published tool surface matches expected_tool_surface.txt
+00:00 +6: test/web_cdp_discovery_test.dart: parseChromeDebugPortsFromProcessList extracts remote-debugging-port
+00:00 +7: test/web_cdp_discovery_test.dart: selectCdpPageTarget prefers localhost and web-port
+00:00 +8: test/web_cdp_discovery_test.dart: discoverWebCdpEndpoint uses CLI override and /json/list
+00:00 +9: test/error_summary_provider_test.dart: resolveExplainErrorsSummary skipped when includeSummary is false
+00:00 +10: test/web_cdp_discovery_test.dart: parseMachineEvent reads browserDebugPort from nested fields
+00:00 +11: test/web_cdp_discovery_test.dart: parseMachineEvent reads browserDebugPort from nested fields
+00:00 +12: test/error_summary_provider_test.dart: resolveExplainErrorsSummary maps unexpected throw to failed unexpected
+00:00 +13: test/web_cdp_discovery_test.dart: sticky connection target port is tried before process scan
+00:00 +14: test/web_cdp_discovery_test.dart: sticky connection target port is tried before process scan
+00:00 +15: test/web_cdp_discovery_test.dart: sticky connection target port is tried before process scan
+00:00 +16: test/web_cdp_discovery_test.dart: sticky connection target port is tried before process scan
+00:00 +17: test/web_cdp_discovery_test.dart: sticky connection target port is tried before process scan
+00:00 +18: test/contract/agentkit_contract_test.dart: agentkit registry-MCP contracts fmt_get_recent_logs registry invoke matches MCP adapter envelope
+00:00 +19: test/contract/agentkit_contract_test.dart: agentkit registry-MCP contracts dynamic fake intent registers and round-trips via MCP adapter
+00:00 +20: test/contract/agentkit_contract_test.dart: agentkit registry-MCP contracts application_errors resource template round-trips registry and MCP read
+00:00 +21: test/desktop_window_screenshot_test.dart: inferMacOsAppCandidates reads bundle and AppInfo candidates
+00:00 +22: test/desktop_window_screenshot_test.dart: MacOsDesktopWindowScreenshotService returns null for unsupported host devices
+00:00 +23: test/desktop_window_screenshot_test.dart: MacOsDesktopWindowScreenshotService ios on macOS host uses simulator candidates and focus
+00:00 +24: test/desktop_window_screenshot_test.dart: MacOsDesktopWindowScreenshotService chrome on macOS host uses browser candidates and focus
+00:00 +25: test/desktop_window_screenshot_test.dart: MacOsDesktopWindowScreenshotService captures base64 PNG payload from swift helper output
+00:00 +26: test/desktop_window_screenshot_test.dart: MacOsDesktopWindowScreenshotService compiled helper source exits explicitly after emitting payload
+00:00 +27: test/desktop_window_screenshot_test.dart: MacOsDesktopWindowScreenshotService surfaces structured helper failures with details
+00:01 +28: test/desktop_window_screenshot_test.dart: MacOsDesktopWindowScreenshotService status/request/open-settings parse helper payloads
+00:01 +29: test/desktop_window_screenshot_test.dart: MacOsDesktopWindowScreenshotService helper cache key is stable for identical source
+00:01 +30: test/web_cdp_client_test.dart: WebCdpScreenshotClient returns PNG bytes from Page.captureScreenshot
+00:01 +31: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:01 +32: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:01 +33: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:01 +34: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:01 +35: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:01 +36: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:01 +37: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:01 +38: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:01 +39: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:01 +40: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:01 +41: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:01 +42: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:01 +43: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:01 +44: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:01 +45: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:01 +46: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:01 +47: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:01 +48: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:01 +49: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:01 +50: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:01 +51: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:01 +52: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:01 +53: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:01 +54: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:01 +55: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:01 +56: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:01 +57: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:01 +58: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:01 +59: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:01 +60: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:01 +61: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:01 +62: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:01 +63: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:02 +64: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:02 +65: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:02 +66: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:02 +67: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:02 +68: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:02 +69: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:02 +70: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:02 +71: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:03 +72: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:03 +73: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:03 +74: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:03 +75: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:03 +76: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:03 +77: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:03 +78: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:03 +79: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:03 +80: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:03 +81: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:03 +82: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:03 +83: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:03 +84: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:03 +85: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:03 +86: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:03 +87: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:03 +88: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:03 +89: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:03 +90: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:03 +91: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:03 +92: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:03 +93: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:03 +94: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:03 +95: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:03 +96: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:03 +97: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:03 +98: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:03 +99: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+=== flutter-mcp-toolkit: paste this into your lib/main.dart ===
+import 'dart:async';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_mcp_toolkit/flutter_mcp_toolkit.dart';
+
+void main() {
+  runZonedGuarded(
+    () {
+      WidgetsFlutterBinding.ensureInitialized();
+      MCPToolkitBinding.instance
+        ..initialize()
+        ..initializeFlutterToolkit();
+      runApp(const MyApp());
+    },
+    (error, stack) =>
+        MCPToolkitBinding.instance.handleZoneError(error, stack),
+  );
+}
+
+=== end ===
+00:04 +100: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+No pubspec.yaml at /var/folders/y_/4l1gpw3x65df1_lbynvsf4q40000gp/T/codegen_init_empty_ofvuMN. Run from a Flutter project root.
+00:04 +101: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+Mode: mcp
+OK: skills written for claude-code
+00:04 +102: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+Mode: cli
+OK: skills written for all
+00:04 +103: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:04 +104: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:04 +105: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:04 +106: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:04 +107: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:04 +108: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:04 +109: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:04 +110: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:04 +111: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:04 +112: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:04 +113: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:04 +114: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:04 +115: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:04 +116: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:04 +117: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:04 +118: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:04 +118: test/flutter_mcp_example_app_integration_test.dart: flutter_inspector_mcp with flutter_test_app new visual APIs work via MCP tools and resources
+  Skip: Set RUN_FLUTTER_MCP_INTEGRATION=1 to run
+00:04 +118 ~1: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:04 +118 ~1: test/flutter_mcp_example_app_integration_test.dart: flutter_inspector_mcp with flutter_test_app every fmt_* MCP tool dispatches against the live showcase
+  Skip: Set RUN_FLUTTER_MCP_INTEGRATION=1 to run
+00:04 +118 ~2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:05 +119 ~2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:05 +120 ~2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:05 +121 ~2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:05 +121 ~2 -1: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:05 +121 ~2 -1: test/skill_assets_test.dart: SkillAssets exposes 9 skill bodies [E]
+  Expected: <9>
+    Actual: <10>
+  
+  package:matcher                  expect
+  test/skill_assets_test.dart 8:7  main.<fn>.<fn>
+  
+00:05 +122 ~2 -1: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:05 +123 ~2 -1: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:05 +123 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:05 +123 ~2 -2: test/skill_assets_test.dart: SkillAssets skill ids match the expected list [E]
+  Expected: Set:[
+              'flutter-mcp-toolkit-guide',
+              'flutter-mcp-toolkit-setup',
+              'flutter-mcp-toolkit-inspect',
+              'flutter-mcp-toolkit-control',
+              'flutter-mcp-toolkit-debug',
+              'flutter-mcp-toolkit-custom-tools',
+              'flutter-mcp',
+              'flutter-mcp-cli-runtime-validation',
+              'flutter-mcp-toolkit-repo-maintainer'
+            ]
+    Actual: Set:[
+              'flutter-mcp-toolkit-guide',
+              'flutter-mcp-toolkit-setup',
+              'flutter-mcp-toolkit-inspect',
+              'flutter-mcp-toolkit-control',
+              'flutter-mcp-toolkit-debug',
+              'flutter-mcp-toolkit-custom-tools',
+              'flutter-mcp-toolkit-agentkit-migration',
+              'flutter-mcp',
+              'flutter-mcp-cli-runtime-validation',
+              'flutter-mcp-toolkit-repo-maintainer'
+            ]
+     Which: larger than expected
+  
+  package:matcher                   expect
+  test/skill_assets_test.dart 32:7  main.<fn>.<fn>
+  
+00:05 +124 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:05 +125 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:05 +126 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:05 +127 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:05 +128 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:05 +129 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:05 +130 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:05 +131 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:05 +132 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:05 +133 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:05 +134 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:05 +135 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:05 +136 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:06 +137 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:08 +138 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:10 +139 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:10 +140 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:11 +141 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:14 +142 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:14 +143 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:14 +144 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:14 +145 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:14 +146 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:14 +147 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:14 +148 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:14 +149 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:14 +150 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:14 +151 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:14 +152 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:14 +153 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:14 +154 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:15 +155 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:15 +156 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:15 +157 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:15 +158 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:15 +159 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:16 +160 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:16 +161 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:16 +162 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:16 +163 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:16 +164 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:16 +165 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:16 +166 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:16 +167 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:16 +168 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+would migrate: /var/folders/y_/4l1gpw3x65df1_lbynvsf4q40000gp/T/migrate_agent_entries_kv81wY/entries.dart
+1 file(s) would change (1 dart files scanned)
+00:16 +169 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+would migrate: /var/folders/y_/4l1gpw3x65df1_lbynvsf4q40000gp/T/migrate_agent_entries_Amk4j6/entries.dart
+  wrote: /var/folders/y_/4l1gpw3x65df1_lbynvsf4q40000gp/T/migrate_agent_entries_Amk4j6/entries.dart
+1 file(s) migrated (1 dart files scanned)
+00:16 +170 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+Path not found: /var/folders/y_/4l1gpw3x65df1_lbynvsf4q40000gp/T/migrate_agent_entries_FyYEWI/missing.dart
+00:16 +171 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:16 +171 ~2 -2: loading test/web_cdp_integration_test.dart
+Warning: A tag was used that wasn't specified in dart_test.yaml.
+  integration was used in the suite itself
+
+00:16 +172 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:17 +173 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:17 +174 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:17 +175 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:17 +176 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:17 +177 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:17 +178 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:17 +179 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:17 +180 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+{"ok":true,"platforms":["web"],"projectRoot":"/var/folders/y_/4l1gpw3x65df1_lbynvsf4q40000gp/T/codegen_sync_cli_14b1qO","manifestPath":"/var/folders/y_/4l1gpw3x65df1_lbynvsf4q40000gp/T/codegen_sync_cli_14b1qO/agent_manifest.json","webManifestPath":"/var/folders/y_/4l1gpw3x65df1_lbynvsf4q40000gp/T/codegen_sync_cli_14b1qO/web/manifest.json","webMcpJsPath":"/var/folders/y_/4l1gpw3x65df1_lbynvsf4q40000gp/T/codegen_sync_cli_14b1qO/web/agentkit_webmcp.generated.js","wroteManifest":true,"wroteWebMcpJs":true,"wroteAndroidShortcuts":false,"wroteIosGenerated":false,"wroteMacosGenerated":false,"wroteLinuxDesktop":false,"wroteWindowsProtocol":false,"indexHtmlSnippet":"<!-- agentkit-platform: begin -->\n<script src=\"agentkit_webmcp.generated.js\" defer></script>\n<!-- agentkit-platform: end -->\n"}
+{"ok":true,"platforms":["web"],"projectRoot":"/var/folders/y_/4l1gpw3x65df1_lbynvsf4q40000gp/T/codegen_sync_cli_14b1qO"}
+00:17 +181 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+{"ok":true,"platforms":["android"],"projectRoot":"/var/folders/y_/4l1gpw3x65df1_lbynvsf4q40000gp/T/codegen_sync_android_qEm2hY","manifestPath":"/var/folders/y_/4l1gpw3x65df1_lbynvsf4q40000gp/T/codegen_sync_android_qEm2hY/agent_manifest.json","androidShortcutsPath":"/var/folders/y_/4l1gpw3x65df1_lbynvsf4q40000gp/T/codegen_sync_android_qEm2hY/android/app/src/main/res/xml/agentkit_shortcuts.xml","wroteManifest":false,"wroteWebMcpJs":false,"wroteAndroidShortcuts":true,"wroteIosGenerated":false,"wroteMacosGenerated":false,"wroteLinuxDesktop":false,"wroteWindowsProtocol":false,"androidManifestSnippet":"<!-- agentkit-platform: begin -->\n<meta-data\n    android:name=\"android.app.shortcuts\"\n    android:resource=\"@xml/agentkit_shortcuts\" />\n<!-- agentkit-platform: end -->\n","androidGradleHook":"// agentkit-platform: begin\ntasks.named(\"preBuild\").configure {\n    doFirst {\n        exec {\n            workingDir = rootProject.layout.projectDirectory.dir(\"../../\").asFile\n            commandLine(\n                \"flutter-mcp-toolkit\",\n                \"codegen\",\n                \"sync\",\n                \"--platform\",\n                \"android\",\n            )\n        }\n    }\n}\n// agentkit-platform: end\n"}
+00:17 +182 ~2 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:18 +182 ~2 -2: test/flutter_cli_example_app_integration_test.dart: flutter-mcp-toolkit with flutter_test_app can connect and execute canonical commands
+  Skip: Set RUN_FLUTTER_CLI_INTEGRATION=1 to run
+00:18 +182 ~3 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:18 +182 ~3 -2: test/flutter_cli_example_app_integration_test.dart: flutter-mcp-toolkit with flutter_test_app every catalog command exec's against the live showcase
+  Skip: Set RUN_FLUTTER_CLI_INTEGRATION=1 to run
+00:18 +182 ~4 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:18 +183 ~4 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:18 +184 ~4 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:18 +185 ~4 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:18 +186 ~4 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:18 +187 ~4 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:18 +188 ~4 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts global help and contextual subcommand help are distinct
+00:18 +189 ~4 -2: test/clean_mcp_test.dart: MCP Server Integration Tests should list resources after initialization
+00:18 +190 ~4 -2: test/clean_mcp_test.dart: MCP Server Integration Tests should list resources after initialization
+00:18 +191 ~4 -2: test/clean_mcp_test.dart: MCP Server Integration Tests should list resources after initialization
+00:18 +192 ~4 -2: test/clean_mcp_test.dart: MCP Server Integration Tests should list resources after initialization
+00:19 +193 ~4 -2: test/clean_mcp_test.dart: MCP Server Integration Tests should list resources after initialization
+00:19 +194 ~4 -2: test/clean_mcp_test.dart: MCP Server Integration Tests should list resources after initialization
+00:19 +195 ~4 -2: test/clean_mcp_test.dart: MCP Server Integration Tests should list resources after initialization
+00:19 +196 ~4 -2: test/clean_mcp_test.dart: MCP Server Integration Tests should list resources after initialization
+00:19 +197 ~4 -2: test/clean_mcp_test.dart: MCP Server Integration Tests should list resources after initialization
+00:19 +198 ~4 -2: test/clean_mcp_test.dart: MCP Server Integration Tests should list resources after initialization
+00:20 +199 ~4 -2: test/flutter_mcp_toolkit_test.dart: flutter-mcp-toolkit v3 one-shot exec invalid command returns deterministic error descriptor
+00:20 +200 ~4 -2: test/flutter_mcp_toolkit_test.dart: flutter-mcp-toolkit v3 one-shot exec invalid command returns deterministic error descriptor
+00:20 +201 ~4 -2: test/flutter_mcp_toolkit_test.dart: flutter-mcp-toolkit v3 one-shot exec invalid command returns deterministic error descriptor
+00:20 +202 ~4 -2: test/flutter_mcp_toolkit_test.dart: flutter-mcp-toolkit v3 one-shot exec invalid command returns deterministic error descriptor
+00:20 +203 ~4 -2: test/flutter_mcp_toolkit_test.dart: flutter-mcp-toolkit v3 one-shot exec invalid command returns deterministic error descriptor
+00:20 +204 ~4 -2: test/flutter_mcp_toolkit_test.dart: flutter-mcp-toolkit v3 one-shot exec invalid command returns deterministic error descriptor
+00:20 +205 ~4 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts batch executes multiple status steps in one invocation
+00:20 +206 ~4 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts batch executes multiple status steps in one invocation
+00:20 +207 ~4 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts batch executes multiple status steps in one invocation
+00:20 +208 ~4 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts batch executes multiple status steps in one invocation
+00:20 +209 ~4 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts batch executes multiple status steps in one invocation
+00:21 +210 ~4 -2: test/clean_mcp_test.dart: MCP Server Integration Tests should handle invalid JSON-RPC requests
+00:21 +211 ~4 -2: test/clean_mcp_test.dart: MCP Server Integration Tests should handle invalid JSON-RPC requests
+00:21 +212 ~4 -2: test/clean_mcp_test.dart: MCP Server Integration Tests should handle invalid JSON-RPC requests
+00:21 +213 ~4 -2: test/clean_mcp_test.dart: MCP Server Integration Tests should handle invalid JSON-RPC requests
+00:22 +214 ~4 -2: test/clean_mcp_test.dart: MCP Server Integration Tests should handle invalid JSON-RPC requests
+00:22 +215 ~4 -2: test/clean_mcp_test.dart: MCP Server Integration Tests should handle invalid JSON-RPC requests
+00:22 +216 ~4 -2: test/clean_mcp_test.dart: MCP Server Integration Tests should handle invalid JSON-RPC requests
+00:22 +217 ~4 -2: test/clean_mcp_test.dart: MCP Server Integration Tests should handle invalid JSON-RPC requests
+00:22 +218 ~4 -2: test/clean_mcp_test.dart: MCP Server Integration Tests should handle invalid JSON-RPC requests
+00:22 +219 ~4 -2: test/clean_mcp_test.dart: MCP Server Integration Tests should handle invalid JSON-RPC requests
+00:23 +220 ~4 -2: test/clean_mcp_test.dart: MCP Server Integration Tests should handle invalid JSON-RPC requests
+00:24 +221 ~4 -2: test/clean_mcp_test.dart: MCP Server Integration Tests should handle invalid JSON-RPC requests
+00:24 +222 ~4 -2: test/flutter_mcp_toolkit_test.dart: flutter-mcp-toolkit v3 one-shot exec rejects unknown keys when command schema is strict
+00:25 +223 ~4 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts schema exposes visual-debug commands with expected MCP visibility
+00:25 +224 ~4 -2: test/clean_mcp_test.dart: MCP Server Integration Tests should handle malformed JSON requests gracefully
+00:27 +225 ~4 -2: test/clean_mcp_test.dart: MCP Server Integration Tests should handle malformed JSON requests gracefully
+00:27 +226 ~4 -2: test/clean_mcp_test.dart: MCP Server Integration Tests should handle malformed JSON requests gracefully
+00:28 +227 ~4 -2: test/flutter_mcp_toolkit_test.dart: flutter-mcp-toolkit v3 one-shot exec rejects string-encoded object args for dynamic tool calls
+00:29 +228 ~4 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts doctor emits required checks and critical-fail exit semantics
+00:31 +229 ~4 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts doctor emits required checks and critical-fail exit semantics
+00:31 +230 ~4 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts doctor emits required checks and critical-fail exit semantics
+00:33 +231 ~4 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts doctor emits required checks and critical-fail exit semantics
+00:34 +232 ~4 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts doctor emits required checks and critical-fail exit semantics
+00:35 +233 ~4 -2: test/flutter_mcp_toolkit_test.dart: flutter-mcp-toolkit v3 one-shot snapshot create + diff + bundle create are functional
+00:40 +234 ~4 -2: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts permissions preconnects before probing app-owned bridges
+00:42 +234 ~4 -3: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts permissions preconnects before probing app-owned bridges [E]
+  Expected: a value not equal to <0>
+    Actual: <0>
+     Which: is not a value not equal to <0>
+  
+  package:matcher                                    expect
+  test/flutter_mcp_toolkit_contract_test.dart 282:7  main.<fn>.<fn>
+  
+00:42 +234 ~4 -3: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts doctor uses global --vm-service-uri when subcommand --target is omitted
+00:46 +235 ~4 -3: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts doctor reports app-owned bridge checks as connection-blocked when target is unreachable
+00:51 +235 ~4 -4: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts doctor reports app-owned bridge checks as connection-blocked when target is unreachable [E]
+  Expected: contains 'VM target is not connected'
+    Actual: 'App permission bridge is not required for this target.'
+     Which: does not contain 'VM target is not connected'
+  
+  package:matcher                                    expect
+  test/flutter_mcp_toolkit_contract_test.dart 344:9  main.<fn>.<fn>
+  
+00:51 +235 ~4 -4: test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts validate-runtime mirrors result envelope to output dir
+00:58 +236 ~4 -4: Some tests failed.
+
+Failing tests:
+  test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts doctor reports app-owned bridge checks as connection-blocked when target is unreachable
+  test/flutter_mcp_toolkit_contract_test.dart: flutter-mcp-toolkit v3 contracts permissions preconnects before probing app-owned bridges
+  test/skill_assets_test.dart: SkillAssets exposes 9 skill bodies
+  test/skill_assets_test.dart: SkillAssets skill ids match the expected list
+
+Consider enabling the flag chain-stack-traces to receive more detailed exceptions.
+For example, 'dart test --chain-stack-traces'.

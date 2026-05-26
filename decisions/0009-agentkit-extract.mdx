@@ -1,0 +1,27 @@
+---
+title: Agentkit Phase 7 — monorepo extract and publish
+status: accepted
+date: 2026-05-27
+---
+
+## Context
+
+Phases 1–8 delivered agentkit **inside mcp_flutter** (`complete_in_repo_product`). Consumers (`mcp_toolkit`, `server_capability_core`, `mcp_server_dart`) use workspace path dependencies.
+
+## Decision
+
+1. **Extract** all `packages/agentkit_*` into a standalone workspace before pub.dev publish.
+2. **Publish order:** `agentkit_schema` → `agentkit_core` → `agentkit_mcp` / adapters → `agentkit_platform` → `agentkit_testing`.
+3. **Keep** `fmt_migrate_agent_entries` and migration CLI in **mcp_flutter**; migrator logic stays in published `agentkit_core`.
+4. **Split CI:** agentkit repo runs package matrix; mcp_flutter runs integration against **hosted** versions after cutover.
+5. **Registration types** (`ToolRegistration`, `ResourceRegistration`) canonical in **`agentkit_mcp`**; kernel re-exports for compatibility.
+
+## Consequences
+
+- Phase 7 plan: `docs/superpowers/plans/2026-05-27-agentkit-phase7-extract.md`
+- Remove `publish_to: none` and add per-package LICENSE/CHANGELOG before first publish.
+- `mcp_toolkit` major bump when switching from path to hosted deps.
+
+## Not in scope
+
+- Gemma product wiring, HarmonyOS, live registry→manifest automation.

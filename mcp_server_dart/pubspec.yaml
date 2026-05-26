@@ -22,9 +22,13 @@ dependencies:
   json_rpc_2: ^4.1.0
   logging: ^1.3.0
   agentkit_core:
+    path: ../agentkit/packages/agentkit_core
   agentkit_mcp:
+    path: ../agentkit/packages/agentkit_mcp
   agentkit_platform:
+    path: ../agentkit/packages/agentkit_platform
   agentkit_schema:
+    path: ../agentkit/packages/agentkit_schema
   flutter_mcp_toolkit_capability_core:
   flutter_mcp_toolkit_capability_kernel:
   flutter_mcp_toolkit_core:

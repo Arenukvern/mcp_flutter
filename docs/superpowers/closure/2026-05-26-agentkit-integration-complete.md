@@ -1,5 +1,9 @@
 # Agentkit integration gate — complete in-repo (post Phase 6)
 
+> **Historical snapshot** (2026-05-26). Platform init, plugin, and `fmt_migrate_agent_entries`
+> shipped in [product closure](./2026-05-26-agentkit-product-complete-in-repo.md).
+> Forward work: [WHATS_NEXT](../WHATS_NEXT.md) · [Phase 7 extract](../plans/2026-05-27-agentkit-phase7-extract.md). Integration hardening (archived): [integration completion plan](../plans/archive/2026-05-26-agentkit-integration-completion-next.md).
+
 **Date:** 2026-05-26  
 **Verdict:** pass  
 **Branch:** `feat/agentkit-phase1-3`  
@@ -19,8 +23,8 @@ Integration pass inside `mcp_flutter`: user-facing API truth (`AgentCallEntry`),
 | B — Runtime E2E | pass — package + mcp_server_dart + mcp_toolkit tests; migrate `--check`; contracts (see appendix) |
 | C — Platform integration | pass — `codegen sync` artifacts for web + native on `flutter_test_app`; web bootstrap in `mcp_toolkit`; `AGENTKIT_PLATFORM.md` hook doc |
 | D — Testing | pass — `packages/agentkit_testing/test/entry_invoke_test.dart` |
-| E — Operator | deferred — `fmt_migrate_agent_entries` MCP tool → Phase 7 tracker |
-| F — Program hygiene | pass — tracker `complete_in_repo_integrated`; phase6 plan checkboxes updated |
+| E — Operator | pass at integration time for CLI; MCP tool shipped in product gate (phase 8) |
+| F — Program hygiene | pass at integration time — tracker milestone; archived phase6 task checkboxes were **not** updated (use tracker sub_phases 6a–6h) |
 
 ## Validation appendix
 
@@ -48,7 +52,8 @@ Integration pass inside `mcp_flutter`: user-facing API truth (`AgentCallEntry`),
 ## Deferred (tracker)
 
 - Standalone agentkit monorepo (phase7)
-- `agentkit_platform` Flutter plugin + `app_links`
-- `flutter-mcp-toolkit init agentkit-platform`
-- `fmt_migrate_agent_entries` MCP tool
 - `generateWebAgentManifest` pipeline from live registry (manifest maintained under `web/agent_manifest.json`)
+
+## Superseded by product gate (2026-05-26)
+
+See [2026-05-26-agentkit-product-complete-in-repo.md](./2026-05-26-agentkit-product-complete-in-repo.md): `init agentkit-platform`, `agentkit_platform` plugin + `app_links`, `fmt_migrate_agent_entries` MCP tool shipped.

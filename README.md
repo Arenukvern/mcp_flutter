@@ -54,6 +54,7 @@ Maintainers submitting to official stores: [marketplace submission runbook](docs
 
 - **[Docs for AI Agent and Human](https://docs.page/arenukvern/mcp_flutter)** - wiki + llms.txt
 - **[Migrating v2 → v3](docs/start_here/migration_v2_to_v3.mdx)** — `fmt_*` MCP tools, binaries, client config keys, `validate-runtime`.
+- **[Agentkit Phase 6 migration](docs/start_here/migration_agentkit_phase6.md)** — `MCPCallEntry` removal, `AgentCallEntry`, platform `codegen sync`, `fmt_migrate_agent_entries`.
 - **[Why this repo matters](docs/start_here/why_this_repo_matters.mdx)** — what it is, why it exists.
 - **[CLI vs MCP](docs/start_here/cli_vs_mcp.mdx)** — pick the right mode.
 - **[Feature map](docs/start_here/feature_map.mdx)** — the 27 tools.

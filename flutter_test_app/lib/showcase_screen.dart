@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 import 'package:test_app/agent_state.dart';
 import 'package:test_app/platform_view_showcase.dart';
+import 'package:test_app/visual_reconstruct_screen.dart';
 
 /// Showcase page for MCP Flutter — a single-page demonstration of every
 /// built-in interaction tool.
@@ -54,6 +55,8 @@ class _ShowcaseScreenState extends State<ShowcaseScreen> {
                   _Header(),
                   SizedBox(height: 56),
                   _CaptureSection(),
+                  SizedBox(height: 64),
+                  _VisualReconstructSection(),
                   SizedBox(height: 64),
                   _TapSection(),
                   SizedBox(height: 56),
@@ -218,6 +221,31 @@ class _Header extends StatelessWidget {
           style: _kBody,
         ),
       ],
+    );
+  }
+}
+
+class _VisualReconstructSection extends StatelessWidget {
+  const _VisualReconstructSection();
+
+  @override
+  Widget build(final BuildContext context) {
+    return _Section(
+      label: 'Visual reconstruct',
+      heading: 'Golden dogfood screen',
+      headingSemanticsId: 'visual_reconstruct_section_heading',
+      hint:
+          'Route /visual-reconstruct — fixed layout for guild compare and HS v2.',
+      child: Semantics(
+        identifier: 'visual_reconstruct_open',
+        button: true,
+        child: FilledButton(
+          onPressed: () {
+            Navigator.of(context).pushNamed('/visual-reconstruct');
+          },
+          child: const Text('Open reconstruct fixture'),
+        ),
+      ),
     );
   }
 }

@@ -1,0 +1,24 @@
+---
+title: Web /agent/invoke — JS-only sufficient
+status: accepted
+date: 2026-05-26
+---
+
+# ADR 0008: Web `/agent/invoke` — JS-only sufficient
+
+## Context
+
+Phase 6d defined dual web surfaces: WebMCP runtime tools and PWA `protocol_handlers` targeting `/agent/invoke?name=…`.
+
+`agentkit_webmcp.generated.js` already POSTs to `/agent/invoke` for non-WebMCP hosts. A Flutter route would duplicate dispatch already handled by WebMCP + Dart bootstrap (`AgentWebMcpBootstrap`).
+
+## Decision
+
+**Do not add a Flutter `/agent/invoke` route in `flutter_test_app`.** Treat JS + WebMCP + Dart bootstrap as sufficient for in-repo product completion.
+
+PWA manifest `protocol_handlers` remain emitted for OS install surfaces; agents in Chrome discover runtime tools via WebMCP.
+
+## Consequences
+
+- Dogfood validates `codegen sync` manifest + `index.html` snippet + `mcp_toolkit` web bootstrap.
+- Future apps may add a GoRouter route if they need same-origin fetch without WebMCP; optional, not required for gate.

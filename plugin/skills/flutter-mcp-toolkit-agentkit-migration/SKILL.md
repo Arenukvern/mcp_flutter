@@ -101,15 +101,25 @@ See `docs/platform-notes/android-oem.md` for Xiaomi/Huawei (same shortcuts XML a
 
 ## MCP migrate tool
 
-`fmt_migrate_agent_entries` is **not shipped yet** — use CLI only. Report-only MCP
-tool is documented as TODO in the migration doc.
+`fmt_migrate_agent_entries` is **shipped** (report-only by default; `apply: true` to
+rewrite). CLI equivalent: `flutter-mcp-toolkit migrate agent-entries`.
 
-## Maintainer checklist (Phase 6 release)
+## Maintainer checklist (in-repo product gate)
 
 1. `flutter-mcp-toolkit migrate agent-entries --check` on `flutter_test_app/lib`
 2. `make sync-skills` after any `plugin/skills/` edit
 3. `cd mcp_server_dart && dart test test/contract/`
 4. Grep: no `MCPCallEntry` in skills except this file's BEFORE examples
+
+## Phase 7 extract (external monorepo)
+
+When agentkit publishes to pub.dev (see `decisions/0009-agentkit-extract.mdx`):
+
+1. Replace `path: ../agentkit/packages/agentkit_*` (or hosted `^0.1.0` after publish) in `pubspec.yaml`.
+2. Run `flutter pub get` and `migrate agent-entries --check` again.
+3. CI: use `make check-agentkit-integration` in mcp_flutter; package matrix moves to agentkit repo.
+
+Until then, all agentkit packages remain **in-repo** with `publish_to: none`.
 
 ## Related skills
 

@@ -15,9 +15,13 @@ resolution: workspace
 
 dependencies:
   agentkit_codegen:
+    path: ../../agentkit/packages/agentkit_codegen
   agentkit_core:
+    path: ../../agentkit/packages/agentkit_core
   agentkit_mcp:
+    path: ../../agentkit/packages/agentkit_mcp
   agentkit_schema:
+    path: ../../agentkit/packages/agentkit_schema
   collection: ^1.19.1
   dart_mcp: ^0.5.0
   flutter_mcp_toolkit_capability_kernel:

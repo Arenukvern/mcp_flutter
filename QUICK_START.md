@@ -28,6 +28,7 @@ The old long-form quick-start content was intentionally split into focused docs 
 ## v2.x to v3.0.0 Hard Cut
 
 - **Migration guide:** [docs/start_here/migration_v2_to_v3.mdx](docs/start_here/migration_v2_to_v3.mdx) — `fmt_*` MCP tools, **`flutter-mcp-toolkit-server`**, **`mcpServers` key `flutter-mcp-toolkit`**, `validate-runtime` targeting.
+- **Agentkit Phase 6:** [docs/start_here/migration_agentkit_phase6.md](docs/start_here/migration_agentkit_phase6.md) — `AgentCallEntry`, platform `codegen sync`, `init agentkit-platform`.
 - Run preflight before VM-dependent automation: `flutter-mcp-toolkit doctor --json`.
 - Update parsers to read error descriptor fields from `error.descriptor`.
 - Use safe write flags (`--check --diff --backup --no-overwrite`) for snapshot/bundle flows.

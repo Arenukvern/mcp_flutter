@@ -1,0 +1,8 @@
+.dart_tool/
+.packages
+build/
+# Keep pubspec.lock for workspace reproducibility.
+.idea/
+*.iml
+.flutter-plugins
+.flutter-plugins-dependencies

@@ -1,0 +1,35 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "packages": {
+    "packages/agentkit_schema": {
+      "release-type": "dart",
+      "package-name": "agentkit_schema",
+      "component": "agentkit_schema"
+    },
+    "packages/agentkit_core": {
+      "release-type": "dart",
+      "package-name": "agentkit_core",
+      "component": "agentkit_core"
+    },
+    "packages/agentkit_mcp": {
+      "release-type": "dart",
+      "package-name": "agentkit_mcp",
+      "component": "agentkit_mcp"
+    },
+    "packages/agentkit_webmcp": {
+      "release-type": "dart",
+      "package-name": "agentkit_webmcp",
+      "component": "agentkit_webmcp"
+    },
+    "packages/agentkit_platform": {
+      "release-type": "dart",
+      "package-name": "agentkit_platform",
+      "component": "agentkit_platform"
+    },
+    "packages/agentkit_testing": {
+      "release-type": "dart",
+      "package-name": "agentkit_testing",
+      "component": "agentkit_testing"
+    }
+  }
+}

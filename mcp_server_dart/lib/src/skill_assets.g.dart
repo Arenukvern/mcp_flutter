@@ -1458,15 +1458,25 @@ See `docs/platform-notes/android-oem.md` for Xiaomi/Huawei (same shortcuts XML a
 
 ## MCP migrate tool
 
-`fmt_migrate_agent_entries` is **not shipped yet** — use CLI only. Report-only MCP
-tool is documented as TODO in the migration doc.
+`fmt_migrate_agent_entries` is **shipped** (report-only by default; `apply: true` to
+rewrite). CLI equivalent: `flutter-mcp-toolkit migrate agent-entries`.
 
-## Maintainer checklist (Phase 6 release)
+## Maintainer checklist (in-repo product gate)
 
 1. `flutter-mcp-toolkit migrate agent-entries --check` on `flutter_test_app/lib`
 2. `make sync-skills` after any `plugin/skills/` edit
 3. `cd mcp_server_dart && dart test test/contract/`
 4. Grep: no `MCPCallEntry` in skills except this file's BEFORE examples
+
+## Phase 7 extract (external monorepo)
+
+When agentkit publishes to pub.dev (see `decisions/0009-agentkit-extract.mdx`):
+
+1. Replace `path: ../agentkit/packages/agentkit_*` (or hosted `^0.1.0` after publish) in `pubspec.yaml`.
+2. Run `flutter pub get` and `migrate agent-entries --check` again.
+3. CI: use `make check-agentkit-integration` in mcp_flutter; package matrix moves to agentkit repo.
+
+Until then, all agentkit packages remain **in-repo** with `publish_to: none`.
 
 ## Related skills
 
@@ -1774,6 +1784,7 @@ Avoid duplicating install tables in README — link to overview.
 - Canonical skills: `plugin/skills/` (repo root `skills/` → symlink for `npx skills`).
 - New bundled skill: add `plugin/skills/<id>/SKILL.md`, append `id` to `expectedSkillIds` in [build_skill_assets.dart](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_server_dart/tool/build_skill_assets.dart), run `make sync-skills`.
 - Local Cursor copy: `.cursor/skills/<id>/` may symlink to `plugin/skills/<id>/`.
+- Platform dogfood skills: `flutter-mcp-toolkit-maintain-web`, `flutter-mcp-toolkit-maintain-macos`, `flutter-mcp-toolkit-dogfood-iterations`.
 
 ### HyperFrames promo (flutter_mcp_video repo)
 
@@ -1790,7 +1801,7 @@ When closing Phase 6 on `feat/agentkit-phase1-3`:
 3. `bash tool/contracts/check_agentkit_skills_grep.sh` — no legacy call-entry symbol outside migration skill.
 4. `cd mcp_server_dart && dart test test/contract/`
 5. `flutter-mcp-toolkit migrate agent-entries --check flutter_test_app/lib` (expect exit 0)
-6. Tracker: `program.status: complete_in_repo`; closure `docs/superpowers/closure/2026-05-26-agentkit-program-complete-in-repo.md`
+6. Tracker: `program.status: complete_in_repo_product`; `integration_hardening_complete: true`; closures under `docs/superpowers/closure/`; forward work `docs/superpowers/WHATS_NEXT.md` and `docs/superpowers/plans/2026-05-27-agentkit-phase7-extract.md`
 
 ## Pre-merge checklist
 
@@ -1800,6 +1811,286 @@ When closing Phase 6 on `feat/agentkit-phase1-3`:
 - [ ] No secrets in committed configs
 ''',
       relativePath: 'skills/flutter-mcp-toolkit-repo-maintainer/SKILL.md',
+    ),
+    SkillAsset(
+      id: 'flutter-mcp-toolkit-maintain-web',
+      frontmatter: r'''name: flutter-mcp-toolkit-maintain-web
+description: Maintains flutter_test_app and agentkit web targets (Chrome, web codegen, WebMCP bootstrap, web-showcase, webmcp verify). Use when editing web/index.html, agent_manifest.json, agentkit_webmcp.generated.js, web platform sync, Chrome dogfood, or navigator.modelContext.''',
+      body: r'''
+<!-- @FMT_MODE_PRELUDE -->
+
+# Maintain Web (Chrome + WebMCP)
+
+Dogfood app: `flutter_test_app`. Canonical platform doc: `flutter_test_app/AGENTKIT_PLATFORM.md`.
+
+## WebMCP vs VM MCP
+
+| Path | Proves |
+|------|--------|
+| VM extensions + `fmt_*` tools | MCP toolkit dogfood (always) |
+| `navigator.modelContext` | True WebMCP (Chrome flag / `--web-browser-flag`) |
+
+ADR: `decisions/0008_web_agent_invoke_js_only.mdx` — JS `fetch('/agent/invoke')` **404** by design; Dart `invokeDirect` works when `modelContext` exists.
+
+## Launch (repeatable WebMCP)
+
+```bash
+make web-showcase
+# WS_URI from .showcase/web_app.log (re-grep after hot reload)
+grep -Eo 'ws://127\.0\.0\.1:[0-9]+/[A-Za-z0-9_=-]+/ws' .showcase/web_app.log | tail -1
+```
+
+```bash
+dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart webmcp chrome-args
+dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart webmcp verify --web-port 8080
+```
+
+Stop: `make showcase-stop`.
+
+**Do not** rely on `chrome://flags` alone across machines — use `webmcp chrome-args` / `make web-showcase`.
+
+## Codegen & hooks
+
+```bash
+dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart codegen sync \
+  --platform web,android,ios,macos,linux,windows \
+  --project-dir flutter_test_app
+
+dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart init agentkit-platform \
+  --project-dir flutter_test_app --check
+```
+
+| Artifact | Source |
+|----------|--------|
+| `web/agentkit_webmcp.generated.js` | `codegen sync` from `web/agent_manifest.json` |
+| `web/index.html` | `init agentkit-platform` script tag |
+| Dart bootstrap | `AgentWebMcpBootstrap.registerFromEntries` (debug web, after `addEntries`) |
+
+## Runtime validate
+
+```bash
+dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart --save-images \
+  --output-dir .showcase/web_iter validate-runtime \
+  --target "$WS_URI" \
+  --flutter-device chrome \
+  --timeout-ms 45000
+```
+
+Pass `--web-browser-debugging-port <cdp>` if CDP discovery fails.
+
+## Known issues
+
+1. **Duplicate tool name** — generated JS + Dart bootstrap both `registerTool`; dedupe or gate one path.
+2. **CDP probe** — `webmcp verify` may report `webmcp_active_log_evidence` while CDP `hasModelContext` is false (Flutter execution context).
+3. **Stale WS_URI** — always grep fresh token after hot restart before eval/validate.
+
+## Related
+
+- `docs/superpowers/evals/2026-05-26-webmcp-verification.md`
+- `flutter-mcp-cli-runtime-validation` — validate-runtime details
+- `flutter-mcp-toolkit-dogfood-iterations` — scored iterations
+''',
+      relativePath: 'skills/flutter-mcp-toolkit-maintain-web/SKILL.md',
+    ),
+    SkillAsset(
+      id: 'flutter-mcp-toolkit-maintain-macos',
+      frontmatter: r'''name: flutter-mcp-toolkit-maintain-macos
+description: Maintains flutter_test_app macOS showcase, native agentkit hooks (codegen, app_links invoke), and VM MCP validation. Use when editing macOS Runner, agentkit_codegen.sh, macOS dogfood, Screen Recording capture, or comparing macOS parity to web WebMCP.''',
+      body: r'''
+<!-- @FMT_MODE_PRELUDE -->
+
+# Maintain macOS (showcase + native agentkit)
+
+Dogfood app: `flutter_test_app`. Platform doc: `flutter_test_app/AGENTKIT_PLATFORM.md`.
+
+## WebMCP on macOS
+
+**`navigator.modelContext` is web-only.** macOS dogfood proves **VM extensions**, **dynamic registry**, **native invoke** (`agentkit://` via `app_links`), and **visual capture** (Screen Recording on host).
+
+For WebMCP parity scoring, run web iteration separately (`flutter-mcp-toolkit-maintain-web`).
+
+## Launch showcase
+
+```bash
+make showcase-stop && make showcase
+```
+
+- Log: `.showcase/flutter_app.log`
+- WS URI: grep `ws://127.0.0.1:…/ws` from log (default VM port **8181**)
+
+```bash
+grep -Eo 'ws://127\.0\.0\.1:[0-9]+/[A-Za-z0-9_=-]+/ws' .showcase/flutter_app.log | tail -1
+```
+
+Stop: `make showcase-stop`.
+
+## Codegen & hooks
+
+```bash
+dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart codegen sync \
+  --platform web,android,ios,macos,linux,windows \
+  --project-dir flutter_test_app
+
+dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart init agentkit-platform \
+  --project-dir flutter_test_app --check
+```
+
+| Target | Role |
+|--------|------|
+| `macos/agentkit_codegen.sh` | Xcode Run Script → `codegen sync --platform macos` |
+| `macos/Runner.xcodeproj` | Run Script phase (see script comment if manual) |
+| `lib/main.dart` | `AgentkitInvokeLinkListener` for `agentkit://invoke/…` |
+
+## Runtime validate
+
+```bash
+dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart --save-images \
+  --output-dir .showcase/macos_iter validate-runtime \
+  --target "$MACOS_WS_URI" \
+  --flutter-device macos \
+  --timeout-ms 45000
+```
+
+Permissions (host process running CLI):
+
+```bash
+dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart permissions status
+dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart permissions request
+```
+
+## Dual-platform dogfood
+
+```bash
+bash tool/evals/run_dogfood_eval.sh \
+  --ws-uri "$WEB_WS_URI" \
+  --macos --macos-ws-uri "$MACOS_WS_URI"
+```
+
+## Related
+
+- `flutter-mcp-cli-runtime-validation` — doctor, capture backends, extensions
+- `flutter-mcp-toolkit-maintain-web` — WebMCP enablement
+- `flutter-mcp-toolkit-dogfood-iterations` — rubric + tracker
+''',
+      relativePath: 'skills/flutter-mcp-toolkit-maintain-macos/SKILL.md',
+    ),
+    SkillAsset(
+      id: 'flutter-mcp-toolkit-dogfood-iterations',
+      frontmatter: r'''name: flutter-mcp-toolkit-dogfood-iterations
+description: Runs and records flutter_test_app dogfood iterations (tool_quality_rubric, run_dogfood_eval.sh, dogfood_web_eval.yaml). Use when scoring MCP/agentkit quality, appending iteration N, comparing regressions, or CI static/weekly eval gates.''',
+      body: r'''
+<!-- @FMT_MODE_PRELUDE -->
+
+# Dogfood iterations
+
+Tracker: `.showcase/dogfood_web_eval.yaml`  
+Rubric: `docs/superpowers/evals/tool_quality_rubric.yaml`  
+Overview: `docs/superpowers/evals/README.md`
+
+## Pass threshold
+
+**≥80/100** weighted; ship at **≥90** or accepted `pass_with_warnings`.
+
+| Dimension | Weight |
+|-----------|--------|
+| connectivity | 20 |
+| schema_validity | 10 |
+| handler_correctness | 20 |
+| capture_quality | 10 |
+| visual_fidelity | 10 |
+| webmcp_parity | 10 |
+| agentkit_authoring | 10 |
+| docs_truth | 10 |
+
+## Iteration workflow
+
+```
+Task Progress:
+- [ ] Start app (web-showcase or make showcase)
+- [ ] Fresh WS_URI from log (not stale after hot reload)
+- [ ] Run battery
+- [ ] Record score + warnings in tracker
+- [ ] Promote recurring patterns if repeated ≥2 times
+```
+
+### Web iteration
+
+```bash
+make web-showcase
+export WS_URI="$(grep -Eo 'ws://127\.0\.0\.1:[0-9]+/[A-Za-z0-9_=-]+/ws' .showcase/web_app.log | tail -1)"
+bash tool/evals/run_dogfood_eval.sh --ws-uri "$WS_URI" --merge --skip-visual   # yq or dart fallback
+# or without merge:
+bash tool/evals/run_dogfood_eval.sh --ws-uri "$WS_URI"
+```
+
+Auto-runs: static gates + `validate-runtime` + `webmcp verify`.
+
+### Static only (CI / PR)
+
+```bash
+make dogfood-eval-static
+```
+
+### Makefile
+
+```bash
+make dogfood-eval          # needs WS_URI in env
+make dogfood-eval-static
+```
+
+## Artifacts
+
+- Per run: `.showcase/eval_runs/<timestamp>/eval_run.yaml`
+- Snapshot: `.showcase/eval_run_<timestamp>.yaml`
+- With `--merge`: updates `dogfood_web_eval.yaml` (`yq` or `dart run mcp_server_dart/tool/merge_dogfood_tracker.dart`)
+
+## Verdicts
+
+| Verdict | Meaning |
+|---------|---------|
+| `pass` | score ≥80, no blocking warnings |
+| `pass_with_warnings` | score ≥80, e.g. `visual_capture_truth_mode` |
+| `fail` | score <80 |
+| `blocked_no_runtime` | `--skip-runtime` only |
+
+## Exec vs MCP names
+
+Document in iteration notes when testing invoke:
+
+- **exec:** bare names (`get_recent_logs`, `dogfood_ping`) — also accepts `fmt_*` aliases
+- **MCP:** `fmt_` prefix (`fmt_get_recent_logs`, `fmt_client_tool` + listing `name`)
+- **Connection:** global `--vm-service-uri` (not `exec --target`)
+
+```bash
+dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart \
+  --vm-service-uri "$WS_URI" exec --name get_recent_logs --args '{}'
+```
+
+## Chrome battery notes
+
+- Skip heavy visual harness unless `HARNESS_ROOT` points at `flutter_harness`: add `--skip-visual`
+- `validate-runtime --save-images` can hang >5m on Chrome; battery omits it unless `DOGFOOD_SAVE_IMAGES=1`
+
+## CI (branch)
+
+`.github/workflows/agentkit_eval.yml` — PR: `dogfood-eval-static`; weekly/main: agentkit package tests + static.
+
+Full Chrome runtime dogfood stays **local** until headless WebMCP is cost-effective.
+
+## After each iteration
+
+1. Diff `dimension_scores` vs previous iteration in tracker.
+2. Add to `recurring_warnings` / `recurring_errors` when repeated.
+3. Update `fix_recommendations` with actionable doc/code deltas.
+4. Do **not** treat tracker YAML as gate without a fresh battery run.
+
+## Related skills
+
+- `flutter-mcp-toolkit-maintain-web` — WebMCP launch + verify
+- `flutter-mcp-toolkit-maintain-macos` — macOS showcase
+- `flutter-mcp-toolkit-repo-maintainer` — `make sync-skills` after editing this skill
+''',
+      relativePath: 'skills/flutter-mcp-toolkit-dogfood-iterations/SKILL.md',
     ),
   ];
 

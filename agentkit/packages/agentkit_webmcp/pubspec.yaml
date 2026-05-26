@@ -1,0 +1,25 @@
+name: agentkit_webmcp
+description: PRE-RELEASE — WebMCP publish adapter for agentkit registry (navigator.modelContext).
+version: 0.1.0
+license: MIT
+repository: https://github.com/Arenukvern/mcp_flutter/tree/main/agentkit/packages/agentkit_webmcp
+issue_tracker: https://github.com/Arenukvern/mcp_flutter/issues
+homepage: https://github.com/Arenukvern/mcp_flutter/tree/main/agentkit/packages/agentkit_webmcp
+topics:
+  - mcp
+  - webmcp
+  - agents
+
+environment:
+  sdk: ">=3.11.0 <4.0.0"
+resolution: workspace
+
+dependencies:
+  agentkit_core: ^0.1.0
+  agentkit_schema: ^0.1.0
+  meta: ^1.17.0
+
+dev_dependencies:
+  xsoulspace_lints: ^0.1.2
+  lints: ^6.1.0
+  test: ^1.31.1

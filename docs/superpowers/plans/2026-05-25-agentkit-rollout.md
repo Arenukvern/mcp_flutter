@@ -1,6 +1,6 @@
 # Agentkit Program Rollout
 
-> **For agentic workers:** Use [tracker](../tracker/agentkit-rollout.yaml) for machine state. Phases 1–5 are **done**. Pre-extract completion is **Phase 6** (spec pending).
+> **For agentic workers:** Use [tracker](../tracker/agentkit-rollout.yaml) for machine state. Phases 1–6 + integration + **product (phase 8)** are **done**. Extract is **Phase 7** (pending).
 
 **Goal:** Finish agentkit **inside mcp_flutter** (real wiring, no stubs, migration complete), then extract to a standalone repo.
 
@@ -24,7 +24,8 @@
 | **4** | [closure phase4](../closure/2026-05-25-agentkit-phase4-registry-resources.md) | done | Registry-backed resources + hot-sync |
 | **5** | [hardening spec](../specs/2026-05-25-agentkit-phase5-hardening-design.md) | done | 5-A docs, 5-B runtime, 5-C codegen pilot |
 | **6** | [spec](../specs/2026-05-26-agentkit-pre-extract-completion-design.md) | done | Bar D: hard cut, platform sync, migration CLI, skills — [closure](../closure/2026-05-26-agentkit-program-complete-in-repo.md) |
-| **7** | design § extract | pending | Standalone agentkit monorepo |
+| **8** | [product closure](../closure/2026-05-26-agentkit-product-complete-in-repo.md) | done | Init CLI, invoke plugin, `fmt_migrate_agent_entries`, CI codegen `--check` |
+| **7** | [phase7 extract](2026-05-27-agentkit-phase7-extract.md) | in progress | Standalone agentkit monorepo (7.4–7.7 pending publish) |
 
 Closures: [../closure/](../closure/).
 
@@ -33,8 +34,8 @@ Closures: [../closure/](../closure/).
 ## Program status
 
 - **Phases 1–5:** Gates passed on `feat/agentkit-phase1-3`.
-- **`program.status`:** `complete_in_repo` — Phase 6 gate passed; see [closure](../closure/2026-05-26-agentkit-program-complete-in-repo.md).
-- **Extract:** Phase 7 — standalone repo (pending).
+- **`program.status`:** `complete_in_repo_product` — see [product closure](../closure/2026-05-26-agentkit-product-complete-in-repo.md) and [integration closure](../closure/2026-05-26-agentkit-integration-complete.md).
+- **Extract:** Phase 7 — **in progress** (7.1–7.3, 7.6 done; 7.4–7.5, 7.7 pending — see [tracker](../tracker/agentkit-rollout.yaml)).
 
 ---
 
@@ -62,4 +63,6 @@ Closures: [../closure/](../closure/).
 
 ## Current action
 
-**Phase 7:** Plan standalone agentkit monorepo extract per design spec. Phase 6 complete — see [closure](../closure/2026-05-26-agentkit-program-complete-in-repo.md).
+**Integration hardening:** complete (2026-05-27) — archived [integration completion plan](archive/2026-05-26-agentkit-integration-completion-next.md). Tracker: `integration_hardening_complete: true`.
+
+**Phase 7:** [Phase 7 extract plan](2026-05-27-agentkit-phase7-extract.md) — **in progress** (publish/cutover pending). Index: [WHATS_NEXT](../WHATS_NEXT.md) · [tracker](../tracker/agentkit-rollout.yaml).

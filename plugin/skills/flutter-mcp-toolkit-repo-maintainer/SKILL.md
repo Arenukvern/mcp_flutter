@@ -109,6 +109,7 @@ Avoid duplicating install tables in README — link to overview.
 - Canonical skills: `plugin/skills/` (repo root `skills/` → symlink for `npx skills`).
 - New bundled skill: add `plugin/skills/<id>/SKILL.md`, append `id` to `expectedSkillIds` in [build_skill_assets.dart](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_server_dart/tool/build_skill_assets.dart), run `make sync-skills`.
 - Local Cursor copy: `.cursor/skills/<id>/` may symlink to `plugin/skills/<id>/`.
+- Platform dogfood skills: `flutter-mcp-toolkit-maintain-web`, `flutter-mcp-toolkit-maintain-macos`, `flutter-mcp-toolkit-dogfood-iterations`.
 
 ### HyperFrames promo (flutter_mcp_video repo)
 
@@ -125,7 +126,7 @@ When closing Phase 6 on `feat/agentkit-phase1-3`:
 3. `bash tool/contracts/check_agentkit_skills_grep.sh` — no legacy call-entry symbol outside migration skill.
 4. `cd mcp_server_dart && dart test test/contract/`
 5. `flutter-mcp-toolkit migrate agent-entries --check flutter_test_app/lib` (expect exit 0)
-6. Tracker: `program.status: complete_in_repo`; closure `docs/superpowers/closure/2026-05-26-agentkit-program-complete-in-repo.md`
+6. Tracker: `program.status: complete_in_repo_product`; `integration_hardening_complete: true`; closures under `docs/superpowers/closure/`; forward work `docs/superpowers/WHATS_NEXT.md` and `docs/superpowers/plans/2026-05-27-agentkit-phase7-extract.md`
 
 ## Pre-merge checklist
 

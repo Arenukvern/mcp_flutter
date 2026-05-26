@@ -5,6 +5,9 @@ Written by the **Closer** agent after each phase gate.
 **Naming:** `YYYY-MM-DD-agentkit-<phase-id>.md`  
 **Template:** [agentkit-self-closing-loop.md](../agentkit-self-closing-loop.md#3-closure-report-artifact)
 
+> Closures are **historical snapshots**. For live deferrals use [tracker](../tracker/agentkit-rollout.yaml).
+> Forward work: [WHATS_NEXT](../WHATS_NEXT.md) · active extract [Phase 7 plan](../plans/2026-05-27-agentkit-phase7-extract.md).
+
 ## Index
 
 | Report | Phase |
@@ -15,7 +18,8 @@ Written by the **Closer** agent after each phase gate.
 | [2026-05-25-agentkit-phase4-registry-resources.md](2026-05-25-agentkit-phase4-registry-resources.md) | 4 — Resources |
 | [2026-05-25-agentkit-phase5b-runtime.md](2026-05-25-agentkit-phase5b-runtime.md) | 5-B — Runtime |
 | [2026-05-25-agentkit-phase5c-authoring.md](2026-05-25-agentkit-phase5c-authoring.md) | 5-C — Authoring |
-
-**Program-complete (in-repo):** `YYYY-MM-DD-agentkit-program-complete-in-repo.md` — after Phase 6 gate.
+| [2026-05-26-agentkit-program-complete-in-repo.md](2026-05-26-agentkit-program-complete-in-repo.md) | 6 — Bar D program gate |
+| [2026-05-26-agentkit-integration-complete.md](2026-05-26-agentkit-integration-complete.md) | Integration pass |
+| [2026-05-26-agentkit-product-complete-in-repo.md](2026-05-26-agentkit-product-complete-in-repo.md) | 8 — In-repo product |
 
 **Extract:** separate closure when standalone repo ships (Phase 7).

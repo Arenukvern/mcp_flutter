@@ -44,7 +44,8 @@ final class CommandCatalog {
   }
 
   CoreCommand buildCommand(final String name, final Map<String, Object?> args) {
-    final spec = _byName[name];
+    final resolved = resolveExecCommandName(name);
+    final spec = _byName[resolved];
     if (spec == null) {
       throw ArgumentError('Unsupported command: $name');
     }
@@ -100,7 +101,8 @@ final class CommandCatalog {
 
   Map<String, Object?> schema({final String? name}) {
     if (name != null && name.isNotEmpty) {
-      final spec = _byName[name];
+      final resolved = resolveExecCommandName(name);
+      final spec = _byName[resolved];
       if (spec == null) {
         throw ArgumentError('Unknown command for schema lookup: $name');
       }
@@ -116,7 +118,26 @@ final class CommandCatalog {
     };
   }
 
-  CommandSpec? specFor(final String name) => _byName[name];
+  CommandSpec? specFor(final String name) => _byName[resolveExecCommandName(name)];
+
+  /// Exec accepts bare catalog names; MCP clients often pass `fmt_*` prefixes.
+  String resolveExecCommandName(final String name) {
+    if (_byName.containsKey(name)) {
+      return name;
+    }
+    if (name.startsWith('fmt_')) {
+      final bare = name.substring(4);
+      if (_byName.containsKey(bare)) {
+        return bare;
+      }
+    } else {
+      final prefixed = 'fmt_$name';
+      if (_byName.containsKey(prefixed)) {
+        return prefixed;
+      }
+    }
+    return name;
+  }
 
   List<CommandSpec> _buildSpecs() {
     final specs = <CommandSpec>[

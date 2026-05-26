@@ -286,9 +286,13 @@ mixin ViewIntrospectionService {
       if (!renderObject.hasSize) {
         return null;
       }
-      final origin = renderObject.localToGlobal(ui.Offset.zero);
-      final rect = origin & renderObject.size;
-      return _rectToJson(rect);
+      try {
+        final origin = renderObject.localToGlobal(ui.Offset.zero);
+        final rect = origin & renderObject.size;
+        return _rectToJson(rect);
+      } on Object {
+        return null;
+      }
     }
 
     try {
@@ -297,7 +301,7 @@ mixin ViewIntrospectionService {
         renderObject.paintBounds,
       );
       return _rectToJson(transformed);
-    } on Exception {
+    } on Object {
       return null;
     }
   }
@@ -308,13 +312,16 @@ mixin ViewIntrospectionService {
     if (renderObject == null || !renderObject.attached) {
       return null;
     }
+    if (renderObject is RenderBox && !renderObject.hasSize) {
+      return null;
+    }
     try {
       final transformed = MatrixUtils.transformRect(
         renderObject.getTransformTo(null),
         renderObject.semanticBounds,
       );
       return _rectToJson(transformed);
-    } on Exception {
+    } on Object {
       return null;
     }
   }

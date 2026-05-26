@@ -7,6 +7,7 @@ import 'tools/form_tools.dart';
 import 'tools/inspection_tools.dart';
 import 'tools/interaction_tools.dart';
 import 'tools/log_tools.dart';
+import 'tools/migrate_agent_entries_tool.dart';
 import 'tools/navigation_tools.dart';
 import 'tools/semantic_tools.dart';
 import 'tools/wait_tools.dart';
@@ -33,6 +34,7 @@ final class FmtCapability implements Capability {
     registerInteractionTools(context);
     registerNavigationTools(context);
     registerLogTools(context);
+    registerMigrateAgentEntriesTool(context);
     registerSemanticTools(context);
     registerInspectionTools(context);
     registerWaitTools(context);

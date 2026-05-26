@@ -1,0 +1,40 @@
+name: agentkit_platform
+description: PRE-RELEASE — Platform emitters and sync for agentkit (web manifest, WebMCP JS, bootstrap).
+version: 0.1.0
+license: MIT
+repository: https://github.com/Arenukvern/mcp_flutter/tree/main/agentkit/packages/agentkit_platform
+issue_tracker: https://github.com/Arenukvern/mcp_flutter/issues
+homepage: https://github.com/Arenukvern/mcp_flutter/tree/main/agentkit/packages/agentkit_platform
+topics:
+  - mcp
+  - flutter
+  - agents
+
+environment:
+  sdk: ">=3.11.0 <4.0.0"
+  flutter: ">=3.24.0"
+resolution: workspace
+
+dependencies:
+  agentkit_core: ^0.1.0
+  agentkit_schema: ^0.1.0
+  app_links: ^6.4.0
+  flutter:
+    sdk: flutter
+  meta: ^1.17.0
+  path: ^1.9.1
+  web: ^1.1.1
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: dev.agentkit.agentkit_platform
+        pluginClass: AgentkitPlatformPlugin
+      ios:
+        pluginClass: AgentkitPlatformPlugin
+
+dev_dependencies:
+  xsoulspace_lints: ^0.1.2
+  lints: ^6.1.0
+  test: ^1.31.1

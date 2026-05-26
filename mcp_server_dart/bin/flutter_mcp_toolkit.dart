@@ -14,6 +14,8 @@ import 'package:flutter_mcp_toolkit_server/src/cli/codegen_sync_command.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/init_command.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/init_mode.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/init_target.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/init_agentkit_platform_command.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/webmcp_command.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/migrate_agent_entries_command.dart';
 
 Future<void> main(final List<String> args) async {
@@ -54,6 +56,9 @@ Future<void> main(final List<String> args) async {
   }
   if (parsed.command?.name == 'codegen') {
     io.exit(await _runCodegenSubcommand(parsed.command!));
+  }
+  if (parsed.command?.name == 'webmcp') {
+    io.exit(await _runWebmcpSubcommand(parsed.command!));
   }
   final logLevel = _parseLogLevel(parsed.option(_logLevel));
   final logger = _buildLogger(logLevel);
@@ -1715,6 +1720,8 @@ String _globalUsage() {
     ..writeln('  migrate agent-entries')
     ..writeln('  migrate mcp-call-entry')
     ..writeln('  codegen sync')
+    ..writeln('  webmcp chrome-args')
+    ..writeln('  webmcp verify')
     ..writeln()
     ..writeln('Global options:')
     ..writeln(_argParser.usage)
@@ -1751,6 +1758,9 @@ String _usageForCommand(final List<String> commandPath) {
     'migrate mcp-call-entry' => _usageMigrateAgentEntries(),
     'codegen' => _usageCodegen(),
     'codegen sync' => _usageCodegenSync(),
+    'webmcp' => _usageWebmcp(),
+    'webmcp chrome-args' => _usageWebmcpChromeArgs(),
+    'webmcp verify' => _usageWebmcpVerify(),
     _ => _globalUsage(),
   };
 }
@@ -2092,6 +2102,14 @@ final _argParser = ArgParser(allowTrailingOptions: false)
         allowed: ['project', 'user'],
         defaultsTo: 'project',
         help: r'Install scope: project (./) or user ($HOME).',
+      )
+      ..addOption(
+        'project-dir',
+        help: 'Flutter project root (for init agentkit-platform)',
+      )
+      ..addFlag(
+        _check,
+        help: 'Verify platform hooks without writing (agentkit-platform)',
       ),
   )
   ..addCommand(
@@ -2118,6 +2136,17 @@ final _argParser = ArgParser(allowTrailingOptions: false)
       ..addCommand(
         'mcp-call-entry',
         _migrateAgentEntriesParser(),
+      ),
+  )
+  ..addCommand(
+    'webmcp',
+    _commandParser()
+      ..addCommand('chrome-args', _commandParser())
+      ..addCommand(
+        'verify',
+        _commandParser()
+          ..addOption('cdp-port', help: 'Chrome remote debugging port (auto-discover if omitted)')
+          ..addOption('web-port', defaultsTo: '8080', help: 'Prefer app tab on this port'),
       ),
   )
   ..addCommand(
@@ -2348,14 +2377,16 @@ Optional skill installation copies mcp_server_dart/skills/$_runtimeValidationSki
 ''';
 
 String _usageInit() => '''
-Usage: flutter-mcp-toolkit init <claude-code|cursor|codex|cline|agents-skills|all> [--mode mcp|cli|auto] [--scope project|user]
+Usage:
+  flutter-mcp-toolkit init <claude-code|cursor|codex|cline|agents-skills|all> [--mode mcp|cli|auto] [--scope project|user]
+  flutter-mcp-toolkit init agentkit-platform [--project-dir <path>] [--check]
 
 Examples:
   flutter-mcp-toolkit init claude-code
-  flutter-mcp-toolkit init claude-code --mode cli
-  flutter-mcp-toolkit init all --mode mcp --scope user
+  flutter-mcp-toolkit init agentkit-platform --project-dir ../my_app
+  flutter-mcp-toolkit init agentkit-platform --check
 
-Installs flutter-mcp-toolkit skills and MCP server config for an AI agent.
+Installs flutter-mcp-toolkit skills (agent targets) or one-time platform hooks (agentkit-platform).
 ''';
 
 String _usageCodegenInit() => '''
@@ -2371,9 +2402,15 @@ Adds flutter_mcp_toolkit to a Flutter app and emits boilerplate for main.dart.
 Future<int> _runInitSubcommand(final ArgResults command) async {
   if (command.rest.isEmpty) {
     io.stderr.writeln(
-      'Usage: flutter-mcp-toolkit init <claude-code|cursor|codex|cline|agents-skills|all>',
+      'Usage: flutter-mcp-toolkit init <claude-code|cursor|codex|cline|agents-skills|all|agentkit-platform>',
     );
     return 64;
+  }
+  if (command.rest.first == 'agentkit-platform') {
+    return runInitAgentkitPlatform(
+      projectRoot: command.option('project-dir') ?? io.Directory.current.path,
+      checkOnly: command.flag(_check),
+    );
   }
   final InitTarget target;
   try {
@@ -2478,8 +2515,51 @@ Examples:
   flutter-mcp-toolkit migrate agent-entries --write lib/main.dart
   flutter-mcp-toolkit migrate mcp-call-entry --write --namespace my_app lib/
 
-Migrates MCPCallEntry tool/resource factories to AgentCallEntry ahead of Phase 6b hard cut.
+Migrates legacy MCPCallEntry tool/resource factories to AgentCallEntry (Phase 6b hard cut shipped).
 See docs/start_here/migration_agentkit_phase6.md for limitations.
+''';
+
+Future<int> _runWebmcpSubcommand(final ArgResults command) async {
+  final sub = command.command;
+  if (sub == null) {
+    io.stderr.writeln('Usage: flutter-mcp-toolkit webmcp <chrome-args|verify>');
+    return 64;
+  }
+  switch (sub.name) {
+    case 'chrome-args':
+      return runWebmcpChromeArgs();
+    case 'verify':
+      return runWebmcpVerify(
+        cdpPort: int.tryParse(sub.option('cdp-port') ?? ''),
+        preferredWebPort: int.tryParse(sub.option('web-port') ?? '') ?? 8080,
+      );
+    default:
+      io.stderr.writeln('Unknown webmcp subcommand: ${sub.name}');
+      return 64;
+  }
+}
+
+String _usageWebmcp() => '''
+Usage:
+  flutter-mcp-toolkit webmcp chrome-args
+  flutter-mcp-toolkit webmcp verify [--cdp-port PORT] [--web-port 8080]
+
+Enables repeatable WebMCP E2E on Chrome without manual chrome://flags each session.
+See docs/superpowers/evals/2026-05-26-webmcp-verification.md
+''';
+
+String _usageWebmcpChromeArgs() => '''
+Usage: flutter-mcp-toolkit webmcp chrome-args
+
+Prints JSON with --web-browser-flag values and a full flutter run -d chrome command.
+Use scripts/run_web_showcase.sh for a logged dogfood launch.
+''';
+
+String _usageWebmcpVerify() => '''
+Usage: flutter-mcp-toolkit webmcp verify [--cdp-port PORT] [--web-port 8080]
+
+Probes a running Chrome tab via CDP for navigator.modelContext.registerTool.
+Exit 0 when WebMCP API is active; 1 with fix hints when not.
 ''';
 
 Future<int> _runMigrateSubcommand(final ArgResults command) async {
