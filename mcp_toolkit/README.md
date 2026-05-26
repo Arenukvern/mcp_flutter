@@ -24,24 +24,28 @@ For example, the default first-pass path is `bootstrapFlutter()`.
 
 All methods are available only in debug mode and wrapped in assert statements.
 
+Register custom surfaces with **`AgentCallEntry`** (re-exported from `agentkit_core`):
+
 ```dart
 await MCPToolkitBinding.instance.bootstrapFlutter(
   additionalEntries: {
-    MCPCallEntry.resource(
-      definition: MCPResourceDefinition(
-        name: 'app_runtime_status',
-        description: 'Read-only app diagnostics',
-        mimeType: 'application/json',
-      ),
-      handler: (final request) => MCPCallResult(
+    AgentCallEntry.resource(
+      namespace: 'app',
+      name: 'app_runtime_status',
+      description: 'Read-only app diagnostics',
+      mimeType: 'application/json',
+      handler: (final args) async => AgentResult.success(
         message: 'App runtime diagnostics',
-        parameters: {'ready': true},
+        data: {'ready': true},
       ),
     ),
   },
   runApp: () => runApp(const MyApp()),
 );
 ```
+
+Or use **`mcpToolkitTool`** / **`mcpToolkitResource`** when you already have
+`MCPToolDefinition` + `MCPCallResult` handlers (see [example/fibonacci_tool_example.dart](example/fibonacci_tool_example.dart)).
 
 App-side permission bridging is separate and opt-in:
 
@@ -58,7 +62,8 @@ MCPToolkitBinding.instance
 
 ```dart
 addMcpTool(
-  MCPCallEntry.tool(
+  mcpToolkitTool(
+    namespace: 'app',
     definition: MCPToolDefinition(
       name: 'calculate_fibonacci',
       description: 'Calculate the nth Fibonacci number and return the sequence',
@@ -134,34 +139,34 @@ Import `PlatformViewHints` and constants from `package:mcp_toolkit/mcp_toolkit.d
     Future<void> main() async {
       await MCPToolkitBinding.instance.bootstrapFlutter(
         additionalEntries: {
-          MCPCallEntry.tool(
-            definition: MCPToolDefinition(
-              name: 'calculate_fibonacci',
-              description: 'Calculate the nth Fibonacci number',
-              inputSchema: ObjectSchema(
-                properties: {
-                  'n': IntegerSchema(description: 'Fibonacci position'),
-                },
-                required: ['n'],
-              ),
-            ),
-            handler: (final request) {
-              final n = int.tryParse(request['n'] ?? '0') ?? 0;
-              return MCPCallResult(
+          AgentCallEntry.tool(
+            namespace: 'app',
+            name: 'calculate_fibonacci',
+            description: 'Calculate the nth Fibonacci number',
+            inputSchema: const {
+              'type': 'object',
+              'additionalProperties': false,
+              'properties': {
+                'n': {'type': 'string'},
+              },
+              'required': ['n'],
+            },
+            handler: (final args) async {
+              final n = int.tryParse(args['n']?.toString() ?? '') ?? 0;
+              return AgentResult.success(
                 message: 'Calculated Fibonacci number for position $n',
-                parameters: {'result': fibonacci(n)},
+                data: {'result': fibonacci(n)},
               );
             },
           ),
-          MCPCallEntry.resource(
-            definition: MCPResourceDefinition(
-              name: 'app_runtime_status',
-              description: 'Read-only runtime diagnostics',
-              mimeType: 'application/json',
-            ),
-            handler: (final request) => MCPCallResult(
+          AgentCallEntry.resource(
+            namespace: 'app',
+            name: 'app_runtime_status',
+            description: 'Read-only runtime diagnostics',
+            mimeType: 'application/json',
+            handler: (final args) async => AgentResult.success(
               message: 'Runtime diagnostics',
-              parameters: {'ready': true, 'screen': 'home'},
+              data: {'ready': true, 'screen': 'home'},
             ),
           ),
         },
@@ -180,6 +185,10 @@ Import `PlatformViewHints` and constants from `package:mcp_toolkit/mcp_toolkit.d
     and zone error forwarding via `handleZoneError`.
 
     Keep the older low-level calls only when you need custom startup choreography.
+
+    **Migrating from `MCPCallEntry`:** use
+    `flutter-mcp-toolkit migrate agent-entries` — see
+    [migration_agentkit_phase6.md](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/start_here/migration_agentkit_phase6.md).
 
 3.  **Optional: Register an App-Side Permission Delegate**:
     Keep `initializeFlutterToolkit()` unchanged and add the permission bridge only if the app owns the relevant permission flow.
@@ -239,7 +248,8 @@ Use resources for read-only state, tools for actions, and prefer lowercase under
 
 End-user docs for AI assistants live in the **`mcp_flutter`** repo:
 
-- Cursor / Codex plugin (`plugin/skills/`): start with **`flutter-mcp-toolkit-guide`**, then **`flutter-mcp-toolkit-custom-tools`** when registering **`MCPCallEntry`** tools or resources from app code.
+- Cursor / Codex plugin (`plugin/skills/`): start with **`flutter-mcp-toolkit-guide`**, then **`flutter-mcp-toolkit-custom-tools`** when registering **`AgentCallEntry`** tools or resources from app code.
+- **`flutter-mcp-toolkit-agentkit-migration`** when upgrading from removed `MCPCallEntry` APIs.
 - Claude Code marketplace plugin (`plugin/skills/`): **`flutter-mcp`** for driving the app; **`flutter-mcp-toolkit-custom-tools`** for the same registration workflow.
 
 Run `make sync-skills` after editing plugin skills so `mcp_server_dart/lib/src/skill_assets.g.dart` stays in sync.
