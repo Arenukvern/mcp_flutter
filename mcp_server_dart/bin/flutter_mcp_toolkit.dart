@@ -14,6 +14,7 @@ import 'package:flutter_mcp_toolkit_server/src/cli/codegen_sync_command.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/init_command.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/init_mode.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/init_target.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/migrate_agent_entries_command.dart';
 
 Future<void> main(final List<String> args) async {
   late final ArgResults parsed;
@@ -1724,6 +1725,8 @@ String _globalUsage() {
     ..writeln('  validate-runtime')
     ..writeln('  init')
     ..writeln('  codegen-init')
+    ..writeln('  migrate agent-entries')
+    ..writeln('  migrate mcp-call-entry')
     ..writeln('  codegen sync')
     ..writeln()
     ..writeln('Global options:')
@@ -1756,6 +1759,9 @@ String _usageForCommand(final List<String> commandPath) {
     'validate-runtime' => _usageValidateRuntime(),
     'init' => _usageInit(),
     'codegen-init' => _usageCodegenInit(),
+    'migrate' => _usageMigrate(),
+    'migrate agent-entries' => _usageMigrateAgentEntries(),
+    'migrate mcp-call-entry' => _usageMigrateAgentEntries(),
     'codegen' => _usageCodegen(),
     'codegen sync' => _usageCodegenSync(),
     _ => _globalUsage(),
@@ -2116,6 +2122,18 @@ final _argParser = ArgParser(allowTrailingOptions: false)
       ),
   )
   ..addCommand(
+    'migrate',
+    _commandParser()
+      ..addCommand(
+        'agent-entries',
+        _migrateAgentEntriesParser(),
+      )
+      ..addCommand(
+        'mcp-call-entry',
+        _migrateAgentEntriesParser(),
+      ),
+  )
+  ..addCommand(
     'codegen',
     _commandParser()
       ..addCommand(
@@ -2174,6 +2192,7 @@ const _outputDir = 'output-dir';
 const _logLevel = 'log-level';
 const _help = 'help';
 const _check = 'check';
+const _write = 'write';
 const _diff = 'diff';
 const _backup = 'backup';
 const _noOverwrite = 'no-overwrite';
