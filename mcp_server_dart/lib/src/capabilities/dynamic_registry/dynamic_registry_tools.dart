@@ -26,11 +26,12 @@ final class DynamicRegistryTools {
   CoreCommandExecutor get _executor => server.coreCommandExecutor;
 
   static const _setupWorkflowText =
-      'To create new tools/resources: 1) Generate MCPCallEntry.tool() or MCPCallEntry.resource() with handler and definition, '
-      '2) Add to Flutter app (in main.dart, widget tree, or state management like provider/riverpod) using addMcpTool(), '
-      '3) Use fmt_list_client_tools_and_resources to verify the tool is registered, '
-      '4) Hot reload the app to activate. '
-      '5) Use fmt_client_tool to execute the tool. ';
+      'To create new tools/resources: 1) Define AgentCallEntry.tool() or AgentCallEntry.resource() '
+      '(namespace, name, description, inputSchema, handler returning AgentResult), '
+      '2) Register in the Flutter app (main.dart or bootstrap) via MCPToolkitBinding.addEntries() or addMcpTool(), '
+      '3) Use fmt_list_client_tools_and_resources to verify registration, '
+      '4) Hot restart the app to activate. '
+      '5) Use fmt_client_tool or fmt_client_resource to execute. ';
 
   static const _exactMatchingText =
       'Names/URIs must match exactly what appears in fmt_list_client_tools_and_resources. ';
@@ -44,7 +45,7 @@ final class DynamicRegistryTools {
       'Returns tool definitions with names, descriptions, and input schemas, plus available resources with URIs. '
       "Essential for planning your debugging workflow and understanding the app's current MCP toolkit setup. "
       '\n\n$_setupWorkflowText'
-      'See server instructions for detailed examples of creating custom MCPCallEntry definitions.';
+      'See flutter-mcp-toolkit-custom-tools skill for AgentCallEntry examples.';
 
   static final listClientToolsAndResources = Tool(
     name: 'fmt_list_client_tools_and_resources',
@@ -61,7 +62,7 @@ final class DynamicRegistryTools {
         '$_schemaComplianceText'
         'This is your primary way to interact with Flutter app functionality beyond static MCP server tools. '
         '\n\nFor custom tools: $_setupWorkflowText'
-        'Example: Create MCPCallEntry.tool() with handler: (params) => MCPCallResult(...), then register and hot reload.',
+        'Example: AgentCallEntry.tool(namespace: "app", name: "my_tool", ...) then addEntries; hot restart.',
     inputSchema: strictToolInputSchema(
       required: ['toolName'],
       properties: {
@@ -87,7 +88,7 @@ final class DynamicRegistryTools {
         '$_exactMatchingText'
         'Typically used for getting current app state snapshots or accessing structured data. '
         '\n\nFor custom resources: $_setupWorkflowText'
-        'Example: Create MCPCallEntry.resource() with handler: (uri) => MCPCallResult(...), then register and hot reload.',
+        'Example: AgentCallEntry.resource(namespace: "app", name: "my_resource", ...) then addEntries; hot restart.',
     inputSchema: strictToolInputSchema(
       required: ['resourceUri'],
       properties: {
