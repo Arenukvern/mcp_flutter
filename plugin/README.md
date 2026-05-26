@@ -16,7 +16,7 @@ AI agent
               ▼ VM Service extensions (ext.mcp.toolkit.*)
         Flutter app (debug) + mcp_toolkit
               │
-              └─► MCPCallEntry.tool / .resource registered via addMcpTool
+              └─► AgentCallEntry.tool / .resource registered via addMcpTool
 ```
 
 - **Static tools** — semantic snapshot, tap, scroll, hot-reload, errors, etc.

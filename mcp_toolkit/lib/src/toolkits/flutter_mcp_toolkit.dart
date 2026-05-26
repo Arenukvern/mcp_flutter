@@ -14,7 +14,7 @@ import '../services/screenshot_service.dart';
 import '../services/view_introspection_service.dart';
 import 'interaction_toolkit.dart';
 
-/// Returns a set of MCPCallEntry objects for the Flutter MCP Toolkit.
+/// Returns [AgentCallEntry] values for the Flutter MCP Toolkit.
 ///
 /// The toolkit provides functionality for handling app errors,
 /// view screenshots, and view details.
@@ -45,7 +45,7 @@ extension MCPToolkitBindingExtension on MCPToolkitBinding {
 }
 
 /// {@template on_app_errors_entry}
-/// MCPCallEntry for handling app errors.
+/// AgentCallEntry wrapper for app errors.
 /// {@endtemplate}
 extension type OnAppErrorsEntry._(AgentCallEntry entry) implements AgentCallEntry {
   /// {@macro on_app_errors_entry}
@@ -97,7 +97,7 @@ extension type OnAppErrorsEntry._(AgentCallEntry entry) implements AgentCallEntr
 }
 
 /// {@template on_view_screenshots_entry}
-/// MCPCallEntry for handling view screenshots.
+/// AgentCallEntry wrapper for view screenshots.
 /// {@endtemplate}
 extension type OnViewScreenshotsEntry._(AgentCallEntry entry)
     implements AgentCallEntry {
@@ -140,7 +140,7 @@ extension type OnViewScreenshotsEntry._(AgentCallEntry entry)
 }
 
 /// {@template on_view_details_entry}
-/// MCPCallEntry for handling view details.
+/// AgentCallEntry wrapper for view details.
 /// {@endtemplate}
 extension type const OnViewDetailsEntry._(AgentCallEntry entry)
     implements AgentCallEntry {
@@ -169,7 +169,7 @@ extension type const OnViewDetailsEntry._(AgentCallEntry entry)
 }
 
 /// {@template on_inspect_widget_at_point_entry}
-/// MCPCallEntry for inspecting widget details at global coordinates.
+/// AgentCallEntry wrapper for inspecting widget details at global coordinates.
 /// {@endtemplate}
 extension type const OnInspectWidgetAtPointEntry._(AgentCallEntry entry)
     implements AgentCallEntry {

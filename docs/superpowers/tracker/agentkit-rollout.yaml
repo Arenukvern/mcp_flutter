@@ -8,14 +8,19 @@ program:
   rollout_doc: docs/superpowers/plans/2026-05-25-agentkit-rollout.md
   self_closing_loop: docs/superpowers/agentkit-self-closing-loop.md
   hardening_spec: docs/superpowers/specs/2026-05-25-agentkit-phase5-hardening-design.md
-  status: complete_in_repo
+  status: complete_in_repo_integrated
+  integration_gate: pass
+  integration_phase: done
   active_phase: null
   next_spec: docs/superpowers/specs/2026-05-26-agentkit-pre-extract-completion-design.md
   closure_report: docs/superpowers/closure/2026-05-26-agentkit-program-complete-in-repo.md
+  integration_closure: docs/superpowers/closure/2026-05-26-agentkit-integration-complete.md
   deferred_work:
     - Standalone agentkit monorepo split from mcp_flutter consumer (phase7)
     - agentkit_platform Flutter plugin (agentkit://invoke via app_links)
-    - fmt_migrate_agent_entries MCP tool (CLI migrate shipped in 6f)
+    - fmt_migrate_agent_entries MCP tool (CLI migrate shipped in 6f; MCP report-only deferred)
+    - init agentkit-platform CLI (hook injection; templates in agentkit_platform)
+    - generateWebAgentManifest wired from registry (manifest manual / codegen sync today)
     - Gemma product wiring (flutter_gemma in example/shipping app; agentkit_gemma stays example-only)
     - HarmonyOS NEXT / Intents Kit / hadss_intents
 

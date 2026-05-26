@@ -56,7 +56,7 @@ Permission behavior for this flow:
 
 - Use `data.summary` as pass/fail status for automation.
 - Use `data.summary.capturePlatformViewsDetected` and `captureFocusAttempted` for platform-view routing.
-- Use `data.summary.captureFallbackUsed` to see whether a `flutter_layer` retry ran (skipped when platform views were detected).
+- Use `data.summary.captureFallbackUsed` to see whether a `flutter_layer` retry ran after a failed `desktop_window` attempt (including when platform views are detected).
 - Use `data.steps` for per-step evidence and retries.
 - Use `data.doctor.checks` to explain setup blockers.
 - Use `data.summary.screenshotFiles` for saved screenshot paths when `--save-images` is enabled.

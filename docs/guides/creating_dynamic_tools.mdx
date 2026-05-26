@@ -14,19 +14,17 @@ In your Flutter app, create a new file called `lib/my_tools.dart` and add the fo
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 
 void registerMyTools() {
-  final helloTool = MCPCallEntry.tool(
-    handler: (params) {
-      return MCPCallResult(
-        message: 'Hello from a dynamic tool!',
-        parameters: const {},
-      );
+  final helloTool = AgentCallEntry.tool(
+    namespace: 'app',
+    name: 'hello',
+    description: 'A simple tool that says hello.',
+    inputSchema: const {
+      'type': 'object',
+      'additionalProperties': false,
+      'properties': {},
     },
-    definition: MCPToolDefinition(
-      name: 'hello',
-      description: 'A simple tool that says hello.',
-      inputSchema: ObjectSchema(
-        properties: const {},
-      ),
+    handler: (_) async => AgentResult.success(
+      message: 'Hello from a dynamic tool!',
     ),
   );
 

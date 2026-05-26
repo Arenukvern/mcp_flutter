@@ -14,7 +14,7 @@ Execute **after** merging marketplace-prep changes and cutting a release with sy
 3. Add real images under [plugin/assets/](https://github.com/Arenukvern/mcp_flutter/tree/main/plugin/assets) per [plugin/assets/README.md](https://github.com/Arenukvern/mcp_flutter/blob/main/plugin/assets/README.md).
 4. Smoke test:
    - Debug app with `mcp_toolkit` running.
-   - Register a sample `MCPCallEntry.tool`.
+   - Register a sample `AgentCallEntry.tool`.
    - Call `fmt_list_client_tools_and_resources` → see your tool.
    - Call `fmt_client_tool` with your tool name.
 
@@ -30,7 +30,7 @@ Copy for forms: [docs/ai_agents/marketplace_copy.yaml](https://github.com/Arenuk
 4. **Short description:** paste `short_description` from `marketplace_copy.yaml`.
 5. **Long description:** paste `long_description`; emphasize:
    - 27 built-in `fmt_*` tools
-   - **Dynamic registry** — `addMcpTool` / `MCPCallEntry` in the Flutter app
+   - **Dynamic registry** — `addMcpTool` / `AgentCallEntry` in the Flutter app
    - Skill `flutter-mcp-toolkit-custom-tools`
 6. **Keywords:** from `marketplace_copy.yaml`.
 7. **Security:** paste `security_notes` bullets.

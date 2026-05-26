@@ -112,7 +112,8 @@ final class PlatformSync {
     if (!manifestFile.existsSync()) {
       throw StateError(
         'Missing $manifestFileName at ${manifestFile.path}. '
-        'Generate it from registry descriptors first.',
+        'Maintain web/agent_manifest.json (or project-root copy) from your '
+        'agent descriptor list, or run `flutter-mcp-toolkit codegen sync`.',
       );
     }
     return AgentManifest.parse(manifestFile.readAsStringSync());

@@ -55,7 +55,11 @@ Full matrix (`dart test packages/agentkit_*`, `cd mcp_server_dart && dart test`)
 - `fmt_migrate_agent_entries` MCP tool
 - Public re-export shim removal after consumer deprecation window (if any remain outside `mcp_toolkit`)
 
+## Integration gate (2026-05-26)
+
+Follow-up integration pass: [2026-05-26-agentkit-integration-complete.md](./2026-05-26-agentkit-integration-complete.md).  
+Tracker: `program.status: complete_in_repo_integrated`, `integration_gate: pass`.
+
 ## Handoff
 
-Tracker: `program.status: complete_in_repo`, `active_phase: null`.  
 Next: Phase 7 extract plan from [agentkit design spec](../specs/2026-05-25-agentkit-design.md).

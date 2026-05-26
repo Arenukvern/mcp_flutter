@@ -3,6 +3,7 @@
 import 'dart:developer' as developer;
 
 import 'package:agentkit_core/agentkit_core.dart';
+import 'package:agentkit_platform/agentkit_platform.dart';
 import 'package:flutter/foundation.dart';
 
 import 'agent_call_entry_extensions.dart';
@@ -62,6 +63,10 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
       _allEntries
         ..clear()
         ..addAll(uniqueEntries);
+
+      if (kIsWeb) {
+        AgentWebMcpBootstrap.registerFromEntries(_allEntries);
+      }
 
       for (final entry in entries) {
         final extensionName = entry.serviceExtensionName;

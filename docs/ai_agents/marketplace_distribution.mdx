@@ -9,7 +9,7 @@ description: How flutter-mcp-toolkit reaches Claude Code, Cursor, Codex, Cline, 
 
 1. **Host MCP** — `flutter-mcp-toolkit-server` with 27 `fmt_*` tools (inspect, control, debug).
 2. **In-app toolkit** — `mcp_toolkit` in your Flutter app (debug only).
-3. **Dynamic registry** — your app registers custom tools/resources at runtime (`addMcpTool`, `MCPCallEntry`); agents use `fmt_list_client_tools_and_resources`, `fmt_client_tool`, `fmt_client_resource`.
+3. **Dynamic registry** — your app registers custom tools/resources at runtime (`AgentCallEntry`, `addMcpTool` / `addEntries`); agents use `fmt_list_client_tools_and_resources`, `fmt_client_tool`, `fmt_client_resource`.
 
 Copy for store listings lives in [marketplace_copy.yaml](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/ai_agents/marketplace_copy.yaml).
 
@@ -78,7 +78,7 @@ Does **not** write `mcp.json`. Run `flutter-mcp-toolkit init <agent>` afterward 
 
 1. `flutter-mcp-toolkit-server` on `PATH` (or `FLUTTER_MCP_BIN`).
 2. Target Flutter app in **debug** with `mcp_toolkit` initialized.
-3. For custom tools: register `MCPCallEntry` in app code; see [Dynamic tool registry](/core/dynamic_tools_registry) and skill `flutter-mcp-toolkit-custom-tools`.
+3. For custom tools: register `AgentCallEntry` in app code; see [Dynamic tool registry](/core/dynamic_tools_registry) and skill `flutter-mcp-toolkit-custom-tools`.
 
 ## Maintainers
 

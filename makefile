@@ -20,7 +20,8 @@ check-contracts:
 	bash tool/contracts/check_skill_assets_drift.sh && \
 	bash tool/contracts/check_changelog_markdown.sh && \
 	bash tool/contracts/check_tool_prefix.sh && \
-	bash tool/contracts/check_repo_split_paths.sh
+	bash tool/contracts/check_repo_split_paths.sh && \
+	bash tool/contracts/check_agentkit_skills_grep.sh
 
 .PHONY: release-artifacts
 release-artifacts:

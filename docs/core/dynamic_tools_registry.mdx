@@ -92,27 +92,27 @@ Future<void> main() async {
 ## Register A Dynamic Tool
 
 ```dart
-import 'package:dart_mcp/client.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 
 Future<void> registerDynamicEntries() async {
-  final sayHello = MCPCallEntry.tool(
-    handler: (request) {
-      final name = request['name'] ?? 'World';
-      return MCPCallResult(
+  final sayHello = AgentCallEntry.tool(
+    namespace: 'app',
+    name: 'say_hello',
+    description: 'Return a greeting for a provided name',
+    inputSchema: const {
+      'type': 'object',
+      'additionalProperties': false,
+      'properties': {
+        'name': {'type': 'string'},
+      },
+    },
+    handler: (final args) async {
+      final name = args['name']?.toString() ?? 'World';
+      return AgentResult.success(
         message: 'Hello, $name!',
-        parameters: {'greeting': 'Hello, $name!'},
+        data: {'greeting': 'Hello, $name!'},
       );
     },
-    definition: MCPToolDefinition(
-      name: 'say_hello',
-      description: 'Return a greeting for a provided name',
-      inputSchema: ObjectSchema(
-        properties: {
-          'name': StringSchema(description: 'Name to greet'),
-        },
-      ),
-    ),
   );
 
   await MCPToolkitBinding.instance.addEntries(entries: {sayHello});
@@ -130,17 +130,16 @@ Future<void> registerDynamicEntries() async {
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 
 Future<void> registerConfigResource() async {
-  final appConfig = MCPCallEntry.resource(
-    handler: (_) => MCPCallResult(
+  final appConfig = AgentCallEntry.resource(
+    namespace: 'app',
+    name: 'app_config',
+    description: 'Read current app configuration',
+    mimeType: 'application/json',
+    handler: (_) async => AgentResult.success(
       message: 'App configuration snapshot',
-      parameters: {
+      data: {
         'config': {'apiBaseUrl': 'https://example.com'},
       },
-    ),
-    definition: MCPResourceDefinition(
-      name: 'app_config',
-      description: 'Read current app configuration',
-      mimeType: 'application/json',
     ),
   );
 

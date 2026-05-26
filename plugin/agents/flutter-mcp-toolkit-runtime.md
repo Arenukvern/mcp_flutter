@@ -36,7 +36,7 @@ use the same `fmt_` prefix for a single consistent surface.
 
 ## Dynamic tool registration
 
-When a user asks for app-specific introspection that isn't covered by built-in tools (cart state, feature flags, domain queries), consider registering a custom MCP tool via `MCPCallEntry.tool` + `MCPToolkitBinding.instance.addEntries`. Rules:
+When a user asks for app-specific introspection that isn't covered by built-in tools (cart state, feature flags, domain queries), consider registering a custom MCP tool via `AgentCallEntry.tool` + `MCPToolkitBinding.instance.addEntries` (see skill `flutter-mcp-toolkit-custom-tools`). Rules:
 
 - Register once at bootstrap (after `MCPToolkitBinding.instance..initialize()..initializeFlutterToolkit();`, before/during `runApp`). Not inside widget lifecycles.
 - Tight schema: `additionalProperties: false`, explicit `required`, enums over free strings.

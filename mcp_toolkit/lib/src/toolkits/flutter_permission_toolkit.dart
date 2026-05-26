@@ -165,7 +165,7 @@ abstract interface class MCPPermissionDelegate {
   });
 }
 
-/// Returns a set of MCPCallEntry objects for
+/// Returns a set of [AgentCallEntry] values for
 /// the Flutter MCP Permission Toolkit.
 Set<AgentCallEntry> getFlutterMcpPermissionEntries({
   required final MCPPermissionDelegate delegate,

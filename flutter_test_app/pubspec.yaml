@@ -40,6 +40,8 @@ dependencies:
   web: ^1.1.1
 
 dependency_overrides:
+  agentkit_core:
+    path: ../packages/agentkit_core
   agentkit_schema:
     path: ../packages/agentkit_schema
 dev_dependencies:

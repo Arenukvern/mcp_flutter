@@ -32,10 +32,10 @@
 - Modify: `packages/agentkit_mcp/lib/src/mcp_publish_adapter.dart` (if template URI matching needed)
 - Test: `mcp_server_dart/test/flutter_inspector_resources_test.dart` (create if missing)
 
-- [ ] **Step 1:** Write failing test — read `visual://localhost/app/errors/3` returns JSON via registry invoke
-- [ ] **Step 2:** Register template URI pattern as resource intent(s) or single intent with `count` param; remove `addResourceTemplate` for errors
-- [ ] **Step 3:** Run host + inspector tests
-- [ ] **Step 4:** Commit `feat(agentkit): registry-backed app errors resource template`
+- [x] **Step 1:** Write failing test — read `visual://localhost/app/errors/3` returns JSON via registry invoke
+- [x] **Step 2:** Register template URI pattern as resource intent(s) or single intent with `count` param; remove `addResourceTemplate` for errors
+- [x] **Step 3:** Run host + inspector tests
+- [x] **Step 4:** Commit `feat(agentkit): registry-backed app errors resource template`
 
 ---
 
@@ -50,11 +50,11 @@
 - Modify: `flutter_test_app/lib/main.dart`, examples
 - Test: `mcp_toolkit/test/**`, `flutter_test_app` analyze
 
-- [ ] **Step 1:** Add/extend `AgentCallEntry` factories if MCP factories had unique behavior (methodName, resourceUri)
-- [ ] **Step 2:** Migrate toolkits + binding to `AgentCallEntry` (compile-driven)
-- [ ] **Step 3:** Delete bridge + MCPCallEntry types
-- [ ] **Step 4:** Fix tests; `dart test mcp_toolkit`
-- [ ] **Step 5:** Commit `feat(agentkit)!: remove MCPCallEntry from mcp_toolkit`
+- [x] **Step 1:** Add/extend `AgentCallEntry` factories if MCP factories had unique behavior (methodName, resourceUri)
+- [x] **Step 2:** Migrate toolkits + binding to `AgentCallEntry` (compile-driven)
+- [x] **Step 3:** Delete bridge + MCPCallEntry types
+- [x] **Step 4:** Fix tests; `dart test mcp_toolkit`
+- [x] **Step 5:** Commit `feat(agentkit)!: remove MCPCallEntry from mcp_toolkit`
 
 ---
 
@@ -147,10 +147,10 @@
 - Regenerate: `mcp_server_dart/lib/src/skill_assets.g.dart` (maintainer script)
 - Modify: `mcp_server_dart/lib/src/mcp_toolkit_server/server_instructions.dart`
 
-- [ ] **Step 1:** Write migration skill (CLI + MCP migrate, hard cut)
-- [ ] **Step 2:** Rewrite custom-tools for AgentCallEntry only
-- [ ] **Step 3:** Regenerate skill_assets; grep gate no stray MCPCallEntry
-- [ ] **Step 4:** Commit
+- [x] **Step 1:** Write migration skill (CLI + MCP migrate, hard cut)
+- [x] **Step 2:** Rewrite custom-tools for AgentCallEntry only
+- [x] **Step 3:** Regenerate skill_assets; grep gate no stray MCPCallEntry
+- [x] **Step 4:** Commit
 
 ---
 
@@ -161,10 +161,11 @@
 - Create: `docs/superpowers/closure/2026-05-26-agentkit-program-complete-in-repo.md`
 - Modify: tracker, rollout
 
-- [ ] **Step 1:** Remove redundant shims; document allowed imports
-- [ ] **Step 2:** Run full validation matrix from spec 6h
-- [ ] **Step 3:** Closure report + tracker `complete_in_repo`
-- [ ] **Step 4:** Commit
+- [x] **Step 1:** Remove redundant shims; document allowed imports
+- [x] **Step 2:** Run full validation matrix from spec 6h
+- [x] **Step 3:** Closure report + tracker `complete_in_repo`
+- [x] **Step 4:** Commit
+- [x] **Integration gate (2026-05-26):** [integration closure](../closure/2026-05-26-agentkit-integration-complete.md)
 
 ---
 

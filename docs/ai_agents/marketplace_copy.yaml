@@ -17,7 +17,7 @@ long_description: |
 
   Dynamic registry (key differentiator):
   - Register app-specific tools and resources at runtime with addMcpTool /
-    MCPCallEntry in your Flutter app or game
+    AgentCallEntry in your Flutter app or game
   - Agents discover via fmt_list_client_tools_and_resources and invoke via
     fmt_client_tool / fmt_client_resource
   - Building blocks for domain-specific debug surfaces (cart state, feature

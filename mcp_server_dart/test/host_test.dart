@@ -180,9 +180,7 @@ void main() {
         final cap = _CapturingCapability((final ctx) => escapedCtx = ctx);
         final host = McpHost();
         await host.registerCapability(cap);
-        // Note: registerResource currently throws UnimplementedError after the
-        // seal check. We assert the seal fires FIRST (StateError before
-        // UnimplementedError).
+        // registerResource after seal must throw StateError (registry-backed path).
         expect(
           () => escapedCtx.registerResource(
             ResourceRegistration(

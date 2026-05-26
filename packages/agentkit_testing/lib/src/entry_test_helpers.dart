@@ -6,7 +6,3 @@ extension AgentCallEntryTest on AgentCallEntry {
       invokeDirect(AgentWireArgs(wire).toAgentArguments());
 }
 
-extension AgentCallEntrySetTest on Set<AgentCallEntry> {
-  AgentCallEntry byName(final String name) =>
-      firstWhere((final entry) => entry.name == name);
-}
