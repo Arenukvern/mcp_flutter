@@ -706,9 +706,6 @@ Future<CoreResult> _runValidateRuntime({
       capturePlatformViewsDetected || _captureHintsPlatformViewsDetected(steps);
   captureFocusAttempted = _desktopCaptureRetriedInSteps(steps);
   if (snapshotFailure != null &&
-      !shouldSkipFlutterLayerFallback(
-        _platformViewHintsFromDetected(capturePlatformViewsDetected),
-      ) &&
       _eligibleForFlutterLayerCaptureRetry(snapshotFailure)) {
     snapshotFailure = await runStep(
       'capture_ui_snapshot_flutter_layer',
@@ -791,9 +788,6 @@ Future<CoreResult> _runValidateRuntime({
     captureFocusAttempted =
         captureFocusAttempted || _desktopCaptureRetriedInSteps(steps);
     if (afterReloadSnapshotFailure != null &&
-        !shouldSkipFlutterLayerFallback(
-          _platformViewHintsFromDetected(capturePlatformViewsDetected),
-        ) &&
         _eligibleForFlutterLayerCaptureRetry(afterReloadSnapshotFailure)) {
       afterReloadSnapshotFailure = await runStep(
         'capture_ui_snapshot_after_reload_flutter_layer',
@@ -1397,8 +1391,9 @@ void _printInteractiveNarrativeIfNeeded({
     case 'validate-runtime':
       io.stdout.writeln(
         'validate-runtime: visual capture tries auto mode first; executor '
-        'recovery retries host capture once (desktopCaptureRetried). When '
-        'platform views are detected, flutter_layer fallback is skipped.',
+        'recovery retries host capture once (desktopCaptureRetried). If '
+        'desktop_window still fails, retries once with flutter_layer '
+        '(even when platform views are detected).',
       );
       return;
     case 'permissions':
@@ -1570,14 +1565,6 @@ bool _desktopCaptureRetriedInSteps(final List<Map<String, Object?>> steps) {
   }
   return false;
 }
-
-PlatformViewHints _platformViewHintsFromDetected(final bool detected) =>
-    PlatformViewHints(
-      platformViewsDetected: detected,
-      matches: const <PlatformViewMatch>[],
-      recommendedMode: detected ? kCaptureHintRecommendedDesktopWindow : null,
-      warning: detected ? kPlatformViewWarning : null,
-    );
 
 bool _platformViewsDetectedInPayload(final Map<String, Object?>? payload) {
   if (payload == null) {
