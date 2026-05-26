@@ -23,6 +23,7 @@ dependencies:
   logging: ^1.3.0
   agentkit_core:
   agentkit_mcp:
+  agentkit_platform:
   agentkit_schema:
   flutter_mcp_toolkit_capability_core:
   flutter_mcp_toolkit_capability_kernel:

@@ -13,6 +13,7 @@ workspace:
   - packages/agentkit_gemma
   - packages/agentkit_apple
   - packages/agentkit_android
+  - packages/agentkit_platform
   - packages/agentkit_testing
   - packages/server_capability_kernel
   - packages/server_capability_core

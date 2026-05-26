@@ -10,6 +10,7 @@ import 'package:flutter_mcp_toolkit_server/flutter_mcp_core.dart';
 import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/desktop_capture_recovery.dart';
 import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/platform_view_hints.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/codegen_init_command.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/codegen_sync_command.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/init_command.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/init_mode.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/init_target.dart';
@@ -46,6 +47,12 @@ Future<void> main(final List<String> args) async {
   }
   if (parsed.command?.name == 'codegen-init') {
     io.exit(await _runCodegenInitSubcommand(parsed.command!));
+  }
+  if (parsed.command?.name == 'migrate') {
+    io.exit(await _runMigrateSubcommand(parsed.command!));
+  }
+  if (parsed.command?.name == 'codegen') {
+    io.exit(await _runCodegenSubcommand(parsed.command!));
   }
   final logLevel = _parseLogLevel(parsed.option(_logLevel));
   final logger = _buildLogger(logLevel);
@@ -1717,6 +1724,7 @@ String _globalUsage() {
     ..writeln('  validate-runtime')
     ..writeln('  init')
     ..writeln('  codegen-init')
+    ..writeln('  codegen sync')
     ..writeln()
     ..writeln('Global options:')
     ..writeln(_argParser.usage)
@@ -1748,6 +1756,8 @@ String _usageForCommand(final List<String> commandPath) {
     'validate-runtime' => _usageValidateRuntime(),
     'init' => _usageInit(),
     'codegen-init' => _usageCodegenInit(),
+    'codegen' => _usageCodegen(),
+    'codegen sync' => _usageCodegenSync(),
     _ => _globalUsage(),
   };
 }
@@ -2104,6 +2114,27 @@ final _argParser = ArgParser(allowTrailingOptions: false)
         defaultsTo: true,
         help: 'Run "flutter pub add flutter_mcp_toolkit" first.',
       ),
+  )
+  ..addCommand(
+    'codegen',
+    _commandParser()
+      ..addCommand(
+        'sync',
+        _commandParser()
+          ..addOption(
+            'platform',
+            defaultsTo: 'web',
+            help: 'Comma-separated platforms (phase 6d-web: web only)',
+          )
+          ..addOption(
+            'project-dir',
+            help: 'Flutter project root (defaults to current directory)',
+          )
+          ..addFlag(
+            _check,
+            help: 'Verify generated web artifacts are up to date',
+          ),
+      ),
   );
 
 const _defaultHost = 'localhost';
@@ -2376,3 +2407,90 @@ Future<int> _runCodegenInitSubcommand(final ArgResults command) =>
       printSnippetOnly: command.flag('print-only'),
       runPubAdd: command.flag('pub-add'),
     );
+
+Future<int> _runCodegenSubcommand(final ArgResults command) async {
+  final sub = command.command;
+  if (sub == null || sub.name != 'sync') {
+    io.stderr.writeln('Usage: flutter-mcp-toolkit codegen sync --platform web');
+    return 64;
+  }
+  return runCodegenSync(
+    platform: sub.option('platform') ?? 'web',
+    projectRoot: sub.option('project-dir') ?? io.Directory.current.path,
+    checkOnly: sub.flag(_check),
+  );
+}
+
+String _usageCodegen() => '''
+Usage:
+  flutter-mcp-toolkit codegen sync ...
+
+Examples:
+  flutter-mcp-toolkit codegen sync --platform web
+  flutter-mcp-toolkit codegen sync --platform web --check
+''';
+
+String _usageCodegenSync() => '''
+Usage: flutter-mcp-toolkit codegen sync --platform web [--project-dir <path>] [--check]
+
+Examples:
+  flutter-mcp-toolkit codegen sync --platform web
+  flutter-mcp-toolkit codegen sync --platform web --check
+
+Reads agent_manifest.json and writes web/manifest.json shortcuts +
+web/agentkit_webmcp.generated.js for WebMCP bootstrap path C.
+''';
+
+ArgParser _migrateAgentEntriesParser() => _commandParser()
+  ..addFlag(_check, help: 'Report pending migrations; exit 1 if any would change')
+  ..addFlag(_write, help: 'Apply migrations in place')
+  ..addOption(
+    'namespace',
+    defaultsTo: 'app',
+    help: 'Default AgentCallEntry namespace for migrated entries',
+  );
+
+String _usageMigrate() => '''
+Usage: flutter-mcp-toolkit migrate <agent-entries|mcp-call-entry> [options] <path>
+
+Subcommands:
+  agent-entries   Migrate MCPCallEntry → AgentCallEntry in Dart sources
+  mcp-call-entry  Alias for agent-entries
+
+Use `flutter-mcp-toolkit migrate agent-entries --help` for options.
+''';
+
+String _usageMigrateAgentEntries() => '''
+Usage: flutter-mcp-toolkit migrate agent-entries [--check] [--write] [--namespace app] <path>
+
+Examples:
+  flutter-mcp-toolkit migrate agent-entries --check lib/
+  flutter-mcp-toolkit migrate agent-entries --write lib/main.dart
+  flutter-mcp-toolkit migrate mcp-call-entry --write --namespace my_app lib/
+
+Migrates MCPCallEntry tool/resource factories to AgentCallEntry ahead of Phase 6b hard cut.
+See docs/start_here/migration_agentkit_phase6.md for limitations.
+''';
+
+Future<int> _runMigrateSubcommand(final ArgResults command) async {
+  final sub = command.command;
+  if (sub == null ||
+      (sub.name != 'agent-entries' && sub.name != 'mcp-call-entry')) {
+    io.stderr.writeln(
+      'Usage: flutter-mcp-toolkit migrate <agent-entries|mcp-call-entry> [options] <path>',
+    );
+    return 64;
+  }
+  if (sub.rest.isEmpty) {
+    io.stderr.writeln(
+      'Usage: flutter-mcp-toolkit migrate ${sub.name} [--check] [--write] <path>',
+    );
+    return 64;
+  }
+  return runMigrateAgentEntries(
+    path: sub.rest.first,
+    checkOnly: sub.flag(_check),
+    write: sub.flag(_write),
+    defaultNamespace: sub.option('namespace') ?? 'app',
+  );
+}
