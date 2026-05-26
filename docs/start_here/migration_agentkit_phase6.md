@@ -57,8 +57,7 @@ The migrator is **text-based**, not a full analyzer rewrite:
 3. **Complex handlers** — block bodies with multiple returns may need hand-editing to
    return `AgentResult` directly instead of the adapter wrapper.
 4. **Bootstrap APIs** — `addMcpTool`, `MCPToolkitBinding.addEntries`, and
-   `agent_client_install` still accept `MCPCallEntry` until Phase 6b; after migration,
-   switch call sites to `AgentCallEntry` + registry helpers.
+   `agent_client_install` accept **`AgentCallEntry` only** (Phase 6b hard cut).
 
 ## MCP tool (TODO)
 

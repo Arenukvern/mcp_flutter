@@ -55,7 +55,8 @@ Always run `flutter-mcp-toolkit doctor --json` first. Parse the output:
 | Read state ("what's on screen?", "show me errors", "screenshot") | `flutter-mcp-toolkit-inspect` |
 | Drive UI ("tap X", "type into Y", "scroll to Z", "hot reload") | `flutter-mcp-toolkit-control` |
 | Diagnose ("why is X failing?", "show recent logs", "evaluate expression") | `flutter-mcp-toolkit-debug` |
-| Register app-specific MCP tools/resources (`MCPCallEntry`, `bootstrapFlutter` `additionalEntries`) | `flutter-mcp-toolkit-custom-tools` |
+| Register app-specific MCP tools/resources (`AgentCallEntry`, `bootstrapFlutter` `additionalEntries`) | `flutter-mcp-toolkit-custom-tools` |
+| Upgrade after agentkit Phase 6 breaking bump (migrate CLI) | `flutter-mcp-toolkit-agentkit-migration` |
 | Harness Script lint/run/Maestro (`*.hs.yaml`, app registry) | Install **flutter_harness** — skill `flutter-mcp-semantic-test` in that repo |
 | HS capture bundles / promo video | **flutter_harness** + **flutter_mcp_video** (not bundled in toolkit `init`) |
 
@@ -806,6 +807,11 @@ Do NOT use this skill for:
 - Reading what is currently on screen — use `flutter-mcp-toolkit-inspect`.
 - The toolkit itself failing to connect — load `flutter-mcp-toolkit-setup`.
 
+## Registry vs bundled tools
+
+- **Bundled `fmt_*` tools** (screenshot, logs, evaluate, …) run on the MCP server via **`AgentRegistry`** on the host.
+- **App-registered surfaces** appear after `MCPToolkitBinding.addEntries` / `AgentCallEntry` — discover with **`fmt_list_client_tools_and_resources`**, then **`fmt_client_tool`** / **`fmt_client_resource`**.
+
 ## Triage flow
 
 1. **Error envelope returned?** Read `error.code` first, then `error.descriptor.retryable`. Look the code up in the Error envelope playbook below.
@@ -1174,7 +1180,7 @@ Every failure returns `{code, message, details, descriptor, recovery}`. Always r
     SkillAsset(
       id: 'flutter-mcp-toolkit-custom-tools',
       frontmatter: r'''name: flutter-mcp-toolkit-custom-tools
-description: Use this skill when the agent exposes app-specific surfaces by registering custom MCP tools and resources inside the Flutter app (mcp_toolkit dynamic registry — MCPCallEntry, bootstrapFlutter additionalEntries / addEntries). Covers tool vs resource vs evaluate-expression, Map-based handlers, schema strictness, discovery via fmt_list_client_tools_and_resources, fmt_client_tool, fmt_client_resource, and lifecycle pitfalls.''',
+description: Use this skill when the agent exposes app-specific surfaces by registering custom MCP tools and resources inside the Flutter app (mcp_toolkit dynamic registry — AgentCallEntry, bootstrapFlutter additionalEntries / addEntries). Covers tool vs resource vs evaluate-expression, Map-based handlers, schema strictness, discovery via fmt_list_client_tools_and_resources, fmt_client_tool, fmt_client_resource, and lifecycle pitfalls.''',
       body: r'''
 <!-- @FMT_MODE_PRELUDE -->
 
@@ -1182,133 +1188,292 @@ description: Use this skill when the agent exposes app-specific surfaces by regi
 
 Use this when bundled MCP tools (screenshot, semantic snapshot, tap, …) are not enough and you need **app-specific** read surfaces or actions — e.g. cart totals, feature flags, curated debug snapshots of internal state. Entries are registered **in the Flutter process** and exposed to the agent through the **dynamic registry**.
 
+> **Migration:** The legacy call-entry type was removed in agentkit Phase 6b. Use **`AgentCallEntry`** or **`mcpToolkitTool` / `mcpToolkitResource`**. See **`flutter-mcp-toolkit-agentkit-migration`**.
+
 ## Pick the right primitive
 
 | Need | Use |
 |------|-----|
 | One-off read of a simple value | **`fmt_evaluate_dart_expression`** (no app code change). |
-| Stable **read-only** payload (diagnostics, JSON snapshot, “current route”) | **`MCPCallEntry.resource`** + **`fmt_client_resource`**. Prefer resources when the contract is “GET-like” and idempotent. |
-| Parameterized or mutating action, or reusable named operation | **`MCPCallEntry.tool`** + **`fmt_client_tool`**. |
+| Stable **read-only** payload (diagnostics, JSON snapshot, “current route”) | **`AgentCallEntry.resource`** + **`fmt_client_resource`**. Prefer resources when the contract is “GET-like” and idempotent. |
+| Parameterized or mutating action, or reusable named operation | **`AgentCallEntry.tool`** + **`fmt_client_tool`**. |
 
-## Handler signature (tools and resources)
+## Handler signatures
 
-[`MCPCallHandler`](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_toolkit/lib/src/mcp_models.dart) is `FutureOr<MCPCallResult> Function(ServiceExtensionRequestMap request)` where **`ServiceExtensionRequestMap` is `Map<String, String>`**.
+### Native `AgentCallEntry` (preferred for new code)
 
-- Tool arguments arrive as **string values** keyed by schema property names — mirror the README pattern: `request['n']`, `request['userId']`, then parse (`int.tryParse`, `double.tryParse`, `jsonDecode` for nested blobs if the wire format sends JSON-as-string).
-- Do **not** use `request.arguments` — that is not the app-side API.
-
-## Minimal tool registration
+Handlers receive **`AgentArguments`** (`Map<String, Object?>`) and return **`AgentResult`**:
 
 ```dart
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 
-final tool = MCPCallEntry.tool(
-  handler: (request) async {
-    final userId = request['userId'] ?? '';
+final tool = AgentCallEntry.tool(
+  namespace: 'app',
+  name: 'cart_get_snapshot',
+  description: 'Return current cart total and items for a user.',
+  inputSchema: const {
+    'type': 'object',
+    'additionalProperties': false,
+    'properties': {
+      'userId': {'type': 'string'},
+    },
+    'required': ['userId'],
+  },
+  handler: (final args) async {
+    final userId = args['userId']?.toString() ?? '';
     final cart = CartRepository.instance.forUser(userId);
-    return MCPCallResult(
+    return AgentResult.success(
       message: 'ok',
-      parameters: {
+      data: {
         'total': cart.total,
-        'items': cart.items.map((i) => i.toJson()).toList(),
+        'items': cart.items.map((final i) => i.toJson()).toList(),
       },
     );
   },
-  definition: MCPToolDefinition(
-    name: 'cart_get_snapshot',
-    description: 'Return current cart total and items for a user.',
-    inputSchema: {
-      'type': 'object',
-      'additionalProperties': false,
-      'properties': {
-        'userId': {'type': 'string'},
-      },
-      'required': ['userId'],
-    },
-  ),
 );
 
 await MCPToolkitBinding.instance.addEntries(entries: {tool});
 ```
 
-Prefer **`MCPToolkitBinding.instance.bootstrapFlutter(additionalEntries: { ... }, runApp: ...)`** so tools/resources register in one place with zone/error setup — same entries shape as above.
+### Legacy `MCPToolDefinition` + `MCPCallResult` (bridge)
 
-Register **after** `initialize()` / **`bootstrapFlutter`** wiring, **once** at bootstrap — not inside `build`, not per-widget `initState`.
+Built-in toolkits still use **`mcpToolkitTool`** / **`mcpToolkitResource`** to adapt
+`Map<String, String>` service-extension handlers:
+
+```dart
+final tool = mcpToolkitTool(
+  namespace: 'app',
+  handler: (final request) async {
+    final userId = request['userId'] ?? '';
+    return MCPCallResult(
+      message: 'ok',
+      parameters: {'userId': userId},
+    );
+  },
+  definition: MCPToolDefinition(
+    name: 'cart_get_snapshot',
+    description: 'Return current cart total and items for a user.',
+    inputSchema: ObjectSchema(
+      properties: {
+        'userId': StringSchema(),
+      },
+      required: ['userId'],
+    ),
+  ),
+);
+```
+
+- Tool arguments on the wire are **strings** keyed by schema property names — parse with `int.tryParse`, `jsonDecode`, etc.
+- Do **not** use `request.arguments` on the app side.
+
+Prefer **`MCPToolkitBinding.instance.bootstrapFlutter(additionalEntries: { ... }, runApp: ...)`** so tools/resources register in one place with zone/error setup.
+
+Register **once** at bootstrap — not inside `build`, not per-widget `initState`.
 
 ## Custom resources
 
-Resources are for **read-only** MCP surfaces: diagnostics, config summaries, or JSON blobs the agent polls without treating them as imperative actions.
+```dart
+final resource = AgentCallEntry.resource(
+  namespace: 'app',
+  name: 'app_cart_digest',
+  description: 'Compact cart summary for agents (read-only).',
+  mimeType: 'application/json',
+  handler: (final args) async => AgentResult.success(
+    message: 'Cart digest',
+    data: {
+      'itemCount': CartRepository.instance.visibleCount,
+      'currency': CartRepository.instance.currencyCode,
+    },
+  ),
+);
+```
+
+Or via bridge:
 
 ```dart
-MCPCallEntry.resource(
+mcpToolkitResource(
+  namespace: 'app',
   definition: MCPResourceDefinition(
     name: 'app_cart_digest',
     description: 'Compact cart summary for agents (read-only).',
     mimeType: 'application/json',
   ),
-  handler: (request) async => MCPCallResult(
+  handler: (final request) async => MCPCallResult(
     message: 'Cart digest',
-    parameters: {
-      'itemCount': CartRepository.instance.visibleCount,
-      'currency': CartRepository.instance.currencyCode,
-    },
+    parameters: {'itemCount': 3},
   ),
 ),
 ```
 
-- **`name`** must be `snake_case` (letters, digits, underscores). [`resourceUri`](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_toolkit/lib/src/mcp_models.dart) maps it to a **`visual://localhost/...`** URI (underscore segments become path segments). Agents consume it via **`fmt_client_resource`** using that URI / listing from **`fmt_list_client_tools_and_resources`**.
-- Set **`mimeType`** honestly (`application/json` vs `text/plain`) so clients know how to interpret payloads.
+- **`name`** must be `snake_case`. Published resource URIs follow **`visual://localhost/...`** conventions; agents use **`fmt_client_resource`** and listings from **`fmt_list_client_tools_and_resources`**.
 
 ## Schema rules (tools)
 
 The MCP server enforces strict JSON Schema:
 
-- Prefer **`additionalProperties: false`** unless you intentionally accept arbitrary keys. Unknown keys **fail validation** — good for catching agent typos.
+- Prefer **`additionalProperties: false`** unless you intentionally accept arbitrary keys.
 - Mark **`required`** for anything the handler reads unconditionally.
-- Prefer primitives and **`enum`** over unconstrained strings.
-- **`parameters`** in **`MCPCallResult`** must be JSON-serializable; non-serializable objects degrade to **`toString()`**.
+- **`AgentResult.data`** / **`MCPCallResult.parameters`** must be JSON-serializable.
 
 ## Discovery from the agent side
 
 1. **`fmt_list_client_tools_and_resources`** — enumerate app-registered tools and resources.
-2. **`fmt_client_tool`** — invoke a tool by name with JSON args (CLI: `flutter-mcp-toolkit exec --name fmt_client_tool --args '...'` per your transport).
-3. **`fmt_client_resource`** — fetch a registered resource (URI from listing / `resourceUri` convention).
+2. **`fmt_client_tool`** — invoke a dynamic tool by name with JSON args.
+3. **`fmt_client_resource`** — fetch a registered resource URI from the listing.
 
-If something should appear but does not: confirm **`addEntries`** completed (**`await`**), then hot **restart** — reload does not always replay discovery cleanly.
+If something should appear but does not: confirm **`addEntries`** completed (**`await`**), then hot **restart**.
 
 ## Lifecycle gotchas
 
-- **Hot reload** + **`addEntries`** from widget code → duplicate registrations. Register once in **`main()` / bootstrap**, not in **`build`**.
-- **Hot restart** clears VM state; registrations tied to **`bootstrapFlutter`** / **`main`** run again on boot — correct pattern survives restart.
-- **Debug mode only** — release builds do not expose these VM service extensions.
-- **Naming**: flat global namespace per app — prefix tools/resources (`cart_`, `flags_`, `nav_`) to avoid collisions with builtins or other domains.
+- **Hot reload** + **`addEntries`** from widget code → duplicate registrations. Register once in **`main()` / bootstrap**.
+- **Debug mode only** — release builds do not expose VM service extensions.
+- **Naming**: flat global namespace per app — prefix tools/resources (`cart_`, `flags_`, `nav_`).
 
 ## When the agent authors surfaces for the user’s app
 
 1. Ensure **`mcp_toolkit`** is in **`pubspec.yaml`**.
-2. Add **`lib/mcp_tools/<domain>_surfaces.dart`** exporting **`registerXSurfaces()`** that returns **`Set<MCPCallEntry>`** or performs **`addEntries`** once.
-3. Wire **`registerXSurfaces()`** from **`bootstrapFlutter(..., additionalEntries: ...)`** or call **`addEntries`** immediately after **`initializeFlutterToolkit`** inside **`bootstrapFlutter`**’s chain — **never** from **`StatefulWidget` lifecycle**.
-4. Tight schemas (**`additionalProperties: false`**, explicit **`required`**).
-5. Hot **restart**, then **`fmt_list_client_tools_and_resources`** before first **`fmt_client_tool`** / **`fmt_client_resource`** call.
+2. Add **`lib/mcp_tools/<domain>_surfaces.dart`** returning **`Set<AgentCallEntry>`** or calling **`addEntries`** once.
+3. Wire from **`bootstrapFlutter(..., additionalEntries: ...)`** — never from **`StatefulWidget` lifecycle**.
+4. Tight schemas; hot **restart**; then **`fmt_list_client_tools_and_resources`** before first client invoke.
 
 ## Safety and scope
 
-- Treat handlers as **powerful debug hooks**: avoid exposing secrets, full databases, or unchecked filesystem/network IO.
-- Keep handlers thin: delegate to domain/services already used by the app (same DI/getters), **don’t** duplicate business logic in MCP-only paths unless intentional.
+- Treat handlers as **powerful debug hooks**: avoid secrets, unchecked IO.
+- Keep handlers thin: delegate to existing app services.
 
 ## Common traps
 
-- **`request.arguments`** — wrong shape; use **`request['key']`** on **`Map<String, String>`**.
-- Missing **`await`** on **`addEntries`** → race before discovery lists your surface.
-- Returning **`Future`** instances inside **`parameters`** → useless serialization; **`await`** inside the handler.
+- Mixing **`AgentArguments`** with **`Map<String, String>`** — pick one API (native vs `mcpToolkitTool`).
+- Missing **`await`** on **`addEntries`** → race before discovery.
 - **`inputSchema`** out of sync with the handler → agents trust the schema; update both.
 
 ## Related
 
-- Driving the live app (snapshot / tap / reload): **`flutter-mcp-toolkit-guide`** → **`flutter-mcp-toolkit-inspect`** / **`flutter-mcp-toolkit-control`**.
-- Repository **`ARCHITECTURE.md`** → “Dynamic Registry Architecture”.
+- **`flutter-mcp-toolkit-agentkit-migration`** — CLI migrator, breaking upgrade
+- **`flutter-mcp-toolkit-guide`** → inspect / control / debug skills
+- Repository **`ARCHITECTURE.md`** → “Dynamic Registry Architecture”
 ''',
       relativePath: 'skills/flutter-mcp-toolkit-custom-tools/SKILL.md',
+    ),
+    SkillAsset(
+      id: 'flutter-mcp-toolkit-agentkit-migration',
+      frontmatter: r'''name: flutter-mcp-toolkit-agentkit-migration
+description: >-
+  Migrate Flutter app code from removed MCPCallEntry to AgentCallEntry after
+  agentkit Phase 6b. Use when upgrading mcp_toolkit, fixing compile errors after
+  a major bump, or running flutter-mcp-toolkit migrate agent-entries.''',
+      body: r'''
+<!-- @FMT_MODE_PRELUDE -->
+
+# Agentkit migration — MCPCallEntry → AgentCallEntry
+
+**Phase 6b hard cut:** `MCPCallEntry` is **removed** from `mcp_toolkit`. App code must use
+`AgentCallEntry` (from `agentkit_core`, re-exported by `mcp_toolkit`).
+
+Canonical doc: [migration_agentkit_phase6.md](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/start_here/migration_agentkit_phase6.md)
+
+## When to use this skill
+
+- `dart analyze` reports undefined `MCPCallEntry` after pulling agentkit Phase 6
+- User asks to migrate custom tools/resources to the new API
+- Before shipping a major `mcp_toolkit` bump to consumers
+
+## CLI (preferred)
+
+```bash
+# Preview (exit 1 if changes pending)
+flutter-mcp-toolkit migrate agent-entries --check lib/
+
+# Apply
+flutter-mcp-toolkit migrate agent-entries --write lib/
+flutter-mcp-toolkit migrate agent-entries --write --namespace my_app lib/main.dart
+```
+
+Alias: `migrate mcp-call-entry` (same behavior).
+
+## After migration — registration
+
+- `MCPToolkitBinding.addEntries(entries: Set<AgentCallEntry>)`
+- `bootstrapFlutter(additionalEntries: { ... })`
+- `addMcpTool(AgentCallEntry)` — still a shortcut for a single entry
+
+Handlers should return **`AgentResult`** (`AgentResult.success` / `AgentResult.failure`).
+For legacy `MCPCallResult` + `MCPToolDefinition` handlers, use **`mcpToolkitTool`** /
+**`mcpToolkitResource`** (see `flutter-mcp-toolkit-custom-tools`).
+
+## Legacy pattern (before — do not ship new code)
+
+```dart
+// BEFORE (removed in Phase 6b)
+final tool = MCPCallEntry.tool(
+  handler: (request) async => MCPCallResult(
+    message: 'ok',
+    parameters: {'n': request['n']},
+  ),
+  definition: MCPToolDefinition(
+    name: 'my_tool',
+    description: 'Example',
+    inputSchema: {'type': 'object', 'properties': {}},
+  ),
+);
+```
+
+## Target pattern (after)
+
+```dart
+import 'package:mcp_toolkit/mcp_toolkit.dart';
+
+final tool = AgentCallEntry.tool(
+  namespace: 'app',
+  name: 'my_tool',
+  description: 'Example',
+  inputSchema: const {
+    'type': 'object',
+    'additionalProperties': false,
+    'properties': {'n': {'type': 'string'}},
+    'required': ['n'],
+  },
+  handler: (final args) async {
+    final n = args['n']?.toString() ?? '';
+    return AgentResult.success(
+      message: 'ok',
+      data: {'n': n},
+    );
+  },
+);
+
+await MCPToolkitBinding.instance.addEntries(entries: {tool});
+```
+
+## Platform sync (optional)
+
+After tool surfaces compile:
+
+```bash
+flutter-mcp-toolkit codegen sync --platform web
+flutter-mcp-toolkit codegen sync --platform android,ios,macos --check
+```
+
+See `docs/platform-notes/android-oem.md` for Xiaomi/Huawei (same shortcuts XML as AOSP).
+
+## MCP migrate tool
+
+`fmt_migrate_agent_entries` is **not shipped yet** — use CLI only. Report-only MCP
+tool is documented as TODO in the migration doc.
+
+## Maintainer checklist (Phase 6 release)
+
+1. `flutter-mcp-toolkit migrate agent-entries --check` on `flutter_test_app/lib`
+2. `make sync-skills` after any `plugin/skills/` edit
+3. `cd mcp_server_dart && dart test test/contract/`
+4. Grep: no `MCPCallEntry` in skills except this file's BEFORE examples
+
+## Related skills
+
+- **`flutter-mcp-toolkit-custom-tools`** — authoring `AgentCallEntry` surfaces
+- **`flutter-mcp-toolkit-repo-maintainer`** — CHANGELOG, version pins, `sync-skills`
+''',
+      relativePath: 'skills/flutter-mcp-toolkit-agentkit-migration/SKILL.md',
     ),
     SkillAsset(
       id: 'flutter-mcp',
@@ -1553,7 +1718,7 @@ After any version bump in `plugin/*-plugin/plugin.json` or edit under `plugin/sk
 Keep a Changelog **requires** version headings like `## [3.0.1]`. Linters treat `[3.0.1]` as an undefined **reference link** (MD052: "No link definition found").
 
 - **Do not remove** the file-top `<!-- markdownlint-disable MD052 -->` in CHANGELOG.md (release-please must keep it when prepending sections).
-- In bullet text, use **backticks** for code identifiers: `` `MCPCallEntry.resourceUri` ``, not `[MCPCallEntry.resourceUri]`.
+- In bullet text, use **backticks** for code identifiers: `` `AgentCallEntry` ``, not `[AgentCallEntry]`.
 - Before merge: `bash tool/contracts/check_changelog_markdown.sh` (also in `make check-contracts`).
 
 ## Automated release (preferred)
@@ -1615,6 +1780,17 @@ Avoid duplicating install tables in README — link to overview.
 Video skill and projects live in **[flutter_mcp_video](https://github.com/Arenukvern/flutter_mcp_video)** (`skills/hyperframes-video/`, `projects/video-projects/<id>/`). Not bundled in toolkit `make sync-skills`.
 
 When shipping a promo there: edit the video repo; run `bash tool/check_doc_paths.sh` in that repo before merge. Toolkit repo only hosts shared brand assets under `plugin/assets/` (symlink targets for v7-weaver).
+
+## Agentkit Phase 6 (pre-extract) maintainer gate
+
+When closing Phase 6 on `feat/agentkit-phase1-3`:
+
+1. Append `flutter-mcp-toolkit-agentkit-migration` to `expectedSkillIds` in `build_skill_assets.dart` if not already present.
+2. `make sync-skills` — commit `skill_assets.g.dart` with skill edits.
+3. `bash tool/contracts/check_agentkit_skills_grep.sh` — no legacy call-entry symbol outside migration skill.
+4. `cd mcp_server_dart && dart test test/contract/`
+5. `flutter-mcp-toolkit migrate agent-entries --check flutter_test_app/lib` (expect exit 0)
+6. Tracker: `program.status: complete_in_repo`; closure `docs/superpowers/closure/2026-05-26-agentkit-program-complete-in-repo.md`
 
 ## Pre-merge checklist
 

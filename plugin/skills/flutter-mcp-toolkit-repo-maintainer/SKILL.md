@@ -53,7 +53,7 @@ After any version bump in `plugin/*-plugin/plugin.json` or edit under `plugin/sk
 Keep a Changelog **requires** version headings like `## [3.0.1]`. Linters treat `[3.0.1]` as an undefined **reference link** (MD052: "No link definition found").
 
 - **Do not remove** the file-top `<!-- markdownlint-disable MD052 -->` in CHANGELOG.md (release-please must keep it when prepending sections).
-- In bullet text, use **backticks** for code identifiers: `` `MCPCallEntry.resourceUri` ``, not `[MCPCallEntry.resourceUri]`.
+- In bullet text, use **backticks** for code identifiers: `` `AgentCallEntry` ``, not `[AgentCallEntry]`.
 - Before merge: `bash tool/contracts/check_changelog_markdown.sh` (also in `make check-contracts`).
 
 ## Automated release (preferred)
@@ -115,6 +115,17 @@ Avoid duplicating install tables in README — link to overview.
 Video skill and projects live in **[flutter_mcp_video](https://github.com/Arenukvern/flutter_mcp_video)** (`skills/hyperframes-video/`, `projects/video-projects/<id>/`). Not bundled in toolkit `make sync-skills`.
 
 When shipping a promo there: edit the video repo; run `bash tool/check_doc_paths.sh` in that repo before merge. Toolkit repo only hosts shared brand assets under `plugin/assets/` (symlink targets for v7-weaver).
+
+## Agentkit Phase 6 (pre-extract) maintainer gate
+
+When closing Phase 6 on `feat/agentkit-phase1-3`:
+
+1. Append `flutter-mcp-toolkit-agentkit-migration` to `expectedSkillIds` in `build_skill_assets.dart` if not already present.
+2. `make sync-skills` — commit `skill_assets.g.dart` with skill edits.
+3. `bash tool/contracts/check_agentkit_skills_grep.sh` — no legacy call-entry symbol outside migration skill.
+4. `cd mcp_server_dart && dart test test/contract/`
+5. `flutter-mcp-toolkit migrate agent-entries --check flutter_test_app/lib` (expect exit 0)
+6. Tracker: `program.status: complete_in_repo`; closure `docs/superpowers/closure/2026-05-26-agentkit-program-complete-in-repo.md`
 
 ## Pre-merge checklist
 

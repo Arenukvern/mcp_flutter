@@ -19,6 +19,11 @@ Do NOT use this skill for:
 - Reading what is currently on screen — use `flutter-mcp-toolkit-inspect`.
 - The toolkit itself failing to connect — load `flutter-mcp-toolkit-setup`.
 
+## Registry vs bundled tools
+
+- **Bundled `fmt_*` tools** (screenshot, logs, evaluate, …) run on the MCP server via **`AgentRegistry`** on the host.
+- **App-registered surfaces** appear after `MCPToolkitBinding.addEntries` / `AgentCallEntry` — discover with **`fmt_list_client_tools_and_resources`**, then **`fmt_client_tool`** / **`fmt_client_resource`**.
+
 ## Triage flow
 
 1. **Error envelope returned?** Read `error.code` first, then `error.descriptor.retryable`. Look the code up in the Error envelope playbook below.
