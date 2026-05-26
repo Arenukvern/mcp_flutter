@@ -138,6 +138,8 @@ phases:
       - { id: 6f, title: Migration CLI + MCP tool + docs, status: pending }
       - { id: 6g, title: Skills + skill_assets, status: pending }
       - { id: 6h, title: Shim removal + complete_in_repo gate, status: pending }
+    validation:
+      - cd mcp_server_dart && dart test test/contract/
     exit_criteria:
       - MCPCallEntry removed from public API; all in-repo sites use AgentCallEntry
       - CHANGELOG and migration_agentkit_phase6 doc published
