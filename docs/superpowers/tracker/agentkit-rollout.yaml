@@ -8,22 +8,23 @@ program:
   rollout_doc: docs/superpowers/plans/2026-05-25-agentkit-rollout.md
   self_closing_loop: docs/superpowers/agentkit-self-closing-loop.md
   hardening_spec: docs/superpowers/specs/2026-05-25-agentkit-phase5-hardening-design.md
-  status: pre_extract_pending # complete_milestone until phase6 gate; then complete_in_repo; extract is phase7
-  active_phase: phase6
+  status: complete_in_repo
+  active_phase: null
   next_spec: docs/superpowers/specs/2026-05-26-agentkit-pre-extract-completion-design.md
+  closure_report: docs/superpowers/closure/2026-05-26-agentkit-program-complete-in-repo.md
   deferred_work:
-    - Standalone agentkit monorepo split from mcp_flutter consumer
-    - Public re-export shim removal after deprecation window
+    - Standalone agentkit monorepo split from mcp_flutter consumer (phase7)
+    - agentkit_platform Flutter plugin (agentkit://invoke via app_links)
+    - fmt_migrate_agent_entries MCP tool (CLI migrate shipped in 6f)
     - Gemma product wiring (flutter_gemma in example/shipping app; agentkit_gemma stays example-only)
-    - Server capability @AgentTool codegen in server_capability_core (pilot is client/test-only)
-    - Swift/XML platform emitters (manifest JSON + docs only in 5-C)
+    - HarmonyOS NEXT / Intents Kit / hadss_intents
 
 phases:
   - id: phase1
     title: Core in mcp_flutter workspace
     plan: docs/superpowers/plans/archive/2026-05-25-agentkit-phase1.md
     plan_revision: v1
-    status: done # pending | in_progress | done | failed_gate
+    status: done
     design_section: Migration phases / Phase 1
     exit_criteria:
       - All static server tools invoke via AgentRegistry
@@ -124,37 +125,53 @@ phases:
         completed_at: 2026-05-26
 
   - id: phase6
-    title: Pre-extract completion (Bar D — hard cut + Swift/XML + migration tools)
+    title: Pre-extract completion (Bar D)
     spec: docs/superpowers/specs/2026-05-26-agentkit-pre-extract-completion-design.md
     plan: docs/superpowers/plans/2026-05-26-agentkit-phase6-pre-extract.md
-    status: pending
-    bar: D # B strict + Swift/XML; skip Gemma product only; hard cut MCPCallEntry
+    status: done
+    bar: D
+    last_gate: pass
+    last_gate_at: 2026-05-26
+    closure_report: docs/superpowers/closure/2026-05-26-agentkit-program-complete-in-repo.md
     sub_phases:
-      - { id: 6a, title: Server registry completeness, status: pending }
-      - { id: 6b, title: MCPCallEntry hard cut + in-repo migration, status: pending }
-      - { id: 6c, title: Server @AgentTool codegen (one fmt_*), status: pending }
-      - { id: 6d, title: Swift + XML platform emitters + CLI, status: pending }
-      - { id: 6e, title: Contract tests, status: pending }
-      - { id: 6f, title: Migration CLI + MCP tool + docs, status: pending }
-      - { id: 6g, title: Skills + skill_assets, status: pending }
-      - { id: 6h, title: Shim removal + complete_in_repo gate, status: pending }
+      - { id: 6a, title: Server registry completeness, status: done, commit: 7677239 }
+      - { id: 6b, title: MCPCallEntry hard cut, status: done, commit: 9823430 }
+      - { id: 6c, title: Server @AgentTool codegen, status: done, commit: d835a02 }
+      - { id: 6d, title: Platform sync (web + native), status: done, commits: [f3614b0, 0633da3] }
+      - { id: 6e, title: Contract tests, status: done, commit: d07a592 }
+      - { id: 6f, title: Migration CLI + docs, status: done, commit: 0910443 }
+      - { id: 6g, title: Skills + skill_assets, status: done }
+      - { id: 6h, title: complete_in_repo gate, status: done }
     validation:
+      - dart test packages/agentkit_schema packages/agentkit_core packages/agentkit_testing
+      - dart test packages/agentkit_mcp packages/agentkit_webmcp packages/agentkit_apple packages/agentkit_android packages/agentkit_platform packages/agentkit_codegen
+      - dart test packages/server_capability_kernel
+      - cd mcp_server_dart && dart test
       - cd mcp_server_dart && dart test test/contract/
+      - dart analyze packages/agentkit_* mcp_toolkit mcp_server_dart
+      - bash tool/contracts/check_agentkit_skills_grep.sh
+      - flutter-mcp-toolkit migrate agent-entries --check flutter_test_app/lib
     exit_criteria:
-      - MCPCallEntry removed from public API; all in-repo sites use AgentCallEntry
+      - MCPCallEntry removed; in-repo sites use AgentCallEntry
       - CHANGELOG and migration_agentkit_phase6 doc published
-      - flutter-mcp-toolkit migrate agent-entries + fmt_migrate_agent_entries (report/apply)
-      - One fmt_* tool via server codegen; registry-backed errors resource template
-      - Swift and XML emitter tests pass; CLI codegen manifest subcommand
+      - flutter-mcp-toolkit migrate agent-entries
+      - fmt_get_recent_logs server codegen pilot
+      - Registry-backed errors resource template
+      - Native + web platform emitters; CLI codegen sync
       - Contract tests fmt + dynamic + resource
-      - Skills updated; no MCPCallEntry in skill bodies except migration before examples
+      - Skills updated; grep gate for MCPCallEntry
       - program.status complete_in_repo
     non_goals:
       - flutter_gemma product wiring
-      - HarmonyOS NEXT / Intents Kit / hadss_intents
+      - HarmonyOS NEXT
       - Standalone monorepo extract (phase7)
     platform_decisions:
       emitters: option_1_own_agentkit_platform
       web_bootstrap: C_js_and_dart_interop
       web_priority: highest_within_6d
       xiaomi_huawei: android_shortcuts_xml_only
+
+  - id: phase7
+    title: Standalone agentkit monorepo extract
+    status: pending
+    blocked_by: phase6

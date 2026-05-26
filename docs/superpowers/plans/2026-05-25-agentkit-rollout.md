@@ -23,7 +23,8 @@
 | **3** | [archive/phase3](archive/2026-05-25-agentkit-phase3.md) | done | WebMCP, Gemma example, manifest JSON |
 | **4** | [closure phase4](../closure/2026-05-25-agentkit-phase4-registry-resources.md) | done | Registry-backed resources + hot-sync |
 | **5** | [hardening spec](../specs/2026-05-25-agentkit-phase5-hardening-design.md) | done | 5-A docs, 5-B runtime, 5-C codegen pilot |
-| **6** | [spec](../specs/2026-05-26-agentkit-pre-extract-completion-design.md) | pending | Bar D: hard cut, Swift/XML, migration tools, skills |
+| **6** | [spec](../specs/2026-05-26-agentkit-pre-extract-completion-design.md) | done | Bar D: hard cut, platform sync, migration CLI, skills — [closure](../closure/2026-05-26-agentkit-program-complete-in-repo.md) |
+| **7** | design § extract | pending | Standalone agentkit monorepo |
 
 Closures: [../closure/](../closure/).
 
@@ -32,8 +33,8 @@ Closures: [../closure/](../closure/).
 ## Program status
 
 - **Phases 1–5:** Gates passed on `feat/agentkit-phase1-3`.
-- **`program.status`:** `complete_milestone` — in-repo delivery; see tracker `deferred_work`.
-- **Extract:** Blocked until Phase 6 exit criteria pass (no standalone repo until then).
+- **`program.status`:** `complete_in_repo` — Phase 6 gate passed; see [closure](../closure/2026-05-26-agentkit-program-complete-in-repo.md).
+- **Extract:** Phase 7 — standalone repo (pending).
 
 ---
 
@@ -51,14 +52,14 @@ Closures: [../closure/](../closure/).
 | `AgentRuntime` + `McpPublishAdapter` attach | done (5-B) |
 | Dynamic registry intents + hot-sync | done |
 | `agentkit_codegen` pilot | done (5-C; not full product codegen) |
-| `MCPCallEntry` → `AgentCallEntry` migration | **partial** — bridge only |
-| Resource templates via registry | **exception** — `addResourceTemplate` for `app/errors/{count}` |
-| Skills/docs teach `AgentCallEntry` | **pending** → Phase 6 |
-| Public shim removal | **pending** → Phase 6 |
-| Standalone repo | **after Phase 6** |
+| `MCPCallEntry` → `AgentCallEntry` migration | **done** — hard cut + CLI migrate |
+| Resource templates via registry | **done** — `app/errors/{count}` |
+| Skills/docs teach `AgentCallEntry` | **done** |
+| Platform emitters (`agentkit_platform`) | **done** — web + native |
+| Standalone repo | **Phase 7** |
 
 ---
 
 ## Current action
 
-**Phase 6:** Spec approved (Bar D). Implement per [phase6 plan](2026-05-26-agentkit-phase6-pre-extract.md) when published. No monorepo extract until `complete_in_repo` gate.
+**Phase 7:** Plan standalone agentkit monorepo extract per design spec. Phase 6 complete — see [closure](../closure/2026-05-26-agentkit-program-complete-in-repo.md).

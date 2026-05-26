@@ -1,13 +1,20 @@
 /// MCP Toolkit for Flutter applications
 ///
-/// Provides tools for integrating Flutter apps with
-/// MCP (Model Context Protocol) servers,
-/// including dynamic tool and resource registration capabilities.
+/// Integrates Flutter debug apps with MCP servers via VM service extensions and
+/// the agentkit dynamic registry.
 ///
-/// This package is a part of the MCP Flutter project and is used to register
-/// tools and resources in the Flutter app.
+/// **Public surface (intentional):**
+/// - Re-exports [agentkit_core] and [agentkit_schema] for a single import in apps.
+/// - Flutter binding: [MCPToolkitBinding], [addMcpTool], toolkits under `src/toolkits/`.
+/// - Authoring: [AgentCallEntry] (register with [MCPToolkitBinding.addEntries]).
+/// - Legacy handler bridge: [mcpToolkitTool], [mcpToolkitResource] for
+///   [MCPToolDefinition] + [MCPCallResult] handlers.
+/// - Wire types: [MCPCallResult], [MCPToolDefinition], [MCPResourceDefinition].
 ///
-/// See [MCPToolkitBinding] for more information on how to use this package.
+/// `MCPCallEntry` was removed in agentkit Phase 6b; use
+/// [flutter-mcp-toolkit migrate agent-entries](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/start_here/migration_agentkit_phase6.md).
+///
+/// See [MCPToolkitBinding] for bootstrap and registration.
 library;
 
 export 'package:agentkit_core/agentkit_core.dart';
