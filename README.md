@@ -12,10 +12,13 @@ _Inspect and drive a running Flutter app from your AI assistant._
 
 </div>
 
+- 📖 **Docs:** [docs.page/arenukvern/mcp_flutter](https://docs.page/arenukvern/mcp_flutter/)
+
 `flutter-mcp-toolkit` is a Dart MCP server + Flutter package that lets AI Agents (Codex, Zed, Cursor, Intent, Claude Code, Cline, etc..) take (semantic snapshots, tap widgets, type into forms, hot-reload, and read logs from a Flutter app) or create __its own tools and resources at runtime__ using MCP Toolkit — without leaving the conversation and work with Flutter apps in closed feedback loop - see example of it described in [OpenAI Agentic Harness](https://openai.com/index/harness-engineering/).
 
 
 ![View Screenshots](docs/view_screenshots.gif)
+
 
 ## Get started in 4 steps
 
@@ -36,6 +39,12 @@ flutter run --debug
 ```
 
 That's it. Your AI agent can now inspect and drive the running app — and your app can expose **custom MCP tools at runtime** (see [Dynamic Tools Registration](#dynamic-tools-registration) below).
+
+
+## 📰 News
+
+- **2026-05-26** — v3.1.0: Platform-view capture routing, macOS/iOS Simulator host screenshots, web CDP tab capture (SCK → CDP → flutter_layer), and cross-platform showcase platform views.
+<!-- TODO(arenukvern): add tool to write news automatically -->
 
 ## Install from marketplaces
 
