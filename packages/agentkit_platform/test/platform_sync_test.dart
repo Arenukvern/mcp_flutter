@@ -37,9 +37,9 @@ void main() {
     final result = sync.syncWeb(projectRoot: temp.path);
     expect(result.wroteManifest, isTrue);
     expect(result.wroteWebMcpJs, isTrue);
-    expect(File(result.webMcpJsPath).existsSync(), isTrue);
+    expect(File(result.webMcpJsPath!).existsSync(), isTrue);
     expect(
-      File(result.webManifestPath).readAsStringSync(),
+      File(result.webManifestPath!).readAsStringSync(),
       contains('"shortcuts"'),
     );
     expect(sync.checkWeb(temp.path), isTrue);

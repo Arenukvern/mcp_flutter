@@ -2430,7 +2430,9 @@ Future<int> _runCodegenInitSubcommand(final ArgResults command) =>
 Future<int> _runCodegenSubcommand(final ArgResults command) async {
   final sub = command.command;
   if (sub == null || sub.name != 'sync') {
-    io.stderr.writeln('Usage: flutter-mcp-toolkit codegen sync --platform web');
+    io.stderr.writeln(
+      'Usage: flutter-mcp-toolkit codegen sync --platform web,android,...',
+    );
     return 64;
   }
   return runCodegenSync(
@@ -2450,14 +2452,16 @@ Examples:
 ''';
 
 String _usageCodegenSync() => '''
-Usage: flutter-mcp-toolkit codegen sync --platform web [--project-dir <path>] [--check]
+Usage: flutter-mcp-toolkit codegen sync --platform <targets> [--project-dir <path>] [--check]
+
+Targets (comma-separated): web, android, ios, macos, linux, windows
 
 Examples:
   flutter-mcp-toolkit codegen sync --platform web
-  flutter-mcp-toolkit codegen sync --platform web --check
+  flutter-mcp-toolkit codegen sync --platform android,ios,macos
+  flutter-mcp-toolkit codegen sync --platform web,android,linux,windows --check
 
-Reads agent_manifest.json and writes web/manifest.json shortcuts +
-web/agentkit_webmcp.generated.js for WebMCP bootstrap path C.
+Reads agent_manifest.json and writes platform artifacts (manifest/JS/XML/Swift/desktop/reg).
 ''';
 
 ArgParser _migrateAgentEntriesParser() => _commandParser()
