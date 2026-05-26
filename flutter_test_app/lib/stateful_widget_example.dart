@@ -20,7 +20,8 @@ class _StatefulCounterWidgetState extends State<StatefulCounterWidget> {
 
   void _registerCounterTool() {
     addMcpTool(
-      MCPCallEntry.tool(
+      mcpToolkitTool(
+        namespace: 'app',
         handler: (request) {
           return MCPCallResult(
             message: 'StatefulWidget counter value',

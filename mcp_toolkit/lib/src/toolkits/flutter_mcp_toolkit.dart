@@ -1,9 +1,12 @@
 import 'dart:async';
 
+import 'package:agentkit_core/agentkit_core.dart';
+
 import 'package:dart_mcp/client.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
 import 'package:is_dart_empty_or_not/is_dart_empty_or_not.dart';
 
+import '../agent_entry_helpers.dart';
 import '../mcp_models.dart';
 import '../mcp_toolkit_binding.dart';
 import '../services/error_monitor.dart';
@@ -22,7 +25,7 @@ import 'interaction_toolkit.dart';
 const selectWidgetAtPointToolName = 'select_widget_at_point';
 
 /// MCP tool entries for Flutter screenshots, errors, views, and interactions.
-Set<MCPCallEntry> getFlutterMcpToolkitEntries({
+Set<AgentCallEntry> getFlutterMcpToolkitEntries({
   required final MCPToolkitBinding binding,
 }) => {
   OnAppErrorsEntry(errorMonitor: binding),
@@ -44,10 +47,10 @@ extension MCPToolkitBindingExtension on MCPToolkitBinding {
 /// {@template on_app_errors_entry}
 /// MCPCallEntry for handling app errors.
 /// {@endtemplate}
-extension type OnAppErrorsEntry._(MCPCallEntry entry) implements MCPCallEntry {
+extension type OnAppErrorsEntry._(AgentCallEntry entry) implements AgentCallEntry {
   /// {@macro on_app_errors_entry}
   factory OnAppErrorsEntry({required final ErrorMonitor errorMonitor}) {
-    final entry = MCPCallEntry.tool(
+    final entry = mcpToolkitTool(
       handler: (final parameters) {
         final count = jsonDecodeInt(parameters['count'] ?? '').whenZeroUse(10);
         final reversedErrors = errorMonitor.errors.take(count).toList();
@@ -96,11 +99,11 @@ extension type OnAppErrorsEntry._(MCPCallEntry entry) implements MCPCallEntry {
 /// {@template on_view_screenshots_entry}
 /// MCPCallEntry for handling view screenshots.
 /// {@endtemplate}
-extension type OnViewScreenshotsEntry._(MCPCallEntry entry)
-    implements MCPCallEntry {
+extension type OnViewScreenshotsEntry._(AgentCallEntry entry)
+    implements AgentCallEntry {
   /// {@macro on_view_screenshots_entry}
   factory OnViewScreenshotsEntry({required final MCPToolkitBinding binding}) {
-    final entry = MCPCallEntry.tool(
+    final entry = mcpToolkitTool(
       handler: (final parameters) async {
         final compress = jsonDecodeBool(parameters['compress']);
         final images = await ScreenshotService.takeScreenshots(
@@ -139,11 +142,11 @@ extension type OnViewScreenshotsEntry._(MCPCallEntry entry)
 /// {@template on_view_details_entry}
 /// MCPCallEntry for handling view details.
 /// {@endtemplate}
-extension type const OnViewDetailsEntry._(MCPCallEntry entry)
-    implements MCPCallEntry {
+extension type const OnViewDetailsEntry._(AgentCallEntry entry)
+    implements AgentCallEntry {
   /// {@macro on_view_details_entry}
   factory OnViewDetailsEntry({required final MCPToolkitBinding binding}) {
-    final entry = MCPCallEntry.tool(
+    final entry = mcpToolkitTool(
       handler: (final parameters) {
         final payload = ViewIntrospectionService.buildViewDetailsPayload(
           captureHintsContributor: binding.captureHintsContributor,
@@ -168,11 +171,11 @@ extension type const OnViewDetailsEntry._(MCPCallEntry entry)
 /// {@template on_inspect_widget_at_point_entry}
 /// MCPCallEntry for inspecting widget details at global coordinates.
 /// {@endtemplate}
-extension type const OnInspectWidgetAtPointEntry._(MCPCallEntry entry)
-    implements MCPCallEntry {
+extension type const OnInspectWidgetAtPointEntry._(AgentCallEntry entry)
+    implements AgentCallEntry {
   /// {@macro on_inspect_widget_at_point_entry}
   factory OnInspectWidgetAtPointEntry() {
-    final entry = MCPCallEntry.tool(
+    final entry = mcpToolkitTool(
       handler: (final parameters) {
         final x = jsonDecodeInt(parameters['x']).whenZeroUse(0);
         final y = jsonDecodeInt(parameters['y']).whenZeroUse(0);
@@ -210,13 +213,13 @@ extension type const OnInspectWidgetAtPointEntry._(MCPCallEntry entry)
 
 /// MCP tool entry that delegates to [MCPToolkitBinding.selectAtPointHandler]
 /// when set, otherwise inspects the widget at (x, y).
-extension type const OnSelectWidgetAtPointEntry._(MCPCallEntry entry)
-    implements MCPCallEntry {
+extension type const OnSelectWidgetAtPointEntry._(AgentCallEntry entry)
+    implements AgentCallEntry {
   /// Creates the select-at-point tool backed by [binding].
   factory OnSelectWidgetAtPointEntry({
     required final MCPToolkitBinding binding,
   }) {
-    final entry = MCPCallEntry.tool(
+    final entry = mcpToolkitTool(
       handler: (final parameters) {
         final customHandler = binding.selectAtPointHandler;
         if (customHandler != null) {

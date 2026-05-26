@@ -59,7 +59,8 @@ Future<void> _registerInitialMCPTools() async {
   _initialEntriesRegistered = true;
   final binding = MCPToolkitBinding.instance;
 
-  final fibonacciEntry = MCPCallEntry.tool(
+  final fibonacciEntry = mcpToolkitTool(
+    namespace: 'app',
     handler: (final request) {
       final n = int.tryParse(request['n'] ?? '0') ?? 0;
       return MCPCallResult(
@@ -83,7 +84,8 @@ Future<void> _registerInitialMCPTools() async {
     ),
   );
 
-  final appStateEntry = MCPCallEntry.resource(
+  final appStateEntry = mcpToolkitResource(
+    namespace: 'app',
     definition: MCPResourceDefinition(
       name: 'app_state',
       description: 'Current agent-facing showcase state',
@@ -95,7 +97,8 @@ Future<void> _registerInitialMCPTools() async {
     ),
   );
 
-  final agentStateEntry = MCPCallEntry.tool(
+  final agentStateEntry = mcpToolkitTool(
+    namespace: 'app',
     handler: (final request) => MCPCallResult(
       message: 'Agent showcase state',
       parameters: AgentState.instance.snapshot(),
@@ -119,7 +122,8 @@ Future<void> _registerDelayedMCPTools() async {
   _delayedEntriesRegistered = true;
   final binding = MCPToolkitBinding.instance;
 
-  final preferencesEntry = MCPCallEntry.tool(
+  final preferencesEntry = mcpToolkitTool(
+    namespace: 'app',
     handler: (final request) {
       final category = request['category'] ?? 'all';
       return MCPCallResult(

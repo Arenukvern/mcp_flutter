@@ -5,6 +5,9 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
+import 'package:agentkit_core/agentkit_core.dart';
+
+import 'agent_call_entry_extensions.dart';
 import 'mcp_models.dart';
 import 'mcp_toolkit_binding_base.dart';
 import 'mcp_toolkit_extensions.dart';
@@ -19,7 +22,7 @@ import 'toolkits/flutter_mcp_toolkit.dart';
 /// This is a shortcut for [MCPToolkitBinding.addEntries] method.
 ///
 /// Should be called only after [MCPToolkitBinding.initialize] is called.
-void addMcpTool(final MCPCallEntry entry) =>
+void addMcpTool(final AgentCallEntry entry) =>
     unawaited(MCPToolkitBinding.instance.addEntries(entries: {entry}));
 
 /// The binding for the MCP Toolkit.
@@ -91,7 +94,7 @@ class MCPToolkitBinding extends MCPToolkitBindingBase
   /// Canonical app bootstrap for Flutter hosts using MCP toolkit in debug.
   Future<void> bootstrapFlutter({
     required final FutureOr<void> Function() runApp,
-    final Iterable<MCPCallEntry> additionalEntries = const <MCPCallEntry>[],
+    final Iterable<AgentCallEntry> additionalEntries = const <AgentCallEntry>[],
     final FutureOr<void> Function()? ensureInitialized,
     final void Function(Object error, StackTrace stackTrace)? onZoneError,
     final bool initializeFlutterToolkitEntries = true,
@@ -167,17 +170,18 @@ class MCPToolkitBinding extends MCPToolkitBindingBase
   ///
   /// Registers service extensions that can be called by the MCP server
   /// through the Dart VM service.
-  Future<void> addEntries({required final Set<MCPCallEntry> entries}) async {
+  Future<void> addEntries({required final Set<AgentCallEntry> entries}) async {
     assert(() {
       initializeServiceExtensions(errorMonitor: this, entries: entries);
       return true;
     }());
   }
 
-  Future<void> _addMissingEntries(final Iterable<MCPCallEntry> entries) {
-    final existingKeys = allEntries.map((final entry) => entry.key).toSet();
+  Future<void> _addMissingEntries(final Iterable<AgentCallEntry> entries) {
+    final existingKeys =
+        allEntries.map((final entry) => entry.serviceExtensionName).toSet();
     final missingEntries = entries
-        .where((final entry) => !existingKeys.contains(entry.key))
+        .where((final entry) => !existingKeys.contains(entry.serviceExtensionName))
         .toSet();
     if (missingEntries.isEmpty) {
       return Future<void>.value();
@@ -187,5 +191,5 @@ class MCPToolkitBinding extends MCPToolkitBindingBase
 
   /// Get all accumulated entries across all addEntries calls
   @override
-  Set<MCPCallEntry> get allEntries => super.allEntries;
+  Set<AgentCallEntry> get allEntries => super.allEntries;
 }

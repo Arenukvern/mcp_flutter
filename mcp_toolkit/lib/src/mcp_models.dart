@@ -44,20 +44,6 @@ typedef MCPCallHandler =
 /// it will be added automatically in the [MCPBridgeBinding].
 extension type const MCPMethodName(String _value) implements String {}
 
-/// A record for the MCP call entry for type safety.
-///
-/// Use [MCPCallEntry] to create a new entry.
-///
-/// This typedef made private to avoid using it instead of [MCPCallEntry].
-typedef _MCPCallEntryRecord = MapEntry<MCPMethodName, _MCPCallEntryRecordValue>;
-
-/// A record value for the MCP call entry for type safety.
-typedef _MCPCallEntryRecordValue = ({
-  MCPCallHandler handler,
-  MCPToolDefinition? toolDefinition,
-  MCPResourceDefinition? resourceDefinition,
-});
-
 /// A base definition for MCP definitions.
 extension type const MCPDefinition._(Map<String, dynamic> _value)
     implements Map<String, dynamic> {
@@ -80,9 +66,9 @@ extension type const MCPDefinition._(Map<String, dynamic> _value)
 ///
 /// Example with tool definition:
 /// ```dart
-/// extension type OnAppErrorsEntry._(MCPCallEntry entry) implements MCPCallEntry {
+/// extension type OnAppErrorsEntry._(AgentCallEntry entry) implements AgentCallEntry {
 ///   factory OnAppErrorsEntry({required final ErrorMonitor errorMonitor}) {
-///     final entry = MCPCallEntry(
+///     final entry = mcpToolkitTool(
 ///       methodName: const MCPMethodName('app_errors'),
 ///       handler: (final request) => MCPCallResult(
 ///         message: 'Returns app errors',
@@ -132,9 +118,9 @@ extension type const MCPToolDefinition._(MCPDefinition _definition)
 /// Resource definition for MCP registration
 ///
 /// ```dart
-/// extension type OnAppStateEntry._(MCPCallEntry entry) implements MCPCallEntry {
+/// extension type OnAppStateEntry._(AgentCallEntry entry) implements AgentCallEntry {
 ///   factory OnAppStateEntry({required final AppState appState}) {
-///     final entry = MCPCallEntry(
+///     final entry = mcpToolkitResource(
 ///       methodName: const MCPMethodName('view_details'),
 ///       handler: (final request) => MCPCallResult(
 ///         message: 'Returns view details',
@@ -170,76 +156,3 @@ extension type const MCPResourceDefinition._(MCPDefinition _definition)
   );
 }
 
-/// {@template mcp_call_entry}
-/// A MCP call entry.
-/// Contains a method name and a handler for the call, with optional
-/// tool and resource definitions for automatic MCP server registration.
-///
-/// Prefer [AgentCallEntry] for new app tools (exported from `agentkit_core`
-/// via this package). [MCPCallEntry] remains for the MCP service-extension
-/// bridge until a future major version.
-/// {@endtemplate}
-///
-/// {@macro mcp_tool_definition}
-///
-/// or with resource definition:
-///
-/// {@macro mcp_resource_definition}
-///
-///
-@Deprecated(
-  'Use AgentCallEntry from agentkit_core (exported by mcp_toolkit). '
-  'MCPCallEntry remains for MCP service-extension bridge compatibility.',
-)
-extension type const MCPCallEntry._(_MCPCallEntryRecord entry)
-    implements _MCPCallEntryRecord {
-  /// {@macro mcp_call_entry}
-  factory MCPCallEntry.resource({
-    required final MCPCallHandler handler,
-    required final MCPResourceDefinition definition,
-  }) => MCPCallEntry._(
-    _MCPCallEntryRecord(MCPMethodName(definition.name), (
-      handler: handler,
-      toolDefinition: null,
-      resourceDefinition: definition,
-    )),
-  );
-
-  /// {@macro mcp_call_entry}
-  factory MCPCallEntry.tool({
-    required final MCPCallHandler handler,
-    required final MCPToolDefinition definition,
-  }) => MCPCallEntry._(
-    _MCPCallEntryRecord(MCPMethodName(definition.name), (
-      handler: handler,
-      toolDefinition: definition,
-      resourceDefinition: null,
-    )),
-  );
-
-  /// Check if this entry has a tool definition
-  bool get hasTool => value.toolDefinition != null;
-
-  /// Check if this entry has a resource definition
-  bool get hasResource => value.resourceDefinition != null;
-
-  /// Get the resource URI for this entry.
-  ///
-  /// Converts an underscore-separated name into a URL path.
-  /// For example, 'my_resource_name' becomes 'visual://localhost/my/resource/name'.
-  ///
-  /// The entry key must match the pattern of lowercase letters, digits, and underscores.
-  String get resourceUri {
-    final key = entry.key;
-    if (key.isEmpty) {
-      return 'visual://localhost/unknown';
-    }
-
-    final keyPattern = RegExp(r'^[a-z0-9_]+$');
-    assert(
-      keyPattern.hasMatch(key),
-      'Resource entry key "$key" must contain only lowercase letters, digits, and underscores',
-    );
-    return 'visual://localhost/${key.split('_').join('/')}';
-  }
-}

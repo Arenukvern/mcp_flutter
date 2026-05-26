@@ -2,9 +2,11 @@
 
 import 'dart:developer' as developer;
 
+import 'package:agentkit_core/agentkit_core.dart';
 import 'package:flutter/foundation.dart';
 
-import 'mcp_models.dart';
+import 'agent_call_entry_extensions.dart';
+import 'agent_entry_helpers.dart';
 import 'mcp_toolkit_binding_base.dart';
 import 'services/error_monitor.dart';
 
@@ -14,10 +16,10 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
   final _registeredEntryKeys = <String>{};
 
   /// Accumulated entries from all addEntries calls
-  final _allEntries = <MCPCallEntry>{};
+  final _allEntries = <AgentCallEntry>{};
 
   /// Get all accumulated entries (read-only)
-  Set<MCPCallEntry> get allEntries => Set.unmodifiable(_allEntries);
+  Set<AgentCallEntry> get allEntries => Set.unmodifiable(_allEntries);
 
   /// Called when the binding is initialized, to register service
   /// extensions.
@@ -41,7 +43,7 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
   @mustCallSuper
   void initializeServiceExtensions({
     required final ErrorMonitor errorMonitor,
-    required final Set<MCPCallEntry> entries,
+    required final Set<AgentCallEntry> entries,
   }) {
     if (kReleaseMode) {
       throw UnsupportedError(
@@ -50,10 +52,8 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
     }
 
     assert(() {
-      // Accumulate entries from this call
       final allEntries = {..._allEntries, ...entries};
-      // Filter out duplicate entries based on their key
-      final uniqueEntries = <MCPCallEntry>{};
+      final uniqueEntries = <AgentCallEntry>{};
       for (final entry in allEntries) {
         if (!uniqueEntries.any((final e) => e.key == entry.key)) {
           uniqueEntries.add(entry);
@@ -63,21 +63,26 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
         ..clear()
         ..addAll(uniqueEntries);
 
-      // Register individual service extensions for each entry in this batch.
-      // A Dart VM extension name can only be registered once per process.
-      // Broad integration runs boot the app multiple times in one process,
-      // so duplicate keys must be ignored to keep teardown deterministic.
       for (final entry in entries) {
-        if (!_registeredEntryKeys.add(entry.key)) {
+        final extensionName = entry.serviceExtensionName;
+        if (!_registeredEntryKeys.add(extensionName)) {
           continue;
         }
         registerServiceExtension(
-          name: entry.key,
-          callback: (final parameters) async => entry.value.handler(parameters),
+          name: extensionName,
+          callback: (final parameters) async {
+            final args = parameters.map(
+              (final key, final value) => MapEntry<String, Object?>(
+                key,
+                value,
+              ),
+            );
+            final result = await entry.value.handler(args);
+            return agentResultToServiceExtensionMap(result);
+          },
         );
       }
 
-      // Register the registerDynamics service extension only once
       if (!_debugServiceExtensionsRegistered) {
         registerServiceExtension(
           name: 'registerDynamics',
@@ -92,18 +97,15 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
       return true;
     }());
 
-    // Post event to notify MCP server about new tool registrations
     _postToolRegistrationEvent(entries);
   }
 
-  /// Post an event to the Dart VM when new tools are registered
-  /// This allows the MCP server to detect tool changes in real-time via DTD
-  void _postToolRegistrationEvent(final Set<MCPCallEntry> newEntries) {
+  void _postToolRegistrationEvent(final Set<AgentCallEntry> newEntries) {
     if (newEntries.isEmpty) return;
 
     final toolNames = newEntries
         .where((final entry) => entry.hasTool)
-        .map((final entry) => entry.key.toString())
+        .map((final entry) => entry.serviceExtensionName)
         .toList();
 
     final resourceUris = newEntries
@@ -111,7 +113,6 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
         .map((final entry) => entry.resourceUri)
         .toList();
 
-    // Post event to Dart VM for DTD/MCP server consumption
     developer.postEvent('MCPToolkit.ToolRegistration', {
       'kind': 'ToolRegistration',
       'timestamp': DateTime.now().toIso8601String(),
@@ -123,7 +124,6 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
       'totalEntries': _allEntries.length,
     });
 
-    // Also post individual events for immediate responsiveness
     for (final toolName in toolNames) {
       developer.postEvent('MCPToolkit.ServiceExtensionStateChanged', {
         'kind': 'ServiceExtensionStateChanged',
@@ -140,46 +140,37 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
     }
   }
 
-  /// Get a unique app identifier for this Flutter app
-  // Use a combination of process identifier and timestamp for uniqueness
   String _getAppId() => 'flutter_app_${DateTime.now().millisecondsSinceEpoch}';
 
-  /// Handles the registerDynamics service extension call
-  /// Returns all accumulated tools and resources in the format expected by the MCP server
   Map<String, dynamic> _handleRegisterDynamics() {
     final tools = <Map<String, dynamic>>[];
     final resources = <Map<String, dynamic>>[];
 
-    // Use all accumulated entries, not just the latest batch
     for (final entry in _allEntries) {
-      // Add tool definitions
+      final descriptor = entry.toRegistration().descriptor;
       if (entry.hasTool) {
-        tools.add(Map<String, dynamic>.from(entry.value.toolDefinition!));
-        continue;
-      }
-
-      // Add resource definitions
-      if (entry.hasResource) {
-        resources.add({
-          ...entry.value.resourceDefinition!,
-          'uri': entry.resourceUri,
+        tools.add({
+          'name': descriptor.effectiveMethodName,
+          'description': descriptor.description,
+          'inputSchema': descriptor.inputSchema,
         });
         continue;
       }
 
-      // Create a default tool definition for entries without one
+      if (entry.hasResource) {
+        resources.add({
+          'name': descriptor.name,
+          'description': descriptor.description,
+          'mimeType': descriptor.mimeType ?? 'application/json',
+          'uri': descriptor.effectiveResourceUri,
+        });
+        continue;
+      }
+
       tools.add({
-        'name': entry.key,
-        'description': 'Flutter app tool: ${entry.key}',
-        'inputSchema': {
-          'type': 'object',
-          'properties': {
-            'parameters': {
-              'type': 'object',
-              'description': 'Parameters for the tool call',
-            },
-          },
-        },
+        'name': descriptor.effectiveMethodName,
+        'description': 'Flutter app tool: ${descriptor.name}',
+        'inputSchema': descriptor.inputSchema,
       });
     }
 

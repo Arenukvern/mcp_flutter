@@ -21,7 +21,8 @@ class CustomNotifier with ChangeNotifier {
     //
     // See more about MCP dynamic tools:
     // https://github.com/Arenukvern/mcp_flutter/blob/main/QUICK_START.md#dynamic-tools-registration
-    final yourTool = MCPCallEntry.tool(
+    final yourTool = mcpToolkitTool(
+      namespace: 'app',
       handler: (request) {
         return MCPCallResult(
           message: 'See CustomNotifier state',

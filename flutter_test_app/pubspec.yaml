@@ -39,6 +39,9 @@ dependencies:
   vm_service: ^15.0.2
   web: ^1.1.1
 
+dependency_overrides:
+  agentkit_schema:
+    path: ../packages/agentkit_schema
 dev_dependencies:
   flutter_lints: ^6.0.0
   flutter_test:

@@ -13,7 +13,8 @@ void main() {
       StackTrace? forwardedStackTrace;
       var runCount = 0;
 
-      final diagnosticResource = MCPCallEntry.resource(
+      final diagnosticResource = mcpToolkitResource(
+        namespace: 'app',
         definition: MCPResourceDefinition(
           name: 'starter_runtime_status',
           description: 'Starter diagnostics resource',
@@ -24,7 +25,8 @@ void main() {
           parameters: {'ready': true},
         ),
       );
-      final mutatingTool = MCPCallEntry.tool(
+      final mutatingTool = mcpToolkitTool(
+        namespace: 'app',
         definition: MCPToolDefinition(
           name: 'starter_increment_counter',
           description: 'Starter action tool',
@@ -50,7 +52,7 @@ void main() {
       expect(runCount, equals(1));
       expect(binding.isInitialized, isTrue);
       expect(
-        binding.allEntries.map((final entry) => entry.key),
+        binding.allEntries.map((final entry) => entry.serviceExtensionName),
         containsAll(<String>[
           'view_details',
           'inspect_widget_at_point',

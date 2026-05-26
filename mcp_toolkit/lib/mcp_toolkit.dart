@@ -14,8 +14,9 @@ export 'package:agentkit_core/agentkit_core.dart';
 export 'package:agentkit_schema/agentkit_schema.dart';
 export 'package:dart_mcp/client.dart' hide Icon;
 
+export 'src/agent_call_entry_extensions.dart';
 export 'src/agent_client_install.dart';
-export 'src/mcp_call_entry_bridge.dart';
+export 'src/agent_entry_helpers.dart';
 export 'src/mcp_models.dart';
 export 'src/mcp_toolkit_binding.dart';
 export 'src/mcp_toolkit_binding_base.dart';
