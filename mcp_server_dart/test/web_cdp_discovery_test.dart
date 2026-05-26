@@ -3,8 +3,6 @@ import 'dart:io';
 
 import 'package:flutter_mcp_toolkit_server/flutter_mcp_core.dart';
 import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/web_cdp_discovery.dart';
-import 'package:flutter_mcp_toolkit_server/src/shared_core/vm_connections/connection_context.dart';
-import 'package:flutter_mcp_toolkit_server/src/shared_core/vm_connections/flutter_tool_machine_discovery.dart';
 import 'package:test/test.dart';
 
 void main() {

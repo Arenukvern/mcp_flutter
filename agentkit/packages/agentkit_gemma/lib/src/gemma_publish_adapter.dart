@@ -50,9 +50,7 @@ final class GemmaPublishAdapter implements AgentAdapter {
 
   @override
   Future<void> detach() async {
-    for (final name in _registered.toList()) {
-      unregister(name);
-    }
+    _registered.toList().forEach(unregister);
     _registered.clear();
   }
 

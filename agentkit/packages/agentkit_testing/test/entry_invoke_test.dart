@@ -18,7 +18,7 @@ Set<AgentCallEntry> _buildDemoEntries({
           'viewMode': {'type': 'string'},
         },
       },
-      handler: (final args) async {
+      handler: (final args) {
         final wire = AgentWireArgs(
           args.map((final k, final v) => MapEntry(k, v?.toString() ?? '')),
         );
@@ -38,7 +38,7 @@ Set<AgentCallEntry> _buildDemoEntries({
         'additionalProperties': false,
         'properties': {},
       },
-      handler: (_) async => AgentResult.success(
+      handler: (_) => AgentResult.success(
         message: 'pong',
         data: const {'ok': true},
       ),
@@ -56,7 +56,7 @@ void main() {
         'additionalProperties': false,
         'properties': {},
       },
-      handler: (_) async => AgentResult.success(
+      handler: (_) => AgentResult.success(
         message: 'pong',
         data: const {'ok': true},
       ),
@@ -91,7 +91,7 @@ void main() {
         name: 'a',
         description: 'a',
         inputSchema: const {'type': 'object', 'properties': {}},
-        handler: (_) async => AgentResult.success(),
+        handler: (_) => AgentResult.success(),
       ),
     };
 

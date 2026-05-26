@@ -1,7 +1,6 @@
 // packages/server_capability_core/test/tools/flutter_inspector_tools_test.dart
 import 'dart:convert';
 
-import 'package:dart_mcp/server.dart';
 import 'package:flutter_mcp_toolkit_capability_core/src/tools/flutter_inspector_tools.dart';
 import 'package:flutter_mcp_toolkit_capability_kernel/flutter_mcp_toolkit_capability_kernel.dart';
 import 'package:flutter_mcp_toolkit_capability_kernel/testing.dart';
@@ -138,9 +137,7 @@ void main() {
           .registrationFor('hot_restart_flutter')!
           .handler(const <String, Object?>{});
       expect(result.ok, isFalse);
-      final json =
-          agentResultPayload(result)
-              as Map<String, Object?>;
+      final json = agentResultPayload(result);
       _expectEnvelopeKeys(json);
     });
   });
@@ -240,9 +237,7 @@ void main() {
           .registrationFor('hot_reload_flutter')!
           .handler(const <String, Object?>{});
       expect(result.ok, isFalse);
-      final json =
-          agentResultPayload(result)
-              as Map<String, Object?>;
+      final json = agentResultPayload(result);
       _expectEnvelopeKeys(json);
     });
   });
@@ -291,9 +286,7 @@ void main() {
           .registrationFor('connect_debug_app')!
           .handler(const <String, Object?>{});
       expect(result.ok, isTrue);
-      final decoded =
-          agentResultPayload(result)
-              as Map<String, Object?>;
+      final decoded = agentResultPayload(result);
       expect(decoded['endpoint'], 'ws://127.0.0.1:8181/ws');
     });
 
@@ -308,9 +301,7 @@ void main() {
           .registrationFor('connect_debug_app')!
           .handler(const <String, Object?>{});
       expect(result.ok, isFalse);
-      final json =
-          agentResultPayload(result)
-              as Map<String, Object?>;
+      final json = agentResultPayload(result);
       _expectEnvelopeKeys(json);
     });
 
@@ -366,9 +357,7 @@ void main() {
           .registrationFor('discover_debug_apps')!
           .handler(const <String, Object?>{});
       expect(result.ok, isTrue);
-      final decoded =
-          agentResultPayload(result)
-              as Map<String, Object?>;
+      final decoded = agentResultPayload(result);
       expect(decoded['count'], 0);
     });
 
@@ -383,9 +372,7 @@ void main() {
           .registrationFor('discover_debug_apps')!
           .handler(const <String, Object?>{});
       expect(result.ok, isFalse);
-      final json =
-          agentResultPayload(result)
-              as Map<String, Object?>;
+      final json = agentResultPayload(result);
       _expectEnvelopeKeys(json);
     });
   });
@@ -438,9 +425,7 @@ void main() {
           .registrationFor('get_vm')!
           .handler(const <String, Object?>{});
       expect(result.ok, isTrue);
-      final decoded =
-          agentResultPayload(result)
-              as Map<String, Object?>;
+      final decoded = agentResultPayload(result);
       expect(decoded['pid'], 42);
     });
 
@@ -455,9 +440,7 @@ void main() {
           .registrationFor('get_vm')!
           .handler(const <String, Object?>{});
       expect(result.ok, isFalse);
-      final json =
-          agentResultPayload(result)
-              as Map<String, Object?>;
+      final json = agentResultPayload(result);
       _expectEnvelopeKeys(json);
     });
   });
@@ -540,9 +523,7 @@ void main() {
           .registrationFor('get_extension_rpcs')!
           .handler(const <String, Object?>{});
       expect(result.ok, isFalse);
-      final json =
-          agentResultPayload(result)
-              as Map<String, Object?>;
+      final json = agentResultPayload(result);
       _expectEnvelopeKeys(json);
     });
   });

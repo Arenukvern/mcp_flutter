@@ -64,9 +64,7 @@ final class WebMcpPublishAdapter implements AgentAdapter {
   Future<void> detach() async {
     await _events?.cancel();
     _events = null;
-    for (final name in _published.toList()) {
-      _unpublish(name);
-    }
+    _published.toList().forEach(_unpublish);
     _registry = null;
   }
 

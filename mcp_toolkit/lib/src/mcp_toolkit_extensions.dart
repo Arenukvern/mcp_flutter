@@ -65,7 +65,7 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
         ..addAll(uniqueEntries);
 
       if (kIsWeb) {
-        AgentWebMcpBootstrap.registerFromEntries(_allEntries);
+        registerAgentWebMcpFromEntries(_allEntries);
       }
 
       for (final entry in entries) {
@@ -77,10 +77,7 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
           name: extensionName,
           callback: (final parameters) async {
             final args = parameters.map(
-              (final key, final value) => MapEntry<String, Object?>(
-                key,
-                value,
-              ),
+              MapEntry<String, Object?>.new,
             );
             final result = await entry.value.handler(args);
             return agentResultToServiceExtensionMap(result);

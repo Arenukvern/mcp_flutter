@@ -1,14 +1,14 @@
 // Re-exports shared migrator; CLI runner stays here for stderr/stdout UX.
+import 'dart:io';
+
+import 'package:agentkit_core/agentkit_core.dart';
+
 export 'package:agentkit_core/agentkit_core.dart'
     show
         MigrateAgentEntriesMigrator,
         MigrateAgentEntriesPathNotFound,
         MigrateAgentEntriesReport,
         migrateAgentEntriesAtPath;
-
-import 'dart:io';
-
-import 'package:agentkit_core/agentkit_core.dart';
 
 Future<int> runMigrateAgentEntries({
   required final String path,

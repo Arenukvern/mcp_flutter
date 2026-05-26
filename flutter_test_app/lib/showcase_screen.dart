@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 import 'package:test_app/agent_state.dart';
 import 'package:test_app/platform_view_showcase.dart';
-import 'package:test_app/visual_reconstruct_screen.dart';
 
 /// Showcase page for MCP Flutter — a single-page demonstration of every
 /// built-in interaction tool.

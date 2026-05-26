@@ -2,6 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+// Subscriptions are cancelled in tearDownAll via stopLaunchedFlutterProcess().
+// ignore_for_file: cancel_subscriptions
+
 import 'package:test/test.dart';
 
 import 'support/showcase_cleanup.dart';

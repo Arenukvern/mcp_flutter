@@ -57,7 +57,7 @@ dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart codegen sync \
 
 ## Web invoke
 
-- **WebMCP + Dart bootstrap:** `mcp_toolkit` `AgentWebMcpBootstrap` after `addEntries`; `web/index.html` loads `agentkit_webmcp.generated.js`.
+- **WebMCP + Dart bootstrap:** `mcp_toolkit` calls `registerAgentWebMcpFromEntries` after `addEntries`; `web/index.html` loads `agentkit_webmcp.generated.js`.
 - **WebMcpPublishAdapter dogfood:** `lib/agent_web_mcp_dogfood.dart` attaches registry hot-sync for dogfood entries on web.
 - **macOS validate-runtime:** `make showcase` then `make macos-validate-runtime` with `MACOS_WS_URI` set.
 - **Enable WebMCP on Chrome (repeatable):** `make web-showcase` or `dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart webmcp chrome-args` then `webmcp verify --web-port 8080`. See [WebMCP verification](../docs/superpowers/evals/2026-05-26-webmcp-verification.md).

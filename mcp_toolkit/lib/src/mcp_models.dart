@@ -155,4 +155,3 @@ extension type const MCPResourceDefinition._(MCPDefinition _definition)
     ),
   );
 }
-

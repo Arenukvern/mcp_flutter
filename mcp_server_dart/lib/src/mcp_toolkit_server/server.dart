@@ -6,6 +6,7 @@
 import 'dart:async';
 
 import 'package:dart_mcp/server.dart';
+import 'package:flutter_mcp_toolkit_capability_kernel/flutter_mcp_toolkit_capability_kernel.dart';
 import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/base_server.dart';
 import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/core/default_command_runner.dart';
 import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/host.dart';
@@ -14,7 +15,6 @@ import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/mixins/flutter
 import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/mixins/vm_service_support.dart';
 import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/server_instructions.dart';
 import 'package:flutter_mcp_toolkit_server/src/runtime_version.dart';
-import 'package:flutter_mcp_toolkit_capability_kernel/flutter_mcp_toolkit_capability_kernel.dart';
 import 'package:stream_channel/stream_channel.dart';
 
 // Keep this prompt concise; detailed troubleshooting and control workflows live

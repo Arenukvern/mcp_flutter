@@ -1,7 +1,6 @@
 import 'package:agentkit_schema/agentkit_schema.dart';
-import 'package:dart_mcp/server.dart';
-import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/host.dart';
 import 'package:flutter_mcp_toolkit_capability_kernel/flutter_mcp_toolkit_capability_kernel.dart';
+import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/host.dart';
 import 'package:test/test.dart';
 
 // Capability that captures the CapabilityConfig it sees during register().
@@ -46,7 +45,7 @@ final class _FakeCapability implements Capability {
           description: 'fake tool $name',
           inputSchema: const {'type': 'object'},
           handler: (_) async => AgentResult.success(
-            data: <String, Object?>{'text': 'ok'},
+            data: const <String, Object?>{'text': 'ok'},
           ),
         ),
       );
@@ -166,7 +165,7 @@ void main() {
             description: 'd',
             inputSchema: const {'type': 'object'},
             handler: (_) async =>
-                AgentResult.success(data: <String, Object?>{'text': 'ok'}),
+                AgentResult.success(data: const <String, Object?>{'text': 'ok'}),
           ),
         ),
         throwsA(isA<StateError>()),

@@ -1,10 +1,9 @@
 import 'dart:async';
 
-import 'package:agentkit_core/agentkit_core.dart';
-import 'package:dart_mcp/server.dart';
 import 'package:agentkit_schema/agentkit_schema.dart';
-import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/host.dart';
+import 'package:dart_mcp/server.dart';
 import 'package:flutter_mcp_toolkit_capability_kernel/flutter_mcp_toolkit_capability_kernel.dart';
+import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/host.dart';
 import 'package:test/test.dart';
 
 final class _RegistryProbeCapability implements Capability {
@@ -25,7 +24,7 @@ final class _RegistryProbeCapability implements Capability {
         description: 'ping',
         inputSchema: const {'type': 'object'},
         handler: (final args) async => AgentResult.success(
-          data: <String, Object?>{'text': 'legacy'},
+          data: const <String, Object?>{'text': 'legacy'},
         ),
       ),
     );
@@ -78,7 +77,7 @@ void main() {
           >{};
       final host = McpHost(
         dispatchBridge: DartMcpDispatchBridge(
-          publish: (_, __) {},
+          publish: (_, final _) {},
           unpublish: (_) {},
           publishResource: (final resource, final impl) {
             publishedResources[resource.uri] = impl;
@@ -95,7 +94,7 @@ void main() {
           description: 'app errors',
           mimeType: 'application/json',
           handler: (_) async => AgentResult.success(
-            data: <String, Object?>{
+            data: const <String, Object?>{
               'contents': [
                 <String, Object?>{
                   'type': 'text',

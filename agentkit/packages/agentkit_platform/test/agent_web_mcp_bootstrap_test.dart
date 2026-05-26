@@ -3,9 +3,9 @@ import 'package:agentkit_platform/agentkit_platform.dart';
 import 'package:test/test.dart';
 
 void main() {
-  test('AgentWebMcpBootstrap.registerFromEntries is safe on VM', () {
+  test('registerAgentWebMcpFromEntries is safe on VM', () {
     expect(
-      () => AgentWebMcpBootstrap.registerFromEntries(<AgentCallEntry>{}),
+      () => registerAgentWebMcpFromEntries(<AgentCallEntry>{}),
       returnsNormally,
     );
   });

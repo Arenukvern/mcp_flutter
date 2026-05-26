@@ -1,7 +1,5 @@
 // packages/server_capability_core/test/tools/debug_dump_tools_test.dart
-import 'dart:convert';
 
-import 'package:dart_mcp/server.dart';
 import 'package:flutter_mcp_toolkit_capability_core/src/tools/debug_dump_tools.dart';
 import 'package:flutter_mcp_toolkit_capability_kernel/flutter_mcp_toolkit_capability_kernel.dart';
 import 'package:flutter_mcp_toolkit_capability_kernel/testing.dart';
@@ -129,9 +127,7 @@ void main() {
           .registrationFor('debug_dump_layer_tree')!
           .handler(const <String, Object?>{});
       expect(result.ok, isFalse);
-      final json =
-          agentResultPayload(result)
-              as Map<String, Object?>;
+      final json = agentResultPayload(result);
       _expectEnvelopeKeys(json);
     });
   });
@@ -189,9 +185,7 @@ void main() {
           .registrationFor('debug_dump_semantics_tree')!
           .handler(const <String, Object?>{});
       expect(result.ok, isFalse);
-      final json =
-          agentResultPayload(result)
-              as Map<String, Object?>;
+      final json = agentResultPayload(result);
       _expectEnvelopeKeys(json);
     });
   });
@@ -244,9 +238,7 @@ void main() {
           .registrationFor('debug_dump_render_tree')!
           .handler(const <String, Object?>{});
       expect(result.ok, isFalse);
-      final json =
-          agentResultPayload(result)
-              as Map<String, Object?>;
+      final json = agentResultPayload(result);
       _expectEnvelopeKeys(json);
     });
   });
@@ -299,9 +291,7 @@ void main() {
           .registrationFor('debug_dump_focus_tree')!
           .handler(const <String, Object?>{});
       expect(result.ok, isFalse);
-      final json =
-          agentResultPayload(result)
-              as Map<String, Object?>;
+      final json = agentResultPayload(result);
       _expectEnvelopeKeys(json);
     });
   });

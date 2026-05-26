@@ -4,9 +4,9 @@ import 'package:test/test.dart';
 
 void main() {
   test('invoke runs intent handler', () async {
-    final registry = InMemoryAgentRegistry();
-    registry.register(
-      RegisteredAgentIntent(
+    final registry = InMemoryAgentRegistry()
+      ..register(
+        RegisteredAgentIntent(
         descriptor: AgentIntentDescriptor(
           namespace: 'demo',
           name: 'echo',

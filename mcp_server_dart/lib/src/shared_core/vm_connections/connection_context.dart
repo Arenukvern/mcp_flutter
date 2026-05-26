@@ -274,6 +274,13 @@ final class ConnectionContext {
   @visibleForTesting
   Map<String, Object?>? debugViewScreenshotsPayload;
 
+  /// Injected view_details payload (tests/integration); bypasses VM extension.
+  Map<String, Object?>? get injectedViewDetailsPayload => debugViewDetailsPayload;
+
+  /// Injected view_screenshots payload (tests/integration); bypasses VM I/O.
+  Map<String, Object?>? get injectedViewScreenshotsPayload =>
+      debugViewScreenshotsPayload;
+
   /// VM process id for the active service connection, or null if unknown.
   Future<int?> resolveConnectedVmPid() async {
     final override = debugConnectedVmPidOverride;

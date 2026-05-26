@@ -99,7 +99,8 @@ AgentCallEntry get $entryGetter => AgentCallEntry.tool(
       }
     }
 
-    return '''{
+    return '''
+{
   'type': 'object',
   'properties': <String, Object?>{
 ${properties.join('\n')}

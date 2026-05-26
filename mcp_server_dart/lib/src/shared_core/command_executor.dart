@@ -599,7 +599,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       );
     }
 
-    final debugScreenshots = connectionContext.debugViewScreenshotsPayload;
+    final debugScreenshots = connectionContext.injectedViewScreenshotsPayload;
     Map<String, Object?> extensionJson;
     if (debugScreenshots != null) {
       extensionJson = debugScreenshots;
@@ -711,7 +711,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     if (mode != ScreenshotMode.auto && mode != ScreenshotMode.flutterLayer) {
       return PlatformViewHints.none;
     }
-    final debugPayload = connectionContext.debugViewDetailsPayload;
+    final debugPayload = connectionContext.injectedViewDetailsPayload;
     if (debugPayload != null) {
       return _hintsFromPayload(debugPayload);
     }

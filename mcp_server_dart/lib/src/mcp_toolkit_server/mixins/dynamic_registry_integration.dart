@@ -13,7 +13,6 @@ import 'package:flutter_mcp_toolkit_server/src/capabilities/dynamic_registry/dyn
 import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/base_server.dart';
 import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/server.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/types/error_codes.dart';
-import 'package:flutter_mcp_toolkit_server/src/shared_core/types/results.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/vm_connections/connection_override.dart';
 import 'package:meta/meta.dart';
 
@@ -342,8 +341,7 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
   RegisteredAgentIntent _wrapDynamicToolIntent({
     required final MCPToolkitServer toolkitServer,
     required final RegisteredAgentIntent intent,
-  }) {
-    return RegisteredAgentIntent(
+  }) => RegisteredAgentIntent(
       descriptor: intent.descriptor,
       execute: (final invocation) async {
         final ensure = await toolkitServer.connectionContext
@@ -358,14 +356,12 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
         return intent.execute(invocation);
       },
     );
-  }
 
   RegisteredAgentIntent _wrapDynamicResourceIntent({
     required final MCPToolkitServer toolkitServer,
     required final RegisteredAgentIntent intent,
     required final String resourceUri,
-  }) {
-    return RegisteredAgentIntent(
+  }) => RegisteredAgentIntent(
       descriptor: intent.descriptor,
       execute: (final invocation) async {
         final requestedUri =
@@ -395,7 +391,6 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
         return intent.execute(invocation);
       },
     );
-  }
 
   void _logRegistryEvent(final DynamicRegistryEvent event) {
     switch (event) {

@@ -59,8 +59,9 @@ final class AppleSwiftAppIntentsEmitter {
     if (shortcutLines.isEmpty) {
       buffer.writeln('    ]');
     } else {
-      buffer.writeln('${shortcutLines.join(',\n')},');
-      buffer.writeln('    ]');
+      buffer
+        ..writeln('${shortcutLines.join(',\n')},')
+        ..writeln('    ]');
     }
     buffer
       ..writeln('  }')

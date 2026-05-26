@@ -21,6 +21,7 @@ void main() {
           return;
         }
         final socket = await WebSocketTransformer.upgrade(request);
+        addTearDown(socket.close);
         socket.listen((final data) {
           final decoded = jsonDecode(data as String) as Map<String, Object?>;
           final id = (decoded['id'] as num?)?.toInt();

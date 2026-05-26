@@ -273,7 +273,7 @@ Future<Map<String, Object?>?> _cdpEvaluate({
       },
     );
 
-    Future<Map<String, Object?>> send(final Map<String, Object?> msg) async {
+    Future<Map<String, Object?>> send(final Map<String, Object?> msg) {
       final myId = ++id;
       final completer = Completer<Map<String, Object?>>();
       pending[myId] = completer;
@@ -293,7 +293,7 @@ Future<Map<String, Object?>?> _cdpEvaluate({
         'expression': expression,
         'returnByValue': true,
         'awaitPromise': false,
-        if (contextId != null) 'contextId': contextId,
+        'contextId': ?contextId,
       };
       final result = await send(<String, Object?>{
         'method': 'Runtime.evaluate',

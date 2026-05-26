@@ -5,9 +5,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:web_socket_channel/web_socket_channel.dart';
-
 import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/web_cdp_discovery.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 
 final class WebCdpCaptureException implements Exception {
   const WebCdpCaptureException({
@@ -25,6 +24,7 @@ final class WebCdpCaptureException implements Exception {
 }
 
 /// Captures PNG bytes from a CDP page target.
+// ignore: one_member_abstracts
 abstract interface class WebTabPngCapturer {
   Future<Uint8List> capturePng({
     required final WebCdpEndpoint endpoint,

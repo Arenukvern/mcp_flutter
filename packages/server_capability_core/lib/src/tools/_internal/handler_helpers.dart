@@ -8,8 +8,6 @@
 /// `flutter_mcp_toolkit_capability_core` and must not be imported from outside this package.
 library;
 
-import 'dart:convert';
-
 import 'package:agentkit_schema/agentkit_schema.dart';
 import 'package:meta/meta.dart';
 import 'package:flutter_mcp_toolkit_capability_kernel/flutter_mcp_toolkit_capability_kernel.dart';

@@ -4,8 +4,8 @@
 import 'dart:convert';
 import 'dart:io' as io;
 
-import 'package:flutter_mcp_toolkit_server/src/capabilities/dynamic_registry/dynamic_gateway.dart';
 import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
+import 'package:flutter_mcp_toolkit_server/src/capabilities/dynamic_registry/dynamic_gateway.dart';
 
 // Pure value types re-exported from flutter_mcp_toolkit_core.
 export 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart'

@@ -4,7 +4,7 @@ import 'package:flutter_mcp_toolkit_server/src/cli/migrate_agent_entries_command
 import 'package:test/test.dart';
 
 void main() {
-  final migrator = MigrateAgentEntriesMigrator(defaultNamespace: 'app');
+  final migrator = MigrateAgentEntriesMigrator();
   final fixturesDir = Directory('test/fixtures/migrate');
 
   group('MigrateAgentEntriesMigrator', () {

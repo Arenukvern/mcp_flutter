@@ -21,7 +21,7 @@ final class _CodegenLogCapability implements Capability {
       agentCallEntryToToolRegistration(
         getRecentLogsCallEntry,
         handler: (_) async => AgentResult.success(
-          data: <String, Object?>{'codegen': true},
+          data: const <String, Object?>{'codegen': true},
         ),
       ),
     );

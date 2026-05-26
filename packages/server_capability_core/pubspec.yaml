@@ -4,6 +4,7 @@ description: >-
   diagnostics, and hot-reload coordination. Server-side Dart; no Flutter SDK
   dependency.
 version: 0.1.0
+publish_to: none
 license: MIT
 repository: https://github.com/Arenukvern/mcp_flutter/tree/main/packages/server_capability_core
 issue_tracker: https://github.com/Arenukvern/mcp_flutter/issues

@@ -71,7 +71,7 @@ void main() {
             name: 'fake_echo',
             description: 'contract fake dynamic tool',
             kind: AgentIntentKind.tool,
-            inputSchema: <String, Object?>{
+            inputSchema: const <String, Object?>{
               'type': 'object',
               'properties': <String, Object?>{
                 'message': <String, Object?>{'type': 'string'},
@@ -119,9 +119,9 @@ void main() {
             >{};
         final host = McpHost(
           dispatchBridge: DartMcpDispatchBridge(
-            publish: (_, __) {},
+            publish: (_, final _) {},
             unpublish: (_) {},
-            publishResource: (_, __) {},
+            publishResource: (_, final _) {},
             unpublishResource: (_) {},
             publishResourceTemplate: (final template, final impl) {
               publishedTemplates[template.uriTemplate] = impl;
@@ -177,9 +177,9 @@ void main() {
         final roundTrip = readResourceResultToAgentResult(mcpRead);
         expect(roundTrip.ok, isTrue);
         final registryText =
-            ((registryResult.data['contents'] as List).first as Map)['text'];
+            ((registryResult.data['contents']! as List).first as Map)['text'];
         final roundTripText =
-            ((roundTrip.data['contents'] as List).first as Map)['text'];
+            ((roundTrip.data['contents']! as List).first as Map)['text'];
         expect(roundTripText, registryText);
         expect(roundTripText, '{"count":3}');
       },

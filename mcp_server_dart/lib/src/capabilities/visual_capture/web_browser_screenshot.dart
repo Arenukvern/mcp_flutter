@@ -6,11 +6,10 @@ import 'dart:io';
 
 import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/desktop_window_screenshot.dart';
 import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/visual_capture.dart';
-import 'package:flutter_mcp_toolkit_server/src/shared_core/types/core_types.dart';
-import 'package:flutter_mcp_toolkit_server/src/shared_core/vm_connections/connection_context.dart';
-
 import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/web_cdp_client.dart';
 import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/web_cdp_discovery.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/types/core_types.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/vm_connections/connection_context.dart';
 
 /// Web capture: macOS ScreenCaptureKit first, then CDP (Phase B).
 final class WebBrowserScreenshotService

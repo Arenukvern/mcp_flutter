@@ -15,8 +15,7 @@ AgentCallEntry mcpToolkitTool({
   required final MCPToolDefinition definition,
   required final MCPCallHandler handler,
   final String namespace = _defaultToolkitNamespace,
-}) {
-  return AgentCallEntry.tool(
+}) => AgentCallEntry.tool(
     namespace: namespace,
     name: definition.name,
     description: definition.description,
@@ -28,15 +27,13 @@ AgentCallEntry mcpToolkitTool({
       return _mcpResultToAgentResult(result);
     },
   );
-}
 
 /// Builds an [AgentCallEntry] resource from legacy [MCPResourceDefinition] + handler.
 AgentCallEntry mcpToolkitResource({
   required final MCPResourceDefinition definition,
   required final MCPCallHandler handler,
   final String namespace = _defaultToolkitNamespace,
-}) {
-  return AgentCallEntry.resource(
+}) => AgentCallEntry.resource(
     namespace: namespace,
     name: definition.name,
     description: definition.description,
@@ -48,7 +45,6 @@ AgentCallEntry mcpToolkitResource({
       return _mcpResultToAgentResult(result);
     },
   );
-}
 
 ServiceExtensionRequestMap _argsToServiceExtensionMap(final AgentArguments args) =>
     args.map((final key, final value) => MapEntry(key, value?.toString() ?? ''));

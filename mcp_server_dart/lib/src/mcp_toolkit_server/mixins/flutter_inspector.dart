@@ -5,7 +5,6 @@ import 'dart:async';
 
 import 'package:agentkit_mcp/agentkit_mcp.dart';
 import 'package:dart_mcp/server.dart';
-import 'package:flutter_mcp_toolkit_capability_kernel/flutter_mcp_toolkit_capability_kernel.dart';
 import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/base_server.dart';
 import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/handlers/resource_handler.dart'
     as inspector_resources;

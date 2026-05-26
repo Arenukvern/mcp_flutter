@@ -5,9 +5,9 @@ import 'package:test/test.dart';
 
 void main() {
   test('WebMcpPublishAdapter publishes tools and invokes registry', () async {
-    final registry = InMemoryAgentRegistry();
-    registry.register(
-      RegisteredAgentIntent(
+    final registry = InMemoryAgentRegistry()
+      ..register(
+        RegisteredAgentIntent(
         descriptor: AgentIntentDescriptor(
           namespace: 'app',
           name: 'hello',

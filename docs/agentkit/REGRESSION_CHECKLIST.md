@@ -21,7 +21,7 @@ Last verified: 2026-05-27 after Phase 7 workspace move to `agentkit/`.
 | `MCPCallEntry` removed | OK | Only mentioned in export docs; use `AgentCallEntry` |
 | `mcp_toolkit` path deps | OK | `../agentkit/packages/*` + root `dependency_overrides` |
 | `MCPToolkitBinding.addEntries` | OK | Accepts `AgentCallEntry` |
-| Web bootstrap | OK | `AgentWebMcpBootstrap` in `mcp_toolkit_extensions.dart` |
+| Web bootstrap | OK | `registerAgentWebMcpFromEntries` in `mcp_toolkit_extensions.dart` |
 | Service extensions | OK | Unchanged pattern |
 | Dogfood app | OK | `flutter_test_app` builds with path agentkit deps |
 

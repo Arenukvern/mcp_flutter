@@ -218,15 +218,16 @@ final class MigrateAgentEntriesMigrator {
       ..writeln('  );');
 
     if (hasExistingReturn) {
-      buffer.writeln(bodyLines);
-      buffer.writeln('  if (_result is Map<String, Object?>) {');
-      buffer.writeln("    final message = _result['message'] as String? ?? '';");
-      buffer.writeln(
-        "    final data = Map<String, Object?>.from(_result)..remove('message');",
-      );
-      buffer.writeln('    return AgentResult.success(message: message, data: data);');
-      buffer.writeln('  }');
-      buffer.writeln("  return AgentResult.success(message: '$paramName handled');");
+      buffer
+        ..writeln(bodyLines)
+        ..writeln('  if (_result is Map<String, Object?>) {')
+        ..writeln("    final message = _result['message'] as String? ?? '';")
+        ..writeln(
+          "    final data = Map<String, Object?>.from(_result)..remove('message');",
+        )
+        ..writeln('    return AgentResult.success(message: message, data: data);')
+        ..writeln('  }')
+        ..writeln("  return AgentResult.success(message: '$paramName handled');");
     } else {
       buffer
         ..writeln(bodyLines)

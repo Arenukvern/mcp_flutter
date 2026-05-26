@@ -8,8 +8,8 @@ import 'dart:io' as io;
 import 'package:args/args.dart';
 import 'package:async/async.dart';
 import 'package:dart_mcp/server.dart';
-import 'package:flutter_mcp_toolkit_server/flutter_mcp_server.dart';
 import 'package:flutter_mcp_toolkit_capability_core/flutter_mcp_toolkit_capability_core.dart';
+import 'package:flutter_mcp_toolkit_server/flutter_mcp_server.dart';
 import 'package:stream_channel/stream_channel.dart';
 
 Future<void> main(final List<String> args) async {

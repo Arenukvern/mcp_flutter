@@ -9,7 +9,7 @@ void main() {
       name: 'ping',
       description: 'ping',
       inputSchema: const {'type': 'object', 'properties': <String, Object?>{}},
-      handler: (_) async => AgentResult.success(),
+      handler: (_) => AgentResult.success(),
     );
     expect(entry.toRegistration().qualifiedName, 'app_ping');
   });
