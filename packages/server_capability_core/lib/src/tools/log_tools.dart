@@ -2,36 +2,45 @@
 // Copyright (c) 2025, Flutter Inspector MCP Server authors.
 // Licensed under the MIT License.
 
+import 'package:agentkit_mcp/agentkit_mcp.dart';
 import 'package:flutter_mcp_toolkit_capability_kernel/flutter_mcp_toolkit_capability_kernel.dart';
 import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 
 import '_internal/handler_helpers.dart';
+import 'codegen/get_recent_logs_tool.dart';
+
+Map<String, Object?> _mergeConnectionSchema(final Map<String, Object?> schema) {
+  final merged = <String, Object?>{
+    ...schema,
+    'additionalProperties': false,
+    'properties': <String, Object?>{
+      ...(schema['properties'] as Map<String, Object?>),
+      'connection': connectionOverrideJsonSchema(),
+    },
+  };
+  final required = merged['required'];
+  if (required is List && required.isEmpty) {
+    merged.remove('required');
+  }
+  return merged;
+}
 
 /// Registers log tools with the host through [context].
-/// Registers: get_recent_logs.
+/// Registers: get_recent_logs (via `@AgentTool` codegen).
 void registerLogTools(final CapabilityContext context) {
   final runner = context.require<CommandRunner>();
 
   context.registerTool(
-    ToolRegistration(
-      name: 'get_recent_logs',
-      description:
-          'Get recent print() and log output from the running Flutter app.',
-      inputSchema: <String, Object?>{
-        'type': 'object',
-        'additionalProperties': false,
-        'properties': <String, Object?>{
-          'count': <String, Object?>{
-            'type': 'integer',
-            'description': 'Number of recent log entries (default: 50).',
-          },
-          'connection': connectionOverrideJsonSchema(),
-        },
-      },
+    agentCallEntryToToolRegistration(
+      getRecentLogsCallEntry,
+      mergeInputSchema: _mergeConnectionSchema,
       handler: (final args) async {
         final countRaw = intArgOrNull(args['count']);
-        final count = countRaw ?? 50;
-        return runCommand(runner, args, GetRecentLogsCommand(count: count));
+        return runCommand(
+          runner,
+          args,
+          GetRecentLogsCommand(count: countRaw ?? 50),
+        );
       },
     ),
   );

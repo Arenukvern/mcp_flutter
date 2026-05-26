@@ -1,6 +1,35 @@
 import 'package:agentkit_core/agentkit_core.dart';
 import 'package:flutter_mcp_toolkit_capability_kernel/flutter_mcp_toolkit_capability_kernel.dart';
 
+/// Builds a [ToolRegistration] from a codegen [AgentCallEntry].
+///
+/// Use [handler] when the generated handler cannot access host services (e.g.
+/// [CommandRunner]) or full wire [AgentArguments] (e.g. `connection` override).
+/// Use [mergeInputSchema] to extend the generated JSON Schema.
+ToolRegistration agentCallEntryToToolRegistration(
+  final AgentCallEntry entry, {
+  final ToolHandler? handler,
+  final Map<String, Object?> Function(Map<String, Object?> schema)?
+  mergeInputSchema,
+}) {
+  final intent = entry.toRegistration();
+  var inputSchema = Map<String, Object?>.from(intent.descriptor.inputSchema);
+  if (mergeInputSchema != null) {
+    inputSchema = mergeInputSchema(inputSchema);
+  }
+  final execute =
+      handler ??
+      (final args) => intent.execute(
+        AgentInvocation(descriptor: intent.descriptor, arguments: args),
+      );
+  return ToolRegistration(
+    name: intent.descriptor.name,
+    description: intent.descriptor.description,
+    inputSchema: inputSchema,
+    handler: execute,
+  );
+}
+
 RegisteredAgentIntent toolRegistrationToRegistration({
   required final String capabilityId,
   required final ToolRegistration registration,
