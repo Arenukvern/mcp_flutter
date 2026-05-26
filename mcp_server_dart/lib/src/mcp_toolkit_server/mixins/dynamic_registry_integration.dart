@@ -3,6 +3,9 @@
 
 // ignore_for_file: avoid_catches_without_on_clauses, lines_longer_than_80_chars
 
+import 'dart:async';
+
+import 'package:agentkit_core/agentkit_core.dart';
 import 'package:agentkit_schema/agentkit_schema.dart';
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_mcp_toolkit_server/src/capabilities/dynamic_registry/core_dynamic_registry_gateway.dart';
@@ -349,7 +352,7 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
           return AgentResult.failure(
             code: ensure.code ?? CoreErrorCode.vmNotConnected,
             message: ensure.message ?? 'VM service not connected',
-            details: ensure.details,
+            details: _agentFailureDetails(ensure.details),
           );
         }
         return intent.execute(invocation);
@@ -372,10 +375,11 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
           executor: toolkitServer.coreCommandExecutor,
         );
         if (connectError != null) {
+          final err = connectError.error!;
           return AgentResult.failure(
-            code: connectError.code,
-            message: connectError.message,
-            details: connectError.details,
+            code: err.code,
+            message: err.message,
+            details: _agentFailureDetails(err.details),
           );
         }
 
@@ -385,7 +389,7 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
           return AgentResult.failure(
             code: ensure.code ?? CoreErrorCode.vmNotConnected,
             message: ensure.message ?? 'VM service not connected',
-            details: ensure.details,
+            details: _agentFailureDetails(ensure.details),
           );
         }
         return intent.execute(invocation);
@@ -435,4 +439,17 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
         );
     }
   }
+}
+
+Map<String, Object?> _agentFailureDetails(final Object? raw) {
+  if (raw is Map<String, Object?>) {
+    return raw;
+  }
+  if (raw is Map) {
+    return Map<String, Object?>.from(raw);
+  }
+  if (raw == null) {
+    return const {};
+  }
+  return {'detail': raw};
 }
