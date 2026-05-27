@@ -69,12 +69,7 @@ extension type const MCPDefinition._(Map<String, dynamic> _value)
 /// extension type OnAppErrorsEntry._(AgentCallEntry entry) implements AgentCallEntry {
 ///   factory OnAppErrorsEntry({required final ErrorMonitor errorMonitor}) {
 ///     final entry = mcpToolkitTool(
-///       methodName: const MCPMethodName('app_errors'),
-///       handler: (final request) => MCPCallResult(
-///         message: 'Returns app errors',
-///         parameters: {'errors': []},
-///       ),
-///       toolDefinition: MCPToolDefinition(
+///       definition: MCPToolDefinition(
 ///         name: 'app_errors',
 ///         description: 'Get application errors and diagnostics',
 ///         inputSchema: ObjectSchema(
@@ -85,6 +80,10 @@ extension type const MCPDefinition._(Map<String, dynamic> _value)
 ///             ),
 ///           },
 ///         ),
+///       ),
+///       handler: (final request) => MCPCallResult(
+///         message: 'Returns app errors',
+///         parameters: {'errors': []},
 ///       ),
 ///     );
 ///     return OnAppErrorsEntry._(entry);

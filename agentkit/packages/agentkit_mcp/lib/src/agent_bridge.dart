@@ -21,9 +21,12 @@ ToolRegistration agentCallEntryToToolRegistration(
   }
   final execute =
       handler ??
-      (final args) => intent.execute(
-        AgentInvocation(descriptor: intent.descriptor, arguments: args),
-      );
+      (final args) {
+        intent.validate(args);
+        return intent.execute(
+          AgentInvocation(descriptor: intent.descriptor, arguments: args),
+        );
+      };
   return ToolRegistration(
     name: intent.descriptor.name,
     description: intent.descriptor.description,

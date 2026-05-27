@@ -79,6 +79,8 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
             final args = parameters.map(
               MapEntry<String, Object?>.new,
             );
+            final registration = entry.toRegistration();
+            registration.validate(args);
             final result = await entry.value.handler(args);
             return agentResultToServiceExtensionMap(result);
           },

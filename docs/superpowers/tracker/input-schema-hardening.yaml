@@ -1,0 +1,55 @@
+# Input schema / validation hardening — tracker
+# Audit skill: .cursor/skills/flutter-mcp-input-schema-audit/SKILL.md
+
+program:
+  name: input-schema-hardening
+  status: complete_in_repo
+
+tracks:
+  - id: skill-audit
+    title: Audit skill for future regressions
+    status: done
+
+  - id: p0-invoke-direct
+    title: invokeDirect validates before execute (WebMCP)
+    status: done
+
+  - id: p0-vm-extension-validate
+    title: App registerServiceExtension validates before handler
+    status: done
+
+  - id: p0-migrator-schema
+    title: migrate agent-entries preserves primitive ObjectSchema fields
+    status: done
+
+  - id: p0-empty-schema-fallback
+    title: inputSchemaFromMcpToolDefinition throws when inputSchema missing
+    status: done
+
+  - id: p1-vm-fail-closed
+    title: VmExtensionDynamicGateway fail-closed when tool schema missing
+    status: done
+
+  - id: p1-bridge-json-args
+    title: mcpToolkitTool JSON-encodes non-scalar args for legacy handlers
+    status: done
+
+  - id: p1-forward-resource-validate
+    title: forwardResourceRead validates before execute
+    status: done
+
+  - id: p1-agent-bridge-handler
+    title: ToolRegistration default handler calls validate
+    status: done
+
+  - id: p2-toolkit-parity-doc
+    title: Document dynamic vs fmt_* schema parity (connection field)
+    status: done
+
+  - id: p2-docs-stale
+    title: Fix stale mcp_models dartdoc and SIMPLIFIED_DYNAMIC_REGISTRATION.md
+    status: done
+
+  - id: tests-unit-e2e
+    title: Unit tests; E2E in flutter_cli_example_app_integration_test.dart
+    status: done

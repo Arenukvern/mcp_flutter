@@ -85,7 +85,9 @@ App-registered dynamic tools (from `AgentCallEntry` via `addEntries`) are listed
 
 Phase C cold-path metadata (`dogfood_reconstruct_start`, job `reconstruct.start`) is **app-side only** — same pattern as `dogfood_visual_reconstruct_info`; no bundled `fmt_*` tool in `mcp_server_dart`. See [deconstruct verification](../../docs/superpowers/evals/2026-05-26-deconstruct-verification.md).
 
-**Schema validation:** `exec --args` must match the tool’s JSON Schema. Wrong keys, extra properties when `additionalProperties: false`, or using an MCP-prefixed name on exec (e.g. `fmt_get_recent_logs`) fails validation or returns “Unsupported command”.
+**Schema validation:** `exec --args` must match the tool’s JSON Schema. Wrong keys, extra properties when `additionalProperties: false`, or using an MCP-prefixed name on exec (e.g. `fmt_get_recent_logs`) fails validation or returns “Unsupported command”. `fmt_client_tool` validates against the same `inputSchema` returned by `fmt_list_client_tools_and_resources` before calling the app VM extension.
+
+**Dynamic vs `fmt_*` schema parity:** App tools from `mcp_toolkit` (`tap_widget`, `semantic_snapshot`, …) are listed under their **bare** names via `registerDynamics`. Server catalog tools (`fmt_tap_widget`, …) in `server_capability_core` often add a **`connection`** field and stricter `additionalProperties: false`. For connection-aware calls from the host, prefer **`fmt_*`** tools; for in-app registrations, use `AgentCallEntry.tool` with explicit `inputSchema` maps (or `mcpToolkitTool`, which forwards `ObjectSchema`).
 
 Example:
 

@@ -1,14 +1,11 @@
+import 'dart:convert';
+
 import 'package:agentkit_core/agentkit_core.dart';
 import 'package:agentkit_schema/agentkit_schema.dart';
 
 import 'mcp_models.dart';
 
 const _defaultToolkitNamespace = 'mcp';
-
-const _emptyObjectSchema = <String, Object?>{
-  'type': 'object',
-  'properties': <String, Object?>{},
-};
 
 /// Builds an [AgentCallEntry] tool from legacy [MCPToolDefinition] + handler shape.
 AgentCallEntry mcpToolkitTool({
@@ -49,8 +46,21 @@ AgentCallEntry mcpToolkitResource({
 ServiceExtensionRequestMap _argsToServiceExtensionMap(
   final AgentArguments args,
 ) => args.map(
-  (final key, final value) => MapEntry(key, value?.toString() ?? ''),
+  (final key, final value) => MapEntry(key, _wireArgForServiceExtension(value)),
 );
+
+String _wireArgForServiceExtension(final Object? value) {
+  if (value == null) {
+    return '';
+  }
+  if (value is String) {
+    return value;
+  }
+  if (value is num || value is bool) {
+    return value.toString();
+  }
+  return jsonEncode(value);
+}
 
 AgentResult _mcpResultToAgentResult(final MCPCallResult result) {
   final message = result['message'] as String? ?? '';
@@ -68,8 +78,15 @@ InputSchema inputSchemaFromMcpToolDefinition(
   final MCPToolDefinition definition,
 ) {
   final raw = definition['inputSchema'];
+  if (raw == null) {
+    throw ArgumentError(
+      'MCPToolDefinition "${definition.name}" is missing inputSchema',
+    );
+  }
   if (raw is! Map) {
-    return _emptyObjectSchema;
+    throw ArgumentError(
+      'MCPToolDefinition "${definition.name}" inputSchema must be a Map',
+    );
   }
   return _deepCopyInputSchema(Map<Object?, Object?>.from(raw));
 }

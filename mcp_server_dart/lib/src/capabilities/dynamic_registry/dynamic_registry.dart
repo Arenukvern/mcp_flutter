@@ -589,10 +589,25 @@ final class DynamicRegistry {
     }
 
     updateAppActivity();
+    final args = <String, Object?>{'uri': resourceUri};
+    try {
+      entry.intent.validate(args);
+    } on AgentValidationException catch (e) {
+      return ReadResourceResult(
+        contents: [
+          TextResourceContents(
+            text: e.message,
+            uri: resourceUri,
+            mimeType: 'text/plain',
+          ),
+        ],
+      );
+    }
+
     final agentResult = await entry.intent.execute(
       AgentInvocation(
         descriptor: entry.intent.descriptor,
-        arguments: <String, Object?>{'uri': resourceUri},
+        arguments: args,
       ),
     );
     return agentResultToReadResourceResult(agentResult, uri: resourceUri);

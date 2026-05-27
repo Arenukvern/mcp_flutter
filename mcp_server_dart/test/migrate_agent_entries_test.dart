@@ -29,6 +29,32 @@ void main() {
       expect(migrator.wouldChange(after), isFalse);
     });
 
+    test('preserves ObjectSchema required and primitive property types', () {
+      const before = '''
+import 'package:mcp_toolkit/mcp_toolkit.dart';
+
+MCPCallEntry.tool(
+  definition: MCPToolDefinition(
+    name: 'calculate_fibonacci',
+    description: 'Fibonacci',
+    inputSchema: ObjectSchema(
+      properties: {
+        'n': IntegerSchema(minimum: 0, maximum: 100),
+      },
+      required: ['n'],
+    ),
+  ),
+  handler: (final request) => MCPCallResult(
+    message: 'ok',
+    parameters: const {},
+  ),
+);
+''';
+      final migrated = migrator.migrateSource(before);
+      expect(migrated, contains("'required': <String>['n']"));
+      expect(migrated, contains("'n': {'type': 'integer'}"));
+    });
+
     test('adds agentkit imports when missing', () {
       final before = File('${fixturesDir.path}/before_starter_entries.dart').readAsStringSync();
       final migrated = migrator.migrateSource(before);

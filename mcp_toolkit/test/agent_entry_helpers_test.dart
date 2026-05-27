@@ -30,6 +30,32 @@ void main() {
       expect((properties['n']! as Map)['type'], 'integer');
     });
 
+    test('json-encodes object-typed args for legacy handlers', () async {
+      String? capturedPredicate;
+      final entry = mcpToolkitTool(
+        definition: MCPToolDefinition(
+          name: 'wait_for',
+          description: 'wait',
+          inputSchema: ObjectSchema(
+            properties: {
+              'predicate': ObjectSchema(),
+            },
+            required: ['predicate'],
+          ),
+        ),
+        handler: (final request) async {
+          capturedPredicate = request['predicate'];
+          return MCPCallResult(message: 'ok', parameters: {});
+        },
+      );
+
+      await entry.invokeDirect({
+        'predicate': {'kind': 'time', 'ms': 50},
+      });
+      expect(capturedPredicate, contains('"kind"'));
+      expect(capturedPredicate, contains('time'));
+    });
+
     test('forwards empty ObjectSchema properties map', () {
       final entry = mcpToolkitTool(
         definition: MCPToolDefinition(

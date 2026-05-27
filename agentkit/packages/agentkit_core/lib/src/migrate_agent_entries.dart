@@ -148,16 +148,18 @@ final class MigrateAgentEntriesMigrator {
     final buffer = StringBuffer('AgentCallEntry.$kind(\n')
       ..writeln("    namespace: '$defaultNamespace',")
       ..writeln("    name: '$name',")
-      ..writeln("    description: '$description',")
-      ..writeln('    inputSchema: const {')
-      ..writeln("      'type': 'object',")
-      ..writeln("      'properties': <String, Object?>{},");
-    if (kind == 'resource') {
-      buffer
-        ..writeln('    },')
-        ..writeln("    mimeType: '$mimeType',");
+      ..writeln("    description: '$description',");
+    if (kind == 'tool') {
+      _writeInputSchemaConst(buffer, definitionBody);
     } else {
-      buffer.writeln('    },');
+      buffer
+        ..writeln('    inputSchema: const {')
+        ..writeln("      'type': 'object',")
+        ..writeln("      'properties': <String, Object?>{},")
+        ..writeln('    },');
+    }
+    if (kind == 'resource') {
+      buffer.writeln("    mimeType: '$mimeType',");
     }
     buffer
       ..writeln('    handler: $handlerLines,')
@@ -248,6 +250,81 @@ final class MigrateAgentEntriesMigrator {
   String? _extractStringField(final String body, final String field) {
     final match = RegExp("$field:\\s*'([^']*)'").firstMatch(body);
     return match?.group(1);
+  }
+
+  void _writeInputSchemaConst(final StringBuffer buffer, final String definitionBody) {
+    final schemaOpen = RegExp(r'inputSchema:\s*ObjectSchema\s*\(').firstMatch(definitionBody);
+    if (schemaOpen == null) {
+      buffer
+        ..writeln('    inputSchema: const {')
+        ..writeln("      'type': 'object',")
+        ..writeln("      'properties': <String, Object?>{},")
+        ..writeln('    },');
+      return;
+    }
+
+    final openParen = schemaOpen.end - 1;
+    final closeParen = _matchingParenIndex(definitionBody, openParen);
+    if (closeParen == null) {
+      buffer
+        ..writeln('    inputSchema: const {')
+        ..writeln("      'type': 'object',")
+        ..writeln("      'properties': <String, Object?>{},")
+        ..writeln('    },');
+      return;
+    }
+
+    final schemaBody = definitionBody.substring(openParen + 1, closeParen);
+    final required = _extractRequiredFieldNames(schemaBody);
+    final properties = _extractTypedProperties(schemaBody);
+
+    buffer.writeln('    inputSchema: const {');
+    buffer.writeln("      'type': 'object',");
+    if (properties.isEmpty) {
+      buffer.writeln("      'properties': <String, Object?>{},");
+    } else {
+      buffer.writeln("      'properties': <String, Object?>{");
+      for (final entry in properties.entries) {
+        buffer.writeln("        '${entry.key}': {'type': '${entry.value}'},");
+      }
+      buffer.writeln('      },');
+    }
+    if (required.isNotEmpty) {
+      buffer.writeln(
+        "      'required': <String>[${required.map((final n) => "'$n'").join(', ')}],",
+      );
+    }
+    buffer.writeln('    },');
+  }
+
+  List<String> _extractRequiredFieldNames(final String schemaBody) {
+    final match = RegExp(r'required:\s*\[([^\]]*)\]').firstMatch(schemaBody);
+    if (match == null) {
+      return const [];
+    }
+    return RegExp(r"'([^']+)'")
+        .allMatches(match.group(1)!)
+        .map((final m) => m.group(1)!)
+        .toList();
+  }
+
+  Map<String, String> _extractTypedProperties(final String schemaBody) {
+    final properties = <String, String>{};
+    final typePattern = RegExp(
+      r"'([^']+)':\s*(StringSchema|IntegerSchema|BooleanSchema|NumberSchema|Schema\.string|Schema\.int|Schema\.bool|Schema\.num)\b",
+    );
+    for (final match in typePattern.allMatches(schemaBody)) {
+      final name = match.group(1)!;
+      final schemaType = match.group(2)!;
+      properties[name] = switch (schemaType) {
+        'StringSchema' || 'Schema.string' => 'string',
+        'IntegerSchema' || 'Schema.int' => 'integer',
+        'BooleanSchema' || 'Schema.bool' => 'boolean',
+        'NumberSchema' || 'Schema.num' => 'number',
+        _ => 'string',
+      };
+    }
+    return properties;
   }
 
   String _fixImports(final String source) {

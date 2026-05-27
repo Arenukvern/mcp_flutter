@@ -5,6 +5,7 @@
 
 import 'dart:convert';
 
+import 'package:agentkit_schema/agentkit_schema.dart';
 import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_consts.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/types/error_codes.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/types/results.dart';
@@ -97,6 +98,11 @@ final class VmExtensionDynamicGateway implements CoreDynamicGateway {
     final ensureFailure = await _ensureVmConnected();
     if (ensureFailure != null) {
       return ensureFailure;
+    }
+
+    final validationFailure = await _validateToolArguments(toolName, arguments);
+    if (validationFailure != null) {
+      return validationFailure;
     }
 
     try {
@@ -242,6 +248,58 @@ final class VmExtensionDynamicGateway implements CoreDynamicGateway {
     }
 
     return CoreResult.success(data: result);
+  }
+
+  Future<CoreResult?> _validateToolArguments(
+    final String toolName,
+    final Map<String, Object?> arguments,
+  ) async {
+    final schema = await _inputSchemaForTool(toolName);
+    if (schema == null) {
+      return CoreResult.failure(
+        code: CoreErrorCode.invalidCommand,
+        message:
+            'Cannot validate dynamic tool "$toolName": tool not listed or '
+            'inputSchema missing (call fmt_list_client_tools_and_resources first)',
+      );
+    }
+    try {
+      validateAgainstSchema(schema, arguments);
+      return null;
+    } on AgentValidationException catch (e) {
+      return CoreResult.failure(
+        code: CoreErrorCode.invalidCommand,
+        message: e.message,
+      );
+    }
+  }
+
+  Future<InputSchema?> _inputSchemaForTool(final String toolName) async {
+    final cached = _inputSchemaFromTools(_tools, toolName);
+    if (cached != null) {
+      return cached;
+    }
+    final listResult = await listClientToolsAndResources();
+    if (!listResult.ok) {
+      return null;
+    }
+    return _inputSchemaFromTools(_tools, toolName);
+  }
+
+  InputSchema? _inputSchemaFromTools(
+    final List<Map<String, Object?>> tools,
+    final String toolName,
+  ) {
+    for (final tool in tools) {
+      if ('${tool['name']}' != toolName) {
+        continue;
+      }
+      final raw = tool['inputSchema'];
+      if (raw is Map) {
+        return Map<String, Object?>.from(raw);
+      }
+    }
+    return null;
   }
 
   Future<CoreResult?> _ensureVmConnected() async {

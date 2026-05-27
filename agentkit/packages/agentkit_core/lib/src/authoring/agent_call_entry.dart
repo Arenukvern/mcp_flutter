@@ -90,6 +90,7 @@ extension type const AgentCallEntry._(MapEntry<String, _AgentCallEntryValue> _en
 
   Future<AgentResult> invokeDirect(final AgentArguments arguments) {
     final registration = toRegistration();
+    registration.validate(arguments);
     return registration.execute(
       AgentInvocation(descriptor: registration.descriptor, arguments: arguments),
     );

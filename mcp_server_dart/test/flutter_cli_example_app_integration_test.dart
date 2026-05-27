@@ -387,6 +387,56 @@ void main() {
     );
 
     test(
+      'dynamic registry exposes inputSchema and validates fmt_client_tool args',
+      skip: runIntegration ? false : 'Set RUN_FLUTTER_CLI_INTEGRATION=1 to run',
+      timeout: const Timeout(Duration(minutes: 6)),
+      () async {
+        final dynamicList = await _waitForDynamicTool('tap_widget');
+        expect(dynamicList['ok'], isTrue);
+        final dynamicData = dynamicList['data'] as Map<String, dynamic>;
+
+        final tapSchema = _findDynamicToolInputSchema(dynamicData, 'tap_widget');
+        expect(tapSchema, isNotNull, reason: 'tap_widget missing from listing');
+        expect(tapSchema!['required'], ['ref']);
+        final tapProperties = tapSchema['properties'] as Map?;
+        expect(tapProperties, contains('ref'));
+
+        final fibSchema = _findDynamicToolInputSchema(
+          dynamicData,
+          'calculate_fibonacci',
+        );
+        expect(fibSchema, isNotNull);
+        expect(fibSchema!['required'], ['n']);
+
+        final missingRef = await _runCliRaw([
+          'exec',
+          '--name',
+          'fmt_client_tool',
+          '--args',
+          jsonEncode({
+            'toolName': 'tap_widget',
+            'arguments': <String, Object?>{},
+          }),
+        ]);
+        expect(missingRef.envelope['ok'], isFalse);
+        expect(_envelopeText(missingRef.envelope), contains('ref'));
+
+        final missingN = await _runCliRaw([
+          'exec',
+          '--name',
+          'fmt_client_tool',
+          '--args',
+          jsonEncode({
+            'toolName': 'calculate_fibonacci',
+            'arguments': <String, Object?>{},
+          }),
+        ]);
+        expect(missingN.envelope['ok'], isFalse);
+        expect(_envelopeText(missingN.envelope), contains('n'));
+      },
+    );
+
+    test(
       "every catalog command exec's against the live showcase",
       skip: runIntegration ? false : 'Set RUN_FLUTTER_CLI_INTEGRATION=1 to run',
       timeout: const Timeout(Duration(minutes: 12)),
@@ -602,6 +652,27 @@ Future<void> _waitForCliConnectable({
 
   fail('Timed out waiting for flutter_test_app to become connectable via CLI');
 }
+
+Map<String, dynamic>? _findDynamicToolInputSchema(
+  final Map<String, dynamic> dynamicData,
+  final String toolName,
+) {
+  final tools = (dynamicData['tools'] as List?) ?? const [];
+  for (final tool in tools.whereType<Map>()) {
+    final map = tool.cast<String, Object?>();
+    if ('${map['name']}' != toolName) {
+      continue;
+    }
+    final schema = map['inputSchema'];
+    if (schema is Map) {
+      return schema.cast<String, dynamic>();
+    }
+  }
+  return null;
+}
+
+String _envelopeText(final Map<String, dynamic> envelope) =>
+    jsonEncode(envelope);
 
 Future<Map<String, dynamic>> _waitForDynamicTool(final String toolName) async {
   final start = DateTime.now();
