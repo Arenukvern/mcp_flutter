@@ -16,17 +16,17 @@ AgentCallEntry mcpToolkitTool({
   required final MCPCallHandler handler,
   final String namespace = _defaultToolkitNamespace,
 }) => AgentCallEntry.tool(
-    namespace: namespace,
-    name: definition.name,
-    description: definition.description,
-    inputSchema: _emptyObjectSchema,
-    methodName: definition.name,
-    handler: (final args) async {
-      final request = _argsToServiceExtensionMap(args);
-      final result = await handler(request);
-      return _mcpResultToAgentResult(result);
-    },
-  );
+  namespace: namespace,
+  name: definition.name,
+  description: definition.description,
+  inputSchema: inputSchemaFromMcpToolDefinition(definition),
+  methodName: definition.name,
+  handler: (final args) async {
+    final request = _argsToServiceExtensionMap(args);
+    final result = await handler(request);
+    return _mcpResultToAgentResult(result);
+  },
+);
 
 /// Builds an [AgentCallEntry] resource from legacy [MCPResourceDefinition] + handler.
 AgentCallEntry mcpToolkitResource({
@@ -34,20 +34,23 @@ AgentCallEntry mcpToolkitResource({
   required final MCPCallHandler handler,
   final String namespace = _defaultToolkitNamespace,
 }) => AgentCallEntry.resource(
-    namespace: namespace,
-    name: definition.name,
-    description: definition.description,
-    methodName: definition.name,
-    mimeType: definition['mimeType'] as String? ?? 'application/json',
-    handler: (final args) async {
-      final request = _argsToServiceExtensionMap(args);
-      final result = await handler(request);
-      return _mcpResultToAgentResult(result);
-    },
-  );
+  namespace: namespace,
+  name: definition.name,
+  description: definition.description,
+  methodName: definition.name,
+  mimeType: definition['mimeType'] as String? ?? 'application/json',
+  handler: (final args) async {
+    final request = _argsToServiceExtensionMap(args);
+    final result = await handler(request);
+    return _mcpResultToAgentResult(result);
+  },
+);
 
-ServiceExtensionRequestMap _argsToServiceExtensionMap(final AgentArguments args) =>
-    args.map((final key, final value) => MapEntry(key, value?.toString() ?? ''));
+ServiceExtensionRequestMap _argsToServiceExtensionMap(
+  final AgentArguments args,
+) => args.map(
+  (final key, final value) => MapEntry(key, value?.toString() ?? ''),
+);
 
 AgentResult _mcpResultToAgentResult(final MCPCallResult result) {
   final message = result['message'] as String? ?? '';
@@ -56,7 +59,39 @@ AgentResult _mcpResultToAgentResult(final MCPCallResult result) {
 }
 
 /// Service-extension wire format for [AgentResult] (legacy MCPCallResult shape).
-Map<String, dynamic> agentResultToServiceExtensionMap(final AgentResult result) => {
-  'message': result.message,
-  ...result.data,
-};
+Map<String, dynamic> agentResultToServiceExtensionMap(
+  final AgentResult result,
+) => {'message': result.message, ...result.data};
+
+/// Copies [MCPToolDefinition.inputSchema] into agentkit [InputSchema] maps.
+InputSchema inputSchemaFromMcpToolDefinition(
+  final MCPToolDefinition definition,
+) {
+  final raw = definition['inputSchema'];
+  if (raw is! Map) {
+    return _emptyObjectSchema;
+  }
+  return _deepCopyInputSchema(Map<Object?, Object?>.from(raw));
+}
+
+Map<String, Object?> _deepCopyInputSchema(final Map<Object?, Object?> raw) =>
+    raw.map((final key, final value) {
+      final normalized = _normalizeSchemaValue(value);
+      return MapEntry(key.toString(), normalized);
+    });
+
+Object? _normalizeSchemaValue(final Object? value) {
+  if (value case final Map raw) {
+    return _deepCopyInputSchema(Map<Object?, Object?>.from(raw));
+  }
+  if (value is Iterable && value is! String) {
+    return value
+        .map<Object?>(
+          (final item) => item is Map
+              ? _deepCopyInputSchema(Map<Object?, Object?>.from(item))
+              : item,
+        )
+        .toList();
+  }
+  return value;
+}

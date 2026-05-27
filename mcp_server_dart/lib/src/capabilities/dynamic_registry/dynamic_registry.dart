@@ -49,7 +49,10 @@ final class DynamicResourceEntry with EquatableMixin {
   bool? get stringify => true;
 
   @override
-  List<Object?> get props => [intent.descriptor.effectiveResourceUri, resource.uri];
+  List<Object?> get props => [
+    intent.descriptor.effectiveResourceUri,
+    resource.uri,
+  ];
 }
 
 /// A string that represents a dynamic app id.
@@ -344,11 +347,20 @@ final class DynamicRegistry {
     }
 
     updateAppActivity();
+    final args = arguments ?? const <String, Object?>{};
+    try {
+      entry.intent.validate(args);
+    } on AgentValidationException catch (e) {
+      return agentResultToMcpResult(
+        AgentResult.failure(
+          code: CoreErrorCode.invalidCommand,
+          message: e.message,
+        ),
+      );
+    }
+
     final agentResult = await entry.intent.execute(
-      AgentInvocation(
-        descriptor: entry.intent.descriptor,
-        arguments: arguments ?? const <String, Object?>{},
-      ),
+      AgentInvocation(descriptor: entry.intent.descriptor, arguments: args),
     );
     return agentResultToMcpResult(agentResult);
   }
@@ -364,7 +376,7 @@ final class DynamicRegistry {
         name: tool.name,
         description: tool.description ?? '',
         kind: AgentIntentKind.tool,
-        inputSchema: _inputSchemaMap(tool),
+        inputSchema: inputSchemaFromMcpTool(tool),
       ),
       execute: (final invocation) => _invokeDynamicTool(
         toolName: tool.name,
@@ -438,8 +450,7 @@ final class DynamicRegistry {
       ),
       execute: (final invocation) => _invokeDynamicResource(
         resource: resource,
-        requestedUri:
-            invocation.arguments['uri'] as String? ?? resource.uri,
+        requestedUri: invocation.arguments['uri'] as String? ?? resource.uri,
       ),
     );
   }
@@ -568,9 +579,6 @@ final class DynamicRegistry {
     }
   }
 
-  static Map<String, Object?> _inputSchemaMap(final Tool tool) =>
-      const <String, Object?>{'type': 'object', 'additionalProperties': true};
-
   /// Forward MCP resource read via stored [RegisteredAgentIntent].
   Future<ReadResourceResult?> forwardResourceRead(
     final String resourceUri,
@@ -656,4 +664,32 @@ final class DynamicRegistry {
         text.contains('extension call returned null') ||
         text.contains('-32601');
   }
+}
+
+/// Copies MCP [Tool.inputSchema] into agentkit [InputSchema] for listing and validation.
+InputSchema inputSchemaFromMcpTool(final Tool tool) {
+  final raw = tool.inputSchema;
+  return _deepCopyInputSchemaMap(Map<Object?, Object?>.from(raw as Map));
+}
+
+Map<String, Object?> _deepCopyInputSchemaMap(final Map<Object?, Object?> raw) =>
+    raw.map(
+      (final key, final value) =>
+          MapEntry(key.toString(), _normalizeSchemaMapValue(value)),
+    );
+
+Object? _normalizeSchemaMapValue(final Object? value) {
+  if (value is Map) {
+    return _deepCopyInputSchemaMap(Map<Object?, Object?>.from(value));
+  }
+  if (value is Iterable && value is! String) {
+    return value
+        .map<Object?>(
+          (final item) => item is Map
+              ? _deepCopyInputSchemaMap(Map<Object?, Object?>.from(item))
+              : item,
+        )
+        .toList();
+  }
+  return value;
 }

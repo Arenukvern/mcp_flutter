@@ -1864,7 +1864,7 @@ dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart init agentkit-platform \
 |----------|--------|
 | `web/agentkit_webmcp.generated.js` | `codegen sync` from `web/agent_manifest.json` |
 | `web/index.html` | `init agentkit-platform` script tag |
-| Dart bootstrap | `AgentWebMcpBootstrap.registerFromEntries` (debug web, after `addEntries`) |
+| Dart bootstrap | `registerAgentWebMcpFromEntries` in `mcp_toolkit_extensions.dart` (debug web, after `addEntries`; `agentkit_platform`) |
 
 ## Runtime validate
 
@@ -1880,7 +1880,7 @@ Pass `--web-browser-debugging-port <cdp>` if CDP discovery fails.
 
 ## Known issues
 
-1. **Duplicate tool name** — generated JS + Dart bootstrap both `registerTool`; dedupe or gate one path.
+1. **Duplicate tool name** — generated JS + `registerAgentWebMcpFromEntries` both call `registerTool`; dedupe or gate one path (`agent_web_mcp_bootstrap_web.dart` name cache).
 2. **CDP probe** — `webmcp verify` may report `webmcp_active_log_evidence` while CDP `hasModelContext` is false (Flutter execution context).
 3. **Stale WS_URI** — always grep fresh token after hot restart before eval/validate.
 
