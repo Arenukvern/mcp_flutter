@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:agentkit_schema/agentkit_schema.dart';
-import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 
 import '../intent/agent_intent_descriptor.dart';
 import '../intent/agent_intent_kind.dart';

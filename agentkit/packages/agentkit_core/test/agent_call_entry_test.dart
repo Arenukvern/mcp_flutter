@@ -1,6 +1,6 @@
 import 'package:agentkit_core/agentkit_core.dart';
 import 'package:agentkit_schema/agentkit_schema.dart';
-import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
+import 'package:agentkit_schema/agentkit_schema.dart';
 import 'package:test/test.dart';
 
 void main() {

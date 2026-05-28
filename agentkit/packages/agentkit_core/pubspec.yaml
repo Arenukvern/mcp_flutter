@@ -16,8 +16,6 @@ resolution: workspace
 
 dependencies:
   agentkit_schema: ^0.1.0
-  flutter_mcp_toolkit_core:
-    path: ../../../packages/core
   meta: ^1.17.0
   path: ^1.9.1
 

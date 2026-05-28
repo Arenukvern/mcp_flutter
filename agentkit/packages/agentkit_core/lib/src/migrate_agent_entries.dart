@@ -411,28 +411,6 @@ final class MigrateAgentEntriesMigrator {
     return properties;
   }
 
-  Map<String, String> _extractSimpleArrayItemTypes(final String schemaBody) {
-    final section = _objectSchemaPropertiesInner(schemaBody);
-    if (section == null) {
-      return const {};
-    }
-
-    final itemTypes = <String, String>{};
-    final pattern = RegExp(
-      r"'([^']+)':\s*(?:const\s+)?ArraySchema\s*\(\s*items\s*:\s*(?:const\s+)?"
-      r'(StringSchema|IntegerSchema|BooleanSchema|NumberSchema|'
-      r'Schema\.string|Schema\.int|Schema\.bool|Schema\.num)\b',
-    );
-    for (final match in pattern.allMatches(section)) {
-      if (_braceDepthAt(section, match.start) != 0) {
-        continue;
-      }
-      final name = match.group(1)!;
-      itemTypes[name] = _jsonTypeForSchemaConstructor(match.group(2)!);
-    }
-    return itemTypes;
-  }
-
   String _jsonTypeForSchemaConstructor(final String schemaType) => switch (schemaType) {
         'StringSchema' || 'Schema.string' => 'string',
         'IntegerSchema' || 'Schema.int' => 'integer',
