@@ -26,4 +26,53 @@ void main() {
     expect(result.ok, isTrue);
     expect(result.data['text'], '{"ok":true}');
   });
+
+  test('toolRegistrationToRegistration validates before handler', () {
+    var handlerCalled = false;
+    final registration = ToolRegistration(
+      name: 'strict',
+      description: 'strict',
+      inputSchema: const <String, Object?>{
+        'type': 'object',
+        'additionalProperties': false,
+        'required': <String>['ref'],
+        'properties': <String, Object?>{
+          'ref': <String, Object?>{'type': 'string'},
+        },
+      },
+      handler: (final args) async {
+        handlerCalled = true;
+        return AgentResult.success(data: args);
+      },
+    );
+    final intent = toolRegistrationToRegistration(
+      capabilityId: 'fmt',
+      registration: registration,
+    );
+
+    expect(
+      () => intent.execute(
+        AgentInvocation(
+          descriptor: intent.descriptor,
+          arguments: const <String, Object?>{},
+        ),
+      ),
+      throwsA(isA<AgentValidationException>()),
+    );
+    expect(handlerCalled, isFalse);
+
+    expect(
+      () => intent.execute(
+        AgentInvocation(
+          descriptor: intent.descriptor,
+          arguments: const <String, Object?>{
+            'ref': 'ok',
+            'extra': true,
+          },
+        ),
+      ),
+      throwsA(isA<AgentValidationException>()),
+    );
+    expect(handlerCalled, isFalse);
+  });
 }

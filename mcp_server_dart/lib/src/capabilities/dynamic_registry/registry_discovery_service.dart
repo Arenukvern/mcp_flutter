@@ -7,13 +7,87 @@ import 'dart:async';
 
 import 'package:dart_mcp/server.dart';
 import 'package:dtd/dtd.dart';
+import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 import 'package:flutter_mcp_toolkit_server/flutter_mcp_server.dart';
 import 'package:flutter_mcp_toolkit_server/src/capabilities/dynamic_registry/dynamic_registry.dart';
 import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_consts.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
+import 'package:meta/meta.dart';
 import 'package:rx/constructors.dart';
 import 'package:rx/converters.dart';
 import 'package:vm_service/vm_service.dart';
+
+/// Thrown when one or more tools/resources in a registerDynamics payload fail
+/// to parse.
+final class RegisterDynamicsPayloadException implements Exception {
+  const RegisterDynamicsPayloadException(this.failures);
+
+  final List<String> failures;
+
+  @override
+  String toString() =>
+      'RegisterDynamicsPayloadException(${failures.join('; ')})';
+}
+
+/// Parsed registerDynamics payload — tools and resources ready to register.
+@visibleForTesting
+typedef ParsedRegisterDynamicsPayload = ({
+  DynamicAppId appId,
+  List<Tool> tools,
+  List<({Resource resource, Map<String, Object?>? inputSchema})> resources,
+});
+
+/// Parses registerDynamics response data.
+///
+/// Throws [RegisterDynamicsPayloadException] if any tool or resource fails
+/// [Tool.fromMap] / [Resource.fromMap] (fail-closed; no partial registration).
+@visibleForTesting
+ParsedRegisterDynamicsPayload parseRegisterDynamicsPayload(
+  final Map<String, dynamic> data,
+) {
+  final failures = <String>[];
+  final appId = DynamicAppId(jsonDecodeString(data['appId']));
+  final toolsRaw = jsonDecodeListAs<Map<String, dynamic>>(data['tools']);
+  final resourcesRaw = jsonDecodeListAs<Map<String, dynamic>>(
+    data['resources'],
+  );
+
+  final tools = <Tool>[];
+  for (final toolData in toolsRaw) {
+    try {
+      final tool = Tool.fromMap(toolData);
+      if (allMcpToolkitExtNames.contains(tool.name)) {
+        continue;
+      }
+      tools.add(tool);
+    } catch (e) {
+      failures.add('tool "${toolData['name']}": $e');
+    }
+  }
+
+  final resources =
+      <({Resource resource, Map<String, Object?>? inputSchema})>[];
+  for (final resourceData in resourcesRaw) {
+    try {
+      final resource = Resource.fromMap(resourceData);
+      if (allMcpToolkitExtNames.contains(resource.uri)) {
+        continue;
+      }
+      resources.add((
+        resource: resource,
+        inputSchema: inputSchemaFromDynamicRegistrationMap(resourceData),
+      ));
+    } catch (e) {
+      failures.add('resource "${resourceData['uri']}": $e');
+    }
+  }
+
+  if (failures.isNotEmpty) {
+    throw RegisterDynamicsPayloadException(failures);
+  }
+
+  return (appId: appId, tools: tools, resources: resources);
+}
 
 /// Registry discovery service that leverages DTD events and
 /// direct VM connection
@@ -177,6 +251,7 @@ final class RegistryDiscoveryService {
         'stackTrace: $stackTrace',
         logger: _loggerName,
       );
+      dynamicRegistry.unregisterApp();
     }
   }
 
@@ -185,60 +260,34 @@ final class RegistryDiscoveryService {
     final Map<String, dynamic> data,
   ) async {
     try {
-      final appId = DynamicAppId(jsonDecodeString(data['appId']));
-      final tools = jsonDecodeListAs<Map<String, dynamic>>(data['tools']);
-      final resources = jsonDecodeListAs<Map<String, dynamic>>(
-        data['resources'],
-      );
+      final parsed = parseRegisterDynamicsPayload(data);
 
       logger.log(
         LoggingLevel.info,
-        'Processing registration: ${tools.length} tools, '
-        '${resources.length} resources from $appId',
+        'Processing registration: ${parsed.tools.length} tools, '
+        '${parsed.resources.length} resources from ${parsed.appId}',
         logger: _loggerName,
       );
 
       // Clear existing registrations for this app
-      server.unregisterDynamicApp(appId);
+      server.unregisterDynamicApp(parsed.appId);
 
-      // Register tools
-      for (final toolData in tools) {
-        try {
-          final tool = Tool.fromMap(toolData);
-          if (allMcpToolkitExtNames.contains(tool.name)) {
-            continue;
-          }
-          server.registerDynamicTool(tool, appId);
-        } catch (e) {
-          logger.log(
-            LoggingLevel.warning,
-            'Failed to register tool ${toolData['name']}: $e',
-            logger: _loggerName,
-          );
-        }
+      for (final tool in parsed.tools) {
+        server.registerDynamicTool(tool, parsed.appId);
       }
 
-      // Register resources
-      for (final resourceData in resources) {
-        try {
-          final resource = Resource.fromMap(resourceData);
-          if (allMcpToolkitExtNames.contains(resource.uri)) {
-            continue;
-          }
-          server.registerDynamicResource(resource, appId);
-        } catch (e) {
-          logger.log(
-            LoggingLevel.warning,
-            'Failed to register resource ${resourceData['uri']}: $e',
-            logger: _loggerName,
-          );
-        }
+      for (final entry in parsed.resources) {
+        server.registerDynamicResource(
+          entry.resource,
+          parsed.appId,
+          inputSchema: entry.inputSchema,
+        );
       }
 
       logger.log(
         LoggingLevel.info,
-        'Successfully registered $appId with ${tools.length} '
-        'tools and ${resources.length} resources',
+        'Successfully registered ${parsed.appId} with '
+        '${parsed.tools.length} tools and ${parsed.resources.length} resources',
         logger: _loggerName,
       );
     } catch (e, stackTrace) {
@@ -248,6 +297,13 @@ final class RegistryDiscoveryService {
         'stackTrace: $stackTrace',
         logger: _loggerName,
       );
+      dynamicRegistry.unregisterApp();
     }
   }
+
+  /// Test hook for [_processRegistrationResponse].
+  @visibleForTesting
+  Future<void> processRegistrationResponseForTesting(
+    final Map<String, dynamic> data,
+  ) => _processRegistrationResponse(data);
 }

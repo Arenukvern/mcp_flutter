@@ -11,7 +11,7 @@ import 'package:flutter/foundation.dart';
 ///
 /// For example:
 /// ```dart
-/// final count = jsonDecodeInt(parameters['count'] ?? '').whenZeroUse(10);
+/// final count = jsonDecodeInt(parameters['count'] ?? '').whenZeroUse(4);
 /// final reversedErrors = errorMonitor.errors.take(count).toList();
 /// final errors = reversedErrors.map((final e) => e.toJson()).toList();
 ///
@@ -76,7 +76,7 @@ extension type const MCPDefinition._(Map<String, dynamic> _value)
 ///           properties: {
 ///             'count': IntegerSchema(
 ///               description: 'Number of errors to retrieve',
-///               default: 10,
+///               default: 4,
 ///             ),
 ///           },
 ///         ),

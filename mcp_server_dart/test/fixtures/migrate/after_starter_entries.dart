@@ -28,10 +28,6 @@ Set<AgentCallEntry> buildStarterEntries() => {
     namespace: 'app',
     name: 'app_status',
     description: 'App status resource',
-    inputSchema: const {
-      'type': 'object',
-      'properties': <String, Object?>{},
-    },
     mimeType: 'application/json',
     handler: (final args) async {
       final request = args.map(

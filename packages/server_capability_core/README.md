@@ -51,6 +51,8 @@ context.registerTool(
 ```
 
 Pilot: `lib/src/tools/codegen/get_recent_logs_tool.dart` → `get_recent_logs`.
+Generated `.g.dart` uses [getRecentLogsInputSchema]; [registerLogTools] still
+merges the same schema at host registration for regen safety.
 
 Additional `fmt_*` tools via `@AgentTool` are **pilot-only** until a second tool
 passes low blast-radius review; prefer hand-written `ToolRegistration` for new

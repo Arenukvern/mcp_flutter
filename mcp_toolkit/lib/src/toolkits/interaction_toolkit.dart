@@ -1,5 +1,6 @@
 import 'package:agentkit_core/agentkit_core.dart';
 import 'package:dart_mcp/client.dart';
+import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
 
 import '../agent_entry_helpers.dart';
@@ -53,7 +54,7 @@ extension type OnSemanticSnapshotEntry._(AgentCallEntry entry)
         description:
             'Get compact semantic tree of interactive widgets with refs '
             'for interaction tools (tap_widget, enter_text, etc.).',
-        inputSchema: ObjectSchema(properties: {}),
+        inputSchema: ObjectSchema.fromMap(semanticSnapshotInputSchema()),
       ),
     );
     return OnSemanticSnapshotEntry._(entry);
@@ -108,17 +109,7 @@ extension type OnTapWidgetEntry._(AgentCallEntry entry) implements AgentCallEntr
             'Tap the centre of a widget identified by a semantic snapshot ref. '
             'Call semantic_snapshot immediately before to get fresh refs. '
             'Pass snapshot_id to detect staleness.',
-        inputSchema: ObjectSchema(
-          required: ['ref'],
-          properties: {
-            'ref': StringSchema(
-              description: 'Semantic ref string (e.g. "s_0")',
-            ),
-            'snapshotId': IntegerSchema(
-              description: 'Optional snapshot_id - if stale, returns error',
-            ),
-          },
-        ),
+        inputSchema: ObjectSchema.fromMap(tapWidgetInputSchema()),
       ),
     );
     return OnTapWidgetEntry._(entry);
@@ -178,18 +169,7 @@ extension type OnEnterTextEntry._(AgentCallEntry entry) implements AgentCallEntr
             'Taps the field to focus it first, then sets the value. '
             'Call semantic_snapshot immediately before to get fresh refs. '
             'Pass snapshot_id to detect staleness.',
-        inputSchema: ObjectSchema(
-          required: ['ref', 'text'],
-          properties: {
-            'ref': StringSchema(
-              description: 'Semantic ref of the text field (e.g. "s_2")',
-            ),
-            'text': StringSchema(description: 'Text to enter into the field'),
-            'snapshotId': IntegerSchema(
-              description: 'Optional snapshot_id - if stale, returns error',
-            ),
-          },
-        ),
+        inputSchema: ObjectSchema.fromMap(enterTextInputSchema()),
       ),
     );
     return OnEnterTextEntry._(entry);
@@ -245,25 +225,7 @@ extension type OnScrollEntry._(AgentCallEntry entry) implements AgentCallEntry {
             'Simulates a drag gesture. '
             'Call semantic_snapshot immediately before to get fresh refs. '
             'Pass snapshot_id to detect staleness.',
-        inputSchema: ObjectSchema(
-          required: ['direction'],
-          properties: {
-            'direction': StringSchema(
-              description: 'Direction to scroll: up, down, left, right',
-            ),
-            'ref': StringSchema(
-              description:
-                  'Optional semantic ref to scroll from '
-                  '(defaults to screen centre)',
-            ),
-            'distance': StringSchema(
-              description: 'Distance in logical pixels (default 300)',
-            ),
-            'snapshotId': IntegerSchema(
-              description: 'Optional snapshot_id - if stale, returns error',
-            ),
-          },
-        ),
+        inputSchema: ObjectSchema.fromMap(scrollInputSchema()),
       ),
     );
     return OnScrollEntry._(entry);
@@ -319,17 +281,7 @@ extension type OnLongPressEntry._(AgentCallEntry entry) implements AgentCallEntr
             'Holds for ~500 ms before releasing. '
             'Call semantic_snapshot immediately before to get fresh refs. '
             'Pass snapshot_id to detect staleness.',
-        inputSchema: ObjectSchema(
-          required: ['ref'],
-          properties: {
-            'ref': StringSchema(
-              description: 'Semantic ref string (e.g. "s_0")',
-            ),
-            'snapshotId': IntegerSchema(
-              description: 'Optional snapshot_id - if stale, returns error',
-            ),
-          },
-        ),
+        inputSchema: ObjectSchema.fromMap(longPressInputSchema()),
       ),
     );
     return OnLongPressEntry._(entry);
@@ -384,25 +336,7 @@ extension type OnSwipeEntry._(AgentCallEntry entry) implements AgentCallEntry {
             'Swipe from a ref or the screen centre in a given direction. '
             'Call semantic_snapshot immediately before to get fresh refs. '
             'Pass snapshot_id to detect staleness.',
-        inputSchema: ObjectSchema(
-          required: ['direction'],
-          properties: {
-            'direction': StringSchema(
-              description: 'Direction to swipe: up, down, left, right',
-            ),
-            'ref': StringSchema(
-              description:
-                  'Optional semantic ref to start from '
-                  '(defaults to screen centre)',
-            ),
-            'distance': StringSchema(
-              description: 'Distance in logical pixels (default 300)',
-            ),
-            'snapshotId': IntegerSchema(
-              description: 'Optional snapshot_id - if stale, returns error',
-            ),
-          },
-        ),
+        inputSchema: ObjectSchema.fromMap(swipeInputSchema()),
       ),
     );
     return OnSwipeEntry._(entry);
@@ -461,20 +395,7 @@ extension type OnDragEntry._(AgentCallEntry entry) implements AgentCallEntry {
             'Drag from one widget to another, identified by semantic refs. '
             'Call semantic_snapshot immediately before to get fresh refs. '
             'Pass snapshot_id to detect staleness.',
-        inputSchema: ObjectSchema(
-          required: ['fromRef', 'toRef'],
-          properties: {
-            'fromRef': StringSchema(
-              description: 'Semantic ref of the drag source',
-            ),
-            'toRef': StringSchema(
-              description: 'Semantic ref of the drag destination',
-            ),
-            'snapshotId': IntegerSchema(
-              description: 'Optional snapshot_id - if stale, returns error',
-            ),
-          },
-        ),
+        inputSchema: ObjectSchema.fromMap(dragInputSchema()),
       ),
     );
     return OnDragEntry._(entry);
@@ -510,15 +431,7 @@ extension type OnGetRecentLogsEntry._(AgentCallEntry entry)
         description:
             'Get recent print() / debugPrint() output captured from the '
             'running Flutter app.',
-        inputSchema: ObjectSchema(
-          properties: {
-            'count': IntegerSchema(
-              description: 'Number of recent entries to return (default 50)',
-              minimum: 1,
-              maximum: 200,
-            ),
-          },
-        ),
+        inputSchema: ObjectSchema.fromMap(getRecentLogsInputSchema()),
       ),
     );
     return OnGetRecentLogsEntry._(entry);
@@ -558,13 +471,7 @@ extension type OnWaitForEntry._(AgentCallEntry entry) implements AgentCallEntry 
         description:
             'Wait for a UI predicate (text/noText/time/stable/noError) and '
             'return a fresh semantic snapshot. Default timeout 5000ms, max 30000ms.',
-        inputSchema: ObjectSchema(
-          properties: {
-            'predicate': ObjectSchema(),
-            'timeoutMs': IntegerSchema(minimum: 1, maximum: 30000),
-          },
-          required: const ['predicate'],
-        ),
+        inputSchema: ObjectSchema.fromMap(waitForInputSchema()),
       ),
     );
     return OnWaitForEntry._(entry);
@@ -612,16 +519,7 @@ extension type OnPressKeyEntry._(AgentCallEntry entry) implements AgentCallEntry
             'Reaches Focus widgets / Shortcuts / Actions / Tab traversal. '
             'Does NOT trigger TextField.onSubmitted (use tap_widget on the '
             'submit button instead) or IME composition.',
-        inputSchema: ObjectSchema(
-          properties: {
-            'key': StringSchema(),
-            'ctrl': BooleanSchema(),
-            'shift': BooleanSchema(),
-            'alt': BooleanSchema(),
-            'meta': BooleanSchema(),
-          },
-          required: const ['key'],
-        ),
+        inputSchema: ObjectSchema.fromMap(pressKeyInputSchema()),
       ),
     );
     return OnPressKeyEntry._(entry);
@@ -666,10 +564,7 @@ extension type OnHandleDialogEntry._(AgentCallEntry entry)
             'Dismiss the topmost popup/dialog route on the registered '
             'Navigator. Currently only action="dismiss" is supported. '
             'Requires MCPToolkitBinding.instance.navigatorKey = key.',
-        inputSchema: ObjectSchema(
-          properties: {'action': StringSchema()},
-          required: const ['action'],
-        ),
+        inputSchema: ObjectSchema.fromMap(handleDialogInputSchema()),
       ),
     );
     return OnHandleDialogEntry._(entry);
@@ -713,14 +608,7 @@ extension type OnNavigateEntry._(AgentCallEntry entry) implements AgentCallEntry
             'Drive the registered Navigator. action=push|pop|popUntil. '
             'push/popUntil require route. push accepts arguments. '
             'Requires MCPToolkitBinding.instance.navigatorKey = key.',
-        inputSchema: ObjectSchema(
-          properties: {
-            'action': StringSchema(),
-            'route': StringSchema(),
-            'arguments': ObjectSchema(),
-          },
-          required: const ['action'],
-        ),
+        inputSchema: ObjectSchema.fromMap(navigateInputSchema()),
       ),
     );
     return OnNavigateEntry._(entry);
@@ -782,10 +670,7 @@ extension type OnHoverEntry._(AgentCallEntry entry) implements AgentCallEntry {
             'listeners on PointerHoverEvent. Desktop/web only — mobile '
             'has no hover concept. Call semantic_snapshot immediately '
             'before to get fresh refs.',
-        inputSchema: ObjectSchema(
-          required: const ['ref'],
-          properties: {'ref': StringSchema(), 'snapshotId': IntegerSchema()},
-        ),
+        inputSchema: ObjectSchema.fromMap(hoverInputSchema()),
       ),
     );
     return OnHoverEntry._(entry);

@@ -2,6 +2,7 @@
 import 'package:agentkit_codegen/agentkit_codegen.dart';
 import 'package:agentkit_core/agentkit_core.dart';
 import 'package:agentkit_schema/agentkit_schema.dart';
+import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 
 part 'get_recent_logs_tool.g.dart';
 

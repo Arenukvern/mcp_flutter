@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:agentkit_core/agentkit_core.dart';
 import 'package:agentkit_schema/agentkit_schema.dart';
+import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 
 import 'mcp_models.dart';
 
@@ -30,12 +31,14 @@ AgentCallEntry mcpToolkitResource({
   required final MCPResourceDefinition definition,
   required final MCPCallHandler handler,
   final String namespace = _defaultToolkitNamespace,
+  final InputSchema? inputSchema,
 }) => AgentCallEntry.resource(
   namespace: namespace,
   name: definition.name,
   description: definition.description,
   methodName: definition.name,
   mimeType: definition['mimeType'] as String? ?? 'application/json',
+  inputSchema: inputSchema ?? _resourceInputSchemaFromDefinition(definition),
   handler: (final args) async {
     final request = _argsToServiceExtensionMap(args);
     final result = await handler(request);
@@ -72,6 +75,21 @@ AgentResult _mcpResultToAgentResult(final MCPCallResult result) {
 Map<String, dynamic> agentResultToServiceExtensionMap(
   final AgentResult result,
 ) => {'message': result.message, ...result.data};
+
+InputSchema _resourceInputSchemaFromDefinition(
+  final MCPResourceDefinition definition,
+) {
+  final raw = definition['inputSchema'];
+  if (raw == null) {
+    return clientResourceReadInputSchema();
+  }
+  if (raw is! Map) {
+    throw ArgumentError(
+      'MCPResourceDefinition "${definition.name}" inputSchema must be a Map',
+    );
+  }
+  return _deepCopyInputSchema(Map<Object?, Object?>.from(raw));
+}
 
 /// Copies [MCPToolDefinition.inputSchema] into agentkit [InputSchema] maps.
 InputSchema inputSchemaFromMcpToolDefinition(

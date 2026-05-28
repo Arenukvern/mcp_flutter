@@ -2,6 +2,7 @@
 import 'package:agentkit_core/agentkit_core.dart';
 import 'package:agentkit_mcp/agentkit_mcp.dart';
 import 'package:agentkit_schema/agentkit_schema.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter_mcp_toolkit_capability_core/src/tools/codegen/get_recent_logs_tool.dart';
 import 'package:flutter_mcp_toolkit_capability_core/src/tools/log_tools.dart';
 import 'package:flutter_mcp_toolkit_capability_kernel/flutter_mcp_toolkit_capability_kernel.dart';
@@ -12,6 +13,8 @@ import 'package:test/test.dart';
 import '../_test_helpers.dart';
 
 void main() {
+  const schemaEquality = DeepCollectionEquality();
+
   group('get_recent_logs @AgentTool codegen', () {
     test('generated call entry exposes fmt namespace and bare tool name', () {
       final intent = getRecentLogsCallEntry.toRegistration();
@@ -20,12 +23,14 @@ void main() {
       expect(intent.qualifiedName, 'fmt_get_recent_logs');
     });
 
-    test('generated schema includes optional count integer', () {
-      final schema = getRecentLogsCallEntry.toRegistration().descriptor.inputSchema;
-      final props = schema['properties'] as Map<String, Object?>;
-      expect((props['count']! as Map<String, Object?>)['type'], 'integer');
-      final required = schema['required'];
-      expect(required == null || (required as List).isEmpty, isTrue);
+    test('call entry inputSchema matches getRecentLogsInputSchema', () {
+      expect(
+        schemaEquality.equals(
+          getRecentLogsInputSchema(),
+          getRecentLogsCallEntry.toRegistration().descriptor.inputSchema,
+        ),
+        isTrue,
+      );
     });
 
     test('agentCallEntryToToolRegistration registers and invokes via host path', () async {

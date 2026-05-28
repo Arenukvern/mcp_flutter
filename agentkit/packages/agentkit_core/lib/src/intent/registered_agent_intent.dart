@@ -15,7 +15,11 @@ final class RegisteredAgentIntent {
        _validate =
            validate ??
            ((final args) {
-             validateAgainstSchema(descriptor.inputSchema, args);
+             final coerced = coerceArgumentsForSchema(
+               descriptor.inputSchema,
+               args,
+             );
+             validateAgainstSchema(descriptor.inputSchema, coerced);
            });
 
   final AgentIntentDescriptor descriptor;

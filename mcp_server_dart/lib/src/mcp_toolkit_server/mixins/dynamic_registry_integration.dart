@@ -246,6 +246,7 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
     final Resource resource,
     final String sourceApp, {
     final Map<String, dynamic> metadata = const {},
+    final Map<String, Object?>? inputSchema,
   }) {
     final registry = _dynamicRegistry;
     if (registry == null) return;
@@ -261,7 +262,7 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
 
     final appId = DynamicAppId(sourceApp);
 
-    registry.registerResource(resource, appId);
+    registry.registerResource(resource, appId, inputSchema: inputSchema);
     final toolkitServer = this as MCPToolkitServer;
     final resourceEntry = registry.getResourceEntry(resource.uri);
     if (resourceEntry != null) {
@@ -336,6 +337,11 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
   /// Get the dynamic registry instance (for advanced usage)
   @protected
   DynamicRegistry? get dynamicRegistry =>
+      isDynamicRegistrySupported ? _dynamicRegistry : null;
+
+  /// Test-only access to the dynamic registry instance.
+  @visibleForTesting
+  DynamicRegistry? get dynamicRegistryForTesting =>
       isDynamicRegistrySupported ? _dynamicRegistry : null;
 
   RegisteredAgentIntent _wrapDynamicToolIntent({

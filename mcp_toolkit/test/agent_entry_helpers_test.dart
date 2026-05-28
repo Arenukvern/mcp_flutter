@@ -1,7 +1,47 @@
+import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 
 void main() {
+  group('mcpToolkitResource inputSchema', () {
+    test('defaults to clientResourceReadInputSchema when definition omits schema', () {
+      final entry = mcpToolkitResource(
+        definition: MCPResourceDefinition(
+          name: 'app_status',
+          description: 'App status',
+          mimeType: 'application/json',
+        ),
+        handler: (_) => MCPCallResult(message: 'ok', parameters: {}),
+      );
+
+      expect(
+        entry.toRegistration().descriptor.inputSchema,
+        clientResourceReadInputSchema(),
+      );
+    });
+
+    test('forwards explicit inputSchema override', () {
+      const override = {
+        'type': 'object',
+        'required': ['mode'],
+        'properties': {
+          'mode': {'type': 'string'},
+        },
+      };
+      final entry = mcpToolkitResource(
+        definition: MCPResourceDefinition(
+          name: 'app_status',
+          description: 'App status',
+          mimeType: 'application/json',
+        ),
+        inputSchema: override,
+        handler: (_) => MCPCallResult(message: 'ok', parameters: {}),
+      );
+
+      expect(entry.toRegistration().descriptor.inputSchema, override);
+    });
+  });
+
   group('mcpToolkitTool inputSchema', () {
     test('forwards ObjectSchema from MCPToolDefinition', () {
       final entry = mcpToolkitTool(
@@ -37,13 +77,11 @@ void main() {
           name: 'wait_for',
           description: 'wait',
           inputSchema: ObjectSchema(
-            properties: {
-              'predicate': ObjectSchema(),
-            },
+            properties: {'predicate': ObjectSchema()},
             required: ['predicate'],
           ),
         ),
-        handler: (final request) async {
+        handler: (final request) {
           capturedPredicate = request['predicate'];
           return MCPCallResult(message: 'ok', parameters: {});
         },
@@ -69,6 +107,35 @@ void main() {
       final schema = entry.toRegistration().descriptor.inputSchema;
       expect(schema['type'], 'object');
       expect(schema['properties'], isA<Map>());
+    });
+  });
+
+  group('invokeDirect wire coercion', () {
+    test('accepts integer fields as VM extension strings', () async {
+      int? capturedTimeout;
+      final entry = mcpToolkitTool(
+        definition: MCPToolDefinition(
+          name: 'wait_for',
+          description: 'wait',
+          inputSchema: ObjectSchema(
+            properties: {
+              'predicate': ObjectSchema(),
+              'timeoutMs': IntegerSchema(),
+            },
+            required: ['predicate'],
+          ),
+        ),
+        handler: (final request) {
+          capturedTimeout = int.tryParse(request['timeoutMs'] ?? '');
+          return MCPCallResult(message: 'ok', parameters: {});
+        },
+      );
+
+      await entry.invokeDirect({
+        'predicate': '{"kind":"time","ms":1}',
+        'timeoutMs': '2500',
+      });
+      expect(capturedTimeout, 2500);
     });
   });
 

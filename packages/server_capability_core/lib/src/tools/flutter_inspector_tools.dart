@@ -24,18 +24,7 @@ void registerFlutterInspectorTools(final CapabilityContext context) {
     ToolRegistration(
       name: 'hot_reload_flutter',
       description: 'Hot reloads the Flutter app.',
-      inputSchema: <String, Object?>{
-        'type': 'object',
-        'additionalProperties': false,
-        'properties': <String, Object?>{
-          'force': <String, Object?>{
-            'type': 'boolean',
-            'description':
-                'If true, forces a hot reload even if there are no source changes',
-          },
-          'connection': connectionOverrideJsonSchema(),
-        },
-      },
+      inputSchema: hotReloadFlutterInputSchema(),
       handler: (final args) async {
         final force = boolArgOrFalse(args['force']);
         return runCommand(
@@ -63,13 +52,7 @@ void registerFlutterInspectorTools(final CapabilityContext context) {
       name: 'hot_restart_flutter',
       description:
           'Hot restarts the Flutter app (full restart; state not preserved).',
-      inputSchema: <String, Object?>{
-        'type': 'object',
-        'additionalProperties': false,
-        'properties': <String, Object?>{
-          'connection': connectionOverrideJsonSchema(),
-        },
-      },
+      inputSchema: hotRestartFlutterInputSchema(),
       handler: (final args) async {
         return runCommand(runner, args, const HotRestartFlutterCommand());
       },

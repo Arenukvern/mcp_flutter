@@ -16,25 +16,7 @@ void registerInteractionTools(final CapabilityContext context) {
       description:
           'Tap a widget identified by ref from semantic_snapshot. '
           'Refs are session-scoped to the most recent semantic_snapshot call.',
-      inputSchema: <String, Object?>{
-        'type': 'object',
-        'additionalProperties': false,
-        'required': <String>['ref'],
-        'properties': <String, Object?>{
-          'ref': <String, Object?>{
-            'type': 'string',
-            'description': 'Widget ref from semantic_snapshot (e.g. "s_0").',
-          },
-          'snapshotId': <String, Object?>{
-            'type': 'integer',
-            'description':
-                'Optional: snapshot_id returned by most recent '
-                'semantic_snapshot. If provided and stale, the call fails '
-                'with stale_snapshot.',
-          },
-          'connection': connectionOverrideJsonSchema(),
-        },
-      },
+      inputSchema: tapWidgetInputSchema(),
       handler: (final args) async {
         final ref = stringArgOrNull(args['ref']) ?? '';
         final snapshotId = intArgOrNull(args['snapshotId']);
@@ -53,29 +35,7 @@ void registerInteractionTools(final CapabilityContext context) {
       description:
           'Enter text into a text field identified by ref from '
           'semantic_snapshot. Taps the field to focus before typing.',
-      inputSchema: <String, Object?>{
-        'type': 'object',
-        'additionalProperties': false,
-        'required': <String>['ref', 'text'],
-        'properties': <String, Object?>{
-          'ref': <String, Object?>{
-            'type': 'string',
-            'description': 'Text field ref.',
-          },
-          'text': <String, Object?>{
-            'type': 'string',
-            'description': 'Text to enter.',
-          },
-          'snapshotId': <String, Object?>{
-            'type': 'integer',
-            'description':
-                'Optional: snapshot_id returned by most recent '
-                'semantic_snapshot. If provided and stale, the call fails '
-                'with stale_snapshot.',
-          },
-          'connection': connectionOverrideJsonSchema(),
-        },
-      },
+      inputSchema: enterTextInputSchema(),
       handler: (final args) async {
         final ref = stringArgOrNull(args['ref']) ?? '';
         final text = stringArgOrNull(args['text']) ?? '';
@@ -96,33 +56,7 @@ void registerInteractionTools(final CapabilityContext context) {
           'Scroll to reveal content in a direction. "down" reveals content '
           'below (finger swipes up); "up" reveals content above. Matches '
           'Playwright and user language ("scroll down to see the footer").',
-      inputSchema: <String, Object?>{
-        'type': 'object',
-        'additionalProperties': false,
-        'required': <String>['direction'],
-        'properties': <String, Object?>{
-          'direction': <String, Object?>{
-            'type': 'string',
-            'description': 'Scroll direction: up, down, left, right.',
-          },
-          'ref': <String, Object?>{
-            'type': 'string',
-            'description': 'Optional ref to scroll from.',
-          },
-          'distance': <String, Object?>{
-            'type': 'number',
-            'description': 'Scroll distance in logical pixels (default: 300).',
-          },
-          'snapshotId': <String, Object?>{
-            'type': 'integer',
-            'description':
-                'Optional: snapshot_id returned by most recent '
-                'semantic_snapshot. If provided and stale, the call fails '
-                'with stale_snapshot.',
-          },
-          'connection': connectionOverrideJsonSchema(),
-        },
-      },
+      inputSchema: scrollInputSchema(),
       handler: (final args) async {
         final direction = stringArgOrNull(args['direction']) ?? 'down';
         final ref = stringArgOrNull(args['ref']);
@@ -146,25 +80,7 @@ void registerInteractionTools(final CapabilityContext context) {
     ToolRegistration(
       name: 'long_press',
       description: 'Long-press a widget identified by ref.',
-      inputSchema: <String, Object?>{
-        'type': 'object',
-        'additionalProperties': false,
-        'required': <String>['ref'],
-        'properties': <String, Object?>{
-          'ref': <String, Object?>{
-            'type': 'string',
-            'description': 'Widget ref.',
-          },
-          'snapshotId': <String, Object?>{
-            'type': 'integer',
-            'description':
-                'Optional: snapshot_id returned by most recent '
-                'semantic_snapshot. If provided and stale, the call fails '
-                'with stale_snapshot.',
-          },
-          'connection': connectionOverrideJsonSchema(),
-        },
-      },
+      inputSchema: longPressInputSchema(),
       handler: (final args) async {
         final ref = stringArgOrNull(args['ref']) ?? '';
         final snapshotId = intArgOrNull(args['snapshotId']);
@@ -183,33 +99,7 @@ void registerInteractionTools(final CapabilityContext context) {
       description:
           'Swipe to reveal content in a direction (higher pointer velocity '
           'than scroll; used for flings). "down" reveals content below.',
-      inputSchema: <String, Object?>{
-        'type': 'object',
-        'additionalProperties': false,
-        'required': <String>['direction'],
-        'properties': <String, Object?>{
-          'direction': <String, Object?>{
-            'type': 'string',
-            'description': 'Swipe direction: up, down, left, right.',
-          },
-          'ref': <String, Object?>{
-            'type': 'string',
-            'description': 'Optional ref to swipe from.',
-          },
-          'distance': <String, Object?>{
-            'type': 'number',
-            'description': 'Swipe distance in logical pixels (default: 300).',
-          },
-          'snapshotId': <String, Object?>{
-            'type': 'integer',
-            'description':
-                'Optional: snapshot_id returned by most recent '
-                'semantic_snapshot. If provided and stale, the call fails '
-                'with stale_snapshot.',
-          },
-          'connection': connectionOverrideJsonSchema(),
-        },
-      },
+      inputSchema: swipeInputSchema(),
       handler: (final args) async {
         final direction = stringArgOrNull(args['direction']) ?? 'up';
         final ref = stringArgOrNull(args['ref']);
@@ -233,29 +123,7 @@ void registerInteractionTools(final CapabilityContext context) {
     ToolRegistration(
       name: 'drag',
       description: 'Drag from one widget to another, identified by refs.',
-      inputSchema: <String, Object?>{
-        'type': 'object',
-        'additionalProperties': false,
-        'required': <String>['fromRef', 'toRef'],
-        'properties': <String, Object?>{
-          'fromRef': <String, Object?>{
-            'type': 'string',
-            'description': 'Source widget ref.',
-          },
-          'toRef': <String, Object?>{
-            'type': 'string',
-            'description': 'Target widget ref.',
-          },
-          'snapshotId': <String, Object?>{
-            'type': 'integer',
-            'description':
-                'Optional: snapshot_id returned by most recent '
-                'semantic_snapshot. If provided and stale, the call fails '
-                'with stale_snapshot.',
-          },
-          'connection': connectionOverrideJsonSchema(),
-        },
-      },
+      inputSchema: dragInputSchema(),
       handler: (final args) async {
         final fromRef = stringArgOrNull(args['fromRef']) ?? '';
         final toRef = stringArgOrNull(args['toRef']) ?? '';
@@ -279,16 +147,7 @@ void registerInteractionTools(final CapabilityContext context) {
           'host (mobile platforms have no hover concept). '
           'Call semantic_snapshot immediately before to get fresh refs. '
           'Pass snapshot_id to detect staleness.',
-      inputSchema: <String, Object?>{
-        'type': 'object',
-        'additionalProperties': false,
-        'required': <String>['ref'],
-        'properties': <String, Object?>{
-          'ref': <String, Object?>{'type': 'string'},
-          'snapshotId': <String, Object?>{'type': 'integer'},
-          'connection': connectionOverrideJsonSchema(),
-        },
-      },
+      inputSchema: hoverInputSchema(),
       handler: (final args) async {
         final ref = stringArgOrNull(args['ref']) ?? '';
         final snapshotId = intArgOrNull(args['snapshotId']);
@@ -309,19 +168,7 @@ void registerInteractionTools(final CapabilityContext context) {
           'Enter, Escape, Tab, Backspace, Delete, Space, ArrowUp/Down/'
           'Left/Right, and single ASCII chars (a-z, 0-9). Optional '
           'modifiers: ctrl, shift, alt, meta.',
-      inputSchema: <String, Object?>{
-        'type': 'object',
-        'additionalProperties': false,
-        'required': <String>['key'],
-        'properties': <String, Object?>{
-          'key': <String, Object?>{'type': 'string'},
-          'ctrl': <String, Object?>{'type': 'boolean'},
-          'shift': <String, Object?>{'type': 'boolean'},
-          'alt': <String, Object?>{'type': 'boolean'},
-          'meta': <String, Object?>{'type': 'boolean'},
-          'connection': connectionOverrideJsonSchema(),
-        },
-      },
+      inputSchema: pressKeyInputSchema(),
       handler: (final args) async {
         final key = stringArgOrNull(args['key']) ?? '';
         final ctrl = boolArgOrFalse(args['ctrl']);
@@ -355,25 +202,7 @@ void registerInteractionTools(final CapabilityContext context) {
       description:
           'Evaluate a Dart expression in the running app isolate. '
           'Returns the result of the expression as text.',
-      inputSchema: <String, Object?>{
-        'type': 'object',
-        'additionalProperties': false,
-        'required': <String>['expression'],
-        'properties': <String, Object?>{
-          'expression': <String, Object?>{
-            'type': 'string',
-            'description':
-                'Dart expression to evaluate (e.g. "MyClass.instance.value").',
-          },
-          'libraryUri': <String, Object?>{
-            'type': 'string',
-            'description':
-                'Optional library URI for evaluation scope '
-                '(e.g. package:myapp/main.dart). Defaults to root library.',
-          },
-          'connection': connectionOverrideJsonSchema(),
-        },
-      },
+      inputSchema: evaluateDartExpressionInputSchema(),
       handler: (final args) async {
         final expression = stringArgOrNull(args['expression']) ?? '';
         return runCommand(
@@ -402,29 +231,7 @@ void registerInteractionTools(final CapabilityContext context) {
       description:
           'Hot reload then capture screenshot + semantic snapshot + errors '
           'in a single call. Tight edit-preview cycle for AI iteration.',
-      inputSchema: <String, Object?>{
-        'type': 'object',
-        'additionalProperties': false,
-        'properties': <String, Object?>{
-          'compress': <String, Object?>{
-            'type': 'boolean',
-            'description': 'Compress screenshots (default: true).',
-          },
-          'includeSemantics': <String, Object?>{
-            'type': 'boolean',
-            'description': 'Include semantic snapshot (default: true).',
-          },
-          'includeErrors': <String, Object?>{
-            'type': 'boolean',
-            'description': 'Include app errors (default: true).',
-          },
-          'errorsCount': <String, Object?>{
-            'type': 'integer',
-            'description': 'Number of errors to include (default: 4).',
-          },
-          'connection': connectionOverrideJsonSchema(),
-        },
-      },
+      inputSchema: hotReloadAndCaptureInputSchema(),
       handler: (final args) async {
         final compress = boolArgOrDefault(args['compress'], defaultValue: true);
         final includeSemantics = boolArgOrDefault(

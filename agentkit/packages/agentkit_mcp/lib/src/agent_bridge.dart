@@ -1,4 +1,5 @@
 import 'package:agentkit_core/agentkit_core.dart';
+import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 import 'resource_registration.dart';
 import 'resource_template_registration.dart';
 import 'tool_registration.dart';
@@ -38,59 +39,75 @@ ToolRegistration agentCallEntryToToolRegistration(
 RegisteredAgentIntent toolRegistrationToRegistration({
   required final String capabilityId,
   required final ToolRegistration registration,
-}) => RegisteredAgentIntent(
-    descriptor: AgentIntentDescriptor(
-      namespace: capabilityId,
-      name: registration.name,
-      description: registration.description,
-      kind: AgentIntentKind.tool,
-      inputSchema: registration.inputSchema,
-    ),
-    execute: (final invocation) => registration.handler(invocation.arguments),
+}) {
+  final descriptor = AgentIntentDescriptor(
+    namespace: capabilityId,
+    name: registration.name,
+    description: registration.description,
+    kind: AgentIntentKind.tool,
+    inputSchema: registration.inputSchema,
   );
+  late final RegisteredAgentIntent intent;
+  intent = RegisteredAgentIntent(
+    descriptor: descriptor,
+    execute: (final invocation) {
+      intent.validate(invocation.arguments);
+      return registration.handler(invocation.arguments);
+    },
+  );
+  return intent;
+}
 
 RegisteredAgentIntent resourceRegistrationToRegistration({
   required final String capabilityId,
   required final ResourceRegistration registration,
-}) => RegisteredAgentIntent(
-    descriptor: AgentIntentDescriptor(
-      namespace: capabilityId,
-      name: registration.name,
-      description: registration.description,
-      kind: AgentIntentKind.resource,
-      inputSchema: const <String, Object?>{'type': 'object'},
-      resourceUri: registration.uri,
-      mimeType: registration.mimeType,
-    ),
+}) {
+  final inputSchema = clientResourceReadInputSchema();
+  final descriptor = AgentIntentDescriptor(
+    namespace: capabilityId,
+    name: registration.name,
+    description: registration.description,
+    kind: AgentIntentKind.resource,
+    inputSchema: inputSchema,
+    resourceUri: registration.uri,
+    mimeType: registration.mimeType,
+  );
+  late final RegisteredAgentIntent intent;
+  intent = RegisteredAgentIntent(
+    descriptor: descriptor,
     execute: (final invocation) {
+      intent.validate(invocation.arguments);
       final uri = invocation.arguments['uri'];
       return registration.handler(uri is String ? uri : registration.uri);
     },
   );
+  return intent;
+}
 
 RegisteredAgentIntent resourceTemplateRegistrationToRegistration({
   required final String capabilityId,
   required final ResourceTemplateRegistration registration,
-}) => RegisteredAgentIntent(
-    descriptor: AgentIntentDescriptor(
-      namespace: capabilityId,
-      name: registration.name,
-      description: registration.description,
-      kind: AgentIntentKind.resource,
-      inputSchema: const <String, Object?>{
-        'type': 'object',
-        'properties': {
-          'uri': {'type': 'string'},
-          'count': {'type': 'string'},
-        },
-      },
-      resourceUri: registration.uriTemplate,
-      mimeType: registration.mimeType,
-    ),
+}) {
+  final inputSchema = clientResourceTemplateReadInputSchema();
+  final descriptor = AgentIntentDescriptor(
+    namespace: capabilityId,
+    name: registration.name,
+    description: registration.description,
+    kind: AgentIntentKind.resource,
+    inputSchema: inputSchema,
+    resourceUri: registration.uriTemplate,
+    mimeType: registration.mimeType,
+  );
+  late final RegisteredAgentIntent intent;
+  intent = RegisteredAgentIntent(
+    descriptor: descriptor,
     execute: (final invocation) {
+      intent.validate(invocation.arguments);
       final uri = invocation.arguments['uri'];
       return registration.handler(
         uri is String ? uri : registration.uriTemplate,
       );
     },
   );
+  return intent;
+}

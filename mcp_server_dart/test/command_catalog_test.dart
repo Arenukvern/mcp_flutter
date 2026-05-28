@@ -1,7 +1,11 @@
+import 'package:collection/collection.dart';
+import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 import 'package:flutter_mcp_toolkit_server/flutter_mcp_core.dart';
 import 'package:test/test.dart';
 
 void main() {
+  const schemaEquality = DeepCollectionEquality();
+
   group('CommandCatalog', () {
     final catalog = CommandCatalog.instance;
 
@@ -90,6 +94,263 @@ void main() {
       );
     });
 
+    test('rejects tap_widget without ref via shared interaction schema', () {
+      expect(
+        () => catalog.buildCommand('tap_widget', <String, Object?>{}),
+        throwsA(
+          isA<ArgumentError>().having(
+            (final error) => error.message,
+            'message',
+            contains('ref'),
+          ),
+        ),
+      );
+    });
+
+    test('rejects fill_form without fields via shared interaction schema', () {
+      expect(
+        () => catalog.buildCommand('fill_form', <String, Object?>{}),
+        throwsA(
+          isA<ArgumentError>().having(
+            (final error) => error.message,
+            'message',
+            contains('fields'),
+          ),
+        ),
+      );
+    });
+
+    test('rejects fill_form empty field item via shared schema', () {
+      expect(
+        () => catalog.buildCommand('fill_form', <String, Object?>{
+          'fields': <Map<String, Object?>>[{}],
+        }),
+        throwsA(
+          isA<ArgumentError>().having(
+            (final error) => error.message,
+            'message',
+            contains('ref'),
+          ),
+        ),
+      );
+    });
+
+    test('rejects fill_form field item missing ref via shared schema', () {
+      expect(
+        () => catalog.buildCommand('fill_form', <String, Object?>{
+          'fields': <Map<String, Object?>>[
+            {'text': 'x'},
+          ],
+        }),
+        throwsA(
+          isA<ArgumentError>().having(
+            (final error) => error.message,
+            'message',
+            contains('ref'),
+          ),
+        ),
+      );
+    });
+
+    test('rejects fill_form unknown keys via shared interaction schema', () {
+      expect(
+        () => catalog.buildCommand('fill_form', <String, Object?>{
+          'fields': <Map<String, Object?>>[
+            {'ref': 's_0', 'text': 'alice'},
+          ],
+          'unexpected': true,
+        }),
+        throwsA(isA<ArgumentError>()),
+      );
+    });
+
+    test(
+      'rejects evaluate_dart_expression without expression via shared schema',
+      () {
+        expect(
+          () => catalog.buildCommand('evaluate_dart_expression', {}),
+          throwsA(isA<ArgumentError>()),
+        );
+      },
+    );
+
+    test('accepts evaluate_dart_expression with expression', () {
+      final command = catalog.buildCommand('evaluate_dart_expression', {
+        'expression': 'true',
+      });
+      expect(command, isA<EvaluateDartExpressionCommand>());
+    });
+
+    test('accepts hot_reload_and_capture with empty args', () {
+      final command = catalog.buildCommand('hot_reload_and_capture', {});
+      expect(command, isA<HotReloadAndCaptureCommand>());
+    });
+
+    test('rejects semantic_snapshot with unknown keys', () {
+      expect(
+        () => catalog.buildCommand('semantic_snapshot', {
+          'unexpected': true,
+        }),
+        throwsA(
+          isA<ArgumentError>().having(
+            (final error) => error.message,
+            'message',
+            anyOf(contains('Unknown argument key'), contains('Unknown property')),
+          ),
+        ),
+      );
+    });
+
+    test('accepts semantic_snapshot with empty args', () {
+      final command = catalog.buildCommand('semantic_snapshot', {});
+      expect(command, isA<SemanticSnapshotCommand>());
+    });
+
+    test('hot_reload_flutter catalog schema matches shared core schema', () {
+      expect(
+        schemaEquality.equals(
+          catalog.specFor('hot_reload_flutter')!.inputSchema,
+          hotReloadFlutterInputSchema(),
+        ),
+        isTrue,
+      );
+    });
+
+    test('hot_restart_flutter catalog schema matches shared core schema', () {
+      expect(
+        schemaEquality.equals(
+          catalog.specFor('hot_restart_flutter')!.inputSchema,
+          hotRestartFlutterInputSchema(),
+        ),
+        isTrue,
+      );
+    });
+
+    test('get_screenshots catalog schema matches shared core schema', () {
+      expect(
+        schemaEquality.equals(
+          catalog.specFor('get_screenshots')!.inputSchema,
+          getScreenshotsInputSchema(),
+        ),
+        isTrue,
+      );
+    });
+
+    test('capture_ui_snapshot catalog schema matches shared core schema', () {
+      expect(
+        schemaEquality.equals(
+          catalog.specFor('capture_ui_snapshot')!.inputSchema,
+          captureUiSnapshotInputSchema(),
+        ),
+        isTrue,
+      );
+    });
+
+    test('get_view_details catalog schema matches shared core schema', () {
+      expect(
+        schemaEquality.equals(
+          catalog.specFor('get_view_details')!.inputSchema,
+          getViewDetailsInputSchema(),
+        ),
+        isTrue,
+      );
+    });
+
+    test('inspect_widget_at_point catalog schema matches shared core schema', () {
+      expect(
+        schemaEquality.equals(
+          catalog.specFor('inspect_widget_at_point')!.inputSchema,
+          inspectWidgetAtPointInputSchema(),
+        ),
+        isTrue,
+      );
+    });
+
+    test('get_app_errors catalog schema matches shared core schema', () {
+      expect(
+        schemaEquality.equals(
+          catalog.specFor('get_app_errors')!.inputSchema,
+          getAppErrorsInputSchema(),
+        ),
+        isTrue,
+      );
+    });
+
+    test('focus_window catalog schema matches shared core schema', () {
+      expect(
+        schemaEquality.equals(
+          catalog.specFor('focus_window')!.inputSchema,
+          focusWindowInputSchema(),
+        ),
+        isTrue,
+      );
+    });
+
+    test('rejects inspect_widget_at_point without x and y via shared schema', () {
+      expect(
+        () => catalog.buildCommand('inspect_widget_at_point', {}),
+        throwsA(isA<ArgumentError>()),
+      );
+    });
+
+    test('inspect_widget_at_point accepts origin coordinates', () {
+      final command = catalog.buildCommand('inspect_widget_at_point', {
+        'x': 0,
+        'y': 0,
+      });
+      expect(command, isA<InspectWidgetAtPointCommand>());
+      expect((command as InspectWidgetAtPointCommand).x, 0);
+      expect((command as InspectWidgetAtPointCommand).y, 0);
+    });
+
+    test('rejects get_view_details unknown keys via shared schema', () {
+      expect(
+        () => catalog.buildCommand('get_view_details', {'unexpected': true}),
+        throwsA(isA<ArgumentError>()),
+      );
+    });
+
+    test('rejects get_app_errors unknown keys via shared schema', () {
+      expect(
+        () => catalog.buildCommand('get_app_errors', {'unexpected': true}),
+        throwsA(isA<ArgumentError>()),
+      );
+    });
+
+    test('rejects focus_window unknown keys via shared schema', () {
+      expect(
+        () => catalog.buildCommand('focus_window', {'unexpected': true}),
+        throwsA(isA<ArgumentError>()),
+      );
+    });
+
+    test('rejects get_screenshots unknown keys via shared schema', () {
+      expect(
+        () => catalog.buildCommand('get_screenshots', {
+          'unexpected': true,
+        }),
+        throwsA(isA<ArgumentError>()),
+      );
+    });
+
+    test('rejects capture_ui_snapshot unknown keys via shared schema', () {
+      expect(
+        () => catalog.buildCommand('capture_ui_snapshot', {
+          'unexpected': true,
+        }),
+        throwsA(isA<ArgumentError>()),
+      );
+    });
+
+    test('rejects hot_reload_flutter unknown keys', () {
+      expect(
+        () => catalog.buildCommand('hot_reload_flutter', {
+          'unexpected': true,
+        }),
+        throwsA(isA<ArgumentError>()),
+      );
+    });
+
     test('rejects string-encoded booleans where bool is required', () {
       expect(
         () => catalog.buildCommand('hot_reload_flutter', {'force': 'true'}),
@@ -168,6 +429,9 @@ void main() {
       final props = spec.inputSchema['properties']! as Map<String, Object?>;
       expect(props.containsKey('predicate'), isTrue);
       expect(props.containsKey('timeoutMs'), isTrue);
+      final timeoutMs = props['timeoutMs']! as Map<String, Object?>;
+      expect(timeoutMs['minimum'], 1);
+      expect(timeoutMs['maximum'], 30000);
 
       final cmd = catalog.buildCommand('wait_for', {
         'predicate': {'kind': 'time', 'ms': 100},
@@ -177,6 +441,38 @@ void main() {
       final wc = cmd as WaitForCommand;
       expect(wc.predicate['kind'], 'time');
       expect(wc.timeoutMs, 1000);
+    });
+
+    test('rejects wait_for timeoutMs above shared schema maximum', () {
+      expect(
+        () => catalog.buildCommand('wait_for', {
+          'predicate': <String, Object?>{'kind': 'time', 'ms': 1},
+          'timeoutMs': 30001,
+        }),
+        throwsA(
+          isA<ArgumentError>().having(
+            (final error) => error.message,
+            'message',
+            contains('30000'),
+          ),
+        ),
+      );
+    });
+
+    test('rejects wait_for timeoutMs below shared schema minimum', () {
+      expect(
+        () => catalog.buildCommand('wait_for', {
+          'predicate': <String, Object?>{'kind': 'time', 'ms': 1},
+          'timeoutMs': 0,
+        }),
+        throwsA(
+          isA<ArgumentError>().having(
+            (final error) => error.message,
+            'message',
+            contains('timeoutMs'),
+          ),
+        ),
+      );
     });
 
     test('press_key, handle_dialog, navigate commands are registered', () {

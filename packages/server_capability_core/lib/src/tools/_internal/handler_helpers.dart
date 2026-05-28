@@ -63,6 +63,16 @@ String? stringArgOrNull(final Object? raw) {
   return trimmed.isEmpty ? null : trimmed;
 }
 
+/// Returns the int value of [raw], or null if absent or non-numeric.
+///
+/// Unlike [intArgOrNull], zero is a valid coordinate (e.g. inspect at origin).
+@internal
+int? coordinateIntArgOrNull(final Object? raw) => switch (raw) {
+  final int v => v,
+  final num v when v == v.toInt() => v.toInt(),
+  _ => null,
+};
+
 /// Returns the int value of [raw], or null if absent, non-numeric, or zero.
 ///
 /// Zero is treated as absent for legacy parity (`snapshotId == 0` means "not

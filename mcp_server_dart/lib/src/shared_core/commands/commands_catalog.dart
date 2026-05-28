@@ -5,6 +5,7 @@
 // Pure command classes live in packages/core/lib/src/commands/core_commands.dart.
 
 import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/commands/interaction_catalog_validation.dart';
 
 final class CommandCatalog {
   CommandCatalog._();
@@ -50,6 +51,13 @@ final class CommandCatalog {
       throw ArgumentError('Unsupported command: $name');
     }
     _validateUnknownKeys(spec: spec, args: args);
+    final schemaFailure = validationFailureForInteractionCatalogCommand(
+      commandName: resolved,
+      arguments: args,
+    );
+    if (schemaFailure != null) {
+      throw ArgumentError(schemaFailure.error!.message);
+    }
     return spec.build(args);
   }
 
@@ -147,7 +155,9 @@ final class CommandCatalog {
         inputSchema: _objectSchema(
           properties: {
             'mode': _stringSchema(
-              enumValues: const <String>['auto', 'manual', 'uri'],
+              description:
+                  'Connection mode: auto, manual, or uri (Tier C docs only; '
+                  'not enum-validated on exec).',
             ),
             'targetId': _stringSchema(
               description:
@@ -192,7 +202,9 @@ final class CommandCatalog {
         inputSchema: _objectSchema(
           properties: {
             'mode': _stringSchema(
-              enumValues: const <String>['auto', 'manual', 'uri'],
+              description:
+                  'Connection mode: auto, manual, or uri (Tier C docs only; '
+                  'not enum-validated on exec).',
             ),
             'targetId': _stringSchema(
               description:
@@ -492,9 +504,7 @@ final class CommandCatalog {
       CommandSpec(
         name: 'hot_reload_flutter',
         description: 'Run Flutter hot reload through VM service.',
-        inputSchema: _objectSchema(
-          properties: {'force': _boolSchema(defaultValue: false)},
-        ),
+        inputSchema: hotReloadFlutterInputSchema(),
         outputSchema: _objectSchema(additionalProperties: true),
         requiresVm: true,
         supportsWatch: true,
@@ -506,7 +516,7 @@ final class CommandCatalog {
       CommandSpec(
         name: 'hot_restart_flutter',
         description: 'Run Flutter hot restart through VM service.',
-        inputSchema: _objectSchema(),
+        inputSchema: hotRestartFlutterInputSchema(),
         outputSchema: _objectSchema(additionalProperties: true),
         requiresVm: true,
         supportsWatch: true,
@@ -526,9 +536,7 @@ final class CommandCatalog {
       CommandSpec(
         name: 'get_app_errors',
         description: 'Fetch recent app errors captured by toolkit extension.',
-        inputSchema: _objectSchema(
-          properties: {'count': _intSchema(defaultValue: 4)},
-        ),
+        inputSchema: interactionCatalogInputSchemaFor('get_app_errors')!,
         outputSchema: _objectSchema(
           properties: {
             'message': _stringSchema(),
@@ -547,23 +555,7 @@ final class CommandCatalog {
       CommandSpec(
         name: 'get_screenshots',
         description: 'Collect screenshots for all current Flutter views.',
-        inputSchema: _objectSchema(
-          properties: {
-            'compress': _boolSchema(defaultValue: true),
-            'mode': _stringSchema(
-              enumValues: ScreenshotMode.values
-                  .map((final mode) => mode.wireName)
-                  .toList(growable: false),
-              defaultValue: ScreenshotMode.auto.wireName,
-            ),
-            'permissionPolicy': _stringSchema(
-              enumValues: PermissionPolicy.values
-                  .map((final policy) => policy.wireName)
-                  .toList(growable: false),
-              defaultValue: PermissionPolicy.checkOnly.wireName,
-            ),
-          },
-        ),
+        inputSchema: interactionCatalogInputSchemaFor('get_screenshots')!,
         outputSchema: _objectSchema(
           properties: {
             'images': _arraySchema(items: _stringSchema()),
@@ -593,13 +585,7 @@ final class CommandCatalog {
         name: 'focus_window',
         description:
             'Bring the host app or iOS Simulator window to the foreground before desktop capture.',
-        inputSchema: _objectSchema(
-          properties: {
-            'targetPid': _intSchema(
-              description: 'Optional VM process id (defaults to connected VM).',
-            ),
-          },
-        ),
+        inputSchema: interactionCatalogInputSchemaFor('focus_window')!,
         outputSchema: _objectSchema(additionalProperties: true),
         requiresVm: false,
         supportsWatch: false,
@@ -612,7 +598,7 @@ final class CommandCatalog {
         name: 'get_view_details',
         description:
             'Read detailed Flutter view metrics and widget tree information.',
-        inputSchema: _objectSchema(),
+        inputSchema: interactionCatalogInputSchemaFor('get_view_details')!,
         outputSchema: _objectSchema(
           properties: {
             'message': _stringSchema(),
@@ -633,21 +619,14 @@ final class CommandCatalog {
         name: 'inspect_widget_at_point',
         description:
             'Inspect the deepest widget/render node at global logical (x,y).',
-        inputSchema: _objectSchema(
-          properties: {
-            'x': _intSchema(),
-            'y': _intSchema(),
-            'viewId': _intSchema(),
-          },
-          required: const <String>['x', 'y'],
-        ),
+        inputSchema: interactionCatalogInputSchemaFor('inspect_widget_at_point')!,
         outputSchema: _objectSchema(additionalProperties: true),
         requiresVm: true,
         supportsWatch: true,
         mcpExposed: true,
         build: (final args) => InspectWidgetAtPointCommand(
-          x: _intArg(args, 'x', fallback: 0),
-          y: _intArg(args, 'y', fallback: 0),
+          x: _strictIntArg(value: _findArg(args, 'x')!, key: 'x'),
+          y: _strictIntArg(value: _findArg(args, 'y')!, key: 'y'),
           viewId: _nullableIntArg(args, 'viewId', alias: 'view-id'),
         ),
       ),
@@ -655,26 +634,7 @@ final class CommandCatalog {
         name: 'capture_ui_snapshot',
         description:
             'Capture screenshot(s), view details, and app errors in one bundle.',
-        inputSchema: _objectSchema(
-          properties: {
-            'errorsCount': _intSchema(defaultValue: 4),
-            'compress': _boolSchema(defaultValue: true),
-            'includeViewDetails': _boolSchema(defaultValue: true),
-            'includeErrors': _boolSchema(defaultValue: true),
-            'screenshotMode': _stringSchema(
-              enumValues: ScreenshotMode.values
-                  .map((final mode) => mode.wireName)
-                  .toList(growable: false),
-              defaultValue: ScreenshotMode.auto.wireName,
-            ),
-            'permissionPolicy': _stringSchema(
-              enumValues: PermissionPolicy.values
-                  .map((final policy) => policy.wireName)
-                  .toList(growable: false),
-              defaultValue: PermissionPolicy.checkOnly.wireName,
-            ),
-          },
-        ),
+        inputSchema: interactionCatalogInputSchemaFor('capture_ui_snapshot')!,
         outputSchema: _objectSchema(additionalProperties: true),
         requiresVm: true,
         supportsWatch: true,
@@ -704,7 +664,7 @@ final class CommandCatalog {
             'Get compact semantic tree of interactive widgets with stable refs '
             'usable by interaction tools (tap_widget, enter_text, etc.). '
             'Call this before any interaction tool to get fresh refs.',
-        inputSchema: _objectSchema(),
+        inputSchema: interactionCatalogInputSchemaFor('semantic_snapshot')!,
         outputSchema: _objectSchema(additionalProperties: true),
         requiresVm: true,
         supportsWatch: true,
@@ -716,20 +676,7 @@ final class CommandCatalog {
         description:
             'Tap a widget identified by ref from semantic_snapshot. '
             'Refs are session-scoped to the most recent semantic_snapshot call.',
-        inputSchema: _objectSchema(
-          properties: {
-            'ref': _stringSchema(
-              description: 'Widget ref from semantic_snapshot (e.g. "s_0").',
-            ),
-            'snapshotId': _intSchema(
-              description:
-                  'Optional: snapshot_id returned by most recent '
-                  'semantic_snapshot. If provided and stale, the call fails '
-                  'with stale_snapshot.',
-            ),
-          },
-          required: const <String>['ref'],
-        ),
+        inputSchema: interactionCatalogInputSchemaFor('tap_widget')!,
         outputSchema: _objectSchema(additionalProperties: true),
         requiresVm: true,
         supportsWatch: false,
@@ -744,19 +691,7 @@ final class CommandCatalog {
         description:
             'Enter text into a text field identified by ref from '
             'semantic_snapshot. Taps the field to focus before typing.',
-        inputSchema: _objectSchema(
-          properties: {
-            'ref': _stringSchema(description: 'Text field ref.'),
-            'text': _stringSchema(description: 'Text to enter.'),
-            'snapshotId': _intSchema(
-              description:
-                  'Optional: snapshot_id returned by most recent '
-                  'semantic_snapshot. If provided and stale, the call fails '
-                  'with stale_snapshot.',
-            ),
-          },
-          required: const <String>['ref', 'text'],
-        ),
+        inputSchema: interactionCatalogInputSchemaFor('enter_text')!,
         outputSchema: _objectSchema(additionalProperties: true),
         requiresVm: true,
         supportsWatch: false,
@@ -773,22 +708,7 @@ final class CommandCatalog {
             'Scroll to reveal content in a direction. "down" reveals content '
             'below (finger swipes up); "up" reveals content above. Matches '
             'Playwright and user language ("scroll down to see the footer").',
-        inputSchema: _objectSchema(
-          properties: {
-            'direction': _stringSchema(
-              enumValues: const <String>['up', 'down', 'left', 'right'],
-            ),
-            'ref': _stringSchema(description: 'Optional ref to scroll from.'),
-            'distance': _intSchema(defaultValue: 300),
-            'snapshotId': _intSchema(
-              description:
-                  'Optional: snapshot_id returned by most recent '
-                  'semantic_snapshot. If provided and stale, the call fails '
-                  'with stale_snapshot.',
-            ),
-          },
-          required: const <String>['direction'],
-        ),
+        inputSchema: interactionCatalogInputSchemaFor('scroll')!,
         outputSchema: _objectSchema(additionalProperties: true),
         requiresVm: true,
         supportsWatch: false,
@@ -810,18 +730,7 @@ final class CommandCatalog {
       CommandSpec(
         name: 'long_press',
         description: 'Long-press a widget identified by ref.',
-        inputSchema: _objectSchema(
-          properties: {
-            'ref': _stringSchema(description: 'Widget ref.'),
-            'snapshotId': _intSchema(
-              description:
-                  'Optional: snapshot_id returned by most recent '
-                  'semantic_snapshot. If provided and stale, the call fails '
-                  'with stale_snapshot.',
-            ),
-          },
-          required: const <String>['ref'],
-        ),
+        inputSchema: interactionCatalogInputSchemaFor('long_press')!,
         outputSchema: _objectSchema(additionalProperties: true),
         requiresVm: true,
         supportsWatch: false,
@@ -836,22 +745,7 @@ final class CommandCatalog {
         description:
             'Swipe to reveal content in a direction (higher pointer velocity '
             'than scroll; used for flings). "down" reveals content below.',
-        inputSchema: _objectSchema(
-          properties: {
-            'direction': _stringSchema(
-              enumValues: const <String>['up', 'down', 'left', 'right'],
-            ),
-            'ref': _stringSchema(description: 'Optional ref to swipe from.'),
-            'distance': _intSchema(defaultValue: 300),
-            'snapshotId': _intSchema(
-              description:
-                  'Optional: snapshot_id returned by most recent '
-                  'semantic_snapshot. If provided and stale, the call fails '
-                  'with stale_snapshot.',
-            ),
-          },
-          required: const <String>['direction'],
-        ),
+        inputSchema: interactionCatalogInputSchemaFor('swipe')!,
         outputSchema: _objectSchema(additionalProperties: true),
         requiresVm: true,
         supportsWatch: false,
@@ -873,19 +767,7 @@ final class CommandCatalog {
       CommandSpec(
         name: 'drag',
         description: 'Drag from one widget to another, identified by refs.',
-        inputSchema: _objectSchema(
-          properties: {
-            'fromRef': _stringSchema(description: 'Source widget ref.'),
-            'toRef': _stringSchema(description: 'Target widget ref.'),
-            'snapshotId': _intSchema(
-              description:
-                  'Optional: snapshot_id returned by most recent '
-                  'semantic_snapshot. If provided and stale, the call fails '
-                  'with stale_snapshot.',
-            ),
-          },
-          required: const <String>['fromRef', 'toRef'],
-        ),
+        inputSchema: interactionCatalogInputSchemaFor('drag')!,
         outputSchema: _objectSchema(additionalProperties: true),
         requiresVm: true,
         supportsWatch: false,
@@ -901,14 +783,7 @@ final class CommandCatalog {
         description:
             'Hot reload then capture screenshot + semantic snapshot + errors '
             'in a single call. Tight edit-preview cycle for AI iteration.',
-        inputSchema: _objectSchema(
-          properties: {
-            'compress': _boolSchema(defaultValue: true),
-            'includeSemantics': _boolSchema(defaultValue: true),
-            'includeErrors': _boolSchema(defaultValue: true),
-            'errorsCount': _intSchema(defaultValue: 4),
-          },
-        ),
+        inputSchema: hotReloadAndCaptureInputSchema(),
         outputSchema: _objectSchema(additionalProperties: true),
         requiresVm: true,
         supportsWatch: false,
@@ -935,20 +810,7 @@ final class CommandCatalog {
         description:
             'Evaluate a Dart expression in the running app isolate. '
             'Returns the result of the expression as text.',
-        inputSchema: _objectSchema(
-          properties: {
-            'expression': _stringSchema(
-              description: 'Dart expression (e.g. "MyClass.instance.value").',
-            ),
-            'libraryUri': _stringSchema(
-              nullable: true,
-              description:
-                  'Optional library URI for evaluation scope '
-                  '(e.g. package:myapp/main.dart). Defaults to root library.',
-            ),
-          },
-          required: const <String>['expression'],
-        ),
+        inputSchema: evaluateDartExpressionInputSchema(),
         outputSchema: _objectSchema(additionalProperties: true),
         requiresVm: true,
         supportsWatch: false,
@@ -962,9 +824,7 @@ final class CommandCatalog {
         name: 'get_recent_logs',
         description:
             'Get recent print() and debugPrint() output from the running app.',
-        inputSchema: _objectSchema(
-          properties: {'count': _intSchema(defaultValue: 50)},
-        ),
+        inputSchema: getRecentLogsInputSchema(),
         outputSchema: _objectSchema(additionalProperties: true),
         requiresVm: true,
         supportsWatch: true,
@@ -978,21 +838,7 @@ final class CommandCatalog {
             'Block until a UI predicate matches or a timeout elapses, then '
             'return a fresh semantic snapshot. Predicate kinds: text, noText, '
             'time, stable, noError. Replaces sleep+snapshot polling loops.',
-        inputSchema: _objectSchema(
-          required: const ['predicate'],
-          properties: {
-            'predicate': _objectSchema(additionalProperties: true),
-            // Default 5000, max 30000. Schema advertises the ceiling for
-            // clients/MCP introspection; the toolkit is the actual enforcer
-            // (`_intArg` does not validate against `maximum`).
-            'timeoutMs': const <String, Object?>{
-              'type': 'integer',
-              'default': 5000,
-              'maximum': 30000,
-              'minimum': 1,
-            },
-          },
-        ),
+        inputSchema: interactionCatalogInputSchemaFor('wait_for')!,
         outputSchema: _objectSchema(additionalProperties: true),
         requiresVm: true,
         supportsWatch: false,
@@ -1009,16 +855,7 @@ final class CommandCatalog {
             'Enter, Escape, Tab, Backspace, Delete, Space, '
             'ArrowUp/Down/Left/Right, and single ASCII chars (a-z, 0-9). '
             'Optional modifiers: ctrl, shift, alt, meta.',
-        inputSchema: _objectSchema(
-          required: const ['key'],
-          properties: {
-            'key': _stringSchema(),
-            'ctrl': _boolSchema(),
-            'shift': _boolSchema(),
-            'alt': _boolSchema(),
-            'meta': _boolSchema(),
-          },
-        ),
+        inputSchema: interactionCatalogInputSchemaFor('press_key')!,
         outputSchema: _objectSchema(additionalProperties: true),
         requiresVm: true,
         supportsWatch: false,
@@ -1038,10 +875,7 @@ final class CommandCatalog {
             'Navigator. Currently only action="dismiss" is supported. '
             'Requires the app to register a navigator key via '
             'MCPToolkitBinding.instance.navigatorKey = key',
-        inputSchema: _objectSchema(
-          required: const ['action'],
-          properties: {'action': _stringSchema()},
-        ),
+        inputSchema: handleDialogInputSchema(),
         outputSchema: _objectSchema(additionalProperties: true),
         requiresVm: true,
         supportsWatch: false,
@@ -1056,14 +890,7 @@ final class CommandCatalog {
             'Drive the registered Navigator: push a named route, pop the '
             'topmost route, or popUntil a named route. Requires '
             'MCPToolkitBinding.instance.navigatorKey = key on the app.',
-        inputSchema: _objectSchema(
-          required: const ['action'],
-          properties: {
-            'action': _stringSchema(),
-            'route': _stringSchema(),
-            'arguments': _objectSchema(additionalProperties: true),
-          },
-        ),
+        inputSchema: navigateInputSchema(),
         outputSchema: _objectSchema(additionalProperties: true),
         requiresVm: true,
         supportsWatch: false,
@@ -1088,23 +915,7 @@ final class CommandCatalog {
             'the first field only — refs that change mid-batch will '
             'surface as a stale_snapshot error from the per-field '
             'enter_text dispatch.',
-        inputSchema: _objectSchema(
-          required: const ['fields'],
-          properties: {
-            'fields': const <String, Object?>{
-              'type': 'array',
-              'items': <String, Object?>{
-                'type': 'object',
-                'required': <String>['ref', 'text'],
-                'properties': <String, Object?>{
-                  'ref': <String, Object?>{'type': 'string'},
-                  'text': <String, Object?>{'type': 'string'},
-                },
-              },
-            },
-            'snapshotId': _intSchema(),
-          },
-        ),
+        inputSchema: interactionCatalogInputSchemaFor('fill_form')!,
         outputSchema: _objectSchema(additionalProperties: true),
         requiresVm: true,
         supportsWatch: false,
@@ -1137,10 +948,7 @@ final class CommandCatalog {
             'host (mobile platforms have no hover concept). '
             'Call semantic_snapshot immediately before to get fresh refs. '
             'Pass snapshot_id to detect staleness.',
-        inputSchema: _objectSchema(
-          required: const ['ref'],
-          properties: {'ref': _stringSchema(), 'snapshotId': _intSchema()},
-        ),
+        inputSchema: interactionCatalogInputSchemaFor('hover')!,
         outputSchema: _objectSchema(additionalProperties: true),
         requiresVm: true,
         supportsWatch: false,
@@ -1510,7 +1318,6 @@ final class CommandCatalog {
 
   static Map<String, Object?> _stringSchema({
     final String? description,
-    final List<String>? enumValues,
     final Object? defaultValue,
     final bool nullable = false,
   }) {
@@ -1518,7 +1325,6 @@ final class CommandCatalog {
     return {
       'type': type,
       'description': ?description,
-      'enum': ?enumValues,
       'default': ?defaultValue,
     };
   }

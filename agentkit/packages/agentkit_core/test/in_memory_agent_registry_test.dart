@@ -23,6 +23,40 @@ void main() {
     expect(out.data['in'], 1);
   });
 
+  test('invoke coerces VM wire strings before validate', () async {
+    int? capturedSnapshotId;
+    final registry = InMemoryAgentRegistry()
+      ..register(
+        RegisteredAgentIntent(
+          descriptor: AgentIntentDescriptor(
+            namespace: 'app',
+            name: 'tap',
+            description: 'tap',
+            kind: AgentIntentKind.tool,
+            inputSchema: const {
+              'type': 'object',
+              'required': ['ref'],
+              'properties': {
+                'ref': {'type': 'string'},
+                'snapshotId': {'type': 'integer'},
+              },
+            },
+          ),
+          execute: (final inv) async {
+            capturedSnapshotId = inv.arguments['snapshotId'] as int?;
+            return AgentResult.success();
+          },
+        ),
+      );
+
+    final out = await registry.invoke('app_tap', {
+      'ref': 's_0',
+      'snapshotId': '99',
+    });
+    expect(out.ok, isTrue);
+    expect(capturedSnapshotId, 99);
+  });
+
   test('duplicate qualified name throws', () {
     final registry = InMemoryAgentRegistry();
     final intent = RegisteredAgentIntent(

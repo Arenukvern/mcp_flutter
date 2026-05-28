@@ -98,13 +98,15 @@ void main() {
       },
     );
 
-    test('wait_for schema — timeoutMs is integer', () {
+    test('wait_for schema — timeoutMs is integer with min/max', () {
       final ctx = _registeredCtx();
       final props =
           ctx.registrationFor('wait_for')!.inputSchema['properties']
               as Map<String, Object?>;
       final tSchema = props['timeoutMs'] as Map<String, Object?>;
       expect(tSchema['type'], equals('integer'));
+      expect(tSchema['minimum'], equals(1));
+      expect(tSchema['maximum'], equals(30000));
     });
 
     test('wait_for schema includes connection override property', () {

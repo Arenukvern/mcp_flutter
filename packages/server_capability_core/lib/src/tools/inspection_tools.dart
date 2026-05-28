@@ -20,13 +20,7 @@ void registerInspectionTools(final CapabilityContext context) {
     ToolRegistration(
       name: 'get_view_details',
       description: 'Get details for all views in the application.',
-      inputSchema: <String, Object?>{
-        'type': 'object',
-        'additionalProperties': false,
-        'properties': <String, Object?>{
-          'connection': connectionOverrideJsonSchema(),
-        },
-      },
+      inputSchema: getViewDetailsInputSchema(),
       handler: (final args) async {
         return runCommand(runner, args, const GetViewDetailsCommand());
       },
@@ -38,29 +32,16 @@ void registerInspectionTools(final CapabilityContext context) {
       name: 'inspect_widget_at_point',
       description:
           'Inspect the deepest widget at global logical coordinates (x, y).',
-      inputSchema: <String, Object?>{
-        'type': 'object',
-        'additionalProperties': false,
-        'required': <String>['x', 'y'],
-        'properties': <String, Object?>{
-          'x': <String, Object?>{
-            'type': 'integer',
-            'description': 'Global logical X coordinate.',
-          },
-          'y': <String, Object?>{
-            'type': 'integer',
-            'description': 'Global logical Y coordinate.',
-          },
-          'viewId': <String, Object?>{
-            'type': 'integer',
-            'description': 'Optional FlutterView id for multi-view apps.',
-          },
-          'connection': connectionOverrideJsonSchema(),
-        },
-      },
+      inputSchema: inspectWidgetAtPointInputSchema(),
       handler: (final args) async {
-        final x = intArgOrNull(args['x']) ?? 0;
-        final y = intArgOrNull(args['y']) ?? 0;
+        final x = coordinateIntArgOrNull(args['x']);
+        final y = coordinateIntArgOrNull(args['y']);
+        if (x == null || y == null) {
+          return AgentResult.failure(
+            code: 'invalid_arguments',
+            message: 'inspect_widget_at_point requires integer x and y',
+          );
+        }
         final viewId = intArgOrNull(args['viewId']);
         return runCommand(
           runner,
@@ -75,17 +56,7 @@ void registerInspectionTools(final CapabilityContext context) {
     ToolRegistration(
       name: 'get_app_errors',
       description: 'Get the most recent application errors from Dart VM.',
-      inputSchema: <String, Object?>{
-        'type': 'object',
-        'additionalProperties': false,
-        'properties': <String, Object?>{
-          'count': <String, Object?>{
-            'type': 'integer',
-            'description': 'Number of recent errors to retrieve (default: 4).',
-          },
-          'connection': connectionOverrideJsonSchema(),
-        },
-      },
+      inputSchema: getAppErrorsInputSchema(),
       handler: (final args) async {
         final countRaw = intArgOrNull(args['count']);
         final count = countRaw ?? 4;
@@ -132,29 +103,7 @@ void registerInspectionTools(final CapabilityContext context) {
     ToolRegistration(
       name: 'get_screenshots',
       description: 'Get screenshots of all views in the application.',
-      inputSchema: <String, Object?>{
-        'type': 'object',
-        'additionalProperties': false,
-        'properties': <String, Object?>{
-          'compress': <String, Object?>{
-            'type': 'boolean',
-            'description': 'Whether to compress the images (default: true).',
-          },
-          'mode': <String, Object?>{
-            'type': 'string',
-            'description':
-                'Screenshot mode: auto, flutter_layer, or desktop_window '
-                '(default: auto).',
-          },
-          'permissionPolicy': <String, Object?>{
-            'type': 'string',
-            'description':
-                'Permission policy: check_only, auto_request_once, or '
-                'request_always (default: check_only).',
-          },
-          'connection': connectionOverrideJsonSchema(),
-        },
-      },
+      inputSchema: getScreenshotsInputSchema(),
       handler: (final args) async {
         final compress = _boolArg(args['compress'], defaultValue: true);
         return runCommand(
@@ -215,42 +164,7 @@ void registerInspectionTools(final CapabilityContext context) {
       name: 'capture_ui_snapshot',
       description:
           'Capture screenshots, view details, and app errors in one response.',
-      inputSchema: <String, Object?>{
-        'type': 'object',
-        'additionalProperties': false,
-        'properties': <String, Object?>{
-          'errorsCount': <String, Object?>{
-            'type': 'integer',
-            'description': 'Number of recent errors to include (default: 4).',
-          },
-          'compress': <String, Object?>{
-            'type': 'boolean',
-            'description':
-                'Whether screenshots should be compressed (default: true).',
-          },
-          'includeViewDetails': <String, Object?>{
-            'type': 'boolean',
-            'description': 'Include detailed view/widget data (default: true).',
-          },
-          'includeErrors': <String, Object?>{
-            'type': 'boolean',
-            'description': 'Include app errors (default: true).',
-          },
-          'screenshotMode': <String, Object?>{
-            'type': 'string',
-            'description':
-                'Screenshot mode: auto, flutter_layer, or desktop_window '
-                '(default: auto).',
-          },
-          'permissionPolicy': <String, Object?>{
-            'type': 'string',
-            'description':
-                'Permission policy: check_only, auto_request_once, or '
-                'request_always (default: check_only).',
-          },
-          'connection': connectionOverrideJsonSchema(),
-        },
-      },
+      inputSchema: captureUiSnapshotInputSchema(),
       handler: (final args) async {
         final errorsCount = intArgOrNull(args['errorsCount']) ?? 4;
         final compress = _boolArg(args['compress'], defaultValue: true);
@@ -283,18 +197,7 @@ void registerInspectionTools(final CapabilityContext context) {
       name: 'focus_window',
       description:
           'Focus the host macOS app window or iOS Simulator before desktop capture.',
-      inputSchema: <String, Object?>{
-        'type': 'object',
-        'additionalProperties': false,
-        'properties': <String, Object?>{
-          'targetPid': <String, Object?>{
-            'type': 'integer',
-            'description':
-                'Optional VM process id (defaults to the connected VM).',
-          },
-          'connection': connectionOverrideJsonSchema(),
-        },
-      },
+      inputSchema: focusWindowInputSchema(),
       handler: (final args) async {
         return runCommand(
           runner,

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:agentkit_schema/agentkit_schema.dart';
+import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 
 import '../intent/agent_intent_descriptor.dart';
 import '../intent/agent_intent_kind.dart';
@@ -22,7 +23,9 @@ typedef _AgentCallEntryValue = ({
   String? mimeType,
 });
 
-extension type const AgentCallEntry._(MapEntry<String, _AgentCallEntryValue> _entry)
+extension type const AgentCallEntry._(
+  MapEntry<String, _AgentCallEntryValue> _entry
+)
     implements MapEntry<String, _AgentCallEntryValue> {
   factory AgentCallEntry.tool({
     required final String namespace,
@@ -49,17 +52,14 @@ extension type const AgentCallEntry._(MapEntry<String, _AgentCallEntryValue> _en
     required final String name,
     required final String description,
     required final AgentCallHandler handler,
-    final InputSchema inputSchema = const {
-      'type': 'object',
-      'properties': <String, Object?>{},
-    },
+    final InputSchema? inputSchema,
     final String? methodName,
     final String? mimeType,
   }) => AgentCallEntry._(
     MapEntry(name, (
       namespace: namespace,
       description: description,
-      inputSchema: inputSchema,
+      inputSchema: inputSchema ?? clientResourceReadInputSchema(),
       kind: AgentIntentKind.resource,
       handler: handler,
       methodName: methodName,
@@ -90,9 +90,16 @@ extension type const AgentCallEntry._(MapEntry<String, _AgentCallEntryValue> _en
 
   Future<AgentResult> invokeDirect(final AgentArguments arguments) {
     final registration = toRegistration();
-    registration.validate(arguments);
+    final coerced = coerceArgumentsForSchema(
+      registration.descriptor.inputSchema,
+      arguments,
+    );
+    registration.validate(coerced);
     return registration.execute(
-      AgentInvocation(descriptor: registration.descriptor, arguments: arguments),
+      AgentInvocation(
+        descriptor: registration.descriptor,
+        arguments: coerced,
+      ),
     );
   }
 }

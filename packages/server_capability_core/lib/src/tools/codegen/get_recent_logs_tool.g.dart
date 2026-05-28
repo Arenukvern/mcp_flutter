@@ -9,17 +9,6 @@ part of 'get_recent_logs_tool.dart';
 // AgentToolGenerator
 // **************************************************************************
 
-const _get_recent_logsInputSchema = <String, Object?>{
-  'type': 'object',
-  'properties': <String, Object?>{
-    'count': <String, Object?>{
-      'type': 'integer',
-      'description': 'Number of recent log entries (default: 50).',
-    },
-  },
-  'required': <String>[],
-};
-
 RegisteredAgentIntent get getRecentLogsRegistration =>
     getRecentLogsCallEntry.toRegistration();
 
@@ -28,6 +17,6 @@ AgentCallEntry get getRecentLogsCallEntry => AgentCallEntry.tool(
   name: 'get_recent_logs',
   description:
       'Get recent print() and log output from the running Flutter app.',
-  inputSchema: _get_recent_logsInputSchema,
+  inputSchema: getRecentLogsInputSchema(),
   handler: (final args) async => fmtGetRecentLogs(args['count'] as int),
 );

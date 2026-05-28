@@ -28,6 +28,7 @@ dependency_overrides:
   agentkit_schema:
     path: ../agentkit/packages/agentkit_schema
 dev_dependencies:
+  collection: ^1.19.1
   flutter_test:
     sdk: flutter
   lints: ^6.1.0

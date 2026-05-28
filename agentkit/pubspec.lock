@@ -222,6 +222,13 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_mcp_toolkit_core:
+    dependency: transitive
+    description:
+      path: "../packages/core"
+      relative: true
+    source: path
+    version: "0.1.0"
   flutter_web_plugins:
     dependency: transitive
     description: flutter

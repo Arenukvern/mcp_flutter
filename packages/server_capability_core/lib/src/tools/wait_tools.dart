@@ -21,29 +21,7 @@ void registerWaitTools(final CapabilityContext context) {
           'Wait for a UI predicate (text/noText/time/stable) and return a '
           'fresh semantic snapshot. Replaces sleep+snapshot polling. '
           'Default timeout 5000 ms, max 30000 ms.',
-      inputSchema: <String, Object?>{
-        'type': 'object',
-        'additionalProperties': false,
-        'required': <String>['predicate'],
-        'properties': <String, Object?>{
-          'predicate': <String, Object?>{
-            'type': 'object',
-            'additionalProperties': true,
-            'description':
-                'Predicate map. Shapes: '
-                '{kind:"time", ms:int} | '
-                '{kind:"text", text:String} | '
-                '{kind:"noText", text:String} | '
-                '{kind:"stable", stableWindowMs:int}, '
-                '{kind:"noError"}',
-          },
-          'timeoutMs': <String, Object?>{
-            'type': 'integer',
-            'description': 'Timeout in ms (default 5000, max 30000).',
-          },
-          'connection': connectionOverrideJsonSchema(),
-        },
-      },
+      inputSchema: waitForInputSchema(),
       handler: (final args) async {
         final predicateRaw = args['predicate'];
         final predicate = predicateRaw is Map

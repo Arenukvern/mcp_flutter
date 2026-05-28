@@ -297,6 +297,10 @@ void main() {
       expect(props.containsKey('distance'), isTrue);
       expect(props.containsKey('snapshotId'), isTrue);
       expect(props.containsKey('connection'), isTrue);
+      expect(
+        (props['direction']! as Map<String, Object?>)['enum'],
+        ['up', 'down', 'left', 'right'],
+      );
     });
 
     test(

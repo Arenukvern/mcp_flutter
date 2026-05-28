@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:agentkit_core/agentkit_core.dart';
 
 import 'package:dart_mcp/client.dart';
+import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
 import 'package:is_dart_empty_or_not/is_dart_empty_or_not.dart';
 
@@ -52,7 +53,7 @@ extension type OnAppErrorsEntry._(AgentCallEntry entry) implements AgentCallEntr
   factory OnAppErrorsEntry({required final ErrorMonitor errorMonitor}) {
     final entry = mcpToolkitTool(
       handler: (final parameters) {
-        final count = jsonDecodeInt(parameters['count'] ?? '').whenZeroUse(10);
+        final count = jsonDecodeInt(parameters['count'] ?? '').whenZeroUse(4);
         final reversedErrors = errorMonitor.errors.take(count).toList();
         final errors = reversedErrors.map((final e) => e.toJson()).toList();
         final message = () {
@@ -81,15 +82,7 @@ extension type OnAppErrorsEntry._(AgentCallEntry entry) implements AgentCallEntr
             'Get application errors and diagnostics information. '
             'Returns recent errors with file paths and line numbers '
             'for debugging.',
-        inputSchema: ObjectSchema(
-          properties: {
-            'count': IntegerSchema(
-              description: 'Number of recent errors to retrieve',
-              minimum: 1,
-              maximum: 10,
-            ),
-          },
-        ),
+        inputSchema: ObjectSchema.fromMap(getAppErrorsInputSchema()),
       ),
     );
     return OnAppErrorsEntry._(entry);
@@ -123,13 +116,7 @@ extension type OnViewScreenshotsEntry._(AgentCallEntry entry)
         description:
             'Take screenshots of all Flutter views/screens. '
             'Useful for visual debugging and UI analysis.',
-        inputSchema: ObjectSchema(
-          properties: {
-            'compress': BooleanSchema(
-              description: 'Whether to compress the screenshots',
-            ),
-          },
-        ),
+        inputSchema: ObjectSchema.fromMap(getScreenshotsInputSchema()),
       ),
     );
     return OnViewScreenshotsEntry._(entry);
@@ -158,7 +145,7 @@ extension type const OnViewDetailsEntry._(AgentCallEntry entry)
         description:
             'Get detailed information about Flutter views and widgets. '
             'Returns structural information about the current UI state.',
-        inputSchema: ObjectSchema(properties: {}),
+        inputSchema: ObjectSchema.fromMap(getViewDetailsInputSchema()),
       ),
     );
     return OnViewDetailsEntry._(entry);
@@ -192,16 +179,7 @@ extension type const OnInspectWidgetAtPointEntry._(AgentCallEntry entry)
         name: 'inspect_widget_at_point',
         description:
             'Inspect deepest widget/render node at global logical coordinates.',
-        inputSchema: ObjectSchema(
-          required: ['x', 'y'],
-          properties: {
-            'x': IntegerSchema(description: 'Global logical X coordinate'),
-            'y': IntegerSchema(description: 'Global logical Y coordinate'),
-            'viewId': IntegerSchema(
-              description: 'Optional FlutterView id for multi-view apps',
-            ),
-          },
-        ),
+        inputSchema: ObjectSchema.fromMap(inspectWidgetAtPointInputSchema()),
       ),
     );
     return OnInspectWidgetAtPointEntry._(entry);
@@ -242,26 +220,7 @@ extension type const OnSelectWidgetAtPointEntry._(AgentCallEntry entry)
             'Inspect or select a widget at global logical coordinates. '
             'When live-edit is active, this selects a live-edit node; '
             'otherwise it falls back to widget inspection.',
-        inputSchema: ObjectSchema(
-          required: ['x', 'y'],
-          properties: {
-            'sessionId': StringSchema(),
-            'x': IntegerSchema(description: 'Global logical X coordinate'),
-            'y': IntegerSchema(description: 'Global logical Y coordinate'),
-            'viewId': IntegerSchema(
-              description: 'Optional FlutterView id for multi-view apps',
-            ),
-            'selectionPolicy': StringSchema(
-              description:
-                  'Optional live-edit selection policy when selecting nodes',
-            ),
-            'targetDomain': StringSchema(
-              description:
-                  'Optional live-edit target domain '
-                  '(e.g. appScene or toolScene)',
-            ),
-          },
-        ),
+        inputSchema: ObjectSchema.fromMap(selectWidgetAtPointInputSchema()),
       ),
     );
     return OnSelectWidgetAtPointEntry._(entry);

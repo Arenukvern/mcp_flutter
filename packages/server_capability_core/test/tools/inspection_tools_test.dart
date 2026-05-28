@@ -159,6 +159,17 @@ void main() {
       },
     );
 
+    test('inspect_widget_at_point accepts origin coordinates', () async {
+      final runner = FakeCommandRunner()
+        ..nextExecuteResult = CoreResult.success(data: {});
+      final ctx = _registeredCtx(runner: runner);
+      final reg = ctx.registrationFor('inspect_widget_at_point')!;
+      await reg.handler(const <String, Object?>{'x': 0, 'y': 0});
+      final cmd = runner.executedCommands.first as InspectWidgetAtPointCommand;
+      expect(cmd.x, 0);
+      expect(cmd.y, 0);
+    });
+
     test('inspect_widget_at_point viewId is null when not provided', () async {
       final runner = FakeCommandRunner()
         ..nextExecuteResult = CoreResult.success(data: {});
@@ -168,6 +179,18 @@ void main() {
       final cmd = runner.executedCommands.first as InspectWidgetAtPointCommand;
       expect(cmd.viewId, isNull);
     });
+
+    test(
+      'inspect_widget_at_point handler rejects missing x and y',
+      () async {
+        final runner = FakeCommandRunner();
+        final ctx = _registeredCtx(runner: runner);
+        final reg = ctx.registrationFor('inspect_widget_at_point')!;
+        final result = await reg.handler(const <String, Object?>{});
+        expect(result.ok, isFalse);
+        expect(runner.executedCommands, isEmpty);
+      },
+    );
 
     test(
       'inspect_widget_at_point handler short-circuits on override failure',
@@ -337,10 +360,13 @@ void main() {
           'string',
         );
         expect(props.containsKey('connection'), isTrue);
-        // No enum constraints — match legacy schema exactly.
         expect(
-          (props['mode']! as Map<String, Object?>).containsKey('enum'),
-          isFalse,
+          (props['mode']! as Map<String, Object?>)['enum'],
+          ['auto', 'flutter_layer', 'desktop_window'],
+        );
+        expect(
+          (props['permissionPolicy']! as Map<String, Object?>)['enum'],
+          ['check_only', 'auto_request_once', 'request_always'],
         );
       },
     );
@@ -493,10 +519,13 @@ void main() {
         'string',
       );
       expect(props.containsKey('connection'), isTrue);
-      // No enum constraints — match legacy.
       expect(
-        (props['screenshotMode']! as Map<String, Object?>).containsKey('enum'),
-        isFalse,
+        (props['screenshotMode']! as Map<String, Object?>)['enum'],
+        ['auto', 'flutter_layer', 'desktop_window'],
+      );
+      expect(
+        (props['permissionPolicy']! as Map<String, Object?>)['enum'],
+        ['check_only', 'auto_request_once', 'request_always'],
       );
     });
 

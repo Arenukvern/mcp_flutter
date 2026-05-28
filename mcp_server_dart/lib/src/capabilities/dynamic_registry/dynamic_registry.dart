@@ -11,6 +11,7 @@ import 'package:agentkit_mcp/agentkit_mcp.dart';
 import 'package:agentkit_schema/agentkit_schema.dart';
 import 'package:dart_mcp/server.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 import 'package:flutter_mcp_toolkit_server/flutter_mcp_server.dart';
 import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_consts.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/types/error_codes.dart';
@@ -229,10 +230,18 @@ final class DynamicRegistry {
 
   /// Register a new resource from a Flutter application
   /// Resource must be MCP-compliant with proper uri, name, description
-  void registerResource(final Resource resource, final DynamicAppId appId) {
+  void registerResource(
+    final Resource resource,
+    final DynamicAppId appId, {
+    final InputSchema? inputSchema,
+  }) {
     verifyAppConnection(appId);
 
-    final intent = _intentForResource(resource: resource, appId: appId);
+    final intent = _intentForResource(
+      resource: resource,
+      appId: appId,
+      inputSchema: inputSchema,
+    );
     final entry = DynamicResourceEntry(intent: intent, resource: resource);
 
     _resources[resource.uri] = entry;
@@ -347,9 +356,12 @@ final class DynamicRegistry {
     }
 
     updateAppActivity();
-    final args = arguments ?? const <String, Object?>{};
+    final coerced = coerceArgumentsForSchema(
+      entry.intent.descriptor.inputSchema,
+      arguments ?? const <String, Object?>{},
+    );
     try {
-      entry.intent.validate(args);
+      entry.intent.validate(coerced);
     } on AgentValidationException catch (e) {
       return agentResultToMcpResult(
         AgentResult.failure(
@@ -360,7 +372,10 @@ final class DynamicRegistry {
     }
 
     final agentResult = await entry.intent.execute(
-      AgentInvocation(descriptor: entry.intent.descriptor, arguments: args),
+      AgentInvocation(
+        descriptor: entry.intent.descriptor,
+        arguments: coerced,
+      ),
     );
     return agentResultToMcpResult(agentResult);
   }
@@ -436,6 +451,7 @@ final class DynamicRegistry {
   RegisteredAgentIntent _intentForResource({
     required final Resource resource,
     required final DynamicAppId appId,
+    final InputSchema? inputSchema,
   }) {
     final namespace = appId.isEmpty ? 'app' : appId;
     return RegisteredAgentIntent(
@@ -444,7 +460,8 @@ final class DynamicRegistry {
         name: resource.name,
         description: resource.description ?? '',
         kind: AgentIntentKind.resource,
-        inputSchema: const <String, Object?>{'type': 'object'},
+        inputSchema:
+            inputSchema ?? clientResourceReadInputSchema(),
         resourceUri: resource.uri,
         mimeType: resource.mimeType,
       ),
@@ -589,9 +606,12 @@ final class DynamicRegistry {
     }
 
     updateAppActivity();
-    final args = <String, Object?>{'uri': resourceUri};
+    final coerced = coerceArgumentsForSchema(
+      entry.intent.descriptor.inputSchema,
+      <String, Object?>{'uri': resourceUri},
+    );
     try {
-      entry.intent.validate(args);
+      entry.intent.validate(coerced);
     } on AgentValidationException catch (e) {
       return ReadResourceResult(
         contents: [
@@ -607,7 +627,7 @@ final class DynamicRegistry {
     final agentResult = await entry.intent.execute(
       AgentInvocation(
         descriptor: entry.intent.descriptor,
-        arguments: args,
+        arguments: coerced,
       ),
     );
     return agentResultToReadResourceResult(agentResult, uri: resourceUri);
@@ -683,8 +703,15 @@ final class DynamicRegistry {
 
 /// Copies MCP [Tool.inputSchema] into agentkit [InputSchema] for listing and validation.
 InputSchema inputSchemaFromMcpTool(final Tool tool) {
-  final raw = tool.inputSchema;
-  return _deepCopyInputSchemaMap(Map<Object?, Object?>.from(raw as Map));
+  final ObjectSchema schema;
+  try {
+    schema = tool.inputSchema;
+  } on ArgumentError catch (e) {
+    throw ArgumentError('Tool "${tool.name}" is missing inputSchema: $e');
+  }
+  return _deepCopyInputSchemaMap(
+    Map<Object?, Object?>.from(schema as Map<Object?, Object?>),
+  );
 }
 
 Map<String, Object?> _deepCopyInputSchemaMap(final Map<Object?, Object?> raw) =>

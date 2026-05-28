@@ -9,7 +9,20 @@ import 'package:web/web.dart' as web;
 @JS('JSON.parse')
 external JSAny? _jsonParse(final JSString source);
 
+/// Tool names already published to `navigator.modelContext` (Dart bootstrap).
 final _webMcpRegisteredToolNames = <String>{};
+
+/// Entries available to [__agentkitWebMcpDartExecute] when JS registered first.
+final _entriesByQualifiedName = <String, AgentCallEntry>{};
+
+var _dartExecuteHookInstalled = false;
+
+/// Whether [qualifiedName] was registered by [registerFromEntries].
+///
+/// Used by dogfood [WebMcpPublishAdapter] to avoid triple registration when
+/// generated JS bootstrap and Dart bootstrap both run (see web eval doc).
+bool isAgentWebMcpToolRegistered(final String qualifiedName) =>
+    _webMcpRegisteredToolNames.contains(qualifiedName);
 
 extension type _ModelContext._(JSObject _) implements JSObject {
   external void registerTool(final _WebMcpToolDefinition toolDefinition);
@@ -24,11 +37,20 @@ extension type _WebMcpToolDefinition._(JSObject _) implements JSObject {
   });
 }
 
+/// Registers tools on `navigator.modelContext` after [MCPToolkitExtensions.addEntries].
+///
+/// `web/agentkit_webmcp.generated.js` may register the same names before Flutter
+/// loads. Those handlers run JS `validateInput`, then delegate to
+/// [globalContext]'s `__agentkitWebMcpDartExecute` when this bootstrap installs
+/// it (full [AgentCallEntry.invokeDirect] validation). If no Dart entry exists,
+/// execute falls back to `fetch('/agent/invoke')` per ADR 0008.
 void registerFromEntries(final Set<AgentCallEntry> entries) {
   final modelContext = _readModelContext();
   if (modelContext == null) {
     return;
   }
+
+  _ensureDartExecuteHook();
 
   for (final entry in entries) {
     final descriptor = entry.toRegistration().descriptor;
@@ -37,6 +59,8 @@ void registerFromEntries(final Set<AgentCallEntry> entries) {
     }
 
     final qualifiedName = descriptor.qualifiedName;
+    _entriesByQualifiedName[qualifiedName] = entry;
+
     if (_webMcpRegisteredToolNames.contains(qualifiedName)) {
       continue;
     }
@@ -50,9 +74,33 @@ void registerFromEntries(final Set<AgentCallEntry> entries) {
       modelContext.registerTool(toolDefinition);
       _webMcpRegisteredToolNames.add(qualifiedName);
     } on Object {
-      // Duplicate name (JS bootstrap + Dart) or hot restart — skip.
+      // Duplicate name (JS bootstrap registered first) — JS execute uses hook.
     }
   }
+}
+
+void _ensureDartExecuteHook() {
+  if (_dartExecuteHookInstalled) {
+    return;
+  }
+  _dartExecuteHookInstalled = true;
+  globalContext.setProperty(
+    '__agentkitWebMcpDartExecute'.toJS,
+    ((final JSString nameJS, final JSAny? rawArgs) {
+      return _dartExecuteHook(nameJS, rawArgs).toJS;
+    }).toJS,
+  );
+}
+
+Future<JSAny?> _dartExecuteHook(
+  final JSString nameJS,
+  final JSAny? rawArgs,
+) async {
+  final entry = _entriesByQualifiedName[nameJS.toDart];
+  if (entry == null) {
+    return null;
+  }
+  return _invokeEntry(entry, rawArgs);
 }
 
 _ModelContext? _readModelContext() {

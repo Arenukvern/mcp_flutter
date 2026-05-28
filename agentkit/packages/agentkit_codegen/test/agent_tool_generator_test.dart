@@ -1,9 +1,17 @@
 import 'package:agentkit_core/agentkit_core.dart';
+import 'package:agentkit_schema/agentkit_schema.dart';
 import 'package:test/test.dart';
 
 import '../example/demo_ping_tool.dart';
 
 void main() {
+  test('generated demoPingRegistration validates before execute', () {
+    expect(
+      () => demoPingRegistration.validate(const <String, Object?>{}),
+      throwsA(isA<AgentValidationException>()),
+    );
+  });
+
   test('generated demoPingRegistration invokes handler', () async {
     final registration = demoPingRegistration;
     expect(registration.qualifiedName, 'app_demo_ping');

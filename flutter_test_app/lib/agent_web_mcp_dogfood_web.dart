@@ -4,6 +4,7 @@ import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
 
 import 'package:agentkit_core/agentkit_core.dart';
+import 'package:agentkit_platform/agentkit_platform.dart';
 import 'package:agentkit_webmcp/agentkit_webmcp.dart';
 import 'package:web/web.dart' as web;
 
@@ -23,7 +24,12 @@ extension type _WebMcpToolDefinition._(JSObject _) implements JSObject {
 @JS('JSON.parse')
 external JSAny? _jsonParse(JSString source);
 
-/// Exercises [WebMcpPublishAdapter] hot-sync on web (dogfood), alongside JS bootstrap.
+/// Exercises [WebMcpPublishAdapter] hot-sync on web (dogfood).
+///
+/// Skips tools already registered by [registerAgentWebMcpFromEntries] / JS bootstrap
+/// to avoid duplicate `registerTool` names on the same `modelContext`. Execute for
+/// tools registered only in JS still routes through `__agentkitWebMcpDartExecute`
+/// when [registerAgentWebMcpFromEntries] ran after `addEntries`.
 Future<void> wireWebMcpPublishAdapterDogfood(
   final Set<AgentCallEntry> entries,
 ) async {
@@ -43,6 +49,9 @@ Future<void> wireWebMcpPublishAdapterDogfood(
       )
       execute,
     }) {
+      if (isAgentWebMcpToolRegistered(name)) {
+        return;
+      }
       final toolDefinition = _WebMcpToolDefinition(
         name: name.toJS,
         description: description.toJS,
@@ -65,7 +74,11 @@ Future<void> wireWebMcpPublishAdapterDogfood(
   final runtime = AgentRuntime(registry: registry, adapters: [adapter]);
   await runtime.start();
   for (final entry in entries) {
-    registry.register(entry.toRegistration());
+    final registration = entry.toRegistration();
+    if (isAgentWebMcpToolRegistered(registration.qualifiedName)) {
+      continue;
+    }
+    registry.register(registration);
   }
 }
 

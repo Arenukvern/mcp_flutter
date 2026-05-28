@@ -4,6 +4,7 @@ import 'dart:developer' as developer;
 
 import 'package:agentkit_core/agentkit_core.dart';
 import 'package:agentkit_platform/agentkit_platform.dart';
+import 'package:agentkit_schema/agentkit_schema.dart';
 import 'package:flutter/foundation.dart';
 
 import 'agent_call_entry_extensions.dart';
@@ -76,10 +77,12 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
         registerServiceExtension(
           name: extensionName,
           callback: (final parameters) async {
-            final args = parameters.map(
-              MapEntry<String, Object?>.new,
-            );
+            final wireArgs = parameters.map(MapEntry<String, Object?>.new);
             final registration = entry.toRegistration();
+            final args = coerceArgumentsForSchema(
+              registration.descriptor.inputSchema,
+              wireArgs,
+            );
             registration.validate(args);
             final result = await entry.value.handler(args);
             return agentResultToServiceExtensionMap(result);
@@ -167,6 +170,7 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
           'description': descriptor.description,
           'mimeType': descriptor.mimeType ?? 'application/json',
           'uri': descriptor.effectiveResourceUri,
+          'inputSchema': descriptor.inputSchema,
         });
         continue;
       }

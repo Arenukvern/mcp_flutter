@@ -75,11 +75,15 @@ final class InMemoryAgentRegistry implements AgentRegistry {
         message: 'No intent registered for $qualifiedName',
       );
     }
-    intent.validate(arguments);
+    final coerced = coerceArgumentsForSchema(
+      intent.descriptor.inputSchema,
+      arguments,
+    );
+    intent.validate(coerced);
     return intent.execute(
       AgentInvocation(
         descriptor: intent.descriptor,
-        arguments: arguments,
+        arguments: coerced,
         correlationId: correlationId,
       ),
     );
