@@ -137,7 +137,7 @@ The Flutter MCP Server is registered with Smithery's registry, making it discove
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit pull requests or report issues on the [GitHub repository](https://github.com/Arenukvern/mcp_flutter).
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) (maintainer releases, binary checksums) and the [contribution guide](docs/contributing/contribution_guide.mdx). Pull requests and issues: [GitHub](https://github.com/Arenukvern/mcp_flutter).
 
 ## ✨ Contributors
 

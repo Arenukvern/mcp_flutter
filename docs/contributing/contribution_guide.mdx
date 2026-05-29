@@ -41,9 +41,19 @@ CI fails if the generated file is out of sync with `plugin/`. Commit both the
 
 Repo root [`skills/`](/skills) symlinks to `plugin/skills/` so [`npx skills`](https://www.npmjs.com/package/skills) discovers bundles without a recursive search. End-user install docs live in [AI agent overview](/ai_agents/overview); team lockfile template: [`.skills.json.example`](https://github.com/Arenukvern/mcp_flutter/blob/main/.skills.json.example).
 
-Maintainers: use bundled skill **`flutter-mcp-toolkit-repo-maintainer`** (local: `.cursor/skills/flutter-mcp-toolkit-repo-maintainer`) for releases and docs.
-
 Marketplace listing copy: [marketplace_copy.yaml](/ai_agents/marketplace_copy.yaml). Submitting to Claude/Cursor/Codex stores: [marketplace submission runbook](/contributing/marketplace_submission_runbook).
+
+### Maintainers
+
+Use bundled skill **`flutter-mcp-toolkit-repo-maintainer`** (local: `.cursor/skills/flutter-mcp-toolkit-repo-maintainer`) for releases, contracts, and docs.
+
+**Cross-repo release contract (Skill Steward):** product harness repos ship executables on GitHub Releases with changelog in git. Normative reference:
+
+- [`release-changelog-harness`](https://github.com/Arenukvern/skill_steward/tree/main/skills/release-changelog-harness) — `npx skills add arenukvern/skill_steward --skill release-changelog-harness`
+- [binary-release-contract.md](https://github.com/Arenukvern/skill_steward/blob/main/skills/release-changelog-harness/references/binary-release-contract.md)
+- [ADR 0010](https://github.com/Arenukvern/skill_steward/blob/main/docs/decisions/0010-binary-releases-for-product-harness-not-meta-steward.md) (Skill Steward defers binaries; mcp_flutter is the reference impl)
+
+Root [CONTRIBUTING.md](https://github.com/Arenukvern/mcp_flutter/blob/main/CONTRIBUTING.md) summarizes the binary train and **install.sh checksum flow** for maintainers.
 
 ### Commit messages
 
@@ -67,7 +77,9 @@ Releases are automated on `main` via **release-please**:
 2. release-please opens or updates a **Release PR** (e.g. `chore: release 3.0.1`) with `CHANGELOG.md`, [`VERSION`](https://github.com/Arenukvern/mcp_flutter/blob/main/VERSION), pubspecs, plugin pins, and runtime version updates.
 3. Review the Release PR, then merge it.
 4. release-please creates the `vX.Y.Z` tag and GitHub release **with changelog notes**.
-5. [`.github/workflows/release.yml`](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/release.yml) runs on the tag and attaches `flutter_mcp_*` tarballs + `checksums.txt`.
+5. [`.github/workflows/release.yml`](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/release.yml) runs on the tag and attaches `flutter_mcp_*` tarballs + `checksums.txt` (SHA-256 per tarball, same format as [`tool/release/build_release_artifacts.sh`](https://github.com/Arenukvern/mcp_flutter/blob/main/tool/release/build_release_artifacts.sh)).
+
+**Consumer install (no clone):** [`install.sh`](https://github.com/Arenukvern/mcp_flutter/blob/main/install.sh) downloads the tarball and `checksums.txt` from the release URL, verifies SHA-256, then installs to `$HOME/.local/bin`. See [CONTRIBUTING.md — Maintainers](https://github.com/Arenukvern/mcp_flutter/blob/main/CONTRIBUTING.md#maintainers) for the step-by-step checksum flow.
 
 Pending work belongs under `## [Unreleased]` in [CHANGELOG.md](https://github.com/Arenukvern/mcp_flutter/blob/main/CHANGELOG.md). release-please promotes that section when the Release PR merges.
 
