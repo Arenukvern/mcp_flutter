@@ -1,11 +1,11 @@
-# Machine-readable rubric for MCP / agentkit tool quality dogfood evals.
+# Machine-readable rubric for MCP / intentcall tool quality dogfood evals.
 # Consumed by: tool/evals/run_dogfood_eval.sh, agents, Closer gates.
 # Human overview: docs/superpowers/evals/README.md
 
 version: 1
-name: mcp_agentkit_tool_quality
+name: mcp_intentcall_tool_quality
 description: >
-  Scores flutter-mcp-toolkit + agentkit integration on flutter_test_app.
+  Scores flutter-mcp-toolkit + intentcall integration on flutter_test_app.
   Designed for iterative runs: each battery produces comparable dimension scores.
 
 max_score: 100
@@ -56,7 +56,7 @@ dimensions:
         critical: true
       - check: validate_runtime.steps_failed
         critical: true
-      - check: agentkit_testing.entry_invoke
+      - check: intentcall_testing.entry_invoke
         critical: false
         optional: true
     iteration_fields:
@@ -124,20 +124,20 @@ dimensions:
       - webmcp_parity_score
       - web_manifest_ok
 
-  agentkit_authoring:
+  intentcall_authoring:
     weight: 10
     pass_min: 8
     description: Platform hooks, codegen drift, AgentCallEntry migration hygiene.
     signals:
-      - check: init_agentkit_platform.check
+      - check: init_intentcall_platform.check
         critical: true
       - check: codegen_sync.all_platforms
         critical: true
       - check: migrate_agent_entries.check
         critical: true
     iteration_fields:
-      - agentkit_authoring_score
-      - agentkit_hooks_ok
+      - intentcall_authoring_score
+      - intentcall_hooks_ok
       - codegen_sync_ok
       - init_platform_ok
       - migrate_entries_ok
@@ -199,10 +199,10 @@ legacy_scoring:
     doctor_critical_pass: 15
     toolkit_extensions: 20
     capture_evidence: 15
-    agentkit_hooks: 10
+    intentcall_hooks: 10
   maps_to_dimensions:
     validate_runtime_ok: [schema_validity, handler_correctness]
     doctor_critical_pass: [connectivity]
     toolkit_extensions: [connectivity]
     capture_evidence: [capture_quality, visual_fidelity]
-    agentkit_hooks: [agentkit_authoring]
+    intentcall_hooks: [intentcall_authoring]

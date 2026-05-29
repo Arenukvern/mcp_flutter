@@ -11,7 +11,7 @@ This Cursor rule is **retired**. Author dynamic tools with **`AgentCallEntry`** 
 **Use instead:**
 
 - Repo skill: `plugin/skills/flutter-mcp-toolkit-custom-tools/SKILL.md`
-- Migration (before/after only): `plugin/skills/flutter-mcp-toolkit-agentkit-migration/SKILL.md`
+- Migration (before/after only): `plugin/skills/flutter-mcp-toolkit-intentcall-migration/SKILL.md`
 - CLI: `flutter-mcp-toolkit migrate agent-entries`
 - Discovery: `fmt_list_client_tools_and_resources` → invoke via `fmt_client_tool` / `fmt_client_resource`
 

@@ -1,18 +1,18 @@
-# What's next — agentkit + visual
+# What's next — intentcall + visual
 
-Single forward index. **Source of truth for program state:** [tracker/agentkit-rollout.yaml](tracker/agentkit-rollout.yaml).
+Single forward index. **Source of truth for program state:** [tracker/intentcall-rollout.yaml](tracker/intentcall-rollout.yaml).
 
-## Agentkit (Phase 7 extract — in progress)
+## intentcall (Phase 7 extract — in progress)
 
 | Sub-phase | Status | Doc / command |
 |-----------|--------|----------------|
-| 7.4 Publish to pub.dev | Pending | [Phase 7 plan](plans/2026-05-27-agentkit-phase7-extract.md) · `bash tool/agentkit/publish_all.sh --execute` |
-| 7.5 Hosted consumer cutover | Pending (blocked on 7.4) | [Phase 7 plan](plans/2026-05-27-agentkit-phase7-extract.md) §7.5 · [hosted_cutover.md](../../docs/agentkit/hosted_cutover.md) |
-| 7.7 Integration on hosted versions | Pending (blocked on 7.5) | `make check-agentkit-integration` after cutover |
+| 7.4 Publish to pub.dev | Pending | [Phase 7 plan](plans/2026-05-27-intentcall-phase7-extract.md) · `bash tool/intentcall/publish_all.sh --execute` |
+| 7.5 Hosted consumer cutover | Pending (blocked on 7.4) | [Phase 7 plan](plans/2026-05-27-intentcall-phase7-extract.md) §7.5 · [hosted_cutover.md](../../docs/intentcall/hosted_cutover.md) |
+| 7.7 Integration on hosted versions | Pending (blocked on 7.5) | `make check-intentcall-integration` after cutover |
 
-**Done in-repo:** `program.status: complete_in_repo_product` — integration hardening archived ([integration completion plan](plans/archive/2026-05-26-agentkit-integration-completion-next.md)).
+**Done in-repo:** `program.status: complete_in_repo_product` — integration hardening archived ([integration completion plan](plans/archive/2026-05-26-intentcall-integration-completion-next.md)).
 
-**Loop:** [agentkit-self-closing-loop.md](agentkit-self-closing-loop.md) · **Design:** [specs/2026-05-25-agentkit-design.md](specs/2026-05-25-agentkit-design.md)
+**Loop:** [intentcall-self-closing-loop.md](intentcall-self-closing-loop.md) · **Design:** [specs/2026-05-25-intentcall-design.md](specs/2026-05-25-intentcall-design.md)
 
 ## Visual reconstruct (maintenance)
 

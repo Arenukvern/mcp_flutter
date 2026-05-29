@@ -191,7 +191,7 @@ Before auditing, fill this map (keep in audit notes or PR description):
 | **CLI** | e.g. `exec`, bare vs prefixed aliases | Same schema as MCP? |
 | **Shared schema module** | e.g. `interaction_input_schemas`, OpenAPI components | Single source of truth? |
 | **Migrator / codegen** | e.g. `migrate agent-entries` | Preserves required/properties? |
-| **Platform doc** | e.g. `AGENTKIT_PLATFORM.md`, README contract section | Matches fail-closed code? |
+| **Platform doc** | e.g. `INTENTCALL_PLATFORM.md`, README contract section | Matches fail-closed code? |
 
 **Checklist**
 
@@ -211,6 +211,6 @@ Worked example (mcp_flutter), file map, and regression patterns: [reference.md](
 When working in this monorepo only:
 
 - `flutter-mcp-toolkit-custom-tools` — authoring entries
-- `flutter-mcp-toolkit-agentkit-migration` — migrate agent-entries
+- `flutter-mcp-toolkit-intentcall-migration` — migrate agent-entries
 - `flutter-mcp-toolkit-maintain-web` — WebMCP / in-process invoke
 - `flutter-mcp-cli-runtime-validation` — runtime validate-runtime

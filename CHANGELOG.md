@@ -7,24 +7,24 @@
 
 ### Added
 
-- Gating CI: `make check-agentkit-integration` + `.github/workflows/agentkit_eval.yml` job `agentkit-integration` (full agentkit matrix, contracts, skills grep, migrate/init/codegen `--check`).
+- Gating CI: `make check-intentcall-integration` + `.github/workflows/intentcall_eval.yml` job `intentcall-integration` (full intentcall matrix, contracts, skills grep, migrate/init/codegen `--check`).
 - `make macos-validate-runtime` helper (`tool/evals/run_macos_validate_runtime.sh`) for I5 macOS dogfood.
-- Agentkit: `xsoulspace_lints` (`library.yaml` / `app.yaml`); `make analyze`; pre-release warnings on all packages ([agentkit/PRE_RELEASE.md](agentkit/PRE_RELEASE.md)); [regression checklist](docs/agentkit/REGRESSION_CHECKLIST.md).
-- Phase 7 **7.1–7.3, 7.6**: `agentkit/` workspace; pub.dev metadata; `make publish-agentkit-dry-run`; hosted cutover docs; `agentkit_publish_dry_run` CI.
-- Phase 7 **7.1/7.2**: all `agentkit_*` packages under `agentkit/packages/`; consumers use path deps; 41 tests.
-- `flutter_test_app` web dogfood: `WebMcpPublishAdapter` via `agent_web_mcp_dogfood.dart`; Xcode Agentkit Codegen Run Script (ios/macos).
-- `flutter-mcp-toolkit init agentkit-platform` — idempotent Gradle, manifest, `index.html`, and codegen shell hooks with `--check` for CI.
+- intentcall: `xsoulspace_lints` (`library.yaml` / `app.yaml`); `make analyze`; pre-release warnings on all packages ([intentcall/PRE_RELEASE.md](intentcall/PRE_RELEASE.md)); [regression checklist](docs/intentcall/REGRESSION_CHECKLIST.md).
+- Phase 7 **7.1–7.3, 7.6**: `intentcall/` workspace; pub.dev metadata; `make publish-intentcall-dry-run`; hosted cutover docs; `intentcall_publish_dry_run` CI.
+- Phase 7 **7.1/7.2**: all `intentcall_*` packages under `intentcall/packages/`; consumers use path deps; 41 tests.
+- `flutter_test_app` web dogfood: `WebMcpPublishAdapter` via `agent_web_mcp_dogfood.dart`; Xcode intentcall Codegen Run Script (ios/macos).
+- `flutter-mcp-toolkit init intentcall-platform` — idempotent Gradle, manifest, `index.html`, and codegen shell hooks with `--check` for CI.
 - `fmt_migrate_agent_entries` MCP tool (report-only default; `apply: true` to rewrite sources).
-- `agentkit_platform` thin Flutter plugin + `AgentkitInvokeLinkListener` (`app_links`) for `agentkit://invoke/<qualifiedName>`.
+- `intentcall_platform` thin Flutter plugin + `intentcallInvokeLinkListener` (`app_links`) for `intentcall://invoke/<qualifiedName>`.
 - CI / `make check-contracts`: `codegen sync --check` on `flutter_test_app`.
 - ADR [0008](decisions/0008_web_agent_invoke_js_only.mdx): web `/agent/invoke` Flutter route optional (JS + WebMCP sufficient).
 
 ### Changed
 
-- `ToolRegistration` / `ResourceRegistration` canonical types moved to `agentkit_mcp`; kernel re-exports (extract-friendly).
-- Dogfood harness paths use `--dart-define=AGENTKIT_HARNESS_ROOT` / `AGENTKIT_VISUAL_RECONSTRUCT_ROOT`.
-- `MigrateAgentEntriesMigrator` moved to `agentkit_core` (shared by CLI and MCP tool).
-- `agentkit_testing`: ecsly-style builder → `invokeWire` → `AgentResult.envelope` test.
+- `ToolRegistration` / `ResourceRegistration` canonical types moved to `intentcall_mcp`; kernel re-exports (extract-friendly).
+- Dogfood harness paths use `--dart-define=INTENTCALL_HARNESS_ROOT` / `INTENTCALL_VISUAL_RECONSTRUCT_ROOT`.
+- `MigrateAgentEntriesMigrator` moved to `intentcall_core` (shared by CLI and MCP tool).
+- `intentcall_testing`: ecsly-style builder → `invokeWire` → `AgentResult.envelope` test.
 
 ## [3.1.0] - 2026-05-25
 

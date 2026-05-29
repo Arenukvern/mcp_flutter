@@ -56,7 +56,7 @@ Always run `flutter-mcp-toolkit doctor --json` first. Parse the output:
 | Drive UI ("tap X", "type into Y", "scroll to Z", "hot reload") | `flutter-mcp-toolkit-control` |
 | Diagnose ("why is X failing?", "show recent logs", "evaluate expression") | `flutter-mcp-toolkit-debug` |
 | Register app-specific MCP tools/resources (`AgentCallEntry`, `bootstrapFlutter` `additionalEntries`) | `flutter-mcp-toolkit-custom-tools` |
-| Upgrade after agentkit Phase 6 breaking bump (migrate CLI) | `flutter-mcp-toolkit-agentkit-migration` |
+| Upgrade after intentcall Phase 6 breaking bump (migrate CLI) | `flutter-mcp-toolkit-intentcall-migration` |
 | Harness Script lint/run/Maestro (`*.hs.yaml`, app registry) | Install **flutter_harness** — skill `flutter-mcp-semantic-test` in that repo |
 | HS capture bundles / promo video | **flutter_harness** + **flutter_mcp_video** (not bundled in toolkit `init`) |
 
@@ -1188,7 +1188,7 @@ description: Use this skill when the agent exposes app-specific surfaces by regi
 
 Use this when bundled MCP tools (screenshot, semantic snapshot, tap, …) are not enough and you need **app-specific** read surfaces or actions — e.g. cart totals, feature flags, curated debug snapshots of internal state. Entries are registered **in the Flutter process** and exposed to the agent through the **dynamic registry**.
 
-> **Migration:** The legacy call-entry type was removed in agentkit Phase 6b. Use **`AgentCallEntry`** or **`mcpToolkitTool` / `mcpToolkitResource`**. See **`flutter-mcp-toolkit-agentkit-migration`**.
+> **Migration:** The legacy call-entry type was removed in intentcall Phase 6b. Use **`AgentCallEntry`** or **`mcpToolkitTool` / `mcpToolkitResource`**. See **`flutter-mcp-toolkit-intentcall-migration`**.
 
 ## Pick the right primitive
 
@@ -1349,32 +1349,32 @@ If something should appear but does not: confirm **`addEntries`** completed (**`
 
 ## Related
 
-- **`flutter-mcp-toolkit-agentkit-migration`** — CLI migrator, breaking upgrade
+- **`flutter-mcp-toolkit-intentcall-migration`** — CLI migrator, breaking upgrade
 - **`flutter-mcp-toolkit-guide`** → inspect / control / debug skills
 - Repository **`ARCHITECTURE.md`** → “Dynamic Registry Architecture”
 ''',
       relativePath: 'skills/flutter-mcp-toolkit-custom-tools/SKILL.md',
     ),
     SkillAsset(
-      id: 'flutter-mcp-toolkit-agentkit-migration',
-      frontmatter: r'''name: flutter-mcp-toolkit-agentkit-migration
+      id: 'flutter-mcp-toolkit-intentcall-migration',
+      frontmatter: r'''name: flutter-mcp-toolkit-intentcall-migration
 description: >-
   Migrate Flutter app code from removed MCPCallEntry to AgentCallEntry after
-  agentkit Phase 6b. Use when upgrading mcp_toolkit, fixing compile errors after
+  intentcall Phase 6b. Use when upgrading mcp_toolkit, fixing compile errors after
   a major bump, or running flutter-mcp-toolkit migrate agent-entries.''',
       body: r'''
 <!-- @FMT_MODE_PRELUDE -->
 
-# Agentkit migration — MCPCallEntry → AgentCallEntry
+# intentcall migration — MCPCallEntry → AgentCallEntry
 
 **Phase 6b hard cut:** `MCPCallEntry` is **removed** from `mcp_toolkit`. App code must use
-`AgentCallEntry` (from `agentkit_core`, re-exported by `mcp_toolkit`).
+`AgentCallEntry` (from `intentcall_core`, re-exported by `mcp_toolkit`).
 
-Canonical doc: [migration_agentkit_phase6.md](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/start_here/migration_agentkit_phase6.md)
+Canonical doc: [migration_intentcall_phase6.md](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/start_here/migration_intentcall_phase6.md)
 
 ## When to use this skill
 
-- `dart analyze` reports undefined `MCPCallEntry` after pulling agentkit Phase 6
+- `dart analyze` reports undefined `MCPCallEntry` after pulling intentcall Phase 6
 - User asks to migrate custom tools/resources to the new API
 - Before shipping a major `mcp_toolkit` bump to consumers
 
@@ -1470,20 +1470,20 @@ rewrite). CLI equivalent: `flutter-mcp-toolkit migrate agent-entries`.
 
 ## Phase 7 extract (external monorepo)
 
-When agentkit publishes to pub.dev (see `decisions/0009-agentkit-extract.mdx`):
+When intentcall publishes to pub.dev (see `decisions/0009-intentcall-extract.mdx`):
 
-1. Replace `path: ../agentkit/packages/agentkit_*` (or hosted `^0.1.0` after publish) in `pubspec.yaml`.
+1. Replace `path: ../agentkit/packages/intentcall_*` (or hosted `^0.1.0` after publish) in `pubspec.yaml`.
 2. Run `flutter pub get` and `migrate agent-entries --check` again.
-3. CI: use `make check-agentkit-integration` in mcp_flutter; package matrix moves to agentkit repo.
+3. CI: use `make check-intentcall-integration` in mcp_flutter; package matrix moves to intentcall repo.
 
-Until then, all agentkit packages remain **in-repo** with `publish_to: none`.
+Until then, all intentcall packages remain **in-repo** with `publish_to: none`.
 
 ## Related skills
 
 - **`flutter-mcp-toolkit-custom-tools`** — authoring `AgentCallEntry` surfaces
 - **`flutter-mcp-toolkit-repo-maintainer`** — CHANGELOG, version pins, `sync-skills`
 ''',
-      relativePath: 'skills/flutter-mcp-toolkit-agentkit-migration/SKILL.md',
+      relativePath: 'skills/flutter-mcp-toolkit-intentcall-migration/SKILL.md',
     ),
     SkillAsset(
       id: 'flutter-mcp',
@@ -1792,16 +1792,16 @@ Video skill and projects live in **[flutter_mcp_video](https://github.com/Arenuk
 
 When shipping a promo there: edit the video repo; run `bash tool/check_doc_paths.sh` in that repo before merge. Toolkit repo only hosts shared brand assets under `plugin/assets/` (symlink targets for v7-weaver).
 
-## Agentkit Phase 6 (pre-extract) maintainer gate
+## intentcall Phase 6 (pre-extract) maintainer gate
 
-When closing Phase 6 on `feat/agentkit-phase1-3`:
+When closing Phase 6 on `feat/intentcall-phase1-3`:
 
-1. Append `flutter-mcp-toolkit-agentkit-migration` to `expectedSkillIds` in `build_skill_assets.dart` if not already present.
+1. Append `flutter-mcp-toolkit-intentcall-migration` to `expectedSkillIds` in `build_skill_assets.dart` if not already present.
 2. `make sync-skills` — commit `skill_assets.g.dart` with skill edits.
-3. `bash tool/contracts/check_agentkit_skills_grep.sh` — no legacy call-entry symbol outside migration skill.
+3. `bash tool/contracts/check_intentcall_skills_grep.sh` — no legacy call-entry symbol outside migration skill.
 4. `cd mcp_server_dart && dart test test/contract/`
 5. `flutter-mcp-toolkit migrate agent-entries --check flutter_test_app/lib` (expect exit 0)
-6. Tracker: `program.status: complete_in_repo_product`; `integration_hardening_complete: true`; closures under `docs/superpowers/closure/`; forward work `docs/superpowers/WHATS_NEXT.md` and `docs/superpowers/plans/2026-05-27-agentkit-phase7-extract.md`
+6. Tracker: `program.status: complete_in_repo_product`; `integration_hardening_complete: true`; closures under `docs/superpowers/closure/`; forward work `docs/superpowers/WHATS_NEXT.md` and `docs/superpowers/plans/2026-05-27-intentcall-phase7-extract.md`
 
 ## Pre-merge checklist
 
@@ -1815,13 +1815,13 @@ When closing Phase 6 on `feat/agentkit-phase1-3`:
     SkillAsset(
       id: 'flutter-mcp-toolkit-maintain-web',
       frontmatter: r'''name: flutter-mcp-toolkit-maintain-web
-description: Maintains flutter_test_app and agentkit web targets (Chrome, web codegen, WebMCP bootstrap, web-showcase, webmcp verify). Use when editing web/index.html, agent_manifest.json, agentkit_webmcp.generated.js, web platform sync, Chrome dogfood, or navigator.modelContext.''',
+description: Maintains flutter_test_app and intentcall web targets (Chrome, web codegen, WebMCP bootstrap, web-showcase, webmcp verify). Use when editing web/index.html, agent_manifest.json, intentcall_webmcp.generated.js, web platform sync, Chrome dogfood, or navigator.modelContext.''',
       body: r'''
 <!-- @FMT_MODE_PRELUDE -->
 
 # Maintain Web (Chrome + WebMCP)
 
-Dogfood app: `flutter_test_app`. Canonical platform doc: `flutter_test_app/AGENTKIT_PLATFORM.md`.
+Dogfood app: `flutter_test_app`. Canonical platform doc: `flutter_test_app/INTENTCALL_PLATFORM.md`.
 
 ## WebMCP vs VM MCP
 
@@ -1856,15 +1856,15 @@ dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart codegen sync \
   --platform web,android,ios,macos,linux,windows \
   --project-dir flutter_test_app
 
-dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart init agentkit-platform \
+dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart init intentcall-platform \
   --project-dir flutter_test_app --check
 ```
 
 | Artifact | Source |
 |----------|--------|
-| `web/agentkit_webmcp.generated.js` | `codegen sync` from `web/agent_manifest.json` |
-| `web/index.html` | `init agentkit-platform` script tag |
-| Dart bootstrap | `registerAgentWebMcpFromEntries` in `mcp_toolkit_extensions.dart` (debug web, after `addEntries`; `agentkit_platform`) |
+| `web/intentcall_webmcp.generated.js` | `codegen sync` from `web/agent_manifest.json` |
+| `web/index.html` | `init intentcall-platform` script tag |
+| Dart bootstrap | `registerAgentWebMcpFromEntries` in `mcp_toolkit_extensions.dart` (debug web, after `addEntries`; `intentcall_platform`) |
 
 ## Runtime validate
 
@@ -1895,17 +1895,17 @@ Pass `--web-browser-debugging-port <cdp>` if CDP discovery fails.
     SkillAsset(
       id: 'flutter-mcp-toolkit-maintain-macos',
       frontmatter: r'''name: flutter-mcp-toolkit-maintain-macos
-description: Maintains flutter_test_app macOS showcase, native agentkit hooks (codegen, app_links invoke), and VM MCP validation. Use when editing macOS Runner, agentkit_codegen.sh, macOS dogfood, Screen Recording capture, or comparing macOS parity to web WebMCP.''',
+description: Maintains flutter_test_app macOS showcase, native intentcall hooks (codegen, app_links invoke), and VM MCP validation. Use when editing macOS Runner, intentcall_codegen.sh, macOS dogfood, Screen Recording capture, or comparing macOS parity to web WebMCP.''',
       body: r'''
 <!-- @FMT_MODE_PRELUDE -->
 
-# Maintain macOS (showcase + native agentkit)
+# Maintain macOS (showcase + native intentcall)
 
-Dogfood app: `flutter_test_app`. Platform doc: `flutter_test_app/AGENTKIT_PLATFORM.md`.
+Dogfood app: `flutter_test_app`. Platform doc: `flutter_test_app/INTENTCALL_PLATFORM.md`.
 
 ## WebMCP on macOS
 
-**`navigator.modelContext` is web-only.** macOS dogfood proves **VM extensions**, **dynamic registry**, **native invoke** (`agentkit://` via `app_links`), and **visual capture** (Screen Recording on host).
+**`navigator.modelContext` is web-only.** macOS dogfood proves **VM extensions**, **dynamic registry**, **native invoke** (`intentcall://` via `app_links`), and **visual capture** (Screen Recording on host).
 
 For WebMCP parity scoring, run web iteration separately (`flutter-mcp-toolkit-maintain-web`).
 
@@ -1931,15 +1931,15 @@ dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart codegen sync \
   --platform web,android,ios,macos,linux,windows \
   --project-dir flutter_test_app
 
-dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart init agentkit-platform \
+dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart init intentcall-platform \
   --project-dir flutter_test_app --check
 ```
 
 | Target | Role |
 |--------|------|
-| `macos/agentkit_codegen.sh` | Xcode Run Script → `codegen sync --platform macos` |
+| `macos/intentcall_codegen.sh` | Xcode Run Script → `codegen sync --platform macos` |
 | `macos/Runner.xcodeproj` | Run Script phase (see script comment if manual) |
-| `lib/main.dart` | `AgentkitInvokeLinkListener` for `agentkit://invoke/…` |
+| `lib/main.dart` | `intentcallInvokeLinkListener` for `intentcall://invoke/…` |
 
 ## Runtime validate
 
@@ -1977,7 +1977,7 @@ bash tool/evals/run_dogfood_eval.sh \
     SkillAsset(
       id: 'flutter-mcp-toolkit-dogfood-iterations',
       frontmatter: r'''name: flutter-mcp-toolkit-dogfood-iterations
-description: Runs and records flutter_test_app dogfood iterations (tool_quality_rubric, run_dogfood_eval.sh, dogfood_web_eval.yaml). Use when scoring MCP/agentkit quality, appending iteration N, comparing regressions, or CI static/weekly eval gates.''',
+description: Runs and records flutter_test_app dogfood iterations (tool_quality_rubric, run_dogfood_eval.sh, dogfood_web_eval.yaml). Use when scoring MCP/intentcall quality, appending iteration N, comparing regressions, or CI static/weekly eval gates.''',
       body: r'''
 <!-- @FMT_MODE_PRELUDE -->
 
@@ -1999,7 +1999,7 @@ Overview: `docs/superpowers/evals/README.md`
 | capture_quality | 10 |
 | visual_fidelity | 10 |
 | webmcp_parity | 10 |
-| agentkit_authoring | 10 |
+| intentcall_authoring | 10 |
 | docs_truth | 10 |
 
 ## Iteration workflow
@@ -2073,7 +2073,7 @@ dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart \
 
 ## CI (branch)
 
-`.github/workflows/agentkit_eval.yml` — PR: `dogfood-eval-static`; weekly/main: agentkit package tests + static.
+`.github/workflows/intentcall_eval.yml` — PR: `dogfood-eval-static`; weekly/main: intentcall package tests + static.
 
 Full Chrome runtime dogfood stays **local** until headless WebMCP is cost-effective.
 

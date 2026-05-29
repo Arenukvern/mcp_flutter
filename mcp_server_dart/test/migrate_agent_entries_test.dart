@@ -55,16 +55,16 @@ MCPCallEntry.tool(
       expect(migrated, contains("'n': {'type': 'integer'}"));
     });
 
-    test('adds agentkit imports when missing', () {
+    test('adds intentcall imports when missing', () {
       final before = File('${fixturesDir.path}/before_starter_entries.dart').readAsStringSync();
       final migrated = migrator.migrateSource(before);
       expect(
         migrated,
-        contains("import 'package:agentkit_core/agentkit_core.dart';"),
+        contains("import 'package:intentcall_core/intentcall_core.dart';"),
       );
       expect(
         migrated,
-        contains("import 'package:agentkit_schema/agentkit_schema.dart';"),
+        contains("import 'package:intentcall_schema/intentcall_schema.dart';"),
       );
     });
   });

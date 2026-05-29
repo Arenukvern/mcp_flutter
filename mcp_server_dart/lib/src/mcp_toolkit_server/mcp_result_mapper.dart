@@ -1,8 +1,8 @@
-import 'package:agentkit_mcp/agentkit_mcp.dart';
-import 'package:agentkit_schema/agentkit_schema.dart';
+import 'package:intentcall_mcp/intentcall_mcp.dart';
+import 'package:intentcall_schema/intentcall_schema.dart';
 import 'package:dart_mcp/server.dart';
 
-export 'package:agentkit_mcp/agentkit_mcp.dart'
+export 'package:intentcall_mcp/intentcall_mcp.dart'
     show agentResultToMcpResult, mcpResultToAgentResult;
 
 /// Legacy alias used by server tests.

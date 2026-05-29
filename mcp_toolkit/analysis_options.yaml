@@ -1,4 +1,4 @@
-# Shared analyzer config (xsoulspace_lints) — aligned with agentkit monorepo.
+# Shared analyzer config (xsoulspace_lints) — aligned with intentcall monorepo.
 include: package:xsoulspace_lints/library.yaml
 
 analyzer:

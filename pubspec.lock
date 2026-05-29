@@ -9,76 +9,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "91.0.0"
-  agentkit_android:
-    dependency: "direct overridden"
-    description:
-      path: "agentkit/packages/agentkit_android"
-      relative: true
-    source: path
-    version: "0.1.0"
-  agentkit_apple:
-    dependency: "direct overridden"
-    description:
-      path: "agentkit/packages/agentkit_apple"
-      relative: true
-    source: path
-    version: "0.1.0"
-  agentkit_codegen:
-    dependency: "direct overridden"
-    description:
-      path: "agentkit/packages/agentkit_codegen"
-      relative: true
-    source: path
-    version: "0.1.0"
-  agentkit_core:
-    dependency: "direct overridden"
-    description:
-      path: "agentkit/packages/agentkit_core"
-      relative: true
-    source: path
-    version: "0.1.0"
-  agentkit_gemma:
-    dependency: "direct overridden"
-    description:
-      path: "agentkit/packages/agentkit_gemma"
-      relative: true
-    source: path
-    version: "0.1.0"
-  agentkit_mcp:
-    dependency: "direct overridden"
-    description:
-      path: "agentkit/packages/agentkit_mcp"
-      relative: true
-    source: path
-    version: "0.1.0"
-  agentkit_platform:
-    dependency: "direct overridden"
-    description:
-      path: "agentkit/packages/agentkit_platform"
-      relative: true
-    source: path
-    version: "0.1.0"
-  agentkit_schema:
-    dependency: "direct overridden"
-    description:
-      path: "agentkit/packages/agentkit_schema"
-      relative: true
-    source: path
-    version: "0.1.0"
-  agentkit_testing:
-    dependency: "direct overridden"
-    description:
-      path: "agentkit/packages/agentkit_testing"
-      relative: true
-    source: path
-    version: "0.1.0"
-  agentkit_webmcp:
-    dependency: "direct overridden"
-    description:
-      path: "agentkit/packages/agentkit_webmcp"
-      relative: true
-    source: path
-    version: "0.1.0"
   analyzer:
     dependency: transitive
     description:
@@ -393,6 +323,76 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.1.2"
+  intentcall_android:
+    dependency: "direct overridden"
+    description:
+      path: "../agentkit/packages/intentcall_android"
+      relative: true
+    source: path
+    version: "0.1.0"
+  intentcall_apple:
+    dependency: "direct overridden"
+    description:
+      path: "../agentkit/packages/intentcall_apple"
+      relative: true
+    source: path
+    version: "0.1.0"
+  intentcall_codegen:
+    dependency: "direct overridden"
+    description:
+      path: "../agentkit/packages/intentcall_codegen"
+      relative: true
+    source: path
+    version: "0.1.0"
+  intentcall_core:
+    dependency: "direct overridden"
+    description:
+      path: "../agentkit/packages/intentcall_core"
+      relative: true
+    source: path
+    version: "0.1.0"
+  intentcall_gemma:
+    dependency: "direct overridden"
+    description:
+      path: "../agentkit/packages/intentcall_gemma"
+      relative: true
+    source: path
+    version: "0.1.0"
+  intentcall_mcp:
+    dependency: "direct overridden"
+    description:
+      path: "../agentkit/packages/intentcall_mcp"
+      relative: true
+    source: path
+    version: "0.1.0"
+  intentcall_platform:
+    dependency: "direct overridden"
+    description:
+      path: "../agentkit/packages/intentcall_platform"
+      relative: true
+    source: path
+    version: "0.1.0"
+  intentcall_schema:
+    dependency: "direct overridden"
+    description:
+      path: "../agentkit/packages/intentcall_schema"
+      relative: true
+    source: path
+    version: "0.1.0"
+  intentcall_testing:
+    dependency: "direct overridden"
+    description:
+      path: "../agentkit/packages/intentcall_testing"
+      relative: true
+    source: path
+    version: "0.1.0"
+  intentcall_webmcp:
+    dependency: "direct overridden"
+    description:
+      path: "../agentkit/packages/intentcall_webmcp"
+      relative: true
+    source: path
+    version: "0.1.0"
   io:
     dependency: transitive
     description:

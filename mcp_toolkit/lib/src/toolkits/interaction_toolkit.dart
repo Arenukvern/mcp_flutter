@@ -1,4 +1,4 @@
-import 'package:agentkit_core/agentkit_core.dart';
+import 'package:intentcall_core/intentcall_core.dart';
 import 'package:dart_mcp/client.dart';
 import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';

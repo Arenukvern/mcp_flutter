@@ -1,5 +1,5 @@
-import 'package:agentkit_core/agentkit_core.dart';
-import 'package:agentkit_schema/agentkit_schema.dart';
+import 'package:intentcall_core/intentcall_core.dart';
+import 'package:intentcall_schema/intentcall_schema.dart';
 import 'package:flutter_mcp_toolkit_capability_kernel/flutter_mcp_toolkit_capability_kernel.dart';
 
 /// Registers `fmt_migrate_agent_entries` (report-only; `apply: true` writes files).

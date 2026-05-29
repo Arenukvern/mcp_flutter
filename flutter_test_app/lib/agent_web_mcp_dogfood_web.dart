@@ -3,9 +3,9 @@ import 'dart:convert';
 import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
 
-import 'package:agentkit_core/agentkit_core.dart';
-import 'package:agentkit_platform/agentkit_platform.dart';
-import 'package:agentkit_webmcp/agentkit_webmcp.dart';
+import 'package:intentcall_core/intentcall_core.dart';
+import 'package:intentcall_platform/intentcall_platform.dart';
+import 'package:intentcall_webmcp/intentcall_webmcp.dart';
 import 'package:web/web.dart' as web;
 
 extension type _ModelContext._(JSObject _) implements JSObject {
@@ -28,7 +28,7 @@ external JSAny? _jsonParse(JSString source);
 ///
 /// Skips tools already registered by [registerAgentWebMcpFromEntries] / JS bootstrap
 /// to avoid duplicate `registerTool` names on the same `modelContext`. Execute for
-/// tools registered only in JS still routes through `__agentkitWebMcpDartExecute`
+/// tools registered only in JS still routes through `__intentcallWebMcpDartExecute`
 /// when [registerAgentWebMcpFromEntries] ran after `addEntries`.
 Future<void> wireWebMcpPublishAdapterDogfood(
   final Set<AgentCallEntry> entries,

@@ -1,5 +1,5 @@
-import 'package:agentkit_core/agentkit_core.dart';
-import 'package:agentkit_schema/agentkit_schema.dart';
+import 'package:intentcall_core/intentcall_core.dart';
+import 'package:intentcall_schema/intentcall_schema.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 
 Set<AgentCallEntry> buildStarterEntries() => {

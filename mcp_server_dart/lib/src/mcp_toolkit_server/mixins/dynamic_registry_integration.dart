@@ -5,8 +5,8 @@
 
 import 'dart:async';
 
-import 'package:agentkit_core/agentkit_core.dart';
-import 'package:agentkit_schema/agentkit_schema.dart';
+import 'package:intentcall_core/intentcall_core.dart';
+import 'package:intentcall_schema/intentcall_schema.dart';
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_mcp_toolkit_server/src/capabilities/dynamic_registry/core_dynamic_registry_gateway.dart';
 import 'package:flutter_mcp_toolkit_server/src/capabilities/dynamic_registry/dynamic_registry.dart';

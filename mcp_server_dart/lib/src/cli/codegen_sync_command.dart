@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:agentkit_platform/agentkit_platform.dart';
+import 'package:intentcall_platform/intentcall_platform.dart';
 
 /// Runs `flutter-mcp-toolkit codegen sync --platform <targets>`.
 Future<int> runCodegenSync({
@@ -72,7 +72,7 @@ Future<int> runCodegenSync({
         'wroteMacosGenerated': result.wroteMacosGenerated,
         'wroteLinuxDesktop': result.wroteLinuxDesktop,
         'wroteWindowsProtocol': result.wroteWindowsProtocol,
-        if (platforms.contains('web')) 'indexHtmlSnippet': kAgentkitWebIndexSnippet,
+        if (platforms.contains('web')) 'indexHtmlSnippet': kIntentCallWebIndexSnippet,
         if (platforms.contains('android'))
           'androidManifestSnippet': kAndroidShortcutsManifestSnippet,
         if (platforms.contains('android'))

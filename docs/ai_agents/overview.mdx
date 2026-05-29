@@ -89,6 +89,18 @@ npx skills add Arenukvern/mcp_flutter -a cursor -a cline -y
 
 Discover more community skills at **[skills.sh](https://skills.sh)**. Pin the CLI in CI with `npx skills@latest` if needed.
 
+## Harness meta-skills (Agent Guild)
+
+When **building or maintaining** product harnesses (CLI + MCP + docs), install meta-skills from [Agent Guild](https://github.com/arenukvern/agent_guild):
+
+```bash
+npx skills add arenukvern/agent_guild --skill harness-engineering-culture -a cursor -y
+npx skills add arenukvern/agent_guild --skill north-star-governance -y
+npx skills add arenukvern/agent_guild --skill faq-driven-docs -y
+```
+
+Guild teaches **how** to design agent-first harnesses (mechanical gates, docs map, CLI/MCP parity). **This repo** owns `flutter-mcp-toolkit` and `fmt_*` — not Guild’s `guild` CLI. See [OpenAI — Harness engineering](https://openai.com/index/harness-engineering/) and mcp_flutter [CLI vs MCP](/start_here/cli_vs_mcp).
+
 ### Team lockfile (reproducible installs)
 
 After the first `npx skills add`, the CLI writes `.skills.json` and `skills-lock.json`. Commit those in your app repo so everyone gets the same skill versions.

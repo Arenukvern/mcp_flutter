@@ -2,7 +2,7 @@
 // Copyright (c) 2025, Flutter Inspector MCP Server authors.
 // Licensed under the MIT License.
 
-import 'package:agentkit_mcp/agentkit_mcp.dart';
+import 'package:intentcall_mcp/intentcall_mcp.dart';
 import 'package:flutter_mcp_toolkit_capability_kernel/flutter_mcp_toolkit_capability_kernel.dart';
 import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 

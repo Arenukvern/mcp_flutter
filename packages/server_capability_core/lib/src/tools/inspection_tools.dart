@@ -4,7 +4,7 @@
 
 import 'dart:convert';
 
-import 'package:agentkit_schema/agentkit_schema.dart';
+import 'package:intentcall_schema/intentcall_schema.dart';
 import 'package:flutter_mcp_toolkit_capability_kernel/flutter_mcp_toolkit_capability_kernel.dart';
 import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 

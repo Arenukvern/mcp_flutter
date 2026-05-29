@@ -1,7 +1,7 @@
 // packages/server_capability_core/lib/src/tools/codegen/get_recent_logs_tool.dart
-import 'package:agentkit_codegen/agentkit_codegen.dart';
-import 'package:agentkit_core/agentkit_core.dart';
-import 'package:agentkit_schema/agentkit_schema.dart';
+import 'package:intentcall_codegen/intentcall_codegen.dart';
+import 'package:intentcall_core/intentcall_core.dart';
+import 'package:intentcall_schema/intentcall_schema.dart';
 import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 
 part 'get_recent_logs_tool.g.dart';

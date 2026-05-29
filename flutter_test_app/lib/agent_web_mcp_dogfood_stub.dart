@@ -1,4 +1,4 @@
-import 'package:agentkit_core/agentkit_core.dart';
+import 'package:intentcall_core/intentcall_core.dart';
 
 /// No-op on non-web targets.
 Future<void> wireWebMcpPublishAdapterDogfood(

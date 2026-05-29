@@ -2,7 +2,7 @@
 
 import 'dart:async';
 
-import 'package:agentkit_core/agentkit_core.dart';
+import 'package:intentcall_core/intentcall_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 

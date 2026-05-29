@@ -1,0 +1,234 @@
+# intentcall program tracker — updated by Closer agent after each phase gate.
+# Design spec: docs/superpowers/specs/2026-05-25-intentcall-design.md
+# Loop playbook: docs/superpowers/intentcall-self-closing-loop.md
+#
+# Package paths: libraries live under intentcall/packages/ since Phase 7.1 (2026-05-27).
+# Historical validation blocks below use pre-extract paths; re-run with:
+#   make check-intentcall-integration
+#   make dogfood-eval-static   # or make dogfood-eval with WS_URI
+#   cd intentcall && make test && make analyze
+
+program:
+  id: intentcall
+  design_spec: docs/superpowers/specs/2026-05-25-intentcall-design.md
+  rollout_doc: docs/superpowers/plans/2026-05-25-intentcall-rollout.md
+  self_closing_loop: docs/superpowers/intentcall-self-closing-loop.md
+  hardening_spec: docs/superpowers/specs/2026-05-25-intentcall-phase5-hardening-design.md
+  status: complete_in_repo_product
+  product_gate: pass
+  integration_gate: pass
+  integration_phase: done
+  integration_hardening_complete: true
+  active_phase: null
+  active_work_plan: docs/superpowers/plans/2026-05-27-intentcall-phase7-extract.md
+  next_spec: docs/superpowers/plans/2026-05-27-intentcall-phase7-extract.md
+  closure_report: docs/superpowers/closure/2026-05-26-intentcall-program-complete-in-repo.md
+  integration_closure: docs/superpowers/closure/2026-05-26-intentcall-integration-complete.md
+  product_closure: docs/superpowers/closure/2026-05-26-intentcall-product-complete-in-repo.md
+  integration_completion_plan: docs/superpowers/plans/archive/2026-05-26-intentcall-integration-completion-next.md
+  ci_gates:
+    local: make check-contracts
+    github:
+      gating: .github/workflows/intentcall_eval.yml — job intentcall-static (make dogfood-eval-static)
+      weekly: intentcall_eval.yml — job intentcall-weekly (intentcall package test matrix + static battery)
+      informational: contract_gates.yml — codegen sync --check (continue-on-error)
+      gating_integration: .github/workflows/intentcall_eval.yml — job intentcall-integration (make check-intentcall-integration)
+      gap: make check-contracts (version sync, changelog) not on every PR
+  deferred_work:
+    - Phase 7.4 publish to pub.dev (--execute) then 7.5 hosted cutover then 7.7 integration on hosted
+    - Visual reconstruct maintenance only — checkpoint protocol (see plans/2026-05-26-visual-reconstruct-next.md)
+    - generateWebAgentManifest wired from live registry (manifest manual + codegen sync today)
+    - Second fmt_* @AgentTool codegen beyond pilot (documented in server_capability_core README)
+    - Gemma product wiring (flutter_gemma in example/shipping app; intentcall_gemma stays example-only)
+    - HarmonyOS NEXT / Intents Kit / hadss_intents
+
+phases:
+  - id: phase1
+    title: Core in mcp_flutter workspace
+    plan: docs/superpowers/plans/archive/2026-05-25-intentcall-phase1.md
+    plan_revision: v1
+    status: done
+    design_section: Migration phases / Phase 1
+    exit_criteria:
+      - All static server tools invoke via AgentRegistry
+      - External MCP and CLI contracts unchanged
+      - intentcall_schema and intentcall_core packages exist with tests
+      - Client DX helpers specified in design spec implemented or deferred with note
+      - intentcall_codegen annotations-only (no build_runner generator in phase 1)
+    validation:
+      - dart test packages/intentcall_schema
+      - dart test packages/intentcall_core
+      - dart test packages/intentcall_testing
+      - dart test packages/server_capability_kernel
+      - cd mcp_server_dart && dart test
+      - dart analyze packages/intentcall_schema packages/intentcall_core mcp_toolkit
+      - cd mcp_server_dart && dart run bin/flutter_mcp_cli.dart schema --name fmt_wait
+      - cd mcp_server_dart && dart run bin/flutter_mcp_cli.dart capabilities
+    closure_report: docs/superpowers/closure/2026-05-25-intentcall-phase1.md
+    last_gate: pass
+    last_gate_at: 2026-05-25
+
+  - id: phase2
+    title: Decouple host from dart_mcp
+    plan: docs/superpowers/plans/archive/2026-05-25-intentcall-phase2.md
+    plan_revision: v1
+    status: done
+    design_section: Migration phases / Phase 2
+    exit_criteria:
+      - McpHost registry-only; McpAgentAdapter owns dart_mcp publish
+      - DynamicRegistry stores RegisteredAgentIntent not dart_mcp.Tool
+      - server_capability_kernel has zero dart_mcp imports
+    validation:
+      - dart test packages/intentcall_mcp
+      - cd mcp_server_dart && dart test test/agent_registry_host_test.dart test/host_test.dart
+      - dart analyze packages/intentcall_mcp mcp_server_dart/lib/src/mcp_toolkit_server/host.dart
+    closure_report: docs/superpowers/closure/2026-05-25-intentcall-phase2.md
+    last_gate: pass
+    last_gate_at: 2026-05-25
+
+  - id: phase3
+    title: Multi-adapter shipping (in-repo)
+    plan: docs/superpowers/plans/archive/2026-05-25-intentcall-phase3.md
+    plan_revision: v1
+    status: done
+    design_section: Migration phases / Phase 3
+    exit_criteria:
+      - intentcall monorepo split from mcp_flutter consumer (deferred; in-repo path deps OK)
+      - intentcall_webmcp adapter shipped with tests (WebMcpPublishAdapter; not a stub)
+      - intentcall_gemma example-only adapter shipped with tests (no flutter_gemma product wiring)
+      - intentcall_apple and intentcall_android manifest codegen started
+      - Public shims removed after deprecation window (deferred)
+    validation:
+      - dart test packages/intentcall_mcp
+      - dart test packages/intentcall_webmcp
+      - dart test packages/intentcall_gemma
+      - dart test packages/intentcall_apple
+      - dart test packages/intentcall_android
+      - dart test packages/server_capability_kernel
+      - dart analyze packages/server_capability_kernel packages/intentcall_webmcp packages/intentcall_gemma
+    closure_report: docs/superpowers/closure/2026-05-25-intentcall-phase3.md
+    last_gate: pass
+    last_gate_at: 2026-05-25
+
+  - id: phase4
+    title: Registry-backed MCP resources and hot-sync
+    plan: docs/superpowers/closure/2026-05-25-intentcall-phase4-registry-resources.md
+    plan_revision: v1
+    status: done
+    design_section: Migration phases / Phase 3 follow-up (T8 registerResource)
+    exit_criteria:
+      - McpHost registerResource publishes via AgentRegistry and McpPublishAdapter
+      - DynamicRegistry resources use RegisteredAgentIntent and sync to agentRegistry
+      - Flutter Inspector static visual resources via registerPublishedResource
+      - WebMcpPublishAdapter hot-syncs tools on registry events
+    validation:
+      - dart test packages/intentcall_mcp
+      - dart test packages/intentcall_webmcp
+      - cd mcp_server_dart && dart test test/host_test.dart test/agent_registry_host_test.dart
+    closure_report: docs/superpowers/closure/2026-05-25-intentcall-phase4-registry-resources.md
+    last_gate: pass
+    last_gate_at: 2026-05-25
+
+  - id: phase5
+    title: Hardening (docs, runtime, authoring)
+    spec: docs/superpowers/specs/2026-05-25-intentcall-phase5-hardening-design.md
+    status: complete_milestone
+    sub_phases:
+      - id: 5a
+        title: Documentation and program hygiene
+        status: done
+        completed_at: 2026-05-26
+      - id: 5b
+        title: Runtime consolidation
+        status: done
+        completed_at: 2026-05-26
+      - id: 5c
+        title: Authoring and optional codegen
+        status: done
+        completed_at: 2026-05-26
+
+  - id: phase6
+    title: Pre-extract completion (Bar D)
+    spec: docs/superpowers/specs/2026-05-26-intentcall-pre-extract-completion-design.md
+    plan: docs/superpowers/plans/archive/2026-05-26-intentcall-phase6-pre-extract.md
+    status: done
+    bar: D
+    last_gate: pass
+    last_gate_at: 2026-05-26
+    closure_report: docs/superpowers/closure/2026-05-26-intentcall-program-complete-in-repo.md
+    sub_phases:
+      - { id: 6a, title: Server registry completeness, status: done, commit: 7677239 }
+      - { id: 6b, title: MCPCallEntry hard cut, status: done, commit: 9823430 }
+      - { id: 6c, title: Server @AgentTool codegen, status: done, commit: d835a02 }
+      - { id: 6d, title: Platform sync (web + native), status: done, commits: [f3614b0, 0633da3] }
+      - { id: 6e, title: Contract tests, status: done, commit: d07a592 }
+      - { id: 6f, title: Migration CLI + docs, status: done, commit: 0910443 }
+      - { id: 6g, title: Skills + skill_assets, status: done }
+      - { id: 6h, title: complete_in_repo gate, status: done }
+    validation:
+      - dart test packages/intentcall_schema packages/intentcall_core packages/intentcall_testing
+      - dart test packages/intentcall_mcp packages/intentcall_webmcp packages/intentcall_apple packages/intentcall_android packages/intentcall_platform packages/intentcall_codegen
+      - dart test packages/server_capability_kernel
+      - cd mcp_server_dart && dart test
+      - cd mcp_server_dart && dart test test/contract/
+      - dart analyze packages/intentcall_* mcp_toolkit mcp_server_dart
+      - bash tool/contracts/check_intentcall_skills_grep.sh
+      - flutter-mcp-toolkit migrate agent-entries --check flutter_test_app/lib
+    exit_criteria:
+      - MCPCallEntry removed; in-repo sites use AgentCallEntry
+      - CHANGELOG and migration_intentcall_phase6 doc published
+      - flutter-mcp-toolkit migrate agent-entries
+      - fmt_get_recent_logs server codegen pilot
+      - Registry-backed errors resource template
+      - Native + web platform emitters; CLI codegen sync
+      - Contract tests fmt + dynamic + resource
+      - Skills updated; grep gate for MCPCallEntry
+      - program.status complete_in_repo (phase 6 gate; product status is phase 8)
+    non_goals:
+      - flutter_gemma product wiring
+      - HarmonyOS NEXT
+      - Standalone monorepo extract (phase7)
+    platform_decisions:
+      emitters: option_1_own_intentcall_platform
+      web_bootstrap: C_js_and_dart_interop
+      web_priority: highest_within_6d
+      xiaomi_huawei: android_shortcuts_xml_only
+
+  - id: phase7
+    title: Standalone intentcall monorepo extract
+    status: in_progress
+    blocked_by: phase8
+    sub_phases:
+      - { id: 7.1, title: Workspace scaffold + package move, status: done, last_gate_at: 2026-05-27 }
+      - { id: 7.2, title: Consumer path deps (no mcp_flutter workspace), status: done, last_gate_at: 2026-05-27 }
+      - { id: 7.3, title: Pub.dev metadata + dry-run, status: done, last_gate_at: 2026-05-27 }
+      - { id: 7.4, title: Publish to pub.dev, status: pending, notes: run publish_all.sh --execute }
+      - { id: 7.5, title: Hosted consumer cutover, status: pending, blocked_by: 7.4 }
+      - { id: 7.6, title: Publish automation, status: done, last_gate_at: 2026-05-27 }
+      - { id: 7.7, title: Integration on hosted versions, status: pending, blocked_by: 7.5 }
+    plan: docs/superpowers/plans/2026-05-27-intentcall-phase7-extract.md
+    spec: docs/superpowers/specs/2026-05-25-intentcall-design.md
+    adr: decisions/0009-intentcall-extract.mdx
+    validation:
+      - cd intentcall && make test
+      - cd intentcall && make analyze
+      - make check-intentcall-integration
+      - make publish-intentcall-dry-run
+      - make dogfood-eval-static
+      - make dogfood-eval   # requires WS_URI from make web-showcase
+
+  - id: phase8
+    title: In-repo product completion
+    spec: docs/superpowers/specs/2026-05-26-intentcall-pre-extract-completion-design.md
+    status: done
+    last_gate: pass
+    last_gate_at: 2026-05-26
+    closure_report: docs/superpowers/closure/2026-05-26-intentcall-product-complete-in-repo.md
+    exit_criteria:
+      - init intentcall-platform with --check
+      - intentcall_platform plugin + app_links dogfood
+      - codegen sync --check in CI
+      - fmt_migrate_agent_entries shipped
+      - intentcall_testing Client DX pattern
+      - MCPCallEntry grep gate green
+      - program.status complete_in_repo_product

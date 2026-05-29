@@ -238,7 +238,7 @@
 			buildConfigurationList = 33CC10FB2044A3C60003C045 /* Build configuration list for PBXNativeTarget "Runner" */;
 			buildPhases = (
 				2CA556FD50FEC9BFEBE6C57C /* [CP] Check Pods Manifest.lock */,
-				A7F3E91B2C4D5E6F8A9B0C1D /* Agentkit Codegen */,
+				A7F3E91B2C4D5E6F8A9B0C1D /* intentcall Codegen */,
 				33CC10E92044A3C60003C045 /* Sources */,
 				33CC10EA2044A3C60003C045 /* Frameworks */,
 				33CC10EB2044A3C60003C045 /* Resources */,
@@ -409,7 +409,7 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		A7F3E91B2C4D5E6F8A9B0C1D /* Agentkit Codegen */ = {
+		A7F3E91B2C4D5E6F8A9B0C1D /* intentcall Codegen */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
@@ -417,12 +417,12 @@
 			);
 			inputPaths = (
 			);
-			name = "Agentkit Codegen";
+			name = "intentcall Codegen";
 			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# agentkit-platform: begin\nbash \"$SRCROOT/agentkit_codegen.sh\"\n# agentkit-platform: end\n";
+			shellScript = "# intentcall-platform: begin\nbash \"$SRCROOT/intentcall_codegen.sh\"\n# intentcall-platform: end\n";
 			showEnvVarsInLog = 0;
 		};
 		EA2D95A022F4447B10B1C5A9 /* [CP] Embed Pods Frameworks */ = {

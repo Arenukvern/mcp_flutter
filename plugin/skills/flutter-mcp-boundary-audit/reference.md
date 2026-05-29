@@ -12,17 +12,17 @@ Use this section when auditing **this** repository. Map the generic roles from S
 
 | Concern | Primary files |
 |---------|----------------|
-| Wire coercion (pre–Tier A, app paths) | `agentkit/packages/agentkit_schema/lib/src/schema_coercion.dart` |
-| Entry model | `agentkit/packages/agentkit_core/lib/src/authoring/agent_call_entry.dart` |
+| Wire coercion (pre–Tier A, app paths) | `intentcall/packages/intentcall_schema/lib/src/schema_coercion.dart` |
+| Entry model | `intentcall/packages/intentcall_core/lib/src/authoring/agent_call_entry.dart` |
 | Toolkit bridge / VM registration | `mcp_toolkit/lib/src/mcp_toolkit_extensions.dart`, `agent_entry_helpers.dart` |
 | App interaction tools | `mcp_toolkit/lib/src/toolkits/interaction_toolkit.dart` |
 | Shared interaction schemas | `packages/core/lib/src/tools/interaction_input_schemas.dart` |
 | Server fmt tools | `packages/server_capability_core/lib/src/tools/interaction_tools.dart`, `semantic_tools.dart`, `wait_tools.dart` |
 | Dynamic registry | `mcp_server_dart/lib/src/capabilities/dynamic_registry/` — grep `forwardToolCall` |
 | VM gateway | `mcp_server_dart` — `VmExtensionDynamicGateway` / `dynamic_gateway.dart` |
-| Migrator | `agentkit/packages/agentkit_core/lib/src/migrate_agent_entries.dart` |
-| WebMCP | `agentkit` web bootstrap, `flutter_test_app/web/agentkit_webmcp.generated.js` |
-| Platform contract doc | `flutter_test_app/AGENTKIT_PLATFORM.md` |
+| Migrator | `intentcall/packages/intentcall_core/lib/src/migrate_agent_entries.dart` |
+| WebMCP | `intentcall` web bootstrap, `flutter_test_app/web/intentcall_webmcp.generated.js` |
+| Platform contract doc | `flutter_test_app/INTENTCALL_PLATFORM.md` |
 | Registration doc | `mcp_server_dart/docs/SIMPLIFIED_DYNAMIC_REGISTRATION.md` |
 
 ### Gateway flow (mcp_flutter)
@@ -45,7 +45,7 @@ AgentCallEntry (authoring)
 
 ### VM wire coercion (repo state)
 
-VM service extensions deliver string-key maps on the wire. **`coerceArgumentsForSchema`** (`agentkit_schema`) runs **before** Tier A on app paths that see wire-shaped args:
+VM service extensions deliver string-key maps on the wire. **`coerceArgumentsForSchema`** (`intentcall_schema`) runs **before** Tier A on app paths that see wire-shaped args:
 
 | Path | Coerce before validate? |
 |------|-------------------------|
@@ -60,7 +60,7 @@ VM service extensions deliver string-key maps on the wire. **`coerceArgumentsFor
 | `AgentWireArgs` | Optional handler-side parsers for raw wire maps |
 | `_wireArgForServiceExtension` | Outbound handler args → VM ext strings |
 
-**Tier B contract:** `flutter_test_app/AGENTKIT_PLATFORM.md` — discovery stores per-tool `inputSchema`; `fmt_client_tool` / `forwardToolCall` and `VmExtensionDynamicGateway` coerce then validate inner args before the app sees them (same as app VM callback). MCP `fmt_*` catalog tools skip wire coerce (args are already JSON).
+**Tier B contract:** `flutter_test_app/INTENTCALL_PLATFORM.md` — discovery stores per-tool `inputSchema`; `fmt_client_tool` / `forwardToolCall` and `VmExtensionDynamicGateway` coerce then validate inner args before the app sees them (same as app VM callback). MCP `fmt_*` catalog tools skip wire coerce (args are already JSON).
 
 Re-audit host vs app paths only if coercion is added on **one** side without the other.
 
@@ -91,7 +91,7 @@ Re-audit host vs app paths only if coercion is added on **one** side without the
 
 **Parity tests:** `mcp_toolkit/test/interaction_toolkit_schema_parity_test.dart`, `packages/server_capability_core/test/tools/interaction_input_schemas_test.dart`.
 
-Document intentional deltas in `flutter_test_app/AGENTKIT_PLATFORM.md`.
+Document intentional deltas in `flutter_test_app/INTENTCALL_PLATFORM.md`.
 
 ### mcp_flutter red-flag grep
 
@@ -99,14 +99,14 @@ From repo root:
 
 ```bash
 rg "inputSchema:\s*const\s*\{\s*'type':\s*'object'" --glob "*.dart" -g '!test/fixtures/**' -g '!**/after_*.dart'
-rg "_emptyObjectSchema|additionalProperties:\s*true" --glob "*.dart" mcp_toolkit agentkit mcp_server_dart packages
-rg "\.execute\(" --glob "*.dart" agentkit mcp_toolkit mcp_server_dart packages | rg -v "validate|test/"
-rg "invokeDirect" --glob "*.dart" agentkit mcp_toolkit
+rg "_emptyObjectSchema|additionalProperties:\s*true" --glob "*.dart" mcp_toolkit intentcall mcp_server_dart packages
+rg "\.execute\(" --glob "*.dart" intentcall mcp_toolkit mcp_server_dart packages | rg -v "validate|test/"
+rg "invokeDirect" --glob "*.dart" intentcall mcp_toolkit
 rg "inputSchemaFromMcpTool|_emptyObjectSchema|placeholder" --glob "*.dart" mcp_server_dart packages/server_capability_core
-rg "inputSchema" --glob "*migrate*" agentkit mcp_server_dart
-rg "registerTool" --glob "*.dart" agentkit mcp_toolkit flutter_test_app/web
+rg "inputSchema" --glob "*migrate*" intentcall mcp_server_dart
+rg "registerTool" --glob "*.dart" intentcall mcp_toolkit flutter_test_app/web
 rg -i "permissive|additionalProperties:\s*true|no validation" --glob "*.md" mcp_server_dart docs flutter_test_app
-rg "jsonEncode|JSON\.encode" --glob "*agent_entry*" agentkit mcp_toolkit
+rg "jsonEncode|JSON\.encode" --glob "*agent_entry*" intentcall mcp_toolkit
 ```
 
 ### mcp_flutter E2E proof
@@ -151,7 +151,7 @@ From `docs/superpowers/tracker/mcp-boundary-hardening.yaml` — re-audit if touc
 
 `exec` accepts bare and `fmt_` aliases; MCP wire uses `fmt_` prefix. Dynamic app tools: listed by `fmt_list_client_tools_and_resources`, invoked via `fmt_client_tool` with **bare** `name` from listing.
 
-See `flutter_test_app/AGENTKIT_PLATFORM.md` § CLI exec vs MCP tool names.
+See `flutter_test_app/INTENTCALL_PLATFORM.md` § CLI exec vs MCP tool names.
 
 ### ADRs / evals (mcp_flutter)
 

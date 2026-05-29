@@ -13,7 +13,7 @@
 | **C1 Planner** | Architecture + task breakdown | `flutter_visual_reconstruct/plans/2026-05-26-phase-c-deconstruct.md` | Done |
 | **C2 Library** | Deconstruct sidecar | `lib/src/deconstruct/`, CLI `deconstruct`, IR YAML writer | Done — 26 tests |
 | **C3 Harness** | HS ops | `deconstruct`, `reconstruct` steps; linter; tests | Done — 57 tests |
-| **C4 Agentkit** | MCP tool + entry | `reconstruct.start` in mcp_flutter; dogfood eval hook | Done |
+| **C4 intentcall** | MCP tool + entry | `reconstruct.start` in mcp_flutter; dogfood eval hook | Done |
 | **C5 Validate** | E2E + fix | Tests green; HS smoke; eval script update | Done — no integration fixes required |
 
 ## Key design decisions
@@ -23,7 +23,7 @@
 | IR format | YAML matching `ir_v0.schema.yaml` |
 | Deconstruct v0 | MIT-only: tile color clustering + optional semantic hints file (no VLM) |
 | Output | `ir.yaml` + `layers/` preview PNGs optional |
-| `reconstruct.start` | Agentkit `AgentCallEntry` returning IR paths + harness script hint |
+| `reconstruct.start` | intentcall `AgentCallEntry` returning IR paths + harness script hint |
 | HS `deconstruct` | VM capture name → write IR under `--bundle-dir` |
 | HS `reconstruct` | Load IR → stub “render” = compare golden again (v0) |
 
@@ -51,5 +51,5 @@ cd mcp_flutter && bash tool/evals/run_dogfood_eval.sh --skip-runtime --run-decon
 ## Merge order
 
 1. C1 plan (non-blocking if prompts are complete)
-2. C2 library + C3 harness + C4 agentkit (parallel)
+2. C2 library + C3 harness + C4 intentcall (parallel)
 3. C5 validate and fix integration breaks — **complete**

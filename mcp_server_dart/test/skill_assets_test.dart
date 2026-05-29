@@ -38,7 +38,7 @@ void main() {
           'flutter-mcp-toolkit-control',
           'flutter-mcp-toolkit-debug',
           'flutter-mcp-toolkit-custom-tools',
-          'flutter-mcp-toolkit-agentkit-migration',
+          'flutter-mcp-toolkit-intentcall-migration',
           'flutter-mcp-toolkit-dogfood-iterations',
           'flutter-mcp-toolkit-maintain-web',
           'flutter-mcp-toolkit-maintain-macos',

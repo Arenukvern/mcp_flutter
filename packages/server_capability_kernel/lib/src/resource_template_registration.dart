@@ -1,2 +1,2 @@
-export 'package:agentkit_mcp/agentkit_mcp.dart'
+export 'package:intentcall_mcp/intentcall_mcp.dart'
     show ResourceHandler, ResourceTemplateRegistration;

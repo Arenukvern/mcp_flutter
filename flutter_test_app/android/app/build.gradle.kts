@@ -43,7 +43,7 @@ flutter {
     source = "../.."
 }
 
-// agentkit-platform: begin
+// intentcall-platform: begin
 tasks.named("preBuild").configure {
     doFirst {
         exec {
@@ -58,4 +58,4 @@ tasks.named("preBuild").configure {
         }
     }
 }
-// agentkit-platform: end
+// intentcall-platform: end

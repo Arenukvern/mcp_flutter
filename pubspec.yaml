@@ -9,25 +9,25 @@ workspace:
   - packages/server_capability_core
   - mcp_server_dart
 
-# Until Phase 7.4 publish + 7.5 cutover, force local agentkit for all consumers.
+# Until Phase 7.4 publish + 7.5 cutover, force local intentcall for all consumers.
 dependency_overrides:
-  agentkit_schema:
-    path: agentkit/packages/agentkit_schema
-  agentkit_core:
-    path: agentkit/packages/agentkit_core
-  agentkit_mcp:
-    path: agentkit/packages/agentkit_mcp
-  agentkit_codegen:
-    path: agentkit/packages/agentkit_codegen
-  agentkit_webmcp:
-    path: agentkit/packages/agentkit_webmcp
-  agentkit_gemma:
-    path: agentkit/packages/agentkit_gemma
-  agentkit_apple:
-    path: agentkit/packages/agentkit_apple
-  agentkit_android:
-    path: agentkit/packages/agentkit_android
-  agentkit_platform:
-    path: agentkit/packages/agentkit_platform
-  agentkit_testing:
-    path: agentkit/packages/agentkit_testing
+  intentcall_schema:
+    path: ../agentkit/packages/intentcall_schema
+  intentcall_core:
+    path: ../agentkit/packages/intentcall_core
+  intentcall_mcp:
+    path: ../agentkit/packages/intentcall_mcp
+  intentcall_codegen:
+    path: ../agentkit/packages/intentcall_codegen
+  intentcall_webmcp:
+    path: ../agentkit/packages/intentcall_webmcp
+  intentcall_gemma:
+    path: ../agentkit/packages/intentcall_gemma
+  intentcall_apple:
+    path: ../agentkit/packages/intentcall_apple
+  intentcall_android:
+    path: ../agentkit/packages/intentcall_android
+  intentcall_platform:
+    path: ../agentkit/packages/intentcall_platform
+  intentcall_testing:
+    path: ../agentkit/packages/intentcall_testing

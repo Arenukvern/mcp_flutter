@@ -23,10 +23,10 @@ final capability = FmtCapability(/* host services */);
 
 ## Adding tools with `@AgentTool` (Phase 6c pilot)
 
-Optional codegen via `agentkit_codegen` + `build_runner`. Hand-written
+Optional codegen via `intentcall_codegen` + `build_runner`. Hand-written
 `ToolRegistration` remains first-class.
 
-1. Add deps (`agentkit_codegen`, `agentkit_core`, `agentkit_mcp`) and
+1. Add deps (`intentcall_codegen`, `intentcall_core`, `intentcall_mcp`) and
    `build_runner` dev_dep (see `pubspec.yaml`).
 2. Annotate a top-level function returning `Future<AgentResult>`:
 

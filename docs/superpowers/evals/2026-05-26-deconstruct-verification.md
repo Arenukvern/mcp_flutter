@@ -1,4 +1,4 @@
-# Deconstruct / reconstruct.start verification — Phase C (agentkit)
+# Deconstruct / reconstruct.start verification — Phase C (intentcall)
 
 **Date:** 2026-05-26 (updated 2026-05-27)  
 **Scope:** `mcp_flutter` C4 — app-side `reconstruct.start` metadata; dogfood eval hooks.  

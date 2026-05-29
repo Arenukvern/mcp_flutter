@@ -2,11 +2,11 @@ import 'package:mcp_toolkit/mcp_toolkit.dart';
 
 /// Optional paths to sibling repos (visual harness). Override via --dart-define.
 const _visualReconstructRoot = String.fromEnvironment(
-  'AGENTKIT_VISUAL_RECONSTRUCT_ROOT',
+  'INTENTCALL_VISUAL_RECONSTRUCT_ROOT',
   defaultValue: '../../flutter_visual_reconstruct',
 );
 const _harnessRoot = String.fromEnvironment(
-  'AGENTKIT_HARNESS_ROOT',
+  'INTENTCALL_HARNESS_ROOT',
   defaultValue: '../../flutter_harness',
 );
 

@@ -1,7 +1,7 @@
 import 'dart:convert';
 
-import 'package:agentkit_core/agentkit_core.dart';
-import 'package:agentkit_schema/agentkit_schema.dart';
+import 'package:intentcall_core/intentcall_core.dart';
+import 'package:intentcall_schema/intentcall_schema.dart';
 import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 
 import 'mcp_models.dart';
@@ -91,7 +91,7 @@ InputSchema _resourceInputSchemaFromDefinition(
   return _deepCopyInputSchema(Map<Object?, Object?>.from(raw));
 }
 
-/// Copies [MCPToolDefinition.inputSchema] into agentkit [InputSchema] maps.
+/// Copies [MCPToolDefinition.inputSchema] into intentcall [InputSchema] maps.
 InputSchema inputSchemaFromMcpToolDefinition(
   final MCPToolDefinition definition,
 ) {

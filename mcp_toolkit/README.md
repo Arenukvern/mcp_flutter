@@ -24,7 +24,7 @@ For example, the default first-pass path is `bootstrapFlutter()`.
 
 All methods are available only in debug mode and wrapped in assert statements.
 
-Register custom surfaces with **`AgentCallEntry`** (re-exported from `agentkit_core`):
+Register custom surfaces with **`AgentCallEntry`** (re-exported from `intentcall_core`):
 
 ```dart
 await MCPToolkitBinding.instance.bootstrapFlutter(
@@ -188,7 +188,7 @@ Import `PlatformViewHints` and constants from `package:mcp_toolkit/mcp_toolkit.d
 
     **Migrating from `MCPCallEntry`:** use
     `flutter-mcp-toolkit migrate agent-entries` — see
-    [migration_agentkit_phase6.md](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/start_here/migration_agentkit_phase6.md).
+    [migration_intentcall_phase6.md](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/start_here/migration_intentcall_phase6.md).
 
 3.  **Optional: Register an App-Side Permission Delegate**:
     Keep `initializeFlutterToolkit()` unchanged and add the permission bridge only if the app owns the relevant permission flow.
@@ -249,7 +249,7 @@ Use resources for read-only state, tools for actions, and prefer lowercase under
 End-user docs for AI assistants live in the **`mcp_flutter`** repo:
 
 - Cursor / Codex plugin (`plugin/skills/`): start with **`flutter-mcp-toolkit-guide`**, then **`flutter-mcp-toolkit-custom-tools`** when registering **`AgentCallEntry`** tools or resources from app code.
-- **`flutter-mcp-toolkit-agentkit-migration`** when upgrading from removed `MCPCallEntry` APIs.
+- **`flutter-mcp-toolkit-intentcall-migration`** when upgrading from removed `MCPCallEntry` APIs.
 - Claude Code marketplace plugin (`plugin/skills/`): **`flutter-mcp`** for driving the app; **`flutter-mcp-toolkit-custom-tools`** for the same registration workflow.
 
 Run `make sync-skills` after editing plugin skills so `mcp_server_dart/lib/src/skill_assets.g.dart` stays in sync.

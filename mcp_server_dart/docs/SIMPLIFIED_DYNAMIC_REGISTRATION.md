@@ -1,12 +1,12 @@
 # Simplified Dynamic Registration
 
-> **Phase 6b:** `MCPCallEntry` was removed. Use `AgentCallEntry` + `MCPToolkitBinding.addEntries` / `mcpToolkitTool` (forwards `ObjectSchema` → `inputSchema`). See `docs/start_here/migration_agentkit_phase6.md`. Examples below that mention `MCPCallEntry` are historical. System
+> **Phase 6b:** `MCPCallEntry` was removed. Use `AgentCallEntry` + `MCPToolkitBinding.addEntries` / `mcpToolkitTool` (forwards `ObjectSchema` → `inputSchema`). See `docs/start_here/migration_intentcall_phase6.md`. Examples below that mention `MCPCallEntry` are historical. System
 
 > [!WARNING]
 > Historical/internal design note. Examples here may not match the current public API exactly.
 > For canonical usage, use root docs (`README.md`, `QUICK_START.md`, `CONFIGURATION.md`) and `docs/`.
 >
-> **Phase 6b:** `MCPCallEntry` was removed. Use `AgentCallEntry` + `MCPToolkitBinding.addEntries` / `mcpToolkitTool` (forwards `ObjectSchema` → `inputSchema`). See `docs/start_here/migration_agentkit_phase6.md`.
+> **Phase 6b:** `MCPCallEntry` was removed. Use `AgentCallEntry` + `MCPToolkitBinding.addEntries` / `mcpToolkitTool` (forwards `ObjectSchema` → `inputSchema`). See `docs/start_here/migration_intentcall_phase6.md`.
 
 ## Overview
 

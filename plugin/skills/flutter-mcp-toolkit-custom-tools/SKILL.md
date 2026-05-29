@@ -9,7 +9,7 @@ description: Use this skill when the agent exposes app-specific surfaces by regi
 
 Use this when bundled MCP tools (screenshot, semantic snapshot, tap, …) are not enough and you need **app-specific** read surfaces or actions — e.g. cart totals, feature flags, curated debug snapshots of internal state. Entries are registered **in the Flutter process** and exposed to the agent through the **dynamic registry**.
 
-> **Migration:** The legacy call-entry type was removed in agentkit Phase 6b. Use **`AgentCallEntry`** or **`mcpToolkitTool` / `mcpToolkitResource`**. See **`flutter-mcp-toolkit-agentkit-migration`**.
+> **Migration:** The legacy call-entry type was removed in intentcall Phase 6b. Use **`AgentCallEntry`** or **`mcpToolkitTool` / `mcpToolkitResource`**. See **`flutter-mcp-toolkit-intentcall-migration`**.
 
 ## Pick the right primitive
 
@@ -170,6 +170,6 @@ If something should appear but does not: confirm **`addEntries`** completed (**`
 
 ## Related
 
-- **`flutter-mcp-toolkit-agentkit-migration`** — CLI migrator, breaking upgrade
+- **`flutter-mcp-toolkit-intentcall-migration`** — CLI migrator, breaking upgrade
 - **`flutter-mcp-toolkit-guide`** → inspect / control / debug skills
 - Repository **`ARCHITECTURE.md`** → “Dynamic Registry Architecture”

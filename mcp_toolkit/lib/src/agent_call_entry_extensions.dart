@@ -1,4 +1,4 @@
-import 'package:agentkit_core/agentkit_core.dart';
+import 'package:intentcall_core/intentcall_core.dart';
 
 /// MCP toolkit helpers for [AgentCallEntry] service-extension registration.
 extension AgentCallEntryMcpToolkit on AgentCallEntry {

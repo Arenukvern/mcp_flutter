@@ -53,6 +53,6 @@ void main() {
 
 Save your changes and hot reload the app. Now, you can ask your AI assistant to run the `hello` tool. It should respond with "Hello from a dynamic tool!".
 
-### Server-side registry (agentkit)
+### Server-side registry (intentcall)
 
 On the MCP server, dynamic tools are stored as `RegisteredAgentIntent` entries in `DynamicRegistry` (not raw `dart_mcp.Tool` handlers). MCP publish still uses the tool schema for listing; invocation routes through `AgentRegistry.invoke` and VM extension forwarding.

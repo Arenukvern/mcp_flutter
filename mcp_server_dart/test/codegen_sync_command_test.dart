@@ -37,7 +37,7 @@ void main() {
       projectRoot: temp.path,
     );
     expect(exitCode, 0);
-    expect(File('${webDir.path}/agentkit_webmcp.generated.js').existsSync(), isTrue);
+    expect(File('${webDir.path}/intentcall_webmcp.generated.js').existsSync(), isTrue);
 
     final checkExit = await runCodegenSync(
       platform: 'web',
@@ -78,7 +78,7 @@ void main() {
     expect(exitCode, 0);
     expect(
       File(
-        '${temp.path}/android/app/src/main/res/xml/agentkit_shortcuts.xml',
+        '${temp.path}/android/app/src/main/res/xml/intentcall_shortcuts.xml',
       ).existsSync(),
       isTrue,
     );

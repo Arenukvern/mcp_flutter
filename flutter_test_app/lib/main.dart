@@ -2,7 +2,7 @@
 
 import 'dart:async';
 
-import 'package:agentkit_platform/agentkit_platform_flutter.dart';
+import 'package:intentcall_platform/intentcall_platform_flutter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
@@ -26,9 +26,9 @@ Future<void> main({final bool enableDelayedMcpRegistration = true}) async {
   await _registerInitialMCPTools();
   if (!kIsWeb) {
     unawaited(
-      AgentkitInvokeLinkListener(
+      intentcallInvokeLinkListener(
         onQualifiedName: (final name) {
-          debugPrint('agentkit invoke: $name');
+          debugPrint('intentcall invoke: $name');
         },
       ).start(),
     );

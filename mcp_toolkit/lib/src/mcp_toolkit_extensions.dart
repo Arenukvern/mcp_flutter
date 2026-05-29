@@ -2,9 +2,9 @@
 
 import 'dart:developer' as developer;
 
-import 'package:agentkit_core/agentkit_core.dart';
-import 'package:agentkit_platform/agentkit_platform.dart';
-import 'package:agentkit_schema/agentkit_schema.dart';
+import 'package:intentcall_core/intentcall_core.dart';
+import 'package:intentcall_platform/intentcall_platform.dart';
+import 'package:intentcall_schema/intentcall_schema.dart';
 import 'package:flutter/foundation.dart';
 
 import 'agent_call_entry_extensions.dart';

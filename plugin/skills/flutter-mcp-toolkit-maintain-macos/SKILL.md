@@ -1,17 +1,17 @@
 ---
 name: flutter-mcp-toolkit-maintain-macos
-description: Maintains flutter_test_app macOS showcase, native agentkit hooks (codegen, app_links invoke), and VM MCP validation. Use when editing macOS Runner, agentkit_codegen.sh, macOS dogfood, Screen Recording capture, or comparing macOS parity to web WebMCP.
+description: Maintains flutter_test_app macOS showcase, native intentcall hooks (codegen, app_links invoke), and VM MCP validation. Use when editing macOS Runner, intentcall_codegen.sh, macOS dogfood, Screen Recording capture, or comparing macOS parity to web WebMCP.
 ---
 
 <!-- @FMT_MODE_PRELUDE -->
 
-# Maintain macOS (showcase + native agentkit)
+# Maintain macOS (showcase + native intentcall)
 
-Dogfood app: `flutter_test_app`. Platform doc: `flutter_test_app/AGENTKIT_PLATFORM.md`.
+Dogfood app: `flutter_test_app`. Platform doc: `flutter_test_app/INTENTCALL_PLATFORM.md`.
 
 ## WebMCP on macOS
 
-**`navigator.modelContext` is web-only.** macOS dogfood proves **VM extensions**, **dynamic registry**, **native invoke** (`agentkit://` via `app_links`), and **visual capture** (Screen Recording on host).
+**`navigator.modelContext` is web-only.** macOS dogfood proves **VM extensions**, **dynamic registry**, **native invoke** (`intentcall://` via `app_links`), and **visual capture** (Screen Recording on host).
 
 For WebMCP parity scoring, run web iteration separately (`flutter-mcp-toolkit-maintain-web`).
 
@@ -37,15 +37,15 @@ dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart codegen sync \
   --platform web,android,ios,macos,linux,windows \
   --project-dir flutter_test_app
 
-dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart init agentkit-platform \
+dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart init intentcall-platform \
   --project-dir flutter_test_app --check
 ```
 
 | Target | Role |
 |--------|------|
-| `macos/agentkit_codegen.sh` | Xcode Run Script → `codegen sync --platform macos` |
+| `macos/intentcall_codegen.sh` | Xcode Run Script → `codegen sync --platform macos` |
 | `macos/Runner.xcodeproj` | Run Script phase (see script comment if manual) |
-| `lib/main.dart` | `AgentkitInvokeLinkListener` for `agentkit://invoke/…` |
+| `lib/main.dart` | `intentcallInvokeLinkListener` for `intentcall://invoke/…` |
 
 ## Runtime validate
 

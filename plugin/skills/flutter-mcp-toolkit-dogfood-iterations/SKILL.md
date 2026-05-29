@@ -1,6 +1,6 @@
 ---
 name: flutter-mcp-toolkit-dogfood-iterations
-description: Runs and records flutter_test_app dogfood iterations (tool_quality_rubric, run_dogfood_eval.sh, dogfood_web_eval.yaml). Use when scoring MCP/agentkit quality, appending iteration N, comparing regressions, or CI static/weekly eval gates.
+description: Runs and records flutter_test_app dogfood iterations (tool_quality_rubric, run_dogfood_eval.sh, dogfood_web_eval.yaml). Use when scoring MCP/intentcall quality, appending iteration N, comparing regressions, or CI static/weekly eval gates.
 ---
 
 <!-- @FMT_MODE_PRELUDE -->
@@ -23,7 +23,7 @@ Overview: `docs/superpowers/evals/README.md`
 | capture_quality | 10 |
 | visual_fidelity | 10 |
 | webmcp_parity | 10 |
-| agentkit_authoring | 10 |
+| intentcall_authoring | 10 |
 | docs_truth | 10 |
 
 ## Iteration workflow
@@ -97,7 +97,7 @@ dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart \
 
 ## CI (branch)
 
-`.github/workflows/agentkit_eval.yml` — PR: `dogfood-eval-static`; weekly/main: agentkit package tests + static.
+`.github/workflows/intentcall_eval.yml` — PR: `dogfood-eval-static`; weekly/main: intentcall package tests + static.
 
 Full Chrome runtime dogfood stays **local** until headless WebMCP is cost-effective.
 

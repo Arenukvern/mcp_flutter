@@ -1,4 +1,4 @@
-import 'package:agentkit_core/agentkit_core.dart';
+import 'package:intentcall_core/intentcall_core.dart';
 import 'package:flutter/foundation.dart';
 
 import 'mcp_toolkit_binding.dart';

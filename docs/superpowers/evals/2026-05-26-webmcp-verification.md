@@ -11,11 +11,11 @@ Verify **true WebMCP** (`navigator.modelContext.registerTool` / W3C CG draft) fo
 
 | Path | Role |
 |------|------|
-| `flutter_test_app/web/agentkit_webmcp.generated.js` | JS bootstrap from manifest; feature-detect + `registerTool` |
+| `flutter_test_app/web/intentcall_webmcp.generated.js` | JS bootstrap from manifest; feature-detect + `registerTool` |
 | `flutter_test_app/web/index.html` | Loads generated JS before Flutter |
-| `agentkit/packages/agentkit_platform/.../agent_web_mcp_bootstrap_web.dart` | Dart `js_interop` registration after `addEntries` (debug web) |
+| `intentcall/packages/intentcall_platform/.../agent_web_mcp_bootstrap_web.dart` | Dart `js_interop` registration after `addEntries` (debug web) |
 | `mcp_toolkit/lib/src/mcp_toolkit_extensions.dart` | Calls `AgentWebMcpBootstrap.registerFromEntries` on web |
-| `agentkit/packages/agentkit_webmcp/` | `WebMcpPublishAdapter` (registry hot-sync) — **not wired in flutter_test_app** |
+| `intentcall/packages/intentcall_webmcp/` | `WebMcpPublishAdapter` (registry hot-sync) — **not wired in flutter_test_app** |
 
 ### Detection
 
@@ -43,9 +43,9 @@ Both paths **no-op silently** when API absent.
 ## Test results
 
 ```bash
-cd agentkit && dart test packages/agentkit_webmcp \
-  packages/agentkit_platform/test/agent_web_mcp_bootstrap_test.dart \
-  packages/agentkit_platform/test/web_emitters_test.dart
+cd intentcall && dart test packages/intentcall_webmcp \
+  packages/intentcall_platform/test/agent_web_mcp_bootstrap_test.dart \
+  packages/intentcall_platform/test/web_emitters_test.dart
 # → 9/9 passed (2026-05-26)
 ```
 
@@ -56,7 +56,7 @@ No automated browser test with real `navigator.modelContext`.
 | Check | Result |
 |-------|--------|
 | App serving | yes |
-| `agentkit_webmcp.generated.js` served | yes |
+| `intentcall_webmcp.generated.js` served | yes |
 | `POST /agent/invoke?name=app_demo_ping` | **404** (expected per ADR 0008) |
 | CDP: `'modelContext' in navigator` | **false** |
 | VM extensions + dynamic registry | **pass** (dogfood evals 1–5) |
@@ -103,7 +103,7 @@ Generated JS and Dart `AgentWebMcpBootstrap` both call `registerTool`. Hot resta
 2. PWA `protocol_handlers` / JS `fetch` suggest invoke works — **404** without Flutter route.
 3. `WebMcpPublishAdapter` untested in browser for this app.
 4. Tool set mismatch: manifest JS registers `app_demo_ping` only; runtime tools need Dart bootstrap.
-5. No repo doc for Chrome flag until this file — add to `AGENTKIT_PLATFORM.md` when flag steps confirmed.
+5. No repo doc for Chrome flag until this file — add to `INTENTCALL_PLATFORM.md` when flag steps confirmed.
 
 ## Conclusion
 

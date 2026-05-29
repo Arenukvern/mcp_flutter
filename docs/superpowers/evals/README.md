@@ -1,12 +1,12 @@
-# MCP / Agentkit tool quality evals
+# MCP / intentcall tool quality evals
 
-Iterative dogfood framework for scoring **flutter-mcp-toolkit** and **agentkit** integration on `flutter_test_app`. Each run produces comparable dimension scores, tracks `recurring_errors` / `fix_recommendations`, and appends to the showcase tracker when requested.
+Iterative dogfood framework for scoring **flutter-mcp-toolkit** and **intentcall** integration on `flutter_test_app`. Each run produces comparable dimension scores, tracks `recurring_errors` / `fix_recommendations`, and appends to the showcase tracker when requested.
 
 ## Philosophy
 
-1. **Evidence before scores** — Runtime checks (`validate-runtime`) and static gates (`codegen sync --check`, `init agentkit-platform --check`, `migrate agent-entries --check`) must run fresh; stale YAML is not a gate.
+1. **Evidence before scores** — Runtime checks (`validate-runtime`) and static gates (`codegen sync --check`, `init intentcall-platform --check`, `migrate agent-entries --check`) must run fresh; stale YAML is not a gate.
 2. **Comparable iterations** — Same rubric (`tool_quality_rubric.yaml`), same battery script, same app (`flutter_test_app`). Iteration *N* should be diffable against *N−1*.
-3. **Dimensions, not vibes** — Eight weighted dimensions (connectivity, schema validity, handler correctness, capture quality, visual fidelity, WebMCP parity, agentkit authoring, docs truth). Pass at **≥80/100**; warn below **90** when shipping.
+3. **Dimensions, not vibes** — Eight weighted dimensions (connectivity, schema validity, handler correctness, capture quality, visual fidelity, WebMCP parity, intentcall authoring, docs truth). Pass at **≥80/100**; warn below **90** when shipping.
 4. **Recurring patterns** — Warnings that appear in ≥2 iterations promote to `recurring_warnings`; errors to `recurring_errors`. Agents propose `fix_recommendations`; humans accept or defer.
 5. **Legacy compatibility** — Early dogfood iterations (1–4) used flat weights (`validate_runtime_ok`, `extensions_ok`, …). The rubric maps those fields into dimensions so historical runs stay readable.
 
@@ -20,7 +20,7 @@ Iterative dogfood framework for scoring **flutter-mcp-toolkit** and **agentkit**
 | capture_quality | 10 | 8 |
 | visual_fidelity | 10 | 8 |
 | webmcp_parity | 10 | 8 |
-| agentkit_authoring | 10 | 8 |
+| intentcall_authoring | 10 | 8 |
 | docs_truth | 10 | 8 |
 
 Machine-readable source: [`tool_quality_rubric.yaml`](./tool_quality_rubric.yaml).
@@ -33,7 +33,7 @@ Archived spec gap matrix (iter 1–11): [archive/2026-05-26-dogfood-spec-gap-mat
 
 ## Workspace layout (Phase 7)
 
-Agentkit libraries live under **`agentkit/packages/`** (standalone workspace). Dogfood and CLI commands run from **mcp_flutter** repo root; `run_dogfood_eval.sh` runs `dart test packages/agentkit_testing` inside `agentkit/`.
+intentcall libraries live under **`intentcall/packages/`** (standalone workspace). Dogfood and CLI commands run from **mcp_flutter** repo root; `run_dogfood_eval.sh` runs `dart test packages/intentcall_testing` inside `intentcall/`.
 
 ## How to run
 
@@ -81,11 +81,11 @@ bash tool/evals/run_dogfood_eval.sh --merge
 # Snapshot only (no tracker merge)
 bash tool/evals/run_dogfood_eval.sh --ws-uri "$WS_URI"
 
-# Include macOS validate-runtime (second WS_URI) + agentkit_testing
+# Include macOS validate-runtime (second WS_URI) + intentcall_testing
 bash tool/evals/run_dogfood_eval.sh \
   --ws-uri "$WS_URI" \
   --macos --macos-ws-uri "$MACOS_WS" \
-  --run-agentkit-tests \
+  --run-intentcall-tests \
   --merge
 
 # Static gates only (no running app)
@@ -122,10 +122,10 @@ make web-showcase          # Chrome + WebMCP flags
 
 | Trigger | Job | Command |
 |---------|-----|---------|
-| PR + push | `agentkit-static` | `make dogfood-eval-static` |
-| Weekly + `main` | `agentkit-weekly` | agentkit package tests + static battery |
+| PR + push | `intentcall-static` | `make dogfood-eval-static` |
+| Weekly + `main` | `intentcall-weekly` | intentcall package tests + static battery |
 
-Workflow: [`.github/workflows/agentkit_eval.yml`](../../.github/workflows/agentkit_eval.yml). Full Chrome runtime dogfood stays local until a headless WebMCP runner is cost-effective.
+Workflow: [`.github/workflows/intentcall_eval.yml`](../../.github/workflows/intentcall_eval.yml). Full Chrome runtime dogfood stays local until a headless WebMCP runner is cost-effective.
 
 Agent skills (run `make sync-skills` after edits):
 
@@ -188,11 +188,11 @@ dimension_scores:
   capture_quality: 10
   visual_fidelity: 10
   webmcp_parity: 10
-  agentkit_authoring: 10
+  intentcall_authoring: 10
   docs_truth: 10
 checks:
   codegen_sync: { exit: 0, ok: true }
-  init_agentkit_platform: { exit: 0, ok: true }
+  init_intentcall_platform: { exit: 0, ok: true }
   migrate_agent_entries: { exit: 0, ok: true }
   validate_runtime: { exit: 0, ok: true, artifact: .showcase/eval_runs/.../validate-runtime.json }
 errors: []
@@ -204,5 +204,5 @@ fix_recommendations: []
 ## Related docs
 
 - [flutter-mcp-cli-runtime-validation](https://github.com/Arenukvern/mcp_flutter/blob/main/plugin/skills/flutter-mcp-cli-runtime-validation/SKILL.md)
-- [migration_agentkit_phase6.md](../../start_here/migration_agentkit_phase6.md)
-- [flutter_test_app/AGENTKIT_PLATFORM.md](../../flutter_test_app/AGENTKIT_PLATFORM.md)
+- [migration_intentcall_phase6.md](../../start_here/migration_intentcall_phase6.md)
+- [flutter_test_app/INTENTCALL_PLATFORM.md](../../flutter_test_app/INTENTCALL_PLATFORM.md)

@@ -1,7 +1,7 @@
 // packages/server_capability_core/test/_test_helpers.dart
 import 'dart:convert';
 
-import 'package:agentkit_schema/agentkit_schema.dart';
+import 'package:intentcall_schema/intentcall_schema.dart';
 import 'package:flutter_mcp_toolkit_capability_kernel/flutter_mcp_toolkit_capability_kernel.dart';
 
 /// Decodes success [AgentResult.data] or error envelope fields for assertions.

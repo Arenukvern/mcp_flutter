@@ -53,7 +53,7 @@ ${configuration.dynamicRegistrySupported ? '''
 
 For detailed dynamic/tool-creation flows, rely on skill docs to avoid prompt duplication:
 - flutter-mcp-toolkit-custom-tools (register AgentCallEntry / addMcpTool in the app)
-- flutter-mcp-toolkit-agentkit-migration (MCPCallEntry → AgentCallEntry CLI migrate)
+- flutter-mcp-toolkit-intentcall-migration (MCPCallEntry → AgentCallEntry CLI migrate)
 - flutter-mcp-toolkit-debug
 - flutter-mcp-toolkit-control
 ''' : ''}

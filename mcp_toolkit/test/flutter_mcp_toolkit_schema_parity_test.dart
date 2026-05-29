@@ -7,7 +7,7 @@ import 'package:mcp_toolkit/mcp_toolkit.dart';
 ///
 /// VM extension / `fmt_client_tool` names (`app_errors`, `view_details`,
 /// `view_screenshots`) differ from CLI `exec` / `fmt_*` names (`get_*`) — see
-/// `flutter_test_app/AGENTKIT_PLATFORM.md`.
+/// `flutter_test_app/INTENTCALL_PLATFORM.md`.
 void main() {
   const schemaEquality = DeepCollectionEquality();
 

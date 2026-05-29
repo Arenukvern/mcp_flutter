@@ -1,7 +1,7 @@
 // packages/server_capability_core/test/tools/codegen_get_recent_logs_test.dart
-import 'package:agentkit_core/agentkit_core.dart';
-import 'package:agentkit_mcp/agentkit_mcp.dart';
-import 'package:agentkit_schema/agentkit_schema.dart';
+import 'package:intentcall_core/intentcall_core.dart';
+import 'package:intentcall_mcp/intentcall_mcp.dart';
+import 'package:intentcall_schema/intentcall_schema.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter_mcp_toolkit_capability_core/src/tools/codegen/get_recent_logs_tool.dart';
 import 'package:flutter_mcp_toolkit_capability_core/src/tools/log_tools.dart';

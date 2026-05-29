@@ -1,13 +1,13 @@
 ---
 name: flutter-mcp-toolkit-maintain-web
-description: Maintains flutter_test_app and agentkit web targets (Chrome, web codegen, WebMCP bootstrap, web-showcase, webmcp verify). Use when editing web/index.html, agent_manifest.json, agentkit_webmcp.generated.js, web platform sync, Chrome dogfood, or navigator.modelContext.
+description: Maintains flutter_test_app and intentcall web targets (Chrome, web codegen, WebMCP bootstrap, web-showcase, webmcp verify). Use when editing web/index.html, agent_manifest.json, intentcall_webmcp.generated.js, web platform sync, Chrome dogfood, or navigator.modelContext.
 ---
 
 <!-- @FMT_MODE_PRELUDE -->
 
 # Maintain Web (Chrome + WebMCP)
 
-Dogfood app: `flutter_test_app`. Canonical platform doc: `flutter_test_app/AGENTKIT_PLATFORM.md`.
+Dogfood app: `flutter_test_app`. Canonical platform doc: `flutter_test_app/INTENTCALL_PLATFORM.md`.
 
 ## WebMCP vs VM MCP
 
@@ -42,15 +42,15 @@ dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart codegen sync \
   --platform web,android,ios,macos,linux,windows \
   --project-dir flutter_test_app
 
-dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart init agentkit-platform \
+dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart init intentcall-platform \
   --project-dir flutter_test_app --check
 ```
 
 | Artifact | Source |
 |----------|--------|
-| `web/agentkit_webmcp.generated.js` | `codegen sync` from `web/agent_manifest.json` |
-| `web/index.html` | `init agentkit-platform` script tag |
-| Dart bootstrap | `registerAgentWebMcpFromEntries` in `mcp_toolkit_extensions.dart` (debug web, after `addEntries`; `agentkit_platform`) |
+| `web/intentcall_webmcp.generated.js` | `codegen sync` from `web/agent_manifest.json` |
+| `web/index.html` | `init intentcall-platform` script tag |
+| Dart bootstrap | `registerAgentWebMcpFromEntries` in `mcp_toolkit_extensions.dart` (debug web, after `addEntries`; `intentcall_platform`) |
 
 ## Runtime validate
 

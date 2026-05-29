@@ -43,7 +43,7 @@
 - [x] IR v0 schema draft in `flutter_harness` — [specs/ir_v0.schema.yaml](https://github.com/Arenukvern/flutter_harness/blob/main/specs/ir_v0.schema.yaml)
 - [x] Deconstruct sidecar (MIT tile heuristics) — `flutter_visual_reconstruct` C2 (`deconstruct` CLI, `dart test` green)
 - [x] HS `deconstruct` / `reconstruct` ops + `deconstruct_smoke.hs.yaml` offline — `flutter_harness` C3
-- [x] agentkit: `dogfood_reconstruct_start` (`reconstruct.start` metadata, eval static hook) — [verification](../evals/2026-05-26-deconstruct-verification.md)
+- [x] intentcall: `dogfood_reconstruct_start` (`reconstruct.start` metadata, eval static hook) — [verification](../evals/2026-05-26-deconstruct-verification.md)
 - [x] C5 offline integration — `check_hs_fixtures.sh`, `run_dogfood_eval.sh --skip-runtime --run-deconstruct-smoke`
 - [ ] checkpoint protocol (HS + human `.approved`) — deferred past C4 metadata
 

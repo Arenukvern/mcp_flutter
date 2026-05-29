@@ -10,7 +10,7 @@ import 'package:flutter_mcp_toolkit_server/flutter_mcp_core.dart';
 import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/platform_view_hints.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/codegen_init_command.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/codegen_sync_command.dart';
-import 'package:flutter_mcp_toolkit_server/src/cli/init_agentkit_platform_command.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/init_intentcall_platform_command.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/init_command.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/init_mode.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/init_target.dart';
@@ -2104,11 +2104,11 @@ final _argParser = ArgParser(allowTrailingOptions: false)
       )
       ..addOption(
         'project-dir',
-        help: 'Flutter project root (for init agentkit-platform)',
+        help: 'Flutter project root (for init intentcall-platform)',
       )
       ..addFlag(
         _check,
-        help: 'Verify platform hooks without writing (agentkit-platform)',
+        help: 'Verify platform hooks without writing (intentcall-platform)',
       ),
   )
   ..addCommand(
@@ -2378,14 +2378,14 @@ Optional skill installation copies mcp_server_dart/skills/$_runtimeValidationSki
 String _usageInit() => '''
 Usage:
   flutter-mcp-toolkit init <claude-code|cursor|codex|cline|agents-skills|all> [--mode mcp|cli|auto] [--scope project|user]
-  flutter-mcp-toolkit init agentkit-platform [--project-dir <path>] [--check]
+  flutter-mcp-toolkit init intentcall-platform [--project-dir <path>] [--check]
 
 Examples:
   flutter-mcp-toolkit init claude-code
-  flutter-mcp-toolkit init agentkit-platform --project-dir ../my_app
-  flutter-mcp-toolkit init agentkit-platform --check
+  flutter-mcp-toolkit init intentcall-platform --project-dir ../my_app
+  flutter-mcp-toolkit init intentcall-platform --check
 
-Installs flutter-mcp-toolkit skills (agent targets) or one-time platform hooks (agentkit-platform).
+Installs flutter-mcp-toolkit skills (agent targets) or one-time platform hooks (intentcall-platform).
 ''';
 
 String _usageCodegenInit() => '''
@@ -2401,12 +2401,12 @@ Adds flutter_mcp_toolkit to a Flutter app and emits boilerplate for main.dart.
 Future<int> _runInitSubcommand(final ArgResults command) async {
   if (command.rest.isEmpty) {
     io.stderr.writeln(
-      'Usage: flutter-mcp-toolkit init <claude-code|cursor|codex|cline|agents-skills|all|agentkit-platform>',
+      'Usage: flutter-mcp-toolkit init <claude-code|cursor|codex|cline|agents-skills|all|intentcall-platform>',
     );
     return 64;
   }
-  if (command.rest.first == 'agentkit-platform') {
-    return runInitAgentkitPlatform(
+  if (command.rest.first == 'intentcall-platform') {
+    return runInitintentcallPlatform(
       projectRoot: command.option('project-dir') ?? io.Directory.current.path,
       checkOnly: command.flag(_check),
     );
@@ -2515,7 +2515,7 @@ Examples:
   flutter-mcp-toolkit migrate mcp-call-entry --write --namespace my_app lib/
 
 Migrates legacy MCPCallEntry tool/resource factories to AgentCallEntry (Phase 6b hard cut shipped).
-See docs/start_here/migration_agentkit_phase6.md for limitations.
+See docs/start_here/migration_intentcall_phase6.md for limitations.
 ''';
 
 Future<int> _runWebmcpSubcommand(final ArgResults command) async {

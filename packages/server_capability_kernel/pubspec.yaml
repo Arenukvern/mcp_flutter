@@ -15,10 +15,10 @@ environment:
 resolution: workspace
 
 dependencies:
-  agentkit_mcp:
-    path: ../../agentkit/packages/agentkit_mcp
-  agentkit_schema:
-    path: ../../agentkit/packages/agentkit_schema
+  intentcall_mcp:
+    path: ../../../agentkit/packages/intentcall_mcp
+  intentcall_schema:
+    path: ../../../agentkit/packages/intentcall_schema
   flutter_mcp_toolkit_core:
   meta: ^1.17.0
 

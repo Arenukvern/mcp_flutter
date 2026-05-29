@@ -100,17 +100,17 @@ To check whether embeddings exist, inspect `.gitnexus/meta.json` — the `stats.
 
 <!-- gitnexus:end -->
 
-## Agentkit program (spec-driven)
+## intentcall program (spec-driven)
 
-When implementing the **agentkit** migration, use the self-closing loop — do not mark phases complete without the Closer gate:
+When implementing the **intentcall** migration, use the self-closing loop — do not mark phases complete without the Closer gate:
 
 | Doc | Role |
 |-----|------|
-| `docs/superpowers/specs/2026-05-25-agentkit-design.md` | Source of truth |
-| `docs/superpowers/plans/2026-05-25-agentkit-rollout.md` | Program overview |
-| `docs/superpowers/tracker/agentkit-rollout.yaml` | Active phase + status |
-| `docs/superpowers/agentkit-self-closing-loop.md` | Implementer + **Closer** protocol |
-| `docs/superpowers/plans/2026-05-27-agentkit-phase7-extract.md` | Active extract work (tracker `active_work_plan`) |
+| `docs/superpowers/specs/2026-05-25-intentcall-design.md` | Source of truth |
+| `docs/superpowers/plans/2026-05-25-intentcall-rollout.md` | Program overview |
+| `docs/superpowers/tracker/intentcall-rollout.yaml` | Active phase + status |
+| `docs/superpowers/intentcall-self-closing-loop.md` | Implementer + **Closer** protocol |
+| `docs/superpowers/plans/2026-05-27-intentcall-phase7-extract.md` | Active extract work (tracker `active_work_plan`) |
 | `docs/superpowers/plans/2026-05-26-visual-reconstruct-next.md` | Visual harness maintenance (checkpoint + optional runtime E2E) |
 | `docs/superpowers/WHATS_NEXT.md` | Single-page forward index |
 | `docs/superpowers/plans/archive/` | Historical phase plans — do not execute |

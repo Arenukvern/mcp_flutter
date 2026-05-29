@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Standard dogfood battery for MCP/agentkit tool quality.
+# Standard dogfood battery for MCP/intentcall tool quality.
 # Rubric: docs/superpowers/evals/tool_quality_rubric.yaml
 # Overview: docs/superpowers/evals/README.md
 set -euo pipefail
@@ -18,7 +18,7 @@ vm_host_port=8181
 ws_uri="${WS_URI:-}"
 macos_ws_uri="${MACOS_WS_URI:-}"
 run_macos=false
-run_agentkit_tests=false
+run_intentcall_tests=false
 run_deconstruct_smoke=false
 skip_runtime=false
 skip_visual=false
@@ -38,14 +38,14 @@ usage() {
   cat <<'EOF'
 Usage: tool/evals/run_dogfood_eval.sh [options]
 
-Runs the standard agentkit/MCP dogfood battery and writes scored YAML.
+Runs the standard intentcall/MCP dogfood battery and writes scored YAML.
 
 Options:
   --ws-uri URI              Web (chrome) VM websocket (or set WS_URI)
   --macos                   Also run validate-runtime for macOS showcase
   --macos-ws-uri URI        macOS VM websocket (or MACOS_WS_URI)
   --merge                   Merge iteration into .showcase/dogfood_web_eval.yaml (yq or dart)
-  --run-agentkit-tests      dart test packages/agentkit_testing
+  --run-intentcall-tests      dart test packages/intentcall_testing
   --run-deconstruct-smoke   Offline HS deconstruct_smoke.hs.yaml (needs fixture)
   --skip-runtime            Static checks only (no validate-runtime)
   --skip-visual             Skip HS warm-path visual_fidelity compare
@@ -67,7 +67,7 @@ while [[ $# -gt 0 ]]; do
     --macos-ws-uri) macos_ws_uri="$2"; shift 2 ;;
     --macos) run_macos=true; shift ;;
     --merge) merge_tracker=true; shift ;;
-    --run-agentkit-tests) run_agentkit_tests=true; shift ;;
+    --run-intentcall-tests) run_intentcall_tests=true; shift ;;
     --run-deconstruct-smoke) run_deconstruct_smoke=true; shift ;;
     --skip-runtime) skip_runtime=true; shift ;;
     --skip-visual) skip_visual=true; shift ;;
@@ -89,7 +89,7 @@ log() { printf '[dogfood-eval] %s\n' "$*"; }
 codegen_exit=0
 init_exit=0
 migrate_exit=0
-agentkit_test_exit=0
+intentcall_test_exit=0
 deconstruct_static_exit=0
 deconstruct_harness_exit=-1
 deconstruct_cli_exit=-1
@@ -103,11 +103,11 @@ set +e
 codegen_exit=$?
 set -e
 
-log "init agentkit-platform --check"
+log "init intentcall-platform --check"
 set +e
-"${toolkit[@]}" init agentkit-platform \
+"${toolkit[@]}" init intentcall-platform \
   --project-dir "${app_dir}" \
-  --check >"${run_dir}/init_agentkit_platform.log" 2>&1
+  --check >"${run_dir}/init_intentcall_platform.log" 2>&1
 init_exit=$?
 set -e
 
@@ -118,11 +118,19 @@ set +e
 migrate_exit=$?
 set -e
 
-if [[ "${run_agentkit_tests}" == true ]]; then
-  log "dart test packages/agentkit_testing"
+if [[ "${run_intentcall_tests}" == true ]]; then
+  log "dart test packages/intentcall_testing"
   set +e
-  (cd "${repo_root}/agentkit" && dart test packages/agentkit_testing) >"${run_dir}/agentkit_testing.log" 2>&1
-  agentkit_test_exit=$?
+  intentcall_root="${INTENTCALL_ROOT:-}"
+  if [[ -z "${intentcall_root}" ]]; then
+    if [[ -d "${repo_root}/../agentkit/packages/intentcall_testing" ]]; then
+      intentcall_root="${repo_root}/../agentkit"
+    else
+      intentcall_root="${repo_root}/intentcall"
+    fi
+  fi
+  (cd "${intentcall_root}" && dart test packages/intentcall_testing) >"${run_dir}/intentcall_testing.log" 2>&1
+  intentcall_test_exit=$?
   set -e
 fi
 
@@ -455,8 +463,8 @@ dim_authoring=0
 [[ "${codegen_exit}" -eq 0 ]] && dim_authoring=$((dim_authoring + 3))
 [[ "${migrate_exit}" -eq 0 ]] && dim_authoring=$((dim_authoring + 3))
 
-if [[ "${run_agentkit_tests}" == true ]]; then
-  [[ "${agentkit_test_exit}" -eq 0 ]] && dim_handler=20 || dim_handler=$((dim_handler > 4 ? dim_handler - 4 : 0))
+if [[ "${run_intentcall_tests}" == true ]]; then
+  [[ "${intentcall_test_exit}" -eq 0 ]] && dim_handler=20 || dim_handler=$((dim_handler > 4 ? dim_handler - 4 : 0))
 fi
 
 # docs_truth: start full; deduct for known recurring warnings present this run
@@ -487,12 +495,12 @@ fi
 
 # --- errors list -------------------------------------------------------------
 [[ "${codegen_exit}" -ne 0 ]] && errors+=("codegen_sync_check_failed")
-[[ "${init_exit}" -ne 0 ]] && errors+=("init_agentkit_platform_failed")
+[[ "${init_exit}" -ne 0 ]] && errors+=("init_intentcall_platform_failed")
 [[ "${migrate_exit}" -ne 0 ]] && errors+=("migrate_agent_entries_failed")
 [[ "${skip_runtime}" != true && -z "${ws_uri}" ]] && errors+=("missing_ws_uri")
 [[ "${skip_runtime}" != true && -n "${ws_uri}" && "${vr_web_ok}" != true ]] && errors+=("validate_runtime_web_failed")
 [[ "${skip_runtime}" != true && "${webmcp_verify_exit}" -ge 0 && "${webmcp_probe_ok}" != true ]] && warnings+=("webmcp_verify_failed")
-[[ "${run_agentkit_tests}" == true && "${agentkit_test_exit}" -ne 0 ]] && errors+=("agentkit_testing_failed")
+[[ "${run_intentcall_tests}" == true && "${intentcall_test_exit}" -ne 0 ]] && errors+=("intentcall_testing_failed")
 
 # --- YAML writers ------------------------------------------------------------
 yaml_list() {
@@ -531,22 +539,22 @@ write_eval_run() {
     printf '  capture_quality: %s\n' "${dim_capture}"
     printf '  visual_fidelity: %s\n' "${dim_visual}"
     printf '  webmcp_parity: %s\n' "${dim_webmcp}"
-    printf '  agentkit_authoring: %s\n' "${dim_authoring}"
+    printf '  intentcall_authoring: %s\n' "${dim_authoring}"
     printf '  docs_truth: %s\n\n' "${dim_docs}"
     printf 'checks:\n'
     printf '  codegen_sync: { exit: %s, ok: %s, log: %s }\n' \
       "${codegen_exit}" "$([[ "${codegen_exit}" -eq 0 ]] && echo true || echo false)" \
       "${run_dir}/codegen_sync.log"
-    printf '  init_agentkit_platform: { exit: %s, ok: %s, log: %s }\n' \
+    printf '  init_intentcall_platform: { exit: %s, ok: %s, log: %s }\n' \
       "${init_exit}" "$([[ "${init_exit}" -eq 0 ]] && echo true || echo false)" \
-      "${run_dir}/init_agentkit_platform.log"
+      "${run_dir}/init_intentcall_platform.log"
     printf '  migrate_agent_entries: { exit: %s, ok: %s, log: %s }\n' \
       "${migrate_exit}" "$([[ "${migrate_exit}" -eq 0 ]] && echo true || echo false)" \
       "${run_dir}/migrate_agent_entries.log"
-    if [[ "${run_agentkit_tests}" == true ]]; then
-      printf '  agentkit_testing: { exit: %s, ok: %s, log: %s }\n' \
-        "${agentkit_test_exit}" "$([[ "${agentkit_test_exit}" -eq 0 ]] && echo true || echo false)" \
-        "${run_dir}/agentkit_testing.log"
+    if [[ "${run_intentcall_tests}" == true ]]; then
+      printf '  intentcall_testing: { exit: %s, ok: %s, log: %s }\n' \
+        "${intentcall_test_exit}" "$([[ "${intentcall_test_exit}" -eq 0 ]] && echo true || echo false)" \
+        "${run_dir}/intentcall_testing.log"
     fi
     printf '  deconstruct_static: { exit: %s, ok: %s, log: %s }\n' \
       "${deconstruct_static_exit}" "$([[ "${deconstruct_static_exit}" -eq 0 ]] && echo true || echo false)" \
@@ -575,7 +583,7 @@ write_eval_run() {
     printf 'doctor_critical_pass: %s\n' "${doctor_critical_pass}"
     printf 'extensions_ok: %s\n' "${extensions_ok}"
     printf 'capture_ok: %s\n' "${capture_ok}"
-    printf 'agentkit_hooks_ok: %s\n' "$([[ "${init_exit}" -eq 0 && "${codegen_exit}" -eq 0 ]] && echo true || echo false)"
+    printf 'intentcall_hooks_ok: %s\n' "$([[ "${init_exit}" -eq 0 && "${codegen_exit}" -eq 0 ]] && echo true || echo false)"
     [[ -n "${capture_backend}" ]] && printf 'captureBackend: %s\n' "${capture_backend}"
     [[ -n "${dynamic_registry_tools}" ]] && printf 'dynamic_registry_tools: %s\n' "${dynamic_registry_tools}"
     printf 'visual_compare_pass: %s\n' "${visual_compare_pass}"
@@ -628,7 +636,7 @@ if [[ "${merge_tracker}" == true ]]; then
     printf 'doctor_critical_pass: %s\n' "${doctor_critical_pass}"
     printf 'extensions_ok: %s\n' "${extensions_ok}"
     printf 'capture_ok: %s\n' "${capture_ok}"
-    printf 'agentkit_hooks_ok: %s\n' "$([[ "${init_exit}" -eq 0 && "${codegen_exit}" -eq 0 ]] && echo true || echo false)"
+    printf 'intentcall_hooks_ok: %s\n' "$([[ "${init_exit}" -eq 0 && "${codegen_exit}" -eq 0 ]] && echo true || echo false)"
     [[ -n "${ws_uri}" ]] && printf 'ws_uri: %s\n' "${ws_uri}"
     [[ -n "${capture_backend}" ]] && printf 'captureBackend: %s\n' "${capture_backend}"
     printf 'dimension_scores:\n'
@@ -638,7 +646,7 @@ if [[ "${merge_tracker}" == true ]]; then
     printf '  capture_quality: %s\n' "${dim_capture}"
     printf '  visual_fidelity: %s\n' "${dim_visual}"
     printf '  webmcp_parity: %s\n' "${dim_webmcp}"
-    printf '  agentkit_authoring: %s\n' "${dim_authoring}"
+    printf '  intentcall_authoring: %s\n' "${dim_authoring}"
     printf '  docs_truth: %s\n' "${dim_docs}"
     printf 'visual_compare_pass: %s\n' "${visual_compare_pass}"
     [[ -n "${visual_guild_weighted_score}" ]] && printf 'visual_guild_weighted_score: %s\n' "${visual_guild_weighted_score}"

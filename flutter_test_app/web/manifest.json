@@ -42,11 +42,11 @@
     ],
     "protocol_handlers": [
         {
-            "protocol": "web+agentkit",
+            "protocol": "web+intentcall",
             "url": "/agent/invoke?protocol=%s"
         },
         {
-            "protocol": "web+agentkit",
+            "protocol": "web+intentcall",
             "url": "/agent/invoke?name=app_demo_ping&payload=%s"
         }
     ]

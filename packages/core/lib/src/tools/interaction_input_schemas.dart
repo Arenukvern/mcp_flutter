@@ -1,11 +1,11 @@
 // Copyright (c) 2025, Flutter Inspector MCP Server authors.
 // Licensed under the MIT License.
 
-import 'package:agentkit_schema/agentkit_schema.dart';
+import 'package:intentcall_schema/intentcall_schema.dart';
 
 import '../connection/connection_override.dart';
 
-export 'package:agentkit_schema/agentkit_schema.dart'
+export 'package:intentcall_schema/intentcall_schema.dart'
     show
         clientResourceReadInputSchema,
         clientResourceTemplateReadInputSchema,
@@ -528,7 +528,7 @@ Map<String, Object?> hotReloadAndCaptureInputSchema() => <String, Object?>{
 
 /// Original 18-tool interaction catalog (gestures, navigation, forms, hot reload).
 ///
-/// Parity table: `flutter_test_app/AGENTKIT_PLATFORM.md`.
+/// Parity table: `flutter_test_app/INTENTCALL_PLATFORM.md`.
 const coreInteractionCatalogCommandNames = <String>[
   'tap_widget',
   'semantic_snapshot',

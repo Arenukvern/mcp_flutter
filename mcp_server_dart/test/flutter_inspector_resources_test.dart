@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:agentkit_schema/agentkit_schema.dart';
+import 'package:intentcall_schema/intentcall_schema.dart';
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_mcp_toolkit_capability_kernel/flutter_mcp_toolkit_capability_kernel.dart';
 import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/host.dart';
