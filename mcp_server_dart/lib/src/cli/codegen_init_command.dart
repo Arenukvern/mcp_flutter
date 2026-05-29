@@ -18,7 +18,7 @@ Future<int> runCodegenInit({
   if (runPubAdd) {
     final result = await Process.start(
       'flutter',
-      ['pub', 'add', 'flutter_mcp_toolkit'],
+      ['pub', 'add', 'mcp_toolkit'],
       workingDirectory: projectRoot,
       mode: ProcessStartMode.inheritStdio,
     );
