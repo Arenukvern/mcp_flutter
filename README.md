@@ -4,6 +4,7 @@
 
 _Inspect and drive a running Flutter app from your AI assistant._
 
+[![skills.sh](https://skills.sh/b/arenukvern/mcp_flutter)](https://skills.sh/arenukvern/mcp_flutter)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Flutter](https://img.shields.io/badge/Flutter-3.x-blue.svg)](https://flutter.dev)
 [![smithery badge](https://smithery.ai/badge/@Arenukvern/mcp_flutter)](https://smithery.ai/server/@Arenukvern/mcp_flutter)
@@ -12,10 +13,13 @@ _Inspect and drive a running Flutter app from your AI assistant._
 
 </div>
 
+- 📖 **Docs:** [docs.page/arenukvern/mcp_flutter](https://docs.page/arenukvern/mcp_flutter/)
+
 `flutter-mcp-toolkit` is a Dart MCP server + Flutter package that lets AI Agents (Codex, Zed, Cursor, Intent, Claude Code, Cline, etc..) take (semantic snapshots, tap widgets, type into forms, hot-reload, and read logs from a Flutter app) or create __its own tools and resources at runtime__ using MCP Toolkit — without leaving the conversation and work with Flutter apps in closed feedback loop - see example of it described in [OpenAI Agentic Harness](https://openai.com/index/harness-engineering/).
 
 
 ![View Screenshots](docs/view_screenshots.gif)
+
 
 ## Get started in 4 steps
 
@@ -36,6 +40,12 @@ flutter run --debug
 ```
 
 That's it. Your AI agent can now inspect and drive the running app — and your app can expose **custom MCP tools at runtime** (see [Dynamic Tools Registration](#dynamic-tools-registration) below).
+
+
+## 📰 News
+
+- **2026-05-26** — v3.1.0: Platform-view capture routing, macOS/iOS Simulator host screenshots, web CDP tab capture (SCK → CDP → flutter_layer), and cross-platform showcase platform views.
+<!-- TODO(arenukvern): add tool to write news automatically -->
 
 ## Install from marketplaces
 
@@ -167,6 +177,9 @@ Huge thanks to all contributors for making this project better!
       <td align="center" valign="top" width="14.28%"><a href="https://joelkitching.com/"><img src="https://avatars.githubusercontent.com/u/514199?v=4?s=100" width="100px;" alt="Joel Kitching"/><br /><sub><b>Joel Kitching</b></sub></a><br /><a href="#code-jkitching" title="Code">💻</a> <a href="#maintenance-jkitching" title="Maintenance">🚧</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/jeanlucthumm"><img src="https://avatars.githubusercontent.com/u/4934853?v=4?s=100" width="100px;" alt="Jean-Luc Thumm"/><br /><sub><b>Jean-Luc Thumm</b></sub></a><br /><a href="#maintenance-jeanlucthumm" title="Maintenance">🚧</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/tekboxs"><img src="https://avatars.githubusercontent.com/u/64443719?v=4?s=100" width="100px;" alt="Miguel Casagrande"/><br /><sub><b>Miguel Casagrande</b></sub></a><br /><a href="#code-tekboxs" title="Code">💻</a> <a href="#maintenance-tekboxs" title="Maintenance">🚧</a></td>
+    </tr>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/drown0315"><img src="https://avatars.githubusercontent.com/u/108989782?v=4?s=100" width="100px;" alt="drown0315"/><br /><sub><b>drown0315</b></sub></a><br /><a href="#code-drown0315" title="Code">💻</a> <a href="#maintenance-drown0315" title="Maintenance">🚧</a> <a href="#bug-drown0315" title="Bug reports">🐛</a></td>
     </tr>
   </tbody>
 </table>
