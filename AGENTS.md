@@ -116,3 +116,12 @@ When implementing the **intentcall** migration, use the self-closing loop — do
 | `docs/superpowers/plans/archive/` | Historical phase plans — do not execute |
 
 **Closer** verifies, writes `docs/superpowers/closure/`, regenerates the same phase plan on failure or the next phase plan on success. In-repo product gate is `complete_in_repo_product`; **Phase 7 extract** is `in_progress` (7.4–7.7 pending publish — see tracker).
+
+## Governance & Skill Steward
+
+This repository strictly adheres to the Cascading Agent Surface architecture governed by **Skill Steward**.
+When writing code, documentation, or planning features:
+1. **You MUST obey `steward.yaml`**. It defines the required branding constraints, banned jargon, and documentation locations. 
+2. Before making architectural decisions, read the Ethics Charter at `docs/NORTH_STAR.md`.
+3. The repository utilizes standardized agent skills under `.agents/skills/`. Do not write new skills locally unless they are specific to this repository's domain; generalized skills must be pushed upstream to `skill_steward`.
+4. Run `make check-contracts` to automatically validate your skills and brand compliance before committing.
