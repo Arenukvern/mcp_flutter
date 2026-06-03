@@ -27,6 +27,11 @@ check-contracts:
 	dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart codegen sync \
 	  --platform web,android,ios,macos,linux,windows \
 	  --project-dir flutter_test_app --check && \
+	if ! command -v steward &> /dev/null; then \
+		echo "Error: 'steward' command not found."; \
+		echo "Please install via: curl -fsSL https://raw.githubusercontent.com/arenukvern/skill_steward/main/install.sh | bash"; \
+		exit 1; \
+	fi && \
 	steward validate skills/
 
 .PHONY: release-artifacts
