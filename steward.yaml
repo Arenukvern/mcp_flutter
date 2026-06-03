@@ -1,0 +1,30 @@
+archetype: "A — Product MCP"
+harness:
+  name: "Flutter MCP Harness"
+  description: "Validation, contract testing, and local skills management for the Flutter MCP Server & Toolkit."
+docs:
+  "Why This Repo Matters": "docs/start_here/why_this_repo_matters.mdx"
+  "Feature Map": "docs/start_here/feature_map.mdx"
+  "Docs Map": "docs/start_here/docs_map.mdx"
+  "CLI vs MCP": "docs/start_here/cli_vs_mcp.mdx"
+  "Execution Playbook": "docs/ai_agents/execution_playbook.mdx"
+  "Architecture": "docs/core/project_architecture.mdx"
+  "Dynamic Tool Registry": "docs/core/dynamic_tools_registry.mdx"
+pipelines:
+  validate:
+    cmd: "make check-contracts"
+    desc: "Run all 11 repository contract checks and schema validations"
+  sync-skills:
+    cmd: "make sync-skills"
+    desc: "Regenerate skill assets from mcp_flutter skills"
+  web-showcase:
+    cmd: "make web-showcase"
+    desc: "Launch the Flutter test application showcase on macOS"
+
+branding:
+  banned_words: ["unlock", "supercharge", "ultimate", "leverage"]
+  ignored_paths: []
+
+governance:
+  adr_directory: "decisions/"
+  ethics_charter: "docs/NORTH_STAR.md"

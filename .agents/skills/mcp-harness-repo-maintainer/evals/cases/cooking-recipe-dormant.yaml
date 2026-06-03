@@ -1,0 +1,12 @@
+id: mcp-maintainer-recipe-dormant
+skill: mcp-harness-repo-maintainer
+routing: should_not_trigger
+input: "Write a sourdough bread recipe with fermentation timings for home bakers"
+rules:
+  - kind: file_exists
+    path: references/evals.md
+  - kind: description_excludes_all
+    terms: ["sourdough", "fermentation", "baking recipe"]
+  - kind: body_includes_any
+    path: SKILL.md
+    terms: ["skill_steward", "harness"]

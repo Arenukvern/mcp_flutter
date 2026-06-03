@@ -1,0 +1,12 @@
+id: mcp-maintainer-sibling-trigger
+skill: mcp-harness-repo-maintainer
+routing: should_trigger
+input: "Refactor product MCP so CLI and MCP adapters stay thin over packages/core"
+rules:
+  - kind: file_exists
+    path: references/evals.md
+  - kind: description_includes_any
+    terms: ["harness", "CLI", "MCP", "core"]
+  - kind: body_includes_any
+    path: SKILL.md
+    terms: ["repo-archetypes", "thin"]

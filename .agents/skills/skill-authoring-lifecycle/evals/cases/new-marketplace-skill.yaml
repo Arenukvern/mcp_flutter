@@ -1,0 +1,12 @@
+id: create-skill-scaffold-trigger
+skill: create-skill
+routing: should_trigger
+input: "Create a new skill called faq-driven-docs in the Skill Steward repo"
+rules:
+  - kind: file_exists
+    path: references/evals.md
+  - kind: description_includes_any
+    terms: ["scaffold", "SKILL.md", "marketplace", "skill_steward"]
+  - kind: body_includes_any
+    path: SKILL.md
+    terms: ["skills.sh.json", "pnpm run validate", "docs/STANDARDS"]
