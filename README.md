@@ -29,7 +29,7 @@ curl -fsSL https://raw.githubusercontent.com/Arenukvern/mcp_flutter/main/install
 
 # 2. Add the toolkit to your Flutter app
 cd my-flutter-app
-flutter-mcp-toolkit codegen-init   # adds flutter_mcp_toolkit + emits main.dart snippet
+flutter-mcp-toolkit codegen-init   # adds mcp_toolkit + emits main.dart snippet
 
 # 3. Install skills for your AI agent
 flutter-mcp-toolkit init claude-code   # or: cursor | codex | cline | agents-skills | all
@@ -126,7 +126,7 @@ This MCP server is verified by [MseeP.ai](https://mseep.ai).
    - Check the tool's logs for connection errors
 
 3. **Dynamic Tools Not Appearing**
-   - Ensure `flutter_mcp_toolkit` package is properly initialized in your Flutter app
+   - Ensure `mcp_toolkit` package is properly initialized in your Flutter app
    - Check that tools are registered using `MCPToolkitBinding.instance.addEntries()`
    - Use `fmt_list_client_tools_and_resources` to verify registration
    - Hot reload your Flutter app after adding new tools
@@ -138,7 +138,7 @@ The Flutter MCP Server is registered with Smithery's registry, making it discove
 ```
 ┌─────────────────┐     ┌───────────────────────┐     ┌─────────────────┐
 │                 │     │  Flutter App with     │     │                 │
-│  Flutter App    │<--->│  flutter_mcp_toolkit  │<--->│ flutter-mcp-    │
+│  Flutter App    │<--->│  mcp_toolkit          │<--->│ flutter-mcp-    │
 │  (Debug Mode)   │     │  (VM Svc. Extensions  │     │ toolkit-server  │
 │                 │     │  + Dynamic Tools)     │     │                 │
 └─────────────────┘     └───────────────────────┘     └─────────────────┘
