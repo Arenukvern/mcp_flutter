@@ -1,3 +1,8 @@
+---
+description: Global Steward Governance
+globs: *
+---
+
 You are operating in a repository governed by Skill Steward.
 Do not run complex bash scripts manually. Use `steward mcp` or the underlying pipelines.
 

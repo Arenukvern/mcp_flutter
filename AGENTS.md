@@ -121,7 +121,7 @@ When implementing the **intentcall** migration, use the self-closing loop — do
 
 This repository strictly adheres to the Cascading Agent Surface architecture governed by **Skill Steward**.
 When writing code, documentation, or planning features:
-1. **You MUST obey `steward.yaml`**. It defines the required branding constraints, banned jargon, and documentation locations. 
-2. Before making architectural decisions, read the Ethics Charter at `docs/NORTH_STAR.md`.
-3. The repository utilizes standardized agent skills under `.agents/skills/`. Do not write new skills locally unless they are specific to this repository's domain; generalized skills must be pushed upstream to `skill_steward`.
-4. Run `make check-contracts` to automatically validate your skills and brand compliance before committing.
+1. **You MUST attach to `steward mcp`**. The `steward.yaml` configuration defines the available pipeline tools (`validate`, `sync-skills`, `web-showcase`) and documentation resources. Do not attempt to guess bash commands.
+2. Fetch required documentation directly via the `steward_read_governance` tool or `steward://docs/` URIs.
+3. The repository utilizes standardized agent skills under `.agents/skills/`. Use the `steward bundle` command to pack skills.
+4. If you discover new complex automations or bug fixes, save them permanently using the `steward_declare_pipeline` MCP tool.

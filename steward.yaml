@@ -11,6 +11,10 @@ docs:
   "Architecture": "docs/core/project_architecture.mdx"
   "Dynamic Tool Registry": "docs/core/dynamic_tools_registry.mdx"
 pipelines:
+  subagent_test:
+    cmd: "echo subagent"
+    desc: "A test by subagent"
+
   validate:
     cmd: "make check-contracts"
     desc: "Run all 11 repository contract checks and schema validations"
@@ -28,3 +32,12 @@ branding:
 governance:
   adr_directory: "decisions/"
   ethics_charter: "docs/NORTH_STAR.md"
+
+skills_distribution:
+  source_dir: "skills/"
+  output: "skills.sh.json"
+
+evals:
+  ecsly_test_eval:
+    desc: "A test eval"
+    verification_cmd: "echo 'Validating test eval' && exit 0"
