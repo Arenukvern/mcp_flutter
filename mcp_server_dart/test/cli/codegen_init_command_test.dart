@@ -2,6 +2,7 @@
 import 'dart:io';
 
 import 'package:flutter_mcp_toolkit_server/src/cli/codegen_init_command.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/codegen_snippets.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -29,6 +30,20 @@ dependencies:
       expect(exitCode, 0);
       // No new files in the project root other than pubspec.yaml.
       expect(File('${tmp.path}/lib/main.dart').existsSync(), isFalse);
+    });
+
+    test('snippet imports the published mcp_toolkit package', () {
+      // Regression guard: the package is published on pub.dev as `mcp_toolkit`.
+      // `flutter_mcp_toolkit` does not exist there, so importing it in the
+      // emitted boilerplate would break `flutter pub get` / compilation.
+      expect(
+        CodegenSnippets.flutterMainInit,
+        contains("import 'package:mcp_toolkit/mcp_toolkit.dart';"),
+      );
+      expect(
+        CodegenSnippets.flutterMainInit,
+        isNot(contains('package:flutter_mcp_toolkit/')),
+      );
     });
 
     test('refuses to run if pubspec.yaml is missing', () async {
