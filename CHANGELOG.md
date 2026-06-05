@@ -3,6 +3,26 @@
 <!-- markdownlint-disable MD052 -->
 <!-- Keep a Changelog version headings use [3.0.1] brackets; MD052 treats them as reference links. -->
 
+## [3.1.1](https://github.com/Arenukvern/mcp_flutter/compare/v3.1.0...v3.1.1) (2026-06-05)
+
+
+### Bug Fixes
+
+* **codegen-init:** add correct pubspec dependency ([dbbb32d](https://github.com/Arenukvern/mcp_flutter/commit/dbbb32d904dd9e8613b6c5236b3e5bf645f2724c))
+* **codegen-init:** add correct pubspec dependency ([0fb5230](https://github.com/Arenukvern/mcp_flutter/commit/0fb52307df316d06a8074c46e51027ea7ad9cda9))
+* **codegen-init:** use published mcp_toolkit package name ([9d46ba3](https://github.com/Arenukvern/mcp_flutter/commit/9d46ba3c4221f3d6157d6b5568faac51365645d6))
+* **codegen-init:** use published mcp_toolkit package name ([#1](https://github.com/Arenukvern/mcp_flutter/issues/1)) ([a53a908](https://github.com/Arenukvern/mcp_flutter/commit/a53a908320ff1ba3e0b117f29ba3f0c7f0bf5bd3))
+
+
+### Documentation
+
+* add drown0315 as a contributor for code, maintenance, and bug ([192cba5](https://github.com/Arenukvern/mcp_flutter/commit/192cba5917dd9143e74b7f4f9da7a9fce7f22acf))
+* add druyang as a contributor for code, maintenance, and bug ([3da354e](https://github.com/Arenukvern/mcp_flutter/commit/3da354e40b24879efc78a1a3e6803845e5da0909))
+* update .all-contributorsrc ([a24a9ff](https://github.com/Arenukvern/mcp_flutter/commit/a24a9ff0efec6eb9c5a27098913a1245db860a40))
+* update .all-contributorsrc ([33c1495](https://github.com/Arenukvern/mcp_flutter/commit/33c1495584bf69603ea4521bb6ad3c32d6dd1157))
+* update README.md ([54bbf4d](https://github.com/Arenukvern/mcp_flutter/commit/54bbf4d6aaaf904fa6316987c2010550dc1f776d))
+* update README.md ([52fd2d5](https://github.com/Arenukvern/mcp_flutter/commit/52fd2d5a79e56740a8556655969c62fb89f813eb))
+
 ## [Unreleased]
 
 ## [3.1.0] - 2026-05-25
