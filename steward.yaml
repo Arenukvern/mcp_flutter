@@ -62,7 +62,15 @@ actions:
       shell: false
     cwd: .
     effects:
-      fs_read: ["."]
+      fs_read:
+        - tool/contracts/check_tool_prefix.sh
+        - tool/contracts/expected_tool_surface.txt
+        - CHANGELOG.md
+        - README.md
+        - ARCHITECTURE.md
+        - docs/start_here/migration_v2_to_v3.mdx
+        - decisions/0001_capability_kernel_and_tool_prefix.mdx
+        - decisions/0002_v3_scope_and_consolidation_deferrals.mdx
       fs_write: []
       git: false
       network: false
