@@ -93,6 +93,9 @@ intentcall_test_exit=0
 deconstruct_static_exit=0
 deconstruct_harness_exit=-1
 deconstruct_cli_exit=-1
+warnings=("visual_capture_truth_mode")
+errors=()
+fix_recommendations=()
 
 log "codegen sync --check (all platforms)"
 set +e
@@ -137,16 +140,23 @@ fi
 # --- deconstruct static (Phase C; fast, no WS) ------------------------------
 run_deconstruct_static() {
   log "deconstruct static: IR schema + golden + harness smoke fixture"
+  if [[ ! -f "${deconstruct_golden}" ]]; then
+    echo "missing golden: ${deconstruct_golden}" >"${run_dir}/deconstruct_static.log"
+    deconstruct_static_exit=2
+    warnings+=("deconstruct_static_failed")
+    return 0
+  fi
+  if [[ ! -f "${ir_schema}" ]]; then
+    {
+      echo "WARN: deconstruct IR schema not found (sidecar optional): ${ir_schema}"
+      echo "deconstruct static skipped; clone flutter_harness next to mcp_flutter for this check"
+    } >"${run_dir}/deconstruct_static.log"
+    deconstruct_static_exit=0
+    warnings+=("deconstruct_sidecar_skipped")
+    return 0
+  fi
   set +e
   {
-    [[ -f "${ir_schema}" ]] || {
-      echo "missing ir_schema: ${ir_schema}"
-      exit 2
-    }
-    [[ -f "${deconstruct_golden}" ]] || {
-      echo "missing golden: ${deconstruct_golden}"
-      exit 2
-    }
     if [[ ! -f "${deconstruct_smoke_hs}" ]]; then
       echo "WARN: deconstruct_smoke.hs.yaml not found (C3 harness): ${deconstruct_smoke_hs}"
     else
@@ -212,9 +222,6 @@ extensions_ok=false
 capture_ok=false
 doctor_critical_pass=false
 steps_failed=()
-warnings=("visual_capture_truth_mode")
-errors=()
-fix_recommendations=()
 capture_backend=""
 capture_platform_views=""
 dynamic_registry_tools=""
