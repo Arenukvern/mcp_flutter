@@ -21,9 +21,9 @@ dependencies:
   dart_mcp: ^0.5.0
   dtd: ^4.0.0
   equatable: ^2.0.8
-  flutter_mcp_toolkit_capability_core:
-  flutter_mcp_toolkit_capability_kernel:
-  flutter_mcp_toolkit_core:
+  flutter_mcp_toolkit_capability_core: ^0.1.0
+  flutter_mcp_toolkit_capability_kernel: ^0.1.0
+  flutter_mcp_toolkit_core: ^0.1.0
   from_json_to_json: ^0.5.0
   is_dart_empty_or_not: ^0.4.0
   json_rpc_2: ^4.1.0
