@@ -14,10 +14,10 @@ environment:
 resolution: workspace
 
 dependencies:
-  flutter_mcp_toolkit_core:
+  flutter_mcp_toolkit_core: ^0.1.0
   intentcall_mcp: ^0.1.0
   intentcall_schema: ^0.1.0
-  meta: ^1.17.0
+  meta: ^1.18.0
 
 dev_dependencies:
   lints: ^6.1.0

@@ -22,7 +22,7 @@ resolution: workspace
 
 dependencies:
   intentcall_schema: ^0.1.0
-  meta: ^1.17.0
+  meta: ^1.18.0
 
 dev_dependencies:
   lints: ^6.1.0
