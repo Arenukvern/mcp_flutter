@@ -1,5 +1,12 @@
 # 4.0.0-dev.1
 
+## [Unreleased]
+
+### Changed
+
+- Raised package Dart SDK floor to `>=3.12.0 <4.0.0`.
+- Added Flutter SDK floor `>=3.44.0 <4.0.0` for Flutter package support.
+
 ## BREAKING CHANGES
 
 - **Removed `MCPCallEntry`** from the public API. Use `AgentCallEntry` (re-exported by `mcp_toolkit` from in-repo `intentcall_core`; pub.dev publish is Phase 7) for all dynamic tool/resource registration.

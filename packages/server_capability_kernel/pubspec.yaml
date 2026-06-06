@@ -10,7 +10,7 @@ issue_tracker: https://github.com/Arenukvern/mcp_flutter/issues
 documentation: https://github.com/Arenukvern/mcp_flutter/tree/main/packages/server_capability_kernel#readme
 
 environment:
-  sdk: ">=3.11.0 <4.0.0"
+  sdk: ">=3.12.0 <4.0.0"
 resolution: workspace
 
 dependencies:

@@ -12,7 +12,7 @@ void main() {
     File('${tmp.path}/pubspec.yaml').writeAsStringSync('''
 name: my_flutter_app
 environment:
-  sdk: ">=3.11.0"
+  sdk: ">=3.12.0"
 dependencies:
   flutter:
     sdk: flutter
