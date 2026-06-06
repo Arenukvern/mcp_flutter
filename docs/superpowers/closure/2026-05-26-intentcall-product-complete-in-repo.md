@@ -19,7 +19,7 @@ In-repo **product** completion inside `mcp_flutter` (no monorepo extract, no pub
 
 | ID | Result |
 |----|--------|
-| A — Platform productization | pass — `init intentcall-platform` + `--check`; `intentcall_platform` plugin + `intentcallInvokeLinkListener`; manifest workflow documented; ADR 0008 web invoke JS-only |
+| A — Platform productization | pass — `init intentcall-platform` + `--check`; `intentcall_platform` plugin + `IntentCallInvokeLinkListener`; manifest workflow documented; ADR 0008 web invoke JS-only |
 | B — Operator & codegen | pass — `fmt_migrate_agent_entries`; codegen pilot docs in `server_capability_core/README` |
 | C — Testing & contracts | pass — `intentcall_testing` ecsly-style envelope test; e2e tool count 29/33 |
 | D — API surface & release | pass — `mcp_toolkit.dart` public surface documented; CHANGELOG Unreleased; README + QUICK_START migration links |

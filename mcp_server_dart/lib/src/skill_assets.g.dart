@@ -1939,7 +1939,7 @@ dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart init intentcall-platform \
 |--------|------|
 | `macos/intentcall_codegen.sh` | Xcode Run Script → `codegen sync --platform macos` |
 | `macos/Runner.xcodeproj` | Run Script phase (see script comment if manual) |
-| `lib/main.dart` | `intentcallInvokeLinkListener` for `intentcall://invoke/…` |
+| `lib/main.dart` | `IntentCallInvokeLinkListener` for `intentcall://invoke/…` |
 
 ## Runtime validate
 

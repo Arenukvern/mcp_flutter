@@ -323,75 +323,45 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.1.2"
-  intentcall_android:
-    dependency: "direct overridden"
-    description:
-      path: "../agentkit/packages/intentcall_android"
-      relative: true
-    source: path
-    version: "0.1.0"
-  intentcall_apple:
-    dependency: "direct overridden"
-    description:
-      path: "../agentkit/packages/intentcall_apple"
-      relative: true
-    source: path
-    version: "0.1.0"
   intentcall_codegen:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
-      path: "../agentkit/packages/intentcall_codegen"
-      relative: true
-    source: path
+      name: intentcall_codegen
+      sha256: "38d798b0777bdde5c5ae13f27c4469526c83772d1abf4e574c2047d06b9ee07d"
+      url: "https://pub.dev"
+    source: hosted
     version: "0.1.0"
   intentcall_core:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
-      path: "../agentkit/packages/intentcall_core"
-      relative: true
-    source: path
-    version: "0.1.0"
-  intentcall_gemma:
-    dependency: "direct overridden"
-    description:
-      path: "../agentkit/packages/intentcall_gemma"
-      relative: true
-    source: path
+      name: intentcall_core
+      sha256: "96190700c2e3863d15e5d8e947bdaa3ba636d5fd709807dd05bd2ca195df578e"
+      url: "https://pub.dev"
+    source: hosted
     version: "0.1.0"
   intentcall_mcp:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
-      path: "../agentkit/packages/intentcall_mcp"
-      relative: true
-    source: path
+      name: intentcall_mcp
+      sha256: bb5228eb857c2108054df5e9a4a5930ebabc22977dd1c7e8eb27116d51cfd3f9
+      url: "https://pub.dev"
+    source: hosted
     version: "0.1.0"
   intentcall_platform:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
-      path: "../agentkit/packages/intentcall_platform"
-      relative: true
-    source: path
+      name: intentcall_platform
+      sha256: "370791f870b7733603995b37640fb0ea01c43341055de92f94490143405420c6"
+      url: "https://pub.dev"
+    source: hosted
     version: "0.1.0"
   intentcall_schema:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
-      path: "../agentkit/packages/intentcall_schema"
-      relative: true
-    source: path
-    version: "0.1.0"
-  intentcall_testing:
-    dependency: "direct overridden"
-    description:
-      path: "../agentkit/packages/intentcall_testing"
-      relative: true
-    source: path
-    version: "0.1.0"
-  intentcall_webmcp:
-    dependency: "direct overridden"
-    description:
-      path: "../agentkit/packages/intentcall_webmcp"
-      relative: true
-    source: path
+      name: intentcall_schema
+      sha256: "944f6827863115c94d5244e5649807124cd0d36d2a871c95b815da93c908825a"
+      url: "https://pub.dev"
+    source: hosted
     version: "0.1.0"
   io:
     dependency: transitive

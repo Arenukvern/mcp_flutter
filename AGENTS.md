@@ -121,7 +121,9 @@ When implementing the **intentcall** migration, use the self-closing loop — do
 
 This repository strictly adheres to the Cascading Agent Surface architecture governed by **Skill Steward**.
 When writing code, documentation, or planning features:
-1. **You MUST attach to `steward mcp`**. The `steward.yaml` configuration defines the available pipeline tools (`validate`, `sync-skills`, `web-showcase`) and documentation resources. Do not attempt to guess bash commands.
-2. Fetch required documentation directly via the `steward_read_governance` tool or `steward://docs/` URIs.
-3. The repository utilizes standardized agent skills under `.agents/skills/`. Use the `steward bundle` command to pack skills.
-4. If you discover new complex automations or bug fixes, save them permanently using the `steward_declare_pipeline` MCP tool.
+1. Start with `steward doctor --json`, then `steward actions list --json`.
+2. Inspect any intended action before execution: `steward action inspect <id> --json`.
+3. Use `steward probe --json --profile quick` for the safe first pass.
+4. Use `steward benchmark --scenario mcp_flutter.web-dogfood-warm --json` for the first dogfood scenario.
+5. Do not use legacy `steward mcp` pipeline execution, `steward_declare_pipeline`, or raw pipeline tools for v1 contracts.
+6. If you discover new complex automations or bug fixes, capture them as observations / unknown cases first; promote only after review.

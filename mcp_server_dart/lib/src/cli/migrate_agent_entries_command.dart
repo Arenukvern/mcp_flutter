@@ -1,9 +1,9 @@
 // Re-exports shared migrator; CLI runner stays here for stderr/stdout UX.
 import 'dart:io';
 
-import 'package:intentcall_core/intentcall_core.dart';
+import 'package:intentcall_core/intentcall_core_migration.dart';
 
-export 'package:intentcall_core/intentcall_core.dart'
+export 'package:intentcall_core/intentcall_core_migration.dart'
     show
         MigrateAgentEntriesMigrator,
         MigrateAgentEntriesPathNotFound,

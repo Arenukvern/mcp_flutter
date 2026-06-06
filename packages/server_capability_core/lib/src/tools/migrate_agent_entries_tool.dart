@@ -1,4 +1,4 @@
-import 'package:intentcall_core/intentcall_core.dart';
+import 'package:intentcall_core/intentcall_core_migration.dart';
 import 'package:intentcall_schema/intentcall_schema.dart';
 import 'package:flutter_mcp_toolkit_capability_kernel/flutter_mcp_toolkit_capability_kernel.dart';
 
@@ -16,11 +16,13 @@ void registerMigrateAgentEntriesTool(final CapabilityContext context) {
         'properties': <String, Object?>{
           'projectRoot': <String, Object?>{
             'type': 'string',
-            'description': 'Flutter/Dart project root or single .dart file path.',
+            'description':
+                'Flutter/Dart project root or single .dart file path.',
           },
           'apply': <String, Object?>{
             'type': 'boolean',
-            'description': 'When true, apply migrations. Default false (report-only).',
+            'description':
+                'When true, apply migrations. Default false (report-only).',
           },
           'namespace': <String, Object?>{
             'type': 'string',

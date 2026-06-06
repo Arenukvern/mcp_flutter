@@ -28,8 +28,7 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
-  intentcall_core:
-    path: ../../agentkit/packages/intentcall_core
+  intentcall_core: ^0.1.0
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
@@ -37,22 +36,13 @@ dependencies:
     sdk: flutter
   mcp_toolkit:
     path: ../mcp_toolkit
-  intentcall_platform:
-    path: ../../agentkit/packages/intentcall_platform
-  intentcall_webmcp:
-    path: ../../agentkit/packages/intentcall_webmcp
+  intentcall_platform: ^0.1.0
+  intentcall_webmcp: ^0.1.0
   app_links: ^6.4.0
   provider: ^6.1.5+1
   vm_service: ^15.0.2
   web: ^1.1.1
 
-dependency_overrides:
-  intentcall_core:
-    path: ../../agentkit/packages/intentcall_core
-  intentcall_schema:
-    path: ../../agentkit/packages/intentcall_schema
-  intentcall_webmcp:
-    path: ../../agentkit/packages/intentcall_webmcp
 dev_dependencies:
   flutter_lints: ^6.0.0
   flutter_test:

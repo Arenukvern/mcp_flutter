@@ -11,14 +11,10 @@ executables:
   flutter-mcp-toolkit: flutter_mcp_toolkit
   flutter-mcp-toolkit-server: flutter_mcp_toolkit_server
 dependencies:
-  intentcall_core:
-    path: ../../agentkit/packages/intentcall_core
-  intentcall_mcp:
-    path: ../../agentkit/packages/intentcall_mcp
-  intentcall_platform:
-    path: ../../agentkit/packages/intentcall_platform
-  intentcall_schema:
-    path: ../../agentkit/packages/intentcall_schema
+  intentcall_core: ^0.1.0
+  intentcall_mcp: ^0.1.0
+  intentcall_platform: ^0.1.0
+  intentcall_schema: ^0.1.0
   args: ^2.7.0
   async: ^2.13.0
   collection: ^1.19.1

@@ -26,7 +26,7 @@ Future<void> main({final bool enableDelayedMcpRegistration = true}) async {
   await _registerInitialMCPTools();
   if (!kIsWeb) {
     unawaited(
-      intentcallInvokeLinkListener(
+      IntentCallInvokeLinkListener(
         onQualifiedName: (final name) {
           debugPrint('intentcall invoke: $name');
         },

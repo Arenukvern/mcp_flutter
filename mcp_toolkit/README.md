@@ -1,18 +1,24 @@
 # MCP Toolkit for Flutter
 
-[![Pub Version](https://img.shields.io/badge/version-3.0.0-blue)](https://github.com/Arenukvern/mcp_flutter/tree/main/mcp_toolkit)
+[![Pub Version](https://img.shields.io/badge/version-4.0.0-blue)](https://github.com/Arenukvern/mcp_flutter/tree/main/mcp_toolkit)
 
 > [!NOTE]
-> This is not official package - it's a personal project.
+> Hi! This is not official package - it's a personal project.
 >
 > For official package - please see [ai repository](https://github.com/dart-lang/ai/tree/main/pkgs/dart_tooling_mcp_server)
-
-This package is a core component of the [mcp_flutter](https://github.com/Arenukvern/mcp_flutter) project. It acts as the "client-side" library within your Flutter application, enabling the Model Context Protocol (MCP) `MCP Server` to perform Flutter-specific operations like retrieving application errors, capturing screenshots, and getting view details.
-
+>
+> This package is a core component of the [flutter-mcp-toolkit](https://github.com/Arenukvern/mcp_flutter) project. It acts as the "client-side" library within your Flutter application, enabling the Model Context Protocol (MCP) `MCP Server` to perform Flutter-specific operations like retrieving application errors, capturing screenshots, and getting view details.
+>
+> - 📖 **Docs:** [docs.page/arenukvern/mcp_flutter](https://docs.page/arenukvern/mcp_flutter/)
+>
+> `flutter-mcp-toolkit` is a Dart MCP server + Flutter package that lets AI Agents (Codex, Zed, Cursor, Intent, Claude Code, Cline, etc..) take (semantic snapshots, tap widgets, type into forms, hot-reload, and read logs from a Flutter app) or create **its own tools and resources at runtime** using MCP Toolkit — without leaving the conversation and work with Flutter apps in closed feedback loop - see example of it described in [OpenAI Agentic Harness](https://openai.com/index/harness-engineering/).
+>
 > [!NOTE]
 > Please notice:
 >
 > - The architecture of package may change significantly.
+
+![View Screenshots](https://github.com/Arenukvern/mcp_flutter/blob/6a0a83b8df2cf364b8d535cb382068ed0f4259ff/docs/view_screenshots.gif)
 
 ## Data Transparency
 

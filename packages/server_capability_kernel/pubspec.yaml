@@ -16,10 +16,8 @@ resolution: workspace
 
 dependencies:
   flutter_mcp_toolkit_core:
-  intentcall_mcp:
-    path: ../../../agentkit/packages/intentcall_mcp
-  intentcall_schema:
-    path: ../../../agentkit/packages/intentcall_schema
+  intentcall_mcp: ^0.1.0
+  intentcall_schema: ^0.1.0
   meta: ^1.17.0
 
 dev_dependencies:

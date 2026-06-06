@@ -20,14 +20,10 @@ dependencies:
   flutter_mcp_toolkit_capability_kernel:
   flutter_mcp_toolkit_core:
   from_json_to_json: ^0.5.0
-  intentcall_codegen:
-    path: ../../../agentkit/packages/intentcall_codegen
-  intentcall_core:
-    path: ../../../agentkit/packages/intentcall_core
-  intentcall_mcp:
-    path: ../../../agentkit/packages/intentcall_mcp
-  intentcall_schema:
-    path: ../../../agentkit/packages/intentcall_schema
+  intentcall_codegen: ^0.1.0
+  intentcall_core: ^0.1.0
+  intentcall_mcp: ^0.1.0
+  intentcall_schema: ^0.1.0
   is_dart_empty_or_not: ^0.4.0
   meta: ^1.17.0
   vm_service: ^15.0.2

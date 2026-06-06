@@ -30,7 +30,7 @@ Patches (idempotent markers `intentcall-platform: begin` … `end`):
 
 ## Pub resolution
 
-`mcp_toolkit` pulls platform emitters; dogfood adds `intentcall_platform` for `intentcallInvokeLinkListener` (`app_links`).
+`mcp_toolkit` pulls platform emitters; dogfood adds `intentcall_platform` for `IntentCallInvokeLinkListener` (`app_links`).
 
 ```yaml
 # Root pubspec.yaml applies dependency_overrides to intentcall workspace:
@@ -65,7 +65,7 @@ dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart codegen sync \
 
 ## Native invoke (dogfood)
 
-`intentcallInvokeLinkListener` in `lib/main.dart` logs `intentcall://invoke/<qualifiedName>` via `app_links` (Android/iOS/desktop).
+`IntentCallInvokeLinkListener` in `lib/main.dart` logs `intentcall://invoke/<qualifiedName>` via `app_links` (Android/iOS/desktop).
 
 ## CLI exec vs MCP tool names
 
