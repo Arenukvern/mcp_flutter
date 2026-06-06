@@ -1,6 +1,6 @@
 # intentcall hosted dependency cutover (Phase 7.5 / 7.7)
 
-After packages are on pub.dev, switch mcp_flutter consumers from path deps to hosted versions.
+Status: **complete**. `mcp_flutter` consumers now use hosted `intentcall_* ^0.1.0` packages. Keep this page as the regression checklist for future hosted cutovers.
 
 ## Checklist
 
@@ -18,6 +18,6 @@ After packages are on pub.dev, switch mcp_flutter consumers from path deps to ho
 
 ## CI (7.7)
 
-When cutover is complete, add a weekly job or branch rule that fails if path deps to `intentcall/packages` reappear in consumer pubspecs (optional `tool/intentcall/check_no_path_deps.sh`).
+Keep a weekly job or branch rule that fails if path deps to `intentcall/packages`, `agentkit/packages`, or `path: .*intentcall` reappear in consumer pubspecs.
 
-Until publish, **keep path deps** — integration tests depend on the local `intentcall/` workspace.
+Path dependencies are now local-development-only. Do not restore them for normal hosted integration.

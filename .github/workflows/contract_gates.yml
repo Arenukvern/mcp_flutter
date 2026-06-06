@@ -101,6 +101,9 @@ jobs:
         continue-on-error: true
         run: bash tool/contracts/check_plugin_surfaces.sh
 
+      - name: Check version sync
+        run: bash tool/contracts/check_version_sync.sh
+
       - name: Check tool prefix
         continue-on-error: true
         run: bash tool/contracts/check_tool_prefix.sh

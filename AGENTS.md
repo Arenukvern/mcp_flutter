@@ -110,12 +110,12 @@ When implementing the **intentcall** migration, use the self-closing loop — do
 | `docs/superpowers/plans/2026-05-25-intentcall-rollout.md` | Program overview |
 | `docs/superpowers/tracker/intentcall-rollout.yaml` | Active phase + status |
 | `docs/superpowers/intentcall-self-closing-loop.md` | Implementer + **Closer** protocol |
-| `docs/superpowers/plans/2026-05-27-intentcall-phase7-extract.md` | Active extract work (tracker `active_work_plan`) |
+| `docs/superpowers/plans/2026-05-27-intentcall-phase7-extract.md` | Historical extract plan; do not re-execute publish/cutover steps |
 | `docs/superpowers/plans/2026-05-26-visual-reconstruct-next.md` | Visual harness maintenance (checkpoint + optional runtime E2E) |
 | `docs/superpowers/WHATS_NEXT.md` | Single-page forward index |
 | `docs/superpowers/plans/archive/` | Historical phase plans — do not execute |
 
-**Closer** verifies, writes `docs/superpowers/closure/`, regenerates the same phase plan on failure or the next phase plan on success. In-repo product gate is `complete_in_repo_product`; **Phase 7 extract** is `in_progress` (7.4–7.7 pending publish — see tracker).
+**Closer** verifies, writes `docs/superpowers/closure/`, regenerates the same phase plan on failure or the next phase plan on success. In-repo product gate is `complete_in_repo_product`; **Phase 7 extract/cutover is post-cutover**. Agents should validate hosted `intentcall_*` dependencies and regression gates, not re-run the initial publish/cutover.
 
 ## Governance & Skill Steward
 

@@ -36,6 +36,12 @@ jobs:
         working-directory: mcp_server_dart
         run: flutter pub get
 
+      - name: Assert release tag matches VERSION
+        run: bash tool/release/assert_release_tag.sh "${{ github.ref_name }}"
+
+      - name: Check release version sync
+        run: bash tool/contracts/check_version_sync.sh
+
       - name: Build release artifacts
         env:
           VERSION: ${{ github.ref_name }}

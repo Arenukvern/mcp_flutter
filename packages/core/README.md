@@ -8,7 +8,7 @@ No Flutter SDK, `dart_mcp`, or transport dependencies.
 
 ```yaml
 dependencies:
-  flutter_mcp_toolkit_core: ^0.1.0
+  flutter_mcp_toolkit_core: ^4.0.0-dev.1
 ```
 
 ## Usage

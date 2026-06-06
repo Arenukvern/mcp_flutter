@@ -4,6 +4,12 @@
 
 ### Changed
 
+## [4.0.0-dev.1] - 2026-06-06
+
+### Changed
+
+- Align server package, runtime metadata, capability package constraints, and plugin manifests with the Flutter MCP Toolkit breaking prerelease train.
+
 - Raised workspace Dart SDK floor to `>=3.12.0 <4.0.0` for the MCP server package and aligned Docker examples with Dart `3.12.0`.
 - `validate-runtime`: after a failed host `desktop_window` screenshot (`get_screenshots_failed`, retryable), automatically retries `capture_ui_snapshot` with `flutter_layer`. Summary includes `captureFallbackUsed` when the retry succeeds.
 - Global `--vm-service-uri` is accepted as the VM target for `validate-runtime` (and warns if both `--target` and `--vm-service-uri` differ; `--target` wins).

@@ -38,6 +38,17 @@ check-contracts:
 release-artifacts:
 	cd $(CURDIR) && bash tool/release/build_release_artifacts.sh
 
+.PHONY: sync-version
+sync-version:
+	cd $(CURDIR) && bash tool/release/sync_version.sh
+
+.PHONY: publish-pub-dry-run publish-pub
+publish-pub-dry-run:
+	cd $(CURDIR) && bash tool/release/publish_pub_packages.sh
+
+publish-pub:
+	cd $(CURDIR) && bash tool/release/publish_pub_packages.sh --execute --skip-existing
+
 # Run the flutter_test_app showcase on macOS and print the canonical VM URI
 # once the app is ready. Blocks the terminal so the agent can copy the URI
 # into subsequent CLI calls (`--args '{"connection":{"targetId":"<uri>"}}'`).

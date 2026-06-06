@@ -2,15 +2,17 @@
 
 Single forward index. **Source of truth for program state:** [tracker/intentcall-rollout.yaml](tracker/intentcall-rollout.yaml).
 
-## intentcall (Phase 7 extract — in progress)
+## intentcall (post-cutover verification)
 
 | Sub-phase | Status | Doc / command |
 |-----------|--------|----------------|
-| 7.4 Publish to pub.dev | Pending | [Phase 7 plan](plans/2026-05-27-intentcall-phase7-extract.md) · `bash tool/intentcall/publish_all.sh --execute` |
-| 7.5 Hosted consumer cutover | Pending (blocked on 7.4) | [Phase 7 plan](plans/2026-05-27-intentcall-phase7-extract.md) §7.5 · [hosted_cutover.md](../../docs/intentcall/hosted_cutover.md) |
-| 7.7 Integration on hosted versions | Pending (blocked on 7.5) | `make check-intentcall-integration` after cutover |
+| 7.4 Publish to pub.dev | Done | `intentcall_*` packages are hosted at `0.1.0`; use the Phase 7 plan only as release history |
+| 7.5 Hosted consumer cutover | Done | `mcp_toolkit`, `mcp_server_dart`, capability packages, and `flutter_test_app` use hosted `intentcall_* ^0.1.0` |
+| 7.7 Integration on hosted versions | Active verification | `make check-contracts`; stale path scan for `agentkit/packages`, `intentcall/packages`, and `path: .*intentcall` |
 
 **Done in-repo:** `program.status: complete_in_repo_product` — integration hardening archived ([integration completion plan](plans/archive/2026-05-26-intentcall-integration-completion-next.md)).
+
+**Current next work:** keep hosted dependency proof green, publish/validate `mcp_toolkit` prereleases explicitly, and update downstream apps only when they pin the intended prerelease (`^4.0.0-dev.1` or newer).
 
 **Loop:** [intentcall-self-closing-loop.md](intentcall-self-closing-loop.md) · **Design:** [specs/2026-05-25-intentcall-design.md](specs/2026-05-25-intentcall-design.md)
 

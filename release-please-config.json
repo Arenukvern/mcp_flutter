@@ -42,7 +42,13 @@
         "packages/core/lib/src/runtime_version.dart",
         "packages/server_capability_core/lib/src/fmt_capability.dart",
         "mcp_server_dart/pubspec.yaml",
-        "mcp_toolkit/pubspec.yaml"
+        "mcp_toolkit/pubspec.yaml",
+        "packages/core/pubspec.yaml",
+        "packages/server_capability_kernel/pubspec.yaml",
+        "packages/server_capability_core/pubspec.yaml",
+        "packages/core/README.md",
+        "packages/server_capability_kernel/README.md",
+        "packages/server_capability_core/README.md"
       ]
     }
   }

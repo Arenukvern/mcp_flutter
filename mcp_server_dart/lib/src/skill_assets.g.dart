@@ -1706,6 +1706,9 @@ release-please on `main`; use manual steps only when the Release PR path is bloc
 | [packages/server_capability_core/lib/src/fmt_capability.dart](https://github.com/Arenukvern/mcp_flutter/blob/main/packages/server_capability_core/lib/src/fmt_capability.dart) | `version` getter                                                                                                                                      |
 | [mcp_server_dart/pubspec.yaml](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_server_dart/pubspec.yaml)                                                               | `version:`                                                                                                                                            |
 | [mcp_toolkit/pubspec.yaml](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_toolkit/pubspec.yaml)                                                                       | `version:`                                                                                                                                            |
+| [packages/core/pubspec.yaml](https://github.com/Arenukvern/mcp_flutter/blob/main/packages/core/pubspec.yaml)                                                                   | `version:`                                                                                                                                            |
+| [packages/server_capability_kernel/pubspec.yaml](https://github.com/Arenukvern/mcp_flutter/blob/main/packages/server_capability_kernel/pubspec.yaml)                           | `version:` + same-train dependency constraints                                                                                                        |
+| [packages/server_capability_core/pubspec.yaml](https://github.com/Arenukvern/mcp_flutter/blob/main/packages/server_capability_core/pubspec.yaml)                               | `version:` + same-train dependency constraints                                                                                                        |
 | [plugin/.cursor-plugin/plugin.json](https://github.com/Arenukvern/mcp_flutter/blob/main/plugin/.cursor-plugin/plugin.json)                                                     | `version`                                                                                                                                             |
 | [plugin/.codex-plugin/plugin.json](https://github.com/Arenukvern/mcp_flutter/blob/main/plugin/.codex-plugin/plugin.json)                                                       | `version`                                                                                                                                             |
 | [plugin/.claude-plugin/plugin.json](https://github.com/Arenukvern/mcp_flutter/blob/main/plugin/.claude-plugin/plugin.json)                                                     | `version`                                                                                                                                             |
@@ -1713,7 +1716,7 @@ release-please on `main`; use manual steps only when the Release PR path is bloc
 | [.release-please-manifest.json](https://github.com/Arenukvern/mcp_flutter/blob/main/.release-please-manifest.json)                                                             | `"."` key                                                                                                                                             |
 | [mcp_server_dart/lib/src/skill_assets.g.dart](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_server_dart/lib/src/skill_assets.g.dart)                                 | **generated** — embeds `plugin/.cursor-plugin/plugin.json`, `plugin/.codex-plugin/plugin.json`, `plugin/mcp.json`, and all `plugin/skills/*/SKILL.md` |
 
-After any version bump in `plugin/*-plugin/plugin.json` or edit under `plugin/skills/`: run `make sync-skills`, then `make check-contracts` (includes `check_version_sync.sh` and `check_skill_assets_drift.sh`).
+After any version bump: run `make sync-version`, then `make sync-skills`, then `make check-contracts` (includes `check_version_sync.sh` and `check_skill_assets_drift.sh`). `tool/release/sync_version.sh` derives all version touchpoints from root `VERSION`.
 
 **Harness / video (separate repos):** [flutter_harness](https://github.com/Arenukvern/flutter_harness), [flutter_mcp_video](https://github.com/Arenukvern/flutter_mcp_video) — not maintained in this plugin tree. Three-repo layout: [flutter_harness/docs/RELATED_REPOS.md](https://github.com/Arenukvern/flutter_harness/blob/main/docs/RELATED_REPOS.md).
 
@@ -1737,16 +1740,23 @@ Keep a Changelog **requires** version headings like `## [3.0.1]`. Linters treat 
 flowchart LR
   main[merge_to_main] --> rp[release-please.yml]
   rp --> pr[Release_PR]
+  pr --> sync[release_pr_sync_versions.yml]
+  pr --> assets[release_pr_sync_skills.yml]
   pr --> tag[vX_Y_Z_tag]
   tag --> rel[release.yml_binaries]
+  tag --> pub[pub_publish.yml_pubdev]
 ```
 
 1. Merge PRs to `main` with conventional commits.
 2. Wait for **Release PR** from [release-please.yml](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/release-please.yml).
-3. **skill assets:** [release_pr_sync_skills.yml](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/release_pr_sync_skills.yml) auto-commits `skill_assets.g.dart` on Release PRs when drift is detected; posts a checklist comment on PR open. If **skill-assets-drift** still fails, run `make sync-skills` locally and push (release-please bumps `plugin/*-plugin/plugin.json` but not the generated bundle).
-4. Review VERSION, CHANGELOG, pubspecs, plugin pins in that PR → merge.
-5. release-please creates `vX.Y.Z` + GitHub release notes.
-6. [release.yml](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/release.yml) attaches `flutter_mcp_*` tarballs (does not overwrite release body).
+3. **version train:** [release_pr_sync_versions.yml](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/release_pr_sync_versions.yml) runs `tool/release/sync_version.sh` on Release PRs and commits any drift from root `VERSION`.
+4. **skill assets:** [release_pr_sync_skills.yml](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/release_pr_sync_skills.yml) auto-commits `skill_assets.g.dart` on Release PRs when drift is detected; posts a checklist comment on PR open. If **skill-assets-drift** still fails, run `make sync-skills` locally and push.
+5. Review VERSION, CHANGELOG, pubspecs, plugin pins in that PR → merge.
+6. release-please creates `vX.Y.Z` + GitHub release notes.
+7. [release.yml](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/release.yml) asserts tag == `VERSION`, then attaches `flutter_mcp_*` tarballs (does not overwrite release body).
+8. [pub_publish.yml](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/pub_publish.yml) publishes pub.dev packages in dependency order through OIDC: `flutter_mcp_toolkit_core` → `flutter_mcp_toolkit_capability_kernel` → `flutter_mcp_toolkit_capability_core` → `mcp_toolkit`.
+
+Before automated pub.dev publishing can run, each package must already have a first manual publish and pub.dev Admin must enable GitHub Actions publishing for this repository with tag pattern `v{{version}}`. Use GitHub environment `pub.dev` with required reviewers.
 
 Config: [release-please-config.json](https://github.com/Arenukvern/mcp_flutter/blob/main/release-please-config.json).
 
@@ -1755,14 +1765,16 @@ Config: [release-please-config.json](https://github.com/Arenukvern/mcp_flutter/b
 Use when release-please is unavailable or you must ship from a branch:
 
 1. Move `## [Unreleased]` bullets into `## [X.Y.Z]` (add date), leave empty `## [Unreleased]`.
-2. Bump all version touchpoints above to `X.Y.Z`.
-3. Update `.release-please-manifest.json` `"."` to `X.Y.Z`.
-4. `make sync-skills` (required whenever plugin manifests or skills change — release-please bumps plugin JSON but not `skill_assets.g.dart`).
+2. Update `VERSION` to `X.Y.Z`.
+3. `make sync-version` to derive all version touchpoints and `.release-please-manifest.json`.
+4. `make sync-skills` (required whenever plugin manifests or skills change).
 5. `make check-contracts`
 6. Commit: `chore: release X.Y.Z`
-7. Tag: `git tag vX.Y.Z` and push tag (triggers binary workflow).
+7. Optional pub.dev preflight: `make publish-pub-dry-run`.
+8. Tag: `git tag vX.Y.Z` and push tag (triggers binary and pub.dev workflows).
 
 Build artifacts locally: `make release-artifacts` or `bash tool/release/build_release_artifacts.sh --version X.Y.Z`.
+Publish pub.dev packages locally only as a fallback: `make publish-pub`.
 
 ## Docs map (single sources of truth)
 
@@ -2097,7 +2109,7 @@ Full Chrome runtime dogfood stays **local** until headless WebMCP is cost-effect
   static const String cursorPluginManifest = r'''{
   "name": "flutter-mcp-toolkit",
   "description": "Flutter MCP toolkit: inspect and drive debug apps (semantic snapshot, tap, hot-reload) and register custom MCP tools and resources at runtime from your Flutter app or game via mcp_toolkit — closed agent feedback loop.",
-  "version": "3.1.0",
+  "version": "4.0.0-dev.1",
   "author": {
     "name": "Arenukvern",
     "url": "https://github.com/Arenukvern/mcp_flutter"
@@ -2121,7 +2133,7 @@ Full Chrome runtime dogfood stays **local** until headless WebMCP is cost-effect
 ''';
   static const String codexPluginManifest = r'''{
   "name": "flutter-mcp-toolkit",
-  "version": "3.1.0",
+  "version": "4.0.0-dev.1",
   "description": "Flutter MCP toolkit: inspect and drive debug apps (semantic snapshot, tap, hot-reload) and register custom MCP tools and resources at runtime from your Flutter app or game via mcp_toolkit — closed agent feedback loop.",
   "author": {
     "name": "Arenukvern",

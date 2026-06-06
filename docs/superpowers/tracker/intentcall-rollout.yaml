@@ -196,24 +196,24 @@ phases:
 
   - id: phase7
     title: Standalone intentcall monorepo extract
-    status: in_progress
+    status: done
     blocked_by: phase8
     sub_phases:
       - { id: 7.1, title: Workspace scaffold + package move, status: done, last_gate_at: 2026-05-27 }
-      - { id: 7.2, title: Consumer path deps (no mcp_flutter workspace), status: done, last_gate_at: 2026-05-27 }
+      - { id: 7.2, title: Historical consumer path deps during extract, status: done, last_gate_at: 2026-05-27 }
       - { id: 7.3, title: Pub.dev metadata + dry-run, status: done, last_gate_at: 2026-05-27 }
-      - { id: 7.4, title: Publish to pub.dev, status: pending, notes: run publish_all.sh --execute }
-      - { id: 7.5, title: Hosted consumer cutover, status: pending, blocked_by: 7.4 }
+      - { id: 7.4, title: Publish to pub.dev, status: done, last_gate_at: 2026-06-06, notes: intentcall_* 0.1.0 published }
+      - { id: 7.5, title: Hosted consumer cutover, status: done, last_gate_at: 2026-06-06, notes: mcp_flutter consumers use hosted intentcall_* ^0.1.0 }
       - { id: 7.6, title: Publish automation, status: done, last_gate_at: 2026-05-27 }
-      - { id: 7.7, title: Integration on hosted versions, status: pending, blocked_by: 7.5 }
+      - { id: 7.7, title: Integration on hosted versions, status: done, last_gate_at: 2026-06-06, notes: make check-contracts and focused hosted dependency tests passed }
     plan: docs/superpowers/plans/2026-05-27-intentcall-phase7-extract.md
     spec: docs/superpowers/specs/2026-05-25-intentcall-design.md
     adr: decisions/0009-intentcall-extract.mdx
     validation:
-      - cd intentcall && make test
-      - cd intentcall && make analyze
-      - make check-intentcall-integration
-      - make publish-intentcall-dry-run
+      - cd ../agentkit && just test
+      - cd ../agentkit && just analyze
+      - make check-contracts
+      - rg -n "agentkit/packages|intentcall/packages|path: .*intentcall" pubspec.yaml packages/*/pubspec.yaml mcp_toolkit/pubspec.yaml flutter_test_app/pubspec.yaml mcp_server_dart/pubspec.yaml
       - make dogfood-eval-static
       - make dogfood-eval   # requires WS_URI from make web-showcase
 
