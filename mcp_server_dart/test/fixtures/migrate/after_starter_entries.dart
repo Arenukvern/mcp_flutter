@@ -7,15 +7,15 @@ Set<AgentCallEntry> buildStarterEntries() => {
     namespace: 'app',
     name: 'ping_tool',
     description: 'Returns pong',
-    inputSchema: const {'type': 'object', 'properties': <String, Object?>{}},
+    inputSchema: const {
+      'type': 'object',
+      'properties': <String, Object?>{},
+    },
     handler: (final args) async {
       final request = args.map(
         (final key, final value) => MapEntry(key, value?.toString() ?? ''),
       );
-      final _result = MCPCallResult(
-        message: 'pong',
-        parameters: const {'ok': true},
-      );
+      final _result = MCPCallResult(message: 'pong', parameters: const {'ok': true});
       final message = _result['message'] as String? ?? '';
       final data = Map<String, Object?>.from(_result)..remove('message');
       return AgentResult.success(message: message, data: data);
@@ -30,10 +30,7 @@ Set<AgentCallEntry> buildStarterEntries() => {
       final request = args.map(
         (final key, final value) => MapEntry(key, value?.toString() ?? ''),
       );
-      final _result = MCPCallResult(
-        message: 'status',
-        parameters: const {'ready': true},
-      );
+      final _result = MCPCallResult(message: 'status', parameters: const {'ready': true});
       final message = _result['message'] as String? ?? '';
       final data = Map<String, Object?>.from(_result)..remove('message');
       return AgentResult.success(message: message, data: data);

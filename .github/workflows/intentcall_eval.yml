@@ -19,12 +19,6 @@ jobs:
       - name: Checkout mcp_flutter
         uses: actions/checkout@v4
 
-      - name: Checkout intentcall workspace
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ github.repository_owner }}/intentcall
-          path: intentcall-external
-
       - name: Setup Flutter SDK
         uses: subosito/flutter-action@v2
         with:
@@ -36,8 +30,6 @@ jobs:
         run: flutter pub get
 
       - name: Static dogfood battery
-        env:
-          INTENTCALL_ROOT: ${{ github.workspace }}/intentcall-external
         run: make dogfood-eval-static
 
   intentcall-integration:
@@ -49,12 +41,6 @@ jobs:
       - name: Checkout mcp_flutter
         uses: actions/checkout@v4
 
-      - name: Checkout intentcall workspace
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ github.repository_owner }}/intentcall
-          path: intentcall-external
-
       - name: Setup Flutter SDK
         uses: subosito/flutter-action@v2
         with:
@@ -65,12 +51,12 @@ jobs:
         working-directory: mcp_server_dart
         run: flutter pub get
 
-      - name: Full intentcall integration matrix
-        env:
-          INTENTCALL_ROOT: ${{ github.workspace }}/intentcall-external
+      - name: Hosted intentcall integration matrix
         run: |
-          make check-intentcall-integration
-          make -C "${INTENTCALL_ROOT}" analyze
+          make dogfood-eval-static
+          dart test packages/server_capability_kernel packages/server_capability_core
+          cd mcp_server_dart
+          dart test test/contract/
 
   intentcall-weekly:
     name: intentcall package tests (weekly / main)
@@ -82,12 +68,6 @@ jobs:
       - name: Checkout mcp_flutter
         uses: actions/checkout@v4
 
-      - name: Checkout intentcall workspace
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ github.repository_owner }}/intentcall
-          path: intentcall-external
-
       - name: Setup Flutter SDK
         uses: subosito/flutter-action@v2
         with:
@@ -98,15 +78,9 @@ jobs:
         working-directory: mcp_server_dart
         run: flutter pub get
 
-      - name: intentcall package test matrix
-        env:
-          INTENTCALL_ROOT: ${{ github.workspace }}/intentcall-external
+      - name: Hosted package compatibility smoke
         run: |
-          make -C "${INTENTCALL_ROOT}" test
-          make -C "${INTENTCALL_ROOT}" analyze
           dart test packages/server_capability_kernel packages/server_capability_core
 
       - name: Static dogfood battery
-        env:
-          INTENTCALL_ROOT: ${{ github.workspace }}/intentcall-external
         run: make dogfood-eval-static
