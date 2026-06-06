@@ -4,7 +4,7 @@ class CodegenSnippets {
   static const String flutterMainInit = '''
 import 'dart:async';
 import 'package:flutter/widgets.dart';
-import 'package:flutter_mcp_toolkit/flutter_mcp_toolkit.dart';
+import 'package:mcp_toolkit/mcp_toolkit.dart';
 
 void main() {
   runZonedGuarded(

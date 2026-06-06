@@ -2,7 +2,6 @@ name: mcp_toolkit
 description: Flutter MCP Toolkit to add Flutter-specific methods to the MCP server
 repository: https://github.com/Arenukvern/mcp_flutter/tree/main/mcp_toolkit
 version: 4.0.0-dev.1
-publish_to: none
 environment:
   sdk: ">=3.11.0 <4.0.0"
 dependencies:
@@ -11,8 +10,7 @@ dependencies:
   equatable: ^2.0.8
   flutter:
     sdk: flutter
-  flutter_mcp_toolkit_core:
-    path: ../packages/core
+  flutter_mcp_toolkit_core: 
   from_json_to_json: ^0.5.0
   intentcall_core: ^0.1.0
   intentcall_platform: ^0.1.0

@@ -197,7 +197,7 @@ Mode auto-detects (MCP if registered, else CLI). Override with `--mode mcp|cli|a
 
 ### `codegen-init`
 
-From a Flutter project root, add `flutter_mcp_toolkit` as a dependency and emit
+From a Flutter project root, add `mcp_toolkit` as a dependency and emit
 the boilerplate snippet for `lib/main.dart`.
 
 ```bash

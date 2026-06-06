@@ -2122,7 +2122,7 @@ final _argParser = ArgParser(allowTrailingOptions: false)
       ..addFlag(
         'pub-add',
         defaultsTo: true,
-        help: 'Run "flutter pub add flutter_mcp_toolkit" first.',
+        help: 'Run "flutter pub add mcp_toolkit" first.',
       ),
   )
   ..addCommand(
@@ -2395,7 +2395,7 @@ Examples:
   flutter-mcp-toolkit codegen-init
   flutter-mcp-toolkit codegen-init --no-pub-add
 
-Adds flutter_mcp_toolkit to a Flutter app and emits boilerplate for main.dart.
+Adds mcp_toolkit to a Flutter app and emits boilerplate for main.dart.
 ''';
 
 Future<int> _runInitSubcommand(final ArgResults command) async {
