@@ -156,90 +156,94 @@ void main() {
       expect(commands, equals(<String>['focus', 'capture']));
     });
 
-    test('captures base64 PNG payload from swift helper output', () async {
-      final tempDir = await Directory.systemTemp.createTemp(
-        'mcp_window_capture',
-      );
-      addTearDown(() async {
-        if (tempDir.existsSync()) {
-          await tempDir.delete(recursive: true);
-        }
-      });
-
-      final bundleDir = Directory(
-        '${tempDir.path}/build/macos/Build/Products/Debug/sample_app.app/Contents/MacOS',
-      )..createSync(recursive: true);
-      File('${bundleDir.path}/sample_app').writeAsStringSync('');
-
-      String? compiledBinary;
-      final commands = <String>[];
-
-      final service = MacOsDesktopWindowScreenshotService(
-        runProcess: (final executable, final arguments) async {
-          if (executable == 'swiftc') {
-            compiledBinary = arguments.last;
-            return ProcessResult(1, 0, '', '');
+    test(
+      'captures base64 PNG payload from swift helper output',
+      () async {
+        final tempDir = await Directory.systemTemp.createTemp(
+          'mcp_window_capture',
+        );
+        addTearDown(() async {
+          if (tempDir.existsSync()) {
+            await tempDir.delete(recursive: true);
           }
-          expect(executable, equals(compiledBinary));
-          commands.add(arguments.first);
-          if (arguments.first == 'focus') {
-            return ProcessResult(
-              1,
-              0,
-              jsonEncode(<String, Object?>{'ok': true}),
-              '',
-            );
-          }
-          expect(arguments.first, equals('capture'));
-          expect(arguments[1], equals('--pid'));
-          expect(arguments[2], equals('98223'));
-          final payload = <String, Object?>{
-            'ok': true,
-            'appName': 'sample_app',
-            'windowOwnerPid': 98223,
-            'windowId': 77,
-            'windowTitle': 'Sample Window',
-            'windowSelectionSource': 'all_windows_fallback',
-            'windowCaptureVisibility': 'offscreen_or_hidden',
-            'windowBounds': <String, Object?>{
-              'x': 10.0,
-              'y': 20.0,
-              'width': 300.0,
-              'height': 200.0,
-            },
-            'pngBase64': base64Encode(<int>[1, 2, 3, 4]),
-            'permissionStatus': 'granted',
-          };
-          return ProcessResult(1, 0, jsonEncode(payload), '');
-        },
-      );
+        });
 
-      final capture = await service.capture(
-        projectDir: tempDir.path,
-        device: 'macos',
-        compress: true,
-        targetPid: 98223,
-        cacheDir: tempDir.path,
-      );
+        final bundleDir = Directory(
+          '${tempDir.path}/build/macos/Build/Products/Debug/sample_app.app/Contents/MacOS',
+        )..createSync(recursive: true);
+        File('${bundleDir.path}/sample_app').writeAsStringSync('');
 
-      expect(capture, isNotNull);
-      expect(capture!.captureMode, equals('desktop_window'));
-      expect(capture.images, hasLength(1));
-      expect(capture.metadata['appName'], equals('sample_app'));
-      expect(capture.metadata['windowOwnerPid'], equals(98223));
-      expect(capture.metadata['windowId'], equals(77));
-      expect(capture.metadata['windowTitle'], equals('Sample Window'));
-      expect(
-        capture.metadata['windowSelectionSource'],
-        equals('all_windows_fallback'),
-      );
-      expect(
-        capture.metadata['windowCaptureVisibility'],
-        equals('offscreen_or_hidden'),
-      );
-      expect(compiledBinary, isNotNull);
-      expect(commands, equals(<String>['focus', 'capture']));
-    });
+        String? compiledBinary;
+        final commands = <String>[];
+
+        final service = MacOsDesktopWindowScreenshotService(
+          runProcess: (final executable, final arguments) async {
+            if (executable == 'swiftc') {
+              compiledBinary = arguments.last;
+              return ProcessResult(1, 0, '', '');
+            }
+            expect(executable, equals(compiledBinary));
+            commands.add(arguments.first);
+            if (arguments.first == 'focus') {
+              return ProcessResult(
+                1,
+                0,
+                jsonEncode(<String, Object?>{'ok': true}),
+                '',
+              );
+            }
+            expect(arguments.first, equals('capture'));
+            expect(arguments[1], equals('--pid'));
+            expect(arguments[2], equals('98223'));
+            final payload = <String, Object?>{
+              'ok': true,
+              'appName': 'sample_app',
+              'windowOwnerPid': 98223,
+              'windowId': 77,
+              'windowTitle': 'Sample Window',
+              'windowSelectionSource': 'all_windows_fallback',
+              'windowCaptureVisibility': 'offscreen_or_hidden',
+              'windowBounds': <String, Object?>{
+                'x': 10.0,
+                'y': 20.0,
+                'width': 300.0,
+                'height': 200.0,
+              },
+              'pngBase64': base64Encode(<int>[1, 2, 3, 4]),
+              'permissionStatus': 'granted',
+            };
+            return ProcessResult(1, 0, jsonEncode(payload), '');
+          },
+        );
+
+        final capture = await service.capture(
+          projectDir: tempDir.path,
+          device: 'macos',
+          compress: true,
+          targetPid: 98223,
+          cacheDir: tempDir.path,
+        );
+
+        expect(capture, isNotNull);
+        expect(capture!.captureMode, equals('desktop_window'));
+        expect(capture.images, hasLength(1));
+        expect(capture.metadata['appName'], equals('sample_app'));
+        expect(capture.metadata['windowOwnerPid'], equals(98223));
+        expect(capture.metadata['windowId'], equals(77));
+        expect(capture.metadata['windowTitle'], equals('Sample Window'));
+        expect(
+          capture.metadata['windowSelectionSource'],
+          equals('all_windows_fallback'),
+        );
+        expect(
+          capture.metadata['windowCaptureVisibility'],
+          equals('offscreen_or_hidden'),
+        );
+        expect(compiledBinary, isNotNull);
+        expect(commands, equals(<String>['focus', 'capture']));
+      },
+      skip: !Platform.isMacOS ? 'macOS helper only' : false,
+    );
 
     test(
       'compiled helper source exits explicitly after emitting payload',
@@ -306,66 +310,71 @@ void main() {
         expect(helperSource, contains('FileHandle.standardOutput.write(data)'));
         expect(helperSource, contains('Foundation.exit(0)'));
       },
+      skip: !Platform.isMacOS ? 'macOS helper only' : false,
     );
 
-    test('surfaces structured helper failures with details', () async {
-      final tempDir = await Directory.systemTemp.createTemp(
-        'mcp_window_capture',
-      );
-      addTearDown(() async {
-        if (tempDir.existsSync()) {
-          await tempDir.delete(recursive: true);
-        }
-      });
-
-      final bundleDir = Directory(
-        '${tempDir.path}/build/macos/Build/Products/Debug/sample_app.app/Contents/MacOS',
-      )..createSync(recursive: true);
-      File('${bundleDir.path}/sample_app').writeAsStringSync('');
-
-      String? compiledBinary;
-      final service = MacOsDesktopWindowScreenshotService(
-        runProcess: (final executable, final arguments) async {
-          if (executable == 'swiftc') {
-            compiledBinary = arguments.last;
-            return ProcessResult(1, 0, '', '');
+    test(
+      'surfaces structured helper failures with details',
+      () async {
+        final tempDir = await Directory.systemTemp.createTemp(
+          'mcp_window_capture',
+        );
+        addTearDown(() async {
+          if (tempDir.existsSync()) {
+            await tempDir.delete(recursive: true);
           }
-          expect(executable, equals(compiledBinary));
-          final payload = <String, Object?>{
-            'ok': false,
-            'error': 'window_not_found',
-            'details': <String, Object?>{
-              'visibleOwners': <String>['Codex'],
-              'allOwners': <String>['Codex', 'sample_app'],
-            },
-          };
-          return ProcessResult(1, 0, jsonEncode(payload), '');
-        },
-      );
+        });
 
-      expect(
-        () => service.capture(
-          projectDir: tempDir.path,
-          device: 'macos',
-          compress: true,
-          targetPid: 98223,
-          cacheDir: tempDir.path,
-        ),
-        throwsA(
-          isA<DesktopWindowCaptureException>()
-              .having(
-                (final e) => e.message,
-                'message',
-                contains('window_not_found'),
-              )
-              .having(
-                (final e) => e.details['allOwners'],
-                'details.allOwners',
-                equals(const <String>['Codex', 'sample_app']),
-              ),
-        ),
-      );
-    });
+        final bundleDir = Directory(
+          '${tempDir.path}/build/macos/Build/Products/Debug/sample_app.app/Contents/MacOS',
+        )..createSync(recursive: true);
+        File('${bundleDir.path}/sample_app').writeAsStringSync('');
+
+        String? compiledBinary;
+        final service = MacOsDesktopWindowScreenshotService(
+          runProcess: (final executable, final arguments) async {
+            if (executable == 'swiftc') {
+              compiledBinary = arguments.last;
+              return ProcessResult(1, 0, '', '');
+            }
+            expect(executable, equals(compiledBinary));
+            final payload = <String, Object?>{
+              'ok': false,
+              'error': 'window_not_found',
+              'details': <String, Object?>{
+                'visibleOwners': <String>['Codex'],
+                'allOwners': <String>['Codex', 'sample_app'],
+              },
+            };
+            return ProcessResult(1, 0, jsonEncode(payload), '');
+          },
+        );
+
+        expect(
+          () => service.capture(
+            projectDir: tempDir.path,
+            device: 'macos',
+            compress: true,
+            targetPid: 98223,
+            cacheDir: tempDir.path,
+          ),
+          throwsA(
+            isA<DesktopWindowCaptureException>()
+                .having(
+                  (final e) => e.message,
+                  'message',
+                  contains('window_not_found'),
+                )
+                .having(
+                  (final e) => e.details['allOwners'],
+                  'details.allOwners',
+                  equals(const <String>['Codex', 'sample_app']),
+                ),
+          ),
+        );
+      },
+      skip: !Platform.isMacOS ? 'macOS helper only' : false,
+    );
 
     test('status/request/open-settings parse helper payloads', () async {
       final calls = <String>[];

@@ -291,6 +291,7 @@ void main() {
         expect(data['owner'], equals('host'));
         expect(data['backend'], isNotEmpty);
       },
+      skip: !Platform.isMacOS ? 'macOS host broker only' : false,
     );
 
     test(
