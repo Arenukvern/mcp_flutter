@@ -1,8 +1,6 @@
 // Copyright (c) 2025, Flutter Inspector MCP Server authors.
 // Licensed under the MIT License.
 
-import 'package:intentcall_schema/intentcall_schema.dart';
-
 import '../connection/connection_override.dart';
 
 export 'package:intentcall_schema/intentcall_schema.dart'
@@ -50,9 +48,7 @@ Map<String, Object?> tapWidgetInputSchema() => <String, Object?>{
 Map<String, Object?> semanticSnapshotInputSchema() => <String, Object?>{
   'type': 'object',
   'additionalProperties': false,
-  'properties': <String, Object?>{
-    'connection': connectionOverrideJsonSchema(),
-  },
+  'properties': <String, Object?>{'connection': connectionOverrideJsonSchema()},
 };
 
 /// Shared JSON Schema for [wait_for] / `fmt_wait_for`.
@@ -143,10 +139,7 @@ Map<String, Object?> longPressInputSchema() => <String, Object?>{
   'additionalProperties': false,
   'required': <String>['ref'],
   'properties': <String, Object?>{
-    'ref': <String, Object?>{
-      'type': 'string',
-      'description': 'Widget ref.',
-    },
+    'ref': <String, Object?>{'type': 'string', 'description': 'Widget ref.'},
     'snapshotId': <String, Object?>{
       'type': 'integer',
       'description':
@@ -335,18 +328,14 @@ Map<String, Object?> hotReloadFlutterInputSchema() => <String, Object?>{
 Map<String, Object?> hotRestartFlutterInputSchema() => <String, Object?>{
   'type': 'object',
   'additionalProperties': false,
-  'properties': <String, Object?>{
-    'connection': connectionOverrideJsonSchema(),
-  },
+  'properties': <String, Object?>{'connection': connectionOverrideJsonSchema()},
 };
 
 /// Shared JSON Schema for [get_view_details] / `fmt_get_view_details`.
 Map<String, Object?> getViewDetailsInputSchema() => <String, Object?>{
   'type': 'object',
   'additionalProperties': false,
-  'properties': <String, Object?>{
-    'connection': connectionOverrideJsonSchema(),
-  },
+  'properties': <String, Object?>{'connection': connectionOverrideJsonSchema()},
 };
 
 /// Shared JSON Schema for [inspect_widget_at_point] / `fmt_inspect_widget_at_point`.
@@ -427,8 +416,7 @@ Map<String, Object?> focusWindowInputSchema() => <String, Object?>{
   'properties': <String, Object?>{
     'targetPid': <String, Object?>{
       'type': 'integer',
-      'description':
-          'Optional VM process id (defaults to the connected VM).',
+      'description': 'Optional VM process id (defaults to the connected VM).',
     },
     'connection': connectionOverrideJsonSchema(),
   },
@@ -581,34 +569,35 @@ const interactionCatalogInputSchemaForCommandNames = <String>[
 /// Covers [interactionCatalogInputSchemaForCommandNames] (24): the
 /// [tierAExecCatalogCommandNames] set (18 core + 4 inspection) plus two capture tools.
 /// Returns `null` for commands outside that set.
-Map<String, Object?>? interactionCatalogInputSchemaFor(final String commandName) =>
-    switch (commandName) {
-      'tap_widget' => tapWidgetInputSchema(),
-      'semantic_snapshot' => semanticSnapshotInputSchema(),
-      'wait_for' => waitForInputSchema(),
-      'enter_text' => enterTextInputSchema(),
-      'scroll' => scrollInputSchema(),
-      'long_press' => longPressInputSchema(),
-      'swipe' => swipeInputSchema(),
-      'drag' => dragInputSchema(),
-      'fill_form' => fillFormInputSchema(),
-      'hover' => hoverInputSchema(),
-      'press_key' => pressKeyInputSchema(),
-      'get_recent_logs' => getRecentLogsInputSchema(),
-      'handle_dialog' => handleDialogInputSchema(),
-      'navigate' => navigateInputSchema(),
-      'evaluate_dart_expression' => evaluateDartExpressionInputSchema(),
-      'hot_reload_flutter' => hotReloadFlutterInputSchema(),
-      'hot_restart_flutter' => hotRestartFlutterInputSchema(),
-      'hot_reload_and_capture' => hotReloadAndCaptureInputSchema(),
-      'get_screenshots' => getScreenshotsInputSchema(),
-      'capture_ui_snapshot' => captureUiSnapshotInputSchema(),
-      'get_view_details' => getViewDetailsInputSchema(),
-      'inspect_widget_at_point' => inspectWidgetAtPointInputSchema(),
-      'get_app_errors' => getAppErrorsInputSchema(),
-      'focus_window' => focusWindowInputSchema(),
-      _ => null,
-    };
+Map<String, Object?>? interactionCatalogInputSchemaFor(
+  final String commandName,
+) => switch (commandName) {
+  'tap_widget' => tapWidgetInputSchema(),
+  'semantic_snapshot' => semanticSnapshotInputSchema(),
+  'wait_for' => waitForInputSchema(),
+  'enter_text' => enterTextInputSchema(),
+  'scroll' => scrollInputSchema(),
+  'long_press' => longPressInputSchema(),
+  'swipe' => swipeInputSchema(),
+  'drag' => dragInputSchema(),
+  'fill_form' => fillFormInputSchema(),
+  'hover' => hoverInputSchema(),
+  'press_key' => pressKeyInputSchema(),
+  'get_recent_logs' => getRecentLogsInputSchema(),
+  'handle_dialog' => handleDialogInputSchema(),
+  'navigate' => navigateInputSchema(),
+  'evaluate_dart_expression' => evaluateDartExpressionInputSchema(),
+  'hot_reload_flutter' => hotReloadFlutterInputSchema(),
+  'hot_restart_flutter' => hotRestartFlutterInputSchema(),
+  'hot_reload_and_capture' => hotReloadAndCaptureInputSchema(),
+  'get_screenshots' => getScreenshotsInputSchema(),
+  'capture_ui_snapshot' => captureUiSnapshotInputSchema(),
+  'get_view_details' => getViewDetailsInputSchema(),
+  'inspect_widget_at_point' => inspectWidgetAtPointInputSchema(),
+  'get_app_errors' => getAppErrorsInputSchema(),
+  'focus_window' => focusWindowInputSchema(),
+  _ => null,
+};
 
 /// Shared JSON Schema for [press_key] / `fmt_press_key`.
 Map<String, Object?> pressKeyInputSchema() => <String, Object?>{
@@ -624,4 +613,3 @@ Map<String, Object?> pressKeyInputSchema() => <String, Object?>{
     'connection': connectionOverrideJsonSchema(),
   },
 };
-

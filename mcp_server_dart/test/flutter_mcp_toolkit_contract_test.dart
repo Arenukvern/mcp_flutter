@@ -355,7 +355,8 @@ void main() {
             contains('VM target is not connected'),
             contains('not required for this target'),
           ),
-          reason: 'Host targets skip app bridge; app targets warn when VM is down',
+          reason:
+              'Host targets skip app bridge; app targets warn when VM is down',
         );
       },
     );

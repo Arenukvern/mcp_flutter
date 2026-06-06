@@ -7,10 +7,8 @@ Set<MCPCallEntry> buildStarterEntries() => {
       description: 'Returns pong',
       inputSchema: ObjectSchema(properties: const {}),
     ),
-    handler: (final request) => MCPCallResult(
-      message: 'pong',
-      parameters: const {'ok': true},
-    ),
+    handler: (final request) =>
+        MCPCallResult(message: 'pong', parameters: const {'ok': true}),
   ),
   MCPCallEntry.resource(
     definition: MCPResourceDefinition(
@@ -18,9 +16,7 @@ Set<MCPCallEntry> buildStarterEntries() => {
       description: 'App status resource',
       mimeType: 'application/json',
     ),
-    handler: (final request) => MCPCallResult(
-      message: 'status',
-      parameters: const {'ready': true},
-    ),
+    handler: (final request) =>
+        MCPCallResult(message: 'status', parameters: const {'ready': true}),
   ),
 };

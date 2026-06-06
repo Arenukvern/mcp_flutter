@@ -5,13 +5,11 @@
 
 import 'dart:convert';
 
-import 'package:intentcall_schema/intentcall_schema.dart';
 import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_consts.dart';
-import 'package:flutter_mcp_toolkit_server/src/shared_core/types/error_codes.dart';
-import 'package:flutter_mcp_toolkit_server/src/shared_core/types/results.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/vm_connections/connection_context.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
+import 'package:intentcall_schema/intentcall_schema.dart';
 import 'package:is_dart_empty_or_not/is_dart_empty_or_not.dart';
 
 /// Dynamic registry behavior adapter used by the shared command executor.
@@ -283,12 +281,11 @@ final class VmExtensionDynamicGateway implements CoreDynamicGateway {
     required final String subjectLabel,
     required final InputSchema? schema,
     required final Map<String, Object?> arguments,
-  }) async =>
-      validationFailureForDynamicSchema(
-        subjectLabel: subjectLabel,
-        schema: schema,
-        arguments: arguments,
-      );
+  }) async => validationFailureForDynamicSchema(
+    subjectLabel: subjectLabel,
+    schema: schema,
+    arguments: arguments,
+  );
 
   Future<InputSchema?> _inputSchemaForTool(final String toolName) async {
     final cached = _inputSchemaFromTools(_tools, toolName);
@@ -341,7 +338,9 @@ final class VmExtensionDynamicGateway implements CoreDynamicGateway {
     return null;
   }
 
-  InputSchema? _inputSchemaFromToolListingEntry(final Map<String, Object?> entry) {
+  InputSchema? _inputSchemaFromToolListingEntry(
+    final Map<String, Object?> entry,
+  ) {
     final raw = entry['inputSchema'];
     if (raw is Map) {
       return Map<String, Object?>.from(raw);

@@ -2,9 +2,9 @@
 
 import 'dart:async';
 
-import 'package:intentcall_core/intentcall_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
+import 'package:intentcall_core/intentcall_core.dart';
 
 import 'agent_call_entry_extensions.dart';
 import 'mcp_models.dart';
@@ -171,10 +171,13 @@ class MCPToolkitBinding extends MCPToolkitBindingBase
   }
 
   Future<void> _addMissingEntries(final Iterable<AgentCallEntry> entries) {
-    final existingKeys =
-        allEntries.map((final entry) => entry.serviceExtensionName).toSet();
+    final existingKeys = allEntries
+        .map((final entry) => entry.serviceExtensionName)
+        .toSet();
     final missingEntries = entries
-        .where((final entry) => !existingKeys.contains(entry.serviceExtensionName))
+        .where(
+          (final entry) => !existingKeys.contains(entry.serviceExtensionName),
+        )
         .toSet();
     if (missingEntries.isEmpty) {
       return Future<void>.value();

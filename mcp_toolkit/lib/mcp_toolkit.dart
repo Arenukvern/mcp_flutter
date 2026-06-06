@@ -17,9 +17,9 @@
 /// See [MCPToolkitBinding] for bootstrap and registration.
 library;
 
+export 'package:dart_mcp/client.dart' hide Icon;
 export 'package:intentcall_core/intentcall_core.dart';
 export 'package:intentcall_schema/intentcall_schema.dart';
-export 'package:dart_mcp/client.dart' hide Icon;
 
 export 'src/agent_call_entry_extensions.dart';
 export 'src/agent_client_install.dart';

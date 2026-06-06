@@ -30,29 +30,26 @@ String buildWebmcpFlutterRunCommand({
 Map<String, Object?> webmcpChromeArgsJson({
   final int webPort = 8080,
   final int vmHostPort = 8181,
-}) =>
-    <String, Object?>{
-      'ok': true,
-      'webPort': webPort,
-      'vmHostPort': vmHostPort,
-      'browserFlags': kWebmcpChromeBrowserFlags,
-      'flutterRun': buildWebmcpFlutterRunCommand(
-        webPort: webPort,
-        vmHostPort: vmHostPort,
-      ),
-      'manualFlag': 'chrome://flags/#enable-webmcp-testing',
-      'note':
-          'Prefer flutter run --web-browser-flag above; manual flag persists in profile.',
-    };
+}) => <String, Object?>{
+  'ok': true,
+  'webPort': webPort,
+  'vmHostPort': vmHostPort,
+  'browserFlags': kWebmcpChromeBrowserFlags,
+  'flutterRun': buildWebmcpFlutterRunCommand(
+    webPort: webPort,
+    vmHostPort: vmHostPort,
+  ),
+  'manualFlag': 'chrome://flags/#enable-webmcp-testing',
+  'note':
+      'Prefer flutter run --web-browser-flag above; manual flag persists in profile.',
+};
 
 Future<int> runWebmcpChromeArgs({
   final int webPort = 8080,
   final int vmHostPort = 8181,
 }) async {
   stdout.writeln(
-    jsonEncode(
-      webmcpChromeArgsJson(webPort: webPort, vmHostPort: vmHostPort),
-    ),
+    jsonEncode(webmcpChromeArgsJson(webPort: webPort, vmHostPort: vmHostPort)),
   );
   return 0;
 }
@@ -76,10 +73,7 @@ Future<int> runWebmcpVerify({
   for (final port in ports) {
     final targets = await fetchCdpTargetList(port);
     if (targets.isEmpty) {
-      lastError = <String, Object?>{
-        'cdpPort': port,
-        'error': 'no_cdp_targets',
-      };
+      lastError = <String, Object?>{'cdpPort': port, 'error': 'no_cdp_targets'};
       continue;
     }
     final page = selectCdpPageTarget(
@@ -131,8 +125,7 @@ Future<int> runWebmcpVerify({
       timeout: timeout,
     );
 
-    final cdpOk =
-        probe != null && _probeIndicatesWebmcpActive(probe);
+    final cdpOk = probe != null && _probeIndicatesWebmcpActive(probe);
     final logEvidence = _webmcpLogEvidence();
     final ok = cdpOk || logEvidence;
     stdout.writeln(
@@ -147,10 +140,7 @@ Future<int> runWebmcpVerify({
             : logEvidence
             ? 'webmcp_active_log_evidence'
             : 'webmcp_inactive',
-        if (!ok)
-          'fix': buildWebmcpFlutterRunCommand(
-            webPort: preferredWebPort,
-          ),
+        if (!ok) 'fix': buildWebmcpFlutterRunCommand(webPort: preferredWebPort),
       }),
     );
     return ok ? 0 : 1;
@@ -167,7 +157,9 @@ Future<int> runWebmcpVerify({
   return 1;
 }
 
-Map<String, Object?>? _probeFromEvaluateResponse(final Map<String, Object?> response) {
+Map<String, Object?>? _probeFromEvaluateResponse(
+  final Map<String, Object?> response,
+) {
   final value = response['result'];
   if (value is! Map) {
     return null;
@@ -204,10 +196,10 @@ bool _webmcpLogEvidence() {
       continue;
     }
     final text = file.readAsStringSync();
-    final hasApi = text.contains('ModelContext') ||
-        text.contains('modelContext');
-    final hasRegister = text.contains('registerTool') ||
-        text.contains('Duplicate tool name');
+    final hasApi =
+        text.contains('ModelContext') || text.contains('modelContext');
+    final hasRegister =
+        text.contains('registerTool') || text.contains('Duplicate tool name');
     if (hasApi && hasRegister) {
       return true;
     }
@@ -241,8 +233,7 @@ Future<Map<String, Object?>?> _cdpEvaluate({
             if (ctx is Map) {
               final ctxId = ctx['id'];
               final aux = ctx['auxData'];
-              final isDefault =
-                  aux is Map && aux['isDefault'] == true;
+              final isDefault = aux is Map && aux['isDefault'] == true;
               if (ctxId is int) {
                 if (isDefault) {
                   contextIds.insert(0, ctxId);
@@ -277,9 +268,7 @@ Future<Map<String, Object?>?> _cdpEvaluate({
       final myId = ++id;
       final completer = Completer<Map<String, Object?>>();
       pending[myId] = completer;
-      channel!.sink.add(
-        jsonEncode(<String, Object?>{...msg, 'id': myId}),
-      );
+      channel!.sink.add(jsonEncode(<String, Object?>{...msg, 'id': myId}));
       return completer.future.timeout(timeout);
     }
 

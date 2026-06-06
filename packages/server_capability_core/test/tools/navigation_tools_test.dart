@@ -78,7 +78,9 @@ void main() {
           ..nextExecuteResult = CoreResult.success(data: {'dismissed': true});
         final ctx = _registeredCtx(runner: runner);
         final reg = ctx.registrationFor('handle_dialog')!;
-        final result = await reg.handler(const <String, Object?>{'action': 'dismiss'});
+        final result = await reg.handler(const <String, Object?>{
+          'action': 'dismiss',
+        });
         expect(result.ok, isTrue);
         expect(runner.executedCommands, hasLength(1));
         final cmd = runner.executedCommands.first as HandleDialogCommand;
@@ -107,7 +109,9 @@ void main() {
         );
       final ctx = _registeredCtx(runner: runner);
       final reg = ctx.registrationFor('handle_dialog')!;
-      final result = await reg.handler(const <String, Object?>{'action': 'dismiss'});
+      final result = await reg.handler(const <String, Object?>{
+        'action': 'dismiss',
+      });
       expect(result.ok, isFalse);
       expect(runner.executedCommands, isEmpty);
     });
@@ -122,7 +126,9 @@ void main() {
           );
         final ctx = _registeredCtx(runner: runner);
         final reg = ctx.registrationFor('handle_dialog')!;
-        final result = await reg.handler(const <String, Object?>{'action': 'dismiss'});
+        final result = await reg.handler(const <String, Object?>{
+          'action': 'dismiss',
+        });
         expect(result.ok, isFalse);
         final json = agentResultPayload(result);
         _expectEnvelopeKeys(json);
@@ -161,10 +167,10 @@ void main() {
       final ctx = _registeredCtx(runner: runner);
       final reg = ctx.registrationFor('navigate')!;
       await reg.handler(const <String, Object?>{
-            'action': 'push',
-            'route': '/details',
-            'arguments': {'id': 42},
-          });
+        'action': 'push',
+        'route': '/details',
+        'arguments': {'id': 42},
+      });
       final cmd = runner.executedCommands.first as NavigateCommand;
       expect(cmd.action, 'push');
       expect(cmd.route, '/details');
@@ -191,7 +197,9 @@ void main() {
         );
       final ctx = _registeredCtx(runner: runner);
       final reg = ctx.registrationFor('navigate')!;
-      final result = await reg.handler(const <String, Object?>{'action': 'pop'});
+      final result = await reg.handler(const <String, Object?>{
+        'action': 'pop',
+      });
       expect(result.ok, isFalse);
       expect(runner.executedCommands, isEmpty);
     });
@@ -207,9 +215,9 @@ void main() {
         final ctx = _registeredCtx(runner: runner);
         final reg = ctx.registrationFor('navigate')!;
         final result = await reg.handler(const <String, Object?>{
-              'action': 'push',
-              'route': '/home',
-            });
+          'action': 'push',
+          'route': '/home',
+        });
         expect(result.ok, isFalse);
         final json = agentResultPayload(result);
         _expectEnvelopeKeys(json);

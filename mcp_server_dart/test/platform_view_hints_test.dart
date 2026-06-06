@@ -9,7 +9,10 @@ void main() {
     });
     expect(hints.platformViewsDetected, isTrue);
     expect(
-      mergeCaptureHintMetadata(data: <String, Object?>{}, hints: hints)['captureHints'],
+      mergeCaptureHintMetadata(
+        data: <String, Object?>{},
+        hints: hints,
+      )['captureHints'],
       isNotNull,
     );
   });

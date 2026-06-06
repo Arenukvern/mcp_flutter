@@ -3,7 +3,6 @@ import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 
-import 'package:mcp_toolkit/src/toolkits/flutter_mcp_toolkit.dart';
 
 /// App inspection dynamic tools vs shared `interaction_input_schemas` parity.
 ///
@@ -21,11 +20,9 @@ void main() {
   const schemaEquality = DeepCollectionEquality();
 
   Map<String, Object?> appInputSchema(final String toolName) =>
-      getFlutterMcpToolkitEntries(binding: MCPToolkitBinding.instance)
-          .byName(toolName)
-          .toRegistration()
-          .descriptor
-          .inputSchema;
+      getFlutterMcpToolkitEntries(
+        binding: MCPToolkitBinding.instance,
+      ).byName(toolName).toRegistration().descriptor.inputSchema;
 
   group('flutter_mcp_toolkit inspection vs shared core schemas', () {
     test('app_errors', () {
@@ -37,7 +34,7 @@ void main() {
       );
       expect(schema['additionalProperties'], isFalse);
       expect(schema.containsKey('required'), isFalse);
-      final props = schema['properties'] as Map<String, Object?>;
+      final props = schema['properties']! as Map<String, Object?>;
       expect((props['count']! as Map<String, Object?>)['type'], 'integer');
       expect(props.containsKey('connection'), isTrue);
     });
@@ -51,7 +48,7 @@ void main() {
       );
       expect(schema['additionalProperties'], isFalse);
       expect(schema.containsKey('required'), isFalse);
-      final props = schema['properties'] as Map<String, Object?>;
+      final props = schema['properties']! as Map<String, Object?>;
       expect(props.containsKey('connection'), isTrue);
     });
 
@@ -64,7 +61,7 @@ void main() {
       );
       expect(schema['additionalProperties'], isFalse);
       expect(schema.containsKey('required'), isFalse);
-      final props = schema['properties'] as Map<String, Object?>;
+      final props = schema['properties']! as Map<String, Object?>;
       expect(props.containsKey('compress'), isTrue);
       expect(props.containsKey('mode'), isTrue);
       expect(props.containsKey('permissionPolicy'), isTrue);
@@ -76,11 +73,12 @@ void main() {
       expect(
         schemaEquality.equals(schema, inspectWidgetAtPointInputSchema()),
         isTrue,
-        reason: 'must match server_capability_core / fmt_inspect_widget_at_point',
+        reason:
+            'must match server_capability_core / fmt_inspect_widget_at_point',
       );
       expect(schema['additionalProperties'], isFalse);
       expect(schema['required'], ['x', 'y']);
-      final props = schema['properties'] as Map<String, Object?>;
+      final props = schema['properties']! as Map<String, Object?>;
       expect((props['x']! as Map<String, Object?>)['type'], 'integer');
       expect((props['y']! as Map<String, Object?>)['type'], 'integer');
       expect(props.containsKey('viewId'), isTrue);

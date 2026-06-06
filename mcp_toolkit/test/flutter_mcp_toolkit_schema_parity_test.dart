@@ -12,15 +12,14 @@ void main() {
   const schemaEquality = DeepCollectionEquality();
 
   Map<String, Object?> appInputSchema(final String toolName) =>
-      getFlutterMcpToolkitEntries(binding: MCPToolkitBinding.instance)
-          .byName(toolName)
-          .toRegistration()
-          .descriptor
-          .inputSchema;
+      getFlutterMcpToolkitEntries(
+        binding: MCPToolkitBinding.instance,
+      ).byName(toolName).toRegistration().descriptor.inputSchema;
 
   AgentCallEntry entryByName(final String toolName) =>
-      getFlutterMcpToolkitEntries(binding: MCPToolkitBinding.instance)
-          .byName(toolName);
+      getFlutterMcpToolkitEntries(
+        binding: MCPToolkitBinding.instance,
+      ).byName(toolName);
 
   group('flutter_mcp_toolkit vs fmt_* catalog (shared core schemas)', () {
     test('app_errors', () {
@@ -32,7 +31,7 @@ void main() {
       );
       expect(schema['additionalProperties'], isFalse);
       expect(schema.containsKey('required'), isFalse);
-      final props = schema['properties'] as Map<String, Object?>;
+      final props = schema['properties']! as Map<String, Object?>;
       expect((props['count']! as Map<String, Object?>)['type'], 'integer');
       expect(props.containsKey('connection'), isTrue);
     });
@@ -46,7 +45,7 @@ void main() {
       );
       expect(schema['additionalProperties'], isFalse);
       expect(schema.containsKey('required'), isFalse);
-      final props = schema['properties'] as Map<String, Object?>;
+      final props = schema['properties']! as Map<String, Object?>;
       expect(props.containsKey('connection'), isTrue);
     });
 
@@ -59,7 +58,7 @@ void main() {
       );
       expect(schema['additionalProperties'], isFalse);
       expect(schema.containsKey('required'), isFalse);
-      final props = schema['properties'] as Map<String, Object?>;
+      final props = schema['properties']! as Map<String, Object?>;
       expect((props['compress']! as Map<String, Object?>)['type'], 'boolean');
       expect((props['mode']! as Map<String, Object?>)['type'], 'string');
       expect(
@@ -79,7 +78,7 @@ void main() {
       );
       expect(schema['additionalProperties'], isFalse);
       expect(schema['required'], ['x', 'y']);
-      final props = schema['properties'] as Map<String, Object?>;
+      final props = schema['properties']! as Map<String, Object?>;
       expect(props.containsKey('connection'), isTrue);
       expect((props['x']! as Map<String, Object?>)['type'], 'integer');
       expect((props['y']! as Map<String, Object?>)['type'], 'integer');
@@ -95,7 +94,7 @@ void main() {
       );
       expect(schema['additionalProperties'], isFalse);
       expect(schema['required'], ['x', 'y']);
-      final props = schema['properties'] as Map<String, Object?>;
+      final props = schema['properties']! as Map<String, Object?>;
       expect(props.containsKey('connection'), isTrue);
       expect((props['x']! as Map<String, Object?>)['type'], 'integer');
       expect((props['y']! as Map<String, Object?>)['type'], 'integer');
@@ -106,7 +105,9 @@ void main() {
     });
 
     test('registerDynamics shape is strict for inspect_widget_at_point', () {
-      final descriptor = entryByName('inspect_widget_at_point').toRegistration().descriptor;
+      final descriptor = entryByName(
+        'inspect_widget_at_point',
+      ).toRegistration().descriptor;
       expect(descriptor.name, 'inspect_widget_at_point');
       expect(descriptor.inputSchema['additionalProperties'], isFalse);
       expect(descriptor.inputSchema['required'], ['x', 'y']);
@@ -124,7 +125,9 @@ void main() {
     });
 
     test('registerDynamics shape is strict for select_widget_at_point', () {
-      final descriptor = entryByName('select_widget_at_point').toRegistration().descriptor;
+      final descriptor = entryByName(
+        'select_widget_at_point',
+      ).toRegistration().descriptor;
       expect(descriptor.name, 'select_widget_at_point');
       expect(descriptor.inputSchema['additionalProperties'], isFalse);
       expect(descriptor.inputSchema['required'], ['x', 'y']);

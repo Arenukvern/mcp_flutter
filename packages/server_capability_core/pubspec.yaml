@@ -4,11 +4,17 @@ description: >-
   diagnostics, and hot-reload coordination. Server-side Dart; no Flutter SDK
   dependency.
 version: 0.1.0
-publish_to: none
 license: MIT
 repository: https://github.com/Arenukvern/mcp_flutter/tree/main/packages/server_capability_core
 issue_tracker: https://github.com/Arenukvern/mcp_flutter/issues
 documentation: https://github.com/Arenukvern/mcp_flutter/tree/main/packages/server_capability_core#readme
+
+topics:
+  - mcp
+  - flutter
+  - dart
+  - debugging
+  - agentic-harness
 
 environment:
   sdk: ">=3.11.0 <4.0.0"
@@ -32,9 +38,3 @@ dev_dependencies:
   build_runner: ^2.15.0
   lints: ^6.1.0
   test: ^1.25.0
-
-topics:
-  - mcp
-  - flutter
-  - dart
-  - debugging

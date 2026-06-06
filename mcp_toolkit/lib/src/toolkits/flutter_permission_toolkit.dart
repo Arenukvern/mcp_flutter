@@ -1,8 +1,7 @@
 import 'dart:async';
 
-import 'package:intentcall_core/intentcall_core.dart';
-
 import 'package:dart_mcp/client.dart';
+import 'package:intentcall_core/intentcall_core.dart';
 
 import '../agent_entry_helpers.dart';
 import '../mcp_models.dart';

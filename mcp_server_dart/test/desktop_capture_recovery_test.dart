@@ -128,7 +128,6 @@ void main() {
       expect(captureCount, 1);
     });
   });
-
 }
 
 final class _CountingDesktopService implements DesktopWindowScreenshotService {

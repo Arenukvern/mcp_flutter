@@ -275,7 +275,8 @@ final class ConnectionContext {
   Map<String, Object?>? debugViewScreenshotsPayload;
 
   /// Injected view_details payload (tests/integration); bypasses VM extension.
-  Map<String, Object?>? get injectedViewDetailsPayload => debugViewDetailsPayload;
+  Map<String, Object?>? get injectedViewDetailsPayload =>
+      debugViewDetailsPayload;
 
   /// Injected view_screenshots payload (tests/integration); bypasses VM I/O.
   Map<String, Object?>? get injectedViewScreenshotsPayload =>

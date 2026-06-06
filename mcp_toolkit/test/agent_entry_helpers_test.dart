@@ -1,24 +1,26 @@
-import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 
 void main() {
   group('mcpToolkitResource inputSchema', () {
-    test('defaults to clientResourceReadInputSchema when definition omits schema', () {
-      final entry = mcpToolkitResource(
-        definition: MCPResourceDefinition(
-          name: 'app_status',
-          description: 'App status',
-          mimeType: 'application/json',
-        ),
-        handler: (_) => MCPCallResult(message: 'ok', parameters: {}),
-      );
+    test(
+      'defaults to clientResourceReadInputSchema when definition omits schema',
+      () {
+        final entry = mcpToolkitResource(
+          definition: MCPResourceDefinition(
+            name: 'app_status',
+            description: 'App status',
+            mimeType: 'application/json',
+          ),
+          handler: (_) => MCPCallResult(message: 'ok', parameters: {}),
+        );
 
-      expect(
-        entry.toRegistration().descriptor.inputSchema,
-        clientResourceReadInputSchema(),
-      );
-    });
+        expect(
+          entry.toRegistration().descriptor.inputSchema,
+          clientResourceReadInputSchema(),
+        );
+      },
+    );
 
     test('forwards explicit inputSchema override', () {
       const override = {

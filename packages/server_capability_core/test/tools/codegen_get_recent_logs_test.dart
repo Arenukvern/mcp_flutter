@@ -33,31 +33,33 @@ void main() {
       );
     });
 
-    test('agentCallEntryToToolRegistration registers and invokes via host path', () async {
-      final runner = FakeCommandRunner()
-        ..nextExecuteResult = CoreResult.success(data: <String>['line']);
-      final ctx = FakeCapabilityContext(
-        capabilityId: 'fmt',
-        services: <Type, HostService>{CommandRunner: runner},
-      );
-      registerLogTools(ctx);
+    test(
+      'agentCallEntryToToolRegistration registers and invokes via host path',
+      () async {
+        final runner = FakeCommandRunner()
+          ..nextExecuteResult = CoreResult.success(data: <String>['line']);
+        final ctx = FakeCapabilityContext(
+          capabilityId: 'fmt',
+          services: <Type, HostService>{CommandRunner: runner},
+        );
+        registerLogTools(ctx);
 
-      final reg = ctx.registrationFor('get_recent_logs')!;
-      final result = await reg.handler(const <String, Object?>{'count': 10});
-      expect(result.ok, isTrue);
-      expect(runner.executedCommands, hasLength(1));
-      expect(
-        runner.executedCommands.first,
-        isA<GetRecentLogsCommand>().having((c) => c.count, 'count', 10),
-      );
-    });
+        final reg = ctx.registrationFor('get_recent_logs')!;
+        final result = await reg.handler(const <String, Object?>{'count': 10});
+        expect(result.ok, isTrue);
+        expect(runner.executedCommands, hasLength(1));
+        expect(
+          runner.executedCommands.first,
+          isA<GetRecentLogsCommand>().having((c) => c.count, 'count', 10),
+        );
+      },
+    );
 
     test('bridge round-trips through RegisteredAgentIntent execute', () async {
       final registration = agentCallEntryToToolRegistration(
         getRecentLogsCallEntry,
-        handler: (_) async => AgentResult.success(
-          data: <String, Object?>{'via': 'bridge'},
-        ),
+        handler: (_) async =>
+            AgentResult.success(data: <String, Object?>{'via': 'bridge'}),
       );
       final intent = toolRegistrationToRegistration(
         capabilityId: 'fmt',

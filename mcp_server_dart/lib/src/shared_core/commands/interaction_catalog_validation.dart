@@ -3,7 +3,6 @@
 
 import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 import 'package:flutter_mcp_toolkit_server/src/capabilities/dynamic_registry/dynamic_gateway.dart';
-import 'package:flutter_mcp_toolkit_server/src/shared_core/types/results.dart';
 
 /// Validates [arguments] for catalog interaction commands before
 /// [CommandCatalog.buildCommand] applies permissive fallbacks.

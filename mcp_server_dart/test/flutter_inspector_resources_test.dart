@@ -1,9 +1,9 @@
 import 'dart:async';
 
-import 'package:intentcall_schema/intentcall_schema.dart';
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_mcp_toolkit_capability_kernel/flutter_mcp_toolkit_capability_kernel.dart';
 import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/host.dart';
+import 'package:intentcall_schema/intentcall_schema.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -63,10 +63,7 @@ void main() {
         );
         expect(direct.ok, isTrue);
         final directContents = direct.data['contents']! as List;
-        expect(
-          (directContents.first as Map)['text'],
-          '{"count":3}',
-        );
+        expect((directContents.first as Map)['text'], '{"count":3}');
 
         final mcpRead = await publishedTemplates[uriTemplate]!(
           ReadResourceRequest(uri: readUri),

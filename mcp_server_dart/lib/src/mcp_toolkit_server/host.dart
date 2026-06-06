@@ -4,10 +4,10 @@
 // ignore_for_file: public_member_api_docs
 import 'dart:async';
 
-import 'package:intentcall_core/intentcall_core.dart';
-import 'package:intentcall_mcp/intentcall_mcp.dart';
 import 'package:dart_mcp/server.dart' as dart_mcp;
 import 'package:flutter_mcp_toolkit_capability_kernel/flutter_mcp_toolkit_capability_kernel.dart';
+import 'package:intentcall_core/intentcall_core.dart';
+import 'package:intentcall_mcp/intentcall_mcp.dart';
 
 /// Bridge contract used by [McpHost] to publish prefixed capability tools to
 /// `dart_mcp`'s [dart_mcp.ToolsSupport]. Production wiring passes the

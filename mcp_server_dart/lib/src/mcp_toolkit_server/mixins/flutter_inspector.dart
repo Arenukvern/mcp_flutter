@@ -3,13 +3,13 @@
 
 import 'dart:async';
 
-import 'package:intentcall_mcp/intentcall_mcp.dart';
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/base_server.dart';
 import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/handlers/resource_handler.dart'
     as inspector_resources;
 import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/mixins/vm_service_support.dart';
 import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/server.dart';
+import 'package:intentcall_mcp/intentcall_mcp.dart';
 
 /// Mix this in to any MCPServer to back the Flutter Inspector resource
 /// surface (`visual://localhost/...`). All MCP **tools** are published by
@@ -108,7 +108,9 @@ base mixin FlutterInspector
 
   Future<void> _registerRegistryResource({
     required final Resource resource,
-    required final Future<ReadResourceResult> Function(ReadResourceRequest request)
+    required final Future<ReadResourceResult> Function(
+      ReadResourceRequest request,
+    )
     read,
   }) async {
     await _toolkitServer.capabilityHost.registerPublishedResource(
@@ -127,7 +129,9 @@ base mixin FlutterInspector
 
   Future<void> _registerRegistryResourceTemplate({
     required final ResourceTemplate template,
-    required final Future<ReadResourceResult> Function(ReadResourceRequest request)
+    required final Future<ReadResourceResult> Function(
+      ReadResourceRequest request,
+    )
     read,
   }) async {
     await _toolkitServer.capabilityHost.registerPublishedResourceTemplate(

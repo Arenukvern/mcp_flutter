@@ -40,32 +40,33 @@ Future<void> wireWebMcpPublishAdapterDogfood(
 
   final registry = InMemoryAgentRegistry();
   final adapter = WebMcpPublishAdapter(
-    publish: ({
-      required final String name,
-      required final String description,
-      required final Map<String, Object?> inputSchema,
-      required final Future<Map<String, Object?>> Function(
-        Map<String, Object?> arguments,
-      )
-      execute,
-    }) {
-      if (isAgentWebMcpToolRegistered(name)) {
-        return;
-      }
-      final toolDefinition = _WebMcpToolDefinition(
-        name: name.toJS,
-        description: description.toJS,
-        inputSchema: _jsonParse(jsonEncode(inputSchema).toJS)!,
-        execute: ((final JSAny? rawArgs) {
-          return execute(_decodeArgs(rawArgs)).then(_encodeMap).toJS;
-        }).toJS,
-      );
-      try {
-        modelContext.registerTool(toolDefinition);
-      } on Object {
-        // Duplicate with JS bootstrap — expected on hot restart.
-      }
-    },
+    publish:
+        ({
+          required final String name,
+          required final String description,
+          required final Map<String, Object?> inputSchema,
+          required final Future<Map<String, Object?>> Function(
+            Map<String, Object?> arguments,
+          )
+          execute,
+        }) {
+          if (isAgentWebMcpToolRegistered(name)) {
+            return;
+          }
+          final toolDefinition = _WebMcpToolDefinition(
+            name: name.toJS,
+            description: description.toJS,
+            inputSchema: _jsonParse(jsonEncode(inputSchema).toJS)!,
+            execute: ((final JSAny? rawArgs) {
+              return execute(_decodeArgs(rawArgs)).then(_encodeMap).toJS;
+            }).toJS,
+          );
+          try {
+            modelContext.registerTool(toolDefinition);
+          } on Object {
+            // Duplicate with JS bootstrap — expected on hot restart.
+          }
+        },
     unpublish: (_) {
       // WebMCP has no standard unregister; registry detach handles our bookkeeping.
     },

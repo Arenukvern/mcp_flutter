@@ -5,8 +5,6 @@
 
 import 'dart:async';
 
-import 'package:intentcall_core/intentcall_core.dart';
-import 'package:intentcall_schema/intentcall_schema.dart';
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_mcp_toolkit_server/src/capabilities/dynamic_registry/core_dynamic_registry_gateway.dart';
 import 'package:flutter_mcp_toolkit_server/src/capabilities/dynamic_registry/dynamic_registry.dart';
@@ -14,6 +12,8 @@ import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/base_server.da
 import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/server.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/types/error_codes.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/vm_connections/connection_override.dart';
+import 'package:intentcall_core/intentcall_core.dart';
+import 'package:intentcall_schema/intentcall_schema.dart';
 import 'package:meta/meta.dart';
 
 /// Mixin that integrates dynamic registry with MCP server infrastructure
@@ -348,55 +348,55 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
     required final MCPToolkitServer toolkitServer,
     required final RegisteredAgentIntent intent,
   }) => RegisteredAgentIntent(
-      descriptor: intent.descriptor,
-      execute: (final invocation) async {
-        final ensure = await toolkitServer.connectionContext
-            .ensureConnectedWithPolicy();
-        if (!ensure.connected) {
-          return AgentResult.failure(
-            code: ensure.code ?? CoreErrorCode.vmNotConnected,
-            message: ensure.message ?? 'VM service not connected',
-            details: _agentFailureDetails(ensure.details),
-          );
-        }
-        return intent.execute(invocation);
-      },
-    );
+    descriptor: intent.descriptor,
+    execute: (final invocation) async {
+      final ensure = await toolkitServer.connectionContext
+          .ensureConnectedWithPolicy();
+      if (!ensure.connected) {
+        return AgentResult.failure(
+          code: ensure.code ?? CoreErrorCode.vmNotConnected,
+          message: ensure.message ?? 'VM service not connected',
+          details: _agentFailureDetails(ensure.details),
+        );
+      }
+      return intent.execute(invocation);
+    },
+  );
 
   RegisteredAgentIntent _wrapDynamicResourceIntent({
     required final MCPToolkitServer toolkitServer,
     required final RegisteredAgentIntent intent,
     required final String resourceUri,
   }) => RegisteredAgentIntent(
-      descriptor: intent.descriptor,
-      execute: (final invocation) async {
-        final requestedUri =
-            invocation.arguments['uri'] as String? ?? resourceUri;
-        final connectError = await applyConnectionOverrideFromResourceUri(
-          resourceUri: requestedUri,
-          executor: toolkitServer.coreCommandExecutor,
+    descriptor: intent.descriptor,
+    execute: (final invocation) async {
+      final requestedUri =
+          invocation.arguments['uri'] as String? ?? resourceUri;
+      final connectError = await applyConnectionOverrideFromResourceUri(
+        resourceUri: requestedUri,
+        executor: toolkitServer.coreCommandExecutor,
+      );
+      if (connectError != null) {
+        final err = connectError.error!;
+        return AgentResult.failure(
+          code: err.code,
+          message: err.message,
+          details: _agentFailureDetails(err.details),
         );
-        if (connectError != null) {
-          final err = connectError.error!;
-          return AgentResult.failure(
-            code: err.code,
-            message: err.message,
-            details: _agentFailureDetails(err.details),
-          );
-        }
+      }
 
-        final ensure = await toolkitServer.connectionContext
-            .ensureConnectedWithPolicy();
-        if (!ensure.connected) {
-          return AgentResult.failure(
-            code: ensure.code ?? CoreErrorCode.vmNotConnected,
-            message: ensure.message ?? 'VM service not connected',
-            details: _agentFailureDetails(ensure.details),
-          );
-        }
-        return intent.execute(invocation);
-      },
-    );
+      final ensure = await toolkitServer.connectionContext
+          .ensureConnectedWithPolicy();
+      if (!ensure.connected) {
+        return AgentResult.failure(
+          code: ensure.code ?? CoreErrorCode.vmNotConnected,
+          message: ensure.message ?? 'VM service not connected',
+          details: _agentFailureDetails(ensure.details),
+        );
+      }
+      return intent.execute(invocation);
+    },
+  );
 
   void _logRegistryEvent(final DynamicRegistryEvent event) {
     switch (event) {

@@ -8,5 +8,7 @@ void describeCapability(Capability capability) {
 
 void main() {
   // ignore: avoid_print
-  print('Import flutter_mcp_toolkit_capability_kernel and implement Capability.');
+  print(
+    'Import flutter_mcp_toolkit_capability_kernel and implement Capability.',
+  );
 }

@@ -1,9 +1,9 @@
 import 'dart:async';
 
-import 'package:intentcall_schema/intentcall_schema.dart';
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_mcp_toolkit_capability_kernel/flutter_mcp_toolkit_capability_kernel.dart';
 import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/host.dart';
+import 'package:intentcall_schema/intentcall_schema.dart';
 import 'package:test/test.dart';
 
 final class _RegistryProbeCapability implements Capability {
@@ -110,10 +110,9 @@ void main() {
       expect(host.resourceUris, contains(uri));
       expect(publishedResources, contains(uri));
 
-      final direct = await host.agentRegistry.invoke(
-        uri,
-        <String, Object?>{'uri': uri},
-      );
+      final direct = await host.agentRegistry.invoke(uri, <String, Object?>{
+        'uri': uri,
+      });
       expect(direct.ok, isTrue);
 
       final mcpRead = await publishedResources[uri]!(

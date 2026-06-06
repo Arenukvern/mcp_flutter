@@ -37,7 +37,10 @@ void main() {
       projectRoot: temp.path,
     );
     expect(exitCode, 0);
-    expect(File('${webDir.path}/intentcall_webmcp.generated.js').existsSync(), isTrue);
+    expect(
+      File('${webDir.path}/intentcall_webmcp.generated.js').existsSync(),
+      isTrue,
+    );
 
     final checkExit = await runCodegenSync(
       platform: 'web',

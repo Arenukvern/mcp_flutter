@@ -1,5 +1,5 @@
-import 'package:intentcall_core/intentcall_core.dart';
 import 'package:flutter/foundation.dart';
+import 'package:intentcall_core/intentcall_core.dart';
 
 import 'mcp_toolkit_binding.dart';
 
@@ -11,7 +11,8 @@ final class AgentClientInstall {
 
   static Future<void> once({
     required final Future<Set<AgentCallEntry>> Function() buildEntries,
-    final Future<void> Function({required Set<AgentCallEntry> entries})? register,
+    final Future<void> Function({required Set<AgentCallEntry> entries})?
+    register,
   }) async {
     if (kReleaseMode || _done) {
       return;

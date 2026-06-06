@@ -126,7 +126,8 @@ final class CommandCatalog {
     };
   }
 
-  CommandSpec? specFor(final String name) => _byName[resolveExecCommandName(name)];
+  CommandSpec? specFor(final String name) =>
+      _byName[resolveExecCommandName(name)];
 
   /// Exec accepts bare catalog names; MCP clients often pass `fmt_*` prefixes.
   String resolveExecCommandName(final String name) {
@@ -590,9 +591,8 @@ final class CommandCatalog {
         requiresVm: false,
         supportsWatch: false,
         mcpExposed: true,
-        build: (final args) => FocusWindowCommand(
-          targetPid: _nullableIntArg(args, 'targetPid'),
-        ),
+        build: (final args) =>
+            FocusWindowCommand(targetPid: _nullableIntArg(args, 'targetPid')),
       ),
       CommandSpec(
         name: 'get_view_details',
@@ -619,7 +619,9 @@ final class CommandCatalog {
         name: 'inspect_widget_at_point',
         description:
             'Inspect the deepest widget/render node at global logical (x,y).',
-        inputSchema: interactionCatalogInputSchemaFor('inspect_widget_at_point')!,
+        inputSchema: interactionCatalogInputSchemaFor(
+          'inspect_widget_at_point',
+        )!,
         outputSchema: _objectSchema(additionalProperties: true),
         requiresVm: true,
         supportsWatch: true,

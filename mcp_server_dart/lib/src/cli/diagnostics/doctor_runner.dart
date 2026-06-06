@@ -430,17 +430,18 @@ final class DoctorRunner {
       final diagnostic = switch ((platform, actualMode)) {
         ('web', screenshotModeDesktopWindow) =>
           'Web visual capture uses Chrome CDP ($screenshotModeDesktopWindow); '
-          'expected for web_browser backend (not native window pixels).',
+              'expected for web_browser backend (not native window pixels).',
         _ =>
           'Visual truth path requested $screenshotModeAuto -> actual $actualMode'
-          '${result.fallbackReason == null ? '' : ' (${result.fallbackReason})'}.',
+              '${result.fallbackReason == null ? '' : ' (${result.fallbackReason})'}.',
       };
       return _check(
         id: 'visual_capture_truth_mode',
         status: status,
         critical: false,
         diagnostic: diagnostic,
-        fixCommand: platform == 'web' && actualMode == screenshotModeDesktopWindow
+        fixCommand:
+            platform == 'web' && actualMode == screenshotModeDesktopWindow
             ? 'No action needed for web_browser CDP capture; use --flutter-device chrome in validate-runtime.'
             : 'Grant capture permission or adjust the target/capture mode before relying on visual assertions.',
       );

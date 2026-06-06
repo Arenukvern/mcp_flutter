@@ -101,7 +101,8 @@ final class WebCdpScreenshotClient implements WebTabPngCapturer {
     final StreamSink<dynamic> sink, {
     required final String method,
     required final int id,
-    required final Duration timeout, final Map<String, Object?> params = const <String, Object?>{},
+    required final Duration timeout,
+    final Map<String, Object?> params = const <String, Object?>{},
   }) async {
     final payload = jsonEncode(<String, Object?>{
       'id': id,
@@ -120,7 +121,10 @@ final class WebCdpScreenshotClient implements WebTabPngCapturer {
           }
           return null;
         })
-        .where((final decoded) => decoded is Map && (decoded['id'] as num?)?.toInt() == id)
+        .where(
+          (final decoded) =>
+              decoded is Map && (decoded['id'] as num?)?.toInt() == id,
+        )
         .map((final decoded) => Map<String, Object?>.from(decoded as Map))
         .first
         .timeout(timeout);
@@ -128,7 +132,10 @@ final class WebCdpScreenshotClient implements WebTabPngCapturer {
     if (response.containsKey('error')) {
       throw WebCdpCaptureException(
         message: 'CDP $method failed: ${response['error']}',
-        details: <String, Object?>{'method': method, 'error': response['error']},
+        details: <String, Object?>{
+          'method': method,
+          'error': response['error'],
+        },
       );
     }
 

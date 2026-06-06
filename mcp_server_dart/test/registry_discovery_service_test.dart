@@ -2,50 +2,42 @@ import 'dart:async';
 
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_mcp_toolkit_server/src/capabilities/dynamic_registry/dynamic_registry.dart';
-import 'package:flutter_mcp_toolkit_server/src/capabilities/dynamic_registry/registry_discovery_service.dart';
-import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/mixins/dynamic_registry_integration.dart';
 import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/server.dart';
 import 'package:stream_channel/stream_channel.dart';
 import 'package:test/test.dart';
 
-MCPToolkitServer _createDiscoveryTestServer() => MCPToolkitServer.fromStreamChannel(
-  StreamChannel.withCloseGuarantee(
-    const Stream.empty(),
-    StreamController<String>().sink,
-  ),
-  configuration: (
-    vmHost: 'localhost',
-    vmPort: 8181,
-    awaitDndConnection: false,
-    resourcesSupported: true,
-    imagesSupported: false,
-    dumpsSupported: false,
-    logLevel: 'error',
-    environment: 'test',
-    dynamicRegistrySupported: true,
-    saveImagesToFiles: false,
-    flutterProjectDir: null,
-    flutterDevice: null,
-    flutterDiscoveryTimeoutMs: 2500,
-  ),
-);
+MCPToolkitServer _createDiscoveryTestServer() =>
+    MCPToolkitServer.fromStreamChannel(
+      StreamChannel.withCloseGuarantee(
+        const Stream.empty(),
+        StreamController<String>().sink,
+      ),
+      configuration: (
+        vmHost: 'localhost',
+        vmPort: 8181,
+        awaitDndConnection: false,
+        resourcesSupported: true,
+        imagesSupported: false,
+        dumpsSupported: false,
+        logLevel: 'error',
+        environment: 'test',
+        dynamicRegistrySupported: true,
+        saveImagesToFiles: false,
+        flutterProjectDir: null,
+        flutterDevice: null,
+        flutterDiscoveryTimeoutMs: 2500,
+      ),
+    );
 
 Map<String, dynamic> _registrationPayload({
-  required List<Map<String, dynamic>> tools,
-  List<Map<String, dynamic>> resources = const [],
-}) => {
-  'appId': 'test_app',
-  'tools': tools,
-  'resources': resources,
-};
+  required final List<Map<String, dynamic>> tools,
+  final List<Map<String, dynamic>> resources = const [],
+}) => {'appId': 'test_app', 'tools': tools, 'resources': resources};
 
-Map<String, dynamic> _validToolMap({String name = 'custom_tool'}) => {
+Map<String, dynamic> _validToolMap({final String name = 'custom_tool'}) => {
   'name': name,
   'description': 'A custom tool',
-  'inputSchema': {
-    'type': 'object',
-    'properties': <String, Object?>{},
-  },
+  'inputSchema': {'type': 'object', 'properties': <String, Object?>{}},
 };
 
 void main() {
@@ -150,19 +142,12 @@ void main() {
       await sub.cancel();
 
       expect(registry.appInfo?.toolCount ?? 0, 0);
-      expect(
-        events.whereType<AppUnregisteredEvent>(),
-        isNotEmpty,
-      );
+      expect(events.whereType<AppUnregisteredEvent>(), isNotEmpty);
     });
 
     test('valid payload registers tools after clearing prior app', () async {
       registry.registerTool(
-        Tool(
-          name: 'old_tool',
-          description: 'old',
-          inputSchema: ObjectSchema(),
-        ),
+        Tool(name: 'old_tool', description: 'old', inputSchema: ObjectSchema()),
         const DynamicAppId('old_app'),
       );
 

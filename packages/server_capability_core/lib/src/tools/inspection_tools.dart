@@ -120,7 +120,9 @@ void registerInspectionTools(final CapabilityContext context) {
             if (fileUrls.isNotEmpty) {
               // URL-based mode: return text references + meta.
               return AgentResult.success(
-                data: <String, Object?>{'meta': <String, Object?>{'fileUrls': fileUrls}},
+                data: <String, Object?>{
+                  'meta': <String, Object?>{'fileUrls': fileUrls},
+                },
                 artifacts: fileUrls
                     .map(
                       (final url) => AgentArtifact.text(
@@ -138,8 +140,7 @@ void registerInspectionTools(final CapabilityContext context) {
                   ? const <String, Object?>{}
                   : <String, Object?>{'meta': routing},
               artifacts: [
-                if (routing.isNotEmpty)
-                  AgentArtifact.text(jsonEncode(routing)),
+                if (routing.isNotEmpty) AgentArtifact.text(jsonEncode(routing)),
                 ...images.map(
                   (final image) =>
                       AgentArtifact.text(image, mimeType: 'image/png'),

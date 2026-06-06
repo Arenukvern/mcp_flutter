@@ -33,7 +33,9 @@ Future<int> runInitintentcallPlatform({
 
   if (!report.ok) {
     for (final target in report.targets.where((final t) => !t.ok)) {
-      stderr.writeln('${target.id}: ${target.message ?? "not configured"} (${target.path})');
+      stderr.writeln(
+        '${target.id}: ${target.message ?? "not configured"} (${target.path})',
+      );
     }
   }
 

@@ -395,7 +395,10 @@ void main() {
         expect(dynamicList['ok'], isTrue);
         final dynamicData = dynamicList['data'] as Map<String, dynamic>;
 
-        final tapSchema = _findDynamicToolInputSchema(dynamicData, 'tap_widget');
+        final tapSchema = _findDynamicToolInputSchema(
+          dynamicData,
+          'tap_widget',
+        );
         expect(tapSchema, isNotNull, reason: 'tap_widget missing from listing');
         expect(tapSchema!['required'], ['ref']);
         final tapProperties = tapSchema['properties'] as Map?;

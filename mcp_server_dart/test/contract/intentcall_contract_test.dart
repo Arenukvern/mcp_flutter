@@ -1,13 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:intentcall_core/intentcall_core.dart';
-import 'package:intentcall_mcp/intentcall_mcp.dart';
-import 'package:intentcall_schema/intentcall_schema.dart';
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_mcp_toolkit_capability_core/src/tools/codegen/get_recent_logs_tool.dart';
 import 'package:flutter_mcp_toolkit_capability_kernel/flutter_mcp_toolkit_capability_kernel.dart';
 import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/host.dart';
+import 'package:intentcall_core/intentcall_core.dart';
+import 'package:intentcall_mcp/intentcall_mcp.dart';
+import 'package:intentcall_schema/intentcall_schema.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -42,70 +42,75 @@ void main() {
         expect(mcpResult, equals(agentResultToMcpResult(registryResult)));
         expect(mcpResultToAgentResult(mcpResult).data['text'], isNotNull);
         final decoded =
-            jsonDecode(mcpResultToAgentResult(mcpResult).data['text']! as String)
+            jsonDecode(
+                  mcpResultToAgentResult(mcpResult).data['text']! as String,
+                )
                 as Map<String, Object?>;
         expect(decoded['count'], 7);
       },
     );
 
-    test('dynamic fake intent registers and round-trips via MCP adapter', () async {
-      const toolName = 'dynapp_fake_echo';
-      final published =
-          <String, FutureOr<CallToolResult> Function(CallToolRequest)>{};
-      final unpublished = <String>[];
-      final registry = InMemoryAgentRegistry();
-      final adapter = McpPublishAdapter(
-        publishTool: (final tool, final impl) {
-          published[tool.name] = impl;
-        },
-        unpublishTool: unpublished.add,
-      );
+    test(
+      'dynamic fake intent registers and round-trips via MCP adapter',
+      () async {
+        const toolName = 'dynapp_fake_echo';
+        final published =
+            <String, FutureOr<CallToolResult> Function(CallToolRequest)>{};
+        final unpublished = <String>[];
+        final registry = InMemoryAgentRegistry();
+        final adapter = McpPublishAdapter(
+          publishTool: (final tool, final impl) {
+            published[tool.name] = impl;
+          },
+          unpublishTool: unpublished.add,
+        );
 
-      await adapter.attach(registry);
-      expect(published, isEmpty);
+        await adapter.attach(registry);
+        expect(published, isEmpty);
 
-      registry.register(
-        RegisteredAgentIntent(
-          descriptor: AgentIntentDescriptor(
-            namespace: 'dynapp',
-            name: 'fake_echo',
-            description: 'contract fake dynamic tool',
-            kind: AgentIntentKind.tool,
-            inputSchema: const <String, Object?>{
-              'type': 'object',
-              'properties': <String, Object?>{
-                'message': <String, Object?>{'type': 'string'},
+        registry.register(
+          RegisteredAgentIntent(
+            descriptor: AgentIntentDescriptor(
+              namespace: 'dynapp',
+              name: 'fake_echo',
+              description: 'contract fake dynamic tool',
+              kind: AgentIntentKind.tool,
+              inputSchema: const <String, Object?>{
+                'type': 'object',
+                'properties': <String, Object?>{
+                  'message': <String, Object?>{'type': 'string'},
+                },
               },
-            },
+            ),
+            execute: (final invocation) async => AgentResult.success(
+              data: <String, Object?>{
+                'echo': invocation.arguments['message'] ?? 'ok',
+              },
+            ),
           ),
-          execute: (final invocation) async => AgentResult.success(
-            data: <String, Object?>{
-              'echo': invocation.arguments['message'] ?? 'ok',
-            },
-          ),
-        ),
-        qualifiedNameOverride: toolName,
-      );
+          qualifiedNameOverride: toolName,
+        );
 
-      await Future<void>.delayed(Duration.zero);
-      expect(published, contains(toolName));
+        await Future<void>.delayed(Duration.zero);
+        expect(published, contains(toolName));
 
-      const args = <String, Object?>{'message': 'round-trip'};
-      final registryResult = await registry.invoke(toolName, args);
-      final mcpResult = await published[toolName]!(
-        CallToolRequest(name: toolName, arguments: args),
-      );
+        const args = <String, Object?>{'message': 'round-trip'};
+        final registryResult = await registry.invoke(toolName, args);
+        final mcpResult = await published[toolName]!(
+          CallToolRequest(name: toolName, arguments: args),
+        );
 
-      expect(registryResult.ok, isTrue);
-      expect(registryResult.data['echo'], 'round-trip');
-      expect(mcpResult, equals(agentResultToMcpResult(registryResult)));
+        expect(registryResult.ok, isTrue);
+        expect(registryResult.data['echo'], 'round-trip');
+        expect(mcpResult, equals(agentResultToMcpResult(registryResult)));
 
-      registry.unregister(toolName);
-      await Future<void>.delayed(Duration.zero);
-      expect(unpublished, contains(toolName));
+        registry.unregister(toolName);
+        await Future<void>.delayed(Duration.zero);
+        expect(unpublished, contains(toolName));
 
-      await adapter.detach();
-    });
+        await adapter.detach();
+      },
+    );
 
     test(
       'application_errors resource template round-trips registry and MCP read',
@@ -205,9 +210,7 @@ final class _FmtCodegenContractCapability implements Capability {
         handler: (final args) async {
           final count = args['count'];
           return AgentResult.success(
-            data: <String, Object?>{
-              'count': count is int ? count : 50,
-            },
+            data: <String, Object?>{'count': count is int ? count : 50},
           );
         },
       ),

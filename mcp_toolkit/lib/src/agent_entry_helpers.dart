@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:intentcall_core/intentcall_core.dart';
 import 'package:intentcall_schema/intentcall_schema.dart';
-import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 
 import 'mcp_models.dart';
 

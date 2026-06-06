@@ -31,9 +31,7 @@ void main() {
 
     test('round-trips explicit dismiss action', () {
       final cmd =
-          catalog.buildCommand('handle_dialog', {
-                'action': 'dismiss',
-              })
+          catalog.buildCommand('handle_dialog', {'action': 'dismiss'})
               as HandleDialogCommand;
       expect(cmd.action, 'dismiss');
     });

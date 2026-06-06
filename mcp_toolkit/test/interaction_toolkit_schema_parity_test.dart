@@ -3,7 +3,6 @@ import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 
-import 'package:mcp_toolkit/src/toolkits/interaction_toolkit.dart';
 
 /// App dynamic tools vs `fmt_*` catalog parity.
 ///
@@ -24,7 +23,11 @@ void main() {
   const schemaEquality = DeepCollectionEquality();
 
   Map<String, Object?> appInputSchema(final String toolName) =>
-      getInteractionToolkitEntries().byName(toolName).toRegistration().descriptor.inputSchema;
+      getInteractionToolkitEntries()
+          .byName(toolName)
+          .toRegistration()
+          .descriptor
+          .inputSchema;
 
   group('interaction_toolkit vs fmt_* catalog (shared core schemas)', () {
     test('tap_widget', () {
@@ -36,7 +39,7 @@ void main() {
       );
       expect(schema['additionalProperties'], isFalse);
       expect(schema['required'], ['ref']);
-      final props = schema['properties'] as Map<String, Object?>;
+      final props = schema['properties']! as Map<String, Object?>;
       expect(props.containsKey('connection'), isTrue);
       expect(props.containsKey('ref'), isTrue);
       expect(props.containsKey('snapshotId'), isTrue);
@@ -51,7 +54,7 @@ void main() {
       );
       expect(schema['additionalProperties'], isFalse);
       expect(schema.containsKey('required'), isFalse);
-      final props = schema['properties'] as Map<String, Object?>;
+      final props = schema['properties']! as Map<String, Object?>;
       expect(props.containsKey('connection'), isTrue);
     });
 
@@ -64,8 +67,8 @@ void main() {
       );
       expect(schema['additionalProperties'], isFalse);
       expect(schema['required'], ['predicate']);
-      final props = schema['properties'] as Map<String, Object?>;
-      final predicate = props['predicate'] as Map<String, Object?>;
+      final props = schema['properties']! as Map<String, Object?>;
+      final predicate = props['predicate']! as Map<String, Object?>;
       expect(predicate['additionalProperties'], isTrue);
       expect(props.containsKey('connection'), isTrue);
       expect(props.containsKey('timeoutMs'), isTrue);
@@ -80,7 +83,7 @@ void main() {
       );
       expect(schema['additionalProperties'], isFalse);
       expect(schema.containsKey('required'), isFalse);
-      final props = schema['properties'] as Map<String, Object?>;
+      final props = schema['properties']! as Map<String, Object?>;
       expect((props['count']! as Map<String, Object?>)['type'], 'integer');
       expect(props.containsKey('connection'), isTrue);
     });
@@ -94,7 +97,7 @@ void main() {
       );
       expect(schema['additionalProperties'], isFalse);
       expect(schema['required'], ['action']);
-      final props = schema['properties'] as Map<String, Object?>;
+      final props = schema['properties']! as Map<String, Object?>;
       expect(props.containsKey('connection'), isTrue);
     });
 
@@ -107,8 +110,8 @@ void main() {
       );
       expect(schema['additionalProperties'], isFalse);
       expect(schema['required'], ['action']);
-      final props = schema['properties'] as Map<String, Object?>;
-      final arguments = props['arguments'] as Map<String, Object?>;
+      final props = schema['properties']! as Map<String, Object?>;
+      final arguments = props['arguments']! as Map<String, Object?>;
       expect(arguments['additionalProperties'], isTrue);
       expect(props.containsKey('connection'), isTrue);
     });

@@ -10,10 +10,8 @@ extension type OnDemoEntry._(MCPCallEntry entry) implements MCPCallEntry {
         description: 'Demo extension type entry',
         inputSchema: ObjectSchema(properties: const {}),
       ),
-      handler: (final request) => MCPCallResult(
-        message: 'demo',
-        parameters: const {'done': true},
-      ),
+      handler: (final request) =>
+          MCPCallResult(message: 'demo', parameters: const {'done': true}),
     );
     return OnDemoEntry._(entry);
   }

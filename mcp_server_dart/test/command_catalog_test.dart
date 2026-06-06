@@ -188,14 +188,15 @@ void main() {
 
     test('rejects semantic_snapshot with unknown keys', () {
       expect(
-        () => catalog.buildCommand('semantic_snapshot', {
-          'unexpected': true,
-        }),
+        () => catalog.buildCommand('semantic_snapshot', {'unexpected': true}),
         throwsA(
           isA<ArgumentError>().having(
             (final error) => error.message,
             'message',
-            anyOf(contains('Unknown argument key'), contains('Unknown property')),
+            anyOf(
+              contains('Unknown argument key'),
+              contains('Unknown property'),
+            ),
           ),
         ),
       );
@@ -256,15 +257,18 @@ void main() {
       );
     });
 
-    test('inspect_widget_at_point catalog schema matches shared core schema', () {
-      expect(
-        schemaEquality.equals(
-          catalog.specFor('inspect_widget_at_point')!.inputSchema,
-          inspectWidgetAtPointInputSchema(),
-        ),
-        isTrue,
-      );
-    });
+    test(
+      'inspect_widget_at_point catalog schema matches shared core schema',
+      () {
+        expect(
+          schemaEquality.equals(
+            catalog.specFor('inspect_widget_at_point')!.inputSchema,
+            inspectWidgetAtPointInputSchema(),
+          ),
+          isTrue,
+        );
+      },
+    );
 
     test('get_app_errors catalog schema matches shared core schema', () {
       expect(
@@ -286,12 +290,15 @@ void main() {
       );
     });
 
-    test('rejects inspect_widget_at_point without x and y via shared schema', () {
-      expect(
-        () => catalog.buildCommand('inspect_widget_at_point', {}),
-        throwsA(isA<ArgumentError>()),
-      );
-    });
+    test(
+      'rejects inspect_widget_at_point without x and y via shared schema',
+      () {
+        expect(
+          () => catalog.buildCommand('inspect_widget_at_point', {}),
+          throwsA(isA<ArgumentError>()),
+        );
+      },
+    );
 
     test('inspect_widget_at_point accepts origin coordinates', () {
       final command = catalog.buildCommand('inspect_widget_at_point', {
@@ -300,7 +307,7 @@ void main() {
       });
       expect(command, isA<InspectWidgetAtPointCommand>());
       expect((command as InspectWidgetAtPointCommand).x, 0);
-      expect((command as InspectWidgetAtPointCommand).y, 0);
+      expect(command.y, 0);
     });
 
     test('rejects get_view_details unknown keys via shared schema', () {
@@ -326,27 +333,21 @@ void main() {
 
     test('rejects get_screenshots unknown keys via shared schema', () {
       expect(
-        () => catalog.buildCommand('get_screenshots', {
-          'unexpected': true,
-        }),
+        () => catalog.buildCommand('get_screenshots', {'unexpected': true}),
         throwsA(isA<ArgumentError>()),
       );
     });
 
     test('rejects capture_ui_snapshot unknown keys via shared schema', () {
       expect(
-        () => catalog.buildCommand('capture_ui_snapshot', {
-          'unexpected': true,
-        }),
+        () => catalog.buildCommand('capture_ui_snapshot', {'unexpected': true}),
         throwsA(isA<ArgumentError>()),
       );
     });
 
     test('rejects hot_reload_flutter unknown keys', () {
       expect(
-        () => catalog.buildCommand('hot_reload_flutter', {
-          'unexpected': true,
-        }),
+        () => catalog.buildCommand('hot_reload_flutter', {'unexpected': true}),
         throwsA(isA<ArgumentError>()),
       );
     });

@@ -56,7 +56,10 @@ void main() {
 
     test('router covers twenty-four command names including capture tools', () {
       expect(interactionCatalogInputSchemaForCommandNames, hasLength(24));
-      expect(interactionCatalogInputSchemaForCommandNames.toSet(), hasLength(24));
+      expect(
+        interactionCatalogInputSchemaForCommandNames.toSet(),
+        hasLength(24),
+      );
       expect(
         interactionCatalogInputSchemaForCommandNames,
         containsAll(captureTierAExecCommandNames),

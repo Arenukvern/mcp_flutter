@@ -1,7 +1,6 @@
 import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/commands/commands_catalog.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/commands/interaction_catalog_validation.dart';
-import 'package:flutter_mcp_toolkit_server/src/shared_core/types/error_codes.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -419,14 +418,12 @@ void main() {
     test('rejects scroll invalid direction enum', () {
       final failure = validationFailureForInteractionCatalogCommand(
         commandName: 'scroll',
-        arguments: const <String, Object?>{
-          'direction': 'sideways',
-        },
+        arguments: const <String, Object?>{'direction': 'sideways'},
       );
 
       expect(failure, isNotNull);
       expect(failure!.error!.message, contains('direction'));
-      expect(failure!.error!.message, contains('one of'));
+      expect(failure.error!.message, contains('one of'));
     });
 
     test('accepts scroll valid direction enum', () {
@@ -503,9 +500,7 @@ void main() {
 
     test('get_recent_logs rejects unknown keys via shared schema', () {
       expect(
-        () => catalog.buildCommand('get_recent_logs', {
-          'unexpected': true,
-        }),
+        () => catalog.buildCommand('get_recent_logs', {'unexpected': true}),
         throwsA(isA<ArgumentError>()),
       );
     });
@@ -535,9 +530,7 @@ void main() {
 
     test('hot_reload_flutter rejects unknown keys via shared schema', () {
       expect(
-        () => catalog.buildCommand('hot_reload_flutter', {
-          'unexpected': true,
-        }),
+        () => catalog.buildCommand('hot_reload_flutter', {'unexpected': true}),
         throwsA(isA<ArgumentError>()),
       );
     });
@@ -553,9 +546,7 @@ void main() {
 
     test('hot_restart_flutter rejects unknown keys via shared schema', () {
       expect(
-        () => catalog.buildCommand('hot_restart_flutter', {
-          'unexpected': true,
-        }),
+        () => catalog.buildCommand('hot_restart_flutter', {'unexpected': true}),
         throwsA(isA<ArgumentError>()),
       );
     });
@@ -592,12 +583,15 @@ void main() {
       );
     });
 
-    test('inspect_widget_at_point catalog schema matches shared core schema', () {
-      expect(
-        catalog.specFor('inspect_widget_at_point')!.inputSchema,
-        inspectWidgetAtPointInputSchema(),
-      );
-    });
+    test(
+      'inspect_widget_at_point catalog schema matches shared core schema',
+      () {
+        expect(
+          catalog.specFor('inspect_widget_at_point')!.inputSchema,
+          inspectWidgetAtPointInputSchema(),
+        );
+      },
+    );
 
     test('get_app_errors catalog schema matches shared core schema', () {
       expect(
@@ -642,8 +636,9 @@ void main() {
     });
 
     test('connect catalog mode omits enum (Tier C docs only)', () {
-      final props = catalog.specFor('connect')!.inputSchema['properties']!
-          as Map<String, Object?>;
+      final props =
+          catalog.specFor('connect')!.inputSchema['properties']!
+              as Map<String, Object?>;
       final modeSchema = props['mode']! as Map<String, Object?>;
       expect(modeSchema.containsKey('enum'), isFalse);
       expect(modeSchema['description'], contains('auto'));

@@ -185,9 +185,9 @@ void main() {
           data: {'type': 'ReloadReport'},
         );
       final ctx = _registeredCtx(runner: runner);
-      await ctx
-          .registrationFor('hot_reload_flutter')!
-          .handler(const <String, Object?>{'force': true});
+      await ctx.registrationFor('hot_reload_flutter')!.handler(
+        const <String, Object?>{'force': true},
+      );
       final cmd = runner.executedCommands.first as HotReloadFlutterCommand;
       expect(cmd.force, isTrue);
     });
@@ -308,9 +308,9 @@ void main() {
     test('returns error on malformed connection argument', () async {
       final runner = FakeCommandRunner();
       final ctx = _registeredCtx(runner: runner);
-      final result = await ctx
-          .registrationFor('connect_debug_app')!
-          .handler(const <String, Object?>{'connection': 'not-an-object'});
+      final result = await ctx.registrationFor('connect_debug_app')!.handler(
+        const <String, Object?>{'connection': 'not-an-object'},
+      );
       expect(result.ok, isFalse);
       // No execute call — parse error short-circuits
       expect(runner.executedCommands, isEmpty);
@@ -395,9 +395,7 @@ void main() {
           data: {'type': 'VM', 'version': '3.x'},
         );
       final ctx = _registeredCtx(runner: runner);
-      await ctx
-          .registrationFor('get_vm')!
-          .handler(const <String, Object?>{});
+      await ctx.registrationFor('get_vm')!.handler(const <String, Object?>{});
       expect(runner.executedCommands.first, isA<GetVmCommand>());
     });
 
@@ -502,12 +500,12 @@ void main() {
       final ctx = _registeredCtx(runner: runner);
       // Passing isolateId and isRawResponse: they must be accepted (no error)
       // and the executor receives GetExtensionRpcsCommand (ignores the args).
-      final result = await ctx
-          .registrationFor('get_extension_rpcs')!
-          .handler(const <String, Object?>{
-                'isolateId': 'isolates/1',
-                'isRawResponse': true,
-              });
+      final result = await ctx.registrationFor('get_extension_rpcs')!.handler(
+        const <String, Object?>{
+          'isolateId': 'isolates/1',
+          'isRawResponse': true,
+        },
+      );
       expect(result.ok, isTrue);
       expect(runner.executedCommands.first, isA<GetExtensionRpcsCommand>());
     });

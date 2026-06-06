@@ -1,14 +1,11 @@
 import 'dart:async';
 
+import 'package:dart_mcp/server.dart';
+import 'package:flutter_mcp_toolkit_server/src/capabilities/dynamic_registry/dynamic_registry.dart';
+import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/server.dart';
 import 'package:intentcall_core/intentcall_core.dart';
 import 'package:intentcall_mcp/intentcall_mcp.dart';
 import 'package:intentcall_schema/intentcall_schema.dart';
-import 'package:dart_mcp/server.dart';
-import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
-import 'package:flutter_mcp_toolkit_server/src/capabilities/dynamic_registry/dynamic_registry.dart';
-import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/mixins/dynamic_registry_integration.dart';
-import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/server.dart';
-import 'package:flutter_mcp_toolkit_server/src/shared_core/types/error_codes.dart';
 import 'package:stream_channel/stream_channel.dart';
 import 'package:test/test.dart';
 
@@ -145,10 +142,7 @@ void main() {
           description: 'Tap by ref',
           inputSchema: ObjectSchema(
             required: ['ref'],
-            properties: {
-              'ref': StringSchema(),
-              'snapshotId': IntegerSchema(),
-            },
+            properties: {'ref': StringSchema(), 'snapshotId': IntegerSchema()},
           ),
         ),
         const DynamicAppId('test_app'),

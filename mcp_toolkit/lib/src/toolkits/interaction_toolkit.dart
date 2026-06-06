@@ -1,7 +1,7 @@
-import 'package:intentcall_core/intentcall_core.dart';
 import 'package:dart_mcp/client.dart';
 import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
+import 'package:intentcall_core/intentcall_core.dart';
 
 import '../agent_entry_helpers.dart';
 import '../mcp_models.dart';
@@ -68,7 +68,8 @@ extension type OnSemanticSnapshotEntry._(AgentCallEntry entry)
 /// {@template on_tap_widget_entry}
 /// Taps the widget identified by a semantic ref.
 /// {@endtemplate}
-extension type OnTapWidgetEntry._(AgentCallEntry entry) implements AgentCallEntry {
+extension type OnTapWidgetEntry._(AgentCallEntry entry)
+    implements AgentCallEntry {
   /// {@macro on_tap_widget_entry}
   factory OnTapWidgetEntry() {
     final entry = mcpToolkitTool(
@@ -123,7 +124,8 @@ extension type OnTapWidgetEntry._(AgentCallEntry entry) implements AgentCallEntr
 /// {@template on_enter_text_entry}
 /// Enters text into a text field identified by a semantic ref.
 /// {@endtemplate}
-extension type OnEnterTextEntry._(AgentCallEntry entry) implements AgentCallEntry {
+extension type OnEnterTextEntry._(AgentCallEntry entry)
+    implements AgentCallEntry {
   /// {@macro on_enter_text_entry}
   factory OnEnterTextEntry() {
     final entry = mcpToolkitTool(
@@ -239,7 +241,8 @@ extension type OnScrollEntry._(AgentCallEntry entry) implements AgentCallEntry {
 /// {@template on_long_press_entry}
 /// Long-presses the widget identified by a semantic ref.
 /// {@endtemplate}
-extension type OnLongPressEntry._(AgentCallEntry entry) implements AgentCallEntry {
+extension type OnLongPressEntry._(AgentCallEntry entry)
+    implements AgentCallEntry {
   /// {@macro on_long_press_entry}
   factory OnLongPressEntry() {
     final entry = mcpToolkitTool(
@@ -446,7 +449,8 @@ extension type OnGetRecentLogsEntry._(AgentCallEntry entry)
 /// Block until a UI predicate holds or a timeout elapses, then return a
 /// fresh semantic snapshot. Eliminates sleep+snapshot polling loops.
 /// {@endtemplate}
-extension type OnWaitForEntry._(AgentCallEntry entry) implements AgentCallEntry {
+extension type OnWaitForEntry._(AgentCallEntry entry)
+    implements AgentCallEntry {
   /// {@macro on_wait_for_entry}
   factory OnWaitForEntry() {
     final entry = mcpToolkitTool(
@@ -489,7 +493,8 @@ extension type OnWaitForEntry._(AgentCallEntry entry) implements AgentCallEntry 
 /// the `flutter/textinput` channel) — use `tap_widget` on the submit
 /// button instead.
 /// {@endtemplate}
-extension type OnPressKeyEntry._(AgentCallEntry entry) implements AgentCallEntry {
+extension type OnPressKeyEntry._(AgentCallEntry entry)
+    implements AgentCallEntry {
   /// {@macro on_press_key_entry}
   factory OnPressKeyEntry() {
     final entry = mcpToolkitTool(
@@ -579,7 +584,8 @@ extension type OnHandleDialogEntry._(AgentCallEntry entry)
 /// Drive the registered Navigator: push a named route, pop the topmost
 /// route, or popUntil a named route.
 /// {@endtemplate}
-extension type OnNavigateEntry._(AgentCallEntry entry) implements AgentCallEntry {
+extension type OnNavigateEntry._(AgentCallEntry entry)
+    implements AgentCallEntry {
   /// {@macro on_navigate_entry}
   factory OnNavigateEntry() {
     final entry = mcpToolkitTool(

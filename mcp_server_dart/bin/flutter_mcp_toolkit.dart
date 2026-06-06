@@ -10,8 +10,8 @@ import 'package:flutter_mcp_toolkit_server/flutter_mcp_core.dart';
 import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/platform_view_hints.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/codegen_init_command.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/codegen_sync_command.dart';
-import 'package:flutter_mcp_toolkit_server/src/cli/init_intentcall_platform_command.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/init_command.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/init_intentcall_platform_command.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/init_mode.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/init_target.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/migrate_agent_entries_command.dart';
@@ -2128,14 +2128,8 @@ final _argParser = ArgParser(allowTrailingOptions: false)
   ..addCommand(
     'migrate',
     _commandParser()
-      ..addCommand(
-        'agent-entries',
-        _migrateAgentEntriesParser(),
-      )
-      ..addCommand(
-        'mcp-call-entry',
-        _migrateAgentEntriesParser(),
-      ),
+      ..addCommand('agent-entries', _migrateAgentEntriesParser())
+      ..addCommand('mcp-call-entry', _migrateAgentEntriesParser()),
   )
   ..addCommand(
     'webmcp',
@@ -2144,30 +2138,36 @@ final _argParser = ArgParser(allowTrailingOptions: false)
       ..addCommand(
         'verify',
         _commandParser()
-          ..addOption('cdp-port', help: 'Chrome remote debugging port (auto-discover if omitted)')
-          ..addOption('web-port', defaultsTo: '8080', help: 'Prefer app tab on this port'),
+          ..addOption(
+            'cdp-port',
+            help: 'Chrome remote debugging port (auto-discover if omitted)',
+          )
+          ..addOption(
+            'web-port',
+            defaultsTo: '8080',
+            help: 'Prefer app tab on this port',
+          ),
       ),
   )
   ..addCommand(
     'codegen',
-    _commandParser()
-      ..addCommand(
-        'sync',
-        _commandParser()
-          ..addOption(
-            'platform',
-            defaultsTo: 'web',
-            help: 'Comma-separated platforms (phase 6d-web: web only)',
-          )
-          ..addOption(
-            'project-dir',
-            help: 'Flutter project root (defaults to current directory)',
-          )
-          ..addFlag(
-            _check,
-            help: 'Verify generated web artifacts are up to date',
-          ),
-      ),
+    _commandParser()..addCommand(
+      'sync',
+      _commandParser()
+        ..addOption(
+          'platform',
+          defaultsTo: 'web',
+          help: 'Comma-separated platforms (phase 6d-web: web only)',
+        )
+        ..addOption(
+          'project-dir',
+          help: 'Flutter project root (defaults to current directory)',
+        )
+        ..addFlag(
+          _check,
+          help: 'Verify generated web artifacts are up to date',
+        ),
+    ),
   );
 
 const _defaultHost = 'localhost';
@@ -2488,7 +2488,10 @@ Reads agent_manifest.json and writes platform artifacts (manifest/JS/XML/Swift/d
 ''';
 
 ArgParser _migrateAgentEntriesParser() => _commandParser()
-  ..addFlag(_check, help: 'Report pending migrations; exit 1 if any would change')
+  ..addFlag(
+    _check,
+    help: 'Report pending migrations; exit 1 if any would change',
+  )
   ..addFlag(_write, help: 'Apply migrations in place')
   ..addOption(
     'namespace',

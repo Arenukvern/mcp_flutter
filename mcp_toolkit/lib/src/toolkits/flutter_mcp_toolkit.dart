@@ -1,10 +1,9 @@
 import 'dart:async';
 
-import 'package:intentcall_core/intentcall_core.dart';
-
 import 'package:dart_mcp/client.dart';
 import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
+import 'package:intentcall_core/intentcall_core.dart';
 import 'package:is_dart_empty_or_not/is_dart_empty_or_not.dart';
 
 import '../agent_entry_helpers.dart';
@@ -48,7 +47,8 @@ extension MCPToolkitBindingExtension on MCPToolkitBinding {
 /// {@template on_app_errors_entry}
 /// AgentCallEntry wrapper for app errors.
 /// {@endtemplate}
-extension type OnAppErrorsEntry._(AgentCallEntry entry) implements AgentCallEntry {
+extension type OnAppErrorsEntry._(AgentCallEntry entry)
+    implements AgentCallEntry {
   /// {@macro on_app_errors_entry}
   factory OnAppErrorsEntry({required final ErrorMonitor errorMonitor}) {
     final entry = mcpToolkitTool(

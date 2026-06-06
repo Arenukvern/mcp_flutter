@@ -6,16 +6,15 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:intentcall_core/intentcall_core.dart';
-import 'package:intentcall_mcp/intentcall_mcp.dart';
-import 'package:intentcall_schema/intentcall_schema.dart';
 import 'package:dart_mcp/server.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 import 'package:flutter_mcp_toolkit_server/flutter_mcp_server.dart';
 import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_consts.dart';
-import 'package:flutter_mcp_toolkit_server/src/shared_core/types/error_codes.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
+import 'package:intentcall_core/intentcall_core.dart';
+import 'package:intentcall_mcp/intentcall_mcp.dart';
+import 'package:intentcall_schema/intentcall_schema.dart';
 import 'package:is_dart_empty_or_not/is_dart_empty_or_not.dart';
 import 'package:meta/meta.dart';
 import 'package:vm_service/vm_service.dart';
@@ -372,10 +371,7 @@ final class DynamicRegistry {
     }
 
     final agentResult = await entry.intent.execute(
-      AgentInvocation(
-        descriptor: entry.intent.descriptor,
-        arguments: coerced,
-      ),
+      AgentInvocation(descriptor: entry.intent.descriptor, arguments: coerced),
     );
     return agentResultToMcpResult(agentResult);
   }
@@ -460,8 +456,7 @@ final class DynamicRegistry {
         name: resource.name,
         description: resource.description ?? '',
         kind: AgentIntentKind.resource,
-        inputSchema:
-            inputSchema ?? clientResourceReadInputSchema(),
+        inputSchema: inputSchema ?? clientResourceReadInputSchema(),
         resourceUri: resource.uri,
         mimeType: resource.mimeType,
       ),
@@ -625,10 +620,7 @@ final class DynamicRegistry {
     }
 
     final agentResult = await entry.intent.execute(
-      AgentInvocation(
-        descriptor: entry.intent.descriptor,
-        arguments: coerced,
-      ),
+      AgentInvocation(descriptor: entry.intent.descriptor, arguments: coerced),
     );
     return agentResultToReadResourceResult(agentResult, uri: resourceUri);
   }

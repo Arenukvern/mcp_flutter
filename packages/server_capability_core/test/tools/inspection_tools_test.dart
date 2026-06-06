@@ -150,7 +150,11 @@ void main() {
           ..nextExecuteResult = CoreResult.success(data: {'widget': 'Text'});
         final ctx = _registeredCtx(runner: runner);
         final reg = ctx.registrationFor('inspect_widget_at_point')!;
-        await reg.handler(const <String, Object?>{'x': 100, 'y': 200, 'viewId': 1});
+        await reg.handler(const <String, Object?>{
+          'x': 100,
+          'y': 200,
+          'viewId': 1,
+        });
         final cmd =
             runner.executedCommands.first as InspectWidgetAtPointCommand;
         expect(cmd.x, 100);
@@ -180,17 +184,14 @@ void main() {
       expect(cmd.viewId, isNull);
     });
 
-    test(
-      'inspect_widget_at_point handler rejects missing x and y',
-      () async {
-        final runner = FakeCommandRunner();
-        final ctx = _registeredCtx(runner: runner);
-        final reg = ctx.registrationFor('inspect_widget_at_point')!;
-        final result = await reg.handler(const <String, Object?>{});
-        expect(result.ok, isFalse);
-        expect(runner.executedCommands, isEmpty);
-      },
-    );
+    test('inspect_widget_at_point handler rejects missing x and y', () async {
+      final runner = FakeCommandRunner();
+      final ctx = _registeredCtx(runner: runner);
+      final reg = ctx.registrationFor('inspect_widget_at_point')!;
+      final result = await reg.handler(const <String, Object?>{});
+      expect(result.ok, isFalse);
+      expect(runner.executedCommands, isEmpty);
+    });
 
     test(
       'inspect_widget_at_point handler short-circuits on override failure',
@@ -202,7 +203,10 @@ void main() {
           );
         final ctx = _registeredCtx(runner: runner);
         final reg = ctx.registrationFor('inspect_widget_at_point')!;
-        final result = await reg.handler(const <String, Object?>{'x': 0, 'y': 0});
+        final result = await reg.handler(const <String, Object?>{
+          'x': 0,
+          'y': 0,
+        });
         expect(result.ok, isFalse);
         expect(runner.executedCommands, isEmpty);
       },
@@ -218,7 +222,10 @@ void main() {
           );
         final ctx = _registeredCtx(runner: runner);
         final reg = ctx.registrationFor('inspect_widget_at_point')!;
-        final result = await reg.handler(const <String, Object?>{'x': 0, 'y': 0});
+        final result = await reg.handler(const <String, Object?>{
+          'x': 0,
+          'y': 0,
+        });
         expect(result.ok, isFalse);
         final json = agentResultPayload(result);
         _expectEnvelopeKeys(json);
@@ -360,14 +367,16 @@ void main() {
           'string',
         );
         expect(props.containsKey('connection'), isTrue);
-        expect(
-          (props['mode']! as Map<String, Object?>)['enum'],
-          ['auto', 'flutter_layer', 'desktop_window'],
-        );
-        expect(
-          (props['permissionPolicy']! as Map<String, Object?>)['enum'],
-          ['check_only', 'auto_request_once', 'request_always'],
-        );
+        expect((props['mode']! as Map<String, Object?>)['enum'], [
+          'auto',
+          'flutter_layer',
+          'desktop_window',
+        ]);
+        expect((props['permissionPolicy']! as Map<String, Object?>)['enum'], [
+          'check_only',
+          'auto_request_once',
+          'request_always',
+        ]);
       },
     );
 
@@ -381,10 +390,10 @@ void main() {
         final ctx = _registeredCtx(runner: runner);
         final reg = ctx.registrationFor('get_screenshots')!;
         await reg.handler(const <String, Object?>{
-              'compress': false,
-              'mode': 'flutter_layer',
-              'permissionPolicy': 'auto_request_once',
-            });
+          'compress': false,
+          'mode': 'flutter_layer',
+          'permissionPolicy': 'auto_request_once',
+        });
         final cmd = runner.executedCommands.first as GetScreenshotsCommand;
         expect(cmd.compress, isFalse);
         expect(cmd.mode, ScreenshotMode.flutterLayer);
@@ -410,14 +419,8 @@ void main() {
         final result = await reg.handler(const <String, Object?>{});
         expect(result.ok, isTrue);
         expect(result.artifacts, hasLength(2));
-        expect(
-          result.artifacts[0].text,
-          contains('file:///tmp/screen0.png'),
-        );
-        expect(
-          result.artifacts[1].text,
-          contains('file:///tmp/screen1.png'),
-        );
+        expect(result.artifacts[0].text, contains('file:///tmp/screen0.png'));
+        expect(result.artifacts[1].text, contains('file:///tmp/screen1.png'));
         expect(result.data['meta'], isNotNull);
       },
     );
@@ -519,14 +522,16 @@ void main() {
         'string',
       );
       expect(props.containsKey('connection'), isTrue);
-      expect(
-        (props['screenshotMode']! as Map<String, Object?>)['enum'],
-        ['auto', 'flutter_layer', 'desktop_window'],
-      );
-      expect(
-        (props['permissionPolicy']! as Map<String, Object?>)['enum'],
-        ['check_only', 'auto_request_once', 'request_always'],
-      );
+      expect((props['screenshotMode']! as Map<String, Object?>)['enum'], [
+        'auto',
+        'flutter_layer',
+        'desktop_window',
+      ]);
+      expect((props['permissionPolicy']! as Map<String, Object?>)['enum'], [
+        'check_only',
+        'auto_request_once',
+        'request_always',
+      ]);
     });
 
     test(
@@ -537,13 +542,13 @@ void main() {
         final ctx = _registeredCtx(runner: runner);
         final reg = ctx.registrationFor('capture_ui_snapshot')!;
         await reg.handler(const <String, Object?>{
-              'errorsCount': 8,
-              'compress': false,
-              'includeViewDetails': false,
-              'includeErrors': false,
-              'screenshotMode': 'desktop_window',
-              'permissionPolicy': 'request_always',
-            });
+          'errorsCount': 8,
+          'compress': false,
+          'includeViewDetails': false,
+          'includeErrors': false,
+          'screenshotMode': 'desktop_window',
+          'permissionPolicy': 'request_always',
+        });
         final cmd = runner.executedCommands.first as CaptureUiSnapshotCommand;
         expect(cmd.errorsCount, 8);
         expect(cmd.compress, isFalse);

@@ -1,8 +1,8 @@
-import 'package:intentcall_mcp/intentcall_mcp.dart';
-import 'package:intentcall_schema/intentcall_schema.dart';
 import 'package:flutter_mcp_toolkit_capability_core/src/tools/codegen/get_recent_logs_tool.dart';
 import 'package:flutter_mcp_toolkit_capability_kernel/flutter_mcp_toolkit_capability_kernel.dart';
 import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/host.dart';
+import 'package:intentcall_mcp/intentcall_mcp.dart';
+import 'package:intentcall_schema/intentcall_schema.dart';
 import 'package:test/test.dart';
 
 final class _CodegenLogCapability implements Capability {
@@ -20,9 +20,8 @@ final class _CodegenLogCapability implements Capability {
     context.registerTool(
       agentCallEntryToToolRegistration(
         getRecentLogsCallEntry,
-        handler: (_) async => AgentResult.success(
-          data: const <String, Object?>{'codegen': true},
-        ),
+        handler: (_) async =>
+            AgentResult.success(data: const <String, Object?>{'codegen': true}),
       ),
     );
   }
@@ -32,15 +31,18 @@ final class _CodegenLogCapability implements Capability {
 }
 
 void main() {
-  test('McpHost registry invokes fmt_get_recent_logs from @AgentTool codegen', () async {
-    final host = McpHost();
-    await host.registerCapability(_CodegenLogCapability());
+  test(
+    'McpHost registry invokes fmt_get_recent_logs from @AgentTool codegen',
+    () async {
+      final host = McpHost();
+      await host.registerCapability(_CodegenLogCapability());
 
-    final result = await host.agentRegistry.invoke(
-      'fmt_get_recent_logs',
-      const <String, Object?>{},
-    );
-    expect(result.ok, isTrue);
-    expect(result.data['codegen'], isTrue);
-  });
+      final result = await host.agentRegistry.invoke(
+        'fmt_get_recent_logs',
+        const <String, Object?>{},
+      );
+      expect(result.ok, isTrue);
+      expect(result.data['codegen'], isTrue);
+    },
+  );
 }

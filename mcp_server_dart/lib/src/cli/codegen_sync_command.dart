@@ -72,7 +72,8 @@ Future<int> runCodegenSync({
         'wroteMacosGenerated': result.wroteMacosGenerated,
         'wroteLinuxDesktop': result.wroteLinuxDesktop,
         'wroteWindowsProtocol': result.wroteWindowsProtocol,
-        if (platforms.contains('web')) 'indexHtmlSnippet': kIntentCallWebIndexSnippet,
+        if (platforms.contains('web'))
+          'indexHtmlSnippet': kIntentCallWebIndexSnippet,
         if (platforms.contains('android'))
           'androidManifestSnippet': kAndroidShortcutsManifestSnippet,
         if (platforms.contains('android'))

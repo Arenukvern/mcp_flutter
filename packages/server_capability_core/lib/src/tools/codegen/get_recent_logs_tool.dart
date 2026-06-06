@@ -21,7 +21,5 @@ Future<AgentResult> fmtGetRecentLogs(
   @AgentParam('Number of recent log entries (default: 50).', required: false)
   int? count,
 ) async {
-  return AgentResult.success(
-    data: <String, Object?>{'count': count ?? 50},
-  );
+  return AgentResult.success(data: <String, Object?>{'count': count ?? 50});
 }

@@ -9,14 +9,20 @@ void main() {
 
   group('MigrateAgentEntriesMigrator', () {
     test('migrates starter tool and resource fixtures', () {
-      final before = File('${fixturesDir.path}/before_starter_entries.dart').readAsStringSync();
-      final after = File('${fixturesDir.path}/after_starter_entries.dart').readAsStringSync();
+      final before = File(
+        '${fixturesDir.path}/before_starter_entries.dart',
+      ).readAsStringSync();
+      final after = File(
+        '${fixturesDir.path}/after_starter_entries.dart',
+      ).readAsStringSync();
       final migrated = migrator.migrateSource(before);
       expect(migrated, after);
     });
 
     test('migrates extension type Set and implements clauses', () {
-      final before = File('${fixturesDir.path}/before_extension_type.dart').readAsStringSync();
+      final before = File(
+        '${fixturesDir.path}/before_extension_type.dart',
+      ).readAsStringSync();
       final migrated = migrator.migrateSource(before);
       expect(migrated, contains('Set<AgentCallEntry>'));
       expect(migrated, contains('implements AgentCallEntry'));
@@ -25,7 +31,9 @@ void main() {
     });
 
     test('wouldChange is false for already migrated source', () {
-      final after = File('${fixturesDir.path}/after_starter_entries.dart').readAsStringSync();
+      final after = File(
+        '${fixturesDir.path}/after_starter_entries.dart',
+      ).readAsStringSync();
       expect(migrator.wouldChange(after), isFalse);
     });
 
@@ -56,7 +64,9 @@ MCPCallEntry.tool(
     });
 
     test('adds intentcall imports when missing', () {
-      final before = File('${fixturesDir.path}/before_starter_entries.dart').readAsStringSync();
+      final before = File(
+        '${fixturesDir.path}/before_starter_entries.dart',
+      ).readAsStringSync();
       final migrated = migrator.migrateSource(before);
       expect(
         migrated,
@@ -72,13 +82,17 @@ MCPCallEntry.tool(
   group('runMigrateAgentEntries', () {
     late Directory tmp;
 
-    setUp(() => tmp = Directory.systemTemp.createTempSync('migrate_agent_entries_'));
+    setUp(
+      () => tmp = Directory.systemTemp.createTempSync('migrate_agent_entries_'),
+    );
     tearDown(() => tmp.deleteSync(recursive: true));
 
     test('--check exits 1 when migrations are pending', () async {
       final file = File('${tmp.path}/entries.dart')
         ..writeAsStringSync(
-          File('${fixturesDir.path}/before_starter_entries.dart').readAsStringSync(),
+          File(
+            '${fixturesDir.path}/before_starter_entries.dart',
+          ).readAsStringSync(),
         );
 
       final exitCode = await runMigrateAgentEntries(
@@ -92,9 +106,13 @@ MCPCallEntry.tool(
     test('--write applies migration in place', () async {
       final file = File('${tmp.path}/entries.dart')
         ..writeAsStringSync(
-          File('${fixturesDir.path}/before_starter_entries.dart').readAsStringSync(),
+          File(
+            '${fixturesDir.path}/before_starter_entries.dart',
+          ).readAsStringSync(),
         );
-      final expected = File('${fixturesDir.path}/after_starter_entries.dart').readAsStringSync();
+      final expected = File(
+        '${fixturesDir.path}/after_starter_entries.dart',
+      ).readAsStringSync();
 
       final exitCode = await runMigrateAgentEntries(
         path: file.path,

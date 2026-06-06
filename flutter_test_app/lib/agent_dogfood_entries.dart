@@ -58,7 +58,8 @@ Set<AgentCallEntry> buildAgentDogfoodEntries() => {
         'kind': 'app_dogfood_visual_reconstruct',
         'route': '/visual-reconstruct',
         'golden': 'test/goldens/visual_reconstruct.png',
-        'guild_profile_warm': '$_visualReconstructRoot/profiles/dogfood_warm.yaml',
+        'guild_profile_warm':
+            '$_visualReconstructRoot/profiles/dogfood_warm.yaml',
         'guild_profile_strict':
             '$_visualReconstructRoot/profiles/default_guild.yaml',
         'harness_smoke':
@@ -74,7 +75,8 @@ Set<AgentCallEntry> buildAgentDogfoodEntries() => {
   AgentCallEntry.tool(
     namespace: 'app',
     name: 'dogfood_ping',
-    description: 'Dogfood ping — returns a fixed payload for registry/invoke checks',
+    description:
+        'Dogfood ping — returns a fixed payload for registry/invoke checks',
     inputSchema: const {
       'type': 'object',
       'additionalProperties': false,
@@ -82,11 +84,7 @@ Set<AgentCallEntry> buildAgentDogfoodEntries() => {
     },
     handler: (_) async => AgentResult.success(
       message: 'dogfood pong',
-      data: const {
-        'ok': true,
-        'kind': 'app_dogfood_ping',
-        'iteration': 5,
-      },
+      data: const {'ok': true, 'kind': 'app_dogfood_ping', 'iteration': 5},
     ),
   ),
 };

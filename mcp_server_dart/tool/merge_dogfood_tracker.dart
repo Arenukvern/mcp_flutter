@@ -50,7 +50,9 @@ void main(final List<String> args) {
   ];
 
   final nextIteration =
-      RegExp(r'^iteration:\s*(\d+)').firstMatch(iterationLines.first)?.group(1) ??
+      RegExp(
+        r'^iteration:\s*(\d+)',
+      ).firstMatch(iterationLines.first)?.group(1) ??
       '${scores.length}';
 
   final out = <String>[

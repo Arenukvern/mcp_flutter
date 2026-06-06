@@ -142,15 +142,13 @@ void main() {
       () async {
         final fakeRunner = FakeCommandRunner();
         final ctx = _registeredCtx(runner: fakeRunner);
-        await ctx
-            .registrationFor('fill_form')!
-            .handler(<String, Object?>{
-                  'fields': <Object?>[
-                    {'ref': 'tf_0', 'text': 'Alice'},
-                    {'ref': 'tf_1', 'text': 'alice@example.com'},
-                  ],
-                  'snapshotId': 7,
-                });
+        await ctx.registrationFor('fill_form')!.handler(<String, Object?>{
+          'fields': <Object?>[
+            {'ref': 'tf_0', 'text': 'Alice'},
+            {'ref': 'tf_1', 'text': 'alice@example.com'},
+          ],
+          'snapshotId': 7,
+        });
         expect(fakeRunner.executedCommands, hasLength(1));
         final cmd = fakeRunner.executedCommands.first as FillFormCommand;
         expect(cmd.fields, hasLength(2));
@@ -166,13 +164,11 @@ void main() {
     test('handler passes snapshotId as null when not provided', () async {
       final fakeRunner = FakeCommandRunner();
       final ctx = _registeredCtx(runner: fakeRunner);
-      await ctx
-          .registrationFor('fill_form')!
-          .handler(<String, Object?>{
-                'fields': <Object?>[
-                  {'ref': 'tf_0', 'text': 'Bob'},
-                ],
-              });
+      await ctx.registrationFor('fill_form')!.handler(<String, Object?>{
+        'fields': <Object?>[
+          {'ref': 'tf_0', 'text': 'Bob'},
+        ],
+      });
       final cmd = fakeRunner.executedCommands.first as FillFormCommand;
       expect(cmd.snapshotId, isNull);
     });
@@ -180,14 +176,12 @@ void main() {
     test('handler treats snapshotId == 0 as absent (legacy parity)', () async {
       final fakeRunner = FakeCommandRunner();
       final ctx = _registeredCtx(runner: fakeRunner);
-      await ctx
-          .registrationFor('fill_form')!
-          .handler(<String, Object?>{
-                'fields': <Object?>[
-                  {'ref': 'tf_0', 'text': 'Bob'},
-                ],
-                'snapshotId': 0,
-              });
+      await ctx.registrationFor('fill_form')!.handler(<String, Object?>{
+        'fields': <Object?>[
+          {'ref': 'tf_0', 'text': 'Bob'},
+        ],
+        'snapshotId': 0,
+      });
       final cmd = fakeRunner.executedCommands.first as FillFormCommand;
       expect(cmd.snapshotId, isNull);
     });
@@ -198,9 +192,9 @@ void main() {
         final fakeRunner = FakeCommandRunner();
         final ctx = _registeredCtx(runner: fakeRunner);
         // Schema validation would normally block this; handler must be defensive.
-        await ctx
-            .registrationFor('fill_form')!
-            .handler(<String, Object?>{'fields': 'not-a-list'});
+        await ctx.registrationFor('fill_form')!.handler(<String, Object?>{
+          'fields': 'not-a-list',
+        });
         final cmd = fakeRunner.executedCommands.first as FillFormCommand;
         expect(cmd.fields, isEmpty);
       },
@@ -215,9 +209,7 @@ void main() {
         ],
         'connection': {'port': 9999},
       };
-      await ctx
-          .registrationFor('fill_form')!
-          .handler(args);
+      await ctx.registrationFor('fill_form')!.handler(args);
       expect(fakeRunner.overrideArguments, hasLength(1));
       expect(fakeRunner.overrideArguments.first, equals(args));
       expect(fakeRunner.executedCommands, hasLength(1));
@@ -241,14 +233,14 @@ void main() {
           },
         );
       final ctx = _registeredCtx(runner: fakeRunner);
-      final result = await ctx
-          .registrationFor('fill_form')!
-          .handler(<String, Object?>{
-                'fields': <Object?>[
-                  {'ref': 'tf_0', 'text': 'Alice'},
-                  {'ref': 'tf_1', 'text': 'alice@example.com'},
-                ],
-              });
+      final result = await ctx.registrationFor('fill_form')!.handler(
+        <String, Object?>{
+          'fields': <Object?>[
+            {'ref': 'tf_0', 'text': 'Alice'},
+            {'ref': 'tf_1', 'text': 'alice@example.com'},
+          ],
+        },
+      );
       expect(result.ok, isTrue);
       final json = agentResultPayload(result);
       expect(json['success'], isTrue);
@@ -271,14 +263,14 @@ void main() {
           },
         );
       final ctx = _registeredCtx(runner: fakeRunner);
-      final result = await ctx
-          .registrationFor('fill_form')!
-          .handler(<String, Object?>{
-                'fields': <Object?>[
-                  {'ref': 'tf_0', 'text': 'Alice'},
-                  {'ref': 'tf_1', 'text': 'bad-ref'},
-                ],
-              });
+      final result = await ctx.registrationFor('fill_form')!.handler(
+        <String, Object?>{
+          'fields': <Object?>[
+            {'ref': 'tf_0', 'text': 'Alice'},
+            {'ref': 'tf_1', 'text': 'bad-ref'},
+          ],
+        },
+      );
       expect(result.ok, isFalse);
       final json = agentResultPayload(result);
       expect(json['code'], equals(CoreErrorCode.fillFormFailed));
@@ -298,14 +290,14 @@ void main() {
             message: 'No app running on port 9999',
           );
         final ctx = _registeredCtx(runner: fakeRunner);
-        final result = await ctx
-            .registrationFor('fill_form')!
-            .handler(<String, Object?>{
-                  'fields': <Object?>[
-                    {'ref': 'tf_0', 'text': 'X'},
-                  ],
-                  'connection': {'port': 9999},
-                });
+        final result = await ctx.registrationFor('fill_form')!.handler(
+          <String, Object?>{
+            'fields': <Object?>[
+              {'ref': 'tf_0', 'text': 'X'},
+            ],
+            'connection': {'port': 9999},
+          },
+        );
         expect(fakeRunner.executedCommands, isEmpty);
         expect(result.ok, isFalse);
         final json = agentResultPayload(result);

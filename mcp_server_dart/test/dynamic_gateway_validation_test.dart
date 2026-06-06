@@ -1,7 +1,6 @@
-import 'package:intentcall_schema/intentcall_schema.dart';
 import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 import 'package:flutter_mcp_toolkit_server/src/capabilities/dynamic_registry/dynamic_gateway.dart';
-import 'package:flutter_mcp_toolkit_server/src/shared_core/types/error_codes.dart';
+import 'package:intentcall_schema/intentcall_schema.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -54,10 +53,7 @@ void main() {
       final failure = validationFailureForDynamicSchema(
         subjectLabel: 'tool "tap_widget"',
         schema: tapWidgetInputSchema(),
-        arguments: const <String, Object?>{
-          'ref': 's_0',
-          'snapshotId': '42',
-        },
+        arguments: const <String, Object?>{'ref': 's_0', 'snapshotId': '42'},
       );
 
       expect(failure, isNull);
@@ -67,10 +63,7 @@ void main() {
       expect(
         () => validateAgainstSchema(
           tapWidgetInputSchema(),
-          const <String, Object?>{
-            'ref': 's_0',
-            'snapshotId': '42',
-          },
+          const <String, Object?>{'ref': 's_0', 'snapshotId': '42'},
         ),
         throwsA(isA<AgentValidationException>()),
       );
