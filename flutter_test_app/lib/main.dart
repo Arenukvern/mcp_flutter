@@ -2,11 +2,16 @@
 
 import 'dart:async';
 
+import 'package:intentcall_platform/intentcall_platform_flutter.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
+import 'package:test_app/agent_dogfood_entries.dart';
+import 'package:test_app/agent_web_mcp_dogfood.dart';
 import 'package:test_app/agent_state.dart';
 import 'package:test_app/platform_view_showcase.dart';
 import 'package:test_app/showcase_screen.dart';
+import 'package:test_app/visual_reconstruct_screen.dart';
 
 var _initialEntriesRegistered = false;
 var _delayedEntriesRegistered = false;
@@ -19,6 +24,15 @@ Future<void> main({final bool enableDelayedMcpRegistration = true}) async {
     ..initializeFlutterToolkit();
 
   await _registerInitialMCPTools();
+  if (!kIsWeb) {
+    unawaited(
+      IntentCallInvokeLinkListener(
+        onQualifiedName: (final name) {
+          debugPrint('intentcall invoke: $name');
+        },
+      ).start(),
+    );
+  }
   if (enableDelayedMcpRegistration) {
     // Mirror the previous bootstrap timing: a brief delay so a remote
     // observer can witness the dynamic-registry update event.
@@ -59,7 +73,8 @@ Future<void> _registerInitialMCPTools() async {
   _initialEntriesRegistered = true;
   final binding = MCPToolkitBinding.instance;
 
-  final fibonacciEntry = MCPCallEntry.tool(
+  final fibonacciEntry = mcpToolkitTool(
+    namespace: 'app',
     handler: (final request) {
       final n = int.tryParse(request['n'] ?? '0') ?? 0;
       return MCPCallResult(
@@ -83,7 +98,8 @@ Future<void> _registerInitialMCPTools() async {
     ),
   );
 
-  final appStateEntry = MCPCallEntry.resource(
+  final appStateEntry = mcpToolkitResource(
+    namespace: 'app',
     definition: MCPResourceDefinition(
       name: 'app_state',
       description: 'Current agent-facing showcase state',
@@ -95,7 +111,8 @@ Future<void> _registerInitialMCPTools() async {
     ),
   );
 
-  final agentStateEntry = MCPCallEntry.tool(
+  final agentStateEntry = mcpToolkitTool(
+    namespace: 'app',
     handler: (final request) => MCPCallResult(
       message: 'Agent showcase state',
       parameters: AgentState.instance.snapshot(),
@@ -108,9 +125,18 @@ Future<void> _registerInitialMCPTools() async {
     ),
   );
 
+  final dogfoodEntries = buildAgentDogfoodEntries();
   await binding.addEntries(
-    entries: {fibonacciEntry, appStateEntry, agentStateEntry},
+    entries: {
+      fibonacciEntry,
+      appStateEntry,
+      agentStateEntry,
+      ...dogfoodEntries,
+    },
   );
+  if (kIsWeb) {
+    await wireWebMcpPublishAdapterDogfood(dogfoodEntries);
+  }
   print('Initial MCP tools and resources registered');
 }
 
@@ -119,7 +145,8 @@ Future<void> _registerDelayedMCPTools() async {
   _delayedEntriesRegistered = true;
   final binding = MCPToolkitBinding.instance;
 
-  final preferencesEntry = MCPCallEntry.tool(
+  final preferencesEntry = mcpToolkitTool(
+    namespace: 'app',
     handler: (final request) {
       final category = request['category'] ?? 'all';
       return MCPCallResult(
@@ -150,6 +177,10 @@ Future<void> _registerDelayedMCPTools() async {
 
 // ---- App ---------------------------------------------------------------------
 
+/// When true (e.g. `--dart-define=DOGFOOD_VISUAL=true`), boot on the visual
+/// reconstruct fixture for warm-path guild compare without HS navigation.
+const _dogfoodVisual = bool.fromEnvironment('DOGFOOD_VISUAL');
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -165,6 +196,10 @@ class MyApp extends StatelessWidget {
       useMaterial3: true,
       scaffoldBackgroundColor: const Color(0xFFFAFAFA),
     ),
-    home: const ShowcaseScreen(),
+    routes: {
+      '/': (_) => const ShowcaseScreen(),
+      '/visual-reconstruct': (_) => const VisualReconstructScreen(),
+    },
+    initialRoute: _dogfoodVisual ? '/visual-reconstruct' : '/',
   );
 }

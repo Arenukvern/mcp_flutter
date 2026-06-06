@@ -2,13 +2,12 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:test/test.dart';
-
 import 'package:flutter_mcp_toolkit_server/flutter_mcp_core.dart';
 import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/desktop_window_screenshot.dart';
 import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/web_browser_screenshot.dart';
 import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/web_cdp_client.dart';
 import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/web_cdp_discovery.dart';
+import 'package:test/test.dart';
 
 final class _FakeMacHost implements DesktopWindowScreenshotService {
   _FakeMacHost({this.captureResult, this.throws = false});
@@ -37,7 +36,6 @@ final class _FakeMacHost implements DesktopWindowScreenshotService {
     final String? cacheDir,
   }) async => const <String, Object?>{'ok': true};
 
-  @override
   bool supportsPlatform(final String effectivePlatform) => false;
 }
 

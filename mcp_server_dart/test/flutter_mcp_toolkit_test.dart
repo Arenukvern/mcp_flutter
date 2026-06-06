@@ -8,7 +8,7 @@ void main() {
   // JIT-compiles this package. Under CPU contention (CI / agent hosts) a
   // single invocation can exceed the default 30s test timeout even though
   // the child process is healthy — raise the ceiling for the whole group.
-  group('flutter-mcp-toolkit v3 one-shot', () {
+  group('flutter-mcp-toolkit v4 one-shot', () {
     late Directory tempDir;
     late String statePath;
 
@@ -90,7 +90,7 @@ void main() {
       expect(envelope['ok'], isTrue);
 
       final data = envelope['data'] as Map<String, dynamic>;
-      expect(data['protocolVersion'], equals('flutter-mcp-toolkit/3.0'));
+      expect(data['protocolVersion'], equals('flutter-mcp-toolkit/4.0'));
       expect(data['schemaVersion'], equals('command-catalog/v1'));
       expect((data['features'] as Map<String, dynamic>)['serve'], isTrue);
     });

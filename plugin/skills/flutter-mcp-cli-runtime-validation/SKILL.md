@@ -35,8 +35,8 @@ Permission behavior for this flow:
 - `validate-runtime` stays read/write only for visual capture and defaults to `auto_request_once`.
 - `doctor` remains read-only.
 - On macOS, Screen Recording permission belongs to the host process running `flutter-mcp-toolkit`.
-- On web: `desktop_window` uses macOS ScreenCaptureKit then Chrome CDP (`Page.captureScreenshot`); Linux/Windows use CDP when remote debugging is reachable. Pass `--web-browser-debugging-port` if discovery fails. With platform views detected, `validate-runtime` does not fall back to `flutter_layer` after a successful `desktop_window` capture. Check `captureHints.weakSignalsDetected` for `Texture`-only apps.
-- Executor recovery retries host capture once (`desktopCaptureRetried` in screenshot payloads). When `captureHints.platformViewsDetected` is true, validate-runtime does not fall back to `flutter_layer`. Otherwise it may retry once with `flutter_layer` after a failed host capture.
+- On web: `desktop_window` uses macOS ScreenCaptureKit then Chrome CDP (`Page.captureScreenshot`); Linux/Windows use CDP when remote debugging is reachable. Pass `--web-browser-debugging-port` if discovery fails. For web targets, pass `--flutter-device chrome` so validation does not pick macOS host `desktop_window` by mistake.
+- Executor recovery retries host capture once (`desktopCaptureRetried` in screenshot payloads). If `desktop_window` still fails (including when platform views are detected), `validate-runtime` retries once with `flutter_layer`. Check `data.summary.captureFallbackUsed`.
 - You may pass the VM URI as global `--vm-service-uri` instead of `validate-runtime --target` when only one URI is needed.
 
 ## What `validate-runtime` Must Prove
@@ -56,7 +56,7 @@ Permission behavior for this flow:
 
 - Use `data.summary` as pass/fail status for automation.
 - Use `data.summary.capturePlatformViewsDetected` and `captureFocusAttempted` for platform-view routing.
-- Use `data.summary.captureFallbackUsed` to see whether a `flutter_layer` retry ran (skipped when platform views were detected).
+- Use `data.summary.captureFallbackUsed` to see whether a `flutter_layer` retry ran after a failed `desktop_window` attempt (including when platform views are detected).
 - Use `data.steps` for per-step evidence and retries.
 - Use `data.doctor.checks` to explain setup blockers.
 - Use `data.summary.screenshotFiles` for saved screenshot paths when `--save-images` is enabled.

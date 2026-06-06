@@ -7,7 +7,7 @@ DOCKER_FILE="$ROOT_DIR/mcp_server_dart/Dockerfile"
 DOCKER_DEV_FILE="$ROOT_DIR/mcp_server_dart/Dockerfile.dev"
 
 extract_pubspec_min_sdk() {
-  sed -nE "s/^[[:space:]]*sdk:[[:space:]]*\^?([0-9]+\.[0-9]+\.[0-9]+).*/\1/p" "$PUBSPEC_FILE" | head -n 1
+  sed -nE "s/^[[:space:]]*sdk:[[:space:]]*['\"]?(\^|>=)?([0-9]+\.[0-9]+\.[0-9]+).*/\2/p" "$PUBSPEC_FILE" | head -n 1
 }
 
 extract_docker_sdk() {

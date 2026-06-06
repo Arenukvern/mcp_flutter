@@ -22,9 +22,17 @@ void main() {
   });
 
   group('HandleDialogCommand', () {
-    test('default action is dismiss', () {
+    test('requires action at catalog boundary', () {
+      expect(
+        () => catalog.buildCommand('handle_dialog', {}),
+        throwsA(isA<ArgumentError>()),
+      );
+    });
+
+    test('round-trips explicit dismiss action', () {
       final cmd =
-          catalog.buildCommand('handle_dialog', {}) as HandleDialogCommand;
+          catalog.buildCommand('handle_dialog', {'action': 'dismiss'})
+              as HandleDialogCommand;
       expect(cmd.action, 'dismiss');
     });
   });

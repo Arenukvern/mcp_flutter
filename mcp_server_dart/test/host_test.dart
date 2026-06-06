@@ -1,6 +1,6 @@
-import 'package:dart_mcp/server.dart';
-import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/host.dart';
 import 'package:flutter_mcp_toolkit_capability_kernel/flutter_mcp_toolkit_capability_kernel.dart';
+import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/host.dart';
+import 'package:intentcall_schema/intentcall_schema.dart';
 import 'package:test/test.dart';
 
 // Capability that captures the CapabilityConfig it sees during register().
@@ -45,7 +45,7 @@ final class _FakeCapability implements Capability {
           description: 'fake tool $name',
           inputSchema: const {'type': 'object'},
           handler: (_) async =>
-              CallToolResult(content: [TextContent(text: 'ok')]),
+              AgentResult.success(data: const <String, Object?>{'text': 'ok'}),
         ),
       );
     }
@@ -163,38 +163,34 @@ void main() {
             name: 'late',
             description: 'd',
             inputSchema: const {'type': 'object'},
-            handler: (_) async =>
-                CallToolResult(content: [TextContent(text: 'ok')]),
+            handler: (_) async => AgentResult.success(
+              data: const <String, Object?>{'text': 'ok'},
+            ),
           ),
         ),
         throwsA(isA<StateError>()),
       );
     });
 
-    test(
-      'registerResource after register() returns throws StateError',
-      () async {
-        late CapabilityContext escapedCtx;
-        final cap = _CapturingCapability((final ctx) => escapedCtx = ctx);
-        final host = McpHost();
-        await host.registerCapability(cap);
-        // Note: registerResource currently throws UnimplementedError after the
-        // seal check. We assert the seal fires FIRST (StateError before
-        // UnimplementedError).
-        expect(
-          () => escapedCtx.registerResource(
-            ResourceRegistration(
-              uri: 'fake://x',
-              name: 'x',
-              description: 'x',
-              mimeType: 'text/plain',
-              handler: (_) async => ReadResourceResult(contents: const []),
-            ),
+    test('registerResource after register() returns throws StateError', () async {
+      late CapabilityContext escapedCtx;
+      final cap = _CapturingCapability((final ctx) => escapedCtx = ctx);
+      final host = McpHost();
+      await host.registerCapability(cap);
+      // registerResource after seal must throw StateError (registry-backed path).
+      expect(
+        () => escapedCtx.registerResource(
+          ResourceRegistration(
+            uri: 'fake://x',
+            name: 'x',
+            description: 'x',
+            mimeType: 'text/plain',
+            handler: (_) async => AgentResult.success(),
           ),
-          throwsA(isA<StateError>()),
-        );
-      },
-    );
+        ),
+        throwsA(isA<StateError>()),
+      );
+    });
 
     test(
       'failed registration leaves no partial state; retry is clean',

@@ -269,24 +269,30 @@ void main() {
       },
     );
 
-    test('permissions preconnects before probing app-owned bridges', () async {
-      final result = await _runCli(statePath, [
-        '--flutter-device',
-        'ios',
-        '--vm-service-uri',
-        'ws://127.0.0.1:1/unreachable/ws',
-        'permissions',
-        'status',
-      ]);
+    test(
+      'permissions status uses host broker without VM when target is unreachable',
+      () async {
+        final result = await _runCli(statePath, [
+          '--flutter-device',
+          'ios',
+          '--vm-service-uri',
+          'ws://127.0.0.1:1/unreachable/ws',
+          'permissions',
+          'status',
+        ]);
 
-      expect(result.exitCode, isNonZero);
+        expect(result.exitCode, equals(0));
 
-      final envelope =
-          jsonDecode((result.stdout as String).trim()) as Map<String, dynamic>;
-      expect(envelope['ok'], isFalse);
-      final error = envelope['error'] as Map<String, dynamic>;
-      expect(error['code'], equals('connect_failed'));
-    });
+        final envelope =
+            jsonDecode((result.stdout as String).trim())
+                as Map<String, dynamic>;
+        expect(envelope['ok'], isTrue);
+        final data = envelope['data'] as Map<String, dynamic>;
+        expect(data['owner'], equals('host'));
+        expect(data['backend'], isNotEmpty);
+      },
+      skip: !Platform.isMacOS ? 'macOS host broker only' : false,
+    );
 
     test(
       'doctor uses global --vm-service-uri when subcommand --target is omitted',
@@ -341,9 +347,17 @@ void main() {
         final checks = (data['checks'] as List).cast<Map<String, dynamic>>();
         final byId = {for (final check in checks) check['id'] as String: check};
 
+        expect(byId['vm_target_reachable']!['status'], equals('fail'));
+        final bridgeDiagnostic =
+            byId['app_permission_bridge']!['diagnostic'] as String;
         expect(
-          byId['app_permission_bridge']!['diagnostic'],
-          contains('VM target is not connected'),
+          bridgeDiagnostic,
+          anyOf(
+            contains('VM target is not connected'),
+            contains('not required for this target'),
+          ),
+          reason:
+              'Host targets skip app bridge; app targets warn when VM is down',
         );
       },
     );

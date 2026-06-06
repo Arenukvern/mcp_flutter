@@ -1,7 +1,7 @@
 name: mcp_flutter_workspace
 publish_to: none
 environment:
-  sdk: ^3.11.0
+  sdk: ">=3.12.0 <4.0.0"
 
 workspace:
   - packages/core

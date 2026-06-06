@@ -133,6 +133,7 @@ class ControlFlowService {
     }) {
       final event = makeEvent(isDown: isDown, k: k);
       keyboard.handleKeyEvent(event);
+      // ignore: deprecated_member_use
       keyManager.keyMessageHandler?.call(KeyMessage(<KeyEvent>[event], null));
     }
 

@@ -8,7 +8,7 @@ No Flutter SDK, `dart_mcp`, or transport dependencies.
 
 ```yaml
 dependencies:
-  flutter_mcp_toolkit_core: ^0.1.0
+  flutter_mcp_toolkit_core: ^4.0.0-dev.1
 ```
 
 ## Usage
@@ -33,7 +33,7 @@ This package lives in the [mcp_flutter](https://github.com/Arenukvern/mcp_flutte
 | `pubspec.yaml`: `description`, `repository`, `issue_tracker` | Set |
 | Hosted dependencies only (no `path:` / `git:`) | Yes |
 | `dart pub publish --dry-run` | Run before each release |
-| SDK: `>=3.11.0 <4.0.0` | Set in `pubspec.yaml` |
+| SDK: `>=3.12.0 <4.0.0` | Set in `pubspec.yaml` |
 | Public API docs (≥20% for PANA) | Add `///` on exported APIs over time |
 
 See [Dart publishing guide](https://dart.dev/tools/pub/publishing).

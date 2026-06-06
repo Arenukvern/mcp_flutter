@@ -1,0 +1,266 @@
+00:00 +0: loading packages/intentcall_schema/test/agent_result_envelope_test.dart
+00:00 +0: packages/intentcall_schema/test/agent_result_envelope_test.dart: resourceEnvelope builds visual uri
+00:00 +1: packages/intentcall_schema/test/agent_wire_args_test.dart: parses bool and int from wire strings
+00:00 +2: packages/intentcall_schema/test/schema_validator_test.dart: rejects missing required field
+00:00 +3: packages/intentcall_schema/test/schema_validator_test.dart: rejects unknown properties when additionalProperties is false
+00:00 +4: packages/intentcall_core/test/agent_call_entry_test.dart: toRegistration uses qualified name
+00:00 +5: packages/intentcall_core/test/in_memory_agent_registry_test.dart: invoke runs intent handler
+00:00 +6: packages/intentcall_core/test/in_memory_agent_registry_test.dart: duplicate qualified name throws
+00:00 +7: packages/intentcall_mcp/test/mcp_publish_adapter_test.dart: McpPublishAdapter hot-syncs resource on IntentRegistered event
+00:00 +8: packages/intentcall_mcp/test/agent_bridge_test.dart: toolRegistrationToRegistration invokes AgentResult handler
+00:00 +9: packages/intentcall_mcp/test/mcp_resource_mapper_test.dart: agentResultToReadResourceResult maps resource envelope
+00:00 +10: packages/intentcall_mcp/test/mcp_resource_mapper_test.dart: readResourceResultToAgentResult round-trips via agentResultToReadResourceResult
+00:00 +11: packages/intentcall_mcp/test/mcp_resource_mapper_test.dart: agentResultToReadResourceResult maps failure
+00:00 +12: packages/intentcall_mcp/test/resource_bridge_test.dart: resourceRegistrationToRegistration invokes handler with uri
+00:00 +13: packages/intentcall_webmcp/test/webmcp_publish_adapter_test.dart: WebMcpPublishAdapter publishes tools and invokes registry
+00:00 +14: packages/intentcall_webmcp/test/webmcp_publish_adapter_test.dart: WebMcpPublishAdapter hot-syncs register and unregister after attach
+00:00 +15: packages/intentcall_apple/test/agent_manifest_generator_test.dart: generateAppleAgentManifest includes tool and resource intents
+00:00 +16: packages/intentcall_android/test/agent_manifest_generator_test.dart: generateAndroidAgentManifest lists shortcuts
+00:00 +17: packages/intentcall_platform/test/platform_sync_test.dart: PlatformSync.syncWeb writes manifest and js artifacts
+00:00 +18: packages/intentcall_platform/test/native_platform_sync_test.dart: PlatformSync syncs android, ios, linux, windows
+00:00 +19: packages/intentcall_platform/test/native_platform_sync_test.dart: PlatformSync syncs android, ios, linux, windows
+00:00 +20: packages/intentcall_platform/test/native_emitters_test.dart: AndroidShortcutsXmlEmitter emits shortcut with intentcall deep link
+00:00 +21: packages/intentcall_platform/test/native_emitters_test.dart: AndroidShortcutsXmlEmitter matches golden xml
+00:00 +22: packages/intentcall_platform/test/native_emitters_test.dart: AppleSwiftAppIntentsEmitter emits AppIntent and AppShortcutsProvider
+00:00 +23: packages/intentcall_platform/test/native_emitters_test.dart: AppleSwiftAppIntentsEmitter matches golden swift
+00:00 +24: packages/intentcall_platform/test/native_emitters_test.dart: LinuxDesktopEntryEmitter registers x-scheme-handler
+00:00 +25: packages/intentcall_platform/test/native_emitters_test.dart: LinuxDesktopEntryEmitter matches golden desktop entry
+00:00 +26: packages/intentcall_platform/test/native_emitters_test.dart: WindowsProtocolEmitter emits registry script
+00:00 +27: packages/intentcall_platform/test/native_emitters_test.dart: WindowsProtocolEmitter emits msix fragment
+00:00 +28: packages/intentcall_platform/test/web_emitters_test.dart: WebManifestEmitter patches shortcuts and protocol_handlers from agent manifest
+00:00 +29: packages/intentcall_platform/test/web_emitters_test.dart: WebManifestEmitter matches golden manifest output
+00:00 +30: packages/intentcall_platform/test/web_emitters_test.dart: WebMcpJsEmitter emits feature-detect registerTool loop
+00:00 +31: packages/intentcall_platform/test/web_emitters_test.dart: WebMcpJsEmitter matches golden js output
+00:00 +32: packages/intentcall_platform/test/web_emitters_test.dart: WebMcpJsEmitter skips non-tool intents
+00:00 +33: packages/intentcall_platform/test/web_emitters_test.dart: AgentManifest reads shortcuts and intents arrays
+00:00 +34: packages/intentcall_codegen/test/agent_tool_generator_test.dart: generated demoPingRegistration invokes handler
+00:00 +35: packages/intentcall_codegen/test/agent_tool_generator_test.dart: generated demoPingCallEntry registers via toRegistration
+00:01 +36: packages/server_capability_kernel/test/command_runner_test.dart: CommandRunner — interface contract CommandRunner implements HostService
+00:01 +37: packages/server_capability_kernel/test/validators_test.dart: validateCapabilityId accepts lowercase alphanumeric with underscores
+00:01 +38: packages/server_capability_kernel/test/validators_test.dart: validateCapabilityId accepts lowercase alphanumeric with underscores
+00:01 +39: packages/server_capability_kernel/test/validators_test.dart: validateCapabilityId accepts lowercase alphanumeric with underscores
+00:01 +40: packages/server_capability_kernel/test/validators_test.dart: validateCapabilityId accepts lowercase alphanumeric with underscores
+00:01 +41: packages/server_capability_kernel/test/validators_test.dart: validateCapabilityId accepts lowercase alphanumeric with underscores
+00:01 +42: packages/server_capability_kernel/test/validators_test.dart: validateCapabilityId accepts lowercase alphanumeric with underscores
+00:01 +43: packages/server_capability_kernel/test/validators_test.dart: validateCapabilityId accepts lowercase alphanumeric with underscores
+00:01 +44: packages/server_capability_kernel/test/validators_test.dart: validateCapabilityId rejects empty
+00:01 +45: packages/server_capability_kernel/test/validators_test.dart: validateCapabilityId rejects leading digit
+00:01 +46: packages/server_capability_kernel/test/validators_test.dart: validateCapabilityId rejects uppercase
+00:01 +47: packages/server_capability_kernel/test/validators_test.dart: validateCapabilityId rejects hyphen and dot
+00:01 +48: packages/server_capability_kernel/test/validators_test.dart: validateCapabilityId rejects reserved id "app"
+00:01 +49: packages/server_capability_kernel/test/validators_test.dart: validateBareToolName accepts a name that does not start with the capability prefix
+00:01 +50: packages/server_capability_kernel/test/validators_test.dart: validateBareToolName rejects a name that starts with the capability prefix
+00:01 +51: packages/server_capability_kernel/test/validators_test.dart: validateBareToolName accepts coincidental prefix-suffix overlap
+00:01 +52: packages/server_capability_kernel/test/validators_test.dart: applyPrefix joins capability id and bare name with underscore
+00:01 +53: packages/server_capability_kernel/test/capability_config_test.dart: CapabilityConfig default constructor has empty values
+00:01 +54: packages/server_capability_kernel/test/capability_config_test.dart: CapabilityConfig get<T> returns the value when type matches
+00:01 +55: packages/server_capability_kernel/test/capability_config_test.dart: CapabilityConfig get<T> returns null when type does not match
+00:01 +56: packages/server_capability_kernel/test/capability_config_test.dart: CapabilityConfig get<T> returns null for missing key
+00:01 +57: packages/server_capability_kernel/test/capability_config_test.dart: CapabilityConfig getBool returns defaultValue when key missing
+00:01 +58: packages/server_capability_kernel/test/capability_config_test.dart: CapabilityConfig getBool returns defaultValue when value is wrong type
+00:01 +59: packages/server_capability_kernel/test/capability_config_test.dart: CapabilityConfig getString returns null for absent or wrong type
+00:01 +60: packages/server_capability_kernel/test/capability_config_test.dart: CapabilityConfig getInt returns null for absent or wrong type
+00:01 +61: packages/server_capability_core/test/fmt_capability_test.dart: FmtCapability.register — dumps_supported gating dumps_supported=false: dump tools are NOT registered
+00:01 +62: packages/server_capability_core/test/fmt_capability_test.dart: FmtCapability.register — dumps_supported gating dumps_supported=true: all 4 dump tools ARE registered
+00:01 +63: packages/server_capability_core/test/fmt_capability_test.dart: FmtCapability.register — dumps_supported gating other tools are registered regardless of dumps_supported
+00:01 +64: packages/server_capability_core/test/tools/flutter_inspector_tools_test.dart: flutter_inspector_tools — registration registers all 6 tools
+00:01 +65: packages/server_capability_core/test/tools/flutter_inspector_tools_test.dart: flutter_inspector_tools — hot_restart_flutter schema: only connection; additionalProperties false
+00:01 +66: packages/server_capability_core/test/tools/flutter_inspector_tools_test.dart: flutter_inspector_tools — hot_restart_flutter handler executes HotRestartFlutterCommand
+00:01 +67: packages/server_capability_core/test/tools/flutter_inspector_tools_test.dart: flutter_inspector_tools — hot_restart_flutter handler short-circuits on override failure
+00:01 +68: packages/server_capability_core/test/tools/flutter_inspector_tools_test.dart: flutter_inspector_tools — hot_restart_flutter returns 5-key error envelope on execute failure
+00:01 +69: packages/server_capability_core/test/tools/flutter_inspector_tools_test.dart: flutter_inspector_tools — hot_reload_flutter schema: has force and connection, additionalProperties false
+00:01 +70: packages/server_capability_core/test/tools/flutter_inspector_tools_test.dart: flutter_inspector_tools — hot_reload_flutter handler executes HotReloadFlutterCommand with force=false by default
+00:01 +71: packages/server_capability_core/test/tools/flutter_inspector_tools_test.dart: flutter_inspector_tools — hot_reload_flutter handler passes force=true when provided
+00:01 +72: packages/server_capability_core/test/tools/flutter_inspector_tools_test.dart: flutter_inspector_tools — hot_reload_flutter success yields 2 TextContent items, first is "Hot reload completed"
+00:01 +73: packages/server_capability_core/test/tools/flutter_inspector_tools_test.dart: flutter_inspector_tools — hot_reload_flutter handler short-circuits on override failure
+00:01 +74: packages/server_capability_core/test/tools/flutter_inspector_tools_test.dart: flutter_inspector_tools — hot_reload_flutter returns 5-key error envelope on execute failure
+00:01 +75: packages/server_capability_core/test/tools/flutter_inspector_tools_test.dart: flutter_inspector_tools — connect_debug_app schema: connection only, additionalProperties false, no required
+00:01 +76: packages/server_capability_core/test/tools/flutter_inspector_tools_test.dart: flutter_inspector_tools — connect_debug_app handler dispatches ConnectCommand directly — no applyConnectionOverride call
+00:01 +77: packages/server_capability_core/test/tools/flutter_inspector_tools_test.dart: flutter_inspector_tools — connect_debug_app handler returns success data as JSON
+00:01 +78: packages/server_capability_core/test/tools/flutter_inspector_tools_test.dart: flutter_inspector_tools — connect_debug_app returns 5-key error envelope on connect failure
+00:01 +79: packages/server_capability_core/test/tools/flutter_inspector_tools_test.dart: flutter_inspector_tools — connect_debug_app returns error on malformed connection argument
+00:01 +80: packages/server_capability_core/test/tools/flutter_inspector_tools_test.dart: flutter_inspector_tools — discover_debug_apps schema: connection only, additionalProperties false, no required
+00:01 +81: packages/server_capability_core/test/tools/flutter_inspector_tools_test.dart: flutter_inspector_tools — discover_debug_apps handler dispatches DiscoverDebugAppsCommand — no override call
+00:01 +82: packages/server_capability_core/test/tools/flutter_inspector_tools_test.dart: flutter_inspector_tools — discover_debug_apps handler returns success data as JSON
+00:01 +83: packages/server_capability_core/test/tools/flutter_inspector_tools_test.dart: flutter_inspector_tools — discover_debug_apps returns 5-key error envelope on execute failure
+00:01 +84: packages/server_capability_core/test/tools/flutter_inspector_tools_test.dart: flutter_inspector_tools — get_vm schema: connection only, additionalProperties false, no required
+00:01 +85: packages/server_capability_core/test/tools/flutter_inspector_tools_test.dart: flutter_inspector_tools — get_vm handler executes GetVmCommand
+00:01 +86: packages/server_capability_core/test/tools/flutter_inspector_tools_test.dart: flutter_inspector_tools — get_vm handler short-circuits on override failure
+00:01 +87: packages/server_capability_core/test/tools/flutter_inspector_tools_test.dart: flutter_inspector_tools — get_vm handler returns success data as JSON
+00:01 +88: packages/server_capability_core/test/tools/flutter_inspector_tools_test.dart: flutter_inspector_tools — get_vm returns 5-key error envelope on execute failure
+00:01 +89: packages/server_capability_core/test/tools/flutter_inspector_tools_test.dart: flutter_inspector_tools — get_extension_rpcs schema: isolateId, isRawResponse, connection present; additionalProperties false
+00:01 +90: packages/server_capability_core/test/tools/flutter_inspector_tools_test.dart: flutter_inspector_tools — get_extension_rpcs handler executes GetExtensionRpcsCommand
+00:01 +91: packages/server_capability_core/test/tools/flutter_inspector_tools_test.dart: flutter_inspector_tools — get_extension_rpcs handler short-circuits on override failure
+00:01 +92: packages/server_capability_core/test/tools/flutter_inspector_tools_test.dart: flutter_inspector_tools — get_extension_rpcs handler ignores vestigial isolateId / isRawResponse args
+00:01 +93: packages/server_capability_core/test/tools/flutter_inspector_tools_test.dart: flutter_inspector_tools — get_extension_rpcs returns 5-key error envelope on execute failure
+00:01 +94: packages/server_capability_core/test/tools/codegen_get_recent_logs_test.dart: get_recent_logs @AgentTool codegen generated call entry exposes fmt namespace and bare tool name
+00:01 +95: packages/server_capability_core/test/tools/codegen_get_recent_logs_test.dart: get_recent_logs @AgentTool codegen generated schema includes optional count integer
+00:01 +96: packages/server_capability_core/test/tools/codegen_get_recent_logs_test.dart: get_recent_logs @AgentTool codegen agentCallEntryToToolRegistration registers and invokes via host path
+00:01 +97: packages/server_capability_core/test/tools/codegen_get_recent_logs_test.dart: get_recent_logs @AgentTool codegen bridge round-trips through RegisteredAgentIntent execute
+00:01 +98: packages/server_capability_core/test/tools/navigation_tools_test.dart: navigation tools — handle_dialog registers handle_dialog
+00:01 +99: packages/server_capability_core/test/tools/navigation_tools_test.dart: navigation tools — handle_dialog handle_dialog schema: additionalProperties false, required [action]
+00:01 +100: packages/server_capability_core/test/tools/navigation_tools_test.dart: navigation tools — handle_dialog handle_dialog handler builds HandleDialogCommand with action
+00:01 +101: packages/server_capability_core/test/tools/navigation_tools_test.dart: navigation tools — handle_dialog handle_dialog action defaults to "dismiss" when not provided
+00:01 +102: packages/server_capability_core/test/tools/navigation_tools_test.dart: navigation tools — handle_dialog handle_dialog handler short-circuits on override failure
+00:01 +103: packages/server_capability_core/test/tools/navigation_tools_test.dart: navigation tools — handle_dialog handle_dialog handler returns 5-key error envelope on execute failure
+00:01 +104: packages/server_capability_core/test/tools/navigation_tools_test.dart: navigation tools — navigate registers navigate
+00:01 +105: packages/server_capability_core/test/tools/navigation_tools_test.dart: navigation tools — navigate navigate schema: additionalProperties false, required [action]
+00:01 +106: packages/server_capability_core/test/tools/navigation_tools_test.dart: navigation tools — navigate navigate handler builds NavigateCommand with all args
+00:01 +107: packages/server_capability_core/test/tools/navigation_tools_test.dart: navigation tools — navigate navigate action defaults to "push" when not provided
+00:01 +108: packages/server_capability_core/test/tools/navigation_tools_test.dart: navigation tools — navigate navigate handler short-circuits on override failure
+00:01 +109: packages/server_capability_core/test/tools/navigation_tools_test.dart: navigation tools — navigate navigate handler returns 5-key error envelope on execute failure
+00:01 +110: packages/server_capability_core/test/tools/log_tools_test.dart: log tools — get_recent_logs registers get_recent_logs
+00:01 +111: packages/server_capability_core/test/tools/log_tools_test.dart: log tools — get_recent_logs get_recent_logs schema: additionalProperties false, no required
+00:01 +112: packages/server_capability_core/test/tools/inspection_tools_test.dart: inspection tools — get_view_details registers get_view_details
+00:01 +113: packages/server_capability_core/test/tools/inspection_tools_test.dart: inspection tools — get_view_details registers get_view_details
+00:01 +114: packages/server_capability_core/test/tools/inspection_tools_test.dart: inspection tools — get_view_details registers get_view_details
+00:01 +115: packages/server_capability_core/test/tools/inspection_tools_test.dart: inspection tools — get_view_details registers get_view_details
+00:01 +116: packages/server_capability_core/test/tools/inspection_tools_test.dart: inspection tools — get_view_details registers get_view_details
+00:01 +117: packages/server_capability_core/test/tools/inspection_tools_test.dart: inspection tools — get_view_details get_view_details schema: additionalProperties false, no required
+00:01 +118: packages/server_capability_core/test/tools/inspection_tools_test.dart: inspection tools — get_view_details get_view_details handler delegates GetViewDetailsCommand
+00:01 +119: packages/server_capability_core/test/tools/inspection_tools_test.dart: inspection tools — get_view_details get_view_details handler short-circuits on override failure
+00:01 +120: packages/server_capability_core/test/tools/inspection_tools_test.dart: inspection tools — get_view_details get_view_details handler returns 5-key error envelope on execute failure
+00:01 +121: packages/server_capability_core/test/tools/inspection_tools_test.dart: inspection tools — inspect_widget_at_point registers inspect_widget_at_point
+00:01 +122: packages/server_capability_core/test/tools/inspection_tools_test.dart: inspection tools — inspect_widget_at_point inspect_widget_at_point schema: required [x, y], x/y/viewId integer
+00:01 +123: packages/server_capability_core/test/tools/inspection_tools_test.dart: inspection tools — inspect_widget_at_point inspect_widget_at_point handler builds InspectWidgetAtPointCommand
+00:01 +124: packages/server_capability_core/test/tools/inspection_tools_test.dart: inspection tools — inspect_widget_at_point inspect_widget_at_point viewId is null when not provided
+00:01 +125: packages/server_capability_core/test/tools/inspection_tools_test.dart: inspection tools — inspect_widget_at_point inspect_widget_at_point handler short-circuits on override failure
+00:01 +126: packages/server_capability_core/test/tools/inspection_tools_test.dart: inspection tools — inspect_widget_at_point inspect_widget_at_point handler returns 5-key error envelope on execute failure
+00:01 +127: packages/server_capability_core/test/tools/inspection_tools_test.dart: inspection tools — get_app_errors registers get_app_errors
+00:01 +128: packages/server_capability_core/test/tools/inspection_tools_test.dart: inspection tools — get_app_errors get_app_errors schema: additionalProperties false, count integer, no required
+00:01 +129: packages/server_capability_core/test/tools/inspection_tools_test.dart: inspection tools — get_app_errors get_app_errors count defaults to 4 when not provided
+00:01 +130: packages/server_capability_core/test/tools/inspection_tools_test.dart: inspection tools — get_app_errors get_app_errors handler fans out message + per-error TextContent
+00:01 +131: packages/server_capability_core/test/tools/inspection_tools_test.dart: inspection tools — get_app_errors get_app_errors with no errors returns single message content
+00:01 +132: packages/server_capability_core/test/tools/inspection_tools_test.dart: inspection tools — get_app_errors get_app_errors handler short-circuits on override failure
+00:01 +133: packages/server_capability_core/test/tools/inspection_tools_test.dart: inspection tools — get_app_errors get_app_errors handler returns 5-key error envelope on execute failure
+00:01 +134: packages/server_capability_core/test/tools/inspection_tools_test.dart: inspection tools — get_screenshots registers get_screenshots
+00:01 +135: packages/server_capability_core/test/tools/inspection_tools_test.dart: inspection tools — get_screenshots get_screenshots schema: additionalProperties false, no required, compress boolean, mode/permissionPolicy string, connection present
+00:01 +136: packages/server_capability_core/test/tools/inspection_tools_test.dart: inspection tools — get_screenshots get_screenshots handler builds GetScreenshotsCommand from args
+00:01 +137: packages/server_capability_core/test/tools/inspection_tools_test.dart: inspection tools — get_screenshots get_screenshots onSuccess: fileUrls branch returns TextContent + meta
+00:01 +138: packages/server_capability_core/test/tools/inspection_tools_test.dart: inspection tools — get_screenshots get_screenshots onSuccess: images branch returns ImageContent blocks
+00:01 +139: packages/server_capability_core/test/tools/inspection_tools_test.dart: inspection tools — get_screenshots get_screenshots handler short-circuits on override failure
+00:01 +140: packages/server_capability_core/test/tools/inspection_tools_test.dart: inspection tools — get_screenshots get_screenshots handler returns 5-key error envelope on execute failure
+00:01 +141: packages/server_capability_core/test/tools/inspection_tools_test.dart: inspection tools — capture_ui_snapshot registers capture_ui_snapshot
+00:01 +142: packages/server_capability_core/test/tools/inspection_tools_test.dart: inspection tools — capture_ui_snapshot capture_ui_snapshot schema: additionalProperties false, no required, errorsCount integer, compress/includeViewDetails/includeErrors boolean, screenshotMode/permissionPolicy string, connection present
+00:01 +143: packages/server_capability_core/test/tools/inspection_tools_test.dart: inspection tools — capture_ui_snapshot capture_ui_snapshot handler builds CaptureUiSnapshotCommand from args
+00:01 +144: packages/server_capability_core/test/tools/inspection_tools_test.dart: inspection tools — capture_ui_snapshot capture_ui_snapshot defaults: errorsCount=4, compress=true, includeViewDetails=true, includeErrors=true
+00:01 +145: packages/server_capability_core/test/tools/inspection_tools_test.dart: inspection tools — capture_ui_snapshot capture_ui_snapshot success returns single TextContent with JSON
+00:01 +146: packages/server_capability_core/test/tools/inspection_tools_test.dart: inspection tools — capture_ui_snapshot capture_ui_snapshot handler short-circuits on override failure
+00:01 +147: packages/server_capability_core/test/tools/inspection_tools_test.dart: inspection tools — capture_ui_snapshot capture_ui_snapshot handler returns 5-key error envelope on execute failure
+00:01 +148: packages/server_capability_core/test/tools/semantic_tools_test.dart: semantic tools — semantic_snapshot registers semantic_snapshot
+00:01 +149: packages/server_capability_core/test/tools/semantic_tools_test.dart: semantic tools — semantic_snapshot semantic_snapshot schema: additionalProperties false, no required
+00:01 +150: packages/server_capability_core/test/tools/semantic_tools_test.dart: semantic tools — semantic_snapshot semantic_snapshot handler delegates to CommandRunner.execute
+00:01 +151: packages/server_capability_core/test/tools/semantic_tools_test.dart: semantic tools — semantic_snapshot semantic_snapshot handler calls applyConnectionOverride before execute
+00:01 +152: packages/server_capability_core/test/tools/semantic_tools_test.dart: semantic tools — semantic_snapshot semantic_snapshot handler short-circuits on override failure
+00:01 +153: packages/server_capability_core/test/tools/semantic_tools_test.dart: semantic tools — semantic_snapshot semantic_snapshot handler returns 5-key error envelope on execute failure
+00:01 +154: packages/server_capability_core/test/tools/interaction_tools_test.dart: interaction tools — tap_widget registers tap_widget with the bare name (no prefix)
+00:01 +155: packages/server_capability_core/test/tools/interaction_tools_test.dart: interaction tools — tap_widget tap_widget input schema has correct type and required fields
+00:01 +156: packages/server_capability_core/test/tools/interaction_tools_test.dart: interaction tools — tap_widget tap_widget schema includes connection override property
+00:01 +157: packages/server_capability_core/test/tools/interaction_tools_test.dart: interaction tools — tap_widget tap_widget handler delegates to CommandRunner.execute
+00:01 +158: packages/server_capability_core/test/tools/interaction_tools_test.dart: interaction tools — tap_widget tap_widget handler omits snapshotId when not provided
+00:01 +159: packages/server_capability_core/test/tools/interaction_tools_test.dart: interaction tools — tap_widget tap_widget handler treats snapshotId == 0 as absent (legacy parity)
+00:01 +160: packages/server_capability_core/test/tools/interaction_tools_test.dart: interaction tools — tap_widget tap_widget handler calls applyConnectionOverride before execute
+00:01 +161: packages/server_capability_core/test/tools/interaction_tools_test.dart: interaction tools — tap_widget tap_widget handler short-circuits on connection override failure
+00:01 +162: packages/server_capability_core/test/tools/interaction_tools_test.dart: interaction tools — tap_widget tap_widget handler returns structured error envelope on execute failure
+00:01 +163: packages/server_capability_core/test/tools/interaction_tools_test.dart: interaction tools — enter_text registers enter_text
+00:01 +164: packages/server_capability_core/test/tools/interaction_tools_test.dart: interaction tools — enter_text enter_text schema: additionalProperties false, required [ref, text]
+00:01 +165: packages/server_capability_core/test/tools/interaction_tools_test.dart: interaction tools — enter_text enter_text handler builds EnterTextCommand with correct args
+00:01 +166: packages/server_capability_core/test/tools/interaction_tools_test.dart: interaction tools — enter_text enter_text handler short-circuits on override failure
+00:01 +167: packages/server_capability_core/test/tools/interaction_tools_test.dart: interaction tools — enter_text enter_text handler returns error envelope on execute failure
+00:01 +168: packages/server_capability_core/test/tools/interaction_tools_test.dart: interaction tools — scroll registers scroll
+00:01 +169: packages/server_capability_core/test/tools/interaction_tools_test.dart: interaction tools — scroll scroll schema: additionalProperties false, required [direction]
+00:01 +170: packages/server_capability_core/test/tools/interaction_tools_test.dart: interaction tools — scroll scroll handler builds ScrollCommand with direction, ref, distance
+00:01 +171: packages/server_capability_core/test/tools/interaction_tools_test.dart: interaction tools — scroll scroll uses direction fallback "down" when direction not provided
+00:01 +172: packages/server_capability_core/test/tools/interaction_tools_test.dart: interaction tools — scroll scroll ref is null when omitted
+00:01 +173: packages/server_capability_core/test/tools/interaction_tools_test.dart: interaction tools — scroll scroll distance defaults to 300 when omitted
+00:01 +174: packages/server_capability_core/test/tools/interaction_tools_test.dart: interaction tools — scroll scroll handler short-circuits on override failure
+00:01 +175: packages/server_capability_core/test/tools/interaction_tools_test.dart: interaction tools — scroll scroll handler returns error envelope on execute failure
+00:01 +176: packages/server_capability_core/test/tools/interaction_tools_test.dart: interaction tools — long_press registers long_press
+00:01 +177: packages/server_capability_core/test/tools/wait_tools_test.dart: wait tools — wait_for registration registers wait_for with the bare name (no prefix)
+00:01 +178: packages/server_capability_core/test/tools/wait_tools_test.dart: wait tools — wait_for registration registers wait_for with the bare name (no prefix)
+00:01 +179: packages/server_capability_core/test/tools/wait_tools_test.dart: wait tools — wait_for registration registers wait_for with the bare name (no prefix)
+00:01 +180: packages/server_capability_core/test/tools/interaction_tools_test.dart: interaction tools — long_press long_press handler short-circuits on override failure
+00:01 +181: packages/server_capability_core/test/tools/interaction_tools_test.dart: interaction tools — long_press long_press handler short-circuits on override failure
+00:01 +182: packages/server_capability_core/test/tools/interaction_tools_test.dart: interaction tools — long_press long_press handler returns error envelope on execute failure
+00:01 +183: packages/server_capability_core/test/tools/wait_tools_test.dart: wait tools — wait_for registration wait_for schema has required: [predicate]
+00:01 +184: packages/server_capability_core/test/tools/interaction_tools_test.dart: interaction tools — swipe registers swipe
+00:01 +185: packages/server_capability_core/test/tools/wait_tools_test.dart: wait tools — wait_for registration wait_for schema — predicate is object with additionalProperties:true
+00:01 +186: packages/server_capability_core/test/tools/interaction_tools_test.dart: interaction tools — swipe swipe schema: additionalProperties false, required [direction]
+00:01 +187: packages/server_capability_core/test/tools/wait_tools_test.dart: wait tools — wait_for registration wait_for schema — timeoutMs is integer
+00:01 +188: packages/server_capability_core/test/tools/interaction_tools_test.dart: interaction tools — swipe swipe handler builds SwipeCommand with all args
+00:01 +189: packages/server_capability_core/test/tools/wait_tools_test.dart: wait tools — wait_for registration wait_for schema includes connection override property
+00:01 +190: packages/server_capability_core/test/tools/interaction_tools_test.dart: interaction tools — swipe swipe uses direction fallback "up" when direction is empty
+00:01 +191: packages/server_capability_core/test/tools/wait_tools_test.dart: wait tools — wait_for handler command construction handler builds WaitForCommand with provided predicate and timeoutMs
+00:01 +192: packages/server_capability_core/test/tools/wait_tools_test.dart: wait tools — wait_for handler command construction handler builds WaitForCommand with provided predicate and timeoutMs
+00:01 +193: packages/server_capability_core/test/tools/wait_tools_test.dart: wait tools — wait_for handler command construction handler builds WaitForCommand with provided predicate and timeoutMs
+00:01 +194: packages/server_capability_core/test/tools/interaction_tools_test.dart: interaction tools — swipe swipe handler returns error envelope on execute failure
+00:01 +195: packages/server_capability_core/test/tools/interaction_tools_test.dart: interaction tools — swipe swipe handler returns error envelope on execute failure
+00:01 +196: packages/server_capability_core/test/tools/wait_tools_test.dart: wait tools — wait_for handler command construction handler defaults timeoutMs to 5000 when timeoutMs is 0 (legacy parity)
+00:01 +197: packages/server_capability_core/test/tools/interaction_tools_test.dart: interaction tools — drag registers drag
+00:01 +198: packages/server_capability_core/test/tools/wait_tools_test.dart: wait tools — wait_for handler command construction handler uses empty predicate map when predicate is not a Map
+00:01 +199: packages/server_capability_core/test/tools/wait_tools_test.dart: wait tools — wait_for handler command construction handler uses empty predicate map when predicate is not a Map
+00:01 +200: packages/server_capability_core/test/tools/interaction_tools_test.dart: interaction tools — drag drag handler builds DragCommand with fromRef and toRef
+00:01 +201: packages/server_capability_core/test/tools/wait_tools_test.dart: wait tools — wait_for handler command construction handler calls applyConnectionOverride before execute
+00:01 +202: packages/server_capability_core/test/tools/interaction_tools_test.dart: interaction tools — drag drag handler short-circuits on override failure
+00:01 +203: packages/server_capability_core/test/tools/wait_tools_test.dart: wait tools — wait_for outcomes outcome: match success — non-error CallToolResult with matched:true
+00:01 +204: packages/server_capability_core/test/tools/wait_tools_test.dart: wait tools — wait_for outcomes outcome: match success — non-error CallToolResult with matched:true
+00:01 +205: packages/server_capability_core/test/tools/wait_tools_test.dart: wait tools — wait_for outcomes outcome: match success — non-error CallToolResult with matched:true
+00:01 +206: packages/server_capability_core/test/tools/wait_tools_test.dart: wait tools — wait_for outcomes outcome: match success — non-error CallToolResult with matched:true
+00:01 +207: packages/server_capability_core/test/tools/interaction_tools_test.dart: interaction tools — hover hover handler builds HoverCommand
+00:01 +208: packages/server_capability_core/test/tools/wait_tools_test.dart: wait tools — wait_for outcomes outcome: timeout — error envelope with waitTimeout code
+00:01 +209: packages/server_capability_core/test/tools/wait_tools_test.dart: wait tools — wait_for outcomes outcome: timeout — error envelope with waitTimeout code
+00:01 +210: packages/server_capability_core/test/tools/wait_tools_test.dart: wait tools — wait_for outcomes outcome: timeout — error envelope with waitTimeout code
+00:01 +211: packages/server_capability_core/test/tools/interaction_tools_test.dart: interaction tools — press_key registers press_key
+00:01 +212: packages/server_capability_core/test/tools/wait_tools_test.dart: wait tools — wait_for outcomes outcome: actual error — error envelope with waitForFailed code
+00:01 +213: packages/server_capability_core/test/tools/interaction_tools_test.dart: interaction tools — press_key press_key schema: additionalProperties false, required [key]
+00:01 +214: packages/server_capability_core/test/tools/wait_tools_test.dart: wait tools — wait_for outcomes override short-circuit — executedCommands is empty, isError is true
+00:01 +215: packages/server_capability_core/test/tools/interaction_tools_test.dart: interaction tools — press_key press_key handler builds PressKeyCommand with all modifiers
+00:01 +216: packages/server_capability_core/test/tools/interaction_tools_test.dart: interaction tools — press_key press_key handler defaults all modifiers to false when omitted
+00:01 +217: packages/server_capability_core/test/tools/interaction_tools_test.dart: interaction tools — press_key press_key handler short-circuits on override failure
+00:01 +218: packages/server_capability_core/test/tools/interaction_tools_test.dart: interaction tools — press_key press_key handler returns error envelope on execute failure
+00:01 +219: packages/server_capability_core/test/tools/interaction_tools_test.dart: interaction tools — evaluate_dart_expression registers evaluate_dart_expression
+00:01 +220: packages/server_capability_core/test/tools/debug_dump_tools_test.dart: debug_dump_tools — registration registers all 4 dump tools
+00:01 +221: packages/server_capability_core/test/tools/debug_dump_tools_test.dart: debug_dump_tools — registration registers all 4 dump tools
+00:01 +222: packages/server_capability_core/test/tools/debug_dump_tools_test.dart: debug_dump_tools — registration registers all 4 dump tools
+00:01 +223: packages/server_capability_core/test/tools/debug_dump_tools_test.dart: debug_dump_tools — registration registers all 4 dump tools
+00:01 +224: packages/server_capability_core/test/tools/debug_dump_tools_test.dart: debug_dump_tools — registration registers all 4 dump tools
+00:01 +225: packages/server_capability_core/test/tools/debug_dump_tools_test.dart: debug_dump_tools — registration registers all 4 dump tools
+00:01 +226: packages/server_capability_core/test/tools/debug_dump_tools_test.dart: debug_dump_tools — registration registers all 4 dump tools
+00:01 +227: packages/server_capability_core/test/tools/debug_dump_tools_test.dart: debug_dump_tools — registration registers all 4 dump tools
+00:01 +228: packages/server_capability_core/test/tools/debug_dump_tools_test.dart: debug_dump_tools — registration registers all 4 dump tools
+00:01 +229: packages/server_capability_core/test/tools/debug_dump_tools_test.dart: debug_dump_tools — registration registers all 4 dump tools
+00:01 +230: packages/server_capability_core/test/tools/debug_dump_tools_test.dart: debug_dump_tools — registration registers all 4 dump tools
+00:01 +231: packages/server_capability_core/test/tools/debug_dump_tools_test.dart: debug_dump_tools — registration registers all 4 dump tools
+00:01 +232: packages/server_capability_core/test/tools/debug_dump_tools_test.dart: debug_dump_tools — debug_dump_layer_tree schema: no required, additionalProperties false, connection present
+00:01 +233: packages/server_capability_core/test/tools/debug_dump_tools_test.dart: debug_dump_tools — debug_dump_layer_tree handler executes DebugDumpLayerTreeCommand
+00:01 +234: packages/server_capability_core/test/tools/debug_dump_tools_test.dart: debug_dump_tools — debug_dump_layer_tree handler short-circuits on override failure
+00:01 +235: packages/server_capability_core/test/tools/debug_dump_tools_test.dart: debug_dump_tools — debug_dump_layer_tree returns 5-key error envelope on execute failure
+00:01 +236: packages/server_capability_core/test/tools/debug_dump_tools_test.dart: debug_dump_tools — debug_dump_semantics_tree schema: no required, additionalProperties false, connection present
+00:01 +237: packages/server_capability_core/test/tools/debug_dump_tools_test.dart: debug_dump_tools — debug_dump_semantics_tree handler executes DebugDumpSemanticsTreeCommand
+00:01 +238: packages/server_capability_core/test/tools/debug_dump_tools_test.dart: debug_dump_tools — debug_dump_semantics_tree handler short-circuits on override failure
+00:01 +239: packages/server_capability_core/test/tools/debug_dump_tools_test.dart: debug_dump_tools — debug_dump_semantics_tree returns 5-key error envelope on execute failure
+00:01 +240: packages/server_capability_core/test/tools/debug_dump_tools_test.dart: debug_dump_tools — debug_dump_render_tree schema: no required, additionalProperties false, connection present
+00:01 +241: packages/server_capability_core/test/tools/debug_dump_tools_test.dart: debug_dump_tools — debug_dump_render_tree handler executes DebugDumpRenderTreeCommand
+00:01 +242: packages/server_capability_core/test/tools/debug_dump_tools_test.dart: debug_dump_tools — debug_dump_render_tree handler short-circuits on override failure
+00:01 +243: packages/server_capability_core/test/tools/debug_dump_tools_test.dart: debug_dump_tools — debug_dump_render_tree returns 5-key error envelope on execute failure
+00:01 +244: packages/server_capability_core/test/tools/debug_dump_tools_test.dart: debug_dump_tools — debug_dump_focus_tree schema: no required, additionalProperties false, connection present
+00:01 +245: packages/server_capability_core/test/tools/debug_dump_tools_test.dart: debug_dump_tools — debug_dump_focus_tree handler executes DebugDumpFocusTreeCommand
+00:01 +246: packages/server_capability_core/test/tools/debug_dump_tools_test.dart: debug_dump_tools — debug_dump_focus_tree handler short-circuits on override failure
+00:01 +247: packages/server_capability_core/test/tools/debug_dump_tools_test.dart: debug_dump_tools — debug_dump_focus_tree returns 5-key error envelope on execute failure
+00:01 +248: packages/server_capability_core/test/tools/form_tools_test.dart: form tools — fill_form registration registers fill_form with the bare name (no prefix)
+00:01 +249: packages/server_capability_core/test/tools/form_tools_test.dart: form tools — fill_form registration fill_form schema has type:object and additionalProperties:false
+00:01 +250: packages/server_capability_core/test/tools/form_tools_test.dart: form tools — fill_form registration fill_form schema has required: [fields]
+00:01 +251: packages/server_capability_core/test/tools/form_tools_test.dart: form tools — fill_form registration fill_form schema — fields is array type
+00:01 +252: packages/server_capability_core/test/tools/form_tools_test.dart: form tools — fill_form registration fill_form schema — fields items have additionalProperties:false and required [ref, text]
+00:01 +253: packages/server_capability_core/test/tools/form_tools_test.dart: form tools — fill_form registration fill_form schema — snapshotId is integer
+00:01 +254: packages/server_capability_core/test/tools/form_tools_test.dart: form tools — fill_form registration fill_form schema includes connection override property
+00:01 +255: packages/server_capability_core/test/tools/form_tools_test.dart: form tools — fill_form handler command construction handler builds FillFormCommand with fields list and snapshotId
+00:01 +256: packages/server_capability_core/test/tools/form_tools_test.dart: form tools — fill_form handler command construction handler passes snapshotId as null when not provided
+00:01 +257: packages/server_capability_core/test/tools/form_tools_test.dart: form tools — fill_form handler command construction handler treats snapshotId == 0 as absent (legacy parity)
+00:01 +258: packages/server_capability_core/test/tools/form_tools_test.dart: form tools — fill_form handler command construction handler uses empty fields list when fields arg is not a List
+00:01 +259: packages/server_capability_core/test/tools/form_tools_test.dart: form tools — fill_form handler command construction handler calls applyConnectionOverride before execute
+00:01 +260: packages/server_capability_core/test/tools/form_tools_test.dart: form tools — fill_form outcomes success: all fields filled — non-error CallToolResult
+00:01 +261: packages/server_capability_core/test/tools/form_tools_test.dart: form tools — fill_form outcomes stop-on-failure: error envelope with fillFormFailed code
+00:01 +262: packages/server_capability_core/test/tools/form_tools_test.dart: form tools — fill_form outcomes override short-circuit — executedCommands is empty, isError is true
+00:01 +263: All tests passed!
+exit:0

@@ -1,0 +1,142 @@
+# MCP boundary / contract hardening — tracker
+# Audit skill: .cursor/skills/flutter-mcp-boundary-audit/SKILL.md
+# (formerly input-schema-hardening)
+
+program:
+  name: mcp-boundary-hardening
+  status: complete_in_repo
+
+tracks:
+  - id: skill-audit
+    title: Boundary audit skill for future regressions
+    status: done
+    note: Renamed flutter-mcp-input-schema-audit → flutter-mcp-boundary-audit
+
+  - id: p0-invoke-direct
+    title: invokeDirect validates before execute (WebMCP)
+    status: done
+
+  - id: p0-vm-extension-validate
+    title: App registerServiceExtension validates before handler
+    status: done
+
+  - id: p0-migrator-schema
+    title: migrate agent-entries preserves primitive ObjectSchema fields
+    status: done
+
+  - id: p0-empty-schema-fallback
+    title: inputSchemaFromMcpToolDefinition throws when inputSchema missing
+    status: done
+
+  - id: p1-vm-fail-closed
+    title: VmExtensionDynamicGateway fail-closed when tool schema missing
+    status: done
+
+  - id: p1-vm-resource-validate
+    title: VmExtensionDynamicGateway validates resource reads before VM ext
+    status: done
+
+  - id: p1-resource-discovery-schema
+    title: registerDynamics includes resource inputSchema; registry uses it
+    status: done
+
+  - id: p1-bridge-json-args
+    title: mcpToolkitTool JSON-encodes non-scalar args for legacy handlers
+    status: done
+
+  - id: p1-forward-resource-validate
+    title: forwardResourceRead validates before execute
+    status: done
+
+  - id: p1-agent-bridge-handler
+    title: ToolRegistration default handler calls validate
+    status: done
+
+  - id: p2-toolkit-parity-doc
+    title: Document dynamic vs fmt_* schema parity (connection field)
+    status: done
+
+  - id: p2-toolkit-schema-align
+    title: Align tap_widget, semantic_snapshot, wait_for schemas via core
+    status: done
+
+  - id: p2-interaction-schemas-extended
+    title: Shared schemas for enter_text, scroll, gestures, press_key
+    status: done
+
+  - id: p2-discovery-failure-clear
+    title: registerDynamics failure clears stale dynamic registry
+    status: done
+
+  - id: p2-webmcp-triple-register
+    title: WebMCP dogfood skips tools already registered on modelContext
+    status: done
+
+  - id: p2-input-schema-from-mcp-tool
+    title: inputSchemaFromMcpTool fail-closed when inputSchema missing
+    status: done
+
+  - id: p2-docs-stale
+    title: Fix stale mcp_models dartdoc and SIMPLIFIED_DYNAMIC_REGISTRATION.md
+    status: done
+
+  - id: tests-unit-e2e
+    title: Unit tests; E2E in flutter_cli_example_app_integration_test.dart
+    status: done
+
+  - id: p2-validation-tiers-doc
+    title: INTENTCALL_PLATFORM.md Validation tiers section
+    status: done
+    note: Tiers A–D — validateAgainstSchema, dynamic fmt_client_tool, exec catalog, WebMCP JS vs Dart hook
+
+  - id: p2-schema-validator-dartdoc
+    title: validateAgainstSchema supported subset dartdoc
+    status: done
+    note: intentcall_schema/lib/src/schema_validator.dart
+
+  - id: p2-audit-skill-vm-wire-note
+    title: Boundary audit skill VM wire coercion checklist
+    status: done
+    note: Skill + INTENTCALL_PLATFORM Tier B — app callback + invokeDirect use coerceArgumentsForSchema
+
+  - id: p2-vm-wire-coerce-at-validate
+    title: Coerce VM string-key args before validateAgainstSchema (optional)
+    status: done
+    note: app+invokeDirect coerced; host registry coerce in p2-host-registry-coerce
+
+  - id: p2-host-registry-coerce
+    title: Host forwardToolCall + VmExtensionDynamicGateway coerce before Tier A
+    status: done
+    note: validationFailureForDynamicSchema in dynamic_gateway.dart; forwardToolCall in dynamic_registry.dart
+
+  - id: p2-docs-boundary-audit-final
+    title: INTENTCALL_PLATFORM + audit skill host coerce and interaction parity
+    status: done
+    note: Tier B host coerce; MCP fmt_* vs registry table; interactionCatalogInputSchemaFor tools
+
+  - id: p2-docs-parity-18-tools
+    title: INTENTCALL_PLATFORM parity table + Tier C exec doc drift
+    status: done
+    note: fill_form, hot_reload_flutter, hot_restart_flutter in parity table; 18-tool count; Tier C documents exec Tier A via validationFailureForInteractionCatalogCommand; reference.md aligned-tools table
+
+  - id: p2-docs-tier-a-22-vs-router-24
+    title: Document 18 core vs 22 tier A exec vs 24 schema router
+    status: done
+    note: coreInteractionCatalogCommandNames, tierAExecCatalogCommandNames, captureTierAExecCommandNames in interaction_input_schemas.dart; INTENTCALL_PLATFORM inspection/capture tables; reference.md counts
+
+  - id: re-audit-2026-05-28
+    title: Boundary re-audit (flutter-mcp-boundary-audit)
+    status: done
+    note: |
+      No new P0/P1 after app_errors default 4, select_widget_at_point schema, inspect_widget_at_point dual-path,
+      INTENTCALL 18/22/24 counts. Closed P2 — resourceTemplateRegistrationToRegistration strict schema;
+      toolRegistrationToRegistration validate-before-handler; INTENTCALL select_widget_at_point doc.
+      Remaining limitations — Tier A enum/pattern/format; WebMCP Tier D JS-only fallback (ADR 0008).
+
+  - id: p2-resource-template-schema-ssot
+    title: clientResourceTemplateReadInputSchema single-source in core
+    status: done
+    note: |
+      Re-audit 2026-05-28 (post 93a06430) — no new P0/P1/P2. Optional SSOT: packages/core
+      clientResourceTemplateReadInputSchema wired from agent_bridge resourceTemplateRegistrationToRegistration;
+      interaction_input_schemas_test + resource_bridge_test.

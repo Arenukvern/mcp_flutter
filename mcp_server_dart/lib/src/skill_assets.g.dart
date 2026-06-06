@@ -55,7 +55,8 @@ Always run `flutter-mcp-toolkit doctor --json` first. Parse the output:
 | Read state ("what's on screen?", "show me errors", "screenshot") | `flutter-mcp-toolkit-inspect` |
 | Drive UI ("tap X", "type into Y", "scroll to Z", "hot reload") | `flutter-mcp-toolkit-control` |
 | Diagnose ("why is X failing?", "show recent logs", "evaluate expression") | `flutter-mcp-toolkit-debug` |
-| Register app-specific MCP tools/resources (`MCPCallEntry`, `bootstrapFlutter` `additionalEntries`) | `flutter-mcp-toolkit-custom-tools` |
+| Register app-specific MCP tools/resources (`AgentCallEntry`, `bootstrapFlutter` `additionalEntries`) | `flutter-mcp-toolkit-custom-tools` |
+| Upgrade after intentcall Phase 6 breaking bump (migrate CLI) | `flutter-mcp-toolkit-intentcall-migration` |
 | Harness Script lint/run/Maestro (`*.hs.yaml`, app registry) | Install **flutter_harness** — skill `flutter-mcp-semantic-test` in that repo |
 | HS capture bundles / promo video | **flutter_harness** + **flutter_mcp_video** (not bundled in toolkit `init`) |
 
@@ -806,6 +807,11 @@ Do NOT use this skill for:
 - Reading what is currently on screen — use `flutter-mcp-toolkit-inspect`.
 - The toolkit itself failing to connect — load `flutter-mcp-toolkit-setup`.
 
+## Registry vs bundled tools
+
+- **Bundled `fmt_*` tools** (screenshot, logs, evaluate, …) run on the MCP server via **`AgentRegistry`** on the host.
+- **App-registered surfaces** appear after `MCPToolkitBinding.addEntries` / `AgentCallEntry` — discover with **`fmt_list_client_tools_and_resources`**, then **`fmt_client_tool`** / **`fmt_client_resource`**.
+
 ## Triage flow
 
 1. **Error envelope returned?** Read `error.code` first, then `error.descriptor.retryable`. Look the code up in the Error envelope playbook below.
@@ -952,7 +958,7 @@ Every failure returns `{code, message, details, descriptor, recovery}`. Always r
 1. `flutter-mcp-toolkit doctor --json` — check `visual_capture_permission_denied` separately.
 2. Check `captureHints` on `get_view_details` or screenshot payloads. Strong signals (`platformViewsDetected`): `UiKitView`, `AppKitView`, `AndroidView`, `HtmlElementView` — use `desktop_window` or `auto` (macOS app, iOS Simulator, or Chrome/web on any host with CDP). Web truth capture: macOS ScreenCaptureKit first, then Chrome CDP (`captureBackend: cdp`); override port with `--web-browser-debugging-port`. Weak signals (`weakSignalsDetected`): `Texture` only — prefer `desktop_window` on macOS host but `auto` does not upgrade. WGPU/custom engines without platform views: set `MCPToolkitBinding.captureHintsContributor` in the app. Image-only `get_screenshots` tools also return routing JSON in `meta` and a leading text block. Showcase: `make showcase-stop` then `make showcase` (macOS `AppKitView`) or `flutter run -d chrome` (web `HtmlElementView` + CDP capture).
 3. Run `focus_window` (MCP: `fmt_focus_window`) then retry `get_screenshots` with `mode: desktop_window`.
-4. For **`validate-runtime`**, executor recovery retries focus+capture once (`desktopCaptureRetried`). When platform views are detected, validate-runtime does not fall back to `flutter_layer`. Read `capturePlatformViewsDetected`, `captureFocusAttempted`, and `captureFallbackUsed` in `data.summary`.
+4. For **`validate-runtime`**, executor recovery retries focus+capture once (`desktopCaptureRetried`). If `desktop_window` still fails, validate-runtime retries once with `flutter_layer` even when platform views are detected. Read `capturePlatformViewsDetected`, `captureFocusAttempted`, and `captureFallbackUsed` in `data.summary`.
 
 ### `visualCapturePermissionDenied` (`visual_capture_permission_denied`)
 
@@ -1174,7 +1180,7 @@ Every failure returns `{code, message, details, descriptor, recovery}`. Always r
     SkillAsset(
       id: 'flutter-mcp-toolkit-custom-tools',
       frontmatter: r'''name: flutter-mcp-toolkit-custom-tools
-description: Use this skill when the agent exposes app-specific surfaces by registering custom MCP tools and resources inside the Flutter app (mcp_toolkit dynamic registry — MCPCallEntry, bootstrapFlutter additionalEntries / addEntries). Covers tool vs resource vs evaluate-expression, Map-based handlers, schema strictness, discovery via fmt_list_client_tools_and_resources, fmt_client_tool, fmt_client_resource, and lifecycle pitfalls.''',
+description: Use this skill when the agent exposes app-specific surfaces by registering custom MCP tools and resources inside the Flutter app (mcp_toolkit dynamic registry — AgentCallEntry, bootstrapFlutter additionalEntries / addEntries). Covers tool vs resource vs evaluate-expression, Map-based handlers, schema strictness, discovery via fmt_list_client_tools_and_resources, fmt_client_tool, fmt_client_resource, and lifecycle pitfalls.''',
       body: r'''
 <!-- @FMT_MODE_PRELUDE -->
 
@@ -1182,133 +1188,302 @@ description: Use this skill when the agent exposes app-specific surfaces by regi
 
 Use this when bundled MCP tools (screenshot, semantic snapshot, tap, …) are not enough and you need **app-specific** read surfaces or actions — e.g. cart totals, feature flags, curated debug snapshots of internal state. Entries are registered **in the Flutter process** and exposed to the agent through the **dynamic registry**.
 
+> **Migration:** The legacy call-entry type was removed in intentcall Phase 6b. Use **`AgentCallEntry`** or **`mcpToolkitTool` / `mcpToolkitResource`**. See **`flutter-mcp-toolkit-intentcall-migration`**.
+
 ## Pick the right primitive
 
 | Need | Use |
 |------|-----|
 | One-off read of a simple value | **`fmt_evaluate_dart_expression`** (no app code change). |
-| Stable **read-only** payload (diagnostics, JSON snapshot, “current route”) | **`MCPCallEntry.resource`** + **`fmt_client_resource`**. Prefer resources when the contract is “GET-like” and idempotent. |
-| Parameterized or mutating action, or reusable named operation | **`MCPCallEntry.tool`** + **`fmt_client_tool`**. |
+| Stable **read-only** payload (diagnostics, JSON snapshot, “current route”) | **`AgentCallEntry.resource`** + **`fmt_client_resource`**. Prefer resources when the contract is “GET-like” and idempotent. |
+| Parameterized or mutating action, or reusable named operation | **`AgentCallEntry.tool`** + **`fmt_client_tool`**. |
 
-## Handler signature (tools and resources)
+## Handler signatures
 
-[`MCPCallHandler`](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_toolkit/lib/src/mcp_models.dart) is `FutureOr<MCPCallResult> Function(ServiceExtensionRequestMap request)` where **`ServiceExtensionRequestMap` is `Map<String, String>`**.
+### Native `AgentCallEntry` (preferred for new code)
 
-- Tool arguments arrive as **string values** keyed by schema property names — mirror the README pattern: `request['n']`, `request['userId']`, then parse (`int.tryParse`, `double.tryParse`, `jsonDecode` for nested blobs if the wire format sends JSON-as-string).
-- Do **not** use `request.arguments` — that is not the app-side API.
-
-## Minimal tool registration
+Handlers receive **`AgentArguments`** (`Map<String, Object?>`) and return **`AgentResult`**:
 
 ```dart
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 
-final tool = MCPCallEntry.tool(
-  handler: (request) async {
-    final userId = request['userId'] ?? '';
+final tool = AgentCallEntry.tool(
+  namespace: 'app',
+  name: 'cart_get_snapshot',
+  description: 'Return current cart total and items for a user.',
+  inputSchema: const {
+    'type': 'object',
+    'additionalProperties': false,
+    'properties': {
+      'userId': {'type': 'string'},
+    },
+    'required': ['userId'],
+  },
+  handler: (final args) async {
+    final userId = args['userId']?.toString() ?? '';
     final cart = CartRepository.instance.forUser(userId);
-    return MCPCallResult(
+    return AgentResult.success(
       message: 'ok',
-      parameters: {
+      data: {
         'total': cart.total,
-        'items': cart.items.map((i) => i.toJson()).toList(),
+        'items': cart.items.map((final i) => i.toJson()).toList(),
       },
     );
   },
-  definition: MCPToolDefinition(
-    name: 'cart_get_snapshot',
-    description: 'Return current cart total and items for a user.',
-    inputSchema: {
-      'type': 'object',
-      'additionalProperties': false,
-      'properties': {
-        'userId': {'type': 'string'},
-      },
-      'required': ['userId'],
-    },
-  ),
 );
 
 await MCPToolkitBinding.instance.addEntries(entries: {tool});
 ```
 
-Prefer **`MCPToolkitBinding.instance.bootstrapFlutter(additionalEntries: { ... }, runApp: ...)`** so tools/resources register in one place with zone/error setup — same entries shape as above.
+### Legacy `MCPToolDefinition` + `MCPCallResult` (bridge)
 
-Register **after** `initialize()` / **`bootstrapFlutter`** wiring, **once** at bootstrap — not inside `build`, not per-widget `initState`.
+Built-in toolkits still use **`mcpToolkitTool`** / **`mcpToolkitResource`** to adapt
+`Map<String, String>` service-extension handlers:
+
+```dart
+final tool = mcpToolkitTool(
+  namespace: 'app',
+  handler: (final request) async {
+    final userId = request['userId'] ?? '';
+    return MCPCallResult(
+      message: 'ok',
+      parameters: {'userId': userId},
+    );
+  },
+  definition: MCPToolDefinition(
+    name: 'cart_get_snapshot',
+    description: 'Return current cart total and items for a user.',
+    inputSchema: ObjectSchema(
+      properties: {
+        'userId': StringSchema(),
+      },
+      required: ['userId'],
+    ),
+  ),
+);
+```
+
+- Tool arguments on the wire are **strings** keyed by schema property names — parse with `int.tryParse`, `jsonDecode`, etc.
+- Do **not** use `request.arguments` on the app side.
+
+Prefer **`MCPToolkitBinding.instance.bootstrapFlutter(additionalEntries: { ... }, runApp: ...)`** so tools/resources register in one place with zone/error setup.
+
+Register **once** at bootstrap — not inside `build`, not per-widget `initState`.
 
 ## Custom resources
 
-Resources are for **read-only** MCP surfaces: diagnostics, config summaries, or JSON blobs the agent polls without treating them as imperative actions.
+```dart
+final resource = AgentCallEntry.resource(
+  namespace: 'app',
+  name: 'app_cart_digest',
+  description: 'Compact cart summary for agents (read-only).',
+  mimeType: 'application/json',
+  handler: (final args) async => AgentResult.success(
+    message: 'Cart digest',
+    data: {
+      'itemCount': CartRepository.instance.visibleCount,
+      'currency': CartRepository.instance.currencyCode,
+    },
+  ),
+);
+```
+
+Or via bridge:
 
 ```dart
-MCPCallEntry.resource(
+mcpToolkitResource(
+  namespace: 'app',
   definition: MCPResourceDefinition(
     name: 'app_cart_digest',
     description: 'Compact cart summary for agents (read-only).',
     mimeType: 'application/json',
   ),
-  handler: (request) async => MCPCallResult(
+  handler: (final request) async => MCPCallResult(
     message: 'Cart digest',
-    parameters: {
-      'itemCount': CartRepository.instance.visibleCount,
-      'currency': CartRepository.instance.currencyCode,
-    },
+    parameters: {'itemCount': 3},
   ),
 ),
 ```
 
-- **`name`** must be `snake_case` (letters, digits, underscores). [`resourceUri`](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_toolkit/lib/src/mcp_models.dart) maps it to a **`visual://localhost/...`** URI (underscore segments become path segments). Agents consume it via **`fmt_client_resource`** using that URI / listing from **`fmt_list_client_tools_and_resources`**.
-- Set **`mimeType`** honestly (`application/json` vs `text/plain`) so clients know how to interpret payloads.
+- **`name`** must be `snake_case`. Published resource URIs follow **`visual://localhost/...`** conventions; agents use **`fmt_client_resource`** and listings from **`fmt_list_client_tools_and_resources`**.
 
 ## Schema rules (tools)
 
 The MCP server enforces strict JSON Schema:
 
-- Prefer **`additionalProperties: false`** unless you intentionally accept arbitrary keys. Unknown keys **fail validation** — good for catching agent typos.
+- Prefer **`additionalProperties: false`** unless you intentionally accept arbitrary keys.
 - Mark **`required`** for anything the handler reads unconditionally.
-- Prefer primitives and **`enum`** over unconstrained strings.
-- **`parameters`** in **`MCPCallResult`** must be JSON-serializable; non-serializable objects degrade to **`toString()`**.
+- **`AgentResult.data`** / **`MCPCallResult.parameters`** must be JSON-serializable.
 
 ## Discovery from the agent side
 
 1. **`fmt_list_client_tools_and_resources`** — enumerate app-registered tools and resources.
-2. **`fmt_client_tool`** — invoke a tool by name with JSON args (CLI: `flutter-mcp-toolkit exec --name fmt_client_tool --args '...'` per your transport).
-3. **`fmt_client_resource`** — fetch a registered resource (URI from listing / `resourceUri` convention).
+2. **`fmt_client_tool`** — invoke a dynamic tool by name with JSON args.
+3. **`fmt_client_resource`** — fetch a registered resource URI from the listing.
 
-If something should appear but does not: confirm **`addEntries`** completed (**`await`**), then hot **restart** — reload does not always replay discovery cleanly.
+If something should appear but does not: confirm **`addEntries`** completed (**`await`**), then hot **restart**.
 
 ## Lifecycle gotchas
 
-- **Hot reload** + **`addEntries`** from widget code → duplicate registrations. Register once in **`main()` / bootstrap**, not in **`build`**.
-- **Hot restart** clears VM state; registrations tied to **`bootstrapFlutter`** / **`main`** run again on boot — correct pattern survives restart.
-- **Debug mode only** — release builds do not expose these VM service extensions.
-- **Naming**: flat global namespace per app — prefix tools/resources (`cart_`, `flags_`, `nav_`) to avoid collisions with builtins or other domains.
+- **Hot reload** + **`addEntries`** from widget code → duplicate registrations. Register once in **`main()` / bootstrap**.
+- **Debug mode only** — release builds do not expose VM service extensions.
+- **Naming**: flat global namespace per app — prefix tools/resources (`cart_`, `flags_`, `nav_`).
 
 ## When the agent authors surfaces for the user’s app
 
 1. Ensure **`mcp_toolkit`** is in **`pubspec.yaml`**.
-2. Add **`lib/mcp_tools/<domain>_surfaces.dart`** exporting **`registerXSurfaces()`** that returns **`Set<MCPCallEntry>`** or performs **`addEntries`** once.
-3. Wire **`registerXSurfaces()`** from **`bootstrapFlutter(..., additionalEntries: ...)`** or call **`addEntries`** immediately after **`initializeFlutterToolkit`** inside **`bootstrapFlutter`**’s chain — **never** from **`StatefulWidget` lifecycle**.
-4. Tight schemas (**`additionalProperties: false`**, explicit **`required`**).
-5. Hot **restart**, then **`fmt_list_client_tools_and_resources`** before first **`fmt_client_tool`** / **`fmt_client_resource`** call.
+2. Add **`lib/mcp_tools/<domain>_surfaces.dart`** returning **`Set<AgentCallEntry>`** or calling **`addEntries`** once.
+3. Wire from **`bootstrapFlutter(..., additionalEntries: ...)`** — never from **`StatefulWidget` lifecycle**.
+4. Tight schemas; hot **restart**; then **`fmt_list_client_tools_and_resources`** before first client invoke.
 
 ## Safety and scope
 
-- Treat handlers as **powerful debug hooks**: avoid exposing secrets, full databases, or unchecked filesystem/network IO.
-- Keep handlers thin: delegate to domain/services already used by the app (same DI/getters), **don’t** duplicate business logic in MCP-only paths unless intentional.
+- Treat handlers as **powerful debug hooks**: avoid secrets, unchecked IO.
+- Keep handlers thin: delegate to existing app services.
 
 ## Common traps
 
-- **`request.arguments`** — wrong shape; use **`request['key']`** on **`Map<String, String>`**.
-- Missing **`await`** on **`addEntries`** → race before discovery lists your surface.
-- Returning **`Future`** instances inside **`parameters`** → useless serialization; **`await`** inside the handler.
+- Mixing **`AgentArguments`** with **`Map<String, String>`** — pick one API (native vs `mcpToolkitTool`).
+- Missing **`await`** on **`addEntries`** → race before discovery.
 - **`inputSchema`** out of sync with the handler → agents trust the schema; update both.
 
 ## Related
 
-- Driving the live app (snapshot / tap / reload): **`flutter-mcp-toolkit-guide`** → **`flutter-mcp-toolkit-inspect`** / **`flutter-mcp-toolkit-control`**.
-- Repository **`ARCHITECTURE.md`** → “Dynamic Registry Architecture”.
+- **`flutter-mcp-toolkit-intentcall-migration`** — CLI migrator, breaking upgrade
+- **`flutter-mcp-toolkit-guide`** → inspect / control / debug skills
+- Repository **`ARCHITECTURE.md`** → “Dynamic Registry Architecture”
 ''',
       relativePath: 'skills/flutter-mcp-toolkit-custom-tools/SKILL.md',
+    ),
+    SkillAsset(
+      id: 'flutter-mcp-toolkit-intentcall-migration',
+      frontmatter: r'''name: flutter-mcp-toolkit-intentcall-migration
+description: >-
+  Migrate Flutter app code from removed MCPCallEntry to AgentCallEntry after
+  intentcall Phase 6b. Use when upgrading mcp_toolkit, fixing compile errors after
+  a major bump, or running flutter-mcp-toolkit migrate agent-entries.''',
+      body: r'''
+<!-- @FMT_MODE_PRELUDE -->
+
+# intentcall migration — MCPCallEntry → AgentCallEntry
+
+**Phase 6b hard cut:** `MCPCallEntry` is **removed** from `mcp_toolkit`. App code must use
+`AgentCallEntry` (from `intentcall_core`, re-exported by `mcp_toolkit`).
+
+Canonical doc: [migration_intentcall_phase6.md](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/start_here/migration_intentcall_phase6.md)
+
+## When to use this skill
+
+- `dart analyze` reports undefined `MCPCallEntry` after pulling intentcall Phase 6
+- User asks to migrate custom tools/resources to the new API
+- Before shipping a major `mcp_toolkit` bump to consumers
+
+## CLI (preferred)
+
+```bash
+# Preview (exit 1 if changes pending)
+flutter-mcp-toolkit migrate agent-entries --check lib/
+
+# Apply
+flutter-mcp-toolkit migrate agent-entries --write lib/
+flutter-mcp-toolkit migrate agent-entries --write --namespace my_app lib/main.dart
+```
+
+Alias: `migrate mcp-call-entry` (same behavior).
+
+## After migration — registration
+
+- `MCPToolkitBinding.addEntries(entries: Set<AgentCallEntry>)`
+- `bootstrapFlutter(additionalEntries: { ... })`
+- `addMcpTool(AgentCallEntry)` — still a shortcut for a single entry
+
+Handlers should return **`AgentResult`** (`AgentResult.success` / `AgentResult.failure`).
+For legacy `MCPCallResult` + `MCPToolDefinition` handlers, use **`mcpToolkitTool`** /
+**`mcpToolkitResource`** (see `flutter-mcp-toolkit-custom-tools`).
+
+## Legacy pattern (before — do not ship new code)
+
+```dart
+// BEFORE (removed in Phase 6b)
+final tool = MCPCallEntry.tool(
+  handler: (request) async => MCPCallResult(
+    message: 'ok',
+    parameters: {'n': request['n']},
+  ),
+  definition: MCPToolDefinition(
+    name: 'my_tool',
+    description: 'Example',
+    inputSchema: {'type': 'object', 'properties': {}},
+  ),
+);
+```
+
+## Target pattern (after)
+
+```dart
+import 'package:mcp_toolkit/mcp_toolkit.dart';
+
+final tool = AgentCallEntry.tool(
+  namespace: 'app',
+  name: 'my_tool',
+  description: 'Example',
+  inputSchema: const {
+    'type': 'object',
+    'additionalProperties': false,
+    'properties': {'n': {'type': 'string'}},
+    'required': ['n'],
+  },
+  handler: (final args) async {
+    final n = args['n']?.toString() ?? '';
+    return AgentResult.success(
+      message: 'ok',
+      data: {'n': n},
+    );
+  },
+);
+
+await MCPToolkitBinding.instance.addEntries(entries: {tool});
+```
+
+## Platform sync (optional)
+
+After tool surfaces compile:
+
+```bash
+flutter-mcp-toolkit codegen sync --platform web
+flutter-mcp-toolkit codegen sync --platform android,ios,macos --check
+```
+
+See `docs/platform-notes/android-oem.md` for Xiaomi/Huawei (same shortcuts XML as AOSP).
+
+## MCP migrate tool
+
+`fmt_migrate_agent_entries` is **shipped** (report-only by default; `apply: true` to
+rewrite). CLI equivalent: `flutter-mcp-toolkit migrate agent-entries`.
+
+## Maintainer checklist (in-repo product gate)
+
+1. `flutter-mcp-toolkit migrate agent-entries --check` on `flutter_test_app/lib`
+2. `make sync-skills` after any `plugin/skills/` edit
+3. `cd mcp_server_dart && dart test test/contract/`
+4. Grep: no `MCPCallEntry` in skills except this file's BEFORE examples
+
+## Phase 7 extract (external monorepo)
+
+When intentcall publishes to pub.dev (see `decisions/0009-intentcall-extract.mdx`):
+
+1. Replace `path: ../agentkit/packages/intentcall_*` (or hosted `^0.1.0` after publish) in `pubspec.yaml`.
+2. Run `flutter pub get` and `migrate agent-entries --check` again.
+3. CI: use `make check-intentcall-integration` in mcp_flutter; package matrix moves to intentcall repo.
+
+Until then, all intentcall packages remain **in-repo** with `publish_to: none`.
+
+## Related skills
+
+- **`flutter-mcp-toolkit-custom-tools`** — authoring `AgentCallEntry` surfaces
+- **`flutter-mcp-toolkit-repo-maintainer`** — CHANGELOG, version pins, `sync-skills`
+''',
+      relativePath: 'skills/flutter-mcp-toolkit-intentcall-migration/SKILL.md',
     ),
     SkillAsset(
       id: 'flutter-mcp',
@@ -1438,8 +1613,8 @@ Permission behavior for this flow:
 - `validate-runtime` stays read/write only for visual capture and defaults to `auto_request_once`.
 - `doctor` remains read-only.
 - On macOS, Screen Recording permission belongs to the host process running `flutter-mcp-toolkit`.
-- On web: `desktop_window` uses macOS ScreenCaptureKit then Chrome CDP (`Page.captureScreenshot`); Linux/Windows use CDP when remote debugging is reachable. Pass `--web-browser-debugging-port` if discovery fails. With platform views detected, `validate-runtime` does not fall back to `flutter_layer` after a successful `desktop_window` capture. Check `captureHints.weakSignalsDetected` for `Texture`-only apps.
-- Executor recovery retries host capture once (`desktopCaptureRetried` in screenshot payloads). When `captureHints.platformViewsDetected` is true, validate-runtime does not fall back to `flutter_layer`. Otherwise it may retry once with `flutter_layer` after a failed host capture.
+- On web: `desktop_window` uses macOS ScreenCaptureKit then Chrome CDP (`Page.captureScreenshot`); Linux/Windows use CDP when remote debugging is reachable. Pass `--web-browser-debugging-port` if discovery fails. For web targets, pass `--flutter-device chrome` so validation does not pick macOS host `desktop_window` by mistake.
+- Executor recovery retries host capture once (`desktopCaptureRetried` in screenshot payloads). If `desktop_window` still fails (including when platform views are detected), `validate-runtime` retries once with `flutter_layer`. Check `data.summary.captureFallbackUsed`.
 - You may pass the VM URI as global `--vm-service-uri` instead of `validate-runtime --target` when only one URI is needed.
 
 ## What `validate-runtime` Must Prove
@@ -1459,7 +1634,7 @@ Permission behavior for this flow:
 
 - Use `data.summary` as pass/fail status for automation.
 - Use `data.summary.capturePlatformViewsDetected` and `captureFocusAttempted` for platform-view routing.
-- Use `data.summary.captureFallbackUsed` to see whether a `flutter_layer` retry ran (skipped when platform views were detected).
+- Use `data.summary.captureFallbackUsed` to see whether a `flutter_layer` retry ran after a failed `desktop_window` attempt (including when platform views are detected).
 - Use `data.steps` for per-step evidence and retries.
 - Use `data.doctor.checks` to explain setup blockers.
 - Use `data.summary.screenshotFiles` for saved screenshot paths when `--save-images` is enabled.
@@ -1531,6 +1706,9 @@ release-please on `main`; use manual steps only when the Release PR path is bloc
 | [packages/server_capability_core/lib/src/fmt_capability.dart](https://github.com/Arenukvern/mcp_flutter/blob/main/packages/server_capability_core/lib/src/fmt_capability.dart) | `version` getter                                                                                                                                      |
 | [mcp_server_dart/pubspec.yaml](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_server_dart/pubspec.yaml)                                                               | `version:`                                                                                                                                            |
 | [mcp_toolkit/pubspec.yaml](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_toolkit/pubspec.yaml)                                                                       | `version:`                                                                                                                                            |
+| [packages/core/pubspec.yaml](https://github.com/Arenukvern/mcp_flutter/blob/main/packages/core/pubspec.yaml)                                                                   | `version:`                                                                                                                                            |
+| [packages/server_capability_kernel/pubspec.yaml](https://github.com/Arenukvern/mcp_flutter/blob/main/packages/server_capability_kernel/pubspec.yaml)                           | `version:` + same-train dependency constraints                                                                                                        |
+| [packages/server_capability_core/pubspec.yaml](https://github.com/Arenukvern/mcp_flutter/blob/main/packages/server_capability_core/pubspec.yaml)                               | `version:` + same-train dependency constraints                                                                                                        |
 | [plugin/.cursor-plugin/plugin.json](https://github.com/Arenukvern/mcp_flutter/blob/main/plugin/.cursor-plugin/plugin.json)                                                     | `version`                                                                                                                                             |
 | [plugin/.codex-plugin/plugin.json](https://github.com/Arenukvern/mcp_flutter/blob/main/plugin/.codex-plugin/plugin.json)                                                       | `version`                                                                                                                                             |
 | [plugin/.claude-plugin/plugin.json](https://github.com/Arenukvern/mcp_flutter/blob/main/plugin/.claude-plugin/plugin.json)                                                     | `version`                                                                                                                                             |
@@ -1538,7 +1716,7 @@ release-please on `main`; use manual steps only when the Release PR path is bloc
 | [.release-please-manifest.json](https://github.com/Arenukvern/mcp_flutter/blob/main/.release-please-manifest.json)                                                             | `"."` key                                                                                                                                             |
 | [mcp_server_dart/lib/src/skill_assets.g.dart](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_server_dart/lib/src/skill_assets.g.dart)                                 | **generated** — embeds `plugin/.cursor-plugin/plugin.json`, `plugin/.codex-plugin/plugin.json`, `plugin/mcp.json`, and all `plugin/skills/*/SKILL.md` |
 
-After any version bump in `plugin/*-plugin/plugin.json` or edit under `plugin/skills/`: run `make sync-skills`, then `make check-contracts` (includes `check_version_sync.sh` and `check_skill_assets_drift.sh`).
+After any version bump: run `make sync-version`, then `make sync-skills`, then `make check-contracts` (includes `check_version_sync.sh` and `check_skill_assets_drift.sh`). `tool/release/sync_version.sh` derives all version touchpoints from root `VERSION`.
 
 **Harness / video (separate repos):** [flutter_harness](https://github.com/Arenukvern/flutter_harness), [flutter_mcp_video](https://github.com/Arenukvern/flutter_mcp_video) — not maintained in this plugin tree. Three-repo layout: [flutter_harness/docs/RELATED_REPOS.md](https://github.com/Arenukvern/flutter_harness/blob/main/docs/RELATED_REPOS.md).
 
@@ -1553,7 +1731,7 @@ After any version bump in `plugin/*-plugin/plugin.json` or edit under `plugin/sk
 Keep a Changelog **requires** version headings like `## [3.0.1]`. Linters treat `[3.0.1]` as an undefined **reference link** (MD052: "No link definition found").
 
 - **Do not remove** the file-top `<!-- markdownlint-disable MD052 -->` in CHANGELOG.md (release-please must keep it when prepending sections).
-- In bullet text, use **backticks** for code identifiers: `` `MCPCallEntry.resourceUri` ``, not `[MCPCallEntry.resourceUri]`.
+- In bullet text, use **backticks** for code identifiers: `` `AgentCallEntry` ``, not `[AgentCallEntry]`.
 - Before merge: `bash tool/contracts/check_changelog_markdown.sh` (also in `make check-contracts`).
 
 ## Automated release (preferred)
@@ -1562,16 +1740,23 @@ Keep a Changelog **requires** version headings like `## [3.0.1]`. Linters treat 
 flowchart LR
   main[merge_to_main] --> rp[release-please.yml]
   rp --> pr[Release_PR]
+  pr --> sync[release_pr_sync_versions.yml]
+  pr --> assets[release_pr_sync_skills.yml]
   pr --> tag[vX_Y_Z_tag]
   tag --> rel[release.yml_binaries]
+  tag --> pub[pub_publish.yml_pubdev]
 ```
 
 1. Merge PRs to `main` with conventional commits.
 2. Wait for **Release PR** from [release-please.yml](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/release-please.yml).
-3. **skill assets:** [release_pr_sync_skills.yml](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/release_pr_sync_skills.yml) auto-commits `skill_assets.g.dart` on Release PRs when drift is detected; posts a checklist comment on PR open. If **skill-assets-drift** still fails, run `make sync-skills` locally and push (release-please bumps `plugin/*-plugin/plugin.json` but not the generated bundle).
-4. Review VERSION, CHANGELOG, pubspecs, plugin pins in that PR → merge.
-5. release-please creates `vX.Y.Z` + GitHub release notes.
-6. [release.yml](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/release.yml) attaches `flutter_mcp_*` tarballs (does not overwrite release body).
+3. **version train:** [release_pr_sync_versions.yml](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/release_pr_sync_versions.yml) runs `tool/release/sync_version.sh` on Release PRs and commits any drift from root `VERSION`.
+4. **skill assets:** [release_pr_sync_skills.yml](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/release_pr_sync_skills.yml) auto-commits `skill_assets.g.dart` on Release PRs when drift is detected; posts a checklist comment on PR open. If **skill-assets-drift** still fails, run `make sync-skills` locally and push.
+5. Review VERSION, CHANGELOG, pubspecs, plugin pins in that PR → merge.
+6. release-please creates `vX.Y.Z` + GitHub release notes.
+7. [release.yml](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/release.yml) asserts tag == `VERSION`, then attaches `flutter_mcp_*` tarballs (does not overwrite release body).
+8. [pub_publish.yml](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/pub_publish.yml) publishes pub.dev packages in dependency order through OIDC: `flutter_mcp_toolkit_core` → `flutter_mcp_toolkit_capability_kernel` → `flutter_mcp_toolkit_capability_core` → `mcp_toolkit`.
+
+Before automated pub.dev publishing can run, each package must already have a first manual publish and pub.dev Admin must enable GitHub Actions publishing for this repository with tag pattern `v{{version}}`. Use GitHub environment `pub.dev` with required reviewers.
 
 Config: [release-please-config.json](https://github.com/Arenukvern/mcp_flutter/blob/main/release-please-config.json).
 
@@ -1580,14 +1765,16 @@ Config: [release-please-config.json](https://github.com/Arenukvern/mcp_flutter/b
 Use when release-please is unavailable or you must ship from a branch:
 
 1. Move `## [Unreleased]` bullets into `## [X.Y.Z]` (add date), leave empty `## [Unreleased]`.
-2. Bump all version touchpoints above to `X.Y.Z`.
-3. Update `.release-please-manifest.json` `"."` to `X.Y.Z`.
-4. `make sync-skills` (required whenever plugin manifests or skills change — release-please bumps plugin JSON but not `skill_assets.g.dart`).
+2. Update `VERSION` to `X.Y.Z`.
+3. `make sync-version` to derive all version touchpoints and `.release-please-manifest.json`.
+4. `make sync-skills` (required whenever plugin manifests or skills change).
 5. `make check-contracts`
 6. Commit: `chore: release X.Y.Z`
-7. Tag: `git tag vX.Y.Z` and push tag (triggers binary workflow).
+7. Optional pub.dev preflight: `make publish-pub-dry-run`.
+8. Tag: `git tag vX.Y.Z` and push tag (triggers binary and pub.dev workflows).
 
 Build artifacts locally: `make release-artifacts` or `bash tool/release/build_release_artifacts.sh --version X.Y.Z`.
+Publish pub.dev packages locally only as a fallback: `make publish-pub`.
 
 ## Docs map (single sources of truth)
 
@@ -1609,12 +1796,24 @@ Avoid duplicating install tables in README — link to overview.
 - Canonical skills: `plugin/skills/` (repo root `skills/` → symlink for `npx skills`).
 - New bundled skill: add `plugin/skills/<id>/SKILL.md`, append `id` to `expectedSkillIds` in [build_skill_assets.dart](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_server_dart/tool/build_skill_assets.dart), run `make sync-skills`.
 - Local Cursor copy: `.cursor/skills/<id>/` may symlink to `plugin/skills/<id>/`.
+- Platform dogfood skills: `flutter-mcp-toolkit-maintain-web`, `flutter-mcp-toolkit-maintain-macos`, `flutter-mcp-toolkit-dogfood-iterations`.
 
 ### HyperFrames promo (flutter_mcp_video repo)
 
 Video skill and projects live in **[flutter_mcp_video](https://github.com/Arenukvern/flutter_mcp_video)** (`skills/hyperframes-video/`, `projects/video-projects/<id>/`). Not bundled in toolkit `make sync-skills`.
 
 When shipping a promo there: edit the video repo; run `bash tool/check_doc_paths.sh` in that repo before merge. Toolkit repo only hosts shared brand assets under `plugin/assets/` (symlink targets for v7-weaver).
+
+## intentcall Phase 6 (pre-extract) maintainer gate
+
+When closing Phase 6 on `feat/intentcall-phase1-3`:
+
+1. Append `flutter-mcp-toolkit-intentcall-migration` to `expectedSkillIds` in `build_skill_assets.dart` if not already present.
+2. `make sync-skills` — commit `skill_assets.g.dart` with skill edits.
+3. `bash tool/contracts/check_intentcall_skills_grep.sh` — no legacy call-entry symbol outside migration skill.
+4. `cd mcp_server_dart && dart test test/contract/`
+5. `flutter-mcp-toolkit migrate agent-entries --check flutter_test_app/lib` (expect exit 0)
+6. Tracker: `program.status: complete_in_repo_product`; `integration_hardening_complete: true`; closures under `docs/superpowers/closure/`; forward work `docs/superpowers/WHATS_NEXT.md` and `docs/superpowers/plans/2026-05-27-intentcall-phase7-extract.md`
 
 ## Pre-merge checklist
 
@@ -1625,12 +1824,292 @@ When shipping a promo there: edit the video repo; run `bash tool/check_doc_paths
 ''',
       relativePath: 'skills/flutter-mcp-toolkit-repo-maintainer/SKILL.md',
     ),
+    SkillAsset(
+      id: 'flutter-mcp-toolkit-maintain-web',
+      frontmatter: r'''name: flutter-mcp-toolkit-maintain-web
+description: Maintains flutter_test_app and intentcall web targets (Chrome, web codegen, WebMCP bootstrap, web-showcase, webmcp verify). Use when editing web/index.html, agent_manifest.json, intentcall_webmcp.generated.js, web platform sync, Chrome dogfood, or navigator.modelContext.''',
+      body: r'''
+<!-- @FMT_MODE_PRELUDE -->
+
+# Maintain Web (Chrome + WebMCP)
+
+Dogfood app: `flutter_test_app`. Canonical platform doc: `flutter_test_app/INTENTCALL_PLATFORM.md`.
+
+## WebMCP vs VM MCP
+
+| Path | Proves |
+|------|--------|
+| VM extensions + `fmt_*` tools | MCP toolkit dogfood (always) |
+| `navigator.modelContext` | True WebMCP (Chrome flag / `--web-browser-flag`) |
+
+ADR: `decisions/0008_web_agent_invoke_js_only.mdx` — JS `fetch('/agent/invoke')` **404** by design; Dart `invokeDirect` works when `modelContext` exists.
+
+## Launch (repeatable WebMCP)
+
+```bash
+make web-showcase
+# WS_URI from .showcase/web_app.log (re-grep after hot reload)
+grep -Eo 'ws://127\.0\.0\.1:[0-9]+/[A-Za-z0-9_=-]+/ws' .showcase/web_app.log | tail -1
+```
+
+```bash
+dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart webmcp chrome-args
+dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart webmcp verify --web-port 8080
+```
+
+Stop: `make showcase-stop`.
+
+**Do not** rely on `chrome://flags` alone across machines — use `webmcp chrome-args` / `make web-showcase`.
+
+## Codegen & hooks
+
+```bash
+dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart codegen sync \
+  --platform web,android,ios,macos,linux,windows \
+  --project-dir flutter_test_app
+
+dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart init intentcall-platform \
+  --project-dir flutter_test_app --check
+```
+
+| Artifact | Source |
+|----------|--------|
+| `web/intentcall_webmcp.generated.js` | `codegen sync` from `web/agent_manifest.json` |
+| `web/index.html` | `init intentcall-platform` script tag |
+| Dart bootstrap | `registerAgentWebMcpFromEntries` in `mcp_toolkit_extensions.dart` (debug web, after `addEntries`; `intentcall_platform`) |
+
+## Runtime validate
+
+```bash
+dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart --save-images \
+  --output-dir .showcase/web_iter validate-runtime \
+  --target "$WS_URI" \
+  --flutter-device chrome \
+  --timeout-ms 45000
+```
+
+Pass `--web-browser-debugging-port <cdp>` if CDP discovery fails.
+
+## Known issues
+
+1. **Duplicate tool name** — generated JS + `registerAgentWebMcpFromEntries` both call `registerTool`; dedupe or gate one path (`agent_web_mcp_bootstrap_web.dart` name cache).
+2. **CDP probe** — `webmcp verify` may report `webmcp_active_log_evidence` while CDP `hasModelContext` is false (Flutter execution context).
+3. **Stale WS_URI** — always grep fresh token after hot restart before eval/validate.
+
+## Related
+
+- `docs/superpowers/evals/2026-05-26-webmcp-verification.md`
+- `flutter-mcp-cli-runtime-validation` — validate-runtime details
+- `flutter-mcp-toolkit-dogfood-iterations` — scored iterations
+''',
+      relativePath: 'skills/flutter-mcp-toolkit-maintain-web/SKILL.md',
+    ),
+    SkillAsset(
+      id: 'flutter-mcp-toolkit-maintain-macos',
+      frontmatter: r'''name: flutter-mcp-toolkit-maintain-macos
+description: Maintains flutter_test_app macOS showcase, native intentcall hooks (codegen, app_links invoke), and VM MCP validation. Use when editing macOS Runner, intentcall_codegen.sh, macOS dogfood, Screen Recording capture, or comparing macOS parity to web WebMCP.''',
+      body: r'''
+<!-- @FMT_MODE_PRELUDE -->
+
+# Maintain macOS (showcase + native intentcall)
+
+Dogfood app: `flutter_test_app`. Platform doc: `flutter_test_app/INTENTCALL_PLATFORM.md`.
+
+## WebMCP on macOS
+
+**`navigator.modelContext` is web-only.** macOS dogfood proves **VM extensions**, **dynamic registry**, **native invoke** (`intentcall://` via `app_links`), and **visual capture** (Screen Recording on host).
+
+For WebMCP parity scoring, run web iteration separately (`flutter-mcp-toolkit-maintain-web`).
+
+## Launch showcase
+
+```bash
+make showcase-stop && make showcase
+```
+
+- Log: `.showcase/flutter_app.log`
+- WS URI: grep `ws://127.0.0.1:…/ws` from log (default VM port **8181**)
+
+```bash
+grep -Eo 'ws://127\.0\.0\.1:[0-9]+/[A-Za-z0-9_=-]+/ws' .showcase/flutter_app.log | tail -1
+```
+
+Stop: `make showcase-stop`.
+
+## Codegen & hooks
+
+```bash
+dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart codegen sync \
+  --platform web,android,ios,macos,linux,windows \
+  --project-dir flutter_test_app
+
+dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart init intentcall-platform \
+  --project-dir flutter_test_app --check
+```
+
+| Target | Role |
+|--------|------|
+| `macos/intentcall_codegen.sh` | Xcode Run Script → `codegen sync --platform macos` |
+| `macos/Runner.xcodeproj` | Run Script phase (see script comment if manual) |
+| `lib/main.dart` | `IntentCallInvokeLinkListener` for `intentcall://invoke/…` |
+
+## Runtime validate
+
+```bash
+dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart --save-images \
+  --output-dir .showcase/macos_iter validate-runtime \
+  --target "$MACOS_WS_URI" \
+  --flutter-device macos \
+  --timeout-ms 45000
+```
+
+Permissions (host process running CLI):
+
+```bash
+dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart permissions status
+dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart permissions request
+```
+
+## Dual-platform dogfood
+
+```bash
+bash tool/evals/run_dogfood_eval.sh \
+  --ws-uri "$WEB_WS_URI" \
+  --macos --macos-ws-uri "$MACOS_WS_URI"
+```
+
+## Related
+
+- `flutter-mcp-cli-runtime-validation` — doctor, capture backends, extensions
+- `flutter-mcp-toolkit-maintain-web` — WebMCP enablement
+- `flutter-mcp-toolkit-dogfood-iterations` — rubric + tracker
+''',
+      relativePath: 'skills/flutter-mcp-toolkit-maintain-macos/SKILL.md',
+    ),
+    SkillAsset(
+      id: 'flutter-mcp-toolkit-dogfood-iterations',
+      frontmatter: r'''name: flutter-mcp-toolkit-dogfood-iterations
+description: Runs and records flutter_test_app dogfood iterations (tool_quality_rubric, run_dogfood_eval.sh, dogfood_web_eval.yaml). Use when scoring MCP/intentcall quality, appending iteration N, comparing regressions, or CI static/weekly eval gates.''',
+      body: r'''
+<!-- @FMT_MODE_PRELUDE -->
+
+# Dogfood iterations
+
+Tracker: `.showcase/dogfood_web_eval.yaml`  
+Rubric: `docs/superpowers/evals/tool_quality_rubric.yaml`  
+Overview: `docs/superpowers/evals/README.md`
+
+## Pass threshold
+
+**≥80/100** weighted; ship at **≥90** or accepted `pass_with_warnings`.
+
+| Dimension | Weight |
+|-----------|--------|
+| connectivity | 20 |
+| schema_validity | 10 |
+| handler_correctness | 20 |
+| capture_quality | 10 |
+| visual_fidelity | 10 |
+| webmcp_parity | 10 |
+| intentcall_authoring | 10 |
+| docs_truth | 10 |
+
+## Iteration workflow
+
+```
+Task Progress:
+- [ ] Start app (web-showcase or make showcase)
+- [ ] Fresh WS_URI from log (not stale after hot reload)
+- [ ] Run battery
+- [ ] Record score + warnings in tracker
+- [ ] Promote recurring patterns if repeated ≥2 times
+```
+
+### Web iteration
+
+```bash
+make web-showcase
+export WS_URI="$(grep -Eo 'ws://127\.0\.0\.1:[0-9]+/[A-Za-z0-9_=-]+/ws' .showcase/web_app.log | tail -1)"
+bash tool/evals/run_dogfood_eval.sh --ws-uri "$WS_URI" --merge --skip-visual   # yq or dart fallback
+# or without merge:
+bash tool/evals/run_dogfood_eval.sh --ws-uri "$WS_URI"
+```
+
+Auto-runs: static gates + `validate-runtime` + `webmcp verify`.
+
+### Static only (CI / PR)
+
+```bash
+make dogfood-eval-static
+```
+
+### Makefile
+
+```bash
+make dogfood-eval          # needs WS_URI in env
+make dogfood-eval-static
+```
+
+## Artifacts
+
+- Per run: `.showcase/eval_runs/<timestamp>/eval_run.yaml`
+- Snapshot: `.showcase/eval_run_<timestamp>.yaml`
+- With `--merge`: updates `dogfood_web_eval.yaml` (`yq` or `dart run mcp_server_dart/tool/merge_dogfood_tracker.dart`)
+
+## Verdicts
+
+| Verdict | Meaning |
+|---------|---------|
+| `pass` | score ≥80, no blocking warnings |
+| `pass_with_warnings` | score ≥80, e.g. `visual_capture_truth_mode` |
+| `fail` | score <80 |
+| `blocked_no_runtime` | `--skip-runtime` only |
+
+## Exec vs MCP names
+
+Document in iteration notes when testing invoke:
+
+- **exec:** bare names (`get_recent_logs`, `dogfood_ping`) — also accepts `fmt_*` aliases
+- **MCP:** `fmt_` prefix (`fmt_get_recent_logs`, `fmt_client_tool` + listing `name`)
+- **Connection:** global `--vm-service-uri` (not `exec --target`)
+
+```bash
+dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart \
+  --vm-service-uri "$WS_URI" exec --name get_recent_logs --args '{}'
+```
+
+## Chrome battery notes
+
+- Skip heavy visual harness unless `HARNESS_ROOT` points at `flutter_harness`: add `--skip-visual`
+- `validate-runtime --save-images` can hang >5m on Chrome; battery omits it unless `DOGFOOD_SAVE_IMAGES=1`
+
+## CI (branch)
+
+`.github/workflows/intentcall_eval.yml` — PR: `dogfood-eval-static`; weekly/main: intentcall package tests + static.
+
+Full Chrome runtime dogfood stays **local** until headless WebMCP is cost-effective.
+
+## After each iteration
+
+1. Diff `dimension_scores` vs previous iteration in tracker.
+2. Add to `recurring_warnings` / `recurring_errors` when repeated.
+3. Update `fix_recommendations` with actionable doc/code deltas.
+4. Do **not** treat tracker YAML as gate without a fresh battery run.
+
+## Related skills
+
+- `flutter-mcp-toolkit-maintain-web` — WebMCP launch + verify
+- `flutter-mcp-toolkit-maintain-macos` — macOS showcase
+- `flutter-mcp-toolkit-repo-maintainer` — `make sync-skills` after editing this skill
+''',
+      relativePath: 'skills/flutter-mcp-toolkit-dogfood-iterations/SKILL.md',
+    ),
   ];
 
   static const String cursorPluginManifest = r'''{
   "name": "flutter-mcp-toolkit",
   "description": "Flutter MCP toolkit: inspect and drive debug apps (semantic snapshot, tap, hot-reload) and register custom MCP tools and resources at runtime from your Flutter app or game via mcp_toolkit — closed agent feedback loop.",
-  "version": "3.1.0",
+  "version": "4.0.0-dev.1",
   "author": {
     "name": "Arenukvern",
     "url": "https://github.com/Arenukvern/mcp_flutter"
@@ -1654,7 +2133,7 @@ When shipping a promo there: edit the video repo; run `bash tool/check_doc_paths
 ''';
   static const String codexPluginManifest = r'''{
   "name": "flutter-mcp-toolkit",
-  "version": "3.1.0",
+  "version": "4.0.0-dev.1",
   "description": "Flutter MCP toolkit: inspect and drive debug apps (semantic snapshot, tap, hot-reload) and register custom MCP tools and resources at runtime from your Flutter app or game via mcp_toolkit — closed agent feedback loop.",
   "author": {
     "name": "Arenukvern",
@@ -1680,7 +2159,7 @@ When shipping a promo there: edit the video repo; run `bash tool/check_doc_paths
   "interface": {
     "displayName": "Flutter MCP Toolkit",
     "shortDescription": "Inspect, drive, and extend Flutter debug apps via MCP — including runtime custom tools.",
-    "longDescription": "flutter-mcp-toolkit is a Dart MCP server plus Flutter package (mcp_toolkit) for AI-assisted Flutter development in debug mode. Built-in: 27 fmt_* MCP tools and bundled agent skills. Dynamic registry: register app-specific tools and resources at runtime with addMcpTool / MCPCallEntry; agents discover via fmt_list_client_tools_and_resources and invoke via fmt_client_tool / fmt_client_resource. Requires debug app with mcp_toolkit and flutter-mcp-toolkit-server on PATH. Complements official Dart MCP.",
+    "longDescription": "flutter-mcp-toolkit is a Dart MCP server plus Flutter package (mcp_toolkit) for AI-assisted Flutter development in debug mode. Built-in: 27 fmt_* MCP tools and bundled agent skills. Dynamic registry: register app-specific tools and resources at runtime with AgentCallEntry and addMcpTool; agents discover via fmt_list_client_tools_and_resources and invoke via fmt_client_tool / fmt_client_resource. Requires debug app with mcp_toolkit and flutter-mcp-toolkit-server on PATH. Complements official Dart MCP.",
     "developerName": "Arenukvern",
     "category": "Developer Tools",
     "capabilities": [

@@ -1,3 +1,27 @@
+# 4.0.0-dev.1
+
+## [Unreleased]
+
+### Changed
+
+- Raised package Dart SDK floor to `>=3.12.0 <4.0.0`.
+- Added Flutter SDK floor `>=3.44.0 <4.0.0` for Flutter package support.
+
+## BREAKING CHANGES
+
+- **Removed `MCPCallEntry`** from the public API. Use `AgentCallEntry` (re-exported by `mcp_toolkit` from in-repo `intentcall_core`; pub.dev publish is Phase 7) for all dynamic tool/resource registration.
+- **Removed** `mcp_call_entry_bridge.dart` and `MCPCallEntryAgentBridge.toAgentCallEntry()`.
+- `MCPToolkitBinding.addEntries`, `bootstrapFlutter` `additionalEntries`, `addMcpTool`, and `AgentClientInstall.once` now take `AgentCallEntry` / `Set<AgentCallEntry>`.
+- Built-in toolkits use `mcpToolkitTool` / `mcpToolkitResource` helpers when you still author with `MCPToolDefinition` / `MCPCallHandler` + `MCPCallResult`.
+
+### Migration
+
+See [intentcall Phase 6 migration](../docs/start_here/migration_intentcall_phase6.md) and run:
+
+```bash
+flutter-mcp-toolkit migrate agent-entries --check lib/
+```
+
 # 3.0.0
 
 - Version alignment hard cut with Flutter MCP v3 release train.

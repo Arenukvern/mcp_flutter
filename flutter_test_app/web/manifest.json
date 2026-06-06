@@ -31,5 +31,23 @@
             "type": "image/png",
             "purpose": "maskable"
         }
+    ],
+    "shortcuts": [
+        {
+            "name": "Demo Ping",
+            "short_name": "Demo Ping",
+            "description": "Demo ping tool for WebMCP platform sync",
+            "url": "/agent/invoke?name=app_demo_ping"
+        }
+    ],
+    "protocol_handlers": [
+        {
+            "protocol": "web+intentcall",
+            "url": "/agent/invoke?protocol=%s"
+        },
+        {
+            "protocol": "web+intentcall",
+            "url": "/agent/invoke?name=app_demo_ping&payload=%s"
+        }
     ]
 }

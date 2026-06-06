@@ -7,12 +7,15 @@ import 'dart:io' as io;
 import 'package:args/args.dart';
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_mcp_toolkit_server/flutter_mcp_core.dart';
-import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/desktop_capture_recovery.dart';
 import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/platform_view_hints.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/codegen_init_command.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/codegen_sync_command.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/init_command.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/init_intentcall_platform_command.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/init_mode.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/init_target.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/migrate_agent_entries_command.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/webmcp_command.dart';
 
 Future<void> main(final List<String> args) async {
   late final ArgResults parsed;
@@ -46,6 +49,15 @@ Future<void> main(final List<String> args) async {
   }
   if (parsed.command?.name == 'codegen-init') {
     io.exit(await _runCodegenInitSubcommand(parsed.command!));
+  }
+  if (parsed.command?.name == 'migrate') {
+    io.exit(await _runMigrateSubcommand(parsed.command!));
+  }
+  if (parsed.command?.name == 'codegen') {
+    io.exit(await _runCodegenSubcommand(parsed.command!));
+  }
+  if (parsed.command?.name == 'webmcp') {
+    io.exit(await _runWebmcpSubcommand(parsed.command!));
   }
   final logLevel = _parseLogLevel(parsed.option(_logLevel));
   final logger = _buildLogger(logLevel);
@@ -698,9 +710,6 @@ Future<CoreResult> _runValidateRuntime({
       capturePlatformViewsDetected || _captureHintsPlatformViewsDetected(steps);
   captureFocusAttempted = _desktopCaptureRetriedInSteps(steps);
   if (snapshotFailure != null &&
-      !shouldSkipFlutterLayerFallback(
-        _platformViewHintsFromDetected(capturePlatformViewsDetected),
-      ) &&
       _eligibleForFlutterLayerCaptureRetry(snapshotFailure)) {
     snapshotFailure = await runStep(
       'capture_ui_snapshot_flutter_layer',
@@ -783,9 +792,6 @@ Future<CoreResult> _runValidateRuntime({
     captureFocusAttempted =
         captureFocusAttempted || _desktopCaptureRetriedInSteps(steps);
     if (afterReloadSnapshotFailure != null &&
-        !shouldSkipFlutterLayerFallback(
-          _platformViewHintsFromDetected(capturePlatformViewsDetected),
-        ) &&
         _eligibleForFlutterLayerCaptureRetry(afterReloadSnapshotFailure)) {
       afterReloadSnapshotFailure = await runStep(
         'capture_ui_snapshot_after_reload_flutter_layer',
@@ -1389,8 +1395,9 @@ void _printInteractiveNarrativeIfNeeded({
     case 'validate-runtime':
       io.stdout.writeln(
         'validate-runtime: visual capture tries auto mode first; executor '
-        'recovery retries host capture once (desktopCaptureRetried). When '
-        'platform views are detected, flutter_layer fallback is skipped.',
+        'recovery retries host capture once (desktopCaptureRetried). If '
+        'desktop_window still fails, retries once with flutter_layer '
+        '(even when platform views are detected).',
       );
       return;
     case 'permissions':
@@ -1563,14 +1570,6 @@ bool _desktopCaptureRetriedInSteps(final List<Map<String, Object?>> steps) {
   return false;
 }
 
-PlatformViewHints _platformViewHintsFromDetected(final bool detected) =>
-    PlatformViewHints(
-      platformViewsDetected: detected,
-      matches: const <PlatformViewMatch>[],
-      recommendedMode: detected ? kCaptureHintRecommendedDesktopWindow : null,
-      warning: detected ? kPlatformViewWarning : null,
-    );
-
 bool _platformViewsDetectedInPayload(final Map<String, Object?>? payload) {
   if (payload == null) {
     return false;
@@ -1717,6 +1716,11 @@ String _globalUsage() {
     ..writeln('  validate-runtime')
     ..writeln('  init')
     ..writeln('  codegen-init')
+    ..writeln('  migrate agent-entries')
+    ..writeln('  migrate mcp-call-entry')
+    ..writeln('  codegen sync')
+    ..writeln('  webmcp chrome-args')
+    ..writeln('  webmcp verify')
     ..writeln()
     ..writeln('Global options:')
     ..writeln(_argParser.usage)
@@ -1748,6 +1752,14 @@ String _usageForCommand(final List<String> commandPath) {
     'validate-runtime' => _usageValidateRuntime(),
     'init' => _usageInit(),
     'codegen-init' => _usageCodegenInit(),
+    'migrate' => _usageMigrate(),
+    'migrate agent-entries' => _usageMigrateAgentEntries(),
+    'migrate mcp-call-entry' => _usageMigrateAgentEntries(),
+    'codegen' => _usageCodegen(),
+    'codegen sync' => _usageCodegenSync(),
+    'webmcp' => _usageWebmcp(),
+    'webmcp chrome-args' => _usageWebmcpChromeArgs(),
+    'webmcp verify' => _usageWebmcpVerify(),
     _ => _globalUsage(),
   };
 }
@@ -2089,6 +2101,14 @@ final _argParser = ArgParser(allowTrailingOptions: false)
         allowed: ['project', 'user'],
         defaultsTo: 'project',
         help: r'Install scope: project (./) or user ($HOME).',
+      )
+      ..addOption(
+        'project-dir',
+        help: 'Flutter project root (for init intentcall-platform)',
+      )
+      ..addFlag(
+        _check,
+        help: 'Verify platform hooks without writing (intentcall-platform)',
       ),
   )
   ..addCommand(
@@ -2104,6 +2124,50 @@ final _argParser = ArgParser(allowTrailingOptions: false)
         defaultsTo: true,
         help: 'Run "flutter pub add mcp_toolkit" first.',
       ),
+  )
+  ..addCommand(
+    'migrate',
+    _commandParser()
+      ..addCommand('agent-entries', _migrateAgentEntriesParser())
+      ..addCommand('mcp-call-entry', _migrateAgentEntriesParser()),
+  )
+  ..addCommand(
+    'webmcp',
+    _commandParser()
+      ..addCommand('chrome-args', _commandParser())
+      ..addCommand(
+        'verify',
+        _commandParser()
+          ..addOption(
+            'cdp-port',
+            help: 'Chrome remote debugging port (auto-discover if omitted)',
+          )
+          ..addOption(
+            'web-port',
+            defaultsTo: '8080',
+            help: 'Prefer app tab on this port',
+          ),
+      ),
+  )
+  ..addCommand(
+    'codegen',
+    _commandParser()..addCommand(
+      'sync',
+      _commandParser()
+        ..addOption(
+          'platform',
+          defaultsTo: 'web',
+          help: 'Comma-separated platforms (phase 6d-web: web only)',
+        )
+        ..addOption(
+          'project-dir',
+          help: 'Flutter project root (defaults to current directory)',
+        )
+        ..addFlag(
+          _check,
+          help: 'Verify generated web artifacts are up to date',
+        ),
+    ),
   );
 
 const _defaultHost = 'localhost';
@@ -2143,6 +2207,7 @@ const _outputDir = 'output-dir';
 const _logLevel = 'log-level';
 const _help = 'help';
 const _check = 'check';
+const _write = 'write';
 const _diff = 'diff';
 const _backup = 'backup';
 const _noOverwrite = 'no-overwrite';
@@ -2311,14 +2376,16 @@ Optional skill installation copies mcp_server_dart/skills/$_runtimeValidationSki
 ''';
 
 String _usageInit() => '''
-Usage: flutter-mcp-toolkit init <claude-code|cursor|codex|cline|agents-skills|all> [--mode mcp|cli|auto] [--scope project|user]
+Usage:
+  flutter-mcp-toolkit init <claude-code|cursor|codex|cline|agents-skills|all> [--mode mcp|cli|auto] [--scope project|user]
+  flutter-mcp-toolkit init intentcall-platform [--project-dir <path>] [--check]
 
 Examples:
   flutter-mcp-toolkit init claude-code
-  flutter-mcp-toolkit init claude-code --mode cli
-  flutter-mcp-toolkit init all --mode mcp --scope user
+  flutter-mcp-toolkit init intentcall-platform --project-dir ../my_app
+  flutter-mcp-toolkit init intentcall-platform --check
 
-Installs flutter-mcp-toolkit skills and MCP server config for an AI agent.
+Installs flutter-mcp-toolkit skills (agent targets) or one-time platform hooks (intentcall-platform).
 ''';
 
 String _usageCodegenInit() => '''
@@ -2334,9 +2401,15 @@ Adds mcp_toolkit to a Flutter app and emits boilerplate for main.dart.
 Future<int> _runInitSubcommand(final ArgResults command) async {
   if (command.rest.isEmpty) {
     io.stderr.writeln(
-      'Usage: flutter-mcp-toolkit init <claude-code|cursor|codex|cline|agents-skills|all>',
+      'Usage: flutter-mcp-toolkit init <claude-code|cursor|codex|cline|agents-skills|all|intentcall-platform>',
     );
     return 64;
+  }
+  if (command.rest.first == 'intentcall-platform') {
+    return runInitintentcallPlatform(
+      projectRoot: command.option('project-dir') ?? io.Directory.current.path,
+      checkOnly: command.flag(_check),
+    );
   }
   final InitTarget target;
   try {
@@ -2376,3 +2449,140 @@ Future<int> _runCodegenInitSubcommand(final ArgResults command) =>
       printSnippetOnly: command.flag('print-only'),
       runPubAdd: command.flag('pub-add'),
     );
+
+Future<int> _runCodegenSubcommand(final ArgResults command) async {
+  final sub = command.command;
+  if (sub == null || sub.name != 'sync') {
+    io.stderr.writeln(
+      'Usage: flutter-mcp-toolkit codegen sync --platform web,android,...',
+    );
+    return 64;
+  }
+  return runCodegenSync(
+    platform: sub.option('platform') ?? 'web',
+    projectRoot: sub.option('project-dir') ?? io.Directory.current.path,
+    checkOnly: sub.flag(_check),
+  );
+}
+
+String _usageCodegen() => '''
+Usage:
+  flutter-mcp-toolkit codegen sync ...
+
+Examples:
+  flutter-mcp-toolkit codegen sync --platform web
+  flutter-mcp-toolkit codegen sync --platform web --check
+''';
+
+String _usageCodegenSync() => '''
+Usage: flutter-mcp-toolkit codegen sync --platform <targets> [--project-dir <path>] [--check]
+
+Targets (comma-separated): web, android, ios, macos, linux, windows
+
+Examples:
+  flutter-mcp-toolkit codegen sync --platform web
+  flutter-mcp-toolkit codegen sync --platform android,ios,macos
+  flutter-mcp-toolkit codegen sync --platform web,android,linux,windows --check
+
+Reads agent_manifest.json and writes platform artifacts (manifest/JS/XML/Swift/desktop/reg).
+''';
+
+ArgParser _migrateAgentEntriesParser() => _commandParser()
+  ..addFlag(
+    _check,
+    help: 'Report pending migrations; exit 1 if any would change',
+  )
+  ..addFlag(_write, help: 'Apply migrations in place')
+  ..addOption(
+    'namespace',
+    defaultsTo: 'app',
+    help: 'Default AgentCallEntry namespace for migrated entries',
+  );
+
+String _usageMigrate() => '''
+Usage: flutter-mcp-toolkit migrate <agent-entries|mcp-call-entry> [options] <path>
+
+Subcommands:
+  agent-entries   Migrate MCPCallEntry → AgentCallEntry in Dart sources
+  mcp-call-entry  Alias for agent-entries
+
+Use `flutter-mcp-toolkit migrate agent-entries --help` for options.
+''';
+
+String _usageMigrateAgentEntries() => '''
+Usage: flutter-mcp-toolkit migrate agent-entries [--check] [--write] [--namespace app] <path>
+
+Examples:
+  flutter-mcp-toolkit migrate agent-entries --check lib/
+  flutter-mcp-toolkit migrate agent-entries --write lib/main.dart
+  flutter-mcp-toolkit migrate mcp-call-entry --write --namespace my_app lib/
+
+Migrates legacy MCPCallEntry tool/resource factories to AgentCallEntry (Phase 6b hard cut shipped).
+See docs/start_here/migration_intentcall_phase6.md for limitations.
+''';
+
+Future<int> _runWebmcpSubcommand(final ArgResults command) async {
+  final sub = command.command;
+  if (sub == null) {
+    io.stderr.writeln('Usage: flutter-mcp-toolkit webmcp <chrome-args|verify>');
+    return 64;
+  }
+  switch (sub.name) {
+    case 'chrome-args':
+      return runWebmcpChromeArgs();
+    case 'verify':
+      return runWebmcpVerify(
+        cdpPort: int.tryParse(sub.option('cdp-port') ?? ''),
+        preferredWebPort: int.tryParse(sub.option('web-port') ?? '') ?? 8080,
+      );
+    default:
+      io.stderr.writeln('Unknown webmcp subcommand: ${sub.name}');
+      return 64;
+  }
+}
+
+String _usageWebmcp() => '''
+Usage:
+  flutter-mcp-toolkit webmcp chrome-args
+  flutter-mcp-toolkit webmcp verify [--cdp-port PORT] [--web-port 8080]
+
+Enables repeatable WebMCP E2E on Chrome without manual chrome://flags each session.
+See docs/superpowers/evals/2026-05-26-webmcp-verification.md
+''';
+
+String _usageWebmcpChromeArgs() => '''
+Usage: flutter-mcp-toolkit webmcp chrome-args
+
+Prints JSON with --web-browser-flag values and a full flutter run -d chrome command.
+Use scripts/run_web_showcase.sh for a logged dogfood launch.
+''';
+
+String _usageWebmcpVerify() => '''
+Usage: flutter-mcp-toolkit webmcp verify [--cdp-port PORT] [--web-port 8080]
+
+Probes a running Chrome tab via CDP for navigator.modelContext.registerTool.
+Exit 0 when WebMCP API is active; 1 with fix hints when not.
+''';
+
+Future<int> _runMigrateSubcommand(final ArgResults command) async {
+  final sub = command.command;
+  if (sub == null ||
+      (sub.name != 'agent-entries' && sub.name != 'mcp-call-entry')) {
+    io.stderr.writeln(
+      'Usage: flutter-mcp-toolkit migrate <agent-entries|mcp-call-entry> [options] <path>',
+    );
+    return 64;
+  }
+  if (sub.rest.isEmpty) {
+    io.stderr.writeln(
+      'Usage: flutter-mcp-toolkit migrate ${sub.name} [--check] [--write] <path>',
+    );
+    return 64;
+  }
+  return runMigrateAgentEntries(
+    path: sub.rest.first,
+    checkOnly: sub.flag(_check),
+    write: sub.flag(_write),
+    defaultNamespace: sub.option('namespace') ?? 'app',
+  );
+}

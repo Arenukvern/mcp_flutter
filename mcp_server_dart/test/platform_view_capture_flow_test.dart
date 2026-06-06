@@ -1,7 +1,6 @@
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_mcp_toolkit_server/flutter_mcp_core.dart';
 import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/desktop_window_screenshot.dart';
-import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/platform_view_hints.dart';
 import 'package:test/test.dart';
 
 Map<String, Object?> _uiKitViewDebugPayload() => <String, Object?>{

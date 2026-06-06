@@ -30,8 +30,7 @@ void registerDebugDumpTools(final CapabilityContext context) {
           'connection': connectionOverrideJsonSchema(),
         },
       },
-      handler: (final request) async {
-        final args = request.arguments ?? const <String, Object?>{};
+      handler: (final args) async {
         return runCommand(runner, args, const DebugDumpLayerTreeCommand());
       },
     ),
@@ -48,8 +47,7 @@ void registerDebugDumpTools(final CapabilityContext context) {
           'connection': connectionOverrideJsonSchema(),
         },
       },
-      handler: (final request) async {
-        final args = request.arguments ?? const <String, Object?>{};
+      handler: (final args) async {
         return runCommand(runner, args, const DebugDumpSemanticsTreeCommand());
       },
     ),
@@ -66,8 +64,7 @@ void registerDebugDumpTools(final CapabilityContext context) {
           'connection': connectionOverrideJsonSchema(),
         },
       },
-      handler: (final request) async {
-        final args = request.arguments ?? const <String, Object?>{};
+      handler: (final args) async {
         return runCommand(runner, args, const DebugDumpRenderTreeCommand());
       },
     ),
@@ -84,8 +81,7 @@ void registerDebugDumpTools(final CapabilityContext context) {
           'connection': connectionOverrideJsonSchema(),
         },
       },
-      handler: (final request) async {
-        final args = request.arguments ?? const <String, Object?>{};
+      handler: (final args) async {
         return runCommand(runner, args, const DebugDumpFocusTreeCommand());
       },
     ),

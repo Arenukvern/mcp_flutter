@@ -1,6 +1,9 @@
 import 'package:dart_mcp/client.dart';
+import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
+import 'package:intentcall_core/intentcall_core.dart';
 
+import '../agent_entry_helpers.dart';
 import '../mcp_models.dart';
 import '../services/control_flow_service.dart';
 import '../services/gesture_interaction_service.dart';
@@ -10,7 +13,7 @@ import '../services/wait_predicate_service.dart';
 
 /// Returns the set of MCP entries for the interaction toolkit:
 /// semantic snapshot, gestures, and log capture.
-Set<MCPCallEntry> getInteractionToolkitEntries() => {
+Set<AgentCallEntry> getInteractionToolkitEntries() => {
   OnSemanticSnapshotEntry(),
   OnTapWidgetEntry(),
   OnEnterTextEntry(),
@@ -33,11 +36,11 @@ Set<MCPCallEntry> getInteractionToolkitEntries() => {
 /// {@template on_semantic_snapshot_entry}
 /// Captures a compact semantic tree of interactive widgets with refs.
 /// {@endtemplate}
-extension type OnSemanticSnapshotEntry._(MCPCallEntry entry)
-    implements MCPCallEntry {
+extension type OnSemanticSnapshotEntry._(AgentCallEntry entry)
+    implements AgentCallEntry {
   /// {@macro on_semantic_snapshot_entry}
   factory OnSemanticSnapshotEntry() {
-    final entry = MCPCallEntry.tool(
+    final entry = mcpToolkitTool(
       handler: (final parameters) async {
         final snapshot = await SemanticSnapshotService.buildSemanticSnapshot();
         return MCPCallResult(
@@ -51,7 +54,7 @@ extension type OnSemanticSnapshotEntry._(MCPCallEntry entry)
         description:
             'Get compact semantic tree of interactive widgets with refs '
             'for interaction tools (tap_widget, enter_text, etc.).',
-        inputSchema: ObjectSchema(properties: {}),
+        inputSchema: ObjectSchema.fromMap(semanticSnapshotInputSchema()),
       ),
     );
     return OnSemanticSnapshotEntry._(entry);
@@ -65,10 +68,11 @@ extension type OnSemanticSnapshotEntry._(MCPCallEntry entry)
 /// {@template on_tap_widget_entry}
 /// Taps the widget identified by a semantic ref.
 /// {@endtemplate}
-extension type OnTapWidgetEntry._(MCPCallEntry entry) implements MCPCallEntry {
+extension type OnTapWidgetEntry._(AgentCallEntry entry)
+    implements AgentCallEntry {
   /// {@macro on_tap_widget_entry}
   factory OnTapWidgetEntry() {
-    final entry = MCPCallEntry.tool(
+    final entry = mcpToolkitTool(
       handler: (final parameters) async {
         final ref = parameters['ref'] ?? '';
         if (ref.isEmpty) {
@@ -106,17 +110,7 @@ extension type OnTapWidgetEntry._(MCPCallEntry entry) implements MCPCallEntry {
             'Tap the centre of a widget identified by a semantic snapshot ref. '
             'Call semantic_snapshot immediately before to get fresh refs. '
             'Pass snapshot_id to detect staleness.',
-        inputSchema: ObjectSchema(
-          required: ['ref'],
-          properties: {
-            'ref': StringSchema(
-              description: 'Semantic ref string (e.g. "s_0")',
-            ),
-            'snapshotId': IntegerSchema(
-              description: 'Optional snapshot_id - if stale, returns error',
-            ),
-          },
-        ),
+        inputSchema: ObjectSchema.fromMap(tapWidgetInputSchema()),
       ),
     );
     return OnTapWidgetEntry._(entry);
@@ -130,10 +124,11 @@ extension type OnTapWidgetEntry._(MCPCallEntry entry) implements MCPCallEntry {
 /// {@template on_enter_text_entry}
 /// Enters text into a text field identified by a semantic ref.
 /// {@endtemplate}
-extension type OnEnterTextEntry._(MCPCallEntry entry) implements MCPCallEntry {
+extension type OnEnterTextEntry._(AgentCallEntry entry)
+    implements AgentCallEntry {
   /// {@macro on_enter_text_entry}
   factory OnEnterTextEntry() {
-    final entry = MCPCallEntry.tool(
+    final entry = mcpToolkitTool(
       handler: (final parameters) async {
         final ref = parameters['ref'] ?? '';
         final text = parameters['text'] ?? '';
@@ -176,18 +171,7 @@ extension type OnEnterTextEntry._(MCPCallEntry entry) implements MCPCallEntry {
             'Taps the field to focus it first, then sets the value. '
             'Call semantic_snapshot immediately before to get fresh refs. '
             'Pass snapshot_id to detect staleness.',
-        inputSchema: ObjectSchema(
-          required: ['ref', 'text'],
-          properties: {
-            'ref': StringSchema(
-              description: 'Semantic ref of the text field (e.g. "s_2")',
-            ),
-            'text': StringSchema(description: 'Text to enter into the field'),
-            'snapshotId': IntegerSchema(
-              description: 'Optional snapshot_id - if stale, returns error',
-            ),
-          },
-        ),
+        inputSchema: ObjectSchema.fromMap(enterTextInputSchema()),
       ),
     );
     return OnEnterTextEntry._(entry);
@@ -201,10 +185,10 @@ extension type OnEnterTextEntry._(MCPCallEntry entry) implements MCPCallEntry {
 /// {@template on_scroll_entry}
 /// Scrolls from a ref or screen centre in a given direction.
 /// {@endtemplate}
-extension type OnScrollEntry._(MCPCallEntry entry) implements MCPCallEntry {
+extension type OnScrollEntry._(AgentCallEntry entry) implements AgentCallEntry {
   /// {@macro on_scroll_entry}
   factory OnScrollEntry() {
-    final entry = MCPCallEntry.tool(
+    final entry = mcpToolkitTool(
       handler: (final parameters) async {
         final direction = parameters['direction'] ?? 'down';
         final ref = parameters['ref'];
@@ -243,25 +227,7 @@ extension type OnScrollEntry._(MCPCallEntry entry) implements MCPCallEntry {
             'Simulates a drag gesture. '
             'Call semantic_snapshot immediately before to get fresh refs. '
             'Pass snapshot_id to detect staleness.',
-        inputSchema: ObjectSchema(
-          required: ['direction'],
-          properties: {
-            'direction': StringSchema(
-              description: 'Direction to scroll: up, down, left, right',
-            ),
-            'ref': StringSchema(
-              description:
-                  'Optional semantic ref to scroll from '
-                  '(defaults to screen centre)',
-            ),
-            'distance': StringSchema(
-              description: 'Distance in logical pixels (default 300)',
-            ),
-            'snapshotId': IntegerSchema(
-              description: 'Optional snapshot_id - if stale, returns error',
-            ),
-          },
-        ),
+        inputSchema: ObjectSchema.fromMap(scrollInputSchema()),
       ),
     );
     return OnScrollEntry._(entry);
@@ -275,10 +241,11 @@ extension type OnScrollEntry._(MCPCallEntry entry) implements MCPCallEntry {
 /// {@template on_long_press_entry}
 /// Long-presses the widget identified by a semantic ref.
 /// {@endtemplate}
-extension type OnLongPressEntry._(MCPCallEntry entry) implements MCPCallEntry {
+extension type OnLongPressEntry._(AgentCallEntry entry)
+    implements AgentCallEntry {
   /// {@macro on_long_press_entry}
   factory OnLongPressEntry() {
-    final entry = MCPCallEntry.tool(
+    final entry = mcpToolkitTool(
       handler: (final parameters) async {
         final ref = parameters['ref'] ?? '';
         if (ref.isEmpty) {
@@ -317,17 +284,7 @@ extension type OnLongPressEntry._(MCPCallEntry entry) implements MCPCallEntry {
             'Holds for ~500 ms before releasing. '
             'Call semantic_snapshot immediately before to get fresh refs. '
             'Pass snapshot_id to detect staleness.',
-        inputSchema: ObjectSchema(
-          required: ['ref'],
-          properties: {
-            'ref': StringSchema(
-              description: 'Semantic ref string (e.g. "s_0")',
-            ),
-            'snapshotId': IntegerSchema(
-              description: 'Optional snapshot_id - if stale, returns error',
-            ),
-          },
-        ),
+        inputSchema: ObjectSchema.fromMap(longPressInputSchema()),
       ),
     );
     return OnLongPressEntry._(entry);
@@ -341,10 +298,10 @@ extension type OnLongPressEntry._(MCPCallEntry entry) implements MCPCallEntry {
 /// {@template on_swipe_entry}
 /// Swipes from a ref or screen centre in a given direction.
 /// {@endtemplate}
-extension type OnSwipeEntry._(MCPCallEntry entry) implements MCPCallEntry {
+extension type OnSwipeEntry._(AgentCallEntry entry) implements AgentCallEntry {
   /// {@macro on_swipe_entry}
   factory OnSwipeEntry() {
-    final entry = MCPCallEntry.tool(
+    final entry = mcpToolkitTool(
       handler: (final parameters) async {
         final direction = parameters['direction'] ?? 'up';
         final ref = parameters['ref'];
@@ -382,25 +339,7 @@ extension type OnSwipeEntry._(MCPCallEntry entry) implements MCPCallEntry {
             'Swipe from a ref or the screen centre in a given direction. '
             'Call semantic_snapshot immediately before to get fresh refs. '
             'Pass snapshot_id to detect staleness.',
-        inputSchema: ObjectSchema(
-          required: ['direction'],
-          properties: {
-            'direction': StringSchema(
-              description: 'Direction to swipe: up, down, left, right',
-            ),
-            'ref': StringSchema(
-              description:
-                  'Optional semantic ref to start from '
-                  '(defaults to screen centre)',
-            ),
-            'distance': StringSchema(
-              description: 'Distance in logical pixels (default 300)',
-            ),
-            'snapshotId': IntegerSchema(
-              description: 'Optional snapshot_id - if stale, returns error',
-            ),
-          },
-        ),
+        inputSchema: ObjectSchema.fromMap(swipeInputSchema()),
       ),
     );
     return OnSwipeEntry._(entry);
@@ -414,10 +353,10 @@ extension type OnSwipeEntry._(MCPCallEntry entry) implements MCPCallEntry {
 /// {@template on_drag_entry}
 /// Drags from one widget ref to another.
 /// {@endtemplate}
-extension type OnDragEntry._(MCPCallEntry entry) implements MCPCallEntry {
+extension type OnDragEntry._(AgentCallEntry entry) implements AgentCallEntry {
   /// {@macro on_drag_entry}
   factory OnDragEntry() {
-    final entry = MCPCallEntry.tool(
+    final entry = mcpToolkitTool(
       handler: (final parameters) async {
         final fromRef = parameters['fromRef'] ?? '';
         final toRef = parameters['toRef'] ?? '';
@@ -459,20 +398,7 @@ extension type OnDragEntry._(MCPCallEntry entry) implements MCPCallEntry {
             'Drag from one widget to another, identified by semantic refs. '
             'Call semantic_snapshot immediately before to get fresh refs. '
             'Pass snapshot_id to detect staleness.',
-        inputSchema: ObjectSchema(
-          required: ['fromRef', 'toRef'],
-          properties: {
-            'fromRef': StringSchema(
-              description: 'Semantic ref of the drag source',
-            ),
-            'toRef': StringSchema(
-              description: 'Semantic ref of the drag destination',
-            ),
-            'snapshotId': IntegerSchema(
-              description: 'Optional snapshot_id - if stale, returns error',
-            ),
-          },
-        ),
+        inputSchema: ObjectSchema.fromMap(dragInputSchema()),
       ),
     );
     return OnDragEntry._(entry);
@@ -486,11 +412,11 @@ extension type OnDragEntry._(MCPCallEntry entry) implements MCPCallEntry {
 /// {@template on_get_recent_logs_entry}
 /// Returns recently captured print / log output.
 /// {@endtemplate}
-extension type OnGetRecentLogsEntry._(MCPCallEntry entry)
-    implements MCPCallEntry {
+extension type OnGetRecentLogsEntry._(AgentCallEntry entry)
+    implements AgentCallEntry {
   /// {@macro on_get_recent_logs_entry}
   factory OnGetRecentLogsEntry() {
-    final entry = MCPCallEntry.tool(
+    final entry = mcpToolkitTool(
       handler: (final parameters) {
         final count = jsonDecodeInt(parameters['count'] ?? '50');
         final logs = LogCaptureService.getRecentLogs(
@@ -508,15 +434,7 @@ extension type OnGetRecentLogsEntry._(MCPCallEntry entry)
         description:
             'Get recent print() / debugPrint() output captured from the '
             'running Flutter app.',
-        inputSchema: ObjectSchema(
-          properties: {
-            'count': IntegerSchema(
-              description: 'Number of recent entries to return (default 50)',
-              minimum: 1,
-              maximum: 200,
-            ),
-          },
-        ),
+        inputSchema: ObjectSchema.fromMap(getRecentLogsInputSchema()),
       ),
     );
     return OnGetRecentLogsEntry._(entry);
@@ -531,10 +449,11 @@ extension type OnGetRecentLogsEntry._(MCPCallEntry entry)
 /// Block until a UI predicate holds or a timeout elapses, then return a
 /// fresh semantic snapshot. Eliminates sleep+snapshot polling loops.
 /// {@endtemplate}
-extension type OnWaitForEntry._(MCPCallEntry entry) implements MCPCallEntry {
+extension type OnWaitForEntry._(AgentCallEntry entry)
+    implements AgentCallEntry {
   /// {@macro on_wait_for_entry}
   factory OnWaitForEntry() {
-    final entry = MCPCallEntry.tool(
+    final entry = mcpToolkitTool(
       handler: (final parameters) async {
         final predicate = Map<String, Object?>.from(
           jsonDecodeMap(parameters['predicate'] ?? '{}'),
@@ -556,13 +475,7 @@ extension type OnWaitForEntry._(MCPCallEntry entry) implements MCPCallEntry {
         description:
             'Wait for a UI predicate (text/noText/time/stable/noError) and '
             'return a fresh semantic snapshot. Default timeout 5000ms, max 30000ms.',
-        inputSchema: ObjectSchema(
-          properties: {
-            'predicate': ObjectSchema(),
-            'timeoutMs': IntegerSchema(minimum: 1, maximum: 30000),
-          },
-          required: const ['predicate'],
-        ),
+        inputSchema: ObjectSchema.fromMap(waitForInputSchema()),
       ),
     );
     return OnWaitForEntry._(entry);
@@ -580,10 +493,11 @@ extension type OnWaitForEntry._(MCPCallEntry entry) implements MCPCallEntry {
 /// the `flutter/textinput` channel) — use `tap_widget` on the submit
 /// button instead.
 /// {@endtemplate}
-extension type OnPressKeyEntry._(MCPCallEntry entry) implements MCPCallEntry {
+extension type OnPressKeyEntry._(AgentCallEntry entry)
+    implements AgentCallEntry {
   /// {@macro on_press_key_entry}
   factory OnPressKeyEntry() {
-    final entry = MCPCallEntry.tool(
+    final entry = mcpToolkitTool(
       handler: (final parameters) async {
         final key = jsonDecodeString(parameters['key']);
         final result = await ControlFlowService.pressKey(
@@ -610,16 +524,7 @@ extension type OnPressKeyEntry._(MCPCallEntry entry) implements MCPCallEntry {
             'Reaches Focus widgets / Shortcuts / Actions / Tab traversal. '
             'Does NOT trigger TextField.onSubmitted (use tap_widget on the '
             'submit button instead) or IME composition.',
-        inputSchema: ObjectSchema(
-          properties: {
-            'key': StringSchema(),
-            'ctrl': BooleanSchema(),
-            'shift': BooleanSchema(),
-            'alt': BooleanSchema(),
-            'meta': BooleanSchema(),
-          },
-          required: const ['key'],
-        ),
+        inputSchema: ObjectSchema.fromMap(pressKeyInputSchema()),
       ),
     );
     return OnPressKeyEntry._(entry);
@@ -633,11 +538,11 @@ extension type OnPressKeyEntry._(MCPCallEntry entry) implements MCPCallEntry {
 /// {@template on_handle_dialog_entry}
 /// Dismiss the topmost popup/dialog route on the registered Navigator.
 /// {@endtemplate}
-extension type OnHandleDialogEntry._(MCPCallEntry entry)
-    implements MCPCallEntry {
+extension type OnHandleDialogEntry._(AgentCallEntry entry)
+    implements AgentCallEntry {
   /// {@macro on_handle_dialog_entry}
   factory OnHandleDialogEntry() {
-    final entry = MCPCallEntry.tool(
+    final entry = mcpToolkitTool(
       handler: (final parameters) async {
         final action = jsonDecodeString(parameters['action']);
         if (action != 'dismiss') {
@@ -664,10 +569,7 @@ extension type OnHandleDialogEntry._(MCPCallEntry entry)
             'Dismiss the topmost popup/dialog route on the registered '
             'Navigator. Currently only action="dismiss" is supported. '
             'Requires MCPToolkitBinding.instance.navigatorKey = key.',
-        inputSchema: ObjectSchema(
-          properties: {'action': StringSchema()},
-          required: const ['action'],
-        ),
+        inputSchema: ObjectSchema.fromMap(handleDialogInputSchema()),
       ),
     );
     return OnHandleDialogEntry._(entry);
@@ -682,10 +584,11 @@ extension type OnHandleDialogEntry._(MCPCallEntry entry)
 /// Drive the registered Navigator: push a named route, pop the topmost
 /// route, or popUntil a named route.
 /// {@endtemplate}
-extension type OnNavigateEntry._(MCPCallEntry entry) implements MCPCallEntry {
+extension type OnNavigateEntry._(AgentCallEntry entry)
+    implements AgentCallEntry {
   /// {@macro on_navigate_entry}
   factory OnNavigateEntry() {
-    final entry = MCPCallEntry.tool(
+    final entry = mcpToolkitTool(
       handler: (final parameters) async {
         final action = jsonDecodeString(parameters['action']);
         final route = jsonDecodeString(parameters['route']);
@@ -711,14 +614,7 @@ extension type OnNavigateEntry._(MCPCallEntry entry) implements MCPCallEntry {
             'Drive the registered Navigator. action=push|pop|popUntil. '
             'push/popUntil require route. push accepts arguments. '
             'Requires MCPToolkitBinding.instance.navigatorKey = key.',
-        inputSchema: ObjectSchema(
-          properties: {
-            'action': StringSchema(),
-            'route': StringSchema(),
-            'arguments': ObjectSchema(),
-          },
-          required: const ['action'],
-        ),
+        inputSchema: ObjectSchema.fromMap(navigateInputSchema()),
       ),
     );
     return OnNavigateEntry._(entry);
@@ -734,10 +630,10 @@ extension type OnNavigateEntry._(MCPCallEntry entry) implements MCPCallEntry {
 /// Drives MouseRegion.onEnter/onExit. Requires a desktop or web host
 /// (mobile platforms have no hover concept).
 /// {@endtemplate}
-extension type OnHoverEntry._(MCPCallEntry entry) implements MCPCallEntry {
+extension type OnHoverEntry._(AgentCallEntry entry) implements AgentCallEntry {
   /// {@macro on_hover_entry}
   factory OnHoverEntry() {
-    final entry = MCPCallEntry.tool(
+    final entry = mcpToolkitTool(
       handler: (final parameters) async {
         final ref = jsonDecodeString(parameters['ref']);
         if (ref.isEmpty) {
@@ -780,10 +676,7 @@ extension type OnHoverEntry._(MCPCallEntry entry) implements MCPCallEntry {
             'listeners on PointerHoverEvent. Desktop/web only — mobile '
             'has no hover concept. Call semantic_snapshot immediately '
             'before to get fresh refs.',
-        inputSchema: ObjectSchema(
-          required: const ['ref'],
-          properties: {'ref': StringSchema(), 'snapshotId': IntegerSchema()},
-        ),
+        inputSchema: ObjectSchema.fromMap(hoverInputSchema()),
       ),
     );
     return OnHoverEntry._(entry);

@@ -5,11 +5,11 @@
 
 import 'dart:convert';
 
+import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_consts.dart';
-import 'package:flutter_mcp_toolkit_server/src/shared_core/types/error_codes.dart';
-import 'package:flutter_mcp_toolkit_server/src/shared_core/types/results.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/vm_connections/connection_context.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
+import 'package:intentcall_schema/intentcall_schema.dart';
 import 'package:is_dart_empty_or_not/is_dart_empty_or_not.dart';
 
 /// Dynamic registry behavior adapter used by the shared command executor.
@@ -99,6 +99,11 @@ final class VmExtensionDynamicGateway implements CoreDynamicGateway {
       return ensureFailure;
     }
 
+    final validationFailure = await _validateToolArguments(toolName, arguments);
+    if (validationFailure != null) {
+      return validationFailure;
+    }
+
     try {
       final response = await connectionContext.callFlutterExtension(
         '$mcpToolkitExt.$toolName',
@@ -134,6 +139,11 @@ final class VmExtensionDynamicGateway implements CoreDynamicGateway {
     final ensureFailure = await _ensureVmConnected();
     if (ensureFailure != null) {
       return ensureFailure;
+    }
+
+    final validationFailure = await _validateResourceArguments(resourceUri);
+    if (validationFailure != null) {
+      return validationFailure;
     }
 
     try {
@@ -244,6 +254,110 @@ final class VmExtensionDynamicGateway implements CoreDynamicGateway {
     return CoreResult.success(data: result);
   }
 
+  Future<CoreResult?> _validateToolArguments(
+    final String toolName,
+    final Map<String, Object?> arguments,
+  ) async {
+    final schema = await _inputSchemaForTool(toolName);
+    return _validateDynamicArguments(
+      subjectLabel: 'tool "$toolName"',
+      schema: schema,
+      arguments: arguments,
+    );
+  }
+
+  Future<CoreResult?> _validateResourceArguments(
+    final String resourceUri,
+  ) async {
+    final schema = await _inputSchemaForResource(resourceUri);
+    return _validateDynamicArguments(
+      subjectLabel: 'resource "$resourceUri"',
+      schema: schema,
+      arguments: {'uri': resourceUri},
+    );
+  }
+
+  Future<CoreResult?> _validateDynamicArguments({
+    required final String subjectLabel,
+    required final InputSchema? schema,
+    required final Map<String, Object?> arguments,
+  }) async => validationFailureForDynamicSchema(
+    subjectLabel: subjectLabel,
+    schema: schema,
+    arguments: arguments,
+  );
+
+  Future<InputSchema?> _inputSchemaForTool(final String toolName) async {
+    final cached = _inputSchemaFromTools(_tools, toolName);
+    if (cached != null) {
+      return cached;
+    }
+    final listResult = await listClientToolsAndResources();
+    if (!listResult.ok) {
+      return null;
+    }
+    return _inputSchemaFromTools(_tools, toolName);
+  }
+
+  Future<InputSchema?> _inputSchemaForResource(final String resourceUri) async {
+    final cached = _inputSchemaFromResources(_resources, resourceUri);
+    if (cached != null) {
+      return cached;
+    }
+    final listResult = await listClientToolsAndResources();
+    if (!listResult.ok) {
+      return null;
+    }
+    return _inputSchemaFromResources(_resources, resourceUri);
+  }
+
+  InputSchema? _inputSchemaFromTools(
+    final List<Map<String, Object?>> tools,
+    final String toolName,
+  ) {
+    for (final tool in tools) {
+      if ('${tool['name']}' != toolName) {
+        continue;
+      }
+      return _inputSchemaFromToolListingEntry(tool);
+    }
+    return null;
+  }
+
+  InputSchema? _inputSchemaFromResources(
+    final List<Map<String, Object?>> resources,
+    final String resourceUri,
+  ) {
+    for (final resource in resources) {
+      final uri = '${resource['uri']}';
+      if (uri != resourceUri) {
+        continue;
+      }
+      return _inputSchemaFromResourceListingEntry(resource);
+    }
+    return null;
+  }
+
+  InputSchema? _inputSchemaFromToolListingEntry(
+    final Map<String, Object?> entry,
+  ) {
+    final raw = entry['inputSchema'];
+    if (raw is Map) {
+      return Map<String, Object?>.from(raw);
+    }
+    return null;
+  }
+
+  InputSchema? _inputSchemaFromResourceListingEntry(
+    final Map<String, Object?> entry,
+  ) {
+    final raw = entry['inputSchema'];
+    if (raw is Map) {
+      return Map<String, Object?>.from(raw);
+    }
+    return clientResourceReadInputSchema();
+  }
+
   Future<CoreResult?> _ensureVmConnected() async {
     final ensure = await connectionContext.ensureConnectedWithPolicy();
     if (ensure.connected) {
@@ -292,6 +406,32 @@ final class VmExtensionDynamicGateway implements CoreDynamicGateway {
         text.contains('not found') ||
         text.contains('extension call returned null') ||
         text.contains('-32601');
+  }
+}
+
+/// Shared validate-before-VM-ext / fmt_client_* logic (testable without VM).
+CoreResult? validationFailureForDynamicSchema({
+  required final String subjectLabel,
+  required final InputSchema? schema,
+  required final Map<String, Object?> arguments,
+}) {
+  if (schema == null) {
+    return CoreResult.failure(
+      code: CoreErrorCode.invalidCommand,
+      message:
+          'Cannot validate dynamic $subjectLabel: not listed or '
+          'inputSchema missing (call fmt_list_client_tools_and_resources first)',
+    );
+  }
+  try {
+    final coerced = coerceArgumentsForSchema(schema, arguments);
+    validateAgainstSchema(schema, coerced);
+    return null;
+  } on AgentValidationException catch (e) {
+    return CoreResult.failure(
+      code: CoreErrorCode.invalidCommand,
+      message: e.message,
+    );
   }
 }
 

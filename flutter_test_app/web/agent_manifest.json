@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "platform": "web",
+  "tools": [
+    {
+      "qualifiedName": "app_demo_ping",
+      "namespace": "app",
+      "name": "demo_ping",
+      "description": "Demo ping tool for WebMCP platform sync",
+      "kind": "tool",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  ]
+}

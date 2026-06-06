@@ -5,9 +5,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:web_socket_channel/web_socket_channel.dart';
-
 import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/web_cdp_discovery.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 
 final class WebCdpCaptureException implements Exception {
   const WebCdpCaptureException({
@@ -25,6 +24,7 @@ final class WebCdpCaptureException implements Exception {
 }
 
 /// Captures PNG bytes from a CDP page target.
+// ignore: one_member_abstracts
 abstract interface class WebTabPngCapturer {
   Future<Uint8List> capturePng({
     required final WebCdpEndpoint endpoint,
@@ -101,7 +101,8 @@ final class WebCdpScreenshotClient implements WebTabPngCapturer {
     final StreamSink<dynamic> sink, {
     required final String method,
     required final int id,
-    required final Duration timeout, final Map<String, Object?> params = const <String, Object?>{},
+    required final Duration timeout,
+    final Map<String, Object?> params = const <String, Object?>{},
   }) async {
     final payload = jsonEncode(<String, Object?>{
       'id': id,
@@ -120,7 +121,10 @@ final class WebCdpScreenshotClient implements WebTabPngCapturer {
           }
           return null;
         })
-        .where((final decoded) => decoded is Map && (decoded['id'] as num?)?.toInt() == id)
+        .where(
+          (final decoded) =>
+              decoded is Map && (decoded['id'] as num?)?.toInt() == id,
+        )
         .map((final decoded) => Map<String, Object?>.from(decoded as Map))
         .first
         .timeout(timeout);
@@ -128,7 +132,10 @@ final class WebCdpScreenshotClient implements WebTabPngCapturer {
     if (response.containsKey('error')) {
       throw WebCdpCaptureException(
         message: 'CDP $method failed: ${response['error']}',
-        details: <String, Object?>{'method': method, 'error': response['error']},
+        details: <String, Object?>{
+          'method': method,
+          'error': response['error'],
+        },
       );
     }
 

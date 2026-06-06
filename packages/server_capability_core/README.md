@@ -8,9 +8,9 @@ Server-side Dart only — no Flutter SDK dependency.
 
 ```yaml
 dependencies:
-  flutter_mcp_toolkit_capability_core: ^0.1.0
-  flutter_mcp_toolkit_capability_kernel: ^0.1.0
-  flutter_mcp_toolkit_core: ^0.1.0
+  flutter_mcp_toolkit_capability_core: ^4.0.0-dev.1
+  flutter_mcp_toolkit_capability_kernel: ^4.0.0-dev.1
+  flutter_mcp_toolkit_core: ^4.0.0-dev.1
 ```
 
 ## Usage
@@ -21,6 +21,43 @@ import 'package:flutter_mcp_toolkit_capability_core/flutter_mcp_toolkit_capabili
 final capability = FmtCapability(/* host services */);
 ```
 
+## Adding tools with `@AgentTool` (Phase 6c pilot)
+
+Optional codegen via `intentcall_codegen` + `build_runner`. Hand-written
+`ToolRegistration` remains first-class.
+
+1. Add deps (`intentcall_codegen`, `intentcall_core`, `intentcall_mcp`) and
+   `build_runner` dev_dep (see `pubspec.yaml`).
+2. Annotate a top-level function returning `Future<AgentResult>`:
+
+```dart
+part 'my_tool.g.dart';
+
+@AgentTool(namespace: 'fmt', name: 'my_tool', description: '...')
+Future<AgentResult> fmtMyTool(@AgentParam('...') String arg) async { ... }
+```
+
+3. Run `dart run build_runner build` in this package.
+4. Register through the host path:
+
+```dart
+context.registerTool(
+  agentCallEntryToToolRegistration(
+    myToolCallEntry,
+    mergeInputSchema: (schema) => { /* e.g. connection override */ ...schema },
+    handler: (args) => runCommand(runner, args, MyCommand(...)),
+  ),
+);
+```
+
+Pilot: `lib/src/tools/codegen/get_recent_logs_tool.dart` → `get_recent_logs`.
+Generated `.g.dart` uses [getRecentLogsInputSchema]; [registerLogTools] still
+merges the same schema at host registration for regen safety.
+
+Additional `fmt_*` tools via `@AgentTool` are **pilot-only** until a second tool
+passes low blast-radius review; prefer hand-written `ToolRegistration` for new
+server tools. Operator migration uses hand-written `fmt_migrate_agent_entries`.
+
 ## Monorepo development
 
 `pubspec_overrides.yaml` resolves sibling packages from local paths (not published).
@@ -30,8 +67,8 @@ final capability = FmtCapability(/* host services */);
 | Requirement | Status |
 |-------------|--------|
 | `LICENSE`, `README.md`, `CHANGELOG.md` | Included |
-| Hosted sibling deps in `pubspec.yaml` | kernel + core `^0.1.0` |
-| Publish **after** kernel and core `0.1.0` on pub.dev | Required |
+| Hosted sibling deps in `pubspec.yaml` | kernel + core `^4.0.0-dev.1` |
+| Publish **after** kernel and core `4.0.0-dev.1` on pub.dev | Required |
 | `dart pub publish --dry-run` | Run before release |
 
 ## License

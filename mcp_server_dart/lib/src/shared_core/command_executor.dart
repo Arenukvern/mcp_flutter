@@ -599,7 +599,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       );
     }
 
-    final debugScreenshots = connectionContext.debugViewScreenshotsPayload;
+    final debugScreenshots = connectionContext.injectedViewScreenshotsPayload;
     Map<String, Object?> extensionJson;
     if (debugScreenshots != null) {
       extensionJson = debugScreenshots;
@@ -613,7 +613,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
           args: {'compress': command.compress},
         );
         extensionJson = _map(result.json);
-      } on Exception catch (e) {
+      } on Object catch (e) {
         return CoreResult.failure(
           code: CoreErrorCode.getScreenshotsFailed,
           message: 'Failed to get screenshots: $e',
@@ -711,7 +711,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     if (mode != ScreenshotMode.auto && mode != ScreenshotMode.flutterLayer) {
       return PlatformViewHints.none;
     }
-    final debugPayload = connectionContext.debugViewDetailsPayload;
+    final debugPayload = connectionContext.injectedViewDetailsPayload;
     if (debugPayload != null) {
       return _hintsFromPayload(debugPayload);
     }
@@ -724,7 +724,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
         mcpToolkitExtKeys.viewDetails,
       );
       return _hintsFromPayload(_map(result.json));
-    } on Exception {
+    } on Object {
       return PlatformViewHints.none;
     }
   }

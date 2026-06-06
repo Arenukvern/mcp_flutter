@@ -204,7 +204,7 @@ docker run -i \
 
 ```bash
 # Check Dart SDK version
-docker run dart:3.7.0-sdk dart --version
+docker run dart:3.12.0-sdk dart --version
 
 # Clean build
 docker build --no-cache -t mcp_server:latest .

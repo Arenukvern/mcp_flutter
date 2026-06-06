@@ -1,0 +1,118 @@
+schema: steward/v1
+repo:
+  id: mcp_flutter
+  archetype: product_mcp
+harness:
+  name: flutter-mcp-toolkit
+  mode: cli_mcp
+  description: Validation, contract testing, and local skills management for the Flutter MCP Server and Toolkit.
+  entrypoints:
+    cli: flutter-mcp-toolkit
+    mcp_server: flutter-mcp-toolkit-server
+    mcp_tool_prefix: fmt_
+adoption:
+  status: adopting
+  owner: flutter-mcp-toolkit
+  gate:
+    pillar: quality
+stewardship:
+  governance:
+    charter: AGENTS.md
+    adr_dir: decisions/
+    ethics_charter: docs/NORTH_STAR.md
+  knowledge:
+    docs_map: docs/start_here/docs_map.mdx
+    source_policy: required_for_external_claims
+  skill_lifecycle:
+    installable_skills: true
+    registry: skills.sh.json
+  quality:
+    validate: make check-contracts
+    skill_eval: steward eval
+  harness:
+    enabled: true
+    action_contract: actions
+  release:
+    changelog: CHANGELOG.md
+    artifact_provenance: required
+  review_handoff:
+    moe_required_for_architecture: true
+  strategic_alignment:
+    vision_source: docs/start_here/why_this_repo_matters.mdx
+    success_evidence: required
+  security:
+    action_effects: required
+    redaction: steward/redaction/v1
+  org:
+    owners: AGENTS.md
+docs:
+  "Why This Repo Matters": docs/start_here/why_this_repo_matters.mdx
+  "Feature Map": docs/start_here/feature_map.mdx
+  "Docs Map": docs/start_here/docs_map.mdx
+  "CLI vs MCP": docs/start_here/cli_vs_mcp.mdx
+  "Execution Playbook": docs/ai_agents/execution_playbook.mdx
+  "Architecture": docs/core/project_architecture.mdx
+  "Dynamic Tool Registry": docs/core/dynamic_tools_registry.mdx
+actions:
+  fmt.check.tool-prefix:
+    kind: command
+    desc: Verify canonical fmt_ tool prefix contract and changelog surface.
+    command:
+      argv: [/bin/bash, tool/contracts/check_tool_prefix.sh]
+      shell: false
+    cwd: .
+    effects:
+      fs_read:
+        - tool/contracts/check_tool_prefix.sh
+        - tool/contracts/expected_tool_surface.txt
+        - CHANGELOG.md
+        - README.md
+        - ARCHITECTURE.md
+        - docs/start_here/migration_v2_to_v3.mdx
+        - decisions/0001_capability_kernel_and_tool_prefix.mdx
+        - decisions/0002_v3_scope_and_consolidation_deferrals.mdx
+      fs_write: []
+      git: false
+      network: false
+      secrets: false
+      destructive: false
+    safety:
+      class: bounded_local
+      default_policy: auto
+      requires_confirmation: false
+    limits:
+      timeout_ms: 10000
+      max_output_bytes: 200000
+    outputs:
+      - id: stdout
+        kind: stream
+        required: true
+        retention: summary
+        format: text
+    evidence:
+      redaction: steward/redaction/v1
+      summary_fields: [exit_code, duration_ms, output_digest]
+probes:
+  quick:
+    profile: quick
+    actions: [fmt.check.tool-prefix]
+diagnostics:
+  cases: {}
+unknown_cases:
+  path: .steward/unknown-cases
+  retention: local
+provenance:
+  dependencies: []
+  artifacts: []
+  benchmarks:
+    - id: mcp_flutter.web-dogfood-warm
+      manifest: steward/scenarios/mcp_flutter.web-dogfood-warm.yaml
+branding:
+  banned_words: [unlock, supercharge, ultimate, leverage]
+  ignored_paths: []
+governance:
+  adr_directory: decisions/
+  ethics_charter: docs/NORTH_STAR.md
+skills_distribution:
+  source_dir: skills/
+  output: skills.sh.json

@@ -8,11 +8,13 @@ import 'dart:convert';
 
 import 'package:dart_mcp/server.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 import 'package:flutter_mcp_toolkit_server/flutter_mcp_server.dart';
 import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_consts.dart';
-import 'package:flutter_mcp_toolkit_server/src/shared_core/types/error_codes.dart';
-import 'package:flutter_mcp_toolkit_server/src/shared_core/types/results.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
+import 'package:intentcall_core/intentcall_core.dart';
+import 'package:intentcall_mcp/intentcall_mcp.dart';
+import 'package:intentcall_schema/intentcall_schema.dart';
 import 'package:is_dart_empty_or_not/is_dart_empty_or_not.dart';
 import 'package:meta/meta.dart';
 import 'package:vm_service/vm_service.dart';
@@ -20,31 +22,37 @@ import 'package:vm_service/vm_service.dart';
 export 'dynamic_registry_tools.dart';
 export 'registry_discovery_service.dart';
 
-/// Entry for a dynamically registered tool - fully MCP compliant
+/// Entry for a dynamically registered tool — [RegisteredAgentIntent] + MCP [Tool].
 @immutable
 final class DynamicToolEntry with EquatableMixin {
-  const DynamicToolEntry({required this.tool});
+  const DynamicToolEntry({required this.intent, required this.tool});
 
+  final RegisteredAgentIntent intent;
   final Tool tool;
+
   @override
   bool? get stringify => true;
 
   @override
-  List<Object?> get props => [tool];
+  List<Object?> get props => [intent.descriptor.qualifiedName, tool.name];
 }
 
-/// Entry for a dynamically registered resource - fully MCP compliant
+/// Entry for a dynamically registered resource — intent + MCP [Resource].
 @immutable
 final class DynamicResourceEntry with EquatableMixin {
-  const DynamicResourceEntry({required this.resource});
+  const DynamicResourceEntry({required this.intent, required this.resource});
 
+  final RegisteredAgentIntent intent;
   final Resource resource;
 
   @override
   bool? get stringify => true;
 
   @override
-  List<Object?> get props => [resource];
+  List<Object?> get props => [
+    intent.descriptor.effectiveResourceUri,
+    resource.uri,
+  ];
 }
 
 /// A string that represents a dynamic app id.
@@ -183,7 +191,8 @@ final class DynamicRegistry {
   void registerTool(final Tool tool, final DynamicAppId appId) {
     verifyAppConnection(appId);
 
-    final entry = DynamicToolEntry(tool: tool);
+    final intent = _intentForTool(tool: tool, appId: appId);
+    final entry = DynamicToolEntry(intent: intent, tool: tool);
 
     _tools[tool.name] = entry;
     _lastActivity = DateTime.now();
@@ -220,10 +229,19 @@ final class DynamicRegistry {
 
   /// Register a new resource from a Flutter application
   /// Resource must be MCP-compliant with proper uri, name, description
-  void registerResource(final Resource resource, final DynamicAppId appId) {
+  void registerResource(
+    final Resource resource,
+    final DynamicAppId appId, {
+    final InputSchema? inputSchema,
+  }) {
     verifyAppConnection(appId);
 
-    final entry = DynamicResourceEntry(resource: resource);
+    final intent = _intentForResource(
+      resource: resource,
+      appId: appId,
+      inputSchema: inputSchema,
+    );
+    final entry = DynamicResourceEntry(intent: intent, resource: resource);
 
     _resources[resource.uri] = entry;
 
@@ -325,8 +343,8 @@ final class DynamicRegistry {
   /// Check if a resource is dynamically registered (for MCP resource routing)
   bool isDynamicResource(final String uri) => getResourceEntry(uri) != null;
 
-  /// Forward MCP tool call to the appropriate Flutter app
-  /// Returns null if tool not found, otherwise forwards the call
+  /// Forward MCP tool call via stored [RegisteredAgentIntent].
+  /// Returns null if tool not found.
   Future<CallToolResult?> forwardToolCall(
     final String toolName,
     final Map<String, Object?>? arguments,
@@ -337,119 +355,141 @@ final class DynamicRegistry {
     }
 
     updateAppActivity();
+    final coerced = coerceArgumentsForSchema(
+      entry.intent.descriptor.inputSchema,
+      arguments ?? const <String, Object?>{},
+    );
+    try {
+      entry.intent.validate(coerced);
+    } on AgentValidationException catch (e) {
+      return agentResultToMcpResult(
+        AgentResult.failure(
+          code: CoreErrorCode.invalidCommand,
+          message: e.message,
+        ),
+      );
+    }
 
+    final agentResult = await entry.intent.execute(
+      AgentInvocation(descriptor: entry.intent.descriptor, arguments: coerced),
+    );
+    return agentResultToMcpResult(agentResult);
+  }
+
+  RegisteredAgentIntent _intentForTool({
+    required final Tool tool,
+    required final DynamicAppId appId,
+  }) {
+    final namespace = appId.isEmpty ? 'app' : appId;
+    return RegisteredAgentIntent(
+      descriptor: AgentIntentDescriptor(
+        namespace: namespace,
+        name: tool.name,
+        description: tool.description ?? '',
+        kind: AgentIntentKind.tool,
+        inputSchema: inputSchemaFromMcpTool(tool),
+      ),
+      execute: (final invocation) => _invokeDynamicTool(
+        toolName: tool.name,
+        arguments: invocation.arguments,
+      ),
+    );
+  }
+
+  Future<AgentResult> _invokeDynamicTool({
+    required final String toolName,
+    required final AgentArguments arguments,
+  }) async {
     try {
       final vmService = this.vmService;
       if (vmService == null) {
-        logger.log(
-          LoggingLevel.warning,
-          'Cannot forward tool call: VM service not available',
-          logger: 'DynamicRegistry',
-        );
-        return CallToolResult(
-          content: [
-            TextContent(
-              text: jsonEncode(
-                CoreResult.failure(
-                  code: CoreErrorCode.vmNotConnected,
-                  message: 'VM service not available for tool forwarding',
-                ).error?.toJson(),
-              ),
-            ),
-          ],
-          isError: true,
+        return AgentResult.failure(
+          code: CoreErrorCode.vmNotConnected,
+          message: 'VM service not available for tool forwarding',
         );
       }
 
-      // Call the tool's specific service extension
       final response = await server.callFlutterExtension(
-        '$mcpToolkitExt.${entry.tool.name}',
-        args: arguments ?? {},
+        '$mcpToolkitExt.$toolName',
+        args: arguments,
       );
 
-      // Parse the response from the Flutter app
       final data = jsonDecodeMap(response.json);
       final message = jsonDecodeString(
         data['message'],
       ).whenEmptyUse('Tool executed successfully');
-      final resultParameters = jsonDecodeMap(data);
+      final resultParameters = jsonDecodeMap(data)..remove('message');
 
-      return CallToolResult(
-        content: [
-          TextContent(text: message),
-          TextContent(text: jsonEncode(resultParameters..remove('message'))),
+      return AgentResult.success(
+        message: message,
+        data: resultParameters,
+        artifacts: [
+          AgentArtifact.text(message),
+          if (resultParameters.isNotEmpty)
+            AgentArtifact.text(jsonEncode(resultParameters)),
         ],
-        isError: false,
       );
     } on Exception catch (e, stackTrace) {
       logger.log(
         LoggingLevel.error,
-        'Failed to forward tool call to ${entry.tool.name}: $e'
+        'Failed to forward tool call to $toolName: $e'
         'stackTrace: $stackTrace',
         logger: 'DynamicRegistry',
       );
 
-      return CallToolResult(
-        content: [
-          TextContent(
-            text: jsonEncode(
-              CoreResult.failure(
-                code: CoreErrorCode.dynamicToolFailed,
-                message: 'Error forwarding tool call: $e',
-              ).error?.toJson(),
-            ),
-          ),
-        ],
-        isError: true,
+      return AgentResult.failure(
+        code: CoreErrorCode.dynamicToolFailed,
+        message: 'Error forwarding tool call: $e',
       );
     }
   }
 
-  /// Forward MCP resource read to the appropriate Flutter app
-  /// Returns null if resource not found, otherwise forwards the read
-  Future<ReadResourceResult?> forwardResourceRead(
-    final String resourceUri,
-  ) async {
-    final entry = getResourceEntry(resourceUri);
-    if (entry == null) {
-      return null;
-    }
+  RegisteredAgentIntent _intentForResource({
+    required final Resource resource,
+    required final DynamicAppId appId,
+    final InputSchema? inputSchema,
+  }) {
+    final namespace = appId.isEmpty ? 'app' : appId;
+    return RegisteredAgentIntent(
+      descriptor: AgentIntentDescriptor(
+        namespace: namespace,
+        name: resource.name,
+        description: resource.description ?? '',
+        kind: AgentIntentKind.resource,
+        inputSchema: inputSchema ?? clientResourceReadInputSchema(),
+        resourceUri: resource.uri,
+        mimeType: resource.mimeType,
+      ),
+      execute: (final invocation) => _invokeDynamicResource(
+        resource: resource,
+        requestedUri: invocation.arguments['uri'] as String? ?? resource.uri,
+      ),
+    );
+  }
 
-    updateAppActivity();
-
+  Future<AgentResult> _invokeDynamicResource({
+    required final Resource resource,
+    required final String requestedUri,
+  }) async {
     try {
       final vmService = this.vmService;
       if (vmService == null) {
-        logger.log(
-          LoggingLevel.warning,
-          'Cannot forward resource read: VM service not available',
-          logger: 'DynamicRegistry',
-        );
-        return ReadResourceResult(
-          contents: [
-            TextResourceContents(
-              uri: resourceUri,
-              text: jsonEncode(
-                CoreResult.failure(
-                  code: CoreErrorCode.vmNotConnected,
-                  message: 'VM service not available for resource forwarding',
-                ).error?.toJson(),
-              ),
-            ),
-          ],
+        return AgentResult.failure(
+          code: CoreErrorCode.vmNotConnected,
+          message: 'VM service not available for resource forwarding',
         );
       }
 
       logger.log(
         LoggingLevel.info,
-        'Forwarding resource read ${entry.resource.uri} to Flutter app',
+        'Forwarding resource read ${resource.uri} to Flutter app',
         logger: 'DynamicRegistry',
       );
 
-      final parsedResourceUri = Uri.parse(entry.resource.uri);
+      final parsedResourceUri = Uri.parse(resource.uri);
       final candidates = _resourceExtensionCandidates(
         parsed: parsedResourceUri,
-        fallbackName: entry.resource.name,
+        fallbackName: resource.name,
       );
 
       Map<String, Object?>? data;
@@ -458,7 +498,7 @@ final class DynamicRegistry {
         try {
           final response = await server.callFlutterExtension(
             '$mcpToolkitExt.$candidate',
-            args: {'uri': entry.resource.uri},
+            args: {'uri': resource.uri},
           );
           data = jsonDecodeMap(response.json);
           break;
@@ -472,40 +512,44 @@ final class DynamicRegistry {
 
       if (data == null) {
         throw StateError(
-          'No matching dynamic resource extension for ${entry.resource.uri}. '
+          'No matching dynamic resource extension for ${resource.uri}. '
           'Last error: $lastUnknownMethodError',
         );
       }
 
       final mimeType = jsonDecodeString(
         data['mimeType'],
-      ).whenEmptyUse(entry.resource.mimeType ?? 'application/json');
+      ).whenEmptyUse(resource.mimeType ?? 'application/json');
 
       if (jsonDecodeBool(data['isBlob'])) {
         final blob = jsonDecodeString(data['blob']);
         if (blob.isNotEmpty) {
-          return ReadResourceResult(
-            contents: [
-              BlobResourceContents(
-                uri: resourceUri,
-                blob: blob,
-                mimeType: mimeType,
-              ),
-            ],
+          return readResourceResultToAgentResult(
+            ReadResourceResult(
+              contents: [
+                BlobResourceContents(
+                  uri: requestedUri,
+                  blob: blob,
+                  mimeType: mimeType,
+                ),
+              ],
+            ),
           );
         }
       }
 
       final content = jsonDecodeString(data['content']);
       if (content.isNotEmpty) {
-        return ReadResourceResult(
-          contents: [
-            TextResourceContents(
-              uri: resourceUri,
-              text: content,
-              mimeType: mimeType,
-            ),
-          ],
+        return readResourceResultToAgentResult(
+          ReadResourceResult(
+            contents: [
+              TextResourceContents(
+                uri: requestedUri,
+                text: content,
+                mimeType: mimeType,
+              ),
+            ],
+          ),
         );
       }
 
@@ -521,37 +565,64 @@ final class DynamicRegistry {
         if (payload.isNotEmpty) 'parameters': payload,
       };
 
-      return ReadResourceResult(
-        contents: [
-          TextResourceContents(
-            uri: resourceUri,
-            text: jsonEncode(normalizedPayload),
-            mimeType: 'application/json',
-          ),
-        ],
+      return readResourceResultToAgentResult(
+        ReadResourceResult(
+          contents: [
+            TextResourceContents(
+              uri: requestedUri,
+              text: jsonEncode(normalizedPayload),
+              mimeType: 'application/json',
+            ),
+          ],
+        ),
       );
-    } catch (e, stackTrace) {
+    } on Exception catch (e, stackTrace) {
       logger.log(
         LoggingLevel.error,
-        'Failed to forward resource read to ${entry.resource.uri}: $e'
+        'Failed to forward resource read to ${resource.uri}: $e'
         'stackTrace: $stackTrace',
         logger: 'DynamicRegistry',
       );
 
+      return AgentResult.failure(
+        code: CoreErrorCode.dynamicResourceFailed,
+        message: 'Error forwarding resource read: $e',
+      );
+    }
+  }
+
+  /// Forward MCP resource read via stored [RegisteredAgentIntent].
+  Future<ReadResourceResult?> forwardResourceRead(
+    final String resourceUri,
+  ) async {
+    final entry = getResourceEntry(resourceUri);
+    if (entry == null) {
+      return null;
+    }
+
+    updateAppActivity();
+    final coerced = coerceArgumentsForSchema(
+      entry.intent.descriptor.inputSchema,
+      <String, Object?>{'uri': resourceUri},
+    );
+    try {
+      entry.intent.validate(coerced);
+    } on AgentValidationException catch (e) {
       return ReadResourceResult(
         contents: [
           TextResourceContents(
+            text: e.message,
             uri: resourceUri,
-            text: jsonEncode(
-              CoreResult.failure(
-                code: CoreErrorCode.dynamicResourceFailed,
-                message: 'Error forwarding resource read: $e',
-              ).error?.toJson(),
-            ),
+            mimeType: 'text/plain',
           ),
         ],
       );
     }
+
+    final agentResult = await entry.intent.execute(
+      AgentInvocation(descriptor: entry.intent.descriptor, arguments: coerced),
+    );
+    return agentResultToReadResourceResult(agentResult, uri: resourceUri);
   }
 
   /// Get tools and resources for the current app
@@ -620,4 +691,39 @@ final class DynamicRegistry {
         text.contains('extension call returned null') ||
         text.contains('-32601');
   }
+}
+
+/// Copies MCP [Tool.inputSchema] into intentcall [InputSchema] for listing and validation.
+InputSchema inputSchemaFromMcpTool(final Tool tool) {
+  final ObjectSchema schema;
+  try {
+    schema = tool.inputSchema;
+  } on ArgumentError catch (e) {
+    throw ArgumentError('Tool "${tool.name}" is missing inputSchema: $e');
+  }
+  return _deepCopyInputSchemaMap(
+    Map<Object?, Object?>.from(schema as Map<Object?, Object?>),
+  );
+}
+
+Map<String, Object?> _deepCopyInputSchemaMap(final Map<Object?, Object?> raw) =>
+    raw.map(
+      (final key, final value) =>
+          MapEntry(key.toString(), _normalizeSchemaMapValue(value)),
+    );
+
+Object? _normalizeSchemaMapValue(final Object? value) {
+  if (value is Map) {
+    return _deepCopyInputSchemaMap(Map<Object?, Object?>.from(value));
+  }
+  if (value is Iterable && value is! String) {
+    return value
+        .map<Object?>(
+          (final item) => item is Map
+              ? _deepCopyInputSchemaMap(Map<Object?, Object?>.from(item))
+              : item,
+        )
+        .toList();
+  }
+  return value;
 }

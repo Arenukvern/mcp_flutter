@@ -126,7 +126,7 @@ CLI runtime gate for app inspection:
 - Host capture runs one automatic focus+capture recovery cycle on retryable failures (`desktopCaptureRetried` in the payload). You can also call `focus_window` then retry `get_screenshots` with `desktop_window`.
 - If first explicit-URI connect times out, retry once and validate with `doctor --json --target <ws_uri> --timeout-ms 10000`.
 - When `--output-dir` is set, `validate-runtime` mirrors its JSON envelope to `<output-dir>/validate-runtime.json` and screenshot files are written under `<output-dir>/.mcp_screenshots/`.
-- `validate-runtime` tries host `desktop_window` first when `auto` selects it. Executor recovery retries focus+capture once (`desktopCaptureRetried`). When `captureHints.platformViewsDetected` is true, validate-runtime does **not** fall back to `flutter_layer`. Otherwise it may retry once with `flutter_layer`. Check `data.summary.capturePlatformViewsDetected`, `captureFocusAttempted`, and `captureFallbackUsed`. Web headful capture options: [ADR 0007](../decisions/0007_web_headful_tab_capture.mdx).
+- `validate-runtime` tries host `desktop_window` first when `auto` selects it. Executor recovery retries focus+capture once (`desktopCaptureRetried`). If `desktop_window` still fails, validate-runtime retries once with `flutter_layer` (including when platform views are detected, e.g. the showcase `AppKitView`). Check `data.summary.capturePlatformViewsDetected`, `captureFocusAttempted`, and `captureFallbackUsed`. Web headful capture options: [ADR 0007](../decisions/0007_web_headful_tab_capture.mdx).
 
 ## Visual Capture Permissions
 
@@ -147,7 +147,7 @@ Troubleshooting:
 
 - If macOS capture is denied, rerun `flutter-mcp-toolkit permissions status` first. If status is still `denied`, open System Settings from the CLI and grant Screen Recording to the terminal or client process you are using.
 - If `doctor --json` shows `visual_capture_truth_mode=flutter_layer` on macOS, you are not getting native window pixels yet.
-- If web `desktop_window` fails and no platform views are detected, use `flutter_layer` or pass `--web-browser-debugging-port` from Chrome’s `--remote-debugging-port`. When `captureHints.platformViewsDetected` is true, `auto` / `validate-runtime` do not silently fall back to `flutter_layer`.
+- If web `desktop_window` fails, use `flutter_layer` or pass `--web-browser-debugging-port` from Chrome’s `--remote-debugging-port`. For web targets, pass `--flutter-device chrome` on `validate-runtime`. `validate-runtime` still retries `flutter_layer` after a failed `desktop_window` even when platform views are detected.
 - If post-reload capture fails once on macOS desktop-window mode, that is usually a host capture race rather than an app failure. `validate-runtime` retries those failures before returning red, and may also retry with `flutter_layer` after a failed `desktop_window` screenshot.
 
 Failure matrix:

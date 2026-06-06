@@ -14,5 +14,6 @@ export 'src/command_runner.dart';
 export 'src/host_service.dart';
 export 'src/kernel_errors.dart';
 export 'src/resource_registration.dart';
+export 'src/resource_template_registration.dart';
 export 'src/tool_registration.dart';
 export 'src/validators.dart';

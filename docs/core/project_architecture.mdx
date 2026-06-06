@@ -229,16 +229,12 @@ graph TD
 
 ```dart
 // Add new commands via dynamic registration
-final customTool = MCPCallEntry.tool(
-  handler: (request) {
-    // Your custom logic
-    return MCPCallResult(message: 'Success', parameters: const {});
-  },
-  definition: MCPToolDefinition(
-    name: 'custom_command',
-    description: 'Your custom functionality',
-    inputSchema: {...},
-  ),
+final customTool = AgentCallEntry.tool(
+  namespace: 'app',
+  name: 'custom_command',
+  description: 'Your custom functionality',
+  inputSchema: const {'type': 'object', 'properties': {}},
+  handler: (_) async => AgentResult.success(message: 'Success'),
 );
 
 await MCPToolkitBinding.instance.addEntries(entries: {customTool});

@@ -1,7 +1,5 @@
 // packages/server_capability_core/test/tools/semantic_tools_test.dart
-import 'dart:convert';
 
-import 'package:dart_mcp/server.dart';
 import 'package:flutter_mcp_toolkit_capability_core/src/tools/semantic_tools.dart';
 import 'package:flutter_mcp_toolkit_capability_kernel/flutter_mcp_toolkit_capability_kernel.dart';
 import 'package:flutter_mcp_toolkit_capability_kernel/testing.dart';
@@ -79,17 +77,11 @@ void main() {
           ..nextExecuteResult = CoreResult.success(data: snapshotData);
         final ctx = _registeredCtx(runner: runner);
         final reg = ctx.registrationFor('semantic_snapshot')!;
-        final result = await reg.handler(
-          CallToolRequest(
-            name: 'semantic_snapshot',
-            arguments: const <String, Object?>{},
-          ),
-        );
-        expect(result.isError, isNot(true));
+        final result = await reg.handler(const <String, Object?>{});
+        expect(result.ok, isTrue);
         expect(runner.executedCommands, hasLength(1));
         expect(runner.executedCommands.first, isA<SemanticSnapshotCommand>());
-        final text = (result.content.first as TextContent).text;
-        final json = jsonDecode(text) as Map<String, Object?>;
+        final json = agentResultPayload(result);
         expect(json['snapshotId'], 1);
       },
     );
@@ -101,12 +93,7 @@ void main() {
           ..nextExecuteResult = CoreResult.success(data: {});
         final ctx = _registeredCtx(runner: runner);
         final reg = ctx.registrationFor('semantic_snapshot')!;
-        await reg.handler(
-          CallToolRequest(
-            name: 'semantic_snapshot',
-            arguments: const <String, Object?>{},
-          ),
-        );
+        await reg.handler(const <String, Object?>{});
         expect(runner.callLog.first, 'applyConnectionOverride');
         expect(runner.callLog[1], 'execute');
       },
@@ -122,13 +109,8 @@ void main() {
           );
         final ctx = _registeredCtx(runner: runner);
         final reg = ctx.registrationFor('semantic_snapshot')!;
-        final result = await reg.handler(
-          CallToolRequest(
-            name: 'semantic_snapshot',
-            arguments: const <String, Object?>{},
-          ),
-        );
-        expect(result.isError, isTrue);
+        final result = await reg.handler(const <String, Object?>{});
+        expect(result.ok, isFalse);
         expect(runner.executedCommands, isEmpty);
       },
     );
@@ -143,15 +125,9 @@ void main() {
           );
         final ctx = _registeredCtx(runner: runner);
         final reg = ctx.registrationFor('semantic_snapshot')!;
-        final result = await reg.handler(
-          CallToolRequest(
-            name: 'semantic_snapshot',
-            arguments: const <String, Object?>{},
-          ),
-        );
-        expect(result.isError, isTrue);
-        final text = (result.content.first as TextContent).text;
-        final json = jsonDecode(text) as Map<String, Object?>;
+        final result = await reg.handler(const <String, Object?>{});
+        expect(result.ok, isFalse);
+        final json = agentResultPayload(result);
         _expectEnvelopeKeys(json);
       },
     );

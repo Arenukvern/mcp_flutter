@@ -9,8 +9,9 @@ Future<void> main() async {
   );
 }
 
-Set<MCPCallEntry> get _starterEntries => {
-  MCPCallEntry.tool(
+Set<AgentCallEntry> get _starterEntries => {
+  mcpToolkitTool(
+    namespace: 'app',
     definition: MCPToolDefinition(
       name: 'calculate_fibonacci',
       description: 'Calculate the nth Fibonacci number and return the sequence',
@@ -53,7 +54,8 @@ Set<MCPCallEntry> get _starterEntries => {
       );
     },
   ),
-  MCPCallEntry.resource(
+  mcpToolkitResource(
+    namespace: 'app',
     definition: MCPResourceDefinition(
       name: 'app_runtime_status',
       description: 'Read-only runtime diagnostics for the starter app',

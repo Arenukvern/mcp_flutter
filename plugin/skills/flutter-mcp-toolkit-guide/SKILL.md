@@ -36,7 +36,8 @@ Always run `flutter-mcp-toolkit doctor --json` first. Parse the output:
 | Read state ("what's on screen?", "show me errors", "screenshot") | `flutter-mcp-toolkit-inspect` |
 | Drive UI ("tap X", "type into Y", "scroll to Z", "hot reload") | `flutter-mcp-toolkit-control` |
 | Diagnose ("why is X failing?", "show recent logs", "evaluate expression") | `flutter-mcp-toolkit-debug` |
-| Register app-specific MCP tools/resources (`MCPCallEntry`, `bootstrapFlutter` `additionalEntries`) | `flutter-mcp-toolkit-custom-tools` |
+| Register app-specific MCP tools/resources (`AgentCallEntry`, `bootstrapFlutter` `additionalEntries`) | `flutter-mcp-toolkit-custom-tools` |
+| Upgrade after intentcall Phase 6 breaking bump (migrate CLI) | `flutter-mcp-toolkit-intentcall-migration` |
 | Harness Script lint/run/Maestro (`*.hs.yaml`, app registry) | Install **flutter_harness** — skill `flutter-mcp-semantic-test` in that repo |
 | HS capture bundles / promo video | **flutter_harness** + **flutter_mcp_video** (not bundled in toolkit `init`) |
 

@@ -1,9 +1,12 @@
 import 'dart:async';
 
 import 'package:dart_mcp/client.dart';
+import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
+import 'package:intentcall_core/intentcall_core.dart';
 import 'package:is_dart_empty_or_not/is_dart_empty_or_not.dart';
 
+import '../agent_entry_helpers.dart';
 import '../mcp_models.dart';
 import '../mcp_toolkit_binding.dart';
 import '../services/error_monitor.dart';
@@ -11,7 +14,7 @@ import '../services/screenshot_service.dart';
 import '../services/view_introspection_service.dart';
 import 'interaction_toolkit.dart';
 
-/// Returns a set of MCPCallEntry objects for the Flutter MCP Toolkit.
+/// Returns [AgentCallEntry] values for the Flutter MCP Toolkit.
 ///
 /// The toolkit provides functionality for handling app errors,
 /// view screenshots, and view details.
@@ -22,7 +25,7 @@ import 'interaction_toolkit.dart';
 const selectWidgetAtPointToolName = 'select_widget_at_point';
 
 /// MCP tool entries for Flutter screenshots, errors, views, and interactions.
-Set<MCPCallEntry> getFlutterMcpToolkitEntries({
+Set<AgentCallEntry> getFlutterMcpToolkitEntries({
   required final MCPToolkitBinding binding,
 }) => {
   OnAppErrorsEntry(errorMonitor: binding),
@@ -42,14 +45,15 @@ extension MCPToolkitBindingExtension on MCPToolkitBinding {
 }
 
 /// {@template on_app_errors_entry}
-/// MCPCallEntry for handling app errors.
+/// AgentCallEntry wrapper for app errors.
 /// {@endtemplate}
-extension type OnAppErrorsEntry._(MCPCallEntry entry) implements MCPCallEntry {
+extension type OnAppErrorsEntry._(AgentCallEntry entry)
+    implements AgentCallEntry {
   /// {@macro on_app_errors_entry}
   factory OnAppErrorsEntry({required final ErrorMonitor errorMonitor}) {
-    final entry = MCPCallEntry.tool(
+    final entry = mcpToolkitTool(
       handler: (final parameters) {
-        final count = jsonDecodeInt(parameters['count'] ?? '').whenZeroUse(10);
+        final count = jsonDecodeInt(parameters['count'] ?? '').whenZeroUse(4);
         final reversedErrors = errorMonitor.errors.take(count).toList();
         final errors = reversedErrors.map((final e) => e.toJson()).toList();
         final message = () {
@@ -78,15 +82,7 @@ extension type OnAppErrorsEntry._(MCPCallEntry entry) implements MCPCallEntry {
             'Get application errors and diagnostics information. '
             'Returns recent errors with file paths and line numbers '
             'for debugging.',
-        inputSchema: ObjectSchema(
-          properties: {
-            'count': IntegerSchema(
-              description: 'Number of recent errors to retrieve',
-              minimum: 1,
-              maximum: 10,
-            ),
-          },
-        ),
+        inputSchema: ObjectSchema.fromMap(getAppErrorsInputSchema()),
       ),
     );
     return OnAppErrorsEntry._(entry);
@@ -94,22 +90,19 @@ extension type OnAppErrorsEntry._(MCPCallEntry entry) implements MCPCallEntry {
 }
 
 /// {@template on_view_screenshots_entry}
-/// MCPCallEntry for handling view screenshots.
+/// AgentCallEntry wrapper for view screenshots.
 /// {@endtemplate}
-extension type OnViewScreenshotsEntry._(MCPCallEntry entry)
-    implements MCPCallEntry {
+extension type OnViewScreenshotsEntry._(AgentCallEntry entry)
+    implements AgentCallEntry {
   /// {@macro on_view_screenshots_entry}
   factory OnViewScreenshotsEntry({required final MCPToolkitBinding binding}) {
-    final entry = MCPCallEntry.tool(
+    final entry = mcpToolkitTool(
       handler: (final parameters) async {
         final compress = jsonDecodeBool(parameters['compress']);
         final images = await ScreenshotService.takeScreenshots(
           compress: compress,
         );
-        final tree = ViewIntrospectionService.buildViewDetailsPayload(
-          captureHintsContributor: binding.captureHintsContributor,
-        );
-        final captureHints = tree['captureHints'];
+        final captureHints = binding.captureHintsContributor?.call();
         return MCPCallResult(
           message:
               'Screenshots taken for each view. '
@@ -123,13 +116,7 @@ extension type OnViewScreenshotsEntry._(MCPCallEntry entry)
         description:
             'Take screenshots of all Flutter views/screens. '
             'Useful for visual debugging and UI analysis.',
-        inputSchema: ObjectSchema(
-          properties: {
-            'compress': BooleanSchema(
-              description: 'Whether to compress the screenshots',
-            ),
-          },
-        ),
+        inputSchema: ObjectSchema.fromMap(getScreenshotsInputSchema()),
       ),
     );
     return OnViewScreenshotsEntry._(entry);
@@ -137,13 +124,13 @@ extension type OnViewScreenshotsEntry._(MCPCallEntry entry)
 }
 
 /// {@template on_view_details_entry}
-/// MCPCallEntry for handling view details.
+/// AgentCallEntry wrapper for view details.
 /// {@endtemplate}
-extension type const OnViewDetailsEntry._(MCPCallEntry entry)
-    implements MCPCallEntry {
+extension type const OnViewDetailsEntry._(AgentCallEntry entry)
+    implements AgentCallEntry {
   /// {@macro on_view_details_entry}
   factory OnViewDetailsEntry({required final MCPToolkitBinding binding}) {
-    final entry = MCPCallEntry.tool(
+    final entry = mcpToolkitTool(
       handler: (final parameters) {
         final payload = ViewIntrospectionService.buildViewDetailsPayload(
           captureHintsContributor: binding.captureHintsContributor,
@@ -158,7 +145,7 @@ extension type const OnViewDetailsEntry._(MCPCallEntry entry)
         description:
             'Get detailed information about Flutter views and widgets. '
             'Returns structural information about the current UI state.',
-        inputSchema: ObjectSchema(properties: {}),
+        inputSchema: ObjectSchema.fromMap(getViewDetailsInputSchema()),
       ),
     );
     return OnViewDetailsEntry._(entry);
@@ -166,13 +153,13 @@ extension type const OnViewDetailsEntry._(MCPCallEntry entry)
 }
 
 /// {@template on_inspect_widget_at_point_entry}
-/// MCPCallEntry for inspecting widget details at global coordinates.
+/// AgentCallEntry wrapper for inspecting widget details at global coordinates.
 /// {@endtemplate}
-extension type const OnInspectWidgetAtPointEntry._(MCPCallEntry entry)
-    implements MCPCallEntry {
+extension type const OnInspectWidgetAtPointEntry._(AgentCallEntry entry)
+    implements AgentCallEntry {
   /// {@macro on_inspect_widget_at_point_entry}
   factory OnInspectWidgetAtPointEntry() {
-    final entry = MCPCallEntry.tool(
+    final entry = mcpToolkitTool(
       handler: (final parameters) {
         final x = jsonDecodeInt(parameters['x']).whenZeroUse(0);
         final y = jsonDecodeInt(parameters['y']).whenZeroUse(0);
@@ -192,16 +179,7 @@ extension type const OnInspectWidgetAtPointEntry._(MCPCallEntry entry)
         name: 'inspect_widget_at_point',
         description:
             'Inspect deepest widget/render node at global logical coordinates.',
-        inputSchema: ObjectSchema(
-          required: ['x', 'y'],
-          properties: {
-            'x': IntegerSchema(description: 'Global logical X coordinate'),
-            'y': IntegerSchema(description: 'Global logical Y coordinate'),
-            'viewId': IntegerSchema(
-              description: 'Optional FlutterView id for multi-view apps',
-            ),
-          },
-        ),
+        inputSchema: ObjectSchema.fromMap(inspectWidgetAtPointInputSchema()),
       ),
     );
     return OnInspectWidgetAtPointEntry._(entry);
@@ -210,13 +188,13 @@ extension type const OnInspectWidgetAtPointEntry._(MCPCallEntry entry)
 
 /// MCP tool entry that delegates to [MCPToolkitBinding.selectAtPointHandler]
 /// when set, otherwise inspects the widget at (x, y).
-extension type const OnSelectWidgetAtPointEntry._(MCPCallEntry entry)
-    implements MCPCallEntry {
+extension type const OnSelectWidgetAtPointEntry._(AgentCallEntry entry)
+    implements AgentCallEntry {
   /// Creates the select-at-point tool backed by [binding].
   factory OnSelectWidgetAtPointEntry({
     required final MCPToolkitBinding binding,
   }) {
-    final entry = MCPCallEntry.tool(
+    final entry = mcpToolkitTool(
       handler: (final parameters) {
         final customHandler = binding.selectAtPointHandler;
         if (customHandler != null) {
@@ -242,26 +220,7 @@ extension type const OnSelectWidgetAtPointEntry._(MCPCallEntry entry)
             'Inspect or select a widget at global logical coordinates. '
             'When live-edit is active, this selects a live-edit node; '
             'otherwise it falls back to widget inspection.',
-        inputSchema: ObjectSchema(
-          required: ['x', 'y'],
-          properties: {
-            'sessionId': StringSchema(),
-            'x': IntegerSchema(description: 'Global logical X coordinate'),
-            'y': IntegerSchema(description: 'Global logical Y coordinate'),
-            'viewId': IntegerSchema(
-              description: 'Optional FlutterView id for multi-view apps',
-            ),
-            'selectionPolicy': StringSchema(
-              description:
-                  'Optional live-edit selection policy when selecting nodes',
-            ),
-            'targetDomain': StringSchema(
-              description:
-                  'Optional live-edit target domain '
-                  '(e.g. appScene or toolScene)',
-            ),
-          },
-        ),
+        inputSchema: ObjectSchema.fromMap(selectWidgetAtPointInputSchema()),
       ),
     );
     return OnSelectWidgetAtPointEntry._(entry);

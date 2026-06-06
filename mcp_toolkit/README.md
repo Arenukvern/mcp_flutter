@@ -1,18 +1,30 @@
 # MCP Toolkit for Flutter
 
-[![Pub Version](https://img.shields.io/badge/version-3.0.0-blue)](https://github.com/Arenukvern/mcp_flutter/tree/main/mcp_toolkit)
+[![Pub Version](https://img.shields.io/badge/version-4.0.0-blue)](https://github.com/Arenukvern/mcp_flutter/tree/main/mcp_toolkit)
+[![skills.sh](https://skills.sh/b/arenukvern/mcp_flutter)](https://skills.sh/arenukvern/mcp_flutter)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Flutter](https://img.shields.io/badge/Flutter-3.x-blue.svg)](https://flutter.dev)
+[![smithery badge](https://smithery.ai/badge/@Arenukvern/mcp_flutter)](https://smithery.ai/server/@Arenukvern/mcp_flutter)
+[![All Contributors](https://img.shields.io/github/all-contributors/Arenukvern/mcp_flutter?color=ee8449&style=flat-square)](https://github.com/Arenukvern/mcp_flutter#contributors-)
+<a title="Discord" href="https://discord.com/invite/y54DpJwmAn" ><img src="https://img.shields.io/discord/696688204476055592.svg" /></a>
+[![maintained with Skill Steward](https://raw.githubusercontent.com/Arenukvern/skill_steward/main/docs/brand/assets/svg/badge-light.svg)](https://github.com/Arenukvern/skill_steward)
 
 > [!NOTE]
-> This is not official package - it's a personal project.
+> Hi! This is not official package - it's a personal project.
 >
 > For official package - please see [ai repository](https://github.com/dart-lang/ai/tree/main/pkgs/dart_tooling_mcp_server)
-
-This package is a core component of the [mcp_flutter](https://github.com/Arenukvern/mcp_flutter) project. It acts as the "client-side" library within your Flutter application, enabling the Model Context Protocol (MCP) `MCP Server` to perform Flutter-specific operations like retrieving application errors, capturing screenshots, and getting view details.
-
+>
+> This package is a core component of the [flutter-mcp-toolkit](https://github.com/Arenukvern/mcp_flutter) project. It acts as the "client-side" library within your Flutter application, enabling the Model Context Protocol (MCP) `MCP Server` to perform Flutter-specific operations like retrieving application errors, capturing screenshots, and getting view details.
+>
+> - 📖 **Docs:** [docs.page/arenukvern/mcp_flutter](https://docs.page/arenukvern/mcp_flutter/)
+>
+> `flutter-mcp-toolkit` is a Dart MCP server + Flutter package that lets AI Agents (Codex, Zed, Cursor, Intent, Claude Code, Cline, etc..) take (semantic snapshots, tap widgets, type into forms, hot-reload, and read logs from a Flutter app) or create **its own tools and resources at runtime** using MCP Toolkit — without leaving the conversation and work with Flutter apps in closed feedback loop - see example of it described in [OpenAI Agentic Harness](https://openai.com/index/harness-engineering/).
+>
 > [!NOTE]
-> Please notice:
 >
 > - The architecture of package may change significantly.
+
+![View Screenshots](https://github.com/Arenukvern/mcp_flutter/blob/6a0a83b8df2cf364b8d535cb382068ed0f4259ff/docs/view_screenshots.gif)
 
 ## Data Transparency
 
@@ -24,24 +36,28 @@ For example, the default first-pass path is `bootstrapFlutter()`.
 
 All methods are available only in debug mode and wrapped in assert statements.
 
+Register custom surfaces with **`AgentCallEntry`** (re-exported from `intentcall_core`):
+
 ```dart
 await MCPToolkitBinding.instance.bootstrapFlutter(
   additionalEntries: {
-    MCPCallEntry.resource(
-      definition: MCPResourceDefinition(
-        name: 'app_runtime_status',
-        description: 'Read-only app diagnostics',
-        mimeType: 'application/json',
-      ),
-      handler: (final request) => MCPCallResult(
+    AgentCallEntry.resource(
+      namespace: 'app',
+      name: 'app_runtime_status',
+      description: 'Read-only app diagnostics',
+      mimeType: 'application/json',
+      handler: (final args) async => AgentResult.success(
         message: 'App runtime diagnostics',
-        parameters: {'ready': true},
+        data: {'ready': true},
       ),
     ),
   },
   runApp: () => runApp(const MyApp()),
 );
 ```
+
+Or use **`mcpToolkitTool`** / **`mcpToolkitResource`** when you already have
+`MCPToolDefinition` + `MCPCallResult` handlers (see [example/fibonacci_tool_example.dart](example/fibonacci_tool_example.dart)).
 
 App-side permission bridging is separate and opt-in:
 
@@ -58,7 +74,8 @@ MCPToolkitBinding.instance
 
 ```dart
 addMcpTool(
-  MCPCallEntry.tool(
+  mcpToolkitTool(
+    namespace: 'app',
     definition: MCPToolDefinition(
       name: 'calculate_fibonacci',
       description: 'Calculate the nth Fibonacci number and return the sequence',
@@ -134,34 +151,34 @@ Import `PlatformViewHints` and constants from `package:mcp_toolkit/mcp_toolkit.d
     Future<void> main() async {
       await MCPToolkitBinding.instance.bootstrapFlutter(
         additionalEntries: {
-          MCPCallEntry.tool(
-            definition: MCPToolDefinition(
-              name: 'calculate_fibonacci',
-              description: 'Calculate the nth Fibonacci number',
-              inputSchema: ObjectSchema(
-                properties: {
-                  'n': IntegerSchema(description: 'Fibonacci position'),
-                },
-                required: ['n'],
-              ),
-            ),
-            handler: (final request) {
-              final n = int.tryParse(request['n'] ?? '0') ?? 0;
-              return MCPCallResult(
+          AgentCallEntry.tool(
+            namespace: 'app',
+            name: 'calculate_fibonacci',
+            description: 'Calculate the nth Fibonacci number',
+            inputSchema: const {
+              'type': 'object',
+              'additionalProperties': false,
+              'properties': {
+                'n': {'type': 'string'},
+              },
+              'required': ['n'],
+            },
+            handler: (final args) async {
+              final n = int.tryParse(args['n']?.toString() ?? '') ?? 0;
+              return AgentResult.success(
                 message: 'Calculated Fibonacci number for position $n',
-                parameters: {'result': fibonacci(n)},
+                data: {'result': fibonacci(n)},
               );
             },
           ),
-          MCPCallEntry.resource(
-            definition: MCPResourceDefinition(
-              name: 'app_runtime_status',
-              description: 'Read-only runtime diagnostics',
-              mimeType: 'application/json',
-            ),
-            handler: (final request) => MCPCallResult(
+          AgentCallEntry.resource(
+            namespace: 'app',
+            name: 'app_runtime_status',
+            description: 'Read-only runtime diagnostics',
+            mimeType: 'application/json',
+            handler: (final args) async => AgentResult.success(
               message: 'Runtime diagnostics',
-              parameters: {'ready': true, 'screen': 'home'},
+              data: {'ready': true, 'screen': 'home'},
             ),
           ),
         },
@@ -180,6 +197,10 @@ Import `PlatformViewHints` and constants from `package:mcp_toolkit/mcp_toolkit.d
     and zone error forwarding via `handleZoneError`.
 
     Keep the older low-level calls only when you need custom startup choreography.
+
+    **Migrating from `MCPCallEntry`:** use
+    `flutter-mcp-toolkit migrate agent-entries` — see
+    [migration_intentcall_phase6.md](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/start_here/migration_intentcall_phase6.md).
 
 3.  **Optional: Register an App-Side Permission Delegate**:
     Keep `initializeFlutterToolkit()` unchanged and add the permission bridge only if the app owns the relevant permission flow.
@@ -239,7 +260,8 @@ Use resources for read-only state, tools for actions, and prefer lowercase under
 
 End-user docs for AI assistants live in the **`mcp_flutter`** repo:
 
-- Cursor / Codex plugin (`plugin/skills/`): start with **`flutter-mcp-toolkit-guide`**, then **`flutter-mcp-toolkit-custom-tools`** when registering **`MCPCallEntry`** tools or resources from app code.
+- Cursor / Codex plugin (`plugin/skills/`): start with **`flutter-mcp-toolkit-guide`**, then **`flutter-mcp-toolkit-custom-tools`** when registering **`AgentCallEntry`** tools or resources from app code.
+- **`flutter-mcp-toolkit-intentcall-migration`** when upgrading from removed `MCPCallEntry` APIs.
 - Claude Code marketplace plugin (`plugin/skills/`): **`flutter-mcp`** for driving the app; **`flutter-mcp-toolkit-custom-tools`** for the same registration workflow.
 
 Run `make sync-skills` after editing plugin skills so `mcp_server_dart/lib/src/skill_assets.g.dart` stays in sync.

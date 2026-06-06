@@ -2,11 +2,11 @@
 // Copyright (c) 2025, Flutter Inspector MCP Server authors.
 // Licensed under the MIT License.
 
+import 'package:flutter_mcp_toolkit_capability_kernel/flutter_mcp_toolkit_capability_kernel.dart';
+import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/command_executor.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/vm_connections/connection_override.dart'
     as core_connection_override;
-import 'package:flutter_mcp_toolkit_capability_kernel/flutter_mcp_toolkit_capability_kernel.dart';
-import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 
 /// Server-side [CommandRunner] implementation that delegates to
 /// [DefaultCoreCommandExecutor].

@@ -1,0 +1,128 @@
+name: Release PR — sync versions
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: release-pr-sync-versions-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  detect-release-pr:
+    runs-on: ubuntu-latest
+    outputs:
+      is_release_pr: ${{ steps.check.outputs.is_release_pr }}
+    steps:
+      - id: check
+        name: Detect release-please PR
+        run: |
+          title="${{ github.event.pull_request.title }}"
+          head="${{ github.head_ref }}"
+          if [[ "$head" == release-please--* ]] || [[ "$title" == *": release "* ]]; then
+            echo "is_release_pr=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_release_pr=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  auto-sync-versions:
+    needs: detect-release-pr
+    if: needs.detect-release-pr.outputs.is_release_pr == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Sync release version touchpoints
+        run: bash tool/release/sync_version.sh
+
+      - name: Commit and push if changed
+        run: |
+          if git diff --quiet; then
+            echo "release version touchpoints already in sync"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            VERSION \
+            .release-please-manifest.json \
+            .claude-plugin/marketplace.json \
+            plugin/EXPECTED_SERVER_VERSION \
+            plugin/.cursor-plugin/plugin.json \
+            plugin/.codex-plugin/plugin.json \
+            plugin/.claude-plugin/plugin.json \
+            mcp_server_dart/pubspec.yaml \
+            mcp_toolkit/pubspec.yaml \
+            packages/core/pubspec.yaml \
+            packages/server_capability_kernel/pubspec.yaml \
+            packages/server_capability_core/pubspec.yaml \
+            packages/core/README.md \
+            packages/server_capability_kernel/README.md \
+            packages/server_capability_core/README.md \
+            packages/core/lib/src/runtime_version.dart \
+            packages/server_capability_core/lib/src/fmt_capability.dart
+          git commit -m "chore: sync release version touchpoints"
+          git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
+
+  release-pr-checklist-comment:
+    needs: detect-release-pr
+    if: >-
+      needs.detect-release-pr.outputs.is_release_pr == 'true' &&
+      github.event.action == 'opened'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        env:
+          WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/workflows/release_pr_sync_versions.yml
+        with:
+          script: |
+            const marker = '<!-- release-pr-version-sync-checklist -->';
+            const pr = context.payload.pull_request;
+            const body = `${marker}
+            ## Release PR — version sync
+
+            release-please updates \`VERSION\`; all package/plugin/runtime
+            touchpoints must be derived from that value.
+
+            **Automatic:** [Release PR — sync versions](${process.env.WORKFLOW_URL}) runs \`tool/release/sync_version.sh\` and commits drift fixes.
+
+            **Manual (if automation did not run):**
+            \`\`\`bash
+            make sync-version
+            bash tool/contracts/check_version_sync.sh
+            git add VERSION .release-please-manifest.json plugin mcp_server_dart/pubspec.yaml mcp_toolkit/pubspec.yaml packages
+            git commit -m "chore: sync release version touchpoints"
+            git push
+            \`\`\`
+
+            **Required check:** \`check_version_sync.sh\` must pass before merge.
+            `;
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+            });
+            const existing = comments.find((c) => c.body?.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                body,
+              });
+            }

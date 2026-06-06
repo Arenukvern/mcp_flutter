@@ -2,17 +2,17 @@
 //
 // Verifies that:
 //   - McpHost + FmtCapability registration produces the expected prefixed
-//     tool surface (28 tools with dumps_supported=false, 32 with it true).
+//     tool surface (29 tools with dumps_supported=false, 33 with it true).
 //   - CapabilityConfig values flow from McpHost construction through the
 //     CapabilityContext to FmtCapability's conditional registration logic.
 //   - The DartMcpDispatchBridge publishes prefixed names to the dart_mcp
 //     side and the legacy unprefixed surface is gated off (T8 cut).
 
 import 'package:dart_mcp/server.dart' as dart_mcp;
-import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/host.dart';
 import 'package:flutter_mcp_toolkit_capability_core/flutter_mcp_toolkit_capability_core.dart';
 import 'package:flutter_mcp_toolkit_capability_kernel/flutter_mcp_toolkit_capability_kernel.dart';
 import 'package:flutter_mcp_toolkit_capability_kernel/testing.dart';
+import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/host.dart';
 import 'package:test/test.dart';
 
 /// Helper: build a [McpHost] with a [FakeCommandRunner] and the given config.
@@ -23,7 +23,7 @@ McpHost _makeHost({final bool dumpsSupported = false}) => McpHost(
   ),
 );
 
-// All 28 non-dump tool bare names registered by FmtCapability.
+// All 29 non-dump tool bare names registered by FmtCapability.
 const _nonDumpToolNames = <String>[
   // flutter_inspector_tools (6)
   'fmt_hot_reload_flutter',
@@ -48,6 +48,8 @@ const _nonDumpToolNames = <String>[
   'fmt_navigate',
   // log_tools (1)
   'fmt_get_recent_logs',
+  // migrate (1)
+  'fmt_migrate_agent_entries',
   // semantic_tools (1)
   'fmt_semantic_snapshot',
   // inspection_tools (6)
@@ -74,7 +76,7 @@ const _dumpToolNames = <String>[
 void main() {
   group('capability kernel e2e — FmtCapability wiring', () {
     test(
-      'dumps_supported=false: 28 tools registered; no dump tool names present',
+      'dumps_supported=false: 29 tools registered; no dump tool names present',
       () async {
         final host = _makeHost();
         await host.registerCapability(const FmtCapability());
@@ -85,12 +87,12 @@ void main() {
           names,
           containsAll(_nonDumpToolNames),
           reason:
-              'All 28 non-dump tools must be present with dumps_supported=false',
+              'All 29 non-dump tools must be present with dumps_supported=false',
         );
         expect(
           names.length,
-          equals(28),
-          reason: 'Exactly 28 tools when dumps_supported=false',
+          equals(29),
+          reason: 'Exactly 29 tools when dumps_supported=false',
         );
         for (final dumpName in _dumpToolNames) {
           expect(
@@ -103,7 +105,7 @@ void main() {
     );
 
     test(
-      'dumps_supported=true: 32 tools registered; all 4 dump tool names present',
+      'dumps_supported=true: 33 tools registered; all 4 dump tool names present',
       () async {
         final host = _makeHost(dumpsSupported: true);
         await host.registerCapability(const FmtCapability());
@@ -113,7 +115,7 @@ void main() {
         expect(
           names,
           containsAll(_nonDumpToolNames),
-          reason:               'All 28 non-dump tools must be present',
+          reason: 'All 29 non-dump tools must be present',
         );
         expect(
           names,
@@ -122,8 +124,8 @@ void main() {
         );
         expect(
           names.length,
-          equals(32),
-          reason: 'Exactly 32 tools when dumps_supported=true',
+          equals(33),
+          reason: 'Exactly 33 tools when dumps_supported=true',
         );
       },
     );
@@ -164,7 +166,7 @@ void main() {
 
         final publishedNames = published.map((final t) => t.name).toSet();
         expect(publishedNames, containsAll(_nonDumpToolNames));
-        expect(publishedNames.length, equals(28));
+        expect(publishedNames.length, equals(29));
         // Sanity: the legacy unprefixed names are NOT what the kernel publishes.
         expect(publishedNames, isNot(contains('tap_widget')));
         expect(publishedNames, isNot(contains('enter_text')));

@@ -1,17 +1,29 @@
 /// MCP Toolkit for Flutter applications
 ///
-/// Provides tools for integrating Flutter apps with
-/// MCP (Model Context Protocol) servers,
-/// including dynamic tool and resource registration capabilities.
+/// Integrates Flutter debug apps with MCP servers via VM service extensions and
+/// the intentcall dynamic registry.
 ///
-/// This package is a part of the MCP Flutter project and is used to register
-/// tools and resources in the Flutter app.
+/// **Public surface (intentional):**
+/// - Re-exports [intentcall_core] and [intentcall_schema] for a single import in apps.
+/// - Flutter binding: [MCPToolkitBinding], [addMcpTool], toolkits under `src/toolkits/`.
+/// - Authoring: [AgentCallEntry] (register with [MCPToolkitBinding.addEntries]).
+/// - Legacy handler bridge: [mcpToolkitTool], [mcpToolkitResource] for
+///   [MCPToolDefinition] + [MCPCallResult] handlers.
+/// - Wire types: [MCPCallResult], [MCPToolDefinition], [MCPResourceDefinition].
 ///
-/// See [MCPToolkitBinding] for more information on how to use this package.
+/// `MCPCallEntry` was removed in intentcall Phase 6b; use
+/// [flutter-mcp-toolkit migrate agent-entries](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/start_here/migration_intentcall_phase6.md).
+///
+/// See [MCPToolkitBinding] for bootstrap and registration.
 library;
 
 export 'package:dart_mcp/client.dart' hide Icon;
+export 'package:intentcall_core/intentcall_core.dart';
+export 'package:intentcall_schema/intentcall_schema.dart';
 
+export 'src/agent_call_entry_extensions.dart';
+export 'src/agent_client_install.dart';
+export 'src/agent_entry_helpers.dart';
 export 'src/mcp_models.dart';
 export 'src/mcp_toolkit_binding.dart';
 export 'src/mcp_toolkit_binding_base.dart';

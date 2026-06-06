@@ -3,20 +3,21 @@ description: >-
   Capability kernel contracts for Flutter MCP Toolkit — composable MCP units,
   host services, tool/resource registration, and prefixed tool naming. Pure
   Dart; no Flutter or transport.
-version: 0.1.0
+version: 4.0.0-dev.1
 license: MIT
 repository: https://github.com/Arenukvern/mcp_flutter/tree/main/packages/server_capability_kernel
 issue_tracker: https://github.com/Arenukvern/mcp_flutter/issues
 documentation: https://github.com/Arenukvern/mcp_flutter/tree/main/packages/server_capability_kernel#readme
 
 environment:
-  sdk: ">=3.11.0 <4.0.0"
+  sdk: ">=3.12.0 <4.0.0"
 resolution: workspace
 
 dependencies:
-  dart_mcp: ^0.5.0
-  flutter_mcp_toolkit_core:
-  meta: ^1.17.0
+  flutter_mcp_toolkit_core: ^4.0.0-dev.1
+  intentcall_mcp: ^0.1.0
+  intentcall_schema: ^0.1.0
+  meta: ^1.18.0
 
 dev_dependencies:
   lints: ^6.1.0
@@ -27,3 +28,5 @@ topics:
   - mcp
   - flutter
   - dart
+  - debugging
+  - agentic-harness

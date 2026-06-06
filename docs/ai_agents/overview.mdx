@@ -22,7 +22,7 @@ description: Install flutter-mcp-toolkit skills and MCP wiring for Claude Code, 
 
 1. **Host MCP** — `flutter-mcp-toolkit-server` with 27 `fmt_*` tools.
 2. **In-app toolkit** — `mcp_toolkit` in your Flutter app (debug only).
-3. **Dynamic registry** — register custom tools/resources at runtime (`addMcpTool`, `MCPCallEntry`). Agents discover via `fmt_list_client_tools_and_resources` and invoke via `fmt_client_tool` / `fmt_client_resource`. Use skill **`flutter-mcp-toolkit-custom-tools`** and [Dynamic tool registry](/core/dynamic_tools_registry).
+3. **Dynamic registry** — register custom tools/resources at runtime (`AgentCallEntry`, `addEntries` / `addMcpTool`). Agents discover via `fmt_list_client_tools_and_resources` and invoke via `fmt_client_tool` / `fmt_client_resource`. Use skill **`flutter-mcp-toolkit-custom-tools`** and [Dynamic tool registry](/core/dynamic_tools_registry).
 
 Skills alone do **not** replace the MCP server or in-app toolkit.
 
@@ -88,6 +88,18 @@ npx skills add Arenukvern/mcp_flutter -a cursor -a cline -y
 ```
 
 Discover more community skills at **[skills.sh](https://skills.sh)**. Pin the CLI in CI with `npx skills@latest` if needed.
+
+## Harness meta-skills (Agent Guild)
+
+When **building or maintaining** product harnesses (CLI + MCP + docs), install meta-skills from [Agent Guild](https://github.com/arenukvern/agent_guild):
+
+```bash
+npx skills add arenukvern/agent_guild --skill harness-engineering-culture -a cursor -y
+npx skills add arenukvern/agent_guild --skill north-star-governance -y
+npx skills add arenukvern/agent_guild --skill faq-driven-docs -y
+```
+
+Guild teaches **how** to design agent-first harnesses (mechanical gates, docs map, CLI/MCP parity). **This repo** owns `flutter-mcp-toolkit` and `fmt_*` — not Guild’s `guild` CLI. See [OpenAI — Harness engineering](https://openai.com/index/harness-engineering/) and mcp_flutter [CLI vs MCP](/start_here/cli_vs_mcp).
 
 ### Team lockfile (reproducible installs)
 

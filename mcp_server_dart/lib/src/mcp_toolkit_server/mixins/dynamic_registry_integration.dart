@@ -9,11 +9,11 @@ import 'package:dart_mcp/server.dart';
 import 'package:flutter_mcp_toolkit_server/src/capabilities/dynamic_registry/core_dynamic_registry_gateway.dart';
 import 'package:flutter_mcp_toolkit_server/src/capabilities/dynamic_registry/dynamic_registry.dart';
 import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/base_server.dart';
-import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/core/to_resources_tools.dart';
 import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/server.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/types/error_codes.dart';
-import 'package:flutter_mcp_toolkit_server/src/shared_core/types/results.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/vm_connections/connection_override.dart';
+import 'package:intentcall_core/intentcall_core.dart';
+import 'package:intentcall_schema/intentcall_schema.dart';
 import 'package:meta/meta.dart';
 
 /// Mixin that integrates dynamic registry with MCP server infrastructure
@@ -219,51 +219,25 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
     }
 
     final appId = DynamicAppId(sourceApp);
+    final toolkitServer = this as MCPToolkitServer;
 
-    // Register in the dynamic registry
     registry.registerTool(tool, appId);
-
-    // Register as a standard MCP tool that forwards to the dynamic registry
-    try {
-      final toolkitServer = this as MCPToolkitServer;
-      registerTool(tool, (final request) async {
-        final ensure = await toolkitServer.connectionContext
-            .ensureConnectedWithPolicy();
-        if (!ensure.connected) {
-          final failure = CoreResult.failure(
-            code: ensure.code ?? CoreErrorCode.vmNotConnected,
-            message: ensure.message ?? 'VM service not connected',
-            details: ensure.details,
-          );
-          return toCallToolErrorResult(failure, prefix: 'Failed to connect');
-        }
-
-        return await registry.forwardToolCall(
-              request.name,
-              request.arguments,
-            ) ??
-            toCallToolErrorResult(
-              CoreResult.failure(
-                code: CoreErrorCode.dynamicToolFailed,
-                message: 'Dynamic tool not available: ${request.name}',
-              ),
-              prefix: 'Dynamic tool execution failed',
-            );
-      });
-
-      log(
-        LoggingLevel.info,
-        'Registered dynamic tool as MCP tool: ${tool.name}',
-        logger: 'DynamicRegistryIntegration',
-      );
-    } catch (e, stackTrace) {
-      log(
-        LoggingLevel.warning,
-        'Failed to register dynamic tool ${tool.name} as MCP tool: $e '
-        'stackTrace: $stackTrace',
-        logger: 'DynamicRegistryIntegration',
+    final entry = registry.getToolEntry(tool.name);
+    if (entry != null) {
+      toolkitServer.capabilityHost.agentRegistry.register(
+        _wrapDynamicToolIntent(
+          toolkitServer: toolkitServer,
+          intent: entry.intent,
+        ),
+        qualifiedNameOverride: tool.name,
       );
     }
+
+    log(
+      LoggingLevel.info,
+      'Registered dynamic tool via AgentRegistry: ${tool.name}',
+      logger: 'DynamicRegistryIntegration',
+    );
   }
 
   /// Register a dynamic resource from a Flutter client
@@ -272,6 +246,7 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
     final Resource resource,
     final String sourceApp, {
     final Map<String, dynamic> metadata = const {},
+    final Map<String, Object?>? inputSchema,
   }) {
     final registry = _dynamicRegistry;
     if (registry == null) return;
@@ -287,66 +262,25 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
 
     final appId = DynamicAppId(sourceApp);
 
-    // Register in the dynamic registry
-    registry.registerResource(resource, appId);
-
-    // Register as a standard MCP resource that forwards to the dynamic registry
-    try {
-      final toolkitServer = this as MCPToolkitServer;
-      addResource(resource, (final request) async {
-        final connectError = await applyConnectionOverrideFromResourceUri(
-          resourceUri: request.uri,
-          executor: toolkitServer.coreCommandExecutor,
-        );
-        if (connectError != null) {
-          return toReadResourceErrorResult(
-            uri: request.uri,
-            result: connectError,
-            prefix: 'Failed to connect',
-          );
-        }
-
-        final ensure = await toolkitServer.connectionContext
-            .ensureConnectedWithPolicy();
-        if (!ensure.connected) {
-          final failure = CoreResult.failure(
-            code: ensure.code ?? CoreErrorCode.vmNotConnected,
-            message: ensure.message ?? 'VM service not connected',
-            details: ensure.details,
-          );
-          return toReadResourceErrorResult(
-            uri: request.uri,
-            result: failure,
-            prefix: 'Failed to connect',
-          );
-        }
-
-        final content = await registry.forwardResourceRead(request.uri);
-        if (content != null) return content;
-
-        return toReadResourceErrorResult(
-          uri: request.uri,
-          result: CoreResult.failure(
-            code: CoreErrorCode.dynamicResourceFailed,
-            message: 'Dynamic resource not available: ${request.uri}',
-          ),
-          prefix: 'Dynamic resource read failed',
-        );
-      });
-
-      log(
-        LoggingLevel.info,
-        'Registered dynamic resource as MCP resource: ${resource.uri}',
-        logger: 'DynamicRegistryIntegration',
-      );
-    } catch (e, stackTrace) {
-      log(
-        LoggingLevel.warning,
-        'Failed to register dynamic resource ${resource.uri} as MCP resource: $e '
-        'stackTrace: $stackTrace',
-        logger: 'DynamicRegistryIntegration',
+    registry.registerResource(resource, appId, inputSchema: inputSchema);
+    final toolkitServer = this as MCPToolkitServer;
+    final resourceEntry = registry.getResourceEntry(resource.uri);
+    if (resourceEntry != null) {
+      toolkitServer.capabilityHost.agentRegistry.register(
+        _wrapDynamicResourceIntent(
+          toolkitServer: toolkitServer,
+          intent: resourceEntry.intent,
+          resourceUri: resource.uri,
+        ),
+        qualifiedNameOverride: resource.uri,
       );
     }
+
+    log(
+      LoggingLevel.info,
+      'Registered dynamic resource via AgentRegistry: ${resource.uri}',
+      logger: 'DynamicRegistryIntegration',
+    );
   }
 
   /// Unregister all tools and resources from a Flutter client
@@ -357,15 +291,15 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
     if (registry == null) return;
 
     final hadContent = registry.getAppEntries();
+    final toolkitServer = this as MCPToolkitServer;
 
-    // Unregister from MCP framework first
     for (final entry in hadContent.tools) {
       try {
-        unregisterTool(entry.tool.name);
+        toolkitServer.capabilityHost.agentRegistry.unregister(entry.tool.name);
       } catch (e, stackTrace) {
         log(
           LoggingLevel.warning,
-          'Failed to unregister MCP tool ${entry.tool.name}: $e '
+          'Failed to unregister dynamic tool ${entry.tool.name}: $e '
           'stackTrace: $stackTrace',
           logger: 'DynamicRegistryIntegration',
         );
@@ -374,11 +308,13 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
 
     for (final entry in hadContent.resources) {
       try {
-        removeResource(entry.resource.uri);
+        toolkitServer.capabilityHost.agentRegistry.unregister(
+          entry.resource.uri,
+        );
       } catch (e, stackTrace) {
         log(
           LoggingLevel.warning,
-          'Failed to unregister MCP resource ${entry.resource.uri}: $e '
+          'Failed to unregister dynamic resource ${entry.resource.uri}: $e '
           'stackTrace: $stackTrace',
           logger: 'DynamicRegistryIntegration',
         );
@@ -402,6 +338,65 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
   @protected
   DynamicRegistry? get dynamicRegistry =>
       isDynamicRegistrySupported ? _dynamicRegistry : null;
+
+  /// Test-only access to the dynamic registry instance.
+  @visibleForTesting
+  DynamicRegistry? get dynamicRegistryForTesting =>
+      isDynamicRegistrySupported ? _dynamicRegistry : null;
+
+  RegisteredAgentIntent _wrapDynamicToolIntent({
+    required final MCPToolkitServer toolkitServer,
+    required final RegisteredAgentIntent intent,
+  }) => RegisteredAgentIntent(
+    descriptor: intent.descriptor,
+    execute: (final invocation) async {
+      final ensure = await toolkitServer.connectionContext
+          .ensureConnectedWithPolicy();
+      if (!ensure.connected) {
+        return AgentResult.failure(
+          code: ensure.code ?? CoreErrorCode.vmNotConnected,
+          message: ensure.message ?? 'VM service not connected',
+          details: _agentFailureDetails(ensure.details),
+        );
+      }
+      return intent.execute(invocation);
+    },
+  );
+
+  RegisteredAgentIntent _wrapDynamicResourceIntent({
+    required final MCPToolkitServer toolkitServer,
+    required final RegisteredAgentIntent intent,
+    required final String resourceUri,
+  }) => RegisteredAgentIntent(
+    descriptor: intent.descriptor,
+    execute: (final invocation) async {
+      final requestedUri =
+          invocation.arguments['uri'] as String? ?? resourceUri;
+      final connectError = await applyConnectionOverrideFromResourceUri(
+        resourceUri: requestedUri,
+        executor: toolkitServer.coreCommandExecutor,
+      );
+      if (connectError != null) {
+        final err = connectError.error!;
+        return AgentResult.failure(
+          code: err.code,
+          message: err.message,
+          details: _agentFailureDetails(err.details),
+        );
+      }
+
+      final ensure = await toolkitServer.connectionContext
+          .ensureConnectedWithPolicy();
+      if (!ensure.connected) {
+        return AgentResult.failure(
+          code: ensure.code ?? CoreErrorCode.vmNotConnected,
+          message: ensure.message ?? 'VM service not connected',
+          details: _agentFailureDetails(ensure.details),
+        );
+      }
+      return intent.execute(invocation);
+    },
+  );
 
   void _logRegistryEvent(final DynamicRegistryEvent event) {
     switch (event) {
@@ -445,4 +440,17 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
         );
     }
   }
+}
+
+Map<String, Object?> _agentFailureDetails(final Object? raw) {
+  if (raw is Map<String, Object?>) {
+    return raw;
+  }
+  if (raw is Map) {
+    return Map<String, Object?>.from(raw);
+  }
+  if (raw == null) {
+    return const {};
+  }
+  return {'detail': raw};
 }

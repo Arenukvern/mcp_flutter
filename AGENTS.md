@@ -99,3 +99,30 @@ To check whether embeddings exist, inspect `.gitnexus/meta.json` — the `stats.
 | Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
 
 <!-- gitnexus:end -->
+
+## intentcall program (spec-driven)
+
+When implementing the **intentcall** migration, use the self-closing loop — do not mark phases complete without the Closer gate:
+
+| Doc | Role |
+|-----|------|
+| `docs/superpowers/specs/2026-05-25-intentcall-design.md` | Source of truth |
+| `docs/superpowers/plans/2026-05-25-intentcall-rollout.md` | Program overview |
+| `docs/superpowers/tracker/intentcall-rollout.yaml` | Active phase + status |
+| `docs/superpowers/intentcall-self-closing-loop.md` | Implementer + **Closer** protocol |
+| `docs/superpowers/plans/2026-05-27-intentcall-phase7-extract.md` | Historical extract plan; do not re-execute publish/cutover steps |
+| `docs/superpowers/plans/2026-05-26-visual-reconstruct-next.md` | Visual harness maintenance (checkpoint + optional runtime E2E) |
+| `docs/superpowers/WHATS_NEXT.md` | Single-page forward index |
+| `docs/superpowers/plans/archive/` | Historical phase plans — do not execute |
+
+**Closer** verifies, writes `docs/superpowers/closure/`, regenerates the same phase plan on failure or the next phase plan on success. In-repo product gate is `complete_in_repo_product`; **Phase 7 extract/cutover is post-cutover**. Agents should validate hosted `intentcall_*` dependencies and regression gates, not re-run the initial publish/cutover.
+
+## Governance & Skill Steward
+
+This repository strictly adheres to the Cascading Agent Surface architecture governed by **Skill Steward**.
+When writing code, documentation, or planning features:
+1. Start with `steward doctor --json`, then `steward actions list --json`.
+2. Inspect any intended action before execution: `steward action inspect <id> --json`.
+3. Use `steward probe --json --profile quick` for the safe first pass.
+4. Use `steward benchmark --scenario mcp_flutter.web-dogfood-warm --json` for the first dogfood scenario.
+6. If you discover new complex automations or bug fixes, capture them as observations / unknown cases first; promote only after review.

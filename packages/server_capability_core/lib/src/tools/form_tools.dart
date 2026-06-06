@@ -21,29 +21,8 @@ void registerFormTools(final CapabilityContext context) {
           'Stops on first failure. Each field: {ref, text}. Pass snapshotId '
           'to validate against the most recent semantic_snapshot (checked '
           'on the first field only).',
-      inputSchema: <String, Object?>{
-        'type': 'object',
-        'additionalProperties': false,
-        'required': <String>['fields'],
-        'properties': <String, Object?>{
-          'fields': <String, Object?>{
-            'type': 'array',
-            'items': <String, Object?>{
-              'type': 'object',
-              'additionalProperties': false,
-              'required': <String>['ref', 'text'],
-              'properties': <String, Object?>{
-                'ref': <String, Object?>{'type': 'string'},
-                'text': <String, Object?>{'type': 'string'},
-              },
-            },
-          },
-          'snapshotId': <String, Object?>{'type': 'integer'},
-          'connection': connectionOverrideJsonSchema(),
-        },
-      },
-      handler: (final request) async {
-        final args = request.arguments ?? const <String, Object?>{};
+      inputSchema: fillFormInputSchema(),
+      handler: (final args) async {
         final fieldsRaw = args['fields'];
         final fields = fieldsRaw is List
             ? fieldsRaw

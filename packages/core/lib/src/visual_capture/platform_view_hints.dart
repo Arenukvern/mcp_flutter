@@ -130,7 +130,8 @@ void accumulatePlatformViewSignals({
 }) {
   final strongWidget =
       widgetType != null && _matchesSuffix(widgetType, _strongWidgetSuffixes);
-  final strongRender = renderObjectType != null &&
+  final strongRender =
+      renderObjectType != null &&
       _matchesSuffix(renderObjectType, _strongRenderSuffixes);
   if (strongWidget || strongRender) {
     matches.add(

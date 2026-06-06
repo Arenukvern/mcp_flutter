@@ -1,0 +1,18 @@
+{
+  "skills": [
+    "flutter-mcp",
+    "flutter-mcp-boundary-audit",
+    "flutter-mcp-cli-runtime-validation",
+    "flutter-mcp-toolkit-control",
+    "flutter-mcp-toolkit-custom-tools",
+    "flutter-mcp-toolkit-debug",
+    "flutter-mcp-toolkit-dogfood-iterations",
+    "flutter-mcp-toolkit-guide",
+    "flutter-mcp-toolkit-inspect",
+    "flutter-mcp-toolkit-intentcall-migration",
+    "flutter-mcp-toolkit-maintain-macos",
+    "flutter-mcp-toolkit-maintain-web",
+    "flutter-mcp-toolkit-repo-maintainer",
+    "flutter-mcp-toolkit-setup"
+  ]
+}

@@ -1,6 +1,6 @@
 {
   "name": "flutter-mcp-toolkit",
-  "version": "3.1.1",
+  "version": "4.0.0-dev.1",
   "description": "Flutter MCP toolkit: inspect and drive debug apps (semantic snapshot, tap, hot-reload) and register custom MCP tools and resources at runtime from your Flutter app or game via mcp_toolkit — closed agent feedback loop.",
   "author": {
     "name": "Arenukvern",
@@ -26,7 +26,7 @@
   "interface": {
     "displayName": "Flutter MCP Toolkit",
     "shortDescription": "Inspect, drive, and extend Flutter debug apps via MCP — including runtime custom tools.",
-    "longDescription": "flutter-mcp-toolkit is a Dart MCP server plus Flutter package (mcp_toolkit) for AI-assisted Flutter development in debug mode. Built-in: 27 fmt_* MCP tools and bundled agent skills. Dynamic registry: register app-specific tools and resources at runtime with addMcpTool / MCPCallEntry; agents discover via fmt_list_client_tools_and_resources and invoke via fmt_client_tool / fmt_client_resource. Requires debug app with mcp_toolkit and flutter-mcp-toolkit-server on PATH. Complements official Dart MCP.",
+    "longDescription": "flutter-mcp-toolkit is a Dart MCP server plus Flutter package (mcp_toolkit) for AI-assisted Flutter development in debug mode. Built-in: 27 fmt_* MCP tools and bundled agent skills. Dynamic registry: register app-specific tools and resources at runtime with AgentCallEntry and addMcpTool; agents discover via fmt_list_client_tools_and_resources and invoke via fmt_client_tool / fmt_client_resource. Requires debug app with mcp_toolkit and flutter-mcp-toolkit-server on PATH. Complements official Dart MCP.",
     "developerName": "Arenukvern",
     "category": "Developer Tools",
     "capabilities": [

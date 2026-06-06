@@ -10,6 +10,7 @@ _Inspect and drive a running Flutter app from your AI assistant._
 [![smithery badge](https://smithery.ai/badge/@Arenukvern/mcp_flutter)](https://smithery.ai/server/@Arenukvern/mcp_flutter)
 [![All Contributors](https://img.shields.io/github/all-contributors/Arenukvern/mcp_flutter?color=ee8449&style=flat-square)](https://github.com/Arenukvern/mcp_flutter#contributors-)
 <a title="Discord" href="https://discord.com/invite/y54DpJwmAn" ><img src="https://img.shields.io/discord/696688204476055592.svg" /></a>
+[![maintained with Skill Steward](https://raw.githubusercontent.com/Arenukvern/skill_steward/main/docs/brand/assets/svg/badge-light.svg)](https://github.com/Arenukvern/skill_steward)
 
 </div>
 
@@ -64,6 +65,7 @@ Maintainers submitting to official stores: [marketplace submission runbook](docs
 
 - **[Docs for AI Agent and Human](https://docs.page/arenukvern/mcp_flutter)** - wiki + llms.txt
 - **[Migrating v2 → v3](docs/start_here/migration_v2_to_v3.mdx)** — `fmt_*` MCP tools, binaries, client config keys, `validate-runtime`.
+- **[intentcall Phase 6 migration](docs/start_here/migration_intentcall_phase6.md)** — `MCPCallEntry` removal, `AgentCallEntry`, platform `codegen sync`, `fmt_migrate_agent_entries`.
 - **[Why this repo matters](docs/start_here/why_this_repo_matters.mdx)** — what it is, why it exists.
 - **[CLI vs MCP](docs/start_here/cli_vs_mcp.mdx)** — pick the right mode.
 - **[Feature map](docs/start_here/feature_map.mdx)** — the 27 tools.
@@ -146,7 +148,7 @@ The Flutter MCP Server is registered with Smithery's registry, making it discove
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit pull requests or report issues on the [GitHub repository](https://github.com/Arenukvern/mcp_flutter).
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) (maintainer releases, binary checksums) and the [contribution guide](docs/contributing/contribution_guide.mdx). Pull requests and issues: [GitHub](https://github.com/Arenukvern/mcp_flutter).
 
 ## ✨ Contributors
 

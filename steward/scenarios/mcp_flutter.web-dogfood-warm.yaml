@@ -1,0 +1,24 @@
+schema: steward/scenario-manifest/v1
+repo: mcp_flutter
+scenario: mcp_flutter.web-dogfood-warm
+status: runnable
+source:
+  git: https://github.com/Arenukvern/mcp_flutter
+  commit: 717c4c8c196aa2be42b395d293fec6e302cd030d
+  steward_contract: steward.yaml
+safe_first_probe: fmt.check.tool-prefix
+required_actions:
+  - fmt.check.tool-prefix
+artifacts:
+  - id: steward_contract
+    kind: yaml
+    path: steward.yaml
+    required: true
+    durability: input
+  - id: tool_prefix_contract
+    kind: text
+    path: tool/contracts/expected_tool_surface.txt
+    required: true
+    durability: input
+blocked_by: null
+owner: flutter-mcp-toolkit

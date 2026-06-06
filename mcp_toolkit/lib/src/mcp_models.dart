@@ -11,7 +11,7 @@ import 'package:flutter/foundation.dart';
 ///
 /// For example:
 /// ```dart
-/// final count = jsonDecodeInt(parameters['count'] ?? '').whenZeroUse(10);
+/// final count = jsonDecodeInt(parameters['count'] ?? '').whenZeroUse(4);
 /// final reversedErrors = errorMonitor.errors.take(count).toList();
 /// final errors = reversedErrors.map((final e) => e.toJson()).toList();
 ///
@@ -44,20 +44,6 @@ typedef MCPCallHandler =
 /// it will be added automatically in the [MCPBridgeBinding].
 extension type const MCPMethodName(String _value) implements String {}
 
-/// A record for the MCP call entry for type safety.
-///
-/// Use [MCPCallEntry] to create a new entry.
-///
-/// This typedef made private to avoid using it instead of [MCPCallEntry].
-typedef _MCPCallEntryRecord = MapEntry<MCPMethodName, _MCPCallEntryRecordValue>;
-
-/// A record value for the MCP call entry for type safety.
-typedef _MCPCallEntryRecordValue = ({
-  MCPCallHandler handler,
-  MCPToolDefinition? toolDefinition,
-  MCPResourceDefinition? resourceDefinition,
-});
-
 /// A base definition for MCP definitions.
 extension type const MCPDefinition._(Map<String, dynamic> _value)
     implements Map<String, dynamic> {
@@ -80,25 +66,24 @@ extension type const MCPDefinition._(Map<String, dynamic> _value)
 ///
 /// Example with tool definition:
 /// ```dart
-/// extension type OnAppErrorsEntry._(MCPCallEntry entry) implements MCPCallEntry {
+/// extension type OnAppErrorsEntry._(AgentCallEntry entry) implements AgentCallEntry {
 ///   factory OnAppErrorsEntry({required final ErrorMonitor errorMonitor}) {
-///     final entry = MCPCallEntry(
-///       methodName: const MCPMethodName('app_errors'),
-///       handler: (final request) => MCPCallResult(
-///         message: 'Returns app errors',
-///         parameters: {'errors': []},
-///       ),
-///       toolDefinition: MCPToolDefinition(
+///     final entry = mcpToolkitTool(
+///       definition: MCPToolDefinition(
 ///         name: 'app_errors',
 ///         description: 'Get application errors and diagnostics',
 ///         inputSchema: ObjectSchema(
 ///           properties: {
 ///             'count': IntegerSchema(
 ///               description: 'Number of errors to retrieve',
-///               default: 10,
+///               default: 4,
 ///             ),
 ///           },
 ///         ),
+///       ),
+///       handler: (final request) => MCPCallResult(
+///         message: 'Returns app errors',
+///         parameters: {'errors': []},
 ///       ),
 ///     );
 ///     return OnAppErrorsEntry._(entry);
@@ -132,9 +117,9 @@ extension type const MCPToolDefinition._(MCPDefinition _definition)
 /// Resource definition for MCP registration
 ///
 /// ```dart
-/// extension type OnAppStateEntry._(MCPCallEntry entry) implements MCPCallEntry {
+/// extension type OnAppStateEntry._(AgentCallEntry entry) implements AgentCallEntry {
 ///   factory OnAppStateEntry({required final AppState appState}) {
-///     final entry = MCPCallEntry(
+///     final entry = mcpToolkitResource(
 ///       methodName: const MCPMethodName('view_details'),
 ///       handler: (final request) => MCPCallResult(
 ///         message: 'Returns view details',
@@ -168,71 +153,4 @@ extension type const MCPResourceDefinition._(MCPDefinition _definition)
       params: {'mimeType': mimeType},
     ),
   );
-}
-
-/// {@template mcp_call_entry}
-/// A MCP call entry.
-/// Contains a method name and a handler for the call, with optional
-/// tool and resource definitions for automatic MCP server registration.
-///
-/// {@endtemplate}
-///
-/// {@macro mcp_tool_definition}
-///
-/// or with resource definition:
-///
-/// {@macro mcp_resource_definition}
-///
-///
-extension type const MCPCallEntry._(_MCPCallEntryRecord entry)
-    implements _MCPCallEntryRecord {
-  /// {@macro mcp_call_entry}
-  factory MCPCallEntry.resource({
-    required final MCPCallHandler handler,
-    required final MCPResourceDefinition definition,
-  }) => MCPCallEntry._(
-    _MCPCallEntryRecord(MCPMethodName(definition.name), (
-      handler: handler,
-      toolDefinition: null,
-      resourceDefinition: definition,
-    )),
-  );
-
-  /// {@macro mcp_call_entry}
-  factory MCPCallEntry.tool({
-    required final MCPCallHandler handler,
-    required final MCPToolDefinition definition,
-  }) => MCPCallEntry._(
-    _MCPCallEntryRecord(MCPMethodName(definition.name), (
-      handler: handler,
-      toolDefinition: definition,
-      resourceDefinition: null,
-    )),
-  );
-
-  /// Check if this entry has a tool definition
-  bool get hasTool => value.toolDefinition != null;
-
-  /// Check if this entry has a resource definition
-  bool get hasResource => value.resourceDefinition != null;
-
-  /// Get the resource URI for this entry.
-  ///
-  /// Converts an underscore-separated name into a URL path.
-  /// For example, 'my_resource_name' becomes 'visual://localhost/my/resource/name'.
-  ///
-  /// The entry key must match the pattern of lowercase letters, digits, and underscores.
-  String get resourceUri {
-    final key = entry.key;
-    if (key.isEmpty) {
-      return 'visual://localhost/unknown';
-    }
-
-    final keyPattern = RegExp(r'^[a-z0-9_]+$');
-    assert(
-      keyPattern.hasMatch(key),
-      'Resource entry key "$key" must contain only lowercase letters, digits, and underscores',
-    );
-    return 'visual://localhost/${key.split('_').join('/')}';
-  }
 }

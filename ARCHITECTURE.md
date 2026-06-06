@@ -228,16 +228,12 @@ This unified architecture supports:
 
 ```dart
 // Add new commands via dynamic registration
-final customTool = MCPCallEntry.tool(
-  handler: (request) {
-    // Your custom logic
-    return MCPCallResult(message: 'Success', parameters: const {});
-  },
-  definition: MCPToolDefinition(
-    name: 'custom_command',
-    description: 'Your custom functionality',
-    inputSchema: {...},
-  ),
+final customTool = AgentCallEntry.tool(
+  namespace: 'app',
+  name: 'custom_command',
+  description: 'Your custom functionality',
+  inputSchema: const {'type': 'object', 'properties': {}},
+  handler: (_) async => AgentResult.success(message: 'Success'),
 );
 
 await MCPToolkitBinding.instance.addEntries(entries: {customTool});
@@ -249,15 +245,14 @@ await MCPToolkitBinding.instance.addEntries(entries: {customTool});
 
 ```dart
 // Example: Register custom debugging tool
-final debugTool = MCPCallEntry.tool(
-  handler: (request) => MCPCallResult(
+final debugTool = AgentCallEntry.tool(
+  namespace: 'app',
+  name: 'get_debug_state',
+  description: 'Get current debug state',
+  inputSchema: const {'type': 'object', 'properties': {}},
+  handler: (_) async => AgentResult.success(
     message: 'Debug info',
-    parameters: {'state': getCurrentState()},
-  ),
-  definition: MCPToolDefinition(
-    name: 'get_debug_state',
-    description: 'Get current debug state',
-    inputSchema: {'type': 'object', 'properties': {}},
+    data: {'state': getCurrentState()},
   ),
 );
 

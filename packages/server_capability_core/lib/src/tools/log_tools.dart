@@ -2,37 +2,33 @@
 // Copyright (c) 2025, Flutter Inspector MCP Server authors.
 // Licensed under the MIT License.
 
+import 'package:intentcall_mcp/intentcall_mcp.dart';
 import 'package:flutter_mcp_toolkit_capability_kernel/flutter_mcp_toolkit_capability_kernel.dart';
 import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 
 import '_internal/handler_helpers.dart';
+import 'codegen/get_recent_logs_tool.dart';
 
 /// Registers log tools with the host through [context].
-/// Registers: get_recent_logs.
+///
+/// [get_recent_logs] uses `@AgentTool` codegen for the call entry; host
+/// registration applies [getRecentLogsInputSchema] via [mergeInputSchema] so
+/// discovery matches dynamic tools even if `.g.dart` is regenerated without
+/// connection / `additionalProperties: false`.
 void registerLogTools(final CapabilityContext context) {
   final runner = context.require<CommandRunner>();
 
   context.registerTool(
-    ToolRegistration(
-      name: 'get_recent_logs',
-      description:
-          'Get recent print() and log output from the running Flutter app.',
-      inputSchema: <String, Object?>{
-        'type': 'object',
-        'additionalProperties': false,
-        'properties': <String, Object?>{
-          'count': <String, Object?>{
-            'type': 'integer',
-            'description': 'Number of recent log entries (default: 50).',
-          },
-          'connection': connectionOverrideJsonSchema(),
-        },
-      },
-      handler: (final request) async {
-        final args = request.arguments ?? const <String, Object?>{};
+    agentCallEntryToToolRegistration(
+      getRecentLogsCallEntry,
+      mergeInputSchema: (_) => getRecentLogsInputSchema(),
+      handler: (final args) async {
         final countRaw = intArgOrNull(args['count']);
-        final count = countRaw ?? 50;
-        return runCommand(runner, args, GetRecentLogsCommand(count: count));
+        return runCommand(
+          runner,
+          args,
+          GetRecentLogsCommand(count: countRaw ?? 50),
+        );
       },
     ),
   );

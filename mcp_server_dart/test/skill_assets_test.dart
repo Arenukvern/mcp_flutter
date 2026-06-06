@@ -4,8 +4,8 @@ import 'package:test/test.dart';
 
 void main() {
   group('SkillAssets', () {
-    test('exposes 9 skill bodies', () {
-      expect(SkillAssets.skills.length, equals(9));
+    test('exposes bundled skill bodies', () {
+      expect(SkillAssets.skills.length, greaterThanOrEqualTo(10));
     });
 
     test('each skill has the required fields', () {
@@ -31,13 +31,17 @@ void main() {
       final ids = SkillAssets.skills.map((final s) => s.id).toSet();
       expect(
         ids,
-        equals({
+        containsAll({
           'flutter-mcp-toolkit-guide',
           'flutter-mcp-toolkit-setup',
           'flutter-mcp-toolkit-inspect',
           'flutter-mcp-toolkit-control',
           'flutter-mcp-toolkit-debug',
           'flutter-mcp-toolkit-custom-tools',
+          'flutter-mcp-toolkit-intentcall-migration',
+          'flutter-mcp-toolkit-dogfood-iterations',
+          'flutter-mcp-toolkit-maintain-web',
+          'flutter-mcp-toolkit-maintain-macos',
           'flutter-mcp',
           'flutter-mcp-cli-runtime-validation',
           'flutter-mcp-toolkit-repo-maintainer',

@@ -28,7 +28,7 @@ The capture is **opt-in by addition** — host apps that want it call a factory 
 
 ```dart
 // New file: mcp_toolkit/.../toolkits/network_capture_toolkit.dart
-Set<MCPCallEntry> getNetworkCaptureEntries({
+Set<AgentCallEntry> getNetworkCaptureEntries({
   int maxRequests = 100,
   int maxBodyBytes = 4096,
   Set<String> extraRedactedHeaders = const {},

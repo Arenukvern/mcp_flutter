@@ -14,19 +14,17 @@ In your Flutter app, create a new file called `lib/my_tools.dart` and add the fo
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 
 void registerMyTools() {
-  final helloTool = MCPCallEntry.tool(
-    handler: (params) {
-      return MCPCallResult(
-        message: 'Hello from a dynamic tool!',
-        parameters: const {},
-      );
+  final helloTool = AgentCallEntry.tool(
+    namespace: 'app',
+    name: 'hello',
+    description: 'A simple tool that says hello.',
+    inputSchema: const {
+      'type': 'object',
+      'additionalProperties': false,
+      'properties': {},
     },
-    definition: MCPToolDefinition(
-      name: 'hello',
-      description: 'A simple tool that says hello.',
-      inputSchema: ObjectSchema(
-        properties: const {},
-      ),
+    handler: (_) async => AgentResult.success(
+      message: 'Hello from a dynamic tool!',
     ),
   );
 
@@ -54,3 +52,7 @@ void main() {
 ### 4. Hot Reload and Use the Tool
 
 Save your changes and hot reload the app. Now, you can ask your AI assistant to run the `hello` tool. It should respond with "Hello from a dynamic tool!".
+
+### Server-side registry (intentcall)
+
+On the MCP server, dynamic tools are stored as `RegisteredAgentIntent` entries in `DynamicRegistry` (not raw `dart_mcp.Tool` handlers). MCP publish still uses the tool schema for listing; invocation routes through `AgentRegistry.invoke` and VM extension forwarding.

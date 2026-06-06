@@ -1,7 +1,6 @@
 // packages/server_capability_core/test/tools/inspection_tools_test.dart
 import 'dart:convert';
 
-import 'package:dart_mcp/server.dart';
 import 'package:flutter_mcp_toolkit_capability_core/src/tools/inspection_tools.dart';
 import 'package:flutter_mcp_toolkit_capability_kernel/flutter_mcp_toolkit_capability_kernel.dart';
 import 'package:flutter_mcp_toolkit_capability_kernel/testing.dart';
@@ -77,13 +76,8 @@ void main() {
         ..nextExecuteResult = CoreResult.success(data: viewData);
       final ctx = _registeredCtx(runner: runner);
       final reg = ctx.registrationFor('get_view_details')!;
-      final result = await reg.handler(
-        CallToolRequest(
-          name: 'get_view_details',
-          arguments: const <String, Object?>{},
-        ),
-      );
-      expect(result.isError, isNot(true));
+      final result = await reg.handler(const <String, Object?>{});
+      expect(result.ok, isTrue);
       expect(runner.executedCommands.first, isA<GetViewDetailsCommand>());
     });
 
@@ -97,13 +91,8 @@ void main() {
           );
         final ctx = _registeredCtx(runner: runner);
         final reg = ctx.registrationFor('get_view_details')!;
-        final result = await reg.handler(
-          CallToolRequest(
-            name: 'get_view_details',
-            arguments: const <String, Object?>{},
-          ),
-        );
-        expect(result.isError, isTrue);
+        final result = await reg.handler(const <String, Object?>{});
+        expect(result.ok, isFalse);
         expect(runner.executedCommands, isEmpty);
       },
     );
@@ -118,15 +107,9 @@ void main() {
           );
         final ctx = _registeredCtx(runner: runner);
         final reg = ctx.registrationFor('get_view_details')!;
-        final result = await reg.handler(
-          CallToolRequest(
-            name: 'get_view_details',
-            arguments: const <String, Object?>{},
-          ),
-        );
-        expect(result.isError, isTrue);
-        final text = (result.content.first as TextContent).text;
-        final json = jsonDecode(text) as Map<String, Object?>;
+        final result = await reg.handler(const <String, Object?>{});
+        expect(result.ok, isFalse);
+        final json = agentResultPayload(result);
         _expectEnvelopeKeys(json);
       },
     );
@@ -167,12 +150,11 @@ void main() {
           ..nextExecuteResult = CoreResult.success(data: {'widget': 'Text'});
         final ctx = _registeredCtx(runner: runner);
         final reg = ctx.registrationFor('inspect_widget_at_point')!;
-        await reg.handler(
-          CallToolRequest(
-            name: 'inspect_widget_at_point',
-            arguments: const <String, Object?>{'x': 100, 'y': 200, 'viewId': 1},
-          ),
-        );
+        await reg.handler(const <String, Object?>{
+          'x': 100,
+          'y': 200,
+          'viewId': 1,
+        });
         final cmd =
             runner.executedCommands.first as InspectWidgetAtPointCommand;
         expect(cmd.x, 100);
@@ -181,19 +163,34 @@ void main() {
       },
     );
 
+    test('inspect_widget_at_point accepts origin coordinates', () async {
+      final runner = FakeCommandRunner()
+        ..nextExecuteResult = CoreResult.success(data: {});
+      final ctx = _registeredCtx(runner: runner);
+      final reg = ctx.registrationFor('inspect_widget_at_point')!;
+      await reg.handler(const <String, Object?>{'x': 0, 'y': 0});
+      final cmd = runner.executedCommands.first as InspectWidgetAtPointCommand;
+      expect(cmd.x, 0);
+      expect(cmd.y, 0);
+    });
+
     test('inspect_widget_at_point viewId is null when not provided', () async {
       final runner = FakeCommandRunner()
         ..nextExecuteResult = CoreResult.success(data: {});
       final ctx = _registeredCtx(runner: runner);
       final reg = ctx.registrationFor('inspect_widget_at_point')!;
-      await reg.handler(
-        CallToolRequest(
-          name: 'inspect_widget_at_point',
-          arguments: const <String, Object?>{'x': 50, 'y': 75},
-        ),
-      );
+      await reg.handler(const <String, Object?>{'x': 50, 'y': 75});
       final cmd = runner.executedCommands.first as InspectWidgetAtPointCommand;
       expect(cmd.viewId, isNull);
+    });
+
+    test('inspect_widget_at_point handler rejects missing x and y', () async {
+      final runner = FakeCommandRunner();
+      final ctx = _registeredCtx(runner: runner);
+      final reg = ctx.registrationFor('inspect_widget_at_point')!;
+      final result = await reg.handler(const <String, Object?>{});
+      expect(result.ok, isFalse);
+      expect(runner.executedCommands, isEmpty);
     });
 
     test(
@@ -206,13 +203,11 @@ void main() {
           );
         final ctx = _registeredCtx(runner: runner);
         final reg = ctx.registrationFor('inspect_widget_at_point')!;
-        final result = await reg.handler(
-          CallToolRequest(
-            name: 'inspect_widget_at_point',
-            arguments: const <String, Object?>{'x': 0, 'y': 0},
-          ),
-        );
-        expect(result.isError, isTrue);
+        final result = await reg.handler(const <String, Object?>{
+          'x': 0,
+          'y': 0,
+        });
+        expect(result.ok, isFalse);
         expect(runner.executedCommands, isEmpty);
       },
     );
@@ -227,15 +222,12 @@ void main() {
           );
         final ctx = _registeredCtx(runner: runner);
         final reg = ctx.registrationFor('inspect_widget_at_point')!;
-        final result = await reg.handler(
-          CallToolRequest(
-            name: 'inspect_widget_at_point',
-            arguments: const <String, Object?>{'x': 0, 'y': 0},
-          ),
-        );
-        expect(result.isError, isTrue);
-        final text = (result.content.first as TextContent).text;
-        final json = jsonDecode(text) as Map<String, Object?>;
+        final result = await reg.handler(const <String, Object?>{
+          'x': 0,
+          'y': 0,
+        });
+        expect(result.ok, isFalse);
+        final json = agentResultPayload(result);
         _expectEnvelopeKeys(json);
       },
     );
@@ -271,12 +263,7 @@ void main() {
         );
       final ctx = _registeredCtx(runner: runner);
       final reg = ctx.registrationFor('get_app_errors')!;
-      await reg.handler(
-        CallToolRequest(
-          name: 'get_app_errors',
-          arguments: const <String, Object?>{},
-        ),
-      );
+      await reg.handler(const <String, Object?>{});
       final cmd = runner.executedCommands.first as GetAppErrorsCommand;
       expect(cmd.count, 4);
     });
@@ -296,21 +283,13 @@ void main() {
           );
         final ctx = _registeredCtx(runner: runner);
         final reg = ctx.registrationFor('get_app_errors')!;
-        final result = await reg.handler(
-          CallToolRequest(
-            name: 'get_app_errors',
-            arguments: const <String, Object?>{'count': 4},
-          ),
-        );
-        expect(result.isError, isNot(true));
-        // message + 2 errors = 3 content items
-        expect(result.content, hasLength(3));
-        expect((result.content[0] as TextContent).text, '2 errors');
-        final error1 =
-            jsonDecode((result.content[1] as TextContent).text) as Map;
+        final result = await reg.handler(const <String, Object?>{'count': 4});
+        expect(result.ok, isTrue);
+        expect(result.artifacts, hasLength(3));
+        expect(result.artifacts[0].text, '2 errors');
+        final error1 = jsonDecode(result.artifacts[1].text!) as Map;
         expect(error1['type'], 'StateError');
-        final error2 =
-            jsonDecode((result.content[2] as TextContent).text) as Map;
+        final error2 = jsonDecode(result.artifacts[2].text!) as Map;
         expect(error2['type'], 'TypeError');
       },
     );
@@ -324,15 +303,10 @@ void main() {
           );
         final ctx = _registeredCtx(runner: runner);
         final reg = ctx.registrationFor('get_app_errors')!;
-        final result = await reg.handler(
-          CallToolRequest(
-            name: 'get_app_errors',
-            arguments: const <String, Object?>{},
-          ),
-        );
-        expect(result.isError, isNot(true));
-        expect(result.content, hasLength(1));
-        expect((result.content[0] as TextContent).text, 'No errors found');
+        final result = await reg.handler(const <String, Object?>{});
+        expect(result.ok, isTrue);
+        expect(result.artifacts, hasLength(1));
+        expect(result.artifacts[0].text, 'No errors found');
       },
     );
 
@@ -344,13 +318,8 @@ void main() {
         );
       final ctx = _registeredCtx(runner: runner);
       final reg = ctx.registrationFor('get_app_errors')!;
-      final result = await reg.handler(
-        CallToolRequest(
-          name: 'get_app_errors',
-          arguments: const <String, Object?>{},
-        ),
-      );
-      expect(result.isError, isTrue);
+      final result = await reg.handler(const <String, Object?>{});
+      expect(result.ok, isFalse);
       expect(runner.executedCommands, isEmpty);
     });
 
@@ -364,15 +333,9 @@ void main() {
           );
         final ctx = _registeredCtx(runner: runner);
         final reg = ctx.registrationFor('get_app_errors')!;
-        final result = await reg.handler(
-          CallToolRequest(
-            name: 'get_app_errors',
-            arguments: const <String, Object?>{},
-          ),
-        );
-        expect(result.isError, isTrue);
-        final text = (result.content.first as TextContent).text;
-        final json = jsonDecode(text) as Map<String, Object?>;
+        final result = await reg.handler(const <String, Object?>{});
+        expect(result.ok, isFalse);
+        final json = agentResultPayload(result);
         _expectEnvelopeKeys(json);
       },
     );
@@ -404,11 +367,16 @@ void main() {
           'string',
         );
         expect(props.containsKey('connection'), isTrue);
-        // No enum constraints — match legacy schema exactly.
-        expect(
-          (props['mode']! as Map<String, Object?>).containsKey('enum'),
-          isFalse,
-        );
+        expect((props['mode']! as Map<String, Object?>)['enum'], [
+          'auto',
+          'flutter_layer',
+          'desktop_window',
+        ]);
+        expect((props['permissionPolicy']! as Map<String, Object?>)['enum'], [
+          'check_only',
+          'auto_request_once',
+          'request_always',
+        ]);
       },
     );
 
@@ -421,16 +389,11 @@ void main() {
           );
         final ctx = _registeredCtx(runner: runner);
         final reg = ctx.registrationFor('get_screenshots')!;
-        await reg.handler(
-          CallToolRequest(
-            name: 'get_screenshots',
-            arguments: const <String, Object?>{
-              'compress': false,
-              'mode': 'flutter_layer',
-              'permissionPolicy': 'auto_request_once',
-            },
-          ),
-        );
+        await reg.handler(const <String, Object?>{
+          'compress': false,
+          'mode': 'flutter_layer',
+          'permissionPolicy': 'auto_request_once',
+        });
         final cmd = runner.executedCommands.first as GetScreenshotsCommand;
         expect(cmd.compress, isFalse);
         expect(cmd.mode, ScreenshotMode.flutterLayer);
@@ -453,24 +416,12 @@ void main() {
           );
         final ctx = _registeredCtx(runner: runner);
         final reg = ctx.registrationFor('get_screenshots')!;
-        final result = await reg.handler(
-          CallToolRequest(
-            name: 'get_screenshots',
-            arguments: const <String, Object?>{},
-          ),
-        );
-        expect(result.isError, isNot(true));
-        expect(result.content, hasLength(2));
-        expect(
-          (result.content[0] as TextContent).text,
-          contains('file:///tmp/screen0.png'),
-        );
-        expect(
-          (result.content[1] as TextContent).text,
-          contains('file:///tmp/screen1.png'),
-        );
-        // meta must carry the fileUrls list
-        expect(result.meta, isNotNull);
+        final result = await reg.handler(const <String, Object?>{});
+        expect(result.ok, isTrue);
+        expect(result.artifacts, hasLength(2));
+        expect(result.artifacts[0].text, contains('file:///tmp/screen0.png'));
+        expect(result.artifacts[1].text, contains('file:///tmp/screen1.png'));
+        expect(result.data['meta'], isNotNull);
       },
     );
 
@@ -486,19 +437,14 @@ void main() {
           );
         final ctx = _registeredCtx(runner: runner);
         final reg = ctx.registrationFor('get_screenshots')!;
-        final result = await reg.handler(
-          CallToolRequest(
-            name: 'get_screenshots',
-            arguments: const <String, Object?>{},
-          ),
-        );
-        expect(result.isError, isNot(true));
-        expect(result.content, hasLength(2));
-        expect(result.content[0], isA<ImageContent>());
-        expect((result.content[0] as ImageContent).data, 'base64dataA');
-        expect((result.content[0] as ImageContent).mimeType, 'image/png');
-        expect(result.content[1], isA<ImageContent>());
-        expect((result.content[1] as ImageContent).data, 'base64dataB');
+        final result = await reg.handler(const <String, Object?>{});
+        expect(result.ok, isTrue);
+        final images = result.artifacts
+            .where((final a) => a.mimeType == 'image/png')
+            .toList();
+        expect(images, hasLength(2));
+        expect(images[0].text, 'base64dataA');
+        expect(images[1].text, 'base64dataB');
       },
     );
 
@@ -512,13 +458,8 @@ void main() {
           );
         final ctx = _registeredCtx(runner: runner);
         final reg = ctx.registrationFor('get_screenshots')!;
-        final result = await reg.handler(
-          CallToolRequest(
-            name: 'get_screenshots',
-            arguments: const <String, Object?>{},
-          ),
-        );
-        expect(result.isError, isTrue);
+        final result = await reg.handler(const <String, Object?>{});
+        expect(result.ok, isFalse);
         expect(runner.executedCommands, isEmpty);
       },
     );
@@ -533,15 +474,9 @@ void main() {
           );
         final ctx = _registeredCtx(runner: runner);
         final reg = ctx.registrationFor('get_screenshots')!;
-        final result = await reg.handler(
-          CallToolRequest(
-            name: 'get_screenshots',
-            arguments: const <String, Object?>{},
-          ),
-        );
-        expect(result.isError, isTrue);
-        final text = (result.content.first as TextContent).text;
-        final json = jsonDecode(text) as Map<String, Object?>;
+        final result = await reg.handler(const <String, Object?>{});
+        expect(result.ok, isFalse);
+        final json = agentResultPayload(result);
         _expectEnvelopeKeys(json);
       },
     );
@@ -587,11 +522,16 @@ void main() {
         'string',
       );
       expect(props.containsKey('connection'), isTrue);
-      // No enum constraints — match legacy.
-      expect(
-        (props['screenshotMode']! as Map<String, Object?>).containsKey('enum'),
-        isFalse,
-      );
+      expect((props['screenshotMode']! as Map<String, Object?>)['enum'], [
+        'auto',
+        'flutter_layer',
+        'desktop_window',
+      ]);
+      expect((props['permissionPolicy']! as Map<String, Object?>)['enum'], [
+        'check_only',
+        'auto_request_once',
+        'request_always',
+      ]);
     });
 
     test(
@@ -601,19 +541,14 @@ void main() {
           ..nextExecuteResult = CoreResult.success(data: {'ok': true});
         final ctx = _registeredCtx(runner: runner);
         final reg = ctx.registrationFor('capture_ui_snapshot')!;
-        await reg.handler(
-          CallToolRequest(
-            name: 'capture_ui_snapshot',
-            arguments: const <String, Object?>{
-              'errorsCount': 8,
-              'compress': false,
-              'includeViewDetails': false,
-              'includeErrors': false,
-              'screenshotMode': 'desktop_window',
-              'permissionPolicy': 'request_always',
-            },
-          ),
-        );
+        await reg.handler(const <String, Object?>{
+          'errorsCount': 8,
+          'compress': false,
+          'includeViewDetails': false,
+          'includeErrors': false,
+          'screenshotMode': 'desktop_window',
+          'permissionPolicy': 'request_always',
+        });
         final cmd = runner.executedCommands.first as CaptureUiSnapshotCommand;
         expect(cmd.errorsCount, 8);
         expect(cmd.compress, isFalse);
@@ -630,12 +565,7 @@ void main() {
         ..nextExecuteResult = CoreResult.success(data: {'ok': true});
       final ctx = _registeredCtx(runner: runner);
       final reg = ctx.registrationFor('capture_ui_snapshot')!;
-      await reg.handler(
-        CallToolRequest(
-          name: 'capture_ui_snapshot',
-          arguments: const <String, Object?>{},
-        ),
-      );
+      await reg.handler(const <String, Object?>{});
       final cmd = runner.executedCommands.first as CaptureUiSnapshotCommand;
       expect(cmd.errorsCount, 4);
       expect(cmd.compress, isTrue);
@@ -654,16 +584,9 @@ void main() {
           ..nextExecuteResult = CoreResult.success(data: payload);
         final ctx = _registeredCtx(runner: runner);
         final reg = ctx.registrationFor('capture_ui_snapshot')!;
-        final result = await reg.handler(
-          CallToolRequest(
-            name: 'capture_ui_snapshot',
-            arguments: const <String, Object?>{},
-          ),
-        );
-        expect(result.isError, isNot(true));
-        expect(result.content, hasLength(1));
-        final text = (result.content.first as TextContent).text;
-        final decoded = jsonDecode(text) as Map<String, Object?>;
+        final result = await reg.handler(const <String, Object?>{});
+        expect(result.ok, isTrue);
+        final decoded = agentResultPayload(result);
         expect(decoded.containsKey('screenshots'), isTrue);
       },
     );
@@ -678,13 +601,8 @@ void main() {
           );
         final ctx = _registeredCtx(runner: runner);
         final reg = ctx.registrationFor('capture_ui_snapshot')!;
-        final result = await reg.handler(
-          CallToolRequest(
-            name: 'capture_ui_snapshot',
-            arguments: const <String, Object?>{},
-          ),
-        );
-        expect(result.isError, isTrue);
+        final result = await reg.handler(const <String, Object?>{});
+        expect(result.ok, isFalse);
         expect(runner.executedCommands, isEmpty);
       },
     );
@@ -699,15 +617,9 @@ void main() {
           );
         final ctx = _registeredCtx(runner: runner);
         final reg = ctx.registrationFor('capture_ui_snapshot')!;
-        final result = await reg.handler(
-          CallToolRequest(
-            name: 'capture_ui_snapshot',
-            arguments: const <String, Object?>{},
-          ),
-        );
-        expect(result.isError, isTrue);
-        final text = (result.content.first as TextContent).text;
-        final json = jsonDecode(text) as Map<String, Object?>;
+        final result = await reg.handler(const <String, Object?>{});
+        expect(result.ok, isFalse);
+        final json = agentResultPayload(result);
         _expectEnvelopeKeys(json);
       },
     );

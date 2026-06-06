@@ -21,4 +21,4 @@
 ## Distribution
 
 - **Ship:** `install.sh` → `flutter-mcp-toolkit` + `flutter-mcp-toolkit-server`.
-- **pub.dev:** `mcp_toolkit` for Flutter apps; kernel/core packages deferred.
+- **pub.dev:** Flutter MCP Toolkit packages ship on one version train. `VERSION`, `mcp_toolkit`, `mcp_server_dart`, capability/core packages, runtime metadata, and plugin manifests must agree (currently `4.0.0-dev.1` for the breaking prerelease train).

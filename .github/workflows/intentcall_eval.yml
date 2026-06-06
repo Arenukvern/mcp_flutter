@@ -1,0 +1,86 @@
+name: intentcall eval gates
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  schedule:
+    # Weekly Monday 06:00 UTC — static battery + intentcall package tests
+    - cron: '0 6 * * 1'
+
+jobs:
+  intentcall-static:
+    name: intentcall static eval (gating)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout mcp_flutter
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install mcp_server_dart dependencies
+        working-directory: mcp_server_dart
+        run: flutter pub get
+
+      - name: Static dogfood battery
+        run: make dogfood-eval-static
+
+  intentcall-integration:
+    name: intentcall integration gate (gating)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout mcp_flutter
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install mcp_server_dart dependencies
+        working-directory: mcp_server_dart
+        run: flutter pub get
+
+      - name: Hosted intentcall integration matrix
+        run: |
+          make dogfood-eval-static
+          dart test packages/server_capability_kernel packages/server_capability_core
+          cd mcp_server_dart
+          dart test test/contract/
+
+  intentcall-weekly:
+    name: intentcall package tests (weekly / main)
+    if: github.event_name == 'schedule' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    steps:
+      - name: Checkout mcp_flutter
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install mcp_server_dart dependencies
+        working-directory: mcp_server_dart
+        run: flutter pub get
+
+      - name: Hosted package compatibility smoke
+        run: |
+          dart test packages/server_capability_kernel packages/server_capability_core
+
+      - name: Static dogfood battery
+        run: make dogfood-eval-static

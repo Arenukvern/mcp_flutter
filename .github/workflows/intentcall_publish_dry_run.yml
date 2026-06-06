@@ -1,0 +1,17 @@
+# Publish dry-run moved to the standalone intentcall repository:
+#   https://github.com/<org>/intentcall — workflow .github/workflows/ci.yml
+#
+# mcp_flutter consumers use path deps to ../agentkit until Phase 7.5 hosted cutover.
+
+name: intentcall publish dry-run (moved)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  moved-notice:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "Run publish dry-run in the intentcall repo: make publish-dry-run"
+          exit 0

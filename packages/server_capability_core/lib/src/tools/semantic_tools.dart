@@ -18,15 +18,8 @@ void registerSemanticTools(final CapabilityContext context) {
       description:
           'Get compact semantic tree of interactive widgets with refs usable '
           'by interaction tools (tap_widget, enter_text, etc.)',
-      inputSchema: <String, Object?>{
-        'type': 'object',
-        'additionalProperties': false,
-        'properties': <String, Object?>{
-          'connection': connectionOverrideJsonSchema(),
-        },
-      },
-      handler: (final request) async {
-        final args = request.arguments ?? const <String, Object?>{};
+      inputSchema: semanticSnapshotInputSchema(),
+      handler: (final args) async {
         return runCommand(runner, args, const SemanticSnapshotCommand());
       },
     ),

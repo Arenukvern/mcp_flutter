@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Verifies repo VERSION matches all release-tagged version touchpoints.
+# Verifies repo VERSION matches every Flutter MCP Toolkit package and plugin
+# release touchpoint.
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -26,17 +27,18 @@ runtime_version="$(
 [[ "$runtime_version" == "$repo_version" ]] ||
   fail "kFlutterMcpVersion ($runtime_version) != VERSION ($repo_version)"
 
-server_pubspec_version="$(
-  sed -nE 's/^version:[[:space:]]*([^[:space:]#]+).*/\1/p' "$ROOT_DIR/mcp_server_dart/pubspec.yaml" | head -1
-)"
-[[ "$server_pubspec_version" == "$repo_version" ]] ||
-  fail "mcp_server_dart/pubspec.yaml version ($server_pubspec_version) != VERSION ($repo_version)"
-
-toolkit_pubspec_version="$(
-  sed -nE 's/^version:[[:space:]]*([^[:space:]#]+).*/\1/p' "$ROOT_DIR/mcp_toolkit/pubspec.yaml" | head -1
-)"
-[[ "$toolkit_pubspec_version" == "$repo_version" ]] ||
-  fail "mcp_toolkit/pubspec.yaml version ($toolkit_pubspec_version) != VERSION ($repo_version)"
+for pubspec in \
+  "$ROOT_DIR/mcp_server_dart/pubspec.yaml" \
+  "$ROOT_DIR/mcp_toolkit/pubspec.yaml" \
+  "$ROOT_DIR/packages/core/pubspec.yaml" \
+  "$ROOT_DIR/packages/server_capability_kernel/pubspec.yaml" \
+  "$ROOT_DIR/packages/server_capability_core/pubspec.yaml"; do
+  pubspec_version="$(
+    sed -nE 's/^version:[[:space:]]*([^[:space:]#]+).*/\1/p' "$pubspec" | head -1
+  )"
+  [[ "$pubspec_version" == "$repo_version" ]] ||
+    fail "${pubspec#$ROOT_DIR/} version ($pubspec_version) != VERSION ($repo_version)"
+done
 
 fmt_capability_version="$(
   sed -nE "s/.*version => '([^']+)';.*$/\1/p" "$FMT_CAPABILITY_FILE" | head -1
@@ -61,4 +63,17 @@ marketplace_version="$(
 [[ "$marketplace_version" == "$repo_version" ]] ||
   fail ".claude-plugin/marketplace.json plugins[0].version ($marketplace_version) != VERSION ($repo_version)"
 
-ok "all version touchpoints match VERSION ($repo_version)"
+for dep in \
+  flutter_mcp_toolkit_core \
+  flutter_mcp_toolkit_capability_kernel \
+  flutter_mcp_toolkit_capability_core; do
+  if ! grep -R "^[[:space:]]*$dep:[[:space:]]*\\^$repo_version\\b" \
+    "$ROOT_DIR/mcp_toolkit/pubspec.yaml" \
+    "$ROOT_DIR/mcp_server_dart/pubspec.yaml" \
+    "$ROOT_DIR/packages/server_capability_kernel/pubspec.yaml" \
+    "$ROOT_DIR/packages/server_capability_core/pubspec.yaml" >/dev/null; then
+    fail "no hosted dependency constraint found for $dep ^$repo_version"
+  fi
+done
+
+ok "package/plugin version touchpoints match VERSION ($repo_version)"

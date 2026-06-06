@@ -19,20 +19,8 @@ void registerNavigationTools(final CapabilityContext context) {
           'Dismiss the topmost popup/dialog route on the registered Navigator. '
           'Currently only action="dismiss" is supported. '
           'Requires MCPToolkitBinding.instance.navigatorKey = key on the app.',
-      inputSchema: <String, Object?>{
-        'type': 'object',
-        'additionalProperties': false,
-        'required': <String>['action'],
-        'properties': <String, Object?>{
-          'action': <String, Object?>{
-            'type': 'string',
-            'description': 'Currently must be "dismiss".',
-          },
-          'connection': connectionOverrideJsonSchema(),
-        },
-      },
-      handler: (final request) async {
-        final args = request.arguments ?? const <String, Object?>{};
+      inputSchema: handleDialogInputSchema(),
+      handler: (final args) async {
         final action = stringArgOrNull(args['action']) ?? 'dismiss';
         return runCommand(runner, args, HandleDialogCommand(action: action));
       },
@@ -46,22 +34,8 @@ void registerNavigationTools(final CapabilityContext context) {
           'Drive the registered Navigator: action=push|pop|popUntil. '
           'push and popUntil require route. push accepts arguments map. '
           'Requires MCPToolkitBinding.instance.navigatorKey = key on the app.',
-      inputSchema: <String, Object?>{
-        'type': 'object',
-        'additionalProperties': false,
-        'required': <String>['action'],
-        'properties': <String, Object?>{
-          'action': <String, Object?>{'type': 'string'},
-          'route': <String, Object?>{'type': 'string'},
-          'arguments': <String, Object?>{
-            'type': 'object',
-            'additionalProperties': true,
-          },
-          'connection': connectionOverrideJsonSchema(),
-        },
-      },
-      handler: (final request) async {
-        final args = request.arguments ?? const <String, Object?>{};
+      inputSchema: navigateInputSchema(),
+      handler: (final args) async {
         final action = stringArgOrNull(args['action']) ?? 'push';
         final route = stringArgOrNull(args['route']);
         final argsMapRaw = args['arguments'];

@@ -128,16 +128,6 @@ void main() {
       expect(captureCount, 1);
     });
   });
-
-  group('shouldSkipFlutterLayerFallback', () {
-    test('true when platform views detected', () {
-      final hints = detectPlatformViews(<String, Object?>{
-        'widgetType': 'HtmlElementView',
-        'children': const <Object?>[],
-      });
-      expect(shouldSkipFlutterLayerFallback(hints), isTrue);
-    });
-  });
 }
 
 final class _CountingDesktopService implements DesktopWindowScreenshotService {

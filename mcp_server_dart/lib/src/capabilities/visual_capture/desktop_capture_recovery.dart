@@ -27,10 +27,6 @@ final class DesktopCaptureRecoveryResult {
   };
 }
 
-/// When true, callers must not fall back to flutter_layer after desktop failure.
-bool shouldSkipFlutterLayerFallback(final PlatformViewHints hints) =>
-    hints.platformViewsDetected;
-
 /// Resolves `auto` to [ScreenshotMode.desktopWindow] when platform views need
 /// host pixels and the macOS host can capture.
 ScreenshotMode resolveEffectiveScreenshotMode({

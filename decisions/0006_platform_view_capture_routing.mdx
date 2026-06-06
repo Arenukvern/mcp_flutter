@@ -42,9 +42,11 @@ routing was inconsistent: iOS Simulator targets never used host capture, and
    platform views are detected or mode is explicitly `desktop_window`. Metadata:
    `desktopCaptureRetried`, `desktopCaptureRecovery`.
 
-6. **validate-runtime** — Do not fall back to `flutter_layer` when
-   `capturePlatformViewsDetected` is true. Report `captureFocusAttempted` from
-   executor recovery metadata (not duplicate `focus_window` CLI steps).
+6. **validate-runtime** — After a retryable `desktop_window` failure, retry once
+   with `flutter_layer` even when `capturePlatformViewsDetected` is true (showcase
+   `AppKitView` / `HtmlElementView`). Surface `captureFallbackUsed` in
+   `data.summary`. Report `captureFocusAttempted` from executor recovery metadata
+   (not duplicate `focus_window` CLI steps).
 
 7. **Tool** — `focus_window` / `fmt_focus_window` for explicit foregrounding.
 

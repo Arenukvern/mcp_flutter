@@ -4,6 +4,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .maestro
+.antigravitycli/
 /.flutter_mcp
 # Build output
 /build/
@@ -43,3 +44,4 @@ mcp_server_dart/flutter_inspector_mcp
 # Sibling repos (not part of this tree — clone separately)
 # ../flutter_harness
 # ../flutter_mcp_video
+.steward/benchmark-summaries/mcp_flutter.web-dogfood-warm.strict.json

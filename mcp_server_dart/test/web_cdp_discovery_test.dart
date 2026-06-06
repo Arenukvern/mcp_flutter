@@ -3,21 +3,19 @@ import 'dart:io';
 
 import 'package:flutter_mcp_toolkit_server/flutter_mcp_core.dart';
 import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/web_cdp_discovery.dart';
-import 'package:flutter_mcp_toolkit_server/src/shared_core/vm_connections/connection_context.dart';
-import 'package:flutter_mcp_toolkit_server/src/shared_core/vm_connections/flutter_tool_machine_discovery.dart';
 import 'package:test/test.dart';
 
 void main() {
-  test('parseChromeDebugPortsFromProcessList extracts remote-debugging-port', () {
-    const listing = '''
+  test(
+    'parseChromeDebugPortsFromProcessList extracts remote-debugging-port',
+    () {
+      const listing = '''
 /usr/bin/Google Chrome --remote-debugging-port=50541 --user-data-dir=/tmp/x
 chromium --remote-debugging-port=9222
 ''';
-    expect(
-      parseChromeDebugPortsFromProcessList(listing),
-      [9222, 50541],
-    );
-  });
+      expect(parseChromeDebugPortsFromProcessList(listing), [9222, 50541]);
+    },
+  );
 
   test('selectCdpPageTarget prefers localhost and web-port', () {
     final selected = selectCdpPageTarget(
@@ -84,13 +82,15 @@ chromium --remote-debugging-port=9222
   });
 
   test('parseMachineEvent reads browserDebugPort from nested fields', () {
-    final parsed = FlutterToolMachineDiscovery.parseMachineEvent(<String, Object?>{
-      'event': 'app.debugPort',
-      'params': <String, Object?>{
-        'wsUri': 'ws://127.0.0.1:50541/ws',
-        'port': 50541,
+    final parsed = FlutterToolMachineDiscovery.parseMachineEvent(
+      <String, Object?>{
+        'event': 'app.debugPort',
+        'params': <String, Object?>{
+          'wsUri': 'ws://127.0.0.1:50541/ws',
+          'port': 50541,
+        },
       },
-    });
+    );
     expect(parsed.browserDebugPort, 50541);
     expect(parsed.vmServiceWsUri?.port, 50541);
   });

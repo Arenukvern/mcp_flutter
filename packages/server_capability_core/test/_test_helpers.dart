@@ -1,5 +1,27 @@
 // packages/server_capability_core/test/_test_helpers.dart
+import 'dart:convert';
+
+import 'package:intentcall_schema/intentcall_schema.dart';
 import 'package:flutter_mcp_toolkit_capability_kernel/flutter_mcp_toolkit_capability_kernel.dart';
+
+/// Decodes success [AgentResult.data] or error envelope fields for assertions.
+Map<String, Object?> agentResultPayload(final AgentResult result) {
+  if (!result.ok) {
+    return <String, Object?>{
+      if (result.code != null) 'code': result.code,
+      'message': result.message,
+      ...result.details,
+    };
+  }
+  if (result.data.isNotEmpty) {
+    return result.data;
+  }
+  final text = result.artifacts.firstOrNull?.text;
+  if (text != null && text.startsWith('{')) {
+    return Map<String, Object?>.from(jsonDecode(text) as Map);
+  }
+  return result.data;
+}
 
 /// In-memory CapabilityContext for unit tests. Stores registrations and
 /// exposes them for assertion. Throws [HostServiceUnavailableError] on
