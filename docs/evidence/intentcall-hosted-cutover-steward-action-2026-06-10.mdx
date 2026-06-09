@@ -1,0 +1,79 @@
+# IntentCall hosted cutover Steward action — 2026-06-10
+
+**Status:** useful adoption gate passed · **Audience:** maintainers and agents
+
+## Claim
+
+`mcp_flutter` now has a useful Steward action for hosted IntentCall dependency cutover, not only contract-status inspection. The action proves that consumer pubspecs do not retain stale local IntentCall path dependencies.
+
+This is a bounded software-ecology improvement: it makes a real product maintenance gate discoverable through Steward actions, quick probes, and strict benchmark evidence.
+
+## Adoption run
+
+| Field | Value |
+|-------|-------|
+| Exact claim | Hosted IntentCall dependency cutover is inspectable and benchmarkable through Steward. |
+| Repo state | Branch `codex/steward-adoption-h2`, action commit `3b91408` |
+| Declared surfaces used | `steward.yaml`, `makefile`, `tool/intentcall/check_no_path_deps.sh`, `docs/superpowers/WHATS_NEXT.md` |
+| Commands/actions | `make check-contracts`, `fmt.check.intentcall-hosted-deps`, `mcp_flutter.intentcall-hosted-cutover` |
+| Artifact | Local ignored summary `.steward/benchmark-summaries/mcp_flutter.intentcall-hosted-cutover.strict.json` |
+| Verdict | Passed |
+| Lesson | Product gates that are already native and deterministic can become narrow Steward actions; runtime-heavy dogfood remains a separate scenario. |
+
+## Native gate hardening
+
+`tool/intentcall/check_no_path_deps.sh` now rejects:
+
+- `agentkit/packages`
+- `intentcall/packages`
+- `path: ...intentcall`
+
+Regression:
+
+```bash
+bash tool/intentcall/check_no_path_deps_test.sh
+# OK: check_no_path_deps rejects stale hosted-cutover path dependencies
+```
+
+Native validation:
+
+```bash
+make check-contracts
+# Passed; existing skill metadata/source warnings only
+```
+
+## Steward action
+
+Action id: `fmt.check.intentcall-hosted-deps`
+
+Safety:
+
+- `class: bounded_local`
+- `default_policy: auto`
+- `fs_write: []`
+- `git: false`
+- `network: false`
+- `secrets: false`
+- `destructive: false`
+
+## Steward proof
+
+```bash
+dart --packages=../agent_guild/packages/steward_cli/.dart_tool/package_config.json ../agent_guild/packages/steward_cli/bin/steward.dart actions list --json
+# Listed fmt.check.tool-prefix and fmt.check.intentcall-hosted-deps.
+
+dart --packages=../agent_guild/packages/steward_cli/.dart_tool/package_config.json ../agent_guild/packages/steward_cli/bin/steward.dart action inspect fmt.check.intentcall-hosted-deps --json
+# Passed: bounded_local / auto.
+
+dart --packages=../agent_guild/packages/steward_cli/.dart_tool/package_config.json ../agent_guild/packages/steward_cli/bin/steward.dart probe --profile quick --json
+# Passed: selected fmt.check.tool-prefix and fmt.check.intentcall-hosted-deps.
+
+dart --packages=../agent_guild/packages/steward_cli/.dart_tool/package_config.json ../agent_guild/packages/steward_cli/bin/steward.dart benchmark --scenario mcp_flutter.intentcall-hosted-cutover --strict --output .steward/benchmark-summaries/mcp_flutter.intentcall-hosted-cutover.strict.json --json
+# Passed: result=pass, blocked_by=null, durability.status=ready, proof.status=ready.
+```
+
+## Non-claims
+
+- This does not prove full WebMCP runtime dogfood.
+- This does not prove every IntentCall consumer outside this repo has cut over.
+- This does not claim broad H5 maturity for Skill Steward. It is one useful promoted local gate with benchmark evidence.
