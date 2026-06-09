@@ -1,0 +1,52 @@
+# Steward H2 proof — 2026-06-10
+
+**Status:** H2 smoke passed · **Audience:** maintainers and agents
+
+## Claim
+
+`mcp_flutter` is the first external Skill Steward adoption target with a current `steward/v1` contract and a passing H2 smoke loop. This proves contract discovery, safe action inspection, quick probe execution, and one strict dogfood benchmark. It does not prove product runtime correctness, full H4 workflow breadth, or H5 promoted harness maturity.
+
+## Repo state
+
+- Branch: `codex/steward-adoption-h2`
+- Contract commit: `af35ac3185c31fb26edb4aa546834f70208a5600`
+- Worktree state during H2 loop: clean
+- Native gate: `make check-contracts`
+- Steward scenario: `mcp_flutter.web-dogfood-warm`
+- Local ignored benchmark summary: `.steward/benchmark-summaries/mcp_flutter.web-dogfood-warm.strict.json`
+
+## Contract refresh
+
+- `repo.archetype` now uses the public Skill Steward archetype vocabulary: `harness`.
+- `stewardship.repo_quality` is declared with `contract_spec`, `maturity_model`, and evidence path.
+- `AGENTS.md` records the checkout-local Skill Steward CLI fallback for environments where global `steward` is stale.
+
+## Commands
+
+Run from `/Users/anton/mcp/mcp_flutter`:
+
+```bash
+make check-contracts
+/Users/anton/flutter/bin/cache/dart-sdk/bin/dart --packages=/Users/anton/mcp/agent_guild/packages/steward_cli/.dart_tool/package_config.json /Users/anton/mcp/agent_guild/packages/steward_cli/bin/steward.dart doctor --json
+/Users/anton/flutter/bin/cache/dart-sdk/bin/dart --packages=/Users/anton/mcp/agent_guild/packages/steward_cli/.dart_tool/package_config.json /Users/anton/mcp/agent_guild/packages/steward_cli/bin/steward.dart actions list --json
+/Users/anton/flutter/bin/cache/dart-sdk/bin/dart --packages=/Users/anton/mcp/agent_guild/packages/steward_cli/.dart_tool/package_config.json /Users/anton/mcp/agent_guild/packages/steward_cli/bin/steward.dart action inspect fmt.check.tool-prefix --json
+/Users/anton/flutter/bin/cache/dart-sdk/bin/dart --packages=/Users/anton/mcp/agent_guild/packages/steward_cli/.dart_tool/package_config.json /Users/anton/mcp/agent_guild/packages/steward_cli/bin/steward.dart probe --profile quick --json
+/Users/anton/flutter/bin/cache/dart-sdk/bin/dart --packages=/Users/anton/mcp/agent_guild/packages/steward_cli/.dart_tool/package_config.json /Users/anton/mcp/agent_guild/packages/steward_cli/bin/steward.dart benchmark --scenario mcp_flutter.web-dogfood-warm --strict --output .steward/benchmark-summaries/mcp_flutter.web-dogfood-warm.strict.json --json
+```
+
+## Results
+
+| Gate | Result |
+|------|--------|
+| `make check-contracts` | Passed; existing skill metadata/source warnings only |
+| `doctor --json` | Passed; `config.valid: true`, `repo.archetype: "harness"` |
+| `actions list --json` | Passed; exposed `fmt.check.tool-prefix` |
+| `action inspect fmt.check.tool-prefix --json` | Passed; action is `bounded_local` / `auto`, with no writes, no network, no secrets, and no destructive effects |
+| `probe --profile quick --json` | Passed; selected `fmt.check.tool-prefix` |
+| `benchmark --strict --output ...` | Passed; `result: "pass"`, `blocked_by: null`, `durability.status: "ready"`, `proof.status: "ready"` |
+
+## Non-claims
+
+- This does not prove the WebMCP runtime dogfood path.
+- This does not promote a new diagnostic or action to H5.
+- This does not prove every mcp_flutter workflow is agent-operable.
