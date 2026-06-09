@@ -1,7 +1,7 @@
 schema: steward/v1
 repo:
   id: mcp_flutter
-  archetype: product_mcp
+  archetype: harness
 harness:
   name: flutter-mcp-toolkit
   mode: cli_mcp
@@ -23,6 +23,10 @@ stewardship:
   knowledge:
     docs_map: docs/start_here/docs_map.mdx
     source_policy: required_for_external_claims
+  repo_quality:
+    contract_spec: steward.yaml
+    maturity_model: general_stewardship
+    evidence: .steward/benchmark-summaries
   skill_lifecycle:
     installable_skills: true
     registry: skills.sh.json

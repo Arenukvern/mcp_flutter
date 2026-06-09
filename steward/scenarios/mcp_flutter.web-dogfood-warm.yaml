@@ -4,7 +4,7 @@ scenario: mcp_flutter.web-dogfood-warm
 status: runnable
 source:
   git: https://github.com/Arenukvern/mcp_flutter
-  commit: 717c4c8c196aa2be42b395d293fec6e302cd030d
+  commit: 21c160a09bb2d7fe18993c8a703bb05d1cc64ff9
   steward_contract: steward.yaml
 safe_first_probe: fmt.check.tool-prefix
 required_actions:

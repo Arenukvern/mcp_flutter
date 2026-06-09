@@ -122,7 +122,8 @@ When implementing the **intentcall** migration, use the self-closing loop — do
 This repository strictly adheres to the Cascading Agent Surface architecture governed by **Skill Steward**.
 When writing code, documentation, or planning features:
 1. Start with `steward doctor --json`, then `steward actions list --json`.
-2. Inspect any intended action before execution: `steward action inspect <id> --json`.
-3. Use `steward probe --json --profile quick` for the safe first pass.
-4. Use `steward benchmark --scenario mcp_flutter.web-dogfood-warm --json` for the first dogfood scenario.
+2. If the global `steward` binary is stale or lacks `doctor` / `actions` / `probe` / `benchmark`, use the adjacent checkout-local Skill Steward CLI: `dart --packages=../agent_guild/packages/steward_cli/.dart_tool/package_config.json ../agent_guild/packages/steward_cli/bin/steward.dart <command>`.
+3. Inspect any intended action before execution: `steward action inspect <id> --json`.
+4. Use `steward probe --json --profile quick` for the safe first pass.
+5. Use `steward benchmark --scenario mcp_flutter.web-dogfood-warm --strict --json` for the first dogfood scenario.
 6. If you discover new complex automations or bug fixes, capture them as observations / unknown cases first; promote only after review.
