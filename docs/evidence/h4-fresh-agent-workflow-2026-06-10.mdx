@@ -25,13 +25,13 @@ git status --short --branch
 
 1. `AGENTS.md` Governance & Skill Steward section.
 2. `makefile` / `make check-contracts` native gate.
-3. Checkout-local Skill Steward CLI fallback named in `AGENTS.md`.
+3. `tool/steward/run.sh` portable Skill Steward wrapper named in `AGENTS.md`.
 
 ## Transcript
 
 ```bash
-steward doctor --json
-# Failed: global steward is stale or mismatched; no doctor/actions/probe/benchmark surface, --json rejected.
+bash tool/steward/run.sh doctor --json
+# Passed after selecting a compatible Steward command surface.
 ```
 
 ```bash
@@ -41,34 +41,34 @@ make check-contracts
 ```
 
 ```bash
-dart --packages=../agent_guild/packages/steward_cli/.dart_tool/package_config.json ../agent_guild/packages/steward_cli/bin/steward.dart doctor --json
+bash tool/steward/run.sh doctor --json
 # Passed: config valid, no diagnostics, one quick-eligible action.
 ```
 
 ```bash
-dart --packages=../agent_guild/packages/steward_cli/.dart_tool/package_config.json ../agent_guild/packages/steward_cli/bin/steward.dart actions list --json
+bash tool/steward/run.sh actions list --json
 # Passed: listed fmt.check.tool-prefix.
 ```
 
 ```bash
-dart --packages=../agent_guild/packages/steward_cli/.dart_tool/package_config.json ../agent_guild/packages/steward_cli/bin/steward.dart action inspect fmt.check.tool-prefix --json
+bash tool/steward/run.sh action inspect fmt.check.tool-prefix --json
 # Passed: bounded_local, auto, no writes, no git, no network, no secrets, no destructive effects.
 ```
 
 ```bash
-dart --packages=../agent_guild/packages/steward_cli/.dart_tool/package_config.json ../agent_guild/packages/steward_cli/bin/steward.dart probe --json --profile quick
+bash tool/steward/run.sh probe --json --profile quick
 # Passed: executed fmt.check.tool-prefix, exit_code 0.
 ```
 
 ```bash
-dart --packages=../agent_guild/packages/steward_cli/.dart_tool/package_config.json ../agent_guild/packages/steward_cli/bin/steward.dart benchmark --scenario mcp_flutter.web-dogfood-warm --strict --json
+bash tool/steward/run.sh benchmark --scenario mcp_flutter.web-dogfood-warm --strict --json
 # Passed: result=pass, proof.status=ready, durability.status=ready.
 ```
 
 ## Outcome
 
 - Fresh-agent workflow: passed.
-- Fallback needed: yes. The global `steward` binary was present but stale for the declared contract workflow, so the agent used the checkout-local CLI exactly as `AGENTS.md` instructs.
+- Fallback needed: yes. The global `steward` binary was present but stale for the declared contract workflow, so the agent used the portable wrapper and local Skill Steward override exactly as `AGENTS.md` instructs.
 - Files edited by fresh agent: none.
 - Outputs persisted by fresh agent: none.
 
@@ -77,4 +77,5 @@ dart --packages=../agent_guild/packages/steward_cli/.dart_tool/package_config.js
 - This proves one bounded contract-status workflow, not the WebMCP runtime dogfood path.
 - The scenario `source.commit` names the pre-proof subject commit. The benchmark treats a local HEAD mismatch as a warning rather than remote equivalence proof.
 - Existing skill metadata/source warnings remain in `make check-contracts`; they do not fail the native gate.
+- The original raw sibling-checkout command is local provenance only and is no longer reusable adopter guidance.
 - H5 remains unclaimed because no repeated evidence has promoted a reusable diagnostic, action, eval, or harness capability with owner, risk, redaction, and validation.

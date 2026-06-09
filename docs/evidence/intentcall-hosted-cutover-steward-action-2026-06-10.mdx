@@ -59,18 +59,20 @@ Safety:
 ## Steward proof
 
 ```bash
-dart --packages=../agent_guild/packages/steward_cli/.dart_tool/package_config.json ../agent_guild/packages/steward_cli/bin/steward.dart actions list --json
+bash tool/steward/run.sh actions list --json
 # Listed fmt.check.tool-prefix and fmt.check.intentcall-hosted-deps.
 
-dart --packages=../agent_guild/packages/steward_cli/.dart_tool/package_config.json ../agent_guild/packages/steward_cli/bin/steward.dart action inspect fmt.check.intentcall-hosted-deps --json
+bash tool/steward/run.sh action inspect fmt.check.intentcall-hosted-deps --json
 # Passed: bounded_local / auto.
 
-dart --packages=../agent_guild/packages/steward_cli/.dart_tool/package_config.json ../agent_guild/packages/steward_cli/bin/steward.dart probe --profile quick --json
+bash tool/steward/run.sh probe --profile quick --json
 # Passed: selected fmt.check.tool-prefix and fmt.check.intentcall-hosted-deps.
 
-dart --packages=../agent_guild/packages/steward_cli/.dart_tool/package_config.json ../agent_guild/packages/steward_cli/bin/steward.dart benchmark --scenario mcp_flutter.intentcall-hosted-cutover --strict --output .steward/benchmark-summaries/mcp_flutter.intentcall-hosted-cutover.strict.json --json
+bash tool/steward/run.sh benchmark --scenario mcp_flutter.intentcall-hosted-cutover --strict --output .steward/benchmark-summaries/mcp_flutter.intentcall-hosted-cutover.strict.json --json
 # Passed: result=pass, blocked_by=null, durability.status=ready, proof.status=ready.
 ```
+
+The original maintainer run used a private sibling Skill Steward checkout. That local path is provenance only; reusable adopter docs should use `tool/steward/run.sh`, a released `steward`, or `SKILL_STEWARD_ROOT=<skill-steward-checkout>` as an explicit local override.
 
 ## Non-claims
 

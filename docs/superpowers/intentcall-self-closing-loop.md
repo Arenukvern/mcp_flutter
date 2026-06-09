@@ -73,7 +73,7 @@ Run every command listed in the phase plan **Task N: exit verification** and in 
 **Default Phase 1 commands:**
 
 ```bash
-cd /Users/anton/mcp/mcp_flutter
+cd "$(git rev-parse --show-toplevel)"
 make check-intentcall-integration
 cd intentcall && make test && make analyze
 cd mcp_server_dart && dart test

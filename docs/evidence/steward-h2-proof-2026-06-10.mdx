@@ -19,20 +19,24 @@
 
 - `repo.archetype` now uses the public Skill Steward archetype vocabulary: `harness`.
 - `stewardship.repo_quality` is declared with `contract_spec`, `maturity_model`, and evidence path.
-- `AGENTS.md` records the checkout-local Skill Steward CLI fallback for environments where global `steward` is stale.
+- `AGENTS.md` records the portable `tool/steward/run.sh` wrapper and local Skill Steward checkout override for environments where global `steward` is stale.
 
-## Commands
+## Portable commands
 
-Run from `/Users/anton/mcp/mcp_flutter`:
+Run from the repository root. The wrapper uses a compatible `steward` on `PATH`, or `SKILL_STEWARD_ROOT=<skill-steward-checkout>` for local Skill Steward development.
 
 ```bash
 make check-contracts
-/Users/anton/flutter/bin/cache/dart-sdk/bin/dart --packages=/Users/anton/mcp/agent_guild/packages/steward_cli/.dart_tool/package_config.json /Users/anton/mcp/agent_guild/packages/steward_cli/bin/steward.dart doctor --json
-/Users/anton/flutter/bin/cache/dart-sdk/bin/dart --packages=/Users/anton/mcp/agent_guild/packages/steward_cli/.dart_tool/package_config.json /Users/anton/mcp/agent_guild/packages/steward_cli/bin/steward.dart actions list --json
-/Users/anton/flutter/bin/cache/dart-sdk/bin/dart --packages=/Users/anton/mcp/agent_guild/packages/steward_cli/.dart_tool/package_config.json /Users/anton/mcp/agent_guild/packages/steward_cli/bin/steward.dart action inspect fmt.check.tool-prefix --json
-/Users/anton/flutter/bin/cache/dart-sdk/bin/dart --packages=/Users/anton/mcp/agent_guild/packages/steward_cli/.dart_tool/package_config.json /Users/anton/mcp/agent_guild/packages/steward_cli/bin/steward.dart probe --profile quick --json
-/Users/anton/flutter/bin/cache/dart-sdk/bin/dart --packages=/Users/anton/mcp/agent_guild/packages/steward_cli/.dart_tool/package_config.json /Users/anton/mcp/agent_guild/packages/steward_cli/bin/steward.dart benchmark --scenario mcp_flutter.web-dogfood-warm --strict --output .steward/benchmark-summaries/mcp_flutter.web-dogfood-warm.strict.json --json
+bash tool/steward/run.sh doctor --json
+bash tool/steward/run.sh actions list --json
+bash tool/steward/run.sh action inspect fmt.check.tool-prefix --json
+bash tool/steward/run.sh probe --profile quick --json
+bash tool/steward/run.sh benchmark --scenario mcp_flutter.web-dogfood-warm --strict --output .steward/benchmark-summaries/mcp_flutter.web-dogfood-warm.strict.json --json
 ```
+
+## Local provenance
+
+The original run used the maintainer's private Dart SDK path plus a sibling Skill Steward checkout. That raw `dart --packages=... steward.dart` form is non-copyable provenance only; future evidence should use the wrapper command above and record `SKILL_STEWARD_ROOT` only as a local override.
 
 ## Results
 
