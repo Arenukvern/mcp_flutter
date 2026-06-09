@@ -44,4 +44,4 @@ mcp_server_dart/flutter_inspector_mcp
 # Sibling repos (not part of this tree — clone separately)
 # ../flutter_harness
 # ../flutter_mcp_video
-.steward/benchmark-summaries/mcp_flutter.web-dogfood-warm.strict.json
+.steward/benchmark-summaries/*.json
