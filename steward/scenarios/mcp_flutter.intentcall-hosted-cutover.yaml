@@ -1,0 +1,59 @@
+schema: steward/scenario-manifest/v1
+repo: mcp_flutter
+scenario: mcp_flutter.intentcall-hosted-cutover
+status: runnable
+source:
+  git: https://github.com/Arenukvern/mcp_flutter
+  commit: fd0c0597d0a7c57e3643a0cc423926ca4fbc5f96
+  steward_contract: steward.yaml
+safe_first_probe: fmt.check.intentcall-hosted-deps
+required_actions:
+  - fmt.check.intentcall-hosted-deps
+artifacts:
+  - id: steward_contract
+    kind: yaml
+    path: steward.yaml
+    required: true
+    durability: input
+  - id: no_path_deps_gate
+    kind: shell
+    path: tool/intentcall/check_no_path_deps.sh
+    required: true
+    durability: input
+  - id: mcp_toolkit_pubspec
+    kind: yaml
+    path: mcp_toolkit/pubspec.yaml
+    required: true
+    durability: input
+  - id: mcp_server_dart_pubspec
+    kind: yaml
+    path: mcp_server_dart/pubspec.yaml
+    required: true
+    durability: input
+  - id: core_pubspec
+    kind: yaml
+    path: packages/core/pubspec.yaml
+    required: true
+    durability: input
+  - id: server_capability_core_pubspec
+    kind: yaml
+    path: packages/server_capability_core/pubspec.yaml
+    required: true
+    durability: input
+  - id: server_capability_kernel_pubspec
+    kind: yaml
+    path: packages/server_capability_kernel/pubspec.yaml
+    required: true
+    durability: input
+  - id: flutter_test_app_pubspec
+    kind: yaml
+    path: flutter_test_app/pubspec.yaml
+    required: true
+    durability: input
+  - id: program_state
+    kind: markdown
+    path: docs/superpowers/WHATS_NEXT.md
+    required: true
+    durability: reference
+blocked_by: null
+owner: flutter-mcp-toolkit

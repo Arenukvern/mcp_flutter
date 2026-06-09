@@ -96,10 +96,47 @@ actions:
     evidence:
       redaction: steward/redaction/v1
       summary_fields: [exit_code, duration_ms, output_digest]
+  fmt.check.intentcall-hosted-deps:
+    kind: command
+    desc: Verify hosted IntentCall dependency cutover has no stale local path dependencies.
+    command:
+      argv: [/bin/bash, tool/intentcall/check_no_path_deps.sh]
+      shell: false
+    cwd: .
+    effects:
+      fs_read:
+        - tool/intentcall/check_no_path_deps.sh
+        - mcp_toolkit/pubspec.yaml
+        - mcp_server_dart/pubspec.yaml
+        - packages/core/pubspec.yaml
+        - packages/server_capability_core/pubspec.yaml
+        - packages/server_capability_kernel/pubspec.yaml
+        - flutter_test_app/pubspec.yaml
+      fs_write: []
+      git: false
+      network: false
+      secrets: false
+      destructive: false
+    safety:
+      class: bounded_local
+      default_policy: auto
+      requires_confirmation: false
+    limits:
+      timeout_ms: 10000
+      max_output_bytes: 200000
+    outputs:
+      - id: stdout
+        kind: stream
+        required: true
+        retention: summary
+        format: text
+    evidence:
+      redaction: steward/redaction/v1
+      summary_fields: [exit_code, duration_ms, output_digest]
 probes:
   quick:
     profile: quick
-    actions: [fmt.check.tool-prefix]
+    actions: [fmt.check.tool-prefix, fmt.check.intentcall-hosted-deps]
 diagnostics:
   cases: {}
 unknown_cases:
@@ -111,6 +148,8 @@ provenance:
   benchmarks:
     - id: mcp_flutter.web-dogfood-warm
       manifest: steward/scenarios/mcp_flutter.web-dogfood-warm.yaml
+    - id: mcp_flutter.intentcall-hosted-cutover
+      manifest: steward/scenarios/mcp_flutter.intentcall-hosted-cutover.yaml
 branding:
   banned_words: [unlock, supercharge, ultimate, leverage]
   ignored_paths: []

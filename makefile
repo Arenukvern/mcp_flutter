@@ -22,6 +22,7 @@ check-contracts:
 	bash tool/contracts/check_tool_prefix.sh && \
 	bash tool/contracts/check_repo_split_paths.sh && \
 	bash tool/contracts/check_intentcall_skills_grep.sh && \
+	bash tool/intentcall/check_no_path_deps.sh && \
 	dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart init intentcall-platform \
 	  --project-dir flutter_test_app --check && \
 	dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart codegen sync \
