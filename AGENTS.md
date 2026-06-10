@@ -1,7 +1,7 @@
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **mcp_flutter** (3749 symbols, 8525 relationships, 299 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **mcp_flutter** (4864 symbols, 10694 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -126,4 +126,5 @@ When writing code, documentation, or planning features:
 3. Inspect any intended action before execution: `steward action inspect <id> --json`.
 4. Use `steward probe --json --profile quick` for the safe first pass.
 5. Use `steward benchmark --scenario mcp_flutter.web-dogfood-warm --strict --json` for the first dogfood scenario.
-6. If you discover new complex automations or bug fixes, capture them as observations / unknown cases first; promote only after review.
+6. For the hosted IntentCall dependency gate, inspect `fmt.check.intentcall-hosted-deps` and benchmark `mcp_flutter.intentcall-hosted-cutover`; promotion evidence is in `docs/evidence/steward-h5-hosted-cutover-promotion-2026-06-10.mdx`.
+7. If you discover new complex automations or bug fixes, capture them as observations / unknown cases first; promote only after review.

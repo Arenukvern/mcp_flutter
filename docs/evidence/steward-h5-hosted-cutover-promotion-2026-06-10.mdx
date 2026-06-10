@@ -1,0 +1,69 @@
+# Steward H5 hosted cutover promotion — 2026-06-10
+
+**Status:** bounded H5 promoted capability · **Audience:** maintainers and agents
+
+## Claim
+
+`fmt.check.intentcall-hosted-deps` is the first bounded H5 Skill Steward capability in this repository. It promotes an existing deterministic product gate into a discoverable, inspectable, benchmarkable Steward action.
+
+The useful outcome is not "another green benchmark." The useful outcome is that future agents can prevent local-only IntentCall path dependencies from hiding hosted dependency regressions.
+
+## Tool improvement packet
+
+| Field | Answer |
+|-------|--------|
+| Observation | Hosted cutover can regress when a consumer pubspec regains `agentkit/packages`, `intentcall/packages`, or `path: ...intentcall`. |
+| User value | Agents can keep `mcp_flutter` aligned to hosted `intentcall_*` packages instead of silently succeeding through local sibling paths. |
+| Native owner | `tool/intentcall/check_no_path_deps.sh` and `tool/intentcall/check_no_path_deps_test.sh`. |
+| Steward surface | Action `fmt.check.intentcall-hosted-deps`; scenario `mcp_flutter.intentcall-hosted-cutover`. |
+| Safety and effects | `bounded_local`, auto policy, explicit `fs_read`, `fs_write: []`, `git: false`, `network: false`, `secrets: false`, `destructive: false`. |
+| Redaction | `steward/redaction/v1`; benchmark summaries keep result, digests, owner, proof, durability, warnings, and subject commit. |
+| Falsifier | `bash tool/intentcall/check_no_path_deps_test.sh` rejects synthetic stale path dependencies. |
+| Positive proof | `steward probe --profile quick --json` runs the action on current state; strict benchmark result is `pass`. |
+| Promotion criteria | Owner, risk, redaction, validation, falsifier, quick probe, strict benchmark, and non-claims are all recorded. |
+| Educational note | Promote deterministic native gates that prevent real repo maintenance failures; keep runtime-heavy dogfood in a separate scenario. |
+
+## Fresh-agent surface check
+
+A separate fresh-agent exercise used declared surfaces first and ran:
+
+```bash
+steward doctor --json
+steward actions list --json
+steward action inspect fmt.check.intentcall-hosted-deps --json
+steward probe --profile quick --json
+bash tool/intentcall/check_no_path_deps_test.sh
+git status --short
+```
+
+Verdict: the action was discoverable, inspectable, quick-probe eligible, bounded-local, and live-passed. The test rejected stale hosted-cutover path dependencies. The worktree remained clean during that exercise.
+
+The exercise found one improvement: owner/risk/redaction/validation should be visible from the fresh-agent surface alone. The action evidence now exposes:
+
+```yaml
+owner: flutter-mcp-toolkit
+risk: hosted_dependency_cutover_regression
+redaction: steward/redaction/v1
+validation:
+  native_gate: make check-contracts
+  falsifier: bash tool/intentcall/check_no_path_deps_test.sh
+  benchmark: mcp_flutter.intentcall-hosted-cutover
+```
+
+## Verification commands
+
+Run from the repo root with a current released `steward` command:
+
+```bash
+steward action inspect fmt.check.intentcall-hosted-deps --json
+bash tool/intentcall/check_no_path_deps_test.sh
+make check-contracts
+steward benchmark --scenario mcp_flutter.intentcall-hosted-cutover --strict --output .steward/benchmark-summaries/mcp_flutter.intentcall-hosted-cutover.strict.json --json
+```
+
+## Non-claims
+
+- This is bounded H5 for one hosted-dependency gate, not broad repo H5.
+- This does not prove WebMCP runtime dogfood.
+- This does not prove all IntentCall consumers outside this repo have cut over.
+- `source.commit` in benchmark summaries is the subject commit, not remote-equivalence proof.

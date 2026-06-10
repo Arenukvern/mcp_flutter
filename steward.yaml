@@ -131,8 +131,14 @@ actions:
         retention: summary
         format: text
     evidence:
+      owner: flutter-mcp-toolkit
+      risk: hosted_dependency_cutover_regression
       redaction: steward/redaction/v1
       summary_fields: [exit_code, duration_ms, output_digest]
+      validation:
+        native_gate: make check-contracts
+        falsifier: bash tool/intentcall/check_no_path_deps_test.sh
+        benchmark: mcp_flutter.intentcall-hosted-cutover
 probes:
   quick:
     profile: quick
