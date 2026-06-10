@@ -1,0 +1,48 @@
+{
+  "schema": "steward/benchmark-summary/v1",
+  "repo": "mcp_flutter",
+  "repo_commit": "7b17f4b293408987a978987b5d5c879095d15790",
+  "dirty": false,
+  "runner": "steward@0.3.4",
+  "scenario": "mcp_flutter.web-dogfood-warm",
+  "scenario_source": {
+    "git": "https://github.com/Arenukvern/mcp_flutter",
+    "commit": "21c160a09bb2d7fe18993c8a703bb05d1cc64ff9",
+    "steward_contract": "steward.yaml"
+  },
+  "scenario_manifest": "steward/scenarios/mcp_flutter.web-dogfood-warm.yaml",
+  "scenario_manifest_sha256": "20fb678eabdabeaa1c72d0309d36586f5d11ee90a2bfb38acebdc03e3927dc1f",
+  "run_id": "2026-06-10T00:20:55.813714Z",
+  "mode": "cold_start",
+  "result": "pass",
+  "actions_run": [
+    "fmt.check.tool-prefix"
+  ],
+  "execution_summaries": [
+    {
+      "action_id": "fmt.check.tool-prefix",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_ms": 306,
+      "stdout_sha256": "77210e282bb78b6d788c27510fe3cc670300d2485a32498eec672785f51fa7b3",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "output_truncated": false
+    }
+  ],
+  "durability": {
+    "status": "ready",
+    "blocking_paths": [],
+    "warnings": [
+      "Local HEAD does not match source.commit; treating source.commit as the subject commit, not remote proof."
+    ]
+  },
+  "proof": {
+    "mode": "strict",
+    "status": "ready",
+    "broad_read_actions": [],
+    "blocking_paths": [],
+    "warnings": []
+  },
+  "owner": "flutter-mcp-toolkit",
+  "blocked_by": null
+}
