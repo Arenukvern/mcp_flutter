@@ -121,9 +121,9 @@ When implementing the **intentcall** migration, use the self-closing loop — do
 
 This repository strictly adheres to the Cascading Agent Surface architecture governed by **Skill Steward**.
 When writing code, documentation, or planning features:
-1. Start with `bash tool/steward/run.sh doctor --json`, then `bash tool/steward/run.sh actions list --json`.
-2. If the wrapper reports a missing or stale `steward`, install the released CLI with `curl -fsSL https://raw.githubusercontent.com/Arenukvern/skill_steward/main/install.sh | bash`, or run with `SKILL_STEWARD_ROOT=<skill-steward-checkout>` for local Skill Steward development. Do not copy absolute SDK paths or raw `dart --packages=.../steward.dart` commands into reusable docs.
-3. Inspect any intended action before execution: `bash tool/steward/run.sh action inspect <id> --json`.
-4. Use `bash tool/steward/run.sh probe --json --profile quick` for the safe first pass.
-5. Use `bash tool/steward/run.sh benchmark --scenario mcp_flutter.web-dogfood-warm --strict --json` for the first dogfood scenario.
+1. Start with `steward doctor --json`, then `steward actions list --json`.
+2. If `steward` is missing or stale, install the released CLI with `curl -fsSL https://raw.githubusercontent.com/Arenukvern/skill_steward/main/install.sh | bash`. For local Skill Steward development, run from the Skill Steward checkout with `cd packages/steward_cli && dart run :steward <command>`, or activate that checkout with `dart pub global activate --source path packages/steward_cli`. Do not copy absolute SDK paths, raw `dart --packages=.../steward.dart` commands, or adopter-local runner scripts into reusable docs.
+3. Inspect any intended action before execution: `steward action inspect <id> --json`.
+4. Use `steward probe --json --profile quick` for the safe first pass.
+5. Use `steward benchmark --scenario mcp_flutter.web-dogfood-warm --strict --json` for the first dogfood scenario.
 6. If you discover new complex automations or bug fixes, capture them as observations / unknown cases first; promote only after review.

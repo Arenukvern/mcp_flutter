@@ -28,7 +28,7 @@ check-contracts:
 	dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart codegen sync \
 	  --platform web,android,ios,macos,linux,windows \
 	  --project-dir flutter_test_app --check && \
-	bash tool/steward/run.sh validate skills/
+	steward validate skills/
 
 .PHONY: release-artifacts
 release-artifacts:

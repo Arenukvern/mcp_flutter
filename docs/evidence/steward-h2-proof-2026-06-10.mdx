@@ -21,24 +21,24 @@
 
 - `repo.archetype` now uses the public Skill Steward archetype vocabulary: `harness`.
 - `stewardship.repo_quality` is declared with `contract_spec`, `maturity_model`, and evidence path.
-- `AGENTS.md` records the portable `tool/steward/run.sh` wrapper and local Skill Steward checkout override for environments where global `steward` is stale.
+- `AGENTS.md` now records the released `steward` executable as the reusable command surface. The earlier `tool/steward/run.sh` bridge was temporary proof scaffolding for a stale local binary and is not the adoption pattern for future repos.
 
 ## Portable commands
 
-Run from the repository root. The wrapper uses a compatible `steward` on `PATH`, or `SKILL_STEWARD_ROOT=<skill-steward-checkout>` for local Skill Steward development.
+Run from the repository root after installing a current `steward` binary.
 
 ```bash
 make check-contracts
-bash tool/steward/run.sh doctor --json
-bash tool/steward/run.sh actions list --json
-bash tool/steward/run.sh action inspect fmt.check.tool-prefix --json
-bash tool/steward/run.sh probe --profile quick --json
-bash tool/steward/run.sh benchmark --scenario mcp_flutter.web-dogfood-warm --strict --output .steward/benchmark-summaries/mcp_flutter.web-dogfood-warm.strict.json --json
+steward doctor --json
+steward actions list --json
+steward action inspect fmt.check.tool-prefix --json
+steward probe --profile quick --json
+steward benchmark --scenario mcp_flutter.web-dogfood-warm --strict --output .steward/benchmark-summaries/mcp_flutter.web-dogfood-warm.strict.json --json
 ```
 
 ## Local provenance
 
-The original run used the maintainer's private Dart SDK path plus a sibling Skill Steward checkout. That raw `dart --packages=... steward.dart` form is non-copyable provenance only; future evidence should use the wrapper command above and record `SKILL_STEWARD_ROOT` only as a local override.
+The original run used the maintainer's private Dart SDK path plus a sibling Skill Steward checkout. A later proof used a temporary repo-local wrapper to bridge a stale global binary. Both forms are non-copyable provenance only; future evidence should use the released `steward` executable, Skill Steward's setup action, or an explicit maintainer source checkout.
 
 ## Results
 

@@ -60,20 +60,20 @@ Safety:
 ## Steward proof
 
 ```bash
-bash tool/steward/run.sh actions list --json
+steward actions list --json
 # Listed fmt.check.tool-prefix and fmt.check.intentcall-hosted-deps.
 
-bash tool/steward/run.sh action inspect fmt.check.intentcall-hosted-deps --json
+steward action inspect fmt.check.intentcall-hosted-deps --json
 # Passed: bounded_local / auto.
 
-bash tool/steward/run.sh probe --profile quick --json
+steward probe --profile quick --json
 # Passed: selected fmt.check.tool-prefix and fmt.check.intentcall-hosted-deps.
 
-bash tool/steward/run.sh benchmark --scenario mcp_flutter.intentcall-hosted-cutover --strict --output .steward/benchmark-summaries/mcp_flutter.intentcall-hosted-cutover.strict.json --json
+steward benchmark --scenario mcp_flutter.intentcall-hosted-cutover --strict --output .steward/benchmark-summaries/mcp_flutter.intentcall-hosted-cutover.strict.json --json
 # Passed: result=pass, blocked_by=null, durability.status=ready, proof.status=ready.
 ```
 
-The original maintainer run used a private sibling Skill Steward checkout. That local path is provenance only; reusable adopter docs should use `tool/steward/run.sh`, a released `steward`, or `SKILL_STEWARD_ROOT=<skill-steward-checkout>` as an explicit local override.
+The original maintainer run used a private sibling Skill Steward checkout, and a later proof used a temporary repo-local wrapper to bridge a stale global binary. Those forms are provenance only; reusable adopter docs should use the released `steward` executable, Skill Steward's setup action, or an explicit maintainer source checkout.
 
 The tracked redacted summary preserves the benchmark result, proof status, durability status, subject commit, and warnings while omitting machine-local command paths.
 

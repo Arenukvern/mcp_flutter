@@ -25,7 +25,7 @@ git status --short --branch
 
 1. `AGENTS.md` Governance & Skill Steward section.
 2. `makefile` / `make check-contracts` native gate.
-3. `tool/steward/run.sh` portable Skill Steward wrapper named in `AGENTS.md`.
+3. At proof time, `tool/steward/run.sh` was the temporary Skill Steward bridge named in `AGENTS.md`; current reusable guidance uses the released `steward` executable.
 
 ## Transcript
 
@@ -68,15 +68,16 @@ bash tool/steward/run.sh benchmark --scenario mcp_flutter.web-dogfood-warm --str
 ## Outcome
 
 - Fresh-agent workflow: passed.
-- Fallback needed: yes. The global `steward` binary was present but stale for the declared contract workflow, so the agent used the portable wrapper and local Skill Steward override exactly as `AGENTS.md` instructs.
+- Fallback needed at proof time: yes. The global `steward` binary was present but stale for the declared contract workflow, so the agent used the then-documented temporary wrapper and local Skill Steward override.
 - Files edited by fresh agent: none.
 - Outputs persisted by fresh agent: none.
 - Review artifact added later: `docs/evidence/generated/mcp_flutter.web-dogfood-warm.strict.redacted.json`.
+- Current adoption note: the temporary wrapper was not promoted. New adopters should install and run `steward` directly.
 
 ## Remaining gaps and non-claims
 
 - This proves one bounded contract-status workflow, not the WebMCP runtime dogfood path.
 - The scenario `source.commit` names the pre-proof subject commit. The benchmark treats a local HEAD mismatch as a warning rather than remote equivalence proof.
 - Existing skill metadata/source warnings remain in `make check-contracts`; they do not fail the native gate.
-- The original raw sibling-checkout command is local provenance only and is no longer reusable adopter guidance.
+- The original raw sibling-checkout command and temporary wrapper are local provenance only and are no longer reusable adopter guidance.
 - H5 remains unclaimed because no repeated evidence has promoted a reusable diagnostic, action, eval, or harness capability with owner, risk, redaction, and validation.
