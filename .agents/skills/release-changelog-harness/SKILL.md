@@ -5,7 +5,7 @@ license: MIT
 type: governance
 metadata:
   author: skill-steward
-  version: "1.1.0"
+  version: "1.2.0"
   category: harness
 paths:
   - "CHANGELOG.md"
@@ -50,6 +50,7 @@ Before picking a tool, agree the repo obeys:
 3. **Mechanical publish path** — One documented command sequence in **DX_FAQ**; CI is the source of truth for “can ship.”
 4. **Agent-readable output** — Post-release, `CHANGELOG.md` (or per-package changelogs) reflects what shipped; agents can answer “what changed in vX?”
 5. **Why is recorded** — Non-obvious toolchain choice → short **ADR** or DESIGN_FAQ Q&A.
+6. **Install trust matches release truth** — The latest GitHub Release, release assets, checksums, package versions, and install docs must agree; stale pinned install examples are release drift.
 
 ## Ecosystem router (default patterns)
 
@@ -60,9 +61,8 @@ Before picking a tool, agree the repo obeys:
 | Dart monorepo (`melos.yaml`) | [Melos](https://melos.invertase.dev/) `version` + changelog | Align with pub publish order in DX_FAQ. |
 | Single Dart package | `CHANGELOG.md` + git tag + `dart pub publish` | Keep entries agent-editable markdown. |
 | Rust workspace | [release-plz](https://github.com/MarcoIeni/release-plz) or cargo-release + git-cliff | Prefer automation that opens version PRs. |
-| Meta / skills-only (Skill Steward) | [Changesets](https://github.com/changesets/changesets) + `CHANGELOG.md` + git tag ([ADR 0009](../../docs/decisions/0009-adopt-changesets-for-repo-releases.mdx)) | Repo semver only; skills unversioned; document consumer impact in `.changeset/*.md`. |
 | Product harness w/ binaries | release-please + tag CI + `install.sh` | **Do not** add a second version source; follow [binary-release-contract.md](references/binary-release-contract.md) |
-| Meta / skills-only (Skill Steward) | Changesets + tag CI + `install.sh` | Version synchronized with CLI binary releases via [binary-release-contract.md](references/binary-release-contract.md) per [ADR 0014](../../docs/decisions/0014-distribute-steward-cli-as-binary.mdx) |
+| Meta + CLI binary (Skill Steward) | Changesets + single Release workflow + `install.sh` | Version PR updates git truth first; the release workflow tags, builds assets, creates/updates GitHub Release, and verifies latest/install trust per [ADR 0014](../../docs/decisions/0014-distribute-steward-cli-as-binary.mdx) |
 
 Full matrix: [ecosystem-tooling.md](references/ecosystem-tooling.md). Binary/install: [binary-release-contract.md](references/binary-release-contract.md).
 
@@ -71,13 +71,13 @@ Full matrix: [ecosystem-tooling.md](references/ecosystem-tooling.md). Binary/ins
 - “We should use Changesets like the JS community”
 - Release process is unclear, versions drift, or agents can’t tell what shipped
 - Adding release CI, versioning policy, or monorepo publish workflow
-- Auditing whether changelog tooling matches repo archetype (`mcp-harness-repo-maintainer`)
+- Auditing whether changelog tooling matches repo archetype (`repo-quality-system-lifecycle`)
 
 ## Workflow
 
 ### 1. Classify the repo
 
-Use `mcp-harness-repo-maintainer` archetype (product MCP, platform lib, harness, meta steward). **Meta and harness repos** need legibility; **app repos** need legibility **and** runtime compatibility notes.
+Use `repo-quality-system-lifecycle` archetypes (app, library, CLI/tool, plugin, harness, meta/governance). **Meta and harness repos** need legibility; **app repos** need legibility **and** runtime compatibility notes.
 
 ### 2. Choose generator (ADR if non-obvious)
 
@@ -95,7 +95,7 @@ Record choice in `docs/decisions/NNNN-release-changelog-tooling.md` when more th
 | Surface | Action |
 |---------|--------|
 | **DX_FAQ** | Memory-palace block: add changeset, version, publish, verify tag |
-| **CI** | Block publish/tag if changesets/changelog policy violated |
+| **CI** | Block publish/tag if changesets/changelog policy violated; for binaries, use one release owner or an explicit workflow_run/PAT handoff |
 | **AGENTS.md** | One row in doc router—no full Changesets essay |
 | **CONTRIBUTING** | “Every user-facing PR adds a changeset or CHANGELOG entry” |
 
@@ -111,15 +111,17 @@ Contributor adds:
 Short imperative summary agents can quote in release notes.
 ```
 
-#### Private Packages Tagging
-By default, Changesets ignores packages marked with `"private": true` in `package.json` for Git release tagging. To allow versioning and tagging for a private root package or private workspace modules, update `.changeset/config.json` to include:
+#### Private Packages and Public Tags
+By default, Changesets ignores packages marked with `"private": true` in `package.json`. To allow version bumps for a private root package or private workspace modules, update `.changeset/config.json` to include:
 
 ```json
   "privatePackages": {
     "version": true,
-    "tag": true
+    "tag": false
   }
 ```
+
+Use `"tag": false` when a custom release script owns the public `vX.Y.Z` tag. Use `"tag": true` only when Changesets itself should create package-scoped tags.
 
 Maintainer flow:
 
@@ -131,6 +133,17 @@ git commit -am "chore: version packages"
 ```
 
 Publish: project-specific (`changeset publish`, GitHub Action, or npm provenance)—**document exact commands in DX_FAQ**, not here.
+
+For automated Changesets releases, prefer:
+
+```text
+merge feature PR with changeset
+→ CI opens/updates Version PR
+→ merge Version PR
+→ same Release workflow creates vX.Y.Z, builds artifacts, creates/updates GitHub Release, verifies latest release state
+```
+
+If the tag is pushed with `GITHUB_TOKEN`, do not depend on a separate `on: push: tags` workflow to build assets; GitHub suppresses recursive workflow triggers for that token.
 
 ### 5. Choose distribution surface
 
@@ -148,7 +161,7 @@ Publish: project-specific (`changeset publish`, GitHub Action, or npm provenance
 - [ ] CI fails when a version bump lacks notes
 - [ ] DX_FAQ lists commands copy-paste ready
 - [ ] No duplicate version sources (e.g. hand bump + bot bump)
-- [ ] If binaries: tag assets match version SSOT; `install.sh` documents pinned install
+- [ ] If binaries: tag assets match version SSOT; latest GitHub Release points to the package version; `install.sh` defaults to latest and pinned examples use placeholders or generated checks
 
 ## Anti-patterns
 
@@ -160,17 +173,18 @@ Publish: project-specific (`changeset publish`, GitHub Action, or npm provenance
 | Skipping changesets “because AI will write CHANGELOG at release” | Non-deterministic; no PR-time review |
 | Version bumps without consumer-facing sentence | Users and agents can’t assess upgrade risk |
 | Binary Releases without changelog in git | Users see version; agents miss intent |
+| Separate tag-triggered binary workflow after a `GITHUB_TOKEN` tag push | GitHub suppresses recursive workflow triggers; latest release/assets can silently lag |
+| Static pinned install examples with real old versions | README/DX says one thing while GitHub Releases/install.sh say another |
 | `git clone` as end-user install for a server product | Use `install.sh` + Release assets (binary release pattern) |
 
 ## Related skills
 
 | Skill | Use for |
 |-------|---------|
-| `mcp-harness-repo-maintainer` | Mechanical gates, docs as SSOT |
-| `faq-driven-docs` | DX_FAQ release commands |
-| `adr-records` | Record toolchain choice |
-| `mcp-harness-repo-maintainer` | Archetype + sibling release consistency |
-| `north-star-governance` | Don’t leave release plans as permanent plan files |
+| `repo-quality-system-lifecycle` | Repo archetype, mechanical gates, evidence path |
+| `mcp-harness-repo-maintainer` | Typed actions, probes, benchmarks, CLI/MCP parity |
+| `repository-governance-lifecycle` | ADRs, DESIGN_FAQ/DX_FAQ updates, and plan hygiene |
+| `skill-source-citations` | Durable release-tooling sources |
 
 ## Install
 

@@ -38,14 +38,14 @@ Copy the section for your archetype before a release or large PR.
 - [ ] Run export/registry scripts if profiles are added
 - [ ] Document consumers (harness comparison steps, dogfood golden path)
 
-## Archetype E — Meta Steward (e.g., skill_steward)
+## Meta/governance repo (e.g., skill_steward)
 
 - [ ] Run static analysis and lints on linter/validator CLI
 - [ ] Run validator CLI against meta-skills
 - [ ] Validate documentation / site checker if documentation touched
 - [ ] Sync skills registries and README tables
 - [ ] Ensure no domain/product MCP or product domain skills are added
-- [ ] **No binary release train** — skills via `npx skills` only (see ADR 0010)
+- [ ] Verify distribution surfaces are intentional: skills via `npx skills`; `steward` CLI binaries only when synchronized with the repo release contract (see ADR 0014)
 - [ ] Verify stale planning/plan files are removed (plan hygiene)
 - [ ] Verify IDE hooks / configuration files are valid
 

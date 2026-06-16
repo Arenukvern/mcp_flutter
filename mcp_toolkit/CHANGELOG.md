@@ -16,7 +16,7 @@
 
 ### Migration
 
-See [intentcall Phase 6 migration](../docs/start_here/migration_intentcall_phase6.md) and run:
+See [intentcall Phase 6 migration](../docs/start_here/migration_mcp_call_entry_to_agent_call_entry.md) and run:
 
 ```bash
 flutter-mcp-toolkit migrate agent-entries --check lib/

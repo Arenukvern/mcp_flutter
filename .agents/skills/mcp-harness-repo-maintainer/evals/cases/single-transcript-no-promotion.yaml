@@ -1,0 +1,20 @@
+id: mcp-maintainer-single-transcript-no-promotion
+skill: mcp-harness-repo-maintainer
+routing: should_trigger
+input: "One H4 transcript showed the global steward binary was stale; promote a permanent diagnostic immediately"
+rules:
+  - kind: file_exists
+    path: references/evals.md
+  - kind: file_exists
+    path: ../../docs/evidence/h3-h5-adoption-promotion-packet-2026-06-10.mdx
+  - kind: description_includes_any
+    terms: ["action candidates", "benchmarks", "cold-start"]
+  - kind: body_includes_any
+    path: SKILL.md
+    terms: ["Do not promote diagnostics from the same run", "unknown case first"]
+  - kind: body_includes_any
+    path: ../../docs/evidence/h3-h5-adoption-promotion-packet-2026-06-10.mdx
+    terms: ["one transcript", "not H5", "capture first", "repeated evidence"]
+  - kind: body_includes_any
+    path: ../../packages/steward_cli/README.md
+    terms: ["Evidence growth loop", "can_promote_in_this_run: false"]

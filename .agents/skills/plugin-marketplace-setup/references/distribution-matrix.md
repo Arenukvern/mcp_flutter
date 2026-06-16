@@ -10,6 +10,7 @@ Extended channel list for skills + plugins. Verify against upstream docs when sh
 | skills.sh index | Yes (public repos) | No | No | No |
 | Project scope | `.agents/skills/` + agent symlinks | Same | No | No |
 | Global `-g` | `~/.agents/skills/` | Same | No | No |
+| Zed native | `.agents/skills/` project | `~/.agents/skills/` global | No | No |
 
 ## Plugins by agent
 
@@ -18,7 +19,8 @@ Extended channel list for skills + plugins. Verify against upstream docs when sh
 | Cursor public | `.cursor-plugin/plugin.json` | cursor.com/marketplace publish | N/A |
 | Cursor team | `.cursor-plugin/marketplace.json` | Dashboard import GitHub repo | Teams / Enterprise |
 | Claude Code | `.claude-plugin/*` | `/plugin marketplace add` | Private git + tokens |
-| Codex | per OpenAI plugin layout | `codex plugin marketplace add` | Private git |
+| Codex | `.codex-plugin/plugin.json` | `.agents/plugins/marketplace.json` + `codex plugin add` | Repo or personal marketplace |
+| Open Plugin v1 | `.plugin/plugin.json` | Host-specific | Vendor-neutral baseline |
 | Cline / Kiro hooks | varies | skills CLI + native hooks | varies |
 
 ## Product example (generic product MCP)
@@ -38,4 +40,6 @@ Hooks / MCP / commands bundle      → plugin manifest per agent
 Multiple plugins one repo          → marketplace.json
 Cursor org-internal only           → team marketplace (private Git)
 Claude team private git            → .claude-plugin/marketplace.json + tokens
+Codex local development            → .agents/plugins/marketplace.json + reinstall/cache refresh
+Zed reusable workflow              → .agents/skills/ direct child skill folder
 ```

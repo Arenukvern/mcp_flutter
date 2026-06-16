@@ -1,5 +1,5 @@
-id: create-skill-infra-dormant
-skill: create-skill
+id: skill-authoring-infra-dormant
+skill: skill-authoring-lifecycle
 routing: should_not_trigger
 input: "Deploy a Kubernetes cluster to production using Terraform modules"
 rules:

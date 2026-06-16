@@ -326,6 +326,25 @@ final class EnterTextCommand extends CoreCommand {
   String get name => 'enter_text';
 }
 
+final class RevealSearchCommand extends CoreCommand {
+  const RevealSearchCommand({
+    required this.query,
+    this.matchBy = 'text',
+    this.direction = 'down',
+    this.maxAttempts = 5,
+    this.distance = 300,
+  });
+
+  final String query;
+  final String matchBy;
+  final String direction;
+  final int maxAttempts;
+  final double distance;
+
+  @override
+  String get name => 'reveal_search';
+}
+
 final class ScrollCommand extends CoreCommand {
   const ScrollCommand({
     required this.direction,

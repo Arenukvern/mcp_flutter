@@ -1,0 +1,19 @@
+id: mcp-maintainer-generational-skeptic-promotion-trigger
+skill: mcp-harness-repo-maintainer
+routing: should_trigger
+input: "We keep adding Steward tools while adopting mcp_flutter; use the Skeptic lens to decide whether this should stay a native command, become docs, become codegen, become a harness action, or be deleted"
+rules:
+  - kind: file_exists
+    path: references/evals.md
+  - kind: file_exists
+    path: ../../docs/core/generational-architecture-ladder.mdx
+  - kind: file_exists
+    path: ../../docs/evidence/adoption-run-v2-template.mdx
+  - kind: description_includes_any
+    terms: ["capability-level adoption evidence", "cold-start proof loops", "actions"]
+  - kind: body_includes_any
+    path: SKILL.md
+    terms: ["Skeptic before promotion", "smallest useful layer", "deletion/collapse"]
+  - kind: body_includes_any
+    path: ../../docs/evidence/adoption-run-v2-template.mdx
+    terms: ["generational_architecture_check", "maintenance_delta", "held_out_benchmarks"]

@@ -3,10 +3,9 @@ import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 
-
 /// App dynamic tools vs `fmt_*` catalog parity.
 ///
-/// Thirteen tools from [getInteractionToolkitEntries] in
+/// Fourteen tools from [getInteractionToolkitEntries] in
 /// `interaction_toolkit.dart` (`registerDynamics`) are asserted here against
 /// shared maps in `interaction_input_schemas.dart` (`flutter_mcp_toolkit_core`).
 /// Host `fmt_*` registrations live in `packages/server_capability_core/lib/src/tools/*_tools.dart`.
@@ -16,7 +15,7 @@ import 'package:mcp_toolkit/mcp_toolkit.dart';
 /// - `hot_reload_flutter`, `hot_restart_flutter` — `flutter_inspector_tools.dart`
 /// - `evaluate_dart_expression`, `hot_reload_and_capture` — `interaction_tools.dart`
 ///
-/// Full schema router parity (18 core, 22 tier A exec, 24 in
+/// Full schema router parity (19 core, 23 tier A exec, 25 in
 /// `interactionCatalogInputSchemaFor`) is in
 /// `packages/server_capability_core/test/tools/interaction_input_schemas_test.dart`.
 void main() {
@@ -114,6 +113,32 @@ void main() {
       final arguments = props['arguments']! as Map<String, Object?>;
       expect(arguments['additionalProperties'], isTrue);
       expect(props.containsKey('connection'), isTrue);
+    });
+
+    test('reveal_search', () {
+      final schema = appInputSchema('reveal_search');
+      expect(schema['additionalProperties'], isFalse);
+      expect(schema['required'], ['query']);
+      final props = schema['properties']! as Map<String, Object?>;
+      expect(
+        props.keys,
+        containsAll(<String>[
+          'query',
+          'matchBy',
+          'direction',
+          'maxAttempts',
+          'distance',
+          'connection',
+        ]),
+      );
+      expect((props['matchBy']! as Map<String, Object?>)['enum'], [
+        'text',
+        'identifier',
+        'label',
+        'value',
+        'hint',
+      ]);
+      expect((props['maxAttempts']! as Map<String, Object?>)['maximum'], 10);
     });
 
     for (final tool in <(String, Map<String, Object?> Function())>[

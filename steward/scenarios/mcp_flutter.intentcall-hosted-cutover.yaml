@@ -50,9 +50,9 @@ artifacts:
     path: flutter_test_app/pubspec.yaml
     required: true
     durability: input
-  - id: program_state
+  - id: intentcall_consumer_guide
     kind: markdown
-    path: docs/superpowers/WHATS_NEXT.md
+    path: docs/intentcall/README.md
     required: true
     durability: reference
 blocked_by: null

@@ -330,6 +330,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     SemanticSnapshotCommand() => _semanticSnapshot(),
     TapWidgetCommand() => _tapWidget(command),
     EnterTextCommand() => _enterText(command),
+    RevealSearchCommand() => _revealSearch(command),
     ScrollCommand() => _scroll(command),
     LongPressCommand() => _longPress(command),
     SwipeCommand() => _swipe(command),
@@ -978,6 +979,30 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       return CoreResult.failure(
         code: CoreErrorCode.interactionFailed,
         message: 'Failed to enter text: $e',
+      );
+    }
+  }
+
+  Future<CoreResult> _revealSearch(final RevealSearchCommand command) async {
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) return ensureFailure;
+
+    try {
+      final result = await connectionContext.callFlutterExtension(
+        mcpToolkitExtKeys.revealSearch,
+        args: {
+          'query': command.query,
+          'matchBy': command.matchBy,
+          'direction': command.direction,
+          'maxAttempts': command.maxAttempts,
+          'distance': command.distance,
+        },
+      );
+      return CoreResult.success(data: _map(result.json));
+    } on Exception catch (e) {
+      return CoreResult.failure(
+        code: CoreErrorCode.interactionFailed,
+        message: 'Failed to reveal/search semantic target: $e',
       );
     }
   }

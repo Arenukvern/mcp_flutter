@@ -1,5 +1,5 @@
 ---
-name: repo-brand-identity
+name: repository-governance-lifecycle-brand-reference
 description: Establishes, maintains, and governs visual brand identity systems for repository projects (such as Skill Steward), including palettes, vector logos, README status badges, and documentation tone. Use when designing branding, creating custom SVG/Shields.io badges, or adding/updating brand asset guides.
 license: MIT
 type: governance
@@ -94,7 +94,7 @@ node -e "const fs = require('fs'); const clean = fs.readFileSync('logo.svg', 'ut
 ## Install (end users)
 
 ```bash
-npx skills add arenukvern/skill_steward --skill repo-brand-identity
+npx skills add arenukvern/skill_steward --skill repository-governance-lifecycle
 ```
 
 ## Sources

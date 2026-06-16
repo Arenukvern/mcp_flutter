@@ -1,0 +1,22 @@
+id: mcp-maintainer-native-gate-promotion-trigger
+skill: mcp-harness-repo-maintainer
+routing: should_trigger
+input: "mcp_flutter has a deterministic check_no_path_deps.sh gate with a regression fixture; promote it into a Steward action and benchmark only if it produces useful guidance for future agents"
+rules:
+  - kind: file_exists
+    path: references/evals.md
+  - kind: file_exists
+    path: ../../docs/evidence/h3-h5-adoption-promotion-packet-2026-06-10.mdx
+  - kind: file_exists
+    path: ../../docs/evidence/mcp-flutter-capability-level-proof-2026-06-10.mdx
+  - kind: description_includes_any
+    terms: ["actions", "benchmarks", "harness"]
+  - kind: body_includes_any
+    path: SKILL.md
+    terms: ["Native deterministic gate promotion", "falsifier test", "tool improvement packet"]
+  - kind: body_includes_any
+    path: ../../docs/evidence/h3-h5-adoption-promotion-packet-2026-06-10.mdx
+    terms: ["Tool improvement packet template", "Falsifier", "Generative usefulness"]
+  - kind: body_includes_any
+    path: ../../docs/evidence/mcp-flutter-capability-level-proof-2026-06-10.mdx
+    terms: ["fmt.check.intentcall-hosted-deps", "check_no_path_deps_test.sh", "capability-level H5"]

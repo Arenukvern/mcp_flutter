@@ -36,14 +36,15 @@ void main() {
   });
 
   group('interactionCatalogInputSchemaFor', () {
-    test('core interaction catalog has eighteen tools', () {
-      expect(coreInteractionCatalogCommandNames, hasLength(18));
-      expect(coreInteractionCatalogCommandNames.toSet(), hasLength(18));
+    test('core interaction catalog has nineteen tools', () {
+      expect(coreInteractionCatalogCommandNames, hasLength(19));
+      expect(coreInteractionCatalogCommandNames.toSet(), hasLength(19));
+      expect(coreInteractionCatalogCommandNames, contains('reveal_search'));
     });
 
-    test('tier A exec catalog is eighteen core plus four inspection', () {
-      expect(tierAExecCatalogCommandNames, hasLength(22));
-      expect(tierAExecCatalogCommandNames.toSet(), hasLength(22));
+    test('tier A exec catalog is nineteen core plus four inspection', () {
+      expect(tierAExecCatalogCommandNames, hasLength(23));
+      expect(tierAExecCatalogCommandNames.toSet(), hasLength(23));
       expect(
         tierAExecCatalogCommandNames,
         containsAll(inspectionTierAExecCommandNames),
@@ -54,11 +55,11 @@ void main() {
       );
     });
 
-    test('router covers twenty-four command names including capture tools', () {
-      expect(interactionCatalogInputSchemaForCommandNames, hasLength(24));
+    test('router covers twenty-five command names including capture tools', () {
+      expect(interactionCatalogInputSchemaForCommandNames, hasLength(25));
       expect(
         interactionCatalogInputSchemaForCommandNames.toSet(),
-        hasLength(24),
+        hasLength(25),
       );
       expect(
         interactionCatalogInputSchemaForCommandNames,
@@ -122,6 +123,17 @@ void main() {
         schemaEquality.equals(
           semanticSnapshotInputSchema(),
           ctx.registrationFor('semantic_snapshot')!.inputSchema,
+        ),
+        isTrue,
+      );
+    });
+
+    test('reveal_search', () {
+      final ctx = catalogContext();
+      expect(
+        schemaEquality.equals(
+          revealSearchInputSchema(),
+          ctx.registrationFor('reveal_search')!.inputSchema,
         ),
         isTrue,
       );
@@ -291,6 +303,7 @@ void main() {
 
     for (final tool in <(String, Map<String, Object?> Function())>[
       ('enter_text', enterTextInputSchema),
+      ('reveal_search', revealSearchInputSchema),
       ('scroll', scrollInputSchema),
       ('long_press', longPressInputSchema),
       ('swipe', swipeInputSchema),

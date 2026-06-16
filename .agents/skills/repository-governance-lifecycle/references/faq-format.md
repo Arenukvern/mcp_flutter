@@ -1,5 +1,5 @@
 ---
-name: faq-driven-docs
+name: repository-governance-lifecycle-faq-reference
 description: Creates and maintains DESIGN_FAQ (why) and DX_FAQ (how) documentation in FAQ-driven development style. Use when writing docs, rules, prompts, updating FAQs after code changes, or bootstrapping faq_usage rules and Cursor commands.
 license: MIT
 type: governance
@@ -143,12 +143,12 @@ Change type?
 ## Install
 
 ```bash
-npx skills add arenukvern/skill_steward --skill faq-driven-docs
+npx skills add arenukvern/skill_steward --skill repository-governance-lifecycle
 ```
 
 ## Related Guild skill
 
-Repo-wide navigation and SSOT rules: [north-star-governance](../north-star-governance/SKILL.md) (structured documentation lattice). Use **both**: lattice at repo root, FAQs per package.
+Repo-wide navigation and SSOT rules live in [repository-governance-lifecycle](../SKILL.md). Use the same skill for lattice, ADRs, and FAQs.
 
 ## Further reading
 

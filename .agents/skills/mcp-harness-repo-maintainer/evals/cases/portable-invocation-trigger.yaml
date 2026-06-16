@@ -1,0 +1,20 @@
+id: mcp-maintainer-portable-invocation-trigger
+skill: mcp-harness-repo-maintainer
+routing: should_trigger
+input: "The adoption proof tells agents to run /Users/anton/flutter/bin/dart --packages ../agent_guild/.../steward.dart; fix the Steward install and invocation guidance so another machine can reproduce it"
+rules:
+  - kind: file_exists
+    path: references/evals.md
+  - kind: file_exists
+    path: ../../docs/core/portable-steward-invocation.mdx
+  - kind: description_includes_any
+    terms: ["steward.yaml", "cold-start", "benchmarks"]
+  - kind: body_includes_any
+    path: SKILL.md
+    terms: ["Portable Steward invocation", "Do not teach absolute local paths"]
+  - kind: body_includes_any
+    path: ../../docs/core/portable-steward-invocation.mdx
+    terms: ["install.sh", "dart pub global activate --source path", "dart run :steward", "raw dart --packages"]
+  - kind: body_includes_any
+    path: ../../packages/steward_cli/README.md
+    terms: ["Portable invocation hierarchy", "install.sh", "dart pub global activate --source path", "raw dart --packages"]

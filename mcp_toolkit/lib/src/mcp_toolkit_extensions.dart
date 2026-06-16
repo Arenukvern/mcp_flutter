@@ -77,7 +77,9 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
         registerServiceExtension(
           name: extensionName,
           callback: (final parameters) async {
-            final wireArgs = parameters.map(MapEntry<String, Object?>.new);
+            final wireArgs = mcpToolkitArgumentsFromServiceExtensionParameters(
+              parameters,
+            );
             final registration = entry.toRegistration();
             final args = coerceArgumentsForSchema(
               registration.descriptor.inputSchema,
@@ -106,6 +108,11 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
 
     _postToolRegistrationEvent(entries);
   }
+
+  @visibleForTesting
+  Map<String, Object?> mcpToolkitArgumentsFromServiceExtensionParameters(
+    final Map<String, String> parameters,
+  ) => parameters.map(MapEntry<String, Object?>.new)..remove('isolateId');
 
   void _postToolRegistrationEvent(final Set<AgentCallEntry> newEntries) {
     if (newEntries.isEmpty) return;

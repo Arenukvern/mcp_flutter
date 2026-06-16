@@ -1,0 +1,19 @@
+id: multi-agent-handoff-parallel-product-impact-guardrail-trigger
+skill: multi-agent-handoff
+routing: should_trigger
+input: "Parallel subagents produced green Steward proofs, but the app UI, API, performance, release path, and native product behavior did not change. Decide what can be claimed."
+rules:
+  - kind: file_exists
+    path: references/evals.md
+  - kind: body_includes_any
+    path: SKILL.md
+    terms: ["Product impact check"]
+  - kind: body_includes_any
+    path: SKILL.md
+    terms: ["source-owned product"]
+  - kind: body_includes_any
+    path: SKILL.md
+    terms: ["not product acceleration"]
+  - kind: body_includes_any
+    path: SKILL.md
+    terms: ["screenshot/perf proof"]

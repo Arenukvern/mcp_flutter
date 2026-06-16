@@ -1,0 +1,12 @@
+id: harness-engineering-producer-consumer-trigger
+skill: harness-engineering-lifecycle
+routing: should_trigger
+input: "Generalize a Steward harness across producer consumer repos after local contract exists"
+rules:
+  - kind: file_exists
+    path: references/evals.md
+  - kind: description_includes_any
+    terms: ["producer-consumer", "local harness contract", "dogfooding"]
+  - kind: body_includes_any
+    path: SKILL.md
+    terms: ["Producer", "Consumer", "Dual Verification"]

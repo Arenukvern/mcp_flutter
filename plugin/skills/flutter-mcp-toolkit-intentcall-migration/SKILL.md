@@ -2,22 +2,22 @@
 name: flutter-mcp-toolkit-intentcall-migration
 description: >-
   Migrate Flutter app code from removed MCPCallEntry to AgentCallEntry after
-  intentcall Phase 6b. Use when upgrading mcp_toolkit, fixing compile errors after
+  the hard cut. Use when upgrading mcp_toolkit, fixing compile errors after
   a major bump, or running flutter-mcp-toolkit migrate agent-entries.
 ---
 
 <!-- @FMT_MODE_PRELUDE -->
 
-# intentcall migration — MCPCallEntry → AgentCallEntry
+# IntentCall migration — MCPCallEntry → AgentCallEntry
 
-**Phase 6b hard cut:** `MCPCallEntry` is **removed** from `mcp_toolkit`. App code must use
+`MCPCallEntry` is **removed** from `mcp_toolkit`. App code must use
 `AgentCallEntry` (from `intentcall_core`, re-exported by `mcp_toolkit`).
 
-Canonical doc: [migration_intentcall_phase6.md](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/start_here/migration_intentcall_phase6.md)
+Canonical migration doc: [migration_mcp_call_entry_to_agent_call_entry.md](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/start_here/migration_mcp_call_entry_to_agent_call_entry.md)
 
 ## When to use this skill
 
-- `dart analyze` reports undefined `MCPCallEntry` after pulling intentcall Phase 6
+- `dart analyze` reports undefined `MCPCallEntry` after upgrading `mcp_toolkit`
 - User asks to migrate custom tools/resources to the new API
 - Before shipping a major `mcp_toolkit` bump to consumers
 
@@ -111,15 +111,14 @@ rewrite). CLI equivalent: `flutter-mcp-toolkit migrate agent-entries`.
 3. `cd mcp_server_dart && dart test test/contract/`
 4. Grep: no `MCPCallEntry` in skills except this file's BEFORE examples
 
-## Phase 7 extract (external monorepo)
+## Hosted IntentCall packages
 
-When intentcall publishes to pub.dev (see `decisions/0009-intentcall-extract.mdx`):
+IntentCall now lives outside this repository. Normal consumer state uses hosted `intentcall_*` packages.
 
-1. Replace `path: ../agentkit/packages/intentcall_*` (or hosted `^0.1.0` after publish) in `pubspec.yaml`.
-2. Run `flutter pub get` and `migrate agent-entries --check` again.
-3. CI: use `make check-intentcall-integration` in mcp_flutter; package matrix moves to intentcall repo.
-
-Until then, all intentcall packages remain **in-repo** with `publish_to: none`.
+1. Use hosted `intentcall_*: ^0.1.0` dependencies for committed consumer state.
+2. Use local path overrides only for deliberate cross-repo development against `/Users/anton/mcp/agentkit`.
+3. Run `flutter pub get` and `migrate agent-entries --check` again after dependency changes.
+4. CI: use `make check-intentcall-integration` in `mcp_flutter`; package matrix ownership lives in the IntentCall repo.
 
 ## Related skills
 

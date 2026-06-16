@@ -204,5 +204,5 @@ fix_recommendations: []
 ## Related docs
 
 - [flutter-mcp-cli-runtime-validation](https://github.com/Arenukvern/mcp_flutter/blob/main/plugin/skills/flutter-mcp-cli-runtime-validation/SKILL.md)
-- [migration_intentcall_phase6.md](../../start_here/migration_intentcall_phase6.md)
+- [migration_mcp_call_entry_to_agent_call_entry.md](../../start_here/migration_mcp_call_entry_to_agent_call_entry.md)
 - [flutter_test_app/INTENTCALL_PLATFORM.md](../../flutter_test_app/INTENTCALL_PLATFORM.md)

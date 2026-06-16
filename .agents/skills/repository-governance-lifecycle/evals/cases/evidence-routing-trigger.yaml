@@ -1,0 +1,12 @@
+id: repository-governance-evidence-routing-trigger
+skill: repository-governance-lifecycle
+routing: should_trigger
+input: "This proof note mixes an ADR decision, stale benchmark output, a reusable template, and a completed plan. Decide what becomes evidence, ADR, FAQ, check, or deletion."
+rules:
+  - kind: file_exists
+    path: references/evals.md
+  - kind: description_includes_any
+    terms: ["governance", "ADR", "doc lattice", "structural change"]
+  - kind: body_includes_any
+    path: SKILL.md
+    terms: ["Route Evidence Deliberately", "Evidence artifacts", "current_status_pointer", "move to evidence"]

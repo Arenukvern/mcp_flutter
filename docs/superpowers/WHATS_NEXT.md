@@ -1,20 +1,8 @@
-# What's next — intentcall + visual
+# What's next
 
-Single forward index. **Source of truth for program state:** [tracker/intentcall-rollout.yaml](tracker/intentcall-rollout.yaml).
-
-## intentcall (post-cutover verification)
-
-| Sub-phase | Status | Doc / command |
-|-----------|--------|----------------|
-| 7.4 Publish to pub.dev | Done | `intentcall_*` packages are hosted at `0.1.0`; use the Phase 7 plan only as release history |
-| 7.5 Hosted consumer cutover | Done | `mcp_toolkit`, `mcp_server_dart`, capability packages, and `flutter_test_app` use hosted `intentcall_* ^0.1.0` |
-| 7.7 Integration on hosted versions | Active verification | `make check-contracts`; stale path scan for `agentkit/packages`, `intentcall/packages`, and `path: .*intentcall` |
-
-**Done in-repo:** `program.status: complete_in_repo_product` — integration hardening archived ([integration completion plan](plans/archive/2026-05-26-intentcall-integration-completion-next.md)).
-
-**Current next work:** keep hosted dependency proof green, publish/validate `mcp_toolkit` prereleases explicitly, and update downstream apps only when they pin the intended prerelease (`^4.0.0-dev.1` or newer).
-
-**Loop:** [intentcall-self-closing-loop.md](intentcall-self-closing-loop.md) · **Design:** [specs/2026-05-25-intentcall-design.md](specs/2026-05-25-intentcall-design.md)
+This file tracks non-IntentCall forward work. IntentCall consumer guidance lives in
+[docs/intentcall/README.md](../intentcall/README.md); canonical IntentCall
+architecture lives in `/Users/anton/mcp/agentkit`.
 
 ## Visual reconstruct (maintenance)
 
@@ -26,7 +14,6 @@ Single forward index. **Source of truth for program state:** [tracker/intentcall
 
 **Not a tracker phase** — parallel harness work across sibling repos (`flutter_harness`, `flutter_visual_reconstruct`).
 
-## Archives (do not execute)
+## Historical eval snapshots
 
-- [plans/archive/](plans/archive/) — completed phase plans
-- [evals/archive/](evals/archive/) — historical eval snapshots
+Historical eval snapshots live in [evals/archive/](evals/archive/). They are evidence records, not execution plans.

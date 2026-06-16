@@ -1,0 +1,20 @@
+id: mcp-maintainer-goal-first-detour-stop-trigger
+skill: mcp-harness-repo-maintainer
+routing: should_trigger
+input: "The user asked us to fix a repo problem, but steward and the MCP runtime keep failing to install; stop rebuilding tools and preserve the original goal"
+rules:
+  - kind: file_exists
+    path: references/evals.md
+  - kind: file_exists
+    path: ../../docs/evidence/adoption-run-v2-template.mdx
+  - kind: description_includes_any
+    terms: ["harness", "actions", "benchmarks"]
+  - kind: body_includes_any
+    path: SKILL.md
+    terms: ["Goal-first adoption", "two failed repair/setup attempts", "return to the task"]
+  - kind: body_includes_any
+    path: ../../docs/evidence/h3-h5-adoption-promotion-packet-2026-06-10.mdx
+    terms: ["Goal-first detour budget", "stop tool restoration", "original acceptance check"]
+  - kind: body_includes_any
+    path: ../../docs/evidence/adoption-run-v2-template.mdx
+    terms: ["stop_rule_triggered", "return_to_goal_step", "decision: stop"]

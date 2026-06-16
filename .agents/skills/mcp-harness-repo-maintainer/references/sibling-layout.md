@@ -6,37 +6,37 @@ Canonical peer layout from sibling agentic workspace patterns.
 
 ```text
 <workspace>/
-  <product_mcp>/                # A — toolkit + MCP + init
-  <platform_libs>/              # B — SDK platform / domain libraries
-  <cli_harness>/                # C — CLI/Harness runner
-  <visual_sidecar>/             # D — visual sidecar / comparison tool
+  <plugin_repo>/                # toolkit + MCP/plugin init
+  <library_repo>/               # SDK platform / domain libraries
+  <harness_repo>/               # CLI/harness runner
+  <visual_sidecar>/             # visual sidecar / comparison tool
   <media_assets>/               # LFS/media assets (optional)
-  <meta_steward>/               # E — meta skills & validation (e.g., skill_steward)
+  <meta_governance_repo>/       # meta skills & validation (e.g., skill_steward)
 ```
 
 ## Dependency direction
 
 ```text
-<media_assets> → <cli_harness> → <product_mcp> (core capability modules)
+<media_assets> → <harness_repo> → <plugin_repo> (core capability modules)
                         ↓
               <visual_sidecar> (visual validation engine)
-<platform_libs> ← platform SDK / packages (integrated & verified in product MCP)
-<meta_steward> → meta-skills and validation rules only (no runtime dep on above)
+<library_repo> ← platform SDK / packages (integrated & verified in plugin/MCP repos)
+<meta_governance_repo> → meta-skills and validation rules only (no runtime dep on above)
 ```
 
 ## Path overrides
 
 Workspaces/repositories should support developer-friendly path overrides for sibling directories during local development (e.g., Cargo path overrides, npm/pnpm workspaces, Python sys.path or poetry path overrides, Dart `pubspec_overrides.yaml`).
 
-**Example (Dart/Flutter pubspec overrides in `<cli_harness>`):**
+**Example (Dart/Flutter pubspec overrides in `<harness_repo>`):**
 
 ```yaml
 dependency_overrides:
-  product_mcp_core:
-    path: ../<product_mcp>/packages/core
+  plugin_core:
+    path: ../<plugin_repo>/packages/core
 ```
 
-**Example (npm/pnpm workspace overrides in `<product_mcp>`):**
+**Example (npm/pnpm workspace overrides in `<plugin_repo>`):**
 Configure workspace dependency overrides in the package manager manifest to target local platform library path development.
 
 ## Dogfood warm path (integration smoke)

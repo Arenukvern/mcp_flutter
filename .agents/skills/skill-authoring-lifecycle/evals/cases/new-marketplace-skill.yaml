@@ -1,7 +1,7 @@
-id: create-skill-scaffold-trigger
-skill: create-skill
+id: skill-authoring-scaffold-trigger
+skill: skill-authoring-lifecycle
 routing: should_trigger
-input: "Create a new skill called faq-driven-docs in the Skill Steward repo"
+input: "Create a new skill called review-lifecycle in the Skill Steward repo"
 rules:
   - kind: file_exists
     path: references/evals.md

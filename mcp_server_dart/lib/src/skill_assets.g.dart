@@ -79,9 +79,10 @@ parameter shapes lives in the task skills.
   `semantic_snapshot`, `inspect_widget_at_point`, `capture_ui_snapshot`,
   `connect_debug_app`. → `flutter-mcp-toolkit-inspect`.
 - **Interaction (mutating):** `tap_widget`, `long_press`, `enter_text`,
-  `fill_form`, `scroll`, `swipe`, `drag`, `hover`, `press_key`, `wait_for`,
-  `navigate`, `handle_dialog`, `hot_reload_flutter`, `hot_restart_flutter`,
-  `hot_reload_and_capture`. → `flutter-mcp-toolkit-control`.
+  `reveal_search`, `fill_form`, `scroll`, `swipe`, `drag`, `hover`,
+  `press_key`, `wait_for`, `navigate`, `handle_dialog`,
+  `hot_reload_flutter`, `hot_restart_flutter`, `hot_reload_and_capture`. →
+  `flutter-mcp-toolkit-control`.
 - **Debug:** `get_recent_logs`, `evaluate_dart_expression`. →
   `flutter-mcp-toolkit-debug`.
 - **Dynamic registry (app-defined):** after registration in the Flutter app,
@@ -568,7 +569,7 @@ Use this skill when you need to drive a running Flutter app as a user would:
 
 ## Selectors
 
-Every interaction tool targets a widget by **ref** — a short string like `"s_0"` returned by `semantic_snapshot`. There is no by-text or by-type selector syntax on the tool itself. The workflow is: call `semantic_snapshot`, scan the returned nodes, find the right ref, then pass it.
+Most interaction tools target a widget by **ref** — a short string like `"s_0"` returned by `semantic_snapshot`. For visible widgets, call `semantic_snapshot`, scan the returned nodes, find the right ref, then pass it. For off-screen targets with stable semantics text or identifier, use `reveal_search`; it performs a bounded snapshot → match → scroll loop and returns a fresh `ref`/`snapshotId`.
 
 Snapshot node fields to filter on:
 
@@ -610,6 +611,13 @@ fill_form(fields: [{ref:"s_1", text:"user@example.com"}, {ref:"s_2", text:"secre
 scroll(direction: "down", distance: 300)
 semantic_snapshot() → item now visible → ref "s_5"
 tap_widget(ref: "s_5")
+```
+
+### Reveal an off-screen field by identifier
+```
+reveal_search(query: "greeting_input_field", matchBy: "identifier", direction: "down", maxAttempts: 4)
+→ returns ref "s_14", snapshotId 2, match, attempts trace
+enter_text(ref: "s_14", snapshotId: 2, text: "hello")
 ```
 
 ### Wait for a widget to appear
@@ -661,6 +669,13 @@ Enter text into a text field; taps to focus before typing. `ref` • string • 
 {"name": "enter_text", "arguments": {"ref": "s_1", "text": "hello@example.com"}}
 ```
 Returns: `{"via": "editable_state"}` — Failures: `stale_snapshot`, `ref_not_found`
+
+### reveal_search
+Find a semantic target that may be off-screen. `query` • string • required. `matchBy` • string • optional (`text|identifier|label|value|hint`, default `text`). `direction` • string • optional (`up|down|left|right`, default `down`). `maxAttempts` • integer • optional • max 10. `distance` • number • optional. `connection` • object • optional.
+```json
+{"name": "reveal_search", "arguments": {"query": "greeting_input_field", "matchBy": "identifier", "direction": "down", "maxAttempts": 4}}
+```
+Returns: `{"ref": "s_14", "snapshotId": 2, "match": {...}, "attempts": [...]}` — Failures: `missing_query`, `target_not_found`, `scroll_blocked`
 
 ### fill_form
 Batch text entry: fills multiple fields in one call. Stops on first failure. `snapshotId` validated on first field only. `fields` • array of `{ref, text}` • required. `snapshotId` • integer • optional. `connection` • object • optional.
@@ -1360,21 +1375,21 @@ If something should appear but does not: confirm **`addEntries`** completed (**`
       frontmatter: r'''name: flutter-mcp-toolkit-intentcall-migration
 description: >-
   Migrate Flutter app code from removed MCPCallEntry to AgentCallEntry after
-  intentcall Phase 6b. Use when upgrading mcp_toolkit, fixing compile errors after
+  the hard cut. Use when upgrading mcp_toolkit, fixing compile errors after
   a major bump, or running flutter-mcp-toolkit migrate agent-entries.''',
       body: r'''
 <!-- @FMT_MODE_PRELUDE -->
 
-# intentcall migration — MCPCallEntry → AgentCallEntry
+# IntentCall migration — MCPCallEntry → AgentCallEntry
 
-**Phase 6b hard cut:** `MCPCallEntry` is **removed** from `mcp_toolkit`. App code must use
+`MCPCallEntry` is **removed** from `mcp_toolkit`. App code must use
 `AgentCallEntry` (from `intentcall_core`, re-exported by `mcp_toolkit`).
 
-Canonical doc: [migration_intentcall_phase6.md](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/start_here/migration_intentcall_phase6.md)
+Canonical migration doc: [migration_mcp_call_entry_to_agent_call_entry.md](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/start_here/migration_mcp_call_entry_to_agent_call_entry.md)
 
 ## When to use this skill
 
-- `dart analyze` reports undefined `MCPCallEntry` after pulling intentcall Phase 6
+- `dart analyze` reports undefined `MCPCallEntry` after upgrading `mcp_toolkit`
 - User asks to migrate custom tools/resources to the new API
 - Before shipping a major `mcp_toolkit` bump to consumers
 
@@ -1468,15 +1483,14 @@ rewrite). CLI equivalent: `flutter-mcp-toolkit migrate agent-entries`.
 3. `cd mcp_server_dart && dart test test/contract/`
 4. Grep: no `MCPCallEntry` in skills except this file's BEFORE examples
 
-## Phase 7 extract (external monorepo)
+## Hosted IntentCall packages
 
-When intentcall publishes to pub.dev (see `decisions/0009-intentcall-extract.mdx`):
+IntentCall now lives outside this repository. Normal consumer state uses hosted `intentcall_*` packages.
 
-1. Replace `path: ../agentkit/packages/intentcall_*` (or hosted `^0.1.0` after publish) in `pubspec.yaml`.
-2. Run `flutter pub get` and `migrate agent-entries --check` again.
-3. CI: use `make check-intentcall-integration` in mcp_flutter; package matrix moves to intentcall repo.
-
-Until then, all intentcall packages remain **in-repo** with `publish_to: none`.
+1. Use hosted `intentcall_*: ^0.1.0` dependencies for committed consumer state.
+2. Use local path overrides only for deliberate cross-repo development against `/Users/anton/mcp/agentkit`.
+3. Run `flutter pub get` and `migrate agent-entries --check` again after dependency changes.
+4. CI: use `make check-intentcall-integration` in `mcp_flutter`; package matrix ownership lives in the IntentCall repo.
 
 ## Related skills
 
@@ -1532,8 +1546,9 @@ tools (`fmt_list_client_tools_and_resources`, `fmt_client_tool`,
 
 1. `fmt_semantic_snapshot` → returns `s_0..s_N` refs + `snapshot_id`.
 2. `fmt_tap_widget` / `fmt_enter_text` / `fmt_scroll` / `fmt_swipe` / `fmt_long_press` / `fmt_drag` — act on a ref. **Always pass `snapshotId`** — you get a structured `stale_snapshot` error if the tree moved, instead of a silent wrong tap.
-3. `fmt_evaluate_dart_expression` — read state directly (e.g. `AgentState.instance.counter`).
-4. `fmt_hot_reload_and_capture` — after a code edit, returns reload status + screenshot + fresh snapshot + errors in one response. Prefer this over manual reload + separate capture.
+3. `fmt_reveal_search` — for off-screen semantic targets, bounded snapshot/search/scroll that returns a fresh `ref` + `snapshotId`.
+4. `fmt_evaluate_dart_expression` — read state directly (e.g. `AgentState.instance.counter`).
+5. `fmt_hot_reload_and_capture` — after a code edit, returns reload status + screenshot + fresh snapshot + errors in one response. Prefer this over manual reload + separate capture.
 
 ## Error envelope contract
 
@@ -1804,16 +1819,16 @@ Video skill and projects live in **[flutter_mcp_video](https://github.com/Arenuk
 
 When shipping a promo there: edit the video repo; run `bash tool/check_doc_paths.sh` in that repo before merge. Toolkit repo only hosts shared brand assets under `plugin/assets/` (symlink targets for v7-weaver).
 
-## intentcall Phase 6 (pre-extract) maintainer gate
+## IntentCall consumer maintainer gate
 
-When closing Phase 6 on `feat/intentcall-phase1-3`:
+When changing IntentCall consumer integration in `mcp_flutter`:
 
 1. Append `flutter-mcp-toolkit-intentcall-migration` to `expectedSkillIds` in `build_skill_assets.dart` if not already present.
 2. `make sync-skills` — commit `skill_assets.g.dart` with skill edits.
 3. `bash tool/contracts/check_intentcall_skills_grep.sh` — no legacy call-entry symbol outside migration skill.
 4. `cd mcp_server_dart && dart test test/contract/`
 5. `flutter-mcp-toolkit migrate agent-entries --check flutter_test_app/lib` (expect exit 0)
-6. Tracker: `program.status: complete_in_repo_product`; `integration_hardening_complete: true`; closures under `docs/superpowers/closure/`; forward work `docs/superpowers/WHATS_NEXT.md` and `docs/superpowers/plans/2026-05-27-intentcall-phase7-extract.md`
+6. Keep canonical IntentCall design links pointed at `/Users/anton/mcp/agentkit`; keep this repo focused on hosted dependency and regression proof.
 
 ## Pre-merge checklist
 

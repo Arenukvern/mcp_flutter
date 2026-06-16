@@ -1,0 +1,15 @@
+id: skill-eval-improve-duplicated-guidance-compression-trigger
+skill: skill-eval-improve
+routing: should_trigger
+input: "Improve this skill after reviewers found three overlapping rules and two duplicate eval cases. Choose whether to delete, replace, compress, or add a held-out prompt without overfitting."
+rules:
+  - kind: file_exists
+    path: references/evals.md
+  - kind: description_includes_any
+    terms: ["tuning skill quality", "bounded edits", "held-out gates"]
+  - kind: body_includes_any
+    path: SKILL.md
+    terms: ["Delete or replace duplicated rules before adding a new section or eval case"]
+  - kind: body_includes_any
+    path: SKILL.md
+    terms: ["compress, delete, or replace"]

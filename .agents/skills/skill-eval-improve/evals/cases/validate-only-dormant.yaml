@@ -1,0 +1,12 @@
+id: skill-eval-improve-validate-only-dormant
+skill: skill-eval-improve
+routing: should_not_trigger
+input: "Run pnpm validate on every skill in this repo before merge"
+rules:
+  - kind: file_exists
+    path: references/evals.md
+  - kind: description_excludes_all
+    terms: ["Kubernetes", "Terraform", "production deploy"]
+  - kind: body_includes_any
+    path: SKILL.md
+    terms: ["Bulk repo validation", "pnpm run validate"]

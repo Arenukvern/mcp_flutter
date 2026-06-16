@@ -1,0 +1,15 @@
+id: repository-governance-routine-repair-dormant
+skill: repository-governance-lifecycle
+routing: should_not_trigger
+input: "Fix a formatter failure and rerun the repo's native validation gate without changing docs, claims, policy, or architecture."
+rules:
+  - kind: file_exists
+    path: references/evals.md
+  - kind: description_excludes_all
+    terms: ["formatter failure", "native validation gate"]
+  - kind: body_includes_any
+    path: SKILL.md
+    terms: ["structural shift, claim change, durable policy change, or docs-lattice change"]
+  - kind: body_includes_any
+    path: SKILL.md
+    terms: ["Routine repo repairs should keep the original goal and native gate first"]

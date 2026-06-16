@@ -101,11 +101,11 @@ addMcpTool(
 );
 ```
 
-- **VM Service Extensions**: Registers a set of custom VM service extensions (e.g., `ext.mcp.toolkit.app_errors`, `ext.mcp.toolkit.view_screenshots`, `ext.mcp.toolkit.view_details`, `ext.mcp.toolkit.semantic_snapshot`, `ext.mcp.toolkit.tap_widget`, …).
+- **VM Service Extensions**: Registers a set of custom VM service extensions (e.g., `ext.mcp.toolkit.app_errors`, `ext.mcp.toolkit.view_screenshots`, `ext.mcp.toolkit.view_details`, `ext.mcp.toolkit.semantic_snapshot`, `ext.mcp.toolkit.reveal_search`, `ext.mcp.toolkit.tap_widget`, …).
 - **Error Reporting**: Captures and makes available runtime errors from the Flutter application.
 - **Screenshot Capability**: Allows external tools to request screenshots of the application's views.
 - **Application Details**: Provides a mechanism to fetch basic details about the application's views.
-- **Semantic Snapshot + Gestures** (`SemanticSnapshotService`, `GestureInteractionService`): Compact JSON snapshot of interactive widgets with stable refs, plus ref-driven `tap`/`long_press`/`enter_text`/`scroll`/`swipe`/`drag` using a two-tier (semantic-action → pointer-event) dispatch.
+- **Semantic Snapshot + Gestures** (`SemanticSnapshotService`, `RevealSearchService`, `GestureInteractionService`): Compact JSON snapshot of interactive widgets with stable refs, bounded reveal/search for off-screen semantic targets, plus ref-driven `tap`/`long_press`/`enter_text`/`scroll`/`swipe`/`drag` using a two-tier (semantic-action → pointer-event) dispatch.
 - **Log Capture** (`LogCaptureService`): Ring buffer of recent `print`/`debugPrint` output surfaced via `get_recent_logs`.
 - **Optional Permission Bridge**: Lets the app expose permission status/request/open-settings handlers only when you register a delegate.
 - **Capture hints for hybrid rendering**: `view_details` and `view_screenshots` expose `captureHints` when native platform views or external `Texture` widgets are detected. Apps that render via WGPU/Metal/Vulkan without platform views can opt in:
@@ -200,7 +200,7 @@ Import `PlatformViewHints` and constants from `package:mcp_toolkit/mcp_toolkit.d
 
     **Migrating from `MCPCallEntry`:** use
     `flutter-mcp-toolkit migrate agent-entries` — see
-    [migration_intentcall_phase6.md](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/start_here/migration_intentcall_phase6.md).
+    [migration_mcp_call_entry_to_agent_call_entry.md](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/start_here/migration_mcp_call_entry_to_agent_call_entry.md).
 
 3.  **Optional: Register an App-Side Permission Delegate**:
     Keep `initializeFlutterToolkit()` unchanged and add the permission bridge only if the app owns the relevant permission flow.

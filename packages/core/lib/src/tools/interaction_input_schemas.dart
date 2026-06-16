@@ -103,6 +103,48 @@ Map<String, Object?> enterTextInputSchema() => <String, Object?>{
   },
 };
 
+/// Shared JSON Schema for [reveal_search] / `fmt_reveal_search`.
+Map<String, Object?> revealSearchInputSchema() => <String, Object?>{
+  'type': 'object',
+  'additionalProperties': false,
+  'required': <String>['query'],
+  'properties': <String, Object?>{
+    'query': <String, Object?>{
+      'type': 'string',
+      'description': 'Target text or identifier to find in semantic snapshots.',
+    },
+    'matchBy': <String, Object?>{
+      'type': 'string',
+      'enum': <String>['text', 'identifier', 'label', 'value', 'hint'],
+      'default': 'text',
+      'description':
+          'Bounded selector field. "text" searches label, value, and hint.',
+    },
+    'direction': <String, Object?>{
+      'type': 'string',
+      'enum': _gestureDirections,
+      'default': 'down',
+      'description': 'Scroll direction between snapshots.',
+    },
+    'maxAttempts': <String, Object?>{
+      'type': 'integer',
+      'minimum': 0,
+      'maximum': 10,
+      'default': 5,
+      'description':
+          'Maximum scroll attempts after the initial snapshot (default 5).',
+    },
+    'distance': <String, Object?>{
+      'type': 'number',
+      'minimum': 1,
+      'maximum': 2000,
+      'default': 300,
+      'description': 'Scroll distance in logical pixels between attempts.',
+    },
+    'connection': connectionOverrideJsonSchema(),
+  },
+};
+
 /// Shared JSON Schema for [scroll] / `fmt_scroll`.
 Map<String, Object?> scrollInputSchema() => <String, Object?>{
   'type': 'object',
@@ -514,7 +556,7 @@ Map<String, Object?> hotReloadAndCaptureInputSchema() => <String, Object?>{
   },
 };
 
-/// Original 18-tool interaction catalog (gestures, navigation, forms, hot reload).
+/// Original interaction catalog (gestures, navigation, forms, hot reload).
 ///
 /// Parity table: `flutter_test_app/INTENTCALL_PLATFORM.md`.
 const coreInteractionCatalogCommandNames = <String>[
@@ -522,6 +564,7 @@ const coreInteractionCatalogCommandNames = <String>[
   'semantic_snapshot',
   'wait_for',
   'enter_text',
+  'reveal_search',
   'scroll',
   'long_press',
   'swipe',
@@ -538,7 +581,7 @@ const coreInteractionCatalogCommandNames = <String>[
   'hot_reload_and_capture',
 ];
 
-/// Host inspection tools beyond the core 18 (Tier A `exec` / `fmt_*`).
+/// Host inspection tools beyond the core 19 (Tier A `exec` / `fmt_*`).
 const inspectionTierAExecCommandNames = <String>[
   'get_view_details',
   'inspect_widget_at_point',
@@ -552,13 +595,13 @@ const captureTierAExecCommandNames = <String>[
   'capture_ui_snapshot',
 ];
 
-/// Tier A exec catalog: core 18 + 4 inspection (22 tools).
+/// Tier A exec catalog: core 19 + 4 inspection (23 tools).
 const tierAExecCatalogCommandNames = <String>[
   ...coreInteractionCatalogCommandNames,
   ...inspectionTierAExecCommandNames,
 ];
 
-/// Every command name served by [interactionCatalogInputSchemaFor] (22 + 2 capture).
+/// Every command name served by [interactionCatalogInputSchemaFor] (23 + 2 capture).
 const interactionCatalogInputSchemaForCommandNames = <String>[
   ...tierAExecCatalogCommandNames,
   ...captureTierAExecCommandNames,
@@ -566,8 +609,8 @@ const interactionCatalogInputSchemaForCommandNames = <String>[
 
 /// JSON Schema for catalog/exec commands aligned with app dynamic tools and `fmt_*`.
 ///
-/// Covers [interactionCatalogInputSchemaForCommandNames] (24): the
-/// [tierAExecCatalogCommandNames] set (18 core + 4 inspection) plus two capture tools.
+/// Covers [interactionCatalogInputSchemaForCommandNames]: the
+/// [tierAExecCatalogCommandNames] set plus two capture tools.
 /// Returns `null` for commands outside that set.
 Map<String, Object?>? interactionCatalogInputSchemaFor(
   final String commandName,
@@ -576,6 +619,7 @@ Map<String, Object?>? interactionCatalogInputSchemaFor(
   'semantic_snapshot' => semanticSnapshotInputSchema(),
   'wait_for' => waitForInputSchema(),
   'enter_text' => enterTextInputSchema(),
+  'reveal_search' => revealSearchInputSchema(),
   'scroll' => scrollInputSchema(),
   'long_press' => longPressInputSchema(),
   'swipe' => swipeInputSchema(),

@@ -38,6 +38,7 @@ export 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart'
         SemanticSnapshotCommand,
         TapWidgetCommand,
         EnterTextCommand,
+        RevealSearchCommand,
         ScrollCommand,
         LongPressCommand,
         SwipeCommand,

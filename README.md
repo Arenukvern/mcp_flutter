@@ -66,10 +66,10 @@ Maintainers submitting to official stores: [marketplace submission runbook](docs
 
 - **[Docs for AI Agent and Human](https://docs.page/arenukvern/mcp_flutter)** - wiki + llms.txt
 - **[Migrating v2 → v3](docs/start_here/migration_v2_to_v3.mdx)** — `fmt_*` MCP tools, binaries, client config keys, `validate-runtime`.
-- **[intentcall Phase 6 migration](docs/start_here/migration_intentcall_phase6.md)** — `MCPCallEntry` removal, `AgentCallEntry`, platform `codegen sync`, `fmt_migrate_agent_entries`.
+- **[MCPCallEntry to AgentCallEntry migration](docs/start_here/migration_mcp_call_entry_to_agent_call_entry.md)** — `MCPCallEntry` removal, `AgentCallEntry`, platform `codegen sync`, `fmt_migrate_agent_entries`.
 - **[Why this repo matters](docs/start_here/why_this_repo_matters.mdx)** — what it is, why it exists.
 - **[CLI vs MCP](docs/start_here/cli_vs_mcp.mdx)** — pick the right mode.
-- **[Feature map](docs/start_here/feature_map.mdx)** — the 27 tools.
+- **[Feature map](docs/start_here/feature_map.mdx)** — the 30 tools.
 - **[AI agent setup](docs/ai_agents/overview.mdx)** - for AI Agents.
 - **[Marketplace distribution](docs/ai_agents/marketplace_distribution.mdx)** — Claude, Cursor, Codex, skills.sh.
 - **[Architecture](ARCHITECTURE.md)** — for contributors.

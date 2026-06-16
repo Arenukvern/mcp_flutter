@@ -1,5 +1,5 @@
 ---
-name: ethical-stewardship
+name: repository-governance-lifecycle-ethics-reference
 description: Establishes, audits, and maintains core ethical systems in software repositories as moral principles, actionable takeaways, design constraints, and engineering rules. Guiding agents and humans to collaborate side-by-side to elicit, translate, and refine context-appropriate ethical constraints for any project. Use when defining repository culture, drafting ethical manifestos, or auditing software decisions against moral design boundaries.
 license: MIT
 type: governance
@@ -121,7 +121,7 @@ Implement these four operational rules during the development lifecycle:
 ## Install (end users)
 
 ```bash
-npx skills add arenukvern/skill_steward --skill ethical-stewardship
+npx skills add arenukvern/skill_steward --skill repository-governance-lifecycle
 ```
 
 ## Sources

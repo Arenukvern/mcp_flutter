@@ -53,11 +53,11 @@ Divergence is a **bug**. New feature workflow:
 
 | Archetype Role | Repo Folder | CLI (thin) | MCP (thin) | Core (thick) |
 |----------------|-------------|------------|------------|--------------|
-| **Product MCP** | `<product_mcp>` | `toolkit-cli doctor` / `run` | `capability_tools` | `core` library & capability modules |
-| **Platform Libs** | `<platform_libs>` | library CLI wrapper | wire protocol adapter module | platform API logic and validations |
-| **CLI Harness** | `<cli_harness>` | runner CLI | (none—by design) | harness engine and app registry |
+| **Plugin/MCP** | `<plugin_repo>` | `toolkit-cli doctor` / `run` | `capability_tools` | `core` library & capability modules |
+| **Library** | `<library_repo>` | library CLI wrapper | wire protocol adapter module | platform API logic and validations |
+| **Harness/CLI** | `<harness_repo>` | runner CLI | (none—by design) | harness engine and app registry |
 | **Visual Sidecar**| `<visual_sidecar>` | diff / comparison CLI | (none—by design) | visual verdict/profile pipeline |
-| **Meta Steward** | `<meta_steward>` | validator CLI | (optional index tool) | validator rules package |
+| **Meta/Governance** | `<meta_governance_repo>` | validator CLI | (optional index tool) | validator rules package |
 
 Repos without MCP still use the **CLI → core** split; MCP is optional second adapter.
 

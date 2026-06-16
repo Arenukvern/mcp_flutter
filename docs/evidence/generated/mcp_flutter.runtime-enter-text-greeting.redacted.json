@@ -1,0 +1,100 @@
+{
+  "schema": "steward-adoption-runtime-proof/v1",
+  "capabilityId": "mcp_flutter.runtime.enter-text-greeting",
+  "status": "adoption_run_passed_capability_candidate",
+  "recordedAt": "2026-06-13T20:57:26Z",
+  "subject": {
+    "repo": "mcp_flutter",
+    "branch": "codex/steward-adoption-h2",
+    "baseCommit": "87c493c8fb880c58572aa7b59d74e368a68b5144",
+    "dirtyState": "caller must inspect git status; this script does not assert clean checkout"
+  },
+  "runtime": {
+    "platform": "macos",
+    "launchCommand": "make showcase",
+    "vmServiceUri": "ws://127.0.0.1:<redacted-port>/<redacted-token>/ws"
+  },
+  "proof": {
+    "doctor": {
+      "ok": true,
+      "total": 10,
+      "pass": 10,
+      "warn": 0,
+      "fail": 0
+    },
+    "discovery": {
+      "snapshotId": 2,
+      "selector": {
+        "identifier": "greeting_input_field",
+        "ref": "s_14",
+        "type": "textField"
+      }
+    },
+    "reveal": {
+      "strategy": "reveal_search",
+      "tool": "reveal_search",
+      "targetIdentifier": "greeting_input_field",
+      "attempts": [
+        {
+          "attempt": 0,
+          "snapshotId": 1,
+          "nodeCount": 16,
+          "found": false,
+          "scroll": {
+            "success": true,
+            "targetNodeId": 24,
+            "via": "semantic_action",
+            "action": "scroll_down",
+            "scrollBefore": 0.0,
+            "scrollAfter": 480.0
+          }
+        },
+        {
+          "attempt": 1,
+          "snapshotId": 2,
+          "nodeCount": 22,
+          "found": true,
+          "ref": "s_14"
+        }
+      ],
+      "match": {
+        "ref": "s_14",
+        "id": 29,
+        "type": "textField",
+        "identifier": "greeting_input_field",
+        "bounds": {
+          "left": 72.0,
+          "top": 544.0,
+          "right": 728.0,
+          "bottom": 592.0
+        },
+        "children": [
+          "s_13"
+        ]
+      },
+      "success": true
+    },
+    "falsifier": {
+      "expression": "AgentState.instance.greeting",
+      "before": ""
+    },
+    "interaction": {
+      "tool": "enter_text",
+      "ref": "s_14",
+      "snapshotId": 2,
+      "text": "steward runtime proof",
+      "success": true,
+      "via": "editable_state"
+    },
+    "acceptance": {
+      "expression": "AgentState.instance.greeting",
+      "expected": "steward runtime proof",
+      "actual": "steward runtime proof",
+      "passed": true
+    }
+  },
+  "caveats": [
+    "This proves one adoption run, not full H5 capability or repo-wide adoption.",
+    "Promote only after a held-out fresh checkout or second-agent repeat."
+  ]
+}

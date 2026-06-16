@@ -21,7 +21,7 @@ while IFS= read -r -d '' f; do
 done < <(find mcp_toolkit mcp_server_dart packages flutter_test_app -name pubspec.yaml -print0 2>/dev/null)
 
 if [[ "${found}" -ne 0 ]]; then
-  echo "FAIL: migrate to hosted intentcall deps (see docs/intentcall/hosted_cutover.md)" >&2
+  echo "FAIL: use hosted intentcall deps for committed consumer state (see docs/intentcall/README.md)" >&2
   exit 1
 fi
 
