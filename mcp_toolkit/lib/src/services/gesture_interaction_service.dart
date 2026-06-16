@@ -706,29 +706,40 @@ mixin GestureInteractionService {
     // Register the device first — MouseTracker only tracks hover events from
     // pointers that announced themselves via PointerAddedEvent; otherwise the
     // hover may be filtered out and MouseRegion.onEnter never fires.
-    const pointer = 1;
-    GestureBinding.instance
+    // Use a fresh pointer id and end with PointerRemovedEvent so repeated
+    // hover calls do not violate MouseTracker's Added-after-Removed invariant.
+    final pointer = _nextPointerId++;
+    final binding = GestureBinding.instance;
+    const prime = ui.Offset(-100, -100);
+    binding
       ..handlePointerEvent(
         PointerAddedEvent(
           pointer: pointer,
-          position: const ui.Offset(-100, -100),
+          position: prime,
           kind: PointerDeviceKind.mouse,
           timeStamp: _now(),
         ),
       )
       // Prime: hover off-screen first so the target hover is a clean
-      // position change. Reuses pointer id so the mouse tracker treats
-      // them as the same logical mouse.
+      // position change.
       ..handlePointerEvent(
         PointerHoverEvent(
           pointer: pointer,
-          position: const ui.Offset(-100, -100),
+          position: prime,
           kind: PointerDeviceKind.mouse,
           timeStamp: _now(),
         ),
       )
       ..handlePointerEvent(
         PointerHoverEvent(
+          pointer: pointer,
+          position: centre,
+          kind: PointerDeviceKind.mouse,
+          timeStamp: _now(),
+        ),
+      )
+      ..handlePointerEvent(
+        PointerRemovedEvent(
           pointer: pointer,
           position: centre,
           kind: PointerDeviceKind.mouse,

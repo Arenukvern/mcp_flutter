@@ -1,5 +1,7 @@
 // ignore_for_file: avoid_print
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 import 'package:test_app/agent_state.dart';
@@ -623,6 +625,16 @@ class _DebugSection extends StatelessWidget {
                   child: const Text('Trigger caught error'),
                 ),
               ),
+              const SizedBox(width: 16),
+              Semantics(
+                identifier: 'show_test_dialog_button',
+                button: true,
+                child: TextButton(
+                  onPressed: () => _showTestDialog(context),
+                  style: TextButton.styleFrom(foregroundColor: _kAccent),
+                  child: const Text('Show dialog'),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -670,6 +682,24 @@ class _DebugSection extends StatelessWidget {
         ),
       );
     }
+  }
+
+  void _showTestDialog(final BuildContext context) {
+    unawaited(
+      showDialog<void>(
+        context: context,
+        builder: (final context) => AlertDialog(
+          title: const Text('MCP test dialog'),
+          content: const Text('Dismiss via handle_dialog(action: dismiss).'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

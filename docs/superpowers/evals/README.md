@@ -25,11 +25,11 @@ Iterative dogfood framework for scoring **flutter-mcp-toolkit** and **intentcall
 
 Machine-readable source: [`tool_quality_rubric.yaml`](./tool_quality_rubric.yaml).
 
-Tracker file (web dogfood history): [`.showcase/dogfood_web_eval.yaml`](../../.showcase/dogfood_web_eval.yaml).
+Tracker file (web dogfood history): [`docs/evidence/dogfood/dogfood_web_eval.yaml`](../../evidence/dogfood/dogfood_web_eval.yaml) ([ADR 0011](/decisions/0011_dogfood_tracker_evidence_split)).
 
 WebMCP-specific verification (separate from VM dogfood): [2026-05-26-webmcp-verification.md](./2026-05-26-webmcp-verification.md).
 
-Archived spec gap matrix (iter 1–11): [archive/2026-05-26-dogfood-spec-gap-matrix.md](./archive/2026-05-26-dogfood-spec-gap-matrix.md). Current iterations: [`.showcase/dogfood_web_eval.yaml`](../../.showcase/dogfood_web_eval.yaml).
+Archived spec gap matrix (iter 1–11): [archive/2026-05-26-dogfood-spec-gap-matrix.md](./archive/2026-05-26-dogfood-spec-gap-matrix.md). Current iterations: [`docs/evidence/dogfood/dogfood_web_eval.yaml`](../../evidence/dogfood/dogfood_web_eval.yaml).
 
 ## Workspace layout (Phase 7)
 
@@ -138,7 +138,7 @@ Agent skills (run `make sync-skills` after edits):
 Artifacts:
 
 - Per-run folder: `.showcase/eval_runs/<timestamp>/` (`validate-runtime.json`, check logs, `eval_run.yaml`)
-- With `--merge`: updates `.showcase/dogfood_web_eval.yaml` iteration list + `summary`
+- With `--merge`: updates `docs/evidence/dogfood/dogfood_web_eval.yaml` iteration list + `summary`
 - Without `--merge`: `.showcase/eval_run_<timestamp>.yaml` at repo root
 
 ### 3. Interpret results

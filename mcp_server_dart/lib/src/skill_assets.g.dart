@@ -2010,7 +2010,7 @@ description: Runs and records flutter_test_app dogfood iterations (tool_quality_
 
 # Dogfood iterations
 
-Tracker: `.showcase/dogfood_web_eval.yaml`  
+Tracker: `docs/evidence/dogfood/dogfood_web_eval.yaml`  
 Rubric: `docs/superpowers/evals/tool_quality_rubric.yaml`  
 Overview: `docs/superpowers/evals/README.md`
 
@@ -2069,7 +2069,7 @@ make dogfood-eval-static
 
 - Per run: `.showcase/eval_runs/<timestamp>/eval_run.yaml`
 - Snapshot: `.showcase/eval_run_<timestamp>.yaml`
-- With `--merge`: updates `dogfood_web_eval.yaml` (`yq` or `dart run mcp_server_dart/tool/merge_dogfood_tracker.dart`)
+- With `--merge`: updates `docs/evidence/dogfood/dogfood_web_eval.yaml` (`yq` or `dart run mcp_server_dart/tool/merge_dogfood_tracker.dart`)
 
 ## Verdicts
 

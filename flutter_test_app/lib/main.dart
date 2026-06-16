@@ -16,12 +16,17 @@ import 'package:test_app/visual_reconstruct_screen.dart';
 var _initialEntriesRegistered = false;
 var _delayedEntriesRegistered = false;
 
+/// Registered on [MCPToolkitBinding.instance] for `navigate` / `handle_dialog`.
+final GlobalKey<NavigatorState> showcaseNavigatorKey =
+    GlobalKey<NavigatorState>();
+
 Future<void> main({final bool enableDelayedMcpRegistration = true}) async {
   WidgetsFlutterBinding.ensureInitialized();
   registerShowcasePlatformView();
   MCPToolkitBinding.instance
     ..initialize()
-    ..initializeFlutterToolkit();
+    ..initializeFlutterToolkit()
+    ..navigatorKey = showcaseNavigatorKey;
 
   await _registerInitialMCPTools();
   if (!kIsWeb) {
@@ -186,6 +191,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(final BuildContext context) => MaterialApp(
+    navigatorKey: showcaseNavigatorKey,
     title: 'MCP Flutter',
     debugShowCheckedModeBanner: false,
     theme: ThemeData(

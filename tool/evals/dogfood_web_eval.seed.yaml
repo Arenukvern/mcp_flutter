@@ -1,0 +1,26 @@
+# Cold-start template for the web dogfood tracker.
+# On first `run_dogfood_eval.sh --merge`, copied to docs/evidence/dogfood/dogfood_web_eval.yaml.
+# Rubric: docs/superpowers/evals/tool_quality_rubric.yaml
+# Overview: docs/superpowers/evals/README.md
+
+program: flutter_test_app_web_dogfood
+scoring:
+  rubric: docs/superpowers/evals/tool_quality_rubric.yaml
+  max_per_iteration: 100
+  pass_threshold: 80
+
+device: chrome
+web_port: 8080
+vm_host_port: 8181
+
+setup:
+  app_log: .showcase/web_app.log
+
+iterations: []
+
+summary:
+  iterations_count: 0
+  verdict: not_run
+  recurring_errors: []
+  recurring_warnings: []
+  fix_recommendations: []

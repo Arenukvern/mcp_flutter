@@ -1,7 +1,7 @@
 # Plan — visual reconstruct (post warm-path)
 
 **Status:** **Maintenance** — checkpoint protocol + optional runtime E2E only  
-**Living tracker:** [`.showcase/dogfood_web_eval.yaml`](../../../.showcase/dogfood_web_eval.yaml) · [evals README](../evals/README.md)  
+**Living tracker:** [`docs/evidence/dogfood/dogfood_web_eval.yaml`](../../evidence/dogfood/dogfood_web_eval.yaml) · [evals README](../evals/README.md)  
 **Archived critique:** [evals/archive/2026-05-26-visual-reconstruct-critique.md](../evals/archive/2026-05-26-visual-reconstruct-critique.md)
 
 ## Key design decisions

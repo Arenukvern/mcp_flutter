@@ -15,6 +15,31 @@ Implementation uses conditional imports: `lib/platform_view_showcase_{stub,macos
 
 **macOS (repo root):** `make showcase-stop && make showcase` — prints VM `wsUri`.
 
+### Web showcase testing
+
+| Goal | Command |
+|------|---------|
+| **Interactive dev** — keep Chrome running, run tools manually | `make web-showcase` (terminal 1), then `export WS_URI=…` and `make exec-sweep-web` (terminal 2) |
+| **CI / one-shot battery** — launch, doctor, validate-runtime, webmcp, enter-text proof, exec sweep, teardown | `make web-showcase-tests` |
+
+Scripts: `scripts/run_web_showcase.sh` (launch), `scripts/run_exec_sweep.sh` (per-tool exec), `scripts/run_web_showcase_tests.sh` (all-in-one). Artifacts land in `.showcase/tool_verify/web/`.
+
+**macOS exec sweep** (showcase already running):
+
+```bash
+export WS_URI="$(grep -Eo 'ws://127\.0\.0\.1:[0-9]+/[A-Za-z0-9_=-]+/ws' .showcase/flutter_app.log | tail -1)"
+make exec-sweep
+```
+
+**Web exec sweep only** (after `make web-showcase`):
+
+```bash
+export WS_URI="$(grep -Eo 'ws://127\.0\.0\.1:[0-9]+/[A-Za-z0-9_=-]+/ws' .showcase/web_app.log | tail -1)"
+make exec-sweep-web
+```
+
+For scored dogfood iterations and harness compare, use `bash tool/evals/run_dogfood_eval.sh` instead.
+
 **Chrome (web CDP smoke):**
 
 ```bash

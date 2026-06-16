@@ -24,4 +24,4 @@ for i in $(seq 1 "${count}"); do
   sleep 2
 done
 
-echo "[dogfood-iter] done ${count} iterations; tracker: ${repo_root}/.showcase/dogfood_web_eval.yaml"
+echo "[dogfood-iter] done ${count} iterations; tracker: ${repo_root}/docs/evidence/dogfood/dogfood_web_eval.yaml"

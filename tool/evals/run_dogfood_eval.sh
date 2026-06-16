@@ -9,7 +9,8 @@ repo_root="$(cd "${here}/../.." && pwd)"
 app_dir="${repo_root}/flutter_test_app"
 showcase="${repo_root}/.showcase"
 rubric="${repo_root}/docs/superpowers/evals/tool_quality_rubric.yaml"
-tracker="${showcase}/dogfood_web_eval.yaml"
+tracker="${DOGFOOD_TRACKER:-${repo_root}/docs/evidence/dogfood/dogfood_web_eval.yaml}"
+tracker_seed="${repo_root}/tool/evals/dogfood_web_eval.seed.yaml"
 toolkit=(dart run "${repo_root}/mcp_server_dart/bin/flutter_mcp_toolkit.dart")
 
 device=chrome
@@ -44,7 +45,7 @@ Options:
   --ws-uri URI              Web (chrome) VM websocket (or set WS_URI)
   --macos                   Also run validate-runtime for macOS showcase
   --macos-ws-uri URI        macOS VM websocket (or MACOS_WS_URI)
-  --merge                   Merge iteration into .showcase/dogfood_web_eval.yaml (yq or dart)
+  --merge                   Merge iteration into docs/evidence/dogfood/dogfood_web_eval.yaml (yq or dart)
   --run-intentcall-tests      dart test packages/intentcall_testing
   --run-deconstruct-smoke   Offline HS deconstruct_smoke.hs.yaml (needs fixture)
   --skip-runtime            Static checks only (no validate-runtime)
@@ -622,8 +623,14 @@ log "score=${score} verdict=${verdict}"
 # --- merge into dogfood tracker ----------------------------------------------
 if [[ "${merge_tracker}" == true ]]; then
   if [[ ! -f "${tracker}" ]]; then
-    log "WARN: tracker missing at ${tracker}; skip merge"
-    exit 0
+    if [[ -f "${tracker_seed}" ]]; then
+      mkdir -p "$(dirname "${tracker}")"
+      cp "${tracker_seed}" "${tracker}"
+      log "bootstrapped tracker from ${tracker_seed}"
+    else
+      log "WARN: tracker missing at ${tracker} and no seed at ${tracker_seed}; skip merge"
+      exit 0
+    fi
   fi
 
   if command -v yq >/dev/null 2>&1; then

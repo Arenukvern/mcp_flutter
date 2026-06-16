@@ -2,11 +2,11 @@
   "schema": "steward-adoption-runtime-proof/v1",
   "capabilityId": "mcp_flutter.runtime.enter-text-greeting",
   "status": "adoption_run_passed_capability_candidate",
-  "recordedAt": "2026-06-13T20:57:26Z",
+  "recordedAt": "2026-06-16T23:04:39Z",
   "subject": {
     "repo": "mcp_flutter",
     "branch": "codex/steward-adoption-h2",
-    "baseCommit": "87c493c8fb880c58572aa7b59d74e368a68b5144",
+    "baseCommit": "160ee4e0cf48266cd917ab0ae9ba1a5650332092",
     "dirtyState": "caller must inspect git status; this script does not assert clean checkout"
   },
   "runtime": {
@@ -42,17 +42,37 @@
           "found": false,
           "scroll": {
             "success": true,
-            "targetNodeId": 24,
-            "via": "semantic_action",
-            "action": "scroll_down",
+            "via": "pointer_scroll_event",
+            "action": "scroll",
+            "direction": "down",
+            "distance": 220.0,
+            "at": {
+              "x": 400.0,
+              "y": 300.0
+            },
+            "scrollDelta": {
+              "x": 0.0,
+              "y": 220.0
+            },
             "scrollBefore": 0.0,
-            "scrollAfter": 480.0
+            "scrollAfter": 440.0,
+            "semanticAttempt": {
+              "success": false,
+              "targetNodeId": 24,
+              "via": "semantic_action",
+              "action": "scroll_down",
+              "scrollBefore": 0.0,
+              "scrollAfter": 0.0,
+              "scrollExtentMin": 0.0,
+              "scrollExtentMax": 2037.0,
+              "error": "no_scroll_movement"
+            }
           }
         },
         {
           "attempt": 1,
           "snapshotId": 2,
-          "nodeCount": 22,
+          "nodeCount": 20,
           "found": true,
           "ref": "s_14"
         }
@@ -64,9 +84,9 @@
         "identifier": "greeting_input_field",
         "bounds": {
           "left": 72.0,
-          "top": 544.0,
+          "top": 584.0,
           "right": 728.0,
-          "bottom": 592.0
+          "bottom": 600.0
         },
         "children": [
           "s_13"
