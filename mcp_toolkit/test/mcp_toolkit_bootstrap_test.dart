@@ -1,9 +1,52 @@
-// ignore_for_file: lines_longer_than_80_chars
+// ignore_for_file: invalid_use_of_protected_member, lines_longer_than_80_chars
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 
 void main() {
+  test(
+    'service extension callbacks do not treat isolateId as a tool argument',
+    () async {
+      final binding = _CapturingToolkitBinding()..initialize();
+      Map<String, String>? capturedRequest;
+
+      final tool = mcpToolkitTool(
+        namespace: 'app',
+        definition: MCPToolDefinition(
+          name: 'inspect_number',
+          description: 'Inspect a number',
+          inputSchema: ObjectSchema(
+            properties: {'x': IntegerSchema()},
+            required: ['x'],
+          ),
+        ),
+        handler: (final request) {
+          capturedRequest = request;
+          return MCPCallResult(message: 'inspected', parameters: {'ok': true});
+        },
+      );
+
+      binding.initializeServiceExtensions(
+        errorMonitor: _TestErrorMonitor(),
+        entries: {tool},
+      );
+
+      final callback = binding.callbacks['inspect_number'];
+      expect(callback, isNotNull);
+
+      final result = await callback!({
+        'isolateId': 'isolates/4805254787721395',
+        'x': '120',
+      });
+
+      expect(result['ok'], isTrue);
+      expect(capturedRequest, isNotNull);
+      expect(capturedRequest, isNot(contains('isolateId')));
+      expect(capturedRequest?['x'], '120');
+    },
+  );
+
   testWidgets(
     'bootstrapFlutter initializes toolkit, adds entries, and forwards zone errors',
     (final tester) async {
@@ -81,3 +124,18 @@ void main() {
     },
   );
 }
+
+final class _CapturingToolkitBinding extends MCPToolkitBindingBase
+    with MCPToolkitExtensions {
+  final callbacks = <String, ServiceExtensionCallback>{};
+
+  @override
+  void registerServiceExtension({
+    required final String name,
+    required final ServiceExtensionCallback callback,
+  }) {
+    callbacks[name] = callback;
+  }
+}
+
+final class _TestErrorMonitor with ErrorMonitor {}
