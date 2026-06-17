@@ -92,11 +92,24 @@ same_train_packages=(
   flutter_mcp_toolkit_capability_kernel
   flutter_mcp_toolkit_capability_core
 )
+export FMT_RELEASE_VERSION="$version"
 for file in "${same_train_constraint_files[@]}"; do
   [[ -f "$file" ]] || continue
   for package in "${same_train_packages[@]}"; do
     perl -0pi -e "s/($package:\\s*)\\^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?/\${1}^$version/g" "$file"
   done
+done
+
+same_train_readme_files=(
+  "$ROOT_DIR/packages/core/README.md"
+  "$ROOT_DIR/packages/server_capability_kernel/README.md"
+  "$ROOT_DIR/packages/server_capability_core/README.md"
+)
+for file in "${same_train_readme_files[@]}"; do
+  [[ -f "$file" ]] || continue
+  perl -0pi \
+    -e 'BEGIN { $v = $ENV{FMT_RELEASE_VERSION} } s/(`flutter_mcp_toolkit_core` `)[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?(`)/$1$v$2/g; s/(kernel \+ core `\^?)[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?(`)/$1$v$2/g; s/(kernel and core `)[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?(`)/$1$v$2/g;' \
+    "$file"
 done
 
 perl -0pi \
@@ -109,7 +122,6 @@ perl -0pi \
   -e "s{String get version => '[^']+';}{String get version => '$version';};" \
   "$ROOT_DIR/packages/server_capability_core/lib/src/fmt_capability.dart"
 
-export FMT_RELEASE_VERSION="$version"
 ruby <<'RUBY'
 require 'json'
 
