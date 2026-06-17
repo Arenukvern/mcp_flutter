@@ -1,6 +1,6 @@
 # Archived eval snapshots
 
-Historical dogfood / visual eval write-ups. For current rubric and commands see [evals README](../README.md) and [dogfood tracker](../../../.showcase/dogfood_web_eval.yaml).
+Historical dogfood / visual eval write-ups. For current rubric and commands see [evals README](../README.md) and [dogfood tracker](../../evidence/dogfood/dogfood_web_eval.yaml).
 
 | Snapshot | Notes |
 |----------|-------|

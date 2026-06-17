@@ -32,6 +32,7 @@ fmt_long_press
 fmt_migrate_agent_entries
 fmt_navigate
 fmt_press_key
+fmt_reveal_search
 fmt_scroll
 fmt_semantic_snapshot
 fmt_swipe

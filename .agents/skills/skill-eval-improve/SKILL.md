@@ -1,6 +1,6 @@
 ---
 name: skill-eval-improve
-description: Improves Agent Skills via validate → rule-based eval cases → plugin-eval → prompt evals → bounded edits with held-out gates. Use when tuning skill quality, routing, or adopting Chrome/Microsoft eval tiers—not for bulk validate-only or SkillOpt automation.
+description: Improves Agent Skills via validate → rule-based eval cases → plugin-eval → prompt evals → bounded edits with held-out gates. Use when tuning skill quality, routing, or adopting Chrome/Microsoft T-named quality gates—not for bulk validate-only or SkillOpt automation.
 license: MIT
 type: governance
 metadata:
@@ -22,12 +22,12 @@ Improve skills **measurably**: baseline → measure → bounded edit → re-vali
 - Skill triggers wrong or never loads (description routing)
 - Bloated `SKILL.md`, high token cost, weak outcomes
 - After adding a new procedure—need regression checks
-- Porting patterns from product MCP / plugin-eval research into Guild skills
+- Porting patterns from product MCP / plugin-eval research into Skill Steward skills
 
 ## When not to use
 
 - **Bulk repo validation** — e.g. “validate every skill in this repo” → `pnpm run validate` only ([skill-authoring-lifecycle](../skill-authoring-lifecycle/SKILL.md) for audit); do not start benchmark or SkillOpt loops.
-- **Automated SkillOpt / cluster training** — Guild documents a **manual** bounded-edit loop; no overnight optimizer pipeline.
+- **Automated SkillOpt / cluster training** — Skill Steward documents a **manual** bounded-edit loop; no overnight optimizer pipeline.
 - **Creating a new skill** — use [skill-authoring-lifecycle](../skill-authoring-lifecycle/SKILL.md) first; eval-improve applies after a skill exists.
 
 Cursor scope (optional): activate when editing under `skills/**` or `scripts/validate-skills.mjs`.
@@ -37,15 +37,16 @@ Cursor scope (optional): activate when editing under `skills/**` or `scripts/val
 | Layer | Expert | Tool / method | Cost |
 |-------|--------|---------------|------|
 | **0 — Gate** | Lint | `pnpm run validate`, `skill-authoring-lifecycle` | seconds |
-| **0b — Rules** | Routing/docs SSOT | `pnpm run eval` (Tier 1 YAML cases) | seconds |
+| **0b — Rules** | Routing/docs SSOT | `pnpm run eval` (T1 behavior-critical YAML cases) | seconds |
 | **1 — Static** | Structure | Codex `plugin-eval analyze` (if available) | seconds |
 | **2 — Human** | Behavior | 3–5 prompts with/without skill | minutes |
 | **3 — Measured** | Usage | `plugin-eval benchmark` + `measurement-plan` | minutes–hours |
 | **4 — Evolve** | Text optimization | SkillOpt-style bounded edits + held-out gate | hours |
+| **5 — Navigate**| Telemetry / dogfood | Current `steward benchmark` scenarios on compact traces | seconds |
 
 Use the **cheapest layer that answers the question**. Do not skip layer 0.
 
-## Layer 0 — Guild validator (always)
+## Layer 0 — Skill Steward validator (always)
 
 ```bash
 pnpm run validate
@@ -54,20 +55,20 @@ pnpm run validate:json   # CI / automation
 
 Fix all `error:` lines. Treat `warn:` (missing `sources.md`, long SKILL.md) seriously.
 
-## Eval tiers ([ADR 0011](../../docs/decisions/0011-tiered-skill-evals-and-rule-based-ci.mdx))
+## T-named skill quality gates ([ADR 0011](../../docs/decisions/0011-tiered-skill-evals-and-rule-based-ci.mdx), [ADR 0027](../../docs/decisions/0027-t-named-skill-quality-gates.mdx))
 
 | Tier | Skills | CI |
 |------|--------|-----|
-| **1** | `north-star-governance`, `mcp-harness-repo-maintainer`, `mcp-harness-repo-maintainer`, `skill-authoring-lifecycle` | `pnpm run eval` + validate |
-| **2** | All others | `pnpm run validate` |
+| **T1 — Behavior-critical eval-gated** | Routing/procedure skills where drift can change agent decisions, claims, delegation, governance, or evidence boundaries | `pnpm run eval` + validate |
+| **T2 — Structural validate-only** | All others | `pnpm run validate` |
 
-Tier 1 requires `evals/cases/*.yaml` (≥2) + `references/evals.md`. Schema: [eval-case-schema.md](references/eval-case-schema.md).
+T1 behavior-critical currently includes `harness-engineering-lifecycle`, `mcp-harness-repo-maintainer`, `mixture-of-experts`, `multi-agent-handoff`, `plugin-marketplace-setup`, `repo-quality-system-lifecycle`, `repository-governance-lifecycle`, `skill-authoring-lifecycle`, `skill-eval-improve`, `steward-continuity-boundary-lifecycle`, and `vision-alignment-foresight`. Each requires `evals/cases/*.yaml` (≥2) + `references/evals.md`. Schema: [eval-case-schema.md](references/eval-case-schema.md).
 
-## Layer 0b — Rule-based cases (Tier 1 CI)
+## Layer 0b — Rule-based cases (T1 behavior-critical CI)
 
 ```bash
 pnpm run eval
-pnpm run eval -- --skill north-star-governance
+pnpm run eval -- --skill mcp-harness-repo-maintainer
 pnpm run eval:json
 ```
 
@@ -116,7 +117,7 @@ Rollout (tasks + current skill) → Reflect (failures vs successes)
   → Bounded edit (add/delete/replace under budget) → Held-out gate (keep only if better)
 ```
 
-Guild **manual** adaptation (no GPU cluster required):
+Skill Steward **manual** adaptation (no GPU cluster required):
 
 | Step | Action |
 |------|--------|
@@ -139,12 +140,22 @@ Related: [SkillLens](https://microsoft.github.io/SkillOpt/) (model-generated ski
 | [skillgrade](https://github.com/mgechev/skillgrade) | Regression testing skill quality (mgechev) |
 | Claude authoring best practices | Eval-before-write workflow |
 
+## Layer 5 — Runtime Dogfood Benchmarks
+
+At 10,000x scale, NLP prompt evaluation fails because LLMs suffer **Cognitive Overload** navigating massive toolsets. Runtime dogfood should objectively assert their logical trajectory using deterministic traces.
+
+1. **Capture compact traces:** Store action IDs, tool counts, artifact digests, and redacted excerpts, not raw product traces.
+2. **Define assertions:** Expected action trajectory, declared surfaces used first, maximum tool calls, maximum repair/setup attempts, maximum unrelated tool calls, required `return_to_goal_step`, required artifacts, and negative checks for unrelated actions.
+3. **Run dogfood benchmarks:** Use `steward benchmark --scenario <id> --json` for runtime dogfood scenarios. Do not put product runtime scenarios under T1 behavior-critical skill evals.
+
+The current `steward eval --name` registered-eval path is legacy/experimental. Skill quality remains `pnpm run eval`; runtime dogfood belongs to `steward benchmark`, where `durability_blocked` is valid blocked evidence when contract inputs are modified or untracked, not proof of runtime behavior.
+
 ## Improve workflow (checklist)
 
 ```
 - [ ] sources.md cites plugin-eval + SkillOpt if used
 - [ ] pnpm run validate
-- [ ] Tier 1: `pnpm run eval` + cases updated
+- [ ] T1 behavior-critical: `pnpm run eval` + cases updated
 - [ ] plugin-eval analyze (optional)
 - [ ] 3+ prompt evals documented in references/evals.md
 - [ ] Bounded edit applied; held-out improved
@@ -156,14 +167,17 @@ Related: [SkillLens](https://microsoft.github.io/SkillOpt/) (model-generated ski
 
 1. `name` / `description` (routing)—must include **what + when**
 2. Broken links / missing `references/sources.md`
-3. Move bulk to `references/` (SKILL.md &lt; 500 lines)
-4. Add error-handling / validation steps agents skip
-5. Token cost (description length, always-loaded content)
+3. Delete or replace duplicated rules before adding a new section or eval case
+4. Move bulk to `references/` (SKILL.md &lt; 500 lines)
+5. Add error-handling / validation steps agents skip
+6. Token cost (description length, always-loaded content)
 
 ## Anti-patterns
 
 - Rewriting entire SKILL.md from one failure (destroy working rules)
 - Self-editing without held-out prompts (overfit)
+- Adding skill rules, evals, or tools from one observed run when a smaller FAQ, error message, native command, observed-effect check, or deletion would solve the problem
+- Adding a new eval for duplicated guidance before trying to compress, delete, or replace the overlapping rule
 - Claims without `references/sources.md` rows
 - Evaluating only with static analyze—never running real prompts
 - LLM judge in CI (flake, cost) — offline only per [ADR 0011](../../docs/decisions/0011-tiered-skill-evals-and-rule-based-ci.mdx)

@@ -1,0 +1,669 @@
+# Browser dogfood eval tracker — flutter_test_app + flutter-mcp-toolkit
+# Versioned evidence (ADR 0011). Per-run artifacts stay under .showcase/eval_runs/.
+# Schema: iterations[] + summary (recurring_errors, fix_recommendations, verdict).
+# Rubric: docs/superpowers/evals/tool_quality_rubric.yaml
+# Run battery: bash tool/evals/run_dogfood_eval.sh --ws-uri "$WS_URI" [--merge]
+# Overview: docs/superpowers/evals/README.md
+# Do not treat as CI gate without a fresh run_dogfood_eval.sh battery.
+
+program: flutter_test_app_web_dogfood
+scoring:
+  rubric: docs/superpowers/evals/tool_quality_rubric.yaml
+  max_per_iteration: 100
+  pass_threshold: 80
+  # Legacy flat weights (iterations 1–4); new runs also populate dimension_scores.
+  weights:
+    validate_runtime_ok: 40
+    doctor_critical_pass: 15
+    toolkit_extensions: 20
+    capture_evidence: 15
+    intentcall_hooks: 10
+
+device: chrome
+web_port: 8080
+vm_host_port: 8181
+started_at: 2026-05-26T17:05:38Z
+ws_uri: ws://127.0.0.1:8181/YX4j1F2FX1g=/ws
+
+setup:
+  stop_showcase: true
+  app_log: .showcase/web_app.log
+  app_started: true
+
+iterations:
+  - iteration: 1
+    score: 100
+    validate_runtime_ok: true
+    doctor_critical_pass: true
+    extensions_ok: true
+    extensions_diagnostic: "Required toolkit extensions detected (4/4)."
+    capture_ok: true
+    capture_step: capture_ui_snapshot
+    intentcall_hooks_ok: true
+    errors:
+      []
+    warnings:
+      - visual_capture_truth_mode
+    ws_uri: ws://127.0.0.1:8181/_LFr9g7qdQM=/ws
+    captureBackend: web_browser
+    capturePlatformViewsDetected: null
+    steps_failed:
+      []
+  - iteration: 2
+    flags:
+      - --after-reload
+    score: 100
+    validate_runtime_ok: true
+    doctor_critical_pass: true
+    extensions_ok: true
+    extensions_diagnostic: "Required toolkit extensions detected (4/4)."
+    capture_ok: true
+    capture_step: capture_ui_snapshot
+    intentcall_hooks_ok: true
+    errors:
+      []
+    warnings:
+      - visual_capture_truth_mode
+    ws_uri: ws://127.0.0.1:8181/_LFr9g7qdQM=/ws
+    captureBackend: web_browser
+    capturePlatformViewsDetected: null
+    steps_failed:
+      []
+  - iteration: 3
+    score: 100
+    validate_runtime_ok: true
+    doctor_critical_pass: true
+    extensions_ok: true
+    extensions_diagnostic: "Required toolkit extensions detected (4/4)."
+    capture_ok: true
+    capture_step: capture_ui_snapshot
+    intentcall_hooks_ok: true
+    errors:
+      []
+    warnings:
+      - visual_capture_truth_mode
+      - fmt_get_recent_logs_unsupported_cli
+    ws_uri: ws://127.0.0.1:8181/_LFr9g7qdQM=/ws
+    captureBackend: web_browser
+    capturePlatformViewsDetected: null
+    steps_failed:
+      []
+    extra_exec:
+      semantic_snapshot:
+        ok: true
+        interactionSurface: flutter_widgets
+      fmt_get_recent_logs:
+        ok: false
+        error: "Unsupported command: fmt_get_recent_logs"
+      get_recent_logs:
+        ok: true
+        note: bare exec name works; MCP clients use fmt_get_recent_logs prefix
+
+  - iteration: 4
+    focus: post-delayed-registration (21 dynamic tools)
+    score: 100
+    validate_runtime_ok: true
+    doctor_critical_pass: true
+    extensions_ok: true
+    capture_ok: true
+    intentcall_hooks_ok: true
+    dynamic_registry_tools: 21
+    dynamic_registry_resources: 1
+    errors: []
+    warnings:
+      - visual_capture_truth_mode
+    artifacts:
+      - .showcase/web_iter_4/validate-runtime.json
+
+  - iteration: 5
+    focus: hand-written AgentCallEntry (app_dogfood_ping) + exec DX doc
+    score: 100
+    rubric:
+      hand_written_agent_call_entry: 25
+      visible_in_dynamic_registry: 25
+      invoke_ok: 30
+      exec_dx_doc_updated: 20
+    hand_written_agent_call_entry: true
+    visible_in_dynamic_registry: true
+    invoke_ok: true
+    exec_dx_doc_updated: true
+    dynamic_registry_tools: 22
+    dynamic_registry_resources: 1
+    tool_qualified_name: app_dogfood_ping
+    tool_listing_name: dogfood_ping
+    tool_extension: ext.mcp.toolkit.dogfood_ping
+    invoke_path: fmt_client_tool
+    invoke_args:
+      toolName: dogfood_ping
+      arguments: {}
+    invoke_result:
+      ok: true
+      message: dogfood pong
+      data:
+        ok: true
+        kind: app_dogfood_ping
+        iteration: 5
+    errors: []
+    warnings:
+      - visual_capture_truth_mode
+    ws_uri: ws://127.0.0.1:8181/YX4j1F2FX1g=/ws
+    artifacts:
+      - flutter_test_app/lib/agent_dogfood_entries.dart
+      - flutter_test_app/INTENTCALL_PLATFORM.md
+      - .showcase/web_iter_5/doctor.json
+      - .showcase/web_iter_5/invoke-dogfood.json
+      - .showcase/web_iter_5/validate-runtime.json
+
+  - iteration: 6
+    focus: WebMCP E2E tooling (web-showcase + webmcp verify) + rubric battery
+    score: 100
+    dimension_scores:
+      connectivity: 20
+      schema_validity: 10
+      handler_correctness: 20
+      capture_quality: 15
+      webmcp_parity: 15
+      intentcall_authoring: 10
+      docs_truth: 10
+    validate_runtime_ok: true
+    doctor_critical_pass: true
+    extensions_ok: true
+    capture_ok: true
+    intentcall_hooks_ok: true
+    webmcp_verify_ok: true
+    webmcp_verdict: webmcp_active_log_evidence
+    webmcp_cdp_probe:
+      hasModelContext: false
+      registerTool: false
+    webmcp_log_evidence: true
+    launch: make web-showcase
+    errors: []
+    warnings:
+      - visual_capture_truth_mode
+    notes:
+      - webmcp_duplicate_tool_registration mitigated in intentcall_platform (idempotent registerTool)
+    ws_uri: ws://127.0.0.1:8181/XR-MRsWfCc8=/ws
+    captureBackend: web_browser
+    artifacts:
+      - .showcase/eval_runs/20260526T174543Z/eval_run.yaml
+      - .showcase/eval_runs/20260526T174543Z/web/validate-runtime.json
+      - .showcase/eval_runs/20260526T174543Z/webmcp_verify.json
+      - mcp_server_dart/lib/src/cli/webmcp_command.dart
+      - scripts/run_web_showcase.sh
+      - .github/workflows/intentcall_eval.yml
+
+  - iteration: 7
+    focus: WebMCP CDP probe fix + idempotent Dart bootstrap (no InvalidStateError)
+    score: 100
+    dimension_scores:
+      connectivity: 20
+      schema_validity: 10
+      handler_correctness: 20
+      capture_quality: 15
+      webmcp_parity: 15
+      intentcall_authoring: 10
+      docs_truth: 10
+    validate_runtime_ok: true
+    doctor_critical_pass: true
+    extensions_ok: true
+    capture_ok: true
+    intentcall_hooks_ok: true
+    webmcp_verify_ok: true
+    webmcp_verdict: webmcp_active
+    webmcp_cdp_probe:
+      hasModelContext: true
+      registerTool: true
+      source: globalThis
+    webmcp_log_evidence: false
+    launch: make web-showcase
+    errors: []
+    warnings:
+      - visual_capture_truth_mode
+    ws_uri: ws://127.0.0.1:8181/j4HT2f83sRU=/ws
+    captureBackend: web_browser
+    artifacts:
+      - .showcase/eval_runs/20260526T182116Z/eval_run.yaml
+      - .showcase/eval_runs/20260526T182116Z/webmcp_verify.json
+      - packages/intentcall_platform/lib/src/bootstrap/agent_web_mcp_bootstrap_web.dart
+      - mcp_server_dart/lib/src/cli/webmcp_command.dart
+
+  - iteration: 8
+    focus: Full standard battery (run_dogfood_eval.sh --merge)
+    ran_at: "2026-05-26T19:59:50Z"
+    score: 98
+    verdict: pass_with_warnings
+    validate_runtime_ok: true
+    doctor_critical_pass: true
+    extensions_ok: true
+    capture_ok: true
+    intentcall_hooks_ok: true
+    ws_uri: ws://127.0.0.1:8181/NWVXwE_k_Pw=/ws
+    captureBackend: web_browser
+    dimension_scores:
+      connectivity: 20
+      schema_validity: 10
+      handler_correctness: 20
+      capture_quality: 10
+      visual_fidelity: 8
+      webmcp_parity: 10
+      intentcall_authoring: 10
+      docs_truth: 10
+    visual_compare_pass: true
+    notes:
+      - validate-runtime with --save-images on Chrome hung >5m; battery now skips save-images unless DOGFOOD_SAVE_IMAGES=1
+    errors:
+      - visual_fidelity_harness_failed
+    warnings:
+      - visual_capture_truth_mode
+      - visual_warm_path_failed
+    artifacts:
+      - /Users/anton/mcp/mcp_flutter/.showcase/eval_runs/20260526T195933Z/eval_run.yaml
+
+  - iteration: 9
+    focus: Exec/MCP parity + dynamic registry (fmt_get_recent_logs, get_recent_logs, fmt_client_tool dogfood_ping)
+    ran_at: "2026-05-26T20:00:19Z"
+    score: 98
+    verdict: pass_with_warnings
+    validate_runtime_ok: true
+    doctor_critical_pass: true
+    extensions_ok: true
+    capture_ok: true
+    intentcall_hooks_ok: true
+    ws_uri: ws://127.0.0.1:8181/NWVXwE_k_Pw=/ws
+    captureBackend: web_browser
+    dimension_scores:
+      connectivity: 20
+      schema_validity: 10
+      handler_correctness: 20
+      capture_quality: 10
+      visual_fidelity: 8
+      webmcp_parity: 10
+      intentcall_authoring: 10
+      docs_truth: 10
+    visual_compare_pass: true
+    errors:
+      - visual_fidelity_harness_failed
+    warnings:
+      - visual_capture_truth_mode
+      - visual_warm_path_failed
+    artifacts:
+      - /Users/anton/mcp/mcp_flutter/.showcase/eval_runs/20260526T195951Z/eval_run.yaml
+      - /Users/anton/mcp/mcp_flutter/.showcase/eval_runs/iter9_probes/exec.log
+
+  - iteration: 10
+    focus: WebMCP verify + validate-runtime capture evidence
+    ran_at: "2026-05-26T20:00:25Z"
+    score: 98
+    verdict: pass_with_warnings
+    validate_runtime_ok: true
+    doctor_critical_pass: true
+    extensions_ok: true
+    capture_ok: true
+    intentcall_hooks_ok: true
+    ws_uri: ws://127.0.0.1:8181/NWVXwE_k_Pw=/ws
+    webmcp_verify_ok: true
+    webmcp_verdict: webmcp_active
+    webmcp_cdp_probe:
+      hasModelContext: true
+      registerTool: true
+      source: globalThis
+    captureBackend: web_browser
+    dimension_scores:
+      connectivity: 20
+      schema_validity: 10
+      handler_correctness: 20
+      capture_quality: 10
+      visual_fidelity: 8
+      webmcp_parity: 10
+      intentcall_authoring: 10
+      docs_truth: 10
+    visual_compare_pass: true
+    errors:
+      - visual_fidelity_harness_failed
+    warnings:
+      - visual_capture_truth_mode
+      - visual_warm_path_failed
+    artifacts:
+      - /Users/anton/mcp/mcp_flutter/.showcase/eval_runs/20260526T195959Z/eval_run.yaml
+
+  - iteration: 11
+    focus: Exec parity re-verify (--vm-service-uri global flag)
+    ran_at: "2026-05-26T20:02:23Z"
+    score: 100
+    verdict: pass
+    validate_runtime_ok: true
+    exec_probes:
+      fmt_get_recent_logs: ok
+      get_recent_logs: ok
+      fmt_client_tool_dogfood_ping: ok
+    ws_uri: ws://127.0.0.1:8181/NWVXwE_k_Pw=/ws
+    errors: []
+    warnings: []
+    artifacts:
+      - .showcase/eval_runs/iter11_probes/fmt_logs.json
+      - .showcase/eval_runs/iter11_probes/bare_logs.json
+      - .showcase/eval_runs/iter11_probes/dogfood_ping.json
+      - /Users/anton/mcp/mcp_flutter/.showcase/web_iter_10/webmcp_verify.log
+      - /Users/anton/mcp/mcp_flutter/.showcase/web_iter_10/validate-runtime.log
+      - /Users/anton/mcp/mcp_flutter/.showcase/web_iter_10/validate-runtime.json
+
+  - iteration: 12
+    ran_at: "2026-05-26T20:53:40Z"
+    score: 100
+    verdict: pass_with_warnings
+    validate_runtime_ok: true
+    doctor_critical_pass: true
+    extensions_ok: true
+    capture_ok: true
+    intentcall_hooks_ok: true
+    ws_uri: ws://127.0.0.1:8181/YMAhINxNAbY=/ws
+    captureBackend: web_browser
+    dimension_scores:
+      connectivity: 20
+      schema_validity: 10
+      handler_correctness: 20
+      capture_quality: 10
+      visual_fidelity: 10
+      webmcp_parity: 10
+      intentcall_authoring: 10
+      docs_truth: 10
+    visual_compare_pass: true
+    errors: []
+    warnings:
+      - visual_capture_truth_mode
+    artifacts:
+      - /Users/anton/mcp/mcp_flutter/.showcase/eval_runs/20260526T205327Z/eval_run.yaml
+
+  - iteration: 13
+    ran_at: "2026-05-26T20:54:13Z"
+    score: 100
+    verdict: pass_with_warnings
+    validate_runtime_ok: true
+    doctor_critical_pass: true
+    extensions_ok: true
+    capture_ok: true
+    intentcall_hooks_ok: true
+    ws_uri: ws://127.0.0.1:8181/YMAhINxNAbY=/ws
+    captureBackend: web_browser
+    dimension_scores:
+      connectivity: 20
+      schema_validity: 10
+      handler_correctness: 20
+      capture_quality: 10
+      visual_fidelity: 10
+      webmcp_parity: 10
+      intentcall_authoring: 10
+      docs_truth: 10
+    visual_compare_pass: true
+    errors: []
+    warnings:
+      - visual_capture_truth_mode
+    artifacts:
+      - /Users/anton/mcp/mcp_flutter/.showcase/eval_runs/20260526T205358Z/eval_run.yaml
+
+  - iteration: 14
+    ran_at: "2026-05-26T20:54:29Z"
+    score: 100
+    verdict: pass_with_warnings
+    validate_runtime_ok: true
+    doctor_critical_pass: true
+    extensions_ok: true
+    capture_ok: true
+    intentcall_hooks_ok: true
+    ws_uri: ws://127.0.0.1:8181/YMAhINxNAbY=/ws
+    captureBackend: web_browser
+    dimension_scores:
+      connectivity: 20
+      schema_validity: 10
+      handler_correctness: 20
+      capture_quality: 10
+      visual_fidelity: 10
+      webmcp_parity: 10
+      intentcall_authoring: 10
+      docs_truth: 10
+    visual_compare_pass: true
+    errors: []
+    warnings:
+      - visual_capture_truth_mode
+    artifacts:
+      - /Users/anton/mcp/mcp_flutter/.showcase/eval_runs/20260526T205416Z/eval_run.yaml
+
+  - iteration: 15
+    ran_at: "2026-05-26T20:54:45Z"
+    score: 100
+    verdict: pass_with_warnings
+    validate_runtime_ok: true
+    doctor_critical_pass: true
+    extensions_ok: true
+    capture_ok: true
+    intentcall_hooks_ok: true
+    ws_uri: ws://127.0.0.1:8181/YMAhINxNAbY=/ws
+    captureBackend: web_browser
+    dimension_scores:
+      connectivity: 20
+      schema_validity: 10
+      handler_correctness: 20
+      capture_quality: 10
+      visual_fidelity: 10
+      webmcp_parity: 10
+      intentcall_authoring: 10
+      docs_truth: 10
+    visual_compare_pass: true
+    errors: []
+    warnings:
+      - visual_capture_truth_mode
+    artifacts:
+      - /Users/anton/mcp/mcp_flutter/.showcase/eval_runs/20260526T205432Z/eval_run.yaml
+
+  - iteration: 16
+    ran_at: "2026-05-26T20:55:02Z"
+    score: 100
+    verdict: pass_with_warnings
+    validate_runtime_ok: true
+    doctor_critical_pass: true
+    extensions_ok: true
+    capture_ok: true
+    intentcall_hooks_ok: true
+    ws_uri: ws://127.0.0.1:8181/YMAhINxNAbY=/ws
+    captureBackend: web_browser
+    dimension_scores:
+      connectivity: 20
+      schema_validity: 10
+      handler_correctness: 20
+      capture_quality: 10
+      visual_fidelity: 10
+      webmcp_parity: 10
+      intentcall_authoring: 10
+      docs_truth: 10
+    visual_compare_pass: true
+    errors: []
+    warnings:
+      - visual_capture_truth_mode
+    artifacts:
+      - /Users/anton/mcp/mcp_flutter/.showcase/eval_runs/20260526T205448Z/eval_run.yaml
+
+  - iteration: 17
+    ran_at: "2026-05-26T20:55:17Z"
+    score: 100
+    verdict: pass_with_warnings
+    validate_runtime_ok: true
+    doctor_critical_pass: true
+    extensions_ok: true
+    capture_ok: true
+    intentcall_hooks_ok: true
+    ws_uri: ws://127.0.0.1:8181/YMAhINxNAbY=/ws
+    captureBackend: web_browser
+    dimension_scores:
+      connectivity: 20
+      schema_validity: 10
+      handler_correctness: 20
+      capture_quality: 10
+      visual_fidelity: 10
+      webmcp_parity: 10
+      intentcall_authoring: 10
+      docs_truth: 10
+    visual_compare_pass: true
+    errors: []
+    warnings:
+      - visual_capture_truth_mode
+    artifacts:
+      - /Users/anton/mcp/mcp_flutter/.showcase/eval_runs/20260526T205505Z/eval_run.yaml
+
+  - iteration: 18
+    ran_at: "2026-05-26T22:41:15Z"
+    score: 90
+    verdict: pass_with_warnings
+    validate_runtime_ok: true
+    doctor_critical_pass: true
+    extensions_ok: true
+    capture_ok: true
+    intentcall_hooks_ok: true
+    ws_uri: ws://127.0.0.1:8181/9udoVMdH7fo=/ws
+    captureBackend: web_browser
+    dimension_scores:
+      connectivity: 20
+      schema_validity: 10
+      handler_correctness: 20
+      capture_quality: 10
+      visual_fidelity: 0
+      webmcp_parity: 10
+      intentcall_authoring: 10
+      docs_truth: 10
+    visual_compare_pass: false
+    errors: []
+    warnings:
+      - visual_capture_truth_mode
+      - visual_fidelity_skipped
+    artifacts:
+      - /Users/anton/mcp/mcp_flutter/.showcase/eval_runs/20260526T224101Z/eval_run.yaml
+
+  - iteration: 19
+    ran_at: "2026-06-06T15:41:00Z"
+    score: 28
+    verdict: blocked_no_runtime
+    validate_runtime_ok: false
+    doctor_critical_pass: false
+    extensions_ok: false
+    capture_ok: false
+    intentcall_hooks_ok: true
+    dimension_scores:
+      connectivity: 0
+      schema_validity: 0
+      handler_correctness: 0
+      capture_quality: 0
+      visual_fidelity: 0
+      webmcp_parity: 8
+      intentcall_authoring: 10
+      docs_truth: 10
+    visual_compare_pass: false
+    errors: []
+    warnings:
+      - visual_capture_truth_mode
+    artifacts:
+      - /Users/anton/mcp/mcp_flutter/.showcase/eval_runs/20260606T154051Z/eval_run.yaml
+
+  - iteration: 20
+    ran_at: "2026-06-06T15:47:35Z"
+    score: 28
+    verdict: blocked_no_runtime
+    validate_runtime_ok: false
+    doctor_critical_pass: false
+    extensions_ok: false
+    capture_ok: false
+    intentcall_hooks_ok: true
+    dimension_scores:
+      connectivity: 0
+      schema_validity: 0
+      handler_correctness: 0
+      capture_quality: 0
+      visual_fidelity: 0
+      webmcp_parity: 8
+      intentcall_authoring: 10
+      docs_truth: 10
+    visual_compare_pass: false
+    errors: []
+    warnings:
+      - visual_capture_truth_mode
+    artifacts:
+      - /Users/anton/mcp/mcp_flutter/.showcase/eval_runs/20260606T154725Z/eval_run.yaml
+
+  - iteration: 21
+    ran_at: "2026-06-06T15:48:16Z"
+    score: 28
+    verdict: blocked_no_runtime
+    validate_runtime_ok: false
+    doctor_critical_pass: false
+    extensions_ok: false
+    capture_ok: false
+    intentcall_hooks_ok: true
+    dimension_scores:
+      connectivity: 0
+      schema_validity: 0
+      handler_correctness: 0
+      capture_quality: 0
+      visual_fidelity: 0
+      webmcp_parity: 8
+      intentcall_authoring: 10
+      docs_truth: 10
+    visual_compare_pass: false
+    errors: []
+    warnings:
+      - visual_capture_truth_mode
+      - deconstruct_sidecar_skipped
+    artifacts:
+      - /Users/anton/mcp/mcp_flutter/.showcase/eval_runs/20260606T154810Z/eval_run.yaml
+
+  - iteration: 22
+    ran_at: "2026-06-06T15:48:18Z"
+    score: 28
+    verdict: blocked_no_runtime
+    validate_runtime_ok: false
+    doctor_critical_pass: false
+    extensions_ok: false
+    capture_ok: false
+    intentcall_hooks_ok: true
+    dimension_scores:
+      connectivity: 0
+      schema_validity: 0
+      handler_correctness: 0
+      capture_quality: 0
+      visual_fidelity: 0
+      webmcp_parity: 8
+      intentcall_authoring: 10
+      docs_truth: 10
+    visual_compare_pass: false
+    errors: []
+    warnings:
+      - visual_capture_truth_mode
+    artifacts:
+      - /Users/anton/mcp/mcp_flutter/.showcase/eval_runs/20260606T154810Z/eval_run.yaml
+
+summary:
+  best_score: 100
+  worst_score: 28
+  mean_score: 86.2
+  iterations_count: 22
+  app_mcp_log:
+    initial_registration: "18 tools, 0 resources (+1 AgentCallEntry dogfood_ping)"
+    delayed_registration: "2 tools, 1 resources"
+  recurring_errors: []
+  recurring_warnings:
+    - visual_capture_truth_mode
+    - visual_fidelity_skipped
+  fix_recommendations:
+    - Warm path green iterations 13–17 (score 100, visual_fidelity 10); re-run with DOGFOOD_VISUAL=1 + sibling flutter_harness when changing goldens.
+    - Iteration 18 visual_fidelity_skipped — battery ran without warm-path compare; use full battery (no --skip-visual) for visual dimension.
+    - Document exec connection flag as global --vm-service-uri (not exec --target).
+    - Default dogfood Chrome validate-runtime without --save-images (use DOGFOOD_SAVE_IMAGES=1 when needed).
+    - Dynamic list uses bare tool name (`dogfood_ping`); qualified `app_dogfood_ping` is descriptor-only (documented in INTENTCALL_PLATFORM.md).
+  addressed:
+    - exec fmt_* alias parity (CommandCatalog.resolveExecCommandName)
+    - doctor visual_capture_truth_mode passes for web CDP desktop_window
+    - dogfood --merge without yq (dart merge_dogfood_tracker.dart)
+    - WebMCP dedupe + CDP verify (iterations 6–7)
+  verdict: blocked_no_runtime
+  webmcp_tooling:
+    chrome_args: dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart webmcp chrome-args
+    verify: dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart webmcp verify --web-port 8080
+    showcase: make web-showcase
+  browser_url: http://localhost:8080

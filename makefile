@@ -22,16 +22,12 @@ check-contracts:
 	bash tool/contracts/check_tool_prefix.sh && \
 	bash tool/contracts/check_repo_split_paths.sh && \
 	bash tool/contracts/check_intentcall_skills_grep.sh && \
+	bash tool/intentcall/check_no_path_deps.sh && \
 	dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart init intentcall-platform \
 	  --project-dir flutter_test_app --check && \
 	dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart codegen sync \
 	  --platform web,android,ios,macos,linux,windows \
 	  --project-dir flutter_test_app --check && \
-	if ! command -v steward &> /dev/null; then \
-		echo "Error: 'steward' command not found."; \
-		echo "Please install via: curl -fsSL https://raw.githubusercontent.com/arenukvern/skill_steward/main/install.sh | bash"; \
-		exit 1; \
-	fi && \
 	steward validate skills/
 
 .PHONY: release-artifacts
@@ -65,6 +61,19 @@ showcase:
 
 showcase-stop:
 	@bash $(CURDIR)/scripts/stop_showcase.sh
+
+.PHONY: exec-sweep exec-sweep-web
+exec-sweep:
+	@test -n "$$WS_URI" || (echo "Set WS_URI from: grep ws .showcase/flutter_app.log" && exit 1)
+	PLATFORM=macos bash $(CURDIR)/scripts/run_exec_sweep.sh
+
+exec-sweep-web:
+	@test -n "$$WS_URI" || (echo "Set WS_URI from: grep ws .showcase/web_app.log" && exit 1)
+	PLATFORM=web bash $(CURDIR)/scripts/run_exec_sweep.sh
+
+.PHONY: web-showcase-tests
+web-showcase-tests:
+	@bash $(CURDIR)/scripts/run_web_showcase_tests.sh
 
 .PHONY: sync-skills
 sync-skills:

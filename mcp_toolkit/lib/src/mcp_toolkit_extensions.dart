@@ -77,7 +77,9 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
         registerServiceExtension(
           name: extensionName,
           callback: (final parameters) async {
-            final wireArgs = _extractToolArguments(parameters);
+            final wireArgs = mcpToolkitArgumentsFromServiceExtensionParameters(
+              parameters,
+            );
             final registration = entry.toRegistration();
             final args = coerceArgumentsForSchema(
               registration.descriptor.inputSchema,
@@ -106,6 +108,11 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
 
     _postToolRegistrationEvent(entries);
   }
+
+  @visibleForTesting
+  Map<String, Object?> mcpToolkitArgumentsFromServiceExtensionParameters(
+    final Map<String, String> parameters,
+  ) => parameters.map(MapEntry<String, Object?>.new)..remove('isolateId');
 
   void _postToolRegistrationEvent(final Set<AgentCallEntry> newEntries) {
     if (newEntries.isEmpty) return;
@@ -191,11 +198,3 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
     };
   }
 }
-
-// Flutter's VM service extension transport injects isolateId into callback
-// parameters. It routes the VM service call to the target isolate; it is not
-// an MCP tool argument. Strip it before schema coercion/validation because
-// tool schemas intentionally reject unknown properties.
-Map<String, Object?> _extractToolArguments(
-  final Map<String, String> parameters,
-) => Map<String, Object?>.from(parameters)..remove('isolateId');

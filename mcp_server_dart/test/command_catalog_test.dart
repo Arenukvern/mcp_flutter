@@ -207,6 +207,39 @@ void main() {
       expect(command, isA<SemanticSnapshotCommand>());
     });
 
+    test('reveal_search command is registered with bounded schema', () {
+      final spec = catalog.specFor('reveal_search');
+      expect(spec, isNotNull);
+      expect(spec!.mcpExposed, isTrue);
+      expect(
+        schemaEquality.equals(spec.inputSchema, revealSearchInputSchema()),
+        isTrue,
+      );
+
+      final command = catalog.buildCommand('reveal_search', {
+        'query': 'greeting_input_field',
+        'matchBy': 'identifier',
+        'direction': 'down',
+        'maxAttempts': 4,
+        'distance': 160,
+      });
+
+      expect(command, isA<RevealSearchCommand>());
+      final reveal = command as RevealSearchCommand;
+      expect(reveal.query, 'greeting_input_field');
+      expect(reveal.matchBy, 'identifier');
+      expect(reveal.direction, 'down');
+      expect(reveal.maxAttempts, 4);
+      expect(reveal.distance, 160);
+    });
+
+    test('rejects reveal_search without query via shared schema', () {
+      expect(
+        () => catalog.buildCommand('reveal_search', {}),
+        throwsA(isA<ArgumentError>()),
+      );
+    });
+
     test('hot_reload_flutter catalog schema matches shared core schema', () {
       expect(
         schemaEquality.equals(

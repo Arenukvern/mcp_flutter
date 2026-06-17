@@ -1,0 +1,187 @@
+# Steward runtime text-input capability packet - 2026-06-10
+
+**Status:** adoption run passed; capability candidate pending held-out repeat · **Audience:** maintainers and agents
+
+## Claim to prove
+
+A fresh agent can use Flutter MCP Toolkit against the running `flutter_test_app` to discover the greeting field, enter text through the interaction tool, and prove runtime state changed.
+
+This is the next harder Skill Steward adoption slice after the hosted dependency cutover gate because it exercises a live MCP/runtime path:
+
+```text
+launch app -> discover VM service -> semantic_snapshot -> enter_text -> evaluate_dart_expression
+```
+
+It does not claim all interaction tools, `fill_form`, web/mobile parity, production app behavior, WebMCP dogfood, or broad repo H5 maturity.
+
+## Result - 2026-06-10
+
+The adoption slice passed after bounded repairs to the toolkit runtime path.
+The proof selected the text field by `semantic_snapshot` identifier, called
+`enter_text`, and verified the live app state through
+`evaluate_dart_expression`.
+
+This is not a full H5 proof. It is one successful adoption run plus a
+capability candidate because the run happened on a dirty local tree after the
+required repairs were applied.
+
+Evidence artifact:
+
+- `docs/evidence/generated/mcp_flutter.runtime-enter-text-greeting.redacted.json`
+
+Reproduction entrypoint:
+
+```bash
+WS_URI='ws://127.0.0.1:<port>/<token>/ws' \
+  tool/evals/run_runtime_enter_text_greeting.sh
+```
+
+Runtime target:
+
+- Platform: macOS debug app launched by `make showcase`.
+- VM service URI provenance: local ephemeral URI emitted by `flutter run`
+  (`ws://127.0.0.1:<port>/<token>/ws`, token redacted in evidence).
+- Subject: commit `87c493c8fb880c58572aa7b59d74e368a68b5144` plus local
+  adoption-run repairs in this change set.
+
+Acceptance facts:
+
+- `doctor --json`: 10 checks, 10 pass, 0 fail.
+- First `semantic_snapshot`: exposed Semantics identifiers, proving the agent
+  can select by `greeting_input_field` rather than by first ref.
+- `scroll(direction: "down", distance: 900)`: moved scroll position from
+  `0.0` to `480.0`, revealing the Type section and field ref `s_14`.
+- Before `enter_text`: `AgentState.instance.greeting == ""`.
+- `enter_text(ref: "s_14", snapshotId: 2, text: "steward runtime proof")`:
+  returned `success: true`, `via: "editable_state"`.
+- After `enter_text`: `AgentState.instance.greeting ==
+  "steward runtime proof"`.
+
+Caveats found during the run:
+
+- The app service-extension transport included VM metadata key `isolateId`;
+  the toolkit now strips that before app-side schema validation.
+- `semantic_snapshot` previously omitted `SemanticsNode.identifier`; the
+  snapshot now exposes identifiers so adoption proof does not depend on
+  brittle ref order.
+- Scroll could previously report success while leaving scroll position
+  unchanged. The scroll service now records `scrollBefore`/`scrollAfter` and
+  returns `no_scroll_movement` when it cannot prove movement.
+- An exploratory `wait_for` probe for the echo text exceeded its own timeout
+  and was killed. This is not part of the acceptance check, but it is a
+  follow-up caveat for the interaction harness.
+
+## Local repeat - 2026-06-13
+
+The runtime path passed again in the current checkout:
+
+```bash
+make showcase
+WS_URI='ws://127.0.0.1:<port>/<token>/ws' \
+  tool/evals/run_runtime_enter_text_greeting.sh
+```
+
+Evidence artifact:
+
+- `docs/evidence/generated/mcp_flutter.runtime-enter-text-greeting.redacted.json`
+
+Acceptance facts from the 2026-06-13 artifact:
+
+- `doctor --json`: 10 checks, 10 pass, 0 fail.
+- `AgentState.instance.greeting` before entry was not the target text.
+- `enter_text` submitted `steward runtime proof`.
+- `AgentState.instance.greeting` after entry returned exactly
+  `steward runtime proof`.
+
+This repeat is useful freshness evidence for the local runtime path, but it is
+not the clean held-out proof required for H5 promotion. The checkout still had
+uncommitted adoption-run repairs and this proof script itself was part of the
+local change set.
+
+## Held-out repeat attempt - 2026-06-13
+
+A second-agent held-out attempt prepared the same proof path but did not reach
+VM service startup: `make showcase` failed before the runtime eval could run
+because macOS denied loading `FlutterMacOS.framework` during
+code-signing/system-policy validation. Treat this as blocked input for the
+next promotion attempt, not as a failed product interaction proof.
+
+Until that launch blocker is cleared in a clean owner checkout, the ceiling
+remains: helper implemented, focused and local runtime proof passed, held-out
+repeat pending.
+
+## Adoption-run/v2 classification
+
+| Field | Value |
+|-------|-------|
+| Capability id | `mcp_flutter.runtime.enter-text-greeting` |
+| Capability class | `mcp_tool_runtime` |
+| Scope | `adoption_run` passed; `capability_candidate` until held-out repeat |
+| User goal | Prove a real MCP toolkit interaction can fill a Flutter text input and verify state |
+| Acceptance check | `AgentState.instance.greeting` equals the submitted text after `enter_text` |
+| Native owner | `flutter_test_app`, `flutter-mcp-toolkit`, interaction command catalog, and `flutter-mcp-toolkit-control` skill |
+| Review outcomes | continue, refactor, stop, abandon, or promote |
+
+## Target surface
+
+Known target:
+
+- `flutter_test_app/lib/showcase_screen.dart` wraps the field with semantics identifier `greeting_input_field`.
+- `semantic_snapshot` should return a ref for that field.
+- `enter_text` should submit `steward runtime proof`.
+- `evaluate_dart_expression("AgentState.instance.greeting")` should return the submitted text.
+- `flutter_test_app/lib/agent_state.dart` owns the assertion state.
+
+Use `enter_text` for this one-field proof. Reserve `fill_form` for a later batch-form capability proof.
+
+## Acceptance sequence
+
+Run from this checkout:
+
+```bash
+cd flutter_test_app
+flutter run --debug --machine --host-vmservice-port=8181 -d macos
+```
+
+Use the emitted `app.debugPort.wsUri` as `$WS`.
+
+```bash
+flutter-mcp-toolkit doctor --vm-service-uri "$WS" --json
+flutter-mcp-toolkit exec --name semantic_snapshot \
+  --args "{\"connection\":{\"targetId\":\"$WS\"}}"
+```
+
+Find the node with semantics identifier `greeting_input_field`, capture its `ref` and `snapshotId`, then run:
+
+```bash
+flutter-mcp-toolkit exec --name enter_text \
+  --args "{\"ref\":\"<ref>\",\"snapshotId\":<snapshotId>,\"text\":\"steward runtime proof\",\"connection\":{\"targetId\":\"$WS\"}}"
+
+flutter-mcp-toolkit exec --name evaluate_dart_expression \
+  --args "{\"expression\":\"AgentState.instance.greeting\",\"connection\":{\"targetId\":\"$WS\"}}"
+```
+
+The proof passes only when the final expression returns exactly `steward runtime proof`.
+
+## Detour budget
+
+- If the field ref is stale, call `semantic_snapshot` again and retry once.
+- If app launch or VM service connection fails after two setup attempts, stop restoration and record an unknown case.
+- Do not add a new MCP tool in this adoption run unless the existing toolkit path is proven unable to satisfy the acceptance check.
+- If direct Dart expression can set the state but `enter_text` fails, record fallback evidence only; that does not prove text-input interaction.
+
+## Promotion requirements
+
+Promote to capability-level H5 only after:
+
+- A clean runtime run proves `doctor`, `semantic_snapshot`, `enter_text`, and `evaluate_dart_expression`.
+- Evidence records platform, VM service URI provenance, subject commit, and dirty state.
+- The proof selects the field by semantics identifier, not by whichever ref appears first.
+- A falsifier exists, such as asserting the expression is not the target value before entry or proving a wrong ref does not satisfy the acceptance check.
+- A future-agent or held-out run repeats the path without hidden local context.
+
+Current interpretation:
+
+- The first four bullets are satisfied for this bounded capability.
+- The held-out future-agent repeat remains open, so this is not a full
+  capability-level H5 proof and must not be used as a repo-wide adoption claim.

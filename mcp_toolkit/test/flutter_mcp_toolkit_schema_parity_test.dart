@@ -22,6 +22,19 @@ void main() {
       ).byName(toolName);
 
   group('flutter_mcp_toolkit vs fmt_* catalog (shared core schemas)', () {
+    test(
+      'service extension transport args are stripped before tool validation',
+      () {
+        final args = MCPToolkitBinding.instance
+            .mcpToolkitArgumentsFromServiceExtensionParameters(<String, String>{
+              'isolateId': 'isolates/1',
+              'count': '2',
+            });
+
+        expect(args, <String, Object?>{'count': '2'});
+      },
+    );
+
     test('app_errors', () {
       final schema = appInputSchema('app_errors');
       expect(

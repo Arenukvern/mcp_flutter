@@ -49,6 +49,9 @@ mixin SemanticSnapshotService {
   /// multiple times.
   static SemanticsOwner? get semanticsOwner {
     final binding = WidgetsBinding.instance;
+    if (_isInFlutterTest()) {
+      return binding.pipelineOwner.semanticsOwner;
+    }
     _semanticsHandle ??= binding.ensureSemantics();
     return binding.pipelineOwner.semanticsOwner;
   }
@@ -242,6 +245,7 @@ mixin SemanticSnapshotService {
         'ref': ref,
         'id': node.id,
         'type': type,
+        if (data.identifier.isNotEmpty) 'identifier': data.identifier,
         if (data.label.isNotEmpty) 'label': data.label,
         if (data.value.isNotEmpty) 'value': data.value,
         if (data.hint.isNotEmpty) 'hint': data.hint,

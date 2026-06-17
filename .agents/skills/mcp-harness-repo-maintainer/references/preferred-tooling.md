@@ -45,7 +45,7 @@ You can still keep a thin `package.json` / `pubspec.yaml` / `Cargo.toml` for dep
    ```bash
    npx skills add arenukvern/skill_steward -a cursor -a claude-code -y
    ```
-   Prioritize: `mcp-harness-repo-maintainer`, `faq-driven-docs`, `adr-records`, `mcp-harness-repo-maintainer`.
+   Prioritize: `repo-quality-system-lifecycle`, `repository-governance-lifecycle`, `mcp-harness-repo-maintainer`, `skill-authoring-lifecycle`, `skill-source-citations`.
 
 2. When starting the CLI surface, default to Dart + Justfile unless you have a documented exception.
 

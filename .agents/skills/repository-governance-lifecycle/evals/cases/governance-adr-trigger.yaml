@@ -1,0 +1,12 @@
+id: repository-governance-adr-trigger
+skill: repository-governance-lifecycle
+routing: should_trigger
+input: "Write an ADR and update DESIGN_FAQ for a repository governance architecture change"
+rules:
+  - kind: file_exists
+    path: references/evals.md
+  - kind: description_includes_any
+    terms: ["governance", "ADR", "architecture", "doc lattice"]
+  - kind: body_includes_any
+    path: SKILL.md
+    terms: ["DESIGN_FAQ.mdx", "DX_FAQ.mdx", "Plan Hygiene"]

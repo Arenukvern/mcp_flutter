@@ -1,10 +1,10 @@
 schema: steward/scenario-manifest/v1
 repo: mcp_flutter
 scenario: mcp_flutter.web-dogfood-warm
-status: runnable
+status: superseded
 source:
   git: https://github.com/Arenukvern/mcp_flutter
-  commit: 717c4c8c196aa2be42b395d293fec6e302cd030d
+  commit: 21c160a09bb2d7fe18993c8a703bb05d1cc64ff9
   steward_contract: steward.yaml
 safe_first_probe: fmt.check.tool-prefix
 required_actions:
@@ -20,5 +20,5 @@ artifacts:
     path: tool/contracts/expected_tool_surface.txt
     required: true
     durability: input
-blocked_by: null
+blocked_by: superseded by mcp_flutter.contract-status-smoke; this historical scenario never proved live WebMCP runtime dogfood
 owner: flutter-mcp-toolkit

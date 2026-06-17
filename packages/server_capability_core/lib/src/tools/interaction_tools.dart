@@ -51,6 +51,39 @@ void registerInteractionTools(final CapabilityContext context) {
 
   context.registerTool(
     ToolRegistration(
+      name: 'reveal_search',
+      description:
+          'Find a semantic target that may be off-screen by taking a '
+          'snapshot, matching one bounded selector, scrolling up to '
+          'maxAttempts, and returning a fresh ref/snapshotId plus trace.',
+      inputSchema: revealSearchInputSchema(),
+      handler: (final args) async {
+        final query = stringArgOrNull(args['query']) ?? '';
+        final matchBy = stringArgOrNull(args['matchBy']) ?? 'text';
+        final direction = stringArgOrNull(args['direction']) ?? 'down';
+        final maxAttempts = switch (args['maxAttempts']) {
+          final int value => value,
+          final num value when value == value.toInt() => value.toInt(),
+          _ => 5,
+        };
+        final distance = doubleArgOrDefault(args['distance'], 300.0);
+        return runCommand(
+          runner,
+          args,
+          RevealSearchCommand(
+            query: query,
+            matchBy: matchBy,
+            direction: direction,
+            maxAttempts: maxAttempts,
+            distance: distance,
+          ),
+        );
+      },
+    ),
+  );
+
+  context.registerTool(
+    ToolRegistration(
       name: 'scroll',
       description:
           'Scroll to reveal content in a direction. "down" reveals content '

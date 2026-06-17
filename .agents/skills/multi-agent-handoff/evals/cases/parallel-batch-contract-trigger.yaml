@@ -1,0 +1,38 @@
+id: multi-agent-handoff-parallel-batch-contract-trigger
+skill: multi-agent-handoff
+routing: should_trigger
+input: "Use handoff lane contracts for parallel subagents fixing several independent repo problems; preserve the original goal, run native gates first, keep claim ceilings honest, and close every lane with a terminal state."
+rules:
+  - kind: file_exists
+    path: references/evals.md
+  - kind: file_exists
+    path: references/handoff-template.md
+  - kind: description_includes_any
+    terms: ["handoffs", "multi-agent", "subagent"]
+  - kind: body_includes_any
+    path: SKILL.md
+    terms: ["Parallel Batch"]
+  - kind: body_includes_any
+    path: SKILL.md
+    terms: ["Original goal"]
+  - kind: body_includes_any
+    path: SKILL.md
+    terms: ["Default native gate"]
+  - kind: body_includes_any
+    path: SKILL.md
+    terms: ["Claim ceiling"]
+  - kind: body_includes_any
+    path: SKILL.md
+    terms: ["Acceleration note"]
+  - kind: body_includes_any
+    path: SKILL.md
+    terms: ["Saved"]
+  - kind: body_includes_any
+    path: SKILL.md
+    terms: ["Cost/duplication"]
+  - kind: body_includes_any
+    path: SKILL.md
+    terms: ["Future hot path"]
+  - kind: body_includes_any
+    path: SKILL.md
+    terms: ["terminal state"]

@@ -1,0 +1,24 @@
+id: mixture-of-experts-parallel-governance-boundary-trigger
+skill: mixture-of-experts
+routing: should_trigger
+input: "Run MoE subagents to judge whether a parallel stewardship conversation helped or became overhead; check cold-to-hot usefulness, native gates, temp proof landing, and terminal states without authorizing writes."
+rules:
+  - kind: file_exists
+    path: references/evals.md
+  - kind: description_includes_any
+    terms: ["Mixture of Experts", "MoE", "subagents", "critical"]
+  - kind: body_includes_any
+    path: SKILL.md
+    terms: ["ownership contract"]
+  - kind: body_includes_any
+    path: SKILL.md
+    terms: ["Fallback"]
+  - kind: body_includes_any
+    path: SKILL.md
+    terms: ["Integration contract"]
+  - kind: body_includes_any
+    path: SKILL.md
+    terms: ["lens-status summary"]
+  - kind: body_includes_any
+    path: SKILL.md
+    terms: ["MoE findings alone are not terminal lane states"]

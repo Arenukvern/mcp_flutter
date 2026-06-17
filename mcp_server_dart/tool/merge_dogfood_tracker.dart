@@ -1,4 +1,4 @@
-// Appends a dogfood iteration block to .showcase/dogfood_web_eval.yaml (preserves comments).
+// Appends a dogfood iteration block to docs/evidence/dogfood/dogfood_web_eval.yaml (preserves comments).
 // Usage: dart run tool/merge_dogfood_tracker.dart <tracker.yaml> <iteration.yaml> <verdict>
 import 'dart:io';
 

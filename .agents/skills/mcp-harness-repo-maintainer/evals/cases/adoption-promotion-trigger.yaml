@@ -1,0 +1,20 @@
+id: mcp-maintainer-adoption-promotion-trigger
+skill: mcp-harness-repo-maintainer
+routing: should_trigger
+input: "A fresh-agent adoption run found repeated stale steward fallback friction in mcp_flutter; capture it and decide whether it can become an action candidate"
+rules:
+  - kind: file_exists
+    path: references/evals.md
+  - kind: file_exists
+    path: ../../docs/evidence/h3-h5-adoption-promotion-packet-2026-06-10.mdx
+  - kind: description_includes_any
+    terms: ["action candidates", "benchmarks", "cold-start"]
+  - kind: body_includes_any
+    path: SKILL.md
+    terms: ["Progressive Automation", "unknown case", "typed action candidate"]
+  - kind: body_includes_any
+    path: ../../docs/evidence/h3-h5-adoption-promotion-packet-2026-06-10.mdx
+    terms: ["adoption_run", "unknown case", "action candidate", "promoted capability"]
+  - kind: body_includes_any
+    path: ../../packages/steward_cli/README.md
+    terms: ["steward observe", "steward unknown-case create", "steward action-candidate create"]

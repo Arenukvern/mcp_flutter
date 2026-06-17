@@ -1,0 +1,83 @@
+# H4 fresh-agent workflow — 2026-06-10
+
+**Status:** H4 bounded workflow passed · **Audience:** maintainers and agents
+
+## Claim
+
+A fresh agent completed one bounded `mcp_flutter` workflow using declared repository surfaces before raw exploration: prove the first Skill Steward dogfood scenario status. This is an H4 proof for the bounded contract-status workflow, not a claim that all product or runtime workflows are H4.
+
+## Task
+
+Prove the first Skill Steward dogfood scenario status for `mcp_flutter` using declared repository surfaces before raw exploration.
+
+## Repo state
+
+```bash
+git status
+# On branch codex/steward-adoption-h2
+# nothing to commit, working tree clean
+
+git status --short --branch
+# ## codex/steward-adoption-h2
+```
+
+## Declared surfaces used first
+
+1. `AGENTS.md` Governance & Skill Steward section.
+2. `makefile` / `make check-contracts` native gate.
+3. At proof time, `tool/steward/run.sh` was the temporary Skill Steward bridge named in `AGENTS.md`; current reusable guidance uses the released `steward` executable.
+
+## Transcript
+
+```bash
+bash tool/steward/run.sh doctor --json
+# Passed after selecting a compatible Steward command surface.
+```
+
+```bash
+make check-contracts
+# Passed.
+# Existing warnings only: skill metadata warnings for missing license and references/sources.md.
+```
+
+```bash
+bash tool/steward/run.sh doctor --json
+# Passed: config valid, no diagnostics, one quick-eligible action.
+```
+
+```bash
+bash tool/steward/run.sh actions list --json
+# Passed: listed fmt.check.tool-prefix.
+```
+
+```bash
+bash tool/steward/run.sh action inspect fmt.check.tool-prefix --json
+# Passed: bounded_local, auto, no writes, no git, no network, no secrets, no destructive effects.
+```
+
+```bash
+bash tool/steward/run.sh probe --json --profile quick
+# Passed: executed fmt.check.tool-prefix, exit_code 0.
+```
+
+```bash
+bash tool/steward/run.sh benchmark --scenario mcp_flutter.web-dogfood-warm --strict --json
+# Passed: result=pass, proof.status=ready, durability.status=ready.
+```
+
+## Outcome
+
+- Fresh-agent workflow: passed.
+- Fallback needed at proof time: yes. The global `steward` binary was present but stale for the declared contract workflow, so the agent used the then-documented temporary wrapper and local Skill Steward override.
+- Files edited by fresh agent: none.
+- Outputs persisted by fresh agent: none.
+- Review artifact added later: `docs/evidence/generated/mcp_flutter.web-dogfood-warm.strict.redacted.json`.
+- Current adoption note: the temporary wrapper was not promoted. New adopters should install and run `steward` directly.
+
+## Remaining gaps and non-claims
+
+- This proves one bounded contract-status workflow, not the WebMCP runtime dogfood path.
+- The scenario `source.commit` names the pre-proof subject commit. The benchmark treats a local HEAD mismatch as a warning rather than remote equivalence proof.
+- Existing skill metadata/source warnings remain in `make check-contracts`; they do not fail the native gate.
+- The original raw sibling-checkout command and temporary wrapper are local provenance only and are no longer reusable adopter guidance.
+- H5 remains unclaimed because no repeated evidence has promoted a reusable diagnostic, action, eval, or harness capability with owner, risk, redaction, and validation.

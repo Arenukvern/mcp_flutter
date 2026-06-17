@@ -49,7 +49,7 @@
     "noindex": false
   },
   "variables": {
-    "version": "3.0.4",
+    "version": "4.0.0-dev.1",
     "repo": "https://github.com/Arenukvern/mcp_flutter",
     "docs": "https://docs.page/arenukvern/mcp_flutter"
   },
@@ -125,6 +125,14 @@
         {
           "title": "Execution Playbook",
           "href": "/ai_agents/execution_playbook"
+        },
+        {
+          "title": "Steward H5 Hosted Cutover",
+          "href": "/evidence/steward-h5-hosted-cutover-promotion-2026-06-10"
+        },
+        {
+          "title": "Steward Runtime Text Input",
+          "href": "/evidence/steward-runtime-text-input-capability-2026-06-10"
         },
         {
           "title": "AI Troubleshooting",

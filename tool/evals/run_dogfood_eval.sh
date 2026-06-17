@@ -9,7 +9,8 @@ repo_root="$(cd "${here}/../.." && pwd)"
 app_dir="${repo_root}/flutter_test_app"
 showcase="${repo_root}/.showcase"
 rubric="${repo_root}/docs/superpowers/evals/tool_quality_rubric.yaml"
-tracker="${showcase}/dogfood_web_eval.yaml"
+tracker="${DOGFOOD_TRACKER:-${repo_root}/docs/evidence/dogfood/dogfood_web_eval.yaml}"
+tracker_seed="${repo_root}/tool/evals/dogfood_web_eval.seed.yaml"
 toolkit=(dart run "${repo_root}/mcp_server_dart/bin/flutter_mcp_toolkit.dart")
 
 device=chrome
@@ -44,7 +45,7 @@ Options:
   --ws-uri URI              Web (chrome) VM websocket (or set WS_URI)
   --macos                   Also run validate-runtime for macOS showcase
   --macos-ws-uri URI        macOS VM websocket (or MACOS_WS_URI)
-  --merge                   Merge iteration into .showcase/dogfood_web_eval.yaml (yq or dart)
+  --merge                   Merge iteration into docs/evidence/dogfood/dogfood_web_eval.yaml (yq or dart)
   --run-intentcall-tests      dart test packages/intentcall_testing
   --run-deconstruct-smoke   Offline HS deconstruct_smoke.hs.yaml (needs fixture)
   --skip-runtime            Static checks only (no validate-runtime)
@@ -622,15 +623,17 @@ log "score=${score} verdict=${verdict}"
 # --- merge into dogfood tracker ----------------------------------------------
 if [[ "${merge_tracker}" == true ]]; then
   if [[ ! -f "${tracker}" ]]; then
-    log "WARN: tracker missing at ${tracker}; skip merge"
-    exit 0
+    if [[ -f "${tracker_seed}" ]]; then
+      mkdir -p "$(dirname "${tracker}")"
+      cp "${tracker_seed}" "${tracker}"
+      log "bootstrapped tracker from ${tracker_seed}"
+    else
+      log "WARN: tracker missing at ${tracker} and no seed at ${tracker_seed}; skip merge"
+      exit 0
+    fi
   fi
 
-  if command -v yq >/dev/null 2>&1; then
-    next_iter="$(yq '.iterations | length' "${tracker}")"
-  else
-    next_iter="$(grep -cE '^  - iteration:' "${tracker}" || true)"
-  fi
+  next_iter="$(grep -cE '^  - iteration:' "${tracker}" || true)"
   next_iter=$((next_iter + 1))
 
   iteration_yaml="${run_dir}/iteration_merge.yaml"
@@ -666,22 +669,9 @@ if [[ "${merge_tracker}" == true ]]; then
     printf 'artifacts:\n  - %s/eval_run.yaml\n' "${run_dir}"
   } >"${iteration_yaml}"
 
-  if command -v yq >/dev/null 2>&1; then
-    next_iter="$(yq '.iterations | length' "${tracker}")"
-    next_iter=$((next_iter + 1))
-    yq -i ".iterations += [load(\"${iteration_yaml}\")]" "${tracker}"
-    yq -i ".summary.iterations_count = (.iterations | length)" "${tracker}"
-    yq -i '.summary.best_score = ([.iterations[].score] | max)' "${tracker}"
-    yq -i '.summary.worst_score = ([.iterations[].score] | min)' "${tracker}"
-    yq -i '.summary.mean_score = (([.iterations[].score] | add) / ([.iterations[].score] | length))' "${tracker}"
-    yq -i ".summary.verdict = \"${verdict}\"" "${tracker}"
-    yq -i ".scoring.rubric = \"docs/superpowers/evals/tool_quality_rubric.yaml\"" "${tracker}"
-    log "merged iteration ${next_iter} into ${tracker} (yq)"
-  else
   dart run "${repo_root}/mcp_server_dart/tool/merge_dogfood_tracker.dart" \
     "${tracker}" "${iteration_yaml}" "${verdict}"
-    log "merged into ${tracker} (dart)"
-  fi
+  log "merged into ${tracker} (dart)"
 fi
 
 # Exit non-zero if battery failed

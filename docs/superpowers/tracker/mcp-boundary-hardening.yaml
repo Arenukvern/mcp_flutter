@@ -85,7 +85,7 @@ tracks:
     status: done
 
   - id: p2-validation-tiers-doc
-    title: INTENTCALL_PLATFORM.md Validation tiers section
+    title: boundary-audit skill validation parity section
     status: done
     note: Tiers A–D — validateAgainstSchema, dynamic fmt_client_tool, exec catalog, WebMCP JS vs Dart hook
 
@@ -97,7 +97,7 @@ tracks:
   - id: p2-audit-skill-vm-wire-note
     title: Boundary audit skill VM wire coercion checklist
     status: done
-    note: Skill + INTENTCALL_PLATFORM Tier B — app callback + invokeDirect use coerceArgumentsForSchema
+    note: Skill Tier B — app callback + invokeDirect use coerceArgumentsForSchema
 
   - id: p2-vm-wire-coerce-at-validate
     title: Coerce VM string-key args before validateAgainstSchema (optional)
@@ -110,19 +110,19 @@ tracks:
     note: validationFailureForDynamicSchema in dynamic_gateway.dart; forwardToolCall in dynamic_registry.dart
 
   - id: p2-docs-boundary-audit-final
-    title: INTENTCALL_PLATFORM + audit skill host coerce and interaction parity
+    title: audit skill host coerce and interaction parity
     status: done
     note: Tier B host coerce; MCP fmt_* vs registry table; interactionCatalogInputSchemaFor tools
 
   - id: p2-docs-parity-18-tools
-    title: INTENTCALL_PLATFORM parity table + Tier C exec doc drift
+    title: boundary-audit parity table + Tier C exec doc drift
     status: done
     note: fill_form, hot_reload_flutter, hot_restart_flutter in parity table; 18-tool count; Tier C documents exec Tier A via validationFailureForInteractionCatalogCommand; reference.md aligned-tools table
 
   - id: p2-docs-tier-a-22-vs-router-24
     title: Document 18 core vs 22 tier A exec vs 24 schema router
     status: done
-    note: coreInteractionCatalogCommandNames, tierAExecCatalogCommandNames, captureTierAExecCommandNames in interaction_input_schemas.dart; INTENTCALL_PLATFORM inspection/capture tables; reference.md counts
+    note: coreInteractionCatalogCommandNames, tierAExecCatalogCommandNames, captureTierAExecCommandNames in interaction_input_schemas.dart; boundary-audit reference tables; reference.md counts
 
   - id: re-audit-2026-05-28
     title: Boundary re-audit (flutter-mcp-boundary-audit)

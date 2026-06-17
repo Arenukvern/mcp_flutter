@@ -1,0 +1,120 @@
+{
+  "schema": "steward-adoption-runtime-proof/v1",
+  "capabilityId": "mcp_flutter.runtime.enter-text-greeting",
+  "status": "adoption_run_passed_capability_candidate",
+  "recordedAt": "2026-06-16T23:04:39Z",
+  "subject": {
+    "repo": "mcp_flutter",
+    "branch": "codex/steward-adoption-h2",
+    "baseCommit": "160ee4e0cf48266cd917ab0ae9ba1a5650332092",
+    "dirtyState": "caller must inspect git status; this script does not assert clean checkout"
+  },
+  "runtime": {
+    "platform": "macos",
+    "launchCommand": "make showcase",
+    "vmServiceUri": "ws://127.0.0.1:<redacted-port>/<redacted-token>/ws"
+  },
+  "proof": {
+    "doctor": {
+      "ok": true,
+      "total": 10,
+      "pass": 10,
+      "warn": 0,
+      "fail": 0
+    },
+    "discovery": {
+      "snapshotId": 2,
+      "selector": {
+        "identifier": "greeting_input_field",
+        "ref": "s_14",
+        "type": "textField"
+      }
+    },
+    "reveal": {
+      "strategy": "reveal_search",
+      "tool": "reveal_search",
+      "targetIdentifier": "greeting_input_field",
+      "attempts": [
+        {
+          "attempt": 0,
+          "snapshotId": 1,
+          "nodeCount": 16,
+          "found": false,
+          "scroll": {
+            "success": true,
+            "via": "pointer_scroll_event",
+            "action": "scroll",
+            "direction": "down",
+            "distance": 220.0,
+            "at": {
+              "x": 400.0,
+              "y": 300.0
+            },
+            "scrollDelta": {
+              "x": 0.0,
+              "y": 220.0
+            },
+            "scrollBefore": 0.0,
+            "scrollAfter": 440.0,
+            "semanticAttempt": {
+              "success": false,
+              "targetNodeId": 24,
+              "via": "semantic_action",
+              "action": "scroll_down",
+              "scrollBefore": 0.0,
+              "scrollAfter": 0.0,
+              "scrollExtentMin": 0.0,
+              "scrollExtentMax": 2037.0,
+              "error": "no_scroll_movement"
+            }
+          }
+        },
+        {
+          "attempt": 1,
+          "snapshotId": 2,
+          "nodeCount": 20,
+          "found": true,
+          "ref": "s_14"
+        }
+      ],
+      "match": {
+        "ref": "s_14",
+        "id": 29,
+        "type": "textField",
+        "identifier": "greeting_input_field",
+        "bounds": {
+          "left": 72.0,
+          "top": 584.0,
+          "right": 728.0,
+          "bottom": 600.0
+        },
+        "children": [
+          "s_13"
+        ]
+      },
+      "success": true
+    },
+    "falsifier": {
+      "expression": "AgentState.instance.greeting",
+      "before": ""
+    },
+    "interaction": {
+      "tool": "enter_text",
+      "ref": "s_14",
+      "snapshotId": 2,
+      "text": "steward runtime proof",
+      "success": true,
+      "via": "editable_state"
+    },
+    "acceptance": {
+      "expression": "AgentState.instance.greeting",
+      "expected": "steward runtime proof",
+      "actual": "steward runtime proof",
+      "passed": true
+    }
+  },
+  "caveats": [
+    "This proves one adoption run, not full H5 capability or repo-wide adoption.",
+    "Promote only after a held-out fresh checkout or second-agent repeat."
+  ]
+}

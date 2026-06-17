@@ -42,6 +42,7 @@ PR opened → contributor added structured release note?
 merge to main → version/changelog coherent?
 tag/publish → artifacts match changelog?
 tag/publish → binaries checksum-verified and version-aligned?
+release latest → GitHub Release, docs, and install.sh agree?
 ```
 
 Implement with your stack’s workflow file; keep command names in **DX_FAQ**, not in skills.
@@ -61,7 +62,7 @@ Implement with your stack’s workflow file; keep command names in **DX_FAQ**, n
 |-----------|------------------------|
 | **Product MCP** | release-please + Release tarballs + `install.sh` |
 | **Platform Libs** | pub/npm publish + changelog per package |
-| Meta Steward | Changesets + tag CI + `install.sh` |
+| Meta Steward | Changesets + single Release workflow + `install.sh` |
 | **CLI Harness** | fixtures + package versions; binaries when standalone CLI ships |
 
 Align **wording** (“what changed for agents?”) across siblings; **do not** force one npm tool on all.

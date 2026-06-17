@@ -59,7 +59,22 @@ $CLI exec --name semantic_snapshot \
 Direction follows the Playwright convention: `direction: "down"` reveals
 content below (the finger swipes up).
 
-## 4. Read runtime state without registering a tool
+## 4. Reveal an off-screen semantic target
+
+Use `reveal_search` when the target has a stable semantics identifier or text
+but is not currently in the snapshot. It is intentionally bounded: one narrow
+match field, a scroll direction, and a maximum attempt count.
+
+```bash
+$CLI exec --name reveal_search \
+  --args "{\"query\":\"greeting_input_field\",\"matchBy\":\"identifier\",\"direction\":\"down\",\"maxAttempts\":4,\"connection\":{\"targetId\":\"$WS\"}}"
+```
+
+The response returns `ref`, `snapshotId`, `match`, and an `attempts` trace.
+Pass that fresh `ref` and `snapshotId` directly to `enter_text`, `tap_widget`,
+or another ref-based interaction.
+
+## 5. Read runtime state without registering a tool
 
 ```bash
 $CLI exec --name evaluate_dart_expression \
@@ -70,7 +85,7 @@ Evaluates in the app's root library and returns `{result, kind, classRef}`.
 Useful for asserting "did the tap I just issued actually update state?"
 without waiting for a visual diff.
 
-## 5. Edit → hot reload → see what changed
+## 6. Edit → hot reload → see what changed
 
 ```bash
 # After editing a Dart file:

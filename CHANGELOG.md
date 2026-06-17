@@ -29,7 +29,7 @@
 
 - Gating CI: `make check-intentcall-integration` + `.github/workflows/intentcall_eval.yml` job `intentcall-integration` (full intentcall matrix, contracts, skills grep, migrate/init/codegen `--check`).
 - `make macos-validate-runtime` helper (`tool/evals/run_macos_validate_runtime.sh`) for I5 macOS dogfood.
-- intentcall: `xsoulspace_lints` (`library.yaml` / `app.yaml`); `make analyze`; pre-release warnings on all packages ([intentcall/PRE_RELEASE.md](intentcall/PRE_RELEASE.md)); [regression checklist](docs/intentcall/REGRESSION_CHECKLIST.md).
+- intentcall: `xsoulspace_lints` (`library.yaml` / `app.yaml`); `make analyze`; pre-release warnings on all packages ([intentcall/PRE_RELEASE.md](intentcall/PRE_RELEASE.md)); IntentCall consumer guide.
 - Phase 7 **7.1–7.3, 7.6**: `intentcall/` workspace; pub.dev metadata; `make publish-intentcall-dry-run`; hosted cutover docs; `intentcall_publish_dry_run` CI.
 - Phase 7 **7.1/7.2**: all `intentcall_*` packages under `intentcall/packages/`; consumers use path deps; 41 tests.
 - `flutter_test_app` web dogfood: `WebMcpPublishAdapter` via `agent_web_mcp_dogfood.dart`; Xcode intentcall Codegen Run Script (ios/macos).
@@ -175,7 +175,7 @@ Major release. Three pillars:
 1. **Capability kernel** — the server's tool surface is now composed from
    `Capability` instances registered into an `McpHost`. The kernel applies
    the capability prefix and bridges into `dart_mcp`'s `ToolsSupport`.
-2. **Playwright-style interaction layer** — 27 prefixed tools that let an
+2. **Playwright-style interaction layer** — prefixed tools that let an
    AI agent drive a running Flutter app the way a user does, with semantic
    refs and a snapshot/staleness contract.
 3. **Plugin-first install** — a Claude Code marketplace plugin bundles
@@ -217,6 +217,7 @@ for the smallest-possible-diff guide.
 | --------------------------------------- | ------------------------------------- |
 | `tap_widget`                            | `fmt_tap_widget`                      |
 | `enter_text`                            | `fmt_enter_text`                      |
+| `reveal_search`                         | `fmt_reveal_search`                   |
 | `scroll`                                | `fmt_scroll`                          |
 | `long_press`                            | `fmt_long_press`                      |
 | `swipe`                                 | `fmt_swipe`                           |
@@ -381,7 +382,7 @@ updates `PATH` for you on first run.
 - `tool/contracts/check_docs_drift.sh` — CLI help vs docs.
 - `tool/contracts/check_plugin_surfaces.sh` — plugin manifest shape.
 - `tool/contracts/check_tool_prefix.sh` — single canonical prefix across
-  every shipped doc; CHANGELOG migration table covers all 27 tools.
+  every shipped doc; CHANGELOG migration table covers the locked tool surface.
 - CI: `.github/workflows/contract_gates.yml`.
 - macOS integration smoke runner:
   `tool/integration/classify_macos_integration_run.sh`.

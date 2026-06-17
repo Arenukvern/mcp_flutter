@@ -36,6 +36,95 @@ targets:
         note: Merge hooks.json.snippet into .cursor/hooks.json
 ```
 
+## Open Plugin v1 manifest (portable)
+
+Use `.plugin/plugin.json` for the vendor-neutral baseline when targeting hosts that implement the Open Plugin spec.
+
+```json
+{
+  "name": "my-plugin",
+  "version": "0.1.0",
+  "description": "Reusable skills and MCP wiring.",
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json"
+}
+```
+
+## Codex plugin.json
+
+Place this at `.codex-plugin/plugin.json`. Include `skills`, `mcpServers`, `apps`, or `hooks` only when the referenced companion files exist.
+
+```json
+{
+  "name": "my-plugin",
+  "version": "0.1.0",
+  "description": "Bundle reusable skills and app integrations.",
+  "author": {
+    "name": "Your team"
+  },
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "hooks": "./hooks/hooks.json",
+  "interface": {
+    "displayName": "My Plugin",
+    "shortDescription": "Reusable skills and apps",
+    "longDescription": "Distribute skills, hooks, and MCP integrations together.",
+    "developerName": "Your team",
+    "category": "Productivity",
+    "capabilities": ["Read", "Write"],
+    "defaultPrompt": [
+      "Use My Plugin to triage repo tasks."
+    ]
+  }
+}
+```
+
+## Codex marketplace.json
+
+Repo/team marketplaces live at `.agents/plugins/marketplace.json`; personal marketplaces live at `~/.agents/plugins/marketplace.json`.
+
+```json
+{
+  "name": "local-example-plugins",
+  "interface": {
+    "displayName": "Local Example Plugins"
+  },
+  "plugins": [
+    {
+      "name": "my-plugin",
+      "source": {
+        "source": "local",
+        "path": "./plugins/my-plugin"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
+```
+
+Git-backed Codex entry:
+
+```json
+{
+  "name": "remote-helper",
+  "source": {
+    "source": "git-subdir",
+    "url": "https://github.com/example/codex-plugins.git",
+    "path": "./plugins/remote-helper",
+    "ref": "main"
+  },
+  "policy": {
+    "installation": "AVAILABLE",
+    "authentication": "ON_INSTALL"
+  },
+  "category": "Productivity"
+}
+```
+
 ## Claude marketplace.json (repo root)
 
 ```json
@@ -114,5 +203,6 @@ Set `GITHUB_TOKEN` (or host equivalent) for background auto-updates on private r
 
 ```bash
 npx skills add org/repo -a cursor -a claude-code -a codex -y
+npx skills add org/repo -a cursor -a claude-code -a codex -a zed -y
 npx skills add org/repo --skill my-skill --copy
 ```

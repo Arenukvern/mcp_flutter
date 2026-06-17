@@ -8,7 +8,7 @@ Classification for sibling agentic repositories/monorepos.
 
 | | **A Product MCP** | **B Platform Libs** | **C CLI Harness** | **D Visual Sidecar** | **E Meta Steward** |
 |---|-------------------|----------------|-------------------|----------------------|------------------|
-| **Example Folder** | `<product_mcp>` | `<platform_libs>` | `<cli_harness>` | `<visual_sidecar>` | `<meta_steward>` |
+| **Example Folder** | `<plugin_repo>` | `<library_repo>` | `<harness_repo>` | `<visual_sidecar>` | `<meta_governance_repo>` |
 | **Primary ship unit** | Plugin + MCP binary / server | Package manager modules | Runner CLI + test fixtures | Profile definitions + comparison CLI | Portable skills / checklists |
 | **MCP server in-repo** | Yes | Wire-adapter module only | No (consumes product MCP) | No | No |
 | **plugin/mcp.json** | Yes | No | No | No | No |

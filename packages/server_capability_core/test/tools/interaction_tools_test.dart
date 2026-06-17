@@ -202,6 +202,57 @@ void main() {
   });
 
   // =========================================================================
+  // reveal_search
+  // =========================================================================
+  group('interaction tools - reveal_search', () {
+    test('registers reveal_search', () {
+      final ctx = _registeredCtx();
+      expect(ctx.registeredToolNames, contains('reveal_search'));
+    });
+
+    test(
+      'reveal_search schema: additionalProperties false, required [query]',
+      () {
+        final ctx = _registeredCtx();
+        final schema = ctx.registrationFor('reveal_search')!.inputSchema;
+        expect(schema['additionalProperties'], isFalse);
+        final required = schema['required'] as List<Object?>;
+        expect(required, contains('query'));
+        final props = schema['properties'] as Map<String, Object?>;
+        expect(props.containsKey('query'), isTrue);
+        expect(props.containsKey('matchBy'), isTrue);
+        expect(props.containsKey('maxAttempts'), isTrue);
+        expect(props.containsKey('distance'), isTrue);
+        expect(props.containsKey('connection'), isTrue);
+      },
+    );
+
+    test(
+      'reveal_search handler builds RevealSearchCommand with correct args',
+      () async {
+        final fakeRunner = FakeCommandRunner();
+        final ctx = _registeredCtx(runner: fakeRunner);
+        await ctx
+            .registrationFor('reveal_search')!
+            .handler(const <String, Object?>{
+              'query': 'greeting_input_field',
+              'matchBy': 'identifier',
+              'direction': 'down',
+              'maxAttempts': 4,
+              'distance': 160,
+            });
+        expect(fakeRunner.executedCommands, hasLength(1));
+        final cmd = fakeRunner.executedCommands.first as RevealSearchCommand;
+        expect(cmd.query, equals('greeting_input_field'));
+        expect(cmd.matchBy, equals('identifier'));
+        expect(cmd.direction, equals('down'));
+        expect(cmd.maxAttempts, equals(4));
+        expect(cmd.distance, equals(160));
+      },
+    );
+  });
+
+  // =========================================================================
   // enter_text
   // =========================================================================
   group('interaction tools — enter_text', () {

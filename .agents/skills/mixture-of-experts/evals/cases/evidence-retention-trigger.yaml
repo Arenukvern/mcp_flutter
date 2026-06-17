@@ -1,0 +1,12 @@
+id: mixture-of-experts-evidence-retention-trigger
+skill: mixture-of-experts
+routing: should_trigger
+input: "Run MoE critique on these evidence artifacts and retention rules. Which notes are ADRs, current ledgers, historical evidence, templates, checks, or deletion candidates?"
+rules:
+  - kind: file_exists
+    path: references/evals.md
+  - kind: description_includes_any
+    terms: ["Mixture of Experts", "MoE", "subagents", "critical"]
+  - kind: body_includes_any
+    path: SKILL.md
+    terms: ["Evidence / Retention QA", "artifact status", "retention/disposition", "claim protected"]

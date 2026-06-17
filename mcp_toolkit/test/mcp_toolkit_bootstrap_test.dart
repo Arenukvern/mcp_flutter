@@ -2,15 +2,64 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intentcall_core/intentcall_core.dart';
+import 'package:intentcall_schema/intentcall_schema.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 
 void main() {
-  test(
-    'service extension callbacks do not treat isolateId as a tool argument',
-    () async {
-      final binding = _CapturingToolkitBinding()..initialize();
-      Map<String, String>? capturedRequest;
+  group('VM service extension isolateId stripping', () {
+    test(
+      'callback succeeds when isolateId is injected on strict schemas',
+      () async {
+        final binding = _CapturingToolkitBinding()..initialize();
+        Map<String, Object?>? capturedRequest;
 
+        final tool = mcpToolkitTool(
+          namespace: 'app',
+          definition: MCPToolDefinition(
+            name: 'inspect_number',
+            description: 'Inspect a number',
+            inputSchema: ObjectSchema(
+              properties: {'x': IntegerSchema()},
+              required: ['x'],
+              additionalProperties: false,
+            ),
+          ),
+          handler: (final request) {
+            capturedRequest = request;
+            return MCPCallResult(
+              message: 'inspected',
+              parameters: {'ok': true, 'x': request['x']},
+            );
+          },
+        );
+
+        binding.initializeServiceExtensions(
+          errorMonitor: _TestErrorMonitor(),
+          entries: {tool},
+        );
+
+        final callback = binding.callbacks['inspect_number'];
+        expect(callback, isNotNull);
+
+        final result = await callback!({
+          'isolateId': 'isolates/4805254787721395',
+          'x': '120',
+        });
+
+        expect(result['ok'], isTrue);
+        expect(result['x'], '120');
+        expect(capturedRequest, isNotNull);
+        expect(capturedRequest!.keys, ['x']);
+        expect(capturedRequest, isNot(contains('isolateId')));
+        expect(capturedRequest!['x'], '120');
+      },
+    );
+
+    test(
+      'raw VM service parameters with isolateId fail strict schema validation',
+      () {
+      final binding = _CapturingToolkitBinding()..initialize();
       final tool = mcpToolkitTool(
         namespace: 'app',
         definition: MCPToolDefinition(
@@ -19,33 +68,39 @@ void main() {
           inputSchema: ObjectSchema(
             properties: {'x': IntegerSchema()},
             required: ['x'],
+            additionalProperties: false,
           ),
         ),
-        handler: (final request) {
-          capturedRequest = request;
-          return MCPCallResult(message: 'inspected', parameters: {'ok': true});
-        },
+        handler: (final request) =>
+            MCPCallResult(message: 'inspected', parameters: {'ok': true}),
       );
-
-      binding.initializeServiceExtensions(
-        errorMonitor: _TestErrorMonitor(),
-        entries: {tool},
-      );
-
-      final callback = binding.callbacks['inspect_number'];
-      expect(callback, isNotNull);
-
-      final result = await callback!({
+      final registration = tool.toRegistration();
+      final rawWireArgs = <String, Object?>{
         'isolateId': 'isolates/4805254787721395',
         'x': '120',
-      });
+      };
 
-      expect(result['ok'], isTrue);
-      expect(capturedRequest, isNotNull);
-      expect(capturedRequest, isNot(contains('isolateId')));
-      expect(capturedRequest?['x'], '120');
-    },
-  );
+      expect(
+        () => registration.validate(rawWireArgs),
+        throwsA(isA<AgentValidationException>()),
+        reason:
+            'VM transport isolateId must not reach strict MCP tool schemas',
+      );
+
+      final strippedArgs = binding
+          .mcpToolkitArgumentsFromServiceExtensionParameters(<String, String>{
+            'isolateId': 'isolates/4805254787721395',
+            'x': '120',
+          });
+      final coercedArgs = coerceArgumentsForSchema(
+        registration.descriptor.inputSchema,
+        strippedArgs,
+      );
+
+      expect(() => registration.validate(coercedArgs), returnsNormally);
+      },
+    );
+  });
 
   testWidgets(
     'bootstrapFlutter initializes toolkit, adds entries, and forwards zone errors',

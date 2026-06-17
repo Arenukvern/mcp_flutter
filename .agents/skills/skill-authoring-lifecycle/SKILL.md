@@ -26,17 +26,21 @@ Add, review, and validate an installable skill package under `skills/` in the Sk
 ## Phase 1: Creation Workflow
 
 1. **Verify intent** — Does the intent overlap with an existing skill? Merge into an existing skill if they serve the same high-level goal or are two halves of the same lifecycle ([ADR 0016](../../docs/decisions/0016-skill-cohesion-and-lifecycle-boundaries.mdx)).
-2. **Choose a name** — `kebab-case`, 1–64 chars, matches Agent Skills rules (see `docs/STANDARDS.mdx`).
-3. **Create directory** — `skills/{name}/` (directory name must equal `name` in frontmatter).
-4. **Copy template** — from `templates/skill/SKILL.md`; replace placeholders.
-5. **Write description** — one block covering *what* and *when* (trigger phrases users say).
-6. **Cite sources** — create `references/sources.md` from `templates/skill/references/sources.md`; add rows for every spec/repo/paper used.
-7. **Write body** — numbered steps, examples, output format; keep under 500 lines.
-8. **Evals** — Tier 1 skills (see [STANDARDS](../../docs/STANDARDS.mdx)): `references/evals.md` + ≥2 `evals/cases/*.yaml`. Others: optional `evals.md`.
-9. **Optional** — `scripts/`, `assets/`.
-10. **Register skill**:
-   - Add skill id to `skills.sh.json` under the right grouping.
+2. **Collect examples** — Write 2–3 concrete user prompts that should trigger the skill and 1 prompt that should not. Skip only when the request already supplies clear usage patterns.
+3. **Plan resources** — Decide whether the skill needs instructions only, `scripts/` for repeated or fragile operations, `references/` for detailed knowledge, or `assets/` for templates/static files.
+4. **Choose a name** — `kebab-case`, 1–64 chars, matches Agent Skills rules (see `docs/STANDARDS.mdx`).
+5. **Create directory** — `skills/{name}/` (directory name must equal `name` in frontmatter).
+6. **Copy template** — from `templates/skill/SKILL.md`; replace placeholders.
+7. **Write description** — one concise block covering *what* and *when* (trigger phrases users say). Activation-critical routing belongs here, not only in a body "When to use" section.
+8. **Cite sources** — create `references/sources.md` from `templates/skill/references/sources.md`; add rows for every spec/repo/paper used.
+9. **Write body** — numbered steps, examples, output format; keep under 500 lines.
+10. **Evals** — T1 behavior-critical skills (see [STANDARDS](../../docs/STANDARDS.mdx)): `references/evals.md` + ≥2 `evals/cases/*.yaml`. Others: optional `evals.md`.
+11. **Optional metadata** — add `agents/openai.yaml` only when Codex app UI metadata, invocation policy, or tool dependencies are useful.
+12. **Optional resources** — create only the needed `scripts/`, `references/`, and `assets/` directories; delete placeholder resources.
+13. **Register skill**:
+   - Add skill id to `skills.sh.json` using the current repo schema.
    - Add row to root `README.md` skill table.
+14. **Forward-test tricky skills** — For broad or fragile workflows, use a fresh subagent/thread with a natural user prompt and raw artifacts. Do not leak the intended answer, suspected bug, or planned fix into the validation prompt.
 
 ## Frontmatter template
 
@@ -72,6 +76,7 @@ Review a skill package before merge or publish to skills.sh.
 - [ ] `license` set if not repo MIT
 - [ ] `metadata.version` and `metadata.author`
 - [ ] `compatibility` if skill needs git, network, docker, or a specific product
+- [ ] `agents/openai.yaml` present only when Codex-specific UI/policy/dependency metadata is useful
 
 ### Body
 - [ ] Clear numbered workflow
@@ -84,12 +89,13 @@ Review a skill package before merge or publish to skills.sh.
 - [ ] Shebang present (`bash` or `node`)
 - [ ] `set -euo pipefail` for bash
 - [ ] stderr for logs, stdout for machine-readable output
+- [ ] Representative scripts were actually run, or skipped with a recorded reason
 
 ### Registry (this repo)
 - [ ] Skill id in `skills.sh.json`
 - [ ] Row in root `README.md` table
 - [ ] `pnpm run validate` passes (no `sources.md` warning)
-- [ ] **Tier 1**: `evals/cases/*.yaml` + `pnpm run eval`
+- [ ] **T1 behavior-critical**: `evals/cases/*.yaml` + `pnpm run eval`
 
 ## Phase 3: Deprecation & Renaming (Changesets)
 

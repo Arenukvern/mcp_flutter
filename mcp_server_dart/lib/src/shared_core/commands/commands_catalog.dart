@@ -705,6 +705,29 @@ final class CommandCatalog {
         ),
       ),
       CommandSpec(
+        name: 'reveal_search',
+        description:
+            'Find a semantic target that may be off-screen by taking a '
+            'snapshot, matching one bounded selector, scrolling up to '
+            'maxAttempts, and returning a fresh ref/snapshotId plus trace.',
+        inputSchema: interactionCatalogInputSchemaFor('reveal_search')!,
+        outputSchema: _objectSchema(additionalProperties: true),
+        requiresVm: true,
+        supportsWatch: false,
+        mcpExposed: true,
+        build: (final args) {
+          final rawDistance = _findArg(args, 'distance');
+          final distance = rawDistance is num ? rawDistance.toDouble() : 300.0;
+          return RevealSearchCommand(
+            query: _stringArg(args, 'query', fallback: ''),
+            matchBy: _stringArg(args, 'matchBy', fallback: 'text'),
+            direction: _stringArg(args, 'direction', fallback: 'down'),
+            maxAttempts: _intArg(args, 'maxAttempts', fallback: 5),
+            distance: distance,
+          );
+        },
+      ),
+      CommandSpec(
         name: 'scroll',
         description:
             'Scroll to reveal content in a direction. "down" reveals content '

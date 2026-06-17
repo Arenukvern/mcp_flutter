@@ -12,7 +12,7 @@
 /// - Wire types: [MCPCallResult], [MCPToolDefinition], [MCPResourceDefinition].
 ///
 /// `MCPCallEntry` was removed in intentcall Phase 6b; use
-/// [flutter-mcp-toolkit migrate agent-entries](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/start_here/migration_intentcall_phase6.md).
+/// [flutter-mcp-toolkit migrate agent-entries](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/start_here/migration_mcp_call_entry_to_agent_call_entry.md).
 ///
 /// See [MCPToolkitBinding] for bootstrap and registration.
 library;
@@ -33,6 +33,7 @@ export 'src/services/error_monitor.dart';
 export 'src/services/gesture_interaction_service.dart';
 export 'src/services/log_capture_service.dart';
 export 'src/services/platform_view_hints.dart';
+export 'src/services/reveal_search_service.dart';
 export 'src/services/semantic_snapshot_service.dart';
 export 'src/services/view_introspection_service.dart';
 export 'src/services/wait_predicate_service.dart';

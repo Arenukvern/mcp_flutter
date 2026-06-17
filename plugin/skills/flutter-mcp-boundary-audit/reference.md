@@ -60,7 +60,7 @@ VM service extensions deliver string-key maps on the wire. **`coerceArgumentsFor
 | `AgentWireArgs` | Optional handler-side parsers for raw wire maps |
 | `_wireArgForServiceExtension` | Outbound handler args → VM ext strings |
 
-**Tier B contract:** `flutter_test_app/INTENTCALL_PLATFORM.md` — discovery stores per-tool `inputSchema`; `fmt_client_tool` / `forwardToolCall` and `VmExtensionDynamicGateway` coerce then validate inner args before the app sees them (same as app VM callback). MCP `fmt_*` catalog tools skip wire coerce (args are already JSON).
+**Tier B contract:** this skill owns the detailed parity notes; `flutter_test_app/INTENTCALL_PLATFORM.md` keeps the app-level proof summary.  discovery stores per-tool `inputSchema`; `fmt_client_tool` / `forwardToolCall` and `VmExtensionDynamicGateway` coerce then validate inner args before the app sees them (same as app VM callback). MCP `fmt_*` catalog tools skip wire coerce (args are already JSON).
 
 Re-audit host vs app paths only if coercion is added on **one** side without the other.
 
@@ -75,15 +75,15 @@ Re-audit host vs app paths only if coercion is added on **one** side without the
 
 | Set | Count | Constant |
 |-----|-------|----------|
-| Core interaction catalog | 18 | `coreInteractionCatalogCommandNames` |
-| Tier A exec (core + inspection) | 22 | `tierAExecCatalogCommandNames` |
-| `interactionCatalogInputSchemaFor` router | 24 | `interactionCatalogInputSchemaForCommandNames` (= 22 + 2 capture) |
+| Core interaction catalog | 19 | `coreInteractionCatalogCommandNames` |
+| Tier A exec (core + inspection) | 23 | `tierAExecCatalogCommandNames` |
+| `interactionCatalogInputSchemaFor` router | 25 | `interactionCatalogInputSchemaForCommandNames` (= 23 + 2 capture) |
 
 | App dynamic (`interaction_toolkit.dart` → `registerDynamics`) | Server catalog only (`fmt_*` + CLI `exec`, no app twin) |
 |---------------------------------------------------------------|--------------------------------------------------------|
-| `tap_widget`, `semantic_snapshot`, `wait_for`, `enter_text`, `scroll`, `long_press`, `swipe`, `drag`, `hover`, `press_key`, `get_recent_logs`, `handle_dialog`, `navigate` | `fill_form`, `hot_reload_flutter`, `hot_restart_flutter`, `evaluate_dart_expression`, `hot_reload_and_capture` |
+| `tap_widget`, `semantic_snapshot`, `wait_for`, `enter_text`, `reveal_search`, `scroll`, `long_press`, `swipe`, `drag`, `hover`, `press_key`, `get_recent_logs`, `handle_dialog`, `navigate` | `fill_form`, `hot_reload_flutter`, `hot_restart_flutter`, `evaluate_dart_expression`, `hot_reload_and_capture` |
 
-**Host-only beyond core 18:** `get_view_details`, `inspect_widget_at_point`, `get_app_errors`, `focus_window` (inspection; part of 22-tool tier A exec). **`get_screenshots`**, **`capture_ui_snapshot`** use the same schema router (24 total) but are capture, not in the 22-tool tier A exec set.
+**Host-only beyond core 19:** `get_view_details`, `inspect_widget_at_point`, `get_app_errors`, `focus_window` (inspection; part of 23-tool tier A exec). **`get_screenshots`**, **`capture_ui_snapshot`** use the same schema router (25 total) but are capture, not in the 23-tool tier A exec set.
 
 **CLI `exec`:** commands with `interactionCatalogInputSchemaFor` entries get Tier A in `CommandCatalog.buildCommand` via `validationFailureForInteractionCatalogCommand` (not catalog-only unknown-key checks). Other catalog commands rely on `_validateUnknownKeys` + `spec.build` unless their catalog schema is strict.
 
@@ -91,7 +91,7 @@ Re-audit host vs app paths only if coercion is added on **one** side without the
 
 **Parity tests:** `mcp_toolkit/test/interaction_toolkit_schema_parity_test.dart`, `packages/server_capability_core/test/tools/interaction_input_schemas_test.dart`.
 
-Document intentional deltas in `flutter_test_app/INTENTCALL_PLATFORM.md`.
+Document intentional deltas in this skill reference or the relevant parity tests; keep `flutter_test_app/INTENTCALL_PLATFORM.md` app-level only.
 
 ### mcp_flutter red-flag grep
 
@@ -151,7 +151,7 @@ From `docs/superpowers/tracker/mcp-boundary-hardening.yaml` — re-audit if touc
 
 `exec` accepts bare and `fmt_` aliases; MCP wire uses `fmt_` prefix. Dynamic app tools: listed by `fmt_list_client_tools_and_resources`, invoked via `fmt_client_tool` with **bare** `name` from listing.
 
-See `flutter_test_app/INTENTCALL_PLATFORM.md` § CLI exec vs MCP tool names.
+See this skill reference and `flutter_test_app/INTENTCALL_PLATFORM.md`.
 
 ### ADRs / evals (mcp_flutter)
 

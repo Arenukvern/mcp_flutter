@@ -45,8 +45,9 @@ tools (`fmt_list_client_tools_and_resources`, `fmt_client_tool`,
 
 1. `fmt_semantic_snapshot` → returns `s_0..s_N` refs + `snapshot_id`.
 2. `fmt_tap_widget` / `fmt_enter_text` / `fmt_scroll` / `fmt_swipe` / `fmt_long_press` / `fmt_drag` — act on a ref. **Always pass `snapshotId`** — you get a structured `stale_snapshot` error if the tree moved, instead of a silent wrong tap.
-3. `fmt_evaluate_dart_expression` — read state directly (e.g. `AgentState.instance.counter`).
-4. `fmt_hot_reload_and_capture` — after a code edit, returns reload status + screenshot + fresh snapshot + errors in one response. Prefer this over manual reload + separate capture.
+3. `fmt_reveal_search` — for off-screen semantic targets, bounded snapshot/search/scroll that returns a fresh `ref` + `snapshotId`.
+4. `fmt_evaluate_dart_expression` — read state directly (e.g. `AgentState.instance.counter`).
+5. `fmt_hot_reload_and_capture` — after a code edit, returns reload status + screenshot + fresh snapshot + errors in one response. Prefer this over manual reload + separate capture.
 
 ## Error envelope contract
 

@@ -129,16 +129,16 @@ Video skill and projects live in **[flutter_mcp_video](https://github.com/Arenuk
 
 When shipping a promo there: edit the video repo; run `bash tool/check_doc_paths.sh` in that repo before merge. Toolkit repo only hosts shared brand assets under `plugin/assets/` (symlink targets for v7-weaver).
 
-## intentcall Phase 6 (pre-extract) maintainer gate
+## IntentCall consumer maintainer gate
 
-When closing Phase 6 on `feat/intentcall-phase1-3`:
+When changing IntentCall consumer integration in `mcp_flutter`:
 
 1. Append `flutter-mcp-toolkit-intentcall-migration` to `expectedSkillIds` in `build_skill_assets.dart` if not already present.
 2. `make sync-skills` — commit `skill_assets.g.dart` with skill edits.
 3. `bash tool/contracts/check_intentcall_skills_grep.sh` — no legacy call-entry symbol outside migration skill.
 4. `cd mcp_server_dart && dart test test/contract/`
 5. `flutter-mcp-toolkit migrate agent-entries --check flutter_test_app/lib` (expect exit 0)
-6. Tracker: `program.status: complete_in_repo_product`; `integration_hardening_complete: true`; closures under `docs/superpowers/closure/`; forward work `docs/superpowers/WHATS_NEXT.md` and `docs/superpowers/plans/2026-05-27-intentcall-phase7-extract.md`
+6. Keep canonical IntentCall design links pointed at `/Users/anton/mcp/agentkit`; keep this repo focused on hosted dependency and regression proof.
 
 ## Pre-merge checklist
 

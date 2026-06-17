@@ -1,0 +1,12 @@
+id: mcp-maintainer-cold-start-contract-trigger
+skill: mcp-harness-repo-maintainer
+routing: should_trigger
+input: "Bootstrap a local repo harness with steward.yaml and prove the cold-start contract before diagnosing failures"
+rules:
+  - kind: file_exists
+    path: references/evals.md
+  - kind: description_includes_any
+    terms: ["steward.yaml", "cold-start", "local harness", "harness"]
+  - kind: body_includes_any
+    path: SKILL.md
+    terms: ["Cold-start local harness proof loop", "durability_blocked", "steward benchmark"]

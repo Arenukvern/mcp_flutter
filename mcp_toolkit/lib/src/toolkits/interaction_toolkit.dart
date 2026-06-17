@@ -8,6 +8,7 @@ import '../mcp_models.dart';
 import '../services/control_flow_service.dart';
 import '../services/gesture_interaction_service.dart';
 import '../services/log_capture_service.dart';
+import '../services/reveal_search_service.dart';
 import '../services/semantic_snapshot_service.dart';
 import '../services/wait_predicate_service.dart';
 
@@ -17,6 +18,7 @@ Set<AgentCallEntry> getInteractionToolkitEntries() => {
   OnSemanticSnapshotEntry(),
   OnTapWidgetEntry(),
   OnEnterTextEntry(),
+  OnRevealSearchEntry(),
   OnScrollEntry(),
   OnLongPressEntry(),
   OnSwipeEntry(),
@@ -179,6 +181,105 @@ extension type OnEnterTextEntry._(AgentCallEntry entry)
 }
 
 // ---------------------------------------------------------------------------
+// Reveal search
+// ---------------------------------------------------------------------------
+
+/// {@template on_reveal_search_entry}
+/// Searches semantic snapshots and scrolls a bounded number of times to reveal
+/// an off-screen target.
+/// {@endtemplate}
+extension type OnRevealSearchEntry._(AgentCallEntry entry)
+    implements AgentCallEntry {
+  /// {@macro on_reveal_search_entry}
+  factory OnRevealSearchEntry() {
+    final entry = mcpToolkitTool(
+      handler: (final parameters) async {
+        final query = parameters['query'] ?? '';
+        if (query.isEmpty) {
+          return MCPCallResult(
+            message: 'Missing required parameter "query".',
+            parameters: <String, dynamic>{
+              'success': false,
+              'error': 'missing_query',
+            },
+          );
+        }
+
+        final maxAttempts = parameters.containsKey('maxAttempts')
+            ? jsonDecodeInt(parameters['maxAttempts'])
+            : 5;
+        final distance = parameters.containsKey('distance')
+            ? jsonDecodeDouble(parameters['distance'])
+            : 300.0;
+        final result = await RevealSearchService.revealSearch(
+          query: query,
+          matchBy: parameters['matchBy'] ?? 'text',
+          direction: parameters['direction'] ?? 'down',
+          maxAttempts: maxAttempts,
+          distance: distance,
+        );
+        return MCPCallResult(
+          message: result['success'] == true
+              ? 'Reveal search found "${result['ref']}".'
+              : 'Reveal search failed: ${result['error']}',
+          parameters: result,
+        );
+      },
+      definition: MCPToolDefinition(
+        name: 'reveal_search',
+        description:
+            'Find a semantic target that may be off-screen by taking a '
+            'snapshot, matching one bounded selector, scrolling up to '
+            'maxAttempts, and returning a fresh ref/snapshotId plus trace.',
+        inputSchema: ObjectSchema.fromMap(_revealSearchInputSchema()),
+      ),
+    );
+    return OnRevealSearchEntry._(entry);
+  }
+}
+
+Map<String, Object?> _revealSearchInputSchema() => <String, Object?>{
+  'type': 'object',
+  'additionalProperties': false,
+  'required': <String>['query'],
+  'properties': <String, Object?>{
+    'query': <String, Object?>{
+      'type': 'string',
+      'description': 'Target text or identifier to find in semantic snapshots.',
+    },
+    'matchBy': <String, Object?>{
+      'type': 'string',
+      'enum': <String>['text', 'identifier', 'label', 'value', 'hint'],
+      'default': 'text',
+      'description':
+          'Bounded selector field. "text" searches label, value, and hint.',
+    },
+    'direction': <String, Object?>{
+      'type': 'string',
+      'enum': <String>['up', 'down', 'left', 'right'],
+      'default': 'down',
+      'description': 'Scroll direction between snapshots.',
+    },
+    'maxAttempts': <String, Object?>{
+      'type': 'integer',
+      'minimum': 0,
+      'maximum': 10,
+      'default': 5,
+      'description':
+          'Maximum scroll attempts after the initial snapshot (default 5).',
+    },
+    'distance': <String, Object?>{
+      'type': 'number',
+      'minimum': 1,
+      'maximum': 2000,
+      'default': 300,
+      'description': 'Scroll distance in logical pixels between attempts.',
+    },
+    'connection': connectionOverrideJsonSchema(),
+  },
+};
+
+// ---------------------------------------------------------------------------
 // Scroll
 // ---------------------------------------------------------------------------
 
@@ -213,9 +314,14 @@ extension type OnScrollEntry._(AgentCallEntry entry) implements AgentCallEntry {
           direction: direction,
           distance: distance == 0 ? 300 : distance,
         );
+        final before = result['scrollBefore'];
+        final after = result['scrollAfter'];
+        final movedBy = before is num && after is num
+            ? (after - before).abs()
+            : result['distance'];
         return MCPCallResult(
           message: result['success'] == true
-              ? 'Scrolled $direction by ${result['distance']} px.'
+              ? 'Scrolled $direction by $movedBy px.'
               : 'Scroll failed: ${result['error']}',
           parameters: result,
         );

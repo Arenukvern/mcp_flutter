@@ -10,7 +10,7 @@ Rule-based cases run in CI via `pnpm run eval`. They do **not** execute agents o
 skills/{skill-name}/evals/cases/{id}.yaml
 ```
 
-Tier 1 skills require **≥2** case files plus `references/evals.md` (human/LLM suite).
+T1 behavior-critical skills require **≥2** case files plus `references/evals.md` (human/LLM suite).
 
 ## Case shape
 

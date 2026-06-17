@@ -1,5 +1,5 @@
 ---
-name: north-star-governance
+name: repository-governance-lifecycle
 description: Maintains docs/NORTH_STAR.mdx, wires AGENTS.md as a short agent map, applies plan hygiene, and bootstraps a vectorless, layered documentation store for concepts, architecture, and decisions. Use when updating charter, repo navigation, closing work, or organizing repo docs without duplicating how code works.
 license: MIT
 type: governance
@@ -67,8 +67,9 @@ Run this spine **before** a multi-file feature, new integration, or repo reshape
 
 ```text
 1. North Star — still in scope? (own / do-not-own)
-2. adr-records — any trigger T1–T8? → decision brief or proposed ADR
-3. mcp-harness-repo-maintainer — thin CLI/MCP, mechanical gate planned?
+2. repository-governance-lifecycle — any trigger T1–T8? → decision brief or proposed ADR
+3. repo-quality-system-lifecycle — repo archetype, native gate, evidence path?
+4. mcp-harness-repo-maintainer — typed actions, CLI/MCP, benchmark proof needed?
 4. Implement — only after checkpoint answered or waived by user
 5. Close — extract to ADR/FAQ/code; delete plan scratch
 ```
@@ -130,15 +131,15 @@ If missing or incorrect, add:
 
 | Tool | Scope |
 |------|--------|
-| **north-star-governance** (this skill) | Repo-wide lattice, ADRs, charters, agent programs |
-| **faq-driven-docs** | Per-package DESIGN_FAQ + DX_FAQ compression |
+| **repository-governance-lifecycle** (this skill) | Repo-wide lattice, ADRs, charters, FAQs, agent programs |
+| **skill-source-citations** | Source provenance for durable docs and skills |
 
 Use both: lattice for navigation and decisions; FAQs for dense package knowledge.
 
 ## Install
 
 ```bash
-npx skills add arenukvern/skill_steward --skill north-star-governance
+npx skills add arenukvern/skill_steward --skill repository-governance-lifecycle
 ```
 
 ## References

@@ -60,9 +60,10 @@ parameter shapes lives in the task skills.
   `semantic_snapshot`, `inspect_widget_at_point`, `capture_ui_snapshot`,
   `connect_debug_app`. → `flutter-mcp-toolkit-inspect`.
 - **Interaction (mutating):** `tap_widget`, `long_press`, `enter_text`,
-  `fill_form`, `scroll`, `swipe`, `drag`, `hover`, `press_key`, `wait_for`,
-  `navigate`, `handle_dialog`, `hot_reload_flutter`, `hot_restart_flutter`,
-  `hot_reload_and_capture`. → `flutter-mcp-toolkit-control`.
+  `reveal_search`, `fill_form`, `scroll`, `swipe`, `drag`, `hover`,
+  `press_key`, `wait_for`, `navigate`, `handle_dialog`,
+  `hot_reload_flutter`, `hot_restart_flutter`, `hot_reload_and_capture`. →
+  `flutter-mcp-toolkit-control`.
 - **Debug:** `get_recent_logs`, `evaluate_dart_expression`. →
   `flutter-mcp-toolkit-debug`.
 - **Dynamic registry (app-defined):** after registration in the Flutter app,

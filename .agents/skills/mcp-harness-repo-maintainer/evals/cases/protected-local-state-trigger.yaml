@@ -1,0 +1,12 @@
+id: mcp-maintainer-protected-local-state-trigger
+skill: mcp-harness-repo-maintainer
+routing: should_trigger
+input: "Update the steward.yaml benchmark for vitamins_quiz_bot, but keep .env and SQLite DB/WAL/SHM files as protected local state and do not read them"
+rules:
+  - kind: file_exists
+    path: references/evals.md
+  - kind: description_includes_any
+    terms: ["steward.yaml", "actions", "benchmarks", "redaction"]
+  - kind: body_includes_any
+    path: SKILL.md
+    terms: ["Protect local state", "do-not-touch exception", "contract or scenario input"]

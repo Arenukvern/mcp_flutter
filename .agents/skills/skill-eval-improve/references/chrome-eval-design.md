@@ -33,7 +33,7 @@ Score: pass | partial | fail per row
 
 ## Task-specific metrics (skills meta-layer)
 
-| Metric | Tier 1 expectation |
+| Metric | T1 behavior-critical expectation |
 |--------|-------------------|
 | **Alignment** | Follows skill steps and charter |
 | **Groundedness** | Links to ADR/FAQ/NORTH_STAR, not hallucinated policy |

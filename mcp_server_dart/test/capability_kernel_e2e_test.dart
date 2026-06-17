@@ -2,11 +2,14 @@
 //
 // Verifies that:
 //   - McpHost + FmtCapability registration produces the expected prefixed
-//     tool surface (29 tools with dumps_supported=false, 33 with it true).
+//     tool surface tracked by tool/contracts/expected_tool_surface.txt
+//     (plus 4 dump tools when dumps_supported=true).
 //   - CapabilityConfig values flow from McpHost construction through the
 //     CapabilityContext to FmtCapability's conditional registration logic.
 //   - The DartMcpDispatchBridge publishes prefixed names to the dart_mcp
 //     side and the legacy unprefixed surface is gated off (T8 cut).
+
+import 'dart:io';
 
 import 'package:dart_mcp/server.dart' as dart_mcp;
 import 'package:flutter_mcp_toolkit_capability_core/flutter_mcp_toolkit_capability_core.dart';
@@ -23,47 +26,26 @@ McpHost _makeHost({final bool dumpsSupported = false}) => McpHost(
   ),
 );
 
-// All 29 non-dump tool bare names registered by FmtCapability.
-const _nonDumpToolNames = <String>[
-  // flutter_inspector_tools (6)
-  'fmt_hot_reload_flutter',
-  'fmt_hot_restart_flutter',
-  'fmt_connect_debug_app',
-  'fmt_discover_debug_apps',
-  'fmt_get_vm',
-  'fmt_get_extension_rpcs',
-  // interaction_tools (10)
-  'fmt_tap_widget',
-  'fmt_enter_text',
-  'fmt_scroll',
-  'fmt_long_press',
-  'fmt_swipe',
-  'fmt_drag',
-  'fmt_hover',
-  'fmt_press_key',
-  'fmt_evaluate_dart_expression',
-  'fmt_hot_reload_and_capture',
-  // navigation_tools (2)
-  'fmt_handle_dialog',
-  'fmt_navigate',
-  // log_tools (1)
-  'fmt_get_recent_logs',
-  // migrate (1)
-  'fmt_migrate_agent_entries',
-  // semantic_tools (1)
-  'fmt_semantic_snapshot',
-  // inspection_tools (6)
-  'fmt_get_view_details',
-  'fmt_inspect_widget_at_point',
-  'fmt_get_app_errors',
-  'fmt_get_screenshots',
-  'fmt_focus_window',
-  'fmt_capture_ui_snapshot',
-  // wait_tools (1)
-  'fmt_wait_for',
-  // form_tools (1)
-  'fmt_fill_form',
-];
+// Non-dump fmt_* tools locked by tool/contracts/expected_tool_surface.txt.
+// Keep capability_kernel_e2e and tool_surface_snapshot_test in lockstep by
+// updating that file only — do not duplicate tool names here.
+Set<String> _expectedNonDumpToolNames() {
+  final expectedFile = File(_resolveExpectedToolSurfaceFile());
+  expect(
+    expectedFile.existsSync(),
+    isTrue,
+    reason:
+        'expected_tool_surface.txt not found at ${expectedFile.path}',
+  );
+  return expectedFile
+      .readAsLinesSync()
+      .map((final line) => line.trim())
+      .where((final line) => line.isNotEmpty && !line.startsWith('#'))
+      .toSet();
+}
+
+String _resolveExpectedToolSurfaceFile() =>
+    '${Directory.current.parent.path}/tool/contracts/expected_tool_surface.txt';
 
 // The 4 dump tool names that appear only when dumps_supported=true.
 const _dumpToolNames = <String>[
@@ -76,8 +58,9 @@ const _dumpToolNames = <String>[
 void main() {
   group('capability kernel e2e — FmtCapability wiring', () {
     test(
-      'dumps_supported=false: 29 tools registered; no dump tool names present',
+      'dumps_supported=false: tool surface matches expected_tool_surface.txt',
       () async {
+        final expected = _expectedNonDumpToolNames();
         final host = _makeHost();
         await host.registerCapability(const FmtCapability());
 
@@ -85,14 +68,10 @@ void main() {
 
         expect(
           names,
-          containsAll(_nonDumpToolNames),
+          equals(expected),
           reason:
-              'All 29 non-dump tools must be present with dumps_supported=false',
-        );
-        expect(
-          names.length,
-          equals(29),
-          reason: 'Exactly 29 tools when dumps_supported=false',
+              'FmtCapability must register exactly the tools in '
+              'expected_tool_surface.txt',
         );
         for (final dumpName in _dumpToolNames) {
           expect(
@@ -105,18 +84,15 @@ void main() {
     );
 
     test(
-      'dumps_supported=true: 33 tools registered; all 4 dump tool names present',
+      'dumps_supported=true: expected surface plus all dump tools',
       () async {
+        final expected = _expectedNonDumpToolNames();
         final host = _makeHost(dumpsSupported: true);
         await host.registerCapability(const FmtCapability());
 
         final names = host.toolNames.toSet();
 
-        expect(
-          names,
-          containsAll(_nonDumpToolNames),
-          reason: 'All 29 non-dump tools must be present',
-        );
+        expect(names, containsAll(expected));
         expect(
           names,
           containsAll(_dumpToolNames),
@@ -124,8 +100,10 @@ void main() {
         );
         expect(
           names.length,
-          equals(33),
-          reason: 'Exactly 33 tools when dumps_supported=true',
+          equals(expected.length + _dumpToolNames.length),
+          reason:
+              'Exactly ${expected.length + _dumpToolNames.length} tools when '
+              'dumps_supported=true',
         );
       },
     );
@@ -164,9 +142,9 @@ void main() {
         );
         await host.registerCapability(const FmtCapability());
 
+        final expected = _expectedNonDumpToolNames();
         final publishedNames = published.map((final t) => t.name).toSet();
-        expect(publishedNames, containsAll(_nonDumpToolNames));
-        expect(publishedNames.length, equals(29));
+        expect(publishedNames, equals(expected));
         // Sanity: the legacy unprefixed names are NOT what the kernel publishes.
         expect(publishedNames, isNot(contains('tap_widget')));
         expect(publishedNames, isNot(contains('enter_text')));

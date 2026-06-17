@@ -1,0 +1,89 @@
+# IntentCall hosted cutover Steward action — 2026-06-10
+
+**Status:** useful adoption gate passed · **Audience:** maintainers and agents
+
+## Claim
+
+`mcp_flutter` now has a useful Steward action for hosted IntentCall dependency cutover, not only contract-status inspection. The action proves that consumer pubspecs do not retain stale local IntentCall path dependencies.
+
+This is a bounded software-ecology improvement: it makes a real product maintenance gate discoverable through Steward actions, quick probes, and strict benchmark evidence.
+
+Bounded H5 promotion details live in [Steward H5 hosted cutover promotion](steward-h5-hosted-cutover-promotion-2026-06-10).
+
+## Adoption run
+
+| Field | Value |
+|-------|-------|
+| Exact claim | Hosted IntentCall dependency cutover is inspectable and benchmarkable through Steward. |
+| Repo state | Branch `codex/steward-adoption-h2`, action commit `3b91408` |
+| Redacted proof snapshot | Commit `bf21f6f1b0648f0fdcb0d97c84ab3174a0c23701` |
+| Declared surfaces used | `steward.yaml`, `makefile`, `tool/intentcall/check_no_path_deps.sh`, `docs/superpowers/WHATS_NEXT.md` |
+| Commands/actions | `make check-contracts`, `fmt.check.intentcall-hosted-deps`, `mcp_flutter.intentcall-hosted-cutover` |
+| Artifact | Local ignored summary `.steward/benchmark-summaries/mcp_flutter.intentcall-hosted-cutover.strict.json`; tracked redacted review summary `docs/evidence/generated/mcp_flutter.intentcall-hosted-cutover.strict.redacted.json` |
+| Verdict | Passed |
+| Lesson | Product gates that are already native and deterministic can become narrow Steward actions; runtime-heavy dogfood remains a separate scenario. |
+
+## Native gate hardening
+
+`tool/intentcall/check_no_path_deps.sh` now rejects:
+
+- `agentkit/packages`
+- `intentcall/packages`
+- `path: ...intentcall`
+
+Regression:
+
+```bash
+bash tool/intentcall/check_no_path_deps_test.sh
+# OK: check_no_path_deps rejects stale hosted-cutover path dependencies
+```
+
+Native validation:
+
+```bash
+make check-contracts
+# Passed; existing skill metadata/source warnings only
+```
+
+## Steward action
+
+Action id: `fmt.check.intentcall-hosted-deps`
+
+Safety:
+
+- `class: bounded_local`
+- `default_policy: auto`
+- `fs_write: []`
+- `git: false`
+- `network: false`
+- `secrets: false`
+- `destructive: false`
+
+Scenario metadata now includes `tool/intentcall/check_no_path_deps_test.sh` as a reference falsifier artifact. That keeps the native negative gate visible from Steward without adding the falsifier to the quick probe.
+
+## Steward proof
+
+```bash
+steward actions list --json
+# Listed fmt.check.tool-prefix and fmt.check.intentcall-hosted-deps.
+
+steward action inspect fmt.check.intentcall-hosted-deps --json
+# Passed: bounded_local / auto.
+
+steward probe --profile quick --json
+# Passed: selected fmt.check.tool-prefix and fmt.check.intentcall-hosted-deps.
+
+steward benchmark --scenario mcp_flutter.intentcall-hosted-cutover --strict --output .steward/benchmark-summaries/mcp_flutter.intentcall-hosted-cutover.strict.json --json
+# Passed: result=pass, blocked_by=null, durability.status=ready, proof.status=ready.
+```
+
+The original maintainer run used a private sibling Skill Steward checkout, and a later proof used a temporary repo-local wrapper to bridge a stale global binary. Those forms are provenance only; reusable adopter docs should use the released `steward` executable, Skill Steward's setup action, or an explicit maintainer source checkout.
+
+The tracked redacted summary preserves the benchmark result, proof status, durability status, subject commit, and warnings while omitting machine-local command paths.
+
+## Non-claims
+
+- This does not prove full WebMCP runtime dogfood.
+- This does not prove every IntentCall consumer outside this repo has cut over.
+- This does not claim broad H5 maturity for Skill Steward. It is one useful promoted local gate with benchmark evidence.
+- `source.commit` is treated as the benchmark subject commit. A later local `HEAD` can differ and still produce a warning; this is not remote-equivalence proof.

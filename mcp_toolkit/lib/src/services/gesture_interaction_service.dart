@@ -2,6 +2,7 @@
 // ignore_for_file: avoid_catches_without_on_clauses
 // ignore_for_file: use_build_context_synchronously
 
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -268,6 +269,7 @@ mixin GestureInteractionService {
     final double distance = 300,
   }) async {
     final action = _scrollActionFor(direction);
+    Map<String, Object?>? semanticAttempt;
 
     if (ref != null && action != null) {
       final node = SemanticSnapshotService.resolveRef(ref);
@@ -275,17 +277,17 @@ mixin GestureInteractionService {
         return _refNotFound(ref);
       }
       if (node.getSemanticsData().hasAction(action)) {
-        final owner = SemanticSnapshotService.semanticsOwner;
-        if (owner != null) {
-          owner.performAction(node.id, action);
-          await _waitFrame();
-          return <String, Object?>{
-            'success': true,
-            'ref': ref,
-            'via': 'semantic_action',
-            'action': 'scroll_$direction',
-          };
+        final result = await _performSemanticScroll(
+          node: node,
+          action: action,
+          direction: direction,
+          distance: distance,
+          ref: ref,
+        );
+        if (_scrollMoved(result)) {
+          return result;
         }
+        semanticAttempt = result;
       }
     }
 
@@ -296,14 +298,17 @@ mixin GestureInteractionService {
       if (owner != null && root != null) {
         final target = _findScrollableFor(root, action);
         if (target != null) {
-          owner.performAction(target.id, action);
-          await _waitFrame();
-          return <String, Object?>{
-            'success': true,
-            'via': 'semantic_action',
-            'action': 'scroll_$direction',
-            'targetNodeId': target.id,
-          };
+          final result = await _performSemanticScroll(
+            node: target,
+            action: action,
+            direction: direction,
+            distance: distance,
+            targetNodeId: target.id,
+          );
+          if (_scrollMoved(result)) {
+            return result;
+          }
+          semanticAttempt = result;
         }
       }
     }
@@ -319,6 +324,8 @@ mixin GestureInteractionService {
     }
     final origin = start ?? _screenCenter();
     final scrollDelta = _scrollDelta(direction, distance);
+    final scrollable = _findAnyScrollable();
+    final before = _scrollPosition(scrollable);
     if (kIsWeb) {
       // PointerScrollEvent routed through GestureBinding doesn't reach the
       // Flutter Web engine's wheel handler either. Return a structured
@@ -336,6 +343,26 @@ mixin GestureInteractionService {
       };
     }
     await _dispatchScrollSignal(origin, scrollDelta);
+    final after = _scrollPosition(scrollable);
+    if (before != null && after != null && before == after) {
+      return <String, Object?>{
+        'success': false,
+        'via': 'pointer_scroll_event',
+        'action': 'scroll',
+        'direction': direction,
+        'distance': distance,
+        'at': _offsetToMap(origin),
+        'scrollDelta': _offsetToMap(scrollDelta),
+        'scrollBefore': before,
+        'scrollAfter': after,
+        'error': 'no_scroll_movement',
+        'semanticAttempt': ?semanticAttempt,
+        'hint':
+            'Scroll input was dispatched, but the scroll position did not '
+            'change. Re-snapshot and try a scrollable ref or a different '
+            'direction.',
+      };
+    }
     return <String, Object?>{
       'success': true,
       'via': 'pointer_scroll_event',
@@ -344,8 +371,100 @@ mixin GestureInteractionService {
       'distance': distance,
       'at': _offsetToMap(origin),
       'scrollDelta': _offsetToMap(scrollDelta),
+      'scrollBefore': ?before,
+      'scrollAfter': ?after,
+      'semanticAttempt': ?semanticAttempt,
     };
   }
+
+  static Future<Map<String, Object?>> _performSemanticScroll({
+    required final SemanticsNode node,
+    required final SemanticsAction action,
+    required final String direction,
+    required final double distance,
+    final String? ref,
+    final int? targetNodeId,
+  }) async {
+    final owner = SemanticSnapshotService.semanticsOwner;
+    if (owner == null) {
+      return <String, Object?>{
+        'success': false,
+        'ref': ?ref,
+        'targetNodeId': ?targetNodeId,
+        'action': 'scroll_$direction',
+        'error': 'semantics_owner_unavailable',
+      };
+    }
+
+    final before = _scrollPosition(node);
+    owner.performAction(node.id, action);
+    await _waitFrame();
+    var after = _scrollPosition(node);
+    if (before != null && after != null && before != after) {
+      return <String, Object?>{
+        'success': true,
+        'ref': ?ref,
+        'targetNodeId': ?targetNodeId,
+        'via': 'semantic_action',
+        'action': 'scroll_$direction',
+        'scrollBefore': before,
+        'scrollAfter': after,
+      };
+    }
+
+    if (node.getSemanticsData().hasAction(SemanticsAction.scrollToOffset) &&
+        before != null) {
+      final target = _targetScrollOffset(
+        direction: direction,
+        distance: distance,
+        data: node.getSemanticsData(),
+      );
+      final Float64List scrollToOffsetArgs;
+      if (_isHorizontal(direction)) {
+        scrollToOffsetArgs = Float64List.fromList(<double>[target, 0]);
+      } else {
+        scrollToOffsetArgs = Float64List.fromList(<double>[0, target]);
+      }
+      owner.performAction(
+        node.id,
+        SemanticsAction.scrollToOffset,
+        scrollToOffsetArgs,
+      );
+      await _waitFrame();
+      after = _scrollPosition(node);
+      if (after != null && before != after) {
+        return <String, Object?>{
+          'success': true,
+          'ref': ?ref,
+          'targetNodeId': ?targetNodeId,
+          'via': 'semantic_scroll_to_offset',
+          'action': 'scroll_$direction',
+          'distance': distance,
+          'scrollBefore': before,
+          'scrollAfter': after,
+        };
+      }
+    }
+
+    return <String, Object?>{
+      'success': false,
+      'ref': ?ref,
+      'targetNodeId': ?targetNodeId,
+      'via': 'semantic_action',
+      'action': 'scroll_$direction',
+      'scrollBefore': ?before,
+      'scrollAfter': ?after,
+      'scrollExtentMin': _finiteOrNull(node.getSemanticsData().scrollExtentMin),
+      'scrollExtentMax': _finiteOrNull(node.getSemanticsData().scrollExtentMax),
+      'error': 'no_scroll_movement',
+    };
+  }
+
+  static bool _scrollMoved(final Map<String, Object?> result) =>
+      result['success'] == true &&
+      result['scrollBefore'] != null &&
+      result['scrollAfter'] != null &&
+      result['scrollBefore'] != result['scrollAfter'];
 
   /// Best-effort classification of [node]'s widget type, used only to produce
   /// a helpful hint when `enter_text` can't find an editable state. Returns
@@ -410,6 +529,31 @@ mixin GestureInteractionService {
     void visit(final SemanticsNode node) {
       if (result != null) return;
       if (node.getSemanticsData().hasAction(action)) {
+        result = node;
+        return;
+      }
+      node.visitChildren((final child) {
+        visit(child);
+        return result == null;
+      });
+    }
+
+    visit(root);
+    return result;
+  }
+
+  static SemanticsNode? _findAnyScrollable() {
+    final root = SemanticSnapshotService.semanticsOwner?.rootSemanticsNode;
+    if (root == null) return null;
+    SemanticsNode? result;
+    void visit(final SemanticsNode node) {
+      if (result != null) return;
+      final data = node.getSemanticsData();
+      if (data.hasAction(SemanticsAction.scrollUp) ||
+          data.hasAction(SemanticsAction.scrollDown) ||
+          data.hasAction(SemanticsAction.scrollLeft) ||
+          data.hasAction(SemanticsAction.scrollRight) ||
+          data.hasAction(SemanticsAction.scrollToOffset)) {
         result = node;
         return;
       }
@@ -562,29 +706,40 @@ mixin GestureInteractionService {
     // Register the device first — MouseTracker only tracks hover events from
     // pointers that announced themselves via PointerAddedEvent; otherwise the
     // hover may be filtered out and MouseRegion.onEnter never fires.
-    const pointer = 1;
-    GestureBinding.instance
+    // Use a fresh pointer id and end with PointerRemovedEvent so repeated
+    // hover calls do not violate MouseTracker's Added-after-Removed invariant.
+    final pointer = _nextPointerId++;
+    final binding = GestureBinding.instance;
+    const prime = ui.Offset(-100, -100);
+    binding
       ..handlePointerEvent(
         PointerAddedEvent(
           pointer: pointer,
-          position: const ui.Offset(-100, -100),
+          position: prime,
           kind: PointerDeviceKind.mouse,
           timeStamp: _now(),
         ),
       )
       // Prime: hover off-screen first so the target hover is a clean
-      // position change. Reuses pointer id so the mouse tracker treats
-      // them as the same logical mouse.
+      // position change.
       ..handlePointerEvent(
         PointerHoverEvent(
           pointer: pointer,
-          position: const ui.Offset(-100, -100),
+          position: prime,
           kind: PointerDeviceKind.mouse,
           timeStamp: _now(),
         ),
       )
       ..handlePointerEvent(
         PointerHoverEvent(
+          pointer: pointer,
+          position: centre,
+          kind: PointerDeviceKind.mouse,
+          timeStamp: _now(),
+        ),
+      )
+      ..handlePointerEvent(
+        PointerRemovedEvent(
           pointer: pointer,
           position: centre,
           kind: PointerDeviceKind.mouse,
@@ -769,6 +924,33 @@ mixin GestureInteractionService {
     'right' => ui.Offset(-distance, 0), // reveal content right → finger left
     _ => ui.Offset(0, -distance),
   };
+
+  static double? _scrollPosition(final SemanticsNode? node) {
+    if (node == null) return null;
+    return _finiteOrNull(node.getSemanticsData().scrollPosition);
+  }
+
+  static double _targetScrollOffset({
+    required final String direction,
+    required final double distance,
+    required final SemanticsData data,
+  }) {
+    final before = _finiteOrNull(data.scrollPosition) ?? 0;
+    final requested = switch (direction.toLowerCase()) {
+      'down' || 'right' => before + distance,
+      'up' || 'left' => before - distance,
+      _ => before + distance,
+    };
+    final min = _finiteOrNull(data.scrollExtentMin) ?? 0;
+    final max = _finiteOrNull(data.scrollExtentMax) ?? requested;
+    return requested.clamp(min, max);
+  }
+
+  static double? _finiteOrNull(final double? value) =>
+      value != null && value.isFinite ? value : null;
+
+  static bool _isHorizontal(final String direction) =>
+      direction.toLowerCase() == 'left' || direction.toLowerCase() == 'right';
 
   /// Return the centre of the first render view.
   static ui.Offset _screenCenter() {

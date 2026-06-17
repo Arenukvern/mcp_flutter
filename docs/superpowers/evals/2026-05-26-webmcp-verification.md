@@ -112,4 +112,4 @@ Generated JS and Dart `AgentWebMcpBootstrap` both call `registerTool`. Hot resta
 ## Related
 
 - [tool_quality_rubric.yaml](./tool_quality_rubric.yaml) — dimension `webmcp_parity`
-- [dogfood_web_eval.yaml](../../.showcase/dogfood_web_eval.yaml) — iterations 1–11 (VM + WebMCP)
+- [dogfood_web_eval.yaml](../../evidence/dogfood/dogfood_web_eval.yaml) — iterations 1–11 (VM + WebMCP)

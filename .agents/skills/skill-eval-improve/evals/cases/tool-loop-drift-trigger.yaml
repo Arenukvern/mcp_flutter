@@ -1,0 +1,12 @@
+id: skill-eval-improve-tool-loop-drift-trigger
+skill: skill-eval-improve
+routing: should_trigger
+input: "Improve this skill after an adoption run drifted into repairing tools; add a held-out gate so we don't overfit from one transcript"
+rules:
+  - kind: file_exists
+    path: references/evals.md
+  - kind: description_includes_any
+    terms: ["held-out gates", "bounded edits", "routing"]
+  - kind: body_includes_any
+    path: SKILL.md
+    terms: ["maximum repair/setup attempts", "return_to_goal_step", "held-out gate"]
