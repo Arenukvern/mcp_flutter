@@ -9,7 +9,7 @@
       "name": "flutter-mcp-toolkit",
       "source": "./plugin",
       "description": "Flutter MCP toolkit: inspect and drive debug apps (semantic snapshot, tap, hot-reload) and register custom MCP tools and resources at runtime from your Flutter app or game via mcp_toolkit — closed agent feedback loop.",
-      "version": "4.0.0-dev.2",
+      "version": "4.0.0-dev.3",
       "keywords": [
         "flutter",
         "dart",
