@@ -633,11 +633,7 @@ if [[ "${merge_tracker}" == true ]]; then
     fi
   fi
 
-  if command -v yq >/dev/null 2>&1; then
-    next_iter="$(yq '.iterations | length' "${tracker}")"
-  else
-    next_iter="$(grep -cE '^  - iteration:' "${tracker}" || true)"
-  fi
+  next_iter="$(grep -cE '^  - iteration:' "${tracker}" || true)"
   next_iter=$((next_iter + 1))
 
   iteration_yaml="${run_dir}/iteration_merge.yaml"
@@ -673,22 +669,9 @@ if [[ "${merge_tracker}" == true ]]; then
     printf 'artifacts:\n  - %s/eval_run.yaml\n' "${run_dir}"
   } >"${iteration_yaml}"
 
-  if command -v yq >/dev/null 2>&1; then
-    next_iter="$(yq '.iterations | length' "${tracker}")"
-    next_iter=$((next_iter + 1))
-    yq -i ".iterations += [load(\"${iteration_yaml}\")]" "${tracker}"
-    yq -i ".summary.iterations_count = (.iterations | length)" "${tracker}"
-    yq -i '.summary.best_score = ([.iterations[].score] | max)' "${tracker}"
-    yq -i '.summary.worst_score = ([.iterations[].score] | min)' "${tracker}"
-    yq -i '.summary.mean_score = (([.iterations[].score] | add) / ([.iterations[].score] | length))' "${tracker}"
-    yq -i ".summary.verdict = \"${verdict}\"" "${tracker}"
-    yq -i ".scoring.rubric = \"docs/superpowers/evals/tool_quality_rubric.yaml\"" "${tracker}"
-    log "merged iteration ${next_iter} into ${tracker} (yq)"
-  else
   dart run "${repo_root}/mcp_server_dart/tool/merge_dogfood_tracker.dart" \
     "${tracker}" "${iteration_yaml}" "${verdict}"
-    log "merged into ${tracker} (dart)"
-  fi
+  log "merged into ${tracker} (dart)"
 fi
 
 # Exit non-zero if battery failed
