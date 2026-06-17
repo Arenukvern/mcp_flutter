@@ -59,6 +59,8 @@ Safety:
 - `secrets: false`
 - `destructive: false`
 
+Scenario metadata now includes `tool/intentcall/check_no_path_deps_test.sh` as a reference falsifier artifact. That keeps the native negative gate visible from Steward without adding the falsifier to the quick probe.
+
 ## Steward proof
 
 ```bash

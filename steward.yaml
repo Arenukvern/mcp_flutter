@@ -139,10 +139,269 @@ actions:
         native_gate: make check-contracts
         falsifier: bash tool/intentcall/check_no_path_deps_test.sh
         benchmark: mcp_flutter.intentcall-hosted-cutover
+  fmt.check.sdk-parity:
+    kind: command
+    desc: Verify Dart SDK floor parity between mcp_server_dart pubspec and Docker images.
+    command:
+      argv: [/bin/bash, tool/contracts/check_sdk_parity.sh]
+      shell: false
+    cwd: .
+    effects:
+      fs_read:
+        - tool/contracts/check_sdk_parity.sh
+        - mcp_server_dart/pubspec.yaml
+        - mcp_server_dart/Dockerfile
+        - mcp_server_dart/Dockerfile.dev
+      fs_write: []
+      git: false
+      network: false
+      secrets: false
+      destructive: false
+    safety:
+      class: bounded_local
+      default_policy: auto
+      requires_confirmation: false
+    limits:
+      timeout_ms: 10000
+      max_output_bytes: 200000
+    outputs:
+      - id: stdout
+        kind: stream
+        required: true
+        retention: summary
+        format: text
+    evidence:
+      owner: flutter-mcp-toolkit
+      risk: sdk_floor_drift
+      redaction: steward/redaction/v1
+      summary_fields: [exit_code, duration_ms, output_digest]
+      validation:
+        native_gate: make check-contracts
+  fmt.check.version-sync:
+    kind: command
+    desc: Verify repo VERSION matches package, runtime, plugin, and hosted dependency version touchpoints.
+    command:
+      argv: [/bin/bash, tool/contracts/check_version_sync.sh]
+      shell: false
+    cwd: .
+    effects:
+      fs_read:
+        - tool/contracts/check_version_sync.sh
+        - VERSION
+        - packages/core/lib/src/runtime_version.dart
+        - packages/server_capability_core/lib/src/fmt_capability.dart
+        - mcp_server_dart/pubspec.yaml
+        - mcp_toolkit/pubspec.yaml
+        - packages/core/pubspec.yaml
+        - packages/server_capability_kernel/pubspec.yaml
+        - packages/server_capability_core/pubspec.yaml
+        - plugin/.cursor-plugin/plugin.json
+        - plugin/.codex-plugin/plugin.json
+        - plugin/.claude-plugin/plugin.json
+        - .claude-plugin/marketplace.json
+      fs_write: []
+      git: false
+      network: false
+      secrets: false
+      destructive: false
+    safety:
+      class: bounded_local
+      default_policy: auto
+      requires_confirmation: false
+    limits:
+      timeout_ms: 10000
+      max_output_bytes: 200000
+    outputs:
+      - id: stdout
+        kind: stream
+        required: true
+        retention: summary
+        format: text
+    evidence:
+      owner: flutter-mcp-toolkit
+      risk: release_train_drift
+      redaction: steward/redaction/v1
+      summary_fields: [exit_code, duration_ms, output_digest]
+      validation:
+        native_gate: make check-contracts
+  fmt.check.changelog-markdown:
+    kind: command
+    desc: Verify CHANGELOG markdown keeps Keep a Changelog headings and code identifiers unambiguous.
+    command:
+      argv: [/bin/bash, tool/contracts/check_changelog_markdown.sh]
+      shell: false
+    cwd: .
+    effects:
+      fs_read:
+        - tool/contracts/check_changelog_markdown.sh
+        - CHANGELOG.md
+      fs_write: []
+      git: false
+      network: false
+      secrets: false
+      destructive: false
+    safety:
+      class: bounded_local
+      default_policy: auto
+      requires_confirmation: false
+    limits:
+      timeout_ms: 10000
+      max_output_bytes: 200000
+    outputs:
+      - id: stdout
+        kind: stream
+        required: true
+        retention: summary
+        format: text
+    evidence:
+      owner: flutter-mcp-toolkit
+      risk: changelog_markdown_drift
+      redaction: steward/redaction/v1
+      summary_fields: [exit_code, duration_ms, output_digest]
+      validation:
+        native_gate: make check-contracts
+  fmt.check.repo-split-paths:
+    kind: command
+    desc: Verify split package directories exist and legacy package directories have not returned.
+    command:
+      argv: [/bin/bash, tool/contracts/check_repo_split_paths.sh]
+      shell: false
+    cwd: .
+    effects:
+      fs_read:
+        - tool/contracts/check_repo_split_paths.sh
+        - packages/core
+        - packages/server_capability_kernel
+        - packages/server_capability_core
+      fs_write: []
+      git: false
+      network: false
+      secrets: false
+      destructive: false
+    safety:
+      class: bounded_local
+      default_policy: auto
+      requires_confirmation: false
+    limits:
+      timeout_ms: 10000
+      max_output_bytes: 200000
+    outputs:
+      - id: stdout
+        kind: stream
+        required: true
+        retention: summary
+        format: text
+    evidence:
+      owner: flutter-mcp-toolkit
+      risk: package_layout_regression
+      redaction: steward/redaction/v1
+      summary_fields: [exit_code, duration_ms, output_digest]
+      validation:
+        native_gate: make check-contracts
+  fmt.check.intentcall-skills-grep:
+    kind: command
+    desc: Verify legacy MCPCallEntry references remain confined to the migration skill and generated bundle.
+    command:
+      argv: [/bin/bash, tool/contracts/check_intentcall_skills_grep.sh]
+      shell: false
+    cwd: .
+    effects:
+      fs_read:
+        - tool/contracts/check_intentcall_skills_grep.sh
+        - plugin/skills
+        - docs/core
+        - docs/ai_agents
+        - docs/guides
+        - docs/contributing
+        - plugin/README.md
+        - plugin/agents/flutter-mcp-toolkit-runtime.md
+        - plugin/.codex-plugin/plugin.json
+        - ARCHITECTURE.md
+        - mcp_server_dart/lib/src/skill_assets.g.dart
+      fs_write: []
+      git: false
+      network: false
+      secrets: false
+      destructive: false
+    safety:
+      class: bounded_local
+      default_policy: auto
+      requires_confirmation: false
+    limits:
+      timeout_ms: 10000
+      max_output_bytes: 200000
+    outputs:
+      - id: stdout
+        kind: stream
+        required: true
+        retention: summary
+        format: text
+    evidence:
+      owner: flutter-mcp-toolkit
+      risk: legacy_intentcall_surface_regression
+      redaction: steward/redaction/v1
+      summary_fields: [exit_code, duration_ms, output_digest]
+      validation:
+        native_gate: make check-contracts
+  fmt.check.contracts-full:
+    kind: command
+    desc: Run the full native mcp_flutter contract gate through the repo Makefile.
+    command:
+      argv: [make, check-contracts]
+      shell: false
+    cwd: .
+    effects:
+      fs_read:
+        - makefile
+        - tool/contracts
+        - tool/intentcall
+        - steward.yaml
+        - skills
+        - plugin
+        - docs
+        - mcp_server_dart
+        - mcp_toolkit
+        - packages
+        - flutter_test_app
+      fs_write:
+        - mcp_server_dart/.dart_tool
+        - mcp_server_dart/pubspec.lock
+        - mcp_server_dart/lib/src/skill_assets.g.dart
+      git: false
+      network: false
+      secrets: false
+      destructive: false
+    safety:
+      class: bounded_local
+      default_policy: auto
+      requires_confirmation: false
+    limits:
+      timeout_ms: 120000
+      max_output_bytes: 400000
+    outputs:
+      - id: stdout
+        kind: stream
+        required: true
+        retention: summary
+        format: text
+    evidence:
+      owner: flutter-mcp-toolkit
+      risk: full_contract_regression
+      redaction: steward/redaction/v1
+      summary_fields: [exit_code, duration_ms, output_digest]
+      validation:
+        native_gate: make check-contracts
 probes:
   quick:
     profile: quick
-    actions: [fmt.check.tool-prefix, fmt.check.intentcall-hosted-deps]
+    actions:
+      - fmt.check.tool-prefix
+      - fmt.check.intentcall-hosted-deps
+      - fmt.check.sdk-parity
+      - fmt.check.version-sync
+      - fmt.check.changelog-markdown
+      - fmt.check.repo-split-paths
+      - fmt.check.intentcall-skills-grep
 diagnostics:
   cases: {}
 unknown_cases:
@@ -152,8 +411,8 @@ provenance:
   dependencies: []
   artifacts: []
   benchmarks:
-    - id: mcp_flutter.web-dogfood-warm
-      manifest: steward/scenarios/mcp_flutter.web-dogfood-warm.yaml
+    - id: mcp_flutter.contract-status-smoke
+      manifest: steward/scenarios/mcp_flutter.contract-status-smoke.yaml
     - id: mcp_flutter.intentcall-hosted-cutover
       manifest: steward/scenarios/mcp_flutter.intentcall-hosted-cutover.yaml
 branding:

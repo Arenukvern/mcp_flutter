@@ -64,6 +64,7 @@ When writing code, documentation, or planning features:
 2. If `steward` is missing or stale, install the released CLI with `curl -fsSL https://raw.githubusercontent.com/Arenukvern/skill_steward/main/install.sh | bash`. For local Skill Steward development, run from the Skill Steward checkout with `cd packages/steward_cli && dart run :steward <command>`, or activate that checkout with `dart pub global activate --source path packages/steward_cli`. Do not copy absolute SDK paths, raw `dart --packages=.../steward.dart` commands, or adopter-local runner scripts into reusable docs.
 3. Inspect any intended action before execution: `steward action inspect <id> --json`.
 4. Use `steward probe --json --profile quick` for the safe first pass.
-5. Use `steward benchmark --scenario mcp_flutter.web-dogfood-warm --strict --json` for the first dogfood scenario.
+5. Use `steward benchmark --scenario mcp_flutter.contract-status-smoke --strict --json` for the first contract-smoke scenario. This is not WebMCP runtime proof.
 6. For the hosted IntentCall dependency gate, inspect `fmt.check.intentcall-hosted-deps` and benchmark `mcp_flutter.intentcall-hosted-cutover`; promotion evidence is in `docs/evidence/steward-h5-hosted-cutover-promotion-2026-06-10.mdx`.
-7. If you discover new complex automations or bug fixes, capture them as observations / unknown cases first; promote only after review.
+7. For the full native gate, inspect `fmt.check.contracts-full` for effects metadata, then run `make check-contracts`; keep it out of `probes.quick` because it may touch local Dart package state.
+8. If you discover new complex automations or bug fixes, capture them as observations / unknown cases first; promote only after review.

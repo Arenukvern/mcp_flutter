@@ -1,0 +1,45 @@
+schema: steward/scenario-manifest/v1
+repo: mcp_flutter
+scenario: mcp_flutter.contract-status-smoke
+status: runnable
+source:
+  git: https://github.com/Arenukvern/mcp_flutter
+  commit: 2614f1d86a82365173e0640e2aaf56571417b10e
+  steward_contract: steward.yaml
+safe_first_probe: fmt.check.tool-prefix
+required_actions:
+  - fmt.check.tool-prefix
+  - fmt.check.intentcall-hosted-deps
+  - fmt.check.sdk-parity
+  - fmt.check.version-sync
+  - fmt.check.changelog-markdown
+  - fmt.check.repo-split-paths
+  - fmt.check.intentcall-skills-grep
+artifacts:
+  - id: steward_contract
+    kind: yaml
+    path: steward.yaml
+    required: true
+    durability: input
+  - id: tool_prefix_contract
+    kind: text
+    path: tool/contracts/expected_tool_surface.txt
+    required: true
+    durability: input
+  - id: hosted_dependency_gate
+    kind: shell
+    path: tool/intentcall/check_no_path_deps.sh
+    required: true
+    durability: input
+  - id: version_sync_gate
+    kind: shell
+    path: tool/contracts/check_version_sync.sh
+    required: true
+    durability: input
+  - id: sdk_parity_gate
+    kind: shell
+    path: tool/contracts/check_sdk_parity.sh
+    required: true
+    durability: input
+blocked_by: null
+owner: flutter-mcp-toolkit

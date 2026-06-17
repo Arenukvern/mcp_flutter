@@ -20,6 +20,11 @@ artifacts:
     path: tool/intentcall/check_no_path_deps.sh
     required: true
     durability: input
+  - id: no_path_deps_falsifier
+    kind: shell
+    path: tool/intentcall/check_no_path_deps_test.sh
+    required: true
+    durability: reference
   - id: mcp_toolkit_pubspec
     kind: yaml
     path: mcp_toolkit/pubspec.yaml

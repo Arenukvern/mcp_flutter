@@ -4,7 +4,7 @@
 
 ## Claim
 
-`mcp_flutter` is the first external Skill Steward adoption target with a current `steward/v1` contract and a passing H2 smoke loop. This proves contract discovery, safe action inspection, quick probe execution, and one strict dogfood benchmark. It does not prove product runtime correctness, full H4 workflow breadth, or H5 promoted harness maturity.
+`mcp_flutter` is the first external Skill Steward adoption target with a `steward/v1` contract and a passing H2 smoke loop. This proves contract discovery, safe action inspection, quick probe execution, and one strict contract benchmark. It does not prove product runtime correctness, full H4 workflow breadth, full native-gate execution through Steward, or H5 promoted harness maturity.
 
 ## Repo state
 
@@ -22,6 +22,8 @@
 - `repo.archetype` now uses the public Skill Steward archetype vocabulary: `harness`.
 - `stewardship.repo_quality` is declared with `contract_spec`, `maturity_model`, and evidence path.
 - `AGENTS.md` now records the released `steward` executable as the reusable command surface. The earlier `tool/steward/run.sh` bridge was temporary proof scaffolding for a stale local binary and is not the adoption pattern for future repos.
+- Current contract management now uses `mcp_flutter.contract-status-smoke` as the first smoke scenario. The historical `mcp_flutter.web-dogfood-warm` name is superseded because it never proved live WebMCP runtime behavior.
+- `steward.yaml` exposes additional quick-safe contract slices and a non-quick `fmt.check.contracts-full` action so local Steward CLI users can inspect the full native gate's effects before running `make check-contracts` directly.
 
 ## Portable commands
 
@@ -33,7 +35,9 @@ steward doctor --json
 steward actions list --json
 steward action inspect fmt.check.tool-prefix --json
 steward probe --profile quick --json
-steward benchmark --scenario mcp_flutter.web-dogfood-warm --strict --output .steward/benchmark-summaries/mcp_flutter.web-dogfood-warm.strict.json --json
+steward benchmark --scenario mcp_flutter.contract-status-smoke --strict --output .steward/benchmark-summaries/mcp_flutter.contract-status-smoke.strict.json --json
+steward action inspect fmt.check.contracts-full --json
+make check-contracts
 ```
 
 ## Local provenance
@@ -53,9 +57,18 @@ The original run used the maintainer's private Dart SDK path plus a sibling Skil
 
 The tracked redacted summary preserves the benchmark result, proof status, durability status, subject commit, and warnings while omitting machine-local command paths.
 
+## Current status update - 2026-06-17
+
+- `steward doctor --json` and `steward actions list --json` pass with the expanded action set.
+- `steward probe --profile quick --json` passes and runs seven read-only bounded-local checks.
+- Strict benchmark reruns for the new/changed scenarios are expected to report `durability_blocked` until `steward.yaml` and the new scenario manifests are committed; that is dirty-input protection, not a contract execution failure.
+- Current `steward benchmark` still rejects non-quick actions as safe first probes, so the full native gate remains inspectable through Steward but executable through `make check-contracts`.
+- The local `steward` binary in this environment does not expose `schema check-outputs` or `schema drift`; use `doctor`, `actions list`, `action inspect`, `probe`, and `benchmark` here unless the CLI is upgraded.
+
 ## Non-claims
 
 - This does not prove the WebMCP runtime dogfood path.
 - This does not promote a new diagnostic or action to H5.
 - This does not prove every mcp_flutter workflow is agent-operable.
+- The contract-smoke scenario proves deterministic contract slices, not release publishing, runtime launch, or visual/product correctness.
 - `source.commit` is treated as the benchmark subject commit. A later local `HEAD` can differ and still produce a warning; this is not remote-equivalence proof.
