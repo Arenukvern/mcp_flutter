@@ -10,6 +10,8 @@ toolkit=(dart run "${repo_root}/mcp_server_dart/bin/flutter_mcp_toolkit.dart")
 ws_uri="${WS_URI:-${MACOS_WS_URI:-}}"
 output="${repo_root}/docs/evidence/generated/mcp_flutter.runtime-enter-text-greeting.redacted.json"
 text="steward runtime proof"
+platform="${RUNTIME_PLATFORM:-macos}"
+launch_command="${RUNTIME_LAUNCH_COMMAND:-make showcase}"
 branch="$(git -C "${repo_root}" branch --show-current 2>/dev/null || true)"
 base_commit="$(git -C "${repo_root}" rev-parse HEAD 2>/dev/null || true)"
 
@@ -21,6 +23,8 @@ Options:
   --ws-uri URI       VM websocket URI for a running flutter_test_app showcase
   --output PATH      Evidence JSON path
   --text TEXT        Text to enter (default: steward runtime proof)
+  --platform NAME    Runtime platform label (default: macos)
+  --launch-command   Launch command recorded in evidence (default: make showcase)
   -h, --help         Show this help
 
 Example:
@@ -35,6 +39,8 @@ while [[ $# -gt 0 ]]; do
     --ws-uri) ws_uri="$2"; shift 2 ;;
     --output) output="$2"; shift 2 ;;
     --text) text="$2"; shift 2 ;;
+    --platform) platform="$2"; shift 2 ;;
+    --launch-command) launch_command="$2"; shift 2 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Unknown option: $1" >&2; usage >&2; exit 64 ;;
   esac
@@ -73,11 +79,16 @@ fi
 
 ref="$(jq -r '.data.ref' "${work_dir}/reveal_search.json")"
 snapshot_id="$(jq -r '.data.snapshotId' "${work_dir}/reveal_search.json")"
+enter_text_args="$(jq -cn \
+  --arg ref "${ref}" \
+  --argjson snapshotId "${snapshot_id}" \
+  --arg text "${text}" \
+  '{ref: $ref, snapshotId: $snapshotId, text: $text}')"
 run_tool exec --name evaluate_dart_expression \
   --args '{"expression":"AgentState.instance.greeting"}' \
   >"${work_dir}/before.json"
 run_tool exec --name enter_text \
-  --args "{\"ref\":\"${ref}\",\"snapshotId\":${snapshot_id},\"text\":\"${text}\"}" \
+  --args "${enter_text_args}" \
   >"${work_dir}/enter_text.json"
 run_tool exec --name evaluate_dart_expression \
   --args '{"expression":"AgentState.instance.greeting"}' \
@@ -90,6 +101,8 @@ jq -n \
   --arg baseCommit "${base_commit}" \
   --arg expected "${text}" \
   --arg ref "${ref}" \
+  --arg platform "${platform}" \
+  --arg launchCommand "${launch_command}" \
   --argjson doctor "$(cat "${work_dir}/doctor.json")" \
   --argjson revealSearch "$(cat "${work_dir}/reveal_search.json")" \
   --argjson before "$(cat "${work_dir}/before.json")" \
@@ -107,8 +120,8 @@ jq -n \
       dirtyState: "caller must inspect git status; this script does not assert clean checkout"
     },
     runtime: {
-      platform: "macos",
-      launchCommand: "make showcase",
+      platform: $platform,
+      launchCommand: $launchCommand,
       vmServiceUri: "ws://127.0.0.1:<redacted-port>/<redacted-token>/ws"
     },
     proof: {

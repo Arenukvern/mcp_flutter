@@ -14,6 +14,8 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 showcase="${repo_root}/.showcase"
 log="${showcase}/web_app.log"
 out="${showcase}/tool_verify/web"
+web_port="${WEB_PORT:-8080}"
+vm_port="${VM_HOST_PORT:-8181}"
 mkdir -p "${out}"
 
 printf '[web-tests] starting chrome showcase (detach)…\n'
@@ -21,7 +23,7 @@ bash "${repo_root}/scripts/run_web_showcase.sh" --detach
 
 ws_uri=""
 for _ in $(seq 1 30); do
-  ws_uri="$(grep -Eo 'ws://127\.0\.0\.1:8181/[A-Za-z0-9_=-]+/ws' "${log}" | tail -1 || true)"
+  ws_uri="$(grep -Eo "ws://127\\.0\\.0\\.1:${vm_port}/[A-Za-z0-9_=-]+/ws" "${log}" | tail -1 || true)"
   if [[ -n "${ws_uri}" ]]; then break; fi
   sleep 1
 done
@@ -57,8 +59,9 @@ run_step doctor "${toolkit[@]}" doctor --json
 run_step validate-runtime "${toolkit[@]}" --flutter-device chrome --web-browser-debugging-port "${WEB_BROWSER_DEBUGGING_PORT}" \
   --save-images --output-dir "${out}/validate-runtime" \
   validate-runtime --target "${ws_uri}" --timeout-ms 60000
-run_step webmcp-verify dart run "${repo_root}/mcp_server_dart/bin/flutter_mcp_toolkit.dart" webmcp verify --web-port 8080
+run_step webmcp-verify dart run "${repo_root}/mcp_server_dart/bin/flutter_mcp_toolkit.dart" webmcp verify --web-port "${web_port}"
 run_step runtime-enter-text bash "${repo_root}/tool/evals/run_runtime_enter_text_greeting.sh" --ws-uri "${ws_uri}" \
+  --platform web --launch-command "scripts/run_web_showcase.sh --detach" \
   --output "${out}/runtime-enter-text-greeting.json"
 run_step exec-sweep bash "${repo_root}/scripts/run_exec_sweep.sh"
 
