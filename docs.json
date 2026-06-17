@@ -49,7 +49,7 @@
     "noindex": false
   },
   "variables": {
-    "version": "3.0.4",
+    "version": "4.0.0-dev.1",
     "repo": "https://github.com/Arenukvern/mcp_flutter",
     "docs": "https://docs.page/arenukvern/mcp_flutter"
   },
