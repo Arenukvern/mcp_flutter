@@ -8,9 +8,9 @@ Server-side Dart only — no Flutter SDK dependency.
 
 ```yaml
 dependencies:
-  flutter_mcp_toolkit_capability_core: ^4.0.0-dev.2
-  flutter_mcp_toolkit_capability_kernel: ^4.0.0-dev.2
-  flutter_mcp_toolkit_core: ^4.0.0-dev.2
+  flutter_mcp_toolkit_capability_core: ^4.0.0-dev.3
+  flutter_mcp_toolkit_capability_kernel: ^4.0.0-dev.3
+  flutter_mcp_toolkit_core: ^4.0.0-dev.3
 ```
 
 ## Usage
