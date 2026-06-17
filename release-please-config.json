@@ -3,6 +3,9 @@
   "packages": {
     ".": {
       "release-type": "simple",
+      "versioning": "prerelease",
+      "prerelease": true,
+      "prerelease-type": "dev",
       "package-name": "flutter-mcp-toolkit",
       "changelog-path": "CHANGELOG.md",
       "version-file": "VERSION",
