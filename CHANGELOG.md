@@ -3,6 +3,33 @@
 <!-- markdownlint-disable MD052 -->
 <!-- Keep a Changelog version headings use [3.0.1] brackets; MD052 treats them as reference links. -->
 
+## [4.0.0-dev.2](https://github.com/Arenukvern/mcp_flutter/compare/v4.0.0-dev.1...v4.0.0-dev.2) (2026-06-17)
+
+
+### Features
+
+* add steward hosted dependency gate ([3b91408](https://github.com/Arenukvern/mcp_flutter/commit/3b91408f266480d7822df409c2efbfc34f45e99f))
+* promote hosted dependency steward gate ([82868e8](https://github.com/Arenukvern/mcp_flutter/commit/82868e83145fd9c56dbd45f677c42ea39b60e4ce))
+
+
+### Bug Fixes
+
+* https://github.com/drown0315 broken link ([48fe450](https://github.com/Arenukvern/mcp_flutter/commit/48fe4509f5b1ab47e2f7ae588c467ea01b57f85d))
+* json ([c67e8fe](https://github.com/Arenukvern/mcp_flutter/commit/c67e8fe5773c9a5da94e018c1dbc507556e6cce1))
+* **mcp_toolkit:** VM isolateId causes tool validation error ([37fcaa8](https://github.com/Arenukvern/mcp_flutter/commit/37fcaa8442f6ffed6d236ff6e40a0fec1381c6cc))
+* use deterministic dogfood tracker merge ([3e07d3a](https://github.com/Arenukvern/mcp_flutter/commit/3e07d3a5baffdb2afdd14f052d718d2cace0ab70))
+
+
+### Documentation
+
+* persist steward proof summaries ([339b20f](https://github.com/Arenukvern/mcp_flutter/commit/339b20f9ad6b9aea6856016aa1ce137b7150e89b))
+* prepare runtime text input steward proof ([87c493c](https://github.com/Arenukvern/mcp_flutter/commit/87c493c8fb880c58572aa7b59d74e368a68b5144))
+* record bounded steward h5 adoption ([bf21f6f](https://github.com/Arenukvern/mcp_flutter/commit/bf21f6f1b0648f0fdcb0d97c84ab3174a0c23701))
+* record steward adoption evidence ([fd0c059](https://github.com/Arenukvern/mcp_flutter/commit/fd0c0597d0a7c57e3643a0cc423926ca4fbc5f96))
+* refresh direct steward proof summaries ([638b970](https://github.com/Arenukvern/mcp_flutter/commit/638b970b538484f36ba27f77a08bb396b8e08255))
+* refresh steward h5 proof summary ([d74a524](https://github.com/Arenukvern/mcp_flutter/commit/d74a5247b4602f2a49bd0e33dcb4fd593f1825d0))
+* update GitNexus project details and enhance harness engineering lifecycle documentation ([9245d8f](https://github.com/Arenukvern/mcp_flutter/commit/9245d8fa2d7d1789b7d5cf4cf3392834877e8774))
+
 ## [3.1.1](https://github.com/Arenukvern/mcp_flutter/compare/v3.1.0...v3.1.1) (2026-06-05)
 
 
