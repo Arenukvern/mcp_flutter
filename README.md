@@ -21,7 +21,7 @@ _Inspect and drive a running Flutter app from your AI assistant._
 
 ![View Screenshots](docs/view_screenshots.gif)
 
-> ![NOTICE]: ‼️WARNING‼️ I accidently merged new experimental version into main (4.0.0-dev.1) - this is untested version and may break - it contains many architectural changes. Please use older version - will try to fix quality of the 4.0.0 as fast as possible. I’m sorry about that incident - hopefuly to resolve it soon.
+> ![NOTICE]: Version 4 is currently a prerelease train. Use `4.0.0-dev.2` only if you are intentionally testing the new architecture; otherwise stay on the latest stable 3.x release until `4.0.0` is promoted.
 
 ## Get started in 4 steps
 
