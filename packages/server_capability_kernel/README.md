@@ -8,8 +8,8 @@ Pure Dart — no Flutter SDK or transport.
 
 ```yaml
 dependencies:
-  flutter_mcp_toolkit_capability_kernel: ^4.0.0-dev.2
-  flutter_mcp_toolkit_core: ^4.0.0-dev.2
+  flutter_mcp_toolkit_capability_kernel: ^4.0.0-dev.3
+  flutter_mcp_toolkit_core: ^4.0.0-dev.3
 ```
 
 ## Usage
@@ -29,8 +29,8 @@ Use `pubspec_overrides.yaml` in this directory (not published) to resolve `flutt
 | Requirement | Status |
 |-------------|--------|
 | `LICENSE`, `README.md`, `CHANGELOG.md` | Included |
-| Hosted deps only in `pubspec.yaml` | `flutter_mcp_toolkit_core: ^4.0.0-dev.2` |
-| Publish **after** `flutter_mcp_toolkit_core` `4.0.0-dev.2` is on pub.dev | Required for consumers |
+| Hosted deps only in `pubspec.yaml` | `flutter_mcp_toolkit_core: ^4.0.0-dev.3` |
+| Publish **after** `flutter_mcp_toolkit_core` `4.0.0-dev.3` is on pub.dev | Required for consumers |
 | `dart pub publish --dry-run` | Run before release |
 
 ## License

@@ -3,7 +3,7 @@ description: >-
   Pure-Dart shared types for Flutter MCP Toolkit — command envelopes, result
   types, error codes, connection overrides, and capability models. No Flutter or
   transport dependencies.
-version: 4.0.0-dev.2
+version: 4.0.0-dev.3
 license: MIT
 repository: https://github.com/Arenukvern/mcp_flutter/tree/main/packages/core
 issue_tracker: https://github.com/Arenukvern/mcp_flutter/issues

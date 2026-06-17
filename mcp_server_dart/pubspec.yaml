@@ -1,5 +1,5 @@
 name: flutter_mcp_toolkit_server
-version: 4.0.0-dev.2
+version: 4.0.0-dev.3
 description: >-
   An MCP server for Flutter Inspector, exposing Flutter debugging and inspection
   tools to AI models via Dart VM service.
@@ -17,9 +17,9 @@ dependencies:
   dart_mcp: ^0.5.0
   dtd: ^4.0.0
   equatable: ^2.0.8
-  flutter_mcp_toolkit_capability_core: ^4.0.0-dev.2
-  flutter_mcp_toolkit_capability_kernel: ^4.0.0-dev.2
-  flutter_mcp_toolkit_core: ^4.0.0-dev.2
+  flutter_mcp_toolkit_capability_core: ^4.0.0-dev.3
+  flutter_mcp_toolkit_capability_kernel: ^4.0.0-dev.3
+  flutter_mcp_toolkit_core: ^4.0.0-dev.3
   from_json_to_json: ^0.5.0
   intentcall_core: ^0.1.0
   intentcall_mcp: ^0.1.0
