@@ -17,8 +17,8 @@ usage() {
 Usage: tool/release/sync_version.sh [--version <semver>]
 
 Synchronizes package versions, same-train dependency constraints, runtime
-metadata, plugin manifests, marketplace metadata, release-please manifest, and
-README dependency snippets from root VERSION.
+metadata, plugin manifests, marketplace metadata, release-please manifest,
+README dependency snippets, and package changelog entries from root VERSION.
 USAGE
 }
 
@@ -111,6 +111,48 @@ for file in "${same_train_readme_files[@]}"; do
     -e 'BEGIN { $v = $ENV{FMT_RELEASE_VERSION} } s/(`flutter_mcp_toolkit_core` `)[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?(`)/$1$v$2/g; s/(kernel \+ core `\^?)[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?(`)/$1$v$2/g; s/(kernel and core `)[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?(`)/$1$v$2/g;' \
     "$file"
 done
+
+export FMT_RELEASE_DATE="${FMT_RELEASE_DATE:-$(date -u +%F)}"
+ruby <<'RUBY'
+version = ENV.fetch('FMT_RELEASE_VERSION')
+date = ENV.fetch('FMT_RELEASE_DATE')
+
+entries = [
+  [
+    'packages/core/CHANGELOG.md',
+    "## [#{version}] - #{date}\n\n### Changed\n\n- Align package version with the Flutter MCP Toolkit prerelease train.\n\n",
+  ],
+  [
+    'packages/server_capability_kernel/CHANGELOG.md',
+    "## [#{version}] - #{date}\n\n### Changed\n\n- Align package version and hosted sibling dependency constraints with the Flutter MCP Toolkit prerelease train.\n\n",
+  ],
+  [
+    'packages/server_capability_core/CHANGELOG.md',
+    "## [#{version}] - #{date}\n\n### Changed\n\n- Align package version and hosted sibling dependency constraints with the Flutter MCP Toolkit prerelease train.\n\n",
+  ],
+  [
+    'mcp_toolkit/CHANGELOG.md',
+    "# #{version}\n\n- Align package version and hosted sibling dependency constraints with the Flutter MCP Toolkit prerelease train.\n\n",
+  ],
+]
+
+entries.each do |path, entry|
+  next unless File.exist?(path)
+  content = File.read(path)
+  next if content.include?(version)
+
+  updated =
+    if path == 'mcp_toolkit/CHANGELOG.md'
+      entry + content
+    elsif content.match?(/\n## \[(?!Unreleased\])/)
+      content.sub(/\n## \[(?!Unreleased\])/, "\n#{entry}## [")
+    else
+      content.rstrip + "\n\n" + entry
+    end
+
+  File.write(path, updated)
+end
+RUBY
 
 perl -0pi \
   -e "s{const kFlutterMcpVersion = '[^']+';}{const kFlutterMcpVersion = '$version';};" \

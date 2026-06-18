@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+## [4.0.0-dev.3] - 2026-06-18
+
+### Changed
+
+- Align package version with the Flutter MCP Toolkit prerelease train.
+
 ## [4.0.0-dev.1] - 2026-06-06
 
 ### Changed
