@@ -3,6 +3,13 @@
 <!-- markdownlint-disable MD052 -->
 <!-- Keep a Changelog version headings use [3.0.1] brackets; MD052 treats them as reference links. -->
 
+## [4.0.0-dev.4](https://github.com/Arenukvern/mcp_flutter/compare/v4.0.0-dev.3...v4.0.0-dev.4) (2026-06-18)
+
+
+### Bug Fixes
+
+* **release:** sync package changelogs for pub publish ([6dfca08](https://github.com/Arenukvern/mcp_flutter/commit/6dfca082e1b1472d2913887c93fb54b908eb9e6b))
+
 ## [4.0.0-dev.3](https://github.com/Arenukvern/mcp_flutter/compare/v4.0.0-dev.2...v4.0.0-dev.3) (2026-06-17)
 
 

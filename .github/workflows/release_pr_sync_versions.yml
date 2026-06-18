@@ -61,9 +61,13 @@ jobs:
             plugin/.claude-plugin/plugin.json \
             mcp_server_dart/pubspec.yaml \
             mcp_toolkit/pubspec.yaml \
+            mcp_toolkit/CHANGELOG.md \
             packages/core/pubspec.yaml \
+            packages/core/CHANGELOG.md \
             packages/server_capability_kernel/pubspec.yaml \
+            packages/server_capability_kernel/CHANGELOG.md \
             packages/server_capability_core/pubspec.yaml \
+            packages/server_capability_core/CHANGELOG.md \
             packages/core/README.md \
             packages/server_capability_kernel/README.md \
             packages/server_capability_core/README.md \
