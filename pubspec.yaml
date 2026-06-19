@@ -7,4 +7,5 @@ workspace:
   - packages/core
   - packages/server_capability_kernel
   - packages/server_capability_core
+  - mcp_toolkit
   - mcp_server_dart
