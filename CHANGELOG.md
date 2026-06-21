@@ -3,6 +3,13 @@
 <!-- markdownlint-disable MD052 -->
 <!-- Keep a Changelog version headings use [3.0.1] brackets; MD052 treats them as reference links. -->
 
+## [4.0.0-dev.5](https://github.com/Arenukvern/mcp_flutter/compare/v4.0.0-dev.4...v4.0.0-dev.5) (2026-06-21)
+
+
+### Bug Fixes
+
+* align release checks with Flutter SDK pins ([175ca58](https://github.com/Arenukvern/mcp_flutter/commit/175ca5875591eca6238f2326bd3a450338827f99))
+
 ## [4.0.0-dev.4](https://github.com/Arenukvern/mcp_flutter/compare/v4.0.0-dev.3...v4.0.0-dev.4) (2026-06-18)
 
 
