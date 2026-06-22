@@ -4,6 +4,12 @@
 
 ### Changed
 
+## [4.0.0-dev.5] - 2026-06-21
+
+### Changed
+
+- Align package version and hosted sibling dependency constraints with the Flutter MCP Toolkit prerelease train.
+
 ## [4.0.0-dev.4] - 2026-06-18
 
 ### Changed

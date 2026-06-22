@@ -3,7 +3,7 @@ description: >-
   Core Flutter MCP capability (`fmt`) — VM inspection, interaction, navigation,
   diagnostics, and hot-reload coordination. Server-side Dart; no Flutter SDK
   dependency.
-version: 4.0.0-dev.4
+version: 4.0.0-dev.5
 license: MIT
 repository: >-
   https://github.com/Arenukvern/mcp_flutter/tree/main/packages/server_capability_core
@@ -22,8 +22,8 @@ resolution: workspace
 dependencies:
   collection: ^1.19.1
   dart_mcp: ^0.5.0
-  flutter_mcp_toolkit_capability_kernel: ^4.0.0-dev.4
-  flutter_mcp_toolkit_core: ^4.0.0-dev.4
+  flutter_mcp_toolkit_capability_kernel: ^4.0.0-dev.5
+  flutter_mcp_toolkit_core: ^4.0.0-dev.5
   from_json_to_json: ^0.5.0
   intentcall_codegen: ^0.1.0
   intentcall_core: ^0.1.0
