@@ -107,6 +107,7 @@ void main() {
 
     setUp(() {
       server = _createDiscoveryTestServer();
+      // ignore: invalid_use_of_protected_member
       server.initializeDynamicRegistry(mcpToolkitServer: server);
       registry = server.dynamicRegistryForTesting!;
       discovery = RegistryDiscoveryService(

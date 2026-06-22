@@ -196,7 +196,11 @@ final class MacOsDesktopWindowScreenshotService
       return null;
     }
 
-    await focus(device: device, targetPid: targetPid, cacheDir: cacheDir);
+    final focusPayload = await focus(
+      device: device,
+      targetPid: targetPid,
+      cacheDir: cacheDir,
+    );
 
     final payload = await _runHelper(
       command: 'capture',
@@ -207,10 +211,19 @@ final class MacOsDesktopWindowScreenshotService
       ],
     );
     if (payload['ok'] != true) {
+      final helperDetails = _asObject(payload['details']);
       throw DesktopWindowCaptureException(
         message:
             'macOS desktop window capture failed: ${payload['error'] ?? payload}',
-        details: _asObject(payload['details']),
+        details: <String, Object?>{
+          ...helperDetails,
+          'helperError': payload['error'],
+          'helperPayload': payload,
+          'focus': focusPayload,
+          'candidates': appNames,
+          'targetPid': ?targetPid,
+          'device': device,
+        },
       );
     }
 
@@ -247,8 +260,24 @@ final class MacOsDesktopWindowScreenshotService
       ...trailing,
     ]);
     if (result.exitCode != 0) {
-      throw Exception(
-        'macOS visual capture helper failed: ${result.stderr}'.trim(),
+      final payload = _tryParsePayload('${result.stdout}');
+      if (payload != null) {
+        return <String, Object?>{
+          ...payload,
+          'helperExitCode': result.exitCode,
+          if ('${result.stderr}'.trim().isNotEmpty)
+            'helperStderr': '${result.stderr}'.trim(),
+        };
+      }
+      throw DesktopWindowCaptureException(
+        message: 'macOS visual capture helper failed: ${result.stderr}'.trim(),
+        details: <String, Object?>{
+          'command': command,
+          'arguments': trailing,
+          'exitCode': result.exitCode,
+          'stderr': '${result.stderr}',
+          'stdout': '${result.stdout}',
+        },
       );
     }
     return _parsePayload('${result.stdout}');
@@ -429,6 +458,14 @@ Map<String, Object?> _parsePayload(final String stdoutText) {
   }
   final decoded = jsonDecode(trimmed);
   return _asObject(decoded);
+}
+
+Map<String, Object?>? _tryParsePayload(final String stdoutText) {
+  try {
+    return _parsePayload(stdoutText);
+  } on FormatException {
+    return null;
+  }
 }
 
 Map<String, Object?> _asObject(final Object? value) {

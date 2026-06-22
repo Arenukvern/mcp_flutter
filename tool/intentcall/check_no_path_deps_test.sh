@@ -49,4 +49,34 @@ expect_fails_for \
     path: ../third_party/intentcall_schema" \
   "path: .*intentcall"
 
+mkdir -p "${tmp}/mcp_server_dart" "${tmp}/packages"
+cat > "${tmp}/mcp_toolkit/pubspec.yaml" <<YAML
+name: fixture
+dependencies:
+  intentcall_core: ^0.1.0
+YAML
+
+cat > "${tmp}/pubspec.yaml" <<YAML
+name: fixture_root
+dependency_overrides:
+  intentcall_session:
+    path: ../agentkit/packages/intentcall_session
+YAML
+
+if ! bash "${tmp}/tool/intentcall/check_no_path_deps.sh" >/dev/null 2>&1; then
+  echo "expected default mode to allow root local overrides" >&2
+  exit 1
+fi
+
+if bash "${tmp}/tool/intentcall/check_no_path_deps.sh" --strict-root >/dev/null 2>"${tmp}/strict.err"; then
+  echo "expected strict-root mode to fail root local overrides" >&2
+  exit 1
+fi
+
+if ! grep -q "root path override still present" "${tmp}/strict.err"; then
+  echo "expected strict-root error to mention root path override" >&2
+  cat "${tmp}/strict.err" >&2
+  exit 1
+fi
+
 echo "OK: check_no_path_deps rejects stale hosted-cutover path dependencies"

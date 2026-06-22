@@ -15,7 +15,9 @@ import 'package:flutter_mcp_toolkit_server/src/cli/init_intentcall_platform_comm
 import 'package:flutter_mcp_toolkit_server/src/cli/init_mode.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/init_target.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/migrate_agent_entries_command.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/session/flutter_session_connector.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/webmcp_command.dart';
+import 'package:intentcall_session/intentcall_session.dart';
 
 Future<void> main(final List<String> args) async {
   late final ArgResults parsed;
@@ -94,8 +96,8 @@ Future<void> main(final List<String> args) async {
     initialStickyEndpointUri: bootstrapStickyEndpoint,
   );
 
-  final sessionManager = SessionManager(
-    connectionContext: connectionContext,
+  final sessionManager = IntentSessionManager(
+    connector: FlutterSessionConnector(connectionContext: connectionContext),
     stateStore: stateStore,
   );
   await sessionManager.load();
@@ -130,10 +132,12 @@ Future<void> main(final List<String> args) async {
   );
 
   final catalog = CommandCatalog.instance;
-  final snapshotStore = SnapshotStore(snapshotsDir: '$stateRoot/snapshots');
+  final commandSnapshots = CommandSnapshotService(
+    snapshotsDir: '$stateRoot/snapshots',
+  );
   final bundleBuilder = BundleBuilder(
     bundlesDir: '$stateRoot/bundles',
-    snapshotStore: snapshotStore,
+    snapshotStore: commandSnapshots.snapshotStore,
     stateFilePath: statePath,
   );
   final doctorRunner = DoctorRunner(
@@ -151,7 +155,7 @@ Future<void> main(final List<String> args) async {
       executor: executor,
       sessionManager: sessionManager,
       catalog: catalog,
-      snapshotStore: snapshotStore,
+      commandSnapshots: commandSnapshots,
       bundleBuilder: bundleBuilder,
       configuration: configuration,
     );
@@ -167,7 +171,7 @@ Future<void> main(final List<String> args) async {
     catalog: catalog,
     configuration: configuration,
     sessionManager: sessionManager,
-    snapshotStore: snapshotStore,
+    commandSnapshots: commandSnapshots,
     bundleBuilder: bundleBuilder,
     doctorRunner: doctorRunner,
   );
@@ -195,8 +199,8 @@ Future<CoreResult> _runOneShot({
   required final DefaultCoreCommandExecutor executor,
   required final CommandCatalog catalog,
   required final CoreRuntimeConfiguration configuration,
-  required final SessionManager sessionManager,
-  required final SnapshotStore snapshotStore,
+  required final IntentSessionManager sessionManager,
+  required final CommandSnapshotService commandSnapshots,
   required final BundleBuilder bundleBuilder,
   required final DoctorRunner doctorRunner,
 }) async {
@@ -285,7 +289,7 @@ Future<CoreResult> _runOneShot({
 
         return _runSnapshotCommand(
           snapshotCommand: snapshotCommand,
-          snapshotStore: snapshotStore,
+          commandSnapshots: commandSnapshots,
           executor: executor,
           catalog: catalog,
         );
@@ -366,7 +370,7 @@ Future<CoreResult> _runBatchCommand({
   required final ArgResults command,
   required final DefaultCoreCommandExecutor executor,
   required final CommandCatalog catalog,
-  required final SessionManager sessionManager,
+  required final IntentSessionManager sessionManager,
 }) async {
   final steps = _parseBatchStepsJson(command.option('steps'));
   if (steps.isEmpty) {
@@ -434,7 +438,7 @@ Future<CoreResult> _runBatchCommand({
 
 Future<CoreResult> _runSnapshotCommand({
   required final ArgResults snapshotCommand,
-  required final SnapshotStore snapshotStore,
+  required final CommandSnapshotService commandSnapshots,
   required final DefaultCoreCommandExecutor executor,
   required final CommandCatalog catalog,
 }) async {
@@ -451,7 +455,7 @@ Future<CoreResult> _runSnapshotCommand({
       final args = _parseArgumentsJson(snapshotCommand.option('args'));
       final writeOptions = _safeWriteOptionsFrom(snapshotCommand);
       try {
-        final snapshot = await snapshotStore.createSnapshot(
+        final snapshot = await commandSnapshots.createSnapshot(
           id: name,
           executor: executor,
           catalog: catalog,
@@ -486,7 +490,10 @@ Future<CoreResult> _runSnapshotCommand({
       }
 
       try {
-        final diff = await snapshotStore.diffSnapshots(fromId: from, toId: to);
+        final diff = await commandSnapshots.diffSnapshots(
+          fromId: from,
+          toId: to,
+        );
         return CoreResult.success(data: diff);
         // ignore: avoid_catching_errors
       } on ArgumentError catch (e) {
@@ -834,6 +841,20 @@ Future<CoreResult> _runValidateRuntime({
     flutterLayerFallback: 'capture_ui_snapshot_after_reload_flutter_layer',
   );
   final captureFallbackUsed = _validateRuntimeUsedFlutterLayerFallback(steps);
+  final primaryCaptureFailed = _stepFailed(steps, 'capture_ui_snapshot');
+  final postReloadPrimaryCaptureFailed = _stepFailed(
+    steps,
+    'capture_ui_snapshot_after_reload',
+  );
+  final fallbackCaptureSucceeded =
+      captureFallbackUsed &&
+      (_stepOk(steps, 'capture_ui_snapshot_flutter_layer') ||
+          _stepOk(steps, 'capture_ui_snapshot_after_reload_flutter_layer'));
+  final verdict = fallbackCaptureSucceeded
+      ? 'pass_with_fallback'
+      : failedSteps == 0
+      ? 'pass'
+      : 'pass_with_recoverable_failures';
   return CoreResult.success(
     data: {
       'doctor': doctorData,
@@ -850,7 +871,11 @@ Future<CoreResult> _runValidateRuntime({
         'errorsCount': errorsCount,
         'visualCaptureCommand': 'capture_ui_snapshot',
         'requiredExtensions': requiredSorted,
+        'verdict': verdict,
         'captureFallbackUsed': captureFallbackUsed,
+        'primaryCaptureFailed': primaryCaptureFailed,
+        'postReloadPrimaryCaptureFailed': postReloadPrimaryCaptureFailed,
+        'fallbackCaptureSucceeded': fallbackCaptureSucceeded,
         'capturePlatformViewsDetected': capturePlatformViewsDetected,
         'captureFocusAttempted': captureFocusAttempted,
         'captureBackend':
@@ -873,7 +898,7 @@ Future<CoreResult> _runPermissionsCommand({
   required final ArgResults command,
   required final CoreRuntimeConfiguration configuration,
   required final DefaultCoreCommandExecutor executor,
-  required final SessionManager sessionManager,
+  required final IntentSessionManager sessionManager,
 }) async {
   final actionCommand = command.command;
   if (actionCommand == null) {
@@ -930,7 +955,7 @@ Future<PersistedState> _readBootstrapState(final StateStore store) async {
 Future<CoreResult?> _preconnectIfNeeded({
   required final ArgResults parsed,
   required final CoreCommand command,
-  required final SessionManager sessionManager,
+  required final IntentSessionManager sessionManager,
   required final DefaultCoreCommandExecutor executor,
   final ConnectCommand? explicitConnectionOverride,
 }) => preconnectForExecution(
@@ -945,7 +970,7 @@ Future<CoreResult> _executeExecCommand({
   required final ArgResults parsed,
   required final DefaultCoreCommandExecutor executor,
   required final CommandCatalog catalog,
-  required final SessionManager sessionManager,
+  required final IntentSessionManager sessionManager,
   required final String name,
   required final Map<String, Object?> rawArgs,
 }) async {
@@ -1652,6 +1677,12 @@ bool _validateRuntimeUsedFlutterLayerFallback(
   }
   return false;
 }
+
+bool _stepFailed(final List<Map<String, Object?>> steps, final String name) =>
+    steps.any((final step) => step['name'] == name && step['ok'] != true);
+
+bool _stepOk(final List<Map<String, Object?>> steps, final String name) =>
+    steps.any((final step) => step['name'] == name && step['ok'] == true);
 
 bool _shouldRetryPostReloadCapture(final CoreResult result) {
   final code = result.error?.code;

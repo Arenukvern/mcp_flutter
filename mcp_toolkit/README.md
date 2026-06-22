@@ -57,7 +57,7 @@ await MCPToolkitBinding.instance.bootstrapFlutter(
 ```
 
 Or use **`mcpToolkitTool`** / **`mcpToolkitResource`** when you already have
-`MCPToolDefinition` + `MCPCallResult` handlers (see [example/fibonacci_tool_example.dart](example/fibonacci_tool_example.dart)).
+`MCPToolDefinition` + `MCPCallResult` handlers (see [example/fibonacci_tool_example.dart](example/fibonacci_tool_example.dart)). These helpers are compatibility bridges; new reusable registry, session, and result behavior belongs in IntentCall packages.
 
 App-side permission bridging is separate and opt-in:
 

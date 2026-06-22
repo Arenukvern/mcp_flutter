@@ -9,3 +9,11 @@ workspace:
   - packages/server_capability_core
   - mcp_toolkit
   - mcp_server_dart
+
+dependency_overrides:
+  intentcall_core:
+    path: ../agentkit/packages/intentcall_core
+  intentcall_mcp:
+    path: ../agentkit/packages/intentcall_mcp
+  intentcall_session:
+    path: ../agentkit/packages/intentcall_session

@@ -345,20 +345,18 @@ packages:
     source: hosted
     version: "0.1.0"
   intentcall_core:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
-      name: intentcall_core
-      sha256: "96190700c2e3863d15e5d8e947bdaa3ba636d5fd709807dd05bd2ca195df578e"
-      url: "https://pub.dev"
-    source: hosted
+      path: "../agentkit/packages/intentcall_core"
+      relative: true
+    source: path
     version: "0.1.0"
   intentcall_mcp:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
-      name: intentcall_mcp
-      sha256: bb5228eb857c2108054df5e9a4a5930ebabc22977dd1c7e8eb27116d51cfd3f9
-      url: "https://pub.dev"
-    source: hosted
+      path: "../agentkit/packages/intentcall_mcp"
+      relative: true
+    source: path
     version: "0.1.0"
   intentcall_platform:
     dependency: transitive
@@ -375,6 +373,13 @@ packages:
       sha256: "944f6827863115c94d5244e5649807124cd0d36d2a871c95b815da93c908825a"
       url: "https://pub.dev"
     source: hosted
+    version: "0.1.0"
+  intentcall_session:
+    dependency: "direct overridden"
+    description:
+      path: "../agentkit/packages/intentcall_session"
+      relative: true
+    source: path
     version: "0.1.0"
   io:
     dependency: transitive

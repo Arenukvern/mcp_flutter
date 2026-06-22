@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_mcp_toolkit_server/flutter_mcp_core.dart';
+import 'package:intentcall_session/intentcall_session.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -10,7 +11,7 @@ void main() {
     late String snapshotsDir;
     late String bundlesDir;
     late String stateFilePath;
-    late SnapshotStore snapshotStore;
+    late IntentSnapshotStore snapshotStore;
     late BundleBuilder bundleBuilder;
 
     setUp(() {
@@ -18,7 +19,7 @@ void main() {
       snapshotsDir = '${tempDir.path}/snapshots';
       bundlesDir = '${tempDir.path}/bundles';
       stateFilePath = '${tempDir.path}/state.json';
-      snapshotStore = SnapshotStore(snapshotsDir: snapshotsDir);
+      snapshotStore = IntentSnapshotStore(snapshotsDir: snapshotsDir);
       bundleBuilder = BundleBuilder(
         bundlesDir: bundlesDir,
         snapshotStore: snapshotStore,

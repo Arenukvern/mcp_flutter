@@ -46,6 +46,19 @@ mixin GestureInteractionService {
     if (node == null) {
       return _refNotFound(ref);
     }
+    final visibility = SemanticSnapshotService.visibilityForRef(ref);
+    if (visibility['centerInViewport'] != true) {
+      return <String, Object?>{
+        'success': false,
+        'ref': ref,
+        'action': 'tap',
+        'error': 'target_outside_viewport',
+        'message':
+            'Target center is outside the visible viewport. Reveal or scroll '
+            'the target before tapping.',
+        ...visibility,
+      };
+    }
 
     if (node.getSemanticsData().hasAction(SemanticsAction.tap)) {
       final owner = SemanticSnapshotService.semanticsOwner;
@@ -703,25 +716,17 @@ mixin GestureInteractionService {
       return _refNotFound(ref);
     }
 
-    // Register the device first — MouseTracker only tracks hover events from
-    // pointers that announced themselves via PointerAddedEvent; otherwise the
-    // hover may be filtered out and MouseRegion.onEnter never fires.
-    // Use a fresh pointer id and end with PointerRemovedEvent so repeated
-    // hover calls do not violate MouseTracker's Added-after-Removed invariant.
+    // Drive hover as position changes only. Flutter's MouseTracker keeps
+    // per-device state and asserts if a PointerAddedEvent is sent without a
+    // preceding PointerRemovedEvent for that device; in live apps a synthetic
+    // add/remove sequence can race existing mouse state. Hover events are
+    // enough to update the tracked position and fire MouseRegion transitions.
     final pointer = _nextPointerId++;
     final binding = GestureBinding.instance;
     const prime = ui.Offset(-100, -100);
     binding
-      ..handlePointerEvent(
-        PointerAddedEvent(
-          pointer: pointer,
-          position: prime,
-          kind: PointerDeviceKind.mouse,
-          timeStamp: _now(),
-        ),
-      )
-      // Prime: hover off-screen first so the target hover is a clean
-      // position change.
+      // Prime: hover off-screen first so the target hover is a clean position
+      // change.
       ..handlePointerEvent(
         PointerHoverEvent(
           pointer: pointer,
@@ -732,14 +737,6 @@ mixin GestureInteractionService {
       )
       ..handlePointerEvent(
         PointerHoverEvent(
-          pointer: pointer,
-          position: centre,
-          kind: PointerDeviceKind.mouse,
-          timeStamp: _now(),
-        ),
-      )
-      ..handlePointerEvent(
-        PointerRemovedEvent(
           pointer: pointer,
           position: centre,
           kind: PointerDeviceKind.mouse,

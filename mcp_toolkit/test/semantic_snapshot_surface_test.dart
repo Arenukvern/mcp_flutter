@@ -167,7 +167,6 @@ void main() {
       final revealFuture = RevealSearchService.revealSearch(
         query: 'greeting_input_field',
         matchBy: 'identifier',
-        direction: 'down',
         maxAttempts: 6,
         distance: 160,
       );

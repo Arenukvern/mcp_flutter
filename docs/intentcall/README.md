@@ -18,11 +18,62 @@ Keep IntentCall product architecture out of this repository. If a doc needs to e
 
 Keep `mcp_flutter` docs focused on consumer integration, migration, regression proof, and dogfood behavior.
 
+## Runtime sessions
+
+Runtime session ownership lives in IntentCall, not in this consumer repo.
+Downstream debug tools that need a running app session should depend on
+`intentcall_session` for session state/lifecycle and on `intentcall_core` /
+`intentcall_schema` for registry, invocation, result, artifact, and event
+semantics.
+
+The reusable session surface is:
+
+- `SessionState`, `PersistedState`, `StateStore`, `StateLockManager`, and
+  `SafeFileWriter`
+- `IntentSessionManager` backed by an `IntentSessionConnector`
+- `IntentSessionExecutor` for invoking an `AgentRegistry` inside a session
+- `IntentSnapshotStore` for generic JSON snapshot persistence and diffing
+- `AgentResult` / `AgentArtifact` from IntentCall
+
+Do not import `mcp_server_dart/src/cli/session/*` or other private server
+internals from downstream repos. The hard public boundary is
+`intentcall_session` plus the IntentCall registry/result packages; Flutter MCP
+is the adapter proving those pieces against a real Flutter app.
+
+Flutter MCP remains one runtime adapter. It keeps VM service discovery, DTD,
+Flutter extension calls, screenshots, widget inspection, MCP projection, and CLI
+daemon wiring in `mcp_server_dart`. Its `FlutterSessionConnector` adapts
+`ConnectionContext` to `IntentSessionConnector`.
+
+The word "broker" should describe product composition, not a new facade layer.
+For example, a visual-debug broker can compose `IntentSessionManager`,
+`IntentSessionExecutor`, `AgentRegistry`, `intentcall_mcp`, and its artifact
+storage. It should not re-export those packages or duplicate the command
+executor under a new name.
+
+Dynamic registry is also IntentCall responsibility. If registry ownership,
+catalog snapshots, invocation semantics, durable permissions, or transport
+publication rules need to change, update `/Users/anton/mcp/agentkit` and dogfood
+the hosted or overridden package here.
+
+Flutter MCP still owns Flutter-specific dynamic discovery: reading app-posted
+tools/resources from the VM service, registering Flutter extension calls, and
+bridging screenshots/widget inspection. IntentCall owns the reusable registry
+events and MCP publication behavior, including query-tolerant resource reads and
+resource-template de-duplication.
+
+Flutter MCP also owns command snapshot production. The reusable
+`IntentSnapshotStore` persists and diffs JSON payloads; `CommandSnapshotService`
+in `mcp_server_dart` builds those payloads by executing the Flutter MCP command
+catalog through `DefaultCoreCommandExecutor`.
+
 ## Normal consumer state
 
 Committed `mcp_flutter` state should use hosted `intentcall_*` dependencies. Do not commit normal consumer pubspecs with `agentkit/packages`, `intentcall/packages`, or `path: .*intentcall` dependencies.
 
-Use local path overrides only while deliberately developing against the sibling IntentCall checkout, then remove them before committing consumer integration changes.
+Use root `dependency_overrides` only while deliberately developing against the
+sibling IntentCall checkout, then remove them before publishing consumer
+integration changes.
 
 ## Consumer proof gates
 
@@ -46,7 +97,7 @@ The durable proof should live in checks, CI, Steward scenarios, tests, and dated
 | Symptom | Start here |
 |---------|------------|
 | `MCPCallEntry` compile errors or migration work | [MCPCallEntry to AgentCallEntry migration](../start_here/migration_mcp_call_entry_to_agent_call_entry.md) |
-| Hosted dependency or local path override drift | `tool/intentcall/check_no_path_deps.sh`, then this guide |
+| Hosted dependency or local path override drift | `tool/intentcall/check_no_path_deps.sh`; use `--strict-root` before release/cutover |
 | Platform hooks, WebMCP, deep links, app dynamic tools | [flutter_test_app/INTENTCALL_PLATFORM.md](../../flutter_test_app/INTENTCALL_PLATFORM.md) |
 | Schema, `fmt_*`, CLI `exec`, or app-dynamic parity debugging | `plugin/skills/flutter-mcp-boundary-audit/` |
 | Unsure whether to fix `mcp_flutter` or IntentCall upstream | Fix consumer wiring here; fix architecture/package behavior in `/Users/anton/mcp/agentkit` |
@@ -58,7 +109,8 @@ For future hosted dependency bumps:
 1. Confirm the intended `intentcall_*` versions exist on pub.dev.
 2. Update consumer constraints in `mcp_toolkit`, `mcp_server_dart`, capability packages, and `flutter_test_app` as needed.
 3. Remove temporary local path overrides.
-4. Run the consumer proof gates above.
-5. Investigate package behavior regressions in `/Users/anton/mcp/agentkit`, not in this consumer repo.
+4. Run `tool/intentcall/check_no_path_deps.sh --strict-root`.
+5. Run the consumer proof gates above.
+6. Investigate package behavior regressions in `/Users/anton/mcp/agentkit`, not in this consumer repo.
 
 Historical in-repo IntentCall rollout plans, specs, trackers, closure reports, hosted cutover notes, and checklist docs were removed after durable extraction. Git history is the forensic archive.

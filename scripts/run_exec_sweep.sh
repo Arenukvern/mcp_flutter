@@ -117,6 +117,90 @@ raise SystemExit(1)
 PY
 }
 
+capture_snapshot() {
+  local label="$1"
+  local outfile="${outdir}/${label}.json"
+  if "${toolkit[@]}" exec --name semantic_snapshot --args '{}' >"${outfile}" 2>"${outdir}/${label}.stderr" && json_ok "${outfile}"; then
+    printf '%s\n' "${outfile}"
+    return 0
+  fi
+  return 1
+}
+
+write_ref_args_for_identifier() {
+  local snap_file="$1"
+  local identifier="$2"
+  local outfile="$3"
+  local require_visible="${4:-true}"
+  python3 - "${snap_file}" "${identifier}" "${outfile}" "${require_visible}" <<'PY'
+import json, sys
+d = json.load(open(sys.argv[1]))
+want = sys.argv[2]
+out = sys.argv[3]
+require_visible = sys.argv[4] == "true"
+sid = d.get("data", {}).get("snapshot_id")
+for node in d.get("data", {}).get("nodes", []):
+    if node.get("identifier") != want or not node.get("ref"):
+        continue
+    if require_visible and node.get("centerInViewport") is not True:
+        raise SystemExit(
+            f"{want} found but center is outside viewport: {node.get('bounds')}"
+        )
+    json.dump({"ref": node["ref"], "snapshotId": sid}, open(out, "w"))
+    raise SystemExit(0)
+raise SystemExit(f"{want} not found")
+PY
+}
+
+write_ref_args_for_type() {
+  local snap_file="$1"
+  local type_name="$2"
+  local outfile="$3"
+  python3 - "${snap_file}" "${type_name}" "${outfile}" <<'PY'
+import json, sys
+d = json.load(open(sys.argv[1]))
+want = sys.argv[2]
+out = sys.argv[3]
+sid = d.get("data", {}).get("snapshot_id")
+for node in d.get("data", {}).get("nodes", []):
+    if node.get("type") == want and node.get("ref"):
+        json.dump({"ref": node["ref"], "snapshotId": sid}, open(out, "w"))
+        raise SystemExit(0)
+raise SystemExit(f"{want} not found")
+PY
+}
+
+ensure_visible_identifier_args() {
+  local identifier="$1"
+  local outfile="$2"
+  local direction="${3:-down}"
+  local snap_file
+  for attempt in 0 1 2 3 4 5 6; do
+    snap_file="$(capture_snapshot "semantic_${identifier}_${attempt}")" || return 1
+    if write_ref_args_for_identifier "${snap_file}" "${identifier}" "${outfile}" true 2>"${outdir}/${identifier}_${attempt}.visibility"; then
+      return 0
+    fi
+    "${toolkit[@]}" exec --name scroll --args "{\"direction\":\"${direction}\",\"distance\":420}" >"${outdir}/scroll_to_${identifier}_${attempt}.json" 2>"${outdir}/scroll_to_${identifier}_${attempt}.stderr" || true
+  done
+  return 1
+}
+
+args_ref() {
+  python3 - "$1" <<'PY'
+import json, sys
+d = json.load(open(sys.argv[1]))
+print(d["ref"])
+PY
+}
+
+args_snapshot_id() {
+  python3 - "$1" <<'PY'
+import json, sys
+d = json.load(open(sys.argv[1]))
+print(d["snapshotId"])
+PY
+}
+
 printf '[exec-sweep] platform=%s ws=%s out=%s\n' "${platform}" "${ws_uri}" "${outdir}"
 
 # Discovery / VM
@@ -140,40 +224,55 @@ fi
 
 # Semantic + interaction chain
 run_tool semantic_snapshot '{}' || true
-snap="$(json_field "${outdir}/semantic_snapshot.json" data.snapshot_id)"
-increment_ref="$(ref_for_identifier "${outdir}/semantic_snapshot.json" stateful_counter_increment_button || echo s_9)"
-scrollable_ref="$(ref_for_identifier "${outdir}/semantic_snapshot.json" showcase_scrollable || true)"
-if [[ -z "${scrollable_ref}" ]]; then
-  scrollable_ref="$(python3 - "${outdir}/semantic_snapshot.json" <<'PY'
-import json, sys
-d = json.load(open(sys.argv[1]))
-for node in d.get("data", {}).get("nodes", []):
-    if node.get("type") == "scrollable" and node.get("ref"):
-        print(node["ref"])
-        raise SystemExit(0)
-print("s_21")
-PY
-)"
-fi
 
 run_tool reveal_search '{"query":"greeting_input_field","matchBy":"identifier","direction":"down","maxAttempts":4,"distance":220}' || true
 reveal_ref="$(json_field "${outdir}/reveal_search.json" data.ref)"
 reveal_snap="$(json_field "${outdir}/reveal_search.json" data.snapshotId)"
+reveal_visible="$(json_field "${outdir}/reveal_search.json" data.centerInViewport)"
 if [[ -z "${reveal_ref}" ]]; then
-  reveal_ref="$(ref_for_identifier "${outdir}/semantic_snapshot.json" greeting_input_field || true)"
-  reveal_snap="${snap}"
+  if ensure_visible_identifier_args greeting_input_field "${outdir}/greeting_args.json" down; then
+    reveal_ref="$(args_ref "${outdir}/greeting_args.json")"
+    reveal_snap="$(args_snapshot_id "${outdir}/greeting_args.json")"
+  fi
+elif [[ "${reveal_visible}" != "True" && "${reveal_visible}" != "true" ]]; then
+  if ensure_visible_identifier_args greeting_input_field "${outdir}/greeting_args.json" down; then
+    reveal_ref="$(args_ref "${outdir}/greeting_args.json")"
+    reveal_snap="$(args_snapshot_id "${outdir}/greeting_args.json")"
+  fi
 fi
 
 run_tool evaluate_dart_expression '{"expression":"AgentState.instance.greeting"}' || true
 if [[ -n "${reveal_ref}" && -n "${reveal_snap}" ]]; then
   run_tool enter_text "{\"ref\":\"${reveal_ref}\",\"snapshotId\":${reveal_snap},\"text\":\"exec sweep\"}" || true
 fi
-run_tool tap_widget "{\"ref\":\"${increment_ref}\",\"snapshotId\":${snap}}" || true
-run_tool scroll "{\"ref\":\"${scrollable_ref}\",\"direction\":\"down\",\"distance\":120,\"snapshotId\":${snap}}" || true
-run_tool long_press "{\"ref\":\"${increment_ref}\",\"snapshotId\":${snap}}" || true
-run_tool swipe "{\"ref\":\"${scrollable_ref}\",\"direction\":\"down\",\"distance\":80,\"snapshotId\":${snap}}" || true
-run_tool drag "{\"fromRef\":\"${increment_ref}\",\"toRef\":\"${increment_ref}\",\"snapshotId\":${snap}}" || true
-run_tool hover "{\"ref\":\"${increment_ref}\",\"snapshotId\":${snap}}" || true
+
+if ensure_visible_identifier_args stateful_counter_increment_button "${outdir}/increment_tap_args.json" up; then
+  run_tool tap_widget "$(cat "${outdir}/increment_tap_args.json")" || true
+fi
+if ensure_visible_identifier_args stateful_counter_increment_button "${outdir}/increment_long_press_args.json" up; then
+  run_tool long_press "$(cat "${outdir}/increment_long_press_args.json")" || true
+fi
+if ensure_visible_identifier_args stateful_counter_increment_button "${outdir}/increment_drag_args.json" up; then
+  increment_ref="$(args_ref "${outdir}/increment_drag_args.json")"
+  increment_snap="$(args_snapshot_id "${outdir}/increment_drag_args.json")"
+  run_tool drag "{\"fromRef\":\"${increment_ref}\",\"toRef\":\"${increment_ref}\",\"snapshotId\":${increment_snap}}" || true
+fi
+if ensure_visible_identifier_args stateful_counter_increment_button "${outdir}/increment_hover_args.json" up; then
+  run_tool hover "$(cat "${outdir}/increment_hover_args.json")" || true
+fi
+
+scroll_snap="$(capture_snapshot semantic_before_scroll || true)"
+if [[ -n "${scroll_snap}" ]] && write_ref_args_for_type "${scroll_snap}" scrollable "${outdir}/scrollable_args.json" 2>/dev/null; then
+  scroll_ref="$(args_ref "${outdir}/scrollable_args.json")"
+  scroll_snap_id="$(args_snapshot_id "${outdir}/scrollable_args.json")"
+  run_tool scroll "{\"ref\":\"${scroll_ref}\",\"direction\":\"down\",\"distance\":120,\"snapshotId\":${scroll_snap_id}}" || true
+fi
+scroll_snap="$(capture_snapshot semantic_before_swipe || true)"
+if [[ -n "${scroll_snap}" ]] && write_ref_args_for_type "${scroll_snap}" scrollable "${outdir}/scrollable_swipe_args.json" 2>/dev/null; then
+  scroll_ref="$(args_ref "${outdir}/scrollable_swipe_args.json")"
+  scroll_snap_id="$(args_snapshot_id "${outdir}/scrollable_swipe_args.json")"
+  run_tool swipe "{\"ref\":\"${scroll_ref}\",\"direction\":\"down\",\"distance\":80,\"snapshotId\":${scroll_snap_id}}" || true
+fi
 run_tool press_key '{"key":"Tab"}' || true
 run_tool get_recent_logs '{"count":10}' || true
 run_tool wait_for '{"predicate":{"kind":"time","ms":300},"timeoutMs":2000}' || true
@@ -181,18 +280,18 @@ run_tool wait_for '{"predicate":{"kind":"time","ms":300},"timeoutMs":2000}' || t
 # Navigation + dialog (requires showcaseNavigatorKey in flutter_test_app)
 run_tool navigate '{"action":"push","route":"/visual-reconstruct"}' || true
 run_tool navigate '{"action":"pop"}' || true
-dialog_ref="$(ref_for_identifier "${outdir}/semantic_snapshot.json" show_test_dialog_button || true)"
-if [[ -n "${dialog_ref}" ]]; then
-  run_tool tap_widget "{\"ref\":\"${dialog_ref}\",\"snapshotId\":${snap}}" || true
+if ensure_visible_identifier_args show_test_dialog_button "${outdir}/dialog_args.json" down; then
+  run_tool tap_widget "$(cat "${outdir}/dialog_args.json")" || true
   sleep 0.5
   run_tool handle_dialog '{"action":"dismiss"}' || true
 else
   run_tool handle_dialog '{"action":"dismiss"}' || true
 fi
 
-greeting_ref="$(ref_for_identifier "${outdir}/semantic_snapshot.json" greeting_input_field || true)"
-if [[ -n "${greeting_ref}" ]]; then
-  run_tool fill_form "{\"fields\":[{\"ref\":\"${greeting_ref}\",\"text\":\"fill form ok\"}],\"snapshotId\":${snap}}" || true
+if ensure_visible_identifier_args greeting_input_field "${outdir}/greeting_fill_args.json" up; then
+  greeting_ref="$(args_ref "${outdir}/greeting_fill_args.json")"
+  greeting_snap="$(args_snapshot_id "${outdir}/greeting_fill_args.json")"
+  run_tool fill_form "{\"fields\":[{\"ref\":\"${greeting_ref}\",\"text\":\"fill form ok\"}],\"snapshotId\":${greeting_snap}}" || true
 fi
 
 # Hot reload family (restart last — destructive)

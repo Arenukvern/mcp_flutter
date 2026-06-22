@@ -2,8 +2,6 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:intentcall_core/intentcall_core.dart';
-import 'package:intentcall_schema/intentcall_schema.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 
 void main() {
@@ -59,45 +57,45 @@ void main() {
     test(
       'raw VM service parameters with isolateId fail strict schema validation',
       () {
-      final binding = _CapturingToolkitBinding()..initialize();
-      final tool = mcpToolkitTool(
-        namespace: 'app',
-        definition: MCPToolDefinition(
-          name: 'inspect_number',
-          description: 'Inspect a number',
-          inputSchema: ObjectSchema(
-            properties: {'x': IntegerSchema()},
-            required: ['x'],
-            additionalProperties: false,
+        final binding = _CapturingToolkitBinding()..initialize();
+        final tool = mcpToolkitTool(
+          namespace: 'app',
+          definition: MCPToolDefinition(
+            name: 'inspect_number',
+            description: 'Inspect a number',
+            inputSchema: ObjectSchema(
+              properties: {'x': IntegerSchema()},
+              required: ['x'],
+              additionalProperties: false,
+            ),
           ),
-        ),
-        handler: (final request) =>
-            MCPCallResult(message: 'inspected', parameters: {'ok': true}),
-      );
-      final registration = tool.toRegistration();
-      final rawWireArgs = <String, Object?>{
-        'isolateId': 'isolates/4805254787721395',
-        'x': '120',
-      };
+          handler: (final request) =>
+              MCPCallResult(message: 'inspected', parameters: {'ok': true}),
+        );
+        final registration = tool.toRegistration();
+        final rawWireArgs = <String, Object?>{
+          'isolateId': 'isolates/4805254787721395',
+          'x': '120',
+        };
 
-      expect(
-        () => registration.validate(rawWireArgs),
-        throwsA(isA<AgentValidationException>()),
-        reason:
-            'VM transport isolateId must not reach strict MCP tool schemas',
-      );
+        expect(
+          () => registration.validate(rawWireArgs),
+          throwsA(isA<AgentValidationException>()),
+          reason:
+              'VM transport isolateId must not reach strict MCP tool schemas',
+        );
 
-      final strippedArgs = binding
-          .mcpToolkitArgumentsFromServiceExtensionParameters(<String, String>{
-            'isolateId': 'isolates/4805254787721395',
-            'x': '120',
-          });
-      final coercedArgs = coerceArgumentsForSchema(
-        registration.descriptor.inputSchema,
-        strippedArgs,
-      );
+        final strippedArgs = binding
+            .mcpToolkitArgumentsFromServiceExtensionParameters(<String, String>{
+              'isolateId': 'isolates/4805254787721395',
+              'x': '120',
+            });
+        final coercedArgs = coerceArgumentsForSchema(
+          registration.descriptor.inputSchema,
+          strippedArgs,
+        );
 
-      expect(() => registration.validate(coercedArgs), returnsNormally);
+        expect(() => registration.validate(coercedArgs), returnsNormally);
       },
     );
   });

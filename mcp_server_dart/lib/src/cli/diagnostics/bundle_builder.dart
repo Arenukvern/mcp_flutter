@@ -4,7 +4,7 @@
 import 'dart:convert';
 import 'dart:io' as io;
 
-import 'package:flutter_mcp_toolkit_server/src/cli/sessions_persistence/session_persistence.dart';
+import 'package:intentcall_session/intentcall_session.dart';
 
 final class BundleBuilder {
   BundleBuilder({
@@ -14,7 +14,7 @@ final class BundleBuilder {
   });
 
   final String bundlesDir;
-  final SnapshotStore snapshotStore;
+  final IntentSnapshotStore snapshotStore;
   final String stateFilePath;
 
   Future<Map<String, Object?>> createBundle({
@@ -362,8 +362,12 @@ final class BundleBuilder {
 
     String? backupPath;
     if (createBackup) {
-      backupPath = createTimestampedBackupPath(outputPath);
-      _copyDirectory(source: swapDir, target: io.Directory(backupPath));
+      final backupDirectoryPath = createTimestampedBackupPath(outputPath);
+      backupPath = backupDirectoryPath;
+      _copyDirectory(
+        source: swapDir,
+        target: io.Directory(backupDirectoryPath),
+      );
     }
     if (swapDir.existsSync()) {
       swapDir.deleteSync(recursive: true);

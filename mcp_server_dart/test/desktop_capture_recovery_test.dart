@@ -127,6 +127,46 @@ void main() {
       expect(result.retried, isFalse);
       expect(captureCount, 1);
     });
+
+    test(
+      'preserves first focus and second failure details after retry',
+      () async {
+        final service = _CountingDesktopService(
+          captures: <DesktopWindowScreenshotCapture?>[null, null],
+        );
+
+        final hints = detectPlatformViews(<String, Object?>{
+          'widgetType': 'UiKitView',
+          'children': const <Object?>[],
+        });
+
+        final result = await captureDesktopWithRecovery(
+          service: service,
+          projectDir: '/tmp',
+          device: 'macos',
+          compress: true,
+          targetPid: 42,
+          cacheDir: null,
+          hints: hints,
+          explicitDesktopMode: true,
+        );
+
+        expect(result.capture, isNull);
+        expect(result.retried, isTrue);
+        expect(
+          result.errorDetails['firstAttempt'],
+          isA<Map<String, Object?>>(),
+        );
+        expect(
+          result.errorDetails['focus'],
+          equals(<String, Object?>{'ok': true}),
+        );
+        expect(
+          result.errorDetails['secondAttempt'],
+          isA<Map<String, Object?>>(),
+        );
+      },
+    );
   });
 }
 

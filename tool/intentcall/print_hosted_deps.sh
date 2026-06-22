@@ -9,6 +9,7 @@ cat <<EOF
 
 intentcall_schema: ^${version}
 intentcall_core: ^${version}
+intentcall_session: ^${version}
 intentcall_mcp: ^${version}
 intentcall_platform: ^${version}
 intentcall_codegen: ^${version}

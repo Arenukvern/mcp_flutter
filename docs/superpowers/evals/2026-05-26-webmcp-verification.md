@@ -13,9 +13,9 @@ Verify **true WebMCP** (`navigator.modelContext.registerTool` / W3C CG draft) fo
 |------|------|
 | `flutter_test_app/web/intentcall_webmcp.generated.js` | JS bootstrap from manifest; feature-detect + `registerTool` |
 | `flutter_test_app/web/index.html` | Loads generated JS before Flutter |
-| `intentcall/packages/intentcall_platform/.../agent_web_mcp_bootstrap_web.dart` | Dart `js_interop` registration after `addEntries` (debug web) |
+| `/Users/anton/mcp/agentkit/packages/intentcall_platform/.../agent_web_mcp_bootstrap_web.dart` | Dart `js_interop` registration after `addEntries` (debug web) |
 | `mcp_toolkit/lib/src/mcp_toolkit_extensions.dart` | Calls `AgentWebMcpBootstrap.registerFromEntries` on web |
-| `intentcall/packages/intentcall_webmcp/` | `WebMcpPublishAdapter` (registry hot-sync) — **not wired in flutter_test_app** |
+| `/Users/anton/mcp/agentkit/packages/intentcall_webmcp/` | `WebMcpPublishAdapter` (registry hot-sync) — **not wired in flutter_test_app** |
 
 ### Detection
 

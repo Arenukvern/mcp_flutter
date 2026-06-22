@@ -106,6 +106,47 @@ void main() {
       },
     );
 
+    test('desktop failure explains missing flutter-device context', () async {
+      void logger(
+        final LoggingLevel level,
+        final String message, {
+        final String logger = 'test',
+      }) {}
+
+      final executor = DefaultCoreCommandExecutor(
+        connectionContext: ConnectionContext(
+          defaultHost: 'localhost',
+          defaultPort: 8181,
+          logger: logger,
+          discoverPorts: () async => <int>[8181],
+        ),
+        portScanner: CorePortScanner(logger: logger),
+        imageFileSaver: CoreImageFileSaver(logger: logger),
+        configuration: const CoreRuntimeConfiguration(
+          vmHost: 'localhost',
+          vmPort: 8181,
+          resourcesSupported: true,
+          imagesSupported: true,
+          dumpsSupported: false,
+          dynamicRegistrySupported: false,
+          saveImagesToFiles: false,
+        ),
+        desktopWindowScreenshotService: const _AlwaysFailFakeAdapter(),
+      );
+
+      final result = await executor.execute(
+        const GetScreenshotsCommand(mode: ScreenshotMode.desktopWindow),
+      );
+
+      expect(result.ok, isFalse);
+      expect(result.error?.message, contains('requires --flutter-device'));
+      final details = Map<String, Object?>.from(result.error!.details! as Map);
+      final desktopWindow = Map<String, Object?>.from(
+        details['desktopWindow']! as Map,
+      );
+      expect(desktopWindow['reason'], 'missing_flutter_device');
+    });
+
     test(
       'auto upgrades to desktop_window when UiKitView in debug payload',
       () async {
@@ -332,6 +373,14 @@ void main() {
           (detailsMap['captureHints'] as Map?) ?? const <String, Object?>{},
         );
         expect(captureHints['platformViewsDetected'], isTrue);
+        expect(detailsMap['desktopWindow'], isA<Map<String, Object?>>());
+        final desktopWindow = Map<String, Object?>.from(
+          detailsMap['desktopWindow']! as Map,
+        );
+        expect(desktopWindow['desktopCaptureRetried'], isTrue);
+        expect(desktopWindow['firstAttempt'], isA<Map<String, Object?>>());
+        expect(desktopWindow['focus'], isA<Map<String, Object?>>());
+        expect(desktopWindow['secondAttempt'], isA<Map<String, Object?>>());
       },
     );
   });

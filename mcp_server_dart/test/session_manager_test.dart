@@ -1,10 +1,12 @@
 import 'dart:io';
 
 import 'package:flutter_mcp_toolkit_server/flutter_mcp_core.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/session/flutter_session_connector.dart';
+import 'package:intentcall_session/intentcall_session.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group('SessionManager', () {
+  group('IntentSessionManager', () {
     late Directory tempDir;
     late String statePath;
 
@@ -45,8 +47,8 @@ void main() {
         discoverPorts: () async => <int>[8181],
       );
 
-      final manager = SessionManager(
-        connectionContext: context,
+      final manager = IntentSessionManager(
+        connector: FlutterSessionConnector(connectionContext: context),
         stateStore: store,
       );
       await manager.load();
@@ -68,15 +70,15 @@ void main() {
         discoverPorts: () async => <int>[8181],
       );
 
-      final manager = SessionManager(
-        connectionContext: context,
+      final manager = IntentSessionManager(
+        connector: FlutterSessionConnector(connectionContext: context),
         stateStore: store,
       );
       await manager.load();
 
       final result = await manager.endSession('does-not-exist');
       expect(result.ok, isFalse);
-      expect(result.error?.code, equals('session_not_found'));
+      expect(result.code, equals('session_not_found'));
     });
   });
 }

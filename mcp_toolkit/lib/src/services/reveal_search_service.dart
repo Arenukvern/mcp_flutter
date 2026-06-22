@@ -28,7 +28,7 @@ mixin RevealSearchService {
     }
 
     final normalizedMatchBy = _normalizeMatchBy(matchBy);
-    final boundedMaxAttempts = maxAttempts.clamp(0, _maxAttemptsLimit).toInt();
+    final boundedMaxAttempts = maxAttempts.clamp(0, _maxAttemptsLimit);
     final boundedDistance = distance.clamp(1, _maxDistance).toDouble();
     final attempts = <Map<String, Object?>>[];
     Map<String, Object?>? lastSnapshot;
@@ -47,16 +47,24 @@ mixin RevealSearchService {
         'snapshotId': snapshot['snapshot_id'],
         'nodeCount': snapshot['nodeCount'],
         'found': match != null,
-        if (match != null) 'ref': match['ref'],
       };
+      if (match != null) {
+        trace
+          ..['ref'] = match['ref']
+          ..['visibleInViewport'] = match['visibleInViewport']
+          ..['centerInViewport'] = match['centerInViewport'];
+      }
       attempts.add(trace);
 
-      if (match != null) {
+      if (match != null && match['centerInViewport'] == true) {
         return <String, Object?>{
           'success': true,
           'ref': match['ref'],
           'snapshotId': snapshot['snapshot_id'],
           'match': match,
+          'visibleInViewport': match['visibleInViewport'],
+          'centerInViewport': match['centerInViewport'],
+          'viewport': snapshot['viewport'],
           'query': normalizedQuery,
           'matchBy': normalizedMatchBy,
           'attempts': attempts,
@@ -64,6 +72,26 @@ mixin RevealSearchService {
       }
 
       if (attempt == boundedMaxAttempts) {
+        if (match != null) {
+          return <String, Object?>{
+            'success': true,
+            'ref': match['ref'],
+            'snapshotId': snapshot['snapshot_id'],
+            'match': match,
+            'visibleInViewport': match['visibleInViewport'],
+            'centerInViewport': match['centerInViewport'],
+            'viewport': snapshot['viewport'],
+            'recommendedNextAction': 'scroll_more',
+            'warning':
+                'Target was found but its center is outside the viewport.',
+            'query': normalizedQuery,
+            'matchBy': normalizedMatchBy,
+            'direction': direction,
+            'maxAttempts': boundedMaxAttempts,
+            'distance': boundedDistance,
+            'attempts': attempts,
+          };
+        }
         break;
       }
 
@@ -73,6 +101,26 @@ mixin RevealSearchService {
       );
       trace['scroll'] = scroll;
       if (scroll['success'] != true) {
+        if (match != null) {
+          return <String, Object?>{
+            'success': true,
+            'ref': match['ref'],
+            'snapshotId': snapshot['snapshot_id'],
+            'match': match,
+            'visibleInViewport': match['visibleInViewport'],
+            'centerInViewport': match['centerInViewport'],
+            'viewport': snapshot['viewport'],
+            'recommendedNextAction': 'scroll_more',
+            'warning':
+                'Target was found but its center is outside the viewport.',
+            'query': normalizedQuery,
+            'matchBy': normalizedMatchBy,
+            'direction': direction,
+            'maxAttempts': boundedMaxAttempts,
+            'distance': boundedDistance,
+            'attempts': attempts,
+          };
+        }
         return <String, Object?>{
           'success': false,
           'error': 'scroll_blocked',

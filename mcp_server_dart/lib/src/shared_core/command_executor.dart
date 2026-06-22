@@ -15,9 +15,9 @@ import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/platf
 import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/visual_capture.dart';
 import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/web_browser_screenshot.dart';
 import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/web_cdp_discovery.dart';
-import 'package:flutter_mcp_toolkit_server/src/cli/session/session_manager.dart';
 import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_consts.dart';
 import 'package:flutter_mcp_toolkit_server/src/runtime_version.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/agent_result_mapper.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/commands/commands.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/types/core_types.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/types/error_codes.dart';
@@ -25,6 +25,7 @@ import 'package:flutter_mcp_toolkit_server/src/shared_core/types/results.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/vm_connections/connection_context.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/vm_connections/core_port_scanner.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
+import 'package:intentcall_session/intentcall_session.dart';
 import 'package:is_dart_empty_or_not/is_dart_empty_or_not.dart';
 import 'package:vm_service/vm_service.dart';
 
@@ -58,7 +59,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
   final CorePortScanner portScanner;
   final CoreImageFileSaver imageFileSaver;
   final CoreRuntimeConfiguration configuration;
-  final SessionManager? sessionManager;
+  final IntentSessionManager? sessionManager;
 
   CoreDynamicGateway? dynamicGateway;
 
@@ -567,7 +568,9 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     if (permission.actualMode == screenshotModeDesktopWindow) {
       final desktopCapture = await _tryDesktopWindowCapture(
         command,
-        captureMode: effectiveMode,
+        captureMode: effectiveMode == ScreenshotMode.auto
+            ? ScreenshotMode.desktopWindow
+            : effectiveMode,
         hints: hints,
       );
       if (desktopCapture.data != null) {
@@ -1151,10 +1154,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
 
     return CoreResult.success(
       data: {
-        'hotReload': {
-          'success': reloadSuccess,
-          if (reloadResult != null) ...reloadResult,
-        },
+        'hotReload': {'success': reloadSuccess, ...?reloadResult},
         'screenshot': screenshotData,
         if (command.includeSemantics) 'semantics': semanticsData,
         if (command.includeErrors) 'errors': errorsData,
@@ -1619,7 +1619,10 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       );
     }
 
-    return manager.endSession(command.sessionId);
+    return coreResultFromAgentResult(
+      await manager.endSession(command.sessionId),
+      meta: {if (command.sessionId != null) 'sessionId': command.sessionId},
+    );
   }
 
   Future<CoreResult> _sessionExec(final SessionExecCommand command) async {
@@ -1631,7 +1634,11 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       );
     }
 
-    final attach = await manager.attachSession(sessionId: command.sessionId);
+    final attach = coreResultFromAgentResult(
+      await manager.attachSession(
+        IntentSessionAttachRequest(sessionId: command.sessionId),
+      ),
+    );
     if (!attach.ok) {
       return attach;
     }
@@ -1667,8 +1674,30 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       );
     }
 
-    return manager.startSession(command);
+    return coreResultFromAgentResult(
+      await manager.startSession(_toSessionStartRequest(command)),
+    );
   }
+
+  IntentSessionStartRequest _toSessionStartRequest(
+    final SessionStartCommand command,
+  ) => IntentSessionStartRequest(
+    mode: _toIntentSessionMode(command.mode),
+    targetId: command.targetId,
+    uri: command.uri,
+    host: command.host,
+    port: command.port,
+    forceReconnect: command.forceReconnect,
+    sessionId: command.sessionId,
+  );
+
+  IntentSessionConnectionMode _toIntentSessionMode(
+    final CoreConnectionMode mode,
+  ) => switch (mode) {
+    CoreConnectionMode.auto => IntentSessionConnectionMode.auto,
+    CoreConnectionMode.manual => IntentSessionConnectionMode.manual,
+    CoreConnectionMode.uri => IntentSessionConnectionMode.uri,
+  };
 
   String _stableStringHash(final String value) {
     var hash = 0x811c9dc5;
@@ -1707,6 +1736,11 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
           ? const _DesktopCaptureResolution(
               errorMessage:
                   'Desktop window screenshot mode requires --flutter-device.',
+              errorDetails: <String, Object?>{
+                'reason': 'missing_flutter_device',
+                'fix':
+                    'Pass global --flutter-device macos or --flutter-device ios.',
+              },
             )
           : const _DesktopCaptureResolution();
     }
@@ -1716,6 +1750,12 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
               errorMessage:
                   'Desktop window screenshot mode requires '
                   '--flutter-project-dir for macOS apps.',
+              errorDetails: <String, Object?>{
+                'reason': 'missing_flutter_project_dir',
+                'device': 'macos',
+                'fix':
+                    'Pass global --flutter-project-dir pointing at the Flutter app.',
+              },
             )
           : const _DesktopCaptureResolution();
     }
@@ -1742,7 +1782,10 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       }
       return _DesktopCaptureResolution(
         errorMessage: recovery.errorMessage,
-        errorDetails: recovery.errorDetails,
+        errorDetails: <String, Object?>{
+          ...recovery.recoveryMetadata(),
+          ...recovery.errorDetails,
+        },
       );
     }
 
@@ -1799,7 +1842,11 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
 
     final manager = sessionManager;
     if (command.sessionId != null && manager != null) {
-      final attach = await manager.attachSession(sessionId: command.sessionId);
+      final attach = coreResultFromAgentResult(
+        await manager.attachSession(
+          IntentSessionAttachRequest(sessionId: command.sessionId),
+        ),
+      );
       if (!attach.ok) {
         return attach;
       }
