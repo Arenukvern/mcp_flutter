@@ -347,16 +347,20 @@ packages:
   intentcall_core:
     dependency: "direct overridden"
     description:
-      path: "../agentkit/packages/intentcall_core"
-      relative: true
-    source: path
+      path: "packages/intentcall_core"
+      ref: "chore/adopt-steward-governance"
+      resolved-ref: "10693b07325fa09ea56abcf3610cda7fdd56d912"
+      url: "https://github.com/Arenukvern/intentcall.git"
+    source: git
     version: "0.1.0"
   intentcall_mcp:
     dependency: "direct overridden"
     description:
-      path: "../agentkit/packages/intentcall_mcp"
-      relative: true
-    source: path
+      path: "packages/intentcall_mcp"
+      ref: "chore/adopt-steward-governance"
+      resolved-ref: "10693b07325fa09ea56abcf3610cda7fdd56d912"
+      url: "https://github.com/Arenukvern/intentcall.git"
+    source: git
     version: "0.1.0"
   intentcall_platform:
     dependency: transitive
@@ -377,9 +381,11 @@ packages:
   intentcall_session:
     dependency: "direct overridden"
     description:
-      path: "../agentkit/packages/intentcall_session"
-      relative: true
-    source: path
+      path: "packages/intentcall_session"
+      ref: "chore/adopt-steward-governance"
+      resolved-ref: "10693b07325fa09ea56abcf3610cda7fdd56d912"
+      url: "https://github.com/Arenukvern/intentcall.git"
+    source: git
     version: "0.1.0"
   io:
     dependency: transitive

@@ -12,8 +12,17 @@ workspace:
 
 dependency_overrides:
   intentcall_core:
-    path: ../agentkit/packages/intentcall_core
+    git:
+      url: https://github.com/Arenukvern/intentcall.git
+      ref: chore/adopt-steward-governance
+      path: packages/intentcall_core
   intentcall_mcp:
-    path: ../agentkit/packages/intentcall_mcp
+    git:
+      url: https://github.com/Arenukvern/intentcall.git
+      ref: chore/adopt-steward-governance
+      path: packages/intentcall_mcp
   intentcall_session:
-    path: ../agentkit/packages/intentcall_session
+    git:
+      url: https://github.com/Arenukvern/intentcall.git
+      ref: chore/adopt-steward-governance
+      path: packages/intentcall_session
