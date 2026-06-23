@@ -345,22 +345,20 @@ packages:
     source: hosted
     version: "0.1.0"
   intentcall_core:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
-      path: "packages/intentcall_core"
-      ref: "chore/adopt-steward-governance"
-      resolved-ref: "10693b07325fa09ea56abcf3610cda7fdd56d912"
-      url: "https://github.com/Arenukvern/intentcall.git"
-    source: git
+      name: intentcall_core
+      sha256: "96190700c2e3863d15e5d8e947bdaa3ba636d5fd709807dd05bd2ca195df578e"
+      url: "https://pub.dev"
+    source: hosted
     version: "0.1.0"
   intentcall_mcp:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
-      path: "packages/intentcall_mcp"
-      ref: "chore/adopt-steward-governance"
-      resolved-ref: "10693b07325fa09ea56abcf3610cda7fdd56d912"
-      url: "https://github.com/Arenukvern/intentcall.git"
-    source: git
+      name: intentcall_mcp
+      sha256: bb5228eb857c2108054df5e9a4a5930ebabc22977dd1c7e8eb27116d51cfd3f9
+      url: "https://pub.dev"
+    source: hosted
     version: "0.1.0"
   intentcall_platform:
     dependency: transitive
@@ -379,13 +377,12 @@ packages:
     source: hosted
     version: "0.1.0"
   intentcall_session:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
-      path: "packages/intentcall_session"
-      ref: "chore/adopt-steward-governance"
-      resolved-ref: "10693b07325fa09ea56abcf3610cda7fdd56d912"
-      url: "https://github.com/Arenukvern/intentcall.git"
-    source: git
+      name: intentcall_session
+      sha256: "1b7c0eefadabf3cbaa8ddf01d49507e2af9b561ff78013f569ae595c1a4892dc"
+      url: "https://pub.dev"
+    source: hosted
     version: "0.1.0"
   io:
     dependency: transitive

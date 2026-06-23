@@ -1,2 +1,2 @@
-export 'package:intentcall_core/intentcall_core.dart'
+export 'package:intentcall_mcp/intentcall_mcp.dart'
     show ResourceHandler, ResourceTemplateRegistration;
