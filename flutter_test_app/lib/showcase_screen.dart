@@ -608,6 +608,8 @@ class _DebugSection extends StatelessWidget {
               Semantics(
                 identifier: 'emit_log_button',
                 button: true,
+                onTap: () =>
+                    state.logMessage('agent hook: log at ${DateTime.now()}'),
                 child: TextButton(
                   onPressed: () =>
                       state.logMessage('agent hook: log at ${DateTime.now()}'),
@@ -619,6 +621,7 @@ class _DebugSection extends StatelessWidget {
               Semantics(
                 identifier: 'trigger_error_button',
                 button: true,
+                onTap: _triggerCaughtError,
                 child: TextButton(
                   onPressed: _triggerCaughtError,
                   style: TextButton.styleFrom(foregroundColor: _kAccent),
@@ -629,6 +632,7 @@ class _DebugSection extends StatelessWidget {
               Semantics(
                 identifier: 'show_test_dialog_button',
                 button: true,
+                onTap: () => _showTestDialog(context),
                 child: TextButton(
                   onPressed: () => _showTestDialog(context),
                   style: TextButton.styleFrom(foregroundColor: _kAccent),

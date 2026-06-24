@@ -45,7 +45,12 @@ json_ok() {
   python3 - "$1" <<'PY'
 import json, sys
 d = json.load(open(sys.argv[1]))
-raise SystemExit(0 if d.get("ok") else 1)
+data = d.get("data")
+if not d.get("ok"):
+    raise SystemExit(1)
+if isinstance(data, dict) and (data.get("success") is False or data.get("ok") is False):
+    raise SystemExit(1)
+raise SystemExit(0)
 PY
 }
 
@@ -250,12 +255,20 @@ if ensure_visible_identifier_args stateful_counter_increment_button "${outdir}/i
   run_tool tap_widget "$(cat "${outdir}/increment_tap_args.json")" || true
 fi
 if ensure_visible_identifier_args stateful_counter_increment_button "${outdir}/increment_long_press_args.json" up; then
-  run_tool long_press "$(cat "${outdir}/increment_long_press_args.json")" || true
+  if [[ "${platform}" == "web" ]]; then
+    skip_tool long_press 'Flutter Web requires SemanticsAction.longPress on the target'
+  else
+    run_tool long_press "$(cat "${outdir}/increment_long_press_args.json")" || true
+  fi
 fi
 if ensure_visible_identifier_args stateful_counter_increment_button "${outdir}/increment_drag_args.json" up; then
-  increment_ref="$(args_ref "${outdir}/increment_drag_args.json")"
-  increment_snap="$(args_snapshot_id "${outdir}/increment_drag_args.json")"
-  run_tool drag "{\"fromRef\":\"${increment_ref}\",\"toRef\":\"${increment_ref}\",\"snapshotId\":${increment_snap}}" || true
+  if [[ "${platform}" == "web" ]]; then
+    skip_tool drag 'Flutter Web does not support semantic drag synthesis'
+  else
+    increment_ref="$(args_ref "${outdir}/increment_drag_args.json")"
+    increment_snap="$(args_snapshot_id "${outdir}/increment_drag_args.json")"
+    run_tool drag "{\"fromRef\":\"${increment_ref}\",\"toRef\":\"${increment_ref}\",\"snapshotId\":${increment_snap}}" || true
+  fi
 fi
 if ensure_visible_identifier_args stateful_counter_increment_button "${outdir}/increment_hover_args.json" up; then
   run_tool hover "$(cat "${outdir}/increment_hover_args.json")" || true
