@@ -26,7 +26,14 @@ fi
 echo "== intentcall package matrix (${intentcall_root}) =="
 (
   cd "${intentcall_root}"
-  make test
+  if [[ -f Makefile || -f makefile ]]; then
+    make test
+  elif command -v just >/dev/null 2>&1 && [[ -f justfile ]]; then
+    just test
+  else
+    echo "intentcall test runner missing at ${intentcall_root}: expected Makefile or justfile" >&2
+    exit 1
+  fi
 )
 dart test packages/server_capability_kernel packages/server_capability_core
 

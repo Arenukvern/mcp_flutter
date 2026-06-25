@@ -146,6 +146,68 @@ mixin SemanticSnapshotService {
   static Future<Map<String, Object?>> peekSemanticSnapshot() =>
       _buildSnapshot(incrementId: false);
 
+  /// Non-mutating signature of visible descendants under [node].
+  ///
+  /// This intentionally does not allocate refs, update cached ref/bounds maps,
+  /// or bump [currentSnapshotId]. It is for internal movement checks where the
+  /// caller already owns a live semantics node and must not invalidate or
+  /// silently rebind refs from the last public snapshot.
+  static Map<String, Object?> visibleSubtreeSignature(
+    final SemanticsNode node,
+  ) {
+    final viewport = viewportRect;
+    if (viewport == null) {
+      return <String, Object?>{
+        'available': false,
+        'targetNodeId': node.id,
+        'reason': 'viewport_unavailable',
+      };
+    }
+
+    final entries = <String>[];
+    void walk(final SemanticsNode current) {
+      final rect = _globalRect(current);
+      final visible =
+          current != node &&
+          rect.overlaps(viewport) &&
+          rect.width > 0 &&
+          rect.height > 0;
+      if (visible) {
+        final data = current.getSemanticsData();
+        entries.add(
+          [
+            current.id,
+            _classifyNode(data),
+            rect.left.round(),
+            rect.top.round(),
+            rect.right.round(),
+            rect.bottom.round(),
+          ].join(':'),
+        );
+      }
+      current.visitChildren((final child) {
+        walk(child);
+        return true;
+      });
+    }
+
+    walk(node);
+    if (entries.isEmpty) {
+      return <String, Object?>{
+        'available': false,
+        'targetNodeId': node.id,
+        'reason': 'no_visible_descendants',
+      };
+    }
+
+    return <String, Object?>{
+      'available': true,
+      'targetNodeId': node.id,
+      'visibleDescendantCount': entries.length,
+      'signatureHash': _stableHash(entries),
+    };
+  }
+
   static Future<Map<String, Object?>> _buildSnapshot({
     required final bool incrementId,
   }) async {
@@ -505,5 +567,18 @@ mixin SemanticSnapshotService {
     }
     if (action == SemanticsAction.focus) return 'focus';
     return action.toString();
+  }
+
+  static int _stableHash(final List<String> values) {
+    var hash = 0x811c9dc5;
+    for (final value in values) {
+      for (final unit in value.codeUnits) {
+        hash ^= unit;
+        hash = (hash * 0x01000193) & 0xffffffff;
+      }
+      hash ^= 0x0a;
+      hash = (hash * 0x01000193) & 0xffffffff;
+    }
+    return hash;
   }
 }

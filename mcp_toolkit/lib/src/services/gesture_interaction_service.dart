@@ -326,6 +326,23 @@ mixin GestureInteractionService {
       }
     }
 
+    if (kIsWeb) {
+      if (semanticAttempt != null) {
+        return semanticAttempt;
+      }
+      return <String, Object?>{
+        'success': false,
+        'ref': ?ref,
+        'action': 'scroll_$direction',
+        'error': 'unsupported_scroll_action',
+        'hint':
+            'No Flutter Web semantics node exposed the matching scroll '
+            'action for this direction. Call semantic_snapshot and choose a '
+            'scrollable ref with scrollUp / scrollDown / scrollLeft / '
+            'scrollRight.',
+      };
+    }
+
     // Desktop-friendly fallback: PointerScrollEvent (mouse-wheel-style).
     // This is how Flutter on macOS/Linux/Windows actually scrolls; synthetic
     // touch drags don't always drive scroll physics on desktop.
@@ -339,22 +356,6 @@ mixin GestureInteractionService {
     final scrollDelta = _scrollDelta(direction, distance);
     final scrollable = _findAnyScrollable();
     final before = _scrollPosition(scrollable);
-    if (kIsWeb) {
-      // PointerScrollEvent routed through GestureBinding doesn't reach the
-      // Flutter Web engine's wheel handler either. Return a structured
-      // failure so the agent re-snapshots to find a scrollable ref.
-      return <String, Object?>{
-        'success': false,
-        'ref': ?ref,
-        'action': 'scroll_$direction',
-        'error': 'web_gesture_not_supported',
-        'hint':
-            'scroll on Flutter Web requires a ref whose "actions" include '
-            'the matching scroll action. Call semantic_snapshot, find a '
-            'node with actions scrollUp / scrollDown, and pass its ref to '
-            'scroll(ref, direction).',
-      };
-    }
     await _dispatchScrollSignal(origin, scrollDelta);
     final after = _scrollPosition(scrollable);
     if (before != null && after != null && before == after) {
@@ -410,8 +411,11 @@ mixin GestureInteractionService {
     }
 
     final before = _scrollPosition(node);
+    final beforeSignature = kIsWeb
+        ? SemanticSnapshotService.visibleSubtreeSignature(node)
+        : null;
     owner.performAction(node.id, action);
-    await _waitFrame();
+    await _waitSemanticScrollFrame();
     var after = _scrollPosition(node);
     if (before != null && after != null && before != after) {
       return <String, Object?>{
@@ -424,9 +428,28 @@ mixin GestureInteractionService {
         'scrollAfter': after,
       };
     }
+    final actionProgress = kIsWeb
+        ? _webScrollSubtreeProgress(
+            beforeSignature: beforeSignature,
+            node: node,
+          )
+        : null;
+    if (actionProgress != null) {
+      return <String, Object?>{
+        'success': true,
+        'ref': ?ref,
+        'targetNodeId': ?targetNodeId,
+        'via': 'semantic_action_web',
+        'action': 'scroll_$direction',
+        'platform': 'web',
+        'distance': distance,
+        'scrollBefore': ?before,
+        'scrollAfter': ?after,
+        ...actionProgress,
+      };
+    }
 
-    if (node.getSemanticsData().hasAction(SemanticsAction.scrollToOffset) &&
-        before != null) {
+    if (node.getSemanticsData().hasAction(SemanticsAction.scrollToOffset)) {
       final target = _targetScrollOffset(
         direction: direction,
         distance: distance,
@@ -443,9 +466,9 @@ mixin GestureInteractionService {
         SemanticsAction.scrollToOffset,
         scrollToOffsetArgs,
       );
-      await _waitFrame();
+      await _waitSemanticScrollFrame();
       after = _scrollPosition(node);
-      if (after != null && before != after) {
+      if (before != null && after != null && before != after) {
         return <String, Object?>{
           'success': true,
           'ref': ?ref,
@@ -455,6 +478,27 @@ mixin GestureInteractionService {
           'distance': distance,
           'scrollBefore': before,
           'scrollAfter': after,
+        };
+      }
+      final offsetProgress = kIsWeb
+          ? _webScrollSubtreeProgress(
+              beforeSignature: beforeSignature,
+              node: node,
+            )
+          : null;
+      if (offsetProgress != null) {
+        return <String, Object?>{
+          'success': true,
+          'ref': ?ref,
+          'targetNodeId': ?targetNodeId,
+          'via': 'semantic_scroll_to_offset_web',
+          'action': 'scroll_$direction',
+          'platform': 'web',
+          'distance': distance,
+          'scrollBefore': ?before,
+          'scrollAfter': ?after,
+          'scrollToOffset': target,
+          ...offsetProgress,
         };
       }
     }
@@ -470,14 +514,18 @@ mixin GestureInteractionService {
       'scrollExtentMin': _finiteOrNull(node.getSemanticsData().scrollExtentMin),
       'scrollExtentMax': _finiteOrNull(node.getSemanticsData().scrollExtentMax),
       'error': 'no_scroll_movement',
+      'platform': kIsWeb ? 'web' : 'flutter',
+      'movementVerified': false,
+      'dispatched': true,
     };
   }
 
   static bool _scrollMoved(final Map<String, Object?> result) =>
       result['success'] == true &&
-      result['scrollBefore'] != null &&
-      result['scrollAfter'] != null &&
-      result['scrollBefore'] != result['scrollAfter'];
+      ((result['scrollBefore'] != null &&
+              result['scrollAfter'] != null &&
+              result['scrollBefore'] != result['scrollAfter']) ||
+          result['movementVerified'] == true);
 
   /// Best-effort classification of [node]'s widget type, used only to produce
   /// a helpful hint when `enter_text` can't find an editable state. Returns
@@ -610,20 +658,29 @@ mixin GestureInteractionService {
         final scrollAction = _scrollActionFor(direction);
         if (scrollAction != null) {
           final node = SemanticSnapshotService.resolveRef(ref);
-          final owner = SemanticSnapshotService.semanticsOwner;
-          if (node != null &&
-              owner != null &&
-              node.getSemanticsData().hasAction(scrollAction)) {
-            owner.performAction(node.id, scrollAction);
-            await _waitFrame();
+          if (node != null && node.getSemanticsData().hasAction(scrollAction)) {
+            final result = await scroll(
+              ref: ref,
+              direction: direction,
+              distance: distance,
+            );
+            if (result['success'] == true) {
+              result
+                ..['action'] = 'swipe_$direction'
+                ..['note'] =
+                    'On web, swipe redirected to the verified semantic '
+                    'scroll path because pointer synthesis does not drive '
+                    'browser scroll physics.';
+              return result;
+            }
             return <String, Object?>{
-              'success': true,
+              ...result,
               'ref': ref,
-              'via': 'semantic_action_fallback',
               'action': 'swipe_$direction',
               'note':
                   'On web, swipe redirected to SemanticsAction.scroll because '
-                  'pointer synthesis does not drive browser scroll physics.',
+                  'pointer synthesis does not drive browser scroll physics, '
+                  'but no movement was verified.',
             };
           }
         }
@@ -949,6 +1006,32 @@ mixin GestureInteractionService {
   static bool _isHorizontal(final String direction) =>
       direction.toLowerCase() == 'left' || direction.toLowerCase() == 'right';
 
+  static Map<String, Object?>? _webScrollSubtreeProgress({
+    required final Map<String, Object?>? beforeSignature,
+    required final SemanticsNode node,
+  }) {
+    if (beforeSignature == null || beforeSignature['available'] != true) {
+      return null;
+    }
+    final afterSignature = SemanticSnapshotService.visibleSubtreeSignature(
+      node,
+    );
+    if (afterSignature['available'] != true ||
+        afterSignature['signatureHash'] == beforeSignature['signatureHash']) {
+      return null;
+    }
+
+    return <String, Object?>{
+      'movementVerified': true,
+      'movementSource': 'scrollable_subtree_signature',
+      'targetNodeId': node.id,
+      'visibleDescendantCountBefore': beforeSignature['visibleDescendantCount'],
+      'visibleDescendantCountAfter': afterSignature['visibleDescendantCount'],
+      'signatureHashBefore': beforeSignature['signatureHash'],
+      'signatureHashAfter': afterSignature['signatureHash'],
+    };
+  }
+
   /// Return the centre of the first render view.
   static ui.Offset _screenCenter() {
     try {
@@ -989,4 +1072,13 @@ mixin GestureInteractionService {
   /// work triggered by a preceding dispatch.
   static Future<void> _waitFrame() =>
       Future<void>.delayed(const Duration(milliseconds: 16));
+
+  static Future<void> _waitSemanticScrollFrame() async {
+    await _waitFrame();
+    if (!kIsWeb) return;
+    for (var i = 0; i < 3; i++) {
+      WidgetsBinding.instance.scheduleFrame();
+      await Future<void>.delayed(const Duration(milliseconds: 32));
+    }
+  }
 }

@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart' show visibleForTesting;
+
 import 'gesture_interaction_service.dart';
 import 'semantic_snapshot_service.dart';
 
@@ -101,6 +103,9 @@ mixin RevealSearchService {
       );
       trace['scroll'] = scroll;
       if (scroll['success'] != true) {
+        if (_shouldContinueAfterScroll(scroll)) {
+          continue;
+        }
         if (match != null) {
           return <String, Object?>{
             'success': true,
@@ -198,5 +203,16 @@ mixin RevealSearchService {
       'identifier' || 'label' || 'value' || 'hint' => normalized,
       _ => 'text',
     };
+  }
+
+  @visibleForTesting
+  static bool shouldContinueAfterScrollForTesting(
+    final Map<String, Object?> scroll,
+  ) => _shouldContinueAfterScroll(scroll);
+
+  static bool _shouldContinueAfterScroll(final Map<String, Object?> scroll) {
+    if (scroll['deferredMovementCheck'] == true) return true;
+    if (scroll['movementVerified'] == true) return true;
+    return false;
   }
 }

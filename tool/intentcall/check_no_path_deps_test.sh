@@ -49,11 +49,16 @@ expect_fails_for \
     path: ../third_party/intentcall_schema" \
   "path: .*intentcall"
 
+expect_fails_for \
+  stale-hosted-version \
+  "  intentcall_core: ^0.1.0" \
+  "stale hosted intentcall version"
+
 mkdir -p "${tmp}/mcp_server_dart" "${tmp}/packages"
 cat > "${tmp}/mcp_toolkit/pubspec.yaml" <<YAML
 name: fixture
 dependencies:
-  intentcall_core: ^0.1.0
+  intentcall_core: ^0.2.1
 YAML
 
 cat > "${tmp}/pubspec.yaml" <<YAML
@@ -61,6 +66,16 @@ name: fixture_root
 dependency_overrides:
   intentcall_session:
     path: ../agentkit/packages/intentcall_session
+YAML
+cat > "${tmp}/pubspec.lock" <<YAML
+packages:
+  intentcall_core:
+    dependency: "direct main"
+    description:
+      name: intentcall_core
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.2.1"
 YAML
 
 if ! bash "${tmp}/tool/intentcall/check_no_path_deps.sh" >/dev/null 2>&1; then
@@ -79,4 +94,21 @@ if ! grep -q "root path override still present" "${tmp}/strict.err"; then
   exit 1
 fi
 
-echo "OK: check_no_path_deps rejects stale hosted-cutover path dependencies"
+cat > "${tmp}/pubspec.yaml" <<YAML
+name: fixture_root
+dependencies:
+  intentcall_core: ^0.1.0
+YAML
+
+if bash "${tmp}/tool/intentcall/check_no_path_deps.sh" --strict-root >/dev/null 2>"${tmp}/strict-version.err"; then
+  echo "expected strict-root mode to fail stale root hosted version" >&2
+  exit 1
+fi
+
+if ! grep -q "stale hosted intentcall version" "${tmp}/strict-version.err"; then
+  echo "expected strict-root error to mention stale hosted version" >&2
+  cat "${tmp}/strict-version.err" >&2
+  exit 1
+fi
+
+echo "OK: check_no_path_deps rejects stale hosted-cutover path dependencies and versions"

@@ -91,7 +91,8 @@
 
 - Raised workspace Dart SDK floor to `>=3.12.0 <4.0.0` across packages and updated fixture expectations.
 - Added Flutter SDK floor `>=3.44.0 <4.0.0` for Flutter packages (`mcp_toolkit`, `flutter_test_app`) and bumped server Docker toolchain images/checks to `dart:3.12.0-sdk`.
-- `ToolRegistration` / `ResourceRegistration` canonical types moved to `intentcall_mcp`; kernel re-exports (extract-friendly).
+- **Breaking:** `mcp_server_dart/lib/flutter_mcp_core.dart` no longer promises compatibility for removed private session/state/snapshot internals. Downstream code should import `intentcall_session` for `IntentSessionManager`, `StateStore`, `StateLockManager`, `SafeFileWriter`, and `IntentSnapshotStore`; Flutter MCP keeps only its server-local `FlutterSessionConnector` adapter.
+- `ToolRegistration` / `ResourceRegistration` canonical types moved to `intentcall_core`; kernel re-exports (extract-friendly).
 - Dogfood harness paths use `--dart-define=INTENTCALL_HARNESS_ROOT` / `INTENTCALL_VISUAL_RECONSTRUCT_ROOT`.
 - `MigrateAgentEntriesMigrator` moved to `intentcall_core` (shared by CLI and MCP tool).
 - `intentcall_testing`: ecsly-style builder → `invokeWire` → `AgentResult.envelope` test.

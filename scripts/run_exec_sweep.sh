@@ -15,8 +15,21 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "${here}/.." && pwd)"
 platform="${PLATFORM:-macos}"
 ws_uri="${WS_URI:?Set WS_URI from make showcase or make web-showcase}"
-outdir="${repo_root}/.showcase/tool_verify/exec_sweep/${platform}"
+legacy_root="${repo_root}/.showcase/tool_verify/exec_sweep"
+outdir="${legacy_root}/${platform}"
 mkdir -p "${outdir}"
+
+cleanup_legacy_root_artifacts() {
+  local artifact
+  for artifact in "${legacy_root}"/sweep_summary.txt \
+    "${legacy_root}"/*.json \
+    "${legacy_root}"/*.stderr; do
+    [[ -e "${artifact}" ]] || continue
+    rm -f "${artifact}"
+  done
+}
+
+cleanup_legacy_root_artifacts
 
 toolkit=(
   dart run "${repo_root}/mcp_server_dart/bin/flutter_mcp_toolkit.dart"
@@ -40,6 +53,7 @@ pass=0
 fail=0
 skip=0
 results=()
+reveal_down_direction=down
 
 json_ok() {
   python3 - "$1" <<'PY'
@@ -105,6 +119,14 @@ skip_tool() {
   printf 'SKIP: %s (%s)\n' "${name}" "${reason}"
   skip=$((skip + 1))
   results+=("SKIP ${name} (${reason})")
+}
+
+missing_required_tool() {
+  local name="$1"
+  local reason="$2"
+  printf 'FAIL: %s (%s)\n' "${name}" "${reason}"
+  fail=$((fail + 1))
+  results+=("FAIL ${name} (${reason})")
 }
 
 ref_for_identifier() {
@@ -230,17 +252,17 @@ fi
 # Semantic + interaction chain
 run_tool semantic_snapshot '{}' || true
 
-run_tool reveal_search '{"query":"greeting_input_field","matchBy":"identifier","direction":"down","maxAttempts":4,"distance":220}' || true
+run_tool reveal_search "{\"query\":\"greeting_input_field\",\"matchBy\":\"identifier\",\"direction\":\"${reveal_down_direction}\",\"maxAttempts\":4,\"distance\":220}" || true
 reveal_ref="$(json_field "${outdir}/reveal_search.json" data.ref)"
 reveal_snap="$(json_field "${outdir}/reveal_search.json" data.snapshotId)"
 reveal_visible="$(json_field "${outdir}/reveal_search.json" data.centerInViewport)"
 if [[ -z "${reveal_ref}" ]]; then
-  if ensure_visible_identifier_args greeting_input_field "${outdir}/greeting_args.json" down; then
+  if ensure_visible_identifier_args greeting_input_field "${outdir}/greeting_args.json" "${reveal_down_direction}"; then
     reveal_ref="$(args_ref "${outdir}/greeting_args.json")"
     reveal_snap="$(args_snapshot_id "${outdir}/greeting_args.json")"
   fi
 elif [[ "${reveal_visible}" != "True" && "${reveal_visible}" != "true" ]]; then
-  if ensure_visible_identifier_args greeting_input_field "${outdir}/greeting_args.json" down; then
+  if ensure_visible_identifier_args greeting_input_field "${outdir}/greeting_args.json" "${reveal_down_direction}"; then
     reveal_ref="$(args_ref "${outdir}/greeting_args.json")"
     reveal_snap="$(args_snapshot_id "${outdir}/greeting_args.json")"
   fi
@@ -249,10 +271,14 @@ fi
 run_tool evaluate_dart_expression '{"expression":"AgentState.instance.greeting"}' || true
 if [[ -n "${reveal_ref}" && -n "${reveal_snap}" ]]; then
   run_tool enter_text "{\"ref\":\"${reveal_ref}\",\"snapshotId\":${reveal_snap},\"text\":\"exec sweep\"}" || true
+else
+  missing_required_tool enter_text 'greeting_input_field ref not visible/discovered'
 fi
 
 if ensure_visible_identifier_args stateful_counter_increment_button "${outdir}/increment_tap_args.json" up; then
   run_tool tap_widget "$(cat "${outdir}/increment_tap_args.json")" || true
+else
+  missing_required_tool tap_widget 'stateful_counter_increment_button ref not visible/discovered'
 fi
 if ensure_visible_identifier_args stateful_counter_increment_button "${outdir}/increment_long_press_args.json" up; then
   if [[ "${platform}" == "web" ]]; then
@@ -260,6 +286,8 @@ if ensure_visible_identifier_args stateful_counter_increment_button "${outdir}/i
   else
     run_tool long_press "$(cat "${outdir}/increment_long_press_args.json")" || true
   fi
+else
+  missing_required_tool long_press 'stateful_counter_increment_button ref not visible/discovered'
 fi
 if ensure_visible_identifier_args stateful_counter_increment_button "${outdir}/increment_drag_args.json" up; then
   if [[ "${platform}" == "web" ]]; then
@@ -269,9 +297,13 @@ if ensure_visible_identifier_args stateful_counter_increment_button "${outdir}/i
     increment_snap="$(args_snapshot_id "${outdir}/increment_drag_args.json")"
     run_tool drag "{\"fromRef\":\"${increment_ref}\",\"toRef\":\"${increment_ref}\",\"snapshotId\":${increment_snap}}" || true
   fi
+else
+  missing_required_tool drag 'stateful_counter_increment_button ref not visible/discovered'
 fi
 if ensure_visible_identifier_args stateful_counter_increment_button "${outdir}/increment_hover_args.json" up; then
   run_tool hover "$(cat "${outdir}/increment_hover_args.json")" || true
+else
+  missing_required_tool hover 'stateful_counter_increment_button ref not visible/discovered'
 fi
 
 scroll_snap="$(capture_snapshot semantic_before_scroll || true)"
@@ -279,12 +311,16 @@ if [[ -n "${scroll_snap}" ]] && write_ref_args_for_type "${scroll_snap}" scrolla
   scroll_ref="$(args_ref "${outdir}/scrollable_args.json")"
   scroll_snap_id="$(args_snapshot_id "${outdir}/scrollable_args.json")"
   run_tool scroll "{\"ref\":\"${scroll_ref}\",\"direction\":\"down\",\"distance\":120,\"snapshotId\":${scroll_snap_id}}" || true
+else
+  missing_required_tool scroll 'scrollable ref not visible/discovered'
 fi
 scroll_snap="$(capture_snapshot semantic_before_swipe || true)"
 if [[ -n "${scroll_snap}" ]] && write_ref_args_for_type "${scroll_snap}" scrollable "${outdir}/scrollable_swipe_args.json" 2>/dev/null; then
   scroll_ref="$(args_ref "${outdir}/scrollable_swipe_args.json")"
   scroll_snap_id="$(args_snapshot_id "${outdir}/scrollable_swipe_args.json")"
   run_tool swipe "{\"ref\":\"${scroll_ref}\",\"direction\":\"down\",\"distance\":80,\"snapshotId\":${scroll_snap_id}}" || true
+else
+  missing_required_tool swipe 'scrollable ref not visible/discovered'
 fi
 run_tool press_key '{"key":"Tab"}' || true
 run_tool get_recent_logs '{"count":10}' || true
@@ -292,19 +328,25 @@ run_tool wait_for '{"predicate":{"kind":"time","ms":300},"timeoutMs":2000}' || t
 
 # Navigation + dialog (requires showcaseNavigatorKey in flutter_test_app)
 run_tool navigate '{"action":"push","route":"/visual-reconstruct"}' || true
-run_tool navigate '{"action":"pop"}' || true
-if ensure_visible_identifier_args show_test_dialog_button "${outdir}/dialog_args.json" down; then
+if [[ "${platform}" == "web" ]]; then
+  run_tool navigate '{"action":"push","route":"/"}' || true
+else
+  run_tool navigate '{"action":"pop"}' || true
+fi
+if ensure_visible_identifier_args show_test_dialog_button "${outdir}/dialog_args.json" "${reveal_down_direction}"; then
   run_tool tap_widget "$(cat "${outdir}/dialog_args.json")" || true
   sleep 0.5
   run_tool handle_dialog '{"action":"dismiss"}' || true
 else
-  run_tool handle_dialog '{"action":"dismiss"}' || true
+  missing_required_tool handle_dialog 'show_test_dialog_button ref not visible/discovered'
 fi
 
 if ensure_visible_identifier_args greeting_input_field "${outdir}/greeting_fill_args.json" up; then
   greeting_ref="$(args_ref "${outdir}/greeting_fill_args.json")"
   greeting_snap="$(args_snapshot_id "${outdir}/greeting_fill_args.json")"
   run_tool fill_form "{\"fields\":[{\"ref\":\"${greeting_ref}\",\"text\":\"fill form ok\"}],\"snapshotId\":${greeting_snap}}" || true
+else
+  missing_required_tool fill_form 'greeting_input_field ref not visible/discovered'
 fi
 
 # Hot reload family (restart last — destructive)
@@ -332,6 +374,9 @@ run_tool hot_restart_flutter '{}' || true
 summary_file="${outdir}/sweep_summary.txt"
 {
   printf 'platform=%s\n' "${platform}"
+  printf 'generatedAt=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  printf 'script=%s\n' "${BASH_SOURCE[0]}"
+  printf 'outdir=%s\n' "${outdir}"
   printf 'WS_URI=%s\n' "${ws_uri}"
   printf 'PASS=%s FAIL=%s SKIP=%s\n' "${pass}" "${fail}" "${skip}"
   printf '\nResults:\n'

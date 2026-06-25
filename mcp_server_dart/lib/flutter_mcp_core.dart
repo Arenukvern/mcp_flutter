@@ -1,11 +1,15 @@
 // Copyright (c) 2025, Flutter Inspector MCP Server authors.
 // Licensed under the MIT License.
 
-/// Broad compatibility barrel for server-side Flutter MCP internals.
+/// Server-side Flutter MCP internals that remain intentionally exported.
 ///
 /// New consumers should prefer focused public surfaces such as
 /// `flutter_mcp_attach.dart`, `intentcall_session`, and package-specific
-/// capability APIs. This barrel remains for existing server/CLI integrations.
+/// capability APIs.
+///
+/// Removed private session, state, lock, safe-write, and snapshot internals are
+/// not re-exported here. Import `intentcall_session` for those APIs; Flutter
+/// MCP only adapts them through its server-local `FlutterSessionConnector`.
 library;
 
 export 'src/capabilities/ai_providers/error_summary_provider.dart';

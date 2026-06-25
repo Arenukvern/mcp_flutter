@@ -2,7 +2,7 @@
 # Prints hosted pub.dev dependency snippets for mcp_flutter consumers (Phase 7.5).
 set -euo pipefail
 
-version="${INTENTCALL_VERSION:-0.1.0}"
+version="${INTENTCALL_VERSION:-0.2.1}"
 
 cat <<EOF
 # Replace path: ../agentkit/packages/<name> with:

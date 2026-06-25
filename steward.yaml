@@ -139,6 +139,51 @@ actions:
         native_gate: make check-contracts
         falsifier: bash tool/intentcall/check_no_path_deps_test.sh
         benchmark: mcp_flutter.intentcall-hosted-cutover
+  fmt.check.intentcall-hosted-deps-strict:
+    kind: command
+    desc: Verify hosted IntentCall dependency cutover has no stale local or root path dependencies.
+    command:
+      argv: [/bin/bash, tool/intentcall/check_no_path_deps.sh, --strict-root]
+      shell: false
+    cwd: .
+    effects:
+      fs_read:
+        - tool/intentcall/check_no_path_deps.sh
+        - pubspec.yaml
+        - pubspec.lock
+        - mcp_toolkit/pubspec.yaml
+        - mcp_server_dart/pubspec.yaml
+        - packages/core/pubspec.yaml
+        - packages/server_capability_core/pubspec.yaml
+        - packages/server_capability_kernel/pubspec.yaml
+        - flutter_test_app/pubspec.yaml
+      fs_write: []
+      git: false
+      network: false
+      secrets: false
+      destructive: false
+    safety:
+      class: bounded_local
+      default_policy: auto
+      requires_confirmation: false
+    limits:
+      timeout_ms: 10000
+      max_output_bytes: 200000
+    outputs:
+      - id: stdout
+        kind: stream
+        required: true
+        retention: summary
+        format: text
+    evidence:
+      owner: flutter-mcp-toolkit
+      risk: hosted_dependency_cutover_regression
+      redaction: steward/redaction/v1
+      summary_fields: [exit_code, duration_ms, output_digest]
+      validation:
+        native_gate: make check-contracts
+        falsifier: bash tool/intentcall/check_no_path_deps_test.sh
+        benchmark: mcp_flutter.intentcall-hosted-cutover
   fmt.check.sdk-parity:
     kind: command
     desc: Verify Dart SDK floor parity between mcp_server_dart pubspec and Docker images.

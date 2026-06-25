@@ -6,7 +6,7 @@
 |------|----------|
 | Canonical local IntentCall clone | `/Users/anton/mcp/agentkit` |
 | GitHub | `github.com/Arenukvern/intentcall` |
-| Consumer package policy | Hosted `intentcall_* ^0.1.0` from pub.dev |
+| Consumer package policy | Hosted `intentcall_* ^0.2.1` from pub.dev |
 | Local-development exception | Temporary sibling path overrides to `/Users/anton/mcp/agentkit/packages/intentcall_*` only |
 | Main integration gate | `make check-intentcall-integration` |
 | Repo contract gate | `make check-contracts` |
@@ -39,6 +39,14 @@ Do not import `mcp_server_dart/src/cli/session/*` or other private server
 internals from downstream repos. The hard public boundary is
 `intentcall_session` plus the IntentCall registry/result packages; Flutter MCP
 is the adapter proving those pieces against a real Flutter app.
+
+Breaking boundary cut: `mcp_server_dart/lib/flutter_mcp_core.dart` and
+server-local session barrels no longer promise compatibility for removed
+`SessionManager`, `StateStore`, `StateLockManager`, `SafeFileWriter`, or
+snapshot internals. Downstream code must import `intentcall_session` for
+`IntentSessionManager`, `StateStore`, `StateLockManager`, `SafeFileWriter`, and
+`IntentSnapshotStore`. Flutter MCP exposes `FlutterSessionConnector` only as
+its adapter between `ConnectionContext` and IntentCall sessions.
 
 Flutter MCP remains one runtime adapter. It keeps VM service discovery, DTD,
 Flutter extension calls, screenshots, widget inspection, MCP projection, and CLI

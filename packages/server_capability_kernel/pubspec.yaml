@@ -16,7 +16,6 @@ resolution: workspace
 dependencies:
   flutter_mcp_toolkit_core: ^4.0.0-dev.5
   intentcall_core: ^0.2.1
-  intentcall_mcp: ^0.2.1
   intentcall_schema: ^0.2.1
   meta: ^1.18.0
 dev_dependencies:

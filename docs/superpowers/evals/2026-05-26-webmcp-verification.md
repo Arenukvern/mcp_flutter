@@ -5,7 +5,9 @@
 
 ## Scope
 
-Verify **true WebMCP** (`navigator.modelContext.registerTool` / W3C CG draft) for `flutter_test_app`, distinct from VM extensions + dynamic registry dogfood.
+Verify **true WebMCP** (`document.modelContext.registerTool` with
+`navigator.modelContext.registerTool` fallback / W3C CG draft) for
+`flutter_test_app`, distinct from VM extensions + dynamic registry dogfood.
 
 ## Code paths (verified in repo)
 
@@ -19,7 +21,8 @@ Verify **true WebMCP** (`navigator.modelContext.registerTool` / W3C CG draft) fo
 
 ### Detection
 
-- **JS:** `'modelContext' in nav && typeof nav.modelContext.registerTool === 'function'`
+- **JS:** generated code checks `document.modelContext.registerTool` first,
+  then falls back to `navigator.modelContext.registerTool`.
 - **Dart:** `navigator.hasProperty('modelContext')` (does not check `registerTool` is a function)
 
 Both paths **no-op silently** when API absent.
