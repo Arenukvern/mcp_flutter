@@ -12,6 +12,7 @@
   if (!modelContext) {
     return;
   }
+  var fallbackEnabled = false;
   var invokePath = "/agent/invoke";
   var tools = [
   {
@@ -20,6 +21,23 @@
     "inputSchema": {
       "type": "object",
       "properties": {}
+    }
+  },
+  {
+    "name": "app_intentcall_bridge_ping",
+    "description": "Proof that native/WebMCP dispatch executes Dart registry logic",
+    "inputSchema": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "echo": {
+          "type": "string",
+          "description": "Value echoed by Dart registry proof."
+        }
+      },
+      "required": [
+        "echo"
+      ]
     }
   }
 ];
@@ -167,6 +185,13 @@
   }
 
   function fetchInvoke(name, args) {
+    if (!fallbackEnabled) {
+      return Promise.resolve({
+        ok: false,
+        code: 'runtime_unavailable',
+        message: 'No Dart WebMCP runtime registered for ' + name + '.',
+      });
+    }
     return global.fetch(invokePath + '?name=' + encodeURIComponent(name), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

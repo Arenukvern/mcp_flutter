@@ -38,6 +38,12 @@
             "short_name": "Demo Ping",
             "description": "Demo ping tool for WebMCP platform sync",
             "url": "/agent/invoke?name=app_demo_ping"
+        },
+        {
+            "name": "Intentcall Bridge Ping",
+            "short_name": "Intentcall Bridge Ping",
+            "description": "Proof that native/WebMCP dispatch executes Dart registry logic",
+            "url": "/agent/invoke?name=app_intentcall_bridge_ping"
         }
     ],
     "protocol_handlers": [
@@ -48,6 +54,10 @@
         {
             "protocol": "web+intentcall",
             "url": "/agent/invoke?name=app_demo_ping&payload=%s"
+        },
+        {
+            "protocol": "web+intentcall",
+            "url": "/agent/invoke?name=app_intentcall_bridge_ping&payload=%s"
         }
     ]
 }

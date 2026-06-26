@@ -2,6 +2,7 @@
 
 import 'dart:async';
 
+import 'package:intentcall_platform/intentcall_platform.dart';
 import 'package:intentcall_platform/intentcall_platform_flutter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -15,6 +16,8 @@ import 'package:test_app/visual_reconstruct_screen.dart';
 
 var _initialEntriesRegistered = false;
 var _delayedEntriesRegistered = false;
+final _intentCallProofRegistry = InMemoryAgentRegistry();
+late final IntentCallNativeBridge _intentCallProofBridge;
 
 /// Registered on [MCPToolkitBinding.instance] for `navigate` / `handle_dialog`.
 final GlobalKey<NavigatorState> showcaseNavigatorKey =
@@ -34,9 +37,20 @@ Future<void> main({final bool enableDelayedMcpRegistration = true}) async {
       IntentCallInvokeLinkListener(
         onQualifiedName: (final name) {
           debugPrint('intentcall invoke: $name');
+          unawaited(
+            _intentCallProofBridge.execute(
+              IntentCallInvocationEnvelope(
+                id: 'deeplink-${DateTime.now().microsecondsSinceEpoch}',
+                qualifiedName: name,
+                arguments: const <String, Object?>{},
+                source: IntentCallInvocationSource.deepLink,
+              ),
+            ),
+          );
         },
       ).start(),
     );
+    unawaited(_drainIntentCallPendingInvocations());
   }
   if (enableDelayedMcpRegistration) {
     // Mirror the previous bootstrap timing: a brief delay so a remote
@@ -73,10 +87,48 @@ Map<String, dynamic> _getUserPreferences(final String category) {
   };
 }
 
+AgentCallEntry _intentCallBridgePingEntry() => AgentCallEntry.tool(
+  namespace: 'app',
+  name: 'intentcall_bridge_ping',
+  description:
+      'Proof that WebMCP/native bridge dispatch executes Dart registry logic.',
+  inputSchema: const <String, Object?>{
+    'type': 'object',
+    'additionalProperties': false,
+    'properties': <String, Object?>{
+      'echo': <String, Object?>{
+        'type': 'string',
+        'description': 'Value echoed by Dart registry proof.',
+      },
+    },
+    'required': <String>['echo'],
+  },
+  handler: (final args) async => AgentResult.success(
+    message: 'intentcall bridge pong',
+    data: <String, Object?>{
+      'source': 'dart_registry',
+      'kind': 'intentcall_bridge_ping',
+      'echo': args['echo'],
+      'timestamp': DateTime.now().toUtc().toIso8601String(),
+    },
+  ),
+);
+
+Future<void> _drainIntentCallPendingInvocations() async {
+  final pending = await const IntentCallPendingInvocations().takePending();
+  for (final envelope in pending) {
+    final result = await _intentCallProofBridge.execute(envelope);
+    debugPrint(
+      'intentcall pending invocation ${envelope.qualifiedName}: ${result.ok}',
+    );
+  }
+}
+
 Future<void> _registerInitialMCPTools() async {
   if (_initialEntriesRegistered) return;
   _initialEntriesRegistered = true;
   final binding = MCPToolkitBinding.instance;
+  final intentCallBridgePingEntry = _intentCallBridgePingEntry();
 
   final fibonacciEntry = mcpToolkitTool(
     namespace: 'app',
@@ -131,15 +183,35 @@ Future<void> _registerInitialMCPTools() async {
   );
 
   final dogfoodEntries = buildAgentDogfoodEntries();
+  _intentCallProofRegistry.register(intentCallBridgePingEntry.toRegistration());
+  _intentCallProofBridge = IntentCallNativeBridge.bindRegistry(
+    registry: _intentCallProofRegistry,
+    policy: const IntentCallAuthorizationPolicy(
+      allowedSources: <String>{
+        IntentCallInvocationSource.webMcpDart,
+        IntentCallInvocationSource.nativeGenerated,
+        IntentCallInvocationSource.deepLink,
+      },
+      allowedQualifiedNames: <String>{'app_intentcall_bridge_ping'},
+    ),
+  );
   await binding.addEntries(
     entries: {
       fibonacciEntry,
       appStateEntry,
       agentStateEntry,
+      intentCallBridgePingEntry,
       ...dogfoodEntries,
     },
   );
   if (kIsWeb) {
+    registerAgentWebMcpFromRegistry(
+      _intentCallProofRegistry,
+      policy: const IntentCallAuthorizationPolicy(
+        allowedSources: <String>{IntentCallInvocationSource.webMcpDart},
+        allowedQualifiedNames: <String>{'app_intentcall_bridge_ping'},
+      ),
+    );
     await wireWebMcpPublishAdapterDogfood(dogfoodEntries);
   }
   print('Initial MCP tools and resources registered');

@@ -60,6 +60,12 @@ run_step validate-runtime "${toolkit[@]}" --flutter-device chrome --web-browser-
   --save-images --output-dir "${out}/validate-runtime" \
   validate-runtime --target "${ws_uri}" --timeout-ms 60000
 run_step webmcp-verify dart run "${repo_root}/mcp_server_dart/bin/flutter_mcp_toolkit.dart" webmcp verify --web-port "${web_port}"
+run_step webmcp-bridge-proof dart run "${repo_root}/mcp_server_dart/bin/flutter_mcp_toolkit.dart" webmcp verify \
+  --web-port "${web_port}" \
+  --tool-name app_intentcall_bridge_ping \
+  --tool-args '{"echo":"webmcp-proof"}' \
+  --expect-result-field source \
+  --expect-result-value dart_registry
 run_step runtime-enter-text bash "${repo_root}/tool/evals/run_runtime_enter_text_greeting.sh" --ws-uri "${ws_uri}" \
   --platform web --launch-command "scripts/run_web_showcase.sh --detach" \
   --output "${out}/runtime-enter-text-greeting.json"

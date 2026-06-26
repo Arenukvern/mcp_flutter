@@ -334,7 +334,7 @@ if [[ "${skip_runtime}" != true ]]; then
   fi
 
   if [[ "${webmcp_verify}" == true || "${device}" == chrome ]]; then
-    log "webmcp verify (CDP probe for navigator.modelContext)"
+    log "webmcp verify (CDP probe for WebMCP modelContext)"
     set +e
     webmcp_args=(webmcp verify --web-port "${web_port}")
     [[ -n "${web_debug_port}" ]] && webmcp_args+=(--cdp-port "${web_debug_port}")

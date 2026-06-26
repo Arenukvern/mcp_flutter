@@ -12,7 +12,23 @@ struct AppDemoPingIntent: AppIntent {
   static var title: LocalizedStringResource = "Demo ping tool for WebMCP platform sync"
 
   func perform() async throws -> some IntentResult {
-    await IntentCallNativeBridge.invoke(qualifiedName: "app_demo_ping")
+    var arguments: [String: Any] = [:]
+    await IntentCallNativeBridge.enqueue(qualifiedName: "app_demo_ping", arguments: arguments)
+    return .result()
+  }
+}
+
+@available(iOS 16.0, macOS 13.0, *)
+struct AppIntentcallBridgePingIntent: AppIntent {
+  static var title: LocalizedStringResource = "Proof that native/WebMCP dispatch executes Dart registry logic"
+
+  @Parameter(title: "Echo")
+  var echo: String
+
+  func perform() async throws -> some IntentResult {
+    var arguments: [String: Any] = [:]
+    arguments["echo"] = echo
+    await IntentCallNativeBridge.enqueue(qualifiedName: "app_intentcall_bridge_ping", arguments: arguments)
     return .result()
   }
 }
@@ -20,14 +36,24 @@ struct AppDemoPingIntent: AppIntent {
 @available(iOS 16.0, macOS 13.0, *)
 struct IntentCallShortcutsProvider: AppShortcutsProvider {
   static var appShortcuts: [AppShortcut] {
-    [
-    AppShortcut(intent: AppDemoPingIntent(), phrases: ["Demo Ping"]),
-    ]
+    AppShortcut(intent: AppDemoPingIntent(), phrases: ["\(.applicationName) Demo Ping"])
+    AppShortcut(intent: AppIntentcallBridgePingIntent(), phrases: ["\(.applicationName) Intentcall Bridge Ping"])
   }
 }
 
 enum IntentCallNativeBridge {
-  static func invoke(qualifiedName: String) async {
+  private static let pendingKey = "intentcall.pending_invocations"
+
+  static func enqueue(qualifiedName: String, arguments: [String: Any]) async {
+    var pending = UserDefaults.standard.array(forKey: pendingKey) as? [[String: Any]] ?? []
+    pending.append([
+      "id": UUID().uuidString,
+      "qualifiedName": qualifiedName,
+      "arguments": arguments,
+      "source": "native.generated",
+      "createdAt": ISO8601DateFormatter().string(from: Date())
+    ])
+    UserDefaults.standard.set(pending, forKey: pendingKey)
     guard let url = URL(string: "intentcall://invoke/\(qualifiedName)") else { return }
     #if canImport(UIKit)
     await UIApplication.shared.open(url)

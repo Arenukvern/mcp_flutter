@@ -345,36 +345,32 @@ packages:
     source: hosted
     version: "0.2.1"
   intentcall_core:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
-      name: intentcall_core
-      sha256: "4c69e60117d45bf3cd28565fe23f4fcad5962d8bd15f10a38dd583d19d86ecd6"
-      url: "https://pub.dev"
-    source: hosted
+      path: "/Users/anton/mcp/agentkit/packages/intentcall_core"
+      relative: false
+    source: path
     version: "0.2.1"
   intentcall_mcp:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
-      name: intentcall_mcp
-      sha256: "6982277f1a8e6fddec5e991b1d817554ac0086582c46dca99cc74a21c7451181"
-      url: "https://pub.dev"
-    source: hosted
+      path: "/Users/anton/mcp/agentkit/packages/intentcall_mcp"
+      relative: false
+    source: path
     version: "0.2.1"
   intentcall_platform:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
-      name: intentcall_platform
-      sha256: "0163da97997ed875d313c46330c6df19100fd5cdab0dfdfa84988cb890ebd37c"
-      url: "https://pub.dev"
-    source: hosted
+      path: "/Users/anton/mcp/agentkit/packages/intentcall_platform"
+      relative: false
+    source: path
     version: "0.2.1"
   intentcall_schema:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
-      name: intentcall_schema
-      sha256: "2a5d2c345d104e06c799a1acaf49f2841c92916c8ef690934cbacac29c857c22"
-      url: "https://pub.dev"
-    source: hosted
+      path: "/Users/anton/mcp/agentkit/packages/intentcall_schema"
+      relative: false
+    source: path
     version: "0.2.1"
   intentcall_session:
     dependency: transitive
@@ -383,6 +379,13 @@ packages:
       sha256: "89fa17a9035f968095d55ec934c70dcdcf8a6fc3ebe7afbc972a6270f1e3699a"
       url: "https://pub.dev"
     source: hosted
+    version: "0.2.1"
+  intentcall_webmcp:
+    dependency: "direct overridden"
+    description:
+      path: "/Users/anton/mcp/agentkit/packages/intentcall_webmcp"
+      relative: false
+    source: path
     version: "0.2.1"
   io:
     dependency: transitive

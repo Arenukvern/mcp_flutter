@@ -1,15 +1,21 @@
 PODS:
   - FlutterMacOS (1.0.0)
+  - intentcall_platform (0.2.1):
+    - FlutterMacOS
 
 DEPENDENCIES:
   - FlutterMacOS (from `Flutter/ephemeral`)
+  - intentcall_platform (from `Flutter/ephemeral/.symlinks/plugins/intentcall_platform/macos`)
 
 EXTERNAL SOURCES:
   FlutterMacOS:
     :path: Flutter/ephemeral
+  intentcall_platform:
+    :path: Flutter/ephemeral/.symlinks/plugins/intentcall_platform/macos
 
 SPEC CHECKSUMS:
   FlutterMacOS: d0db08ddef1a9af05a5ec4b724367152bb0500b1
+  intentcall_platform: ca566bfa72708110b6caf1db78cb5fb66e6790cf
 
 PODFILE CHECKSUM: 54d867c82ac51cbd61b565781b9fada492027009
 

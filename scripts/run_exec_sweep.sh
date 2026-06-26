@@ -356,6 +356,7 @@ run_tool hot_reload_and_capture '{"compress":true,"errorsCount":5}' || true
 # Client bridge
 run_tool fmt_list_client_tools_and_resources '{}' || true
 run_tool fmt_client_tool '{"toolName":"dogfood_ping","arguments":{}}' || true
+run_tool fmt_client_tool '{"toolName":"intentcall_bridge_ping","arguments":{"echo":"vm-service-proof"}}' || true
 
 # migrate is a top-level subcommand, not exec
 printf '=== migrate agent-entries ===\n'

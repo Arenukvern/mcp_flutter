@@ -12,6 +12,24 @@
         "type": "object",
         "properties": {}
       }
+    },
+    {
+      "qualifiedName": "app_intentcall_bridge_ping",
+      "namespace": "app",
+      "name": "intentcall_bridge_ping",
+      "description": "Proof that native/WebMCP dispatch executes Dart registry logic",
+      "kind": "tool",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "echo": {
+            "type": "string",
+            "description": "Value echoed by Dart registry proof."
+          }
+        },
+        "required": ["echo"]
+      }
     }
   ]
 }

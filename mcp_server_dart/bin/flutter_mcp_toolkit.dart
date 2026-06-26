@@ -2177,6 +2177,24 @@ final _argParser = ArgParser(allowTrailingOptions: false)
             'web-port',
             defaultsTo: '8080',
             help: 'Prefer app tab on this port',
+          )
+          ..addOption(
+            'tool-name',
+            help:
+                'Optional WebMCP tool name to invoke through modelContextTesting.',
+          )
+          ..addOption(
+            'tool-args',
+            defaultsTo: '{}',
+            help: 'JSON object arguments for --tool-name.',
+          )
+          ..addOption(
+            'expect-result-field',
+            help: 'Optional top-level result field that must match.',
+          )
+          ..addOption(
+            'expect-result-value',
+            help: 'Expected JSON/string value for --expect-result-field.',
           ),
       ),
   )
@@ -2562,9 +2580,20 @@ Future<int> _runWebmcpSubcommand(final ArgResults command) async {
     case 'chrome-args':
       return runWebmcpChromeArgs();
     case 'verify':
+      final rawToolArgs = jsonDecode(sub.option('tool-args') ?? '{}');
+      final toolArgs = rawToolArgs is Map
+          ? rawToolArgs.cast<String, Object?>()
+          : const <String, Object?>{};
+      final rawExpected = sub.option('expect-result-value');
       return runWebmcpVerify(
         cdpPort: int.tryParse(sub.option('cdp-port') ?? ''),
         preferredWebPort: int.tryParse(sub.option('web-port') ?? '') ?? 8080,
+        toolName: sub.option('tool-name'),
+        toolArguments: toolArgs,
+        expectResultField: sub.option('expect-result-field'),
+        expectResultValue: rawExpected == null
+            ? null
+            : _parseJsonScalarOrString(rawExpected),
       );
     default:
       io.stderr.writeln('Unknown webmcp subcommand: ${sub.name}');
@@ -2572,10 +2601,19 @@ Future<int> _runWebmcpSubcommand(final ArgResults command) async {
   }
 }
 
+Object? _parseJsonScalarOrString(final String value) {
+  try {
+    return jsonDecode(value);
+  } on FormatException {
+    return value;
+  }
+}
+
 String _usageWebmcp() => '''
 Usage:
   flutter-mcp-toolkit webmcp chrome-args
   flutter-mcp-toolkit webmcp verify [--cdp-port PORT] [--web-port 8080]
+      [--tool-name NAME --tool-args JSON --expect-result-field FIELD --expect-result-value VALUE]
 
 Enables repeatable WebMCP E2E on Chrome without manual chrome://flags each session.
 See docs/superpowers/evals/2026-05-26-webmcp-verification.md
@@ -2590,9 +2628,11 @@ Use scripts/run_web_showcase.sh for a logged dogfood launch.
 
 String _usageWebmcpVerify() => '''
 Usage: flutter-mcp-toolkit webmcp verify [--cdp-port PORT] [--web-port 8080]
+       [--tool-name NAME --tool-args JSON --expect-result-field FIELD --expect-result-value VALUE]
 
 Probes a running Chrome tab via CDP for navigator.modelContext.registerTool.
-Exit 0 when WebMCP API is active; 1 with fix hints when not.
+With --tool-name, invokes the WebMCP tool through modelContextTesting and fails
+if the generated network fallback is used.
 ''';
 
 Future<int> _runMigrateSubcommand(final ArgResults command) async {

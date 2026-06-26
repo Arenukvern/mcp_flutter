@@ -1847,7 +1847,7 @@ When changing IntentCall consumer integration in `mcp_flutter`:
     SkillAsset(
       id: 'flutter-mcp-toolkit-maintain-web',
       frontmatter: r'''name: flutter-mcp-toolkit-maintain-web
-description: Maintains flutter_test_app and intentcall web targets (Chrome, web codegen, WebMCP bootstrap, web-showcase, webmcp verify). Use when editing web/index.html, agent_manifest.json, intentcall_webmcp.generated.js, web platform sync, Chrome dogfood, or navigator.modelContext.''',
+description: Maintains flutter_test_app and intentcall web targets (Chrome, web codegen, WebMCP bootstrap, web-showcase, webmcp verify). Use when editing web/index.html, agent_manifest.json, intentcall_webmcp.generated.js, web platform sync, Chrome dogfood, or WebMCP modelContext.''',
       body: r'''
 <!-- @FMT_MODE_PRELUDE -->
 
@@ -1860,7 +1860,7 @@ Dogfood app: `flutter_test_app`. Canonical platform doc: `flutter_test_app/INTEN
 | Path | Proves |
 |------|--------|
 | VM extensions + `fmt_*` tools | MCP toolkit dogfood (always) |
-| `navigator.modelContext` | True WebMCP (Chrome flag / `--web-browser-flag`) |
+| `document.modelContext` | True WebMCP (Chrome flag / `--web-browser-flag`) |
 
 ADR: `decisions/0008_web_agent_invoke_js_only.mdx` — JS `fetch('/agent/invoke')` **404** by design; Dart `invokeDirect` works when `modelContext` exists.
 
@@ -1937,7 +1937,7 @@ Dogfood app: `flutter_test_app`. Platform doc: `flutter_test_app/INTENTCALL_PLAT
 
 ## WebMCP on macOS
 
-**`navigator.modelContext` is web-only.** macOS dogfood proves **VM extensions**, **dynamic registry**, **native invoke** (`intentcall://` via `app_links`), and **visual capture** (Screen Recording on host).
+**WebMCP `modelContext` is web-only.** macOS dogfood proves **VM extensions**, **dynamic registry**, **native invoke** (`intentcall://` via `app_links`), and **visual capture** (Screen Recording on host).
 
 For WebMCP parity scoring, run web iteration separately (`flutter-mcp-toolkit-maintain-web`).
 

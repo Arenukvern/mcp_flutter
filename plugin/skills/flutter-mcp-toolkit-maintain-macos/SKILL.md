@@ -11,7 +11,7 @@ Dogfood app: `flutter_test_app`. Platform doc: `flutter_test_app/INTENTCALL_PLAT
 
 ## WebMCP on macOS
 
-**`navigator.modelContext` is web-only.** macOS dogfood proves **VM extensions**, **dynamic registry**, **native invoke** (`intentcall://` via `app_links`), and **visual capture** (Screen Recording on host).
+**WebMCP `modelContext` is web-only.** macOS dogfood proves **VM extensions**, **dynamic registry**, **native invoke** (`intentcall://` via `app_links`), and **visual capture** (Screen Recording on host).
 
 For WebMCP parity scoring, run web iteration separately (`flutter-mcp-toolkit-maintain-web`).
 
