@@ -222,6 +222,45 @@ actions:
       summary_fields: [exit_code, duration_ms, output_digest]
       validation:
         native_gate: make check-contracts
+  fmt.check.cli-alias-surface:
+    kind: command
+    desc: Verify fmtk CLI alias, canonical CLI, server binary, and release/install alias surfaces.
+    command:
+      argv: [/bin/bash, tool/contracts/check_cli_alias_surface.sh]
+      shell: false
+    cwd: .
+    effects:
+      fs_read:
+        - tool/contracts/check_cli_alias_surface.sh
+        - mcp_server_dart/pubspec.yaml
+        - mcp_server_dart/makefile
+        - tool/release/build_release_artifacts.sh
+        - install.sh
+      fs_write: []
+      git: false
+      network: false
+      secrets: false
+      destructive: false
+    safety:
+      class: bounded_local
+      default_policy: auto
+      requires_confirmation: false
+    limits:
+      timeout_ms: 10000
+      max_output_bytes: 200000
+    outputs:
+      - id: stdout
+        kind: stream
+        required: true
+        retention: summary
+        format: text
+    evidence:
+      owner: flutter-mcp-toolkit
+      risk: cli_alias_surface_regression
+      redaction: steward/redaction/v1
+      summary_fields: [exit_code, duration_ms, output_digest]
+      validation:
+        native_gate: make check-contracts
   fmt.check.version-sync:
     kind: command
     desc: Verify repo VERSION matches package, runtime, plugin, and hosted dependency version touchpoints.
@@ -443,6 +482,7 @@ probes:
       - fmt.check.tool-prefix
       - fmt.check.intentcall-hosted-deps
       - fmt.check.sdk-parity
+      - fmt.check.cli-alias-surface
       - fmt.check.version-sync
       - fmt.check.changelog-markdown
       - fmt.check.repo-split-paths

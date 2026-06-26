@@ -8,6 +8,7 @@ environment:
   sdk: '>=3.12.0 <4.0.0'
 resolution: workspace
 executables:
+  fmtk: flutter_mcp_toolkit
   flutter-mcp-toolkit: flutter_mcp_toolkit
   flutter-mcp-toolkit-server: flutter_mcp_toolkit_server
 dependencies:

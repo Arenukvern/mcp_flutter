@@ -14,6 +14,7 @@ inspect:
 check-contracts:
 	cd $(CURDIR) && \
 	bash tool/contracts/check_sdk_parity.sh && \
+	bash tool/contracts/check_cli_alias_surface.sh && \
 	bash tool/contracts/check_docs_drift.sh && \
 	bash tool/contracts/check_plugin_surfaces.sh && \
 	bash tool/contracts/check_version_sync.sh && \

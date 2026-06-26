@@ -1,6 +1,7 @@
 # CLI Quick Recipes
 
-Practical command patterns for `flutter-mcp-toolkit`.
+Practical command patterns for `fmtk`, the short alias for the canonical
+`flutter-mcp-toolkit` CLI.
 
 If you have not decided between interfaces yet, read [CLI vs MCP](/start_here/cli_vs_mcp) first.
 
@@ -12,10 +13,13 @@ From repo root:
 make install
 ```
 
-Run commands with:
+That builds local binaries under `mcp_server_dart/build/`. Add that directory
+to `PATH`, or call the local binary directly:
 
 ```bash
-dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart
+export PATH="$PWD/mcp_server_dart/build:$PATH"
+fmtk --help
+# or: ./mcp_server_dart/build/fmtk --help
 ```
 
 ## 0. Two-Step Agent Flow (Recommended)
@@ -30,7 +34,7 @@ flutter run --debug --host-vmservice-port=8182 --dds-port=8181
 Step 2: run a single runtime validation command.
 
 ```bash
-dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart --save-images validate-runtime \
+fmtk --save-images validate-runtime \
   --target ws://127.0.0.1:8181/<token>/ws \
   --timeout-ms 10000 \
   --after-reload
@@ -43,23 +47,24 @@ Optional: add `--install-skill` to install bundled skill `flutter-mcp-cli-runtim
 ## 1. Inspect Available Capabilities
 
 ```bash
-dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart capabilities
-dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart schema
-dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart schema --name get_app_errors
+fmtk capabilities
+fmtk schema
+fmtk schema --name get_app_errors
 ```
 
 ## 2. Run One-Shot Health Checks
 
 ```bash
-dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart doctor --json
-dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart exec --name status --args '{}'
-dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart exec --name get_vm --args '{}'
+fmtk doctor --json
+fmtk exec --name status --args '{}'
+fmtk exec --name get_vm --args '{}'
+fmtk batch --steps '[{"name":"status","args":{}},{"name":"get_app_errors","args":{"count":5}}]'
 ```
 
 ## 3. CLI-First Runtime Preflight (Required Before App Inspection)
 
 ```bash
-dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart exec --name get_extension_rpcs --args '{}'
+fmtk exec --name get_extension_rpcs --args '{}'
 ```
 
 Confirm these extensions exist before claiming screenshot/layout/error inspection works:
@@ -79,25 +84,25 @@ If any are missing:
 ## 4. Pull Common Debug Data
 
 ```bash
-dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart exec --name get_app_errors --args '{"count":5}'
-dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart exec --name get_view_details --args '{}'
-dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart exec --name get_screenshots --args '{}'
-dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart exec --name discover_debug_apps --args '{}'
-dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart exec --name capture_ui_snapshot --args '{"includeViewDetails":true,"includeErrors":true}'
-dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart exec --name inspect_widget_at_point --args '{"x":120,"y":220}'
+fmtk exec --name get_app_errors --args '{"count":5}'
+fmtk exec --name get_view_details --args '{}'
+fmtk exec --name get_screenshots --args '{}'
+fmtk exec --name discover_debug_apps --args '{}'
+fmtk exec --name capture_ui_snapshot --args '{"includeViewDetails":true,"includeErrors":true}'
+fmtk exec --name inspect_widget_at_point --args '{"x":120,"y":220}'
 ```
 
 ## 5. Verify Runtime Changes (Agent-Style)
 
 ```bash
 # baseline visual/layout state
-dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart exec --name get_screenshots --args '{}'
-dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart exec --name get_view_details --args '{}'
+fmtk exec --name get_screenshots --args '{}'
+fmtk exec --name get_view_details --args '{}'
 
 # after code edits
-dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart exec --name hot_reload_flutter --args '{}'
-dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart exec --name get_screenshots --args '{}'
-dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart exec --name get_view_details --args '{}'
+fmtk exec --name hot_reload_flutter --args '{}'
+fmtk exec --name get_screenshots --args '{}'
+fmtk exec --name get_view_details --args '{}'
 ```
 
 ## 6. Handle Multiple Debug Targets Explicitly
@@ -105,7 +110,7 @@ dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart exec --name get_view_detai
 When calls fail with `connection_selection_required`, retry with a target URI:
 
 ```bash
-dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart exec \
+fmtk exec \
   --name get_vm \
   --args '{"connection":{"targetId":"ws://127.0.0.1:59490/<token>/ws"}}'
 ```
@@ -115,7 +120,7 @@ dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart exec \
 If you have Flutter machine output with `app.debugPort.wsUri`, prefer `connection.uri` and paste that value exactly:
 
 ```bash
-dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart exec \
+fmtk exec \
   --name get_vm \
   --args '{"connection":{"uri":"ws://127.0.0.1:59490/<token>/ws"}}'
 ```
@@ -123,20 +128,20 @@ dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart exec \
 ## 8. Use Session Lifecycle Commands
 
 ```bash
-dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart exec --name session_start --args '{"mode":"uri","uri":"ws://127.0.0.1:8181/<token>/ws"}'
-dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart exec --name session_exec --args '{"command":"get_app_errors","arguments":{"count":3}}'
-dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart exec --name session_end --args '{}'
+fmtk exec --name session_start --args '{"mode":"uri","uri":"ws://127.0.0.1:8181/<token>/ws"}'
+fmtk exec --name session_exec --args '{"command":"get_app_errors","arguments":{"count":3}}'
+fmtk exec --name session_end --args '{}'
 ```
 
 ## 9. Create Reproducible Artifacts
 
 ```bash
-dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart snapshot create --name baseline --args '{"commands":[{"name":"status","args":{}},{"name":"get_app_errors","args":{"count":5}}]}' --check --diff
-dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart snapshot create --name baseline --args '{"commands":[{"name":"status","args":{}},{"name":"get_app_errors","args":{"count":5}}]}' --backup
-dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart snapshot create --name after_fix --args '{"commands":[{"name":"status","args":{}},{"name":"get_app_errors","args":{"count":5}}]}' --no-overwrite
-dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart snapshot diff --from baseline --to after_fix
-dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart bundle create --from-snapshot after_fix --check --diff
-dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart bundle create --from-snapshot after_fix --backup
+fmtk snapshot create --name baseline --args '{"commands":[{"name":"status","args":{}},{"name":"get_app_errors","args":{"count":5}}]}' --check --diff
+fmtk snapshot create --name baseline --args '{"commands":[{"name":"status","args":{}},{"name":"get_app_errors","args":{"count":5}}]}' --backup
+fmtk snapshot create --name after_fix --args '{"commands":[{"name":"status","args":{}},{"name":"get_app_errors","args":{"count":5}}]}' --no-overwrite
+fmtk snapshot diff --from baseline --to after_fix
+fmtk bundle create --from-snapshot after_fix --check --diff
+fmtk bundle create --from-snapshot after_fix --backup
 ```
 
 ## 10. CI Script Template
@@ -146,12 +151,13 @@ dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart bundle create --from-snaps
 set -euo pipefail
 
 make install
+export PATH="$PWD/mcp_server_dart/build:$PATH"
 
-dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart doctor --json
-dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart exec --name get_extension_rpcs --args '{}'
-dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart exec --name status --args '{}'
-dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart exec --name get_app_errors --args '{"count":10}'
-dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart snapshot create --name ci_run --args '{"commands":[{"name":"status","args":{}},{"name":"get_app_errors","args":{"count":10}}]}' --check --diff
+fmtk doctor --json
+fmtk exec --name get_extension_rpcs --args '{}'
+fmtk exec --name status --args '{}'
+fmtk exec --name get_app_errors --args '{"count":10}'
+fmtk snapshot create --name ci_run --args '{"commands":[{"name":"status","args":{}},{"name":"get_app_errors","args":{"count":10}}]}' --check --diff
 ```
 
 ## 11. Common Failure Recovery

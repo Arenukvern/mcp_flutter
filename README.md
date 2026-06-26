@@ -21,13 +21,14 @@ _Inspect and drive a running Flutter app from your AI assistant._
 
 ![View Screenshots](docs/view_screenshots.gif)
 
-> ![NOTICE]: Version 4 is currently a prerelease train. Use `4.0.0-dev.2` only if you are intentionally testing the new architecture; otherwise stay on the latest stable 3.x release until `4.0.0` is promoted.
+> ![NOTICE]: Version 4 is currently a prerelease train. Use `4.0.0-dev.5` only if you are intentionally testing the new architecture; otherwise stay on the latest stable 3.x release until `4.0.0` is promoted.
 
 ## Get started in 4 steps
 
 ```bash
 # 1. Install the binary
 curl -fsSL https://raw.githubusercontent.com/Arenukvern/mcp_flutter/main/install.sh | bash
+# Installs flutter-mcp-toolkit plus the short fmtk alias for repeated CLI loops.
 
 # 2. Add the toolkit to your Flutter app
 cd my-flutter-app
@@ -77,7 +78,7 @@ Maintainers submitting to official stores: [marketplace submission runbook](docs
 
 ## What it does
 
-The toolkit exposes 27 MCP tools (under the `fmt_*` capability prefix) across four categories:
+The default toolkit surface exposes 30 MCP tools under the `fmt_*` capability prefix across four categories:
 
 - **Inspection** — semantic snapshot, view details, errors, screenshots, VM info
 - **Interaction** — tap, scroll, type, fill forms, hot-reload, navigate, wait_for

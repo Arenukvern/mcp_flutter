@@ -86,9 +86,11 @@ parameter shapes lives in the task skills.
 - **Debug:** `get_recent_logs`, `evaluate_dart_expression`. →
   `flutter-mcp-toolkit-debug`.
 - **Dynamic registry (app-defined):** after registration in the Flutter app,
-  list with `list_client_tools_and_resources`, then `client_tool` /
-  `client_resource` — wire names as **`fmt_*`** when calling MCP. →
-  `flutter-mcp-toolkit-custom-tools`.
+  MCP calls use `fmt_list_client_tools_and_resources`, then
+  `fmt_client_tool` / `fmt_client_resource`. When shelling out to the CLI,
+  command names appear only as `exec --name <name>` values; do not call bare
+  `list_client_tools_and_resources`, `client_tool`, or `client_resource` as
+  MCP tools. → `flutter-mcp-toolkit-custom-tools`.
 
 ## When in doubt
 
@@ -109,7 +111,7 @@ description: Verify the flutter-mcp-toolkit install, run doctor preflight, troub
 
 Use this skill when:
 
-- First-time install: `flutter-mcp-toolkit` is not yet on PATH.
+- First-time install: `flutter-mcp-toolkit` or its short alias `fmtk` is not yet on PATH.
 - `doctor --json` returns any check with `"status": "fail"`.
 - MCP server fails to connect or tools return `vm_not_connected` / `connect_failed`.
 - Visual capture or toolkit-bridge commands are returning unexpected errors.
@@ -119,10 +121,11 @@ Use this skill when:
 ## Verify install
 
 ```bash
-flutter-mcp-toolkit --version
+flutter-mcp-toolkit --help
+fmtk --help
 ```
 
-Expected output: version string (e.g. `flutter-mcp-toolkit 3.0.0`).
+Expected output: command help from both names. `flutter-mcp-toolkit` is the canonical long name; `fmtk` is the compact alias for day-to-day terminal loops.
 
 If you get `command not found`, the binary is not on PATH:
 
@@ -133,7 +136,7 @@ export PATH="$PATH:/path/to/mcp_flutter/mcp_server_dart/build"
 cd /path/to/mcp_flutter && make build
 ```
 
-Then verify with `flutter-mcp-toolkit --version`.
+Then verify with `flutter-mcp-toolkit --help` and `fmtk --help`.
 
 ---
 
@@ -142,14 +145,14 @@ Then verify with `flutter-mcp-toolkit --version`.
 Always run doctor before any VM-dependent command:
 
 ```bash
-flutter-mcp-toolkit doctor --json
+fmtk doctor --json
 ```
 
 Flags: `--target <ws_uri>` (test a specific URI), global `--vm-service-uri <ws_uri>` (same as `--target` when omitted on `doctor`), `--timeout-ms <n>` (default: 2500).
 
 ```bash
 # Global URI works for doctor (same as validate-runtime)
-flutter-mcp-toolkit --vm-service-uri 'ws://127.0.0.1:8181/<token>/ws' doctor --json
+fmtk --vm-service-uri 'ws://127.0.0.1:8181/<token>/ws' doctor --json
 ```
 
 Sample green output:
@@ -187,9 +190,9 @@ export PATH="$PATH:/path/to/mcp_flutter/mcp_server_dart/build"
 Flutter app not running, stale token after restart, or URI not resolved:
 
 ```bash
-flutter-mcp-toolkit exec --name discover_debug_apps --args '{}'
-flutter-mcp-toolkit exec --name status --args '{}'
-flutter-mcp-toolkit doctor --json --target ws://127.0.0.1:8181/<new-token>/ws
+fmtk exec --name discover_debug_apps --args '{}'
+fmtk exec --name status --args '{}'
+fmtk doctor --json --target ws://127.0.0.1:8181/<new-token>/ws
 ```
 
 After a successful auto re-attach, `meta.recovery.reattachedTo` shows the new endpoint.
@@ -199,7 +202,7 @@ After a successful auto re-attach, `meta.recovery.reattachedTo` shows the new en
 Wrong port, app not started, or stale token. Pass explicit URI from `app.debugPort.wsUri`:
 
 ```bash
-flutter-mcp-toolkit exec --name get_vm --args '{"connection":{"uri":"ws://127.0.0.1:8181/<token>/ws"}}'
+fmtk exec --name get_vm --args '{"connection":{"uri":"ws://127.0.0.1:8181/<token>/ws"}}'
 ```
 
 ### `connection_selection_required`
@@ -211,7 +214,7 @@ Multiple debug targets detected. List with `discover_debug_apps`, then pass the 
 Dart compilation error or VM disconnected. Check errors, fix, then retry:
 
 ```bash
-flutter-mcp-toolkit exec --name get_app_errors --args '{}'
+fmtk exec --name get_app_errors --args '{}'
 ```
 
 ### `visual_capture_unsupported`
@@ -219,7 +222,7 @@ flutter-mcp-toolkit exec --name get_app_errors --args '{}'
 macOS screen recording permission not granted or unsupported platform:
 
 ```bash
-flutter-mcp-toolkit permissions request --kind visual_capture
+fmtk permissions request --kind visual_capture
 ```
 
 ---
@@ -230,7 +233,7 @@ flutter-mcp-toolkit permissions request --kind visual_capture
 
 ```bash
 flutter run --debug --host-vmservice-port=8182 -d macos
-flutter-mcp-toolkit --dart-vm-port 8182 doctor --json
+fmtk --dart-vm-port 8182 doctor --json
 ```
 
 Use `flutter run --machine` and copy `app.debugPort.wsUri` when you need the exact websocket URI (recommended for `validate-runtime` and `exec`).
@@ -242,30 +245,30 @@ Use `flutter run --machine` and copy `app.debugPort.wsUri` when you need the exa
 **Multiple apps / wrong target**: Pass `--target` with the exact websocket URI:
 
 ```bash
-flutter-mcp-toolkit doctor --json --target ws://127.0.0.1:8181/<token>/ws
+fmtk doctor --json --target ws://127.0.0.1:8181/<token>/ws
 ```
 
 ---
 
 ## CLI surface
 
-The binary is `flutter-mcp-toolkit` (built to `mcp_server_dart/build/`).
+The canonical binary is `flutter-mcp-toolkit` (built to `mcp_server_dart/build/`). Packaged installs also include `fmtk`, a short alias to the same entrypoint. Use `fmtk` in quick loops; keep the long name in install, onboarding, PATH, and MCP configuration docs.
 
 | Subcommand                  | Purpose                                                 | Minimal example                                                                |
 | --------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| `exec`                      | Run a single named command against the VM               | `flutter-mcp-toolkit exec --name get_vm --args '{}'`                           |
-| `batch`                     | Run multiple commands in one call                       | `flutter-mcp-toolkit batch --steps '[{"name":"get_vm"},{"name":"status"}]'`    |
-| `schema`                    | Print the JSON schema for a named command               | `flutter-mcp-toolkit schema --name hot_reload_flutter`                         |
-| `capabilities`              | List all registered capabilities                        | `flutter-mcp-toolkit capabilities`                                             |
-| `serve`                     | Start the MCP server (stdio transport)                  | `flutter-mcp-toolkit serve`                                                    |
-| `snapshot create`           | Capture and save a named snapshot                       | `flutter-mcp-toolkit snapshot create --name baseline --args '{}'`              |
-| `snapshot diff`             | Diff two snapshots                                      | `flutter-mcp-toolkit snapshot diff --from baseline --to current`               |
-| `bundle create`             | Package a snapshot into a publishable bundle            | `flutter-mcp-toolkit bundle create --from-snapshot baseline --output ./out`    |
-| `doctor`                    | Run preflight checks (VM + toolkit + registry)          | `flutter-mcp-toolkit doctor --json`                                            |
-| `permissions status`        | Check a permission (e.g. visual_capture)                | `flutter-mcp-toolkit permissions status --kind visual_capture`                 |
-| `permissions request`       | Request a permission                                    | `flutter-mcp-toolkit permissions request --kind visual_capture`                |
-| `permissions open-settings` | Open OS settings for a permission                       | `flutter-mcp-toolkit permissions open-settings --kind visual_capture`          |
-| `validate-runtime`          | End-to-end VM + toolkit + capture smoke test            | `flutter-mcp-toolkit validate-runtime --target ws://127.0.0.1:8181/<token>/ws` |
+| `exec`                      | Run a single named command against the VM               | `fmtk exec --name get_vm --args '{}'`                                          |
+| `batch`                     | Run multiple commands in one call                       | `fmtk batch --steps '[{"name":"get_vm"},{"name":"status"}]'`                   |
+| `schema`                    | Print the JSON schema for a named command               | `fmtk schema --name hot_reload_flutter`                                        |
+| `capabilities`              | List all registered capabilities                        | `fmtk capabilities`                                                            |
+| `serve`                     | Start the MCP server (stdio transport)                  | `fmtk serve`                                                                   |
+| `snapshot create`           | Capture and save a named snapshot                       | `fmtk snapshot create --name baseline --args '{}'`                             |
+| `snapshot diff`             | Diff two snapshots                                      | `fmtk snapshot diff --from baseline --to current`                              |
+| `bundle create`             | Package a snapshot into a publishable bundle            | `fmtk bundle create --from-snapshot baseline --output ./out`                   |
+| `doctor`                    | Run preflight checks (VM + toolkit + registry)          | `fmtk doctor --json`                                                           |
+| `permissions status`        | Check a permission (e.g. visual_capture)                | `fmtk permissions status --kind visual_capture`                                |
+| `permissions request`       | Request a permission                                    | `fmtk permissions request --kind visual_capture`                               |
+| `permissions open-settings` | Open OS settings for a permission                       | `fmtk permissions open-settings --kind visual_capture`                         |
+| `validate-runtime`          | End-to-end VM + toolkit + capture smoke test            | `fmtk validate-runtime --target ws://127.0.0.1:8181/<token>/ws`                |
 | `init <agent>`              | Install skills + MCP server config for an AI agent      | `flutter-mcp-toolkit init claude-code`                                         |
 | `codegen-init`              | Add toolkit dependency and emit `main.dart` boilerplate | `flutter-mcp-toolkit codegen-init`                                             |
 
@@ -274,6 +277,8 @@ Global flags (before the subcommand): `--dart-vm-port <n>`, `--dart-vm-host <hos
 **VM targeting:** Global `--vm-service-uri` applies to `doctor` and `validate-runtime` when subcommand `--target` is omitted. If both are set and differ, `--target` wins (stderr warning).
 
 **`validate-runtime` screenshots:** the first capture uses `auto` (often `desktop_window` on macOS). If that step fails with a retryable `get_screenshots_failed`, the CLI retries once with `flutter_layer`. On success, `data.summary.captureFallbackUsed` is `true` in the JSON envelope.
+
+**Debug/eval batteries:** keep repeated checks as scripts or `batch` calls over existing primitives first: `--log-level debug`, `--output-dir`, `--save-images`, `doctor --json`, `validate-runtime`, `batch`, and `exec --name diagnose`. Do not expose a generic MCP `run_tool`; MCP remains the typed `fmt_*` tool surface. If a flow becomes reusable across projects as a scenario, graduate it to `flutter_harness` HS docs/examples instead of adding a toolkit-only scenario language.
 
 ---
 
@@ -316,7 +321,7 @@ The install script is idempotent — re-running it replaces the binary in place:
 curl -fsSL https://raw.githubusercontent.com/Arenukvern/mcp_flutter/main/install.sh | bash
 ```
 
-After reinstall, verify with `flutter-mcp-toolkit --version`.
+After reinstall, verify with `flutter-mcp-toolkit --help` and `fmtk --help`.
 ''',
       relativePath: 'skills/flutter-mcp-toolkit-setup/SKILL.md',
     ),
@@ -2174,7 +2179,7 @@ Full Chrome runtime dogfood stays **local** until headless WebMCP is cost-effect
   "interface": {
     "displayName": "Flutter MCP Toolkit",
     "shortDescription": "Inspect, drive, and extend Flutter debug apps via MCP — including runtime custom tools.",
-    "longDescription": "flutter-mcp-toolkit is a Dart MCP server plus Flutter package (mcp_toolkit) for AI-assisted Flutter development in debug mode. Built-in: 27 fmt_* MCP tools and bundled agent skills. Dynamic registry: register app-specific tools and resources at runtime with AgentCallEntry and addMcpTool; agents discover via fmt_list_client_tools_and_resources and invoke via fmt_client_tool / fmt_client_resource. Requires debug app with mcp_toolkit and flutter-mcp-toolkit-server on PATH. Complements official Dart MCP.",
+    "longDescription": "flutter-mcp-toolkit is a Dart MCP server plus Flutter package (mcp_toolkit) for AI-assisted Flutter development in debug mode. Built-in: 30 fmt_* MCP tools and bundled agent skills. Dynamic registry: register app-specific tools and resources at runtime with AgentCallEntry and addMcpTool; agents discover via fmt_list_client_tools_and_resources and invoke via fmt_client_tool / fmt_client_resource. Requires debug app with mcp_toolkit and flutter-mcp-toolkit-server on PATH. Complements official Dart MCP.",
     "developerName": "Arenukvern",
     "category": "Developer Tools",
     "capabilities": [

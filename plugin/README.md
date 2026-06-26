@@ -9,7 +9,7 @@ Three layers (not “MCP server only”):
 ```text
 AI agent
     │
-    ├─► flutter-mcp-toolkit-server (27 fmt_* tools: inspect, control, debug)
+    ├─► flutter-mcp-toolkit-server (30 fmt_* tools: inspect, control, debug)
     │
     └─► fmt_list_client_tools_and_resources / fmt_client_tool / fmt_client_resource
               │

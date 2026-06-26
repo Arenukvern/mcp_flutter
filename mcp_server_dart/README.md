@@ -8,9 +8,9 @@ Tool names on MCP are prefixed with **`fmt_`**, binaries and `mcpServers` keys w
 
 This project now uses a shared core execution layer:
 
-1. `flutter-mcp-toolkit` is the canonical command surface (connect, inspect, execute, diagnostics).
+1. `flutter-mcp-toolkit` is the canonical command surface (connect, inspect, execute, diagnostics). `fmtk` is the short alias for the same CLI entrypoint.
 2. `flutter-mcp-toolkit-server` is a thin MCP protocol adapter that maps MCP tool/resource calls to the same core executor.
-3. **MCP `tools/list` names** use the **`fmt_`** capability prefix; **CLI `exec --name`** uses bare catalog names. Resource URIs are unchanged.
+3. **MCP `tools/list` names** use the **`fmt_`** capability prefix; **CLI `exec --name`** uses command catalog names or aliases outside the MCP `tools/call` namespace. Resource URIs are unchanged.
 
 The shared core module is available as `flutter_mcp_core` inside this package.
 
@@ -20,7 +20,7 @@ Use this sequence first on macOS:
 
 1. Add `mcp_toolkit` to the app and call `MCPToolkitBinding.instance.bootstrapFlutter(...)`.
 2. Launch the app in debug mode.
-3. Run `flutter-mcp-toolkit validate-runtime`.
+3. Run `fmtk validate-runtime` (or the canonical long form `flutter-mcp-toolkit validate-runtime`).
 4. Query dynamic entries in this order:
    `fmt_list_client_tools_and_resources`,
    `fmt_client_tool`,
@@ -47,19 +47,22 @@ Safe-write flags for write-producing commands:
 - `snapshot create`: `--check --diff --backup --no-overwrite`
 - `bundle create`: `--check --diff --backup --no-overwrite`
 
-`exec` targets commands in the shared `CommandCatalog` (these are the
-unprefixed catalog names; the CLI is not subject to the MCP capability
-prefix):
+`exec` targets commands in the shared `CommandCatalog` (CLI command names may
+be bare because they appear only after `--name`; the CLI is not the MCP
+`tools/call` namespace):
 `connect`, `session_start`, `session_exec`, `session_end`, `diagnose`, `watch`, `explain_errors`, `status`, `discover_debug_apps`, `get_vm`, `get_extension_rpcs`, `hot_reload_flutter`, `hot_restart_flutter`, `get_active_ports`, `get_app_errors`, `get_screenshots`, `focus_window`, `get_view_details`, `inspect_widget_at_point`, `capture_ui_snapshot`, `debug_dump_layer_tree`, `debug_dump_semantics_tree`, `debug_dump_render_tree`, `debug_dump_focus_tree`, `fmt_list_client_tools_and_resources`, `fmt_client_tool`, `fmt_client_resource`, `dynamicRegistryStats`, `semantic_snapshot`, `tap_widget`, `long_press`, `enter_text`, `reveal_search`, `scroll`, `swipe`, `drag`, `hot_reload_and_capture`, `evaluate_dart_expression`, `get_recent_logs`.
 
-> **MCP names**. When invoked via MCP `tools/call`, every catalog tool above
-> surfaces under the `fmt_` capability prefix (e.g. `fmt_tap_widget`,
-> `fmt_hot_reload_and_capture`). The dynamic-registry host trio
-> (`fmt_list_client_tools_and_resources`, `fmt_client_tool`, `fmt_client_resource`) and
-> `dynamicRegistryStats` stay unprefixed in MCP. CLI examples below use the
-> catalog name unchanged.
+> **MCP names**. When invoked via MCP `tools/call`, exposed tools use the
+> `fmt_` capability prefix (e.g. `fmt_tap_widget`,
+> `fmt_hot_reload_and_capture`). The dynamic-registry host trio is exposed as
+> `fmt_list_client_tools_and_resources`, `fmt_client_tool`, and
+> `fmt_client_resource` where enabled. `dynamicRegistryStats` remains available
+> from the CLI catalog for low-level diagnostics and is not part of the default
+> MCP tool surface.
 
 Interaction tools (catalog names: `semantic_snapshot` → `tap_widget` / `enter_text` / `reveal_search` / `scroll` / `swipe` / `long_press` / `drag`) follow a Playwright-style ref model: take a snapshot, then pass `ref: "s_N"` (and optional `snapshotId` for staleness detection) into the interaction tool. `reveal_search` is the bounded helper for off-screen semantic targets: it snapshots, matches one narrow selector, scrolls up to `maxAttempts`, and returns a fresh `ref`/`snapshotId` plus trace. `hot_reload_and_capture` fuses reload + screenshot + fresh snapshot + errors. `evaluate_dart_expression` runs an ad-hoc Dart expression against the app's root library. See [docs/start_here/cli_quick_recipes.mdx](../docs/start_here/cli_quick_recipes.mdx) and [docs/guides/interaction_cookbook.mdx](../docs/guides/interaction_cookbook.mdx) for the full surface and golden paths.
+
+Packaged installs include both `flutter-mcp-toolkit` and `fmtk`; examples below use `dart run` for source-tree development. Prefer `fmtk` for compact local loops and keep `flutter-mcp-toolkit` in onboarding, install, PATH, and MCP config docs where the searchable canonical name helps.
 
 CLI runs the same shared command catalog/executor as MCP. Preferred debugging path:
 `discover_debug_apps` -> `capture_ui_snapshot` -> `inspect_widget_at_point`.

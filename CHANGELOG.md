@@ -75,6 +75,7 @@
 
 ### Added
 
+- `fmtk` short CLI alias for `flutter-mcp-toolkit`, including release artifacts and install script smoke checks.
 - Gating CI: `make check-intentcall-integration` + `.github/workflows/intentcall_eval.yml` job `intentcall-integration` (full intentcall matrix, contracts, skills grep, migrate/init/codegen `--check`).
 - `make macos-validate-runtime` helper (`tool/evals/run_macos_validate_runtime.sh`) for I5 macOS dogfood.
 - intentcall: `xsoulspace_lints` (`library.yaml` / `app.yaml`); `make analyze`; pre-release warnings on all packages ([intentcall/PRE_RELEASE.md](intentcall/PRE_RELEASE.md)); IntentCall consumer guide.
