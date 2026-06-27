@@ -340,53 +340,50 @@ packages:
     dependency: transitive
     description:
       name: intentcall_codegen
-      sha256: "9e92d21d9e7266a6929f389cdddb84565f8e10a3b2b2be1af57121bffd57b28c"
+      sha256: d5c56aa40a69daa573fe09c2036623a500a0c6e1f871e6064e40c9683a96f036
       url: "https://pub.dev"
     source: hosted
-    version: "0.2.1"
+    version: "0.3.0"
   intentcall_core:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
-      path: "/Users/anton/mcp/agentkit/packages/intentcall_core"
-      relative: false
-    source: path
-    version: "0.2.1"
+      name: intentcall_core
+      sha256: e0245649ade9ce73e7fd504ac6e8942e7338bb865ad2007b835c2c18320ca62e
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.3.0"
   intentcall_mcp:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
-      path: "/Users/anton/mcp/agentkit/packages/intentcall_mcp"
-      relative: false
-    source: path
-    version: "0.2.1"
+      name: intentcall_mcp
+      sha256: "104dc51e2916202665ecd2cefa106240f11642cdb764a120fb3e26bceb6324d3"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.3.0"
   intentcall_platform:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
-      path: "/Users/anton/mcp/agentkit/packages/intentcall_platform"
-      relative: false
-    source: path
-    version: "0.2.1"
+      name: intentcall_platform
+      sha256: "47f6129c95f43fc8fdc22d3c22d732eabbf98e42ee5b990de139ad0f73eedb97"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.3.0"
   intentcall_schema:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
-      path: "/Users/anton/mcp/agentkit/packages/intentcall_schema"
-      relative: false
-    source: path
-    version: "0.2.1"
+      name: intentcall_schema
+      sha256: a60adef080e2646d99b670b6687c83386ce0d0d8c4c08a4ea084c074b349ad7b
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.3.0"
   intentcall_session:
     dependency: transitive
     description:
       name: intentcall_session
-      sha256: "89fa17a9035f968095d55ec934c70dcdcf8a6fc3ebe7afbc972a6270f1e3699a"
+      sha256: "7102e45983852a08a696e7cf8cdf9ca4883f75dd936b6e0a126a94b7b0bce906"
       url: "https://pub.dev"
     source: hosted
-    version: "0.2.1"
-  intentcall_webmcp:
-    dependency: "direct overridden"
-    description:
-      path: "/Users/anton/mcp/agentkit/packages/intentcall_webmcp"
-      relative: false
-    source: path
-    version: "0.2.1"
+    version: "0.3.0"
   io:
     dependency: transitive
     description:

@@ -45,14 +45,17 @@ enum IntentCallNativeBridge {
   private static let pendingKey = "intentcall.pending_invocations"
 
   static func enqueue(qualifiedName: String, arguments: [String: Any]) async {
-    var pending = UserDefaults.standard.array(forKey: pendingKey) as? [[String: Any]] ?? []
-    pending.append([
+    let item: [String: Any] = [
       "id": UUID().uuidString,
       "qualifiedName": qualifiedName,
       "arguments": arguments,
       "source": "native.generated",
       "createdAt": ISO8601DateFormatter().string(from: Date())
-    ])
+    ]
+    objc_sync_enter(UserDefaults.standard)
+    defer { objc_sync_exit(UserDefaults.standard) }
+    var pending = UserDefaults.standard.array(forKey: pendingKey) as? [[String: Any]] ?? []
+    pending.append(item)
     UserDefaults.standard.set(pending, forKey: pendingKey)
     guard let url = URL(string: "intentcall://invoke/\(qualifiedName)") else { return }
     #if canImport(UIKit)

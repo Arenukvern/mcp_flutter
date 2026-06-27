@@ -22,19 +22,52 @@ class ShowcaseScreen extends StatefulWidget {
 
 class _ShowcaseScreenState extends State<ShowcaseScreen> {
   final TextEditingController _textController = TextEditingController();
+  bool _syncingGreetingFromState = false;
 
   @override
   void initState() {
     super.initState();
-    _textController.addListener(() {
-      AgentState.instance.greeting = _textController.text;
-    });
+    _textController.addListener(_syncGreetingFromController);
+    AgentState.instance.addListener(_syncGreetingToController);
+    _syncGreetingToController();
   }
 
   @override
   void dispose() {
+    AgentState.instance.removeListener(_syncGreetingToController);
+    _textController.removeListener(_syncGreetingFromController);
     _textController.dispose();
     super.dispose();
+  }
+
+  void _syncGreetingFromController() {
+    if (_syncingGreetingFromState) return;
+    AgentState.instance.greeting = _textController.text;
+  }
+
+  void _syncGreetingToController() {
+    final greeting = AgentState.instance.greeting;
+    if (_textController.text == greeting) return;
+    final selection = _textController.selection;
+    final baseOffset = selection.isValid
+        ? selection.baseOffset.clamp(0, greeting.length).toInt()
+        : greeting.length;
+    final extentOffset = selection.isValid
+        ? selection.extentOffset.clamp(0, greeting.length).toInt()
+        : greeting.length;
+    _syncingGreetingFromState = true;
+    try {
+      _textController.value = TextEditingValue(
+        text: greeting,
+        selection: TextSelection(
+          baseOffset: baseOffset,
+          extentOffset: extentOffset,
+        ),
+        composing: TextRange.empty,
+      );
+    } finally {
+      _syncingGreetingFromState = false;
+    }
   }
 
   @override
@@ -52,28 +85,28 @@ class _ShowcaseScreenState extends State<ShowcaseScreen> {
                   horizontal: 32,
                   vertical: 48,
                 ),
-                children: const <Widget>[
-                  _Header(),
-                  SizedBox(height: 56),
-                  _CaptureSection(),
-                  SizedBox(height: 64),
-                  _VisualReconstructSection(),
-                  SizedBox(height: 64),
+                children: <Widget>[
+                  const _Header(),
+                  const SizedBox(height: 56),
+                  const _CaptureSection(),
+                  const SizedBox(height: 64),
+                  const _VisualReconstructSection(),
+                  const SizedBox(height: 64),
                   _TapSection(),
-                  SizedBox(height: 56),
+                  const SizedBox(height: 56),
                   _TypeSection(),
-                  SizedBox(height: 56),
+                  const SizedBox(height: 56),
                   _ToggleSection(),
-                  SizedBox(height: 56),
+                  const SizedBox(height: 56),
                   _SlideSection(),
-                  SizedBox(height: 56),
-                  _ScrollSection(),
-                  SizedBox(height: 56),
-                  _IterateSection(),
-                  SizedBox(height: 56),
+                  const SizedBox(height: 56),
+                  const _ScrollSection(),
+                  const SizedBox(height: 56),
+                  const _IterateSection(),
+                  const SizedBox(height: 56),
                   _DebugSection(),
-                  SizedBox(height: 96),
-                  _Footer(),
+                  const SizedBox(height: 96),
+                  const _Footer(),
                 ],
               ),
             ),

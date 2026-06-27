@@ -6,7 +6,7 @@
 |------|----------|
 | Canonical local IntentCall clone | `/Users/anton/mcp/agentkit` |
 | GitHub | `github.com/Arenukvern/intentcall` |
-| Consumer package policy | Hosted `intentcall_* ^0.2.1` from pub.dev |
+| Consumer package policy | Hosted `intentcall_* ^0.3.0` from pub.dev |
 | Local-development exception | Temporary sibling path overrides to `/Users/anton/mcp/agentkit/packages/intentcall_*` only |
 | Main integration gate | `make check-intentcall-integration` |
 | Repo contract gate | `make check-contracts` |
