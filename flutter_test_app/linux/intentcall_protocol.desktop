@@ -6,6 +6,6 @@ Type=Application
 Name=Flutter App (IntentCall)
 Comment=IntentCall deep-link handler
 Exec=@EXEC@ %u
-MimeType=x-scheme-handler/intentcall;
+MimeType=x-scheme-handler/mcpfluttertest;
 NoDisplay=true
 Terminal=false

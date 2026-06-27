@@ -15,15 +15,23 @@ showcase="${repo_root}/.showcase"
 log="${showcase}/web_app.log"
 out="${showcase}/tool_verify/web"
 web_port="${WEB_PORT:-8080}"
-vm_port="${VM_HOST_PORT:-8181}"
 mkdir -p "${out}"
 
 printf '[web-tests] starting chrome showcase (detach)…\n'
-bash "${repo_root}/scripts/run_web_showcase.sh" --detach
+launch_stdout="${out}/web-showcase.stdout"
+launch_stderr="${out}/web-showcase.stderr"
+if ! bash "${repo_root}/scripts/run_web_showcase.sh" --detach >"${launch_stdout}" 2>"${launch_stderr}"; then
+  cat "${launch_stdout}" >&2
+  cat "${launch_stderr}" >&2
+  exit 1
+fi
+cat "${launch_stdout}"
 
 ws_uri=""
+ws_uri="$(grep -aEo 'WS_URI=ws://127\.0\.0\.1:[0-9]+/[A-Za-z0-9_=-]+/ws' "${launch_stdout}" | tail -1 | sed 's/^WS_URI=//' || true)"
 for _ in $(seq 1 30); do
-  ws_uri="$(grep -Eo "ws://127\\.0\\.0\\.1:${vm_port}/[A-Za-z0-9_=-]+/ws" "${log}" | tail -1 || true)"
+  if [[ -n "${ws_uri}" ]]; then break; fi
+  ws_uri="$(grep -aEo 'ws://127\.0\.0\.1:[0-9]+/[A-Za-z0-9_=-]+/ws' "${log}" | tail -1 || true)"
   if [[ -n "${ws_uri}" ]]; then break; fi
   sleep 1
 done

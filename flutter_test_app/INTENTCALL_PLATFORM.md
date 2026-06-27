@@ -22,7 +22,7 @@ The hook installer manages idempotent markers for WebMCP script tags, Android sh
 
 ## Dependency policy
 
-Normal repo state resolves hosted `intentcall_* ^0.3.0` packages from pub.dev. Local path overrides to `/Users/anton/mcp/agentkit/packages/intentcall_*` are local-development-only and should not be committed for hosted consumer integration.
+Normal repo state resolves hosted `intentcall_* ^0.3.1` packages from pub.dev. Local path overrides to `/Users/anton/mcp/agentkit/packages/intentcall_*` are local-development-only and should not be committed for hosted consumer integration.
 
 ## Manifest and platform sync
 

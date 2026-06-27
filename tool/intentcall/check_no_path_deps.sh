@@ -39,8 +39,8 @@ import re
 import sys
 from pathlib import Path
 
-required_pubspec = "^0.3.0"
-required_lock = "0.3.0"
+required_pubspec = "^0.3.1"
+required_lock = "0.3.1"
 
 def clean(value: str) -> str:
     value = value.strip()
@@ -122,7 +122,7 @@ if ! check_versions "${version_files[@]}"; then
 fi
 
 if [[ "${found}" -ne 0 ]]; then
-  echo "FAIL: use hosted intentcall deps ^0.3.0 for committed consumer state (see docs/intentcall/README.md)" >&2
+  echo "FAIL: use hosted intentcall deps ^0.3.1 for committed consumer state (see docs/intentcall/README.md)" >&2
   exit 1
 fi
 

@@ -18,6 +18,7 @@ var _initialEntriesRegistered = false;
 var _delayedEntriesRegistered = false;
 final _intentCallProofRegistry = InMemoryAgentRegistry();
 late final IntentCallNativeBridge _intentCallProofBridge;
+const _intentCallProtocolScheme = 'mcpfluttertest';
 
 /// Registered on [MCPToolkitBinding.instance] for `navigate` / `handle_dialog`.
 final GlobalKey<NavigatorState> showcaseNavigatorKey =
@@ -35,6 +36,7 @@ Future<void> main({final bool enableDelayedMcpRegistration = true}) async {
   if (!kIsWeb) {
     unawaited(
       IntentCallInvokeLinkListener(
+        protocolScheme: _intentCallProtocolScheme,
         onQualifiedName: (final name) {
           debugPrint('intentcall invoke: $name');
           unawaited(

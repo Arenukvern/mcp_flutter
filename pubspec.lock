@@ -340,50 +340,50 @@ packages:
     dependency: transitive
     description:
       name: intentcall_codegen
-      sha256: d5c56aa40a69daa573fe09c2036623a500a0c6e1f871e6064e40c9683a96f036
+      sha256: "947605e2103cf48115af6ef7d6705b50731902c831592d6c17ba69ba3c3158e2"
       url: "https://pub.dev"
     source: hosted
-    version: "0.3.0"
+    version: "0.3.1"
   intentcall_core:
     dependency: transitive
     description:
       name: intentcall_core
-      sha256: e0245649ade9ce73e7fd504ac6e8942e7338bb865ad2007b835c2c18320ca62e
+      sha256: "00f5914c8757fb67a25719258b1ea7c8de343ea0d542e130d3736e9c00aae084"
       url: "https://pub.dev"
     source: hosted
-    version: "0.3.0"
+    version: "0.3.1"
   intentcall_mcp:
     dependency: transitive
     description:
       name: intentcall_mcp
-      sha256: "104dc51e2916202665ecd2cefa106240f11642cdb764a120fb3e26bceb6324d3"
+      sha256: "80303c8c5663d56668c565cad187df64ef86d33ac9a7632998aacdc641c12266"
       url: "https://pub.dev"
     source: hosted
-    version: "0.3.0"
+    version: "0.3.1"
   intentcall_platform:
     dependency: transitive
     description:
       name: intentcall_platform
-      sha256: "47f6129c95f43fc8fdc22d3c22d732eabbf98e42ee5b990de139ad0f73eedb97"
+      sha256: dbe1c09472fe1a0bd5fb9faa2b3e08f1494543b6a0d6a5bbb07c2a69260a1f03
       url: "https://pub.dev"
     source: hosted
-    version: "0.3.0"
+    version: "0.3.1"
   intentcall_schema:
     dependency: transitive
     description:
       name: intentcall_schema
-      sha256: a60adef080e2646d99b670b6687c83386ce0d0d8c4c08a4ea084c074b349ad7b
+      sha256: "3357a50752d14d147ff604a445579a114bb9c9c3eea24976eff285639a6d5bd0"
       url: "https://pub.dev"
     source: hosted
-    version: "0.3.0"
+    version: "0.3.1"
   intentcall_session:
     dependency: transitive
     description:
       name: intentcall_session
-      sha256: "7102e45983852a08a696e7cf8cdf9ca4883f75dd936b6e0a126a94b7b0bce906"
+      sha256: "7c65b40f870072ce0dffb47dcdd4e8f081b27ad4ea96ca4163990d1ac43f398f"
       url: "https://pub.dev"
     source: hosted
-    version: "0.3.0"
+    version: "0.3.1"
   io:
     dependency: transitive
     description:

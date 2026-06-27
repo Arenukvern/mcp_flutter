@@ -8,7 +8,7 @@
       android:shortcutLongLabel="Demo ping tool for WebMCP platform sync">
     <intent
         android:action="android.intent.action.VIEW"
-        android:data="intentcall://invoke/app_demo_ping" />
+        android:data="mcpfluttertest://invoke/app_demo_ping" />
   </shortcut>
   <shortcut
       android:shortcutId="app_intentcall_bridge_ping"
@@ -17,7 +17,7 @@
       android:shortcutLongLabel="Proof that native/WebMCP dispatch executes Dart registry logic">
     <intent
         android:action="android.intent.action.VIEW"
-        android:data="intentcall://invoke/app_intentcall_bridge_ping" />
+        android:data="mcpfluttertest://invoke/app_intentcall_bridge_ping" />
   </shortcut>
 </shortcuts>
 

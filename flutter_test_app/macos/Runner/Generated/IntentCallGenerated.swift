@@ -10,17 +10,19 @@ import AppKit
 @available(iOS 16.0, macOS 13.0, *)
 struct AppDemoPingIntent: AppIntent {
   static var title: LocalizedStringResource = "Demo ping tool for WebMCP platform sync"
+  static var openAppWhenRun: Bool = true
 
   func perform() async throws -> some IntentResult {
     var arguments: [String: Any] = [:]
-    await IntentCallNativeBridge.enqueue(qualifiedName: "app_demo_ping", arguments: arguments)
-    return .result()
+    let invocationId = await IntentCallNativeBridge.enqueue(qualifiedName: "app_demo_ping", arguments: arguments)
+    return .result(dialog: IntentDialog("Queued invocation \(invocationId) for app dispatch."))
   }
 }
 
 @available(iOS 16.0, macOS 13.0, *)
 struct AppIntentcallBridgePingIntent: AppIntent {
   static var title: LocalizedStringResource = "Proof that native/WebMCP dispatch executes Dart registry logic"
+  static var openAppWhenRun: Bool = true
 
   @Parameter(title: "Echo")
   var echo: String
@@ -28,8 +30,8 @@ struct AppIntentcallBridgePingIntent: AppIntent {
   func perform() async throws -> some IntentResult {
     var arguments: [String: Any] = [:]
     arguments["echo"] = echo
-    await IntentCallNativeBridge.enqueue(qualifiedName: "app_intentcall_bridge_ping", arguments: arguments)
-    return .result()
+    let invocationId = await IntentCallNativeBridge.enqueue(qualifiedName: "app_intentcall_bridge_ping", arguments: arguments)
+    return .result(dialog: IntentDialog("Queued invocation \(invocationId) for app dispatch."))
   }
 }
 
@@ -43,10 +45,12 @@ struct IntentCallShortcutsProvider: AppShortcutsProvider {
 
 enum IntentCallNativeBridge {
   private static let pendingKey = "intentcall.pending_invocations"
+  private static let fallbackScheme: String? = "mcpfluttertest"
 
-  static func enqueue(qualifiedName: String, arguments: [String: Any]) async {
+  static func enqueue(qualifiedName: String, arguments: [String: Any]) async -> String {
+    let invocationId = UUID().uuidString
     let item: [String: Any] = [
-      "id": UUID().uuidString,
+      "id": invocationId,
       "qualifiedName": qualifiedName,
       "arguments": arguments,
       "source": "native.generated",
@@ -57,12 +61,13 @@ enum IntentCallNativeBridge {
     var pending = UserDefaults.standard.array(forKey: pendingKey) as? [[String: Any]] ?? []
     pending.append(item)
     UserDefaults.standard.set(pending, forKey: pendingKey)
-    guard let url = URL(string: "intentcall://invoke/\(qualifiedName)") else { return }
+    guard let scheme = fallbackScheme, let url = URL(string: "\(scheme)://invoke/\(qualifiedName)") else { return invocationId }
     #if canImport(UIKit)
     await UIApplication.shared.open(url)
     #elseif canImport(AppKit)
     NSWorkspace.shared.open(url)
     #endif
+    return invocationId
   }
 }
 

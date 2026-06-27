@@ -88,7 +88,7 @@ for _ in $(seq 1 180); do
     tail -40 "${log}" >&2
     exit 1
   fi
-  ws_uri="$(grep -Eo 'ws://127\.0\.0\.1:[0-9]+/[A-Za-z0-9_=-]+/ws' "${log}" | tail -1 || true)"
+  ws_uri="$(grep -aEo 'ws://127\.0\.0\.1:[0-9]+/[A-Za-z0-9_=-]+/ws' "${log}" | tail -1 || true)"
   if [[ -n "${ws_uri}" ]]; then
     if [[ "${detach}" == true ]]; then
       if grep -q "${ready_pattern}" "${log}"; then

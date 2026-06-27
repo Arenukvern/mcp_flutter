@@ -3,9 +3,9 @@
 ; tool: app_intentcall_bridge_ping
 Windows Registry Editor Version 5.00
 
-[HKEY_CURRENT_USER\Software\Classes\intentcall]
+[HKEY_CURRENT_USER\Software\Classes\mcpfluttertest]
 @="URL:IntentCall Protocol"
 "URL Protocol"=""
 
-[HKEY_CURRENT_USER\Software\Classes\intentcall\shell\open\command]
+[HKEY_CURRENT_USER\Software\Classes\mcpfluttertest\shell\open\command]
 @="\"@APP_EXE@\" \"%1\""

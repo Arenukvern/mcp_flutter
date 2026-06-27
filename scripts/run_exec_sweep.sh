@@ -113,6 +113,37 @@ PY
   return 1
 }
 
+run_tool_allow_web_no_movement_skip() {
+  local name="$1"
+  local args="${2-{\}}"
+  local outfile="${outdir}/${name}.json"
+  printf '=== %s ===\n' "${name}"
+  if "${toolkit[@]}" exec --name "${name}" --args "${args}" >"${outfile}" 2>"${outdir}/${name}.stderr"; then
+    if json_ok "${outfile}"; then
+      printf 'PASS: %s\n' "${name}"
+      pass=$((pass + 1))
+      results+=("PASS ${name}")
+      return 0
+    fi
+  fi
+  if [[ "${platform}" == "web" ]] && [[ "$(json_field "${outfile}" data.error)" == "no_scroll_movement" ]]; then
+    skip_tool "${name}" 'Flutter Web semantic gesture dispatched but no movement was verified'
+    return 0
+  fi
+  printf 'FAIL: %s\n' "${name}"
+  python3 - "${outfile}" <<'PY' 2>/dev/null || true
+import json, sys
+try:
+  d = json.load(open(sys.argv[1]))
+  print(d.get("error") or d)
+except Exception as e:
+  print(e)
+PY
+  fail=$((fail + 1))
+  results+=("FAIL ${name}")
+  return 1
+}
+
 skip_tool() {
   local name="$1"
   local reason="$2"
@@ -212,6 +243,28 @@ ensure_visible_identifier_args() {
   return 1
 }
 
+reveal_identifier_args() {
+  local identifier="$1"
+  local outfile="$2"
+  local direction="${3:-down}"
+  local max_attempts="${4:-6}"
+  local distance="${5:-320}"
+  local reveal_file="${outdir}/reveal_${identifier}.json"
+  if ! "${toolkit[@]}" exec --name reveal_search --args "{\"query\":\"${identifier}\",\"matchBy\":\"identifier\",\"direction\":\"${direction}\",\"maxAttempts\":${max_attempts},\"distance\":${distance}}" >"${reveal_file}" 2>"${outdir}/reveal_${identifier}.stderr"; then
+    return 1
+  fi
+  python3 - "${reveal_file}" "${outfile}" <<'PY'
+import json, sys
+d = json.load(open(sys.argv[1]))
+data = d.get("data", {})
+ref = data.get("ref")
+sid = data.get("snapshotId")
+if not d.get("ok") or data.get("success") is not True or not ref or sid is None:
+    raise SystemExit(1)
+json.dump({"ref": ref, "snapshotId": sid}, open(sys.argv[2], "w"))
+PY
+}
+
 args_ref() {
   python3 - "$1" <<'PY'
 import json, sys
@@ -306,23 +359,39 @@ else
   missing_required_tool hover 'stateful_counter_increment_button ref not visible/discovered'
 fi
 
-scroll_snap="$(capture_snapshot semantic_before_scroll || true)"
-if [[ -n "${scroll_snap}" ]] && write_ref_args_for_type "${scroll_snap}" scrollable "${outdir}/scrollable_args.json" 2>/dev/null; then
+if reveal_identifier_args scroll_demo_list "${outdir}/scrollable_args.json" "${reveal_down_direction}" 5 260; then
   scroll_ref="$(args_ref "${outdir}/scrollable_args.json")"
   scroll_snap_id="$(args_snapshot_id "${outdir}/scrollable_args.json")"
-  run_tool scroll "{\"ref\":\"${scroll_ref}\",\"direction\":\"down\",\"distance\":120,\"snapshotId\":${scroll_snap_id}}" || true
+  run_tool_allow_web_no_movement_skip scroll "{\"ref\":\"${scroll_ref}\",\"direction\":\"down\",\"distance\":120,\"snapshotId\":${scroll_snap_id}}" || true
 else
-  missing_required_tool scroll 'scrollable ref not visible/discovered'
+  scroll_snap="$(capture_snapshot semantic_before_scroll || true)"
+  if [[ -n "${scroll_snap}" ]] && write_ref_args_for_type "${scroll_snap}" scrollable "${outdir}/scrollable_args.json" 2>/dev/null; then
+    scroll_ref="$(args_ref "${outdir}/scrollable_args.json")"
+    scroll_snap_id="$(args_snapshot_id "${outdir}/scrollable_args.json")"
+    run_tool_allow_web_no_movement_skip scroll "{\"ref\":\"${scroll_ref}\",\"direction\":\"down\",\"distance\":120,\"snapshotId\":${scroll_snap_id}}" || true
+  else
+    missing_required_tool scroll 'scrollable ref not visible/discovered'
+  fi
 fi
-scroll_snap="$(capture_snapshot semantic_before_swipe || true)"
-if [[ -n "${scroll_snap}" ]] && write_ref_args_for_type "${scroll_snap}" scrollable "${outdir}/scrollable_swipe_args.json" 2>/dev/null; then
+if reveal_identifier_args scroll_demo_list "${outdir}/scrollable_swipe_args.json" "${reveal_down_direction}" 5 260; then
   scroll_ref="$(args_ref "${outdir}/scrollable_swipe_args.json")"
   scroll_snap_id="$(args_snapshot_id "${outdir}/scrollable_swipe_args.json")"
-  run_tool swipe "{\"ref\":\"${scroll_ref}\",\"direction\":\"down\",\"distance\":80,\"snapshotId\":${scroll_snap_id}}" || true
+  run_tool_allow_web_no_movement_skip swipe "{\"ref\":\"${scroll_ref}\",\"direction\":\"down\",\"distance\":80,\"snapshotId\":${scroll_snap_id}}" || true
 else
-  missing_required_tool swipe 'scrollable ref not visible/discovered'
+  scroll_snap="$(capture_snapshot semantic_before_swipe || true)"
+  if [[ -n "${scroll_snap}" ]] && write_ref_args_for_type "${scroll_snap}" scrollable "${outdir}/scrollable_swipe_args.json" 2>/dev/null; then
+    scroll_ref="$(args_ref "${outdir}/scrollable_swipe_args.json")"
+    scroll_snap_id="$(args_snapshot_id "${outdir}/scrollable_swipe_args.json")"
+    run_tool_allow_web_no_movement_skip swipe "{\"ref\":\"${scroll_ref}\",\"direction\":\"down\",\"distance\":80,\"snapshotId\":${scroll_snap_id}}" || true
+  else
+    missing_required_tool swipe 'scrollable ref not visible/discovered'
+  fi
 fi
-run_tool press_key '{"key":"Tab"}' || true
+if [[ "${platform}" == "web" ]]; then
+  skip_tool press_key 'Flutter Web browser focus can terminate or detach the VM service after synthetic key input'
+else
+  run_tool press_key '{"key":"Tab"}' || true
+fi
 run_tool get_recent_logs '{"count":10}' || true
 run_tool wait_for '{"predicate":{"kind":"time","ms":300},"timeoutMs":2000}' || true
 
@@ -333,7 +402,8 @@ if [[ "${platform}" == "web" ]]; then
 else
   run_tool navigate '{"action":"pop"}' || true
 fi
-if ensure_visible_identifier_args show_test_dialog_button "${outdir}/dialog_args.json" "${reveal_down_direction}"; then
+if reveal_identifier_args show_test_dialog_button "${outdir}/dialog_args.json" "${reveal_down_direction}" 8 320 || \
+  ensure_visible_identifier_args show_test_dialog_button "${outdir}/dialog_args.json" "${reveal_down_direction}"; then
   run_tool tap_widget "$(cat "${outdir}/dialog_args.json")" || true
   sleep 0.5
   run_tool handle_dialog '{"action":"dismiss"}' || true

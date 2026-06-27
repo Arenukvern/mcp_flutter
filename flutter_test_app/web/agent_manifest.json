@@ -1,6 +1,7 @@
 {
   "version": 1,
   "platform": "web",
+  "protocolScheme": "mcpfluttertest",
   "tools": [
     {
       "qualifiedName": "app_demo_ping",
