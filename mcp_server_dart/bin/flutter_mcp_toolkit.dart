@@ -8,6 +8,7 @@ import 'package:args/args.dart';
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_mcp_toolkit_server/flutter_mcp_core.dart';
 import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/platform_view_hints.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/appintents_testing_command.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/codegen_init_command.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/codegen_sync_command.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/init_command.dart';
@@ -1750,6 +1751,7 @@ String _globalUsage() {
     ..writeln('  migrate agent-entries')
     ..writeln('  migrate mcp-call-entry')
     ..writeln('  codegen sync')
+    ..writeln('  codegen appintents-testing generate')
     ..writeln('  webmcp chrome-args')
     ..writeln('  webmcp verify')
     ..writeln()
@@ -1788,6 +1790,9 @@ String _usageForCommand(final List<String> commandPath) {
     'migrate mcp-call-entry' => _usageMigrateAgentEntries(),
     'codegen' => _usageCodegen(),
     'codegen sync' => _usageCodegenSync(),
+    'codegen appintents-testing' => _usageCodegenAppIntentsTesting(),
+    'codegen appintents-testing generate' =>
+      _usageCodegenAppIntentsTestingGenerate(),
     'webmcp' => _usageWebmcp(),
     'webmcp chrome-args' => _usageWebmcpChromeArgs(),
     'webmcp verify' => _usageWebmcpVerify(),
@@ -2200,23 +2205,61 @@ final _argParser = ArgParser(allowTrailingOptions: false)
   )
   ..addCommand(
     'codegen',
-    _commandParser()..addCommand(
-      'sync',
-      _commandParser()
-        ..addOption(
-          'platform',
-          defaultsTo: 'web',
-          help: 'Comma-separated platforms (phase 6d-web: web only)',
-        )
-        ..addOption(
-          'project-dir',
-          help: 'Flutter project root (defaults to current directory)',
-        )
-        ..addFlag(
-          _check,
-          help: 'Verify generated web artifacts are up to date',
+    _commandParser()
+      ..addCommand(
+        'sync',
+        _commandParser()
+          ..addOption(
+            'platform',
+            defaultsTo: 'web',
+            help:
+                'Comma-separated platforms: web,android,ios,macos,linux,windows',
+          )
+          ..addOption(
+            'project-dir',
+            help: 'Flutter project root (defaults to current directory)',
+          )
+          ..addFlag(_check, help: 'Verify generated artifacts are up to date'),
+      )
+      ..addCommand(
+        'appintents-testing',
+        _commandParser()..addCommand(
+          'generate',
+          _commandParser()
+            ..addOption(
+              'project-dir',
+              help: 'Flutter project root (default: current directory)',
+            )
+            ..addOption(
+              'manifest',
+              defaultsTo: 'web/agent_manifest.json',
+              help: 'Path to agent_manifest.json.',
+            )
+            ..addOption(
+              'bundle-id',
+              help: 'Bundle identifier for IntentDefinitions lookup.',
+            )
+            ..addOption(
+              'output',
+              help: 'Swift output path. Defaults to stdout.',
+            )
+            ..addOption(
+              'test-class',
+              defaultsTo: 'IntentCallAppIntentsLiveInvocationTests',
+              help: 'Generated XCTest class name.',
+            )
+            ..addOption(
+              'sample-arguments',
+              help:
+                  'Optional JSON file keyed by manifest qualifiedName with primitive App Intent argument fixtures.',
+            )
+            ..addOption(
+              'entity-fixtures',
+              help:
+                  'Optional JSON file keyed by entity qualifiedName with identifier/search/expectedTitle fixtures.',
+            ),
         ),
-    ),
+      ),
   );
 
 const _defaultHost = 'localhost';
@@ -2502,9 +2545,10 @@ Future<int> _runCodegenInitSubcommand(final ArgResults command) =>
 Future<int> _runCodegenSubcommand(final ArgResults command) async {
   final sub = command.command;
   if (sub == null || sub.name != 'sync') {
-    io.stderr.writeln(
-      'Usage: flutter-mcp-toolkit codegen sync --platform web,android,...',
-    );
+    if (sub?.name == 'appintents-testing') {
+      return _runCodegenAppIntentsTestingSubcommand(sub!);
+    }
+    io.stderr.writeln(_usageCodegen());
     return 64;
   }
   return runCodegenSync(
@@ -2514,13 +2558,35 @@ Future<int> _runCodegenSubcommand(final ArgResults command) async {
   );
 }
 
+Future<int> _runCodegenAppIntentsTestingSubcommand(
+  final ArgResults command,
+) async {
+  final sub = command.command;
+  if (sub == null || sub.name != 'generate') {
+    io.stderr.writeln(_usageCodegenAppIntentsTesting());
+    return 64;
+  }
+  return runAppIntentsTestingGenerate(
+    projectRoot: sub.option('project-dir') ?? io.Directory.current.path,
+    manifestPath: sub.option('manifest') ?? 'web/agent_manifest.json',
+    bundleIdentifier: sub.option('bundle-id') ?? '',
+    testClassName:
+        sub.option('test-class') ?? 'IntentCallAppIntentsLiveInvocationTests',
+    sampleArgumentsPath: sub.option('sample-arguments'),
+    entityFixturesPath: sub.option('entity-fixtures'),
+    outputPath: sub.option('output'),
+  );
+}
+
 String _usageCodegen() => '''
 Usage:
   flutter-mcp-toolkit codegen sync ...
+  flutter-mcp-toolkit codegen appintents-testing generate ...
 
 Examples:
   flutter-mcp-toolkit codegen sync --platform web
   flutter-mcp-toolkit codegen sync --platform web --check
+  flutter-mcp-toolkit codegen appintents-testing generate --bundle-id com.example.App
 ''';
 
 String _usageCodegenSync() => '''
@@ -2534,6 +2600,31 @@ Examples:
   flutter-mcp-toolkit codegen sync --platform web,android,linux,windows --check
 
 Reads agent_manifest.json and writes platform artifacts (manifest/JS/XML/Swift/desktop/reg).
+''';
+
+String _usageCodegenAppIntentsTesting() => '''
+Usage: flutter-mcp-toolkit codegen appintents-testing generate [options]
+
+Subcommands:
+  generate   Emit an Apple AppIntentsTesting XCTest UI-test scaffold
+
+Use `flutter-mcp-toolkit codegen appintents-testing generate --help` for options.
+''';
+
+String _usageCodegenAppIntentsTestingGenerate() => '''
+Usage: flutter-mcp-toolkit codegen appintents-testing generate --bundle-id <id> [options]
+
+Options:
+  --project-dir <path>        Flutter project root (default: current directory)
+  --manifest <path>           agent_manifest.json path (default: web/agent_manifest.json)
+  --bundle-id <id>            Bundle identifier for IntentDefinitions lookup
+  --output <path>             Swift output path (default: stdout)
+  --test-class <name>         XCTest class name
+  --sample-arguments <json>   Required primitive argument fixtures by qualifiedName
+  --entity-fixtures <json>    Entity query fixtures by qualifiedName
+
+The generated source is scaffold/API-shape proof only until it is added to a
+signed XCTest UI-test target and run with xcodebuild through full Xcode.
 ''';
 
 ArgParser _migrateAgentEntriesParser() => _commandParser()

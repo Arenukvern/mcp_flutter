@@ -1,5 +1,8 @@
 # flutter_mcp_toolkit_capability_kernel
 
+[![pub package](https://img.shields.io/pub/v/flutter_mcp_toolkit_capability_kernel.svg?include_prereleases)](https://pub.dev/packages/flutter_mcp_toolkit_capability_kernel)
+[![pub points](https://img.shields.io/pub/points/flutter_mcp_toolkit_capability_kernel.svg)](https://pub.dev/packages/flutter_mcp_toolkit_capability_kernel/score)
+
 Capability kernel for [Flutter MCP Toolkit](https://github.com/Arenukvern/mcp_flutter): `Capability`, `CapabilityContext`, `HostService`, tool/resource registration, and `<capabilityId>_` name prefixing.
 
 Pure Dart — no Flutter SDK or transport.

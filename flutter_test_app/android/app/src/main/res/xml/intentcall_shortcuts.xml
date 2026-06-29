@@ -19,5 +19,23 @@
         android:action="android.intent.action.VIEW"
         android:data="mcpfluttertest://invoke/app_intentcall_bridge_ping" />
   </shortcut>
+  <shortcut
+      android:shortcutId="app_set_greeting"
+      android:enabled="true"
+      android:shortcutShortLabel="Set Greeting"
+      android:shortcutLongLabel="Fill the showcase greeting field with text">
+    <intent
+        android:action="android.intent.action.VIEW"
+        android:data="mcpfluttertest://invoke/app_set_greeting" />
+  </shortcut>
+  <shortcut
+      android:shortcutId="app_enable_switch"
+      android:enabled="true"
+      android:shortcutShortLabel="Enable Switch"
+      android:shortcutLongLabel="Enable the showcase feature switch">
+    <intent
+        android:action="android.intent.action.VIEW"
+        android:data="mcpfluttertest://invoke/app_enable_switch" />
+  </shortcut>
 </shortcuts>
 

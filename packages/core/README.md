@@ -1,5 +1,8 @@
 # flutter_mcp_toolkit_core
 
+[![pub package](https://img.shields.io/pub/v/flutter_mcp_toolkit_core.svg?include_prereleases)](https://pub.dev/packages/flutter_mcp_toolkit_core)
+[![pub points](https://img.shields.io/pub/points/flutter_mcp_toolkit_core.svg)](https://pub.dev/packages/flutter_mcp_toolkit_core/score)
+
 Pure-Dart shared types for [Flutter MCP Toolkit](https://github.com/Arenukvern/mcp_flutter): command envelopes, `CoreResult` / `CoreError`, error codes, connection overrides, and capability models.
 
 No Flutter SDK, `dart_mcp`, or transport dependencies.

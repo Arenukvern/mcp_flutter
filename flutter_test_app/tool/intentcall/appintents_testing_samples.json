@@ -1,0 +1,8 @@
+{
+  "app_intentcall_bridge_ping": {
+    "echo": "appintents-testing-proof"
+  },
+  "app_set_greeting": {
+    "text": "AppIntentsTesting proof"
+  }
+}

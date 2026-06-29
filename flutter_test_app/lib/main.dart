@@ -17,7 +17,7 @@ import 'package:test_app/visual_reconstruct_screen.dart';
 var _initialEntriesRegistered = false;
 var _delayedEntriesRegistered = false;
 final _intentCallProofRegistry = InMemoryAgentRegistry();
-late final IntentCallNativeBridge _intentCallProofBridge;
+late final IntentCallFlutterHost _intentCallHost;
 const _intentCallProtocolScheme = 'mcpfluttertest';
 
 /// Registered on [MCPToolkitBinding.instance] for `navigate` / `handle_dialog`.
@@ -33,27 +33,7 @@ Future<void> main({final bool enableDelayedMcpRegistration = true}) async {
     ..navigatorKey = showcaseNavigatorKey;
 
   await _registerInitialMCPTools();
-  if (!kIsWeb) {
-    unawaited(
-      IntentCallInvokeLinkListener(
-        protocolScheme: _intentCallProtocolScheme,
-        onQualifiedName: (final name) {
-          debugPrint('intentcall invoke: $name');
-          unawaited(
-            _intentCallProofBridge.execute(
-              IntentCallInvocationEnvelope(
-                id: 'deeplink-${DateTime.now().microsecondsSinceEpoch}',
-                qualifiedName: name,
-                arguments: const <String, Object?>{},
-                source: IntentCallInvocationSource.deepLink,
-              ),
-            ),
-          );
-        },
-      ).start(),
-    );
-    unawaited(_drainIntentCallPendingInvocations());
-  }
+  unawaited(_intentCallHost.start());
   if (enableDelayedMcpRegistration) {
     // Mirror the previous bootstrap timing: a brief delay so a remote
     // observer can witness the dynamic-registry update event.
@@ -116,13 +96,157 @@ AgentCallEntry _intentCallBridgePingEntry() => AgentCallEntry.tool(
   ),
 );
 
-Future<void> _drainIntentCallPendingInvocations() async {
-  final pending = await const IntentCallPendingInvocations().takePending();
-  for (final envelope in pending) {
-    final result = await _intentCallProofBridge.execute(envelope);
-    debugPrint(
-      'intentcall pending invocation ${envelope.qualifiedName}: ${result.ok}',
+AgentCallEntry _setGreetingEntry() => AgentCallEntry.tool(
+  namespace: 'app',
+  name: 'set_greeting',
+  description: 'Fill the showcase greeting field with text.',
+  inputSchema: const <String, Object?>{
+    'type': 'object',
+    'additionalProperties': false,
+    'properties': <String, Object?>{
+      'text': <String, Object?>{
+        'type': 'string',
+        'description': 'Text to place in the greeting field.',
+      },
+    },
+    'required': <String>['text'],
+  },
+  handler: (final args) async {
+    final text = '${args['text'] ?? ''}';
+    AgentState.instance
+      ..greeting = text
+      ..logMessage('IntentCall set greeting: $text');
+    return AgentResult.success(
+      message: 'Greeting updated.',
+      data: <String, Object?>{
+        'kind': 'set_greeting',
+        'greeting': AgentState.instance.greeting,
+        'state': AgentState.instance.snapshot(),
+      },
     );
+  },
+);
+
+AgentCallEntry _enableSwitchEntry() => AgentCallEntry.tool(
+  namespace: 'app',
+  name: 'enable_switch',
+  description: 'Enable the showcase feature switch.',
+  inputSchema: const <String, Object?>{
+    'type': 'object',
+    'additionalProperties': false,
+    'properties': <String, Object?>{},
+  },
+  handler: (final args) async {
+    AgentState.instance
+      ..toggle = true
+      ..logMessage('IntentCall enabled showcase switch');
+    return AgentResult.success(
+      message: 'Switch enabled.',
+      data: <String, Object?>{
+        'kind': 'enable_switch',
+        'toggle': AgentState.instance.toggle,
+        'state': AgentState.instance.snapshot(),
+      },
+    );
+  },
+);
+
+AgentEntityTypeDescriptor _showcaseScreenEntityType() =>
+    AgentEntityTypeDescriptor(
+      namespace: 'app',
+      name: 'screen',
+      identifierName: 'id',
+      displayName: 'Showcase Screen',
+      privacy: AgentEntityPrivacy.public,
+      deepLinkBehavior: AgentEntityDeepLinkBehavior.optional,
+      openBehavior: AgentEntityOpenBehavior.supported,
+      properties: <AgentEntityPropertyDescriptor>[
+        AgentEntityPropertyDescriptor(
+          name: 'title',
+          valueType: AgentEntityPropertyValueType.string,
+          isDisplay: true,
+          isSearchable: true,
+          isIndexed: true,
+          privacy: AgentEntityPrivacy.public,
+        ),
+        AgentEntityPropertyDescriptor(
+          name: 'summary',
+          valueType: AgentEntityPropertyValueType.string,
+          isDisplay: true,
+          isSearchable: true,
+          isIndexed: true,
+          privacy: AgentEntityPrivacy.public,
+        ),
+        AgentEntityPropertyDescriptor(
+          name: 'tags',
+          valueType: AgentEntityPropertyValueType.array,
+          isSearchable: true,
+          isIndexed: true,
+          privacy: AgentEntityPrivacy.public,
+        ),
+      ],
+    );
+
+Future<void> _seedIntentCallShowcaseEntities() async {
+  if (kIsWeb) return;
+  final snapshots = <AgentEntitySnapshot>[
+    AgentEntitySnapshot(
+      ref: const AgentEntityRef(
+        namespace: 'app',
+        typeName: 'screen',
+        identifier: 'greeting_form',
+      ),
+      title: 'Greeting Form',
+      subtitle: 'Fill the showcase greeting text field',
+      keywords: const <String>['form', 'text', 'greeting', 'siri'],
+      deepLink: '$_intentCallProtocolScheme://entity/app_screen/greeting_form',
+      properties: const <String, Object?>{
+        'title': 'Greeting Form',
+        'summary': 'Fill the showcase greeting text field',
+        'tags': <String>['form', 'text', 'greeting', 'siri'],
+      },
+    ),
+    AgentEntitySnapshot(
+      ref: const AgentEntityRef(
+        namespace: 'app',
+        typeName: 'screen',
+        identifier: 'feature_switch',
+      ),
+      title: 'Feature Switch',
+      subtitle: 'Enable the showcase switch from an Apple action',
+      keywords: const <String>['toggle', 'switch', 'shortcut', 'siri'],
+      deepLink: '$_intentCallProtocolScheme://entity/app_screen/feature_switch',
+      properties: const <String, Object?>{
+        'title': 'Feature Switch',
+        'summary': 'Enable the showcase switch from an Apple action',
+        'tags': <String>['toggle', 'switch', 'shortcut', 'siri'],
+      },
+    ),
+    AgentEntitySnapshot(
+      ref: const AgentEntityRef(
+        namespace: 'app',
+        typeName: 'screen',
+        identifier: 'counter_demo',
+      ),
+      title: 'Counter Demo',
+      subtitle: 'Inspect the reactive counter fixture',
+      keywords: const <String>['counter', 'demo', 'runtime', 'spotlight'],
+      deepLink: '$_intentCallProtocolScheme://entity/app_screen/counter_demo',
+      properties: const <String, Object?>{
+        'title': 'Counter Demo',
+        'summary': 'Inspect the reactive counter fixture',
+        'tags': <String>['counter', 'demo', 'runtime', 'spotlight'],
+      },
+    ),
+  ];
+  try {
+    final count = await IntentCallPlatformEntityIndex().upsertAgentSnapshots(
+      snapshots: snapshots,
+    );
+    debugPrint('intentcall seeded $count showcase entity snapshots');
+  } catch (error, stackTrace) {
+    debugPrint('intentcall entity snapshot seed failed: $error');
+    debugPrint('$stackTrace');
   }
 }
 
@@ -131,6 +255,8 @@ Future<void> _registerInitialMCPTools() async {
   _initialEntriesRegistered = true;
   final binding = MCPToolkitBinding.instance;
   final intentCallBridgePingEntry = _intentCallBridgePingEntry();
+  final setGreetingEntry = _setGreetingEntry();
+  final enableSwitchEntry = _enableSwitchEntry();
 
   final fibonacciEntry = mcpToolkitTool(
     namespace: 'app',
@@ -186,7 +312,11 @@ Future<void> _registerInitialMCPTools() async {
 
   final dogfoodEntries = buildAgentDogfoodEntries();
   _intentCallProofRegistry.register(intentCallBridgePingEntry.toRegistration());
-  _intentCallProofBridge = IntentCallNativeBridge.bindRegistry(
+  _intentCallProofRegistry
+    ..register(setGreetingEntry.toRegistration())
+    ..register(enableSwitchEntry.toRegistration())
+    ..registerEntityType(_showcaseScreenEntityType());
+  _intentCallHost = IntentCallFlutterHost.bindRegistry(
     registry: _intentCallProofRegistry,
     policy: const IntentCallAuthorizationPolicy(
       allowedSources: <String>{
@@ -194,8 +324,39 @@ Future<void> _registerInitialMCPTools() async {
         IntentCallInvocationSource.nativeGenerated,
         IntentCallInvocationSource.deepLink,
       },
-      allowedQualifiedNames: <String>{'app_intentcall_bridge_ping'},
+      allowedQualifiedNames: <String>{
+        'app_intentcall_bridge_ping',
+        'app_set_greeting',
+        'app_enable_switch',
+      },
     ),
+    registerWebMcp: kIsWeb,
+    listenForDeepLinks: !kIsWeb,
+    protocolScheme: _intentCallProtocolScheme,
+    onEnvelope: (final envelope) {
+      debugPrint('intentcall invoke: ${envelope.qualifiedName}');
+    },
+    onResult: (final envelope, final result) {
+      if (envelope.source == IntentCallInvocationSource.nativeGenerated) {
+        debugPrint(
+          'intentcall pending invocation ${envelope.qualifiedName}: ${result.ok}',
+        );
+      } else {
+        debugPrint(
+          'intentcall ${envelope.source} invocation ${envelope.qualifiedName}: ${result.ok}',
+        );
+      }
+    },
+    onDenied: (final envelope, final result) {
+      debugPrint(
+        'intentcall denied ${envelope.source} invocation ${envelope.qualifiedName}: ${result.code}',
+      );
+    },
+    onError: (final envelope, final error, final stackTrace) {
+      debugPrint(
+        'intentcall error ${envelope.source} invocation ${envelope.qualifiedName}: $error',
+      );
+    },
   );
   await binding.addEntries(
     entries: {
@@ -203,17 +364,13 @@ Future<void> _registerInitialMCPTools() async {
       appStateEntry,
       agentStateEntry,
       intentCallBridgePingEntry,
+      setGreetingEntry,
+      enableSwitchEntry,
       ...dogfoodEntries,
     },
   );
+  await _seedIntentCallShowcaseEntities();
   if (kIsWeb) {
-    registerAgentWebMcpFromRegistry(
-      _intentCallProofRegistry,
-      policy: const IntentCallAuthorizationPolicy(
-        allowedSources: <String>{IntentCallInvocationSource.webMcpDart},
-        allowedQualifiedNames: <String>{'app_intentcall_bridge_ping'},
-      ),
-    );
     await wireWebMcpPublishAdapterDogfood(dogfoodEntries);
   }
   print('Initial MCP tools and resources registered');

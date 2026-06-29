@@ -39,6 +39,32 @@
         "echo"
       ]
     }
+  },
+  {
+    "name": "app_set_greeting",
+    "description": "Fill the showcase greeting field with text",
+    "inputSchema": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "Text to place in the greeting field."
+        }
+      },
+      "required": [
+        "text"
+      ]
+    }
+  },
+  {
+    "name": "app_enable_switch",
+    "description": "Enable the showcase feature switch",
+    "inputSchema": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {}
+    }
   }
 ];
 

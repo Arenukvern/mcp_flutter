@@ -6,11 +6,12 @@
 |------|----------|
 | Canonical local IntentCall clone | `/Users/anton/mcp/agentkit` |
 | GitHub | `github.com/Arenukvern/intentcall` |
-| Consumer package policy | Hosted `intentcall_* ^0.3.1` from pub.dev |
+| Consumer package policy | Hosted `intentcall_* ^0.6.0` from pub.dev |
 | Local-development exception | Temporary sibling path overrides to `/Users/anton/mcp/agentkit/packages/intentcall_*` only |
 | Main integration gate | `make check-intentcall-integration` |
 | Repo contract gate | `make check-contracts` |
 | IntentCall publish checks | Run from `/Users/anton/mcp/agentkit` |
+| AppIntentsTesting consumer scaffold | `flutter-mcp-toolkit codegen appintents-testing generate` |
 
 ## Boundary
 
@@ -100,6 +101,39 @@ make sync-skills
 
 The durable proof should live in checks, CI, Steward scenarios, tests, and dated evidence records, not in a hand-maintained pass-count checklist.
 
+## Apple AppIntentsTesting scaffold
+
+The hosted `intentcall_platform` package owns the AppIntentsTesting emitter.
+Flutter MCP Toolkit exposes it as a consumer convenience command:
+
+```bash
+flutter-mcp-toolkit codegen appintents-testing generate \
+  --project-dir path/to/flutter_app \
+  --bundle-id com.example.App \
+  --sample-arguments path/to/appintents_testing_samples.json \
+  --entity-fixtures path/to/appintents_testing_entities.json \
+  --output path/to/YourAppUITests/IntentCallAppIntentsLiveInvocationTests.swift
+```
+
+The command reads `web/agent_manifest.json` by default. Required primitive App
+Intent parameters must be supplied through `--sample-arguments`. Entity query
+and Spotlight scaffold checks are opt-in through `--entity-fixtures`, keyed by
+entity `qualifiedName` with `identifier`, `search`, and `expectedTitle` values.
+Manifest, fixture, and output paths are resolved relative to `--project-dir`
+unless they are absolute paths.
+
+Proof labels stay separate:
+
+| Label | What it proves |
+|-------|----------------|
+| Generated scaffold proof | The manifest and fixtures can produce an XCTest source file from the hosted `intentcall_platform` emitter, including opted-in entity query/Spotlight scaffold checks. |
+| AppIntentsTesting import compile proof | Full Xcode can typecheck `import AppIntentsTesting`; this still does not run generated intents. |
+| AppIntentsTesting runtime proof | A signed consuming app runs the generated XCTest UI-test target through `xcodebuild test` and verifies the behavior being claimed. |
+| Product smoke | Manual Shortcuts, Siri, or Spotlight checks against an installed app; useful, but not a substitute for the automated runtime lane. |
+
+If the generated source is not added to a signed UI-test target and executed,
+claim only generated scaffold proof.
+
 ## Troubleshooting routes
 
 | Symptom | Start here |
@@ -117,8 +151,10 @@ For future hosted dependency bumps:
 1. Confirm the intended `intentcall_*` versions exist on pub.dev.
 2. Update consumer constraints in `mcp_toolkit`, `mcp_server_dart`, capability packages, and `flutter_test_app` as needed.
 3. Remove temporary local path overrides.
-4. Run `tool/intentcall/check_no_path_deps.sh --strict-root`.
-5. Run the consumer proof gates above.
-6. Investigate package behavior regressions in `/Users/anton/mcp/agentkit`, not in this consumer repo.
+4. Regenerate any action AppIntentsTesting scaffold from the hosted emitter if
+   the app keeps one checked in.
+5. Run `tool/intentcall/check_no_path_deps.sh --strict-root`.
+6. Run the consumer proof gates above.
+7. Investigate package behavior regressions in `/Users/anton/mcp/agentkit`, not in this consumer repo.
 
 Historical in-repo IntentCall rollout plans, specs, trackers, closure reports, hosted cutover notes, and checklist docs were removed after durable extraction. Git history is the forensic archive.

@@ -1,5 +1,8 @@
 # flutter_mcp_toolkit_capability_core
 
+[![pub package](https://img.shields.io/pub/v/flutter_mcp_toolkit_capability_core.svg?include_prereleases)](https://pub.dev/packages/flutter_mcp_toolkit_capability_core)
+[![pub points](https://img.shields.io/pub/points/flutter_mcp_toolkit_capability_core.svg)](https://pub.dev/packages/flutter_mcp_toolkit_capability_core/score)
+
 Core MCP capability (`fmt`) for [Flutter MCP Toolkit](https://github.com/Arenukvern/mcp_flutter): VM inspection, UI interaction, navigation, logs, diagnostics, and hot-reload coordination.
 
 Server-side Dart only — no Flutter SDK dependency.

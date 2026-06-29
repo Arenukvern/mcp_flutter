@@ -58,7 +58,7 @@ mkdir -p "${tmp}/mcp_server_dart" "${tmp}/packages"
 cat > "${tmp}/mcp_toolkit/pubspec.yaml" <<YAML
 name: fixture
 dependencies:
-  intentcall_core: ^0.3.1
+  intentcall_core: ^0.6.0
 YAML
 
 cat > "${tmp}/pubspec.yaml" <<YAML
@@ -75,7 +75,7 @@ packages:
       name: intentcall_core
       url: "https://pub.dev"
     source: hosted
-    version: "0.3.1"
+    version: "0.6.0"
 YAML
 
 if ! bash "${tmp}/tool/intentcall/check_no_path_deps.sh" >/dev/null 2>&1; then

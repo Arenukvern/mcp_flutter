@@ -1,0 +1,7 @@
+{
+  "app_screen": {
+    "identifier": "home",
+    "search": "Home",
+    "expectedTitle": "Home"
+  }
+}

@@ -18,6 +18,7 @@ web_port="${WEB_PORT:-8080}"
 vm_port="${VM_HOST_PORT:-8181}"
 flutter_route="${FLUTTER_ROUTE:-}"
 dogfood_visual="${DOGFOOD_VISUAL:-}"
+canvaskit_url="${WEB_CANVASKIT_URL:-}"
 detach=false
 
 usage() {
@@ -55,11 +56,18 @@ if [[ "${dogfood_visual}" == "1" || "${dogfood_visual}" == "true" ]]; then
   dart_define_args=(--dart-define=DOGFOOD_VISUAL=true)
   printf '[web-showcase] DOGFOOD_VISUAL=true (initialRoute /visual-reconstruct)\n'
 fi
+if [[ -n "${canvaskit_url}" ]]; then
+  dart_define_args+=(--dart-define="FLUTTER_WEB_CANVASKIT_URL=${canvaskit_url}")
+  printf '[web-showcase] FLUTTER_WEB_CANVASKIT_URL=%s\n' "${canvaskit_url}"
+else
+  printf '[web-showcase] using local Flutter web resources (--no-web-resources-cdn)\n'
+fi
 
 flutter_args=(
   run -d chrome
   --web-port="${web_port}"
   --host-vmservice-port="${vm_port}"
+  --no-web-resources-cdn
   "${route_args[@]}"
   "${dart_define_args[@]}"
   --debug

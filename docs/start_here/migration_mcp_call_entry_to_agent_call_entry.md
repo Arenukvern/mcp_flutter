@@ -78,6 +78,23 @@ flutter-mcp-toolkit codegen sync --platform web,android,ios,macos,linux,windows 
 
 CI drift: add `--check` to both commands (also in `make check-contracts`).
 
+Apple AppIntentsTesting scaffold generation, when the app has full Xcode and a
+UI-test target ready:
+
+```bash
+flutter-mcp-toolkit codegen appintents-testing generate \
+  --project-dir path/to/flutter_app \
+  --bundle-id com.example.App \
+  --sample-arguments path/to/appintents_testing_samples.json \
+  --entity-fixtures path/to/appintents_testing_entities.json \
+  --output path/to/YourAppUITests/IntentCallAppIntentsLiveInvocationTests.swift
+```
+
+This command only proves generated scaffold shape. Runtime proof requires the
+generated source to run inside a signed XCTest UI-test target. Manifest,
+fixture, and output paths are resolved relative to `--project-dir` unless they
+are absolute paths.
+
 ## Related docs
 
 - [IntentCall consumer docs](../intentcall/README.md)

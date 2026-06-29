@@ -58,6 +58,7 @@ void main() {
 {
   "version": 1,
   "platform": "android",
+  "protocolScheme": "exampleapp",
   "shortcuts": [
     {
       "qualifiedName": "app_ping",
