@@ -10,6 +10,7 @@ import 'package:dart_mcp/server.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 import 'package:flutter_mcp_toolkit_server/flutter_mcp_server.dart';
+import 'package:flutter_mcp_toolkit_server/src/capabilities/dynamic_registry/dynamic_result_normalizer.dart';
 import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_consts.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
 import 'package:intentcall_core/intentcall_core.dart';
@@ -553,24 +554,14 @@ final class DynamicRegistry {
         );
       }
 
-      final payload = <String, Object?>{...data}
-        ..remove('content')
-        ..remove('mimeType')
-        ..remove('blob')
-        ..remove('isBlob');
-      final message = jsonDecodeString(payload['message']);
-      payload.remove('message');
-      final normalizedPayload = <String, Object?>{
-        if (message.isNotEmpty) 'message': message,
-        if (payload.isNotEmpty) 'parameters': payload,
-      };
+      final normalized = normalizeDynamicTextResourcePayload(data);
 
       return readResourceResultToAgentResult(
         ReadResourceResult(
           contents: [
             TextResourceContents(
               uri: requestedUri,
-              text: jsonEncode(normalizedPayload),
+              text: normalized.content,
               mimeType: 'application/json',
             ),
           ],
@@ -698,6 +689,7 @@ InputSchema inputSchemaFromMcpTool(final Tool tool) {
   final ObjectSchema schema;
   try {
     schema = tool.inputSchema;
+    // ignore: avoid_catching_errors
   } on ArgumentError catch (e) {
     throw ArgumentError('Tool "${tool.name}" is missing inputSchema: $e');
   }

@@ -47,6 +47,7 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
     mcpToolkitServer.attachDynamicGateway(
       RegistryBackedDynamicGateway(
         registry: registry,
+        agentRegistry: mcpToolkitServer.capabilityHost.agentRegistry,
         discoveryService: () => discoveryService,
       ),
     );

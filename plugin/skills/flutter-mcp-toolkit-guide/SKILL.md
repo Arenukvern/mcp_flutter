@@ -67,9 +67,11 @@ parameter shapes lives in the task skills.
 - **Debug:** `get_recent_logs`, `evaluate_dart_expression`. →
   `flutter-mcp-toolkit-debug`.
 - **Dynamic registry (app-defined):** after registration in the Flutter app,
-  list with `list_client_tools_and_resources`, then `client_tool` /
-  `client_resource` — wire names as **`fmt_*`** when calling MCP. →
-  `flutter-mcp-toolkit-custom-tools`.
+  MCP calls use `fmt_list_client_tools_and_resources`, then
+  `fmt_client_tool` / `fmt_client_resource`. When shelling out to the CLI,
+  command names appear only as `exec --name <name>` values; do not call bare
+  `list_client_tools_and_resources`, `client_tool`, or `client_resource` as
+  MCP tools. → `flutter-mcp-toolkit-custom-tools`.
 
 ## When in doubt
 

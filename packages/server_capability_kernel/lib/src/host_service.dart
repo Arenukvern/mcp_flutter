@@ -8,7 +8,7 @@ import 'package:meta/meta.dart';
 /// the kernel only defines the interfaces.
 abstract interface class HostService {}
 
-/// Bridge to the dynamic-registry that surfaces app-side
+/// Reserved bridge to the dynamic registry that surfaces app-side
 /// `MCPToolkitBinding.addEntries` registrations as MCP tools.
 ///
 /// A capability that wants to expose its app-side tools under its own
@@ -21,8 +21,11 @@ abstract interface class DynamicRegistryBridge implements HostService {
   void claim({required final String namespace});
 }
 
-/// Read-only access to the running Flutter app's VM service. Capabilities
-/// that need to invoke service extensions go through this.
+/// Reserved read-only access to the running Flutter app's VM service.
+///
+/// Current built-in capabilities use [CommandRunner] for most operations. Keep
+/// this contract available for future host services without moving VM-specific
+/// code into the kernel.
 abstract interface class VmServiceClient implements HostService {
   /// Invoke a service extension on the running app, returning the raw
   /// response map.
@@ -32,8 +35,8 @@ abstract interface class VmServiceClient implements HostService {
   });
 }
 
-/// Hot-reload coordinator. Capabilities that orchestrate code generation
-/// + reload (live-edit) request reloads through this.
+/// Reserved hot-reload coordinator for capabilities that orchestrate code
+/// generation plus reload requests.
 abstract interface class HotReloadCoordinator implements HostService {
   Future<HotReloadResult> reload({final bool pause = false});
 }

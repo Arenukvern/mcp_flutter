@@ -2,7 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 
 void main() {
-  final f = File('/Users/anton/mcp/mcp_flutter/flutter_test_app/lib/main.dart');
+  final appRoot = File(Platform.script.toFilePath()).parent.parent;
+  final f = File('${appRoot.path}/lib/main.dart');
   final content = f.readAsStringSync();
   final newContent = content.replaceFirst(
     "'Hello Live Flutter Editing'",
@@ -42,6 +43,6 @@ void main() {
     'riskFlags': <String>[],
   };
   File(
-    '/Users/anton/mcp/mcp_flutter/flutter_test_app/resolution_output.json',
+    '${appRoot.path}/resolution_output.json',
   ).writeAsStringSync(JsonEncoder.withIndent('  ').convert(proposal));
 }

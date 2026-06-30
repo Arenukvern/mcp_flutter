@@ -1,7 +1,7 @@
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **mcp_flutter** (4644 symbols, 10513 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **mcp_flutter** (4736 symbols, 10413 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -48,7 +48,7 @@ This project is indexed by GitNexus as **mcp_flutter** (4644 symbols, 10513 rela
 
 | Question | Go to |
 |---|---|
-| Canonical IntentCall design / AX / DX | `/Users/anton/mcp/agentkit/docs/NORTH_STAR.mdx` |
+| Canonical IntentCall design / AX / DX | [IntentCall North Star](https://github.com/Arenukvern/intentcall/blob/main/docs/NORTH_STAR.mdx) |
 | Consumer integration, hosted dependencies, and proof gates | `docs/intentcall/README.md` |
 | Legacy call-entry migration | `docs/start_here/migration_mcp_call_entry_to_agent_call_entry.md` |
 | Visual harness maintenance | `docs/superpowers/plans/2026-05-26-visual-reconstruct-next.md` |

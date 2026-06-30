@@ -1,0 +1,102 @@
+# ADR 0012 — `fmtk` CLI alias and harness boundary
+
+- **Status:** Accepted
+- **Shipped:** Unreleased
+- **Authoritative source:** `mcp_server_dart/pubspec.yaml`, `install.sh`, `tool/release/build_release_artifacts.sh`
+
+## Context
+
+`flutter-mcp-toolkit` is explicit and searchable, but it is long for repeated
+agent and terminal loops. The MCP tool surface already uses the compact `fmt_`
+capability prefix, so agents and developers naturally reach for a shorter CLI
+handle when running `doctor`, `exec`, `batch`, and `validate-runtime`.
+
+The short name cannot be too clever:
+
+- `fmt` collides with the standard Unix text formatter (`/usr/bin/fmt` on
+  macOS).
+- `fmcp` is readable, but a PyPI package with that name already exists.
+- Renaming the canonical binary would break install docs, plugin manifests, and
+  searchability.
+- Shipping many aliases increases docs and support surface.
+
+At the same time, `scripts/run_exec_sweep.sh` showed a second pressure: repeated
+debug/eval batteries want compact commands and good logging, but they should
+not turn every step into a new public CLI or MCP verb. Repeatable scenario
+documents belong in `flutter_harness`; the toolkit should stay focused on live
+Flutter command primitives, CLI/MCP parity, diagnostics, and runtime validation.
+
+## Decision
+
+Ship `fmtk` as a short CLI alias for `flutter-mcp-toolkit`.
+
+`fmtk <args>` runs the same entrypoint as `flutter-mcp-toolkit <args>`. The long
+name remains canonical in install, onboarding, plugin config, marketplace, and
+PATH troubleshooting docs. The MCP server binary remains
+`flutter-mcp-toolkit-server`; package names, MCP registry keys, and MCP tools
+continue unchanged. MCP remains the typed `fmt_*` surface. We do not add a
+generic MCP `run_tool`.
+
+## Considered Options
+
+- **`fmt` alias:** rejected because it collides with the standard Unix text
+  formatter (`/usr/bin/fmt` locally).
+- **`fmcp` alias:** rejected because `fmcp` already exists on PyPI.
+- **Both `fmcp` and `fmtk`:** rejected because multiple short aliases enlarge
+  docs, support, completions, and install smoke surface without enough AX gain.
+- **Rename `flutter-mcp-toolkit`:** rejected because the long name is still the
+  searchable canonical identity for installs, plugin configs, registry keys,
+  and onboarding.
+- **`fmtk` alias:** accepted because it is compact, reads as Flutter MCP
+  Toolkit, and no checked pub.dev/PyPI package or unscoped npm package conflict
+  was found for this Dart CLI alias.
+
+Debug/eval workflows should first use existing surfaces:
+
+- `--log-level debug`
+- `--output-dir`
+- `--save-images`
+- `doctor --json`
+- `validate-runtime`
+- `batch`
+- `exec --name diagnose` / diagnostics bundle
+
+If a debug/eval battery becomes reusable across projects, graduate it to
+`flutter_harness` as Harness Script or a harness example instead of adding a
+scenario language to `mcp_flutter`.
+
+## Consequences
+
+**Good:**
+
+- Agents and developers get shorter repeated commands: `fmtk doctor --json`,
+  `fmtk exec --name status --args '{}'`, `fmtk batch ...`.
+- The explicit `flutter-mcp-toolkit` name remains stable for install,
+  searchability, and docs.
+- `mcp_flutter` and `flutter_harness` keep a cleaner boundary: primitives here,
+  reusable scenarios in the harness repo.
+
+**Bad:**
+
+- Release and install artifacts now have one more binary to build, smoke test,
+  and document.
+- Users may ask whether `fmtk` or `flutter-mcp-toolkit` is preferred; docs must
+  consistently call `fmtk` the short alias.
+
+**Neutral:**
+
+- Existing MCP clients, plugin configs, package names, and `fmt_*` tool names do
+  not change.
+
+## Notes
+
+- Name-collision check at decision time: `fmt` is a local system command;
+  `fmcp` exists on PyPI; no checked pub.dev/PyPI package or unscoped npm
+  package conflict was found for `fmtk` as this Dart CLI alias. Scoped npm
+  packages and other ecosystem uses, including Factorio Mod Tool Kit, do not
+  block a local Dart binary alias.
+- Sources checked: [PyPI `fmcp`](https://pypi.org/project/fmcp/),
+  [pub.dev `mcp_toolkit`](https://pub.dev/packages/mcp_toolkit), and
+  [Flutter MCP server docs](https://docs.flutter.dev/ai/mcp-server).
+- Harness-side boundary is recorded in
+  `flutter_harness/decisions/0003_toolkit_primitives_and_harness_scenarios.md`.

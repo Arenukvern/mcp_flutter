@@ -21,7 +21,7 @@ usage() {
   cat <<'EOF'
 Usage: tool/intentcall/publish_all.sh [--execute]
 
-Publishes packages in order (schema → core → adapters → platform → testing).
+Publishes packages in order (schema → core → session → adapters → platform → testing).
 Without --execute, runs `dart pub publish --dry-run` only.
 EOF
 }
@@ -37,6 +37,7 @@ done
 publish_order=(
   intentcall_schema
   intentcall_core
+  intentcall_session
   intentcall_mcp
   intentcall_webmcp
   intentcall_gemma

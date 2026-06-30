@@ -14,7 +14,10 @@ if [[ -z "${ws_uri}" ]]; then
   exit 64
 fi
 
-"${toolkit[@]}" validate-runtime \
+"${toolkit[@]}" \
+  --flutter-device macos \
+  --flutter-project-dir "${repo_root}/flutter_test_app" \
+  validate-runtime \
   --target "${ws_uri}" \
   --timeout-ms "${timeout_ms}" \
   --output-dir "${repo_root}/.showcase/macos_validate_runtime"

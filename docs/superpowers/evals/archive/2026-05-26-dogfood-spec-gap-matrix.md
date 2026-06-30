@@ -3,7 +3,7 @@
 # Dogfood vs intentcall spec — gap matrix
 
 **Date:** 2026-05-26  
-**Spec:** Historical IntentCall in-repo design and Bar D pre-extract completion docs were removed after durable extraction to `/Users/anton/mcp/agentkit`; this archived eval remains a snapshot of the old gap analysis.
+**Spec:** Historical IntentCall in-repo design and Bar D pre-extract completion docs were removed after durable extraction to the IntentCall repository; this archived eval remains a snapshot of the old gap analysis.
 **Evidence:** [`docs/evidence/dogfood/dogfood_web_eval.yaml`](../../evidence/dogfood/dogfood_web_eval.yaml) (iterations 1–10), code + CI on `feat/intentcall-phase1-3`
 
 ## Summary

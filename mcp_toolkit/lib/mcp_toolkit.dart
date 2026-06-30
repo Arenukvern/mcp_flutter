@@ -8,7 +8,8 @@
 /// - Flutter binding: [MCPToolkitBinding], [addMcpTool], toolkits under `src/toolkits/`.
 /// - Authoring: [AgentCallEntry] (register with [MCPToolkitBinding.addEntries]).
 /// - Legacy handler bridge: [mcpToolkitTool], [mcpToolkitResource] for
-///   [MCPToolDefinition] + [MCPCallResult] handlers.
+///   [MCPToolDefinition] + [MCPCallResult] handlers. New reusable registry,
+///   session, and result behavior belongs in IntentCall packages.
 /// - Wire types: [MCPCallResult], [MCPToolDefinition], [MCPResourceDefinition].
 ///
 /// `MCPCallEntry` was removed in intentcall Phase 6b; use

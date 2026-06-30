@@ -54,7 +54,7 @@ void main() {
 
     test('parseProcessDiscoveryLine extracts target from DDS command line', () {
       final parsed = FlutterToolMachineDiscovery.parseProcessDiscoveryLine(
-        '76597 /Users/anton/flutter/bin/cache/dart-sdk/bin/dart development-service --vm-service-uri=http://127.0.0.1:55571/jafDCsl7Cz4=/ --bind-address=127.0.0.1 --bind-port=0 --serve-devtools',
+        '76597 /opt/flutter/bin/cache/dart-sdk/bin/dart development-service --vm-service-uri=http://127.0.0.1:55571/jafDCsl7Cz4=/ --bind-address=127.0.0.1 --bind-port=0 --serve-devtools',
       );
 
       expect(

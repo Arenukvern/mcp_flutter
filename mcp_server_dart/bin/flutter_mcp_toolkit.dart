@@ -8,6 +8,7 @@ import 'package:args/args.dart';
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_mcp_toolkit_server/flutter_mcp_core.dart';
 import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/platform_view_hints.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/appintents_testing_command.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/codegen_init_command.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/codegen_sync_command.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/init_command.dart';
@@ -15,7 +16,9 @@ import 'package:flutter_mcp_toolkit_server/src/cli/init_intentcall_platform_comm
 import 'package:flutter_mcp_toolkit_server/src/cli/init_mode.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/init_target.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/migrate_agent_entries_command.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/session/flutter_session_connector.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/webmcp_command.dart';
+import 'package:intentcall_session/intentcall_session.dart';
 
 Future<void> main(final List<String> args) async {
   late final ArgResults parsed;
@@ -94,8 +97,8 @@ Future<void> main(final List<String> args) async {
     initialStickyEndpointUri: bootstrapStickyEndpoint,
   );
 
-  final sessionManager = SessionManager(
-    connectionContext: connectionContext,
+  final sessionManager = IntentSessionManager(
+    connector: FlutterSessionConnector(connectionContext: connectionContext),
     stateStore: stateStore,
   );
   await sessionManager.load();
@@ -130,10 +133,12 @@ Future<void> main(final List<String> args) async {
   );
 
   final catalog = CommandCatalog.instance;
-  final snapshotStore = SnapshotStore(snapshotsDir: '$stateRoot/snapshots');
+  final commandSnapshots = CommandSnapshotService(
+    snapshotsDir: '$stateRoot/snapshots',
+  );
   final bundleBuilder = BundleBuilder(
     bundlesDir: '$stateRoot/bundles',
-    snapshotStore: snapshotStore,
+    snapshotStore: commandSnapshots.snapshotStore,
     stateFilePath: statePath,
   );
   final doctorRunner = DoctorRunner(
@@ -151,7 +156,7 @@ Future<void> main(final List<String> args) async {
       executor: executor,
       sessionManager: sessionManager,
       catalog: catalog,
-      snapshotStore: snapshotStore,
+      commandSnapshots: commandSnapshots,
       bundleBuilder: bundleBuilder,
       configuration: configuration,
     );
@@ -167,7 +172,7 @@ Future<void> main(final List<String> args) async {
     catalog: catalog,
     configuration: configuration,
     sessionManager: sessionManager,
-    snapshotStore: snapshotStore,
+    commandSnapshots: commandSnapshots,
     bundleBuilder: bundleBuilder,
     doctorRunner: doctorRunner,
   );
@@ -195,8 +200,8 @@ Future<CoreResult> _runOneShot({
   required final DefaultCoreCommandExecutor executor,
   required final CommandCatalog catalog,
   required final CoreRuntimeConfiguration configuration,
-  required final SessionManager sessionManager,
-  required final SnapshotStore snapshotStore,
+  required final IntentSessionManager sessionManager,
+  required final CommandSnapshotService commandSnapshots,
   required final BundleBuilder bundleBuilder,
   required final DoctorRunner doctorRunner,
 }) async {
@@ -285,7 +290,7 @@ Future<CoreResult> _runOneShot({
 
         return _runSnapshotCommand(
           snapshotCommand: snapshotCommand,
-          snapshotStore: snapshotStore,
+          commandSnapshots: commandSnapshots,
           executor: executor,
           catalog: catalog,
         );
@@ -366,7 +371,7 @@ Future<CoreResult> _runBatchCommand({
   required final ArgResults command,
   required final DefaultCoreCommandExecutor executor,
   required final CommandCatalog catalog,
-  required final SessionManager sessionManager,
+  required final IntentSessionManager sessionManager,
 }) async {
   final steps = _parseBatchStepsJson(command.option('steps'));
   if (steps.isEmpty) {
@@ -434,7 +439,7 @@ Future<CoreResult> _runBatchCommand({
 
 Future<CoreResult> _runSnapshotCommand({
   required final ArgResults snapshotCommand,
-  required final SnapshotStore snapshotStore,
+  required final CommandSnapshotService commandSnapshots,
   required final DefaultCoreCommandExecutor executor,
   required final CommandCatalog catalog,
 }) async {
@@ -451,7 +456,7 @@ Future<CoreResult> _runSnapshotCommand({
       final args = _parseArgumentsJson(snapshotCommand.option('args'));
       final writeOptions = _safeWriteOptionsFrom(snapshotCommand);
       try {
-        final snapshot = await snapshotStore.createSnapshot(
+        final snapshot = await commandSnapshots.createSnapshot(
           id: name,
           executor: executor,
           catalog: catalog,
@@ -486,7 +491,10 @@ Future<CoreResult> _runSnapshotCommand({
       }
 
       try {
-        final diff = await snapshotStore.diffSnapshots(fromId: from, toId: to);
+        final diff = await commandSnapshots.diffSnapshots(
+          fromId: from,
+          toId: to,
+        );
         return CoreResult.success(data: diff);
         // ignore: avoid_catching_errors
       } on ArgumentError catch (e) {
@@ -834,6 +842,20 @@ Future<CoreResult> _runValidateRuntime({
     flutterLayerFallback: 'capture_ui_snapshot_after_reload_flutter_layer',
   );
   final captureFallbackUsed = _validateRuntimeUsedFlutterLayerFallback(steps);
+  final primaryCaptureFailed = _stepFailed(steps, 'capture_ui_snapshot');
+  final postReloadPrimaryCaptureFailed = _stepFailed(
+    steps,
+    'capture_ui_snapshot_after_reload',
+  );
+  final fallbackCaptureSucceeded =
+      captureFallbackUsed &&
+      (_stepOk(steps, 'capture_ui_snapshot_flutter_layer') ||
+          _stepOk(steps, 'capture_ui_snapshot_after_reload_flutter_layer'));
+  final verdict = fallbackCaptureSucceeded
+      ? 'pass_with_fallback'
+      : failedSteps == 0
+      ? 'pass'
+      : 'pass_with_recoverable_failures';
   return CoreResult.success(
     data: {
       'doctor': doctorData,
@@ -850,7 +872,11 @@ Future<CoreResult> _runValidateRuntime({
         'errorsCount': errorsCount,
         'visualCaptureCommand': 'capture_ui_snapshot',
         'requiredExtensions': requiredSorted,
+        'verdict': verdict,
         'captureFallbackUsed': captureFallbackUsed,
+        'primaryCaptureFailed': primaryCaptureFailed,
+        'postReloadPrimaryCaptureFailed': postReloadPrimaryCaptureFailed,
+        'fallbackCaptureSucceeded': fallbackCaptureSucceeded,
         'capturePlatformViewsDetected': capturePlatformViewsDetected,
         'captureFocusAttempted': captureFocusAttempted,
         'captureBackend':
@@ -873,7 +899,7 @@ Future<CoreResult> _runPermissionsCommand({
   required final ArgResults command,
   required final CoreRuntimeConfiguration configuration,
   required final DefaultCoreCommandExecutor executor,
-  required final SessionManager sessionManager,
+  required final IntentSessionManager sessionManager,
 }) async {
   final actionCommand = command.command;
   if (actionCommand == null) {
@@ -930,7 +956,7 @@ Future<PersistedState> _readBootstrapState(final StateStore store) async {
 Future<CoreResult?> _preconnectIfNeeded({
   required final ArgResults parsed,
   required final CoreCommand command,
-  required final SessionManager sessionManager,
+  required final IntentSessionManager sessionManager,
   required final DefaultCoreCommandExecutor executor,
   final ConnectCommand? explicitConnectionOverride,
 }) => preconnectForExecution(
@@ -945,7 +971,7 @@ Future<CoreResult> _executeExecCommand({
   required final ArgResults parsed,
   required final DefaultCoreCommandExecutor executor,
   required final CommandCatalog catalog,
-  required final SessionManager sessionManager,
+  required final IntentSessionManager sessionManager,
   required final String name,
   required final Map<String, Object?> rawArgs,
 }) async {
@@ -1653,6 +1679,12 @@ bool _validateRuntimeUsedFlutterLayerFallback(
   return false;
 }
 
+bool _stepFailed(final List<Map<String, Object?>> steps, final String name) =>
+    steps.any((final step) => step['name'] == name && step['ok'] != true);
+
+bool _stepOk(final List<Map<String, Object?>> steps, final String name) =>
+    steps.any((final step) => step['name'] == name && step['ok'] == true);
+
 bool _shouldRetryPostReloadCapture(final CoreResult result) {
   final code = result.error?.code;
   if (code == CoreErrorCode.connectFailed ||
@@ -1719,6 +1751,7 @@ String _globalUsage() {
     ..writeln('  migrate agent-entries')
     ..writeln('  migrate mcp-call-entry')
     ..writeln('  codegen sync')
+    ..writeln('  codegen appintents-testing generate')
     ..writeln('  webmcp chrome-args')
     ..writeln('  webmcp verify')
     ..writeln()
@@ -1757,6 +1790,9 @@ String _usageForCommand(final List<String> commandPath) {
     'migrate mcp-call-entry' => _usageMigrateAgentEntries(),
     'codegen' => _usageCodegen(),
     'codegen sync' => _usageCodegenSync(),
+    'codegen appintents-testing' => _usageCodegenAppIntentsTesting(),
+    'codegen appintents-testing generate' =>
+      _usageCodegenAppIntentsTestingGenerate(),
     'webmcp' => _usageWebmcp(),
     'webmcp chrome-args' => _usageWebmcpChromeArgs(),
     'webmcp verify' => _usageWebmcpVerify(),
@@ -2146,28 +2182,84 @@ final _argParser = ArgParser(allowTrailingOptions: false)
             'web-port',
             defaultsTo: '8080',
             help: 'Prefer app tab on this port',
+          )
+          ..addOption(
+            'tool-name',
+            help:
+                'Optional WebMCP tool name to invoke through modelContextTesting.',
+          )
+          ..addOption(
+            'tool-args',
+            defaultsTo: '{}',
+            help: 'JSON object arguments for --tool-name.',
+          )
+          ..addOption(
+            'expect-result-field',
+            help: 'Optional top-level result field that must match.',
+          )
+          ..addOption(
+            'expect-result-value',
+            help: 'Expected JSON/string value for --expect-result-field.',
           ),
       ),
   )
   ..addCommand(
     'codegen',
-    _commandParser()..addCommand(
-      'sync',
-      _commandParser()
-        ..addOption(
-          'platform',
-          defaultsTo: 'web',
-          help: 'Comma-separated platforms (phase 6d-web: web only)',
-        )
-        ..addOption(
-          'project-dir',
-          help: 'Flutter project root (defaults to current directory)',
-        )
-        ..addFlag(
-          _check,
-          help: 'Verify generated web artifacts are up to date',
+    _commandParser()
+      ..addCommand(
+        'sync',
+        _commandParser()
+          ..addOption(
+            'platform',
+            defaultsTo: 'web',
+            help:
+                'Comma-separated platforms: web,android,ios,macos,linux,windows',
+          )
+          ..addOption(
+            'project-dir',
+            help: 'Flutter project root (defaults to current directory)',
+          )
+          ..addFlag(_check, help: 'Verify generated artifacts are up to date'),
+      )
+      ..addCommand(
+        'appintents-testing',
+        _commandParser()..addCommand(
+          'generate',
+          _commandParser()
+            ..addOption(
+              'project-dir',
+              help: 'Flutter project root (default: current directory)',
+            )
+            ..addOption(
+              'manifest',
+              defaultsTo: 'web/agent_manifest.json',
+              help: 'Path to agent_manifest.json.',
+            )
+            ..addOption(
+              'bundle-id',
+              help: 'Bundle identifier for IntentDefinitions lookup.',
+            )
+            ..addOption(
+              'output',
+              help: 'Swift output path. Defaults to stdout.',
+            )
+            ..addOption(
+              'test-class',
+              defaultsTo: 'IntentCallAppIntentsLiveInvocationTests',
+              help: 'Generated XCTest class name.',
+            )
+            ..addOption(
+              'sample-arguments',
+              help:
+                  'Optional JSON file keyed by manifest qualifiedName with primitive App Intent argument fixtures.',
+            )
+            ..addOption(
+              'entity-fixtures',
+              help:
+                  'Optional JSON file keyed by entity qualifiedName with identifier/search/expectedTitle fixtures.',
+            ),
         ),
-    ),
+      ),
   );
 
 const _defaultHost = 'localhost';
@@ -2453,9 +2545,10 @@ Future<int> _runCodegenInitSubcommand(final ArgResults command) =>
 Future<int> _runCodegenSubcommand(final ArgResults command) async {
   final sub = command.command;
   if (sub == null || sub.name != 'sync') {
-    io.stderr.writeln(
-      'Usage: flutter-mcp-toolkit codegen sync --platform web,android,...',
-    );
+    if (sub?.name == 'appintents-testing') {
+      return _runCodegenAppIntentsTestingSubcommand(sub!);
+    }
+    io.stderr.writeln(_usageCodegen());
     return 64;
   }
   return runCodegenSync(
@@ -2465,13 +2558,35 @@ Future<int> _runCodegenSubcommand(final ArgResults command) async {
   );
 }
 
+Future<int> _runCodegenAppIntentsTestingSubcommand(
+  final ArgResults command,
+) async {
+  final sub = command.command;
+  if (sub == null || sub.name != 'generate') {
+    io.stderr.writeln(_usageCodegenAppIntentsTesting());
+    return 64;
+  }
+  return runAppIntentsTestingGenerate(
+    projectRoot: sub.option('project-dir') ?? io.Directory.current.path,
+    manifestPath: sub.option('manifest') ?? 'web/agent_manifest.json',
+    bundleIdentifier: sub.option('bundle-id') ?? '',
+    testClassName:
+        sub.option('test-class') ?? 'IntentCallAppIntentsLiveInvocationTests',
+    sampleArgumentsPath: sub.option('sample-arguments'),
+    entityFixturesPath: sub.option('entity-fixtures'),
+    outputPath: sub.option('output'),
+  );
+}
+
 String _usageCodegen() => '''
 Usage:
   flutter-mcp-toolkit codegen sync ...
+  flutter-mcp-toolkit codegen appintents-testing generate ...
 
 Examples:
   flutter-mcp-toolkit codegen sync --platform web
   flutter-mcp-toolkit codegen sync --platform web --check
+  flutter-mcp-toolkit codegen appintents-testing generate --bundle-id com.example.App
 ''';
 
 String _usageCodegenSync() => '''
@@ -2485,6 +2600,31 @@ Examples:
   flutter-mcp-toolkit codegen sync --platform web,android,linux,windows --check
 
 Reads agent_manifest.json and writes platform artifacts (manifest/JS/XML/Swift/desktop/reg).
+''';
+
+String _usageCodegenAppIntentsTesting() => '''
+Usage: flutter-mcp-toolkit codegen appintents-testing generate [options]
+
+Subcommands:
+  generate   Emit an Apple AppIntentsTesting XCTest UI-test scaffold
+
+Use `flutter-mcp-toolkit codegen appintents-testing generate --help` for options.
+''';
+
+String _usageCodegenAppIntentsTestingGenerate() => '''
+Usage: flutter-mcp-toolkit codegen appintents-testing generate --bundle-id <id> [options]
+
+Options:
+  --project-dir <path>        Flutter project root (default: current directory)
+  --manifest <path>           agent_manifest.json path (default: web/agent_manifest.json)
+  --bundle-id <id>            Bundle identifier for IntentDefinitions lookup
+  --output <path>             Swift output path (default: stdout)
+  --test-class <name>         XCTest class name
+  --sample-arguments <json>   Required primitive argument fixtures by qualifiedName
+  --entity-fixtures <json>    Entity query fixtures by qualifiedName
+
+The generated source is scaffold/API-shape proof only until it is added to a
+signed XCTest UI-test target and run with xcodebuild through full Xcode.
 ''';
 
 ArgParser _migrateAgentEntriesParser() => _commandParser()
@@ -2531,9 +2671,20 @@ Future<int> _runWebmcpSubcommand(final ArgResults command) async {
     case 'chrome-args':
       return runWebmcpChromeArgs();
     case 'verify':
+      final rawToolArgs = jsonDecode(sub.option('tool-args') ?? '{}');
+      final toolArgs = rawToolArgs is Map
+          ? rawToolArgs.cast<String, Object?>()
+          : const <String, Object?>{};
+      final rawExpected = sub.option('expect-result-value');
       return runWebmcpVerify(
         cdpPort: int.tryParse(sub.option('cdp-port') ?? ''),
         preferredWebPort: int.tryParse(sub.option('web-port') ?? '') ?? 8080,
+        toolName: sub.option('tool-name'),
+        toolArguments: toolArgs,
+        expectResultField: sub.option('expect-result-field'),
+        expectResultValue: rawExpected == null
+            ? null
+            : _parseJsonScalarOrString(rawExpected),
       );
     default:
       io.stderr.writeln('Unknown webmcp subcommand: ${sub.name}');
@@ -2541,10 +2692,19 @@ Future<int> _runWebmcpSubcommand(final ArgResults command) async {
   }
 }
 
+Object? _parseJsonScalarOrString(final String value) {
+  try {
+    return jsonDecode(value);
+  } on FormatException {
+    return value;
+  }
+}
+
 String _usageWebmcp() => '''
 Usage:
   flutter-mcp-toolkit webmcp chrome-args
   flutter-mcp-toolkit webmcp verify [--cdp-port PORT] [--web-port 8080]
+      [--tool-name NAME --tool-args JSON --expect-result-field FIELD --expect-result-value VALUE]
 
 Enables repeatable WebMCP E2E on Chrome without manual chrome://flags each session.
 See docs/superpowers/evals/2026-05-26-webmcp-verification.md
@@ -2559,9 +2719,11 @@ Use scripts/run_web_showcase.sh for a logged dogfood launch.
 
 String _usageWebmcpVerify() => '''
 Usage: flutter-mcp-toolkit webmcp verify [--cdp-port PORT] [--web-port 8080]
+       [--tool-name NAME --tool-args JSON --expect-result-field FIELD --expect-result-value VALUE]
 
 Probes a running Chrome tab via CDP for navigator.modelContext.registerTool.
-Exit 0 when WebMCP API is active; 1 with fix hints when not.
+With --tool-name, invokes the WebMCP tool through modelContextTesting and fails
+if the generated network fallback is used.
 ''';
 
 Future<int> _runMigrateSubcommand(final ArgResults command) async {

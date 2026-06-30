@@ -113,7 +113,20 @@ Future<DesktopCaptureRecoveryResult> captureDesktopWithRecovery({
     return first;
   }
 
-  await service.focus(device: device, targetPid: targetPid, cacheDir: cacheDir);
+  Map<String, Object?> focusDetails;
+  try {
+    focusDetails = await service.focus(
+      device: device,
+      targetPid: targetPid,
+      cacheDir: cacheDir,
+    );
+  } on Object catch (e) {
+    focusDetails = <String, Object?>{
+      'ok': false,
+      'error': 'focus_failed',
+      'message': '$e',
+    };
+  }
   final second = await _attemptCapture(
     service: service,
     projectDir: projectDir,
@@ -126,7 +139,13 @@ Future<DesktopCaptureRecoveryResult> captureDesktopWithRecovery({
     capture: second.capture,
     retried: true,
     errorMessage: second.errorMessage,
-    errorDetails: second.errorDetails,
+    errorDetails: second.capture == null
+        ? _recoveryFailureDetails(
+            first: first,
+            focus: focusDetails,
+            second: second,
+          )
+        : second.errorDetails,
     failure: second.failure,
   );
 }
@@ -154,6 +173,7 @@ Future<DesktopCaptureRecoveryResult> _attemptCapture({
       errorMessage:
           'Desktop window screenshot mode is unavailable for the current '
           'target or app window.',
+      errorDetails: <String, Object?>{'reason': 'capture_unavailable'},
     );
   } on DesktopWindowCaptureException catch (e) {
     return DesktopCaptureRecoveryResult(
@@ -174,3 +194,19 @@ Future<DesktopCaptureRecoveryResult> _attemptCapture({
     );
   }
 }
+
+Map<String, Object?> _recoveryFailureDetails({
+  required final DesktopCaptureRecoveryResult first,
+  required final Map<String, Object?> focus,
+  required final DesktopCaptureRecoveryResult second,
+}) => <String, Object?>{
+  'firstAttempt': <String, Object?>{
+    'message': first.errorMessage,
+    if (first.errorDetails.isNotEmpty) 'details': first.errorDetails,
+  },
+  'focus': focus,
+  'secondAttempt': <String, Object?>{
+    'message': second.errorMessage,
+    if (second.errorDetails.isNotEmpty) 'details': second.errorDetails,
+  },
+};

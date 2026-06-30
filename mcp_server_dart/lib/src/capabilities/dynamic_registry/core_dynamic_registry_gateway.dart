@@ -1,22 +1,24 @@
 // Copyright (c) 2025, Flutter Inspector MCP Server authors.
 // Licensed under the MIT License.
 
-import 'dart:convert';
-
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_mcp_toolkit_server/src/capabilities/dynamic_registry/dynamic_gateway.dart';
 import 'package:flutter_mcp_toolkit_server/src/capabilities/dynamic_registry/dynamic_registry.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/types/error_codes.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/types/results.dart';
+import 'package:intentcall_core/intentcall_core.dart';
+import 'package:intentcall_mcp/intentcall_mcp.dart';
 
 /// Dynamic gateway backed by the live in-process registry used by MCP server.
 final class RegistryBackedDynamicGateway implements CoreDynamicGateway {
   RegistryBackedDynamicGateway({
     required this.registry,
+    required this.agentRegistry,
     required this.discoveryService,
   });
 
   final DynamicRegistry registry;
+  final AgentRegistry agentRegistry;
   final RegistryDiscoveryService? Function() discoveryService;
 
   @override
@@ -50,8 +52,8 @@ final class RegistryBackedDynamicGateway implements CoreDynamicGateway {
       );
     }
 
-    final result = await registry.forwardToolCall(toolName, arguments);
-    if (result == null) {
+    final result = await agentRegistry.invoke(toolName, arguments);
+    if (!result.ok && result.code == 'intent_not_found') {
       return CoreResult.failure(
         code: CoreErrorCode.dynamicToolFailed,
         message: 'Tool not found: $toolName',
@@ -59,30 +61,21 @@ final class RegistryBackedDynamicGateway implements CoreDynamicGateway {
       );
     }
 
-    final textContents = result.content.whereType<TextContent>().toList();
-    final message = textContents.isEmpty
-        ? 'Tool executed successfully'
-        : textContents.first.text;
-
-    Object? parameters = const <String, Object?>{};
-    if (textContents.length > 1) {
-      try {
-        parameters = jsonDecode(textContents[1].text);
-      } on Exception {
-        parameters = {'raw': textContents[1].text};
-      }
-    }
-
-    if (result.isError ?? false) {
+    if (!result.ok) {
       return CoreResult.failure(
-        code: CoreErrorCode.dynamicToolFailed,
-        message: message,
-        details: parameters,
+        code: result.code ?? CoreErrorCode.dynamicToolFailed,
+        message: result.message,
+        details: result.details,
       );
     }
 
     return CoreResult.success(
-      data: {'message': message, 'parameters': parameters},
+      data: {
+        'message': result.message.isEmpty
+            ? 'Tool executed successfully'
+            : result.message,
+        'parameters': result.data,
+      },
     );
   }
 
@@ -95,16 +88,37 @@ final class RegistryBackedDynamicGateway implements CoreDynamicGateway {
       );
     }
 
-    final result = await registry.forwardResourceRead(resourceUri);
-    if (result == null || result.contents.isEmpty) {
+    final result = await agentRegistry.invoke(resourceUri, {
+      'uri': resourceUri,
+    });
+    if (!result.ok && result.code == 'intent_not_found') {
       return CoreResult.failure(
         code: CoreErrorCode.dynamicResourceFailed,
         message: 'Resource not found: $resourceUri',
         details: {'reason': 'resource_not_found', 'resourceUri': resourceUri},
       );
     }
+    if (!result.ok) {
+      return CoreResult.failure(
+        code: result.code ?? CoreErrorCode.dynamicResourceFailed,
+        message: result.message,
+        details: result.details,
+      );
+    }
 
-    final first = result.contents.first;
+    final readResult = agentResultToReadResourceResult(
+      result,
+      uri: resourceUri,
+    );
+    if (readResult.contents.isEmpty) {
+      return CoreResult.failure(
+        code: CoreErrorCode.dynamicResourceFailed,
+        message: 'Resource returned no content: $resourceUri',
+        details: {'reason': 'resource_empty', 'resourceUri': resourceUri},
+      );
+    }
+
+    final first = readResult.contents.first;
     if (first is TextResourceContents) {
       return CoreResult.success(
         data: {

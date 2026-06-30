@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:flutter_mcp_toolkit_server/flutter_mcp_core.dart';
+import 'package:intentcall_session/intentcall_session.dart';
 import 'package:test/test.dart';
 
 void main() {

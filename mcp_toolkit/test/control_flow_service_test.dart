@@ -349,6 +349,57 @@ void main() {
     expect(entered, isTrue);
   });
 
+  testWidgets(
+    'hover can be called repeatedly without mouse tracker assertion',
+    (final tester) async {
+      var entered = 0;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: Semantics(
+                label: 'hover_target',
+                child: MouseRegion(
+                  onEnter: (_) => entered += 1,
+                  child: const SizedBox(width: 100, height: 100),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final snapshotFuture = SemanticSnapshotService.buildSemanticSnapshot();
+      await tester.pump();
+      await tester.pump();
+      final snapshot = await snapshotFuture;
+      final nodes = snapshot['nodes']! as List<Object?>;
+      final targetEntry =
+          nodes.firstWhere(
+                (final n) =>
+                    n is Map &&
+                    (n['label'] as String?)?.contains('hover_target') == true,
+              )!
+              as Map<Object?, Object?>;
+      final ref = targetEntry['ref']! as String;
+
+      final firstHover = GestureInteractionService.hoverAtRef(ref);
+      await tester.pump(const Duration(milliseconds: 20));
+      final first = await firstHover;
+      await tester.pump();
+
+      final secondHover = GestureInteractionService.hoverAtRef(ref);
+      await tester.pump(const Duration(milliseconds: 20));
+      final second = await secondHover;
+      await tester.pumpAndSettle();
+
+      expect(first['success'], isTrue);
+      expect(second['success'], isTrue);
+      expect(entered, greaterThanOrEqualTo(1));
+    },
+  );
+
   testWidgets('hover returns ref_not_found for an unknown ref', (
     final tester,
   ) async {

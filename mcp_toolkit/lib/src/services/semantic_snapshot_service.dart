@@ -41,6 +41,58 @@ mixin SemanticSnapshotService {
   /// Look up the cached global center for a ref from the last snapshot.
   static ui.Offset? resolveCenter(final String ref) => _lastCenterMap[ref];
 
+  /// Current logical viewport for pointer-driven interactions.
+  static ui.Rect? get viewportRect {
+    final renderViews = WidgetsBinding.instance.renderViews;
+    if (renderViews.isEmpty) return null;
+    final view = renderViews.first.flutterView;
+    final dpr = view.devicePixelRatio;
+    if (dpr <= 0) return null;
+    final physicalSize = view.physicalSize;
+    return ui.Rect.fromLTWH(
+      0,
+      0,
+      physicalSize.width / dpr,
+      physicalSize.height / dpr,
+    );
+  }
+
+  /// Visibility metadata for a cached ref from the last snapshot.
+  static Map<String, Object?> visibilityForRef(final String ref) {
+    final bounds = resolveBounds(ref);
+    final center = resolveCenter(ref);
+    final viewport = viewportRect;
+    return visibilityForBounds(
+      bounds: bounds,
+      center: center,
+      viewport: viewport,
+    );
+  }
+
+  /// Visibility metadata for logical bounds in the current Flutter viewport.
+  static Map<String, Object?> visibilityForBounds({
+    required final ui.Rect? bounds,
+    required final ui.Offset? center,
+    required final ui.Rect? viewport,
+  }) {
+    final visible =
+        bounds != null &&
+        viewport != null &&
+        bounds.overlaps(viewport) &&
+        bounds.width > 0 &&
+        bounds.height > 0;
+    final centerVisible =
+        center != null && viewport != null && viewport.contains(center);
+    return <String, Object?>{
+      'visibleInViewport': visible,
+      'centerInViewport': centerVisible,
+      if (bounds != null) 'bounds': _rectToMap(bounds),
+      if (viewport != null) 'viewport': _rectToMap(viewport),
+      if (center != null)
+        'center': <String, Object?>{'x': center.dx, 'y': center.dy},
+    };
+  }
+
   /// Ensure the semantics tree is built and return the active
   /// [SemanticsOwner].
   ///
@@ -93,6 +145,68 @@ mixin SemanticSnapshotService {
   /// snapshotIds remain valid.
   static Future<Map<String, Object?>> peekSemanticSnapshot() =>
       _buildSnapshot(incrementId: false);
+
+  /// Non-mutating signature of visible descendants under [node].
+  ///
+  /// This intentionally does not allocate refs, update cached ref/bounds maps,
+  /// or bump [currentSnapshotId]. It is for internal movement checks where the
+  /// caller already owns a live semantics node and must not invalidate or
+  /// silently rebind refs from the last public snapshot.
+  static Map<String, Object?> visibleSubtreeSignature(
+    final SemanticsNode node,
+  ) {
+    final viewport = viewportRect;
+    if (viewport == null) {
+      return <String, Object?>{
+        'available': false,
+        'targetNodeId': node.id,
+        'reason': 'viewport_unavailable',
+      };
+    }
+
+    final entries = <String>[];
+    void walk(final SemanticsNode current) {
+      final rect = _globalRect(current);
+      final visible =
+          current != node &&
+          rect.overlaps(viewport) &&
+          rect.width > 0 &&
+          rect.height > 0;
+      if (visible) {
+        final data = current.getSemanticsData();
+        entries.add(
+          [
+            current.id,
+            _classifyNode(data),
+            rect.left.round(),
+            rect.top.round(),
+            rect.right.round(),
+            rect.bottom.round(),
+          ].join(':'),
+        );
+      }
+      current.visitChildren((final child) {
+        walk(child);
+        return true;
+      });
+    }
+
+    walk(node);
+    if (entries.isEmpty) {
+      return <String, Object?>{
+        'available': false,
+        'targetNodeId': node.id,
+        'reason': 'no_visible_descendants',
+      };
+    }
+
+    return <String, Object?>{
+      'available': true,
+      'targetNodeId': node.id,
+      'visibleDescendantCount': entries.length,
+      'signatureHash': _stableHash(entries),
+    };
+  }
 
   static Future<Map<String, Object?>> _buildSnapshot({
     required final bool incrementId,
@@ -274,12 +388,26 @@ mixin SemanticSnapshotService {
     _lastBoundsMap = boundsMap;
     _lastCenterMap = centerMap;
 
+    final viewport = viewportRect;
+    for (final node in nodes) {
+      final ref = node['ref'];
+      if (ref is! String) continue;
+      node.addAll(
+        visibilityForBounds(
+          bounds: boundsMap[ref],
+          center: centerMap[ref],
+          viewport: viewport,
+        ),
+      );
+    }
+
     return <String, Object?>{
       'snapshot_id': snapshotId,
       'nodes': nodes,
       'nodeCount': nodes.length,
       'truncated': truncated,
       'interactionSurface': _classifyInteractionSurface(nodes.length),
+      if (viewport != null) 'viewport': _rectToMap(viewport),
     };
   }
 
@@ -293,6 +421,16 @@ mixin SemanticSnapshotService {
     if (interactiveNodeCount > 0) return 'flutter_widgets';
     return 'hybrid';
   }
+
+  static Map<String, Object?> _rectToMap(final ui.Rect rect) =>
+      <String, Object?>{
+        'left': rect.left,
+        'top': rect.top,
+        'right': rect.right,
+        'bottom': rect.bottom,
+        'width': rect.width,
+        'height': rect.height,
+      };
 
   // ---------------------------------------------------------------------------
   // Helpers
@@ -429,5 +567,18 @@ mixin SemanticSnapshotService {
     }
     if (action == SemanticsAction.focus) return 'focus';
     return action.toString();
+  }
+
+  static int _stableHash(final List<String> values) {
+    var hash = 0x811c9dc5;
+    for (final value in values) {
+      for (final unit in value.codeUnits) {
+        hash ^= unit;
+        hash = (hash * 0x01000193) & 0xffffffff;
+      }
+      hash ^= 0x0a;
+      hash = (hash * 0x01000193) & 0xffffffff;
+    }
+    return hash;
   }
 }

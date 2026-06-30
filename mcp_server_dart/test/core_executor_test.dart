@@ -243,8 +243,13 @@ void main() {
         expect(details?['desktopWindow'], isA<Map<String, Object?>>());
         final desktopWindow =
             details?['desktopWindow'] as Map<String, Object?>?;
+        expect(desktopWindow?['desktopCaptureRetried'], isTrue);
+        final firstAttempt =
+            desktopWindow?['firstAttempt'] as Map<String, Object?>?;
+        final firstAttemptDetails =
+            firstAttempt?['details'] as Map<String, Object?>?;
         expect(
-          desktopWindow?['allOwners'],
+          firstAttemptDetails?['allOwners'],
           equals(const <String>['Codex', 'sample_app']),
         );
       },

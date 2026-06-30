@@ -3,7 +3,7 @@
 Flutter MCP Toolkit removed the dual authoring path. **`MCPCallEntry` is deleted** from
 `mcp_toolkit`; use **`AgentCallEntry`** and the operator tools below for straggler repos.
 
-IntentCall architecture and future package planning are canonical in `/Users/anton/mcp/agentkit`. This page is kept in `mcp_flutter` because it documents the consumer migration surface shipped by Flutter MCP Toolkit.
+IntentCall architecture and future package planning are canonical in the IntentCall repository. This page is kept in `mcp_flutter` because it documents the consumer migration surface shipped by Flutter MCP Toolkit.
 
 ## TL;DR
 
@@ -78,10 +78,27 @@ flutter-mcp-toolkit codegen sync --platform web,android,ios,macos,linux,windows 
 
 CI drift: add `--check` to both commands (also in `make check-contracts`).
 
+Apple AppIntentsTesting scaffold generation, when the app has full Xcode and a
+UI-test target ready:
+
+```bash
+flutter-mcp-toolkit codegen appintents-testing generate \
+  --project-dir path/to/flutter_app \
+  --bundle-id com.example.App \
+  --sample-arguments path/to/appintents_testing_samples.json \
+  --entity-fixtures path/to/appintents_testing_entities.json \
+  --output path/to/YourAppUITests/IntentCallAppIntentsLiveInvocationTests.swift
+```
+
+This command only proves generated scaffold shape. Runtime proof requires the
+generated source to run inside a signed XCTest UI-test target. Manifest,
+fixture, and output paths are resolved relative to `--project-dir` unless they
+are absolute paths.
+
 ## Related docs
 
 - [IntentCall consumer docs](../intentcall/README.md)
-- Canonical IntentCall design and ADRs: `/Users/anton/mcp/agentkit`
+- Canonical IntentCall design and ADRs: `github.com/Arenukvern/intentcall`
 - [v2 → v3 migration](./migration_v2_to_v3.mdx) — server-side `fmt_` prefix (unchanged)
 
 ## Validation

@@ -8,10 +8,9 @@ import 'dart:convert';
 import 'dart:io' as io;
 
 import 'package:flutter_mcp_toolkit_server/src/cli/diagnostics/bundle_builder.dart';
-import 'package:flutter_mcp_toolkit_server/src/cli/session/session_manager.dart';
-import 'package:flutter_mcp_toolkit_server/src/cli/sessions_persistence/safe_writes.dart';
-import 'package:flutter_mcp_toolkit_server/src/cli/sessions_persistence/snapshot_store.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/diagnostics/command_snapshot_service.dart';
 import 'package:flutter_mcp_toolkit_server/src/runtime_version.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/agent_result_mapper.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/command_executor.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/commands/commands.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/types/core_types.dart';
@@ -19,13 +18,14 @@ import 'package:flutter_mcp_toolkit_server/src/shared_core/types/error_codes.dar
 import 'package:flutter_mcp_toolkit_server/src/shared_core/types/results.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/vm_connections/connection_override.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/vm_connections/preconnect.dart';
+import 'package:intentcall_session/intentcall_session.dart';
 
 final class CliDaemonServer {
   CliDaemonServer({
     required this.executor,
     required this.sessionManager,
     required this.catalog,
-    required this.snapshotStore,
+    required this.commandSnapshots,
     required this.bundleBuilder,
     required this.configuration,
     this.input,
@@ -34,9 +34,9 @@ final class CliDaemonServer {
   });
 
   final DefaultCoreCommandExecutor executor;
-  final SessionManager sessionManager;
+  final IntentSessionManager sessionManager;
   final CommandCatalog catalog;
-  final SnapshotStore snapshotStore;
+  final CommandSnapshotService commandSnapshots;
   final BundleBuilder bundleBuilder;
   final CoreRuntimeConfiguration configuration;
   final Stream<String>? input;
@@ -364,7 +364,7 @@ final class CliDaemonServer {
     );
 
     try {
-      final snapshot = await snapshotStore.createSnapshot(
+      final snapshot = await commandSnapshots.createSnapshot(
         id: name,
         executor: executor,
         catalog: catalog,
@@ -398,7 +398,7 @@ final class CliDaemonServer {
     final to = _requiredString(params, 'to');
 
     try {
-      final diff = await snapshotStore.diffSnapshots(fromId: from, toId: to);
+      final diff = await commandSnapshots.diffSnapshots(fromId: from, toId: to);
       return {'diff': diff};
     } on ArgumentError catch (e) {
       throw _JsonRpcException(
@@ -449,7 +449,9 @@ final class CliDaemonServer {
       );
     }
 
-    final result = await sessionManager.startSession(command);
+    final result = coreResultFromAgentResult(
+      await sessionManager.startSession(_toSessionStartRequest(command)),
+    );
     if (!result.ok) {
       throw _coreFailure(result);
     }
@@ -469,7 +471,9 @@ final class CliDaemonServer {
       );
     }
 
-    final result = await sessionManager.endSession(command.sessionId);
+    final result = coreResultFromAgentResult(
+      await sessionManager.endSession(command.sessionId),
+    );
     if (!result.ok) {
       throw _coreFailure(result);
     }
@@ -492,6 +496,22 @@ final class CliDaemonServer {
       );
     }
   }
+
+  IntentSessionStartRequest _toSessionStartRequest(
+    final SessionStartCommand command,
+  ) => IntentSessionStartRequest(
+    mode: switch (command.mode) {
+      CoreConnectionMode.auto => IntentSessionConnectionMode.auto,
+      CoreConnectionMode.manual => IntentSessionConnectionMode.manual,
+      CoreConnectionMode.uri => IntentSessionConnectionMode.uri,
+    },
+    targetId: command.targetId,
+    uri: command.uri,
+    host: command.host,
+    port: command.port,
+    forceReconnect: command.forceReconnect,
+    sessionId: command.sessionId,
+  );
 
   CoreCommand _wrapWithSessionIfNeeded({
     required final String? sessionId,

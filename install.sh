@@ -29,7 +29,7 @@ usage() {
 Usage: ./install.sh [--version <semver|vSemver>] [--install-dir <path>] [--repo <owner/name>] [--base-url <url>]
        curl -fsSL https://raw.githubusercontent.com/${REPO}/main/install.sh | bash -s -- [--version <semver>]
 
-Installs flutter-mcp-toolkit and flutter-mcp-toolkit-server from GitHub release artifacts.
+Installs flutter-mcp-toolkit, its short fmtk alias, and flutter-mcp-toolkit-server from GitHub release artifacts.
 
 When run from a git clone, version defaults to the repo VERSION file (or runtime_version.dart).
 When piped from curl without --version, the latest GitHub release is used if available.
@@ -205,12 +205,20 @@ package_dir="$work_dir/flutter_mcp_${version_no_prefix}_${triple}"
 
 mkdir -p "$INSTALL_DIR"
 install -m 0755 "$package_dir/bin/flutter-mcp-toolkit" "$INSTALL_DIR/flutter-mcp-toolkit"
+if [[ -f "$package_dir/bin/fmtk" ]]; then
+  install -m 0755 "$package_dir/bin/fmtk" "$INSTALL_DIR/fmtk"
+else
+  # Backward compatibility for pre-fmtk release artifacts: synthesize the alias
+  # from the canonical CLI binary so raw-main installers can still install older tags.
+  install -m 0755 "$package_dir/bin/flutter-mcp-toolkit" "$INSTALL_DIR/fmtk"
+fi
 install -m 0755 \
   "$package_dir/bin/flutter-mcp-toolkit-server" \
   "$INSTALL_DIR/flutter-mcp-toolkit-server"
 
 echo "Installed binaries to $INSTALL_DIR"
 "$INSTALL_DIR/flutter-mcp-toolkit" --help >/dev/null
+"$INSTALL_DIR/fmtk" --help >/dev/null
 
 if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
   shell_name="$(basename "${SHELL:-sh}")"
@@ -238,3 +246,4 @@ fi
 
 echo "Install complete: flutter-mcp-toolkit ${version_no_prefix}"
 echo "Smoke test command: $INSTALL_DIR/flutter-mcp-toolkit --help"
+echo "Short alias: $INSTALL_DIR/fmtk --help"

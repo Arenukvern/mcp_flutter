@@ -251,7 +251,7 @@ final class RegistryDiscoveryService {
         'stackTrace: $stackTrace',
         logger: _loggerName,
       );
-      dynamicRegistry.unregisterApp();
+      _unregisterCurrentDynamicApp();
     }
   }
 
@@ -297,8 +297,12 @@ final class RegistryDiscoveryService {
         'stackTrace: $stackTrace',
         logger: _loggerName,
       );
-      dynamicRegistry.unregisterApp();
+      _unregisterCurrentDynamicApp();
     }
+  }
+
+  void _unregisterCurrentDynamicApp() {
+    server.unregisterDynamicApp(dynamicRegistry.appId);
   }
 
   /// Test hook for [_processRegistrationResponse].

@@ -5,26 +5,34 @@ We welcome contributions to the Flutter MCP Toolkit! Please feel free to submit 
 ### Development Setup
 
 1.  Clone the repository.
-2.  Install the dependencies for both the server and the toolkit:
+2.  Inspect the declared agent/maintainer contract:
 
     ```bash
-    # Toolkit core package
+    steward doctor --json
+    steward actions list --json
+    steward action inspect fmt.check.tool-prefix --json
+    steward probe --json --profile quick
+    ```
+
+3.  Install the dependencies for the app package, server, and test app:
+
+    ```bash
     cd mcp_toolkit
     dart pub get
 
-    # Server package
-    cd ../../mcp_server_dart
+    cd ../mcp_server_dart
     dart pub get
 
-    # test app (if needed)
-    cd ../../flutter_test_app
+    cd ../flutter_test_app
     dart pub get
     ```
 
-3.  Run the tests:
+4.  Run the focused tests for the package you changed, then run the repo gate
+    before opening a PR:
 
     ```bash
-    dart test
+    steward probe --json --profile quick
+    make check-contracts
     ```
 
 ### Editing skills
@@ -101,3 +109,23 @@ Before submitting a pull request, please make sure that:
 - The code is well-formatted and follows the project's style guide.
 - The tests pass.
 - The documentation is updated, if necessary.
+- Security-impacting changes link to [SECURITY.md](https://github.com/Arenukvern/mcp_flutter/blob/main/SECURITY.md).
+
+### Contributor credit
+
+Contributor credit is managed with
+[all-contributors](https://allcontributors.org/). The source of truth is
+[`/.all-contributorsrc`](https://github.com/Arenukvern/mcp_flutter/blob/main/.all-contributorsrc),
+and the generated table is rendered in the README.
+
+To add a contributor from a PR:
+
+```bash
+npx all-contributors-cli add <github-login> code,doc
+npx all-contributors-cli generate
+```
+
+Commit the updated `.all-contributorsrc` and `README.md` together. Use the
+smallest accurate contribution type set; non-code work such as docs, bug
+reports, security review, user testing, tutorials, research, infrastructure,
+and maintenance is welcome.

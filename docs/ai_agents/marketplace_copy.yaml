@@ -11,7 +11,7 @@ long_description: |
   for AI-assisted Flutter development in debug mode.
 
   Built-in surface:
-  - 27 fmt_* MCP tools for inspection, UI control, debugging, and lifecycle
+  - 30 fmt_* MCP tools for inspection, UI control, debugging, and lifecycle
   - Bundled agent skills (flutter-mcp-toolkit-*, flutter-mcp,
     flutter-mcp-toolkit-custom-tools)
 
