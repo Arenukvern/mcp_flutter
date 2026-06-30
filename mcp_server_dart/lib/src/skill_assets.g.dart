@@ -1493,7 +1493,7 @@ rewrite). CLI equivalent: `flutter-mcp-toolkit migrate agent-entries`.
 IntentCall now lives outside this repository. Normal consumer state uses hosted `intentcall_*` packages.
 
 1. Use hosted `intentcall_*: ^0.1.0` dependencies for committed consumer state.
-2. Use local path overrides only for deliberate cross-repo development against `/Users/anton/mcp/agentkit`.
+2. Use local path overrides only for deliberate cross-repo development against a local IntentCall checkout.
 3. Run `flutter pub get` and `migrate agent-entries --check` again after dependency changes.
 4. CI: use `make check-intentcall-integration` in `mcp_flutter`; package matrix ownership lives in the IntentCall repo.
 
@@ -1833,7 +1833,7 @@ When changing IntentCall consumer integration in `mcp_flutter`:
 3. `bash tool/contracts/check_intentcall_skills_grep.sh` — no legacy call-entry symbol outside migration skill.
 4. `cd mcp_server_dart && dart test test/contract/`
 5. `flutter-mcp-toolkit migrate agent-entries --check flutter_test_app/lib` (expect exit 0)
-6. Keep canonical IntentCall design links pointed at `/Users/anton/mcp/agentkit`; keep this repo focused on hosted dependency and regression proof.
+6. Keep canonical IntentCall design links pointed at the IntentCall repository; keep this repo focused on hosted dependency and regression proof.
 
 ## Pre-merge checklist
 

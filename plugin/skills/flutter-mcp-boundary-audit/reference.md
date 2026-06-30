@@ -12,15 +12,15 @@ Use this section when auditing **this** repository. Map the generic roles from S
 
 | Concern | Primary files |
 |---------|----------------|
-| Wire coercion (pre–Tier A, app paths) | `/Users/anton/mcp/agentkit/packages/intentcall_schema/lib/src/schema_coercion.dart` |
-| Entry model | `/Users/anton/mcp/agentkit/packages/intentcall_core/lib/src/authoring/agent_call_entry.dart` |
+| Wire coercion (pre-Tier A, app paths) | `intentcall_schema/lib/src/schema_coercion.dart` |
+| Entry model | `intentcall_core/lib/src/authoring/agent_call_entry.dart` |
 | Toolkit bridge / VM registration | `mcp_toolkit/lib/src/mcp_toolkit_extensions.dart`, `agent_entry_helpers.dart` |
 | App interaction tools | `mcp_toolkit/lib/src/toolkits/interaction_toolkit.dart` |
 | Shared interaction schemas | `packages/core/lib/src/tools/interaction_input_schemas.dart` |
 | Server fmt tools | `packages/server_capability_core/lib/src/tools/interaction_tools.dart`, `semantic_tools.dart`, `wait_tools.dart` |
 | Dynamic registry | `mcp_server_dart/lib/src/capabilities/dynamic_registry/` — grep `forwardToolCall` |
 | VM gateway | `mcp_server_dart` — `VmExtensionDynamicGateway` / `dynamic_gateway.dart` |
-| Migrator | `/Users/anton/mcp/agentkit/packages/intentcall_core/lib/src/migrate_agent_entries.dart` |
+| Migrator | `intentcall_core/lib/src/migrate_agent_entries.dart` |
 | WebMCP | `intentcall` web bootstrap, `flutter_test_app/web/intentcall_webmcp.generated.js` |
 | Platform contract doc | `flutter_test_app/INTENTCALL_PLATFORM.md` |
 | Registration doc | `mcp_server_dart/docs/SIMPLIFIED_DYNAMIC_REGISTRATION.md` |

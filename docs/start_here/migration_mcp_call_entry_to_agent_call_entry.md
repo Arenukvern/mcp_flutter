@@ -3,7 +3,7 @@
 Flutter MCP Toolkit removed the dual authoring path. **`MCPCallEntry` is deleted** from
 `mcp_toolkit`; use **`AgentCallEntry`** and the operator tools below for straggler repos.
 
-IntentCall architecture and future package planning are canonical in `/Users/anton/mcp/agentkit`. This page is kept in `mcp_flutter` because it documents the consumer migration surface shipped by Flutter MCP Toolkit.
+IntentCall architecture and future package planning are canonical in the IntentCall repository. This page is kept in `mcp_flutter` because it documents the consumer migration surface shipped by Flutter MCP Toolkit.
 
 ## TL;DR
 
@@ -98,7 +98,7 @@ are absolute paths.
 ## Related docs
 
 - [IntentCall consumer docs](../intentcall/README.md)
-- Canonical IntentCall design and ADRs: `/Users/anton/mcp/agentkit`
+- Canonical IntentCall design and ADRs: `github.com/Arenukvern/intentcall`
 - [v2 → v3 migration](./migration_v2_to_v3.mdx) — server-side `fmt_` prefix (unchanged)
 
 ## Validation

@@ -1,7 +1,7 @@
 id: mcp-maintainer-portable-invocation-trigger
 skill: mcp-harness-repo-maintainer
 routing: should_trigger
-input: "The adoption proof tells agents to run /Users/anton/flutter/bin/dart --packages ../agent_guild/.../steward.dart; fix the Steward install and invocation guidance so another machine can reproduce it"
+input: "The adoption proof tells agents to run /opt/flutter/bin/dart --packages ../agent_guild/.../steward.dart; fix the Steward install and invocation guidance so another machine can reproduce it"
 rules:
   - kind: file_exists
     path: references/evals.md

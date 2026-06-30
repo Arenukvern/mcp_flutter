@@ -33,7 +33,7 @@ Archived spec gap matrix (iter 1–11): [archive/2026-05-26-dogfood-spec-gap-mat
 
 ## Workspace layout
 
-IntentCall libraries live in the sibling **`/Users/anton/mcp/agentkit/packages/`** workspace. Dogfood and CLI commands run from **mcp_flutter** repo root; hosted package checks should use the consumer gates in `docs/intentcall/README.md`.
+IntentCall libraries live in the sibling IntentCall workspace during local development. Dogfood and CLI commands run from **mcp_flutter** repo root; hosted package checks should use the consumer gates in `docs/intentcall/README.md`.
 
 ## How to run
 

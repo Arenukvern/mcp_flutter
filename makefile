@@ -19,6 +19,7 @@ check-contracts:
 	bash tool/contracts/check_plugin_surfaces.sh && \
 	bash tool/contracts/check_version_sync.sh && \
 	bash tool/contracts/check_skill_assets_drift.sh && \
+	bash tool/contracts/check_no_personal_paths.sh && \
 	bash tool/contracts/check_changelog_markdown.sh && \
 	bash tool/contracts/check_tool_prefix.sh && \
 	bash tool/contracts/check_repo_split_paths.sh && \

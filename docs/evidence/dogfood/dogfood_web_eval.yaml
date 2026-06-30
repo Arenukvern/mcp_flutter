@@ -257,7 +257,7 @@ iterations:
       - visual_capture_truth_mode
       - visual_warm_path_failed
     artifacts:
-      - /Users/anton/mcp/mcp_flutter/.showcase/eval_runs/20260526T195933Z/eval_run.yaml
+      - .showcase/eval_runs/20260526T195933Z/eval_run.yaml
 
   - iteration: 9
     focus: Exec/MCP parity + dynamic registry (fmt_get_recent_logs, get_recent_logs, fmt_client_tool dogfood_ping)
@@ -287,8 +287,8 @@ iterations:
       - visual_capture_truth_mode
       - visual_warm_path_failed
     artifacts:
-      - /Users/anton/mcp/mcp_flutter/.showcase/eval_runs/20260526T195951Z/eval_run.yaml
-      - /Users/anton/mcp/mcp_flutter/.showcase/eval_runs/iter9_probes/exec.log
+      - .showcase/eval_runs/20260526T195951Z/eval_run.yaml
+      - .showcase/eval_runs/iter9_probes/exec.log
 
   - iteration: 10
     focus: WebMCP verify + validate-runtime capture evidence
@@ -324,7 +324,7 @@ iterations:
       - visual_capture_truth_mode
       - visual_warm_path_failed
     artifacts:
-      - /Users/anton/mcp/mcp_flutter/.showcase/eval_runs/20260526T195959Z/eval_run.yaml
+      - .showcase/eval_runs/20260526T195959Z/eval_run.yaml
 
   - iteration: 11
     focus: Exec parity re-verify (--vm-service-uri global flag)
@@ -343,9 +343,9 @@ iterations:
       - .showcase/eval_runs/iter11_probes/fmt_logs.json
       - .showcase/eval_runs/iter11_probes/bare_logs.json
       - .showcase/eval_runs/iter11_probes/dogfood_ping.json
-      - /Users/anton/mcp/mcp_flutter/.showcase/web_iter_10/webmcp_verify.log
-      - /Users/anton/mcp/mcp_flutter/.showcase/web_iter_10/validate-runtime.log
-      - /Users/anton/mcp/mcp_flutter/.showcase/web_iter_10/validate-runtime.json
+      - .showcase/web_iter_10/webmcp_verify.log
+      - .showcase/web_iter_10/validate-runtime.log
+      - .showcase/web_iter_10/validate-runtime.json
 
   - iteration: 12
     ran_at: "2026-05-26T20:53:40Z"
@@ -372,7 +372,7 @@ iterations:
     warnings:
       - visual_capture_truth_mode
     artifacts:
-      - /Users/anton/mcp/mcp_flutter/.showcase/eval_runs/20260526T205327Z/eval_run.yaml
+      - .showcase/eval_runs/20260526T205327Z/eval_run.yaml
 
   - iteration: 13
     ran_at: "2026-05-26T20:54:13Z"
@@ -399,7 +399,7 @@ iterations:
     warnings:
       - visual_capture_truth_mode
     artifacts:
-      - /Users/anton/mcp/mcp_flutter/.showcase/eval_runs/20260526T205358Z/eval_run.yaml
+      - .showcase/eval_runs/20260526T205358Z/eval_run.yaml
 
   - iteration: 14
     ran_at: "2026-05-26T20:54:29Z"
@@ -426,7 +426,7 @@ iterations:
     warnings:
       - visual_capture_truth_mode
     artifacts:
-      - /Users/anton/mcp/mcp_flutter/.showcase/eval_runs/20260526T205416Z/eval_run.yaml
+      - .showcase/eval_runs/20260526T205416Z/eval_run.yaml
 
   - iteration: 15
     ran_at: "2026-05-26T20:54:45Z"
@@ -453,7 +453,7 @@ iterations:
     warnings:
       - visual_capture_truth_mode
     artifacts:
-      - /Users/anton/mcp/mcp_flutter/.showcase/eval_runs/20260526T205432Z/eval_run.yaml
+      - .showcase/eval_runs/20260526T205432Z/eval_run.yaml
 
   - iteration: 16
     ran_at: "2026-05-26T20:55:02Z"
@@ -480,7 +480,7 @@ iterations:
     warnings:
       - visual_capture_truth_mode
     artifacts:
-      - /Users/anton/mcp/mcp_flutter/.showcase/eval_runs/20260526T205448Z/eval_run.yaml
+      - .showcase/eval_runs/20260526T205448Z/eval_run.yaml
 
   - iteration: 17
     ran_at: "2026-05-26T20:55:17Z"
@@ -507,7 +507,7 @@ iterations:
     warnings:
       - visual_capture_truth_mode
     artifacts:
-      - /Users/anton/mcp/mcp_flutter/.showcase/eval_runs/20260526T205505Z/eval_run.yaml
+      - .showcase/eval_runs/20260526T205505Z/eval_run.yaml
 
   - iteration: 18
     ran_at: "2026-05-26T22:41:15Z"
@@ -535,7 +535,7 @@ iterations:
       - visual_capture_truth_mode
       - visual_fidelity_skipped
     artifacts:
-      - /Users/anton/mcp/mcp_flutter/.showcase/eval_runs/20260526T224101Z/eval_run.yaml
+      - .showcase/eval_runs/20260526T224101Z/eval_run.yaml
 
   - iteration: 19
     ran_at: "2026-06-06T15:41:00Z"
@@ -560,7 +560,7 @@ iterations:
     warnings:
       - visual_capture_truth_mode
     artifacts:
-      - /Users/anton/mcp/mcp_flutter/.showcase/eval_runs/20260606T154051Z/eval_run.yaml
+      - .showcase/eval_runs/20260606T154051Z/eval_run.yaml
 
   - iteration: 20
     ran_at: "2026-06-06T15:47:35Z"
@@ -585,7 +585,7 @@ iterations:
     warnings:
       - visual_capture_truth_mode
     artifacts:
-      - /Users/anton/mcp/mcp_flutter/.showcase/eval_runs/20260606T154725Z/eval_run.yaml
+      - .showcase/eval_runs/20260606T154725Z/eval_run.yaml
 
   - iteration: 21
     ran_at: "2026-06-06T15:48:16Z"
@@ -611,7 +611,7 @@ iterations:
       - visual_capture_truth_mode
       - deconstruct_sidecar_skipped
     artifacts:
-      - /Users/anton/mcp/mcp_flutter/.showcase/eval_runs/20260606T154810Z/eval_run.yaml
+      - .showcase/eval_runs/20260606T154810Z/eval_run.yaml
 
   - iteration: 22
     ran_at: "2026-06-06T15:48:18Z"
@@ -636,7 +636,7 @@ iterations:
     warnings:
       - visual_capture_truth_mode
     artifacts:
-      - /Users/anton/mcp/mcp_flutter/.showcase/eval_runs/20260606T154810Z/eval_run.yaml
+      - .showcase/eval_runs/20260606T154810Z/eval_run.yaml
 
 summary:
   best_score: 100

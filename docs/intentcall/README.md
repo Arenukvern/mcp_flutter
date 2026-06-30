@@ -4,18 +4,17 @@
 
 | Item | Location |
 |------|----------|
-| Canonical local IntentCall clone | `/Users/anton/mcp/agentkit` |
-| GitHub | `github.com/Arenukvern/intentcall` |
+| Canonical IntentCall repo | `github.com/Arenukvern/intentcall` |
 | Consumer package policy | Hosted `intentcall_* ^0.6.0` from pub.dev |
-| Local-development exception | Temporary sibling path overrides to `/Users/anton/mcp/agentkit/packages/intentcall_*` only |
+| Local-development exception | Temporary sibling path overrides to a local IntentCall checkout only |
 | Main integration gate | `make check-intentcall-integration` |
 | Repo contract gate | `make check-contracts` |
-| IntentCall publish checks | Run from `/Users/anton/mcp/agentkit` |
+| IntentCall publish checks | Run from the IntentCall checkout |
 | AppIntentsTesting consumer scaffold | `flutter-mcp-toolkit codegen appintents-testing generate` |
 
 ## Boundary
 
-Keep IntentCall product architecture out of this repository. If a doc needs to explain API ownership, package boundaries, adapter contracts, schema semantics, platform projection, or release strategy, update `/Users/anton/mcp/agentkit` instead.
+Keep IntentCall product architecture out of this repository. If a doc needs to explain API ownership, package boundaries, adapter contracts, schema semantics, platform projection, or release strategy, update the IntentCall repository instead.
 
 Keep `mcp_flutter` docs focused on consumer integration, migration, regression proof, and dogfood behavior.
 
@@ -62,7 +61,7 @@ executor under a new name.
 
 Dynamic registry is also IntentCall responsibility. If registry ownership,
 catalog snapshots, invocation semantics, durable permissions, or transport
-publication rules need to change, update `/Users/anton/mcp/agentkit` and dogfood
+publication rules need to change, update the IntentCall repository and dogfood
 the hosted or overridden package here.
 
 Flutter MCP still owns Flutter-specific dynamic discovery: reading app-posted
@@ -142,7 +141,7 @@ claim only generated scaffold proof.
 | Hosted dependency or local path override drift | `tool/intentcall/check_no_path_deps.sh`; use `--strict-root` before release/cutover |
 | Platform hooks, WebMCP, deep links, app dynamic tools | [flutter_test_app/INTENTCALL_PLATFORM.md](../../flutter_test_app/INTENTCALL_PLATFORM.md) |
 | Schema, `fmt_*`, CLI `exec`, or app-dynamic parity debugging | `plugin/skills/flutter-mcp-boundary-audit/` |
-| Unsure whether to fix `mcp_flutter` or IntentCall upstream | Fix consumer wiring here; fix architecture/package behavior in `/Users/anton/mcp/agentkit` |
+| Unsure whether to fix `mcp_flutter` or IntentCall upstream | Fix consumer wiring here; fix architecture/package behavior in the IntentCall repository |
 
 ## Maintainer notes
 
@@ -155,6 +154,6 @@ For future hosted dependency bumps:
    the app keeps one checked in.
 5. Run `tool/intentcall/check_no_path_deps.sh --strict-root`.
 6. Run the consumer proof gates above.
-7. Investigate package behavior regressions in `/Users/anton/mcp/agentkit`, not in this consumer repo.
+7. Investigate package behavior regressions in the IntentCall repository, not in this consumer repo.
 
 Historical in-repo IntentCall rollout plans, specs, trackers, closure reports, hosted cutover notes, and checklist docs were removed after durable extraction. Git history is the forensic archive.
