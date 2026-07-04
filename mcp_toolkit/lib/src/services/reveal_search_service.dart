@@ -75,24 +75,16 @@ mixin RevealSearchService {
 
       if (attempt == boundedMaxAttempts) {
         if (match != null) {
-          return <String, Object?>{
-            'success': true,
-            'ref': match['ref'],
-            'snapshotId': snapshot['snapshot_id'],
-            'match': match,
-            'visibleInViewport': match['visibleInViewport'],
-            'centerInViewport': match['centerInViewport'],
-            'viewport': snapshot['viewport'],
-            'recommendedNextAction': 'scroll_more',
-            'warning':
-                'Target was found but its center is outside the viewport.',
-            'query': normalizedQuery,
-            'matchBy': normalizedMatchBy,
-            'direction': direction,
-            'maxAttempts': boundedMaxAttempts,
-            'distance': boundedDistance,
-            'attempts': attempts,
-          };
+          return _foundButNotActionableResult(
+            snapshot: snapshot,
+            match: match,
+            query: normalizedQuery,
+            matchBy: normalizedMatchBy,
+            direction: direction,
+            maxAttempts: boundedMaxAttempts,
+            distance: boundedDistance,
+            attempts: attempts,
+          );
         }
         break;
       }
@@ -107,24 +99,16 @@ mixin RevealSearchService {
           continue;
         }
         if (match != null) {
-          return <String, Object?>{
-            'success': true,
-            'ref': match['ref'],
-            'snapshotId': snapshot['snapshot_id'],
-            'match': match,
-            'visibleInViewport': match['visibleInViewport'],
-            'centerInViewport': match['centerInViewport'],
-            'viewport': snapshot['viewport'],
-            'recommendedNextAction': 'scroll_more',
-            'warning':
-                'Target was found but its center is outside the viewport.',
-            'query': normalizedQuery,
-            'matchBy': normalizedMatchBy,
-            'direction': direction,
-            'maxAttempts': boundedMaxAttempts,
-            'distance': boundedDistance,
-            'attempts': attempts,
-          };
+          return _foundButNotActionableResult(
+            snapshot: snapshot,
+            match: match,
+            query: normalizedQuery,
+            matchBy: normalizedMatchBy,
+            direction: direction,
+            maxAttempts: boundedMaxAttempts,
+            distance: boundedDistance,
+            attempts: attempts,
+          );
         }
         return <String, Object?>{
           'success': false,
@@ -153,6 +137,35 @@ mixin RevealSearchService {
       'attempts': attempts,
     };
   }
+
+  static Map<String, Object?> _foundButNotActionableResult({
+    required final Map<String, Object?> snapshot,
+    required final Map<String, Object?> match,
+    required final String query,
+    required final String matchBy,
+    required final String direction,
+    required final int maxAttempts,
+    required final double distance,
+    required final List<Map<String, Object?>> attempts,
+  }) => <String, Object?>{
+    'success': false,
+    'error': 'target_not_actionable',
+    'actionable': false,
+    'ref': match['ref'],
+    'snapshotId': snapshot['snapshot_id'],
+    'match': match,
+    'visibleInViewport': match['visibleInViewport'],
+    'centerInViewport': match['centerInViewport'],
+    'viewport': snapshot['viewport'],
+    'recommendedNextAction': 'scroll_more',
+    'warning': 'Target was found but its center is outside the viewport.',
+    'query': query,
+    'matchBy': matchBy,
+    'direction': direction,
+    'maxAttempts': maxAttempts,
+    'distance': distance,
+    'attempts': attempts,
+  };
 
   static Map<String, Object?>? _findMatch({
     required final Map<String, Object?> snapshot,
@@ -209,6 +222,27 @@ mixin RevealSearchService {
   static bool shouldContinueAfterScrollForTesting(
     final Map<String, Object?> scroll,
   ) => _shouldContinueAfterScroll(scroll);
+
+  @visibleForTesting
+  static Map<String, Object?> foundButNotActionableResultForTesting({
+    required final Map<String, Object?> snapshot,
+    required final Map<String, Object?> match,
+    required final String query,
+    required final String matchBy,
+    required final String direction,
+    required final int maxAttempts,
+    required final double distance,
+    required final List<Map<String, Object?>> attempts,
+  }) => _foundButNotActionableResult(
+    snapshot: snapshot,
+    match: match,
+    query: query,
+    matchBy: matchBy,
+    direction: direction,
+    maxAttempts: maxAttempts,
+    distance: distance,
+    attempts: attempts,
+  );
 
   static bool _shouldContinueAfterScroll(final Map<String, Object?> scroll) {
     if (scroll['deferredMovementCheck'] == true) return true;

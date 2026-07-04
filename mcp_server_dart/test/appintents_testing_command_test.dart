@@ -79,6 +79,23 @@ void main() {
     expect(swift, contains('spotlightQuery("Home")'));
   });
 
+  test('committed AppIntentsTesting entity fixture matches showcase seed', () {
+    final fixture = File(
+      '../flutter_test_app/tool/intentcall/appintents_testing_entities.json',
+    );
+    final seedSource = File('../flutter_test_app/lib/main.dart');
+
+    final fixtures = readAppIntentsTestingEntityFixtures(fixture);
+    final appScreen = fixtures['app_screen']!;
+    final source = seedSource.readAsStringSync();
+
+    expect(appScreen.identifier, 'greeting_form');
+    expect(appScreen.search, 'Greeting Form');
+    expect(appScreen.expectedTitle, 'Greeting Form');
+    expect(source, contains("identifier: '${appScreen.identifier}'"));
+    expect(source, contains("title: '${appScreen.expectedTitle}'"));
+  });
+
   test('rejects malformed sample argument fixtures', () {
     final temp = Directory.systemTemp.createTempSync('appintents_fixture_');
     addTearDown(() => temp.deleteSync(recursive: true));

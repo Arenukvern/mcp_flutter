@@ -270,6 +270,43 @@ void main() {
     );
   });
 
+  test('reveal_search found-but-not-actionable payload is a failure', () {
+    final result = RevealSearchService.foundButNotActionableResultForTesting(
+      snapshot: const <String, Object?>{
+        'snapshot_id': 7,
+        'viewport': <String, Object?>{'width': 400, 'height': 400},
+      },
+      match: const <String, Object?>{
+        'ref': 's_3',
+        'identifier': 'partly_visible_target',
+        'visibleInViewport': true,
+        'centerInViewport': false,
+      },
+      query: 'partly_visible_target',
+      matchBy: 'identifier',
+      direction: 'down',
+      maxAttempts: 0,
+      distance: 300,
+      attempts: const <Map<String, Object?>>[
+        <String, Object?>{
+          'attempt': 0,
+          'found': true,
+          'ref': 's_3',
+          'visibleInViewport': true,
+          'centerInViewport': false,
+        },
+      ],
+    );
+
+    expect(result['success'], isFalse);
+    expect(result['error'], 'target_not_actionable');
+    expect(result['actionable'], isFalse);
+    expect(result['ref'], 's_3');
+    expect(result['visibleInViewport'], isTrue);
+    expect(result['centerInViewport'], isFalse);
+    expect(result['recommendedNextAction'], 'scroll_more');
+  });
+
   testWidgets(
     'semantic_snapshot reports hybrid when no interactive semantics refs',
     (final tester) async {
