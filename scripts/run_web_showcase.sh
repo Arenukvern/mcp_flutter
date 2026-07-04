@@ -61,13 +61,13 @@ if [[ -n "${canvaskit_url}" ]]; then
   printf '[web-showcase] FLUTTER_WEB_CANVASKIT_URL=%s\n' "${canvaskit_url}"
 else
   printf '[web-showcase] using local Flutter web resources (--no-web-resources-cdn)\n'
+  flutter_args+=(--no-web-resources-cdn)
 fi
 
 flutter_args=(
   run -d chrome
   --web-port="${web_port}"
   --host-vmservice-port="${vm_port}"
-  --no-web-resources-cdn
   "${route_args[@]}"
   "${dart_define_args[@]}"
   --debug

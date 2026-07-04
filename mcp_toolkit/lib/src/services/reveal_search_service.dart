@@ -30,7 +30,7 @@ mixin RevealSearchService {
     }
 
     final normalizedMatchBy = _normalizeMatchBy(matchBy);
-    final boundedMaxAttempts = maxAttempts.clamp(0, _maxAttemptsLimit);
+    final boundedMaxAttempts = maxAttempts.clamp(0, _maxAttemptsLimit).toInt();
     final boundedDistance = distance.clamp(1, _maxDistance).toDouble();
     final attempts = <Map<String, Object?>>[];
     Map<String, Object?>? lastSnapshot;

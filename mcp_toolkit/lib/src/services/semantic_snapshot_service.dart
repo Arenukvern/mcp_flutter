@@ -43,9 +43,9 @@ mixin SemanticSnapshotService {
 
   /// Current logical viewport for pointer-driven interactions.
   static ui.Rect? get viewportRect {
-    final renderViews = WidgetsBinding.instance.renderViews;
-    if (renderViews.isEmpty) return null;
-    final view = renderViews.first.flutterView;
+    final renderView = _activeRenderView;
+    if (renderView == null) return null;
+    final view = renderView.flutterView;
     final dpr = view.devicePixelRatio;
     if (dpr <= 0) return null;
     final physicalSize = view.physicalSize;
@@ -278,7 +278,7 @@ mixin SemanticSnapshotService {
           'message': 'No render views available.',
         };
       }
-      final owner = renderViews.first.owner;
+      final owner = (_activeRenderView ?? renderViews.first).owner;
       if (owner == null) {
         _lastRefMap = refMap;
         _lastBoundsMap = boundsMap;
@@ -458,7 +458,9 @@ mixin SemanticSnapshotService {
     }
     final renderViews = WidgetsBinding.instance.renderViews;
     if (renderViews.isEmpty) return rect;
-    final dpr = renderViews.first.flutterView.devicePixelRatio;
+    final activeRenderView = _activeRenderView;
+    if (activeRenderView == null) return rect;
+    final dpr = activeRenderView.flutterView.devicePixelRatio;
     if (dpr == 1.0) return rect;
     return ui.Rect.fromLTRB(
       rect.left / dpr,
@@ -466,6 +468,28 @@ mixin SemanticSnapshotService {
       rect.right / dpr,
       rect.bottom / dpr,
     );
+  }
+
+  static RenderView? get _activeRenderView {
+    final renderViews = WidgetsBinding.instance.renderViews;
+    if (renderViews.isEmpty) {
+      return null;
+    }
+
+    final implicitView =
+        WidgetsBinding.instance.platformDispatcher.implicitView;
+    if (implicitView == null) {
+      return renderViews.last;
+    }
+
+    for (final renderView in renderViews) {
+      if (renderView.flutterView == implicitView ||
+          renderView.flutterView.viewId == implicitView.viewId) {
+        return renderView;
+      }
+    }
+
+    return renderViews.last;
   }
 
   /// Returns `true` when a semantics node is interactive or carries a

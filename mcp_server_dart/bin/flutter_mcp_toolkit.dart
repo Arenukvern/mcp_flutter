@@ -2620,7 +2620,8 @@ Options:
   --bundle-id <id>            Bundle identifier for IntentDefinitions lookup
   --output <path>             Swift output path (default: stdout)
   --test-class <name>         XCTest class name
-  --sample-arguments <json>   Required primitive argument fixtures by qualifiedName
+  --sample-arguments <json>   Optional JSON file keyed by qualifiedName with
+                              primitive argument fixtures.
   --entity-fixtures <json>    Entity query fixtures by qualifiedName
 
 The generated source is scaffold/API-shape proof only until it is added to a
@@ -2671,7 +2672,13 @@ Future<int> _runWebmcpSubcommand(final ArgResults command) async {
     case 'chrome-args':
       return runWebmcpChromeArgs();
     case 'verify':
-      final rawToolArgs = jsonDecode(sub.option('tool-args') ?? '{}');
+      Object? rawToolArgs;
+      try {
+        rawToolArgs = jsonDecode(sub.option('tool-args') ?? '{}');
+      } on FormatException catch (error) {
+        io.stderr.writeln('Invalid --tool-args JSON: $error');
+        return 64;
+      }
       final toolArgs = rawToolArgs is Map
           ? rawToolArgs.cast<String, Object?>()
           : const <String, Object?>{};
