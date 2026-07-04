@@ -1,12 +1,12 @@
 # Simplified Dynamic Registration
 
-> **Phase 6b:** `MCPCallEntry` was removed. Use `AgentCallEntry` + `MCPToolkitBinding.addEntries` / `mcpToolkitTool` (forwards `ObjectSchema` → `inputSchema`). See `docs/start_here/migration_mcp_call_entry_to_agent_call_entry.md`. Examples below that mention `MCPCallEntry` are historical. System
-
 > [!WARNING]
 > Historical/internal design note. Examples here may not match the current public API exactly.
 > For canonical usage, use root docs (`README.md`, `QUICK_START.md`, `CONFIGURATION.md`) and `docs/`.
 >
-> **Phase 6b:** `MCPCallEntry` was removed. Use `AgentCallEntry` + `MCPToolkitBinding.addEntries` / `mcpToolkitTool` (forwards `ObjectSchema` → `inputSchema`). See `docs/start_here/migration_mcp_call_entry_to_agent_call_entry.md`.
+> **Phase 6b:** the legacy call-entry API was removed. Use `AgentCallEntry` +
+> `MCPToolkitBinding.addEntries` / `mcpToolkitTool` (forwards `ObjectSchema`
+> to `inputSchema`). See `docs/start_here/migration_mcp_call_entry_to_agent_call_entry.md`.
 
 ## Overview
 
@@ -129,21 +129,19 @@ Future<void> main() async {
 }
 
 Future<void> _registerAppTools() async {
-  final calculatorTool = MCPCallEntry(
-    methodName: const MCPMethodName('calculate'),
-    handler: (request) => MCPCallResult(
-      message: 'Calculation completed',
-      parameters: {'result': 42},
-    ),
-    toolDefinition: MCPToolDefinition(
-      name: 'calculate',
-      description: 'Perform calculations',
-      inputSchema: {
-        'type': 'object',
-        'properties': {
-          'expression': {'type': 'string', 'description': 'Math expression'},
-        },
+  final calculatorTool = AgentCallEntry.tool(
+    namespace: 'app',
+    name: 'calculate',
+    description: 'Perform calculations',
+    inputSchema: const {
+      'type': 'object',
+      'properties': {
+        'expression': {'type': 'string', 'description': 'Math expression'},
       },
+    ),
+    handler: (final args) async => AgentResult.success(
+      message: 'Calculation completed',
+      data: {'result': 42},
     ),
   );
 

@@ -23,13 +23,7 @@ check-contracts:
 	bash tool/contracts/check_changelog_markdown.sh && \
 	bash tool/contracts/check_tool_prefix.sh && \
 	bash tool/contracts/check_repo_split_paths.sh && \
-	bash tool/contracts/check_intentcall_skills_grep.sh && \
-	bash tool/intentcall/check_no_path_deps.sh && \
-	dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart init intentcall-platform \
-	  --project-dir flutter_test_app --check && \
-	dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart codegen sync \
-	  --platform web,android,ios,macos,linux,windows \
-	  --project-dir flutter_test_app --check && \
+	bash tool/contracts/check_intentcall_hosted_consumer.sh && \
 	steward validate skills/
 
 .PHONY: release-artifacts
@@ -82,15 +76,18 @@ sync-skills:
 	dart run mcp_server_dart/tool/build_skill_assets.dart
 	@echo "OK: skill assets regenerated"
 
-.PHONY: check-intentcall-integration macos-validate-runtime publish-intentcall-dry-run
-check-intentcall-integration:
+.PHONY: check-intentcall-hosted-consumer check-intentcall-sibling-matrix check-intentcall-integration macos-validate-runtime
+check-intentcall-hosted-consumer:
+	bash $(CURDIR)/tool/contracts/check_intentcall_hosted_consumer.sh
+
+check-intentcall-sibling-matrix:
 	bash $(CURDIR)/tool/contracts/check_intentcall_integration.sh
+
+check-intentcall-integration: check-intentcall-sibling-matrix
+	@echo "OK: check-intentcall-integration compatibility alias ran check-intentcall-sibling-matrix"
 
 macos-validate-runtime:
 	bash $(CURDIR)/tool/evals/run_macos_validate_runtime.sh
-
-publish-intentcall-dry-run:
-	bash $(CURDIR)/tool/intentcall/publish_all.sh
 
 .PHONY: dogfood-eval dogfood-eval-static
 dogfood-eval:

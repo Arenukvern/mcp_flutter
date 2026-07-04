@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Full in-repo intentcall integration gate (I2).
-# Wired into: make check-intentcall-integration, .github/workflows/intentcall_eval.yml
+# Sibling upstream IntentCall matrix plus mcp_flutter consumer regression gate.
+# Wired into: make check-intentcall-sibling-matrix, compatibility alias
+# check-intentcall-integration, and .github/workflows/intentcall_eval.yml.
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -56,4 +57,4 @@ dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart codegen sync \
   --platform web,android,ios,macos,linux,windows \
   --project-dir flutter_test_app --check
 
-echo "OK: intentcall integration gate"
+echo "OK: sibling intentcall matrix gate"

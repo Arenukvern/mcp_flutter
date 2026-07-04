@@ -1,6 +1,26 @@
-# MCP Flutter Quick Start
+# Flutter MCP Toolkit Quick Start
 
-This repository now uses audience-first docs.
+Use this page when you want the shortest route from a Flutter app to a live
+agent feedback loop.
+
+## Get Started
+
+```bash
+# 1. Install the binary and fmtk alias.
+curl -fsSL https://raw.githubusercontent.com/Arenukvern/mcp_flutter/main/install.sh | bash
+
+# 2. Add the toolkit to your Flutter app.
+cd my-flutter-app
+flutter-mcp-toolkit codegen-init   # adds mcp_toolkit + emits a main.dart snippet
+
+# 3. Install skills and MCP config for your agent.
+flutter-mcp-toolkit init claude-code   # or: cursor | codex | cline | agents-skills | all
+
+# 4. Run the app in debug mode.
+flutter run --debug
+```
+
+Then run `flutter-mcp-toolkit doctor --json` before VM-dependent automation.
 
 ## Choose Your Path
 
@@ -15,6 +35,7 @@ This repository now uses audience-first docs.
 - Why this repo matters: [docs/start_here/why_this_repo_matters.mdx](docs/start_here/why_this_repo_matters.mdx)
 - Feature map: [docs/start_here/feature_map.mdx](docs/start_here/feature_map.mdx)
 - CLI vs MCP (what to use when): [docs/start_here/cli_vs_mcp.mdx](docs/start_here/cli_vs_mcp.mdx)
+- IntentCall consumer boundary: [docs/intentcall/README.md](docs/intentcall/README.md)
 
 ## Video Walkthroughs
 
@@ -29,6 +50,7 @@ The old long-form quick-start content was intentionally split into focused docs 
 
 - **Migration guide:** [docs/start_here/migration_v2_to_v3.mdx](docs/start_here/migration_v2_to_v3.mdx) — `fmt_*` MCP tools, **`flutter-mcp-toolkit-server`**, **`mcpServers` key `flutter-mcp-toolkit`**, `validate-runtime` targeting.
 - **MCPCallEntry migration:** [docs/start_here/migration_mcp_call_entry_to_agent_call_entry.md](docs/start_here/migration_mcp_call_entry_to_agent_call_entry.md) — `AgentCallEntry`, platform `codegen sync`, `init intentcall-platform`.
-- Run preflight before VM-dependent automation: `flutter-mcp-toolkit doctor --json`.
+- **IntentCall consumer guide:** [docs/intentcall/README.md](docs/intentcall/README.md) — hosted package policy, consumer proof gates, and upstream ownership.
+- Local validation gates: `steward probe --json --profile quick`, `make check-contracts`, and `make check-intentcall-hosted-consumer` for IntentCall consumption changes.
 - Update parsers to read error descriptor fields from `error.descriptor`.
 - Use safe write flags (`--check --diff --backup --no-overwrite`) for snapshot/bundle flows.

@@ -20,21 +20,25 @@ Add metadata about tool state, usage frequency, and categorization:
 
 ```dart
 // Enhanced tool registration with metadata
-final debugToolEntry = MCPCallEntry.tool(
+final debugToolEntry = AgentCallEntry.tool(
+  namespace: 'app',
+  name: 'inspect_widget_state',
+  description: 'Inspect current widget state',
+  inputSchema: const {
+    'type': 'object',
+    'additionalProperties': false,
+    'properties': <String, Object?>{},
+  },
   handler: debugHandler,
-  definition: MCPToolDefinition(
-    name: 'inspect_widget_state',
-    description: 'Inspect current widget state',
-    inputSchema: {...},
-    metadata: {
-      'category': 'debugging',
-      'priority': 'high',
-      'usageHint': 'Use when UI behaves unexpectedly',
-      'estimatedExecutionTime': 'fast',
-      'sideEffects': false,
-    },
-  ),
 );
+
+final debugToolMetadata = const {
+  'category': 'debugging',
+  'priority': 'high',
+  'usageHint': 'Use when UI behaves unexpectedly',
+  'estimatedExecutionTime': 'fast',
+  'sideEffects': false,
+};
 ```
 
 ### Implementation
@@ -207,12 +211,17 @@ Enrich error reporting with actionable context:
 
 ```dart
 // Enhanced error resource
-extension type EnhancedErrorResource._(MCPCallEntry entry) implements MCPCallEntry {
+extension type EnhancedErrorResource._(AgentCallEntry entry)
+    implements AgentCallEntry {
   factory EnhancedErrorResource() {
-    return EnhancedErrorResource._(MCPCallEntry.resource(
-      handler: (request) => MCPCallResult(
+    return EnhancedErrorResource._(AgentCallEntry.resource(
+      namespace: 'app',
+      name: 'enhanced_errors',
+      description: 'Detailed error information with actionable context',
+      inputSchema: const {'type': 'object'},
+      handler: (final args) async => AgentResult.success(
         message: 'Enhanced error information with context',
-        parameters: {
+        data: {
           'errors': errors.map((e) => {
             'message': e.message,
             'stackTrace': e.stackTrace,
@@ -222,10 +231,6 @@ extension type EnhancedErrorResource._(MCPCallEntry entry) implements MCPCallEnt
             'debuggingSteps': e.recommendedDebuggingSteps,
           }).toList(),
         },
-      ),
-      definition: MCPResourceDefinition(
-        name: 'enhanced_errors',
-        description: 'Detailed error information with actionable context',
       ),
     ));
   }

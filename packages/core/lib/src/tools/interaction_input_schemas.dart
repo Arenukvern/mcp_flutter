@@ -36,7 +36,7 @@ Map<String, Object?> tapWidgetInputSchema() => <String, Object?>{
     'snapshotId': <String, Object?>{
       'type': 'integer',
       'description':
-          'Optional: snapshot_id returned by most recent '
+          'Optional: snapshotId input. Use the snapshot_id returned by most recent '
           'semantic_snapshot. If provided and stale, the call fails '
           'with stale_snapshot.',
     },
@@ -95,7 +95,7 @@ Map<String, Object?> enterTextInputSchema() => <String, Object?>{
     'snapshotId': <String, Object?>{
       'type': 'integer',
       'description':
-          'Optional: snapshot_id returned by most recent '
+          'Optional: snapshotId input. Use the snapshot_id returned by most recent '
           'semantic_snapshot. If provided and stale, the call fails '
           'with stale_snapshot.',
     },
@@ -167,7 +167,7 @@ Map<String, Object?> scrollInputSchema() => <String, Object?>{
     'snapshotId': <String, Object?>{
       'type': 'integer',
       'description':
-          'Optional: snapshot_id returned by most recent '
+          'Optional: snapshotId input. Use the snapshot_id returned by most recent '
           'semantic_snapshot. If provided and stale, the call fails '
           'with stale_snapshot.',
     },
@@ -185,7 +185,7 @@ Map<String, Object?> longPressInputSchema() => <String, Object?>{
     'snapshotId': <String, Object?>{
       'type': 'integer',
       'description':
-          'Optional: snapshot_id returned by most recent '
+          'Optional: snapshotId input. Use the snapshot_id returned by most recent '
           'semantic_snapshot. If provided and stale, the call fails '
           'with stale_snapshot.',
     },
@@ -215,7 +215,7 @@ Map<String, Object?> swipeInputSchema() => <String, Object?>{
     'snapshotId': <String, Object?>{
       'type': 'integer',
       'description':
-          'Optional: snapshot_id returned by most recent '
+          'Optional: snapshotId input. Use the snapshot_id returned by most recent '
           'semantic_snapshot. If provided and stale, the call fails '
           'with stale_snapshot.',
     },
@@ -240,7 +240,7 @@ Map<String, Object?> dragInputSchema() => <String, Object?>{
     'snapshotId': <String, Object?>{
       'type': 'integer',
       'description':
-          'Optional: snapshot_id returned by most recent '
+          'Optional: snapshotId input. Use the snapshot_id returned by most recent '
           'semantic_snapshot. If provided and stale, the call fails '
           'with stale_snapshot.',
     },
@@ -294,7 +294,7 @@ Map<String, Object?> fillFormInputSchema() => <String, Object?>{
     'snapshotId': <String, Object?>{
       'type': 'integer',
       'description':
-          'Optional: snapshot_id returned by most recent '
+          'Optional: snapshotId input. Use the snapshot_id returned by most recent '
           'semantic_snapshot. Checked on the first field only.',
     },
     'connection': connectionOverrideJsonSchema(),

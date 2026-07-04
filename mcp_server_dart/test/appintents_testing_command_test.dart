@@ -83,7 +83,9 @@ void main() {
     final fixture = File(
       '../flutter_test_app/tool/intentcall/appintents_testing_entities.json',
     );
-    final seedSource = File('../flutter_test_app/lib/main.dart');
+    final seedSource = File(
+      '../flutter_test_app/lib/intentcall_showcase_entries.dart',
+    );
 
     final fixtures = readAppIntentsTestingEntityFixtures(fixture);
     final appScreen = fixtures['app_screen']!;

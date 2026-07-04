@@ -226,7 +226,8 @@ Promo motion lives in GSAP keyframes derived from VO cues. The brand contributio
 | `fmt_*` chip appear | `expo.out` | 0.30s | Tool armed |
 | Phone payoff | `power2.out` | 0.50s | Result lands |
 
-Full vocabulary: [promo-motion-vocabulary.md](../skills/hyperframes-video/references/promo-motion-vocabulary.md).
+Full promo motion vocabulary lives with the video skill in the
+`flutter_mcp_video` repository. This repo keeps only shared plugin assets.
 
 ---
 

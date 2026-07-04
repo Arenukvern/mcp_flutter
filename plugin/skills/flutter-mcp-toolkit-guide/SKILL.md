@@ -37,9 +37,16 @@ Always run `flutter-mcp-toolkit doctor --json` first. Parse the output:
 | Drive UI ("tap X", "type into Y", "scroll to Z", "hot reload") | `flutter-mcp-toolkit-control` |
 | Diagnose ("why is X failing?", "show recent logs", "evaluate expression") | `flutter-mcp-toolkit-debug` |
 | Register app-specific MCP tools/resources (`AgentCallEntry`, `bootstrapFlutter` `additionalEntries`) | `flutter-mcp-toolkit-custom-tools` |
-| Upgrade after intentcall Phase 6 breaking bump (migrate CLI) | `flutter-mcp-toolkit-intentcall-migration` |
-| Harness Script lint/run/Maestro (`*.hs.yaml`, app registry) | Install **flutter_harness** — skill `flutter-mcp-semantic-test` in that repo |
-| HS capture bundles / promo video | **flutter_harness** + **flutter_mcp_video** (not bundled in toolkit `init`) |
+| Upgrade from removed legacy call-entry APIs | `flutter-mcp-toolkit-intentcall-migration` |
+| Audit CLI/MCP/schema/dynamic-registry parity before changing tool surfaces | `flutter-mcp-boundary-audit` |
+| Maintain `flutter_test_app` web / WebMCP showcase hooks | `flutter-mcp-toolkit-maintain-web` |
+| Maintain `flutter_test_app` macOS / native IntentCall hooks | `flutter-mcp-toolkit-maintain-macos` |
+| Score dogfood iterations or route dogfood evidence | `flutter-mcp-toolkit-dogfood-iterations` |
+| Release, version, or plugin skill bundle maintenance | `flutter-mcp-toolkit-repo-maintainer` |
+
+Harness Script lint/run/Maestro and promo/video capture live in their owner
+repositories. Do not look for `flutter-mcp-semantic-test`,
+`flutter-mcp-capture`, or `hyperframes-video` in this plugin.
 
 If the task spans more than one (e.g. "tap the button and show me what
 changed"), load `inspect` AND `control`. Skills are additive.
@@ -72,6 +79,11 @@ parameter shapes lives in the task skills.
   command names appear only as `exec --name <name>` values; do not call bare
   `list_client_tools_and_resources`, `client_tool`, or `client_resource` as
   MCP tools. → `flutter-mcp-toolkit-custom-tools`.
+- **Boundary/proof maintenance:** use `flutter-mcp-boundary-audit` before
+  changing catalog/schema/registry surfaces; use `flutter-mcp-toolkit-maintain-web`
+  or `flutter-mcp-toolkit-maintain-macos` for showcase platform hooks; use
+  `flutter-mcp-toolkit-repo-maintainer` for release, version, and generated
+  skill-bundle work.
 
 ## When in doubt
 

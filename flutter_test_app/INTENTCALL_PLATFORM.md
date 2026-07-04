@@ -88,8 +88,11 @@ flutter-mcp-toolkit webmcp verify --web-port 8080 \
 # macOS runtime proof after showcase launch
 make macos-validate-runtime
 
-# Consumer integration gate
-make check-intentcall-integration
+# Hosted consumer proof
+make check-intentcall-hosted-consumer
+
+# Sibling upstream matrix proof, for deliberate local IntentCall checkout work
+make check-intentcall-sibling-matrix
 
 # Generate AppIntentsTesting scaffold only
 dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart \

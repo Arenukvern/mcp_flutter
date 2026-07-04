@@ -17,18 +17,20 @@ Use this skill for read-only state inspection of a running Flutter app: what is 
 flutter-mcp-toolkit batch --steps '[
   {"name":"semantic_snapshot"},
   {"name":"get_app_errors","args":{"count":5}},
-  {"name":"get_screenshots","args":{"screenshotMode":"flutter_layer","compress":true}}
+  {"name":"get_screenshots","args":{"mode":"flutter_layer","compress":true}}
 ]'
 ```
 
-Use `screenshotMode: flutter_layer` on macOS to avoid Screen Recording permission failures.
+Use `mode: flutter_layer` on `get_screenshots` on macOS to avoid Screen
+Recording permission failures. `capture_ui_snapshot` uses the separate
+`screenshotMode` field.
 
 ### Snapshot the visible UI
 
 1. Call `semantic_snapshot()`.
 2. Read `interactionSurface`: `flutter_widgets` (tap-by-ref works), `hybrid` (sparse semantics), `game_canvas` (use `evaluate_dart_expression` + screenshots).
 3. Each interactive node has a stable `ref` (`s_0`, `s_1`, …) and the response includes a `snapshot_id`.
-4. Pass refs to interaction tools; pass `snapshot_id` to detect staleness.
+4. Pass refs to interaction tools; pass the `snapshot_id` value as `snapshotId` to detect staleness.
 
 ### After a code edit
 

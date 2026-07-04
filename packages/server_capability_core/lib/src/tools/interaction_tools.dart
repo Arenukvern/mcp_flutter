@@ -179,7 +179,7 @@ void registerInteractionTools(final CapabilityContext context) {
           'and listeners on PointerHoverEvent. Requires a desktop or web '
           'host (mobile platforms have no hover concept). '
           'Call semantic_snapshot immediately before to get fresh refs. '
-          'Pass snapshot_id to detect staleness.',
+          'Pass snapshotId to detect staleness.',
       inputSchema: hoverInputSchema(),
       handler: (final args) async {
         final ref = stringArgOrNull(args['ref']) ?? '';

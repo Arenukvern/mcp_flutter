@@ -111,7 +111,7 @@ extension type OnTapWidgetEntry._(AgentCallEntry entry)
         description:
             'Tap the centre of a widget identified by a semantic snapshot ref. '
             'Call semantic_snapshot immediately before to get fresh refs. '
-            'Pass snapshot_id to detect staleness.',
+            'Pass snapshotId to detect staleness.',
         inputSchema: ObjectSchema.fromMap(tapWidgetInputSchema()),
       ),
     );
@@ -172,7 +172,7 @@ extension type OnEnterTextEntry._(AgentCallEntry entry)
             'Enter text into a text field identified by a semantic ref. '
             'Taps the field to focus it first, then sets the value. '
             'Call semantic_snapshot immediately before to get fresh refs. '
-            'Pass snapshot_id to detect staleness.',
+            'Pass snapshotId to detect staleness.',
         inputSchema: ObjectSchema.fromMap(enterTextInputSchema()),
       ),
     );
@@ -332,7 +332,7 @@ extension type OnScrollEntry._(AgentCallEntry entry) implements AgentCallEntry {
             'Scroll in a direction from a ref or the screen centre. '
             'Simulates a drag gesture. '
             'Call semantic_snapshot immediately before to get fresh refs. '
-            'Pass snapshot_id to detect staleness.',
+            'Pass snapshotId to detect staleness.',
         inputSchema: ObjectSchema.fromMap(scrollInputSchema()),
       ),
     );
@@ -389,7 +389,7 @@ extension type OnLongPressEntry._(AgentCallEntry entry)
             'Long-press a widget identified by a semantic ref. '
             'Holds for ~500 ms before releasing. '
             'Call semantic_snapshot immediately before to get fresh refs. '
-            'Pass snapshot_id to detect staleness.',
+            'Pass snapshotId to detect staleness.',
         inputSchema: ObjectSchema.fromMap(longPressInputSchema()),
       ),
     );
@@ -444,7 +444,7 @@ extension type OnSwipeEntry._(AgentCallEntry entry) implements AgentCallEntry {
         description:
             'Swipe from a ref or the screen centre in a given direction. '
             'Call semantic_snapshot immediately before to get fresh refs. '
-            'Pass snapshot_id to detect staleness.',
+            'Pass snapshotId to detect staleness.',
         inputSchema: ObjectSchema.fromMap(swipeInputSchema()),
       ),
     );
@@ -503,7 +503,7 @@ extension type OnDragEntry._(AgentCallEntry entry) implements AgentCallEntry {
         description:
             'Drag from one widget to another, identified by semantic refs. '
             'Call semantic_snapshot immediately before to get fresh refs. '
-            'Pass snapshot_id to detect staleness.',
+            'Pass snapshotId to detect staleness.',
         inputSchema: ObjectSchema.fromMap(dragInputSchema()),
       ),
     );

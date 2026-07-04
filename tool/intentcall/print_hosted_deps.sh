@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Prints hosted pub.dev dependency snippets for mcp_flutter consumers (Phase 7.5).
+# Prints hosted pub.dev dependency snippets for mcp_flutter consumers.
 set -euo pipefail
 
-version="${INTENTCALL_VERSION:-0.5.0}"
+version="${INTENTCALL_VERSION:-0.6.0}"
 
 cat <<EOF
-# Replace path: ../agentkit/packages/<name> with:
+# Committed mcp_flutter consumer state should use hosted dependencies:
 
 intentcall_schema: ^${version}
 intentcall_core: ^${version}

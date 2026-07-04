@@ -76,11 +76,11 @@
 ### Added
 
 - `fmtk` short CLI alias for `flutter-mcp-toolkit`, including release artifacts and install script smoke checks.
-- Gating CI: `make check-intentcall-integration` + `.github/workflows/intentcall_eval.yml` job `intentcall-integration` (full intentcall matrix, contracts, skills grep, migrate/init/codegen `--check`).
+- Gating CI: `make check-intentcall-hosted-consumer` for hosted consumer proof, plus `make check-intentcall-sibling-matrix` / `.github/workflows/intentcall_eval.yml` for sibling upstream matrix regression proof.
 - `make macos-validate-runtime` helper (`tool/evals/run_macos_validate_runtime.sh`) for I5 macOS dogfood.
 - intentcall: `xsoulspace_lints` (`library.yaml` / `app.yaml`); `make analyze`; pre-release warnings on all packages ([intentcall/PRE_RELEASE.md](intentcall/PRE_RELEASE.md)); IntentCall consumer guide.
-- Phase 7 **7.1–7.3, 7.6**: `intentcall/` workspace; pub.dev metadata; `make publish-intentcall-dry-run`; hosted cutover docs; `intentcall_publish_dry_run` CI.
-- Phase 7 **7.1/7.2**: all `intentcall_*` packages under `intentcall/packages/`; consumers use path deps; 41 tests.
+- Phase 7 **7.1–7.3, 7.6**: `intentcall/` workspace; pub.dev metadata; hosted consumer docs; moved publish dry-run ownership to the IntentCall repository.
+- Phase 7 **7.1/7.2**: all `intentcall_*` packages started under `intentcall/packages/`; hosted consumer cutover now uses pub.dev packages.
 - `flutter_test_app` web dogfood: `WebMcpPublishAdapter` via `agent_web_mcp_dogfood.dart`; Xcode intentcall Codegen Run Script (ios/macos).
 - `flutter-mcp-toolkit init intentcall-platform` — idempotent Gradle, manifest, `index.html`, and codegen shell hooks with `--check` for CI.
 - `fmt_migrate_agent_entries` MCP tool (report-only default; `apply: true` to rewrite sources).

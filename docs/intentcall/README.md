@@ -7,7 +7,9 @@
 | Canonical IntentCall repo | `github.com/Arenukvern/intentcall` |
 | Consumer package policy | Hosted `intentcall_* ^0.6.0` from pub.dev |
 | Local-development exception | Temporary sibling path overrides to a local IntentCall checkout only |
-| Main integration gate | `make check-intentcall-integration` |
+| Hosted consumer proof | `make check-intentcall-hosted-consumer`; Steward `fmt.check.intentcall-hosted-deps-strict` |
+| Sibling upstream matrix proof | `make check-intentcall-sibling-matrix` |
+| Compatibility alias | `make check-intentcall-integration` → sibling upstream matrix proof |
 | Repo contract gate | `make check-contracts` |
 | IntentCall publish checks | Run from the IntentCall checkout |
 | AppIntentsTesting consumer scaffold | `flutter-mcp-toolkit codegen appintents-testing generate` |
@@ -88,9 +90,19 @@ integration changes.
 Run these before changing IntentCall consumption in `mcp_flutter`:
 
 ```bash
-make check-intentcall-integration
+make check-intentcall-hosted-consumer
 make check-contracts
 ```
+
+`make check-intentcall-hosted-consumer` is the self-contained hosted package
+consumer gate for this repository. It verifies that committed consumer state has
+no local IntentCall path dependency, then checks migration, platform init,
+platform codegen, and IntentCall skill/doc drift.
+
+Use `make check-intentcall-sibling-matrix` only when deliberately testing this
+consumer against a local sibling IntentCall checkout. The historical
+`make check-intentcall-integration` target remains as a compatibility alias for
+that sibling-matrix lane; do not present it as a fresh-adopter hosted gate.
 
 When plugin skills change, also run the skill sync workflow before claiming the generated runtime assets are current:
 
@@ -153,7 +165,9 @@ For future hosted dependency bumps:
 4. Regenerate any action AppIntentsTesting scaffold from the hosted emitter if
    the app keeps one checked in.
 5. Run `tool/intentcall/check_no_path_deps.sh --strict-root`.
-6. Run the consumer proof gates above.
-7. Investigate package behavior regressions in the IntentCall repository, not in this consumer repo.
+6. Run the hosted consumer proof gate above.
+7. Run the sibling matrix only when the change deliberately spans a local
+   IntentCall checkout.
+8. Investigate package behavior regressions in the IntentCall repository, not in this consumer repo.
 
 Historical in-repo IntentCall rollout plans, specs, trackers, closure reports, hosted cutover notes, and checklist docs were removed after durable extraction. Git history is the forensic archive.
