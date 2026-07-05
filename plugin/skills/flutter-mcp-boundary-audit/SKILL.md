@@ -3,6 +3,8 @@ name: flutter-mcp-boundary-audit
 description: Generic contract/schema boundary audit across authoring, discovery, validation, and execute—detecting split-brain between listings and invoke paths, gateway divergence, and permissive placeholders. Use when changing tool registration, RPC/plugin registries, dynamic tools, MCP or WebMCP surfaces, CLI exec aliases, OpenAPI or JSON Schema contracts, migrators/codegen, bridge argument encoding, or platform docs that describe API contracts.
 ---
 
+<!-- @FMT_MODE_PRELUDE -->
+
 # Contract boundary audit
 
 > **Skill ID:** `flutter-mcp-boundary-audit` — name is historical; content is **repository-neutral**. Same workflow applies to MCP stacks, RPC gateways, plugin registries, and OpenAPI-style contracts.

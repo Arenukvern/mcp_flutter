@@ -1399,6 +1399,8 @@ If something should appear but does not: confirm **`addEntries`** completed (**`
       frontmatter: r'''name: flutter-mcp-boundary-audit
 description: Generic contract/schema boundary audit across authoring, discovery, validation, and execute—detecting split-brain between listings and invoke paths, gateway divergence, and permissive placeholders. Use when changing tool registration, RPC/plugin registries, dynamic tools, MCP or WebMCP surfaces, CLI exec aliases, OpenAPI or JSON Schema contracts, migrators/codegen, bridge argument encoding, or platform docs that describe API contracts.''',
       body: r'''
+<!-- @FMT_MODE_PRELUDE -->
+
 # Contract boundary audit
 
 > **Skill ID:** `flutter-mcp-boundary-audit` — name is historical; content is **repository-neutral**. Same workflow applies to MCP stacks, RPC gateways, plugin registries, and OpenAPI-style contracts.
@@ -2423,7 +2425,7 @@ Full Chrome runtime dogfood stays **local** until headless WebMCP is cost-effect
   "interface": {
     "displayName": "Flutter MCP Toolkit",
     "shortDescription": "Inspect, drive, and extend Flutter debug apps via MCP — including runtime custom tools.",
-    "longDescription": "flutter-mcp-toolkit is a Dart MCP server plus Flutter package (mcp_toolkit) for AI-assisted Flutter development in debug mode. Built-in: 30 fmt_* MCP tools and bundled agent skills. Dynamic registry: register app-specific tools and resources at runtime with AgentCallEntry and addMcpTool; agents discover via fmt_list_client_tools_and_resources and invoke via fmt_client_tool / fmt_client_resource. Requires debug app with mcp_toolkit and flutter-mcp-toolkit-server on PATH. Complements official Dart MCP.",
+    "longDescription": "flutter-mcp-toolkit is a Dart MCP server plus Flutter package (mcp_toolkit) for AI-assisted Flutter development in debug mode. Built-in: core fmt_* MCP tools and bundled agent skills. Dynamic registry: register app-specific tools and resources at runtime with AgentCallEntry and addMcpTool; agents discover via fmt_list_client_tools_and_resources and invoke via fmt_client_tool / fmt_client_resource. Requires debug app with mcp_toolkit and flutter-mcp-toolkit-server on PATH. Complements official Dart MCP.",
     "developerName": "Arenukvern",
     "category": "Developer Tools",
     "capabilities": [
