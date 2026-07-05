@@ -99,6 +99,7 @@ Future<void> registerMyTools() async {
     handler: (_) async => AgentResult.success(
       message: 'Hello from a dynamic tool!',
     ),
+  );
   await MCPToolkitBinding.instance.addEntries(entries: {helloTool});
 }
 ```
