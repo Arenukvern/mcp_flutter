@@ -3,6 +3,19 @@
 <!-- markdownlint-disable MD052 -->
 <!-- Keep a Changelog version headings use [3.0.1] brackets; MD052 treats them as reference links. -->
 
+## [4.0.0-dev.6](https://github.com/Arenukvern/mcp_flutter/compare/v4.0.0-dev.5...v4.0.0-dev.6) (2026-07-05)
+
+
+### Bug Fixes
+
+* add FMT_MODE_PRELUDE to boundary-audit skill and sync assets ([81f788c](https://github.com/Arenukvern/mcp_flutter/commit/81f788cbaafde6ff70105e106eed0b55edfa2061))
+* add missing closing parenthesis in dynamic tools registration ([72f4c90](https://github.com/Arenukvern/mcp_flutter/commit/72f4c9075322a35b9388251d2182ac31bac85724))
+
+
+### Documentation
+
+* architecture cleanup, intentcall, flutter mcp toolkit purpose ([b1609bf](https://github.com/Arenukvern/mcp_flutter/commit/b1609bff17ad95d5b1b2a04271640b44d935c2d8))
+
 ## [4.0.0-dev.5](https://github.com/Arenukvern/mcp_flutter/compare/v4.0.0-dev.4...v4.0.0-dev.5) (2026-06-21)
 
 

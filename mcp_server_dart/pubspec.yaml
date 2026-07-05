@@ -1,5 +1,5 @@
 name: flutter_mcp_toolkit_server
-version: 4.0.0-dev.5
+version: 4.0.0-dev.6
 description: >-
   An MCP server for Flutter Inspector, exposing Flutter debugging and inspection
   tools to AI models via Dart VM service.
