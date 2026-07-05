@@ -5,8 +5,6 @@ set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "${here}/../.." && pwd)"
-toolkit=(dart run "${repo_root}/mcp_server_dart/bin/flutter_mcp_toolkit.dart")
-
 ws_uri="${WS_URI:-${MACOS_WS_URI:-}}"
 output="${repo_root}/docs/evidence/generated/mcp_flutter.runtime-enter-text-greeting.redacted.json"
 text="steward runtime proof"
@@ -14,6 +12,11 @@ platform="${RUNTIME_PLATFORM:-macos}"
 launch_command="${RUNTIME_LAUNCH_COMMAND:-make showcase}"
 branch="$(git -C "${repo_root}" branch --show-current 2>/dev/null || true)"
 base_commit="$(git -C "${repo_root}" rev-parse HEAD 2>/dev/null || true)"
+
+toolkit=(dart run "${repo_root}/mcp_server_dart/bin/flutter_mcp_toolkit.dart")
+if [[ "${platform}" == "web" ]]; then
+  toolkit+=(--flutter-device chrome --web-browser-debugging-port "${WEB_BROWSER_DEBUGGING_PORT:-9222}")
+fi
 
 usage() {
   cat <<'EOF'
@@ -122,14 +125,24 @@ ensure_visible_identifier_args() {
   local match_file="$3"
   local direction="${4:-down}"
   local snap_file
-  for attempt in 0 1 2 3 4 5 6; do
-    snap_file="$(capture_snapshot "semantic_${identifier}_${attempt}")" || return 1
-    if write_ref_args_for_identifier "${snap_file}" "${identifier}" "${args_file}" "${match_file}" 2>"${work_dir}/${identifier}_${attempt}.visibility"; then
-      return 0
+  local directions=( "${direction}" )
+  if [[ "${platform}" == "web" ]]; then
+    if [[ "${direction}" == "down" ]]; then
+      directions+=(up)
+    else
+      directions+=(down)
     fi
-    run_tool exec --name scroll --args "{\"direction\":\"${direction}\",\"distance\":420}" \
-      >"${work_dir}/scroll_to_${identifier}_${attempt}.json" \
-      2>"${work_dir}/scroll_to_${identifier}_${attempt}.stderr" || true
+  fi
+  for attempt in 0 1 2 3 4 5 6; do
+    for direction in "${directions[@]}"; do
+      snap_file="$(capture_snapshot "semantic_${identifier}_${attempt}_${direction}")" || return 1
+      if write_ref_args_for_identifier "${snap_file}" "${identifier}" "${args_file}" "${match_file}" 2>"${work_dir}/${identifier}_${attempt}_${direction}.visibility"; then
+        return 0
+      fi
+      run_tool exec --name scroll --args "{\"direction\":\"${direction}\",\"distance\":420}" \
+        >"${work_dir}/scroll_to_${identifier}_${attempt}_${direction}.json" \
+        2>"${work_dir}/scroll_to_${identifier}_${attempt}_${direction}.stderr" || true
+    done
   done
   return 1
 }
@@ -173,6 +186,14 @@ if ! run_tool exec --name reveal_search \
   --args '{"query":"greeting_input_field","matchBy":"identifier","direction":"down","maxAttempts":4,"distance":220}' \
   >"${work_dir}/reveal_search.json"; then
   :
+fi
+
+if [[ "$(jq -r '.data.success // false' "${work_dir}/reveal_search.json")" != "true" ]]; then
+  if [[ "${platform}" == "web" ]]; then
+    run_tool exec --name reveal_search \
+      --args '{"query":"greeting_input_field","matchBy":"identifier","direction":"up","maxAttempts":4,"distance":220}' \
+      >"${work_dir}/reveal_search.json" || true
+  fi
 fi
 
 if [[ "$(jq -r '.data.success // false' "${work_dir}/reveal_search.json")" != "true" ]]; then
