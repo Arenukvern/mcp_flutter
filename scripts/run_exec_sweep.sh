@@ -280,8 +280,28 @@ for node in d.get("data", {}).get("nodes", []):
     if node.get("type") == want and node.get("ref"):
         json.dump({"ref": node["ref"], "snapshotId": sid}, open(out, "w"))
         raise SystemExit(0)
-raise SystemExit(f"{want} not found")
+  raise SystemExit(f"{want} not found")
 PY
+}
+
+resolve_scrollable_args() {
+  local outfile="$1"
+  local fallback_label="${2:-semantic_before_interaction}"
+  local initial_snap="${outdir}/semantic_snapshot.json"
+  local fresh_snap
+
+  if [[ -f "${initial_snap}" ]] && write_ref_args_for_type "${initial_snap}" scrollable "${outfile}" 2>/dev/null; then
+    return 0
+  fi
+
+  fresh_snap="$(capture_snapshot "${fallback_label}" || true)"
+  if [[ -z "${fresh_snap}" ]]; then
+    return 1
+  fi
+  if write_ref_args_for_type "${fresh_snap}" scrollable "${outfile}" 2>/dev/null; then
+    return 0
+  fi
+  return 1
 }
 
 ensure_visible_identifier_args() {
@@ -335,7 +355,7 @@ reveal_identifier_args() {
     if ! "${toolkit[@]}" exec --name reveal_search --args "{\"query\":\"${identifier}\",\"matchBy\":\"identifier\",\"direction\":\"${d}\",\"maxAttempts\":${max_attempts},\"distance\":${distance}}" >"${reveal_file}" 2>"${reveal_stderr}"; then
       continue
     fi
-    python3 - "${reveal_file}" "${outfile}" <<'PY'
+    if ! python3 - "${reveal_file}" "${outfile}" <<'PY'
 import json, sys
 d = json.load(open(sys.argv[1]))
 data = d.get("data", {})
@@ -345,6 +365,9 @@ if not d.get("ok") or data.get("success") is not True or not ref or sid is None:
     raise SystemExit(1)
 json.dump({"ref": ref, "snapshotId": sid}, open(sys.argv[2], "w"))
 PY
+    then
+      continue
+    fi
     return 0
   done
   return 1
@@ -444,9 +467,13 @@ else
   missing_required_tool hover 'stateful_counter_increment_button ref not visible/discovered'
 fi
 
+scroll_ref=""
+scroll_snap_id=""
 if reveal_identifier_args scroll_demo_list "${outdir}/scrollable_args.json" "${reveal_down_direction}" 5 260; then
-  scroll_ref="$(args_ref "${outdir}/scrollable_args.json")"
-  scroll_snap_id="$(args_snapshot_id "${outdir}/scrollable_args.json")"
+  if [[ -s "${outdir}/scrollable_args.json" ]]; then
+    scroll_ref="$(args_ref "${outdir}/scrollable_args.json")"
+    scroll_snap_id="$(args_snapshot_id "${outdir}/scrollable_args.json")"
+  fi
   if [[ -n "${scroll_ref}" && -n "${scroll_snap_id}" ]]; then
     run_tool_allow_web_no_movement_skip scroll "{\"ref\":\"${scroll_ref}\",\"direction\":\"down\",\"distance\":120,\"snapshotId\":${scroll_snap_id}}" || true
   elif [[ "${platform}" == "web" ]]; then
@@ -455,8 +482,7 @@ if reveal_identifier_args scroll_demo_list "${outdir}/scrollable_args.json" "${r
     missing_required_tool scroll 'scrollable ref not visible/discovered'
   fi
 else
-  scroll_snap="$(capture_snapshot semantic_before_scroll || true)"
-  if [[ -n "${scroll_snap}" ]] && write_ref_args_for_type "${scroll_snap}" scrollable "${outdir}/scrollable_args.json" 2>/dev/null; then
+  if resolve_scrollable_args "${outdir}/scrollable_args.json" "semantic_before_scroll"; then
     scroll_ref="$(args_ref "${outdir}/scrollable_args.json")"
     scroll_snap_id="$(args_snapshot_id "${outdir}/scrollable_args.json")"
     if [[ -n "${scroll_ref}" && -n "${scroll_snap_id}" ]]; then
@@ -475,8 +501,10 @@ else
   fi
 fi
 if reveal_identifier_args scroll_demo_list "${outdir}/scrollable_swipe_args.json" "${reveal_down_direction}" 5 260; then
-  scroll_ref="$(args_ref "${outdir}/scrollable_swipe_args.json")"
-  scroll_snap_id="$(args_snapshot_id "${outdir}/scrollable_swipe_args.json")"
+  if [[ -s "${outdir}/scrollable_swipe_args.json" ]]; then
+    scroll_ref="$(args_ref "${outdir}/scrollable_swipe_args.json")"
+    scroll_snap_id="$(args_snapshot_id "${outdir}/scrollable_swipe_args.json")"
+  fi
   if [[ -n "${scroll_ref}" && -n "${scroll_snap_id}" ]]; then
     run_tool_allow_web_no_movement_skip swipe "{\"ref\":\"${scroll_ref}\",\"direction\":\"down\",\"distance\":80,\"snapshotId\":${scroll_snap_id}}" || true
   elif [[ "${platform}" == "web" ]]; then
@@ -485,8 +513,7 @@ if reveal_identifier_args scroll_demo_list "${outdir}/scrollable_swipe_args.json
     missing_required_tool swipe 'scrollable ref not visible/discovered'
   fi
 else
-  scroll_snap="$(capture_snapshot semantic_before_swipe || true)"
-  if [[ -n "${scroll_snap}" ]] && write_ref_args_for_type "${scroll_snap}" scrollable "${outdir}/scrollable_swipe_args.json" 2>/dev/null; then
+  if resolve_scrollable_args "${outdir}/scrollable_swipe_args.json" "semantic_before_swipe"; then
     scroll_ref="$(args_ref "${outdir}/scrollable_swipe_args.json")"
     scroll_snap_id="$(args_snapshot_id "${outdir}/scrollable_swipe_args.json")"
     if [[ -n "${scroll_ref}" && -n "${scroll_snap_id}" ]]; then
@@ -504,6 +531,8 @@ else
     fi
   fi
 fi
+scroll_ref=""
+scroll_snap_id=""
 if [[ "${platform}" == "web" ]]; then
   skip_tool press_key 'Flutter Web browser focus can terminate or detach the VM service after synthetic key input'
 else
