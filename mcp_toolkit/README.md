@@ -1,6 +1,7 @@
 # MCP Toolkit for Flutter
 
-[![Pub Version](https://img.shields.io/badge/version-4.0.0-blue)](https://github.com/Arenukvern/mcp_flutter/tree/main/mcp_toolkit)
+[![pub package](https://img.shields.io/pub/v/mcp_toolkit.svg?include_prereleases)](https://pub.dev/packages/mcp_toolkit)
+[![pub points](https://img.shields.io/pub/points/mcp_toolkit.svg)](https://pub.dev/packages/mcp_toolkit/score)
 [![skills.sh](https://skills.sh/b/arenukvern/mcp_flutter)](https://skills.sh/arenukvern/mcp_flutter)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Flutter](https://img.shields.io/badge/Flutter-3.x-blue.svg)](https://flutter.dev)
@@ -57,7 +58,7 @@ await MCPToolkitBinding.instance.bootstrapFlutter(
 ```
 
 Or use **`mcpToolkitTool`** / **`mcpToolkitResource`** when you already have
-`MCPToolDefinition` + `MCPCallResult` handlers (see [example/fibonacci_tool_example.dart](example/fibonacci_tool_example.dart)).
+`MCPToolDefinition` + `MCPCallResult` handlers (see [example/fibonacci_tool_example.dart](example/fibonacci_tool_example.dart)). These helpers are compatibility bridges; new reusable registry, session, and result behavior belongs in IntentCall packages.
 
 App-side permission bridging is separate and opt-in:
 
@@ -135,7 +136,9 @@ Import `PlatformViewHints` and constants from `package:mcp_toolkit/mcp_toolkit.d
       flutter:
         sdk: flutter
       # ... other dependencies
-      mcp_toolkit: ^3.0.0 # Use the latest version
+      # Stable users: stay on the latest 3.x release.
+      # v4 prerelease adopters: use the current 4.0.0-dev.x train intentionally.
+      mcp_toolkit: ^4.0.0-dev.5
     ```
 
     Then, run `flutter pub get` in your Flutter project's directory.
@@ -201,6 +204,12 @@ Import `PlatformViewHints` and constants from `package:mcp_toolkit/mcp_toolkit.d
     **Migrating from `MCPCallEntry`:** use
     `flutter-mcp-toolkit migrate agent-entries` — see
     [migration_mcp_call_entry_to_agent_call_entry.md](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/start_here/migration_mcp_call_entry_to_agent_call_entry.md).
+
+    **When to touch IntentCall directly:** ordinary Flutter apps should import
+    `package:mcp_toolkit/mcp_toolkit.dart` and use its `AgentCallEntry` /
+    `AgentResult` re-exports. Depend on `intentcall_*` packages directly only
+    when you are building reusable registry/session/platform behavior outside
+    Flutter MCP Toolkit's app instrumentation layer.
 
 3.  **Optional: Register an App-Side Permission Delegate**:
     Keep `initializeFlutterToolkit()` unchanged and add the permission bridge only if the app owns the relevant permission flow.

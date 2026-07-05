@@ -6,7 +6,8 @@ setup:
 compile: sync-skills
 	@ mkdir -p build && \
 	dart compile exe bin/flutter_mcp_toolkit_server.dart -o build/flutter-mcp-toolkit-server && \
-	dart compile exe bin/flutter_mcp_toolkit.dart -o build/flutter-mcp-toolkit
+	dart compile exe bin/flutter_mcp_toolkit.dart -o build/flutter-mcp-toolkit && \
+	cp build/flutter-mcp-toolkit build/fmtk
 
 .PHONY: inspect
 inspect:

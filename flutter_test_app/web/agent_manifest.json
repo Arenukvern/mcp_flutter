@@ -1,6 +1,41 @@
 {
   "version": 1,
   "platform": "web",
+  "protocolScheme": "mcpfluttertest",
+  "entityTypes": [
+    {
+      "qualifiedName": "app_screen",
+      "namespace": "app",
+      "name": "screen",
+      "displayName": "Showcase Screen",
+      "pluralDisplayName": "Showcase Screens",
+      "description": "Open a discoverable MCP Flutter showcase screen",
+      "titleKey": "title",
+      "subtitleKey": "subtitle",
+      "keywordsKey": "keywords",
+      "urlKey": "deepLink",
+      "defaultQueryLimit": 6,
+      "snapshotSchema": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "subtitle": { "type": "string" },
+          "keywords": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "deepLink": { "type": "string" },
+          "properties": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "required": ["id", "title"]
+      }
+    }
+  ],
   "tools": [
     {
       "qualifiedName": "app_demo_ping",
@@ -10,6 +45,66 @@
       "kind": "tool",
       "inputSchema": {
         "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "qualifiedName": "app_intentcall_bridge_ping",
+      "namespace": "app",
+      "name": "intentcall_bridge_ping",
+      "description": "Proof that native/WebMCP dispatch executes Dart registry logic",
+      "kind": "tool",
+      "dispatchMode": "openApp",
+      "surfaces": {
+        "apple.appShortcuts": { "include": true }
+      },
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "echo": {
+            "type": "string",
+            "description": "Value echoed by Dart registry proof."
+          }
+        },
+        "required": ["echo"]
+      }
+    },
+    {
+      "qualifiedName": "app_set_greeting",
+      "namespace": "app",
+      "name": "set_greeting",
+      "description": "Fill the showcase greeting field with text",
+      "kind": "tool",
+      "dispatchMode": "openApp",
+      "surfaces": {
+        "apple.appShortcuts": { "include": true }
+      },
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "Text to place in the greeting field."
+          }
+        },
+        "required": ["text"]
+      }
+    },
+    {
+      "qualifiedName": "app_enable_switch",
+      "namespace": "app",
+      "name": "enable_switch",
+      "description": "Enable the showcase feature switch",
+      "kind": "tool",
+      "dispatchMode": "openApp",
+      "surfaces": {
+        "apple.appShortcuts": { "include": true }
+      },
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
         "properties": {}
       }
     }

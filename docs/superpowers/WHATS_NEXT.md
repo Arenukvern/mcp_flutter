@@ -2,7 +2,7 @@
 
 This file tracks non-IntentCall forward work. IntentCall consumer guidance lives in
 [docs/intentcall/README.md](../intentcall/README.md); canonical IntentCall
-architecture lives in `/Users/anton/mcp/agentkit`.
+architecture lives in the IntentCall repository.
 
 ## Visual reconstruct (maintenance)
 

@@ -10,7 +10,7 @@ That lead me to continue working on this project from that point - and that's th
 
 Most of the changes / motivation is described in [Changelog for v2](https://github.com/Arenukvern/mcp_flutter/blob/main/CHANGELOG.md#210)
 
-And the current goal: to make Flutter debugging and automation usable and customizable for AI Agents for all Flutter applicaitons.  
+And the current goal: to make Flutter debugging and automation usable and customizable for AI Agents for all Flutter applications.
 
 ## The Problem
 
@@ -33,11 +33,11 @@ Generic MCP or Dart-only tooling can expose low-level VM data, but real Flutter 
 
 ```bash
 # 1. Install the binary
-curl -fsSL https://raw.githubusercontent.com/Arenukvern/flutter-mcp-toolkit/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Arenukvern/mcp_flutter/main/install.sh | bash
 
 # 2. Add the toolkit to your Flutter app
 cd my-flutter-app
-flutter-mcp-toolkit codegen-init   # adds flutter_mcp_toolkit + emits main.dart snippet
+flutter-mcp-toolkit codegen-init   # adds mcp_toolkit + emits main.dart snippet
 
 # 3. Install skills for your AI agent
 flutter-mcp-toolkit init claude-code   # or: cursor | codex | cline | all

@@ -5,7 +5,7 @@ description: Install flutter-mcp-toolkit skills and MCP wiring for Claude Code, 
 
 # AI Agent Setup
 
-`flutter-mcp-toolkit` ships **eight** agent skills (task guides + runtime golden path + CLI validation). Canonical source: [`plugin/skills/`](https://github.com/Arenukvern/mcp_flutter/tree/main/plugin/skills) (also exposed at repo root as [`skills/`](https://github.com/Arenukvern/mcp_flutter/tree/main/skills) for [`npx skills`](https://www.npmjs.com/package/skills) discovery).
+`flutter-mcp-toolkit` ships **14** agent skills (task guides, runtime golden path, maintenance lanes, migration, and boundary audit). Canonical source: [`plugin/skills/`](https://github.com/Arenukvern/mcp_flutter/tree/main/plugin/skills) (also exposed at repo root as [`skills/`](https://github.com/Arenukvern/mcp_flutter/tree/main/skills) for [`npx skills`](https://www.npmjs.com/package/skills) discovery).
 
 | Skill | Purpose |
 |---|---|
@@ -15,12 +15,18 @@ description: Install flutter-mcp-toolkit skills and MCP wiring for Claude Code, 
 | `flutter-mcp-toolkit-control` | Drive UI |
 | `flutter-mcp-toolkit-debug` | Diagnose problems |
 | `flutter-mcp-toolkit-custom-tools` | Register dynamic MCP tools in the Flutter app |
+| `flutter-mcp-boundary-audit` | Audit CLI/MCP/schema/dynamic-registry boundary drift |
 | `flutter-mcp` | Golden-path runtime loop (snapshot → act → hot-reload) |
 | `flutter-mcp-cli-runtime-validation` | CLI `validate-runtime` smoke test |
+| `flutter-mcp-toolkit-intentcall-migration` | Legacy call-entry to `AgentCallEntry` migration |
+| `flutter-mcp-toolkit-maintain-web` | Web/WebMCP showcase maintenance |
+| `flutter-mcp-toolkit-maintain-macos` | macOS native showcase maintenance |
+| `flutter-mcp-toolkit-dogfood-iterations` | Dogfood iteration scoring and evidence routing |
+| `flutter-mcp-toolkit-repo-maintainer` | Release, version, and skill-bundle maintenance |
 
 ## Three layers (read this first)
 
-1. **Host MCP** — `flutter-mcp-toolkit-server` with 27 `fmt_*` tools.
+1. **Host MCP** — `flutter-mcp-toolkit-server` with 30 `fmt_*` tools.
 2. **In-app toolkit** — `mcp_toolkit` in your Flutter app (debug only).
 3. **Dynamic registry** — register custom tools/resources at runtime (`AgentCallEntry`, `addEntries` / `addMcpTool`). Agents discover via `fmt_list_client_tools_and_resources` and invoke via `fmt_client_tool` / `fmt_client_resource`. Use skill **`flutter-mcp-toolkit-custom-tools`** and [Dynamic tool registry](/core/dynamic_tools_registry).
 

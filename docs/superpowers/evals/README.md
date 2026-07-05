@@ -31,9 +31,9 @@ WebMCP-specific verification (separate from VM dogfood): [2026-05-26-webmcp-veri
 
 Archived spec gap matrix (iter 1–11): [archive/2026-05-26-dogfood-spec-gap-matrix.md](./archive/2026-05-26-dogfood-spec-gap-matrix.md). Current iterations: [`docs/evidence/dogfood/dogfood_web_eval.yaml`](../../evidence/dogfood/dogfood_web_eval.yaml).
 
-## Workspace layout (Phase 7)
+## Workspace layout
 
-intentcall libraries live under **`intentcall/packages/`** (standalone workspace). Dogfood and CLI commands run from **mcp_flutter** repo root; `run_dogfood_eval.sh` runs `dart test packages/intentcall_testing` inside `intentcall/`.
+IntentCall libraries live in the sibling IntentCall workspace during local development. Dogfood and CLI commands run from **mcp_flutter** repo root; hosted package checks should use the consumer gates in `docs/intentcall/README.md`.
 
 ## How to run
 

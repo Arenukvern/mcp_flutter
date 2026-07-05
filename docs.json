@@ -49,7 +49,7 @@
     "noindex": false
   },
   "variables": {
-    "version": "4.0.0-dev.2",
+    "version": "4.0.0-dev.5",
     "repo": "https://github.com/Arenukvern/mcp_flutter",
     "docs": "https://docs.page/arenukvern/mcp_flutter"
   },
@@ -196,6 +196,10 @@
         {
           "title": "Contributors",
           "href": "/contributing/contributors"
+        },
+        {
+          "title": "Security",
+          "href": "https://github.com/Arenukvern/mcp_flutter/blob/main/SECURITY.md"
         },
         {
           "title": "Docs Maintenance",

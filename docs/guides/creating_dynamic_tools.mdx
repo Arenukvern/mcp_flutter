@@ -6,14 +6,87 @@ This guide will walk you through the process of creating and registering your fi
 
 Make sure you have followed the [execution playbook](/ai_agents/execution_playbook) and have the MCP server and a Flutter app running.
 
-### 2. Create the Tool
+### 2. Create the Entry
 
-In your Flutter app, create a new file called `lib/my_tools.dart` and add the following code:
+In your Flutter app, create a new file called `lib/my_tools.dart` and add the
+following code:
 
 ```dart
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 
-void registerMyTools() {
+Set<AgentCallEntry> buildMyTools() {
+  return {
+    AgentCallEntry.tool(
+      namespace: 'app',
+      name: 'hello',
+      description: 'A simple tool that says hello.',
+      inputSchema: const {
+        'type': 'object',
+        'additionalProperties': false,
+        'properties': {},
+      },
+      handler: (_) async => AgentResult.success(
+        message: 'Hello from a dynamic tool!',
+      ),
+    ),
+  };
+}
+```
+
+Use `AgentCallEntry.resource` instead when the surface is read-only and
+idempotent, such as app configuration, current route, or compact diagnostics.
+
+### 3. Register At Bootstrap
+
+In your `lib/main.dart` file, pass the entries to `bootstrapFlutter`:
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:mcp_toolkit/mcp_toolkit.dart';
+import 'my_tools.dart';
+
+Future<void> main() async {
+  await MCPToolkitBinding.instance.bootstrapFlutter(
+    additionalEntries: buildMyTools(),
+    runApp: () => runApp(const MyApp()),
+  );
+}
+```
+
+`bootstrapFlutter` performs `WidgetsFlutterBinding.ensureInitialized()`,
+initializes the toolkit, registers entries once, forwards zone errors, and then
+runs the app.
+
+### 4. Verify And Use The Tool
+
+Hot restart after changing registrations, then list the app-owned dynamic
+surfaces:
+
+```json
+{
+  "name": "fmt_list_client_tools_and_resources",
+  "arguments": {}
+}
+```
+
+Invoke by the exact tool name from the listing:
+
+```json
+{
+  "name": "fmt_client_tool",
+  "arguments": {
+    "toolName": "hello",
+    "arguments": {}
+  }
+}
+```
+
+### Lower-Level Registration
+
+Use `addEntries` directly only when the app needs custom startup choreography:
+
+```dart
+Future<void> registerMyTools() async {
   final helloTool = AgentCallEntry.tool(
     namespace: 'app',
     name: 'hello',
@@ -27,32 +100,14 @@ void registerMyTools() {
       message: 'Hello from a dynamic tool!',
     ),
   );
-
-  addMcpTool(helloTool);
+  await MCPToolkitBinding.instance.addEntries(entries: {helloTool});
 }
 ```
-
-### 3. Register the Tool
-
-In your `lib/main.dart` file, import `my_tools.dart` and call `registerMyTools()` in your `main` function:
-
-```dart
-import 'package:flutter/material.dart';
-import 'package:mcp_toolkit/mcp_toolkit.dart';
-import 'my_tools.dart';
-
-void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-  MCPToolkitBinding.instance.initialize();
-  registerMyTools();
-  runApp(const MyApp());
-}
-```
-
-### 4. Hot Reload and Use the Tool
-
-Save your changes and hot reload the app. Now, you can ask your AI assistant to run the `hello` tool. It should respond with "Hello from a dynamic tool!".
 
 ### Server-side registry (intentcall)
 
 On the MCP server, dynamic tools are stored as `RegisteredAgentIntent` entries in `DynamicRegistry` (not raw `dart_mcp.Tool` handlers). MCP publish still uses the tool schema for listing; invocation routes through `AgentRegistry.invoke` and VM extension forwarding.
+
+Change app-owned Flutter registration here. Change reusable registry/session
+semantics, schema policy, or platform publication behavior in the upstream
+IntentCall repository.

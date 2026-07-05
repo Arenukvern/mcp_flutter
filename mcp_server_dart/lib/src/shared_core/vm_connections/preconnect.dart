@@ -1,16 +1,17 @@
 // Copyright (c) 2025, Flutter Inspector MCP Server authors.
 // Licensed under the MIT License.
 
-import 'package:flutter_mcp_toolkit_server/src/cli/session/session_manager.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/agent_result_mapper.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/command_executor.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/commands/commands.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/types/results.dart';
+import 'package:intentcall_session/intentcall_session.dart';
 
 /// Shared pre-connect policy for CLI one-shot, daemon requests, and snapshots.
 Future<CoreResult?> preconnectForExecution({
   required final CoreCommand command,
   required final DefaultCoreCommandExecutor executor,
-  required final SessionManager? sessionManager,
+  required final IntentSessionManager? sessionManager,
   final ConnectCommand? explicitConnectionOverride,
   final String? explicitVmServiceUri,
 }) async {
@@ -44,8 +45,10 @@ Future<CoreResult?> preconnectForExecution({
 
   final requestedSessionId = _sessionIdForCommand(command);
   if (requestedSessionId != null && requestedSessionId.isNotEmpty) {
-    final explicitAttach = await manager.attachSession(
-      sessionId: requestedSessionId,
+    final explicitAttach = coreResultFromAgentResult(
+      await manager.attachSession(
+        IntentSessionAttachRequest(sessionId: requestedSessionId),
+      ),
     );
     if (!explicitAttach.ok) {
       return explicitAttach;

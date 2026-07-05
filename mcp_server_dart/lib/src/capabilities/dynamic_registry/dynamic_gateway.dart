@@ -6,13 +6,18 @@
 import 'dart:convert';
 
 import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
+import 'package:flutter_mcp_toolkit_server/src/capabilities/dynamic_registry/dynamic_result_normalizer.dart';
 import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_consts.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/vm_connections/connection_context.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
 import 'package:intentcall_schema/intentcall_schema.dart';
 import 'package:is_dart_empty_or_not/is_dart_empty_or_not.dart';
 
-/// Dynamic registry behavior adapter used by the shared command executor.
+/// Flutter dynamic invocation adapter used by the shared command executor.
+///
+/// IntentCall owns registry and invocation semantics. This server-local gateway
+/// is only the Flutter transport bridge for VM extension and in-process MCP
+/// registry adapters.
 abstract interface class CoreDynamicGateway {
   Future<CoreResult> listClientToolsAndResources();
 
@@ -205,25 +210,15 @@ final class VmExtensionDynamicGateway implements CoreDynamicGateway {
         );
       }
 
-      final payload = <String, Object?>{...json}
-        ..remove('content')
-        ..remove('mimeType')
-        ..remove('blob')
-        ..remove('isBlob');
-      final message = jsonDecodeString(payload['message']);
-      payload.remove('message');
-      final normalizedPayload = <String, Object?>{
-        if (message.isNotEmpty) 'message': message,
-        if (payload.isNotEmpty) 'parameters': payload,
-      };
+      final normalized = normalizeDynamicTextResourcePayload(json);
 
       return CoreResult.success(
         data: {
           'uri': resourceUri,
-          'content': jsonEncode(normalizedPayload),
+          'content': normalized.content,
           'mimeType': 'application/json',
-          if (message.isNotEmpty) 'message': message,
-          if (payload.isNotEmpty) 'payload': payload,
+          if (normalized.message.isNotEmpty) 'message': normalized.message,
+          if (normalized.payload.isNotEmpty) 'payload': normalized.payload,
         },
       );
     } catch (e) {

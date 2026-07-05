@@ -131,6 +131,7 @@ void main() {
           flutterDiscoveryTimeoutMs: 2500,
         ),
       );
+      // ignore: invalid_use_of_protected_member
       server.initializeDynamicRegistry(mcpToolkitServer: server);
       registry = server.dynamicRegistryForTesting!;
     });

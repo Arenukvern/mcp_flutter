@@ -115,10 +115,10 @@ rewrite). CLI equivalent: `flutter-mcp-toolkit migrate agent-entries`.
 
 IntentCall now lives outside this repository. Normal consumer state uses hosted `intentcall_*` packages.
 
-1. Use hosted `intentcall_*: ^0.1.0` dependencies for committed consumer state.
-2. Use local path overrides only for deliberate cross-repo development against `/Users/anton/mcp/agentkit`.
+1. Use hosted `intentcall_*: ^0.6.0` dependencies for committed consumer state.
+2. Use local path overrides only for deliberate cross-repo development against a local IntentCall checkout.
 3. Run `flutter pub get` and `migrate agent-entries --check` again after dependency changes.
-4. CI: use `make check-intentcall-integration` in `mcp_flutter`; package matrix ownership lives in the IntentCall repo.
+4. CI: use `make check-intentcall-hosted-consumer` for hosted `mcp_flutter` proof; use `make check-intentcall-sibling-matrix` only for deliberate local IntentCall checkout matrix proof. The historical `make check-intentcall-integration` target is a compatibility alias for the sibling-matrix lane, not a fresh-adopter hosted gate.
 
 ## Related skills
 

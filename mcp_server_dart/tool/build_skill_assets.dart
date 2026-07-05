@@ -15,6 +15,7 @@ const expectedSkillIds = [
   'flutter-mcp-toolkit-control',
   'flutter-mcp-toolkit-debug',
   'flutter-mcp-toolkit-custom-tools',
+  'flutter-mcp-boundary-audit',
   'flutter-mcp-toolkit-intentcall-migration',
   'flutter-mcp',
   'flutter-mcp-cli-runtime-validation',
@@ -30,6 +31,21 @@ void main() {
   final pluginDir = Directory('${repoRoot.path}/plugin');
   if (!pluginDir.existsSync()) {
     stderr.writeln('plugin/ not found at ${pluginDir.path}');
+    exit(1);
+  }
+
+  final actualSkillIds = _discoverSkillIds(pluginDir);
+  final expected = expectedSkillIds.toSet();
+  final extra = actualSkillIds.difference(expected).toList()..sort();
+  final missing = expected.difference(actualSkillIds).toList()..sort();
+  if (extra.isNotEmpty || missing.isNotEmpty) {
+    if (extra.isNotEmpty) {
+      stderr.writeln('Unexpected plugin skills: ${extra.join(', ')}');
+    }
+    if (missing.isNotEmpty) {
+      stderr.writeln('Missing plugin skills: ${missing.join(', ')}');
+    }
+    stderr.writeln('Update expectedSkillIds or plugin/skills before syncing.');
     exit(1);
   }
 
@@ -72,6 +88,17 @@ void main() {
     ),
   );
   stdout.writeln('Wrote ${out.path}');
+}
+
+Set<String> _discoverSkillIds(final Directory pluginDir) {
+  final skillsDir = Directory('${pluginDir.path}/skills');
+  if (!skillsDir.existsSync()) return const <String>{};
+  return skillsDir
+      .listSync()
+      .whereType<Directory>()
+      .where((final dir) => File('${dir.path}/SKILL.md').existsSync())
+      .map((final dir) => dir.path.split(Platform.pathSeparator).last)
+      .toSet();
 }
 
 class _Skill {

@@ -53,6 +53,8 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
       );
     }
 
+    // Dynamic registration is a debug/profile VM-service surface; release apps
+    // should not depend on these service extensions being present.
     assert(() {
       final allEntries = {..._allEntries, ...entries};
       final uniqueEntries = <AgentCallEntry>{};
@@ -114,6 +116,7 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
     final Map<String, String> parameters,
   ) => parameters.map(MapEntry<String, Object?>.new)..remove('isolateId');
 
+  /// Posts the debug-only DTD event consumed by Flutter MCP dynamic discovery.
   void _postToolRegistrationEvent(final Set<AgentCallEntry> newEntries) {
     if (newEntries.isEmpty) return;
 

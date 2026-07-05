@@ -9,7 +9,7 @@ Three layers (not “MCP server only”):
 ```text
 AI agent
     │
-    ├─► flutter-mcp-toolkit-server (27 fmt_* tools: inspect, control, debug)
+    ├─► flutter-mcp-toolkit-server (30 fmt_* tools: inspect, control, debug)
     │
     └─► fmt_list_client_tools_and_resources / fmt_client_tool / fmt_client_resource
               │
@@ -32,7 +32,7 @@ AI agent
 
 All paths materialize from the embedded skill bundle generated from this directory (`make sync-skills`).
 
-## Bundled skills (11)
+## Bundled skills (14)
 
 | Skill | Purpose |
 |-------|---------|
@@ -42,13 +42,18 @@ All paths materialize from the embedded skill bundle generated from this directo
 | `flutter-mcp-toolkit-control` | Drive UI |
 | `flutter-mcp-toolkit-debug` | Diagnose failures |
 | **`flutter-mcp-toolkit-custom-tools`** | **Register dynamic MCP tools/resources in the app** |
+| `flutter-mcp-boundary-audit` | Contract/schema boundary audit for tool registration, dynamic registry, CLI/MCP parity, migrators, and platform docs |
 | `flutter-mcp` | Golden-path runtime loop |
 | `flutter-mcp-cli-runtime-validation` | CLI `validate-runtime` |
+| `flutter-mcp-toolkit-intentcall-migration` | Legacy call-entry to `AgentCallEntry` migration |
+| `flutter-mcp-toolkit-maintain-web` | `flutter_test_app` web / WebMCP maintenance |
+| `flutter-mcp-toolkit-maintain-macos` | `flutter_test_app` macOS native / IntentCall maintenance |
+| `flutter-mcp-toolkit-dogfood-iterations` | Dogfood iteration scoring and artifact routing |
 | `flutter-mcp-toolkit-repo-maintainer` | Release / repo maintenance |
-| **`flutter-mcp-semantic-test`** | **HS lint / run / Maestro adapter** |
-| **`flutter-mcp-capture`** | **HS capture bundles + hyperframes-v1 emit stub** |
 
-**Optional (not in default init):** `hyperframes-video` — promo/HyperFrames pipeline; gather tools in [`tools/frame-gather/`](../../tools/frame-gather/) — [skill](skills/hyperframes-video/SKILL.md)
+Harness and video-production skills live in their owner repositories. This
+plugin only ships the Flutter MCP Toolkit runtime, maintenance, migration, and
+boundary-audit skills listed above.
 
 Store listing copy: [docs/ai_agents/marketplace_copy.yaml](../docs/ai_agents/marketplace_copy.yaml).
 

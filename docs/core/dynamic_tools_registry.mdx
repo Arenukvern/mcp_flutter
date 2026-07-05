@@ -2,6 +2,11 @@
 
 Dynamic Tool Registry lets your Flutter app expose app-specific MCP tools/resources at runtime, without rebuilding the MCP server.
 
+`mcp_flutter` owns the Flutter bridge: VM-service extensions, DTD discovery,
+`fmt_*` tools, and app-owned debug surfaces. Canonical IntentCall registry,
+session, schema, platform projection, and publish semantics live upstream in
+the IntentCall repository.
+
 ## Why It Exists
 
 Built-in MCP tools are generic. Real projects usually need custom actions like:
@@ -75,17 +80,12 @@ import 'package:flutter/material.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  MCPToolkitBinding.instance
-    ..initialize()
-    ..initializeFlutterToolkit();
-
-  if (kDebugMode) {
-    await registerDynamicEntries();
-  }
-
-  runApp(const MyApp());
+  await MCPToolkitBinding.instance.bootstrapFlutter(
+    additionalEntries: kDebugMode
+        ? await buildDynamicEntries()
+        : const <AgentCallEntry>{},
+    runApp: () => runApp(const MyApp()),
+  );
 }
 ```
 
@@ -94,6 +94,35 @@ Future<void> main() async {
 ```dart
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 
+Future<Set<AgentCallEntry>> buildDynamicEntries() async {
+  return {
+    AgentCallEntry.tool(
+      namespace: 'app',
+      name: 'say_hello',
+      description: 'Return a greeting for a provided name',
+      inputSchema: const {
+        'type': 'object',
+        'additionalProperties': false,
+        'properties': {
+          'name': {'type': 'string'},
+        },
+      },
+      handler: (final args) async {
+        final name = args['name']?.toString() ?? 'World';
+        return AgentResult.success(
+          message: 'Hello, $name!',
+          data: {'greeting': 'Hello, $name!'},
+        );
+      },
+    ),
+  };
+}
+```
+
+If the app cannot use `bootstrapFlutter`, register once after `initialize()` and
+`initializeFlutterToolkit()`:
+
+```dart
 Future<void> registerDynamicEntries() async {
   final sayHello = AgentCallEntry.tool(
     namespace: 'app',
@@ -121,7 +150,7 @@ Future<void> registerDynamicEntries() async {
 
 ## Register A Dynamic Resource
 
-`MCPResourceDefinition` is name-based. URI is derived from `name`:
+`AgentCallEntry.resource` is name-based. URI is derived from `name`:
 
 - `app_config` -> `visual://localhost/app/config`
 - `user_debug_state` -> `visual://localhost/user/debug/state`

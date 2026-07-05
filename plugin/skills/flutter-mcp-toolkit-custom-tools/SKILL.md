@@ -11,6 +11,11 @@ Use this when bundled MCP tools (screenshot, semantic snapshot, tap, …) are no
 
 > **Migration:** The legacy call-entry type was removed in intentcall Phase 6b. Use **`AgentCallEntry`** or **`mcpToolkitTool` / `mcpToolkitResource`**. See **`flutter-mcp-toolkit-intentcall-migration`**.
 
+> **Boundary:** Change app discovery, Flutter VM-service extensions, or
+> app-owned debug surfaces here. Change canonical registry/session semantics,
+> schema policy, platform projection, or publish behavior in the upstream
+> IntentCall repository.
+
 ## Pick the right primitive
 
 | Need | Use |

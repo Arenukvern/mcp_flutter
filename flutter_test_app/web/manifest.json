@@ -38,6 +38,24 @@
             "short_name": "Demo Ping",
             "description": "Demo ping tool for WebMCP platform sync",
             "url": "/agent/invoke?name=app_demo_ping"
+        },
+        {
+            "name": "Intentcall Bridge Ping",
+            "short_name": "Intentcall Bridge Ping",
+            "description": "Proof that native/WebMCP dispatch executes Dart registry logic",
+            "url": "/agent/invoke?name=app_intentcall_bridge_ping"
+        },
+        {
+            "name": "Set Greeting",
+            "short_name": "Set Greeting",
+            "description": "Fill the showcase greeting field with text",
+            "url": "/agent/invoke?name=app_set_greeting"
+        },
+        {
+            "name": "Enable Switch",
+            "short_name": "Enable Switch",
+            "description": "Enable the showcase feature switch",
+            "url": "/agent/invoke?name=app_enable_switch"
         }
     ],
     "protocol_handlers": [
@@ -48,6 +66,18 @@
         {
             "protocol": "web+intentcall",
             "url": "/agent/invoke?name=app_demo_ping&payload=%s"
+        },
+        {
+            "protocol": "web+intentcall",
+            "url": "/agent/invoke?name=app_intentcall_bridge_ping&payload=%s"
+        },
+        {
+            "protocol": "web+intentcall",
+            "url": "/agent/invoke?name=app_set_greeting&payload=%s"
+        },
+        {
+            "protocol": "web+intentcall",
+            "url": "/agent/invoke?name=app_enable_switch&payload=%s"
         }
     ]
 }

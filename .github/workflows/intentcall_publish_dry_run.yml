@@ -1,9 +1,8 @@
-# Publish dry-run moved to the standalone intentcall repository:
-#   https://github.com/<org>/intentcall — workflow .github/workflows/ci.yml
-#
-# mcp_flutter consumers use path deps to ../agentkit until Phase 7.5 hosted cutover.
+# IntentCall publishing is owned by the standalone IntentCall repository.
+# This consumer repository keeps only a moved notice so old manual workflow links
+# do not look like a live mcp_flutter publishing lane.
 
-name: intentcall publish dry-run (moved)
+name: intentcall publish ownership notice
 
 on:
   workflow_dispatch:
@@ -13,5 +12,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          echo "Run publish dry-run in the intentcall repo: make publish-dry-run"
+          echo "IntentCall publish dry-run is not owned by mcp_flutter."
+          echo "Run publish checks in the IntentCall repository release workflow."
           exit 0

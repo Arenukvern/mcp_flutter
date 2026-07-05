@@ -381,7 +381,10 @@ void main() {
           'mode': 'auto',
           'permissionPolicy': 'auto_request_once',
         });
-        final autoEnvelope = _decodeToolEnvelope(autoScreenshots);
+        final autoEnvelope = _decodeToolEnvelope(
+          autoScreenshots,
+          useLastText: true,
+        );
         final autoPermission =
             (autoEnvelope['errorDetails'] as Map?)?['permission'];
         final autoRequestedMode =
@@ -633,11 +636,14 @@ Map<String, dynamic> _decodeToolEnvelope(
       envelope['code'] is String &&
       envelope['message'] is String) {
     final details = envelope['details'];
-    final permission = details is Map ? details['permission'] : null;
+    final errorDetails = details is Map && details['details'] is Map
+        ? details['details']
+        : details;
+    final permission = errorDetails is Map ? errorDetails['permission'] : null;
     return <String, dynamic>{
       'ok': false,
       'errorCode': envelope['code'],
-      'errorDetails': details,
+      'errorDetails': errorDetails,
       'requestedMode': permission is Map ? permission['requestedMode'] : null,
       'actualMode': permission is Map ? permission['actualMode'] : null,
     };

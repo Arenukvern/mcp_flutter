@@ -4,6 +4,13 @@ We welcome pull requests and issues on [GitHub](https://github.com/Arenukvern/mc
 
 **Full guide (setup, commits, releases, PR checklist):** [docs/contributing/contribution_guide.mdx](docs/contributing/contribution_guide.mdx) · [docs.page](https://docs.page/Arenukvern/mcp_flutter/contributing/contribution_guide)
 
+## Contributor links
+
+- Contributor credit: [docs/contributing/contributors.mdx](docs/contributing/contributors.mdx)
+- Docs maintenance: [docs/contributing/docs_maintenance.mdx](docs/contributing/docs_maintenance.mdx)
+- Code of conduct: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
+- Security reporting: [SECURITY.md](SECURITY.md)
+
 ## Maintainers
 
 ### Release legibility (cross-repo contract)

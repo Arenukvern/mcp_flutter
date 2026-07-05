@@ -1,0 +1,7 @@
+{
+  "app_screen": {
+    "identifier": "greeting_form",
+    "search": "Greeting Form",
+    "expectedTitle": "Greeting Form"
+  }
+}

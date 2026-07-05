@@ -18,6 +18,7 @@ web_port="${WEB_PORT:-8080}"
 vm_port="${VM_HOST_PORT:-8181}"
 flutter_route="${FLUTTER_ROUTE:-}"
 dogfood_visual="${DOGFOOD_VISUAL:-}"
+canvaskit_url="${WEB_CANVASKIT_URL:-}"
 detach=false
 
 usage() {
@@ -55,6 +56,13 @@ if [[ "${dogfood_visual}" == "1" || "${dogfood_visual}" == "true" ]]; then
   dart_define_args=(--dart-define=DOGFOOD_VISUAL=true)
   printf '[web-showcase] DOGFOOD_VISUAL=true (initialRoute /visual-reconstruct)\n'
 fi
+if [[ -n "${canvaskit_url}" ]]; then
+  dart_define_args+=(--dart-define="FLUTTER_WEB_CANVASKIT_URL=${canvaskit_url}")
+  printf '[web-showcase] FLUTTER_WEB_CANVASKIT_URL=%s\n' "${canvaskit_url}"
+else
+  printf '[web-showcase] using local Flutter web resources (--no-web-resources-cdn)\n'
+  flutter_args+=(--no-web-resources-cdn)
+fi
 
 flutter_args=(
   run -d chrome
@@ -88,7 +96,7 @@ for _ in $(seq 1 180); do
     tail -40 "${log}" >&2
     exit 1
   fi
-  ws_uri="$(grep -Eo 'ws://127\.0\.0\.1:[0-9]+/[A-Za-z0-9_=-]+/ws' "${log}" | tail -1 || true)"
+  ws_uri="$(grep -aEo 'ws://127\.0\.0\.1:[0-9]+/[A-Za-z0-9_=-]+/ws' "${log}" | tail -1 || true)"
   if [[ -n "${ws_uri}" ]]; then
     if [[ "${detach}" == true ]]; then
       if grep -q "${ready_pattern}" "${log}"; then

@@ -5,7 +5,7 @@ import 'dart:io';
 import 'package:flutter_mcp_toolkit_server/src/capabilities/visual_capture/web_cdp_discovery.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
-/// Chromium flags to expose `navigator.modelContext` for WebMCP E2E (pre-stable).
+/// Chromium flags to expose WebMCP `modelContext` for E2E (pre-stable).
 ///
 /// Pass each via Flutter: `flutter run -d chrome --web-browser-flag="<flag>"`.
 const kWebmcpChromeBrowserFlags = <String>[
@@ -54,10 +54,14 @@ Future<int> runWebmcpChromeArgs({
   return 0;
 }
 
-/// Probes live Chrome via CDP for `navigator.modelContext`.
+/// Probes live Chrome via CDP for WebMCP `document.modelContext`.
 Future<int> runWebmcpVerify({
   final int? cdpPort,
   final int preferredWebPort = 8080,
+  final String? toolName,
+  final Map<String, Object?> toolArguments = const <String, Object?>{},
+  final String? expectResultField,
+  final Object? expectResultValue,
   final Duration timeout = const Duration(seconds: 8),
 }) async {
   final ports = <int>{};
@@ -93,15 +97,15 @@ Future<int> runWebmcpVerify({
       wsUrl: wsUrl,
       expression: '''
 (() => {
-  function probeNav(nav, source) {
-    if (!nav) return null;
-    const has = 'modelContext' in nav;
-    const reg = has && typeof nav.modelContext.registerTool === 'function';
+  function probeOwner(owner, source) {
+    if (!owner) return null;
+    const has = 'modelContext' in owner;
+    const reg = has && typeof owner.modelContext.registerTool === 'function';
     let toolCount = null;
-    if (has && typeof nav.modelContextTesting !== 'undefined' &&
-        typeof nav.modelContextTesting.getTools === 'function') {
+    if (has && typeof owner.modelContextTesting !== 'undefined' &&
+        typeof owner.modelContextTesting.getTools === 'function') {
       try {
-        toolCount = nav.modelContextTesting.getTools().length;
+        toolCount = owner.modelContextTesting.getTools().length;
       } catch (e) {
         toolCount = -1;
       }
@@ -109,13 +113,16 @@ Future<int> runWebmcpVerify({
     return { hasModelContext: has, registerTool: reg, testingToolCount: toolCount, source: source };
   }
   const candidates = [
-    probeNav(globalThis.navigator, 'globalThis'),
-    probeNav(window.navigator, 'window'),
-    probeNav(document.defaultView && document.defaultView.navigator, 'defaultView'),
+    probeOwner(document, 'document'),
+    probeOwner(globalThis.document, 'globalThis.document'),
+    probeOwner(globalThis.navigator, 'globalThis.navigator'),
+    probeOwner(window.navigator, 'window.navigator'),
+    probeOwner(document.defaultView && document.defaultView.navigator, 'defaultView.navigator'),
   ].filter(Boolean);
   for (const frame of Array.from(document.querySelectorAll('iframe'))) {
     try {
-      candidates.push(probeNav(frame.contentWindow && frame.contentWindow.navigator, 'iframe'));
+      candidates.push(probeOwner(frame.contentDocument, 'iframe.document'));
+      candidates.push(probeOwner(frame.contentWindow && frame.contentWindow.navigator, 'iframe.navigator'));
     } catch (e) {}
   }
   const active = candidates.find((p) => p.hasModelContext && p.registerTool) || candidates[0];
@@ -126,17 +133,34 @@ Future<int> runWebmcpVerify({
     );
 
     final cdpOk = probe != null && _probeIndicatesWebmcpActive(probe);
+    final toolProof = cdpOk && toolName != null
+        ? await _cdpInvokeWebMcpTool(
+            wsUrl: wsUrl,
+            toolName: toolName,
+            arguments: toolArguments,
+            expectResultField: expectResultField,
+            expectResultValue: expectResultValue,
+            timeout: timeout,
+          )
+        : null;
     final logEvidence = _webmcpLogEvidence();
-    final ok = cdpOk || logEvidence;
+    final ok = toolName == null
+        ? cdpOk || logEvidence
+        : toolProof?['ok'] == true && toolProof?['fetchCalled'] == false;
     stdout.writeln(
       jsonEncode(<String, Object?>{
         'ok': ok,
         'cdpPort': port,
         'pageUrl': page?['url'],
         'probe': probe,
+        'toolProof': ?toolProof,
         'logEvidence': logEvidence,
         'verdict': cdpOk
-            ? 'webmcp_active'
+            ? toolName == null
+                  ? 'webmcp_active'
+                  : ok
+                  ? 'webmcp_tool_invoked'
+                  : 'webmcp_tool_invoke_failed'
             : logEvidence
             ? 'webmcp_active_log_evidence'
             : 'webmcp_inactive',
@@ -155,6 +179,120 @@ Future<int> runWebmcpVerify({
     }),
   );
   return 1;
+}
+
+Future<Map<String, Object?>?> _cdpInvokeWebMcpTool({
+  required final Uri wsUrl,
+  required final String toolName,
+  required final Map<String, Object?> arguments,
+  required final String? expectResultField,
+  required final Object? expectResultValue,
+  required final Duration timeout,
+}) {
+  final expression =
+      '''
+(async () => {
+  const win = globalThis.window || globalThis;
+  const doc = win.document || globalThis.document;
+  const nav = globalThis.navigator || win.navigator;
+  const testing = (doc && doc.modelContextTesting) ||
+      (globalThis.document && globalThis.document.modelContextTesting) ||
+      (nav && nav.modelContextTesting) ||
+      win.modelContextTesting ||
+      (doc && doc.defaultView && doc.defaultView.navigator &&
+       doc.defaultView.navigator.modelContextTesting);
+  if (!testing || typeof testing.getTools !== 'function') {
+    const hook = globalThis.__intentcallWebMcpDartExecute;
+    if (typeof hook !== 'function') {
+      return { ok: false, code: 'testing_api_unavailable' };
+    }
+    let fetchCalled = false;
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = function() {
+      fetchCalled = true;
+      return originalFetch.apply(this, arguments);
+    };
+    try {
+      const result = await hook(${jsonEncode(toolName)}, ${jsonEncode(arguments)});
+      const expectedField = ${jsonEncode(expectResultField)};
+      const expectedValue = ${jsonEncode(expectResultValue)};
+      const fieldValue = expectedField ? result && result[expectedField] : null;
+      const expectationMet = expectedField ? fieldValue === expectedValue : true;
+      return {
+        ok: expectationMet,
+        code: expectationMet
+            ? 'dart_hook_invoked_testing_api_unavailable'
+            : 'unexpected_result',
+        toolName: ${jsonEncode(toolName)},
+        names: null,
+        result,
+        fetchCalled,
+        expectedField,
+        expectedValue,
+        fieldValue,
+      };
+    } catch (e) {
+      return {
+        ok: false,
+        code: 'dart_hook_execute_error_testing_api_unavailable',
+        message: String(e),
+        toolName: ${jsonEncode(toolName)},
+        names: null,
+        fetchCalled,
+      };
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  }
+  const tools = testing.getTools();
+  const names = tools.map((tool) => tool.name);
+  const tool = tools.find((candidate) => candidate.name === ${jsonEncode(toolName)});
+  if (!tool || typeof tool.execute !== 'function') {
+    return { ok: false, code: 'tool_missing', names };
+  }
+  let fetchCalled = false;
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = function() {
+    fetchCalled = true;
+    return originalFetch.apply(this, arguments);
+  };
+  try {
+    const result = await tool.execute(${jsonEncode(arguments)});
+    const expectedField = ${jsonEncode(expectResultField)};
+    const expectedValue = ${jsonEncode(expectResultValue)};
+    const fieldValue = expectedField ? result && result[expectedField] : null;
+    const expectationMet = expectedField ? fieldValue === expectedValue : true;
+    return {
+      ok: expectationMet,
+      code: expectationMet ? 'tool_invoked' : 'unexpected_result',
+      toolName: ${jsonEncode(toolName)},
+      names,
+      result,
+      fetchCalled,
+      expectedField,
+      expectedValue,
+      fieldValue,
+    };
+  } catch (e) {
+    return {
+      ok: false,
+      code: 'tool_execute_error',
+      message: String(e),
+      toolName: ${jsonEncode(toolName)},
+      names,
+      fetchCalled,
+    };
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+})()
+''';
+  return _cdpEvaluate(
+    wsUrl: wsUrl,
+    expression: expression,
+    timeout: timeout,
+    awaitPromise: true,
+  );
 }
 
 Map<String, Object?>? _probeFromEvaluateResponse(
@@ -211,6 +349,7 @@ Future<Map<String, Object?>?> _cdpEvaluate({
   required final Uri wsUrl,
   required final String expression,
   required final Duration timeout,
+  final bool awaitPromise = false,
 }) async {
   WebSocketChannel? channel;
   StreamSubscription<dynamic>? sub;
@@ -281,7 +420,7 @@ Future<Map<String, Object?>?> _cdpEvaluate({
       final params = <String, Object?>{
         'expression': expression,
         'returnByValue': true,
-        'awaitPromise': false,
+        'awaitPromise': awaitPromise,
         'contextId': ?contextId,
       };
       final result = await send(<String, Object?>{

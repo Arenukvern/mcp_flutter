@@ -161,8 +161,8 @@ class MCPToolkitBinding extends MCPToolkitBindingBase
 
   /// Initializes the MCP Toolkit binding.
   ///
-  /// Registers service extensions that can be called by the MCP server
-  /// through the Dart VM service.
+  /// Registers debug/profile service extensions that can be called by the MCP
+  /// server through the Dart VM service.
   Future<void> addEntries({required final Set<AgentCallEntry> entries}) async {
     assert(() {
       initializeServiceExtensions(errorMonitor: this, entries: entries);

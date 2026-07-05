@@ -57,7 +57,7 @@ Common codes and recovery:
 
 - `connection_selection_required` — retry with `arguments.connection.targetId` or exact `arguments.connection.uri` from `app.debugPort.wsUri`.
 - `target_not_found` — refresh targets, then prefer exact `arguments.connection.uri`.
-- `stale_snapshot` — call `fmt_semantic_snapshot` again, then retry the action with the new `snapshot_id`.
+- `stale_snapshot` — call `fmt_semantic_snapshot` again, then retry the action with the new `snapshotId` input.
 - `tool_not_found` — confirm the prefixed name (`fmt_<tool>`); v3.0.0 dropped legacy unprefixed names.
 - Empty screenshot output — verify the server was not started with `--no-images`.
 - Missing view resource/tool — verify the server was not started with `--no-resources`.

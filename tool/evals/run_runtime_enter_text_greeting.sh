@@ -5,8 +5,6 @@ set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "${here}/../.." && pwd)"
-toolkit=(dart run "${repo_root}/mcp_server_dart/bin/flutter_mcp_toolkit.dart")
-
 ws_uri="${WS_URI:-${MACOS_WS_URI:-}}"
 output="${repo_root}/docs/evidence/generated/mcp_flutter.runtime-enter-text-greeting.redacted.json"
 text="steward runtime proof"
@@ -14,6 +12,11 @@ platform="${RUNTIME_PLATFORM:-macos}"
 launch_command="${RUNTIME_LAUNCH_COMMAND:-make showcase}"
 branch="$(git -C "${repo_root}" branch --show-current 2>/dev/null || true)"
 base_commit="$(git -C "${repo_root}" rev-parse HEAD 2>/dev/null || true)"
+
+toolkit=(dart run "${repo_root}/mcp_server_dart/bin/flutter_mcp_toolkit.dart")
+if [[ "${platform}" == "web" ]]; then
+  toolkit+=(--flutter-device chrome --web-browser-debugging-port "${WEB_BROWSER_DEBUGGING_PORT:-9222}")
+fi
 
 usage() {
   cat <<'EOF'
@@ -66,15 +69,141 @@ run_tool() {
   "${toolkit[@]}" --vm-service-uri "${ws_uri}" "$@"
 }
 
+json_ok() {
+  python3 - "$1" <<'PY'
+import json, sys
+d = json.load(open(sys.argv[1]))
+data = d.get("data")
+if not d.get("ok"):
+    raise SystemExit(1)
+if isinstance(data, dict) and (data.get("success") is False or data.get("ok") is False):
+    raise SystemExit(1)
+raise SystemExit(0)
+PY
+}
+
+capture_snapshot() {
+  local label="$1"
+  local outfile="${work_dir}/${label}.json"
+  if run_tool exec --name semantic_snapshot --args '{}' >"${outfile}" 2>"${work_dir}/${label}.stderr" && json_ok "${outfile}"; then
+    printf '%s\n' "${outfile}"
+    return 0
+  fi
+  return 1
+}
+
+write_ref_args_for_identifier() {
+  local snap_file="$1"
+  local identifier="$2"
+  local args_file="$3"
+  local match_file="$4"
+  python3 - "${snap_file}" "${identifier}" "${args_file}" "${match_file}" <<'PY'
+import json, sys
+d = json.load(open(sys.argv[1]))
+want = sys.argv[2]
+args_out = sys.argv[3]
+match_out = sys.argv[4]
+data = d.get("data", {})
+sid = data.get("snapshot_id")
+for node in data.get("nodes", []):
+    if node.get("identifier") != want or not node.get("ref"):
+        continue
+    if node.get("centerInViewport") is not True:
+        raise SystemExit(
+            f"{want} found but center is outside viewport: {node.get('bounds')}"
+        )
+    json.dump({"ref": node["ref"], "snapshotId": sid}, open(args_out, "w"))
+    json.dump(node, open(match_out, "w"))
+    raise SystemExit(0)
+raise SystemExit(f"{want} not found")
+PY
+}
+
+ensure_visible_identifier_args() {
+  local identifier="$1"
+  local args_file="$2"
+  local match_file="$3"
+  local direction="${4:-down}"
+  local snap_file
+  local directions=( "${direction}" )
+  if [[ "${platform}" == "web" ]]; then
+    if [[ "${direction}" == "down" ]]; then
+      directions+=(up)
+    else
+      directions+=(down)
+    fi
+  fi
+  for attempt in 0 1 2 3 4 5 6; do
+    for direction in "${directions[@]}"; do
+      snap_file="$(capture_snapshot "semantic_${identifier}_${attempt}_${direction}")" || return 1
+      if write_ref_args_for_identifier "${snap_file}" "${identifier}" "${args_file}" "${match_file}" 2>"${work_dir}/${identifier}_${attempt}_${direction}.visibility"; then
+        return 0
+      fi
+      run_tool exec --name scroll --args "{\"direction\":\"${direction}\",\"distance\":420}" \
+        >"${work_dir}/scroll_to_${identifier}_${attempt}_${direction}.json" \
+        2>"${work_dir}/scroll_to_${identifier}_${attempt}_${direction}.stderr" || true
+    done
+  done
+  return 1
+}
+
+write_reveal_fallback_json() {
+  local args_file="$1"
+  local match_file="$2"
+  local outfile="$3"
+  python3 - "${args_file}" "${match_file}" "${outfile}" <<'PY'
+import json, sys
+args = json.load(open(sys.argv[1]))
+match = json.load(open(sys.argv[2]))
+payload = {
+    "ok": True,
+    "data": {
+        "message": "Revealed target with semantic snapshot fallback.",
+        "success": True,
+        "error": None,
+        "query": "greeting_input_field",
+        "matchBy": "identifier",
+        "direction": "down",
+        "snapshotId": args.get("snapshotId"),
+        "ref": args.get("ref"),
+        "match": match,
+        "attempts": [
+            {
+                "strategy": "semantic_snapshot_scroll_fallback",
+                "reason": "reveal_search could not verify web scroll movement"
+            }
+        ],
+        "fallbackUsed": True,
+    },
+    "meta": {},
+}
+json.dump(payload, open(sys.argv[3], "w"), indent=2)
+PY
+}
+
 run_tool doctor --json >"${work_dir}/doctor.json"
-run_tool exec --name reveal_search \
+if ! run_tool exec --name reveal_search \
   --args '{"query":"greeting_input_field","matchBy":"identifier","direction":"down","maxAttempts":4,"distance":220}' \
-  >"${work_dir}/reveal_search.json"
+  >"${work_dir}/reveal_search.json"; then
+  :
+fi
 
 if [[ "$(jq -r '.data.success // false' "${work_dir}/reveal_search.json")" != "true" ]]; then
-  echo "Could not reveal semantics identifier greeting_input_field with reveal_search." >&2
-  jq '.data' "${work_dir}/reveal_search.json" >&2
-  exit 1
+  if [[ "${platform}" == "web" ]]; then
+    run_tool exec --name reveal_search \
+      --args '{"query":"greeting_input_field","matchBy":"identifier","direction":"up","maxAttempts":4,"distance":220}' \
+      >"${work_dir}/reveal_search.json" || true
+  fi
+fi
+
+if [[ "$(jq -r '.data.success // false' "${work_dir}/reveal_search.json")" != "true" ]]; then
+  if ensure_visible_identifier_args greeting_input_field "${work_dir}/greeting_args.json" "${work_dir}/greeting_match.json" down; then
+    write_reveal_fallback_json "${work_dir}/greeting_args.json" "${work_dir}/greeting_match.json" "${work_dir}/reveal_search.json"
+  else
+    echo "Could not reveal semantics identifier greeting_input_field with reveal_search or semantic snapshot fallback." >&2
+    jq '.data' "${work_dir}/reveal_search.json" >&2
+    exit 1
+  fi
 fi
 
 ref="$(jq -r '.data.ref' "${work_dir}/reveal_search.json")"

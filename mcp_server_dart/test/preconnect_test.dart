@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_mcp_toolkit_server/flutter_mcp_core.dart';
+import 'package:flutter_mcp_toolkit_server/src/cli/session/flutter_session_connector.dart';
+import 'package:intentcall_session/intentcall_session.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -37,8 +39,8 @@ void main() {
               (final endpoint, {required final timeout}) async => true,
         );
 
-        final manager = SessionManager(
-          connectionContext: context,
+        final manager = IntentSessionManager(
+          connector: FlutterSessionConnector(connectionContext: context),
           stateStore: store,
         );
         await manager.load();
@@ -73,8 +75,8 @@ void main() {
         discoverPorts: () async => <int>[8181, 8182],
       );
 
-      final manager = SessionManager(
-        connectionContext: context,
+      final manager = IntentSessionManager(
+        connector: FlutterSessionConnector(connectionContext: context),
         stateStore: store,
       );
       await manager.load();
@@ -129,7 +131,7 @@ void main() {
 
 DefaultCoreCommandExecutor _buildExecutor({
   required final ConnectionContext context,
-  required final SessionManager? sessionManager,
+  required final IntentSessionManager? sessionManager,
 }) => DefaultCoreCommandExecutor(
   connectionContext: context,
   portScanner: const CorePortScanner(logger: _noopLogger),

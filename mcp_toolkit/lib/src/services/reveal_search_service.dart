@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart' show visibleForTesting;
+
 import 'gesture_interaction_service.dart';
 import 'semantic_snapshot_service.dart';
 
@@ -47,16 +49,24 @@ mixin RevealSearchService {
         'snapshotId': snapshot['snapshot_id'],
         'nodeCount': snapshot['nodeCount'],
         'found': match != null,
-        if (match != null) 'ref': match['ref'],
       };
+      if (match != null) {
+        trace
+          ..['ref'] = match['ref']
+          ..['visibleInViewport'] = match['visibleInViewport']
+          ..['centerInViewport'] = match['centerInViewport'];
+      }
       attempts.add(trace);
 
-      if (match != null) {
+      if (match != null && match['centerInViewport'] == true) {
         return <String, Object?>{
           'success': true,
           'ref': match['ref'],
           'snapshotId': snapshot['snapshot_id'],
           'match': match,
+          'visibleInViewport': match['visibleInViewport'],
+          'centerInViewport': match['centerInViewport'],
+          'viewport': snapshot['viewport'],
           'query': normalizedQuery,
           'matchBy': normalizedMatchBy,
           'attempts': attempts,
@@ -64,6 +74,18 @@ mixin RevealSearchService {
       }
 
       if (attempt == boundedMaxAttempts) {
+        if (match != null) {
+          return _foundButNotActionableResult(
+            snapshot: snapshot,
+            match: match,
+            query: normalizedQuery,
+            matchBy: normalizedMatchBy,
+            direction: direction,
+            maxAttempts: boundedMaxAttempts,
+            distance: boundedDistance,
+            attempts: attempts,
+          );
+        }
         break;
       }
 
@@ -73,6 +95,21 @@ mixin RevealSearchService {
       );
       trace['scroll'] = scroll;
       if (scroll['success'] != true) {
+        if (_shouldContinueAfterScroll(scroll)) {
+          continue;
+        }
+        if (match != null) {
+          return _foundButNotActionableResult(
+            snapshot: snapshot,
+            match: match,
+            query: normalizedQuery,
+            matchBy: normalizedMatchBy,
+            direction: direction,
+            maxAttempts: boundedMaxAttempts,
+            distance: boundedDistance,
+            attempts: attempts,
+          );
+        }
         return <String, Object?>{
           'success': false,
           'error': 'scroll_blocked',
@@ -100,6 +137,35 @@ mixin RevealSearchService {
       'attempts': attempts,
     };
   }
+
+  static Map<String, Object?> _foundButNotActionableResult({
+    required final Map<String, Object?> snapshot,
+    required final Map<String, Object?> match,
+    required final String query,
+    required final String matchBy,
+    required final String direction,
+    required final int maxAttempts,
+    required final double distance,
+    required final List<Map<String, Object?>> attempts,
+  }) => <String, Object?>{
+    'success': false,
+    'error': 'target_not_actionable',
+    'actionable': false,
+    'ref': match['ref'],
+    'snapshotId': snapshot['snapshot_id'],
+    'match': match,
+    'visibleInViewport': match['visibleInViewport'],
+    'centerInViewport': match['centerInViewport'],
+    'viewport': snapshot['viewport'],
+    'recommendedNextAction': 'scroll_more',
+    'warning': 'Target was found but its center is outside the viewport.',
+    'query': query,
+    'matchBy': matchBy,
+    'direction': direction,
+    'maxAttempts': maxAttempts,
+    'distance': distance,
+    'attempts': attempts,
+  };
 
   static Map<String, Object?>? _findMatch({
     required final Map<String, Object?> snapshot,
@@ -150,5 +216,37 @@ mixin RevealSearchService {
       'identifier' || 'label' || 'value' || 'hint' => normalized,
       _ => 'text',
     };
+  }
+
+  @visibleForTesting
+  static bool shouldContinueAfterScrollForTesting(
+    final Map<String, Object?> scroll,
+  ) => _shouldContinueAfterScroll(scroll);
+
+  @visibleForTesting
+  static Map<String, Object?> foundButNotActionableResultForTesting({
+    required final Map<String, Object?> snapshot,
+    required final Map<String, Object?> match,
+    required final String query,
+    required final String matchBy,
+    required final String direction,
+    required final int maxAttempts,
+    required final double distance,
+    required final List<Map<String, Object?>> attempts,
+  }) => _foundButNotActionableResult(
+    snapshot: snapshot,
+    match: match,
+    query: query,
+    matchBy: matchBy,
+    direction: direction,
+    maxAttempts: maxAttempts,
+    distance: distance,
+    attempts: attempts,
+  );
+
+  static bool _shouldContinueAfterScroll(final Map<String, Object?> scroll) {
+    if (scroll['deferredMovementCheck'] == true) return true;
+    if (scroll['movementVerified'] == true) return true;
+    return false;
   }
 }

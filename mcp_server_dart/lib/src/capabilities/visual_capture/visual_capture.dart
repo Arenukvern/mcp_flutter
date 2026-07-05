@@ -317,7 +317,7 @@ final class VisualCaptureBroker {
     this.dynamicGateway,
     final Iterable<VisualCapturePlatformAdapter>? adapters,
   }) : _adapters = <VisualCapturePlatformAdapter>[
-         if (adapters != null) ...adapters,
+         ...?adapters,
          const WebVisualCapturePlatformAdapter(),
          if (!io.Platform.isMacOS)
            const UnsupportedUntilAppBridgeVisualCapturePlatformAdapter(

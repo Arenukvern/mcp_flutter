@@ -3,10 +3,11 @@ import 'dart:io';
 
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_mcp_toolkit_server/flutter_mcp_core.dart';
+import 'package:intentcall_session/intentcall_session.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group('SnapshotStore', () {
+  group('CommandSnapshotService', () {
     late Directory tempDir;
     late String snapshotsDir;
 
@@ -22,7 +23,7 @@ void main() {
     });
 
     test('creates snapshot deterministically from command plan', () async {
-      final store = SnapshotStore(snapshotsDir: snapshotsDir);
+      final store = CommandSnapshotService(snapshotsDir: snapshotsDir);
       final catalog = CommandCatalog.instance;
 
       void logger(
@@ -72,8 +73,63 @@ void main() {
       expect(File('$snapshotsDir/s1.json').existsSync(), isTrue);
     });
 
+    test(
+      'accepts JSON string snapshot plans at the loose args boundary',
+      () async {
+        final store = CommandSnapshotService(snapshotsDir: snapshotsDir);
+        final catalog = CommandCatalog.instance;
+
+        void logger(
+          final LoggingLevel level,
+          final String message, {
+          final String logger = 'test',
+        }) {}
+
+        final context = ConnectionContext(
+          defaultHost: 'localhost',
+          defaultPort: 8181,
+          logger: logger,
+          discoverPorts: () async => <int>[8181],
+        );
+
+        final executor = DefaultCoreCommandExecutor(
+          connectionContext: context,
+          portScanner: CorePortScanner(logger: logger),
+          imageFileSaver: CoreImageFileSaver(logger: logger),
+          configuration: const CoreRuntimeConfiguration(
+            vmHost: 'localhost',
+            vmPort: 8181,
+            resourcesSupported: true,
+            imagesSupported: true,
+            dumpsSupported: false,
+            dynamicRegistrySupported: false,
+            saveImagesToFiles: false,
+          ),
+        );
+
+        final snapshot = await store.createSnapshot(
+          id: 'json_plan',
+          executor: executor,
+          catalog: catalog,
+          args: {
+            'commands': jsonEncode([
+              {'name': 'status', 'args': jsonEncode(<String, Object?>{})},
+            ]),
+          },
+        );
+
+        final plan = (snapshot['plan']! as List).cast<Map<String, Object?>>();
+        final results = (snapshot['results']! as List)
+            .cast<Map<String, Object?>>();
+
+        expect(plan.single['name'], equals('status'));
+        expect(plan.single['args'], equals(<String, Object?>{}));
+        expect(results.single['name'], equals('status'));
+      },
+    );
+
     test('computes structural diff with path-level changes', () async {
-      final store = SnapshotStore(snapshotsDir: snapshotsDir);
+      final store = IntentSnapshotStore(snapshotsDir: snapshotsDir);
       await Directory(snapshotsDir).create(recursive: true);
 
       final a = File('$snapshotsDir/a.json');
@@ -114,7 +170,7 @@ void main() {
     });
 
     test('honors per-step args.connection before step execution', () async {
-      final store = SnapshotStore(snapshotsDir: snapshotsDir);
+      final store = CommandSnapshotService(snapshotsDir: snapshotsDir);
       final catalog = CommandCatalog.instance;
 
       void logger(
@@ -178,7 +234,7 @@ void main() {
     test(
       '--check mode reports planned snapshot drift without writing file',
       () async {
-        final store = SnapshotStore(snapshotsDir: snapshotsDir);
+        final store = CommandSnapshotService(snapshotsDir: snapshotsDir);
         final catalog = CommandCatalog.instance;
 
         void logger(
@@ -231,7 +287,7 @@ void main() {
     );
 
     test('--no-overwrite blocks existing snapshot target', () async {
-      final store = SnapshotStore(snapshotsDir: snapshotsDir);
+      final store = CommandSnapshotService(snapshotsDir: snapshotsDir);
       final catalog = CommandCatalog.instance;
       void logger(
         final LoggingLevel level,

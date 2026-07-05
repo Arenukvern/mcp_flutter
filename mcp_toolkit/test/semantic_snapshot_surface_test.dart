@@ -127,6 +127,53 @@ void main() {
     }
   });
 
+  testWidgets('visible subtree signature does not mutate snapshot refs', (
+    final tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    try {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              height: 200,
+              child: ListView.builder(
+                itemCount: 12,
+                itemBuilder: (final context, final index) =>
+                    SizedBox(height: 48, child: Text('Row $index')),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final snapshot = await _snapshotAfterPump(tester);
+      final snapshotId = SemanticSnapshotService.currentSnapshotId;
+      final nodes = (snapshot['nodes']! as List<Object?>)
+          .cast<Map<String, Object?>>();
+      final scrollable = nodes.singleWhere(
+        (final node) => node['type'] == 'scrollable',
+      );
+      final row = nodes.firstWhere((final node) => node['label'] == 'Row 0');
+      final scrollableRef = scrollable['ref']! as String;
+      final rowRef = row['ref']! as String;
+      final scrollableNode = SemanticSnapshotService.resolveRef(scrollableRef)!;
+      final rowNode = SemanticSnapshotService.resolveRef(rowRef);
+
+      final signature = SemanticSnapshotService.visibleSubtreeSignature(
+        scrollableNode,
+      );
+
+      expect(signature['available'], isTrue);
+      expect(signature['signatureHash'], isA<int>());
+      expect(SemanticSnapshotService.currentSnapshotId, snapshotId);
+      expect(SemanticSnapshotService.resolveRef(rowRef), same(rowNode));
+    } finally {
+      semantics.dispose();
+    }
+  });
+
   testWidgets('reveal_search finds an off-screen semantics identifier', (
     final tester,
   ) async {
@@ -167,7 +214,6 @@ void main() {
       final revealFuture = RevealSearchService.revealSearch(
         query: 'greeting_input_field',
         matchBy: 'identifier',
-        direction: 'down',
         maxAttempts: 6,
         distance: 160,
       );
@@ -187,6 +233,78 @@ void main() {
     } finally {
       semantics.dispose();
     }
+  });
+
+  test('reveal_search only continues after verified or deferred scroll', () {
+    expect(
+      RevealSearchService.shouldContinueAfterScrollForTesting(<String, Object?>{
+        'success': false,
+        'deferredMovementCheck': true,
+      }),
+      isTrue,
+    );
+    expect(
+      RevealSearchService.shouldContinueAfterScrollForTesting(<String, Object?>{
+        'success': true,
+        'movementVerified': true,
+      }),
+      isTrue,
+    );
+    expect(
+      RevealSearchService.shouldContinueAfterScrollForTesting(<String, Object?>{
+        'success': false,
+        'via': 'semantic_action',
+        'platform': 'web',
+        'error': 'no_scroll_movement',
+        'dispatched': true,
+      }),
+      isFalse,
+    );
+    expect(
+      RevealSearchService.shouldContinueAfterScrollForTesting(<String, Object?>{
+        'success': false,
+        'platform': 'web',
+        'error': 'unsupported_scroll_action',
+      }),
+      isFalse,
+    );
+  });
+
+  test('reveal_search found-but-not-actionable payload is a failure', () {
+    final result = RevealSearchService.foundButNotActionableResultForTesting(
+      snapshot: const <String, Object?>{
+        'snapshot_id': 7,
+        'viewport': <String, Object?>{'width': 400, 'height': 400},
+      },
+      match: const <String, Object?>{
+        'ref': 's_3',
+        'identifier': 'partly_visible_target',
+        'visibleInViewport': true,
+        'centerInViewport': false,
+      },
+      query: 'partly_visible_target',
+      matchBy: 'identifier',
+      direction: 'down',
+      maxAttempts: 0,
+      distance: 300,
+      attempts: const <Map<String, Object?>>[
+        <String, Object?>{
+          'attempt': 0,
+          'found': true,
+          'ref': 's_3',
+          'visibleInViewport': true,
+          'centerInViewport': false,
+        },
+      ],
+    );
+
+    expect(result['success'], isFalse);
+    expect(result['error'], 'target_not_actionable');
+    expect(result['actionable'], isFalse);
+    expect(result['ref'], 's_3');
+    expect(result['visibleInViewport'], isTrue);
+    expect(result['centerInViewport'], isFalse);
+    expect(result['recommendedNextAction'], 'scroll_more');
   });
 
   testWidgets(

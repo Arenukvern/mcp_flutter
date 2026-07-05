@@ -2,13 +2,12 @@
 
 import 'dart:async';
 
-import 'package:intentcall_platform/intentcall_platform_flutter.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 import 'package:test_app/agent_dogfood_entries.dart';
-import 'package:test_app/agent_web_mcp_dogfood.dart';
 import 'package:test_app/agent_state.dart';
+import 'package:test_app/agent_web_mcp_dogfood.dart';
+import 'package:test_app/intentcall_showcase_bootstrap.dart';
 import 'package:test_app/platform_view_showcase.dart';
 import 'package:test_app/showcase_screen.dart';
 import 'package:test_app/visual_reconstruct_screen.dart';
@@ -29,15 +28,7 @@ Future<void> main({final bool enableDelayedMcpRegistration = true}) async {
     ..navigatorKey = showcaseNavigatorKey;
 
   await _registerInitialMCPTools();
-  if (!kIsWeb) {
-    unawaited(
-      IntentCallInvokeLinkListener(
-        onQualifiedName: (final name) {
-          debugPrint('intentcall invoke: $name');
-        },
-      ).start(),
-    );
-  }
+  unawaited(intentCallHost.start());
   if (enableDelayedMcpRegistration) {
     // Mirror the previous bootstrap timing: a brief delay so a remote
     // observer can witness the dynamic-registry update event.
@@ -47,7 +38,7 @@ Future<void> main({final bool enableDelayedMcpRegistration = true}) async {
   runApp(const MyApp());
 }
 
-// ---- MCP tool registrations (kept from previous demo) ------------------------
+// ---- App-specific MCP registrations -----------------------------------------
 
 int _calculateFibonacci(final int n) {
   if (n <= 1) return n;
@@ -77,6 +68,7 @@ Future<void> _registerInitialMCPTools() async {
   if (_initialEntriesRegistered) return;
   _initialEntriesRegistered = true;
   final binding = MCPToolkitBinding.instance;
+  final proofEntries = buildIntentCallProofEntries();
 
   final fibonacciEntry = mcpToolkitTool(
     namespace: 'app',
@@ -131,17 +123,17 @@ Future<void> _registerInitialMCPTools() async {
   );
 
   final dogfoodEntries = buildAgentDogfoodEntries();
+  await configureIntentCallShowcase(proofEntries: proofEntries);
   await binding.addEntries(
     entries: {
       fibonacciEntry,
       appStateEntry,
       agentStateEntry,
+      ...proofEntries,
       ...dogfoodEntries,
     },
   );
-  if (kIsWeb) {
-    await wireWebMcpPublishAdapterDogfood(dogfoodEntries);
-  }
+  await wireWebMcpPublishAdapterDogfood(dogfoodEntries);
   print('Initial MCP tools and resources registered');
 }
 

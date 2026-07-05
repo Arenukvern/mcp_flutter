@@ -107,6 +107,7 @@ void main() {
 
     setUp(() {
       server = _createDiscoveryTestServer();
+      // ignore: invalid_use_of_protected_member
       server.initializeDynamicRegistry(mcpToolkitServer: server);
       registry = server.dynamicRegistryForTesting!;
       discovery = RegistryDiscoveryService(
@@ -115,35 +116,65 @@ void main() {
       );
     });
 
-    test('parse failure unregisters stale dynamic registry', () async {
-      registry.registerTool(
-        Tool(
-          name: 'stale_tool',
-          description: 'previously registered',
-          inputSchema: ObjectSchema(),
-        ),
-        const DynamicAppId('stale_app'),
-      );
-      expect(registry.appInfo?.toolCount, 1);
+    test(
+      'parse failure unregisters stale dynamic app from all registries',
+      () async {
+        server.registerDynamicTool(
+          Tool(
+            name: 'stale_tool',
+            description: 'previously registered',
+            inputSchema: ObjectSchema(),
+          ),
+          'stale_app',
+        );
+        server.registerDynamicResource(
+          Resource(
+            uri: 'visual://localhost/stale',
+            name: 'stale_resource',
+            description: 'previously registered',
+            mimeType: 'application/json',
+          ),
+          'stale_app',
+        );
+        expect(registry.appInfo?.toolCount, 1);
+        expect(registry.appInfo?.resourceCount, 1);
 
-      final events = <DynamicRegistryEvent>[];
-      final sub = registry.events.listen(events.add);
+        final events = <DynamicRegistryEvent>[];
+        final sub = registry.events.listen(events.add);
 
-      await discovery.processRegistrationResponseForTesting(
-        _registrationPayload(
-          tools: [
-            _validToolMap(),
-            const {'invalid': true},
-          ],
-        ),
-      );
+        await discovery.processRegistrationResponseForTesting(
+          _registrationPayload(
+            tools: [
+              _validToolMap(),
+              const {'invalid': true},
+            ],
+          ),
+        );
 
-      await Future<void>.delayed(Duration.zero);
-      await sub.cancel();
+        await Future<void>.delayed(Duration.zero);
+        await sub.cancel();
 
-      expect(registry.appInfo?.toolCount ?? 0, 0);
-      expect(events.whereType<AppUnregisteredEvent>(), isNotEmpty);
-    });
+        expect(registry.appInfo?.toolCount ?? 0, 0);
+        expect(registry.appInfo?.resourceCount ?? 0, 0);
+        expect(registry.getToolEntry('stale_tool'), isNull);
+        expect(registry.getResourceEntry('visual://localhost/stale'), isNull);
+        expect(events.whereType<AppUnregisteredEvent>(), isNotEmpty);
+
+        final staleTool = await server.capabilityHost.agentRegistry.invoke(
+          'stale_tool',
+          const {},
+        );
+        expect(staleTool.ok, isFalse);
+        expect(staleTool.code, 'intent_not_found');
+
+        final staleResource = await server.capabilityHost.agentRegistry.invoke(
+          'visual://localhost/stale',
+          const {'uri': 'visual://localhost/stale'},
+        );
+        expect(staleResource.ok, isFalse);
+        expect(staleResource.code, 'intent_not_found');
+      },
+    );
 
     test('valid payload registers tools after clearing prior app', () async {
       registry.registerTool(

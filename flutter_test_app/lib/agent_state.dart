@@ -59,6 +59,16 @@ class AgentState extends ChangeNotifier {
     notifyListeners();
   }
 
+  @visibleForTesting
+  void resetForTest() {
+    _counter = 0;
+    _greeting = '';
+    _toggle = false;
+    _slider = 50;
+    _lastLog = '';
+    notifyListeners();
+  }
+
   Map<String, Object?> snapshot() => <String, Object?>{
     'counter': _counter,
     'greeting': _greeting,

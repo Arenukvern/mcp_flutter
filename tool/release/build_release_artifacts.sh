@@ -122,6 +122,7 @@ for triple in "${TRIPLES[@]}"; do
   mkdir -p "$stage_dir/bin"
 
   compile_binary "bin/flutter_mcp_toolkit.dart" "$stage_dir/bin/flutter-mcp-toolkit" "$target_os" "$target_arch"
+  cp "$stage_dir/bin/flutter-mcp-toolkit" "$stage_dir/bin/fmtk"
   compile_binary "bin/flutter_mcp_toolkit_server.dart" "$stage_dir/bin/flutter-mcp-toolkit-server" "$target_os" "$target_arch"
 
   cp "$ROOT_DIR/LICENSE" "$stage_dir/LICENSE"
@@ -131,6 +132,7 @@ for triple in "${TRIPLES[@]}"; do
   smoke_dir="$(mktemp -d)"
   tar -C "$smoke_dir" -xzf "$archive_path"
   "$smoke_dir/$package_name/bin/flutter-mcp-toolkit" --help >/dev/null
+  "$smoke_dir/$package_name/bin/fmtk" --help >/dev/null
   "$smoke_dir/$package_name/bin/flutter-mcp-toolkit-server" --help >/dev/null
   rm -rf "$smoke_dir"
 
