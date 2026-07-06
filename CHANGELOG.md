@@ -3,6 +3,12 @@
 <!-- markdownlint-disable MD052 -->
 <!-- Keep a Changelog version headings use [3.0.1] brackets; MD052 treats them as reference links. -->
 
+## [Unreleased]
+
+### Features
+
+* Delegate `codegen sync` and `init intentcall-platform` to `intentcall_cli`; add `jaspr_web_example` with three-gate CI recipe (`manifest export --check`, `platform sync --check`).
+
 ## [4.0.0-dev.6](https://github.com/Arenukvern/mcp_flutter/compare/v4.0.0-dev.5...v4.0.0-dev.6) (2026-07-05)
 
 

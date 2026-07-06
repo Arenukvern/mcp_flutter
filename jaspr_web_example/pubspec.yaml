@@ -1,0 +1,17 @@
+name: jaspr_web_example
+description: >-
+  Jaspr-style web-only IntentCall example for the three-gate CI recipe
+  (build_runner, manifest export --check, platform sync --check).
+publish_to: none
+version: 0.1.0
+
+environment:
+  sdk: ">=3.12.0 <4.0.0"
+
+dependencies:
+  intentcall_core: ^0.6.0
+
+dev_dependencies:
+  build_runner: ^2.10.5
+  intentcall_codegen: ^0.6.0
+  lints: ^6.1.0

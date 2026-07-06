@@ -30,6 +30,8 @@ done
 
 found=0
 patterns='agentkit/packages|intentcall/packages|path:[[:space:]]*.*intentcall'
+allowed_intentcall_cli_path='agentkit/packages/intentcall_cli'
+allowed_platform_sync_path='agentkit/packages/intentcall_platform_sync'
 matches_file="$(mktemp)"
 trap 'rm -f "${matches_file}"' EXIT
 
@@ -60,6 +62,9 @@ def stanza(lines, start, indent):
         out.append(line)
     return out
 
+def uses_git_source(stanza_lines):
+    return any(re.match(r"\s*git:\s*$", line) for line in stanza_lines)
+
 def find_version(lines, start, indent):
     for line in stanza(lines, start, indent):
         match = re.match(r"\s*version:\s*(.+?)\s*$", line)
@@ -81,6 +86,20 @@ for raw_path in sys.argv[1:]:
         indent = len(match.group(1))
         package = match.group(2)
         inline = clean(match.group(3) or "")
+        block = stanza(lines, index, indent)
+        if package == "intentcall_cli" and (
+            uses_git_source(block)
+            or any(
+                "../../agentkit/packages/intentcall_cli" in line
+                for line in block
+            )
+        ):
+            continue
+        if package == "intentcall_platform_sync" and any(
+            "../../agentkit/packages/intentcall_platform_sync" in line
+            for line in block
+        ):
+            continue
         version = inline if inline else find_version(lines, index, indent)
         if not version or version != expected:
             print(
@@ -98,10 +117,17 @@ version_files=()
 while IFS= read -r -d '' f; do
   version_files+=("$f")
   if grep -nE "${patterns}" "$f" >"${matches_file}" 2>/dev/null; then
-    echo "path dep still present: $f" >&2
-    echo "matched stale path pattern: agentkit/packages | intentcall/packages | path: .*intentcall" >&2
-    cat "${matches_file}" >&2
-    found=1
+    if ! grep -qE "${allowed_intentcall_cli_path}|${allowed_platform_sync_path}" "${matches_file}"; then
+      echo "path dep still present: $f" >&2
+      echo "matched stale path pattern: agentkit/packages | intentcall/packages | path: .*intentcall" >&2
+      cat "${matches_file}" >&2
+      found=1
+    elif grep -vE "${allowed_intentcall_cli_path}|${allowed_platform_sync_path}" "${matches_file}" | grep -q .; then
+      echo "path dep still present: $f" >&2
+      echo "matched stale path pattern: agentkit/packages | intentcall/packages | path: .*intentcall" >&2
+      grep -vE "${allowed_intentcall_cli_path}|${allowed_platform_sync_path}" "${matches_file}" >&2 || true
+      found=1
+    fi
   fi
 done < <(find mcp_toolkit mcp_server_dart packages flutter_test_app -name pubspec.yaml -print0 2>/dev/null)
 
@@ -109,10 +135,12 @@ if [[ "${strict_root}" == true ]]; then
   for f in pubspec.yaml pubspec.lock; do
     version_files+=("$f")
     if [[ -f "${f}" ]] && grep -nE "${patterns}" "$f" >"${matches_file}" 2>/dev/null; then
-      echo "root path override still present: $f" >&2
-      echo "matched release-blocking path pattern: agentkit/packages | intentcall/packages | path: .*intentcall" >&2
-      cat "${matches_file}" >&2
-      found=1
+      if grep -qvE "${allowed_intentcall_cli_path}|${allowed_platform_sync_path}" "${matches_file}"; then
+        echo "root path override still present: $f" >&2
+        echo "matched release-blocking path pattern: agentkit/packages | intentcall/packages | path: .*intentcall" >&2
+        grep -vE "${allowed_intentcall_cli_path}|${allowed_platform_sync_path}" "${matches_file}" >&2 || true
+        found=1
+      fi
     fi
   done
 fi

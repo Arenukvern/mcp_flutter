@@ -336,6 +336,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.1.2"
+  intentcall_cli:
+    dependency: transitive
+    description:
+      path: "../agentkit/packages/intentcall_cli"
+      relative: true
+    source: path
+    version: "0.6.0"
   intentcall_codegen:
     dependency: transitive
     description:
@@ -367,6 +374,13 @@ packages:
       sha256: a14d533b5ab2413c67ce2f943b56ab2a335a1a46b88a00ae62d72fafc6cacf50
       url: "https://pub.dev"
     source: hosted
+    version: "0.6.0"
+  intentcall_platform_sync:
+    dependency: "direct overridden"
+    description:
+      path: "../agentkit/packages/intentcall_platform_sync"
+      relative: true
+    source: path
     version: "0.6.0"
   intentcall_schema:
     dependency: transitive

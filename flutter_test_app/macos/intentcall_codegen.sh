@@ -1,4 +1,6 @@
 # intentcall-platform: begin
 cd "${SRCROOT}/.."
-flutter-mcp-toolkit codegen sync --platform ios,macos || exit 1
+dart run build_runner build --delete-conflicting-outputs
+intentcall manifest export --check
+intentcall platform sync --platform ios,macos || exit 1
 # intentcall-platform: end

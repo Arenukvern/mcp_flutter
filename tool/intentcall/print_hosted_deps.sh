@@ -13,6 +13,7 @@ intentcall_session: ^${version}
 intentcall_mcp: ^${version}
 intentcall_platform: ^${version}
 intentcall_codegen: ^${version}
+intentcall_cli: ^${version}
 intentcall_webmcp: ^${version}
 intentcall_testing: ^${version}
 intentcall_gemma: ^${version}

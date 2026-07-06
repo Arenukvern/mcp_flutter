@@ -24,6 +24,8 @@ dependencies:
   from_json_to_json: ^0.5.0
   intentcall_core: ^0.6.0
   intentcall_mcp: ^0.6.0
+  intentcall_cli:
+    path: ../../agentkit/packages/intentcall_cli
   intentcall_platform: ^0.6.0
   intentcall_schema: ^0.6.0
   intentcall_session: ^0.6.0
@@ -43,3 +45,7 @@ dev_dependencies:
   test: ^1.31.0
   xsoulspace_inference_core: ^0.1.0-beta.1
   xsoulspace_lints: ^0.1.2
+
+dependency_overrides:
+  intentcall_platform_sync:
+    path: ../../agentkit/packages/intentcall_platform_sync
