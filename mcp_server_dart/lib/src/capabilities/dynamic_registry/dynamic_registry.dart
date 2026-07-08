@@ -50,10 +50,7 @@ final class DynamicResourceEntry with EquatableMixin {
   bool? get stringify => true;
 
   @override
-  List<Object?> get props => [
-    intent.descriptor.effectiveResourceUri,
-    resource.uri,
-  ];
+  List<Object?> get props => [resource.uri];
 }
 
 /// A string that represents a dynamic app id.

@@ -661,7 +661,7 @@ iterations:
     warnings:
       - visual_capture_truth_mode
     artifacts:
-      - /Users/anton/mcp/mcp_flutter/.showcase/eval_runs/20260708T224124Z/eval_run.yaml
+      - .showcase/eval_runs/20260708T224124Z/eval_run.yaml
 
 summary:
   best_score: 100
