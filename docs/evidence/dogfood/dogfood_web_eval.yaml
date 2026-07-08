@@ -638,11 +638,36 @@ iterations:
     artifacts:
       - .showcase/eval_runs/20260606T154810Z/eval_run.yaml
 
+  - iteration: 23
+    ran_at: "2026-07-08T22:41:31Z"
+    score: 28
+    verdict: blocked_no_runtime
+    validate_runtime_ok: false
+    doctor_critical_pass: false
+    extensions_ok: false
+    capture_ok: false
+    intentcall_hooks_ok: true
+    dimension_scores:
+      connectivity: 0
+      schema_validity: 0
+      handler_correctness: 0
+      capture_quality: 0
+      visual_fidelity: 0
+      webmcp_parity: 8
+      intentcall_authoring: 10
+      docs_truth: 10
+    visual_compare_pass: false
+    errors: []
+    warnings:
+      - visual_capture_truth_mode
+    artifacts:
+      - /Users/anton/mcp/mcp_flutter/.showcase/eval_runs/20260708T224124Z/eval_run.yaml
+
 summary:
   best_score: 100
   worst_score: 28
-  mean_score: 86.2
-  iterations_count: 22
+  mean_score: 83.7
+  iterations_count: 23
   app_mcp_log:
     initial_registration: "18 tools, 0 resources (+1 AgentCallEntry dogfood_ping)"
     delayed_registration: "2 tools, 1 resources"

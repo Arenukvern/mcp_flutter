@@ -14,59 +14,7 @@
   }
   var fallbackEnabled = false;
   var invokePath = "/agent/invoke";
-  var tools = [
-  {
-    "name": "app_demo_ping",
-    "description": "Demo ping tool for WebMCP platform sync",
-    "inputSchema": {
-      "type": "object",
-      "properties": {}
-    }
-  },
-  {
-    "name": "app_intentcall_bridge_ping",
-    "description": "Proof that native/WebMCP dispatch executes Dart registry logic",
-    "inputSchema": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "echo": {
-          "type": "string",
-          "description": "Value echoed by Dart registry proof."
-        }
-      },
-      "required": [
-        "echo"
-      ]
-    }
-  },
-  {
-    "name": "app_set_greeting",
-    "description": "Fill the showcase greeting field with text",
-    "inputSchema": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "text": {
-          "type": "string",
-          "description": "Text to place in the greeting field."
-        }
-      },
-      "required": [
-        "text"
-      ]
-    }
-  },
-  {
-    "name": "app_enable_switch",
-    "description": "Enable the showcase feature switch",
-    "inputSchema": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {}
-    }
-  }
-];
+  var tools = [];
 
   function validationError(message) {
     return { ok: false, code: 'validation_error', message: message };

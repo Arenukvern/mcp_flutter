@@ -14,23 +14,7 @@
   }
   var fallbackEnabled = false;
   var invokePath = "/agent/invoke";
-  var tools = [
-  {
-    "name": "shop_search",
-    "description": "Search catalog",
-    "inputSchema": {
-      "type": "object",
-      "properties": {
-        "query": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "query"
-      ]
-    }
-  }
-];
+  var tools = [];
 
   function validationError(message) {
     return { ok: false, code: 'validation_error', message: message };

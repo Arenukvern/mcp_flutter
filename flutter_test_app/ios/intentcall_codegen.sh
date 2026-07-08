@@ -1,6 +1,6 @@
 # intentcall-platform: begin
 cd "${SRCROOT}/.."
 dart run build_runner build --delete-conflicting-outputs
-intentcall manifest export --check
-intentcall platform sync --platform ios,macos || exit 1
+dart run intentcall_cli:intentcall manifest export --check
+dart run intentcall_cli:intentcall platform sync --platform ios,macos || exit 1
 # intentcall-platform: end

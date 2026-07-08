@@ -26,6 +26,11 @@ Normal repo state resolves hosted `intentcall_* ^0.6.0` packages from pub.dev. L
 
 ## Manifest and platform sync
 
+`flutter_test_app/intentcall.yaml` is the authoritative host config
+(`host: flutter`, `protocolScheme: mcpfluttertest`, `platforms.enabled`).
+Keep `web/agent_manifest.json` as the committed manifest fixture; export/sync
+must stay in lockstep with that file.
+
 Regenerate platform artifacts from the app manifest:
 
 ```bash

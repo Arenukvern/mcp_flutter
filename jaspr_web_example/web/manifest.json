@@ -1,22 +1,6 @@
 {
     "name": "demo_jaspr",
     "start_url": ".",
-    "shortcuts": [
-        {
-            "name": "Search",
-            "short_name": "Search",
-            "description": "Search catalog",
-            "url": "/agent/invoke?name=shop_search"
-        }
-    ],
-    "protocol_handlers": [
-        {
-            "protocol": "web+intentcall",
-            "url": "/agent/invoke?protocol=%s"
-        },
-        {
-            "protocol": "web+intentcall",
-            "url": "/agent/invoke?name=shop_search&payload=%s"
-        }
-    ]
+    "shortcuts": [],
+    "protocol_handlers": []
 }

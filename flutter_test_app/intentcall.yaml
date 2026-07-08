@@ -1,0 +1,14 @@
+host: flutter
+protocolScheme: mcpfluttertest
+layout:
+  manifest: web/agent_manifest.json
+platforms:
+  enabled:
+    - web
+    - android
+    - ios
+    - macos
+    - linux
+    - windows
+defaults:
+  dispatchMode: openApp

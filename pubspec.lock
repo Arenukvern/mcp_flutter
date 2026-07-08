@@ -153,6 +153,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.2"
+  code_assets:
+    dependency: transitive
+    description:
+      name: code_assets
+      sha256: bf394f466ba9205f1812a0433b392d6af280f155f56651eda7c18cc32ed493b8
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.2.1"
   collection:
     dependency: transitive
     description:
@@ -312,6 +320,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.2.0"
+  hooks:
+    dependency: transitive
+    description:
+      name: hooks
+      sha256: "9a62a50b50b769a737bc0a8ff381f333529df3ab746b2f6b02e83760231455ba"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.2"
   http:
     dependency: transitive
     description:
@@ -336,44 +352,68 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.1.2"
+  intentcall_bridge:
+    dependency: "direct overridden"
+    description:
+      path: "../agentkit/packages/intentcall_bridge"
+      relative: true
+    source: path
+    version: "0.6.0"
   intentcall_cli:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
       path: "../agentkit/packages/intentcall_cli"
       relative: true
     source: path
     version: "0.6.0"
   intentcall_codegen:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
-      name: intentcall_codegen
-      sha256: "29e22519b4b1206ed448bdff59743f9b09b4dfc3bab31f4bea5c8760a8ad3fa4"
-      url: "https://pub.dev"
-    source: hosted
+      path: "../agentkit/packages/intentcall_codegen"
+      relative: true
+    source: path
     version: "0.6.0"
   intentcall_core:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
-      name: intentcall_core
-      sha256: "10363edd11dab107d83d5126decec03d07ab6bf9fa4685a62f9f9d9c0af13cea"
-      url: "https://pub.dev"
-    source: hosted
+      path: "../agentkit/packages/intentcall_core"
+      relative: true
+    source: path
+    version: "0.6.0"
+  intentcall_hooks:
+    dependency: "direct overridden"
+    description:
+      path: "../agentkit/packages/intentcall_hooks"
+      relative: true
+    source: path
     version: "0.6.0"
   intentcall_mcp:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
-      name: intentcall_mcp
-      sha256: "47c6cc4dab40480841de1a9c1aace24e2733f35e7617882414cfd5e9c91fdcd2"
-      url: "https://pub.dev"
-    source: hosted
+      path: "../agentkit/packages/intentcall_mcp"
+      relative: true
+    source: path
     version: "0.6.0"
   intentcall_platform:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
-      name: intentcall_platform
-      sha256: a14d533b5ab2413c67ce2f943b56ab2a335a1a46b88a00ae62d72fafc6cacf50
-      url: "https://pub.dev"
-    source: hosted
+      path: "../agentkit/packages/intentcall_platform"
+      relative: true
+    source: path
+    version: "0.6.0"
+  intentcall_platform_android:
+    dependency: "direct overridden"
+    description:
+      path: "../agentkit/packages/intentcall_platform_android"
+      relative: true
+    source: path
+    version: "0.6.0"
+  intentcall_platform_apple:
+    dependency: "direct overridden"
+    description:
+      path: "../agentkit/packages/intentcall_platform_apple"
+      relative: true
+    source: path
     version: "0.6.0"
   intentcall_platform_sync:
     dependency: "direct overridden"
@@ -383,20 +423,25 @@ packages:
     source: path
     version: "0.6.0"
   intentcall_schema:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
-      name: intentcall_schema
-      sha256: "7fd95e20f8d32f5ffe6c9cd4058d3fbf513c52dff69a63d9c4c8f4bf2810f842"
-      url: "https://pub.dev"
-    source: hosted
+      path: "../agentkit/packages/intentcall_schema"
+      relative: true
+    source: path
     version: "0.6.0"
   intentcall_session:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
-      name: intentcall_session
-      sha256: "6b997f1fb173982fff8c9952f7c6d16621f42a01433902774c3e93543944fb6a"
-      url: "https://pub.dev"
-    source: hosted
+      path: "../agentkit/packages/intentcall_session"
+      relative: true
+    source: path
+    version: "0.6.0"
+  intentcall_webmcp:
+    dependency: "direct overridden"
+    description:
+      path: "../agentkit/packages/intentcall_webmcp"
+      relative: true
+    source: path
     version: "0.6.0"
   io:
     dependency: transitive
@@ -582,6 +627,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.5.0"
+  record_use:
+    dependency: transitive
+    description:
+      name: record_use
+      sha256: "2551bd8eecfe95d14ae75f6021ad0248be5c27f138c2ec12fcb52b500b3ba1ed"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.6.0"
   rx:
     dependency: transitive
     description:
