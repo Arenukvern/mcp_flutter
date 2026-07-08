@@ -1,18 +1,12 @@
 import 'package:args/args.dart';
 import 'package:intentcall_cli/intentcall_cli.dart';
 
-ArgParser _platformSyncParser() {
-  return ArgParser()
-    ..addOption('project-dir', defaultsTo: '.')
-    ..addMultiOption(
-      'platform',
-      abbr: 'p',
-      valueHelp: 'LIST',
-    )
-    ..addFlag('check', negatable: false)
-    ..addFlag('dry-run', negatable: false)
-    ..addOption('host', defaultsTo: 'flutter');
-}
+ArgParser _platformSyncParser() => ArgParser()
+  ..addOption('project-dir', defaultsTo: '.')
+  ..addMultiOption('platform', abbr: 'p', valueHelp: 'LIST')
+  ..addFlag('check', negatable: false)
+  ..addFlag('dry-run', negatable: false)
+  ..addOption('host', defaultsTo: 'flutter');
 
 /// Delegates to `intentcall platform sync --host flutter`.
 int delegatePlatformSync({

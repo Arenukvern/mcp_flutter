@@ -71,7 +71,7 @@ flutter run -d chrome --web-port=8080 --host-vmservice-port=8181
 
    You can pass the same URI as global `--vm-service-uri` instead of `--target`.
 
-3. **iOS Simulator:** if Xcode reports a Podfile.lock mismatch, run `cd ios && pod install`, then `flutter run` with the same VM flags.
+3. **iOS Simulator:** run `flutter run -d ios` with the same VM flags. Native plugins resolve via Swift Package Manager (`FlutterGeneratedPluginSwiftPackage`).
 
 ## Getting Started
 

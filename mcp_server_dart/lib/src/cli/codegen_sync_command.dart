@@ -1,8 +1,7 @@
 import 'dart:io';
 
+import 'package:flutter_mcp_toolkit_server/src/cli/intentcall_delegate.dart';
 import 'package:intentcall_platform/intentcall_platform.dart';
-
-import 'intentcall_delegate.dart';
 
 /// Runs `flutter-mcp-toolkit codegen sync` by delegating to [intentcall_cli].
 Future<int> runCodegenSync({

@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart' show visibleForTesting;
+import 'package:from_json_to_json/from_json_to_json.dart';
 
 import 'gesture_interaction_service.dart';
 import 'semantic_snapshot_service.dart';
@@ -30,8 +31,10 @@ mixin RevealSearchService {
     }
 
     final normalizedMatchBy = _normalizeMatchBy(matchBy);
-    final boundedMaxAttempts = maxAttempts.clamp(0, _maxAttemptsLimit).toInt();
-    final boundedDistance = distance.clamp(1, _maxDistance).toDouble();
+    final boundedMaxAttempts = jsonDecodeInt(
+      maxAttempts.clamp(0, _maxAttemptsLimit),
+    );
+    final boundedDistance = jsonDecodeDouble(distance.clamp(1, _maxDistance));
     final attempts = <Map<String, Object?>>[];
     Map<String, Object?>? lastSnapshot;
 
