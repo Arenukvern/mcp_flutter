@@ -10,7 +10,7 @@
 | Hosted consumer proof | `make check-intentcall-hosted-consumer`; Steward `fmt.check.intentcall-hosted-deps-strict` |
 | Sibling upstream matrix proof | `make check-intentcall-sibling-matrix` |
 | Compatibility alias | `make check-intentcall-integration` → sibling upstream matrix proof |
-| Repo contract gate | `make check-contracts` |
+| Repo contract gate | `make check-contracts` (includes `check_apple_runner_compile.sh` — `flutter build macos --config-only` on `flutter_test_app`) |
 | IntentCall publish checks | Run from the IntentCall checkout |
 | AppIntentsTesting consumer scaffold | `flutter-mcp-toolkit codegen appintents-testing generate` |
 
@@ -111,6 +111,28 @@ make sync-skills
 ```
 
 The durable proof should live in checks, CI, Steward scenarios, tests, and dated evidence records, not in a hand-maintained pass-count checklist.
+
+### Apple Runner compile gate
+
+`make check-contracts` runs `tool/contracts/check_apple_runner_compile.sh`. This is
+the canonical compile-proof gate for federated Apple projection:
+
+1. Verifies `flutter_test_app/macos/Runner/Generated/IntentCallGenerated.swift`
+   imports `intentcall_platform_apple` and does **not** define an inline
+   `IntentCallNativeBridge` enum (facade lives in the plugin).
+2. When `INTENTCALL_ROOT` or `../agentkit` is present, runs
+   `intentcall platform sync --platform ios,macos` before compile.
+3. Runs `flutter build macos --config-only` on `flutter_test_app`.
+
+Standalone:
+
+```bash
+bash tool/contracts/check_apple_runner_compile.sh
+```
+
+From the IntentCall checkout with sibling `mcp_flutter`: `just apple-runner-compile-check`.
+
+Set `FAIL_ON_SKIP=1` in CI when Flutter/Xcode must be present.
 
 ## Apple AppIntentsTesting scaffold
 
