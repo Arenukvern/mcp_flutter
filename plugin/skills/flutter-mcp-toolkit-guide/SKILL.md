@@ -39,7 +39,7 @@ Always run `flutter-mcp-toolkit doctor --json` first. Parse the output:
 | Register app-specific MCP tools/resources (`AgentCallEntry`, `bootstrapFlutter` `additionalEntries`) | `flutter-mcp-toolkit-custom-tools` |
 | Upgrade from removed legacy call-entry APIs | `flutter-mcp-toolkit-intentcall-migration` |
 | Audit CLI/MCP/schema/dynamic-registry parity before changing tool surfaces | `flutter-mcp-boundary-audit` |
-| Maintain `flutter_test_app` web / WebMCP showcase hooks | `flutter-mcp-toolkit-maintain-web` |
+| Maintain `flutter_test_app` web / WebMCP showcase hooks; agent list/execute via Chrome DevTools MCP (`list_webmcp_tools` / `execute_webmcp_tool`) | `flutter-mcp-toolkit-maintain-web` |
 | Maintain `flutter_test_app` macOS / native IntentCall hooks | `flutter-mcp-toolkit-maintain-macos` |
 | Score dogfood iterations or route dogfood evidence | `flutter-mcp-toolkit-dogfood-iterations` |
 | Release, version, or plugin skill bundle maintenance | `flutter-mcp-toolkit-repo-maintainer` |
@@ -84,6 +84,10 @@ parameter shapes lives in the task skills.
   or `flutter-mcp-toolkit-maintain-macos` for showcase platform hooks; use
   `flutter-mcp-toolkit-repo-maintainer` for release, version, and generated
   skill-bundle work.
+- **True WebMCP (browser):** with Chrome DevTools MCP
+  (`--categoryExperimentalWebmcp`), use `list_webmcp_tools` /
+  `execute_webmcp_tool` after navigating to the web app. Details in
+  `flutter-mcp-toolkit-maintain-web`.
 
 ## When in doubt
 
