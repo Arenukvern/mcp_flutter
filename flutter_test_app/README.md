@@ -82,3 +82,11 @@ This project is a starting point for a Flutter application.
 
 For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/).
+
+
+Addtional links:
+WebMCP: 
+https://chromewebstore.google.com/detail/webmcp-model-context-tool/gbpdfapgefenggkahomfgkhfehlcenpd
+DevTools WebMCP Support:
+https://chromewebstore.google.com/detail/devtools-webmcp-support/omfiknibgnbjbhglmknfbnghnnahjmmf
+https://developer.chrome.com/docs/ai/webmcp
