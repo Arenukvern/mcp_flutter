@@ -55,6 +55,7 @@ That's it. Your AI agent can now inspect and drive the running app — and your 
 
 
 ## 📰 News
+-**2026-07-11** - v4 new Live Demos records: [v4 semantic snapshot etc.. with Grok Build CLI](https://youtu.be/P0ObCyt0k3M), [v4 with IntentCall power - WebMCP projection](https://www.youtube.com/watch?v=mX4xxVeImq0) 
 
 - **2026-05-26** — v3.1.0: Platform-view capture routing, macOS/iOS Simulator host screenshots, web CDP tab capture (SCK → CDP → flutter_layer), and cross-platform showcase platform views.
 <!-- TODO(arenukvern): add tool to write news automatically -->
