@@ -11,28 +11,41 @@
       "pluralDisplayName": "Showcase Screens",
       "description": "Open a discoverable MCP Flutter showcase screen",
       "titleKey": "title",
-      "subtitleKey": "subtitle",
-      "keywordsKey": "keywords",
+      "subtitleKey": "summary",
+      "keywordsKey": "tags",
       "urlKey": "deepLink",
       "defaultQueryLimit": 6,
       "snapshotSchema": {
         "type": "object",
         "additionalProperties": true,
         "properties": {
-          "id": { "type": "string" },
-          "title": { "type": "string" },
-          "subtitle": { "type": "string" },
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "subtitle": {
+            "type": "string"
+          },
           "keywords": {
             "type": "array",
-            "items": { "type": "string" }
+            "items": {
+              "type": "string"
+            }
           },
-          "deepLink": { "type": "string" },
+          "deepLink": {
+            "type": "string"
+          },
           "properties": {
             "type": "object",
             "additionalProperties": true
           }
         },
-        "required": ["id", "title"]
+        "required": [
+          "id",
+          "title"
+        ]
       }
     }
   ],
@@ -56,7 +69,18 @@
       "kind": "tool",
       "dispatchMode": "openApp",
       "surfaces": {
-        "apple.appShortcuts": { "include": true }
+        "apple.appIntents": {
+          "include": true
+        },
+        "apple.appShortcuts": {
+          "include": true
+        },
+        "apple.entities": {
+          "include": true
+        },
+        "apple.spotlight": {
+          "include": true
+        }
       },
       "inputSchema": {
         "type": "object",
@@ -67,7 +91,9 @@
             "description": "Value echoed by Dart registry proof."
           }
         },
-        "required": ["echo"]
+        "required": [
+          "echo"
+        ]
       }
     },
     {
@@ -78,7 +104,18 @@
       "kind": "tool",
       "dispatchMode": "openApp",
       "surfaces": {
-        "apple.appShortcuts": { "include": true }
+        "apple.appIntents": {
+          "include": true
+        },
+        "apple.appShortcuts": {
+          "include": true
+        },
+        "apple.entities": {
+          "include": true
+        },
+        "apple.spotlight": {
+          "include": true
+        }
       },
       "inputSchema": {
         "type": "object",
@@ -89,7 +126,9 @@
             "description": "Text to place in the greeting field."
           }
         },
-        "required": ["text"]
+        "required": [
+          "text"
+        ]
       }
     },
     {
@@ -100,7 +139,18 @@
       "kind": "tool",
       "dispatchMode": "openApp",
       "surfaces": {
-        "apple.appShortcuts": { "include": true }
+        "apple.appIntents": {
+          "include": true
+        },
+        "apple.appShortcuts": {
+          "include": true
+        },
+        "apple.entities": {
+          "include": true
+        },
+        "apple.spotlight": {
+          "include": true
+        }
       },
       "inputSchema": {
         "type": "object",

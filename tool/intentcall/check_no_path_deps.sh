@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Fails if committed consumer pubspecs still use local intentcall path deps.
+# Validates committed consumer pubspecs path-depend on sibling agentkit IntentCall packages.
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -12,11 +12,10 @@ usage() {
   cat <<'EOF'
 Usage: tool/intentcall/check_no_path_deps.sh [--strict-root]
 
-Default mode scans committed consumer packages and allows root dependency_overrides
-used for deliberate local sibling development.
+Default mode scans committed consumer packages and requires local agentkit path
+dependencies for every intentcall_* package.
 
---strict-root additionally scans the root pubspec and lockfile. Use it before
-publishing release/cutover changes that must not rely on local IntentCall paths.
+--strict-root additionally scans the root pubspec and lockfile.
 EOF
 }
 
@@ -29,18 +28,13 @@ while [[ $# -gt 0 ]]; do
 done
 
 found=0
-patterns='agentkit/packages|intentcall/packages|path:[[:space:]]*.*intentcall'
-matches_file="$(mktemp)"
-trap 'rm -f "${matches_file}"' EXIT
+expected_path_suffix='agentkit/packages/intentcall_'
 
-check_versions() {
+check_path_deps() {
   python3 - "$@" <<'PY'
 import re
 import sys
 from pathlib import Path
-
-required_pubspec = "^0.6.0"
-required_lock = "0.6.0"
 
 def clean(value: str) -> str:
     value = value.strip()
@@ -60,12 +54,36 @@ def stanza(lines, start, indent):
         out.append(line)
     return out
 
-def find_version(lines, start, indent):
+def find_path(lines, start, indent):
     for line in stanza(lines, start, indent):
-        match = re.match(r"\s*version:\s*(.+?)\s*$", line)
+        match = re.match(r"\s*path:\s*(.+?)\s*$", line)
         if match:
             return clean(match.group(1))
     return None
+
+def section_ranges(lines):
+    ranges = []
+    for index, line in enumerate(lines):
+        match = re.match(r"^(dependencies|dev_dependencies|dependency_overrides):\s*$", line)
+        if match:
+            ranges.append((match.group(1), index))
+    return ranges
+
+def section_end(lines, start):
+    for index in range(start + 1, len(lines)):
+        line = lines[index]
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        if re.match(r"^[A-Za-z0-9_]+:\s*$", line):
+            return index
+    return len(lines)
+
+def in_dependency_section(index, lines, ranges):
+    for _, start in ranges:
+        end = section_end(lines, start)
+        if start < index < end:
+            return True
+    return False
 
 failed = False
 for raw_path in sys.argv[1:]:
@@ -73,19 +91,40 @@ for raw_path in sys.argv[1:]:
     if not path.exists():
         continue
     lines = path.read_text().splitlines()
-    expected = required_lock if path.name == "pubspec.lock" else required_pubspec
+    dep_ranges = section_ranges(lines)
     for index, line in enumerate(lines):
-        match = re.match(r"^(\s*)(intentcall_[A-Za-z0-9_]+):(?:\s*(.*?))?\s*$", line)
+        if not in_dependency_section(index, lines, dep_ranges):
+            continue
+        match = re.match(r"^  (intentcall_[A-Za-z0-9_]+):(?:\s*(.*?))?\s*$", line)
         if not match:
             continue
-        indent = len(match.group(1))
-        package = match.group(2)
-        inline = clean(match.group(3) or "")
-        version = inline if inline else find_version(lines, index, indent)
-        if not version or version != expected:
+        package = match.group(1)
+        inline = clean(match.group(2) or "")
+        indent = 2
+        block = stanza(lines, index, indent)
+        dep_path = find_path(lines, index, indent)
+        if inline and not dep_path:
             print(
-                f"stale hosted intentcall version: {path}:{index + 1}: "
-                f"{package} uses {version or '<missing>'}; expected {expected}",
+                f"hosted intentcall dependency: {path}:{index + 1}: "
+                f"{package} uses hosted {inline}; expected path to "
+                f"agentkit/packages/{package}",
+                file=sys.stderr,
+            )
+            failed = True
+            continue
+        if not dep_path:
+            print(
+                f"missing intentcall path dependency: {path}:{index + 1}: "
+                f"{package} has no path: stanza",
+                file=sys.stderr,
+            )
+            failed = True
+            continue
+        expected_suffix = f"agentkit/packages/{package}"
+        if expected_suffix not in dep_path.replace("\\", "/"):
+            print(
+                f"unexpected intentcall path dependency: {path}:{index + 1}: "
+                f"{package} -> {dep_path}; expected */{expected_suffix}",
                 file=sys.stderr,
             )
             failed = True
@@ -97,37 +136,25 @@ PY
 version_files=()
 while IFS= read -r -d '' f; do
   version_files+=("$f")
-  if grep -nE "${patterns}" "$f" >"${matches_file}" 2>/dev/null; then
-    echo "path dep still present: $f" >&2
-    echo "matched stale path pattern: agentkit/packages | intentcall/packages | path: .*intentcall" >&2
-    cat "${matches_file}" >&2
-    found=1
-  fi
-done < <(find mcp_toolkit mcp_server_dart packages flutter_test_app -name pubspec.yaml -print0 2>/dev/null)
+done < <(find mcp_toolkit mcp_server_dart packages flutter_test_app jaspr_web_example -name pubspec.yaml -print0 2>/dev/null)
 
 if [[ "${strict_root}" == true ]]; then
   for f in pubspec.yaml pubspec.lock; do
-    version_files+=("$f")
-    if [[ -f "${f}" ]] && grep -nE "${patterns}" "$f" >"${matches_file}" 2>/dev/null; then
-      echo "root path override still present: $f" >&2
-      echo "matched release-blocking path pattern: agentkit/packages | intentcall/packages | path: .*intentcall" >&2
-      cat "${matches_file}" >&2
-      found=1
-    fi
+    [[ -f "${f}" ]] && version_files+=("$f")
   done
 fi
 
-if ! check_versions "${version_files[@]}"; then
+if ! check_path_deps "${version_files[@]}"; then
   found=1
 fi
 
 if [[ "${found}" -ne 0 ]]; then
-  echo "FAIL: use hosted intentcall deps ^0.6.0 for committed consumer state (see docs/intentcall/README.md)" >&2
+  echo "FAIL: committed consumers must path-depend on sibling agentkit intentcall_* packages (see docs/intentcall/README.md)" >&2
   exit 1
 fi
 
 if [[ "${strict_root}" == true ]]; then
-  echo "OK: no intentcall path deps in consumers or root release state"
+  echo "OK: agentkit intentcall path deps in consumers and root release state"
 else
-  echo "OK: no intentcall path deps in committed consumers (root local overrides not checked; run --strict-root before release/cutover)"
+  echo "OK: agentkit intentcall path deps in committed consumers (root not checked; run --strict-root for full gate)"
 fi

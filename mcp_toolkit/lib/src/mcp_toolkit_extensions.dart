@@ -127,7 +127,7 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
 
     final resourceUris = newEntries
         .where((final entry) => entry.hasResource)
-        .map((final entry) => entry.resourceUri)
+        .map((final entry) => entry.resolveResourceUri(protocolScheme))
         .toList();
 
     developer.postEvent('MCPToolkit.ToolRegistration', {
@@ -179,7 +179,7 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
           'name': descriptor.name,
           'description': descriptor.description,
           'mimeType': descriptor.mimeType ?? 'application/json',
-          'uri': descriptor.effectiveResourceUri,
+          'uri': entry.resolveResourceUri(protocolScheme),
           'inputSchema': descriptor.inputSchema,
         });
         continue;

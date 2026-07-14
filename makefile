@@ -24,6 +24,8 @@ check-contracts:
 	bash tool/contracts/check_tool_prefix.sh && \
 	bash tool/contracts/check_repo_split_paths.sh && \
 	bash tool/contracts/check_intentcall_hosted_consumer.sh && \
+	bash tool/contracts/check_apple_runner_compile.sh && \
+	bash tool/contracts/check_intentcall_jaspr_three_gate.sh && \
 	steward validate skills/
 
 .PHONY: release-artifacts

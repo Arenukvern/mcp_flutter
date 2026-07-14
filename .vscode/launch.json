@@ -14,12 +14,30 @@
       ]
     },
     {
+      "name": "flutter_test_app Chrome + WebMCP",
+      "request": "launch",
+      "type": "dart",
+      "cwd": "./flutter_test_app",
+      "deviceId": "chrome",
+      "flutterMode": "debug",
+      "args": [
+        "--web-port=8080",
+        "--host-vmservice-port=8181",
+        "--web-browser-flag=--user-data-dir=${workspaceFolder}/.showcase/chrome-webmcp-profile",
+        "--web-browser-flag=--enable-features=WebMCPTesting,WebModelContext,DevToolsWebMCPSupport",
+        "--web-browser-flag=--enable-experimental-web-platform-features",
+      ]
+    },
+    {
       "name": "devtools_mcp_extension debug",
       "request": "launch",
       "type": "dart",
       "cwd": "./mcp_toolkit/devtools_mcp_extension",
       "flutterMode": "debug",
-      "args": ["--debug", "--web-port=3434"]
+      "args": [
+        "--debug",
+        "--web-port=3434"
+      ]
     },
     {
       "name": "Debug MCP Server",
@@ -40,7 +58,9 @@
       "request": "launch",
       "program": "bin/main.dart",
       "console": "terminal",
-      "args": ["--log-level=debug"],
+      "args": [
+        "--log-level=debug"
+      ],
       "cwd": "${workspaceFolder}/mcp_server_dart"
     }
   ]

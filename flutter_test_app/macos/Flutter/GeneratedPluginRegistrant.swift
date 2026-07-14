@@ -6,7 +6,7 @@ import FlutterMacOS
 import Foundation
 
 import app_links
-import intentcall_platform
+import intentcall_platform_apple
 
 func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
   AppLinksMacosPlugin.register(with: registry.registrar(forPlugin: "AppLinksMacosPlugin"))
