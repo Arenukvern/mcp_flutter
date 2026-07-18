@@ -368,6 +368,7 @@ mixin SemanticSnapshotService {
         if (data.hasFlag(SemanticsFlag.isFocused)) 'focused': true,
         if (data.hasFlag(SemanticsFlag.isChecked)) 'checked': true,
         if (data.hasFlag(SemanticsFlag.isToggled)) 'toggled': true,
+        if (data.hasFlag(SemanticsFlag.isSelected)) 'selected': true,
         'bounds': <String, Object?>{
           'left': globalRect.left.roundToDouble(),
           'top': globalRect.top.roundToDouble(),
