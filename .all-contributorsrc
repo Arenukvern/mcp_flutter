@@ -171,6 +171,16 @@
         "maintenance",
         "bug"
       ]
+    },
+    {
+      "login": "dipsy",
+      "name": "dipsy",
+      "avatar_url": "https://avatars.githubusercontent.com/u/1336665?v=4",
+      "profile": "https://github.com/dipsy",
+      "contributions": [
+        "code",
+        "maintenance"
+      ]
     }
   ]
 }
