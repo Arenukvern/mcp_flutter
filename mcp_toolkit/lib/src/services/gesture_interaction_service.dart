@@ -65,14 +65,6 @@ mixin GestureInteractionService {
       if (owner != null) {
         owner.performAction(node.id, SemanticsAction.tap);
         await _waitFrame();
-        // Desktop: performAction alone often skips Material button callbacks.
-        if (!kIsWeb) {
-          final center = SemanticSnapshotService.resolveCenter(ref);
-          if (center != null) {
-            await _dispatchTap(center);
-            await _waitFrame();
-          }
-        }
         return <String, Object?>{
           'success': true,
           'ref': ref,
