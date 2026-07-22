@@ -8,6 +8,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
 import '../utils/image_compressor.dart';
+import 'background_frame_pump.dart';
 
 /// Service for taking screenshots of the main app view using RenderView layers.
 mixin ScreenshotService {
@@ -63,6 +64,7 @@ mixin ScreenshotService {
       );
       // Schedule a frame to ensure the layer tree is built and painted.
       WidgetsBinding.instance.scheduleFrame();
+      pumpFramesIfSuspended();
       // Wait for the frame to likely complete.
       await Future.delayed(const Duration(milliseconds: 100));
     }
