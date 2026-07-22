@@ -11,6 +11,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
+import 'background_frame_pump.dart';
 import 'semantic_snapshot_service.dart';
 
 /// A service that drives the running Flutter app using a two-tier strategy:
@@ -1061,9 +1062,13 @@ mixin GestureInteractionService {
   }
 
   /// Wait one vsync frame (~16 ms) so the framework can flush pointer / focus
-  /// work triggered by a preceding dispatch.
-  static Future<void> _waitFrame() =>
-      Future<void>.delayed(const Duration(milliseconds: 16));
+  /// work triggered by a preceding dispatch. When the window is backgrounded
+  /// the engine delivers no vsync — the pipeline is then driven manually so
+  /// the dispatch still lands in layout/paint/semantics.
+  static Future<void> _waitFrame() async {
+    await pumpFramesIfSuspended();
+    await Future<void>.delayed(const Duration(milliseconds: 16));
+  }
 
   static Future<void> _waitSemanticScrollFrame() async {
     await _waitFrame();

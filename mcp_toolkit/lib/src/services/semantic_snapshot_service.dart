@@ -5,6 +5,8 @@ import 'dart:ui' as ui;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
+import 'background_frame_pump.dart';
+
 /// A service that walks the Flutter semantics tree and produces a compact,
 /// AI-friendly snapshot of interactive / meaningful elements.
 ///
@@ -235,7 +237,13 @@ mixin SemanticSnapshotService {
       if (isCold) {
         // Cold path only: give Flutter a frame to actually populate the tree.
         binding.scheduleFrame();
-        await binding.endOfFrame;
+        final endOfFrame = binding.endOfFrame;
+        await pumpFramesIfSuspended();
+        await endOfFrame;
+      } else {
+        // A backgrounded window pumps no frames on its own — flush any
+        // pending state so the snapshot reflects the latest dispatches.
+        await pumpFramesIfSuspended();
       }
 
       return await _buildSnapshotBody(incrementId: incrementId);
