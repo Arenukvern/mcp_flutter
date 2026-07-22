@@ -238,12 +238,12 @@ mixin SemanticSnapshotService {
         // Cold path only: give Flutter a frame to actually populate the tree.
         binding.scheduleFrame();
         final endOfFrame = binding.endOfFrame;
-        pumpFramesIfSuspended();
+        await pumpFramesIfSuspended();
         await endOfFrame;
       } else {
         // A backgrounded window pumps no frames on its own — flush any
         // pending state so the snapshot reflects the latest dispatches.
-        pumpFramesIfSuspended();
+        await pumpFramesIfSuspended();
       }
 
       return await _buildSnapshotBody(incrementId: incrementId);

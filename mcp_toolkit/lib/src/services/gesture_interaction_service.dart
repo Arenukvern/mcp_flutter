@@ -1066,7 +1066,7 @@ mixin GestureInteractionService {
   /// the engine delivers no vsync — the pipeline is then driven manually so
   /// the dispatch still lands in layout/paint/semantics.
   static Future<void> _waitFrame() async {
-    pumpFramesIfSuspended();
+    await pumpFramesIfSuspended();
     await Future<void>.delayed(const Duration(milliseconds: 16));
   }
 
