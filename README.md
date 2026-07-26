@@ -10,6 +10,7 @@ _Inspect and drive a running Flutter app from your AI assistant._
 [![intentcall eval gates](https://github.com/Arenukvern/mcp_flutter/actions/workflows/intentcall_eval.yml/badge.svg?branch=main)](https://github.com/Arenukvern/mcp_flutter/actions/workflows/intentcall_eval.yml)
 [![skill-assets-drift](https://github.com/Arenukvern/mcp_flutter/actions/workflows/skill_assets_drift.yml/badge.svg?branch=main)](https://github.com/Arenukvern/mcp_flutter/actions/workflows/skill_assets_drift.yml)
 [![Docs](https://img.shields.io/badge/docs-docs.page-blue)](https://docs.page/arenukvern/mcp_flutter/)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Arenukvern/mcp_flutter)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Flutter](https://img.shields.io/badge/Flutter-%3E%3D3.44-blue.svg)](https://flutter.dev)
 [![smithery badge](https://smithery.ai/badge/@Arenukvern/mcp_flutter)](https://smithery.ai/server/@Arenukvern/mcp_flutter)
