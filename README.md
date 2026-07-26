@@ -55,6 +55,7 @@ That's it. Your AI agent can now inspect and drive the running app — and your 
 
 
 ## 📰 News
+-**2026-07-11** - v4 new Live Demos records: [v4 semantic snapshot etc.. with Grok Build CLI](https://youtu.be/P0ObCyt0k3M), [v4 with IntentCall power - WebMCP projection](https://www.youtube.com/watch?v=mX4xxVeImq0) 
 
 - **2026-05-26** — v3.1.0: Platform-view capture routing, macOS/iOS Simulator host screenshots, web CDP tab capture (SCK → CDP → flutter_layer), and cross-platform showcase platform views.
 <!-- TODO(arenukvern): add tool to write news automatically -->
@@ -223,6 +224,7 @@ More detail: [docs/contributing/contributors.mdx](docs/contributing/contributors
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/drown0315"><img src="https://avatars.githubusercontent.com/u/108989782?v=4?s=100" width="100px;" alt="drown0315"/><br /><sub><b>drown0315</b></sub></a><br /><a href="#code-drown0315" title="Code">💻</a> <a href="#maintenance-drown0315" title="Maintenance">🚧</a> <a href="#bug-drown0315" title="Bug reports">🐛</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/druyang"><img src="https://avatars.githubusercontent.com/u/46964831?v=4?s=100" width="100px;" alt="druyang"/><br /><sub><b>druyang</b></sub></a><br /><a href="#code-druyang" title="Code">💻</a> <a href="#maintenance-druyang" title="Maintenance">🚧</a> <a href="#bug-druyang" title="Bug reports">🐛</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/dipsy"><img src="https://avatars.githubusercontent.com/u/1336665?v=4?s=100" width="100px;" alt="dipsy"/><br /><sub><b>dipsy</b></sub></a><br /><a href="#code-dipsy" title="Code">💻</a> <a href="#maintenance-dipsy" title="Maintenance">🚧</a> <a href="#bug-dipsy" title="Bug reports">🐛</a></td>
     </tr>
   </tbody>
 </table>

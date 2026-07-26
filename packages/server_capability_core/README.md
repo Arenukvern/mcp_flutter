@@ -11,9 +11,9 @@ Server-side Dart only — no Flutter SDK dependency.
 
 ```yaml
 dependencies:
-  flutter_mcp_toolkit_capability_core: ^4.0.0-dev.6
-  flutter_mcp_toolkit_capability_kernel: ^4.0.0-dev.6
-  flutter_mcp_toolkit_core: ^4.0.0-dev.6
+  flutter_mcp_toolkit_capability_core: ^4.0.0-dev.7
+  flutter_mcp_toolkit_capability_kernel: ^4.0.0-dev.7
+  flutter_mcp_toolkit_core: ^4.0.0-dev.7
 ```
 
 ## Usage
@@ -70,8 +70,8 @@ server tools. Operator migration uses hand-written `fmt_migrate_agent_entries`.
 | Requirement | Status |
 |-------------|--------|
 | `LICENSE`, `README.md`, `CHANGELOG.md` | Included |
-| Hosted sibling deps in `pubspec.yaml` | kernel + core `^4.0.0-dev.6` |
-| Publish **after** kernel and core `4.0.0-dev.6` on pub.dev | Required |
+| Hosted sibling deps in `pubspec.yaml` | kernel + core `^4.0.0-dev.7` |
+| Publish **after** kernel and core `4.0.0-dev.7` on pub.dev | Required |
 | `dart pub publish --dry-run` | Run before release |
 
 ## License

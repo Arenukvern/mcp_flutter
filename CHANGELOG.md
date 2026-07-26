@@ -3,6 +3,27 @@
 <!-- markdownlint-disable MD052 -->
 <!-- Keep a Changelog version headings use [3.0.1] brackets; MD052 treats them as reference links. -->
 
+## [4.0.0-dev.7](https://github.com/Arenukvern/mcp_flutter/compare/v4.0.0-dev.6...v4.0.0-dev.7) (2026-07-18)
+
+
+### Features
+
+* **mcp_toolkit:** expose isSelected flag in semantic snapshot nodes ([64a35af](https://github.com/Arenukvern/mcp_flutter/commit/64a35afaec15b4e58d95bbbaa43a6be1d62fc092))
+
+
+### Bug Fixes
+
+* **mcp_toolkit:** don't double-dispatch tap on desktop when semantic action succeeds ([ab6fc27](https://github.com/Arenukvern/mcp_flutter/commit/ab6fc27239a5c92d527d1ce7582c00d0454c2572))
+* **mcp_toolkit:** tap double-dispatch on desktop + expose isSelected in semantic snapshot ([af2da1a](https://github.com/Arenukvern/mcp_flutter/commit/af2da1a744953ad7188548ac9cf445a485f83d26))
+
+
+### Documentation
+
+* add dipsy as a contributor for code, and maintenance ([fea5eab](https://github.com/Arenukvern/mcp_flutter/commit/fea5eabe561479516f3e240220b8fdff5abbdf98))
+* update .all-contributorsrc ([1f670f2](https://github.com/Arenukvern/mcp_flutter/commit/1f670f2d17ca1e554d3774f707525ca2dee498d6))
+* update README.md ([d078171](https://github.com/Arenukvern/mcp_flutter/commit/d078171e8c50aebeb3d1572474ce1a83b0e19400))
+* update star history chart to README ([46e5d89](https://github.com/Arenukvern/mcp_flutter/commit/46e5d8998055c75466d2b3b167abbc7e0fac5516))
+
 ## [4.0.0-dev.6](https://github.com/Arenukvern/mcp_flutter/compare/v4.0.0-dev.5...v4.0.0-dev.6) (2026-07-05)
 
 

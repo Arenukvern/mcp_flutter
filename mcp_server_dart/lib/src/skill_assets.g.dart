@@ -2375,7 +2375,7 @@ Full Chrome runtime dogfood stays **local** until headless WebMCP is cost-effect
   static const String cursorPluginManifest = r'''{
   "name": "flutter-mcp-toolkit",
   "description": "Flutter MCP toolkit: inspect and drive debug apps (semantic snapshot, tap, hot-reload) and register custom MCP tools and resources at runtime from your Flutter app or game via mcp_toolkit — closed agent feedback loop.",
-  "version": "4.0.0-dev.6",
+  "version": "4.0.0-dev.7",
   "author": {
     "name": "Arenukvern",
     "url": "https://github.com/Arenukvern/mcp_flutter"
@@ -2399,7 +2399,7 @@ Full Chrome runtime dogfood stays **local** until headless WebMCP is cost-effect
 ''';
   static const String codexPluginManifest = r'''{
   "name": "flutter-mcp-toolkit",
-  "version": "4.0.0-dev.6",
+  "version": "4.0.0-dev.7",
   "description": "Flutter MCP toolkit: inspect and drive debug apps (semantic snapshot, tap, hot-reload) and register custom MCP tools and resources at runtime from your Flutter app or game via mcp_toolkit — closed agent feedback loop.",
   "author": {
     "name": "Arenukvern",
