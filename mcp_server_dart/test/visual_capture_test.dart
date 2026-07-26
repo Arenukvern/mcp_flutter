@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_mcp_toolkit_server/flutter_mcp_core.dart';
@@ -117,6 +118,40 @@ void main() {
   });
 
   test(
+    'app bridge detects supported kinds from normalized resource parameters',
+    () async {
+      final broker = VisualCaptureBroker(
+        configuration: const CoreRuntimeConfiguration(
+          vmHost: 'localhost',
+          vmPort: 8181,
+          resourcesSupported: true,
+          imagesSupported: true,
+          dumpsSupported: false,
+          dynamicRegistrySupported: true,
+          saveImagesToFiles: false,
+          flutterDevice: 'ios',
+        ),
+        dynamicGateway: _FakeDynamicGateway(
+          resourceData: <String, Object?>{
+            'content': jsonEncode(<String, Object?>{
+              'parameters': <String, Object?>{
+                'supportedKinds': <String>[
+                  PermissionKind.visualCapture.wireName,
+                ],
+              },
+            }),
+          },
+        ),
+        adapters: const <VisualCapturePlatformAdapter>[
+          _PlaceholderAppBridgeAdapter(),
+        ],
+      );
+
+      expect(await broker.isAppBridgeInstalled(), isTrue);
+    },
+  );
+
+  test(
     'prepareForCapture honors bridge-supported modes on app-owned targets',
     () async {
       final broker = VisualCaptureBroker(
@@ -204,6 +239,10 @@ final class _PlaceholderAppBridgeAdapter
 }
 
 final class _FakeDynamicGateway implements CoreDynamicGateway {
+  _FakeDynamicGateway({this.resourceData});
+
+  final Map<String, Object?>? resourceData;
+
   @override
   Future<CoreResult> dynamicRegistryStats({
     required final bool includeAppDetails,
@@ -214,14 +253,20 @@ final class _FakeDynamicGateway implements CoreDynamicGateway {
       CoreResult.success();
 
   @override
-  Future<CoreResult> runClientResource(final String resourceUri) async =>
-      CoreResult.success(
-        data: <String, Object?>{
-          'payload': <String, Object?>{
-            'supportedKinds': <String>[PermissionKind.visualCapture.wireName],
-          },
+  Future<CoreResult> runClientResource(final String resourceUri) async {
+    final data = resourceData;
+    if (data != null) {
+      return CoreResult.success(data: data);
+    }
+
+    return CoreResult.success(
+      data: <String, Object?>{
+        'payload': <String, Object?>{
+          'supportedKinds': <String>[PermissionKind.visualCapture.wireName],
         },
-      );
+      },
+    );
+  }
 
   @override
   Future<CoreResult> runClientTool(

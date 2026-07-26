@@ -105,10 +105,10 @@ final class DynamicRegistryAppPermissionBridgeGateway
     try {
       final decoded = jsonDecode(content);
       if (decoded is Map<String, Object?>) {
-        return _asStringList(decoded['supportedKinds']);
+        return _supportedKindsFromObject(decoded);
       }
       if (decoded is Map) {
-        return _asStringList(decoded['supportedKinds']);
+        return _supportedKindsFromObject(decoded);
       }
       if (decoded is List) {
         return decoded.whereType<String>().toList(growable: false);
@@ -186,6 +186,15 @@ final class DynamicRegistryAppPermissionBridgeGateway
       bridgeInstalled: true,
     );
   }
+}
+
+List<String> _supportedKindsFromObject(final Map<dynamic, dynamic> value) {
+  final direct = _asStringList(value['supportedKinds']);
+  if (direct.isNotEmpty) {
+    return direct;
+  }
+
+  return _asStringList(_asObject(value['parameters'])['supportedKinds']);
 }
 
 final class WebVisualCapturePlatformAdapter
