@@ -3,6 +3,37 @@
 <!-- markdownlint-disable MD052 -->
 <!-- Keep a Changelog version headings use [3.0.1] brackets; MD052 treats them as reference links. -->
 
+## [4.0.0-dev.8](https://github.com/Arenukvern/mcp_flutter/compare/v4.0.0-dev.7...v4.0.0-dev.8) (2026-07-31)
+
+
+### Features
+
+* **mcp_toolkit:** pump frames manually while the host window is backgrounded ([729519e](https://github.com/Arenukvern/mcp_flutter/commit/729519ecd1eb336efc3efc48a1ec06fa92e809bf))
+* **mcp_toolkit:** pump frames manually while the host window is backgrounded. Contributed by https://github.com/dipsy (thank you!) ([8264cde](https://github.com/Arenukvern/mcp_flutter/commit/8264cded0156e4468bb4a2be26dac362b51e3c42))
+
+
+### Bug Fixes
+
+* **mcp_toolkit:** preserve mid-frame microtask phase in suspended pump ([3d6ee73](https://github.com/Arenukvern/mcp_flutter/commit/3d6ee738c61d25748879d7dc81aa270af19c0f6c))
+* **server:** return capture_ui_snapshot images as ImageContent ([043dc7a](https://github.com/Arenukvern/mcp_flutter/commit/043dc7afaf9c3c66c5abd2b14b9de641fde03368))
+* **server:** return capture_ui_snapshot images as ImageContent. Made by https://github.com/dipsy ([3667891](https://github.com/Arenukvern/mcp_flutter/commit/3667891a82bebc480b627f7f7641ee2bee40b219))
+* **tool:** detect repo root from a linked worktree in build_skill_assets ([87c5cc8](https://github.com/Arenukvern/mcp_flutter/commit/87c5cc880bbe2272f7f1dbcdd5a284a1962c4c72))
+* **tool:** detect repo root from a linked worktree in build_skill_assets ([3ea5433](https://github.com/Arenukvern/mcp_flutter/commit/3ea54336d2132b6fa09a1096e75a425c6503960b))
+
+
+### Documentation
+
+* Add Ask DeepWiki badge to README ([6975f88](https://github.com/Arenukvern/mcp_flutter/commit/6975f88acf033d14c17213c532af2fd441c8f2b0))
+* add chrstphe as a contributor for doc, and platform ([9b6fd6b](https://github.com/Arenukvern/mcp_flutter/commit/9b6fd6b17e6ec869b4197d07792086b710fa7b15))
+* add dipsy as a contributor for code, maintenance, and bug ([99d669e](https://github.com/Arenukvern/mcp_flutter/commit/99d669e8b580a698bee8fca0ac87d4eb1beba460))
+* add wenyue as a contributor for code, and maintenance ([41fc0e6](https://github.com/Arenukvern/mcp_flutter/commit/41fc0e6d68eb95e5c71b1486a336721486e2f00f))
+* update .all-contributorsrc ([35101e0](https://github.com/Arenukvern/mcp_flutter/commit/35101e0fd70e7e0902a61723ff0502bdff9c1078))
+* update .all-contributorsrc ([1ccbbce](https://github.com/Arenukvern/mcp_flutter/commit/1ccbbcecb7dd26e92f559cd49da8eceefd88cc95))
+* update .all-contributorsrc ([57e2178](https://github.com/Arenukvern/mcp_flutter/commit/57e2178666998d5db6d5758e860b026efc094816))
+* update README.md ([3d4399f](https://github.com/Arenukvern/mcp_flutter/commit/3d4399f0b8c83f773267ecfacd0cafadc1cfd219))
+* update README.md ([c055f5a](https://github.com/Arenukvern/mcp_flutter/commit/c055f5afcd198a851c6b3d7a43901d2d289416c7))
+* update README.md ([a15e2bc](https://github.com/Arenukvern/mcp_flutter/commit/a15e2bc87cbb5a01196ef1162db4e6291c47593c))
+
 ## [4.0.0-dev.7](https://github.com/Arenukvern/mcp_flutter/compare/v4.0.0-dev.6...v4.0.0-dev.7) (2026-07-18)
 
 
