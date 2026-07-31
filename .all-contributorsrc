@@ -192,6 +192,16 @@
         "code",
         "maintenance"
       ]
+    },
+    {
+      "login": "chrstphe",
+      "name": "Christophe",
+      "avatar_url": "https://avatars.githubusercontent.com/u/10966918?v=4",
+      "profile": "http://biff.ai",
+      "contributions": [
+        "doc",
+        "platform"
+      ]
     }
   ]
 }

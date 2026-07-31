@@ -229,6 +229,7 @@ More detail: [docs/contributing/contributors.mdx](docs/contributing/contributors
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/druyang"><img src="https://avatars.githubusercontent.com/u/46964831?v=4?s=100" width="100px;" alt="druyang"/><br /><sub><b>druyang</b></sub></a><br /><a href="#code-druyang" title="Code">💻</a> <a href="#maintenance-druyang" title="Maintenance">🚧</a> <a href="#bug-druyang" title="Bug reports">🐛</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/dipsy"><img src="https://avatars.githubusercontent.com/u/1336665?v=4?s=100" width="100px;" alt="dipsy"/><br /><sub><b>dipsy</b></sub></a><br /><a href="#code-dipsy" title="Code">💻</a> <a href="#maintenance-dipsy" title="Maintenance">🚧</a> <a href="#bug-dipsy" title="Bug reports">🐛</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/wenyue"><img src="https://avatars.githubusercontent.com/u/4454019?v=4?s=100" width="100px;" alt="wenyue"/><br /><sub><b>wenyue</b></sub></a><br /><a href="#code-wenyue" title="Code">💻</a> <a href="#maintenance-wenyue" title="Maintenance">🚧</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="http://biff.ai"><img src="https://avatars.githubusercontent.com/u/10966918?v=4?s=100" width="100px;" alt="Christophe"/><br /><sub><b>Christophe</b></sub></a><br /><a href="#doc-chrstphe" title="Documentation">📖</a> <a href="#platform-chrstphe" title="Packaging/porting to new platform">📦</a></td>
     </tr>
   </tbody>
 </table>
