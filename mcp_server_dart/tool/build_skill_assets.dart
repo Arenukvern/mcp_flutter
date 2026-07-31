@@ -132,7 +132,10 @@ _Parts _splitFrontmatter(final String content) {
 Directory _findRepoRoot() {
   var dir = Directory.current;
   while (dir.parent.path != dir.path) {
-    if (Directory('${dir.path}/.git').existsSync()) return dir;
+    // `.git` is a directory in a plain clone, and a file holding a `gitdir:`
+    // pointer in a linked worktree or a submodule checkout.
+    final marker = '${dir.path}/.git';
+    if (Directory(marker).existsSync() || File(marker).existsSync()) return dir;
     dir = dir.parent;
   }
   throw StateError('Not in a git repo');
