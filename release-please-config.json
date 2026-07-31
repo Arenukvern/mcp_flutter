@@ -51,7 +51,12 @@
         "packages/server_capability_core/pubspec.yaml",
         "packages/core/README.md",
         "packages/server_capability_kernel/README.md",
-        "packages/server_capability_core/README.md"
+        "packages/server_capability_core/README.md",
+        {
+          "type": "json",
+          "path": "mcp_server_dart/server.json",
+          "jsonpath": "$.version"
+        }
       ]
     }
   }

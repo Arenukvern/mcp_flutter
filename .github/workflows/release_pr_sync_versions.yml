@@ -71,6 +71,7 @@ jobs:
             packages/core/README.md \
             packages/server_capability_kernel/README.md \
             packages/server_capability_core/README.md \
+            mcp_server_dart/server.json \
             packages/core/lib/src/runtime_version.dart \
             packages/server_capability_core/lib/src/fmt_capability.dart
           git commit -m "chore: sync release version touchpoints"

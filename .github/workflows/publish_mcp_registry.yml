@@ -1,0 +1,78 @@
+name: Publish MCP Registry server
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
+concurrency:
+  group: mcp-registry-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: mcp-registry-publish
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Resolve release version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            version="${GITHUB_REF_NAME#v}"
+          else
+            version="$(tr -d '[:space:]' < VERSION)"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Synchronize release metadata
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: bash tool/release/sync_version.sh --version "$RELEASE_VERSION"
+
+      - name: Verify MCP Registry contracts
+        run: bash tool/contracts/check_mcp_registry.sh
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and publish OCI image
+        uses: docker/build-push-action@v6
+        with:
+          context: mcp_server_dart
+          file: Dockerfile.registry
+          push: true
+          tags: ghcr.io/arenukvern/flutter-mcp-toolkit:${{ steps.version.outputs.version }}
+
+      - name: Ensure GHCR package is public
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh api --method PATCH "user/packages/container/flutter-mcp-toolkit" -f visibility=public
+
+      - name: Install mcp-publisher
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher
+          chmod +x mcp-publisher
+
+      - name: Validate server manifest with the Registry
+        run: ./mcp-publisher validate mcp_server_dart/server.json
+
+      - name: Authenticate to MCP Registry with GitHub OIDC
+        run: ./mcp-publisher login github-oidc
+
+      - name: Publish server metadata to MCP Registry
+        working-directory: mcp_server_dart
+        run: ../mcp-publisher publish

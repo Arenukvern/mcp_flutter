@@ -1,0 +1,42 @@
+# MCP Registry image build. This is intentionally separate from the legacy
+# Dockerfiles so existing `docker build .` users keep their current contract.
+# Build from mcp_server_dart:
+# docker build -f Dockerfile.registry -t flutter-mcp-toolkit:registry .
+
+FROM dart:3.12.0-sdk AS build
+
+WORKDIR /app
+
+COPY pubspec.yaml ./pubspec.yaml
+# The registry image resolves published sibling packages independently from
+# the monorepo workspace, which keeps this image reproducible in CI.
+RUN sed -i '/^resolution: workspace$/d' pubspec.yaml && dart pub get
+
+COPY bin/ ./bin/
+COPY lib/ ./lib/
+COPY analysis_options.yaml ./
+
+RUN dart compile exe bin/flutter_mcp_toolkit_server.dart -o /app/mcp_server
+
+FROM debian:bookworm-slim
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates tini && \
+    rm -rf /var/lib/apt/lists/* && \
+    apt-get clean
+
+RUN useradd -r -u 1001 -g root mcpuser
+
+WORKDIR /app
+COPY --from=build --chown=mcpuser:root /app/mcp_server /app/mcp_server
+USER mcpuser
+
+ENTRYPOINT ["/usr/bin/tini", "--", "/app/mcp_server"]
+
+# Required by the MCP Registry. Additional OCI labels describe the server's
+# semantic snapshots, built-in tools, and runtime client-tool registry.
+LABEL io.modelcontextprotocol.server.name="io.github.Arenukvern/flutter-mcp-toolkit" \
+      org.opencontainers.image.title="Flutter MCP Toolkit" \
+      org.opencontainers.image.description="Flutter MCP server with semantic snapshots, ready-to-use interaction tools, and runtime-registered client tools and resources."
+
+CMD ["--resources", "--images", "--log-level=error", "--environment=production"]

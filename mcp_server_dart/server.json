@@ -1,0 +1,23 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.Arenukvern/flutter-mcp-toolkit",
+  "title": "Flutter MCP Toolkit",
+  "description": "Inspect & drive Flutter debug apps/games: ie semantic snapshot/search& customizable client-tools",
+  "repository": {
+    "url": "https://github.com/Arenukvern/mcp_flutter",
+    "source": "github",
+    "subfolder": "mcp_server_dart"
+  },
+  "websiteUrl": "https://docs.page/arenukvern/mcp_flutter",
+  "version": "4.0.0-dev.8",
+  "packages": [
+    {
+      "registryType": "oci",
+      "registryBaseUrl": "https://ghcr.io",
+      "identifier": "ghcr.io/arenukvern/flutter-mcp-toolkit:4.0.0-dev.8",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

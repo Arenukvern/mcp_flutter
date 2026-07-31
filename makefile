@@ -24,7 +24,8 @@ check-contracts:
 	bash tool/contracts/check_tool_prefix.sh && \
 	bash tool/contracts/check_repo_split_paths.sh && \
 	bash tool/contracts/check_intentcall_hosted_consumer.sh && \
-	steward validate skills/
+	bash tool/contracts/check_mcp_registry.sh && \
+	 steward validate skills/
 
 .PHONY: release-artifacts
 release-artifacts:

@@ -7,6 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
+  actions: write
   contents: read
   id-token: write
 
@@ -40,3 +41,9 @@ jobs:
       - name: Publish packages
         if: github.event_name == 'push'
         run: bash tool/release/publish_pub_packages.sh --execute --skip-existing
+
+      - name: Trigger MCP Registry publication
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run publish_mcp_registry.yml --ref "${GITHUB_REF_NAME}"

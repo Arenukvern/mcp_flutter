@@ -10,6 +10,10 @@ Two Dockerfiles are provided:
 
 - **`Dockerfile`** - Production-ready, multi-stage build with compiled binary
 - **`Dockerfile.dev`** - Development version with Dart VM for debugging
+- **`Dockerfile.registry`** - Dedicated GHCR/MCP Registry image with Registry ownership metadata
+
+The first two files preserve the existing local Docker contract. The Registry
+workflow uses `Dockerfile.registry` and does not change local Docker builds.
 
 ## Production Deployment
 
