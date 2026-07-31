@@ -156,10 +156,12 @@ void registerInspectionTools(final CapabilityContext context) {
   // ---------------------------------------------------------------------------
   // capture_ui_snapshot
   // ---------------------------------------------------------------------------
-  // The "bundle" described in docs is JSON inside a single TextContent.
-  // Legacy resource_handler.dart captureUiSnapshot (lines 472-474) returns
-  //   CallToolResult(content: [TextContent(text: jsonEncode(result.data))]).
-  // No multi-content transform required — standard runCommand with no onSuccess.
+  // The bundle travels as JSON in a TextContent, but captured images are lifted
+  // out of `screenshots.images` into ImageContent blocks (same artifact contract
+  // as get_screenshots). Base64 inlined into the JSON counts against the client
+  // response budget as text, which overflows it for a single desktop frame.
+  // `imageSummaries` keeps the per-image ids/hashes, so the bundle stays
+  // self-describing with the payload removed.
   context.registerTool(
     ToolRegistration(
       name: 'capture_ui_snapshot',
@@ -188,6 +190,33 @@ void registerInspectionTools(final CapabilityContext context) {
             screenshotMode: parseScreenshotMode(args['screenshotMode']),
             permissionPolicy: parsePermissionPolicy(args['permissionPolicy']),
           ),
+          onSuccess: (final data) {
+            final bundle = _asMap(data);
+            final screenshots = _asMap(bundle['screenshots']);
+            final images = _stringList(screenshots['images']);
+            if (images.isEmpty) {
+              return AgentResult.success(
+                artifacts: [AgentArtifact.text(jsonEncode(bundle))],
+              );
+            }
+            return AgentResult.success(
+              artifacts: [
+                AgentArtifact.text(
+                  jsonEncode(<String, Object?>{
+                    ...bundle,
+                    'screenshots': <String, Object?>{
+                      ...screenshots,
+                      'images': const <String>[],
+                    },
+                  }),
+                ),
+                ...images.map(
+                  (final image) =>
+                      AgentArtifact.text(image, mimeType: 'image/png'),
+                ),
+              ],
+            );
+          },
         );
       },
     ),
