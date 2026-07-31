@@ -2,6 +2,8 @@
 
 # flutter-mcp-toolkit
 
+[![MCP Toplist](https://mcptoplist.com/badge/glama%2FArenukvern%2Fmcp_flutter.svg)](https://mcptoplist.com/server/glama%2FArenukvern%2Fmcp_flutter)
+
 _Inspect and drive a running Flutter app from your AI assistant._
 
 [![skills.sh](https://skills.sh/b/arenukvern/mcp_flutter)](https://skills.sh/arenukvern/mcp_flutter)

@@ -592,6 +592,73 @@ void main() {
     );
 
     test(
+      'capture_ui_snapshot onSuccess: images move to ImageContent blocks '
+      'and leave the bundle JSON',
+      () async {
+        final runner = FakeCommandRunner()
+          ..nextExecuteResult = CoreResult.success(
+            data: {
+              'message': 'Captured UI snapshot bundle.',
+              'screenshots': {
+                'images': ['base64dataA', 'base64dataB'],
+                'fileUrls': <String>[],
+                'captureMode': 'flutter_layer',
+              },
+              'imageSummaries': [
+                {'id': 'image_1', 'source': 'inline_base64'},
+                {'id': 'image_2', 'source': 'inline_base64'},
+              ],
+            },
+          );
+        final ctx = _registeredCtx(runner: runner);
+        final reg = ctx.registrationFor('capture_ui_snapshot')!;
+        final result = await reg.handler(const <String, Object?>{});
+        expect(result.ok, isTrue);
+        expect(result.artifacts, hasLength(3));
+
+        final bundle =
+            jsonDecode(result.artifacts.first.text!) as Map<String, Object?>;
+        final screenshots = bundle['screenshots']! as Map<String, Object?>;
+        expect(screenshots['images'], isEmpty);
+        expect(screenshots['captureMode'], 'flutter_layer');
+        expect(bundle['imageSummaries'], hasLength(2));
+
+        final images = result.artifacts
+            .where((final a) => a.mimeType == 'image/png')
+            .toList();
+        expect(images, hasLength(2));
+        expect(images[0].text, 'base64dataA');
+        expect(images[1].text, 'base64dataB');
+      },
+    );
+
+    test(
+      'capture_ui_snapshot onSuccess: fileUrls bundle stays a single '
+      'TextContent',
+      () async {
+        final runner = FakeCommandRunner()
+          ..nextExecuteResult = CoreResult.success(
+            data: {
+              'screenshots': {
+                'images': <String>[],
+                'fileUrls': ['file:///tmp/screen0.png'],
+              },
+            },
+          );
+        final ctx = _registeredCtx(runner: runner);
+        final reg = ctx.registrationFor('capture_ui_snapshot')!;
+        final result = await reg.handler(const <String, Object?>{});
+        expect(result.ok, isTrue);
+        expect(result.artifacts, hasLength(1));
+        expect(result.artifacts.single.mimeType, 'text/plain');
+        final bundle =
+            jsonDecode(result.artifacts.single.text!) as Map<String, Object?>;
+        final screenshots = bundle['screenshots']! as Map<String, Object?>;
+        expect(screenshots['fileUrls'], ['file:///tmp/screen0.png']);
+      },
+    );
+
+    test(
       'capture_ui_snapshot handler short-circuits on override failure',
       () async {
         final runner = FakeCommandRunner()
