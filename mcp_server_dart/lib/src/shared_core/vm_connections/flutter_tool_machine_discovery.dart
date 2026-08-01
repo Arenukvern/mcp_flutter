@@ -9,6 +9,7 @@ import 'dart:io';
 
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/types/core_types.dart';
+import 'package:meta/meta.dart';
 
 final class FlutterMachineDiscoveryTarget {
   const FlutterMachineDiscoveryTarget({
@@ -54,6 +55,13 @@ final class FlutterMachineEventData {
 
 typedef FlutterAttachArgumentsBuilder = List<String> Function({String? device});
 typedef FlutterMachineProcessLinesProvider = Future<List<String>> Function();
+typedef FlutterMachineProcessStarter =
+    Future<Process> Function(
+      String executable,
+      List<String> arguments, {
+      String? workingDirectory,
+      bool runInShell,
+    });
 
 /// Discovers active Flutter debug VMs by parsing `flutter attach --machine`.
 final class FlutterToolMachineDiscovery {
@@ -62,14 +70,26 @@ final class FlutterToolMachineDiscovery {
     this.flutterExecutable = 'flutter',
     this.attachArgumentsBuilder = _defaultAttachArgumentsBuilder,
     this.processLinesProvider = _defaultProcessLinesProvider,
+    @visibleForTesting this.processStarter = _defaultProcessStarter,
+    @visibleForTesting this.isWindows,
     this.settleAfterFirstMatch = const Duration(milliseconds: 250),
+    @visibleForTesting this.stopTimeout = const Duration(milliseconds: 400),
   });
 
   final CoreLogger logger;
   final String flutterExecutable;
   final FlutterAttachArgumentsBuilder attachArgumentsBuilder;
   final FlutterMachineProcessLinesProvider processLinesProvider;
+  @visibleForTesting
+  final FlutterMachineProcessStarter processStarter;
+
+  @visibleForTesting
+  final bool? isWindows;
+
   final Duration settleAfterFirstMatch;
+
+  @visibleForTesting
+  final Duration stopTimeout;
 
   Future<List<FlutterMachineDiscoveryTarget>> discover({
     final String? projectDir,
@@ -102,7 +122,7 @@ final class FlutterToolMachineDiscovery {
         logger: 'FlutterMachineDiscovery',
       );
 
-      process = await Process.start(
+      process = await processStarter(
         flutterExecutable,
         args,
         workingDirectory: _normalizePath(projectDir),
@@ -455,6 +475,51 @@ final class FlutterToolMachineDiscovery {
         .toList(growable: false);
   }
 
+  static Future<Process> _defaultProcessStarter(
+    final String executable,
+    final List<String> arguments, {
+    final String? workingDirectory,
+    final bool runInShell = false,
+  }) => Process.start(
+    executable,
+    arguments,
+    workingDirectory: workingDirectory,
+    runInShell: runInShell,
+  );
+
+  Future<bool> _terminateWindowsProcessTree(final int pid) async {
+    Process taskkillProcess;
+    try {
+      taskkillProcess = await processStarter('taskkill', <String>[
+        '/PID',
+        '$pid',
+        '/T',
+        '/F',
+      ], runInShell: false);
+    } on Exception {
+      return false;
+    }
+
+    unawaited(taskkillProcess.stdout.drain<void>());
+    unawaited(taskkillProcess.stderr.drain<void>());
+
+    try {
+      return await taskkillProcess.exitCode.timeout(stopTimeout) == 0;
+    } on TimeoutException {
+      taskkillProcess.kill();
+      try {
+        await taskkillProcess.exitCode.timeout(stopTimeout);
+      } on TimeoutException {
+        taskkillProcess.kill(ProcessSignal.sigkill);
+        await taskkillProcess.exitCode.timeout(
+          stopTimeout,
+          onTimeout: () => -1,
+        );
+      }
+      return false;
+    }
+  }
+
   static String _normalizeWsPath(final String path) {
     final rawPath = path.trim();
     if (rawPath.isEmpty) {
@@ -545,11 +610,26 @@ final class FlutterToolMachineDiscovery {
     }
 
     await process.exitCode.timeout(
-      const Duration(milliseconds: 400),
-      onTimeout: () {
+      stopTimeout,
+      onTimeout: () async {
+        if (isWindows ?? Platform.isWindows) {
+          final terminatedTree = await _terminateWindowsProcessTree(
+            process.pid,
+          );
+          if (terminatedTree) {
+            return process.exitCode.timeout(stopTimeout, onTimeout: () => -1);
+          }
+          logger(
+            LoggingLevel.warning,
+            'Failed to terminate Flutter machine discovery process tree; '
+            'falling back to direct process termination.',
+            logger: 'FlutterMachineDiscovery',
+          );
+        }
+
         process.kill();
         return process.exitCode.timeout(
-          const Duration(milliseconds: 400),
+          stopTimeout,
           onTimeout: () {
             process.kill(ProcessSignal.sigkill);
             return -1;

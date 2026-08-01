@@ -3,6 +3,12 @@
 <!-- markdownlint-disable MD052 -->
 <!-- Keep a Changelog version headings use [3.0.1] brackets; MD052 treats them as reference links. -->
 
+## [Unreleased]
+
+### Bug Fixes
+
+* **server:** terminate Flutter machine discovery process trees on Windows
+
 ## [4.0.0-dev.8](https://github.com/Arenukvern/mcp_flutter/compare/v4.0.0-dev.7...v4.0.0-dev.8) (2026-07-31)
 
 
