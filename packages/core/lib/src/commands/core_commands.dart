@@ -390,17 +390,29 @@ final class SwipeCommand extends CoreCommand {
 }
 
 /// Pointer device to synthesize for a [DragCommand].
+///
+/// Keeps command state typed; the wire protocol stays stringly. Values are
+/// parsed once via [parseDragPointerKind] and serialized back through
+/// [wireName] only at the extension-forwarding boundary.
 enum DragPointerKind {
+  /// Desktop-style pointer: scrollables ignore mouse drags, so the drag
+  /// reaches the target's drag/pan recognizer (drag-and-drop).
   mouse('mouse'),
+
+  /// Touch-style pointer: scrollables compete for the gesture, so a drag
+  /// over scrollable content scrolls it.
   touch('touch');
 
   const DragPointerKind(this.wireName);
 
+  /// String form used on the wire (tool schema enum and extension args).
   final String wireName;
 }
 
-/// Parses a wire value into a [DragPointerKind]. Null, empty and unknown
-/// values yield null — the app picks the platform default.
+/// Parses a wire [value] into a [DragPointerKind].
+///
+/// Returns null for null, empty and unknown values — the app then picks
+/// the platform default.
 DragPointerKind? parseDragPointerKind(final Object? value) {
   if (value == null) return null;
   final normalized = '$value'.trim().toLowerCase();
