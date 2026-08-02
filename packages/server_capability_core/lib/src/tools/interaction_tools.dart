@@ -161,10 +161,16 @@ void registerInteractionTools(final CapabilityContext context) {
         final fromRef = stringArgOrNull(args['fromRef']) ?? '';
         final toRef = stringArgOrNull(args['toRef']) ?? '';
         final snapshotId = intArgOrNull(args['snapshotId']);
+        final kind = stringArgOrNull(args['kind']);
         return runCommand(
           runner,
           args,
-          DragCommand(fromRef: fromRef, toRef: toRef, snapshotId: snapshotId),
+          DragCommand(
+            fromRef: fromRef,
+            toRef: toRef,
+            snapshotId: snapshotId,
+            kind: kind,
+          ),
         );
       },
     ),

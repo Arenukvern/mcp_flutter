@@ -394,11 +394,16 @@ final class DragCommand extends CoreCommand {
     required this.fromRef,
     required this.toRef,
     this.snapshotId,
+    this.kind,
   });
 
   final String fromRef;
   final String toRef;
   final int? snapshotId;
+
+  /// Pointer device kind to synthesize (`mouse` | `touch`). Null lets the
+  /// app pick the platform default.
+  final String? kind;
 
   @override
   String get name => 'drag';

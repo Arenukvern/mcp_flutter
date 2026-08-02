@@ -1,4 +1,5 @@
 import 'package:dart_mcp/client.dart';
+import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
 import 'package:intentcall_core/intentcall_core.dart';
@@ -487,9 +488,15 @@ extension type OnDragEntry._(AgentCallEntry entry) implements AgentCallEntry {
             },
           );
         }
+        final kind = switch (parameters['kind']) {
+          'mouse' => PointerDeviceKind.mouse,
+          'touch' => PointerDeviceKind.touch,
+          _ => null,
+        };
         final result = await GestureInteractionService.drag(
           fromRef: fromRef,
           toRef: toRef,
+          kind: kind,
         );
         return MCPCallResult(
           message: result['success'] == true
