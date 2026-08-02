@@ -389,6 +389,29 @@ final class SwipeCommand extends CoreCommand {
   String get name => 'swipe';
 }
 
+/// Pointer device to synthesize for a [DragCommand].
+enum DragPointerKind {
+  mouse('mouse'),
+  touch('touch');
+
+  const DragPointerKind(this.wireName);
+
+  final String wireName;
+}
+
+/// Parses a wire value into a [DragPointerKind]. Null, empty and unknown
+/// values yield null — the app picks the platform default.
+DragPointerKind? parseDragPointerKind(final Object? value) {
+  if (value == null) return null;
+  final normalized = '$value'.trim().toLowerCase();
+  for (final kind in DragPointerKind.values) {
+    if (kind.wireName == normalized) {
+      return kind;
+    }
+  }
+  return null;
+}
+
 final class DragCommand extends CoreCommand {
   const DragCommand({
     required this.fromRef,
@@ -401,9 +424,9 @@ final class DragCommand extends CoreCommand {
   final String toRef;
   final int? snapshotId;
 
-  /// Pointer device kind to synthesize (`mouse` | `touch`). Null lets the
-  /// app pick the platform default.
-  final String? kind;
+  /// Pointer device kind to synthesize. Null lets the app pick the
+  /// platform default.
+  final DragPointerKind? kind;
 
   @override
   String get name => 'drag';

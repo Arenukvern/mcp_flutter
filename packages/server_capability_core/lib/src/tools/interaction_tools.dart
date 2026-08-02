@@ -161,7 +161,7 @@ void registerInteractionTools(final CapabilityContext context) {
         final fromRef = stringArgOrNull(args['fromRef']) ?? '';
         final toRef = stringArgOrNull(args['toRef']) ?? '';
         final snapshotId = intArgOrNull(args['snapshotId']);
-        final kind = stringArgOrNull(args['kind']);
+        final kind = parseDragPointerKind(args['kind']);
         return runCommand(
           runner,
           args,

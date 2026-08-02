@@ -801,7 +801,7 @@ final class CommandCatalog {
           fromRef: _stringArg(args, 'fromRef', fallback: ''),
           toRef: _stringArg(args, 'toRef', fallback: ''),
           snapshotId: _nullableIntArg(args, 'snapshotId', alias: 'snapshot-id'),
-          kind: _nullableStringArg(args, 'kind'),
+          kind: parseDragPointerKind(_nullableStringArg(args, 'kind')),
         ),
       ),
       CommandSpec(

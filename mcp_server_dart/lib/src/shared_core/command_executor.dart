@@ -1088,7 +1088,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
           'fromRef': command.fromRef,
           'toRef': command.toRef,
           if (command.snapshotId != null) 'snapshotId': command.snapshotId,
-          if (command.kind != null) 'kind': command.kind,
+          if (command.kind case final kind?) 'kind': kind.wireName,
         },
       );
       return CoreResult.success(data: _map(result.json));
