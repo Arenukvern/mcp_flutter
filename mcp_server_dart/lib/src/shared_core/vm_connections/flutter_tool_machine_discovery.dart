@@ -74,6 +74,7 @@ final class FlutterToolMachineDiscovery {
     @visibleForTesting this.isWindows,
     this.settleAfterFirstMatch = const Duration(milliseconds: 250),
     @visibleForTesting this.stopTimeout = const Duration(milliseconds: 400),
+    @visibleForTesting this.windowsTreeStopTimeout = const Duration(seconds: 5),
   });
 
   final CoreLogger logger;
@@ -91,7 +92,50 @@ final class FlutterToolMachineDiscovery {
   @visibleForTesting
   final Duration stopTimeout;
 
+  @visibleForTesting
+  final Duration windowsTreeStopTimeout;
+
+  static final Expando<_DiscoveryCoordinator> _coordinators =
+      Expando<_DiscoveryCoordinator>();
+
   Future<List<FlutterMachineDiscoveryTarget>> discover({
+    final String? projectDir,
+    final String? device,
+    final Duration timeout = const Duration(milliseconds: 2500),
+  }) {
+    final key = (
+      projectDir: projectDir,
+      device: device?.trim(),
+      timeout: timeout,
+    );
+    final coordinator = _coordinators[this] ??= _DiscoveryCoordinator();
+    final pending = coordinator.pending[key];
+    if (pending != null) {
+      return pending;
+    }
+
+    final operation = coordinator.tail.then(
+      (_) => _runDiscovery(
+        projectDir: projectDir,
+        device: device,
+        timeout: timeout,
+      ),
+    );
+    late final Future<List<FlutterMachineDiscoveryTarget>> tracked;
+    tracked = operation.whenComplete(() {
+      if (identical(coordinator.pending[key], tracked)) {
+        coordinator.pending.remove(key)?.ignore();
+      }
+    });
+    coordinator.pending[key] = tracked;
+    coordinator.tail = operation.then<void>(
+      (_) {},
+      onError: (final Object _, final StackTrace _) {},
+    );
+    return tracked;
+  }
+
+  Future<List<FlutterMachineDiscoveryTarget>> _runDiscovery({
     final String? projectDir,
     final String? device,
     final Duration timeout = const Duration(milliseconds: 2500),
@@ -115,6 +159,8 @@ final class FlutterToolMachineDiscovery {
       });
     }
 
+    late DateTime processStartedAfter;
+    late DateTime processStartedBefore;
     try {
       logger(
         LoggingLevel.debug,
@@ -122,12 +168,14 @@ final class FlutterToolMachineDiscovery {
         logger: 'FlutterMachineDiscovery',
       );
 
+      processStartedAfter = DateTime.now().toUtc();
       process = await processStarter(
         flutterExecutable,
         args,
         workingDirectory: _normalizePath(projectDir),
         runInShell: true,
       );
+      processStartedBefore = DateTime.now().toUtc();
     } on Exception catch (e) {
       logger(
         LoggingLevel.warning,
@@ -206,7 +254,11 @@ final class FlutterToolMachineDiscovery {
         Future<void>.delayed(timeout),
       ]);
     } finally {
-      await _requestStop(process);
+      await _requestStop(
+        process,
+        processStartedAfter: processStartedAfter,
+        processStartedBefore: processStartedBefore,
+      );
       await stdoutSub.cancel();
       await stderrSub.cancel();
       settleTimer?.cancel();
@@ -487,31 +539,53 @@ final class FlutterToolMachineDiscovery {
     runInShell: runInShell,
   );
 
-  Future<bool> _terminateWindowsProcessTree(final int pid) async {
-    Process taskkillProcess;
+  Future<bool> _terminateWindowsProcessTree(
+    final int pid, {
+    required final DateTime processStartedAfter,
+    required final DateTime processStartedBefore,
+  }) => _runWindowsTerminator('powershell.exe', <String>[
+    '-NoLogo',
+    '-NoProfile',
+    '-NonInteractive',
+    '-ExecutionPolicy',
+    'Bypass',
+    '-Command',
+    _windowsTreeTerminationScript(
+      pid,
+      processStartedAfter: processStartedAfter,
+      processStartedBefore: processStartedBefore,
+      expectedFlutterExecutable: flutterExecutable,
+    ),
+  ], timeout: windowsTreeStopTimeout);
+
+  Future<bool> _runWindowsTerminator(
+    final String executable,
+    final List<String> arguments, {
+    required final Duration timeout,
+  }) async {
+    Process terminatorProcess;
     try {
-      taskkillProcess = await processStarter('taskkill', <String>[
-        '/PID',
-        '$pid',
-        '/T',
-        '/F',
-      ], runInShell: false);
+      terminatorProcess = await processStarter(
+        executable,
+        arguments,
+        runInShell: false,
+      );
     } on Exception {
       return false;
     }
 
-    unawaited(taskkillProcess.stdout.drain<void>());
-    unawaited(taskkillProcess.stderr.drain<void>());
+    unawaited(terminatorProcess.stdout.drain<void>());
+    unawaited(terminatorProcess.stderr.drain<void>());
 
     try {
-      return await taskkillProcess.exitCode.timeout(stopTimeout) == 0;
+      return await terminatorProcess.exitCode.timeout(timeout) == 0;
     } on TimeoutException {
-      taskkillProcess.kill();
+      terminatorProcess.kill();
       try {
-        await taskkillProcess.exitCode.timeout(stopTimeout);
+        await terminatorProcess.exitCode.timeout(stopTimeout);
       } on TimeoutException {
-        taskkillProcess.kill(ProcessSignal.sigkill);
-        await taskkillProcess.exitCode.timeout(
+        terminatorProcess.kill(ProcessSignal.sigkill);
+        await terminatorProcess.exitCode.timeout(
           stopTimeout,
           onTimeout: () => -1,
         );
@@ -519,6 +593,136 @@ final class FlutterToolMachineDiscovery {
       return false;
     }
   }
+
+  static String _windowsTreeTerminationScript(
+    final int rootPid, {
+    required final DateTime processStartedAfter,
+    required final DateTime processStartedBefore,
+    required final String expectedFlutterExecutable,
+  }) =>
+      r'''
+$rootPid = __ROOT_PID__
+$ErrorActionPreference = 'Stop'
+$startedAfter = [DateTimeOffset]::Parse('__STARTED_AFTER__').UtcDateTime
+$startedBefore = [DateTimeOffset]::Parse('__STARTED_BEFORE__').UtcDateTime
+$flutterPattern = [regex]::Escape('__FLUTTER_EXECUTABLE__') +
+  '(?:["'']?)\s+attach\s+--machine(?:\s|$)'
+$all = @(Get-CimInstance Win32_Process -ErrorAction Stop)
+$root = @($all | Where-Object { [int]$_.ProcessId -eq $rootPid }) |
+  Select-Object -First 1
+if ($null -eq $root) { exit 2 }
+$rootCreated = ([DateTime]$root.CreationDate).ToUniversalTime()
+$rootCommand = [string]$root.CommandLine
+if ($root.Name -ne 'cmd.exe' -or
+    $rootCreated -lt $startedAfter -or
+    $rootCreated -gt $startedBefore -or
+    $rootCommand -notmatch $flutterPattern) {
+  exit 3
+}
+
+$rootHandle = Get-Process -Id $rootPid -ErrorAction Stop
+$handleCreated = $rootHandle.StartTime.ToUniversalTime()
+if ([Math]::Abs($handleCreated.Ticks - $rootCreated.Ticks) -gt 10) {
+  exit 4
+}
+[void]$rootHandle.Handle
+
+$lineage = @{$rootPid = [long]$rootCreated.Ticks}
+$rootStoppedBefore = $null
+function Add-Lineage([object[]]$processes, [DateTime]$latestCreation) {
+  $processesById = @{}
+  foreach ($process in $processes) {
+    $processesById[[int]$process.ProcessId] = $process
+  }
+  $changed = $true
+  while ($changed) {
+    $changed = $false
+    foreach ($process in $processes) {
+      $processId = [int]$process.ProcessId
+      $parentId = [int]$process.ParentProcessId
+      if (-not $lineage.ContainsKey($parentId)) {
+        continue
+      }
+      if ($processesById.ContainsKey($parentId)) {
+        $parentProcess = $processesById[$parentId]
+        $parentCreated = ([DateTime]$parentProcess.CreationDate).ToUniversalTime()
+        if ([long]$parentCreated.Ticks -ne [long]$lineage[$parentId]) {
+          continue
+        }
+      } elseif ($parentId -ne $rootPid -or $null -eq $rootStoppedBefore) {
+        continue
+      }
+      $created = ([DateTime]$process.CreationDate).ToUniversalTime()
+      if (-not $lineage.ContainsKey($processId) -and
+          $created -ge $rootCreated -and
+          $created -le $latestCreation) {
+        $lineage[$processId] = [long]$created.Ticks
+        $changed = $true
+      }
+    }
+  }
+}
+
+Add-Lineage $all ([DateTime]::UtcNow)
+$rootHandle.Kill()
+if (-not $rootHandle.WaitForExit(2000)) { exit 5 }
+$rootStoppedBefore = $rootHandle.ExitTime.ToUniversalTime()
+$deadline = [DateTime]::UtcNow.AddSeconds(2)
+$quietPasses = 0
+while ([DateTime]::UtcNow -lt $deadline) {
+  $all = @(Get-CimInstance Win32_Process -ErrorAction Stop)
+  Add-Lineage $all $rootStoppedBefore
+  $targets = @($all | Where-Object {
+    $created = ([DateTime]$_.CreationDate).ToUniversalTime()
+    $lineage.ContainsKey([int]$_.ProcessId) -and
+    [long]$created.Ticks -eq [long]$lineage[[int]$_.ProcessId] -and
+    $_.Name -in @('dart.exe', 'dartvm.exe') -and
+    $created -ge $rootCreated -and
+    $created -le $rootStoppedBefore -and
+    $_.CommandLine -match 'flutter_tools\.snapshot.*attach\s+--machine(?:\s|$)'
+  })
+  if ($targets.Count -eq 0) {
+    $quietPasses++
+    if ($quietPasses -ge 2) { exit 0 }
+    Start-Sleep -Milliseconds 100
+    continue
+  }
+
+  $quietPasses = 0
+  foreach ($target in $targets) {
+    try {
+      $targetHandle = Get-Process -Id ([int]$target.ProcessId) -ErrorAction Stop
+      $targetCreated = ([DateTime]$target.CreationDate).ToUniversalTime()
+      $targetHandleCreated = $targetHandle.StartTime.ToUniversalTime()
+      if ([Math]::Abs(
+            $targetHandleCreated.Ticks - $targetCreated.Ticks
+          ) -gt 10) {
+        continue
+      }
+      [void]$targetHandle.Handle
+      $targetHandle.Kill()
+      [void]$targetHandle.WaitForExit(500)
+    } catch {
+      continue
+    }
+  }
+  Start-Sleep -Milliseconds 100
+}
+exit 6
+'''
+          .replaceAll('__ROOT_PID__', '$rootPid')
+          .replaceAll(
+            '__STARTED_AFTER__',
+            processStartedAfter.toUtc().toIso8601String(),
+          )
+          .replaceAll(
+            '__STARTED_BEFORE__',
+            processStartedBefore.toUtc().toIso8601String(),
+          )
+          .replaceAll(
+            '__FLUTTER_EXECUTABLE__',
+            expectedFlutterExecutable.replaceAll("'", "''"),
+          );
 
   static String _normalizeWsPath(final String path) {
     final rawPath = path.trim();
@@ -601,7 +805,37 @@ final class FlutterToolMachineDiscovery {
     return '${uri.host.toLowerCase()}:${uri.port}';
   }
 
-  Future<void> _requestStop(final Process process) async {
+  Future<void> _requestStop(
+    final Process process, {
+    required final DateTime processStartedAfter,
+    required final DateTime processStartedBefore,
+  }) async {
+    if (isWindows ?? Platform.isWindows) {
+      final terminatedTree = await _terminateWindowsProcessTree(
+        process.pid,
+        processStartedAfter: processStartedAfter,
+        processStartedBefore: processStartedBefore,
+      );
+      if (terminatedTree) {
+        await process.exitCode.timeout(stopTimeout, onTimeout: () => -1);
+        return;
+      }
+      logger(
+        LoggingLevel.warning,
+        'Failed to terminate Flutter machine discovery process tree; '
+        'falling back to a graceful stdin stop.',
+        logger: 'FlutterMachineDiscovery',
+      );
+      try {
+        process.stdin.writeln('q');
+        await process.stdin.flush();
+      } catch (_) {
+        // Ignore stdin close/write errors during the safe fallback.
+      }
+      await process.exitCode.timeout(stopTimeout, onTimeout: () => -1);
+      return;
+    }
+
     try {
       process.stdin.writeln('q');
       await process.stdin.flush();
@@ -611,22 +845,7 @@ final class FlutterToolMachineDiscovery {
 
     await process.exitCode.timeout(
       stopTimeout,
-      onTimeout: () async {
-        if (isWindows ?? Platform.isWindows) {
-          final terminatedTree = await _terminateWindowsProcessTree(
-            process.pid,
-          );
-          if (terminatedTree) {
-            return process.exitCode.timeout(stopTimeout, onTimeout: () => -1);
-          }
-          logger(
-            LoggingLevel.warning,
-            'Failed to terminate Flutter machine discovery process tree; '
-            'falling back to direct process termination.',
-            logger: 'FlutterMachineDiscovery',
-          );
-        }
-
+      onTimeout: () {
         process.kill();
         return process.exitCode.timeout(
           stopTimeout,
@@ -638,4 +857,14 @@ final class FlutterToolMachineDiscovery {
       },
     );
   }
+}
+
+final class _DiscoveryCoordinator {
+  final Map<
+    ({String? projectDir, String? device, Duration timeout}),
+    Future<List<FlutterMachineDiscoveryTarget>>
+  >
+  pending = {};
+
+  Future<void> tail = Future<void>.value();
 }

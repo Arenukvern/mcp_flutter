@@ -2,8 +2,17 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:dart_mcp/server.dart' show LoggingLevel;
 import 'package:flutter_mcp_toolkit_server/flutter_mcp_core.dart';
 import 'package:test/test.dart';
+
+void _discardLog(
+  final LoggingLevel level,
+  final String message, {
+  final String logger = '',
+}) {}
+
+Future<List<String>> _emptyProcessLines() async => const <String>[];
 
 void main() {
   group('FlutterToolMachineDiscovery', () {
@@ -69,14 +78,15 @@ void main() {
     });
 
     test(
-      'uses Windows tree termination when graceful stop times out',
+      'uses parent-aware Windows cleanup before the shell wrapper can exit',
       () async {
         final process = _StubbornProcess(4242);
-        final taskkillProcess = _StubbornProcess(5000)..completeExit(0);
-        List<String>? taskkillArguments;
+        final powershellProcess = _StubbornProcess(5000)..completeExit(0);
+        List<String>? powershellArguments;
+        var taskkillStarted = false;
         addTearDown(() async {
           await process.dispose();
-          await taskkillProcess.dispose();
+          await powershellProcess.dispose();
         });
 
         final discovery = FlutterToolMachineDiscovery(
@@ -88,31 +98,161 @@ void main() {
                 final workingDirectory,
                 final runInShell = false,
               }) async {
-                if (executable == 'taskkill') {
-                  taskkillArguments = List<String>.of(arguments);
+                if (executable == 'powershell.exe') {
+                  powershellArguments = List<String>.of(arguments);
                   process.completeExit(-1);
-                  return taskkillProcess;
+                  return powershellProcess;
+                }
+                if (executable == 'taskkill') {
+                  taskkillStarted = true;
                 }
                 return process;
               },
           isWindows: true,
           stopTimeout: Duration.zero,
+          windowsTreeStopTimeout: Duration.zero,
           processLinesProvider: () async => const <String>[],
         );
 
         await discovery.discover(timeout: Duration.zero);
 
-        expect(taskkillArguments, equals(<String>['/PID', '4242', '/T', '/F']));
+        expect(powershellArguments, isNotNull);
+        expect(powershellArguments, contains('-Command'));
+        expect(powershellArguments!.last, contains('ParentProcessId'));
+        expect(powershellArguments!.last, contains('flutter_tools'));
+        expect(powershellArguments!.last, contains('CreationDate'));
+        expect(powershellArguments!.last, contains('WaitForExit'));
+        expect(powershellArguments!.last, contains('ExitTime'));
+        expect(
+          powershellArguments!.last,
+          contains(r"$ErrorActionPreference = 'Stop'"),
+        );
+        expect(
+          powershellArguments!.last,
+          contains(r'[void]$rootHandle.Handle'),
+        );
+        expect(powershellArguments!.last, contains(r'$parentId -ne $rootPid'));
+        expect(powershellArguments!.last, contains(r'$quietPasses'));
+        expect(powershellArguments!.last, contains(r'$created.Ticks'));
+        expect(
+          powershellArguments!.last,
+          isNot(contains(r'$lineage[$processId] = $true')),
+        );
+        expect(
+          powershellArguments!.last,
+          isNot(contains(r'Stop-Process -Id $rootPid')),
+        );
+        expect(taskkillStarted, isFalse);
         expect(process.killSignals, isEmpty);
-        expect(process.stdinText, contains('q'));
+        expect(process.stdinText, isEmpty);
+      },
+    );
+
+    test('preserves the public const constructor', () {
+      const discovery = FlutterToolMachineDiscovery(
+        logger: _discardLog,
+        processLinesProvider: _emptyProcessLines,
+      );
+
+      expect(discovery, isA<FlutterToolMachineDiscovery>());
+    });
+
+    test('coalesces overlapping discovery requests', () async {
+      final allowProcessStart = Completer<void>();
+      final processes = <_StubbornProcess>[];
+      var processStartCount = 0;
+      addTearDown(() async {
+        for (final process in processes) {
+          await process.dispose();
+        }
+      });
+
+      final discovery = FlutterToolMachineDiscovery(
+        logger: (final level, final message, {final logger = ''}) {},
+        processStarter:
+            (
+              final executable,
+              final arguments, {
+              final workingDirectory,
+              final runInShell = false,
+            }) async {
+              processStartCount++;
+              await allowProcessStart.future;
+              final process = _StubbornProcess(4200 + processStartCount);
+              processes.add(process);
+              return process;
+            },
+        isWindows: false,
+        stopTimeout: Duration.zero,
+        processLinesProvider: () async => const <String>[],
+      );
+
+      final first = discovery.discover(timeout: Duration.zero);
+      final second = discovery.discover(timeout: Duration.zero);
+      allowProcessStart.complete();
+
+      await Future.wait(<Future<Object?>>[first, second]);
+
+      expect(processStartCount, 1);
+    });
+
+    test(
+      'does not coalesce overlapping requests with different inputs',
+      () async {
+        final allowProcessStart = Completer<void>();
+        final processes = <_StubbornProcess>[];
+        var processStartCount = 0;
+        addTearDown(() async {
+          for (final process in processes) {
+            await process.dispose();
+          }
+        });
+
+        final discovery = FlutterToolMachineDiscovery(
+          logger: (final level, final message, {final logger = ''}) {},
+          processStarter:
+              (
+                final executable,
+                final arguments, {
+                final workingDirectory,
+                final runInShell = false,
+              }) async {
+                processStartCount++;
+                await allowProcessStart.future;
+                final process = _StubbornProcess(4300 + processStartCount);
+                processes.add(process);
+                return process;
+              },
+          isWindows: false,
+          stopTimeout: Duration.zero,
+          processLinesProvider: () async => const <String>[],
+        );
+
+        final first = discovery.discover(
+          device: 'windows',
+          timeout: Duration.zero,
+        );
+        final second = discovery.discover(
+          device: 'chrome',
+          timeout: Duration.zero,
+        );
+        allowProcessStart.complete();
+
+        await Future.wait(<Future<Object?>>[first, second]);
+
+        expect(processStartCount, 2);
       },
     );
 
     test('falls back when Windows tree termination fails', () async {
       final process = _StubbornProcess(4242);
+      final powershellProcess = _StubbornProcess(5001)..completeExit(1);
       final taskkillProcess = _StubbornProcess(5000)..completeExit(1);
+      var powershellStarted = false;
+      var taskkillStarted = false;
       addTearDown(() async {
         await process.dispose();
+        await powershellProcess.dispose();
         await taskkillProcess.dispose();
       });
 
@@ -124,25 +264,39 @@ void main() {
               final arguments, {
               final workingDirectory,
               final runInShell = false,
-            }) async => executable == 'taskkill' ? taskkillProcess : process,
+            }) async {
+              if (executable == 'powershell.exe') {
+                powershellStarted = true;
+                return powershellProcess;
+              }
+              if (executable == 'taskkill') {
+                taskkillStarted = true;
+                return taskkillProcess;
+              }
+              return process;
+            },
         isWindows: true,
         stopTimeout: Duration.zero,
+        windowsTreeStopTimeout: Duration.zero,
         processLinesProvider: () async => const <String>[],
       );
 
       await discovery.discover(timeout: Duration.zero);
 
-      expect(
-        process.killSignals,
-        equals(<ProcessSignal>[ProcessSignal.sigterm]),
-      );
+      expect(powershellStarted, isTrue);
+      expect(taskkillStarted, isFalse);
+      expect(process.killSignals, isEmpty);
+      expect(process.stdinText, contains('q'));
     });
 
     test('bounds Windows tree termination before falling back', () async {
       final process = _StubbornProcess(2147483000);
-      final taskkillProcess = _StubbornProcess(4242);
+      final powershellProcess = _StubbornProcess(4243);
+      final taskkillProcess = _StubbornProcess(4242)..completeExit(1);
+      var taskkillStarted = false;
       addTearDown(() async {
         await process.dispose();
+        await powershellProcess.dispose();
         await taskkillProcess.dispose();
       });
 
@@ -154,9 +308,18 @@ void main() {
               final arguments, {
               final workingDirectory,
               final runInShell = false,
-            }) async => executable == 'taskkill' ? taskkillProcess : process,
+            }) async {
+              if (executable == 'taskkill') {
+                taskkillStarted = true;
+                return taskkillProcess;
+              }
+              return executable == 'powershell.exe'
+                  ? powershellProcess
+                  : process;
+            },
         isWindows: true,
         stopTimeout: Duration.zero,
+        windowsTreeStopTimeout: Duration.zero,
         processLinesProvider: () async => const <String>[],
       );
 
@@ -164,12 +327,11 @@ void main() {
           .discover(timeout: Duration.zero)
           .timeout(const Duration(milliseconds: 100));
 
+      expect(taskkillStarted, isFalse);
+      expect(process.killSignals, isEmpty);
+      expect(process.stdinText, contains('q'));
       expect(
-        process.killSignals,
-        equals(<ProcessSignal>[ProcessSignal.sigterm]),
-      );
-      expect(
-        taskkillProcess.killSignals,
+        powershellProcess.killSignals,
         equals(<ProcessSignal>[ProcessSignal.sigterm]),
       );
     });

@@ -7,7 +7,7 @@
 
 ### Bug Fixes
 
-* **server:** terminate Flutter machine discovery process trees on Windows
+* **server:** coalesce overlapping Flutter discovery and terminate its process trees on Windows
 
 ## [4.0.0-dev.8](https://github.com/Arenukvern/mcp_flutter/compare/v4.0.0-dev.7...v4.0.0-dev.8) (2026-07-31)
 
