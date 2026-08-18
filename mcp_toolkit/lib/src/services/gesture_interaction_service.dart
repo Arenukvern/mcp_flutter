@@ -5,7 +5,8 @@
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -705,9 +706,16 @@ mixin GestureInteractionService {
   }
 
   /// Drag from the centre of [fromRef] to the centre of [toRef].
+  ///
+  /// [kind] selects the synthesized pointer device; when null, defaults to
+  /// [PointerDeviceKind.mouse] on desktop platforms and
+  /// [PointerDeviceKind.touch] elsewhere — the device a real user would
+  /// drag with there. See [_dispatchDrag] for how the kind decides the
+  /// gesture-arena outcome.
   static Future<Map<String, Object?>> drag({
     required final String fromRef,
     required final String toRef,
+    final PointerDeviceKind? kind,
   }) async {
     final from = SemanticSnapshotService.resolveCenter(fromRef);
     if (from == null) {
@@ -735,17 +743,28 @@ mixin GestureInteractionService {
             'mutate state directly via evaluate_dart_expression.',
       };
     }
-    await _dispatchDrag(from, to, steps: 12);
+    final effectiveKind = kind ?? _defaultDragKind();
+    await _dispatchDrag(from, to, steps: 12, kind: effectiveKind);
     return <String, Object?>{
       'success': true,
       'via': 'pointer_events',
       'action': 'drag',
+      'kind': effectiveKind.name,
       'fromRef': fromRef,
       'toRef': toRef,
       'from': _offsetToMap(from),
       'to': _offsetToMap(to),
     };
   }
+
+  /// The pointer device a real user drags with on the running platform.
+  static PointerDeviceKind _defaultDragKind() =>
+      switch (defaultTargetPlatform) {
+        TargetPlatform.macOS ||
+        TargetPlatform.windows ||
+        TargetPlatform.linux => PointerDeviceKind.mouse,
+        _ => PointerDeviceKind.touch,
+      };
 
   /// Synthesize a mouse hover at the centre of the widget identified by
   /// [ref]. Drives `MouseRegion.onEnter`/`onExit` via the framework's
@@ -853,16 +872,30 @@ mixin GestureInteractionService {
     await _waitFrame();
   }
 
+  /// Dispatches a press-move-release sequence as [kind] pointer events.
+  ///
+  /// [kind] decides which recognizers compete for the gesture. Mouse wins a
+  /// drag-and-drop cleanly on desktop: scrollables don't track mouse drags
+  /// (default [ScrollBehavior.dragDevices] excludes the mouse), so the
+  /// target's pan recognizer takes the gesture uncontested — matching a
+  /// real user drag. Touch keeps scrollables in the arena, which a
+  /// swipe/fling relies on.
   static Future<void> _dispatchDrag(
     final ui.Offset from,
     final ui.Offset to, {
     final int steps = 10,
     final Duration perStep = const Duration(milliseconds: 16),
+    final PointerDeviceKind kind = PointerDeviceKind.touch,
   }) async {
     final binding = GestureBinding.instance;
     final pointer = _nextPointerId++;
     binding.handlePointerEvent(
-      PointerDownEvent(pointer: pointer, position: from, timeStamp: _now()),
+      PointerDownEvent(
+        pointer: pointer,
+        position: from,
+        kind: kind,
+        timeStamp: _now(),
+      ),
     );
 
     final dx = (to.dx - from.dx) / steps;
@@ -876,6 +909,7 @@ mixin GestureInteractionService {
           pointer: pointer,
           position: pos,
           delta: pos - last,
+          kind: kind,
           timeStamp: _now(),
         ),
       );
@@ -883,7 +917,12 @@ mixin GestureInteractionService {
     }
 
     binding.handlePointerEvent(
-      PointerUpEvent(pointer: pointer, position: to, timeStamp: _now()),
+      PointerUpEvent(
+        pointer: pointer,
+        position: to,
+        kind: kind,
+        timeStamp: _now(),
+      ),
     );
     await _waitFrame();
   }
