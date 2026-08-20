@@ -35,6 +35,17 @@ mixin GestureInteractionService {
   /// Monotonically increasing pointer id so every gesture sequence is unique.
   static int _nextPointerId = 1;
 
+  /// The pointer device every synthesised event is attributed to.
+  ///
+  /// Must stay clear of the platform's own device ids — the embedder numbers
+  /// its mouse `0` on desktop. [MouseTracker] keys its per-device state
+  /// machine on `device` (never on `pointer`) and asserts that a device's
+  /// event stream is bracketed by add/remove: sharing the id parks a
+  /// synthetic hover in the real mouse's slot, and the `PointerAddedEvent`
+  /// the embedder sends when the cursor next enters the window trips that
+  /// assert inside the gesture binding.
+  static const int _syntheticDevice = 1 << 20;
+
   // ---------------------------------------------------------------------------
   // Tier 1 / Tier 2 dispatch — public API
   // ---------------------------------------------------------------------------
@@ -66,6 +77,7 @@ mixin GestureInteractionService {
       final owner = SemanticSnapshotService.semanticsOwner;
       if (owner != null) {
         owner.performAction(node.id, SemanticsAction.tap);
+        _releaseSyntheticDevice();
         await _waitFrame();
         return <String, Object?>{
           'success': true,
@@ -123,6 +135,7 @@ mixin GestureInteractionService {
       final owner = SemanticSnapshotService.semanticsOwner;
       if (owner != null) {
         owner.performAction(node.id, SemanticsAction.longPress);
+        _releaseSyntheticDevice();
         await _waitFrame();
         return <String, Object?>{
           'success': true,
@@ -775,6 +788,11 @@ mixin GestureInteractionService {
   /// is unambiguously a position change — without priming, a single hover
   /// at the target may not produce an enter transition if the tracker's
   /// last-known position is unset or already over the target.
+  ///
+  /// The hover is left parked on the target so a revealed affordance stays on
+  /// screen for the gesture that follows; the next tap, long press or drag
+  /// ends with [_releaseSyntheticDevice] — whichever tier served it — which
+  /// fires the matching `onExit`.
   static Future<Map<String, Object?>> hoverAtRef(final String ref) async {
     final node = SemanticSnapshotService.resolveRef(ref);
     if (node == null) {
@@ -785,11 +803,9 @@ mixin GestureInteractionService {
       return _refNotFound(ref);
     }
 
-    // Drive hover as position changes only. Flutter's MouseTracker keeps
-    // per-device state and asserts if a PointerAddedEvent is sent without a
-    // preceding PointerRemovedEvent for that device; in live apps a synthetic
-    // add/remove sequence can race existing mouse state. Hover events are
-    // enough to update the tracked position and fire MouseRegion transitions.
+    // Drive hover as position changes only: hover events are enough to update
+    // the tracked position and fire MouseRegion transitions, so the device
+    // never needs an add/remove pair to become live.
     final pointer = _nextPointerId++;
     final binding = GestureBinding.instance;
     const prime = ui.Offset(-100, -100);
@@ -801,6 +817,7 @@ mixin GestureInteractionService {
           pointer: pointer,
           position: prime,
           kind: PointerDeviceKind.mouse,
+          device: _syntheticDevice,
           timeStamp: _now(),
         ),
       )
@@ -809,6 +826,7 @@ mixin GestureInteractionService {
           pointer: pointer,
           position: centre,
           kind: PointerDeviceKind.mouse,
+          device: _syntheticDevice,
           timeStamp: _now(),
         ),
       );
@@ -825,6 +843,27 @@ mixin GestureInteractionService {
   // Pointer dispatch helpers (tier 2)
   // ---------------------------------------------------------------------------
 
+  /// Detach [_syntheticDevice] from [MouseTracker] once a gesture is done, so
+  /// its hover state does not outlive the gesture: the removal fires
+  /// `MouseRegion.onExit` for whatever the synthetic pointer was over. Moving
+  /// the real mouse cannot clear it — that is a different device.
+  ///
+  /// Called from every gesture entry point, semantic and pointer alike, so the
+  /// lifetime of a parked hover does not depend on which tier served the
+  /// gesture. A no-op when the device holds no mouse state, and the removal
+  /// carries no position because [MouseTracker] clears the annotations of a
+  /// removed device without hit-testing.
+  static void _releaseSyntheticDevice() {
+    GestureBinding.instance.handlePointerEvent(
+      PointerRemovedEvent(
+        pointer: _nextPointerId++,
+        kind: PointerDeviceKind.mouse,
+        device: _syntheticDevice,
+        timeStamp: _now(),
+      ),
+    );
+  }
+
   static Future<void> _dispatchTap(final ui.Offset position) async {
     final binding = GestureBinding.instance;
     final pointer = _nextPointerId++;
@@ -833,6 +872,7 @@ mixin GestureInteractionService {
         pointer: pointer,
         position: position,
         kind: PointerDeviceKind.mouse,
+        device: _syntheticDevice,
         timeStamp: _now(),
       ),
     );
@@ -842,9 +882,11 @@ mixin GestureInteractionService {
         pointer: pointer,
         position: position,
         kind: PointerDeviceKind.mouse,
+        device: _syntheticDevice,
         timeStamp: _now(),
       ),
     );
+    _releaseSyntheticDevice();
     await _waitFrame();
   }
 
@@ -856,6 +898,7 @@ mixin GestureInteractionService {
         pointer: pointer,
         position: position,
         kind: PointerDeviceKind.mouse,
+        device: _syntheticDevice,
         timeStamp: _now(),
       ),
     );
@@ -866,9 +909,11 @@ mixin GestureInteractionService {
         pointer: pointer,
         position: position,
         kind: PointerDeviceKind.mouse,
+        device: _syntheticDevice,
         timeStamp: _now(),
       ),
     );
+    _releaseSyntheticDevice();
     await _waitFrame();
   }
 
@@ -894,6 +939,7 @@ mixin GestureInteractionService {
         pointer: pointer,
         position: from,
         kind: kind,
+        device: _syntheticDevice,
         timeStamp: _now(),
       ),
     );
@@ -910,6 +956,7 @@ mixin GestureInteractionService {
           position: pos,
           delta: pos - last,
           kind: kind,
+          device: _syntheticDevice,
           timeStamp: _now(),
         ),
       );
@@ -921,9 +968,11 @@ mixin GestureInteractionService {
         pointer: pointer,
         position: to,
         kind: kind,
+        device: _syntheticDevice,
         timeStamp: _now(),
       ),
     );
+    _releaseSyntheticDevice();
     await _waitFrame();
   }
 
@@ -971,6 +1020,7 @@ mixin GestureInteractionService {
       PointerScrollEvent(
         position: position,
         scrollDelta: scrollDelta,
+        device: _syntheticDevice,
         timeStamp: _now(),
       ),
     );

@@ -665,7 +665,10 @@ final class CommandCatalog {
         description:
             'Get compact semantic tree of interactive widgets with stable refs '
             'usable by interaction tools (tap_widget, enter_text, etc.). '
-            'Call this before any interaction tool to get fresh refs.',
+            'Call this before any interaction tool to get fresh refs. '
+            'A control that appears only under the pointer is absent here: '
+            'on desktop and web, hover the element that should own it and '
+            'snapshot again.',
         inputSchema: interactionCatalogInputSchemaFor('semantic_snapshot')!,
         outputSchema: _objectSchema(additionalProperties: true),
         requiresVm: true,
@@ -969,10 +972,11 @@ final class CommandCatalog {
         name: 'hover',
         description:
             'Synthesize a mouse hover at the centre of a widget identified '
-            'by a semantic snapshot ref. Drives MouseRegion.onEnter/onExit '
-            'and listeners on PointerHoverEvent. Requires a desktop or web '
-            'host (mobile platforms have no hover concept). '
-            'Call semantic_snapshot immediately before to get fresh refs. '
+            'by a semantic snapshot ref, driving MouseRegion.onEnter/onExit. '
+            'Desktop and web only. The hover stays parked, so an affordance '
+            'it reveals survives the next semantic_snapshot; act on it with '
+            'your next call — tap_widget, long_press or drag releases the '
+            'hover and the affordance with it. '
             'Pass snapshotId to detect staleness.',
         inputSchema: interactionCatalogInputSchemaFor('hover')!,
         outputSchema: _objectSchema(additionalProperties: true),
