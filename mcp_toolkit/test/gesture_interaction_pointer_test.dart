@@ -181,6 +181,72 @@ void main() {
     }
   });
 
+  testWidgets('scroll releases the synthetic mouse device on both tiers', (
+    final tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    try {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ListView.builder(
+              itemCount: 30,
+              itemBuilder: (final context, final index) => SizedBox(
+                height: 48,
+                child: Semantics(
+                  identifier: 'row_$index',
+                  child: Text('Row $index'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final snapshot = await _snapshotAfterPump(tester);
+      final row = _refFor(snapshot, 'row_0');
+      final scrollable =
+          (snapshot['nodes']! as List<Object?>)
+                  .cast<Map<String, Object?>>()
+                  .firstWhere(
+                    (final node) => node['type'] == 'scrollable',
+                  )['ref']!
+              as String;
+
+      // Pointer tier: the scroll signal itself carries the synthetic device.
+      await _settleAfterPumps(
+        tester,
+        GestureInteractionService.hoverAtRef(row),
+      );
+      await _settleAfterPumps(
+        tester,
+        GestureInteractionService.scroll(direction: 'down', distance: 120),
+        pumps: 12,
+      );
+      expect(tester.binding.mouseTracker.mouseIsConnected, isFalse);
+
+      // Semantic tier: the scrollable's own scroll action moves the content
+      // without any pointer event.
+      await _settleAfterPumps(
+        tester,
+        GestureInteractionService.hoverAtRef(row),
+      );
+      await _settleAfterPumps(
+        tester,
+        GestureInteractionService.scroll(
+          ref: scrollable,
+          direction: 'down',
+          distance: 120,
+        ),
+        pumps: 12,
+      );
+      expect(tester.binding.mouseTracker.mouseIsConnected, isFalse);
+    } finally {
+      semantics.dispose();
+    }
+  });
+
   testWidgets('synthetic hover leaves the platform mouse device untouched', (
     final tester,
   ) async {

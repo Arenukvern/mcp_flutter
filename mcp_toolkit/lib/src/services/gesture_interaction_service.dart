@@ -201,6 +201,7 @@ mixin GestureInteractionService {
       final owner = SemanticSnapshotService.semanticsOwner;
       if (owner != null) {
         owner.performAction(node.id, SemanticsAction.setText, text);
+        _releaseSyntheticDevice();
         await _waitFrame();
         return <String, Object?>{
           'success': true,
@@ -422,6 +423,7 @@ mixin GestureInteractionService {
         ? SemanticSnapshotService.visibleSubtreeSignature(node)
         : null;
     owner.performAction(node.id, action);
+    _releaseSyntheticDevice();
     await _waitSemanticScrollFrame();
     var after = _scrollPosition(node);
     if (before != null && after != null && before != after) {
@@ -790,9 +792,9 @@ mixin GestureInteractionService {
   /// last-known position is unset or already over the target.
   ///
   /// The hover is left parked on the target so a revealed affordance stays on
-  /// screen for the gesture that follows; the next tap, long press or drag
-  /// ends with [_releaseSyntheticDevice] — whichever tier served it — which
-  /// fires the matching `onExit`.
+  /// screen for the interaction that follows; every other entry point ends
+  /// with [_releaseSyntheticDevice] — whichever tier served it — which fires
+  /// the matching `onExit`.
   static Future<Map<String, Object?>> hoverAtRef(final String ref) async {
     final node = SemanticSnapshotService.resolveRef(ref);
     if (node == null) {
@@ -1024,6 +1026,7 @@ mixin GestureInteractionService {
         timeStamp: _now(),
       ),
     );
+    _releaseSyntheticDevice();
     await _waitFrame();
   }
 

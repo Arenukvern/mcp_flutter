@@ -184,8 +184,8 @@ void registerInteractionTools(final CapabilityContext context) {
           'semantic snapshot ref, driving MouseRegion.onEnter/onExit. '
           'Desktop and web only. The hover stays parked, so an affordance it '
           'reveals survives the next semantic_snapshot; act on it with your '
-          'next call — tap_widget, long_press or drag releases the hover and '
-          'the affordance with it. Pass snapshotId to detect staleness.',
+          'next call — any other interaction releases the hover, and the '
+          'affordance goes with it. Pass snapshotId to detect staleness.',
       inputSchema: hoverInputSchema(),
       handler: (final args) async {
         final ref = stringArgOrNull(args['ref']) ?? '';

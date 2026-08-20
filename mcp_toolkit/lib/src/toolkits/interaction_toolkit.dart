@@ -745,7 +745,7 @@ extension type OnNavigateEntry._(AgentCallEntry entry)
 /// Synthesize a mouse hover at the centre of a widget identified by ref.
 /// Drives MouseRegion.onEnter/onExit. Requires a desktop or web host
 /// (mobile platforms have no hover concept). The hover stays parked on the
-/// target until the next pointer gesture releases it.
+/// target until the next interaction releases it.
 /// {@endtemplate}
 extension type OnHoverEntry._(AgentCallEntry entry) implements AgentCallEntry {
   /// {@macro on_hover_entry}
@@ -792,8 +792,8 @@ extension type OnHoverEntry._(AgentCallEntry entry) implements AgentCallEntry {
             'by a semantic ref, driving MouseRegion.onEnter/onExit. '
             'Desktop and web only. The hover stays parked, so an affordance '
             'it reveals survives the next semantic_snapshot; act on it with '
-            'your next call — tap_widget, long_press or drag releases the '
-            'hover and the affordance with it.',
+            'your next call — any other interaction releases the hover, and '
+            'the affordance goes with it.',
         inputSchema: ObjectSchema.fromMap(hoverInputSchema()),
       ),
     );
