@@ -863,7 +863,10 @@ final class CommandCatalog {
         description:
             'Block until a UI predicate matches or a timeout elapses, then '
             'return a fresh semantic snapshot. Predicate kinds: text, noText, '
-            'time, stable, noError. Replaces sleep+snapshot polling loops.',
+            'node, time, stable, noError. text matches any string in the tree, '
+            'including the label of a tab that is not open — wait on state '
+            'with node, e.g. {kind:"node", identifier:"...", selected:true}. '
+            'Replaces sleep+snapshot polling loops.',
         inputSchema: interactionCatalogInputSchemaFor('wait_for')!,
         outputSchema: _objectSchema(additionalProperties: true),
         requiresVm: true,
