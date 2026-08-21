@@ -865,7 +865,8 @@ final class CommandCatalog {
             'return a fresh semantic snapshot. Predicate kinds: text, noText, '
             'node, time, stable, noError. text matches any string in the tree, '
             'including the label of a tab that is not open — wait on state '
-            'with node, e.g. {kind:"node", identifier:"...", selected:true}. '
+            'with node: {"kind":"node","identifier":"…","selected":true}, or '
+            'add "absent":true to wait for it to go away. '
             'Replaces sleep+snapshot polling loops.',
         inputSchema: interactionCatalogInputSchemaFor('wait_for')!,
         outputSchema: _objectSchema(additionalProperties: true),

@@ -198,96 +198,92 @@ void main() {
     expect(result['snapshot_id'], isA<int>());
   });
 
-  testWidgets('wait_for node predicate reads state, not the label', (
-    final tester,
-  ) async {
-    await tester.pumpWidget(
-      const MaterialApp(home: Scaffold(body: _StaticTabs())),
-    );
-    await tester.pump();
+  group('wait_for node predicate', () {
+    testWidgets('reads state, not the label', (final tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(home: Scaffold(body: _StaticTabs())),
+      );
+      await tester.pump();
 
-    // The label of the closed tab is in the tree the whole time, so a text
-    // predicate reports it as open — while the node predicate reads the flag
-    // and reports it closed.
-    final textFuture = WaitPredicateService.waitFor(
-      predicate: const {'kind': 'text', 'text': 'Second'},
-      timeoutMs: 2000,
-    );
-    final closedFuture = WaitPredicateService.waitFor(
-      predicate: const {
-        'kind': 'node',
-        'identifier': 'tab_second',
-        'selected': true,
-        'absent': true,
-      },
-      timeoutMs: 2000,
-    );
-    final openFuture = WaitPredicateService.waitFor(
-      predicate: const {
-        'kind': 'node',
-        'identifier': 'tab_first',
-        'selected': true,
-      },
-      timeoutMs: 2000,
-    );
+      // The label of the closed tab is in the tree the whole time, so a text
+      // predicate reports it as open — while the node predicate reads the flag
+      // and reports it closed.
+      final textFuture = WaitPredicateService.waitFor(
+        predicate: const {'kind': 'text', 'text': 'Second'},
+        timeoutMs: 2000,
+      );
+      final closedFuture = WaitPredicateService.waitFor(
+        predicate: const {
+          'kind': 'node',
+          'identifier': 'tab_second',
+          'selected': true,
+          'absent': true,
+        },
+        timeoutMs: 2000,
+      );
+      final openFuture = WaitPredicateService.waitFor(
+        predicate: const {
+          'kind': 'node',
+          'identifier': 'tab_first',
+          'selected': true,
+        },
+        timeoutMs: 2000,
+      );
 
-    for (var i = 0; i < 30; i++) {
-      await tester.pump(const Duration(milliseconds: 50));
-    }
+      for (var i = 0; i < 30; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
 
-    expect((await textFuture)['matched'], isTrue);
-    expect((await closedFuture)['matched'], isTrue);
-    expect((await openFuture)['matched'], isTrue);
-  });
+      expect((await textFuture)['matched'], isTrue);
+      expect((await closedFuture)['matched'], isTrue);
+      expect((await openFuture)['matched'], isTrue);
+    });
 
-  testWidgets('wait_for node predicate matches once the flag flips', (
-    final tester,
-  ) async {
-    await tester.pumpWidget(
-      const MaterialApp(home: Scaffold(body: _DelayedSelection())),
-    );
-    await tester.pump();
+    testWidgets('matches once the flag flips', (final tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(home: Scaffold(body: _DelayedSelection())),
+      );
+      await tester.pump();
 
-    final waitFuture = WaitPredicateService.waitFor(
-      predicate: const {
-        'kind': 'node',
-        'identifier': 'tab_second',
-        'selected': true,
-      },
-      timeoutMs: 2000,
-    );
+      final waitFuture = WaitPredicateService.waitFor(
+        predicate: const {
+          'kind': 'node',
+          'identifier': 'tab_second',
+          'selected': true,
+        },
+        timeoutMs: 2000,
+      );
 
-    for (var i = 0; i < 30; i++) {
-      await tester.pump(const Duration(milliseconds: 50));
-    }
+      for (var i = 0; i < 30; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
 
-    final result = await waitFuture;
-    expect(result['matched'], isTrue);
-    expect(result['snapshot_id'], isA<int>());
-  });
+      final result = await waitFuture;
+      expect(result['matched'], isTrue);
+      expect(result['snapshot_id'], isA<int>());
+    });
 
-  testWidgets('wait_for node predicate with absent matches once it is gone', (
-    final tester,
-  ) async {
-    await tester.pumpWidget(
-      const MaterialApp(home: Scaffold(body: _DelayedIdentifiedClear())),
-    );
-    await tester.pump();
+    testWidgets('absent matches once the node is gone', (final tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(home: Scaffold(body: _DelayedIdentifiedClear())),
+      );
+      await tester.pump();
 
-    final waitFuture = WaitPredicateService.waitFor(
-      predicate: const {
-        'kind': 'node',
-        'identifier': 'transient_row',
-        'absent': true,
-      },
-      timeoutMs: 2000,
-    );
+      final waitFuture = WaitPredicateService.waitFor(
+        predicate: const {
+          'kind': 'node',
+          'identifier': 'transient_row',
+          'absent': true,
+        },
+        timeoutMs: 2000,
+      );
 
-    for (var i = 0; i < 30; i++) {
-      await tester.pump(const Duration(milliseconds: 50));
-    }
+      for (var i = 0; i < 30; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
 
-    expect((await waitFuture)['matched'], isTrue);
+      expect((await waitFuture)['matched'], isTrue);
+    });
   });
 }
 
@@ -322,7 +318,7 @@ class _DelayedIdentifiedClear extends StatefulWidget {
 }
 
 class _DelayedIdentifiedClearState extends State<_DelayedIdentifiedClear> {
-  var _present = true;
+  bool _present = true;
 
   @override
   void initState() {
@@ -352,7 +348,7 @@ class _DelayedSelection extends StatefulWidget {
 }
 
 class _DelayedSelectionState extends State<_DelayedSelection> {
-  var _secondSelected = false;
+  bool _secondSelected = false;
 
   @override
   void initState() {
