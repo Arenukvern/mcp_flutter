@@ -66,7 +66,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: mcp_server_dart
-          file: Dockerfile.registry
+          file: mcp_server_dart/Dockerfile.registry
           push: true
           tags: ghcr.io/arenukvern/flutter-mcp-toolkit:${{ steps.version.outputs.version }}
 
