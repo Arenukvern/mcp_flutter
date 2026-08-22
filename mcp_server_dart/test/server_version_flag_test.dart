@@ -8,11 +8,14 @@ import 'package:test/test.dart';
 
 void main() {
   test('--version prints kFlutterMcpVersion and exits 0', () async {
+    final packageRoot = Directory.current.path.endsWith('mcp_server_dart')
+        ? Directory.current
+        : Directory.fromUri(Directory.current.uri.resolve('mcp_server_dart'));
     final result = await Process.run('dart', [
       'run',
       'bin/flutter_mcp_toolkit_server.dart',
       '--version',
-    ], workingDirectory: Directory.current.path);
+    ], workingDirectory: packageRoot.path);
 
     expect(result.exitCode, 0);
     expect((result.stdout as String).trim(), kFlutterMcpVersion);

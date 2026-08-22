@@ -8,7 +8,7 @@
 
 ### Changed
 
-- Align package version and hosted sibling dependency constraints with the Flutter MCP Toolkit 4.0.0-dev train.
+- Align package version and hosted sibling dependency constraints as part of the 5.0.0 release.
 
 ## [4.0.0-dev.8] - 2026-07-31
 
