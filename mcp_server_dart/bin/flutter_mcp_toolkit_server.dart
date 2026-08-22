@@ -9,6 +9,7 @@ import 'package:args/args.dart';
 import 'package:async/async.dart';
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_mcp_toolkit_capability_core/flutter_mcp_toolkit_capability_core.dart';
+import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 import 'package:flutter_mcp_toolkit_server/flutter_mcp_server.dart';
 import 'package:stream_channel/stream_channel.dart';
 
@@ -16,6 +17,10 @@ Future<void> main(final List<String> args) async {
   final parsedArgs = argParser.parse(args);
   if (parsedArgs.flag(help)) {
     io.stdout.writeln(argParser.usage);
+    io.exit(0);
+  }
+  if (parsedArgs.flag(version)) {
+    io.stdout.writeln(kFlutterMcpVersion);
     io.exit(0);
   }
 
@@ -177,7 +182,8 @@ final argParser = ArgParser(allowTrailingOptions: false)
     defaultsTo: defaultEnvironment,
     help: 'Environment mode (development|production)',
   )
-  ..addFlag(help, abbr: 'h', help: 'Show usage text');
+  ..addFlag(help, abbr: 'h', help: 'Show usage text')
+  ..addFlag(version, help: 'Print version and exit');
 
 const defaultHost = 'localhost';
 const defaultPort = 8181;
@@ -191,6 +197,7 @@ const dumpsSupported = 'dumps';
 const logLevel = 'log-level';
 const environment = 'environment';
 const help = 'help';
+const String version = 'version';
 const dynamicRegistrySupported = 'dynamics';
 const awaitDndConnection = 'await-dnd';
 const saveImagesToFiles = 'save-images';

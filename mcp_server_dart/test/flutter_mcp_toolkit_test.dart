@@ -90,7 +90,7 @@ void main() {
       expect(envelope['ok'], isTrue);
 
       final data = envelope['data'] as Map<String, dynamic>;
-      expect(data['protocolVersion'], equals('flutter-mcp-toolkit/4.0'));
+      expect(data['protocolVersion'], equals('flutter-mcp-toolkit/5.0'));
       expect(data['schemaVersion'], equals('command-catalog/v1'));
       expect((data['features'] as Map<String, dynamic>)['serve'], isTrue);
     });
