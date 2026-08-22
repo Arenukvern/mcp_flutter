@@ -1,8 +1,38 @@
 # Docker Deployment Guide
 
-IMPORTANT NOTE: Not tested - please critically review how dockerfile works before using it.
-
 This guide covers building and running the MCP Server using Docker.
+
+## Install from GHCR (MCP Registry image)
+
+The official MCP Registry image is published to GHCR on every release:
+
+```bash
+docker pull ghcr.io/arenukvern/flutter-mcp-toolkit:latest
+```
+
+Use it in an `mcpServers` config:
+
+```json
+{
+  "mcpServers": {
+    "flutter-mcp-toolkit": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "--network=host",
+        "ghcr.io/arenukvern/flutter-mcp-toolkit:latest"
+      ]
+    }
+  }
+}
+```
+
+> `--network=host` is required on macOS/Linux so the container can reach the
+> Dart VM service of your locally running Flutter debug app. Pin a specific
+> version tag (for example `ghcr.io/arenukvern/flutter-mcp-toolkit:4.0.0-dev.8`)
+> instead of `latest` for reproducible setups.
 
 ## Overview
 
@@ -239,14 +269,10 @@ docker stats <container_id>
 
 ## Registry Publishing
 
+The official image is built from `Dockerfile.registry` and published to GHCR by
+[`.github/workflows/publish_mcp_registry.yml`](../.github/workflows/publish_mcp_registry.yml)
+when `pub_publish.yml` completes. Manual local build:
+
 ```bash
-# Tag for registry
-docker tag mcp_server:latest myregistry.com/mcp_server:0.1.0
-
-# Push to registry
-docker push myregistry.com/mcp_server:0.1.0
-
-# Pull and run
-docker pull myregistry.com/mcp_server:0.1.0
-docker run -i myregistry.com/mcp_server:0.1.0
+docker build -f Dockerfile.registry -t flutter-mcp-toolkit:registry .
 ```
