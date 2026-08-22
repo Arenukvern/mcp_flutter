@@ -95,6 +95,11 @@ final class FlutterToolMachineDiscovery {
   @visibleForTesting
   final Duration windowsTreeStopTimeout;
 
+  /// Coordination state keyed by object identity.
+  ///
+  /// Note: identical const invocations of this class are canonicalized by the
+  /// Dart runtime into a single object, so they intentionally share one
+  /// coordinator — from the caller's perspective they are the same instance.
   static final Expando<_DiscoveryCoordinator> _coordinators =
       Expando<_DiscoveryCoordinator>();
 
@@ -104,7 +109,7 @@ final class FlutterToolMachineDiscovery {
     final Duration timeout = const Duration(milliseconds: 2500),
   }) {
     final key = (
-      projectDir: projectDir,
+      projectDir: _normalizePath(projectDir),
       device: device?.trim(),
       timeout: timeout,
     );
@@ -168,14 +173,18 @@ final class FlutterToolMachineDiscovery {
         logger: 'FlutterMachineDiscovery',
       );
 
-      processStartedAfter = DateTime.now().toUtc();
+      processStartedAfter = DateTime.now().toUtc().subtract(
+        const Duration(milliseconds: 1),
+      );
       process = await processStarter(
         flutterExecutable,
         args,
         workingDirectory: _normalizePath(projectDir),
         runInShell: true,
       );
-      processStartedBefore = DateTime.now().toUtc();
+      processStartedBefore = DateTime.now().toUtc().add(
+        const Duration(milliseconds: 1),
+      );
     } on Exception catch (e) {
       logger(
         LoggingLevel.warning,
@@ -539,10 +548,15 @@ final class FlutterToolMachineDiscovery {
     runInShell: runInShell,
   );
 
-  Future<bool> _terminateWindowsProcessTree(
+  /// Exit code reported by the Windows tree-termination script when the root
+  /// was killed but descendant Dart processes remained after the rescan budget.
+  static const _windowsDescendantsRemainExitCode = 6;
+
+  Future<int> _terminateWindowsProcessTree(
     final int pid, {
     required final DateTime processStartedAfter,
     required final DateTime processStartedBefore,
+    required final Duration scriptBudget,
   }) => _runWindowsTerminator('powershell.exe', <String>[
     '-NoLogo',
     '-NoProfile',
@@ -555,10 +569,12 @@ final class FlutterToolMachineDiscovery {
       processStartedAfter: processStartedAfter,
       processStartedBefore: processStartedBefore,
       expectedFlutterExecutable: flutterExecutable,
+      waitForExitMs: scriptBudget.inMilliseconds ~/ 4,
+      rescanSeconds: scriptBudget.inSeconds ~/ 2,
     ),
   ], timeout: windowsTreeStopTimeout);
 
-  Future<bool> _runWindowsTerminator(
+  Future<int> _runWindowsTerminator(
     final String executable,
     final List<String> arguments, {
     required final Duration timeout,
@@ -571,14 +587,14 @@ final class FlutterToolMachineDiscovery {
         runInShell: false,
       );
     } on Exception {
-      return false;
+      return -1;
     }
 
-    unawaited(terminatorProcess.stdout.drain<void>());
-    unawaited(terminatorProcess.stderr.drain<void>());
+    terminatorProcess.stdout.drain<void>().ignore();
+    terminatorProcess.stderr.drain<void>().ignore();
 
     try {
-      return await terminatorProcess.exitCode.timeout(timeout) == 0;
+      return await terminatorProcess.exitCode.timeout(timeout);
     } on TimeoutException {
       terminatorProcess.kill();
       try {
@@ -590,7 +606,7 @@ final class FlutterToolMachineDiscovery {
           onTimeout: () => -1,
         );
       }
-      return false;
+      return -1;
     }
   }
 
@@ -599,6 +615,8 @@ final class FlutterToolMachineDiscovery {
     required final DateTime processStartedAfter,
     required final DateTime processStartedBefore,
     required final String expectedFlutterExecutable,
+    required final int waitForExitMs,
+    required final int rescanSeconds,
   }) =>
       r'''
 $rootPid = __ROOT_PID__
@@ -665,9 +683,9 @@ function Add-Lineage([object[]]$processes, [DateTime]$latestCreation) {
 
 Add-Lineage $all ([DateTime]::UtcNow)
 $rootHandle.Kill()
-if (-not $rootHandle.WaitForExit(2000)) { exit 5 }
+if (-not $rootHandle.WaitForExit(__WAIT_FOR_EXIT_MS__)) { exit 5 }
 $rootStoppedBefore = $rootHandle.ExitTime.ToUniversalTime()
-$deadline = [DateTime]::UtcNow.AddSeconds(2)
+$deadline = [DateTime]::UtcNow.AddSeconds(__RESCAN_SECONDS__)
 $quietPasses = 0
 while ([DateTime]::UtcNow -lt $deadline) {
   $all = @(Get-CimInstance Win32_Process -ErrorAction Stop)
@@ -711,6 +729,8 @@ while ([DateTime]::UtcNow -lt $deadline) {
 exit 6
 '''
           .replaceAll('__ROOT_PID__', '$rootPid')
+          .replaceAll('__WAIT_FOR_EXIT_MS__', '$waitForExitMs')
+          .replaceAll('__RESCAN_SECONDS__', '$rescanSeconds')
           .replaceAll(
             '__STARTED_AFTER__',
             processStartedAfter.toUtc().toIso8601String(),
@@ -811,35 +831,59 @@ exit 6
     required final DateTime processStartedBefore,
   }) async {
     if (isWindows ?? Platform.isWindows) {
-      final terminatedTree = await _terminateWindowsProcessTree(
+      final terminatorExitCode = await _terminateWindowsProcessTree(
         process.pid,
         processStartedAfter: processStartedAfter,
         processStartedBefore: processStartedBefore,
+        scriptBudget: windowsTreeStopTimeout,
       );
-      if (terminatedTree) {
+      if (terminatorExitCode == 0) {
+        await process.exitCode.timeout(stopTimeout, onTimeout: () => -1);
+        return;
+      }
+      if (terminatorExitCode == _windowsDescendantsRemainExitCode) {
+        // The verified wrapper was killed; stdin cannot reach a dead process.
+        logger(
+          LoggingLevel.warning,
+          'Flutter machine discovery wrapper (pid ${process.pid}) was '
+          'terminated but descendant Dart processes may remain.',
+          logger: 'FlutterMachineDiscovery',
+        );
         await process.exitCode.timeout(stopTimeout, onTimeout: () => -1);
         return;
       }
       logger(
         LoggingLevel.warning,
-        'Failed to terminate Flutter machine discovery process tree; '
+        'Failed to terminate Flutter machine discovery process tree '
+        '(exit code: $terminatorExitCode); '
         'falling back to a graceful stdin stop.',
         logger: 'FlutterMachineDiscovery',
       );
       try {
         process.stdin.writeln('q');
         await process.stdin.flush();
-      } catch (_) {
+      } on Exception catch (_) {
         // Ignore stdin close/write errors during the safe fallback.
       }
-      await process.exitCode.timeout(stopTimeout, onTimeout: () => -1);
+      final exitCode = await process.exitCode.timeout(
+        stopTimeout,
+        onTimeout: () => -1,
+      );
+      if (exitCode == -1) {
+        logger(
+          LoggingLevel.warning,
+          'Flutter machine discovery wrapper (pid ${process.pid}) could not '
+          'be stopped and remains running.',
+          logger: 'FlutterMachineDiscovery',
+        );
+      }
       return;
     }
 
     try {
       process.stdin.writeln('q');
       await process.stdin.flush();
-    } catch (_) {
+    } on Exception catch (_) {
       // Ignore stdin close/write errors.
     }
 
