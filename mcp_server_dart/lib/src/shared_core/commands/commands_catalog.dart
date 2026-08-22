@@ -665,7 +665,10 @@ final class CommandCatalog {
         description:
             'Get compact semantic tree of interactive widgets with stable refs '
             'usable by interaction tools (tap_widget, enter_text, etc.). '
-            'Call this before any interaction tool to get fresh refs.',
+            'Call this before any interaction tool to get fresh refs. '
+            'A control that appears only under the pointer is absent here: '
+            'on desktop and web, hover the element that should own it and '
+            'snapshot again.',
         inputSchema: interactionCatalogInputSchemaFor('semantic_snapshot')!,
         outputSchema: _objectSchema(additionalProperties: true),
         requiresVm: true,
@@ -801,6 +804,7 @@ final class CommandCatalog {
           fromRef: _stringArg(args, 'fromRef', fallback: ''),
           toRef: _stringArg(args, 'toRef', fallback: ''),
           snapshotId: _nullableIntArg(args, 'snapshotId', alias: 'snapshot-id'),
+          kind: parseDragPointerKind(_nullableStringArg(args, 'kind')),
         ),
       ),
       CommandSpec(
@@ -862,7 +866,11 @@ final class CommandCatalog {
         description:
             'Block until a UI predicate matches or a timeout elapses, then '
             'return a fresh semantic snapshot. Predicate kinds: text, noText, '
-            'time, stable, noError. Replaces sleep+snapshot polling loops.',
+            'node, time, stable, noError. text matches any string in the tree, '
+            'including the label of a tab that is not open — wait on state '
+            'with node: {"kind":"node","identifier":"…","selected":true}, or '
+            'add "absent":true to wait for it to go away. '
+            'Replaces sleep+snapshot polling loops.',
         inputSchema: interactionCatalogInputSchemaFor('wait_for')!,
         outputSchema: _objectSchema(additionalProperties: true),
         requiresVm: true,
@@ -968,10 +976,11 @@ final class CommandCatalog {
         name: 'hover',
         description:
             'Synthesize a mouse hover at the centre of a widget identified '
-            'by a semantic snapshot ref. Drives MouseRegion.onEnter/onExit '
-            'and listeners on PointerHoverEvent. Requires a desktop or web '
-            'host (mobile platforms have no hover concept). '
-            'Call semantic_snapshot immediately before to get fresh refs. '
+            'by a semantic snapshot ref, driving MouseRegion.onEnter/onExit. '
+            'Desktop and web only. The hover stays parked, so an affordance '
+            'it reveals survives the next semantic_snapshot; act on it with '
+            'your next call — any other interaction releases the hover, and '
+            'the affordance goes with it. '
             'Pass snapshotId to detect staleness.',
         inputSchema: interactionCatalogInputSchemaFor('hover')!,
         outputSchema: _objectSchema(additionalProperties: true),

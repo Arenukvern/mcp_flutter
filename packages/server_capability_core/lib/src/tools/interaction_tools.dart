@@ -161,10 +161,16 @@ void registerInteractionTools(final CapabilityContext context) {
         final fromRef = stringArgOrNull(args['fromRef']) ?? '';
         final toRef = stringArgOrNull(args['toRef']) ?? '';
         final snapshotId = intArgOrNull(args['snapshotId']);
+        final kind = parseDragPointerKind(args['kind']);
         return runCommand(
           runner,
           args,
-          DragCommand(fromRef: fromRef, toRef: toRef, snapshotId: snapshotId),
+          DragCommand(
+            fromRef: fromRef,
+            toRef: toRef,
+            snapshotId: snapshotId,
+            kind: kind,
+          ),
         );
       },
     ),
@@ -174,12 +180,12 @@ void registerInteractionTools(final CapabilityContext context) {
     ToolRegistration(
       name: 'hover',
       description:
-          'Synthesize a mouse hover at the centre of a widget identified '
-          'by a semantic snapshot ref. Drives MouseRegion.onEnter/onExit '
-          'and listeners on PointerHoverEvent. Requires a desktop or web '
-          'host (mobile platforms have no hover concept). '
-          'Call semantic_snapshot immediately before to get fresh refs. '
-          'Pass snapshotId to detect staleness.',
+          'Synthesize a mouse hover at the centre of a widget identified by a '
+          'semantic snapshot ref, driving MouseRegion.onEnter/onExit. '
+          'Desktop and web only. The hover stays parked, so an affordance it '
+          'reveals survives the next semantic_snapshot; act on it with your '
+          'next call — any other interaction releases the hover, and the '
+          'affordance goes with it. Pass snapshotId to detect staleness.',
       inputSchema: hoverInputSchema(),
       handler: (final args) async {
         final ref = stringArgOrNull(args['ref']) ?? '';
