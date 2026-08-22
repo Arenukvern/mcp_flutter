@@ -65,6 +65,8 @@ Map<String, Object?> waitForInputSchema() => <String, Object?>{
           '{kind:"time", ms:int} | '
           '{kind:"text", text:String} | '
           '{kind:"noText", text:String} | '
+          '{kind:"node", identifier:String, selected/enabled/focused/checked/'
+          'toggled:bool, absent:bool} | '
           '{kind:"stable", stableWindowMs:int}, '
           '{kind:"noError"}',
     },
@@ -236,6 +238,16 @@ Map<String, Object?> dragInputSchema() => <String, Object?>{
     'toRef': <String, Object?>{
       'type': 'string',
       'description': 'Target widget ref.',
+    },
+    'kind': <String, Object?>{
+      'type': 'string',
+      'enum': <String>['mouse', 'touch'],
+      'description':
+          'Pointer device to synthesize. Defaults to mouse on desktop '
+          'targets and touch elsewhere. Mouse keeps scrollables out of the '
+          'gesture arena, so the drag lands on the target\'s drag/pan '
+          'recognizer (drag-and-drop); touch keeps scrollables competing, '
+          'so a drag over scrollable content scrolls it instead.',
     },
     'snapshotId': <String, Object?>{
       'type': 'integer',

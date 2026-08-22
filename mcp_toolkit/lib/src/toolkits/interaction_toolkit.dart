@@ -1,4 +1,5 @@
 import 'package:dart_mcp/client.dart';
+import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
 import 'package:intentcall_core/intentcall_core.dart';
@@ -55,7 +56,10 @@ extension type OnSemanticSnapshotEntry._(AgentCallEntry entry)
         name: 'semantic_snapshot',
         description:
             'Get compact semantic tree of interactive widgets with refs '
-            'for interaction tools (tap_widget, enter_text, etc.).',
+            'for interaction tools (tap_widget, enter_text, etc.). '
+            'A control that appears only under the pointer is absent here: '
+            'on desktop and web, hover the element that should own it and '
+            'snapshot again.',
         inputSchema: ObjectSchema.fromMap(semanticSnapshotInputSchema()),
       ),
     );
@@ -487,9 +491,15 @@ extension type OnDragEntry._(AgentCallEntry entry) implements AgentCallEntry {
             },
           );
         }
+        final kind = switch (parameters['kind']) {
+          'mouse' => PointerDeviceKind.mouse,
+          'touch' => PointerDeviceKind.touch,
+          _ => null,
+        };
         final result = await GestureInteractionService.drag(
           fromRef: fromRef,
           toRef: toRef,
+          kind: kind,
         );
         return MCPCallResult(
           message: result['success'] == true
@@ -579,8 +589,12 @@ extension type OnWaitForEntry._(AgentCallEntry entry)
       definition: MCPToolDefinition(
         name: 'wait_for',
         description:
-            'Wait for a UI predicate (text/noText/time/stable/noError) and '
-            'return a fresh semantic snapshot. Default timeout 5000ms, max 30000ms.',
+            'Wait for a UI predicate (text/noText/node/time/stable/noError) '
+            'and return a fresh semantic snapshot. text matches any string in '
+            'the tree, including the label of a tab that is not open — wait '
+            'on state with node: {"kind":"node","identifier":"…",'
+            '"selected":true}, or add "absent":true to wait for it to go '
+            'away. Default timeout 5000ms, max 30000ms.',
         inputSchema: ObjectSchema.fromMap(waitForInputSchema()),
       ),
     );
@@ -734,7 +748,8 @@ extension type OnNavigateEntry._(AgentCallEntry entry)
 /// {@template on_hover_entry}
 /// Synthesize a mouse hover at the centre of a widget identified by ref.
 /// Drives MouseRegion.onEnter/onExit. Requires a desktop or web host
-/// (mobile platforms have no hover concept).
+/// (mobile platforms have no hover concept). The hover stays parked on the
+/// target until the next interaction releases it.
 /// {@endtemplate}
 extension type OnHoverEntry._(AgentCallEntry entry) implements AgentCallEntry {
   /// {@macro on_hover_entry}
@@ -778,10 +793,11 @@ extension type OnHoverEntry._(AgentCallEntry entry) implements AgentCallEntry {
         name: 'hover',
         description:
             'Synthesize a mouse hover at the centre of a widget identified '
-            'by a semantic ref. Drives MouseRegion.onEnter/onExit and '
-            'listeners on PointerHoverEvent. Desktop/web only — mobile '
-            'has no hover concept. Call semantic_snapshot immediately '
-            'before to get fresh refs.',
+            'by a semantic ref, driving MouseRegion.onEnter/onExit. '
+            'Desktop and web only. The hover stays parked, so an affordance '
+            'it reveals survives the next semantic_snapshot; act on it with '
+            'your next call — any other interaction releases the hover, and '
+            'the affordance goes with it.',
         inputSchema: ObjectSchema.fromMap(hoverInputSchema()),
       ),
     );

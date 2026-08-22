@@ -11,6 +11,9 @@ import 'semantic_snapshot_service.dart';
 ///   - `time`:    {kind: 'time', ms: int} — pure delay, no UI inspection.
 ///   - `text`:    {kind: 'text', text: String} — substring appears in snapshot.
 ///   - `noText`:  {kind: 'noText', text: String} — substring absent.
+///   - `node`:    {kind: 'node', identifier: String, selected/enabled/focused/
+///                checked/toggled: bool, absent: bool} — a node carrying that
+///                identifier holds the named flags. `absent: true` inverts it.
 ///   - `stable`:  {kind: 'stable', stableWindowMs: int} — no semantic change
 ///                for the stable window.
 ///   - `noError`: {kind: 'noError'} — Flutter error monitor has no entries.
@@ -119,9 +122,58 @@ class WaitPredicateService {
       case 'noText':
         final needle = (predicate['text'] as String?) ?? '';
         return needle.isNotEmpty && !_snapshotContainsText(snapshot, needle);
+      case 'node':
+        return _nodeMatches(predicate, snapshot);
       default:
         return false;
     }
+  }
+
+  /// Semantic flags a `node` predicate can require, spelled as the snapshot
+  /// spells them.
+  static const _nodeFlags = <String>[
+    'selected',
+    'enabled',
+    'focused',
+    'checked',
+    'toggled',
+  ];
+
+  /// Whether a node carrying `identifier` holds every flag the predicate
+  /// names. `absent: true` inverts the result, so one shape covers "appeared",
+  /// "became selected" and "went away".
+  ///
+  /// Unlike `text`, this reads the node's own state rather than any string in
+  /// the tree: the label of an unselected tab is present the whole time, so it
+  /// cannot say whether that tab is open.
+  static bool _nodeMatches(
+    final Map<String, Object?> predicate,
+    final Map<String, Object?> snapshot,
+  ) {
+    final identifier = (predicate['identifier'] as String?) ?? '';
+    if (identifier.isEmpty) return false;
+    final nodes = snapshot['nodes'];
+    if (nodes is! List) return false;
+
+    final found = nodes.whereType<Map<Object?, Object?>>().any(
+      (final node) =>
+          node['identifier'] == identifier && _flagsHold(predicate, node),
+    );
+    return predicate['absent'] == true ? !found : found;
+  }
+
+  /// A flag the snapshot omits reads as `false` — it only emits the ones that
+  /// are set.
+  static bool _flagsHold(
+    final Map<String, Object?> predicate,
+    final Map<Object?, Object?> node,
+  ) {
+    for (final flag in _nodeFlags) {
+      final expected = predicate[flag];
+      if (expected == null) continue;
+      if ((node[flag] ?? false) != expected) return false;
+    }
+    return true;
   }
 
   static bool _snapshotContainsText(
