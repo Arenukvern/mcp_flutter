@@ -1,15 +1,15 @@
 # 5.0.0
 
-- Align package version and hosted sibling dependency constraints with the Flutter MCP Toolkit prerelease train.
+- Align package version and hosted sibling dependency constraints as part of the 5.0.0 release.
 
 
 # 4.0.0-dev.8
 
-- Align package version and hosted sibling dependency constraints with the Flutter MCP Toolkit prerelease train.
+- Align package version and hosted sibling dependency constraints as part of the 5.0.0 release.
 
 # 4.0.0-dev.7
 
-- Align package version and hosted sibling dependency constraints with the Flutter MCP Toolkit prerelease train.
+- Align package version and hosted sibling dependency constraints as part of the 5.0.0 release.
 
 ### Features
 
@@ -31,19 +31,19 @@
 
 # 4.0.0-dev.6
 
-- Align package version and hosted sibling dependency constraints with the Flutter MCP Toolkit prerelease train.
+- Align package version and hosted sibling dependency constraints as part of the 5.0.0 release.
 
 # 4.0.0-dev.5
 
-- Align package version and hosted sibling dependency constraints with the Flutter MCP Toolkit prerelease train.
+- Align package version and hosted sibling dependency constraints as part of the 5.0.0 release.
 
 # 4.0.0-dev.4
 
-- Align package version and hosted sibling dependency constraints with the Flutter MCP Toolkit prerelease train.
+- Align package version and hosted sibling dependency constraints as part of the 5.0.0 release.
 
 # 4.0.0-dev.3
 
-- Align package version and hosted sibling dependency constraints with the Flutter MCP Toolkit prerelease train.
+- Align package version and hosted sibling dependency constraints as part of the 5.0.0 release.
 
 # 4.0.0-dev.1
 

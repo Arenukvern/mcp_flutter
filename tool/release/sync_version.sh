@@ -120,19 +120,19 @@ date = ENV.fetch('FMT_RELEASE_DATE')
 entries = [
   [
     'packages/core/CHANGELOG.md',
-    "## [#{version}] - #{date}\n\n### Changed\n\n- Align package version with the Flutter MCP Toolkit prerelease train.\n\n",
+    "## [#{version}] - #{date}\n\n### Changed\n\n- Align package version with the Flutter MCP Toolkit #{version} release.\n\n",
   ],
   [
     'packages/server_capability_kernel/CHANGELOG.md',
-    "## [#{version}] - #{date}\n\n### Changed\n\n- Align package version and hosted sibling dependency constraints with the Flutter MCP Toolkit prerelease train.\n\n",
+    "## [#{version}] - #{date}\n\n### Changed\n\n- Align package version and hosted sibling dependency constraints with the Flutter MCP Toolkit #{version} release.\n\n",
   ],
   [
     'packages/server_capability_core/CHANGELOG.md',
-    "## [#{version}] - #{date}\n\n### Changed\n\n- Align package version and hosted sibling dependency constraints with the Flutter MCP Toolkit prerelease train.\n\n",
+    "## [#{version}] - #{date}\n\n### Changed\n\n- Align package version and hosted sibling dependency constraints with the Flutter MCP Toolkit #{version} release.\n\n",
   ],
   [
     'mcp_toolkit/CHANGELOG.md',
-    "# #{version}\n\n- Align package version and hosted sibling dependency constraints with the Flutter MCP Toolkit prerelease train.\n\n",
+    "# #{version}\n\n- Align package version and hosted sibling dependency constraints with the Flutter MCP Toolkit #{version} release.\n\n",
   ],
 ]
 
@@ -155,8 +155,8 @@ end
 RUBY
 
 perl -0pi \
-  -e "s{const kFlutterMcpVersion = '[^']+';}{const kFlutterMcpVersion = '$version';};" \
-  -e "s{const kFlutterMcpMajorVersion = [0-9]+;}{const kFlutterMcpMajorVersion = $major;};" \
+  -e "s{const String kFlutterMcpVersion = '[^']+';}{const String kFlutterMcpVersion = '$version';};" \
+  -e "s{const int kFlutterMcpMajorVersion = [0-9]+;}{const int kFlutterMcpMajorVersion = $major;};" \
   -e "s{flutter-mcp-toolkit/[0-9]+\\.[0-9]+}{flutter-mcp-toolkit/$protocol_version};" \
   "$ROOT_DIR/packages/core/lib/src/runtime_version.dart"
 
@@ -173,6 +173,7 @@ files = [
   ['plugin/.codex-plugin/plugin.json', ['version']],
   ['plugin/.claude-plugin/plugin.json', ['version']],
   ['.claude-plugin/marketplace.json', ['plugins', 0, 'version']],
+  ['docs.json', ['variables', 'version']],
   ['.release-please-manifest.json', ['.']],
 ]
 
