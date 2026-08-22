@@ -3,6 +3,34 @@
 <!-- markdownlint-disable MD052 -->
 <!-- Keep a Changelog version headings use [3.0.1] brackets; MD052 treats them as reference links. -->
 
+## [4.0.0-dev.9](https://github.com/Arenukvern/mcp_flutter/compare/v4.0.0-dev.8...v4.0.0-dev.9) (2026-08-22)
+
+
+### Features
+
+* **gestures:** platform-appropriate pointer kind for drag ([d80ff25](https://github.com/Arenukvern/mcp_flutter/commit/d80ff259fdf51901a75db02e40927065bc306bd6))
+* **gestures:** platform-appropriate pointer kind for drag. Made by hi [@dipsy](https://github.com/dipsy) in https://github.com/Arenukvern/mcp_flutter/pull/117 ([f062b3e](https://github.com/Arenukvern/mcp_flutter/commit/f062b3e5576c77c8594ba2aa1115d776774537cf))
+* **wait:** add a node predicate to wait_for ([f20b712](https://github.com/Arenukvern/mcp_flutter/commit/f20b712c79cf040e11bfcc1e33c60aabe183fd24))
+* **wait:** add a node predicate to wait_for. Made by [@dipsy](https://github.com/dipsy)  https://github.com/Arenukvern/mcp_flutter/pull/121 ([cb749d7](https://github.com/Arenukvern/mcp_flutter/commit/cb749d798df0fd6741beac53e33afd06fd0c4cce))
+
+
+### Bug Fixes
+
+* **gestures:** keep synthetic pointers off the platform mouse device ([4fe9886](https://github.com/Arenukvern/mcp_flutter/commit/4fe9886049cd7c6af890c58b64d3940fad0b4475))
+* **gestures:** keep synthetic pointers off the platform mouse device. Made by [@dipsy](https://github.com/dipsy) https://github.com/Arenukvern/mcp_flutter/pull/120 ([9fc64e9](https://github.com/Arenukvern/mcp_flutter/commit/9fc64e95e348aef329762c72ed294abdda5a8596))
+* **gestures:** release the synthetic device after a scroll too ([62a96e9](https://github.com/Arenukvern/mcp_flutter/commit/62a96e9ba80968df2dd4a6ab5a90e85549f12a20))
+* **server:** address PR [#115](https://github.com/Arenukvern/mcp_flutter/issues/115) review comments ([d2cea26](https://github.com/Arenukvern/mcp_flutter/commit/d2cea2613a4504cf2ae470b683adde2c0d6d9bd4))
+* **server:** address PR 115 review comments ([7f140dc](https://github.com/Arenukvern/mcp_flutter/commit/7f140dcfb744b8bca13b24b3c25032345accfbe0))
+* **server:** clean up Windows machine discovery process trees ([11d5d02](https://github.com/Arenukvern/mcp_flutter/commit/11d5d02b3e6066820720285bfd369336d127e4e8))
+* **server:** clean up Windows machine discovery process trees. Made by [@wenyue](https://github.com/wenyue) in https://github.com/Arenukvern/mcp_flutter/pull/115 ([b510de0](https://github.com/Arenukvern/mcp_flutter/commit/b510de08d14cc11dab3b8bea04503a9bbae81e9e))
+* **server:** handle already-exited root in Windows tree terminator ([aa076e7](https://github.com/Arenukvern/mcp_flutter/commit/aa076e7ce4a93b14ab54fc2432964508d3c449c6))
+* **server:** harden Windows machine discovery cleanup ([4810a33](https://github.com/Arenukvern/mcp_flutter/commit/4810a33a7c433949b7f59c994b9a43930da32768))
+
+
+### Documentation
+
+* **core:** document DragPointerKind members and parser contract ([a834cdb](https://github.com/Arenukvern/mcp_flutter/commit/a834cdb657d7b26955594e50652cc72d5e6bfbfa))
+
 ## [Unreleased]
 
 ### Bug Fixes
