@@ -1,3 +1,7 @@
+# 5.0.0
+
+- Align package version and hosted sibling dependency constraints with the Flutter MCP Toolkit prerelease train.
+
 
 # 4.0.0-dev.8
 
