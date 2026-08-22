@@ -3,9 +3,8 @@
   "packages": {
     ".": {
       "release-type": "simple",
-      "versioning": "prerelease",
-      "prerelease": true,
-      "prerelease-type": "dev",
+      "versioning": "default",
+      "prerelease": false,
       "package-name": "flutter-mcp-toolkit",
       "changelog-path": "CHANGELOG.md",
       "version-file": "VERSION",
@@ -51,7 +50,12 @@
         "packages/server_capability_core/pubspec.yaml",
         "packages/core/README.md",
         "packages/server_capability_kernel/README.md",
-        "packages/server_capability_core/README.md"
+        "packages/server_capability_core/README.md",
+        {
+          "type": "json",
+          "path": "mcp_server_dart/server.json",
+          "jsonpath": "$.version"
+        }
       ]
     }
   }

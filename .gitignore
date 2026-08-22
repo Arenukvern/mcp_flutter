@@ -45,3 +45,4 @@ mcp_server_dart/flutter_inspector_mcp
 # ../flutter_harness
 # ../flutter_mcp_video
 .steward/benchmark-summaries/*.json
+mcp_server_dart/mcp-publisher

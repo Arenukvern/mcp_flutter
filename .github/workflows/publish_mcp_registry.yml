@@ -1,0 +1,94 @@
+name: Publish MCP Registry server
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
+concurrency:
+  group: mcp-registry-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: mcp-registry-publish
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Require release tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REF" != refs/tags/v* ]]; then
+            echo "::error::This workflow must be run from a v* release tag (got $GITHUB_REF)."
+            exit 1
+          fi
+
+      - name: Resolve release version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          file_version="$(tr -d '[:space:]' < VERSION)"
+          if [[ "$version" != "$file_version" ]]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} does not match VERSION (${file_version})."
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Synchronize release metadata
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: bash tool/release/sync_version.sh --version "$RELEASE_VERSION"
+
+      - name: Verify MCP Registry contracts
+        run: bash tool/contracts/check_mcp_registry.sh
+
+      - name: Stage workspace lockfile for the image build context
+        run: cp pubspec.lock mcp_server_dart/pubspec.lock
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and publish OCI image
+        uses: docker/build-push-action@v6
+        with:
+          context: mcp_server_dart
+          file: Dockerfile.registry
+          push: true
+          tags: ghcr.io/arenukvern/flutter-mcp-toolkit:${{ steps.version.outputs.version }}
+
+      - name: Install pinned mcp-publisher
+        env:
+          MCP_PUBLISHER_VERSION: v1.8.1
+          MCP_PUBLISHER_SHA256: a06c9096dcb9727c13555b6be26c7effa707b01f06a4c561ba7a3635443cf2cc
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}/mcp-publisher_linux_amd64.tar.gz" \
+            -o mcp-publisher.tar.gz
+          echo "${MCP_PUBLISHER_SHA256}  mcp-publisher.tar.gz" | sha256sum --check --strict -
+          tar xz mcp-publisher -f mcp-publisher.tar.gz
+          chmod +x mcp-publisher
+
+      - name: Validate server manifest with the Registry
+        run: ./mcp-publisher validate mcp_server_dart/server.json
+
+      - name: Authenticate to MCP Registry with GitHub OIDC
+        run: ./mcp-publisher login github-oidc
+
+      - name: Publish server metadata to MCP Registry
+        working-directory: mcp_server_dart
+        run: ../mcp-publisher publish

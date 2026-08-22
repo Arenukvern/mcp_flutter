@@ -35,4 +35,4 @@ USER mcpuser
 ENTRYPOINT ["/usr/bin/tini", "--"]
 
 # Run via dart VM (not compiled) for easier debugging
-CMD ["dart", "run", "bin/main.dart", "--resources", "--images", "--log-level=debug"]
+CMD ["dart", "run", "bin/flutter_mcp_toolkit_server.dart", "--resources", "--images", "--log-level=debug"]

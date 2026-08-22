@@ -1,0 +1,17 @@
+.git/
+.github/
+.dart_tool/
+**/.dart_tool/
+build/
+**/build/
+coverage/
+dist/
+node_modules/
+.DS_Store
+.flutter_mcp/
+**/.flutter_mcp/
+test/
+**/test/
+docs/
+**/docs/
+*.log

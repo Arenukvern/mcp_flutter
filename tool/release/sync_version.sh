@@ -184,6 +184,18 @@ files.each do |path, keys|
   cursor[keys.last] = version
   File.write(path, JSON.pretty_generate(json) + "\n")
 end
+
+server_path = 'mcp_server_dart/server.json'
+if File.exist?(server_path)
+  server = JSON.parse(File.read(server_path))
+  server['version'] = version
+  server.fetch('packages').each do |package|
+    next unless package['registryType'] == 'oci'
+
+    package['identifier'] = "ghcr.io/arenukvern/flutter-mcp-toolkit:#{version}"
+  end
+  File.write(server_path, JSON.pretty_generate(server) + "\n")
+end
 RUBY
 
 echo "sync_version: synchronized release train to $version"
