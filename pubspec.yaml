@@ -4,8 +4,6 @@ environment:
   sdk: ">=3.12.0 <4.0.0"
 
 workspace:
-  - packages/core
-  - packages/server_capability_kernel
-  - packages/server_capability_core
+  - packages/*
   - mcp_toolkit
   - mcp_server_dart
