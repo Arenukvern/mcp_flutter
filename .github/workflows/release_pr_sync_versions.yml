@@ -55,7 +55,6 @@ jobs:
             VERSION \
             .release-please-manifest.json \
             .claude-plugin/marketplace.json \
-            docs.json \
             plugin/EXPECTED_SERVER_VERSION \
             plugin/.cursor-plugin/plugin.json \
             plugin/.codex-plugin/plugin.json \
@@ -104,7 +103,7 @@ jobs:
             \`\`\`bash
             make sync-version
             bash tool/contracts/check_version_sync.sh
-            git add VERSION .release-please-manifest.json plugin mcp_server_dart/pubspec.yaml mcp_toolkit/pubspec.yaml packages docs.json
+            git add VERSION .release-please-manifest.json plugin mcp_server_dart/pubspec.yaml mcp_toolkit/pubspec.yaml packages
             git commit -m "chore: sync release version touchpoints"
             git push
             \`\`\`
