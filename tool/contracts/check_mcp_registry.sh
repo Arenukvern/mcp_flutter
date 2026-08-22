@@ -43,7 +43,7 @@ grep -Fq 'bin/flutter_mcp_toolkit_server.dart' "$DOCKERFILE" ||
   fail "Dockerfile does not compile the published server entrypoint"
 grep -Fq 'docker/build-push-action' "$RELEASE_WORKFLOW" ||
   fail "publish workflow does not build and push the OCI image"
-grep -Fq 'file: Dockerfile.registry' "$RELEASE_WORKFLOW" ||
+grep -Fq 'file: mcp_server_dart/Dockerfile.registry' "$RELEASE_WORKFLOW" ||
   fail "publish workflow is not using the dedicated Registry Dockerfile"
 grep -Fq 'github-oidc' "$RELEASE_WORKFLOW" ||
   fail "publish workflow does not use GitHub OIDC for MCP Registry authentication"
