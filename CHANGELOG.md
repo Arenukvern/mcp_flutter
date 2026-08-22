@@ -3,6 +3,14 @@
 <!-- markdownlint-disable MD052 -->
 <!-- Keep a Changelog version headings use [3.0.1] brackets; MD052 treats them as reference links. -->
 
+## [5.0.1](https://github.com/Arenukvern/mcp_flutter/compare/v5.0.0...v5.0.1) (2026-08-22)
+
+
+### Bug Fixes
+
+* **ci:** use explicit path for Dockerfile.registry in build-push action ([b3c8310](https://github.com/Arenukvern/mcp_flutter/commit/b3c8310c70b413236f0cdb5b229713784680ebe8))
+* **ci:** use explicit path for Dockerfile.registry in build-push action ([7cb7b67](https://github.com/Arenukvern/mcp_flutter/commit/7cb7b67d7d1c6c8b43a967185d7915d798aff2a1))
+
 ## [5.0.0](https://github.com/Arenukvern/mcp_flutter/compare/v4.0.0...v5.0.0) (2026-08-22)
 
 

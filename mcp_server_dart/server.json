@@ -9,12 +9,12 @@
     "subfolder": "mcp_server_dart"
   },
   "websiteUrl": "https://docs.page/arenukvern/mcp_flutter",
-  "version": "5.0.0",
+  "version": "5.0.1",
   "packages": [
     {
       "registryType": "oci",
       "registryBaseUrl": "https://ghcr.io",
-      "identifier": "ghcr.io/arenukvern/flutter-mcp-toolkit:5.0.0",
+      "identifier": "ghcr.io/arenukvern/flutter-mcp-toolkit:5.0.1",
       "transport": {
         "type": "stdio"
       }
