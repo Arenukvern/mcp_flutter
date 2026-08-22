@@ -8,9 +8,11 @@ FROM dart:3.12.0-sdk AS build
 WORKDIR /app
 
 COPY pubspec.yaml ./pubspec.yaml
-# The registry image resolves published sibling packages independently from
-# the monorepo workspace, which keeps this image reproducible in CI.
-RUN sed -i '/^resolution: workspace$/d' pubspec.yaml && dart pub get
+COPY pubspec.lock ./pubspec.lock
+# The registry image resolves published sibling packages from the committed
+# workspace lockfile, which keeps this image reproducible in CI. The lockfile
+# is staged into the build context by publish_mcp_registry.yml.
+RUN sed -i '/^resolution: workspace$/d' pubspec.yaml && dart pub get --enforce-lockfile
 
 COPY bin/ ./bin/
 COPY lib/ ./lib/

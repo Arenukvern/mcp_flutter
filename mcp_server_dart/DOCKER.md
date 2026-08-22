@@ -7,7 +7,7 @@ This guide covers building and running the MCP Server using Docker.
 The official MCP Registry image is published to GHCR on every release:
 
 ```bash
-docker pull ghcr.io/arenukvern/flutter-mcp-toolkit:latest
+docker pull ghcr.io/arenukvern/flutter-mcp-toolkit:4.0.0
 ```
 
 Use it in an `mcpServers` config:
@@ -22,7 +22,7 @@ Use it in an `mcpServers` config:
         "-i",
         "--rm",
         "--network=host",
-        "ghcr.io/arenukvern/flutter-mcp-toolkit:latest"
+        "ghcr.io/arenukvern/flutter-mcp-toolkit:4.0.0"
       ]
     }
   }
@@ -30,13 +30,12 @@ Use it in an `mcpServers` config:
 ```
 
 > `--network=host` is required on macOS/Linux so the container can reach the
-> Dart VM service of your locally running Flutter debug app. Pin a specific
-> version tag (for example `ghcr.io/arenukvern/flutter-mcp-toolkit:4.0.0`)
-> instead of `latest` for reproducible setups.
+> Dart VM service of your locally running Flutter debug app. Pin the version
+> tag to the release you validated against for reproducible setups.
 
 ## Overview
 
-Two Dockerfiles are provided:
+Three Dockerfiles are provided:
 
 - **`Dockerfile`** - Production-ready, multi-stage build with compiled binary
 - **`Dockerfile.dev`** - Development version with Dart VM for debugging

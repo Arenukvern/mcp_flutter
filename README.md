@@ -25,7 +25,7 @@ _Inspect and drive a running Flutter app from your AI assistant._
 - 📖 **Docs:** [docs.page/arenukvern/mcp_flutter](https://docs.page/arenukvern/mcp_flutter/)
 - 🤝 **Contribute:** [guide](docs/contributing/contribution_guide.mdx) · [contributors](docs/contributing/contributors.mdx) · [code of conduct](CODE_OF_CONDUCT.md) · [security](SECURITY.md)
 
-`flutter-mcp-toolkit` is a Dart MCP server + Flutter package that lets AI Agents (Codex, Zed, Cursor, Intent, Claude Code, Cline, etc..) take (semantic snapshots, tap widgets, type into forms, hot-reload, and read logs from a Flutter app) or create **its own tools and resources at runtime** using MCP Toolkit — without leaving the conversation and work with Flutter apps in closed feedback loop - see example of it described in [OpenAI Agentic Harness](https://openai.com/index/harness-engineering/).
+`flutter-mcp-toolkit` is a Dart MCP server + Flutter package for AI agents (Codex, Zed, Cursor, Intent, Claude Code, Cline, and more). Agents can inspect a running Flutter app, take semantic snapshots, tap widgets, type into forms, hot-reload, and read logs. Apps can also register their own MCP tools and resources at runtime via MCP Toolkit — all without leaving the conversation. The result is a closed feedback loop between agent and app; see [OpenAI Agentic Harness](https://openai.com/index/harness-engineering/) for an example of this pattern.
 
 ![Watercolor comic infographic explaining flutter-mcp-toolkit: install fmtk, add it to a Flutter app, connect an AI agent, then inspect, tap, reload, and prove changes in a close feedback loop.](docs/assets/flutter-mcp-toolkit-infographic.png)
 
@@ -89,7 +89,7 @@ The official registry serves an OCI image from GHCR. Point any MCP client at it:
         "-i",
         "--rm",
         "--network=host",
-        "ghcr.io/arenukvern/flutter-mcp-toolkit:latest"
+        "ghcr.io/arenukvern/flutter-mcp-toolkit:4.0.0"
       ]
     }
   }
