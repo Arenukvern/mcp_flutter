@@ -552,6 +552,10 @@ final class FlutterToolMachineDiscovery {
   /// was killed but descendant Dart processes remained after the rescan budget.
   static const _windowsDescendantsRemainExitCode = 6;
 
+  /// Exit code reported when the root process already exited on its own
+  /// before the terminator could acquire its handle.
+  static const _windowsRootAlreadyExitedExitCode = 7;
+
   Future<int> _terminateWindowsProcessTree(
     final int pid, {
     required final DateTime processStartedAfter,
@@ -638,7 +642,8 @@ if ($root.Name -ne 'cmd.exe' -or
   exit 3
 }
 
-$rootHandle = Get-Process -Id $rootPid -ErrorAction Stop
+$rootHandle = Get-Process -Id $rootPid -ErrorAction SilentlyContinue
+if ($null -eq $rootHandle) { exit 7 }
 $handleCreated = $rootHandle.StartTime.ToUniversalTime()
 if ([Math]::Abs($handleCreated.Ticks - $rootCreated.Ticks) -gt 10) {
   exit 4
@@ -847,6 +852,17 @@ exit 6
           LoggingLevel.warning,
           'Flutter machine discovery wrapper (pid ${process.pid}) was '
           'terminated but descendant Dart processes may remain.',
+          logger: 'FlutterMachineDiscovery',
+        );
+        await process.exitCode.timeout(stopTimeout, onTimeout: () => -1);
+        return;
+      }
+      if (terminatorExitCode == _windowsRootAlreadyExitedExitCode) {
+        // The wrapper exited on its own before termination; nothing to stop.
+        logger(
+          LoggingLevel.debug,
+          'Flutter machine discovery wrapper (pid ${process.pid}) already '
+          'exited before tree termination.',
           logger: 'FlutterMachineDiscovery',
         );
         await process.exitCode.timeout(stopTimeout, onTimeout: () => -1);
