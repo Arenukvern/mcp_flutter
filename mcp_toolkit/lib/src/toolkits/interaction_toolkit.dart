@@ -56,7 +56,10 @@ extension type OnSemanticSnapshotEntry._(AgentCallEntry entry)
         name: 'semantic_snapshot',
         description:
             'Get compact semantic tree of interactive widgets with refs '
-            'for interaction tools (tap_widget, enter_text, etc.).',
+            'for interaction tools (tap_widget, enter_text, etc.). '
+            'A control that appears only under the pointer is absent here: '
+            'on desktop and web, hover the element that should own it and '
+            'snapshot again.',
         inputSchema: ObjectSchema.fromMap(semanticSnapshotInputSchema()),
       ),
     );
@@ -741,7 +744,8 @@ extension type OnNavigateEntry._(AgentCallEntry entry)
 /// {@template on_hover_entry}
 /// Synthesize a mouse hover at the centre of a widget identified by ref.
 /// Drives MouseRegion.onEnter/onExit. Requires a desktop or web host
-/// (mobile platforms have no hover concept).
+/// (mobile platforms have no hover concept). The hover stays parked on the
+/// target until the next interaction releases it.
 /// {@endtemplate}
 extension type OnHoverEntry._(AgentCallEntry entry) implements AgentCallEntry {
   /// {@macro on_hover_entry}
@@ -785,10 +789,11 @@ extension type OnHoverEntry._(AgentCallEntry entry) implements AgentCallEntry {
         name: 'hover',
         description:
             'Synthesize a mouse hover at the centre of a widget identified '
-            'by a semantic ref. Drives MouseRegion.onEnter/onExit and '
-            'listeners on PointerHoverEvent. Desktop/web only — mobile '
-            'has no hover concept. Call semantic_snapshot immediately '
-            'before to get fresh refs.',
+            'by a semantic ref, driving MouseRegion.onEnter/onExit. '
+            'Desktop and web only. The hover stays parked, so an affordance '
+            'it reveals survives the next semantic_snapshot; act on it with '
+            'your next call — any other interaction releases the hover, and '
+            'the affordance goes with it.',
         inputSchema: ObjectSchema.fromMap(hoverInputSchema()),
       ),
     );
