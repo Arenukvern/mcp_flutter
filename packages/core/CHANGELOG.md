@@ -12,41 +12,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Keep the package test constraint compatible with the pinned Flutter 3.44.2
   `flutter_test` stack used by release PR checks.
 
+## [5.0.0] - 2026-08-22
+
+### Changed
+
+- Align package version as part of the 5.0.0 release.
+
 ## [4.0.0-dev.8] - 2026-07-31
 
 ### Changed
 
-- Align package version with the Flutter MCP Toolkit prerelease train.
+- Align package version with the Flutter MCP Toolkit 4.0.0-dev train.
 
 ## [4.0.0-dev.7] - 2026-07-18
 
 ### Changed
 
-- Align package version with the Flutter MCP Toolkit prerelease train.
+- Align package version with the Flutter MCP Toolkit 4.0.0-dev train.
 
 ## [4.0.0-dev.6] - 2026-07-05
 
 ### Changed
 
-- Align package version with the Flutter MCP Toolkit prerelease train.
+- Align package version with the Flutter MCP Toolkit 4.0.0-dev train.
 
 ## [4.0.0-dev.5] - 2026-06-21
 
 ### Changed
 
-- Align package version with the Flutter MCP Toolkit prerelease train.
+- Align package version with the Flutter MCP Toolkit 4.0.0-dev train.
 
 ## [4.0.0-dev.4] - 2026-06-18
 
 ### Changed
 
-- Align package version with the Flutter MCP Toolkit prerelease train.
+- Align package version with the Flutter MCP Toolkit 4.0.0-dev train.
 
 ## [4.0.0-dev.3] - 2026-06-18
 
 ### Changed
 
-- Align package version with the Flutter MCP Toolkit prerelease train.
+- Align package version with the Flutter MCP Toolkit 4.0.0-dev train.
 
 ## [4.0.0-dev.1] - 2026-06-06
 
