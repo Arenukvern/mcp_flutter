@@ -197,6 +197,184 @@ void main() {
     expect(result['matched'], isTrue);
     expect(result['snapshot_id'], isA<int>());
   });
+
+  group('wait_for node predicate', () {
+    testWidgets('reads state, not the label', (final tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(home: Scaffold(body: _StaticTabs())),
+      );
+      await tester.pump();
+
+      // The label of the closed tab is in the tree the whole time, so a text
+      // predicate reports it as open — while the node predicate reads the flag
+      // and reports it closed.
+      final textFuture = WaitPredicateService.waitFor(
+        predicate: const {'kind': 'text', 'text': 'Second'},
+        timeoutMs: 2000,
+      );
+      final closedFuture = WaitPredicateService.waitFor(
+        predicate: const {
+          'kind': 'node',
+          'identifier': 'tab_second',
+          'selected': true,
+          'absent': true,
+        },
+        timeoutMs: 2000,
+      );
+      final openFuture = WaitPredicateService.waitFor(
+        predicate: const {
+          'kind': 'node',
+          'identifier': 'tab_first',
+          'selected': true,
+        },
+        timeoutMs: 2000,
+      );
+
+      for (var i = 0; i < 30; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+
+      expect((await textFuture)['matched'], isTrue);
+      expect((await closedFuture)['matched'], isTrue);
+      expect((await openFuture)['matched'], isTrue);
+    });
+
+    testWidgets('matches once the flag flips', (final tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(home: Scaffold(body: _DelayedSelection())),
+      );
+      await tester.pump();
+
+      final waitFuture = WaitPredicateService.waitFor(
+        predicate: const {
+          'kind': 'node',
+          'identifier': 'tab_second',
+          'selected': true,
+        },
+        timeoutMs: 2000,
+      );
+
+      for (var i = 0; i < 30; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+
+      final result = await waitFuture;
+      expect(result['matched'], isTrue);
+      expect(result['snapshot_id'], isA<int>());
+    });
+
+    testWidgets('absent matches once the node is gone', (final tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(home: Scaffold(body: _DelayedIdentifiedClear())),
+      );
+      await tester.pump();
+
+      final waitFuture = WaitPredicateService.waitFor(
+        predicate: const {
+          'kind': 'node',
+          'identifier': 'transient_row',
+          'absent': true,
+        },
+        timeoutMs: 2000,
+      );
+
+      for (var i = 0; i < 30; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+
+      expect((await waitFuture)['matched'], isTrue);
+    });
+  });
+}
+
+class _StaticTabs extends StatelessWidget {
+  const _StaticTabs();
+
+  @override
+  Widget build(final BuildContext context) => Row(
+    children: <Widget>[
+      Semantics(
+        identifier: 'tab_first',
+        label: 'First',
+        selected: true,
+        child: const SizedBox(width: 40, height: 40),
+      ),
+      Semantics(
+        identifier: 'tab_second',
+        label: 'Second',
+        selected: false,
+        child: const SizedBox(width: 40, height: 40),
+      ),
+    ],
+  );
+}
+
+class _DelayedIdentifiedClear extends StatefulWidget {
+  const _DelayedIdentifiedClear();
+
+  @override
+  State<_DelayedIdentifiedClear> createState() =>
+      _DelayedIdentifiedClearState();
+}
+
+class _DelayedIdentifiedClearState extends State<_DelayedIdentifiedClear> {
+  bool _present = true;
+
+  @override
+  void initState() {
+    super.initState();
+    Future<void>.delayed(const Duration(milliseconds: 200), () {
+      if (mounted) setState(() => _present = false);
+    });
+  }
+
+  @override
+  Widget build(final BuildContext context) => Center(
+    child: _present
+        ? Semantics(
+            identifier: 'transient_row',
+            label: 'Row',
+            child: const SizedBox(width: 40, height: 40),
+          )
+        : const SizedBox.shrink(),
+  );
+}
+
+class _DelayedSelection extends StatefulWidget {
+  const _DelayedSelection();
+
+  @override
+  State<_DelayedSelection> createState() => _DelayedSelectionState();
+}
+
+class _DelayedSelectionState extends State<_DelayedSelection> {
+  bool _secondSelected = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Future<void>.delayed(const Duration(milliseconds: 200), () {
+      if (mounted) setState(() => _secondSelected = true);
+    });
+  }
+
+  @override
+  Widget build(final BuildContext context) => Row(
+    children: <Widget>[
+      Semantics(
+        identifier: 'tab_first',
+        label: 'First',
+        selected: !_secondSelected,
+        child: const SizedBox(width: 40, height: 40),
+      ),
+      Semantics(
+        identifier: 'tab_second',
+        label: 'Second',
+        selected: _secondSelected,
+        child: const SizedBox(width: 40, height: 40),
+      ),
+    ],
+  );
 }
 
 class _DelayedText extends StatefulWidget {

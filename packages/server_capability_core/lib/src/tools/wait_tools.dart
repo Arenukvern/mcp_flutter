@@ -18,8 +18,12 @@ void registerWaitTools(final CapabilityContext context) {
     ToolRegistration(
       name: 'wait_for',
       description:
-          'Wait for a UI predicate (text/noText/time/stable) and return a '
-          'fresh semantic snapshot. Replaces sleep+snapshot polling. '
+          'Wait for a UI predicate (text/noText/node/time/stable/noError) and '
+          'return a fresh semantic snapshot. Replaces sleep+snapshot polling. '
+          'text matches any string in the tree, including the label of a tab '
+          'that is not open — wait on state with node: '
+          '{"kind":"node","identifier":"…","selected":true}, or add '
+          '"absent":true to wait for it to go away. '
           'Default timeout 5000 ms, max 30000 ms.',
       inputSchema: waitForInputSchema(),
       handler: (final args) async {

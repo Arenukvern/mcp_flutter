@@ -65,6 +65,8 @@ Map<String, Object?> waitForInputSchema() => <String, Object?>{
           '{kind:"time", ms:int} | '
           '{kind:"text", text:String} | '
           '{kind:"noText", text:String} | '
+          '{kind:"node", identifier:String, selected/enabled/focused/checked/'
+          'toggled:bool, absent:bool} | '
           '{kind:"stable", stableWindowMs:int}, '
           '{kind:"noError"}',
     },
