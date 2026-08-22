@@ -31,7 +31,7 @@ Use it in an `mcpServers` config:
 
 > `--network=host` is required on macOS/Linux so the container can reach the
 > Dart VM service of your locally running Flutter debug app. Pin a specific
-> version tag (for example `ghcr.io/arenukvern/flutter-mcp-toolkit:4.0.0-dev.8`)
+> version tag (for example `ghcr.io/arenukvern/flutter-mcp-toolkit:4.0.0`)
 > instead of `latest` for reproducible setups.
 
 ## Overview

@@ -33,7 +33,7 @@ The picture's story: the toolkit gives an AI assistant a shared window and contr
 
 ![View Screenshots](docs/view_screenshots.gif)
 
-> ![NOTICE]: Version 4 is currently a prerelease train. Use `4.0.0-dev.5` only if you are intentionally testing the new architecture; otherwise stay on the latest stable 3.x release until `4.0.0` is promoted.
+> ![NOTICE]: Version 4 is now stable. Earlier `4.0.0-dev.*` builds were prerelease testing builds of the new architecture.
 
 ## Get started in 4 steps
 
