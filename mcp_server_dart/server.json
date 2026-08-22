@@ -14,7 +14,7 @@
     {
       "registryType": "oci",
       "registryBaseUrl": "https://ghcr.io",
-      "identifier": "ghcr.io/arenukvern/flutter-mcp-toolkit:5.0.0",
+      "identifier": "ghcr.io/arenukvern/flutter-mcp-toolkit:5.0.1",
       "transport": {
         "type": "stdio"
       }

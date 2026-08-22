@@ -1,3 +1,7 @@
+# 5.0.1
+
+- Align package version and hosted sibling dependency constraints with the Flutter MCP Toolkit 5.0.1 release.
+
 # 5.0.0
 
 - Align package version and hosted sibling dependency constraints as part of the 5.0.0 release.
