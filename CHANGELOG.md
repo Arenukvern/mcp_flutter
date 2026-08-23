@@ -3,6 +3,25 @@
 <!-- markdownlint-disable MD052 -->
 <!-- Keep a Changelog version headings use [3.0.1] brackets; MD052 treats them as reference links. -->
 
+## [5.1.0](https://github.com/Arenukvern/mcp_flutter/compare/v5.0.4...v5.1.0) (2026-08-23)
+
+
+### Features
+
+* logo ([bfeae14](https://github.com/Arenukvern/mcp_flutter/commit/bfeae14596201d531198f6e94b045aae5dbd1926))
+
+
+### Bug Fixes
+
+* **contracts:** address second review round on mcp-registry checks ([333d788](https://github.com/Arenukvern/mcp_flutter/commit/333d7884e26c87b6320337732a5820ffbb006c97))
+* **contracts:** harden mcp-registry checks per review ([6b0e32b](https://github.com/Arenukvern/mcp_flutter/commit/6b0e32b2ab907649ab6f898cf011d35c001b4808))
+
+
+### Documentation
+
+* ADR 0013 — MCP Registry publish hardening + fmt.check.mcp-registry gate ([299e4f4](https://github.com/Arenukvern/mcp_flutter/commit/299e4f4a69c1a26f8ba2d8f6d1c420d584896d62))
+* ADR 0013 — MCP Registry publish hardening + fmt.check.mcp-registry gate ([0e14e4d](https://github.com/Arenukvern/mcp_flutter/commit/0e14e4d0dddc7d6aac8eea3632557f72494ef709))
+
 ## [5.0.4](https://github.com/Arenukvern/mcp_flutter/compare/v5.0.3...v5.0.4) (2026-08-23)
 
 
