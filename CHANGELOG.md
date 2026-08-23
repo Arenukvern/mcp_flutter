@@ -3,6 +3,16 @@
 <!-- markdownlint-disable MD052 -->
 <!-- Keep a Changelog version headings use [3.0.1] brackets; MD052 treats them as reference links. -->
 
+## [5.0.2](https://github.com/Arenukvern/mcp_flutter/compare/v5.0.1...v5.0.2) (2026-08-23)
+
+
+### Bug Fixes
+
+* **contracts:** check flutter availability in skill assets drift script ([b891998](https://github.com/Arenukvern/mcp_flutter/commit/b891998c82dc6376398c3f9e7d57a7874cbd91f9))
+* **contracts:** match corrected Dockerfile.registry path in check_mcp_registry ([9d1cde0](https://github.com/Arenukvern/mcp_flutter/commit/9d1cde0e9488d3139172b59d175e9de94826c96c))
+* **contracts:** match corrected Dockerfile.registry path in check_mcp_registry ([dfcd371](https://github.com/Arenukvern/mcp_flutter/commit/dfcd3710292169fd8f40bcd561745e44fc80c78e))
+* **mcp-registry:** build image from monorepo context with Flutter SDK ([6c952a7](https://github.com/Arenukvern/mcp_flutter/commit/6c952a74aff73817dcab8ccaae610e6bbf4840ee))
+
 ## [5.0.1](https://github.com/Arenukvern/mcp_flutter/compare/v5.0.0...v5.0.1) (2026-08-22)
 
 

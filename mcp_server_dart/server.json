@@ -9,7 +9,7 @@
     "subfolder": "mcp_server_dart"
   },
   "websiteUrl": "https://docs.page/arenukvern/mcp_flutter",
-  "version": "5.0.1",
+  "version": "5.0.2",
   "packages": [
     {
       "registryType": "oci",
