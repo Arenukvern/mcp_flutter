@@ -34,6 +34,9 @@ abort "server version #{server['version']} != VERSION #{version}" unless server[
 abort 'OCI package is missing' unless package
 expected_identifier = "ghcr.io/arenukvern/flutter-mcp-toolkit:#{version}"
 abort "OCI identifier #{package['identifier']} != #{expected_identifier}" unless package['identifier'] == expected_identifier
+# The MCP Registry rejects OCI packages carrying registryBaseUrl; the canonical
+# ghcr.io reference in identifier is required instead (publish run #4 failure).
+abort 'OCI package must not carry registryBaseUrl (use canonical identifier)' if package.key?('registryBaseUrl')
 abort 'OCI package transport must be stdio' unless package.dig('transport', 'type') == 'stdio'
 RUBY
 
@@ -41,10 +44,17 @@ grep -Fq 'io.modelcontextprotocol.server.name="io.github.Arenukvern/flutter-mcp-
   fail "Dockerfile is missing the exact MCP ownership label"
 grep -Fq 'bin/flutter_mcp_toolkit_server.dart' "$DOCKERFILE" ||
   fail "Dockerfile does not compile the published server entrypoint"
+grep -Eq '^FROM ghcr\.io/cirruslabs/flutter:' "$DOCKERFILE" ||
+  fail "Dockerfile build stage must use a pinned Flutter SDK image (intentcall_platform requires Flutter)"
+if grep -Eq '^[[:space:]]*RUN .*--enforce-lockfile' "$DOCKERFILE"; then
+  fail "Dockerfile must not run --enforce-lockfile: SDK-bundled pins differ per host platform and break cross-platform builds"
+fi
 grep -Fq 'docker/build-push-action' "$RELEASE_WORKFLOW" ||
   fail "publish workflow does not build and push the OCI image"
 grep -Fq 'file: mcp_server_dart/Dockerfile.registry' "$RELEASE_WORKFLOW" ||
   fail "publish workflow is not using the dedicated Registry Dockerfile"
+grep -Fq 'context: .' "$RELEASE_WORKFLOW" ||
+  fail "publish workflow must build from the repo root context (workspace siblings are unpublished)"
 grep -Fq 'github-oidc' "$RELEASE_WORKFLOW" ||
   fail "publish workflow does not use GitHub OIDC for MCP Registry authentication"
 grep -Fq 'gh workflow run publish_mcp_registry.yml' "$PUB_WORKFLOW" ||
