@@ -3,6 +3,14 @@
 <!-- markdownlint-disable MD052 -->
 <!-- Keep a Changelog version headings use [3.0.1] brackets; MD052 treats them as reference links. -->
 
+## [5.0.3](https://github.com/Arenukvern/mcp_flutter/compare/v5.0.2...v5.0.3) (2026-08-23)
+
+
+### Bug Fixes
+
+* **mcp-registry:** resolve deps inside pinned image, drop lockfile enforcement ([381f13b](https://github.com/Arenukvern/mcp_flutter/commit/381f13b482c96fd5b15dce6a20a504c81657c497))
+* **mcp-registry:** resolve deps inside pinned image, drop lockfile enforcement ([3f7d6a1](https://github.com/Arenukvern/mcp_flutter/commit/3f7d6a1cb4fd6c490ca304e03a011639b05f5bfc))
+
 ## [5.0.2](https://github.com/Arenukvern/mcp_flutter/compare/v5.0.1...v5.0.2) (2026-08-23)
 
 
