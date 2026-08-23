@@ -3,6 +3,14 @@
 <!-- markdownlint-disable MD052 -->
 <!-- Keep a Changelog version headings use [3.0.1] brackets; MD052 treats them as reference links. -->
 
+## [5.0.4](https://github.com/Arenukvern/mcp_flutter/compare/v5.0.3...v5.0.4) (2026-08-23)
+
+
+### Bug Fixes
+
+* **mcp-registry:** drop registryBaseUrl from OCI package entry ([fdb87d3](https://github.com/Arenukvern/mcp_flutter/commit/fdb87d36f945f1573b1b3af71e732d98d9b5bf15))
+* **mcp-registry:** drop registryBaseUrl from OCI package entry ([2e6365a](https://github.com/Arenukvern/mcp_flutter/commit/2e6365a88198e7316760fa062ac72897e552dd83))
+
 ## [5.0.3](https://github.com/Arenukvern/mcp_flutter/compare/v5.0.2...v5.0.3) (2026-08-23)
 
 
