@@ -44,17 +44,38 @@ grep -Fq 'io.modelcontextprotocol.server.name="io.github.Arenukvern/flutter-mcp-
   fail "Dockerfile is missing the exact MCP ownership label"
 grep -Fq 'bin/flutter_mcp_toolkit_server.dart' "$DOCKERFILE" ||
   fail "Dockerfile does not compile the published server entrypoint"
-grep -Eq '^FROM ghcr\.io/cirruslabs/flutter:' "$DOCKERFILE" ||
-  fail "Dockerfile build stage must use a pinned Flutter SDK image (intentcall_platform requires Flutter)"
-if grep -Eq '^[[:space:]]*RUN .*--enforce-lockfile' "$DOCKERFILE"; then
-  fail "Dockerfile must not run --enforce-lockfile: SDK-bundled pins differ per host platform and break cross-platform builds"
-fi
-grep -Fq 'docker/build-push-action' "$RELEASE_WORKFLOW" ||
-  fail "publish workflow does not build and push the OCI image"
-grep -Fq 'file: mcp_server_dart/Dockerfile.registry' "$RELEASE_WORKFLOW" ||
-  fail "publish workflow is not using the dedicated Registry Dockerfile"
-grep -Fq 'context: .' "$RELEASE_WORKFLOW" ||
-  fail "publish workflow must build from the repo root context (workspace siblings are unpublished)"
+
+export DOCKERFILE RELEASE_WORKFLOW
+ruby <<'RUBY'
+require 'yaml'
+
+dockerfile = File.read(ENV.fetch('DOCKERFILE'))
+
+# --- Dockerfile: build stage must be a pinned Flutter SDK image ---
+# Join continuation lines so each instruction is inspected whole.
+instructions = dockerfile.gsub(/\\\s*\n/, ' ').split(/\n+/)
+build_from = instructions.grep(/^FROM /i).find { |l| /\bAS\s+build\b/i.match?(l) }
+abort 'Dockerfile is missing a build stage named AS build' unless build_from
+unless /^FROM\s+ghcr\.io\/cirruslabs\/flutter:(\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?)@sha256:[0-9a-f]{64}\s/i.match?(build_from) ||
+       /^FROM\s+ghcr\.io\/cirruslabs\/flutter:\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?\s/i.match?(build_from)
+  abort "Dockerfile build stage must use ghcr.io/cirruslabs/flutter with an exact version tag (or digest); got: #{build_from.strip}"
+end
+
+# --- Dockerfile: no RUN instruction may use --enforce-lockfile ---
+if instructions.grep(/^RUN /i).any? { |l| l.include?('--enforce-lockfile') }
+  abort 'Dockerfile must not run --enforce-lockfile: SDK-bundled pins differ per host platform and break cross-platform builds'
+end
+
+# --- Workflow: assert exact context/file in the build-push step's with mapping ---
+workflow = YAML.safe_load(File.read(ENV.fetch('RELEASE_WORKFLOW')), aliases: true)
+steps = workflow.dig('jobs', 'publish', 'steps') || []
+build_step = steps.find { |s| s['uses'].to_s.start_with?('docker/build-push-action@') }
+abort 'publish workflow has no docker/build-push-action step' unless build_step
+with = build_stage_with = build_step['with'] || {}
+abort 'publish workflow build step must set with.context exactly to "." (workspace siblings are unpublished)' unless with['context'] == '.'
+abort 'publish workflow build step must set with.file exactly to mcp_server_dart/Dockerfile.registry' unless with['file'] == 'mcp_server_dart/Dockerfile.registry'
+RUBY
+
 grep -Fq 'github-oidc' "$RELEASE_WORKFLOW" ||
   fail "publish workflow does not use GitHub OIDC for MCP Registry authentication"
 grep -Fq 'gh workflow run publish_mcp_registry.yml' "$PUB_WORKFLOW" ||
