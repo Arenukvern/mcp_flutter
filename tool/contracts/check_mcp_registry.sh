@@ -52,17 +52,29 @@ require 'yaml'
 dockerfile = File.read(ENV.fetch('DOCKERFILE'))
 
 # --- Dockerfile: build stage must be a pinned Flutter SDK image ---
-# Join continuation lines so each instruction is inspected whole.
-instructions = dockerfile.gsub(/\\\s*\n/, ' ').split(/\n+/)
-build_from = instructions.grep(/^FROM /i).find { |l| /\bAS\s+build\b/i.match?(l) }
+# Join continuation lines, then strip leading whitespace (Docker ignores it).
+instructions = dockerfile.gsub(/\\\s*\n/, ' ').split(/\n+/).map(&:strip)
+build_from = instructions.grep(/^FROM\b/i).find { |l| /\bAS\s+build(\s|$)/i.match?(l) }
 abort 'Dockerfile is missing a build stage named AS build' unless build_from
-unless /^FROM\s+ghcr\.io\/cirruslabs\/flutter:(\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?)@sha256:[0-9a-f]{64}\s/i.match?(build_from) ||
-       /^FROM\s+ghcr\.io\/cirruslabs\/flutter:\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?\s/i.match?(build_from)
-  abort "Dockerfile build stage must use ghcr.io/cirruslabs/flutter with an exact version tag (or digest); got: #{build_from.strip}"
-end
+
+# Accept: [FROM] [--platform=...] ghcr.io/cirruslabs/flutter:<exact-version>[@sha256:...]
+# or a digest-only reference. Reject floating tags (:latest, no tag).
+rest = build_from.sub(/^FROM\s+/i, '')
+rest = rest.sub(/^--platform=\S+\s+/i, '')
+image_ref = rest.split(/\s+/).first.to_s
+# Valid pins: exact version tag, optionally with digest; or digest-only.
+# Floating: no tag and no digest (includes :latest).
+valid_pin = if image_ref =~ /^ghcr\.io\/cirruslabs\/flutter@sha256:[0-9a-f]{64}$/
+              true
+            elsif (m = image_ref.match(/^ghcr\.io\/cirruslabs\/flutter:(\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?)(@sha256:[0-9a-f]{64})?$/))
+              true
+            else
+              false
+            end
+abort "Dockerfile build stage must use ghcr.io/cirruslabs/flutter with an exact version tag (optionally @sha256 digest); got: #{build_from}" unless valid_pin
 
 # --- Dockerfile: no RUN instruction may use --enforce-lockfile ---
-if instructions.grep(/^RUN /i).any? { |l| l.include?('--enforce-lockfile') }
+if instructions.grep(/^RUN\b/i).any? { |l| l.include?('--enforce-lockfile') }
   abort 'Dockerfile must not run --enforce-lockfile: SDK-bundled pins differ per host platform and break cross-platform builds'
 end
 
