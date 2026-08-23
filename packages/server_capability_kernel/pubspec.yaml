@@ -3,7 +3,7 @@ description: >-
   Capability kernel contracts for Flutter MCP Toolkit — composable MCP units,
   host services, tool/resource registration, and prefixed tool naming. Pure
   Dart; no Flutter or transport.
-version: 5.0.3
+version: 5.0.4
 license: MIT
 repository: >-
   https://github.com/Arenukvern/mcp_flutter/tree/main/packages/server_capability_kernel
