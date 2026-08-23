@@ -15,3 +15,16 @@ test/
 docs/
 **/docs/
 *.log
+# Large app/platform dirs not needed for the server image build
+flutter_test_app/
+tool/
+plans/
+specs/
+decisions/
+skills/
+plugin/
+.claude-plugin/
+.cursor-plugin/
+.codex-plugin/
+.agents/
+agents/

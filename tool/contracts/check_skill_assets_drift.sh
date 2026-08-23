@@ -17,6 +17,7 @@ ok() {
 }
 
 command -v dart >/dev/null 2>&1 || fail "dart not found; install Dart SDK to run this check"
+command -v flutter >/dev/null 2>&1 || fail "flutter not found; install Flutter SDK to run this check"
 
 BEFORE="$(mktemp)"
 cleanup() {
@@ -27,7 +28,7 @@ trap cleanup EXIT
 cp "$GENERATED" "$BEFORE"
 
 cd "$ROOT_DIR/mcp_server_dart"
-dart pub get >/dev/null
+flutter pub get >/dev/null
 cd "$ROOT_DIR"
 dart run mcp_server_dart/tool/build_skill_assets.dart >/dev/null
 

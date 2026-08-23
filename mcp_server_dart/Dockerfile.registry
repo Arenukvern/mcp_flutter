@@ -1,24 +1,24 @@
 # MCP Registry image build. This is intentionally separate from the legacy
 # Dockerfiles so existing `docker build .` users keep their current contract.
-# Build from mcp_server_dart:
-# docker build -f Dockerfile.registry -t flutter-mcp-toolkit:registry .
-
-FROM dart:3.12.0-sdk AS build
+# Build from the repository root:
+# docker build -f mcp_server_dart/Dockerfile.registry -t flutter-mcp-toolkit:registry .
+#
+# The build stage uses a Flutter SDK image and the full monorepo context
+# because mcp_server_dart depends on workspace siblings (packages/*,
+# mcp_toolkit) that are not published to pub.dev, and intentcall_platform
+# requires the Flutter SDK. Workspace resolution needs those sources.
+FROM ghcr.io/cirruslabs/flutter:3.44.0 AS build
 
 WORKDIR /app
 
-COPY pubspec.yaml ./pubspec.yaml
-COPY pubspec.lock ./pubspec.lock
-# The registry image resolves published sibling packages from the committed
-# workspace lockfile, which keeps this image reproducible in CI. The lockfile
-# is staged into the build context by publish_mcp_registry.yml.
-RUN sed -i '/^resolution: workspace$/d' pubspec.yaml && dart pub get --enforce-lockfile
+COPY pubspec.yaml pubspec.lock VERSION ./
+COPY mcp_server_dart/ mcp_server_dart/
+COPY mcp_toolkit/ mcp_toolkit/
+COPY packages/ packages/
 
-COPY bin/ ./bin/
-COPY lib/ ./lib/
-COPY analysis_options.yaml ./
+RUN cd mcp_server_dart && flutter pub get --enforce-lockfile
 
-RUN dart compile exe bin/flutter_mcp_toolkit_server.dart -o /app/mcp_server
+RUN cd mcp_server_dart && dart compile exe bin/flutter_mcp_toolkit_server.dart -o /app/mcp_server
 
 FROM debian:bookworm-slim
 
