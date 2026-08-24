@@ -329,15 +329,18 @@ final class CorePortScanner {
 
       final start = int.tryParse(range.group(1)!);
       final end = int.tryParse(range.group(2)!);
-      if (!_isValidPort(start) ||
-          !_isValidPort(end) ||
-          end! < start! ||
-          ports.length + (end - start + 1) > maxScanPortsCount) {
+      if (!_isValidPort(start) || !_isValidPort(end) || end! < start!) {
         continue;
       }
-      for (var port = start; port <= end; port++) {
-        ports.add(port);
+
+      final added = <int>{
+        for (var port = start; port <= end; port++)
+          if (!ports.contains(port)) port,
+      };
+      if (ports.length + added.length > maxScanPortsCount) {
+        continue;
       }
+      ports.addAll(added);
     }
 
     return ports.toList()..sort();
