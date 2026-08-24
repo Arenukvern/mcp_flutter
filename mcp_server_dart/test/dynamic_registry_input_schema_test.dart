@@ -130,6 +130,7 @@ void main() {
           flutterDevice: null,
           flutterDiscoveryTimeoutMs: 2500,
           scanPorts: const <int>[],
+          preferredTargetLabel: null,
         ),
       );
       // ignore: invalid_use_of_protected_member

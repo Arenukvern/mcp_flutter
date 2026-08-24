@@ -19,6 +19,7 @@ MCP transport is `stdin/stdout` (no inbound MCP TCP port).
 | `--flutter-device` | Optional Flutter device for machine discovery (for example `chrome`). |
 | `--flutter-discovery-timeout-ms` | Timeout in milliseconds for machine discovery. Defaults to `2500`. |
 | `--scan-ports` | Extra ports probed during discovery, as a comma-separated list of ports and ranges (for example `8765-8767,9100`). Needed for a desktop app, whose VM service listens inside the application process, and for any app started with `--no-dds`. |
+| `--prefer-target-label` | Prefer the discovered target whose label contains this text, so auto-attach can pick between several running apps. Labels come from the app itself (`MCPToolkitBinding.setAppIdentity`). Matching narrows the candidates only at the auto-attach step, so an active connection and a target connected to explicitly still win; a value that matches no target is ignored. |
 | `--log-level` | The logging level for the server. Can be `debug`, `info`, `notice`, `warning`, `error`, `critical`, `alert`, or `emergency`. Defaults to `critical`. Log levels are based on https://spec.modelcontextprotocol.io/specification/2025-03-26/server/utilities/logging/#log-levels |
 | `--environment` | The environment mode. Can be `development` or `production`. Defaults to `production`. |
 | `-h`, `--help` | Show the usage text. |

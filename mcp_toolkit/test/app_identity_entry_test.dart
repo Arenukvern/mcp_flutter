@@ -27,11 +27,11 @@ void main() {
     });
 
     test('reports the label the app set', () async {
-      binding.setAppIdentity(label: '  Work app · transport  ');
+      binding.setAppIdentity(label: '  my_app · staging  ');
 
       final result = await callIdentity();
 
-      expect(result.data['label'], equals('Work app · transport'));
+      expect(result.data['label'], equals('my_app · staging'));
     });
 
     test('an empty label counts as unnamed', () {

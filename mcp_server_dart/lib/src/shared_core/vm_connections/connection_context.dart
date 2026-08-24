@@ -73,6 +73,7 @@ final class CoreConnectionTarget {
     this.browserDebugPort,
     this.discoverySource = _portScanSource,
     this.vmPid,
+    this.label,
   });
 
   final String targetId;
@@ -85,6 +86,11 @@ final class CoreConnectionTarget {
   final int? browserDebugPort;
   final String discoverySource;
 
+  /// Human-readable name the running app reports for itself, when it does.
+  ///
+  /// Lets a caller pick a target by what it is instead of by port number.
+  final String? label;
+
   /// Process id the VM service reports, when it was probed.
   ///
   /// An app running behind DDS answers on two endpoints — its own VM service
@@ -92,19 +98,21 @@ final class CoreConnectionTarget {
   /// it tells one app with two doors from two separate apps.
   final int? vmPid;
 
-  /// A copy carrying [value] as [vmPid], keeping the current id when null.
-  CoreConnectionTarget withVmPid(final int? value) => CoreConnectionTarget(
-    targetId: targetId,
-    host: host,
-    port: port,
-    endpoint: endpoint,
-    isSticky: isSticky,
-    isCurrent: isCurrent,
-    dtdUri: dtdUri,
-    browserDebugPort: browserDebugPort,
-    discoverySource: discoverySource,
-    vmPid: value ?? vmPid,
-  );
+  /// A copy carrying the probe result, keeping current values when null.
+  CoreConnectionTarget withProbe({final int? vmPid, final String? label}) =>
+      CoreConnectionTarget(
+        targetId: targetId,
+        host: host,
+        port: port,
+        endpoint: endpoint,
+        isSticky: isSticky,
+        isCurrent: isCurrent,
+        dtdUri: dtdUri,
+        browserDebugPort: browserDebugPort,
+        discoverySource: discoverySource,
+        vmPid: vmPid ?? this.vmPid,
+        label: label ?? this.label,
+      );
 
   static const String machineDiscoverySource = _machineSource;
   static const String portScanDiscoverySource = _portScanSource;
@@ -142,6 +150,7 @@ final class CoreConnectionTarget {
     'host': host,
     'port': port,
     'endpoint': endpoint,
+    if (label != null) 'label': label,
     if (vmPid != null) 'pid': vmPid,
     if (dtdUri != null) 'dtdUri': dtdUri,
     if (browserDebugPort != null) 'browserDebugPort': browserDebugPort,
@@ -228,6 +237,7 @@ final class ConnectionContext {
     this.discoverMachineTargets,
     this.initialStickyEndpointUri,
     this.probeFlutterTarget,
+    this.preferredTargetLabel,
   }) {
     final rawSticky = initialStickyEndpointUri;
     if (rawSticky == null || rawSticky.isEmpty) {
@@ -251,6 +261,15 @@ final class ConnectionContext {
   final String? initialStickyEndpointUri;
   final CoreFlutterTargetProbe? probeFlutterTarget;
 
+  /// Text that picks a target by its [CoreConnectionTarget.label].
+  ///
+  /// Auto-attach uses it to choose among several running apps without the
+  /// caller naming an endpoint. It decides nothing the caller has already
+  /// decided: an active connection and a sticky target both win over it.
+  /// Ignored when nothing matches, so a stale preference degrades to the usual
+  /// "name a target" answer.
+  final String? preferredTargetLabel;
+
   VmService? _vmService;
   WebSocketChannel? _vmChannel;
   DartToolingDaemon? _dartToolingDaemon;
@@ -262,7 +281,10 @@ final class ConnectionContext {
   CoreConnectionMode _lastMode = CoreConnectionMode.auto;
   Map<String, Object?> _lastSelectionDiagnostics = const <String, Object?>{};
   Map<String, Object?> _lastDiscoveryDiagnostics = const <String, Object?>{};
-  final Map<String, ({bool isFlutter, int? vmPid, DateTime checkedAt})>
+  final Map<
+    String,
+    ({bool isFlutter, int? vmPid, String? label, DateTime checkedAt})
+  >
   _flutterProbeCache = {};
 
   bool _wasConnected = false;
@@ -496,7 +518,9 @@ final class ConnectionContext {
 
   Future<List<CoreConnectionTarget>> discoverTargets() async {
     final machineTargets = await _discoverMachineTargets();
-    final machineOnlyTargets = _buildMachineTargets(machineTargets);
+    final machineOnlyTargets = await _labelTargets(
+      _buildMachineTargets(machineTargets),
+    );
     if (machineOnlyTargets.isNotEmpty) {
       _lastDiscoveryDiagnostics = {
         'strategyUsed': 'machine_only',
@@ -940,9 +964,11 @@ final class ConnectionContext {
       }
     }
 
-    final selected = stickyTarget ?? await _soleInstanceTarget(targets);
+    final preferredTargets = _targetsMatchingPreferredLabel(targets);
+    final selected =
+        stickyTarget ?? await _soleInstanceTarget(preferredTargets);
     if (selected == null) {
-      final selectionDetails = _multipleTargetsDetails(targets);
+      final selectionDetails = _multipleTargetsDetails(preferredTargets);
       throw CoreConnectionException(
         reason: CoreConnectionFailureReason.multipleTargets,
         message:
@@ -1072,10 +1098,60 @@ final class ConnectionContext {
     final flutterTargets = <CoreConnectionTarget>[];
     for (var i = 0; i < candidates.length; i++) {
       if (checks[i].isFlutter) {
-        flutterTargets.add(candidates[i].withVmPid(checks[i].vmPid));
+        flutterTargets.add(
+          candidates[i].withProbe(
+            vmPid: checks[i].vmPid,
+            label: checks[i].label,
+          ),
+        );
       }
     }
     return flutterTargets;
+  }
+
+  Future<List<CoreConnectionTarget>> _labelTargets(
+    final List<CoreConnectionTarget> targets,
+  ) async {
+    if (targets.isEmpty) {
+      return targets;
+    }
+
+    final probes = await Future.wait(targets.map(_probeTarget));
+    return <CoreConnectionTarget>[
+      for (var i = 0; i < targets.length; i++)
+        targets[i].withProbe(vmPid: probes[i].vmPid, label: probes[i].label),
+    ];
+  }
+
+  /// Targets whose label matches [preferredTargetLabel].
+  ///
+  /// Falls back to every target when nothing matches, so a preference that no
+  /// longer names a running app cannot hide the apps that are running.
+  List<CoreConnectionTarget> _targetsMatchingPreferredLabel(
+    final List<CoreConnectionTarget> targets,
+  ) {
+    final preference = preferredTargetLabel?.trim().toLowerCase();
+    if (preference == null || preference.isEmpty || targets.length < 2) {
+      return targets;
+    }
+
+    final matches = targets
+        .where(
+          (final target) =>
+              target.label?.toLowerCase().contains(preference) ?? false,
+        )
+        .toList(growable: false);
+    if (matches.isEmpty) {
+      logger(
+        LoggingLevel.info,
+        'No discovered target matches --prefer-target-label '
+        '"$preferredTargetLabel"',
+        logger: 'ConnectionContext',
+      );
+      return targets;
+    }
+
+    return matches;
   }
 
   /// The one target to auto-attach to, or `null` when the choice is a real one.
@@ -1110,7 +1186,7 @@ final class ConnectionContext {
     return targets.reduce((final a, final b) => b.port < a.port ? b : a);
   }
 
-  Future<({bool isFlutter, int? vmPid})> _probeTarget(
+  Future<({bool isFlutter, int? vmPid, String? label})> _probeTarget(
     final CoreConnectionTarget target, {
     final bool refresh = false,
   }) async {
@@ -1118,11 +1194,16 @@ final class ConnectionContext {
     final cached = refresh ? null : _flutterProbeCache[target.targetId];
     if (cached != null &&
         now.difference(cached.checkedAt) <= _portScanFlutterProbeCacheTtl) {
-      return (isFlutter: cached.isFlutter, vmPid: cached.vmPid);
+      return (
+        isFlutter: cached.isFlutter,
+        vmPid: cached.vmPid,
+        label: cached.label,
+      );
     }
 
     var isFlutter = false;
     int? vmPid;
+    String? label;
     try {
       final endpoint = CoreEndpoint.fromUri(Uri.parse(target.endpoint));
       if (probeFlutterTarget != null) {
@@ -1137,21 +1218,24 @@ final class ConnectionContext {
         );
         isFlutter = probed.isFlutter;
         vmPid = probed.vmPid;
+        label = probed.label;
       }
     } catch (_) {
       isFlutter = false;
       vmPid = null;
+      label = null;
     }
 
     _flutterProbeCache[target.targetId] = (
       isFlutter: isFlutter,
       vmPid: vmPid,
+      label: label,
       checkedAt: now,
     );
-    return (isFlutter: isFlutter, vmPid: vmPid);
+    return (isFlutter: isFlutter, vmPid: vmPid, label: label);
   }
 
-  Future<({bool isFlutter, int? vmPid})> _probeFlutterEndpoint(
+  Future<({bool isFlutter, int? vmPid, String? label})> _probeFlutterEndpoint(
     final CoreEndpoint endpoint, {
     required final Duration timeout,
   }) async {
@@ -1191,15 +1275,60 @@ final class ConnectionContext {
                     const <Object?>[])
                 .map((final e) => '$e')
                 .toList(growable: false);
-        if (_hasFlutterExtensions(extensionRPCs)) {
-          return (isFlutter: true, vmPid: vmPid);
+        if (!_hasFlutterExtensions(extensionRPCs)) {
+          continue;
         }
+
+        final label = extensionRPCs.contains(_appIdentityExtension)
+            ? await _fetchTargetLabel(
+                client: client,
+                httpBase: httpBase,
+                isolateId: isolateId,
+                timeout: timeout,
+              )
+            : null;
+        return (isFlutter: true, vmPid: vmPid, label: label);
       }
-      return (isFlutter: false, vmPid: null);
+      return (isFlutter: false, vmPid: null, label: null);
     } catch (_) {
-      return (isFlutter: false, vmPid: null);
+      return (isFlutter: false, vmPid: null, label: null);
     } finally {
       client.close(force: true);
+    }
+  }
+
+  /// Read the app-provided instance label from [_appIdentityExtension].
+  ///
+  /// The label names the running instance for a caller choosing a target, so a
+  /// missing or unusable payload only costs the label, never the target.
+  Future<String?> _fetchTargetLabel({
+    required final HttpClient client,
+    required final Uri httpBase,
+    required final String isolateId,
+    required final Duration timeout,
+  }) async {
+    try {
+      final payload = await _fetchVmServiceMap(
+        client: client,
+        uri: _vmServiceMethodUri(
+          httpBase,
+          _appIdentityExtension,
+          query: <String, String>{'isolateId': isolateId},
+        ),
+        timeout: timeout,
+      );
+      final label = _extractResultMap(payload)['label']?.toString().trim();
+      if (label == null || label.isEmpty) {
+        return null;
+      }
+      return label;
+    } catch (e) {
+      logger(
+        LoggingLevel.debug,
+        'Target label probe failed for $httpBase: $e',
+        logger: 'ConnectionContext',
+      );
+      return null;
     }
   }
 
@@ -1326,6 +1455,9 @@ final class ConnectionContext {
     'ext.flutter',
     'ext.mcp.toolkit',
   ];
+
+  /// Service extension an app registers to name its running instance.
+  static const String _appIdentityExtension = 'ext.mcp.toolkit.app_identity';
 
   Future<bool> _isCurrentConnectionHealthy({
     required final Duration timeout,

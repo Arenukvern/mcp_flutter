@@ -92,6 +92,7 @@ Future<void> main(final List<String> args) async {
     defaultPort: int.tryParse(parsed.option(_dartVmPort) ?? '') ?? _defaultPort,
     logger: logger,
     discoverPorts: portScanner.scanForFlutterPorts,
+    preferredTargetLabel: _nonEmptyOption(parsed.option(_preferTargetLabel)),
     discoverMachineTargets: () => machineDiscovery.discover(
       projectDir: flutterProjectDir,
       device: flutterDevice,
@@ -1918,6 +1919,13 @@ final _argParser = ArgParser(allowTrailingOptions: false)
         'process, and any app started with --no-dds.',
   )
   ..addOption(
+    _preferTargetLabel,
+    help:
+        'Prefer the discovered target whose label contains this text, so '
+        'auto-attach can pick between several running apps. Labels come from '
+        'the app itself (MCPToolkitBinding.setAppIdentity).',
+  )
+  ..addOption(
     _webBrowserDebuggingPort,
     help:
         'Chrome remote-debugging-port override for web CDP capture when '
@@ -2315,6 +2323,7 @@ const _flutterProjectDir = 'flutter-project-dir';
 const _flutterDevice = 'flutter-device';
 const _flutterDiscoveryTimeoutMs = 'flutter-discovery-timeout-ms';
 const _scanPorts = 'scan-ports';
+const _preferTargetLabel = 'prefer-target-label';
 const _webBrowserDebuggingPort = 'web-browser-debugging-port';
 const _webPort = 'web-port';
 const _stateFile = 'state-file';
