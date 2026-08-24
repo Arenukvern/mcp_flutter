@@ -92,6 +92,7 @@ final class CoreConnectionTarget {
   /// it tells one app with two doors from two separate apps.
   final int? vmPid;
 
+  /// A copy carrying [value] as [vmPid], keeping the current id when null.
   CoreConnectionTarget withVmPid(final int? value) => CoreConnectionTarget(
     targetId: targetId,
     host: host,
@@ -939,7 +940,7 @@ final class ConnectionContext {
       }
     }
 
-    final selected = stickyTarget ?? _soleInstanceTarget(targets);
+    final selected = stickyTarget ?? await _soleInstanceTarget(targets);
     if (selected == null) {
       final selectionDetails = _multipleTargetsDetails(targets);
       throw CoreConnectionException(
@@ -1084,15 +1085,25 @@ final class ConnectionContext {
   /// doors into the same app. Endpoints that report the same process are one
   /// app: prefer its lowest port, which is the one a `--device-vmservice-port`
   /// pins and therefore survives a hot restart.
-  CoreConnectionTarget? _soleInstanceTarget(
+  /// The processes are re-read before merging: a cached id can outlive the app
+  /// it came from, and an endpoint another app has since taken over would then
+  /// be merged into a target the caller never chose.
+  Future<CoreConnectionTarget?> _soleInstanceTarget(
     final List<CoreConnectionTarget> targets,
-  ) {
+  ) async {
     if (targets.length == 1) {
       return targets.first;
     }
 
-    final pid = targets.first.vmPid;
-    if (pid == null || targets.any((final t) => t.vmPid != pid)) {
+    if (targets.any((final target) => target.vmPid == null)) {
+      return null;
+    }
+
+    final probes = await Future.wait(
+      targets.map((final target) => _probeTarget(target, refresh: true)),
+    );
+    final pid = probes.first.vmPid;
+    if (pid == null || probes.any((final probe) => probe.vmPid != pid)) {
       return null;
     }
 
@@ -1100,10 +1111,11 @@ final class ConnectionContext {
   }
 
   Future<({bool isFlutter, int? vmPid})> _probeTarget(
-    final CoreConnectionTarget target,
-  ) async {
+    final CoreConnectionTarget target, {
+    final bool refresh = false,
+  }) async {
     final now = DateTime.now().toUtc();
-    final cached = _flutterProbeCache[target.targetId];
+    final cached = refresh ? null : _flutterProbeCache[target.targetId];
     if (cached != null &&
         now.difference(cached.checkedAt) <= _portScanFlutterProbeCacheTtl) {
       return (isFlutter: cached.isFlutter, vmPid: cached.vmPid);
@@ -1152,7 +1164,8 @@ final class ConnectionContext {
         timeout: timeout,
       );
       final vm = _extractResultMap(vmPayload);
-      final vmPid = vm['pid'] is int ? vm['pid']! as int : null;
+      final rawPid = vm['pid'];
+      final vmPid = rawPid is int && rawPid > 0 ? rawPid : null;
       final isolates = vm['isolates'] as List<Object?>? ?? const <Object?>[];
 
       for (final isolateRef in isolates) {

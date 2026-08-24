@@ -118,45 +118,64 @@ void main() {
       final String logger = 'core',
     }) {}
 
-    test('spec parser expands ranges and lists into sorted unique ports', () {
-      expect(
-        CorePortScanner.parseScanPortsSpec(' 9100, 8765-8767 ,9100'),
-        equals([8765, 8766, 8767, 9100]),
-      );
+    const limit = CorePortScanner.maxScanPortsCount;
+    final specCases = <String, ({String? spec, List<int> expected})>{
+      'expands a range and a list into sorted unique ports': (
+        spec: ' 9100, 8765-8767 ,9100',
+        expected: [8765, 8766, 8767, 9100],
+      ),
+      'reads nothing out of a missing value': (spec: null, expected: []),
+      'reads nothing out of an empty value': (spec: '', expected: []),
+      'drops text': (spec: 'abc', expected: []),
+      'drops port zero': (spec: '0', expected: []),
+      'drops a port above the range': (spec: '70000', expected: []),
+      'drops a reversed range': (spec: '8767-8765', expected: []),
+      'keeps the usable half of a value': (spec: 'abc,8765', expected: [8765]),
+      'drops a range wider than the cap': (
+        spec: '9000-${9000 + limit}',
+        expected: [],
+      ),
+    };
+
+    specCases.forEach((final name, final testCase) {
+      test('spec parser $name', () {
+        expect(
+          CorePortScanner.parseScanPortsSpec(testCase.spec),
+          equals(testCase.expected),
+          reason:
+              'spec "${testCase.spec}" should parse as ${testCase.expected}',
+        );
+      });
     });
 
-    test('spec parser drops unusable entries', () {
-      expect(CorePortScanner.parseScanPortsSpec(null), isEmpty);
-      expect(CorePortScanner.parseScanPortsSpec(''), isEmpty);
-      expect(CorePortScanner.parseScanPortsSpec('abc'), isEmpty);
-      expect(CorePortScanner.parseScanPortsSpec('0'), isEmpty);
-      expect(CorePortScanner.parseScanPortsSpec('70000'), isEmpty);
-      expect(CorePortScanner.parseScanPortsSpec('8767-8765'), isEmpty);
-      expect(CorePortScanner.parseScanPortsSpec('abc,8765'), equals([8765]));
-    });
-
-    test('spec parser caps how many ports a value expands to', () {
-      const start = 9000;
-      const limit = CorePortScanner.maxScanPortsCount;
+    test('spec parser fills up to the cap', () {
       expect(
-        CorePortScanner.parseScanPortsSpec('$start-${start + limit}'),
-        isEmpty,
-      );
-      expect(
-        CorePortScanner.parseScanPortsSpec('$start-${start + limit - 1}'),
+        CorePortScanner.parseScanPortsSpec('9000-${9000 + limit - 1}'),
         hasLength(limit),
+        reason: 'a range of exactly $limit ports is usable as a whole',
       );
     });
 
     test('spec parser drops entries that would exceed the cap', () {
-      const limit = CorePortScanner.maxScanPortsCount;
       final ports = CorePortScanner.parseScanPortsSpec(
         '1000-${1000 + limit - 2},2000-2100,8765',
       );
 
-      expect(ports, hasLength(limit));
-      expect(ports.last, 8765);
-      expect(ports, isNot(contains(2000)));
+      expect(
+        ports,
+        hasLength(limit),
+        reason: 'the cap counts every port the value expands to',
+      );
+      expect(
+        ports.last,
+        8765,
+        reason: 'a single port still fits in the one remaining slot',
+      );
+      expect(
+        ports,
+        isNot(contains(2000)),
+        reason: 'the range that no longer fits is dropped whole',
+      );
     });
 
     test(
@@ -173,8 +192,16 @@ void main() {
           scanPorts: [listener.port],
         );
 
-        expect(await scanner.probeKnownPorts(), contains(listener.port));
-        expect(await scanner.scanForFlutterPorts(), contains(listener.port));
+        expect(
+          await scanner.probeKnownPorts(),
+          contains(listener.port),
+          reason: 'a configured port that accepts a connection is reachable',
+        );
+        expect(
+          await scanner.scanForFlutterPorts(),
+          contains(listener.port),
+          reason: 'the probe result is merged into the scan result',
+        );
       },
     );
 
@@ -188,7 +215,11 @@ void main() {
         scanPorts: [closedPort],
       );
 
-      expect(await scanner.scanForFlutterPorts(), isNot(contains(closedPort)));
+      expect(
+        await scanner.scanForFlutterPorts(),
+        isNot(contains(closedPort)),
+        reason: 'nothing listens on the port, so it is not a candidate',
+      );
     });
   });
 }

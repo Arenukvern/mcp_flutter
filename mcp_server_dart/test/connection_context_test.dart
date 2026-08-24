@@ -6,14 +6,17 @@ import 'package:flutter_mcp_toolkit_server/flutter_mcp_core.dart';
 import 'package:test/test.dart';
 
 /// Minimal VM service HTTP facade: enough for the discovery probe.
-Future<HttpServer> _startFakeVmService({required final int pid}) async {
+Future<HttpServer> _startFakeVmService({
+  required final int pid,
+  final int Function()? pidOverride,
+}) async {
   final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
   const isolateId = 'isolates/1';
   unawaited(
     server.forEach((final request) async {
       final result = switch (request.uri.pathSegments.last) {
         'getVM' => {
-          'pid': pid,
+          'pid': pidOverride?.call() ?? pid,
           'isolates': [
             {'type': '@Isolate', 'id': isolateId, 'name': 'main'},
           ],
@@ -201,6 +204,47 @@ void main() {
           CoreConnectionFailureReason.multipleTargets,
         ),
       ),
+    );
+  });
+
+  test('a process that changed hands is not merged from cache', () async {
+    var secondPid = 21;
+    final first = await _startFakeVmService(pid: 21);
+    final second = await _startFakeVmService(
+      pid: 21,
+      pidOverride: () => secondPid,
+    );
+    addTearDown(() => first.close(force: true));
+    addTearDown(() => second.close(force: true));
+
+    final context = ConnectionContext(
+      defaultHost: '127.0.0.1',
+      defaultPort: 8181,
+      logger: (final level, final message, {final logger = 'test'}) {},
+      discoverPorts: () async => <int>[first.port, second.port],
+    );
+
+    final targets = await context.discoverTargets();
+    expect(
+      targets.every((final target) => target.vmPid == 21),
+      isTrue,
+      reason: 'both endpoints answered as one process on the first pass',
+    );
+
+    // Another app takes the endpoint over while the probe cache still holds
+    // the old process id.
+    secondPid = 22;
+
+    await expectLater(
+      context.connect(),
+      throwsA(
+        isA<CoreConnectionException>().having(
+          (final e) => e.reason,
+          'reason',
+          CoreConnectionFailureReason.multipleTargets,
+        ),
+      ),
+      reason: 'a stale process id must not merge two apps into one target',
     );
   });
 }
