@@ -18,6 +18,7 @@ typedef VMServiceConfigurationRecord = ({
   String? flutterProjectDir,
   String? flutterDevice,
   int flutterDiscoveryTimeoutMs,
+  List<int> scanPorts,
 });
 
 abstract base class BaseMCPToolkitServer extends MCPServer

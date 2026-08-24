@@ -4,6 +4,7 @@
 // ignore_for_file: unnecessary_async
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/base_server.dart';
@@ -34,6 +35,7 @@ base class TestPortScannerServer extends BaseMCPToolkitServer {
           flutterProjectDir: null,
           flutterDevice: null,
           flutterDiscoveryTimeoutMs: 2500,
+          scanPorts: const <int>[],
         ),
         implementation: Implementation(
           name: 'test-port-scanner',
@@ -106,6 +108,79 @@ void main() {
         'dart malformed line with no tcp endpoint',
       );
       expect(port, isNull);
+    });
+  });
+
+  group('CorePortScanner scan ports', () {
+    void noopLogger(
+      final LoggingLevel level,
+      final String message, {
+      final String logger = 'core',
+    }) {}
+
+    test('spec parser expands ranges and lists into sorted unique ports', () {
+      expect(
+        CorePortScanner.parseScanPortsSpec(' 9100, 8765-8767 ,9100'),
+        equals([8765, 8766, 8767, 9100]),
+      );
+    });
+
+    test('spec parser drops unusable entries', () {
+      expect(CorePortScanner.parseScanPortsSpec(null), isEmpty);
+      expect(CorePortScanner.parseScanPortsSpec(''), isEmpty);
+      expect(CorePortScanner.parseScanPortsSpec('abc'), isEmpty);
+      expect(CorePortScanner.parseScanPortsSpec('0'), isEmpty);
+      expect(CorePortScanner.parseScanPortsSpec('70000'), isEmpty);
+      expect(CorePortScanner.parseScanPortsSpec('8767-8765'), isEmpty);
+      expect(CorePortScanner.parseScanPortsSpec('abc,8765'), equals([8765]));
+    });
+
+    test('spec parser rejects a range wider than the allowed span', () {
+      const start = 9000;
+      expect(
+        CorePortScanner.parseScanPortsSpec(
+          '$start-${start + CorePortScanner.maxScanPortsRangeSpan}',
+        ),
+        isEmpty,
+      );
+      expect(
+        CorePortScanner.parseScanPortsSpec(
+          '$start-${start + CorePortScanner.maxScanPortsRangeSpan - 1}',
+        ),
+        hasLength(CorePortScanner.maxScanPortsRangeSpan),
+      );
+    });
+
+    test(
+      'configured ports are probed regardless of the process scan',
+      () async {
+        final listener = await ServerSocket.bind(
+          InternetAddress.loopbackIPv4,
+          0,
+        );
+        addTearDown(listener.close);
+
+        final scanner = CorePortScanner(
+          logger: noopLogger,
+          scanPorts: [listener.port],
+        );
+
+        expect(await scanner.probeKnownPorts(), contains(listener.port));
+        expect(await scanner.scanForFlutterPorts(), contains(listener.port));
+      },
+    );
+
+    test('configured ports nobody listens on stay out of the result', () async {
+      final probe = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
+      final closedPort = probe.port;
+      await probe.close();
+
+      final scanner = CorePortScanner(
+        logger: noopLogger,
+        scanPorts: [closedPort],
+      );
+
+      expect(await scanner.scanForFlutterPorts(), isNot(contains(closedPort)));
     });
   });
 }
