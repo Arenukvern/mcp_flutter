@@ -135,20 +135,28 @@ void main() {
       expect(CorePortScanner.parseScanPortsSpec('abc,8765'), equals([8765]));
     });
 
-    test('spec parser rejects a range wider than the allowed span', () {
+    test('spec parser caps how many ports a value expands to', () {
       const start = 9000;
+      const limit = CorePortScanner.maxScanPortsCount;
       expect(
-        CorePortScanner.parseScanPortsSpec(
-          '$start-${start + CorePortScanner.maxScanPortsRangeSpan}',
-        ),
+        CorePortScanner.parseScanPortsSpec('$start-${start + limit}'),
         isEmpty,
       );
       expect(
-        CorePortScanner.parseScanPortsSpec(
-          '$start-${start + CorePortScanner.maxScanPortsRangeSpan - 1}',
-        ),
-        hasLength(CorePortScanner.maxScanPortsRangeSpan),
+        CorePortScanner.parseScanPortsSpec('$start-${start + limit - 1}'),
+        hasLength(limit),
       );
+    });
+
+    test('spec parser drops entries that would exceed the cap', () {
+      const limit = CorePortScanner.maxScanPortsCount;
+      final ports = CorePortScanner.parseScanPortsSpec(
+        '1000-${1000 + limit - 2},2000-2100,8765',
+      );
+
+      expect(ports, hasLength(limit));
+      expect(ports.last, 8765);
+      expect(ports, isNot(contains(2000)));
     });
 
     test(

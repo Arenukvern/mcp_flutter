@@ -1912,7 +1912,7 @@ final _argParser = ArgParser(allowTrailingOptions: false)
   ..addOption(
     _scanPorts,
     help:
-        'Extra ports to probe during discovery, as a comma separated list of '
+        'Extra ports to probe during discovery, as a comma-separated list of '
         'ports and ranges (for example 8765-8767,9100). Needed to discover a '
         'desktop app whose VM service listens inside the application '
         'process, and any app started with --no-dds.',

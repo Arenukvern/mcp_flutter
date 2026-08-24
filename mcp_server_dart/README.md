@@ -324,7 +324,9 @@ Both CLI and MCP server accept:
 
 The port scan recognizes `dart`/`flutter` processes. A desktop app hosts its VM
 service inside its own native process and an app started with `--no-dds` has no
-Dart process, so run those on known ports and name them with `--scan-ports`.
+Dart process, so neither is found by name. Start such an app on a fixed VM
+service port (`flutter run -d macos --device-vmservice-port=8765`) and pass that
+port to the scanner with `--scan-ports=8765`.
 
 Manual fallback remains available:
 

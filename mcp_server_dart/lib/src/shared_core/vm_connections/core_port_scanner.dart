@@ -299,13 +299,17 @@ final class CorePortScanner {
   /// Common Flutter development ports.
   List<int> get commonFlutterPorts => [8080, 8181, 9000, 9001, 9999];
 
-  /// Widest range a single `--scan-ports` entry may expand to.
-  static const int maxScanPortsRangeSpan = 256;
+  /// Most ports a `--scan-ports` value may expand to.
+  ///
+  /// Every port is probed on every scan, so the whole specification is capped,
+  /// not just a single range.
+  static const int maxScanPortsCount = 256;
 
   /// Parse a `--scan-ports` value such as `8765-8767,9100`.
   ///
-  /// Entries outside `1-65535`, reversed or oversized ranges, and unparsable
-  /// text are dropped so a typo cannot stall discovery.
+  /// Entries outside `1-65535`, reversed ranges, unparsable text, and entries
+  /// that would push the result past [maxScanPortsCount] are dropped, so
+  /// neither a typo nor an overly wide request can stall discovery.
   static List<int> parseScanPortsSpec(final String? spec) {
     final ports = <int>{};
     for (final entry in (spec ?? '').split(',')) {
@@ -317,7 +321,7 @@ final class CorePortScanner {
       final range = RegExp(r'^(\d+)-(\d+)$').firstMatch(trimmed);
       if (range == null) {
         final port = int.tryParse(trimmed);
-        if (_isValidPort(port)) {
+        if (_isValidPort(port) && ports.length < maxScanPortsCount) {
           ports.add(port!);
         }
         continue;
@@ -328,7 +332,7 @@ final class CorePortScanner {
       if (!_isValidPort(start) ||
           !_isValidPort(end) ||
           end! < start! ||
-          end - start >= maxScanPortsRangeSpan) {
+          ports.length + (end - start + 1) > maxScanPortsCount) {
         continue;
       }
       for (var port = start; port <= end; port++) {
