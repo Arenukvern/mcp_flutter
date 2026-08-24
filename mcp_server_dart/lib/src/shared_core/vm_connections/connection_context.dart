@@ -613,10 +613,22 @@ final class ConnectionContext {
     );
 
     try {
-      final dtdFuture = DartToolingDaemon.connect(wsUri);
-      _dartToolingDaemon = timeout == Duration.zero
-          ? await dtdFuture
-          : await dtdFuture.timeout(timeout);
+      // DDS endpoints do not speak the DTD protocol, so a failed DTD
+      // handshake must not block VM-service connections. DTD-dependent
+      // features degrade gracefully when this remains null.
+      try {
+        final dtdFuture = DartToolingDaemon.connect(wsUri);
+        _dartToolingDaemon = timeout == Duration.zero
+            ? await dtdFuture
+            : await dtdFuture.timeout(timeout);
+      } on Exception catch (dtdError) {
+        logger(
+          LoggingLevel.warning,
+          'DTD unavailable at $wsUri: $dtdError',
+          logger: 'ConnectionContext',
+        );
+        _dartToolingDaemon = null;
+      }
 
       _vmChannel = WebSocketChannel.connect(wsUri);
 
