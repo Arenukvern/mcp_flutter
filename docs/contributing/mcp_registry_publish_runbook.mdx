@@ -1,0 +1,70 @@
+---
+title: MCP Registry publish runbook
+description: How the flutter-mcp-toolkit OCI image is published to the official MCP Registry, and the gates that keep it green.
+---
+
+# MCP Registry publish runbook
+
+The official [MCP Registry](https://registry.modelcontextprotocol.io) entry
+(`io.github.Arenukvern/flutter-mcp-toolkit`) is published automatically when a
+new version tag lands: `pub_publish.yml` triggers
+`publish_mcp_registry.yml`, which builds the OCI image, pushes it to GHCR, and
+publishes `mcp_server_dart/server.json` to the registry.
+
+This pipeline failed four times before its first green run. Every failure mode
+is now covered by a local gate — see
+[ADR 0013](/decisions/0013_mcp_registry_publish_hardening) for the full
+post-mortem.
+
+## Pre-flight gates (run before cutting a release)
+
+```bash
+make check-contracts                          # includes check_mcp_registry.sh
+steward action run fmt.check.mcp-registry     # same check via Steward
+```
+
+The `check_mcp_registry.sh` contract asserts:
+
+- `server.json` name, description bounds, and version match root `VERSION`.
+- The OCI package identifier is exactly
+  `ghcr.io/arenukvern/flutter-mcp-toolkit:<VERSION>` and carries **no**
+  `registryBaseUrl` field (the Registry rejects it).
+- The Dockerfile compiles `bin/flutter_mcp_toolkit_server.dart`, uses a pinned
+  `ghcr.io/cirruslabs/flutter:` build stage, and never runs
+  `--enforce-lockfile` (SDK-bundled pins differ per host platform).
+- The workflow builds with `context: .` (workspace siblings are unpublished)
+  and uses GitHub OIDC for registry auth.
+- pub.dev publication still triggers the dependent registry publication.
+
+## Manual validation of server.json against the live registry
+
+```bash
+./mcp-publisher validate mcp_server_dart/server.json
+```
+
+Install the pinned publisher binary as the workflow does (see
+`publish_mcp_registry.yml` for the pinned version and SHA256).
+
+## Local end-to-end image build
+
+```bash
+docker build --platform linux/amd64 \
+  -f mcp_server_dart/Dockerfile.registry -t fmtk-registry-test .
+docker run --rm fmtk-registry-test --version   # should print VERSION
+```
+
+Always test on `linux/amd64` — that is what CI uses, and dependency resolution
+differs per host platform.
+
+## Known constraints (do not "fix" these back)
+
+1. **No lockfile enforcement in Docker.** A host-generated `pubspec.lock`
+   breaks cross-platform builds because Flutter SDK-bundled pins differ between
+   arm64 and amd64. Reproducibility comes from the pinned base-image tag.
+2. **Build from repo root.** `mcp_server_dart` depends on workspace siblings
+   (`packages/*`, `mcp_toolkit`) that are not on pub.dev; a bare
+   `mcp_server_dart/` context cannot resolve.
+3. **Flutter SDK base image required.** `intentcall_platform` requires the
+   Flutter SDK; a pure `dart:SDK` image fails at resolution.
+
+If any of these need to change, update [ADR 0013](/decisions/0013_mcp_registry_publish_hardening) first.

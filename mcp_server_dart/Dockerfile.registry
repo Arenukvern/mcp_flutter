@@ -11,12 +11,19 @@ FROM ghcr.io/cirruslabs/flutter:3.44.0 AS build
 
 WORKDIR /app
 
-COPY pubspec.yaml pubspec.lock VERSION ./
-COPY mcp_server_dart/ mcp_server_dart/
+COPY pubspec.yaml VERSION ./
+COPY mcp_server_dart/pubspec.yaml mcp_server_dart/pubspec.yaml
 COPY mcp_toolkit/ mcp_toolkit/
 COPY packages/ packages/
+COPY mcp_server_dart/bin/ mcp_server_dart/bin/
+COPY mcp_server_dart/lib/ mcp_server_dart/lib/
+COPY mcp_server_dart/analysis_options.yaml mcp_server_dart/analysis_options.yaml
 
-RUN cd mcp_server_dart && flutter pub get --enforce-lockfile
+# Resolve inside the pinned image rather than enforcing a host-generated
+# lockfile: Flutter SDK-bundled package pins differ between host platforms
+# (arm64 vs amd64), so --enforce-lockfile fails on the amd64 CI runner.
+# The pinned base-image tag is the reproducibility anchor.
+RUN cd mcp_server_dart && flutter pub get
 
 RUN cd mcp_server_dart && dart compile exe bin/flutter_mcp_toolkit_server.dart -o /app/mcp_server
 

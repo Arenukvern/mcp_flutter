@@ -3,6 +3,41 @@
 <!-- markdownlint-disable MD052 -->
 <!-- Keep a Changelog version headings use [3.0.1] brackets; MD052 treats them as reference links. -->
 
+## [5.1.0](https://github.com/Arenukvern/mcp_flutter/compare/v5.0.4...v5.1.0) (2026-08-23)
+
+
+### Features
+
+* logo ([bfeae14](https://github.com/Arenukvern/mcp_flutter/commit/bfeae14596201d531198f6e94b045aae5dbd1926))
+
+
+### Bug Fixes
+
+* **contracts:** address second review round on mcp-registry checks ([333d788](https://github.com/Arenukvern/mcp_flutter/commit/333d7884e26c87b6320337732a5820ffbb006c97))
+* **contracts:** harden mcp-registry checks per review ([6b0e32b](https://github.com/Arenukvern/mcp_flutter/commit/6b0e32b2ab907649ab6f898cf011d35c001b4808))
+
+
+### Documentation
+
+* ADR 0013 — MCP Registry publish hardening + fmt.check.mcp-registry gate ([299e4f4](https://github.com/Arenukvern/mcp_flutter/commit/299e4f4a69c1a26f8ba2d8f6d1c420d584896d62))
+* ADR 0013 — MCP Registry publish hardening + fmt.check.mcp-registry gate ([0e14e4d](https://github.com/Arenukvern/mcp_flutter/commit/0e14e4d0dddc7d6aac8eea3632557f72494ef709))
+
+## [5.0.4](https://github.com/Arenukvern/mcp_flutter/compare/v5.0.3...v5.0.4) (2026-08-23)
+
+
+### Bug Fixes
+
+* **mcp-registry:** drop registryBaseUrl from OCI package entry ([fdb87d3](https://github.com/Arenukvern/mcp_flutter/commit/fdb87d36f945f1573b1b3af71e732d98d9b5bf15))
+* **mcp-registry:** drop registryBaseUrl from OCI package entry ([2e6365a](https://github.com/Arenukvern/mcp_flutter/commit/2e6365a88198e7316760fa062ac72897e552dd83))
+
+## [5.0.3](https://github.com/Arenukvern/mcp_flutter/compare/v5.0.2...v5.0.3) (2026-08-23)
+
+
+### Bug Fixes
+
+* **mcp-registry:** resolve deps inside pinned image, drop lockfile enforcement ([381f13b](https://github.com/Arenukvern/mcp_flutter/commit/381f13b482c96fd5b15dce6a20a504c81657c497))
+* **mcp-registry:** resolve deps inside pinned image, drop lockfile enforcement ([3f7d6a1](https://github.com/Arenukvern/mcp_flutter/commit/3f7d6a1cb4fd6c490ca304e03a011639b05f5bfc))
+
 ## [5.0.2](https://github.com/Arenukvern/mcp_flutter/compare/v5.0.1...v5.0.2) (2026-08-23)
 
 
