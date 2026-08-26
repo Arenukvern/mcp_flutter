@@ -47,6 +47,9 @@ Future<void> main(final List<String> args) async {
             int.tryParse(parsedArgs.option(flutterDiscoveryTimeoutMs) ?? '') ??
             defaultFlutterDiscoveryTimeoutMs,
         scanPorts: _parseScanPorts(parsedArgs.option(scanPorts)),
+        preferredTargetLabel: _nonEmptyOption(
+          parsedArgs.option(preferTargetLabel),
+        ),
       );
       final server = MCPToolkitServer.fromStreamChannel(
         StreamChannel.withCloseGuarantee(io.stdin, io.stdout)
@@ -192,6 +195,13 @@ final argParser = ArgParser(allowTrailingOptions: false)
         'process, and any app started with --no-dds.',
   )
   ..addOption(
+    preferTargetLabel,
+    help:
+        'Prefer the discovered target whose label contains this text, so '
+        'auto-attach can pick between several running apps. Labels come from '
+        'the app itself (MCPToolkitBinding.setAppIdentity).',
+  )
+  ..addOption(
     logLevel,
     defaultsTo: defaultLogLevel,
     help:
@@ -226,4 +236,5 @@ const flutterProjectDir = 'flutter-project-dir';
 const flutterDevice = 'flutter-device';
 const flutterDiscoveryTimeoutMs = 'flutter-discovery-timeout-ms';
 const scanPorts = 'scan-ports';
+const preferTargetLabel = 'prefer-target-label';
 const defaultFlutterDiscoveryTimeoutMs = 2500;

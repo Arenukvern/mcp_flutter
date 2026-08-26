@@ -27,6 +27,7 @@ MCPToolkitServer _createDiscoveryTestServer() =>
         flutterDevice: null,
         flutterDiscoveryTimeoutMs: 2500,
         scanPorts: const <int>[],
+        preferredTargetLabel: null,
       ),
     );
 
