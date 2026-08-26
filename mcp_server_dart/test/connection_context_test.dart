@@ -1,5 +1,39 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter_mcp_toolkit_server/flutter_mcp_core.dart';
 import 'package:test/test.dart';
+
+/// Minimal VM service HTTP facade: enough for the discovery probe.
+Future<HttpServer> _startFakeVmService({
+  required final int pid,
+  final int Function()? pidOverride,
+}) async {
+  final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+  const isolateId = 'isolates/1';
+  unawaited(
+    server.forEach((final request) async {
+      final result = switch (request.uri.pathSegments.last) {
+        'getVM' => {
+          'pid': pidOverride?.call() ?? pid,
+          'isolates': [
+            {'type': '@Isolate', 'id': isolateId, 'name': 'main'},
+          ],
+        },
+        'getIsolate' => {
+          'extensionRPCs': ['ext.flutter.reassemble'],
+        },
+        _ => <String, Object?>{},
+      };
+      request.response
+        ..headers.contentType = ContentType.json
+        ..write(jsonEncode({'jsonrpc': '2.0', 'result': result}));
+      await request.response.close();
+    }),
+  );
+  return server;
+}
 
 void main() {
   test('seeds sticky endpoint with URI path token', () {
@@ -112,6 +146,105 @@ void main() {
     expect(
       context.lastDiscoveryDiagnostics['portDroppedNonFlutterCount'],
       equals(2),
+    );
+  });
+
+  test('two endpoints of one app auto-attach to the pinned port', () async {
+    final app = await _startFakeVmService(pid: 4242);
+    final dds = await _startFakeVmService(pid: 4242);
+    addTearDown(() => app.close(force: true));
+    addTearDown(() => dds.close(force: true));
+
+    final context = ConnectionContext(
+      defaultHost: '127.0.0.1',
+      defaultPort: 8181,
+      logger: (final level, final message, {final logger = 'test'}) {},
+      discoverPorts: () async => <int>[app.port, dds.port],
+    );
+
+    final targets = await context.discoverTargets();
+    expect(targets, hasLength(2));
+    expect(targets.every((final t) => t.vmPid == 4242), isTrue);
+    expect(targets.first.toJson()['pid'], equals(4242));
+
+    // The fake VM speaks HTTP only, so the attempt dies on the websocket
+    // upgrade — reaching that point is the proof no choice was demanded.
+    final lowerPort = app.port < dds.port ? app.port : dds.port;
+    await expectLater(
+      context.connect(),
+      throwsA(
+        predicate(
+          (final e) =>
+              e is! CoreConnectionException && '$e'.contains(':$lowerPort/'),
+          'websocket attempt against port $lowerPort',
+        ),
+      ),
+    );
+  });
+
+  test('two separate apps still require an explicit target', () async {
+    final first = await _startFakeVmService(pid: 1);
+    final second = await _startFakeVmService(pid: 2);
+    addTearDown(() => first.close(force: true));
+    addTearDown(() => second.close(force: true));
+
+    final context = ConnectionContext(
+      defaultHost: '127.0.0.1',
+      defaultPort: 8181,
+      logger: (final level, final message, {final logger = 'test'}) {},
+      discoverPorts: () async => <int>[first.port, second.port],
+    );
+
+    await expectLater(
+      context.connect(),
+      throwsA(
+        isA<CoreConnectionException>().having(
+          (final e) => e.reason,
+          'reason',
+          CoreConnectionFailureReason.multipleTargets,
+        ),
+      ),
+    );
+  });
+
+  test('a process that changed hands is not merged from cache', () async {
+    var secondPid = 21;
+    final first = await _startFakeVmService(pid: 21);
+    final second = await _startFakeVmService(
+      pid: 21,
+      pidOverride: () => secondPid,
+    );
+    addTearDown(() => first.close(force: true));
+    addTearDown(() => second.close(force: true));
+
+    final context = ConnectionContext(
+      defaultHost: '127.0.0.1',
+      defaultPort: 8181,
+      logger: (final level, final message, {final logger = 'test'}) {},
+      discoverPorts: () async => <int>[first.port, second.port],
+    );
+
+    final targets = await context.discoverTargets();
+    expect(
+      targets.every((final target) => target.vmPid == 21),
+      isTrue,
+      reason: 'both endpoints answered as one process on the first pass',
+    );
+
+    // Another app takes the endpoint over while the probe cache still holds
+    // the old process id.
+    secondPid = 22;
+
+    await expectLater(
+      context.connect(),
+      throwsA(
+        isA<CoreConnectionException>().having(
+          (final e) => e.reason,
+          'reason',
+          CoreConnectionFailureReason.multipleTargets,
+        ),
+      ),
+      reason: 'a stale process id must not merge two apps into one target',
     );
   });
 }

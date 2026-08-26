@@ -30,7 +30,10 @@ base mixin VMServiceSupport on BaseMCPToolkitServer {
     discoverMachineTargets: _discoverMachineTargets,
   );
 
-  late final CorePortScanner _corePortScanner = CorePortScanner(logger: _log);
+  late final CorePortScanner _corePortScanner = CorePortScanner(
+    logger: _log,
+    scanPorts: configuration.scanPorts,
+  );
 
   late final CoreImageFileSaver _coreImageFileSaver = CoreImageFileSaver(
     logger: _log,

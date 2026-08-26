@@ -129,6 +129,7 @@ void main() {
           flutterProjectDir: null,
           flutterDevice: null,
           flutterDiscoveryTimeoutMs: 2500,
+          scanPorts: const <int>[],
         ),
       );
       // ignore: invalid_use_of_protected_member
