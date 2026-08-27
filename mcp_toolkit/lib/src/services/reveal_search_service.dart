@@ -25,12 +25,15 @@ mixin RevealSearchService {
       return <String, Object?>{
         'success': false,
         'error': 'missing_query',
+        'hint':
+            'reveal_search needs something to look for. Pass the text a node '
+            'shows, or its identifier together with matchBy: "identifier".',
         'attempts': const <Object?>[],
       };
     }
 
     final normalizedMatchBy = _normalizeMatchBy(matchBy);
-    final boundedMaxAttempts = maxAttempts.clamp(0, _maxAttemptsLimit).toInt();
+    final boundedMaxAttempts = maxAttempts.clamp(0, _maxAttemptsLimit);
     final boundedDistance = distance.clamp(1, _maxDistance).toDouble();
     final attempts = <Map<String, Object?>>[];
     Map<String, Object?>? lastSnapshot;
@@ -114,6 +117,11 @@ mixin RevealSearchService {
           'success': false,
           'error': 'scroll_blocked',
           'scrollError': scroll['error'],
+          'hint':
+              'The search stopped early: scrolling "$direction" moved nothing, '
+              'so further attempts would re-read the same screen. The list is '
+              'already at that edge — search the other direction — or the '
+              'point being scrolled is not over the list; see scrollError.',
           'query': normalizedQuery,
           'matchBy': normalizedMatchBy,
           'direction': direction,
@@ -128,6 +136,13 @@ mixin RevealSearchService {
     return <String, Object?>{
       'success': false,
       'error': 'target_not_found',
+      'hint':
+          'Nothing matched "$normalizedQuery" by $normalizedMatchBy across '
+          '${attempts.length} screens. The text may be split across nodes or '
+          'rendered without semantics — call semantic_snapshot and read what '
+          'the screen actually publishes, or raise maxAttempts if the target '
+          'sits further than '
+          '${(boundedMaxAttempts * boundedDistance).round()} px away.',
       'query': normalizedQuery,
       'matchBy': normalizedMatchBy,
       'direction': direction,
@@ -158,7 +173,11 @@ mixin RevealSearchService {
     'centerInViewport': match['centerInViewport'],
     'viewport': snapshot['viewport'],
     'recommendedNextAction': 'scroll_more',
-    'warning': 'Target was found but its center is outside the viewport.',
+    'hint':
+        'The target is in the tree but its centre is still outside the '
+        'viewport, so a gesture aimed at it would land off screen. Call '
+        'reveal_search again with a larger maxAttempts or distance; the ref '
+        'returned here is good for reading, not for tapping.',
     'query': query,
     'matchBy': matchBy,
     'direction': direction,

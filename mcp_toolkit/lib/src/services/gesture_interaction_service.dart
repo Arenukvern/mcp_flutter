@@ -59,7 +59,12 @@ mixin GestureInteractionService {
     if (node == null) {
       return _refNotFound(ref);
     }
-    final visibility = SemanticSnapshotService.visibilityForRef(ref);
+    if (!node.attached) {
+      return _staleRef(ref, 'tap');
+    }
+    final disabled = _disabledRef(node, ref, 'tap');
+    if (disabled != null) return disabled;
+    final visibility = SemanticSnapshotService.liveVisibilityForRef(ref);
     if (visibility['centerInViewport'] != true) {
       return <String, Object?>{
         'success': false,
@@ -69,6 +74,11 @@ mixin GestureInteractionService {
         'message':
             'Target center is outside the visible viewport. Reveal or scroll '
             'the target before tapping.',
+        'hint':
+            'The node exists but sits off screen, so a pointer event at its '
+            'centre would land outside the window. Call reveal_search with '
+            'its identifier or text to scroll it into view and get a fresh '
+            'ref.',
         ...visibility,
       };
     }
@@ -88,14 +98,9 @@ mixin GestureInteractionService {
       }
     }
 
-    final center = SemanticSnapshotService.resolveCenter(ref);
+    final center = _liveCenter(ref);
     if (center == null) {
-      return <String, Object?>{
-        'success': false,
-        'ref': ref,
-        'action': 'tap',
-        'error': 'no_bounds_for_ref',
-      };
+      return _noBoundsForRef(ref, 'tap');
     }
     if (kIsWeb) {
       // Tier 2 on web: pointer synthesis doesn't reach the browser gesture
@@ -114,6 +119,7 @@ mixin GestureInteractionService {
             'browser gesture arena.',
       };
     }
+    final occupant = _occupantAtPoint(node, center);
     await _dispatchTap(center);
     return <String, Object?>{
       'success': true,
@@ -121,6 +127,12 @@ mixin GestureInteractionService {
       'via': 'pointer_events',
       'action': 'tap',
       'point': _offsetToMap(center),
+      'pointBelongsTo': ?occupant,
+      if (occupant != null)
+        'hint':
+            'The node exposed no tap action, so the tap was aimed at the '
+            'centre of its box — which "$occupant" occupies. Whatever '
+            'reacted, reacted there.',
     };
   }
 
@@ -130,6 +142,11 @@ mixin GestureInteractionService {
     if (node == null) {
       return _refNotFound(ref);
     }
+    if (!node.attached) {
+      return _staleRef(ref, 'long_press');
+    }
+    final disabled = _disabledRef(node, ref, 'long_press');
+    if (disabled != null) return disabled;
 
     if (node.getSemanticsData().hasAction(SemanticsAction.longPress)) {
       final owner = SemanticSnapshotService.semanticsOwner;
@@ -146,14 +163,9 @@ mixin GestureInteractionService {
       }
     }
 
-    final center = SemanticSnapshotService.resolveCenter(ref);
+    final center = _liveCenter(ref);
     if (center == null) {
-      return <String, Object?>{
-        'success': false,
-        'ref': ref,
-        'action': 'long_press',
-        'error': 'no_bounds_for_ref',
-      };
+      return _noBoundsForRef(ref, 'long_press');
     }
     if (kIsWeb) {
       // Pointer synthesis via GestureBinding doesn't reach the browser
@@ -172,6 +184,7 @@ mixin GestureInteractionService {
             'call evaluate_dart_expression to mutate app state directly).',
       };
     }
+    final occupant = _occupantAtPoint(node, center);
     await _dispatchLongPress(center);
     return <String, Object?>{
       'success': true,
@@ -179,15 +192,25 @@ mixin GestureInteractionService {
       'via': 'pointer_events',
       'action': 'long_press',
       'point': _offsetToMap(center),
+      'pointBelongsTo': ?occupant,
+      if (occupant != null)
+        'hint':
+            'The node exposed no long-press action, so the press was aimed at '
+            'the centre of its box — which "$occupant" occupies. Whatever '
+            'reacted, reacted there.',
     };
   }
 
   /// Enter [text] into the text field identified by [ref].
   ///
-  /// Prefers the `setText` semantic action. Falls back to tapping to focus
-  /// the field and driving its [EditableTextState] directly via
-  /// [EditableTextState.userUpdateTextEditingValue] (which runs
-  /// [TextInputFormatter]s and fires `onChanged` correctly).
+  /// Prefers the `setText` semantic action, which the field exposes only while
+  /// it holds focus. Otherwise drives the [EditableTextState] that lives inside
+  /// the ref's own bounds via [EditableTextState.userUpdateTextEditingValue]
+  /// (which runs [TextInputFormatter]s and fires `onChanged` correctly).
+  ///
+  /// Both paths report what the field holds afterwards in `verified`: the
+  /// second one reads the controller back, so a value the field refused —
+  /// or a hit on the wrong field — fails instead of reporting success.
   static Future<Map<String, Object?>> enterTextAtRef(
     final String ref,
     final String text,
@@ -196,6 +219,11 @@ mixin GestureInteractionService {
     if (node == null) {
       return _refNotFound(ref);
     }
+    if (!node.attached) {
+      return _staleRef(ref, 'enter_text');
+    }
+    final disabled = _disabledRef(node, ref, 'enter_text');
+    if (disabled != null) return disabled;
 
     if (node.getSemanticsData().hasAction(SemanticsAction.setText)) {
       final owner = SemanticSnapshotService.semanticsOwner;
@@ -203,28 +231,62 @@ mixin GestureInteractionService {
         owner.performAction(node.id, SemanticsAction.setText, text);
         _releaseSyntheticDevice();
         await _waitFrame();
+        // The field's semantics value is the only read-back this path has.
+        // A masking or formatting field legitimately reports something else,
+        // so a mismatch is surfaced rather than treated as a failure.
+        final applied = node.attached ? node.getSemanticsData().value : null;
         return <String, Object?>{
           'success': true,
           'ref': ref,
           'via': 'semantic_action',
           'action': 'setText',
           'text': text,
+          'verified': applied == text,
+          'appliedText': applied,
+          'verifiedBy': 'semantics_value',
+          if (applied != text)
+            'hint':
+                'The field now reports "$applied". Fields that mask, format, '
+                'or publish no semantics value do this legitimately; otherwise '
+                're-snapshot and read the node value to see where the text '
+                'went.',
         };
       }
     }
 
-    // Fallback: locate the EditableTextState whose render object overlaps
-    // the ref's bounds and drive it directly. This avoids relying on focus,
-    // which is not always set by synthetic taps (especially on desktop).
-    final bounds = SemanticSnapshotService.resolveBounds(ref);
+    // Fallback: locate the EditableTextState that sits inside the ref's own
+    // bounds and drive it directly. This avoids relying on focus, which is not
+    // always set by synthetic taps (especially on desktop).
+    final bounds = _liveBounds(ref);
+    final isTextField = node.getSemanticsData().flagsCollection.isTextField;
     EditableTextState? editable = bounds == null
         ? null
-        : _findEditableInRect(bounds);
+        : _findEditableForNode(node, bounds);
+
+    // A ref that is not a text field has no business reaching the focus-based
+    // last resort: it would drive whichever field happens to hold focus and
+    // report success for a write the caller never asked for.
+    if (editable == null && !isTextField) {
+      final refType = _classifyForHint(node);
+      return <String, Object?>{
+        'success': false,
+        'ref': ref,
+        'action': 'enter_text',
+        'error': 'not_a_text_field',
+        'hint': refType == null
+            ? 'The ref does not point to a text field. Call '
+                  'semantic_snapshot and pick a node with '
+                  'type: "textField" (check the node\'s "type" field).'
+            : 'Ref "$ref" is a "$refType", not a text field. Call '
+                  'semantic_snapshot and pick a node with '
+                  'type: "textField".',
+      };
+    }
 
     // If the tree search didn't find one, tap to focus and try the focused
     // element as a last resort.
     if (editable == null) {
-      final center = SemanticSnapshotService.resolveCenter(ref);
+      final center = _liveCenter(ref);
       if (center != null) {
         await _dispatchTap(center);
         await _waitFrame();
@@ -236,22 +298,19 @@ mixin GestureInteractionService {
     }
 
     if (editable == null) {
-      final refType = _classifyForHint(node);
       return <String, Object?>{
         'success': false,
         'ref': ref,
         'action': 'enter_text',
         'error': 'no_editable_state',
-        'hint': refType == null
-            ? 'The ref does not point to a text field. Call '
-                  'semantic_snapshot and pick a node with '
-                  'type: "textField" (check the node\'s "type" field).'
-            : 'Ref "$ref" is a "$refType", not a text field. Call '
-                  'semantic_snapshot and pick a node with '
-                  'type: "textField".',
+        'hint':
+            'Ref "$ref" is a text field, but no EditableTextState was found '
+            'inside its bounds or on the focused element. Re-snapshot and try '
+            'again, or set the value through evaluate_dart_expression.',
       };
     }
 
+    final previous = editable.textEditingValue;
     final value = TextEditingValue(
       text: text,
       selection: TextSelection.collapsed(offset: text.length),
@@ -259,12 +318,52 @@ mixin GestureInteractionService {
     editable.userUpdateTextEditingValue(value, SelectionChangedCause.keyboard);
     await _waitFrame();
 
+    final applied = editable.textEditingValue.text;
+    // Nothing landed at all: the field refused the write outright (read-only,
+    // or a formatter that rejects every character of it). Anything the field
+    // did keep is a value the caller now has to reckon with, not a failure —
+    // a formatter trimming "3 days" to "3" is the same thing a person typing
+    // there would get.
+    if (applied.isEmpty && text.isNotEmpty) {
+      // The rejected write still wiped whatever the field held. A refusal that
+      // leaves the field emptied is a change the caller never asked for, so
+      // put the old value back before reporting.
+      if (previous.text.isNotEmpty) {
+        editable.userUpdateTextEditingValue(
+          previous,
+          SelectionChangedCause.keyboard,
+        );
+        await _waitFrame();
+      }
+      return <String, Object?>{
+        'success': false,
+        'ref': ref,
+        'via': 'editable_state',
+        'action': 'enter_text',
+        'error': 'text_not_applied',
+        'text': text,
+        'appliedText': editable.textEditingValue.text,
+        'hint':
+            'The field kept none of "$text" — an input formatter rejected it '
+            'outright, or the field is read-only. It was left holding '
+            '"${previous.text}", as it was before the call.',
+      };
+    }
+
     return <String, Object?>{
       'success': true,
       'ref': ref,
       'via': 'editable_state',
       'action': 'enter_text',
       'text': text,
+      'verified': applied == text,
+      'appliedText': applied,
+      'verifiedBy': 'controller',
+      if (applied != text)
+        'hint':
+            'The field holds "$applied" — an input formatter reshaped the '
+            'value on the way in. Read appliedText as what the field now '
+            'contains.',
     };
   }
 
@@ -297,6 +396,9 @@ mixin GestureInteractionService {
       if (node == null) {
         return _refNotFound(ref);
       }
+      if (!node.attached) {
+        return _staleRef(ref, 'scroll_$direction');
+      }
       if (node.getSemanticsData().hasAction(action)) {
         final result = await _performSemanticScroll(
           node: node,
@@ -312,12 +414,20 @@ mixin GestureInteractionService {
       }
     }
 
-    // No ref — try to auto-find a scrollable in the semantics tree.
+    // No ref — scroll what sits in the middle of the screen, which is what
+    // "scroll the page" means to the caller. Only when nothing there can take
+    // the action does the search widen to the whole tree, where the first
+    // match is as likely to be a header strip as the content.
     if (ref == null && action != null) {
       final owner = SemanticSnapshotService.semanticsOwner;
       final root = owner?.rootSemanticsNode;
       if (owner != null && root != null) {
-        final target = _findScrollableFor(root, action);
+        final underPointer = _findScrollableAt(_screenCenter());
+        final target =
+            (underPointer != null &&
+                underPointer.getSemanticsData().hasAction(action))
+            ? underPointer
+            : _findScrollableFor(root, action);
         if (target != null) {
           final result = await _performSemanticScroll(
             node: target,
@@ -354,18 +464,39 @@ mixin GestureInteractionService {
     // Desktop-friendly fallback: PointerScrollEvent (mouse-wheel-style).
     // This is how Flutter on macOS/Linux/Windows actually scrolls; synthetic
     // touch drags don't always drive scroll physics on desktop.
-    final start = ref != null
-        ? SemanticSnapshotService.resolveCenter(ref)
-        : _screenCenter();
+    final start = ref != null ? _liveCenter(ref) : _screenCenter();
     if (start == null && ref != null) {
       return _refNotFound(ref);
     }
     final origin = start ?? _screenCenter();
     final scrollDelta = _scrollDelta(direction, distance);
-    final scrollable = _findAnyScrollable();
+    final scrollable = _findScrollableAt(origin);
+    if (scrollable == null) {
+      // A scrollable that answered the semantic tier already said what it
+      // could do — its boundary report beats "there is nothing under the
+      // pointer", which is about a fallback the caller never asked for.
+      if (semanticAttempt != null) {
+        return semanticAttempt;
+      }
+      return <String, Object?>{
+        'success': false,
+        'ref': ?ref,
+        'via': 'pointer_scroll_event',
+        'action': 'scroll_$direction',
+        'at': _offsetToMap(origin),
+        'error': 'no_scrollable_at_point',
+        'semanticAttempt': ?semanticAttempt,
+        'hint':
+            'Nothing under that point advertises a scroll action, so a wheel '
+            'event there would have had nothing to drive. Call '
+            'semantic_snapshot and pass the ref of a node with scrollUp / '
+            'scrollDown / scrollLeft / scrollRight in its "actions".',
+      };
+    }
     final before = _scrollPosition(scrollable);
     await _dispatchScrollSignal(origin, scrollDelta);
-    final after = _scrollPosition(scrollable);
+    final settle = await _settledScrollPosition(scrollable, before);
+    final after = settle.position;
     if (before != null && after != null && before == after) {
       return <String, Object?>{
         'success': false,
@@ -395,6 +526,7 @@ mixin GestureInteractionService {
       'scrollDelta': _offsetToMap(scrollDelta),
       'scrollBefore': ?before,
       'scrollAfter': ?after,
+      if (!settle.settled) 'settled': false,
       'semanticAttempt': ?semanticAttempt,
     };
   }
@@ -415,6 +547,10 @@ mixin GestureInteractionService {
         'targetNodeId': ?targetNodeId,
         'action': 'scroll_$direction',
         'error': 'semantics_owner_unavailable',
+        'hint':
+            'The app is publishing no semantics tree, so no node can be asked '
+            'to scroll. Semantics are built on demand: call semantic_snapshot '
+            'first — it turns them on — and retry.',
       };
     }
 
@@ -425,8 +561,10 @@ mixin GestureInteractionService {
     owner.performAction(node.id, action);
     _releaseSyntheticDevice();
     await _waitSemanticScrollFrame();
-    var after = _scrollPosition(node);
+    var settle = await _settledScrollPosition(node, before);
+    var after = settle.position;
     if (before != null && after != null && before != after) {
+      final travelled = (after - before).abs();
       return <String, Object?>{
         'success': true,
         'ref': ?ref,
@@ -435,6 +573,15 @@ mixin GestureInteractionService {
         'action': 'scroll_$direction',
         'scrollBefore': before,
         'scrollAfter': after,
+        if (!settle.settled) 'settled': false,
+        // The semantic scroll action moves by whatever the scrollable calls a
+        // page; `distance` reaches only the scrollToOffset and wheel tiers.
+        if ((travelled - distance).abs() > distance * 0.25)
+          'hint':
+              'This tier scrolls by a viewport page, so it travelled '
+              '${travelled.round()} px rather than the $distance requested. '
+              'Pass a ref whose actions include scrollToOffset for an exact '
+              'offset.',
       };
     }
     final actionProgress = kIsWeb
@@ -476,7 +623,8 @@ mixin GestureInteractionService {
         scrollToOffsetArgs,
       );
       await _waitSemanticScrollFrame();
-      after = _scrollPosition(node);
+      settle = await _settledScrollPosition(node, before);
+      after = settle.position;
       if (before != null && after != null && before != after) {
         return <String, Object?>{
           'success': true,
@@ -512,6 +660,19 @@ mixin GestureInteractionService {
       }
     }
 
+    final extentMin = _finiteOrNull(node.getSemanticsData().scrollExtentMin);
+    final extentMax = _finiteOrNull(node.getSemanticsData().scrollExtentMax);
+    // A scrollable whose extents coincide has no range to travel, so its
+    // offset sits at both ends at once — that is content fitting the viewport,
+    // not the end of a list, and saying "already at its end" would send the
+    // caller scrolling the other way for nothing.
+    final edge = extentMin == extentMax
+        ? null
+        : switch (before) {
+            final double at when at == extentMin => 'start',
+            final double at when at == extentMax => 'end',
+            _ => null,
+          };
     return <String, Object?>{
       'success': false,
       'ref': ?ref,
@@ -520,12 +681,20 @@ mixin GestureInteractionService {
       'action': 'scroll_$direction',
       'scrollBefore': ?before,
       'scrollAfter': ?after,
-      'scrollExtentMin': _finiteOrNull(node.getSemanticsData().scrollExtentMin),
-      'scrollExtentMax': _finiteOrNull(node.getSemanticsData().scrollExtentMax),
+      'scrollExtentMin': extentMin,
+      'scrollExtentMax': extentMax,
       'error': 'no_scroll_movement',
       'platform': kIsWeb ? 'web' : 'flutter',
       'movementVerified': false,
       'dispatched': true,
+      'hint': edge != null
+          ? 'The scrollable took the action but is already at its $edge, so '
+                'there was nowhere left to go in that direction. Scroll the '
+                'other way, or read this as the $edge of the list.'
+          : 'The scrollable took the action and its offset never changed. Its '
+                'content fits the viewport, or an inner list owns the rows — '
+                'call semantic_snapshot and pass the ref of the node whose '
+                'scrollExtentMax exceeds its own height.',
     };
   }
 
@@ -558,21 +727,55 @@ mixin GestureInteractionService {
   ///
   /// Lets enter_text find the right field without depending on focus,
   /// which synthetic taps don't reliably transfer on desktop.
-  static EditableTextState? _findEditableInRect(final ui.Rect rect) {
+  /// Whether [start] sits in a subtree that the semantics tree cannot see.
+  ///
+  /// A cross-fade keeps both branches mounted at the same coordinates and hides
+  /// one from semantics; an offstage branch is laid out and equally invisible.
+  /// Their fields answer geometry questions exactly like the visible ones, so
+  /// a search by position alone happily writes into the branch nobody is
+  /// looking at — and then reads its own write back as confirmation.
+  static bool _hiddenFromSemantics(final RenderObject start) {
+    RenderObject? current = start;
+    while (current != null) {
+      if (current is RenderExcludeSemantics && current.excluding) return true;
+      if (current is RenderOffstage && current.offstage) return true;
+      current = current.parent;
+    }
+    return false;
+  }
+
+  /// The [EditableTextState] that belongs to [node].
+  ///
+  /// A candidate that owns the target's own semantics node is the answer.
+  /// Failing that, containment either way — the field sits inside the ref's
+  /// bounds, or the ref's centre sits inside the field — makes the match the
+  /// caller's target. A plain overlap test would also claim a field the ref
+  /// merely touches at the edge, and writing into a neighbour is
+  /// indistinguishable from writing nowhere.
+  static EditableTextState? _findEditableForNode(
+    final SemanticsNode node,
+    final ui.Rect rect,
+  ) {
     final centre = rect.center;
-    final editables = <EditableTextState>[];
+    EditableTextState? semanticMatch;
     EditableTextState? spatialMatch;
 
     void visit(final Element element) {
+      if (semanticMatch != null) return;
       final state = element is StatefulElement ? element.state : null;
       if (state is EditableTextState) {
-        editables.add(state);
-        if (spatialMatch == null) {
-          final renderObject = element.renderObject;
-          if (renderObject is RenderBox && renderObject.hasSize) {
+        final renderObject = element.renderObject;
+        if (renderObject is RenderBox &&
+            renderObject.hasSize &&
+            !_hiddenFromSemantics(renderObject)) {
+          if (renderObject.debugSemantics?.id == node.id) {
+            semanticMatch = state;
+            return;
+          }
+          if (spatialMatch == null) {
             final origin = renderObject.localToGlobal(ui.Offset.zero);
             final bounds = origin & renderObject.size;
-            if (bounds.contains(centre) || bounds.overlaps(rect)) {
+            if (bounds.contains(centre) || rect.contains(bounds.center)) {
               spatialMatch = state;
             }
           }
@@ -584,9 +787,7 @@ mixin GestureInteractionService {
     final root = WidgetsBinding.instance.rootElement;
     if (root != null) visit(root);
 
-    if (spatialMatch != null) return spatialMatch;
-    if (editables.length == 1) return editables.first;
-    return null;
+    return semanticMatch ?? spatialMatch;
   }
 
   /// Walk the semantics tree depth-first and return the first node that
@@ -612,24 +813,43 @@ mixin GestureInteractionService {
     return result;
   }
 
-  static SemanticsNode? _findAnyScrollable() {
+  /// The innermost scrollable whose bounds contain [point].
+  ///
+  /// The pointer-scroll fallback proves it moved something by reading a scroll
+  /// position before and after. Reading it off the first scrollable in the tree
+  /// would measure a list nowhere near the pointer — in a shell with a scrolling
+  /// header that is always the header — and report movement, or the lack of it,
+  /// for the wrong widget. Descending keeps the innermost match, which is the
+  /// one a wheel event at [point] actually drives.
+  static SemanticsNode? _findScrollableAt(final ui.Offset point) {
     final root = SemanticSnapshotService.semanticsOwner?.rootSemanticsNode;
     if (root == null) return null;
     SemanticsNode? result;
+    var smallest = double.infinity;
+    // The whole tree is walked rather than descended into: a node's rect does
+    // not have to cover its children, so pruning on the parent would hide the
+    // scrollable that actually sits under the point.
     void visit(final SemanticsNode node) {
-      if (result != null) return;
       final data = node.getSemanticsData();
       if (data.hasAction(SemanticsAction.scrollUp) ||
           data.hasAction(SemanticsAction.scrollDown) ||
           data.hasAction(SemanticsAction.scrollLeft) ||
           data.hasAction(SemanticsAction.scrollRight) ||
           data.hasAction(SemanticsAction.scrollToOffset)) {
-        result = node;
-        return;
+        final rect = SemanticSnapshotService.liveRect(node);
+        if (rect != null && rect.contains(point)) {
+          // Nested scrollables all contain the point; the tightest one is what
+          // a wheel event there drives.
+          final area = rect.width * rect.height;
+          if (area <= smallest) {
+            smallest = area;
+            result = node;
+          }
+        }
       }
       node.visitChildren((final child) {
         visit(child);
-        return result == null;
+        return true;
       });
     }
 
@@ -647,7 +867,14 @@ mixin GestureInteractionService {
   }) async {
     ui.Offset start;
     if (ref != null) {
-      final center = SemanticSnapshotService.resolveCenter(ref);
+      final node = SemanticSnapshotService.resolveRef(ref);
+      if (node == null) {
+        return _refNotFound(ref);
+      }
+      if (!node.attached) {
+        return _staleRef(ref, 'swipe_$direction');
+      }
+      final center = _liveCenter(ref);
       if (center == null) {
         return _refNotFound(ref);
       }
@@ -708,15 +935,46 @@ mixin GestureInteractionService {
       };
     }
     final end = start + _directionDelta(direction, distance);
+    // A fling carries past the finger, so `distance` describes the gesture and
+    // not the travel. Where something scrollable sits under the start point,
+    // its own offset before and after is the only honest measure of what the
+    // swipe did.
+    final scrollable = _findScrollableAt(start);
+    final before = _scrollPosition(scrollable);
     await _dispatchSwipe(start, end);
+    final settle = await _settledScrollPosition(scrollable, before);
+    final after = settle.position;
+    if (before != null && after != null && before == after) {
+      return <String, Object?>{
+        'success': false,
+        'ref': ?ref,
+        'via': 'pointer_events',
+        'action': 'swipe_$direction',
+        'direction': direction,
+        'distance': distance,
+        'from': _offsetToMap(start),
+        'to': _offsetToMap(end),
+        'scrollBefore': before,
+        'scrollAfter': after,
+        'error': 'no_scroll_movement',
+        'hint':
+            'The swipe was dispatched, but the scrollable under the start '
+            'point did not move. It may already be at that edge; check '
+            'scrollBefore against the list extents, or swipe the other way.',
+      };
+    }
     return <String, Object?>{
       'success': true,
+      'ref': ?ref,
       'via': 'pointer_events',
       'action': 'swipe',
       'direction': direction,
       'distance': distance,
       'from': _offsetToMap(start),
       'to': _offsetToMap(end),
+      'scrollBefore': ?before,
+      'scrollAfter': ?after,
+      if (!settle.settled) 'settled': false,
     };
   }
 
@@ -732,11 +990,20 @@ mixin GestureInteractionService {
     required final String toRef,
     final PointerDeviceKind? kind,
   }) async {
-    final from = SemanticSnapshotService.resolveCenter(fromRef);
+    for (final ref in <String>[fromRef, toRef]) {
+      final node = SemanticSnapshotService.resolveRef(ref);
+      if (node == null) {
+        return _refNotFound(ref);
+      }
+      if (!node.attached) {
+        return _staleRef(ref, 'drag');
+      }
+    }
+    final from = _liveCenter(fromRef);
     if (from == null) {
       return _refNotFound(fromRef);
     }
-    final to = SemanticSnapshotService.resolveCenter(toRef);
+    final to = _liveCenter(toRef);
     if (to == null) {
       return _refNotFound(toRef);
     }
@@ -800,7 +1067,10 @@ mixin GestureInteractionService {
     if (node == null) {
       return _refNotFound(ref);
     }
-    final centre = SemanticSnapshotService.resolveCenter(ref);
+    if (!node.attached) {
+      return _staleRef(ref, 'hover');
+    }
+    final centre = _liveCenter(ref);
     if (centre == null) {
       return _refNotFound(ref);
     }
@@ -1069,6 +1339,36 @@ mixin GestureInteractionService {
     return _finiteOrNull(node.getSemanticsData().scrollPosition);
   }
 
+  /// [node]'s scroll position once the tree has had a chance to publish it.
+  ///
+  /// A scroll applied to the render object reaches semantics only on the next
+  /// flush, so reading straight after the dispatch can still see [before].
+  /// Calling that "nothing moved" is worse than a slow answer: the caller then
+  /// retries through another tier and the content scrolls twice.
+  static Future<({double? position, bool settled})> _settledScrollPosition(
+    final SemanticsNode? node,
+    final double? before,
+  ) async {
+    var after = _scrollPosition(node);
+    for (var attempt = 0; attempt < 3 && after == before; attempt++) {
+      await _waitFrame();
+      after = _scrollPosition(node);
+    }
+    if (after == before) return (position: after, settled: true);
+    // The move showed up; now let it come to rest. A fling passes through
+    // mid-flight offsets and springs back past the edge on the way, so a
+    // reading taken mid-flight both reports a place the list never stopped at
+    // and, at the edge, differs from `before` enough to pass for movement.
+    var previous = after;
+    for (var attempt = 0; attempt < 25; attempt++) {
+      await _waitFrame();
+      final current = _scrollPosition(node);
+      if (current == previous) return (position: current, settled: true);
+      previous = current;
+    }
+    return (position: previous, settled: false);
+  }
+
   static double _targetScrollOffset({
     required final String direction,
     required final double distance,
@@ -1135,10 +1435,134 @@ mixin GestureInteractionService {
       <String, Object?>{
         'success': false,
         'ref': ref,
-        'error':
-            'Ref "$ref" not found. '
-            'Call semantic_snapshot first to populate refs.',
+        'error': 'ref_not_found',
+        'hint':
+            'Ref "$ref" is not in the current snapshot. Call '
+            'semantic_snapshot (or reveal_search for an off-screen target) '
+            'and use a ref from its result.',
       };
+
+  /// Structured refusal for a ref whose node has left the semantics tree.
+  ///
+  /// Without it the node answers no actions, so every gesture silently falls
+  /// through to Tier 2 and fires at coordinates that now belong to whatever
+  /// took the node's place.
+  static Map<String, Object?> _staleRef(
+    final String ref,
+    final String action,
+  ) => <String, Object?>{
+    'success': false,
+    'ref': ref,
+    'action': action,
+    'error': 'stale_ref',
+    'hint':
+        'The node behind "$ref" left the semantics tree (a route closed, a row '
+        'collapsed, a list rebuilt). Call semantic_snapshot again and use the '
+        'fresh ref.',
+  };
+
+  /// Structured refusal for a node that is in the tree but has no box.
+  ///
+  /// A node with no geometry gives the pointer tier nowhere to aim, and the
+  /// fallback would otherwise fire at the screen centre — a gesture on a
+  /// widget the caller never named.
+  static Map<String, Object?> _noBoundsForRef(
+    final String ref,
+    final String action,
+  ) => <String, Object?>{
+    'success': false,
+    'ref': ref,
+    'action': action,
+    'error': 'no_bounds_for_ref',
+    'hint':
+        'The node behind "$ref" reports no rectangle, so there is no point to '
+        'aim at. A merged or zero-sized node does this; call '
+        'semantic_snapshot and take the ref of the node that carries the '
+        'bounds — usually the parent that owns the label.',
+  };
+
+  /// The tightest semantics node covering [point], if it is not [node] itself.
+  ///
+  /// A pointer gesture aims at the centre of the target's box, and in a
+  /// composite row that centre often belongs to a child — the long-press lands
+  /// on the date chip inside the card rather than on the card. The answer has
+  /// to name that, or the caller reads the wrong widget's reaction as its own.
+  static String? _occupantAtPoint(
+    final SemanticsNode node,
+    final ui.Offset point,
+  ) {
+    final root = SemanticSnapshotService.semanticsOwner?.rootSemanticsNode;
+    if (root == null) return null;
+    SemanticsNode? tightest;
+    var smallest = double.infinity;
+    void visit(final SemanticsNode current) {
+      final rect = SemanticSnapshotService.liveRect(current);
+      if (rect != null && rect.contains(point)) {
+        final area = rect.width * rect.height;
+        if (area <= smallest) {
+          smallest = area;
+          tightest = current;
+        }
+      }
+      current.visitChildren((final child) {
+        visit(child);
+        return true;
+      });
+    }
+
+    visit(root);
+    final occupant = tightest;
+    if (occupant == null || occupant.id == node.id) return null;
+    final data = occupant.getSemanticsData();
+    final name = data.identifier.isNotEmpty
+        ? data.identifier
+        : (data.label.isNotEmpty ? data.label : 'node ${occupant.id}');
+    return name;
+  }
+
+  /// Structured refusal for a node that says it cannot be operated.
+  ///
+  /// A disabled control ignores every tier: the semantic action is not
+  /// registered and the pointer event hits a widget with no live callback.
+  /// Both look exactly like a delivered gesture from the outside.
+  static Map<String, Object?>? _disabledRef(
+    final SemanticsNode node,
+    final String ref,
+    final String action,
+  ) {
+    // `isEnabled` is a tristate: `none` means the widget never declared an
+    // enabled state at all, which is not the same as being disabled.
+    if (node.getSemanticsData().flagsCollection.isEnabled !=
+        ui.Tristate.isFalse) {
+      return null;
+    }
+    return <String, Object?>{
+      'success': false,
+      'ref': ref,
+      'action': action,
+      'error': 'target_disabled',
+      'hint':
+          'The node behind "$ref" reports enabled: false, so nothing would '
+          'act on the gesture — a control disabled by validation, or one that '
+          'is read-only by design. Its own screen decides which.',
+    };
+  }
+
+  /// Current global centre of [ref], falling back to the snapshot capture when
+  /// the node cannot report live geometry.
+  static ui.Offset? _liveCenter(final String ref) =>
+      SemanticSnapshotService.liveCenter(
+        SemanticSnapshotService.resolveRef(ref),
+      ) ??
+      SemanticSnapshotService.resolveCenter(ref);
+
+  /// Current global bounds of [ref], falling back to the snapshot capture when
+  /// the node cannot report live geometry.
+  static ui.Rect? _liveBounds(final String ref) =>
+      SemanticSnapshotService.liveRect(
+        SemanticSnapshotService.resolveRef(ref),
+      ) ??
+      SemanticSnapshotService.resolveBounds(ref);
 
   /// Produce a strictly monotonically increasing [Duration] since app start.
   ///

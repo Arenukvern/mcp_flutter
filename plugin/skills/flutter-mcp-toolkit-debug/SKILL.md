@@ -313,12 +313,12 @@ Every failure returns `{code, message, details, descriptor, recovery}`. Always r
 
 ### `interactionFailed` (`interaction_failed`)
 
-**Means:** a tap/scroll/swipe/drag/long_press/enter_text call failed.
-**Causes:** stale `ref`; widget not visible or not interactive; toolkit bridge not initialized.
+**Means:** a tap/scroll/swipe/drag/long_press/enter_text/reveal_search call was refused.
+**Causes:** stale `ref`; widget not visible, not interactive, or disabled; target never found; toolkit bridge not initialized.
 **Recovery:**
 
-1. `semantic_snapshot()` — get fresh refs.
-2. Retry with the new ref.
+1. Read `error.details.hint` — a refusal names its own cause and next step, and that hint is what `error.recovery.summary` carries.
+2. Otherwise `semantic_snapshot()` for fresh refs, then retry.
 
 ### `semanticSnapshotFailed` (`semantic_snapshot_failed`)
 

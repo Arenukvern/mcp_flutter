@@ -955,7 +955,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
           if (command.snapshotId != null) 'snapshotId': command.snapshotId,
         },
       );
-      return CoreResult.success(data: _map(result.json));
+      return routeInteractionResponse('tap_widget', _map(result.json));
     } on Exception catch (e) {
       return CoreResult.failure(
         code: CoreErrorCode.interactionFailed,
@@ -977,7 +977,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
           if (command.snapshotId != null) 'snapshotId': command.snapshotId,
         },
       );
-      return CoreResult.success(data: _map(result.json));
+      return routeInteractionResponse('enter_text', _map(result.json));
     } on Exception catch (e) {
       return CoreResult.failure(
         code: CoreErrorCode.interactionFailed,
@@ -1001,7 +1001,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
           'distance': command.distance,
         },
       );
-      return CoreResult.success(data: _map(result.json));
+      return routeInteractionResponse('reveal_search', _map(result.json));
     } on Exception catch (e) {
       return CoreResult.failure(
         code: CoreErrorCode.interactionFailed,
@@ -1024,7 +1024,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
           if (command.snapshotId != null) 'snapshotId': command.snapshotId,
         },
       );
-      return CoreResult.success(data: _map(result.json));
+      return routeInteractionResponse('scroll', _map(result.json));
     } on Exception catch (e) {
       return CoreResult.failure(
         code: CoreErrorCode.interactionFailed,
@@ -1045,7 +1045,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
           if (command.snapshotId != null) 'snapshotId': command.snapshotId,
         },
       );
-      return CoreResult.success(data: _map(result.json));
+      return routeInteractionResponse('long_press', _map(result.json));
     } on Exception catch (e) {
       return CoreResult.failure(
         code: CoreErrorCode.interactionFailed,
@@ -1068,7 +1068,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
           if (command.snapshotId != null) 'snapshotId': command.snapshotId,
         },
       );
-      return CoreResult.success(data: _map(result.json));
+      return routeInteractionResponse('swipe', _map(result.json));
     } on Exception catch (e) {
       return CoreResult.failure(
         code: CoreErrorCode.interactionFailed,
@@ -1091,7 +1091,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
           if (command.kind case final kind?) 'kind': kind.wireName,
         },
       );
-      return CoreResult.success(data: _map(result.json));
+      return routeInteractionResponse('drag', _map(result.json));
     } on Exception catch (e) {
       return CoreResult.failure(
         code: CoreErrorCode.interactionFailed,
@@ -1438,14 +1438,16 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
           snapshotId: i == 0 ? command.snapshotId : null,
         ),
       );
-      final fieldData = _map(result.data);
+      // A refused field carries its payload in the error details, a written
+      // one in the data — the batch report must show what each field ended up
+      // holding either way, or a partial write reads as "nothing happened".
+      final fieldData = _map(result.data ?? result.error?.details);
       results.add(fieldData);
-      // `_enterText` always returns CoreResult.success regardless of
-      // toolkit-side failure — so a transport error (`!result.ok`) AND a
-      // toolkit-side failure (`fieldData['success'] == false` /
-      // `fieldData['ok'] == false`) both count as "stop the batch."
-      // Toolkit emits `success: false` for missing args and `ok: false`
-      // for stale_snapshot — accept either shape.
+      // A transport error (`!result.ok`) and a refusal inside the payload
+      // (`fieldData['success'] == false` for a rejected write, `['ok'] == false`
+      // for a stale snapshot) both count as "stop the batch" — accept either
+      // shape, since a field that did not take its text makes every later
+      // field's ref suspect too.
       final toolkitOk =
           !(fieldData['success'] == false || fieldData['ok'] == false);
       if (!result.ok || !toolkitOk) {
@@ -1910,6 +1912,26 @@ final class _DesktopCaptureResolution {
   final Map<String, Object?>? data;
   final String? errorMessage;
   final Map<String, Object?> errorDetails;
+}
+
+/// Route an interaction payload to a result that matches its own verdict.
+///
+/// The toolkit answers a refused gesture with `success: false` and a stale
+/// snapshot with `ok: false`. Wrapping either in [CoreResult.success] leaves
+/// the caller with an envelope that reads as "the call worked" around a
+/// refusal — the payload keeps the truth, but only for whoever reads it.
+/// Public so the routing can be exercised in tests without a live VM.
+CoreResult routeInteractionResponse(
+  final String tool,
+  final Map<String, Object?> data,
+) {
+  if (data['success'] == true) return CoreResult.success(data: data);
+  final reason = data['error'] ?? data['message'] ?? 'no success in payload';
+  return CoreResult.failure(
+    code: CoreErrorCode.interactionFailed,
+    message: '$tool failed: $reason',
+    details: data,
+  );
 }
 
 /// Route the toolkit's `wait_for` extension response to a [CoreResult].

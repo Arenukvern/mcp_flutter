@@ -43,6 +43,31 @@ mixin SemanticSnapshotService {
   /// Look up the cached global center for a ref from the last snapshot.
   static ui.Offset? resolveCenter(final String ref) => _lastCenterMap[ref];
 
+  /// Global bounds of [node] as they are **now**, in logical pixels.
+  ///
+  /// Returns `null` for a detached node — one a rebuild took out of the tree
+  /// (a popped route, a collapsed row). Its captured geometry now describes
+  /// whatever took its place, so interaction must refuse the ref rather than
+  /// act on those coordinates.
+  static ui.Rect? liveRect(final SemanticsNode? node) =>
+      node == null || !node.attached ? null : _globalRect(node);
+
+  /// Global center of [node] as it is **now**, in logical pixels.
+  static ui.Offset? liveCenter(final SemanticsNode? node) =>
+      liveRect(node)?.center;
+
+  /// Visibility metadata for a ref computed from the node's current geometry,
+  /// falling back to the snapshot capture when the node is gone.
+  static Map<String, Object?> liveVisibilityForRef(final String ref) {
+    final rect = liveRect(_lastRefMap[ref]);
+    if (rect == null) return visibilityForRef(ref);
+    return visibilityForBounds(
+      bounds: rect,
+      center: rect.center,
+      viewport: viewportRect,
+    );
+  }
+
   /// Current logical viewport for pointer-driven interactions.
   static ui.Rect? get viewportRect {
     final renderView = _activeRenderView;
@@ -369,7 +394,10 @@ mixin SemanticSnapshotService {
         'type': type,
         if (data.identifier.isNotEmpty) 'identifier': data.identifier,
         if (data.label.isNotEmpty) 'label': data.label,
-        if (data.value.isNotEmpty) 'value': data.value,
+        // A text field always reports its value, empty included: "the field is
+        // empty" and "this node has no value" are different answers, and a
+        // caller confirming that a field was cleared needs to tell them apart.
+        if (data.value.isNotEmpty || type == 'textField') 'value': data.value,
         if (data.hint.isNotEmpty) 'hint': data.hint,
         if (data.hasFlag(SemanticsFlag.hasEnabledState))
           'enabled': data.hasFlag(SemanticsFlag.isEnabled),

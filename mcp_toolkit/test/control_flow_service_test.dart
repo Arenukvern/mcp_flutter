@@ -55,6 +55,8 @@ void main() {
     expect(result['success'], isFalse);
     expect(result['error'], 'unknown_key');
     expect(result['key'], 'BogusKey');
+    expect(result['acceptedNames'], contains('Escape'));
+    expect(result['hint'], isNotEmpty);
   });
 
   test('press_key rejects empty key', () async {
@@ -102,7 +104,29 @@ void main() {
 
     expect(result['success'], isTrue);
     expect(result['ctrl'], isTrue);
+    expect(result['handled'], isTrue);
     expect(saveInvoked, 1);
+  });
+
+  testWidgets('press_key reports a keystroke nobody claimed', (
+    final tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Material(child: SizedBox(width: 100, height: 100)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final result = await ControlFlowService.pressKey(key: 'Escape');
+    await tester.pump();
+
+    expect(result['success'], isTrue);
+    expect(
+      result['handled'],
+      isFalse,
+      reason: 'dispatching a key is not the same as something acting on it',
+    );
   });
 
   // -----------------------------------------------------------------------
@@ -162,6 +186,7 @@ void main() {
       final result = await ControlFlowService.dismissDialog();
       expect(result['success'], isFalse);
       expect(result['error'], 'no_popup_route');
+      expect(result['hint'], contains('its own control'));
 
       MCPToolkitBinding.instance.navigatorKey = null;
     },
@@ -174,6 +199,7 @@ void main() {
       final result = await ControlFlowService.dismissDialog();
       expect(result['success'], isFalse);
       expect(result['error'], 'navigator_not_registered');
+      expect(result['hint'], contains('navigatorKey'));
     },
   );
 
@@ -204,6 +230,37 @@ void main() {
 
     expect(result['success'], isTrue);
     expect(find.text('settings page'), findsOneWidget);
+
+    MCPToolkitBinding.instance.navigatorKey = null;
+  });
+
+  testWidgets('navigate push reports a route the app never opened', (
+    final tester,
+  ) async {
+    final navKey = GlobalKey<NavigatorState>();
+    MCPToolkitBinding.instance.navigatorKey = navKey;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        navigatorKey: navKey,
+        routes: {'/': (final _) => const Scaffold(body: Text('home'))},
+        onUnknownRoute: (final settings) => MaterialPageRoute<void>(
+          settings: const RouteSettings(name: '/not-found'),
+          builder: (final _) => const Scaffold(body: Text('not found')),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final result = await ControlFlowService.navigate(
+      action: 'push',
+      route: '/nowhere',
+    );
+    await tester.pumpAndSettle();
+
+    expect(result['success'], isFalse);
+    expect(result['error'], 'route_not_pushed');
+    expect(result['topRouteName'], '/not-found');
 
     MCPToolkitBinding.instance.navigatorKey = null;
   });
@@ -244,6 +301,7 @@ void main() {
     );
     expect(result['success'], isFalse);
     expect(result['error'], 'navigator_not_registered');
+    expect(result['hint'], contains('navigatorKey'));
   });
 
   test('navigate rejects unknown action', () async {
@@ -252,6 +310,7 @@ void main() {
     final result = await ControlFlowService.navigate(action: 'teleport');
     expect(result['success'], isFalse);
     expect(result['error'], 'unknown_action');
+    expect(result['acceptedActions'], contains('popUntil'));
     MCPToolkitBinding.instance.navigatorKey = null;
   });
 
@@ -284,6 +343,7 @@ void main() {
     expect(result['error'], 'route_not_in_stack');
     expect(result['route'], '/does_not_exist');
     expect(result['currentRoutes'], isA<List<Object?>>());
+    expect(result['hint'], contains('currentRoutes'));
     // Both routes must still be on the stack — nothing was popped.
     expect(find.text('inner page'), findsOneWidget);
 
@@ -411,9 +471,8 @@ void main() {
       's_does_not_exist',
     );
     expect(result['success'], isFalse);
-    // _refNotFound returns a human-readable message containing 'not found'
-    // rather than a token like 'ref_not_found' — match the existing shape.
-    expect(result['error'], contains('not found'));
+    expect(result['error'], 'ref_not_found');
+    expect(result['hint'], contains('semantic_snapshot'));
   });
 }
 

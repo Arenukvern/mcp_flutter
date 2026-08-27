@@ -694,7 +694,7 @@ Find a semantic target that may be off-screen. `query` • string • required. 
 ```json
 {"name": "reveal_search", "arguments": {"query": "greeting_input_field", "matchBy": "identifier", "direction": "down", "maxAttempts": 4}}
 ```
-Returns: `{"ref": "s_14", "snapshotId": 2, "match": {...}, "attempts": [...]}` — Failures: `missing_query`, `target_not_found`, `scroll_blocked`
+Returns: `{"ref": "s_14", "snapshotId": 2, "match": {...}, "attempts": [...]}` — Failures: `missing_query`, `target_not_found`, `scroll_blocked`, `target_not_actionable`
 
 ### fill_form
 Batch text entry: fills multiple fields in one call. Stops on first failure. `snapshotId` validated on first field only. `fields` • array of `{ref, text}` • required. `snapshotId` • integer • optional. `connection` • object • optional.
@@ -1135,12 +1135,12 @@ Every failure returns `{code, message, details, descriptor, recovery}`. Always r
 
 ### `interactionFailed` (`interaction_failed`)
 
-**Means:** a tap/scroll/swipe/drag/long_press/enter_text call failed.
-**Causes:** stale `ref`; widget not visible or not interactive; toolkit bridge not initialized.
+**Means:** a tap/scroll/swipe/drag/long_press/enter_text/reveal_search call was refused.
+**Causes:** stale `ref`; widget not visible, not interactive, or disabled; target never found; toolkit bridge not initialized.
 **Recovery:**
 
-1. `semantic_snapshot()` — get fresh refs.
-2. Retry with the new ref.
+1. Read `error.details.hint` — a refusal names its own cause and next step, and that hint is what `error.recovery.summary` carries.
+2. Otherwise `semantic_snapshot()` for fresh refs, then retry.
 
 ### `semanticSnapshotFailed` (`semantic_snapshot_failed`)
 

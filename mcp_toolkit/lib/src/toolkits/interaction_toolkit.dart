@@ -13,6 +13,52 @@ import '../services/reveal_search_service.dart';
 import '../services/semantic_snapshot_service.dart';
 import '../services/wait_predicate_service.dart';
 
+/// The refusal every interaction returns when the `snapshotId` it was given
+/// predates the current snapshot.
+///
+/// The refs that snapshot handed out are keyed to it: by now the same strings
+/// address whatever took those nodes' place, so acting on them is worse than
+/// refusing.
+MCPCallResult _staleSnapshot(final int providedSnapshotId) => MCPCallResult(
+  message: 'Snapshot is stale. Call semantic_snapshot to get fresh refs.',
+  parameters: <String, Object?>{
+    'ok': false,
+    'error': 'stale_snapshot',
+    'providedSnapshotId': providedSnapshotId,
+    'currentSnapshotId': SemanticSnapshotService.currentSnapshotId,
+    'hint':
+        'Refs belong to the snapshot that produced them. Call '
+        'semantic_snapshot (or reveal_search) again and use the ref and '
+        'snapshotId from its result.',
+  },
+);
+
+/// The refusal an interaction returns when a required argument never arrived.
+///
+/// Naming the arguments separates a call the caller can retry from one they
+/// have to guess at — and the hint says where the value comes from, which for
+/// a ref is never something to invent.
+MCPCallResult _missingParameters({
+  required final String tool,
+  required final String error,
+  required final List<String> missing,
+  required final String hint,
+}) => MCPCallResult(
+  message: '$tool: missing required parameter(s) ${missing.join(', ')}.',
+  parameters: <String, Object?>{
+    'success': false,
+    'error': error,
+    'missing': missing,
+    'hint': hint,
+  },
+);
+
+/// The hint every ref-taking interaction gives when its `ref` is absent.
+const _refSourceHint =
+    'A ref is issued by semantic_snapshot (or reveal_search) and names one '
+    'node in that snapshot. Call one of them and pass the ref from its '
+    'result, together with its snapshotId.';
+
 /// Returns the set of MCP entries for the interaction toolkit:
 /// semantic snapshot, gestures, and log capture.
 Set<AgentCallEntry> getInteractionToolkitEntries() => {
@@ -82,25 +128,18 @@ extension type OnTapWidgetEntry._(AgentCallEntry entry)
       handler: (final parameters) async {
         final ref = parameters['ref'] ?? '';
         if (ref.isEmpty) {
-          return MCPCallResult(
-            message: 'Missing required parameter "ref".',
-            parameters: <String, dynamic>{'success': false},
+          return _missingParameters(
+            tool: 'tap_widget',
+            error: 'missing_parameters',
+            missing: const <String>['ref'],
+            hint: _refSourceHint,
           );
         }
         final snapshotIdRaw = jsonDecodeInt(parameters['snapshotId']);
         final snapshotId = snapshotIdRaw == 0 ? null : snapshotIdRaw;
         if (snapshotId != null &&
             snapshotId != SemanticSnapshotService.currentSnapshotId) {
-          return MCPCallResult(
-            message:
-                'Snapshot is stale. Call semantic_snapshot to get fresh refs.',
-            parameters: <String, dynamic>{
-              'ok': false,
-              'error': 'stale_snapshot',
-              'providedSnapshotId': snapshotId,
-              'currentSnapshotId': SemanticSnapshotService.currentSnapshotId,
-            },
-          );
+          return _staleSnapshot(snapshotId);
         }
         final result = await GestureInteractionService.tapAtRef(ref);
         return MCPCallResult(
@@ -137,27 +176,27 @@ extension type OnEnterTextEntry._(AgentCallEntry entry)
     final entry = mcpToolkitTool(
       handler: (final parameters) async {
         final ref = parameters['ref'] ?? '';
-        final text = parameters['text'] ?? '';
-        if (ref.isEmpty || text.isEmpty) {
-          return MCPCallResult(
-            message: 'Missing required parameter(s) "ref" and/or "text".',
-            parameters: <String, dynamic>{'success': false},
+        // An empty string is a value, not an omission: it is how a field is
+        // cleared. Only a missing key is a missing parameter.
+        final text = parameters['text'];
+        if (ref.isEmpty || text == null) {
+          return _missingParameters(
+            tool: 'enter_text',
+            error: 'missing_parameters',
+            missing: <String>[
+              if (ref.isEmpty) 'ref',
+              if (text == null) 'text',
+            ],
+            hint:
+                '$_refSourceHint Pass "text" explicitly — an empty string is '
+                'a value there, and clears the field.',
           );
         }
         final snapshotIdRaw = jsonDecodeInt(parameters['snapshotId']);
         final snapshotId = snapshotIdRaw == 0 ? null : snapshotIdRaw;
         if (snapshotId != null &&
             snapshotId != SemanticSnapshotService.currentSnapshotId) {
-          return MCPCallResult(
-            message:
-                'Snapshot is stale. Call semantic_snapshot to get fresh refs.',
-            parameters: <String, dynamic>{
-              'ok': false,
-              'error': 'stale_snapshot',
-              'providedSnapshotId': snapshotId,
-              'currentSnapshotId': SemanticSnapshotService.currentSnapshotId,
-            },
-          );
+          return _staleSnapshot(snapshotId);
         }
         final result = await GestureInteractionService.enterTextAtRef(
           ref,
@@ -200,12 +239,14 @@ extension type OnRevealSearchEntry._(AgentCallEntry entry)
       handler: (final parameters) async {
         final query = parameters['query'] ?? '';
         if (query.isEmpty) {
-          return MCPCallResult(
-            message: 'Missing required parameter "query".',
-            parameters: <String, dynamic>{
-              'success': false,
-              'error': 'missing_query',
-            },
+          return _missingParameters(
+            tool: 'reveal_search',
+            error: 'missing_query',
+            missing: const <String>['query'],
+            hint:
+                'reveal_search needs something to look for. Pass the text a '
+                'node shows, or its identifier together with '
+                'matchBy: "identifier".',
           );
         }
 
@@ -302,16 +343,7 @@ extension type OnScrollEntry._(AgentCallEntry entry) implements AgentCallEntry {
         final snapshotId = snapshotIdRaw == 0 ? null : snapshotIdRaw;
         if (snapshotId != null &&
             snapshotId != SemanticSnapshotService.currentSnapshotId) {
-          return MCPCallResult(
-            message:
-                'Snapshot is stale. Call semantic_snapshot to get fresh refs.',
-            parameters: <String, dynamic>{
-              'ok': false,
-              'error': 'stale_snapshot',
-              'providedSnapshotId': snapshotId,
-              'currentSnapshotId': SemanticSnapshotService.currentSnapshotId,
-            },
-          );
+          return _staleSnapshot(snapshotId);
         }
         final result = await GestureInteractionService.scroll(
           ref: ref,
@@ -359,25 +391,18 @@ extension type OnLongPressEntry._(AgentCallEntry entry)
       handler: (final parameters) async {
         final ref = parameters['ref'] ?? '';
         if (ref.isEmpty) {
-          return MCPCallResult(
-            message: 'Missing required parameter "ref".',
-            parameters: <String, dynamic>{'success': false},
+          return _missingParameters(
+            tool: 'long_press',
+            error: 'missing_parameters',
+            missing: const <String>['ref'],
+            hint: _refSourceHint,
           );
         }
         final snapshotIdRaw = jsonDecodeInt(parameters['snapshotId']);
         final snapshotId = snapshotIdRaw == 0 ? null : snapshotIdRaw;
         if (snapshotId != null &&
             snapshotId != SemanticSnapshotService.currentSnapshotId) {
-          return MCPCallResult(
-            message:
-                'Snapshot is stale. Call semantic_snapshot to get fresh refs.',
-            parameters: <String, dynamic>{
-              'ok': false,
-              'error': 'stale_snapshot',
-              'providedSnapshotId': snapshotId,
-              'currentSnapshotId': SemanticSnapshotService.currentSnapshotId,
-            },
-          );
+          return _staleSnapshot(snapshotId);
         }
         final result = await GestureInteractionService.longPressAtRef(ref);
         return MCPCallResult(
@@ -420,16 +445,7 @@ extension type OnSwipeEntry._(AgentCallEntry entry) implements AgentCallEntry {
         final snapshotId = snapshotIdRaw == 0 ? null : snapshotIdRaw;
         if (snapshotId != null &&
             snapshotId != SemanticSnapshotService.currentSnapshotId) {
-          return MCPCallResult(
-            message:
-                'Snapshot is stale. Call semantic_snapshot to get fresh refs.',
-            parameters: <String, dynamic>{
-              'ok': false,
-              'error': 'stale_snapshot',
-              'providedSnapshotId': snapshotId,
-              'currentSnapshotId': SemanticSnapshotService.currentSnapshotId,
-            },
-          );
+          return _staleSnapshot(snapshotId);
         }
         final result = await GestureInteractionService.swipe(
           direction: direction,
@@ -471,25 +487,23 @@ extension type OnDragEntry._(AgentCallEntry entry) implements AgentCallEntry {
         final fromRef = parameters['fromRef'] ?? '';
         final toRef = parameters['toRef'] ?? '';
         if (fromRef.isEmpty || toRef.isEmpty) {
-          return MCPCallResult(
-            message: 'Missing required parameter(s) "fromRef" and/or "toRef".',
-            parameters: <String, dynamic>{'success': false},
+          return _missingParameters(
+            tool: 'drag',
+            error: 'missing_parameters',
+            missing: <String>[
+              if (fromRef.isEmpty) 'fromRef',
+              if (toRef.isEmpty) 'toRef',
+            ],
+            hint:
+                '$_refSourceHint drag needs both ends, and both must come '
+                'from the same snapshot.',
           );
         }
         final snapshotIdRaw = jsonDecodeInt(parameters['snapshotId']);
         final snapshotId = snapshotIdRaw == 0 ? null : snapshotIdRaw;
         if (snapshotId != null &&
             snapshotId != SemanticSnapshotService.currentSnapshotId) {
-          return MCPCallResult(
-            message:
-                'Snapshot is stale. Call semantic_snapshot to get fresh refs.',
-            parameters: <String, dynamic>{
-              'ok': false,
-              'error': 'stale_snapshot',
-              'providedSnapshotId': snapshotId,
-              'currentSnapshotId': SemanticSnapshotService.currentSnapshotId,
-            },
-          );
+          return _staleSnapshot(snapshotId);
         }
         final kind = switch (parameters['kind']) {
           'mouse' => PointerDeviceKind.mouse,
@@ -592,9 +606,10 @@ extension type OnWaitForEntry._(AgentCallEntry entry)
             'Wait for a UI predicate (text/noText/node/time/stable/noError) '
             'and return a fresh semantic snapshot. text matches any string in '
             'the tree, including the label of a tab that is not open — wait '
-            'on state with node: {"kind":"node","identifier":"…",'
-            '"selected":true}, or add "absent":true to wait for it to go '
-            'away. Default timeout 5000ms, max 30000ms.',
+            'on state with node: '
+            '{"kind":"node","identifier":"…","selected":true}, or add '
+            '"absent":true to wait for it to go away. '
+            'Default timeout 5000ms, max 30000ms.',
         inputSchema: ObjectSchema.fromMap(waitForInputSchema()),
       ),
     );
@@ -672,6 +687,11 @@ extension type OnHandleDialogEntry._(AgentCallEntry entry)
               'success': false,
               'error': 'unsupported_action',
               'action': action,
+              'acceptedActions': const <String>['dismiss'],
+              'hint':
+                  'handle_dialog only dismisses the topmost popup, so its '
+                  'action is always "dismiss". To confirm a dialog, tap its '
+                  'own button; to leave a page, call navigate.',
             },
           );
         }
@@ -758,28 +778,18 @@ extension type OnHoverEntry._(AgentCallEntry entry) implements AgentCallEntry {
       handler: (final parameters) async {
         final ref = jsonDecodeString(parameters['ref']);
         if (ref.isEmpty) {
-          return MCPCallResult(
-            message: 'Missing required parameter "ref".',
-            parameters: const <String, Object?>{
-              'success': false,
-              'error': 'missing_ref',
-            },
+          return _missingParameters(
+            tool: 'hover',
+            error: 'missing_ref',
+            missing: const <String>['ref'],
+            hint: _refSourceHint,
           );
         }
         final snapshotIdRaw = jsonDecodeInt(parameters['snapshotId']);
         final snapshotId = snapshotIdRaw == 0 ? null : snapshotIdRaw;
         if (snapshotId != null &&
             snapshotId != SemanticSnapshotService.currentSnapshotId) {
-          return MCPCallResult(
-            message:
-                'Snapshot is stale. Call semantic_snapshot to get fresh refs.',
-            parameters: <String, Object?>{
-              'ok': false,
-              'error': 'stale_snapshot',
-              'providedSnapshotId': snapshotId,
-              'currentSnapshotId': SemanticSnapshotService.currentSnapshotId,
-            },
-          );
+          return _staleSnapshot(snapshotId);
         }
         final result = await GestureInteractionService.hoverAtRef(ref);
         return MCPCallResult(
