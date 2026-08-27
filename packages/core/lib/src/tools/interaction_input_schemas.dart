@@ -160,7 +160,9 @@ Map<String, Object?> scrollInputSchema() => <String, Object?>{
     },
     'ref': <String, Object?>{
       'type': 'string',
-      'description': 'Optional ref to scroll from.',
+      'description':
+          'Optional: the list to scroll, or any node inside it. Without it, '
+          'the list under the screen centre scrolls.',
     },
     'distance': <String, Object?>{
       'type': 'number',

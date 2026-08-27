@@ -183,10 +183,7 @@ extension type OnEnterTextEntry._(AgentCallEntry entry)
           return _missingParameters(
             tool: 'enter_text',
             error: 'missing_parameters',
-            missing: <String>[
-              if (ref.isEmpty) 'ref',
-              if (text == null) 'text',
-            ],
+            missing: <String>[if (ref.isEmpty) 'ref', if (text == null) 'text'],
             hint:
                 '$_refSourceHint Pass "text" explicitly — an empty string is '
                 'a value there, and clears the field.',
@@ -365,8 +362,9 @@ extension type OnScrollEntry._(AgentCallEntry entry) implements AgentCallEntry {
       definition: MCPToolDefinition(
         name: 'scroll',
         description:
-            'Scroll in a direction from a ref or the screen centre. '
-            'Simulates a drag gesture. '
+            'Scroll in a direction. Pass the ref of a list, or of any node '
+            'inside one, and that list moves; with no ref the list under the '
+            'screen centre moves. '
             'Call semantic_snapshot immediately before to get fresh refs. '
             'Pass snapshotId to detect staleness.',
         inputSchema: ObjectSchema.fromMap(scrollInputSchema()),

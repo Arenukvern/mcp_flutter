@@ -606,9 +606,9 @@ mixin GestureInteractionService {
         // the page the scrollable chose is all `distance` could ever have got.
         if ((travelled - distance).abs() > distance * 0.25)
           'hint':
-              'This scrollable takes no exact offset, so it moved by a '
-              'viewport page — ${travelled.round()} px rather than the '
-              '$distance requested. Read scrollAfter for where it stopped.',
+              'No exact offset landed, so the scrollable moved by a viewport '
+              'page — ${travelled.round()} px rather than the $distance '
+              'requested. Read scrollAfter for where it stopped.',
       };
     }
     final actionProgress = kIsWeb

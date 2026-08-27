@@ -360,9 +360,13 @@ mixin RevealSearchService {
     attempts: attempts,
   );
 
-  static bool _shouldContinueAfterScroll(final Map<String, Object?> scroll) {
-    if (scroll['deferredMovementCheck'] == true) return true;
-    if (scroll['movementVerified'] == true) return true;
-    return false;
-  }
+  /// Whether a scroll that reported failure still moved the screen enough to
+  /// be worth re-reading.
+  ///
+  /// Only the web tier answers this way: it cannot read a scroll offset, so it
+  /// compares the visible subtree before and after and says so in
+  /// `movementVerified`. Everywhere else a failed scroll means the screen is
+  /// unchanged, and another attempt would re-read it.
+  static bool _shouldContinueAfterScroll(final Map<String, Object?> scroll) =>
+      scroll['movementVerified'] == true;
 }

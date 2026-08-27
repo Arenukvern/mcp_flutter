@@ -234,14 +234,7 @@ void main() {
     }
   });
 
-  test('reveal_search only continues after verified or deferred scroll', () {
-    expect(
-      RevealSearchService.shouldContinueAfterScrollForTesting(<String, Object?>{
-        'success': false,
-        'deferredMovementCheck': true,
-      }),
-      isTrue,
-    );
+  test('reveal_search only continues after a verified scroll', () {
     expect(
       RevealSearchService.shouldContinueAfterScrollForTesting(<String, Object?>{
         'success': true,

@@ -135,7 +135,7 @@ Batch text entry: fills multiple fields in one call. Stops on first failure. `sn
 Returns: `{"filled": 2}` — Failures: `stale_snapshot`, `ref_not_found`
 
 ### scroll
-Scroll to reveal content. `"down"` reveals content below (finger swipes up). `direction` • string • required (`up|down|left|right`). `ref` • string • optional (falls back to screen center). `distance` • number • optional • default 300. `snapshotId` • integer • optional. `connection` • object • optional.
+Scroll to reveal content. `"down"` reveals content below (finger swipes up). `direction` • string • required (`up|down|left|right`). `ref` • string • optional — the list to scroll, or any node inside it; without it the list under the screen centre scrolls. `distance` • number • optional • default 300, honoured exactly where the list takes an offset, otherwise rounded to a viewport page. `snapshotId` • integer • optional. `connection` • object • optional.
 ```json
 {"name": "scroll", "arguments": {"direction": "down", "ref": "s_0", "distance": 500}}
 ```
