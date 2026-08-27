@@ -633,6 +633,44 @@ void main() {
     );
 
     test(
+      'capture_ui_snapshot onSuccess: the emptied bundle says where the '
+      'images went',
+      () async {
+        final runner = FakeCommandRunner()
+          ..nextExecuteResult = CoreResult.success(
+            data: {
+              'screenshots': {
+                'images': ['base64dataA'],
+                'fileUrls': <String>[],
+              },
+              'imageSummaries': [
+                {'id': 'image_1', 'source': 'inline_base64', 'hash': 'h1'},
+              ],
+            },
+          );
+        final ctx = _registeredCtx(runner: runner);
+        final reg = ctx.registrationFor('capture_ui_snapshot')!;
+        final result = await reg.handler(const <String, Object?>{});
+
+        final bundle =
+            jsonDecode(result.artifacts.first.text!) as Map<String, Object?>;
+        final screenshots = bundle['screenshots']! as Map<String, Object?>;
+        expect(screenshots['images'], isEmpty);
+        expect(screenshots['imagesDeliveredAs'], 'image_blocks');
+        expect(screenshots['imagesNote'], contains('image block'));
+
+        final summary =
+            (bundle['imageSummaries']! as List).single as Map<String, Object?>;
+        expect(
+          summary['source'],
+          'image_block',
+          reason: 'the summary must not point at a payload that has left',
+        );
+        expect(summary['hash'], 'h1');
+      },
+    );
+
+    test(
       'capture_ui_snapshot onSuccess: fileUrls bundle stays a single '
       'TextContent',
       () async {

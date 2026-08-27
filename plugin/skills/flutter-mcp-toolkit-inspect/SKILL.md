@@ -206,7 +206,7 @@ Capture screenshots, view details, and app errors in one bundled response.
 capture_ui_snapshot(errorsCount: 2, includeViewDetails: false)
 ```
 
-Returns: single `TextContent` JSON block with `screenshots`, `viewDetails`, and `errors` keys.
+Returns: a `TextContent` JSON block with `screenshots`, `viewDetails`, and `errors` keys. When `screenshots.images` contains inline base64, each payload is lifted into a sibling image block and the JSON reports `screenshots.imagesDeliveredAs: "image_blocks"`; the emptied `images` list is then the normal shape, not a failed capture. Captures delivered through `screenshots.fileUrls` stay in the JSON and produce no image blocks.
 
 - `vm_service_unavailable` — app not running.
 - `permission_denied` — retry with `permissionPolicy: "auto_request_once"`.

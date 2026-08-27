@@ -545,7 +545,7 @@ Capture screenshots, view details, and app errors in one bundled response.
 capture_ui_snapshot(errorsCount: 2, includeViewDetails: false)
 ```
 
-Returns: single `TextContent` JSON block with `screenshots`, `viewDetails`, and `errors` keys.
+Returns: a `TextContent` JSON block with `screenshots`, `viewDetails`, and `errors` keys, plus one image block per captured screenshot. The base64 payload is lifted out of `screenshots.images` into those blocks (`screenshots.imagesDeliveredAs: "image_blocks"`), so an empty `images` list next to a non-zero `summary.imageCount` is the normal shape, not a failed capture.
 
 - `vm_service_unavailable` — app not running.
 - `permission_denied` — retry with `permissionPolicy: "auto_request_once"`.
