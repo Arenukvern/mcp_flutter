@@ -38,7 +38,8 @@ void registerInteractionTools(final CapabilityContext context) {
       inputSchema: enterTextInputSchema(),
       handler: (final args) async {
         final ref = stringArgOrNull(args['ref']) ?? '';
-        final text = stringArgOrNull(args['text']) ?? '';
+        // Verbatim: the caller's spaces are the value they are typing.
+        final text = verbatimStringArgOrNull(args['text']) ?? '';
         final snapshotId = intArgOrNull(args['snapshotId']);
         return runCommand(
           runner,

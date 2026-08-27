@@ -297,6 +297,29 @@ void main() {
       },
     );
 
+    test('enter_text keeps the caller\'s spaces', () async {
+      final fakeRunner = FakeCommandRunner();
+      final ctx = _registeredCtx(runner: fakeRunner);
+      await ctx.registrationFor('enter_text')!.handler(
+        const <String, Object?>{'ref': 'tf_0', 'text': '  padded  '},
+      );
+      final cmd = fakeRunner.executedCommands.first as EnterTextCommand;
+      expect(cmd.text, equals('  padded  '));
+    });
+
+    test('enter_text does not turn whitespace into a cleared field', () async {
+      // Trimming made " " arrive as "", which the toolkit acts on by clearing
+      // the field — and the write-back check then confirmed the clear, because
+      // it compares against the trimmed string.
+      final fakeRunner = FakeCommandRunner();
+      final ctx = _registeredCtx(runner: fakeRunner);
+      await ctx.registrationFor('enter_text')!.handler(
+        const <String, Object?>{'ref': 'tf_0', 'text': ' '},
+      );
+      final cmd = fakeRunner.executedCommands.first as EnterTextCommand;
+      expect(cmd.text, equals(' '));
+    });
+
     test('enter_text handler short-circuits on override failure', () async {
       final fakeRunner = FakeCommandRunner()
         ..nextOverrideResult = CoreResult.failure(
