@@ -399,13 +399,21 @@ mixin GestureInteractionService {
       if (!node.attached) {
         return _staleRef(ref, 'scroll_$direction');
       }
-      if (node.getSemanticsData().hasAction(action)) {
+      // A ref that scrolls itself is the target; otherwise the caller means
+      // the list the ref sits in. A row carries no scroll action of its own,
+      // and its centre is usually off screen — which is the very reason the
+      // caller is scrolling — so neither tier can act on the row itself.
+      final scrollTarget = node.getSemanticsData().hasAction(action)
+          ? node
+          : _scrollableAncestorOf(node, action);
+      if (scrollTarget != null) {
         final result = await _performSemanticScroll(
-          node: node,
+          node: scrollTarget,
           action: action,
           direction: direction,
           distance: distance,
           ref: ref,
+          targetNodeId: scrollTarget.id == node.id ? null : scrollTarget.id,
         );
         if (_scrollMoved(result)) {
           return result;
@@ -415,19 +423,22 @@ mixin GestureInteractionService {
     }
 
     // No ref — scroll what sits in the middle of the screen, which is what
-    // "scroll the page" means to the caller. Only when nothing there can take
-    // the action does the search widen to the whole tree, where the first
-    // match is as likely to be a header strip as the content.
+    // "scroll the page" means to the caller. When that scrollable cannot take
+    // the action it is already at that edge, and the pointer tier below
+    // reports about it. Widening to the whole tree only makes sense when
+    // nothing scrollable is under the pointer at all: its first match is as
+    // likely to be a header strip as the content, and a boundary report about
+    // that strip describes a widget the caller never meant.
     if (ref == null && action != null) {
       final owner = SemanticSnapshotService.semanticsOwner;
       final root = owner?.rootSemanticsNode;
       if (owner != null && root != null) {
         final underPointer = _findScrollableAt(_screenCenter());
-        final target =
-            (underPointer != null &&
-                underPointer.getSemanticsData().hasAction(action))
-            ? underPointer
-            : _findScrollableFor(root, action);
+        final target = underPointer == null
+            ? _findScrollableFor(root, action)
+            : (underPointer.getSemanticsData().hasAction(action)
+                  ? underPointer
+                  : null);
         if (target != null) {
           final result = await _performSemanticScroll(
             node: target,
@@ -493,7 +504,7 @@ mixin GestureInteractionService {
             'scrollDown / scrollLeft / scrollRight in its "actions".',
       };
     }
-    final before = _scrollPosition(scrollable);
+    final before = await _restingScrollPosition(scrollable);
     await _dispatchScrollSignal(origin, scrollDelta);
     final settle = await _settledScrollPosition(scrollable, before);
     final after = settle.position;
@@ -554,15 +565,32 @@ mixin GestureInteractionService {
       };
     }
 
-    final before = _scrollPosition(node);
+    final before = await _restingScrollPosition(node);
     final beforeSignature = kIsWeb
         ? SemanticSnapshotService.visibleSubtreeSignature(node)
         : null;
+
+    // An exact offset beats a page whenever the scrollable offers one: the
+    // page action moves by whatever the viewport calls a page and ignores
+    // `distance` entirely, so asking for 400 px and travelling 642 is the
+    // normal outcome rather than an edge case.
+    final exact = await _scrollToOffsetAttempt(
+      owner: owner,
+      node: node,
+      direction: direction,
+      distance: distance,
+      before: before,
+      beforeSignature: beforeSignature,
+      ref: ref,
+      targetNodeId: targetNodeId,
+    );
+    if (exact != null) return exact;
+
     owner.performAction(node.id, action);
     _releaseSyntheticDevice();
     await _waitSemanticScrollFrame();
-    var settle = await _settledScrollPosition(node, before);
-    var after = settle.position;
+    final settle = await _settledScrollPosition(node, before);
+    final after = settle.position;
     if (before != null && after != null && before != after) {
       final travelled = (after - before).abs();
       return <String, Object?>{
@@ -574,14 +602,13 @@ mixin GestureInteractionService {
         'scrollBefore': before,
         'scrollAfter': after,
         if (!settle.settled) 'settled': false,
-        // The semantic scroll action moves by whatever the scrollable calls a
-        // page; `distance` reaches only the scrollToOffset and wheel tiers.
+        // Reached only where an exact offset was unavailable or refused, so
+        // the page the scrollable chose is all `distance` could ever have got.
         if ((travelled - distance).abs() > distance * 0.25)
           'hint':
-              'This tier scrolls by a viewport page, so it travelled '
-              '${travelled.round()} px rather than the $distance requested. '
-              'Pass a ref whose actions include scrollToOffset for an exact '
-              'offset.',
+              'This scrollable takes no exact offset, so it moved by a '
+              'viewport page — ${travelled.round()} px rather than the '
+              '$distance requested. Read scrollAfter for where it stopped.',
       };
     }
     final actionProgress = kIsWeb
@@ -605,60 +632,17 @@ mixin GestureInteractionService {
       };
     }
 
-    if (node.getSemanticsData().hasAction(SemanticsAction.scrollToOffset)) {
-      final target = _targetScrollOffset(
-        direction: direction,
-        distance: distance,
-        data: node.getSemanticsData(),
-      );
-      final Float64List scrollToOffsetArgs;
-      if (_isHorizontal(direction)) {
-        scrollToOffsetArgs = Float64List.fromList(<double>[target, 0]);
-      } else {
-        scrollToOffsetArgs = Float64List.fromList(<double>[0, target]);
-      }
-      owner.performAction(
-        node.id,
-        SemanticsAction.scrollToOffset,
-        scrollToOffsetArgs,
-      );
-      await _waitSemanticScrollFrame();
-      settle = await _settledScrollPosition(node, before);
-      after = settle.position;
-      if (before != null && after != null && before != after) {
-        return <String, Object?>{
-          'success': true,
-          'ref': ?ref,
-          'targetNodeId': ?targetNodeId,
-          'via': 'semantic_scroll_to_offset',
-          'action': 'scroll_$direction',
-          'distance': distance,
-          'scrollBefore': before,
-          'scrollAfter': after,
-        };
-      }
-      final offsetProgress = kIsWeb
-          ? _webScrollSubtreeProgress(
-              beforeSignature: beforeSignature,
-              node: node,
-            )
-          : null;
-      if (offsetProgress != null) {
-        return <String, Object?>{
-          'success': true,
-          'ref': ?ref,
-          'targetNodeId': ?targetNodeId,
-          'via': 'semantic_scroll_to_offset_web',
-          'action': 'scroll_$direction',
-          'platform': 'web',
-          'distance': distance,
-          'scrollBefore': ?before,
-          'scrollAfter': ?after,
-          'scrollToOffset': target,
-          ...offsetProgress,
-        };
-      }
-    }
+    final offsetResult = await _scrollToOffsetAttempt(
+      owner: owner,
+      node: node,
+      direction: direction,
+      distance: distance,
+      before: before,
+      beforeSignature: beforeSignature,
+      ref: ref,
+      targetNodeId: targetNodeId,
+    );
+    if (offsetResult != null) return offsetResult;
 
     final extentMin = _finiteOrNull(node.getSemanticsData().scrollExtentMin);
     final extentMax = _finiteOrNull(node.getSemanticsData().scrollExtentMax);
@@ -696,6 +680,101 @@ mixin GestureInteractionService {
                 'call semantic_snapshot and pass the ref of the node whose '
                 'scrollExtentMax exceeds its own height.',
     };
+  }
+
+  /// Ask [node] to land on an exact offset [distance] away, if it can.
+  ///
+  /// Returns the success payload, or `null` when the node takes no offset
+  /// action or the offset moved nothing — the caller then falls back to the
+  /// page action.
+  static Future<Map<String, Object?>?> _scrollToOffsetAttempt({
+    required final SemanticsOwner owner,
+    required final SemanticsNode node,
+    required final String direction,
+    required final double distance,
+    required final double? before,
+    required final Map<String, Object?>? beforeSignature,
+    required final String? ref,
+    required final int? targetNodeId,
+  }) async {
+    if (!node.getSemanticsData().hasAction(SemanticsAction.scrollToOffset)) {
+      return null;
+    }
+    final target = _targetScrollOffset(
+      direction: direction,
+      distance: distance,
+      data: node.getSemanticsData(),
+    );
+    final scrollToOffsetArgs = _isHorizontal(direction)
+        ? Float64List.fromList(<double>[target, 0])
+        : Float64List.fromList(<double>[0, target]);
+    owner.performAction(
+      node.id,
+      SemanticsAction.scrollToOffset,
+      scrollToOffsetArgs,
+    );
+    // This tier can now answer before the page action runs, so releasing the
+    // synthetic pointer is its job too: a device left connected parks a
+    // synthetic hover in the real mouse's slot.
+    _releaseSyntheticDevice();
+    await _waitSemanticScrollFrame();
+    final settle = await _settledScrollPosition(node, before);
+    final after = settle.position;
+    if (before != null && after != null && before != after) {
+      return <String, Object?>{
+        'success': true,
+        'ref': ?ref,
+        'targetNodeId': ?targetNodeId,
+        'via': 'semantic_scroll_to_offset',
+        'action': 'scroll_$direction',
+        'distance': distance,
+        'scrollBefore': before,
+        'scrollAfter': after,
+        if (!settle.settled) 'settled': false,
+      };
+    }
+    final offsetProgress = kIsWeb
+        ? _webScrollSubtreeProgress(
+            beforeSignature: beforeSignature,
+            node: node,
+          )
+        : null;
+    if (offsetProgress != null) {
+      return <String, Object?>{
+        'success': true,
+        'ref': ?ref,
+        'targetNodeId': ?targetNodeId,
+        'via': 'semantic_scroll_to_offset_web',
+        'action': 'scroll_$direction',
+        'platform': 'web',
+        'distance': distance,
+        'scrollBefore': ?before,
+        'scrollAfter': ?after,
+        'scrollToOffset': target,
+        ...offsetProgress,
+      };
+    }
+    return null;
+  }
+
+  /// [node]'s scroll position once it stops changing.
+  ///
+  /// A list relaxing out of an overscroll reports a different offset every
+  /// frame. Taking the "before" reading off that motion makes the next
+  /// comparison measure the settling instead of the scroll, and the springback
+  /// to the edge then counts as movement — a scroll that did nothing reported
+  /// as one that did.
+  static Future<double?> _restingScrollPosition(
+    final SemanticsNode? node,
+  ) async {
+    var previous = _scrollPosition(node);
+    for (var attempt = 0; attempt < 25; attempt++) {
+      await _waitFrame();
+      final current = _scrollPosition(node);
+      if (current == previous) return current;
+      previous = current;
+    }
+    return previous;
   }
 
   static bool _scrollMoved(final Map<String, Object?> result) =>
@@ -790,6 +869,40 @@ mixin GestureInteractionService {
     return semanticMatch ?? spatialMatch;
   }
 
+  /// The nearest ancestor of [node] that advertises [action].
+  ///
+  /// Climbing beats searching by position here: the row whose ref was passed
+  /// is off screen more often than not, so its coordinates point outside every
+  /// scrollable on screen. Its parent chain says which list owns it no matter
+  /// where it currently sits.
+  static SemanticsNode? _scrollableAncestorOf(
+    final SemanticsNode node,
+    final SemanticsAction action,
+  ) {
+    SemanticsNode? anyScrollable;
+    var current = node.parent;
+    while (current != null) {
+      final data = current.getSemanticsData();
+      if (data.hasAction(action)) return current;
+      anyScrollable ??= _isScrollable(data) ? current : null;
+      current = current.parent;
+    }
+    // No ancestor can move that way — a list already at the edge the caller is
+    // asking for drops the direction from its actions. The nearest scrollable
+    // is still the answer: it reports which edge it is sitting at, whereas
+    // falling through to a wheel event aims at the ref's own centre, which is
+    // off screen exactly when the caller needs the scroll.
+    return anyScrollable;
+  }
+
+  /// Whether [data] belongs to a node that scrolls at all, in any direction.
+  static bool _isScrollable(final SemanticsData data) =>
+      data.hasAction(SemanticsAction.scrollUp) ||
+      data.hasAction(SemanticsAction.scrollDown) ||
+      data.hasAction(SemanticsAction.scrollLeft) ||
+      data.hasAction(SemanticsAction.scrollRight) ||
+      data.hasAction(SemanticsAction.scrollToOffset);
+
   /// Walk the semantics tree depth-first and return the first node that
   /// advertises [action]. Returns `null` if none is found.
   static SemanticsNode? _findScrollableFor(
@@ -831,11 +944,7 @@ mixin GestureInteractionService {
     // scrollable that actually sits under the point.
     void visit(final SemanticsNode node) {
       final data = node.getSemanticsData();
-      if (data.hasAction(SemanticsAction.scrollUp) ||
-          data.hasAction(SemanticsAction.scrollDown) ||
-          data.hasAction(SemanticsAction.scrollLeft) ||
-          data.hasAction(SemanticsAction.scrollRight) ||
-          data.hasAction(SemanticsAction.scrollToOffset)) {
+      if (_isScrollable(data)) {
         final rect = SemanticSnapshotService.liveRect(node);
         if (rect != null && rect.contains(point)) {
           // Nested scrollables all contain the point; the tightest one is what
@@ -940,7 +1049,7 @@ mixin GestureInteractionService {
     // its own offset before and after is the only honest measure of what the
     // swipe did.
     final scrollable = _findScrollableAt(start);
-    final before = _scrollPosition(scrollable);
+    final before = await _restingScrollPosition(scrollable);
     await _dispatchSwipe(start, end);
     final settle = await _settledScrollPosition(scrollable, before);
     final after = settle.position;

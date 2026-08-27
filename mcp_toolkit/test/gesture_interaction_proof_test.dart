@@ -128,6 +128,48 @@ class _RailBesideList extends StatelessWidget {
   );
 }
 
+/// An app shell: a navigation rail whose rows all stay in the tree while
+/// scrolled out of view, beside a content list that occupies the screen centre.
+/// Anything aimed at the centre drives the content, never the rail.
+class _ShellRailBesideList extends StatelessWidget {
+  const _ShellRailBesideList();
+
+  @override
+  Widget build(final BuildContext context) => MaterialApp(
+    home: Scaffold(
+      body: Row(
+        children: <Widget>[
+          SizedBox(
+            width: 120,
+            child: SingleChildScrollView(
+              child: Column(
+                children: <Widget>[
+                  for (var i = 0; i < 40; i++)
+                    SizedBox(
+                      height: 48,
+                      child: Semantics(
+                        identifier: 'rail_$i',
+                        label: 'Rail $i',
+                        child: const SizedBox.expand(),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: 60,
+              itemBuilder: (final context, final index) =>
+                  SizedBox(height: 48, child: Text('Row $index')),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
 void main() {
   testWidgets('a gesture refuses a ref whose node left the tree', (
     final tester,
@@ -471,7 +513,7 @@ void main() {
     }
   });
 
-  testWidgets('pointer scroll measures the scrollable under the pointer', (
+  testWidgets('a scroll reports the offsets of the list it actually moved', (
     final tester,
   ) async {
     final semantics = tester.ensureSemantics();
@@ -493,13 +535,118 @@ void main() {
           .stateList<ScrollableState>(find.byType(Scrollable))
           .map((final s) => s.position.pixels)
           .toList();
-      expect(result['via'], 'pointer_scroll_event');
       expect(result['success'], isTrue, reason: '$result');
-      // The strip stays put and the list moves, so the reported before/after
-      // pair belongs to the list rather than to whatever came first in the tree.
-      expect(positions, <double>[0, 200]);
+      // The strip comes first in the tree and stays put; the list the row
+      // belongs to is what moved, and the reported pair has to describe it.
+      expect(positions.first, 0, reason: 'the header strip must stay put');
+      expect(positions.last, greaterThan(0), reason: 'the row list must move');
       expect(result['scrollBefore'], 0.0);
-      expect(result['scrollAfter'], 200.0);
+      expect(result['scrollAfter'], positions.last);
+    } finally {
+      semantics.dispose();
+    }
+  });
+
+  testWidgets('a row ref scrolls the list that row belongs to', (
+    final tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    try {
+      await tester.pumpWidget(const _ShellRailBesideList());
+      await tester.pumpAndSettle();
+
+      final row = _refFor(await _snapshotAfterPump(tester), 'rail_30');
+
+      final result = await _settleAfterPumps(
+        tester,
+        GestureInteractionService.scroll(
+          ref: row,
+          direction: 'down',
+          distance: 200,
+        ),
+        pumps: 60,
+      );
+      final positions = tester
+          .stateList<ScrollableState>(find.byType(Scrollable))
+          .map((final s) => s.position.pixels)
+          .toList();
+
+      expect(result['success'], isTrue, reason: '$result');
+      // The row carries no scroll action of its own; the answer is its list.
+      expect(positions.first, greaterThan(0), reason: 'the rail must move');
+      expect(positions.last, 0, reason: 'the content list must stay put');
+    } finally {
+      semantics.dispose();
+    }
+  });
+
+  testWidgets('a list at its edge answers for itself, not for a stray point', (
+    final tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    try {
+      await tester.pumpWidget(const _ShellRailBesideList());
+      await tester.pumpAndSettle();
+
+      // The rail starts at its top, so it drops scrollDown from its actions
+      // and the row's own centre is far below the viewport.
+      final row = _refFor(await _snapshotAfterPump(tester), 'rail_30');
+
+      final result = await _settleAfterPumps(
+        tester,
+        GestureInteractionService.scroll(
+          ref: row,
+          direction: 'up',
+          distance: 200,
+        ),
+        pumps: 80,
+      );
+
+      expect(result['success'], isFalse);
+      expect(
+        result['error'],
+        'no_scroll_movement',
+        reason:
+            'the rail is at its top; that is the answer, not "no '
+            'scrollable under the point"',
+      );
+      expect(result['hint'], contains('start'));
+    } finally {
+      semantics.dispose();
+    }
+  });
+
+  testWidgets('reveal_search scrolls the list its target lives in', (
+    final tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    try {
+      await tester.pumpWidget(const _ShellRailBesideList());
+      await tester.pumpAndSettle();
+
+      final revealFuture = RevealSearchService.revealSearch(
+        query: 'rail_20',
+        matchBy: 'identifier',
+        maxAttempts: 6,
+        distance: 200,
+      );
+      for (var i = 0; i < 400; i++) {
+        await tester.pump(const Duration(milliseconds: 20));
+      }
+      final result = await revealFuture;
+      final positions = tester
+          .stateList<ScrollableState>(find.byType(Scrollable))
+          .map((final s) => s.position.pixels)
+          .toList();
+
+      expect(result['success'], isTrue, reason: '$result');
+      expect(result['centerInViewport'], isTrue);
+      expect(positions.first, greaterThan(0), reason: 'the rail is what moved');
+      expect(
+        positions.last,
+        0,
+        reason: 'scrolling the content would never reveal a rail row',
+      );
     } finally {
       semantics.dispose();
     }
