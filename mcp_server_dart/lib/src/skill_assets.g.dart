@@ -736,7 +736,7 @@ Synthesize key press (down+up). Accepted: `Enter Escape Tab Backspace Delete Spa
 ```json
 {"name": "press_key", "arguments": {"key": "Enter"}}
 ```
-Returns: `{"key": "Enter"}` — Failures: `unsupported_key`, `no_focus`
+Returns: `{"key": "Enter", "handled": bool}` — `handled` covers both dispatch phases (hardware keyboard handlers and focus chain); false means the keystroke was delivered and nothing claimed it. Failures: `unsupported_key`, `no_focus`
 
 ### wait_for
 Wait for a UI predicate; returns fresh semantic snapshot. Predicates: `{kind:"text",text}` | `{kind:"noText",text}` | `{kind:"time",ms}` | `{kind:"stable",stableWindowMs}`. `predicate` • object • required. `timeoutMs` • integer • optional • default 5000 • max 30000. `connection` • object • optional.

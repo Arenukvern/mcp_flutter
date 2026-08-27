@@ -127,6 +127,37 @@ void main() {
       isFalse,
       reason: 'dispatching a key is not the same as something acting on it',
     );
+    expect(result['hint'], contains('main key-down event'));
+  });
+
+  testWidgets('press_key handled excludes a claimed key-up event', (
+    final tester,
+  ) async {
+    var keyUpHandled = false;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Focus(
+          autofocus: true,
+          onKeyEvent: (final node, final event) {
+            if (event is KeyUpEvent &&
+                event.logicalKey == LogicalKeyboardKey.escape) {
+              keyUpHandled = true;
+              return KeyEventResult.handled;
+            }
+            return KeyEventResult.ignored;
+          },
+          child: const SizedBox(width: 100, height: 100),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final result = await ControlFlowService.pressKey(key: 'Escape');
+    await tester.pump();
+
+    expect(keyUpHandled, isTrue);
+    expect(result['handled'], isFalse);
+    expect(result['hint'], contains('main key-down event'));
   });
 
   // -----------------------------------------------------------------------

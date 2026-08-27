@@ -172,7 +172,8 @@ class ControlFlowService {
       'handled': handled,
       if (!handled)
         'hint':
-            'The keystroke was dispatched but nothing in the focus chain '
+            'The main key-down event reached both dispatch phases — the '
+            'hardware keyboard handlers and the focus chain — and neither '
             'claimed it. Text input is one such case: desktop typing goes '
             'through the TextInput channel, so use enter_text for fields.',
     };
