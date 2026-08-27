@@ -190,7 +190,10 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
           'imageCount': imageSummaries.length,
           'includeViewDetails': command.includeViewDetails,
           'includeErrors': command.includeErrors,
-          'errorsCount': command.errorsCount,
+          'errorsCount': ?capturedErrorCount(
+            includeErrors: command.includeErrors,
+            appErrors: appErrors,
+          ),
           'compress': command.compress,
           'requestedMode': command.screenshotMode.wireName,
           'actualMode':
@@ -1912,6 +1915,26 @@ final class _DesktopCaptureResolution {
   final Map<String, Object?>? data;
   final String? errorMessage;
   final Map<String, Object?> errorDetails;
+}
+
+/// How many errors a `capture_ui_snapshot` bundle carries, or `null` when the
+/// caller did not ask for any.
+///
+/// It sits next to `imageCount` in the bundle's summary and is read as a count
+/// of what came back. The request's own `errorsCount` cap belongs to the
+/// caller's arguments and says nothing about what was found — printed there it
+/// claimed errors even where none had been fetched. Public so the count can be
+/// exercised in tests without a live VM.
+int? capturedErrorCount({
+  required final bool includeErrors,
+  required final Object? appErrors,
+}) {
+  if (!includeErrors) return null;
+  final errors = switch (appErrors) {
+    final Map<Object?, Object?> bundle => bundle['errors'],
+    _ => null,
+  };
+  return errors is List ? errors.length : 0;
 }
 
 /// Route an interaction payload to a result that matches its own verdict.
