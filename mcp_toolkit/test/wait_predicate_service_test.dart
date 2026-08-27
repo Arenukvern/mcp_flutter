@@ -147,6 +147,119 @@ void main() {
     },
   );
 
+  group('wait_for timeout says why it never matched', () {
+    Map<String, Object?> snapshotOf(final List<Object?> nodes) =>
+        <String, Object?>{'snapshot_id': 3, 'nodes': nodes};
+
+    test('text that differs only by case names the string on screen', () {
+      final result = WaitPredicateService.buildTimeoutResponseForTesting(
+        predicate: const {'kind': 'text', 'text': 'закупки'},
+        elapsedMs: 5000,
+        lastSnapshot: snapshotOf(<Object?>[
+          <String, Object?>{'ref': 's_0', 'label': 'Закупки'},
+        ]),
+      );
+
+      expect(result['hint'], contains('case-sensitive'));
+      expect(result['caseInsensitiveMatch'], 'Закупки');
+    });
+
+    test('text absent altogether reports how much was on screen', () {
+      final result = WaitPredicateService.buildTimeoutResponseForTesting(
+        predicate: const {'kind': 'text', 'text': 'nowhere'},
+        elapsedMs: 5000,
+        lastSnapshot: snapshotOf(<Object?>[
+          <String, Object?>{'ref': 's_0', 'label': 'Заказы'},
+        ]),
+      );
+
+      expect(result['hint'], contains('Nothing on screen contains "nowhere"'));
+      expect(result.containsKey('caseInsensitiveMatch'), isFalse);
+    });
+
+    test('a node whose flag disagrees names the flag and its value', () {
+      final result = WaitPredicateService.buildTimeoutResponseForTesting(
+        predicate: const {
+          'kind': 'node',
+          'identifier': 'panel.tab.journal',
+          'selected': true,
+        },
+        elapsedMs: 5000,
+        lastSnapshot: snapshotOf(<Object?>[
+          <String, Object?>{
+            'ref': 's_4',
+            'identifier': 'panel.tab.journal',
+            'selected': false,
+          },
+        ]),
+      );
+
+      expect(result['hint'], contains('selected is false, not true'));
+      expect((result['nodeState']! as Map)['selected'], isFalse);
+    });
+
+    test('nodeState reports only the flags the snapshot published', () {
+      final result = WaitPredicateService.buildTimeoutResponseForTesting(
+        predicate: const {
+          'kind': 'node',
+          'identifier': 'nav.settings',
+          'checked': true,
+        },
+        elapsedMs: 5000,
+        lastSnapshot: snapshotOf(<Object?>[
+          <String, Object?>{'ref': 's_9', 'identifier': 'nav.settings'},
+        ]),
+      );
+
+      // A snapshot emits a flag only where the widget declares that state, so
+      // filling the rest in reported a plain nav row as a disabled, unchecked
+      // control.
+      expect(result['nodeState'], isEmpty);
+      expect(result['hint'], contains('checked is false, not true'));
+    });
+
+    test('a node that is not in the tree is told apart from a wrong flag', () {
+      final result = WaitPredicateService.buildTimeoutResponseForTesting(
+        predicate: const {'kind': 'node', 'identifier': 'panel.tab.absent'},
+        elapsedMs: 5000,
+        lastSnapshot: snapshotOf(<Object?>[
+          <String, Object?>{'ref': 's_4', 'identifier': 'panel.tab.journal'},
+        ]),
+      );
+
+      expect(result['hint'], contains('No node on screen carries'));
+      expect(result.containsKey('nodeState'), isFalse);
+    });
+
+    test('noText names the node still carrying the string', () {
+      final result = WaitPredicateService.buildTimeoutResponseForTesting(
+        predicate: const {'kind': 'noText', 'text': 'Загрузка'},
+        elapsedMs: 5000,
+        lastSnapshot: snapshotOf(<Object?>[
+          <String, Object?>{
+            'ref': 's_2',
+            'identifier': 'screen.loader',
+            'label': 'Загрузка',
+          },
+        ]),
+      );
+
+      expect(result['hint'], contains('screen.loader'));
+      expect(result['stillCarriedBy'], 's_2');
+    });
+
+    test('stable reports how often the tree moved under it', () {
+      final result = WaitPredicateService.buildTimeoutResponseForTesting(
+        predicate: const {'kind': 'stable', 'stableWindowMs': 250},
+        elapsedMs: 5000,
+        changeCount: 17,
+      );
+
+      expect(result['changeCount'], 17);
+      expect(result['hint'], contains('changed 17 times'));
+    });
+  });
+
   testWidgets(
     'wait_for noError predicate matches when error monitor is empty',
     (final tester) async {
