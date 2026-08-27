@@ -1959,12 +1959,19 @@ CoreResult routeInteractionResponse(
 
 /// Route the toolkit's `wait_for` extension response to a [CoreResult].
 ///
-/// Treats anything other than literal `true` for the `matched` field as a
-/// failure: `matched == false` is an expected predicate timeout
-/// (`wait_timeout`); any other shape (null / string / int / coerced wire
-/// value) is a malformed-payload bug bucketed as `wait_for_failed`. Public
-/// so the routing can be exercised in tests without a live VM.
+/// A structured `invalid_predicate` refusal is a validation failure.
+/// Otherwise `matched == false` is an expected predicate timeout
+/// (`wait_timeout`); any other non-true shape is a malformed-payload bug
+/// bucketed as `wait_for_failed`.
 CoreResult routeWaitForResponse(final Map<String, Object?> data) {
+  if (data['error'] == CoreErrorCode.invalidPredicate) {
+    return CoreResult.failure(
+      code: CoreErrorCode.invalidPredicate,
+      message:
+          data['hint'] as String? ?? 'wait_for received an invalid predicate',
+      details: data,
+    );
+  }
   final matched = data['matched'];
   if (matched != true) {
     return CoreResult.failure(

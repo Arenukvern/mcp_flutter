@@ -95,6 +95,7 @@ abstract final class CoreErrorCode {
   static const evaluateExpressionFailed = 'evaluate_expression_failed';
   static const getRecentLogsFailed = 'get_recent_logs_failed';
 
+  static const invalidPredicate = 'invalid_predicate';
   static const waitTimeout = 'wait_timeout';
   static const waitForFailed = 'wait_for_failed';
 
@@ -404,6 +405,13 @@ const Map<String, CoreErrorDescriptor> _descriptorMap =
         retryable: true,
         exitCode: 69,
         httpLikeStatus: 500,
+      ),
+      CoreErrorCode.invalidPredicate: CoreErrorDescriptor(
+        code: CoreErrorCode.invalidPredicate,
+        category: CoreErrorCategory.validation,
+        retryable: false,
+        exitCode: 64,
+        httpLikeStatus: 400,
       ),
       CoreErrorCode.waitTimeout: CoreErrorDescriptor(
         code: CoreErrorCode.waitTimeout,

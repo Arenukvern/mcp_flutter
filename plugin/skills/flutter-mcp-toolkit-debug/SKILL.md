@@ -336,6 +336,12 @@ Every failure returns `{code, message, details, descriptor, recovery}`. Always r
 **Means:** `get_recent_logs` retrieval failed.
 **Recovery:** `flutter-mcp-toolkit doctor --json` — verify toolkit is initialized.
 
+### `invalidPredicate` (`invalid_predicate`)
+
+**Means:** `wait_for` received a predicate whose requested observation cannot fit inside its timeout budget.
+**Causes:** `stableWindowMs` is greater than or equal to effective `timeoutMs`.
+**Recovery:** set `timeoutMs` above `stableWindowMs`; omitting `timeoutMs` uses the 5000 ms default.
+
 ### `waitTimeout` (`wait_timeout`)
 
 **Means:** `wait_for` predicate did not match before `timeoutMs` elapsed.

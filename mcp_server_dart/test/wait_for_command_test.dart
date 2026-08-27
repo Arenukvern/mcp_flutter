@@ -50,6 +50,20 @@ void main() {
       expect((result.error!.details! as Map)['lastSnapshotId'], 3);
     });
 
+    test('invalid predicate routes to validation failure', () {
+      final result = routeWaitForResponse({
+        'matched': false,
+        'error': CoreErrorCode.invalidPredicate,
+        'reason': 'stable_window_not_less_than_timeout',
+        'elapsedMs': 0,
+        'hint': 'stableWindowMs (1000) must be less than timeoutMs (100).',
+      });
+
+      expect(result.ok, isFalse);
+      expect(result.error!.code, CoreErrorCode.invalidPredicate);
+      expect(result.error!.message, contains('stableWindowMs'));
+    });
+
     test('matched missing routes to wait_for_failed (malformed)', () {
       final result = routeWaitForResponse({'elapsedMs': 100});
       expect(result.ok, isFalse);

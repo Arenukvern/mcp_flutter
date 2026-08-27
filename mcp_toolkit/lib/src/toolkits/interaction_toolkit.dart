@@ -591,12 +591,15 @@ extension type OnWaitForEntry._(AgentCallEntry entry)
           predicate: predicate,
           timeoutMs: timeoutMs == 0 ? 5000 : timeoutMs,
         );
-        return MCPCallResult(
-          message: result['matched'] == true
-              ? 'wait_for matched after ${result['elapsedMs']}ms.'
-              : 'wait_for timed out after ${result['elapsedMs']}ms.',
-          parameters: result,
-        );
+        final String message;
+        if (result['error'] == 'invalid_predicate') {
+          message = 'wait_for rejected an invalid predicate: ${result['hint']}';
+        } else if (result['matched'] == true) {
+          message = 'wait_for matched after ${result['elapsedMs']}ms.';
+        } else {
+          message = 'wait_for timed out after ${result['elapsedMs']}ms.';
+        }
+        return MCPCallResult(message: message, parameters: result);
       },
       definition: MCPToolDefinition(
         name: 'wait_for',

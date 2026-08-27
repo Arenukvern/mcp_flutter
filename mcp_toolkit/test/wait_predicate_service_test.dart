@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
@@ -29,6 +30,20 @@ void main() {
       timeoutMs: 500,
     );
     expect((result['predicate']! as Map)['ms'], 50);
+  });
+
+  test('wait_for rejects an impossible stable timeout budget', () async {
+    final result = await WaitPredicateService.waitFor(
+      predicate: const {'kind': 'stable', 'stableWindowMs': 1000},
+      timeoutMs: 100,
+    );
+
+    expect(result['matched'], isFalse);
+    expect(result['error'], 'invalid_predicate');
+    expect(result['reason'], 'stable_window_not_less_than_timeout');
+    expect(result['elapsedMs'], 0);
+    expect(result['timeoutMs'], 100);
+    expect(result['hint'], contains('must be less than timeoutMs'));
   });
 
   testWidgets(
@@ -258,6 +273,17 @@ void main() {
       expect(result['changeCount'], 17);
       expect(result['hint'], contains('changed 17 times'));
     });
+
+    test('stable with no changes points at the timeout budget', () {
+      final result = WaitPredicateService.buildTimeoutResponseForTesting(
+        predicate: const {'kind': 'stable', 'stableWindowMs': 1000},
+        elapsedMs: 100,
+      );
+
+      expect(result['changeCount'], 0);
+      expect(result['hint'], contains('Increase timeoutMs'));
+      expect(result['hint'], isNot(contains('animating')));
+    });
   });
 
   testWidgets(
@@ -297,19 +323,59 @@ void main() {
       timeoutMs: 2000,
     );
 
-    // Drive enough frames to cross the stable window. requiredStableFrames
-    // = ceil(100/16) = 7. Under the test binding, each loop iteration also
-    // calls peekSemanticSnapshot which awaits an extra cold-path frame
-    // (handle is acquired+disposed per call), so each iter consumes ~2
-    // frames. Pump 20 to be safe.
-    for (var i = 0; i < 20; i++) {
-      await tester.pump(const Duration(milliseconds: 50));
+    // Each sample needs two pumped frames under the test binding. Ten slow
+    // frames provide about five samples over 250 ms: enough wall time, but
+    // fewer than the seven samples the old 60 fps conversion required.
+    for (var i = 0; i < 10; i++) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 25)),
+      );
+      await tester.pump();
     }
 
     final result = await waitFuture;
     expect(result['matched'], isTrue);
     expect(result['snapshot_id'], isA<int>());
+
+    final stableFor = result['stableFor']! as Map<String, Object?>;
+    expect(stableFor['requestedWindowMs'], 100);
+    expect(stableFor['sampledFrames'], greaterThanOrEqualTo(2));
+    expect(
+      stableFor['sampledFrames'],
+      lessThan(7),
+      reason: 'a millisecond window must not become a fixed 60 fps frame count',
+    );
+    expect(stableFor['elapsedMs'], greaterThanOrEqualTo(100));
   });
+
+  testWidgets(
+    'wait_for stable resolves while frames are suspended',
+    (final tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(home: Scaffold(body: Text('static'))),
+      );
+      await tester.pump();
+
+      final binding = tester.binding
+        ..handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      addTearDown(
+        () => binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed),
+      );
+      expect(binding.framesEnabled, isFalse);
+
+      final result = await WaitPredicateService.waitFor(
+        predicate: const {'kind': 'stable', 'stableWindowMs': 0},
+        timeoutMs: 500,
+      );
+
+      expect(result['matched'], isTrue);
+      expect(
+        (result['stableFor']! as Map<String, Object?>)['sampledFrames'],
+        greaterThanOrEqualTo(2),
+      );
+    },
+    skip: kIsWeb,
+  );
 
   group('wait_for node predicate', () {
     testWidgets('reads state, not the label', (final tester) async {

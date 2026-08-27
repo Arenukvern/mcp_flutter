@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 
 import '../mcp_toolkit_binding.dart';
+import 'background_frame_pump.dart';
 import 'semantic_snapshot_service.dart';
 
 /// Service that blocks until a UI predicate holds or a timeout elapses.
@@ -15,7 +16,7 @@ import 'semantic_snapshot_service.dart';
 ///                checked/toggled: bool, absent: bool} — a node carrying that
 ///                identifier holds the named flags. `absent: true` inverts it.
 ///   - `stable`:  {kind: 'stable', stableWindowMs: int} — no semantic change
-///                for the stable window.
+///                for the requested wall time, sampled once per frame.
 ///   - `noError`: {kind: 'noError'} — Flutter error monitor has no entries.
 ///
 /// Implemented incrementally — see plan tasks 2–5.
@@ -27,8 +28,17 @@ class WaitPredicateService {
     required final Map<String, Object?> predicate,
     final int timeoutMs = 5000,
   }) async {
-    final stopwatch = Stopwatch()..start();
     final kind = predicate['kind'];
+    final stableWindowMs =
+        (predicate['stableWindowMs'] as num?)?.toInt() ?? 250;
+    if (kind == 'stable' && stableWindowMs >= timeoutMs) {
+      return _invalidStableBudget(
+        predicate: predicate,
+        stableWindowMs: stableWindowMs,
+        timeoutMs: timeoutMs,
+      );
+    }
+    final stopwatch = Stopwatch()..start();
 
     if (kind == 'time') {
       final ms = (predicate['ms'] as num?)?.toInt() ?? 0;
@@ -49,7 +59,7 @@ class WaitPredicateService {
             finalSnapshot,
           );
         }
-        await binding.endOfFrame;
+        await _awaitNextFrame(binding);
       }
       return _timeoutResponse(
         predicate,
@@ -63,14 +73,11 @@ class WaitPredicateService {
 
     Map<String, Object?>? lastSnapshot;
     String? lastSerialised;
-    var stableFrames = 0;
+    var stableSamples = 0;
+    var unchangedSinceMs = 0;
     // How often the tree changed under the wait. Only `stable` acts on it, but
     // it is the one number that explains why that predicate never settled.
     var changeCount = 0;
-    final stableWindowMs =
-        (predicate['stableWindowMs'] as num?)?.toInt() ?? 250;
-    // Convert ms -> required consecutive stable frames at ~60fps.
-    final requiredStableFrames = (stableWindowMs / 16).ceil().clamp(1, 9999);
 
     while (stopwatch.elapsed < deadline) {
       final snapshot = await SemanticSnapshotService.peekSemanticSnapshot();
@@ -78,21 +85,39 @@ class WaitPredicateService {
 
       if (kind == 'stable') {
         final serialised = _serialiseNodes(snapshot);
-        if (lastSerialised != null && serialised == lastSerialised) {
-          stableFrames++;
-          if (stableFrames >= requiredStableFrames) {
+        final sampledAtMs = stopwatch.elapsedMilliseconds;
+        if (lastSerialised == null || serialised != lastSerialised) {
+          if (lastSerialised != null) changeCount++;
+          stableSamples = 1;
+          lastSerialised = serialised;
+          unchangedSinceMs = sampledAtMs;
+        } else {
+          stableSamples++;
+          if (sampledAtMs - unchangedSinceMs >= stableWindowMs) {
             final finalSnapshot =
                 await SemanticSnapshotService.buildSemanticSnapshot();
-            return _successWithSnapshot(
-              predicate,
-              stopwatch.elapsedMilliseconds,
-              finalSnapshot,
-            );
+            final finalSerialised = _serialiseNodes(finalSnapshot);
+            if (finalSerialised == lastSerialised) {
+              return _successWithSnapshot(
+                predicate,
+                stopwatch.elapsedMilliseconds,
+                finalSnapshot,
+                measured: <String, Object?>{
+                  'stableFor': <String, Object?>{
+                    'requestedWindowMs': stableWindowMs,
+                    'sampledFrames': stableSamples,
+                    'elapsedMs':
+                        stopwatch.elapsedMilliseconds - unchangedSinceMs,
+                  },
+                },
+              );
+            }
+            changeCount++;
+            lastSnapshot = finalSnapshot;
+            lastSerialised = finalSerialised;
+            stableSamples = 1;
+            unchangedSinceMs = stopwatch.elapsedMilliseconds;
           }
-        } else {
-          if (lastSerialised != null) changeCount++;
-          stableFrames = 0;
-          lastSerialised = serialised;
         }
       } else if (_evaluate(predicate, snapshot)) {
         final finalSnapshot =
@@ -104,7 +129,7 @@ class WaitPredicateService {
         );
       }
 
-      await binding.endOfFrame;
+      await _awaitNextFrame(binding);
     }
 
     return _timeoutResponse(
@@ -113,6 +138,13 @@ class WaitPredicateService {
       lastSnapshot,
       changeCount: changeCount,
     );
+  }
+
+  static Future<void> _awaitNextFrame(final WidgetsBinding binding) async {
+    binding.scheduleFrame();
+    final endOfFrame = binding.endOfFrame;
+    await pumpFramesIfSuspended();
+    await endOfFrame;
   }
 
   static bool _evaluate(
@@ -222,12 +254,31 @@ class WaitPredicateService {
   static Map<String, Object?> _successWithSnapshot(
     final Map<String, Object?> predicate,
     final int elapsedMs,
-    final Map<String, Object?> snapshot,
-  ) => <String, Object?>{
+    final Map<String, Object?> snapshot, {
+    final Map<String, Object?> measured = const <String, Object?>{},
+  }) => <String, Object?>{
     'matched': true,
     'predicate': predicate,
     'elapsedMs': elapsedMs,
+    ...measured,
     ...snapshot,
+  };
+
+  static Map<String, Object?> _invalidStableBudget({
+    required final Map<String, Object?> predicate,
+    required final int stableWindowMs,
+    required final int timeoutMs,
+  }) => <String, Object?>{
+    'matched': false,
+    'error': 'invalid_predicate',
+    'reason': 'stable_window_not_less_than_timeout',
+    'predicate': predicate,
+    'elapsedMs': 0,
+    'timeoutMs': timeoutMs,
+    'hint':
+        'stableWindowMs ($stableWindowMs) must be less than timeoutMs '
+        '($timeoutMs). Set timeoutMs above stableWindowMs; when timeoutMs is '
+        'omitted, its default is 5000 ms.',
   };
 
   static Map<String, Object?> _timeoutResponse(
@@ -387,11 +438,22 @@ class WaitPredicateService {
     final int changeCount,
   ) {
     final window = (predicate['stableWindowMs'] as num?)?.toInt() ?? 250;
+    if (changeCount == 0) {
+      return <String, Object?>{
+        'hint':
+            'No semantic change was observed, but the wait ended before the '
+            'tree had remained unchanged for the requested $window ms. '
+            'Increase timeoutMs beyond stableWindowMs so the full window can '
+            'be observed.',
+        'changeCount': 0,
+      };
+    }
     return <String, Object?>{
       'hint':
-          'The semantics tree never held still for $window ms — it changed '
-          '$changeCount times while waiting. Something on screen is animating '
-          'or polling; wait on what you actually need instead.',
+          'The semantics tree never remained unchanged for $window ms across '
+          'consecutive frame samples — it changed $changeCount times while '
+          'waiting. Something on screen is animating or polling; wait on what '
+          'you actually need instead.',
       'changeCount': changeCount,
     };
   }

@@ -167,10 +167,10 @@ Synthesize key press (down+up). Accepted: `Enter Escape Tab Backspace Delete Spa
 ```json
 {"name": "press_key", "arguments": {"key": "Enter"}}
 ```
-Returns: `{"key": "Enter", "handled": bool}` — `handled` covers both dispatch phases (hardware keyboard handlers and focus chain); false means the keystroke was delivered and nothing claimed it. Failures: `unsupported_key`, `no_focus`
+Returns: `{"key": "Enter", "handled": bool}` — `handled` says whether either dispatch phase (hardware keyboard handlers or focus chain) claimed the main key-down event; false does not describe the key-up or modifier events. Failures: `unsupported_key`, `no_focus`
 
 ### wait_for
-Wait for a UI predicate; returns fresh semantic snapshot. Predicates: `{kind:"text",text}` | `{kind:"noText",text}` | `{kind:"time",ms}` | `{kind:"stable",stableWindowMs}`. `predicate` • object • required. `timeoutMs` • integer • optional • default 5000 • max 30000. `connection` • object • optional.
+Wait for a UI predicate; returns fresh semantic snapshot. Predicates: `{kind:"text",text}` | `{kind:"noText",text}` | `{kind:"time",ms}` | `{kind:"stable",stableWindowMs}`. `stable` samples once per frame and matches after the semantics tree has remained unchanged for the requested wall time; the match reports `stableFor.sampledFrames` and `stableFor.elapsedMs`. `stableWindowMs` must be less than `timeoutMs` (default 5000); an impossible budget fails immediately with `invalid_predicate`. `predicate` • object • required. `timeoutMs` • integer • optional • default 5000 • max 30000. `connection` • object • optional.
 ```json
 {"name": "wait_for", "arguments": {"predicate": {"kind": "text", "text": "Dashboard"}, "timeoutMs": 8000}}
 ```
