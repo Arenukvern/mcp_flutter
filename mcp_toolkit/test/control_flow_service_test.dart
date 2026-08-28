@@ -265,6 +265,38 @@ void main() {
     MCPToolkitBinding.instance.navigatorKey = null;
   });
 
+  testWidgets('navigate push reports an unnamed generated route', (
+    final tester,
+  ) async {
+    final navKey = GlobalKey<NavigatorState>();
+    MCPToolkitBinding.instance.navigatorKey = navKey;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        navigatorKey: navKey,
+        home: const Scaffold(body: Text('home')),
+        onGenerateRoute: (final settings) => MaterialPageRoute<void>(
+          builder: (final _) =>
+              const Scaffold(body: Text('generated destination')),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final result = await ControlFlowService.navigate(
+      action: 'push',
+      route: '/generated',
+    );
+    await tester.pumpAndSettle();
+
+    expect(result['success'], isTrue);
+    expect(result['verified'], isFalse);
+    expect(result['via'], 'stack_changed_unnamed_route');
+    expect(find.text('generated destination'), findsOneWidget);
+
+    MCPToolkitBinding.instance.navigatorKey = null;
+  });
+
   testWidgets('navigate push reports a route the app never opened', (
     final tester,
   ) async {

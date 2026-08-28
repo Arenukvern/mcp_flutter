@@ -211,6 +211,13 @@ class ControlFlowService {
   }
 
   /// Dismisses the topmost [PopupRoute] via [Navigator.maybePop].
+  ///
+  /// Returns the dismissal verdict and the route name/type. Refuses when no
+  /// navigator is registered, the top route is not a popup, or the popup
+  /// declines the pop. Tools should use this instead of a blind navigator pop
+  /// so a plain page is never mistaken for a dialog.
+  ///
+  /// @ai Call this only for dialog-like popup routes; use `navigate` for pages.
   static Future<Map<String, Object?>> dismissDialog() async {
     final navState = MCPToolkitBinding.instance.navigatorKey?.currentState;
     if (navState == null) {
@@ -297,6 +304,7 @@ class ControlFlowService {
         // the catchError below never sees it. Without this the exception
         // escapes the extension and reaches the caller as a transport error
         // with no cause in it.
+        final previousTopRoute = _topRoute(navState);
         try {
           unawaited(
             navState.pushNamed<Object?>(route, arguments: arguments).catchError((
@@ -329,28 +337,43 @@ class ControlFlowService {
         }
         // The push cannot be awaited — it completes only when the route is
         // popped — but [NavigatorState.push] adds the entry synchronously, so
-        // the stack already says whether it happened. An unknown name leaves
-        // the app where it was, and reporting that as a successful push sends
-        // the caller looking for a screen that never opened.
-        final topRoute = _topRoute(navState)?.settings.name;
-        if (topRoute != route) {
+        // the stack already says whether it happened. A generated route may
+        // omit settings.name; a changed route object still proves the push,
+        // but cannot verify that the app preserved the requested name.
+        final currentTopRoute = _topRoute(navState);
+        final topRouteName = currentTopRoute?.settings.name;
+        if (topRouteName == route) {
           return <String, Object?>{
-            'success': false,
+            'success': true,
             'action': 'push',
             'route': route,
-            'error': 'route_not_pushed',
-            'topRouteName': topRoute,
+          };
+        }
+        if (!identical(currentTopRoute, previousTopRoute) &&
+            topRouteName == null) {
+          return <String, Object?>{
+            'success': true,
+            'action': 'push',
+            'route': route,
+            'verified': false,
+            'via': 'stack_changed_unnamed_route',
+            'topRouteType': currentTopRoute?.runtimeType.toString(),
             'hint':
-                'The navigator is showing "$topRoute" instead. Check the route '
-                "name against the app's route table; an unknown name is "
-                "either dropped or replaced by the app's unknown-route "
-                'fallback.',
+                'The navigator stack changed, but the generated route has no '
+                'settings.name. The push took effect; use semantic_snapshot '
+                'to verify the destination screen.',
           };
         }
         return <String, Object?>{
-          'success': true,
+          'success': false,
           'action': 'push',
           'route': route,
+          'error': 'route_not_pushed',
+          'topRouteName': topRouteName,
+          'hint':
+              'The navigator is showing "$topRouteName" instead. Check the '
+              "name against the app's route table; an unknown name is either "
+              "dropped or replaced by the app's unknown-route fallback.",
         };
       case 'pop':
         if (navState == null) {

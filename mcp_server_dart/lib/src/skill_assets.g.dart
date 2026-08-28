@@ -708,7 +708,7 @@ Scroll to reveal content. `"down"` reveals content below (finger swipes up). `di
 ```json
 {"name": "scroll", "arguments": {"direction": "down", "ref": "s_0", "distance": 500}}
 ```
-Returns: `{"via": "semantic_action"}` — Failures: `ref_not_found`, `stale_snapshot`
+Returns: `{"via": "semantic_action", "scrollBefore": 0.0, "scrollAfter": 500.0, "distance": 500.0}`. `scrollBefore`/`scrollAfter` are forwarded whenever measurable; `distance` is present on exact-offset and pointer-scroll paths. Failures: `ref_not_found`, `stale_snapshot`
 
 ### swipe
 High-velocity fling. Same direction model as `scroll`. Always Tier 2 pointer events. `direction` • string • required. `ref` • string • optional. `distance` • number • optional • default 300. `snapshotId` • integer • optional. `connection` • object • optional.
@@ -739,6 +739,7 @@ Synthesize key press (down+up). Accepted: `Enter Escape Tab Backspace Delete Spa
 Returns: `{"key": "Enter", "handled": bool}` — `handled` says whether either dispatch phase (hardware keyboard handlers or focus chain) claimed the main key-down event; false does not describe the key-up or modifier events. Failures: `unsupported_key`, `no_focus`
 
 ### wait_for
+
 Wait for a UI predicate; returns fresh semantic snapshot. Predicates: `{kind:"text",text}` | `{kind:"noText",text}` | `{kind:"time",ms}` | `{kind:"stable",stableWindowMs}`. `stable` samples once per frame and matches after the semantics tree has remained unchanged for the requested wall time; the match reports `stableFor.sampledFrames` and `stableFor.elapsedMs`. `stableWindowMs` must be less than `timeoutMs` (default 5000); an impossible budget fails immediately with `invalid_predicate`. `predicate` • object • required. `timeoutMs` • integer • optional • default 5000 • max 30000. `connection` • object • optional.
 ```json
 {"name": "wait_for", "arguments": {"predicate": {"kind": "text", "text": "Dashboard"}, "timeoutMs": 8000}}
@@ -750,7 +751,7 @@ Drive the registered Navigator. Requires `MCPToolkitBinding.instance.navigatorKe
 ```json
 {"name": "navigate", "arguments": {"action": "push", "route": "/profile", "arguments": {"userId": "42"}}}
 ```
-Returns: `{"action": "push", "route": "/profile"}` — Failures: `navigator_not_configured`, `route_not_found`
+Returns: `{"action": "push", "route": "/profile"}`. A generated unnamed route returns `success: true`, `verified: false`, and `via: "stack_changed_unnamed_route"` because the stack changed but its requested name cannot be checked. Failures: `navigator_not_configured`, `route_not_found`
 
 ### handle_dialog
 Dismiss the topmost popup/dialog route. Only `action: "dismiss"` supported. Requires `navigatorKey = key` on `MCPToolkitBinding.instance` in the app. `action` • string • required (must be `"dismiss"`). `connection` • object • optional.
@@ -1372,7 +1373,7 @@ If something should appear but does not: confirm **`addEntries`** completed (**`
 
 - **Hot reload** + **`addEntries`** from widget code → duplicate registrations. Register once in **`main()` / bootstrap**.
 - **Debug mode only** — release builds do not expose VM service extensions.
-- **Naming**: flat global namespace per app — prefix tools/resources (`cart_`, `flags_`, `nav_`). A name a built-in entry already holds is skipped without a word: the built-in answers and your handler never runs.
+- **Naming**: the app uses a flat global namespace. Prefix tools/resources (`cart_`, `flags_`, `nav_`). If a built-in entry already uses a name, the custom entry is skipped without warning; the built-in handles the call and the custom handler does not run.
 - **Naming the running instance** is `MCPToolkitBinding.instance.setAppIdentity(label: 'Fleet app · staging')`, called again whenever the name changes (sign-in, workspace switch). Discovery reads that label, and a tool of your own called `app_identity` is one of the collisions above.
 
 ## When the agent authors surfaces for the user’s app

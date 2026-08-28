@@ -64,6 +64,21 @@ void main() {
       expect(result.error!.message, contains('stableWindowMs'));
     });
 
+    test('invalid predicate with a non-string hint uses fallback', () {
+      final result = routeWaitForResponse({
+        'matched': false,
+        'error': CoreErrorCode.invalidPredicate,
+        'hint': 42,
+      });
+
+      expect(result.ok, isFalse);
+      expect(result.error!.code, CoreErrorCode.invalidPredicate);
+      expect(
+        result.error!.message,
+        'wait_for received an invalid predicate',
+      );
+    });
+
     test('matched missing routes to wait_for_failed (malformed)', () {
       final result = routeWaitForResponse({'elapsedMs': 100});
       expect(result.ok, isFalse);

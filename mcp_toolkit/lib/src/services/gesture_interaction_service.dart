@@ -632,17 +632,19 @@ mixin GestureInteractionService {
       };
     }
 
-    final offsetResult = await _scrollToOffsetAttempt(
-      owner: owner,
-      node: node,
-      direction: direction,
-      distance: distance,
-      before: before,
-      beforeSignature: beforeSignature,
-      ref: ref,
-      targetNodeId: targetNodeId,
-    );
-    if (offsetResult != null) return offsetResult;
+    if (kIsWeb) {
+      final offsetResult = await _scrollToOffsetAttempt(
+        owner: owner,
+        node: node,
+        direction: direction,
+        distance: distance,
+        before: before,
+        beforeSignature: beforeSignature,
+        ref: ref,
+        targetNodeId: targetNodeId,
+      );
+      if (offsetResult != null) return offsetResult;
+    }
 
     final extentMin = _finiteOrNull(node.getSemanticsData().scrollExtentMin);
     final extentMax = _finiteOrNull(node.getSemanticsData().scrollExtentMax);

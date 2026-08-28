@@ -1917,14 +1917,12 @@ final class _DesktopCaptureResolution {
   final Map<String, Object?> errorDetails;
 }
 
-/// How many errors a `capture_ui_snapshot` bundle carries, or `null` when the
-/// caller did not ask for any.
+/// How many errors a `capture_ui_snapshot` bundle carries.
 ///
-/// It sits next to `imageCount` in the bundle's summary and is read as a count
-/// of what came back. The request's own `errorsCount` cap belongs to the
-/// caller's arguments and says nothing about what was found — printed there it
-/// claimed errors even where none had been fetched. Public so the count can be
-/// exercised in tests without a live VM.
+/// [includeErrors] says whether the caller requested errors. [appErrors] is
+/// the decoded error bundle returned by the app. Returns `null` when errors
+/// were not requested, otherwise the number of entries in its `errors` list
+/// or zero when that list is absent.
 int? capturedErrorCount({
   required final bool includeErrors,
   required final Object? appErrors,
@@ -1939,11 +1937,10 @@ int? capturedErrorCount({
 
 /// Route an interaction payload to a result that matches its own verdict.
 ///
-/// The toolkit answers a refused gesture with `success: false` and a stale
-/// snapshot with `ok: false`. Wrapping either in [CoreResult.success] leaves
-/// the caller with an envelope that reads as "the call worked" around a
-/// refusal — the payload keeps the truth, but only for whoever reads it.
-/// Public so the routing can be exercised in tests without a live VM.
+/// [tool] names the interaction for the failure message. [data] is the
+/// decoded toolkit payload. Returns success only for `success: true`;
+/// refused gestures and stale snapshots become failures that retain [data]
+/// as their details.
 CoreResult routeInteractionResponse(
   final String tool,
   final Map<String, Object?> data,
@@ -1959,16 +1956,17 @@ CoreResult routeInteractionResponse(
 
 /// Route the toolkit's `wait_for` extension response to a [CoreResult].
 ///
-/// A structured `invalid_predicate` refusal is a validation failure.
-/// Otherwise `matched == false` is an expected predicate timeout
-/// (`wait_timeout`); any other non-true shape is a malformed-payload bug
-/// bucketed as `wait_for_failed`.
+/// [data] is the decoded toolkit response. Returns success for
+/// `matched: true`, a validation failure for `invalid_predicate`, a timeout
+/// for `matched: false`, or `wait_for_failed` for any malformed verdict.
 CoreResult routeWaitForResponse(final Map<String, Object?> data) {
   if (data['error'] == CoreErrorCode.invalidPredicate) {
+    final hint = data['hint'];
     return CoreResult.failure(
       code: CoreErrorCode.invalidPredicate,
-      message:
-          data['hint'] as String? ?? 'wait_for received an invalid predicate',
+      message: hint is String
+          ? hint
+          : 'wait_for received an invalid predicate',
       details: data,
     );
   }

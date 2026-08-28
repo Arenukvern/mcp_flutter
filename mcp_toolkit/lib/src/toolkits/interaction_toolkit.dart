@@ -781,7 +781,7 @@ extension type OnHoverEntry._(AgentCallEntry entry) implements AgentCallEntry {
         if (ref.isEmpty) {
           return _missingParameters(
             tool: 'hover',
-            error: 'missing_ref',
+            error: 'missing_parameters',
             missing: const <String>['ref'],
             hint: _refSourceHint,
           );

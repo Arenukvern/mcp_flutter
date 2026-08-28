@@ -34,6 +34,7 @@ String _refFor(final Map<String, Object?> snapshot, final String identifier) {
 
 /// Swaps its child for a placeholder when [visible] is flipped through the
 /// returned setter, so a snapshotted node can be taken out of the tree.
+/// @ai Test-only fixture isolating a ref whose node leaves the tree.
 class _Removable extends StatefulWidget {
   const _Removable({required this.child});
 
@@ -62,6 +63,7 @@ class _RemovableState extends State<_Removable> {
 
 /// A scrolling header above the content list: the shape that makes "the first
 /// scrollable in the tree" the wrong thing to scroll or to measure.
+/// @ai Test-only fixture isolating ownership below a horizontal scroll strip.
 class _StripAboveList extends StatelessWidget {
   const _StripAboveList();
 
@@ -99,6 +101,7 @@ class _StripAboveList extends StatelessWidget {
 
 /// A scrolling side rail before the content list: both scroll vertically, so
 /// "the first scrollable in the tree" and "the one the caller means" differ.
+/// @ai Test-only fixture isolating competing vertical scrollables.
 class _RailBesideList extends StatelessWidget {
   const _RailBesideList();
 
@@ -131,6 +134,7 @@ class _RailBesideList extends StatelessWidget {
 /// An app shell: a navigation rail whose rows all stay in the tree while
 /// scrolled out of view, beside a content list that occupies the screen centre.
 /// Anything aimed at the centre drives the content, never the rail.
+/// @ai Test-only fixture isolating centre-targeted scrolling in an app shell.
 class _ShellRailBesideList extends StatelessWidget {
   const _ShellRailBesideList();
 
