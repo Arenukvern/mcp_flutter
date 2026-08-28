@@ -708,14 +708,14 @@ Scroll to reveal content. `"down"` reveals content below (finger swipes up). `di
 ```json
 {"name": "scroll", "arguments": {"direction": "down", "ref": "s_0", "distance": 500}}
 ```
-Returns: `{"via": "semantic_action", "scrollBefore": 0.0, "scrollAfter": 500.0, "distance": 500.0}`. `scrollBefore`/`scrollAfter` are forwarded whenever measurable; `distance` is present on exact-offset and pointer-scroll paths. Failures: `ref_not_found`, `stale_snapshot`
+Returns: `{"via": "semantic_action", "scrollBefore": 0.0, "scrollAfter": 500.0, "distance": 500.0}`. `scrollBefore`/`scrollAfter` are forwarded whenever measurable; `distance` is present on exact-offset and pointer-scroll paths. Failures: `ref_not_found`, `stale_snapshot`, `no_scrollable_at_point`, `no_scroll_movement`, `unsupported_scroll_action`, `semantics_owner_unavailable`
 
 ### swipe
 High-velocity fling. Same direction model as `scroll`. Always Tier 2 pointer events. `direction` • string • required. `ref` • string • optional. `distance` • number • optional • default 300. `snapshotId` • integer • optional. `connection` • object • optional.
 ```json
 {"name": "swipe", "arguments": {"direction": "left", "ref": "s_4"}}
 ```
-Returns: `{"via": "pointer_events"}` — Failures: `ref_not_found`, `web_gesture_not_supported`
+Returns: `{"via": "pointer_events", "scrollBefore": 0.0, "scrollAfter": 420.0}` when movement is measurable. When finite scroll offsets are unavailable, a dispatched gesture returns `success: true`, `verified: false`, and `measurementReason`. Failures: `ref_not_found`, `stale_snapshot`, `no_scroll_movement`, `web_gesture_not_supported`
 
 ### drag
 Drag from one widget to another. Always Tier 2. `fromRef` • string • required. `toRef` • string • required. `snapshotId` • integer • optional. `connection` • object • optional.

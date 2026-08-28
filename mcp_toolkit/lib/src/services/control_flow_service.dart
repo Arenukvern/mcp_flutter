@@ -217,7 +217,7 @@ class ControlFlowService {
   /// declines the pop. Tools should use this instead of a blind navigator pop
   /// so a plain page is never mistaken for a dialog.
   ///
-  /// @ai Call this only for dialog-like popup routes; use `navigate` for pages.
+  /// @ai Call this only for dialog-like popup routes; use [navigate] for pages.
   static Future<Map<String, Object?>> dismissDialog() async {
     final navState = MCPToolkitBinding.instance.navigatorKey?.currentState;
     if (navState == null) {

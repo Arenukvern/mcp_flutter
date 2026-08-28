@@ -517,6 +517,54 @@ void main() {
     }
   });
 
+  testWidgets('a swipe without measurable scroll reports unverified delivery', (
+    final tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    var handled = false;
+    try {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: Semantics(
+                identifier: 'custom_swipe',
+                label: 'Custom swipe target',
+                button: true,
+                onTap: () {},
+                child: Listener(
+                  behavior: HitTestBehavior.opaque,
+                  onPointerUp: (final _) => handled = true,
+                  child: const SizedBox(width: 200, height: 200),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final target = _refFor(await _snapshotAfterPump(tester), 'custom_swipe');
+      final result = await _settleAfterPumps(
+        tester,
+        GestureInteractionService.swipe(
+          ref: target,
+          direction: 'down',
+          distance: 80,
+        ),
+        pumps: 20,
+      );
+      expect(handled, isTrue, reason: 'the target received the swipe input');
+      expect(result['success'], isTrue);
+      expect(result['verified'], isFalse);
+      expect(result['measurementReason'], 'no_scrollable_at_point');
+      expect(result['scrollBefore'], isNull);
+      expect(result['scrollAfter'], isNull);
+    } finally {
+      semantics.dispose();
+    }
+  });
+
   testWidgets('a scroll reports the offsets of the list it actually moved', (
     final tester,
   ) async {

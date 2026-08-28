@@ -270,6 +270,7 @@ void main() {
   ) async {
     final navKey = GlobalKey<NavigatorState>();
     MCPToolkitBinding.instance.navigatorKey = navKey;
+    addTearDown(() => MCPToolkitBinding.instance.navigatorKey = null);
 
     await tester.pumpWidget(
       MaterialApp(
@@ -293,8 +294,6 @@ void main() {
     expect(result['verified'], isFalse);
     expect(result['via'], 'stack_changed_unnamed_route');
     expect(find.text('generated destination'), findsOneWidget);
-
-    MCPToolkitBinding.instance.navigatorKey = null;
   });
 
   testWidgets('navigate push reports a route the app never opened', (

@@ -632,19 +632,17 @@ mixin GestureInteractionService {
       };
     }
 
-    if (kIsWeb) {
-      final offsetResult = await _scrollToOffsetAttempt(
-        owner: owner,
-        node: node,
-        direction: direction,
-        distance: distance,
-        before: before,
-        beforeSignature: beforeSignature,
-        ref: ref,
-        targetNodeId: targetNodeId,
-      );
-      if (offsetResult != null) return offsetResult;
-    }
+    final offsetResult = await _scrollToOffsetAttempt(
+      owner: owner,
+      node: node,
+      direction: direction,
+      distance: distance,
+      before: before,
+      beforeSignature: beforeSignature,
+      ref: ref,
+      targetNodeId: targetNodeId,
+    );
+    if (offsetResult != null) return offsetResult;
 
     final extentMin = _finiteOrNull(node.getSemanticsData().scrollExtentMin);
     final extentMax = _finiteOrNull(node.getSemanticsData().scrollExtentMax);
@@ -1055,7 +1053,29 @@ mixin GestureInteractionService {
     await _dispatchSwipe(start, end);
     final settle = await _settledScrollPosition(scrollable, before);
     final after = settle.position;
-    if (before != null && after != null && before == after) {
+    if (before == null || after == null) {
+      return <String, Object?>{
+        'success': true,
+        'ref': ?ref,
+        'verified': false,
+        'via': 'pointer_events',
+        'action': 'swipe',
+        'direction': direction,
+        'distance': distance,
+        'from': _offsetToMap(start),
+        'to': _offsetToMap(end),
+        'measurementReason': scrollable == null
+            ? 'no_scrollable_at_point'
+            : 'scroll_position_unavailable',
+        'hint': scrollable == null
+            ? 'The swipe was dispatched, but no scrollable semantics node '
+                  'covers its start point. A custom gesture may still have '
+                  'handled it, so the outcome is unverified.'
+            : 'The swipe was dispatched, but the scrollable publishes no '
+                  'finite offset. The outcome cannot be verified.',
+      };
+    }
+    if (before == after) {
       return <String, Object?>{
         'success': false,
         'ref': ?ref,
@@ -1083,8 +1103,8 @@ mixin GestureInteractionService {
       'distance': distance,
       'from': _offsetToMap(start),
       'to': _offsetToMap(end),
-      'scrollBefore': ?before,
-      'scrollAfter': ?after,
+      'scrollBefore': before,
+      'scrollAfter': after,
       if (!settle.settled) 'settled': false,
     };
   }
