@@ -545,7 +545,7 @@ Capture screenshots, view details, and app errors in one bundled response.
 capture_ui_snapshot(errorsCount: 2, includeViewDetails: false)
 ```
 
-Returns: a `TextContent` JSON block with `screenshots`, `viewDetails`, and `errors` keys, plus one image block per captured screenshot. The base64 payload is lifted out of `screenshots.images` into those blocks (`screenshots.imagesDeliveredAs: "image_blocks"`), so an empty `images` list next to a non-zero `summary.imageCount` is the normal shape, not a failed capture.
+Returns: a `TextContent` JSON block with `screenshots`, `viewDetails`, and `errors` keys. When `screenshots.images` contains inline base64, each payload is lifted into a sibling image block and the JSON reports `screenshots.imagesDeliveredAs: "image_blocks"`; the emptied `images` list is then the normal shape, not a failed capture. Captures delivered through `screenshots.fileUrls` stay in the JSON and produce no image blocks.
 
 - `vm_service_unavailable` — app not running.
 - `permission_denied` — retry with `permissionPolicy: "auto_request_once"`.
@@ -736,10 +736,10 @@ Synthesize key press (down+up). Accepted: `Enter Escape Tab Backspace Delete Spa
 ```json
 {"name": "press_key", "arguments": {"key": "Enter"}}
 ```
-Returns: `{"key": "Enter", "handled": bool}` — `handled` covers both dispatch phases (hardware keyboard handlers and focus chain); false means the keystroke was delivered and nothing claimed it. Failures: `unsupported_key`, `no_focus`
+Returns: `{"key": "Enter", "handled": bool}` — `handled` says whether either dispatch phase (hardware keyboard handlers or focus chain) claimed the main key-down event; false does not describe the key-up or modifier events. Failures: `unsupported_key`, `no_focus`
 
 ### wait_for
-Wait for a UI predicate; returns fresh semantic snapshot. Predicates: `{kind:"text",text}` | `{kind:"noText",text}` | `{kind:"time",ms}` | `{kind:"stable",stableWindowMs}`. `stable` samples once per frame, so the window becomes a run of unchanged frames and a slow app takes longer than the window asked for; the match reports `stableFor.requiredFrames`, `stableFor.frames` and `stableFor.elapsedMs`. `predicate` • object • required. `timeoutMs` • integer • optional • default 5000 • max 30000. `connection` • object • optional.
+Wait for a UI predicate; returns fresh semantic snapshot. Predicates: `{kind:"text",text}` | `{kind:"noText",text}` | `{kind:"time",ms}` | `{kind:"stable",stableWindowMs}`. `stable` samples once per frame and matches after the semantics tree has remained unchanged for the requested wall time; the match reports `stableFor.sampledFrames` and `stableFor.elapsedMs`. `stableWindowMs` must be less than `timeoutMs` (default 5000); an impossible budget fails immediately with `invalid_predicate`. `predicate` • object • required. `timeoutMs` • integer • optional • default 5000 • max 30000. `connection` • object • optional.
 ```json
 {"name": "wait_for", "arguments": {"predicate": {"kind": "text", "text": "Dashboard"}, "timeoutMs": 8000}}
 ```
@@ -1158,6 +1158,12 @@ Every failure returns `{code, message, details, descriptor, recovery}`. Always r
 **Means:** `get_recent_logs` retrieval failed.
 **Recovery:** `flutter-mcp-toolkit doctor --json` — verify toolkit is initialized.
 
+### `invalidPredicate` (`invalid_predicate`)
+
+**Means:** `wait_for` received a predicate whose requested observation cannot fit inside its timeout budget.
+**Causes:** `stableWindowMs` is greater than or equal to effective `timeoutMs`.
+**Recovery:** set `timeoutMs` above `stableWindowMs`; omitting `timeoutMs` uses the 5000 ms default.
+
 ### `waitTimeout` (`wait_timeout`)
 
 **Means:** `wait_for` predicate did not match before `timeoutMs` elapsed.
@@ -1367,7 +1373,7 @@ If something should appear but does not: confirm **`addEntries`** completed (**`
 - **Hot reload** + **`addEntries`** from widget code → duplicate registrations. Register once in **`main()` / bootstrap**.
 - **Debug mode only** — release builds do not expose VM service extensions.
 - **Naming**: flat global namespace per app — prefix tools/resources (`cart_`, `flags_`, `nav_`). A name a built-in entry already holds is skipped without a word: the built-in answers and your handler never runs.
-- **Naming the running instance** is `MCPToolkitBinding.instance.setAppIdentity(label: …)`, called again whenever the name changes (sign-in, workspace switch). Discovery reads that label, and a tool of your own called `app_identity` is one of the collisions above.
+- **Naming the running instance** is `MCPToolkitBinding.instance.setAppIdentity(label: 'Fleet app · staging')`, called again whenever the name changes (sign-in, workspace switch). Discovery reads that label, and a tool of your own called `app_identity` is one of the collisions above.
 
 ## When the agent authors surfaces for the user’s app
 
