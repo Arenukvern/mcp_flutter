@@ -160,99 +160,100 @@ void main() {
     expect(result['hint'], contains('main key-down event'));
   });
 
-  testWidgets('press_key matches a plain shortcut while a modifier is held', (
-    final tester,
-  ) async {
-    // A modifier can be left down by a key-up the app never saw: the window
-    // lost focus mid-chord, or a keyboard state sync restored what the engine
-    // still believed was pressed. SingleActivator matches the exact modifier
-    // set, so an unreleased Meta makes every plain shortcut stop firing.
-    var dismissed = 0;
-    await tester.pumpWidget(
-      MaterialApp(
-        home: CallbackShortcuts(
-          bindings: <ShortcutActivator, VoidCallback>{
-            const SingleActivator(LogicalKeyboardKey.escape): () => dismissed++,
-          },
-          child: const Focus(
-            autofocus: true,
-            child: SizedBox(width: 100, height: 100),
+  group('press_key modifier cleanup', () {
+    testWidgets('a plain shortcut matches while a modifier is held', (
+      final tester,
+    ) async {
+      // A modifier can be left down by a key-up the app never saw: the window
+      // lost focus mid-chord, or a keyboard state sync restored what the engine
+      // still believed was pressed. SingleActivator matches the exact modifier
+      // set, so an unreleased Meta makes every plain shortcut stop firing.
+      var dismissed = 0;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: CallbackShortcuts(
+            bindings: <ShortcutActivator, VoidCallback>{
+              const SingleActivator(LogicalKeyboardKey.escape): () =>
+                  dismissed++,
+            },
+            child: const Focus(
+              autofocus: true,
+              child: SizedBox(width: 100, height: 100),
+            ),
           ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    HardwareKeyboard.instance.handleKeyEvent(
-      const KeyDownEvent(
-        physicalKey: PhysicalKeyboardKey.metaLeft,
-        logicalKey: LogicalKeyboardKey.metaLeft,
-        timeStamp: Duration.zero,
-      ),
-    );
-    expect(
-      HardwareKeyboard.instance.logicalKeysPressed,
-      contains(LogicalKeyboardKey.metaLeft),
-    );
-
-    final result = await ControlFlowService.pressKey(key: 'Escape');
-    await tester.pump();
-
-    expect(dismissed, 1);
-    expect(result['clearedStaleModifiers'], contains('Meta Left'));
-    expect(HardwareKeyboard.instance.logicalKeysPressed, isEmpty);
-  });
-
-  testWidgets('press_key holds no modifier after a combination', (
-    final tester,
-  ) async {
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: Material(child: SizedBox(width: 100, height: 100)),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    await ControlFlowService.pressKey(key: 'e', meta: true);
-    await tester.pump();
-
-    expect(HardwareKeyboard.instance.logicalKeysPressed, isEmpty);
-  });
-
-  testWidgets('press_key releases a modifier the app pressed back', (
-    final tester,
-  ) async {
-    // What the keystroke triggers can restore the modifier — a route change
-    // that syncs keyboard state, for one. The call still leaves none held,
-    // and says which it had to release.
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Focus(
-          autofocus: true,
-          onKeyEvent: (final node, final event) {
-            if (event is KeyUpEvent &&
-                event.logicalKey == LogicalKeyboardKey.metaLeft) {
-              HardwareKeyboard.instance.handleKeyEvent(
-                const KeyDownEvent(
-                  physicalKey: PhysicalKeyboardKey.metaLeft,
-                  logicalKey: LogicalKeyboardKey.metaLeft,
-                  timeStamp: Duration.zero,
-                ),
-              );
-            }
-            return KeyEventResult.ignored;
-          },
-          child: const SizedBox(width: 100, height: 100),
+      HardwareKeyboard.instance.handleKeyEvent(
+        const KeyDownEvent(
+          physicalKey: PhysicalKeyboardKey.metaLeft,
+          logicalKey: LogicalKeyboardKey.metaLeft,
+          timeStamp: Duration.zero,
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      expect(
+        HardwareKeyboard.instance.logicalKeysPressed,
+        contains(LogicalKeyboardKey.metaLeft),
+      );
 
-    final result = await ControlFlowService.pressKey(key: 'e', meta: true);
-    await tester.pump();
+      final result = await ControlFlowService.pressKey(key: 'Escape');
+      await tester.pump();
 
-    expect(result['releasedStuckModifiers'], contains('Meta Left'));
-    expect(HardwareKeyboard.instance.logicalKeysPressed, isEmpty);
+      expect(dismissed, 1);
+      expect(result['clearedStaleModifiers'], contains('Meta Left'));
+      expect(HardwareKeyboard.instance.logicalKeysPressed, isEmpty);
+    });
+
+    testWidgets('a combination leaves no modifier held', (final tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Material(child: SizedBox(width: 100, height: 100)),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await ControlFlowService.pressKey(key: 'e', meta: true);
+      await tester.pump();
+
+      expect(HardwareKeyboard.instance.logicalKeysPressed, isEmpty);
+    });
+
+    testWidgets('a modifier the app pressed back is released', (
+      final tester,
+    ) async {
+      // What the keystroke triggers can restore the modifier — a route change
+      // that syncs keyboard state, for one. The call still leaves none held,
+      // and says which it had to release.
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Focus(
+            autofocus: true,
+            onKeyEvent: (final node, final event) {
+              if (event is KeyUpEvent &&
+                  event.logicalKey == LogicalKeyboardKey.metaLeft) {
+                HardwareKeyboard.instance.handleKeyEvent(
+                  const KeyDownEvent(
+                    physicalKey: PhysicalKeyboardKey.metaLeft,
+                    logicalKey: LogicalKeyboardKey.metaLeft,
+                    timeStamp: Duration.zero,
+                  ),
+                );
+              }
+              return KeyEventResult.ignored;
+            },
+            child: const SizedBox(width: 100, height: 100),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final result = await ControlFlowService.pressKey(key: 'e', meta: true);
+      await tester.pump();
+
+      expect(result['releasedStuckModifiers'], contains('Meta Left'));
+      expect(HardwareKeyboard.instance.logicalKeysPressed, isEmpty);
+    });
   });
 
   // -----------------------------------------------------------------------

@@ -743,7 +743,7 @@ Synthesize key press (down+up). Accepted: `Enter Escape Tab Backspace Delete Spa
 ```json
 {"name": "press_key", "arguments": {"key": "Enter"}}
 ```
-Returns: `{"key": "Enter", "handled": bool}` — `handled` says whether either dispatch phase (hardware keyboard handlers or focus chain) claimed the main key-down event; false does not describe the key-up or modifier events. `clearedStaleModifiers` / `releasedStuckModifiers` name any modifier the call had to release — a modifier left held by an earlier keystroke makes every plain shortcut stop matching, so the call normalizes it and says so. Failures: `unsupported_key`, `no_focus`
+Returns: `{"key": "Enter", "handled": bool}` — `handled` says whether either dispatch phase (hardware keyboard handlers or focus chain) claimed the main key-down event; false does not describe the key-up or modifier events. `clearedStaleModifiers` / `releasedStuckModifiers` name any modifier the call had to release — a modifier left held by an earlier keystroke makes every plain shortcut stop matching, so the call normalizes it and says so. Failures: `unknown_key`
 
 ### wait_for
 
