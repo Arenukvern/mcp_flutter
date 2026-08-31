@@ -400,10 +400,10 @@ mixin GestureInteractionService {
         return _staleRef(ref, 'scroll_$direction');
       }
       // A ref that scrolls itself is the target; otherwise the caller means
-      // the list the ref sits in. A row carries no scroll action of its own,
-      // and its centre is usually off screen — which is the very reason the
-      // caller is scrolling — so neither tier can act on the row itself.
-      final scrollTarget = node.getSemanticsData().hasAction(action)
+      // the list the ref sits in. A row's centre is usually off screen — which
+      // is the very reason the caller is scrolling — so neither tier can act
+      // on the row itself.
+      final scrollTarget = _scrollsBy(node.getSemanticsData(), action)
           ? node
           : _scrollableAncestorOf(node, action);
       if (scrollTarget != null) {
@@ -436,7 +436,7 @@ mixin GestureInteractionService {
         final underPointer = _findScrollableAt(_screenCenter());
         final target = underPointer == null
             ? _findScrollableFor(root, action)
-            : (underPointer.getSemanticsData().hasAction(action)
+            : (_scrollsBy(underPointer.getSemanticsData(), action)
                   ? underPointer
                   : null);
         if (target != null) {
@@ -883,7 +883,7 @@ mixin GestureInteractionService {
     var current = node.parent;
     while (current != null) {
       final data = current.getSemanticsData();
-      if (data.hasAction(action)) return current;
+      if (_scrollsBy(data, action)) return current;
       anyScrollable ??= _isScrollable(data) ? current : null;
       current = current.parent;
     }
@@ -897,14 +897,35 @@ mixin GestureInteractionService {
 
   /// Whether [data] belongs to a node that scrolls at all, in any direction.
   static bool _isScrollable(final SemanticsData data) =>
-      data.hasAction(SemanticsAction.scrollUp) ||
-      data.hasAction(SemanticsAction.scrollDown) ||
-      data.hasAction(SemanticsAction.scrollLeft) ||
-      data.hasAction(SemanticsAction.scrollRight) ||
-      data.hasAction(SemanticsAction.scrollToOffset);
+      _publishesScrollGeometry(data) &&
+      (data.hasAction(SemanticsAction.scrollUp) ||
+          data.hasAction(SemanticsAction.scrollDown) ||
+          data.hasAction(SemanticsAction.scrollLeft) ||
+          data.hasAction(SemanticsAction.scrollRight) ||
+          data.hasAction(SemanticsAction.scrollToOffset));
 
-  /// Walk the semantics tree depth-first and return the first node that
-  /// advertises [action]. Returns `null` if none is found.
+  /// Whether [data] belongs to a scroll view that can take [action] itself.
+  static bool _scrollsBy(
+    final SemanticsData data,
+    final SemanticsAction action,
+  ) => data.hasAction(action) && _isScrollable(data);
+
+  /// Whether [data] carries the scroll geometry only a scroll view publishes.
+  ///
+  /// Scroll actions alone do not make a node a list. A `GestureDetector` with
+  /// pan or drag handlers advertises scrollLeft / scrollRight / scrollUp /
+  /// scrollDown as well, and performing one of those on it synthesises a drag
+  /// on that widget — a card gets picked up and carried instead of a list
+  /// moving — which is the opposite of what the caller asked for. Only
+  /// `Scrollable` also publishes where it currently sits, so the position is
+  /// what a scroll action is trusted against.
+  static bool _publishesScrollGeometry(final SemanticsData data) =>
+      data.scrollPosition != null ||
+      data.scrollExtentMin != null ||
+      data.scrollExtentMax != null;
+
+  /// Walk the semantics tree depth-first and return the first scroll view that
+  /// takes [action]. Returns `null` if none is found.
   static SemanticsNode? _findScrollableFor(
     final SemanticsNode root,
     final SemanticsAction action,
@@ -912,7 +933,7 @@ mixin GestureInteractionService {
     SemanticsNode? result;
     void visit(final SemanticsNode node) {
       if (result != null) return;
-      if (node.getSemanticsData().hasAction(action)) {
+      if (_scrollsBy(node.getSemanticsData(), action)) {
         result = node;
         return;
       }

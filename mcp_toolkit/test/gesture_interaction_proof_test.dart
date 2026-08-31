@@ -174,6 +174,42 @@ class _ShellRailBesideList extends StatelessWidget {
   );
 }
 
+/// A board scrolling sideways whose cards are dragged by a pan gesture. Those
+/// cards publish scrollLeft / scrollRight of their own — Flutter mirrors a pan
+/// handler into scroll semantics — while only the board can actually scroll.
+/// @ai Test-only fixture isolating a draggable that advertises scroll actions.
+class _DragBoard extends StatelessWidget {
+  const _DragBoard();
+
+  static final List<String> dragged = <String>[];
+
+  @override
+  Widget build(final BuildContext context) => MaterialApp(
+    home: Scaffold(
+      body: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: <Widget>[
+            for (var i = 0; i < 12; i++)
+              MergeSemantics(
+                child: Semantics(
+                  identifier: 'card_$i',
+                  label: 'Card $i',
+                  child: GestureDetector(
+                    onPanStart: (final _) => dragged.add('card_$i'),
+                    onPanUpdate: (final _) {},
+                    onPanEnd: (final _) {},
+                    child: const SizedBox(width: 260, height: 140),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
 void main() {
   testWidgets('a gesture refuses a ref whose node left the tree', (
     final tester,
@@ -627,6 +663,43 @@ void main() {
       // The row carries no scroll action of its own; the answer is its list.
       expect(positions.first, greaterThan(0), reason: 'the rail must move');
       expect(positions.last, 0, reason: 'the content list must stay put');
+    } finally {
+      semantics.dispose();
+    }
+  });
+
+  testWidgets('a draggable card ref scrolls the board, never itself', (
+    final tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    _DragBoard.dragged.clear();
+    try {
+      await tester.pumpWidget(const _DragBoard());
+      await tester.pumpAndSettle();
+
+      final card = _refFor(await _snapshotAfterPump(tester), 'card_6');
+
+      final result = await _settleAfterPumps(
+        tester,
+        GestureInteractionService.scroll(
+          ref: card,
+          direction: 'right',
+          distance: 200,
+        ),
+        pumps: 60,
+      );
+      final board = tester
+          .state<ScrollableState>(find.byType(Scrollable))
+          .position
+          .pixels;
+
+      expect(result['success'], isTrue, reason: '$result');
+      expect(board, greaterThan(0), reason: 'the board must move');
+      expect(
+        _DragBoard.dragged,
+        isEmpty,
+        reason: 'a scroll must not pick the card up',
+      );
     } finally {
       semantics.dispose();
     }
