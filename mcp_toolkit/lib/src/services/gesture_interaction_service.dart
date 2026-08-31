@@ -912,12 +912,12 @@ mixin GestureInteractionService {
 
   /// Whether [data] carries the scroll geometry only a scroll view publishes.
   ///
-  /// Scroll actions alone do not make a node a list. A `GestureDetector` with
+  /// Scroll actions alone do not make a node a list. A [GestureDetector] with
   /// pan or drag handlers advertises scrollLeft / scrollRight / scrollUp /
   /// scrollDown as well, and performing one of those on it synthesises a drag
   /// on that widget — a card gets picked up and carried instead of a list
   /// moving — which is the opposite of what the caller asked for. Only
-  /// `Scrollable` also publishes where it currently sits, so the position is
+  /// [Scrollable] also publishes where it currently sits, so the position is
   /// what a scroll action is trusted against.
   static bool _publishesScrollGeometry(final SemanticsData data) =>
       data.scrollPosition != null ||

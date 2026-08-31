@@ -190,7 +190,7 @@ class _DragBoard extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         child: Row(
           children: <Widget>[
-            for (var i = 0; i < 12; i++)
+            for (int i = 0; i < 12; i++)
               MergeSemantics(
                 child: Semantics(
                   identifier: 'card_$i',
