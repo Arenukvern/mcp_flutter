@@ -555,6 +555,18 @@ void main() {
         expect(cappedString['returnedLength'], 32 * 1024);
         expect((cappedString['result'] as String).length, 32 * 1024);
         expect(cappedString['hint'], contains('.substring(32768)'));
+        // The cap counts UTF-16 code units, so a non-ASCII String windows at
+        // the same length as an ASCII one.
+        final cyrillicString = _decodeToolJsonPayload(
+          await dispatch('fmt_evaluate_dart_expression', {
+            'expression': '"ы" * 40000',
+            'connection': connection,
+          }),
+        );
+        expect(cyrillicString['truncated'], isTrue);
+        expect(cyrillicString['length'], 40000);
+        expect(cyrillicString['returnedLength'], 32768);
+        expect((cyrillicString['result'] as String).length, 32768);
 
         // 8. fused edit/preview — runs hot reload + capture.
         await dispatch('fmt_hot_reload_and_capture', {

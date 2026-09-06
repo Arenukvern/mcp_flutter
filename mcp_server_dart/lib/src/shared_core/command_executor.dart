@@ -1241,9 +1241,10 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
   }
 
-  /// Upper bound on the characters `evaluate_dart_expression` returns; a
-  /// longer String is windowed and reported as `truncated`.
-  static const int _maxEvaluationResultLength = 32 * 1024;
+  /// Upper bound on what `evaluate_dart_expression` returns, in UTF-16 code
+  /// units — the unit `getObject(count:)` windows by and `String.length`
+  /// counts in; a longer String is windowed and reported as `truncated`.
+  static const int _maxEvaluationResultCodeUnits = 32768;
 
   /// The VM abbreviates a String inside an `InstanceRef` and only flags it
   /// with `valueAsStringIsTruncated`; the full text lives behind `getObject`,
@@ -1262,7 +1263,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
         isolateId,
         objectId,
         offset: 0,
-        count: _maxEvaluationResultLength,
+        count: _maxEvaluationResultCodeUnits,
       );
       if (full is Instance && full.valueAsString != null) {
         value = full.valueAsString;
@@ -1281,8 +1282,8 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       if (truncated && value != null) 'returnedLength': value.length,
       if (truncated)
         'hint':
-            'Only the first ${value?.length ?? 0} of $length characters are '
-            'returned; evaluate the expression with '
+            'Only the first ${value?.length ?? 0} of $length UTF-16 code '
+            'units are returned; evaluate the expression with '
             '.substring(${value?.length ?? 0}) to read the rest.'
       else if (value == null && className != null)
         'hint':
