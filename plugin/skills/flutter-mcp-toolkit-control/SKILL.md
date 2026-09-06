@@ -125,7 +125,7 @@ Find a semantic target that may be off-screen. `query` • string • required. 
 ```json
 {"name": "reveal_search", "arguments": {"query": "greeting_input_field", "matchBy": "identifier", "direction": "down", "maxAttempts": 4}}
 ```
-Returns: `{"ref": "s_14", "snapshotId": 2, "match": {...}, "attempts": [...]}` — Failures: `missing_query`, `target_not_found`, `scroll_blocked`, `target_not_actionable`
+Returns: `{"ref": "s_14", "snapshotId": 2, "match": {...}, "attempts": [...]}` — Failures: `missing_query`, `target_not_found`, `scroll_blocked`, `target_not_actionable`. `identifier` matches whole and case-sensitively; the other modes are case-insensitive substring tests. A miss by `identifier` carries `identifiersSeen` (how many the searched screens published) and `nearIdentifiers` — the closest of them, so `panel.tab` not found comes back with `panel.tab.overview` / `panel.tab.jobs` to pass instead.
 
 ### fill_form
 Batch text entry: fills multiple fields in one call. Stops on first failure. `snapshotId` validated on first field only. `fields` • array of `{ref, text}` • required. `snapshotId` • integer • optional. `connection` • object • optional.

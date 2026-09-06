@@ -329,10 +329,137 @@ void main() {
       expect(result['error'], anyOf('target_not_found', 'scroll_blocked'));
       expect(result['hint'], isA<String>());
       expect(result['hint'], isNotEmpty);
+      // The page publishes no identifier, so the miss says that rather than
+      // guessing at split text — an identifier is matched whole.
+      expect(result['hint'], contains('published any identifier'));
+      expect(result['hint'], isNot(contains('split across nodes')));
+      expect(result['identifiersSeen'], 0);
+      expect(result['nearIdentifiers'], isEmpty);
     } finally {
       semantics.dispose();
     }
   });
+
+  testWidgets('reveal_search names the identifiers near a missed one', (
+    final tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    try {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Column(
+              children: <Widget>[
+                Semantics(
+                  identifier: 'panel.tab.overview',
+                  child: const Text('Overview'),
+                ),
+                Semantics(
+                  identifier: 'panel.tab.jobs',
+                  child: const Text('Jobs'),
+                ),
+                Semantics(
+                  identifier: 'other.thing',
+                  child: const Text('Other'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final revealFuture = RevealSearchService.revealSearch(
+        query: 'panel.tab',
+        matchBy: 'identifier',
+        maxAttempts: 1,
+        distance: 120,
+      );
+      for (var i = 0; i < 12; i++) {
+        await tester.pump(const Duration(milliseconds: 20));
+      }
+      final result = await revealFuture;
+
+      expect(result['success'], isFalse);
+      expect(result['error'], anyOf('target_not_found', 'scroll_blocked'));
+      expect(result['identifiersSeen'], 3);
+      expect(result['nearIdentifiers'], <String>[
+        'panel.tab.jobs',
+        'panel.tab.overview',
+      ]);
+      expect(
+        result['hint'],
+        contains('"panel.tab.jobs", "panel.tab.overview"'),
+      );
+      expect(result['hint'], isNot(contains('split across nodes')));
+    } finally {
+      semantics.dispose();
+    }
+  });
+
+  testWidgets('reveal_search explains a text miss as a substring test', (
+    final tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    try {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(body: Center(child: Text('Only row'))),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final revealFuture = RevealSearchService.revealSearch(
+        query: 'nothing here',
+        maxAttempts: 1,
+        distance: 120,
+      );
+      for (var i = 0; i < 12; i++) {
+        await tester.pump(const Duration(milliseconds: 20));
+      }
+      final result = await revealFuture;
+
+      expect(result['success'], isFalse);
+      expect(result['hint'], contains('split across nodes'));
+      expect(result.containsKey('nearIdentifiers'), isFalse);
+    } finally {
+      semantics.dispose();
+    }
+  });
+
+  test(
+    'reveal_search ranks near identifiers by how they resemble the query',
+    () {
+      expect(
+        RevealSearchService.nearIdentifiersFor(
+          query: 'panel.tab',
+          identifiersSeen: <String>[
+            'other.thing',
+            'panel.header',
+            'sidebar.panel.tab',
+            'Panel.Tab',
+            'panel.tab.version',
+            'panel.tab.overview',
+            'panel.tab.overview',
+          ],
+        ),
+        <String>[
+          'Panel.Tab',
+          'panel.tab.overview',
+          'panel.tab.version',
+          'sidebar.panel.tab',
+          'panel.header',
+        ],
+      );
+      expect(
+        RevealSearchService.nearIdentifiersFor(
+          query: 'nav.tasks',
+          identifiersSeen: <String>['dialog.omniSearch', 'topbar.avatar'],
+        ),
+        isEmpty,
+      );
+    },
+  );
 
   testWidgets(
     'semantic_snapshot reports hybrid when no interactive semantics refs',

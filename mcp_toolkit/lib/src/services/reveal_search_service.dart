@@ -37,10 +37,14 @@ mixin RevealSearchService {
     final boundedDistance = distance.clamp(1, _maxDistance).toDouble();
     final attempts = <Map<String, Object?>>[];
     Map<String, Object?>? lastSnapshot;
+    // Every identifier any screen of the search published, so a miss can name
+    // what was there instead of the one asked for.
+    final identifiersSeen = <String>{};
 
     for (var attempt = 0; attempt <= boundedMaxAttempts; attempt++) {
       final snapshot = await SemanticSnapshotService.buildSemanticSnapshot();
       lastSnapshot = snapshot;
+      identifiersSeen.addAll(_identifiersOf(snapshot));
       final match = _findMatch(
         snapshot: snapshot,
         query: normalizedQuery,
@@ -133,9 +137,15 @@ mixin RevealSearchService {
               'The search stopped early: scrolling "$direction" moved nothing, '
               'so further attempts would re-read the same screen. The list is '
               'already at that edge — search the other direction — or the '
-              'point being scrolled is not over the list; see scrollError.',
+              'point being scrolled is not over the list; see scrollError. '
+              '${_missHint(query: normalizedQuery, matchBy: normalizedMatchBy, identifiersSeen: identifiersSeen)}',
           'query': normalizedQuery,
           'matchBy': normalizedMatchBy,
+          ..._missDetails(
+            query: normalizedQuery,
+            matchBy: normalizedMatchBy,
+            identifiersSeen: identifiersSeen,
+          ),
           'direction': direction,
           'maxAttempts': boundedMaxAttempts,
           'distance': boundedDistance,
@@ -150,13 +160,17 @@ mixin RevealSearchService {
       'error': 'target_not_found',
       'hint':
           'Nothing matched "$normalizedQuery" by $normalizedMatchBy across '
-          '${attempts.length} screens. The text may be split across nodes or '
-          'rendered without semantics — call semantic_snapshot and read what '
-          'the screen actually publishes, or raise maxAttempts if the target '
-          'sits further than '
+          '${attempts.length} screens. '
+          '${_missHint(query: normalizedQuery, matchBy: normalizedMatchBy, identifiersSeen: identifiersSeen)} '
+          'Raise maxAttempts if the target sits further than '
           '${(boundedMaxAttempts * boundedDistance).round()} px away.',
       'query': normalizedQuery,
       'matchBy': normalizedMatchBy,
+      ..._missDetails(
+        query: normalizedQuery,
+        matchBy: normalizedMatchBy,
+        identifiersSeen: identifiersSeen,
+      ),
       'direction': direction,
       'maxAttempts': boundedMaxAttempts,
       'distance': boundedDistance,
@@ -285,6 +299,120 @@ mixin RevealSearchService {
 
   static double? _asDouble(final Object? value) =>
       value is num ? value.toDouble() : null;
+
+  static const int _maxNearIdentifiers = 8;
+
+  static Iterable<String> _identifiersOf(final Map<String, Object?> snapshot) {
+    final nodes = snapshot['nodes'];
+    if (nodes is! List) return const <String>[];
+    return nodes
+        .whereType<Map<Object?, Object?>>()
+        .map((final node) => node['identifier'])
+        .whereType<String>()
+        .where((final id) => id.isNotEmpty);
+  }
+
+  /// Identifiers from the screens searched that look like the one asked for,
+  /// closest first: the same spelling in another case, then those the query
+  /// is a prefix of (`panel.tab` → `panel.tab.overview`), then those that
+  /// contain it, then those sharing its leading dotted segments.
+  ///
+  /// The list is what turns "not found" into a result the caller can act on:
+  /// an identifier is matched exactly, so a typo or a missing trailing
+  /// segment finds nothing on its own and the caller cannot see why.
+  @visibleForTesting
+  static List<String> nearIdentifiersFor({
+    required final String query,
+    required final Iterable<String> identifiersSeen,
+  }) {
+    final lowerQuery = query.toLowerCase();
+    final querySegments = query.split('.');
+    int sharedSegments(final String id) {
+      final segments = id.split('.');
+      var shared = 0;
+      while (shared < segments.length &&
+          shared < querySegments.length &&
+          segments[shared] == querySegments[shared]) {
+        shared++;
+      }
+      return shared;
+    }
+
+    // Lower rank sorts first; the shared-segment count breaks ties within
+    // the same rank so the sibling with the longer common path leads.
+    (int, int)? rankOf(final String id) {
+      final lowerId = id.toLowerCase();
+      final shared = sharedSegments(id);
+      if (lowerId == lowerQuery) return (0, -shared);
+      if (lowerId.startsWith(lowerQuery)) return (1, -shared);
+      if (lowerId.contains(lowerQuery)) return (2, -shared);
+      if (shared > 0) return (3, -shared);
+      return null;
+    }
+
+    final ranked =
+        <(String, (int, int))>[
+          for (final id in identifiersSeen.toSet())
+            if (rankOf(id) case final rank?) (id, rank),
+        ]..sort((final a, final b) {
+          final byRank = a.$2.$1.compareTo(b.$2.$1);
+          if (byRank != 0) return byRank;
+          final bySegments = a.$2.$2.compareTo(b.$2.$2);
+          if (bySegments != 0) return bySegments;
+          return a.$1.compareTo(b.$1);
+        });
+    return <String>[for (final (id, _) in ranked.take(_maxNearIdentifiers)) id];
+  }
+
+  static Map<String, Object?> _missDetails({
+    required final String query,
+    required final String matchBy,
+    required final Set<String> identifiersSeen,
+  }) {
+    if (matchBy != 'identifier') return const <String, Object?>{};
+    return <String, Object?>{
+      'identifiersSeen': identifiersSeen.length,
+      'nearIdentifiers': nearIdentifiersFor(
+        query: query,
+        identifiersSeen: identifiersSeen,
+      ),
+    };
+  }
+
+  /// Why a miss by [matchBy] happens and what to read next — an identifier
+  /// is compared whole, so the text-mode advice about split nodes does not
+  /// apply to it.
+  static String _missHint({
+    required final String query,
+    required final String matchBy,
+    required final Set<String> identifiersSeen,
+  }) {
+    if (matchBy != 'identifier') {
+      return 'Matching by $matchBy is a case-insensitive substring test, so '
+          'the text may be split across nodes or rendered without semantics '
+          '— call semantic_snapshot and read what the screen actually '
+          'publishes.';
+    }
+    final near = nearIdentifiersFor(
+      query: query,
+      identifiersSeen: identifiersSeen,
+    );
+    if (near.isNotEmpty) {
+      return 'An identifier must match whole and case-sensitively; '
+          '${identifiersSeen.length} identifiers were seen and the closest '
+          'are ${near.map((final id) => '"$id"').join(', ')} '
+          '(nearIdentifiers) — pass one of them.';
+    }
+    if (identifiersSeen.isEmpty) {
+      return 'An identifier must match whole and case-sensitively, and no '
+          'screen searched published any identifier at all — the app does '
+          'not set Semantics(identifier:) here; search by text instead.';
+    }
+    return 'An identifier must match whole and case-sensitively; '
+        '${identifiersSeen.length} identifiers were seen and none resembles '
+        '"$query" — call semantic_snapshot and read the identifier field, '
+        'or search by text.';
+  }
 
   static Map<String, Object?>? _findMatch({
     required final Map<String, Object?> snapshot,
