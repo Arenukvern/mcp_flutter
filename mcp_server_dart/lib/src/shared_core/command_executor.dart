@@ -943,7 +943,9 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
           if (command.identifierPrefix != null)
             'identifierPrefix': command.identifierPrefix,
           if (command.subtreeOf != null) 'subtreeOf': command.subtreeOf,
-          if (command.fields != null) 'fields': command.fields,
+          // Extension parameters travel as strings; the app decodes a
+          // list from JSON, not from List.toString().
+          if (command.fields != null) 'fields': jsonEncode(command.fields),
         },
       );
       return CoreResult.success(data: _map(result.json));
