@@ -705,6 +705,49 @@ void main() {
     }
   });
 
+  testWidgets('custom scroll semantics without geometry still take the action', (
+    final tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    var handled = 0;
+    try {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: Semantics(
+                identifier: 'canvas',
+                onScrollUp: () => handled++,
+                child: const SizedBox(width: 300, height: 300),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final canvas = _refFor(await _snapshotAfterPump(tester), 'canvas');
+
+      final result = await _settleAfterPumps(
+        tester,
+        GestureInteractionService.scroll(
+          ref: canvas,
+          direction: 'down',
+          distance: 200,
+        ),
+        pumps: 30,
+      );
+
+      expect(result['success'], isTrue, reason: '$result');
+      expect(result['via'], 'semantic_action');
+      expect(result['verified'], isFalse);
+      expect(result['unmeasured'], isTrue);
+      expect(handled, 1, reason: 'the handler must run exactly once');
+    } finally {
+      semantics.dispose();
+    }
+  });
+
   testWidgets('a list at its edge answers for itself, not for a stray point', (
     final tester,
   ) async {

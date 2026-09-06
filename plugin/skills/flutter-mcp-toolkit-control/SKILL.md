@@ -118,7 +118,7 @@ Enter text into a text field; taps to focus before typing. `ref` • string • 
 ```json
 {"name": "enter_text", "arguments": {"ref": "s_1", "text": "hello@example.com"}}
 ```
-Returns: `{"via": "editable_state"}` — Failures: `stale_snapshot`, `ref_not_found`
+Returns: `{"via": "editable_state", "verified": true, "appliedText": "..."}`. A write the field kept nothing of fails with `text_not_applied`, `appliedText` (empty) and `restoredText` (the value put back). Failures: `stale_snapshot`, `ref_not_found`, `text_not_applied`
 
 ### reveal_search
 Find a semantic target that may be off-screen. `query` • string • required. `matchBy` • string • optional (`text|identifier|label|value|hint`, default `text`). `direction` • string • optional (`up|down|left|right`, default `down`). `maxAttempts` • integer • optional • max 10. `distance` • number • optional. `connection` • object • optional.
@@ -139,7 +139,7 @@ Scroll to reveal content. `"down"` reveals content below (finger swipes up). `di
 ```json
 {"name": "scroll", "arguments": {"direction": "down", "ref": "s_0", "distance": 500}}
 ```
-Returns: `{"via": "semantic_action", "scrollBefore": 0.0, "scrollAfter": 500.0, "distance": 500.0}`. `scrollBefore`/`scrollAfter` are forwarded whenever measurable; `distance` is present on exact-offset and pointer-scroll paths. Failures: `ref_not_found`, `stale_snapshot`, `no_scrollable_at_point`, `no_scroll_movement`, `unsupported_scroll_action`, `semantics_owner_unavailable`
+Returns: `{"via": "semantic_action", "scrollBefore": 0.0, "scrollAfter": 500.0, "distance": 500.0}`. `scrollBefore`/`scrollAfter` are forwarded whenever measurable; `distance` is present on exact-offset and pointer-scroll paths. A node that advertises the scroll action without a scroll position (custom `Semantics(onScrollUp: ...)`) takes it and returns `success: true`, `verified: false`, `unmeasured: true`. Failures: `ref_not_found`, `stale_snapshot`, `no_scrollable_at_point`, `no_scroll_movement`, `unsupported_scroll_action`, `semantics_owner_unavailable`
 
 ### swipe
 High-velocity fling. Same direction model as `scroll`. Always Tier 2 pointer events. `direction` • string • required. `ref` • string • optional. `distance` • number • optional • default 300. `snapshotId` • integer • optional. `connection` • object • optional.
@@ -182,14 +182,14 @@ Drive the registered Navigator. Requires `MCPToolkitBinding.instance.navigatorKe
 ```json
 {"name": "navigate", "arguments": {"action": "push", "route": "/profile", "arguments": {"userId": "42"}}}
 ```
-Returns: `{"action": "push", "route": "/profile"}`. A generated unnamed route returns `success: true`, `verified: false`, and `via: "stack_changed_unnamed_route"` because the stack changed but its requested name cannot be checked. Failures: `navigator_not_configured`, `route_not_found`
+Returns: `{"action": "push", "route": "/profile"}`. A generated unnamed route returns `success: true`, `verified: false`, and `via: "stack_changed_unnamed_route"` because the stack changed but its requested name cannot be checked. `pop` reads `success` off the stack and reports `handled` from `maybePop`: a page under `PopScope(canPop: false)` comes back `handled: true`, `success: false`, `nothing_popped`. Failures: `navigator_not_configured`, `route_not_found`
 
 ### handle_dialog
 Dismiss the topmost popup/dialog route. Only `action: "dismiss"` supported. Requires `navigatorKey = key` on `MCPToolkitBinding.instance` in the app. `action` • string • required (must be `"dismiss"`). `connection` • object • optional.
 ```json
 {"name": "handle_dialog", "arguments": {"action": "dismiss"}}
 ```
-Returns: `{"dismissed": true}` — Failures: `navigator_not_configured`, `no_dialog`
+Returns: `{"success": true, "handled": true, "routeType": "DialogRoute<void>"}`. `success` is read off the route stack; `handled` is what `maybePop` answered, so a dialog under `PopScope(canPop: false)` comes back `handled: true`, `success: false`, `dialog_declined_pop`. Failures: `navigator_not_registered`, `no_popup_route`, `dialog_declined_pop`
 
 ### hot_reload_flutter
 Hot reload the app. Preserves state. `force` • boolean • optional • default false (reload even without source changes). `connection` • object • optional.

@@ -223,6 +223,50 @@ void main() {
     },
   );
 
+  testWidgets('handle_dialog dismiss reports a dialog that refused to close', (
+    final tester,
+  ) async {
+    final navKey = GlobalKey<NavigatorState>();
+    MCPToolkitBinding.instance.navigatorKey = navKey;
+    addTearDown(() => MCPToolkitBinding.instance.navigatorKey = null);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        navigatorKey: navKey,
+        home: Builder(
+          builder: (final context) => Scaffold(
+            body: Center(
+              child: ElevatedButton(
+                onPressed: () => showDialog<void>(
+                  context: context,
+                  builder: (final _) => const PopScope(
+                    canPop: false,
+                    child: AlertDialog(title: Text('Unsaved changes')),
+                  ),
+                ),
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    expect(find.byType(AlertDialog), findsOneWidget);
+
+    final result = await ControlFlowService.dismissDialog();
+    await tester.pumpAndSettle();
+
+    // maybePop answers true for a guarded route after merely notifying it;
+    // the dialog is still there, and the verdict must say so.
+    expect(result['success'], isFalse, reason: '$result');
+    expect(result['handled'], isTrue);
+    expect(result['error'], 'dialog_declined_pop');
+    expect(find.byType(AlertDialog), findsOneWidget);
+  });
+
   test(
     'handle_dialog dismiss fails fast when no navigator registered',
     () async {
@@ -301,6 +345,7 @@ void main() {
   ) async {
     final navKey = GlobalKey<NavigatorState>();
     MCPToolkitBinding.instance.navigatorKey = navKey;
+    addTearDown(() => MCPToolkitBinding.instance.navigatorKey = null);
 
     await tester.pumpWidget(
       MaterialApp(
@@ -353,6 +398,41 @@ void main() {
     expect(find.text('home'), findsOneWidget);
 
     MCPToolkitBinding.instance.navigatorKey = null;
+  });
+
+  testWidgets('navigate pop reports a page that refused to leave', (
+    final tester,
+  ) async {
+    final navKey = GlobalKey<NavigatorState>();
+    MCPToolkitBinding.instance.navigatorKey = navKey;
+    addTearDown(() => MCPToolkitBinding.instance.navigatorKey = null);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        navigatorKey: navKey,
+        routes: {
+          '/': (final _) => const Scaffold(body: Text('home')),
+          '/editor': (final _) => const PopScope(
+            canPop: false,
+            child: Scaffold(body: Text('editor')),
+          ),
+        },
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    unawaited(navKey.currentState!.pushNamed('/editor'));
+    await tester.pumpAndSettle();
+    expect(find.text('editor'), findsOneWidget);
+
+    final result = await ControlFlowService.navigate(action: 'pop');
+    await tester.pumpAndSettle();
+
+    expect(result['success'], isFalse, reason: '$result');
+    expect(result['handled'], isTrue);
+    expect(result['error'], 'nothing_popped');
+    expect(result['topRouteName'], '/editor');
+    expect(find.text('editor'), findsOneWidget);
   });
 
   test('navigate fails fast when no navigator registered', () async {

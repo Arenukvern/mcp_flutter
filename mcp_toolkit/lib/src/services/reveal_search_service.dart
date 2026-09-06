@@ -177,6 +177,9 @@ mixin RevealSearchService {
   }) {
     final approached = _targetApproached(attempts);
     final scrolled = _lastScrolledNode(attempts);
+    final anyScrollFailed = attempts.any(
+      (final attempt) => _asMap(attempt['scroll'])?['success'] == false,
+    );
     return <String, Object?>{
       'success': false,
       'error': 'target_not_actionable',
@@ -197,7 +200,7 @@ mixin RevealSearchService {
                 'viewport, so a gesture aimed at it would land off screen. Call '
                 'reveal_search again with a larger maxAttempts or distance; the '
                 'ref returned here is good for reading, not for tapping.'
-          : 'Every scroll succeeded and the target never moved closer, so '
+          : '${anyScrollFailed ? 'No attempted scroll moved the target closer, and at least one reported failure (see attempts[*].scroll)' : 'Every scroll succeeded and the target never moved closer'}, so '
                 'repeating them will not reveal it: what is being scrolled '
                 '${scrolled == null ? 'is not the list holding the target' : 'is node $scrolled, not the list holding the target'}. '
                 'Call semantic_snapshot, find the scrollable whose children '

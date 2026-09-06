@@ -342,7 +342,8 @@ mixin GestureInteractionService {
         'action': 'enter_text',
         'error': 'text_not_applied',
         'text': text,
-        'appliedText': editable.textEditingValue.text,
+        'appliedText': applied,
+        'restoredText': editable.textEditingValue.text,
         'hint':
             'The field kept none of "$text" — an input formatter rejected it '
             'outright, or the field is read-only. It was left holding '
@@ -403,9 +404,11 @@ mixin GestureInteractionService {
       // the list the ref sits in. A row's centre is usually off screen — which
       // is the very reason the caller is scrolling — so neither tier can act
       // on the row itself.
-      final scrollTarget = _scrollsBy(node.getSemanticsData(), action)
+      final data = node.getSemanticsData();
+      final scrollTarget = _scrollsBy(data, action)
           ? node
-          : _scrollableAncestorOf(node, action);
+          : _scrollableAncestorOf(node, action) ??
+                (_takesActionUnmeasured(data, action) ? node : null);
       if (scrollTarget != null) {
         final result = await _performSemanticScroll(
           node: scrollTarget,
@@ -415,7 +418,7 @@ mixin GestureInteractionService {
           ref: ref,
           targetNodeId: scrollTarget.id == node.id ? null : scrollTarget.id,
         );
-        if (_scrollMoved(result)) {
+        if (_scrollMoved(result) || result['unmeasured'] == true) {
           return result;
         }
         semanticAttempt = result;
@@ -447,7 +450,7 @@ mixin GestureInteractionService {
             distance: distance,
             targetNodeId: target.id,
           );
-          if (_scrollMoved(result)) {
+          if (_scrollMoved(result) || result['unmeasured'] == true) {
             return result;
           }
           semanticAttempt = result;
@@ -589,6 +592,25 @@ mixin GestureInteractionService {
     owner.performAction(node.id, action);
     _releaseSyntheticDevice();
     await _waitSemanticScrollFrame();
+    if (!_publishesScrollGeometry(node.getSemanticsData())) {
+      // A custom `Semantics(onScrollUp: ...)` ran its handler, but with no
+      // position to read there is nothing to measure it against, and a
+      // pointer scroll after it would drive the handler's widget a second
+      // time.
+      return <String, Object?>{
+        'success': true,
+        'ref': ?ref,
+        'targetNodeId': ?targetNodeId,
+        'via': 'semantic_action',
+        'action': 'scroll_$direction',
+        'verified': false,
+        'unmeasured': true,
+        'hint':
+            'The node took the scroll action but publishes no scroll '
+            'position, so the movement could not be measured. Read the '
+            'screen to confirm what its handler did.',
+      };
+    }
     final settle = await _settledScrollPosition(node, before);
     final after = settle.position;
     if (before != null && after != null && before != after) {
@@ -880,20 +902,33 @@ mixin GestureInteractionService {
     final SemanticsAction action,
   ) {
     SemanticsNode? anyScrollable;
+    SemanticsNode? unmeasured;
     var current = node.parent;
     while (current != null) {
       final data = current.getSemanticsData();
       if (_scrollsBy(data, action)) return current;
       anyScrollable ??= _isScrollable(data) ? current : null;
+      unmeasured ??= _takesActionUnmeasured(data, action) ? current : null;
       current = current.parent;
     }
     // No ancestor can move that way — a list already at the edge the caller is
     // asking for drops the direction from its actions. The nearest scrollable
     // is still the answer: it reports which edge it is sitting at, whereas
     // falling through to a wheel event aims at the ref's own centre, which is
-    // off screen exactly when the caller needs the scroll.
-    return anyScrollable;
+    // off screen exactly when the caller needs the scroll. A node that merely
+    // advertises the action comes last: with a scroll view in the chain it is
+    // the pan gesture the guard exists to skip, without one it is the custom
+    // semantics the caller wired for exactly this.
+    return anyScrollable ?? unmeasured;
   }
+
+  /// Whether [data] advertises [action] without the geometry that would let
+  /// the outcome be measured — custom `Semantics(onScrollUp: ...)` as much as
+  /// a pan gesture.
+  static bool _takesActionUnmeasured(
+    final SemanticsData data,
+    final SemanticsAction action,
+  ) => data.hasAction(action) && !_publishesScrollGeometry(data);
 
   /// Whether [data] belongs to a node that scrolls at all, in any direction.
   static bool _isScrollable(final SemanticsData data) =>
@@ -931,12 +966,15 @@ mixin GestureInteractionService {
     final SemanticsAction action,
   ) {
     SemanticsNode? result;
+    SemanticsNode? unmeasured;
     void visit(final SemanticsNode node) {
       if (result != null) return;
-      if (_scrollsBy(node.getSemanticsData(), action)) {
+      final data = node.getSemanticsData();
+      if (_scrollsBy(data, action)) {
         result = node;
         return;
       }
+      unmeasured ??= _takesActionUnmeasured(data, action) ? node : null;
       node.visitChildren((final child) {
         visit(child);
         return result == null;
@@ -944,7 +982,7 @@ mixin GestureInteractionService {
     }
 
     visit(root);
-    return result;
+    return result ?? unmeasured;
   }
 
   /// The innermost scrollable whose bounds contain [point].

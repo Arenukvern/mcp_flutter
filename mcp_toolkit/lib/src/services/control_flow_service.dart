@@ -214,7 +214,11 @@ class ControlFlowService {
   ///
   /// Returns the dismissal verdict and the route name/type. Refuses when no
   /// navigator is registered, the top route is not a popup, or the popup
-  /// declines the pop. Tools should use this instead of a blind navigator pop
+  /// declines the pop. `success` is read off the stack, not off `maybePop`:
+  /// that answers `true` for a route whose pop disposition is `doNotPop` — a
+  /// `PopScope` with `canPop: false` — after merely notifying it, so its
+  /// value says the request was delivered (`handled`), not that anything
+  /// left the stack. Tools should use this instead of a blind navigator pop
   /// so a plain page is never mistaken for a dialog.
   ///
   /// @ai Call this only for dialog-like popup routes; use [navigate] for pages.
@@ -240,9 +244,11 @@ class ControlFlowService {
       };
     }
 
-    final popped = await navState.maybePop();
+    final handled = await navState.maybePop();
+    final popped = !identical(_topRoute(navState), route);
     return <String, Object?>{
       'success': popped,
+      'handled': handled,
       // A dialog route is usually anonymous, so the type is what identifies
       // what was actually dismissed.
       'routeName': route.settings.name,
@@ -379,9 +385,12 @@ class ControlFlowService {
         if (navState == null) {
           return _navigatorNotRegistered();
         }
-        final popped = await navState.maybePop();
+        final before = _topRoute(navState);
+        final handled = await navState.maybePop();
+        final popped = !identical(_topRoute(navState), before);
         return <String, Object?>{
           'success': popped,
+          'handled': handled,
           'action': 'pop',
           if (!popped) ...<String, Object?>{
             'error': 'nothing_popped',

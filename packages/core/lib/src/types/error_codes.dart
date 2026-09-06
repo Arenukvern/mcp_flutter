@@ -538,8 +538,10 @@ Map<String, Object?> recoveryForErrorCode(
   // `fix_command` comes with it: these causes are answered by different
   // commands, and one that is right for a stale ref is wrong for a key name
   // that resolves to nothing. Consumers already treat it as optional.
+  // `details` is an app-supplied payload, so only a String `hint` is readable
+  // guidance; anything else keeps the mapped recovery.
   final hint = switch (details) {
-    final Map<Object?, Object?> value => value['hint']?.toString(),
+    {'hint': final String value} => value,
     _ => null,
   };
   if (hint != null && hint.isNotEmpty) {
