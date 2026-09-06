@@ -313,8 +313,8 @@ Every failure returns `{code, message, details, descriptor, recovery}`. Always r
 
 ### `interactionFailed` (`interaction_failed`)
 
-**Means:** a tap/scroll/swipe/drag/long_press/enter_text/reveal_search call was refused.
-**Causes:** stale `ref`; widget not visible, not interactive, or disabled; target never found; toolkit bridge not initialized.
+**Means:** a tap/scroll/swipe/drag/long_press/enter_text/reveal_search/focus_widget call was refused.
+**Causes:** stale `ref`; widget not visible, not interactive, or disabled; target never found; toolkit bridge not initialized. For `focus_widget`: `focus_not_exposed` (nothing focusable answers for the ref — a tap-only button with no `FocusNode`) or `focus_refused` (focus moved elsewhere; `details.focusedNow` names the holder).
 **Recovery:**
 
 1. Read `error.details.hint` — a refusal names its own cause and next step, and that hint is what `error.recovery.summary` carries.
