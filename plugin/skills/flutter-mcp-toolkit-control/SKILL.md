@@ -19,7 +19,7 @@ Use this skill when you need to drive a running Flutter app as a user would:
 
 ## Selectors
 
-Most interaction tools target a widget by **ref** — a short string like `"s_0"` returned by `semantic_snapshot`. For visible widgets, call `semantic_snapshot`, scan the returned nodes, find the right ref, then pass it. For off-screen targets with stable semantics text or identifier, use `reveal_search`; it performs a bounded snapshot → match → scroll loop and returns a fresh `ref`/`snapshotId`.
+Most interaction tools target a widget by **ref** — a short string like `"s_0"` returned by `semantic_snapshot`. For visible widgets, call `semantic_snapshot`, scan the returned nodes, find the right ref, then pass it — narrow a large screen with `identifierPrefix`, `subtreeOf` (a ref or an identifier) or `fields`; refs are those of the full tree either way. For off-screen targets with stable semantics text or identifier, use `reveal_search`; it performs a bounded snapshot → match → scroll loop and returns a fresh `ref`/`snapshotId`.
 
 Snapshot node fields to filter on:
 

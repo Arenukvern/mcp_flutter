@@ -92,10 +92,21 @@ extension type OnSemanticSnapshotEntry._(AgentCallEntry entry)
   factory OnSemanticSnapshotEntry() {
     final entry = mcpToolkitTool(
       handler: (final parameters) async {
-        final snapshot = await SemanticSnapshotService.buildSemanticSnapshot();
+        final rawFields = parameters['fields'] as Object?;
+        final filter = SemanticSnapshotFilter(
+          identifierPrefix: _nonEmptyString(parameters['identifierPrefix']),
+          subtreeOf: _nonEmptyString(parameters['subtreeOf']),
+          fields: rawFields is List
+              ? rawFields.map((final f) => f.toString()).toList()
+              : null,
+        );
+        final snapshot = await SemanticSnapshotService.buildSemanticSnapshot(
+          filter: filter.isEmpty ? null : filter,
+        );
         return MCPCallResult(
-          message:
-              'Semantic snapshot captured. Use refs to interact with widgets.',
+          message: snapshot['success'] == false
+              ? 'Semantic snapshot refused: ${snapshot['error']}'
+              : 'Semantic snapshot captured. Use refs to interact with widgets.',
           parameters: snapshot,
         );
       },
@@ -104,6 +115,8 @@ extension type OnSemanticSnapshotEntry._(AgentCallEntry entry)
         description:
             'Get compact semantic tree of interactive widgets with refs '
             'for interaction tools (tap_widget, enter_text, etc.). '
+            'Narrow it with identifierPrefix, subtreeOf (a ref or an '
+            'identifier) and fields; refs are those of the full tree. '
             'A control that appears only under the pointer is absent here: '
             'on desktop and web, hover the element that should own it and '
             'snapshot again.',
@@ -870,4 +883,10 @@ extension type OnFocusWidgetEntry._(AgentCallEntry entry)
     );
     return OnFocusWidgetEntry._(entry);
   }
+}
+
+String? _nonEmptyString(final Object? value) {
+  if (value is! String) return null;
+  final trimmed = value.trim();
+  return trimmed.isEmpty ? null : trimmed;
 }

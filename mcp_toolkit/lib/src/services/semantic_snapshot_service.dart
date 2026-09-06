@@ -5,7 +5,42 @@ import 'dart:ui' as ui;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
+import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart'
+    show semanticSnapshotNodeFields;
+
 import 'background_frame_pump.dart';
+
+/// What a `semantic_snapshot` call keeps of the full tree.
+///
+/// The tree is always walked whole — refs number the full walk, so a ref
+/// read off a filtered snapshot stays valid for every interaction tool. The
+/// filter only decides which nodes, and which of their fields, are returned.
+class SemanticSnapshotFilter {
+  const SemanticSnapshotFilter({
+    this.identifierPrefix,
+    this.subtreeOf,
+    this.fields,
+  });
+
+  /// Keep nodes whose identifier starts with this prefix.
+  final String? identifierPrefix;
+
+  /// Keep one node and its descendants: a ref from the latest snapshot or a
+  /// Semantics identifier, the ref tried first.
+  final String? subtreeOf;
+
+  /// Node keys to return; `ref` is always kept.
+  final List<String>? fields;
+
+  bool get isEmpty =>
+      identifierPrefix == null && subtreeOf == null && fields == null;
+
+  Map<String, Object?> toMap() => <String, Object?>{
+    if (identifierPrefix != null) 'identifierPrefix': identifierPrefix,
+    if (subtreeOf != null) 'subtreeOf': subtreeOf,
+    if (fields != null) 'fields': fields,
+  };
+}
 
 /// A service that walks the Flutter semantics tree and produces a compact,
 /// AI-friendly snapshot of interactive / meaningful elements.
@@ -97,14 +132,20 @@ mixin SemanticSnapshotService {
     final bounds = resolveBounds(ref);
     final center = resolveCenter(ref);
     final viewport = viewportRect;
-    return visibilityForBounds(
-      bounds: bounds,
-      center: center,
-      viewport: viewport,
-    );
+    return <String, Object?>{
+      ...visibilityForBounds(
+        bounds: bounds,
+        center: center,
+        viewport: viewport,
+      ),
+      if (viewport != null) 'viewport': _rectToMap(viewport),
+    };
   }
 
   /// Visibility metadata for logical bounds in the current Flutter viewport.
+  ///
+  /// The viewport itself is not part of the answer: a snapshot states it once
+  /// in its envelope, and a single-ref reply adds it in [visibilityForRef].
   static Map<String, Object?> visibilityForBounds({
     required final ui.Rect? bounds,
     required final ui.Offset? center,
@@ -122,7 +163,6 @@ mixin SemanticSnapshotService {
       'visibleInViewport': visible,
       'centerInViewport': centerVisible,
       if (bounds != null) 'bounds': _rectToMap(bounds),
-      if (viewport != null) 'viewport': _rectToMap(viewport),
       if (center != null)
         'center': <String, Object?>{'x': center.dx, 'y': center.dy},
     };
@@ -172,8 +212,9 @@ mixin SemanticSnapshotService {
   /// Async so we can await a frame on the (rare) cold path where the
   /// semantics tree hasn't been primed yet — e.g. if
   /// [MCPToolkitBinding.initialize] didn't run for some reason.
-  static Future<Map<String, Object?>> buildSemanticSnapshot() =>
-      _buildSnapshot(incrementId: true);
+  static Future<Map<String, Object?>> buildSemanticSnapshot({
+    final SemanticSnapshotFilter? filter,
+  }) => _buildSnapshot(incrementId: true, filter: filter);
 
   /// Internal: read the snapshot without bumping the public id stream.
   /// Used by `WaitPredicateService` while polling so callers' outstanding
@@ -245,7 +286,24 @@ mixin SemanticSnapshotService {
 
   static Future<Map<String, Object?>> _buildSnapshot({
     required final bool incrementId,
+    final SemanticSnapshotFilter? filter,
   }) async {
+    final unknownFields = filter?.fields
+        ?.where((final f) => !semanticSnapshotNodeFields.contains(f))
+        .toList();
+    if (unknownFields != null && unknownFields.isNotEmpty) {
+      return <String, Object?>{
+        'success': false,
+        'error': 'unknown_field',
+        'unknownFields': unknownFields,
+        'acceptedFields': semanticSnapshotNodeFields,
+        'hint':
+            'fields names keys of a snapshot node, and '
+            '${unknownFields.map((final f) => '"$f"').join(', ')} '
+            '${unknownFields.length == 1 ? 'is' : 'are'} not among them — '
+            'pick from acceptedFields. No snapshot was taken.',
+      };
+    }
     final binding = WidgetsBinding.instance;
     final isTestBinding = _isInFlutterTest();
 
@@ -279,7 +337,7 @@ mixin SemanticSnapshotService {
         await pumpFramesIfSuspended();
       }
 
-      return await _buildSnapshotBody(incrementId: incrementId);
+      return await _buildSnapshotBody(incrementId: incrementId, filter: filter);
     } finally {
       if (isTestBinding) {
         handle.dispose();
@@ -296,10 +354,35 @@ mixin SemanticSnapshotService {
 
   static Future<Map<String, Object?>> _buildSnapshotBody({
     required final bool incrementId,
+    final SemanticSnapshotFilter? filter,
   }) async {
     final refMap = <String, SemanticsNode>{};
     final boundsMap = <String, ui.Rect>{};
     final centerMap = <String, ui.Offset>{};
+
+    // Resolved before the counter moves and the ref maps are replaced, so a
+    // refusal leaves the caller's refs and snapshot id exactly as they were.
+    final subtreeOf = filter?.subtreeOf;
+    SemanticsNode? subtreeRoot;
+    if (subtreeOf != null) {
+      subtreeRoot =
+          _lastRefMap[subtreeOf] ??
+          _findByIdentifier(_currentRootNode(), subtreeOf);
+      if (subtreeRoot == null) {
+        return <String, Object?>{
+          'success': false,
+          'error': 'subtree_root_not_found',
+          'subtreeOf': subtreeOf,
+          'snapshotId': _snapshotCounter,
+          'hint':
+              '"$subtreeOf" is neither a ref of snapshot $_snapshotCounter '
+              'nor an identifier the tree publishes. Refs expire with every '
+              'snapshot, so pass an identifier when one exists, or take an '
+              'unfiltered snapshot and use a ref from it. No snapshot was '
+              'taken.',
+        };
+      }
+    }
 
     final snapshotId = incrementId ? ++_snapshotCounter : _snapshotCounter;
 
@@ -446,14 +529,110 @@ mixin SemanticSnapshotService {
       );
     }
 
+    final totalNodeCount = nodes.length;
+    final returned = filter == null || filter.isEmpty
+        ? nodes
+        : _applyFilter(
+            nodes: nodes,
+            refMap: refMap,
+            filter: filter,
+            subtreeRoot: subtreeRoot,
+          );
+
     return <String, Object?>{
       'snapshot_id': snapshotId,
-      'nodes': nodes,
-      'nodeCount': nodes.length,
+      'nodes': returned,
+      'nodeCount': returned.length,
+      if (filter != null && !filter.isEmpty) ...<String, Object?>{
+        'totalNodeCount': totalNodeCount,
+        'filter': filter.toMap(),
+      },
       'truncated': truncated,
-      'interactionSurface': _classifyInteractionSurface(nodes.length),
+      // The surface describes the app, not the slice asked for.
+      'interactionSurface': _classifyInteractionSurface(totalNodeCount),
       if (viewport != null) 'viewport': _rectToMap(viewport),
     };
+  }
+
+  /// The nodes a [filter] keeps, with `children` pruned to kept refs and
+  /// fields projected to the requested set.
+  static List<Map<String, Object?>> _applyFilter({
+    required final List<Map<String, Object?>> nodes,
+    required final Map<String, SemanticsNode> refMap,
+    required final SemanticSnapshotFilter filter,
+    required final SemanticsNode? subtreeRoot,
+  }) {
+    final prefix = filter.identifierPrefix;
+    final kept = <Map<String, Object?>>[
+      for (final node in nodes)
+        if ((subtreeRoot == null ||
+                _isWithin(refMap[node['ref']! as String], subtreeRoot)) &&
+            (prefix == null ||
+                (node['identifier'] is String &&
+                    (node['identifier']! as String).startsWith(prefix))))
+          node,
+    ];
+    final keptRefs = <Object?>{for (final node in kept) node['ref']};
+    final fields = filter.fields?.toSet();
+    return <Map<String, Object?>>[
+      for (final node in kept)
+        <String, Object?>{
+          for (final MapEntry(:key, :value) in node.entries)
+            if (fields == null || key == 'ref' || fields.contains(key))
+              if (key == 'children')
+                key: <String>[
+                  for (final child in value! as List<String>)
+                    if (keptRefs.contains(child)) child,
+                ]
+              else
+                key: value,
+        }..removeWhere(
+          (final key, final value) =>
+              key == 'children' && (value! as List<String>).isEmpty,
+        ),
+    ];
+  }
+
+  /// Whether [node] is [root] or sits below it.
+  static bool _isWithin(final SemanticsNode? node, final SemanticsNode root) {
+    for (var current = node; current != null; current = current.parent) {
+      if (identical(current, root)) return true;
+    }
+    return false;
+  }
+
+  static SemanticsNode? _currentRootNode() {
+    try {
+      final renderViews = WidgetsBinding.instance.renderViews;
+      if (renderViews.isEmpty) return null;
+      final owner = (_activeRenderView ?? renderViews.first).owner;
+      return owner?.semanticsOwner?.rootSemanticsNode;
+    } on Exception {
+      // The body reports the missing tree itself; the lookup just found nothing.
+      return null;
+    }
+  }
+
+  static SemanticsNode? _findByIdentifier(
+    final SemanticsNode? root,
+    final String identifier,
+  ) {
+    if (root == null) return null;
+    SemanticsNode? found;
+    void walk(final SemanticsNode node) {
+      if (found != null) return;
+      if (node.getSemanticsData().identifier == identifier) {
+        found = node;
+        return;
+      }
+      node.visitChildren((final child) {
+        walk(child);
+        return found == null;
+      });
+    }
+
+    walk(root);
+    return found;
   }
 
   /// How agents should interact with this app's visible surface.
@@ -542,6 +721,11 @@ mixin SemanticSnapshotService {
   static bool _isInteractiveOrMeaningful(final SemanticsData data) {
     // Has a semantic label or value worth surfacing.
     if (data.label.isNotEmpty || data.value.isNotEmpty) return true;
+
+    // An identifier is a handle the app published on purpose — a container
+    // named "rail" or "panel" exists to be addressed, by subtreeOf or by
+    // wait_for, even though it neither reads nor acts.
+    if (data.identifier.isNotEmpty) return true;
 
     // Interactive flags.
     if (data.hasFlag(SemanticsFlag.isButton)) return true;

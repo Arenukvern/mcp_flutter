@@ -498,16 +498,25 @@ Returns: `{"extensionRPCs": ["ext.flutter.inspector.getRootWidget", "ext.mcp.too
 
 ### semantic_snapshot
 
-Return a compact accessibility tree of interactive widgets with stable `ref` strings and a `snapshot_id`.
+Return a compact accessibility tree of interactive widgets with stable `ref` strings and a `snapshot_id`. A node is listed when it reads (label, value), acts (button, text field, tap, scroll…) or carries a `Semantics(identifier:)`.
 
+- `identifierPrefix` (string, optional) — keep only nodes whose identifier starts with it (`"nav."` for one rail).
+- `subtreeOf` (string, optional) — keep one node and its descendants; a ref from the latest snapshot or an identifier, the ref tried first.
+- `fields` (array of strings, optional) — node keys to return; `ref` is always kept. Names: `ref id type identifier label value hint enabled focused checked toggled selected bounds actions children visibleInViewport centerInViewport center`.
 - `connection` (object, optional) — connection override.
+
+The tree is always walked whole, so a ref read off a filtered snapshot is the same ref the full snapshot would give and works with every interaction tool. A filtered reply adds `totalNodeCount` and echoes `filter`; `children` lists kept refs only.
 
 ```
 semantic_snapshot()
+semantic_snapshot(identifierPrefix: "nav.", fields: ["identifier", "selected"])
+semantic_snapshot(subtreeOf: "panel.tabs")
 ```
 
-Returns: `{"snapshot_id": 3, "nodes": [{"ref": "s_0", "label": "Increment", "actions": ["tap"]}]}`
+Returns: `{"snapshot_id": 3, "nodeCount": 1, "viewport": {...}, "nodes": [{"ref": "s_0", "label": "Increment", "actions": ["tap"], "bounds": {...}, "visibleInViewport": true, "centerInViewport": true, "center": {...}}]}` — the viewport is stated once in the envelope, not on each node.
 
+- `subtree_root_not_found` — `subtreeOf` is neither a ref of the latest snapshot nor an identifier in the tree; no snapshot was taken, refs and `snapshot_id` are unchanged.
+- `unknown_field` — a name in `fields` is not a node key; `acceptedFields` lists them.
 - `vm_service_unavailable` — app not running or `MCPToolkitBinding.initialize()` not called.
 - `connection_selection_required` — multiple targets; supply `connection.targetId`.
 
@@ -588,7 +597,7 @@ Use this skill when you need to drive a running Flutter app as a user would:
 
 ## Selectors
 
-Most interaction tools target a widget by **ref** — a short string like `"s_0"` returned by `semantic_snapshot`. For visible widgets, call `semantic_snapshot`, scan the returned nodes, find the right ref, then pass it. For off-screen targets with stable semantics text or identifier, use `reveal_search`; it performs a bounded snapshot → match → scroll loop and returns a fresh `ref`/`snapshotId`.
+Most interaction tools target a widget by **ref** — a short string like `"s_0"` returned by `semantic_snapshot`. For visible widgets, call `semantic_snapshot`, scan the returned nodes, find the right ref, then pass it — narrow a large screen with `identifierPrefix`, `subtreeOf` (a ref or an identifier) or `fields`; refs are those of the full tree either way. For off-screen targets with stable semantics text or identifier, use `reveal_search`; it performs a bounded snapshot → match → scroll loop and returns a fresh `ref`/`snapshotId`.
 
 Snapshot node fields to filter on:
 

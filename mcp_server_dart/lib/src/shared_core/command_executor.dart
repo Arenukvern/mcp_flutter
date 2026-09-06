@@ -331,7 +331,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     GetViewDetailsCommand() => _getViewDetails(),
     InspectWidgetAtPointCommand() => _inspectWidgetAtPoint(command),
     CaptureUiSnapshotCommand() => _captureUiSnapshot(command),
-    SemanticSnapshotCommand() => _semanticSnapshot(),
+    SemanticSnapshotCommand() => _semanticSnapshot(command),
     TapWidgetCommand() => _tapWidget(command),
     EnterTextCommand() => _enterText(command),
     RevealSearchCommand() => _revealSearch(command),
@@ -930,13 +930,21 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
   }
 
-  Future<CoreResult> _semanticSnapshot() async {
+  Future<CoreResult> _semanticSnapshot(
+    final SemanticSnapshotCommand command,
+  ) async {
     final ensureFailure = await _ensureVmConnected();
     if (ensureFailure != null) return ensureFailure;
 
     try {
       final result = await connectionContext.callFlutterExtension(
         mcpToolkitExtKeys.semanticSnapshot,
+        args: {
+          if (command.identifierPrefix != null)
+            'identifierPrefix': command.identifierPrefix,
+          if (command.subtreeOf != null) 'subtreeOf': command.subtreeOf,
+          if (command.fields != null) 'fields': command.fields,
+        },
       );
       return CoreResult.success(data: _map(result.json));
     } on Exception catch (e) {

@@ -674,7 +674,30 @@ final class CommandCatalog {
         requiresVm: true,
         supportsWatch: true,
         mcpExposed: true,
-        build: (final args) => const SemanticSnapshotCommand(),
+        build: (final args) {
+          // Schema validation has already rejected anything but an array;
+          // the enum inside it is not enforced there, so name a bad field
+          // here rather than after a VM round trip.
+          final rawFields = _findArg(args, 'fields');
+          final fields = rawFields is List
+              ? rawFields.map((final f) => f.toString()).toList()
+              : null;
+          final unknown = fields
+              ?.where((final f) => !semanticSnapshotNodeFields.contains(f))
+              .toList();
+          if (unknown != null && unknown.isNotEmpty) {
+            throw ArgumentError(
+              'Invalid value for "fields": ${unknown.join(', ')} '
+              '(accepted: ${semanticSnapshotNodeFields.join(', ')}; '
+              r'schema path: $.inputSchema.properties.fields.items)',
+            );
+          }
+          return SemanticSnapshotCommand(
+            identifierPrefix: _nullableStringArg(args, 'identifierPrefix'),
+            subtreeOf: _nullableStringArg(args, 'subtreeOf'),
+            fields: fields,
+          );
+        },
       ),
       CommandSpec(
         name: 'tap_widget',
