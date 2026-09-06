@@ -319,6 +319,10 @@
 
 ## [Unreleased]
 
+### Features
+
+* **focus_widget:** give a widget keyboard focus by ref — the semantic focus action first, the focus node inside its bounds otherwise — and prove where focus landed (`fmt_focus_widget`, CLI `exec --name focus_widget`)
+
 ### Bug Fixes
 
 * **server:** coalesce identical overlapping Flutter discovery requests and terminate their process trees on Windows

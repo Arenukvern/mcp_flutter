@@ -106,6 +106,7 @@ abstract final class CoreErrorCode {
 
   static const fillFormFailed = 'fill_form_failed';
   static const hoverFailed = 'hover_failed';
+  static const focusWidgetFailed = 'focus_widget_failed';
 
   static const unknown = 'unknown_error';
 }
@@ -464,6 +465,13 @@ const Map<String, CoreErrorDescriptor> _descriptorMap =
       ),
       CoreErrorCode.hoverFailed: CoreErrorDescriptor(
         code: CoreErrorCode.hoverFailed,
+        category: CoreErrorCategory.execution,
+        retryable: true,
+        exitCode: 69,
+        httpLikeStatus: 500,
+      ),
+      CoreErrorCode.focusWidgetFailed: CoreErrorDescriptor(
+        code: CoreErrorCode.focusWidgetFailed,
         category: CoreErrorCategory.execution,
         retryable: true,
         exitCode: 69,

@@ -13,7 +13,7 @@ Use this skill when you need to drive a running Flutter app as a user would:
 - Scroll or swipe to reveal off-screen content.
 - Navigate between routes programmatically (push, pop, popUntil).
 - Dismiss dialogs and bottom sheets.
-- Press keyboard keys (Enter, Escape, Tab, arrows, ASCII chars).
+- Give a widget keyboard focus, then press keys (Enter, Escape, Tab, arrows, ASCII chars).
 - Hot-reload or hot-restart after editing Dart source files.
 - Combine reload + screenshot + semantics in one round-trip for fast iteration.
 
@@ -161,6 +161,13 @@ Synthesize a mouse hover. Desktop/web only — no hover concept on mobile. `ref`
 {"name": "hover", "arguments": {"ref": "s_5"}}
 ```
 Returns: `{"via": "pointer_events"}` — Failures: `ref_not_found`, platform error on mobile
+
+### focus_widget
+Give keyboard focus to a widget, so the `press_key` that follows reaches it. Uses the node's semantic `focus` action when the snapshot lists one, otherwise the focusable widget inside the ref's bounds (the only route on iOS, where Flutter exposes no focus action). Leaves a parked hover in place. `ref` • string • required. `snapshotId` • integer • optional. `connection` • object • optional.
+```json
+{"name": "focus_widget", "arguments": {"ref": "s_5"}}
+```
+Returns: `{"via": "semantic_action" | "focus_node", "verified": true, "verifiedBy": "semantics_flag" | "focus_node", "focusMoved": bool}` — `success: true` means the target reports focus after the framework caught up; `focusMoved: false` means it already held it. On the focus-node route, `focusedNow` names the control inside the ref that actually took focus. Failures: `ref_not_found`, `stale_ref`, `stale_snapshot`, `target_disabled`, `focus_not_exposed` (nothing focusable behind the ref), `focus_refused` (the request went through but the target does not report focus; `focusedNow` says where it sits)
 
 ### press_key
 Synthesize key press (down+up). Accepted: `Enter Escape Tab Backspace Delete Space ArrowUp ArrowDown ArrowLeft ArrowRight` plus single ASCII (`a-z` `0-9`). `key` • string • required. `ctrl/shift/alt/meta` • boolean • optional • default false. `connection` • object • optional.

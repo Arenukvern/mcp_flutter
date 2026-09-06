@@ -348,6 +348,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     NavigateCommand() => _navigate(command),
     FillFormCommand() => _fillForm(command),
     HoverCommand() => _hover(command),
+    FocusWidgetCommand() => _focusWidget(command),
     DebugDumpLayerTreeCommand() => _debugDumpLayerTree(),
     DebugDumpSemanticsTreeCommand() => _debugDumpSemanticsTree(),
     DebugDumpRenderTreeCommand() => _debugDumpRenderTree(),
@@ -1501,6 +1502,27 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       return CoreResult.failure(
         code: CoreErrorCode.hoverFailed,
         message: 'Failed to execute hover: $e',
+      );
+    }
+  }
+
+  Future<CoreResult> _focusWidget(final FocusWidgetCommand command) async {
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) return ensureFailure;
+
+    try {
+      final result = await connectionContext.callFlutterExtension(
+        mcpToolkitExtKeys.focusWidget,
+        args: {
+          'ref': command.ref,
+          if (command.snapshotId != null) 'snapshotId': command.snapshotId,
+        },
+      );
+      return routeInteractionResponse('focus_widget', _map(result.json));
+    } on Exception catch (e) {
+      return CoreResult.failure(
+        code: CoreErrorCode.focusWidgetFailed,
+        message: 'Failed to execute focus_widget: $e',
       );
     }
   }

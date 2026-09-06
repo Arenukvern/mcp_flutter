@@ -52,6 +52,7 @@ export 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart'
         NavigateCommand,
         FillFormCommand,
         HoverCommand,
+        FocusWidgetCommand,
         // Debug commands
         DebugDumpFocusTreeCommand,
         DebugDumpLayerTreeCommand,

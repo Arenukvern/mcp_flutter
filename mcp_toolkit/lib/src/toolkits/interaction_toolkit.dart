@@ -76,6 +76,7 @@ Set<AgentCallEntry> getInteractionToolkitEntries() => {
   OnHandleDialogEntry(),
   OnNavigateEntry(),
   OnHoverEntry(),
+  OnFocusWidgetEntry(),
 };
 
 // ---------------------------------------------------------------------------
@@ -813,5 +814,60 @@ extension type OnHoverEntry._(AgentCallEntry entry) implements AgentCallEntry {
       ),
     );
     return OnHoverEntry._(entry);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Focus
+// ---------------------------------------------------------------------------
+
+/// {@template on_focus_widget_entry}
+/// Gives keyboard focus to the widget identified by a semantic ref, so the
+/// keystroke that follows reaches it. Performs the node's semantic focus
+/// action when it exposes one, otherwise asks the focus node inside the
+/// ref's bounds. The result proves where focus landed.
+/// {@endtemplate}
+extension type OnFocusWidgetEntry._(AgentCallEntry entry)
+    implements AgentCallEntry {
+  /// {@macro on_focus_widget_entry}
+  factory OnFocusWidgetEntry() {
+    final entry = mcpToolkitTool(
+      handler: (final parameters) async {
+        final ref = jsonDecodeString(parameters['ref']);
+        if (ref.isEmpty) {
+          return _missingParameters(
+            tool: 'focus_widget',
+            error: 'missing_parameters',
+            missing: const <String>['ref'],
+            hint: _refSourceHint,
+          );
+        }
+        final snapshotIdRaw = jsonDecodeInt(parameters['snapshotId']);
+        final snapshotId = snapshotIdRaw == 0 ? null : snapshotIdRaw;
+        if (snapshotId != null &&
+            snapshotId != SemanticSnapshotService.currentSnapshotId) {
+          return _staleSnapshot(snapshotId);
+        }
+        final result = await GestureInteractionService.focusAtRef(ref);
+        return MCPCallResult(
+          message: result['success'] == true
+              ? 'Focused widget at ref "$ref".'
+              : 'focus_widget failed: ${result['error']}.',
+          parameters: result,
+        );
+      },
+      definition: MCPToolDefinition(
+        name: 'focus_widget',
+        description:
+            'Give keyboard focus to the widget identified by a semantic snapshot '
+            'ref, so the press_key that follows reaches it. Performs the '
+            "node's semantic focus action when it exposes one, otherwise asks "
+            "the focusable widget inside the ref's bounds; the result proves "
+            'where focus landed. Leaves a parked hover in place. '
+            'Pass snapshotId to detect staleness.',
+        inputSchema: ObjectSchema.fromMap(focusWidgetInputSchema()),
+      ),
+    );
+    return OnFocusWidgetEntry._(entry);
   }
 }

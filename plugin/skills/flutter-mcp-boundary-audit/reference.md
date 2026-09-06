@@ -81,7 +81,7 @@ Re-audit host vs app paths only if coercion is added on **one** side without the
 
 | App dynamic (`interaction_toolkit.dart` → `registerDynamics`) | Server catalog only (`fmt_*` + CLI `exec`, no app twin) |
 |---------------------------------------------------------------|--------------------------------------------------------|
-| `tap_widget`, `semantic_snapshot`, `wait_for`, `enter_text`, `reveal_search`, `scroll`, `long_press`, `swipe`, `drag`, `hover`, `press_key`, `get_recent_logs`, `handle_dialog`, `navigate` | `fill_form`, `hot_reload_flutter`, `hot_restart_flutter`, `evaluate_dart_expression`, `hot_reload_and_capture` |
+| `tap_widget`, `semantic_snapshot`, `wait_for`, `enter_text`, `reveal_search`, `scroll`, `long_press`, `swipe`, `drag`, `hover`, `focus_widget`, `press_key`, `get_recent_logs`, `handle_dialog`, `navigate` | `fill_form`, `hot_reload_flutter`, `hot_restart_flutter`, `evaluate_dart_expression`, `hot_reload_and_capture` |
 
 **Host-only beyond core 19:** `get_view_details`, `inspect_widget_at_point`, `get_app_errors`, `focus_window` (inspection; part of 23-tool tier A exec). **`get_screenshots`**, **`capture_ui_snapshot`** use the same schema router (25 total) but are capture, not in the 23-tool tier A exec set.
 

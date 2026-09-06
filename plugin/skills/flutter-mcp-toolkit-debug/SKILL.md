@@ -388,6 +388,11 @@ Every failure returns `{code, message, details, descriptor, recovery}`. Always r
 **Means:** `hover` execution failed.
 **Recovery:** `flutter-mcp-toolkit doctor --json`
 
+### `focusWidgetFailed` (`focus_widget_failed`)
+
+**Means:** `focus_widget` could not reach the app. A refusal the app itself reports (`focus_not_exposed`, `focus_refused`) arrives as `interaction_failed` with the toolkit's hint in `details`.
+**Recovery:** `flutter-mcp-toolkit doctor --json`
+
 ### `unknown` (`unknown_error`)
 
 **Means:** fallback for any unrecognised error code.

@@ -36,15 +36,15 @@ void main() {
   });
 
   group('interactionCatalogInputSchemaFor', () {
-    test('core interaction catalog has nineteen tools', () {
-      expect(coreInteractionCatalogCommandNames, hasLength(19));
-      expect(coreInteractionCatalogCommandNames.toSet(), hasLength(19));
+    test('core interaction catalog has twenty tools', () {
+      expect(coreInteractionCatalogCommandNames, hasLength(20));
+      expect(coreInteractionCatalogCommandNames.toSet(), hasLength(20));
       expect(coreInteractionCatalogCommandNames, contains('reveal_search'));
     });
 
-    test('tier A exec catalog is nineteen core plus four inspection', () {
-      expect(tierAExecCatalogCommandNames, hasLength(23));
-      expect(tierAExecCatalogCommandNames.toSet(), hasLength(23));
+    test('tier A exec catalog is twenty core plus four inspection', () {
+      expect(tierAExecCatalogCommandNames, hasLength(24));
+      expect(tierAExecCatalogCommandNames.toSet(), hasLength(24));
       expect(
         tierAExecCatalogCommandNames,
         containsAll(inspectionTierAExecCommandNames),
@@ -55,11 +55,11 @@ void main() {
       );
     });
 
-    test('router covers twenty-five command names including capture tools', () {
-      expect(interactionCatalogInputSchemaForCommandNames, hasLength(25));
+    test('router covers twenty-six command names including capture tools', () {
+      expect(interactionCatalogInputSchemaForCommandNames, hasLength(26));
       expect(
         interactionCatalogInputSchemaForCommandNames.toSet(),
-        hasLength(25),
+        hasLength(26),
       );
       expect(
         interactionCatalogInputSchemaForCommandNames,
@@ -309,6 +309,7 @@ void main() {
       ('swipe', swipeInputSchema),
       ('drag', dragInputSchema),
       ('hover', hoverInputSchema),
+      ('focus_widget', focusWidgetInputSchema),
       ('press_key', pressKeyInputSchema),
     ]) {
       test(tool.$1, () {

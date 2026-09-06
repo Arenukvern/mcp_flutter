@@ -537,8 +537,8 @@ void main() {
       expect(nv.route, '/settings');
     });
 
-    test('fill_form, hover commands are registered', () {
-      for (final name in ['fill_form', 'hover']) {
+    test('fill_form, hover, focus_widget commands are registered', () {
+      for (final name in ['fill_form', 'hover', 'focus_widget']) {
         final spec = catalog.specFor(name);
         expect(spec, isNotNull, reason: '$name spec missing');
         expect(spec!.mcpExposed, isTrue, reason: '$name not mcpExposed');
@@ -558,6 +558,11 @@ void main() {
 
       final hv = catalog.buildCommand('hover', {'ref': 's_3'}) as HoverCommand;
       expect(hv.ref, 's_3');
+
+      final fw =
+          catalog.buildCommand('focus_widget', {'ref': 's_4'})
+              as FocusWidgetCommand;
+      expect(fw.ref, 's_4');
     });
   });
 }
