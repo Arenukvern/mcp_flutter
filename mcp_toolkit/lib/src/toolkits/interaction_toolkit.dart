@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dart_mcp/client.dart';
 import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
@@ -92,13 +94,10 @@ extension type OnSemanticSnapshotEntry._(AgentCallEntry entry)
   factory OnSemanticSnapshotEntry() {
     final entry = mcpToolkitTool(
       handler: (final parameters) async {
-        final rawFields = parameters['fields'] as Object?;
         final filter = SemanticSnapshotFilter(
           identifierPrefix: _nonEmptyString(parameters['identifierPrefix']),
           subtreeOf: _nonEmptyString(parameters['subtreeOf']),
-          fields: rawFields is List
-              ? rawFields.map((final f) => f.toString()).toList()
-              : null,
+          fields: _stringList(parameters['fields']),
         );
         final snapshot = await SemanticSnapshotService.buildSemanticSnapshot(
           filter: filter.isEmpty ? null : filter,
@@ -883,6 +882,19 @@ extension type OnFocusWidgetEntry._(AgentCallEntry entry)
     );
     return OnFocusWidgetEntry._(entry);
   }
+}
+
+/// A list argument reaches a legacy handler JSON-encoded — the wire map holds
+/// strings — and already validated against the schema, so the text is JSON.
+List<String>? _stringList(final Object? value) {
+  final decoded = switch (value) {
+    final String text when text.trim().isNotEmpty => jsonDecode(text),
+    final List<Object?> list => list,
+    _ => null,
+  };
+  return decoded is List
+      ? decoded.map((final f) => f.toString()).toList()
+      : null;
 }
 
 String? _nonEmptyString(final Object? value) {

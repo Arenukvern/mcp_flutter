@@ -677,6 +677,37 @@ void main() {
       },
     );
 
+    testWidgets('the entry decodes fields from the wire map', (
+      final tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      try {
+        await pumpRailAndPanel(tester);
+        // The service extension hands a legacy handler strings only, so the
+        // list arrives JSON-encoded; invokeDirect walks that same path.
+        final future = OnSemanticSnapshotEntry().invokeDirect(<String, Object?>{
+          'identifierPrefix': 'nav.',
+          'fields': <String>['identifier', 'label'],
+        });
+        await tester.pump();
+        final result = await future;
+
+        expect(result.ok, isTrue, reason: result.message);
+        expect(result.data['filter'], <String, Object?>{
+          'identifierPrefix': 'nav.',
+          'fields': <String>['identifier', 'label'],
+        });
+        for (final node in nodesOf(result.data)) {
+          expect(
+            node.keys,
+            unorderedEquals(<String>['ref', 'identifier', 'label']),
+          );
+        }
+      } finally {
+        semantics.dispose();
+      }
+    });
+
     testWidgets('fields projects every node and always keeps the ref', (
       final tester,
     ) async {
