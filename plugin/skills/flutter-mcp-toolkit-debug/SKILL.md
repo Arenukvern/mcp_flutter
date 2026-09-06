@@ -63,7 +63,7 @@ evaluate_dart_expression(expression: "Navigator.of(context).canPop()")
 evaluate_dart_expression(expression: "AgentState.instance.value.toString()")
 ```
 
-Returns: `{"result": "42"}` — always a string-serialized value. Executes arbitrary code in the live isolate — avoid side-effecting expressions. Debug mode only. On failure see `evaluateExpressionFailed` in the playbook.
+Returns: `{"result": "42", "kind": "Int", "classRef": "_Smi", "truncated": false}` — `result` is always a string. A long String comes back whole up to 32 KiB; past that `truncated: true` with `length`, `returnedLength` and a hint naming the `.substring(...)` that reads the rest. A List, Map or object comes back as a bare class name (`"_GrowableList"`) with a hint — wrap the expression in `.toString()` or `jsonEncode(...)` to read its value. Executes arbitrary code in the live isolate — avoid side-effecting expressions. Debug mode only. On failure see `evaluateExpressionFailed` in the playbook.
 
 ## Connect / multi-app flows
 
