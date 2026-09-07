@@ -55,6 +55,8 @@ void main() {
     expect(result['success'], isFalse);
     expect(result['error'], 'unknown_key');
     expect(result['key'], 'BogusKey');
+    expect(result['acceptedNames'], contains('Escape'));
+    expect(result['hint'], isNotEmpty);
   });
 
   test('press_key rejects empty key', () async {
@@ -102,7 +104,60 @@ void main() {
 
     expect(result['success'], isTrue);
     expect(result['ctrl'], isTrue);
+    expect(result['handled'], isTrue);
     expect(saveInvoked, 1);
+  });
+
+  testWidgets('press_key reports a keystroke nobody claimed', (
+    final tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Material(child: SizedBox(width: 100, height: 100)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final result = await ControlFlowService.pressKey(key: 'Escape');
+    await tester.pump();
+
+    expect(result['success'], isTrue);
+    expect(
+      result['handled'],
+      isFalse,
+      reason: 'dispatching a key is not the same as something acting on it',
+    );
+    expect(result['hint'], contains('main key-down event'));
+  });
+
+  testWidgets('press_key handled excludes a claimed key-up event', (
+    final tester,
+  ) async {
+    var keyUpHandled = false;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Focus(
+          autofocus: true,
+          onKeyEvent: (final node, final event) {
+            if (event is KeyUpEvent &&
+                event.logicalKey == LogicalKeyboardKey.escape) {
+              keyUpHandled = true;
+              return KeyEventResult.handled;
+            }
+            return KeyEventResult.ignored;
+          },
+          child: const SizedBox(width: 100, height: 100),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final result = await ControlFlowService.pressKey(key: 'Escape');
+    await tester.pump();
+
+    expect(keyUpHandled, isTrue);
+    expect(result['handled'], isFalse);
+    expect(result['hint'], contains('main key-down event'));
   });
 
   // -----------------------------------------------------------------------
@@ -162,10 +217,55 @@ void main() {
       final result = await ControlFlowService.dismissDialog();
       expect(result['success'], isFalse);
       expect(result['error'], 'no_popup_route');
+      expect(result['hint'], contains('its own control'));
 
       MCPToolkitBinding.instance.navigatorKey = null;
     },
   );
+
+  testWidgets('handle_dialog dismiss reports a dialog that refused to close', (
+    final tester,
+  ) async {
+    final navKey = GlobalKey<NavigatorState>();
+    MCPToolkitBinding.instance.navigatorKey = navKey;
+    addTearDown(() => MCPToolkitBinding.instance.navigatorKey = null);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        navigatorKey: navKey,
+        home: Builder(
+          builder: (final context) => Scaffold(
+            body: Center(
+              child: ElevatedButton(
+                onPressed: () => showDialog<void>(
+                  context: context,
+                  builder: (final _) => const PopScope(
+                    canPop: false,
+                    child: AlertDialog(title: Text('Unsaved changes')),
+                  ),
+                ),
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    expect(find.byType(AlertDialog), findsOneWidget);
+
+    final result = await ControlFlowService.dismissDialog();
+    await tester.pumpAndSettle();
+
+    // maybePop answers true for a guarded route after merely notifying it;
+    // the dialog is still there, and the verdict must say so.
+    expect(result['success'], isFalse, reason: '$result');
+    expect(result['handled'], isTrue);
+    expect(result['error'], 'dialog_declined_pop');
+    expect(find.byType(AlertDialog), findsOneWidget);
+  });
 
   test(
     'handle_dialog dismiss fails fast when no navigator registered',
@@ -174,6 +274,7 @@ void main() {
       final result = await ControlFlowService.dismissDialog();
       expect(result['success'], isFalse);
       expect(result['error'], 'navigator_not_registered');
+      expect(result['hint'], contains('navigatorKey'));
     },
   );
 
@@ -208,6 +309,69 @@ void main() {
     MCPToolkitBinding.instance.navigatorKey = null;
   });
 
+  testWidgets('navigate push reports an unnamed generated route', (
+    final tester,
+  ) async {
+    final navKey = GlobalKey<NavigatorState>();
+    MCPToolkitBinding.instance.navigatorKey = navKey;
+    addTearDown(() => MCPToolkitBinding.instance.navigatorKey = null);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        navigatorKey: navKey,
+        home: const Scaffold(body: Text('home')),
+        onGenerateRoute: (final settings) => MaterialPageRoute<void>(
+          builder: (final _) =>
+              const Scaffold(body: Text('generated destination')),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final result = await ControlFlowService.navigate(
+      action: 'push',
+      route: '/generated',
+    );
+    await tester.pumpAndSettle();
+
+    expect(result['success'], isTrue);
+    expect(result['verified'], isFalse);
+    expect(result['via'], 'stack_changed_unnamed_route');
+    expect(find.text('generated destination'), findsOneWidget);
+  });
+
+  testWidgets('navigate push reports a route the app never opened', (
+    final tester,
+  ) async {
+    final navKey = GlobalKey<NavigatorState>();
+    MCPToolkitBinding.instance.navigatorKey = navKey;
+    addTearDown(() => MCPToolkitBinding.instance.navigatorKey = null);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        navigatorKey: navKey,
+        routes: {'/': (final _) => const Scaffold(body: Text('home'))},
+        onUnknownRoute: (final settings) => MaterialPageRoute<void>(
+          settings: const RouteSettings(name: '/not-found'),
+          builder: (final _) => const Scaffold(body: Text('not found')),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final result = await ControlFlowService.navigate(
+      action: 'push',
+      route: '/nowhere',
+    );
+    await tester.pumpAndSettle();
+
+    expect(result['success'], isFalse);
+    expect(result['error'], 'route_not_pushed');
+    expect(result['topRouteName'], '/not-found');
+
+    MCPToolkitBinding.instance.navigatorKey = null;
+  });
+
   testWidgets('navigate pop returns to previous route', (final tester) async {
     final navKey = GlobalKey<NavigatorState>();
     MCPToolkitBinding.instance.navigatorKey = navKey;
@@ -236,6 +400,41 @@ void main() {
     MCPToolkitBinding.instance.navigatorKey = null;
   });
 
+  testWidgets('navigate pop reports a page that refused to leave', (
+    final tester,
+  ) async {
+    final navKey = GlobalKey<NavigatorState>();
+    MCPToolkitBinding.instance.navigatorKey = navKey;
+    addTearDown(() => MCPToolkitBinding.instance.navigatorKey = null);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        navigatorKey: navKey,
+        routes: {
+          '/': (final _) => const Scaffold(body: Text('home')),
+          '/editor': (final _) => const PopScope(
+            canPop: false,
+            child: Scaffold(body: Text('editor')),
+          ),
+        },
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    unawaited(navKey.currentState!.pushNamed('/editor'));
+    await tester.pumpAndSettle();
+    expect(find.text('editor'), findsOneWidget);
+
+    final result = await ControlFlowService.navigate(action: 'pop');
+    await tester.pumpAndSettle();
+
+    expect(result['success'], isFalse, reason: '$result');
+    expect(result['handled'], isTrue);
+    expect(result['error'], 'nothing_popped');
+    expect(result['topRouteName'], '/editor');
+    expect(find.text('editor'), findsOneWidget);
+  });
+
   test('navigate fails fast when no navigator registered', () async {
     MCPToolkitBinding.instance.navigatorKey = null;
     final result = await ControlFlowService.navigate(
@@ -244,6 +443,7 @@ void main() {
     );
     expect(result['success'], isFalse);
     expect(result['error'], 'navigator_not_registered');
+    expect(result['hint'], contains('navigatorKey'));
   });
 
   test('navigate rejects unknown action', () async {
@@ -252,6 +452,7 @@ void main() {
     final result = await ControlFlowService.navigate(action: 'teleport');
     expect(result['success'], isFalse);
     expect(result['error'], 'unknown_action');
+    expect(result['acceptedActions'], contains('popUntil'));
     MCPToolkitBinding.instance.navigatorKey = null;
   });
 
@@ -284,6 +485,7 @@ void main() {
     expect(result['error'], 'route_not_in_stack');
     expect(result['route'], '/does_not_exist');
     expect(result['currentRoutes'], isA<List<Object?>>());
+    expect(result['hint'], contains('currentRoutes'));
     // Both routes must still be on the stack — nothing was popped.
     expect(find.text('inner page'), findsOneWidget);
 
@@ -411,9 +613,8 @@ void main() {
       's_does_not_exist',
     );
     expect(result['success'], isFalse);
-    // _refNotFound returns a human-readable message containing 'not found'
-    // rather than a token like 'ref_not_found' — match the existing shape.
-    expect(result['error'], contains('not found'));
+    expect(result['error'], 'ref_not_found');
+    expect(result['hint'], contains('semantic_snapshot'));
   });
 }
 

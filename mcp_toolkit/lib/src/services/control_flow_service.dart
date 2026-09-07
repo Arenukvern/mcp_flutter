@@ -102,6 +102,11 @@ class ControlFlowService {
         'success': false,
         'error': 'unknown_key',
         'key': key,
+        'acceptedNames': _namedKeys.keys.toList(),
+        'hint':
+            'No key is named "$key". Pass one of acceptedNames, or a single '
+            'character (a letter or a digit) — the names are case-sensitive '
+            'and a whole word like "esc" or "return" resolves to nothing.',
       };
     }
 
@@ -127,14 +132,23 @@ class ControlFlowService {
           : KeyUpEvent(physicalKey: physical, logicalKey: k, timeStamp: stamp);
     }
 
-    void send({
+    // Whether either dispatch phase claimed the keystroke. A key nothing
+    // listens for is dispatched just as successfully as one that triggers a
+    // shortcut, so the caller needs this to tell the two apart.
+    bool send({
       required final bool isDown,
       required final LogicalKeyboardKey k,
     }) {
       final event = makeEvent(isDown: isDown, k: k);
-      keyboard.handleKeyEvent(event);
-      // ignore: deprecated_member_use
-      keyManager.keyMessageHandler?.call(KeyMessage(<KeyEvent>[event], null));
+      final byKeyboard = keyboard.handleKeyEvent(event);
+      final byFocusChain =
+          // ignore: deprecated_member_use
+          keyManager.keyMessageHandler?.call(
+            // ignore: deprecated_member_use
+            KeyMessage(<KeyEvent>[event], null),
+          ) ??
+          false;
+      return byKeyboard || byFocusChain;
     }
 
     // Press modifiers down in order, then main key down+up, then release
@@ -142,7 +156,7 @@ class ControlFlowService {
     for (final mod in modifiers) {
       send(isDown: true, k: mod);
     }
-    send(isDown: true, k: logical);
+    final handled = send(isDown: true, k: logical);
     send(isDown: false, k: logical);
     for (final mod in modifiers.reversed) {
       send(isDown: false, k: mod);
@@ -155,6 +169,13 @@ class ControlFlowService {
       'shift': shift,
       'alt': alt,
       'meta': meta,
+      'handled': handled,
+      if (!handled)
+        'hint':
+            'The main key-down event reached both dispatch phases — the '
+            'hardware keyboard handlers and the focus chain — and neither '
+            'claimed it. Text input is one such case: desktop typing goes '
+            'through the TextInput channel, so use enter_text for fields.',
     };
   }
 
@@ -162,38 +183,83 @@ class ControlFlowService {
   // handle_dialog
   // -------------------------------------------------------------------------
 
+  /// Structured refusal for an app whose root navigator the toolkit cannot
+  /// reach, either because the key was never handed over or because no
+  /// navigator is mounted behind it yet.
+  static Map<String, Object?> _navigatorNotRegistered() => <String, Object?>{
+    'success': false,
+    'error': 'navigator_not_registered',
+    'hint':
+        'The toolkit has no root NavigatorState to act on. Assign the same '
+        'GlobalKey<NavigatorState> to MCPToolkitBinding.instance.navigatorKey '
+        'and to MaterialApp.navigatorKey, and call again once the first frame '
+        'is up. Until then, drive the UI through tap_widget.',
+  };
+
+  /// The topmost route, read without touching the stack.
+  ///
+  /// [NavigatorState.popUntil] visits routes from the top down, and a
+  /// predicate that answers `true` on the first one aborts the loop before
+  /// anything is popped.
+  static Route<Object?>? _topRoute(final NavigatorState navState) {
+    Route<Object?>? top;
+    navState.popUntil((final r) {
+      top ??= r;
+      return true;
+    });
+    return top;
+  }
+
   /// Dismisses the topmost [PopupRoute] via [Navigator.maybePop].
+  ///
+  /// Returns the dismissal verdict and the route name/type. Refuses when no
+  /// navigator is registered, the top route is not a popup, or the popup
+  /// declines the pop. `success` is read off the stack, not off `maybePop`:
+  /// that answers `true` for a route whose pop disposition is `doNotPop` — a
+  /// `PopScope` with `canPop: false` — after merely notifying it, so its
+  /// value says the request was delivered (`handled`), not that anything
+  /// left the stack. Tools should use this instead of a blind navigator pop
+  /// so a plain page is never mistaken for a dialog.
+  ///
+  /// @ai Call this only for dialog-like popup routes; use [navigate] for pages.
   static Future<Map<String, Object?>> dismissDialog() async {
     final navState = MCPToolkitBinding.instance.navigatorKey?.currentState;
     if (navState == null) {
-      return <String, Object?>{
-        'success': false,
-        'error': 'navigator_not_registered',
-      };
+      return _navigatorNotRegistered();
     }
 
-    // `popUntil` visits routes from topmost to bottommost. Capturing the
-    // first visited route gives us the current top without actually
-    // popping anything (the sentinel-true predicate aborts the pop loop
-    // immediately).
-    Route<Object?>? topRoute;
-    navState.popUntil((final r) {
-      topRoute ??= r;
-      return true;
-    });
-    final route = topRoute;
+    final route = _topRoute(navState);
     if (route is! PopupRoute) {
       return <String, Object?>{
         'success': false,
         'error': 'no_popup_route',
         'topRouteName': route?.settings.name,
+        'topRouteType': route?.runtimeType.toString(),
+        'hint':
+            'Nothing dialog-like is on top of the stack, so there was nothing '
+            'to dismiss. A sheet or overlay shown without a PopupRoute — an '
+            'OverlayEntry, an inline panel — is not reachable this way; close '
+            'it through its own control, or use navigate with action "pop" '
+            'for a plain page.',
       };
     }
 
-    final popped = await navState.maybePop();
+    final handled = await navState.maybePop();
+    final popped = !identical(_topRoute(navState), route);
     return <String, Object?>{
       'success': popped,
+      'handled': handled,
+      // A dialog route is usually anonymous, so the type is what identifies
+      // what was actually dismissed.
       'routeName': route.settings.name,
+      'routeType': route.runtimeType.toString(),
+      if (!popped) ...<String, Object?>{
+        'error': 'dialog_declined_pop',
+        'hint':
+            'The popup is still open: it declined the pop, which a dialog '
+            'built with barrierDismissible false or guarded by a PopScope '
+            'does deliberately. Dismiss it through its own control instead.',
+      },
     };
   }
 
@@ -213,10 +279,7 @@ class ControlFlowService {
     // tree is mounted yet (e.g. unit tests that don't pump a MaterialApp).
     final key = MCPToolkitBinding.instance.navigatorKey;
     if (key == null) {
-      return <String, Object?>{
-        'success': false,
-        'error': 'navigator_not_registered',
-      };
+      return _navigatorNotRegistered();
     }
     final navState = key.currentState;
 
@@ -227,13 +290,14 @@ class ControlFlowService {
             'success': false,
             'error': 'missing_route',
             'action': action,
+            'hint':
+                'navigate "$action" acts on a named route, so it needs a '
+                '"route" argument — the name the app registered in its routes '
+                'table, such as "/settings".',
           };
         }
         if (navState == null) {
-          return <String, Object?>{
-            'success': false,
-            'error': 'navigator_not_registered',
-          };
+          return _navigatorNotRegistered();
         }
         // Don't await: `pushNamed` resolves only when the route is popped,
         // so awaiting deadlocks until the next pop. Fire-and-forget the
@@ -241,44 +305,116 @@ class ControlFlowService {
         // Attach a catchError so an unknown-route exception (or any
         // navigation error) surfaces as a debug log instead of an
         // unhandled future, which would otherwise be swallowed silently.
-        unawaited(
-          navState.pushNamed<Object?>(route, arguments: arguments).catchError((
-            final Object error,
-            final StackTrace stack,
-          ) {
-            debugPrint(
-              '[MCPToolkit] navigate push failed for route "$route": $error',
-            );
-            return null;
-          }),
-        );
+        // An app without `onGenerateRoute` (anything on a declarative router,
+        // for instance) throws out of `pushNamed` before the future exists, so
+        // the catchError below never sees it. Without this the exception
+        // escapes the extension and reaches the caller as a transport error
+        // with no cause in it.
+        final previousTopRoute = _topRoute(navState);
+        try {
+          unawaited(
+            navState.pushNamed<Object?>(route, arguments: arguments).catchError((
+              final Object error,
+              final StackTrace stack,
+            ) {
+              debugPrint(
+                '[MCPToolkit] navigate push failed for route "$route": $error',
+              );
+              return null;
+            }),
+          );
+        } on Object catch (error, stack) {
+          debugPrint(
+            '[MCPToolkit] navigate push threw for route "$route": $error\n'
+            '$stack',
+          );
+          return <String, Object?>{
+            'success': false,
+            'action': 'push',
+            'route': route,
+            'error': 'push_rejected',
+            'reason': '$error',
+            'hint':
+                'The navigator refused the name outright. Apps built on a '
+                'declarative router (go_router, auto_route) have no named '
+                'route table for this call to use — drive their navigation '
+                'through the UI, or through evaluate_dart_expression.',
+          };
+        }
+        // The push cannot be awaited — it completes only when the route is
+        // popped — but [NavigatorState.push] adds the entry synchronously, so
+        // the stack already says whether it happened. A generated route may
+        // omit settings.name; a changed route object still proves the push,
+        // but cannot verify that the app preserved the requested name.
+        final currentTopRoute = _topRoute(navState);
+        final topRouteName = currentTopRoute?.settings.name;
+        if (topRouteName == route) {
+          return <String, Object?>{
+            'success': true,
+            'action': 'push',
+            'route': route,
+          };
+        }
+        if (!identical(currentTopRoute, previousTopRoute) &&
+            topRouteName == null) {
+          return <String, Object?>{
+            'success': true,
+            'action': 'push',
+            'route': route,
+            'verified': false,
+            'via': 'stack_changed_unnamed_route',
+            'topRouteType': currentTopRoute?.runtimeType.toString(),
+            'hint':
+                'The navigator stack changed, but the generated route has no '
+                'settings.name. The push took effect; use semantic_snapshot '
+                'to verify the destination screen.',
+          };
+        }
         return <String, Object?>{
-          'success': true,
+          'success': false,
           'action': 'push',
           'route': route,
+          'error': 'route_not_pushed',
+          'topRouteName': topRouteName,
+          'hint':
+              'The navigator is showing "$topRouteName" instead. Check the '
+              "name against the app's route table; an unknown name is either "
+              "dropped or replaced by the app's unknown-route fallback.",
         };
       case 'pop':
         if (navState == null) {
-          return <String, Object?>{
-            'success': false,
-            'error': 'navigator_not_registered',
-          };
+          return _navigatorNotRegistered();
         }
-        final popped = await navState.maybePop();
-        return <String, Object?>{'success': popped, 'action': 'pop'};
+        final before = _topRoute(navState);
+        final handled = await navState.maybePop();
+        final popped = !identical(_topRoute(navState), before);
+        return <String, Object?>{
+          'success': popped,
+          'handled': handled,
+          'action': 'pop',
+          if (!popped) ...<String, Object?>{
+            'error': 'nothing_popped',
+            'topRouteName': _topRoute(navState)?.settings.name,
+            'hint':
+                'The navigator stayed where it was: this is the last route on '
+                'its stack, or the current route declined the pop (a '
+                'PopScope guarding unsaved input, for instance).',
+          },
+        };
       case 'popUntil':
         if (route == null || route.isEmpty) {
           return <String, Object?>{
             'success': false,
             'error': 'missing_route',
             'action': action,
+            'hint':
+                'navigate "$action" acts on a named route, so it needs a '
+                '"route" argument — the name the app registered in its routes '
+                'table, such as "/settings".',
           };
         }
         if (navState == null) {
-          return <String, Object?>{
-            'success': false,
-            'error': 'navigator_not_registered',
-          };
+          return _navigatorNotRegistered();
         }
         // Walk the stack non-destructively first using the `popUntil`
         // sentinel pattern (predicate returns `true` so nothing is popped).
@@ -297,6 +433,12 @@ class ControlFlowService {
             'action': 'popUntil',
             'route': route,
             'currentRoutes': routeNames,
+            'hint':
+                'Nothing was popped: "$route" is not on the stack, and '
+                'popUntil with a name it cannot find would pop every route '
+                'and leave the navigator empty. Pick a name from '
+                'currentRoutes — an anonymous route shows there as null and '
+                'cannot be targeted by name.',
           };
         }
         navState.popUntil(ModalRoute.withName(route));
@@ -310,6 +452,11 @@ class ControlFlowService {
           'success': false,
           'error': 'unknown_action',
           'action': action,
+          'acceptedActions': const <String>['push', 'pop', 'popUntil'],
+          'hint':
+              'navigate does not know the action "$action". Pass one of '
+              'acceptedActions; to close a dialog rather than a page, call '
+              'handle_dialog instead.',
         };
     }
   }

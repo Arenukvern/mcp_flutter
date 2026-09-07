@@ -95,6 +95,7 @@ abstract final class CoreErrorCode {
   static const evaluateExpressionFailed = 'evaluate_expression_failed';
   static const getRecentLogsFailed = 'get_recent_logs_failed';
 
+  static const invalidPredicate = 'invalid_predicate';
   static const waitTimeout = 'wait_timeout';
   static const waitForFailed = 'wait_for_failed';
 
@@ -405,6 +406,13 @@ const Map<String, CoreErrorDescriptor> _descriptorMap =
         exitCode: 69,
         httpLikeStatus: 500,
       ),
+      CoreErrorCode.invalidPredicate: CoreErrorDescriptor(
+        code: CoreErrorCode.invalidPredicate,
+        category: CoreErrorCategory.validation,
+        retryable: false,
+        exitCode: 64,
+        httpLikeStatus: 400,
+      ),
       CoreErrorCode.waitTimeout: CoreErrorDescriptor(
         code: CoreErrorCode.waitTimeout,
         category: CoreErrorCategory.execution,
@@ -520,8 +528,27 @@ Map<String, Object?> recoveryForErrorCode(
     };
   }
 
-  return _defaultRecoveryMap[resolvedCode] ??
+  final fallback =
+      _defaultRecoveryMap[resolvedCode] ??
       _defaultRecoveryMap[CoreErrorCode.unknown]!;
+
+  // A failure that ships its own `hint` has already named the cause and the
+  // next step, so the hint is the summary — a stale ref is not an environment
+  // problem, and telling the caller to run doctor for it wastes a call. No
+  // `fix_command` comes with it: these causes are answered by different
+  // commands, and one that is right for a stale ref is wrong for a key name
+  // that resolves to nothing. Consumers already treat it as optional.
+  // `details` is an app-supplied payload, so only a String `hint` is readable
+  // guidance; anything else keeps the mapped recovery.
+  final hint = switch (details) {
+    {'hint': final String value} => value,
+    _ => null,
+  };
+  if (hint != null && hint.isNotEmpty) {
+    return <String, Object?>{'summary': hint};
+  }
+
+  return fallback;
 }
 
 const Map<String, Map<String, Object?>>

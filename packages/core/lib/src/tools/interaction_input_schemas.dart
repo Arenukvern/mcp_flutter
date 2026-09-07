@@ -67,7 +67,11 @@ Map<String, Object?> waitForInputSchema() => <String, Object?>{
           '{kind:"noText", text:String} | '
           '{kind:"node", identifier:String, selected/enabled/focused/checked/'
           'toggled:bool, absent:bool} | '
-          '{kind:"stable", stableWindowMs:int}, '
+          '{kind:"stable", stableWindowMs:int} — sampled once per frame and '
+          'matched after the tree remains unchanged for the requested wall '
+          'time; stableWindowMs must be less than effective timeoutMs, or the '
+          'call fails with invalid_predicate before sampling; a match reports '
+          'stableFor.sampledFrames and stableFor.elapsedMs, '
           '{kind:"noError"}',
     },
     'timeoutMs': <String, Object?>{
@@ -160,7 +164,9 @@ Map<String, Object?> scrollInputSchema() => <String, Object?>{
     },
     'ref': <String, Object?>{
       'type': 'string',
-      'description': 'Optional ref to scroll from.',
+      'description':
+          'Optional: the list to scroll, or any node inside it. Without it, '
+          'the list under the screen centre scrolls.',
     },
     'distance': <String, Object?>{
       'type': 'number',
