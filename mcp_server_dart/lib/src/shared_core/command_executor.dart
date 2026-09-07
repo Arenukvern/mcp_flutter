@@ -1228,14 +1228,13 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       }
 
       final instanceRef = result as InstanceRef;
+      final rendered = await _renderEvaluationValue(
+        vmService: vmService,
+        isolateId: isolate.id!,
+        instanceRef: instanceRef,
+      );
       return CoreResult.success(
-        data: {
-          'expression': command.expression,
-          'result':
-              instanceRef.valueAsString ?? instanceRef.classRef?.name ?? 'null',
-          'kind': instanceRef.kind,
-          'classRef': instanceRef.classRef?.name,
-        },
+        data: {'expression': command.expression, ...rendered},
       );
     } on Exception catch (e) {
       return CoreResult.failure(
@@ -1244,6 +1243,58 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
         details: const <String, Object?>{'errorKind': 'transport'},
       );
     }
+  }
+
+  /// Upper bound on what `evaluate_dart_expression` returns, in UTF-16 code
+  /// units — the unit `getObject(count:)` windows by and `String.length`
+  /// counts in; a longer String is windowed and reported as `truncated`.
+  static const int _maxEvaluationResultCodeUnits = 32768;
+
+  /// The VM abbreviates a String inside an `InstanceRef` and only flags it
+  /// with `valueAsStringIsTruncated`; the full text lives behind `getObject`,
+  /// which windows by `offset`/`count`.
+  Future<Map<String, Object?>> _renderEvaluationValue({
+    required final VmService vmService,
+    required final String isolateId,
+    required final InstanceRef instanceRef,
+  }) async {
+    var value = instanceRef.valueAsString;
+    var length = instanceRef.length;
+    var truncated = instanceRef.valueAsStringIsTruncated ?? false;
+    final objectId = instanceRef.id;
+    if (truncated && objectId != null) {
+      final full = await vmService.getObject(
+        isolateId,
+        objectId,
+        offset: 0,
+        count: _maxEvaluationResultCodeUnits,
+      );
+      if (full is Instance && full.valueAsString != null) {
+        value = full.valueAsString;
+        length = full.length ?? length;
+        truncated = full.valueAsStringIsTruncated ??
+            (length != null && value!.length < length);
+      }
+    }
+    final className = instanceRef.classRef?.name;
+    return {
+      'result': value ?? className ?? 'null',
+      'kind': instanceRef.kind,
+      'classRef': className,
+      'length': ?length,
+      'truncated': truncated,
+      if (truncated && value != null) 'returnedLength': value.length,
+      if (truncated)
+        'hint':
+            'Only the first ${value?.length ?? 0} of $length UTF-16 code '
+            'units are returned; evaluate the expression with '
+            '.substring(${value?.length ?? 0}) to read the rest.'
+      else if (value == null && className != null)
+        'hint':
+            'The VM renders only primitives and Strings; "$className" came '
+            'back as a bare class name. Wrap the expression in .toString() '
+            'or jsonEncode(...) to read its value.',
+    };
   }
 
   Future<String?> _resolveEvaluationLibraryId({
