@@ -13,7 +13,7 @@ Use this skill when you need to drive a running Flutter app as a user would:
 - Scroll or swipe to reveal off-screen content.
 - Navigate between routes programmatically (push, pop, popUntil).
 - Dismiss dialogs and bottom sheets.
-- Press keyboard keys (Enter, Escape, Tab, arrows, ASCII chars).
+- Give a widget keyboard focus, then press keys (Enter, Escape, Tab, arrows, ASCII chars).
 - Hot-reload or hot-restart after editing Dart source files.
 - Combine reload + screenshot + semantics in one round-trip for fast iteration.
 
@@ -118,14 +118,14 @@ Enter text into a text field; taps to focus before typing. `ref` • string • 
 ```json
 {"name": "enter_text", "arguments": {"ref": "s_1", "text": "hello@example.com"}}
 ```
-Returns: `{"via": "editable_state"}` — Failures: `stale_snapshot`, `ref_not_found`
+Returns: `{"via": "editable_state", "verified": true, "appliedText": "..."}`. A write the field kept nothing of fails with `text_not_applied`, `appliedText` (empty) and `restoredText` (the value put back). Failures: `stale_snapshot`, `ref_not_found`, `text_not_applied`
 
 ### reveal_search
 Find a semantic target that may be off-screen. `query` • string • required. `matchBy` • string • optional (`text|identifier|label|value|hint`, default `text`). `direction` • string • optional (`up|down|left|right`, default `down`). `maxAttempts` • integer • optional • max 10. `distance` • number • optional. `connection` • object • optional.
 ```json
 {"name": "reveal_search", "arguments": {"query": "greeting_input_field", "matchBy": "identifier", "direction": "down", "maxAttempts": 4}}
 ```
-Returns: `{"ref": "s_14", "snapshotId": 2, "match": {...}, "attempts": [...]}` — Failures: `missing_query`, `target_not_found`, `scroll_blocked`
+Returns: `{"ref": "s_14", "snapshotId": 2, "match": {...}, "attempts": [...]}` — Failures: `missing_query`, `target_not_found`, `scroll_blocked`, `target_not_actionable`. `identifier` matches whole and case-sensitively; the other modes are case-insensitive substring tests. A miss by `identifier` carries `identifiersSeen` (how many the searched screens published) and `nearIdentifiers` — the closest of them, so `panel.tab` not found comes back with `panel.tab.overview` / `panel.tab.jobs` to pass instead.
 
 ### fill_form
 Batch text entry: fills multiple fields in one call. Stops on first failure. `snapshotId` validated on first field only. `fields` • array of `{ref, text}` • required. `snapshotId` • integer • optional. `connection` • object • optional.
@@ -135,18 +135,18 @@ Batch text entry: fills multiple fields in one call. Stops on first failure. `sn
 Returns: `{"filled": 2}` — Failures: `stale_snapshot`, `ref_not_found`
 
 ### scroll
-Scroll to reveal content. `"down"` reveals content below (finger swipes up). `direction` • string • required (`up|down|left|right`). `ref` • string • optional (falls back to screen center). `distance` • number • optional • default 300. `snapshotId` • integer • optional. `connection` • object • optional.
+Scroll to reveal content. `"down"` reveals content below (finger swipes up). `direction` • string • required (`up|down|left|right`). `ref` • string • optional — the list to scroll, or any node inside it; without it the list under the screen centre scrolls. `distance` • number • optional • default 300, honoured exactly where the list takes an offset, otherwise rounded to a viewport page. `snapshotId` • integer • optional. `connection` • object • optional.
 ```json
 {"name": "scroll", "arguments": {"direction": "down", "ref": "s_0", "distance": 500}}
 ```
-Returns: `{"via": "semantic_action"}` — Failures: `ref_not_found`, `stale_snapshot`
+Returns: `{"via": "semantic_action", "scrollBefore": 0.0, "scrollAfter": 500.0, "distance": 500.0}`. `scrollBefore`/`scrollAfter` are forwarded whenever measurable; `distance` is present on exact-offset and pointer-scroll paths. A node that advertises the scroll action without a scroll position (custom `Semantics(onScrollUp: ...)`) takes it and returns `success: true`, `verified: false`, `unmeasured: true`. Failures: `ref_not_found`, `stale_snapshot`, `no_scrollable_at_point`, `no_scroll_movement`, `unsupported_scroll_action`, `semantics_owner_unavailable`
 
 ### swipe
 High-velocity fling. Same direction model as `scroll`. Always Tier 2 pointer events. `direction` • string • required. `ref` • string • optional. `distance` • number • optional • default 300. `snapshotId` • integer • optional. `connection` • object • optional.
 ```json
 {"name": "swipe", "arguments": {"direction": "left", "ref": "s_4"}}
 ```
-Returns: `{"via": "pointer_events"}` — Failures: `ref_not_found`, `web_gesture_not_supported`
+Returns: `{"via": "pointer_events", "scrollBefore": 0.0, "scrollAfter": 420.0}` when movement is measurable. When finite scroll offsets are unavailable, a dispatched gesture returns `success: true`, `verified: false`, and `measurementReason`. Failures: `ref_not_found`, `stale_snapshot`, `no_scroll_movement`, `web_gesture_not_supported`
 
 ### drag
 Drag from one widget to another. Always Tier 2. `fromRef` • string • required. `toRef` • string • required. `snapshotId` • integer • optional. `connection` • object • optional.
@@ -162,15 +162,23 @@ Synthesize a mouse hover. Desktop/web only — no hover concept on mobile. `ref`
 ```
 Returns: `{"via": "pointer_events"}` — Failures: `ref_not_found`, platform error on mobile
 
+### focus_widget
+Give keyboard focus to a widget, so the `press_key` that follows reaches it. Uses the node's semantic `focus` action when the snapshot lists one, otherwise the focusable widget inside the ref's bounds (the only route on iOS, where Flutter exposes no focus action). Leaves a parked hover in place. `ref` • string • required. `snapshotId` • integer • optional. `connection` • object • optional.
+```json
+{"name": "focus_widget", "arguments": {"ref": "s_5"}}
+```
+Returns: `{"via": "semantic_action" | "focus_node", "verified": true, "verifiedBy": "semantics_flag" | "focus_node", "focusMoved": bool}` — `success: true` means the target reports focus after the framework caught up; `focusMoved: false` means it already held it. On the focus-node route, `focusedNow` names the control inside the ref that actually took focus. Failures: `ref_not_found`, `stale_ref`, `stale_snapshot`, `target_disabled`, `focus_not_exposed` (nothing focusable behind the ref), `focus_refused` (the request went through but the target does not report focus; `focusedNow` says where it sits)
+
 ### press_key
 Synthesize key press (down+up). Accepted: `Enter Escape Tab Backspace Delete Space ArrowUp ArrowDown ArrowLeft ArrowRight` plus single ASCII (`a-z` `0-9`). `key` • string • required. `ctrl/shift/alt/meta` • boolean • optional • default false. `connection` • object • optional.
 ```json
 {"name": "press_key", "arguments": {"key": "Enter"}}
 ```
-Returns: `{"key": "Enter"}` — Failures: `unsupported_key`, `no_focus`
+Returns: `{"key": "Enter", "handled": bool}` — `handled` says whether either dispatch phase (hardware keyboard handlers or focus chain) claimed the main key-down event; false does not describe the key-up or modifier events. Failures: `unsupported_key`, `no_focus`
 
 ### wait_for
-Wait for a UI predicate; returns fresh semantic snapshot. Predicates: `{kind:"text",text}` | `{kind:"noText",text}` | `{kind:"time",ms}` | `{kind:"stable",stableWindowMs}`. `predicate` • object • required. `timeoutMs` • integer • optional • default 5000 • max 30000. `connection` • object • optional.
+
+Wait for a UI predicate; returns fresh semantic snapshot. Predicates: `{kind:"text",text}` | `{kind:"noText",text}` | `{kind:"time",ms}` | `{kind:"stable",stableWindowMs}`. `stable` samples once per frame and matches after the semantics tree has remained unchanged for the requested wall time; the match reports `stableFor.sampledFrames` and `stableFor.elapsedMs`. `stableWindowMs` must be less than `timeoutMs` (default 5000); an impossible budget fails immediately with `invalid_predicate`. `predicate` • object • required. `timeoutMs` • integer • optional • default 5000 • max 30000. `connection` • object • optional.
 ```json
 {"name": "wait_for", "arguments": {"predicate": {"kind": "text", "text": "Dashboard"}, "timeoutMs": 8000}}
 ```
@@ -181,14 +189,14 @@ Drive the registered Navigator. Requires `MCPToolkitBinding.instance.navigatorKe
 ```json
 {"name": "navigate", "arguments": {"action": "push", "route": "/profile", "arguments": {"userId": "42"}}}
 ```
-Returns: `{"action": "push", "route": "/profile"}` — Failures: `navigator_not_configured`, `route_not_found`
+Returns: `{"action": "push", "route": "/profile"}`. A generated unnamed route returns `success: true`, `verified: false`, and `via: "stack_changed_unnamed_route"` because the stack changed but its requested name cannot be checked. `pop` reads `success` off the stack and reports `handled` from `maybePop`: a page under `PopScope(canPop: false)` comes back `handled: true`, `success: false`, `nothing_popped`. Failures: `navigator_not_configured`, `route_not_found`
 
 ### handle_dialog
 Dismiss the topmost popup/dialog route. Only `action: "dismiss"` supported. Requires `navigatorKey = key` on `MCPToolkitBinding.instance` in the app. `action` • string • required (must be `"dismiss"`). `connection` • object • optional.
 ```json
 {"name": "handle_dialog", "arguments": {"action": "dismiss"}}
 ```
-Returns: `{"dismissed": true}` — Failures: `navigator_not_configured`, `no_dialog`
+Returns: `{"success": true, "handled": true, "routeType": "DialogRoute<void>"}`. `success` is read off the route stack; `handled` is what `maybePop` answered, so a dialog under `PopScope(canPop: false)` comes back `handled: true`, `success: false`, `dialog_declined_pop`. Failures: `navigator_not_registered`, `no_popup_route`, `dialog_declined_pop`
 
 ### hot_reload_flutter
 Hot reload the app. Preserves state. `force` • boolean • optional • default false (reload even without source changes). `connection` • object • optional.

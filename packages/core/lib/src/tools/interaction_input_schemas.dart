@@ -67,7 +67,11 @@ Map<String, Object?> waitForInputSchema() => <String, Object?>{
           '{kind:"noText", text:String} | '
           '{kind:"node", identifier:String, selected/enabled/focused/checked/'
           'toggled:bool, absent:bool} | '
-          '{kind:"stable", stableWindowMs:int}, '
+          '{kind:"stable", stableWindowMs:int} — sampled once per frame and '
+          'matched after the tree remains unchanged for the requested wall '
+          'time; stableWindowMs must be less than effective timeoutMs, or the '
+          'call fails with invalid_predicate before sampling; a match reports '
+          'stableFor.sampledFrames and stableFor.elapsedMs, '
           '{kind:"noError"}',
     },
     'timeoutMs': <String, Object?>{
@@ -160,7 +164,9 @@ Map<String, Object?> scrollInputSchema() => <String, Object?>{
     },
     'ref': <String, Object?>{
       'type': 'string',
-      'description': 'Optional ref to scroll from.',
+      'description':
+          'Optional: the list to scroll, or any node inside it. Without it, '
+          'the list under the screen centre scrolls.',
     },
     'distance': <String, Object?>{
       'type': 'number',
@@ -268,6 +274,27 @@ Map<String, Object?> hoverInputSchema() => <String, Object?>{
   'properties': <String, Object?>{
     'ref': <String, Object?>{'type': 'string'},
     'snapshotId': <String, Object?>{'type': 'integer'},
+    'connection': connectionOverrideJsonSchema(),
+  },
+};
+
+/// Shared JSON Schema for [focus_widget] / `fmt_focus_widget`.
+Map<String, Object?> focusWidgetInputSchema() => <String, Object?>{
+  'type': 'object',
+  'additionalProperties': false,
+  'required': <String>['ref'],
+  'properties': <String, Object?>{
+    'ref': <String, Object?>{
+      'type': 'string',
+      'description': 'Widget ref from semantic_snapshot (e.g. "s_0").',
+    },
+    'snapshotId': <String, Object?>{
+      'type': 'integer',
+      'description':
+          'Optional: snapshotId input. Use the snapshot_id returned by most '
+          'recent semantic_snapshot. If provided and stale, the call fails '
+          'with stale_snapshot.',
+    },
     'connection': connectionOverrideJsonSchema(),
   },
 };
@@ -582,6 +609,7 @@ const coreInteractionCatalogCommandNames = <String>[
   'swipe',
   'drag',
   'hover',
+  'focus_widget',
   'press_key',
   'get_recent_logs',
   'handle_dialog',
@@ -593,7 +621,7 @@ const coreInteractionCatalogCommandNames = <String>[
   'hot_reload_and_capture',
 ];
 
-/// Host inspection tools beyond the core 19 (Tier A `exec` / `fmt_*`).
+/// Host inspection tools beyond the core 20 (Tier A `exec` / `fmt_*`).
 const inspectionTierAExecCommandNames = <String>[
   'get_view_details',
   'inspect_widget_at_point',
@@ -607,13 +635,13 @@ const captureTierAExecCommandNames = <String>[
   'capture_ui_snapshot',
 ];
 
-/// Tier A exec catalog: core 19 + 4 inspection (23 tools).
+/// Tier A exec catalog: core 20 + 4 inspection (24 tools).
 const tierAExecCatalogCommandNames = <String>[
   ...coreInteractionCatalogCommandNames,
   ...inspectionTierAExecCommandNames,
 ];
 
-/// Every command name served by [interactionCatalogInputSchemaFor] (23 + 2 capture).
+/// Every command name served by [interactionCatalogInputSchemaFor] (24 + 2 capture).
 const interactionCatalogInputSchemaForCommandNames = <String>[
   ...tierAExecCatalogCommandNames,
   ...captureTierAExecCommandNames,
@@ -638,6 +666,7 @@ Map<String, Object?>? interactionCatalogInputSchemaFor(
   'drag' => dragInputSchema(),
   'fill_form' => fillFormInputSchema(),
   'hover' => hoverInputSchema(),
+  'focus_widget' => focusWidgetInputSchema(),
   'press_key' => pressKeyInputSchema(),
   'get_recent_logs' => getRecentLogsInputSchema(),
   'handle_dialog' => handleDialogInputSchema(),
