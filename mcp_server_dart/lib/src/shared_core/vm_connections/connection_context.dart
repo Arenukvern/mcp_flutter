@@ -631,7 +631,13 @@ final class ConnectionContext {
         await _vmService?.dispose();
       }
       if (_vmChannel != null) {
-        await _vmChannel?.sink.close();
+        // sink.close() never completes when the websocket upgrade failed,
+        // so bound the wait and swallow late errors to keep disconnect()
+        // best-effort and non-blocking.
+        await _vmChannel?.sink.close().catchError((final _) {}).timeout(
+          const Duration(seconds: 1),
+          onTimeout: () => null,
+        );
       }
     } catch (e) {
       logger(
@@ -678,6 +684,19 @@ final class ConnectionContext {
       }
 
       _vmChannel = WebSocketChannel.connect(wsUri);
+
+      // Await the websocket upgrade so connection failures (refused,
+      // non-websocket endpoint) surface here as a normal error instead of
+      // escaping as an unhandled async error from the channel.
+      final vmReady = _vmChannel!.ready;
+      // Swallow a late error if the timeout below fires first so it does
+      // not escape as an unhandled async error.
+      unawaited(vmReady.catchError((final _) {}));
+      if (timeout == Duration.zero) {
+        await vmReady;
+      } else {
+        await vmReady.timeout(timeout);
+      }
 
       _vmService = VmService(
         _vmChannel!.stream.cast<String>(),
