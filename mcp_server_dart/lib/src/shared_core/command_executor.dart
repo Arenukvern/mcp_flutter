@@ -190,7 +190,10 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
           'imageCount': imageSummaries.length,
           'includeViewDetails': command.includeViewDetails,
           'includeErrors': command.includeErrors,
-          'errorsCount': command.errorsCount,
+          'errorsCount': ?capturedErrorCount(
+            includeErrors: command.includeErrors,
+            appErrors: appErrors,
+          ),
           'compress': command.compress,
           'requestedMode': command.screenshotMode.wireName,
           'actualMode':
@@ -345,6 +348,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     NavigateCommand() => _navigate(command),
     FillFormCommand() => _fillForm(command),
     HoverCommand() => _hover(command),
+    FocusWidgetCommand() => _focusWidget(command),
     DebugDumpLayerTreeCommand() => _debugDumpLayerTree(),
     DebugDumpSemanticsTreeCommand() => _debugDumpSemanticsTree(),
     DebugDumpRenderTreeCommand() => _debugDumpRenderTree(),
@@ -955,7 +959,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
           if (command.snapshotId != null) 'snapshotId': command.snapshotId,
         },
       );
-      return CoreResult.success(data: _map(result.json));
+      return routeInteractionResponse('tap_widget', _map(result.json));
     } on Exception catch (e) {
       return CoreResult.failure(
         code: CoreErrorCode.interactionFailed,
@@ -977,7 +981,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
           if (command.snapshotId != null) 'snapshotId': command.snapshotId,
         },
       );
-      return CoreResult.success(data: _map(result.json));
+      return routeInteractionResponse('enter_text', _map(result.json));
     } on Exception catch (e) {
       return CoreResult.failure(
         code: CoreErrorCode.interactionFailed,
@@ -1001,7 +1005,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
           'distance': command.distance,
         },
       );
-      return CoreResult.success(data: _map(result.json));
+      return routeInteractionResponse('reveal_search', _map(result.json));
     } on Exception catch (e) {
       return CoreResult.failure(
         code: CoreErrorCode.interactionFailed,
@@ -1024,7 +1028,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
           if (command.snapshotId != null) 'snapshotId': command.snapshotId,
         },
       );
-      return CoreResult.success(data: _map(result.json));
+      return routeInteractionResponse('scroll', _map(result.json));
     } on Exception catch (e) {
       return CoreResult.failure(
         code: CoreErrorCode.interactionFailed,
@@ -1045,7 +1049,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
           if (command.snapshotId != null) 'snapshotId': command.snapshotId,
         },
       );
-      return CoreResult.success(data: _map(result.json));
+      return routeInteractionResponse('long_press', _map(result.json));
     } on Exception catch (e) {
       return CoreResult.failure(
         code: CoreErrorCode.interactionFailed,
@@ -1068,7 +1072,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
           if (command.snapshotId != null) 'snapshotId': command.snapshotId,
         },
       );
-      return CoreResult.success(data: _map(result.json));
+      return routeInteractionResponse('swipe', _map(result.json));
     } on Exception catch (e) {
       return CoreResult.failure(
         code: CoreErrorCode.interactionFailed,
@@ -1091,7 +1095,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
           if (command.kind case final kind?) 'kind': kind.wireName,
         },
       );
-      return CoreResult.success(data: _map(result.json));
+      return routeInteractionResponse('drag', _map(result.json));
     } on Exception catch (e) {
       return CoreResult.failure(
         code: CoreErrorCode.interactionFailed,
@@ -1224,14 +1228,13 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       }
 
       final instanceRef = result as InstanceRef;
+      final rendered = await _renderEvaluationValue(
+        vmService: vmService,
+        isolateId: isolate.id!,
+        instanceRef: instanceRef,
+      );
       return CoreResult.success(
-        data: {
-          'expression': command.expression,
-          'result':
-              instanceRef.valueAsString ?? instanceRef.classRef?.name ?? 'null',
-          'kind': instanceRef.kind,
-          'classRef': instanceRef.classRef?.name,
-        },
+        data: {'expression': command.expression, ...rendered},
       );
     } on Exception catch (e) {
       return CoreResult.failure(
@@ -1240,6 +1243,58 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
         details: const <String, Object?>{'errorKind': 'transport'},
       );
     }
+  }
+
+  /// Upper bound on what `evaluate_dart_expression` returns, in UTF-16 code
+  /// units — the unit `getObject(count:)` windows by and `String.length`
+  /// counts in; a longer String is windowed and reported as `truncated`.
+  static const int _maxEvaluationResultCodeUnits = 32768;
+
+  /// The VM abbreviates a String inside an `InstanceRef` and only flags it
+  /// with `valueAsStringIsTruncated`; the full text lives behind `getObject`,
+  /// which windows by `offset`/`count`.
+  Future<Map<String, Object?>> _renderEvaluationValue({
+    required final VmService vmService,
+    required final String isolateId,
+    required final InstanceRef instanceRef,
+  }) async {
+    var value = instanceRef.valueAsString;
+    var length = instanceRef.length;
+    var truncated = instanceRef.valueAsStringIsTruncated ?? false;
+    final objectId = instanceRef.id;
+    if (truncated && objectId != null) {
+      final full = await vmService.getObject(
+        isolateId,
+        objectId,
+        offset: 0,
+        count: _maxEvaluationResultCodeUnits,
+      );
+      if (full is Instance && full.valueAsString != null) {
+        value = full.valueAsString;
+        length = full.length ?? length;
+        truncated = full.valueAsStringIsTruncated ??
+            (length != null && value!.length < length);
+      }
+    }
+    final className = instanceRef.classRef?.name;
+    return {
+      'result': value ?? className ?? 'null',
+      'kind': instanceRef.kind,
+      'classRef': className,
+      'length': ?length,
+      'truncated': truncated,
+      if (truncated && value != null) 'returnedLength': value.length,
+      if (truncated)
+        'hint':
+            'Only the first ${value?.length ?? 0} of $length UTF-16 code '
+            'units are returned; evaluate the expression with '
+            '.substring(${value?.length ?? 0}) to read the rest.'
+      else if (value == null && className != null)
+        'hint':
+            'The VM renders only primitives and Strings; "$className" came '
+            'back as a bare class name. Wrap the expression in .toString() '
+            'or jsonEncode(...) to read its value.',
+    };
   }
 
   Future<String?> _resolveEvaluationLibraryId({
@@ -1438,14 +1493,16 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
           snapshotId: i == 0 ? command.snapshotId : null,
         ),
       );
-      final fieldData = _map(result.data);
+      // A refused field carries its payload in the error details, a written
+      // one in the data — the batch report must show what each field ended up
+      // holding either way, or a partial write reads as "nothing happened".
+      final fieldData = _map(result.data ?? result.error?.details);
       results.add(fieldData);
-      // `_enterText` always returns CoreResult.success regardless of
-      // toolkit-side failure — so a transport error (`!result.ok`) AND a
-      // toolkit-side failure (`fieldData['success'] == false` /
-      // `fieldData['ok'] == false`) both count as "stop the batch."
-      // Toolkit emits `success: false` for missing args and `ok: false`
-      // for stale_snapshot — accept either shape.
+      // A transport error (`!result.ok`) and a refusal inside the payload
+      // (`fieldData['success'] == false` for a rejected write, `['ok'] == false`
+      // for a stale snapshot) both count as "stop the batch" — accept either
+      // shape, since a field that did not take its text makes every later
+      // field's ref suspect too.
       final toolkitOk =
           !(fieldData['success'] == false || fieldData['ok'] == false);
       if (!result.ok || !toolkitOk) {
@@ -1496,6 +1553,27 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       return CoreResult.failure(
         code: CoreErrorCode.hoverFailed,
         message: 'Failed to execute hover: $e',
+      );
+    }
+  }
+
+  Future<CoreResult> _focusWidget(final FocusWidgetCommand command) async {
+    final ensureFailure = await _ensureVmConnected();
+    if (ensureFailure != null) return ensureFailure;
+
+    try {
+      final result = await connectionContext.callFlutterExtension(
+        mcpToolkitExtKeys.focusWidget,
+        args: {
+          'ref': command.ref,
+          if (command.snapshotId != null) 'snapshotId': command.snapshotId,
+        },
+      );
+      return routeInteractionResponse('focus_widget', _map(result.json));
+    } on Exception catch (e) {
+      return CoreResult.failure(
+        code: CoreErrorCode.focusWidgetFailed,
+        message: 'Failed to execute focus_widget: $e',
       );
     }
   }
@@ -1912,14 +1990,59 @@ final class _DesktopCaptureResolution {
   final Map<String, Object?> errorDetails;
 }
 
+/// How many errors a `capture_ui_snapshot` bundle carries.
+///
+/// [includeErrors] says whether the caller requested errors. [appErrors] is
+/// the decoded error bundle returned by the app. Returns `null` when errors
+/// were not requested, otherwise the number of entries in its `errors` list
+/// or zero when that list is absent.
+int? capturedErrorCount({
+  required final bool includeErrors,
+  required final Object? appErrors,
+}) {
+  if (!includeErrors) return null;
+  final errors = switch (appErrors) {
+    final Map<Object?, Object?> bundle => bundle['errors'],
+    _ => null,
+  };
+  return errors is List ? errors.length : 0;
+}
+
+/// Route an interaction payload to a result that matches its own verdict.
+///
+/// [tool] names the interaction for the failure message. [data] is the
+/// decoded toolkit payload. Returns success only for `success: true`;
+/// refused gestures and stale snapshots become failures that retain [data]
+/// as their details.
+CoreResult routeInteractionResponse(
+  final String tool,
+  final Map<String, Object?> data,
+) {
+  if (data['success'] == true) return CoreResult.success(data: data);
+  final reason = data['error'] ?? data['message'] ?? 'no success in payload';
+  return CoreResult.failure(
+    code: CoreErrorCode.interactionFailed,
+    message: '$tool failed: $reason',
+    details: data,
+  );
+}
+
 /// Route the toolkit's `wait_for` extension response to a [CoreResult].
 ///
-/// Treats anything other than literal `true` for the `matched` field as a
-/// failure: `matched == false` is an expected predicate timeout
-/// (`wait_timeout`); any other shape (null / string / int / coerced wire
-/// value) is a malformed-payload bug bucketed as `wait_for_failed`. Public
-/// so the routing can be exercised in tests without a live VM.
+/// [data] is the decoded toolkit response. Returns success for
+/// `matched: true`, a validation failure for `invalid_predicate`, a timeout
+/// for `matched: false`, or `wait_for_failed` for any malformed verdict.
 CoreResult routeWaitForResponse(final Map<String, Object?> data) {
+  if (data['error'] == CoreErrorCode.invalidPredicate) {
+    final hint = data['hint'];
+    return CoreResult.failure(
+      code: CoreErrorCode.invalidPredicate,
+      message: hint is String
+          ? hint
+          : 'wait_for received an invalid predicate',
+      details: data,
+    );
+  }
   final matched = data['matched'];
   if (matched != true) {
     return CoreResult.failure(

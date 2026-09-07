@@ -996,6 +996,28 @@ final class CommandCatalog {
         },
       ),
       CommandSpec(
+        name: 'focus_widget',
+        description:
+            'Give keyboard focus to the widget identified by a semantic snapshot '
+            'ref, so the press_key that follows reaches it. Performs the '
+            "node's semantic focus action when it exposes one, otherwise asks "
+            "the focusable widget inside the ref's bounds; the result proves "
+            'where focus landed. Leaves a parked hover in place. '
+            'Pass snapshotId to detect staleness.',
+        inputSchema: interactionCatalogInputSchemaFor('focus_widget')!,
+        outputSchema: _objectSchema(additionalProperties: true),
+        requiresVm: true,
+        supportsWatch: false,
+        mcpExposed: true,
+        build: (final args) {
+          final snapshotIdRaw = _intArg(args, 'snapshotId', fallback: 0);
+          return FocusWidgetCommand(
+            ref: _stringArg(args, 'ref', fallback: ''),
+            snapshotId: snapshotIdRaw == 0 ? null : snapshotIdRaw,
+          );
+        },
+      ),
+      CommandSpec(
         name: 'debug_dump_layer_tree',
         description: 'Run ext.flutter.debugDumpLayerTree.',
         inputSchema: _objectSchema(),

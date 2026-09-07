@@ -12,16 +12,40 @@ import 'package:is_dart_empty_or_not/is_dart_empty_or_not.dart';
 
 /// Cross-platform port scanner used by CLI and MCP wrapper.
 final class CorePortScanner {
-  const CorePortScanner({required this.logger});
+  const CorePortScanner({required this.logger, this.scanPorts = const <int>[]});
 
   final CoreLogger logger;
+
+  /// Ports probed on every scan in addition to the process scan.
+  ///
+  /// A desktop VM service listens inside the application's own native process
+  /// (`my_app`, `Runner.exe`), which the process scan cannot recognize, and an
+  /// app started with `--no-dds` has no Dart process at all. Naming such ports
+  /// keeps those instances discoverable.
+  final List<int> scanPorts;
 
   void _log(final LoggingLevel level, final String message) {
     logger(level, message, logger: 'PortScanner');
   }
 
-  /// Scan for ports where Flutter/Dart processes are listening.
+  /// Scan for ports where a Flutter debug VM service may be listening.
+  ///
+  /// Candidates come from the platform process scan merged with a TCP probe of
+  /// [commonFlutterPorts] and [scanPorts]. Callers verify each candidate before
+  /// presenting it as a target.
   Future<List<int>> scanForFlutterPorts() async {
+    final scans = await Future.wait([_scanProcessPorts(), probeKnownPorts()]);
+
+    final uniquePorts = scans.expand((final ports) => ports).toSet().toList()
+      ..sort();
+    _log(
+      LoggingLevel.info,
+      'Scan completed: ${uniquePorts.length} unique candidate ports',
+    );
+    return uniquePorts;
+  }
+
+  Future<List<int>> _scanProcessPorts() async {
     try {
       if (Platform.isWindows) {
         _log(LoggingLevel.info, 'Using Windows port scanning method');
@@ -37,21 +61,17 @@ final class CorePortScanner {
 
       _log(
         LoggingLevel.warning,
-        'Unsupported platform ${Platform.operatingSystem}, using fallback method',
+        'Unsupported platform ${Platform.operatingSystem}, '
+        'relying on probed ports only',
       );
-      return await _scanForFlutterPortsFallback();
+      return const <int>[];
     } on Exception catch (e) {
-      _log(LoggingLevel.error, 'Platform-specific scanning failed: $e');
-      try {
-        _log(LoggingLevel.info, 'Attempting fallback port scanning method');
-        return await _scanForFlutterPortsFallback();
-      } on Exception catch (fallbackError) {
-        _log(
-          LoggingLevel.error,
-          'Fallback port scanning also failed: $fallbackError',
-        );
-        return <int>[];
-      }
+      _log(
+        LoggingLevel.error,
+        'Platform-specific scanning failed, '
+        'relying on probed ports only: $e',
+      );
+      return const <int>[];
     }
   }
 
@@ -233,27 +253,30 @@ final class CorePortScanner {
     return uniquePorts;
   }
 
-  Future<List<int>> _scanForFlutterPortsFallback() async {
-    _log(LoggingLevel.debug, 'Starting fallback port scan');
+  /// Probe [commonFlutterPorts] and [scanPorts] for reachable ports.
+  ///
+  /// Runs on every scan, so a VM service is discoverable even when no process
+  /// on the machine is recognizable as Dart or Flutter.
+  Future<List<int>> probeKnownPorts() =>
+      _probePorts(<int>{...commonFlutterPorts, ...scanPorts});
 
-    final activePorts = <int>[];
-    for (final port in commonFlutterPorts) {
-      try {
-        final socket = await Socket.connect(
-          'localhost',
-          port,
-          timeout: const Duration(milliseconds: 100),
-        );
-        await socket.close();
-        activePorts.add(port);
-      } on Exception catch (_) {
-        // Ignore unavailable ports.
-      }
+  Future<List<int>> _probePorts(final Set<int> ports) async {
+    if (ports.isEmpty) {
+      return const <int>[];
     }
+    _log(LoggingLevel.debug, 'Probing ${ports.length} known ports');
+
+    final orderedPorts = ports.toList(growable: false);
+    final accessibility = await Future.wait(orderedPorts.map(isPortAccessible));
+
+    final activePorts = <int>[
+      for (var i = 0; i < orderedPorts.length; i++)
+        if (accessibility[i]) orderedPorts[i],
+    ];
 
     _log(
       LoggingLevel.info,
-      'Fallback scan completed: found ${activePorts.length} accessible ports',
+      'Probe completed: found ${activePorts.length} accessible ports',
     );
     return activePorts;
   }
@@ -275,4 +298,54 @@ final class CorePortScanner {
 
   /// Common Flutter development ports.
   List<int> get commonFlutterPorts => [8080, 8181, 9000, 9001, 9999];
+
+  /// Most ports a `--scan-ports` value may expand to.
+  ///
+  /// Every port is probed on every scan, so the whole specification is capped,
+  /// not just a single range.
+  static const int maxScanPortsCount = 256;
+
+  /// Parse a `--scan-ports` value such as `8765-8767,9100`.
+  ///
+  /// Entries outside `1-65535`, reversed ranges, unparsable text, and entries
+  /// that would push the result past [maxScanPortsCount] are dropped, so
+  /// neither a typo nor an overly wide request can stall discovery.
+  static List<int> parseScanPortsSpec(final String? spec) {
+    final ports = <int>{};
+    for (final entry in (spec ?? '').split(',')) {
+      final trimmed = entry.trim();
+      if (trimmed.isEmpty) {
+        continue;
+      }
+
+      final range = RegExp(r'^(\d+)-(\d+)$').firstMatch(trimmed);
+      if (range == null) {
+        final port = int.tryParse(trimmed);
+        if (_isValidPort(port) && ports.length < maxScanPortsCount) {
+          ports.add(port!);
+        }
+        continue;
+      }
+
+      final start = int.tryParse(range.group(1)!);
+      final end = int.tryParse(range.group(2)!);
+      if (!_isValidPort(start) || !_isValidPort(end) || end! < start!) {
+        continue;
+      }
+
+      final added = <int>{
+        for (var port = start; port <= end; port++)
+          if (!ports.contains(port)) port,
+      };
+      if (ports.length + added.length > maxScanPortsCount) {
+        continue;
+      }
+      ports.addAll(added);
+    }
+
+    return ports.toList()..sort();
+  }
+
+  static bool _isValidPort(final int? port) =>
+      port != null && port > 0 && port <= 65535;
 }

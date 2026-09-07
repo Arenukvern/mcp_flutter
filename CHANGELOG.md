@@ -319,9 +319,21 @@
 
 ## [Unreleased]
 
+### Features
+
+* **focus_widget:** give a widget keyboard focus by ref — the semantic focus action first, the focus node inside its bounds otherwise — and prove where focus landed (`fmt_focus_widget`, CLI `exec --name focus_widget`)
+
 ### Bug Fixes
 
 * **server:** coalesce identical overlapping Flutter discovery requests and terminate their process trees on Windows
+* **capture:** explain when inline screenshots move into image blocks
+* **press_key:** define `handled` as the main key-down dispatch result
+* **wait_for:** measure stable windows by elapsed wall time, reject impossible timeout budgets, and drive suspended desktop frames
+
+### Documentation
+
+* **skills:** point instance naming at a copyable `setAppIdentity` call
+
 
 ## [4.0.0-dev.8](https://github.com/Arenukvern/mcp_flutter/compare/v4.0.0-dev.7...v4.0.0-dev.8) (2026-07-31)
 

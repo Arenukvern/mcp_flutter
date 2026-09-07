@@ -68,6 +68,24 @@ Example retry:
 }
 ```
 
+## Running App Missing From `discover_debug_apps`
+
+Cause: discovery scans processes named `dart`/`flutter`. A desktop app hosts its
+VM service inside its own native process (`my_app`, `Runner.exe`), and an app
+started with `--no-dds` has no Dart process at all, so neither shows up.
+
+Fix:
+
+1. Start the app on a known port, for example
+   `flutter run -d macos --device-vmservice-port=8765`.
+2. Pass that port to the server or CLI: `--scan-ports=8765`
+   (lists and ranges work too: `--scan-ports=8765-8767,9100`).
+3. Re-run `discover_debug_apps`; probed ports are verified like any other
+   candidate, so only real Flutter VM services are listed.
+
+Machine discovery (`--flutter-project-dir`) and an explicit
+`connection.uri` remain available when ports are unknown.
+
 ## No Tools Showing In Client
 
 - Restart the AI client after MCP config changes.

@@ -81,7 +81,10 @@ Future<void> main(final List<String> args) async {
     fallback: _defaultFlutterDiscoveryTimeoutMs,
   );
 
-  final portScanner = CorePortScanner(logger: logger);
+  final portScanner = CorePortScanner(
+    logger: logger,
+    scanPorts: _parseScanPortsOption(parsed.option(_scanPorts), logger: logger),
+  );
   final machineDiscovery = FlutterToolMachineDiscovery(logger: logger);
 
   final connectionContext = ConnectionContext(
@@ -89,6 +92,7 @@ Future<void> main(final List<String> args) async {
     defaultPort: int.tryParse(parsed.option(_dartVmPort) ?? '') ?? _defaultPort,
     logger: logger,
     discoverPorts: portScanner.scanForFlutterPorts,
+    preferredTargetLabel: _nonEmptyOption(parsed.option(_preferTargetLabel)),
     discoverMachineTargets: () => machineDiscovery.discover(
       projectDir: flutterProjectDir,
       device: flutterDevice,
@@ -1131,6 +1135,22 @@ LoggingLevel _parseLogLevel(final String? level) => switch (level) {
   _ => LoggingLevel.error,
 };
 
+List<int> _parseScanPortsOption(
+  final String? value, {
+  required final CoreLogger logger,
+}) {
+  final spec = _nonEmptyOption(value);
+  final ports = CorePortScanner.parseScanPortsSpec(spec);
+  if (spec != null && ports.isEmpty) {
+    logger(
+      LoggingLevel.error,
+      'Ignoring --$_scanPorts="$spec": no valid port in 1-65535.',
+      logger: 'PortScanner',
+    );
+  }
+  return ports;
+}
+
 int _parsePositiveIntOption(
   final String? value, {
   required final int fallback,
@@ -1891,6 +1911,21 @@ final _argParser = ArgParser(allowTrailingOptions: false)
         '(flutter attach --machine)',
   )
   ..addOption(
+    _scanPorts,
+    help:
+        'Extra ports to probe during discovery, as a comma-separated list of '
+        'ports and ranges (for example 8765-8767,9100). Needed to discover a '
+        'desktop app whose VM service listens inside the application '
+        'process, and any app started with --no-dds.',
+  )
+  ..addOption(
+    _preferTargetLabel,
+    help:
+        'Prefer the discovered target whose label contains this text, so '
+        'auto-attach can pick between several running apps. Labels come from '
+        'the app itself (MCPToolkitBinding.setAppIdentity).',
+  )
+  ..addOption(
     _webBrowserDebuggingPort,
     help:
         'Chrome remote-debugging-port override for web CDP capture when '
@@ -2287,6 +2322,8 @@ const _vmServiceUri = 'vm-service-uri';
 const _flutterProjectDir = 'flutter-project-dir';
 const _flutterDevice = 'flutter-device';
 const _flutterDiscoveryTimeoutMs = 'flutter-discovery-timeout-ms';
+const _scanPorts = 'scan-ports';
+const _preferTargetLabel = 'prefer-target-label';
 const _webBrowserDebuggingPort = 'web-browser-debugging-port';
 const _webPort = 'web-port';
 const _stateFile = 'state-file';

@@ -202,13 +202,9 @@ void registerInspectionTools(final CapabilityContext context) {
             return AgentResult.success(
               artifacts: [
                 AgentArtifact.text(
-                  jsonEncode(<String, Object?>{
-                    ...bundle,
-                    'screenshots': <String, Object?>{
-                      ...screenshots,
-                      'images': const <String>[],
-                    },
-                  }),
+                  jsonEncode(
+                    _bundleWithImagesLifted(bundle, screenshots, images.length),
+                  ),
                 ),
                 ...images.map(
                   (final image) =>
@@ -237,6 +233,41 @@ void registerInspectionTools(final CapabilityContext context) {
       },
     ),
   );
+}
+
+/// The bundle with the base64 payload removed, saying where it went.
+///
+/// `images: []` beside `summary.imageCount: 1` reads as a capture that
+/// silently failed, and `imageSummaries[].source: 'inline_base64'` then names
+/// the one place the payload is no longer at. Both are true of the core
+/// result, which keeps the images inline; neither survives the lift into
+/// ImageContent blocks, so the shipped bundle has to restate them.
+Map<String, Object?> _bundleWithImagesLifted(
+  final Map<String, Object?> bundle,
+  final Map<String, Object?> screenshots,
+  final int imageCount,
+) => <String, Object?>{
+  ...bundle,
+  'screenshots': <String, Object?>{
+    ...screenshots,
+    'images': const <String>[],
+    'imagesDeliveredAs': 'image_blocks',
+    'imagesNote':
+        'The $imageCount captured '
+        '${imageCount == 1 ? 'image travels' : 'images travel'} as image '
+        "block(s) beside this JSON. They are stripped from 'images' because "
+        'base64 inlined here counts against the response budget as text.',
+  },
+  if (bundle['imageSummaries'] case final List summaries)
+    'imageSummaries': summaries
+        .map(_summaryDeliveredAsBlock)
+        .toList(growable: false),
+};
+
+/// One image summary, with its source pointing at the block that carries it.
+Object? _summaryDeliveredAsBlock(final Object? summary) {
+  if (summary is! Map || summary['source'] != 'inline_base64') return summary;
+  return <String, Object?>{..._asMap(summary), 'source': 'image_block'};
 }
 
 // ---------------------------------------------------------------------------
