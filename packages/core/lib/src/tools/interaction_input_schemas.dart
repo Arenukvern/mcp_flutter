@@ -278,6 +278,27 @@ Map<String, Object?> hoverInputSchema() => <String, Object?>{
   },
 };
 
+/// Shared JSON Schema for [focus_widget] / `fmt_focus_widget`.
+Map<String, Object?> focusWidgetInputSchema() => <String, Object?>{
+  'type': 'object',
+  'additionalProperties': false,
+  'required': <String>['ref'],
+  'properties': <String, Object?>{
+    'ref': <String, Object?>{
+      'type': 'string',
+      'description': 'Widget ref from semantic_snapshot (e.g. "s_0").',
+    },
+    'snapshotId': <String, Object?>{
+      'type': 'integer',
+      'description':
+          'Optional: snapshotId input. Use the snapshot_id returned by most '
+          'recent semantic_snapshot. If provided and stale, the call fails '
+          'with stale_snapshot.',
+    },
+    'connection': connectionOverrideJsonSchema(),
+  },
+};
+
 /// Shared JSON Schema for [get_recent_logs] / `fmt_get_recent_logs`.
 Map<String, Object?> getRecentLogsInputSchema() => <String, Object?>{
   'type': 'object',
@@ -588,6 +609,7 @@ const coreInteractionCatalogCommandNames = <String>[
   'swipe',
   'drag',
   'hover',
+  'focus_widget',
   'press_key',
   'get_recent_logs',
   'handle_dialog',
@@ -599,7 +621,7 @@ const coreInteractionCatalogCommandNames = <String>[
   'hot_reload_and_capture',
 ];
 
-/// Host inspection tools beyond the core 19 (Tier A `exec` / `fmt_*`).
+/// Host inspection tools beyond the core 20 (Tier A `exec` / `fmt_*`).
 const inspectionTierAExecCommandNames = <String>[
   'get_view_details',
   'inspect_widget_at_point',
@@ -613,13 +635,13 @@ const captureTierAExecCommandNames = <String>[
   'capture_ui_snapshot',
 ];
 
-/// Tier A exec catalog: core 19 + 4 inspection (23 tools).
+/// Tier A exec catalog: core 20 + 4 inspection (24 tools).
 const tierAExecCatalogCommandNames = <String>[
   ...coreInteractionCatalogCommandNames,
   ...inspectionTierAExecCommandNames,
 ];
 
-/// Every command name served by [interactionCatalogInputSchemaFor] (23 + 2 capture).
+/// Every command name served by [interactionCatalogInputSchemaFor] (24 + 2 capture).
 const interactionCatalogInputSchemaForCommandNames = <String>[
   ...tierAExecCatalogCommandNames,
   ...captureTierAExecCommandNames,
@@ -644,6 +666,7 @@ Map<String, Object?>? interactionCatalogInputSchemaFor(
   'drag' => dragInputSchema(),
   'fill_form' => fillFormInputSchema(),
   'hover' => hoverInputSchema(),
+  'focus_widget' => focusWidgetInputSchema(),
   'press_key' => pressKeyInputSchema(),
   'get_recent_logs' => getRecentLogsInputSchema(),
   'handle_dialog' => handleDialogInputSchema(),

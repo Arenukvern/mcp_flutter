@@ -555,6 +555,16 @@ final class HoverCommand extends CoreCommand {
   String get name => 'hover';
 }
 
+final class FocusWidgetCommand extends CoreCommand {
+  const FocusWidgetCommand({required this.ref, this.snapshotId});
+
+  final String ref;
+  final int? snapshotId;
+
+  @override
+  String get name => 'focus_widget';
+}
+
 // ──────────────────────────────────────────────────────────────────────────────
 // Debug commands
 // ──────────────────────────────────────────────────────────────────────────────

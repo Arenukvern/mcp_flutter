@@ -37,6 +37,14 @@ mixin SemanticSnapshotService {
   /// Look up a [SemanticsNode] captured during the last snapshot.
   static SemanticsNode? resolveRef(final String ref) => _lastRefMap[ref];
 
+  /// The ref the latest snapshot issued for [node], if it issued one.
+  static String? refFor(final SemanticsNode node) {
+    for (final entry in _lastRefMap.entries) {
+      if (identical(entry.value, node)) return entry.key;
+    }
+    return null;
+  }
+
   /// Look up the cached global bounds for a ref from the last snapshot.
   static ui.Rect? resolveBounds(final String ref) => _lastBoundsMap[ref];
 

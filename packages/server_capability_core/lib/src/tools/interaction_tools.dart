@@ -6,7 +6,8 @@ import '_internal/handler_helpers.dart';
 
 /// Registers Playwright-parity interaction tools with the host through
 /// [context]. Registers: tap_widget, enter_text, scroll, long_press, swipe,
-/// drag, hover, press_key, evaluate_dart_expression, hot_reload_and_capture.
+/// drag, hover, focus_widget, press_key, evaluate_dart_expression,
+/// hot_reload_and_capture.
 void registerInteractionTools(final CapabilityContext context) {
   final runner = context.require<CommandRunner>();
 
@@ -195,6 +196,29 @@ void registerInteractionTools(final CapabilityContext context) {
           runner,
           args,
           HoverCommand(ref: ref, snapshotId: snapshotId),
+        );
+      },
+    ),
+  );
+
+  context.registerTool(
+    ToolRegistration(
+      name: 'focus_widget',
+      description:
+          'Give keyboard focus to the widget identified by a semantic snapshot '
+          'ref, so the press_key that follows reaches it. Performs the '
+          "node's semantic focus action when it exposes one, otherwise asks "
+          "the focusable widget inside the ref's bounds; the result proves "
+          'where focus landed. Leaves a parked hover in place. '
+          'Pass snapshotId to detect staleness.',
+      inputSchema: focusWidgetInputSchema(),
+      handler: (final args) async {
+        final ref = stringArgOrNull(args['ref']) ?? '';
+        final snapshotId = intArgOrNull(args['snapshotId']);
+        return runCommand(
+          runner,
+          args,
+          FocusWidgetCommand(ref: ref, snapshotId: snapshotId),
         );
       },
     ),

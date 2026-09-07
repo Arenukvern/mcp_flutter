@@ -501,6 +501,13 @@ void main() {
       );
       expect(tap['success'], isFalse);
       expect(tap['error'], 'target_disabled');
+
+      final focus = await _settleAfterPumps(
+        tester,
+        GestureInteractionService.focusAtRef(ref),
+      );
+      expect(focus['success'], isFalse);
+      expect(focus['error'], 'target_disabled');
     } finally {
       semantics.dispose();
     }
@@ -841,6 +848,266 @@ void main() {
       expect(result['success'], isTrue, reason: '$result');
       expect(positions.first, 0, reason: 'the rail must stay where it was');
       expect(positions.last, greaterThan(0));
+    } finally {
+      semantics.dispose();
+    }
+  });
+
+  testWidgets('focus lands through the semantic action and is proven', (
+    final tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    try {
+      final target = FocusNode(debugLabel: 'target');
+      final other = FocusNode(debugLabel: 'other');
+      addTearDown(target.dispose);
+      addTearDown(other.dispose);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Column(
+              children: <Widget>[
+                Semantics(
+                  container: true,
+                  identifier: 'other',
+                  label: 'Other',
+                  child: Focus(
+                    focusNode: other,
+                    autofocus: true,
+                    child: const SizedBox(width: 120, height: 40),
+                  ),
+                ),
+                Semantics(
+                  container: true,
+                  identifier: 'target',
+                  label: 'Target',
+                  child: Focus(
+                    focusNode: target,
+                    child: const SizedBox(width: 120, height: 40),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(other.hasPrimaryFocus, isTrue);
+
+      final snapshot = await _snapshotAfterPump(tester);
+      final ref = _refFor(snapshot, 'target');
+      final node = (snapshot['nodes']! as List<Object?>)
+          .cast<Map<String, Object?>>()
+          .firstWhere((final n) => n['ref'] == ref);
+      expect(node['actions'], contains('focus'));
+
+      final result = await _settleAfterPumps(
+        tester,
+        GestureInteractionService.focusAtRef(ref),
+      );
+      expect(result['success'], isTrue);
+      expect(result['via'], 'semantic_action');
+      expect(result['verified'], isTrue);
+      expect(result['verifiedBy'], 'semantics_flag');
+      expect(result['focusMoved'], isTrue);
+      expect(target.hasPrimaryFocus, isTrue);
+      expect(other.hasPrimaryFocus, isFalse);
+
+      // A second call finds focus already there and says so.
+      final again = await _settleAfterPumps(
+        tester,
+        GestureInteractionService.focusAtRef(ref),
+      );
+      expect(again['success'], isTrue);
+      expect(again['focusMoved'], isFalse);
+    } finally {
+      semantics.dispose();
+    }
+  });
+
+  testWidgets('focus opens a text field for the keystrokes that follow', (
+    final tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    try {
+      final focusNode = FocusNode(debugLabel: 'query');
+      addTearDown(focusNode.dispose);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: Semantics(
+                identifier: 'query',
+                child: SizedBox(
+                  width: 300,
+                  child: TextField(focusNode: focusNode),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(focusNode.hasFocus, isFalse);
+
+      final ref = _refFor(await _snapshotAfterPump(tester), 'query');
+      final result = await _settleAfterPumps(
+        tester,
+        GestureInteractionService.focusAtRef(ref),
+      );
+      expect(result['success'], isTrue);
+      expect(result['verified'], isTrue);
+      expect(focusNode.hasPrimaryFocus, isTrue);
+
+      // The field now advertises setText: the semantic route enter_text
+      // prefers is open.
+      final after = await _snapshotAfterPump(tester);
+      final node = (after['nodes']! as List<Object?>)
+          .cast<Map<String, Object?>>()
+          .firstWhere((final n) => n['identifier'] == 'query');
+      expect(node['focused'], isTrue);
+      expect(node['actions'], contains('setText'));
+    } finally {
+      semantics.dispose();
+    }
+  });
+
+  testWidgets('focus reaches a focus node its semantics keep quiet about', (
+    final tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    try {
+      final target = FocusNode(debugLabel: 'target');
+      addTearDown(target.dispose);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: Semantics(
+                container: true,
+                identifier: 'target',
+                label: 'Target',
+                child: Focus(
+                  focusNode: target,
+                  includeSemantics: false,
+                  child: const SizedBox(width: 120, height: 40),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final snapshot = await _snapshotAfterPump(tester);
+      final ref = _refFor(snapshot, 'target');
+      final node = (snapshot['nodes']! as List<Object?>)
+          .cast<Map<String, Object?>>()
+          .firstWhere((final n) => n['ref'] == ref);
+      expect(node['actions'] ?? const <String>[], isNot(contains('focus')));
+
+      final result = await _settleAfterPumps(
+        tester,
+        GestureInteractionService.focusAtRef(ref),
+      );
+      expect(result['success'], isTrue);
+      expect(result['via'], 'focus_node');
+      expect(result['verifiedBy'], 'focus_node');
+      expect(target.hasPrimaryFocus, isTrue);
+    } finally {
+      semantics.dispose();
+    }
+  });
+
+  testWidgets('focus refuses a node with nothing focusable behind it', (
+    final tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    try {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: Semantics(
+                container: true,
+                identifier: 'caption',
+                label: 'Just a caption',
+                child: const SizedBox(width: 120, height: 40),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final ref = _refFor(await _snapshotAfterPump(tester), 'caption');
+      final result = await _settleAfterPumps(
+        tester,
+        GestureInteractionService.focusAtRef(ref),
+      );
+      expect(result['success'], isFalse);
+      expect(result['error'], 'focus_not_exposed');
+      expect(result['hint'], isA<String>());
+    } finally {
+      semantics.dispose();
+    }
+  });
+
+  testWidgets('focus names the node that took it away from the target', (
+    final tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    try {
+      final target = FocusNode(debugLabel: 'target');
+      final thief = FocusNode(debugLabel: 'thief');
+      addTearDown(target.dispose);
+      addTearDown(thief.dispose);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Column(
+              children: <Widget>[
+                Semantics(
+                  container: true,
+                  identifier: 'target',
+                  label: 'Target',
+                  child: Focus(
+                    focusNode: target,
+                    // A handler that passes focus on as soon as it arrives.
+                    onFocusChange: (final hasFocus) {
+                      if (hasFocus) thief.requestFocus();
+                    },
+                    child: const SizedBox(width: 120, height: 40),
+                  ),
+                ),
+                Semantics(
+                  container: true,
+                  identifier: 'thief',
+                  label: 'Thief',
+                  child: Focus(
+                    focusNode: thief,
+                    child: const SizedBox(width: 120, height: 40),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final ref = _refFor(await _snapshotAfterPump(tester), 'target');
+      final result = await _settleAfterPumps(
+        tester,
+        GestureInteractionService.focusAtRef(ref),
+      );
+      expect(result['success'], isFalse);
+      expect(result['error'], 'focus_refused');
+      expect(result['via'], 'semantic_action');
+      final focusedNow = result['focusedNow']! as Map<String, Object?>;
+      expect(focusedNow['identifier'], 'thief');
+      expect(result['hint'], contains('Thief'));
+      expect(thief.hasPrimaryFocus, isTrue);
     } finally {
       semantics.dispose();
     }

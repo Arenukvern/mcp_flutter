@@ -891,6 +891,118 @@ mixin GestureInteractionService {
     return semanticMatch ?? spatialMatch;
   }
 
+  /// The focus node that belongs to [node].
+  ///
+  /// A candidate whose render object owns the target's own semantics node is
+  /// the answer. Failing that, only a focus node whose box fits inside the
+  /// ref's counts: the Navigator and every shortcut layer carry a screen-sized
+  /// `Focus` that can take focus, and a rule that merely asks "does it cover
+  /// the ref's centre" hands them every caption on screen. Among the nodes
+  /// that fit, the innermost under the ref's centre wins, then the first in
+  /// focus order — a card holds its controls, and focusing "the card" means
+  /// focusing the first of them. Scopes are skipped: focusing a scope lands on
+  /// whatever child it last held, which is not the request. Nodes that cannot
+  /// take focus are skipped too, which drops disabled controls and everything
+  /// under a route that is no longer current.
+  static FocusNode? _findFocusNodeForNode(
+    final SemanticsNode node,
+    final ui.Rect rect,
+  ) {
+    final centre = rect.center;
+    // Boxes that share an edge with the ref round differently from it.
+    final fits = rect.inflate(1);
+    FocusNode? underCentre;
+    double? underCentreArea;
+    FocusNode? inside;
+    for (final candidate in FocusManager.instance.rootScope.descendants) {
+      if (candidate is FocusScopeNode || !candidate.canRequestFocus) continue;
+      final context = candidate.context;
+      if (context == null || !context.mounted) continue;
+      final renderObject = context.findRenderObject();
+      if (renderObject is! RenderBox ||
+          !renderObject.attached ||
+          !renderObject.hasSize ||
+          _hiddenFromSemantics(renderObject)) {
+        continue;
+      }
+      if (renderObject.debugSemantics?.id == node.id) return candidate;
+      final bounds =
+          renderObject.localToGlobal(ui.Offset.zero) & renderObject.size;
+      if (bounds.left < fits.left ||
+          bounds.top < fits.top ||
+          bounds.right > fits.right ||
+          bounds.bottom > fits.bottom) {
+        continue;
+      }
+      if (bounds.contains(centre)) {
+        final area = bounds.width * bounds.height;
+        if (underCentreArea == null || area < underCentreArea) {
+          underCentre = candidate;
+          underCentreArea = area;
+        }
+      } else {
+        inside ??= candidate;
+      }
+    }
+    return underCentre ?? inside;
+  }
+
+  /// Whether [node], or a node below it, reports itself focused.
+  ///
+  /// A `Focus` widget flags the node it annotates; a text field flags its
+  /// editable, which sits below the node that carries the field's actions.
+  static bool _subtreeReportsFocus(final SemanticsNode node) {
+    if (!node.attached) return false;
+    var found = false;
+    void visit(final SemanticsNode current) {
+      if (found) return;
+      if (_reportsFocus(current)) {
+        found = true;
+        return;
+      }
+      current.visitChildren((final child) {
+        visit(child);
+        return !found;
+      });
+    }
+
+    visit(node);
+    return found;
+  }
+
+  static bool _reportsFocus(final SemanticsNode node) =>
+      node.getSemanticsData().flagsCollection.isFocused == ui.Tristate.isTrue;
+
+  /// The node that currently reports focus, named the way the snapshot names
+  /// it, or `null` when none does.
+  static Map<String, Object?>? _describeFocusedNode() {
+    final root = SemanticSnapshotService.semanticsOwner?.rootSemanticsNode;
+    if (root == null) return null;
+    SemanticsNode? focused;
+    void visit(final SemanticsNode current) {
+      if (focused != null) return;
+      if (_reportsFocus(current)) {
+        focused = current;
+        return;
+      }
+      current.visitChildren((final child) {
+        visit(child);
+        return focused == null;
+      });
+    }
+
+    visit(root);
+    final node = focused;
+    if (node == null) return null;
+    final data = node.getSemanticsData();
+    return <String, Object?>{
+      'ref': ?SemanticSnapshotService.refFor(node),
+      if (data.identifier.isNotEmpty) 'identifier': data.identifier,
+      if (data.label.isNotEmpty) 'label': data.label,
+      'type': ?_classifyForHint(node),
+    };
+  }
+
   /// The nearest ancestor of [node] that advertises [action].
   ///
   /// Climbing beats searching by position here: the row whose ref was passed
@@ -1298,6 +1410,111 @@ mixin GestureInteractionService {
       'success': true,
       'ref': ref,
       'position': <String, Object?>{'dx': centre.dx, 'dy': centre.dy},
+    };
+  }
+
+  /// Give keyboard focus to the widget identified by [ref].
+  ///
+  /// Tier 1 performs the node's semantic `focus` action — the handler a
+  /// `Focus` widget registers is its own `FocusNode.requestFocus`. Tier 2 asks
+  /// the focus node whose box the ref describes directly: the only route on
+  /// iOS, where Flutter exposes no focus action, and for a widget whose
+  /// `Focus` keeps out of semantics. Neither tier touches the pointer, so a
+  /// hover parked by [hoverAtRef] stays where it is — focus is the keyboard
+  /// side of the same interaction, and a hover-revealed affordance is exactly
+  /// what the keystroke that follows is aimed at.
+  ///
+  /// Focus is proven, not assumed. The request applies in a microtask and the
+  /// node reports `focused` only with the frame that rebuilds it, so the
+  /// result is read after the framework caught up — and names where focus
+  /// sits when it did not land on the target.
+  static Future<Map<String, Object?>> focusAtRef(final String ref) async {
+    final node = SemanticSnapshotService.resolveRef(ref);
+    if (node == null) {
+      return _refNotFound(ref);
+    }
+    if (!node.attached) {
+      return _staleRef(ref, 'focus');
+    }
+    final disabled = _disabledRef(node, ref, 'focus');
+    if (disabled != null) return disabled;
+
+    final before = FocusManager.instance.primaryFocus;
+    final owner = SemanticSnapshotService.semanticsOwner;
+    final String via;
+    FocusNode? requested;
+    if (owner != null &&
+        node.getSemanticsData().hasAction(SemanticsAction.focus)) {
+      owner.performAction(node.id, SemanticsAction.focus);
+      via = 'semantic_action';
+    } else {
+      final bounds = _liveBounds(ref);
+      requested = bounds == null ? null : _findFocusNodeForNode(node, bounds);
+      if (requested == null) {
+        return <String, Object?>{
+          'success': false,
+          'ref': ref,
+          'action': 'focus',
+          'error': 'focus_not_exposed',
+          'hint':
+              'Nothing focusable answers for "$ref": the node exposes no '
+              'focus action, and no focus node that can take focus lies '
+              'inside its box. A widget that reacts to keys needs a Focus (or '
+              'a FocusNode of its own) to receive them; Semantics(focusable: '
+              'true) alone reports nothing the framework can focus.',
+        };
+      }
+      requested.requestFocus();
+      via = 'focus_node';
+    }
+
+    // The request applies in a microtask; the node's `focused` flag lands
+    // with the frame that rebuilds the Focus widget. Give the framework a
+    // couple of frames before concluding that the request was refused.
+    var landed = false;
+    for (var attempt = 0; attempt < 3 && !landed; attempt++) {
+      await _waitFrame();
+      landed = requested?.hasPrimaryFocus ?? _subtreeReportsFocus(node);
+    }
+    final after = FocusManager.instance.primaryFocus;
+    final moved = !identical(before, after);
+    final focusedNow = _describeFocusedNode();
+
+    if (!landed) {
+      final holder =
+          focusedNow?['label'] ?? focusedNow?['identifier'] ?? focusedNow?['ref'];
+      return <String, Object?>{
+        'success': false,
+        'ref': ref,
+        'via': via,
+        'action': 'focus',
+        'error': 'focus_refused',
+        'focusMoved': moved,
+        'focusedNow': ?focusedNow,
+        'hint': holder == null
+            ? 'The request went through, but "$ref" does not report focus '
+                  'afterwards and nothing else does either. A FocusScope '
+                  "above it may refuse focus, or the widget's focus node is "
+                  'not the one its semantics describe.'
+            : 'The request went through, but focus now sits on "$holder" '
+                  'rather than "$ref" — a handler moved it on as soon as it '
+                  'arrived, or a FocusScope kept it where it allows.',
+      };
+    }
+
+    return <String, Object?>{
+      'success': true,
+      'ref': ref,
+      'via': via,
+      'action': 'focus',
+      'verified': true,
+      'verifiedBy': requested == null ? 'semantics_flag' : 'focus_node',
+      'focusMoved': moved,
+      if (!moved) 'hint': 'The node already held focus; nothing changed.',
+      // The focus node route may land on a control inside the ref's box
+      // rather than on the ref's own node: say which node reports focus.
+      if (requested != null && focusedNow != null && focusedNow['ref'] != ref)
+        'focusedNow': focusedNow,
     };
   }
 

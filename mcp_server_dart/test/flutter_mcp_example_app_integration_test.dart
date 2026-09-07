@@ -565,6 +565,7 @@ const _expectedCoreTools = <String>{
   'fmt_get_extension_rpcs',
   'fmt_get_recent_logs',
   'fmt_get_screenshots',
+  'fmt_focus_widget',
   'fmt_focus_window',
   'fmt_get_view_details',
   'fmt_get_vm',

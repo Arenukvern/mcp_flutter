@@ -771,6 +771,55 @@ void main() {
   });
 
   // =========================================================================
+  // focus_widget
+  // =========================================================================
+  group('interaction tools — focus_widget', () {
+    test('registers focus_widget', () {
+      final ctx = _registeredCtx();
+      expect(ctx.registeredToolNames, contains('focus_widget'));
+    });
+
+    test('focus_widget schema: additionalProperties false, required [ref]', () {
+      final ctx = _registeredCtx();
+      final schema = ctx.registrationFor('focus_widget')!.inputSchema;
+      expect(schema['additionalProperties'], isFalse);
+      final required = schema['required'] as List<Object?>;
+      expect(required, contains('ref'));
+      final props = schema['properties'] as Map<String, Object?>;
+      expect(props.containsKey('ref'), isTrue);
+      expect(props.containsKey('snapshotId'), isTrue);
+      expect(props.containsKey('connection'), isTrue);
+    });
+
+    test('focus_widget handler builds FocusWidgetCommand', () async {
+      final fakeRunner = FakeCommandRunner();
+      final ctx = _registeredCtx(runner: fakeRunner);
+      await ctx.registrationFor('focus_widget')!.handler(const <String, Object?>{
+        'ref': 's_7',
+        'snapshotId': 4,
+      });
+      final cmd = fakeRunner.executedCommands.first as FocusWidgetCommand;
+      expect(cmd.ref, equals('s_7'));
+      expect(cmd.snapshotId, equals(4));
+    });
+
+    test('focus_widget handler returns error envelope on execute failure', () async {
+      final fakeRunner = FakeCommandRunner()
+        ..nextExecuteResult = CoreResult.failure(
+          code: CoreErrorCode.interactionFailed,
+          message: 'focus_widget failed',
+        );
+      final ctx = _registeredCtx(runner: fakeRunner);
+      final result = await ctx.registrationFor('focus_widget')!.handler(
+        const <String, Object?>{'ref': 's_7'},
+      );
+      expect(result.ok, isFalse);
+      final json = agentResultPayload(result);
+      _expectEnvelopeKeys(json);
+    });
+  });
+
+  // =========================================================================
   // press_key
   // =========================================================================
   group('interaction tools — press_key', () {
