@@ -1,0 +1,108 @@
+---
+title: Dev-session delegation roadmap (oka & late-attach reloads)
+---
+
+# Roadmap: hot reload / hot restart delegation (oka & late-attach)
+
+Status: proposed (investigated 2026-09-07 against oka `oka dev` +
+`flutter_mcp_cli` v3). Owner: mcp_flutter maintainers. This document is
+written so any agent can implement it without re-deriving the analysis.
+
+## Root cause (verified empirically, not guessed)
+
+`hot_reload_flutter` / `hot_restart_flutter` discover the **flutter tool's
+custom VM services** (`s<N>.reloadSources`, `hotRestart`) by listening on
+the VM service `Service` stream for `ServiceRegistered` events **with a
+1s/0.8s per-command timeout**.
+
+- The flutter tool (`flutter run` / `flutter attach`) registers those
+  services **once, at session start**.
+- The VM service does **not replay** already-registered services on
+  `streamListen(Service)` — verified live: an oka-attached app exposes 94
+  isolate extensions, none reload-capable, and a 1s listen catches nothing.
+- Therefore **any late attach** (toolkit connects after the flutter tool
+  registered its services) silently falls back to raw
+  `vmService.reloadSources` → `ReloadReport {success: true}` with **zero
+  sources loaded** — a no-op reported as success. This is exactly what
+  happens against `oka dev`, whose attach session predates the toolkit
+  connection.
+- Under `flutter run` the native flow often *appears* to work only because
+  the toolkit happens to connect inside the registration window.
+
+Second constraint: **the compile-capable channel is the owning flutter-tool
+daemon** (`app.restart` over its protocol) — and only ONE attach session can
+own an app (a second attach reinstalls + kills the first). The toolkit must
+never spawn its own attach when a session already exists.
+
+## Do
+
+1. **Honest reload reports (do first — small, unblocks everything).**
+   In `_runHotReload` / `_runHotRestart`
+   (`mcp_server_dart/lib/src/shared_core/vm_connections/connection_context.dart`):
+   when the fallback path runs, inspect the `ReloadReport` — zero loaded
+   sources means nothing was reloaded. Return a distinct result
+   (`{success: true, changed: false, reason: 'no compiled delta; drive
+   compilation through the owning dev session'}`) and keep the envelope
+   `ok: true` only for actual reloads. Never report a no-op as success.
+2. **Subscribe to the `Service` stream at connection time** and keep the
+   subscription for the connection lifetime (cache the discovered method
+   names). This fixes the race for early-connect sessions and removes the
+   per-command 1s timeout cost.
+3. **Add a `RunnerControl` delegation layer.** New interface:
+   `isAlive() / reload() / restart()`. Implementations:
+   - `None` (default, current behavior minus the false success);
+   - `OkaDevSession` — reads `<project>/.oka_cache/dev/vm.uri` (the live
+     app endpoint, one `ws://` line) for the app connection, and delegates
+     reload/restart to the oka session's control channel (oka side: see 4);
+   - existing machine-mode path unchanged for the no-owning-session case.
+   Selection: if `vm.uri` exists → `OkaDevSession`; never spawn a second
+   `flutter attach` in that case.
+4. **oka-side prerequisite (tracked in oka's roadmap, not this repo):**
+   `oka dev` needs an out-of-process control channel for
+   reload/restart/stop (its `--json` stdin protocol is currently the only
+   control surface; today a shell fifo works, a small TCP control port is
+   the planned shape). Until it ships, `OkaDevSession.reload()` returns the
+   honest "delegate unavailable" result instead of pretending.
+
+## Do not
+
+- Do **not** compile inside the toolkit. Kernel compilation is always the
+  owning runner's job (flutter tool / oka dev / future `dart run` hot
+  reload). Compiling means spawning a second session — which kills the
+  first.
+- Do **not** treat `ReloadReport.success == true` as "changes applied".
+- Do **not** spawn `flutter attach --machine` when `vm.uri` (oka) or any
+  other session lock exists.
+- Do **not** wait per-command (1s) on the Service stream — subscribe once
+  per connection.
+
+## Later (Dart-general direction)
+
+Split capabilities into tiers so the toolkit works for non-Flutter Dart
+apps (ecsly, jaspr server, CLIs) — mirrors the interface/provider package
+lattice used in this ecosystem:
+
+- `dart VM core` (any Dart VM): connection, evaluate, logs, errors,
+  isolate inspection, delegated reload.
+- `flutter capability` (Flutter only): semantics/widget trees, screenshots,
+  interaction, `ext.flutter.*` — these need the framework's service
+  extensions; a jaspr/ecsly app has none, the core tier still applies.
+- `runner adapters`: oka dev, flutter run, bare dart.
+
+Rename/API note: anything named `hot_reload_flutter` that can no-op should
+either gain the `changed` flag or be renamed so agents cannot mistake a
+no-op for a reload.
+
+## Verification recipe (any agent)
+
+1. `oka dev --json -d <device>` in a Flutter project with the
+   `mcp_toolkit` binding; capture `session.ready` → `wsUri`.
+2. `flutter_mcp_cli exec --name semantic_snapshot --vm-service-uri <uri>` —
+   read a label (oracle; uiautomator cannot see Skia text).
+3. Edit a string in `lib/`, drive reload through the DELEGATED control
+   channel (not `hot_reload_flutter`), snapshot again → new label visible.
+4. Tap a stateful widget via `tap_widget`, hot restart via the delegated
+   channel, snapshot → state reset (restart semantics), label persists
+   (code persists).
+5. Negative test: `hot_reload_flutter` with NO source change must report
+   `changed: false` (today it reports plain success — the bug).
