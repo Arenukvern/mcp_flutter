@@ -631,7 +631,13 @@ final class ConnectionContext {
         await _vmService?.dispose();
       }
       if (_vmChannel != null) {
-        await _vmChannel?.sink.close();
+        // sink.close() never completes when the websocket upgrade failed,
+        // so bound the wait and swallow late errors to keep disconnect()
+        // best-effort and non-blocking.
+        await _vmChannel?.sink.close().catchError((final _) {}).timeout(
+          const Duration(seconds: 1),
+          onTimeout: () => null,
+        );
       }
     } catch (e) {
       logger(
@@ -660,12 +666,57 @@ final class ConnectionContext {
     );
 
     try {
-      final dtdFuture = DartToolingDaemon.connect(wsUri);
-      _dartToolingDaemon = timeout == Duration.zero
-          ? await dtdFuture
-          : await dtdFuture.timeout(timeout);
+      // DDS endpoints do not speak the DTD protocol, so a failed DTD
+      // handshake must not block VM-service connections. DTD-dependent
+      // features degrade gracefully when this remains null.
+      final dtdChannel = WebSocketChannel.connect(wsUri);
+      try {
+        final Future<void> dtdReady = dtdChannel.ready;
+        // Swallow a late error if the timeout below fires first so it does
+        // not escape as an unhandled async error.
+        unawaited(dtdReady.catchError((final _) {}));
+        if (timeout == Duration.zero) {
+          await dtdReady;
+        } else {
+          await dtdReady.timeout(timeout);
+        }
+        _dartToolingDaemon = DartToolingDaemon.fromStreamChannel(
+          dtdChannel.cast<String>(),
+        );
+      } on Exception catch (dtdError) {
+        // Bound the close: sink.close() never completes when the upgrade
+        // failed, and abandoning the channel would leak the socket.
+        unawaited(
+          dtdChannel.sink.close().catchError((final _) {}).timeout(
+            const Duration(seconds: 1),
+            onTimeout: () => null,
+          ),
+        );
+        logger(
+          LoggingLevel.warning,
+          // The VM-service URI path carries an auth token, so only the
+          // host, port, and sanitized error type are logged.
+          'DTD unavailable at ${wsUri.host}:${wsUri.port} '
+          '(${dtdError.runtimeType})',
+          logger: 'ConnectionContext',
+        );
+        _dartToolingDaemon = null;
+      }
 
       _vmChannel = WebSocketChannel.connect(wsUri);
+
+      // Await the websocket upgrade so connection failures (refused,
+      // non-websocket endpoint) surface here as a normal error instead of
+      // escaping as an unhandled async error from the channel.
+      final Future<void> vmReady = _vmChannel!.ready;
+      // Swallow a late error if the timeout below fires first so it does
+      // not escape as an unhandled async error.
+      unawaited(vmReady.catchError((final _) {}));
+      if (timeout == Duration.zero) {
+        await vmReady;
+      } else {
+        await vmReady.timeout(timeout);
+      }
 
       _vmService = VmService(
         _vmChannel!.stream.cast<String>(),
