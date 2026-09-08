@@ -606,7 +606,8 @@ Snapshot node keys to scan:
 | By semantics identifier | `identifier` | `"nav.tasks"` |
 | By visible label / text | `label` | `"Login"` |
 | By value or hint | `value` / `hint` | `"user@example.com"` |
-| By semantic role / type | `actions` | `["tap"]` |
+| By semantic role | `type` | `"button"` |
+| By what it accepts | `actions` | `["tap"]` |
 
 Example — find the "Login" button ref:
 ```
