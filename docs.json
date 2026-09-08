@@ -187,6 +187,10 @@
         {
           "title": "0013 — MCP Registry publish pipeline hardening",
           "href": "/decisions/0013_mcp_registry_publish_hardening"
+        },
+        {
+          "title": "0014 — External dev sessions & runner delegation",
+          "href": "/decisions/0014_external_dev_sessions_runner_delegation"
         }
       ]
     },

@@ -4,8 +4,11 @@ title: Dev-session delegation roadmap (late-attach reloads & the spec v2 contrac
 
 # Roadmap: hot reload / hot restart delegation (late-attach & spec v2)
 
-Status: implemented under the **spec v2 contract** (see "The dev session
-contract (spec v2)" below). Originally investigated 2026-09-07 against the
+Status: **implemented** under the **spec v2 contract** (see "The dev session
+contract (spec v2)" below). Decision record:
+[ADR 0014 — External dev sessions & runner delegation](/decisions/0014_external_dev_sessions_runner_delegation)
+(the *why* and the alternatives). Usage reference:
+[Configuration → Delegated reload / restart](/core/mcp_configuration). Originally investigated 2026-09-07 against the
 first conforming runner (worked example in the spec v2 section); Do-1/Do-2/Do-3
 landed in `mcp_server_dart`, and the runner-specific adapter was inverted into
 the runner-neutral `ExternalSessionRunnerControl` (spec v2, 2026-09-08). Owner:
@@ -314,7 +317,7 @@ metadata passthrough) and `honest_reload_reporting_test.dart` (delegation
 precedence — including sticky endpoint vs runner file vs machine discovery —
 reconnect after relaunch, auto-connect fallback, attach suppression).
 
-### 4. Runner-side prerequisite (tracked in the runner's own roadmap, not this repo)
+### 4. ✅ Runner-side prerequisite — implemented by the first conforming runner (its own repo)
 
 DONE on the runner side: the TCP control port shipped as part of the frozen
 contract; the discovery file is written at session ready and deleted on
