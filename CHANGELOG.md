@@ -3,6 +3,65 @@
 <!-- markdownlint-disable MD052 -->
 <!-- Keep a Changelog version headings use [3.0.1] brackets; MD052 treats them as reference links. -->
 
+## [5.2.0](https://github.com/Arenukvern/mcp_flutter/compare/v5.1.0...v5.2.0) (2026-09-08)
+
+
+### Features
+
+* **discovery:** name discovered targets and select one by its label ([5eea4bb](https://github.com/Arenukvern/mcp_flutter/commit/5eea4bb2399b67499ade6893f50dd70eff9e81a0))
+* **discovery:** name discovered targets and select one by its label. Made by [@dpsy](https://github.com/dpsy) in https://github.com/Arenukvern/mcp_flutter/pull/137 ([ca05479](https://github.com/Arenukvern/mcp_flutter/commit/ca05479368b7425cee72be6a1ef5fabb33a06945))
+* dtd handshake ([cb4a6af](https://github.com/Arenukvern/mcp_flutter/commit/cb4a6af42ab357dd4fff4a0dd7ad84b8ed055334))
+* **focus_widget:** give a widget keyboard focus by ref and prove it ([7028e44](https://github.com/Arenukvern/mcp_flutter/commit/7028e4453b14d4e963a20a05f6b8ec73fe999361))
+* **interaction:** focus a widget by ref and prove where focus landed. Made by [@dipsy](https://github.com/dipsy)  https://github.com/Arenukvern/mcp_flutter/pull/141 ([7243a03](https://github.com/Arenukvern/mcp_flutter/commit/7243a03a1c8fd2da5e17f6c496a307453dd32d46))
+* **mcp_toolkit:** let an app name its running instance ([efb595d](https://github.com/Arenukvern/mcp_flutter/commit/efb595d7eab1e977ba7723d3013d64547db6c316))
+* **semantic_snapshot:** narrow a snapshot by identifier prefix, subtree and fields ([de92c81](https://github.com/Arenukvern/mcp_flutter/commit/de92c8116d8c8e9b0263de527d7fdb3e900d3713))
+* **semantic_snapshot:** narrow a snapshot by identifier prefix, subtree and fields. Made by dipsy https://github.com/Arenukvern/mcp_flutter/pull/143 ([6dc511d](https://github.com/Arenukvern/mcp_flutter/commit/6dc511d8a6ec80d50635acaa73f1cf20deedfcec))
+* **wait_for:** say why the predicate never matched ([b8b74d4](https://github.com/Arenukvern/mcp_flutter/commit/b8b74d42b600b0b150f701d7b1ad1a453ad5376f))
+
+
+### Bug Fixes
+
+* await websocket upgrade and guard sink close in VM connect ([40b4b11](https://github.com/Arenukvern/mcp_flutter/commit/40b4b1198c2e491fce497afb8a62df9c653a693c))
+* **capture:** count the errors a snapshot carries, not the cap requested ([f610327](https://github.com/Arenukvern/mcp_flutter/commit/f6103278ae91db7023ac3d8a0ac34cef915b275e))
+* **capture:** say where the captured images went ([5ddb091](https://github.com/Arenukvern/mcp_flutter/commit/5ddb091cf9a2d99f102464e50506c7cd1179719e))
+* **discovery:** auto-attach when one app answers on two endpoints ([23efbce](https://github.com/Arenukvern/mcp_flutter/commit/23efbce35806b544f027df24ce7414f2c32b02c7))
+* **discovery:** cap how many ports a --scan-ports value expands to ([9c27569](https://github.com/Arenukvern/mcp_flutter/commit/9c27569d2cd433362cd6e277de81dfc25a2d266c))
+* **discovery:** count a --scan-ports range by the ports it adds ([327cd37](https://github.com/Arenukvern/mcp_flutter/commit/327cd377b33676b7fa6e288c57889b9805c8e562))
+* **discovery:** probe configured and common ports on every scan ([0228b7c](https://github.com/Arenukvern/mcp_flutter/commit/0228b7cbcd7f26b9e2e85c1f1e27096f21c6c923))
+* **discovery:** probe configured and common ports on every scan. Made by https://github.com/Arenukvern/mcp_flutter/pull/136 ([59c1f8d](https://github.com/Arenukvern/mcp_flutter/commit/59c1f8da742c9133b76d0dbdeacdda86a94b0e4a))
+* **discovery:** re-read processes before merging endpoints into one target ([55a10a8](https://github.com/Arenukvern/mcp_flutter/commit/55a10a813e38f0f64393ce29c6d8351b9b25e852))
+* do not block VM service connection on DTD handshake failure ([d3b444f](https://github.com/Arenukvern/mcp_flutter/commit/d3b444ff6594613337a5020ed1064a2a33cd0dfd))
+* **enter_text:** type the caller's text, spaces and all ([ef26271](https://github.com/Arenukvern/mcp_flutter/commit/ef26271096bd37c03bcedd6687180b52c33733b8))
+* **evaluate:** name the result cap in UTF-16 code units ([06bfada](https://github.com/Arenukvern/mcp_flutter/commit/06bfadacfa94e2db1d915e6609f476867a9a89ab))
+* **evaluate:** read a truncated String result back in full and say so ([fd7df06](https://github.com/Arenukvern/mcp_flutter/commit/fd7df061b62f981d598f517056c1ce2ff2e4d442))
+* **evaluate:** read a truncated String result back in full and say so. Made by [@dipsy](https://github.com/dipsy)  https://github.com/Arenukvern/mcp_flutter/pull/142 ([0e43fa9](https://github.com/Arenukvern/mcp_flutter/commit/0e43fa9211b8135719a4749bf7f4c0b761913915))
+* **interaction:** address review edge cases ([f9efe16](https://github.com/Arenukvern/mcp_flutter/commit/f9efe16cf4d1228a2ca56c9d44e9d6e82b4cba07))
+* **interaction:** address second review ([1970b93](https://github.com/Arenukvern/mcp_flutter/commit/1970b938e86e98fed06b1e96df622f749ba7b4d9))
+* **interaction:** make tool results report their observed effect. Made by [@dipsy](https://github.com/dipsy)  https://github.com/Arenukvern/mcp_flutter/pull/139 ([c9b94c6](https://github.com/Arenukvern/mcp_flutter/commit/c9b94c667f4a89884804d0b08da720bc76817379))
+* **interaction:** read a pop off the stack, and answer the rest of the review ([d4bdc7c](https://github.com/Arenukvern/mcp_flutter/commit/d4bdc7c6cffd0ee5b2021bc747448a94de4a2990))
+* **interaction:** report what a gesture did, and say why it refused ([88747e3](https://github.com/Arenukvern/mcp_flutter/commit/88747e3f117cdd04ddc5446afe0b6358cf1cf7b9))
+* **press_key:** name both dispatch phases in the unhandled hint ([43d720e](https://github.com/Arenukvern/mcp_flutter/commit/43d720ef4299b756a2dd192410829dc7cbb84974))
+* **press_key:** name the failure code the tool actually returns ([eb44e62](https://github.com/Arenukvern/mcp_flutter/commit/eb44e626b19075f6408fc9aefb34c6b5a6c30fed))
+* **press_key:** send modifiers as real keys and leave none held ([c0e048c](https://github.com/Arenukvern/mcp_flutter/commit/c0e048c3fcacc6e98c012b12862e5ad5a5735b4e))
+* **press_key:** send modifiers as real keys and leave none held. Made by dipsy ([8a3e7a5](https://github.com/Arenukvern/mcp_flutter/commit/8a3e7a5c1260c7b37e270a3fb4198199c0742458))
+* **reveal_search:** explain a miss per matchBy and name the identifiers nearby ([61125e4](https://github.com/Arenukvern/mcp_flutter/commit/61125e46346a9a10cefdaaddd641c1480bc9f483))
+* **scroll:** describe what scroll does, and drop a branch nothing reaches ([ae1c04f](https://github.com/Arenukvern/mcp_flutter/commit/ae1c04f7256ca06ddb594dc2e299041033f2459c))
+* **scroll:** link the Flutter types the scroll guard names ([848651c](https://github.com/Arenukvern/mcp_flutter/commit/848651cacd81003c4a75ce1dd923550b856a4896))
+* **scroll:** move the list the ref belongs to, by the distance asked ([127609c](https://github.com/Arenukvern/mcp_flutter/commit/127609c617bb318e8a972bc4e866f5be81248211))
+* **scroll:** scroll the list, not the card that carries a pan gesture ([df8f2de](https://github.com/Arenukvern/mcp_flutter/commit/df8f2dedf6b6c99a1bc8ae475e0e8f0b16406ed1))
+* **semantic_snapshot:** carry the filters over the MCP path and encode fields as JSON ([7b2aa3d](https://github.com/Arenukvern/mcp_flutter/commit/7b2aa3db9a61e7f07abdaa52885de2e2bacab6e7))
+* **semantic_snapshot:** fail the command when the snapshot was refused ([4ef98e9](https://github.com/Arenukvern/mcp_flutter/commit/4ef98e9635a757d2c07ca2baaf2b65f663bb614d))
+* **semantic_snapshot:** read the fields list off the wire map ([10cee4e](https://github.com/Arenukvern/mcp_flutter/commit/10cee4ef67fefa92411ede9f6c1e7fef00af6824))
+* **wait_for:** honor stable wall time and reject impossible budgets ([d1103b1](https://github.com/Arenukvern/mcp_flutter/commit/d1103b1eb7487e32feb74ef524525a23891dc594))
+
+
+### Documentation
+
+* **control:** tell a node's role from what it accepts ([6289039](https://github.com/Arenukvern/mcp_flutter/commit/6289039f1009765f1b1940d66d9158e4ff281021))
+* **focus_widget:** count the new tool in the audit and name its refusals ([eeff3fe](https://github.com/Arenukvern/mcp_flutter/commit/eeff3fe3b61646108fd066753e41fb065754d85e))
+* **skills:** name an instance with setAppIdentity, not a tool of that name ([1b6bc03](https://github.com/Arenukvern/mcp_flutter/commit/1b6bc03eac18574e640b41dad5244db5fbaf08c5))
+* **skills:** sync proof-of-effect contracts ([f421bc5](https://github.com/Arenukvern/mcp_flutter/commit/f421bc5b7d1b3baca520f297b91579e3ff77b31b))
+
 ## [5.1.0](https://github.com/Arenukvern/mcp_flutter/compare/v5.0.4...v5.1.0) (2026-08-23)
 
 
