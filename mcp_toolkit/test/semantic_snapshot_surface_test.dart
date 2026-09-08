@@ -565,7 +565,7 @@ void main() {
         };
 
         final future = SemanticSnapshotService.buildSemanticSnapshot(
-          filter: const SemanticSnapshotFilter(identifierPrefix: 'nav.'),
+          filter: SemanticSnapshotFilter(identifierPrefix: 'nav.'),
         );
         await tester.pump();
         final filtered = await future;
@@ -604,7 +604,7 @@ void main() {
 
         // By identifier: no earlier snapshot is needed.
         var future = SemanticSnapshotService.buildSemanticSnapshot(
-          filter: const SemanticSnapshotFilter(subtreeOf: 'panel'),
+          filter: SemanticSnapshotFilter(subtreeOf: 'panel'),
         );
         await tester.pump();
         final byIdentifier = await future;
@@ -657,7 +657,7 @@ void main() {
           final knownRef = nodesOf(before).first['ref']! as String;
 
           final future = SemanticSnapshotService.buildSemanticSnapshot(
-            filter: const SemanticSnapshotFilter(subtreeOf: 'no.such.node'),
+            filter: SemanticSnapshotFilter(subtreeOf: 'no.such.node'),
           );
           await tester.pump();
           final result = await future;
@@ -676,6 +676,45 @@ void main() {
         }
       },
     );
+
+    testWidgets('a ref whose node is gone is refused, not answered empty', (
+      final tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      try {
+        await pumpRailAndPanel(tester);
+        final before = await _snapshotAfterPump(tester);
+        final panelRef =
+            nodesOf(
+                  before,
+                ).firstWhere((final n) => n['identifier'] == 'panel')['ref']!
+                as String;
+
+        // The panel leaves the tree; the ref map still points at its node.
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(body: Center(child: Text('Nothing here'))),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final future = SemanticSnapshotService.buildSemanticSnapshot(
+          filter: SemanticSnapshotFilter(subtreeOf: panelRef),
+        );
+        await tester.pump();
+        final result = await future;
+
+        expect(result['success'], isFalse);
+        expect(result['error'], 'subtree_root_not_found');
+        expect(
+          SemanticSnapshotService.currentSnapshotId,
+          before['snapshot_id'],
+          reason: 'a detached root spends no snapshot either',
+        );
+      } finally {
+        semantics.dispose();
+      }
+    });
 
     testWidgets('the entry decodes fields from the wire map', (
       final tester,
@@ -716,7 +755,7 @@ void main() {
         await pumpRailAndPanel(tester);
 
         var future = SemanticSnapshotService.buildSemanticSnapshot(
-          filter: const SemanticSnapshotFilter(
+          filter: SemanticSnapshotFilter(
             fields: <String>['identifier', 'label'],
           ),
         );
@@ -730,7 +769,7 @@ void main() {
         }
 
         future = SemanticSnapshotService.buildSemanticSnapshot(
-          filter: const SemanticSnapshotFilter(fields: <String>['ref', 'nope']),
+          filter: SemanticSnapshotFilter(fields: <String>['ref', 'nope']),
         );
         await tester.pump();
         final refused = await future;

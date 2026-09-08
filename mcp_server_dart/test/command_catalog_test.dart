@@ -223,7 +223,7 @@ void main() {
     test('rejects semantic_snapshot fields that are not an array', () {
       expect(
         () => catalog.buildCommand('semantic_snapshot', {'fields': 'label'}),
-        throwsA(anything),
+        throwsA(isA<ArgumentError>()),
       );
       expect(
         () => catalog.buildCommand('semantic_snapshot', {

@@ -7,6 +7,7 @@ import 'package:flutter/widgets.dart';
 
 import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart'
     show semanticSnapshotNodeFields;
+import 'package:from_json_to_json/from_json_to_json.dart';
 
 import 'background_frame_pump.dart';
 
@@ -15,31 +16,65 @@ import 'background_frame_pump.dart';
 /// The tree is always walked whole — refs number the full walk, so a ref
 /// read off a filtered snapshot stays valid for every interaction tool. The
 /// filter only decides which nodes, and which of their fields, are returned.
-class SemanticSnapshotFilter {
-  const SemanticSnapshotFilter({
-    this.identifierPrefix,
-    this.subtreeOf,
-    this.fields,
+///
+/// The wrapped map is what the snapshot echoes back as `filter`: a key is
+/// there only when the caller asked for it.
+extension type const SemanticSnapshotFilter._(Map<String, dynamic> value) {
+  factory SemanticSnapshotFilter({
+    final String? identifierPrefix,
+    final String? subtreeOf,
+    final List<String>? fields,
+  }) => SemanticSnapshotFilter._(<String, dynamic>{
+    'identifierPrefix': ?identifierPrefix,
+    'subtreeOf': ?subtreeOf,
+    'fields': ?fields,
   });
 
+  /// Reads the filter out of the arguments of a tool call.
+  ///
+  /// A legacy handler receives every argument as a string — the toolkit
+  /// wrapper re-encodes a list as JSON — so `fields` is read from text as
+  /// readily as from a list. A selector is taken as the caller wrote it,
+  /// spaces and all: identifiers are matched whole and prefixes with
+  /// `startsWith`, so trimming would select something else. Only a blank one
+  /// counts as unasked.
+  factory SemanticSnapshotFilter.fromJson(final Map<String, Object?> json) {
+    final identifierPrefix = jsonDecodeString(json['identifierPrefix']);
+    final subtreeOf = jsonDecodeString(json['subtreeOf']);
+    final fields = jsonDecodeListAs<String>(json['fields']);
+    return SemanticSnapshotFilter(
+      identifierPrefix: identifierPrefix.trim().isEmpty
+          ? null
+          : identifierPrefix,
+      subtreeOf: subtreeOf.trim().isEmpty ? null : subtreeOf,
+      fields: fields.isEmpty ? null : fields,
+    );
+  }
+
   /// Keep nodes whose identifier starts with this prefix.
-  final String? identifierPrefix;
+  String? get identifierPrefix => _selector(value['identifierPrefix']);
 
   /// Keep one node and its descendants: a ref from the latest snapshot or a
   /// Semantics identifier, the ref tried first.
-  final String? subtreeOf;
+  String? get subtreeOf => _selector(value['subtreeOf']);
 
-  /// Node keys to return; `ref` is always kept.
-  final List<String>? fields;
+  /// Node keys to return; `ref` is always kept. Absent means every key.
+  List<String>? get fields {
+    final decoded = jsonDecodeListAs<String>(value['fields']);
+    return decoded.isEmpty ? null : decoded;
+  }
 
   bool get isEmpty =>
       identifierPrefix == null && subtreeOf == null && fields == null;
 
-  Map<String, Object?> toMap() => <String, Object?>{
-    if (identifierPrefix != null) 'identifierPrefix': identifierPrefix,
-    if (subtreeOf != null) 'subtreeOf': subtreeOf,
-    if (fields != null) 'fields': fields,
-  };
+  Map<String, dynamic> toJson() => value;
+
+  static const empty = SemanticSnapshotFilter._(<String, dynamic>{});
+
+  static String? _selector(final Object? raw) {
+    final text = jsonDecodeString(raw);
+    return text.trim().isEmpty ? null : text;
+  }
 }
 
 /// A service that walks the Flutter semantics tree and produces a compact,
@@ -365,9 +400,18 @@ mixin SemanticSnapshotService {
     final subtreeOf = filter?.subtreeOf;
     SemanticsNode? subtreeRoot;
     if (subtreeOf != null) {
+      final currentRoot = _currentRootNode();
+      final cached = _lastRefMap[subtreeOf];
+      // A ref outlives the node it names: the widget can be gone while the
+      // map still points at the detached SemanticsNode. Filtering by that
+      // node keeps nothing, and an empty snapshot reads as a screen that
+      // went blank instead of the expired ref it is.
       subtreeRoot =
-          _lastRefMap[subtreeOf] ??
-          _findByIdentifier(_currentRootNode(), subtreeOf);
+          cached != null &&
+              currentRoot != null &&
+              _isWithin(cached, currentRoot)
+          ? cached
+          : _findByIdentifier(currentRoot, subtreeOf);
       if (subtreeRoot == null) {
         return <String, Object?>{
           'success': false,
@@ -545,7 +589,7 @@ mixin SemanticSnapshotService {
       'nodeCount': returned.length,
       if (filter != null && !filter.isEmpty) ...<String, Object?>{
         'totalNodeCount': totalNodeCount,
-        'filter': filter.toMap(),
+        'filter': filter.toJson(),
       },
       'truncated': truncated,
       // The surface describes the app, not the slice asked for.
