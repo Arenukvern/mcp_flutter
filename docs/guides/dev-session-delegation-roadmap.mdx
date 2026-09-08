@@ -4,9 +4,10 @@ title: Dev-session delegation roadmap (oka & late-attach reloads)
 
 # Roadmap: hot reload / hot restart delegation (oka & late-attach)
 
-Status: proposed (investigated 2026-09-07 against oka `oka dev` +
-`flutter_mcp_cli` v3). Owner: mcp_flutter maintainers. This document is
-written so any agent can implement it without re-deriving the analysis.
+Status: implemented (originally investigated 2026-09-07 against oka `oka dev` +
+`flutter_mcp_cli` v3; Do-1/Do-2/Do-3 landed in `mcp_server_dart` — see
+"Implementation status" below). Owner: mcp_flutter maintainers. This document
+is written so any agent can extend it without re-deriving the analysis.
 
 ## Root cause (verified empirically, not guessed)
 
@@ -36,33 +37,93 @@ never spawn its own attach when a session already exists.
 
 ## Do
 
-1. **Honest reload reports (do first — small, unblocks everything).**
-   In `_runHotReload` / `_runHotRestart`
-   (`mcp_server_dart/lib/src/shared_core/vm_connections/connection_context.dart`):
-   when the fallback path runs, inspect the `ReloadReport` — zero loaded
-   sources means nothing was reloaded. Return a distinct result
-   (`{success: true, changed: false, reason: 'no compiled delta; drive
-   compilation through the owning dev session'}`) and keep the envelope
-   `ok: true` only for actual reloads. Never report a no-op as success.
-2. **Subscribe to the `Service` stream at connection time** and keep the
-   subscription for the connection lifetime (cache the discovered method
-   names). This fixes the race for early-connect sessions and removes the
-   per-command 1s timeout cost.
-3. **Add a `RunnerControl` delegation layer.** New interface:
-   `isAlive() / reload() / restart()`. Implementations:
-   - `None` (default, current behavior minus the false success);
-   - `OkaDevSession` — reads `<project>/.oka_cache/dev/vm.uri` (the live
-     app endpoint, one `ws://` line) for the app connection, and delegates
-     reload/restart to the oka session's control channel (oka side: see 4);
-   - existing machine-mode path unchanged for the no-owning-session case.
-   Selection: if `vm.uri` exists → `OkaDevSession`; never spawn a second
-   `flutter attach` in that case.
-4. **oka-side prerequisite (tracked in oka's roadmap, not this repo):**
-   `oka dev` needs an out-of-process control channel for
-   reload/restart/stop (its `--json` stdin protocol is currently the only
-   control surface; today a shell fifo works, a small TCP control port is
-   the planned shape). Until it ships, `OkaDevSession.reload()` returns the
-   honest "delegate unavailable" result instead of pretending.
+### 1. Honest reload reports — IMPLEMENTED
+
+`_runHotReload` / `_runHotRestart`
+(`mcp_server_dart/lib/src/shared_core/vm_connections/connection_context.dart`)
+no longer fire the pointless raw VM call when the flutter tool's custom
+services are not discovered. The fallback result now carries the truth:
+
+- reload: `{report: {type: 'ReloadReport', success: true}, changed: false, reason: 'no compile-capable session; delegate via RunnerControl or connect inside the registration window'}` — `report.success` keeps its
+  backward-compatible value (add-only envelope change); consumers must check
+  `changed` to know whether anything was applied.
+- restart (the old `hotRestart` method-not-found path, which always died with
+  an opaque RPC error): `{report: {type: 'Success', success: false}, changed: false, reason: <same>}`.
+- Real reloads/restarts through a discovered custom service report
+  `changed: true`.
+
+Evidence: `mcp_server_dart/test/honest_reload_reporting_test.dart`
+(fallback → `changed:false` for reload and restart; custom service →
+`changed:true`; the raw `reloadSources` / `hotRestart` VM calls are asserted
+NOT to fire).
+
+### 2. Service-stream subscription once per connection — IMPLEMENTED
+
+`ConnectionContext` now subscribes to the VM `Service` stream at connect time
+(`_setUpServiceStreamMonitoring`) and caches discovered
+`reloadSources` / `hotRestart` method names for the connection lifetime.
+Behavior notes:
+
+- early-connect sessions still catch `ServiceRegistered` events live — the
+  custom-service path is unchanged (no per-command wait needed);
+- late-attach sessions pay a single 300 ms grace wait on the first
+  reload/restart command per connection (down from 1s/0.8s per command), then
+  get the honest no-op immediately;
+- the cache is reset on disconnect/reconnect.
+
+### 3. `RunnerControl` delegation layer — IMPLEMENTED
+
+New seam in `mcp_server_dart/lib/src/shared_core/runner_control/`:
+
+- `RunnerControl` interface: `isAlive() / reload() / restart()` (+
+  `liveVmServiceUri()` and `runnerName`), with `RunnerControlOutcome`
+  carrying `ok / error / fallback / sessionRelaunched / vmServiceUri / raw`;
+- `OkaDevSessionRunnerControl` — reads
+  `<project>/.oka_cache/dev/session.json` (schema 1; unknown schemas and
+  corrupt files rejected with actionable errors), speaks the frozen TCP
+  JSON-lines control protocol on `127.0.0.1:<control_port>`, and awaits the
+  ACTUAL daemon outcome. On connection EOF mid-restart (the relaunch
+  fallback) it re-reads session.json once and reports the new `vm_service_uri`
+  — the CONNECTION is retried (ConnectionContext reconnects), never the
+  restart request. Bounded, configurable timeouts produce actionable errors;
+- `NoneRunnerControl` — the default; nothing delegates, legacy behavior
+  applies.
+
+Selection: when `<oka-project-dir>/.oka_cache/dev/session.json` exists and
+the control channel answers, `hot_reload_flutter` / `hot_restart_flutter`
+delegate to the session (the only compile-capable channel) and machine
+discovery is suppressed (never spawn a second `flutter attach` — it would
+kill the owning session). When the session.json answer is "no", behavior is
+exactly as before. The app connection still uses the normal machinery — the
+session's `vm_service_uri` works with the existing `connection.uri` override
+path (see docs/core/mcp_configuration.mdx), and auto-discovery additionally
+falls back to the owning session endpoint when port scan / machine discovery
+find nothing.
+
+Evidence: `mcp_server_dart/test/oka_dev_session_test.dart` (fake TCP control
+server: reload outcome, daemon error surfacing, fallback flag, EOF
+mid-restart re-read, schema/field rejection, timeout, isAlive) and
+`honest_reload_reporting_test.dart` (delegation precedence, reconnect after
+relaunch, auto-connect fallback, attach suppression).
+
+### 4. oka-side prerequisite (tracked in oka's roadmap, not this repo)
+
+DONE on the oka side: the TCP control port shipped as part of the frozen
+contract (see "FROZEN CONTRACT" in the task brief; `.oka_cache/dev/session.json`
+is written at session.ready and deleted on session exit).
+
+## Do (found during integration smoke, 2026-09-08)
+
+- **Kill the previous attach daemon on session relaunch.** oka's fallback
+  relaunch spawns a new `flutter attach --machine`; if the old daemon's DWD
+  artifacts linger, machine discovery reports *multiple debug targets* and
+  auto-selection fails. The OkaDevSession adapter must prefer
+  `session.json.vm_service_uri` over machine discovery (implemented), and
+  oka-side relaunch must guarantee daemon teardown (oka follow-up).
+- **Zero-delta daemon reloads also report success.** A reload with no file
+  changes since attach returns `changed: true` (the daemon reloaded nothing)
+  — honest but ambiguous; the `changed` flag means "delta applied", not
+  "source edits were pending". Document it.
 
 ## Do not
 
@@ -96,13 +157,62 @@ no-op for a reload.
 ## Verification recipe (any agent)
 
 1. `oka dev --json -d <device>` in a Flutter project with the
-   `mcp_toolkit` binding; capture `session.ready` → `wsUri`.
+   `mcp_toolkit` binding; capture `session.ready` → `wsUri` (also written to
+   `.oka_cache/dev/session.json` + the legacy `.oka_cache/dev/vm.uri`).
 2. `flutter_mcp_cli exec --name semantic_snapshot --vm-service-uri <uri>` —
    read a label (oracle; uiautomator cannot see Skia text).
 3. Edit a string in `lib/`, drive reload through the DELEGATED control
-   channel (not `hot_reload_flutter`), snapshot again → new label visible.
+   channel — with the CLI defaults this is simply `hot_reload_flutter` —
+   snapshot again → new label visible.
 4. Tap a stateful widget via `tap_widget`, hot restart via the delegated
-   channel, snapshot → state reset (restart semantics), label persists
-   (code persists).
+   channel (`hot_restart_flutter`), snapshot → state reset (restart
+   semantics), label persists (code persists).
 5. Negative test: `hot_reload_flutter` with NO source change must report
    `changed: false` (today it reports plain success — the bug).
+
+## Using with oka
+
+`oka dev` sessions work natively: the toolkit detects the session, delegates
+compile-capable work to it, and connects to the app it owns.
+
+```bash
+# 1. Start the owning session in your Flutter project (writes discovery files
+#    at session.ready; deletes them on exit):
+oka dev -d <device>
+
+# 2. Discovery — the toolkit reads <project>/.oka_cache/dev/session.json
+#    (schema 1): vm_service_uri, control_port, device_id, pid, started_at.
+cat .oka_cache/dev/session.json
+
+# 3. Run the toolkit CLI from the project root (or pass --oka-project-dir):
+#    hot reload / hot restart delegate to the oka session's control channel
+#    automatically — no flutter attach is ever spawned.
+flutter-mcp-toolkit exec --name hot_reload_flutter --args '{}'
+flutter-mcp-toolkit exec --name hot_restart_flutter --args '{}'
+
+# 4. App connection: normally automatic (auto-discovery falls back to the
+#    session's vm_service_uri). To pin it, use the standard connection
+#    override (docs/core/mcp_configuration.mdx):
+flutter-mcp-toolkit exec --name semantic_snapshot --args '{}' \
+  --vm-service-uri "$(jq -r .vm_service_uri .oka_cache/dev/session.json)"
+# MCP equivalent:
+#   { "name": "semantic_snapshot", "arguments": { "connection": {
+#       "mode": "uri", "uri": "ws://127.0.0.1:65250/<token>/ws" } } }
+```
+
+Notes:
+
+- `--oka-project-dir <dir>` (default: the current working directory) controls
+  where session.json is looked up.
+- With a live session, `hot_reload_flutter` / `hot_restart_flutter` results
+  carry `delegated: true`, `runner: 'oka-dev-session'`, and the daemon's raw
+  outcome; a daemon compile failure surfaces as an error with the daemon's
+  actionable fix message.
+- On a restart relaunch fallback the control connection may close; the
+  toolkit re-reads session.json once and re-attaches to the new
+  `vm_service_uri` (reported as `reattachedTo`), never re-sending the
+  restart.
+- Without a live session (no session.json, control port closed) behavior is
+  exactly as before: no delegation, plain VM-service paths.
+- The control channel is a localhost-only dev tool with no auth by design
+  (frozen contract); nothing else in the toolkit assumes it.
