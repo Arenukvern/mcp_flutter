@@ -1,13 +1,217 @@
 ---
-title: Dev-session delegation roadmap (oka & late-attach reloads)
+title: Dev-session delegation roadmap (late-attach reloads & the spec v2 contract)
 ---
 
-# Roadmap: hot reload / hot restart delegation (oka & late-attach)
+# Roadmap: hot reload / hot restart delegation (late-attach & spec v2)
 
-Status: implemented (originally investigated 2026-09-07 against oka `oka dev` +
-`flutter_mcp_cli` v3; Do-1/Do-2/Do-3 landed in `mcp_server_dart` — see
-"Implementation status" below). Owner: mcp_flutter maintainers. This document
-is written so any agent can extend it without re-deriving the analysis.
+Status: implemented under the **spec v2 contract** (see "The dev session
+contract (spec v2)" below). Originally investigated 2026-09-07 against the
+first conforming runner (worked example in the spec v2 section); Do-1/Do-2/Do-3
+landed in `mcp_server_dart`, and the runner-specific adapter was inverted into
+the runner-neutral `ExternalSessionRunnerControl` (spec v2, 2026-09-08). Owner:
+mcp_flutter maintainers. This document is written so any agent can extend it
+without re-deriving the analysis, and so a maintainer who has never heard of
+any specific runner can review the contract.
+
+## The dev session contract (spec v2)
+
+Spec v2 **inverts the runner dependency**: the toolkit must not know any
+specific runner. It defines a generic "dev session" contract; ANY Dart runner
+whose `dev` command owns the compile-capable flutter-tool session writes a
+conforming discovery file, and the toolkit delegates to whatever it finds.
+Earlier drafts of this work coupled the toolkit to one runner's storage layout
+(a runner-specific cache path, a runner-named CLI flag, a toolkit-side
+runner name constant). That coupling is gone: the toolkit reads
+ANY conforming file, and the runner's identity comes FROM the file as display
+metadata — never from code. The first conforming runner predates the inversion
+and appears only as the worked example below; nowhere else in toolkit code or
+docs is any runner named. Everything below says "the runner".
+
+The wire protocol, schema field names, and fallback semantics are FROZEN —
+runner-side and toolkit-side implementations move in parallel and renaming a
+field breaks both.
+
+### Discovery file
+
+Default location: `<project>/.flutter_mcp/runner-session.json` (sibling of the
+toolkit's own `.flutter_mcp/state.json`); overridable with the
+`--runner-session-file` CLI flag. Written by the RUNNER at session start,
+DELETED by the runner at session exit. Absent = no live delegable session.
+
+```json
+{
+  "schema": 1,
+  "runner": "<runner-display-name>",
+  "vm_service_uri": "ws://127.0.0.1:65250/<token>/ws",
+  "control_port": 59871,
+  "device_id": "emulator-5554",
+  "pid": 12345,
+  "started_at": "2026-09-08T00:00:00.000Z"
+}
+```
+
+`schema` must be `1` (readers reject unknown schema values with an actionable
+error). All fields except `runner` are required; unknown extra fields are
+tolerated so runners can evolve additively. `runner` is display metadata only —
+surfaced verbatim in delegation results, never used for behavior.
+
+### Control wire protocol (frozen, unchanged from v1)
+
+TCP JSON lines on `127.0.0.1:<control_port>` (localhost only, no auth — dev
+tool by design):
+
+- request: `{"id": int, "method": "reload"|"restart"|"stop"|"status"}`
+- response: `{"id": int, "ok": bool, "result": {...}}` or
+  `{"id": int, "ok": false, "error": string}`
+- reload/restart carry the ACTUAL daemon outcome (`"fallback": true` when the
+  attach-mode relaunch fallback triggered);
+- clients treat EOF as session end and RE-READ the discovery file (once).
+
+### Decision note: why the runner file is NOT part of `.flutter_mcp/state.json`
+
+`.flutter_mcp/state.json` is the toolkit's own persisted state (written and
+owned by the toolkit through `StateStore`, path selected with `--state-file`):
+`schemaVersion`, `activeSessionId`, `activeSession {id, endpoint, createdAt,
+lastUsedAt, mode, host, port, uri}`, and `stickyEndpoint`. It records what the
+toolkit connected to so a later invocation can reuse that endpoint — toolkit
+state with toolkit lifecycle.
+
+`runner-session.json` must stay a separate file because it differs on all
+three axes:
+
+1. **Different writer.** state.json is written by the toolkit; the session
+   file is written by an external process the toolkit does not own and cannot
+   keep fresh. The toolkit only ever reads it.
+2. **Different lifecycle.** state.json survives across sessions (it is a
+   preference record). The session file is a LIVENESS signal: it must exist
+   exactly while the runner session is live and disappear the instant the
+   session exits. "File present" is the toolkit's cheap session-alive probe —
+   merging it into state.json would freeze a liveness signal into a stale
+   preference.
+3. **Different trust.** state.json is the toolkit trusting itself; the session
+   file is a live pointer into a foreign process, including a control port the
+   toolkit will open a socket to. Keeping it separate lets `--runner-session-file`
+   point anywhere (another checkout, CI workspace, non-default project layout)
+   without touching the toolkit's state root, and means a stale toolkit state
+   can never masquerade as a live session.
+
+### Connection-selection stack and precedence (as implemented)
+
+Read from `ConnectionContext` (`mcp_server_dart/lib/src/shared_core/
+vm_connections/connection_context.dart`); the runner file composes with — it
+does not replace — sticky endpoints and connection overrides. The actual
+precedence, top to bottom:
+
+1. **Caller decision (any non-auto mode).** A per-request `connection` override
+   (`connection.uri`, `connection.targetId`, explicit host/port) bypasses
+   auto-selection entirely. This wins over everything, including the runner.
+2. **Active healthy connection (auto mode).** A connected, healthy VM service
+   is reused without any rediscovery.
+3. **Live runner-session endpoint (auto mode).** When the discovery file
+   exists and the runner's control channel answers, the session's
+   `vm_service_uri` wins auto-selection BEFORE discovery: the owning session
+   is the only compile-capable channel, and delegation must resolve to the
+   app it owns even on machines with several running flutter tools.
+4. **Discovery (auto mode).** Port scan + (unsuppressed) machine discovery.
+   Within the discovered candidate set: a **sticky endpoint** (seeded from
+   `state.json`'s active session/sticky endpoint at boot, or set by a previous
+   successful connect) matching a discovered target wins; otherwise the
+   `--prefer-target-label` preference narrows candidates, then a sole
+   instance (same-process endpoints merged) is auto-picked; several genuinely
+   distinct targets produce an actionable `multiple_targets` error.
+5. **Defaults.** `defaultHost`/`defaultPort` apply only to explicit
+   host/port mode, never as an auto-mode fallback (auto fails with
+   `no_targets` instead of guessing).
+
+Two coupling rules that ride on this stack:
+
+- **Machine discovery is suppressed while the runner session is alive.** A
+  second attach session would reinstall the app and kill the first (the only
+  compile-capable channel). The `RunnerControl.isAlive()` probe gates the
+  machine-discovery provider per operation — never at boot — so a runner that
+  starts (or dies) after toolkit boot is handled correctly, and serve-mode
+  wires the control unconditionally.
+- **When the session is gone, everything composes back.** No discovery file →
+  the control answers "not alive" on every query and legacy behavior (sticky +
+  discovery + defaults) applies unchanged. A dead control port with a lingering
+  file surfaces an actionable error, never a false "alive".
+
+### Use-case coverage: one seam, no per-verb special cases
+
+The CLI builds exactly one `ConnectionContext` at boot
+(`mcp_server_dart/bin/flutter_mcp_toolkit.dart`) with the
+`ExternalSessionRunnerControl` wired, and every verb shares it:
+
+- `exec` (single command) and `batch` (command list) go through
+  `DefaultCoreCommandExecutor` → the shared context;
+- `serve` (the MCP/stdio daemon used by MCP server tools) keeps the same
+  context alive for the whole server lifetime;
+- `watch`, `snapshot`, and every other catalog command (including
+  `hot_reload_flutter` / `hot_restart_flutter` themselves) execute through the
+  same context.
+
+Delegation therefore needs no per-verb wiring: `hot_reload_flutter` /
+`hot_restart_flutter` consult `RunnerControl.isAlive()` inside
+`ConnectionContext` before every reload/restart (delegating when alive, honest
+`changed: false` fallback when not), and auto-connect consults it before
+discovery (session endpoint wins, machine discovery suppressed). Any future
+verb inherits both behaviors for free.
+
+### Writing a conforming runner (checklist)
+
+A runner (today's example and any future one) is conforming when it:
+
+- [ ] Writes the discovery file (default
+      `<project>/.flutter_mcp/runner-session.json`, schema 1) at session
+      start, containing `vm_service_uri`, `control_port`, `device_id`, `pid`,
+      `started_at`, and optionally its `runner` display name.
+- [ ] Deletes the discovery file at session exit — including the
+      attach-relaunch path, where the OLD session's file must not outlive the
+      old session (a lingering file with a dead control port is surfaced to
+      the user as "restart the runner session").
+- [ ] Serves the frozen TCP JSON-lines protocol on `127.0.0.1:<control_port>`
+      (request `{id, method}`; response `{id, ok, result}` / `{id, ok:false,
+      error}`) for `reload`, `restart`, `stop`, `status`.
+- [ ] Reports the ACTUAL daemon outcome for reload/restart; sets
+      `result.fallback: true` when the attach-mode relaunch fallback fired.
+- [ ] Treats the toolkit as a client that may disconnect at any moment; on a
+      restart relaunch the runner MAY close the control connection — the
+      toolkit interprets EOF mid-restart as session end, re-reads the
+      discovery file once, and reconnects to the NEW `vm_service_uri` (it
+      never re-sends the restart).
+- [ ] Binds to 127.0.0.1 only, with no auth (localhost-only dev tool, frozen
+      decision).
+- [ ] Never spawns (or tolerates) a second attach session for the same app
+      while alive.
+- [ ] Keeps `schema: 1` until a negotiated contract bump; the toolkit rejects
+      unknown schema values with an upgrade-oriented message.
+
+### Worked example (the first conforming runner)
+
+```bash
+# 1. Start the owning session in your Flutter project (the runner writes
+#    the discovery file at session start and deletes it on exit):
+oka dev -d <device>
+
+# 2. Discovery — the toolkit reads <project>/.flutter_mcp/runner-session.json
+#    (schema 1) by default; or pass --runner-session-file explicitly:
+cat .flutter_mcp/runner-session.json
+
+# 3. Reload/restart delegate to the session's control channel automatically:
+flutter-mcp-toolkit exec --name hot_reload_flutter --args '{}'
+flutter-mcp-toolkit exec --name hot_restart_flutter --args '{}'
+
+# 4. App connection: normally automatic (auto-discovery falls back to the
+#    session's vm_service_uri). To pin it, use the standard connection
+#    override (docs/core/mcp_configuration.mdx):
+flutter-mcp-toolkit exec --name semantic_snapshot --args '{}' \
+  --vm-service-uri "$(jq -r .vm_service_uri .flutter_mcp/runner-session.json)"
+```
+
+Results carry `delegated: true`, the file's `runner` display name, and the
+daemon's raw outcome; a daemon compile failure surfaces as an error with the
+daemon's actionable fix message. On a relaunch fallback the toolkit re-reads
+the discovery file once and reports `reattachedTo`.
 
 ## Root cause (verified empirically, not guessed)
 
@@ -19,14 +223,15 @@ the VM service `Service` stream for `ServiceRegistered` events **with a
 - The flutter tool (`flutter run` / `flutter attach`) registers those
   services **once, at session start**.
 - The VM service does **not replay** already-registered services on
-  `streamListen(Service)` — verified live: an oka-attached app exposes 94
-  isolate extensions, none reload-capable, and a 1s listen catches nothing.
+  `streamListen(Service)` — verified live: an attach-mode runner's app
+  exposes 94 isolate extensions, none reload-capable, and a 1s listen catches
+  nothing.
 - Therefore **any late attach** (toolkit connects after the flutter tool
   registered its services) silently falls back to raw
   `vmService.reloadSources` → `ReloadReport {success: true}` with **zero
   sources loaded** — a no-op reported as success. This is exactly what
-  happens against `oka dev`, whose attach session predates the toolkit
-  connection.
+  happens against an attach-session runner whose session predates the
+  toolkit connection.
 - Under `flutter run` the native flow often *appears* to work only because
   the toolkit happens to connect inside the registration window.
 
@@ -71,55 +276,58 @@ Behavior notes:
   get the honest no-op immediately;
 - the cache is reset on disconnect/reconnect.
 
-### 3. `RunnerControl` delegation layer — IMPLEMENTED
+### 3. `RunnerControl` delegation layer — IMPLEMENTED (spec v2)
 
-New seam in `mcp_server_dart/lib/src/shared_core/runner_control/`:
+Seam in `mcp_server_dart/lib/src/shared_core/runner_control/`:
 
 - `RunnerControl` interface: `isAlive() / reload() / restart()` (+
   `liveVmServiceUri()` and `runnerName`), with `RunnerControlOutcome`
   carrying `ok / error / fallback / sessionRelaunched / vmServiceUri / raw`;
-- `OkaDevSessionRunnerControl` — reads
-  `<project>/.oka_cache/dev/session.json` (schema 1; unknown schemas and
-  corrupt files rejected with actionable errors), speaks the frozen TCP
-  JSON-lines control protocol on `127.0.0.1:<control_port>`, and awaits the
-  ACTUAL daemon outcome. On connection EOF mid-restart (the relaunch
-  fallback) it re-reads session.json once and reports the new `vm_service_uri`
-  — the CONNECTION is retried (ConnectionContext reconnects), never the
-  restart request. Bounded, configurable timeouts produce actionable errors;
+- `ExternalSessionRunnerControl` (spec v2) — reads ANY conforming discovery
+  file (default `<project>/.flutter_mcp/runner-session.json`, schema 1;
+  unknown schemas and corrupt files rejected with actionable errors), speaks
+  the frozen TCP JSON-lines control protocol on `127.0.0.1:<control_port>`,
+  and awaits the ACTUAL daemon outcome. The file's `runner` field is display
+  metadata surfaced in results. On connection EOF mid-restart (the relaunch
+  fallback) it re-reads the discovery file once and reports the new
+  `vm_service_uri` — the CONNECTION is retried (ConnectionContext
+  reconnects), never the restart request. Bounded, configurable timeouts
+  produce actionable errors;
 - `NoneRunnerControl` — the default; nothing delegates, legacy behavior
   applies.
 
-Selection: when `<oka-project-dir>/.oka_cache/dev/session.json` exists and
-the control channel answers, `hot_reload_flutter` / `hot_restart_flutter`
-delegate to the session (the only compile-capable channel) and machine
-discovery is suppressed (never spawn a second `flutter attach` — it would
-kill the owning session). When the session.json answer is "no", behavior is
-exactly as before. The app connection still uses the normal machinery — the
-session's `vm_service_uri` works with the existing `connection.uri` override
-path (see docs/core/mcp_configuration.mdx), and auto-discovery additionally
-falls back to the owning session endpoint when port scan / machine discovery
-find nothing.
+Selection: when the discovery file exists and the control channel answers,
+`hot_reload_flutter` / `hot_restart_flutter` delegate to the session (the only
+compile-capable channel) and machine discovery is suppressed (never spawn a
+second `flutter attach` — it would kill the owning session). When the answer
+is "no", behavior is exactly as before. The app connection still uses the
+normal machinery — the session's `vm_service_uri` works with the existing
+`connection.uri` override path (see docs/core/mcp_configuration.mdx), and
+auto-discovery additionally falls back to the owning session endpoint when
+port scan / machine discovery find nothing (precedence: see the spec v2
+section above).
 
-Evidence: `mcp_server_dart/test/oka_dev_session_test.dart` (fake TCP control
+Evidence: `mcp_server_dart/test/external_session_test.dart` (fake TCP control
 server: reload outcome, daemon error surfacing, fallback flag, EOF
-mid-restart re-read, schema/field rejection, timeout, isAlive) and
-`honest_reload_reporting_test.dart` (delegation precedence, reconnect after
-relaunch, auto-connect fallback, attach suppression).
+mid-restart re-read, schema/field rejection, timeout, isAlive, runner
+metadata passthrough) and `honest_reload_reporting_test.dart` (delegation
+precedence — including sticky endpoint vs runner file vs machine discovery —
+reconnect after relaunch, auto-connect fallback, attach suppression).
 
-### 4. oka-side prerequisite (tracked in oka's roadmap, not this repo)
+### 4. Runner-side prerequisite (tracked in the runner's own roadmap, not this repo)
 
-DONE on the oka side: the TCP control port shipped as part of the frozen
-contract (see "FROZEN CONTRACT" in the task brief; `.oka_cache/dev/session.json`
-is written at session.ready and deleted on session exit).
+DONE on the runner side: the TCP control port shipped as part of the frozen
+contract; the discovery file is written at session ready and deleted on
+session exit.
 
 ## Do (found during integration smoke, 2026-09-08)
 
-- **Kill the previous attach daemon on session relaunch.** oka's fallback
+- **Kill the previous attach daemon on session relaunch.** A runner's fallback
   relaunch spawns a new `flutter attach --machine`; if the old daemon's DWD
   artifacts linger, machine discovery reports *multiple debug targets* and
-  auto-selection fails. The OkaDevSession adapter must prefer
-  `session.json.vm_service_uri` over machine discovery (implemented), and
-  oka-side relaunch must guarantee daemon teardown (oka follow-up).
+  auto-selection fails. The session adapter must prefer the discovery file's
+  `vm_service_uri` over machine discovery (implemented), and the runner-side
+  relaunch must guarantee daemon teardown (runner follow-up).
 - **Zero-delta daemon reloads also report success.** A reload with no file
   changes since attach returns `changed: true` (the daemon reloaded nothing)
   — honest but ambiguous; the `changed` flag means "delta applied", not
@@ -128,27 +336,31 @@ is written at session.ready and deleted on session exit).
 ## Do not
 
 - Do **not** compile inside the toolkit. Kernel compilation is always the
-  owning runner's job (flutter tool / oka dev / future `dart run` hot
-  reload). Compiling means spawning a second session — which kills the
-  first.
+  owning runner's job (flutter tool / runner `dev` command / future
+  `dart run` hot reload). Compiling means spawning a second session — which
+  kills the first.
 - Do **not** treat `ReloadReport.success == true` as "changes applied".
-- Do **not** spawn `flutter attach --machine` when `vm.uri` (oka) or any
-  other session lock exists.
+- Do **not** spawn `flutter attach --machine` when a session lock (the
+  runner's discovery file with a live control port) exists.
 - Do **not** wait per-command (1s) on the Service stream — subscribe once
   per connection.
+- Do **not** name toolkit code after any specific runner. Runner identity is
+  the discovery file's `runner` display field; toolkit-side runner names are
+  neutral defaults only.
 
 ## Later (Dart-general direction)
 
 Split capabilities into tiers so the toolkit works for non-Flutter Dart
-apps (ecsly, jaspr server, CLIs) — mirrors the interface/provider package
+apps (server frameworks, CLIs) — mirrors the interface/provider package
 lattice used in this ecosystem:
 
 - `dart VM core` (any Dart VM): connection, evaluate, logs, errors,
   isolate inspection, delegated reload.
 - `flutter capability` (Flutter only): semantics/widget trees, screenshots,
   interaction, `ext.flutter.*` — these need the framework's service
-  extensions; a jaspr/ecsly app has none, the core tier still applies.
-- `runner adapters`: oka dev, flutter run, bare dart.
+  extensions; a non-Flutter app has none, the core tier still applies.
+- `runner adapters`: any spec-v2 runner (session file + control channel),
+  `flutter run`, bare dart.
 
 Rename/API note: anything named `hot_reload_flutter` that can no-op should
 either gain the `changed` flag or be renamed so agents cannot mistake a
@@ -156,9 +368,9 @@ no-op for a reload.
 
 ## Verification recipe (any agent)
 
-1. `oka dev --json -d <device>` in a Flutter project with the
-   `mcp_toolkit` binding; capture `session.ready` → `wsUri` (also written to
-   `.oka_cache/dev/session.json` + the legacy `.oka_cache/dev/vm.uri`).
+1. Start the owning session (`<runner> dev --json -d <device>`) in a Flutter
+   project with the `mcp_toolkit` binding; capture the session-ready
+   `wsUri` (also written to `.flutter_mcp/runner-session.json`).
 2. `flutter_mcp_cli exec --name semantic_snapshot --vm-service-uri <uri>` —
    read a label (oracle; uiautomator cannot see Skia text).
 3. Edit a string in `lib/`, drive reload through the DELEGATED control
@@ -170,49 +382,26 @@ no-op for a reload.
 5. Negative test: `hot_reload_flutter` with NO source change must report
    `changed: false` (today it reports plain success — the bug).
 
-## Using with oka
+## Using with a conforming runner
 
-`oka dev` sessions work natively: the toolkit detects the session, delegates
-compile-capable work to it, and connects to the app it owns.
-
-```bash
-# 1. Start the owning session in your Flutter project (writes discovery files
-#    at session.ready; deletes them on exit):
-oka dev -d <device>
-
-# 2. Discovery — the toolkit reads <project>/.oka_cache/dev/session.json
-#    (schema 1): vm_service_uri, control_port, device_id, pid, started_at.
-cat .oka_cache/dev/session.json
-
-# 3. Run the toolkit CLI from the project root (or pass --oka-project-dir):
-#    hot reload / hot restart delegate to the oka session's control channel
-#    automatically — no flutter attach is ever spawned.
-flutter-mcp-toolkit exec --name hot_reload_flutter --args '{}'
-flutter-mcp-toolkit exec --name hot_restart_flutter --args '{}'
-
-# 4. App connection: normally automatic (auto-discovery falls back to the
-#    session's vm_service_uri). To pin it, use the standard connection
-#    override (docs/core/mcp_configuration.mdx):
-flutter-mcp-toolkit exec --name semantic_snapshot --args '{}' \
-  --vm-service-uri "$(jq -r .vm_service_uri .oka_cache/dev/session.json)"
-# MCP equivalent:
-#   { "name": "semantic_snapshot", "arguments": { "connection": {
-#       "mode": "uri", "uri": "ws://127.0.0.1:65250/<token>/ws" } } }
-```
+Conforming runner sessions work natively: the toolkit detects the session,
+delegates compile-capable work to it, and connects to the app it owns. See
+the worked example in "The dev session contract (spec v2)" above.
 
 Notes:
 
-- `--oka-project-dir <dir>` (default: the current working directory) controls
-  where session.json is looked up.
+- `--runner-session-file <path>` (default:
+  `<cwd>/.flutter_mcp/runner-session.json`) controls where the discovery
+  file is read from.
 - With a live session, `hot_reload_flutter` / `hot_restart_flutter` results
-  carry `delegated: true`, `runner: 'oka-dev-session'`, and the daemon's raw
-  outcome; a daemon compile failure surfaces as an error with the daemon's
-  actionable fix message.
+  carry `delegated: true`, the runner's display name from the discovery
+  file, and the daemon's raw outcome; a daemon compile failure surfaces as
+  an error with the daemon's actionable fix message.
 - On a restart relaunch fallback the control connection may close; the
-  toolkit re-reads session.json once and re-attaches to the new
+  toolkit re-reads the discovery file once and re-attaches to the new
   `vm_service_uri` (reported as `reattachedTo`), never re-sending the
   restart.
-- Without a live session (no session.json, control port closed) behavior is
-  exactly as before: no delegation, plain VM-service paths.
+- Without a live session (no discovery file, control port closed) behavior
+  is exactly as before: no delegation, plain VM-service paths.
 - The control channel is a localhost-only dev tool with no auth by design
   (frozen contract); nothing else in the toolkit assumes it.

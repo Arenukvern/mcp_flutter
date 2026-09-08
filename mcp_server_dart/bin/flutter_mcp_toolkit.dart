@@ -75,6 +75,11 @@ Future<void> main(final List<String> args) async {
       bootstrapState.activeSession?.endpoint ?? bootstrapState.stickyEndpoint;
 
   final flutterProjectDir = _nonEmptyOption(parsed.option(_flutterProjectDir));
+  final runnerSessionFile =
+      _nonEmptyOption(parsed.option(_runnerSessionFile)) ??
+      ExternalSessionRunnerControl.defaultSessionPathFor(
+        io.Directory.current.path,
+      );
   final flutterDevice = _nonEmptyOption(parsed.option(_flutterDevice));
   final flutterDiscoveryTimeoutMs = _parsePositiveIntOption(
     parsed.option(_flutterDiscoveryTimeoutMs),
@@ -87,12 +92,28 @@ Future<void> main(final List<String> args) async {
   );
   final machineDiscovery = FlutterToolMachineDiscovery(logger: logger);
 
+  // Owning dev-session control (external runner). The runner's discovery file
+  // (--runner-session-file, default <cwd>/.flutter_mcp/runner-session.json)
+  // is written by the RUNNER at session start and deleted at session exit.
+  // While the file exists and the control channel answers,
+  // hot_reload_flutter / hot_restart_flutter delegate to it and machine
+  // discovery never spawns a second attach. While the file is absent the
+  // control reports not-alive on every query, so behavior is exactly as
+  // before. The control is wired unconditionally (not gated on file
+  // existence at boot) because serve-mode is long-lived: a runner may start
+  // after the toolkit booted.
+  final runnerControl = ExternalSessionRunnerControl(
+    sessionFile: runnerSessionFile,
+    logger: logger,
+  );
+
   final connectionContext = ConnectionContext(
     defaultHost: parsed.option(_dartVmHost) ?? _defaultHost,
     defaultPort: int.tryParse(parsed.option(_dartVmPort) ?? '') ?? _defaultPort,
     logger: logger,
     discoverPorts: portScanner.scanForFlutterPorts,
     preferredTargetLabel: _nonEmptyOption(parsed.option(_preferTargetLabel)),
+    runnerControl: runnerControl,
     discoverMachineTargets: () => machineDiscovery.discover(
       projectDir: flutterProjectDir,
       device: flutterDevice,
@@ -220,7 +241,7 @@ Future<CoreResult> _runOneShot({
           );
         }
 
-        return _executeExecCommand(
+        return await _executeExecCommand(
           parsed: parsed,
           executor: executor,
           catalog: catalog,
@@ -230,7 +251,7 @@ Future<CoreResult> _runOneShot({
         );
 
       case 'batch':
-        return _runBatchCommand(
+        return await _runBatchCommand(
           parsed: parsed,
           command: topLevel,
           executor: executor,
@@ -267,7 +288,7 @@ Future<CoreResult> _runOneShot({
         return CoreResult.success(data: data);
 
       case 'permissions':
-        return _runPermissionsCommand(
+        return await _runPermissionsCommand(
           parsed: parsed,
           command: topLevel,
           configuration: configuration,
@@ -276,7 +297,7 @@ Future<CoreResult> _runOneShot({
         );
 
       case 'validate-runtime':
-        return _runValidateRuntime(
+        return await _runValidateRuntime(
           parsed: parsed,
           command: topLevel,
           executor: executor,
@@ -292,7 +313,7 @@ Future<CoreResult> _runOneShot({
           );
         }
 
-        return _runSnapshotCommand(
+        return await _runSnapshotCommand(
           snapshotCommand: snapshotCommand,
           commandSnapshots: commandSnapshots,
           executor: executor,
@@ -1002,7 +1023,7 @@ Future<CoreResult> _executeExecCommand({
       return preconnectError;
     }
 
-    return executor.execute(command);
+    return await executor.execute(command);
     // ignore: avoid_catching_errors
   } on ArgumentError catch (e) {
     return CoreResult.failure(
@@ -1904,6 +1925,19 @@ final _argParser = ArgParser(allowTrailingOptions: false)
         '(for example: chrome)',
   )
   ..addOption(
+    _runnerSessionFile,
+    help:
+        'Discovery file of an external dev-session runner '
+        '(defaults to <cwd>/.flutter_mcp/runner-session.json). Written by '
+        'the runner at session start, deleted at session exit. When a live '
+        'session is found, hot_reload_flutter and hot_restart_flutter '
+        'delegate to it (it is the only compile-capable channel) and no '
+        'second flutter attach is spawned. The app connection uses the '
+        'normal machinery: pass the vm_service_uri from the session file '
+        'via --vm-service-uri or connection.uri, or let auto-discovery '
+        'fall back to the session endpoint.',
+  )
+  ..addOption(
     _flutterDiscoveryTimeoutMs,
     defaultsTo: '$_defaultFlutterDiscoveryTimeoutMs',
     help:
@@ -2320,6 +2354,7 @@ const _dartVmHost = 'dart-vm-host';
 const _dartVmPort = 'dart-vm-port';
 const _vmServiceUri = 'vm-service-uri';
 const _flutterProjectDir = 'flutter-project-dir';
+const _runnerSessionFile = 'runner-session-file';
 const _flutterDevice = 'flutter-device';
 const _flutterDiscoveryTimeoutMs = 'flutter-discovery-timeout-ms';
 const _scanPorts = 'scan-ports';
