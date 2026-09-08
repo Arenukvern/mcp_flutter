@@ -97,7 +97,8 @@ Map<String, Object?> semanticSnapshotInputSchema() => <String, Object?>{
       'uniqueItems': true,
       'description':
           'Node fields to return; "ref" is always included. Omit for every '
-          'field. A name outside the list fails with unknown_field.',
+          'field. A name outside the list is refused before the call reaches '
+          'the app.',
     },
     'connection': connectionOverrideJsonSchema(),
   },

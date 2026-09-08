@@ -516,7 +516,7 @@ semantic_snapshot(subtreeOf: "panel.tabs")
 Returns: `{"snapshot_id": 3, "nodeCount": 1, "viewport": {...}, "nodes": [{"ref": "s_0", "label": "Increment", "actions": ["tap"], "bounds": {...}, "visibleInViewport": true, "centerInViewport": true, "center": {...}}]}` — the viewport is stated once in the envelope, not on each node.
 
 - `subtree_root_not_found` — `subtreeOf` is neither a ref of the latest snapshot nor an identifier in the tree; no snapshot was taken, refs and `snapshot_id` are unchanged.
-- `unknown_field` — a name in `fields` is not a node key; `acceptedFields` lists them.
+- `unknown_field` — a name in `fields` is not a node key; `acceptedFields` lists them. Over MCP and the CLI the name is refused at the boundary instead — an invalid `fields` argument naming the accepted keys, without spending a call on the app.
 - `vm_service_unavailable` — app not running or `MCPToolkitBinding.initialize()` not called.
 - `connection_selection_required` — multiple targets; supply `connection.targetId`.
 

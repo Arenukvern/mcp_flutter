@@ -948,7 +948,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
           if (command.fields != null) 'fields': jsonEncode(command.fields),
         },
       );
-      return CoreResult.success(data: _map(result.json));
+      return routeSemanticSnapshotResponse(_map(result.json));
     } on Exception catch (e) {
       return CoreResult.failure(
         code: CoreErrorCode.semanticSnapshotFailed,
@@ -2033,6 +2033,22 @@ CoreResult routeInteractionResponse(
   return CoreResult.failure(
     code: CoreErrorCode.interactionFailed,
     message: '$tool failed: $reason',
+    details: data,
+  );
+}
+
+/// Route a `semantic_snapshot` payload to a result that matches its verdict.
+///
+/// A captured snapshot carries no `success` key — only a refusal does, so an
+/// absent key is a success. A filter that names an unresolvable `subtreeOf`
+/// takes no snapshot at all, and reaching the caller as a successful command
+/// would let it read stale refs as if they had just been issued.
+CoreResult routeSemanticSnapshotResponse(final Map<String, Object?> data) {
+  if (data['success'] != false) return CoreResult.success(data: data);
+  return CoreResult.failure(
+    code: CoreErrorCode.semanticSnapshotFailed,
+    message:
+        'semantic_snapshot refused: ${data['error'] ?? 'no reason given'}',
     details: data,
   );
 }
