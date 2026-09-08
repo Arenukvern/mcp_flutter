@@ -55,6 +55,12 @@ void main() {
       expect(schema.containsKey('required'), isFalse);
       final props = schema['properties']! as Map<String, Object?>;
       expect(props.containsKey('connection'), isTrue);
+      expect(props.containsKey('identifierPrefix'), isTrue);
+      expect(props.containsKey('subtreeOf'), isTrue);
+      final fields = props['fields']! as Map<String, Object?>;
+      final items = fields['items']! as Map<String, Object?>;
+      expect(items['enum'], semanticSnapshotNodeFields);
+      expect(semanticSnapshotNodeFields, contains('ref'));
     });
 
     test('wait_for', () {

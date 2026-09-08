@@ -23,7 +23,18 @@ void registerSemanticTools(final CapabilityContext context) {
           'snapshot again.',
       inputSchema: semanticSnapshotInputSchema(),
       handler: (final args) async {
-        return runCommand(runner, args, const SemanticSnapshotCommand());
+        final rawFields = args['fields'];
+        return runCommand(
+          runner,
+          args,
+          SemanticSnapshotCommand(
+            identifierPrefix: stringArgOrNull(args['identifierPrefix']),
+            subtreeOf: stringArgOrNull(args['subtreeOf']),
+            fields: rawFields is List
+                ? rawFields.map((final f) => f.toString()).toList()
+                : null,
+          ),
+        );
       },
     ),
   );

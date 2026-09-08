@@ -159,16 +159,25 @@ Returns: `{"extensionRPCs": ["ext.flutter.inspector.getRootWidget", "ext.mcp.too
 
 ### semantic_snapshot
 
-Return a compact accessibility tree of interactive widgets with stable `ref` strings and a `snapshot_id`.
+Return a compact accessibility tree of interactive widgets with stable `ref` strings and a `snapshot_id`. A node is listed when it reads (label, value), acts (button, text field, tap, scroll…) or carries a `Semantics(identifier:)`.
 
+- `identifierPrefix` (string, optional) — keep only nodes whose identifier starts with it (`"nav."` for one rail).
+- `subtreeOf` (string, optional) — keep one node and its descendants; a ref from the latest snapshot or an identifier, the ref tried first.
+- `fields` (array of strings, optional) — node keys to return; `ref` is always kept. Names: `ref id type identifier label value hint enabled focused checked toggled selected bounds actions children visibleInViewport centerInViewport center`.
 - `connection` (object, optional) — connection override.
+
+The tree is always walked whole, so a ref read off a filtered snapshot is the same ref the full snapshot would give and works with every interaction tool. A filtered reply adds `totalNodeCount` and echoes `filter`; `children` lists kept refs only.
 
 ```
 semantic_snapshot()
+semantic_snapshot(identifierPrefix: "nav.", fields: ["identifier", "selected"])
+semantic_snapshot(subtreeOf: "panel.tabs")
 ```
 
-Returns: `{"snapshot_id": 3, "nodes": [{"ref": "s_0", "label": "Increment", "actions": ["tap"]}]}`
+Returns: `{"snapshot_id": 3, "nodeCount": 1, "viewport": {...}, "nodes": [{"ref": "s_0", "label": "Increment", "actions": ["tap"], "bounds": {...}, "visibleInViewport": true, "centerInViewport": true, "center": {...}}]}` — the viewport is stated once in the envelope, not on each node.
 
+- `subtree_root_not_found` — `subtreeOf` is neither a ref of the latest snapshot nor an identifier in the tree; no snapshot was taken, refs and `snapshot_id` are unchanged.
+- `unknown_field` — a name in `fields` is not a node key; `acceptedFields` lists them. Over MCP and the CLI the name is refused at the boundary instead — an invalid `fields` argument naming the accepted keys, without spending a call on the app.
 - `vm_service_unavailable` — app not running or `MCPToolkitBinding.initialize()` not called.
 - `connection_selection_required` — multiple targets; supply `connection.targetId`.
 
