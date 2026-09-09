@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -210,7 +211,87 @@ class _DragBoard extends StatelessWidget {
   );
 }
 
+/// A card too short to survive a coarse drag: 29 px tall, with a long-press
+/// recognizer beside the pan so the arena cannot hand the pan over at
+/// pointer-down. The shape of a calendar block, whose outer 8 px resize the
+/// event and whose middle moves it.
+/// @ai Test-only fixture isolating the press point a drag reports.
+class _ShortCardBoard extends StatelessWidget {
+  const _ShortCardBoard({required this.onDragStart});
+
+  final ValueChanged<DragStartDetails> onDragStart;
+
+  @override
+  Widget build(final BuildContext context) => MaterialApp(
+    home: Scaffold(
+      body: Stack(
+        children: <Widget>[
+          Positioned(
+            left: 40,
+            top: 40,
+            child: Semantics(
+              identifier: 'short_card',
+              label: 'Card',
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onPanStart: onDragStart,
+                onPanUpdate: (final _) {},
+                onPanEnd: (final _) {},
+                onLongPressStart: (final _) {},
+                child: const SizedBox(width: 200, height: 29),
+              ),
+            ),
+          ),
+          Positioned(
+            left: 500,
+            top: 300,
+            child: Semantics(
+              identifier: 'drop_slot',
+              label: 'Slot',
+              child: const SizedBox(width: 200, height: 29),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
 void main() {
+  testWidgets('a drag reports the press point, not the pointer it ran on', (
+    final tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    try {
+      DragStartDetails? start;
+      await tester.pumpWidget(
+        _ShortCardBoard(onDragStart: (final details) => start = details),
+      );
+      await tester.pumpAndSettle();
+
+      final snapshot = await _snapshotAfterPump(tester);
+      final result = await _settleAfterPumps(
+        tester,
+        GestureInteractionService.drag(
+          fromRef: _refFor(snapshot, 'short_card'),
+          toRef: _refFor(snapshot, 'drop_slot'),
+          kind: PointerDeviceKind.mouse,
+        ),
+        pumps: 90,
+      );
+
+      expect(result['success'], isTrue);
+      final press = start!.localPosition.dy;
+      expect(
+        press,
+        inExclusiveRange(8, 21),
+        reason: 'the drag began in the resize edge the pointer never pressed',
+      );
+    } finally {
+      semantics.dispose();
+    }
+  });
+
   testWidgets('a gesture refuses a ref whose node left the tree', (
     final tester,
   ) async {
