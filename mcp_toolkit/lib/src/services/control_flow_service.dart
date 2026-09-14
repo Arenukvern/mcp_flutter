@@ -28,6 +28,68 @@ class ControlFlowService {
     'ArrowRight': LogicalKeyboardKey.arrowRight,
   };
 
+  /// The physical key each modifier is sent as.
+  ///
+  /// Deriving a physical key from a logical one (`PhysicalKeyboardKey(k.keyId)`)
+  /// yields a code no keyboard reports, so a synthesized release cannot cancel
+  /// a press the platform made — the two are different keys to
+  /// [HardwareKeyboard]. Modifiers travel by their real usage code instead,
+  /// because they are the keys whose stuck state breaks later shortcuts.
+  static final Map<LogicalKeyboardKey, PhysicalKeyboardKey> _modifierPhysical =
+      <LogicalKeyboardKey, PhysicalKeyboardKey>{
+        LogicalKeyboardKey.controlLeft: PhysicalKeyboardKey.controlLeft,
+        LogicalKeyboardKey.controlRight: PhysicalKeyboardKey.controlRight,
+        LogicalKeyboardKey.shiftLeft: PhysicalKeyboardKey.shiftLeft,
+        LogicalKeyboardKey.shiftRight: PhysicalKeyboardKey.shiftRight,
+        LogicalKeyboardKey.altLeft: PhysicalKeyboardKey.altLeft,
+        LogicalKeyboardKey.altRight: PhysicalKeyboardKey.altRight,
+        LogicalKeyboardKey.metaLeft: PhysicalKeyboardKey.metaLeft,
+        LogicalKeyboardKey.metaRight: PhysicalKeyboardKey.metaRight,
+      };
+
+  static PhysicalKeyboardKey _physicalFor(final LogicalKeyboardKey k) =>
+      _modifierPhysical[k] ?? PhysicalKeyboardKey(k.keyId);
+
+  /// Releases every modifier the keyboard reports as held except [keep], and
+  /// names what it released.
+  ///
+  /// A modifier outlives its release when the key-up never reaches the app —
+  /// a Cmd let go while the window was in the background, a keyboard state
+  /// sync that restores what the engine still believes is pressed. Nothing
+  /// complains: [SingleActivator] matches the exact modifier set, so the app
+  /// simply stops matching unmodified shortcuts, which reads as a feature that
+  /// quietly does nothing.
+  static List<String> _releaseHeldModifiers({
+    required final Set<LogicalKeyboardKey> keep,
+    required final Duration stamp,
+  }) {
+    final keyboard = HardwareKeyboard.instance;
+    final released = <String>[];
+    for (final MapEntry(key: logical, value: physical)
+        in _modifierPhysical.entries) {
+      if (keep.contains(logical)) continue;
+      if (!keyboard.logicalKeysPressed.contains(logical)) continue;
+      // The press may have come from the platform (real usage code) or from
+      // an earlier synthesized keystroke (usage code derived from the logical
+      // key); release whichever of the two is down.
+      for (final candidate in <PhysicalKeyboardKey>{
+        physical,
+        PhysicalKeyboardKey(logical.keyId),
+      }) {
+        if (!keyboard.physicalKeysPressed.contains(candidate)) continue;
+        keyboard.handleKeyEvent(
+          KeyUpEvent(
+            physicalKey: candidate,
+            logicalKey: logical,
+            timeStamp: stamp,
+          ),
+        );
+      }
+      released.add(logical.debugName ?? logical.keyLabel);
+    }
+    return released;
+  }
+
   static LogicalKeyboardKey? _resolveKey(final String name) {
     if (name.isEmpty) return null;
     final named = _namedKeys[name];
@@ -126,7 +188,7 @@ class ControlFlowService {
       required final bool isDown,
       required final LogicalKeyboardKey k,
     }) {
-      final physical = PhysicalKeyboardKey(k.keyId);
+      final physical = _physicalFor(k);
       return isDown
           ? KeyDownEvent(physicalKey: physical, logicalKey: k, timeStamp: stamp)
           : KeyUpEvent(physicalKey: physical, logicalKey: k, timeStamp: stamp);
@@ -151,6 +213,15 @@ class ControlFlowService {
       return byKeyboard || byFocusChain;
     }
 
+    // A modifier the keyboard already reports as held makes this keystroke a
+    // different one than the caller asked for: SingleActivator matches the
+    // exact modifier set, so a stray Meta turns Escape into Meta+Escape and
+    // nothing claims it. Release what was not asked for before pressing.
+    final cleared = _releaseHeldModifiers(
+      keep: modifiers.toSet(),
+      stamp: stamp,
+    );
+
     // Press modifiers down in order, then main key down+up, then release
     // modifiers in reverse — mirrors a real keystroke sequence.
     for (final mod in modifiers) {
@@ -161,6 +232,14 @@ class ControlFlowService {
     for (final mod in modifiers.reversed) {
       send(isDown: false, k: mod);
     }
+
+    // What the app did in response can put a modifier back — a keyboard state
+    // sync during a route change restores whatever the engine still believes
+    // is held. Leave no modifier down behind this call, whoever pressed it.
+    final stuck = _releaseHeldModifiers(
+      keep: const <LogicalKeyboardKey>{},
+      stamp: stamp,
+    );
 
     return <String, Object?>{
       'success': true,
@@ -176,6 +255,8 @@ class ControlFlowService {
             'hardware keyboard handlers and the focus chain — and neither '
             'claimed it. Text input is one such case: desktop typing goes '
             'through the TextInput channel, so use enter_text for fields.',
+      if (cleared.isNotEmpty) 'clearedStaleModifiers': cleared,
+      if (stuck.isNotEmpty) 'releasedStuckModifiers': stuck,
     };
   }
 

@@ -83,4 +83,34 @@ void main() {
       expect(recovery.containsKey('fix_command'), isFalse);
     });
   });
+
+  group('routeSemanticSnapshotResponse', () {
+    test('a captured snapshot has no success key and still routes to ok', () {
+      final result = routeSemanticSnapshotResponse(<String, Object?>{
+        'snapshot_id': 7,
+        'nodes': <Object?>[
+          <String, Object?>{'ref': 's_0', 'identifier': 'nav.tasks'},
+        ],
+      });
+
+      expect(result.ok, isTrue);
+      expect((result.data! as Map<String, Object?>)['snapshot_id'], 7);
+    });
+
+    test('an unresolvable subtreeOf is a failure, not an empty snapshot', () {
+      // No snapshot was taken, so the refs the caller already holds stay
+      // current — reporting success would read as a screen that went empty.
+      final result = routeSemanticSnapshotResponse(<String, Object?>{
+        'success': false,
+        'error': 'subtree_root_not_found',
+        'subtreeOf': 'panel.missing',
+        'hint': 'Take a full snapshot and read the identifier off it.',
+      });
+
+      expect(result.ok, isFalse);
+      expect(result.error!.code, CoreErrorCode.semanticSnapshotFailed);
+      expect(result.error!.message, contains('subtree_root_not_found'));
+      expect((result.error!.details! as Map)['subtreeOf'], 'panel.missing');
+    });
+  });
 }

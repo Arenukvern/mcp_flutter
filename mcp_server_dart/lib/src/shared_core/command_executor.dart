@@ -331,7 +331,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     GetViewDetailsCommand() => _getViewDetails(),
     InspectWidgetAtPointCommand() => _inspectWidgetAtPoint(command),
     CaptureUiSnapshotCommand() => _captureUiSnapshot(command),
-    SemanticSnapshotCommand() => _semanticSnapshot(),
+    SemanticSnapshotCommand() => _semanticSnapshot(command),
     TapWidgetCommand() => _tapWidget(command),
     EnterTextCommand() => _enterText(command),
     RevealSearchCommand() => _revealSearch(command),
@@ -930,15 +930,25 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
   }
 
-  Future<CoreResult> _semanticSnapshot() async {
+  Future<CoreResult> _semanticSnapshot(
+    final SemanticSnapshotCommand command,
+  ) async {
     final ensureFailure = await _ensureVmConnected();
     if (ensureFailure != null) return ensureFailure;
 
     try {
       final result = await connectionContext.callFlutterExtension(
         mcpToolkitExtKeys.semanticSnapshot,
+        args: {
+          if (command.identifierPrefix != null)
+            'identifierPrefix': command.identifierPrefix,
+          if (command.subtreeOf != null) 'subtreeOf': command.subtreeOf,
+          // Extension parameters travel as strings; the app decodes a
+          // list from JSON, not from List.toString().
+          if (command.fields != null) 'fields': jsonEncode(command.fields),
+        },
       );
-      return CoreResult.success(data: _map(result.json));
+      return routeSemanticSnapshotResponse(_map(result.json));
     } on Exception catch (e) {
       return CoreResult.failure(
         code: CoreErrorCode.semanticSnapshotFailed,
@@ -2023,6 +2033,22 @@ CoreResult routeInteractionResponse(
   return CoreResult.failure(
     code: CoreErrorCode.interactionFailed,
     message: '$tool failed: $reason',
+    details: data,
+  );
+}
+
+/// Route a `semantic_snapshot` payload to a result that matches its verdict.
+///
+/// A captured snapshot carries no `success` key — only a refusal does, so an
+/// absent key is a success. A filter that names an unresolvable `subtreeOf`
+/// takes no snapshot at all, and reaching the caller as a successful command
+/// would let it read stale refs as if they had just been issued.
+CoreResult routeSemanticSnapshotResponse(final Map<String, Object?> data) {
+  if (data['success'] != false) return CoreResult.success(data: data);
+  return CoreResult.failure(
+    code: CoreErrorCode.semanticSnapshotFailed,
+    message:
+        'semantic_snapshot refused: ${data['error'] ?? 'no reason given'}',
     details: data,
   );
 }

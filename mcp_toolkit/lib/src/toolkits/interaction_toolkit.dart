@@ -92,10 +92,14 @@ extension type OnSemanticSnapshotEntry._(AgentCallEntry entry)
   factory OnSemanticSnapshotEntry() {
     final entry = mcpToolkitTool(
       handler: (final parameters) async {
-        final snapshot = await SemanticSnapshotService.buildSemanticSnapshot();
+        final filter = SemanticSnapshotFilter.fromJson(parameters);
+        final snapshot = await SemanticSnapshotService.buildSemanticSnapshot(
+          filter: filter.isEmpty ? null : filter,
+        );
         return MCPCallResult(
-          message:
-              'Semantic snapshot captured. Use refs to interact with widgets.',
+          message: snapshot['success'] == false
+              ? 'Semantic snapshot refused: ${snapshot['error']}'
+              : 'Semantic snapshot captured. Use refs to interact with widgets.',
           parameters: snapshot,
         );
       },
@@ -104,6 +108,8 @@ extension type OnSemanticSnapshotEntry._(AgentCallEntry entry)
         description:
             'Get compact semantic tree of interactive widgets with refs '
             'for interaction tools (tap_widget, enter_text, etc.). '
+            'Narrow it with identifierPrefix, subtreeOf (a ref or an '
+            'identifier) and fields; refs are those of the full tree. '
             'A control that appears only under the pointer is absent here: '
             'on desktop and web, hover the element that should own it and '
             'snapshot again.',

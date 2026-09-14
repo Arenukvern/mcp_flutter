@@ -87,6 +87,37 @@ void main() {
     );
 
     test(
+      'semantic_snapshot handler carries the filters into the command',
+      () async {
+        final runner = FakeCommandRunner()
+          ..nextExecuteResult = CoreResult.success(data: {});
+        final ctx = _registeredCtx(runner: runner);
+        final reg = ctx.registrationFor('semantic_snapshot')!;
+        await reg.handler(const <String, Object?>{
+          'identifierPrefix': 'nav.',
+          'subtreeOf': 'panel',
+          'fields': <Object?>['identifier', 'selected'],
+        });
+        final cmd = runner.executedCommands.single as SemanticSnapshotCommand;
+        expect(cmd.identifierPrefix, 'nav.');
+        expect(cmd.subtreeOf, 'panel');
+        expect(cmd.fields, <String>['identifier', 'selected']);
+      },
+    );
+
+    test('semantic_snapshot handler leaves absent filters null', () async {
+      final runner = FakeCommandRunner()
+        ..nextExecuteResult = CoreResult.success(data: {});
+      final ctx = _registeredCtx(runner: runner);
+      final reg = ctx.registrationFor('semantic_snapshot')!;
+      await reg.handler(const <String, Object?>{'identifierPrefix': '  '});
+      final cmd = runner.executedCommands.single as SemanticSnapshotCommand;
+      expect(cmd.identifierPrefix, isNull);
+      expect(cmd.subtreeOf, isNull);
+      expect(cmd.fields, isNull);
+    });
+
+    test(
       'semantic_snapshot handler calls applyConnectionOverride before execute',
       () async {
         final runner = FakeCommandRunner()

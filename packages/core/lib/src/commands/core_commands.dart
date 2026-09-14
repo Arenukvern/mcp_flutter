@@ -295,7 +295,15 @@ final class CaptureUiSnapshotCommand extends CoreCommand {
 }
 
 final class SemanticSnapshotCommand extends CoreCommand {
-  const SemanticSnapshotCommand();
+  const SemanticSnapshotCommand({
+    this.identifierPrefix,
+    this.subtreeOf,
+    this.fields,
+  });
+
+  final String? identifierPrefix;
+  final String? subtreeOf;
+  final List<String>? fields;
 
   @override
   String get name => 'semantic_snapshot';

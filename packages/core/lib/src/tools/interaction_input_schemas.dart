@@ -44,11 +44,64 @@ Map<String, Object?> tapWidgetInputSchema() => <String, Object?>{
   },
 };
 
+/// Every key a `semantic_snapshot` node can carry, in the order the node
+/// publishes them. `fields` selects among these; `ref` is always returned.
+const List<String> semanticSnapshotNodeFields = <String>[
+  'ref',
+  'id',
+  'type',
+  'identifier',
+  'label',
+  'value',
+  'hint',
+  'enabled',
+  'focused',
+  'checked',
+  'toggled',
+  'selected',
+  'bounds',
+  'actions',
+  'children',
+  'visibleInViewport',
+  'centerInViewport',
+  'center',
+];
+
 /// Shared JSON Schema for [semantic_snapshot] / `fmt_semantic_snapshot`.
 Map<String, Object?> semanticSnapshotInputSchema() => <String, Object?>{
   'type': 'object',
   'additionalProperties': false,
-  'properties': <String, Object?>{'connection': connectionOverrideJsonSchema()},
+  'properties': <String, Object?>{
+    'identifierPrefix': <String, Object?>{
+      'type': 'string',
+      'description':
+          'Return only nodes whose Semantics identifier starts with this '
+          'prefix ("nav." for one navigation rail). Refs are those of the '
+          'full tree, so a ref from a filtered snapshot works everywhere.',
+    },
+    'subtreeOf': <String, Object?>{
+      'type': 'string',
+      'description':
+          'Return only this node and its descendants. A ref from the latest '
+          'snapshot ("s_12") or a Semantics identifier; a ref is tried '
+          'first. Fails with subtree_root_not_found without spending a '
+          'snapshot when neither resolves.',
+    },
+    'fields': <String, Object?>{
+      'type': 'array',
+      'items': <String, Object?>{
+        'type': 'string',
+        'enum': semanticSnapshotNodeFields,
+      },
+      'minItems': 1,
+      'uniqueItems': true,
+      'description':
+          'Node fields to return; "ref" is always included. Omit for every '
+          'field. A name outside the list is refused before the call reaches '
+          'the app.',
+    },
+    'connection': connectionOverrideJsonSchema(),
+  },
 };
 
 /// Shared JSON Schema for [wait_for] / `fmt_wait_for`.
