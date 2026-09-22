@@ -44,9 +44,8 @@ publish-pub-dry-run:
 publish-pub:
 	cd $(CURDIR) && bash tool/release/publish_pub_packages.sh --execute --skip-existing
 
-# Run the flutter_test_app showcase on macOS and print the canonical VM URI
-# once the app is ready. Blocks the terminal so the agent can copy the URI
-# into subsequent CLI calls (`--args '{"connection":{"targetId":"<uri>"}}'`).
+# Run the flutter_test_app showcase on macOS and print the VM URI.
+# Also writes .showcase/intentcall_examples.sh (discover, tool call, MCP serve).
 .PHONY: web-showcase webmcp-chrome-args
 web-showcase:
 	@bash $(CURDIR)/scripts/run_web_showcase.sh
