@@ -68,7 +68,7 @@ parameter shapes lives in the task skills.
   `connect_debug_app`. → `flutter-mcp-toolkit-inspect`.
 - **Interaction (mutating):** `tap_widget`, `long_press`, `enter_text`,
   `reveal_search`, `fill_form`, `scroll`, `swipe`, `drag`, `hover`,
-  `press_key`, `wait_for`, `navigate`, `handle_dialog`,
+  `focus_widget`, `press_key`, `wait_for`, `navigate`, `handle_dialog`,
   `hot_reload_flutter`, `hot_restart_flutter`, `hot_reload_and_capture`. →
   `flutter-mcp-toolkit-control`.
 - **Debug:** `get_recent_logs`, `evaluate_dart_expression`. →

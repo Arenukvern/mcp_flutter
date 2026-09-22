@@ -10,7 +10,10 @@ class PortScanner {
 
   final BaseMCPToolkitServer server;
 
-  CorePortScanner get _core => CorePortScanner(logger: server.log);
+  CorePortScanner get _core => CorePortScanner(
+    logger: server.log,
+    scanPorts: server.configuration.scanPorts,
+  );
 
   Future<List<int>> scanForFlutterPorts() => _core.scanForFlutterPorts();
 

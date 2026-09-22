@@ -53,14 +53,14 @@
           return validationError(path + ' must be an object.');
         }
         return null;
-      case 'array':
-        if (!Array.isArray(value)) return validationError(path + ' must be an array.');
-        var arrayPath = path;
-        if (arrayPath.length >= 2 && arrayPath.charAt(0) === '"' &&
-            arrayPath.charAt(arrayPath.length - 1) === '"') {
-          arrayPath = arrayPath.slice(1, -1);
+      case 'list':
+        if (!Array.isArray(value)) return validationError(path + ' must be an list.');
+        var listPath = path;
+        if (listPath.length >= 2 && listPath.charAt(0) === '"' &&
+            listPath.charAt(listPath.length - 1) === '"') {
+          listPath = listPath.slice(1, -1);
         }
-        return validateArrayItems(arrayPath, schema, value);
+        return validateArrayItems(listPath, schema, value);
       default:
         return null;
     }
@@ -158,9 +158,23 @@
     return null;
   }
 
+  function toolFailure(code, message, details) {
+    var error = new Error(message || code || 'tool_failed');
+    error.code = code || 'tool_failed';
+    if (details) error.details = details;
+    return error;
+  }
+
+  function settle(result) {
+    if (result && result.ok === false) {
+      return Promise.reject(toolFailure(result.code, result.message, result.details));
+    }
+    return Promise.resolve(result);
+  }
+
   function fetchInvoke(name, args) {
     if (!fallbackEnabled) {
-      return Promise.resolve({
+      return settle({
         ok: false,
         code: 'runtime_unavailable',
         message: 'No Dart WebMCP runtime registered for ' + name + '.',
@@ -172,28 +186,50 @@
       body: JSON.stringify(args || {}),
     }).then(function (response) {
       return response.json();
-    });
+    }).then(settle);
   }
+
+  var controllers = global.__intentcallWebMcpControllers ||
+      (global.__intentcallWebMcpControllers = {});
+  global.__intentcallWebMcpAbort = function (name) {
+    var controller = controllers[name];
+    if (controller && typeof controller.abort === 'function') controller.abort();
+    delete controllers[name];
+  };
 
   tools.forEach(function (tool) {
     try {
-      modelContext.registerTool({
+      var previous = controllers[tool.name];
+      if (previous && typeof previous.abort === 'function') previous.abort();
+      var controller = typeof AbortController === 'function' ? new AbortController() : null;
+      if (controller) controllers[tool.name] = controller;
+      var definition = {
         name: tool.name,
         description: tool.description,
         inputSchema: tool.inputSchema,
-        execute: function (args) {
+        execute: function (args, options) {
+          if (options && options.signal && options.signal.aborted) {
+            return Promise.reject(toolFailure('aborted', 'WebMCP tool call aborted.'));
+          }
           var err = validateInput(tool.inputSchema, args);
-          if (err) return Promise.resolve(err);
+          if (err) return settle(err);
           var dart = global.__intentcallWebMcpDartExecute;
           if (typeof dart === 'function') {
             return Promise.resolve(dart(tool.name, args || {})).then(function (result) {
-              if (result != null) return result;
+              if (result != null) return settle(result);
               return fetchInvoke(tool.name, args);
             });
           }
           return fetchInvoke(tool.name, args);
         },
-      });
+      };
+      var registered = modelContext.registerTool(
+        definition,
+        controller ? { signal: controller.signal } : undefined,
+      );
+      if (registered && typeof registered.then === 'function') {
+        registered.catch(function () {});
+      }
     } catch (e) {
       // Hot restart / Dart bootstrap may have registered the same name.
     }

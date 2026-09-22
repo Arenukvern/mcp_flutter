@@ -42,4 +42,21 @@ void main() {
       expect(cmd.snapshotId, 7);
     });
   });
+
+  group('FocusWidgetCommand', () {
+    test('round-trips ref + snapshotId', () {
+      final cmd =
+          catalog.buildCommand('focus_widget', {'ref': 's_3', 'snapshotId': 7})
+              as FocusWidgetCommand;
+      expect(cmd.ref, 's_3');
+      expect(cmd.snapshotId, 7);
+    });
+
+    test('omits snapshotId when absent', () {
+      final cmd =
+          catalog.buildCommand('focus_widget', {'ref': 's_3'})
+              as FocusWidgetCommand;
+      expect(cmd.snapshotId, isNull);
+    });
+  });
 }

@@ -532,6 +532,41 @@ void main() {
           'expression': '1 + 1',
           'connection': connection,
         });
+        // The VM abbreviates a long String in the InstanceRef preview; the
+        // tool must read it back in full through getObject.
+        final longString = _decodeToolJsonPayload(
+          await dispatch('fmt_evaluate_dart_expression', {
+            'expression': '"x" * 1000',
+            'connection': connection,
+          }),
+        );
+        expect(longString['truncated'], isFalse);
+        expect(longString['length'], 1000);
+        expect((longString['result'] as String).length, 1000);
+        // Beyond the tool's own cap the window is reported, never hidden.
+        final cappedString = _decodeToolJsonPayload(
+          await dispatch('fmt_evaluate_dart_expression', {
+            'expression': '"y" * 40000',
+            'connection': connection,
+          }),
+        );
+        expect(cappedString['truncated'], isTrue);
+        expect(cappedString['length'], 40000);
+        expect(cappedString['returnedLength'], 32 * 1024);
+        expect((cappedString['result'] as String).length, 32 * 1024);
+        expect(cappedString['hint'], contains('.substring(32768)'));
+        // The cap counts UTF-16 code units, so a non-ASCII String windows at
+        // the same length as an ASCII one.
+        final cyrillicString = _decodeToolJsonPayload(
+          await dispatch('fmt_evaluate_dart_expression', {
+            'expression': '"ы" * 40000',
+            'connection': connection,
+          }),
+        );
+        expect(cyrillicString['truncated'], isTrue);
+        expect(cyrillicString['length'], 40000);
+        expect(cyrillicString['returnedLength'], 32768);
+        expect((cyrillicString['result'] as String).length, 32768);
 
         // 8. fused edit/preview — runs hot reload + capture.
         await dispatch('fmt_hot_reload_and_capture', {
@@ -565,6 +600,7 @@ const _expectedCoreTools = <String>{
   'fmt_get_extension_rpcs',
   'fmt_get_recent_logs',
   'fmt_get_screenshots',
+  'fmt_focus_widget',
   'fmt_focus_window',
   'fmt_get_view_details',
   'fmt_get_vm',

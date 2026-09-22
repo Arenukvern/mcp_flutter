@@ -49,7 +49,7 @@
     "noindex": false
   },
   "variables": {
-    "version": "4.0.0-dev.5",
+    "version": "5.1.0",
     "repo": "https://github.com/Arenukvern/mcp_flutter",
     "docs": "https://docs.page/arenukvern/mcp_flutter"
   },
@@ -183,6 +183,14 @@
         {
           "title": "0005 — P2 fill_form, hover, select_option drop",
           "href": "/decisions/0005_p2_fill_form_hover_select_option"
+        },
+        {
+          "title": "0013 — MCP Registry publish pipeline hardening",
+          "href": "/decisions/0013_mcp_registry_publish_hardening"
+        },
+        {
+          "title": "0014 — External dev sessions & runner delegation",
+          "href": "/decisions/0014_external_dev_sessions_runner_delegation"
         }
       ]
     },
@@ -204,6 +212,10 @@
         {
           "title": "Docs Maintenance",
           "href": "/contributing/docs_maintenance"
+        },
+        {
+          "title": "MCP Registry Publish Runbook",
+          "href": "/contributing/mcp_registry_publish_runbook"
         }
       ]
     }

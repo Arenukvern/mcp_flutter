@@ -164,5 +164,20 @@ void main() {
         'ref',
       ]);
     });
+
+    test('hover missing ref uses the common missing-parameter code', () async {
+      final entry = getInteractionToolkitEntries().byName('hover');
+      final registration = entry.toRegistration();
+
+      final result = await registration.execute(
+        AgentInvocation(
+          descriptor: registration.descriptor,
+          arguments: const <String, Object?>{},
+        ),
+      );
+
+      expect(result.data['error'], 'missing_parameters');
+      expect(result.data['missing'], ['ref']);
+    });
   });
 }

@@ -66,9 +66,9 @@ echo "mcp_flutter test app: ${app_dir}"
 if AGENTKIT_ROOT="$(resolve_agentkit_root)"; then
   echo "intentcall CLI: ${AGENTKIT_ROOT}/packages/intentcall_cli"
   cd "${AGENTKIT_ROOT}"
-  dart run intentcall_cli:intentcall platform sync \
+  (cd packages/intentcall_cli && dart bin/intentcall.dart platform sync \
     --project-dir "${app_dir}" \
-    --platform ios,macos
+    --platform ios,macos)
 else
   echo "WARN: intentcall sibling not found — using committed generated Swift only" >&2
   echo "      set INTENTCALL_ROOT or clone ../intentcall to sync before compile" >&2

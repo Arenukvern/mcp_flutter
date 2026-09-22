@@ -44,11 +44,64 @@ Map<String, Object?> tapWidgetInputSchema() => <String, Object?>{
   },
 };
 
+/// Every key a `semantic_snapshot` node can carry, in the order the node
+/// publishes them. `fields` selects among these; `ref` is always returned.
+const List<String> semanticSnapshotNodeFields = <String>[
+  'ref',
+  'id',
+  'type',
+  'identifier',
+  'label',
+  'value',
+  'hint',
+  'enabled',
+  'focused',
+  'checked',
+  'toggled',
+  'selected',
+  'bounds',
+  'actions',
+  'children',
+  'visibleInViewport',
+  'centerInViewport',
+  'center',
+];
+
 /// Shared JSON Schema for [semantic_snapshot] / `fmt_semantic_snapshot`.
 Map<String, Object?> semanticSnapshotInputSchema() => <String, Object?>{
   'type': 'object',
   'additionalProperties': false,
-  'properties': <String, Object?>{'connection': connectionOverrideJsonSchema()},
+  'properties': <String, Object?>{
+    'identifierPrefix': <String, Object?>{
+      'type': 'string',
+      'description':
+          'Return only nodes whose Semantics identifier starts with this '
+          'prefix ("nav." for one navigation rail). Refs are those of the '
+          'full tree, so a ref from a filtered snapshot works everywhere.',
+    },
+    'subtreeOf': <String, Object?>{
+      'type': 'string',
+      'description':
+          'Return only this node and its descendants. A ref from the latest '
+          'snapshot ("s_12") or a Semantics identifier; a ref is tried '
+          'first. Fails with subtree_root_not_found without spending a '
+          'snapshot when neither resolves.',
+    },
+    'fields': <String, Object?>{
+      'type': 'array',
+      'items': <String, Object?>{
+        'type': 'string',
+        'enum': semanticSnapshotNodeFields,
+      },
+      'minItems': 1,
+      'uniqueItems': true,
+      'description':
+          'Node fields to return; "ref" is always included. Omit for every '
+          'field. A name outside the list is refused before the call reaches '
+          'the app.',
+    },
+    'connection': connectionOverrideJsonSchema(),
+  },
 };
 
 /// Shared JSON Schema for [wait_for] / `fmt_wait_for`.
@@ -65,7 +118,13 @@ Map<String, Object?> waitForInputSchema() => <String, Object?>{
           '{kind:"time", ms:int} | '
           '{kind:"text", text:String} | '
           '{kind:"noText", text:String} | '
-          '{kind:"stable", stableWindowMs:int}, '
+          '{kind:"node", identifier:String, selected/enabled/focused/checked/'
+          'toggled:bool, absent:bool} | '
+          '{kind:"stable", stableWindowMs:int} — sampled once per frame and '
+          'matched after the tree remains unchanged for the requested wall '
+          'time; stableWindowMs must be less than effective timeoutMs, or the '
+          'call fails with invalid_predicate before sampling; a match reports '
+          'stableFor.sampledFrames and stableFor.elapsedMs, '
           '{kind:"noError"}',
     },
     'timeoutMs': <String, Object?>{
@@ -158,7 +217,9 @@ Map<String, Object?> scrollInputSchema() => <String, Object?>{
     },
     'ref': <String, Object?>{
       'type': 'string',
-      'description': 'Optional ref to scroll from.',
+      'description':
+          'Optional: the list to scroll, or any node inside it. Without it, '
+          'the list under the screen centre scrolls.',
     },
     'distance': <String, Object?>{
       'type': 'number',
@@ -237,6 +298,16 @@ Map<String, Object?> dragInputSchema() => <String, Object?>{
       'type': 'string',
       'description': 'Target widget ref.',
     },
+    'kind': <String, Object?>{
+      'type': 'string',
+      'enum': <String>['mouse', 'touch'],
+      'description':
+          'Pointer device to synthesize. Defaults to mouse on desktop '
+          'targets and touch elsewhere. Mouse keeps scrollables out of the '
+          'gesture arena, so the drag lands on the target\'s drag/pan '
+          'recognizer (drag-and-drop); touch keeps scrollables competing, '
+          'so a drag over scrollable content scrolls it instead.',
+    },
     'snapshotId': <String, Object?>{
       'type': 'integer',
       'description':
@@ -256,6 +327,27 @@ Map<String, Object?> hoverInputSchema() => <String, Object?>{
   'properties': <String, Object?>{
     'ref': <String, Object?>{'type': 'string'},
     'snapshotId': <String, Object?>{'type': 'integer'},
+    'connection': connectionOverrideJsonSchema(),
+  },
+};
+
+/// Shared JSON Schema for [focus_widget] / `fmt_focus_widget`.
+Map<String, Object?> focusWidgetInputSchema() => <String, Object?>{
+  'type': 'object',
+  'additionalProperties': false,
+  'required': <String>['ref'],
+  'properties': <String, Object?>{
+    'ref': <String, Object?>{
+      'type': 'string',
+      'description': 'Widget ref from semantic_snapshot (e.g. "s_0").',
+    },
+    'snapshotId': <String, Object?>{
+      'type': 'integer',
+      'description':
+          'Optional: snapshotId input. Use the snapshot_id returned by most '
+          'recent semantic_snapshot. If provided and stale, the call fails '
+          'with stale_snapshot.',
+    },
     'connection': connectionOverrideJsonSchema(),
   },
 };
@@ -570,6 +662,7 @@ const coreInteractionCatalogCommandNames = <String>[
   'swipe',
   'drag',
   'hover',
+  'focus_widget',
   'press_key',
   'get_recent_logs',
   'handle_dialog',
@@ -581,7 +674,7 @@ const coreInteractionCatalogCommandNames = <String>[
   'hot_reload_and_capture',
 ];
 
-/// Host inspection tools beyond the core 19 (Tier A `exec` / `fmt_*`).
+/// Host inspection tools beyond the core 20 (Tier A `exec` / `fmt_*`).
 const inspectionTierAExecCommandNames = <String>[
   'get_view_details',
   'inspect_widget_at_point',
@@ -595,13 +688,13 @@ const captureTierAExecCommandNames = <String>[
   'capture_ui_snapshot',
 ];
 
-/// Tier A exec catalog: core 19 + 4 inspection (23 tools).
+/// Tier A exec catalog: core 20 + 4 inspection (24 tools).
 const tierAExecCatalogCommandNames = <String>[
   ...coreInteractionCatalogCommandNames,
   ...inspectionTierAExecCommandNames,
 ];
 
-/// Every command name served by [interactionCatalogInputSchemaFor] (23 + 2 capture).
+/// Every command name served by [interactionCatalogInputSchemaFor] (24 + 2 capture).
 const interactionCatalogInputSchemaForCommandNames = <String>[
   ...tierAExecCatalogCommandNames,
   ...captureTierAExecCommandNames,
@@ -626,6 +719,7 @@ Map<String, Object?>? interactionCatalogInputSchemaFor(
   'drag' => dragInputSchema(),
   'fill_form' => fillFormInputSchema(),
   'hover' => hoverInputSchema(),
+  'focus_widget' => focusWidgetInputSchema(),
   'press_key' => pressKeyInputSchema(),
   'get_recent_logs' => getRecentLogsInputSchema(),
   'handle_dialog' => handleDialogInputSchema(),

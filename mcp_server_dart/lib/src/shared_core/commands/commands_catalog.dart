@@ -665,13 +665,39 @@ final class CommandCatalog {
         description:
             'Get compact semantic tree of interactive widgets with stable refs '
             'usable by interaction tools (tap_widget, enter_text, etc.). '
-            'Call this before any interaction tool to get fresh refs.',
+            'Call this before any interaction tool to get fresh refs. '
+            'A control that appears only under the pointer is absent here: '
+            'on desktop and web, hover the element that should own it and '
+            'snapshot again.',
         inputSchema: interactionCatalogInputSchemaFor('semantic_snapshot')!,
         outputSchema: _objectSchema(additionalProperties: true),
         requiresVm: true,
         supportsWatch: true,
         mcpExposed: true,
-        build: (final args) => const SemanticSnapshotCommand(),
+        build: (final args) {
+          // Schema validation has already rejected anything but an array;
+          // the enum inside it is not enforced there, so name a bad field
+          // here rather than after a VM round trip.
+          final rawFields = _findArg(args, 'fields');
+          final fields = rawFields is List
+              ? rawFields.map((final f) => f.toString()).toList()
+              : null;
+          final unknown = fields
+              ?.where((final f) => !semanticSnapshotNodeFields.contains(f))
+              .toList();
+          if (unknown != null && unknown.isNotEmpty) {
+            throw ArgumentError(
+              'Invalid value for "fields": ${unknown.join(', ')} '
+              '(accepted: ${semanticSnapshotNodeFields.join(', ')}; '
+              r'schema path: $.inputSchema.properties.fields.items)',
+            );
+          }
+          return SemanticSnapshotCommand(
+            identifierPrefix: _nullableStringArg(args, 'identifierPrefix'),
+            subtreeOf: _nullableStringArg(args, 'subtreeOf'),
+            fields: fields,
+          );
+        },
       ),
       CommandSpec(
         name: 'tap_widget',
@@ -801,6 +827,7 @@ final class CommandCatalog {
           fromRef: _stringArg(args, 'fromRef', fallback: ''),
           toRef: _stringArg(args, 'toRef', fallback: ''),
           snapshotId: _nullableIntArg(args, 'snapshotId', alias: 'snapshot-id'),
+          kind: parseDragPointerKind(_nullableStringArg(args, 'kind')),
         ),
       ),
       CommandSpec(
@@ -862,7 +889,11 @@ final class CommandCatalog {
         description:
             'Block until a UI predicate matches or a timeout elapses, then '
             'return a fresh semantic snapshot. Predicate kinds: text, noText, '
-            'time, stable, noError. Replaces sleep+snapshot polling loops.',
+            'node, time, stable, noError. text matches any string in the tree, '
+            'including the label of a tab that is not open — wait on state '
+            'with node: {"kind":"node","identifier":"…","selected":true}, or '
+            'add "absent":true to wait for it to go away. '
+            'Replaces sleep+snapshot polling loops.',
         inputSchema: interactionCatalogInputSchemaFor('wait_for')!,
         outputSchema: _objectSchema(additionalProperties: true),
         requiresVm: true,
@@ -968,10 +999,11 @@ final class CommandCatalog {
         name: 'hover',
         description:
             'Synthesize a mouse hover at the centre of a widget identified '
-            'by a semantic snapshot ref. Drives MouseRegion.onEnter/onExit '
-            'and listeners on PointerHoverEvent. Requires a desktop or web '
-            'host (mobile platforms have no hover concept). '
-            'Call semantic_snapshot immediately before to get fresh refs. '
+            'by a semantic snapshot ref, driving MouseRegion.onEnter/onExit. '
+            'Desktop and web only. The hover stays parked, so an affordance '
+            'it reveals survives the next semantic_snapshot; act on it with '
+            'your next call — any other interaction releases the hover, and '
+            'the affordance goes with it. '
             'Pass snapshotId to detect staleness.',
         inputSchema: interactionCatalogInputSchemaFor('hover')!,
         outputSchema: _objectSchema(additionalProperties: true),
@@ -981,6 +1013,28 @@ final class CommandCatalog {
         build: (final args) {
           final snapshotIdRaw = _intArg(args, 'snapshotId', fallback: 0);
           return HoverCommand(
+            ref: _stringArg(args, 'ref', fallback: ''),
+            snapshotId: snapshotIdRaw == 0 ? null : snapshotIdRaw,
+          );
+        },
+      ),
+      CommandSpec(
+        name: 'focus_widget',
+        description:
+            'Give keyboard focus to the widget identified by a semantic snapshot '
+            'ref, so the press_key that follows reaches it. Performs the '
+            "node's semantic focus action when it exposes one, otherwise asks "
+            "the focusable widget inside the ref's bounds; the result proves "
+            'where focus landed. Leaves a parked hover in place. '
+            'Pass snapshotId to detect staleness.',
+        inputSchema: interactionCatalogInputSchemaFor('focus_widget')!,
+        outputSchema: _objectSchema(additionalProperties: true),
+        requiresVm: true,
+        supportsWatch: false,
+        mcpExposed: true,
+        build: (final args) {
+          final snapshotIdRaw = _intArg(args, 'snapshotId', fallback: 0);
+          return FocusWidgetCommand(
             ref: _stringArg(args, 'ref', fallback: ''),
             snapshotId: snapshotIdRaw == 0 ? null : snapshotIdRaw,
           );

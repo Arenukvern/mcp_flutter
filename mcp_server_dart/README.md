@@ -320,6 +320,22 @@ Both CLI and MCP server accept:
 - `--flutter-project-dir`
 - `--flutter-device` (for example `chrome`)
 - `--flutter-discovery-timeout-ms`
+- `--scan-ports` (for example `8765-8767,9100`)
+- `--prefer-target-label` (for example `staging`)
+
+The port scan recognizes `dart`/`flutter` processes. A desktop app hosts its VM
+service inside its own native process and an app started with `--no-dds` has no
+Dart process, so neither is found by name. Start such an app on a fixed VM
+service port (`flutter run -d macos --device-vmservice-port=8765`) and pass that
+port to the scanner with `--scan-ports=8765`.
+
+When several debug apps run at once, let each name itself with
+`MCPToolkitBinding.instance.setAppIdentity(label: 'my_app · staging')`:
+discovery reports the label on every target, and `--prefer-target-label` lets
+auto-attach pick one without the caller naming an endpoint. The label narrows
+the candidates only at the auto-attach step, so an active connection and a
+target connected to explicitly still win; a value that matches no running app
+is ignored, so discovery keeps behaving as it would without it.
 
 Manual fallback remains available:
 

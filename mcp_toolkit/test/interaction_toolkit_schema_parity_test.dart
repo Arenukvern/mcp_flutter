@@ -5,7 +5,7 @@ import 'package:mcp_toolkit/mcp_toolkit.dart';
 
 /// App dynamic tools vs `fmt_*` catalog parity.
 ///
-/// Fourteen tools from [getInteractionToolkitEntries] in
+/// Fifteen tools from [getInteractionToolkitEntries] in
 /// `interaction_toolkit.dart` (`registerDynamics`) are asserted here against
 /// shared maps in `interaction_input_schemas.dart` (`flutter_mcp_toolkit_core`).
 /// Host `fmt_*` registrations live in `packages/server_capability_core/lib/src/tools/*_tools.dart`.
@@ -15,7 +15,7 @@ import 'package:mcp_toolkit/mcp_toolkit.dart';
 /// - `hot_reload_flutter`, `hot_restart_flutter` — `flutter_inspector_tools.dart`
 /// - `evaluate_dart_expression`, `hot_reload_and_capture` — `interaction_tools.dart`
 ///
-/// Full schema router parity (19 core, 23 tier A exec, 25 in
+/// Full schema router parity (20 core, 24 tier A exec, 26 in
 /// `interactionCatalogInputSchemaFor`) is in
 /// `packages/server_capability_core/test/tools/interaction_input_schemas_test.dart`.
 void main() {
@@ -55,6 +55,12 @@ void main() {
       expect(schema.containsKey('required'), isFalse);
       final props = schema['properties']! as Map<String, Object?>;
       expect(props.containsKey('connection'), isTrue);
+      expect(props.containsKey('identifierPrefix'), isTrue);
+      expect(props.containsKey('subtreeOf'), isTrue);
+      final fields = props['fields']! as Map<String, Object?>;
+      final items = fields['items']! as Map<String, Object?>;
+      expect(items['enum'], semanticSnapshotNodeFields);
+      expect(semanticSnapshotNodeFields, contains('ref'));
     });
 
     test('wait_for', () {
@@ -148,6 +154,7 @@ void main() {
       ('swipe', swipeInputSchema),
       ('drag', dragInputSchema),
       ('hover', hoverInputSchema),
+      ('focus_widget', focusWidgetInputSchema),
       ('press_key', pressKeyInputSchema),
     ]) {
       test(tool.$1, () {

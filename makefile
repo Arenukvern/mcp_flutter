@@ -26,6 +26,7 @@ check-contracts:
 	bash tool/contracts/check_intentcall_hosted_consumer.sh && \
 	bash tool/contracts/check_apple_runner_compile.sh && \
 	bash tool/contracts/check_intentcall_jaspr_three_gate.sh && \
+	bash tool/contracts/check_mcp_registry.sh && \
 	steward validate skills/
 
 .PHONY: release-artifacts

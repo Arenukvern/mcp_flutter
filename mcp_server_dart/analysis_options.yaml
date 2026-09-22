@@ -10,6 +10,13 @@
 analyzer:
   exclude:
     - test/fixtures/migrate/**
+    - build/**
+    - android/**
+    - ios/**
+    - web/**
+    - windows/**
+    - macos/**
+    - linux/**
   errors:
     cascade_invocations: ignore
     lines_longer_than_80_chars: ignore

@@ -153,7 +153,8 @@ If something should appear but does not: confirm **`addEntries`** completed (**`
 
 - **Hot reload** + **`addEntries`** from widget code → duplicate registrations. Register once in **`main()` / bootstrap**.
 - **Debug mode only** — release builds do not expose VM service extensions.
-- **Naming**: flat global namespace per app — prefix tools/resources (`cart_`, `flags_`, `nav_`).
+- **Naming**: the app uses a flat global namespace. Prefix tools/resources (`cart_`, `flags_`, `nav_`). If a built-in entry already uses a name, the custom entry is skipped without warning; the built-in handles the call and the custom handler does not run.
+- **Naming the running instance** is `MCPToolkitBinding.instance.setAppIdentity(label: 'Fleet app · staging')`, called again whenever the name changes (sign-in, workspace switch). Discovery reads that label, and a tool of your own called `app_identity` is one of the collisions above.
 
 ## When the agent authors surfaces for the user’s app
 

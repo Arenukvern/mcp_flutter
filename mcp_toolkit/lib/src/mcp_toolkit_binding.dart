@@ -84,6 +84,22 @@ class MCPToolkitBinding extends MCPToolkitBindingBase
   /// return `navigator_not_registered`.
   GlobalKey<NavigatorState>? navigatorKey;
 
+  String? _appIdentityLabel;
+
+  /// Human-readable name of this running instance, or `null` when unnamed.
+  String? get appIdentityLabel => _appIdentityLabel;
+
+  /// Names this running instance for discovery.
+  ///
+  /// Several debug instances of one app can run side by side, and discovery
+  /// tells them apart only by port. A label — the signed-in user, the flavor,
+  /// whatever identifies the window — lets a caller pick a target by what it
+  /// is. Call it again whenever the name changes, for example after sign-in.
+  void setAppIdentity({required final String? label}) {
+    final trimmed = label?.trim();
+    _appIdentityLabel = (trimmed == null || trimmed.isEmpty) ? null : trimmed;
+  }
+
   /// Canonical app bootstrap for Flutter hosts using MCP toolkit in debug.
   Future<void> bootstrapFlutter({
     required final FutureOr<void> Function() runApp,

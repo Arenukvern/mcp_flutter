@@ -63,7 +63,7 @@ evaluate_dart_expression(expression: "Navigator.of(context).canPop()")
 evaluate_dart_expression(expression: "AgentState.instance.value.toString()")
 ```
 
-Returns: `{"result": "42"}` — always a string-serialized value. Executes arbitrary code in the live isolate — avoid side-effecting expressions. Debug mode only. On failure see `evaluateExpressionFailed` in the playbook.
+Returns: `{"result": "42", "kind": "Int", "classRef": "_Smi", "truncated": false}` — `result` is always a string. A long String comes back whole up to 32,768 UTF-16 code units (the unit `length` and `String.length` count in, so non-ASCII text may encode to more bytes); past that `truncated: true` with `length`, `returnedLength` and a hint naming the `.substring(...)` that reads the rest. A List, Map or object comes back as a bare class name (`"_GrowableList"`) with a hint — wrap the expression in `.toString()` or `jsonEncode(...)` to read its value. Executes arbitrary code in the live isolate — avoid side-effecting expressions. Debug mode only. On failure see `evaluateExpressionFailed` in the playbook.
 
 ## Connect / multi-app flows
 
@@ -313,12 +313,12 @@ Every failure returns `{code, message, details, descriptor, recovery}`. Always r
 
 ### `interactionFailed` (`interaction_failed`)
 
-**Means:** a tap/scroll/swipe/drag/long_press/enter_text call failed.
-**Causes:** stale `ref`; widget not visible or not interactive; toolkit bridge not initialized.
+**Means:** a tap/scroll/swipe/drag/long_press/enter_text/reveal_search/focus_widget call was refused.
+**Causes:** stale `ref`; widget not visible, not interactive, or disabled; target never found; toolkit bridge not initialized. For `focus_widget`: `focus_not_exposed` (nothing focusable answers for the ref — a tap-only button with no `FocusNode`) or `focus_refused` (focus moved elsewhere; `details.focusedNow` names the holder).
 **Recovery:**
 
-1. `semantic_snapshot()` — get fresh refs.
-2. Retry with the new ref.
+1. Read `error.details.hint` — a refusal names its own cause and next step, and that hint is what `error.recovery.summary` carries.
+2. Otherwise `semantic_snapshot()` for fresh refs, then retry.
 
 ### `semanticSnapshotFailed` (`semantic_snapshot_failed`)
 
@@ -335,6 +335,12 @@ Every failure returns `{code, message, details, descriptor, recovery}`. Always r
 
 **Means:** `get_recent_logs` retrieval failed.
 **Recovery:** `flutter-mcp-toolkit doctor --json` — verify toolkit is initialized.
+
+### `invalidPredicate` (`invalid_predicate`)
+
+**Means:** `wait_for` received a predicate whose requested observation cannot fit inside its timeout budget.
+**Causes:** `stableWindowMs` is greater than or equal to effective `timeoutMs`.
+**Recovery:** set `timeoutMs` above `stableWindowMs`; omitting `timeoutMs` uses the 5000 ms default.
 
 ### `waitTimeout` (`wait_timeout`)
 
@@ -380,6 +386,11 @@ Every failure returns `{code, message, details, descriptor, recovery}`. Always r
 ### `hoverFailed` (`hover_failed`)
 
 **Means:** `hover` execution failed.
+**Recovery:** `flutter-mcp-toolkit doctor --json`
+
+### `focusWidgetFailed` (`focus_widget_failed`)
+
+**Means:** `focus_widget` could not reach the app. A refusal the app itself reports (`focus_not_exposed`, `focus_refused`) arrives as `interaction_failed` with the toolkit's hint in `details`.
 **Recovery:** `flutter-mcp-toolkit doctor --json`
 
 ### `unknown` (`unknown_error`)

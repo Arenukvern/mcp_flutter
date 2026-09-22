@@ -9,13 +9,19 @@ import 'package:args/args.dart';
 import 'package:async/async.dart';
 import 'package:dart_mcp/server.dart';
 import 'package:flutter_mcp_toolkit_capability_core/flutter_mcp_toolkit_capability_core.dart';
+import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 import 'package:flutter_mcp_toolkit_server/flutter_mcp_server.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/vm_connections/core_port_scanner.dart';
 import 'package:stream_channel/stream_channel.dart';
 
 Future<void> main(final List<String> args) async {
   final parsedArgs = argParser.parse(args);
   if (parsedArgs.flag(help)) {
     io.stdout.writeln(argParser.usage);
+    io.exit(0);
+  }
+  if (parsedArgs.flag(version)) {
+    io.stdout.writeln(kFlutterMcpVersion);
     io.exit(0);
   }
 
@@ -40,6 +46,10 @@ Future<void> main(final List<String> args) async {
         flutterDiscoveryTimeoutMs:
             int.tryParse(parsedArgs.option(flutterDiscoveryTimeoutMs) ?? '') ??
             defaultFlutterDiscoveryTimeoutMs,
+        scanPorts: _parseScanPorts(parsedArgs.option(scanPorts)),
+        preferredTargetLabel: _nonEmptyOption(
+          parsedArgs.option(preferTargetLabel),
+        ),
       );
       final server = MCPToolkitServer.fromStreamChannel(
         StreamChannel.withCloseGuarantee(io.stdin, io.stdout)
@@ -92,6 +102,17 @@ Future<void> main(final List<String> args) async {
       },
     ),
   );
+}
+
+List<int> _parseScanPorts(final String? spec) {
+  final trimmed = _nonEmptyOption(spec);
+  final ports = CorePortScanner.parseScanPortsSpec(trimmed);
+  if (trimmed != null && ports.isEmpty) {
+    io.stderr.writeln(
+      'Ignoring --$scanPorts="$trimmed": no valid port in 1-65535.',
+    );
+  }
+  return ports;
 }
 
 String? _nonEmptyOption(final String? value) {
@@ -166,6 +187,21 @@ final argParser = ArgParser(allowTrailingOptions: false)
         '(flutter attach --machine)',
   )
   ..addOption(
+    scanPorts,
+    help:
+        'Extra ports to probe during discovery, as a comma-separated list of '
+        'ports and ranges (for example 8765-8767,9100). Needed to discover a '
+        'desktop app whose VM service listens inside the application '
+        'process, and any app started with --no-dds.',
+  )
+  ..addOption(
+    preferTargetLabel,
+    help:
+        'Prefer the discovered target whose label contains this text, so '
+        'auto-attach can pick between several running apps. Labels come from '
+        'the app itself (MCPToolkitBinding.setAppIdentity).',
+  )
+  ..addOption(
     logLevel,
     defaultsTo: defaultLogLevel,
     help:
@@ -177,7 +213,8 @@ final argParser = ArgParser(allowTrailingOptions: false)
     defaultsTo: defaultEnvironment,
     help: 'Environment mode (development|production)',
   )
-  ..addFlag(help, abbr: 'h', help: 'Show usage text');
+  ..addFlag(help, abbr: 'h', help: 'Show usage text')
+  ..addFlag(version, help: 'Print version and exit');
 
 const defaultHost = 'localhost';
 const defaultPort = 8181;
@@ -191,10 +228,13 @@ const dumpsSupported = 'dumps';
 const logLevel = 'log-level';
 const environment = 'environment';
 const help = 'help';
+const String version = 'version';
 const dynamicRegistrySupported = 'dynamics';
 const awaitDndConnection = 'await-dnd';
 const saveImagesToFiles = 'save-images';
 const flutterProjectDir = 'flutter-project-dir';
 const flutterDevice = 'flutter-device';
 const flutterDiscoveryTimeoutMs = 'flutter-discovery-timeout-ms';
+const scanPorts = 'scan-ports';
+const preferTargetLabel = 'prefer-target-label';
 const defaultFlutterDiscoveryTimeoutMs = 2500;

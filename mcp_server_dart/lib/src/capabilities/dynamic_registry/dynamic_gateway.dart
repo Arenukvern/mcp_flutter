@@ -427,6 +427,15 @@ CoreResult? validationFailureForDynamicSchema({
       code: CoreErrorCode.invalidCommand,
       message: e.message,
     );
+  } on FormatException catch (e) {
+    // An array or object argument travels as wire text and is decoded while
+    // coercing. Text that is not JSON throws out of the decoder itself, and
+    // one mistyped argument must read back as an invalid command, not as a
+    // crash from inside validation.
+    return CoreResult.failure(
+      code: CoreErrorCode.invalidCommand,
+      message: 'Invalid argument for $subjectLabel: ${e.message}',
+    );
   }
 }
 

@@ -207,6 +207,33 @@ void main() {
       expect(command, isA<SemanticSnapshotCommand>());
     });
 
+    test('carries semantic_snapshot filters into the command', () {
+      final command =
+          catalog.buildCommand('semantic_snapshot', {
+                'identifierPrefix': 'nav.',
+                'subtreeOf': 's_3',
+                'fields': ['identifier', 'label'],
+              })
+              as SemanticSnapshotCommand;
+      expect(command.identifierPrefix, 'nav.');
+      expect(command.subtreeOf, 's_3');
+      expect(command.fields, ['identifier', 'label']);
+    });
+
+    test('rejects semantic_snapshot fields that are not an array', () {
+      expect(
+        () => catalog.buildCommand('semantic_snapshot', {'fields': 'label'}),
+        throwsA(isA<ArgumentError>()),
+      );
+      expect(
+        () => catalog.buildCommand('semantic_snapshot', {
+          'fields': ['nope'],
+        }),
+        throwsA(isA<ArgumentError>()),
+        reason: 'the enum in the schema names the accepted fields',
+      );
+    });
+
     test('reveal_search command is registered with bounded schema', () {
       final spec = catalog.specFor('reveal_search');
       expect(spec, isNotNull);
@@ -537,8 +564,8 @@ void main() {
       expect(nv.route, '/settings');
     });
 
-    test('fill_form, hover commands are registered', () {
-      for (final name in ['fill_form', 'hover']) {
+    test('fill_form, hover, focus_widget commands are registered', () {
+      for (final name in ['fill_form', 'hover', 'focus_widget']) {
         final spec = catalog.specFor(name);
         expect(spec, isNotNull, reason: '$name spec missing');
         expect(spec!.mcpExposed, isTrue, reason: '$name not mcpExposed');
@@ -558,6 +585,11 @@ void main() {
 
       final hv = catalog.buildCommand('hover', {'ref': 's_3'}) as HoverCommand;
       expect(hv.ref, 's_3');
+
+      final fw =
+          catalog.buildCommand('focus_widget', {'ref': 's_4'})
+              as FocusWidgetCommand;
+      expect(fw.ref, 's_4');
     });
   });
 }

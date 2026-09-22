@@ -75,15 +75,15 @@ Re-audit host vs app paths only if coercion is added on **one** side without the
 
 | Set | Count | Constant |
 |-----|-------|----------|
-| Core interaction catalog | 19 | `coreInteractionCatalogCommandNames` |
-| Tier A exec (core + inspection) | 23 | `tierAExecCatalogCommandNames` |
-| `interactionCatalogInputSchemaFor` router | 25 | `interactionCatalogInputSchemaForCommandNames` (= 23 + 2 capture) |
+| Core interaction catalog | 20 | `coreInteractionCatalogCommandNames` |
+| Tier A exec (core + inspection) | 24 | `tierAExecCatalogCommandNames` |
+| `interactionCatalogInputSchemaFor` router | 26 | `interactionCatalogInputSchemaForCommandNames` (= 24 + 2 capture) |
 
 | App dynamic (`interaction_toolkit.dart` → `registerDynamics`) | Server catalog only (`fmt_*` + CLI `exec`, no app twin) |
 |---------------------------------------------------------------|--------------------------------------------------------|
-| `tap_widget`, `semantic_snapshot`, `wait_for`, `enter_text`, `reveal_search`, `scroll`, `long_press`, `swipe`, `drag`, `hover`, `press_key`, `get_recent_logs`, `handle_dialog`, `navigate` | `fill_form`, `hot_reload_flutter`, `hot_restart_flutter`, `evaluate_dart_expression`, `hot_reload_and_capture` |
+| `tap_widget`, `semantic_snapshot`, `wait_for`, `enter_text`, `reveal_search`, `scroll`, `long_press`, `swipe`, `drag`, `hover`, `focus_widget`, `press_key`, `get_recent_logs`, `handle_dialog`, `navigate` | `fill_form`, `hot_reload_flutter`, `hot_restart_flutter`, `evaluate_dart_expression`, `hot_reload_and_capture` |
 
-**Host-only beyond core 19:** `get_view_details`, `inspect_widget_at_point`, `get_app_errors`, `focus_window` (inspection; part of 23-tool tier A exec). **`get_screenshots`**, **`capture_ui_snapshot`** use the same schema router (25 total) but are capture, not in the 23-tool tier A exec set.
+**Host-only beyond core 20:** `get_view_details`, `inspect_widget_at_point`, `get_app_errors`, `focus_window` (inspection; part of 24-tool tier A exec). **`get_screenshots`**, **`capture_ui_snapshot`** use the same schema router (26 total) but are capture, not in the 24-tool tier A exec set.
 
 **CLI `exec`:** commands with `interactionCatalogInputSchemaFor` entries get Tier A in `CommandCatalog.buildCommand` via `validationFailureForInteractionCatalogCommand` (not catalog-only unknown-key checks). Other catalog commands rely on `_validateUnknownKeys` + `spec.build` unless their catalog schema is strict.
 

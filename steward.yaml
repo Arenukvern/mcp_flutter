@@ -427,6 +427,46 @@ actions:
       summary_fields: [exit_code, duration_ms, output_digest]
       validation:
         native_gate: make check-contracts
+  fmt.check.mcp-registry:
+    kind: command
+    desc: Verify MCP Registry manifest, OCI metadata, Dockerfile, and publish workflow wiring.
+    command:
+      argv: [/bin/bash, tool/contracts/check_mcp_registry.sh]
+      shell: false
+    cwd: .
+    effects:
+      fs_read:
+        - tool/contracts/check_mcp_registry.sh
+        - mcp_server_dart/server.json
+        - mcp_server_dart/Dockerfile.registry
+        - .github/workflows/publish_mcp_registry.yml
+        - .github/workflows/pub_publish.yml
+        - VERSION
+      fs_write: []
+      git: false
+      network: false
+      secrets: false
+      destructive: false
+    safety:
+      class: bounded_local
+      default_policy: auto
+      requires_confirmation: false
+    limits:
+      timeout_ms: 10000
+      max_output_bytes: 200000
+    outputs:
+      - id: stdout
+        kind: stream
+        required: true
+        retention: summary
+        format: text
+    evidence:
+      owner: flutter-mcp-toolkit
+      risk: registry_publish_drift
+      redaction: steward/redaction/v1
+      summary_fields: [exit_code, duration_ms, output_digest]
+      validation:
+        native_gate: make check-contracts
   fmt.check.contracts-full:
     kind: command
     desc: Run the full native mcp_flutter contract gate through the repo Makefile.

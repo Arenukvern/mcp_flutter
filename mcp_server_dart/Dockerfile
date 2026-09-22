@@ -13,7 +13,7 @@ COPY lib/ ./lib/
 COPY analysis_options.yaml ./
 
 # Compile to native executable for better performance and smaller image
-RUN dart compile exe bin/main.dart -o /app/mcp_server
+RUN dart compile exe bin/flutter_mcp_toolkit_server.dart -o /app/mcp_server
 
 # Runtime stage - minimal image
 FROM debian:bookworm-slim

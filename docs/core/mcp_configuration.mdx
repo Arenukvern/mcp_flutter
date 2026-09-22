@@ -18,6 +18,9 @@ MCP transport is `stdin/stdout` (no inbound MCP TCP port).
 | `--flutter-project-dir` | Optional Flutter project directory used by machine discovery (`flutter attach --machine`). |
 | `--flutter-device` | Optional Flutter device for machine discovery (for example `chrome`). |
 | `--flutter-discovery-timeout-ms` | Timeout in milliseconds for machine discovery. Defaults to `2500`. |
+| `--runner-session-file` | Path to an external dev-session contract file (`Dart dev session contract`, spec v2). Default: `<project>/.flutter_mcp/runner-session.json`. When present and alive, reload/restart delegate to the owning session (the only compile-capable channel) and machine discovery is suppressed. See [ADR 0014](/decisions/0014_external_dev_sessions_runner_delegation). |
+| `--scan-ports` | Extra ports probed during discovery, as a comma-separated list of ports and ranges (for example `8765-8767,9100`). Needed for a desktop app, whose VM service listens inside the application process, and for any app started with `--no-dds`. |
+| `--prefer-target-label` | Prefer the discovered target whose label contains this text, so auto-attach can pick between several running apps. Labels come from the app itself (`MCPToolkitBinding.setAppIdentity`). Matching narrows the candidates only at the auto-attach step, so an active connection and a target connected to explicitly still win; a value that matches no target is ignored. |
 | `--log-level` | The logging level for the server. Can be `debug`, `info`, `notice`, `warning`, `error`, `critical`, `alert`, or `emergency`. Defaults to `critical`. Log levels are based on https://spec.modelcontextprotocol.io/specification/2025-03-26/server/utilities/logging/#log-levels |
 | `--environment` | The environment mode. Can be `development` or `production`. Defaults to `production`. |
 | `-h`, `--help` | Show the usage text. |
@@ -50,6 +53,30 @@ For VM-dependent operations, the server resolves target in this order:
 2. Reuse sticky target if still discoverable.
 3. Auto-attach if exactly one target is discovered.
 4. Return `connection_selection_required` if multiple targets exist and no explicit target is provided.
+
+### Delegated reload / restart (external dev session)
+
+Some runners own the app session **and** the compiler — for example
+[`oka dev`](https://github.com/Arenukvern/oka), which drives
+`flutter attach --machine` and is the only compile-capable channel while it
+runs. When a runner-session file is present (default
+`.flutter_mcp/runner-session.json`), the toolkit treats that session as the
+owner:
+
+- `hot_reload_flutter` / `hot_restart_flutter` **delegate** to the owning
+  session over its control port; the result carries the actual daemon
+  outcome plus `changed` (whether a compiled delta was applied) and
+  `delegated: true` with `runner` metadata from the file.
+- Machine discovery is suppressed — a second attach session would kill the
+  first.
+- VM-dependent **reads** (snapshots, screenshots, evaluate) still use the
+  normal connection machinery; pass the file's `vm_service_uri` via
+  `connection` (`mode: "uri"`) when discovery is ambiguous.
+- When no runner-session file exists, behavior is unchanged: the toolkit
+  connects to VM services directly, and reload/restart results carry an
+  honest `changed: false` when no compile-capable channel was found (late
+  VM-service attaches cannot compile — see
+  [ADR 0014](/decisions/0014_external_dev_sessions_runner_delegation)).
 
 ### Per-Request `connection` Object
 

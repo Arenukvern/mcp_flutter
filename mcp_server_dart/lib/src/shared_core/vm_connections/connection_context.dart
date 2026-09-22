@@ -10,6 +10,7 @@ import 'dart:io';
 import 'package:dart_mcp/server.dart';
 import 'package:dtd/dtd.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/commands/commands.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/runner_control/runner_control.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/types/types.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/vm_connections/flutter_tool_machine_discovery.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
@@ -72,6 +73,8 @@ final class CoreConnectionTarget {
     this.dtdUri,
     this.browserDebugPort,
     this.discoverySource = _portScanSource,
+    this.vmPid,
+    this.label,
   });
 
   final String targetId;
@@ -83,6 +86,34 @@ final class CoreConnectionTarget {
   final String? dtdUri;
   final int? browserDebugPort;
   final String discoverySource;
+
+  /// Human-readable name the running app reports for itself, when it does.
+  ///
+  /// Lets a caller pick a target by what it is instead of by port number.
+  final String? label;
+
+  /// Process id the VM service reports, when it was probed.
+  ///
+  /// An app running behind DDS answers on two endpoints — its own VM service
+  /// port and the DDS port in front of it — and both report this same id, so
+  /// it tells one app with two doors from two separate apps.
+  final int? vmPid;
+
+  /// A copy carrying the probe result, keeping current values when null.
+  CoreConnectionTarget withProbe({final int? vmPid, final String? label}) =>
+      CoreConnectionTarget(
+        targetId: targetId,
+        host: host,
+        port: port,
+        endpoint: endpoint,
+        isSticky: isSticky,
+        isCurrent: isCurrent,
+        dtdUri: dtdUri,
+        browserDebugPort: browserDebugPort,
+        discoverySource: discoverySource,
+        vmPid: vmPid ?? this.vmPid,
+        label: label ?? this.label,
+      );
 
   static const String machineDiscoverySource = _machineSource;
   static const String portScanDiscoverySource = _portScanSource;
@@ -120,6 +151,8 @@ final class CoreConnectionTarget {
     'host': host,
     'port': port,
     'endpoint': endpoint,
+    if (label != null) 'label': label,
+    if (vmPid != null) 'pid': vmPid,
     if (dtdUri != null) 'dtdUri': dtdUri,
     if (browserDebugPort != null) 'browserDebugPort': browserDebugPort,
     'discoverySource': discoverySource,
@@ -205,6 +238,8 @@ final class ConnectionContext {
     this.discoverMachineTargets,
     this.initialStickyEndpointUri,
     this.probeFlutterTarget,
+    this.preferredTargetLabel,
+    this.runnerControl,
   }) {
     final rawSticky = initialStickyEndpointUri;
     if (rawSticky == null || rawSticky.isEmpty) {
@@ -228,6 +263,23 @@ final class ConnectionContext {
   final String? initialStickyEndpointUri;
   final CoreFlutterTargetProbe? probeFlutterTarget;
 
+  /// Owning dev-session control (an external runner process), when one is
+  /// wired.
+  ///
+  /// When the session reports alive, hot reload / hot restart are delegated to
+  /// it (it is the only compile-capable channel) and machine discovery is
+  /// suppressed so a second attach session can never kill the first.
+  final RunnerControl? runnerControl;
+
+  /// Text that picks a target by its [CoreConnectionTarget.label].
+  ///
+  /// Auto-attach uses it to choose among several running apps without the
+  /// caller naming an endpoint. It decides nothing the caller has already
+  /// decided: an active connection and a sticky target both win over it.
+  /// Ignored when nothing matches, so a stale preference degrades to the usual
+  /// "name a target" answer.
+  final String? preferredTargetLabel;
+
   VmService? _vmService;
   WebSocketChannel? _vmChannel;
   DartToolingDaemon? _dartToolingDaemon;
@@ -239,12 +291,25 @@ final class ConnectionContext {
   CoreConnectionMode _lastMode = CoreConnectionMode.auto;
   Map<String, Object?> _lastSelectionDiagnostics = const <String, Object?>{};
   Map<String, Object?> _lastDiscoveryDiagnostics = const <String, Object?>{};
-  final Map<String, ({bool isFlutter, DateTime checkedAt})> _flutterProbeCache =
-      <String, ({bool isFlutter, DateTime checkedAt})>{};
+  final Map<
+    String,
+    ({bool isFlutter, int? vmPid, String? label, DateTime checkedAt})
+  >
+  _flutterProbeCache = {};
 
   bool _wasConnected = false;
   bool _disconnectedSinceLastConnect = false;
   Map<String, Object?>? _pendingRecovery;
+
+  /// VM `Service` stream subscription kept for the connection lifetime so
+  /// flutter-tool service registrations (reloadSources / hotRestart) are
+  /// cached once instead of re-listened per command with a 1s timeout.
+  StreamSubscription<Event>? _serviceStreamSubscription;
+  final Set<String> _reloadSourcesMethods = <String>{};
+  final Set<String> _hotRestartMethods = <String>{};
+  final List<void Function()> _serviceRegistrationWaiters =
+      <void Function()>[];
+  bool _serviceRegistrationGraceExhausted = false;
 
   /// Single-flight gate shared by [hotReload] and [hotRestart].
   ///
@@ -473,7 +538,9 @@ final class ConnectionContext {
 
   Future<List<CoreConnectionTarget>> discoverTargets() async {
     final machineTargets = await _discoverMachineTargets();
-    final machineOnlyTargets = _buildMachineTargets(machineTargets);
+    final machineOnlyTargets = await _labelTargets(
+      _buildMachineTargets(machineTargets),
+    );
     if (machineOnlyTargets.isNotEmpty) {
       _lastDiscoveryDiagnostics = {
         'strategyUsed': 'machine_only',
@@ -584,7 +651,13 @@ final class ConnectionContext {
         await _vmService?.dispose();
       }
       if (_vmChannel != null) {
-        await _vmChannel?.sink.close();
+        // sink.close() never completes when the websocket upgrade failed,
+        // so bound the wait and swallow late errors to keep disconnect()
+        // best-effort and non-blocking.
+        await _vmChannel?.sink.close().catchError((final _) {}).timeout(
+          const Duration(seconds: 1),
+          onTimeout: () => null,
+        );
       }
     } catch (e) {
       logger(
@@ -597,6 +670,7 @@ final class ConnectionContext {
       _vmChannel = null;
       _dartToolingDaemon = null;
       _activeEndpoint = null;
+      _teardownServiceStreamMonitoring();
       _disconnectedSinceLastConnect = true;
     }
   }
@@ -613,12 +687,57 @@ final class ConnectionContext {
     );
 
     try {
-      final dtdFuture = DartToolingDaemon.connect(wsUri);
-      _dartToolingDaemon = timeout == Duration.zero
-          ? await dtdFuture
-          : await dtdFuture.timeout(timeout);
+      // DDS endpoints do not speak the DTD protocol, so a failed DTD
+      // handshake must not block VM-service connections. DTD-dependent
+      // features degrade gracefully when this remains null.
+      final dtdChannel = WebSocketChannel.connect(wsUri);
+      try {
+        final Future<void> dtdReady = dtdChannel.ready;
+        // Swallow a late error if the timeout below fires first so it does
+        // not escape as an unhandled async error.
+        unawaited(dtdReady.catchError((final _) {}));
+        if (timeout == Duration.zero) {
+          await dtdReady;
+        } else {
+          await dtdReady.timeout(timeout);
+        }
+        _dartToolingDaemon = DartToolingDaemon.fromStreamChannel(
+          dtdChannel.cast<String>(),
+        );
+      } on Exception catch (dtdError) {
+        // Bound the close: sink.close() never completes when the upgrade
+        // failed, and abandoning the channel would leak the socket.
+        unawaited(
+          dtdChannel.sink.close().catchError((final _) {}).timeout(
+            const Duration(seconds: 1),
+            onTimeout: () => null,
+          ),
+        );
+        logger(
+          LoggingLevel.warning,
+          // The VM-service URI path carries an auth token, so only the
+          // host, port, and sanitized error type are logged.
+          'DTD unavailable at ${wsUri.host}:${wsUri.port} '
+          '(${dtdError.runtimeType})',
+          logger: 'ConnectionContext',
+        );
+        _dartToolingDaemon = null;
+      }
 
       _vmChannel = WebSocketChannel.connect(wsUri);
+
+      // Await the websocket upgrade so connection failures (refused,
+      // non-websocket endpoint) surface here as a normal error instead of
+      // escaping as an unhandled async error from the channel.
+      final Future<void> vmReady = _vmChannel!.ready;
+      // Swallow a late error if the timeout below fires first so it does
+      // not escape as an unhandled async error.
+      unawaited(vmReady.catchError((final _) {}));
+      if (timeout == Duration.zero) {
+        await vmReady;
+      } else {
+        await vmReady.timeout(timeout);
+      }
 
       _vmService = VmService(
         _vmChannel!.stream.cast<String>(),
@@ -631,6 +750,8 @@ final class ConnectionContext {
       } else {
         await vmPing.timeout(timeout);
       }
+
+      await _setUpServiceStreamMonitoring(timeout: timeout);
 
       unawaited(
         _vmChannel!.sink.done
@@ -674,7 +795,130 @@ final class ConnectionContext {
     _vmChannel = null;
     _dartToolingDaemon = null;
     _activeEndpoint = null;
+    _teardownServiceStreamMonitoring();
     _disconnectedSinceLastConnect = true;
+  }
+
+  /// Subscribes to the VM `Service` stream once per connection and caches the
+  /// discovered flutter-tool service method names (reloadSources / hotRestart).
+  ///
+  /// The flutter tool registers those services once, at session start, and the
+  /// VM service does not replay them on `streamListen` — so for late-attach
+  /// connections the cache stays empty and reload/restart honestly report a
+  /// no-op instead of firing a VM call that compiles nothing. Early-connect
+  /// sessions receive the ServiceRegistered events live and keep the
+  /// custom-service path (identical behavior, minus the per-command wait).
+  Future<void> _setUpServiceStreamMonitoring({
+    required final Duration timeout,
+  }) async {
+    final service = _vmService;
+    if (service == null) return;
+
+    try {
+      // Attach the listener BEFORE streamListen so events emitted right after
+      // the subscription is created server-side are not dropped.
+      // ignore: cancel_subscriptions
+      final subscription = service
+          .onEvent(EventStreams.kService)
+          .listen(
+            _handleServiceEvent,
+            onError: (final Object error) {
+              logger(
+                LoggingLevel.debug,
+                'Service stream error: $error',
+                logger: 'ConnectionContext',
+              );
+            },
+          );
+      final ready = service.streamListen(EventStreams.kService);
+      if (timeout == Duration.zero) {
+        await ready;
+      } else {
+        await ready.timeout(timeout);
+      }
+      _serviceStreamSubscription = subscription;
+    } catch (e) {
+      logger(
+        LoggingLevel.debug,
+        'Service stream unavailable; flutter-tool services will not be '
+        'discovered: $e',
+        logger: 'ConnectionContext',
+      );
+    }
+  }
+
+  void _handleServiceEvent(final Event event) {
+    switch (event.kind) {
+      case EventKind.kServiceRegistered:
+        final method = event.method;
+        final service = event.service;
+        if (method == null || method.isEmpty || service == null) return;
+        if (service == 'reloadSources') _reloadSourcesMethods.add(method);
+        if (service == 'hotRestart') _hotRestartMethods.add(method);
+      case EventKind.kServiceUnregistered:
+        final method = event.method;
+        if (method == null || method.isEmpty) return;
+        _reloadSourcesMethods.remove(method);
+        _hotRestartMethods.remove(method);
+    }
+    _notifyServiceRegistrationWaiters();
+  }
+
+  void _notifyServiceRegistrationWaiters() {
+    if (_serviceRegistrationWaiters.isEmpty) return;
+    for (final waiter in List.of(_serviceRegistrationWaiters)) {
+      waiter();
+    }
+  }
+
+  /// The discovered method name for one of [serviceNames], waiting up to the
+  /// grace period for a live ServiceRegistered event.
+  ///
+  /// Only the first command after a connection pays the grace wait; once it
+  /// elapses without a registration, later commands answer immediately (the
+  /// stream keeps refreshing the cache if a service registers later).
+  Future<String?> _awaitServiceMethod(final Set<String> serviceNames) async {
+    String? find() {
+      for (final name in serviceNames) {
+        final methods = name == 'reloadSources'
+            ? _reloadSourcesMethods
+            : _hotRestartMethods;
+        if (methods.isNotEmpty) return methods.first;
+      }
+      return null;
+    }
+
+    final cached = find();
+    if (cached != null) return cached;
+    if (_serviceRegistrationGraceExhausted) return null;
+
+    final completer = Completer<String?>();
+    void waiter() {
+      final found = find();
+      if (found != null && !completer.isCompleted) completer.complete(found);
+    }
+
+    _serviceRegistrationWaiters.add(waiter);
+    waiter();
+    try {
+      final result = await completer.future.timeout(
+        _serviceRegistrationGrace,
+        onTimeout: find,
+      );
+      if (result == null) _serviceRegistrationGraceExhausted = true;
+      return result;
+    } finally {
+      _serviceRegistrationWaiters.remove(waiter);
+    }
+  }
+
+  void _teardownServiceStreamMonitoring() {
+    unawaited(_serviceStreamSubscription?.cancel());
+    _serviceStreamSubscription = null;
+    _reloadSourcesMethods.clear();
+    _hotRestartMethods.clear();
+    _serviceRegistrationWaiters.clear();
+    _serviceRegistrationGraceExhausted = false;
   }
 
   Future<
@@ -889,10 +1133,29 @@ final class ConnectionContext {
       await disconnect();
     }
 
+    // An owning dev session (an external runner process) owns THE app this
+    // project works with
+    // and is the only compile-capable channel: while it is alive, its app
+    // endpoint wins auto-selection (before discovery) so delegation commands
+    // resolve to the session's app even on machines with several running
+    // flutter tools. Machine discovery is suppressed while it is alive, so no
+    // second attach can ever be spawned.
+    final sessionUri = await _runnerFallbackUri();
+    if (sessionUri != null) {
+      return _runnerEndpointResult(sessionUri);
+    }
+
     final targets = await discoverTargets();
     final sticky = _stickyEndpoint;
 
     if (targets.isEmpty) {
+      // Belt and braces: the session answered alive but exposed no endpoint
+      // above (for example a race with the discovery-file write).
+      final runnerUri = await _runnerFallbackUri();
+      if (runnerUri != null) {
+        return _runnerEndpointResult(runnerUri);
+      }
+
       throw CoreConnectionException(
         reason: CoreConnectionFailureReason.noTargets,
         message: 'No debug targets discovered',
@@ -917,10 +1180,11 @@ final class ConnectionContext {
       }
     }
 
+    final preferredTargets = _targetsMatchingPreferredLabel(targets);
     final selected =
-        stickyTarget ?? (targets.length == 1 ? targets.first : null);
+        stickyTarget ?? await _soleInstanceTarget(preferredTargets);
     if (selected == null) {
-      final selectionDetails = _multipleTargetsDetails(targets);
+      final selectionDetails = _multipleTargetsDetails(preferredTargets);
       throw CoreConnectionException(
         reason: CoreConnectionFailureReason.multipleTargets,
         message:
@@ -941,6 +1205,49 @@ final class ConnectionContext {
             ? 'Reused sticky target discovered in current scan'
             : 'Auto-attached single discovered target',
         'availableTargets': targets.map((final t) => t.toJson()).toList(),
+        'stickyEndpoint': _stickyEndpoint?.display,
+        'discovery': _lastDiscoveryDiagnostics,
+      },
+    );
+  }
+
+  /// The owning dev session's app endpoint, when one is live.
+  Future<String?> _runnerFallbackUri() async {
+    final control = runnerControl;
+    if (control == null) return null;
+    try {
+      if (!await control.isAlive()) return null;
+      return await control.liveVmServiceUri();
+    } catch (e) {
+      logger(
+        LoggingLevel.debug,
+        'Runner control endpoint lookup failed: $e',
+        logger: 'ConnectionContext',
+      );
+      return null;
+    }
+  }
+
+  ({
+    CoreEndpoint endpoint,
+    Map<String, Object?> diagnostics,
+    int? browserDebugPort,
+  })
+  _runnerEndpointResult(final String vmServiceUri) {
+    final endpoint = CoreEndpoint.fromUri(Uri.parse(vmServiceUri));
+    final targetId = CoreConnectionTarget.buildTargetId(
+      vmServiceWsUri: endpoint.wsUri,
+    );
+    return (
+      endpoint: endpoint,
+      browserDebugPort: _stickyBrowserDebugPort,
+      diagnostics: {
+        'mode': CoreConnectionMode.auto.name,
+        'selectedTargetId': targetId,
+        'selectedEndpoint': targetId,
+        'decision': 'Used owning dev session endpoint (runner control)',
+        'runner': runnerControl?.runnerName,
+        'candidates': <String>[targetId],
         'stickyEndpoint': _stickyEndpoint?.display,
         'discovery': _lastDiscoveryDiagnostics,
       },
@@ -976,6 +1283,30 @@ final class ConnectionContext {
     final provider = discoverMachineTargets;
     if (provider == null) {
       return const <FlutterMachineDiscoveryTarget>[];
+    }
+
+    // Never spawn a second attach session while an owning dev session (an
+    // external runner process) is live: a second attach reinstalls the app
+    // and kills the first session — the only compile-capable channel.
+    final control = runnerControl;
+    if (control != null) {
+      try {
+        if (await control.isAlive()) {
+          logger(
+            LoggingLevel.info,
+            'Skipping machine discovery: owning dev session '
+            '"${control.runnerName}" is alive (a second attach would kill it).',
+            logger: 'ConnectionContext',
+          );
+          return const <FlutterMachineDiscoveryTarget>[];
+        }
+      } catch (e) {
+        logger(
+          LoggingLevel.debug,
+          'Runner control probe failed; continuing machine discovery: $e',
+          logger: 'ConnectionContext',
+        );
+      }
     }
 
     try {
@@ -1045,28 +1376,117 @@ final class ConnectionContext {
       return const <CoreConnectionTarget>[];
     }
 
-    final checks = await Future.wait(candidates.map(_isFlutterPortScanTarget));
+    final checks = await Future.wait(candidates.map(_probeTarget));
 
     final flutterTargets = <CoreConnectionTarget>[];
     for (var i = 0; i < candidates.length; i++) {
-      if (checks[i]) {
-        flutterTargets.add(candidates[i]);
+      if (checks[i].isFlutter) {
+        flutterTargets.add(
+          candidates[i].withProbe(
+            vmPid: checks[i].vmPid,
+            label: checks[i].label,
+          ),
+        );
       }
     }
     return flutterTargets;
   }
 
-  Future<bool> _isFlutterPortScanTarget(
-    final CoreConnectionTarget target,
+  Future<List<CoreConnectionTarget>> _labelTargets(
+    final List<CoreConnectionTarget> targets,
   ) async {
-    final now = DateTime.now().toUtc();
-    final cached = _flutterProbeCache[target.targetId];
-    if (cached != null &&
-        now.difference(cached.checkedAt) <= _portScanFlutterProbeCacheTtl) {
-      return cached.isFlutter;
+    if (targets.isEmpty) {
+      return targets;
     }
 
-    bool isFlutter = false;
+    final probes = await Future.wait(targets.map(_probeTarget));
+    return <CoreConnectionTarget>[
+      for (var i = 0; i < targets.length; i++)
+        targets[i].withProbe(vmPid: probes[i].vmPid, label: probes[i].label),
+    ];
+  }
+
+  /// Targets whose label matches [preferredTargetLabel].
+  ///
+  /// Falls back to every target when nothing matches, so a preference that no
+  /// longer names a running app cannot hide the apps that are running.
+  List<CoreConnectionTarget> _targetsMatchingPreferredLabel(
+    final List<CoreConnectionTarget> targets,
+  ) {
+    final preference = preferredTargetLabel?.trim().toLowerCase();
+    if (preference == null || preference.isEmpty || targets.length < 2) {
+      return targets;
+    }
+
+    final matches = targets
+        .where(
+          (final target) =>
+              target.label?.toLowerCase().contains(preference) ?? false,
+        )
+        .toList(growable: false);
+    if (matches.isEmpty) {
+      logger(
+        LoggingLevel.info,
+        'No discovered target matches --prefer-target-label '
+        '"$preferredTargetLabel"',
+        logger: 'ConnectionContext',
+      );
+      return targets;
+    }
+
+    return matches;
+  }
+
+  /// The one target to auto-attach to, or `null` when the choice is a real one.
+  ///
+  /// An app running behind DDS answers on two endpoints and each is a separate
+  /// target, so counting targets would ask the caller to choose between two
+  /// doors into the same app. Endpoints that report the same process are one
+  /// app: prefer its lowest port, which is the one a `--device-vmservice-port`
+  /// pins and therefore survives a hot restart.
+  /// The processes are re-read before merging: a cached id can outlive the app
+  /// it came from, and an endpoint another app has since taken over would then
+  /// be merged into a target the caller never chose.
+  Future<CoreConnectionTarget?> _soleInstanceTarget(
+    final List<CoreConnectionTarget> targets,
+  ) async {
+    if (targets.length == 1) {
+      return targets.first;
+    }
+
+    if (targets.any((final target) => target.vmPid == null)) {
+      return null;
+    }
+
+    final probes = await Future.wait(
+      targets.map((final target) => _probeTarget(target, refresh: true)),
+    );
+    final pid = probes.first.vmPid;
+    if (pid == null || probes.any((final probe) => probe.vmPid != pid)) {
+      return null;
+    }
+
+    return targets.reduce((final a, final b) => b.port < a.port ? b : a);
+  }
+
+  Future<({bool isFlutter, int? vmPid, String? label})> _probeTarget(
+    final CoreConnectionTarget target, {
+    final bool refresh = false,
+  }) async {
+    final now = DateTime.now().toUtc();
+    final cached = refresh ? null : _flutterProbeCache[target.targetId];
+    if (cached != null &&
+        now.difference(cached.checkedAt) <= _portScanFlutterProbeCacheTtl) {
+      return (
+        isFlutter: cached.isFlutter,
+        vmPid: cached.vmPid,
+        label: cached.label,
+      );
+    }
+
+    var isFlutter = false;
+    int? vmPid;
+    String? label;
     try {
       final endpoint = CoreEndpoint.fromUri(Uri.parse(target.endpoint));
       if (probeFlutterTarget != null) {
@@ -1075,23 +1495,30 @@ final class ConnectionContext {
           timeout: _portScanFlutterProbeTimeout,
         );
       } else {
-        isFlutter = await _probeFlutterEndpoint(
+        final probed = await _probeFlutterEndpoint(
           endpoint,
           timeout: _portScanFlutterProbeTimeout,
         );
+        isFlutter = probed.isFlutter;
+        vmPid = probed.vmPid;
+        label = probed.label;
       }
     } catch (_) {
       isFlutter = false;
+      vmPid = null;
+      label = null;
     }
 
     _flutterProbeCache[target.targetId] = (
       isFlutter: isFlutter,
+      vmPid: vmPid,
+      label: label,
       checkedAt: now,
     );
-    return isFlutter;
+    return (isFlutter: isFlutter, vmPid: vmPid, label: label);
   }
 
-  Future<bool> _probeFlutterEndpoint(
+  Future<({bool isFlutter, int? vmPid, String? label})> _probeFlutterEndpoint(
     final CoreEndpoint endpoint, {
     required final Duration timeout,
   }) async {
@@ -1103,9 +1530,10 @@ final class ConnectionContext {
         uri: _vmServiceMethodUri(httpBase, 'getVM'),
         timeout: timeout,
       );
-      final isolates =
-          _extractResultMap(vmPayload)['isolates'] as List<Object?>? ??
-          const <Object?>[];
+      final vm = _extractResultMap(vmPayload);
+      final rawPid = vm['pid'];
+      final vmPid = rawPid is int && rawPid > 0 ? rawPid : null;
+      final isolates = vm['isolates'] as List<Object?>? ?? const <Object?>[];
 
       for (final isolateRef in isolates) {
         if (isolateRef is! Map) {
@@ -1130,15 +1558,60 @@ final class ConnectionContext {
                     const <Object?>[])
                 .map((final e) => '$e')
                 .toList(growable: false);
-        if (_hasFlutterExtensions(extensionRPCs)) {
-          return true;
+        if (!_hasFlutterExtensions(extensionRPCs)) {
+          continue;
         }
+
+        final label = extensionRPCs.contains(_appIdentityExtension)
+            ? await _fetchTargetLabel(
+                client: client,
+                httpBase: httpBase,
+                isolateId: isolateId,
+                timeout: timeout,
+              )
+            : null;
+        return (isFlutter: true, vmPid: vmPid, label: label);
       }
-      return false;
+      return (isFlutter: false, vmPid: null, label: null);
     } catch (_) {
-      return false;
+      return (isFlutter: false, vmPid: null, label: null);
     } finally {
       client.close(force: true);
+    }
+  }
+
+  /// Read the app-provided instance label from [_appIdentityExtension].
+  ///
+  /// The label names the running instance for a caller choosing a target, so a
+  /// missing or unusable payload only costs the label, never the target.
+  Future<String?> _fetchTargetLabel({
+    required final HttpClient client,
+    required final Uri httpBase,
+    required final String isolateId,
+    required final Duration timeout,
+  }) async {
+    try {
+      final payload = await _fetchVmServiceMap(
+        client: client,
+        uri: _vmServiceMethodUri(
+          httpBase,
+          _appIdentityExtension,
+          query: <String, String>{'isolateId': isolateId},
+        ),
+        timeout: timeout,
+      );
+      final label = _extractResultMap(payload)['label']?.toString().trim();
+      if (label == null || label.isEmpty) {
+        return null;
+      }
+      return label;
+    } catch (e) {
+      logger(
+        LoggingLevel.debug,
+        'Target label probe failed for $httpBase: $e',
+        logger: 'ConnectionContext',
+      );
+      return null;
     }
   }
 
@@ -1265,6 +1738,9 @@ final class ConnectionContext {
     'ext.flutter',
     'ext.mcp.toolkit',
   ];
+
+  /// Service extension an app registers to name its running instance.
+  static const String _appIdentityExtension = 'ext.mcp.toolkit.app_identity';
 
   Future<bool> _isCurrentConnectionHealthy({
     required final Duration timeout,
@@ -1397,6 +1873,9 @@ final class ConnectionContext {
   Future<Map<String, dynamic>?> _runHotReload({
     required final bool force,
   }) async {
+    final delegated = await _delegatedReloadOrRestart(method: 'reload');
+    if (delegated != null) return delegated;
+
     final vmService = _vmService;
     if (vmService == null) {
       return {'error': 'VM service not connected'};
@@ -1404,54 +1883,136 @@ final class ConnectionContext {
 
     try {
       final vm = await vmService.getVM();
-      ReloadReport? report;
-      StreamSubscription<Event>? serviceStreamSubscription;
-
-      try {
-        final hotReloadMethodNameCompleter = Completer<String?>();
-        serviceStreamSubscription = vmService
-            .onEvent(EventStreams.kService)
-            .listen((final e) {
-              if (e.kind == EventKind.kServiceRegistered &&
-                  e.service == 'reloadSources') {
-                hotReloadMethodNameCompleter.complete(e.method);
-              }
-            });
-
-        await vmService.streamListen(EventStreams.kService);
-
-        final hotReloadMethodName = await hotReloadMethodNameCompleter.future
-            .timeout(const Duration(milliseconds: 1000), onTimeout: () => null);
-
-        if (hotReloadMethodName == null) {
-          report = await vmService.reloadSources(
-            vm.isolates!.first.id!,
-            force: force,
-          );
-        } else {
-          final result = await callServiceExtension(
-            hotReloadMethodName,
-            isolateId: vm.isolates!.first.id,
-            args: {'force': force},
-          );
-          final jsonMap = jsonDecodeMap(result?.json);
-          final resultType = jsonDecodeString(jsonMap['type']);
-          final success = jsonDecodeBool(jsonMap['success']);
-          if (resultType == 'Success' ||
-              (resultType == 'ReloadReport' && success)) {
-            report = ReloadReport(success: true);
-          } else {
-            report = ReloadReport(success: false);
-          }
-        }
-      } finally {
-        await serviceStreamSubscription?.cancel();
-        await vmService.streamCancel(EventStreams.kService);
+      final isolates = vm.isolates ?? const <IsolateRef>[];
+      final isolateId = isolates.isNotEmpty ? isolates.first.id : null;
+      if (isolateId == null) {
+        return {'error': 'Hot reload failed: no isolates found'};
       }
 
-      return {'report': report.toJson()};
+      final hotReloadMethodName = await _awaitServiceMethod(
+        const {'reloadSources'},
+      );
+
+      if (hotReloadMethodName == null) {
+        // Honest no-op: without the flutter tool's custom reloadSources
+        // service there is no compile-capable channel on this connection. The
+        // raw VM call would return `ReloadReport {success: true}` with zero
+        // sources loaded — never dress that up as a real reload.
+        return {
+          'report': ReloadReport(success: true).toJson(),
+          'changed': false,
+          'reason': _noCompileCapableSessionReason,
+        };
+      }
+
+      final result = await callServiceExtension(
+        hotReloadMethodName,
+        isolateId: isolateId,
+        args: {'force': force},
+      );
+      final jsonMap = jsonDecodeMap(result?.json);
+      final resultType = jsonDecodeString(jsonMap['type']);
+      final success = jsonDecodeBool(jsonMap['success']);
+      final applied =
+          resultType == 'Success' || (resultType == 'ReloadReport' && success);
+      if (!applied) {
+        return {
+          'report': ReloadReport(success: false).toJson(),
+          'changed': false,
+          if (jsonMap['error'] != null) 'reason': '${jsonMap['error']}',
+        };
+      }
+      return {'report': ReloadReport(success: true).toJson(), 'changed': true};
     } on Exception catch (e, s) {
       return {'error': 'Hot reload failed: $e $s'};
+    }
+  }
+
+  /// Delegates a reload/restart to the owning dev session when one is alive.
+  ///
+  /// Returns null when there is nothing to delegate to (no [RunnerControl] or
+  /// it reports not-alive), letting the caller fall back to the legacy
+  /// VM-service path. The session is the only compile-capable channel, so its
+  /// answer — not a fire-and-forget request — is what gets reported.
+  Future<Map<String, dynamic>?> _delegatedReloadOrRestart({
+    required final String method,
+  }) async {
+    final control = runnerControl;
+    if (control == null) return null;
+
+    final bool alive;
+    try {
+      alive = await control.isAlive();
+    } catch (e) {
+      logger(
+        LoggingLevel.debug,
+        'Runner control probe failed; falling back to VM-service path: $e',
+        logger: 'ConnectionContext',
+      );
+      return null;
+    }
+    if (!alive) return null;
+
+    try {
+      final outcome = method == 'restart'
+          ? await control.restart()
+          : await control.reload();
+
+      if (!outcome.ok) {
+        return {
+          'error':
+              outcome.error ??
+              '${control.runnerName} reported failure without a message',
+          'delegated': true,
+          'runner': control.runnerName,
+          if (outcome.raw.isNotEmpty) 'runnerResult': outcome.raw,
+        };
+      }
+
+      final result = <String, dynamic>{
+        'report': method == 'restart'
+            ? <String, Object?>{'type': 'Success', 'success': true}
+            : ReloadReport(success: true).toJson(),
+        'changed': true,
+        'delegated': true,
+        'runner': control.runnerName,
+        if (outcome.fallback) 'runnerFallback': true,
+        if (outcome.raw.isNotEmpty) 'runnerResult': outcome.raw,
+      };
+
+      if (outcome.sessionRelaunched) {
+        // The control connection closed mid-restart (relaunch fallback): the
+        // app now runs under a new session. Retry the CONNECTION against the
+        // re-read endpoint — never the restart itself.
+        final newUri = outcome.vmServiceUri;
+        if (newUri == null || newUri.isEmpty) {
+          result['reattachError'] =
+              'Session relaunched but no vm_service_uri is available; '
+              'run discover_debug_apps or reconnect explicitly.';
+        } else if (_wasConnected) {
+          try {
+            await connect(
+              mode: CoreConnectionMode.uri,
+              uri: newUri,
+              forceReconnect: true,
+            );
+            result['reattachedTo'] = newUri;
+          } catch (e) {
+            result['reattachError'] =
+                'Session relaunched; reconnect to $newUri failed: $e';
+          }
+        } else {
+          result['reattachedTo'] = newUri;
+        }
+      }
+
+      return result;
+    } catch (e) {
+      return {
+        'error': 'Delegated $method via ${control.runnerName} failed: $e',
+        'delegated': true,
+        'runner': control.runnerName,
+      };
     }
   }
 
@@ -1474,41 +2035,32 @@ final class ConnectionContext {
   }
 
   Future<Map<String, dynamic>?> _runHotRestart() async {
+    final delegated = await _delegatedReloadOrRestart(method: 'restart');
+    if (delegated != null) return delegated;
+
     final vmService = _vmService;
     if (vmService == null) {
       return {'error': 'VM service not connected'};
     }
 
     try {
-      String? hotRestartMethodName;
-      StreamSubscription<Event>? eventSubscription;
-      try {
-        final completer = Completer<String?>();
-        eventSubscription = vmService.onEvent(EventStreams.kService).listen((
-          final e,
-        ) {
-          if (e.kind == EventKind.kServiceRegistered &&
-              e.service == 'hotRestart') {
-            if (!completer.isCompleted) completer.complete(e.method);
-          }
-        });
+      final hotRestartMethodName = await _awaitServiceMethod(
+        const {'hotRestart'},
+      );
 
-        await vmService.streamListen(EventStreams.kService);
-        hotRestartMethodName = await completer.future.timeout(
-          const Duration(milliseconds: 800),
-          onTimeout: () => null,
-        );
-      } finally {
-        try {
-          await eventSubscription?.cancel();
-          await vmService.streamCancel(EventStreams.kService);
-        } catch (_) {
-          // Ignore shutdown racing errors.
-        }
+      if (hotRestartMethodName == null) {
+        // Honest no-op for the method-not-found path: the flutter tool's
+        // hotRestart service is the only restart-capable channel on this
+        // connection, and a raw VM `hotRestart` method has never existed —
+        // the old fallback call always died with an RPC error.
+        return {
+          'report': <String, Object?>{'type': 'Success', 'success': false},
+          'changed': false,
+          'reason': _noCompileCapableSessionReason,
+        };
       }
 
-      final methodToCall = hotRestartMethodName ?? 'hotRestart';
-      final response = await vmService.callMethod(methodToCall);
+      final response = await vmService.callMethod(hotRestartMethodName);
       final json = response.json;
 
       return {
@@ -1516,9 +2068,19 @@ final class ConnectionContext {
           'type': json?['type'] ?? 'Success',
           'success': json?['success'] ?? true,
         },
+        'changed': true,
       };
     } on Exception catch (e, s) {
       return {'error': 'Hot restart failed: $e $s'};
     }
   }
+
+  /// Why a reload/restart reported `changed: false`.
+  static const String _noCompileCapableSessionReason =
+      'no compile-capable session; delegate via RunnerControl or connect '
+      'inside the registration window';
+
+  static const Duration _serviceRegistrationGrace = Duration(
+    milliseconds: 300,
+  );
 }

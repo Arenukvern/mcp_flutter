@@ -2,7 +2,38 @@
 
 ## [unreleased]
 
+### Added
+
+- **External dev session delegation** (Dart dev session contract, spec v2):
+  when a runner-session file exists (default
+  `.flutter_mcp/runner-session.json`, configurable via
+  `--runner-session-file`), `hot_reload_flutter` / `hot_restart_flutter`
+  delegate reload/restart to the owning dev session (e.g. `oka dev`) over
+  its loopback control port — the only compile-capable channel — and
+  machine discovery is suppressed so a second attach session cannot kill
+  the first. Results carry `changed`, `delegated`, and `runner` metadata.
+- Connection-lifetime subscription to the VM `Service` stream (custom
+  `reloadSources`/`hotRestart` services are now cached per connection
+  instead of per-command 1s waits).
+
 ### Changed
+
+- **Honest reload reporting:** the VM-service fallback path (no
+  compile-capable session discovered — the late-attach case) no longer
+  reports a bare `ReloadReport {success: true}` for a reload that loaded
+  zero sources. Results now carry `changed: false` with an actionable
+  reason; `report` remains backward-compatible.
+
+### Documentation
+
+- ADR 0014 — External dev sessions: runner delegation, honest reload
+  reporting, and the Dart dev session contract
+  (`docs/decisions/0014_external_dev_sessions_runner_delegation.mdx`).
+- Dev-session delegation guide: spec v2 contract section, precedence stack,
+  "Writing a conforming runner" checklist, and "Using with oka" recipe
+  (`docs/guides/dev-session-delegation-roadmap.mdx`).
+- Configuration reference: `--runner-session-file` and the delegated
+  reload/restart section (`docs/core/mcp_configuration.mdx`).
 
 ## [4.0.0-dev.1] - 2026-06-06
 

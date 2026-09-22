@@ -29,6 +29,7 @@ Set<AgentCallEntry> getFlutterMcpToolkitEntries({
   required final MCPToolkitBinding binding,
 }) => {
   OnAppErrorsEntry(errorMonitor: binding),
+  OnAppIdentityEntry(binding: binding),
   OnViewScreenshotsEntry(binding: binding),
   OnViewDetailsEntry(binding: binding),
   OnSelectWidgetAtPointEntry(binding: binding),
@@ -42,6 +43,39 @@ extension MCPToolkitBindingExtension on MCPToolkitBinding {
   void initializeFlutterToolkit() => unawaited(
     addEntries(entries: getFlutterMcpToolkitEntries(binding: this)),
   );
+}
+
+/// {@template on_app_identity_entry}
+/// AgentCallEntry wrapper for the instance label set through
+/// [MCPToolkitBinding.setAppIdentity].
+/// {@endtemplate}
+extension type const OnAppIdentityEntry._(AgentCallEntry entry)
+    implements AgentCallEntry {
+  /// {@macro on_app_identity_entry}
+  factory OnAppIdentityEntry({required final MCPToolkitBinding binding}) {
+    final entry = mcpToolkitTool(
+      handler: (final parameters) {
+        final label = binding.appIdentityLabel;
+        return MCPCallResult(
+          message: label == null
+              ? 'This app did not name itself; call setAppIdentity to do so.'
+              : 'Instance label.',
+          parameters: {'label': ?label},
+        );
+      },
+      definition: MCPToolDefinition(
+        name: 'app_identity',
+        description:
+            'Returns the label this app reports for the running instance, '
+            'so a target can be chosen by what it is instead of by port.',
+        inputSchema: ObjectSchema.fromMap(const {
+          'type': 'object',
+          'properties': <String, Object?>{},
+        }),
+      ),
+    );
+    return OnAppIdentityEntry._(entry);
+  }
 }
 
 /// {@template on_app_errors_entry}

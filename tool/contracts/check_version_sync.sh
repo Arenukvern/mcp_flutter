@@ -22,7 +22,7 @@ repo_version="$(tr -d '[:space:]' < "$VERSION_FILE")"
 [[ -n "$repo_version" ]] || fail "VERSION file is empty"
 
 runtime_version="$(
-  sed -nE "s/^const kFlutterMcpVersion = '([^']+)';.*$/\1/p" "$RUNTIME_VERSION_FILE" | head -1
+  sed -nE "s/^const (String )?kFlutterMcpVersion = '([^']+)';.*$/\2/p" "$RUNTIME_VERSION_FILE" | head -1
 )"
 [[ "$runtime_version" == "$repo_version" ]] ||
   fail "kFlutterMcpVersion ($runtime_version) != VERSION ($repo_version)"

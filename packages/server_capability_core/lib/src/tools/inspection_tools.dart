@@ -156,10 +156,12 @@ void registerInspectionTools(final CapabilityContext context) {
   // ---------------------------------------------------------------------------
   // capture_ui_snapshot
   // ---------------------------------------------------------------------------
-  // The "bundle" described in docs is JSON inside a single TextContent.
-  // Legacy resource_handler.dart captureUiSnapshot (lines 472-474) returns
-  //   CallToolResult(content: [TextContent(text: jsonEncode(result.data))]).
-  // No multi-content transform required — standard runCommand with no onSuccess.
+  // The bundle travels as JSON in a TextContent, but captured images are lifted
+  // out of `screenshots.images` into ImageContent blocks (same artifact contract
+  // as get_screenshots). Base64 inlined into the JSON counts against the client
+  // response budget as text, which overflows it for a single desktop frame.
+  // `imageSummaries` keeps the per-image ids/hashes, so the bundle stays
+  // self-describing with the payload removed.
   context.registerTool(
     ToolRegistration(
       name: 'capture_ui_snapshot',
@@ -188,6 +190,29 @@ void registerInspectionTools(final CapabilityContext context) {
             screenshotMode: parseScreenshotMode(args['screenshotMode']),
             permissionPolicy: parsePermissionPolicy(args['permissionPolicy']),
           ),
+          onSuccess: (final data) {
+            final bundle = _asMap(data);
+            final screenshots = _asMap(bundle['screenshots']);
+            final images = _stringList(screenshots['images']);
+            if (images.isEmpty) {
+              return AgentResult.success(
+                artifacts: [AgentArtifact.text(jsonEncode(bundle))],
+              );
+            }
+            return AgentResult.success(
+              artifacts: [
+                AgentArtifact.text(
+                  jsonEncode(
+                    _bundleWithImagesLifted(bundle, screenshots, images.length),
+                  ),
+                ),
+                ...images.map(
+                  (final image) =>
+                      AgentArtifact.text(image, mimeType: 'image/png'),
+                ),
+              ],
+            );
+          },
         );
       },
     ),
@@ -208,6 +233,41 @@ void registerInspectionTools(final CapabilityContext context) {
       },
     ),
   );
+}
+
+/// The bundle with the base64 payload removed, saying where it went.
+///
+/// `images: []` beside `summary.imageCount: 1` reads as a capture that
+/// silently failed, and `imageSummaries[].source: 'inline_base64'` then names
+/// the one place the payload is no longer at. Both are true of the core
+/// result, which keeps the images inline; neither survives the lift into
+/// ImageContent blocks, so the shipped bundle has to restate them.
+Map<String, Object?> _bundleWithImagesLifted(
+  final Map<String, Object?> bundle,
+  final Map<String, Object?> screenshots,
+  final int imageCount,
+) => <String, Object?>{
+  ...bundle,
+  'screenshots': <String, Object?>{
+    ...screenshots,
+    'images': const <String>[],
+    'imagesDeliveredAs': 'image_blocks',
+    'imagesNote':
+        'The $imageCount captured '
+        '${imageCount == 1 ? 'image travels' : 'images travel'} as image '
+        "block(s) beside this JSON. They are stripped from 'images' because "
+        'base64 inlined here counts against the response budget as text.',
+  },
+  if (bundle['imageSummaries'] case final List summaries)
+    'imageSummaries': summaries
+        .map(_summaryDeliveredAsBlock)
+        .toList(growable: false),
+};
+
+/// One image summary, with its source pointing at the block that carries it.
+Object? _summaryDeliveredAsBlock(final Object? summary) {
+  if (summary is! Map || summary['source'] != 'inline_base64') return summary;
+  return <String, Object?>{..._asMap(summary), 'source': 'image_block'};
 }
 
 // ---------------------------------------------------------------------------

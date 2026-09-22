@@ -20,6 +20,7 @@ final mcpToolkitExtKeys = (
   handleDialog: '$mcpToolkitExt.${mcpToolkitExtNames.handleDialog}',
   navigate: '$mcpToolkitExt.${mcpToolkitExtNames.navigate}',
   hover: '$mcpToolkitExt.${mcpToolkitExtNames.hover}',
+  focusWidget: '$mcpToolkitExt.${mcpToolkitExtNames.focusWidget}',
 );
 
 final allMcpToolkitExtNames = {
@@ -42,6 +43,7 @@ final allMcpToolkitExtNames = {
   mcpToolkitExtNames.handleDialog,
   mcpToolkitExtNames.navigate,
   mcpToolkitExtNames.hover,
+  mcpToolkitExtNames.focusWidget,
 };
 
 const mcpToolkitExtNames = (
@@ -64,4 +66,5 @@ const mcpToolkitExtNames = (
   handleDialog: 'handle_dialog',
   navigate: 'navigate',
   hover: 'hover',
+  focusWidget: 'focus_widget',
 );

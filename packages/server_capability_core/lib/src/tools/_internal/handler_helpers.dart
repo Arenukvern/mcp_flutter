@@ -56,12 +56,27 @@ AgentResult agentErrorFromCore(final CoreResult result) => AgentResult.failure(
 // ---------------------------------------------------------------------------
 
 /// Returns the string value of [raw] trimmed, or null if absent/non-string.
+///
+/// Suits a selector — an identifier, a mode, a direction — where surrounding
+/// space is a typo. For anything the caller means literally, use
+/// [verbatimStringArgOrNull].
 @internal
 String? stringArgOrNull(final Object? raw) {
   if (raw is! String) return null;
   final trimmed = raw.trim();
   return trimmed.isEmpty ? null : trimmed;
 }
+
+/// Returns the string value of [raw] exactly as given, or null when absent.
+///
+/// Text destined for a field is not a selector: its spaces are part of the
+/// value, and an empty string is how the field is cleared. Trimming turns
+/// " " into "", which the toolkit then acts on by clearing — a destructive
+/// reading of a benign request, and one the write-back check confirms as
+/// correct because it compares against the trimmed string.
+@internal
+String? verbatimStringArgOrNull(final Object? raw) =>
+    raw is String ? raw : null;
 
 /// Returns the int value of [raw], or null if absent or non-numeric.
 ///

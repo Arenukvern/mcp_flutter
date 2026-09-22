@@ -4,6 +4,28 @@ import 'package:test/test.dart';
 
 void main() {
   group('CoreResult.toErrorEnvelopeJson', () {
+    test('a String hint in details becomes the recovery summary', () {
+      final json = CoreResult.failure(
+        code: CoreErrorCode.interactionFailed,
+        message: 'refused',
+        details: {'hint': 'Re-snapshot and retry.'},
+      ).toErrorEnvelopeJson();
+      expect((json['recovery'] as Map)['summary'], 'Re-snapshot and retry.');
+    });
+
+    test('a non-String hint in details keeps the mapped recovery', () {
+      final json = CoreResult.failure(
+        code: CoreErrorCode.interactionFailed,
+        message: 'refused',
+        details: {
+          'hint': {'a': 'b'},
+        },
+      ).toErrorEnvelopeJson();
+      final summary = (json['recovery'] as Map)['summary'] as String;
+      expect(summary, isNot(contains('{a: b}')));
+      expect(summary, isNotEmpty);
+    });
+
     test('failure case round-trips with all 5 keys present', () {
       final result = CoreResult.failure(
         code: CoreErrorCode.interactionFailed,
