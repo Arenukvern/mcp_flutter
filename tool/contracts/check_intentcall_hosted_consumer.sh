@@ -6,7 +6,7 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "${here}/../.." && pwd)"
 cd "${repo_root}"
 
-echo "== agentkit intentcall path dependency policy =="
+echo "== intentcall sibling path dependency policy =="
 bash tool/intentcall/check_no_path_deps.sh --strict-root
 
 echo "== intentcall migration and generated-platform drift =="
@@ -21,4 +21,4 @@ dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart codegen sync \
 echo "== intentcall skill/doc contract =="
 bash tool/contracts/check_intentcall_skills_grep.sh
 
-echo "OK: agentkit intentcall consumer gate"
+echo "OK: intentcall sibling consumer gate"

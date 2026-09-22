@@ -53,12 +53,12 @@ cat > "${tmp}/mcp_toolkit/pubspec.yaml" <<YAML
 name: fixture
 dependencies:
   intentcall_core:
-    path: ../../agentkit/packages/intentcall_core
+    path: ../../intentcall/packages/intentcall_core
 YAML
 
 if ! bash "${tmp}/tool/intentcall/check_no_path_deps.sh" >/dev/null 2>&1; then
-  echo "expected valid agentkit path dependency to pass" >&2
+  echo "expected valid intentcall path dependency to pass" >&2
   exit 1
 fi
 
-echo "OK: check_no_path_deps requires sibling agentkit intentcall path dependencies"
+echo "OK: check_no_path_deps requires sibling ../intentcall path dependencies"

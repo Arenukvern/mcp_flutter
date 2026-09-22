@@ -5,7 +5,7 @@
 # can run: bash tool/contracts/check_apple_runner_compile.sh
 #
 # Optional env:
-#   INTENTCALL_ROOT  — agentkit checkout (default: ../../agentkit sibling)
+#   INTENTCALL_ROOT  — intentcall checkout (default: ../intentcall, then ../agentkit)
 #   FAIL_ON_SKIP=1   — exit 1 instead of 0 when Flutter/Xcode missing
 set -euo pipefail
 
@@ -34,6 +34,11 @@ resolve_agentkit_root() {
   fi
 
   local sibling
+  sibling="$(cd "$repo_root/../intentcall" 2>/dev/null && pwd || true)"
+  if [[ -n "$sibling" && -f "$sibling/packages/intentcall_cli/pubspec.yaml" ]]; then
+    echo "$sibling"
+    return 0
+  fi
   sibling="$(cd "$repo_root/../agentkit" 2>/dev/null && pwd || true)"
   if [[ -n "$sibling" && -f "$sibling/packages/intentcall_cli/pubspec.yaml" ]]; then
     echo "$sibling"
@@ -65,8 +70,8 @@ if AGENTKIT_ROOT="$(resolve_agentkit_root)"; then
     --project-dir "${app_dir}" \
     --platform ios,macos
 else
-  echo "WARN: agentkit sibling not found — using committed generated Swift only" >&2
-  echo "      set INTENTCALL_ROOT or clone ../agentkit to sync before compile" >&2
+  echo "WARN: intentcall sibling not found — using committed generated Swift only" >&2
+  echo "      set INTENTCALL_ROOT or clone ../intentcall to sync before compile" >&2
 fi
 
 if ! grep -q 'import intentcall_platform_apple' "${generated}"; then

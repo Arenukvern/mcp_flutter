@@ -79,11 +79,19 @@ catalog through `DefaultCoreCommandExecutor`.
 
 ## Normal consumer state
 
-Committed `mcp_flutter` state should use hosted `intentcall_*` dependencies. Do not commit normal consumer pubspecs with `agentkit/packages`, `intentcall/packages`, or `path: .*intentcall` dependencies.
+This branch resolves IntentCall from the sibling checkout at `../intentcall`
+(`dependency_overrides` in the workspace `pubspec.yaml`). The same
+`AgentRegistry` is the contract for both agent kinds:
 
-Use root `dependency_overrides` only while deliberately developing against the
-sibling IntentCall checkout, then remove them before publishing consumer
-integration changes.
+- Coding agents use Flutter MCP Toolkit in a debug session: VM service tools
+  (`fmt_*`) plus the app's declared `AgentCallEntry` tools. Resource URIs go
+  through `AgentCallEntryMcpToolkit.resolveResourceUri`.
+- OS agents use the platform projection of those same entries. `awaitApp`
+  returns the Dart result to Shortcuts/Siri. `openApp` only queues a wake.
+  `windows.appActions` is the Windows result path. WebMCP is the in-page path.
+
+Do not point overrides at `../agentkit`. That directory name is only a fallback
+for older checkouts.
 
 ## Consumer proof gates
 

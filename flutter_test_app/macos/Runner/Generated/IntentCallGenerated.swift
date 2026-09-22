@@ -10,13 +10,29 @@ import AppKit
 #endif
 
 @available(iOS 16.0, macOS 13.0, *)
+struct AppDemoPingIntent: AppIntent {
+  static var title: LocalizedStringResource = "Demo ping tool for WebMCP platform sync"
+  @available(iOS 26.0, macOS 26.0, *)
+  static var supportedModes: IntentModes { .foreground(.immediate) }
+  static var openAppWhenRun: Bool = true
+  @available(iOS 27.0, macOS 27.0, *)
+  static var allowedExecutionTargets: IntentExecutionTargets { .default }
+
+  func perform() async throws -> some IntentResult {
+    var arguments: [String: Any] = [:]
+    let invocationId = await IntentCallNativeBridge.enqueue(qualifiedName: "app_demo_ping", arguments: arguments, openApp: true, fallbackProtocolScheme: "mcpfluttertest")
+    return .result(dialog: IntentDialog("Queued invocation \(invocationId) for app dispatch."))
+  }
+}
+
+@available(iOS 16.0, macOS 13.0, *)
 struct AppIntentcallBridgePingIntent: AppIntent {
   static var title: LocalizedStringResource = "Proof that native/WebMCP dispatch executes Dart registry logic"
   @available(iOS 26.0, macOS 26.0, *)
   static var supportedModes: IntentModes { .foreground(.immediate) }
   static var openAppWhenRun: Bool = true
   @available(iOS 27.0, macOS 27.0, *)
-  static var allowedExecutionTargets: IntentExecutionTargets { .default }
+  static var allowedExecutionTargets: IntentExecutionTargets { .main }
 
   @Parameter(title: "Echo")
   var echo: String
@@ -24,8 +40,8 @@ struct AppIntentcallBridgePingIntent: AppIntent {
   func perform() async throws -> some IntentResult {
     var arguments: [String: Any] = [:]
     arguments["echo"] = echo
-    let invocationId = await IntentCallNativeBridge.enqueue(qualifiedName: "app_intentcall_bridge_ping", arguments: arguments, openApp: true, fallbackProtocolScheme: "mcpfluttertest")
-    return .result(dialog: IntentDialog("Queued invocation \(invocationId) for app dispatch."))
+    let outcome = await IntentCallNativeBridge.invokeAwaiting(qualifiedName: "app_intentcall_bridge_ping", arguments: arguments, fallbackProtocolScheme: "mcpfluttertest")
+    return .result(dialog: IntentDialog(stringLiteral: outcome.dialog))
   }
 }
 

@@ -56,6 +56,19 @@
       "name": "demo_ping",
       "description": "Demo ping tool for WebMCP platform sync",
       "kind": "tool",
+      "dispatchMode": "openApp",
+      "surfaces": {
+        "apple.appIntents": { "include": true },
+        "apple.appShortcuts": { "include": false },
+        "web.webMcp": { "include": true },
+        "web.manifestShortcuts": { "include": true },
+        "web.protocolHandlers": { "include": true },
+        "android.shortcuts": { "include": true },
+        "windows.protocolActivation": { "include": true },
+        "windows.msixProtocol": { "include": true },
+        "windows.appActions": { "include": false },
+        "linux.schemeHandler": { "include": true }
+      },
       "inputSchema": {
         "type": "object",
         "properties": {}
@@ -67,20 +80,20 @@
       "name": "intentcall_bridge_ping",
       "description": "Proof that native/WebMCP dispatch executes Dart registry logic",
       "kind": "tool",
-      "dispatchMode": "openApp",
+      "dispatchMode": "awaitApp",
       "surfaces": {
-        "apple.appIntents": {
-          "include": true
-        },
-        "apple.appShortcuts": {
-          "include": true
-        },
-        "apple.entities": {
-          "include": true
-        },
-        "apple.spotlight": {
-          "include": true
-        }
+        "apple.appIntents": { "include": true },
+        "apple.appShortcuts": { "include": true },
+        "apple.entities": { "include": true },
+        "apple.spotlight": { "include": true },
+        "web.webMcp": { "include": true },
+        "web.manifestShortcuts": { "include": true },
+        "web.protocolHandlers": { "include": true },
+        "android.shortcuts": { "include": true },
+        "windows.protocolActivation": { "include": true },
+        "windows.msixProtocol": { "include": true },
+        "windows.appActions": { "include": false },
+        "linux.schemeHandler": { "include": true }
       },
       "inputSchema": {
         "type": "object",
@@ -104,18 +117,18 @@
       "kind": "tool",
       "dispatchMode": "openApp",
       "surfaces": {
-        "apple.appIntents": {
-          "include": true
-        },
-        "apple.appShortcuts": {
-          "include": true
-        },
-        "apple.entities": {
-          "include": true
-        },
-        "apple.spotlight": {
-          "include": true
-        }
+        "apple.appIntents": { "include": true },
+        "apple.appShortcuts": { "include": true },
+        "apple.entities": { "include": true },
+        "apple.spotlight": { "include": true },
+        "web.webMcp": { "include": true },
+        "web.manifestShortcuts": { "include": true },
+        "web.protocolHandlers": { "include": true },
+        "android.shortcuts": { "include": true },
+        "windows.protocolActivation": { "include": true },
+        "windows.msixProtocol": { "include": true },
+        "windows.appActions": { "include": true },
+        "linux.schemeHandler": { "include": true }
       },
       "inputSchema": {
         "type": "object",
@@ -139,18 +152,18 @@
       "kind": "tool",
       "dispatchMode": "openApp",
       "surfaces": {
-        "apple.appIntents": {
-          "include": true
-        },
-        "apple.appShortcuts": {
-          "include": true
-        },
-        "apple.entities": {
-          "include": true
-        },
-        "apple.spotlight": {
-          "include": true
-        }
+        "apple.appIntents": { "include": true },
+        "apple.appShortcuts": { "include": true },
+        "apple.entities": { "include": true },
+        "apple.spotlight": { "include": true },
+        "web.webMcp": { "include": true },
+        "web.manifestShortcuts": { "include": true },
+        "web.protocolHandlers": { "include": true },
+        "android.shortcuts": { "include": true },
+        "windows.protocolActivation": { "include": true },
+        "windows.msixProtocol": { "include": true },
+        "windows.appActions": { "include": false },
+        "linux.schemeHandler": { "include": true }
       },
       "inputSchema": {
         "type": "object",

@@ -27,6 +27,8 @@ Future<void> configureIntentCallShowcase({
         IntentCallInvocationSource.webMcpDart,
         IntentCallInvocationSource.nativeGenerated,
         IntentCallInvocationSource.deepLink,
+        IntentCallInvocationSource.appleAwaitApp,
+        IntentCallInvocationSource.windowsAppAction,
       },
       allowedQualifiedNames: <String>{
         'app_intentcall_bridge_ping',
