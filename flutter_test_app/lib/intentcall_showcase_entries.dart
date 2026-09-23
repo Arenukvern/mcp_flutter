@@ -115,7 +115,7 @@ AgentEntityTypeDescriptor buildShowcaseScreenEntityType() =>
         ),
         AgentEntityPropertyDescriptor(
           name: 'tags',
-          valueType: AgentEntityPropertyValueType.array,
+          valueType: AgentEntityPropertyValueType.list,
           isSearchable: true,
           isIndexed: true,
           privacy: AgentEntityPrivacy.public,
@@ -174,7 +174,9 @@ Future<void> seedIntentCallShowcaseEntities() async {
       },
     ),
   ];
-  final count = await IntentCallPlatformEntityIndex().upsertAgentSnapshots(
+  final descriptor = buildShowcaseScreenEntityType();
+  final count = await IntentCallPlatformEntityIndex().upsertAgentSnapshotsForType(
+    descriptor: descriptor,
     snapshots: snapshots,
   );
   debugPrint('intentcall seeded $count showcase entity snapshots');

@@ -1,0 +1,9 @@
+host: jaspr
+protocolScheme: jasprdemo
+layout:
+  manifest: web/agent_manifest.json
+platforms:
+  enabled:
+    - web
+defaults:
+  dispatchMode: openApp

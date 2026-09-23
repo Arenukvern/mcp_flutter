@@ -321,6 +321,7 @@
 
 ### Features
 
+* Delegate `codegen sync` and `init intentcall-platform` to `intentcall_cli`; add `jaspr_web_example` with the three-gate CI recipe.
 * **focus_widget:** give a widget keyboard focus by ref — the semantic focus action first, the focus node inside its bounds otherwise — and prove where focus landed (`fmt_focus_widget`, CLI `exec --name focus_widget`)
 
 ### Bug Fixes

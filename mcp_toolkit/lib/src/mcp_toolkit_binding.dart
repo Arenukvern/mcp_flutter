@@ -108,6 +108,7 @@ class MCPToolkitBinding extends MCPToolkitBindingBase
     final void Function(Object error, StackTrace stackTrace)? onZoneError,
     final bool initializeFlutterToolkitEntries = true,
     final bool debugOnly = true,
+    final String? protocolScheme,
   }) async {
     final completer = Completer<void>();
     final zoneErrorHandler = onZoneError ?? handleZoneError;
@@ -125,7 +126,9 @@ class MCPToolkitBinding extends MCPToolkitBindingBase
                 Future<void>.sync(WidgetsFlutterBinding.ensureInitialized));
 
             if (!isInitialized) {
-              initialize();
+              initialize(protocolScheme: protocolScheme);
+            } else if (protocolScheme != null) {
+              this.protocolScheme = protocolScheme;
             }
 
             if (initializeFlutterToolkitEntries) {
@@ -159,6 +162,7 @@ class MCPToolkitBinding extends MCPToolkitBindingBase
   @override
   void initialize({
     final String serviceExtensionName = kMCPServiceExtensionName,
+    final String? protocolScheme,
     final int maxErrors = kDefaultMaxErrors,
   }) {
     assert(() {
@@ -172,7 +176,10 @@ class MCPToolkitBinding extends MCPToolkitBindingBase
       return true;
     }());
 
-    super.initialize(serviceExtensionName: serviceExtensionName);
+    super.initialize(
+      serviceExtensionName: serviceExtensionName,
+      protocolScheme: protocolScheme,
+    );
   }
 
   /// Initializes the MCP Toolkit binding.

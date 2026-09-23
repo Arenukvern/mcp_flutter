@@ -127,7 +127,9 @@ if [[ "${run_intentcall_tests}" == true ]]; then
   set +e
   intentcall_root="${INTENTCALL_ROOT:-}"
   if [[ -z "${intentcall_root}" ]]; then
-    if [[ -d "${repo_root}/../agentkit/packages/intentcall_testing" ]]; then
+    if [[ -d "${repo_root}/../intentcall/packages/intentcall_testing" ]]; then
+      intentcall_root="${repo_root}/../intentcall"
+    elif [[ -d "${repo_root}/../agentkit/packages/intentcall_testing" ]]; then
       intentcall_root="${repo_root}/../agentkit"
     else
       intentcall_root="${repo_root}/intentcall"

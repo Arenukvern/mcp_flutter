@@ -7,3 +7,32 @@ workspace:
   - packages/*
   - mcp_toolkit
   - mcp_server_dart
+  - jaspr_web_example
+
+dependency_overrides:
+  intentcall_bridge:
+    path: ../intentcall/packages/intentcall_bridge
+  intentcall_cli:
+    path: ../intentcall/packages/intentcall_cli
+  intentcall_codegen:
+    path: ../intentcall/packages/intentcall_codegen
+  intentcall_core:
+    path: ../intentcall/packages/intentcall_core
+  intentcall_hooks:
+    path: ../intentcall/packages/intentcall_hooks
+  intentcall_mcp:
+    path: ../intentcall/packages/intentcall_mcp
+  intentcall_platform:
+    path: ../intentcall/packages/intentcall_platform
+  intentcall_platform_android:
+    path: ../intentcall/packages/intentcall_platform_android
+  intentcall_platform_apple:
+    path: ../intentcall/packages/intentcall_platform_apple
+  intentcall_platform_sync:
+    path: ../intentcall/packages/intentcall_platform_sync
+  intentcall_schema:
+    path: ../intentcall/packages/intentcall_schema
+  intentcall_session:
+    path: ../intentcall/packages/intentcall_session
+  intentcall_webmcp:
+    path: ../intentcall/packages/intentcall_webmcp

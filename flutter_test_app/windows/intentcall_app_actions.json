@@ -1,0 +1,42 @@
+{
+  "version": 3,
+  "actions": [
+    {
+      "id": "app_set_greeting",
+      "description": "Fill the showcase greeting field with text",
+      "icon": "ms-resource://Files/Assets/AppIcon.png",
+      "usesGenerativeAI": false,
+      "allowedAppInvokers": [
+        "*"
+      ],
+      "inputs": [
+        {
+          "name": "text",
+          "kind": "Text",
+          "required": true
+        }
+      ],
+      "inputCombinations": [
+        {
+          "inputs": [
+            "text"
+          ],
+          "description": "Fill the showcase greeting field with text"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "kind": "Text"
+        }
+      ],
+      "invocation": {
+        "type": "Uri",
+        "uri": "mcpfluttertest://actions/app_set_greeting",
+        "inputData": {
+          "text": "${text.Text}"
+        }
+      }
+    }
+  ]
+}

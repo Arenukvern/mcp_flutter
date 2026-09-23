@@ -22,8 +22,22 @@ abstract class MCPToolkitBindingBase {
   /// The name of the MCP service extension.
   String _mcpServiceExtensionName = kMCPServiceExtensionName;
 
+  /// App-owned IntentCall protocol scheme, when configured.
+  String? _protocolScheme;
+
   /// The name of the MCP service extension.
   String get mcpServiceExtensionName => _mcpServiceExtensionName;
+
+  /// IntentCall [protocolScheme] used to derive resource URIs.
+  ///
+  /// When unset, [AgentCallEntryMcpToolkit.resolveResourceUri] falls back to
+  /// legacy `visual://localhost/...` URIs for VM dynamic registration.
+  String? get protocolScheme =>
+      _protocolScheme?.isNotEmpty == true ? _protocolScheme : null;
+
+  set protocolScheme(final String? value) {
+    _protocolScheme = value?.trim();
+  }
 
   /// Whether the binding has already been initialized.
   bool get isInitialized => _initialized;
@@ -32,10 +46,12 @@ abstract class MCPToolkitBindingBase {
   @mustCallSuper
   void initialize({
     final String serviceExtensionName = kMCPServiceExtensionName,
+    final String? protocolScheme,
   }) {
     assert(!_initialized);
     _initialized = true;
     _mcpServiceExtensionName = serviceExtensionName;
+    _protocolScheme = protocolScheme?.trim();
   }
 
   /// Registers a service extension method with the given name (full

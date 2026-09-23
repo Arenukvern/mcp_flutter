@@ -26,6 +26,11 @@ Normal repo state resolves hosted `intentcall_* ^0.6.0` packages from pub.dev. L
 
 ## Manifest and platform sync
 
+`flutter_test_app/intentcall.yaml` is the authoritative host config
+(`host: flutter`, `protocolScheme: mcpfluttertest`, `platforms.enabled`).
+Keep `web/agent_manifest.json` as the committed manifest fixture; export/sync
+must stay in lockstep with that file.
+
 Regenerate platform artifacts from the app manifest:
 
 ```bash
@@ -65,7 +70,7 @@ until a signed XCTest UI-test target executes them.
 | WebMCP | `web/index.html` loads generated WebMCP JS for early discovery; Flutter bootstrap starts `IntentCallFlutterHost` with WebMCP registration enabled to prove Dart registry execution with `app_intentcall_bridge_ping`. |
 | VM service | App dynamic tools are listed through `fmt_list_client_tools_and_resources` and invoked through `fmt_client_tool`. |
 | CLI / MCP host | Host tools keep `exec` and `fmt_*` naming parity through shared toolkit schemas and tests. |
-| Native invoke | `IntentCallFlutterHost` drains generated-wrapper envelopes on startup/resume and listens for app-owned deep links through the `mcpfluttertest` scheme. Generated Apple intents use foreground/open-app handoff for `app_intentcall_bridge_ping`, `app_set_greeting`, and `app_enable_switch`. |
+| Native invoke | `IntentCallFlutterHost` drains generated-wrapper envelopes on startup/resume and listens for app-owned deep links through the `mcpfluttertest` scheme. Generated Apple intents call `IntentCallNativeBridge.enqueue` in `intentcall_platform_apple` (imported by `Runner/Generated/IntentCallGenerated.swift`) for foreground/open-app handoff on `app_intentcall_bridge_ping`, `app_set_greeting`, and `app_enable_switch`. |
 | Apple entities | `web/agent_manifest.json` declares the `app_screen` entity type, generated Swift projects it as `AppEntity, IndexedEntity`, and Dart seeds native entity snapshots for Spotlight/App Intents query/cache proof. This is not live Spotlight/Siri discovery proof until a signed installed app is exercised through the OS. |
 | AppIntentsTesting | `tool/intentcall/appintents_testing_samples.json` supplies primitive tool arguments for generated XCTest scaffolds. This is not runtime proof until a signed UI-test target runs the generated source. |
 
@@ -74,6 +79,11 @@ For schema parity, `fmt_*`, CLI `exec`, app-dynamic tool names, and fail-closed 
 ## Useful commands
 
 ```bash
+# Apple compile gate (Runner Generated Swift + federated plugin module)
+bash tool/contracts/check_apple_runner_compile.sh
+# Optional: INTENTCALL_ROOT=../agentkit syncs ios/macos before compile
+# Strict CI: FAIL_ON_SKIP=1 bash tool/contracts/check_apple_runner_compile.sh
+
 # Web dogfood
 make web-showcase
 

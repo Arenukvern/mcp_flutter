@@ -27,6 +27,9 @@ Future<void> configureIntentCallShowcase({
         IntentCallInvocationSource.webMcpDart,
         IntentCallInvocationSource.nativeGenerated,
         IntentCallInvocationSource.deepLink,
+        IntentCallInvocationSource.appleAwaitApp,
+        IntentCallInvocationSource.windowsAppAction,
+        IntentCallInvocationSource.websocket,
       },
       allowedQualifiedNames: <String>{
         'app_intentcall_bridge_ping',
@@ -37,6 +40,7 @@ Future<void> configureIntentCallShowcase({
     registerWebMcp: kIsWeb,
     listenForDeepLinks: !kIsWeb,
     protocolScheme: intentCallProtocolScheme,
+    publishSurfaceLink: !kIsWeb,
     onEnvelope: (final envelope) {
       debugPrint('intentcall invoke: ${envelope.qualifiedName}');
     },

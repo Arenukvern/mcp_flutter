@@ -10,7 +10,7 @@
 | Hosted consumer proof | `make check-intentcall-hosted-consumer`; Steward `fmt.check.intentcall-hosted-deps-strict` |
 | Sibling upstream matrix proof | `make check-intentcall-sibling-matrix` |
 | Compatibility alias | `make check-intentcall-integration` → sibling upstream matrix proof |
-| Repo contract gate | `make check-contracts` |
+| Repo contract gate | `make check-contracts` (includes `check_apple_runner_compile.sh` — `flutter build macos --config-only` on `flutter_test_app`) |
 | IntentCall publish checks | Run from the IntentCall checkout |
 | AppIntentsTesting consumer scaffold | `flutter-mcp-toolkit codegen appintents-testing generate` |
 
@@ -79,11 +79,19 @@ catalog through `DefaultCoreCommandExecutor`.
 
 ## Normal consumer state
 
-Committed `mcp_flutter` state should use hosted `intentcall_*` dependencies. Do not commit normal consumer pubspecs with `agentkit/packages`, `intentcall/packages`, or `path: .*intentcall` dependencies.
+This branch resolves IntentCall from the sibling checkout at `../intentcall`
+(`dependency_overrides` in the workspace `pubspec.yaml`). The same
+`AgentRegistry` is the contract for both agent kinds:
 
-Use root `dependency_overrides` only while deliberately developing against the
-sibling IntentCall checkout, then remove them before publishing consumer
-integration changes.
+- Coding agents use Flutter MCP Toolkit in a debug session: VM service tools
+  (`fmt_*`) plus the app's declared `AgentCallEntry` tools. Resource URIs go
+  through `AgentCallEntryMcpToolkit.resolveResourceUri`.
+- OS agents use the platform projection of those same entries. `awaitApp`
+  returns the Dart result to Shortcuts/Siri. `openApp` only queues a wake.
+  `windows.appActions` is the Windows result path. WebMCP is the in-page path.
+
+Do not point overrides at `../agentkit`. That directory name is only a fallback
+for older checkouts.
 
 ## Consumer proof gates
 
@@ -111,6 +119,28 @@ make sync-skills
 ```
 
 The durable proof should live in checks, CI, Steward scenarios, tests, and dated evidence records, not in a hand-maintained pass-count checklist.
+
+### Apple Runner compile gate
+
+`make check-contracts` runs `tool/contracts/check_apple_runner_compile.sh`. This is
+the canonical compile-proof gate for federated Apple projection:
+
+1. Verifies `flutter_test_app/macos/Runner/Generated/IntentCallGenerated.swift`
+   imports `intentcall_platform_apple` and does **not** define an inline
+   `IntentCallNativeBridge` enum (facade lives in the plugin).
+2. When `INTENTCALL_ROOT` or `../agentkit` is present, runs
+   `intentcall platform sync --platform ios,macos` before compile.
+3. Runs `flutter build macos --config-only` on `flutter_test_app`.
+
+Standalone:
+
+```bash
+bash tool/contracts/check_apple_runner_compile.sh
+```
+
+From the IntentCall checkout with sibling `mcp_flutter`: `just apple-runner-compile-check`.
+
+Set `FAIL_ON_SKIP=1` in CI when Flutter/Xcode must be present.
 
 ## Apple AppIntentsTesting scaffold
 

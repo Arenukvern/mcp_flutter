@@ -11,28 +11,41 @@
       "pluralDisplayName": "Showcase Screens",
       "description": "Open a discoverable MCP Flutter showcase screen",
       "titleKey": "title",
-      "subtitleKey": "subtitle",
-      "keywordsKey": "keywords",
+      "subtitleKey": "summary",
+      "keywordsKey": "tags",
       "urlKey": "deepLink",
       "defaultQueryLimit": 6,
       "snapshotSchema": {
         "type": "object",
         "additionalProperties": true,
         "properties": {
-          "id": { "type": "string" },
-          "title": { "type": "string" },
-          "subtitle": { "type": "string" },
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "subtitle": {
+            "type": "string"
+          },
           "keywords": {
             "type": "array",
-            "items": { "type": "string" }
+            "items": {
+              "type": "string"
+            }
           },
-          "deepLink": { "type": "string" },
+          "deepLink": {
+            "type": "string"
+          },
           "properties": {
             "type": "object",
             "additionalProperties": true
           }
         },
-        "required": ["id", "title"]
+        "required": [
+          "id",
+          "title"
+        ]
       }
     }
   ],
@@ -43,6 +56,19 @@
       "name": "demo_ping",
       "description": "Demo ping tool for WebMCP platform sync",
       "kind": "tool",
+      "dispatchMode": "openApp",
+      "surfaces": {
+        "apple.appIntents": { "include": true },
+        "apple.appShortcuts": { "include": false },
+        "web.webMcp": { "include": true },
+        "web.manifestShortcuts": { "include": true },
+        "web.protocolHandlers": { "include": true },
+        "android.shortcuts": { "include": true },
+        "windows.protocolActivation": { "include": true },
+        "windows.msixProtocol": { "include": true },
+        "windows.appActions": { "include": false },
+        "linux.schemeHandler": { "include": true }
+      },
       "inputSchema": {
         "type": "object",
         "properties": {}
@@ -54,9 +80,20 @@
       "name": "intentcall_bridge_ping",
       "description": "Proof that native/WebMCP dispatch executes Dart registry logic",
       "kind": "tool",
-      "dispatchMode": "openApp",
+      "dispatchMode": "awaitApp",
       "surfaces": {
-        "apple.appShortcuts": { "include": true }
+        "apple.appIntents": { "include": true },
+        "apple.appShortcuts": { "include": true },
+        "apple.entities": { "include": true },
+        "apple.spotlight": { "include": true },
+        "web.webMcp": { "include": true },
+        "web.manifestShortcuts": { "include": true },
+        "web.protocolHandlers": { "include": true },
+        "android.shortcuts": { "include": true },
+        "windows.protocolActivation": { "include": true },
+        "windows.msixProtocol": { "include": true },
+        "windows.appActions": { "include": false },
+        "linux.schemeHandler": { "include": true }
       },
       "inputSchema": {
         "type": "object",
@@ -67,7 +104,9 @@
             "description": "Value echoed by Dart registry proof."
           }
         },
-        "required": ["echo"]
+        "required": [
+          "echo"
+        ]
       }
     },
     {
@@ -78,7 +117,18 @@
       "kind": "tool",
       "dispatchMode": "openApp",
       "surfaces": {
-        "apple.appShortcuts": { "include": true }
+        "apple.appIntents": { "include": true },
+        "apple.appShortcuts": { "include": true },
+        "apple.entities": { "include": true },
+        "apple.spotlight": { "include": true },
+        "web.webMcp": { "include": true },
+        "web.manifestShortcuts": { "include": true },
+        "web.protocolHandlers": { "include": true },
+        "android.shortcuts": { "include": true },
+        "windows.protocolActivation": { "include": true },
+        "windows.msixProtocol": { "include": true },
+        "windows.appActions": { "include": true },
+        "linux.schemeHandler": { "include": true }
       },
       "inputSchema": {
         "type": "object",
@@ -89,7 +139,9 @@
             "description": "Text to place in the greeting field."
           }
         },
-        "required": ["text"]
+        "required": [
+          "text"
+        ]
       }
     },
     {
@@ -100,7 +152,18 @@
       "kind": "tool",
       "dispatchMode": "openApp",
       "surfaces": {
-        "apple.appShortcuts": { "include": true }
+        "apple.appIntents": { "include": true },
+        "apple.appShortcuts": { "include": true },
+        "apple.entities": { "include": true },
+        "apple.spotlight": { "include": true },
+        "web.webMcp": { "include": true },
+        "web.manifestShortcuts": { "include": true },
+        "web.protocolHandlers": { "include": true },
+        "android.shortcuts": { "include": true },
+        "windows.protocolActivation": { "include": true },
+        "windows.msixProtocol": { "include": true },
+        "windows.appActions": { "include": false },
+        "linux.schemeHandler": { "include": true }
       },
       "inputSchema": {
         "type": "object",
