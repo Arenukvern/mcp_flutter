@@ -2,6 +2,7 @@
 // ignore_for_file: avoid_catches_without_on_clauses
 // ignore_for_file: use_build_context_synchronously
 
+import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -1623,12 +1624,9 @@ mixin GestureInteractionService {
       ),
     );
 
-    final dx = (to.dx - from.dx) / steps;
-    final dy = (to.dy - from.dy) / steps;
     var last = from;
-    for (var i = 1; i <= steps; i++) {
+    for (final pos in _dragPath(from, to, steps)) {
       await Future<void>.delayed(perStep);
-      final pos = ui.Offset(from.dx + dx * i, from.dy + dy * i);
       binding.handlePointerEvent(
         PointerMoveEvent(
           pointer: pointer,
@@ -1653,6 +1651,47 @@ mixin GestureInteractionService {
     );
     _releaseSyntheticDevice();
     await _waitFrame();
+  }
+
+  /// Distance between the pointer positions that open a drag.
+  static const double _kRampStep = 2;
+
+  /// The positions a synthesized pointer visits between [from] and [to].
+  ///
+  /// The path opens with [_kRampStep]-sized moves until the pointer has
+  /// travelled [kPanSlop] — the widest slop a recognizer waits for — and
+  /// covers the rest in [steps] equal moves.
+  ///
+  /// The ramp is what keeps the reported press honest. A recognizer that wins
+  /// the arena folds every move dispatched before the win into its start
+  /// position (Flutter's default [DragStartBehavior.start]), so a first move
+  /// as long as a twelfth of the whole path reports a press the user never
+  /// made — enough to start a drag below a 29 px card's grab zone and resize
+  /// it instead of moving it. Ramped, that fold is one [_kRampStep].
+  static List<ui.Offset> _dragPath(
+    final ui.Offset from,
+    final ui.Offset to,
+    final int steps,
+  ) {
+    final total = to - from;
+    final distance = total.distance;
+    if (distance == 0) {
+      return <ui.Offset>[to];
+    }
+    final unit = total / distance;
+    final positions = <ui.Offset>[];
+    final rampEnd = math.min(kPanSlop, distance);
+    var travelled = _kRampStep;
+    while (travelled < rampEnd) {
+      positions.add(from + unit * travelled);
+      travelled += _kRampStep;
+    }
+    final rampedTo = positions.isEmpty ? from : positions.last;
+    final remaining = to - rampedTo;
+    for (var i = 1; i <= steps; i++) {
+      positions.add(rampedTo + remaining * (i / steps));
+    }
+    return positions;
   }
 
   /// Faster drag for swipe / fling — tighter per-step interval feeds higher
