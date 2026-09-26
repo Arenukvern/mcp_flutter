@@ -191,6 +191,10 @@
         {
           "title": "0014 — External dev sessions & runner delegation",
           "href": "/decisions/0014_external_dev_sessions_runner_delegation"
+        },
+        {
+          "title": "0015 — flutter_mcp_harness extraction",
+          "href": "/decisions/0015_flutter_mcp_harness_extraction"
         }
       ]
     },
