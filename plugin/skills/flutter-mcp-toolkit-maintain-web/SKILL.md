@@ -144,4 +144,5 @@ Pass `--web-browser-debugging-port <cdp>` if CDP discovery fails.
 - `docs/superpowers/evals/2026-05-26-webmcp-verification.md`
 - `flutter-mcp-cli-runtime-validation` — validate-runtime details
 - `flutter-mcp-toolkit-dogfood-iterations` — scored iterations
+- `flutter-mcp-e2e-harness` — programmatic scenarios over this showcase (`packages/harness`, `--web --detach` variant)
 - Chrome DevTools MCP: https://github.com/ChromeDevTools/chrome-devtools-mcp (WebMCP tools need `--categoryExperimentalWebmcp` + Chrome 149+)

@@ -9,6 +9,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `ToolkitDriver` (`toolkit_driver.dart`): the toolkit's
+  `AutomationDriver` implementation over the `ext.mcp.toolkit.*`
+  extensions — semantic `AxNode` snapshots with bounds and refs, click /
+  type / key-press / named-route navigate / evaluate actions, PNG
+  screenshots via `view_screenshots` — passing the
+  `universal_automation_conformance` driver suite (ADR-0038 adoption).
+- `ToolkitExtensions.viewScreenshots` constant (`ext.mcp.toolkit.view_screenshots`).
+- `tool/drive_flutter_demo.dart` + `tool/drive_web_demo.dart`: showcase
+  drives for `showcase/` — one driver contract across the instrumented
+  Flutter and browser tiers, with screencast receipts via
+  `universal_screencast` (`universal_capture_flutter`'s
+  `ToolkitFrameSource` on the Flutter side, `CdpScreencastFrameSource`
+  in Chrome).
+
+### Changed
+
+- `ChromeAppTarget.launch` polls the CDP endpoint (250 ms interval, 30 s
+  deadline) instead of probing once — a single probe loses the race
+  against Chrome's DevTools-socket boot on cold starts; launches pass
+  `--force-renderer-accessibility` so headless pages expose their full
+  accessibility tree.
+
 - `tool/intentcall_session.dart`: the IntentCall showcase doors (link
   discover, bridge ping, MCP serve) as a checked-in Dart composition root.
   Resolves the target VM from `--vm-service-uri` or the freshest

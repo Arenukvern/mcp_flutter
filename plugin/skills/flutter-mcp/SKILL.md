@@ -87,3 +87,4 @@ If the target app cannot be instrumented (third-party binary, restricted env), r
 
 - For the dynamic-tools side (registering custom MCP tools from inside the Flutter app), see the `flutter-mcp-toolkit-custom-tools` skill.
 - For routing across setup / inspect / control / debug skills, see `flutter-mcp-toolkit-guide`.
+- For **repeatable** scenarios as checked-in Dart (build/launch/attach/drive/assert without MCP), see `flutter-mcp-e2e-harness`.

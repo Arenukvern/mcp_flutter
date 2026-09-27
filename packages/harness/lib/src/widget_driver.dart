@@ -86,7 +86,11 @@ final class WidgetDriver {
       await _call(
         ToolkitExtensions.scroll,
         args: {
-          '?ref': ref,
+          // Deliberate `if` element, not the `'?ref'` null-aware form:
+          // the runtime sent the literal '?ref' key under this package's
+          // language version and the app's schema rejected it.
+          // ignore: use_null_aware_elements
+          if (ref != null) 'ref': ref,
           'direction': direction,
           'distance': distance,
         },

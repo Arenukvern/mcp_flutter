@@ -77,3 +77,4 @@ bash tool/evals/run_dogfood_eval.sh \
 - `flutter-mcp-cli-runtime-validation` — doctor, capture backends, extensions
 - `flutter-mcp-toolkit-maintain-web` — WebMCP enablement
 - `flutter-mcp-toolkit-dogfood-iterations` — rubric + tracker
+- `flutter-mcp-e2e-harness` — programmatic scenarios over this showcase (`packages/harness`, showcase launcher)

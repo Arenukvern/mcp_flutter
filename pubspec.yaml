@@ -10,6 +10,16 @@ workspace:
   - jaspr_web_example
 
 dependency_overrides:
+  universal_browser_cdp:
+    path: ../../../xs/storage_problem/dart_flutter_packages/pkgs/universal_browser_cdp
+  universal_automation_interface:
+    path: ../../../xs/storage_problem/dart_flutter_packages/pkgs/universal_automation_interface
+  universal_automation_conformance:
+    path: ../../../xs/storage_problem/dart_flutter_packages/pkgs/universal_automation_conformance
+  universal_screencast:
+    path: ../../../xs/storage_problem/dart_flutter_packages/pkgs/universal_screencast
+  universal_capture_flutter:
+    path: ../../../xs/storage_problem/dart_flutter_packages/pkgs/universal_capture_flutter
   intentcall_bridge:
     path: ../intentcall/packages/intentcall_bridge
   intentcall_cli:

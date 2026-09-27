@@ -22,8 +22,13 @@ environment:
 
 dependencies:
   path: ^1.9.0
+  universal_automation_interface: ^0.1.0
+  universal_browser_cdp: ^0.1.0
+  universal_capture_flutter: ^0.1.0
+  universal_screencast: ^0.1.0
   vm_service: ^15.3.0
 
 dev_dependencies:
   lints: ^6.1.0
   test: ^1.31.0
+  universal_automation_conformance: ^0.1.0

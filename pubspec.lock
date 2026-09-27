@@ -840,6 +840,34 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "8.0.14"
+  universal_automation_conformance:
+    dependency: "direct overridden"
+    description:
+      path: "../../../xs/storage_problem/dart_flutter_packages/pkgs/universal_automation_conformance"
+      relative: true
+    source: path
+    version: "0.1.0"
+  universal_automation_interface:
+    dependency: "direct overridden"
+    description:
+      path: "../../../xs/storage_problem/dart_flutter_packages/pkgs/universal_automation_interface"
+      relative: true
+    source: path
+    version: "0.1.0"
+  universal_browser_cdp:
+    dependency: "direct overridden"
+    description:
+      path: "../../../xs/storage_problem/dart_flutter_packages/pkgs/universal_browser_cdp"
+      relative: true
+    source: path
+    version: "0.1.0"
+  universal_capture_flutter:
+    dependency: "direct overridden"
+    description:
+      path: "../../../xs/storage_problem/dart_flutter_packages/pkgs/universal_capture_flutter"
+      relative: true
+    source: path
+    version: "0.1.0"
   universal_io:
     dependency: transitive
     description:
@@ -848,6 +876,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.3.1"
+  universal_screencast:
+    dependency: "direct overridden"
+    description:
+      path: "../../../xs/storage_problem/dart_flutter_packages/pkgs/universal_screencast"
+      relative: true
+    source: path
+    version: "0.1.0"
   vector_math:
     dependency: transitive
     description:

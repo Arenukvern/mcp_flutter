@@ -1,0 +1,168 @@
+# E2E Scenarios (Programmatic Harness)
+
+Repeatable end-to-end scenarios as checked-in Dart: build the app, launch the
+process, attach to its Dart VM service, then drive and assert — no MCP
+client, no shell glue. The driving layer speaks the same `ext.mcp.toolkit.*`
+service extensions the MCP server exposes, so an app instrumented with
+`mcp_toolkit` works with both surfaces unchanged.
+
+| Question | Answer |
+|---|---|
+| Package | [`packages/harness`](https://github.com/Arenukvern/mcp_flutter/tree/main/packages/harness) (`flutter_mcp_harness`) |
+| Decision record | ADR-0015 (`decisions/0015_flutter_mcp_harness_extraction.mdx`) |
+| Interactive alternative | [CLI vs MCP](/start_here/cli_vs_mcp), [Interaction Cookbook](/guides/interaction_cookbook) |
+| Agent skill | `flutter-mcp-e2e-harness` |
+
+## Why a harness owns the lifecycle
+
+An earlier harness attempt was a declarative YAML runner on top of the MCP
+server — and never owned the hard parts. The valuable 80% is the boring 20%:
+
+1. **Own the build.** Run `flutter build <os> --debug` (or own the
+   `flutter run` session), then launch/attach deliberately. No scraping of
+   sticky state files.
+2. **Own the VM.** Scrape the VM service URI from the process's own stdout
+   and connect with the `vm_service` package: extension calls, evaluate, hot
+   reload.
+3. **Own the process lifecycle.** `LaunchedApp` keeps the process, a
+   broadcast log tap, and the VM client. Scenarios stop what they started,
+   in `finally`, with the exit code reflecting the result.
+
+Only on top of those is a named-step `Scenario` with recorded assertions
+worth anything.
+
+## Pick a launch path
+
+At most **one owning session per app** — a second `flutter run`/`attach` on
+a session someone else owns can kill the first (ADR-0014).
+
+| Target | Behavior | Use when |
+|---|---|---|
+| `FlutterRunTarget` | Starts `flutter run -d <device> --debug` and owns it: build, hot reload (`r`/`R`/`q` on stdin), VM URI scraped from the tool output. | You want hot reload in the loop, or you are driving the showcase. |
+| `BinaryAppTarget` (`MacosAppTarget` / `WindowsAppTarget` presets) | Full `flutter build <os> --debug`, launches the binary directly, scrapes the VM URI from its stdout. Never opens a compile channel. | Repeatable fresh-build scenarios (CI-shaped). `launch(build: false)` reuses an existing binary. |
+| External runner owns the app | Construct `LaunchedApp` directly around the owning process; read the VM URI from the runner-session contract (`vm_service_uri`), not stdout. | A dev runner (e.g. `oka dev`) already owns the session (ADR-0014). |
+
+## Scenario anatomy
+
+```dart
+final scenario = Scenario('pairing E2E', steps: [
+  ('launch host', (context) async {
+    final app = await MacosAppTarget(
+      projectDir: appDir,
+      binaryPath: binary,
+      environment: {'MY_APP_ROLE': 'host'},
+    ).launch(build: build);
+    host = app;
+    await app.stdout.waitFor('app started'); // no sleeps
+    context.bag['host'] = app;               // hand values between steps
+    context.report.pass('host at ${app.vmUri}');
+  }),
+  ('pair and assert', (context) async {
+    final driver = WidgetDriver(await host!.vm());
+    final ref = await driver.findRef('connect');
+    if (ref == null) return context.report.fail('no connect button');
+    await driver.tap(ref);
+    final code = await driver.findValue((v) => v.startsWith('MYAPP-'));
+    code != null
+        ? context.report.pass('code exchanged (${code.length} chars)')
+        : context.report.fail('no code in snapshot');
+  }),
+]);
+
+var passed = false;
+try {
+  passed = await scenario.run();
+  scenario.report.printSummary();
+} finally {
+  await host?.stop(); // cleanup always runs
+}
+exit(passed ? 0 : 1);
+```
+
+Rules that make scenarios boring (in a good way):
+
+- Steps run in order; the first failure — a thrown error **or** a
+  `report.fail` — aborts the remaining steps. Cleanup still happens.
+- `HarnessContext.bag` passes values between steps; no globals.
+- `LogTap.waitFor(pattern)` replaces sleep-and-grep. `tail(n)` prints a
+  diagnosis on failure.
+- `retry(action)` polls until non-null for app-side readiness races.
+
+## Driving the UI
+
+`WidgetDriver` wraps the toolkit service extensions as typed calls:
+
+| Call | Notes |
+|---|---|
+| `snapshot()` | `(label, ref)` pairs for the visible tree. |
+| `findRef(needle)` | Case-insensitive substring on labels; retries until `timeout`. |
+| `tap(ref)` / `tapUntil(ref, until:)` | Re-taps until a predicate (log line, state read) fires. |
+| `enterText(ref, text)` | Types into the field by ref. |
+| `scroll(direction:, distance:)` | Off-screen semantics exist only once scrolled into view. |
+| `findValue(predicate)` | Reads a node's selectable-text `value` — the deterministic way to read app-rendered data (clipboards are not). |
+
+Two traps worth knowing:
+
+- **Cold-attach race.** If you attach before the app registered the toolkit,
+  extension calls fail with RPC error `-32601`. The driver answers with an
+  empty snapshot so `findRef`'s retry loop rides it out — one empty snapshot
+  is not proof the UI is empty.
+- **Reload honesty.** `VmClient.hotReload()` is a raw `reloadSources` call:
+  without an owning `flutter run`/`attach` session it cannot compile and
+  reports success with zero changed sources. Treat `true` as "asked", not
+  "recompiled" — or launch through `FlutterRunTarget`, which owns the
+  compile channel.
+
+## The showcase launcher
+
+The repo showcase is itself a harness composition root:
+`packages/harness/tool/showcase.dart` (Dart rewrite of the former
+`scripts/run_showcase.sh` family, which remain as deprecated wrappers).
+
+```bash
+make showcase        # macOS, interactive foreground (r/R/q relayed)
+make web-showcase    # Chrome with WebMCP flags (WEB_PORT, VM_HOST_PORT, …)
+make showcase-stop   # idempotent teardown: pids, stray sessions, VM port
+```
+
+Useful variants and artifacts:
+
+- `dart run packages/harness/tool/showcase.dart --web --detach` — spawns the
+  Chrome session detached, waits for the `ws://` VM URI in
+  `.showcase/web_app.log`, prints `WS_URI=…`, exits 0 (CI-friendly).
+- `.showcase/` holds the teed logs (`flutter_app.log` / `web_app.log`) and
+  pid files. The IntentCall doors (discover / bridge ping / MCP serve) are a
+  checked-in tool against the running showcase:
+  `dart run packages/harness/tool/intentcall_session.dart demo`.
+- Interactive mode relays your keystrokes to the flutter tool and tears the
+  session down on exit or Ctrl-C.
+
+## Boundaries
+
+- **No new toolkit verbs.** `ToolkitExtensions` mirrors
+  `mcp_toolkit`'s interaction toolkit; new verbs are added there first.
+- **No owned compile sessions** in `BinaryAppTarget` — full fresh builds
+  only, so it never competes with a dev runner.
+- **No declarative scenario documents.** Composition roots are
+  consuming-project code (`example/desktop_pair.dart` shows the shape); the
+  YAML-document layer stays in the external `flutter_harness` repo
+  (ADR-0012).
+- **Device bring-up** (Android/iOS) is delegated to the owning dev session
+  (`oka_harness`, ADR-0014); desktop targets live here.
+
+## Verify
+
+```bash
+cd packages/harness
+dart test                                  # unit tests (canned envelopes, fake flutter)
+dart run example/desktop_pair.dart --skip-build
+```
+
+## Related
+
+- [Architecture](/core/project_architecture) — where the harness sits
+- [CLI vs MCP](/start_here/cli_vs_mcp) — surface choice, including when a
+  debug battery should graduate into a scenario
+- [Interaction Cookbook](/guides/interaction_cookbook) — the same verbs over MCP/CLI
+- ADR-0014 — external dev sessions and runner delegation
+- ADR-0015 — harness extraction and boundaries

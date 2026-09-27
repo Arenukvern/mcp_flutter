@@ -81,6 +81,8 @@ failure aborts, cleanup still runs, exit code reflects the result.
 | Attach to an app someone else owns (dev runner session, ADR-0014) | construct `LaunchedApp` around the owning process |
 | Wait for log lines / assert on output | `LogTap.waitFor` / `firstMatch` / `count` / `tail` |
 | Drive the UI | `WidgetDriver`: `snapshot`, `findRef`, `tap`, `tapUntil`, `enterText`, `scroll`, `findValue` |
+| Drive the UI through the universal `AutomationDriver` contract | `ToolkitDriver`: `snapshot` (semantic `AxNode` tree), `perform` (click/type/keys/navigate/evaluate), `screenshot` |
+| Stream frames from a running app / browser | `universal_capture_flutter`'s `ToolkitFrameSource` + `universal_screencast` (see `tool/drive_flutter_demo.dart`) |
 | Structure steps, assertions, cleanup | `Scenario`, `Check`, `ScenarioReport`, `HarnessContext`, `retry` |
 | Evaluate Dart / hot-reload / discover extensions in the app | `VmClient.evaluate` / `hotReload` / `extensionNames` |
 | Reference the toolkit verb names | `ToolkitExtensions` (mirrors `mcp_toolkit`'s interaction toolkit) |
@@ -99,12 +101,21 @@ failure aborts, cleanup still runs, exit code reflects the result.
   `flutter run` session (hot reload via stdin; the showcase launch path).
 - `lib/src/widget_driver.dart` — typed snapshot/tap/enterText/findValue over
   the toolkit service extensions.
+- `lib/src/toolkit_driver.dart` — the toolkit's `AutomationDriver`
+  implementation (ADR-0038): one observe/act/verify vocabulary shared with
+  the CDP and OS-native drivers; passes the family conformance suite
+  (`universal_automation_conformance`) against the same canned-extension
+  seam.
 - `lib/src/toolkit_extensions.dart` — the extension verb names the driver
   calls (source of truth: `mcp_toolkit`'s interaction toolkit).
 - `lib/src/scenario.dart`, `lib/src/check.dart` — steps, checks, report.
 - `example/desktop_pair.dart` — a full two-instance composition root.
 - `tool/showcase.dart` — this repo's showcase launcher (macOS / `--web` /
   `--stop`), the Dart rewrite of the former `scripts/*.sh` showcase.
+- `tool/drive_flutter_demo.dart`, `tool/drive_web_demo.dart` — end-to-end
+  showcase drives for [`showcase/`](../../showcase/): instrumented Flutter
+  tier and browser tier through one driver contract, both recording
+  screencast receipts under `.showcase/`.
 - `tool/intentcall_session.dart` — IntentCall doors against a running
   showcase (discover / bridge ping / MCP serve), a checked-in composition
   root — nothing under `.showcase/` is generated at runtime.
@@ -145,6 +156,30 @@ dart run packages/harness/tool/intentcall_session.dart serve-debug  # MCP door p
 The session tool resolves the VM service URI from the freshest announcement
 in the showcase log (or `--vm-service-uri`) and the IntentCall CLI from
 `INTENTCALL_ROOT`, sibling checkouts, or `PATH`.
+
+## Web targets
+
+Chrome/Chromium scenarios run through [ChromeAppTarget]
+(`lib/src/chrome_app_target.dart`): same ownership philosophy — own the
+process, publish the endpoint, attach the client — but the protocol
+client is `universal_browser_cdp` (CDP), not the VM service, so it
+produces a [LaunchedChrome] rather than a [LaunchedApp]. The compile
+step is deliberately absent: serve the web build yourself and point
+`startUrl` at it. A port already answering CDP is adopted as a borrowed
+session and never killed. Real-Chrome smoke: `XS_TEST_CHROME=1 dart test`.
+
+## Automation drivers (universal_automation_* family)
+
+[ToolkitDriver] implements the `universal_automation_interface`
+`AutomationDriver` contract over the same `ext.mcp.toolkit.*` extensions
+[WidgetDriver] speaks — ADR-0038's adoption of the shared automation
+kernel. Agents get one observe/act/verify vocabulary across the
+instrumented tier (this package), the browser tier
+(`universal_browser_cdp`'s [CdpDriver]), and the OS-native tier, plus the
+family conformance suite for free in tests. Locator grammar: `name`
+matches snapshot labels, `role` matches semantic roles, `css` accepts a
+snapshot ref (`s_12`) or a label; navigation maps to the toolkit's named
+routes and refuses loudly otherwise.
 
 ## Relationship to the MCP server
 

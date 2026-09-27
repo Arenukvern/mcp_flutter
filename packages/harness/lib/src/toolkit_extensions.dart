@@ -53,4 +53,7 @@ abstract final class ToolkitExtensions {
 
   /// Reveals the search field.
   static const String revealSearch = '$prefix.reveal_search';
+
+  /// Base64 screenshots of all views; `compress: false` keeps PNG bytes.
+  static const String viewScreenshots = '$prefix.view_screenshots';
 }

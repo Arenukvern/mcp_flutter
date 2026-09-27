@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Flutter MCP Toolkit — web demo</title>
+    <style>
+      body { font-family: system-ui, sans-serif; max-width: 30rem; margin: 3rem auto; }
+      h1 { font-size: 1.25rem; }
+      button { padding: 0.4rem 1rem; margin-right: 0.5rem; }
+      input { padding: 0.4rem; margin-right: 0.5rem; }
+      #profile[hidden] { display: none; }
+      ul { margin-top: 1rem; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Web demo home</h1>
+      <p>Count: <span id="count">0</span></p>
+      <button id="increment">Increment</button>
+      <p>
+        <label for="name">Name</label>
+        <input id="name" type="text" placeholder="Ada" />
+        <button id="open-profile">Open profile</button>
+      </p>
+      <section id="profile" hidden>
+        <h2>Profile</h2>
+        <p id="greeting">Hello, friend!</p>
+        <button id="back">Back</button>
+      </section>
+      <ul id="log"></ul>
+    </main>
+    <script>
+      let count = 0;
+      const log = (message) => {
+        const li = document.createElement('li');
+        li.textContent = message;
+        document.querySelector('#log').prepend(li);
+      };
+      document.querySelector('#increment').addEventListener('click', () => {
+        count += 1;
+        document.querySelector('#count').textContent = String(count);
+        log('incremented to ' + count);
+      });
+      document.querySelector('#open-profile').addEventListener('click', () => {
+        const name = document.querySelector('#name').value || 'friend';
+        document.querySelector('#greeting').textContent = 'Hello, ' + name + '!';
+        document.querySelector('#profile').hidden = false;
+        log('profile opened for ' + name);
+      });
+      document.querySelector('#back').addEventListener('click', () => {
+        document.querySelector('#profile').hidden = true;
+        log('profile closed');
+      });
+    </script>
+  </body>
+</html>

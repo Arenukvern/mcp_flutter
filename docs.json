@@ -106,6 +106,10 @@
           "href": "/guides/interaction_cookbook"
         },
         {
+          "title": "E2E Scenarios",
+          "href": "/guides/e2e_scenarios"
+        },
+        {
           "title": "Creating Dynamic Tools",
           "href": "/guides/creating_dynamic_tools"
         },

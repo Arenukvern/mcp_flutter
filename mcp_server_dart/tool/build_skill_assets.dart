@@ -23,6 +23,7 @@ const expectedSkillIds = [
   'flutter-mcp-toolkit-maintain-web',
   'flutter-mcp-toolkit-maintain-macos',
   'flutter-mcp-toolkit-dogfood-iterations',
+  'flutter-mcp-e2e-harness',
   // Harness + video skills live in flutter_harness/ and flutter_mcp_video/ (see docs/NORTH_STAR.md)
 ];
 

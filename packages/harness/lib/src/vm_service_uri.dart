@@ -40,8 +40,12 @@ Uri? lastVmServiceWsUriIn(final String contents) {
 /// Converts an http VM service URI to the WebSocket form its clients dial:
 /// `http://127.0.0.1:PORT/TOKEN=` → `ws://127.0.0.1:PORT/TOKEN/ws`.
 Uri canonicalVmServiceWsUri(final Uri httpUri) {
+  // Idempotent: an endpoint published in ws shape (`…/TOKEN/ws`, as oka's
+  // forwarded contract does) must not grow a second `/ws`.
   final path = httpUri.path.endsWith('/')
       ? '${httpUri.path}ws'
-      : '${httpUri.path}/ws';
+      : httpUri.path.endsWith('/ws')
+          ? httpUri.path
+          : '${httpUri.path}/ws';
   return httpUri.replace(scheme: 'ws', path: path);
 }

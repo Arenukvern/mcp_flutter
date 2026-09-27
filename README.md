@@ -128,6 +128,26 @@ The server binary lives in `mcp_server_dart` and is shipped through GitHub
 Release artifacts as `flutter-mcp-toolkit`, `fmtk`, and
 `flutter-mcp-toolkit-server`; it is not a pub.dev package.
 
+## Showcase & automation drivers
+
+The [`showcase/`](showcase/) folder holds examples that test the whole
+stack end-to-end — a minimal instrumented Flutter app
+([`showcase/flutter_demo`](showcase/flutter_demo/)) and a static web page
+([`showcase/web_demo`](showcase/web_demo/)) — each driven live by a
+checked-in composition root through the universal `AutomationDriver`
+contract from the [`universal_automation_*`](https://github.com/xsoulspace/dart_flutter_packages)
+family:
+
+```sh
+make drive-flutter   # instrumented tier: ToolkitDriver over the VM service
+make drive-web       # browser tier: CdpDriver over CDP (headless Chrome)
+```
+
+`packages/harness` implements the shared contract for the Flutter tier
+([`ToolkitDriver`](packages/harness/README.md#automation-drivers-universal_automation_-family)),
+so one observe/act/verify vocabulary covers Flutter apps, browsers, and
+OS-native targets — the same pipeline composition style oka uses.
+
 ## Development support
 
 | Need                           | Start here                                                                                                                                               |

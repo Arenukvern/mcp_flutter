@@ -45,7 +45,9 @@ publish-pub:
 	cd $(CURDIR) && bash tool/release/publish_pub_packages.sh --execute --skip-existing
 
 # Run the flutter_test_app showcase on macOS and print the VM URI.
-# Also writes .showcase/intentcall_examples.sh (discover, tool call, MCP serve).
+# IntentCall doors (discover, tool call, MCP serve) live in
+# packages/harness/tool/intentcall_session.dart — run it in a second
+# terminal once the showcase is up: … intentcall_session.dart demo
 # Dart rewrite of the former scripts/*.sh (ADR-0015); the .sh files are wrappers.
 .PHONY: web-showcase webmcp-chrome-args
 web-showcase:
@@ -60,6 +62,23 @@ showcase:
 
 showcase-stop:
 	@cd $(CURDIR) && dart run packages/harness/tool/showcase.dart --stop
+
+# Drive the showcase examples end-to-end (showcase/): the instrumented
+# Flutter tier (ToolkitDriver over the VM service) and the browser tier
+# (CdpDriver over CDP) through one AutomationDriver contract.
+.PHONY: drive-flutter drive-flutter-chrome drive-web
+drive-flutter:
+	@cd $(CURDIR) && dart run packages/harness/tool/drive_flutter_demo.dart
+
+drive-flutter-chrome:
+	@cd $(CURDIR) && dart run packages/harness/tool/drive_flutter_demo.dart --device chrome
+
+drive-web:
+ifdef VISIBLE
+	@cd $(CURDIR) && dart run packages/harness/tool/drive_web_demo.dart --visible
+else
+	@cd $(CURDIR) && dart run packages/harness/tool/drive_web_demo.dart
+endif
 
 .PHONY: exec-sweep exec-sweep-web
 exec-sweep:
