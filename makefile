@@ -46,19 +46,20 @@ publish-pub:
 
 # Run the flutter_test_app showcase on macOS and print the VM URI.
 # Also writes .showcase/intentcall_examples.sh (discover, tool call, MCP serve).
+# Dart rewrite of the former scripts/*.sh (ADR-0015); the .sh files are wrappers.
 .PHONY: web-showcase webmcp-chrome-args
 web-showcase:
-	@bash $(CURDIR)/scripts/run_web_showcase.sh
+	@cd $(CURDIR) && dart run packages/harness/tool/showcase.dart --web
 
 webmcp-chrome-args:
 	dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart webmcp chrome-args
 
 .PHONY: showcase showcase-stop
 showcase:
-	@bash $(CURDIR)/scripts/run_showcase.sh
+	@cd $(CURDIR) && dart run packages/harness/tool/showcase.dart
 
 showcase-stop:
-	@bash $(CURDIR)/scripts/stop_showcase.sh
+	@cd $(CURDIR) && dart run packages/harness/tool/showcase.dart --stop
 
 .PHONY: exec-sweep exec-sweep-web
 exec-sweep:

@@ -1,12 +1,14 @@
+import 'package:vm_service/vm_service.dart' show RPCError;
 import 'toolkit_extensions.dart';
 import 'vm_client.dart';
 
 /// Call signature of one VM service extension invocation. The seam tests
 /// use to answer with canned envelopes instead of a live VM.
-typedef ExtensionCall = Future<Map<String, dynamic>> Function(
-  String name, {
-  Map<String, Object?> args,
-});
+typedef ExtensionCall =
+    Future<Map<String, dynamic>> Function(
+      String name, {
+      Map<String, Object?> args,
+    });
 
 /// High-level widget driving over the MCP toolkit's VM service extensions.
 ///
@@ -67,14 +69,29 @@ final class WidgetDriver {
   Future<void> enterText(final String ref, final String text) =>
       _call(ToolkitExtensions.enterText, args: {'ref': ref, 'text': text});
 
+  /// Scrolls one step in [direction] from [ref]'s list — or, with no
+  /// [ref], the list under the screen centre — by [distance] logical
+  /// pixels. The port of an accessibility-driver swipe: off-screen
+  /// semantics inside a scrollable only exist once scrolled into view.
+  Future<void> scroll({
+    final String? ref,
+    final String direction = 'down',
+    final double distance = 300,
+  }) => _call(
+        ToolkitExtensions.scroll,
+        args: {
+          if (ref != null) 'ref': ref,
+          'direction': direction,
+          'distance': distance,
+        },
+      );
+
   /// Returns the first snapshot node `value` matching [predicate].
   ///
   /// Selectable-text nodes carry their content in `value` (not `label`),
   /// which is the deterministic way to read app-rendered data: icon-only
   /// copy buttons and host clipboards make clipboard routes unreliable.
-  Future<String?> findValue(
-    final bool Function(String value) predicate,
-  ) async {
+  Future<String?> findValue(final bool Function(String value) predicate) async {
     for (final node in await _snapshotNodes()) {
       if (node is Map) {
         final value = node['value'];
@@ -85,12 +102,21 @@ final class WidgetDriver {
   }
 
   Future<List<Object?>> _snapshotNodes() async {
-    final raw = await _call(ToolkitExtensions.snapshot);
-    final data = raw['data'] ?? raw;
-    return switch (data) {
-      final Map<Object?, Object?> data when data['nodes'] is List =>
-        data['nodes']! as List<Object?>,
-      _ => const <Object?>[],
-    };
+    final List<Object?> nodes;
+    try {
+      final raw = await _call(ToolkitExtensions.snapshot);
+      nodes = switch (raw['data'] ?? raw) {
+        final Map<Object?, Object?> data when data['nodes'] is List =>
+          data['nodes']! as List<Object?>,
+        _ => const <Object?>[],
+      };
+    } on RPCError catch (error) {
+      if (error.code != -32601) rethrow;
+      // The app has not registered the toolkit yet (an attach wins the
+      // race against main() on a cold launch) — an empty snapshot sends
+      // findRef's retry loop back to sleep instead of aborting the step.
+      return const <Object?>[];
+    }
+    return nodes;
   }
 }

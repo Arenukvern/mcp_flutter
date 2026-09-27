@@ -27,6 +27,25 @@ void main() {
       );
     });
 
+    test('waitFor fails fast when the tap closes while waiting', () async {
+      final tap = LogTap();
+      final future = tap.waitFor(
+        'never appears',
+        timeout: const Duration(seconds: 30),
+      );
+      await tap.close();
+      await expectLater(
+        future,
+        throwsA(
+          isA<StateError>().having(
+            (final e) => e.message,
+            'message',
+            contains('never appears'),
+          ),
+        ),
+      );
+    });
+
     test('count and firstMatch scan retained lines', () {
       final tap = LogTap()
         ..add('pointer_move #1')

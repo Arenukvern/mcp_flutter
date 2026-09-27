@@ -40,12 +40,16 @@ failure aborts, cleanup still runs, exit code reflects the result.
   Android/iOS device bring-up belongs to the owning dev session
   (see `oka_harness`, which follows the
   [runner-session contract](../../decisions/0014_external_dev_sessions_runner_delegation.mdx)).
+- `lib/src/flutter_run.dart` — [FlutterRunTarget], the owning interactive
+  `flutter run` session (hot reload via stdin; the showcase launch path).
 - `lib/src/widget_driver.dart` — typed snapshot/tap/enterText/findValue over
   the toolkit service extensions.
 - `lib/src/toolkit_extensions.dart` — the extension verb names the driver
   calls (source of truth: `mcp_toolkit`'s interaction toolkit).
 - `lib/src/scenario.dart`, `lib/src/check.dart` — steps, checks, report.
 - `example/desktop_pair.dart` — a full two-instance composition root.
+- `tool/showcase.dart` — this repo's showcase launcher (macOS / `--web` /
+  `--stop`), the Dart rewrite of the former `scripts/*.sh` showcase.
 
 ## Running
 

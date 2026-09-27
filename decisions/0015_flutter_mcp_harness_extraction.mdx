@@ -46,6 +46,13 @@ Extract the harness core into this monorepo as `flutter_mcp_harness`
 - `AppTarget`/`LaunchedApp` with `BinaryAppTarget` (fresh debug build →
   direct binary launch → stdout VM-URI scrape) and `MacosAppTarget` /
   `WindowsAppTarget` presets.
+- `FlutterRunTarget` — the owning interactive `flutter run` session
+  (device + extra args; hot reload via stdin relay). This is the launch
+  primitive behind the repo's showcase, now `packages/harness/tool/showcase.dart`
+  — the Dart rewrite of `scripts/run_showcase.sh` / `run_web_showcase.sh` /
+  `stop_showcase.sh` (which remain as deprecated wrappers for existing
+  references). It is a *first* owner, so it never hits the ADR-0014
+  second-attach hazard.
 
 Boundaries this package keeps:
 

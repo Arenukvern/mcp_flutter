@@ -24,9 +24,7 @@ final class VmClient {
     );
     final service = await vm_io.vmServiceConnectUri(wsUri.toString());
     final vmName = await service.getVM();
-    final isolates = <vm.IsolateRef>[
-      ...?vmName.isolates,
-    ];
+    final isolates = <vm.IsolateRef>[...?vmName.isolates];
     if (isolates.isEmpty) {
       throw StateError('VM at $httpUri exposes no isolates');
     }

@@ -1,18 +1,15 @@
 /// One assertion result; checks accumulate into a [ScenarioReport].
 final class Check {
-  Check({
-    required this.name,
-    required this.passed,
-    this.detail = '',
-  });
+  Check({required this.name, required this.passed, this.detail = ''});
 
   final String name;
   final bool passed;
   final String detail;
 
   @override
-  String toString() =>
-      passed ? 'PASS: $name' : 'FAIL: $name${detail.isEmpty ? '' : ' ($detail)'}';
+  String toString() => passed
+      ? 'PASS: $name'
+      : 'FAIL: $name${detail.isEmpty ? '' : ' ($detail)'}';
 }
 
 /// Mutable collector passed through steps; failures are recorded, not thrown,
@@ -35,7 +32,9 @@ final class ScenarioReport {
     final failures = checks.where((final c) => !c.passed).length;
     // ignore: avoid_print
     print(
-      allPassed ? 'ALL PASS (${checks.length})' : 'FAILURES: $failures/${checks.length}',
+      allPassed
+          ? 'ALL PASS (${checks.length})'
+          : 'FAILURES: $failures/${checks.length}',
     );
   }
 }

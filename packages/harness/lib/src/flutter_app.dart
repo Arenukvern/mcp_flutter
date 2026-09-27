@@ -4,11 +4,7 @@ import 'dart:io';
 
 import 'log_tap.dart';
 import 'vm_client.dart';
-
-final RegExp _vmServiceUriPattern = RegExp(
-  r'(?:vm service|Dart VM Service)[^\n]*?(http://127\.0\.0\.1:\d+/[\w_-]+=)',
-  caseSensitive: false,
-);
+import 'vm_service_uri.dart';
 
 /// How the app is brought up. Owns build + launch + VM attach.
 abstract interface class AppTarget {
@@ -48,6 +44,9 @@ final class LaunchedApp {
     final code = await process.exitCode.timeout(
       const Duration(seconds: 5),
       onTimeout: () {
+        // SIGKILL escalation orphans the tool's own children (the running
+        // app) — take them along.
+        Process.runSync('pkill', ['-P', '${process.pid}']);
         process.kill(ProcessSignal.sigkill);
         return process.exitCode;
       },
@@ -87,18 +86,22 @@ base class BinaryAppTarget implements AppTarget {
   /// Full build command run before launch when `launch(build: true)`.
   /// Empty means "never build here" (reuse an existing binary).
   final List<String> buildCommand;
+
+  /// Extra environment entries layered on top of the inherited parent
+  /// environment (an empty map inherits unchanged — never a wiped env).
   final Map<String, String> environment;
   final String name;
   final Duration vmServiceTimeout;
 
   @override
   Future<LaunchedApp> launch({final bool build = true}) async {
+    final env = _layeredEnvironment(environment);
     if (build && buildCommand.isNotEmpty) {
       final buildResult = await Process.run(
         buildCommand.first,
         buildCommand.sublist(1),
         workingDirectory: projectDir,
-        environment: environment,
+        environment: env,
         runInShell: true,
       );
       if (buildResult.exitCode != 0) {
@@ -112,20 +115,20 @@ base class BinaryAppTarget implements AppTarget {
       binaryPath,
       binaryArgs,
       workingDirectory: projectDir,
-      environment: environment,
+      environment: env,
     );
     final tap = LogTap()..add('[$name] launched ${binaryPath.split('/').last}');
     _pump(process.stdout, tap);
     _pump(process.stderr, tap);
     final line = await tap.waitFor(
-      _vmServiceUriPattern,
+      vmServiceUriPattern,
       timeout: vmServiceTimeout,
     );
     return LaunchedApp(
       name: name,
       process: process,
       stdout: tap,
-      vmUri: Uri.parse(_vmServiceUriPattern.firstMatch(line)!.group(1)!),
+      vmUri: vmServiceUriFromLine(line)!,
     );
   }
 
@@ -136,6 +139,11 @@ base class BinaryAppTarget implements AppTarget {
         .listen(tap.add, onDone: tap.close);
   }
 }
+
+/// Layers [extra] over the parent environment; `null` means "inherit
+/// unchanged" for dart:io (an empty map would wipe the child's env).
+Map<String, String>? _layeredEnvironment(final Map<String, String> extra) =>
+    extra.isEmpty ? null : <String, String>{...Platform.environment, ...extra};
 
 /// macOS debug app: `flutter build macos --debug` then launch the binary
 /// directly (flutter run's kernel-service path is flaky under automation).
