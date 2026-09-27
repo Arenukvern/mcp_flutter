@@ -23,3 +23,25 @@ Uri? vmServiceUriFromLine(final String line) {
   if (match == null) return null;
   return Uri.parse(match.group(1)!);
 }
+
+/// The last http VM service announcement in a whole log [contents], or null
+/// (later announcements win — a hot restart re-announces a fresh token).
+Uri? lastVmServiceUriIn(final String contents) {
+  final match = vmServiceUriPattern.allMatches(contents).lastOrNull;
+  return match == null ? null : Uri.parse(match.group(1)!);
+}
+
+/// The last web (DWDS) `ws://` announcement in log [contents], or null.
+Uri? lastVmServiceWsUriIn(final String contents) {
+  final match = vmServiceWsUriPattern.allMatches(contents).lastOrNull;
+  return match == null ? null : Uri.parse(match.group(0)!);
+}
+
+/// Converts an http VM service URI to the WebSocket form its clients dial:
+/// `http://127.0.0.1:PORT/TOKEN=` → `ws://127.0.0.1:PORT/TOKEN/ws`.
+Uri canonicalVmServiceWsUri(final Uri httpUri) {
+  final path = httpUri.path.endsWith('/')
+      ? '${httpUri.path}ws'
+      : '${httpUri.path}/ws';
+  return httpUri.replace(scheme: 'ws', path: path);
+}

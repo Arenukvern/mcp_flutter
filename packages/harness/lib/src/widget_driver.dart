@@ -73,18 +73,28 @@ final class WidgetDriver {
   /// [ref], the list under the screen centre — by [distance] logical
   /// pixels. The port of an accessibility-driver swipe: off-screen
   /// semantics inside a scrollable only exist once scrolled into view.
+  ///
+  /// Best-effort like [snapshot]'s warm-up rule: a scroll landing in the
+  /// attach→main() window (toolkit not registered yet) is a no-op, not
+  /// an error — the caller's next [findRef] retry does the useful work.
   Future<void> scroll({
     final String? ref,
     final String direction = 'down',
     final double distance = 300,
-  }) => _call(
+  }) async {
+    try {
+      await _call(
         ToolkitExtensions.scroll,
         args: {
-          if (ref != null) 'ref': ref,
+          '?ref': ref,
           'direction': direction,
           'distance': distance,
         },
       );
+    } on RPCError catch (error) {
+      if (error.code != -32601) rethrow;
+    }
+  }
 
   /// Returns the first snapshot node `value` matching [predicate].
   ///

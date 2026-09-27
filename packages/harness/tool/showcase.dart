@@ -7,6 +7,11 @@
 ///   --web [--detach]      Chrome showcase with WebMCP flags
 ///   --stop                clean stray showcase processes and ports
 ///
+/// This tool only owns bring-up/teardown. The second-terminal IntentCall
+/// doors (discover / bridge ping / MCP serve) are
+/// `tool/intentcall_session.dart`, which scrapes the VM service URI from
+/// the same `.showcase/` logs this tool tees.
+///
 /// Interactive mode streams the flutter tool's output (also teed to
 /// `.showcase/*.log`, which `make exec-sweep` greps), relays your keystrokes
 /// (r / R / q), and tears the session down on exit or Ctrl-C.
@@ -187,12 +192,11 @@ Future<void> macosShowcase() async {
   // Keep teeing live session lines (hot reload cycles, app output).
   app.stdout.stream.listen(tee);
 
-  final wsUri = canonicalWsUri(app.vmUri);
+  final wsUri = canonicalVmServiceWsUri(app.vmUri);
   stdout.writeln();
   log('Dart VM Service:  ${app.vmUri}');
   log('canonical WS URI: $wsUri');
 
-  final intentcallRoot = _discoverIntentcallRoot();
   final linkFile = File(
     p.join(_homeDir(), '.intentcall', 'links', '$scheme.json'),
   );
@@ -206,11 +210,6 @@ Future<void> macosShowcase() async {
     await Future<void>.delayed(const Duration(seconds: 1));
   }
 
-  final examplesPath = await _writeIntentcallExamples(
-    wsUri: wsUri,
-    intentcallRoot: intentcallRoot,
-  );
-
   stdout.writeln();
   log(linkReady
       ? 'link record: ${linkFile.path}'
@@ -218,12 +217,9 @@ Future<void> macosShowcase() async {
   if (!linkReady) {
     log('the app publishes it after the first frame when publishSurfaceLink is on.');
   }
-  log(intentcallRoot == null
-      ? 'intentcall CLI not found next to this repo. '
-          'Set INTENTCALL_ROOT or put intentcall on PATH.'
-      : 'intentcall CLI: $intentcallRoot');
-  log('reproducible session, second terminal:');
-  log('  bash $examplesPath');
+  log('IntentCall doors, second terminal:');
+  log('  dart run packages/harness/tool/intentcall_session.dart demo');
+  log('  (or serve-link / serve-debug to expose the app over MCP)');
   stdout.writeln();
   log("  export WS='$wsUri'");
   log('  flutter-mcp-toolkit exec --name semantic_snapshot \\');
@@ -289,7 +285,7 @@ Future<void> webShowcase({required final bool detach}) async {
       log('flutter exited or never published a VM ws URI (180s).');
       await quit(1);
     }
-    _printWebReady(ws, webPort);
+    _printWebReady('$ws', webPort);
     await quit(0);
   }
 
@@ -319,7 +315,7 @@ Future<void> webShowcase({required final bool detach}) async {
 
   app.stdout.stream.listen(tee);
 
-  _printWebReady(canonicalWsUri(app.vmUri), webPort);
+  _printWebReady('${canonicalVmServiceWsUri(app.vmUri)}', webPort);
   await _relayUntilExit(app, logSink);
 }
 
@@ -381,7 +377,7 @@ Future<int> _spawnDetachedWithLog({
   return process.pid;
 }
 
-Future<String?> _waitForWsInLogFile(
+Future<Uri?> _waitForWsInLogFile(
   final File logFile, {
   required final bool requireReadyPattern,
   required final Future<bool> Function() isAlive,
@@ -392,10 +388,9 @@ Future<String?> _waitForWsInLogFile(
     if (!await isAlive()) return null;
     if (logFile.existsSync()) {
       final content = logFile.readAsStringSync();
-      final match = vmServiceWsUriPattern.allMatches(content).lastOrNull;
-      if (match != null &&
-          (!requireReadyPattern || content.contains(readyPattern))) {
-        return match.group(0);
+      final ws = lastVmServiceWsUriIn(content);
+      if (ws != null && (!requireReadyPattern || content.contains(readyPattern))) {
+        return ws;
       }
     }
     await Future<void>.delayed(const Duration(seconds: 1));
@@ -404,78 +399,8 @@ Future<String?> _waitForWsInLogFile(
 }
 
 // ---------------------------------------------------------------------------
-// intentcall glue (same contract the shell script published)
+// intentcall glue
 // ---------------------------------------------------------------------------
-
-String? _discoverIntentcallRoot() {
-  final fromEnv = Platform.environment['INTENTCALL_ROOT'];
-  if (fromEnv != null && fromEnv.isNotEmpty) return fromEnv;
-  for (final sibling in ['intentcall', 'agentkit']) {
-    final candidate = p.join(repoRoot, '..', sibling, 'packages',
-        'intentcall_cli');
-    if (Directory(candidate).existsSync()) {
-      return p.dirname(p.dirname(candidate));
-    }
-  }
-  return null;
-}
-
-String canonicalWsUri(final Uri httpUri) {
-  final path = httpUri.path.endsWith('/')
-      ? '${httpUri.path}ws'
-      : '${httpUri.path}/ws';
-  return httpUri.replace(scheme: 'ws', path: path).toString();
-}
-
-Future<String> _writeIntentcallExamples({
-  required final String wsUri,
-  required final String? intentcallRoot,
-}) async {
-  final examplesPath = p.join(showcaseDir, 'intentcall_examples.sh');
-  final intentcallBody = intentcallRoot == null
-      ? '  command intentcall "\$@"'
-      : "  (cd ${_shellQuote(p.join(intentcallRoot, 'packages', 'intentcall_cli'))} "
-          '&& dart run bin/intentcall.dart "\$@")';
-  final body =
-      '''#!/usr/bin/env bash
-# Generated by packages/harness/tool/showcase.dart. Requires the macOS showcase to be running.
-set -euo pipefail
-intentcall() {
-$intentcallBody
-}
-scheme=${_shellQuote(scheme)}
-ws_uri=${_shellQuote(wsUri)}
-mode="\${1:-demo}"
-case "\${mode}" in
-  demo)
-    echo "== discover \${scheme} =="
-    intentcall link discover --scheme "\${scheme}"
-    echo "== call app_intentcall_bridge_ping =="
-    intentcall link call --scheme "\${scheme}" --name app_intentcall_bridge_ping --args '{"echo":"hello"}'
-    echo
-    echo "Production-shaped MCP door (blocks, no widget inspector):"
-    echo "  bash ${_shellQuote(examplesPath)} serve-link"
-    echo "Debug MCP door (prefers this VM, blocks):"
-    echo "  bash ${_shellQuote(examplesPath)} serve-debug"
-    ;;
-  serve-link)
-    exec intentcall mcp serve --scheme "\${scheme}"
-    ;;
-  serve-debug)
-    exec intentcall mcp serve --auto --vm-service-uri "\${ws_uri}" --scheme "\${scheme}"
-    ;;
-  *)
-    echo "Usage: bash ${_shellQuote(examplesPath)} [demo|serve-link|serve-debug]" >&2
-    exit 64
-    ;;
-esac
-''';
-  File(examplesPath).writeAsStringSync(body);
-  await Process.run('chmod', ['+x', examplesPath]);
-  return examplesPath;
-}
-
-String _shellQuote(final String value) => "'${value.replaceAll("'", "'\\''")}'";
 
 String _homeDir() =>
     Platform.environment['HOME'] ?? Platform.environment['USERPROFILE'] ?? '~';

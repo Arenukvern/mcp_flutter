@@ -8,6 +8,48 @@ transport required.
 
 This is the client-side counterpart of `mcp_toolkit`, extracted from a
 production E2E loop (see [ADR-0015](../../decisions/0015_flutter_mcp_harness_extraction.mdx)).
+A guided tour lives in the
+[E2E scenarios guide](../../docs/guides/e2e_scenarios.mdx).
+
+## Quick start
+
+```dart
+import 'package:flutter_mcp_harness/flutter_mcp_harness.dart';
+
+LaunchedApp? app;
+var passed = false;
+try {
+  final scenario = Scenario('smoke', steps: [
+    ('launch', (context) async {
+      app = await MacosAppTarget(
+        projectDir: 'my_app',
+        binaryPath: 'my_app/build/macos/Build/Products/Debug/My App.app/Contents/MacOS/My App',
+      ).launch(); // full `flutter build macos --debug`, then run the binary
+      await app!.stdout.waitFor('app ready'); // wait on logs, never sleep
+      context.report.pass('attached at ${app!.vmUri}');
+    }),
+    ('drive + assert', (context) async {
+      final driver = WidgetDriver(await app!.vm());
+      final ref = await driver.findRef('login');
+      if (ref == null) return context.report.fail('no login button');
+      await driver.enterText(await driver.findRef('email'), 'me@example.com');
+      await driver.tap(ref);
+      final banner = await driver.findValue((v) => v.contains('Welcome'));
+      banner != null
+          ? context.report.pass('login confirmed')
+          : context.report.fail('no welcome banner');
+    }),
+  ]);
+  passed = await scenario.run();
+  scenario.report.printSummary();
+} finally {
+  await app?.stop(); // cleanup always runs
+}
+exit(passed ? 0 : 1);
+```
+
+Full two-instance composition root (host + controller pairing):
+[`example/desktop_pair.dart`](example/desktop_pair.dart).
 
 ## Why this shape
 
@@ -30,6 +72,19 @@ Only on top of those is a [Scenario] worth anything: named steps over a
 HarnessContext (a report + a bag for passing values between steps), first
 failure aborts, cleanup still runs, exit code reflects the result.
 
+## API map
+
+| You want to… | Reach for |
+|---|---|
+| Launch an owning interactive `flutter run` (hot reload, showcase) | `FlutterRunTarget` |
+| Fresh full build → direct binary launch (no compile channel after) | `BinaryAppTarget`, `MacosAppTarget`, `WindowsAppTarget` |
+| Attach to an app someone else owns (dev runner session, ADR-0014) | construct `LaunchedApp` around the owning process |
+| Wait for log lines / assert on output | `LogTap.waitFor` / `firstMatch` / `count` / `tail` |
+| Drive the UI | `WidgetDriver`: `snapshot`, `findRef`, `tap`, `tapUntil`, `enterText`, `scroll`, `findValue` |
+| Structure steps, assertions, cleanup | `Scenario`, `Check`, `ScenarioReport`, `HarnessContext`, `retry` |
+| Evaluate Dart / hot-reload / discover extensions in the app | `VmClient.evaluate` / `hotReload` / `extensionNames` |
+| Reference the toolkit verb names | `ToolkitExtensions` (mirrors `mcp_toolkit`'s interaction toolkit) |
+
 ## Layout
 
 - `lib/src/log_tap.dart` — line buffer + `waitFor(pattern)` (no sleeps).
@@ -50,6 +105,9 @@ failure aborts, cleanup still runs, exit code reflects the result.
 - `example/desktop_pair.dart` — a full two-instance composition root.
 - `tool/showcase.dart` — this repo's showcase launcher (macOS / `--web` /
   `--stop`), the Dart rewrite of the former `scripts/*.sh` showcase.
+- `tool/intentcall_session.dart` — IntentCall doors against a running
+  showcase (discover / bridge ping / MCP serve), a checked-in composition
+  root — nothing under `.showcase/` is generated at runtime.
 
 ## Running
 
@@ -61,6 +119,32 @@ dart run example/desktop_pair.dart --skip-build
 
 Scenario entrypoints live in the *consuming project* (composition roots are
 project knowledge, not package code).
+
+## Showcase
+
+The repo showcase is itself a composition root over this package
+(`tool/showcase.dart`, the Dart rewrite of the former `scripts/run_showcase.sh`
+family):
+
+```sh
+make showcase        # macOS showcase, interactive foreground (r/R/q relayed)
+make web-showcase    # Chrome with WebMCP flags (--web --detach for CI-shaped runs)
+make showcase-stop   # idempotent teardown of stray sessions and the VM port
+```
+
+Logs and pid files land under `.showcase/`; the detached web variant prints
+`WS_URI=…` and exits once the VM service is reachable.
+
+IntentCall doors against the running showcase (second terminal):
+
+```sh
+dart run packages/harness/tool/intentcall_session.dart demo         # discover + bridge ping
+dart run packages/harness/tool/intentcall_session.dart serve-debug  # MCP door pinned to this VM
+```
+
+The session tool resolves the VM service URI from the freshest announcement
+in the showcase log (or `--vm-service-uri`) and the IntentCall CLI from
+`INTENTCALL_ROOT`, sibling checkouts, or `PATH`.
 
 ## Relationship to the MCP server
 
