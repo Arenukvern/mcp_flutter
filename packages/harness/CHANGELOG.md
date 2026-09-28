@@ -16,6 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   screenshots via `view_screenshots` — passing the
   `universal_automation_conformance` driver suite (ADR-0038 adoption).
 - `ToolkitExtensions.viewScreenshots` constant (`ext.mcp.toolkit.view_screenshots`).
+- `IntentDriverRouter` (`intent_driver_router.dart`): ADR-0038
+  driver-routed invocation — resolves an intent's `IntentAutomationHint`
+  (transport + verb + locator, plus invocation operands) into a
+  `AutomationAction` on the bound driver. `drive_flutter_demo.dart`
+  proves it live (routed click/type/navigate against the demo app).
+- `intentcall_core` dependency for the hint types.
 - `tool/drive_flutter_demo.dart` + `tool/drive_web_demo.dart`: showcase
   drives for `showcase/` — one driver contract across the instrumented
   Flutter and browser tiers, with screencast receipts via

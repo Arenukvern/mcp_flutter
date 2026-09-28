@@ -18,6 +18,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_mcp_harness/flutter_mcp_harness.dart';
+import 'package:intentcall_core/intentcall_core.dart';
 import 'package:path/path.dart' as p;
 import 'package:universal_automation_interface/universal_automation_interface.dart';
 import 'package:universal_capture_flutter/universal_capture_flutter.dart';
@@ -106,10 +107,39 @@ Future<void> main(final List<String> arguments) async {
     log('streamed ${frames.length} PNG frames through the screencast '
         'pipeline → .showcase/flutter_demo.frames.mjpeg (+ .meta.jsonl)');
 
-    // -- named-route navigation ---------------------------------------------
+    // -- driver-routed invocation (ADR 0038: hint → driver action) -----------
+    // Intents declare what could be driven (transport + verb + locator);
+    // the router resolves each hint into a driver action on the bound
+    // ToolkitDriver. Invocation operands (the text) ride the arguments.
+    final router = IntentDriverRouter(drivers: {'toolkit': driver});
+    await router.invoke(
+      IntentAutomationHint(driver: 'toolkit', locator: const {'name': 'Increment'}),
+    );
+    await router.invoke(
+      IntentAutomationHint(
+        driver: 'toolkit',
+        action: IntentAutomationAction.type,
+        locator: const {'name': 'Name'},
+      ),
+      arguments: const {'text': 'Grace'},
+    );
+    // 3 direct taps + 1 screencast-tick tap + 1 routed tap = 5.
+    final routed = await _labelContaining(driver, 'Count: 5');
+    if (routed == null) {
+      throw StateError('router verify failed: "Count: 5" not on screen');
+    }
+    log('verified: hint-routed invocation → "$routed"');
+
+    // -- named-route navigation (through the router) --------------------------
     // NavigateAction carries a route, no arguments — the app renders its
     // "friend" fallback name; the assertion is that the named route landed.
-    await driver.perform(NavigateAction(Uri.parse('/profile')));
+    await router.invoke(
+      IntentAutomationHint(
+        driver: 'toolkit',
+        action: IntentAutomationAction.navigate,
+      ),
+      arguments: const {'route': '/profile'},
+    );
     final greeting = await _labelContaining(driver, 'Hello,');
     if (greeting == null) {
       throw StateError('verify failed: "/profile" did not render greeting');
@@ -138,8 +168,19 @@ Future<String?> _labelContaining(
   final String needle,
 ) async {
   for (var attempt = 0; attempt < 10; attempt++) {
-    for (final node in (await driver.snapshot()).nodes) {
+    final nodes = (await driver.snapshot()).nodes.toList();
+    for (final node in nodes) {
       if ((node.name ?? '').contains(needle)) return node.name;
+    }
+    if (attempt == 9) {
+      // Last miss: dump what the app actually showed, so a failed verify
+      // reports the surface it saw instead of just a timeout.
+      final seen = nodes
+          .map((node) => node.name ?? node.role)
+          .where((label) => label.isNotEmpty)
+          .join(' | ');
+      // ignore: avoid_print
+      print('[drive_flutter] verify miss for "$needle"; surface: $seen');
     }
     await Future<void>.delayed(const Duration(milliseconds: 500));
   }

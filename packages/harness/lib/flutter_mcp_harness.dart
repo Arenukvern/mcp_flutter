@@ -18,6 +18,7 @@ export 'src/check.dart';
 export 'src/chrome_app_target.dart';
 export 'src/flutter_app.dart';
 export 'src/flutter_run.dart';
+export 'src/intent_driver_router.dart';
 export 'src/log_tap.dart';
 export 'src/scenario.dart';
 export 'src/toolkit_driver.dart';
