@@ -104,7 +104,7 @@ extension type OnSemanticSnapshotEntry._(AgentCallEntry entry)
         );
       },
       definition: MCPToolDefinition(
-        name: 'semantic_snapshot',
+        name: ToolkitExtensionNames.semanticSnapshot,
         description:
             'Get compact semantic tree of interactive widgets with refs '
             'for interaction tools (tap_widget, enter_text, etc.). '
@@ -157,7 +157,7 @@ extension type OnTapWidgetEntry._(AgentCallEntry entry)
         );
       },
       definition: MCPToolDefinition(
-        name: 'tap_widget',
+        name: ToolkitExtensionNames.tapWidget,
         description:
             'Tap the centre of a widget identified by a semantic snapshot ref. '
             'Call semantic_snapshot immediately before to get fresh refs. '
@@ -214,7 +214,7 @@ extension type OnEnterTextEntry._(AgentCallEntry entry)
         );
       },
       definition: MCPToolDefinition(
-        name: 'enter_text',
+        name: ToolkitExtensionNames.enterText,
         description:
             'Enter text into a text field identified by a semantic ref. '
             'Taps the field to focus it first, then sets the value. '
@@ -275,7 +275,7 @@ extension type OnRevealSearchEntry._(AgentCallEntry entry)
         );
       },
       definition: MCPToolDefinition(
-        name: 'reveal_search',
+        name: ToolkitExtensionNames.revealSearch,
         description:
             'Find a semantic target that may be off-screen by taking a '
             'snapshot, matching one bounded selector, scrolling up to '
@@ -367,7 +367,7 @@ extension type OnScrollEntry._(AgentCallEntry entry) implements AgentCallEntry {
         );
       },
       definition: MCPToolDefinition(
-        name: 'scroll',
+        name: ToolkitExtensionNames.scroll,
         description:
             'Scroll in a direction. Pass the ref of a list, or of any node '
             'inside one, and that list moves; with no ref the list under the '
@@ -418,7 +418,7 @@ extension type OnLongPressEntry._(AgentCallEntry entry)
         );
       },
       definition: MCPToolDefinition(
-        name: 'long_press',
+        name: ToolkitExtensionNames.longPress,
         description:
             'Long-press a widget identified by a semantic ref. '
             'Holds for ~500 ms before releasing. '
@@ -465,7 +465,7 @@ extension type OnSwipeEntry._(AgentCallEntry entry) implements AgentCallEntry {
         );
       },
       definition: MCPToolDefinition(
-        name: 'swipe',
+        name: ToolkitExtensionNames.swipe,
         description:
             'Swipe from a ref or the screen centre in a given direction. '
             'Call semantic_snapshot immediately before to get fresh refs. '
@@ -528,7 +528,7 @@ extension type OnDragEntry._(AgentCallEntry entry) implements AgentCallEntry {
         );
       },
       definition: MCPToolDefinition(
-        name: 'drag',
+        name: ToolkitExtensionNames.drag,
         description:
             'Drag from one widget to another, identified by semantic refs. '
             'Call semantic_snapshot immediately before to get fresh refs. '
@@ -565,7 +565,7 @@ extension type OnGetRecentLogsEntry._(AgentCallEntry entry)
         );
       },
       definition: MCPToolDefinition(
-        name: 'get_recent_logs',
+        name: ToolkitExtensionNames.getRecentLogs,
         description:
             'Get recent print() / debugPrint() output captured from the '
             'running Flutter app.',
@@ -609,7 +609,7 @@ extension type OnWaitForEntry._(AgentCallEntry entry)
         return MCPCallResult(message: message, parameters: result);
       },
       definition: MCPToolDefinition(
-        name: 'wait_for',
+        name: ToolkitExtensionNames.waitFor,
         description:
             'Wait for a UI predicate (text/noText/node/time/stable/noError) '
             'and return a fresh semantic snapshot. text matches any string in '
@@ -658,7 +658,7 @@ extension type OnPressKeyEntry._(AgentCallEntry entry)
         );
       },
       definition: MCPToolDefinition(
-        name: 'press_key',
+        name: ToolkitExtensionNames.pressKey,
         description:
             'Synthesize a keyboard key press (down+up). '
             'Accepted keys: Enter, Escape, Tab, Backspace, Delete, Space, '
@@ -712,7 +712,7 @@ extension type OnHandleDialogEntry._(AgentCallEntry entry)
         );
       },
       definition: MCPToolDefinition(
-        name: 'handle_dialog',
+        name: ToolkitExtensionNames.handleDialog,
         description:
             'Dismiss the topmost popup/dialog route on the registered '
             'Navigator. Currently only action="dismiss" is supported. '
@@ -757,7 +757,7 @@ extension type OnNavigateEntry._(AgentCallEntry entry)
         );
       },
       definition: MCPToolDefinition(
-        name: 'navigate',
+        name: ToolkitExtensionNames.navigate,
         description:
             'Drive the registered Navigator. action=push|pop|popUntil. '
             'push/popUntil require route. push accepts arguments. '
@@ -808,7 +808,7 @@ extension type OnHoverEntry._(AgentCallEntry entry) implements AgentCallEntry {
         );
       },
       definition: MCPToolDefinition(
-        name: 'hover',
+        name: ToolkitExtensionNames.hover,
         description:
             'Synthesize a mouse hover at the centre of a widget identified '
             'by a semantic ref, driving MouseRegion.onEnter/onExit. '
@@ -863,7 +863,7 @@ extension type OnFocusWidgetEntry._(AgentCallEntry entry)
         );
       },
       definition: MCPToolDefinition(
-        name: 'focus_widget',
+        name: ToolkitExtensionNames.focusWidget,
         description:
             'Give keyboard focus to the widget identified by a semantic snapshot '
             'ref, so the press_key that follows reaches it. Performs the '

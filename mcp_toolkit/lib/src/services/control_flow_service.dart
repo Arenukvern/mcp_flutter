@@ -265,17 +265,53 @@ class ControlFlowService {
   // -------------------------------------------------------------------------
 
   /// Structured refusal for an app whose root navigator the toolkit cannot
-  /// reach, either because the key was never handed over or because no
-  /// navigator is mounted behind it yet.
+  /// reach — no key was handed over AND no mounted navigator was found in
+  /// the element tree (no first frame yet, or a custom widget tree without
+  /// a Navigator).
   static Map<String, Object?> _navigatorNotRegistered() => <String, Object?>{
     'success': false,
     'error': 'navigator_not_registered',
     'hint':
-        'The toolkit has no root NavigatorState to act on. Assign the same '
-        'GlobalKey<NavigatorState> to MCPToolkitBinding.instance.navigatorKey '
-        'and to MaterialApp.navigatorKey, and call again once the first frame '
-        'is up. Until then, drive the UI through tap_widget.',
+        'The toolkit has no root NavigatorState to act on. It walks the '
+        "element tree for the app's root navigator automatically once a "
+        'frame is up; wiring the same GlobalKey<NavigatorState> to '
+        'MCPToolkitBinding.instance.navigatorKey and '
+        'MaterialApp.navigatorKey only pins the lookup explicitly. Until a '
+        'navigator exists, drive the UI through tap_widget.',
   };
+
+  /// Resolves the app's root navigator.
+  ///
+  /// Order: the explicitly wired
+  /// `MCPToolkitBinding.instance.navigatorKey` first (the app pinned it —
+  /// honor that even if a nested navigator sits above), then a walk of
+  /// the element tree for the OUTERMOST mounted [NavigatorState] (the one
+  /// `MaterialApp.routes` named routes live on). The walk is the native
+  /// default: harness scenarios and the MCP tools must not require apps
+  /// to wire a global key just to navigate. Debug/profile only, like the
+  /// rest of the toolkit.
+  static NavigatorState? _resolveNavigatorState() {
+    final fromKey = MCPToolkitBinding.instance.navigatorKey?.currentState;
+    if (fromKey != null) return fromKey;
+    return _findRootNavigator();
+  }
+
+  static NavigatorState? _findRootNavigator() {
+    final root = WidgetsBinding.instance.rootElement;
+    if (root == null) return null;
+    NavigatorState? found;
+    void visit(final Element element) {
+      if (found != null) return;
+      if (element is StatefulElement && element.state is NavigatorState) {
+        found = element.state as NavigatorState;
+        return;
+      }
+      element.visitChildElements(visit);
+    }
+
+    visit(root);
+    return found;
+  }
 
   /// The topmost route, read without touching the stack.
   ///
@@ -304,7 +340,7 @@ class ControlFlowService {
   ///
   /// @ai Call this only for dialog-like popup routes; use [navigate] for pages.
   static Future<Map<String, Object?>> dismissDialog() async {
-    final navState = MCPToolkitBinding.instance.navigatorKey?.currentState;
+    final navState = _resolveNavigatorState();
     if (navState == null) {
       return _navigatorNotRegistered();
     }
@@ -358,11 +394,7 @@ class ControlFlowService {
     // `currentState` lazily inside the arms that need it so the `default`
     // arm (unknown_action) reports the correct error even when no widget
     // tree is mounted yet (e.g. unit tests that don't pump a MaterialApp).
-    final key = MCPToolkitBinding.instance.navigatorKey;
-    if (key == null) {
-      return _navigatorNotRegistered();
-    }
-    final navState = key.currentState;
+    final navState = _resolveNavigatorState();
 
     switch (action) {
       case 'push':

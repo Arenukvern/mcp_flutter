@@ -405,6 +405,43 @@ void main() {
     MCPToolkitBinding.instance.navigatorKey = null;
   });
 
+  testWidgets('navigate push works without a wired navigatorKey', (
+    final tester,
+  ) async {
+    // The native default: the toolkit walks the element tree for the
+    // root navigator, so apps need no GlobalKey wiring to be drivable.
+    // Ensure nothing is wired from earlier tests.
+    MCPToolkitBinding.instance.navigatorKey = null;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        routes: {
+          '/': (final _) => const Scaffold(body: Text('home')),
+          '/settings': (final _) => const Scaffold(body: Text('settings page')),
+        },
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final result = await ControlFlowService.navigate(
+      action: 'push',
+      route: '/settings',
+    );
+    await tester.pumpAndSettle();
+
+    expect(result['success'], isTrue);
+    expect(find.text('settings page'), findsOneWidget);
+
+    // A wired key still wins over the tree walk (explicit pin honored).
+    final navKey = GlobalKey<NavigatorState>();
+    MCPToolkitBinding.instance.navigatorKey = navKey;
+    final second = await ControlFlowService.navigate(action: 'pop');
+    await tester.pumpAndSettle();
+    expect(second['success'], isTrue);
+    expect(find.text('home'), findsOneWidget);
+    MCPToolkitBinding.instance.navigatorKey = null;
+  });
+
   testWidgets('navigate push reports an unnamed generated route', (
     final tester,
   ) async {

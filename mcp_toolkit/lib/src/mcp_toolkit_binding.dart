@@ -80,6 +80,10 @@ class MCPToolkitBinding extends MCPToolkitBindingBase
   /// Root [NavigatorState] key from `MaterialApp.navigatorKey` /
   /// `WidgetsApp.navigatorKey`, or `null` when not registered.
   ///
+  /// Optional: navigation tools resolve the root navigator from the
+  /// element tree automatically when this is null. Wiring the key pins
+  /// the lookup explicitly (honored even when nested navigators exist).
+  ///
   /// Tools such as `handle_dialog` and `navigate` read this; when `null` they
   /// return `navigator_not_registered`.
   GlobalKey<NavigatorState>? navigatorKey;
