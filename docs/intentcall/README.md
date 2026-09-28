@@ -10,7 +10,7 @@
 | Hosted consumer proof | `make check-intentcall-hosted-consumer`; Steward `fmt.check.intentcall-hosted-deps-strict` |
 | Sibling upstream matrix proof | `make check-intentcall-sibling-matrix` |
 | Compatibility alias | `make check-intentcall-integration` → sibling upstream matrix proof |
-| Repo contract gate | `make check-contracts` (includes `check_apple_runner_compile.sh` — `flutter build macos --config-only` on `flutter_test_app`) |
+| Repo contract gate | `make check-contracts` (includes `check_apple_runner_compile.sh` — `flutter build macos --config-only` on `showcase/flutter_test_app`) |
 | IntentCall publish checks | Run from the IntentCall checkout |
 | AppIntentsTesting consumer scaffold | `flutter-mcp-toolkit codegen appintents-testing generate` |
 
@@ -136,12 +136,12 @@ The durable proof should live in checks, CI, Steward scenarios, tests, and dated
 `make check-contracts` runs `tool/contracts/check_apple_runner_compile.sh`. This is
 the canonical compile-proof gate for federated Apple projection:
 
-1. Verifies `flutter_test_app/macos/Runner/Generated/IntentCallGenerated.swift`
+1. Verifies `showcase/flutter_test_app/macos/Runner/Generated/IntentCallGenerated.swift`
    imports `intentcall_platform_apple` and does **not** define an inline
    `IntentCallNativeBridge` enum (facade lives in the plugin).
 2. When `INTENTCALL_ROOT` or `../agentkit` is present, runs
    `intentcall platform sync --platform ios,macos` before compile.
-3. Runs `flutter build macos --config-only` on `flutter_test_app`.
+3. Runs `flutter build macos --config-only` on `showcase/flutter_test_app`.
 
 Standalone:
 
@@ -192,7 +192,7 @@ claim only generated scaffold proof.
 |---------|------------|
 | `MCPCallEntry` compile errors or migration work | [MCPCallEntry to AgentCallEntry migration](../start_here/migration_mcp_call_entry_to_agent_call_entry.md) |
 | Hosted dependency or local path override drift | `tool/intentcall/check_no_path_deps.sh`; use `--strict-root` before release/cutover |
-| Platform hooks, WebMCP, deep links, app dynamic tools | [flutter_test_app/INTENTCALL_PLATFORM.md](../../flutter_test_app/INTENTCALL_PLATFORM.md) |
+| Platform hooks, WebMCP, deep links, app dynamic tools | [flutter_test_app/INTENTCALL_PLATFORM.md](../../showcase/flutter_test_app/INTENTCALL_PLATFORM.md) |
 | Schema, `fmt_*`, CLI `exec`, or app-dynamic parity debugging | `plugin/skills/flutter-mcp-boundary-audit/` |
 | Unsure whether to fix `mcp_flutter` or IntentCall upstream | Fix consumer wiring here; fix architecture/package behavior in the IntentCall repository |
 

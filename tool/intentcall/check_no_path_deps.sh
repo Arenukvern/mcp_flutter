@@ -153,7 +153,7 @@ PY
 version_files=()
 while IFS= read -r -d '' f; do
   version_files+=("$f")
-done < <(find mcp_toolkit mcp_server_dart packages flutter_test_app jaspr_web_example -name pubspec.yaml -print0 2>/dev/null)
+done < <(find mcp_toolkit mcp_server_dart packages showcase/flutter_test_app jaspr_web_example -name pubspec.yaml -print0 2>/dev/null)
 
 if [[ "${strict_root}" == true ]]; then
   for f in pubspec.yaml pubspec.lock; do

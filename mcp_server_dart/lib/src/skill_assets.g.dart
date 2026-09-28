@@ -58,8 +58,8 @@ Always run `flutter-mcp-toolkit doctor --json` first. Parse the output:
 | Register app-specific MCP tools/resources (`AgentCallEntry`, `bootstrapFlutter` `additionalEntries`) | `flutter-mcp-toolkit-custom-tools` |
 | Upgrade from removed legacy call-entry APIs | `flutter-mcp-toolkit-intentcall-migration` |
 | Audit CLI/MCP/schema/dynamic-registry parity before changing tool surfaces | `flutter-mcp-boundary-audit` |
-| Maintain `flutter_test_app` web / WebMCP showcase hooks; agent list/execute via Chrome DevTools MCP (`list_webmcp_tools` / `execute_webmcp_tool`) | `flutter-mcp-toolkit-maintain-web` |
-| Maintain `flutter_test_app` macOS / native IntentCall hooks | `flutter-mcp-toolkit-maintain-macos` |
+| Maintain `showcase/flutter_test_app` web / WebMCP showcase hooks; agent list/execute via Chrome DevTools MCP (`list_webmcp_tools` / `execute_webmcp_tool`) | `flutter-mcp-toolkit-maintain-web` |
+| Maintain `showcase/flutter_test_app` macOS / native IntentCall hooks | `flutter-mcp-toolkit-maintain-macos` |
 | Score dogfood iterations or route dogfood evidence | `flutter-mcp-toolkit-dogfood-iterations` |
 | Write repeatable E2E scenarios as Dart (`flutter_mcp_harness`: build/launch/attach/drive/assert, showcase launcher) | `flutter-mcp-e2e-harness` |
 | Release, version, or plugin skill bundle maintenance | `flutter-mcp-toolkit-repo-maintainer` |
@@ -1763,7 +1763,7 @@ rewrite). CLI equivalent: `flutter-mcp-toolkit migrate agent-entries`.
 
 ## Maintainer checklist (in-repo product gate)
 
-1. `flutter-mcp-toolkit migrate agent-entries --check` on `flutter_test_app/lib`
+1. `flutter-mcp-toolkit migrate agent-entries --check` on `showcase/flutter_test_app/lib`
 2. `make sync-skills` after any `plugin/skills/` edit
 3. `cd mcp_server_dart && dart test test/contract/`
 4. Grep: no `MCPCallEntry` in skills except this file's BEFORE examples
@@ -2113,7 +2113,7 @@ When changing IntentCall consumer integration in `mcp_flutter`:
 2. `make sync-skills` — commit `skill_assets.g.dart` with skill edits.
 3. `bash tool/contracts/check_intentcall_skills_grep.sh` — no legacy call-entry symbol outside migration skill.
 4. `cd mcp_server_dart && dart test test/contract/`
-5. `flutter-mcp-toolkit migrate agent-entries --check flutter_test_app/lib` (expect exit 0)
+5. `flutter-mcp-toolkit migrate agent-entries --check showcase/flutter_test_app/lib` (expect exit 0)
 6. Keep canonical IntentCall design links pointed at the IntentCall repository; keep this repo focused on hosted dependency and regression proof.
 
 ## Pre-merge checklist
@@ -2128,13 +2128,13 @@ When changing IntentCall consumer integration in `mcp_flutter`:
     SkillAsset(
       id: 'flutter-mcp-toolkit-maintain-web',
       frontmatter: r'''name: flutter-mcp-toolkit-maintain-web
-description: Maintains flutter_test_app and intentcall web targets (Chrome, web codegen, WebMCP bootstrap, web-showcase, webmcp verify, Chrome DevTools MCP). Use when editing web/index.html, agent_manifest.json, intentcall_webmcp.generated.js, web platform sync, Chrome dogfood, WebMCP modelContext, or agent WebMCP list/execute.''',
+description: Maintains showcase/flutter_test_app and intentcall web targets (Chrome, web codegen, WebMCP bootstrap, web-showcase, webmcp verify, Chrome DevTools MCP). Use when editing web/index.html, agent_manifest.json, intentcall_webmcp.generated.js, web platform sync, Chrome dogfood, WebMCP modelContext, or agent WebMCP list/execute.''',
       body: r'''
 <!-- @FMT_MODE_PRELUDE -->
 
 # Maintain Web (Chrome + WebMCP)
 
-Dogfood app: `flutter_test_app`. Canonical platform doc: `flutter_test_app/INTENTCALL_PLATFORM.md`.
+Dogfood app: `showcase/flutter_test_app`. Canonical platform doc: `showcase/flutter_test_app/INTENTCALL_PLATFORM.md`.
 
 ## WebMCP vs VM MCP
 
@@ -2164,7 +2164,7 @@ Stop: `make showcase-stop`.
 
 ### VS Code / Cursor launch
 
-Use config **`flutter_test_app Chrome + WebMCP`** in `.vscode/launch.json`:
+Use config **`showcase/flutter_test_app Chrome + WebMCP`** in `.vscode/launch.json`:
 
 - `--web-browser-flag=--user-data-dir=${workspaceFolder}/.showcase/chrome-webmcp-profile` — **persistent profile** so `chrome://flags` survive stop/start (Flutter default is a temp profile every run).
 - `--web-browser-flag=--enable-features=WebMCPTesting,WebModelContext,DevToolsWebMCPSupport`
@@ -2233,10 +2233,10 @@ dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart webmcp verify --web-port 8
 ```bash
 dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart codegen sync \
   --platform web,android,ios,macos,linux,windows \
-  --project-dir flutter_test_app
+  --project-dir showcase/flutter_test_app
 
 dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart init intentcall-platform \
-  --project-dir flutter_test_app --check
+  --project-dir showcase/flutter_test_app --check
 ```
 
 | Artifact | Source |
@@ -2279,13 +2279,13 @@ Pass `--web-browser-debugging-port <cdp>` if CDP discovery fails.
     SkillAsset(
       id: 'flutter-mcp-toolkit-maintain-macos',
       frontmatter: r'''name: flutter-mcp-toolkit-maintain-macos
-description: Maintains flutter_test_app macOS showcase, native intentcall hooks (codegen, app_links invoke), and VM MCP validation. Use when editing macOS Runner, intentcall_codegen.sh, macOS dogfood, Screen Recording capture, or comparing macOS parity to web WebMCP.''',
+description: Maintains showcase/flutter_test_app macOS showcase, native intentcall hooks (codegen, app_links invoke), and VM MCP validation. Use when editing macOS Runner, intentcall_codegen.sh, macOS dogfood, Screen Recording capture, or comparing macOS parity to web WebMCP.''',
       body: r'''
 <!-- @FMT_MODE_PRELUDE -->
 
 # Maintain macOS (showcase + native intentcall)
 
-Dogfood app: `flutter_test_app`. Platform doc: `flutter_test_app/INTENTCALL_PLATFORM.md`.
+Dogfood app: `showcase/flutter_test_app`. Platform doc: `showcase/flutter_test_app/INTENTCALL_PLATFORM.md`.
 
 ## WebMCP on macOS
 
@@ -2313,10 +2313,10 @@ Stop: `make showcase-stop`.
 ```bash
 dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart codegen sync \
   --platform web,android,ios,macos,linux,windows \
-  --project-dir flutter_test_app
+  --project-dir showcase/flutter_test_app
 
 dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart init intentcall-platform \
-  --project-dir flutter_test_app --check
+  --project-dir showcase/flutter_test_app --check
 ```
 
 | Target | Role |
@@ -2362,7 +2362,7 @@ bash tool/evals/run_dogfood_eval.sh \
     SkillAsset(
       id: 'flutter-mcp-toolkit-dogfood-iterations',
       frontmatter: r'''name: flutter-mcp-toolkit-dogfood-iterations
-description: Runs and records flutter_test_app dogfood iterations (tool_quality_rubric, run_dogfood_eval.sh, dogfood_web_eval.yaml). Use when scoring MCP/intentcall quality, appending iteration N, comparing regressions, or CI static/weekly eval gates.''',
+description: Runs and records showcase/flutter_test_app dogfood iterations (tool_quality_rubric, run_dogfood_eval.sh, dogfood_web_eval.yaml). Use when scoring MCP/intentcall quality, appending iteration N, comparing regressions, or CI static/weekly eval gates.''',
       body: r'''
 <!-- @FMT_MODE_PRELUDE -->
 

@@ -1,4 +1,4 @@
-# Browser dogfood eval tracker — flutter_test_app + flutter-mcp-toolkit
+# Browser dogfood eval tracker — showcase/flutter_test_app + flutter-mcp-toolkit
 # Versioned evidence (ADR 0011). Per-run artifacts stay under .showcase/eval_runs/.
 # Schema: iterations[] + summary (recurring_errors, fix_recommendations, verdict).
 # Rubric: docs/superpowers/evals/tool_quality_rubric.yaml
@@ -148,7 +148,7 @@ iterations:
       - visual_capture_truth_mode
     ws_uri: ws://127.0.0.1:8181/YX4j1F2FX1g=/ws
     artifacts:
-      - flutter_test_app/lib/agent_dogfood_entries.dart
+      - showcase/flutter_test_app/lib/agent_dogfood_entries.dart
       - flutter_test_app/INTENTCALL_PLATFORM.md
       - .showcase/web_iter_5/doctor.json
       - .showcase/web_iter_5/invoke-dogfood.json

@@ -1,13 +1,13 @@
 ---
 name: flutter-mcp-toolkit-maintain-web
-description: Maintains flutter_test_app and intentcall web targets (Chrome, web codegen, WebMCP bootstrap, web-showcase, webmcp verify, Chrome DevTools MCP). Use when editing web/index.html, agent_manifest.json, intentcall_webmcp.generated.js, web platform sync, Chrome dogfood, WebMCP modelContext, or agent WebMCP list/execute.
+description: Maintains showcase/flutter_test_app and intentcall web targets (Chrome, web codegen, WebMCP bootstrap, web-showcase, webmcp verify, Chrome DevTools MCP). Use when editing web/index.html, agent_manifest.json, intentcall_webmcp.generated.js, web platform sync, Chrome dogfood, WebMCP modelContext, or agent WebMCP list/execute.
 ---
 
 <!-- @FMT_MODE_PRELUDE -->
 
 # Maintain Web (Chrome + WebMCP)
 
-Dogfood app: `flutter_test_app`. Canonical platform doc: `flutter_test_app/INTENTCALL_PLATFORM.md`.
+Dogfood app: `showcase/flutter_test_app`. Canonical platform doc: `showcase/flutter_test_app/INTENTCALL_PLATFORM.md`.
 
 ## WebMCP vs VM MCP
 
@@ -37,7 +37,7 @@ Stop: `make showcase-stop`.
 
 ### VS Code / Cursor launch
 
-Use config **`flutter_test_app Chrome + WebMCP`** in `.vscode/launch.json`:
+Use config **`showcase/flutter_test_app Chrome + WebMCP`** in `.vscode/launch.json`:
 
 - `--web-browser-flag=--user-data-dir=${workspaceFolder}/.showcase/chrome-webmcp-profile` — **persistent profile** so `chrome://flags` survive stop/start (Flutter default is a temp profile every run).
 - `--web-browser-flag=--enable-features=WebMCPTesting,WebModelContext,DevToolsWebMCPSupport`
@@ -106,10 +106,10 @@ dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart webmcp verify --web-port 8
 ```bash
 dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart codegen sync \
   --platform web,android,ios,macos,linux,windows \
-  --project-dir flutter_test_app
+  --project-dir showcase/flutter_test_app
 
 dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart init intentcall-platform \
-  --project-dir flutter_test_app --check
+  --project-dir showcase/flutter_test_app --check
 ```
 
 | Artifact | Source |

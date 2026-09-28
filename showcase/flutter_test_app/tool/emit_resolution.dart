@@ -1,4 +1,4 @@
-// One-off script to emit live-edit resolution JSON. Run from flutter_test_app: dart run tool/emit_resolution.dart
+// One-off script to emit live-edit resolution JSON. Run from showcase/flutter_test_app: dart run tool/emit_resolution.dart
 import 'dart:convert';
 import 'dart:io';
 

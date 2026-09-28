@@ -5,7 +5,7 @@
       "name": "test_app debug",
       "request": "launch",
       "type": "dart",
-      "cwd": "./flutter_test_app",
+      "cwd": "./showcase/flutter_test_app",
       "flutterMode": "debug",
       "args": [
         "--host-vmservice-port=8182",
@@ -17,7 +17,7 @@
       "name": "flutter_test_app Chrome + WebMCP",
       "request": "launch",
       "type": "dart",
-      "cwd": "./flutter_test_app",
+      "cwd": "./showcase/flutter_test_app",
       "deviceId": "chrome",
       "flutterMode": "debug",
       "args": [

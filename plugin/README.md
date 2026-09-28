@@ -46,8 +46,8 @@ All paths materialize from the embedded skill bundle generated from this directo
 | `flutter-mcp` | Golden-path runtime loop |
 | `flutter-mcp-cli-runtime-validation` | CLI `validate-runtime` |
 | `flutter-mcp-toolkit-intentcall-migration` | Legacy call-entry to `AgentCallEntry` migration |
-| `flutter-mcp-toolkit-maintain-web` | `flutter_test_app` web / WebMCP maintenance |
-| `flutter-mcp-toolkit-maintain-macos` | `flutter_test_app` macOS native / IntentCall maintenance |
+| `flutter-mcp-toolkit-maintain-web` | `showcase/flutter_test_app` web / WebMCP maintenance |
+| `flutter-mcp-toolkit-maintain-macos` | `showcase/flutter_test_app` macOS native / IntentCall maintenance |
 | `flutter-mcp-toolkit-dogfood-iterations` | Dogfood iteration scoring and artifact routing |
 | `flutter-mcp-toolkit-repo-maintainer` | Release / repo maintenance |
 

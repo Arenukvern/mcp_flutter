@@ -92,12 +92,21 @@ dart test pkgs/universal_capture_macos   # screenshots + ScreenCaptureKit stream
 ```
 showcase/
 ├── README.md              ← you are here
+├── flutter_test_app/      ← the full dogfood showcase app (dynamic tools,
+│                            WebMCP, IntentCall bootstrap, platform views)
+│                            behind `make showcase` / `make web-showcase`
 ├── drivers/               ← composition package: drive programs + the
 │                            FlutterAppFrames adapter (owns the pipeline
 │                            policy, so the harness stays pipeline-free)
-├── flutter_demo/          ← instrumented Flutter target (mcp_toolkit bound)
-└── web_demo/              ← static page + serve.dart (CDP target)
+├── flutter_demo/          ← minimal instrumented target (mcp_toolkit bound)
+└── web_demo/              ← minimal static page + serve.dart (CDP target)
 ```
+
+The big app and the minimal demos are complementary: `flutter_test_app`
+exercises every product hook and is the consumer proof target
+(`make showcase` on macOS, `make web-showcase` for Chrome, IntentCall
+doors via `intentcall_session.dart`); `flutter_demo`/`web_demo` are the
+smallest honest things the `drivers/` programs can drive end-to-end.
 
 #### Dependency inversion
 

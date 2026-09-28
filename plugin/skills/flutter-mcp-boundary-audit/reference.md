@@ -21,8 +21,8 @@ Use this section when auditing **this** repository. Map the generic roles from S
 | Dynamic registry | `mcp_server_dart/lib/src/capabilities/dynamic_registry/` — grep `forwardToolCall` |
 | VM gateway | `mcp_server_dart` — `VmExtensionDynamicGateway` / `dynamic_gateway.dart` |
 | Migrator | `intentcall_core/lib/src/migrate_agent_entries.dart` |
-| WebMCP | `intentcall` web bootstrap, `flutter_test_app/web/intentcall_webmcp.generated.js` |
-| Platform contract doc | `flutter_test_app/INTENTCALL_PLATFORM.md` |
+| WebMCP | `intentcall` web bootstrap, `showcase/flutter_test_app/web/intentcall_webmcp.generated.js` |
+| Platform contract doc | `showcase/flutter_test_app/INTENTCALL_PLATFORM.md` |
 | Registration doc | `mcp_server_dart/docs/SIMPLIFIED_DYNAMIC_REGISTRATION.md` |
 
 ### Gateway flow (mcp_flutter)
@@ -60,7 +60,7 @@ VM service extensions deliver string-key maps on the wire. **`coerceArgumentsFor
 | `AgentWireArgs` | Optional handler-side parsers for raw wire maps |
 | `_wireArgForServiceExtension` | Outbound handler args → VM ext strings |
 
-**Tier B contract:** this skill owns the detailed parity notes; `flutter_test_app/INTENTCALL_PLATFORM.md` keeps the app-level proof summary.  discovery stores per-tool `inputSchema`; `fmt_client_tool` / `forwardToolCall` and `VmExtensionDynamicGateway` coerce then validate inner args before the app sees them (same as app VM callback). MCP `fmt_*` catalog tools skip wire coerce (args are already JSON).
+**Tier B contract:** this skill owns the detailed parity notes; `showcase/flutter_test_app/INTENTCALL_PLATFORM.md` keeps the app-level proof summary.  discovery stores per-tool `inputSchema`; `fmt_client_tool` / `forwardToolCall` and `VmExtensionDynamicGateway` coerce then validate inner args before the app sees them (same as app VM callback). MCP `fmt_*` catalog tools skip wire coerce (args are already JSON).
 
 Re-audit host vs app paths only if coercion is added on **one** side without the other.
 
@@ -91,7 +91,7 @@ Re-audit host vs app paths only if coercion is added on **one** side without the
 
 **Parity tests:** `mcp_toolkit/test/interaction_toolkit_schema_parity_test.dart`, `packages/server_capability_core/test/tools/interaction_input_schemas_test.dart`.
 
-Document intentional deltas in this skill reference or the relevant parity tests; keep `flutter_test_app/INTENTCALL_PLATFORM.md` app-level only.
+Document intentional deltas in this skill reference or the relevant parity tests; keep `showcase/flutter_test_app/INTENTCALL_PLATFORM.md` app-level only.
 
 ### mcp_flutter red-flag grep
 
@@ -104,8 +104,8 @@ rg "\.execute\(" --glob "*.dart" intentcall mcp_toolkit mcp_server_dart packages
 rg "invokeDirect" --glob "*.dart" intentcall mcp_toolkit
 rg "inputSchemaFromMcpTool|_emptyObjectSchema|placeholder" --glob "*.dart" mcp_server_dart packages/server_capability_core
 rg "inputSchema" --glob "*migrate*" intentcall mcp_server_dart
-rg "registerTool" --glob "*.dart" intentcall mcp_toolkit flutter_test_app/web
-rg -i "permissive|additionalProperties:\s*true|no validation" --glob "*.md" mcp_server_dart docs flutter_test_app
+rg "registerTool" --glob "*.dart" intentcall mcp_toolkit showcase/flutter_test_app/web
+rg -i "permissive|additionalProperties:\s*true|no validation" --glob "*.md" mcp_server_dart docs showcase/flutter_test_app
 rg "jsonEncode|JSON\.encode" --glob "*agent_entry*" intentcall mcp_toolkit
 ```
 
@@ -151,7 +151,7 @@ From `docs/superpowers/tracker/mcp-boundary-hardening.yaml` — re-audit if touc
 
 `exec` accepts bare and `fmt_` aliases; MCP wire uses `fmt_` prefix. Dynamic app tools: listed by `fmt_list_client_tools_and_resources`, invoked via `fmt_client_tool` with **bare** `name` from listing.
 
-See this skill reference and `flutter_test_app/INTENTCALL_PLATFORM.md`.
+See this skill reference and `showcase/flutter_test_app/INTENTCALL_PLATFORM.md`.
 
 ### ADRs / evals (mcp_flutter)
 

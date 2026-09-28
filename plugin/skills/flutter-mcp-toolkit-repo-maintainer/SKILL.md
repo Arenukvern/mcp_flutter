@@ -137,7 +137,7 @@ When changing IntentCall consumer integration in `mcp_flutter`:
 2. `make sync-skills` — commit `skill_assets.g.dart` with skill edits.
 3. `bash tool/contracts/check_intentcall_skills_grep.sh` — no legacy call-entry symbol outside migration skill.
 4. `cd mcp_server_dart && dart test test/contract/`
-5. `flutter-mcp-toolkit migrate agent-entries --check flutter_test_app/lib` (expect exit 0)
+5. `flutter-mcp-toolkit migrate agent-entries --check showcase/flutter_test_app/lib` (expect exit 0)
 6. Keep canonical IntentCall design links pointed at the IntentCall repository; keep this repo focused on hosted dependency and regression proof.
 
 ## Pre-merge checklist

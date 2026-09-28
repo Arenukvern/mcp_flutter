@@ -47,9 +47,8 @@ Flutter app in debug mode
 | `packages/server_capability_kernel/` | Capability host contracts. |
 | `packages/server_capability_core/` | Server-side implementation of the Flutter MCP `fmt_*` capability. |
 | `packages/harness/` | `flutter_mcp_harness`: programmatic E2E harness (build/launch/VM-attach/drive/assert as Dart, no MCP transport) implementing the universal `AutomationDriver` contract (`ToolkitDriver`, ADR-0038); home of the showcase launcher (`tool/showcase.dart`). Dependencies are contracts and protocol clients only — frame pipelines live in composition. See ADR-0015. |
-| `showcase/` | Examples that test the whole stack: `flutter_demo/` (instrumented target), `web_demo/` (CDP target), `drivers/` (composition package owning the end-to-end drive programs and the pipeline wiring, `make drive-flutter` / `drive-web`). |
+| `showcase/` | One place for everything demoed: `flutter_test_app/` (the full dogfood showcase app behind `make showcase` — a consumer proof target, not a minimal adopter example), `flutter_demo/` + `web_demo/` (minimal instrumented/CDP targets), `drivers/` (composition package owning the end-to-end drive programs and the pipeline wiring, `make drive-flutter` / `drive-web`). |
 | `plugin/` | Shippable Cursor/Codex/Claude plugin assets and skills. |
-| `flutter_test_app/` | Dogfood app and consumer proof target, not a minimal adopter example. |
 
 ## When To Use Which Surface
 

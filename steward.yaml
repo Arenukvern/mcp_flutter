@@ -111,7 +111,7 @@ actions:
         - packages/core/pubspec.yaml
         - packages/server_capability_core/pubspec.yaml
         - packages/server_capability_kernel/pubspec.yaml
-        - flutter_test_app/pubspec.yaml
+        - showcase/flutter_test_app/pubspec.yaml
       fs_write: []
       git: false
       network: false
@@ -156,7 +156,7 @@ actions:
         - packages/core/pubspec.yaml
         - packages/server_capability_core/pubspec.yaml
         - packages/server_capability_kernel/pubspec.yaml
-        - flutter_test_app/pubspec.yaml
+        - showcase/flutter_test_app/pubspec.yaml
       fs_write: []
       git: false
       network: false
@@ -486,7 +486,7 @@ actions:
         - mcp_server_dart
         - mcp_toolkit
         - packages
-        - flutter_test_app
+        - showcase/flutter_test_app
       fs_write:
         - mcp_server_dart/.dart_tool
         - mcp_server_dart/pubspec.lock

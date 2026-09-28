@@ -1,6 +1,6 @@
 ---
 name: flutter-mcp-toolkit-dogfood-iterations
-description: Runs and records flutter_test_app dogfood iterations (tool_quality_rubric, run_dogfood_eval.sh, dogfood_web_eval.yaml). Use when scoring MCP/intentcall quality, appending iteration N, comparing regressions, or CI static/weekly eval gates.
+description: Runs and records showcase/flutter_test_app dogfood iterations (tool_quality_rubric, run_dogfood_eval.sh, dogfood_web_eval.yaml). Use when scoring MCP/intentcall quality, appending iteration N, comparing regressions, or CI static/weekly eval gates.
 ---
 
 <!-- @FMT_MODE_PRELUDE -->

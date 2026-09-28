@@ -11,7 +11,7 @@ set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "${here}/../.." && pwd)"
-app_dir="${repo_root}/flutter_test_app"
+app_dir="${repo_root}/showcase/flutter_test_app"
 generated="${app_dir}/macos/Runner/Generated/IntentCallGenerated.swift"
 
 skip() {

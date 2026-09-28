@@ -1,6 +1,6 @@
-# IntentCall platform hooks in flutter_test_app
+# IntentCall platform hooks in showcase/flutter_test_app
 
-`flutter_test_app` is the dogfood app for Flutter MCP Toolkit's IntentCall platform hooks. Canonical IntentCall architecture lives in the IntentCall repository; this file documents only this app's consumer setup and proof path.
+`showcase/flutter_test_app` is the dogfood app for Flutter MCP Toolkit's IntentCall platform hooks. Canonical IntentCall architecture lives in the IntentCall repository; this file documents only this app's consumer setup and proof path.
 
 ## One-time hook install
 
@@ -8,14 +8,14 @@ From the `mcp_flutter` repo root:
 
 ```bash
 dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart init intentcall-platform \
-  --project-dir flutter_test_app
+  --project-dir showcase/flutter_test_app
 ```
 
 Drift check:
 
 ```bash
 dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart init intentcall-platform \
-  --project-dir flutter_test_app --check
+  --project-dir showcase/flutter_test_app --check
 ```
 
 The hook installer manages idempotent markers for WebMCP script tags, Android shortcut metadata, and Apple run-script helpers where supported.
@@ -26,7 +26,7 @@ Normal repo state resolves hosted `intentcall_* ^0.6.0` packages from pub.dev. L
 
 ## Manifest and platform sync
 
-`flutter_test_app/intentcall.yaml` is the authoritative host config
+`showcase/flutter_test_app/intentcall.yaml` is the authoritative host config
 (`host: flutter`, `protocolScheme: mcpfluttertest`, `platforms.enabled`).
 Keep `web/agent_manifest.json` as the committed manifest fixture; export/sync
 must stay in lockstep with that file.
@@ -36,7 +36,7 @@ Regenerate platform artifacts from the app manifest:
 ```bash
 dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart codegen sync \
   --platform web,android,ios,macos,linux,windows \
-  --project-dir flutter_test_app
+  --project-dir showcase/flutter_test_app
 ```
 
 Use `--check` in CI or pre-merge drift checks. The app keeps `web/agent_manifest.json` as the consumer manifest fixture.
@@ -48,7 +48,7 @@ Generate an XCTest UI-test scaffold from the same manifest and dogfood fixtures:
 ```bash
 dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart \
   codegen appintents-testing generate \
-  --project-dir flutter_test_app \
+  --project-dir showcase/flutter_test_app \
   --bundle-id com.example.testApp \
   --sample-arguments tool/intentcall/appintents_testing_samples.json \
   --entity-fixtures tool/intentcall/appintents_testing_entities.json \
@@ -107,7 +107,7 @@ make check-intentcall-sibling-matrix
 # Generate AppIntentsTesting scaffold only
 dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart \
   codegen appintents-testing generate \
-  --project-dir flutter_test_app \
+  --project-dir showcase/flutter_test_app \
   --bundle-id com.example.testApp \
   --sample-arguments tool/intentcall/appintents_testing_samples.json \
   --entity-fixtures tool/intentcall/appintents_testing_entities.json

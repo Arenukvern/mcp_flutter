@@ -1,4 +1,4 @@
-# Golden images — `flutter_test_app`
+# Golden images — the showcase app (`showcase/flutter_test_app`)
 
 ## `visual_reconstruct.png`
 
@@ -13,7 +13,7 @@ Reference frame for the **visual reconstruct** dogfood fixture (`VisualReconstru
 From **mcp_flutter** repo root:
 
 ```bash
-cd flutter_test_app
+cd showcase/flutter_test_app
 flutter test test/visual_reconstruct_golden_test.dart --update-goldens
 ```
 

@@ -1,13 +1,13 @@
 ---
 name: flutter-mcp-toolkit-maintain-macos
-description: Maintains flutter_test_app macOS showcase, native intentcall hooks (codegen, app_links invoke), and VM MCP validation. Use when editing macOS Runner, intentcall_codegen.sh, macOS dogfood, Screen Recording capture, or comparing macOS parity to web WebMCP.
+description: Maintains showcase/flutter_test_app macOS showcase, native intentcall hooks (codegen, app_links invoke), and VM MCP validation. Use when editing macOS Runner, intentcall_codegen.sh, macOS dogfood, Screen Recording capture, or comparing macOS parity to web WebMCP.
 ---
 
 <!-- @FMT_MODE_PRELUDE -->
 
 # Maintain macOS (showcase + native intentcall)
 
-Dogfood app: `flutter_test_app`. Platform doc: `flutter_test_app/INTENTCALL_PLATFORM.md`.
+Dogfood app: `showcase/flutter_test_app`. Platform doc: `showcase/flutter_test_app/INTENTCALL_PLATFORM.md`.
 
 ## WebMCP on macOS
 
@@ -35,10 +35,10 @@ Stop: `make showcase-stop`.
 ```bash
 dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart codegen sync \
   --platform web,android,ios,macos,linux,windows \
-  --project-dir flutter_test_app
+  --project-dir showcase/flutter_test_app
 
 dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart init intentcall-platform \
-  --project-dir flutter_test_app --check
+  --project-dir showcase/flutter_test_app --check
 ```
 
 | Target | Role |

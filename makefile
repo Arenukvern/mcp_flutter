@@ -44,7 +44,7 @@ publish-pub-dry-run:
 publish-pub:
 	cd $(CURDIR) && bash tool/release/publish_pub_packages.sh --execute --skip-existing
 
-# Run the flutter_test_app showcase on macOS and print the VM URI.
+# Run the showcase/flutter_test_app showcase on macOS and print the VM URI.
 # IntentCall doors (discover, tool call, MCP serve) live in
 # packages/harness/tool/intentcall_session.dart — run it in a second
 # terminal once the showcase is up: … intentcall_session.dart demo
