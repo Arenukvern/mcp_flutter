@@ -4,7 +4,8 @@
 //   dart run showcase/web_demo/serve.dart 9000       # custom port
 //
 // Serves `index.html` (and nothing else) from this script's directory on
-// loopback only — the target `drive_web_demo.dart` and a human browser
+// loopback only — the target `showcase/drivers/bin/drive_web.dart`
+// and a human browser
 // share.
 import 'dart:io';
 

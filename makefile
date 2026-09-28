@@ -66,18 +66,20 @@ showcase-stop:
 # Drive the showcase examples end-to-end (showcase/): the instrumented
 # Flutter tier (ToolkitDriver over the VM service) and the browser tier
 # (CdpDriver over CDP) through one AutomationDriver contract.
+# Drive programs are showcase composition roots (showcase/drivers/): they
+# own the pipeline policy so flutter_mcp_harness stays pipeline-free.
 .PHONY: drive-flutter drive-flutter-chrome drive-web
 drive-flutter:
-	@cd $(CURDIR) && dart run packages/harness/tool/drive_flutter_demo.dart
+	@cd $(CURDIR) && dart run showcase/drivers/bin/drive_flutter.dart
 
 drive-flutter-chrome:
-	@cd $(CURDIR) && dart run packages/harness/tool/drive_flutter_demo.dart --device chrome
+	@cd $(CURDIR) && dart run showcase/drivers/bin/drive_flutter.dart --device chrome
 
 drive-web:
 ifdef VISIBLE
-	@cd $(CURDIR) && dart run packages/harness/tool/drive_web_demo.dart --visible
+	@cd $(CURDIR) && dart run showcase/drivers/bin/drive_web.dart --visible
 else
-	@cd $(CURDIR) && dart run packages/harness/tool/drive_web_demo.dart
+	@cd $(CURDIR) && dart run showcase/drivers/bin/drive_web.dart
 endif
 
 .PHONY: exec-sweep exec-sweep-web

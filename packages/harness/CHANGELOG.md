@@ -19,18 +19,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `IntentDriverRouter` (`intent_driver_router.dart`): ADR-0038
   driver-routed invocation — resolves an intent's `IntentAutomationHint`
   (transport + verb + locator, plus invocation operands) into a
-  `AutomationAction` on the bound driver. `drive_flutter_demo.dart`
-  proves it live (routed click/type/navigate against the demo app).
+  `AutomationAction` on the bound driver. `showcase/drivers/bin/
+  drive_flutter.dart` proves it live (routed click/type/navigate against
+  the demo app).
 - `intentcall_core` dependency for the hint types.
-- `tool/drive_flutter_demo.dart` + `tool/drive_web_demo.dart`: showcase
-  drives for `showcase/` — one driver contract across the instrumented
-  Flutter and browser tiers, with screencast receipts via
-  `universal_screencast` (`universal_capture_flutter`'s
-  `ToolkitFrameSource` on the Flutter side, `CdpScreencastFrameSource`
-  in Chrome).
+- Showcase drive programs (`showcase/drivers/bin/drive_flutter.dart` +
+  `drive_web.dart`, in the `showcase/drivers` composition package): one
+  driver contract across the instrumented Flutter and browser tiers,
+  with screencast receipts via `universal_screencast` — the Flutter side
+  through the composition-owned `FlutterAppFrames` adapter over this
+  package's `VmClient`, the browser side through
+  `CdpScreencastFrameSource`.
 
 ### Changed
 
+- BREAKING (dependency hygiene): `universal_screencast` and
+  `universal_capture_flutter` are no longer dependencies — the harness
+  library never imported them; the showcase drive programs moved to the
+  `showcase/drivers` composition package, which owns the pipeline policy
+  (dependency inversion: composition wires, libraries don't).
 - `ChromeAppTarget.launch` polls the CDP endpoint (250 ms interval, 30 s
   deadline) instead of probing once — a single probe loses the race
   against Chrome's DevTools-socket boot on cold starts; launches pass

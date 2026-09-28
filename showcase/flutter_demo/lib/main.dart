@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 
 /// The showcase demo app: a deliberately small instrumented target the
-/// harness drives end-to-end (`packages/harness/tool/drive_flutter_demo.dart`).
+/// harness drives end-to-end (`showcase/drivers/bin/drive_flutter.dart`).
 ///
 /// Every control carries a plain text label so a `ToolkitDriver` can
 /// resolve it by name off a semantic snapshot: tap `Increment`, type into

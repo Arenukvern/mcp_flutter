@@ -33,14 +33,16 @@ make drive-flutter-chrome     # Flutter web
 or directly:
 
 ```bash
-dart run packages/harness/tool/drive_flutter_demo.dart
+dart run showcase/drivers/bin/drive_flutter.dart
 ```
 
 The drive tool: observes the semantic tree → taps `Increment` ×3 →
 types `Ada` into `Name` → verifies `Count: 3` → captures a PNG →
 streams PNG frames from the app through the `universal_screencast`
-pipeline into a file recorder → pushes the `/profile` route and verifies
-the greeting. Artifacts land in `.showcase/`.
+pipeline (via this package's `FlutterAppFrames` adapter over the
+harness's VM client) into a file recorder → routes a click/type hint
+through the `IntentDriverRouter` → pushes the `/profile` route and
+verifies the greeting. Artifacts land in `.showcase/`.
 
 ### `web_demo/` — the browser tier
 
@@ -55,7 +57,7 @@ make drive-web VISIBLE=1      # watch it
 or directly:
 
 ```bash
-dart run packages/harness/tool/drive_web_demo.dart
+dart run showcase/drivers/bin/drive_web.dart
 ```
 
 Same loop, different transport: the CDP accessibility tree for
@@ -90,10 +92,22 @@ dart test pkgs/universal_capture_macos   # screenshots + ScreenCaptureKit stream
 ```
 showcase/
 ├── README.md              ← you are here
+├── drivers/               ← composition package: drive programs + the
+│                            FlutterAppFrames adapter (owns the pipeline
+│                            policy, so the harness stays pipeline-free)
 ├── flutter_demo/          ← instrumented Flutter target (mcp_toolkit bound)
 └── web_demo/              ← static page + serve.dart (CDP target)
 ```
 
-Drive programs live next to the harness they drive:
-`packages/harness/tool/drive_flutter_demo.dart` and
-`drive_web_demo.dart`.
+#### Dependency inversion
+
+The drive programs used to live in `packages/harness/tool/` — which
+dragged `universal_screencast` into the harness pubspec even though the
+harness library never imported it. The composition now lives where it
+belongs: `showcase/drivers` depends on the harness AND the pipeline and
+wires them together; `flutter_mcp_harness` depends only on contracts
+(`universal_automation_interface`, `intentcall_core`), protocol clients
+(`vm_service`, `universal_browser_cdp`), and `path`.
+[`FlutterAppFrames`](drivers/lib/flutter_app_frames.dart) is the seam
+made explicit: a small `FrameSource` over the harness's own `VmClient`,
+owned by the composition that needs it.

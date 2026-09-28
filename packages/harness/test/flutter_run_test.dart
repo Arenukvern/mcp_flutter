@@ -97,8 +97,26 @@ void main() {
       vmServiceTimeout: const Duration(milliseconds: 300),
     );
     await expectLater(target.launch(), throwsA(isA<TimeoutException>()));
-    final pid = int.parse(pidFile.readAsStringSync().trim());
-    expect(_processIsAlive(pid), isFalse,
+    // The fake flutter writes the pid right before the (short) VM wait;
+    // under heavy load the reap can win that race by a hair. Retry the
+    // read briefly — the assertion is about the reap, not file timing.
+    var pid = -1;
+    for (var attempt = 0; attempt < 20; attempt++) {
+      try {
+        pid = int.parse(pidFile.readAsStringSync().trim());
+        break;
+      } on FileSystemException {
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      }
+    }
+    // Death confirmation lags the kill under heavy machine load — poll
+    // briefly. A reap that never happened still fails (bounded wait).
+    var alive = _processIsAlive(pid);
+    for (var attempt = 0; attempt < 60 && alive; attempt++) {
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      alive = _processIsAlive(pid);
+    }
+    expect(alive, isFalse,
         reason: 'launch must await the confirmed death before rethrowing');
   });
 

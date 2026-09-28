@@ -2492,11 +2492,24 @@ process, attach to its Dart VM service, and only then drive/assert. It speaks
 the same `ext.mcp.toolkit.*` service extensions as the MCP server, as plain
 Dart. ADR: `decisions/0015_flutter_mcp_harness_extraction.mdx`.
 
+The driving layer speaks the universal `AutomationDriver` contract
+(ADR-0038, `universal_automation_interface`): `ToolkitDriver` exposes the
+observe/act/verify loop (`snapshot` → semantic `AxNode` tree with refs and
+bounds; `perform` click/type/key/named-route-navigate/evaluate; `screenshot`
+PNG), so the same agent vocabulary drives Flutter apps, browsers
+(`CdpDriver`), and OS-native targets. `IntentDriverRouter` additionally
+routes an intent's `automation` hint (transport + verb + locator) onto the
+bound driver. Frame pipelines are deliberately NOT a harness dependency —
+they are composition-level (`showcase/drivers`, which also holds the live
+end-to-end drives: `make drive-flutter` / `drive-flutter-chrome` /
+`drive-web`).
+
 | Need | Use |
 |---|---|
 | Repeatable scenario as code, CI-friendly exit codes | this skill (`flutter_mcp_harness`) |
 | One-off interactive debugging from chat/editor | `flutter-mcp` (MCP `fmt_*` tools) |
 | Browser/WebMCP dogfood of the web showcase | `flutter-mcp-toolkit-maintain-web` |
+| Live end-to-end showcase drives (both tiers) | `showcase/drivers` (`make drive-flutter` / `drive-web`) |
 
 ## Launch paths (pick by ownership)
 

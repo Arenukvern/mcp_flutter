@@ -57,9 +57,10 @@ final class ToolkitDriver implements AutomationDriver {
   DriverCapabilities get capabilities => DriverCapabilities(
     attach: true,
     screenshot: true,
-    // Continuous frames are a frame-source concern — see
-    // universal_capture_flutter's ToolkitFrameSource, which polls
-    // [ToolkitExtensions.viewScreenshots] through this package.
+    // Continuous frames are a frame-source concern, not a driving
+    // concern: adapters (family-owned universal_capture_flutter, or a
+    // consumer-owned one) poll [ToolkitExtensions.viewScreenshots]
+    // themselves. This package stays pipeline-free.
     screencast: false,
     a11yTree: true,
     inputSynthesis: true,

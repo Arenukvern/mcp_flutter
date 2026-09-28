@@ -82,7 +82,7 @@ failure aborts, cleanup still runs, exit code reflects the result.
 | Wait for log lines / assert on output | `LogTap.waitFor` / `firstMatch` / `count` / `tail` |
 | Drive the UI | `WidgetDriver`: `snapshot`, `findRef`, `tap`, `tapUntil`, `enterText`, `scroll`, `findValue` |
 | Drive the UI through the universal `AutomationDriver` contract | `ToolkitDriver`: `snapshot` (semantic `AxNode` tree), `perform` (click/type/keys/navigate/evaluate), `screenshot` |
-| Stream frames from a running app / browser | `universal_capture_flutter`'s `ToolkitFrameSource` + `universal_screencast` (see `tool/drive_flutter_demo.dart`) |
+| Stream frames from a running app / browser | frame sources + `universal_screencast` — composition-level, see `showcase/drivers` (the harness itself stays pipeline-free) |
 | Structure steps, assertions, cleanup | `Scenario`, `Check`, `ScenarioReport`, `HarnessContext`, `retry` |
 | Evaluate Dart / hot-reload / discover extensions in the app | `VmClient.evaluate` / `hotReload` / `extensionNames` |
 | Reference the toolkit verb names | `ToolkitExtensions` (mirrors `mcp_toolkit`'s interaction toolkit) |
@@ -112,10 +112,10 @@ failure aborts, cleanup still runs, exit code reflects the result.
 - `example/desktop_pair.dart` — a full two-instance composition root.
 - `tool/showcase.dart` — this repo's showcase launcher (macOS / `--web` /
   `--stop`), the Dart rewrite of the former `scripts/*.sh` showcase.
-- `tool/drive_flutter_demo.dart`, `tool/drive_web_demo.dart` — end-to-end
-  showcase drives for [`showcase/`](../../showcase/): instrumented Flutter
-  tier and browser tier through one driver contract, both recording
-  screencast receipts under `.showcase/`.
+- The end-to-end showcase drives live in
+  [`showcase/drivers/`](../../showcase/drivers/) — composition roots that
+  wire this package to the frame pipeline (keeps pipeline dependencies
+  out of the harness pubspec).
 - `tool/intentcall_session.dart` — IntentCall doors against a running
   showcase (discover / bridge ping / MCP serve), a checked-in composition
   root — nothing under `.showcase/` is generated at runtime.

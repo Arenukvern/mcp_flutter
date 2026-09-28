@@ -93,6 +93,17 @@ This branch resolves IntentCall from the sibling checkout at `../intentcall`
 Do not point overrides at `../agentkit`. That directory name is only a fallback
 for older checkouts.
 
+### Automation hints (ADR-0038 adoption)
+
+Intents may declare an optional `automation` hint (`IntentAutomationHint` in
+`intentcall_core`: driver transport + action + locator). The projection rule:
+IntentCall states how an intent *could* be driven — registry descriptors carry
+the hint, the MCP wire carries it in tool `_meta`
+(`dev.intentcall/automation`) — and this repo owns the routing:
+`IntentDriverRouter` in `packages/harness` resolves a hint into an
+`AutomationDriver` action against the bound driver. `showcase/drivers` proves
+it live. This repo must not grow drivers, and IntentCall must not drive.
+
 ## Consumer proof gates
 
 Run these before changing IntentCall consumption in `mcp_flutter`:
