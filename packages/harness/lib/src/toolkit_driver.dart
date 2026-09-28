@@ -120,6 +120,21 @@ final class ToolkitDriver implements AutomationDriver {
         if (submit) await _pressKey('Enter');
       case KeyPressAction(:final key):
         await _pressKey(key);
+      case ScrollAction(:final direction, :final distance):
+        final raw = _unwrap(
+          await _call(
+            ToolkitExtensions.scroll,
+            args: {
+              'direction': direction.toLowerCase(),
+              'distance': ?distance,
+            },
+          ),
+        );
+        if (raw['success'] == false) {
+          throw ProtocolException(
+            'scroll refused: ${raw['error']} — ${raw['hint'] ?? 'no hint'}',
+          );
+        }
       case EvaluateAction(:final expression):
         final evaluator = evaluate;
         if (evaluator == null) {

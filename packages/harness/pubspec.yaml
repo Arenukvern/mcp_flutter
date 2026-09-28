@@ -26,6 +26,7 @@ dependencies:
   # ../intentcall. Hosted constraints are rejected by
   # fmt.check.intentcall-hosted-deps.
   intentcall_core:
+  flutter_mcp_toolkit_core: ^5.1.0
   path: ^1.9.0
   universal_automation_interface: ^0.1.0
   universal_browser_cdp: ^0.1.0

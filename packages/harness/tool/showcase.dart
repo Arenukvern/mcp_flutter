@@ -28,7 +28,7 @@ final String repoRoot = p.normalize(
 );
 
 final String showcaseDir = p.join(repoRoot, '.showcase');
-final String appDir = p.join(repoRoot, 'flutter_test_app');
+final String appDir = p.join(repoRoot, 'showcase', 'flutter_test_app');
 
 const String scheme = 'mcpfluttertest';
 
@@ -70,7 +70,7 @@ Future<void> main(final List<String> arguments) async {
 // ---------------------------------------------------------------------------
 
 Future<void> stopShowcase() async {
-  log('cleaning flutter_test_app / MCP showcase processes…');
+  log('cleaning showcase/flutter_test_app / MCP showcase processes…');
   final pidFile = File(p.join(showcaseDir, 'flutter.pid'));
   if (pidFile.existsSync()) {
     final savedPid = int.tryParse(pidFile.readAsStringSync().trim());
@@ -90,7 +90,8 @@ Future<void> stopShowcase() async {
   }
 
   // Flutter tool driving this repo's test app.
-  await _runIgnoringExitCode('pkill', ['-f', 'flutter run.*flutter_test_app']);
+  await _runIgnoringExitCode(
+        'pkill', ['-f', 'flutter run.*showcase/flutter_test_app']);
   await _runIgnoringExitCode('pkill', ['-f', 'flutter_tools.*run.*macos']);
 
   // macOS showcase GUI (survives parent flutter kill).
@@ -267,6 +268,10 @@ Future<void> webShowcase({required final bool detach}) async {
 
   if (detach) {
     final logFile = File(p.join(showcaseDir, 'web_app.log'));
+    // Start the log clean: the session scraper reads the LAST ws
+    // announcement, and an appended log would serve the previous
+    // session's (dead) endpoint until the new one announces.
+    logFile.writeAsStringSync('');
     // Detached children get no stdio, so land the output in the log file
     // the same way the shell script's `nohup … >>log 2>&1 < /dev/null` did.
     final pid = await _spawnDetachedWithLog(

@@ -14,7 +14,10 @@ final RegExp vmServiceUriPattern = RegExp(
 /// `ws://127.0.0.1:PORT/TOKEN/=ws` — used when the port is pinned via
 /// `--host-vmservice-port` and scraped from a log file (detached sessions).
 final RegExp vmServiceWsUriPattern = RegExp(
-  r'ws://127\.0\.0\.1:\d+/[\w_-]+/ws',
+  // Token segment is permissive (`[^/\s]+`): DWDS tokens are base64 and
+  // may carry `=` padding (`ws://…/gOzbAsnvP34=/ws`) — a `\w` class
+  // silently missed those announcements.
+  r'ws://127\.0\.0\.1:\d+/[^/\s]+/ws',
 );
 
 /// Extracts the first VM service http URI from [line], or null.

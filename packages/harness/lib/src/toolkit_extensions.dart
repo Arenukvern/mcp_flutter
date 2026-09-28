@@ -1,59 +1,74 @@
+import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart'
+    as core;
+
 /// Service-extension names the Flutter MCP toolkit registers in the app
-/// (prefix `ext.mcp.toolkit.` + verb).
+/// (`ext.mcp.toolkit.` + verb).
 ///
-/// Source of truth: `mcp_toolkit/lib/src/toolkits/interaction_toolkit.dart`
-/// — the app side registers these verbs at binding time, and this driver
-/// calls them over the VM service. Keep the two lists in lockstep; follow-up
-/// work routes the toolkit's registration literals through a shared core
-/// constants file so the compiler enforces it.
+/// Values are DERIVED from `flutter_mcp_toolkit_core`'s
+/// [core.ToolkitExtensionNames] — the single source of truth shared with
+/// the registering side. A renamed verb is a compile error here instead
+/// of a runtime `-32601` on a live app.
 abstract final class ToolkitExtensions {
-  static const String prefix = 'ext.mcp.toolkit';
+  /// Service-extension prefix (shared with the app side).
+  static const String prefix = core.ToolkitExtensionNames.prefix;
 
   /// Semantic snapshot of the visible widget tree.
-  static const String snapshot = '$prefix.semantic_snapshot';
+  static const String snapshot =
+      '$prefix.${core.ToolkitExtensionNames.semanticSnapshot}';
 
   /// Taps a widget by snapshot ref.
-  static const String tap = '$prefix.tap_widget';
+  static const String tap =
+      '$prefix.${core.ToolkitExtensionNames.tapWidget}';
 
   /// Enters text into a widget by snapshot ref.
-  static const String enterText = '$prefix.enter_text';
+  static const String enterText =
+      '$prefix.${core.ToolkitExtensionNames.enterText}';
 
   /// Scrolls (by direction or to a ref).
-  static const String scroll = '$prefix.scroll';
+  static const String scroll = '$prefix.${core.ToolkitExtensionNames.scroll}';
 
   /// Long-presses a widget by snapshot ref.
-  static const String longPress = '$prefix.long_press';
+  static const String longPress =
+      '$prefix.${core.ToolkitExtensionNames.longPress}';
 
   /// Swipes between coordinates.
-  static const String swipe = '$prefix.swipe';
+  static const String swipe = '$prefix.${core.ToolkitExtensionNames.swipe}';
 
   /// Drags from one widget/point to another.
-  static const String drag = '$prefix.drag';
+  static const String drag = '$prefix.${core.ToolkitExtensionNames.drag}';
 
   /// Presses a keyboard key.
-  static const String pressKey = '$prefix.press_key';
+  static const String pressKey =
+      '$prefix.${core.ToolkitExtensionNames.pressKey}';
 
   /// Waits until a condition (label visible, …) holds.
-  static const String waitFor = '$prefix.wait_for';
+  static const String waitFor =
+      '$prefix.${core.ToolkitExtensionNames.waitFor}';
 
   /// Recent app logs (toolkit-buffered).
-  static const String getRecentLogs = '$prefix.get_recent_logs';
+  static const String getRecentLogs =
+      '$prefix.${core.ToolkitExtensionNames.getRecentLogs}';
 
   /// Navigates a route.
-  static const String navigate = '$prefix.navigate';
+  static const String navigate =
+      '$prefix.${core.ToolkitExtensionNames.navigate}';
 
   /// Handles a native dialog.
-  static const String handleDialog = '$prefix.handle_dialog';
+  static const String handleDialog =
+      '$prefix.${core.ToolkitExtensionNames.handleDialog}';
 
   /// Hovers a position (desktop/web).
-  static const String hover = '$prefix.hover';
+  static const String hover = '$prefix.${core.ToolkitExtensionNames.hover}';
 
   /// Focuses a widget by snapshot ref.
-  static const String focusWidget = '$prefix.focus_widget';
+  static const String focusWidget =
+      '$prefix.${core.ToolkitExtensionNames.focusWidget}';
 
   /// Reveals the search field.
-  static const String revealSearch = '$prefix.reveal_search';
+  static const String revealSearch =
+      '$prefix.${core.ToolkitExtensionNames.revealSearch}';
 
   /// Base64 screenshots of all views; `compress: false` keeps PNG bytes.
-  static const String viewScreenshots = '$prefix.view_screenshots';
+  static const String viewScreenshots =
+      '$prefix.${core.ToolkitExtensionNames.viewScreenshots}';
 }

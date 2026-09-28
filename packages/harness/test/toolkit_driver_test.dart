@@ -63,6 +63,13 @@ const String _pngBase64 =
               'error': 'unknown_key',
               'acceptedNames': ['Enter', 'Escape', 'Tab'],
             },
+      ToolkitExtensions.scroll => args['direction'] == 'left'
+          ? {
+            'success': false,
+            'error': 'invalid_direction',
+            'hint': 'use up, down',
+          }
+          : {'success': true},
       _ => {'success': true},
     };
   }
@@ -170,6 +177,35 @@ void main() {
             (error) => error.message,
             'message',
             contains('not a registered named route'),
+          ),
+        ),
+      );
+      await driver.close();
+    });
+
+    test('scroll maps direction and distance through the extension',
+        () async {
+      final (call, log) = _fakeApp();
+      final driver = ToolkitDriver.custom(call);
+      await driver.perform(
+        const ScrollAction(direction: 'Down', distance: 420),
+      );
+      expect(
+        log.any(
+          (line) => line.contains('ext.mcp.toolkit.scroll') &&
+              line.contains('down') &&
+              line.contains('420.0'),
+        ),
+        isTrue,
+      );
+      // In-band refusal surfaces as a protocol error, not silence.
+      await expectLater(
+        driver.perform(const ScrollAction(direction: 'left')),
+        throwsA(
+          isA<ProtocolException>().having(
+            (error) => error.message,
+            'message',
+            contains('invalid_direction'),
           ),
         ),
       );

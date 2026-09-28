@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `ToolkitExtensions` values now derive from
+  `flutter_mcp_toolkit_core`'s `ToolkitExtensionNames` (single source of
+  truth; harness `flutter_mcp_toolkit_core` dependency added).
+- `ToolkitDriver.perform` handles `ScrollAction`: direction + distance
+  route through `ext.mcp.toolkit.scroll`; in-band refusals surface as
+  `ProtocolException` with the app's error and hint.
+
+### Added
+
 - `ToolkitDriver` (`toolkit_driver.dart`): the toolkit's
   `AutomationDriver` implementation over the `ext.mcp.toolkit.*`
   extensions — semantic `AxNode` snapshots with bounds and refs, click /
