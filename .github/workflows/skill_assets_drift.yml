@@ -26,7 +26,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: '3.44.2'
+          flutter-version: '3.47.5'
       - name: Install deps
         run: cd mcp_server_dart && dart pub get
       - name: Regenerate skill assets
