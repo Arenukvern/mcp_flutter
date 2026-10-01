@@ -110,7 +110,15 @@ jobs:
         continue-on-error: true
         run: bash tool/contracts/check_tool_prefix.sh
 
+      - name: Checkout IntentCall (delegation target for codegen sync)
+        uses: actions/checkout@v4
+        with:
+          repository: Arenukvern/intentcall
+          path: intentcall
+
       - name: intentcall platform codegen drift (flutter_test_app)
+        env:
+          INTENTCALL_ROOT: ${{ github.workspace }}/intentcall
         run: |
           cd mcp_server_dart && flutter pub get
           dart run bin/flutter_mcp_toolkit.dart codegen sync \

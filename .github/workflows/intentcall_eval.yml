@@ -30,7 +30,24 @@ jobs:
         working-directory: mcp_server_dart
         run: flutter pub get
 
+      - name: Checkout static-battery siblings
+        uses: actions/checkout@v4
+        with:
+          repository: Arenukvern/flutter_harness
+          path: flutter_harness
+
+      - name: Checkout IntentCall
+        uses: actions/checkout@v4
+        with:
+          repository: Arenukvern/intentcall
+          path: intentcall
+
+      - name: Link siblings where the battery expects them
+        run: ln -s "$GITHUB_WORKSPACE/flutter_harness" "$GITHUB_WORKSPACE/../flutter_harness"
+
       - name: Static dogfood battery
+        env:
+          INTENTCALL_ROOT: ${{ github.workspace }}/intentcall
         run: make dogfood-eval-static
 
   intentcall-integration:
@@ -53,7 +70,15 @@ jobs:
         working-directory: mcp_server_dart
         run: flutter pub get
 
+      - name: Checkout IntentCall
+        uses: actions/checkout@v4
+        with:
+          repository: Arenukvern/intentcall
+          path: intentcall
+
       - name: Hosted intentcall integration matrix
+        env:
+          INTENTCALL_ROOT: ${{ github.workspace }}/intentcall
         run: |
           make dogfood-eval-static
           dart test packages/server_capability_kernel packages/server_capability_core
