@@ -50,8 +50,21 @@ final class IntentcallCli {
   }
 
   /// Runs `intentcall <arguments>` with stdio inherited and returns the
-  /// delegate's exit code.
+  /// delegate's exit code. Fresh checkouts get `dart pub get` first —
+  /// `dart run bin/<file>` needs the package's own resolution.
   Future<int> run(final List<String> arguments) async {
+    if (cliDir != null &&
+        !Directory(p.join(cliDir!, '.dart_tool')).existsSync()) {
+      final get = await Process.run(
+        executable,
+        const <String>['pub', 'get'],
+        workingDirectory: cliDir,
+      );
+      if (get.exitCode != 0) {
+        stderr.write(get.stderr);
+        return get.exitCode;
+      }
+    }
     stderr.writeln(
       '» delegating to ${cliDir ?? 'intentcall (PATH)'}',
     );

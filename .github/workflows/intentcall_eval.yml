@@ -76,6 +76,15 @@ jobs:
           repository: Arenukvern/intentcall
           path: intentcall
 
+      - name: Checkout flutter_harness (battery fixtures)
+        uses: actions/checkout@v4
+        with:
+          repository: Arenukvern/flutter_harness
+          path: flutter_harness
+
+      - name: Link siblings where the battery expects them
+        run: ln -s "$GITHUB_WORKSPACE/flutter_harness" "$GITHUB_WORKSPACE/../flutter_harness"
+
       - name: Hosted intentcall integration matrix
         env:
           INTENTCALL_ROOT: ${{ github.workspace }}/intentcall
