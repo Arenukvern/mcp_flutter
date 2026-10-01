@@ -374,91 +374,91 @@ packages:
       path: "../intentcall/packages/intentcall_bridge"
       relative: true
     source: path
-    version: "0.7.0"
+    version: "1.0.0"
   intentcall_cli:
     dependency: "direct overridden"
     description:
       path: "../intentcall/packages/intentcall_cli"
       relative: true
     source: path
-    version: "0.7.0"
+    version: "1.0.0"
   intentcall_codegen:
     dependency: "direct overridden"
     description:
       path: "../intentcall/packages/intentcall_codegen"
       relative: true
     source: path
-    version: "0.7.0"
+    version: "1.0.0"
   intentcall_core:
     dependency: "direct overridden"
     description:
       path: "../intentcall/packages/intentcall_core"
       relative: true
     source: path
-    version: "0.7.0"
+    version: "1.0.0"
   intentcall_hooks:
     dependency: "direct overridden"
     description:
       path: "../intentcall/packages/intentcall_hooks"
       relative: true
     source: path
-    version: "0.7.0"
+    version: "1.0.0"
   intentcall_mcp:
     dependency: "direct overridden"
     description:
       path: "../intentcall/packages/intentcall_mcp"
       relative: true
     source: path
-    version: "0.7.0"
+    version: "1.0.0"
   intentcall_platform:
     dependency: "direct overridden"
     description:
       path: "../intentcall/packages/intentcall_platform"
       relative: true
     source: path
-    version: "0.7.0"
+    version: "1.0.0"
   intentcall_platform_android:
     dependency: "direct overridden"
     description:
       path: "../intentcall/packages/intentcall_platform_android"
       relative: true
     source: path
-    version: "0.7.0"
+    version: "1.0.0"
   intentcall_platform_apple:
     dependency: "direct overridden"
     description:
       path: "../intentcall/packages/intentcall_platform_apple"
       relative: true
     source: path
-    version: "0.7.0"
+    version: "1.0.0"
   intentcall_platform_sync:
     dependency: "direct overridden"
     description:
       path: "../intentcall/packages/intentcall_platform_sync"
       relative: true
     source: path
-    version: "0.7.0"
+    version: "1.0.0"
   intentcall_schema:
     dependency: "direct overridden"
     description:
       path: "../intentcall/packages/intentcall_schema"
       relative: true
     source: path
-    version: "0.7.0"
+    version: "1.0.0"
   intentcall_session:
     dependency: "direct overridden"
     description:
       path: "../intentcall/packages/intentcall_session"
       relative: true
     source: path
-    version: "0.7.0"
+    version: "1.0.0"
   intentcall_webmcp:
     dependency: "direct overridden"
     description:
       path: "../intentcall/packages/intentcall_webmcp"
       relative: true
     source: path
-    version: "0.7.0"
+    version: "1.0.0"
   intl:
     dependency: transitive
     description:
@@ -846,28 +846,28 @@ packages:
       path: "../../../xs/storage_problem/dart_flutter_packages/pkgs/universal_automation_conformance"
       relative: true
     source: path
-    version: "0.1.0"
+    version: "0.2.0"
   universal_automation_interface:
     dependency: "direct overridden"
     description:
       path: "../../../xs/storage_problem/dart_flutter_packages/pkgs/universal_automation_interface"
       relative: true
     source: path
-    version: "0.1.1"
+    version: "0.2.0"
   universal_browser_cdp:
     dependency: "direct overridden"
     description:
       path: "../../../xs/storage_problem/dart_flutter_packages/pkgs/universal_browser_cdp"
       relative: true
     source: path
-    version: "0.1.1"
+    version: "0.2.0"
   universal_capture_flutter:
     dependency: "direct overridden"
     description:
       path: "../../../xs/storage_problem/dart_flutter_packages/pkgs/universal_capture_flutter"
       relative: true
     source: path
-    version: "0.1.0"
+    version: "0.1.1"
   universal_io:
     dependency: transitive
     description:
@@ -882,7 +882,7 @@ packages:
       path: "../../../xs/storage_problem/dart_flutter_packages/pkgs/universal_screencast"
       relative: true
     source: path
-    version: "0.1.0"
+    version: "0.1.1"
   vector_math:
     dependency: transitive
     description:

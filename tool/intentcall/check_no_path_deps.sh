@@ -21,6 +21,10 @@ resolution goes through the gitignored root pubspec_overrides.yaml, CI
 resolves hosted from pub.dev. A hosted version constraint is rejected.
 An explicit path must end in intentcall/packages/<package>.
 
+Exception: packages/harness is a PUBLISHED package (flutter_mcp_harness on
+pub.dev) — its hosted consumers need a real floor, so version constraints
+are allowed there.
+
 --strict-root additionally scans the root pubspec and lockfile.
 EOF
 }
@@ -99,6 +103,10 @@ for raw_path in sys.argv[1:]:
     if path.resolve() == (repo_root / "pubspec.yaml").resolve():
         continue
     lines = path.read_text().splitlines()
+    rel = path.resolve().relative_to(repo_root).as_posix()
+    # Published packages pin hosted floors for their consumers; in-repo
+    # proof consumers stay version-free.
+    allow_pinned = rel == "packages/harness/pubspec.yaml"
     dep_ranges = section_ranges(lines)
     for index, line in enumerate(lines):
         if not in_dependency_section(index, lines, dep_ranges):
@@ -118,7 +126,7 @@ for raw_path in sys.argv[1:]:
                     file=sys.stderr,
                 )
                 failed = True
-        elif inline:
+        elif inline and not allow_pinned:
             print(
                 f"hosted intentcall dependency: {path}:{index + 1}: "
                 f"{package} uses hosted {inline}; expected no version "
