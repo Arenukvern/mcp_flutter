@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter_mcp_toolkit_server/src/cli/codegen_sync_command.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/intentcall_delegate.dart';
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 /// Emitter/file-writing truth (web artifacts, shortcuts XML) lives in the
@@ -39,6 +40,19 @@ void main() {
     expect(argv, containsAllInOrder(['--host', 'flutter']));
     expect(argv, containsAllInOrder(['--platform', 'web']));
     expect(argv, containsAllInOrder(['--platform', 'android']));
+  });
+
+  test('delegatePlatformSync absolutizes a relative project root', () async {
+    final fake = _FakeIntentcallCli();
+    final exitCode = await delegatePlatformSync(
+      projectRoot: 'relative/demo',
+      platforms: const ['web'],
+      cli: fake.checkout,
+    );
+    expect(exitCode, 0);
+    final projectDir = fake.lastArgv![fake.lastArgv!.indexOf('--project-dir') + 1];
+    expect(p.isAbsolute(projectDir), isTrue);
+    expect(projectDir, endsWith('relative/demo'));
   });
 
   test('delegatePlatformSync forwards the delegate exit code', () async {

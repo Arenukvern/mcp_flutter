@@ -35,14 +35,22 @@ final class IntentcallCli {
         return IntentcallCli.checkout(candidate);
       }
     }
-    final base = cwd ?? Directory.current.path;
-    for (final sibling in const <String>['intentcall', 'agentkit']) {
-      final candidate = p.normalize(
-        p.join(base, '..', sibling, 'packages', 'intentcall_cli'),
-      );
-      if (Directory(candidate).existsSync()) {
-        return IntentcallCli.checkout(candidate);
+    // Sibling checkouts: walk up from the caller's cwd (commands run from
+    // package dirs like mcp_server_dart as well as the repo root), probing
+    // each level for <root>/intentcall/packages/intentcall_cli.
+    var base = p.normalize(cwd ?? Directory.current.path);
+    for (var depth = 0; depth < 4; depth++) {
+      for (final sibling in const <String>['intentcall', 'agentkit']) {
+        final candidate = p.normalize(
+          p.join(base, sibling, 'packages', 'intentcall_cli'),
+        );
+        if (Directory(candidate).existsSync()) {
+          return IntentcallCli.checkout(candidate);
+        }
       }
+      final parent = p.dirname(base);
+      if (parent == base) break;
+      base = parent;
     }
     final onPath = Process.runSync('which', const <String>['intentcall']);
     if (onPath.exitCode == 0) return IntentcallCli.onPath();
@@ -87,6 +95,14 @@ void _printInstallHint() {
   );
 }
 
+/// The spawned CLI resolves relative paths against its own working
+/// directory (the CLI checkout), so the caller's project root must be
+/// absolutized against the CALLER's cwd first.
+String _absoluteProjectRoot(final String projectRoot) {
+  if (p.isAbsolute(projectRoot)) return projectRoot;
+  return p.normalize(p.join(Directory.current.path, projectRoot));
+}
+
 /// Delegates `flutter-mcp-toolkit codegen sync` to
 /// `intentcall platform sync --host flutter`, discovered at runtime.
 /// [cli] overrides resolution (tests inject a fake).
@@ -105,7 +121,7 @@ Future<int> delegatePlatformSync({
     'platform',
     'sync',
     '--project-dir',
-    projectRoot,
+    _absoluteProjectRoot(projectRoot),
     '--host',
     'flutter',
     for (final platform in platforms) ...<String>['--platform', platform],
@@ -131,7 +147,7 @@ Future<int> delegatePlatformHooksInit({
     'hooks',
     'init',
     '--project-dir',
-    projectRoot,
+    _absoluteProjectRoot(projectRoot),
     '--host',
     'flutter',
     if (checkOnly) '--check',
