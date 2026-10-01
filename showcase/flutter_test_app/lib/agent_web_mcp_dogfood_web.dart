@@ -26,10 +26,10 @@ external JSAny? _jsonParse(JSString source);
 
 /// Exercises [WebMcpPublishAdapter] hot-sync on web (dogfood).
 ///
-/// Skips tools already registered by [registerAgentWebMcpFromEntries] / JS bootstrap
+/// Skips tools already registered by [projectEntriesToWebMcp] / JS bootstrap
 /// to avoid duplicate `registerTool` names on the same `modelContext`. Execute for
 /// tools registered only in JS still routes through `__intentcallWebMcpDartExecute`
-/// when [registerAgentWebMcpFromEntries] ran after `addEntries`.
+/// when [projectEntriesToWebMcp] ran after `addEntries`.
 Future<void> wireWebMcpPublishAdapterDogfood(
   final Set<AgentCallEntry> entries,
 ) async {

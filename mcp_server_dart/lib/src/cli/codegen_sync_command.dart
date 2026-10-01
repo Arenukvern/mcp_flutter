@@ -1,7 +1,10 @@
 import 'dart:io';
 
 import 'package:flutter_mcp_toolkit_server/src/cli/intentcall_delegate.dart';
-import 'package:intentcall_platform/intentcall_platform.dart';
+// Pure-Dart sync surface (kPlatformSyncTargets) — deliberately NOT
+// intentcall_platform, whose federated native packages would gate hosted
+// resolution on the whole platform family (ADR-0016).
+import 'package:intentcall_platform_sync/intentcall_platform_sync.dart';
 
 /// Runs `flutter-mcp-toolkit codegen sync` by delegating to [intentcall_cli].
 Future<int> runCodegenSync({
@@ -29,7 +32,7 @@ Future<int> runCodegenSync({
   }
 
   try {
-    return delegatePlatformSync(
+    return await delegatePlatformSync(
       projectRoot: projectRoot,
       platforms: platforms,
       checkOnly: checkOnly,

@@ -1,6 +1,6 @@
 ---
 name: flutter-mcp-toolkit-custom-tools
-description: Use this skill when the agent exposes app-specific surfaces by registering custom MCP tools and resources inside the Flutter app (mcp_toolkit dynamic registry — AgentCallEntry, bootstrapFlutter additionalEntries / addEntries). Covers tool vs resource vs evaluate-expression, Map-based handlers, schema strictness, discovery via fmt_list_client_tools_and_resources, fmt_client_tool, fmt_client_resource, and lifecycle pitfalls.
+description: Use this skill when the agent exposes app-specific surfaces by registering custom MCP tools and resources inside the Flutter app (mcp_toolkit dynamic registry — AgentCallEntry, addEntries). Covers tool vs resource vs evaluate-expression, Map-based handlers, schema strictness, discovery via fmt_list_client_tools_and_resources, fmt_client_tool, fmt_client_resource, and lifecycle pitfalls.
 ---
 
 <!-- @FMT_MODE_PRELUDE -->
@@ -92,7 +92,7 @@ final tool = mcpToolkitTool(
 - Tool arguments on the wire are **strings** keyed by schema property names — parse with `int.tryParse`, `jsonDecode`, etc.
 - Do **not** use `request.arguments` on the app side.
 
-Prefer **`MCPToolkitBinding.instance.bootstrapFlutter(additionalEntries: { ... }, runApp: ...)`** so tools/resources register in one place with zone/error setup.
+Prefer **`MCPToolkitBinding.instance.addEntries(entries: { ... })` before `bootstrapFlutter(runApp: ...)`** so tools/resources register in one place with zone/error setup.
 
 Register **once** at bootstrap — not inside `build`, not per-widget `initState`.
 
@@ -160,7 +160,7 @@ If something should appear but does not: confirm **`addEntries`** completed (**`
 
 1. Ensure **`mcp_toolkit`** is in **`pubspec.yaml`**.
 2. Add **`lib/mcp_tools/<domain>_surfaces.dart`** returning **`Set<AgentCallEntry>`** or calling **`addEntries`** once.
-3. Wire from **`bootstrapFlutter(..., additionalEntries: ...)`** — never from **`StatefulWidget` lifecycle**.
+3. Wire from **`addEntries(...)` before `bootstrapFlutter(...)`** — never from **`StatefulWidget` lifecycle**.
 4. Tight schemas; hot **restart**; then **`fmt_list_client_tools_and_resources`** before first client invoke.
 
 ## Safety and scope

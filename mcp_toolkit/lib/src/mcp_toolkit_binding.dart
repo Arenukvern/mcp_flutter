@@ -105,12 +105,16 @@ class MCPToolkitBinding extends MCPToolkitBindingBase
   }
 
   /// Canonical app bootstrap for Flutter hosts using MCP toolkit in debug.
+  ///
+  /// Composition owns the surface: register entries with [addEntries] and
+  /// platform tiers with [addProjection] before calling — this method only
+  /// wires lifecycle (zone guard, binding init, the built-in Flutter
+  /// toolkit entries) and then runs the app. Apps that want a fully custom
+  /// entry set call [initialize] + [addEntries] + `runApp` themselves.
   Future<void> bootstrapFlutter({
     required final FutureOr<void> Function() runApp,
-    final Iterable<AgentCallEntry> additionalEntries = const <AgentCallEntry>[],
     final FutureOr<void> Function()? ensureInitialized,
     final void Function(Object error, StackTrace stackTrace)? onZoneError,
-    final bool initializeFlutterToolkitEntries = true,
     final bool debugOnly = true,
     final String? protocolScheme,
   }) async {
@@ -135,14 +139,9 @@ class MCPToolkitBinding extends MCPToolkitBindingBase
               this.protocolScheme = protocolScheme;
             }
 
-            if (initializeFlutterToolkitEntries) {
-              await _addMissingEntries(
-                getFlutterMcpToolkitEntries(binding: this),
-              );
-            }
-            if (additionalEntries.isNotEmpty) {
-              await _addMissingEntries(additionalEntries);
-            }
+            await _addMissingEntries(
+              getFlutterMcpToolkitEntries(binding: this),
+            );
 
             await runApp();
           } finally {

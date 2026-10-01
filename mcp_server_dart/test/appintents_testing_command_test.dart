@@ -81,10 +81,10 @@ void main() {
 
   test('committed AppIntentsTesting entity fixture matches showcase seed', () {
     final fixture = File(
-      '../flutter_test_app/tool/intentcall/appintents_testing_entities.json',
+      '../showcase/flutter_test_app/tool/intentcall/appintents_testing_entities.json',
     );
     final seedSource = File(
-      '../flutter_test_app/lib/intentcall_showcase_entries.dart',
+      '../showcase/flutter_test_app/lib/intentcall_showcase_entries.dart',
     );
 
     final fixtures = readAppIntentsTestingEntityFixtures(fixture);

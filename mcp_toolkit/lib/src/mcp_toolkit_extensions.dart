@@ -4,7 +4,6 @@ import 'dart:developer' as developer;
 
 import 'package:flutter/foundation.dart';
 import 'package:intentcall_core/intentcall_core.dart';
-import 'package:intentcall_platform/intentcall_platform.dart';
 import 'package:intentcall_schema/intentcall_schema.dart';
 
 import 'agent_call_entry_extensions.dart';
@@ -67,8 +66,8 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
         ..clear()
         ..addAll(uniqueEntries);
 
-      if (kIsWeb) {
-        registerAgentWebMcpFromEntries(_allEntries);
+      for (final projection in projections) {
+        projection.entriesChanged(_allEntries);
       }
 
       for (final entry in entries) {

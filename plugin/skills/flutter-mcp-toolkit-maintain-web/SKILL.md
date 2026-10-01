@@ -116,7 +116,7 @@ dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart init intentcall-platform \
 |----------|--------|
 | `web/intentcall_webmcp.generated.js` | `codegen sync` from `web/agent_manifest.json` |
 | `web/index.html` | `init intentcall-platform` script tag |
-| Dart bootstrap | `registerAgentWebMcpFromEntries` in `mcp_toolkit_extensions.dart` (debug web, after `addEntries`; `intentcall_platform`) |
+| Dart bootstrap | projection the app registers — showcase: `ShowcaseWebMcpProjection` (in `intentcall_showcase_bootstrap.dart`), wrapping `projectEntriesToWebMcp` from `intentcall_platform_sync`; wired via `MCPToolkitBinding.addEntryListener` (ADR-0016) |
 
 ## Runtime validate
 
@@ -132,7 +132,7 @@ Pass `--web-browser-debugging-port <cdp>` if CDP discovery fails.
 
 ## Known issues
 
-1. **Duplicate tool name** — generated JS + `registerAgentWebMcpFromEntries` both call `registerTool`; dedupe or gate one path (`agent_web_mcp_bootstrap_web.dart` name cache).
+1. **Duplicate tool name** — generated JS + the WebMCP projection (`projectEntriesToWebMcp`) both call `registerTool`; dedupe or gate one path (`agent_web_mcp_bootstrap_web.dart` name cache).
 2. **CDP probe** — `webmcp verify` may report `webmcp_active_log_evidence` while CDP `hasModelContext` is false (Flutter execution context).
 3. **Stale WS_URI** — always grep fresh token after hot restart before eval/validate.
 4. **Empty WebMCP list right after navigate** — wait until Dart hook / registration finishes, then list again.

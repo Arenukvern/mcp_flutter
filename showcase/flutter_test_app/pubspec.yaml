@@ -42,6 +42,8 @@ dependencies:
     path: ../../mcp_toolkit
   intentcall_platform:
     path: ../../../intentcall/packages/intentcall_platform
+  intentcall_platform_sync:
+    path: ../../../intentcall/packages/intentcall_platform_sync
   intentcall_webmcp:
     path: ../../../intentcall/packages/intentcall_webmcp
   app_links: ^6.4.0

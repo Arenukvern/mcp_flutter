@@ -150,5 +150,6 @@ dart run example/desktop_pair.dart --skip-build
 ## Related
 
 - `flutter-mcp` — the interactive MCP loop over the same extensions
+- `flutter-mcp-automation-chain` — cross-tier wiring for your own app (surface picker, oka integration, runner sessions)
 - `flutter-mcp-toolkit-maintain-macos` / `-maintain-web` — showcase + platform lanes
 - `packages/harness/README.md`, ADR-0014 (runner delegation), ADR-0015 (extraction)

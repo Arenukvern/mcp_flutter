@@ -36,13 +36,14 @@ Always run `flutter-mcp-toolkit doctor --json` first. Parse the output:
 | Read state ("what's on screen?", "show me errors", "screenshot") | `flutter-mcp-toolkit-inspect` |
 | Drive UI ("tap X", "type into Y", "scroll to Z", "hot reload") | `flutter-mcp-toolkit-control` |
 | Diagnose ("why is X failing?", "show recent logs", "evaluate expression") | `flutter-mcp-toolkit-debug` |
-| Register app-specific MCP tools/resources (`AgentCallEntry`, `bootstrapFlutter` `additionalEntries`) | `flutter-mcp-toolkit-custom-tools` |
+| Register app-specific MCP tools/resources (`AgentCallEntry`, `addEntries`) | `flutter-mcp-toolkit-custom-tools` |
 | Upgrade from removed legacy call-entry APIs | `flutter-mcp-toolkit-intentcall-migration` |
 | Audit CLI/MCP/schema/dynamic-registry parity before changing tool surfaces | `flutter-mcp-boundary-audit` |
 | Maintain `showcase/flutter_test_app` web / WebMCP showcase hooks; agent list/execute via Chrome DevTools MCP (`list_webmcp_tools` / `execute_webmcp_tool`) | `flutter-mcp-toolkit-maintain-web` |
 | Maintain `showcase/flutter_test_app` macOS / native IntentCall hooks | `flutter-mcp-toolkit-maintain-macos` |
 | Score dogfood iterations or route dogfood evidence | `flutter-mcp-toolkit-dogfood-iterations` |
 | Write repeatable E2E scenarios as Dart (`flutter_mcp_harness`: build/launch/attach/drive/assert, showcase launcher) | `flutter-mcp-e2e-harness` |
+| Wire automation for an app across surfaces (MCP / CLI / harness / oka), first loops, runner sessions | `flutter-mcp-automation-chain` |
 | Release, version, or plugin skill bundle maintenance | `flutter-mcp-toolkit-repo-maintainer` |
 
 Harness Script lint/run/Maestro and promo/video capture live in their owner

@@ -37,7 +37,7 @@ Alias: `migrate mcp-call-entry` (same behavior).
 ## After migration — registration
 
 - `MCPToolkitBinding.addEntries(entries: Set<AgentCallEntry>)`
-- `bootstrapFlutter(additionalEntries: { ... })`
+- `addEntries(entries: { ... })` before `bootstrapFlutter(runApp: ...)`
 - `addMcpTool(AgentCallEntry)` — still a shortcut for a single entry
 
 Handlers should return **`AgentResult`** (`AgentResult.success` / `AgentResult.failure`).

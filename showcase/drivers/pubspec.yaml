@@ -14,7 +14,9 @@ environment:
 
 dependencies:
   flutter_mcp_harness: ^0.1.0
-  intentcall_core: ^0.6.0
+  # Consumer boundary (docs/intentcall/README.md): no version — resolution
+  # goes through the workspace root overrides pointing at ../intentcall.
+  intentcall_core:
   path: ^1.9.0
   universal_screencast: ^0.1.0
 

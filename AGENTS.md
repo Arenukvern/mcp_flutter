@@ -52,7 +52,7 @@ This project is indexed by GitNexus as **mcp_flutter** (5606 symbols, 12217 rela
 | Canonical IntentCall design / AX / DX | [IntentCall North Star](https://github.com/Arenukvern/intentcall/blob/main/docs/NORTH_STAR.mdx) |
 | Consumer integration, hosted dependencies, and proof gates | `docs/intentcall/README.md` |
 | Legacy call-entry migration | `docs/start_here/migration_mcp_call_entry_to_agent_call_entry.md` |
-| Visual harness maintenance | `docs/superpowers/plans/2026-05-26-visual-reconstruct-next.md` |
+| Automation chain (harness, drivers, oka) | `docs/start_here/automation_chain.mdx` · skill `flutter-mcp-automation-chain` · `packages/harness/` |
 | Non-IntentCall forward index | `docs/superpowers/WHATS_NEXT.md` |
 
 Implemented IntentCall plans/specs/tracker/closures were removed after durable extraction. Agents should validate hosted `intentcall_*` dependencies and regression gates, not re-run the initial publish/cutover.

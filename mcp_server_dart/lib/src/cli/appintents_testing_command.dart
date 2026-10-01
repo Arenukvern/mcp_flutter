@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:intentcall_platform/intentcall_platform.dart';
+// Pure-Dart emitter surface (emitAppIntentsTestingScaffold) — deliberately
+// NOT intentcall_platform; see ADR-0016.
+import 'package:intentcall_platform_sync/intentcall_platform_sync.dart';
 import 'package:path/path.dart' as p;
 
 /// Generates Apple AppIntentsTesting XCTest scaffolds from agent_manifest.json.

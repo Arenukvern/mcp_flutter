@@ -11,6 +11,9 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:flutter/foundation.dart';
+import 'package:intentcall_core/intentcall_core.dart';
+
+import 'toolkit_projection.dart';
 
 /// The name of the MCP service extension.
 const kMCPServiceExtensionName = 'ext.mcp.toolkit';
@@ -24,6 +27,28 @@ abstract class MCPToolkitBindingBase {
 
   /// App-owned IntentCall protocol scheme, when configured.
   String? _protocolScheme;
+
+  /// Platform-surface projections attached by the app's composition root.
+  ///
+  /// Core owns none of them; each lives in the package that owns its
+  /// platform (see [ToolkitProjection] and ADR-0016). The toolkit notifies
+  /// every projection with the full entry set after entries change.
+  final List<ToolkitProjection> projections = <ToolkitProjection>[];
+
+  /// Attaches a platform-surface projection (WebMCP, native AppIntents, …).
+  void addProjection(final ToolkitProjection projection) {
+    projections.add(projection);
+  }
+
+  /// Attaches a bare entry listener as a projection — the zero-glue path
+  /// for duck-typed projections from other packages (e.g. intentcall's
+  /// `WebMcpProjection(policy: p).entriesChanged`, which exposes the same
+  /// shape without importing the toolkit).
+  void addEntryListener(
+    final void Function(Set<AgentCallEntry> entries) listener,
+  ) {
+    projections.add(EntryListenerProjection(listener));
+  }
 
   /// The name of the MCP service extension.
   String get mcpServiceExtensionName => _mcpServiceExtensionName;

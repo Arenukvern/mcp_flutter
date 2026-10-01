@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
-# Validates IntentCall deps resolve to the sibling ../intentcall checkout.
+# Validates consumer intentcall_* declarations follow the hosted consumer
+# policy (docs/intentcall/README.md): no version constraints — resolution is
+# the workspace's business (gitignored pubspec_overrides.yaml locally, hosted
+# pub.dev in CI). Sibling paths are allowed only for dogfood apps.
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -12,10 +15,11 @@ usage() {
   cat <<'EOF'
 Usage: tool/intentcall/check_no_path_deps.sh [--strict-root]
 
-Default mode scans committed consumer packages. A package may omit a version
-when the workspace root dependency_overrides path points at ../intentcall.
-A hosted version is rejected. An explicit path must end in
-intentcall/packages/<package>.
+Default mode scans committed consumer packages. A consumer pubspec must
+declare intentcall_* dependencies with NO version constraint: local
+resolution goes through the gitignored root pubspec_overrides.yaml, CI
+resolves hosted from pub.dev. A hosted version constraint is rejected.
+An explicit path must end in intentcall/packages/<package>.
 
 --strict-root additionally scans the root pubspec and lockfile.
 EOF
@@ -86,30 +90,7 @@ def in_dependency_section(index, lines, ranges):
             return True
     return False
 
-def root_override_paths(repo_root: Path):
-    pubspec = repo_root / "pubspec.yaml"
-    if not pubspec.exists():
-        return {}
-    lines = pubspec.read_text().splitlines()
-    ranges = section_ranges(lines)
-    override_start = None
-    for name, start in ranges:
-        if name == "dependency_overrides":
-            override_start = start
-            break
-    if override_start is None:
-        return {}
-    end = section_end(lines, override_start)
-    paths = {}
-    for index in range(override_start + 1, end):
-        match = re.match(r"^  (intentcall_[A-Za-z0-9_]+):(?:\s*(.*?))?\s*$", lines[index])
-        if not match:
-            continue
-        paths[match.group(1)] = find_path(lines, index, 2)
-    return paths
-
 repo_root = Path.cwd()
-overrides = root_override_paths(repo_root)
 failed = False
 for raw_path in sys.argv[1:]:
     path = Path(raw_path)
@@ -127,21 +108,21 @@ for raw_path in sys.argv[1:]:
             continue
         package = match.group(1)
         inline = clean(match.group(2) or "")
-        dep_path = find_path(lines, index, 2) or overrides.get(package)
+        dep_path = find_path(lines, index, 2)
         expected_suffix = f"intentcall/packages/{package}"
-        if inline and find_path(lines, index, 2) is None:
+        if dep_path is not None:
+            if expected_suffix not in dep_path.replace("\\", "/"):
+                print(
+                    f"unexpected intentcall path dependency: {path}:{index + 1}: "
+                    f"{package} -> {dep_path}; expected */{expected_suffix}",
+                    file=sys.stderr,
+                )
+                failed = True
+        elif inline:
             print(
                 f"hosted intentcall dependency: {path}:{index + 1}: "
-                f"{package} uses hosted {inline}; expected path to "
-                f"{expected_suffix}",
-                file=sys.stderr,
-            )
-            failed = True
-            continue
-        if not dep_path or expected_suffix not in dep_path.replace("\\", "/"):
-            print(
-                f"unexpected intentcall path dependency: {path}:{index + 1}: "
-                f"{package} -> {dep_path or '<missing>'}; expected */{expected_suffix}",
+                f"{package} uses hosted {inline}; expected no version "
+                f"constraint (or a path to {expected_suffix})",
                 file=sys.stderr,
             )
             failed = True
@@ -153,7 +134,7 @@ PY
 version_files=()
 while IFS= read -r -d '' f; do
   version_files+=("$f")
-done < <(find mcp_toolkit mcp_server_dart packages showcase/flutter_test_app jaspr_web_example -name pubspec.yaml -print0 2>/dev/null)
+done < <(find mcp_toolkit mcp_server_dart packages showcase/flutter_test_app showcase/drivers jaspr_web_example -name pubspec.yaml -print0 2>/dev/null)
 
 if [[ "${strict_root}" == true ]]; then
   for f in pubspec.yaml pubspec.lock; do
@@ -171,7 +152,7 @@ if [[ "${found}" -ne 0 ]]; then
 fi
 
 if [[ "${strict_root}" == true ]]; then
-  echo "OK: intentcall sibling path deps in consumers and root release state"
+  echo "OK: intentcall consumer policy holds in consumers and root release state"
 else
-  echo "OK: intentcall sibling path deps in committed consumers (root not checked; run --strict-root for full gate)"
+  echo "OK: intentcall consumer policy holds in committed consumers (root not checked; run --strict-root for full gate)"
 fi

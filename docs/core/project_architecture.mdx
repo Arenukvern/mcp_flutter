@@ -76,7 +76,7 @@ Flutter app in debug mode
 ## Dynamic Registry Rules
 
 - Register app-specific entries once at bootstrap, preferably through
-  `bootstrapFlutter(additionalEntries: ..., runApp: ...)`.
+  `addEntries(entries: ...)` before `bootstrapFlutter(runApp: ...)`.
 - Use resources for read-only idempotent state and tools for actions or
   parameterized operations.
 - Keep schemas strict and payloads compact.

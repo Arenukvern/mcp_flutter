@@ -134,11 +134,11 @@ void main() {
         ),
       );
 
+      await binding.addEntries(entries: {diagnosticResource, mutatingTool});
       await binding.bootstrapFlutter(
         ensureInitialized: () {
           ensured += 1;
         },
-        additionalEntries: {diagnosticResource, mutatingTool},
         runApp: () {
           runCount += 1;
         },

@@ -46,16 +46,18 @@ import 'package:mcp_toolkit/mcp_toolkit.dart';
 import 'my_tools.dart';
 
 Future<void> main() async {
-  await MCPToolkitBinding.instance.bootstrapFlutter(
-    additionalEntries: buildMyTools(),
-    runApp: () => runApp(const MyApp()),
-  );
+  final binding = MCPToolkitBinding.instance;
+  await binding.addEntries(entries: buildMyTools());
+  await binding.bootstrapFlutter(runApp: () => runApp(const MyApp()));
 }
 ```
 
 `bootstrapFlutter` performs `WidgetsFlutterBinding.ensureInitialized()`,
-initializes the toolkit, registers entries once, forwards zone errors, and then
-runs the app.
+initializes the toolkit, registers the built-in Flutter toolkit entries once,
+forwards zone errors, and then runs the app. Entry composition happens
+through `addEntries` before it; platform surfaces compose through
+`addProjection` / `addEntryListener` (see
+[ADR-0016](https://github.com/Arenukvern/mcp_flutter/blob/main/decisions/0016_toolkit_projections_composition.mdx)).
 
 ### 4. Verify And Use The Tool
 

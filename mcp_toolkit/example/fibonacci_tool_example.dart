@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 
 Future<void> main() async {
+  await MCPToolkitBinding.instance.addEntries(entries: _starterEntries);
   await MCPToolkitBinding.instance.bootstrapFlutter(
-    additionalEntries: _starterEntries,
     runApp: () => runApp(const FibonacciApp()),
   );
 }

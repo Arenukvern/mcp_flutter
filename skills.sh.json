@@ -1,8 +1,10 @@
 {
   "skills": [
     "flutter-mcp",
+    "flutter-mcp-automation-chain",
     "flutter-mcp-boundary-audit",
     "flutter-mcp-cli-runtime-validation",
+    "flutter-mcp-e2e-harness",
     "flutter-mcp-toolkit-control",
     "flutter-mcp-toolkit-custom-tools",
     "flutter-mcp-toolkit-debug",

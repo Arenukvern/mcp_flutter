@@ -24,7 +24,7 @@ Give MCP-driven agents Playwright-style visibility into a Flutter app's HTTP tra
 
 ## Public API (host-app surface)
 
-The capture is **opt-in by addition** — host apps that want it call a factory and append the returned entries to `bootstrapFlutter(additionalEntries: ...)` (or `addEntries(...)`). Apps that don't add the entries pay zero cost: no `HttpOverrides` install, no buffer, no extra service.
+The capture is **opt-in by addition** — host apps that want it call a factory and register the returned entries through `addEntries(...)` before `bootstrapFlutter(...)`. Apps that don't add the entries pay zero cost: no `HttpOverrides` install, no buffer, no extra service.
 
 ```dart
 // New file: mcp_toolkit/.../toolkits/network_capture_toolkit.dart
@@ -141,7 +141,7 @@ Two new codes added to `CoreErrorCode` and the playbook:
   - Recovery: `flutter-mcp-toolkit doctor --json`.
 - **`network_capture_not_installed`** — validation, non-retryable, exit 64, http 400.
   - Toolkit returns a sentinel `{installed: false}` when the get/clear extension RPCs are reached but the host app never called `getNetworkCaptureEntries(...)`. Server translates to this error.
-  - Recovery message: `Add getNetworkCaptureEntries() to your bootstrapFlutter(additionalEntries: ...) call to enable HTTP capture.`
+  - Recovery message: `Register getNetworkCaptureEntries() through MCPToolkitBinding.addEntries(...) before bootstrapFlutter(...) to enable HTTP capture.`
 
 ## Wire registration (7-place pattern)
 

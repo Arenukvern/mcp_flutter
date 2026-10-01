@@ -37,23 +37,34 @@ For example, the default first-pass path is `bootstrapFlutter()`.
 
 All methods are available only in debug mode and wrapped in assert statements.
 
-Register custom surfaces with **`AgentCallEntry`** (re-exported from `intentcall_core`):
+Register custom surfaces with **`AgentCallEntry`** (re-exported from `intentcall_core`),
+then bootstrap — composition first, lifecycle last:
 
 ```dart
-await MCPToolkitBinding.instance.bootstrapFlutter(
-  additionalEntries: {
-    AgentCallEntry.resource(
-      namespace: 'app',
-      name: 'app_runtime_status',
-      description: 'Read-only app diagnostics',
-      mimeType: 'application/json',
-      handler: (final args) async => AgentResult.success(
-        message: 'App runtime diagnostics',
-        data: {'ready': true},
-      ),
+final binding = MCPToolkitBinding.instance;
+await binding.addEntries(entries: {
+  AgentCallEntry.resource(
+    namespace: 'app',
+    name: 'app_runtime_status',
+    description: 'Read-only app diagnostics',
+    mimeType: 'application/json',
+    handler: (final args) async => AgentResult.success(
+      message: 'App runtime diagnostics',
+      data: {'ready': true},
     ),
-  },
-  runApp: () => runApp(const MyApp()),
+  ),
+});
+await binding.bootstrapFlutter(runApp: () => runApp(const MyApp()));
+```
+
+Platform surfaces (WebMCP, native AppIntents) are **projections you opt
+into** — each lives in its own package and takes an explicit authorization
+policy:
+
+```dart
+// pubspec.yaml: intentcall_platform_sync (web tier, pure Dart)
+binding.addEntryListener(
+  WebMcpProjection(policy: myPolicy).entriesChanged,
 );
 ```
 
@@ -124,6 +135,41 @@ MCPToolkitBinding.instance.captureHintsContributor = () {
 
 Import `PlatformViewHints` and constants from `package:mcp_toolkit/mcp_toolkit.dart` (re-exported from `flutter_mcp_toolkit_core`).
 
+## Platform projections (opt-in)
+
+Platform surfaces attach to the toolkit through the `ToolkitProjection` SPI
+— the core depends on none of them, so you add only the packages for the
+tiers you want, and every projection takes an **explicit** authorization
+policy:
+
+```dart
+// pubspec.yaml — pick your tiers:
+//   intentcall_platform_sync  (web/WebMCP tier — pure Dart, no plugins)
+//   intentcall_platform       (native AppIntents tier — Flutter plugins)
+
+final binding = MCPToolkitBinding.instance;
+
+// Web tier: project the toolkit's dynamic entries onto the browser
+// WebMCP registry. Duck-typed — zero glue:
+binding.addEntryListener(
+  WebMcpProjection(policy: myPolicy).entriesChanged,
+);
+
+// Or full projections (own classes implementing ToolkitProjection):
+binding.addProjection(myCustomProjection);
+
+await binding.bootstrapFlutter(runApp: () => runApp(const MyApp()));
+```
+
+- `ToolkitProjection` is one method: `entriesChanged(Set<AgentCallEntry>)`,
+  called with the full current entry set after every change (idempotent
+  re-projection).
+- The native tier composes through `IntentCallFlutterHost.bindRegistry(...)`
+  in `intentcall_platform` — see the showcase's
+  [`intentcall_showcase_bootstrap.dart`](https://github.com/Arenukvern/mcp_flutter/blob/main/showcase/flutter_test_app/lib/intentcall_showcase_bootstrap.dart)
+  for the complete policy/bootstrap pattern.
+- The toolkit never chooses an authorization posture for you.
+
 ## Integration
 
 1.  **Add as a Dependency**:
@@ -152,9 +198,9 @@ Import `PlatformViewHints` and constants from `package:mcp_toolkit/mcp_toolkit.d
     import 'package:mcp_toolkit/mcp_toolkit.dart';
 
     Future<void> main() async {
-      await MCPToolkitBinding.instance.bootstrapFlutter(
-        additionalEntries: {
-          AgentCallEntry.tool(
+      final binding = MCPToolkitBinding.instance;
+      await binding.addEntries(entries: {
+        AgentCallEntry.tool(
             namespace: 'app',
             name: 'calculate_fibonacci',
             description: 'Calculate the nth Fibonacci number',
@@ -174,19 +220,18 @@ Import `PlatformViewHints` and constants from `package:mcp_toolkit/mcp_toolkit.d
               );
             },
           ),
-          AgentCallEntry.resource(
-            namespace: 'app',
-            name: 'app_runtime_status',
-            description: 'Read-only runtime diagnostics',
-            mimeType: 'application/json',
-            handler: (final args) async => AgentResult.success(
-              message: 'Runtime diagnostics',
-              data: {'ready': true, 'screen': 'home'},
-            ),
+        AgentCallEntry.resource(
+          namespace: 'app',
+          name: 'app_runtime_status',
+          description: 'Read-only runtime diagnostics',
+          mimeType: 'application/json',
+          handler: (final args) async => AgentResult.success(
+            message: 'Runtime diagnostics',
+            data: {'ready': true, 'screen': 'home'},
           ),
-        },
-        runApp: () => runApp(const MyApp()),
-      );
+        ),
+      });
+      await binding.bootstrapFlutter(runApp: () => runApp(const MyApp()));
     }
 
     // ... rest of your app code
@@ -196,10 +241,14 @@ Import `PlatformViewHints` and constants from `package:mcp_toolkit/mcp_toolkit.d
     `WidgetsFlutterBinding.ensureInitialized()`,
     `initialize()`,
     `initializeFlutterToolkit()`,
-    optional app entry registration,
-    and zone error forwarding via `handleZoneError`.
+    and zone error forwarding via `handleZoneError`. It is lifecycle-only:
+    entries compose through `addEntries` before it, and platform surfaces
+    through `addProjection` / `addEntryListener` — see
+    [ADR-0016](https://github.com/Arenukvern/mcp_flutter/blob/main/decisions/0016_toolkit_projections_composition.mdx)
+    and [Migrating to projections & composition](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/start_here/migration_toolkit_projections.mdx).
 
-    Keep the older low-level calls only when you need custom startup choreography.
+    Keep the low-level calls (`initialize()` + `addEntries()` + `runApp()`)
+    when you need custom startup choreography or a fully custom entry set.
 
     **Migrating from `MCPCallEntry`:** use
     `flutter-mcp-toolkit migrate agent-entries` — see

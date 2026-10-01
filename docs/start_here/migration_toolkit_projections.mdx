@@ -1,0 +1,87 @@
+---
+title: Migrating to projections & composition
+description: Toolkit 5.x → next — dynamic-entry WebMCP auto-registration, bootstrapFlutter parameter removal, and the intentcall function renames.
+---
+
+# Migrating to projections & composition
+
+The toolkit's platform surfaces (WebMCP, native AppIntents) moved from
+hard-wired behavior to **explicit composition**: the app names the surfaces
+it wants and owns their authorization policies. See
+[ADR-0016](https://github.com/Arenukvern/mcp_flutter/blob/main/decisions/0016_toolkit_projections_composition.mdx)
+for the rationale and
+[The Automation Chain](/start_here/automation_chain) for the tier map.
+
+**Who is affected:** apps on `mcp_toolkit` 5.x that relied on (a) automatic
+WebMCP registration of dynamic entries on web, (b) `bootstrapFlutter`'s
+`additionalEntries` / `initializeFlutterToolkitEntries` parameters, or
+(c) intentcall's `registerAgentWebMcpFromEntries` / `registerAgentWebMcpFromRegistry`
+functions (renamed before they were ever released under the new names).
+
+## TL;DR
+
+| Before | After |
+| --- | --- |
+| (nothing — WebMCP registration was automatic on web) | `binding.addEntryListener(WebMcpProjection(policy: myPolicy).entriesChanged);` |
+| `bootstrapFlutter(additionalEntries: myEntries, runApp: ...)` | `await binding.addEntries(entries: myEntries);` then `bootstrapFlutter(runApp: ...)` |
+| `bootstrapFlutter(initializeFlutterToolkitEntries: false, runApp: ...)` | `binding.initialize(protocolScheme: ...)` + `addEntries(...)` + `runApp()` — compose manually |
+| `registerAgentWebMcpFromEntries(entries, policy: p)` | `projectEntriesToWebMcp(entries, policy: p)` |
+| `registerAgentWebMcpFromRegistry(registry, policy: p)` | `projectRegistryToWebMcp(registry, policy: p)` |
+
+## What changed
+
+1. **WebMCP auto-registration removed from core.** `mcp_toolkit` no longer
+   registers dynamic entries on the browser WebMCP registry by itself, and
+   no longer depends on `intentcall_platform` / `intentcall_platform_sync`.
+   Core now depends only on `intentcall_core` + `intentcall_schema` — apps
+   add exactly the projection packages they use, and each projection takes
+   an **explicit** `IntentCallAuthorizationPolicy` (the old hard-wire
+   applied `debugAllowAll()` invisibly).
+2. **`bootstrapFlutter` is lifecycle-only.** `additionalEntries` and
+   `initializeFlutterToolkitEntries` are removed; the method keeps
+   `runApp`, `ensureInitialized`, `onZoneError`, `debugOnly`,
+   `protocolScheme`. Entries compose through `addEntries`; platform tiers
+   through `addProjection` / `addEntryListener`.
+3. **intentcall renames (aliases removed unreleased).**
+   `registerAgentWebMcpFromEntries` → `projectEntriesToWebMcp`,
+   `registerAgentWebMcpFromRegistry` → `projectRegistryToWebMcp` in
+   `intentcall_platform_sync`. The pre-rename names never shipped under a
+   stable release consumers were expected to pin, so the aliases were
+   removed rather than deprecated.
+
+## Migrate in three steps
+
+```dart
+// 1. Add the projection package you need (pubspec.yaml):
+//    intentcall_platform_sync  (web tier, pure Dart)
+//    intentcall_platform       (native AppIntents tier — opt-in)
+
+// 2. Compose before bootstrap:
+final binding = MCPToolkitBinding.instance;
+await binding.addEntries(entries: myEntries);
+binding.addEntryListener(
+  WebMcpProjection(policy: myPolicy).entriesChanged, // web tier
+);
+
+// 3. Bootstrap (lifecycle only):
+await binding.bootstrapFlutter(runApp: () => runApp(const MyApp()));
+```
+
+If you only ever ran on iOS/Android/macOS (never web), nothing in your code
+changes — the removed behavior never fired off-web.
+
+## Notes
+
+- `intentcall_platform` (native) is **not** pulled in transitively anymore;
+  declare it and bootstrap the host yourself with an explicit
+  `IntentCallAuthorizationPolicy` (see the showcase's
+  `intentcall_showcase_bootstrap.dart` for the full pattern).
+- `flutter-mcp-toolkit codegen sync` and `init intentcall-platform` now
+  delegate to the IntentCall CLI at runtime (`INTENTCALL_ROOT`, sibling
+  checkout, or `intentcall` on PATH — `dart pub global activate
+  intentcall_cli`). The server binary no longer compiles it in.
+- Schema validation now enforces JSON-Schema `array` types
+  (`intentcall_schema` previously skipped them): payloads that slipped
+  through (missing `ref`/`text` in `fill_form` fields, non-array
+  `semantic_snapshot` fields) now fail loudly with
+  `AgentValidationException`.
