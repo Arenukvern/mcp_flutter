@@ -1,3 +1,23 @@
+# 6.0.0
+
+### Added
+
+- **Invoke tier (ADR-0017)**: the binding exposes the agent-call registry
+  to automation — `agent_catalog` lists tool entries as
+  `SurfaceActionDescriptor`s and `agent_invoke` dispatches one by
+  registry name (JSON-encoded args, the registration's own schema
+  validation). Registered automatically with the debug extension
+  surface; zero new app-facing API. One registration is an MCP tool, a
+  projection, and a harness-drivable action.
+- `HarnessAction`-free by design: the intentcall registry is the single
+  action source (see mcp_flutter ADR-0017).
+
+### Changed
+
+- Aligned with the 6.0.0 toolkit train: `flutter_mcp_toolkit_core`
+  floor ^6.0.0, `intentcall_core` floor rides the 1.x line (1.1.0
+  carries `IntentAutomationAction.custom` for catalog routing).
+
 # 5.2.0
 
 ### Changed
