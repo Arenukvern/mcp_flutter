@@ -144,6 +144,13 @@ final class ToolkitDriver implements AutomationDriver {
           );
         }
         await evaluator(expression);
+      case InvokeAction(:final name):
+        // Catalog invocations are an automation-catalog capability; the
+        // instrumented toolkit tier has no verb behind them.
+        throw DriverUnsupportedException(
+          'ToolkitDriver does not implement catalog invocations '
+          '(InvokeAction($name))',
+        );
     }
   }
 
