@@ -30,11 +30,21 @@ jobs:
         working-directory: mcp_server_dart
         run: flutter pub get
 
-      - name: Checkout static-battery siblings
+      - name: Checkout flutter_harness (optional sibling)
+        continue-on-error: true
         uses: actions/checkout@v4
         with:
           repository: Arenukvern/flutter_harness
+          token: ${{ secrets.SIBLING_PAT || github.token }}
           path: flutter_harness
+
+      - name: Note harness availability
+        run: |
+          if [ -d flutter_harness/.git ]; then
+            echo "flutter_harness sibling available — harness-backed evals active"
+          else
+            echo "::warning::flutter_harness is not visible to GITHUB_TOKEN (private repo). Harness-backed evals are skipped; add a SIBLING_PAT secret or make the repo visible to restore them."
+          fi
 
       - name: Checkout IntentCall
         uses: actions/checkout@v4
@@ -76,11 +86,21 @@ jobs:
           repository: Arenukvern/intentcall
           path: intentcall
 
-      - name: Checkout flutter_harness (battery fixtures)
+      - name: Checkout flutter_harness (optional sibling)
+        continue-on-error: true
         uses: actions/checkout@v4
         with:
           repository: Arenukvern/flutter_harness
+          token: ${{ secrets.SIBLING_PAT || github.token }}
           path: flutter_harness
+
+      - name: Note harness availability
+        run: |
+          if [ -d flutter_harness/.git ]; then
+            echo "flutter_harness sibling available — harness-backed evals active"
+          else
+            echo "::warning::flutter_harness is not visible to GITHUB_TOKEN (private repo). Harness-backed evals are skipped; add a SIBLING_PAT secret or make the repo visible to restore them."
+          fi
 
       - name: Link siblings where the battery expects them
         run: ln -s "$GITHUB_WORKSPACE/flutter_harness" "$GITHUB_WORKSPACE/../flutter_harness"
@@ -115,9 +135,17 @@ jobs:
         working-directory: mcp_server_dart
         run: flutter pub get
 
+      - name: Checkout IntentCall
+        uses: actions/checkout@v4
+        with:
+          repository: Arenukvern/intentcall
+          path: intentcall
+
       - name: Hosted package compatibility smoke
         run: |
           dart test packages/server_capability_kernel packages/server_capability_core
 
       - name: Static dogfood battery
+        env:
+          INTENTCALL_ROOT: ${{ github.workspace }}/intentcall
         run: make dogfood-eval-static
