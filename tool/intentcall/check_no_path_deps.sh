@@ -21,9 +21,11 @@ resolution goes through the gitignored root pubspec_overrides.yaml, CI
 resolves hosted from pub.dev. A hosted version constraint is rejected.
 An explicit path must end in intentcall/packages/<package>.
 
-Exception: packages/harness is a PUBLISHED package (flutter_mcp_harness on
-pub.dev) — its hosted consumers need a real floor, so version constraints
-are allowed there.
+Exception: PUBLISHED packages pin hosted floors for their consumers —
+pub.dev rejects unconstrained dependencies at publish time. Allowed to
+pin: packages/harness, packages/core, packages/server_capability_kernel,
+packages/server_capability_core, mcp_toolkit. In-repo proof consumers
+(showcase, root tooling) stay version-free.
 
 --strict-root additionally scans the root pubspec and lockfile.
 EOF
@@ -106,7 +108,14 @@ for raw_path in sys.argv[1:]:
     rel = path.resolve().relative_to(repo_root).as_posix()
     # Published packages pin hosted floors for their consumers; in-repo
     # proof consumers stay version-free.
-    allow_pinned = rel == "packages/harness/pubspec.yaml"
+    published_packages = {
+        "packages/harness/pubspec.yaml",
+        "packages/core/pubspec.yaml",
+        "packages/server_capability_kernel/pubspec.yaml",
+        "packages/server_capability_core/pubspec.yaml",
+        "mcp_toolkit/pubspec.yaml",
+    }
+    allow_pinned = rel in published_packages
     dep_ranges = section_ranges(lines)
     for index, line in enumerate(lines):
         if not in_dependency_section(index, lines, dep_ranges):

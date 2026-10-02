@@ -5,7 +5,7 @@
 | Item | Location |
 |------|----------|
 | Canonical IntentCall repo | `github.com/Arenukvern/intentcall` |
-| Consumer package policy | Hosted `intentcall_*` from pub.dev, **no version constraint** (gate-enforced by `fmt.check.intentcall-hosted-deps`) |
+| Consumer package policy | Hosted `intentcall_*` from pub.dev, **no version constraint** for in-repo proof consumers; **published packages pin real floors** (`^1.0.0`) — pub.dev rejects unconstrained deps at publish (gate-enforced by `fmt.check.intentcall-hosted-deps`) |
 | Local-development exception | Sibling path overrides in the gitignored `pubspec_overrides.yaml` only — never committed |
 | Hosted consumer proof | `make check-intentcall-hosted-consumer`; Steward `fmt.check.intentcall-hosted-deps-strict` |
 | Sibling upstream matrix proof | `make check-intentcall-sibling-matrix` |
@@ -242,8 +242,12 @@ For future hosted dependency bumps:
 
 1. Confirm the intended `intentcall_*` versions exist on pub.dev.
 2. Consumer pubspecs stay version-free (`intentcall_core:` — no constraint);
-   hosted CI resolution is the proof. Only dogfood apps (`showcase/*`) may
-   keep sibling path deps.
+   hosted CI resolution is the proof. PUBLISHED packages are the exception:
+   they pin real floors (`intentcall_core: ^1.0.0`) because pub.dev rejects
+   unconstrained dependencies at publish time — currently packages/harness,
+   packages/core, packages/server_capability_kernel,
+   packages/server_capability_core, mcp_toolkit. Only dogfood apps
+   (`showcase/*`) may keep sibling path deps.
 3. Local resolution comes from the gitignored `pubspec_overrides.yaml`
    (sibling checkouts). Never commit it; keep it working.
 4. Regenerate any action AppIntentsTesting scaffold from the hosted emitter if
