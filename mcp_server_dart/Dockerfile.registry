@@ -3,37 +3,27 @@
 # Build from the repository root:
 # docker build -f mcp_server_dart/Dockerfile.registry -t flutter-mcp-toolkit:registry .
 #
-# The build stage uses a Flutter SDK image and the full monorepo context
-# because mcp_server_dart depends on workspace siblings (packages/*,
-# mcp_toolkit) that are not published to pub.dev, and intentcall_platform
-# requires the Flutter SDK. Workspace resolution needs those sources.
+# The build is STANDALONE: since 6.0.0 every server dependency lives on
+# pub.dev (flutter_mcp_toolkit core/capability floors ^6.0.0, intentcall_*),
+# so the image resolves hosted and drops `resolution: workspace` — the
+# monorepo workspace would drag in Flutter-app members (harness, showcase)
+# whose universal_automation_interface floor conflicts with the SDK meta
+# pin of older Flutter images (cirruslabs publishes no 3.47.x tags).
 # Digest of ghcr.io/cirruslabs/flutter:latest at the 6.0.0 release
-# (sha256:217a3d8…, Flutter stable 3.47.x). Cirruslabs stopped publishing
-# exact version tags after 3.44.x, and 3.44.x ships a flutter_test that
-# pins meta 1.18.0 — conflicting with universal_automation_interface
-# 0.2.0 (meta ^1.19.0) in the workspace. The digest is the reproducibility
-# anchor; bump it deliberately per release.
+# (sha256:217a3d8…). The digest is the reproducibility anchor; bump it
+# deliberately per release.
 FROM ghcr.io/cirruslabs/flutter@sha256:217a3d81b124f3fab82b24633bf66b256cc74528b894e7f17103f70150232077 AS build
 
 WORKDIR /app
 
-COPY pubspec.yaml VERSION ./
-COPY mcp_server_dart/pubspec.yaml mcp_server_dart/pubspec.yaml
-COPY mcp_toolkit/ mcp_toolkit/
-COPY packages/ packages/
-# Workspace members: pub resolution requires every directory listed in
-# the root workspace, even ones the server image never compiles.
-COPY showcase/drivers/ showcase/drivers/
-COPY jaspr_web_example/ jaspr_web_example/
-COPY mcp_server_dart/bin/ mcp_server_dart/bin/
-COPY mcp_server_dart/lib/ mcp_server_dart/lib/
-COPY mcp_server_dart/analysis_options.yaml mcp_server_dart/analysis_options.yaml
+COPY mcp_server_dart/ mcp_server_dart/
 
-# Resolve inside the pinned image rather than enforcing a host-generated
-# lockfile: Flutter SDK-bundled package pins differ between host platforms
-# (arm64 vs amd64), so --enforce-lockfile fails on the amd64 CI runner.
-# The pinned base-image tag is the reproducibility anchor.
-RUN cd mcp_server_dart && flutter pub get
+# Standalone resolution: drop the workspace marker, then resolve hosted
+# (no host lockfile — SDK-bundled pins differ per platform, so
+# --enforce-lockfile fails on amd64 CI runners).
+RUN cd mcp_server_dart && \
+    sed -i '/^resolution: workspace/d' pubspec.yaml && \
+    flutter pub get
 
 RUN cd mcp_server_dart && dart compile exe bin/flutter_mcp_toolkit_server.dart -o /app/mcp_server
 
