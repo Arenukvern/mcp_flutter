@@ -125,6 +125,10 @@ for raw_path in sys.argv[1:]:
             continue
         package = match.group(1)
         inline = clean(match.group(2) or "")
+        # release-please normalizes bare deps to explicit YAML null;
+        # both spellings mean "no version constraint".
+        if inline == "null":
+            inline = ""
         dep_path = find_path(lines, index, 2)
         expected_suffix = f"intentcall/packages/{package}"
         if dep_path is not None:
