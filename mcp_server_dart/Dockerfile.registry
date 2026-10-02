@@ -15,6 +15,10 @@ COPY pubspec.yaml VERSION ./
 COPY mcp_server_dart/pubspec.yaml mcp_server_dart/pubspec.yaml
 COPY mcp_toolkit/ mcp_toolkit/
 COPY packages/ packages/
+# Workspace members: pub resolution requires every directory listed in
+# the root workspace, even ones the server image never compiles.
+COPY showcase/drivers/ showcase/drivers/
+COPY jaspr_web_example/ jaspr_web_example/
 COPY mcp_server_dart/bin/ mcp_server_dart/bin/
 COPY mcp_server_dart/lib/ mcp_server_dart/lib/
 COPY mcp_server_dart/analysis_options.yaml mcp_server_dart/analysis_options.yaml
