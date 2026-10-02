@@ -7,11 +7,13 @@
 # because mcp_server_dart depends on workspace siblings (packages/*,
 # mcp_toolkit) that are not published to pub.dev, and intentcall_platform
 # requires the Flutter SDK. Workspace resolution needs those sources.
-# `latest` tracks cirruslabs' current Flutter stable build. Pinned version
-# tags lag stable (3.47.x missing at the 6.0.0 release), and older pins
-# ship a flutter_test that pins meta 1.18.0 — conflicting with
-# universal_automation_interface 0.2.0 (meta ^1.19.0) in the workspace.
-FROM ghcr.io/cirruslabs/flutter:latest AS build
+# Digest of ghcr.io/cirruslabs/flutter:latest at the 6.0.0 release
+# (sha256:217a3d8…, Flutter stable 3.47.x). Cirruslabs stopped publishing
+# exact version tags after 3.44.x, and 3.44.x ships a flutter_test that
+# pins meta 1.18.0 — conflicting with universal_automation_interface
+# 0.2.0 (meta ^1.19.0) in the workspace. The digest is the reproducibility
+# anchor; bump it deliberately per release.
+FROM ghcr.io/cirruslabs/flutter@sha256:217a3d81b124f3fab82b24633bf66b256cc74528b894e7f17103f70150232077 AS build
 
 WORKDIR /app
 
