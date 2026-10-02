@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_mcp_harness/flutter_mcp_harness.dart';
+import 'package:intentcall_schema/intentcall_schema.dart';
 import 'package:test/test.dart';
 import 'package:universal_automation_conformance/universal_automation_conformance.dart';
 import 'package:universal_automation_interface/universal_automation_interface.dart';
@@ -70,6 +71,32 @@ const String _pngBase64 =
             'hint': 'use up, down',
           }
           : {'success': true},
+      ToolkitExtensions.agentCatalog => {
+        'success': true,
+        'actions': [
+          {
+            'name': 'app.buy_item',
+            'namespace': 'app',
+            'description': 'Buys an item',
+            'inputSchema': {
+              'type': 'object',
+              'required': ['sku'],
+              'properties': {'sku': {'type': 'string'}},
+            },
+          },
+          {'name': 'reset_state', 'namespace': 'app', 'description': ''},
+        ],
+      },
+      ToolkitExtensions.agentInvoke =>
+        args['name'] == 'unknown_op'
+            ? {
+              'success': false,
+              'error': 'unknown registry action: unknown_op',
+            }
+            : {
+              'success': true,
+              'result': {'orderId': 'o-1'},
+            },
       _ => {'success': true},
     };
   }
@@ -253,6 +280,63 @@ void main() {
       await driver.close();
       await driver.close();
       expect(driver.snapshot, throwsStateError);
+    });
+  });
+
+  group('invoke tier (ADR-0017 — the registry is the action source)', () {
+    test('actions() lists the app registry as descriptors', () async {
+      final (call, _) = _fakeApp();
+      final driver = ToolkitDriver.custom(call);
+      final actions = await driver.actions();
+      expect(actions, hasLength(2));
+      expect(actions[0].name, 'app.buy_item');
+      expect(actions[0].description, 'Buys an item');
+      expect(
+        actions[0].inputSchema?['required'],
+        ['sku'],
+      );
+      expect(actions[1].inputSchema, isNull);
+    });
+
+    test('InvokeAction validates against the schema then dispatches',
+        () async {
+      final (call, log) = _fakeApp();
+      final driver = ToolkitDriver.custom(call);
+      await driver.perform(
+        InvokeAction('app.buy_item', args: {'sku': 'x-1'}),
+      );
+      // Observe (catalog) before act (invoke); args ride JSON-encoded.
+      expect(log, hasLength(2));
+      expect(log[0], contains('agent_catalog'));
+      expect(log[1], contains('agent_invoke'));
+      expect(log[1], contains('"sku":"x-1"'));
+    });
+
+    test('schema violations fail on this side of the wire', () async {
+      final (call, log) = _fakeApp();
+      final driver = ToolkitDriver.custom(call);
+      await expectLater(
+        driver.perform(const InvokeAction('app.buy_item', args: {})),
+        throwsA(isA<AgentValidationException>()),
+      );
+      // Catalog was read, but the bad args never reached the app.
+      expect(log.where((entry) => entry.contains('agent_invoke')), isEmpty);
+    });
+
+    test('unknown names dispatch — the app refusal is authoritative',
+        () async {
+      final (call, _) = _fakeApp();
+      final driver = ToolkitDriver.custom(call);
+      await expectLater(
+        driver.perform(const InvokeAction('unknown_op')),
+        throwsA(
+          isA<ProtocolException>().having(
+            (e) => e.message,
+            'message',
+            contains('unknown registry action: unknown_op'),
+          ),
+        ),
+      );
     });
   });
 

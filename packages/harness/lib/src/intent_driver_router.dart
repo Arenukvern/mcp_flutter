@@ -63,6 +63,7 @@ final class IntentDriverRouter {
       IntentAutomationAction.key => arguments['key'],
       IntentAutomationAction.navigate => arguments['route'] ?? arguments['to'],
       IntentAutomationAction.evaluate => arguments['expression'],
+      IntentAutomationAction.custom => null,
     };
     final element =
         locator['css'] ?? locator['ref'] ?? locator['name'] ??
@@ -88,6 +89,12 @@ final class IntentDriverRouter {
       ),
       IntentAutomationAction.evaluate => EvaluateAction(
         (operand ?? '').toString(),
+      ),
+      // Catalog surface action: the catalog name lives under
+      // locator.name; the invocation arguments ride as the action args.
+      IntentAutomationAction.custom => InvokeAction(
+        (locator['name'] ?? '').toString(),
+        args: arguments,
       ),
     };
   }

@@ -28,6 +28,15 @@ final class ChromeAppTarget {
     this.windowWidth = 1365,
     this.windowHeight = 768,
     this.userDataDir,
+    this.extraArgs = const [
+      // An occluded/background window gets its rAF throttled to a stop —
+      // the Flutter app freezes mid-render and its semantics DOM never
+      // updates (measured driving a Flutter web gate beside other
+      // windows). The same three flags `flutter run -d chrome` passes.
+      '--disable-background-timer-throttling',
+      '--disable-backgrounding-occluded-windows',
+      '--disable-renderer-backgrounding',
+    ],
   });
 
   /// Fixed CDP debug port. A fixed port keeps the reuse story simple:
@@ -45,6 +54,10 @@ final class ChromeAppTarget {
 
   /// Isolated profile directory; a temp dir when omitted.
   final String? userDataDir;
+
+  /// Extra Chromium switches prepended to the launch args; defaults to
+  /// the background-throttling disables every automation target needs.
+  final List<String> extraArgs;
 
   Directory? _ownedProfile;
 
@@ -92,6 +105,7 @@ final class ChromeAppTarget {
       '--user-data-dir=$profilePath',
       '--no-first-run',
       '--no-default-browser-check',
+      ...extraArgs,
       // Headless renders compute their accessibility tree lazily and
       // `Accessibility.enable` alone does not flip the renderer's AX
       // mode — without this, getFullAXTree answers with the root node

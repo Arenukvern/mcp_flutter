@@ -164,5 +164,23 @@ void main() {
         throwsA(isA<DriverUnsupportedException>()),
       );
     });
+
+    test('custom hints resolve to InvokeAction with invocation args',
+        () async {
+      final driver = toolkit;
+      await router.invoke(
+        IntentAutomationHint(
+          driver: 'toolkit',
+          action: IntentAutomationAction.custom,
+          locator: const {'name': 'app.buy_item'},
+        ),
+        arguments: const {'sku': 'x-1', 'qty': 2},
+      );
+      final action = driver.actions.last;
+      expect(action, isA<InvokeAction>());
+      final invoke = action as InvokeAction;
+      expect(invoke.name, 'app.buy_item');
+      expect(invoke.args, {'sku': 'x-1', 'qty': 2});
+    });
   });
 }

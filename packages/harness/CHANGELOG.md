@@ -5,6 +5,22 @@ All notable changes to this package are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-10-02
+
+### Added
+
+- **Invoke tier (ADR-0017)**: surface actions, registry-native.
+  `ToolkitDriver` now implements `AutomationActionCatalog` — `actions()`
+  lists the app's agent-call registry (the single action source) via the
+  new `agent_catalog` wire verb, and `InvokeAction(name, args)` dispatches
+  through `agent_invoke`, validating arguments against the registered
+  JSON schema (`intentcall_schema`) before the wire.
+- `IntentDriverRouter` routes `IntentAutomationAction.custom` hints to
+  `InvokeAction` (catalog name under `locator['name']`; invocation
+  arguments pass through as the action args).
+- Requires `universal_automation_interface` ^0.2.0 (the `InvokeAction`
+  sealed case is a breaking addition for exhaustive switches).
+
 ## [0.1.1] - 2026-10-01
 
 ### Changed

@@ -71,4 +71,15 @@ abstract final class ToolkitExtensions {
   /// Base64 screenshots of all views; `compress: false` keeps PNG bytes.
   static const String viewScreenshots =
       '$prefix.${core.ToolkitExtensionNames.viewScreenshots}';
+
+  /// Lists the app's agent-call registry as invokable descriptors —
+  /// the invoke tier READS the intent registry instead of growing a
+  /// second registry (ADR-0017).
+  static const String agentCatalog =
+      '$prefix.${core.ToolkitExtensionNames.agentCatalog}';
+
+  /// Invokes one registered agent call: `name` + JSON-encoded `json`
+  /// args; the app side schema-validates before dispatch.
+  static const String agentInvoke =
+      '$prefix.${core.ToolkitExtensionNames.agentInvoke}';
 }
