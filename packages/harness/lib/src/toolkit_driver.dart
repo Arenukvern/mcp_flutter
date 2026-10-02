@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:intentcall_schema/intentcall_schema.dart';
 import 'package:universal_automation_interface/universal_automation_interface.dart';
 import 'package:vm_service/vm_service.dart' show RPCError;
 
@@ -32,7 +33,16 @@ import 'widget_driver.dart';
 /// Connection ownership: [close] releases the driver, not the
 /// [VmClient] — the harness target that launched the app keeps owning
 /// the process and its VM service.
-final class ToolkitDriver implements AutomationDriver {
+///
+/// Surface actions ([InvokeAction]) read the app's agent-call registry —
+/// the intent registry is the single action source (ADR-0017), so an
+/// intent registered once is drivable here, an MCP tool, and a
+/// projection. [actions] lists the registry; [InvokeAction] dispatch
+/// validates arguments against each action's declared schema
+/// (`intentcall_schema`) before the wire, so bad arguments fail on this
+/// side with an actionable message.
+final class ToolkitDriver
+    implements AutomationDriver, AutomationActionCatalog {
   /// Drives the app behind [client].
   ToolkitDriver(final VmClient client)
     : this.custom(client.callExtension, evaluate: client.evaluate);
@@ -144,13 +154,52 @@ final class ToolkitDriver implements AutomationDriver {
           );
         }
         await evaluator(expression);
-      case InvokeAction(:final name):
-        // Catalog invocations are an automation-catalog capability; the
-        // instrumented toolkit tier has no verb behind them.
-        throw DriverUnsupportedException(
-          'ToolkitDriver does not implement catalog invocations '
-          '(InvokeAction($name))',
-        );
+      case InvokeAction(:final name, :final args):
+        await _invokeRegistryAction(name, args);
+    }
+  }
+
+  @override
+  Future<List<SurfaceActionDescriptor>> actions() async {
+    _ensureOpen();
+    final data = _unwrap(await _call(ToolkitExtensions.agentCatalog));
+    final actions = data['actions'];
+    return [
+      if (actions is List)
+        for (final entry in actions)
+          if (SurfaceActionDescriptor.fromJson(entry) case final d?) d,
+    ];
+  }
+
+  /// Validates [args] against the registry action's declared schema and
+  /// dispatches through `agent_invoke`.
+  ///
+  /// An unknown name still dispatches: the app side owns the registry and
+  /// may have grown since the catalog read — its refusal is authoritative.
+  Future<void> _invokeRegistryAction(
+    final String name,
+    final Map<String, Object?> args,
+  ) async {
+    _ensureOpen();
+    for (final action in await actions()) {
+      if (action.name == name) {
+        final schema = action.inputSchema;
+        if (schema != null) {
+          validateAgainstSchema(schema, args);
+        }
+        break;
+      }
+    }
+    final raw = _unwrap(
+      await _call(
+        ToolkitExtensions.agentInvoke,
+        args: {'name': name, 'json': jsonEncode(args)},
+      ),
+    );
+    if (raw['success'] == false) {
+      throw ProtocolException(
+        'invoke "$name" refused: ${raw['error'] ?? 'no reason given'}',
+      );
     }
   }
 

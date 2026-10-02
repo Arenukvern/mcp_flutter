@@ -2505,6 +2505,14 @@ they are composition-level (`showcase/drivers`, which also holds the live
 end-to-end drives: `make drive-flutter` / `drive-flutter-chrome` /
 `drive-web`).
 
+App-specific verbs use the invoke tier (ADR-0017): the app's intent
+registry IS the action catalog — `driver.actions()` lists it, and
+`InvokeAction(name, args)` dispatches to a registered entry with
+schema-validated arguments (custom `IntentAutomationAction.custom` hints
+route the same way). Web surfaces without a VM service (Jaspr, plain JS)
+compose identically over `CdpDriver` via the `window.__mcpActions` page
+registry.
+
 | Need | Use |
 |---|---|
 | Repeatable scenario as code, CI-friendly exit codes | this skill (`flutter_mcp_harness`) |

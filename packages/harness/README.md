@@ -181,6 +181,31 @@ matches snapshot labels, `role` matches semantic roles, `css` accepts a
 snapshot ref (`s_12`) or a label; navigation maps to the toolkit's named
 routes and refuses loudly otherwise.
 
+### The invoke tier (ADR-0017) — surface actions, registry-native
+
+Framework- and app-specific verbs never grow the sealed action set.
+`ToolkitDriver` also implements `AutomationActionCatalog`: `actions()`
+lists the app's agent-call registry (the intent registry is the single
+action source — one registration is an MCP tool, a projection, and a
+drivable action), and `InvokeAction(name, args)` dispatches through the
+`agent_invoke` wire verb, validating `args` against the registered schema
+before the wire:
+
+```dart
+final actions = await driver.actions(); // the app's registry, as descriptors
+await driver.perform(InvokeAction('app.checkout_flow', args: {'sku': 'x-1'}));
+```
+
+Intents route declaratively too — `IntentAutomationAction.custom` hints
+(`locator: {'name': 'app.checkout_flow'}`) resolve to `InvokeAction` in
+[IntentDriverRouter], with invocation arguments passing through.
+
+Non-Flutter surfaces compose the same way over the CDP tier: any web app
+(Jaspr, plain JS, Flutter web) publishes a `window.__mcpActions` registry —
+`{description, schema, invoke: async (args) => …}` per action — and
+`CdpDriver` lists and invokes it through the same `InvokeAction`. A page
+opts in by assigning one object; no package dependency required.
+
 ## Relationship to the MCP server
 
 The server (`mcp_server_dart`) exposes the same toolkit primitives as MCP

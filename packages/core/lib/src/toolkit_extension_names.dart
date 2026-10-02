@@ -70,4 +70,14 @@ abstract final class ToolkitExtensionNames {
 
   /// Inspects the widget at a screen point.
   static const String inspectWidgetAtPoint = 'inspect_widget_at_point';
+
+  /// Lists the agent-call registry as driver-invokable descriptors —
+  /// the catalog the `invoke` tier dispatches against (ADR-0017). The
+  /// app's intent registry is the single action source; this verb reads
+  /// it instead of growing a second registry.
+  static const String agentCatalog = 'agent_catalog';
+
+  /// Invokes one registered agent call by registry key — arguments
+  /// travel JSON-encoded under `json`, the key under `name`.
+  static const String agentInvoke = 'agent_invoke';
 }
