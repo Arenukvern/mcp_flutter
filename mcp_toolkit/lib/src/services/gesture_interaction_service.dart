@@ -2,6 +2,7 @@
 // ignore_for_file: avoid_catches_without_on_clauses
 // ignore_for_file: use_build_context_synchronously
 
+import 'dart:async' show unawaited;
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
@@ -10,6 +11,7 @@ import 'package:flutter/foundation.dart'
     show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/scheduler.dart' show Priority, SchedulerBinding;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
@@ -1382,29 +1384,27 @@ mixin GestureInteractionService {
     // the tracked position and fire MouseRegion transitions, so the device
     // never needs an add/remove pair to become live.
     final pointer = _nextPointerId++;
-    final binding = GestureBinding.instance;
     const prime = ui.Offset(-100, -100);
-    binding
-      // Prime: hover off-screen first so the target hover is a clean position
-      // change.
-      ..handlePointerEvent(
-        PointerHoverEvent(
-          pointer: pointer,
-          position: prime,
-          kind: PointerDeviceKind.mouse,
-          device: _syntheticDevice,
-          timeStamp: _now(),
-        ),
-      )
-      ..handlePointerEvent(
-        PointerHoverEvent(
-          pointer: pointer,
-          position: centre,
-          kind: PointerDeviceKind.mouse,
-          device: _syntheticDevice,
-          timeStamp: _now(),
-        ),
-      );
+    // Prime: hover off-screen first so the target hover is a clean position
+    // change.
+    _send(
+      PointerHoverEvent(
+        pointer: pointer,
+        position: prime,
+        kind: PointerDeviceKind.mouse,
+        device: _syntheticDevice,
+        timeStamp: _now(),
+      ),
+    );
+    _send(
+      PointerHoverEvent(
+        pointer: pointer,
+        position: centre,
+        kind: PointerDeviceKind.mouse,
+        device: _syntheticDevice,
+        timeStamp: _now(),
+      ),
+    );
     await _waitFrame();
 
     return <String, Object?>{
@@ -1533,8 +1533,28 @@ mixin GestureInteractionService {
   /// gesture. A no-op when the device holds no mouse state, and the removal
   /// carries no position because [MouseTracker] clears the annotations of a
   /// removed device without hit-testing.
+  /// Dispatches one synthetic pointer event, deferring past a locked
+  /// gesture binding. A service-extension handler can be invoked while the
+  /// framework holds the lock (a frame is producing); a direct
+  /// `handlePointerEvent` there trips the framework's `!locked` assertion,
+  /// so the event rides the scheduler's task queue instead — it drains
+  /// between frames, FIFO, which also keeps a gesture's event order.
+  static void _send(final PointerEvent event) {
+    final binding = GestureBinding.instance;
+    if (!binding.locked) {
+      binding.handlePointerEvent(event);
+      return;
+    }
+    unawaited(
+      SchedulerBinding.instance.scheduleTask(
+        () => binding.handlePointerEvent(event),
+        Priority.touch,
+      ),
+    );
+  }
+
   static void _releaseSyntheticDevice() {
-    GestureBinding.instance.handlePointerEvent(
+    _send(
       PointerRemovedEvent(
         pointer: _nextPointerId++,
         kind: PointerDeviceKind.mouse,
@@ -1545,9 +1565,8 @@ mixin GestureInteractionService {
   }
 
   static Future<void> _dispatchTap(final ui.Offset position) async {
-    final binding = GestureBinding.instance;
     final pointer = _nextPointerId++;
-    binding.handlePointerEvent(
+    _send(
       PointerDownEvent(
         pointer: pointer,
         position: position,
@@ -1557,7 +1576,7 @@ mixin GestureInteractionService {
       ),
     );
     await Future<void>.delayed(const Duration(milliseconds: 50));
-    binding.handlePointerEvent(
+    _send(
       PointerUpEvent(
         pointer: pointer,
         position: position,
@@ -1571,9 +1590,8 @@ mixin GestureInteractionService {
   }
 
   static Future<void> _dispatchLongPress(final ui.Offset position) async {
-    final binding = GestureBinding.instance;
     final pointer = _nextPointerId++;
-    binding.handlePointerEvent(
+    _send(
       PointerDownEvent(
         pointer: pointer,
         position: position,
@@ -1584,7 +1602,7 @@ mixin GestureInteractionService {
     );
     // Hold well past kLongPressTimeout (500 ms).
     await Future<void>.delayed(const Duration(milliseconds: 600));
-    binding.handlePointerEvent(
+    _send(
       PointerUpEvent(
         pointer: pointer,
         position: position,
@@ -1612,9 +1630,8 @@ mixin GestureInteractionService {
     final Duration perStep = const Duration(milliseconds: 16),
     final PointerDeviceKind kind = PointerDeviceKind.touch,
   }) async {
-    final binding = GestureBinding.instance;
     final pointer = _nextPointerId++;
-    binding.handlePointerEvent(
+    _send(
       PointerDownEvent(
         pointer: pointer,
         position: from,
@@ -1627,7 +1644,7 @@ mixin GestureInteractionService {
     var last = from;
     for (final pos in _dragPath(from, to, steps)) {
       await Future<void>.delayed(perStep);
-      binding.handlePointerEvent(
+      _send(
         PointerMoveEvent(
           pointer: pointer,
           position: pos,
@@ -1640,7 +1657,7 @@ mixin GestureInteractionService {
       last = pos;
     }
 
-    binding.handlePointerEvent(
+    _send(
       PointerUpEvent(
         pointer: pointer,
         position: to,
@@ -1734,7 +1751,7 @@ mixin GestureInteractionService {
     final ui.Offset position,
     final ui.Offset scrollDelta,
   ) async {
-    GestureBinding.instance.handlePointerEvent(
+    _send(
       PointerScrollEvent(
         position: position,
         scrollDelta: scrollDelta,

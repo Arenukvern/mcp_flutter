@@ -3,7 +3,7 @@
 # Rubric: docs/superpowers/evals/tool_quality_rubric.yaml
 # Overview: docs/superpowers/evals/README.md
 
-program: flutter_test_app_web_dogfood
+program: showcase/flutter_test_app_web_dogfood
 scoring:
   rubric: docs/superpowers/evals/tool_quality_rubric.yaml
   max_per_iteration: 100

@@ -37,7 +37,7 @@ Alias: `migrate mcp-call-entry` (same behavior).
 ## After migration — registration
 
 - `MCPToolkitBinding.addEntries(entries: Set<AgentCallEntry>)`
-- `bootstrapFlutter(additionalEntries: { ... })`
+- `addEntries(entries: { ... })` before `bootstrapFlutter(runApp: ...)`
 - `addMcpTool(AgentCallEntry)` — still a shortcut for a single entry
 
 Handlers should return **`AgentResult`** (`AgentResult.success` / `AgentResult.failure`).
@@ -106,7 +106,7 @@ rewrite). CLI equivalent: `flutter-mcp-toolkit migrate agent-entries`.
 
 ## Maintainer checklist (in-repo product gate)
 
-1. `flutter-mcp-toolkit migrate agent-entries --check` on `flutter_test_app/lib`
+1. `flutter-mcp-toolkit migrate agent-entries --check` on `showcase/flutter_test_app/lib`
 2. `make sync-skills` after any `plugin/skills/` edit
 3. `cd mcp_server_dart && dart test test/contract/`
 4. Grep: no `MCPCallEntry` in skills except this file's BEFORE examples

@@ -64,7 +64,7 @@ extension type const OnAppIdentityEntry._(AgentCallEntry entry)
         );
       },
       definition: MCPToolDefinition(
-        name: 'app_identity',
+        name: ToolkitExtensionNames.appIdentity,
         description:
             'Returns the label this app reports for the running instance, '
             'so a target can be chosen by what it is instead of by port.',
@@ -111,7 +111,7 @@ extension type OnAppErrorsEntry._(AgentCallEntry entry)
         return MCPCallResult(message: message, parameters: {'errors': errors});
       },
       definition: MCPToolDefinition(
-        name: 'app_errors',
+        name: ToolkitExtensionNames.appErrors,
         description:
             'Get application errors and diagnostics information. '
             'Returns recent errors with file paths and line numbers '
@@ -146,7 +146,7 @@ extension type OnViewScreenshotsEntry._(AgentCallEntry entry)
         );
       },
       definition: MCPToolDefinition(
-        name: 'view_screenshots',
+        name: ToolkitExtensionNames.viewScreenshots,
         description:
             'Take screenshots of all Flutter views/screens. '
             'Useful for visual debugging and UI analysis.',
@@ -175,7 +175,7 @@ extension type const OnViewDetailsEntry._(AgentCallEntry entry)
         );
       },
       definition: MCPToolDefinition(
-        name: 'view_details',
+        name: ToolkitExtensionNames.viewDetails,
         description:
             'Get detailed information about Flutter views and widgets. '
             'Returns structural information about the current UI state.',
@@ -210,7 +210,7 @@ extension type const OnInspectWidgetAtPointEntry._(AgentCallEntry entry)
         );
       },
       definition: MCPToolDefinition(
-        name: 'inspect_widget_at_point',
+        name: ToolkitExtensionNames.inspectWidgetAtPoint,
         description:
             'Inspect deepest widget/render node at global logical coordinates.',
         inputSchema: ObjectSchema.fromMap(inspectWidgetAtPointInputSchema()),

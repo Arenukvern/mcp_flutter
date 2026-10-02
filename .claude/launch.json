@@ -4,7 +4,7 @@
     {
       "name": "flutter-test-app",
       "runtimeExecutable": "bash",
-      "runtimeArgs": ["-c", "cd flutter_test_app && flutter run -d chrome --debug --web-port=8182"],
+      "runtimeArgs": ["-c", "cd showcase/flutter_test_app && flutter run -d chrome --debug --web-port=8182"],
       "port": 8182
     },
     {

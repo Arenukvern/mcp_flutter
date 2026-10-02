@@ -6,7 +6,7 @@ set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "${here}/../.." && pwd)"
-app_dir="${repo_root}/flutter_test_app"
+app_dir="${repo_root}/showcase/flutter_test_app"
 showcase="${repo_root}/.showcase"
 rubric="${repo_root}/docs/superpowers/evals/tool_quality_rubric.yaml"
 tracker="${DOGFOOD_TRACKER:-${repo_root}/docs/evidence/dogfood/dogfood_web_eval.yaml}"
@@ -127,7 +127,9 @@ if [[ "${run_intentcall_tests}" == true ]]; then
   set +e
   intentcall_root="${INTENTCALL_ROOT:-}"
   if [[ -z "${intentcall_root}" ]]; then
-    if [[ -d "${repo_root}/../agentkit/packages/intentcall_testing" ]]; then
+    if [[ -d "${repo_root}/../intentcall/packages/intentcall_testing" ]]; then
+      intentcall_root="${repo_root}/../intentcall"
+    elif [[ -d "${repo_root}/../agentkit/packages/intentcall_testing" ]]; then
       intentcall_root="${repo_root}/../agentkit"
     else
       intentcall_root="${repo_root}/intentcall"
@@ -532,7 +534,7 @@ write_eval_run() {
     printf '# Rubric: docs/superpowers/evals/tool_quality_rubric.yaml\n\n'
     printf 'run_id: "%s"\n' "${run_id}"
     printf 'rubric: docs/superpowers/evals/tool_quality_rubric.yaml\n'
-    printf 'program: flutter_test_app_web_dogfood\n'
+    printf 'program: showcase/flutter_test_app_web_dogfood\n'
     printf 'device: %s\n' "${device}"
     printf 'web_port: %s\n' "${web_port}"
     printf 'vm_host_port: %s\n' "${vm_host_port}"

@@ -80,6 +80,10 @@ class MCPToolkitBinding extends MCPToolkitBindingBase
   /// Root [NavigatorState] key from `MaterialApp.navigatorKey` /
   /// `WidgetsApp.navigatorKey`, or `null` when not registered.
   ///
+  /// Optional: navigation tools resolve the root navigator from the
+  /// element tree automatically when this is null. Wiring the key pins
+  /// the lookup explicitly (honored even when nested navigators exist).
+  ///
   /// Tools such as `handle_dialog` and `navigate` read this; when `null` they
   /// return `navigator_not_registered`.
   GlobalKey<NavigatorState>? navigatorKey;
@@ -101,13 +105,18 @@ class MCPToolkitBinding extends MCPToolkitBindingBase
   }
 
   /// Canonical app bootstrap for Flutter hosts using MCP toolkit in debug.
+  ///
+  /// Composition owns the surface: register entries with [addEntries] and
+  /// platform tiers with [addProjection] before calling — this method only
+  /// wires lifecycle (zone guard, binding init, the built-in Flutter
+  /// toolkit entries) and then runs the app. Apps that want a fully custom
+  /// entry set call [initialize] + [addEntries] + `runApp` themselves.
   Future<void> bootstrapFlutter({
     required final FutureOr<void> Function() runApp,
-    final Iterable<AgentCallEntry> additionalEntries = const <AgentCallEntry>[],
     final FutureOr<void> Function()? ensureInitialized,
     final void Function(Object error, StackTrace stackTrace)? onZoneError,
-    final bool initializeFlutterToolkitEntries = true,
     final bool debugOnly = true,
+    final String? protocolScheme,
   }) async {
     final completer = Completer<void>();
     final zoneErrorHandler = onZoneError ?? handleZoneError;
@@ -125,17 +134,14 @@ class MCPToolkitBinding extends MCPToolkitBindingBase
                 Future<void>.sync(WidgetsFlutterBinding.ensureInitialized));
 
             if (!isInitialized) {
-              initialize();
+              initialize(protocolScheme: protocolScheme);
+            } else if (protocolScheme != null) {
+              this.protocolScheme = protocolScheme;
             }
 
-            if (initializeFlutterToolkitEntries) {
-              await _addMissingEntries(
-                getFlutterMcpToolkitEntries(binding: this),
-              );
-            }
-            if (additionalEntries.isNotEmpty) {
-              await _addMissingEntries(additionalEntries);
-            }
+            await _addMissingEntries(
+              getFlutterMcpToolkitEntries(binding: this),
+            );
 
             await runApp();
           } finally {
@@ -159,6 +165,7 @@ class MCPToolkitBinding extends MCPToolkitBindingBase
   @override
   void initialize({
     final String serviceExtensionName = kMCPServiceExtensionName,
+    final String? protocolScheme,
     final int maxErrors = kDefaultMaxErrors,
   }) {
     assert(() {
@@ -172,7 +179,10 @@ class MCPToolkitBinding extends MCPToolkitBindingBase
       return true;
     }());
 
-    super.initialize(serviceExtensionName: serviceExtensionName);
+    super.initialize(
+      serviceExtensionName: serviceExtensionName,
+      protocolScheme: protocolScheme,
+    );
   }
 
   /// Initializes the MCP Toolkit binding.

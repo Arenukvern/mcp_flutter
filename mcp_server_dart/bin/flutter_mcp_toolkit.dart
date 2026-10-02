@@ -2793,7 +2793,7 @@ String _usageWebmcpChromeArgs() => '''
 Usage: flutter-mcp-toolkit webmcp chrome-args
 
 Prints JSON with --web-browser-flag values and a full flutter run -d chrome command.
-Use scripts/run_web_showcase.sh for a logged dogfood launch.
+Use `dart run packages/harness/tool/showcase.dart --web` for a logged dogfood launch.
 ''';
 
 String _usageWebmcpVerify() => '''

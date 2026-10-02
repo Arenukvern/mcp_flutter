@@ -5,12 +5,12 @@
 | Item | Location |
 |------|----------|
 | Canonical IntentCall repo | `github.com/Arenukvern/intentcall` |
-| Consumer package policy | Hosted `intentcall_* ^0.6.0` from pub.dev |
-| Local-development exception | Temporary sibling path overrides to a local IntentCall checkout only |
+| Consumer package policy | Hosted `intentcall_*` from pub.dev, **no version constraint** (gate-enforced by `fmt.check.intentcall-hosted-deps`) |
+| Local-development exception | Sibling path overrides in the gitignored `pubspec_overrides.yaml` only — never committed |
 | Hosted consumer proof | `make check-intentcall-hosted-consumer`; Steward `fmt.check.intentcall-hosted-deps-strict` |
 | Sibling upstream matrix proof | `make check-intentcall-sibling-matrix` |
 | Compatibility alias | `make check-intentcall-integration` → sibling upstream matrix proof |
-| Repo contract gate | `make check-contracts` |
+| Repo contract gate | `make check-contracts` (includes `check_apple_runner_compile.sh` — `flutter build macos --config-only` on `showcase/flutter_test_app`) |
 | IntentCall publish checks | Run from the IntentCall checkout |
 | AppIntentsTesting consumer scaffold | `flutter-mcp-toolkit codegen appintents-testing generate` |
 
@@ -79,11 +79,70 @@ catalog through `DefaultCoreCommandExecutor`.
 
 ## Normal consumer state
 
-Committed `mcp_flutter` state should use hosted `intentcall_*` dependencies. Do not commit normal consumer pubspecs with `agentkit/packages`, `intentcall/packages`, or `path: .*intentcall` dependencies.
+This branch resolves IntentCall from the sibling checkout at `../intentcall`
+(`dependency_overrides` in the workspace `pubspec.yaml`). The same
+`AgentRegistry` is the contract for both agent kinds:
 
-Use root `dependency_overrides` only while deliberately developing against the
-sibling IntentCall checkout, then remove them before publishing consumer
-integration changes.
+- Coding agents use Flutter MCP Toolkit in a debug session: VM service tools
+  (`fmt_*`) plus the app's declared `AgentCallEntry` tools. Resource URIs go
+  through `AgentCallEntryMcpToolkit.resolveResourceUri`.
+- OS agents use the platform projection of those same entries. `awaitApp`
+  returns the Dart result to Shortcuts/Siri. `openApp` only queues a wake.
+  `windows.appActions` is the Windows result path. WebMCP is the in-page path.
+
+Do not point overrides at `../agentkit`. That directory name is only a fallback
+for older checkouts.
+
+### Automation hints (ADR-0038 adoption)
+
+Intents may declare an optional `automation` hint (`IntentAutomationHint` in
+`intentcall_core`: driver transport + action + locator). The projection rule:
+IntentCall states how an intent *could* be driven — registry descriptors carry
+the hint, the MCP wire carries it in tool `_meta`
+(`dev.intentcall/automation`) — and this repo owns the routing:
+`IntentDriverRouter` in `packages/harness` resolves a hint into an
+`AutomationDriver` action against the bound driver. `showcase/drivers` proves
+it live. This repo must not grow drivers, and IntentCall must not drive.
+
+## Using the platform projection API exactly
+
+The web/native projection surface (in `intentcall_platform_sync` and
+`intentcall_platform`) composes with the toolkit's projection SPI
+(mcp_flutter ADR-0016). The rule that shapes every signature:
+**an authorization policy is always explicit** — no API chooses an
+invocation posture for your app.
+
+| Surface | API | Package |
+|---|---|---|
+| Project the toolkit's dynamic entries onto the browser WebMCP registry | `WebMcpProjection(policy: myPolicy).entriesChanged` — pass to `MCPToolkitBinding.instance.addEntryListener(...)` | `intentcall_platform_sync` (pure Dart) |
+| One-shot projection from entries | `projectEntriesToWebMcp(entries, policy: myPolicy)` | `intentcall_platform_sync` |
+| One-shot projection from a registry | `projectRegistryToWebMcp(registry, policy: myPolicy, surfaceIndex:)` | `intentcall_platform_sync` |
+| Native tier host (AppIntents/Shortcuts, deep links, surface links, drain coalescing) | `IntentCallFlutterHost.bindRegistry(registry:, policy:, registerWebMcp: kIsWeb, listenForDeepLinks:, protocolScheme:, onEnvelope/onResult/onDenied/onError)` | `intentcall_platform` (via `intentcall_platform_flutter.dart`) |
+
+Policies are `IntentCallAuthorizationPolicy` — source allowlists plus
+qualified-name allowlists, or `denyAll()` / `debugAllowAll()` when you mean
+them. The host's default is `denyAll()`; `debugAllowAll()` is open only while
+Dart assertions are enabled and must be passed deliberately.
+
+Minimal web composition (complete):
+
+```dart
+import 'package:intentcall_platform_sync/intentcall_platform_sync.dart';
+import 'package:mcp_toolkit/mcp_toolkit.dart';
+
+final binding = MCPToolkitBinding.instance;
+binding.addEntryListener(
+  WebMcpProjection(policy: myPolicy).entriesChanged,
+);
+await binding.addEntries(entries: myEntries);
+await binding.bootstrapFlutter(runApp: () => runApp(const MyApp()));
+```
+
+Platform emitters and manifest sync (`kPlatformSyncTargets`,
+`emitAppIntentsTestingScaffold`, `PlatformSync`) stay in
+`intentcall_platform_sync`; the CLI surface lives in `intentcall_cli`
+(`intentcall platform sync` / `platform hooks init`), which this repo's
+`flutter-mcp-toolkit codegen sync` delegates to at runtime.
 
 ## Consumer proof gates
 
@@ -111,6 +170,28 @@ make sync-skills
 ```
 
 The durable proof should live in checks, CI, Steward scenarios, tests, and dated evidence records, not in a hand-maintained pass-count checklist.
+
+### Apple Runner compile gate
+
+`make check-contracts` runs `tool/contracts/check_apple_runner_compile.sh`. This is
+the canonical compile-proof gate for federated Apple projection:
+
+1. Verifies `showcase/flutter_test_app/macos/Runner/Generated/IntentCallGenerated.swift`
+   imports `intentcall_platform_apple` and does **not** define an inline
+   `IntentCallNativeBridge` enum (facade lives in the plugin).
+2. When `INTENTCALL_ROOT` or `../agentkit` is present, runs
+   `intentcall platform sync --platform ios,macos` before compile.
+3. Runs `flutter build macos --config-only` on `showcase/flutter_test_app`.
+
+Standalone:
+
+```bash
+bash tool/contracts/check_apple_runner_compile.sh
+```
+
+From the IntentCall checkout with sibling `mcp_flutter`: `just apple-runner-compile-check`.
+
+Set `FAIL_ON_SKIP=1` in CI when Flutter/Xcode must be present.
 
 ## Apple AppIntentsTesting scaffold
 
@@ -151,7 +232,7 @@ claim only generated scaffold proof.
 |---------|------------|
 | `MCPCallEntry` compile errors or migration work | [MCPCallEntry to AgentCallEntry migration](../start_here/migration_mcp_call_entry_to_agent_call_entry.md) |
 | Hosted dependency or local path override drift | `tool/intentcall/check_no_path_deps.sh`; use `--strict-root` before release/cutover |
-| Platform hooks, WebMCP, deep links, app dynamic tools | [flutter_test_app/INTENTCALL_PLATFORM.md](../../flutter_test_app/INTENTCALL_PLATFORM.md) |
+| Platform hooks, WebMCP, deep links, app dynamic tools | [flutter_test_app/INTENTCALL_PLATFORM.md](../../showcase/flutter_test_app/INTENTCALL_PLATFORM.md) |
 | Schema, `fmt_*`, CLI `exec`, or app-dynamic parity debugging | `plugin/skills/flutter-mcp-boundary-audit/` |
 | Unsure whether to fix `mcp_flutter` or IntentCall upstream | Fix consumer wiring here; fix architecture/package behavior in the IntentCall repository |
 
@@ -160,8 +241,11 @@ claim only generated scaffold proof.
 For future hosted dependency bumps:
 
 1. Confirm the intended `intentcall_*` versions exist on pub.dev.
-2. Update consumer constraints in `mcp_toolkit`, `mcp_server_dart`, capability packages, and `flutter_test_app` as needed.
-3. Remove temporary local path overrides.
+2. Consumer pubspecs stay version-free (`intentcall_core:` — no constraint);
+   hosted CI resolution is the proof. Only dogfood apps (`showcase/*`) may
+   keep sibling path deps.
+3. Local resolution comes from the gitignored `pubspec_overrides.yaml`
+   (sibling checkouts). Never commit it; keep it working.
 4. Regenerate any action AppIntentsTesting scaffold from the hosted emitter if
    the app keeps one checked in.
 5. Run `tool/intentcall/check_no_path_deps.sh --strict-root`.

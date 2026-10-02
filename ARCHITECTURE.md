@@ -46,8 +46,9 @@ Flutter app in debug mode
 | `packages/core/` | Pure Dart command/result/schema vocabulary shared by CLI/server/tooling. |
 | `packages/server_capability_kernel/` | Capability host contracts. |
 | `packages/server_capability_core/` | Server-side implementation of the Flutter MCP `fmt_*` capability. |
+| `packages/harness/` | `flutter_mcp_harness`: programmatic E2E harness (build/launch/VM-attach/drive/assert as Dart, no MCP transport) implementing the universal `AutomationDriver` contract (`ToolkitDriver`, ADR-0038); home of the showcase launcher (`tool/showcase.dart`). Dependencies are contracts and protocol clients only — frame pipelines live in composition. See ADR-0015. |
+| `showcase/` | One place for everything demoed: `flutter_test_app/` (the full dogfood showcase app behind `make showcase` — a consumer proof target, not a minimal adopter example), `flutter_demo/` + `web_demo/` (minimal instrumented/CDP targets), `drivers/` (composition package owning the end-to-end drive programs and the pipeline wiring, `make drive-flutter` / `drive-web`). |
 | `plugin/` | Shippable Cursor/Codex/Claude plugin assets and skills. |
-| `flutter_test_app/` | Dogfood app and consumer proof target, not a minimal adopter example. |
 
 ## When To Use Which Surface
 
@@ -56,6 +57,8 @@ Flutter app in debug mode
 | Add Flutter MCP to an app | `mcp_toolkit` plus `MCPToolkitBinding.instance.bootstrapFlutter(...)`. |
 | Run deterministic checks or CI-ish proof | `flutter-mcp-toolkit` / `fmtk` CLI. |
 | Let an assistant inspect or drive the app | `flutter-mcp-toolkit-server` with MCP `fmt_*` tools. |
+| Drive apps end-to-end through one driver contract | `ToolkitDriver` + `showcase/drivers` (`make drive-flutter` / `drive-web`); scenarios via `flutter_mcp_harness` (`packages/harness`) |
+| Write repeatable E2E scenarios as checked-in Dart | `flutter_mcp_harness` (`packages/harness`); showcase via `make showcase`. |
 | Expose app-specific state/actions | `AgentCallEntry.tool` / `.resource` from app code, discovered by dynamic registry tools. |
 | Change schema/session/registry/platform behavior | IntentCall repository, then update hosted dependency consumption here. |
 | Validate local repo changes | `steward probe --json --profile quick`, then `make check-contracts`. |
@@ -74,7 +77,7 @@ Flutter app in debug mode
 ## Dynamic Registry Rules
 
 - Register app-specific entries once at bootstrap, preferably through
-  `bootstrapFlutter(additionalEntries: ..., runApp: ...)`.
+  `addEntries(entries: ...)` before `bootstrapFlutter(runApp: ...)`.
 - Use resources for read-only idempotent state and tools for actions or
   parameterized operations.
 - Keep schemas strict and payloads compact.

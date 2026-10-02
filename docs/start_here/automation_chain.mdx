@@ -1,0 +1,137 @@
+---
+title: The Automation Chain
+description: Why flutter-mcp-toolkit exists, how its surfaces chain together (MCP, CLI, harness, oka), and the first loop for new users.
+---
+
+# The Automation Chain
+
+## Why this exists at all
+
+An AI agent watching a Flutter app through screenshots is guessing: it
+cannot read your widgets, cannot wait deterministically, and every fix
+requires you to relay information by hand. `flutter-mcp-toolkit` closes that
+loop — your debug-mode app registers `ext.mcp.toolkit.*` service extensions,
+and an agent gets a semantic snapshot (every widget with a stable ref, label,
+role, and bounds), acts through real semantics (tap, type, scroll, navigate),
+hot-reloads, and re-reads state to verify its own work.
+
+The bigger idea: that observe → act → verify loop should not be locked to
+one transport. The toolkit is becoming a **chain of declarative automation
+APIs** on top of the universal `AutomationDriver` contract
+(`universal_automation_*` family, ADR-0038) — the same vocabulary drives
+Flutter apps, browsers, and OS-native tiers, and different surfaces own
+different parts of the lifecycle.
+
+## The chain at a glance
+
+```text
+ your Flutter app (debug)  ── registers ──►  ext.mcp.toolkit.* extensions
+                                                │
+        ┌───────────────────┬───────────────────┼──────────────────────┐
+        ▼                   ▼                   ▼                      ▼
+  MCP fmt_* tools      CLI (fmtk)      flutter_mcp_harness       intentcall hints
+  (chat, editor)      (scripts, CI)    (Dart scenarios, CI)      (declarative routing)
+                                                 │
+                                        build + lifecycle (optional):
+                                        oka owns compile/install/process
+```
+
+Every surface observes and drives the same extensions; only **one** surface
+may own the app's session (see the ownership law below).
+
+## Pick your tier
+
+| You want… | Use | Start here |
+|---|---|---|
+| Chat-driven debugging and verification | MCP `fmt_*` tools | [Get started](https://docs.page/arenukvern/mcp_flutter) |
+| One-shot commands in scripts/CI | CLI (`flutter-mcp-toolkit` / `fmtk`) | [CLI vs MCP](/start_here/cli_vs_mcp) |
+| Repeatable E2E scenarios as checked-in Dart | `flutter_mcp_harness` | [E2E Scenarios](/guides/e2e_scenarios) |
+| Declarative device builds + process lifecycle | **oka** (separate repo) | this page, below |
+| Intent → automation routing without hardcoded transports | `IntentDriverRouter` | [IntentCall consumer guide](/intentcall/README) |
+
+## Your first loop (five minutes)
+
+```bash
+# 1. Install the binary (ships flutter-mcp-toolkit + fmtk alias)
+curl -fsSL https://raw.githubusercontent.com/Arenukvern/mcp_flutter/main/install.sh | bash
+
+# 2. Wire your app (adds mcp_toolkit, emits the main.dart snippet)
+cd my-flutter-app && flutter-mcp-toolkit codegen-init
+
+# 3. Install skills + MCP registration for your agent
+flutter-mcp-toolkit init claude-code   # or: cursor | codex | cline | all
+
+# 4. Run the app
+flutter run --debug
+```
+
+That is the whole setup. Ask your agent "what's on screen?" — it should
+answer from a semantic snapshot, not a screenshot. From here the agent can
+tap, fill forms, hot-reload, and prove its own changes; your app can even
+register custom MCP tools at runtime (see [Dynamic Tools
+Registration](https://docs.page/arenukvern/mcp_flutter)).
+
+## Second loop: scenarios you can commit
+
+When a loop is worth repeating (regression checks, pre-release sweeps),
+graduate it from chat into a Dart scenario with the published
+`flutter_mcp_harness` package — the harness builds the app, launches the
+process, attaches to the VM service, then drives/asserts, with CI-friendly
+exit codes:
+
+```dart
+final app = await MacosAppTarget(projectDir: '.', binaryPath: binary).launch();
+final driver = ToolkitDriver(await app.vm());
+// observe → act → verify; app.stop() in a finally
+```
+
+Full anatomy (targets, `Scenario`, retrying, two-app compositions): [E2E
+Scenarios](/guides/e2e_scenarios) and the `flutter-mcp-e2e-harness` skill.
+
+## Third loop: device builds via oka (optional)
+
+oka is a separate, declarative build system (`dart pub global activate
+oka`). It owns what an E2E harness should not: compiling, installing, and
+the process lifecycle. Its `oka_harness` package consumes the published
+`flutter_mcp_harness`, so device scenarios use the same driver contract as
+desktop ones:
+
+```bash
+oka init          # project-owned composition root: tool/oka_pipeline.dart
+oka build apk     # no-Gradle Android pipeline
+oka dev           # owning dev session — agents: oka dev --watch --json
+```
+
+While `oka dev` owns the app, the toolkit's MCP tools attach as usual: the
+server reads `.flutter_mcp/runner-session.json` (spec v2) and delegates
+reload/restart to the runner. You do **not** need oka for the first two
+loops — it earns its place when you want reproducible device builds and
+owned sessions across Android/iOS.
+
+## The ownership law (read before composing)
+
+**At most one owning attach session per app.** The owner (a `flutter run`,
+or `oka dev`) is the only compile-capable reload channel; a second owning
+attach can kill the first (ADR-0014). MCP tools and harness drivers are
+observers — they attach over the same VM service without taking ownership.
+Details and the runner-session contract: [dev-session delegation
+roadmap](/guides/dev-session-delegation-roadmap).
+
+## FAQ
+
+**Do I need oka?** No. The MCP and harness loops are fully self-contained;
+oka is for declarative device builds and owned dev sessions.
+
+**Can the agent use MCP while a scenario runs?** Observers can coexist; two
+*owners* cannot. Run the scenario as the owner and use MCP tools read-only,
+or attach the MCP server to a runner-owned session via spec v2.
+
+**Where do YAML/declarative scenario files live?** In the external
+`flutter_harness` repo (ADR-0012). Composition roots here are Dart code.
+
+## Related
+
+- [Why This Repo Matters](/start_here/why_this_repo_matters) — the motivation
+- [CLI vs MCP](/start_here/cli_vs_mcp) — surface choice in depth
+- [Feature Map](/start_here/feature_map) — the 30 `fmt_*` tools
+- Skills: `flutter-mcp-automation-chain` (chain wiring), `flutter-mcp` (interactive), `flutter-mcp-e2e-harness` (scenarios)

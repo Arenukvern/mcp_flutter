@@ -55,12 +55,14 @@ Always run `flutter-mcp-toolkit doctor --json` first. Parse the output:
 | Read state ("what's on screen?", "show me errors", "screenshot") | `flutter-mcp-toolkit-inspect` |
 | Drive UI ("tap X", "type into Y", "scroll to Z", "hot reload") | `flutter-mcp-toolkit-control` |
 | Diagnose ("why is X failing?", "show recent logs", "evaluate expression") | `flutter-mcp-toolkit-debug` |
-| Register app-specific MCP tools/resources (`AgentCallEntry`, `bootstrapFlutter` `additionalEntries`) | `flutter-mcp-toolkit-custom-tools` |
+| Register app-specific MCP tools/resources (`AgentCallEntry`, `addEntries`) | `flutter-mcp-toolkit-custom-tools` |
 | Upgrade from removed legacy call-entry APIs | `flutter-mcp-toolkit-intentcall-migration` |
 | Audit CLI/MCP/schema/dynamic-registry parity before changing tool surfaces | `flutter-mcp-boundary-audit` |
-| Maintain `flutter_test_app` web / WebMCP showcase hooks | `flutter-mcp-toolkit-maintain-web` |
-| Maintain `flutter_test_app` macOS / native IntentCall hooks | `flutter-mcp-toolkit-maintain-macos` |
+| Maintain `showcase/flutter_test_app` web / WebMCP showcase hooks; agent list/execute via Chrome DevTools MCP (`list_webmcp_tools` / `execute_webmcp_tool`) | `flutter-mcp-toolkit-maintain-web` |
+| Maintain `showcase/flutter_test_app` macOS / native IntentCall hooks | `flutter-mcp-toolkit-maintain-macos` |
 | Score dogfood iterations or route dogfood evidence | `flutter-mcp-toolkit-dogfood-iterations` |
+| Write repeatable E2E scenarios as Dart (`flutter_mcp_harness`: build/launch/attach/drive/assert, showcase launcher) | `flutter-mcp-e2e-harness` |
+| Wire automation for an app across surfaces (MCP / CLI / harness / oka), first loops, runner sessions | `flutter-mcp-automation-chain` |
 | Release, version, or plugin skill bundle maintenance | `flutter-mcp-toolkit-repo-maintainer` |
 
 Harness Script lint/run/Maestro and promo/video capture live in their owner
@@ -103,6 +105,10 @@ parameter shapes lives in the task skills.
   or `flutter-mcp-toolkit-maintain-macos` for showcase platform hooks; use
   `flutter-mcp-toolkit-repo-maintainer` for release, version, and generated
   skill-bundle work.
+- **True WebMCP (browser):** with Chrome DevTools MCP
+  (`--categoryExperimentalWebmcp`), use `list_webmcp_tools` /
+  `execute_webmcp_tool` after navigating to the web app. Details in
+  `flutter-mcp-toolkit-maintain-web`.
 
 ## When in doubt
 
@@ -1242,7 +1248,7 @@ Every failure returns `{code, message, details, descriptor, recovery}`. Always r
     SkillAsset(
       id: 'flutter-mcp-toolkit-custom-tools',
       frontmatter: r'''name: flutter-mcp-toolkit-custom-tools
-description: Use this skill when the agent exposes app-specific surfaces by registering custom MCP tools and resources inside the Flutter app (mcp_toolkit dynamic registry — AgentCallEntry, bootstrapFlutter additionalEntries / addEntries). Covers tool vs resource vs evaluate-expression, Map-based handlers, schema strictness, discovery via fmt_list_client_tools_and_resources, fmt_client_tool, fmt_client_resource, and lifecycle pitfalls.''',
+description: Use this skill when the agent exposes app-specific surfaces by registering custom MCP tools and resources inside the Flutter app (mcp_toolkit dynamic registry — AgentCallEntry, addEntries). Covers tool vs resource vs evaluate-expression, Map-based handlers, schema strictness, discovery via fmt_list_client_tools_and_resources, fmt_client_tool, fmt_client_resource, and lifecycle pitfalls.''',
       body: r'''
 <!-- @FMT_MODE_PRELUDE -->
 
@@ -1333,7 +1339,7 @@ final tool = mcpToolkitTool(
 - Tool arguments on the wire are **strings** keyed by schema property names — parse with `int.tryParse`, `jsonDecode`, etc.
 - Do **not** use `request.arguments` on the app side.
 
-Prefer **`MCPToolkitBinding.instance.bootstrapFlutter(additionalEntries: { ... }, runApp: ...)`** so tools/resources register in one place with zone/error setup.
+Prefer **`MCPToolkitBinding.instance.addEntries(entries: { ... })` before `bootstrapFlutter(runApp: ...)`** so tools/resources register in one place with zone/error setup.
 
 Register **once** at bootstrap — not inside `build`, not per-widget `initState`.
 
@@ -1401,7 +1407,7 @@ If something should appear but does not: confirm **`addEntries`** completed (**`
 
 1. Ensure **`mcp_toolkit`** is in **`pubspec.yaml`**.
 2. Add **`lib/mcp_tools/<domain>_surfaces.dart`** returning **`Set<AgentCallEntry>`** or calling **`addEntries`** once.
-3. Wire from **`bootstrapFlutter(..., additionalEntries: ...)`** — never from **`StatefulWidget` lifecycle**.
+3. Wire from **`addEntries(...)` before `bootstrapFlutter(...)`** — never from **`StatefulWidget` lifecycle**.
 4. Tight schemas; hot **restart**; then **`fmt_list_client_tools_and_resources`** before first client invoke.
 
 ## Safety and scope
@@ -1689,7 +1695,7 @@ Alias: `migrate mcp-call-entry` (same behavior).
 ## After migration — registration
 
 - `MCPToolkitBinding.addEntries(entries: Set<AgentCallEntry>)`
-- `bootstrapFlutter(additionalEntries: { ... })`
+- `addEntries(entries: { ... })` before `bootstrapFlutter(runApp: ...)`
 - `addMcpTool(AgentCallEntry)` — still a shortcut for a single entry
 
 Handlers should return **`AgentResult`** (`AgentResult.success` / `AgentResult.failure`).
@@ -1758,7 +1764,7 @@ rewrite). CLI equivalent: `flutter-mcp-toolkit migrate agent-entries`.
 
 ## Maintainer checklist (in-repo product gate)
 
-1. `flutter-mcp-toolkit migrate agent-entries --check` on `flutter_test_app/lib`
+1. `flutter-mcp-toolkit migrate agent-entries --check` on `showcase/flutter_test_app/lib`
 2. `make sync-skills` after any `plugin/skills/` edit
 3. `cd mcp_server_dart && dart test test/contract/`
 4. Grep: no `MCPCallEntry` in skills except this file's BEFORE examples
@@ -1868,6 +1874,7 @@ If the target app cannot be instrumented (third-party binary, restricted env), r
 
 - For the dynamic-tools side (registering custom MCP tools from inside the Flutter app), see the `flutter-mcp-toolkit-custom-tools` skill.
 - For routing across setup / inspect / control / debug skills, see `flutter-mcp-toolkit-guide`.
+- For **repeatable** scenarios as checked-in Dart (build/launch/attach/drive/assert without MCP), see `flutter-mcp-e2e-harness`.
 ''',
       relativePath: 'skills/flutter-mcp/SKILL.md',
     ),
@@ -2107,7 +2114,7 @@ When changing IntentCall consumer integration in `mcp_flutter`:
 2. `make sync-skills` — commit `skill_assets.g.dart` with skill edits.
 3. `bash tool/contracts/check_intentcall_skills_grep.sh` — no legacy call-entry symbol outside migration skill.
 4. `cd mcp_server_dart && dart test test/contract/`
-5. `flutter-mcp-toolkit migrate agent-entries --check flutter_test_app/lib` (expect exit 0)
+5. `flutter-mcp-toolkit migrate agent-entries --check showcase/flutter_test_app/lib` (expect exit 0)
 6. Keep canonical IntentCall design links pointed at the IntentCall repository; keep this repo focused on hosted dependency and regression proof.
 
 ## Pre-merge checklist
@@ -2122,20 +2129,20 @@ When changing IntentCall consumer integration in `mcp_flutter`:
     SkillAsset(
       id: 'flutter-mcp-toolkit-maintain-web',
       frontmatter: r'''name: flutter-mcp-toolkit-maintain-web
-description: Maintains flutter_test_app and intentcall web targets (Chrome, web codegen, WebMCP bootstrap, web-showcase, webmcp verify). Use when editing web/index.html, agent_manifest.json, intentcall_webmcp.generated.js, web platform sync, Chrome dogfood, or WebMCP modelContext.''',
+description: Maintains showcase/flutter_test_app and intentcall web targets (Chrome, web codegen, WebMCP bootstrap, web-showcase, webmcp verify, Chrome DevTools MCP). Use when editing web/index.html, agent_manifest.json, intentcall_webmcp.generated.js, web platform sync, Chrome dogfood, WebMCP modelContext, or agent WebMCP list/execute.''',
       body: r'''
 <!-- @FMT_MODE_PRELUDE -->
 
 # Maintain Web (Chrome + WebMCP)
 
-Dogfood app: `flutter_test_app`. Canonical platform doc: `flutter_test_app/INTENTCALL_PLATFORM.md`.
+Dogfood app: `showcase/flutter_test_app`. Canonical platform doc: `showcase/flutter_test_app/INTENTCALL_PLATFORM.md`.
 
 ## WebMCP vs VM MCP
 
 | Path | Proves |
 |------|--------|
 | VM extensions + `fmt_*` tools | MCP toolkit dogfood (always) |
-| `document.modelContext` | True WebMCP (Chrome flag / `--web-browser-flag`) |
+| `navigator.modelContext` / `document.modelContext` | True WebMCP (Chrome flags / `--web-browser-flag`) |
 
 ADR: `decisions/0008_web_agent_invoke_js_only.mdx` — JS `fetch('/agent/invoke')` **404** by design; Dart `invokeDirect` works when `modelContext` exists.
 
@@ -2154,24 +2161,90 @@ dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart webmcp verify --web-port 8
 
 Stop: `make showcase-stop`.
 
-**Do not** rely on `chrome://flags` alone across machines — use `webmcp chrome-args` / `make web-showcase`.
+**Do not** rely on `chrome://flags` alone across machines — use CLI flags / `make web-showcase` / VS Code launch args.
+
+### VS Code / Cursor launch
+
+Use config **`showcase/flutter_test_app Chrome + WebMCP`** in `.vscode/launch.json`:
+
+- `--web-browser-flag=--user-data-dir=${workspaceFolder}/.showcase/chrome-webmcp-profile` — **persistent profile** so `chrome://flags` survive stop/start (Flutter default is a temp profile every run).
+- `--web-browser-flag=--enable-features=WebMCPTesting,WebModelContext,DevToolsWebMCPSupport`
+- `--web-browser-flag=--enable-experimental-web-platform-features`
+
+Path must **not** include literal quotes in the value (avoids a dir named `"./…"`).
+
+Chrome **149+** Application → **WebMCP** pane also needs `#devtools-webmcp-support` / feature `DevToolsWebMCPSupport` (API alone is not enough for that UI).
+
+## Agent WebMCP (Chrome DevTools MCP) — preferred for live invoke
+
+Prefer **`chrome-devtools` MCP** (`list_webmcp_tools`, `execute_webmcp_tool`) over `flutter_mcp_toolkit webmcp verify --tool-name` when an agent should drive page tools.
+
+### Install (once)
+
+**Grok** (`~/.grok/config.toml`):
+
+```toml
+[mcp_servers.chrome-devtools]
+command = "npx"
+args = [
+  "-y",
+  "chrome-devtools-mcp@latest",
+  "--categoryExperimentalWebmcp",
+  "--chromeArg=--enable-features=WebMCP,WebModelContext,DevToolsWebMCPSupport,WebMCPTesting",
+  "--chromeArg=--enable-experimental-web-platform-features",
+  "--userDataDir=/Users/YOU/.cache/chrome-devtools-mcp/chrome-profile-webmcp",
+  "--no-usage-statistics",
+]
+enabled = true
+startup_timeout_sec = 90
+```
+
+Or: `grok mcp add chrome-devtools -- npx -y chrome-devtools-mcp@latest --categoryExperimentalWebmcp ...`
+
+**Cursor** — same `command`/`args` under `mcpServers.chrome-devtools` in `~/.cursor/mcp.json`.
+
+Restart the agent session after install. Doctor: `grok mcp doctor chrome-devtools`.
+
+### Live flow
+
+1. App must serve (e.g. `make web-showcase` or VS Code Chrome + WebMCP on `:8080`).
+2. `list_pages` — chrome-devtools may start its **own** browser (`about:blank`).
+3. `navigate_page` → `http://localhost:8080/` (or your app URL).
+4. Wait for Flutter/Dart bootstrap (first `list_webmcp_tools` can be empty).
+5. `list_webmcp_tools` — expect IntentCall tools + often `mcp_*` toolkit tools registered on `modelContext`.
+6. `execute_webmcp_tool` with `toolName` + JSON-string `input` when required.
+
+Example IntentCall tools: `app_enable_switch` (no args), `app_set_greeting` (`{"text":"…"}`), `app_intentcall_bridge_ping` (`{"echo":"…"}`), `app_get_agent_showcase_state`.
+
+```text
+execute_webmcp_tool
+  toolName: app_enable_switch
+  input: {}
+```
+
+### Fallback (CLI, no chrome-devtools MCP)
+
+```bash
+dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart webmcp verify --web-port 8080 \
+  --tool-name app_enable_switch --tool-args '{}'
+```
 
 ## Codegen & hooks
 
 ```bash
 dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart codegen sync \
   --platform web,android,ios,macos,linux,windows \
-  --project-dir flutter_test_app
+  --project-dir showcase/flutter_test_app
 
 dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart init intentcall-platform \
-  --project-dir flutter_test_app --check
+  --project-dir showcase/flutter_test_app --check
 ```
 
 | Artifact | Source |
 |----------|--------|
 | `web/intentcall_webmcp.generated.js` | `codegen sync` from `web/agent_manifest.json` |
 | `web/index.html` | `init intentcall-platform` script tag |
-| Dart bootstrap | `registerAgentWebMcpFromEntries` in `mcp_toolkit_extensions.dart` (debug web, after `addEntries`; `intentcall_platform`) |
+| Dart bootstrap | projection the app registers — showcase: `ShowcaseWebMcpProjection` (in `intentcall_showcase_bootstrap.dart`), wrapping `projectEntriesToWebMcp` from `intentcall_platform_sync`; wired via `MCPToolkitBinding.addEntryListener` (ADR-0016) |
 
 ## Runtime validate
 
@@ -2187,28 +2260,33 @@ Pass `--web-browser-debugging-port <cdp>` if CDP discovery fails.
 
 ## Known issues
 
-1. **Duplicate tool name** — generated JS + `registerAgentWebMcpFromEntries` both call `registerTool`; dedupe or gate one path (`agent_web_mcp_bootstrap_web.dart` name cache).
+1. **Duplicate tool name** — generated JS + the WebMCP projection (`projectEntriesToWebMcp`) both call `registerTool`; dedupe or gate one path (`agent_web_mcp_bootstrap_web.dart` name cache).
 2. **CDP probe** — `webmcp verify` may report `webmcp_active_log_evidence` while CDP `hasModelContext` is false (Flutter execution context).
 3. **Stale WS_URI** — always grep fresh token after hot restart before eval/validate.
+4. **Empty WebMCP list right after navigate** — wait until Dart hook / registration finishes, then list again.
+5. **Temp Chrome profile** — without `--user-data-dir`, Flutter wipes `chrome://flags` every stop/start.
+6. **Two browsers** — chrome-devtools MCP profile ≠ Flutter-launched Chrome unless you attach with `--browser-url=http://127.0.0.1:<cdpPort>`.
 
 ## Related
 
 - `docs/superpowers/evals/2026-05-26-webmcp-verification.md`
 - `flutter-mcp-cli-runtime-validation` — validate-runtime details
 - `flutter-mcp-toolkit-dogfood-iterations` — scored iterations
+- `flutter-mcp-e2e-harness` — programmatic scenarios over this showcase (`packages/harness`, `--web --detach` variant)
+- Chrome DevTools MCP: https://github.com/ChromeDevTools/chrome-devtools-mcp (WebMCP tools need `--categoryExperimentalWebmcp` + Chrome 149+)
 ''',
       relativePath: 'skills/flutter-mcp-toolkit-maintain-web/SKILL.md',
     ),
     SkillAsset(
       id: 'flutter-mcp-toolkit-maintain-macos',
       frontmatter: r'''name: flutter-mcp-toolkit-maintain-macos
-description: Maintains flutter_test_app macOS showcase, native intentcall hooks (codegen, app_links invoke), and VM MCP validation. Use when editing macOS Runner, intentcall_codegen.sh, macOS dogfood, Screen Recording capture, or comparing macOS parity to web WebMCP.''',
+description: Maintains showcase/flutter_test_app macOS showcase, native intentcall hooks (codegen, app_links invoke), and VM MCP validation. Use when editing macOS Runner, intentcall_codegen.sh, macOS dogfood, Screen Recording capture, or comparing macOS parity to web WebMCP.''',
       body: r'''
 <!-- @FMT_MODE_PRELUDE -->
 
 # Maintain macOS (showcase + native intentcall)
 
-Dogfood app: `flutter_test_app`. Platform doc: `flutter_test_app/INTENTCALL_PLATFORM.md`.
+Dogfood app: `showcase/flutter_test_app`. Platform doc: `showcase/flutter_test_app/INTENTCALL_PLATFORM.md`.
 
 ## WebMCP on macOS
 
@@ -2236,10 +2314,10 @@ Stop: `make showcase-stop`.
 ```bash
 dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart codegen sync \
   --platform web,android,ios,macos,linux,windows \
-  --project-dir flutter_test_app
+  --project-dir showcase/flutter_test_app
 
 dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart init intentcall-platform \
-  --project-dir flutter_test_app --check
+  --project-dir showcase/flutter_test_app --check
 ```
 
 | Target | Role |
@@ -2278,13 +2356,14 @@ bash tool/evals/run_dogfood_eval.sh \
 - `flutter-mcp-cli-runtime-validation` — doctor, capture backends, extensions
 - `flutter-mcp-toolkit-maintain-web` — WebMCP enablement
 - `flutter-mcp-toolkit-dogfood-iterations` — rubric + tracker
+- `flutter-mcp-e2e-harness` — programmatic scenarios over this showcase (`packages/harness`, showcase launcher)
 ''',
       relativePath: 'skills/flutter-mcp-toolkit-maintain-macos/SKILL.md',
     ),
     SkillAsset(
       id: 'flutter-mcp-toolkit-dogfood-iterations',
       frontmatter: r'''name: flutter-mcp-toolkit-dogfood-iterations
-description: Runs and records flutter_test_app dogfood iterations (tool_quality_rubric, run_dogfood_eval.sh, dogfood_web_eval.yaml). Use when scoring MCP/intentcall quality, appending iteration N, comparing regressions, or CI static/weekly eval gates.''',
+description: Runs and records showcase/flutter_test_app dogfood iterations (tool_quality_rubric, run_dogfood_eval.sh, dogfood_web_eval.yaml). Use when scoring MCP/intentcall quality, appending iteration N, comparing regressions, or CI static/weekly eval gates.''',
       body: r'''
 <!-- @FMT_MODE_PRELUDE -->
 
@@ -2398,6 +2477,326 @@ Full Chrome runtime dogfood stays **local** until headless WebMCP is cost-effect
 - `flutter-mcp-toolkit-repo-maintainer` — `make sync-skills` after editing this skill
 ''',
       relativePath: 'skills/flutter-mcp-toolkit-dogfood-iterations/SKILL.md',
+    ),
+    SkillAsset(
+      id: 'flutter-mcp-e2e-harness',
+      frontmatter: r'''name: flutter-mcp-e2e-harness
+description: Use this skill when writing or running repeatable E2E scenarios for Flutter apps as checked-in Dart with the `flutter_mcp_harness` package (`packages/harness`) — build/launch the app, attach to its VM service, drive widgets (snapshot/tap/enter text) and assert without MCP; also covers the repo showcase launcher (`make showcase`, `--web`, `--stop`) and multi-instance desktop compositions. For interactive assistant-driven debugging through MCP `fmt_*` tools, use `flutter-mcp` instead.''',
+      body: r'''
+<!-- @FMT_MODE_PRELUDE -->
+
+# Flutter MCP E2E Harness
+
+Golden path for **programmatic** E2E over the toolkit: `packages/harness`
+(`flutter_mcp_harness`) owns the whole lifecycle — build the app, launch the
+process, attach to its Dart VM service, and only then drive/assert. It speaks
+the same `ext.mcp.toolkit.*` service extensions as the MCP server, as plain
+Dart. ADR: `decisions/0015_flutter_mcp_harness_extraction.mdx`.
+
+The driving layer speaks the universal `AutomationDriver` contract
+(ADR-0038, `universal_automation_interface`): `ToolkitDriver` exposes the
+observe/act/verify loop (`snapshot` → semantic `AxNode` tree with refs and
+bounds; `perform` click/type/key/named-route-navigate/evaluate; `screenshot`
+PNG), so the same agent vocabulary drives Flutter apps, browsers
+(`CdpDriver`), and OS-native targets. `IntentDriverRouter` additionally
+routes an intent's `automation` hint (transport + verb + locator) onto the
+bound driver. Frame pipelines are deliberately NOT a harness dependency —
+they are composition-level (`showcase/drivers`, which also holds the live
+end-to-end drives: `make drive-flutter` / `drive-flutter-chrome` /
+`drive-web`).
+
+| Need | Use |
+|---|---|
+| Repeatable scenario as code, CI-friendly exit codes | this skill (`flutter_mcp_harness`) |
+| One-off interactive debugging from chat/editor | `flutter-mcp` (MCP `fmt_*` tools) |
+| Browser/WebMCP dogfood of the web showcase | `flutter-mcp-toolkit-maintain-web` |
+| Live end-to-end showcase drives (both tiers) | `showcase/drivers` (`make drive-flutter` / `drive-web`) |
+
+## Launch paths (pick by ownership)
+
+The #1 rule: **at most one owning session per app.** A second
+`flutter run`/`flutter attach` on a session someone else owns is the
+ADR-0014 failure mode (the second attach can kill the first).
+
+| Target | When | Notes |
+|---|---|---|
+| `FlutterRunTarget` | You want the flutter tool to own build + hot reload (`r`/`R`/`q` via stdin). The showcase launch path. | `device` (`macos`, `chrome`, …), `extraArgs`, `onLine` tee for long cold builds; VM URI scraped from the tool's own announcement. |
+| `BinaryAppTarget` / `MacosAppTarget` / `WindowsAppTarget` | Fresh full `flutter build <os> --debug` → launch the binary directly. No compile channel afterwards. | Pass `launch(build: false)` to reuse an existing binary. Never opens an owning session. |
+| External runner (e.g. `oka dev`) owns the app | Construct `LaunchedApp` directly around the owning process and read the VM URI from the runner-session contract, not stdout. | This package never imports the runner; callers wire it (`LaunchedApp(name:, process:, stdout:, vmUri:)`). |
+
+`FlutterRunTarget.launch(build:)` ignores the flag — `flutter run` always
+builds. A failed bring-up reaps the session (SIGTERM → child-reaping pkill →
+SIGKILL) before rethrowing.
+
+## Scenario anatomy
+
+```dart
+final scenario = Scenario('checkout E2E', steps: [
+  ('launch app', (context) async {
+    final app = await MacosAppTarget(projectDir: appDir, binaryPath: binary)
+        .launch(build: build);
+    launched = app;                       // for finally-stop
+    await app.stdout.waitFor('app ready'); // no sleeps — wait on logs
+    context.bag['app'] = app;             // hand values between steps
+  }),
+  ('drive + assert', (context) async {
+    final driver = WidgetDriver(await context.take<LaunchedApp>('app').vm());
+    final ref = await driver.findRef('checkout');
+    if (ref == null) return context.report.fail('no checkout button');
+    await driver.tap(ref);
+    final total = await driver.findValue((v) => v.startsWith(r'$'));
+    total != null
+        ? context.report.pass('total rendered: $total')
+        : context.report.fail('no total in snapshot');
+  }),
+]);
+
+var passed = false;
+try {
+  passed = await scenario.run();
+  scenario.report.printSummary();
+} finally {
+  await launched?.stop();                 // cleanup always runs
+}
+exit(passed ? 0 : 1);
+```
+
+- Steps run in order; first failure (thrown **or** `report.fail`) aborts the
+  rest — cleanup still happens in the caller's `finally`.
+- `HarnessContext.bag` passes values between steps; `take<T>(key)` reads them.
+- `retry(action)` polls until non-null (for app-side readiness races).
+- Full two-instance composition root: `packages/harness/example/desktop_pair.dart`.
+
+## Driving widgets (`WidgetDriver`)
+
+- `snapshot()` → `(label, ref)` pairs; `findRef(needle)` is case-insensitive
+  substring + retry until timeout.
+- `tap(ref)`, `tapUntil(ref, until: …)` (re-tap until a predicate fires),
+  `enterText(ref, text)`, `scroll(direction:, distance:)` — off-screen
+  semantics only exist once scrolled into view.
+- `findValue(predicate)` reads a node's selectable-text **`value`** — the
+  deterministic way to read app-rendered data (clipboards and icon-only copy
+  buttons are not).
+- Cold-attach race: the app may not have registered the toolkit yet when you
+  attach. The driver answers RPC error `-32601` with an empty snapshot so
+  `findRef`'s retry loop rides it out instead of aborting — do not treat one
+  empty snapshot as proof the UI is empty.
+- `VmClient` extras: `extensionNames()` (discoverability), `evaluate(expr)`,
+  `hotReload()`. Raw `reloadSources` **cannot compile** without an owning
+  `flutter run`/`attach` session — treat `true` as "asked", not "recompiled".
+
+## Showcase launcher (`packages/harness/tool/showcase.dart`)
+
+```bash
+make showcase        # macOS showcase, interactive foreground (r/R/q relayed)
+make web-showcase    # Chrome + WebMCP flags; WEB_PORT/VM_HOST_PORT/FLIGHT… env
+make showcase-stop   # kill stray sessions, free VM port 8181 (idempotent)
+```
+
+- `--web --detach` (or `make`-less `dart run packages/harness/tool/showcase.dart --web --detach`)
+  spawns headless-ish, waits for the `ws://` VM URI in `.showcase/web_app.log`,
+  prints `WS_URI=…`, exits 0 — the CI-friendly variant.
+- Artifacts under `.showcase/`: `flutter_app.log` / `web_app.log` (teed
+  output) and `flutter.pid` / `web_flutter.pid` pid files.
+- IntentCall doors (second terminal, against the running showcase):
+  `dart run packages/harness/tool/intentcall_session.dart
+  [demo|serve-link|serve-debug]` — resolves the VM service URI from the
+  showcase log (`--vm-service-uri` pins one) and the IntentCall CLI from
+  `INTENTCALL_ROOT`, sibling checkouts, or `PATH`.
+- Interactive mode tees every line to the log (which `make exec-sweep` greps)
+  and tears the session down on exit or Ctrl-C.
+- WS URI for follow-up calls: `grep -Eo 'ws://127\.0\.0\.1:[0-9]+/[A-Za-z0-9_=-]+/ws' .showcase/flutter_app.log | tail -1`.
+
+## Hard boundaries
+
+- **No new toolkit verbs.** `ToolkitExtensions` mirrors
+  `mcp_toolkit/lib/src/toolkits/interaction_toolkit.dart`; keep the lists in
+  lockstep — drift is caught by extension calls failing at runtime today
+  (shared-constants follow-up will make it a compile error).
+- **No owned compile sessions** in `BinaryAppTarget` — full fresh builds only.
+- **No declarative scenario documents** (YAML runners) — those live in the
+  external `flutter_harness` repo (ADR-0012). Composition roots are
+  consuming-project code (see `example/`).
+- Android/iOS device bring-up is delegated to the owning dev session
+  (`oka_harness`, ADR-0014) — not this package.
+
+## Verify
+
+```bash
+cd packages/harness && dart test        # unit tests (canned envelopes, fake flutter)
+dart run example/desktop_pair.dart --skip-build
+```
+
+## Related
+
+- `flutter-mcp` — the interactive MCP loop over the same extensions
+- `flutter-mcp-automation-chain` — cross-tier wiring for your own app (surface picker, oka integration, runner sessions)
+- `flutter-mcp-toolkit-maintain-macos` / `-maintain-web` — showcase + platform lanes
+- `packages/harness/README.md`, ADR-0014 (runner delegation), ADR-0015 (extraction)
+''',
+      relativePath: 'skills/flutter-mcp-e2e-harness/SKILL.md',
+    ),
+    SkillAsset(
+      id: 'flutter-mcp-automation-chain',
+      frontmatter: r'''name: flutter-mcp-automation-chain
+description: Use this skill when wiring automation for a Flutter app — choosing the right surface (interactive MCP `fmt_*` tools, CLI one-shots, programmatic `flutter_mcp_harness` Dart scenarios, the browser CDP tier, or an external build+lifecycle runner like oka), composing the chain end-to-end, or integrating `oka` (`oka init`/`dev`/`run`, device targets, the runner-session contract, `driverForLiveSession`). Also use when the user asks which tier or mode to use, how to drive/build their app from Dart or CI without a chat round-trip, or how oka and flutter-mcp-toolkit fit together. For authoring repeatable scenarios inside this repo's showcase, use `flutter-mcp-e2e-harness`; for interactive debugging, use `flutter-mcp`.''',
+      body: r'''
+<!-- @FMT_MODE_PRELUDE -->
+
+# Flutter MCP Automation Chain
+
+The toolkit's surfaces are **one chain, not competing products**. The app
+registers `ext.mcp.toolkit.*` service extensions (`mcp_toolkit`), and every
+surface drives those same extensions through the universal `AutomationDriver`
+contract (`universal_automation_interface`, ADR-0038): **observe** (semantic
+snapshot with refs/bounds) → **act** (tap/type/navigate) → **verify**
+(snapshot again, read values). Agents learn one grammar regardless of the
+target — Flutter apps, browsers (`CdpDriver`), OS-native tiers.
+
+```text
+ intentcall hints (MCP _meta)                     declarative build + lifecycle
+        │                                         (oka: oka.yaml → targets)
+        ▼                                                │
+ ┌──────────────┐   transport over ext.mcp.toolkit.*   ▼
+ │ MCP fmt_*    │ ◄── the same extensions ──►  flutter_mcp_harness
+ │ CLI (fmtk)   │      (ToolkitDriver implements      Scenario / AppTargets /
+ │ dynamic      │       AutomationDriver)             VmClient / LogTap
+ │ app tools    │
+ └──────────────┘ ◄── universal_automation_* contracts ──► CdpDriver (web)
+```
+
+## The one ownership law
+
+**At most one owning attach session per app.** The owning session (a `flutter
+run`, or an external runner's `dev` command like `oka dev`) is the only
+compile-capable reload channel — a second attach on a session someone else
+owns is the ADR-0014 failure mode (the second attach can kill the first).
+Everything else in the chain is an **observer**: it reads the same VM service
+and drives extensions, but never takes ownership. When an external runner owns
+the session, it writes `.flutter_mcp/runner-session.json` (spec v2, ADR-0014)
+so the toolkit and harness can find the VM and delegate reload/restart to the
+owner. Absence of the file is the liveness signal.
+
+## Pick the surface
+
+| Need | Surface | Skill / doc |
+|---|---|---|
+| Chat-driven debugging ("tap X, what changed?") | MCP `fmt_*` tools | `flutter-mcp` |
+| Script/CI one-shot commands (snapshot, exec, batch) | CLI (`flutter-mcp-toolkit` / `fmtk`) | [CLI vs MCP](/start_here/cli_vs_mcp) |
+| Repeatable scenario as checked-in Dart, CI exit codes | `flutter_mcp_harness` | `flutter-mcp-e2e-harness` |
+| Build + install + launch + process lifecycle (Android/iOS devices) | **oka** (separate repo) | this skill, oka section below |
+| Browser tier (web demos, WebMCP dogfood) | `CdpDriver` over CDP | `flutter-mcp-toolkit-maintain-web` |
+| Intent → driver routing without hardcoding transport | `IntentDriverRouter` + hints | this skill, intentcall section |
+
+## First loop: interactive MCP (five minutes)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Arenukvern/mcp_flutter/main/install.sh | bash
+cd my-flutter-app
+flutter-mcp-toolkit codegen-init        # adds mcp_toolkit + emits main.dart snippet
+flutter-mcp-toolkit init claude-code    # or: cursor | codex | cline | all
+flutter run --debug
+```
+
+The agent now inspects, taps, types, hot-reloads, and reads logs over MCP.
+This is the fastest path and needs nothing else on this page.
+
+## Second loop: own the lifecycle in Dart
+
+For CI or test batteries that must not depend on a chat session, add the
+published harness to your project and compose a scenario:
+
+```yaml
+# pubspec.yaml (hosted package)
+dependencies:
+  flutter_mcp_harness: ^0.1.0
+```
+
+```dart
+final app = await MacosAppTarget(projectDir: '.', binaryPath: binary).launch();
+final driver = ToolkitDriver(await app.vm());
+final ref = await driver.findRef('login');      // snapshot refs are stable ids
+// …perform click/type, re-snapshot, read values…
+await app.stop();                                // scenarios stop what they started
+```
+
+Desktop targets (`FlutterRunTarget`, `BinaryAppTarget`, `MacosAppTarget`,
+`WindowsAppTarget`, `ChromeAppTarget`), `Scenario` anatomy, and the
+in-repo showcase launcher are covered step-by-step in
+`flutter-mcp-e2e-harness` — read it before writing your first scenario.
+
+## Third loop: device builds + lifecycle via oka
+
+oka (separate repo, `dart pub global activate oka`) owns **build + process
+lifecycle** so the toolkit can stay the observation oracle. You do **not**
+need oka unless you want declarative, no-Gradle device builds and owned dev
+sessions.
+
+```bash
+oka init            # scaffolds tool/oka_pipeline.dart — project-owned targets
+oka build apk       # no-Gradle Android pipeline, cached artifacts
+oka run device      # install → launch → failure-signature scan
+oka dev             # owning dev session; agents: oka dev --watch --json (JSON events + stdin control)
+```
+
+Consuming projects compose `oka_harness` (which depends on the published
+`flutter_mcp_harness`) instead of shelling out:
+
+- `AndroidAppTarget` / `IosSimulatorAppTarget` — launch device/simulator apps
+  with the same `AppTarget` contract as desktop tiers.
+- `driverForLiveSession(projectDir)` — attach a driver to a session **oka
+  already owns** (read the signature and `example/emulator_smoke.dart` in the
+  oka repo's `packages/oka_harness/`; never launch a second owner).
+- While `oka dev` owns the app, MCP `fmt_*` tools attach as usual — the
+  server reads `.flutter_mcp/runner-session.json` and delegates
+  reload/restart to the runner (ADR-0014 spec v2).
+
+Division of labor (ADR-0024/0027, oka repo): oka owns compile/sync and
+process lifecycle; the toolkit is the observation oracle. The CLI is
+canonical; MCP is an adapter.
+
+## intentcall hints (declarative routing)
+
+A registered intent can carry an `IntentAutomationHint` (transport + verb +
+locator) on its MCP `_meta`. `IntentDriverRouter` in `flutter_mcp_harness`
+resolves that hint onto a bound `AutomationDriver`, so callers route
+automation declaratively instead of hardcoding which surface performs it.
+See `packages/harness/lib/src/intent_driver_router.dart` and
+[IntentCall consumer guide](/intentcall/README).
+
+## Hard boundaries
+
+- **One owning session per app.** Observers (MCP tools, harness drivers) must
+  not start a second compile-capable attach; construct `LaunchedApp` around a
+  runner-owned process instead of launching a competing one.
+- **The toolkit never imports a runner.** Runner identity comes from the
+  discovery file, never from code (spec v2 inversion).
+- **No declarative YAML scenarios here** — the document runner lives in the
+  external `flutter_harness` repo (ADR-0012); composition roots are
+  consuming-project code.
+- **New toolkit verbs land in `mcp_toolkit` first**; harness extensions
+  mirror that list.
+
+## Related
+
+- `flutter-mcp` — the interactive MCP loop
+- `flutter-mcp-e2e-harness` — scenario authoring, launch-path table, showcase launcher
+- [The Automation Chain](/start_here/automation_chain) — first-time guide
+- [Dev-session delegation roadmap](/guides/dev-session-delegation-roadmap) — spec v2 contract in full
+- [E2E Scenarios](/guides/e2e_scenarios) · [CLI vs MCP](/start_here/cli_vs_mcp)
+
+## Sources
+
+- `decisions/0014_external_dev_sessions_runner_delegation.mdx` — runner-session contract (spec v2)
+- `decisions/0015_flutter_mcp_harness_extraction.mdx` — harness extraction and boundaries
+- `decisions/0012_fmtk_cli_alias_and_harness_boundary.mdx` — CLI/harness boundary
+- oka repo ([github.com/Arenukvern/oka](https://github.com/Arenukvern/oka)):
+  `packages/oka_harness/` (targets, `driverForLiveSession`),
+  `docs/decisions/0027-oka-harness-device-targets.mdx` (hosted
+  `flutter_mcp_harness` consumption), `docs/decisions/0024-declarative-test-workflows-and-agent-adapters.mdx`
+  (oracle/adapter layering)
+''',
+      relativePath: 'skills/flutter-mcp-automation-chain/SKILL.md',
     ),
   ];
 

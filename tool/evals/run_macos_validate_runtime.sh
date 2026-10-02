@@ -16,7 +16,7 @@ fi
 
 "${toolkit[@]}" \
   --flutter-device macos \
-  --flutter-project-dir "${repo_root}/flutter_test_app" \
+  --flutter-project-dir "${repo_root}/showcase/flutter_test_app" \
   validate-runtime \
   --target "${ws_uri}" \
   --timeout-ms "${timeout_ms}" \

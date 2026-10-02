@@ -23,7 +23,7 @@ usage() {
 Usage: tool/evals/run_runtime_enter_text_greeting.sh [options]
 
 Options:
-  --ws-uri URI       VM websocket URI for a running flutter_test_app showcase
+  --ws-uri URI       VM websocket URI for a running showcase/flutter_test_app showcase
   --output PATH      Evidence JSON path
   --text TEXT        Text to enter (default: steward runtime proof)
   --platform NAME    Runtime platform label (default: macos)

@@ -24,8 +24,10 @@ check-contracts:
 	bash tool/contracts/check_tool_prefix.sh && \
 	bash tool/contracts/check_repo_split_paths.sh && \
 	bash tool/contracts/check_intentcall_hosted_consumer.sh && \
+	bash tool/contracts/check_apple_runner_compile.sh && \
+	bash tool/contracts/check_intentcall_jaspr_three_gate.sh && \
 	bash tool/contracts/check_mcp_registry.sh && \
-	 steward validate skills/
+	steward validate skills/
 
 .PHONY: release-artifacts
 release-artifacts:
@@ -42,22 +44,43 @@ publish-pub-dry-run:
 publish-pub:
 	cd $(CURDIR) && bash tool/release/publish_pub_packages.sh --execute --skip-existing
 
-# Run the flutter_test_app showcase on macOS and print the canonical VM URI
-# once the app is ready. Blocks the terminal so the agent can copy the URI
-# into subsequent CLI calls (`--args '{"connection":{"targetId":"<uri>"}}'`).
+# Run the showcase/flutter_test_app showcase on macOS and print the VM URI.
+# IntentCall doors (discover, tool call, MCP serve) live in
+# packages/harness/tool/intentcall_session.dart — run it in a second
+# terminal once the showcase is up: … intentcall_session.dart demo
+# Dart rewrite of the former scripts/*.sh (ADR-0015); the .sh files are wrappers.
 .PHONY: web-showcase webmcp-chrome-args
 web-showcase:
-	@bash $(CURDIR)/scripts/run_web_showcase.sh
+	@cd $(CURDIR) && dart run packages/harness/tool/showcase.dart --web
 
 webmcp-chrome-args:
 	dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart webmcp chrome-args
 
 .PHONY: showcase showcase-stop
 showcase:
-	@bash $(CURDIR)/scripts/run_showcase.sh
+	@cd $(CURDIR) && dart run packages/harness/tool/showcase.dart
 
 showcase-stop:
-	@bash $(CURDIR)/scripts/stop_showcase.sh
+	@cd $(CURDIR) && dart run packages/harness/tool/showcase.dart --stop
+
+# Drive the showcase examples end-to-end (showcase/): the instrumented
+# Flutter tier (ToolkitDriver over the VM service) and the browser tier
+# (CdpDriver over CDP) through one AutomationDriver contract.
+# Drive programs are showcase composition roots (showcase/drivers/): they
+# own the pipeline policy so flutter_mcp_harness stays pipeline-free.
+.PHONY: drive-flutter drive-flutter-chrome drive-web
+drive-flutter:
+	@cd $(CURDIR) && dart run showcase/drivers/bin/drive_flutter.dart
+
+drive-flutter-chrome:
+	@cd $(CURDIR) && dart run showcase/drivers/bin/drive_flutter.dart --device chrome
+
+drive-web:
+ifdef VISIBLE
+	@cd $(CURDIR) && dart run showcase/drivers/bin/drive_web.dart --visible
+else
+	@cd $(CURDIR) && dart run showcase/drivers/bin/drive_web.dart
+endif
 
 .PHONY: exec-sweep exec-sweep-web
 exec-sweep:

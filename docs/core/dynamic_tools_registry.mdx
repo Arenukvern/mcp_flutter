@@ -80,10 +80,12 @@ import 'package:flutter/material.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 
 Future<void> main() async {
+  if (kDebugMode) {
+    await MCPToolkitBinding.instance.addEntries(
+      entries: await buildDynamicEntries(),
+    );
+  }
   await MCPToolkitBinding.instance.bootstrapFlutter(
-    additionalEntries: kDebugMode
-        ? await buildDynamicEntries()
-        : const <AgentCallEntry>{},
     runApp: () => runApp(const MyApp()),
   );
 }

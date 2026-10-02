@@ -5,6 +5,7 @@ export 'src/commands/core_commands.dart';
 export 'src/connection/connection_override.dart';
 export 'src/tools/interaction_input_schemas.dart';
 export 'src/runtime_version.dart';
+export 'src/toolkit_extension_names.dart';
 export 'src/types/capabilities_model.dart';
 export 'src/types/error_codes.dart';
 export 'src/types/results.dart';

@@ -1,0 +1,108 @@
+# ADR 0015 — `flutter_mcp_harness`: the programmatic harness core extracted from production
+
+- **Status:** Accepted
+- **Shipped:** Unreleased
+- **Authoritative source:** `packages/harness/`
+- **Depends on:** ADR-0012 (harness boundary), ADR-0014 (external dev
+  sessions / runner delegation)
+
+## Context
+
+The toolkit's driving primitives (`ext.mcp.toolkit.*` service extensions,
+the `fmt_*` MCP surface) had no programmatic Dart client. Every repeatable
+E2E loop over them had to go through an MCP session or shell out to the
+`fmtk` CLI, which contradicts the pattern that made them valuable: owned
+process lifecycle, typed calls, assertable logs.
+
+An external harness attempt (`flutter_harness`, HS v1) put a declarative
+YAML runner *on top of* the MCP server and never owned app build/launch —
+it could not get out of its own way under automation. A second iteration
+was built inside the [vosges](https://github.com/Arenukvern/vosges) project
+(`vosges_harness`, ~500 lines, deps: `vm_service` + `path`) and now runs
+the project's desktop↔desktop and desktop↔phone E2E loops in production:
+fresh debug build → direct binary launch → VM service attach →
+`WidgetDriver` over the toolkit extensions → recorded assertions. Only
+~40 of its ~500 lines are vosges-specific (pairing-payload sniffing, env
+conventions, scenario composition roots).
+
+That dogfood validated the design; the code is generic and deserves an
+ecosystem home. ADR-0012 assigned *scenario documents* to `flutter_harness`
+and kept the toolkit on primitives; this decision slots the missing layer
+between them — the programmatic client of those primitives — without
+reopening either boundary.
+
+## Decision
+
+Extract the harness core into this monorepo as `flutter_mcp_harness`
+(`packages/harness`):
+
+- `LogTap` — bounded line buffer with `waitFor(pattern)`.
+- `Scenario`/`Check`/`HarnessContext`/`retry` — composable steps with
+  recorded assertions and cleanup-safe failure.
+- `VmClient` — VM service attach (WebSocket), extension calls, evaluate,
+  reload.
+- `WidgetDriver` — snapshot/tap/enterText/findValue over the toolkit
+  extensions; `ToolkitExtensions` carries the verb-name list.
+- `AppTarget`/`LaunchedApp` with `BinaryAppTarget` (fresh debug build →
+  direct binary launch → stdout VM-URI scrape) and `MacosAppTarget` /
+  `WindowsAppTarget` presets.
+- `FlutterRunTarget` — the owning interactive `flutter run` session
+  (device + extra args; hot reload via stdin relay). This is the launch
+  primitive behind the repo's showcase, now `packages/harness/tool/showcase.dart`
+  — the Dart rewrite of `scripts/run_showcase.sh` / `run_web_showcase.sh` /
+  `stop_showcase.sh` (which remain as deprecated wrappers for existing
+  references). It is a *first* owner, so it never hits the ADR-0014
+  second-attach hazard.
+
+Boundaries this package keeps:
+
+- **No new toolkit verbs.** It consumes the existing `ext.mcp.toolkit.*`
+  surface; the verb names are mirrored in `ToolkitExtensions` with the
+  toolkit's interaction toolkit as source of truth (follow-up: route the
+  registration literals through a shared core constants file so drift is a
+  compile error).
+- **No owned compilation sessions.** `BinaryAppTarget` performs full fresh
+  builds and launches the binary directly — it never opens an owning
+  `flutter run`/`flutter attach` session, so it never competes with an
+  ADR-0014 runner over reload/compile. When an external dev session owns
+  the app, connect to its published `vm_service_uri` directly.
+- **No scenario documents.** Composition roots are consuming-project
+  knowledge (`example/` shows the shape); the declarative-document layer
+  stays with `flutter_harness` per ADR-0012.
+
+Extraction companion: oka gains `oka_harness`
+([oka ADR-0026](https://github.com/Arenukvern/oka/blob/main/docs/decisions/0026-oka-harness-device-targets.mdx)),
+which implements the device (Android) half as an `AppTarget` delegated to
+the owning `oka dev` session, reading the VM URI from the
+`.flutter_mcp/runner-session.json` contract (ADR-0014) instead of stdout
+scraping.
+
+## Considered Options
+
+- **Keep the core in vosges only** — rejected: it duplicates a
+  project-independent concern in every Flutter project that needs E2E; the
+  vosges loop was the proving ground, not the natural home.
+- **Put it in the `flutter_harness` repo** — rejected for now: that repo's
+  identity is declarative HS documents + adapters over a *running* app
+  (`--connection auto`); hosting the lifecycle core there would repeat the
+  original failure mode. Re-coring its runner on this package is the
+  planned follow-up.
+- **Put it in oka** — rejected for the driving layer: it speaks the toolkit
+  protocol, so it belongs beside `mcp_toolkit` where renames break CI
+  instead of production. oka gets the lifecycle half (`oka_harness`), which
+  is where its build/launch domain lives.
+- **Extend `mcp_server_dart` with a "scenario" mode** — rejected: the
+  server is the MCP transport; embedding a test runner in it conflates
+  interactive agent sessions with repeatable CI loops (the ADR-0012
+  boundary).
+
+## Consequences
+
+- E2E loops over the toolkit no longer need MCP or `fmtk` subprocesses.
+- The vosges project depends on this package for its harness core; its
+  scenarios stay project-local.
+- Device bring-up splits across repos by ownership: desktop binaries here,
+  Android device sessions in `oka_harness` (which shells `oka dev` — the
+  CLI verbs remain the stable surface).
+- `grep -ri oka` over this package returns zero hits (ADR-0014 acceptance
+  rule); the runner-session contract is consumed by callers, not imported.

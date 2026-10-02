@@ -68,7 +68,7 @@ set `apply: true` to rewrite files on the host. CLI equivalent:
 
 ## Platform hooks (native + web)
 
-One-time project setup (dogfood: [flutter_test_app/INTENTCALL_PLATFORM.md](../../flutter_test_app/INTENTCALL_PLATFORM.md)):
+One-time project setup (dogfood: [flutter_test_app/INTENTCALL_PLATFORM.md](../../showcase/flutter_test_app/INTENTCALL_PLATFORM.md)):
 
 ```bash
 flutter-mcp-toolkit init intentcall-platform --project-dir path/to/flutter_app

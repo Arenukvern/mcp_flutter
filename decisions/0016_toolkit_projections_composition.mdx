@@ -1,0 +1,182 @@
+# ADR 0016 — Toolkit projections: compositional platform surfaces
+
+- **Status:** Accepted
+- **Date:** 2026-10-01
+- **Authoritative source:** `mcp_toolkit/lib/src/toolkit_projection.dart` (the SPI),
+  `MCPToolkitBindingBase.projections` / `addProjection` (the attach point)
+
+## Context
+
+`mcp_toolkit` hard-wired one platform tier into core: on `kIsWeb` it called
+`registerAgentWebMcpFromEntries(_allEntries)` from `intentcall_platform_sync`,
+with the sync package's **default** `IntentCallAuthorizationPolicy
+.debugAllowAll()`. Three composition failures followed from that one call:
+
+1. **Dependency forcing.** Depending on the web bootstrap dragged
+   `intentcall_platform` (federated Android/Apple plugins, `app_links`
+   deep-link plugin, `intentcall_bridge`) into every consumer app, whether or
+   not it targeted those platforms. Manifest merges and plugin registrars are
+   build artifacts — tree shaking does not remove them.
+2. **Silent security posture.** The authorization policy for the WebMCP
+   surface was chosen inside the toolkit, invisibly to the app. The showcase,
+   by contrast, passes an explicit allowlist to `IntentCallFlutterHost`.
+3. **No shape for the next tier.** Every future surface (a native
+   AppIntents projection, an oka session projection, screencast) would have
+   been another flag on `bootstrapFlutter` — configuration-by-arguments.
+
+## Prior art
+
+**oka** (sibling repo) composes through a project-owned typed composition
+root (`tool/oka_pipeline.dart`): const-constructible steps/targets, each
+`BuildStep` declaring `requires`/`provides` artifact sets so the pipeline
+wires by capability, not by flags. "Composition owns pipelines; libraries own
+contracts."
+
+**Flutter** solves per-platform inclusion at **package resolution**: an
+app-facing federated plugin (`url_launcher`) declares
+`plugin.platforms.<platform>.default_package`, and pub resolves only the
+implementations for platforms the app actually builds — a web-only project
+never compiles `url_launcher_android`. Within packages, platform code is
+selected by conditional imports (`.io.dart` / `.web.dart`); `kIsWeb` /
+`defaultTargetPlatform` switch *behavior*, never *inclusion*.
+
+The toolkit needs inclusion driven by **explicit app intent** (each surface
+carries an authorization policy, so the app must choose it), which makes the
+oka-style composition root the right primary mechanism: the app names its
+projections, and — because each projection lives in its own package — the
+dependency graph itself delivers Flutter's resolution-time platform
+selection as a side effect. A platform the app does not name is a package it
+does not depend on.
+
+## Decision
+
+1. **The core grows exactly one abstraction**: `ToolkitProjection` with
+   `entriesChanged(Set<AgentCallEntry> entries)` — full-set semantics,
+   matching how VM-service extensions re-register. `MCPToolkitBindingBase`
+   holds `projections` + `addProjection`. No flags, no platform imports.
+2. **Each platform tier becomes a projection owned by the package that owns
+   the tier.** Web: wraps `projectEntriesToWebMcp` (upstream rename of
+   `registerAgentWebMcpFromEntries`) with a **required explicit policy**.
+   Native: the showcase's `IntentCallFlutterHost` bootstrap, packaged as
+   `AppIntentsProjection` in `intentcall_platform_flutter`.
+3. **mcp_toolkit core depends on `intentcall_core` + `intentcall_schema`
+   only** — no platform packages. Consumer apps add exactly the projection
+   packages they use:
+   ```dart
+   // main.dart — the composition root
+   MCPToolkitBinding.instance
+     ..addProjection(WebMcpProjection(policy: myPolicy))
+     ..addProjection(AppIntentsProjection(policy: myPolicy));
+   ```
+4. **The hard-wired `kIsWeb` registration is removed** (not deprecated
+   behind a flag — a flag would preserve the anti-pattern). The behavior
+   change (web apps must add one line) ships in the next toolkit release
+   with a migration note; web apps that relied on it add a `WebMcpProjection`.
+
+## Alternatives rejected
+
+- **`enableWebMcpProjection: true` flag on bootstrapFlutter** — keeps
+  configuration-by-arguments and a core→platform dependency behind a boolean.
+- **Federated-plugin auto-resolution** (default_package per platform) —
+  automatic, but hides the policy choice; wrong default for an authorization
+  surface. Revisit only as an opt-in convenience meta-package.
+- **Platform-interface pattern** — designed for *implementers* of one
+  abstraction, not for stacking independent surfaces.
+
+## Upstream migration (intentcall)
+
+1. Rename `registerAgentWebMcpFromEntries` → `projectEntriesToWebMcp`
+   (verb what it does; drop "Agent"); keep the old name `@Deprecated` one
+   train.
+2. Ship `WebMcpProjection` in `intentcall_platform_sync` (pure Dart) and
+   `AppIntentsProjection` in `intentcall_platform_flutter` — policy required,
+   no defaults.
+3. Keep `intentcall_bridge` a first-class direct dependency of
+   `intentcall_platform` (cross-app handoff hosts may consume it directly);
+   consumers never declare what they do not import.
+
+## Consequences & follow-ups
+
+- Consumer `mcp_toolkit` pubspecs shrink to the tiers they use; hosted CI
+  resolution shrinks with them.
+- `bootstrapFlutter` remains lifecycle-only; per-feature flags migrate to
+  projections as tiers appear.
+- Future: an `explain`-style `describeProjections()` debug dump (oka
+  `oka explain --targets` analog); projections may adopt oka-style
+  `requires`/`provides` capability contracts if wiring grows beyond
+  entry-set fan-out.
+- Showcase owns `ShowcaseWebMcpProjection` until upstream ships the real
+  class (composition owns wiring; see `intentcall_showcase_bootstrap.dart`).
+
+## Addendum 2 (same day): upstream landed + the schema-validator bug behind it
+
+1. **Rename shipped upstream** (intentcall `intentcall_platform_sync`):
+   `registerAgentWebMcpFromEntries` → `projectEntriesToWebMcp`,
+   `registerAgentWebMcpFromRegistry` → `projectRegistryToWebMcp`. The old
+   names were **removed outright, not deprecated**: the pre-rename names
+   shipped only inside the 0.7.0 train published hours earlier, with no
+   consumer expected to pin them, and the Flutter host + tests were
+   migrated in the same pass. Consumer migration path:
+   [Migrating to projections & composition](/start_here/migration_toolkit_projections) —
+   which also covers the released `mcp_toolkit` 5.1.0 hard-wire (the one
+   real consumer of the old behavior: automatic WebMCP registration on
+   web, with an implicit `debugAllowAll()` policy).
+2. **`WebMcpProjection` shipped upstream** in `intentcall_platform_sync`
+   (pure Dart): required explicit `policy`, duck-typed
+   `entriesChanged(Set<AgentCallEntry>)` shape. mcp_toolkit gained
+   `addEntryListener(...)` so duck-typed projections compose with zero glue
+   and zero cross-package imports. Consuming `WebMcpProjection` in
+   mcp_flutter is gated on the next intentcall publish (hosted CI compiles
+   against pub.dev).
+3. **`AppIntentsProjection` deliberately deferred.** The native tier is
+   install-once (`IntentCallFlutterHost.bindRegistry`: registry, policy,
+   deep links, wake signals, lifecycle drains) — it does not fit the
+   entries-driven `entriesChanged` SPI. Wrapping the host's knobs in a
+   projection now would freeze a bad shape. Needs a lifecycle-SPI decision
+   (`install()` hook on the projection interface, or host-direct stays the
+   documented native pattern) before the class exists.
+4. **The 5 pre-existing server test failures were an upstream validator
+   bug.** `intentcall_schema`'s `validateAgainstSchema` switched on Dart
+   `list` while consumer shared schemas use JSON-Schema `array` — every
+   array-typed argument was silently unvalidated (fill_form items.required,
+   semantic_snapshot fields type; coercion had the same gap, so wire-encoded
+   arrays also never decoded). Fixed upstream in
+   `schema_validator.dart`/`schema_coercion.dart` (both vocabularies
+   accepted) + regression tests; all 114 command_catalog /
+   interaction_catalog_validation server tests pass through the path
+   overrides.
+5. **Topological publish shipped upstream**: `intentcall publish-train`
+   computes the order from the pubspec dependency graph itself (the
+   hand-maintained `publishOrder` had the federated tail inverted and the
+   graph puts `bridge` first, `platform_apple`/`platform_android` before
+   `platform`, `cli` last), retries each package with backoff, skips
+   already-published versions, and continues after a package exhausts its
+   budget. `publish_train.yml` (workflow_dispatch, single run) is the
+   post-merge recovery path; per-tag `pub_publish.yml` stays for
+   stragglers. Membership remains governed by the `publishOrder` list so
+   dev packages (`intentcall_gemma`, `dart_acp_toolkit`) are excluded.
+
+## Addendum (same day): composition-style bootstrap + zero compile-time tool coupling
+
+Two follow-throughs landed with this ADR:
+
+1. **`bootstrapFlutter` split to composition.** `additionalEntries` and
+   `initializeFlutterToolkitEntries` are gone — both duplicated existing
+   composition units (`addEntries`) or had no users. `bootstrapFlutter` keeps
+   lifecycle only (`runApp`, `ensureInitialized`, `onZoneError`, `debugOnly`,
+   `protocolScheme`); apps wanting a fully custom entry set call
+   `initialize` + `addEntries` + `runApp` themselves. Taught workflow in
+   skills/docs updated: `addEntries(...)` before `bootstrapFlutter(...)`.
+2. **The server stops importing tool packages.** `intentcall_cli` (never
+   published — it blocked every hosted resolution) is replaced by runtime
+   discovery in `intentcall_delegate.dart`: `INTENTCALL_ROOT` → sibling
+   checkout → `intentcall` on PATH (`dart pub global activate
+   intentcall_cli`), spawning with inherited stdio and forwarding the exit
+   code — the same chain the harness's `intentcall_session.dart` uses.
+   `intentcall_platform` (whose 0.6.0 pull-in drags the never-published
+   federated `platform_apple`/`platform_android` into resolution) is swapped
+   for pure-Dart `intentcall_platform_sync` — both server call sites
+   (`kPlatformSyncTargets`, `emitAppIntentsTestingScaffold`) live there.
+   Net effect: every `intentcall_*` package this workspace resolves hosted
+   is on pub.dev at 0.7.0 today; no intentcall re-dispatch blocks an
+   `mcp_flutter` release.

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Exec every default-surface MCP command against a running flutter_test_app showcase.
+# Exec every default-surface MCP command against a running
+# showcase/flutter_test_app showcase.
 #
 # Prerequisites:
 #   macOS: make showcase-stop && make showcase  → export WS_URI from log
@@ -39,7 +40,7 @@ toolkit=(
 
 case "${platform}" in
   macos)
-    toolkit+=(--flutter-device macos --flutter-project-dir "${repo_root}/flutter_test_app")
+    toolkit+=(--flutter-device macos --flutter-project-dir "${repo_root}/showcase/flutter_test_app")
     ;;
   web)
     toolkit+=(--flutter-device chrome --web-browser-debugging-port "${WEB_BROWSER_DEBUGGING_PORT:-9222}")
@@ -541,7 +542,7 @@ fi
 run_tool get_recent_logs '{"count":10}' || true
 run_tool wait_for '{"predicate":{"kind":"time","ms":300},"timeoutMs":2000}' || true
 
-# Navigation + dialog (requires showcaseNavigatorKey in flutter_test_app)
+# Navigation + dialog (requires showcaseNavigatorKey in showcase/flutter_test_app)
 run_tool navigate '{"action":"push","route":"/visual-reconstruct"}' || true
 if [[ "${platform}" == "web" ]]; then
   run_tool navigate '{"action":"push","route":"/"}' || true
@@ -594,7 +595,7 @@ run_tool fmt_client_tool '{"toolName":"intentcall_bridge_ping","arguments":{"ech
 
 # migrate is a top-level subcommand, not exec
 printf '=== migrate agent-entries ===\n'
-if dart run "${repo_root}/mcp_server_dart/bin/flutter_mcp_toolkit.dart" migrate agent-entries --check "${repo_root}/flutter_test_app/lib" >"${outdir}/migrate_agent_entries.log" 2>&1; then
+if dart run "${repo_root}/mcp_server_dart/bin/flutter_mcp_toolkit.dart" migrate agent-entries --check "${repo_root}/showcase/flutter_test_app/lib" >"${outdir}/migrate_agent_entries.log" 2>&1; then
   printf 'PASS: migrate agent-entries\n'
   pass=$((pass + 1))
   results+=("PASS migrate agent-entries")

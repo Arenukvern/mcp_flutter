@@ -26,7 +26,9 @@ _Inspect and drive a running Flutter app from your AI assistant._
 - 📖 **Docs:** [docs.page/arenukvern/mcp_flutter](https://docs.page/arenukvern/mcp_flutter/)
 - 🤝 **Contribute:** [guide](docs/contributing/contribution_guide.mdx) · [contributors](docs/contributing/contributors.mdx) · [code of conduct](CODE_OF_CONDUCT.md) · [security](SECURITY.md)
 
-`flutter-mcp-toolkit` is a Dart MCP server + Flutter package for AI agents (Codex, Zed, Cursor, Intent, Claude Code, Cline, and more). Agents can inspect a running Flutter app, take semantic snapshots, tap widgets, type into forms, hot-reload, and read logs. Apps can also register their own MCP tools and resources at runtime via MCP Toolkit — all without leaving the conversation. The result is a closed feedback loop between agent and app; see [OpenAI Agentic Harness](https://openai.com/index/harness-engineering/) for an example of this pattern.
+`flutter-mcp-toolkit` is a Dart MCP server + Flutter package for AI agents (Codex, Zed, Cursor, Intent, Claude Code, Cline, and more). Agents can inspect a running Flutter app, take semantic snapshots, tap widgets, type into forms, hot-reload, and read logs. Apps can also register their own MCP tools and resources at runtime via MCP Toolkit — all without leaving the conversation. The result is a closed feedback loop between agent and app.
+
+And one step further: the toolkit is becoming a **chain of declarative automation APIs** — the same observe/act/verify vocabulary runs through interactive MCP (`fmt_*`), the CLI, programmatic Dart scenarios (`flutter_mcp_harness`), and declarative build+lifecycle runners like [oka](https://github.com/Arenukvern/oka), all over the universal `AutomationDriver` contract. See [The Automation Chain](docs/start_here/automation_chain.mdx). (OpenAI describes this pattern as [harness engineering](https://openai.com/index/harness-engineering/).)
 
 ![Watercolor comic infographic explaining flutter-mcp-toolkit: install fmtk, add it to a Flutter app, connect an AI agent, then inspect, tap, reload, and prove changes in a close feedback loop.](docs/assets/flutter-mcp-toolkit-infographic.png)
 
@@ -58,6 +60,8 @@ flutter run --debug
 That's it. Your AI agent can now inspect and drive the running app — and your app can expose **custom MCP tools at runtime** (see [Dynamic Tools Registration](#dynamic-tools-registration) below).
 
 ## 📰 News
+
+- **2026-10-01** — The toolkit is becoming a chain of declarative automation APIs: universal `AutomationDriver` contracts (`universal_automation_*`), the programmatic [`flutter_mcp_harness`](https://pub.dev/packages/flutter_mcp_harness) package, and [oka](https://github.com/Arenukvern/oka) as the build+lifecycle runner. New: [The Automation Chain](docs/start_here/automation_chain.mdx) guide + `flutter-mcp-automation-chain` skill.
 
 - **2026-07-11** - v4 new Live Demos records: [v4 semantic snapshot etc.. with Grok Build CLI](https://youtu.be/P0ObCyt0k3M), [v4 with IntentCall power - WebMCP projection](https://www.youtube.com/watch?v=mX4xxVeImq0)
 
@@ -105,10 +109,12 @@ Maintainers submitting to official stores: [marketplace submission runbook](docs
 
 - **[Docs for AI Agent and Human](https://docs.page/arenukvern/mcp_flutter)** - wiki + llms.txt
 - **[Migrating v2 → v3](docs/start_here/migration_v2_to_v3.mdx)** — `fmt_*` MCP tools, binaries, client config keys, `validate-runtime`.
+- **[Migrating to projections & composition](docs/start_here/migration_toolkit_projections.mdx)** — WebMCP auto-registration removal, `bootstrapFlutter` parameter removal, intentcall renames.
 - **[MCPCallEntry to AgentCallEntry migration](docs/start_here/migration_mcp_call_entry_to_agent_call_entry.md)** — `MCPCallEntry` removal, `AgentCallEntry`, platform `codegen sync`, `fmt_migrate_agent_entries`.
 - **[IntentCall consumer guide](docs/intentcall/README.md)** — hosted `intentcall_*` dependency policy, consumer proof gates, and the boundary between `mcp_flutter` and upstream IntentCall architecture.
 - **[Why this repo matters](docs/start_here/why_this_repo_matters.mdx)** — what it is, why it exists.
 - **[CLI vs MCP](docs/start_here/cli_vs_mcp.mdx)** — pick the right mode.
+- **[The Automation Chain](docs/start_here/automation_chain.mdx)** — why the chain exists; MCP/CLI/harness/oka tier picker and first loops.
 - **[Feature map](docs/start_here/feature_map.mdx)** — the 30 tools.
 - **[AI agent setup](docs/ai_agents/overview.mdx)** - for AI Agents.
 - **[Marketplace distribution](docs/ai_agents/marketplace_distribution.mdx)** — Claude, Cursor, Codex, skills.sh.
@@ -127,6 +133,39 @@ Maintainers submitting to official stores: [marketplace submission runbook](docs
 The server binary lives in `mcp_server_dart` and is shipped through GitHub
 Release artifacts as `flutter-mcp-toolkit`, `fmtk`, and
 `flutter-mcp-toolkit-server`; it is not a pub.dev package.
+
+## The automation chain
+
+Different surfaces own different parts of the lifecycle, and all of them
+drive the same `ext.mcp.toolkit.*` extensions through the universal
+[`AutomationDriver`](https://github.com/xsoulspace/dart_flutter_packages)
+contract (`universal_automation_*` family):
+
+| Tier | Surface | Best for |
+| --- | --- | --- |
+| Interactive MCP | `fmt_*` tools | chat-driven debugging and verification |
+| CLI | `flutter-mcp-toolkit` / `fmtk` | one-shot commands in scripts and CI |
+| Programmatic Dart | [`packages/harness`](packages/harness/README.md) — `flutter_mcp_harness` on pub.dev | repeatable scenarios as checked-in code |
+| Build + lifecycle | [oka](https://github.com/Arenukvern/oka) | declarative device builds, owned dev sessions |
+
+Guide: [The Automation Chain](docs/start_here/automation_chain.mdx) ·
+skill: `flutter-mcp-automation-chain`.
+
+The [`showcase/`](showcase/) folder holds examples that test the whole
+stack end-to-end — a minimal instrumented Flutter app
+([`showcase/flutter_demo`](showcase/flutter_demo/)) and a static web page
+([`showcase/web_demo`](showcase/web_demo/)) — each driven live by a
+checked-in composition root:
+
+```sh
+make drive-flutter   # instrumented tier: ToolkitDriver over the VM service
+make drive-web       # browser tier: CdpDriver over CDP (headless Chrome)
+```
+
+`packages/harness` implements the shared contract for the Flutter tier
+([`ToolkitDriver`](packages/harness/README.md#automation-drivers-universal_automation_-family)),
+so one observe/act/verify vocabulary covers Flutter apps, browsers, and
+OS-native targets — the same pipeline composition style oka uses.
 
 ## Development support
 

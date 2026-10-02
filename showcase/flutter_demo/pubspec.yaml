@@ -1,0 +1,48 @@
+name: flutter_demo
+description: >-
+  Showcase demo app for the Flutter MCP toolkit: a minimal instrumented
+  target (routes, counter, text field) the harness drives end-to-end.
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.13.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+  mcp_toolkit:
+    path: ../../mcp_toolkit
+
+# This app sits outside the mcp_flutter pub workspace (like
+# flutter_test_app), so the workspace's hosted-intentcall cutover is
+# mirrored here as path overrides.
+dependency_overrides:
+  flutter_mcp_toolkit_core:
+    path: ../../packages/core
+  intentcall_bridge:
+    path: ../../../intentcall/packages/intentcall_bridge
+  intentcall_core:
+    path: ../../../intentcall/packages/intentcall_core
+  intentcall_hooks:
+    path: ../../../intentcall/packages/intentcall_hooks
+  intentcall_platform:
+    path: ../../../intentcall/packages/intentcall_platform
+  intentcall_platform_android:
+    path: ../../../intentcall/packages/intentcall_platform_android
+  intentcall_platform_apple:
+    path: ../../../intentcall/packages/intentcall_platform_apple
+  intentcall_platform_sync:
+    path: ../../../intentcall/packages/intentcall_platform_sync
+  intentcall_schema:
+    path: ../../../intentcall/packages/intentcall_schema
+  intentcall_session:
+    path: ../../../intentcall/packages/intentcall_session
+  intentcall_webmcp:
+    path: ../../../intentcall/packages/intentcall_webmcp
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true

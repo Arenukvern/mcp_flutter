@@ -1,3 +1,19 @@
+# 5.2.0
+
+### Changed
+
+- Extension verbs (`semantic_snapshot`, `tap_widget`, …) are registered
+  through `flutter_mcp_toolkit_core`'s `ToolkitExtensionNames` — one
+  source of truth shared with driving clients, so a renamed verb is a
+  compile error instead of a runtime -32601.
+
+### Fixed
+
+- `navigate` / `handle_dialog` no longer require apps to wire a
+  `GlobalKey<NavigatorState>`: when `MCPToolkitBinding.instance.navigatorKey`
+  is unset, the toolkit walks the element tree for the root navigator
+  (debug/profile only). A wired key still pins the lookup explicitly.
+
 # 5.1.0
 
 - Align package version and hosted sibling dependency constraints with the Flutter MCP Toolkit 5.1.0 release.
@@ -63,8 +79,6 @@
 - Align package version and hosted sibling dependency constraints with the Flutter MCP Toolkit 4.0.0-dev train.
 
 # 4.0.0-dev.1
-
-## [Unreleased]
 
 ### Changed
 

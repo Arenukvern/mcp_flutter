@@ -7,6 +7,9 @@
 /// - Re-exports [intentcall_core] and [intentcall_schema] for a single import in apps.
 /// - Flutter binding: [MCPToolkitBinding], [addMcpTool], toolkits under `src/toolkits/`.
 /// - Authoring: [AgentCallEntry] (register with [MCPToolkitBinding.addEntries]).
+/// - Composable platform surfaces: [ToolkitProjection] + [addProjection] —
+///   projection implementations live in the packages that own their tier
+///   (web, native AppIntents); the core depends on none of them.
 /// - Legacy handler bridge: [mcpToolkitTool], [mcpToolkitResource] for
 ///   [MCPToolDefinition] + [MCPCallResult] handlers. New reusable registry,
 ///   session, and result behavior belongs in IntentCall packages.
@@ -38,6 +41,7 @@ export 'src/services/reveal_search_service.dart';
 export 'src/services/semantic_snapshot_service.dart';
 export 'src/services/view_introspection_service.dart';
 export 'src/services/wait_predicate_service.dart';
+export 'src/toolkit_projection.dart';
 export 'src/toolkits/flutter_mcp_toolkit.dart';
 export 'src/toolkits/flutter_permission_toolkit.dart';
 export 'src/toolkits/interaction_toolkit.dart';

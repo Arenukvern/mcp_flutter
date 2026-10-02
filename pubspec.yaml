@@ -7,3 +7,6 @@ workspace:
   - packages/*
   - mcp_toolkit
   - mcp_server_dart
+  - jaspr_web_example
+  - showcase/drivers
+

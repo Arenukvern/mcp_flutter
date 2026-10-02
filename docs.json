@@ -85,6 +85,10 @@
           "href": "/start_here/cli_vs_mcp"
         },
         {
+          "title": "The Automation Chain",
+          "href": "/start_here/automation_chain"
+        },
+        {
           "title": "CLI Quick Recipes",
           "href": "/start_here/cli_quick_recipes"
         },
@@ -104,6 +108,10 @@
         {
           "title": "Interaction Cookbook",
           "href": "/guides/interaction_cookbook"
+        },
+        {
+          "title": "E2E Scenarios",
+          "href": "/guides/e2e_scenarios"
         },
         {
           "title": "Creating Dynamic Tools",
@@ -191,6 +199,10 @@
         {
           "title": "0014 — External dev sessions & runner delegation",
           "href": "/decisions/0014_external_dev_sessions_runner_delegation"
+        },
+        {
+          "title": "0015 — flutter_mcp_harness extraction",
+          "href": "/decisions/0015_flutter_mcp_harness_extraction"
         }
       ]
     },

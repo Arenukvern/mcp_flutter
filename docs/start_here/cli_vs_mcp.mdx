@@ -92,7 +92,7 @@ A common pattern:
 - Core capability definitions come from the same command catalog.
 - High-signal debugging commands are shared: `discover_debug_apps`, `capture_ui_snapshot`, `inspect_widget_at_point`.
 - Low-signal diagnostics (`get_active_ports`, `dynamicRegistryStats`) remain CLI-available but are not MCP-exposed by default.
-- Debug/eval batteries should group existing primitives (`--log-level debug`, `--output-dir`, `--save-images`, `doctor --json`, `validate-runtime`, `batch`, `exec --name diagnose`) before adding public verbs. Repeatable scenario documents belong in `flutter_harness`.
+- Debug/eval batteries should group existing primitives (`--log-level debug`, `--output-dir`, `--save-images`, `doctor --json`, `validate-runtime`, `batch`, `exec --name diagnose`) before adding public verbs. Repeatable E2E scenarios as checked-in Dart belong in `flutter_mcp_harness` ([`packages/harness`](https://github.com/Arenukvern/mcp_flutter/tree/main/packages/harness), ADR-0015); declarative scenario documents stay in the external `flutter_harness` repo (ADR-0012).
 
 ## Related Docs
 
