@@ -71,7 +71,8 @@ for dep in \
     "$ROOT_DIR/mcp_toolkit/pubspec.yaml" \
     "$ROOT_DIR/mcp_server_dart/pubspec.yaml" \
     "$ROOT_DIR/packages/server_capability_kernel/pubspec.yaml" \
-    "$ROOT_DIR/packages/server_capability_core/pubspec.yaml" >/dev/null; then
+    "$ROOT_DIR/packages/server_capability_core/pubspec.yaml" \
+    "$ROOT_DIR/packages/harness/pubspec.yaml" >/dev/null; then
     fail "no hosted dependency constraint found for $dep ^$repo_version"
   fi
 done

@@ -73,6 +73,7 @@ pubspec_version_files=(
   "$ROOT_DIR/packages/core/pubspec.yaml"
   "$ROOT_DIR/packages/server_capability_kernel/pubspec.yaml"
   "$ROOT_DIR/packages/server_capability_core/pubspec.yaml"
+  "$ROOT_DIR/packages/harness/pubspec.yaml"
 )
 for file in "${pubspec_version_files[@]}"; do
   perl -0pi -e "s/^version:\\s*[^\\n#]+/version: $version/m" "$file"
@@ -83,6 +84,7 @@ same_train_constraint_files=(
   "$ROOT_DIR/mcp_toolkit/pubspec.yaml"
   "$ROOT_DIR/packages/server_capability_kernel/pubspec.yaml"
   "$ROOT_DIR/packages/server_capability_core/pubspec.yaml"
+  "$ROOT_DIR/packages/harness/pubspec.yaml"
   "$ROOT_DIR/packages/core/README.md"
   "$ROOT_DIR/packages/server_capability_kernel/README.md"
   "$ROOT_DIR/packages/server_capability_core/README.md"
@@ -128,6 +130,10 @@ entries = [
   ],
   [
     'packages/server_capability_core/CHANGELOG.md',
+    "## [#{version}] - #{date}\n\n### Changed\n\n- Align package version and hosted sibling dependency constraints with the Flutter MCP Toolkit #{version} release.\n\n",
+  ],
+  [
+    'packages/harness/CHANGELOG.md',
     "## [#{version}] - #{date}\n\n### Changed\n\n- Align package version and hosted sibling dependency constraints with the Flutter MCP Toolkit #{version} release.\n\n",
   ],
   [

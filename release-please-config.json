@@ -11,13 +11,37 @@
       "include-component-in-tag": false,
       "pull-request-title-pattern": "chore${scope}: release ${version}",
       "changelog-sections": [
-        { "type": "feat", "section": "Features" },
-        { "type": "fix", "section": "Bug Fixes" },
-        { "type": "perf", "section": "Performance" },
-        { "type": "docs", "section": "Documentation" },
-        { "type": "chore", "section": "Miscellaneous", "hidden": true },
-        { "type": "refactor", "section": "Miscellaneous", "hidden": true },
-        { "type": "test", "section": "Miscellaneous", "hidden": true }
+        {
+          "type": "feat",
+          "section": "Features"
+        },
+        {
+          "type": "fix",
+          "section": "Bug Fixes"
+        },
+        {
+          "type": "perf",
+          "section": "Performance"
+        },
+        {
+          "type": "docs",
+          "section": "Documentation"
+        },
+        {
+          "type": "chore",
+          "section": "Miscellaneous",
+          "hidden": true
+        },
+        {
+          "type": "refactor",
+          "section": "Miscellaneous",
+          "hidden": true
+        },
+        {
+          "type": "test",
+          "section": "Miscellaneous",
+          "hidden": true
+        }
       ],
       "extra-files": [
         "plugin/EXPECTED_SERVER_VERSION",
@@ -48,6 +72,7 @@
         "packages/core/pubspec.yaml",
         "packages/server_capability_kernel/pubspec.yaml",
         "packages/server_capability_core/pubspec.yaml",
+        "packages/harness/pubspec.yaml",
         "packages/core/README.md",
         "packages/server_capability_kernel/README.md",
         "packages/server_capability_core/README.md",
