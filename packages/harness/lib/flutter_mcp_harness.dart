@@ -14,8 +14,11 @@
 /// see [ToolkitExtensions] for the name list and its source of truth.
 library;
 
+export 'package:universal_automation_interface/universal_automation_interface.dart';
+
 export 'src/check.dart';
 export 'src/chrome_app_target.dart';
+export 'src/driver_session.dart';
 export 'src/flutter_app.dart';
 export 'src/flutter_run.dart';
 export 'src/intent_driver_router.dart';
@@ -25,4 +28,3 @@ export 'src/toolkit_driver.dart';
 export 'src/toolkit_extensions.dart';
 export 'src/vm_client.dart';
 export 'src/vm_service_uri.dart';
-export 'src/widget_driver.dart';

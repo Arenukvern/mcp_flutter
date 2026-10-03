@@ -25,7 +25,7 @@ const expectedSkillIds = [
   'flutter-mcp-toolkit-dogfood-iterations',
   'flutter-mcp-e2e-harness',
   'flutter-mcp-automation-chain',
-  // Harness + video skills live in flutter_harness/ and flutter_mcp_video/ (see docs/NORTH_STAR.md)
+  // The video skill lives in flutter_mcp_video/; the external flutter_harness repo is retired (ADR-0017)
 ];
 
 void main() {

@@ -7,7 +7,7 @@ This guide covers building and running the MCP Server using Docker.
 The official MCP Registry image is published to GHCR on every release:
 
 ```bash
-docker pull ghcr.io/arenukvern/flutter-mcp-toolkit:4.0.0
+docker pull ghcr.io/arenukvern/flutter-mcp-toolkit:6.0.0
 ```
 
 Use it in an `mcpServers` config:
@@ -22,7 +22,7 @@ Use it in an `mcpServers` config:
         "-i",
         "--rm",
         "--network=host",
-        "ghcr.io/arenukvern/flutter-mcp-toolkit:4.0.0"
+        "ghcr.io/arenukvern/flutter-mcp-toolkit:6.0.0"
       ]
     }
   }

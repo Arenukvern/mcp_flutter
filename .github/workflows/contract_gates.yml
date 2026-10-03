@@ -124,3 +124,35 @@ jobs:
           dart run bin/flutter_mcp_toolkit.dart codegen sync \
             --platform web,android,ios,macos,linux,windows \
             --project-dir ../showcase/flutter_test_app --check
+
+  release-contracts:
+    name: Release contracts (gating)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.5'
+          cache: true
+
+      - name: Checkout IntentCall (CLI delegation target)
+        uses: actions/checkout@v4
+        with:
+          repository: Arenukvern/intentcall
+          path: intentcall
+
+      - name: Version touchpoints match the train
+        run: bash tool/contracts/check_version_sync.sh
+
+      - name: IntentCall consumer policy (incl. published-package floors)
+        env:
+          INTENTCALL_ROOT: ${{ github.workspace }}/intentcall
+        run: |
+          bash tool/intentcall/check_no_path_deps.sh
+          bash tool/contracts/check_intentcall_hosted_consumer.sh

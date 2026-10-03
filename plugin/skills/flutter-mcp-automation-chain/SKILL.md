@@ -134,7 +134,8 @@ See `packages/harness/lib/src/intent_driver_router.dart` and
 - **The toolkit never imports a runner.** Runner identity comes from the
   discovery file, never from code (spec v2 inversion).
 - **No declarative YAML scenarios here** — the document runner lives in the
-  external `flutter_harness` repo (ADR-0012); composition roots are
+  this repo (the external HS-DSL experiment, ADR-0012, is retired per
+  ADR-0017); composition roots are
   consuming-project code.
 - **New toolkit verbs land in `mcp_toolkit` first**; harness extensions
   mirror that list.

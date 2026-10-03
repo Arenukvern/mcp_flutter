@@ -92,7 +92,7 @@ dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart \
 
 ## Chrome battery notes
 
-- Skip heavy visual harness unless `HARNESS_ROOT` points at `flutter_harness`: add `--skip-visual`
+- Skip the visual track (`--skip-visual`): its fixture home (external `flutter_harness`) is retired, so the visual evidence is paused, not regenerable
 - `validate-runtime --save-images` can hang >5m on Chrome; battery omits it unless `DOGFOOD_SAVE_IMAGES=1`
 
 ## CI (branch)

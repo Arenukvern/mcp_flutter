@@ -9,6 +9,9 @@ cd "${repo_root}"
 echo "== intentcall sibling path dependency policy =="
 bash tool/intentcall/check_no_path_deps.sh --strict-root
 
+echo "== workspace dependencies (Flutter SDK required: mcp_toolkit is a Flutter package) =="
+flutter pub get
+
 echo "== intentcall migration and generated-platform drift =="
 dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart migrate agent-entries \
   --check showcase/flutter_test_app/lib

@@ -67,18 +67,27 @@ final class VmClient {
   /// toolkit registers on the UI isolate later), and the re-scan finds it
   /// once registration lands. Still-missing methods rethrow to the
   /// caller's tolerance.
+  /// Every wire attempt is bounded by [_callTimeout]: a hung handler
+  /// (e.g. a registry action awaiting something that never completes)
+  /// surfaces as [TimeoutException] instead of wedging an unattended
+  /// driver forever.
   Future<Map<String, dynamic>> callExtension(
     final String name, {
     final Map<String, Object?> args = const <String, Object?>{},
   }) async {
     try {
-      return await _callExtension(name, args);
+      return await _callExtension(name, args).timeout(_callTimeout);
     } on vm.RPCError catch (error) {
       if (error.code != -32601) rethrow;
       await _rebindToToolkitIsolate();
-      return _callExtension(name, args);
+      return _callExtension(name, args).timeout(_callTimeout);
     }
   }
+
+  /// Per-attempt wire bound. Generous — debug apps can stall on a
+  /// breakpoint — but finite, so retry contracts (named last error, not
+  /// a bare hang) actually fire.
+  static const Duration _callTimeout = Duration(seconds: 30);
 
   Future<Map<String, dynamic>> _callExtension(
     final String name,

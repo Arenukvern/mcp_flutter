@@ -94,13 +94,22 @@ void main() {
         errorMonitor: _TestErrorMonitor(),
         entries: {tool},
       );
-      await expectLater(
-        binding.callbacks['agent_invoke']!({
-          'name': 'inspect_number',
-          'json': jsonEncode({'y': 1}),
-        }),
-        throwsA(isA<Exception>()),
-      );
+      final Map<String, Object?> refusal =
+          await binding.callbacks['agent_invoke']!({
+        'name': 'inspect_number',
+        'json': jsonEncode({'y': 1}),
+      });
+      expect(refusal['success'], isFalse);
+      expect(refusal['error'], contains('inspect_number'));
+      // Malformed json args get the same shape (one failure shape per
+      // verb), never a raw FormatException over the wire.
+      final Map<String, Object?> malformed =
+          await binding.callbacks['agent_invoke']!({
+        'name': 'inspect_number',
+        'json': 'not-json',
+      });
+      expect(malformed['success'], isFalse);
+      expect(malformed['error'], isNotNull);
     });
   });
 }

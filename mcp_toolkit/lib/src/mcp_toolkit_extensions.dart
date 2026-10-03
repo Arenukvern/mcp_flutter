@@ -34,7 +34,8 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
   /// instead of growing a second one, so one registration reaches every
   /// surface (MCP tools, projections, harness drivers). The verbs are
   /// registered once and read [_allEntries] live: entries added later are
-  /// catalogued without re-registration. Debug/profile only — release
+  /// catalogued without re-registration. Debug-only (registration runs
+  /// inside the debug assert block) — release
   /// apps have no VM service to serve it on.
   void exposeAgentInvokeSurface() {
     if (kReleaseMode) {
@@ -78,14 +79,25 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
             'error': 'unknown registry action: $name',
           };
         }
-        final raw = parameters['json'];
-        final args = raw == null || raw.isEmpty
-            ? const <String, Object?>{}
-            : Map<String, Object?>.from(jsonDecode(raw) as Map);
-        final registration = entry.toRegistration();
-        registration.validate(args);
-        final result = await entry.value.handler(args);
-        return agentResultToServiceExtensionMap(result);
+        // One failure shape for every refusal (unknown name, malformed
+        // args, schema violation, handler throw): `success: false` plus
+        // the reason. Success stays envelope-less (the handler's own
+        // map) — documented on the verb.
+        try {
+          final raw = parameters['json'];
+          final args = raw == null || raw.isEmpty
+              ? const <String, Object?>{}
+              : Map<String, Object?>.from(jsonDecode(raw) as Map);
+          final registration = entry.toRegistration();
+          registration.validate(args);
+          final result = await entry.value.handler(args);
+          return agentResultToServiceExtensionMap(result);
+        } on Object catch (error) {
+          return <String, Object?>{
+            'success': false,
+            'error': 'invoke "$name" failed: $error',
+          };
+        }
       },
     );
   }
@@ -119,7 +131,7 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
       );
     }
 
-    // Dynamic registration is a debug/profile VM-service surface; release apps
+    // Dynamic registration is a debug-only VM-service surface; release apps
     // should not depend on these service extensions being present.
     assert(() {
       final allEntries = {..._allEntries, ...entries};

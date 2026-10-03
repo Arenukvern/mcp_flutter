@@ -60,6 +60,7 @@ packages=(
   "flutter_mcp_toolkit_capability_kernel|packages/server_capability_kernel|dart"
   "flutter_mcp_toolkit_capability_core|packages/server_capability_core|dart"
   "mcp_toolkit|mcp_toolkit|flutter"
+  "flutter_mcp_harness|packages/harness|flutter"
 )
 
 package_has_version() {
@@ -104,7 +105,9 @@ check_package_static() {
   if ! grep -qE "^version:[[:space:]]*$VERSION([[:space:]#]|\$)" "$pubspec"; then
     fail "$dir version does not match VERSION $VERSION"
   fi
-  if grep -Eq '^[[:space:]]*(path|git):[[:space:]]' "$pubspec"; then
+  # Path deps carry a filesystem value (`path: ../sibling`); the hosted
+  # `path` package's version line (`path: ^1.9.0`) must not trip this.
+  if grep -Eq '^[[:space:]]*(git:[[:space:]]|path:[[:space:]]*[.]{1,2}/)' "$pubspec"; then
     fail "$dir/pubspec.yaml contains path/git dependency"
   fi
   [[ -f "$changelog" ]] || fail "missing $dir/CHANGELOG.md"

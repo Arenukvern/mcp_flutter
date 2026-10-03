@@ -142,9 +142,9 @@ make showcase-stop   # kill stray sessions, free VM port 8181 (idempotent)
   lockstep — drift is caught by extension calls failing at runtime today
   (shared-constants follow-up will make it a compile error).
 - **No owned compile sessions** in `BinaryAppTarget` — full fresh builds only.
-- **No declarative scenario documents** (YAML runners) — those live in the
-  external `flutter_harness` repo (ADR-0012). Composition roots are
-  consuming-project code (see `example/`).
+- **No declarative scenario documents** (YAML runners) — the external
+  `flutter_harness` experiment (ADR-0012) is retired (ADR-0017).
+  Composition roots are consuming-project code (see `example/`).
 - Android/iOS device bring-up is delegated to the owning dev session
   (`oka_harness`, ADR-0014) — not this package.
 
