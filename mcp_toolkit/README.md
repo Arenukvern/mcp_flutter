@@ -135,6 +135,23 @@ MCPToolkitBinding.instance.captureHintsContributor = () {
 
 Import `PlatformViewHints` and constants from `package:mcp_toolkit/mcp_toolkit.dart` (re-exported from `flutter_mcp_toolkit_core`).
 
+## The Invoke Tier (ADR-0017)
+
+The app's agent-call registry is the single action source. Two VM-service
+verbs read it (`ext.mcp.toolkit.agent_catalog`, `ext.mcp.toolkit.agent_invoke`,
+registered automatically with the debug extension surface):
+
+- `agent_catalog` — lists tool entries as descriptors (name, namespace,
+  description, `inputSchema`).
+- `agent_invoke` — `{name, json}` dispatches one entry by registry name;
+  arguments travel JSON-encoded in `json`, the registration's own schema
+  validation runs before the handler, and every refusal (unknown name,
+  malformed args, schema violation, handler throw) returns
+  `{success: false, error}`. Success returns the handler's own map.
+
+One registration is therefore an MCP tool, a projection, and a
+harness-drivable action (`ToolkitDriver.actions()` / `InvokeAction`).
+
 ## Platform projections (opt-in)
 
 Platform surfaces attach to the toolkit through the `ToolkitProjection` SPI

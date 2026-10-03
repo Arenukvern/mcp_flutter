@@ -130,7 +130,7 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
       );
     }
 
-    // Dynamic registration is a debug/profile VM-service surface; release apps
+    // Dynamic registration is a debug-only VM-service surface; release apps
     // should not depend on these service extensions being present.
     assert(() {
       final allEntries = {..._allEntries, ...entries};

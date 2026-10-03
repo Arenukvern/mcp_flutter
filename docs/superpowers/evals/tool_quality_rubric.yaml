@@ -93,7 +93,7 @@ dimensions:
       - check: harness.visual_reconstruct_warm_path
         critical: false
         note: >
-          flutter_harness harness/examples/visual_reconstruct/warm_path_direct.hs.yaml
+          # PAUSED (ADR-0017): fixture home retired — flutter_harness harness/examples/visual_reconstruct/warm_path_direct.hs.yaml
           (not warm_path.hs.yaml); app DOGFOOD_VISUAL=1; verdict pass + checkpoint autonomous;
           copy to eval_runs/<id>/visual_verdict.yaml.
       - check: visual_reconstruct.compare_cli

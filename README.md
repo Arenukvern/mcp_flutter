@@ -36,8 +36,6 @@ The picture's story: the toolkit gives an AI assistant a shared window and contr
 
 ![View Screenshots](docs/view_screenshots.gif)
 
-> ![NOTICE]: Version 4 is now stable. Earlier `4.0.0-dev.*` builds were prerelease testing builds of the new architecture.
-
 ## Get started in 4 steps
 
 ```bash
@@ -61,6 +59,7 @@ That's it. Your AI agent can now inspect and drive the running app — and your 
 
 ## 📰 News
 
+- **2026-10-02** — 6.0.0 released: the **invoke tier** (ADR-0017) — the app's intent registry is the single action source; the harness driver lists (`driver.actions()`) and invokes it (`InvokeAction`) with schema-validated args, `IntentAutomationAction.custom` routes hints, and any web surface (Jaspr, plain JS) composes via `window.__mcpActions`. `flutter_mcp_harness` 0.2.x on pub.dev; server 6.0.0 on the MCP registry.
 - **2026-10-01** — The toolkit is becoming a chain of declarative automation APIs: universal `AutomationDriver` contracts (`universal_automation_*`), the programmatic [`flutter_mcp_harness`](https://pub.dev/packages/flutter_mcp_harness) package, and [oka](https://github.com/Arenukvern/oka) as the build+lifecycle runner. New: [The Automation Chain](docs/start_here/automation_chain.mdx) guide + `flutter-mcp-automation-chain` skill.
 
 - **2026-07-11** - v4 new Live Demos records: [v4 semantic snapshot etc.. with Grok Build CLI](https://youtu.be/P0ObCyt0k3M), [v4 with IntentCall power - WebMCP projection](https://www.youtube.com/watch?v=mX4xxVeImq0)
@@ -94,7 +93,7 @@ The official registry serves an OCI image from GHCR. Point any MCP client at it:
         "-i",
         "--rm",
         "--network=host",
-        "ghcr.io/arenukvern/flutter-mcp-toolkit:4.0.0"
+        "ghcr.io/arenukvern/flutter-mcp-toolkit:6.0.0"
       ]
     }
   }
@@ -115,7 +114,7 @@ Maintainers submitting to official stores: [marketplace submission runbook](docs
 - **[Why this repo matters](docs/start_here/why_this_repo_matters.mdx)** — what it is, why it exists.
 - **[CLI vs MCP](docs/start_here/cli_vs_mcp.mdx)** — pick the right mode.
 - **[The Automation Chain](docs/start_here/automation_chain.mdx)** — why the chain exists; MCP/CLI/harness/oka tier picker and first loops.
-- **[Feature map](docs/start_here/feature_map.mdx)** — the 30 tools.
+- **[Feature map](docs/start_here/feature_map.mdx)** — the 31 tools.
 - **[AI agent setup](docs/ai_agents/overview.mdx)** - for AI Agents.
 - **[Marketplace distribution](docs/ai_agents/marketplace_distribution.mdx)** — Claude, Cursor, Codex, skills.sh.
 - **[Architecture](ARCHITECTURE.md)** — for contributors.
@@ -180,7 +179,7 @@ OS-native targets — the same pipeline composition style oka uses.
 
 ## What it does
 
-The default toolkit surface exposes 30 MCP tools under the `fmt_*` capability prefix across four categories:
+The default toolkit surface exposes 31 MCP tools under the `fmt_*` capability prefix across four categories (35 with the `--dumps` debug tools enabled):
 
 - **Inspection** — semantic snapshot, view details, errors, screenshots, VM info
 - **Interaction** — tap, scroll, type, fill forms, hot-reload, navigate, wait_for

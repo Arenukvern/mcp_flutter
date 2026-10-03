@@ -43,7 +43,7 @@ release-please on `main`; use manual steps only when the Release PR path is bloc
 
 After any version bump: run `make sync-version`, then `make sync-skills`, then `make check-contracts` (includes `check_version_sync.sh` and `check_skill_assets_drift.sh`). `tool/release/sync_version.sh` derives all version touchpoints from root `VERSION`.
 
-**Harness / video (separate repos):** [flutter_harness](https://github.com/Arenukvern/flutter_harness), [flutter_mcp_video](https://github.com/Arenukvern/flutter_mcp_video) — not maintained in this plugin tree. Three-repo layout: [flutter_harness/docs/RELATED_REPOS.md](https://github.com/Arenukvern/flutter_harness/blob/main/docs/RELATED_REPOS.md).
+**Video (separate repo):** [flutter_mcp_video](https://github.com/Arenukvern/flutter_mcp_video) — not maintained in this plugin tree. The external `flutter_harness` repo is retired (ADR-0017); its scenario layer was never migrated.
 
 ## Changelog workflow
 

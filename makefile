@@ -120,11 +120,6 @@ dogfood-eval:
 dogfood-eval-static:
 	bash $(CURDIR)/tool/evals/run_dogfood_eval.sh --skip-runtime --merge
 
-.PHONY: check-harness
-check-harness:
-	@test -d ../flutter_harness || (echo "Clone flutter_harness next to mcp_flutter" && exit 1)
-	FLUTTER_MCP_TOOLKIT_ROOT="$(CURDIR)" bash ../flutter_harness/tool/harness/check_hs_fixtures.sh
-
 .PHONY: test-harness
 test-harness:
 	@test -d ../flutter_harness || (echo "Clone flutter_harness next to mcp_flutter" && exit 1)

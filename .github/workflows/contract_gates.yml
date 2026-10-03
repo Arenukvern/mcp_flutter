@@ -134,6 +134,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Dart SDK
+        uses: dart-lang/setup-dart@v1
+
       - name: Version touchpoints match the train
         run: bash tool/contracts/check_version_sync.sh
 

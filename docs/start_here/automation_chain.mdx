@@ -126,12 +126,11 @@ oka is for declarative device builds and owned dev sessions.
 *owners* cannot. Run the scenario as the owner and use MCP tools read-only,
 or attach the MCP server to a runner-owned session via spec v2.
 
-**Where do YAML/declarative scenario files live?** In the external
-`flutter_harness` repo (ADR-0012). Composition roots here are Dart code.
+**Where do YAML/declarative scenario files live?** Nowhere, for now — the external `flutter_harness` HS-DSL experiment (ADR-0012) is retired (see ADR-0017). Repeatable scenarios are checked-in Dart via `flutter_mcp_harness`; a declarative layer can be re-homed on the invoke tier when wanted.
 
 ## Related
 
 - [Why This Repo Matters](/start_here/why_this_repo_matters) — the motivation
 - [CLI vs MCP](/start_here/cli_vs_mcp) — surface choice in depth
-- [Feature Map](/start_here/feature_map) — the 30 `fmt_*` tools
+- [Feature Map](/start_here/feature_map) — the 31 `fmt_*` tools
 - Skills: `flutter-mcp-automation-chain` (chain wiring), `flutter-mcp` (interactive), `flutter-mcp-e2e-harness` (scenarios)

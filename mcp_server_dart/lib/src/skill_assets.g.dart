@@ -296,7 +296,7 @@ Global flags (before the subcommand): `--dart-vm-port <n>`, `--dart-vm-host <hos
 
 **`validate-runtime` screenshots:** the first capture uses `auto` (often `desktop_window` on macOS). If that step fails with a retryable `get_screenshots_failed`, the CLI retries once with `flutter_layer`. On success, `data.summary.captureFallbackUsed` is `true` in the JSON envelope.
 
-**Debug/eval batteries:** keep repeated checks as scripts or `batch` calls over existing primitives first: `--log-level debug`, `--output-dir`, `--save-images`, `doctor --json`, `validate-runtime`, `batch`, and `exec --name diagnose`. Do not expose a generic MCP `run_tool`; MCP remains the typed `fmt_*` tool surface. If a flow becomes reusable across projects as a scenario, graduate it to `flutter_harness` HS docs/examples instead of adding a toolkit-only scenario language.
+**Debug/eval batteries:** keep repeated checks as scripts or `batch` calls over existing primitives first: `--log-level debug`, `--output-dir`, `--save-images`, `doctor --json`, `validate-runtime`, `batch`, and `exec --name diagnose`. Do not expose a generic MCP `run_tool`; MCP remains the typed `fmt_*` tool surface. If a flow becomes reusable across projects as a scenario, graduate it to checked-in Dart in this repo's `showcase/` or `packages/harness` instead of adding a toolkit-only scenario language.
 
 ---
 
@@ -2020,7 +2020,7 @@ release-please on `main`; use manual steps only when the Release PR path is bloc
 
 After any version bump: run `make sync-version`, then `make sync-skills`, then `make check-contracts` (includes `check_version_sync.sh` and `check_skill_assets_drift.sh`). `tool/release/sync_version.sh` derives all version touchpoints from root `VERSION`.
 
-**Harness / video (separate repos):** [flutter_harness](https://github.com/Arenukvern/flutter_harness), [flutter_mcp_video](https://github.com/Arenukvern/flutter_mcp_video) — not maintained in this plugin tree. Three-repo layout: [flutter_harness/docs/RELATED_REPOS.md](https://github.com/Arenukvern/flutter_harness/blob/main/docs/RELATED_REPOS.md).
+**Video (separate repo):** [flutter_mcp_video](https://github.com/Arenukvern/flutter_mcp_video) — not maintained in this plugin tree. The external `flutter_harness` repo is retired (ADR-0017); its scenario layer was never migrated.
 
 ## Changelog workflow
 
@@ -2454,7 +2454,7 @@ dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart \
 
 ## Chrome battery notes
 
-- Skip heavy visual harness unless `HARNESS_ROOT` points at `flutter_harness`: add `--skip-visual`
+- Skip the visual track (`--skip-visual`): its fixture home (external `flutter_harness`) is retired, so the visual evidence is paused, not regenerable
 - `validate-runtime --save-images` can hang >5m on Chrome; battery omits it unless `DOGFOOD_SAVE_IMAGES=1`
 
 ## CI (branch)
@@ -2622,9 +2622,9 @@ make showcase-stop   # kill stray sessions, free VM port 8181 (idempotent)
   lockstep — drift is caught by extension calls failing at runtime today
   (shared-constants follow-up will make it a compile error).
 - **No owned compile sessions** in `BinaryAppTarget` — full fresh builds only.
-- **No declarative scenario documents** (YAML runners) — those live in the
-  external `flutter_harness` repo (ADR-0012). Composition roots are
-  consuming-project code (see `example/`).
+- **No declarative scenario documents** (YAML runners) — the external
+  `flutter_harness` experiment (ADR-0012) is retired (ADR-0017).
+  Composition roots are consuming-project code (see `example/`).
 - Android/iOS device bring-up is delegated to the owning dev session
   (`oka_harness`, ADR-0014) — not this package.
 
@@ -2780,7 +2780,8 @@ See `packages/harness/lib/src/intent_driver_router.dart` and
 - **The toolkit never imports a runner.** Runner identity comes from the
   discovery file, never from code (spec v2 inversion).
 - **No declarative YAML scenarios here** — the document runner lives in the
-  external `flutter_harness` repo (ADR-0012); composition roots are
+  this repo (the external HS-DSL experiment, ADR-0012, is retired per
+  ADR-0017); composition roots are
   consuming-project code.
 - **New toolkit verbs land in `mcp_toolkit` first**; harness extensions
   mirror that list.

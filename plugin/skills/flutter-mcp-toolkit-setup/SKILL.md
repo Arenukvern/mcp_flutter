@@ -176,7 +176,7 @@ Global flags (before the subcommand): `--dart-vm-port <n>`, `--dart-vm-host <hos
 
 **`validate-runtime` screenshots:** the first capture uses `auto` (often `desktop_window` on macOS). If that step fails with a retryable `get_screenshots_failed`, the CLI retries once with `flutter_layer`. On success, `data.summary.captureFallbackUsed` is `true` in the JSON envelope.
 
-**Debug/eval batteries:** keep repeated checks as scripts or `batch` calls over existing primitives first: `--log-level debug`, `--output-dir`, `--save-images`, `doctor --json`, `validate-runtime`, `batch`, and `exec --name diagnose`. Do not expose a generic MCP `run_tool`; MCP remains the typed `fmt_*` tool surface. If a flow becomes reusable across projects as a scenario, graduate it to `flutter_harness` HS docs/examples instead of adding a toolkit-only scenario language.
+**Debug/eval batteries:** keep repeated checks as scripts or `batch` calls over existing primitives first: `--log-level debug`, `--output-dir`, `--save-images`, `doctor --json`, `validate-runtime`, `batch`, and `exec --name diagnose`. Do not expose a generic MCP `run_tool`; MCP remains the typed `fmt_*` tool surface. If a flow becomes reusable across projects as a scenario, graduate it to checked-in Dart in this repo's `showcase/` or `packages/harness` instead of adding a toolkit-only scenario language.
 
 ---
 
