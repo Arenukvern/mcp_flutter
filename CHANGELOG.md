@@ -3,6 +3,13 @@
 <!-- markdownlint-disable MD052 -->
 <!-- Keep a Changelog version headings use [3.0.1] brackets; MD052 treats them as reference links. -->
 
+## [7.0.1](https://github.com/Arenukvern/mcp_flutter/compare/v7.0.0...v7.0.1) (2026-10-03)
+
+
+### Documentation
+
+* fix broken star history chart in README ([62f3ee1](https://github.com/Arenukvern/mcp_flutter/commit/62f3ee1e03df92ec61dfa28b3f41c9982c51000b))
+
 ## [7.0.0](https://github.com/Arenukvern/mcp_flutter/compare/v6.0.0...v7.0.0) (2026-10-03)
 
 
