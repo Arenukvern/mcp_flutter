@@ -3,7 +3,7 @@ description: >-
   Programmatic E2E harness for Flutter apps: build and launch a debug binary,
   attach to its Dart VM service, drive widgets through the MCP toolkit
   service extensions, and assert with composable scenarios.
-version: 0.2.0
+version: 0.2.1
 license: MIT
 repository: https://github.com/Arenukvern/mcp_flutter/tree/main/packages/harness
 issue_tracker: https://github.com/Arenukvern/mcp_flutter/issues
@@ -25,7 +25,7 @@ dependencies:
   # resolve these on pub.dev, so the floor is pinned to the train that
   # carries the projection API (1.0.0). In-repo proof consumers stay
   # version-free (docs/intentcall/README.md); the gate exempts this file.
-  intentcall_core: ^1.0.0
+  intentcall_core: ^1.1.0
   intentcall_schema: ^1.0.0
   flutter_mcp_toolkit_core: ^6.0.0
   path: ^1.9.0

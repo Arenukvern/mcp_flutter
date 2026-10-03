@@ -5,6 +5,17 @@ All notable changes to this package are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2026-10-02
+
+### Fixed
+
+- Floors follow the 6.0.0 train: `flutter_mcp_toolkit_core` ^6.0.0 (the
+  0.2.0 artifact on pub.dev pinned ^5.1.0 and cannot resolve next to
+  mcp_toolkit 6.x) and `intentcall_core` ^1.1.0 (the `custom`
+  automation action this package's router switches on shipped in
+  intentcall_core 1.1.0 — a consumer resolving 1.0.0 compiled fine and
+  failed at build).
+
 ## [0.2.0] - 2026-10-02
 
 ### Added

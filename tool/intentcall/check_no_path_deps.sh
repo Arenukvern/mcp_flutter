@@ -147,6 +147,16 @@ for raw_path in sys.argv[1:]:
                 file=sys.stderr,
             )
             failed = True
+        elif allow_pinned and dep_path is None and not inline:
+            # pub.dev rejects unconstrained hosted dependencies at publish
+            # time (exit 65), so PUBLISHED packages must pin real floors.
+            print(
+                f"unpinned published dependency: {path}:{index + 1}: "
+                f"{package} has no version constraint; published packages "
+                f"must pin a hosted floor (for example ^1.0.0)",
+                file=sys.stderr,
+            )
+            failed = True
 
 raise SystemExit(1 if failed else 0)
 PY
