@@ -3,7 +3,7 @@ description: >-
   Programmatic E2E harness for Flutter apps: build and launch a debug binary,
   attach to its Dart VM service, drive widgets through the MCP toolkit service
   extensions, and assert with composable scenarios.
-version: 7.0.0
+version: 7.0.1
 license: MIT
 repository: https://github.com/Arenukvern/mcp_flutter/tree/main/packages/harness
 issue_tracker: https://github.com/Arenukvern/mcp_flutter/issues
