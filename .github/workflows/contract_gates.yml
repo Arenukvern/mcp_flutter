@@ -141,10 +141,18 @@ jobs:
           flutter-version: '3.47.5'
           cache: true
 
+      - name: Checkout IntentCall (CLI delegation target)
+        uses: actions/checkout@v4
+        with:
+          repository: Arenukvern/intentcall
+          path: intentcall
+
       - name: Version touchpoints match the train
         run: bash tool/contracts/check_version_sync.sh
 
       - name: IntentCall consumer policy (incl. published-package floors)
+        env:
+          INTENTCALL_ROOT: ${{ github.workspace }}/intentcall
         run: |
           bash tool/intentcall/check_no_path_deps.sh
           bash tool/contracts/check_intentcall_hosted_consumer.sh
