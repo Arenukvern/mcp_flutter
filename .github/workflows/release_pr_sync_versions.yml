@@ -51,30 +51,10 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add \
-            VERSION \
-            .release-please-manifest.json \
-            .claude-plugin/marketplace.json \
-            docs.json \
-            plugin/EXPECTED_SERVER_VERSION \
-            plugin/.cursor-plugin/plugin.json \
-            plugin/.codex-plugin/plugin.json \
-            plugin/.claude-plugin/plugin.json \
-            mcp_server_dart/pubspec.yaml \
-            mcp_toolkit/pubspec.yaml \
-            mcp_toolkit/CHANGELOG.md \
-            packages/core/pubspec.yaml \
-            packages/core/CHANGELOG.md \
-            packages/server_capability_kernel/pubspec.yaml \
-            packages/server_capability_kernel/CHANGELOG.md \
-            packages/server_capability_core/pubspec.yaml \
-            packages/server_capability_core/CHANGELOG.md \
-            packages/core/README.md \
-            packages/server_capability_kernel/README.md \
-            packages/server_capability_core/README.md \
-            mcp_server_dart/server.json \
-            packages/core/lib/src/runtime_version.dart \
-            packages/server_capability_core/lib/src/fmt_capability.dart
+          # Every change on this checkout comes from sync_version.sh; add
+          # them all instead of a hand-maintained list (the list missed
+          # flutter_mcp_harness and silently failed to commit its sync).
+          git add -A
           git commit -m "chore: sync release version touchpoints"
           git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
 
