@@ -3,6 +3,31 @@
 <!-- markdownlint-disable MD052 -->
 <!-- Keep a Changelog version headings use [3.0.1] brackets; MD052 treats them as reference links. -->
 
+## [7.0.0](https://github.com/Arenukvern/mcp_flutter/compare/v6.0.0...v7.0.0) (2026-10-03)
+
+
+### ⚠ BREAKING CHANGES
+
+* **harness:** collapse WidgetDriver; promote the session layer (ADR-0019)
+
+### Features
+
+* **harness:** collapse WidgetDriver; promote the session layer (ADR-0019) ([88f2e77](https://github.com/Arenukvern/mcp_flutter/commit/88f2e7788810ad839ede7cfc7e700c7f75e24655))
+* **release:** flutter_mcp_harness joins the release train ([2170fbc](https://github.com/Arenukvern/mcp_flutter/commit/2170fbcc8a420d594daad5c305ef966b447c700b))
+
+
+### Bug Fixes
+
+* **ci:** release-contracts job needs the Flutter SDK — the hosted-consumer gate runs flutter pub get over a workspace that includes mcp_toolkit ([73a457f](https://github.com/Arenukvern/mcp_flutter/commit/73a457ff19c3066549e755ebe3244e0bd9641a3e))
+* **ci:** release-contracts needs the intentcall sibling — codegen/migrate checks delegate to the intentcall CLI ([45458b2](https://github.com/Arenukvern/mcp_flutter/commit/45458b28c0f90f5729e99a4824b9fd135b2e70a5))
+* **harness,toolkit:** audit-driven runtime hardening ([6d80217](https://github.com/Arenukvern/mcp_flutter/commit/6d802178a1defcb9a7d2e0daf267298c04895b53))
+* **release:** harness 0.2.1 floors, gate enforces published floors, blocking release-contracts job ([f93339f](https://github.com/Arenukvern/mcp_flutter/commit/f93339f3e317f45e35c9c7c684872ac77a358ad3))
+
+
+### Documentation
+
+* audit truth pass — README reality, retired-repo rewording, ADR index ([4a8ad2e](https://github.com/Arenukvern/mcp_flutter/commit/4a8ad2ed4c750e0b6a926eb40b1c023e8e33c3bd))
+
 ## [6.0.0](https://github.com/Arenukvern/mcp_flutter/compare/v5.1.0...v6.0.0) (2026-10-02)
 
 
