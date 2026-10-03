@@ -278,23 +278,27 @@ final class ToolkitDriver
       }
       throw ElementNotFoundException('css', css);
     }
-    if (name != null) {
+    if (name != null || role != null) {
+      // Role and name compose: `role: 'textbox', name: 'Confirm'` must
+      // not degrade to name-only matching and click a button that
+      // happens to be labeled Confirm.
       for (final node in nodes) {
         final label = node.name;
         final ref = node.attributes['ref'];
-        if (label != null &&
-            ref != null &&
-            label.toLowerCase().contains(name.toLowerCase())) {
-          return ref;
-        }
+        final roleOk = role == null || node.role == role;
+        final nameOk = name == null ||
+            (label != null &&
+                label.toLowerCase().contains(name.toLowerCase()));
+        if (ref != null && roleOk && nameOk) return ref;
       }
-      throw ElementNotFoundException('name', name);
+      throw ElementNotFoundException(
+        role != null ? 'role' : 'name',
+        role ?? name!,
+      );
     }
-    for (final node in nodes) {
-      final ref = node.attributes['ref'];
-      if (node.role == role && ref != null) return ref;
-    }
-    throw ElementNotFoundException('role', role ?? '');
+    throw const DriverUnsupportedException(
+      'ToolkitDriver needs a locator: css (ref or label), name, or role',
+    );
   }
 
   Future<void> _pressKey(final String key) async {

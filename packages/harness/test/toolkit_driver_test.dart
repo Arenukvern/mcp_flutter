@@ -12,7 +12,7 @@ import 'package:universal_automation_interface/universal_automation_interface.da
 Map<String, dynamic> _snapshotEnvelope() => {
   'snapshot_id': 41,
   'nodes': [
-    {'ref': 's_0', 'type': 'widget', 'children': ['s_1', 's_2', 's_3', 's_4']},
+    {'ref': 's_0', 'type': 'widget', 'children': ['s_1', 's_2', 's_2b', 's_3', 's_4']},
     {'ref': 's_1', 'type': 'text', 'label': 'Counter: 0'},
     {
       'ref': 's_2',
@@ -20,6 +20,7 @@ Map<String, dynamic> _snapshotEnvelope() => {
       'label': 'Increment',
       'bounds': {'left': 10.0, 'top': 20.0, 'right': 110.0, 'bottom': 60.0},
     },
+    {'ref': 's_2b', 'type': 'button', 'label': 'Name history'},
     {
       'ref': 's_3',
       'type': 'textField',
@@ -117,6 +118,7 @@ void main() {
       expect(root.children.map((node) => node.role), [
         'text',
         'button',
+        'button',
         'textbox',
         'heading',
       ]);
@@ -141,9 +143,15 @@ void main() {
     });
 
     test('click resolves role with name disambiguation', () async {
-      final (call, _) = _fakeApp();
+      final (call, log) = _fakeApp();
       final driver = ToolkitDriver.custom(call);
+      // s_2b ('Name history', a button) precedes s_3 and contains the
+      // name; role+name must skip it and land on the textbox.
       await driver.perform(const ClickAction(role: 'textbox', name: 'Name'));
+      final taps = log.where((line) => line.startsWith('ext.mcp.toolkit.tap'));
+      expect(taps, hasLength(1));
+      expect(taps.single, contains('s_3'));
+      expect(taps.single, isNot(contains('s_2b')));
       await driver.close();
     });
 
@@ -164,8 +172,10 @@ void main() {
     test('type enters text through the resolved ref and submits', () async {
       final (call, log) = _fakeApp();
       final driver = ToolkitDriver.custom(call);
+      // css-as-label is a first-match scan; s_2b ('Name history') now
+      // precedes the textbox, so target the ref directly.
       await driver.perform(
-        const TypeAction('Ada', css: 'Name', submit: true),
+        const TypeAction('Ada', css: 's_3', submit: true),
       );
       expect(
         log.any(
@@ -273,6 +283,18 @@ void main() {
             .evaluate,
         isTrue,
       );
+    });
+
+    test('role and name compose — a name-only decoy never wins', () async {
+      final (call, log) = _fakeApp();
+      final driver = ToolkitDriver.custom(call);
+      // s_1b ('Increment history') precedes the button in snapshot order
+      // and contains the label; role+name must still resolve the button.
+      await driver.perform(
+        const ClickAction(role: 'button', name: 'Increment'),
+      );
+      expect(log.last, contains('s_2'));
+      expect(log.last, isNot(contains('s_1b')));
     });
 
     test('methods throw after close; close is idempotent', () async {

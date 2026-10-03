@@ -78,14 +78,25 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
             'error': 'unknown registry action: $name',
           };
         }
-        final raw = parameters['json'];
-        final args = raw == null || raw.isEmpty
-            ? const <String, Object?>{}
-            : Map<String, Object?>.from(jsonDecode(raw) as Map);
-        final registration = entry.toRegistration();
-        registration.validate(args);
-        final result = await entry.value.handler(args);
-        return agentResultToServiceExtensionMap(result);
+        // One failure shape for every refusal (unknown name, malformed
+        // args, schema violation, handler throw): `success: false` plus
+        // the reason. Success stays envelope-less (the handler's own
+        // map) — documented on the verb.
+        try {
+          final raw = parameters['json'];
+          final args = raw == null || raw.isEmpty
+              ? const <String, Object?>{}
+              : Map<String, Object?>.from(jsonDecode(raw) as Map);
+          final registration = entry.toRegistration();
+          registration.validate(args);
+          final result = await entry.value.handler(args);
+          return agentResultToServiceExtensionMap(result);
+        } on Object catch (error) {
+          return <String, Object?>{
+            'success': false,
+            'error': 'invoke "$name" failed: $error',
+          };
+        }
       },
     );
   }
