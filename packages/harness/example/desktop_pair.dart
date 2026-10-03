@@ -69,31 +69,40 @@ Future<void> main(final List<String> args) async {
         (final context) async {
           final hostApp = context.take<LaunchedApp>('host');
           final ctrlApp = context.take<LaunchedApp>('controller');
-          final hostDriver = WidgetDriver(await hostApp.vm());
-          final ctrlDriver = WidgetDriver(await ctrlApp.vm());
+          final hostDriver = await attachDriver(hostApp);
+          final ctrlDriver = await attachDriver(ctrlApp);
 
-          final buttonRef = await ctrlDriver.findRef('connect');
-          if (buttonRef == null) {
-            context.report.fail('connect button missing');
-            return;
+          // Tap connect (by label) until A reports B joined — a tap lands
+          // before the next frame paints, so the peer wait must retry.
+          var joined = false;
+          for (var attempt = 0; attempt < 10 && !joined; attempt++) {
+            await ctrlDriver.perform(
+              const ClickAction(name: 'connect'),
+            );
+            joined = hostApp.stdout.firstMatch('peer joined') != null;
+            if (!joined) {
+              await Future<void>.delayed(const Duration(milliseconds: 500));
+            }
           }
-          final tapped = await ctrlDriver.tapUntil(
-            buttonRef,
-            until: () async => hostApp.stdout.firstMatch('peer joined') != null,
-          );
-          if (tapped == null) {
+          if (!joined) {
             context.report.fail('A never saw B join');
             return;
           }
 
-          // Read app-rendered data off a selectable-text node.
-          final code =
-              await ctrlDriver.findValue((v) => v.startsWith('MYAPP-'));
+          // Read app-rendered data off a node value in the snapshot.
+          String? code;
+          for (final node in (await ctrlDriver.snapshot()).nodes) {
+            final value = node.value;
+            if (value != null && value.startsWith('MYAPP-')) {
+              code = value;
+              break;
+            }
+          }
           if (code == null) {
             context.report.fail('no code value in snapshot');
             return;
           }
-          await hostDriver.tap((await hostDriver.findRef('accept'))!);
+          await hostDriver.perform(const ClickAction(name: 'accept'));
           context.report.pass('pairing code exchanged (${code.length} chars)');
         },
       ),

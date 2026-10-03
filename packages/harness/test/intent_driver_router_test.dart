@@ -4,7 +4,6 @@ import 'package:flutter_mcp_harness/flutter_mcp_harness.dart';
 import 'package:intentcall_core/intentcall_core.dart';
 import 'package:intentcall_schema/intentcall_schema.dart';
 import 'package:test/test.dart';
-import 'package:universal_automation_interface/universal_automation_interface.dart';
 
 /// Records performed actions; capabilities stay honest (nothing declared).
 final class _RecordingDriver implements AutomationDriver {

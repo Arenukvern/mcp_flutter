@@ -20,7 +20,6 @@ import 'dart:io';
 import 'package:flutter_mcp_harness/flutter_mcp_harness.dart';
 import 'package:intentcall_core/intentcall_core.dart';
 import 'package:path/path.dart' as p;
-import 'package:universal_automation_interface/universal_automation_interface.dart';
 import 'package:universal_screencast/universal_screencast.dart';
 
 import 'package:showcase_drivers/flutter_app_frames.dart';
@@ -56,8 +55,9 @@ Future<void> main(final List<String> arguments) async {
   );
 
   final launched = await app.launch();
+  final driver = await attachDriver(launched);
+  // Same cached VmClient — the screencast source needs it for frames.
   final client = await launched.vm();
-  final driver = ToolkitDriver(client);
   log('attached; toolkit isolate ${client.boundIsolateId}');
 
   try {
@@ -75,11 +75,7 @@ Future<void> main(final List<String> arguments) async {
     log('acted: tapped Increment ×3, typed "Ada" into Name');
 
     // -- verify -------------------------------------------------------------
-    final counter = await _labelContaining(driver, 'Count: 3');
-    if (counter == null) {
-      throw StateError('verify failed: "Count: 3" not on screen');
-    }
-    log('verified: "$counter"');
+    log('verified: "${await driver.expectLabel('Count: 3')}"');
 
     final mainPng = await driver.screenshot();
     await File(
@@ -125,11 +121,8 @@ Future<void> main(final List<String> arguments) async {
       arguments: const {'text': 'Grace'},
     );
     // 3 direct taps + 1 screencast-tick tap + 1 routed tap = 5.
-    final routed = await _labelContaining(driver, 'Count: 5');
-    if (routed == null) {
-      throw StateError('router verify failed: "Count: 5" not on screen');
-    }
-    log('verified: hint-routed invocation → "$routed"');
+    log('verified: hint-routed invocation → '
+        '"${await driver.expectLabel('Count: 5')}"');
 
     // -- named-route navigation (through the router) --------------------------
     // NavigateAction carries a route, no arguments — the app renders its
@@ -141,10 +134,7 @@ Future<void> main(final List<String> arguments) async {
       ),
       arguments: const {'route': '/profile'},
     );
-    final greeting = await _labelContaining(driver, 'Hello,');
-    if (greeting == null) {
-      throw StateError('verify failed: "/profile" did not render greeting');
-    }
+    final greeting = await driver.expectLabel('Hello,');
     final profilePng = await driver.screenshot();
     await File(p.join(outDir, 'flutter_demo_profile.png')).writeAsBytes(
       profilePng,
@@ -162,30 +152,6 @@ Future<void> main(final List<String> arguments) async {
       log('flutter run exited $code');
     }
   }
-}
-
-Future<String?> _labelContaining(
-  final ToolkitDriver driver,
-  final String needle,
-) async {
-  for (var attempt = 0; attempt < 10; attempt++) {
-    final nodes = (await driver.snapshot()).nodes.toList();
-    for (final node in nodes) {
-      if ((node.name ?? '').contains(needle)) return node.name;
-    }
-    if (attempt == 9) {
-      // Last miss: dump what the app actually showed, so a failed verify
-      // reports the surface it saw instead of just a timeout.
-      final seen = nodes
-          .map((node) => node.name ?? node.role)
-          .where((label) => label.isNotEmpty)
-          .join(' | ');
-      // ignore: avoid_print
-      print('[drive_flutter] verify miss for "$needle"; surface: $seen');
-    }
-    await Future<void>.delayed(const Duration(milliseconds: 500));
-  }
-  return null;
 }
 
 void _printTree(final Snapshot snapshot, final void Function(String) log) {

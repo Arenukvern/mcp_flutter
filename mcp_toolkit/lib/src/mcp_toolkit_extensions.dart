@@ -34,7 +34,8 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
   /// instead of growing a second one, so one registration reaches every
   /// surface (MCP tools, projections, harness drivers). The verbs are
   /// registered once and read [_allEntries] live: entries added later are
-  /// catalogued without re-registration. Debug/profile only — release
+  /// catalogued without re-registration. Debug-only (registration runs
+  /// inside the debug assert block) — release
   /// apps have no VM service to serve it on.
   void exposeAgentInvokeSurface() {
     if (kReleaseMode) {

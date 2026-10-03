@@ -32,7 +32,8 @@ for pubspec in \
   "$ROOT_DIR/mcp_toolkit/pubspec.yaml" \
   "$ROOT_DIR/packages/core/pubspec.yaml" \
   "$ROOT_DIR/packages/server_capability_kernel/pubspec.yaml" \
-  "$ROOT_DIR/packages/server_capability_core/pubspec.yaml"; do
+  "$ROOT_DIR/packages/server_capability_core/pubspec.yaml" \
+  "$ROOT_DIR/packages/harness/pubspec.yaml"; do
   pubspec_version="$(
     sed -nE 's/^version:[[:space:]]*([^[:space:]#]+).*/\1/p' "$pubspec" | head -1
   )"

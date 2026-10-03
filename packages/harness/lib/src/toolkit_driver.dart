@@ -7,7 +7,14 @@ import 'package:vm_service/vm_service.dart' show RPCError;
 
 import 'toolkit_extensions.dart';
 import 'vm_client.dart';
-import 'widget_driver.dart';
+
+/// Call signature of one VM service extension invocation. The seam tests
+/// use to answer with canned envelopes instead of a live VM.
+typedef ExtensionCall =
+    Future<Map<String, dynamic>> Function(
+      String name, {
+      Map<String, Object?> args,
+    });
 
 /// [AutomationDriver] over the MCP toolkit's VM-service extensions —
 /// the instrumented tier of the `universal_automation_*` family (ADR 0038).
@@ -167,7 +174,7 @@ final class ToolkitDriver
     return [
       if (actions is List)
         for (final entry in actions)
-          if (SurfaceActionDescriptor.fromJson(entry) case final d?) d,
+          ?SurfaceActionDescriptor.fromJson(entry),
     ];
   }
 

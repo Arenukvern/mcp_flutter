@@ -22,7 +22,6 @@ import 'dart:io';
 
 import 'package:flutter_mcp_harness/flutter_mcp_harness.dart';
 import 'package:path/path.dart' as p;
-import 'package:universal_automation_interface/universal_automation_interface.dart';
 import 'package:universal_browser_cdp/universal_browser_cdp.dart';
 import 'package:universal_screencast/universal_screencast.dart';
 

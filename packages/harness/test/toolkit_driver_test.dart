@@ -4,7 +4,6 @@ import 'package:flutter_mcp_harness/flutter_mcp_harness.dart';
 import 'package:intentcall_schema/intentcall_schema.dart';
 import 'package:test/test.dart';
 import 'package:universal_automation_conformance/universal_automation_conformance.dart';
-import 'package:universal_automation_interface/universal_automation_interface.dart';
 
 /// Canned flat wire snapshot: ref-linked nodes exactly as
 /// `ext.mcp.toolkit.semantic_snapshot` emits them (bounds are

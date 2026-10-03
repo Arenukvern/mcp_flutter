@@ -5,6 +5,28 @@ All notable changes to this package are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.0.0] - 2026-10-03
+
+### Changed
+
+- Align package version and hosted sibling dependency constraints with the Flutter MCP Toolkit 6.0.0 release. The package now shares the toolkit train version (0.2.1 had identical content; the 0.x line was the pre-train history).
+
+### Breaking (ADR-0019 — layering: targets, session, driver, scenario)
+
+- **`WidgetDriver` removed.** One driver per wire: use `attachDriver(app)`
+  + `ToolkitDriver.perform(...)` with the family actions
+  (`ClickAction(name: 'connect')`, `TypeAction`, …). `findRef` →
+  locators, `tapUntil` → a retry loop over `perform` + your condition,
+  `findValue` → a `snapshot()` scan of `node.value`.
+- New session layer, promoted from the showcase drives:
+  `attachDriver(LaunchedApp)` and the observe helpers
+  `labelContaining` / `expectLabel` (retry-until-rendered, with the
+  surface dump in the failure).
+- `HarnessContext.take<T>` fails with a named `StateError` (bag keys
+  listed) instead of a raw `TypeError`.
+- The package re-exports `universal_automation_interface` — one import
+  drives the whole family contract.
+
 ## [0.2.1] - 2026-10-02
 
 ### Fixed

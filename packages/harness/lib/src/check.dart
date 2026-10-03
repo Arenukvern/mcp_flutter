@@ -48,5 +48,14 @@ final class HarnessContext {
   final ScenarioReport report;
   final Map<String, Object?> bag = <String, Object?>{};
 
-  T take<T>(final String key) => bag[key] as T;
+  T take<T>(final String key) {
+    final value = bag[key];
+    if (value is! T) {
+      throw StateError(
+        'no $T under "$key" in the scenario bag '
+        '(have: ${bag.keys.toList()})',
+      );
+    }
+    return value;
+  }
 }
