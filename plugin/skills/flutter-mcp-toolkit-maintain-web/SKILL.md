@@ -18,6 +18,18 @@ Dogfood app: `showcase/flutter_test_app`. Canonical platform doc: `showcase/flut
 
 ADR: `decisions/0008_web_agent_invoke_js_only.mdx` — JS `fetch('/agent/invoke')` **404** by design; Dart `invokeDirect` works when `modelContext` exists.
 
+## JIT vs AOT web: which driving tier
+
+VM extensions (`fmt_*`, the toolkit) require the Dart VM service — they
+exist on JIT web (DDC via `flutter run`). An **AOT web build
+(`flutter build web`) has no VM service**: drive it through the CDP
+tier instead — `flutter_mcp_harness`'s `WebBuildTarget`/`FlutterWebCdp`
+(this repo, ADR-0018) over the browser-level primitives
+(universal-automation-family ADR-0045). For typed app intents on AOT
+web, publish `window.__mcpActions` handlers (plain JS interop, AOT-safe)
+— the CDP driver's `InvokeAction` dispatches to them; projecting the
+toolkit's tool catalog onto that registry is the tracked bridge.
+
 ## Launch (repeatable WebMCP)
 
 ```bash

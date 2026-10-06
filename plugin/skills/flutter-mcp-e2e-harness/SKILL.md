@@ -38,6 +38,54 @@ registry.
 | Repeatable scenario as code, CI-friendly exit codes | this skill (`flutter_mcp_harness`) |
 | One-off interactive debugging from chat/editor | `flutter-mcp` (MCP `fmt_*` tools) |
 | Browser/WebMCP dogfood of the web showcase | `flutter-mcp-toolkit-maintain-web` |
+
+## The web/AOT tier (WebBuildTarget + FlutterWebCdp)
+
+The VM-service toolkit tier exists only where a Dart VM service exists:
+JIT web (DDC, `flutter run`) and debug desktop/mobile. An **AOT web
+build (`flutter build web`) has no VM service — the CDP tier is not a
+fallback there, it is the only tier** (tier matrix: family ADR-0045;
+this repo ADR-0018):
+
+```dart
+final app = await WebBuildTarget(projectDir: '.', build: !skipBuild).launch();
+final flutter = app.flutter;              // FlutterWebCdp over CdpDriver
+await flutter.waitText('Settings');
+await flutter.clickText('Sync between devices', expect: 'I have a pairing code');
+await flutter.typeFocused('mesh-pair/v1 ...');   // bringToFront + insertText
+await app.stop();
+```
+
+Measured rules encoded in `FlutterWebCdp` — do not re-learn them:
+
+- Semantic clicks through the driver's fallback ladder work on real
+  Chromium; the OLD dead path was three stacked bugs (`DOM.enable`
+  missing, AX nodes resolving to TEXT nodes, `callFunctionOn` `this`
+  rebinding) — fixed in `universal_browser_cdp` and guarded by the
+  opt-in live fixture (`XS_TEST_CDP_LIVE=1` in the cdp package).
+- Locate by text/aria-label in the LIVE `flt-semantics` DOM;
+  effect-verify every click (`expect:`) and check the effect BEFORE
+  re-clicking (a toggle re-clicks itself off).
+- The first click after load is swallowed — `warmUpClick()` burns it.
+- Typing needs `Page.bringToFront` + `Input.insertText` (background
+  windows have no OS focus; per-key events land nowhere).
+- Navigate in-app only (`popRoute` = `history.back()`); a reload drops
+  in-memory state. Headless Chrome never runs rAF — Flutter freezes;
+  `WebBuildTarget` defaults to headed Chrome for this reason.
+
+## Failure evidence (EvidenceCollector)
+
+Attach evidence while the scenario runs; `Scenario` dumps it under
+`$TMPDIR/<scenario>/` on the first failing step: `attachCdp` buffers the
+page's console + uncaught exceptions (an app-side throw renders as a
+canvas error screen — invisible in the DOM — and ONLY the console names
+it), `attachLines` tails app stdout, `attachFile` defers an AX/state
+dump. Never let evidence production mask the failure — it is
+best-effort by contract.
+
+VM-service verbs against a booting app: use `vm.callExtensionUntil(...)`
+instead of hand-rolled retry loops (it folds the -32601-before-
+registration window and the isolate rebind).
 | Live end-to-end showcase drives (both tiers) | `showcase/drivers` (`make drive-flutter` / `drive-web`) |
 
 ## Launch paths (pick by ownership)

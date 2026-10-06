@@ -5,7 +5,22 @@ All notable changes to this package are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.2.0] - 2026-10-02
+## [0.2.1] - 2026-10-06
+
+### Fixed
+
+- **VmClient reconnects a dropped websocket (reconnection law)**: the
+  VM service self-disposes when its socket closes (`streamClosed →
+  dispose`), so every later call threw the local `-32000 Service
+  connection disposed` while the app lived on — measured live during
+  gate runs where heavy `view_screenshots` traffic dropped the socket
+  mid-session. `VmClient` now keeps its http URI and re-establishes the
+  socket ONCE per call on any connection-level failure (disposed,
+  -32010, socket errors), re-binding the toolkit isolate. Callers see
+  one slow call instead of a dead client. Tearoff-based consumers
+  (`ToolkitDriver(client.callExtension, …)`) stay valid — the methods
+  dispatch to the reconnected internals.
+
 
 ### Added
 

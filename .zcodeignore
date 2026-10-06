@@ -1,0 +1,82 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.maestro
+.antigravitycli/
+/.flutter_mcp
+# Build output
+/build/
+dist/
+*.tsbuildinfo
+.codex/engineering-loop
+.codex/specs
+.codex/runtime
+.dart_tool
+
+# IDE
+.idea/
+*.swp
+*.swo
+.mcp_screenshots
+.maestro
+mcp_server_dart/.mcp_screenshots
+plugin/assets/.capture/
+# OS
+.DS_Store
+Thumbs.db
+.mcp_screenshots
+# Environment
+.env
+.env.local
+.env.*.local
+mcp_server_dart/flutter_inspector_mcp
+.web_probe_machine.log
+
+# Agentic Executables project hub (regenerate with scripts/ae_live_edit_know.sh)
+.ae_hub/
+.gitnexus
+
+# Local showcase PID/log (scripts/run_showcase.sh)
+.showcase/
+
+# Sibling repos (not part of this tree — clone separately)
+# ../flutter_harness
+# ../flutter_mcp_video
+.steward/benchmark-summaries/*.json
+mcp_server_dart/mcp-publisher
+
+# local sibling-repo overrides (dev only)
+pubspec_overrides.yaml
+
+# ===== ↑ 以上同步自 .gitignore（「从 .gitignore 同步」只重写以上部分）=====
+.git/
+.hg/
+.svn/
+bower_components/
+jspm_packages/
+__pycache__/
+site-packages/
+venv/
+coverage/
+htmlcov/
+lcov-report/
+cmakefiles/
+cmake-build-*/
+bazel-*/
+pods/
+deriveddata/
+storybook-static/
+playwright-report/
+test-results/
+allure-results/
+allure-report/
+cdk.out/
+*.egg-info/
+*.dist-info/
+eggs/
+pip-wheel-metadata/
+wheels/
+# ----- ↑ 以上为 ZCode 默认排除规则（自定义规则请写在本行下方，不会被同步/恢复改动）-----
+# 自定义规则写在下方（本行提示可删除）

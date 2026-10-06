@@ -46,6 +46,8 @@ may own the app's session (see the ownership law below).
 | Chat-driven debugging and verification | MCP `fmt_*` tools | [Get started](https://docs.page/arenukvern/mcp_flutter) |
 | One-shot commands in scripts/CI | CLI (`flutter-mcp-toolkit` / `fmtk`) | [CLI vs MCP](/start_here/cli_vs_mcp) |
 | Repeatable E2E scenarios as checked-in Dart | `flutter_mcp_harness` | [E2E Scenarios](/guides/e2e_scenarios) |
+| Drive a NATIVE macOS app (any app, not just Flutter) | `MacosDriver` via `showcase/drivers/bin/drive_macos.dart` | this page, below |
+| Drive a WEB page | `CdpDriver` via `showcase/drivers/bin/drive_web.dart` | this page, below |
 | Declarative device builds + process lifecycle | **oka** (separate repo) | this page, below |
 | Intent → automation routing without hardcoded transports | `IntentDriverRouter` | [IntentCall consumer guide](/intentcall/README) |
 
@@ -87,6 +89,36 @@ final driver = ToolkitDriver(await app.vm());
 
 Full anatomy (targets, `Scenario`, retrying, two-app compositions): [E2E
 Scenarios](/guides/e2e_scenarios) and the `flutter-mcp-e2e-harness` skill.
+
+## The OS-native and web tiers: one contract, three surfaces
+
+The `AutomationDriver` contract (`universal_automation_*` family) is the
+universal adaptation: the SAME observe → act → verify vocabulary against
+three backends —
+
+| Tier | Driver | Transport | Observe | Act |
+|---|---|---|---|---|
+| Flutter (instrumented) | `ToolkitDriver` | VM service | semantic widget snapshot | tap/type/scroll/navigate |
+| Web | `CdpDriver` | Chrome DevTools Protocol | accessibility tree | click/type/key/scroll |
+| macOS (any app) | `MacosDriver` | AXUIElement + CGEvent | AX tree (per-app or focused) | AXPress/type/key/scroll |
+
+`MacosDriver` is also the APP-MANAGEMENT rung — the part that makes the
+macOS tier manage applications, not only the focused one:
+`runningApps()` (discovery), `launch(bundleId)` (launch-or-activate),
+`activate(pid)`, `terminate(pid)`, `frontmost()`, and `snapshotOfApp(pid)`
+(background reads). The composition root proves the loop against a real
+desktop app:
+
+```bash
+# discover → activate → observe → act → verify → screenshot (.showcase/)
+dart run showcase/drivers/bin/drive_macos.dart --bundle com.example.vosgesDesktop
+```
+
+Non-claims: the macOS tier is CLI/composition-first today — the `fmt_*`
+MCP surface and the CLI command catalog remain Flutter-tier (adding a
+native tier to the catalog is contract work: schema parity, MCP
+exposure, capabilities); the harness and oka do not yet compose
+`MacosDriver`.
 
 ## Third loop: device builds via oka (optional)
 

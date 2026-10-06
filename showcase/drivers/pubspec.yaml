@@ -21,6 +21,11 @@ dependencies:
   intentcall_core:
   path: ^1.9.0
   universal_screencast: ^0.1.0
+  universal_driver_macos:
+    # Native-assets macOS driver — resolves through the workspace
+    # override to the sibling checkout (same policy as the other
+    # universal_* deps above).
+
 
 dev_dependencies:
   lints: ^6.1.0
