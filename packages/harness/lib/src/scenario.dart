@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'check.dart';
+import 'evidence.dart';
 
 /// A named unit of scenario work: prepare, act, assert.
 ///
@@ -14,11 +16,17 @@ typedef Step = Future<void> Function(HarnessContext context);
 typedef NamedStep = (String, Step);
 
 final class Scenario {
-  Scenario(this.name, {required this.steps});
+  Scenario(this.name, {required this.steps, this.evidence, this.evidenceDir});
 
   final String name;
   final List<NamedStep> steps;
   final ScenarioReport report = ScenarioReport();
+
+  /// Failure evidence: when a step fails and this is set, the collected
+  /// buffers/files are dumped under [evidenceDir] (default:
+  /// `$TMPDIR/<slugified scenario name>/`) and the path is printed.
+  final EvidenceCollector? evidence;
+  final String? evidenceDir;
 
   /// Runs steps in order; stops at the first failure (a thrown error or a
   /// failing check). Returns whether all steps passed.
@@ -31,11 +39,27 @@ final class Scenario {
         await step(context);
       } on Object catch (error) {
         report.fail(title, '$error');
+        await _dumpEvidence();
         break;
       }
       if (!report.allPassed) break;
     }
     return report.allPassed;
+  }
+
+  Future<void> _dumpEvidence() async {
+    final collector = evidence;
+    if (collector == null) return;
+    try {
+      final base = evidenceDir ??
+          '${Directory.systemTemp.path}/'
+              '${name.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-')}';
+      final path = await collector.dump(Directory(base));
+      // ignore: avoid_print
+      print('evidence: $path');
+    } on Object {
+      // Evidence is best-effort; never mask the failing step.
+    }
   }
 }
 

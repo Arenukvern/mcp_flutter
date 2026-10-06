@@ -9,10 +9,21 @@ import 'vm_service_uri.dart';
 ///
 /// Extends the harness's control past log scraping: extension calls
 /// (widget snapshot/tap/evaluate), hot reload, and extension discovery.
+///
+/// Reconnection law (measured 2026-10-05): the underlying websocket can
+/// drop mid-session while the app lives on (heavy view_screenshots
+/// traffic drops it reliably). vm_service self-disposes when the socket
+/// closes (`streamClosed → dispose`), and every later call then throws
+/// the local `-32000 Service connection disposed`. [VmClient] therefore
+/// keeps its [httpUri] and re-establishes the socket on any
+/// connection-level failure, ONCE per call, transparently to the caller.
 final class VmClient {
-  VmClient._(this._service, this._mainIsolate);
+  VmClient._(this.httpUri, this._service, this._mainIsolate);
 
-  final vm.VmService _service;
+  /// The http VM-service URI this client (re)connects through.
+  final Uri httpUri;
+
+  vm.VmService _service;
   vm.IsolateRef _mainIsolate;
 
   /// The isolate id this client is bound to (diagnostics).
@@ -41,13 +52,15 @@ final class VmClient {
         firstResponsive ??= ref;
         final extensions = List<String>.from(isolate.extensionRPCs ?? const []);
         if (extensions.any((name) => name.startsWith('ext.mcp.toolkit.'))) {
-          return VmClient._(service, ref);
+          return VmClient._(httpUri, service, ref);
         }
       } on vm.RPCError {
         continue;
       }
     }
-    if (firstResponsive != null) return VmClient._(service, firstResponsive);
+    if (firstResponsive != null) {
+      return VmClient._(httpUri, service, firstResponsive);
+    }
     throw StateError('no responsive isolate at $httpUri');
   }
 
@@ -62,11 +75,17 @@ final class VmClient {
   /// Args must be JSON-encodable; the app side validates types (a point
   /// coordinate sent as "364" instead of 364 fails schema validation).
   ///
-  /// A -32601 (method not found) triggers ONE lazy re-bind: an early
-  /// attach can be bound to an isolate that never runs the app (the
-  /// toolkit registers on the UI isolate later), and the re-scan finds it
-  /// once registration lands. Still-missing methods rethrow to the
-  /// caller's tolerance.
+  /// Three lazy recoveries, each ONE retry before rethrowing to the
+  /// caller's tolerance:
+  /// - a -32601 (method not found) re-binds: an early attach can be bound
+  ///   to an isolate that never runs the app (the toolkit registers on
+  ///   the UI isolate later), and the re-scan finds it once registration
+  ///   lands;
+  /// - a connection-level failure (`Service connection disposed`, socket
+  ///   errors) reconnects the dropped websocket (see the reconnection
+  ///   law on this class);
+  /// - a [StateError] from `getVM`/`getIsolate` on a disposed connection
+  ///   takes the same reconnect path.
   /// Every wire attempt is bounded by [_callTimeout]: a hung handler
   /// (e.g. a registry action awaiting something that never completes)
   /// surfaces as [TimeoutException] instead of wedging an unattended
@@ -78,8 +97,15 @@ final class VmClient {
     try {
       return await _callExtension(name, args).timeout(_callTimeout);
     } on vm.RPCError catch (error) {
-      if (error.code != -32601) rethrow;
-      await _rebindToToolkitIsolate();
+      if (error.code == -32601) {
+        await _rebindToToolkitIsolate();
+        return _callExtension(name, args).timeout(_callTimeout);
+      }
+      if (!_isConnectionLevel(error)) rethrow;
+      await _reconnect();
+      return _callExtension(name, args).timeout(_callTimeout);
+    } on StateError {
+      await _reconnect();
       return _callExtension(name, args).timeout(_callTimeout);
     }
   }
@@ -88,6 +114,37 @@ final class VmClient {
   /// breakpoint — but finite, so retry contracts (named last error, not
   /// a bare hang) actually fire.
   static const Duration _callTimeout = Duration(seconds: 30);
+
+  /// Calls [name] until [until] accepts the response (or it simply
+  /// succeeds when [until] is null), retrying the transient failures the
+  /// app's boot produces: -32601 before the toolkit registers, the
+  /// isolate-rebind dance a too-early attach needs, and the dropped-
+  /// websocket reconnect. Exhausting [attempts] throws the LAST
+  /// response/error — named data, not a bare timeout.
+  Future<Map<String, dynamic>> callExtensionUntil(
+    final String name, {
+    final Map<String, Object?> args = const <String, Object?>{},
+    final bool Function(Map<String, dynamic> response)? until,
+    final int attempts = 15,
+    final Duration delay = const Duration(seconds: 2),
+  }) async {
+    Object? lastError;
+    Map<String, dynamic>? lastResponse;
+    for (var i = 1; i <= attempts; i++) {
+      try {
+        final response = await callExtension(name, args: args);
+        if (until == null || until(response)) return response;
+        lastResponse = response;
+      } on Object catch (error) {
+        lastError = error;
+      }
+      await Future<void>.delayed(delay);
+    }
+    throw StateError(
+      'callExtensionUntil($name) exhausted $attempts attempts '
+      '(last error: $lastError, last response: $lastResponse)',
+    );
+  }
 
   Future<Map<String, dynamic>> _callExtension(
     final String name,
@@ -99,6 +156,31 @@ final class VmClient {
       args: args,
     );
     return response.json ?? <String, dynamic>{};
+  }
+
+  /// True when [error] names a dead connection rather than an app-side
+  /// refusal: the local disposed error (-32000 with the disposed
+  /// message), the protocol's kConnectionDisposed (-32010), or a socket
+  /// failure surfaced through the RPC channel.
+  bool _isConnectionLevel(final vm.RPCError error) {
+    if (error.code == -32010) return true;
+    if (error.code == -32000 &&
+        error.message.contains('Service connection disposed')) {
+      return true;
+    }
+    final message = error.message.toLowerCase();
+    return message.contains('connection closed') ||
+        message.contains('websocket') ||
+        message.contains('socket');
+  }
+
+  /// Re-establishes the socket and re-binds the toolkit isolate. The old
+  /// service is already self-disposed by vm_service when the socket
+  /// dropped; nothing to cancel here.
+  Future<void> _reconnect() async {
+    final wsUri = canonicalVmServiceWsUri(httpUri);
+    _service = await vm_io.vmServiceConnectUri(wsUri.toString());
+    await _rebindToToolkitIsolate();
   }
 
   /// Re-scans the VM's isolates and re-binds to one carrying the MCP

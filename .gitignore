@@ -7,7 +7,7 @@ yarn-error.log*
 .antigravitycli/
 /.flutter_mcp
 # Build output
-/build/
+build/
 dist/
 *.tsbuildinfo
 .codex/engineering-loop
