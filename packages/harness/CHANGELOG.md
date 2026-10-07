@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **App ownership is a first-class choice (`AppOwnership`)**: targets
+  either `launchAndOwn` (build + launch + stop — the previous implicit
+  behavior) or `attachOnly`, for the borrowed-lease case where an
+  app is already running and stopping someone's session is not the
+  harness's call. Attach-only discovers the pid by binary name (an
+  ambiguous match is an error naming the pids, not a silent pick),
+  verifies the running executable resolves to `binaryPath`, refuses
+  when the on-disk build is newer than the running process (a stale
+  app silently passing as the build under test was the failure mode),
+  optionally pins an exact `BuildFingerprint` (sha256 + size), attaches
+  through an explicitly named `vmServiceUri` (a process the tool did
+  not launch has no stdout to scrape), and `LaunchedApp.stop` is a
+  no-op — the owner keeps full lifecycle control. Measured driver: the
+  vosges low-look ADR-0008 run, which found a live desktop process and
+  had no honest way to either reuse or supersede it.
+
 ### Fixed
 
 - **VmClient reconnects a dropped websocket (reconnection law)**: the

@@ -16,6 +16,7 @@ library;
 
 export 'package:universal_automation_interface/universal_automation_interface.dart';
 
+export 'src/app_ownership.dart';
 export 'src/check.dart';
 export 'src/evidence.dart';
 export 'src/chrome_app_target.dart';
