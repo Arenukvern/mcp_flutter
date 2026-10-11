@@ -854,13 +854,20 @@ packages:
       relative: true
     source: path
     version: "0.2.0"
+  universal_automation_semantics:
+    dependency: transitive
+    description:
+      path: "/Users/antonio/xs/storage_problem/dart_flutter_packages/pkgs/universal_automation_semantics"
+      relative: false
+    source: path
+    version: "0.1.0"
   universal_browser_cdp:
     dependency: "direct overridden"
     description:
       path: "../../../xs/storage_problem/dart_flutter_packages/pkgs/universal_browser_cdp"
       relative: true
     source: path
-    version: "0.2.0"
+    version: "0.3.0"
   universal_capture_flutter:
     dependency: "direct overridden"
     description:

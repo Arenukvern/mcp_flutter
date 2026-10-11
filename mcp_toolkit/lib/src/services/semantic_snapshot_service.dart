@@ -1,5 +1,6 @@
 // ignore_for_file: invalid_use_of_protected_member, deprecated_member_use
 
+import 'dart:convert';
 import 'dart:ui' as ui;
 
 import 'package:flutter/rendering.dart';
@@ -8,6 +9,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart'
     show semanticSnapshotNodeFields;
 import 'package:from_json_to_json/from_json_to_json.dart';
+import 'package:universal_automation_semantics/universal_automation_semantics.dart';
 
 import 'background_frame_pump.dart';
 
@@ -24,10 +26,12 @@ extension type const SemanticSnapshotFilter._(Map<String, dynamic> value) {
     final String? identifierPrefix,
     final String? subtreeOf,
     final List<String>? fields,
+    final int? maxNodes,
   }) => SemanticSnapshotFilter._(<String, dynamic>{
     'identifierPrefix': ?identifierPrefix,
     'subtreeOf': ?subtreeOf,
     'fields': ?fields,
+    'maxNodes': ?maxNodes,
   });
 
   /// Reads the filter out of the arguments of a tool call.
@@ -42,12 +46,17 @@ extension type const SemanticSnapshotFilter._(Map<String, dynamic> value) {
     final identifierPrefix = jsonDecodeString(json['identifierPrefix']);
     final subtreeOf = jsonDecodeString(json['subtreeOf']);
     final fields = jsonDecodeListAs<String>(json['fields']);
+    final maxNodes = json['maxNodes'];
+    if (maxNodes != null && maxNodes is! int) {
+      throw const FormatException('maxNodes must be an integer');
+    }
     return SemanticSnapshotFilter(
       identifierPrefix: identifierPrefix.trim().isEmpty
           ? null
           : identifierPrefix,
       subtreeOf: subtreeOf.trim().isEmpty ? null : subtreeOf,
       fields: fields.isEmpty ? null : fields,
+      maxNodes: maxNodes as int?,
     );
   }
 
@@ -64,10 +73,30 @@ extension type const SemanticSnapshotFilter._(Map<String, dynamic> value) {
     return decoded.isEmpty ? null : decoded;
   }
 
+  /// Cap on returned nodes (ADR 0052): trimming hides the tail in walk
+  /// order and the response admits it via `truncated`; refs stay
+  /// full-walk, so interaction tools keep resolving them.
+  int? get maxNodes => value['maxNodes'] as int?;
+
   bool get isEmpty =>
-      identifierPrefix == null && subtreeOf == null && fields == null;
+      identifierPrefix == null &&
+      subtreeOf == null &&
+      fields == null &&
+      maxNodes == null;
 
   Map<String, dynamic> toJson() => value;
+
+  /// The family declaration of record (ADR 0052): the same selection as
+  /// a shared [SemanticView], whose wire form
+  /// (`identifierPrefix`/`subtreeOf`/`maxNodes`) this filter speaks.
+  /// `fields` stays toolkit-side in v1 — snapshot node keys here are
+  /// Flutter-shaped (`label`, `hint`, `enabled`), while the family's
+  /// [SemanticField] is the OS-tier vocabulary.
+  SemanticView toView() => SemanticView(
+    subtreeOf: subtreeOf,
+    identifierPrefix: identifierPrefix,
+    maxNodes: maxNodes,
+  );
 
   static const empty = SemanticSnapshotFilter._(<String, dynamic>{});
 
@@ -92,6 +121,11 @@ mixin SemanticSnapshotService {
 
   /// Ref-to-global-center mapping populated alongside [_lastRefMap].
   static Map<String, ui.Offset> _lastCenterMap = <String, ui.Offset>{};
+
+  /// Filter-signature → the last family observation built for it, so
+  /// `diff: true` can close the act loop against the same view shape.
+  static final Map<String, Observation> _lastFamilyObservations =
+      <String, Observation>{};
 
   /// Handle that keeps the semantics tree built for the lifetime of the app.
   /// Created lazily on first snapshot / semantic action call.
@@ -244,12 +278,25 @@ mixin SemanticSnapshotService {
   /// Returns a map suitable for JSON serialisation with keys `snapshot_id`,
   /// `nodes`, `nodeCount`, and `truncated`.
   ///
+  /// `render` adds the family's compact numbered-text observation
+  /// (ADR 0052) under `render`; `diff` adds `delta` — +/-/~ rows against
+  /// the previous same-filter call's observation. Both read the family
+  /// projection (`family_projection.dart`), so refs and deltas agree
+  /// with the automation family's grammar.
+  ///
   /// Async so we can await a frame on the (rare) cold path where the
   /// semantics tree hasn't been primed yet — e.g. if
   /// [MCPToolkitBinding.initialize] didn't run for some reason.
   static Future<Map<String, Object?>> buildSemanticSnapshot({
     final SemanticSnapshotFilter? filter,
-  }) => _buildSnapshot(incrementId: true, filter: filter);
+    final bool render = false,
+    final bool diff = false,
+  }) => _buildSnapshot(
+    incrementId: true,
+    filter: filter,
+    render: render,
+    diff: diff,
+  );
 
   /// Internal: read the snapshot without bumping the public id stream.
   /// Used by `WaitPredicateService` while polling so callers' outstanding
@@ -322,6 +369,8 @@ mixin SemanticSnapshotService {
   static Future<Map<String, Object?>> _buildSnapshot({
     required final bool incrementId,
     final SemanticSnapshotFilter? filter,
+    final bool render = false,
+    final bool diff = false,
   }) async {
     final unknownFields = filter?.fields
         ?.where((final f) => !semanticSnapshotNodeFields.contains(f))
@@ -372,7 +421,12 @@ mixin SemanticSnapshotService {
         await pumpFramesIfSuspended();
       }
 
-      return await _buildSnapshotBody(incrementId: incrementId, filter: filter);
+      return await _buildSnapshotBody(
+        incrementId: incrementId,
+        filter: filter,
+        render: render,
+        diff: diff,
+      );
     } finally {
       if (isTestBinding) {
         handle.dispose();
@@ -390,6 +444,8 @@ mixin SemanticSnapshotService {
   static Future<Map<String, Object?>> _buildSnapshotBody({
     required final bool incrementId,
     final SemanticSnapshotFilter? filter,
+    final bool render = false,
+    final bool diff = false,
   }) async {
     final refMap = <String, SemanticsNode>{};
     final boundsMap = <String, ui.Rect>{};
@@ -512,7 +568,7 @@ mixin SemanticSnapshotService {
         return;
       }
 
-      final ref = 's_$counter';
+      final ref = snapshotRef(counter);
       counter++;
 
       refMap[ref] = node;
@@ -582,6 +638,33 @@ mixin SemanticSnapshotService {
             filter: filter,
             subtreeRoot: subtreeRoot,
           );
+    // The maxNodes cap hides the tail in walk order; refs stay
+    // full-walk, so interaction tools keep resolving trimmed rows.
+    final capped = filter?.maxNodes != null && returned.length > filter!.maxNodes!;
+
+    // The family projection (ADR 0052): the same emitted walk as a
+    // family Snapshot + Observation — the render/diff grammar is shared
+    // with the automation family, while `nodes` stays this tool's wire.
+    Map<String, Object?>? familyKeys;
+    if (render || diff) {
+      final view = filter?.toView() ?? const SemanticView();
+      final observation = Observation.of(
+        familySnapshotFromNodes(
+          returned,
+          snapshotId: snapshotId,
+          capturedAt: DateTime.now().toUtc(),
+        ),
+        view,
+      );
+      final cacheKey = filter == null ? '' : jsonEncode(filter.toJson());
+      final previous = diff ? _lastFamilyObservations[cacheKey] : null;
+      _lastFamilyObservations[cacheKey] = observation;
+      familyKeys = {
+        if (render) 'render': observation.render(),
+        if (diff && previous != null)
+          'delta': observation.diff(previous).render(),
+      };
+    }
 
     return <String, Object?>{
       'snapshot_id': snapshotId,
@@ -591,15 +674,18 @@ mixin SemanticSnapshotService {
         'totalNodeCount': totalNodeCount,
         'filter': filter.toJson(),
       },
-      'truncated': truncated,
+      'truncated': truncated || capped,
+      ...?familyKeys,
       // The surface describes the app, not the slice asked for.
       'interactionSurface': _classifyInteractionSurface(totalNodeCount),
       if (viewport != null) 'viewport': _rectToMap(viewport),
     };
   }
 
-  /// The nodes a [filter] keeps, with `children` pruned to kept refs and
-  /// fields projected to the requested set.
+  /// The nodes a [filter] keeps: the producer-side predicate (identity
+  /// containment and prefix matching — what the walk itself can see)
+  /// stays here; the shape work (fields projection, children pruning)
+  /// is the shared grammar's ([projectSnapshotNodes]).
   static List<Map<String, Object?>> _applyFilter({
     required final List<Map<String, Object?>> nodes,
     required final Map<String, SemanticsNode> refMap,
@@ -607,34 +693,16 @@ mixin SemanticSnapshotService {
     required final SemanticsNode? subtreeRoot,
   }) {
     final prefix = filter.identifierPrefix;
-    final kept = <Map<String, Object?>>[
-      for (final node in nodes)
-        if ((subtreeRoot == null ||
-                _isWithin(refMap[node['ref']! as String], subtreeRoot)) &&
-            (prefix == null ||
-                (node['identifier'] is String &&
-                    (node['identifier']! as String).startsWith(prefix))))
-          node,
-    ];
-    final keptRefs = <Object?>{for (final node in kept) node['ref']};
-    final fields = filter.fields?.toSet();
-    return <Map<String, Object?>>[
-      for (final node in kept)
-        <String, Object?>{
-          for (final MapEntry(:key, :value) in node.entries)
-            if (fields == null || key == 'ref' || fields.contains(key))
-              if (key == 'children')
-                key: <String>[
-                  for (final child in value! as List<String>)
-                    if (keptRefs.contains(child)) child,
-                ]
-              else
-                key: value,
-        }..removeWhere(
-          (final key, final value) =>
-              key == 'children' && (value! as List<String>).isEmpty,
-        ),
-    ];
+    return projectSnapshotNodes(
+      nodes,
+      keep: (final node) =>
+          (subtreeRoot == null ||
+              _isWithin(refMap[node['ref']! as String], subtreeRoot)) &&
+          (prefix == null ||
+              (node['identifier'] is String &&
+                  (node['identifier']! as String).startsWith(prefix))),
+      fields: filter.fields,
+    );
   }
 
   /// Whether [node] is [root] or sits below it.

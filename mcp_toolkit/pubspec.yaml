@@ -17,6 +17,10 @@ dependencies:
   intentcall_core: ^1.1.0
   intentcall_schema: ^1.0.0
   is_dart_empty_or_not: ^0.4.0
+  universal_automation_interface:
+    path: /Users/antonio/xs/storage_problem/dart_flutter_packages/pkgs/universal_automation_interface
+  universal_automation_semantics:
+    path: /Users/antonio/xs/storage_problem/dart_flutter_packages/pkgs/universal_automation_semantics
   universal_io: ^2.3.1
 dev_dependencies:
   flutter_test:
