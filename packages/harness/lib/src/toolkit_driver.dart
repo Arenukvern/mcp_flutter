@@ -163,6 +163,23 @@ final class ToolkitDriver
         await evaluator(expression);
       case InvokeAction(:final name, :final args):
         await _invokeRegistryAction(name, args);
+      case ClickAtAction():
+        throw const DriverUnsupportedException(
+          'ToolkitDriver taps through the semantics tree (refs), not '
+          'surface coordinates — use ClickAction with a locator; the '
+          'instrumented tier has no coordinate-click verb',
+        );
+      case MoveAction():
+        throw const DriverUnsupportedException(
+          'ToolkitDriver has no pointer-move verb; hover targets are '
+          'addressed by ref through the hover extension',
+        );
+      case DragAction():
+        throw const DriverUnsupportedException(
+          'ToolkitDriver has no coordinate-drag verb — DragAction carries '
+          'from/to surface coordinates while the instrumented tier is '
+          'ref/semantics-addressed',
+        );
     }
   }
 
