@@ -12,7 +12,7 @@ dependencies:
   equatable: ^2.0.8
   flutter:
     sdk: flutter
-  flutter_mcp_toolkit_core: ^7.0.0
+  flutter_mcp_toolkit_core: ^7.0.1
   from_json_to_json: ^0.5.0
   intentcall_core: ^1.1.0
   intentcall_schema: ^1.0.0
