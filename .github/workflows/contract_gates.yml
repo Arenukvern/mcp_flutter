@@ -150,6 +150,9 @@ jobs:
       - name: Version touchpoints match the train
         run: bash tool/contracts/check_version_sync.sh
 
+      - name: MCP Registry contracts (server.json, Dockerfile, publish workflow)
+        run: bash tool/contracts/check_mcp_registry.sh
+
       - name: IntentCall consumer policy (incl. published-package floors)
         env:
           INTENTCALL_ROOT: ${{ github.workspace }}/intentcall
