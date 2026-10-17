@@ -20,7 +20,7 @@ dependencies:
   # goes through the workspace root overrides pointing at ../intentcall.
   intentcall_core:
   path: ^1.9.0
-  universal_screencast: ^0.1.0
+  universal_screencast: ^0.2.0
 
 dev_dependencies:
   lints: ^6.1.0

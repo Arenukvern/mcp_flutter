@@ -163,6 +163,22 @@ final class ToolkitDriver
         await evaluator(expression);
       case InvokeAction(:final name, :final args):
         await _invokeRegistryAction(name, args);
+      case ClickAtAction():
+        throw const DriverUnsupportedException(
+          'ToolkitDriver does not support coordinate clicks; use ClickAction',
+        );
+      case MoveAction():
+        throw const DriverUnsupportedException(
+          'ToolkitDriver does not support MoveAction',
+        );
+      case DragAction():
+        throw const DriverUnsupportedException(
+          'ToolkitDriver does not support DragAction',
+        );
+      default:
+        throw DriverUnsupportedException(
+          'ToolkitDriver does not support ${action.runtimeType}',
+        );
     }
   }
 
