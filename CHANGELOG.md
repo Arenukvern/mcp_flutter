@@ -3,6 +3,18 @@
 <!-- markdownlint-disable MD052 -->
 <!-- Keep a Changelog version headings use [3.0.1] brackets; MD052 treats them as reference links. -->
 
+## [7.0.1](https://github.com/Arenukvern/mcp_flutter/compare/v7.0.0...v7.0.1) (2026-10-17)
+
+
+### Bug Fixes
+
+* **harness:** 7.0.1 — compile against published interface ^0.3.0 ([45ff9fb](https://github.com/Arenukvern/mcp_flutter/commit/45ff9fbccff4ee76bdf52afc6d65d3b411fdc032))
+
+
+### Documentation
+
+* fix broken star history chart in README ([62f3ee1](https://github.com/Arenukvern/mcp_flutter/commit/62f3ee1e03df92ec61dfa28b3f41c9982c51000b))
+
 ## [7.0.0](https://github.com/Arenukvern/mcp_flutter/compare/v6.0.0...v7.0.0) (2026-10-03)
 
 
