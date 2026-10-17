@@ -16,15 +16,19 @@ library;
 
 export 'package:universal_automation_interface/universal_automation_interface.dart';
 
+export 'src/app_ownership.dart';
 export 'src/check.dart';
+export 'src/evidence.dart';
 export 'src/chrome_app_target.dart';
 export 'src/driver_session.dart';
 export 'src/flutter_app.dart';
 export 'src/flutter_run.dart';
 export 'src/intent_driver_router.dart';
+export 'src/flutter_web_cdp.dart';
 export 'src/log_tap.dart';
 export 'src/scenario.dart';
 export 'src/toolkit_driver.dart';
 export 'src/toolkit_extensions.dart';
 export 'src/vm_client.dart';
 export 'src/vm_service_uri.dart';
+export 'src/web_app_target.dart';

@@ -19,6 +19,40 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   dependency follows at `^0.3.0`.
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **App ownership is a first-class choice (`AppOwnership`)**: targets
+  either `launchAndOwn` (build + launch + stop — the previous implicit
+  behavior) or `attachOnly`, for the borrowed-lease case where an
+  app is already running and stopping someone's session is not the
+  harness's call. Attach-only discovers the pid by binary name (an
+  ambiguous match is an error naming the pids, not a silent pick),
+  verifies the running executable resolves to `binaryPath`, refuses
+  when the on-disk build is newer than the running process (a stale
+  app silently passing as the build under test was the failure mode),
+  optionally pins an exact `BuildFingerprint` (sha256 + size), attaches
+  through an explicitly named `vmServiceUri` (a process the tool did
+  not launch has no stdout to scrape), and `LaunchedApp.stop` is a
+  no-op — the owner keeps full lifecycle control. Measured driver: the
+  vosges low-look ADR-0008 run, which found a live desktop process and
+  had no honest way to either reuse or supersede it.
+
+### Fixed
+
+- **VmClient reconnects a dropped websocket (reconnection law)**: the
+  VM service self-disposes when its socket closes (`streamClosed →
+  dispose`), so every later call threw the local `-32000 Service
+  connection disposed` while the app lived on — measured live during
+  gate runs where heavy `view_screenshots` traffic dropped the socket
+  mid-session. `VmClient` now keeps its http URI and re-establishes the
+  socket ONCE per call on any connection-level failure (disposed,
+  -32010, socket errors), re-binding the toolkit isolate. Callers see
+  one slow call instead of a dead client. Tearoff-based consumers
+  (`ToolkitDriver(client.callExtension, …)`) stay valid — the methods
+  dispatch to the reconnected internals.
+
 ## [7.0.0] - 2026-10-03
 
 ### Changed

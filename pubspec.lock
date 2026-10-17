@@ -760,6 +760,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.3.0"
+  universal_automation_semantics:
+    dependency: transitive
+    description:
+      name: universal_automation_semantics
+      sha256: b0761ce0d004816a774cc4f57fc4963fea26f9b9acfe30fe42013a655adf5dcf
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.2.0"
   universal_browser_cdp:
     dependency: transitive
     description:

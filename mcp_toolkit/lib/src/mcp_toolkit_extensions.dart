@@ -88,8 +88,7 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
           final args = raw == null || raw.isEmpty
               ? const <String, Object?>{}
               : Map<String, Object?>.from(jsonDecode(raw) as Map);
-          final registration = entry.toRegistration();
-          registration.validate(args);
+          entry.toRegistration().validate(args);
           final result = await entry.value.handler(args);
           return agentResultToServiceExtensionMap(result);
         } on Object catch (error) {

@@ -2146,6 +2146,18 @@ Dogfood app: `showcase/flutter_test_app`. Canonical platform doc: `showcase/flut
 
 ADR: `decisions/0008_web_agent_invoke_js_only.mdx` — JS `fetch('/agent/invoke')` **404** by design; Dart `invokeDirect` works when `modelContext` exists.
 
+## JIT vs AOT web: which driving tier
+
+VM extensions (`fmt_*`, the toolkit) require the Dart VM service — they
+exist on JIT web (DDC via `flutter run`). An **AOT web build
+(`flutter build web`) has no VM service**: drive it through the CDP
+tier instead — `flutter_mcp_harness`'s `WebBuildTarget`/`FlutterWebCdp`
+(this repo, ADR-0018) over the browser-level primitives
+(universal-automation-family ADR-0045). For typed app intents on AOT
+web, publish `window.__mcpActions` handlers (plain JS interop, AOT-safe)
+— the CDP driver's `InvokeAction` dispatches to them; projecting the
+toolkit's tool catalog onto that registry is the tracked bridge.
+
 ## Launch (repeatable WebMCP)
 
 ```bash
@@ -2518,7 +2530,74 @@ registry.
 | Repeatable scenario as code, CI-friendly exit codes | this skill (`flutter_mcp_harness`) |
 | One-off interactive debugging from chat/editor | `flutter-mcp` (MCP `fmt_*` tools) |
 | Browser/WebMCP dogfood of the web showcase | `flutter-mcp-toolkit-maintain-web` |
-| Live end-to-end showcase drives (both tiers) | `showcase/drivers` (`make drive-flutter` / `drive-web`) |
+
+## Evidence boundaries (what each tier can prove)
+
+A green tier proves only what that tier touches. When you record a
+result — in a validation ledger, a gate, or a report — say which tier
+it came from, and never let one tier's pass stand in for another's:
+
+| Tier | Proves | Cannot prove |
+|---|---|---|
+| Model / unit tests (app package) | the gesture/decision algorithm on synthetic inputs (direction → symbol → correction) | that the app's real signal chain reaches the algorithm |
+| MCP / driver UI scenarios (this harness) | controls exist, are reachable, and respond — presentation and wiring through the toolkit | anything whose input never crosses the UI (e.g. camera-delivered gestures) |
+| Sensor replay (deterministic frames → the REAL pipeline) | app integration: frames → tracker/recognizer → selector → draft / undo / redo / commit with the real filters and state machines, no person needed | real-hand comfort, camera noise, latency feel |
+| Live camera trial (a human hand) | the real sensor story: detection robustness, comfort, fatigue | repeatability — it is a manual trial, never a CI gate |
+
+Worked example (vosges low-look, that repo's ADR-0008): model tests
+verified the codebook; the MCP scenario verified the Settings controls;
+`low_look_sensor_replay_test.dart` feeds a synthetic hand through the
+real tracker and selector and asserts the committed word; only a live
+trial says anything about a real hand. A scenario that only touches
+the UI must not claim the writing loop works.
+
+## The web/AOT tier (WebBuildTarget + FlutterWebCdp)
+
+The VM-service toolkit tier exists only where a Dart VM service exists:
+JIT web (DDC, `flutter run`) and debug desktop/mobile. An **AOT web
+build (`flutter build web`) has no VM service — the CDP tier is not a
+fallback there, it is the only tier** (tier matrix: family ADR-0045;
+this repo ADR-0018):
+
+```dart
+final app = await WebBuildTarget(projectDir: '.', build: !skipBuild).launch();
+final flutter = app.flutter;              // FlutterWebCdp over CdpDriver
+await flutter.waitText('Settings');
+await flutter.clickText('Sync between devices', expect: 'I have a pairing code');
+await flutter.typeFocused('mesh-pair/v1 ...');   // bringToFront + insertText
+await app.stop();
+```
+
+Measured rules encoded in `FlutterWebCdp` — do not re-learn them:
+
+- Semantic clicks through the driver's fallback ladder work on real
+  Chromium; the OLD dead path was three stacked bugs (`DOM.enable`
+  missing, AX nodes resolving to TEXT nodes, `callFunctionOn` `this`
+  rebinding) — fixed in `universal_browser_cdp` and guarded by the
+  opt-in live fixture (`XS_TEST_CDP_LIVE=1` in the cdp package).
+- Locate by text/aria-label in the LIVE `flt-semantics` DOM;
+  effect-verify every click (`expect:`) and check the effect BEFORE
+  re-clicking (a toggle re-clicks itself off).
+- The first click after load is swallowed — `warmUpClick()` burns it.
+- Typing needs `Page.bringToFront` + `Input.insertText` (background
+  windows have no OS focus; per-key events land nowhere).
+- Navigate in-app only (`popRoute` = `history.back()`); a reload drops
+  in-memory state. Headless Chrome never runs rAF — Flutter freezes;
+  `WebBuildTarget` defaults to headed Chrome for this reason.
+
+## Failure evidence (EvidenceCollector)
+
+Attach evidence while the scenario runs; `Scenario` dumps it under
+`$TMPDIR/<scenario>/` on the first failing step: `attachCdp` buffers the
+page's console + uncaught exceptions (an app-side throw renders as a
+canvas error screen — invisible in the DOM — and ONLY the console names
+it), `attachLines` tails app stdout, `attachFile` defers an AX/state
+dump. Never let evidence production mask the failure — it is
+best-effort by contract.
+
+VM-service verbs against a booting app: use `vm.callExtensionUntil(...)`
+instead of hand-rolled retry loops (it folds the -32601-before-
+registration window and the isolate rebind).
 
 ## Launch paths (pick by ownership)
 
@@ -2530,6 +2609,7 @@ ADR-0014 failure mode (the second attach can kill the first).
 |---|---|---|
 | `FlutterRunTarget` | You want the flutter tool to own build + hot reload (`r`/`R`/`q` via stdin). The showcase launch path. | `device` (`macos`, `chrome`, …), `extraArgs`, `onLine` tee for long cold builds; VM URI scraped from the tool's own announcement. |
 | `BinaryAppTarget` / `MacosAppTarget` / `WindowsAppTarget` | Fresh full `flutter build <os> --debug` → launch the binary directly. No compile channel afterwards. | Pass `launch(build: false)` to reuse an existing binary. Never opens an owning session. |
+| Same targets, `ownership: AppOwnership.attachOnly` | The app is ALREADY running and stopping it is not the harness's call (ADR-0020): discovers the pid by binary name, verifies the running executable against `binaryPath` AND the on-disk build against the process start (an optional `BuildFingerprint` pin is stronger), attaches via the explicitly named `vmServiceUri` — and `stop()` never signals the process. | Ambiguous pgrep matches are an error naming the pids. Attach never builds. Attach cannot scrape a stdout it does not own — the URI is named by the owner. |
 | External runner (e.g. `oka dev`) owns the app | Construct `LaunchedApp` directly around the owning process and read the VM URI from the runner-session contract, not stdout. | This package never imports the runner; callers wire it (`LaunchedApp(name:, process:, stdout:, vmUri:)`). |
 
 `FlutterRunTarget.launch(build:)` ignores the flag — `flutter run` always
@@ -2548,11 +2628,16 @@ final scenario = Scenario('checkout E2E', steps: [
     context.bag['app'] = app;             // hand values between steps
   }),
   ('drive + assert', (context) async {
-    final driver = WidgetDriver(await context.take<LaunchedApp>('app').vm());
-    final ref = await driver.findRef('checkout');
-    if (ref == null) return context.report.fail('no checkout button');
-    await driver.tap(ref);
-    final total = await driver.findValue((v) => v.startsWith(r'$'));
+    final driver = await attachDriver(context.take<LaunchedApp>('app'));
+    await driver.expectLabel('checkout'); // retry-until-rendered
+    await driver.perform(const ClickAction(name: 'checkout'));
+    final total = (await driver.snapshot())
+        .nodes
+        .map((node) => node.value)
+        .firstWhere(
+          (value) => value != null && value.startsWith(r'$'),
+          orElse: () => null,
+        );
     total != null
         ? context.report.pass('total rendered: $total')
         : context.report.fail('no total in snapshot');
@@ -2575,23 +2660,28 @@ exit(passed ? 0 : 1);
 - `retry(action)` polls until non-null (for app-side readiness races).
 - Full two-instance composition root: `packages/harness/example/desktop_pair.dart`.
 
-## Driving widgets (`WidgetDriver`)
+## Driving widgets (`ToolkitDriver`)
 
-- `snapshot()` → `(label, ref)` pairs; `findRef(needle)` is case-insensitive
-  substring + retry until timeout.
-- `tap(ref)`, `tapUntil(ref, until: …)` (re-tap until a predicate fires),
-  `enterText(ref, text)`, `scroll(direction:, distance:)` — off-screen
-  semantics only exist once scrolled into view.
-- `findValue(predicate)` reads a node's selectable-text **`value`** — the
-  deterministic way to read app-rendered data (clipboards and icon-only copy
-  buttons are not).
-- Cold-attach race: the app may not have registered the toolkit yet when you
-  attach. The driver answers RPC error `-32601` with an empty snapshot so
-  `findRef`'s retry loop rides it out instead of aborting — do not treat one
-  empty snapshot as proof the UI is empty.
-- `VmClient` extras: `extensionNames()` (discoverability), `evaluate(expr)`,
-  `hotReload()`. Raw `reloadSources` **cannot compile** without an owning
-  `flutter run`/`attach` session — treat `true` as "asked", not "recompiled".
+- `attachDriver(app)` → a `ToolkitDriver` over the app's VM service.
+  `snapshot()` → the semantic `AxNode` tree (label, role, bounds, and
+  the selectable-text **`value`** — the deterministic way to read
+  app-rendered data; clipboards and icon-only copy buttons are not).
+- Act through the family actions (ADR-0038): `driver.perform(const
+  ClickAction(name: 'submit'))`, `TypeAction`, key-press, named-route
+  navigate, `evaluate` — the same vocabulary the MCP server and the
+  invoke tier speak; `screenshot()` for a PNG.
+- Observe with `expectLabel(needle)` / `labelContaining(needle)` —
+  the retry-until-rendered loop (a tap lands before the next frame
+  paints; verifying immediately reads the old tree), failing with a
+  dump of the surface it actually saw.
+- `WidgetDriver` was removed (ADR-0019) — one driver per wire; do not
+  reintroduce per-package driver shells.
+- `VmClient` extras: `extensionNames()` (discoverability),
+  `evaluate(expr)`, `hotReload()`, `callExtensionUntil(...)` (folds the
+  -32601-before-registration window, the isolate rebind, and the
+  dropped-socket reconnect). Raw `reloadSources` **cannot compile**
+  without an owning `flutter run`/`attach` session — treat `true` as
+  "asked", not "recompiled".
 
 ## Showcase launcher (`packages/harness/tool/showcase.dart`)
 

@@ -17,6 +17,8 @@ dependencies:
   intentcall_core: ^1.1.0
   intentcall_schema: ^1.0.0
   is_dart_empty_or_not: ^0.4.0
+  universal_automation_interface: ^0.3.0
+  universal_automation_semantics: ^0.2.0
   universal_io: ^2.3.1
 dev_dependencies:
   flutter_test:

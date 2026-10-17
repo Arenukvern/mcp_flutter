@@ -39,9 +39,11 @@ void main() {
 
       final Map<String, Object?> catalog =
           await binding.callbacks['agent_catalog']!({});
-      final actions = List<Object?>.from(catalog['actions'] as List);
+      final actions =
+          List<Object?>.from(catalog['actions']! as List<Object?>);
       expect(actions, hasLength(1));
-      final descriptor = Map<Object?, Object?>.from(actions.single as Map);
+      final descriptor =
+          Map<Object?, Object?>.from(actions.single! as Map<Object?, Object?>);
       expect(descriptor['name'], 'inspect_number');
       expect(descriptor['namespace'], 'app');
       expect(descriptor['description'], 'Inspect a number');
@@ -60,10 +62,10 @@ void main() {
     });
 
     test('agent_invoke refuses unknown names without throwing', () async {
-      final binding = _CapturingToolkitBinding();
-      binding.initializeServiceExtensions(
-        errorMonitor: _TestErrorMonitor(),
-        entries: const {},
+      final binding = _CapturingToolkitBinding()
+        ..initializeServiceExtensions(
+          errorMonitor: _TestErrorMonitor(),
+          entries: const {},
       );
       final Map<String, Object?> invoke =
           await binding.callbacks['agent_invoke']!({

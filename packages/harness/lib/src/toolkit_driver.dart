@@ -165,15 +165,20 @@ final class ToolkitDriver
         await _invokeRegistryAction(name, args);
       case ClickAtAction():
         throw const DriverUnsupportedException(
-          'ToolkitDriver does not support coordinate clicks; use ClickAction',
+          'ToolkitDriver taps through the semantics tree (refs), not '
+          'surface coordinates — use ClickAction with a locator; the '
+          'instrumented tier has no coordinate-click verb',
         );
       case MoveAction():
         throw const DriverUnsupportedException(
-          'ToolkitDriver does not support MoveAction',
+          'ToolkitDriver has no pointer-move verb; hover targets are '
+          'addressed by ref through the hover extension',
         );
       case DragAction():
         throw const DriverUnsupportedException(
-          'ToolkitDriver does not support DragAction',
+          'ToolkitDriver has no coordinate-drag verb — DragAction carries '
+          'from/to surface coordinates while the instrumented tier is '
+          'ref/semantics-addressed',
         );
       default:
         throw DriverUnsupportedException(

@@ -187,8 +187,8 @@ Future<void> macosShowcase() async {
     await quit(1);
   }
   File(p.join(showcaseDir, 'flutter.pid'))
-      .writeAsStringSync('${app.process.pid}');
-  log('flutter pid ${app.process.pid}');
+      .writeAsStringSync('${app.process!.pid}');
+  log('flutter pid ${app.process!.pid}');
 
   // Keep teeing live session lines (hot reload cycles, app output).
   app.stdout.stream.listen(tee);
@@ -316,7 +316,7 @@ Future<void> webShowcase({required final bool detach}) async {
     await quit(1);
   }
   File(p.join(showcaseDir, 'web_flutter.pid'))
-      .writeAsStringSync('${app.process.pid}');
+      .writeAsStringSync('${app.process!.pid}');
 
   app.stdout.stream.listen(tee);
 
@@ -349,14 +349,14 @@ Future<void> _relayUntilExit(
   });
 
   stdin.listen(
-    (final chunk) => app.process.stdin.add(chunk),
+    (final chunk) => app.process!.stdin.add(chunk),
     onDone: () {
       // EOF on stdin (backgrounded tool): quit the app cleanly.
-      app.process.stdin.write('q');
+      app.process!.stdin.write('q');
     },
   );
 
-  final code = await app.process.exitCode;
+  final code = await app.process!.exitCode;
   await stopShowcase();
   await logSink.flush();
   await logSink.close();
