@@ -15,7 +15,7 @@ import 'package:path/path.dart' as p;
 ///
 /// Usage:
 ///   dart run example/desktop_pair.dart [--skip-build]
-Future<void> main(final List<String> args) async {
+Future<void> main(List<String> args) async {
   final build = !args.contains('--skip-build');
   final appDir = 'flutter_test_app'; // adapt: your Flutter desktop project
   final binary = p.join(
@@ -38,7 +38,7 @@ Future<void> main(final List<String> args) async {
     final scenario = Scenario('desktop pair E2E', steps: [
       (
         'launch host A',
-        (final context) async {
+        (context) async {
           final launched = await MacosAppTarget(
             projectDir: appDir,
             binaryPath: binary,
@@ -52,7 +52,7 @@ Future<void> main(final List<String> args) async {
       ),
       (
         'launch controller B',
-        (final context) async {
+        (context) async {
           final launched = await MacosAppTarget(
             projectDir: appDir,
             binaryPath: binary,
@@ -66,7 +66,7 @@ Future<void> main(final List<String> args) async {
       ),
       (
         'B: drive the UI through A flow',
-        (final context) async {
+        (context) async {
           final hostApp = context.take<LaunchedApp>('host');
           final ctrlApp = context.take<LaunchedApp>('controller');
           final hostDriver = await attachDriver(hostApp);

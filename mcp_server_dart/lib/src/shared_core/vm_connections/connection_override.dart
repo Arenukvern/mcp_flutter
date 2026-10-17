@@ -50,8 +50,8 @@ final ObjectSchema connectionObjectSchema = ObjectSchema(
 ///
 /// Uses strict nested shape: `arguments.connection`.
 Future<CoreResult?> applyConnectionOverride({
-  required final CallToolRequest request,
-  required final CoreCommandExecutor executor,
+  required CallToolRequest request,
+  required CoreCommandExecutor executor,
 }) => applyConnectionOverrideFromArguments(
   arguments: request.arguments,
   executor: executor,
@@ -61,8 +61,8 @@ Future<CoreResult?> applyConnectionOverride({
 ///
 /// Uses strict nested shape: `arguments.connection`.
 Future<CoreResult?> applyConnectionOverrideFromArguments({
-  required final Map<String, Object?>? arguments,
-  required final CoreCommandExecutor executor,
+  required Map<String, Object?>? arguments,
+  required CoreCommandExecutor executor,
 }) async {
   final resolved = buildConnectCommandFromArguments(arguments: arguments);
   final parseError = resolved.error;
@@ -87,8 +87,8 @@ Future<CoreResult?> applyConnectionOverrideFromArguments({
 /// fields are provided (used by `connect_debug_app`).
 ({CoreResult? error, ConnectCommand? command})
 buildConnectCommandFromArguments({
-  required final Map<String, Object?>? arguments,
-  final bool fallbackToAuto = false,
+  required Map<String, Object?>? arguments,
+  bool fallbackToAuto = false,
 }) {
   final parsed = parseConnectionOverrideArguments(
     arguments: arguments,
@@ -105,8 +105,8 @@ buildConnectCommandFromArguments({
 /// Applies connection override from URI query parameters:
 /// `targetId`, `mode`, `host`, `port`, `uri`, `forceReconnect`.
 Future<CoreResult?> applyConnectionOverrideFromResourceUri({
-  required final String resourceUri,
-  required final CoreCommandExecutor executor,
+  required String resourceUri,
+  required CoreCommandExecutor executor,
 }) async {
   final parsedUri = Uri.tryParse(resourceUri);
   if (parsedUri == null) {

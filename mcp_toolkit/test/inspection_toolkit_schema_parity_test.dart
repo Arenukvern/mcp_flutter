@@ -19,7 +19,7 @@ import 'package:mcp_toolkit/mcp_toolkit.dart';
 void main() {
   const schemaEquality = DeepCollectionEquality();
 
-  Map<String, Object?> appInputSchema(final String toolName) =>
+  Map<String, Object?> appInputSchema(String toolName) =>
       getFlutterMcpToolkitEntries(
         binding: MCPToolkitBinding.instance,
       ).byName(toolName).toRegistration().descriptor.inputSchema;

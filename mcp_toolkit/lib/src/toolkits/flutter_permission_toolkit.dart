@@ -148,26 +148,26 @@ abstract interface class MCPPermissionDelegate {
   /// Get the status of a permission.
   /// {@endtemplate}
   FutureOr<MCPPermissionResult> getPermissionStatus({
-    required final String kind,
+    required String kind,
   });
 
   /// {@template request_permission}
   /// Request a permission.
   /// {@endtemplate}
-  FutureOr<MCPPermissionResult> requestPermission({required final String kind});
+  FutureOr<MCPPermissionResult> requestPermission({required String kind});
 
   /// {@template open_permission_settings}
   /// Open the permission settings.
   /// {@endtemplate}
   FutureOr<MCPPermissionResult> openPermissionSettings({
-    required final String kind,
+    required String kind,
   });
 }
 
 /// Returns a set of [AgentCallEntry] values for
 /// the Flutter MCP Permission Toolkit.
 Set<AgentCallEntry> getFlutterMcpPermissionEntries({
-  required final MCPPermissionDelegate delegate,
+  required MCPPermissionDelegate delegate,
 }) => <AgentCallEntry>{
   _SupportedKindsResource(delegate: delegate),
   _PermissionStatusEntry(delegate: delegate),
@@ -183,7 +183,7 @@ extension MCPToolkitPermissionBindingExtension on MCPToolkitBinding {
   /// Initialize the Flutter MCP Permission Toolkit.
   /// {@endtemplate}
   void initializeFlutterPermissionToolkit({
-    required final MCPPermissionDelegate delegate,
+    required MCPPermissionDelegate delegate,
   }) => unawaited(
     addEntries(entries: getFlutterMcpPermissionEntries(delegate: delegate)),
   );
@@ -192,10 +192,10 @@ extension MCPToolkitPermissionBindingExtension on MCPToolkitBinding {
 extension type _SupportedKindsResource._(AgentCallEntry entry)
     implements AgentCallEntry {
   factory _SupportedKindsResource({
-    required final MCPPermissionDelegate delegate,
+    required MCPPermissionDelegate delegate,
   }) {
     final entry = mcpToolkitResource(
-      handler: (final parameters) {
+      handler: (parameters) {
         final kinds = delegate.listSupportedPermissionKinds().toList(
           growable: false,
         );
@@ -217,10 +217,10 @@ extension type _SupportedKindsResource._(AgentCallEntry entry)
 extension type _PermissionStatusEntry._(AgentCallEntry entry)
     implements AgentCallEntry {
   factory _PermissionStatusEntry({
-    required final MCPPermissionDelegate delegate,
+    required MCPPermissionDelegate delegate,
   }) {
     final entry = mcpToolkitTool(
-      handler: (final parameters) async {
+      handler: (parameters) async {
         final kind = parameters['kind'] ?? 'visual_capture';
         final payload = await delegate.getPermissionStatus(kind: kind);
         return MCPCallResult(
@@ -245,10 +245,10 @@ extension type _PermissionStatusEntry._(AgentCallEntry entry)
 extension type _PermissionRequestEntry._(AgentCallEntry entry)
     implements AgentCallEntry {
   factory _PermissionRequestEntry({
-    required final MCPPermissionDelegate delegate,
+    required MCPPermissionDelegate delegate,
   }) {
     final entry = mcpToolkitTool(
-      handler: (final parameters) async {
+      handler: (parameters) async {
         final kind = parameters['kind'] ?? 'visual_capture';
         final payload = await delegate.requestPermission(kind: kind);
         return MCPCallResult(
@@ -273,10 +273,10 @@ extension type _PermissionRequestEntry._(AgentCallEntry entry)
 extension type _PermissionOpenSettingsEntry._(AgentCallEntry entry)
     implements AgentCallEntry {
   factory _PermissionOpenSettingsEntry({
-    required final MCPPermissionDelegate delegate,
+    required MCPPermissionDelegate delegate,
   }) {
     final entry = mcpToolkitTool(
-      handler: (final parameters) async {
+      handler: (parameters) async {
         final kind = parameters['kind'] ?? 'visual_capture';
         final payload = await delegate.openPermissionSettings(kind: kind);
         return MCPCallResult(

@@ -48,7 +48,7 @@ void main() {
 
   testWidgets(
     'wait_for text predicate matches when substring present in snapshot',
-    (final tester) async {
+    (tester) async {
       // Two-phase: start with "Loading", flip to "Done" after 200ms.
       await tester.pumpWidget(
         const MaterialApp(home: Scaffold(body: _DelayedText())),
@@ -77,7 +77,7 @@ void main() {
 
   testWidgets(
     'wait_for text predicate does not bump public snapshot_id more than once',
-    (final tester) async {
+    (tester) async {
       await tester.pumpWidget(
         const MaterialApp(home: Scaffold(body: Text('hello world'))),
       );
@@ -103,7 +103,7 @@ void main() {
   );
 
   testWidgets('wait_for noText predicate matches once substring disappears', (
-    final tester,
+    tester,
   ) async {
     await tester.pumpWidget(
       const MaterialApp(home: Scaffold(body: _DelayedClear())),
@@ -163,7 +163,7 @@ void main() {
   );
 
   group('wait_for timeout says why it never matched', () {
-    Map<String, Object?> snapshotOf(final List<Object?> nodes) =>
+    Map<String, Object?> snapshotOf(List<Object?> nodes) =>
         <String, Object?>{'snapshot_id': 3, 'nodes': nodes};
 
     test('text that differs only by case names the string on screen', () {
@@ -288,7 +288,7 @@ void main() {
 
   testWidgets(
     'wait_for noError predicate matches when error monitor is empty',
-    (final tester) async {
+    (tester) async {
       await tester.pumpWidget(
         const MaterialApp(home: Scaffold(body: Text('ok'))),
       );
@@ -310,7 +310,7 @@ void main() {
   );
 
   testWidgets('wait_for stable predicate matches once UI stops changing', (
-    final tester,
+    tester,
   ) async {
     await tester.pumpWidget(
       const MaterialApp(home: Scaffold(body: Text('static'))),
@@ -350,7 +350,7 @@ void main() {
 
   testWidgets(
     'wait_for stable resolves while frames are suspended',
-    (final tester) async {
+    (tester) async {
       await tester.pumpWidget(
         const MaterialApp(home: Scaffold(body: Text('static'))),
       );
@@ -378,7 +378,7 @@ void main() {
   );
 
   group('wait_for node predicate', () {
-    testWidgets('reads state, not the label', (final tester) async {
+    testWidgets('reads state, not the label', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(home: Scaffold(body: _StaticTabs())),
       );
@@ -418,7 +418,7 @@ void main() {
       expect((await openFuture)['matched'], isTrue);
     });
 
-    testWidgets('matches once the flag flips', (final tester) async {
+    testWidgets('matches once the flag flips', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(home: Scaffold(body: _DelayedSelection())),
       );
@@ -442,7 +442,7 @@ void main() {
       expect(result['snapshot_id'], isA<int>());
     });
 
-    testWidgets('absent matches once the node is gone', (final tester) async {
+    testWidgets('absent matches once the node is gone', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(home: Scaffold(body: _DelayedIdentifiedClear())),
       );
@@ -470,7 +470,7 @@ class _StaticTabs extends StatelessWidget {
   const _StaticTabs();
 
   @override
-  Widget build(final BuildContext context) => Row(
+  Widget build(BuildContext context) => Row(
     children: <Widget>[
       Semantics(
         identifier: 'tab_first',
@@ -508,7 +508,7 @@ class _DelayedIdentifiedClearState extends State<_DelayedIdentifiedClear> {
   }
 
   @override
-  Widget build(final BuildContext context) => Center(
+  Widget build(BuildContext context) => Center(
     child: _present
         ? Semantics(
             identifier: 'transient_row',
@@ -538,7 +538,7 @@ class _DelayedSelectionState extends State<_DelayedSelection> {
   }
 
   @override
-  Widget build(final BuildContext context) => Row(
+  Widget build(BuildContext context) => Row(
     children: <Widget>[
       Semantics(
         identifier: 'tab_first',
@@ -575,7 +575,7 @@ class _DelayedTextState extends State<_DelayedText> {
   }
 
   @override
-  Widget build(final BuildContext context) => Center(child: Text(_label));
+  Widget build(BuildContext context) => Center(child: Text(_label));
 }
 
 class _DelayedClear extends StatefulWidget {
@@ -595,7 +595,7 @@ class _DelayedClearState extends State<_DelayedClear> {
   }
 
   @override
-  Widget build(final BuildContext context) => Center(
+  Widget build(BuildContext context) => Center(
     child: _showLoading ? const Text('Loading') : const SizedBox.shrink(),
   );
 }

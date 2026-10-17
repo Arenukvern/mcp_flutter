@@ -3,7 +3,7 @@ import 'package:test/test.dart';
 
 /// Canned flat wire snapshot with a late-rendering label: the first two
 /// snapshots miss 'Done'; the third carries it.
-Map<String, dynamic> _envelope({required final bool done}) => {
+Map<String, dynamic> _envelope({required bool done}) => {
   'snapshot_id': done ? 3 : 1,
   'nodes': [
     {
@@ -49,7 +49,7 @@ void main() {
         'Done',
         attempts: 2,
         delay: Duration.zero,
-        onMiss: (final surface) => dump = surface,
+        onMiss: (surface) => dump = surface,
       );
       expect(label, isNull);
       expect(dump, contains('Working…'));

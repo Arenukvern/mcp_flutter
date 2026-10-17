@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 
 Future<Map<String, Object?>> _snapshotAfterPump(
-  final WidgetTester tester,
+  WidgetTester tester,
 ) async {
   final snapshotFuture = SemanticSnapshotService.buildSemanticSnapshot();
   await tester.pump();
@@ -14,9 +14,9 @@ Future<Map<String, Object?>> _snapshotAfterPump(
 }
 
 Future<T> _settleAfterPumps<T>(
-  final WidgetTester tester,
-  final Future<T> future, {
-  final int pumps = 12,
+  WidgetTester tester,
+  Future<T> future, {
+  int pumps = 12,
 }) async {
   for (var i = 0; i < pumps; i++) {
     await tester.pump(const Duration(milliseconds: 20));
@@ -24,11 +24,11 @@ Future<T> _settleAfterPumps<T>(
   return future;
 }
 
-String _refFor(final Map<String, Object?> snapshot, final String identifier) {
+String _refFor(Map<String, Object?> snapshot, String identifier) {
   final nodes = (snapshot['nodes']! as List<Object?>)
       .cast<Map<String, Object?>>();
   return nodes.firstWhere(
-        (final node) => node['identifier'] == identifier,
+        (node) => node['identifier'] == identifier,
       )['ref']!
       as String;
 }
@@ -58,7 +58,7 @@ class _RemovableState extends State<_Removable> {
   void remove() => setState(() => visible = false);
 
   @override
-  Widget build(final BuildContext context) =>
+  Widget build(BuildContext context) =>
       visible ? widget.child : const SizedBox.shrink();
 }
 
@@ -69,7 +69,7 @@ class _StripAboveList extends StatelessWidget {
   const _StripAboveList();
 
   @override
-  Widget build(final BuildContext context) => MaterialApp(
+  Widget build(BuildContext context) => MaterialApp(
     home: Scaffold(
       body: Column(
         children: <Widget>[
@@ -78,14 +78,14 @@ class _StripAboveList extends StatelessWidget {
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               itemCount: 30,
-              itemBuilder: (final context, final index) =>
+              itemBuilder: (context, index) =>
                   SizedBox(width: 120, child: Text('Chip $index')),
             ),
           ),
           Expanded(
             child: ListView.builder(
               itemCount: 60,
-              itemBuilder: (final context, final index) => SizedBox(
+              itemBuilder: (context, index) => SizedBox(
                 height: 48,
                 child: Semantics(
                   identifier: 'row_$index',
@@ -107,7 +107,7 @@ class _RailBesideList extends StatelessWidget {
   const _RailBesideList();
 
   @override
-  Widget build(final BuildContext context) => MaterialApp(
+  Widget build(BuildContext context) => MaterialApp(
     home: Scaffold(
       body: Row(
         children: <Widget>[
@@ -115,14 +115,14 @@ class _RailBesideList extends StatelessWidget {
             width: 120,
             child: ListView.builder(
               itemCount: 40,
-              itemBuilder: (final context, final index) =>
+              itemBuilder: (context, index) =>
                   SizedBox(height: 48, child: Text('Rail $index')),
             ),
           ),
           Expanded(
             child: ListView.builder(
               itemCount: 60,
-              itemBuilder: (final context, final index) =>
+              itemBuilder: (context, index) =>
                   SizedBox(height: 48, child: Text('Row $index')),
             ),
           ),
@@ -140,7 +140,7 @@ class _ShellRailBesideList extends StatelessWidget {
   const _ShellRailBesideList();
 
   @override
-  Widget build(final BuildContext context) => MaterialApp(
+  Widget build(BuildContext context) => MaterialApp(
     home: Scaffold(
       body: Row(
         children: <Widget>[
@@ -165,7 +165,7 @@ class _ShellRailBesideList extends StatelessWidget {
           Expanded(
             child: ListView.builder(
               itemCount: 60,
-              itemBuilder: (final context, final index) =>
+              itemBuilder: (context, index) =>
                   SizedBox(height: 48, child: Text('Row $index')),
             ),
           ),
@@ -185,7 +185,7 @@ class _DragBoard extends StatelessWidget {
   static final List<String> dragged = <String>[];
 
   @override
-  Widget build(final BuildContext context) => MaterialApp(
+  Widget build(BuildContext context) => MaterialApp(
     home: Scaffold(
       body: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
@@ -197,9 +197,9 @@ class _DragBoard extends StatelessWidget {
                   identifier: 'card_$i',
                   label: 'Card $i',
                   child: GestureDetector(
-                    onPanStart: (final _) => dragged.add('card_$i'),
-                    onPanUpdate: (final _) {},
-                    onPanEnd: (final _) {},
+                    onPanStart: (_) => dragged.add('card_$i'),
+                    onPanUpdate: (_) {},
+                    onPanEnd: (_) {},
                     child: const SizedBox(width: 260, height: 140),
                   ),
                 ),
@@ -222,7 +222,7 @@ class _ShortCardBoard extends StatelessWidget {
   final ValueChanged<DragStartDetails> onDragStart;
 
   @override
-  Widget build(final BuildContext context) => MaterialApp(
+  Widget build(BuildContext context) => MaterialApp(
     home: Scaffold(
       body: Stack(
         children: <Widget>[
@@ -235,9 +235,9 @@ class _ShortCardBoard extends StatelessWidget {
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onPanStart: onDragStart,
-                onPanUpdate: (final _) {},
-                onPanEnd: (final _) {},
-                onLongPressStart: (final _) {},
+                onPanUpdate: (_) {},
+                onPanEnd: (_) {},
+                onLongPressStart: (_) {},
                 child: const SizedBox(width: 200, height: 29),
               ),
             ),
@@ -259,13 +259,13 @@ class _ShortCardBoard extends StatelessWidget {
 
 void main() {
   testWidgets('a drag reports the press point, not the pointer it ran on', (
-    final tester,
+    tester,
   ) async {
     final semantics = tester.ensureSemantics();
     try {
       DragStartDetails? start;
       await tester.pumpWidget(
-        _ShortCardBoard(onDragStart: (final details) => start = details),
+        _ShortCardBoard(onDragStart: (details) => start = details),
       );
       await tester.pumpAndSettle();
 
@@ -293,7 +293,7 @@ void main() {
   });
 
   testWidgets('a gesture refuses a ref whose node left the tree', (
-    final tester,
+    tester,
   ) async {
     final semantics = tester.ensureSemantics();
     try {
@@ -334,7 +334,7 @@ void main() {
   });
 
   testWidgets('enter_text refuses a ref that is not a text field', (
-    final tester,
+    tester,
   ) async {
     final semantics = tester.ensureSemantics();
     try {
@@ -385,7 +385,7 @@ void main() {
   });
 
   testWidgets('enter_text into an unfocused field reports what landed', (
-    final tester,
+    tester,
   ) async {
     final semantics = tester.ensureSemantics();
     try {
@@ -427,7 +427,7 @@ void main() {
   });
 
   testWidgets('enter_text reports the value a formatter reshaped', (
-    final tester,
+    tester,
   ) async {
     final semantics = tester.ensureSemantics();
     try {
@@ -472,7 +472,7 @@ void main() {
   });
 
   testWidgets('enter_text clears a field when given an empty string', (
-    final tester,
+    tester,
   ) async {
     final semantics = tester.ensureSemantics();
     try {
@@ -510,7 +510,7 @@ void main() {
   });
 
   testWidgets('enter_text fails when the field keeps nothing', (
-    final tester,
+    tester,
   ) async {
     final semantics = tester.ensureSemantics();
     try {
@@ -553,7 +553,7 @@ void main() {
   });
 
   testWidgets('a gesture refuses a control that reports itself disabled', (
-    final tester,
+    tester,
   ) async {
     final semantics = tester.ensureSemantics();
     try {
@@ -595,7 +595,7 @@ void main() {
   });
 
   testWidgets('a rejected write puts back what the field held', (
-    final tester,
+    tester,
   ) async {
     final semantics = tester.ensureSemantics();
     try {
@@ -642,7 +642,7 @@ void main() {
   });
 
   testWidgets('a swipe without measurable scroll reports unverified delivery', (
-    final tester,
+    tester,
   ) async {
     final semantics = tester.ensureSemantics();
     var handled = false;
@@ -658,7 +658,7 @@ void main() {
                 onTap: () {},
                 child: Listener(
                   behavior: HitTestBehavior.opaque,
-                  onPointerUp: (final _) => handled = true,
+                  onPointerUp: (_) => handled = true,
                   child: const SizedBox(width: 200, height: 200),
                 ),
               ),
@@ -690,7 +690,7 @@ void main() {
   });
 
   testWidgets('a scroll reports the offsets of the list it actually moved', (
-    final tester,
+    tester,
   ) async {
     final semantics = tester.ensureSemantics();
     try {
@@ -709,7 +709,7 @@ void main() {
       );
       final positions = tester
           .stateList<ScrollableState>(find.byType(Scrollable))
-          .map((final s) => s.position.pixels)
+          .map((s) => s.position.pixels)
           .toList();
       expect(result['success'], isTrue, reason: '$result');
       // The strip comes first in the tree and stays put; the list the row
@@ -724,7 +724,7 @@ void main() {
   });
 
   testWidgets('a row ref scrolls the list that row belongs to', (
-    final tester,
+    tester,
   ) async {
     final semantics = tester.ensureSemantics();
     try {
@@ -744,7 +744,7 @@ void main() {
       );
       final positions = tester
           .stateList<ScrollableState>(find.byType(Scrollable))
-          .map((final s) => s.position.pixels)
+          .map((s) => s.position.pixels)
           .toList();
 
       expect(result['success'], isTrue, reason: '$result');
@@ -757,7 +757,7 @@ void main() {
   });
 
   testWidgets('a draggable card ref scrolls the board, never itself', (
-    final tester,
+    tester,
   ) async {
     final semantics = tester.ensureSemantics();
     _DragBoard.dragged.clear();
@@ -794,7 +794,7 @@ void main() {
   });
 
   testWidgets('custom scroll semantics without geometry still take the action', (
-    final tester,
+    tester,
   ) async {
     final semantics = tester.ensureSemantics();
     var handled = 0;
@@ -837,7 +837,7 @@ void main() {
   });
 
   testWidgets('a list at its edge answers for itself, not for a stray point', (
-    final tester,
+    tester,
   ) async {
     final semantics = tester.ensureSemantics();
     try {
@@ -873,7 +873,7 @@ void main() {
   });
 
   testWidgets('reveal_search scrolls the list its target lives in', (
-    final tester,
+    tester,
   ) async {
     final semantics = tester.ensureSemantics();
     try {
@@ -892,7 +892,7 @@ void main() {
       final result = await revealFuture;
       final positions = tester
           .stateList<ScrollableState>(find.byType(Scrollable))
-          .map((final s) => s.position.pixels)
+          .map((s) => s.position.pixels)
           .toList();
 
       expect(result['success'], isTrue, reason: '$result');
@@ -909,7 +909,7 @@ void main() {
   });
 
   testWidgets('a ref-less scroll drives the content, not the side rail', (
-    final tester,
+    tester,
   ) async {
     final semantics = tester.ensureSemantics();
     try {
@@ -923,7 +923,7 @@ void main() {
       );
       final positions = tester
           .stateList<ScrollableState>(find.byType(Scrollable))
-          .map((final s) => s.position.pixels)
+          .map((s) => s.position.pixels)
           .toList();
 
       expect(result['success'], isTrue, reason: '$result');
@@ -935,7 +935,7 @@ void main() {
   });
 
   testWidgets('focus lands through the semantic action and is proven', (
-    final tester,
+    tester,
   ) async {
     final semantics = tester.ensureSemantics();
     try {
@@ -979,7 +979,7 @@ void main() {
       final ref = _refFor(snapshot, 'target');
       final node = (snapshot['nodes']! as List<Object?>)
           .cast<Map<String, Object?>>()
-          .firstWhere((final n) => n['ref'] == ref);
+          .firstWhere((n) => n['ref'] == ref);
       expect(node['actions'], contains('focus'));
 
       final result = await _settleAfterPumps(
@@ -1007,7 +1007,7 @@ void main() {
   });
 
   testWidgets('focus opens a text field for the keystrokes that follow', (
-    final tester,
+    tester,
   ) async {
     final semantics = tester.ensureSemantics();
     try {
@@ -1045,7 +1045,7 @@ void main() {
       final after = await _snapshotAfterPump(tester);
       final node = (after['nodes']! as List<Object?>)
           .cast<Map<String, Object?>>()
-          .firstWhere((final n) => n['identifier'] == 'query');
+          .firstWhere((n) => n['identifier'] == 'query');
       expect(node['focused'], isTrue);
       expect(node['actions'], contains('setText'));
     } finally {
@@ -1054,7 +1054,7 @@ void main() {
   });
 
   testWidgets('focus reaches a focus node its semantics keep quiet about', (
-    final tester,
+    tester,
   ) async {
     final semantics = tester.ensureSemantics();
     try {
@@ -1084,7 +1084,7 @@ void main() {
       final ref = _refFor(snapshot, 'target');
       final node = (snapshot['nodes']! as List<Object?>)
           .cast<Map<String, Object?>>()
-          .firstWhere((final n) => n['ref'] == ref);
+          .firstWhere((n) => n['ref'] == ref);
       expect(node['actions'] ?? const <String>[], isNot(contains('focus')));
 
       final result = await _settleAfterPumps(
@@ -1101,7 +1101,7 @@ void main() {
   });
 
   testWidgets('focus refuses a node with nothing focusable behind it', (
-    final tester,
+    tester,
   ) async {
     final semantics = tester.ensureSemantics();
     try {
@@ -1135,7 +1135,7 @@ void main() {
   });
 
   testWidgets('focus names the node that took it away from the target', (
-    final tester,
+    tester,
   ) async {
     final semantics = tester.ensureSemantics();
     try {
@@ -1155,7 +1155,7 @@ void main() {
                   child: Focus(
                     focusNode: target,
                     // A handler that passes focus on as soon as it arrives.
-                    onFocusChange: (final hasFocus) {
+                    onFocusChange: (hasFocus) {
                       if (hasFocus) thief.requestFocus();
                     },
                     child: const SizedBox(width: 120, height: 40),

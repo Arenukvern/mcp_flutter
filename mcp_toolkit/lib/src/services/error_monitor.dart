@@ -10,13 +10,13 @@ import 'package:flutter/widgets.dart';
 enum ErrorSeverity { warning, error, fatal }
 
 /// Represents a Flutter error event.
-class FlutterErrorEvent with EquatableMixin {
+class FlutterErrorEvent with Equatable {
   /// The type of the error.
   FlutterErrorEvent({
     required this.type,
     required this.message,
     this.stackTrace,
-    final DateTime? timestamp,
+    DateTime? timestamp,
     this.severity = ErrorSeverity.error,
   }) : timestamp = timestamp ?? DateTime.now();
 
@@ -57,10 +57,10 @@ mixin ErrorMonitor {
   final errors = <FlutterErrorEvent>{};
 
   /// Initialize error monitoring
-  void attachToFlutterError({final int maxErrors = kDefaultMaxErrors}) {
+  void attachToFlutterError({int maxErrors = kDefaultMaxErrors}) {
     _maxErrors = maxErrors;
     final originalOnError = FlutterError.onError;
-    FlutterError.onError = (final details) {
+    FlutterError.onError = (details) {
       originalOnError?.call(details);
       final error = FlutterErrorEvent(
         type: 'FlutterError',
@@ -86,7 +86,7 @@ mixin ErrorMonitor {
   ///   },
   /// );
   /// ```
-  void handleZoneError(final Object error, final StackTrace stack) {
+  void handleZoneError(Object error, StackTrace stack) {
     _handleError(
       FlutterErrorEvent(
         type: 'UncaughtException',
@@ -97,7 +97,7 @@ mixin ErrorMonitor {
     );
   }
 
-  void _handleError(final FlutterErrorEvent event) {
+  void _handleError(FlutterErrorEvent event) {
     // TODO(arenukvern): add security for sensitive data
     errors.add(event);
     if (errors.isNotEmpty && errors.length > maxErrors) {

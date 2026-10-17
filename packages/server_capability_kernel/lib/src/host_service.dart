@@ -18,7 +18,7 @@ abstract interface class HostService {}
 abstract interface class DynamicRegistryBridge implements HostService {
   /// Reserve a namespace. Throws [StateError] if the namespace is already
   /// claimed by a different capability.
-  void claim({required final String namespace});
+  void claim({required String namespace});
 }
 
 /// Reserved read-only access to the running Flutter app's VM service.
@@ -30,15 +30,15 @@ abstract interface class VmServiceClient implements HostService {
   /// Invoke a service extension on the running app, returning the raw
   /// response map.
   Future<Map<String, Object?>> callServiceExtension(
-    final String method, {
-    final Map<String, Object?>? args,
+    String method, {
+    Map<String, Object?>? args,
   });
 }
 
 /// Reserved hot-reload coordinator for capabilities that orchestrate code
 /// generation plus reload requests.
 abstract interface class HotReloadCoordinator implements HostService {
-  Future<HotReloadResult> reload({final bool pause = false});
+  Future<HotReloadResult> reload({bool pause = false});
 }
 
 /// Result of [HotReloadCoordinator.reload].

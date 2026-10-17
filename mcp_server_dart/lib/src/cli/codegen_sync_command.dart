@@ -8,14 +8,14 @@ import 'package:intentcall_platform_sync/intentcall_platform_sync.dart';
 
 /// Runs `flutter-mcp-toolkit codegen sync` by delegating to [intentcall_cli].
 Future<int> runCodegenSync({
-  required final String platform,
-  required final String projectRoot,
-  final bool checkOnly = false,
+  required String platform,
+  required String projectRoot,
+  bool checkOnly = false,
 }) async {
   final platforms = platform
       .split(',')
-      .map((final value) => value.trim().toLowerCase())
-      .where((final value) => value.isNotEmpty)
+      .map((value) => value.trim().toLowerCase())
+      .where((value) => value.isNotEmpty)
       .toList();
   if (platforms.isEmpty) {
     stderr.writeln('Missing --platform (e.g. web,android,ios)');

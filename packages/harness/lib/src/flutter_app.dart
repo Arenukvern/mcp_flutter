@@ -9,7 +9,7 @@ import 'vm_service_uri.dart';
 
 /// How the app is brought up. Owns build + launch + VM attach.
 abstract interface class AppTarget {
-  Future<LaunchedApp> launch({final bool build = true});
+  Future<LaunchedApp> launch({bool build = true});
 }
 
 /// A running app process with its stdout tap and VM handle — or, in
@@ -80,7 +80,7 @@ final class LaunchedApp {
         return process.exitCode;
       },
     );
-    await onStop?.call().catchError((final _) {});
+    await onStop?.call().catchError((_) {});
     return code;
   }
 }
@@ -156,7 +156,7 @@ base class BinaryAppTarget implements AppTarget {
   final BuildFingerprint? expectedFingerprint;
 
   @override
-  Future<LaunchedApp> launch({final bool build = true}) async {
+  Future<LaunchedApp> launch({bool build = true}) async {
     if (ownership == AppOwnership.attachOnly) {
       // Attach never builds: it does not own bring-up, and rebuilding
       // would break the identity between the on-disk binary and the
@@ -200,7 +200,7 @@ base class BinaryAppTarget implements AppTarget {
     );
   }
 
-  void _pump(final Stream<List<int>> stream, final LogTap tap) {
+  void _pump(Stream<List<int>> stream, LogTap tap) {
     stream
         .transform(utf8.decoder)
         .transform(const LineSplitter())
@@ -243,7 +243,7 @@ base class BinaryAppTarget implements AppTarget {
     final binaryName = binaryPath.split('/').last;
     final probe = await Process.run('pgrep', <String>['-f', binaryName]);
     final pids = parsePgrepPids(probe.stdout as String)
-        .where((final candidate) => candidate != pid)
+        .where((candidate) => candidate != pid)
         .toList();
     if (pids.isEmpty) {
       throw StateError(
@@ -265,7 +265,7 @@ base class BinaryAppTarget implements AppTarget {
   /// binary must not be newer than the process (a rebuild after launch
   /// means the running app is stale). An [expectedFingerprint] pin adds
   /// the exact-build check on top.
-  Future<void> _verifyRunningBinary(final int pid) async {
+  Future<void> _verifyRunningBinary(int pid) async {
     final exe = await Process.run('lsof', <String>[
       '-a',
       '-p',
@@ -315,7 +315,7 @@ base class BinaryAppTarget implements AppTarget {
   /// Path equality that survives symlink and macOS `/private` prefix
   /// differences (lsof reports the path the process opened; the target
   /// may name the logical one).
-  bool _sameFile(final String a, final String b) {
+  bool _sameFile(String a, String b) {
     if (a == b) return true;
     try {
       return File(a).resolveSymbolicLinksSync() ==
@@ -328,7 +328,7 @@ base class BinaryAppTarget implements AppTarget {
 
 /// Layers [extra] over the parent environment; `null` means "inherit
 /// unchanged" for dart:io (an empty map would wipe the child's env).
-Map<String, String>? _layeredEnvironment(final Map<String, String> extra) =>
+Map<String, String>? _layeredEnvironment(Map<String, String> extra) =>
     extra.isEmpty ? null : <String, String>{...Platform.environment, ...extra};
 
 /// macOS debug app: `flutter build macos --debug` then launch the binary

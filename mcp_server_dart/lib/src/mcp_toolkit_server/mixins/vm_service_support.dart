@@ -68,9 +68,9 @@ base mixin VMServiceSupport on BaseMCPToolkitServer {
       );
 
   void _log(
-    final LoggingLevel level,
-    final String message, {
-    final String logger = 'VMService',
+    LoggingLevel level,
+    String message, {
+    String logger = 'VMService',
   }) {
     log(level, message, logger: logger);
   }
@@ -80,7 +80,7 @@ base mixin VMServiceSupport on BaseMCPToolkitServer {
   /// Callback invoked when VM service reconnects after a disconnection.
   void Function()? get onVMServiceReconnected => _onVMServiceReconnected;
 
-  set onVMServiceReconnected(final void Function()? callback) {
+  set onVMServiceReconnected(void Function()? callback) {
     _onVMServiceReconnected = callback;
     _connectionContext.onReconnected = callback;
   }
@@ -93,7 +93,7 @@ base mixin VMServiceSupport on BaseMCPToolkitServer {
 
   /// Install/replace the dynamic command gateway used by core executor.
   // ignore: use_setters_to_change_properties
-  void attachDynamicGateway(final CoreDynamicGateway? gateway) {
+  void attachDynamicGateway(CoreDynamicGateway? gateway) {
     _coreCommandExecutor.dynamicGateway = gateway;
   }
 
@@ -121,15 +121,15 @@ base mixin VMServiceSupport on BaseMCPToolkitServer {
 
   /// Call a Flutter extension method.
   Future<Response> callFlutterExtension(
-    final String method, {
-    final Map<String, dynamic>? args,
+    String method, {
+    Map<String, dynamic>? args,
   }) => _connectionContext.callFlutterExtension(method, args: args);
 
   /// Call a service extension method.
   Future<Response?> callServiceExtension(
-    final String method, {
-    final String? isolateId,
-    final Map<String, dynamic>? args,
+    String method, {
+    String? isolateId,
+    Map<String, dynamic>? args,
   }) => _connectionContext.callServiceExtension(
     method,
     isolateId: isolateId,
@@ -144,7 +144,7 @@ base mixin VMServiceSupport on BaseMCPToolkitServer {
       _connectionContext.getFlutterIsolate();
 
   /// Hot reload the Flutter app.
-  Future<Map<String, dynamic>?> hotReload({final bool force = false}) =>
+  Future<Map<String, dynamic>?> hotReload({bool force = false}) =>
       _connectionContext.hotReload(force: force);
 
   /// Get VM information.
@@ -162,7 +162,7 @@ base mixin VMServiceSupport on BaseMCPToolkitServer {
         'pid': vm.pid,
         'startTime': vm.startTime,
         'isolates': vm.isolates
-            ?.map((final i) => {'id': i.id, 'name': i.name, 'number': i.number})
+            ?.map((i) => {'id': i.id, 'name': i.name, 'number': i.number})
             .toList(),
       };
     } on Exception catch (e, s) {
@@ -187,7 +187,7 @@ base mixin VMServiceSupport on BaseMCPToolkitServer {
 
   /// Ensure VM service is connected.
   Future<bool> ensureVMServiceConnected({
-    final Duration timeout = const Duration(seconds: 2),
+    Duration timeout = const Duration(seconds: 2),
   }) async {
     final ensure = await _connectionContext.ensureConnectedWithPolicy(
       timeout: timeout,

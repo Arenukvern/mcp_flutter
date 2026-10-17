@@ -18,7 +18,7 @@ import 'package:intentcall_session/intentcall_session.dart';
 /// keeps the Flutter-specific command catalog, VM preconnect, and CoreResult
 /// serialization in the Flutter MCP server.
 final class CommandSnapshotService {
-  CommandSnapshotService({required final String snapshotsDir})
+  CommandSnapshotService({required String snapshotsDir})
     : snapshotStore = IntentSnapshotStore(snapshotsDir: snapshotsDir);
 
   CommandSnapshotService.withStore({required this.snapshotStore});
@@ -26,11 +26,11 @@ final class CommandSnapshotService {
   final IntentSnapshotStore snapshotStore;
 
   Future<Map<String, Object?>> createSnapshot({
-    required final String id,
-    required final DefaultCoreCommandExecutor executor,
-    required final CommandCatalog catalog,
-    final Map<String, Object?> args = const <String, Object?>{},
-    final SafeWriteOptions writeOptions = const SafeWriteOptions(),
+    required String id,
+    required DefaultCoreCommandExecutor executor,
+    required CommandCatalog catalog,
+    Map<String, Object?> args = const <String, Object?>{},
+    SafeWriteOptions writeOptions = const SafeWriteOptions(),
   }) async {
     final createdAt = DateTime.now().toUtc();
     final plan = _resolvePlan(catalog: catalog, args: args);
@@ -98,20 +98,20 @@ final class CommandSnapshotService {
     );
   }
 
-  Future<Map<String, Object?>> loadSnapshot(final String id) =>
+  Future<Map<String, Object?>> loadSnapshot(String id) =>
       snapshotStore.loadSnapshot(id);
 
   Future<List<Map<String, Object?>>> listSnapshots() =>
       snapshotStore.listSnapshots();
 
   Future<Map<String, Object?>> diffSnapshots({
-    required final String fromId,
-    required final String toId,
+    required String fromId,
+    required String toId,
   }) => snapshotStore.diffSnapshots(fromId: fromId, toId: toId);
 
   List<Map<String, Object?>> _resolvePlan({
-    required final CommandCatalog catalog,
-    required final Map<String, Object?> args,
+    required CommandCatalog catalog,
+    required Map<String, Object?> args,
   }) {
     final providedPlan = _jsonListOrNull(args['commands']);
     final includeViewDetails = _bool(
@@ -122,20 +122,20 @@ final class CommandSnapshotService {
 
     if (providedPlan != null) {
       return providedPlan
-          .map((final step) {
+          .map((step) {
             final json = _jsonObjectOrEmpty(step);
             return <String, Object?>{
               'name': '${json['name'] ?? ''}',
               'args': _jsonObjectOrEmpty(json['args']),
             };
           })
-          .where((final step) => catalog.contains('${step['name'] ?? ''}'))
+          .where((step) => catalog.contains('${step['name'] ?? ''}'))
           .toList();
     }
 
     final defaults = catalog.defaultSnapshotPlan
         .map(
-          (final step) => {
+          (step) => {
             'name': '${step['name'] ?? ''}',
             'args': Map<String, Object?>.from(_jsonObjectOrEmpty(step['args'])),
           },
@@ -143,7 +143,7 @@ final class CommandSnapshotService {
         .toList();
 
     if (!includeViewDetails) {
-      defaults.removeWhere((final step) => step['name'] == 'get_view_details');
+      defaults.removeWhere((step) => step['name'] == 'get_view_details');
     }
 
     if (errorCount != null) {
@@ -162,9 +162,9 @@ final class CommandSnapshotService {
   }
 
   static ({CoreCommand? command, CoreResult? failure}) _buildCommandSafely({
-    required final CommandCatalog catalog,
-    required final String name,
-    required final Map<String, Object?> args,
+    required CommandCatalog catalog,
+    required String name,
+    required Map<String, Object?> args,
   }) {
     try {
       return (command: catalog.buildCommand(name, args), failure: null);
@@ -187,7 +187,7 @@ final class CommandSnapshotService {
     }
   }
 
-  static Map<String, Object?> _jsonObjectOrEmpty(final Object? value) {
+  static Map<String, Object?> _jsonObjectOrEmpty(Object? value) {
     if (value is Map<String, Object?>) {
       return value;
     }
@@ -201,7 +201,7 @@ final class CommandSnapshotService {
     }
   }
 
-  static List<Object?>? _jsonListOrNull(final Object? value) {
+  static List<Object?>? _jsonListOrNull(Object? value) {
     if (value == null) {
       return null;
     }
@@ -219,7 +219,7 @@ final class CommandSnapshotService {
     }
   }
 
-  static bool _bool(final Object? value, {required final bool fallback}) =>
+  static bool _bool(Object? value, {required bool fallback}) =>
       switch (value) {
         final bool v => v,
         final num v => v != 0,
@@ -227,7 +227,7 @@ final class CommandSnapshotService {
         _ => fallback,
       };
 
-  static int? _intOrNull(final Object? value) => switch (value) {
+  static int? _intOrNull(Object? value) => switch (value) {
     final int v => v,
     final num v => v.toInt(),
     final String v => int.tryParse(v),

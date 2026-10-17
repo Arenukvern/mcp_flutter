@@ -5,7 +5,7 @@ import 'package:flutter_mcp_harness/flutter_mcp_harness.dart';
 
 /// Taps the automations refresh control (found by its tooltip label)
 /// and captures the populated panel.
-Future<void> main(final List<String> args) async {
+Future<void> main(List<String> args) async {
   final out = args.isNotEmpty ? args.first : '/tmp';
   final client = await VmClient.connect(
     Uri.parse('http://127.0.0.1:58092/zhhsqmOHgUQ=/'),

@@ -14,9 +14,9 @@ class ImageCompressor {
   /// [maxWidth] - Maximum width to scale down to (maintains aspect ratio)
   /// [quality] - Compression quality (1-100), currently uses PNG format
   static Future<Uint8List> compressImage({
-    required final Image image,
-    final int maxWidth = 1024,
-    final int quality = 99,
+    required Image image,
+    int maxWidth = 1024,
+    int quality = 99,
   }) async {
     try {
       // Calculate new dimensions maintaining aspect ratio
@@ -62,9 +62,9 @@ class ImageCompressor {
   /// [maxWidth] - Maximum width to scale down to (maintains aspect ratio)
   /// [quality] - JPEG quality (1-100), lower means more compression
   static Future<Uint8List> compressBase64Image({
-    required final String base64Image,
-    final int maxWidth = 1024,
-    final int quality = 99,
+    required String base64Image,
+    int maxWidth = 1024,
+    int quality = 99,
   }) async {
     // Decode base64 to bytes
     final bytes = base64Decode(base64Image);
@@ -73,7 +73,7 @@ class ImageCompressor {
 
   /// Returns a new [Image] from a [Uint8List]
   static Future<Image> getImageFromBytes({
-    required final Uint8List imageBytes,
+    required Uint8List imageBytes,
   }) async {
     final codec = await ui.instantiateImageCodec(imageBytes);
     final frame = await codec.getNextFrame();
@@ -82,9 +82,9 @@ class ImageCompressor {
 
   /// Helper method to resize an image
   static Future<ui.Image> _resizeImage(
-    final ui.Image image,
-    final int width,
-    final int height,
+    ui.Image image,
+    int width,
+    int height,
   ) async {
     final ui.PictureRecorder pictureRecorder = ui.PictureRecorder();
     Canvas(pictureRecorder).drawImageRect(

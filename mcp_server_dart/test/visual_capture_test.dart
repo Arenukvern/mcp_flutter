@@ -27,7 +27,7 @@ void main() {
         ),
         adapters: <VisualCapturePlatformAdapter>[
           MacOsDesktopWindowScreenshotService(
-            runProcess: (_, final _) async =>
+            runProcess: (_, _) async =>
                 ProcessResult(0, 0, '{"ok":true,"status":"granted"}', ''),
           ),
         ],
@@ -73,7 +73,7 @@ void main() {
               flutterDevice: 'chrome',
             ),
             macHost: MacOsDesktopWindowScreenshotService(
-              runProcess: (_, final _) async =>
+              runProcess: (_, _) async =>
                   ProcessResult(0, 0, '{"ok":true,"status":"granted"}', ''),
             ),
           ),
@@ -204,14 +204,14 @@ final class _PlaceholderAppBridgeAdapter
   String get truthMode => CaptureCapability.unsupportedUntilAppBridge.wireName;
 
   @override
-  bool supportsPlatform(final String effectivePlatform) =>
+  bool supportsPlatform(String effectivePlatform) =>
       effectivePlatform == 'ios';
 
   @override
   Future<PermissionBrokerResult> status({
-    required final PermissionKind kind,
-    required final PermissionPolicy policy,
-    required final CoreRuntimeConfiguration configuration,
+    required PermissionKind kind,
+    required PermissionPolicy policy,
+    required CoreRuntimeConfiguration configuration,
   }) async => PermissionBrokerResult(
     kind: kind,
     status: PermissionStatus.unsupportedUntilAppBridge,
@@ -225,16 +225,16 @@ final class _PlaceholderAppBridgeAdapter
 
   @override
   Future<PermissionBrokerResult> request({
-    required final PermissionKind kind,
-    required final PermissionPolicy policy,
-    required final CoreRuntimeConfiguration configuration,
+    required PermissionKind kind,
+    required PermissionPolicy policy,
+    required CoreRuntimeConfiguration configuration,
   }) => status(kind: kind, policy: policy, configuration: configuration);
 
   @override
   Future<PermissionBrokerResult> openSettings({
-    required final PermissionKind kind,
-    required final PermissionPolicy policy,
-    required final CoreRuntimeConfiguration configuration,
+    required PermissionKind kind,
+    required PermissionPolicy policy,
+    required CoreRuntimeConfiguration configuration,
   }) => status(kind: kind, policy: policy, configuration: configuration);
 }
 
@@ -245,7 +245,7 @@ final class _FakeDynamicGateway implements CoreDynamicGateway {
 
   @override
   Future<CoreResult> dynamicRegistryStats({
-    required final bool includeAppDetails,
+    required bool includeAppDetails,
   }) async => CoreResult.success();
 
   @override
@@ -253,7 +253,7 @@ final class _FakeDynamicGateway implements CoreDynamicGateway {
       CoreResult.success();
 
   @override
-  Future<CoreResult> runClientResource(final String resourceUri) async {
+  Future<CoreResult> runClientResource(String resourceUri) async {
     final data = resourceData;
     if (data != null) {
       return CoreResult.success(data: data);
@@ -270,8 +270,8 @@ final class _FakeDynamicGateway implements CoreDynamicGateway {
 
   @override
   Future<CoreResult> runClientTool(
-    final String toolName,
-    final Map<String, Object?> arguments,
+    String toolName,
+    Map<String, Object?> arguments,
   ) async => CoreResult.success(
     data: <String, Object?>{
       'parameters': <String, Object?>{

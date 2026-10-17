@@ -1,10 +1,10 @@
 import 'dart:io';
 import 'package:flutter_mcp_harness/flutter_mcp_harness.dart';
 
-Future<void> main(final List<String> args) async {
+Future<void> main(List<String> args) async {
   final client = await VmClient.connect(Uri.parse(Platform.environment['LA_VM_URI']!));
-  Future<Map<String, dynamic>> ext(final String name,
-          {final Map<String, Object?> args = const {}}) =>
+  Future<Map<String, dynamic>> ext(String name,
+          {Map<String, Object?> args = const {}}) =>
       client.callExtension(name, args: args).timeout(const Duration(seconds: 25));
   final tree = await ext(ToolkitExtensions.snapshot);
   final nodes = (tree['nodes']! as List<Object?>)

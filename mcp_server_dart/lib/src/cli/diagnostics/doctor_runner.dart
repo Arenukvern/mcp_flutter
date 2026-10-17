@@ -32,8 +32,8 @@ final class DoctorRunner {
   final CoreLogger logger;
 
   Future<Map<String, Object?>> run({
-    final String? target,
-    final Duration timeout = const Duration(milliseconds: 2500),
+    String? target,
+    Duration timeout = const Duration(milliseconds: 2500),
   }) async {
     final checks = <Map<String, Object?>>[];
     final visualCaptureBroker = VisualCaptureBroker(
@@ -66,11 +66,11 @@ final class DoctorRunner {
       checks.add(await _checkToolkitExtensions(timeout: timeout));
       checks.add(await _checkDynamicRegistryAvailable(timeout: timeout));
 
-      final passCount = checks.where((final c) => c['status'] == 'pass').length;
-      final warnCount = checks.where((final c) => c['status'] == 'warn').length;
-      final failCount = checks.where((final c) => c['status'] == 'fail').length;
+      final passCount = checks.where((c) => c['status'] == 'pass').length;
+      final warnCount = checks.where((c) => c['status'] == 'warn').length;
+      final failCount = checks.where((c) => c['status'] == 'fail').length;
       final criticalFailures = checks
-          .where((final c) => c['critical'] == true && c['status'] == 'fail')
+          .where((c) => c['critical'] == true && c['status'] == 'fail')
           .length;
 
       return {
@@ -91,7 +91,7 @@ final class DoctorRunner {
   }
 
   Future<Map<String, Object?>> _checkDartSdk({
-    required final Duration timeout,
+    required Duration timeout,
   }) async {
     try {
       final result = await io.Process.run('dart', const <String>[
@@ -142,7 +142,7 @@ final class DoctorRunner {
   }
 
   Future<Map<String, Object?>> _checkFlutterSdk({
-    required final Duration timeout,
+    required Duration timeout,
   }) async {
     try {
       final result = await io.Process.run('flutter', const <String>[
@@ -229,9 +229,9 @@ final class DoctorRunner {
   }
 
   Future<Map<String, Object?>> _checkVmTargetReachable({
-    required final String? target,
-    required final Duration timeout,
-    final bool disconnectAfterCheck = true,
+    required String? target,
+    required Duration timeout,
+    bool disconnectAfterCheck = true,
   }) async {
     try {
       final normalizedTarget = target?.trim();
@@ -312,7 +312,7 @@ final class DoctorRunner {
   }
 
   Future<Map<String, Object?>> _checkVisualCaptureBackend({
-    required final VisualCaptureBroker broker,
+    required VisualCaptureBroker broker,
   }) async {
     final skipped = _skipAppOwnedBridgeCheck(
       broker: broker,
@@ -326,7 +326,7 @@ final class DoctorRunner {
     try {
       final result = await broker.status();
       final capabilityNames = result.capabilities
-          .map((final capability) => capability.wireName)
+          .map((capability) => capability.wireName)
           .join(', ');
       final status = switch (result.status) {
         PermissionStatus.unsupported ||
@@ -360,7 +360,7 @@ final class DoctorRunner {
   }
 
   Future<Map<String, Object?>> _checkVisualCapturePermission({
-    required final VisualCaptureBroker broker,
+    required VisualCaptureBroker broker,
   }) async {
     final skipped = _skipAppOwnedBridgeCheck(
       broker: broker,
@@ -404,7 +404,7 @@ final class DoctorRunner {
   }
 
   Future<Map<String, Object?>> _checkVisualCaptureTruthMode({
-    required final VisualCaptureBroker broker,
+    required VisualCaptureBroker broker,
   }) async {
     final skipped = _skipAppOwnedBridgeCheck(
       broker: broker,
@@ -463,7 +463,7 @@ final class DoctorRunner {
   }
 
   Future<Map<String, Object?>> _checkAppPermissionBridge({
-    required final VisualCaptureBroker broker,
+    required VisualCaptureBroker broker,
   }) async {
     if (broker.adapter.owner != PermissionOwner.app) {
       return _check(
@@ -512,9 +512,9 @@ final class DoctorRunner {
   }
 
   Map<String, Object?>? _skipAppOwnedBridgeCheck({
-    required final VisualCaptureBroker broker,
-    required final String id,
-    required final String fixCommand,
+    required VisualCaptureBroker broker,
+    required String id,
+    required String fixCommand,
   }) {
     if (broker.adapter.owner != PermissionOwner.app ||
         connectionContext.isConnected) {
@@ -531,7 +531,7 @@ final class DoctorRunner {
   }
 
   Future<Map<String, Object?>> _checkDynamicRegistryAvailable({
-    required final Duration timeout,
+    required Duration timeout,
   }) async {
     if (!dynamicRegistrySupported) {
       return _check(
@@ -612,7 +612,7 @@ final class DoctorRunner {
   }
 
   Future<Map<String, Object?>> _checkToolkitExtensions({
-    required final Duration timeout,
+    required Duration timeout,
   }) async {
     try {
       final result = await executor
@@ -643,7 +643,7 @@ final class DoctorRunner {
       }
 
       final extensionList = switch (result.data) {
-        final List values => values.map((final value) => '$value').toSet(),
+        final List values => values.map((value) => '$value').toSet(),
         _ => <String>{},
       };
 
@@ -707,11 +707,11 @@ final class DoctorRunner {
   }
 
   Map<String, Object?> _check({
-    required final String id,
-    required final DoctorCheckStatus status,
-    required final bool critical,
-    required final String diagnostic,
-    required final String fixCommand,
+    required String id,
+    required DoctorCheckStatus status,
+    required bool critical,
+    required String diagnostic,
+    required String fixCommand,
   }) => {
     'id': id,
     'status': status.name,
@@ -720,7 +720,7 @@ final class DoctorRunner {
     'fix_command': fixCommand,
   };
 
-  String _firstNonEmptyLine(final String text) {
+  String _firstNonEmptyLine(String text) {
     final lines = text.split('\n');
     for (final line in lines) {
       final trimmed = line.trim();

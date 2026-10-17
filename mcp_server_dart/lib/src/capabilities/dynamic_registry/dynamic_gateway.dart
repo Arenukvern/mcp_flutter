@@ -22,14 +22,14 @@ abstract interface class CoreDynamicGateway {
   Future<CoreResult> listClientToolsAndResources();
 
   Future<CoreResult> runClientTool(
-    final String toolName,
-    final Map<String, Object?> arguments,
+    String toolName,
+    Map<String, Object?> arguments,
   );
 
-  Future<CoreResult> runClientResource(final String resourceUri);
+  Future<CoreResult> runClientResource(String resourceUri);
 
   Future<CoreResult> dynamicRegistryStats({
-    required final bool includeAppDetails,
+    required bool includeAppDetails,
   });
 }
 
@@ -59,10 +59,10 @@ final class VmExtensionDynamicGateway implements CoreDynamicGateway {
       final appId = jsonDecodeString(json['appId']);
       final tools = jsonDecodeListAs<Map<String, dynamic>>(
         json['tools'],
-      ).map((final e) => e.cast<String, Object?>()).toList();
+      ).map((e) => e.cast<String, Object?>()).toList();
       final resources = jsonDecodeListAs<Map<String, dynamic>>(
         json['resources'],
-      ).map((final e) => e.cast<String, Object?>()).toList();
+      ).map((e) => e.cast<String, Object?>()).toList();
 
       _appId = appId;
       _tools = tools;
@@ -89,8 +89,8 @@ final class VmExtensionDynamicGateway implements CoreDynamicGateway {
 
   @override
   Future<CoreResult> runClientTool(
-    final String toolName,
-    final Map<String, Object?> arguments,
+    String toolName,
+    Map<String, Object?> arguments,
   ) async {
     if (toolName.isEmpty) {
       return CoreResult.failure(
@@ -133,7 +133,7 @@ final class VmExtensionDynamicGateway implements CoreDynamicGateway {
   }
 
   @override
-  Future<CoreResult> runClientResource(final String resourceUri) async {
+  Future<CoreResult> runClientResource(String resourceUri) async {
     if (resourceUri.isEmpty) {
       return CoreResult.failure(
         code: CoreErrorCode.missingResourceUri,
@@ -231,7 +231,7 @@ final class VmExtensionDynamicGateway implements CoreDynamicGateway {
 
   @override
   Future<CoreResult> dynamicRegistryStats({
-    required final bool includeAppDetails,
+    required bool includeAppDetails,
   }) async {
     final result = <String, Object?>{
       'toolCount': _tools.length,
@@ -250,8 +250,8 @@ final class VmExtensionDynamicGateway implements CoreDynamicGateway {
   }
 
   Future<CoreResult?> _validateToolArguments(
-    final String toolName,
-    final Map<String, Object?> arguments,
+    String toolName,
+    Map<String, Object?> arguments,
   ) async {
     final schema = await _inputSchemaForTool(toolName);
     return _validateDynamicArguments(
@@ -262,7 +262,7 @@ final class VmExtensionDynamicGateway implements CoreDynamicGateway {
   }
 
   Future<CoreResult?> _validateResourceArguments(
-    final String resourceUri,
+    String resourceUri,
   ) async {
     final schema = await _inputSchemaForResource(resourceUri);
     return _validateDynamicArguments(
@@ -273,16 +273,16 @@ final class VmExtensionDynamicGateway implements CoreDynamicGateway {
   }
 
   Future<CoreResult?> _validateDynamicArguments({
-    required final String subjectLabel,
-    required final InputSchema? schema,
-    required final Map<String, Object?> arguments,
+    required String subjectLabel,
+    required InputSchema? schema,
+    required Map<String, Object?> arguments,
   }) async => validationFailureForDynamicSchema(
     subjectLabel: subjectLabel,
     schema: schema,
     arguments: arguments,
   );
 
-  Future<InputSchema?> _inputSchemaForTool(final String toolName) async {
+  Future<InputSchema?> _inputSchemaForTool(String toolName) async {
     final cached = _inputSchemaFromTools(_tools, toolName);
     if (cached != null) {
       return cached;
@@ -294,7 +294,7 @@ final class VmExtensionDynamicGateway implements CoreDynamicGateway {
     return _inputSchemaFromTools(_tools, toolName);
   }
 
-  Future<InputSchema?> _inputSchemaForResource(final String resourceUri) async {
+  Future<InputSchema?> _inputSchemaForResource(String resourceUri) async {
     final cached = _inputSchemaFromResources(_resources, resourceUri);
     if (cached != null) {
       return cached;
@@ -307,8 +307,8 @@ final class VmExtensionDynamicGateway implements CoreDynamicGateway {
   }
 
   InputSchema? _inputSchemaFromTools(
-    final List<Map<String, Object?>> tools,
-    final String toolName,
+    List<Map<String, Object?>> tools,
+    String toolName,
   ) {
     for (final tool in tools) {
       if ('${tool['name']}' != toolName) {
@@ -320,8 +320,8 @@ final class VmExtensionDynamicGateway implements CoreDynamicGateway {
   }
 
   InputSchema? _inputSchemaFromResources(
-    final List<Map<String, Object?>> resources,
-    final String resourceUri,
+    List<Map<String, Object?>> resources,
+    String resourceUri,
   ) {
     for (final resource in resources) {
       final uri = '${resource['uri']}';
@@ -334,7 +334,7 @@ final class VmExtensionDynamicGateway implements CoreDynamicGateway {
   }
 
   InputSchema? _inputSchemaFromToolListingEntry(
-    final Map<String, Object?> entry,
+    Map<String, Object?> entry,
   ) {
     final raw = entry['inputSchema'];
     if (raw is Map) {
@@ -344,7 +344,7 @@ final class VmExtensionDynamicGateway implements CoreDynamicGateway {
   }
 
   InputSchema? _inputSchemaFromResourceListingEntry(
-    final Map<String, Object?> entry,
+    Map<String, Object?> entry,
   ) {
     final raw = entry['inputSchema'];
     if (raw is Map) {
@@ -367,12 +367,12 @@ final class VmExtensionDynamicGateway implements CoreDynamicGateway {
   }
 
   List<String> _resourceExtensionCandidates({
-    required final Uri parsed,
-    required final String fallback,
+    required Uri parsed,
+    required String fallback,
   }) {
     final candidates = <String>[];
 
-    void addCandidate(final String value) {
+    void addCandidate(String value) {
       final normalized = value.trim();
       if (normalized.isEmpty || candidates.contains(normalized)) {
         return;
@@ -381,7 +381,7 @@ final class VmExtensionDynamicGateway implements CoreDynamicGateway {
     }
 
     final pathSegments = parsed.pathSegments
-        .where((final segment) => segment.trim().isNotEmpty)
+        .where((segment) => segment.trim().isNotEmpty)
         .toList();
     if (pathSegments.isNotEmpty) {
       addCandidate(pathSegments.last);
@@ -395,7 +395,7 @@ final class VmExtensionDynamicGateway implements CoreDynamicGateway {
     return candidates;
   }
 
-  bool _isUnknownExtensionMethodError(final Object error) {
+  bool _isUnknownExtensionMethodError(Object error) {
     final text = '$error'.toLowerCase();
     return text.contains('unknown method') ||
         text.contains('not found') ||
@@ -406,9 +406,9 @@ final class VmExtensionDynamicGateway implements CoreDynamicGateway {
 
 /// Shared validate-before-VM-ext / fmt_client_* logic (testable without VM).
 CoreResult? validationFailureForDynamicSchema({
-  required final String subjectLabel,
-  required final InputSchema? schema,
-  required final Map<String, Object?> arguments,
+  required String subjectLabel,
+  required InputSchema? schema,
+  required Map<String, Object?> arguments,
 }) {
   if (schema == null) {
     return CoreResult.failure(
@@ -439,7 +439,7 @@ CoreResult? validationFailureForDynamicSchema({
   }
 }
 
-String encodeDynamicPayload(final Object? payload) {
+String encodeDynamicPayload(Object? payload) {
   try {
     return jsonEncode(payload);
   } on Exception {

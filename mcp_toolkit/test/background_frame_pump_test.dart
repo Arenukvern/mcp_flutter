@@ -5,13 +5,13 @@ import 'package:mcp_toolkit/src/services/background_frame_pump.dart';
 
 void main() {
   testWidgets('drives build manually while frames are suspended',
-      (final tester) async {
+      (tester) async {
     var counter = 0;
     late StateSetter setCounter;
     await tester.pumpWidget(
       MaterialApp(
         home: StatefulBuilder(
-          builder: (final context, final setState) {
+          builder: (context, setState) {
             setCounter = setState;
             return Text('count: $counter');
           },
@@ -37,7 +37,7 @@ void main() {
   }, skip: kIsWeb);
 
   testWidgets('is a no-op when frames are enabled',
-      (final tester) async {
+      (tester) async {
     await tester.pumpWidget(const Text('idle', textDirection: TextDirection.ltr));
     expect(tester.binding.framesEnabled, isTrue);
 

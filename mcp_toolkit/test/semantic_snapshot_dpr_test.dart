@@ -11,7 +11,7 @@ void main() {
   // ../../../todo/dpr_resolve_center_bounds.md.
   for (final dpr in const <double>[1, 2, 3]) {
     testWidgets('resolveCenter returns logical coords at DPR=$dpr', (
-      final tester,
+      tester,
     ) async {
       tester.view.devicePixelRatio = dpr;
       addTearDown(tester.view.resetDevicePixelRatio);
@@ -37,7 +37,7 @@ void main() {
       final snapshot = await snapshotFuture;
 
       final nodes = (snapshot['nodes']! as List).cast<Map<String, Object?>>();
-      final node = nodes.firstWhere((final n) => n['label'] == 'dpr_target');
+      final node = nodes.firstWhere((n) => n['label'] == 'dpr_target');
       final ref = node['ref']! as String;
 
       final resolvedCenter = SemanticSnapshotService.resolveCenter(ref);

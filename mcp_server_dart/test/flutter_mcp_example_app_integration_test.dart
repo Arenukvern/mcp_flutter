@@ -50,7 +50,7 @@ void main() {
       flutterStdoutSub = flutterProcess.stdout
           .transform(utf8.decoder)
           .transform(const LineSplitter())
-          .listen((final line) {
+          .listen((line) {
             stdout.writeln('[flutter_test_app] $line');
             final vmUri = _extractVmServiceWsUri(line);
             if (vmUri != null && !vmServiceWsUriCompleter.isCompleted) {
@@ -61,7 +61,7 @@ void main() {
       flutterStderrSub = flutterProcess.stderr
           .transform(utf8.decoder)
           .transform(const LineSplitter())
-          .listen((final line) {
+          .listen((line) {
             stderr.writeln('[flutter_test_app:stderr] $line');
           });
 
@@ -113,7 +113,7 @@ void main() {
         final toolsResult = toolsList['result'] as Map<String, dynamic>;
         final toolNames = (toolsResult['tools'] as List)
             .whereType<Map>()
-            .map((final tool) => '${tool['name']}')
+            .map((tool) => '${tool['name']}')
             .toSet();
         // T8: tools surface under the "fmt_" capability prefix, including
         // dynamic-registry host machinery.
@@ -242,8 +242,8 @@ void main() {
             .toList();
         expect(contents, isNotEmpty);
         final textContents = contents
-            .map((final entry) => '${entry['text'] ?? ''}'.trim())
-            .where((final text) => text.isNotEmpty)
+            .map((entry) => '${entry['text'] ?? ''}'.trim())
+            .where((text) => text.isNotEmpty)
             .toList();
         expect(textContents, isNotEmpty);
 
@@ -297,7 +297,7 @@ void main() {
         final toolsList = await harness.request(method: 'tools/list');
         final names = ((toolsList['result'] as Map)['tools'] as List)
             .whereType<Map>()
-            .map((final t) => '${t['name']}')
+            .map((t) => '${t['name']}')
             .toSet();
         for (final expected in _expectedCoreTools) {
           expect(
@@ -312,8 +312,8 @@ void main() {
 
         // Helper: call by name, assert wire-shape, accept structured error.
         Future<Map<String, dynamic>> dispatch(
-          final String name,
-          final Map<String, Object?> arguments,
+          String name,
+          Map<String, Object?> arguments,
         ) async {
           final response = await harness.request(
             method: 'tools/call',
@@ -340,8 +340,8 @@ void main() {
         final snapData = _decodeToolJsonPayload(snapResp);
         final refs = ((snapData['nodes'] as List?) ?? const [])
             .whereType<Map>()
-            .map((final n) => '${n['ref'] ?? ''}')
-            .where((final r) => r.isNotEmpty)
+            .map((n) => '${n['ref'] ?? ''}')
+            .where((r) => r.isNotEmpty)
             .toList();
         expect(
           refs,
@@ -627,7 +627,7 @@ Directory _serverDirectory() => Directory.current;
 Directory _appDirectory() =>
     Directory('${Directory.current.path}/../flutter_test_app');
 
-String? _extractVmServiceWsUri(final String line) {
+String? _extractVmServiceWsUri(String line) {
   final match = RegExp(
     r'A Dart VM Service on .* is available at: (http://\S+)',
   ).firstMatch(line);
@@ -643,8 +643,8 @@ String? _extractVmServiceWsUri(final String line) {
 }
 
 Map<String, dynamic> _decodeToolJsonPayload(
-  final Map<String, dynamic> response, {
-  final bool useLastText = false,
+  Map<String, dynamic> response, {
+  bool useLastText = false,
 }) {
   final envelope = _decodeToolEnvelope(response, useLastText: useLastText);
   expect(envelope['ok'], isTrue, reason: '${envelope['errorCode']}');
@@ -653,14 +653,14 @@ Map<String, dynamic> _decodeToolJsonPayload(
 
 /// Decodes MCP tool JSON without failing on structured error envelopes.
 Map<String, dynamic> _decodeToolEnvelope(
-  final Map<String, dynamic> response, {
-  final bool useLastText = false,
+  Map<String, dynamic> response, {
+  bool useLastText = false,
 }) {
   final content = _extractToolContentAllowingError(response);
   final textNodes = content
-      .where((final c) => '${c['type']}' == 'text')
-      .map((final c) => '${c['text'] ?? ''}')
-      .where((final text) => text.trim().isNotEmpty)
+      .where((c) => '${c['type']}' == 'text')
+      .map((c) => '${c['text'] ?? ''}')
+      .where((text) => text.trim().isNotEmpty)
       .toList();
   expect(textNodes, isNotEmpty);
   final selectedText = useLastText ? textNodes.last : textNodes.first;
@@ -707,35 +707,35 @@ Map<String, dynamic> _decodeToolEnvelope(
   return <String, dynamic>{'ok': true, ...envelope};
 }
 
-String _decodeFirstToolText(final Map<String, dynamic> response) {
+String _decodeFirstToolText(Map<String, dynamic> response) {
   final content = _extractToolContent(response);
   final textNodes = content
-      .where((final c) => '${c['type']}' == 'text')
-      .map((final c) => '${c['text'] ?? ''}')
-      .where((final text) => text.trim().isNotEmpty)
+      .where((c) => '${c['type']}' == 'text')
+      .map((c) => '${c['text'] ?? ''}')
+      .where((text) => text.trim().isNotEmpty)
       .toList();
   expect(textNodes, isNotEmpty);
   return textNodes.first;
 }
 
 List<Map<String, dynamic>> _extractToolContent(
-  final Map<String, dynamic> response,
+  Map<String, dynamic> response,
 ) => _extractToolContentAllowingError(response, failOnToolError: true);
 
 List<Map<String, dynamic>> _extractToolContentAllowingError(
-  final Map<String, dynamic> response, {
-  final bool failOnToolError = false,
+  Map<String, dynamic> response, {
+  bool failOnToolError = false,
 }) {
   expect(response['error'], isNull);
   final result = response['result'] as Map<String, dynamic>;
   final isError = result['isError'] as bool?;
   final content = (result['content'] as List)
       .whereType<Map>()
-      .map((final entry) => entry.cast<String, dynamic>())
+      .map((entry) => entry.cast<String, dynamic>())
       .toList();
   if (isError == true && failOnToolError) {
     final errorText = content
-        .map((final entry) => '${entry['text'] ?? entry['data'] ?? entry}')
+        .map((entry) => '${entry['text'] ?? entry['data'] ?? entry}')
         .join('\n')
         .trim();
     fail('MCP tool returned error payload: $errorText');
@@ -744,8 +744,8 @@ List<Map<String, dynamic>> _extractToolContentAllowingError(
 }
 
 String? _findResourceUri(
-  final Map<String, dynamic> dynamicData, {
-  required final String resourceName,
+  Map<String, dynamic> dynamicData, {
+  required String resourceName,
 }) {
   final resources = (dynamicData['resources'] as List?) ?? const [];
   for (final resource in resources.whereType<Map>()) {
@@ -762,7 +762,7 @@ String? _findResourceUri(
   return null;
 }
 
-Map<String, dynamic>? _tryDecodeJsonMap(final String value) {
+Map<String, dynamic>? _tryDecodeJsonMap(String value) {
   try {
     final decoded = jsonDecode(value);
     if (decoded is Map<String, dynamic>) {
@@ -778,10 +778,10 @@ Map<String, dynamic>? _tryDecodeJsonMap(final String value) {
 }
 
 Future<Map<String, dynamic>> _callToolUntilSuccess({
-  required final _McpHarness harness,
-  required final String name,
-  required final Map<String, Object?> arguments,
-  final int maxAttempts = 4,
+  required _McpHarness harness,
+  required String name,
+  required Map<String, Object?> arguments,
+  int maxAttempts = 4,
 }) async {
   Map<String, dynamic>? lastResponse;
   for (var attempt = 0; attempt < maxAttempts; attempt++) {
@@ -823,7 +823,7 @@ final class _McpHarness {
   int _nextId = 1;
 
   static Future<_McpHarness> start({
-    required final String workingDirectory,
+    required String workingDirectory,
   }) async {
     final process = await Process.start('dart', [
       'run',
@@ -837,21 +837,21 @@ final class _McpHarness {
 
     final requestController = StreamController<String>();
     final stdinSub = requestController.stream
-        .map((final request) => '$request\n')
+        .map((request) => '$request\n')
         .listen(process.stdin.write);
 
     final responses = <Map<String, dynamic>>[];
     final stdoutSub = process.stdout
         .transform(utf8.decoder)
         .transform(const LineSplitter())
-        .where((final line) => line.trim().isNotEmpty)
-        .map((final line) => jsonDecode(line) as Map<String, dynamic>)
+        .where((line) => line.trim().isNotEmpty)
+        .map((line) => jsonDecode(line) as Map<String, dynamic>)
         .listen(responses.add);
 
     final stderrSub = process.stderr
         .transform(utf8.decoder)
         .transform(const LineSplitter())
-        .listen((final line) {
+        .listen((line) {
           stderr.writeln('[mcp_server:stderr] $line');
         });
 
@@ -867,8 +867,8 @@ final class _McpHarness {
   }
 
   Future<Map<String, dynamic>> request({
-    required final String method,
-    final Map<String, Object?>? params,
+    required String method,
+    Map<String, Object?>? params,
   }) {
     final id = _nextId++;
     final requestEnvelope = <String, Object?>{
@@ -879,11 +879,11 @@ final class _McpHarness {
     };
 
     requestController.add(jsonEncode(requestEnvelope));
-    return _waitForResponse((final response) => response['id'] == id);
+    return _waitForResponse((response) => response['id'] == id);
   }
 
   Future<Map<String, dynamic>> _waitForResponse(
-    final bool Function(Map<String, dynamic>) predicate,
+    bool Function(Map<String, dynamic>) predicate,
   ) async {
     final start = DateTime.now();
     const timeout = Duration(seconds: 45);

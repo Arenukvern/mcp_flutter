@@ -23,7 +23,7 @@ void main() {
               additionalProperties: false,
             ),
           ),
-          handler: (final request) {
+          handler: (request) {
             capturedRequest = request;
             return MCPCallResult(
               message: 'inspected',
@@ -69,7 +69,7 @@ void main() {
               additionalProperties: false,
             ),
           ),
-          handler: (final request) =>
+          handler: (request) =>
               MCPCallResult(message: 'inspected', parameters: {'ok': true}),
         );
         final registration = tool.toRegistration();
@@ -102,7 +102,7 @@ void main() {
 
   testWidgets(
     'bootstrapFlutter initializes toolkit, adds entries, and forwards zone errors',
-    (final tester) async {
+    (tester) async {
       final binding = MCPToolkitBinding.instance;
       var ensured = 0;
       Object? forwardedError;
@@ -116,7 +116,7 @@ void main() {
           description: 'Starter diagnostics resource',
           mimeType: 'application/json',
         ),
-        handler: (final request) => MCPCallResult(
+        handler: (request) => MCPCallResult(
           message: 'Starter diagnostics',
           parameters: {'ready': true},
         ),
@@ -128,7 +128,7 @@ void main() {
           description: 'Starter action tool',
           inputSchema: ObjectSchema(properties: const {}),
         ),
-        handler: (final request) => MCPCallResult(
+        handler: (request) => MCPCallResult(
           message: 'Counter incremented',
           parameters: {'ok': true},
         ),
@@ -148,7 +148,7 @@ void main() {
       expect(runCount, equals(1));
       expect(binding.isInitialized, isTrue);
       expect(
-        binding.allEntries.map((final entry) => entry.serviceExtensionName),
+        binding.allEntries.map((entry) => entry.serviceExtensionName),
         containsAll(<String>[
           'view_details',
           'inspect_widget_at_point',
@@ -161,7 +161,7 @@ void main() {
         ensureInitialized: () {
           ensured += 1;
         },
-        onZoneError: (final error, final stackTrace) {
+        onZoneError: (error, stackTrace) {
           forwardedError = error;
           forwardedStackTrace = stackTrace;
         },
@@ -184,8 +184,8 @@ final class _CapturingToolkitBinding extends MCPToolkitBindingBase
 
   @override
   void registerServiceExtension({
-    required final String name,
-    required final ServiceExtensionCallback callback,
+    required String name,
+    required ServiceExtensionCallback callback,
   }) {
     callbacks[name] = callback;
   }

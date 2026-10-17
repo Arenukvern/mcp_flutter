@@ -20,7 +20,7 @@ abstract interface class Capability {
   /// Called once at host startup. Register tools, resources, and
   /// host-service claims here. Calling twice on the same host throws
   /// [CapabilityAlreadyRegisteredError]. Must not perform I/O.
-  Future<void> register(final CapabilityContext context);
+  Future<void> register(CapabilityContext context);
 
   /// Called once at host shutdown. Release resources, cancel subscriptions.
   Future<void> dispose();

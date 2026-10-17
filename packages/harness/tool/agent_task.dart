@@ -2,17 +2,17 @@ import 'dart:io';
 import 'package:flutter_mcp_harness/flutter_mcp_harness.dart';
 
 /// Fills the editor sheet with an agent task and saves it.
-Future<void> main(final List<String> args) async {
+Future<void> main(List<String> args) async {
   final vmUri = Platform.environment['LA_VM_URI']!;
   final client = await VmClient.connect(Uri.parse(vmUri));
   final driver = ToolkitDriver(client);
-  Future<T> step<T>(final String name, final Future<T> Function() body) =>
+  Future<T> step<T>(String name, Future<T> Function() body) =>
       body().timeout(const Duration(seconds: 25), onTimeout: () {
         stderr.writeln('TIMEOUT at step: $name');
         exit(3);
       });
-  Future<Map<String, dynamic>> ext(final String name,
-          {final Map<String, Object?> args = const {}}) =>
+  Future<Map<String, dynamic>> ext(String name,
+          {Map<String, Object?> args = const {}}) =>
       step(name, () => client.callExtension(name, args: args));
 
   Future<List<Map<String, Object?>>> nodes() async {
@@ -22,7 +22,7 @@ Future<void> main(final List<String> args) async {
         .toList();
   }
 
-  Future<void> tapLabel(final String label) async {
+  Future<void> tapLabel(String label) async {
     final node = (await nodes())
         .where((n) => '${n['label']}' == label)
         .firstOrNull;
@@ -36,7 +36,7 @@ Future<void> main(final List<String> args) async {
     await Future<void>.delayed(const Duration(milliseconds: 600));
   }
 
-  Future<void> typeLabel(final String label, final String text) async {
+  Future<void> typeLabel(String label, String text) async {
     final field = (await nodes())
         .where((n) =>
             '${n['type']}'.toLowerCase().contains('textfield') &&

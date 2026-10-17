@@ -15,12 +15,12 @@ const kWebmcpChromeBrowserFlags = <String>[
 
 /// One-line `flutter run` recipe for dogfood / docs.
 String buildWebmcpFlutterRunCommand({
-  final int webPort = 8080,
-  final int vmHostPort = 8181,
-  final String projectDir = '.',
+  int webPort = 8080,
+  int vmHostPort = 8181,
+  String projectDir = '.',
 }) {
   final flags = kWebmcpChromeBrowserFlags
-      .map((final f) => ' --web-browser-flag="$f"')
+      .map((f) => ' --web-browser-flag="$f"')
       .join();
   return 'cd $projectDir && flutter run -d chrome --web-port=$webPort '
       '--host-vmservice-port=$vmHostPort --debug$flags';
@@ -28,8 +28,8 @@ String buildWebmcpFlutterRunCommand({
 
 /// JSON for `webmcp chrome-args`.
 Map<String, Object?> webmcpChromeArgsJson({
-  final int webPort = 8080,
-  final int vmHostPort = 8181,
+  int webPort = 8080,
+  int vmHostPort = 8181,
 }) => <String, Object?>{
   'ok': true,
   'webPort': webPort,
@@ -45,8 +45,8 @@ Map<String, Object?> webmcpChromeArgsJson({
 };
 
 Future<int> runWebmcpChromeArgs({
-  final int webPort = 8080,
-  final int vmHostPort = 8181,
+  int webPort = 8080,
+  int vmHostPort = 8181,
 }) async {
   stdout.writeln(
     jsonEncode(webmcpChromeArgsJson(webPort: webPort, vmHostPort: vmHostPort)),
@@ -56,13 +56,13 @@ Future<int> runWebmcpChromeArgs({
 
 /// Probes live Chrome via CDP for WebMCP `document.modelContext`.
 Future<int> runWebmcpVerify({
-  final int? cdpPort,
-  final int preferredWebPort = 8080,
-  final String? toolName,
-  final Map<String, Object?> toolArguments = const <String, Object?>{},
-  final String? expectResultField,
-  final Object? expectResultValue,
-  final Duration timeout = const Duration(seconds: 8),
+  int? cdpPort,
+  int preferredWebPort = 8080,
+  String? toolName,
+  Map<String, Object?> toolArguments = const <String, Object?>{},
+  String? expectResultField,
+  Object? expectResultValue,
+  Duration timeout = const Duration(seconds: 8),
 }) async {
   final ports = <int>{};
   if (cdpPort != null) {
@@ -182,12 +182,12 @@ Future<int> runWebmcpVerify({
 }
 
 Future<Map<String, Object?>?> _cdpInvokeWebMcpTool({
-  required final Uri wsUrl,
-  required final String toolName,
-  required final Map<String, Object?> arguments,
-  required final String? expectResultField,
-  required final Object? expectResultValue,
-  required final Duration timeout,
+  required Uri wsUrl,
+  required String toolName,
+  required Map<String, Object?> arguments,
+  required String? expectResultField,
+  required Object? expectResultValue,
+  required Duration timeout,
 }) {
   final expression =
       '''
@@ -296,7 +296,7 @@ Future<Map<String, Object?>?> _cdpInvokeWebMcpTool({
 }
 
 Map<String, Object?>? _probeFromEvaluateResponse(
-  final Map<String, Object?> response,
+  Map<String, Object?> response,
 ) {
   final value = response['result'];
   if (value is! Map) {
@@ -319,7 +319,7 @@ Map<String, Object?>? _probeFromEvaluateResponse(
   return null;
 }
 
-bool _probeIndicatesWebmcpActive(final Map<String, Object?>? probe) =>
+bool _probeIndicatesWebmcpActive(Map<String, Object?>? probe) =>
     probe?['hasModelContext'] == true && probe?['registerTool'] == true;
 
 /// Runtime log tail when CDP isolated-world probe misses Flutter's `window`.
@@ -346,10 +346,10 @@ bool _webmcpLogEvidence() {
 }
 
 Future<Map<String, Object?>?> _cdpEvaluate({
-  required final Uri wsUrl,
-  required final String expression,
-  required final Duration timeout,
-  final bool awaitPromise = false,
+  required Uri wsUrl,
+  required String expression,
+  required Duration timeout,
+  bool awaitPromise = false,
 }) async {
   WebSocketChannel? channel;
   StreamSubscription<dynamic>? sub;
@@ -359,7 +359,7 @@ Future<Map<String, Object?>?> _cdpEvaluate({
     final pending = <int, Completer<Map<String, Object?>>>{};
     final contextIds = <int>[];
     sub = channel.stream.listen(
-      (final event) {
+      (event) {
         final decoded = jsonDecode(event as String);
         if (decoded is! Map) {
           return;
@@ -393,7 +393,7 @@ Future<Map<String, Object?>?> _cdpEvaluate({
           completer.complete(Map<String, Object?>.from(decoded));
         }
       },
-      onError: (final Object e, final StackTrace st) {
+      onError: (Object e, StackTrace st) {
         for (final c in pending.values) {
           if (!c.isCompleted) {
             c.completeError(e, st);
@@ -403,7 +403,7 @@ Future<Map<String, Object?>?> _cdpEvaluate({
       },
     );
 
-    Future<Map<String, Object?>> send(final Map<String, Object?> msg) {
+    Future<Map<String, Object?>> send(Map<String, Object?> msg) {
       final myId = ++id;
       final completer = Completer<Map<String, Object?>>();
       pending[myId] = completer;

@@ -40,11 +40,11 @@ final class CommandCatalog {
 
   List<CommandSpec> get commands {
     final all = _byName.values.toList()
-      ..sort((final a, final b) => a.name.compareTo(b.name));
+      ..sort((a, b) => a.name.compareTo(b.name));
     return all;
   }
 
-  CoreCommand buildCommand(final String name, final Map<String, Object?> args) {
+  CoreCommand buildCommand(String name, Map<String, Object?> args) {
     final resolved = resolveExecCommandName(name);
     final spec = _byName[resolved];
     if (spec == null) {
@@ -62,11 +62,11 @@ final class CommandCatalog {
   }
 
   CapabilitiesModel capabilities({
-    required final CoreRuntimeConfiguration configuration,
+    required CoreRuntimeConfiguration configuration,
   }) {
     final commandSummaries = commands
         .map(
-          (final spec) => {
+          (spec) => {
             'name': spec.name,
             'requiresVm': spec.requiresVm,
             'supportsWatch': spec.supportsWatch,
@@ -105,9 +105,9 @@ final class CommandCatalog {
     );
   }
 
-  bool contains(final String name) => _byName.containsKey(name);
+  bool contains(String name) => _byName.containsKey(name);
 
-  Map<String, Object?> schema({final String? name}) {
+  Map<String, Object?> schema({String? name}) {
     if (name != null && name.isNotEmpty) {
       final resolved = resolveExecCommandName(name);
       final spec = _byName[resolved];
@@ -122,15 +122,15 @@ final class CommandCatalog {
 
     return {
       'schemaVersion': kCommandCatalogSchemaVersion,
-      'commands': commands.map((final spec) => spec.toJson()).toList(),
+      'commands': commands.map((spec) => spec.toJson()).toList(),
     };
   }
 
-  CommandSpec? specFor(final String name) =>
+  CommandSpec? specFor(String name) =>
       _byName[resolveExecCommandName(name)];
 
   /// Exec accepts bare catalog names; MCP clients often pass `fmt_*` prefixes.
-  String resolveExecCommandName(final String name) {
+  String resolveExecCommandName(String name) {
     if (_byName.containsKey(name)) {
       return name;
     }
@@ -185,7 +185,7 @@ final class CommandCatalog {
         requiresVm: false,
         supportsWatch: false,
         mcpExposed: false,
-        build: (final args) => ConnectCommand(
+        build: (args) => ConnectCommand(
           mode: _parseConnectionMode(
             _stringArg(args, 'mode', fallback: 'auto'),
           ),
@@ -240,7 +240,7 @@ final class CommandCatalog {
         requiresVm: false,
         supportsWatch: false,
         mcpExposed: false,
-        build: (final args) => SessionStartCommand(
+        build: (args) => SessionStartCommand(
           mode: _parseConnectionMode(
             _stringArg(args, 'mode', fallback: 'auto'),
           ),
@@ -267,7 +267,7 @@ final class CommandCatalog {
         requiresVm: false,
         supportsWatch: false,
         mcpExposed: false,
-        build: (final args) {
+        build: (args) {
           final targetName = _stringArg(args, 'command', fallback: 'status');
           final targetArgs = _mapArg(args, 'arguments');
           return SessionExecCommand(
@@ -299,7 +299,7 @@ final class CommandCatalog {
         requiresVm: false,
         supportsWatch: false,
         mcpExposed: false,
-        build: (final args) => SessionEndCommand(
+        build: (args) => SessionEndCommand(
           sessionId: _nullableStringArg(args, 'sessionId', alias: 'session-id'),
         ),
       ),
@@ -318,7 +318,7 @@ final class CommandCatalog {
         requiresVm: false,
         supportsWatch: false,
         mcpExposed: false,
-        build: (final args) => DiagnoseCommand(
+        build: (args) => DiagnoseCommand(
           includeViewDetails: _boolArg(
             args,
             'includeViewDetails',
@@ -352,7 +352,7 @@ final class CommandCatalog {
         requiresVm: false,
         supportsWatch: false,
         mcpExposed: false,
-        build: (final args) {
+        build: (args) {
           final targetName = _stringArg(args, 'command', fallback: 'status');
           final targetArgs = _mapArg(args, 'arguments');
           return WatchCommand(
@@ -412,7 +412,7 @@ final class CommandCatalog {
         requiresVm: true,
         supportsWatch: true,
         mcpExposed: false,
-        build: (final args) => ExplainErrorsCommand(
+        build: (args) => ExplainErrorsCommand(
           count: _intArg(args, 'count', fallback: 4),
           includeSummary: _boolArg(
             args,
@@ -449,7 +449,7 @@ final class CommandCatalog {
         requiresVm: false,
         supportsWatch: true,
         mcpExposed: false,
-        build: (final args) => const StatusCommand(),
+        build: (args) => const StatusCommand(),
       ),
       CommandSpec(
         name: 'discover_debug_apps',
@@ -480,7 +480,7 @@ final class CommandCatalog {
         requiresVm: false,
         supportsWatch: true,
         mcpExposed: true,
-        build: (final args) => const DiscoverDebugAppsCommand(),
+        build: (args) => const DiscoverDebugAppsCommand(),
       ),
       CommandSpec(
         name: 'get_vm',
@@ -490,7 +490,7 @@ final class CommandCatalog {
         requiresVm: true,
         supportsWatch: true,
         mcpExposed: true,
-        build: (final args) => const GetVmCommand(),
+        build: (args) => const GetVmCommand(),
       ),
       CommandSpec(
         name: 'get_extension_rpcs',
@@ -500,7 +500,7 @@ final class CommandCatalog {
         requiresVm: true,
         supportsWatch: true,
         mcpExposed: true,
-        build: (final args) => const GetExtensionRpcsCommand(),
+        build: (args) => const GetExtensionRpcsCommand(),
       ),
       CommandSpec(
         name: 'hot_reload_flutter',
@@ -510,7 +510,7 @@ final class CommandCatalog {
         requiresVm: true,
         supportsWatch: true,
         mcpExposed: true,
-        build: (final args) => HotReloadFlutterCommand(
+        build: (args) => HotReloadFlutterCommand(
           force: _boolArg(args, 'force', fallback: false),
         ),
       ),
@@ -522,7 +522,7 @@ final class CommandCatalog {
         requiresVm: true,
         supportsWatch: true,
         mcpExposed: true,
-        build: (final args) => const HotRestartFlutterCommand(),
+        build: (args) => const HotRestartFlutterCommand(),
       ),
       CommandSpec(
         name: 'get_active_ports',
@@ -532,7 +532,7 @@ final class CommandCatalog {
         requiresVm: false,
         supportsWatch: true,
         mcpExposed: false,
-        build: (final args) => const GetActivePortsCommand(),
+        build: (args) => const GetActivePortsCommand(),
       ),
       CommandSpec(
         name: 'get_app_errors',
@@ -550,7 +550,7 @@ final class CommandCatalog {
         requiresVm: true,
         supportsWatch: true,
         mcpExposed: true,
-        build: (final args) =>
+        build: (args) =>
             GetAppErrorsCommand(count: _intArg(args, 'count', fallback: 4)),
       ),
       CommandSpec(
@@ -576,7 +576,7 @@ final class CommandCatalog {
         requiresVm: true,
         supportsWatch: true,
         mcpExposed: true,
-        build: (final args) => GetScreenshotsCommand(
+        build: (args) => GetScreenshotsCommand(
           compress: _boolArg(args, 'compress', fallback: true),
           mode: parseScreenshotMode(args['mode']),
           permissionPolicy: parsePermissionPolicy(args['permissionPolicy']),
@@ -591,7 +591,7 @@ final class CommandCatalog {
         requiresVm: false,
         supportsWatch: false,
         mcpExposed: true,
-        build: (final args) =>
+        build: (args) =>
             FocusWindowCommand(targetPid: _nullableIntArg(args, 'targetPid')),
       ),
       CommandSpec(
@@ -613,7 +613,7 @@ final class CommandCatalog {
         requiresVm: true,
         supportsWatch: true,
         mcpExposed: true,
-        build: (final args) => const GetViewDetailsCommand(),
+        build: (args) => const GetViewDetailsCommand(),
       ),
       CommandSpec(
         name: 'inspect_widget_at_point',
@@ -626,7 +626,7 @@ final class CommandCatalog {
         requiresVm: true,
         supportsWatch: true,
         mcpExposed: true,
-        build: (final args) => InspectWidgetAtPointCommand(
+        build: (args) => InspectWidgetAtPointCommand(
           x: _strictIntArg(value: _findArg(args, 'x')!, key: 'x'),
           y: _strictIntArg(value: _findArg(args, 'y')!, key: 'y'),
           viewId: _nullableIntArg(args, 'viewId', alias: 'view-id'),
@@ -641,7 +641,7 @@ final class CommandCatalog {
         requiresVm: true,
         supportsWatch: true,
         mcpExposed: true,
-        build: (final args) => CaptureUiSnapshotCommand(
+        build: (args) => CaptureUiSnapshotCommand(
           errorsCount: _intArg(args, 'errorsCount', fallback: 4),
           compress: _boolArg(args, 'compress', fallback: true),
           includeViewDetails: _boolArg(
@@ -674,16 +674,16 @@ final class CommandCatalog {
         requiresVm: true,
         supportsWatch: true,
         mcpExposed: true,
-        build: (final args) {
+        build: (args) {
           // Schema validation has already rejected anything but an array;
           // the enum inside it is not enforced there, so name a bad field
           // here rather than after a VM round trip.
           final rawFields = _findArg(args, 'fields');
           final fields = rawFields is List
-              ? rawFields.map((final f) => f.toString()).toList()
+              ? rawFields.map((f) => f.toString()).toList()
               : null;
           final unknown = fields
-              ?.where((final f) => !semanticSnapshotNodeFields.contains(f))
+              ?.where((f) => !semanticSnapshotNodeFields.contains(f))
               .toList();
           if (unknown != null && unknown.isNotEmpty) {
             throw ArgumentError(
@@ -709,7 +709,7 @@ final class CommandCatalog {
         requiresVm: true,
         supportsWatch: false,
         mcpExposed: true,
-        build: (final args) => TapWidgetCommand(
+        build: (args) => TapWidgetCommand(
           ref: _stringArg(args, 'ref', fallback: ''),
           snapshotId: _nullableIntArg(args, 'snapshotId', alias: 'snapshot-id'),
         ),
@@ -724,7 +724,7 @@ final class CommandCatalog {
         requiresVm: true,
         supportsWatch: false,
         mcpExposed: true,
-        build: (final args) => EnterTextCommand(
+        build: (args) => EnterTextCommand(
           ref: _stringArg(args, 'ref', fallback: ''),
           text: _stringArg(args, 'text', fallback: ''),
           snapshotId: _nullableIntArg(args, 'snapshotId', alias: 'snapshot-id'),
@@ -741,7 +741,7 @@ final class CommandCatalog {
         requiresVm: true,
         supportsWatch: false,
         mcpExposed: true,
-        build: (final args) {
+        build: (args) {
           final rawDistance = _findArg(args, 'distance');
           final distance = rawDistance is num ? rawDistance.toDouble() : 300.0;
           return RevealSearchCommand(
@@ -764,7 +764,7 @@ final class CommandCatalog {
         requiresVm: true,
         supportsWatch: false,
         mcpExposed: true,
-        build: (final args) {
+        build: (args) {
           final distance = _nullableIntArg(args, 'distance');
           return ScrollCommand(
             direction: _stringArg(args, 'direction', fallback: 'down'),
@@ -786,7 +786,7 @@ final class CommandCatalog {
         requiresVm: true,
         supportsWatch: false,
         mcpExposed: true,
-        build: (final args) => LongPressCommand(
+        build: (args) => LongPressCommand(
           ref: _stringArg(args, 'ref', fallback: ''),
           snapshotId: _nullableIntArg(args, 'snapshotId', alias: 'snapshot-id'),
         ),
@@ -801,7 +801,7 @@ final class CommandCatalog {
         requiresVm: true,
         supportsWatch: false,
         mcpExposed: true,
-        build: (final args) {
+        build: (args) {
           final distance = _nullableIntArg(args, 'distance');
           return SwipeCommand(
             direction: _stringArg(args, 'direction', fallback: 'up'),
@@ -823,7 +823,7 @@ final class CommandCatalog {
         requiresVm: true,
         supportsWatch: false,
         mcpExposed: true,
-        build: (final args) => DragCommand(
+        build: (args) => DragCommand(
           fromRef: _stringArg(args, 'fromRef', fallback: ''),
           toRef: _stringArg(args, 'toRef', fallback: ''),
           snapshotId: _nullableIntArg(args, 'snapshotId', alias: 'snapshot-id'),
@@ -840,7 +840,7 @@ final class CommandCatalog {
         requiresVm: true,
         supportsWatch: false,
         mcpExposed: true,
-        build: (final args) => HotReloadAndCaptureCommand(
+        build: (args) => HotReloadAndCaptureCommand(
           compress: _boolArg(args, 'compress', fallback: true),
           includeSemantics: _boolArg(
             args,
@@ -867,7 +867,7 @@ final class CommandCatalog {
         requiresVm: true,
         supportsWatch: false,
         mcpExposed: true,
-        build: (final args) => EvaluateDartExpressionCommand(
+        build: (args) => EvaluateDartExpressionCommand(
           expression: _stringArg(args, 'expression', fallback: ''),
           libraryUri: _nullableStringArg(args, 'libraryUri'),
         ),
@@ -881,7 +881,7 @@ final class CommandCatalog {
         requiresVm: true,
         supportsWatch: true,
         mcpExposed: true,
-        build: (final args) =>
+        build: (args) =>
             GetRecentLogsCommand(count: _intArg(args, 'count', fallback: 50)),
       ),
       CommandSpec(
@@ -899,7 +899,7 @@ final class CommandCatalog {
         requiresVm: true,
         supportsWatch: false,
         mcpExposed: true,
-        build: (final args) => WaitForCommand(
+        build: (args) => WaitForCommand(
           predicate: _mapArg(args, 'predicate'),
           timeoutMs: _intArg(args, 'timeoutMs', fallback: 5000),
         ),
@@ -916,7 +916,7 @@ final class CommandCatalog {
         requiresVm: true,
         supportsWatch: false,
         mcpExposed: true,
-        build: (final args) => PressKeyCommand(
+        build: (args) => PressKeyCommand(
           key: _stringArg(args, 'key', fallback: ''),
           ctrl: _boolArg(args, 'ctrl', fallback: false),
           shift: _boolArg(args, 'shift', fallback: false),
@@ -936,7 +936,7 @@ final class CommandCatalog {
         requiresVm: true,
         supportsWatch: false,
         mcpExposed: true,
-        build: (final args) => HandleDialogCommand(
+        build: (args) => HandleDialogCommand(
           action: _stringArg(args, 'action', fallback: 'dismiss'),
         ),
       ),
@@ -951,7 +951,7 @@ final class CommandCatalog {
         requiresVm: true,
         supportsWatch: false,
         mcpExposed: true,
-        build: (final args) => NavigateCommand(
+        build: (args) => NavigateCommand(
           action: _stringArg(args, 'action', fallback: 'push'),
           route: _stringArg(args, 'route', fallback: '').isEmpty
               ? null
@@ -976,12 +976,12 @@ final class CommandCatalog {
         requiresVm: true,
         supportsWatch: false,
         mcpExposed: true,
-        build: (final args) {
+        build: (args) {
           final raw = args['fields'];
           final list = raw is List
               ? raw
                     .whereType<Object?>()
-                    .map<Map<String, Object?>>((final e) {
+                    .map<Map<String, Object?>>((e) {
                       if (e is Map<String, Object?>) return e;
                       if (e is Map) return e.cast<String, Object?>();
                       return const <String, Object?>{};
@@ -1010,7 +1010,7 @@ final class CommandCatalog {
         requiresVm: true,
         supportsWatch: false,
         mcpExposed: true,
-        build: (final args) {
+        build: (args) {
           final snapshotIdRaw = _intArg(args, 'snapshotId', fallback: 0);
           return HoverCommand(
             ref: _stringArg(args, 'ref', fallback: ''),
@@ -1032,7 +1032,7 @@ final class CommandCatalog {
         requiresVm: true,
         supportsWatch: false,
         mcpExposed: true,
-        build: (final args) {
+        build: (args) {
           final snapshotIdRaw = _intArg(args, 'snapshotId', fallback: 0);
           return FocusWidgetCommand(
             ref: _stringArg(args, 'ref', fallback: ''),
@@ -1048,7 +1048,7 @@ final class CommandCatalog {
         requiresVm: true,
         supportsWatch: true,
         mcpExposed: true,
-        build: (final args) => const DebugDumpLayerTreeCommand(),
+        build: (args) => const DebugDumpLayerTreeCommand(),
       ),
       CommandSpec(
         name: 'debug_dump_semantics_tree',
@@ -1058,7 +1058,7 @@ final class CommandCatalog {
         requiresVm: true,
         supportsWatch: true,
         mcpExposed: true,
-        build: (final args) => const DebugDumpSemanticsTreeCommand(),
+        build: (args) => const DebugDumpSemanticsTreeCommand(),
       ),
       CommandSpec(
         name: 'debug_dump_render_tree',
@@ -1068,7 +1068,7 @@ final class CommandCatalog {
         requiresVm: true,
         supportsWatch: true,
         mcpExposed: true,
-        build: (final args) => const DebugDumpRenderTreeCommand(),
+        build: (args) => const DebugDumpRenderTreeCommand(),
       ),
       CommandSpec(
         name: 'debug_dump_focus_tree',
@@ -1078,7 +1078,7 @@ final class CommandCatalog {
         requiresVm: true,
         supportsWatch: true,
         mcpExposed: true,
-        build: (final args) => const DebugDumpFocusTreeCommand(),
+        build: (args) => const DebugDumpFocusTreeCommand(),
       ),
       CommandSpec(
         name: 'fmt_list_client_tools_and_resources',
@@ -1095,7 +1095,7 @@ final class CommandCatalog {
         requiresVm: true,
         supportsWatch: true,
         mcpExposed: true,
-        build: (final args) => const ListClientToolsAndResourcesCommand(),
+        build: (args) => const ListClientToolsAndResourcesCommand(),
       ),
       CommandSpec(
         name: 'fmt_client_tool',
@@ -1116,7 +1116,7 @@ final class CommandCatalog {
         requiresVm: true,
         supportsWatch: true,
         mcpExposed: true,
-        build: (final args) => RunClientToolCommand(
+        build: (args) => RunClientToolCommand(
           toolName: _stringArg(
             args,
             'toolName',
@@ -1148,7 +1148,7 @@ final class CommandCatalog {
         requiresVm: true,
         supportsWatch: true,
         mcpExposed: true,
-        build: (final args) => RunClientResourceCommand(
+        build: (args) => RunClientResourceCommand(
           resourceUri: _stringArg(
             args,
             'resourceUri',
@@ -1172,7 +1172,7 @@ final class CommandCatalog {
         requiresVm: true,
         supportsWatch: true,
         mcpExposed: false,
-        build: (final args) => DynamicRegistryStatsCommand(
+        build: (args) => DynamicRegistryStatsCommand(
           includeAppDetails: _boolArg(
             args,
             'includeAppDetails',
@@ -1187,10 +1187,10 @@ final class CommandCatalog {
   }
 
   static Map<String, Object?> _arraySchema({
-    required final Map<String, Object?> items,
+    required Map<String, Object?> items,
   }) => {'type': 'array', 'items': items};
 
-  static Map<String, Object?> _asSchemaProperties(final Object? value) {
+  static Map<String, Object?> _asSchemaProperties(Object? value) {
     if (value is Map<String, Object?>) {
       return value;
     }
@@ -1201,10 +1201,10 @@ final class CommandCatalog {
   }
 
   static bool _boolArg(
-    final Map<String, Object?> args,
-    final String key, {
-    required final bool fallback,
-    final String? alias,
+    Map<String, Object?> args,
+    String key, {
+    required bool fallback,
+    String? alias,
   }) {
     final value = _findArg(args, key, alias: alias);
     if (value == null) {
@@ -1219,12 +1219,12 @@ final class CommandCatalog {
     );
   }
 
-  static Map<String, Object?> _boolSchema({final Object? defaultValue}) => {
+  static Map<String, Object?> _boolSchema({Object? defaultValue}) => {
     'type': 'boolean',
     'default': ?defaultValue,
   };
 
-  static CommandSpec _decorateConnectionSchema(final CommandSpec spec) {
+  static CommandSpec _decorateConnectionSchema(CommandSpec spec) {
     final supportsConnectionOverride =
         spec.requiresVm || spec.name == 'watch' || spec.name == 'session_exec';
     if (!supportsConnectionOverride) {
@@ -1244,9 +1244,9 @@ final class CommandCatalog {
   }
 
   static Object? _findArg(
-    final Map<String, Object?> args,
-    final String key, {
-    final String? alias,
+    Map<String, Object?> args,
+    String key, {
+    String? alias,
   }) {
     if (args.containsKey(key)) {
       return args[key];
@@ -1270,10 +1270,10 @@ final class CommandCatalog {
   }
 
   static int _intArg(
-    final Map<String, Object?> args,
-    final String key, {
-    required final int fallback,
-    final String? alias,
+    Map<String, Object?> args,
+    String key, {
+    required int fallback,
+    String? alias,
   }) {
     final value = _findArg(args, key, alias: alias);
     if (value == null) {
@@ -1283,8 +1283,8 @@ final class CommandCatalog {
   }
 
   static Map<String, Object?> _intSchema({
-    final Object? defaultValue,
-    final String? description,
+    Object? defaultValue,
+    String? description,
   }) => {
     'type': 'integer',
     'default': ?defaultValue,
@@ -1292,8 +1292,8 @@ final class CommandCatalog {
   };
 
   static Map<String, Object?> _mapArg(
-    final Map<String, Object?> args,
-    final String key,
+    Map<String, Object?> args,
+    String key,
   ) {
     final value = _findArg(args, key, alias: key);
     if (value is Map<String, Object?>) {
@@ -1313,9 +1313,9 @@ final class CommandCatalog {
   }
 
   static int? _nullableIntArg(
-    final Map<String, Object?> args,
-    final String key, {
-    final String? alias,
+    Map<String, Object?> args,
+    String key, {
+    String? alias,
   }) {
     final value = _findArg(args, key, alias: alias);
     if (value == null) {
@@ -1325,9 +1325,9 @@ final class CommandCatalog {
   }
 
   static String? _nullableStringArg(
-    final Map<String, Object?> args,
-    final String key, {
-    final String? alias,
+    Map<String, Object?> args,
+    String key, {
+    String? alias,
   }) {
     final value = _findArg(args, key, alias: alias);
     if (value == null) {
@@ -1343,9 +1343,9 @@ final class CommandCatalog {
   }
 
   static Map<String, Object?> _objectSchema({
-    final Map<String, Object?> properties = const <String, Object?>{},
-    final List<String> required = const <String>[],
-    final bool additionalProperties = false,
+    Map<String, Object?> properties = const <String, Object?>{},
+    List<String> required = const <String>[],
+    bool additionalProperties = false,
   }) => {
     'type': 'object',
     'properties': properties,
@@ -1353,7 +1353,7 @@ final class CommandCatalog {
     'additionalProperties': additionalProperties,
   };
 
-  static CoreConnectionMode _parseConnectionMode(final String mode) =>
+  static CoreConnectionMode _parseConnectionMode(String mode) =>
       switch (mode) {
         'auto' => CoreConnectionMode.auto,
         'manual' => CoreConnectionMode.manual,
@@ -1365,8 +1365,8 @@ final class CommandCatalog {
       };
 
   static int _strictIntArg({
-    required final Object value,
-    required final String key,
+    required Object value,
+    required String key,
   }) => switch (value) {
     final int v => v,
     final num v when v == v.roundToDouble() => v.toInt(),
@@ -1377,10 +1377,10 @@ final class CommandCatalog {
   };
 
   static String _stringArg(
-    final Map<String, Object?> args,
-    final String key, {
-    required final String fallback,
-    final String? alias,
+    Map<String, Object?> args,
+    String key, {
+    required String fallback,
+    String? alias,
   }) {
     final value = _findArg(args, key, alias: alias);
     if (value == null) {
@@ -1396,9 +1396,9 @@ final class CommandCatalog {
   }
 
   static Map<String, Object?> _stringSchema({
-    final String? description,
-    final Object? defaultValue,
-    final bool nullable = false,
+    String? description,
+    Object? defaultValue,
+    bool nullable = false,
   }) {
     final type = nullable ? const <String>['string', 'null'] : 'string';
     return {
@@ -1408,7 +1408,7 @@ final class CommandCatalog {
     };
   }
 
-  static String _toCamelCase(final String value) {
+  static String _toCamelCase(String value) {
     if (!value.contains('-') && !value.contains('_')) {
       return value;
     }
@@ -1420,7 +1420,7 @@ final class CommandCatalog {
 
     return [
       parts.first,
-      ...parts.skip(1).map((final part) {
+      ...parts.skip(1).map((part) {
         if (part.isEmpty) {
           return '';
         }
@@ -1429,19 +1429,19 @@ final class CommandCatalog {
     ].join();
   }
 
-  static String _toKebabCase(final String value) {
+  static String _toKebabCase(String value) {
     final normalized = value
         .replaceAllMapped(
           RegExp('([a-z0-9])([A-Z])'),
-          (final match) => '${match.group(1)}-${match.group(2)}',
+          (match) => '${match.group(1)}-${match.group(2)}',
         )
         .replaceAll('_', '-');
     return normalized.toLowerCase();
   }
 
   static void _validateUnknownKeys({
-    required final CommandSpec spec,
-    required final Map<String, Object?> args,
+    required CommandSpec spec,
+    required Map<String, Object?> args,
   }) {
     final allowsUnknown = spec.inputSchema['additionalProperties'] == true;
     if (allowsUnknown || args.isEmpty) {
@@ -1469,7 +1469,7 @@ final class CommandCatalog {
     }
 
     final unknownKeys =
-        args.keys.where((final key) => !acceptedKeys.contains(key)).toList()
+        args.keys.where((key) => !acceptedKeys.contains(key)).toList()
           ..sort();
 
     if (unknownKeys.isNotEmpty) {

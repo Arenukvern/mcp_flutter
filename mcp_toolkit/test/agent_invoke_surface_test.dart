@@ -22,7 +22,7 @@ void main() {
             additionalProperties: false,
           ),
         ),
-        handler: (final request) => MCPCallResult(
+        handler: (request) => MCPCallResult(
           message: 'inspected',
           parameters: {'ok': true, 'x': request['x']},
         ),
@@ -89,7 +89,7 @@ void main() {
             additionalProperties: false,
           ),
         ),
-        handler: (final request) =>
+        handler: (request) =>
             MCPCallResult(message: 'inspected', parameters: const {}),
       );
       binding.initializeServiceExtensions(
@@ -122,8 +122,8 @@ final class _CapturingToolkitBinding extends MCPToolkitBindingBase
 
   @override
   void registerServiceExtension({
-    required final String name,
-    required final ServiceExtensionCallback callback,
+    required String name,
+    required ServiceExtensionCallback callback,
   }) {
     callbacks[name] = callback;
   }

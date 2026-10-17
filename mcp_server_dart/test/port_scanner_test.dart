@@ -59,7 +59,7 @@ void main() {
     test('scanForFlutterPorts returns valid port list', () async {
       final ports = await portScanner.scanForFlutterPorts();
       expect(ports, isA<List<int>>());
-      expect(ports.every((final port) => port > 0 && port <= 65535), isTrue);
+      expect(ports.every((port) => port > 0 && port <= 65535), isTrue);
     });
 
     test('isPortAccessible returns false for invalid ports', () async {
@@ -114,9 +114,9 @@ void main() {
 
   group('CorePortScanner scan ports', () {
     void noopLogger(
-      final LoggingLevel level,
-      final String message, {
-      final String logger = 'core',
+      LoggingLevel level,
+      String message, {
+      String logger = 'core',
     }) {}
 
     const limit = CorePortScanner.maxScanPortsCount;
@@ -138,7 +138,7 @@ void main() {
       ),
     };
 
-    specCases.forEach((final name, final testCase) {
+    specCases.forEach((name, testCase) {
       test('spec parser $name', () {
         expect(
           CorePortScanner.parseScanPortsSpec(testCase.spec),

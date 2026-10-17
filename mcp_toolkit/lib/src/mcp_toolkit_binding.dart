@@ -21,7 +21,7 @@ import 'toolkits/flutter_mcp_toolkit.dart';
 /// This is a shortcut for [MCPToolkitBinding.addEntries] method.
 ///
 /// Should be called only after [MCPToolkitBinding.initialize] is called.
-void addMcpTool(final AgentCallEntry entry) =>
+void addMcpTool(AgentCallEntry entry) =>
     unawaited(MCPToolkitBinding.instance.addEntries(entries: {entry}));
 
 /// The binding for the MCP Toolkit.
@@ -73,7 +73,7 @@ class MCPToolkitBinding extends MCPToolkitBindingBase
   MCPCallHandler? get selectAtPointHandler => _selectAtPointHandler;
 
   /// Registers a custom select-at-point handler.
-  set selectAtPointHandler(final MCPCallHandler handler) {
+  set selectAtPointHandler(MCPCallHandler handler) {
     _selectAtPointHandler = handler;
   }
 
@@ -99,7 +99,7 @@ class MCPToolkitBinding extends MCPToolkitBindingBase
   /// tells them apart only by port. A label — the signed-in user, the flavor,
   /// whatever identifies the window — lets a caller pick a target by what it
   /// is. Call it again whenever the name changes, for example after sign-in.
-  void setAppIdentity({required final String? label}) {
+  void setAppIdentity({required String? label}) {
     final trimmed = label?.trim();
     _appIdentityLabel = (trimmed == null || trimmed.isEmpty) ? null : trimmed;
   }
@@ -112,11 +112,11 @@ class MCPToolkitBinding extends MCPToolkitBindingBase
   /// toolkit entries) and then runs the app. Apps that want a fully custom
   /// entry set call [initialize] + [addEntries] + `runApp` themselves.
   Future<void> bootstrapFlutter({
-    required final FutureOr<void> Function() runApp,
-    final FutureOr<void> Function()? ensureInitialized,
-    final void Function(Object error, StackTrace stackTrace)? onZoneError,
-    final bool debugOnly = true,
-    final String? protocolScheme,
+    required FutureOr<void> Function() runApp,
+    FutureOr<void> Function()? ensureInitialized,
+    void Function(Object error, StackTrace stackTrace)? onZoneError,
+    bool debugOnly = true,
+    String? protocolScheme,
   }) async {
     final completer = Completer<void>();
     final zoneErrorHandler = onZoneError ?? handleZoneError;
@@ -150,7 +150,7 @@ class MCPToolkitBinding extends MCPToolkitBindingBase
             }
           }
         },
-        (final error, final stackTrace) {
+        (error, stackTrace) {
           if (!completer.isCompleted) {
             completer.complete();
           }
@@ -164,9 +164,9 @@ class MCPToolkitBinding extends MCPToolkitBindingBase
 
   @override
   void initialize({
-    final String serviceExtensionName = kMCPServiceExtensionName,
-    final String? protocolScheme,
-    final int maxErrors = kDefaultMaxErrors,
+    String serviceExtensionName = kMCPServiceExtensionName,
+    String? protocolScheme,
+    int maxErrors = kDefaultMaxErrors,
   }) {
     assert(() {
       assert(
@@ -189,20 +189,20 @@ class MCPToolkitBinding extends MCPToolkitBindingBase
   ///
   /// Registers debug/profile service extensions that can be called by the MCP
   /// server through the Dart VM service.
-  Future<void> addEntries({required final Set<AgentCallEntry> entries}) async {
+  Future<void> addEntries({required Set<AgentCallEntry> entries}) async {
     assert(() {
       initializeServiceExtensions(errorMonitor: this, entries: entries);
       return true;
     }());
   }
 
-  Future<void> _addMissingEntries(final Iterable<AgentCallEntry> entries) {
+  Future<void> _addMissingEntries(Iterable<AgentCallEntry> entries) {
     final existingKeys = allEntries
-        .map((final entry) => entry.serviceExtensionName)
+        .map((entry) => entry.serviceExtensionName)
         .toSet();
     final missingEntries = entries
         .where(
-          (final entry) => !existingKeys.contains(entry.serviceExtensionName),
+          (entry) => !existingKeys.contains(entry.serviceExtensionName),
         )
         .toSet();
     if (missingEntries.isEmpty) {

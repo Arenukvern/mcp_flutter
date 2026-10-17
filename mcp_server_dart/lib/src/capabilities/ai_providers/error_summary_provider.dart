@@ -16,7 +16,7 @@ final class ErrorSummaryOutcome {
     this.safeDetail,
   });
 
-  factory ErrorSummaryOutcome.okText(final String text) {
+  factory ErrorSummaryOutcome.okText(String text) {
     final t = text.trim();
     if (t.isEmpty) {
       return ErrorSummaryOutcome.failed(
@@ -28,8 +28,8 @@ final class ErrorSummaryOutcome {
   }
 
   factory ErrorSummaryOutcome.skipped({
-    required final String reasonCode,
-    final String? safeDetail,
+    required String reasonCode,
+    String? safeDetail,
   }) => ErrorSummaryOutcome(
     status: ErrorSummaryStatus.skipped,
     reasonCode: reasonCode,
@@ -37,8 +37,8 @@ final class ErrorSummaryOutcome {
   );
 
   factory ErrorSummaryOutcome.failed({
-    required final String reasonCode,
-    final String? safeDetail,
+    required String reasonCode,
+    String? safeDetail,
   }) => ErrorSummaryOutcome(
     status: ErrorSummaryStatus.failed,
     reasonCode: reasonCode,
@@ -53,10 +53,10 @@ final class ErrorSummaryOutcome {
 
 /// Gating + defensive catch for `explain_errors` summarization (unit-tested).
 Future<ErrorSummaryOutcome> resolveExplainErrorsSummary({
-  required final bool includeSummary,
-  required final bool allowExternalSummary,
-  required final ErrorSummaryProvider provider,
-  required final Future<ErrorSummaryOutcome> Function() summarize,
+  required bool includeSummary,
+  required bool allowExternalSummary,
+  required ErrorSummaryProvider provider,
+  required Future<ErrorSummaryOutcome> Function() summarize,
 }) async {
   if (!includeSummary) {
     return ErrorSummaryOutcome.skipped(reasonCode: 'not_requested');
@@ -87,8 +87,8 @@ abstract interface class ErrorSummaryProvider {
   bool get requiresExternalConsent;
 
   Future<ErrorSummaryOutcome> summarize({
-    required final List<Map<String, Object?>> errors,
-    required final List<Map<String, Object?>> causes,
+    required List<Map<String, Object?>> errors,
+    required List<Map<String, Object?>> causes,
   });
 }
 
@@ -103,8 +103,8 @@ final class NoopErrorSummaryProvider implements ErrorSummaryProvider {
 
   @override
   Future<ErrorSummaryOutcome> summarize({
-    required final List<Map<String, Object?>> errors,
-    required final List<Map<String, Object?>> causes,
+    required List<Map<String, Object?>> errors,
+    required List<Map<String, Object?>> causes,
   }) async => ErrorSummaryOutcome.skipped(
     reasonCode: 'provider_none',
     safeDetail: 'No AI summarization (summaryProvider is none).',
@@ -113,10 +113,10 @@ final class NoopErrorSummaryProvider implements ErrorSummaryProvider {
 
 final class OpenAiErrorSummaryProvider implements ErrorSummaryProvider {
   OpenAiErrorSummaryProvider({
-    final String? apiKey,
-    final String model = 'gpt-5.4-mini',
-    final Uri? endpoint,
-    final Duration timeout = const Duration(seconds: 20),
+    String? apiKey,
+    String model = 'gpt-5.4-mini',
+    Uri? endpoint,
+    Duration timeout = const Duration(seconds: 20),
   }) : _summarizer = _OpenAiResponsesSummarizer(
          apiKey: apiKey ?? io.Platform.environment['OPENAI_API_KEY'] ?? '',
          model: model,
@@ -134,8 +134,8 @@ final class OpenAiErrorSummaryProvider implements ErrorSummaryProvider {
 
   @override
   Future<ErrorSummaryOutcome> summarize({
-    required final List<Map<String, Object?>> errors,
-    required final List<Map<String, Object?>> causes,
+    required List<Map<String, Object?>> errors,
+    required List<Map<String, Object?>> causes,
   }) => _summarizer.summarize(errors: errors, causes: causes);
 }
 
@@ -153,8 +153,8 @@ final class _OpenAiResponsesSummarizer {
   final Duration timeout;
 
   Future<ErrorSummaryOutcome> summarize({
-    required final List<Map<String, Object?>> errors,
-    required final List<Map<String, Object?>> causes,
+    required List<Map<String, Object?>> errors,
+    required List<Map<String, Object?>> causes,
   }) async {
     if (apiKey.isEmpty) {
       return ErrorSummaryOutcome.failed(

@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter_mcp_harness/flutter_mcp_harness.dart';
 
-Future<void> main(final List<String> args) async {
+Future<void> main(List<String> args) async {
   final dir = args.first;
   final dist = args.length > 1 ? args[1] : '4000';
   final client = await VmClient.connect(Uri.parse(Platform.environment['LA_VM_URI']!));

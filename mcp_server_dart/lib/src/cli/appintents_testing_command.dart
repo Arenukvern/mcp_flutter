@@ -8,13 +8,13 @@ import 'package:path/path.dart' as p;
 
 /// Generates Apple AppIntentsTesting XCTest scaffolds from agent_manifest.json.
 Future<int> runAppIntentsTestingGenerate({
-  required final String projectRoot,
-  required final String manifestPath,
-  required final String bundleIdentifier,
-  required final String testClassName,
-  final String? sampleArgumentsPath,
-  final String? entityFixturesPath,
-  final String? outputPath,
+  required String projectRoot,
+  required String manifestPath,
+  required String bundleIdentifier,
+  required String testClassName,
+  String? sampleArgumentsPath,
+  String? entityFixturesPath,
+  String? outputPath,
 }) async {
   final bundleId = bundleIdentifier.trim();
   if (bundleId.isEmpty) {
@@ -73,11 +73,11 @@ Future<int> runAppIntentsTestingGenerate({
 }
 
 String emitAppIntentsTestingScaffold({
-  required final File manifestFile,
-  required final String bundleIdentifier,
-  required final String testClassName,
-  final File? sampleArgumentsFile,
-  final File? entityFixturesFile,
+  required File manifestFile,
+  required String bundleIdentifier,
+  required String testClassName,
+  File? sampleArgumentsFile,
+  File? entityFixturesFile,
 }) {
   final manifest = AgentManifest.parse(manifestFile.readAsStringSync());
   return AppleAppIntentsTestingEmitter(
@@ -93,10 +93,10 @@ String emitAppIntentsTestingScaffold({
 }
 
 Map<String, Map<String, Object?>> readAppIntentsTestingSampleArguments(
-  final File file,
+  File file,
 ) {
   final raw = _readJsonObjectFile(file);
-  return raw.map((final key, final value) {
+  return raw.map((key, value) {
     final values = switch (value) {
       final Map<String, Object?> typed => typed,
       final Map map => map.cast<String, Object?>(),
@@ -109,9 +109,9 @@ Map<String, Map<String, Object?>> readAppIntentsTestingSampleArguments(
 }
 
 Map<String, AppleAppIntentsTestingEntityFixture>
-readAppIntentsTestingEntityFixtures(final File file) {
+readAppIntentsTestingEntityFixtures(File file) {
   final raw = _readJsonObjectFile(file);
-  return raw.map((final key, final value) {
+  return raw.map((key, value) {
     final values = switch (value) {
       final Map<String, Object?> typed => typed,
       final Map map => map.cast<String, Object?>(),
@@ -136,7 +136,7 @@ readAppIntentsTestingEntityFixtures(final File file) {
   });
 }
 
-Map<String, Object?> _readJsonObjectFile(final File file) {
+Map<String, Object?> _readJsonObjectFile(File file) {
   if (!file.existsSync()) {
     throw FormatException('JSON file not found: ${file.path}');
   }
@@ -150,7 +150,7 @@ Map<String, Object?> _readJsonObjectFile(final File file) {
   };
 }
 
-File _resolvePath(final String projectRoot, final String path) {
+File _resolvePath(String projectRoot, String path) {
   final normalized = p.normalize(path);
   if (p.isAbsolute(normalized)) {
     return File(normalized);
@@ -158,7 +158,7 @@ File _resolvePath(final String projectRoot, final String path) {
   return File(p.join(projectRoot, normalized));
 }
 
-File? _optionalPath(final String projectRoot, final String? path) {
+File? _optionalPath(String projectRoot, String? path) {
   final normalized = (path ?? '').trim();
   if (normalized.isEmpty) {
     return null;

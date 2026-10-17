@@ -20,12 +20,12 @@ final class FlutterSessionConnector implements IntentSessionConnector {
 
   @override
   Future<Map<String, Object?>> connect({
-    final IntentSessionConnectionMode mode = IntentSessionConnectionMode.auto,
-    final String? targetId,
-    final String? uri,
-    final String? host,
-    final int? port,
-    final bool forceReconnect = false,
+    IntentSessionConnectionMode mode = IntentSessionConnectionMode.auto,
+    String? targetId,
+    String? uri,
+    String? host,
+    int? port,
+    bool forceReconnect = false,
   }) async {
     try {
       return await connectionContext.connect(
@@ -48,7 +48,7 @@ final class FlutterSessionConnector implements IntentSessionConnector {
   @override
   Future<void> disconnect() => connectionContext.disconnect();
 
-  CoreConnectionMode _toCoreMode(final IntentSessionConnectionMode mode) =>
+  CoreConnectionMode _toCoreMode(IntentSessionConnectionMode mode) =>
       switch (mode) {
         IntentSessionConnectionMode.auto => CoreConnectionMode.auto,
         IntentSessionConnectionMode.manual => CoreConnectionMode.manual,

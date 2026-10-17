@@ -16,7 +16,7 @@ final class _ConfigCapturingCapability implements Capability {
   String get version => '0.0.0';
 
   @override
-  Future<void> register(final CapabilityContext context) async {
+  Future<void> register(CapabilityContext context) async {
     _onConfig(context.config);
   }
 
@@ -37,7 +37,7 @@ final class _FakeCapability implements Capability {
   final List<String> tools;
 
   @override
-  Future<void> register(final CapabilityContext context) async {
+  Future<void> register(CapabilityContext context) async {
     for (final name in tools) {
       context.registerTool(
         ToolRegistration(
@@ -68,7 +68,7 @@ final class _DisposeTrackingCapability implements Capability {
   final void Function() onDispose;
 
   @override
-  Future<void> register(final CapabilityContext context) async {}
+  Future<void> register(CapabilityContext context) async {}
 
   @override
   Future<void> dispose() async => onDispose();
@@ -86,7 +86,7 @@ final class _CapturingCapability implements Capability {
   String get version => '0.0.0';
 
   @override
-  Future<void> register(final CapabilityContext context) async {
+  Future<void> register(CapabilityContext context) async {
     _capture(context);
   }
 
@@ -141,7 +141,7 @@ void main() {
       final host = McpHost();
       late CapabilityContext capturedContext;
 
-      final cap = _CapturingCapability((final ctx) {
+      final cap = _CapturingCapability((ctx) {
         capturedContext = ctx;
       });
 
@@ -154,7 +154,7 @@ void main() {
 
     test('registerTool after register() returns throws StateError', () async {
       late CapabilityContext escapedCtx;
-      final cap = _CapturingCapability((final ctx) => escapedCtx = ctx);
+      final cap = _CapturingCapability((ctx) => escapedCtx = ctx);
       final host = McpHost();
       await host.registerCapability(cap);
       expect(
@@ -174,7 +174,7 @@ void main() {
 
     test('registerResource after register() returns throws StateError', () async {
       late CapabilityContext escapedCtx;
-      final cap = _CapturingCapability((final ctx) => escapedCtx = ctx);
+      final cap = _CapturingCapability((ctx) => escapedCtx = ctx);
       final host = McpHost();
       await host.registerCapability(cap);
       // registerResource after seal must throw StateError (registry-backed path).
@@ -266,7 +266,7 @@ void main() {
           ),
         );
         await host.registerCapability(
-          _ConfigCapturingCapability((final cfg) => captured = cfg),
+          _ConfigCapturingCapability((cfg) => captured = cfg),
         );
         expect(captured, isNotNull);
         expect(captured!.getBool('dumps_supported'), isTrue);
@@ -279,7 +279,7 @@ void main() {
         CapabilityConfig? captured;
         final host = McpHost();
         await host.registerCapability(
-          _ConfigCapturingCapability((final cfg) => captured = cfg),
+          _ConfigCapturingCapability((cfg) => captured = cfg),
         );
         expect(captured, isNotNull);
         // Default: no values set → getBool returns defaultValue (false).

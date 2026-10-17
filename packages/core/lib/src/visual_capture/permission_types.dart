@@ -18,8 +18,8 @@ enum PermissionKind {
 }
 
 PermissionKind parsePermissionKind(
-  final Object? value, {
-  final PermissionKind fallback = PermissionKind.visualCapture,
+  Object? value, {
+  PermissionKind fallback = PermissionKind.visualCapture,
 }) {
   final normalized = '$value'.trim().toLowerCase();
   for (final candidate in PermissionKind.values) {
@@ -57,8 +57,8 @@ enum PermissionPolicy {
 }
 
 PermissionPolicy parsePermissionPolicy(
-  final Object? value, {
-  final PermissionPolicy fallback = PermissionPolicy.checkOnly,
+  Object? value, {
+  PermissionPolicy fallback = PermissionPolicy.checkOnly,
 }) {
   final normalized = '$value'.trim().toLowerCase();
   for (final candidate in PermissionPolicy.values) {
@@ -131,27 +131,27 @@ final class PermissionBrokerResult {
       actualMode != null && status != PermissionStatus.denied;
 
   PermissionBrokerResult copyWith({
-    final PermissionKind? kind,
-    final PermissionStatus? status,
-    final PermissionPolicy? policy,
-    final PermissionOwner? owner,
-    final String? backend,
-    final Set<CaptureCapability>? capabilities,
-    final Set<String>? supportedModes,
-    final String? requestedMode,
-    final bool clearRequestedMode = false,
-    final String? actualMode,
-    final bool clearActualMode = false,
-    final String? truthMode,
-    final bool clearTruthMode = false,
-    final String? fallbackReason,
-    final bool clearFallbackReason = false,
-    final String? message,
-    final bool clearMessage = false,
-    final Map<String, Object?>? details,
-    final bool? canRequest,
-    final bool? canOpenSettings,
-    final bool? appBridgeInstalled,
+    PermissionKind? kind,
+    PermissionStatus? status,
+    PermissionPolicy? policy,
+    PermissionOwner? owner,
+    String? backend,
+    Set<CaptureCapability>? capabilities,
+    Set<String>? supportedModes,
+    String? requestedMode,
+    bool clearRequestedMode = false,
+    String? actualMode,
+    bool clearActualMode = false,
+    String? truthMode,
+    bool clearTruthMode = false,
+    String? fallbackReason,
+    bool clearFallbackReason = false,
+    String? message,
+    bool clearMessage = false,
+    Map<String, Object?>? details,
+    bool? canRequest,
+    bool? canOpenSettings,
+    bool? appBridgeInstalled,
   }) => PermissionBrokerResult(
     kind: kind ?? this.kind,
     status: status ?? this.status,
@@ -182,7 +182,7 @@ final class PermissionBrokerResult {
     'owner': owner.wireName,
     'backend': backend,
     'capabilities': capabilities
-        .map((final capability) => capability.wireName)
+        .map((capability) => capability.wireName)
         .toList(growable: false),
     'supportedModes': supportedModes.toList(growable: false),
     'requestedMode': requestedMode,

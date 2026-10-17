@@ -31,7 +31,7 @@ final class FakeCommandRunner implements CommandRunner {
 
   @override
   Future<CoreResult?> applyConnectionOverride(
-    final Map<String, Object?>? arguments,
+    Map<String, Object?>? arguments,
   ) async {
     overrideArguments.add(arguments);
     callLog.add('applyConnectionOverride');
@@ -39,7 +39,7 @@ final class FakeCommandRunner implements CommandRunner {
   }
 
   @override
-  Future<CoreResult> execute(final CoreCommand command) async {
+  Future<CoreResult> execute(CoreCommand command) async {
     executedCommands.add(command);
     callLog.add('execute');
     return nextExecuteResult ?? CoreResult.success();

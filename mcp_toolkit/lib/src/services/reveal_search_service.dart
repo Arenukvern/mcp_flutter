@@ -14,11 +14,11 @@ mixin RevealSearchService {
   static const double _maxDistance = 2000;
 
   static Future<Map<String, Object?>> revealSearch({
-    required final String query,
-    final String matchBy = 'text',
-    final String direction = 'down',
-    final int maxAttempts = _defaultMaxAttempts,
-    final double distance = _defaultDistance,
+    required String query,
+    String matchBy = 'text',
+    String direction = 'down',
+    int maxAttempts = _defaultMaxAttempts,
+    double distance = _defaultDistance,
   }) async {
     final normalizedQuery = query.trim();
     if (normalizedQuery.isEmpty) {
@@ -180,19 +180,19 @@ mixin RevealSearchService {
   }
 
   static Map<String, Object?> _foundButNotActionableResult({
-    required final Map<String, Object?> snapshot,
-    required final Map<String, Object?> match,
-    required final String query,
-    required final String matchBy,
-    required final String direction,
-    required final int maxAttempts,
-    required final double distance,
-    required final List<Map<String, Object?>> attempts,
+    required Map<String, Object?> snapshot,
+    required Map<String, Object?> match,
+    required String query,
+    required String matchBy,
+    required String direction,
+    required int maxAttempts,
+    required double distance,
+    required List<Map<String, Object?>> attempts,
   }) {
     final approached = _targetApproached(attempts);
     final scrolled = _lastScrolledNode(attempts);
     final anyScrollFailed = attempts.any(
-      (final attempt) => _asMap(attempt['scroll'])?['success'] == false,
+      (attempt) => _asMap(attempt['scroll'])?['success'] == false,
     );
     return <String, Object?>{
       'success': false,
@@ -233,8 +233,8 @@ mixin RevealSearchService {
   /// Zero once the centre is inside — the condition a gesture needs before it
   /// can aim at the target.
   static double? _outsideViewportBy({
-    required final Map<String, Object?> match,
-    required final Object? viewport,
+    required Map<String, Object?> match,
+    required Object? viewport,
   }) {
     final center = _asMap(match['center']);
     final box = _asMap(viewport);
@@ -274,9 +274,9 @@ mixin RevealSearchService {
   /// converging, so the distance is measured instead of assumed. Absent
   /// evidence — fewer than two measured attempts — the answer is yes: a
   /// refusal must not accuse the caller on a guess.
-  static bool _targetApproached(final List<Map<String, Object?>> attempts) {
+  static bool _targetApproached(List<Map<String, Object?>> attempts) {
     final distances = attempts
-        .map((final attempt) => _asDouble(attempt['outsideViewportBy']))
+        .map((attempt) => _asDouble(attempt['outsideViewportBy']))
         .whereType<double>()
         .toList();
     if (distances.length < 2) return true;
@@ -284,7 +284,7 @@ mixin RevealSearchService {
   }
 
   /// The node the most recent attempt actually scrolled, if it named one.
-  static Object? _lastScrolledNode(final List<Map<String, Object?>> attempts) {
+  static Object? _lastScrolledNode(List<Map<String, Object?>> attempts) {
     for (final attempt in attempts.reversed) {
       final scrolled = _asMap(attempt['scroll'])?['targetNodeId'];
       if (scrolled != null) return scrolled;
@@ -292,24 +292,24 @@ mixin RevealSearchService {
     return null;
   }
 
-  static Map<String, Object?>? _asMap(final Object? value) => switch (value) {
+  static Map<String, Object?>? _asMap(Object? value) => switch (value) {
     final Map<Object?, Object?> map => map.cast<String, Object?>(),
     _ => null,
   };
 
-  static double? _asDouble(final Object? value) =>
+  static double? _asDouble(Object? value) =>
       value is num ? value.toDouble() : null;
 
   static const int _maxNearIdentifiers = 8;
 
-  static Iterable<String> _identifiersOf(final Map<String, Object?> snapshot) {
+  static Iterable<String> _identifiersOf(Map<String, Object?> snapshot) {
     final nodes = snapshot['nodes'];
     if (nodes is! List) return const <String>[];
     return nodes
         .whereType<Map<Object?, Object?>>()
-        .map((final node) => node['identifier'])
+        .map((node) => node['identifier'])
         .whereType<String>()
-        .where((final id) => id.isNotEmpty);
+        .where((id) => id.isNotEmpty);
   }
 
   /// Identifiers from the screens searched that look like the one asked for,
@@ -322,12 +322,12 @@ mixin RevealSearchService {
   /// segment finds nothing on its own and the caller cannot see why.
   @visibleForTesting
   static List<String> nearIdentifiersFor({
-    required final String query,
-    required final Iterable<String> identifiersSeen,
+    required String query,
+    required Iterable<String> identifiersSeen,
   }) {
     final lowerQuery = query.toLowerCase();
     final querySegments = query.split('.');
-    int sharedSegments(final String id) {
+    int sharedSegments(String id) {
       final segments = id.split('.');
       var shared = 0;
       while (shared < segments.length &&
@@ -340,7 +340,7 @@ mixin RevealSearchService {
 
     // Lower rank sorts first; the shared-segment count breaks ties within
     // the same rank so the sibling with the longer common path leads.
-    (int, int)? rankOf(final String id) {
+    (int, int)? rankOf(String id) {
       final lowerId = id.toLowerCase();
       final shared = sharedSegments(id);
       if (lowerId == lowerQuery) return (0, -shared);
@@ -354,7 +354,7 @@ mixin RevealSearchService {
         <(String, (int, int))>[
           for (final id in identifiersSeen.toSet())
             if (rankOf(id) case final rank?) (id, rank),
-        ]..sort((final a, final b) {
+        ]..sort((a, b) {
           final byRank = a.$2.$1.compareTo(b.$2.$1);
           if (byRank != 0) return byRank;
           final bySegments = a.$2.$2.compareTo(b.$2.$2);
@@ -365,9 +365,9 @@ mixin RevealSearchService {
   }
 
   static Map<String, Object?> _missDetails({
-    required final String query,
-    required final String matchBy,
-    required final Set<String> identifiersSeen,
+    required String query,
+    required String matchBy,
+    required Set<String> identifiersSeen,
   }) {
     if (matchBy != 'identifier') return const <String, Object?>{};
     return <String, Object?>{
@@ -383,9 +383,9 @@ mixin RevealSearchService {
   /// is compared whole, so the text-mode advice about split nodes does not
   /// apply to it.
   static String _missHint({
-    required final String query,
-    required final String matchBy,
-    required final Set<String> identifiersSeen,
+    required String query,
+    required String matchBy,
+    required Set<String> identifiersSeen,
   }) {
     if (matchBy != 'identifier') {
       return 'Matching by $matchBy is a case-insensitive substring test, so '
@@ -400,7 +400,7 @@ mixin RevealSearchService {
     if (near.isNotEmpty) {
       return 'An identifier must match whole and case-sensitively; '
           '${identifiersSeen.length} identifiers were seen and the closest '
-          'are ${near.map((final id) => '"$id"').join(', ')} '
+          'are ${near.map((id) => '"$id"').join(', ')} '
           '(nearIdentifiers) — pass one of them.';
     }
     if (identifiersSeen.isEmpty) {
@@ -415,9 +415,9 @@ mixin RevealSearchService {
   }
 
   static Map<String, Object?>? _findMatch({
-    required final Map<String, Object?> snapshot,
-    required final String query,
-    required final String matchBy,
+    required Map<String, Object?> snapshot,
+    required String query,
+    required String matchBy,
   }) {
     final nodes = snapshot['nodes'];
     if (nodes is! List) return null;
@@ -432,9 +432,9 @@ mixin RevealSearchService {
   }
 
   static bool _matches({
-    required final Map<String, Object?> node,
-    required final String query,
-    required final String matchBy,
+    required Map<String, Object?> node,
+    required String query,
+    required String matchBy,
   }) {
     final normalizedQuery = query.toLowerCase();
     return switch (matchBy) {
@@ -449,15 +449,15 @@ mixin RevealSearchService {
     };
   }
 
-  static bool _equalsField(final Object? value, final String query) =>
+  static bool _equalsField(Object? value, String query) =>
       value is String && value.trim() == query;
 
   static bool _containsField(
-    final Object? value,
-    final String normalizedQuery,
+    Object? value,
+    String normalizedQuery,
   ) => value is String && value.toLowerCase().contains(normalizedQuery);
 
-  static String _normalizeMatchBy(final String matchBy) {
+  static String _normalizeMatchBy(String matchBy) {
     final normalized = matchBy.trim().toLowerCase();
     return switch (normalized) {
       'identifier' || 'label' || 'value' || 'hint' => normalized,
@@ -467,19 +467,19 @@ mixin RevealSearchService {
 
   @visibleForTesting
   static bool shouldContinueAfterScrollForTesting(
-    final Map<String, Object?> scroll,
+    Map<String, Object?> scroll,
   ) => _shouldContinueAfterScroll(scroll);
 
   @visibleForTesting
   static Map<String, Object?> foundButNotActionableResultForTesting({
-    required final Map<String, Object?> snapshot,
-    required final Map<String, Object?> match,
-    required final String query,
-    required final String matchBy,
-    required final String direction,
-    required final int maxAttempts,
-    required final double distance,
-    required final List<Map<String, Object?>> attempts,
+    required Map<String, Object?> snapshot,
+    required Map<String, Object?> match,
+    required String query,
+    required String matchBy,
+    required String direction,
+    required int maxAttempts,
+    required double distance,
+    required List<Map<String, Object?>> attempts,
   }) => _foundButNotActionableResult(
     snapshot: snapshot,
     match: match,
@@ -498,6 +498,6 @@ mixin RevealSearchService {
   /// compares the visible subtree before and after and says so in
   /// `movementVerified`. Everywhere else a failed scroll means the screen is
   /// unchanged, and another attempt would re-read it.
-  static bool _shouldContinueAfterScroll(final Map<String, Object?> scroll) =>
+  static bool _shouldContinueAfterScroll(Map<String, Object?> scroll) =>
       scroll['movementVerified'] == true;
 }

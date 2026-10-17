@@ -26,7 +26,7 @@ FakeCapabilityContext _registeredCtx({FakeCommandRunner? runner}) {
   return ctx;
 }
 
-void _expectEnvelopeKeys(final Map<String, Object?> json) {
+void _expectEnvelopeKeys(Map<String, Object?> json) {
   expect(json.containsKey('code'), isTrue, reason: 'envelope must have code');
   expect(
     json.containsKey('message'),

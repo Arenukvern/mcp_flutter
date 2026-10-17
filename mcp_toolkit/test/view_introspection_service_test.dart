@@ -5,7 +5,7 @@ import 'package:mcp_toolkit/mcp_toolkit.dart';
 void main() {
   testWidgets(
     'inspectWidgetAtPoint returns selected summary and render hit targets',
-    (final tester) async {
+    (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(

@@ -11,7 +11,7 @@ extension AgentCallEntryMcpToolkit on AgentCallEntry {
   /// Uses an explicit [AgentIntentDescriptor.resourceUri] when set, otherwise
   /// derives from [protocolScheme] via IntentCall rules, or falls back to the
   /// legacy `visual://localhost/...` shape when no scheme is configured.
-  String resolveResourceUri(final String? protocolScheme) {
+  String resolveResourceUri(String? protocolScheme) {
     final descriptor = toRegistration().descriptor;
     final explicit = descriptor.resourceUri?.trim();
     if (explicit != null && explicit.isNotEmpty) {

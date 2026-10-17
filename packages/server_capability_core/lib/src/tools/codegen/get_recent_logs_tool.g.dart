@@ -18,5 +18,5 @@ AgentCallEntry get getRecentLogsCallEntry => AgentCallEntry.tool(
   description:
       'Get recent print() and log output from the running Flutter app.',
   inputSchema: getRecentLogsInputSchema(),
-  handler: (final args) async => fmtGetRecentLogs(args['count'] as int),
+  handler: (args) async => fmtGetRecentLogs(args['count'] as int),
 );

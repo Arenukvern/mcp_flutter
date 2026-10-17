@@ -32,7 +32,7 @@ import 'package:vm_service/vm_service.dart';
 /// Single command dispatch interface shared by CLI and MCP wrapper.
 // ignore: one_member_abstracts
 abstract interface class CoreCommandExecutor {
-  Future<CoreResult> execute(final CoreCommand command);
+  Future<CoreResult> execute(CoreCommand command);
 }
 
 final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
@@ -42,10 +42,10 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     required this.imageFileSaver,
     required this.configuration,
     this.dynamicGateway,
-    final DesktopWindowScreenshotService? desktopWindowScreenshotService,
+    DesktopWindowScreenshotService? desktopWindowScreenshotService,
     this.sessionManager,
-    final ErrorCauseAnalyzer? errorCauseAnalyzer,
-    final Map<String, ErrorSummaryProvider>? summaryProviders,
+    ErrorCauseAnalyzer? errorCauseAnalyzer,
+    Map<String, ErrorSummaryProvider>? summaryProviders,
   }) : _desktopWindowScreenshotServiceOverride = desktopWindowScreenshotService,
        _errorCauseAnalyzer = errorCauseAnalyzer ?? const ErrorCauseAnalyzer(),
        _summaryProviders =
@@ -89,7 +89,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
   }
 
   @override
-  Future<CoreResult> execute(final CoreCommand command) async {
+  Future<CoreResult> execute(CoreCommand command) async {
     final stopwatch = Stopwatch()..start();
 
     try {
@@ -110,7 +110,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
   }
 
   List<Map<String, Object?>> _buildImageSummaries(
-    final Map<String, Object?> screenshotData,
+    Map<String, Object?> screenshotData,
   ) {
     final summaries = <Map<String, Object?>>[];
 
@@ -139,7 +139,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
   }
 
   Future<CoreResult> _captureUiSnapshot(
-    final CaptureUiSnapshotCommand command,
+    CaptureUiSnapshotCommand command,
   ) async {
     final ensureFailure = await _ensureVmConnected();
     if (ensureFailure != null) return ensureFailure;
@@ -207,7 +207,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     );
   }
 
-  Future<CoreResult> _connect(final ConnectCommand command) async {
+  Future<CoreResult> _connect(ConnectCommand command) async {
     try {
       final data = await connectionContext.connect(
         mode: command.mode,
@@ -242,7 +242,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
 
   Future<int?> _connectedVmPid() => connectionContext.resolveConnectedVmPid();
 
-  Future<CoreResult> _debugDump(final String extensionName) async {
+  Future<CoreResult> _debugDump(String extensionName) async {
     final ensureFailure = await _ensureVmConnected();
     if (ensureFailure != null) return ensureFailure;
 
@@ -274,7 +274,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
   Future<CoreResult> _debugDumpSemanticsTree() =>
       _debugDump('ext.flutter.debugDumpSemanticsTreeInTraversalOrder');
 
-  Future<CoreResult> _diagnose(final DiagnoseCommand command) async {
+  Future<CoreResult> _diagnose(DiagnoseCommand command) async {
     try {
       final bundler = DiagnosticsBundler(execute: _dispatch);
       final data = await bundler.run(
@@ -292,11 +292,11 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
   Future<CoreResult> _discoverDebugApps() async {
     try {
       final targets = await connectionContext.discoverTargets();
-      final ports = targets.map((final target) => target.port).toSet().toList()
+      final ports = targets.map((target) => target.port).toSet().toList()
         ..sort();
       return CoreResult.success(
         data: {
-          'targets': targets.map((final target) => target.toJson()).toList(),
+          'targets': targets.map((target) => target.toJson()).toList(),
           'ports': ports,
           'count': targets.length,
           'diagnostics': connectionContext.lastDiscoveryDiagnostics,
@@ -310,7 +310,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
   }
 
-  Future<CoreResult> _dispatch(final CoreCommand command) => switch (command) {
+  Future<CoreResult> _dispatch(CoreCommand command) => switch (command) {
     ConnectCommand() => _connect(command),
     SessionStartCommand() => _sessionStart(command),
     SessionExecCommand() => _sessionExec(command),
@@ -360,7 +360,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
   };
 
   Future<CoreResult> _dynamicRegistryStats(
-    final DynamicRegistryStatsCommand command,
+    DynamicRegistryStatsCommand command,
   ) async {
     if (!configuration.dynamicRegistrySupported) {
       return CoreResult.failure(
@@ -382,7 +382,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
   }
 
   Map<String, Object?> _enrichErrorWithTopFrame(
-    final Map<String, Object?> error,
+    Map<String, Object?> error,
   ) {
     final next = <String, Object?>{...error};
     final stackTrace = '${next['stackTrace'] ?? ''}'.trim();
@@ -413,7 +413,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     );
   }
 
-  Future<CoreResult> _explainErrors(final ExplainErrorsCommand command) async {
+  Future<CoreResult> _explainErrors(ExplainErrorsCommand command) async {
     try {
       final errorsResult = await _getAppErrors(
         GetAppErrorsCommand(count: command.count),
@@ -428,7 +428,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       ).whenEmptyUse('No errors found');
       final errors = jsonDecodeListAs<Map<String, dynamic>>(
         data['errors'],
-      ).map((final e) => e.cast<String, Object?>()).toList();
+      ).map((e) => e.cast<String, Object?>()).toList();
 
       final causes = _errorCauseAnalyzer.analyze(errors);
 
@@ -468,7 +468,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
   }
 
-  String? _extractSessionId(final CoreResult result) {
+  String? _extractSessionId(CoreResult result) {
     final metaSession = result.meta['sessionId'];
     if (metaSession is String && metaSession.isNotEmpty) {
       return metaSession;
@@ -495,7 +495,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
   }
 
-  Future<CoreResult> _getAppErrors(final GetAppErrorsCommand command) async {
+  Future<CoreResult> _getAppErrors(GetAppErrorsCommand command) async {
     final ensureFailure = await _ensureVmConnected();
     if (ensureFailure != null) return ensureFailure;
 
@@ -507,7 +507,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
 
       final rawErrors = jsonDecodeListAs<Map<String, dynamic>>(
         result.json?['errors'],
-      ).map((final e) => e.cast<String, Object?>()).toList();
+      ).map((e) => e.cast<String, Object?>()).toList();
       final errors = rawErrors.map(_enrichErrorWithTopFrame).toList();
       final message = jsonDecodeString(
         result.json?['message'],
@@ -549,7 +549,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
   }
 
   Future<CoreResult> _getScreenshots(
-    final GetScreenshotsCommand command,
+    GetScreenshotsCommand command,
   ) async {
     final hints = await _scanPlatformViewHints(command.mode);
     final effectiveMode = resolveEffectiveScreenshotMode(
@@ -671,7 +671,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
   }
 
-  Future<CoreResult> _focusWindow(final FocusWindowCommand command) async {
+  Future<CoreResult> _focusWindow(FocusWindowCommand command) async {
     final device = configuration.flutterDevice;
     if (device == null) {
       return CoreResult.failure(
@@ -714,7 +714,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
   }
 
   Future<PlatformViewHints> _scanPlatformViewHints(
-    final ScreenshotMode mode,
+    ScreenshotMode mode,
   ) async {
     if (mode != ScreenshotMode.auto && mode != ScreenshotMode.flutterLayer) {
       return PlatformViewHints.none;
@@ -737,7 +737,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
   }
 
-  PlatformViewHints _hintsFromPayload(final Map<String, Object?> payload) {
+  PlatformViewHints _hintsFromPayload(Map<String, Object?> payload) {
     final embedded = payload['captureHints'];
     if (embedded is Map) {
       final hintsMap = embedded is Map<String, Object?>
@@ -785,10 +785,10 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
   }
 
   Map<String, Object?> _withCaptureHints({
-    required final Map<String, Object?> data,
-    required final PlatformViewHints hints,
-    required final Map<String, Object?> captureData,
-    final bool forceFlutterLayerWarning = false,
+    required Map<String, Object?> data,
+    required PlatformViewHints hints,
+    required Map<String, Object?> captureData,
+    bool forceFlutterLayerWarning = false,
   }) {
     final extraWarnings = <String>[];
     if (effectiveModeUpgraded(data)) {
@@ -813,7 +813,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     );
   }
 
-  bool effectiveModeUpgraded(final Map<String, Object?> data) {
+  bool effectiveModeUpgraded(Map<String, Object?> data) {
     final requested = '${data['requestedMode'] ?? ''}';
     final actual = '${data['actualMode'] ?? ''}';
     return requested == ScreenshotMode.auto.wireName &&
@@ -831,7 +831,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       final payload = _map(result.json);
       final details = jsonDecodeListAs<Map<String, dynamic>>(
         payload['details'],
-      ).map((final e) => e.cast<String, Object?>()).toList();
+      ).map((e) => e.cast<String, Object?>()).toList();
       final message = jsonDecodeString(
         payload['message'],
       ).whenEmptyUse('View details');
@@ -862,7 +862,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
   }
 
-  Future<CoreResult> _hotReload(final HotReloadFlutterCommand command) async {
+  Future<CoreResult> _hotReload(HotReloadFlutterCommand command) async {
     final ensureFailure = await _ensureVmConnected();
     if (ensureFailure != null) return ensureFailure;
 
@@ -907,7 +907,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
   }
 
   Future<CoreResult> _inspectWidgetAtPoint(
-    final InspectWidgetAtPointCommand command,
+    InspectWidgetAtPointCommand command,
   ) async {
     final ensureFailure = await _ensureVmConnected();
     if (ensureFailure != null) return ensureFailure;
@@ -931,7 +931,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
   }
 
   Future<CoreResult> _semanticSnapshot(
-    final SemanticSnapshotCommand command,
+    SemanticSnapshotCommand command,
   ) async {
     final ensureFailure = await _ensureVmConnected();
     if (ensureFailure != null) return ensureFailure;
@@ -957,7 +957,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
   }
 
-  Future<CoreResult> _tapWidget(final TapWidgetCommand command) async {
+  Future<CoreResult> _tapWidget(TapWidgetCommand command) async {
     final ensureFailure = await _ensureVmConnected();
     if (ensureFailure != null) return ensureFailure;
 
@@ -978,7 +978,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
   }
 
-  Future<CoreResult> _enterText(final EnterTextCommand command) async {
+  Future<CoreResult> _enterText(EnterTextCommand command) async {
     final ensureFailure = await _ensureVmConnected();
     if (ensureFailure != null) return ensureFailure;
 
@@ -1000,7 +1000,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
   }
 
-  Future<CoreResult> _revealSearch(final RevealSearchCommand command) async {
+  Future<CoreResult> _revealSearch(RevealSearchCommand command) async {
     final ensureFailure = await _ensureVmConnected();
     if (ensureFailure != null) return ensureFailure;
 
@@ -1024,7 +1024,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
   }
 
-  Future<CoreResult> _scroll(final ScrollCommand command) async {
+  Future<CoreResult> _scroll(ScrollCommand command) async {
     final ensureFailure = await _ensureVmConnected();
     if (ensureFailure != null) return ensureFailure;
 
@@ -1047,7 +1047,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
   }
 
-  Future<CoreResult> _longPress(final LongPressCommand command) async {
+  Future<CoreResult> _longPress(LongPressCommand command) async {
     final ensureFailure = await _ensureVmConnected();
     if (ensureFailure != null) return ensureFailure;
 
@@ -1068,7 +1068,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
   }
 
-  Future<CoreResult> _swipe(final SwipeCommand command) async {
+  Future<CoreResult> _swipe(SwipeCommand command) async {
     final ensureFailure = await _ensureVmConnected();
     if (ensureFailure != null) return ensureFailure;
 
@@ -1091,7 +1091,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
   }
 
-  Future<CoreResult> _drag(final DragCommand command) async {
+  Future<CoreResult> _drag(DragCommand command) async {
     final ensureFailure = await _ensureVmConnected();
     if (ensureFailure != null) return ensureFailure;
 
@@ -1115,7 +1115,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
   }
 
   Future<CoreResult> _hotReloadAndCapture(
-    final HotReloadAndCaptureCommand command,
+    HotReloadAndCaptureCommand command,
   ) async {
     final ensureFailure = await _ensureVmConnected();
     if (ensureFailure != null) return ensureFailure;
@@ -1179,7 +1179,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
   }
 
   Future<CoreResult> _evaluateDartExpression(
-    final EvaluateDartExpressionCommand command,
+    EvaluateDartExpressionCommand command,
   ) async {
     final ensureFailure = await _ensureVmConnected();
     if (ensureFailure != null) return ensureFailure;
@@ -1264,9 +1264,9 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
   /// with `valueAsStringIsTruncated`; the full text lives behind `getObject`,
   /// which windows by `offset`/`count`.
   Future<Map<String, Object?>> _renderEvaluationValue({
-    required final VmService vmService,
-    required final String isolateId,
-    required final InstanceRef instanceRef,
+    required VmService vmService,
+    required String isolateId,
+    required InstanceRef instanceRef,
   }) async {
     var value = instanceRef.valueAsString;
     var length = instanceRef.length;
@@ -1308,9 +1308,9 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
   }
 
   Future<String?> _resolveEvaluationLibraryId({
-    required final VmService vmService,
-    required final Isolate isolate,
-    required final String? requestedLibraryUri,
+    required VmService vmService,
+    required Isolate isolate,
+    required String? requestedLibraryUri,
   }) async {
     final normalizedUri = requestedLibraryUri?.trim();
     if (normalizedUri == null || normalizedUri.isEmpty) {
@@ -1333,7 +1333,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     return null;
   }
 
-  Future<CoreResult> _getRecentLogs(final GetRecentLogsCommand command) async {
+  Future<CoreResult> _getRecentLogs(GetRecentLogsCommand command) async {
     final ensureFailure = await _ensureVmConnected();
     if (ensureFailure != null) return ensureFailure;
 
@@ -1351,7 +1351,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
   }
 
-  Future<CoreResult> _waitFor(final WaitForCommand command) async {
+  Future<CoreResult> _waitFor(WaitForCommand command) async {
     final ensureFailure = await _ensureVmConnected();
     if (ensureFailure != null) return ensureFailure;
 
@@ -1375,7 +1375,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
   }
 
-  Future<CoreResult> _pressKey(final PressKeyCommand command) async {
+  Future<CoreResult> _pressKey(PressKeyCommand command) async {
     final ensureFailure = await _ensureVmConnected();
     if (ensureFailure != null) return ensureFailure;
 
@@ -1409,7 +1409,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
   }
 
-  Future<CoreResult> _handleDialog(final HandleDialogCommand command) async {
+  Future<CoreResult> _handleDialog(HandleDialogCommand command) async {
     final ensureFailure = await _ensureVmConnected();
     if (ensureFailure != null) return ensureFailure;
 
@@ -1437,7 +1437,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
   }
 
-  Future<CoreResult> _navigate(final NavigateCommand command) async {
+  Future<CoreResult> _navigate(NavigateCommand command) async {
     final ensureFailure = await _ensureVmConnected();
     if (ensureFailure != null) return ensureFailure;
 
@@ -1470,7 +1470,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
   }
 
-  Future<CoreResult> _fillForm(final FillFormCommand command) async {
+  Future<CoreResult> _fillForm(FillFormCommand command) async {
     final ensureFailure = await _ensureVmConnected();
     if (ensureFailure != null) return ensureFailure;
 
@@ -1538,7 +1538,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     );
   }
 
-  Future<CoreResult> _hover(final HoverCommand command) async {
+  Future<CoreResult> _hover(HoverCommand command) async {
     final ensureFailure = await _ensureVmConnected();
     if (ensureFailure != null) return ensureFailure;
 
@@ -1567,7 +1567,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
   }
 
-  Future<CoreResult> _focusWidget(final FocusWidgetCommand command) async {
+  Future<CoreResult> _focusWidget(FocusWidgetCommand command) async {
     final ensureFailure = await _ensureVmConnected();
     if (ensureFailure != null) return ensureFailure;
 
@@ -1588,7 +1588,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     }
   }
 
-  bool _isSessionControlCommand(final CoreCommand command) =>
+  bool _isSessionControlCommand(CoreCommand command) =>
       command is SessionStartCommand ||
       command is SessionExecCommand ||
       command is SessionEndCommand ||
@@ -1613,7 +1613,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     return gateway.listClientToolsAndResources();
   }
 
-  Map<String, Object?> _map(final Object? data) {
+  Map<String, Object?> _map(Object? data) {
     if (data is Map<String, Object?>) {
       return data;
     }
@@ -1623,7 +1623,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     return const <String, Object?>{};
   }
 
-  List<Map<String, Object?>> _parseStackFrames(final String stackTrace) {
+  List<Map<String, Object?>> _parseStackFrames(String stackTrace) {
     final lines = stackTrace.split('\n');
     final frames = <Map<String, Object?>>[];
     final pattern = RegExp(r'\(([^:]+):(\d+):(\d+)\)$');
@@ -1662,7 +1662,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
   }
 
   Future<CoreResult> _runClientResource(
-    final RunClientResourceCommand command,
+    RunClientResourceCommand command,
   ) async {
     if (!configuration.dynamicRegistrySupported) {
       return CoreResult.failure(
@@ -1681,7 +1681,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     return gateway.runClientResource(command.resourceUri);
   }
 
-  Future<CoreResult> _runClientTool(final RunClientToolCommand command) async {
+  Future<CoreResult> _runClientTool(RunClientToolCommand command) async {
     if (!configuration.dynamicRegistrySupported) {
       return CoreResult.failure(
         code: CoreErrorCode.dynamicRegistryDisabled,
@@ -1699,7 +1699,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     return gateway.runClientTool(command.toolName, command.arguments);
   }
 
-  Future<CoreResult> _sessionEnd(final SessionEndCommand command) async {
+  Future<CoreResult> _sessionEnd(SessionEndCommand command) async {
     final manager = sessionManager;
     if (manager == null) {
       return CoreResult.failure(
@@ -1714,7 +1714,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     );
   }
 
-  Future<CoreResult> _sessionExec(final SessionExecCommand command) async {
+  Future<CoreResult> _sessionExec(SessionExecCommand command) async {
     final manager = sessionManager;
     if (manager == null) {
       return CoreResult.failure(
@@ -1754,7 +1754,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     });
   }
 
-  Future<CoreResult> _sessionStart(final SessionStartCommand command) async {
+  Future<CoreResult> _sessionStart(SessionStartCommand command) async {
     final manager = sessionManager;
     if (manager == null) {
       return CoreResult.failure(
@@ -1769,7 +1769,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
   }
 
   IntentSessionStartRequest _toSessionStartRequest(
-    final SessionStartCommand command,
+    SessionStartCommand command,
   ) => IntentSessionStartRequest(
     mode: _toIntentSessionMode(command.mode),
     targetId: command.targetId,
@@ -1781,14 +1781,14 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
   );
 
   IntentSessionConnectionMode _toIntentSessionMode(
-    final CoreConnectionMode mode,
+    CoreConnectionMode mode,
   ) => switch (mode) {
     CoreConnectionMode.auto => IntentSessionConnectionMode.auto,
     CoreConnectionMode.manual => IntentSessionConnectionMode.manual,
     CoreConnectionMode.uri => IntentSessionConnectionMode.uri,
   };
 
-  String _stableStringHash(final String value) {
+  String _stableStringHash(String value) {
     var hash = 0x811c9dc5;
     for (final byte in utf8.encode(value)) {
       hash ^= byte;
@@ -1809,9 +1809,9 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
   );
 
   Future<_DesktopCaptureResolution> _tryDesktopWindowCapture(
-    final GetScreenshotsCommand command, {
-    final ScreenshotMode? captureMode,
-    final PlatformViewHints hints = PlatformViewHints.none,
+    GetScreenshotsCommand command, {
+    ScreenshotMode? captureMode,
+    PlatformViewHints hints = PlatformViewHints.none,
   }) async {
     final mode = captureMode ?? command.mode;
     if (mode == ScreenshotMode.flutterLayer) {
@@ -1899,8 +1899,8 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
   );
 
   CoreResult _visualCaptureFailure(
-    final PermissionBrokerResult permission, {
-    required final String defaultMessage,
+    PermissionBrokerResult permission, {
+    required String defaultMessage,
   }) {
     final code = switch (permission.status) {
       PermissionStatus.denied => CoreErrorCode.visualCapturePermissionDenied,
@@ -1920,7 +1920,7 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
     );
   }
 
-  Future<CoreResult> _watchSnapshot(final WatchCommand command) async {
+  Future<CoreResult> _watchSnapshot(WatchCommand command) async {
     if (_isSessionControlCommand(command.command)) {
       return CoreResult.failure(
         code: CoreErrorCode.invalidCommand,
@@ -1953,9 +1953,9 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
   }
 
   CoreResult _withMeta(
-    final CoreResult result,
-    final int durationMs,
-    final String commandName,
+    CoreResult result,
+    int durationMs,
+    String commandName,
   ) {
     final recovery = connectionContext.takePendingRecovery();
     final nextMeta = <String, Object?>{
@@ -1973,10 +1973,10 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
   }
 
   Map<String, Object?> _withPermissionMetadata({
-    required final Map<String, Object?> data,
-    required final String requestedMode,
-    required final PermissionBrokerResult permission,
-    final bool modeUpgraded = false,
+    required Map<String, Object?> data,
+    required String requestedMode,
+    required PermissionBrokerResult permission,
+    bool modeUpgraded = false,
   }) => <String, Object?>{
     ...data,
     'requestedMode': requestedMode,
@@ -2007,8 +2007,8 @@ final class _DesktopCaptureResolution {
 /// were not requested, otherwise the number of entries in its `errors` list
 /// or zero when that list is absent.
 int? capturedErrorCount({
-  required final bool includeErrors,
-  required final Object? appErrors,
+  required bool includeErrors,
+  required Object? appErrors,
 }) {
   if (!includeErrors) return null;
   final errors = switch (appErrors) {
@@ -2025,8 +2025,8 @@ int? capturedErrorCount({
 /// refused gestures and stale snapshots become failures that retain [data]
 /// as their details.
 CoreResult routeInteractionResponse(
-  final String tool,
-  final Map<String, Object?> data,
+  String tool,
+  Map<String, Object?> data,
 ) {
   if (data['success'] == true) return CoreResult.success(data: data);
   final reason = data['error'] ?? data['message'] ?? 'no success in payload';
@@ -2043,7 +2043,7 @@ CoreResult routeInteractionResponse(
 /// absent key is a success. A filter that names an unresolvable `subtreeOf`
 /// takes no snapshot at all, and reaching the caller as a successful command
 /// would let it read stale refs as if they had just been issued.
-CoreResult routeSemanticSnapshotResponse(final Map<String, Object?> data) {
+CoreResult routeSemanticSnapshotResponse(Map<String, Object?> data) {
   if (data['success'] != false) return CoreResult.success(data: data);
   return CoreResult.failure(
     code: CoreErrorCode.semanticSnapshotFailed,
@@ -2058,7 +2058,7 @@ CoreResult routeSemanticSnapshotResponse(final Map<String, Object?> data) {
 /// [data] is the decoded toolkit response. Returns success for
 /// `matched: true`, a validation failure for `invalid_predicate`, a timeout
 /// for `matched: false`, or `wait_for_failed` for any malformed verdict.
-CoreResult routeWaitForResponse(final Map<String, Object?> data) {
+CoreResult routeWaitForResponse(Map<String, Object?> data) {
   if (data['error'] == CoreErrorCode.invalidPredicate) {
     final hint = data['hint'];
     return CoreResult.failure(

@@ -32,20 +32,20 @@ final String appDir = p.join(repoRoot, 'showcase', 'flutter_test_app');
 
 const String scheme = 'mcpfluttertest';
 
-void log(final String message) {
+void log(String message) {
   // ignore: avoid_print
   print('[showcase] $message');
 }
 
 /// exit() skips Dart's stdout flush for redirected output — flush first so
 /// failure reasons are never lost.
-Future<Never> quit(final int code) async {
+Future<Never> quit(int code) async {
   await stdout.flush();
   await stderr.flush();
   exit(code);
 }
 
-Future<void> main(final List<String> arguments) async {
+Future<void> main(List<String> arguments) async {
   final web = arguments.contains('--web');
   final detach = arguments.contains('--detach');
   final stop = arguments.contains('--stop');
@@ -108,7 +108,7 @@ Future<void> stopShowcase() async {
   log('done');
 }
 
-Future<void> _freePort(final int port) async {
+Future<void> _freePort(int port) async {
   if (_which('lsof') == null) return;
   await for (final pid in _pidsOnPort(port)) {
     Process.killPid(pid, ProcessSignal.sigterm);
@@ -119,7 +119,7 @@ Future<void> _freePort(final int port) async {
   }
 }
 
-Stream<int> _pidsOnPort(final int port) async* {
+Stream<int> _pidsOnPort(int port) async* {
   final result = await Process.run('lsof', ['-ti', ':$port']);
   for (final token in result.stdout.toString().split(RegExp(r'\s+'))) {
     final pid = int.tryParse(token);
@@ -128,14 +128,14 @@ Stream<int> _pidsOnPort(final int port) async* {
 }
 
 /// `kill -0` equivalent: does a process with this pid exist?
-Future<bool> _pidAlive(final int pid) async {
+Future<bool> _pidAlive(int pid) async {
   final result = await Process.run('kill', ['-0', '$pid']);
   return result.exitCode == 0;
 }
 
 Future<void> _runIgnoringExitCode(
-  final String executable,
-  final List<String> arguments,
+  String executable,
+  List<String> arguments,
 ) async {
   try {
     await Process.run(executable, arguments);
@@ -144,7 +144,7 @@ Future<void> _runIgnoringExitCode(
   }
 }
 
-String? _which(final String executable) {
+String? _which(String executable) {
   final pathEnv = Platform.environment['PATH'] ?? '';
   for (final dir in pathEnv.split(':')) {
     if (dir.isEmpty) continue;
@@ -168,7 +168,7 @@ Future<void> macosShowcase() async {
 
   // Tee progress from the first build line; a cold macOS build (pods,
   // kernel compile) can take longer than the default VM-service timeout.
-  void tee(final String line) {
+  void tee(String line) {
     stdout.writeln(line);
     logSink.writeln(line);
   }
@@ -237,7 +237,7 @@ Future<void> macosShowcase() async {
 // web showcase — the run_web_showcase.sh equivalent
 // ---------------------------------------------------------------------------
 
-Future<void> webShowcase({required final bool detach}) async {
+Future<void> webShowcase({required bool detach}) async {
   await stopShowcase();
   Directory(showcaseDir).createSync(recursive: true);
 
@@ -296,7 +296,7 @@ Future<void> webShowcase({required final bool detach}) async {
 
   final logFile = File(p.join(showcaseDir, 'web_app.log'));
   final logSink = logFile.openWrite();
-  void tee(final String line) {
+  void tee(String line) {
     stdout.writeln(line);
     logSink.writeln(line);
   }
@@ -324,7 +324,7 @@ Future<void> webShowcase({required final bool detach}) async {
   await _relayUntilExit(app, logSink);
 }
 
-void _printWebReady(final String wsUri, final String webPort) {
+void _printWebReady(String wsUri, String webPort) {
   stdout.writeln();
   log('WS_URI=$wsUri');
   log('verify: dart run mcp_server_dart/bin/flutter_mcp_toolkit.dart '
@@ -340,16 +340,16 @@ void _printWebReady(final String wsUri, final String webPort) {
 /// for the session to end; Ctrl-C and normal exit both tear the session
 /// down (the shell script's `trap … EXIT INT TERM` semantics).
 Future<void> _relayUntilExit(
-  final LaunchedApp app,
-  final IOSink logSink,
+  LaunchedApp app,
+  IOSink logSink,
 ) async {
-  ProcessSignal.sigint.watch().listen((final _) {
+  ProcessSignal.sigint.watch().listen((_) {
     log('interrupted — stopping showcase session…');
     stopShowcase().whenComplete(() => quit(130));
   });
 
   stdin.listen(
-    (final chunk) => app.process!.stdin.add(chunk),
+    (chunk) => app.process!.stdin.add(chunk),
     onDone: () {
       // EOF on stdin (backgrounded tool): quit the app cleanly.
       app.process!.stdin.write('q');
@@ -365,13 +365,13 @@ Future<void> _relayUntilExit(
 }
 
 Future<int> _spawnDetachedWithLog({
-  required final List<String> arguments,
-  required final String logPath,
+  required List<String> arguments,
+  required String logPath,
 }) async {
   final quoted = [
     'flutter',
     ...arguments,
-  ].map((final part) => "'${part.replaceAll("'", r"'\''")}'").join(' ');
+  ].map((part) => "'${part.replaceAll("'", r"'\''")}'").join(' ');
   final script = "exec $quoted >> '$logPath' 2>&1 < /dev/null";
   final process = await Process.start(
     'sh',
@@ -383,9 +383,9 @@ Future<int> _spawnDetachedWithLog({
 }
 
 Future<Uri?> _waitForWsInLogFile(
-  final File logFile, {
-  required final bool requireReadyPattern,
-  required final Future<bool> Function() isAlive,
+  File logFile, {
+  required bool requireReadyPattern,
+  required Future<bool> Function() isAlive,
 }) async {
   const readyPattern = 'Flutter run key commands';
   final deadline = DateTime.now().add(const Duration(seconds: 180));

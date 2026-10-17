@@ -36,7 +36,7 @@ abstract class MCPToolkitBindingBase {
   final List<ToolkitProjection> projections = <ToolkitProjection>[];
 
   /// Attaches a platform-surface projection (WebMCP, native AppIntents, …).
-  void addProjection(final ToolkitProjection projection) {
+  void addProjection(ToolkitProjection projection) {
     projections.add(projection);
   }
 
@@ -45,7 +45,7 @@ abstract class MCPToolkitBindingBase {
   /// `WebMcpProjection(policy: p).entriesChanged`, which exposes the same
   /// shape without importing the toolkit).
   void addEntryListener(
-    final void Function(Set<AgentCallEntry> entries) listener,
+    void Function(Set<AgentCallEntry> entries) listener,
   ) {
     projections.add(EntryListenerProjection(listener));
   }
@@ -60,7 +60,7 @@ abstract class MCPToolkitBindingBase {
   String? get protocolScheme =>
       _protocolScheme?.isNotEmpty == true ? _protocolScheme : null;
 
-  set protocolScheme(final String? value) {
+  set protocolScheme(String? value) {
     _protocolScheme = value?.trim();
   }
 
@@ -70,8 +70,8 @@ abstract class MCPToolkitBindingBase {
   /// Initializes the MCP Toolkit binding.
   @mustCallSuper
   void initialize({
-    final String serviceExtensionName = kMCPServiceExtensionName,
-    final String? protocolScheme,
+    String serviceExtensionName = kMCPServiceExtensionName,
+    String? protocolScheme,
   }) {
     assert(!_initialized);
     _initialized = true;
@@ -88,12 +88,12 @@ abstract class MCPToolkitBindingBase {
   /// {@macro flutter.foundation.BindingBase.registerServiceExtension}
   @protected
   void registerSignalServiceExtension({
-    required final String name,
-    required final AsyncCallback callback,
+    required String name,
+    required AsyncCallback callback,
   }) {
     registerServiceExtension(
       name: name,
-      callback: (final parameters) async {
+      callback: (parameters) async {
         await callback();
         return <String, dynamic>{};
       },
@@ -116,13 +116,13 @@ abstract class MCPToolkitBindingBase {
   /// {@macro flutter.foundation.BindingBase.registerServiceExtension}
   @protected
   void registerBoolServiceExtension({
-    required final String name,
-    required final AsyncValueGetter<bool> getter,
-    required final AsyncValueSetter<bool> setter,
+    required String name,
+    required AsyncValueGetter<bool> getter,
+    required AsyncValueSetter<bool> setter,
   }) {
     registerServiceExtension(
       name: name,
-      callback: (final parameters) async {
+      callback: (parameters) async {
         if (parameters.containsKey('enabled')) {
           await setter(parameters['enabled'] == 'true');
           _postExtensionStateChangedEvent(
@@ -150,13 +150,13 @@ abstract class MCPToolkitBindingBase {
   /// {@macro flutter.foundation.BindingBase.registerServiceExtension}
   @protected
   void registerNumericServiceExtension({
-    required final String name,
-    required final AsyncValueGetter<double> getter,
-    required final AsyncValueSetter<double> setter,
+    required String name,
+    required AsyncValueGetter<double> getter,
+    required AsyncValueSetter<double> setter,
   }) {
     registerServiceExtension(
       name: name,
-      callback: (final parameters) async {
+      callback: (parameters) async {
         if (parameters.containsKey(name)) {
           await setter(double.parse(parameters[name]!));
           _postExtensionStateChangedEvent(name, (await getter()).toString());
@@ -177,7 +177,7 @@ abstract class MCPToolkitBindingBase {
   /// This will be called automatically for service extensions registered via
   /// [registerBoolServiceExtension], [registerNumericServiceExtension], or
   /// [registerStringServiceExtension].
-  void _postExtensionStateChangedEvent(final String name, final value) {
+  void _postExtensionStateChangedEvent(String name, value) {
     postEvent('MCPToolkit.ServiceExtensionStateChanged', <String, dynamic>{
       'extension': '$_mcpServiceExtensionName.$name',
       'value': value,
@@ -190,7 +190,7 @@ abstract class MCPToolkitBindingBase {
   ///
   /// This is unrelated to the events managed by [lockEvents].
   @protected
-  void postEvent(final String eventKind, final Map<String, dynamic> eventData) {
+  void postEvent(String eventKind, Map<String, dynamic> eventData) {
     developer.postEvent(eventKind, eventData);
   }
 
@@ -208,13 +208,13 @@ abstract class MCPToolkitBindingBase {
   /// {@macro flutter.foundation.BindingBase.registerServiceExtension}
   @protected
   void registerStringServiceExtension({
-    required final String name,
-    required final AsyncValueGetter<String> getter,
-    required final AsyncValueSetter<String> setter,
+    required String name,
+    required AsyncValueGetter<String> getter,
+    required AsyncValueSetter<String> setter,
   }) {
     registerServiceExtension(
       name: name,
-      callback: (final parameters) async {
+      callback: (parameters) async {
         if (parameters.containsKey('value')) {
           await setter(parameters['value']!);
           _postExtensionStateChangedEvent(name, await getter());
@@ -277,13 +277,13 @@ abstract class MCPToolkitBindingBase {
   /// {@endtemplate}
   @protected
   void registerServiceExtension({
-    required final String name,
-    required final ServiceExtensionCallback callback,
+    required String name,
+    required ServiceExtensionCallback callback,
   }) {
     final String methodName = '$_mcpServiceExtensionName.$name';
     developer.registerExtension(methodName, (
-      final method,
-      final parameters,
+      method,
+      parameters,
     ) async {
       assert(method == methodName);
       assert(() {

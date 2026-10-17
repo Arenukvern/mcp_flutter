@@ -14,7 +14,7 @@ import 'package:flutter_mcp_toolkit_server/flutter_mcp_server.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/vm_connections/core_port_scanner.dart';
 import 'package:stream_channel/stream_channel.dart';
 
-Future<void> main(final List<String> args) async {
+Future<void> main(List<String> args) async {
   final parsedArgs = argParser.parse(args);
   if (parsedArgs.flag(help)) {
     io.stdout.writeln(argParser.usage);
@@ -57,7 +57,7 @@ Future<void> main(final List<String> args) async {
             .transformStream(const LineSplitter())
             .transformStream(
               StreamTransformer.fromHandlers(
-                handleData: (final data, final sink) {
+                handleData: (data, sink) {
                   if (data.trim().isEmpty) {
                     return;
                   }
@@ -67,7 +67,7 @@ Future<void> main(final List<String> args) async {
             )
             .transformSink(
               StreamSinkTransformer.fromHandlers(
-                handleData: (final data, final sink) {
+                handleData: (data, sink) {
                   sink.add('$data\n');
                 },
               ),
@@ -91,20 +91,20 @@ Future<void> main(final List<String> args) async {
         ),
       );
     },
-    (final e, final s) {
+    (e, s) {
       io.stderr
         ..writeln('Error: $e')
         ..writeln('Stack trace: $s');
     },
     zoneSpecification: ZoneSpecification(
-      print: (_, _, _, final value) {
+      print: (_, _, _, value) {
         io.stderr.writeln('Print intercepted: $value');
       },
     ),
   );
 }
 
-List<int> _parseScanPorts(final String? spec) {
+List<int> _parseScanPorts(String? spec) {
   final trimmed = _nonEmptyOption(spec);
   final ports = CorePortScanner.parseScanPortsSpec(trimmed);
   if (trimmed != null && ports.isEmpty) {
@@ -115,7 +115,7 @@ List<int> _parseScanPorts(final String? spec) {
   return ports;
 }
 
-String? _nonEmptyOption(final String? value) {
+String? _nonEmptyOption(String? value) {
   if (value == null) {
     return null;
   }

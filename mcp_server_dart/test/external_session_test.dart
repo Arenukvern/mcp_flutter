@@ -55,12 +55,12 @@ final class _FakeControlServer {
 
   ServerSocket? _socketServer;
 
-  void _handleSocket(final Socket socket) {
+  void _handleSocket(Socket socket) {
     final lines = socket
         .map(utf8.decode)
         .transform(const LineSplitter());
     lines.listen(
-      (final line) async {
+      (line) async {
         final trimmed = line.trim();
         if (trimmed.isEmpty) return;
         final decoded = jsonDecode(trimmed) as Map;
@@ -86,7 +86,7 @@ final class _FakeControlServer {
         socket.write('${jsonEncode(reply)}\n');
         await socket.flush();
       },
-      onError: (final Object _) {},
+      onError: (Object _) {},
       cancelOnError: true,
     );
   }
@@ -98,9 +98,9 @@ final class _FakeControlServer {
 }
 
 ExternalSessionRunnerControl _makeControl(
-  final String sessionFile, {
-  final Duration reloadTimeout = const Duration(seconds: 5),
-  final Duration restartTimeout = const Duration(seconds: 5),
+  String sessionFile, {
+  Duration reloadTimeout = const Duration(seconds: 5),
+  Duration restartTimeout = const Duration(seconds: 5),
 }) => ExternalSessionRunnerControl(
   sessionFile: sessionFile,
   reloadTimeout: reloadTimeout,
@@ -108,15 +108,15 @@ ExternalSessionRunnerControl _makeControl(
 );
 
 void _writeSessionFile(
-  final String path, {
-  final int schema = 1,
-  final String? runner = 'example-dev',
-  final String vmServiceUri = 'ws://127.0.0.1:65250/abc123/ws',
-  final int controlPort = 59871,
-  final String deviceId = 'emulator-5554',
-  final int pid = 12345,
-  final String startedAt = '2026-09-08T00:00:00.000Z',
-  final Map<String, Object?> extra = const {},
+  String path, {
+  int schema = 1,
+  String? runner = 'example-dev',
+  String vmServiceUri = 'ws://127.0.0.1:65250/abc123/ws',
+  int controlPort = 59871,
+  String deviceId = 'emulator-5554',
+  int pid = 12345,
+  String startedAt = '2026-09-08T00:00:00.000Z',
+  Map<String, Object?> extra = const {},
 }) {
   final file = File(path);
   file.parent.createSync(recursive: true);
@@ -196,7 +196,7 @@ void main() {
         control.reload(),
         throwsA(
           isA<RunnerControlException>().having(
-            (final e) => '$e',
+            (e) => '$e',
             'message',
             contains('Unsupported'),
           ),
@@ -215,7 +215,7 @@ void main() {
         control.reload(),
         throwsA(
           isA<RunnerControlException>().having(
-            (final e) => '$e',
+            (e) => '$e',
             'message',
             contains('invalid JSON'),
           ),
@@ -236,7 +236,7 @@ void main() {
         control.reload(),
         throwsA(
           isA<RunnerControlException>().having(
-            (final e) => '$e',
+            (e) => '$e',
             'message',
             contains('control_port'),
           ),
@@ -469,7 +469,7 @@ void main() {
         expect(outcome.vmServiceUri, equals('ws://127.0.0.1:7777/new-token/ws'));
         expect(outcome.raw['inferred'], equals('relaunch_fallback_eof'));
         // The restart must NOT have been retried.
-        expect(server.requests.map((final r) => r.method), ['restart']);
+        expect(server.requests.map((r) => r.method), ['restart']);
         await server.stop();
       },
     );
@@ -485,7 +485,7 @@ void main() {
 
       // Simulate the session exiting mid-restart: the discovery file is
       // removed at the exact moment the control connection drops.
-      server.onConnectionDrop = (final method) {
+      server.onConnectionDrop = (method) {
         if (method == 'restart') {
           File(path).deleteSync();
         }

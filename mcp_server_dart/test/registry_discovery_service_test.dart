@@ -32,11 +32,11 @@ MCPToolkitServer _createDiscoveryTestServer() =>
     );
 
 Map<String, dynamic> _registrationPayload({
-  required final List<Map<String, dynamic>> tools,
-  final List<Map<String, dynamic>> resources = const [],
+  required List<Map<String, dynamic>> tools,
+  List<Map<String, dynamic>> resources = const [],
 }) => {'appId': 'test_app', 'tools': tools, 'resources': resources};
 
-Map<String, dynamic> _validToolMap({final String name = 'custom_tool'}) => {
+Map<String, dynamic> _validToolMap({String name = 'custom_tool'}) => {
   'name': name,
   'description': 'A custom tool',
   'inputSchema': {'type': 'object', 'properties': <String, Object?>{}},
@@ -78,7 +78,7 @@ void main() {
         ),
         throwsA(
           isA<RegisterDynamicsPayloadException>().having(
-            (final e) => e.failures.length,
+            (e) => e.failures.length,
             'failure count',
             1,
           ),

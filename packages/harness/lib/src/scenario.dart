@@ -65,9 +65,9 @@ final class Scenario {
 
 /// Retries [action] until it returns non-null or [attempts] run out.
 Future<T?> retry<T>(
-  final Future<T?> Function() action, {
-  final int attempts = 5,
-  final Duration delay = const Duration(seconds: 2),
+  Future<T?> Function() action, {
+  int attempts = 5,
+  Duration delay = const Duration(seconds: 2),
 }) async {
   for (var i = 0; i < attempts; i++) {
     final value = await action();

@@ -57,7 +57,7 @@ mixin GestureInteractionService {
   ///
   /// Prefers a semantic `tap` action when available; otherwise falls back to
   /// synthesised pointer events at the widget's cached global center.
-  static Future<Map<String, Object?>> tapAtRef(final String ref) async {
+  static Future<Map<String, Object?>> tapAtRef(String ref) async {
     final node = SemanticSnapshotService.resolveRef(ref);
     if (node == null) {
       return _refNotFound(ref);
@@ -140,7 +140,7 @@ mixin GestureInteractionService {
   }
 
   /// Long-press the widget identified by [ref].
-  static Future<Map<String, Object?>> longPressAtRef(final String ref) async {
+  static Future<Map<String, Object?>> longPressAtRef(String ref) async {
     final node = SemanticSnapshotService.resolveRef(ref);
     if (node == null) {
       return _refNotFound(ref);
@@ -215,8 +215,8 @@ mixin GestureInteractionService {
   /// second one reads the controller back, so a value the field refused —
   /// or a hit on the wrong field — fails instead of reporting success.
   static Future<Map<String, Object?>> enterTextAtRef(
-    final String ref,
-    final String text,
+    String ref,
+    String text,
   ) async {
     final node = SemanticSnapshotService.resolveRef(ref);
     if (node == null) {
@@ -388,9 +388,9 @@ mixin GestureInteractionService {
   ///    scroll physics.
   /// 3. Fallback: multi-step pointer drag from screen centre.
   static Future<Map<String, Object?>> scroll({
-    required final String direction,
-    final String? ref,
-    final double distance = 300,
+    required String direction,
+    String? ref,
+    double distance = 300,
   }) async {
     final action = _scrollActionFor(direction);
     Map<String, Object?>? semanticAttempt;
@@ -549,12 +549,12 @@ mixin GestureInteractionService {
   }
 
   static Future<Map<String, Object?>> _performSemanticScroll({
-    required final SemanticsNode node,
-    required final SemanticsAction action,
-    required final String direction,
-    required final double distance,
-    final String? ref,
-    final int? targetNodeId,
+    required SemanticsNode node,
+    required SemanticsAction action,
+    required String direction,
+    required double distance,
+    String? ref,
+    int? targetNodeId,
   }) async {
     final owner = SemanticSnapshotService.semanticsOwner;
     if (owner == null) {
@@ -713,14 +713,14 @@ mixin GestureInteractionService {
   /// action or the offset moved nothing — the caller then falls back to the
   /// page action.
   static Future<Map<String, Object?>?> _scrollToOffsetAttempt({
-    required final SemanticsOwner owner,
-    required final SemanticsNode node,
-    required final String direction,
-    required final double distance,
-    required final double? before,
-    required final Map<String, Object?>? beforeSignature,
-    required final String? ref,
-    required final int? targetNodeId,
+    required SemanticsOwner owner,
+    required SemanticsNode node,
+    required String direction,
+    required double distance,
+    required double? before,
+    required Map<String, Object?>? beforeSignature,
+    required String? ref,
+    required int? targetNodeId,
   }) async {
     if (!node.getSemanticsData().hasAction(SemanticsAction.scrollToOffset)) {
       return null;
@@ -790,7 +790,7 @@ mixin GestureInteractionService {
   /// to the edge then counts as movement — a scroll that did nothing reported
   /// as one that did.
   static Future<double?> _restingScrollPosition(
-    final SemanticsNode? node,
+    SemanticsNode? node,
   ) async {
     var previous = _scrollPosition(node);
     for (var attempt = 0; attempt < 25; attempt++) {
@@ -802,7 +802,7 @@ mixin GestureInteractionService {
     return previous;
   }
 
-  static bool _scrollMoved(final Map<String, Object?> result) =>
+  static bool _scrollMoved(Map<String, Object?> result) =>
       result['success'] == true &&
       ((result['scrollBefore'] != null &&
               result['scrollAfter'] != null &&
@@ -812,7 +812,7 @@ mixin GestureInteractionService {
   /// Best-effort classification of [node]'s widget type, used only to produce
   /// a helpful hint when `enter_text` can't find an editable state. Returns
   /// null when the node's flags don't suggest a specific type.
-  static String? _classifyForHint(final SemanticsNode node) {
+  static String? _classifyForHint(SemanticsNode node) {
     final data = node.getSemanticsData();
     final f = data.flagsCollection;
     if (f.isTextField) return 'textField';
@@ -838,7 +838,7 @@ mixin GestureInteractionService {
   /// Their fields answer geometry questions exactly like the visible ones, so
   /// a search by position alone happily writes into the branch nobody is
   /// looking at — and then reads its own write back as confirmation.
-  static bool _hiddenFromSemantics(final RenderObject start) {
+  static bool _hiddenFromSemantics(RenderObject start) {
     RenderObject? current = start;
     while (current != null) {
       if (current is RenderExcludeSemantics && current.excluding) return true;
@@ -857,14 +857,14 @@ mixin GestureInteractionService {
   /// merely touches at the edge, and writing into a neighbour is
   /// indistinguishable from writing nowhere.
   static EditableTextState? _findEditableForNode(
-    final SemanticsNode node,
-    final ui.Rect rect,
+    SemanticsNode node,
+    ui.Rect rect,
   ) {
     final centre = rect.center;
     EditableTextState? semanticMatch;
     EditableTextState? spatialMatch;
 
-    void visit(final Element element) {
+    void visit(Element element) {
       if (semanticMatch != null) return;
       final state = element is StatefulElement ? element.state : null;
       if (state is EditableTextState) {
@@ -908,8 +908,8 @@ mixin GestureInteractionService {
   /// take focus are skipped too, which drops disabled controls and everything
   /// under a route that is no longer current.
   static FocusNode? _findFocusNodeForNode(
-    final SemanticsNode node,
-    final ui.Rect rect,
+    SemanticsNode node,
+    ui.Rect rect,
   ) {
     final centre = rect.center;
     // Boxes that share an edge with the ref round differently from it.
@@ -954,16 +954,16 @@ mixin GestureInteractionService {
   ///
   /// A `Focus` widget flags the node it annotates; a text field flags its
   /// editable, which sits below the node that carries the field's actions.
-  static bool _subtreeReportsFocus(final SemanticsNode node) {
+  static bool _subtreeReportsFocus(SemanticsNode node) {
     if (!node.attached) return false;
     var found = false;
-    void visit(final SemanticsNode current) {
+    void visit(SemanticsNode current) {
       if (found) return;
       if (_reportsFocus(current)) {
         found = true;
         return;
       }
-      current.visitChildren((final child) {
+      current.visitChildren((child) {
         visit(child);
         return !found;
       });
@@ -973,7 +973,7 @@ mixin GestureInteractionService {
     return found;
   }
 
-  static bool _reportsFocus(final SemanticsNode node) =>
+  static bool _reportsFocus(SemanticsNode node) =>
       node.getSemanticsData().flagsCollection.isFocused == ui.Tristate.isTrue;
 
   /// The node that currently reports focus, named the way the snapshot names
@@ -982,13 +982,13 @@ mixin GestureInteractionService {
     final root = SemanticSnapshotService.semanticsOwner?.rootSemanticsNode;
     if (root == null) return null;
     SemanticsNode? focused;
-    void visit(final SemanticsNode current) {
+    void visit(SemanticsNode current) {
       if (focused != null) return;
       if (_reportsFocus(current)) {
         focused = current;
         return;
       }
-      current.visitChildren((final child) {
+      current.visitChildren((child) {
         visit(child);
         return focused == null;
       });
@@ -1013,8 +1013,8 @@ mixin GestureInteractionService {
   /// scrollable on screen. Its parent chain says which list owns it no matter
   /// where it currently sits.
   static SemanticsNode? _scrollableAncestorOf(
-    final SemanticsNode node,
-    final SemanticsAction action,
+    SemanticsNode node,
+    SemanticsAction action,
   ) {
     SemanticsNode? anyScrollable;
     SemanticsNode? unmeasured;
@@ -1041,12 +1041,12 @@ mixin GestureInteractionService {
   /// the outcome be measured — custom `Semantics(onScrollUp: ...)` as much as
   /// a pan gesture.
   static bool _takesActionUnmeasured(
-    final SemanticsData data,
-    final SemanticsAction action,
+    SemanticsData data,
+    SemanticsAction action,
   ) => data.hasAction(action) && !_publishesScrollGeometry(data);
 
   /// Whether [data] belongs to a node that scrolls at all, in any direction.
-  static bool _isScrollable(final SemanticsData data) =>
+  static bool _isScrollable(SemanticsData data) =>
       _publishesScrollGeometry(data) &&
       (data.hasAction(SemanticsAction.scrollUp) ||
           data.hasAction(SemanticsAction.scrollDown) ||
@@ -1056,8 +1056,8 @@ mixin GestureInteractionService {
 
   /// Whether [data] belongs to a scroll view that can take [action] itself.
   static bool _scrollsBy(
-    final SemanticsData data,
-    final SemanticsAction action,
+    SemanticsData data,
+    SemanticsAction action,
   ) => data.hasAction(action) && _isScrollable(data);
 
   /// Whether [data] carries the scroll geometry only a scroll view publishes.
@@ -1069,7 +1069,7 @@ mixin GestureInteractionService {
   /// moving — which is the opposite of what the caller asked for. Only
   /// [Scrollable] also publishes where it currently sits, so the position is
   /// what a scroll action is trusted against.
-  static bool _publishesScrollGeometry(final SemanticsData data) =>
+  static bool _publishesScrollGeometry(SemanticsData data) =>
       data.scrollPosition != null ||
       data.scrollExtentMin != null ||
       data.scrollExtentMax != null;
@@ -1077,12 +1077,12 @@ mixin GestureInteractionService {
   /// Walk the semantics tree depth-first and return the first scroll view that
   /// takes [action]. Returns `null` if none is found.
   static SemanticsNode? _findScrollableFor(
-    final SemanticsNode root,
-    final SemanticsAction action,
+    SemanticsNode root,
+    SemanticsAction action,
   ) {
     SemanticsNode? result;
     SemanticsNode? unmeasured;
-    void visit(final SemanticsNode node) {
+    void visit(SemanticsNode node) {
       if (result != null) return;
       final data = node.getSemanticsData();
       if (_scrollsBy(data, action)) {
@@ -1090,7 +1090,7 @@ mixin GestureInteractionService {
         return;
       }
       unmeasured ??= _takesActionUnmeasured(data, action) ? node : null;
-      node.visitChildren((final child) {
+      node.visitChildren((child) {
         visit(child);
         return result == null;
       });
@@ -1108,7 +1108,7 @@ mixin GestureInteractionService {
   /// header that is always the header — and report movement, or the lack of it,
   /// for the wrong widget. Descending keeps the innermost match, which is the
   /// one a wheel event at [point] actually drives.
-  static SemanticsNode? _findScrollableAt(final ui.Offset point) {
+  static SemanticsNode? _findScrollableAt(ui.Offset point) {
     final root = SemanticSnapshotService.semanticsOwner?.rootSemanticsNode;
     if (root == null) return null;
     SemanticsNode? result;
@@ -1116,7 +1116,7 @@ mixin GestureInteractionService {
     // The whole tree is walked rather than descended into: a node's rect does
     // not have to cover its children, so pruning on the parent would hide the
     // scrollable that actually sits under the point.
-    void visit(final SemanticsNode node) {
+    void visit(SemanticsNode node) {
       final data = node.getSemanticsData();
       if (_isScrollable(data)) {
         final rect = SemanticSnapshotService.liveRect(node);
@@ -1130,7 +1130,7 @@ mixin GestureInteractionService {
           }
         }
       }
-      node.visitChildren((final child) {
+      node.visitChildren((child) {
         visit(child);
         return true;
       });
@@ -1144,9 +1144,9 @@ mixin GestureInteractionService {
   ///
   /// Always uses pointer events (higher pointer velocity than [scroll]).
   static Future<Map<String, Object?>> swipe({
-    required final String direction,
-    final String? ref,
-    final double distance = 300,
+    required String direction,
+    String? ref,
+    double distance = 300,
   }) async {
     ui.Offset start;
     if (ref != null) {
@@ -1291,9 +1291,9 @@ mixin GestureInteractionService {
   /// drag with there. See [_dispatchDrag] for how the kind decides the
   /// gesture-arena outcome.
   static Future<Map<String, Object?>> drag({
-    required final String fromRef,
-    required final String toRef,
-    final PointerDeviceKind? kind,
+    required String fromRef,
+    required String toRef,
+    PointerDeviceKind? kind,
   }) async {
     for (final ref in <String>[fromRef, toRef]) {
       final node = SemanticSnapshotService.resolveRef(ref);
@@ -1367,7 +1367,7 @@ mixin GestureInteractionService {
   /// screen for the interaction that follows; every other entry point ends
   /// with [_releaseSyntheticDevice] — whichever tier served it — which fires
   /// the matching `onExit`.
-  static Future<Map<String, Object?>> hoverAtRef(final String ref) async {
+  static Future<Map<String, Object?>> hoverAtRef(String ref) async {
     final node = SemanticSnapshotService.resolveRef(ref);
     if (node == null) {
       return _refNotFound(ref);
@@ -1429,7 +1429,7 @@ mixin GestureInteractionService {
   /// node reports `focused` only with the frame that rebuilds it, so the
   /// result is read after the framework caught up — and names where focus
   /// sits when it did not land on the target.
-  static Future<Map<String, Object?>> focusAtRef(final String ref) async {
+  static Future<Map<String, Object?>> focusAtRef(String ref) async {
     final node = SemanticSnapshotService.resolveRef(ref);
     if (node == null) {
       return _refNotFound(ref);
@@ -1539,7 +1539,7 @@ mixin GestureInteractionService {
   /// `handlePointerEvent` there trips the framework's `!locked` assertion,
   /// so the event rides the scheduler's task queue instead — it drains
   /// between frames, FIFO, which also keeps a gesture's event order.
-  static void _send(final PointerEvent event) {
+  static void _send(PointerEvent event) {
     final binding = GestureBinding.instance;
     if (!binding.locked) {
       binding.handlePointerEvent(event);
@@ -1564,7 +1564,7 @@ mixin GestureInteractionService {
     );
   }
 
-  static Future<void> _dispatchTap(final ui.Offset position) async {
+  static Future<void> _dispatchTap(ui.Offset position) async {
     final pointer = _nextPointerId++;
     _send(
       PointerDownEvent(
@@ -1589,7 +1589,7 @@ mixin GestureInteractionService {
     await _waitFrame();
   }
 
-  static Future<void> _dispatchLongPress(final ui.Offset position) async {
+  static Future<void> _dispatchLongPress(ui.Offset position) async {
     final pointer = _nextPointerId++;
     _send(
       PointerDownEvent(
@@ -1624,11 +1624,11 @@ mixin GestureInteractionService {
   /// real user drag. Touch keeps scrollables in the arena, which a
   /// swipe/fling relies on.
   static Future<void> _dispatchDrag(
-    final ui.Offset from,
-    final ui.Offset to, {
-    final int steps = 10,
-    final Duration perStep = const Duration(milliseconds: 16),
-    final PointerDeviceKind kind = PointerDeviceKind.touch,
+    ui.Offset from,
+    ui.Offset to, {
+    int steps = 10,
+    Duration perStep = const Duration(milliseconds: 16),
+    PointerDeviceKind kind = PointerDeviceKind.touch,
   }) async {
     final pointer = _nextPointerId++;
     _send(
@@ -1686,9 +1686,9 @@ mixin GestureInteractionService {
   /// made — enough to start a drag below a 29 px card's grab zone and resize
   /// it instead of moving it. Ramped, that fold is one [_kRampStep].
   static List<ui.Offset> _dragPath(
-    final ui.Offset from,
-    final ui.Offset to,
-    final int steps,
+    ui.Offset from,
+    ui.Offset to,
+    int steps,
   ) {
     final total = to - from;
     final distance = total.distance;
@@ -1714,8 +1714,8 @@ mixin GestureInteractionService {
   /// Faster drag for swipe / fling — tighter per-step interval feeds higher
   /// velocity into Flutter's velocity tracker.
   static Future<void> _dispatchSwipe(
-    final ui.Offset from,
-    final ui.Offset to,
+    ui.Offset from,
+    ui.Offset to,
   ) => _dispatchDrag(
     from,
     to,
@@ -1733,7 +1733,7 @@ mixin GestureInteractionService {
   /// Flutter's `SemanticsAction.scrollUp` corresponds to a finger moving up —
   /// i.e. the content scrolls up and content below is revealed. So to reveal
   /// content *below*, the agent's `direction: "down"` maps to `scrollUp`.
-  static SemanticsAction? _scrollActionFor(final String direction) =>
+  static SemanticsAction? _scrollActionFor(String direction) =>
       switch (direction.toLowerCase()) {
         'down' => SemanticsAction.scrollUp,
         'up' => SemanticsAction.scrollDown,
@@ -1748,8 +1748,8 @@ mixin GestureInteractionService {
   /// or mouse-wheel tick. Flutter routes this through `PointerSignalResolver`
   /// and scroll physics pick it up the same way real wheel input does.
   static Future<void> _dispatchScrollSignal(
-    final ui.Offset position,
-    final ui.Offset scrollDelta,
+    ui.Offset position,
+    ui.Offset scrollDelta,
   ) async {
     _send(
       PointerScrollEvent(
@@ -1768,8 +1768,8 @@ mixin GestureInteractionService {
   /// already follow the "direction content moves" convention directly —
   /// `scrollDelta.dy > 0` scrolls content *up* and reveals content below.
   static ui.Offset _scrollDelta(
-    final String direction,
-    final double distance,
+    String direction,
+    double distance,
   ) => switch (direction.toLowerCase()) {
     'up' => ui.Offset(0, -distance),
     'down' => ui.Offset(0, distance),
@@ -1787,8 +1787,8 @@ mixin GestureInteractionService {
   /// To reveal content below (direction=down), the finger swipes *up*
   /// (negative y). Hence the inversion from the name to the delta.
   static ui.Offset _directionDelta(
-    final String direction,
-    final double distance,
+    String direction,
+    double distance,
   ) => switch (direction.toLowerCase()) {
     'up' => ui.Offset(0, distance), // reveal content above → finger down
     'down' => ui.Offset(0, -distance), // reveal content below → finger up
@@ -1797,7 +1797,7 @@ mixin GestureInteractionService {
     _ => ui.Offset(0, -distance),
   };
 
-  static double? _scrollPosition(final SemanticsNode? node) {
+  static double? _scrollPosition(SemanticsNode? node) {
     if (node == null) return null;
     return _finiteOrNull(node.getSemanticsData().scrollPosition);
   }
@@ -1809,8 +1809,8 @@ mixin GestureInteractionService {
   /// Calling that "nothing moved" is worse than a slow answer: the caller then
   /// retries through another tier and the content scrolls twice.
   static Future<({double? position, bool settled})> _settledScrollPosition(
-    final SemanticsNode? node,
-    final double? before,
+    SemanticsNode? node,
+    double? before,
   ) async {
     var after = _scrollPosition(node);
     for (var attempt = 0; attempt < 3 && after == before; attempt++) {
@@ -1833,9 +1833,9 @@ mixin GestureInteractionService {
   }
 
   static double _targetScrollOffset({
-    required final String direction,
-    required final double distance,
-    required final SemanticsData data,
+    required String direction,
+    required double distance,
+    required SemanticsData data,
   }) {
     final before = _finiteOrNull(data.scrollPosition) ?? 0;
     final requested = switch (direction.toLowerCase()) {
@@ -1848,15 +1848,15 @@ mixin GestureInteractionService {
     return requested.clamp(min, max);
   }
 
-  static double? _finiteOrNull(final double? value) =>
+  static double? _finiteOrNull(double? value) =>
       value != null && value.isFinite ? value : null;
 
-  static bool _isHorizontal(final String direction) =>
+  static bool _isHorizontal(String direction) =>
       direction.toLowerCase() == 'left' || direction.toLowerCase() == 'right';
 
   static Map<String, Object?>? _webScrollSubtreeProgress({
-    required final Map<String, Object?>? beforeSignature,
-    required final SemanticsNode node,
+    required Map<String, Object?>? beforeSignature,
+    required SemanticsNode node,
   }) {
     if (beforeSignature == null || beforeSignature['available'] != true) {
       return null;
@@ -1891,10 +1891,10 @@ mixin GestureInteractionService {
     }
   }
 
-  static Map<String, Object?> _offsetToMap(final ui.Offset o) =>
+  static Map<String, Object?> _offsetToMap(ui.Offset o) =>
       <String, Object?>{'x': o.dx.roundToDouble(), 'y': o.dy.roundToDouble()};
 
-  static Map<String, Object?> _refNotFound(final String ref) =>
+  static Map<String, Object?> _refNotFound(String ref) =>
       <String, Object?>{
         'success': false,
         'ref': ref,
@@ -1911,8 +1911,8 @@ mixin GestureInteractionService {
   /// through to Tier 2 and fires at coordinates that now belong to whatever
   /// took the node's place.
   static Map<String, Object?> _staleRef(
-    final String ref,
-    final String action,
+    String ref,
+    String action,
   ) => <String, Object?>{
     'success': false,
     'ref': ref,
@@ -1930,8 +1930,8 @@ mixin GestureInteractionService {
   /// fallback would otherwise fire at the screen centre — a gesture on a
   /// widget the caller never named.
   static Map<String, Object?> _noBoundsForRef(
-    final String ref,
-    final String action,
+    String ref,
+    String action,
   ) => <String, Object?>{
     'success': false,
     'ref': ref,
@@ -1951,14 +1951,14 @@ mixin GestureInteractionService {
   /// on the date chip inside the card rather than on the card. The answer has
   /// to name that, or the caller reads the wrong widget's reaction as its own.
   static String? _occupantAtPoint(
-    final SemanticsNode node,
-    final ui.Offset point,
+    SemanticsNode node,
+    ui.Offset point,
   ) {
     final root = SemanticSnapshotService.semanticsOwner?.rootSemanticsNode;
     if (root == null) return null;
     SemanticsNode? tightest;
     var smallest = double.infinity;
-    void visit(final SemanticsNode current) {
+    void visit(SemanticsNode current) {
       final rect = SemanticSnapshotService.liveRect(current);
       if (rect != null && rect.contains(point)) {
         final area = rect.width * rect.height;
@@ -1967,7 +1967,7 @@ mixin GestureInteractionService {
           tightest = current;
         }
       }
-      current.visitChildren((final child) {
+      current.visitChildren((child) {
         visit(child);
         return true;
       });
@@ -1989,9 +1989,9 @@ mixin GestureInteractionService {
   /// registered and the pointer event hits a widget with no live callback.
   /// Both look exactly like a delivered gesture from the outside.
   static Map<String, Object?>? _disabledRef(
-    final SemanticsNode node,
-    final String ref,
-    final String action,
+    SemanticsNode node,
+    String ref,
+    String action,
   ) {
     // `isEnabled` is a tristate: `none` means the widget never declared an
     // enabled state at all, which is not the same as being disabled.
@@ -2013,7 +2013,7 @@ mixin GestureInteractionService {
 
   /// Current global centre of [ref], falling back to the snapshot capture when
   /// the node cannot report live geometry.
-  static ui.Offset? _liveCenter(final String ref) =>
+  static ui.Offset? _liveCenter(String ref) =>
       SemanticSnapshotService.liveCenter(
         SemanticSnapshotService.resolveRef(ref),
       ) ??
@@ -2021,7 +2021,7 @@ mixin GestureInteractionService {
 
   /// Current global bounds of [ref], falling back to the snapshot capture when
   /// the node cannot report live geometry.
-  static ui.Rect? _liveBounds(final String ref) =>
+  static ui.Rect? _liveBounds(String ref) =>
       SemanticSnapshotService.liveRect(
         SemanticSnapshotService.resolveRef(ref),
       ) ??

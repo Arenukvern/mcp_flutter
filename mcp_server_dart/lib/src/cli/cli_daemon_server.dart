@@ -57,7 +57,7 @@ final class CliDaemonServer {
     return io.stdin
         .transform(utf8.decoder)
         .transform(const LineSplitter())
-        .where((final line) => line.trim().isNotEmpty);
+        .where((line) => line.trim().isNotEmpty);
   }
 
   io.Stdout get _stdout => output ?? io.stdout;
@@ -71,7 +71,7 @@ final class CliDaemonServer {
     await _stopAllWatches(reason: 'stdin_closed');
   }
 
-  Future<void> _handleLine(final String line) async {
+  Future<void> _handleLine(String line) async {
     Map<String, Object?> request;
 
     try {
@@ -146,9 +146,9 @@ final class CliDaemonServer {
   }
 
   Future<Map<String, Object?>> _dispatch({
-    required final String method,
-    required final Map<String, Object?> params,
-    final Object? id,
+    required String method,
+    required Map<String, Object?> params,
+    Object? id,
   }) async {
     _throwIfCancelled(id);
 
@@ -185,7 +185,7 @@ final class CliDaemonServer {
     return capabilities.toJson();
   }
 
-  Map<String, Object?> _handleSchema(final Map<String, Object?> params) {
+  Map<String, Object?> _handleSchema(Map<String, Object?> params) {
     final name = _optionalString(params, 'name');
     try {
       return catalog.schema(name: name);
@@ -199,8 +199,8 @@ final class CliDaemonServer {
   }
 
   Future<Map<String, Object?>> _handleCommandExecute(
-    final Map<String, Object?> params, {
-    final Object? id,
+    Map<String, Object?> params, {
+    Object? id,
   }) async {
     _throwIfCancelled(id);
 
@@ -248,7 +248,7 @@ final class CliDaemonServer {
   }
 
   Future<Map<String, Object?>> _handleWatchStart(
-    final Map<String, Object?> params,
+    Map<String, Object?> params,
   ) async {
     final name = _requiredString(params, 'name');
     final rawArgs = _optionalObject(params, 'args');
@@ -332,7 +332,7 @@ final class CliDaemonServer {
   }
 
   Future<Map<String, Object?>> _handleWatchStop(
-    final Map<String, Object?> params,
+    Map<String, Object?> params,
   ) async {
     final watchId = params['watchId']?.toString();
     if (watchId == null || watchId.isEmpty) {
@@ -352,7 +352,7 @@ final class CliDaemonServer {
   }
 
   Future<Map<String, Object?>> _handleSnapshotCreate(
-    final Map<String, Object?> params,
+    Map<String, Object?> params,
   ) async {
     final name = _requiredString(params, 'name');
     final args = _optionalObject(params, 'args');
@@ -392,7 +392,7 @@ final class CliDaemonServer {
   }
 
   Future<Map<String, Object?>> _handleSnapshotDiff(
-    final Map<String, Object?> params,
+    Map<String, Object?> params,
   ) async {
     final from = _requiredString(params, 'from');
     final to = _requiredString(params, 'to');
@@ -410,7 +410,7 @@ final class CliDaemonServer {
   }
 
   Future<Map<String, Object?>> _handleBundleCreate(
-    final Map<String, Object?> params,
+    Map<String, Object?> params,
   ) async {
     final fromSnapshot = _requiredString(params, 'fromSnapshot');
     final outputDir = _optionalString(params, 'output');
@@ -439,7 +439,7 @@ final class CliDaemonServer {
   }
 
   Future<Map<String, Object?>> _handleSessionStart(
-    final Map<String, Object?> params,
+    Map<String, Object?> params,
   ) async {
     final command = _buildCommandOrThrow(name: 'session_start', args: params);
     if (command is! SessionStartCommand) {
@@ -461,7 +461,7 @@ final class CliDaemonServer {
   }
 
   Future<Map<String, Object?>> _handleSessionEnd(
-    final Map<String, Object?> params,
+    Map<String, Object?> params,
   ) async {
     final command = _buildCommandOrThrow(name: 'session_end', args: params);
     if (command is! SessionEndCommand) {
@@ -483,8 +483,8 @@ final class CliDaemonServer {
   }
 
   CoreCommand _buildCommandOrThrow({
-    required final String name,
-    required final Map<String, Object?> args,
+    required String name,
+    required Map<String, Object?> args,
   }) {
     try {
       return catalog.buildCommand(name, args);
@@ -498,7 +498,7 @@ final class CliDaemonServer {
   }
 
   IntentSessionStartRequest _toSessionStartRequest(
-    final SessionStartCommand command,
+    SessionStartCommand command,
   ) => IntentSessionStartRequest(
     mode: switch (command.mode) {
       CoreConnectionMode.auto => IntentSessionConnectionMode.auto,
@@ -514,8 +514,8 @@ final class CliDaemonServer {
   );
 
   CoreCommand _wrapWithSessionIfNeeded({
-    required final String? sessionId,
-    required final CoreCommand command,
+    required String? sessionId,
+    required CoreCommand command,
   }) {
     if (sessionId == null || sessionId.isEmpty) {
       return command;
@@ -530,7 +530,7 @@ final class CliDaemonServer {
     return SessionExecCommand(sessionId: sessionId, command: command);
   }
 
-  Future<void> _runWatch(final _WatchHandle watch) async {
+  Future<void> _runWatch(_WatchHandle watch) async {
     _sendWatchEvent(watch, 'watch/event', {
       'event': 'watch_started',
       'intervalMs': watch.intervalMs,
@@ -587,9 +587,9 @@ final class CliDaemonServer {
   }
 
   void _sendWatchEvent(
-    final _WatchHandle watch,
-    final String method,
-    final Map<String, Object?> payload,
+    _WatchHandle watch,
+    String method,
+    Map<String, Object?> payload,
   ) {
     watch.sequence += 1;
     final event = {
@@ -605,7 +605,7 @@ final class CliDaemonServer {
     _send({'jsonrpc': '2.0', 'method': method, 'params': event});
   }
 
-  void _emitSessionChanged(final CoreResult result) {
+  void _emitSessionChanged(CoreResult result) {
     final data = _asMapOrEmpty(result.data);
     final params = <String, Object?>{
       'sessionId': data['sessionId'] ?? result.meta['sessionId'],
@@ -617,7 +617,7 @@ final class CliDaemonServer {
     _send({'jsonrpc': '2.0', 'method': 'session/changed', 'params': params});
   }
 
-  Future<void> _stopAllWatches({required final String reason}) async {
+  Future<void> _stopAllWatches({required String reason}) async {
     final ids = _watches.keys.toList();
     for (final id in ids) {
       final watch = _watches[id];
@@ -633,7 +633,7 @@ final class CliDaemonServer {
     }
   }
 
-  void _throwIfCancelled(final Object? id) {
+  void _throwIfCancelled(Object? id) {
     if (id == null) {
       return;
     }
@@ -644,7 +644,7 @@ final class CliDaemonServer {
     }
   }
 
-  _JsonRpcException _coreFailure(final CoreResult result) {
+  _JsonRpcException _coreFailure(CoreResult result) {
     final error = result.error;
     if (error == null) {
       return const _JsonRpcException(
@@ -661,7 +661,7 @@ final class CliDaemonServer {
     );
   }
 
-  int _jsonRpcCodeFromDescriptor(final CoreErrorDescriptor descriptor) {
+  int _jsonRpcCodeFromDescriptor(CoreErrorDescriptor descriptor) {
     final status = descriptor.httpLikeStatus;
 
     if (status >= 500) {
@@ -688,10 +688,10 @@ final class CliDaemonServer {
   }
 
   void _sendError({
-    required final Object? id,
-    required final int code,
-    required final String message,
-    final Map<String, Object?>? data,
+    required Object? id,
+    required int code,
+    required String message,
+    Map<String, Object?>? data,
   }) {
     _send({
       'jsonrpc': '2.0',
@@ -700,11 +700,11 @@ final class CliDaemonServer {
     });
   }
 
-  void _send(final Map<String, Object?> payload) {
+  void _send(Map<String, Object?> payload) {
     _stdout.writeln(jsonEncode(payload));
   }
 
-  Map<String, Object?> _asMapOrEmpty(final Object? value) {
+  Map<String, Object?> _asMapOrEmpty(Object? value) {
     if (value is Map<String, Object?>) {
       return value;
     }
@@ -715,8 +715,8 @@ final class CliDaemonServer {
   }
 
   Map<String, Object?> _optionalObject(
-    final Map<String, Object?> params,
-    final String key,
+    Map<String, Object?> params,
+    String key,
   ) {
     if (!params.containsKey(key) || params[key] == null) {
       return const <String, Object?>{};
@@ -736,7 +736,7 @@ final class CliDaemonServer {
     );
   }
 
-  String _requiredString(final Map<String, Object?> params, final String key) {
+  String _requiredString(Map<String, Object?> params, String key) {
     final value = params[key];
     if (value == null) {
       throw _JsonRpcException(
@@ -761,7 +761,7 @@ final class CliDaemonServer {
     return trimmed;
   }
 
-  String? _optionalString(final Map<String, Object?> params, final String key) {
+  String? _optionalString(Map<String, Object?> params, String key) {
     if (!params.containsKey(key) || params[key] == null) {
       return null;
     }
@@ -777,9 +777,9 @@ final class CliDaemonServer {
   }
 
   int _optionalInt(
-    final Map<String, Object?> params,
-    final String key, {
-    required final int fallback,
+    Map<String, Object?> params,
+    String key, {
+    required int fallback,
   }) {
     if (!params.containsKey(key) || params[key] == null) {
       return fallback;
@@ -800,9 +800,9 @@ final class CliDaemonServer {
   }
 
   bool _optionalBool(
-    final Map<String, Object?> params,
-    final String key, {
-    required final bool fallback,
+    Map<String, Object?> params,
+    String key, {
+    required bool fallback,
   }) {
     if (!params.containsKey(key) || params[key] == null) {
       return fallback;
@@ -819,7 +819,7 @@ final class CliDaemonServer {
     );
   }
 
-  bool _containsBlockedWrite(final Object? payload) {
+  bool _containsBlockedWrite(Object? payload) {
     final map = _asMapOrEmpty(payload);
     final writeResults = map['writeResults'];
     if (writeResults is! List) {
@@ -841,7 +841,7 @@ final class CliDaemonServer {
     return 'watch_$_watchCounter';
   }
 
-  void log(final String message) {
+  void log(String message) {
     _stderr.writeln('[CliDaemonServer] $message');
   }
 }

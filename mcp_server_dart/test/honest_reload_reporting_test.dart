@@ -50,7 +50,7 @@ final class _FakeVmServiceServer {
   Future<void> start() async {
     _server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     unawaited(
-      _server!.forEach((final request) async {
+      _server!.forEach((request) async {
         final socket = await WebSocketTransformer.upgrade(request);
         _sockets.add(socket);
         unawaited(_handleSocket(socket));
@@ -58,7 +58,7 @@ final class _FakeVmServiceServer {
     );
   }
 
-  Future<void> _handleSocket(final WebSocket socket) async {
+  Future<void> _handleSocket(WebSocket socket) async {
     await for (final message in socket) {
       if (message is! String) continue;
       Object? decoded;
@@ -138,7 +138,7 @@ final class _FakeVmServiceServer {
     }
   }
 
-  bool _isVmMethod(final String method) =>
+  bool _isVmMethod(String method) =>
       method == 'getVM' ||
       method == 'streamListen' ||
       method == 'streamCancel' ||
@@ -147,10 +147,10 @@ final class _FakeVmServiceServer {
       method.startsWith('s0.');
 
   void _send(
-    final WebSocket socket,
-    final Object? id, {
-    final Map<String, Object?>? result,
-    final Map<String, Object?>? error,
+    WebSocket socket,
+    Object? id, {
+    Map<String, Object?>? result,
+    Map<String, Object?>? error,
   }) {
     socket.add(
       jsonEncode(<String, Object?>{
@@ -209,12 +209,12 @@ final class _StubRunnerControl implements RunnerControl {
 }
 
 ConnectionContext _makeContext({
-  required final CoreLogger logger,
-  required final List<int> ports,
-  final RunnerControl? runnerControl,
-  final String? stickyEndpointUri,
-  final CoreFlutterTargetProbe? probeFlutterTarget,
-  final Future<List<FlutterMachineDiscoveryTarget>> Function()?
+  required CoreLogger logger,
+  required List<int> ports,
+  RunnerControl? runnerControl,
+  String? stickyEndpointUri,
+  CoreFlutterTargetProbe? probeFlutterTarget,
+  Future<List<FlutterMachineDiscoveryTarget>> Function()?
   discoverMachineTargets,
 }) => ConnectionContext(
   defaultHost: '127.0.0.1',
@@ -227,9 +227,9 @@ ConnectionContext _makeContext({
   discoverMachineTargets: discoverMachineTargets,
 );
 
-Future<Map<String, dynamic>?> _reload(final _FakeVmServiceServer vm) async {
+Future<Map<String, dynamic>?> _reload(_FakeVmServiceServer vm) async {
   final context = _makeContext(
-    logger: (final _, final _, {final logger = 'test'}) {},
+    logger: (_, _, {logger = 'test'}) {},
     ports: const [],
   );
   await context.connect(
@@ -267,7 +267,7 @@ void main() {
       await vm.start();
       try {
         final context = _makeContext(
-          logger: (final _, final _, {final logger = 'test'}) {},
+          logger: (_, _, {logger = 'test'}) {},
           ports: const [],
         );
         await context.connect(
@@ -327,7 +327,7 @@ void main() {
         await vm.start();
         try {
           final context = _makeContext(
-            logger: (final _, final _, {final logger = 'test'}) {},
+            logger: (_, _, {logger = 'test'}) {},
             ports: const [],
           );
           await context.connect(
@@ -354,7 +354,7 @@ void main() {
     test('alive runner takes precedence, no VM connection required', () async {
       final control = _StubRunnerControl();
       final context = _makeContext(
-        logger: (final _, final _, {final logger = 'test'}) {},
+        logger: (_, _, {logger = 'test'}) {},
         ports: const [],
         runnerControl: control,
       );
@@ -378,7 +378,7 @@ void main() {
         ),
       );
       final context = _makeContext(
-        logger: (final _, final _, {final logger = 'test'}) {},
+        logger: (_, _, {logger = 'test'}) {},
         ports: const [],
         runnerControl: control,
       );
@@ -407,7 +407,7 @@ void main() {
             ),
           );
           final context = _makeContext(
-            logger: (final _, final _, {final logger = 'test'}) {},
+            logger: (_, _, {logger = 'test'}) {},
             ports: const [],
             runnerControl: control,
           );
@@ -445,7 +445,7 @@ void main() {
           final control = _StubRunnerControl(uri: vm.wsUri);
           var machineQueries = 0;
           final context = _makeContext(
-            logger: (final _, final _, {final logger = 'test'}) {},
+            logger: (_, _, {logger = 'test'}) {},
             ports: const [],
             runnerControl: control,
             discoverMachineTargets: () async {
@@ -478,7 +478,7 @@ void main() {
         try {
           final control = _StubRunnerControl(uri: vm.wsUri);
           final context = _makeContext(
-            logger: (final _, final _, {final logger = 'test'}) {},
+            logger: (_, _, {logger = 'test'}) {},
             ports: const [8181, 8182],
             runnerControl: control,
             discoverMachineTargets: () async =>
@@ -502,7 +502,7 @@ void main() {
         var machineQueries = 0;
         final control = _StubRunnerControl()..alive = false;
         final context = _makeContext(
-          logger: (final _, final _, {final logger = 'test'}) {},
+          logger: (_, _, {logger = 'test'}) {},
           ports: const [],
           runnerControl: control,
           discoverMachineTargets: () async {
@@ -515,7 +515,7 @@ void main() {
           context.connect(),
           throwsA(
             isA<CoreConnectionException>().having(
-              (final e) => e.reason,
+              (e) => e.reason,
               'reason',
               CoreConnectionFailureReason.noTargets,
             ),
@@ -537,11 +537,11 @@ void main() {
         try {
           final control = _StubRunnerControl(uri: runnerVm.wsUri);
           final context = _makeContext(
-            logger: (final _, final _, {final logger = 'test'}) {},
+            logger: (_, _, {logger = 'test'}) {},
             ports: [stickyVm.port],
             runnerControl: control,
             stickyEndpointUri: stickyVm.wsUri,
-            probeFlutterTarget: (_, {required final timeout}) async => true,
+            probeFlutterTarget: (_, {required timeout}) async => true,
           );
 
           final result = await context.connect();
@@ -564,11 +564,11 @@ void main() {
         try {
           final control = _StubRunnerControl()..alive = false;
           final context = _makeContext(
-            logger: (final _, final _, {final logger = 'test'}) {},
+            logger: (_, _, {logger = 'test'}) {},
             ports: [vm.port],
             runnerControl: control,
             stickyEndpointUri: vm.wsUri,
-            probeFlutterTarget: (_, {required final timeout}) async => true,
+            probeFlutterTarget: (_, {required timeout}) async => true,
           );
 
           final result = await context.connect();

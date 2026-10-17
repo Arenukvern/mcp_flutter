@@ -21,7 +21,7 @@ void main() {
             <String, FutureOr<CallToolResult> Function(CallToolRequest)>{};
         final host = McpHost(
           dispatchBridge: DartMcpDispatchBridge(
-            publish: (final tool, final impl) {
+            publish: (tool, impl) {
               published[tool.name] = impl;
             },
             unpublish: (_) {},
@@ -59,7 +59,7 @@ void main() {
         final unpublished = <String>[];
         final registry = InMemoryAgentRegistry();
         final adapter = McpPublishAdapter(
-          publishTool: (final tool, final impl) {
+          publishTool: (tool, impl) {
             published[tool.name] = impl;
           },
           unpublishTool: unpublished.add,
@@ -82,7 +82,7 @@ void main() {
                 },
               },
             ),
-            execute: (final invocation) async => AgentResult.success(
+            execute: (invocation) async => AgentResult.success(
               data: <String, Object?>{
                 'echo': invocation.arguments['message'] ?? 'ok',
               },
@@ -124,11 +124,11 @@ void main() {
             >{};
         final host = McpHost(
           dispatchBridge: DartMcpDispatchBridge(
-            publish: (_, final _) {},
+            publish: (_, _) {},
             unpublish: (_) {},
-            publishResource: (_, final _) {},
+            publishResource: (_, _) {},
             unpublishResource: (_) {},
-            publishResourceTemplate: (final template, final impl) {
+            publishResourceTemplate: (template, impl) {
               publishedTemplates[template.uriTemplate] = impl;
             },
           ),
@@ -141,7 +141,7 @@ void main() {
             name: 'application_errors',
             description: 'Get N application errors',
             mimeType: 'application/json',
-            handler: (final uri) async {
+            handler: (uri) async {
               final count = Uri.parse(uri).pathSegments.last;
               return AgentResult.success(
                 data: <String, Object?>{
@@ -203,11 +203,11 @@ final class _FmtCodegenContractCapability implements Capability {
   String get version => '0.0.0';
 
   @override
-  Future<void> register(final CapabilityContext context) async {
+  Future<void> register(CapabilityContext context) async {
     context.registerTool(
       agentCallEntryToToolRegistration(
         getRecentLogsCallEntry,
-        handler: (final args) async {
+        handler: (args) async {
           final count = args['count'];
           return AgentResult.success(
             data: <String, Object?>{'count': count is int ? count : 50},

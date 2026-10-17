@@ -5,7 +5,7 @@ import 'package:intentcall_schema/intentcall_schema.dart';
 import 'package:flutter_mcp_toolkit_capability_kernel/flutter_mcp_toolkit_capability_kernel.dart';
 
 /// Decodes success [AgentResult.data] or error envelope fields for assertions.
-Map<String, Object?> agentResultPayload(final AgentResult result) {
+Map<String, Object?> agentResultPayload(AgentResult result) {
   if (!result.ok) {
     return <String, Object?>{
       if (result.code != null) 'code': result.code,
@@ -31,8 +31,8 @@ Map<String, Object?> agentResultPayload(final AgentResult result) {
 final class FakeCapabilityContext implements CapabilityContext {
   FakeCapabilityContext({
     required this.capabilityId,
-    final Map<Type, HostService>? services,
-    final CapabilityConfig? config,
+    Map<Type, HostService>? services,
+    CapabilityConfig? config,
   }) : _services = services ?? const <Type, HostService>{},
        _config = config ?? const CapabilityConfig();
 
@@ -44,18 +44,18 @@ final class FakeCapabilityContext implements CapabilityContext {
   final CapabilityConfig _config;
 
   Iterable<String> get registeredToolNames => _tools.keys;
-  ToolRegistration? registrationFor(final String name) => _tools[name];
+  ToolRegistration? registrationFor(String name) => _tools[name];
 
   @override
   CapabilityConfig get config => _config;
 
   @override
-  void registerTool(final ToolRegistration registration) {
+  void registerTool(ToolRegistration registration) {
     _tools[registration.name] = registration;
   }
 
   @override
-  void registerResource(final ResourceRegistration registration) {
+  void registerResource(ResourceRegistration registration) {
     throw UnimplementedError(
       'registerResource not implemented in FakeCapabilityContext',
     );
@@ -73,5 +73,5 @@ final class FakeCapabilityContext implements CapabilityContext {
   }
 
   @override
-  void log(final String message, {final LogLevel level = LogLevel.info}) {}
+  void log(String message, {LogLevel level = LogLevel.info}) {}
 }

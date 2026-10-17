@@ -19,8 +19,8 @@ Future<void> stopShowcaseProcesses() async {
 
 /// Waits until [port] is not listening (or [timeout] elapses).
 Future<void> waitForPortFree(
-  final int port, {
-  final Duration timeout = const Duration(seconds: 30),
+  int port, {
+  Duration timeout = const Duration(seconds: 30),
 }) async {
   final deadline = DateTime.now().add(timeout);
   while (DateTime.now().isBefore(deadline)) {
@@ -37,9 +37,9 @@ Future<void> waitForPortFree(
 
 /// Graceful `q` then hard kill + [stopShowcaseProcesses].
 Future<void> stopLaunchedFlutterProcess(
-  final Process process, {
-  required final StreamSubscription<String> stdoutSub,
-  required final StreamSubscription<String> stderrSub,
+  Process process, {
+  required StreamSubscription<String> stdoutSub,
+  required StreamSubscription<String> stderrSub,
 }) async {
   try {
     process.stdin.writeln('q');

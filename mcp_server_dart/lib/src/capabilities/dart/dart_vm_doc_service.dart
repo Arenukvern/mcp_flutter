@@ -45,10 +45,10 @@ final class DartVmDocService {
   ///
   /// Returns the documentation string or null if not found
   Future<String?> getMemberDocumentation(
-    final String member,
-    final VmService vmService, {
-    final String? isolateId,
-    final String? filePath,
+    String member,
+    VmService vmService, {
+    String? isolateId,
+    String? filePath,
   }) async {
     final cacheKey = '${isolateId ?? 'main'}::$member';
     if (_docCache.containsKey(cacheKey)) {
@@ -91,8 +91,8 @@ final class DartVmDocService {
 
   /// Get documentation using LSP approach
   Future<String?> _getLspDocumentation(
-    final String member,
-    final String filePath,
+    String member,
+    String filePath,
   ) async {
     try {
       // Initialize LSP client if needed
@@ -121,9 +121,9 @@ final class DartVmDocService {
 
   /// Get documentation using VM Service approach (existing implementation)
   Future<String?> _getVmServiceDocumentation(
-    final String member,
-    final VmService vmService, {
-    final String? isolateId,
+    String member,
+    VmService vmService, {
+    String? isolateId,
   }) async {
     try {
       // Get the main isolate if not provided
@@ -167,9 +167,9 @@ final class DartVmDocService {
   ///
   /// Returns hover documentation or null
   Future<String?> getHoverDocumentation(
-    final String filePath,
-    final int line,
-    final int character,
+    String filePath,
+    int line,
+    int character,
   ) async {
     if (!enableLspFallback) return null;
 
@@ -197,7 +197,7 @@ final class DartVmDocService {
   }
 
   /// Get the main isolate ID
-  Future<String?> _getMainIsolateId(final VmService vmService) async {
+  Future<String?> _getMainIsolateId(VmService vmService) async {
     try {
       final vm = await vmService.getVM();
       if (vm.isolates?.isNotEmpty ?? false) {
@@ -211,9 +211,9 @@ final class DartVmDocService {
 
   /// Get documentation for a class using VM Service
   Future<String?> _getClassDocumentation(
-    final VmService vmService,
-    final String isolateId,
-    final String className,
+    VmService vmService,
+    String isolateId,
+    String className,
   ) async {
     try {
       // Get all classes in the isolate
@@ -222,7 +222,7 @@ final class DartVmDocService {
 
       // Find the class by name
       final classRef = classes
-          .where((final c) => c.name == className)
+          .where((c) => c.name == className)
           .firstOrNull;
       if (classRef?.id == null) {
         return null;
@@ -241,9 +241,9 @@ final class DartVmDocService {
 
   /// Get documentation for a library member
   Future<String?> _getLibraryMemberDocumentation(
-    final VmService vmService,
-    final String isolateId,
-    final String memberName,
+    VmService vmService,
+    String isolateId,
+    String memberName,
   ) async {
     try {
       // Get isolate information to access libraries
@@ -260,7 +260,7 @@ final class DartVmDocService {
         // Check library functions
         final functions = library.functions ?? [];
         final functionRef = functions
-            .where((final f) => f.name == memberName)
+            .where((f) => f.name == memberName)
             .firstOrNull;
 
         if (functionRef?.id != null) {
@@ -276,7 +276,7 @@ final class DartVmDocService {
         // Check library variables
         final variables = library.variables ?? [];
         final variableRef = variables
-            .where((final v) => v.name == memberName)
+            .where((v) => v.name == memberName)
             .firstOrNull;
 
         if (variableRef?.id != null) {
@@ -298,7 +298,7 @@ final class DartVmDocService {
   }
 
   /// Extract documentation from a Class object using its source location
-  Future<String?> _extractDocumentationFromClass(final Class classObj) async {
+  Future<String?> _extractDocumentationFromClass(Class classObj) async {
     try {
       // First try to get documentation from the source location
       final location = classObj.location;
@@ -325,9 +325,9 @@ final class DartVmDocService {
 
   /// Get documentation from source file at the given location
   Future<String?> _getDocumentationFromLocation(
-    final String uri,
-    final int tokenPos, [
-    final String? className,
+    String uri,
+    int tokenPos, [
+    String? className,
   ]) async {
     try {
       // Convert VM service URI to file path
@@ -364,9 +364,9 @@ final class DartVmDocService {
 
   /// Extract documentation comments from lines above the target line
   String? _extractDocCommentsAboveLine(
-    final List<String> lines,
-    final int targetLine, [
-    final String? className,
+    List<String> lines,
+    int targetLine, [
+    String? className,
   ]) {
     final docLines = <String>[];
 
@@ -428,7 +428,7 @@ final class DartVmDocService {
   }
 
   /// Convert VM service URI to local file path
-  String? _uriToFilePath(final String uri) {
+  String? _uriToFilePath(String uri) {
     try {
       final parsedUri = Uri.parse(uri);
       if (parsedUri.scheme == 'file') {
@@ -442,7 +442,7 @@ final class DartVmDocService {
   }
 
   /// Get basic class information as fallback
-  String _getBasicClassInfo(final Class classObj) {
+  String _getBasicClassInfo(Class classObj) {
     final docs = <String>[];
 
     // Add class name and basic info
@@ -462,8 +462,8 @@ final class DartVmDocService {
     final interfaces = classObj.interfaces ?? [];
     if (interfaces.isNotEmpty) {
       final interfaceNames = interfaces
-          .where((final i) => i.name != null)
-          .map((final i) => '`${i.name}`')
+          .where((i) => i.name != null)
+          .map((i) => '`${i.name}`')
           .join(', ');
       docs.add('**Implements**: $interfaceNames');
     }
@@ -485,8 +485,8 @@ final class DartVmDocService {
 
   /// Extract documentation from a Function object
   String? _extractDocumentationFromFunction(
-    final Func function,
-    final Library library,
+    Func function,
+    Library library,
   ) {
     final docs = <String>[];
 
@@ -520,8 +520,8 @@ final class DartVmDocService {
 
   /// Extract documentation from a Field object
   String? _extractDocumentationFromField(
-    final Field field,
-    final Library library,
+    Field field,
+    Library library,
   ) {
     final docs = <String>[];
 

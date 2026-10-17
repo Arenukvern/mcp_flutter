@@ -184,9 +184,9 @@ final class _CountingDesktopService implements DesktopWindowScreenshotService {
 
   @override
   Future<Map<String, Object?>> focus({
-    required final String device,
-    final int? targetPid,
-    final String? cacheDir,
+    required String device,
+    int? targetPid,
+    String? cacheDir,
   }) async {
     onFocus?.call();
     return <String, Object?>{'ok': true};
@@ -194,11 +194,11 @@ final class _CountingDesktopService implements DesktopWindowScreenshotService {
 
   @override
   Future<DesktopWindowScreenshotCapture?> capture({
-    required final String projectDir,
-    required final String device,
-    required final bool compress,
-    final int? targetPid,
-    final String? cacheDir,
+    required String projectDir,
+    required String device,
+    required bool compress,
+    int? targetPid,
+    String? cacheDir,
   }) async {
     onCapture?.call();
     if (_index >= captures.length) {

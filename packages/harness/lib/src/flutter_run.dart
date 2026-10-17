@@ -55,7 +55,7 @@ final class FlutterRunTarget implements AppTarget {
   final void Function(String line)? onLine;
 
   @override
-  Future<LaunchedApp> launch({final bool build = true}) async {
+  Future<LaunchedApp> launch({bool build = true}) async {
     // `flutter run` always builds; the AppTarget flag has nothing to skip.
     final process = await Process.start(
       flutterBin,
@@ -96,12 +96,12 @@ final class FlutterRunTarget implements AppTarget {
     }
   }
 
-  void _pump(final Stream<List<int>> stream, final LogTap tap) {
+  void _pump(Stream<List<int>> stream, LogTap tap) {
     stream
         .transform(utf8.decoder)
         .transform(const LineSplitter())
         .listen(
-          (final line) {
+          (line) {
             tap.add(line);
             onLine?.call(line);
           },

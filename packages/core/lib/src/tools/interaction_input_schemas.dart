@@ -706,7 +706,7 @@ const interactionCatalogInputSchemaForCommandNames = <String>[
 /// [tierAExecCatalogCommandNames] set plus two capture tools.
 /// Returns `null` for commands outside that set.
 Map<String, Object?>? interactionCatalogInputSchemaFor(
-  final String commandName,
+  String commandName,
 ) => switch (commandName) {
   'tap_widget' => tapWidgetInputSchema(),
   'semantic_snapshot' => semanticSnapshotInputSchema(),

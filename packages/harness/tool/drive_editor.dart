@@ -6,26 +6,26 @@ import 'package:flutter_mcp_harness/flutter_mcp_harness.dart';
 /// stage=open  -> + button, fill the form, save, verify the new row
 /// stage=edit  -> tap a row, change the schedule, save, verify
 /// stage=delete-> tap a row, delete, confirm, verify gone
-Future<void> main(final List<String> args) async {
+Future<void> main(List<String> args) async {
   final stage = args.isNotEmpty ? args.first : 'open';
   final out = args.length > 1 ? args[1] : '/tmp';
   final target = args.length > 2 ? args[2] : 'demo-timer';
   final vmUri = Platform.environment['LA_VM_URI']!;
   final client = await VmClient.connect(Uri.parse(vmUri));
   final driver = ToolkitDriver(client);
-  Future<T> step<T>(final String name, final Future<T> Function() body) =>
+  Future<T> step<T>(String name, Future<T> Function() body) =>
       body().timeout(const Duration(seconds: 25), onTimeout: () {
         stderr.writeln('TIMEOUT at step: $name');
         exit(3);
       });
   Future<Map<String, dynamic>> ext(
-    final String name, {
-    final Map<String, Object?> args = const <String, Object?>{},
+    String name, {
+    Map<String, Object?> args = const <String, Object?>{},
   }) =>
       step(name, () => client.callExtension(name, args: args));
 
   Future<List<Map<String, Object?>>> nodes({
-    final bool visibleOnly = false,
+    bool visibleOnly = false,
   }) async {
     final tree = await step('snapshot', () => ext(ToolkitExtensions.snapshot));
     return (tree['nodes']! as List<Object?>)
@@ -35,9 +35,9 @@ Future<void> main(final List<String> args) async {
   }
 
   Future<Map<String, Object?>?> byLabel(
-    final List<Map<String, Object?>> ns,
-    final String label, {
-    final String? type,
+    List<Map<String, Object?>> ns,
+    String label, {
+    String? type,
   }) async =>
       ns
           .where(
@@ -47,7 +47,7 @@ Future<void> main(final List<String> args) async {
           )
           .firstOrNull;
 
-  Future<void> tapRef(final String ref) async {
+  Future<void> tapRef(String ref) async {
     await step('tap-$ref', () {
       return ext(ToolkitExtensions.tap, args: {'ref': ref});
     });
@@ -55,9 +55,9 @@ Future<void> main(final List<String> args) async {
   }
 
   Future<void> typeInto(
-    final List<Map<String, Object?>> ns,
-    final String label,
-    final String text,
+    List<Map<String, Object?>> ns,
+    String label,
+    String text,
   ) async {
     final field = ns
         .where(
@@ -79,7 +79,7 @@ Future<void> main(final List<String> args) async {
     await Future<void>.delayed(const Duration(milliseconds: 300));
   }
 
-  Future<void> scrollTo(final String label) async {
+  Future<void> scrollTo(String label) async {
     // Start from the top: the target may sit above the current scroll.
     await step('scroll-top', () {
       return ext(ToolkitExtensions.scroll,
@@ -103,7 +103,7 @@ Future<void> main(final List<String> args) async {
     }
   }
 
-  Future<void> shot(final String name) async {
+  Future<void> shot(String name) async {
     final bytes = await step('shot-$name', () => driver.screenshot());
     await File('$out/la-editor-$name.png').writeAsBytes(bytes);
     stdout.writeln('shot: $out/la-editor-$name.png');

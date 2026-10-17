@@ -6,21 +6,21 @@ import 'package:flutter_mcp_harness/flutter_mcp_harness.dart';
 /// Visual acceptance for the on-device automations pane (ADR-0041 §6).
 /// Every step is hard-timeboxed: a stuck step fails the run instead of
 /// hanging it.
-Future<void> main(final List<String> args) async {
+Future<void> main(List<String> args) async {
   final out = args.isNotEmpty ? args.first : '/tmp';
   final vmUri = Platform.environment['LA_VM_URI'] ??
       'http://127.0.0.1:57684/${Platform.environment['LA_VM_TOKEN'] ?? ''}/';
   final client = await VmClient.connect(Uri.parse(vmUri));
   final driver = ToolkitDriver(client);
   var stepTimeout = const Duration(seconds: 25);
-  Future<T> step<T>(final String name, final Future<T> Function() body) =>
+  Future<T> step<T>(String name, Future<T> Function() body) =>
       body().timeout(stepTimeout, onTimeout: () {
         stderr.writeln('TIMEOUT at step: $name');
         exit(3);
       });
   Future<Map<String, dynamic>> ext(
-    final String name, {
-    final Map<String, Object?> args = const <String, Object?>{},
+    String name, {
+    Map<String, Object?> args = const <String, Object?>{},
   }) =>
       step(name, () => client.callExtension(name, args: args));
   Future<Map<String, dynamic>> snapshot() => ext(ToolkitExtensions.snapshot);

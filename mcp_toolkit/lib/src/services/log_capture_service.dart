@@ -25,7 +25,7 @@ mixin LogCaptureService {
     _installed = true;
 
     final original = debugPrint;
-    debugPrint = (final message, {final wrapWidth}) {
+    debugPrint = (message, {wrapWidth}) {
       _addLog('print', message ?? '');
       original(message, wrapWidth: wrapWidth);
     };
@@ -43,7 +43,7 @@ mixin LogCaptureService {
   }
 
   /// Retrieve the most recent [count] log entries (newest first).
-  static List<Map<String, Object?>> getRecentLogs({final int count = 50}) {
+  static List<Map<String, Object?>> getRecentLogs({int count = 50}) {
     final end = _logs.length;
     final start = (end - count).clamp(0, end);
     return _logs.sublist(start, end).reversed.toList(growable: false);
@@ -56,7 +56,7 @@ mixin LogCaptureService {
   // Internal
   // ---------------------------------------------------------------------------
 
-  static void _addLog(final String type, final String message) {
+  static void _addLog(String type, String message) {
     if (_logs.length >= _maxLogs) {
       _logs.removeAt(0);
     }

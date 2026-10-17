@@ -19,7 +19,7 @@ import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/host.dart';
 import 'package:test/test.dart';
 
 /// Helper: build a [McpHost] with a [FakeCommandRunner] and the given config.
-McpHost _makeHost({final bool dumpsSupported = false}) => McpHost(
+McpHost _makeHost({bool dumpsSupported = false}) => McpHost(
   services: <Type, HostService>{CommandRunner: FakeCommandRunner()},
   config: CapabilityConfig(
     values: <String, Object?>{'dumps_supported': dumpsSupported},
@@ -39,8 +39,8 @@ Set<String> _expectedNonDumpToolNames() {
   );
   return expectedFile
       .readAsLinesSync()
-      .map((final line) => line.trim())
-      .where((final line) => line.isNotEmpty && !line.startsWith('#'))
+      .map((line) => line.trim())
+      .where((line) => line.isNotEmpty && !line.startsWith('#'))
       .toSet();
 }
 
@@ -136,14 +136,14 @@ void main() {
             values: <String, Object?>{'dumps_supported': false},
           ),
           dispatchBridge: DartMcpDispatchBridge(
-            publish: (final tool, final _) => published.add(tool),
+            publish: (tool, _) => published.add(tool),
             unpublish: unpublished.add,
           ),
         );
         await host.registerCapability(const FmtCapability());
 
         final expected = _expectedNonDumpToolNames();
-        final publishedNames = published.map((final t) => t.name).toSet();
+        final publishedNames = published.map((t) => t.name).toSet();
         expect(publishedNames, equals(expected));
         // Sanity: the legacy unprefixed names are NOT what the kernel publishes.
         expect(publishedNames, isNot(contains('tap_widget')));

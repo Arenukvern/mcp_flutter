@@ -5,7 +5,7 @@ import 'package:flutter_mcp_harness/flutter_mcp_harness.dart';
 /// Visual probe over a running, instrumented Flutter app: screenshot the
 /// current surface, list declared surface actions, then optionally
 /// navigate. Usage: dart run tool/visual_probe.dart [outDir] [route]
-Future<void> main(final List<String> args) async {
+Future<void> main(List<String> args) async {
   final out = args.isNotEmpty ? args.first : '/tmp';
   final vmUri = Platform.environment['LA_VM_URI'] ??
       'http://127.0.0.1:57684/${Platform.environment['LA_VM_TOKEN'] ?? ''}/';

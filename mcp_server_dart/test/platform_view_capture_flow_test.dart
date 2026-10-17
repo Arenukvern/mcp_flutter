@@ -22,9 +22,9 @@ void main() {
       'desktop_window with recovery metadata when capture retried',
       () async {
         void logger(
-          final LoggingLevel level,
-          final String message, {
-          final String logger = 'test',
+          LoggingLevel level,
+          String message, {
+          String logger = 'test',
         }) {}
 
         var captureAttempts = 0;
@@ -69,9 +69,9 @@ void main() {
       'desktop failure returns error without flutter_layer images',
       () async {
         void logger(
-          final LoggingLevel level,
-          final String message, {
-          final String logger = 'test',
+          LoggingLevel level,
+          String message, {
+          String logger = 'test',
         }) {}
 
         final executor = DefaultCoreCommandExecutor(
@@ -108,9 +108,9 @@ void main() {
 
     test('desktop failure explains missing flutter-device context', () async {
       void logger(
-        final LoggingLevel level,
-        final String message, {
-        final String logger = 'test',
+        LoggingLevel level,
+        String message, {
+        String logger = 'test',
       }) {}
 
       final executor = DefaultCoreCommandExecutor(
@@ -151,9 +151,9 @@ void main() {
       'auto upgrades to desktop_window when UiKitView in debug payload',
       () async {
         void logger(
-          final LoggingLevel level,
-          final String message, {
-          final String logger = 'test',
+          LoggingLevel level,
+          String message, {
+          String logger = 'test',
         }) {}
 
         final context = ConnectionContext(
@@ -196,7 +196,7 @@ void main() {
         final warnings = data['warnings'] as List<dynamic>?;
         expect(
           warnings?.any(
-            (final w) => '$w'.contains('upgraded to desktop_window'),
+            (w) => '$w'.contains('upgraded to desktop_window'),
           ),
           isTrue,
         );
@@ -205,9 +205,9 @@ void main() {
 
     test('flutter_layer with platform views attaches warnings', () async {
       void logger(
-        final LoggingLevel level,
-        final String message, {
-        final String logger = 'test',
+        LoggingLevel level,
+        String message, {
+        String logger = 'test',
       }) {}
 
       final context = ConnectionContext(
@@ -254,7 +254,7 @@ void main() {
       final warnings = data['warnings'] as List<dynamic>?;
       expect(warnings, isNotNull);
       expect(
-        warnings!.any((final w) => '$w'.contains('platform view')),
+        warnings!.any((w) => '$w'.contains('platform view')),
         isTrue,
       );
       expect(data['captureHints'], isA<Map<String, Object?>>());
@@ -262,9 +262,9 @@ void main() {
 
     test('flutter_layer with Texture only attaches weak warnings', () async {
       void logger(
-        final LoggingLevel level,
-        final String message, {
-        final String logger = 'test',
+        LoggingLevel level,
+        String message, {
+        String logger = 'test',
       }) {}
 
       final context = ConnectionContext(
@@ -323,16 +323,16 @@ void main() {
       expect(hints['weakSignalsDetected'], isTrue);
       expect(hints['platformViewsDetected'], isFalse);
       final warnings = data['warnings'] as List<dynamic>?;
-      expect(warnings?.any((final w) => '$w'.contains('Texture')), isTrue);
+      expect(warnings?.any((w) => '$w'.contains('Texture')), isTrue);
     });
 
     test(
       'desktop failure with platform views puts captureHints in error details',
       () async {
         void logger(
-          final LoggingLevel level,
-          final String message, {
-          final String logger = 'test',
+          LoggingLevel level,
+          String message, {
+          String logger = 'test',
         }) {}
 
         final context = ConnectionContext(
@@ -415,22 +415,22 @@ final class _RetryOnceFakeAdapter
   String get truthMode => screenshotModeDesktopWindow;
 
   @override
-  bool supportsPlatform(final String effectivePlatform) => true;
+  bool supportsPlatform(String effectivePlatform) => true;
 
   @override
   Future<Map<String, Object?>> focus({
-    required final String device,
-    final int? targetPid,
-    final String? cacheDir,
+    required String device,
+    int? targetPid,
+    String? cacheDir,
   }) async => <String, Object?>{'ok': true};
 
   @override
   Future<DesktopWindowScreenshotCapture?> capture({
-    required final String projectDir,
-    required final String device,
-    required final bool compress,
-    final int? targetPid,
-    final String? cacheDir,
+    required String projectDir,
+    required String device,
+    required bool compress,
+    int? targetPid,
+    String? cacheDir,
   }) async {
     onCapture?.call();
     _calls++;
@@ -445,9 +445,9 @@ final class _RetryOnceFakeAdapter
 
   @override
   Future<PermissionBrokerResult> status({
-    required final PermissionKind kind,
-    required final PermissionPolicy policy,
-    required final CoreRuntimeConfiguration configuration,
+    required PermissionKind kind,
+    required PermissionPolicy policy,
+    required CoreRuntimeConfiguration configuration,
   }) async => PermissionBrokerResult(
     kind: kind,
     status: PermissionStatus.granted,
@@ -463,16 +463,16 @@ final class _RetryOnceFakeAdapter
 
   @override
   Future<PermissionBrokerResult> request({
-    required final PermissionKind kind,
-    required final PermissionPolicy policy,
-    required final CoreRuntimeConfiguration configuration,
+    required PermissionKind kind,
+    required PermissionPolicy policy,
+    required CoreRuntimeConfiguration configuration,
   }) => status(kind: kind, policy: policy, configuration: configuration);
 
   @override
   Future<PermissionBrokerResult> openSettings({
-    required final PermissionKind kind,
-    required final PermissionPolicy policy,
-    required final CoreRuntimeConfiguration configuration,
+    required PermissionKind kind,
+    required PermissionPolicy policy,
+    required CoreRuntimeConfiguration configuration,
   }) => status(kind: kind, policy: policy, configuration: configuration);
 }
 
@@ -502,29 +502,29 @@ final class _FlutterLayerCapableFakeAdapter
   String get truthMode => screenshotModeFlutterLayer;
 
   @override
-  bool supportsPlatform(final String effectivePlatform) => true;
+  bool supportsPlatform(String effectivePlatform) => true;
 
   @override
   Future<Map<String, Object?>> focus({
-    required final String device,
-    final int? targetPid,
-    final String? cacheDir,
+    required String device,
+    int? targetPid,
+    String? cacheDir,
   }) async => <String, Object?>{'ok': true};
 
   @override
   Future<DesktopWindowScreenshotCapture?> capture({
-    required final String projectDir,
-    required final String device,
-    required final bool compress,
-    final int? targetPid,
-    final String? cacheDir,
+    required String projectDir,
+    required String device,
+    required bool compress,
+    int? targetPid,
+    String? cacheDir,
   }) async => null;
 
   @override
   Future<PermissionBrokerResult> status({
-    required final PermissionKind kind,
-    required final PermissionPolicy policy,
-    required final CoreRuntimeConfiguration configuration,
+    required PermissionKind kind,
+    required PermissionPolicy policy,
+    required CoreRuntimeConfiguration configuration,
   }) async => PermissionBrokerResult(
     kind: kind,
     status: PermissionStatus.granted,
@@ -540,16 +540,16 @@ final class _FlutterLayerCapableFakeAdapter
 
   @override
   Future<PermissionBrokerResult> request({
-    required final PermissionKind kind,
-    required final PermissionPolicy policy,
-    required final CoreRuntimeConfiguration configuration,
+    required PermissionKind kind,
+    required PermissionPolicy policy,
+    required CoreRuntimeConfiguration configuration,
   }) => status(kind: kind, policy: policy, configuration: configuration);
 
   @override
   Future<PermissionBrokerResult> openSettings({
-    required final PermissionKind kind,
-    required final PermissionPolicy policy,
-    required final CoreRuntimeConfiguration configuration,
+    required PermissionKind kind,
+    required PermissionPolicy policy,
+    required CoreRuntimeConfiguration configuration,
   }) => status(kind: kind, policy: policy, configuration: configuration);
 }
 
@@ -575,22 +575,22 @@ final class _SuccessFakeAdapter
   String get truthMode => screenshotModeDesktopWindow;
 
   @override
-  bool supportsPlatform(final String effectivePlatform) => true;
+  bool supportsPlatform(String effectivePlatform) => true;
 
   @override
   Future<Map<String, Object?>> focus({
-    required final String device,
-    final int? targetPid,
-    final String? cacheDir,
+    required String device,
+    int? targetPid,
+    String? cacheDir,
   }) async => <String, Object?>{'ok': true};
 
   @override
   Future<DesktopWindowScreenshotCapture?> capture({
-    required final String projectDir,
-    required final String device,
-    required final bool compress,
-    final int? targetPid,
-    final String? cacheDir,
+    required String projectDir,
+    required String device,
+    required bool compress,
+    int? targetPid,
+    String? cacheDir,
   }) async => const DesktopWindowScreenshotCapture(
     images: <String>['AQID'],
     captureMode: 'desktop_window',
@@ -598,9 +598,9 @@ final class _SuccessFakeAdapter
 
   @override
   Future<PermissionBrokerResult> status({
-    required final PermissionKind kind,
-    required final PermissionPolicy policy,
-    required final CoreRuntimeConfiguration configuration,
+    required PermissionKind kind,
+    required PermissionPolicy policy,
+    required CoreRuntimeConfiguration configuration,
   }) async => PermissionBrokerResult(
     kind: kind,
     status: PermissionStatus.granted,
@@ -614,16 +614,16 @@ final class _SuccessFakeAdapter
 
   @override
   Future<PermissionBrokerResult> request({
-    required final PermissionKind kind,
-    required final PermissionPolicy policy,
-    required final CoreRuntimeConfiguration configuration,
+    required PermissionKind kind,
+    required PermissionPolicy policy,
+    required CoreRuntimeConfiguration configuration,
   }) => status(kind: kind, policy: policy, configuration: configuration);
 
   @override
   Future<PermissionBrokerResult> openSettings({
-    required final PermissionKind kind,
-    required final PermissionPolicy policy,
-    required final CoreRuntimeConfiguration configuration,
+    required PermissionKind kind,
+    required PermissionPolicy policy,
+    required CoreRuntimeConfiguration configuration,
   }) => status(kind: kind, policy: policy, configuration: configuration);
 }
 
@@ -649,29 +649,29 @@ final class _AlwaysFailFakeAdapter
   String get truthMode => screenshotModeDesktopWindow;
 
   @override
-  bool supportsPlatform(final String effectivePlatform) => true;
+  bool supportsPlatform(String effectivePlatform) => true;
 
   @override
   Future<Map<String, Object?>> focus({
-    required final String device,
-    final int? targetPid,
-    final String? cacheDir,
+    required String device,
+    int? targetPid,
+    String? cacheDir,
   }) async => <String, Object?>{'ok': true};
 
   @override
   Future<DesktopWindowScreenshotCapture?> capture({
-    required final String projectDir,
-    required final String device,
-    required final bool compress,
-    final int? targetPid,
-    final String? cacheDir,
+    required String projectDir,
+    required String device,
+    required bool compress,
+    int? targetPid,
+    String? cacheDir,
   }) async => null;
 
   @override
   Future<PermissionBrokerResult> status({
-    required final PermissionKind kind,
-    required final PermissionPolicy policy,
-    required final CoreRuntimeConfiguration configuration,
+    required PermissionKind kind,
+    required PermissionPolicy policy,
+    required CoreRuntimeConfiguration configuration,
   }) async => PermissionBrokerResult(
     kind: kind,
     status: PermissionStatus.granted,
@@ -685,15 +685,15 @@ final class _AlwaysFailFakeAdapter
 
   @override
   Future<PermissionBrokerResult> request({
-    required final PermissionKind kind,
-    required final PermissionPolicy policy,
-    required final CoreRuntimeConfiguration configuration,
+    required PermissionKind kind,
+    required PermissionPolicy policy,
+    required CoreRuntimeConfiguration configuration,
   }) => status(kind: kind, policy: policy, configuration: configuration);
 
   @override
   Future<PermissionBrokerResult> openSettings({
-    required final PermissionKind kind,
-    required final PermissionPolicy policy,
-    required final CoreRuntimeConfiguration configuration,
+    required PermissionKind kind,
+    required PermissionPolicy policy,
+    required CoreRuntimeConfiguration configuration,
   }) => status(kind: kind, policy: policy, configuration: configuration);
 }

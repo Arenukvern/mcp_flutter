@@ -15,7 +15,7 @@ const _cliPrelude = '''
 > Throughout this skill, calls are written as `tap_widget(selector: "...")` — translate to the CLI form.
 > If the binary isn't on PATH, see `flutter-mcp-toolkit-setup`.''';
 
-String renderModePrelude(final String body, final InitMode mode) {
+String renderModePrelude(String body, InitMode mode) {
   if (mode == InitMode.auto) {
     throw ArgumentError.value(
       mode,

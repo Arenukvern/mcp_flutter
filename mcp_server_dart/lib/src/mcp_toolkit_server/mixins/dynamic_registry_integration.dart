@@ -35,7 +35,7 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
   /// Initialize the dynamic registry integration
   @protected
   void initializeDynamicRegistry({
-    required final MCPToolkitServer mcpToolkitServer,
+    required MCPToolkitServer mcpToolkitServer,
   }) {
     final registry = _dynamicRegistry = DynamicRegistry(
       server: mcpToolkitServer,
@@ -64,7 +64,7 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
 
   /// Start registry discovery that immediately registers and listens for changes
   Future<void> startRegistryDiscovery({
-    required final MCPToolkitServer mcpToolkitServer,
+    required MCPToolkitServer mcpToolkitServer,
   }) async {
     final registry = _dynamicRegistry;
     if (registry == null) return;
@@ -111,7 +111,7 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
 
   /// Re-initialize discovery after VM service reconnection
   Future<void> _reinitializeDiscovery(
-    final MCPToolkitServer mcpToolkitServer,
+    MCPToolkitServer mcpToolkitServer,
   ) async {
     try {
       // Dispose old discovery service
@@ -146,7 +146,7 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
 
   /// Override initialize to register dynamic registry management tools
   @override
-  FutureOr<InitializeResult> initialize(final InitializeRequest request) {
+  FutureOr<InitializeResult> initialize(InitializeRequest request) {
     if (isDynamicRegistrySupported) {
       final mcpToolkitServer = this as MCPToolkitServer;
       // Initialize the dynamic registry first
@@ -203,9 +203,9 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
   /// Register a dynamic tool from a Flutter client
   /// This creates a wrapper that forwards calls to the dynamic registry
   void registerDynamicTool(
-    final Tool tool,
-    final String sourceApp, {
-    final Map<String, dynamic> metadata = const {},
+    Tool tool,
+    String sourceApp, {
+    Map<String, dynamic> metadata = const {},
   }) {
     final registry = _dynamicRegistry;
     if (registry == null) return;
@@ -244,10 +244,10 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
   /// Register a dynamic resource from a Flutter client
   /// This creates a wrapper that forwards calls to the dynamic registry
   void registerDynamicResource(
-    final Resource resource,
-    final String sourceApp, {
-    final Map<String, dynamic> metadata = const {},
-    final Map<String, Object?>? inputSchema,
+    Resource resource,
+    String sourceApp, {
+    Map<String, dynamic> metadata = const {},
+    Map<String, Object?>? inputSchema,
   }) {
     final registry = _dynamicRegistry;
     if (registry == null) return;
@@ -285,7 +285,7 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
   }
 
   /// Unregister all tools and resources from a Flutter client
-  void unregisterDynamicApp(final String sourceApp) {
+  void unregisterDynamicApp(String sourceApp) {
     if (!isDynamicRegistrySupported) return;
 
     final registry = _dynamicRegistry;
@@ -346,11 +346,11 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
       isDynamicRegistrySupported ? _dynamicRegistry : null;
 
   RegisteredAgentIntent _wrapDynamicToolIntent({
-    required final MCPToolkitServer toolkitServer,
-    required final RegisteredAgentIntent intent,
+    required MCPToolkitServer toolkitServer,
+    required RegisteredAgentIntent intent,
   }) => RegisteredAgentIntent(
     descriptor: intent.descriptor,
-    execute: (final invocation) async {
+    execute: (invocation) async {
       final ensure = await toolkitServer.connectionContext
           .ensureConnectedWithPolicy();
       if (!ensure.connected) {
@@ -365,12 +365,12 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
   );
 
   RegisteredAgentIntent _wrapDynamicResourceIntent({
-    required final MCPToolkitServer toolkitServer,
-    required final RegisteredAgentIntent intent,
-    required final String resourceUri,
+    required MCPToolkitServer toolkitServer,
+    required RegisteredAgentIntent intent,
+    required String resourceUri,
   }) => RegisteredAgentIntent(
     descriptor: intent.descriptor,
-    execute: (final invocation) async {
+    execute: (invocation) async {
       final requestedUri =
           invocation.arguments['uri'] as String? ?? resourceUri;
       final connectError = await applyConnectionOverrideFromResourceUri(
@@ -399,7 +399,7 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
     },
   );
 
-  void _logRegistryEvent(final DynamicRegistryEvent event) {
+  void _logRegistryEvent(DynamicRegistryEvent event) {
     switch (event) {
       case ToolRegisteredEvent(:final entry):
         log(
@@ -443,7 +443,7 @@ base mixin DynamicRegistryIntegration on BaseMCPToolkitServer {
   }
 }
 
-Map<String, Object?> _agentFailureDetails(final Object? raw) {
+Map<String, Object?> _agentFailureDetails(Object? raw) {
   if (raw is Map<String, Object?>) {
     return raw;
   }

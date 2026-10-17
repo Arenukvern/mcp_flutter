@@ -8,7 +8,7 @@ void main() {
       final baseEntries = getFlutterMcpToolkitEntries(
         binding: MCPToolkitBinding.instance,
       );
-      final baseNames = baseEntries.map((final entry) => entry.key).toSet();
+      final baseNames = baseEntries.map((entry) => entry.key).toSet();
 
       expect(baseNames.contains(flutterPermissionStatusTool), isFalse);
       expect(baseNames.contains(flutterPermissionRequestTool), isFalse);
@@ -21,7 +21,7 @@ void main() {
       final permissionEntries = getFlutterMcpPermissionEntries(
         delegate: _FakePermissionDelegate(),
       );
-      final permissionNames = permissionEntries.map((final entry) => entry.key);
+      final permissionNames = permissionEntries.map((entry) => entry.key);
 
       expect(permissionNames, contains(flutterPermissionStatusTool));
       expect(permissionNames, contains(flutterPermissionRequestTool));
@@ -42,16 +42,16 @@ final class _FakePermissionDelegate implements MCPPermissionDelegate {
 
   @override
   Future<MCPPermissionResult> getPermissionStatus({
-    required final String kind,
+    required String kind,
   }) async => MCPPermissionResult(kind: kind, status: 'granted');
 
   @override
   Future<MCPPermissionResult> openPermissionSettings({
-    required final String kind,
+    required String kind,
   }) async => MCPPermissionResult(kind: kind, status: 'denied');
 
   @override
   Future<MCPPermissionResult> requestPermission({
-    required final String kind,
+    required String kind,
   }) async => MCPPermissionResult(kind: kind, status: 'granted');
 }

@@ -24,8 +24,8 @@ extension type const MCPCallResult._(Map<String, dynamic> parameters)
     implements Map<String, dynamic> {
   /// The [parameters] will be merged into json with the [message].
   factory MCPCallResult({
-    required final String message,
-    required final Map<String, dynamic> parameters,
+    required String message,
+    required Map<String, dynamic> parameters,
   }) => MCPCallResult._({'message': message, ...parameters});
 }
 
@@ -49,9 +49,9 @@ extension type const MCPDefinition._(Map<String, dynamic> _value)
     implements Map<String, dynamic> {
   /// The [name], [description] and [params] will be merged into json.
   factory MCPDefinition({
-    required final String name,
-    required final String description,
-    final Map<String, dynamic>? params,
+    required String name,
+    required String description,
+    Map<String, dynamic>? params,
   }) => MCPDefinition._({'name': name, 'description': description, ...?params});
 
   /// Get the name of this definition
@@ -101,9 +101,9 @@ extension type const MCPToolDefinition._(MCPDefinition _definition)
     implements MCPDefinition {
   /// The [name], [description] and [inputSchema] will be merged into json.
   factory MCPToolDefinition({
-    required final String name,
-    required final String description,
-    required final ObjectSchema inputSchema,
+    required String name,
+    required String description,
+    required ObjectSchema inputSchema,
   }) => MCPToolDefinition._(
     MCPDefinition(
       name: name,
@@ -143,9 +143,9 @@ extension type const MCPResourceDefinition._(MCPDefinition _definition)
     implements MCPDefinition {
   /// The [name], [description] and [mimeType] will be merged into json.
   factory MCPResourceDefinition({
-    required final String name,
-    required final String description,
-    final String mimeType = 'text/plain',
+    required String name,
+    required String description,
+    String mimeType = 'text/plain',
   }) => MCPResourceDefinition._(
     MCPDefinition(
       name: name,

@@ -26,7 +26,7 @@ base mixin FlutterInspector
   MCPToolkitServer get _toolkitServer => this as MCPToolkitServer;
 
   @override
-  FutureOr<InitializeResult> initialize(final InitializeRequest request) async {
+  FutureOr<InitializeResult> initialize(InitializeRequest request) async {
     log(
       LoggingLevel.info,
       'Initializing Flutter Inspector resources',
@@ -65,7 +65,7 @@ base mixin FlutterInspector
         mimeType: 'application/json',
         description: 'Get the most recent application error from Dart VM',
       ),
-      read: (final request) =>
+      read: (request) =>
           _resourceHandler.handleAppErrorsResource(request, count: 1),
     );
 
@@ -107,8 +107,8 @@ base mixin FlutterInspector
   }
 
   Future<void> _registerRegistryResource({
-    required final Resource resource,
-    required final Future<ReadResourceResult> Function(
+    required Resource resource,
+    required Future<ReadResourceResult> Function(
       ReadResourceRequest request,
     )
     read,
@@ -120,7 +120,7 @@ base mixin FlutterInspector
         name: resource.name,
         description: resource.description ?? '',
         mimeType: resource.mimeType ?? 'application/json',
-        handler: (final uri) async => readResourceResultToAgentResult(
+        handler: (uri) async => readResourceResultToAgentResult(
           await read(ReadResourceRequest(uri: uri)),
         ),
       ),
@@ -128,8 +128,8 @@ base mixin FlutterInspector
   }
 
   Future<void> _registerRegistryResourceTemplate({
-    required final ResourceTemplate template,
-    required final Future<ReadResourceResult> Function(
+    required ResourceTemplate template,
+    required Future<ReadResourceResult> Function(
       ReadResourceRequest request,
     )
     read,
@@ -141,7 +141,7 @@ base mixin FlutterInspector
         name: template.name,
         description: template.description ?? '',
         mimeType: template.mimeType ?? 'application/json',
-        handler: (final uri) async => readResourceResultToAgentResult(
+        handler: (uri) async => readResourceResultToAgentResult(
           await read(ReadResourceRequest(uri: uri)),
         ),
       ),

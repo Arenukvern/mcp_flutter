@@ -3,7 +3,7 @@ import 'package:intentcall_schema/intentcall_schema.dart';
 import 'package:flutter_mcp_toolkit_capability_kernel/flutter_mcp_toolkit_capability_kernel.dart';
 
 /// Registers `fmt_migrate_agent_entries` (report-only; `apply: true` writes files).
-void registerMigrateAgentEntriesTool(final CapabilityContext context) {
+void registerMigrateAgentEntriesTool(CapabilityContext context) {
   context.registerTool(
     ToolRegistration(
       name: 'migrate_agent_entries',
@@ -31,7 +31,7 @@ void registerMigrateAgentEntriesTool(final CapabilityContext context) {
         },
         'required': <String>['projectRoot'],
       },
-      handler: (final args) async {
+      handler: (args) async {
         final root = args['projectRoot']?.toString().trim();
         if (root == null || root.isEmpty) {
           return AgentResult.failure(
@@ -59,7 +59,7 @@ void registerMigrateAgentEntriesTool(final CapabilityContext context) {
               'apply': apply,
               'files': report.results
                   .map(
-                    (final r) => <String, Object?>{
+                    (r) => <String, Object?>{
                       'path': r.path,
                       'changed': r.changed,
                     },

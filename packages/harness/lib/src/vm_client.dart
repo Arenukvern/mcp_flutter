@@ -37,7 +37,7 @@ final class VmClient {
   /// isolate, and extension calls against those 404 (-32601) forever. Among
   /// responsive isolates, prefer one carrying the MCP toolkit registration;
   /// fall back to the first responsive isolate for toolkit-less apps.
-  static Future<VmClient> connect(final Uri httpUri) async {
+  static Future<VmClient> connect(Uri httpUri) async {
     final wsUri = canonicalVmServiceWsUri(httpUri);
     final service = await vm_io.vmServiceConnectUri(wsUri.toString());
     final vmName = await service.getVM();
@@ -91,8 +91,8 @@ final class VmClient {
   /// surfaces as [TimeoutException] instead of wedging an unattended
   /// driver forever.
   Future<Map<String, dynamic>> callExtension(
-    final String name, {
-    final Map<String, Object?> args = const <String, Object?>{},
+    String name, {
+    Map<String, Object?> args = const <String, Object?>{},
   }) async {
     try {
       return await _callExtension(name, args).timeout(_callTimeout);
@@ -122,11 +122,11 @@ final class VmClient {
   /// websocket reconnect. Exhausting [attempts] throws the LAST
   /// response/error — named data, not a bare timeout.
   Future<Map<String, dynamic>> callExtensionUntil(
-    final String name, {
-    final Map<String, Object?> args = const <String, Object?>{},
-    final bool Function(Map<String, dynamic> response)? until,
-    final int attempts = 15,
-    final Duration delay = const Duration(seconds: 2),
+    String name, {
+    Map<String, Object?> args = const <String, Object?>{},
+    bool Function(Map<String, dynamic> response)? until,
+    int attempts = 15,
+    Duration delay = const Duration(seconds: 2),
   }) async {
     Object? lastError;
     Map<String, dynamic>? lastResponse;
@@ -147,8 +147,8 @@ final class VmClient {
   }
 
   Future<Map<String, dynamic>> _callExtension(
-    final String name,
-    final Map<String, Object?> args,
+    String name,
+    Map<String, Object?> args,
   ) async {
     final response = await _service.callServiceExtension(
       name,
@@ -162,7 +162,7 @@ final class VmClient {
   /// refusal: the local disposed error (-32000 with the disposed
   /// message), the protocol's kConnectionDisposed (-32010), or a socket
   /// failure surfaced through the RPC channel.
-  bool _isConnectionLevel(final vm.RPCError error) {
+  bool _isConnectionLevel(vm.RPCError error) {
     if (error.code == -32010) return true;
     if (error.code == -32000 &&
         error.message.contains('Service connection disposed')) {
@@ -203,7 +203,7 @@ final class VmClient {
   }
 
   /// Evaluates an expression in the main isolate's root library context.
-  Future<String> evaluate(final String expression) async {
+  Future<String> evaluate(String expression) async {
     final isolate = await _service.getIsolate(_mainIsolate.id!);
     final response = await _service.evaluate(
       isolate.id!,

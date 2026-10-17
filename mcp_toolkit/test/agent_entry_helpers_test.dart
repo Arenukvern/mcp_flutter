@@ -83,7 +83,7 @@ void main() {
             required: ['predicate'],
           ),
         ),
-        handler: (final request) {
+        handler: (request) {
           capturedPredicate = request['predicate'];
           return MCPCallResult(message: 'ok', parameters: {});
         },
@@ -127,7 +127,7 @@ void main() {
             required: ['predicate'],
           ),
         ),
-        handler: (final request) {
+        handler: (request) {
           capturedTimeout = int.tryParse(request['timeoutMs'] ?? '');
           return MCPCallResult(message: 'ok', parameters: {});
         },

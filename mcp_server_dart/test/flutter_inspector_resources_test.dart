@@ -20,11 +20,11 @@ void main() {
             >{};
         final host = McpHost(
           dispatchBridge: DartMcpDispatchBridge(
-            publish: (_, final _) {},
+            publish: (_, _) {},
             unpublish: (_) {},
-            publishResource: (_, final _) {},
+            publishResource: (_, _) {},
             unpublishResource: (_) {},
-            publishResourceTemplate: (final template, final impl) {
+            publishResourceTemplate: (template, impl) {
               publishedTemplates[template.uriTemplate] = impl;
             },
           ),
@@ -37,7 +37,7 @@ void main() {
             name: 'application_errors',
             description: 'Get N application errors',
             mimeType: 'application/json',
-            handler: (final uri) async {
+            handler: (uri) async {
               final count = Uri.parse(uri).pathSegments.last;
               return AgentResult.success(
                 data: <String, Object?>{

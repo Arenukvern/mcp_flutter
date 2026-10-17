@@ -38,7 +38,7 @@ void main() {
         future,
         throwsA(
           isA<StateError>().having(
-            (final e) => e.message,
+            (e) => e.message,
             'message',
             contains('never appears'),
           ),
@@ -79,20 +79,20 @@ void main() {
       final scenario = Scenario('happy', steps: [
         (
           'step one',
-          (final context) async {
+          (context) async {
             context.bag['value'] = 41;
             context.report.pass('step one');
           },
         ),
         (
           'step two',
-          (final context) async {
+          (context) async {
             context.report.pass('answer ${context.take<int>('value') + 1}');
           },
         ),
       ]);
       expect(await scenario.run(), isTrue);
-      expect(scenario.report.checks.map((final c) => c.name),
+      expect(scenario.report.checks.map((c) => c.name),
           ['step one', 'answer 42']);
     });
 
@@ -102,13 +102,13 @@ void main() {
       final scenario = Scenario('unhappy', steps: [
         (
           'boom',
-          (final context) async {
+          (context) async {
             context.report.fail('boom', 'detail');
           },
         ),
         (
           'never',
-          (final context) async {
+          (context) async {
             secondRan = true;
           },
         ),
@@ -123,7 +123,7 @@ void main() {
       final scenario = Scenario('throws', steps: [
         (
           'explodes',
-          (final context) async {
+          (context) async {
             throw StateError('kaboom');
           },
         ),

@@ -2,8 +2,8 @@
 import 'package:flutter_mcp_toolkit_server/src/cli/init_mode.dart';
 
 InitMode detectMode({
-  required final bool binaryOnPath,
-  required final bool mcpServerRegistered,
+  required bool binaryOnPath,
+  required bool mcpServerRegistered,
 }) {
   if (mcpServerRegistered) return InitMode.mcp;
   if (binaryOnPath) return InitMode.cli;

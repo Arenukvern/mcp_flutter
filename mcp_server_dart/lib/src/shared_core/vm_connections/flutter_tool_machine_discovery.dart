@@ -27,10 +27,10 @@ final class FlutterMachineDiscoveryTarget {
   final String? sourceEvent;
 
   FlutterMachineDiscoveryTarget copyWith({
-    final Uri? vmServiceWsUri,
-    final Uri? dtdUri,
-    final int? browserDebugPort,
-    final String? sourceEvent,
+    Uri? vmServiceWsUri,
+    Uri? dtdUri,
+    int? browserDebugPort,
+    String? sourceEvent,
   }) => FlutterMachineDiscoveryTarget(
     vmServiceWsUri: vmServiceWsUri ?? this.vmServiceWsUri,
     dtdUri: dtdUri ?? this.dtdUri,
@@ -104,9 +104,9 @@ final class FlutterToolMachineDiscovery {
       Expando<_DiscoveryCoordinator>();
 
   Future<List<FlutterMachineDiscoveryTarget>> discover({
-    final String? projectDir,
-    final String? device,
-    final Duration timeout = const Duration(milliseconds: 2500),
+    String? projectDir,
+    String? device,
+    Duration timeout = const Duration(milliseconds: 2500),
   }) {
     final key = (
       projectDir: _normalizePath(projectDir),
@@ -135,15 +135,15 @@ final class FlutterToolMachineDiscovery {
     coordinator.pending[key] = tracked;
     coordinator.tail = operation.then<void>(
       (_) {},
-      onError: (final Object _, final StackTrace _) {},
+      onError: (Object _, StackTrace _) {},
     );
     return tracked;
   }
 
   Future<List<FlutterMachineDiscoveryTarget>> _runDiscovery({
-    final String? projectDir,
-    final String? device,
-    final Duration timeout = const Duration(milliseconds: 2500),
+    String? projectDir,
+    String? device,
+    Duration timeout = const Duration(milliseconds: 2500),
   }) async {
     final args = attachArgumentsBuilder(device: device?.trim());
     final byWsUri = <String, FlutterMachineDiscoveryTarget>{};
@@ -194,7 +194,7 @@ final class FlutterToolMachineDiscovery {
       return const <FlutterMachineDiscoveryTarget>[];
     }
 
-    void handleMachineLine(final String line) {
+    void handleMachineLine(String line) {
       final trimmed = line.trim();
       if (trimmed.isEmpty) {
         return;
@@ -250,7 +250,7 @@ final class FlutterToolMachineDiscovery {
     stderrSub = process.stderr
         .transform(utf8.decoder)
         .transform(const LineSplitter())
-        .listen((final line) {
+        .listen((line) {
           if (stderrLines.length < 8) {
             stderrLines.add(line.trim());
           }
@@ -259,7 +259,7 @@ final class FlutterToolMachineDiscovery {
     try {
       await Future.any<void>([
         stopCompleter.future,
-        process.exitCode.then((final _) {}),
+        process.exitCode.then((_) {}),
         Future<void>.delayed(timeout),
       ]);
     } finally {
@@ -280,7 +280,7 @@ final class FlutterToolMachineDiscovery {
 
     final discovered = byWsUri.values.toList()
       ..sort(
-        (final a, final b) =>
+        (a, b) =>
             a.vmServiceWsUri.toString().compareTo(b.vmServiceWsUri.toString()),
       );
 
@@ -288,7 +288,7 @@ final class FlutterToolMachineDiscovery {
       logger(
         LoggingLevel.debug,
         'Flutter machine discovery produced no VM URIs. stderr: '
-        '${stderrLines.where((final line) => line.isNotEmpty).join(' | ')}',
+        '${stderrLines.where((line) => line.isNotEmpty).join(' | ')}',
         logger: 'FlutterMachineDiscovery',
       );
     }
@@ -309,7 +309,7 @@ final class FlutterToolMachineDiscovery {
         byWsUri.putIfAbsent(target.vmServiceWsUri.toString(), () => target);
       }
       return byWsUri.values.toList()..sort(
-        (final a, final b) =>
+        (a, b) =>
             a.vmServiceWsUri.toString().compareTo(b.vmServiceWsUri.toString()),
       );
     } on Exception catch (e) {
@@ -323,7 +323,7 @@ final class FlutterToolMachineDiscovery {
   }
 
   static FlutterMachineEventData parseMachineEvent(
-    final Map<String, Object?> payload,
+    Map<String, Object?> payload,
   ) {
     final eventName =
         _stringAtPath(payload, const <String>['event']) ??
@@ -373,7 +373,7 @@ final class FlutterToolMachineDiscovery {
     );
   }
 
-  static int? _parseBrowserDebugPort(final Map<String, Object?> payload) {
+  static int? _parseBrowserDebugPort(Map<String, Object?> payload) {
     final candidates = <Object?>[
       _objectAtPath(payload, const <String>['params', 'port']),
       _stringAtPath(payload, const <String>['params', 'port']),
@@ -404,7 +404,7 @@ final class FlutterToolMachineDiscovery {
   }
 
   static FlutterMachineDiscoveryTarget? parseProcessDiscoveryLine(
-    final String line,
+    String line,
   ) {
     final trimmed = line.trim();
     if (trimmed.isEmpty ||
@@ -424,7 +424,7 @@ final class FlutterToolMachineDiscovery {
     );
   }
 
-  static Uri? parseProcessVmServiceWsUri(final String commandLine) {
+  static Uri? parseProcessVmServiceWsUri(String commandLine) {
     final match = RegExp(r'--vm-service-uri=([^\s]+)').firstMatch(commandLine);
     final rawValue = match?.group(1);
     if (rawValue == null || rawValue.isEmpty) {
@@ -445,7 +445,7 @@ final class FlutterToolMachineDiscovery {
     }
 
     final tokenSegments = parsed.pathSegments.where(
-      (final segment) => segment.isNotEmpty,
+      (segment) => segment.isNotEmpty,
     );
     if (tokenSegments.isEmpty) {
       return null;
@@ -459,7 +459,7 @@ final class FlutterToolMachineDiscovery {
     );
   }
 
-  static Uri? parseVmServiceWsUri(final String? value) {
+  static Uri? parseVmServiceWsUri(String? value) {
     if (value == null || value.trim().isEmpty) {
       return null;
     }
@@ -480,7 +480,7 @@ final class FlutterToolMachineDiscovery {
     return canonicalizeVmServiceWsUri(parsed);
   }
 
-  static Uri canonicalizeVmServiceWsUri(final Uri uri) {
+  static Uri canonicalizeVmServiceWsUri(Uri uri) {
     final normalizedPath = _normalizeWsPath(uri.path);
     return uri.replace(
       scheme: uri.scheme.toLowerCase(),
@@ -489,7 +489,7 @@ final class FlutterToolMachineDiscovery {
     );
   }
 
-  static Uri? parseAnyUri(final String? value) {
+  static Uri? parseAnyUri(String? value) {
     if (value == null || value.trim().isEmpty) {
       return null;
     }
@@ -505,7 +505,7 @@ final class FlutterToolMachineDiscovery {
     );
   }
 
-  static List<String> _defaultAttachArgumentsBuilder({final String? device}) {
+  static List<String> _defaultAttachArgumentsBuilder({String? device}) {
     final args = <String>['attach', '--machine'];
     final normalizedDevice = device?.trim();
     if (normalizedDevice != null && normalizedDevice.isNotEmpty) {
@@ -531,16 +531,16 @@ final class FlutterToolMachineDiscovery {
 
     return '${result.stdout}'
         .split('\n')
-        .map((final line) => line.trimRight())
-        .where((final line) => line.trim().isNotEmpty)
+        .map((line) => line.trimRight())
+        .where((line) => line.trim().isNotEmpty)
         .toList(growable: false);
   }
 
   static Future<Process> _defaultProcessStarter(
-    final String executable,
-    final List<String> arguments, {
-    final String? workingDirectory,
-    final bool runInShell = false,
+    String executable,
+    List<String> arguments, {
+    String? workingDirectory,
+    bool runInShell = false,
   }) => Process.start(
     executable,
     arguments,
@@ -557,10 +557,10 @@ final class FlutterToolMachineDiscovery {
   static const _windowsRootAlreadyExitedExitCode = 7;
 
   Future<int> _terminateWindowsProcessTree(
-    final int pid, {
-    required final DateTime processStartedAfter,
-    required final DateTime processStartedBefore,
-    required final Duration scriptBudget,
+    int pid, {
+    required DateTime processStartedAfter,
+    required DateTime processStartedBefore,
+    required Duration scriptBudget,
   }) => _runWindowsTerminator('powershell.exe', <String>[
     '-NoLogo',
     '-NoProfile',
@@ -579,9 +579,9 @@ final class FlutterToolMachineDiscovery {
   ], timeout: windowsTreeStopTimeout);
 
   Future<int> _runWindowsTerminator(
-    final String executable,
-    final List<String> arguments, {
-    required final Duration timeout,
+    String executable,
+    List<String> arguments, {
+    required Duration timeout,
   }) async {
     Process terminatorProcess;
     try {
@@ -615,12 +615,12 @@ final class FlutterToolMachineDiscovery {
   }
 
   static String _windowsTreeTerminationScript(
-    final int rootPid, {
-    required final DateTime processStartedAfter,
-    required final DateTime processStartedBefore,
-    required final String expectedFlutterExecutable,
-    required final int waitForExitMs,
-    required final int rescanSeconds,
+    int rootPid, {
+    required DateTime processStartedAfter,
+    required DateTime processStartedBefore,
+    required String expectedFlutterExecutable,
+    required int waitForExitMs,
+    required int rescanSeconds,
   }) =>
       r'''
 $rootPid = __ROOT_PID__
@@ -749,7 +749,7 @@ exit 6
             expectedFlutterExecutable.replaceAll("'", "''"),
           );
 
-  static String _normalizeWsPath(final String path) {
+  static String _normalizeWsPath(String path) {
     final rawPath = path.trim();
     if (rawPath.isEmpty) {
       return '/ws';
@@ -757,7 +757,7 @@ exit 6
     return rawPath.startsWith('/') ? rawPath : '/$rawPath';
   }
 
-  static String? _normalizePath(final String? path) {
+  static String? _normalizePath(String? path) {
     if (path == null) {
       return null;
     }
@@ -765,7 +765,7 @@ exit 6
     return trimmed.isEmpty ? null : trimmed;
   }
 
-  static Map<String, Object?>? _decodeJsonMap(final String line) {
+  static Map<String, Object?>? _decodeJsonMap(String line) {
     try {
       final decoded = jsonDecode(line);
       if (decoded is Map<String, Object?>) {
@@ -780,7 +780,7 @@ exit 6
     return null;
   }
 
-  static Object? _objectAtPath(final Object? root, final List<String> path) {
+  static Object? _objectAtPath(Object? root, List<String> path) {
     Object? current = root;
     for (final segment in path) {
       if (current is! Map) {
@@ -794,7 +794,7 @@ exit 6
     return current;
   }
 
-  static String? _stringAtPath(final Object? root, final List<String> path) {
+  static String? _stringAtPath(Object? root, List<String> path) {
     Object? current = root;
     for (final segment in path) {
       if (current is! Map) {
@@ -814,7 +814,7 @@ exit 6
     return trimmed.isEmpty ? null : trimmed;
   }
 
-  static String? _firstNonEmpty(final List<String?> values) {
+  static String? _firstNonEmpty(List<String?> values) {
     for (final value in values) {
       if (value != null && value.isNotEmpty) {
         return value;
@@ -823,7 +823,7 @@ exit 6
     return null;
   }
 
-  static String? _hostPortKey(final Uri uri) {
+  static String? _hostPortKey(Uri uri) {
     if (uri.host.isEmpty || !uri.hasPort || uri.port <= 0) {
       return null;
     }
@@ -831,9 +831,9 @@ exit 6
   }
 
   Future<void> _requestStop(
-    final Process process, {
-    required final DateTime processStartedAfter,
-    required final DateTime processStartedBefore,
+    Process process, {
+    required DateTime processStartedAfter,
+    required DateTime processStartedBefore,
   }) async {
     if (isWindows ?? Platform.isWindows) {
       final terminatorExitCode = await _terminateWindowsProcessTree(

@@ -25,7 +25,7 @@ final class LogTap {
   /// replayed — use [waitFor]/[lines] for that).
   Stream<String> get stream => _controller.stream;
 
-  void add(final String line) {
+  void add(String line) {
     _lines.add(line);
     if (_lines.length > maxLines) {
       _lines.removeRange(0, _lines.length - maxLines);
@@ -34,18 +34,18 @@ final class LogTap {
   }
 
   /// First line matching [pattern], or null.
-  String? firstMatch(final Pattern pattern) {
+  String? firstMatch(Pattern pattern) {
     for (final line in _lines) {
       if (line.contains(pattern)) return line;
     }
     return null;
   }
 
-  int count(final Pattern pattern) =>
-      _lines.where((final line) => line.contains(pattern)).length;
+  int count(Pattern pattern) =>
+      _lines.where((line) => line.contains(pattern)).length;
 
   /// The last [n] retained lines (fewer if the buffer is younger).
-  List<String> tail(final int n) =>
+  List<String> tail(int n) =>
       _lines.length <= n ? List.of(_lines) : _lines.sublist(_lines.length - n);
 
   /// Waits up to [timeout] for a line matching [pattern]; returns it.
@@ -53,9 +53,9 @@ final class LogTap {
   /// or [StateError] if the tap closes first (the child process died —
   /// nothing more can match).
   Future<String> waitFor(
-    final Pattern pattern, {
-    final Duration timeout = const Duration(seconds: 30),
-    final Duration poll = const Duration(milliseconds: 100),
+    Pattern pattern, {
+    Duration timeout = const Duration(seconds: 30),
+    Duration poll = const Duration(milliseconds: 100),
   }) async {
     final existing = firstMatch(pattern);
     if (existing != null) return existing;
@@ -63,7 +63,7 @@ final class LogTap {
     final wait = (pattern, done);
     _waits.add(wait);
     void settled() => _waits.remove(wait);
-    final sub = _controller.stream.listen((final line) {
+    final sub = _controller.stream.listen((line) {
       if (!done.isCompleted && line.contains(pattern)) {
         settled();
         done.complete(line);

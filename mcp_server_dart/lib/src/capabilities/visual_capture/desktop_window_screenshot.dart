@@ -13,17 +13,17 @@ typedef RunProcessFn =
 // ignore: one_member_abstracts
 abstract interface class DesktopWindowScreenshotService {
   Future<DesktopWindowScreenshotCapture?> capture({
-    required final String projectDir,
-    required final String device,
-    required final bool compress,
-    final int? targetPid,
-    final String? cacheDir,
+    required String projectDir,
+    required String device,
+    required bool compress,
+    int? targetPid,
+    String? cacheDir,
   });
 
   Future<Map<String, Object?>> focus({
-    required final String device,
-    final int? targetPid,
-    final String? cacheDir,
+    required String device,
+    int? targetPid,
+    String? cacheDir,
   });
 }
 
@@ -39,8 +39,8 @@ final class DesktopWindowScreenshotCapture {
   final Map<String, Object?> metadata;
 
   Map<String, Object?> toJson({
-    required final List<String> fileUrls,
-    final bool includeImages = true,
+    required List<String> fileUrls,
+    bool includeImages = true,
   }) => <String, Object?>{
     'images': includeImages ? images : const <String>[],
     'fileUrls': fileUrls,
@@ -64,7 +64,7 @@ final class DesktopWindowCaptureException implements Exception {
 
 final class MacOsDesktopWindowScreenshotService
     implements DesktopWindowScreenshotService, VisualCapturePlatformAdapter {
-  MacOsDesktopWindowScreenshotService({final RunProcessFn? runProcess})
+  MacOsDesktopWindowScreenshotService({RunProcessFn? runProcess})
     : _runProcess = runProcess ?? _defaultRunProcess;
 
   final RunProcessFn _runProcess;
@@ -91,7 +91,7 @@ final class MacOsDesktopWindowScreenshotService
   String get truthMode => screenshotModeDesktopWindow;
 
   @override
-  bool supportsPlatform(final String effectivePlatform) {
+  bool supportsPlatform(String effectivePlatform) {
     if (!Platform.isMacOS) {
       return false;
     }
@@ -103,9 +103,9 @@ final class MacOsDesktopWindowScreenshotService
 
   @override
   Future<PermissionBrokerResult> status({
-    required final PermissionKind kind,
-    required final PermissionPolicy policy,
-    required final CoreRuntimeConfiguration configuration,
+    required PermissionKind kind,
+    required PermissionPolicy policy,
+    required CoreRuntimeConfiguration configuration,
   }) async {
     final payload = await _runHelper(
       command: 'status',
@@ -121,9 +121,9 @@ final class MacOsDesktopWindowScreenshotService
 
   @override
   Future<PermissionBrokerResult> request({
-    required final PermissionKind kind,
-    required final PermissionPolicy policy,
-    required final CoreRuntimeConfiguration configuration,
+    required PermissionKind kind,
+    required PermissionPolicy policy,
+    required CoreRuntimeConfiguration configuration,
   }) async {
     final payload = await _runHelper(
       command: 'request',
@@ -139,9 +139,9 @@ final class MacOsDesktopWindowScreenshotService
 
   @override
   Future<PermissionBrokerResult> openSettings({
-    required final PermissionKind kind,
-    required final PermissionPolicy policy,
-    required final CoreRuntimeConfiguration configuration,
+    required PermissionKind kind,
+    required PermissionPolicy policy,
+    required CoreRuntimeConfiguration configuration,
   }) async {
     final payload = await _runHelper(
       command: 'open-settings',
@@ -157,9 +157,9 @@ final class MacOsDesktopWindowScreenshotService
 
   @override
   Future<Map<String, Object?>> focus({
-    required final String device,
-    final int? targetPid,
-    final String? cacheDir,
+    required String device,
+    int? targetPid,
+    String? cacheDir,
   }) async {
     if (!_supportsHostDevice(device)) {
       return <String, Object?>{
@@ -181,11 +181,11 @@ final class MacOsDesktopWindowScreenshotService
 
   @override
   Future<DesktopWindowScreenshotCapture?> capture({
-    required final String projectDir,
-    required final String device,
-    required final bool compress,
-    final int? targetPid,
-    final String? cacheDir,
+    required String projectDir,
+    required String device,
+    required bool compress,
+    int? targetPid,
+    String? cacheDir,
   }) async {
     if (!_supportsHostDevice(device)) {
       return null;
@@ -250,9 +250,9 @@ final class MacOsDesktopWindowScreenshotService
   }
 
   Future<Map<String, Object?>> _runHelper({
-    required final String command,
-    required final String? cacheDir,
-    final List<String> trailing = const <String>[],
+    required String command,
+    required String? cacheDir,
+    List<String> trailing = const <String>[],
   }) async {
     final binaryPath = await _resolveHelperBinary(cacheDir: cacheDir);
     final result = await _runProcess(binaryPath, <String>[
@@ -283,7 +283,7 @@ final class MacOsDesktopWindowScreenshotService
     return _parsePayload('${result.stdout}');
   }
 
-  Future<String> _resolveHelperBinary({required final String? cacheDir}) async {
+  Future<String> _resolveHelperBinary({required String? cacheDir}) async {
     final helperDir = Directory(
       path.join(cacheDir ?? _fallbackCacheDir(), 'cache', 'macos_helper'),
     )..createSync(recursive: true);
@@ -315,10 +315,10 @@ final class MacOsDesktopWindowScreenshotService
   }
 
   PermissionBrokerResult _permissionResultFromHelperPayload({
-    required final Map<String, Object?> payload,
-    required final PermissionKind kind,
-    required final PermissionPolicy policy,
-    required final PermissionStatus fallbackStatus,
+    required Map<String, Object?> payload,
+    required PermissionKind kind,
+    required PermissionPolicy policy,
+    required PermissionStatus fallbackStatus,
   }) {
     final status =
         _parseHelperPermissionStatus(payload['status']) ?? fallbackStatus;
@@ -340,11 +340,11 @@ final class MacOsDesktopWindowScreenshotService
 }
 
 Future<ProcessResult> _defaultRunProcess(
-  final String executable,
-  final List<String> arguments,
+  String executable,
+  List<String> arguments,
 ) => Process.run(executable, arguments);
 
-String helperSourceHash(final String source) {
+String helperSourceHash(String source) {
   // ignore: avoid_js_rounded_ints
   var hash = 0xcbf29ce484222325;
   for (final codeUnit in source.codeUnits) {
@@ -357,7 +357,7 @@ String helperSourceHash(final String source) {
 String _fallbackCacheDir() =>
     path.join(Directory.systemTemp.path, 'flutter_mcp_visual_capture');
 
-String? _cacheDir(final String? stateRootDir) {
+String? _cacheDir(String? stateRootDir) {
   final value = stateRootDir?.trim();
   if (value == null || value.isEmpty) {
     return null;
@@ -365,7 +365,7 @@ String? _cacheDir(final String? stateRootDir) {
   return value;
 }
 
-bool _supportsHostDevice(final String device) {
+bool _supportsHostDevice(String device) {
   if (!Platform.isMacOS) {
     return false;
   }
@@ -381,12 +381,12 @@ bool _supportsHostDevice(final String device) {
   }
 }
 
-bool _isWebHostDevice(final String device) =>
+bool _isWebHostDevice(String device) =>
     device == 'chrome' || device == 'web' || device == 'web-server';
 
 List<String> _windowCandidates({
-  required final String projectDir,
-  required final String device,
+  required String projectDir,
+  required String device,
 }) {
   if (device == 'ios') {
     return inferIosSimulatorCandidates();
@@ -405,7 +405,7 @@ List<String> inferChromeWindowCandidates() => const <String>[
   'chrome',
 ];
 
-List<String> inferMacOsAppCandidates({required final String projectDir}) {
+List<String> inferMacOsAppCandidates({required String projectDir}) {
   final candidates = <String>{};
 
   final debugProductsDir = Directory(
@@ -415,7 +415,7 @@ List<String> inferMacOsAppCandidates({required final String projectDir}) {
     final bundles = debugProductsDir
         .listSync(followLinks: false)
         .whereType<Directory>()
-        .where((final entry) => entry.path.endsWith('.app'));
+        .where((entry) => entry.path.endsWith('.app'));
     for (final bundle in bundles) {
       candidates.add(path.basenameWithoutExtension(bundle.path));
       final executableDir = Directory(
@@ -446,12 +446,12 @@ List<String> inferMacOsAppCandidates({required final String projectDir}) {
     }
   }
 
-  final sorted = candidates.where((final value) => value.isNotEmpty).toList()
+  final sorted = candidates.where((value) => value.isNotEmpty).toList()
     ..sort();
   return sorted;
 }
 
-Map<String, Object?> _parsePayload(final String stdoutText) {
+Map<String, Object?> _parsePayload(String stdoutText) {
   final trimmed = stdoutText.trim();
   if (trimmed.isEmpty) {
     return const <String, Object?>{};
@@ -460,7 +460,7 @@ Map<String, Object?> _parsePayload(final String stdoutText) {
   return _asObject(decoded);
 }
 
-Map<String, Object?>? _tryParsePayload(final String stdoutText) {
+Map<String, Object?>? _tryParsePayload(String stdoutText) {
   try {
     return _parsePayload(stdoutText);
   } on FormatException {
@@ -468,7 +468,7 @@ Map<String, Object?>? _tryParsePayload(final String stdoutText) {
   }
 }
 
-Map<String, Object?> _asObject(final Object? value) {
+Map<String, Object?> _asObject(Object? value) {
   if (value is Map<String, Object?>) {
     return value;
   }
@@ -478,7 +478,7 @@ Map<String, Object?> _asObject(final Object? value) {
   return const <String, Object?>{};
 }
 
-PermissionStatus? _parseHelperPermissionStatus(final Object? value) {
+PermissionStatus? _parseHelperPermissionStatus(Object? value) {
   final normalized = '$value'.trim().toLowerCase();
   for (final candidate in PermissionStatus.values) {
     if (candidate.wireName == normalized) {

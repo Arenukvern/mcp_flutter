@@ -11,10 +11,10 @@ export 'package:intentcall_core/intentcall_core_migration.dart'
         migrateAgentEntriesAtPath;
 
 Future<int> runMigrateAgentEntries({
-  required final String path,
-  required final bool checkOnly,
-  required final bool write,
-  final String defaultNamespace = 'app',
+  required String path,
+  required bool checkOnly,
+  required bool write,
+  String defaultNamespace = 'app',
 }) async {
   if (checkOnly && write) {
     stderr.writeln('Use either --check or --write, not both.');
@@ -34,7 +34,7 @@ Future<int> runMigrateAgentEntries({
     return 66;
   }
 
-  for (final result in report.results.where((final r) => r.changed)) {
+  for (final result in report.results.where((r) => r.changed)) {
     stdout.writeln('would migrate: ${result.path}');
     if (write && !checkOnly) {
       stdout.writeln('  wrote: ${result.path}');

@@ -45,15 +45,15 @@ final class CoreResult {
   });
 
   factory CoreResult.success({
-    final Object? data,
-    final Map<String, Object?> meta = const <String, Object?>{},
+    Object? data,
+    Map<String, Object?> meta = const <String, Object?>{},
   }) => CoreResult(ok: true, data: data, meta: meta);
 
   factory CoreResult.failure({
-    required final String code,
-    required final String message,
-    final Object? details,
-    final Map<String, Object?> meta = const <String, Object?>{},
+    required String code,
+    required String message,
+    Object? details,
+    Map<String, Object?> meta = const <String, Object?>{},
   }) {
     final descriptor = descriptorForErrorCode(code);
     return CoreResult(
@@ -80,7 +80,7 @@ final class CoreResult {
     return error?.resolvedDescriptor.exitCode ?? exitCodeForErrorCode(null);
   }
 
-  CoreResult withMeta(final Map<String, Object?> nextMeta) =>
+  CoreResult withMeta(Map<String, Object?> nextMeta) =>
       CoreResult(ok: ok, data: data, error: error, meta: nextMeta);
 
   Map<String, Object?> toEnvelopeJson() => {

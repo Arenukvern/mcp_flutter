@@ -9,7 +9,7 @@ import '_internal/handler_helpers.dart';
 
 /// Registers semantic tools with the host through [context].
 /// Registers: semantic_snapshot.
-void registerSemanticTools(final CapabilityContext context) {
+void registerSemanticTools(CapabilityContext context) {
   final runner = context.require<CommandRunner>();
 
   context.registerTool(
@@ -22,7 +22,7 @@ void registerSemanticTools(final CapabilityContext context) {
           'desktop and web, hover the element that should own it and '
           'snapshot again.',
       inputSchema: semanticSnapshotInputSchema(),
-      handler: (final args) async {
+      handler: (args) async {
         final rawFields = args['fields'];
         return runCommand(
           runner,
@@ -31,7 +31,7 @@ void registerSemanticTools(final CapabilityContext context) {
             identifierPrefix: stringArgOrNull(args['identifierPrefix']),
             subtreeOf: stringArgOrNull(args['subtreeOf']),
             fields: rawFields is List
-                ? rawFields.map((final f) => f.toString()).toList()
+                ? rawFields.map((f) => f.toString()).toList()
                 : null,
           ),
         );

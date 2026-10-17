@@ -43,7 +43,7 @@ typedef ParsedRegisterDynamicsPayload = ({
 /// [Tool.fromMap] / [Resource.fromMap] (fail-closed; no partial registration).
 @visibleForTesting
 ParsedRegisterDynamicsPayload parseRegisterDynamicsPayload(
-  final Map<String, dynamic> data,
+  Map<String, dynamic> data,
 ) {
   final failures = <String>[];
   final appId = DynamicAppId(jsonDecodeString(data['appId']));
@@ -156,7 +156,7 @@ final class RegistryDiscoveryService {
     ]);
 
     final listener = mergedStream.toStream().listen(
-      (final e) {
+      (e) {
         // final method = e.data['method'];
         if (e.kind == EventKind.kServiceRegistered) {
           logger.log(
@@ -168,7 +168,7 @@ final class RegistryDiscoveryService {
         }
         unawaited(_handleMCPToolkitEvent(e));
       },
-      onError: (final error, final stackTrace) => logger.log(
+      onError: (error, stackTrace) => logger.log(
         LoggingLevel.warning,
         'Error in DTD event listener: $error'
         'stackTrace: $stackTrace',
@@ -191,7 +191,7 @@ final class RegistryDiscoveryService {
   }
 
   /// Handle MCP Toolkit events from DTD
-  Future<void> _handleMCPToolkitEvent(final DTDEvent event) async {
+  Future<void> _handleMCPToolkitEvent(DTDEvent event) async {
     try {
       final eventData = event.data;
       final eventKind = jsonDecodeString(eventData['kind']);
@@ -257,7 +257,7 @@ final class RegistryDiscoveryService {
 
   /// Process the response from registerDynamics
   Future<void> _processRegistrationResponse(
-    final Map<String, dynamic> data,
+    Map<String, dynamic> data,
   ) async {
     try {
       final parsed = parseRegisterDynamicsPayload(data);
@@ -308,6 +308,6 @@ final class RegistryDiscoveryService {
   /// Test hook for [_processRegistrationResponse].
   @visibleForTesting
   Future<void> processRegistrationResponseForTesting(
-    final Map<String, dynamic> data,
+    Map<String, dynamic> data,
   ) => _processRegistrationResponse(data);
 }

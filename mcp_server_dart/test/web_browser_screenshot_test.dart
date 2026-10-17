@@ -17,11 +17,11 @@ final class _FakeMacHost implements DesktopWindowScreenshotService {
 
   @override
   Future<DesktopWindowScreenshotCapture?> capture({
-    required final String projectDir,
-    required final String device,
-    required final bool compress,
-    final int? targetPid,
-    final String? cacheDir,
+    required String projectDir,
+    required String device,
+    required bool compress,
+    int? targetPid,
+    String? cacheDir,
   }) async {
     if (throws) {
       throw const DesktopWindowCaptureException(message: 'SCK failed');
@@ -31,12 +31,12 @@ final class _FakeMacHost implements DesktopWindowScreenshotService {
 
   @override
   Future<Map<String, Object?>> focus({
-    required final String device,
-    final int? targetPid,
-    final String? cacheDir,
+    required String device,
+    int? targetPid,
+    String? cacheDir,
   }) async => const <String, Object?>{'ok': true};
 
-  bool supportsPlatform(final String effectivePlatform) => false;
+  bool supportsPlatform(String effectivePlatform) => false;
 }
 
 final class _FakeCdpClient implements WebTabPngCapturer {
@@ -46,8 +46,8 @@ final class _FakeCdpClient implements WebTabPngCapturer {
 
   @override
   Future<Uint8List> capturePng({
-    required final WebCdpEndpoint endpoint,
-    final Duration timeout = const Duration(seconds: 12),
+    required WebCdpEndpoint endpoint,
+    Duration timeout = const Duration(seconds: 12),
   }) async => png;
 }
 
@@ -58,7 +58,7 @@ void main() {
       final server = await HttpServer.bind('127.0.0.1', 0);
       addTearDown(server.close);
       final port = server.port;
-      server.listen((final request) async {
+      server.listen((request) async {
         if (request.uri.path == '/json/list') {
           request.response
             ..statusCode = HttpStatus.ok

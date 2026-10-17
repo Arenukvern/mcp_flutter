@@ -43,7 +43,7 @@ void main() {
       ),
     };
 
-    cases.forEach((final name, final testCase) {
+    cases.forEach((name, testCase) {
       test(name, () {
         expect(
           capturedErrorCount(

@@ -17,7 +17,7 @@ abstract interface class CommandRunner implements HostService {
   /// Returns a [CoreResult] — always check [CoreResult.ok] before using
   /// [CoreResult.data]. On failure, [CoreResult.error] contains the structured
   /// [CoreError] envelope with `{code, message, details, descriptor, recovery}`.
-  Future<CoreResult> execute(final CoreCommand command);
+  Future<CoreResult> execute(CoreCommand command);
 
   /// Apply a per-call connection override from a raw argument map.
   ///
@@ -31,6 +31,6 @@ abstract interface class CommandRunner implements HostService {
   /// Mirrors the legacy [applyConnectionOverride] helper so that capability
   /// handlers can reproduce the full interaction_handler.dart behaviour.
   Future<CoreResult?> applyConnectionOverride(
-    final Map<String, Object?>? arguments,
+    Map<String, Object?>? arguments,
   );
 }

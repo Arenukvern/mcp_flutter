@@ -152,7 +152,7 @@ final class _RecordingExecutor implements CoreCommandExecutor {
   CoreCommand? lastCommand;
 
   @override
-  Future<CoreResult> execute(final CoreCommand command) async {
+  Future<CoreResult> execute(CoreCommand command) async {
     lastCommand = command;
     return CoreResult.success(data: const {'ok': true});
   }

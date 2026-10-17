@@ -23,10 +23,10 @@ import 'background_frame_pump.dart';
 /// there only when the caller asked for it.
 extension type const SemanticSnapshotFilter._(Map<String, dynamic> value) {
   factory SemanticSnapshotFilter({
-    final String? identifierPrefix,
-    final String? subtreeOf,
-    final List<String>? fields,
-    final int? maxNodes,
+    String? identifierPrefix,
+    String? subtreeOf,
+    List<String>? fields,
+    int? maxNodes,
   }) => SemanticSnapshotFilter._(<String, dynamic>{
     'identifierPrefix': ?identifierPrefix,
     'subtreeOf': ?subtreeOf,
@@ -42,7 +42,7 @@ extension type const SemanticSnapshotFilter._(Map<String, dynamic> value) {
   /// spaces and all: identifiers are matched whole and prefixes with
   /// `startsWith`, so trimming would select something else. Only a blank one
   /// counts as unasked.
-  factory SemanticSnapshotFilter.fromJson(final Map<String, Object?> json) {
+  factory SemanticSnapshotFilter.fromJson(Map<String, Object?> json) {
     final identifierPrefix = jsonDecodeString(json['identifierPrefix']);
     final subtreeOf = jsonDecodeString(json['subtreeOf']);
     final fields = jsonDecodeListAs<String>(json['fields']);
@@ -100,7 +100,7 @@ extension type const SemanticSnapshotFilter._(Map<String, dynamic> value) {
 
   static const empty = SemanticSnapshotFilter._(<String, dynamic>{});
 
-  static String? _selector(final Object? raw) {
+  static String? _selector(Object? raw) {
     final text = jsonDecodeString(raw);
     return text.trim().isEmpty ? null : text;
   }
@@ -139,10 +139,10 @@ mixin SemanticSnapshotService {
   static int get currentSnapshotId => _snapshotCounter;
 
   /// Look up a [SemanticsNode] captured during the last snapshot.
-  static SemanticsNode? resolveRef(final String ref) => _lastRefMap[ref];
+  static SemanticsNode? resolveRef(String ref) => _lastRefMap[ref];
 
   /// The ref the latest snapshot issued for [node], if it issued one.
-  static String? refFor(final SemanticsNode node) {
+  static String? refFor(SemanticsNode node) {
     for (final entry in _lastRefMap.entries) {
       if (identical(entry.value, node)) return entry.key;
     }
@@ -150,10 +150,10 @@ mixin SemanticSnapshotService {
   }
 
   /// Look up the cached global bounds for a ref from the last snapshot.
-  static ui.Rect? resolveBounds(final String ref) => _lastBoundsMap[ref];
+  static ui.Rect? resolveBounds(String ref) => _lastBoundsMap[ref];
 
   /// Look up the cached global center for a ref from the last snapshot.
-  static ui.Offset? resolveCenter(final String ref) => _lastCenterMap[ref];
+  static ui.Offset? resolveCenter(String ref) => _lastCenterMap[ref];
 
   /// Global bounds of [node] as they are **now**, in logical pixels.
   ///
@@ -161,16 +161,16 @@ mixin SemanticSnapshotService {
   /// (a popped route, a collapsed row). Its captured geometry now describes
   /// whatever took its place, so interaction must refuse the ref rather than
   /// act on those coordinates.
-  static ui.Rect? liveRect(final SemanticsNode? node) =>
+  static ui.Rect? liveRect(SemanticsNode? node) =>
       node == null || !node.attached ? null : _globalRect(node);
 
   /// Global center of [node] as it is **now**, in logical pixels.
-  static ui.Offset? liveCenter(final SemanticsNode? node) =>
+  static ui.Offset? liveCenter(SemanticsNode? node) =>
       liveRect(node)?.center;
 
   /// Visibility metadata for a ref computed from the node's current geometry,
   /// falling back to the snapshot capture when the node is gone.
-  static Map<String, Object?> liveVisibilityForRef(final String ref) {
+  static Map<String, Object?> liveVisibilityForRef(String ref) {
     final rect = liveRect(_lastRefMap[ref]);
     if (rect == null) return visibilityForRef(ref);
     return visibilityForBounds(
@@ -197,7 +197,7 @@ mixin SemanticSnapshotService {
   }
 
   /// Visibility metadata for a cached ref from the last snapshot.
-  static Map<String, Object?> visibilityForRef(final String ref) {
+  static Map<String, Object?> visibilityForRef(String ref) {
     final bounds = resolveBounds(ref);
     final center = resolveCenter(ref);
     final viewport = viewportRect;
@@ -216,9 +216,9 @@ mixin SemanticSnapshotService {
   /// The viewport itself is not part of the answer: a snapshot states it once
   /// in its envelope, and a single-ref reply adds it in [visibilityForRef].
   static Map<String, Object?> visibilityForBounds({
-    required final ui.Rect? bounds,
-    required final ui.Offset? center,
-    required final ui.Rect? viewport,
+    required ui.Rect? bounds,
+    required ui.Offset? center,
+    required ui.Rect? viewport,
   }) {
     final visible =
         bounds != null &&
@@ -288,9 +288,9 @@ mixin SemanticSnapshotService {
   /// semantics tree hasn't been primed yet — e.g. if
   /// [MCPToolkitBinding.initialize] didn't run for some reason.
   static Future<Map<String, Object?>> buildSemanticSnapshot({
-    final SemanticSnapshotFilter? filter,
-    final bool render = false,
-    final bool diff = false,
+    SemanticSnapshotFilter? filter,
+    bool render = false,
+    bool diff = false,
   }) => _buildSnapshot(
     incrementId: true,
     filter: filter,
@@ -311,7 +311,7 @@ mixin SemanticSnapshotService {
   /// caller already owns a live semantics node and must not invalidate or
   /// silently rebind refs from the last public snapshot.
   static Map<String, Object?> visibleSubtreeSignature(
-    final SemanticsNode node,
+    SemanticsNode node,
   ) {
     final viewport = viewportRect;
     if (viewport == null) {
@@ -323,7 +323,7 @@ mixin SemanticSnapshotService {
     }
 
     final entries = <String>[];
-    void walk(final SemanticsNode current) {
+    void walk(SemanticsNode current) {
       final rect = _globalRect(current);
       final visible =
           current != node &&
@@ -343,7 +343,7 @@ mixin SemanticSnapshotService {
           ].join(':'),
         );
       }
-      current.visitChildren((final child) {
+      current.visitChildren((child) {
         walk(child);
         return true;
       });
@@ -367,13 +367,13 @@ mixin SemanticSnapshotService {
   }
 
   static Future<Map<String, Object?>> _buildSnapshot({
-    required final bool incrementId,
-    final SemanticSnapshotFilter? filter,
-    final bool render = false,
-    final bool diff = false,
+    required bool incrementId,
+    SemanticSnapshotFilter? filter,
+    bool render = false,
+    bool diff = false,
   }) async {
     final unknownFields = filter?.fields
-        ?.where((final f) => !semanticSnapshotNodeFields.contains(f))
+        ?.where((f) => !semanticSnapshotNodeFields.contains(f))
         .toList();
     if (unknownFields != null && unknownFields.isNotEmpty) {
       return <String, Object?>{
@@ -383,7 +383,7 @@ mixin SemanticSnapshotService {
         'acceptedFields': semanticSnapshotNodeFields,
         'hint':
             'fields names keys of a snapshot node, and '
-            '${unknownFields.map((final f) => '"$f"').join(', ')} '
+            '${unknownFields.map((f) => '"$f"').join(', ')} '
             '${unknownFields.length == 1 ? 'is' : 'are'} not among them — '
             'pick from acceptedFields. No snapshot was taken.',
       };
@@ -442,10 +442,10 @@ mixin SemanticSnapshotService {
   }
 
   static Future<Map<String, Object?>> _buildSnapshotBody({
-    required final bool incrementId,
-    final SemanticSnapshotFilter? filter,
-    final bool render = false,
-    final bool diff = false,
+    required bool incrementId,
+    SemanticSnapshotFilter? filter,
+    bool render = false,
+    bool diff = false,
   }) async {
     final refMap = <String, SemanticsNode>{};
     final boundsMap = <String, ui.Rect>{};
@@ -543,7 +543,7 @@ mixin SemanticSnapshotService {
 
     final nodes = <Map<String, Object?>>[];
 
-    void walk(final SemanticsNode node, final List<String>? parentChildRefs) {
+    void walk(SemanticsNode node, List<String>? parentChildRefs) {
       if (counter >= maxNodes) {
         truncated = true;
         return;
@@ -556,7 +556,7 @@ mixin SemanticSnapshotService {
 
       // Always walk children even if this node is not interesting.
       if (node.hasChildren) {
-        node.visitChildren((final child) {
+        node.visitChildren((child) {
           walk(child, isInteractive ? childRefs : parentChildRefs);
           return true;
         });
@@ -687,15 +687,15 @@ mixin SemanticSnapshotService {
   /// stays here; the shape work (fields projection, children pruning)
   /// is the shared grammar's ([projectSnapshotNodes]).
   static List<Map<String, Object?>> _applyFilter({
-    required final List<Map<String, Object?>> nodes,
-    required final Map<String, SemanticsNode> refMap,
-    required final SemanticSnapshotFilter filter,
-    required final SemanticsNode? subtreeRoot,
+    required List<Map<String, Object?>> nodes,
+    required Map<String, SemanticsNode> refMap,
+    required SemanticSnapshotFilter filter,
+    required SemanticsNode? subtreeRoot,
   }) {
     final prefix = filter.identifierPrefix;
     return projectSnapshotNodes(
       nodes,
-      keep: (final node) =>
+      keep: (node) =>
           (subtreeRoot == null ||
               _isWithin(refMap[node['ref']! as String], subtreeRoot)) &&
           (prefix == null ||
@@ -706,7 +706,7 @@ mixin SemanticSnapshotService {
   }
 
   /// Whether [node] is [root] or sits below it.
-  static bool _isWithin(final SemanticsNode? node, final SemanticsNode root) {
+  static bool _isWithin(SemanticsNode? node, SemanticsNode root) {
     for (var current = node; current != null; current = current.parent) {
       if (identical(current, root)) return true;
     }
@@ -726,18 +726,18 @@ mixin SemanticSnapshotService {
   }
 
   static SemanticsNode? _findByIdentifier(
-    final SemanticsNode? root,
-    final String identifier,
+    SemanticsNode? root,
+    String identifier,
   ) {
     if (root == null) return null;
     SemanticsNode? found;
-    void walk(final SemanticsNode node) {
+    void walk(SemanticsNode node) {
       if (found != null) return;
       if (node.getSemanticsData().identifier == identifier) {
         found = node;
         return;
       }
-      node.visitChildren((final child) {
+      node.visitChildren((child) {
         walk(child);
         return found == null;
       });
@@ -753,12 +753,12 @@ mixin SemanticSnapshotService {
   /// - [hybrid]: semantics exist but no interactive refs (custom painters + chrome).
   /// - [game_canvas]: no semantics tree (raw canvas / game loop).
   /// - [empty]: no render surface.
-  static String _classifyInteractionSurface(final int interactiveNodeCount) {
+  static String _classifyInteractionSurface(int interactiveNodeCount) {
     if (interactiveNodeCount > 0) return 'flutter_widgets';
     return 'hybrid';
   }
 
-  static Map<String, Object?> _rectToMap(final ui.Rect rect) =>
+  static Map<String, Object?> _rectToMap(ui.Rect rect) =>
       <String, Object?>{
         'left': rect.left,
         'top': rect.top,
@@ -783,7 +783,7 @@ mixin SemanticSnapshotService {
   ///
   /// Longer write-up (symptom, root cause, regression test): repository root
   /// `todo/dpr_resolve_center_bounds.md`.
-  static ui.Rect _globalRect(final SemanticsNode node) {
+  static ui.Rect _globalRect(SemanticsNode node) {
     var rect = node.rect;
     SemanticsNode? current = node;
     while (current != null) {
@@ -830,7 +830,7 @@ mixin SemanticSnapshotService {
 
   /// Returns `true` when a semantics node is interactive or carries a
   /// meaningful label/value that an AI agent should see.
-  static bool _isInteractiveOrMeaningful(final SemanticsData data) {
+  static bool _isInteractiveOrMeaningful(SemanticsData data) {
     // Has a semantic label or value worth surfacing.
     if (data.label.isNotEmpty || data.value.isNotEmpty) return true;
 
@@ -865,7 +865,7 @@ mixin SemanticSnapshotService {
   }
 
   /// Classify the node into a human-readable type string.
-  static String _classifyNode(final SemanticsData data) {
+  static String _classifyNode(SemanticsData data) {
     if (data.hasFlag(SemanticsFlag.isTextField)) return 'textField';
     if (data.hasFlag(SemanticsFlag.isButton)) return 'button';
     if (data.hasFlag(SemanticsFlag.isSlider)) return 'slider';
@@ -887,7 +887,7 @@ mixin SemanticSnapshotService {
   }
 
   /// Return the list of available [SemanticsAction] names.
-  static List<String> _actionNames(final SemanticsData data) {
+  static List<String> _actionNames(SemanticsData data) {
     final names = <String>[];
     for (final action in SemanticsAction.values) {
       if (data.hasAction(action)) {
@@ -897,7 +897,7 @@ mixin SemanticSnapshotService {
     return names;
   }
 
-  static String _semanticsActionName(final SemanticsAction action) {
+  static String _semanticsActionName(SemanticsAction action) {
     if (action == SemanticsAction.tap) return 'tap';
     if (action == SemanticsAction.longPress) return 'longPress';
     if (action == SemanticsAction.scrollLeft) return 'scrollLeft';
@@ -934,7 +934,7 @@ mixin SemanticSnapshotService {
     return action.toString();
   }
 
-  static int _stableHash(final List<String> values) {
+  static int _stableHash(List<String> values) {
     var hash = 0x811c9dc5;
     for (final value in values) {
       for (final unit in value.codeUnits) {

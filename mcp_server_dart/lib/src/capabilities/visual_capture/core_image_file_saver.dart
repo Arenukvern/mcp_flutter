@@ -35,7 +35,7 @@ final class CoreImageFileSaver {
     return folder;
   }
 
-  Future<String> saveImageToFile(final String base64Image) async {
+  Future<String> saveImageToFile(String base64Image) async {
     final folder = await _ensureTemporalFolder();
     final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-');
     final fileName = 'screenshot-$timestamp.png';
@@ -55,7 +55,7 @@ final class CoreImageFileSaver {
   }
 
   Future<List<String>> saveImagesToFiles(
-    final List<String> base64Images,
+    List<String> base64Images,
   ) async {
     final fileUrls = <String>[];
     for (final image in base64Images) {

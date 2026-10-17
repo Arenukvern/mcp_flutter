@@ -20,7 +20,7 @@ import 'package:flutter_mcp_toolkit_server/src/cli/session/flutter_session_conne
 import 'package:flutter_mcp_toolkit_server/src/cli/webmcp_command.dart';
 import 'package:intentcall_session/intentcall_session.dart';
 
-Future<void> main(final List<String> args) async {
+Future<void> main(List<String> args) async {
   late final ArgResults parsed;
   try {
     parsed = _argParser.parse(args);
@@ -220,15 +220,15 @@ Future<void> main(final List<String> args) async {
 }
 
 Future<CoreResult> _runOneShot({
-  required final ArgResults parsed,
-  required final ArgResults topLevel,
-  required final DefaultCoreCommandExecutor executor,
-  required final CommandCatalog catalog,
-  required final CoreRuntimeConfiguration configuration,
-  required final IntentSessionManager sessionManager,
-  required final CommandSnapshotService commandSnapshots,
-  required final BundleBuilder bundleBuilder,
-  required final DoctorRunner doctorRunner,
+  required ArgResults parsed,
+  required ArgResults topLevel,
+  required DefaultCoreCommandExecutor executor,
+  required CommandCatalog catalog,
+  required CoreRuntimeConfiguration configuration,
+  required IntentSessionManager sessionManager,
+  required CommandSnapshotService commandSnapshots,
+  required BundleBuilder bundleBuilder,
+  required DoctorRunner doctorRunner,
 }) async {
   try {
     switch (topLevel.name) {
@@ -392,11 +392,11 @@ Future<CoreResult> _runOneShot({
 }
 
 Future<CoreResult> _runBatchCommand({
-  required final ArgResults parsed,
-  required final ArgResults command,
-  required final DefaultCoreCommandExecutor executor,
-  required final CommandCatalog catalog,
-  required final IntentSessionManager sessionManager,
+  required ArgResults parsed,
+  required ArgResults command,
+  required DefaultCoreCommandExecutor executor,
+  required CommandCatalog catalog,
+  required IntentSessionManager sessionManager,
 }) async {
   final steps = _parseBatchStepsJson(command.option('steps'));
   if (steps.isEmpty) {
@@ -439,7 +439,7 @@ Future<CoreResult> _runBatchCommand({
   }
 
   final failureCount = stepResults
-      .where((final result) => result['ok'] != true)
+      .where((result) => result['ok'] != true)
       .length;
   final summary = <String, Object?>{
     'total': steps.length,
@@ -463,10 +463,10 @@ Future<CoreResult> _runBatchCommand({
 }
 
 Future<CoreResult> _runSnapshotCommand({
-  required final ArgResults snapshotCommand,
-  required final CommandSnapshotService commandSnapshots,
-  required final DefaultCoreCommandExecutor executor,
-  required final CommandCatalog catalog,
+  required ArgResults snapshotCommand,
+  required CommandSnapshotService commandSnapshots,
+  required DefaultCoreCommandExecutor executor,
+  required CommandCatalog catalog,
 }) async {
   switch (snapshotCommand.name) {
     case 'create':
@@ -543,10 +543,10 @@ Future<CoreResult> _runSnapshotCommand({
 }
 
 Future<CoreResult> _runValidateRuntime({
-  required final ArgResults parsed,
-  required final ArgResults command,
-  required final DefaultCoreCommandExecutor executor,
-  required final DoctorRunner doctorRunner,
+  required ArgResults parsed,
+  required ArgResults command,
+  required DefaultCoreCommandExecutor executor,
+  required DoctorRunner doctorRunner,
 }) async {
   final timeoutMs = _parsePositiveIntOption(
     command.option('timeout-ms'),
@@ -623,9 +623,9 @@ Future<CoreResult> _runValidateRuntime({
   };
 
   Future<CoreResult?> runStep(
-    final String name,
-    final CoreCommand coreCommand, {
-    final bool Function(CoreResult result)? shouldRetry,
+    String name,
+    CoreCommand coreCommand, {
+    bool Function(CoreResult result)? shouldRetry,
   }) async {
     final executed = await _executeWithRetry(
       run: () => executor.execute(coreCommand),
@@ -691,7 +691,7 @@ Future<CoreResult> _runValidateRuntime({
   final extensionStep = steps.last;
   final extensionData = extensionStep['data'];
   final extensionSet = switch (extensionData) {
-    final List values => values.map((final value) => '$value').toSet(),
+    final List values => values.map((value) => '$value').toSet(),
     _ => <String>{},
   };
   final requiredExtensions = <String>{
@@ -854,7 +854,7 @@ Future<CoreResult> _runValidateRuntime({
     }
   }
 
-  final failedSteps = steps.where((final step) => step['ok'] != true).length;
+  final failedSteps = steps.where((step) => step['ok'] != true).length;
   final requiredSorted = requiredExtensions.toList()..sort();
   final primaryCapture = _effectiveValidateRuntimeCaptureData(
     steps,
@@ -920,11 +920,11 @@ Future<CoreResult> _runValidateRuntime({
 }
 
 Future<CoreResult> _runPermissionsCommand({
-  required final ArgResults parsed,
-  required final ArgResults command,
-  required final CoreRuntimeConfiguration configuration,
-  required final DefaultCoreCommandExecutor executor,
-  required final IntentSessionManager sessionManager,
+  required ArgResults parsed,
+  required ArgResults command,
+  required CoreRuntimeConfiguration configuration,
+  required DefaultCoreCommandExecutor executor,
+  required IntentSessionManager sessionManager,
 }) async {
   final actionCommand = command.command;
   if (actionCommand == null) {
@@ -970,7 +970,7 @@ Future<CoreResult> _runPermissionsCommand({
   return CoreResult.success(data: result.toJson());
 }
 
-Future<PersistedState> _readBootstrapState(final StateStore store) async {
+Future<PersistedState> _readBootstrapState(StateStore store) async {
   try {
     return await store.read();
   } on Exception {
@@ -979,11 +979,11 @@ Future<PersistedState> _readBootstrapState(final StateStore store) async {
 }
 
 Future<CoreResult?> _preconnectIfNeeded({
-  required final ArgResults parsed,
-  required final CoreCommand command,
-  required final IntentSessionManager sessionManager,
-  required final DefaultCoreCommandExecutor executor,
-  final ConnectCommand? explicitConnectionOverride,
+  required ArgResults parsed,
+  required CoreCommand command,
+  required IntentSessionManager sessionManager,
+  required DefaultCoreCommandExecutor executor,
+  ConnectCommand? explicitConnectionOverride,
 }) => preconnectForExecution(
   command: command,
   executor: executor,
@@ -993,12 +993,12 @@ Future<CoreResult?> _preconnectIfNeeded({
 );
 
 Future<CoreResult> _executeExecCommand({
-  required final ArgResults parsed,
-  required final DefaultCoreCommandExecutor executor,
-  required final CommandCatalog catalog,
-  required final IntentSessionManager sessionManager,
-  required final String name,
-  required final Map<String, Object?> rawArgs,
+  required ArgResults parsed,
+  required DefaultCoreCommandExecutor executor,
+  required CommandCatalog catalog,
+  required IntentSessionManager sessionManager,
+  required String name,
+  required Map<String, Object?> rawArgs,
 }) async {
   try {
     final effectiveArgs = _applyCliPermissionDefaults(name, rawArgs);
@@ -1044,8 +1044,8 @@ Future<CoreResult> _executeExecCommand({
 }
 
 Map<String, Object?> _applyCliPermissionDefaults(
-  final String name,
-  final Map<String, Object?> rawArgs,
+  String name,
+  Map<String, Object?> rawArgs,
 ) {
   final withDefaults = Map<String, Object?>.from(rawArgs);
   if (withDefaults.containsKey('permissionPolicy')) {
@@ -1058,7 +1058,7 @@ Map<String, Object?> _applyCliPermissionDefaults(
   return withDefaults;
 }
 
-Map<String, Object?> _parseArgumentsJson(final String? value) {
+Map<String, Object?> _parseArgumentsJson(String? value) {
   if (value == null || value.isEmpty) {
     return const <String, Object?>{};
   }
@@ -1073,7 +1073,7 @@ Map<String, Object?> _parseArgumentsJson(final String? value) {
   throw const FormatException('Expected JSON object for --args');
 }
 
-List<_BatchStep> _parseBatchStepsJson(final String? value) {
+List<_BatchStep> _parseBatchStepsJson(String? value) {
   if (value == null || value.isEmpty) {
     throw const FormatException('Expected JSON array for --steps');
   }
@@ -1084,7 +1084,7 @@ List<_BatchStep> _parseBatchStepsJson(final String? value) {
   }
 
   return decoded.indexed
-      .map((final entry) {
+      .map((entry) {
         final (index, rawStep) = entry;
         final step = switch (rawStep) {
           final Map<String, Object?> value => value,
@@ -1110,7 +1110,7 @@ List<_BatchStep> _parseBatchStepsJson(final String? value) {
       .toList(growable: false);
 }
 
-SafeWriteOptions _safeWriteOptionsFrom(final ArgResults command) =>
+SafeWriteOptions _safeWriteOptionsFrom(ArgResults command) =>
     SafeWriteOptions(
       check: command.flag(_check),
       diff: command.flag(_diff),
@@ -1118,7 +1118,7 @@ SafeWriteOptions _safeWriteOptionsFrom(final ArgResults command) =>
       noOverwrite: command.flag(_noOverwrite),
     );
 
-bool _containsBlockedWrite(final Object? payload) {
+bool _containsBlockedWrite(Object? payload) {
   final map = switch (payload) {
     final Map<String, Object?> value => value,
     final Map value => value.cast<String, Object?>(),
@@ -1144,7 +1144,7 @@ bool _containsBlockedWrite(final Object? payload) {
   return false;
 }
 
-LoggingLevel _parseLogLevel(final String? level) => switch (level) {
+LoggingLevel _parseLogLevel(String? level) => switch (level) {
   'debug' => LoggingLevel.debug,
   'info' => LoggingLevel.info,
   'notice' => LoggingLevel.notice,
@@ -1157,8 +1157,8 @@ LoggingLevel _parseLogLevel(final String? level) => switch (level) {
 };
 
 List<int> _parseScanPortsOption(
-  final String? value, {
-  required final CoreLogger logger,
+  String? value, {
+  required CoreLogger logger,
 }) {
   final spec = _nonEmptyOption(value);
   final ports = CorePortScanner.parseScanPortsSpec(spec);
@@ -1173,8 +1173,8 @@ List<int> _parseScanPortsOption(
 }
 
 int _parsePositiveIntOption(
-  final String? value, {
-  required final int fallback,
+  String? value, {
+  required int fallback,
 }) {
   final parsed = int.tryParse(value ?? '');
   if (parsed == null || parsed <= 0) {
@@ -1184,8 +1184,8 @@ int _parsePositiveIntOption(
 }
 
 int _parseNonNegativeIntOption(
-  final String? value, {
-  required final int fallback,
+  String? value, {
+  required int fallback,
 }) {
   final parsed = int.tryParse(value ?? '');
   if (parsed == null || parsed < 0) {
@@ -1195,8 +1195,8 @@ int _parseNonNegativeIntOption(
 }
 
 Map<String, Object?>? _doctorCheckById(
-  final Map<String, Object?> doctorData,
-  final String id,
+  Map<String, Object?> doctorData,
+  String id,
 ) {
   final checks = doctorData['checks'];
   if (checks is! List) {
@@ -1220,7 +1220,7 @@ Map<String, Object?>? _doctorCheckById(
   return null;
 }
 
-bool _doctorHasCriticalFailures(final Map<String, Object?> doctorData) {
+bool _doctorHasCriticalFailures(Map<String, Object?> doctorData) {
   final summary = doctorData['summary'];
   final summaryMap = switch (summary) {
     final Map<String, Object?> value => value,
@@ -1238,9 +1238,9 @@ bool _doctorHasCriticalFailures(final Map<String, Object?> doctorData) {
 }
 
 Future<({CoreResult result, int attempts})> _executeWithRetry({
-  required final Future<CoreResult> Function() run,
-  required final int maxRetries,
-  final bool Function(CoreResult result)? shouldRetry,
+  required Future<CoreResult> Function() run,
+  required int maxRetries,
+  bool Function(CoreResult result)? shouldRetry,
 }) async {
   var retriesUsed = 0;
   var result = await run();
@@ -1263,9 +1263,9 @@ Future<({CoreResult result, int attempts})> _executeWithRetry({
 }
 
 CoreResult _installBundledSkill({
-  final String skillName = _runtimeValidationSkillName,
-  final String? destinationRoot,
-  final bool force = false,
+  String skillName = _runtimeValidationSkillName,
+  String? destinationRoot,
+  bool force = false,
 }) {
   final sourceDir = _resolveBundledSkillSource(skillName);
   if (sourceDir == null) {
@@ -1322,7 +1322,7 @@ CoreResult _installBundledSkill({
   }
 }
 
-io.Directory? _resolveBundledSkillSource(final String skillName) {
+io.Directory? _resolveBundledSkillSource(String skillName) {
   final scriptDir = io.File(io.Platform.script.toFilePath()).parent;
   final repoRoot = scriptDir.parent.parent;
   final candidates = <io.Directory>[
@@ -1356,8 +1356,8 @@ String _defaultCodexHomePath() {
 }
 
 int _copyDirectoryContents({
-  required final io.Directory source,
-  required final io.Directory destination,
+  required io.Directory source,
+  required io.Directory destination,
 }) {
   var filesCopied = 0;
   for (final entity in source.listSync(followLinks: false)) {
@@ -1385,7 +1385,7 @@ int _copyDirectoryContents({
   return filesCopied;
 }
 
-String _lastPathSegment(final String path) {
+String _lastPathSegment(String path) {
   var normalized = path;
   final separator = io.Platform.pathSeparator;
   while (normalized.endsWith(separator)) {
@@ -1395,7 +1395,7 @@ String _lastPathSegment(final String path) {
   return parts.isEmpty ? normalized : parts.last;
 }
 
-String? _nonEmptyOption(final String? value) {
+String? _nonEmptyOption(String? value) {
   if (value == null) {
     return null;
   }
@@ -1404,15 +1404,15 @@ String? _nonEmptyOption(final String? value) {
   return trimmed.isEmpty ? null : trimmed;
 }
 
-CoreLogger _buildLogger(final LoggingLevel minimumLevel) =>
-    (final level, final message, {final logger = 'core'}) {
+CoreLogger _buildLogger(LoggingLevel minimumLevel) =>
+    (level, message, {logger = 'core'}) {
       if (level.index < minimumLevel.index) {
         return;
       }
       io.stderr.writeln('[${level.name}] [$logger] $message');
     };
 
-String _resolveStateRoot(final String statePath) {
+String _resolveStateRoot(String statePath) {
   final file = io.File(statePath);
   final parent = file.parent.path;
   if (parent.isEmpty || parent == '.') {
@@ -1421,12 +1421,12 @@ String _resolveStateRoot(final String statePath) {
   return parent;
 }
 
-String? _resolveOutputDir(final String? value) => _nonEmptyOption(value);
+String? _resolveOutputDir(String? value) => _nonEmptyOption(value);
 
 Future<void> _writeResultArtifactIfNeeded({
-  required final ArgResults topLevel,
-  required final CoreResult result,
-  required final String? outputDir,
+  required ArgResults topLevel,
+  required CoreResult result,
+  required String? outputDir,
 }) async {
   if (outputDir == null) {
     return;
@@ -1446,8 +1446,8 @@ Future<void> _writeResultArtifactIfNeeded({
 }
 
 void _printInteractiveNarrativeIfNeeded({
-  required final ArgResults topLevel,
-  required final CoreResult result,
+  required ArgResults topLevel,
+  required CoreResult result,
 }) {
   if (!io.stdout.hasTerminal) {
     return;
@@ -1490,7 +1490,7 @@ void _printInteractiveNarrativeIfNeeded({
   }
 }
 
-Map<String, Object?> _asObject(final Object? value) {
+Map<String, Object?> _asObject(Object? value) {
   if (value is Map<String, Object?>) {
     return value;
   }
@@ -1501,8 +1501,8 @@ Map<String, Object?> _asObject(final Object? value) {
 }
 
 Map<String, Object?>? _stepData(
-  final List<Map<String, Object?>> steps,
-  final String name,
+  List<Map<String, Object?>> steps,
+  String name,
 ) {
   for (final step in steps) {
     if ('${step['name']}' != name) {
@@ -1519,14 +1519,14 @@ Map<String, Object?>? _stepData(
   return null;
 }
 
-Map<String, Object?> _screenshotEnvelope(final Map<String, Object?>? stepData) {
+Map<String, Object?> _screenshotEnvelope(Map<String, Object?>? stepData) {
   if (stepData == null) {
     return const <String, Object?>{};
   }
   return _asObject(stepData['screenshots']);
 }
 
-String? _captureBackend(final Map<String, Object?>? stepData) {
+String? _captureBackend(Map<String, Object?>? stepData) {
   final screenshots = _screenshotEnvelope(stepData);
   final permission = _asObject(screenshots['permission']);
   return _nonEmptyOption(
@@ -1534,7 +1534,7 @@ String? _captureBackend(final Map<String, Object?>? stepData) {
   );
 }
 
-String? _captureMode(final Map<String, Object?>? stepData) {
+String? _captureMode(Map<String, Object?>? stepData) {
   final screenshots = _screenshotEnvelope(stepData);
   return _nonEmptyOption(
         '${stepData?['summary'] is Map ? (_asObject(stepData?['summary'])['actualMode'] ?? '') : ''}',
@@ -1544,7 +1544,7 @@ String? _captureMode(final Map<String, Object?>? stepData) {
       );
 }
 
-List<String> _screenshotFiles(final List<Map<String, Object?>> steps) {
+List<String> _screenshotFiles(List<Map<String, Object?>> steps) {
   final files = <String>[];
   for (final step in steps) {
     final stepData = _stepData(steps, '${step['name']}');
@@ -1567,8 +1567,8 @@ List<String> _screenshotFiles(final List<Map<String, Object?>> steps) {
 ///
 /// Subcommand `--target` wins over global `--vm-service-uri` when both differ.
 String? _resolveVmTargetUri({
-  required final ArgResults command,
-  required final ArgResults parsed,
+  required ArgResults command,
+  required ArgResults parsed,
 }) {
   final fromCommand = _nonEmptyOption(command.option('target'));
   final fromGlobal = _nonEmptyOption(parsed.option(_vmServiceUri));
@@ -1583,7 +1583,7 @@ String? _resolveVmTargetUri({
 }
 
 bool _captureHintsPlatformViewsDetected(
-  final List<Map<String, Object?>> steps,
+  List<Map<String, Object?>> steps,
 ) {
   for (final step in steps) {
     if (step['ok'] != true) {
@@ -1608,7 +1608,7 @@ bool _captureHintsPlatformViewsDetected(
   return false;
 }
 
-bool _desktopCaptureRetriedInSteps(final List<Map<String, Object?>> steps) {
+bool _desktopCaptureRetriedInSteps(List<Map<String, Object?>> steps) {
   for (final step in steps) {
     final name = '${step['name']}';
     if (!name.contains('capture_ui_snapshot') || step['ok'] != true) {
@@ -1637,7 +1637,7 @@ bool _desktopCaptureRetriedInSteps(final List<Map<String, Object?>> steps) {
   return false;
 }
 
-bool _platformViewsDetectedInPayload(final Map<String, Object?>? payload) {
+bool _platformViewsDetectedInPayload(Map<String, Object?>? payload) {
   if (payload == null) {
     return false;
   }
@@ -1652,7 +1652,7 @@ bool _platformViewsDetectedInPayload(final Map<String, Object?>? payload) {
   return false;
 }
 
-bool _eligibleForFlutterLayerCaptureRetry(final CoreResult result) {
+bool _eligibleForFlutterLayerCaptureRetry(CoreResult result) {
   if (result.ok) {
     return false;
   }
@@ -1679,8 +1679,8 @@ bool _eligibleForFlutterLayerCaptureRetry(final CoreResult result) {
 }
 
 Map<String, Object?>? _stepPayloadIfOk(
-  final List<Map<String, Object?>> steps,
-  final String name,
+  List<Map<String, Object?>> steps,
+  String name,
 ) {
   for (final step in steps) {
     if ('${step['name']}' != name || step['ok'] != true) {
@@ -1698,15 +1698,15 @@ Map<String, Object?>? _stepPayloadIfOk(
 }
 
 Map<String, Object?>? _effectiveValidateRuntimeCaptureData(
-  final List<Map<String, Object?>> steps, {
-  required final String primary,
-  required final String flutterLayerFallback,
+  List<Map<String, Object?>> steps, {
+  required String primary,
+  required String flutterLayerFallback,
 }) =>
     _stepPayloadIfOk(steps, flutterLayerFallback) ??
     _stepPayloadIfOk(steps, primary);
 
 bool _validateRuntimeUsedFlutterLayerFallback(
-  final List<Map<String, Object?>> steps,
+  List<Map<String, Object?>> steps,
 ) {
   for (final step in steps) {
     final name = '${step['name']}';
@@ -1720,13 +1720,13 @@ bool _validateRuntimeUsedFlutterLayerFallback(
   return false;
 }
 
-bool _stepFailed(final List<Map<String, Object?>> steps, final String name) =>
-    steps.any((final step) => step['name'] == name && step['ok'] != true);
+bool _stepFailed(List<Map<String, Object?>> steps, String name) =>
+    steps.any((step) => step['name'] == name && step['ok'] != true);
 
-bool _stepOk(final List<Map<String, Object?>> steps, final String name) =>
-    steps.any((final step) => step['name'] == name && step['ok'] == true);
+bool _stepOk(List<Map<String, Object?>> steps, String name) =>
+    steps.any((step) => step['name'] == name && step['ok'] == true);
 
-bool _shouldRetryPostReloadCapture(final CoreResult result) {
+bool _shouldRetryPostReloadCapture(CoreResult result) {
   final code = result.error?.code;
   if (code == CoreErrorCode.connectFailed ||
       code == CoreErrorCode.vmNotConnected) {
@@ -1745,7 +1745,7 @@ bool _shouldRetryPostReloadCapture(final CoreResult result) {
       message.contains('window');
 }
 
-String _captureFailureKind(final CoreResult result) {
+String _captureFailureKind(CoreResult result) {
   final code = result.error?.code;
   final message =
       '${result.error?.message ?? ''} ${result.error?.details ?? ''}'
@@ -1805,7 +1805,7 @@ String _globalUsage() {
   return buffer.toString();
 }
 
-String _usageForCommand(final List<String> commandPath) {
+String _usageForCommand(List<String> commandPath) {
   final key = commandPath.join(' ');
   return switch (key) {
     'exec' => _usageExec(),
@@ -1841,7 +1841,7 @@ String _usageForCommand(final List<String> commandPath) {
   };
 }
 
-List<String>? _helpCommandPath(final ArgResults parsed) {
+List<String>? _helpCommandPath(ArgResults parsed) {
   final path = <String>[];
   List<String>? selectedPath;
   var cursor = parsed.command;
@@ -1858,8 +1858,8 @@ List<String>? _helpCommandPath(final ArgResults parsed) {
 }
 
 int _resolveExitCode({
-  required final ArgResults topLevel,
-  required final CoreResult result,
+  required ArgResults topLevel,
+  required CoreResult result,
 }) {
   if (topLevel.name != 'doctor') {
     return result.exitCode;
@@ -1875,7 +1875,7 @@ int _resolveExitCode({
     return result.exitCode;
   }
 
-  final hasCriticalFailure = checks.any((final check) {
+  final hasCriticalFailure = checks.any((check) {
     if (check is! Map) {
       return false;
     }
@@ -2562,7 +2562,7 @@ Examples:
 Adds mcp_toolkit to a Flutter app and emits boilerplate for main.dart.
 ''';
 
-Future<int> _runInitSubcommand(final ArgResults command) async {
+Future<int> _runInitSubcommand(ArgResults command) async {
   if (command.rest.isEmpty) {
     io.stderr.writeln(
       'Usage: flutter-mcp-toolkit init <claude-code|cursor|codex|cline|agents-skills|all|intentcall-platform>',
@@ -2607,14 +2607,14 @@ Future<int> _runInitSubcommand(final ArgResults command) async {
   }
 }
 
-Future<int> _runCodegenInitSubcommand(final ArgResults command) =>
+Future<int> _runCodegenInitSubcommand(ArgResults command) =>
     runCodegenInit(
       projectRoot: io.Directory.current.path,
       printSnippetOnly: command.flag('print-only'),
       runPubAdd: command.flag('pub-add'),
     );
 
-Future<int> _runCodegenSubcommand(final ArgResults command) async {
+Future<int> _runCodegenSubcommand(ArgResults command) async {
   final sub = command.command;
   if (sub == null || sub.name != 'sync') {
     if (sub?.name == 'appintents-testing') {
@@ -2631,7 +2631,7 @@ Future<int> _runCodegenSubcommand(final ArgResults command) async {
 }
 
 Future<int> _runCodegenAppIntentsTestingSubcommand(
-  final ArgResults command,
+  ArgResults command,
 ) async {
   final sub = command.command;
   if (sub == null || sub.name != 'generate') {
@@ -2734,7 +2734,7 @@ Migrates legacy MCPCallEntry tool/resource factories to AgentCallEntry (Phase 6b
 See docs/start_here/migration_mcp_call_entry_to_agent_call_entry.md for limitations.
 ''';
 
-Future<int> _runWebmcpSubcommand(final ArgResults command) async {
+Future<int> _runWebmcpSubcommand(ArgResults command) async {
   final sub = command.command;
   if (sub == null) {
     io.stderr.writeln('Usage: flutter-mcp-toolkit webmcp <chrome-args|verify>');
@@ -2771,7 +2771,7 @@ Future<int> _runWebmcpSubcommand(final ArgResults command) async {
   }
 }
 
-Object? _parseJsonScalarOrString(final String value) {
+Object? _parseJsonScalarOrString(String value) {
   try {
     return jsonDecode(value);
   } on FormatException {
@@ -2805,7 +2805,7 @@ With --tool-name, invokes the WebMCP tool through modelContextTesting and fails
 if the generated network fallback is used.
 ''';
 
-Future<int> _runMigrateSubcommand(final ArgResults command) async {
+Future<int> _runMigrateSubcommand(ArgResults command) async {
   final sub = command.command;
   if (sub == null ||
       (sub.name != 'agent-entries' && sub.name != 'mcp-call-entry')) {

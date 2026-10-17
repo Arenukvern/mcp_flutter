@@ -7,9 +7,9 @@ import 'package:flutter_mcp_toolkit_server/flutter_mcp_core.dart';
 import 'package:test/test.dart';
 
 void _discardLog(
-  final LoggingLevel level,
-  final String message, {
-  final String logger = '',
+  LoggingLevel level,
+  String message, {
+  String logger = '',
 }) {}
 
 Future<List<String>> _emptyProcessLines() async => const <String>[];
@@ -90,13 +90,13 @@ void main() {
         });
 
         final discovery = FlutterToolMachineDiscovery(
-          logger: (final level, final message, {final logger = ''}) {},
+          logger: (level, message, {logger = ''}) {},
           processStarter:
               (
-                final executable,
-                final arguments, {
-                final workingDirectory,
-                final runInShell = false,
+                executable,
+                arguments, {
+                workingDirectory,
+                runInShell = false,
               }) async {
                 if (executable == 'powershell.exe') {
                   powershellArguments = List<String>.of(arguments);
@@ -168,13 +168,13 @@ void main() {
       });
 
       final discovery = FlutterToolMachineDiscovery(
-        logger: (final level, final message, {final logger = ''}) {},
+        logger: (level, message, {logger = ''}) {},
         processStarter:
             (
-              final executable,
-              final arguments, {
-              final workingDirectory,
-              final runInShell = false,
+              executable,
+              arguments, {
+              workingDirectory,
+              runInShell = false,
             }) async {
               processStartCount++;
               await allowProcessStart.future;
@@ -209,13 +209,13 @@ void main() {
         });
 
         final discovery = FlutterToolMachineDiscovery(
-          logger: (final level, final message, {final logger = ''}) {},
+          logger: (level, message, {logger = ''}) {},
           processStarter:
               (
-                final executable,
-                final arguments, {
-                final workingDirectory,
-                final runInShell = false,
+                executable,
+                arguments, {
+                workingDirectory,
+                runInShell = false,
               }) async {
                 processStartCount++;
                 await allowProcessStart.future;
@@ -257,13 +257,13 @@ void main() {
       });
 
       final discovery = FlutterToolMachineDiscovery(
-        logger: (final level, final message, {final logger = ''}) {},
+        logger: (level, message, {logger = ''}) {},
         processStarter:
             (
-              final executable,
-              final arguments, {
-              final workingDirectory,
-              final runInShell = false,
+              executable,
+              arguments, {
+              workingDirectory,
+              runInShell = false,
             }) async {
               if (executable == 'powershell.exe') {
                 powershellStarted = true;
@@ -301,13 +301,13 @@ void main() {
       });
 
       final discovery = FlutterToolMachineDiscovery(
-        logger: (final level, final message, {final logger = ''}) {},
+        logger: (level, message, {logger = ''}) {},
         processStarter:
             (
-              final executable,
-              final arguments, {
-              final workingDirectory,
-              final runInShell = false,
+              executable,
+              arguments, {
+              workingDirectory,
+              runInShell = false,
             }) async {
               if (executable == 'taskkill') {
                 taskkillStarted = true;
@@ -341,13 +341,13 @@ void main() {
       addTearDown(process.dispose);
 
       final discovery = FlutterToolMachineDiscovery(
-        logger: (final level, final message, {final logger = ''}) {},
+        logger: (level, message, {logger = ''}) {},
         processStarter:
             (
-              final executable,
-              final arguments, {
-              final workingDirectory,
-              final runInShell = false,
+              executable,
+              arguments, {
+              workingDirectory,
+              runInShell = false,
             }) async => process,
         isWindows: false,
         stopTimeout: Duration.zero,
@@ -396,7 +396,7 @@ final class _StubbornProcess implements Process {
   Future<int> get exitCode => _exitCompleter.future;
 
   @override
-  bool kill([final ProcessSignal signal = ProcessSignal.sigterm]) {
+  bool kill([ProcessSignal signal = ProcessSignal.sigterm]) {
     killSignals.add(signal);
     if (completeOnSigterm || signal == ProcessSignal.sigkill) {
       completeExit(-1);
@@ -404,7 +404,7 @@ final class _StubbornProcess implements Process {
     return true;
   }
 
-  void completeExit(final int code) {
+  void completeExit(int code) {
     if (!_exitCompleter.isCompleted) {
       _exitCompleter.complete(code);
     }

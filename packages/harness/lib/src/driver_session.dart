@@ -16,7 +16,7 @@ import 'toolkit_driver.dart';
 /// Connection ownership stays with [LaunchedApp]: [ToolkitDriver.close]
 /// releases the driver, not the process or its VM service (the target
 /// that launched the app keeps owning those).
-Future<ToolkitDriver> attachDriver(final LaunchedApp app) async =>
+Future<ToolkitDriver> attachDriver(LaunchedApp app) async =>
     ToolkitDriver(await app.vm());
 
 /// Observe-until helpers over the driver's semantic snapshot — the
@@ -30,10 +30,10 @@ extension ToolkitDriverObserve on ToolkitDriver {
   /// Returns the matched label, or `null` after [attempts] misses —
   /// use [expectLabel] when a miss should fail loudly.
   Future<String?> labelContaining(
-    final String needle, {
-    final int attempts = 10,
-    final Duration delay = const Duration(milliseconds: 500),
-    final void Function(String surface)? onMiss,
+    String needle, {
+    int attempts = 10,
+    Duration delay = const Duration(milliseconds: 500),
+    void Function(String surface)? onMiss,
   }) async {
     for (var attempt = 0; attempt < attempts; attempt++) {
       final nodes = (await snapshot()).nodes.toList();
@@ -53,16 +53,16 @@ extension ToolkitDriverObserve on ToolkitDriver {
   /// the needle and a dump of the surface the driver actually saw, so a
   /// failed verify reports what was on screen instead of a bare timeout.
   Future<String> expectLabel(
-    final String needle, {
-    final int attempts = 10,
-    final Duration delay = const Duration(milliseconds: 500),
+    String needle, {
+    int attempts = 10,
+    Duration delay = const Duration(milliseconds: 500),
   }) async {
     String surface = '';
     final label = await labelContaining(
       needle,
       attempts: attempts,
       delay: delay,
-      onMiss: (final dump) => surface = dump,
+      onMiss: (dump) => surface = dump,
     );
     if (label == null) {
       throw StateError(
@@ -74,7 +74,7 @@ extension ToolkitDriverObserve on ToolkitDriver {
   }
 }
 
-String _surfaceDump(final List<AxNode> nodes) => nodes
+String _surfaceDump(List<AxNode> nodes) => nodes
     .map((node) => node.name ?? node.role)
     .where((label) => label.isNotEmpty)
     .join(' | ');

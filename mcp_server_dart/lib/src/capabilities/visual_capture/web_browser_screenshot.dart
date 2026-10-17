@@ -17,8 +17,8 @@ final class WebBrowserScreenshotService
   WebBrowserScreenshotService({
     required this.configuration,
     this.connectionContext,
-    final DesktopWindowScreenshotService? macHost,
-    final WebTabPngCapturer? cdpClient,
+    DesktopWindowScreenshotService? macHost,
+    WebTabPngCapturer? cdpClient,
   }) : _macHost = macHost ?? MacOsDesktopWindowScreenshotService(),
        _cdpClient = cdpClient ?? const WebCdpScreenshotClient();
 
@@ -65,14 +65,14 @@ final class WebBrowserScreenshotService
   String get truthMode => screenshotModeDesktopWindow;
 
   @override
-  bool supportsPlatform(final String effectivePlatform) =>
+  bool supportsPlatform(String effectivePlatform) =>
       effectivePlatform == 'web';
 
   @override
   Future<PermissionBrokerResult> status({
-    required final PermissionKind kind,
-    required final PermissionPolicy policy,
-    required final CoreRuntimeConfiguration configuration,
+    required PermissionKind kind,
+    required PermissionPolicy policy,
+    required CoreRuntimeConfiguration configuration,
   }) async {
     final cdpViable = await isWebCdpCaptureViable(
       configuration: configuration,
@@ -102,23 +102,23 @@ final class WebBrowserScreenshotService
 
   @override
   Future<PermissionBrokerResult> request({
-    required final PermissionKind kind,
-    required final PermissionPolicy policy,
-    required final CoreRuntimeConfiguration configuration,
+    required PermissionKind kind,
+    required PermissionPolicy policy,
+    required CoreRuntimeConfiguration configuration,
   }) => status(kind: kind, policy: policy, configuration: configuration);
 
   @override
   Future<PermissionBrokerResult> openSettings({
-    required final PermissionKind kind,
-    required final PermissionPolicy policy,
-    required final CoreRuntimeConfiguration configuration,
+    required PermissionKind kind,
+    required PermissionPolicy policy,
+    required CoreRuntimeConfiguration configuration,
   }) => status(kind: kind, policy: policy, configuration: configuration);
 
   @override
   Future<Map<String, Object?>> focus({
-    required final String device,
-    final int? targetPid,
-    final String? cacheDir,
+    required String device,
+    int? targetPid,
+    String? cacheDir,
   }) async {
     if (Platform.isMacOS && isWebFlutterDevice(device)) {
       return _macHost.focus(
@@ -135,11 +135,11 @@ final class WebBrowserScreenshotService
 
   @override
   Future<DesktopWindowScreenshotCapture?> capture({
-    required final String projectDir,
-    required final String device,
-    required final bool compress,
-    final int? targetPid,
-    final String? cacheDir,
+    required String projectDir,
+    required String device,
+    required bool compress,
+    int? targetPid,
+    String? cacheDir,
   }) async {
     if (!isWebFlutterDevice(device)) {
       return null;
@@ -173,8 +173,8 @@ final class WebBrowserScreenshotService
   }
 
   Future<DesktopWindowScreenshotCapture?> _captureViaCdp({
-    required final bool compress,
-    required final bool rediscover,
+    required bool compress,
+    required bool rediscover,
   }) async {
     final endpoint = await discoverWebCdpEndpoint(
       configuration: configuration,

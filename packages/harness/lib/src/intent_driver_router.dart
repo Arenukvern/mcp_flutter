@@ -18,7 +18,7 @@ import 'package:universal_automation_interface/universal_automation_interface.da
 final class IntentDriverRouter {
   /// Creates a router over [drivers], keyed by transport name — the same
   /// names hints use (`toolkit`, `cdp`, `ax`, …).
-  IntentDriverRouter({required final Map<String, AutomationDriver> drivers})
+  IntentDriverRouter({required Map<String, AutomationDriver> drivers})
     : _drivers = Map.of(drivers);
 
   final Map<String, AutomationDriver> _drivers;
@@ -28,18 +28,18 @@ final class IntentDriverRouter {
       Map.unmodifiable(_drivers);
 
   /// Binds [driver] under [transport] (later bindings win).
-  void bind(final String transport, final AutomationDriver driver) {
+  void bind(String transport, AutomationDriver driver) {
     _drivers[transport] = driver;
   }
 
   /// Removes the binding under [transport]. Idempotent.
-  void unbind(final String transport) {
+  void unbind(String transport) {
     _drivers.remove(transport);
   }
 
   /// The driver a [hint] names; throws [DriverUnsupportedException] when
   /// the transport is not bound.
-  AutomationDriver driverFor(final IntentAutomationHint hint) {
+  AutomationDriver driverFor(IntentAutomationHint hint) {
     final driver = _drivers[hint.driver];
     if (driver == null) {
       throw DriverUnsupportedException(
@@ -53,8 +53,8 @@ final class IntentDriverRouter {
   /// Resolves [hint] (plus invocation [arguments]) into the concrete
   /// driver action.
   AutomationAction resolve(
-    final IntentAutomationHint hint, {
-    final Map<String, Object?> arguments = const {},
+    IntentAutomationHint hint, {
+    Map<String, Object?> arguments = const {},
   }) {
     final locator = hint.locator;
     final operand = switch (hint.action) {
@@ -102,8 +102,8 @@ final class IntentDriverRouter {
   /// Resolves [hint] and performs it on the named driver. Returns the
   /// driver that executed the action.
   Future<AutomationDriver> invoke(
-    final IntentAutomationHint hint, {
-    final Map<String, Object?> arguments = const {},
+    IntentAutomationHint hint, {
+    Map<String, Object?> arguments = const {},
   }) async {
     final driver = driverFor(hint);
     await driver.perform(resolve(hint, arguments: arguments));
@@ -114,8 +114,8 @@ final class IntentDriverRouter {
   /// hint. Throws [DriverUnsupportedException] when the intent declares
   /// no hint — an intent without one is not driver-routable.
   Future<AutomationDriver> invokeIntent(
-    final RegisteredAgentIntent intent, {
-    final Map<String, Object?> arguments = const {},
+    RegisteredAgentIntent intent, {
+    Map<String, Object?> arguments = const {},
   }) {
     final hint = intent.descriptor.automation;
     if (hint == null) {

@@ -214,8 +214,8 @@ enum ScreenshotMode {
 }
 
 ScreenshotMode parseScreenshotMode(
-  final Object? value, {
-  final ScreenshotMode fallback = ScreenshotMode.auto,
+  Object? value, {
+  ScreenshotMode fallback = ScreenshotMode.auto,
 }) {
   final normalized = '$value'.trim().toLowerCase();
   for (final mode in ScreenshotMode.values) {
@@ -421,7 +421,7 @@ enum DragPointerKind {
 ///
 /// Returns null for null, empty and unknown values — the app then picks
 /// the platform default.
-DragPointerKind? parseDragPointerKind(final Object? value) {
+DragPointerKind? parseDragPointerKind(Object? value) {
   if (value == null) return null;
   final normalized = '$value'.trim().toLowerCase();
   for (final kind in DragPointerKind.values) {

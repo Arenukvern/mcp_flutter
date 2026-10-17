@@ -56,7 +56,7 @@ void main() {
       final commands = <String>[];
       String? compiledBinary;
       final service = MacOsDesktopWindowScreenshotService(
-        runProcess: (final executable, final arguments) async {
+        runProcess: (executable, arguments) async {
           if (executable == 'swiftc') {
             compiledBinary = arguments.last;
             return ProcessResult(0, 0, '', '');
@@ -113,7 +113,7 @@ void main() {
       final commands = <String>[];
       String? compiledBinary;
       final service = MacOsDesktopWindowScreenshotService(
-        runProcess: (final executable, final arguments) async {
+        runProcess: (executable, arguments) async {
           if (executable == 'swiftc') {
             compiledBinary = arguments.last;
             return ProcessResult(0, 0, '', '');
@@ -177,7 +177,7 @@ void main() {
         final commands = <String>[];
 
         final service = MacOsDesktopWindowScreenshotService(
-          runProcess: (final executable, final arguments) async {
+          runProcess: (executable, arguments) async {
             if (executable == 'swiftc') {
               compiledBinary = arguments.last;
               return ProcessResult(1, 0, '', '');
@@ -264,7 +264,7 @@ void main() {
 
         String? helperSourcePath;
         final service = MacOsDesktopWindowScreenshotService(
-          runProcess: (final executable, final arguments) async {
+          runProcess: (executable, arguments) async {
             if (executable == 'swiftc') {
               helperSourcePath = arguments[1];
               return ProcessResult(1, 0, '', '');
@@ -332,7 +332,7 @@ void main() {
 
         String? compiledBinary;
         final service = MacOsDesktopWindowScreenshotService(
-          runProcess: (final executable, final arguments) async {
+          runProcess: (executable, arguments) async {
             if (executable == 'swiftc') {
               compiledBinary = arguments.last;
               return ProcessResult(1, 0, '', '');
@@ -361,12 +361,12 @@ void main() {
           throwsA(
             isA<DesktopWindowCaptureException>()
                 .having(
-                  (final e) => e.message,
+                  (e) => e.message,
                   'message',
                   contains('window_not_found'),
                 )
                 .having(
-                  (final e) => e.details['allOwners'],
+                  (e) => e.details['allOwners'],
                   'details.allOwners',
                   equals(const <String>['Codex', 'sample_app']),
                 ),
@@ -380,7 +380,7 @@ void main() {
       final calls = <String>[];
       String? compiledBinary;
       final service = MacOsDesktopWindowScreenshotService(
-        runProcess: (final executable, final arguments) async {
+        runProcess: (executable, arguments) async {
           if (executable == 'swiftc') {
             compiledBinary = arguments.last;
             return ProcessResult(1, 0, '', '');

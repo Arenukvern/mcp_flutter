@@ -21,7 +21,7 @@ final RegExp vmServiceWsUriPattern = RegExp(
 );
 
 /// Extracts the first VM service http URI from [line], or null.
-Uri? vmServiceUriFromLine(final String line) {
+Uri? vmServiceUriFromLine(String line) {
   final match = vmServiceUriPattern.firstMatch(line);
   if (match == null) return null;
   return Uri.parse(match.group(1)!);
@@ -29,20 +29,20 @@ Uri? vmServiceUriFromLine(final String line) {
 
 /// The last http VM service announcement in a whole log [contents], or null
 /// (later announcements win — a hot restart re-announces a fresh token).
-Uri? lastVmServiceUriIn(final String contents) {
+Uri? lastVmServiceUriIn(String contents) {
   final match = vmServiceUriPattern.allMatches(contents).lastOrNull;
   return match == null ? null : Uri.parse(match.group(1)!);
 }
 
 /// The last web (DWDS) `ws://` announcement in log [contents], or null.
-Uri? lastVmServiceWsUriIn(final String contents) {
+Uri? lastVmServiceWsUriIn(String contents) {
   final match = vmServiceWsUriPattern.allMatches(contents).lastOrNull;
   return match == null ? null : Uri.parse(match.group(0)!);
 }
 
 /// Converts an http VM service URI to the WebSocket form its clients dial:
 /// `http://127.0.0.1:PORT/TOKEN=` → `ws://127.0.0.1:PORT/TOKEN/ws`.
-Uri canonicalVmServiceWsUri(final Uri httpUri) {
+Uri canonicalVmServiceWsUri(Uri httpUri) {
   // Idempotent: an endpoint published in ws shape (`…/TOKEN/ws`, as oka's
   // forwarded contract does) must not grow a second `/ws`.
   final path = httpUri.path.endsWith('/')

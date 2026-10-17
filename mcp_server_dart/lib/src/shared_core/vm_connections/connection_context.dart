@@ -26,7 +26,7 @@ final class CoreEndpoint {
     this.wsPath = '/ws',
   });
 
-  factory CoreEndpoint.fromUri(final Uri uri) {
+  factory CoreEndpoint.fromUri(Uri uri) {
     final normalizedHost = uri.host.isEmpty ? 'localhost' : uri.host;
     final normalizedPort = uri.hasPort ? uri.port : 0;
     if (normalizedPort <= 0) {
@@ -52,7 +52,7 @@ final class CoreEndpoint {
   String get display => wsUri.toString();
 
   @override
-  bool operator ==(final Object other) =>
+  bool operator ==(Object other) =>
       other is CoreEndpoint &&
       other.host == host &&
       other.port == port &&
@@ -100,7 +100,7 @@ final class CoreConnectionTarget {
   final int? vmPid;
 
   /// A copy carrying the probe result, keeping current values when null.
-  CoreConnectionTarget withProbe({final int? vmPid, final String? label}) =>
+  CoreConnectionTarget withProbe({int? vmPid, String? label}) =>
       CoreConnectionTarget(
         targetId: targetId,
         host: host,
@@ -118,16 +118,16 @@ final class CoreConnectionTarget {
   static const String machineDiscoverySource = _machineSource;
   static const String portScanDiscoverySource = _portScanSource;
 
-  static String buildTargetId({required final Uri vmServiceWsUri}) =>
+  static String buildTargetId({required Uri vmServiceWsUri}) =>
       canonicalizeVmServiceWsUri(vmServiceWsUri).toString();
 
-  static Uri canonicalizeVmServiceWsUri(final Uri vmServiceWsUri) =>
+  static Uri canonicalizeVmServiceWsUri(Uri vmServiceWsUri) =>
       FlutterToolMachineDiscovery.canonicalizeVmServiceWsUri(vmServiceWsUri);
 
-  static Uri? parseTargetIdUri(final String value) =>
+  static Uri? parseTargetIdUri(String value) =>
       FlutterToolMachineDiscovery.parseVmServiceWsUri(value);
 
-  static bool isLegacyHostPortTargetId(final String value) {
+  static bool isLegacyHostPortTargetId(String value) {
     final trimmed = value.trim();
     if (trimmed.isEmpty ||
         trimmed.contains('://') ||
@@ -196,7 +196,7 @@ final class EnsureConnectionResult {
     this.recovery,
   });
 
-  const EnsureConnectionResult.success({final Map<String, Object?>? recovery})
+  const EnsureConnectionResult.success({Map<String, Object?>? recovery})
     : this._(
         connected: true,
         code: null,
@@ -206,9 +206,9 @@ final class EnsureConnectionResult {
       );
 
   const EnsureConnectionResult.failure({
-    required final String code,
-    required final String message,
-    final Object? details,
+    required String code,
+    required String message,
+    Object? details,
   }) : this._(
          connected: false,
          code: code,
@@ -388,18 +388,18 @@ final class ConnectionContext {
     return recovery;
   }
 
-  void setStickyEndpointFromUri(final String uri) {
+  void setStickyEndpointFromUri(String uri) {
     _stickyEndpoint = CoreEndpoint.fromUri(Uri.parse(uri));
   }
 
   Future<Map<String, Object?>> connect({
-    final CoreConnectionMode mode = CoreConnectionMode.auto,
-    final String? targetId,
-    final String? uri,
-    final String? host,
-    final int? port,
-    final bool forceReconnect = false,
-    final Duration timeout = const Duration(seconds: 2),
+    CoreConnectionMode mode = CoreConnectionMode.auto,
+    String? targetId,
+    String? uri,
+    String? host,
+    int? port,
+    bool forceReconnect = false,
+    Duration timeout = const Duration(seconds: 2),
   }) async {
     final resolution = await _resolveEndpoint(
       mode: mode,
@@ -462,7 +462,7 @@ final class ConnectionContext {
   }
 
   Future<EnsureConnectionResult> ensureConnectedWithPolicy({
-    final Duration timeout = const Duration(seconds: 2),
+    Duration timeout = const Duration(seconds: 2),
   }) async {
     if (isConnected) {
       final healthy = await _isCurrentConnectionHealthy(
@@ -513,7 +513,7 @@ final class ConnectionContext {
     }
   }
 
-  Map<String, Object?> _enrichConnectionFailureDetails(final Object? details) {
+  Map<String, Object?> _enrichConnectionFailureDetails(Object? details) {
     final base = switch (details) {
       final Map<String, Object?> value => Map<String, Object?>.from(value),
       final Map value => value.cast<String, Object?>(),
@@ -533,7 +533,7 @@ final class ConnectionContext {
   }
 
   Future<bool> ensureConnected({
-    final Duration timeout = const Duration(seconds: 2),
+    Duration timeout = const Duration(seconds: 2),
   }) async => (await ensureConnectedWithPolicy(timeout: timeout)).connected;
 
   Future<List<CoreConnectionTarget>> discoverTargets() async {
@@ -574,7 +574,7 @@ final class ConnectionContext {
   }
 
   List<CoreConnectionTarget> _buildMachineTargets(
-    final List<FlutterMachineDiscoveryTarget> machineTargets,
+    List<FlutterMachineDiscoveryTarget> machineTargets,
   ) {
     final targetsById = <String, CoreConnectionTarget>{};
 
@@ -600,7 +600,7 @@ final class ConnectionContext {
     return _sortTargets(targetsById.values);
   }
 
-  List<CoreConnectionTarget> _buildPortScanTargets(final List<int> ports) {
+  List<CoreConnectionTarget> _buildPortScanTargets(List<int> ports) {
     final targetsById = <String, CoreConnectionTarget>{};
     for (final discoveredPort in ports) {
       final endpoint = _endpointForDiscoveredPort(discoveredPort);
@@ -614,10 +614,10 @@ final class ConnectionContext {
   }
 
   CoreConnectionTarget _buildTarget({
-    required final CoreEndpoint endpoint,
-    required final String discoverySource,
-    final String? dtdUri,
-    final int? browserDebugPort,
+    required CoreEndpoint endpoint,
+    required String discoverySource,
+    String? dtdUri,
+    int? browserDebugPort,
   }) {
     final sticky = _stickyEndpoint;
     final current = _activeEndpoint;
@@ -638,10 +638,10 @@ final class ConnectionContext {
   }
 
   List<CoreConnectionTarget> _sortTargets(
-    final Iterable<CoreConnectionTarget> targets,
+    Iterable<CoreConnectionTarget> targets,
   ) {
     final sorted = targets.toList()
-      ..sort((final a, final b) => a.targetId.compareTo(b.targetId));
+      ..sort((a, b) => a.targetId.compareTo(b.targetId));
     return sorted;
   }
 
@@ -654,7 +654,7 @@ final class ConnectionContext {
         // sink.close() never completes when the websocket upgrade failed,
         // so bound the wait and swallow late errors to keep disconnect()
         // best-effort and non-blocking.
-        await _vmChannel?.sink.close().catchError((final _) {}).timeout(
+        await _vmChannel?.sink.close().catchError((_) {}).timeout(
           const Duration(seconds: 1),
           onTimeout: () => null,
         );
@@ -676,8 +676,8 @@ final class ConnectionContext {
   }
 
   Future<void> _connectToEndpoint(
-    final CoreEndpoint endpoint, {
-    required final Duration timeout,
+    CoreEndpoint endpoint, {
+    required Duration timeout,
   }) async {
     final wsUri = endpoint.wsUri;
     logger(
@@ -695,7 +695,7 @@ final class ConnectionContext {
         final Future<void> dtdReady = dtdChannel.ready;
         // Swallow a late error if the timeout below fires first so it does
         // not escape as an unhandled async error.
-        unawaited(dtdReady.catchError((final _) {}));
+        unawaited(dtdReady.catchError((_) {}));
         if (timeout == Duration.zero) {
           await dtdReady;
         } else {
@@ -708,7 +708,7 @@ final class ConnectionContext {
         // Bound the close: sink.close() never completes when the upgrade
         // failed, and abandoning the channel would leak the socket.
         unawaited(
-          dtdChannel.sink.close().catchError((final _) {}).timeout(
+          dtdChannel.sink.close().catchError((_) {}).timeout(
             const Duration(seconds: 1),
             onTimeout: () => null,
           ),
@@ -732,7 +732,7 @@ final class ConnectionContext {
       final Future<void> vmReady = _vmChannel!.ready;
       // Swallow a late error if the timeout below fires first so it does
       // not escape as an unhandled async error.
-      unawaited(vmReady.catchError((final _) {}));
+      unawaited(vmReady.catchError((_) {}));
       if (timeout == Duration.zero) {
         await vmReady;
       } else {
@@ -741,7 +741,7 @@ final class ConnectionContext {
 
       _vmService = VmService(
         _vmChannel!.stream.cast<String>(),
-        (final message) => _vmChannel!.sink.add(message),
+        (message) => _vmChannel!.sink.add(message),
       );
 
       final vmPing = _vmService!.getVM();
@@ -756,7 +756,7 @@ final class ConnectionContext {
       unawaited(
         _vmChannel!.sink.done
             .then((_) => _handleDisconnect('WebSocket sink closed'))
-            .catchError((final error) {
+            .catchError((error) {
               _handleDisconnect('WebSocket sink error: $error');
             }),
       );
@@ -782,7 +782,7 @@ final class ConnectionContext {
     }
   }
 
-  void _handleDisconnect(final String reason) {
+  void _handleDisconnect(String reason) {
     if (_vmService == null) return;
 
     logger(
@@ -809,7 +809,7 @@ final class ConnectionContext {
   /// sessions receive the ServiceRegistered events live and keep the
   /// custom-service path (identical behavior, minus the per-command wait).
   Future<void> _setUpServiceStreamMonitoring({
-    required final Duration timeout,
+    required Duration timeout,
   }) async {
     final service = _vmService;
     if (service == null) return;
@@ -822,7 +822,7 @@ final class ConnectionContext {
           .onEvent(EventStreams.kService)
           .listen(
             _handleServiceEvent,
-            onError: (final Object error) {
+            onError: (Object error) {
               logger(
                 LoggingLevel.debug,
                 'Service stream error: $error',
@@ -847,7 +847,7 @@ final class ConnectionContext {
     }
   }
 
-  void _handleServiceEvent(final Event event) {
+  void _handleServiceEvent(Event event) {
     switch (event.kind) {
       case EventKind.kServiceRegistered:
         final method = event.method;
@@ -877,7 +877,7 @@ final class ConnectionContext {
   /// Only the first command after a connection pays the grace wait; once it
   /// elapses without a registration, later commands answer immediately (the
   /// stream keeps refreshing the cache if a service registers later).
-  Future<String?> _awaitServiceMethod(final Set<String> serviceNames) async {
+  Future<String?> _awaitServiceMethod(Set<String> serviceNames) async {
     String? find() {
       for (final name in serviceNames) {
         final methods = name == 'reloadSources'
@@ -929,11 +929,11 @@ final class ConnectionContext {
     })
   >
   _resolveEndpoint({
-    required final CoreConnectionMode mode,
-    final String? targetId,
-    final String? uri,
-    final String? host,
-    final int? port,
+    required CoreConnectionMode mode,
+    String? targetId,
+    String? uri,
+    String? host,
+    int? port,
   }) async {
     final normalizedTargetId = targetId?.trim();
     if (normalizedTargetId != null && normalizedTargetId.isNotEmpty) {
@@ -1021,8 +1021,8 @@ final class ConnectionContext {
     })
   >
   _resolveByTargetId(
-    final String targetId, {
-    required final CoreConnectionMode mode,
+    String targetId, {
+    required CoreConnectionMode mode,
   }) async {
     final parsedTargetUri = _parseTargetIdOrThrow(targetId);
     final canonicalTargetId = CoreConnectionTarget.buildTargetId(
@@ -1030,7 +1030,7 @@ final class ConnectionContext {
     );
     final targets = await discoverTargets();
     final selected = targets.firstWhere(
-      (final t) => t.targetId == canonicalTargetId,
+      (t) => t.targetId == canonicalTargetId,
       orElse: () => const CoreConnectionTarget(
         targetId: '',
         host: '',
@@ -1062,7 +1062,7 @@ final class ConnectionContext {
                 'Used explicit targetId URI fallback after discovery miss',
             'requestedTargetId': targetId,
             'targetIdLookupMiss': canonicalTargetId,
-            'availableTargets': targets.map((final t) => t.toJson()).toList(),
+            'availableTargets': targets.map((t) => t.toJson()).toList(),
             'stickyEndpoint': _stickyEndpoint?.display,
             'discovery': _lastDiscoveryDiagnostics,
           },
@@ -1075,7 +1075,7 @@ final class ConnectionContext {
         details: {
           'reason': 'target_not_found',
           'targetId': canonicalTargetId,
-          'availableTargets': targets.map((final t) => t.toJson()).toList(),
+          'availableTargets': targets.map((t) => t.toJson()).toList(),
           'discovery': _lastDiscoveryDiagnostics,
         },
       );
@@ -1090,7 +1090,7 @@ final class ConnectionContext {
         'selectedTargetId': selected.targetId,
         'selectedEndpoint': selected.endpoint,
         'decision': 'Used explicit targetId',
-        'availableTargets': targets.map((final t) => t.toJson()).toList(),
+        'availableTargets': targets.map((t) => t.toJson()).toList(),
         'stickyEndpoint': _stickyEndpoint?.display,
         'discovery': _lastDiscoveryDiagnostics,
       },
@@ -1123,7 +1123,7 @@ final class ConnectionContext {
             'selectedTargetId': selectedTargetId,
             'selectedEndpoint': selectedTargetId,
             'decision': 'Reused active connection',
-            'availableTargets': targets.map((final t) => t.toJson()).toList(),
+            'availableTargets': targets.map((t) => t.toJson()).toList(),
             'stickyEndpoint': _stickyEndpoint?.display,
             'discovery': _lastDiscoveryDiagnostics,
           },
@@ -1204,7 +1204,7 @@ final class ConnectionContext {
         'decision': stickyTarget != null
             ? 'Reused sticky target discovered in current scan'
             : 'Auto-attached single discovered target',
-        'availableTargets': targets.map((final t) => t.toJson()).toList(),
+        'availableTargets': targets.map((t) => t.toJson()).toList(),
         'stickyEndpoint': _stickyEndpoint?.display,
         'discovery': _lastDiscoveryDiagnostics,
       },
@@ -1233,7 +1233,7 @@ final class ConnectionContext {
     Map<String, Object?> diagnostics,
     int? browserDebugPort,
   })
-  _runnerEndpointResult(final String vmServiceUri) {
+  _runnerEndpointResult(String vmServiceUri) {
     final endpoint = CoreEndpoint.fromUri(Uri.parse(vmServiceUri));
     final targetId = CoreConnectionTarget.buildTargetId(
       vmServiceWsUri: endpoint.wsUri,
@@ -1255,9 +1255,9 @@ final class ConnectionContext {
   }
 
   Map<String, Object?> _multipleTargetsDetails(
-    final List<CoreConnectionTarget> targets,
+    List<CoreConnectionTarget> targets,
   ) {
-    final availableTargets = targets.map((final t) => t.toJson()).toList();
+    final availableTargets = targets.map((t) => t.toJson()).toList();
     final suggestedTarget = targets.first.targetId;
     final shortlist = availableTargets
         .take(_maxConnectionSelectionShortlist)
@@ -1321,7 +1321,7 @@ final class ConnectionContext {
     }
   }
 
-  Uri _parseTargetIdOrThrow(final String targetId) {
+  Uri _parseTargetIdOrThrow(String targetId) {
     if (CoreConnectionTarget.isLegacyHostPortTargetId(targetId)) {
       throw CoreConnectionException(
         reason: CoreConnectionFailureReason.invalidTargetId,
@@ -1355,7 +1355,7 @@ final class ConnectionContext {
     return parsed;
   }
 
-  bool _hasNonDefaultWsPath(final Uri uri) {
+  bool _hasNonDefaultWsPath(Uri uri) {
     final rawPath = uri.path.trim();
     if (rawPath.isEmpty) {
       return false;
@@ -1370,7 +1370,7 @@ final class ConnectionContext {
   }
 
   Future<List<CoreConnectionTarget>> _filterFlutterPortScanTargets(
-    final List<CoreConnectionTarget> candidates,
+    List<CoreConnectionTarget> candidates,
   ) async {
     if (candidates.isEmpty) {
       return const <CoreConnectionTarget>[];
@@ -1393,7 +1393,7 @@ final class ConnectionContext {
   }
 
   Future<List<CoreConnectionTarget>> _labelTargets(
-    final List<CoreConnectionTarget> targets,
+    List<CoreConnectionTarget> targets,
   ) async {
     if (targets.isEmpty) {
       return targets;
@@ -1411,7 +1411,7 @@ final class ConnectionContext {
   /// Falls back to every target when nothing matches, so a preference that no
   /// longer names a running app cannot hide the apps that are running.
   List<CoreConnectionTarget> _targetsMatchingPreferredLabel(
-    final List<CoreConnectionTarget> targets,
+    List<CoreConnectionTarget> targets,
   ) {
     final preference = preferredTargetLabel?.trim().toLowerCase();
     if (preference == null || preference.isEmpty || targets.length < 2) {
@@ -1420,7 +1420,7 @@ final class ConnectionContext {
 
     final matches = targets
         .where(
-          (final target) =>
+          (target) =>
               target.label?.toLowerCase().contains(preference) ?? false,
         )
         .toList(growable: false);
@@ -1448,30 +1448,30 @@ final class ConnectionContext {
   /// it came from, and an endpoint another app has since taken over would then
   /// be merged into a target the caller never chose.
   Future<CoreConnectionTarget?> _soleInstanceTarget(
-    final List<CoreConnectionTarget> targets,
+    List<CoreConnectionTarget> targets,
   ) async {
     if (targets.length == 1) {
       return targets.first;
     }
 
-    if (targets.any((final target) => target.vmPid == null)) {
+    if (targets.any((target) => target.vmPid == null)) {
       return null;
     }
 
     final probes = await Future.wait(
-      targets.map((final target) => _probeTarget(target, refresh: true)),
+      targets.map((target) => _probeTarget(target, refresh: true)),
     );
     final pid = probes.first.vmPid;
-    if (pid == null || probes.any((final probe) => probe.vmPid != pid)) {
+    if (pid == null || probes.any((probe) => probe.vmPid != pid)) {
       return null;
     }
 
-    return targets.reduce((final a, final b) => b.port < a.port ? b : a);
+    return targets.reduce((a, b) => b.port < a.port ? b : a);
   }
 
   Future<({bool isFlutter, int? vmPid, String? label})> _probeTarget(
-    final CoreConnectionTarget target, {
-    final bool refresh = false,
+    CoreConnectionTarget target, {
+    bool refresh = false,
   }) async {
     final now = DateTime.now().toUtc();
     final cached = refresh ? null : _flutterProbeCache[target.targetId];
@@ -1519,8 +1519,8 @@ final class ConnectionContext {
   }
 
   Future<({bool isFlutter, int? vmPid, String? label})> _probeFlutterEndpoint(
-    final CoreEndpoint endpoint, {
-    required final Duration timeout,
+    CoreEndpoint endpoint, {
+    required Duration timeout,
   }) async {
     final client = HttpClient();
     try {
@@ -1556,7 +1556,7 @@ final class ConnectionContext {
             (_extractResultMap(isolatePayload)['extensionRPCs']
                         as List<Object?>? ??
                     const <Object?>[])
-                .map((final e) => '$e')
+                .map((e) => '$e')
                 .toList(growable: false);
         if (!_hasFlutterExtensions(extensionRPCs)) {
           continue;
@@ -1585,10 +1585,10 @@ final class ConnectionContext {
   /// The label names the running instance for a caller choosing a target, so a
   /// missing or unusable payload only costs the label, never the target.
   Future<String?> _fetchTargetLabel({
-    required final HttpClient client,
-    required final Uri httpBase,
-    required final String isolateId,
-    required final Duration timeout,
+    required HttpClient client,
+    required Uri httpBase,
+    required String isolateId,
+    required Duration timeout,
   }) async {
     try {
       final payload = await _fetchVmServiceMap(
@@ -1615,7 +1615,7 @@ final class ConnectionContext {
     }
   }
 
-  bool _hasFlutterExtensions(final List<String> extensionRPCs) {
+  bool _hasFlutterExtensions(List<String> extensionRPCs) {
     for (final extension in extensionRPCs) {
       for (final prefix in _flutterExtensionPrefixes) {
         if (extension.startsWith(prefix)) {
@@ -1626,10 +1626,10 @@ final class ConnectionContext {
     return false;
   }
 
-  Uri _vmServiceHttpBaseUri(final CoreEndpoint endpoint) {
+  Uri _vmServiceHttpBaseUri(CoreEndpoint endpoint) {
     final wsUri = endpoint.wsUri;
     final pathSegments = wsUri.pathSegments
-        .where((final s) => s.isNotEmpty)
+        .where((s) => s.isNotEmpty)
         .toList();
     if (pathSegments.isNotEmpty && pathSegments.last == 'ws') {
       pathSegments.removeLast();
@@ -1643,12 +1643,12 @@ final class ConnectionContext {
   }
 
   Uri _vmServiceMethodUri(
-    final Uri base,
-    final String method, {
-    final Map<String, String>? query,
+    Uri base,
+    String method, {
+    Map<String, String>? query,
   }) {
     final pathSegments = <String>[
-      ...base.pathSegments.where((final s) => s.isNotEmpty),
+      ...base.pathSegments.where((s) => s.isNotEmpty),
       method,
     ];
     return Uri(
@@ -1661,9 +1661,9 @@ final class ConnectionContext {
   }
 
   Future<Map<String, Object?>> _fetchVmServiceMap({
-    required final HttpClient client,
-    required final Uri uri,
-    required final Duration timeout,
+    required HttpClient client,
+    required Uri uri,
+    required Duration timeout,
   }) async {
     final requestFuture = client.getUrl(uri);
     final request = timeout == Duration.zero
@@ -1690,7 +1690,7 @@ final class ConnectionContext {
     throw StateError('VM service probe returned non-map payload: $uri');
   }
 
-  Map<String, Object?> _extractResultMap(final Map<String, Object?> payload) {
+  Map<String, Object?> _extractResultMap(Map<String, Object?> payload) {
     final result = payload['result'];
     if (result is Map<String, Object?>) {
       return result;
@@ -1708,7 +1708,7 @@ final class ConnectionContext {
     return discovered;
   }
 
-  CoreEndpoint _endpointForDiscoveredPort(final int discoveredPort) {
+  CoreEndpoint _endpointForDiscoveredPort(int discoveredPort) {
     final sticky = _stickyEndpoint;
     if (sticky != null && sticky.port == discoveredPort) {
       return sticky;
@@ -1722,7 +1722,7 @@ final class ConnectionContext {
     return CoreEndpoint(host: defaultHost, port: discoveredPort);
   }
 
-  bool _sameEndpointByTargetId(final CoreEndpoint a, final CoreEndpoint b) =>
+  bool _sameEndpointByTargetId(CoreEndpoint a, CoreEndpoint b) =>
       CoreConnectionTarget.buildTargetId(vmServiceWsUri: a.wsUri) ==
       CoreConnectionTarget.buildTargetId(vmServiceWsUri: b.wsUri);
 
@@ -1743,7 +1743,7 @@ final class ConnectionContext {
   static const String _appIdentityExtension = 'ext.mcp.toolkit.app_identity';
 
   Future<bool> _isCurrentConnectionHealthy({
-    required final Duration timeout,
+    required Duration timeout,
   }) async {
     final vmService = _vmService;
     if (vmService == null) {
@@ -1764,8 +1764,8 @@ final class ConnectionContext {
   }
 
   Future<Response> callFlutterExtension(
-    final String method, {
-    final Map<String, dynamic>? args,
+    String method, {
+    Map<String, dynamic>? args,
   }) async {
     final isolate = await getFlutterIsolate();
     final isolateId = isolate?.id;
@@ -1785,9 +1785,9 @@ final class ConnectionContext {
   }
 
   Future<Response?> callServiceExtension(
-    final String method, {
-    final String? isolateId,
-    final Map<String, dynamic>? args,
+    String method, {
+    String? isolateId,
+    Map<String, dynamic>? args,
   }) async {
     final vmService = _vmService;
     if (vmService == null) {
@@ -1841,7 +1841,7 @@ final class ConnectionContext {
       try {
         final isolateInfo = await vmService.getIsolate(isolate.id!);
         final extensionRPCs = isolateInfo.extensionRPCs ?? <String>[];
-        if (extensionRPCs.any((final ext) => ext.startsWith('ext.flutter'))) {
+        if (extensionRPCs.any((ext) => ext.startsWith('ext.flutter'))) {
           return isolate;
         }
       } on Exception {
@@ -1852,7 +1852,7 @@ final class ConnectionContext {
     return null;
   }
 
-  Future<Map<String, dynamic>?> hotReload({final bool force = false}) {
+  Future<Map<String, dynamic>?> hotReload({bool force = false}) {
     final pending = _pendingReloadOrRestart;
     if (pending != null) return pending;
     final completer = Completer<Map<String, dynamic>?>();
@@ -1871,7 +1871,7 @@ final class ConnectionContext {
   }
 
   Future<Map<String, dynamic>?> _runHotReload({
-    required final bool force,
+    required bool force,
   }) async {
     final delegated = await _delegatedReloadOrRestart(method: 'reload');
     if (delegated != null) return delegated;
@@ -1935,7 +1935,7 @@ final class ConnectionContext {
   /// VM-service path. The session is the only compile-capable channel, so its
   /// answer — not a fire-and-forget request — is what gets reported.
   Future<Map<String, dynamic>?> _delegatedReloadOrRestart({
-    required final String method,
+    required String method,
   }) async {
     final control = runnerControl;
     if (control == null) return null;

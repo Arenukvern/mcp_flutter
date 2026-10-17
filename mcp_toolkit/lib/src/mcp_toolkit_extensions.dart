@@ -47,11 +47,11 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
     _agentInvokeSurfaceRegistered = true;
     registerServiceExtension(
       name: ToolkitExtensionNames.agentCatalog,
-      callback: (final parameters) async => <String, Object?>{
+      callback: (parameters) async => <String, Object?>{
         'success': true,
         'actions': <Object?>[
           for (final entry in _allEntries.where(
-            (final candidate) => candidate.hasTool,
+            (candidate) => candidate.hasTool,
           ))
             <String, Object?>{
               'name': entry.name,
@@ -64,7 +64,7 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
     );
     registerServiceExtension(
       name: ToolkitExtensionNames.agentInvoke,
-      callback: (final parameters) async {
+      callback: (parameters) async {
         final name = parameters['name'] ?? '';
         AgentCallEntry? entry;
         for (final candidate in _allEntries) {
@@ -121,8 +121,8 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
   @protected
   @mustCallSuper
   void initializeServiceExtensions({
-    required final ErrorMonitor errorMonitor,
-    required final Set<AgentCallEntry> entries,
+    required ErrorMonitor errorMonitor,
+    required Set<AgentCallEntry> entries,
   }) {
     if (kReleaseMode) {
       throw UnsupportedError(
@@ -136,7 +136,7 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
       final allEntries = {..._allEntries, ...entries};
       final uniqueEntries = <AgentCallEntry>{};
       for (final entry in allEntries) {
-        if (!uniqueEntries.any((final e) => e.key == entry.key)) {
+        if (!uniqueEntries.any((e) => e.key == entry.key)) {
           uniqueEntries.add(entry);
         }
       }
@@ -155,7 +155,7 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
         }
         registerServiceExtension(
           name: extensionName,
-          callback: (final parameters) async {
+          callback: (parameters) async {
             final wireArgs = mcpToolkitArgumentsFromServiceExtensionParameters(
               parameters,
             );
@@ -178,7 +178,7 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
       if (!_debugServiceExtensionsRegistered) {
         registerServiceExtension(
           name: 'registerDynamics',
-          callback: (final parameters) async => _handleRegisterDynamics(),
+          callback: (parameters) async => _handleRegisterDynamics(),
         );
       }
 
@@ -194,21 +194,21 @@ mixin MCPToolkitExtensions on MCPToolkitBindingBase {
 
   @visibleForTesting
   Map<String, Object?> mcpToolkitArgumentsFromServiceExtensionParameters(
-    final Map<String, String> parameters,
+    Map<String, String> parameters,
   ) => parameters.map(MapEntry<String, Object?>.new)..remove('isolateId');
 
   /// Posts the debug-only DTD event consumed by Flutter MCP dynamic discovery.
-  void _postToolRegistrationEvent(final Set<AgentCallEntry> newEntries) {
+  void _postToolRegistrationEvent(Set<AgentCallEntry> newEntries) {
     if (newEntries.isEmpty) return;
 
     final toolNames = newEntries
-        .where((final entry) => entry.hasTool)
-        .map((final entry) => entry.serviceExtensionName)
+        .where((entry) => entry.hasTool)
+        .map((entry) => entry.serviceExtensionName)
         .toList();
 
     final resourceUris = newEntries
-        .where((final entry) => entry.hasResource)
-        .map((final entry) => entry.resolveResourceUri(protocolScheme))
+        .where((entry) => entry.hasResource)
+        .map((entry) => entry.resolveResourceUri(protocolScheme))
         .toList();
 
     developer.postEvent('MCPToolkit.ToolRegistration', {

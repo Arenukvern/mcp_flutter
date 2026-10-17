@@ -3,7 +3,7 @@ enum InitMode {
   cli,
   auto;
 
-  static InitMode parse(final String? input) {
+  static InitMode parse(String? input) {
     if (input == null) return InitMode.auto;
     for (final m in InitMode.values) {
       if (m.name == input) return m;

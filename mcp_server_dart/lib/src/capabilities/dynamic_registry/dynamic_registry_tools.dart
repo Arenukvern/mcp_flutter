@@ -108,7 +108,7 @@ final class DynamicRegistryTools {
       };
 
   FutureOr<CallToolResult> _handleListClientToolsAndResources(
-    final CallToolRequest request,
+    CallToolRequest request,
   ) async {
     final connectError = await applyConnectionOverride(
       request: request,
@@ -143,7 +143,7 @@ final class DynamicRegistryTools {
   }
 
   FutureOr<CallToolResult> _handleRunClientTool(
-    final CallToolRequest request,
+    CallToolRequest request,
   ) async {
     final connectError = await applyConnectionOverride(
       request: request,
@@ -197,7 +197,7 @@ final class DynamicRegistryTools {
   }
 
   FutureOr<CallToolResult> _handleRunClientResource(
-    final CallToolRequest request,
+    CallToolRequest request,
   ) async {
     final connectError = await applyConnectionOverride(
       request: request,
@@ -258,7 +258,7 @@ final class DynamicRegistryTools {
     );
   }
 
-  Map<String, Object?> _map(final Object? data) {
+  Map<String, Object?> _map(Object? data) {
     if (data is Map<String, Object?>) {
       return data;
     }

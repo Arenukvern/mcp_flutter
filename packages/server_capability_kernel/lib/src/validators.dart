@@ -6,7 +6,7 @@ final _capabilityIdPattern = RegExp(r'^[a-z][a-z0-9_]*$');
 
 /// Throws [InvalidCapabilityIdError] if [id] is empty, malformed, or
 /// reserved.
-void validateCapabilityId(final String id) {
+void validateCapabilityId(String id) {
   if (id.isEmpty) {
     throw InvalidCapabilityIdError('Capability id must not be empty.');
   }
@@ -26,8 +26,8 @@ void validateCapabilityId(final String id) {
 /// Throws [PrePrefixedToolNameError] if [name] starts with
 /// `<capabilityId>_`.
 void validateBareToolName({
-  required final String capabilityId,
-  required final String name,
+  required String capabilityId,
+  required String name,
 }) {
   final prefix = '${capabilityId}_';
   if (name.startsWith(prefix)) {
@@ -40,6 +40,6 @@ void validateBareToolName({
 
 /// Returns `<capabilityId>_<name>`.
 String applyPrefix({
-  required final String capabilityId,
-  required final String name,
+  required String capabilityId,
+  required String name,
 }) => '${capabilityId}_$name';

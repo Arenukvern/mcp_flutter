@@ -23,7 +23,7 @@ FakeCapabilityContext _registeredCtx({FakeCommandRunner? runner}) {
   return ctx;
 }
 
-void _expectEnvelopeKeys(final Map<String, Object?> json) {
+void _expectEnvelopeKeys(Map<String, Object?> json) {
   expect(json.containsKey('code'), isTrue, reason: 'envelope must have code');
   expect(
     json.containsKey('message'),
@@ -440,7 +440,7 @@ void main() {
         final result = await reg.handler(const <String, Object?>{});
         expect(result.ok, isTrue);
         final images = result.artifacts
-            .where((final a) => a.mimeType == 'image/png')
+            .where((a) => a.mimeType == 'image/png')
             .toList();
         expect(images, hasLength(2));
         expect(images[0].text, 'base64dataA');
@@ -624,7 +624,7 @@ void main() {
         expect(bundle['imageSummaries'], hasLength(2));
 
         final images = result.artifacts
-            .where((final a) => a.mimeType == 'image/png')
+            .where((a) => a.mimeType == 'image/png')
             .toList();
         expect(images, hasLength(2));
         expect(images[0].text, 'base64dataA');

@@ -30,8 +30,8 @@ final class RegistryBackedDynamicGateway implements CoreDynamicGateway {
 
     return CoreResult.success(
       data: {
-        'tools': toolEntries.map((final e) => e.tool).toList(),
-        'resources': resourceEntries.map((final e) => e.resource).toList(),
+        'tools': toolEntries.map((e) => e.tool).toList(),
+        'resources': resourceEntries.map((e) => e.resource).toList(),
         'summary': {
           'totalTools': toolEntries.length,
           'totalResources': resourceEntries.length,
@@ -42,8 +42,8 @@ final class RegistryBackedDynamicGateway implements CoreDynamicGateway {
 
   @override
   Future<CoreResult> runClientTool(
-    final String toolName,
-    final Map<String, Object?> arguments,
+    String toolName,
+    Map<String, Object?> arguments,
   ) async {
     if (toolName.isEmpty) {
       return CoreResult.failure(
@@ -80,7 +80,7 @@ final class RegistryBackedDynamicGateway implements CoreDynamicGateway {
   }
 
   @override
-  Future<CoreResult> runClientResource(final String resourceUri) async {
+  Future<CoreResult> runClientResource(String resourceUri) async {
     if (resourceUri.isEmpty) {
       return CoreResult.failure(
         code: CoreErrorCode.missingResourceUri,
@@ -152,7 +152,7 @@ final class RegistryBackedDynamicGateway implements CoreDynamicGateway {
 
   @override
   Future<CoreResult> dynamicRegistryStats({
-    required final bool includeAppDetails,
+    required bool includeAppDetails,
   }) async {
     final info = registry.appInfo;
     if (info == null) {

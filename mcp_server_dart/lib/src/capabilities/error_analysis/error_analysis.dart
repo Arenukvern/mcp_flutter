@@ -4,7 +4,7 @@
 final class ErrorCauseAnalyzer {
   const ErrorCauseAnalyzer();
 
-  List<Map<String, Object?>> analyze(final List<Map<String, Object?>> errors) {
+  List<Map<String, Object?>> analyze(List<Map<String, Object?>> errors) {
     final causes = <Map<String, Object?>>[];
 
     for (final error in errors) {
@@ -91,7 +91,7 @@ final class ErrorCauseAnalyzer {
       }
     }
 
-    deduped.sort((final a, final b) {
+    deduped.sort((a, b) {
       final ac = (a['confidence'] as num?)?.toDouble() ?? 0;
       final bc = (b['confidence'] as num?)?.toDouble() ?? 0;
       return bc.compareTo(ac);
@@ -100,7 +100,7 @@ final class ErrorCauseAnalyzer {
     return deduped;
   }
 
-  String _mergeErrorText(final Map<String, Object?> error) {
+  String _mergeErrorText(Map<String, Object?> error) {
     final candidates = <String>[];
     for (final key in const [
       'error',
@@ -125,7 +125,7 @@ final class ErrorCauseAnalyzer {
     return candidates.join('\n');
   }
 
-  String? _extractFirstLineContaining(final String text, final String needle) {
+  String? _extractFirstLineContaining(String text, String needle) {
     for (final line in text.split('\n')) {
       if (line.contains(needle)) {
         return line.trim();
@@ -134,7 +134,7 @@ final class ErrorCauseAnalyzer {
     return null;
   }
 
-  String? _extractWidgetLine(final String text) {
+  String? _extractWidgetLine(String text) {
     final lines = text.split('\n');
 
     for (final line in lines) {

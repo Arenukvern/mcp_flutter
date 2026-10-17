@@ -22,7 +22,7 @@ FakeCapabilityContext _registeredCtx({FakeCommandRunner? runner}) {
   return ctx;
 }
 
-void _expectEnvelopeKeys(final Map<String, Object?> json) {
+void _expectEnvelopeKeys(Map<String, Object?> json) {
   expect(json.containsKey('code'), isTrue, reason: 'envelope must have code');
   expect(
     json.containsKey('message'),
@@ -49,7 +49,7 @@ void _expectEnvelopeKeys(final Map<String, Object?> json) {
 /// Shared schema assertions for all debug dump tools.
 /// Each tool has no required fields, additionalProperties: false, and a
 /// connection property.
-void _expectDumpSchema(final Map<String, Object?> schema) {
+void _expectDumpSchema(Map<String, Object?> schema) {
   expect(schema['type'], 'object');
   expect(schema['additionalProperties'], isFalse);
   expect(schema.containsKey('required'), isFalse);

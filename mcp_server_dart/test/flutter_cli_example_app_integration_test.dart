@@ -51,7 +51,7 @@ void main() {
       stdoutSub = flutterProcess.stdout
           .transform(utf8.decoder)
           .transform(const LineSplitter())
-          .listen((final line) {
+          .listen((line) {
             stdout.writeln('[flutter_test_app] $line');
 
             final vmUri = _extractVmServiceWsUri(line);
@@ -63,7 +63,7 @@ void main() {
       stderrSub = flutterProcess.stderr
           .transform(utf8.decoder)
           .transform(const LineSplitter())
-          .listen((final line) {
+          .listen((line) {
             stderr.writeln('[flutter_test_app:stderr] $line');
           });
 
@@ -133,7 +133,7 @@ void main() {
         expect(doctorData['target'], _globalVmServiceWsUri);
         final doctorChecks = (doctorData['checks'] as List).cast<Map>();
         final vmCheck = doctorChecks.firstWhere(
-          (final c) => c['id'] == 'vm_target_reachable',
+          (c) => c['id'] == 'vm_target_reachable',
         );
         expect(vmCheck['status'], 'pass');
 
@@ -150,16 +150,16 @@ void main() {
         ]);
         expect(exts['ok'], isTrue);
         final extList = (exts['data'] as List).cast<String>();
-        expect(extList.any((final e) => e.startsWith('ext.flutter')), isTrue);
+        expect(extList.any((e) => e.startsWith('ext.flutter')), isTrue);
         expect(
           extList.any(
-            (final e) => e.contains('ext.mcp.toolkit.registerDynamics'),
+            (e) => e.contains('ext.mcp.toolkit.registerDynamics'),
           ),
           isTrue,
         );
         expect(
           extList.any(
-            (final e) => e.contains('ext.mcp.toolkit.inspect_widget_at_point'),
+            (e) => e.contains('ext.mcp.toolkit.inspect_widget_at_point'),
           ),
           isTrue,
         );
@@ -175,7 +175,7 @@ void main() {
         final discoverData = discover['data'] as Map<String, dynamic>;
         final targets = (discoverData['targets'] as List)
             .whereType<Map>()
-            .map((final e) => e.cast<String, Object?>())
+            .map((e) => e.cast<String, Object?>())
             .toList();
         expect(targets, isNotEmpty);
 
@@ -451,9 +451,9 @@ void main() {
         // need preconditions the showcase doesn't satisfy (e.g. no dialog
         // open for handle_dialog). Both shapes prove wiring.
         Future<Map<String, dynamic>> exec(
-          final String name,
-          final Object args, {
-          final bool requireOk = false,
+          String name,
+          Object args, {
+          bool requireOk = false,
         }) async {
           final raw = await _runCliRaw([
             'exec',
@@ -485,8 +485,8 @@ void main() {
         final snapData = snap['data'] as Map<String, dynamic>;
         final refs = ((snapData['nodes'] as List?) ?? const [])
             .whereType<Map>()
-            .map((final n) => '${n['ref'] ?? ''}')
-            .where((final r) => r.isNotEmpty)
+            .map((n) => '${n['ref'] ?? ''}')
+            .where((r) => r.isNotEmpty)
             .toList();
         expect(refs, isNotEmpty);
         expect(snapData['interactionSurface'], 'flutter_widgets');
@@ -615,7 +615,7 @@ Directory _serverDirectory() => Directory.current;
 Directory _appDirectory() =>
     Directory('${Directory.current.path}/../flutter_test_app');
 
-String? _extractVmServiceWsUri(final String line) {
+String? _extractVmServiceWsUri(String line) {
   final match = RegExp(
     r'A Dart VM Service on .* is available at: (http://\S+)',
   ).firstMatch(line);
@@ -631,9 +631,9 @@ String? _extractVmServiceWsUri(final String line) {
 }
 
 Future<void> _waitForCliConnectable({
-  required final String vmServiceWsUri,
-  required final Duration timeout,
-  required final Duration interval,
+  required String vmServiceWsUri,
+  required Duration timeout,
+  required Duration interval,
 }) async {
   final start = DateTime.now();
 
@@ -657,8 +657,8 @@ Future<void> _waitForCliConnectable({
 }
 
 Map<String, dynamic>? _findDynamicToolInputSchema(
-  final Map<String, dynamic> dynamicData,
-  final String toolName,
+  Map<String, dynamic> dynamicData,
+  String toolName,
 ) {
   final tools = (dynamicData['tools'] as List?) ?? const [];
   for (final tool in tools.whereType<Map>()) {
@@ -674,10 +674,10 @@ Map<String, dynamic>? _findDynamicToolInputSchema(
   return null;
 }
 
-String _envelopeText(final Map<String, dynamic> envelope) =>
+String _envelopeText(Map<String, dynamic> envelope) =>
     jsonEncode(envelope);
 
-Future<Map<String, dynamic>> _waitForDynamicTool(final String toolName) async {
+Future<Map<String, dynamic>> _waitForDynamicTool(String toolName) async {
   final start = DateTime.now();
   const timeout = Duration(seconds: 60);
 
@@ -694,7 +694,7 @@ Future<Map<String, dynamic>> _waitForDynamicTool(final String toolName) async {
       final tools = (data['tools'] as List?) ?? const [];
       final names = tools
           .whereType<Map>()
-          .map((final t) => '${t['name']}')
+          .map((t) => '${t['name']}')
           .toSet();
       if (names.contains(toolName)) {
         return result;
@@ -708,8 +708,8 @@ Future<Map<String, dynamic>> _waitForDynamicTool(final String toolName) async {
 }
 
 String? _findResourceUri(
-  final Map<String, dynamic> dynamicData, {
-  required final String resourceName,
+  Map<String, dynamic> dynamicData, {
+  required String resourceName,
 }) {
   final resources = (dynamicData['resources'] as List?) ?? const [];
   for (final resource in resources.whereType<Map>()) {
@@ -726,7 +726,7 @@ String? _findResourceUri(
   return null;
 }
 
-Map<String, dynamic>? _tryDecodeJsonMap(final String value) {
+Map<String, dynamic>? _tryDecodeJsonMap(String value) {
   try {
     final decoded = jsonDecode(value);
     if (decoded is Map<String, dynamic>) {
@@ -741,7 +741,7 @@ Map<String, dynamic>? _tryDecodeJsonMap(final String value) {
   }
 }
 
-Future<Map<String, dynamic>> _runCli(final List<String> args) async {
+Future<Map<String, dynamic>> _runCli(List<String> args) async {
   final raw = await _runCliRaw(args);
   if (raw.result.exitCode != 0) {
     fail(
@@ -754,7 +754,7 @@ Future<Map<String, dynamic>> _runCli(final List<String> args) async {
 }
 
 Future<({ProcessResult result, Map<String, dynamic> envelope})> _runCliRaw(
-  final List<String> args,
+  List<String> args,
 ) async {
   final fullArgs = _buildCliArgs(args);
 
@@ -776,7 +776,7 @@ Future<({ProcessResult result, Map<String, dynamic> envelope})> _runCliRaw(
   return (result: result, envelope: envelope);
 }
 
-List<String> _buildCliArgs(final List<String> args) {
+List<String> _buildCliArgs(List<String> args) {
   final fullArgs = <String>['run', 'bin/flutter_mcp_toolkit.dart'];
 
   final statePath = _stateFilePath;

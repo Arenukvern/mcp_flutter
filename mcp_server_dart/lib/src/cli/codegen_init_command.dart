@@ -4,9 +4,9 @@ import 'dart:io';
 import 'package:flutter_mcp_toolkit_server/src/cli/codegen_snippets.dart';
 
 Future<int> runCodegenInit({
-  required final String projectRoot,
-  required final bool printSnippetOnly,
-  required final bool runPubAdd,
+  required String projectRoot,
+  required bool printSnippetOnly,
+  required bool runPubAdd,
 }) async {
   final pubspec = File('$projectRoot/pubspec.yaml');
   if (!pubspec.existsSync()) {

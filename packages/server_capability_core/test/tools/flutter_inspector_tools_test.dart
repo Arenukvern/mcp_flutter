@@ -27,7 +27,7 @@ FakeCapabilityContext _registeredCtx({FakeCommandRunner? runner}) {
   return ctx;
 }
 
-void _expectEnvelopeKeys(final Map<String, Object?> json) {
+void _expectEnvelopeKeys(Map<String, Object?> json) {
   expect(json.containsKey('code'), isTrue, reason: 'envelope must have code');
   expect(
     json.containsKey('message'),
@@ -52,8 +52,8 @@ void _expectEnvelopeKeys(final Map<String, Object?> json) {
 }
 
 void _expectBaseSchema(
-  final Map<String, Object?> schema, {
-  final List<String> extraProps = const [],
+  Map<String, Object?> schema, {
+  List<String> extraProps = const [],
 }) {
   expect(schema['type'], 'object');
   expect(schema['additionalProperties'], isFalse);

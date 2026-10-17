@@ -25,8 +25,8 @@ class WaitPredicateService {
 
   /// Blocks until [predicate] matches or [timeoutMs] elapses.
   static Future<Map<String, Object?>> waitFor({
-    required final Map<String, Object?> predicate,
-    final int timeoutMs = 5000,
+    required Map<String, Object?> predicate,
+    int timeoutMs = 5000,
   }) async {
     final kind = predicate['kind'];
     final stableWindowMs =
@@ -140,7 +140,7 @@ class WaitPredicateService {
     );
   }
 
-  static Future<void> _awaitNextFrame(final WidgetsBinding binding) async {
+  static Future<void> _awaitNextFrame(WidgetsBinding binding) async {
     binding.scheduleFrame();
     final endOfFrame = binding.endOfFrame;
     await pumpFramesIfSuspended();
@@ -148,8 +148,8 @@ class WaitPredicateService {
   }
 
   static bool _evaluate(
-    final Map<String, Object?> predicate,
-    final Map<String, Object?> snapshot,
+    Map<String, Object?> predicate,
+    Map<String, Object?> snapshot,
   ) {
     final kind = predicate['kind'];
     switch (kind) {
@@ -184,8 +184,8 @@ class WaitPredicateService {
   /// the tree: the label of an unselected tab is present the whole time, so it
   /// cannot say whether that tab is open.
   static bool _nodeMatches(
-    final Map<String, Object?> predicate,
-    final Map<String, Object?> snapshot,
+    Map<String, Object?> predicate,
+    Map<String, Object?> snapshot,
   ) {
     final identifier = (predicate['identifier'] as String?) ?? '';
     if (identifier.isEmpty) return false;
@@ -193,7 +193,7 @@ class WaitPredicateService {
     if (nodes is! List) return false;
 
     final found = nodes.whereType<Map<Object?, Object?>>().any(
-      (final node) =>
+      (node) =>
           node['identifier'] == identifier && _flagsHold(predicate, node),
     );
     return predicate['absent'] == true ? !found : found;
@@ -202,8 +202,8 @@ class WaitPredicateService {
   /// A flag the snapshot omits reads as `false` — it only emits the ones that
   /// are set.
   static bool _flagsHold(
-    final Map<String, Object?> predicate,
-    final Map<Object?, Object?> node,
+    Map<String, Object?> predicate,
+    Map<Object?, Object?> node,
   ) {
     for (final flag in _nodeFlags) {
       final expected = predicate[flag];
@@ -214,8 +214,8 @@ class WaitPredicateService {
   }
 
   static bool _snapshotContainsText(
-    final Map<String, Object?> snapshot,
-    final String needle,
+    Map<String, Object?> snapshot,
+    String needle,
   ) {
     final nodes = snapshot['nodes'];
     if (nodes is! List) return false;
@@ -225,7 +225,7 @@ class WaitPredicateService {
   /// Recursively walks any nested Map/List structure looking for a string
   /// value containing [needle]. Field-name agnostic so the predicate is
   /// robust to snapshot-shape changes (label/value/hint/name/whatever).
-  static bool _anyStringContains(final Object? value, final String needle) {
+  static bool _anyStringContains(Object? value, String needle) {
     if (value is String) return value.contains(needle);
     if (value is List) {
       for (final item in value) {
@@ -243,8 +243,8 @@ class WaitPredicateService {
   }
 
   static Map<String, Object?> _successNoSnapshot(
-    final Map<String, Object?> predicate,
-    final int elapsedMs,
+    Map<String, Object?> predicate,
+    int elapsedMs,
   ) => <String, Object?>{
     'matched': true,
     'predicate': predicate,
@@ -252,10 +252,10 @@ class WaitPredicateService {
   };
 
   static Map<String, Object?> _successWithSnapshot(
-    final Map<String, Object?> predicate,
-    final int elapsedMs,
-    final Map<String, Object?> snapshot, {
-    final Map<String, Object?> measured = const <String, Object?>{},
+    Map<String, Object?> predicate,
+    int elapsedMs,
+    Map<String, Object?> snapshot, {
+    Map<String, Object?> measured = const <String, Object?>{},
   }) => <String, Object?>{
     'matched': true,
     'predicate': predicate,
@@ -265,9 +265,9 @@ class WaitPredicateService {
   };
 
   static Map<String, Object?> _invalidStableBudget({
-    required final Map<String, Object?> predicate,
-    required final int stableWindowMs,
-    required final int timeoutMs,
+    required Map<String, Object?> predicate,
+    required int stableWindowMs,
+    required int timeoutMs,
   }) => <String, Object?>{
     'matched': false,
     'error': 'invalid_predicate',
@@ -282,10 +282,10 @@ class WaitPredicateService {
   };
 
   static Map<String, Object?> _timeoutResponse(
-    final Map<String, Object?> predicate,
-    final int elapsedMs,
-    final Map<String, Object?>? lastSnapshot, {
-    final int changeCount = 0,
+    Map<String, Object?> predicate,
+    int elapsedMs,
+    Map<String, Object?>? lastSnapshot, {
+    int changeCount = 0,
   }) => <String, Object?>{
     'matched': false,
     'predicate': predicate,
@@ -308,9 +308,9 @@ class WaitPredicateService {
   /// case. Named `hint` so it reaches the caller as the failure's recovery
   /// summary, like every other refusal.
   static Map<String, Object?> _timeoutDiagnosis({
-    required final Map<String, Object?> predicate,
-    required final Map<String, Object?>? lastSnapshot,
-    required final int changeCount,
+    required Map<String, Object?> predicate,
+    required Map<String, Object?>? lastSnapshot,
+    required int changeCount,
   }) {
     final needle = (predicate['text'] as String?) ?? '';
     return switch (predicate['kind']) {
@@ -324,8 +324,8 @@ class WaitPredicateService {
   }
 
   static Map<String, Object?> _textTimeout(
-    final String needle,
-    final Map<String, Object?>? snapshot,
+    String needle,
+    Map<String, Object?>? snapshot,
   ) {
     if (needle.isEmpty) {
       return const <String, Object?>{
@@ -355,8 +355,8 @@ class WaitPredicateService {
   }
 
   static Map<String, Object?> _noTextTimeout(
-    final String needle,
-    final Map<String, Object?>? snapshot,
+    String needle,
+    Map<String, Object?>? snapshot,
   ) {
     if (needle.isEmpty) {
       return const <String, Object?>{
@@ -380,8 +380,8 @@ class WaitPredicateService {
   }
 
   static Map<String, Object?> _nodeTimeout(
-    final Map<String, Object?> predicate,
-    final Map<String, Object?>? snapshot,
+    Map<String, Object?> predicate,
+    Map<String, Object?>? snapshot,
   ) {
     final identifier = (predicate['identifier'] as String?) ?? '';
     if (identifier.isEmpty) {
@@ -434,8 +434,8 @@ class WaitPredicateService {
   }
 
   static Map<String, Object?> _stableTimeout(
-    final Map<String, Object?> predicate,
-    final int changeCount,
+    Map<String, Object?> predicate,
+    int changeCount,
   ) {
     final window = (predicate['stableWindowMs'] as num?)?.toInt() ?? 250;
     if (changeCount == 0) {
@@ -473,12 +473,12 @@ class WaitPredicateService {
   /// Number of strings under [value], and the first one containing
   /// [lowerNeedle] once case is set aside.
   static (int, String?) _scanStrings(
-    final Object? value,
-    final String lowerNeedle,
+    Object? value,
+    String lowerNeedle,
   ) {
     var count = 0;
     String? match;
-    void walk(final Object? current) {
+    void walk(Object? current) {
       if (current is String) {
         count++;
         if (match == null && current.toLowerCase().contains(lowerNeedle)) {
@@ -500,8 +500,8 @@ class WaitPredicateService {
   }
 
   static Map<Object?, Object?>? _nodeHolding(
-    final Map<String, Object?>? snapshot,
-    final String needle,
+    Map<String, Object?>? snapshot,
+    String needle,
   ) {
     final nodes = snapshot?['nodes'];
     if (nodes is! List) return null;
@@ -512,8 +512,8 @@ class WaitPredicateService {
   }
 
   static Map<Object?, Object?>? _nodeWithIdentifier(
-    final Map<String, Object?>? snapshot,
-    final String identifier,
+    Map<String, Object?>? snapshot,
+    String identifier,
   ) {
     final nodes = snapshot?['nodes'];
     if (nodes is! List) return null;
@@ -530,13 +530,13 @@ class WaitPredicateService {
   /// a disabled, unchecked control. Matching still reads an absent flag as
   /// `false` — see [_flagsHold] — but that is a rule about the predicate, not
   /// a description of the widget.
-  static Map<String, Object?> _stateOf(final Map<Object?, Object?> node) =>
+  static Map<String, Object?> _stateOf(Map<Object?, Object?> node) =>
       <String, Object?>{
         for (final flag in _nodeFlags)
           if (node.containsKey(flag)) flag: node[flag],
       };
 
-  static String _nameOf(final Map<Object?, Object?> node) {
+  static String _nameOf(Map<Object?, Object?> node) {
     final identifier = node['identifier'];
     if (identifier is String && identifier.isNotEmpty) return '"$identifier"';
     final label = node['label'];
@@ -560,10 +560,10 @@ class WaitPredicateService {
   /// tests lock the wire field name (`lastSnapshotId`, not `lastSnapshot`)
   /// without flaky timing.
   static Map<String, Object?> buildTimeoutResponseForTesting({
-    required final Map<String, Object?> predicate,
-    required final int elapsedMs,
-    final Map<String, Object?>? lastSnapshot,
-    final int changeCount = 0,
+    required Map<String, Object?> predicate,
+    required int elapsedMs,
+    Map<String, Object?>? lastSnapshot,
+    int changeCount = 0,
   }) => _timeoutResponse(
     predicate,
     elapsedMs,
@@ -580,9 +580,9 @@ class WaitPredicateService {
     }
   }
 
-  static String _serialiseNodes(final Map<String, Object?> snapshot) {
+  static String _serialiseNodes(Map<String, Object?> snapshot) {
     final nodes = snapshot['nodes'];
     if (nodes is! List) return '';
-    return nodes.map((final n) => n.toString()).join('|');
+    return nodes.map((n) => n.toString()).join('|');
   }
 }

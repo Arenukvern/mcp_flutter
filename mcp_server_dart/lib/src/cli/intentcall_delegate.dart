@@ -24,8 +24,8 @@ final class IntentcallCli {
   /// Resolves the CLI, or null when nothing usable is installed.
   /// [environment] and [cwd] are injectable for tests.
   static IntentcallCli? tryResolve({
-    final Map<String, String>? environment,
-    final String? cwd,
+    Map<String, String>? environment,
+    String? cwd,
   }) {
     final env = environment ?? Platform.environment;
     final fromEnv = env['INTENTCALL_ROOT'];
@@ -60,7 +60,7 @@ final class IntentcallCli {
   /// Runs `intentcall <arguments>` with stdio inherited and returns the
   /// delegate's exit code. Fresh checkouts get `dart pub get` first —
   /// `dart run bin/<file>` needs the package's own resolution.
-  Future<int> run(final List<String> arguments) async {
+  Future<int> run(List<String> arguments) async {
     if (cliDir != null &&
         !Directory(p.join(cliDir!, '.dart_tool')).existsSync()) {
       final get = await Process.run(
@@ -98,7 +98,7 @@ void _printInstallHint() {
 /// The spawned CLI resolves relative paths against its own working
 /// directory (the CLI checkout), so the caller's project root must be
 /// absolutized against the CALLER's cwd first.
-String _absoluteProjectRoot(final String projectRoot) {
+String _absoluteProjectRoot(String projectRoot) {
   if (p.isAbsolute(projectRoot)) return projectRoot;
   return p.normalize(p.join(Directory.current.path, projectRoot));
 }
@@ -107,10 +107,10 @@ String _absoluteProjectRoot(final String projectRoot) {
 /// `intentcall platform sync --host flutter`, discovered at runtime.
 /// [cli] overrides resolution (tests inject a fake).
 Future<int> delegatePlatformSync({
-  required final String projectRoot,
-  required final List<String> platforms,
-  final bool checkOnly = false,
-  final IntentcallCli? cli,
+  required String projectRoot,
+  required List<String> platforms,
+  bool checkOnly = false,
+  IntentcallCli? cli,
 }) async {
   final resolved = cli ?? IntentcallCli.tryResolve();
   if (resolved == null) {
@@ -133,9 +133,9 @@ Future<int> delegatePlatformSync({
 /// `intentcall platform hooks init --host flutter`, discovered at runtime.
 /// [cli] overrides resolution (tests inject a fake).
 Future<int> delegatePlatformHooksInit({
-  required final String projectRoot,
-  final bool checkOnly = false,
-  final IntentcallCli? cli,
+  required String projectRoot,
+  bool checkOnly = false,
+  IntentcallCli? cli,
 }) async {
   final resolved = cli ?? IntentcallCli.tryResolve();
   if (resolved == null) {

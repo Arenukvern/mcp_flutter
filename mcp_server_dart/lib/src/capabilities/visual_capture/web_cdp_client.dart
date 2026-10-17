@@ -27,8 +27,8 @@ final class WebCdpCaptureException implements Exception {
 // ignore: one_member_abstracts
 abstract interface class WebTabPngCapturer {
   Future<Uint8List> capturePng({
-    required final WebCdpEndpoint endpoint,
-    final Duration timeout,
+    required WebCdpEndpoint endpoint,
+    Duration timeout,
   });
 }
 
@@ -38,8 +38,8 @@ final class WebCdpScreenshotClient implements WebTabPngCapturer {
 
   @override
   Future<Uint8List> capturePng({
-    required final WebCdpEndpoint endpoint,
-    final Duration timeout = const Duration(seconds: 12),
+    required WebCdpEndpoint endpoint,
+    Duration timeout = const Duration(seconds: 12),
   }) async {
     WebSocketChannel? channel;
     try {
@@ -97,12 +97,12 @@ final class WebCdpScreenshotClient implements WebTabPngCapturer {
   }
 
   Future<Map<String, Object?>?> _sendCommand(
-    final Stream<dynamic> responses,
-    final StreamSink<dynamic> sink, {
-    required final String method,
-    required final int id,
-    required final Duration timeout,
-    final Map<String, Object?> params = const <String, Object?>{},
+    Stream<dynamic> responses,
+    StreamSink<dynamic> sink, {
+    required String method,
+    required int id,
+    required Duration timeout,
+    Map<String, Object?> params = const <String, Object?>{},
   }) async {
     final payload = jsonEncode(<String, Object?>{
       'id': id,
@@ -112,7 +112,7 @@ final class WebCdpScreenshotClient implements WebTabPngCapturer {
     sink.add(payload);
 
     final response = await responses
-        .map((final event) {
+        .map((event) {
           if (event is String) {
             return jsonDecode(event);
           }
@@ -122,10 +122,10 @@ final class WebCdpScreenshotClient implements WebTabPngCapturer {
           return null;
         })
         .where(
-          (final decoded) =>
+          (decoded) =>
               decoded is Map && (decoded['id'] as num?)?.toInt() == id,
         )
-        .map((final decoded) => Map<String, Object?>.from(decoded as Map))
+        .map((decoded) => Map<String, Object?>.from(decoded as Map))
         .first
         .timeout(timeout);
 
@@ -147,7 +147,7 @@ final class WebCdpScreenshotClient implements WebTabPngCapturer {
   }
 }
 
-bool isRetryableWebCdpFailure(final Object? error) {
+bool isRetryableWebCdpFailure(Object? error) {
   if (error is! WebCdpCaptureException) {
     return false;
   }

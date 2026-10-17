@@ -28,7 +28,7 @@ void main() {
     });
 
     test('skill ids match the expected list', () {
-      final ids = SkillAssets.skills.map((final s) => s.id).toSet();
+      final ids = SkillAssets.skills.map((s) => s.id).toSet();
       expect(
         ids,
         containsAll({
@@ -50,7 +50,7 @@ void main() {
     });
 
     test('hyperframes-video is not in default init bundle', () {
-      final ids = SkillAssets.skills.map((final s) => s.id).toSet();
+      final ids = SkillAssets.skills.map((s) => s.id).toSet();
       expect(ids.contains('hyperframes-video'), isFalse);
     });
 

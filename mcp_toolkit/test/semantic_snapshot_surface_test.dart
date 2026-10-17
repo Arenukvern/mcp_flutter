@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 
 Future<Map<String, Object?>> _snapshotAfterPump(
-  final WidgetTester tester,
+  WidgetTester tester,
 ) async {
   final snapshotFuture = SemanticSnapshotService.buildSemanticSnapshot();
   await tester.pump();
@@ -14,9 +14,9 @@ Future<Map<String, Object?>> _snapshotAfterPump(
 }
 
 Future<Map<String, Object?>> _scrollAfterPumps({
-  required final WidgetTester tester,
-  required final String direction,
-  required final double distance,
+  required WidgetTester tester,
+  required String direction,
+  required double distance,
 }) async {
   final future = GestureInteractionService.scroll(
     direction: direction,
@@ -30,7 +30,7 @@ Future<Map<String, Object?>> _scrollAfterPumps({
 
 void main() {
   testWidgets('semantic_snapshot reports flutter_widgets for tappable UI', (
-    final tester,
+    tester,
   ) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -51,7 +51,7 @@ void main() {
   });
 
   testWidgets('semantic_snapshot exposes Semantics identifiers', (
-    final tester,
+    tester,
   ) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -70,14 +70,14 @@ void main() {
     final snapshot = await _snapshotAfterPump(tester);
     final nodes = snapshot['nodes']! as List<Object?>;
     final button = nodes.cast<Map<String, Object?>>().singleWhere(
-      (final node) => node['label'] == 'Go',
+      (node) => node['label'] == 'Go',
     );
 
     expect(button['identifier'], 'primary_go_button');
   });
 
   testWidgets('scroll reports movement and refuses false success at boundary', (
-    final tester,
+    tester,
   ) async {
     final semantics = tester.ensureSemantics();
     try {
@@ -88,7 +88,7 @@ void main() {
             // aims its wheel event — lands on the list itself.
             body: ListView.builder(
               itemCount: 30,
-              itemBuilder: (final context, final index) =>
+              itemBuilder: (context, index) =>
                   SizedBox(height: 48, child: Text('Row $index')),
             ),
           ),
@@ -129,7 +129,7 @@ void main() {
   });
 
   testWidgets('visible subtree signature does not mutate snapshot refs', (
-    final tester,
+    tester,
   ) async {
     final semantics = tester.ensureSemantics();
     try {
@@ -140,7 +140,7 @@ void main() {
               height: 200,
               child: ListView.builder(
                 itemCount: 12,
-                itemBuilder: (final context, final index) =>
+                itemBuilder: (context, index) =>
                     SizedBox(height: 48, child: Text('Row $index')),
               ),
             ),
@@ -154,9 +154,9 @@ void main() {
       final nodes = (snapshot['nodes']! as List<Object?>)
           .cast<Map<String, Object?>>();
       final scrollable = nodes.singleWhere(
-        (final node) => node['type'] == 'scrollable',
+        (node) => node['type'] == 'scrollable',
       );
-      final row = nodes.firstWhere((final node) => node['label'] == 'Row 0');
+      final row = nodes.firstWhere((node) => node['label'] == 'Row 0');
       final scrollableRef = scrollable['ref']! as String;
       final rowRef = row['ref']! as String;
       final scrollableNode = SemanticSnapshotService.resolveRef(scrollableRef)!;
@@ -176,7 +176,7 @@ void main() {
   });
 
   testWidgets('reveal_search finds an off-screen semantics identifier', (
-    final tester,
+    tester,
   ) async {
     final semantics = tester.ensureSemantics();
     try {
@@ -207,7 +207,7 @@ void main() {
           .cast<Map<String, Object?>>();
       expect(
         initialNodes.any(
-          (final node) => node['identifier'] == 'greeting_input_field',
+          (node) => node['identifier'] == 'greeting_input_field',
         ),
         isFalse,
       );
@@ -303,7 +303,7 @@ void main() {
   });
 
   testWidgets('reveal_search says what to do when nothing matched', (
-    final tester,
+    tester,
   ) async {
     final semantics = tester.ensureSemantics();
     try {
@@ -343,7 +343,7 @@ void main() {
   });
 
   testWidgets('reveal_search names the identifiers near a missed one', (
-    final tester,
+    tester,
   ) async {
     final semantics = tester.ensureSemantics();
     try {
@@ -400,7 +400,7 @@ void main() {
   });
 
   testWidgets('reveal_search explains a text miss as a substring test', (
-    final tester,
+    tester,
   ) async {
     final semantics = tester.ensureSemantics();
     try {
@@ -464,7 +464,7 @@ void main() {
   );
 
   group('semantic_snapshot filters', () {
-    Future<void> pumpRailAndPanel(final WidgetTester tester) async {
+    Future<void> pumpRailAndPanel(WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -520,11 +520,11 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    List<Map<String, Object?>> nodesOf(final Map<String, Object?> snapshot) =>
+    List<Map<String, Object?>> nodesOf(Map<String, Object?> snapshot) =>
         (snapshot['nodes']! as List<Object?>).cast<Map<String, Object?>>();
 
     testWidgets('the viewport is stated once, not on every node', (
-      final tester,
+      tester,
     ) async {
       final semantics = tester.ensureSemantics();
       try {
@@ -552,7 +552,7 @@ void main() {
     });
 
     testWidgets('identifierPrefix keeps the matching nodes only', (
-      final tester,
+      tester,
     ) async {
       final semantics = tester.ensureSemantics();
       try {
@@ -572,7 +572,7 @@ void main() {
 
         final nodes = nodesOf(filtered);
         expect(
-          nodes.map((final n) => n['identifier']),
+          nodes.map((n) => n['identifier']),
           unorderedEquals(<String>['nav.tasks', 'nav.calendar']),
         );
         // Refs number the full walk, so they agree with the unfiltered
@@ -596,7 +596,7 @@ void main() {
     });
 
     testWidgets('subtreeOf narrows to a node and its descendants', (
-      final tester,
+      tester,
     ) async {
       final semantics = tester.ensureSemantics();
       try {
@@ -610,7 +610,7 @@ void main() {
         final byIdentifier = await future;
         final panelNodes = nodesOf(byIdentifier);
         expect(
-          panelNodes.map((final n) => n['identifier'] ?? n['label']),
+          panelNodes.map((n) => n['identifier'] ?? n['label']),
           unorderedEquals(<String>[
             'panel',
             'panel.tab.overview',
@@ -619,9 +619,9 @@ void main() {
         );
         // Children of the kept container name kept refs only.
         final panel = panelNodes.firstWhere(
-          (final n) => n['identifier'] == 'panel',
+          (n) => n['identifier'] == 'panel',
         );
-        final keptRefs = panelNodes.map((final n) => n['ref']).toSet();
+        final keptRefs = panelNodes.map((n) => n['ref']).toSet();
         expect(
           keptRefs.containsAll(panel['children']! as List<Object?>),
           isTrue,
@@ -631,7 +631,7 @@ void main() {
         final railRef =
             nodesOf(
                   await _snapshotAfterPump(tester),
-                ).firstWhere((final n) => n['identifier'] == 'rail')['ref']!
+                ).firstWhere((n) => n['identifier'] == 'rail')['ref']!
                 as String;
         future = SemanticSnapshotService.buildSemanticSnapshot(
           filter: SemanticSnapshotFilter(subtreeOf: railRef),
@@ -639,7 +639,7 @@ void main() {
         await tester.pump();
         final byRef = await future;
         expect(
-          nodesOf(byRef).map((final n) => n['identifier']),
+          nodesOf(byRef).map((n) => n['identifier']),
           unorderedEquals(<String>['rail', 'nav.tasks', 'nav.calendar']),
         );
       } finally {
@@ -649,7 +649,7 @@ void main() {
 
     testWidgets(
       'an unknown subtree root is refused before a snapshot is spent',
-      (final tester) async {
+      (tester) async {
         final semantics = tester.ensureSemantics();
         try {
           await pumpRailAndPanel(tester);
@@ -678,7 +678,7 @@ void main() {
     );
 
     testWidgets('a ref whose node is gone is refused, not answered empty', (
-      final tester,
+      tester,
     ) async {
       final semantics = tester.ensureSemantics();
       try {
@@ -687,7 +687,7 @@ void main() {
         final panelRef =
             nodesOf(
                   before,
-                ).firstWhere((final n) => n['identifier'] == 'panel')['ref']!
+                ).firstWhere((n) => n['identifier'] == 'panel')['ref']!
                 as String;
 
         // The panel leaves the tree; the ref map still points at its node.
@@ -717,7 +717,7 @@ void main() {
     });
 
     testWidgets('the entry decodes fields from the wire map', (
-      final tester,
+      tester,
     ) async {
       final semantics = tester.ensureSemantics();
       try {
@@ -748,7 +748,7 @@ void main() {
     });
 
     testWidgets('fields projects every node and always keeps the ref', (
-      final tester,
+      tester,
     ) async {
       final semantics = tester.ensureSemantics();
       try {
@@ -785,7 +785,7 @@ void main() {
   });
   testWidgets(
     'semantic_snapshot reports hybrid when no interactive semantics refs',
-    (final tester) async {
+    (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(body: SizedBox(width: 100, height: 100)),

@@ -43,8 +43,8 @@ final class ExternalSessionConfig {
   /// Throws [RunnerControlException] with an actionable message when the file
   /// is corrupt or written by an incompatible schema.
   factory ExternalSessionConfig.fromJson(
-    final Map<Object?, Object?> json, {
-    required final String filePath,
+    Map<Object?, Object?> json, {
+    required String filePath,
   }) {
     final schema = _requireInt(json, 'schema', filePath);
     if (schema != externalSessionSchema) {
@@ -94,9 +94,9 @@ final class ExternalSessionConfig {
   final String startedAt;
 
   static int _requireInt(
-    final Map<Object?, Object?> json,
-    final String key,
-    final String filePath,
+    Map<Object?, Object?> json,
+    String key,
+    String filePath,
   ) {
     final value = json[key];
     if (value is int) return value;
@@ -106,9 +106,9 @@ final class ExternalSessionConfig {
   }
 
   static String _requireString(
-    final Map<Object?, Object?> json,
-    final String key,
-    final String filePath,
+    Map<Object?, Object?> json,
+    String key,
+    String filePath,
   ) {
     final value = json[key];
     if (value is String && value.isNotEmpty) return value;
@@ -118,9 +118,9 @@ final class ExternalSessionConfig {
   }
 
   static int _requirePort(
-    final Map<Object?, Object?> json,
-    final String key,
-    final String filePath,
+    Map<Object?, Object?> json,
+    String key,
+    String filePath,
   ) {
     final port = _requireInt(json, key, filePath);
     if (port > 0 && port <= 65535) return port;
@@ -147,7 +147,7 @@ final class ExternalSessionConfig {
 /// carries no auth by design (localhost-only dev tool).
 final class ExternalSessionRunnerControl implements RunnerControl {
   ExternalSessionRunnerControl({
-    required final String sessionFile,
+    required String sessionFile,
     this.logger,
     this.connectTimeout = defaultConnectTimeout,
     this.probeTimeout = defaultProbeTimeout,
@@ -158,7 +158,7 @@ final class ExternalSessionRunnerControl implements RunnerControl {
   /// Default discovery-file location for [projectDir]: sibling of the
   /// toolkit's own `.flutter_mcp/state.json` (same directory, different
   /// writer, different lifecycle).
-  static String defaultSessionPathFor(final String projectDir) => p.join(
+  static String defaultSessionPathFor(String projectDir) => p.join(
     p.absolute(projectDir),
     '.flutter_mcp',
     'runner-session.json',
@@ -284,7 +284,7 @@ final class ExternalSessionRunnerControl implements RunnerControl {
     return config;
   }
 
-  ExternalSessionConfig _parseSessionFile(final File file) {
+  ExternalSessionConfig _parseSessionFile(File file) {
     String contents;
     try {
       contents = file.readAsStringSync();
@@ -317,9 +317,9 @@ final class ExternalSessionRunnerControl implements RunnerControl {
   }
 
   Future<RunnerControlOutcome> _runRequest({
-    required final String method,
-    required final ExternalSessionConfig config,
-    required final Duration timeout,
+    required String method,
+    required ExternalSessionConfig config,
+    required Duration timeout,
   }) async {
     try {
       final result = await _exchange(
@@ -364,7 +364,7 @@ final class ExternalSessionRunnerControl implements RunnerControl {
     }
   }
 
-  RunnerControlOutcome _outcomeFromResult(final Map<String, Object?> result) {
+  RunnerControlOutcome _outcomeFromResult(Map<String, Object?> result) {
     final fallback = result['fallback'] == true;
     return RunnerControlOutcome(ok: true, fallback: fallback, raw: result);
   }
@@ -372,7 +372,7 @@ final class ExternalSessionRunnerControl implements RunnerControl {
   /// Handles the restart EOF fallback: re-read the discovery file once and
   /// report the (possibly new) app endpoint. Never re-sends the restart.
   Future<RunnerControlOutcome> _outcomeAfterRelaunchFallback({
-    required final ExternalSessionConfig previousConfig,
+    required ExternalSessionConfig previousConfig,
   }) async {
     ExternalSessionConfig? next;
     try {
@@ -421,16 +421,16 @@ final class ExternalSessionRunnerControl implements RunnerControl {
   }
 
   Future<Map<String, Object?>> _exchange({
-    required final String method,
-    required final ExternalSessionConfig config,
-    required final Duration timeout,
+    required String method,
+    required ExternalSessionConfig config,
+    required Duration timeout,
   }) async {
     final id = _nextRequestId++;
     Socket? socket;
     StreamSubscription<String>? subscription;
     final response = Completer<Map<String, Object?>>();
 
-    void fail(final Object error) {
+    void fail(Object error) {
       if (!response.isCompleted) response.completeError(error);
     }
 
@@ -447,7 +447,7 @@ final class ExternalSessionRunnerControl implements RunnerControl {
           .map(utf8.decode)
           .transform(const LineSplitter());
       subscription = lines.listen(
-        (final line) {
+        (line) {
           final trimmed = line.trim();
           if (trimmed.isEmpty || response.isCompleted) return;
           Object? decoded;
@@ -489,13 +489,13 @@ final class ExternalSessionRunnerControl implements RunnerControl {
     }
   }
 
-  Map<String, Object?> _coerceResultMap(final Object? result) {
+  Map<String, Object?> _coerceResultMap(Object? result) {
     if (result is Map<String, Object?>) return result;
     if (result is Map) return result.cast<String, Object?>();
     return <String, Object?>{'result': result};
   }
 
-  void _log(final LoggingLevel level, final String message) {
+  void _log(LoggingLevel level, String message) {
     logger?.call(level, message, logger: runnerName);
   }
 }

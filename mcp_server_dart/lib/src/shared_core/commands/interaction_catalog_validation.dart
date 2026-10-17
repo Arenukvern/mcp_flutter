@@ -7,8 +7,8 @@ import 'package:flutter_mcp_toolkit_server/src/capabilities/dynamic_registry/dyn
 /// Validates [arguments] for catalog interaction commands before
 /// [CommandCatalog.buildCommand] applies permissive fallbacks.
 CoreResult? validationFailureForInteractionCatalogCommand({
-  required final String commandName,
-  required final Map<String, Object?> arguments,
+  required String commandName,
+  required Map<String, Object?> arguments,
 }) {
   final schema = interactionCatalogInputSchemaFor(commandName);
   if (schema == null) {

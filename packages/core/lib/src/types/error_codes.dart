@@ -486,7 +486,7 @@ const Map<String, CoreErrorDescriptor> _descriptorMap =
       ),
     };
 
-CoreErrorDescriptor descriptorForErrorCode(final String? code) {
+CoreErrorDescriptor descriptorForErrorCode(String? code) {
   if (code == null || code.isEmpty) {
     return _descriptorMap[CoreErrorCode.unknown]!;
   }
@@ -501,12 +501,12 @@ CoreErrorDescriptor descriptorForErrorCode(final String? code) {
       );
 }
 
-int exitCodeForErrorCode(final String? code) =>
+int exitCodeForErrorCode(String? code) =>
     descriptorForErrorCode(code).exitCode;
 
 Map<String, Object?> recoveryForErrorCode(
-  final String? code, {
-  final Object? details,
+  String? code, {
+  Object? details,
 }) {
   final resolvedCode = (code == null || code.isEmpty)
       ? CoreErrorCode.unknown

@@ -40,7 +40,7 @@ chromium --remote-debugging-port=9222
     final server = await HttpServer.bind('127.0.0.1', 0);
     addTearDown(server.close);
     final port = server.port;
-    server.listen((final request) async {
+    server.listen((request) async {
       if (request.uri.path == '/json/list') {
         request.response
           ..statusCode = HttpStatus.ok
@@ -99,7 +99,7 @@ chromium --remote-debugging-port=9222
     final server = await HttpServer.bind('127.0.0.1', 0);
     addTearDown(server.close);
     final port = server.port;
-    server.listen((final request) async {
+    server.listen((request) async {
       if (request.uri.path == '/json/list') {
         request.response
           ..statusCode = HttpStatus.ok

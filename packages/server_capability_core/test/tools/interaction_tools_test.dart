@@ -29,7 +29,7 @@ FakeCapabilityContext _registeredCtx({FakeCommandRunner? runner}) {
 // ---------------------------------------------------------------------------
 // Helper: assert the 5-key error envelope.
 // ---------------------------------------------------------------------------
-void _expectEnvelopeKeys(final Map<String, Object?> json) {
+void _expectEnvelopeKeys(Map<String, Object?> json) {
   expect(json.containsKey('code'), isTrue, reason: 'envelope must have code');
   expect(
     json.containsKey('message'),

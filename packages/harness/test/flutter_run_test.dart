@@ -27,7 +27,7 @@ while true; do sleep 1; done
 ''';
 
 /// True when [pid] still names a live process (`kill -0` succeeds).
-bool _processIsAlive(final int pid) =>
+bool _processIsAlive(int pid) =>
     Process.runSync('kill', <String>['-0', '$pid']).exitCode == 0;
 
 void main() {

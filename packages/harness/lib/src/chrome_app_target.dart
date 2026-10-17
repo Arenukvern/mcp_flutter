@@ -64,7 +64,7 @@ final class ChromeAppTarget {
   /// Polls [CdpDiscovery.version] until the endpoint answers or [deadline]
   /// passes — Chrome binds its DevTools socket only after boot, so the
   /// first probes legitimately see connection-refused.
-  Future<CdpVersionInfo> _waitForCdp(final Uri httpBase, final int port) async {
+  Future<CdpVersionInfo> _waitForCdp(Uri httpBase, int port) async {
     final deadline = DateTime.now().add(const Duration(seconds: 30));
     while (true) {
       final version = await CdpDiscovery.version(
@@ -81,7 +81,7 @@ final class ChromeAppTarget {
     }
   }
 
-  Future<LaunchedChrome> launch({final bool build = false}) async {
+  Future<LaunchedChrome> launch({bool build = false}) async {
     if (build) {
       throw ArgumentError(
         'ChromeAppTarget owns no build step; serve the web build '
@@ -235,7 +235,7 @@ final class LaunchedChrome {
         return process.exitCode;
       },
     );
-    await onStop?.call().catchError((final _) {});
+    await onStop?.call().catchError((_) {});
     return code;
   }
 }

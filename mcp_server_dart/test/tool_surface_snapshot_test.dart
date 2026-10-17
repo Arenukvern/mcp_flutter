@@ -28,13 +28,13 @@ void main() {
         },
       ),
       dispatchBridge: DartMcpDispatchBridge(
-        publish: (final tool, final _) => published.add(tool),
+        publish: (tool, _) => published.add(tool),
         unpublish: (_) {},
       ),
     );
     await host.registerCapability(const FmtCapability());
 
-    final actual = published.map((final t) => t.name).toSet();
+    final actual = published.map((t) => t.name).toSet();
 
     final expectedFile = File(_resolveExpectedFile());
     expect(
@@ -44,8 +44,8 @@ void main() {
     );
     final expected = expectedFile
         .readAsLinesSync()
-        .map((final l) => l.trim())
-        .where((final l) => l.isNotEmpty && !l.startsWith('#'))
+        .map((l) => l.trim())
+        .where((l) => l.isNotEmpty && !l.startsWith('#'))
         .toSet();
 
     final missing = expected.difference(actual);

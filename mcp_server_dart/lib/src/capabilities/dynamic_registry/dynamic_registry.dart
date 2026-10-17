@@ -25,7 +25,7 @@ export 'registry_discovery_service.dart';
 
 /// Entry for a dynamically registered tool — [RegisteredAgentIntent] + MCP [Tool].
 @immutable
-final class DynamicToolEntry with EquatableMixin {
+final class DynamicToolEntry with Equatable {
   const DynamicToolEntry({required this.intent, required this.tool});
 
   final RegisteredAgentIntent intent;
@@ -40,7 +40,7 @@ final class DynamicToolEntry with EquatableMixin {
 
 /// Entry for a dynamically registered resource — intent + MCP [Resource].
 @immutable
-final class DynamicResourceEntry with EquatableMixin {
+final class DynamicResourceEntry with Equatable {
   const DynamicResourceEntry({required this.intent, required this.resource});
 
   final RegisteredAgentIntent intent;
@@ -61,10 +61,10 @@ extension type const DynamicAppId(String _value) implements String {}
 extension type const DynamicAppInfo._(Map<String, Object?> _value)
     implements Map<String, Object?> {
   factory DynamicAppInfo({
-    required final DynamicAppId id,
-    required final int toolCount,
-    required final int resourceCount,
-    required final DateTime lastActivity,
+    required DynamicAppId id,
+    required int toolCount,
+    required int resourceCount,
+    required DateTime lastActivity,
   }) => DynamicAppInfo._({
     'id': id,
     'toolCount': toolCount,
@@ -186,7 +186,7 @@ final class DynamicRegistry {
 
   /// Register a new tool from a Flutter application
   /// Tool must be MCP-compliant with proper name, description, and inputSchema
-  void registerTool(final Tool tool, final DynamicAppId appId) {
+  void registerTool(Tool tool, DynamicAppId appId) {
     verifyAppConnection(appId);
 
     final intent = _intentForTool(tool: tool, appId: appId);
@@ -204,7 +204,7 @@ final class DynamicRegistry {
     _addEvent(ToolRegisteredEvent(timestamp: DateTime.now(), entry: entry));
   }
 
-  void _addEvent(final DynamicRegistryEvent event) {
+  void _addEvent(DynamicRegistryEvent event) {
     if (!_eventController.isClosed) {
       _eventController.add(event);
     }
@@ -212,7 +212,7 @@ final class DynamicRegistry {
 
   /// Verify that the current app is the same as the appId.
   /// If not, clear the current registrations.
-  void verifyAppConnection(final DynamicAppId appId) {
+  void verifyAppConnection(DynamicAppId appId) {
     if (_appId != null && _appId != appId) {
       logger.log(
         LoggingLevel.info,
@@ -228,9 +228,9 @@ final class DynamicRegistry {
   /// Register a new resource from a Flutter application
   /// Resource must be MCP-compliant with proper uri, name, description
   void registerResource(
-    final Resource resource,
-    final DynamicAppId appId, {
-    final InputSchema? inputSchema,
+    Resource resource,
+    DynamicAppId appId, {
+    InputSchema? inputSchema,
   }) {
     verifyAppConnection(appId);
 
@@ -322,10 +322,10 @@ final class DynamicRegistry {
   List<DynamicResourceEntry> getResourceEntries() => _resources.values.toList();
 
   /// Get tool entry by name for MCP CallToolRequest handling
-  DynamicToolEntry? getToolEntry(final String name) => _tools[name];
+  DynamicToolEntry? getToolEntry(String name) => _tools[name];
 
   /// Get resource entry by URI for MCP ReadResourceRequest handling
-  DynamicResourceEntry? getResourceEntry(final String uri) {
+  DynamicResourceEntry? getResourceEntry(String uri) {
     final direct = _resources[uri];
     if (direct != null) {
       return direct;
@@ -336,16 +336,16 @@ final class DynamicRegistry {
   }
 
   /// Check if a tool is dynamically registered (for MCP tool routing)
-  bool isDynamicTool(final String name) => _tools.containsKey(name);
+  bool isDynamicTool(String name) => _tools.containsKey(name);
 
   /// Check if a resource is dynamically registered (for MCP resource routing)
-  bool isDynamicResource(final String uri) => getResourceEntry(uri) != null;
+  bool isDynamicResource(String uri) => getResourceEntry(uri) != null;
 
   /// Forward MCP tool call via stored [RegisteredAgentIntent].
   /// Returns null if tool not found.
   Future<CallToolResult?> forwardToolCall(
-    final String toolName,
-    final Map<String, Object?>? arguments,
+    String toolName,
+    Map<String, Object?>? arguments,
   ) async {
     final entry = getToolEntry(toolName);
     if (entry == null) {
@@ -375,8 +375,8 @@ final class DynamicRegistry {
   }
 
   RegisteredAgentIntent _intentForTool({
-    required final Tool tool,
-    required final DynamicAppId appId,
+    required Tool tool,
+    required DynamicAppId appId,
   }) {
     final namespace = appId.isEmpty ? 'app' : appId;
     return RegisteredAgentIntent(
@@ -387,7 +387,7 @@ final class DynamicRegistry {
         kind: AgentIntentKind.tool,
         inputSchema: inputSchemaFromMcpTool(tool),
       ),
-      execute: (final invocation) => _invokeDynamicTool(
+      execute: (invocation) => _invokeDynamicTool(
         toolName: tool.name,
         arguments: invocation.arguments,
       ),
@@ -395,8 +395,8 @@ final class DynamicRegistry {
   }
 
   Future<AgentResult> _invokeDynamicTool({
-    required final String toolName,
-    required final AgentArguments arguments,
+    required String toolName,
+    required AgentArguments arguments,
   }) async {
     try {
       final vmService = this.vmService;
@@ -443,9 +443,9 @@ final class DynamicRegistry {
   }
 
   RegisteredAgentIntent _intentForResource({
-    required final Resource resource,
-    required final DynamicAppId appId,
-    final InputSchema? inputSchema,
+    required Resource resource,
+    required DynamicAppId appId,
+    InputSchema? inputSchema,
   }) {
     final namespace = appId.isEmpty ? 'app' : appId;
     return RegisteredAgentIntent(
@@ -458,7 +458,7 @@ final class DynamicRegistry {
         resourceUri: resource.uri,
         mimeType: resource.mimeType,
       ),
-      execute: (final invocation) => _invokeDynamicResource(
+      execute: (invocation) => _invokeDynamicResource(
         resource: resource,
         requestedUri: invocation.arguments['uri'] as String? ?? resource.uri,
       ),
@@ -466,8 +466,8 @@ final class DynamicRegistry {
   }
 
   Future<AgentResult> _invokeDynamicResource({
-    required final Resource resource,
-    required final String requestedUri,
+    required Resource resource,
+    required String requestedUri,
   }) async {
     try {
       final vmService = this.vmService;
@@ -581,7 +581,7 @@ final class DynamicRegistry {
 
   /// Forward MCP resource read via stored [RegisteredAgentIntent].
   Future<ReadResourceResult?> forwardResourceRead(
-    final String resourceUri,
+    String resourceUri,
   ) async {
     final entry = getResourceEntry(resourceUri);
     if (entry == null) {
@@ -635,7 +635,7 @@ final class DynamicRegistry {
       'DynamicRegistry(${_tools.length} tools, '
       '${_resources.length} resources)';
 
-  String _normalizeResourceLookupUri(final String uri) {
+  String _normalizeResourceLookupUri(String uri) {
     final parsed = Uri.tryParse(uri);
     if (parsed == null) {
       return uri;
@@ -645,12 +645,12 @@ final class DynamicRegistry {
   }
 
   List<String> _resourceExtensionCandidates({
-    required final Uri parsed,
-    required final String fallbackName,
+    required Uri parsed,
+    required String fallbackName,
   }) {
     final candidates = <String>[];
 
-    void addCandidate(final String value) {
+    void addCandidate(String value) {
       final normalized = value.trim();
       if (normalized.isEmpty || candidates.contains(normalized)) {
         return;
@@ -659,7 +659,7 @@ final class DynamicRegistry {
     }
 
     final pathSegments = parsed.pathSegments
-        .where((final segment) => segment.trim().isNotEmpty)
+        .where((segment) => segment.trim().isNotEmpty)
         .toList();
     if (pathSegments.isNotEmpty) {
       addCandidate(pathSegments.last);
@@ -672,7 +672,7 @@ final class DynamicRegistry {
     return candidates;
   }
 
-  bool _isUnknownExtensionMethodError(final Object error) {
+  bool _isUnknownExtensionMethodError(Object error) {
     final text = '$error'.toLowerCase();
     return text.contains('unknown method') ||
         text.contains('not found') ||
@@ -682,7 +682,7 @@ final class DynamicRegistry {
 }
 
 /// Copies MCP [Tool.inputSchema] into intentcall [InputSchema] for listing and validation.
-InputSchema inputSchemaFromMcpTool(final Tool tool) {
+InputSchema inputSchemaFromMcpTool(Tool tool) {
   final ObjectSchema schema;
   try {
     schema = tool.inputSchema;
@@ -695,20 +695,20 @@ InputSchema inputSchemaFromMcpTool(final Tool tool) {
   );
 }
 
-Map<String, Object?> _deepCopyInputSchemaMap(final Map<Object?, Object?> raw) =>
+Map<String, Object?> _deepCopyInputSchemaMap(Map<Object?, Object?> raw) =>
     raw.map(
-      (final key, final value) =>
+      (key, value) =>
           MapEntry(key.toString(), _normalizeSchemaMapValue(value)),
     );
 
-Object? _normalizeSchemaMapValue(final Object? value) {
+Object? _normalizeSchemaMapValue(Object? value) {
   if (value is Map) {
     return _deepCopyInputSchemaMap(Map<Object?, Object?>.from(value));
   }
   if (value is Iterable && value is! String) {
     return value
         .map<Object?>(
-          (final item) => item is Map
+          (item) => item is Map
               ? _deepCopyInputSchemaMap(Map<Object?, Object?>.from(item))
               : item,
         )

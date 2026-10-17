@@ -57,8 +57,8 @@ final class MCPToolkitServer extends BaseMCPToolkitServer
 
   /// Create and connect a Flutter Inspector MCP Server
   factory MCPToolkitServer.connect(
-    final StreamChannel<String> channel, {
-    required final VMServiceConfigurationRecord configuration,
+    StreamChannel<String> channel, {
+    required VMServiceConfigurationRecord configuration,
   }) =>
       MCPToolkitServer.fromStreamChannel(channel, configuration: configuration);
 
@@ -68,7 +68,7 @@ final class MCPToolkitServer extends BaseMCPToolkitServer
   late final McpHost _host;
 
   @override
-  FutureOr<InitializeResult> initialize(final InitializeRequest request) async {
+  FutureOr<InitializeResult> initialize(InitializeRequest request) async {
     log(
       LoggingLevel.info,
       'Initializing Flutter Inspector MCP Server',

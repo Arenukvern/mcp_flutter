@@ -4,17 +4,17 @@ import 'package:dart_mcp/server.dart';
 import 'package:flutter_mcp_toolkit_server/flutter_mcp_core.dart';
 
 CallToolResult toCallToolErrorResult(
-  final CoreResult result, {
-  required final String prefix,
+  CoreResult result, {
+  required String prefix,
 }) => CallToolResult(
   isError: true,
   content: [TextContent(text: formatCoreErrorForMcp(result, prefix: prefix))],
 );
 
 ReadResourceResult toReadResourceErrorResult({
-  required final String uri,
-  required final CoreResult result,
-  required final String prefix,
+  required String uri,
+  required CoreResult result,
+  required String prefix,
 }) => ReadResourceResult(
   contents: [
     TextResourceContents(
@@ -25,16 +25,16 @@ ReadResourceResult toReadResourceErrorResult({
 );
 
 String formatCoreErrorForMcp(
-  final CoreResult result, {
-  required final String prefix,
+  CoreResult result, {
+  required String prefix,
 }) {
   final _ = prefix;
   return jsonEncode(result.toErrorEnvelopeJson());
 }
 
 ObjectSchema strictToolInputSchema({
-  final Map<String, Schema> properties = const <String, Schema>{},
-  final List<String> required = const <String>[],
+  Map<String, Schema> properties = const <String, Schema>{},
+  List<String> required = const <String>[],
 }) => ObjectSchema(
   properties: {'connection': connectionObjectSchema, ...properties},
   required: required,

@@ -9,9 +9,9 @@ void main() {
 
     setUp(() {
       void logger(
-        final LoggingLevel level,
-        final String message, {
-        final String logger = 'test',
+        LoggingLevel level,
+        String message, {
+        String logger = 'test',
       }) {}
 
       final context = ConnectionContext(
@@ -51,9 +51,9 @@ void main() {
 
     test('desktop window screenshot mode succeeds without VM bridge', () async {
       void logger(
-        final LoggingLevel level,
-        final String message, {
-        final String logger = 'test',
+        LoggingLevel level,
+        String message, {
+        String logger = 'test',
       }) {}
 
       final localExecutor = DefaultCoreCommandExecutor(
@@ -101,9 +101,9 @@ void main() {
       'desktop window screenshot forwards vm pid into capture service',
       () async {
         void logger(
-          final LoggingLevel level,
-          final String message, {
-          final String logger = 'test',
+          LoggingLevel level,
+          String message, {
+          String logger = 'test',
         }) {}
 
         final context = ConnectionContext(
@@ -137,7 +137,7 @@ void main() {
               captureMode: 'desktop_window',
               metadata: <String, Object?>{'appName': 'sample_app'},
             ),
-            onCapture: (final pid) => capturedPid = pid,
+            onCapture: (pid) => capturedPid = pid,
           ),
         );
 
@@ -152,9 +152,9 @@ void main() {
 
     test('desktop window screenshot mode surfaces capture failures', () async {
       void logger(
-        final LoggingLevel level,
-        final String message, {
-        final String logger = 'test',
+        LoggingLevel level,
+        String message, {
+        String logger = 'test',
       }) {}
 
       final localExecutor = DefaultCoreCommandExecutor(
@@ -195,9 +195,9 @@ void main() {
       'desktop window screenshot mode preserves structured capture diagnostics',
       () async {
         void logger(
-          final LoggingLevel level,
-          final String message, {
-          final String logger = 'test',
+          LoggingLevel level,
+          String message, {
+          String logger = 'test',
         }) {}
 
         final localExecutor = DefaultCoreCommandExecutor(
@@ -257,9 +257,9 @@ void main() {
 
     test('auto-request surfaces actionable permission denial', () async {
       void logger(
-        final LoggingLevel level,
-        final String message, {
-        final String logger = 'test',
+        LoggingLevel level,
+        String message, {
+        String logger = 'test',
       }) {}
 
       final localExecutor = DefaultCoreCommandExecutor(
@@ -314,9 +314,9 @@ void main() {
 
     test('auto ambiguity returns connection_selection_required', () async {
       void logger(
-        final LoggingLevel level,
-        final String message, {
-        final String logger = 'test',
+        LoggingLevel level,
+        String message, {
+        String logger = 'test',
       }) {}
 
       final context = ConnectionContext(
@@ -324,7 +324,7 @@ void main() {
         defaultPort: 8181,
         logger: logger,
         discoverPorts: () async => <int>[8181, 8182],
-        probeFlutterTarget: (final endpoint, {required final timeout}) async =>
+        probeFlutterTarget: (endpoint, {required timeout}) async =>
             true,
       );
 
@@ -366,9 +366,9 @@ void main() {
 
     test('unknown targetId returns connect_failed target_not_found', () async {
       void logger(
-        final LoggingLevel level,
-        final String message, {
-        final String logger = 'test',
+        LoggingLevel level,
+        String message, {
+        String logger = 'test',
       }) {}
 
       final context = ConnectionContext(
@@ -408,9 +408,9 @@ void main() {
       'tokenized targetId bypasses discovery lookup and attempts direct connect',
       () async {
         void logger(
-          final LoggingLevel level,
-          final String message, {
-          final String logger = 'test',
+          LoggingLevel level,
+          String message, {
+          String logger = 'test',
         }) {}
 
         final context = ConnectionContext(
@@ -451,9 +451,9 @@ void main() {
 
     test('legacy host:port targetId returns migration error', () async {
       void logger(
-        final LoggingLevel level,
-        final String message, {
-        final String logger = 'test',
+        LoggingLevel level,
+        String message, {
+        String logger = 'test',
       }) {}
 
       final context = ConnectionContext(
@@ -527,23 +527,23 @@ final class _FakeDesktopWindowScreenshotService
   String get truthMode => screenshotModeDesktopWindow;
 
   @override
-  bool supportsPlatform(final String effectivePlatform) =>
+  bool supportsPlatform(String effectivePlatform) =>
       effectivePlatform == 'macos';
 
   @override
   Future<Map<String, Object?>> focus({
-    required final String device,
-    final int? targetPid,
-    final String? cacheDir,
+    required String device,
+    int? targetPid,
+    String? cacheDir,
   }) async => <String, Object?>{'ok': true};
 
   @override
   Future<DesktopWindowScreenshotCapture?> capture({
-    required final String projectDir,
-    required final String device,
-    required final bool compress,
-    final int? targetPid,
-    final String? cacheDir,
+    required String projectDir,
+    required String device,
+    required bool compress,
+    int? targetPid,
+    String? cacheDir,
   }) async {
     onCapture?.call(targetPid);
     if (error != null) {
@@ -555,9 +555,9 @@ final class _FakeDesktopWindowScreenshotService
 
   @override
   Future<PermissionBrokerResult> status({
-    required final PermissionKind kind,
-    required final PermissionPolicy policy,
-    required final CoreRuntimeConfiguration configuration,
+    required PermissionKind kind,
+    required PermissionPolicy policy,
+    required CoreRuntimeConfiguration configuration,
   }) async => PermissionBrokerResult(
     kind: kind,
     status: permissionStatus,
@@ -573,15 +573,15 @@ final class _FakeDesktopWindowScreenshotService
 
   @override
   Future<PermissionBrokerResult> request({
-    required final PermissionKind kind,
-    required final PermissionPolicy policy,
-    required final CoreRuntimeConfiguration configuration,
+    required PermissionKind kind,
+    required PermissionPolicy policy,
+    required CoreRuntimeConfiguration configuration,
   }) => status(kind: kind, policy: policy, configuration: configuration);
 
   @override
   Future<PermissionBrokerResult> openSettings({
-    required final PermissionKind kind,
-    required final PermissionPolicy policy,
-    required final CoreRuntimeConfiguration configuration,
+    required PermissionKind kind,
+    required PermissionPolicy policy,
+    required CoreRuntimeConfiguration configuration,
   }) => status(kind: kind, policy: policy, configuration: configuration);
 }

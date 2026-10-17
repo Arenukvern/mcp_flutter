@@ -39,8 +39,8 @@ const String _pngBase64 =
 (ExtensionCall call, List<String> log) _fakeApp() {
   final log = <String>[];
   Future<Map<String, dynamic>> call(
-    final String name, {
-    final Map<String, Object?> args = const {},
+    String name, {
+    Map<String, Object?> args = const {},
   }) async {
     log.add('$name $args');
     return switch (name) {

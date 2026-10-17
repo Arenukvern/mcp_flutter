@@ -19,7 +19,7 @@ final class _PingCapability implements Capability {
   String get version => '0.0.0';
 
   @override
-  Future<void> register(final CapabilityContext context) async {
+  Future<void> register(CapabilityContext context) async {
     context.registerTool(
       ToolRegistration(
         name: 'pong',
@@ -48,7 +48,7 @@ final class _DualToolCapability implements Capability {
   String get version => '0.0.0';
 
   @override
-  Future<void> register(final CapabilityContext context) async {
+  Future<void> register(CapabilityContext context) async {
     for (var i = 0; i < tools.length; i++) {
       context.registerTool(
         ToolRegistration(
@@ -86,7 +86,7 @@ void main() {
         final unpublished = <String>[];
         final host = McpHost(
           dispatchBridge: DartMcpDispatchBridge(
-            publish: (final tool, final _) => published.add(tool.name),
+            publish: (tool, _) => published.add(tool.name),
             unpublish: unpublished.add,
           ),
         );
@@ -106,7 +106,7 @@ void main() {
         final unpublished = <String>[];
         final host = McpHost(
           dispatchBridge: DartMcpDispatchBridge(
-            publish: (final tool, final _) => published.add(tool.name),
+            publish: (tool, _) => published.add(tool.name),
             unpublish: unpublished.add,
           ),
         );

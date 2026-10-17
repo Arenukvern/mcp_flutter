@@ -9,11 +9,11 @@ import 'package:intentcall_session/intentcall_session.dart';
 
 /// Shared pre-connect policy for CLI one-shot, daemon requests, and snapshots.
 Future<CoreResult?> preconnectForExecution({
-  required final CoreCommand command,
-  required final DefaultCoreCommandExecutor executor,
-  required final IntentSessionManager? sessionManager,
-  final ConnectCommand? explicitConnectionOverride,
-  final String? explicitVmServiceUri,
+  required CoreCommand command,
+  required DefaultCoreCommandExecutor executor,
+  required IntentSessionManager? sessionManager,
+  ConnectCommand? explicitConnectionOverride,
+  String? explicitVmServiceUri,
 }) async {
   if (_isPreconnectSkippedCommand(command)) {
     return null;
@@ -67,12 +67,12 @@ Future<CoreResult?> preconnectForExecution({
   return null;
 }
 
-bool _isPreconnectSkippedCommand(final CoreCommand command) =>
+bool _isPreconnectSkippedCommand(CoreCommand command) =>
     command is ConnectCommand ||
     command is SessionStartCommand ||
     command is SessionEndCommand;
 
-String? _sessionIdForCommand(final CoreCommand command) {
+String? _sessionIdForCommand(CoreCommand command) {
   if (command case final SessionExecCommand c) {
     return c.sessionId;
   }

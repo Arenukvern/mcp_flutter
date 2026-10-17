@@ -16,7 +16,7 @@ import '_internal/handler_helpers.dart';
 /// on `context.config.getBool('dumps_supported', defaultValue: false)` so they
 /// are only exposed when the host has opted in (matching the legacy server's
 /// `--dumps` flag behaviour).
-void registerDebugDumpTools(final CapabilityContext context) {
+void registerDebugDumpTools(CapabilityContext context) {
   final runner = context.require<CommandRunner>();
 
   context.registerTool(
@@ -30,7 +30,7 @@ void registerDebugDumpTools(final CapabilityContext context) {
           'connection': connectionOverrideJsonSchema(),
         },
       },
-      handler: (final args) async {
+      handler: (args) async {
         return runCommand(runner, args, const DebugDumpLayerTreeCommand());
       },
     ),
@@ -47,7 +47,7 @@ void registerDebugDumpTools(final CapabilityContext context) {
           'connection': connectionOverrideJsonSchema(),
         },
       },
-      handler: (final args) async {
+      handler: (args) async {
         return runCommand(runner, args, const DebugDumpSemanticsTreeCommand());
       },
     ),
@@ -64,7 +64,7 @@ void registerDebugDumpTools(final CapabilityContext context) {
           'connection': connectionOverrideJsonSchema(),
         },
       },
-      handler: (final args) async {
+      handler: (args) async {
         return runCommand(runner, args, const DebugDumpRenderTreeCommand());
       },
     ),
@@ -81,7 +81,7 @@ void registerDebugDumpTools(final CapabilityContext context) {
           'connection': connectionOverrideJsonSchema(),
         },
       },
-      handler: (final args) async {
+      handler: (args) async {
         return runCommand(runner, args, const DebugDumpFocusTreeCommand());
       },
     ),

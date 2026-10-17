@@ -47,7 +47,7 @@ Map<String, Object?> connectionOverrideJsonSchema() => {
 
 /// Appends optional `connection` override field to an object input schema.
 Map<String, Object?> withOptionalConnectionOverrideSchema(
-  final Map<String, Object?> inputSchema,
+  Map<String, Object?> inputSchema,
 ) {
   final properties = _asMap(inputSchema['properties']);
   return {
@@ -78,8 +78,8 @@ final class ConnectionArgsResolution {
 /// - Rejects malformed values (`mode`, `port`, field types).
 /// - Produces optional [ConnectCommand] for pre-connect execution.
 ConnectionArgsResolution parseConnectionOverrideArguments({
-  required final Map<String, Object?>? arguments,
-  final bool fallbackToAuto = false,
+  required Map<String, Object?>? arguments,
+  bool fallbackToAuto = false,
 }) {
   final input = _asMap(arguments);
   final sanitized = Map<String, Object?>.from(input)..remove('connection');
@@ -114,7 +114,7 @@ ConnectionArgsResolution parseConnectionOverrideArguments({
 
   final unknownFields =
       connection.keys
-          .where((final key) => !_connectionOverrideFields.contains(key))
+          .where((key) => !_connectionOverrideFields.contains(key))
           .toList()
         ..sort();
   if (unknownFields.isNotEmpty) {
@@ -231,8 +231,8 @@ ConnectionArgsResolution parseConnectionOverrideArguments({
 
 /// Resolves command args for CLI/daemon execution.
 ConnectionArgsResolution resolveCommandArgumentsForExecution({
-  required final String commandName,
-  required final Map<String, Object?>? arguments,
+  required String commandName,
+  required Map<String, Object?>? arguments,
 }) {
   final parsed = parseConnectionOverrideArguments(arguments: arguments);
   final parseError = parsed.error;
@@ -246,7 +246,7 @@ ConnectionArgsResolution resolveCommandArgumentsForExecution({
   if (!selectorCommand) {
     final legacyFields =
         sanitized.keys
-            .where((final key) => _legacyFlatConnectionFields.contains(key))
+            .where((key) => _legacyFlatConnectionFields.contains(key))
             .toList()
           ..sort();
     if (legacyFields.isNotEmpty) {
@@ -327,9 +327,9 @@ ConnectionArgsResolution resolveCommandArgumentsForExecution({
 }
 
 ConnectionArgsResolution _withFieldError({
-  required final Map<String, Object?> sanitized,
-  required final CoreResult fieldError,
-  required final bool hasConnection,
+  required Map<String, Object?> sanitized,
+  required CoreResult fieldError,
+  required bool hasConnection,
 }) => ConnectionArgsResolution(
   sanitizedArgs: sanitized,
   preconnectCommand: null,
@@ -338,7 +338,7 @@ ConnectionArgsResolution _withFieldError({
 );
 
 Map<String, Object?> _selectorArgsFromConnectCommand(
-  final ConnectCommand command,
+  ConnectCommand command,
 ) => {
   'mode': command.mode.name,
   if (command.targetId != null) 'targetId': command.targetId,
@@ -349,8 +349,8 @@ Map<String, Object?> _selectorArgsFromConnectCommand(
 };
 
 ({String? value, CoreResult? error}) _parseOptionalStringField({
-  required final String key,
-  required final Map<String, Object?> source,
+  required String key,
+  required Map<String, Object?> source,
 }) {
   if (!source.containsKey(key)) {
     return (value: null, error: null);
@@ -373,7 +373,7 @@ Map<String, Object?> _selectorArgsFromConnectCommand(
 }
 
 ({CoreConnectionMode? value, CoreResult? error}) _parseModeField(
-  final Map<String, Object?> source,
+  Map<String, Object?> source,
 ) {
   if (!source.containsKey('mode')) {
     return (value: null, error: null);
@@ -406,7 +406,7 @@ Map<String, Object?> _selectorArgsFromConnectCommand(
 }
 
 ({int? value, CoreResult? error}) _parsePortField(
-  final Map<String, Object?> source,
+  Map<String, Object?> source,
 ) {
   if (!source.containsKey('port')) {
     return (value: null, error: null);
@@ -434,8 +434,8 @@ Map<String, Object?> _selectorArgsFromConnectCommand(
 }
 
 ({bool? value, CoreResult? error}) _parseBoolField({
-  required final String key,
-  required final Map<String, Object?> source,
+  required String key,
+  required Map<String, Object?> source,
 }) {
   if (!source.containsKey(key)) {
     return (value: null, error: null);
@@ -457,9 +457,9 @@ Map<String, Object?> _selectorArgsFromConnectCommand(
 }
 
 CoreResult _invalidConnectionField({
-  required final String field,
-  required final String expected,
-  required final Object? actual,
+  required String field,
+  required String expected,
+  required Object? actual,
 }) => CoreResult.failure(
   code: CoreErrorCode.invalidCommand,
   message: 'Invalid connection.$field: expected $expected',
@@ -470,7 +470,7 @@ CoreResult _invalidConnectionField({
   },
 );
 
-Map<String, Object?> _asMap(final Object? value) {
+Map<String, Object?> _asMap(Object? value) {
   if (value is Map<String, Object?>) {
     return value;
   }
@@ -480,10 +480,10 @@ Map<String, Object?> _asMap(final Object? value) {
   return const <String, Object?>{};
 }
 
-bool _isSelectorCommand(final String commandName) =>
+bool _isSelectorCommand(String commandName) =>
     commandName == 'connect' || commandName == 'session_start';
 
-Set<String> _nativeSelectorFields(final String commandName) {
+Set<String> _nativeSelectorFields(String commandName) {
   if (commandName == 'session_start') {
     return _selectorFieldsWithoutForceReconnect;
   }

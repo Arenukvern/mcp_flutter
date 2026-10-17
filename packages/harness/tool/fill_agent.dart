@@ -12,7 +12,7 @@ Future<void> main() async {
         .whereType<Map<String, Object?>>()
         .toList();
   }
-  Future<void> typeUnlabeled(final String hint, final String text) async {
+  Future<void> typeUnlabeled(String hint, String text) async {
     final field = (await nodes())
         .where((n) =>
             '${n['type']}'.toLowerCase().contains('textfield') &&

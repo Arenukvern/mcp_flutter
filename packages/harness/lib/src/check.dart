@@ -17,19 +17,19 @@ final class Check {
 final class ScenarioReport {
   final List<Check> checks = <Check>[];
 
-  void pass(final String name) => checks.add(Check(name: name, passed: true));
+  void pass(String name) => checks.add(Check(name: name, passed: true));
 
-  void fail(final String name, [final String detail = '']) =>
+  void fail(String name, [String detail = '']) =>
       checks.add(Check(name: name, passed: false, detail: detail));
 
-  bool get allPassed => checks.every((final c) => c.passed);
+  bool get allPassed => checks.every((c) => c.passed);
 
   void printSummary() {
     for (final check in checks) {
       // ignore: avoid_print
       print('  $check');
     }
-    final failures = checks.where((final c) => !c.passed).length;
+    final failures = checks.where((c) => !c.passed).length;
     // ignore: avoid_print
     print(
       allPassed
@@ -48,7 +48,7 @@ final class HarnessContext {
   final ScenarioReport report;
   final Map<String, Object?> bag = <String, Object?>{};
 
-  T take<T>(final String key) {
+  T take<T>(String key) {
     final value = bag[key];
     if (value is! T) {
       throw StateError(

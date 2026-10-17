@@ -17,7 +17,7 @@ class PortScanner {
 
   Future<List<int>> scanForFlutterPorts() => _core.scanForFlutterPorts();
 
-  Future<bool> isPortAccessible(final int port) => _core.isPortAccessible(port);
+  Future<bool> isPortAccessible(int port) => _core.isPortAccessible(port);
 
   List<int> get commonFlutterPorts => _core.commonFlutterPorts;
 }

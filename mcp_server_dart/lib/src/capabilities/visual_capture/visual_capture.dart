@@ -33,24 +33,24 @@ abstract interface class VisualCapturePlatformAdapter {
 
   String get truthMode;
 
-  bool supportsPlatform(final String effectivePlatform);
+  bool supportsPlatform(String effectivePlatform);
 
   Future<PermissionBrokerResult> status({
-    required final PermissionKind kind,
-    required final PermissionPolicy policy,
-    required final CoreRuntimeConfiguration configuration,
+    required PermissionKind kind,
+    required PermissionPolicy policy,
+    required CoreRuntimeConfiguration configuration,
   });
 
   Future<PermissionBrokerResult> request({
-    required final PermissionKind kind,
-    required final PermissionPolicy policy,
-    required final CoreRuntimeConfiguration configuration,
+    required PermissionKind kind,
+    required PermissionPolicy policy,
+    required CoreRuntimeConfiguration configuration,
   });
 
   Future<PermissionBrokerResult> openSettings({
-    required final PermissionKind kind,
-    required final PermissionPolicy policy,
-    required final CoreRuntimeConfiguration configuration,
+    required PermissionKind kind,
+    required PermissionPolicy policy,
+    required CoreRuntimeConfiguration configuration,
   });
 }
 
@@ -58,18 +58,18 @@ abstract interface class AppPermissionBridgeGateway {
   Future<List<String>> listSupportedKinds();
 
   Future<PermissionBrokerResult> status({
-    required final PermissionKind kind,
-    required final PermissionPolicy policy,
+    required PermissionKind kind,
+    required PermissionPolicy policy,
   });
 
   Future<PermissionBrokerResult> request({
-    required final PermissionKind kind,
-    required final PermissionPolicy policy,
+    required PermissionKind kind,
+    required PermissionPolicy policy,
   });
 
   Future<PermissionBrokerResult> openSettings({
-    required final PermissionKind kind,
-    required final PermissionPolicy policy,
+    required PermissionKind kind,
+    required PermissionPolicy policy,
   });
 }
 
@@ -121,8 +121,8 @@ final class DynamicRegistryAppPermissionBridgeGateway
 
   @override
   Future<PermissionBrokerResult> status({
-    required final PermissionKind kind,
-    required final PermissionPolicy policy,
+    required PermissionKind kind,
+    required PermissionPolicy policy,
   }) => _runTool(
     toolName: visualCaptureBridgeTools.status,
     kind: kind,
@@ -131,8 +131,8 @@ final class DynamicRegistryAppPermissionBridgeGateway
 
   @override
   Future<PermissionBrokerResult> request({
-    required final PermissionKind kind,
-    required final PermissionPolicy policy,
+    required PermissionKind kind,
+    required PermissionPolicy policy,
   }) => _runTool(
     toolName: visualCaptureBridgeTools.request,
     kind: kind,
@@ -141,8 +141,8 @@ final class DynamicRegistryAppPermissionBridgeGateway
 
   @override
   Future<PermissionBrokerResult> openSettings({
-    required final PermissionKind kind,
-    required final PermissionPolicy policy,
+    required PermissionKind kind,
+    required PermissionPolicy policy,
   }) => _runTool(
     toolName: visualCaptureBridgeTools.openSettings,
     kind: kind,
@@ -150,9 +150,9 @@ final class DynamicRegistryAppPermissionBridgeGateway
   );
 
   Future<PermissionBrokerResult> _runTool({
-    required final String toolName,
-    required final PermissionKind kind,
-    required final PermissionPolicy policy,
+    required String toolName,
+    required PermissionKind kind,
+    required PermissionPolicy policy,
   }) async {
     final result = await gateway.runClientTool(toolName, <String, Object?>{
       'kind': kind.wireName,
@@ -188,7 +188,7 @@ final class DynamicRegistryAppPermissionBridgeGateway
   }
 }
 
-List<String> _supportedKindsFromObject(final Map<dynamic, dynamic> value) {
+List<String> _supportedKindsFromObject(Map<dynamic, dynamic> value) {
   final direct = _asStringList(value['supportedKinds']);
   if (direct.isNotEmpty) {
     return direct;
@@ -219,14 +219,14 @@ final class WebVisualCapturePlatformAdapter
   String get truthMode => screenshotModeFlutterLayer;
 
   @override
-  bool supportsPlatform(final String effectivePlatform) =>
+  bool supportsPlatform(String effectivePlatform) =>
       effectivePlatform == 'web';
 
   @override
   Future<PermissionBrokerResult> status({
-    required final PermissionKind kind,
-    required final PermissionPolicy policy,
-    required final CoreRuntimeConfiguration configuration,
+    required PermissionKind kind,
+    required PermissionPolicy policy,
+    required CoreRuntimeConfiguration configuration,
   }) async => PermissionBrokerResult(
     kind: kind,
     status: PermissionStatus.notRequired,
@@ -241,16 +241,16 @@ final class WebVisualCapturePlatformAdapter
 
   @override
   Future<PermissionBrokerResult> request({
-    required final PermissionKind kind,
-    required final PermissionPolicy policy,
-    required final CoreRuntimeConfiguration configuration,
+    required PermissionKind kind,
+    required PermissionPolicy policy,
+    required CoreRuntimeConfiguration configuration,
   }) => status(kind: kind, policy: policy, configuration: configuration);
 
   @override
   Future<PermissionBrokerResult> openSettings({
-    required final PermissionKind kind,
-    required final PermissionPolicy policy,
-    required final CoreRuntimeConfiguration configuration,
+    required PermissionKind kind,
+    required PermissionPolicy policy,
+    required CoreRuntimeConfiguration configuration,
   }) => status(kind: kind, policy: policy, configuration: configuration);
 }
 
@@ -281,14 +281,14 @@ final class UnsupportedUntilAppBridgeVisualCapturePlatformAdapter
   String get truthMode => CaptureCapability.unsupportedUntilAppBridge.wireName;
 
   @override
-  bool supportsPlatform(final String effectivePlatform) =>
+  bool supportsPlatform(String effectivePlatform) =>
       platforms.contains(effectivePlatform);
 
   @override
   Future<PermissionBrokerResult> status({
-    required final PermissionKind kind,
-    required final PermissionPolicy policy,
-    required final CoreRuntimeConfiguration configuration,
+    required PermissionKind kind,
+    required PermissionPolicy policy,
+    required CoreRuntimeConfiguration configuration,
   }) async => PermissionBrokerResult(
     kind: kind,
     status: PermissionStatus.unsupportedUntilAppBridge,
@@ -307,16 +307,16 @@ final class UnsupportedUntilAppBridgeVisualCapturePlatformAdapter
 
   @override
   Future<PermissionBrokerResult> request({
-    required final PermissionKind kind,
-    required final PermissionPolicy policy,
-    required final CoreRuntimeConfiguration configuration,
+    required PermissionKind kind,
+    required PermissionPolicy policy,
+    required CoreRuntimeConfiguration configuration,
   }) => status(kind: kind, policy: policy, configuration: configuration);
 
   @override
   Future<PermissionBrokerResult> openSettings({
-    required final PermissionKind kind,
-    required final PermissionPolicy policy,
-    required final CoreRuntimeConfiguration configuration,
+    required PermissionKind kind,
+    required PermissionPolicy policy,
+    required CoreRuntimeConfiguration configuration,
   }) => status(kind: kind, policy: policy, configuration: configuration);
 }
 
@@ -324,7 +324,7 @@ final class VisualCaptureBroker {
   VisualCaptureBroker({
     required this.configuration,
     this.dynamicGateway,
-    final Iterable<VisualCapturePlatformAdapter>? adapters,
+    Iterable<VisualCapturePlatformAdapter>? adapters,
   }) : _adapters = <VisualCapturePlatformAdapter>[
          ...?adapters,
          const WebVisualCapturePlatformAdapter(),
@@ -363,8 +363,8 @@ final class VisualCaptureBroker {
   }
 
   Future<PermissionBrokerResult> status({
-    final PermissionKind kind = PermissionKind.visualCapture,
-    final PermissionPolicy policy = PermissionPolicy.checkOnly,
+    PermissionKind kind = PermissionKind.visualCapture,
+    PermissionPolicy policy = PermissionPolicy.checkOnly,
   }) => _dispatch(
     action: _PermissionBrokerAction.status,
     kind: kind,
@@ -372,8 +372,8 @@ final class VisualCaptureBroker {
   );
 
   Future<PermissionBrokerResult> request({
-    final PermissionKind kind = PermissionKind.visualCapture,
-    final PermissionPolicy policy = PermissionPolicy.requestAlways,
+    PermissionKind kind = PermissionKind.visualCapture,
+    PermissionPolicy policy = PermissionPolicy.requestAlways,
   }) => _dispatch(
     action: _PermissionBrokerAction.request,
     kind: kind,
@@ -381,8 +381,8 @@ final class VisualCaptureBroker {
   );
 
   Future<PermissionBrokerResult> openSettings({
-    final PermissionKind kind = PermissionKind.visualCapture,
-    final PermissionPolicy policy = PermissionPolicy.checkOnly,
+    PermissionKind kind = PermissionKind.visualCapture,
+    PermissionPolicy policy = PermissionPolicy.checkOnly,
   }) => _dispatch(
     action: _PermissionBrokerAction.openSettings,
     kind: kind,
@@ -390,9 +390,9 @@ final class VisualCaptureBroker {
   );
 
   Future<PermissionBrokerResult> prepareForCapture({
-    required final String requestedMode,
-    final PermissionKind kind = PermissionKind.visualCapture,
-    final PermissionPolicy policy = PermissionPolicy.checkOnly,
+    required String requestedMode,
+    PermissionKind kind = PermissionKind.visualCapture,
+    PermissionPolicy policy = PermissionPolicy.checkOnly,
   }) async {
     if (requestedMode == screenshotModeFlutterLayer) {
       return _successForRequestedFlutterLayer(
@@ -432,9 +432,9 @@ final class VisualCaptureBroker {
   }
 
   Future<PermissionBrokerResult> _dispatch({
-    required final _PermissionBrokerAction action,
-    required final PermissionKind kind,
-    required final PermissionPolicy policy,
+    required _PermissionBrokerAction action,
+    required PermissionKind kind,
+    required PermissionPolicy policy,
   }) async {
     final selected = adapter;
     final gateway = dynamicGateway;
@@ -483,9 +483,9 @@ final class VisualCaptureBroker {
   }
 
   Future<PermissionBrokerResult> _prepareAuto(
-    final PermissionBrokerResult initial, {
-    required final String requestedMode,
-    required final PermissionPolicy policy,
+    PermissionBrokerResult initial, {
+    required String requestedMode,
+    required PermissionPolicy policy,
   }) async {
     var current = initial.copyWith(requestedMode: requestedMode);
     if (current.status.isGranted &&
@@ -532,10 +532,10 @@ final class VisualCaptureBroker {
   }
 
   Future<PermissionBrokerResult> _prepareDesktopWindow(
-    final PermissionBrokerResult initial, {
-    required final String requestedMode,
-    required final PermissionPolicy policy,
-    required final bool allowFallback,
+    PermissionBrokerResult initial, {
+    required String requestedMode,
+    required PermissionPolicy policy,
+    required bool allowFallback,
   }) async {
     var current = initial.copyWith(requestedMode: requestedMode);
     if (!current.supportedModes.contains(screenshotModeDesktopWindow)) {
@@ -591,8 +591,8 @@ final class VisualCaptureBroker {
   }
 
   PermissionBrokerResult _successForRequestedFlutterLayer(
-    final PermissionBrokerResult result, {
-    required final String requestedMode,
+    PermissionBrokerResult result, {
+    required String requestedMode,
   }) {
     if (!result.supportedModes.contains(screenshotModeFlutterLayer)) {
       return result.copyWith(
@@ -609,7 +609,7 @@ final class VisualCaptureBroker {
     );
   }
 
-  String _fallbackReasonForAuto(final PermissionBrokerResult result) {
+  String _fallbackReasonForAuto(PermissionBrokerResult result) {
     if (result.status == PermissionStatus.denied) {
       return 'permission_denied';
     }
@@ -627,8 +627,8 @@ final class VisualCaptureBroker {
 }
 
 PermissionBrokerResult _mergeBridgeResult({
-  required final VisualCapturePlatformAdapter selected,
-  required final PermissionBrokerResult result,
+  required VisualCapturePlatformAdapter selected,
+  required PermissionBrokerResult result,
 }) {
   final capabilities = _hasConcreteCapabilities(result.capabilities)
       ? result.capabilities
@@ -653,14 +653,14 @@ PermissionBrokerResult _mergeBridgeResult({
   );
 }
 
-bool _hasConcreteCapabilities(final Set<CaptureCapability> capabilities) =>
+bool _hasConcreteCapabilities(Set<CaptureCapability> capabilities) =>
     capabilities.any(
-      (final capability) =>
+      (capability) =>
           capability != CaptureCapability.unsupported &&
           capability != CaptureCapability.unsupportedUntilAppBridge,
     );
 
-bool _isConcreteTruthMode(final String? truthMode) {
+bool _isConcreteTruthMode(String? truthMode) {
   final normalized = truthMode?.trim();
   if (normalized == null || normalized.isEmpty) {
     return false;
@@ -670,8 +670,8 @@ bool _isConcreteTruthMode(final String? truthMode) {
 }
 
 String _resolveBridgeBackend({
-  required final String bridgeBackend,
-  required final String selectedBackend,
+  required String bridgeBackend,
+  required String selectedBackend,
 }) {
   final normalized = bridgeBackend.trim();
   if (normalized.isEmpty || normalized == 'app_bridge') {
@@ -683,7 +683,7 @@ String _resolveBridgeBackend({
 enum _PermissionBrokerAction { status, request, openSettings }
 
 String _effectiveVisualCapturePlatform(
-  final CoreRuntimeConfiguration configuration,
+  CoreRuntimeConfiguration configuration,
 ) {
   final device = configuration.flutterDevice?.trim().toLowerCase();
   switch (device) {
@@ -710,12 +710,12 @@ String _effectiveVisualCapturePlatform(
 }
 
 PermissionBrokerResult permissionResultFromToolPayload({
-  required final PermissionKind kind,
-  required final PermissionPolicy policy,
-  required final Map<String, Object?> payload,
-  required final String fallbackBackend,
-  required final PermissionOwner fallbackOwner,
-  required final bool bridgeInstalled,
+  required PermissionKind kind,
+  required PermissionPolicy policy,
+  required Map<String, Object?> payload,
+  required String fallbackBackend,
+  required PermissionOwner fallbackOwner,
+  required bool bridgeInstalled,
 }) => _permissionResultFromJson(
   kind: kind,
   policy: policy,
@@ -726,12 +726,12 @@ PermissionBrokerResult permissionResultFromToolPayload({
 );
 
 PermissionBrokerResult _permissionResultFromJson({
-  required final PermissionKind kind,
-  required final PermissionPolicy policy,
-  required final Map<String, Object?> payload,
-  required final String fallbackBackend,
-  required final PermissionOwner fallbackOwner,
-  required final bool bridgeInstalled,
+  required PermissionKind kind,
+  required PermissionPolicy policy,
+  required Map<String, Object?> payload,
+  required String fallbackBackend,
+  required PermissionOwner fallbackOwner,
+  required bool bridgeInstalled,
 }) {
   final status = _parsePermissionStatus(payload['status']);
   final owner = _parsePermissionOwner(payload['owner']) ?? fallbackOwner;
@@ -774,7 +774,7 @@ PermissionBrokerResult _permissionResultFromJson({
   );
 }
 
-PermissionStatus _parsePermissionStatus(final Object? value) {
+PermissionStatus _parsePermissionStatus(Object? value) {
   final normalized = '$value'.trim().toLowerCase();
   for (final candidate in PermissionStatus.values) {
     if (candidate.wireName == normalized) {
@@ -784,7 +784,7 @@ PermissionStatus _parsePermissionStatus(final Object? value) {
   return PermissionStatus.unsupported;
 }
 
-PermissionOwner? _parsePermissionOwner(final Object? value) {
+PermissionOwner? _parsePermissionOwner(Object? value) {
   final normalized = '$value'.trim().toLowerCase();
   for (final candidate in PermissionOwner.values) {
     if (candidate.wireName == normalized) {
@@ -794,7 +794,7 @@ PermissionOwner? _parsePermissionOwner(final Object? value) {
   return null;
 }
 
-Map<String, Object?> _asObject(final Object? value) {
+Map<String, Object?> _asObject(Object? value) {
   if (value is Map<String, Object?>) {
     return value;
   }
@@ -804,20 +804,20 @@ Map<String, Object?> _asObject(final Object? value) {
   return const <String, Object?>{};
 }
 
-List<String> _asStringList(final Object? value) {
+List<String> _asStringList(Object? value) {
   if (value is! List) {
     return const <String>[];
   }
   return value.whereType<String>().toList(growable: false);
 }
 
-bool _parseBool(final Object? value) => switch (value) {
+bool _parseBool(Object? value) => switch (value) {
   final bool v => v,
   final String v => v.toLowerCase() == 'true',
   _ => false,
 };
 
-String? _nullableString(final Object? value) {
+String? _nullableString(Object? value) {
   final text = '$value'.trim();
   if (text.isEmpty || text == 'null') {
     return null;

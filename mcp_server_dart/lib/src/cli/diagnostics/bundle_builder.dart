@@ -18,9 +18,9 @@ final class BundleBuilder {
   final String stateFilePath;
 
   Future<Map<String, Object?>> createBundle({
-    required final String fromSnapshot,
-    final String? outputDirectory,
-    final SafeWriteOptions writeOptions = const SafeWriteOptions(),
+    required String fromSnapshot,
+    String? outputDirectory,
+    SafeWriteOptions writeOptions = const SafeWriteOptions(),
   }) async {
     final snapshot = await snapshotStore.loadSnapshot(fromSnapshot);
     final outputPath = _resolveOutputPath(fromSnapshot, outputDirectory);
@@ -138,10 +138,10 @@ final class BundleBuilder {
   }
 
   Map<String, Object?> _bundleResponse({
-    required final String outputPath,
-    required final String snapshotId,
-    required final List<Map<String, Object?>> fileEntries,
-    required final SafeWriteResult writeResult,
+    required String outputPath,
+    required String snapshotId,
+    required List<Map<String, Object?>> fileEntries,
+    required SafeWriteResult writeResult,
   }) => {
     'outputDirectory': outputPath,
     'manifestPath': '$outputPath/manifest.json',
@@ -151,7 +151,7 @@ final class BundleBuilder {
     'writeResults': [writeResult.toJson()],
   };
 
-  String _resolveOutputPath(final String snapshotId, final String? outputDir) {
+  String _resolveOutputPath(String snapshotId, String? outputDir) {
     if (outputDir != null && outputDir.isNotEmpty) {
       return outputDir;
     }
@@ -165,18 +165,18 @@ final class BundleBuilder {
     List<Map<String, Object?>> fileEntries,
   })
   _buildBundlePlan({
-    required final Map<String, Object?> snapshot,
-    required final String outputPath,
-    required final String snapshotId,
+    required Map<String, Object?> snapshot,
+    required String outputPath,
+    required String snapshotId,
   }) {
     final filesByRelativePath = <String, String>{};
     final fileEntries = <Map<String, Object?>>[];
 
     void addFile({
-      required final String relativePath,
-      required final String content,
-      required final String type,
-      final String? command,
+      required String relativePath,
+      required String content,
+      required String type,
+      String? command,
     }) {
       filesByRelativePath[relativePath] = content;
       fileEntries.add({
@@ -225,7 +225,7 @@ final class BundleBuilder {
     }
 
     fileEntries.sort(
-      (final a, final b) => '${a['path']}'.compareTo('${b['path']}'),
+      (a, b) => '${a['path']}'.compareTo('${b['path']}'),
     );
 
     final manifest = <String, Object?>{
@@ -246,9 +246,9 @@ final class BundleBuilder {
   }
 
   String _resolveDirectoryStatus({
-    required final bool exists,
-    required final Map<String, String> existingFiles,
-    required final Map<String, String> nextFiles,
+    required bool exists,
+    required Map<String, String> existingFiles,
+    required Map<String, String> nextFiles,
   }) {
     if (!exists) {
       return SafeWriteStatus.added;
@@ -260,8 +260,8 @@ final class BundleBuilder {
   }
 
   bool _directoryContentsEqual(
-    final Map<String, String> left,
-    final Map<String, String> right,
+    Map<String, String> left,
+    Map<String, String> right,
   ) {
     if (left.length != right.length) {
       return false;
@@ -274,7 +274,7 @@ final class BundleBuilder {
     return true;
   }
 
-  Map<String, String> _readDirectoryTextFiles(final io.Directory directory) {
+  Map<String, String> _readDirectoryTextFiles(io.Directory directory) {
     if (!directory.existsSync()) {
       return const <String, String>{};
     }
@@ -295,9 +295,9 @@ final class BundleBuilder {
   }
 
   Map<String, Object?> _buildDirectoryDiff({
-    required final String target,
-    required final Map<String, String> existingFiles,
-    required final Map<String, String> nextFiles,
+    required String target,
+    required Map<String, String> existingFiles,
+    required Map<String, String> nextFiles,
   }) {
     final allPaths = <String>{...existingFiles.keys, ...nextFiles.keys}.toList()
       ..sort();
@@ -335,9 +335,9 @@ final class BundleBuilder {
   }
 
   ({String? backupPath}) _publishStagedDirectory({
-    required final String outputPath,
-    required final String stagePath,
-    required final bool createBackup,
+    required String outputPath,
+    required String stagePath,
+    required bool createBackup,
   }) {
     final outputDir = io.Directory(outputPath);
     final stageDir = io.Directory(stagePath);
@@ -376,12 +376,12 @@ final class BundleBuilder {
     return (backupPath: backupPath);
   }
 
-  String _stageDirectoryPath(final String outputPath) =>
+  String _stageDirectoryPath(String outputPath) =>
       '$outputPath.stage.${io.pid}.${DateTime.now().microsecondsSinceEpoch}';
 
   void _copyDirectory({
-    required final io.Directory source,
-    required final io.Directory target,
+    required io.Directory source,
+    required io.Directory target,
   }) {
     target.createSync(recursive: true);
     for (final entity in source.listSync(recursive: true)) {

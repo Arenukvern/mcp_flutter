@@ -23,12 +23,12 @@ final class DefaultCommandRunner implements CommandRunner {
   final CoreCommandExecutor executor;
 
   @override
-  Future<CoreResult> execute(final CoreCommand command) =>
+  Future<CoreResult> execute(CoreCommand command) =>
       executor.execute(command);
 
   @override
   Future<CoreResult?> applyConnectionOverride(
-    final Map<String, Object?>? arguments,
+    Map<String, Object?>? arguments,
   ) => core_connection_override.applyConnectionOverrideFromArguments(
     arguments: arguments,
     executor: executor,

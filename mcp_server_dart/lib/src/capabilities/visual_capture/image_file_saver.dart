@@ -12,10 +12,10 @@ class ImageFileSaver {
 
   CoreImageFileSaver get _core => CoreImageFileSaver(logger: server.log);
 
-  Future<String> saveImageToFile(final String base64Image) =>
+  Future<String> saveImageToFile(String base64Image) =>
       _core.saveImageToFile(base64Image);
 
-  Future<List<String>> saveImagesToFiles(final List<String> base64Images) =>
+  Future<List<String>> saveImagesToFiles(List<String> base64Images) =>
       _core.saveImagesToFiles(base64Images);
 
   Future<void> cleanupOldScreenshots() => _core.cleanupOldScreenshots();

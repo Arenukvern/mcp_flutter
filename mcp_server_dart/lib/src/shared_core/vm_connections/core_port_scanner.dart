@@ -24,7 +24,7 @@ final class CorePortScanner {
   /// keeps those instances discoverable.
   final List<int> scanPorts;
 
-  void _log(final LoggingLevel level, final String message) {
+  void _log(LoggingLevel level, String message) {
     logger(level, message, logger: 'PortScanner');
   }
 
@@ -36,7 +36,7 @@ final class CorePortScanner {
   Future<List<int>> scanForFlutterPorts() async {
     final scans = await Future.wait([_scanProcessPorts(), probeKnownPorts()]);
 
-    final uniquePorts = scans.expand((final ports) => ports).toSet().toList()
+    final uniquePorts = scans.expand((ports) => ports).toSet().toList()
       ..sort();
     _log(
       LoggingLevel.info,
@@ -123,7 +123,7 @@ final class CorePortScanner {
     return uniquePorts;
   }
 
-  static int? parseListeningPortFromUnixLsofLine(final String line) {
+  static int? parseListeningPortFromUnixLsofLine(String line) {
     final trimmed = line.trim();
     if (trimmed.isEmpty) {
       return null;
@@ -144,7 +144,7 @@ final class CorePortScanner {
     return _extractPortFromEndpoint(endpoint);
   }
 
-  static int? _extractPortFromEndpoint(final String endpoint) {
+  static int? _extractPortFromEndpoint(String endpoint) {
     final portMatch = RegExp(r':(\d+)$').firstMatch(endpoint);
     if (portMatch == null) {
       return null;
@@ -260,7 +260,7 @@ final class CorePortScanner {
   Future<List<int>> probeKnownPorts() =>
       _probePorts(<int>{...commonFlutterPorts, ...scanPorts});
 
-  Future<List<int>> _probePorts(final Set<int> ports) async {
+  Future<List<int>> _probePorts(Set<int> ports) async {
     if (ports.isEmpty) {
       return const <int>[];
     }
@@ -282,7 +282,7 @@ final class CorePortScanner {
   }
 
   /// Test whether a port is accessible.
-  Future<bool> isPortAccessible(final int port) async {
+  Future<bool> isPortAccessible(int port) async {
     try {
       final socket = await Socket.connect(
         'localhost',
@@ -310,7 +310,7 @@ final class CorePortScanner {
   /// Entries outside `1-65535`, reversed ranges, unparsable text, and entries
   /// that would push the result past [maxScanPortsCount] are dropped, so
   /// neither a typo nor an overly wide request can stall discovery.
-  static List<int> parseScanPortsSpec(final String? spec) {
+  static List<int> parseScanPortsSpec(String? spec) {
     final ports = <int>{};
     for (final entry in (spec ?? '').split(',')) {
       final trimmed = entry.trim();
@@ -346,6 +346,6 @@ final class CorePortScanner {
     return ports.toList()..sort();
   }
 
-  static bool _isValidPort(final int? port) =>
+  static bool _isValidPort(int? port) =>
       port != null && port > 0 && port <= 65535;
 }

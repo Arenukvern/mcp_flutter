@@ -11,8 +11,8 @@ void main() {
   group('MCP Server Integration Tests', () {
     test('should initialize successfully', () async {
       final result = await _runServerTest((
-        final requestSink,
-        final responseStream,
+        requestSink,
+        responseStream,
       ) async {
         final initRequest = {
           'jsonrpc': '2.0',
@@ -51,8 +51,8 @@ void main() {
 
     test('should list tools after initialization', () async {
       final result = await _runServerTest((
-        final requestSink,
-        final responseStream,
+        requestSink,
+        responseStream,
       ) async {
         final responses = <Map<String, dynamic>>[];
         final responseSubscription = responseStream.listen(responses.add);
@@ -78,7 +78,7 @@ void main() {
           // Wait for init response
           await _waitForResponse(
             responses,
-            (final r) => r['id'] == 1 || r['method'] == 'initialize',
+            (r) => r['id'] == 1 || r['method'] == 'initialize',
           );
 
           // Then request tools list
@@ -94,7 +94,7 @@ void main() {
           // Wait for tools response
           final response = await _waitForResponse(
             responses,
-            (final r) =>
+            (r) =>
                 r['id'] == 2 ||
                 (r.containsKey('result') &&
                     r['result'] is Map &&
@@ -107,7 +107,7 @@ void main() {
           expect(result['tools'], isList);
           final tools = (result['tools'] as List).cast<Map<String, dynamic>>();
           final names = tools
-              .map((final tool) => tool['name']?.toString() ?? '')
+              .map((tool) => tool['name']?.toString() ?? '')
               .toSet();
 
           // v3.0.0: tools surface under the "fmt_" capability prefix.
@@ -128,8 +128,8 @@ void main() {
 
     test('should list resources after initialization', () async {
       final result = await _runServerTest((
-        final requestSink,
-        final responseStream,
+        requestSink,
+        responseStream,
       ) async {
         final responses = <Map<String, dynamic>>[];
         final responseSubscription = responseStream.listen(responses.add);
@@ -155,7 +155,7 @@ void main() {
           // Wait for init response
           await _waitForResponse(
             responses,
-            (final r) => r['id'] == 1 || r['method'] == 'initialize',
+            (r) => r['id'] == 1 || r['method'] == 'initialize',
           );
 
           // Then request resources list
@@ -171,7 +171,7 @@ void main() {
           // Wait for resources response
           final response = await _waitForResponse(
             responses,
-            (final r) =>
+            (r) =>
                 r['id'] == 3 ||
                 (r.containsKey('result') &&
                     r['result'] is Map &&
@@ -185,7 +185,7 @@ void main() {
           final resources = (result['resources'] as List)
               .cast<Map<String, dynamic>>();
           final uris = resources
-              .map((final resource) => resource['uri']?.toString() ?? '')
+              .map((resource) => resource['uri']?.toString() ?? '')
               .toSet();
           expect(uris.contains('visual://localhost/app/errors/latest'), isTrue);
           expect(uris.contains('visual://localhost/view/details'), isTrue);
@@ -199,8 +199,8 @@ void main() {
 
     test('should handle invalid JSON-RPC requests', () async {
       final result = await _runServerTest((
-        final requestSink,
-        final responseStream,
+        requestSink,
+        responseStream,
       ) async {
         final invalidRequest = {
           'jsonrpc': '2.0',
@@ -229,8 +229,8 @@ void main() {
 
     test('should handle malformed JSON requests gracefully', () async {
       final result = await _runServerTest((
-        final requestSink,
-        final responseStream,
+        requestSink,
+        responseStream,
       ) async {
         // Missing closing brace
         const malformedJson = '{"jsonrpc": "2.0", "id": 5, "method": "test"';
@@ -261,8 +261,8 @@ void main() {
 
     test('should handle requests without initialization', () async {
       final result = await _runServerTest((
-        final requestSink,
-        final responseStream,
+        requestSink,
+        responseStream,
       ) async {
         final toolsRequest = {
           'jsonrpc': '2.0',
@@ -298,7 +298,7 @@ void main() {
 
 /// Helper function to run a test with a fresh server process
 Future<bool> _runServerTest(
-  final Future<void> Function(
+  Future<void> Function(
     StreamSink<String> requestSink,
     Stream<Map<String, dynamic>> responseStream,
   )
@@ -317,18 +317,18 @@ Future<bool> _runServerTest(
     // Set up request controller for sending to server's stdin
     requestController = StreamController<String>();
     requestController.stream
-        .map((final request) => '$request\n')
+        .map((request) => '$request\n')
         .listen(
           serverProcess.stdin.writeln,
-          onError: (final error) => print('Request error: $error'),
+          onError: (error) => print('Request error: $error'),
         );
 
     // Set up response stream from server's stdout as a broadcast stream
     final responseStream = serverProcess.stdout
         .transform(utf8.decoder)
         .transform(const LineSplitter())
-        .where((final line) => line.trim().isNotEmpty)
-        .map((final line) {
+        .where((line) => line.trim().isNotEmpty)
+        .map((line) {
           try {
             return jsonDecode(line) as Map<String, dynamic>;
           } catch (e, stackTrace) {
@@ -341,7 +341,7 @@ Future<bool> _runServerTest(
     // Handle server errors (but don't fail the test)
     serverProcess.stderr
         .transform(utf8.decoder)
-        .listen((final error) => print('Server stderr: $error'));
+        .listen((error) => print('Server stderr: $error'));
 
     // Give the server a moment to start up
     await Future.delayed(const Duration(milliseconds: 1000));
@@ -372,8 +372,8 @@ Future<bool> _runServerTest(
 
 /// Helper function to wait for a specific response
 Future<Map<String, dynamic>> _waitForResponse(
-  final List<Map<String, dynamic>> responses,
-  final bool Function(Map<String, dynamic>) condition,
+  List<Map<String, dynamic>> responses,
+  bool Function(Map<String, dynamic>) condition,
 ) async {
   const maxWaitTime = Duration(seconds: 30);
   const checkInterval = Duration(milliseconds: 100);

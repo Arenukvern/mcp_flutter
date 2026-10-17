@@ -25,10 +25,10 @@ import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 /// plain JSON object (e.g. screenshot tools with image artifacts).
 @internal
 Future<AgentResult> runCommand(
-  final CommandRunner runner,
-  final Map<String, Object?> arguments,
-  final CoreCommand command, {
-  final AgentResult Function(Object? data)? onSuccess,
+  CommandRunner runner,
+  Map<String, Object?> arguments,
+  CoreCommand command, {
+  AgentResult Function(Object? data)? onSuccess,
 }) async {
   final overrideError = await runner.applyConnectionOverride(arguments);
   if (overrideError != null) return agentErrorFromCore(overrideError);
@@ -45,7 +45,7 @@ Future<AgentResult> runCommand(
 
 /// Serialises a [CoreResult] failure to a structured [AgentResult].
 @internal
-AgentResult agentErrorFromCore(final CoreResult result) => AgentResult.failure(
+AgentResult agentErrorFromCore(CoreResult result) => AgentResult.failure(
   code: result.error?.code ?? 'core_error',
   message: result.error?.message ?? 'Command failed',
   details: result.toErrorEnvelopeJson(),
@@ -61,7 +61,7 @@ AgentResult agentErrorFromCore(final CoreResult result) => AgentResult.failure(
 /// space is a typo. For anything the caller means literally, use
 /// [verbatimStringArgOrNull].
 @internal
-String? stringArgOrNull(final Object? raw) {
+String? stringArgOrNull(Object? raw) {
   if (raw is! String) return null;
   final trimmed = raw.trim();
   return trimmed.isEmpty ? null : trimmed;
@@ -75,14 +75,14 @@ String? stringArgOrNull(final Object? raw) {
 /// reading of a benign request, and one the write-back check confirms as
 /// correct because it compares against the trimmed string.
 @internal
-String? verbatimStringArgOrNull(final Object? raw) =>
+String? verbatimStringArgOrNull(Object? raw) =>
     raw is String ? raw : null;
 
 /// Returns the int value of [raw], or null if absent or non-numeric.
 ///
 /// Unlike [intArgOrNull], zero is a valid coordinate (e.g. inspect at origin).
 @internal
-int? coordinateIntArgOrNull(final Object? raw) => switch (raw) {
+int? coordinateIntArgOrNull(Object? raw) => switch (raw) {
   final int v => v,
   final num v when v == v.toInt() => v.toInt(),
   _ => null,
@@ -93,7 +93,7 @@ int? coordinateIntArgOrNull(final Object? raw) => switch (raw) {
 /// Zero is treated as absent for legacy parity (`snapshotId == 0` means "not
 /// provided" in the wire protocol).
 @internal
-int? intArgOrNull(final Object? raw) {
+int? intArgOrNull(Object? raw) {
   final value = switch (raw) {
     final int v => v,
     final num v when v == v.toInt() => v.toInt(),
@@ -105,7 +105,7 @@ int? intArgOrNull(final Object? raw) {
 
 /// Returns the double value of [raw], or [defaultValue] if absent/non-numeric.
 @internal
-double doubleArgOrDefault(final Object? raw, final double defaultValue) {
+double doubleArgOrDefault(Object? raw, double defaultValue) {
   if (raw == null) return defaultValue;
   if (raw is num) return raw.toDouble();
   return defaultValue;
@@ -113,7 +113,7 @@ double doubleArgOrDefault(final Object? raw, final double defaultValue) {
 
 /// Returns the bool value of [raw], or false if absent/non-bool.
 @internal
-bool boolArgOrFalse(final Object? raw) {
+bool boolArgOrFalse(Object? raw) {
   if (raw is bool) return raw;
   return false;
 }
@@ -123,7 +123,7 @@ bool boolArgOrFalse(final Object? raw) {
 /// default to true and the wire payload may either omit the key or pass
 /// "false" as a string.
 @internal
-bool boolArgOrDefault(final Object? raw, {required final bool defaultValue}) {
+bool boolArgOrDefault(Object? raw, {required bool defaultValue}) {
   if (raw is bool) return raw;
   if (raw is String) return raw.toLowerCase() != 'false';
   return defaultValue;
@@ -133,7 +133,7 @@ bool boolArgOrDefault(final Object? raw, {required final bool defaultValue}) {
 /// absent / non-numeric / zero. The "zero ⇒ default" rule matches legacy
 /// `whenZeroUse` semantics for fields like `errorsCount`.
 @internal
-int intArgOrDefault(final Object? raw, {required final int defaultValue}) {
+int intArgOrDefault(Object? raw, {required int defaultValue}) {
   final v = switch (raw) {
     final int v => v,
     final num v when v == v.toInt() => v.toInt(),
@@ -145,7 +145,7 @@ int intArgOrDefault(final Object? raw, {required final int defaultValue}) {
 
 /// Routing metadata from screenshot payloads for MCP image-only tool responses.
 @internal
-Map<String, Object?> screenshotRoutingSummary(final Map<String, Object?> data) {
+Map<String, Object?> screenshotRoutingSummary(Map<String, Object?> data) {
   final summary = <String, Object?>{};
   for (final key in <String>[
     'captureHints',

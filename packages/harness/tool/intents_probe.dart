@@ -10,5 +10,5 @@ Future<void> main() async {
   await File('/tmp/la-fresh-semantic.json').writeAsString(
     const JsonEncoder.withIndent(' ').convert(snap),
   );
-  print('snapshot nodes: ' + (snap['nodes']?.length ?? 0).toString());
+  print('snapshot nodes: ${snap['nodes']?.length ?? 0}');
 }

@@ -14,7 +14,7 @@ import '_internal/handler_helpers.dart';
 ///
 /// Registers: hot_reload_flutter, hot_restart_flutter, connect_debug_app,
 /// discover_debug_apps, get_vm, get_extension_rpcs.
-void registerFlutterInspectorTools(final CapabilityContext context) {
+void registerFlutterInspectorTools(CapabilityContext context) {
   final runner = context.require<CommandRunner>();
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -25,13 +25,13 @@ void registerFlutterInspectorTools(final CapabilityContext context) {
       name: 'hot_reload_flutter',
       description: 'Hot reloads the Flutter app.',
       inputSchema: hotReloadFlutterInputSchema(),
-      handler: (final args) async {
+      handler: (args) async {
         final force = boolArgOrFalse(args['force']);
         return runCommand(
           runner,
           args,
           HotReloadFlutterCommand(force: force),
-          onSuccess: (final data) => AgentResult.success(
+          onSuccess: (data) => AgentResult.success(
             artifacts: [
               AgentArtifact.text('Hot reload completed'),
               AgentArtifact.text(jsonEncode(data)),
@@ -53,7 +53,7 @@ void registerFlutterInspectorTools(final CapabilityContext context) {
       description:
           'Hot restarts the Flutter app (full restart; state not preserved).',
       inputSchema: hotRestartFlutterInputSchema(),
-      handler: (final args) async {
+      handler: (args) async {
         return runCommand(runner, args, const HotRestartFlutterCommand());
       },
     ),
@@ -79,7 +79,7 @@ void registerFlutterInspectorTools(final CapabilityContext context) {
           'connection': connectionOverrideJsonSchema(),
         },
       },
-      handler: (final args) async {
+      handler: (args) async {
         final parsed = parseConnectionOverrideArguments(
           arguments: args,
           fallbackToAuto: true,
@@ -116,7 +116,7 @@ void registerFlutterInspectorTools(final CapabilityContext context) {
           'connection': connectionOverrideJsonSchema(),
         },
       },
-      handler: (final args) async {
+      handler: (args) async {
         final result = await runner.execute(const DiscoverDebugAppsCommand());
         if (!result.ok) return agentErrorFromCore(result);
         return AgentResult.success(
@@ -143,7 +143,7 @@ void registerFlutterInspectorTools(final CapabilityContext context) {
           'connection': connectionOverrideJsonSchema(),
         },
       },
-      handler: (final args) async {
+      handler: (args) async {
         return runCommand(runner, args, const GetVmCommand());
       },
     ),
@@ -179,7 +179,7 @@ void registerFlutterInspectorTools(final CapabilityContext context) {
           'connection': connectionOverrideJsonSchema(),
         },
       },
-      handler: (final args) async {
+      handler: (args) async {
         return runCommand(runner, args, const GetExtensionRpcsCommand());
       },
     ),

@@ -20,7 +20,7 @@ final class DynamicTextResourcePayload {
 }
 
 DynamicTextResourcePayload normalizeDynamicTextResourcePayload(
-  final Map<String, Object?> data,
+  Map<String, Object?> data,
 ) {
   final payload = <String, Object?>{...data}
     ..remove('content')

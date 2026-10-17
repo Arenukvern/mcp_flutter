@@ -43,7 +43,7 @@ final class BuildFingerprint {
   /// Fingerprints the file at [path] (sha256 via the system `shasum` —
   /// no crypto dependency in a harness that also runs on pub-only
   /// consumers).
-  static Future<BuildFingerprint> of(final String path) async {
+  static Future<BuildFingerprint> of(String path) async {
     final stat = await File(path).stat();
     final hash = await Process.run('shasum', <String>['-a', '256', path]);
     if (hash.exitCode != 0) {
@@ -59,11 +59,11 @@ final class BuildFingerprint {
 
   /// Same build CONTENT (hash + size), regardless of mtime — copying or
   /// re-signing in place does not change the build.
-  bool sameBuildAs(final BuildFingerprint other) =>
+  bool sameBuildAs(BuildFingerprint other) =>
       sha256 == other.sha256 && sizeBytes == other.sizeBytes;
 
   @override
-  bool operator ==(final Object other) =>
+  bool operator ==(Object other) =>
       other is BuildFingerprint &&
       other.path == path &&
       other.sizeBytes == sizeBytes &&
@@ -79,10 +79,10 @@ final class BuildFingerprint {
 }
 
 /// `pgrep` stdout → pids (one per line, blank lines skipped).
-List<int> parsePgrepPids(final String stdout) => stdout
+List<int> parsePgrepPids(String stdout) => stdout
     .split('\n')
-    .map((final line) => line.trim())
-    .where((final line) => line.isNotEmpty)
+    .map((line) => line.trim())
+    .where((line) => line.isNotEmpty)
     .map(int.tryParse)
     .whereType<int>()
     .toList();
@@ -90,19 +90,19 @@ List<int> parsePgrepPids(final String stdout) => stdout
 /// `lsof -a -p <pid> -d txt -Fn` stdout → the running executable's path
 /// (the last `n` record; loader/kernel entries come first). Null when
 /// the output carries none.
-String? parseLsofExecutablePath(final String stdout) {
+String? parseLsofExecutablePath(String stdout) {
   final paths = stdout
       .split('\n')
-      .where((final line) => line.startsWith('n'))
-      .map((final line) => line.substring(1))
-      .where((final path) => path.isNotEmpty)
+      .where((line) => line.startsWith('n'))
+      .map((line) => line.substring(1))
+      .where((path) => path.isNotEmpty)
       .toList();
   return paths.isEmpty ? null : paths.last;
 }
 
 /// `ps -o lstart=` output (`Thu Oct  6 21:04:33 2026`) → local
 /// [DateTime]; null when the line is not that shape.
-DateTime? parsePsLstart(final String line) {
+DateTime? parsePsLstart(String line) {
   final parts = line.trim().split(RegExp(r'\s+'));
   if (parts.length != 5) return null;
   const months = <String, int>{
@@ -127,7 +127,7 @@ DateTime? parsePsLstart(final String line) {
 /// start (beyond [tolerance] for filesystem timestamp coarseness):
 /// attaching would silently test a stale app.
 bool buildNewerThanProcess({
-  required final DateTime binaryModified,
-  required final DateTime processStarted,
-  final Duration tolerance = const Duration(seconds: 5),
+  required DateTime binaryModified,
+  required DateTime processStarted,
+  Duration tolerance = const Duration(seconds: 5),
 }) => binaryModified.isAfter(processStarted.add(tolerance));

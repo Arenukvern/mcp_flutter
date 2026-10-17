@@ -51,13 +51,13 @@ typedef ExtensionCall =
 final class ToolkitDriver
     implements AutomationDriver, AutomationActionCatalog {
   /// Drives the app behind [client].
-  ToolkitDriver(final VmClient client)
+  ToolkitDriver(VmClient client)
     : this.custom(client.callExtension, evaluate: client.evaluate);
 
   /// Drives through a custom [ExtensionCall] (tests, alternate
   /// transports). [evaluate] backs [EvaluateAction]; omitting it keeps
   /// the `evaluate` capability honest by refusing evaluation.
-  ToolkitDriver.custom(final ExtensionCall call, {this.evaluate})
+  ToolkitDriver.custom(ExtensionCall call, {this.evaluate})
     : _call = call;
 
   final ExtensionCall _call;
@@ -113,7 +113,7 @@ final class ToolkitDriver
   }
 
   @override
-  Future<void> perform(final AutomationAction action) async {
+  Future<void> perform(AutomationAction action) async {
     _ensureOpen();
     switch (action) {
       case NavigateAction(:final url):
@@ -205,8 +205,8 @@ final class ToolkitDriver
   /// An unknown name still dispatches: the app side owns the registry and
   /// may have grown since the catalog read — its refusal is authoritative.
   Future<void> _invokeRegistryAction(
-    final String name,
-    final Map<String, Object?> args,
+    String name,
+    Map<String, Object?> args,
   ) async {
     _ensureOpen();
     for (final action in await actions()) {
@@ -253,7 +253,7 @@ final class ToolkitDriver
     _closed = true;
   }
 
-  Future<void> _navigate(final Uri url) async {
+  Future<void> _navigate(Uri url) async {
     final route = url.path.isEmpty ? url.toString() : url.path;
     final Map<String, Object?> raw;
     try {
@@ -280,9 +280,9 @@ final class ToolkitDriver
   /// snapshot — refs are only meaningful per snapshot, so every act
   /// observes first. Order: exact ref, label substring, role.
   Future<String> _resolveRef({
-    final String? css,
-    final String? role,
-    final String? name,
+    String? css,
+    String? role,
+    String? name,
   }) async {
     if (css == null && role == null && name == null) {
       throw const DriverUnsupportedException(
@@ -329,7 +329,7 @@ final class ToolkitDriver
     );
   }
 
-  Future<void> _pressKey(final String key) async {
+  Future<void> _pressKey(String key) async {
     final raw = _unwrap(
       await _call(ToolkitExtensions.pressKey, args: {'key': key}),
     );
@@ -343,9 +343,9 @@ final class ToolkitDriver
 
   /// Nests the flat ref-linked wire nodes into [AxNode]s.
   AxNode _axNode(
-    final String ref,
-    final Map<String, Object?> wire,
-    final Map<String, Map<String, Object?>> flat,
+    String ref,
+    Map<String, Object?> wire,
+    Map<String, Map<String, Object?>> flat,
   ) {
     final type = wire['type'] as String?;
     final identifier = wire['identifier'] as String?;
@@ -381,17 +381,17 @@ final class ToolkitDriver
 
   /// Maps the toolkit's node classifier onto the family's lowercase
   /// protocol-agnostic roles; the raw type stays in `attributes.type`.
-  static String _role(final String? type) => switch (type) {
+  static String _role(String? type) => switch (type) {
     'textField' => 'textbox',
     'header' => 'heading',
     'tappable' || 'longPressable' || 'widget' || null => 'generic',
     _ => type.toLowerCase(),
   };
 
-  Map<String, Object?> _unwrap(final Map<String, dynamic> raw) =>
+  Map<String, Object?> _unwrap(Map<String, dynamic> raw) =>
       (raw['data'] ?? raw) as Map<String, Object?>;
 
-  Map<String, Object?> _stringMap(final Map<Object?, Object?> raw) => {
+  Map<String, Object?> _stringMap(Map<Object?, Object?> raw) => {
     for (final entry in raw.entries)
       if (entry.key is String) entry.key! as String: entry.value,
   };

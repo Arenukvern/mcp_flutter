@@ -8,21 +8,21 @@ import 'package:meta/meta.dart';
 /// config independently).
 @immutable
 final class CapabilityConfig {
-  const CapabilityConfig({final Map<String, Object?>? values})
+  const CapabilityConfig({Map<String, Object?>? values})
     : _values = values ?? const <String, Object?>{};
 
   final Map<String, Object?> _values;
 
-  T? get<T>(final String key) {
+  T? get<T>(String key) {
     final value = _values[key];
     if (value is T) return value;
     return null;
   }
 
-  bool getBool(final String key, {final bool defaultValue = false}) =>
+  bool getBool(String key, {bool defaultValue = false}) =>
       get<bool>(key) ?? defaultValue;
 
-  String? getString(final String key) => get<String>(key);
+  String? getString(String key) => get<String>(key);
 
-  int? getInt(final String key) => get<int>(key);
+  int? getInt(String key) => get<int>(key);
 }

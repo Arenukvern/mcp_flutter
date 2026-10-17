@@ -3,19 +3,19 @@ import 'dart:io';
 import 'package:flutter_mcp_harness/flutter_mcp_harness.dart';
 
 /// Scroll the Automations pane into view, tap refresh, capture the pane.
-Future<void> main(final List<String> args) async {
+Future<void> main(List<String> args) async {
   final out = args.isNotEmpty ? args.first : '/tmp';
   final vmUri = Platform.environment['LA_VM_URI']!;
   final client = await VmClient.connect(Uri.parse(vmUri));
   final driver = ToolkitDriver(client);
-  Future<T> step<T>(final String name, final Future<T> Function() body) =>
+  Future<T> step<T>(String name, Future<T> Function() body) =>
       body().timeout(const Duration(seconds: 25), onTimeout: () {
         stderr.writeln('TIMEOUT at step: $name');
         exit(3);
       });
   Future<Map<String, dynamic>> ext(
-    final String name, {
-    final Map<String, Object?> args = const <String, Object?>{},
+    String name, {
+    Map<String, Object?> args = const <String, Object?>{},
   }) =>
       step(name, () => client.callExtension(name, args: args));
 
@@ -26,8 +26,8 @@ Future<void> main(final List<String> args) async {
         .toList();
   }
 
-  Future<Map<String, Object?>?> visible(final List<Map<String, Object?>> ns,
-          {final String label = 'notes-indexer'}) async =>
+  Future<Map<String, Object?>?> visible(List<Map<String, Object?>> ns,
+          {String label = 'notes-indexer'}) async =>
       ns.where((n) =>
           n['label'] == label &&
           (n['visibleInViewport'] == true)).firstOrNull;

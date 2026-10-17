@@ -5,15 +5,15 @@ import 'package:from_json_to_json/from_json_to_json.dart';
 extension type ViewMetrics.fromMap(Map<String, Object?> _value) {
   /// Creates view metrics with the given parameters
   factory ViewMetrics({
-    required final int viewId,
-    required final double devicePixelRatio,
-    required final Size physicalSize,
-    required final Size logicalSize,
-    required final Brightness platformBrightness,
-    required final EdgeInsets viewPadding,
-    required final EdgeInsets viewInsets,
-    required final EdgeInsets systemGestureInsets,
-    required final EdgeInsets padding,
+    required int viewId,
+    required double devicePixelRatio,
+    required Size physicalSize,
+    required Size logicalSize,
+    required Brightness platformBrightness,
+    required EdgeInsets viewPadding,
+    required EdgeInsets viewInsets,
+    required EdgeInsets systemGestureInsets,
+    required EdgeInsets padding,
   }) => ViewMetrics.fromMap({
     'viewId': viewId,
     'devicePixelRatio': devicePixelRatio,
@@ -75,7 +75,7 @@ extension type ViewMetrics.fromMap(Map<String, Object?> _value) {
 
   /// The platform brightness (light/dark mode)
   Brightness get platformBrightness => Brightness.values.firstWhere(
-    (final b) => b.name == jsonDecodeString(_value['platformBrightness']),
+    (b) => b.name == jsonDecodeString(_value['platformBrightness']),
     orElse: () => Brightness.light,
   );
 
@@ -132,7 +132,7 @@ mixin ApplicationInfo {
   /// Gets information about all Flutter views in the application
   static List<ViewMetrics> getViewsInformation() {
     final views = WidgetsBinding.instance.renderViews;
-    return views.map((final view) {
+    return views.map((view) {
       final flutterView = view.flutterView;
 
       return ViewMetrics(

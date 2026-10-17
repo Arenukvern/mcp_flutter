@@ -9,7 +9,7 @@ import '_internal/handler_helpers.dart';
 
 /// Registers navigator tools with the host through [context].
 /// Registers: handle_dialog, navigate.
-void registerNavigationTools(final CapabilityContext context) {
+void registerNavigationTools(CapabilityContext context) {
   final runner = context.require<CommandRunner>();
 
   context.registerTool(
@@ -20,7 +20,7 @@ void registerNavigationTools(final CapabilityContext context) {
           'Currently only action="dismiss" is supported. '
           'Requires MCPToolkitBinding.instance.navigatorKey = key on the app.',
       inputSchema: handleDialogInputSchema(),
-      handler: (final args) async {
+      handler: (args) async {
         final action = stringArgOrNull(args['action']) ?? 'dismiss';
         return runCommand(runner, args, HandleDialogCommand(action: action));
       },
@@ -35,7 +35,7 @@ void registerNavigationTools(final CapabilityContext context) {
           'push and popUntil require route. push accepts arguments map. '
           'Requires MCPToolkitBinding.instance.navigatorKey = key on the app.',
       inputSchema: navigateInputSchema(),
-      handler: (final args) async {
+      handler: (args) async {
         final action = stringArgOrNull(args['action']) ?? 'push';
         final route = stringArgOrNull(args['route']);
         final argsMapRaw = args['arguments'];

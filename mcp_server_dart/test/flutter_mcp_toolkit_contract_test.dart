@@ -388,7 +388,7 @@ void main() {
   });
 }
 
-Future<ProcessResult> _runCli(final String statePath, final List<String> args) {
+Future<ProcessResult> _runCli(String statePath, List<String> args) {
   final fullArgs = <String>[
     'run',
     'bin/flutter_mcp_toolkit.dart',

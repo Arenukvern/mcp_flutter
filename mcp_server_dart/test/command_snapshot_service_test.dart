@@ -27,9 +27,9 @@ void main() {
       final catalog = CommandCatalog.instance;
 
       void logger(
-        final LoggingLevel level,
-        final String message, {
-        final String logger = 'test',
+        LoggingLevel level,
+        String message, {
+        String logger = 'test',
       }) {}
 
       final context = ConnectionContext(
@@ -80,9 +80,9 @@ void main() {
         final catalog = CommandCatalog.instance;
 
         void logger(
-          final LoggingLevel level,
-          final String message, {
-          final String logger = 'test',
+          LoggingLevel level,
+          String message, {
+          String logger = 'test',
         }) {}
 
         final context = ConnectionContext(
@@ -160,7 +160,7 @@ void main() {
       final changes = (diff['changes']! as List).cast<Map<String, Object?>>();
 
       expect(changes, isNotEmpty);
-      final paths = changes.map((final c) => c['path']! as String).toSet();
+      final paths = changes.map((c) => c['path']! as String).toSet();
       expect(paths.contains(r'$.value.x'), isTrue);
       expect(paths.contains(r'$.value.list[1]'), isTrue);
       expect(paths.contains(r'$.value.extra'), isTrue);
@@ -174,9 +174,9 @@ void main() {
       final catalog = CommandCatalog.instance;
 
       void logger(
-        final LoggingLevel level,
-        final String message, {
-        final String logger = 'test',
+        LoggingLevel level,
+        String message, {
+        String logger = 'test',
       }) {}
 
       final context = ConnectionContext(
@@ -238,9 +238,9 @@ void main() {
         final catalog = CommandCatalog.instance;
 
         void logger(
-          final LoggingLevel level,
-          final String message, {
-          final String logger = 'test',
+          LoggingLevel level,
+          String message, {
+          String logger = 'test',
         }) {}
 
         final context = ConnectionContext(
@@ -290,9 +290,9 @@ void main() {
       final store = CommandSnapshotService(snapshotsDir: snapshotsDir);
       final catalog = CommandCatalog.instance;
       void logger(
-        final LoggingLevel level,
-        final String message, {
-        final String logger = 'test',
+        LoggingLevel level,
+        String message, {
+        String logger = 'test',
       }) {}
       final context = ConnectionContext(
         defaultHost: 'localhost',

@@ -8,9 +8,9 @@ import 'package:mcp_toolkit/mcp_toolkit.dart';
 /// `nodes` envelope and interaction-by-ref stay untouched.
 void main() {
   Future<Map<String, Object?>> snapshotAfterPump(
-    final WidgetTester tester, {
-    final bool render = false,
-    final bool diff = false,
+    WidgetTester tester, {
+    bool render = false,
+    bool diff = false,
   }) async {
     final future = SemanticSnapshotService.buildSemanticSnapshot(
       render: render,
@@ -21,7 +21,7 @@ void main() {
     return future;
   }
 
-  Widget tree({final String label = 'Go'}) => MaterialApp(
+  Widget tree({String label = 'Go'}) => MaterialApp(
     home: Scaffold(
       body: Semantics(
         identifier: 'primary_go_button',
@@ -33,7 +33,7 @@ void main() {
   );
 
   testWidgets('render speaks the family observation grammar', (
-    final tester,
+    tester,
   ) async {
     await tester.pumpWidget(tree());
     await tester.pumpAndSettle();
@@ -46,7 +46,7 @@ void main() {
     // the same emitted walk.
     final nodes = snapshot['nodes']! as List<Object?>;
     final go = nodes.cast<Map<String, Object?>>().singleWhere(
-      (final node) => node['label'] == 'Go',
+      (node) => node['label'] == 'Go',
     );
     expect(renderText, contains('${go['ref']} button "Go"'));
     // Without the flag, the envelope stays lean.
@@ -55,7 +55,7 @@ void main() {
   });
 
   testWidgets('diff reports no change for an unchanged surface', (
-    final tester,
+    tester,
   ) async {
     await tester.pumpWidget(tree());
     await tester.pumpAndSettle();
@@ -68,7 +68,7 @@ void main() {
     expect(second['delta'], '# no change');
   });
 
-  testWidgets('diff reports an added control as a + row', (final tester) async {
+  testWidgets('diff reports an added control as a + row', (tester) async {
     await tester.pumpWidget(tree());
     await tester.pumpAndSettle();
     await snapshotAfterPump(tester);

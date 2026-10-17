@@ -15,7 +15,7 @@ void main() {
   // -----------------------------------------------------------------------
 
   testWidgets('press_key Enter is observed by the focused Focus widget', (
-    final tester,
+    tester,
   ) async {
     // NOTE: We assert against `Focus.onKeyEvent`, not `TextField.onSubmitted`.
     // TextField submission travels via the `flutter/textinput` channel
@@ -28,7 +28,7 @@ void main() {
         home: Material(
           child: Focus(
             autofocus: true,
-            onKeyEvent: (final node, final event) {
+            onKeyEvent: (node, event) {
               if (event is KeyDownEvent &&
                   event.logicalKey == LogicalKeyboardKey.enter) {
                 gotEnter = true;
@@ -66,7 +66,7 @@ void main() {
   });
 
   testWidgets('press_key Ctrl+S dispatches a Shortcuts/Intent/Action handler', (
-    final tester,
+    tester,
   ) async {
     // Validates the two-pass dispatch (HardwareKeyboard.handleKeyEvent +
     // KeyEventManager.keyMessageHandler) for a modifier+key combo. A
@@ -83,7 +83,7 @@ void main() {
           child: Actions(
             actions: <Type, Action<Intent>>{
               _SaveIntent: CallbackAction<_SaveIntent>(
-                onInvoke: (final _) {
+                onInvoke: (_) {
                   saveInvoked++;
                   return null;
                 },
@@ -109,7 +109,7 @@ void main() {
   });
 
   testWidgets('press_key reports a keystroke nobody claimed', (
-    final tester,
+    tester,
   ) async {
     await tester.pumpWidget(
       const MaterialApp(
@@ -131,14 +131,14 @@ void main() {
   });
 
   testWidgets('press_key handled excludes a claimed key-up event', (
-    final tester,
+    tester,
   ) async {
     var keyUpHandled = false;
     await tester.pumpWidget(
       MaterialApp(
         home: Focus(
           autofocus: true,
-          onKeyEvent: (final node, final event) {
+          onKeyEvent: (node, event) {
             if (event is KeyUpEvent &&
                 event.logicalKey == LogicalKeyboardKey.escape) {
               keyUpHandled = true;
@@ -162,7 +162,7 @@ void main() {
 
   group('press_key modifier cleanup', () {
     testWidgets('a plain shortcut matches while a modifier is held', (
-      final tester,
+      tester,
     ) async {
       // A modifier can be left down by a key-up the app never saw: the window
       // lost focus mid-chord, or a keyboard state sync restored what the engine
@@ -205,7 +205,7 @@ void main() {
       expect(HardwareKeyboard.instance.logicalKeysPressed, isEmpty);
     });
 
-    testWidgets('a combination leaves no modifier held', (final tester) async {
+    testWidgets('a combination leaves no modifier held', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Material(child: SizedBox(width: 100, height: 100)),
@@ -220,7 +220,7 @@ void main() {
     });
 
     testWidgets('a modifier the app pressed back is released', (
-      final tester,
+      tester,
     ) async {
       // What the keystroke triggers can restore the modifier — a route change
       // that syncs keyboard state, for one. The call still leaves none held,
@@ -229,7 +229,7 @@ void main() {
         MaterialApp(
           home: Focus(
             autofocus: true,
-            onKeyEvent: (final node, final event) {
+            onKeyEvent: (node, event) {
               if (event is KeyUpEvent &&
                   event.logicalKey == LogicalKeyboardKey.metaLeft) {
                 HardwareKeyboard.instance.handleKeyEvent(
@@ -261,7 +261,7 @@ void main() {
   // -----------------------------------------------------------------------
 
   testWidgets('handle_dialog dismiss pops the topmost AlertDialog', (
-    final tester,
+    tester,
   ) async {
     final navKey = GlobalKey<NavigatorState>();
     MCPToolkitBinding.instance.navigatorKey = navKey;
@@ -270,12 +270,12 @@ void main() {
       MaterialApp(
         navigatorKey: navKey,
         home: Builder(
-          builder: (final context) => Scaffold(
+          builder: (context) => Scaffold(
             body: Center(
               child: ElevatedButton(
                 onPressed: () => showDialog<void>(
                   context: context,
-                  builder: (final _) =>
+                  builder: (_) =>
                       const AlertDialog(title: Text('Confirm?')),
                 ),
                 child: const Text('open'),
@@ -302,7 +302,7 @@ void main() {
 
   testWidgets(
     'handle_dialog dismiss returns failure when no dialog is showing',
-    (final tester) async {
+    (tester) async {
       final navKey = GlobalKey<NavigatorState>();
       MCPToolkitBinding.instance.navigatorKey = navKey;
 
@@ -320,7 +320,7 @@ void main() {
   );
 
   testWidgets('handle_dialog dismiss reports a dialog that refused to close', (
-    final tester,
+    tester,
   ) async {
     final navKey = GlobalKey<NavigatorState>();
     MCPToolkitBinding.instance.navigatorKey = navKey;
@@ -330,12 +330,12 @@ void main() {
       MaterialApp(
         navigatorKey: navKey,
         home: Builder(
-          builder: (final context) => Scaffold(
+          builder: (context) => Scaffold(
             body: Center(
               child: ElevatedButton(
                 onPressed: () => showDialog<void>(
                   context: context,
-                  builder: (final _) => const PopScope(
+                  builder: (_) => const PopScope(
                     canPop: false,
                     child: AlertDialog(title: Text('Unsaved changes')),
                   ),
@@ -378,7 +378,7 @@ void main() {
   // navigate
   // -----------------------------------------------------------------------
 
-  testWidgets('navigate push pushes the named route', (final tester) async {
+  testWidgets('navigate push pushes the named route', (tester) async {
     final navKey = GlobalKey<NavigatorState>();
     MCPToolkitBinding.instance.navigatorKey = navKey;
 
@@ -386,8 +386,8 @@ void main() {
       MaterialApp(
         navigatorKey: navKey,
         routes: {
-          '/': (final _) => const Scaffold(body: Text('home')),
-          '/settings': (final _) => const Scaffold(body: Text('settings page')),
+          '/': (_) => const Scaffold(body: Text('home')),
+          '/settings': (_) => const Scaffold(body: Text('settings page')),
         },
       ),
     );
@@ -406,7 +406,7 @@ void main() {
   });
 
   testWidgets('navigate push works without a wired navigatorKey', (
-    final tester,
+    tester,
   ) async {
     // The native default: the toolkit walks the element tree for the
     // root navigator, so apps need no GlobalKey wiring to be drivable.
@@ -416,8 +416,8 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         routes: {
-          '/': (final _) => const Scaffold(body: Text('home')),
-          '/settings': (final _) => const Scaffold(body: Text('settings page')),
+          '/': (_) => const Scaffold(body: Text('home')),
+          '/settings': (_) => const Scaffold(body: Text('settings page')),
         },
       ),
     );
@@ -443,7 +443,7 @@ void main() {
   });
 
   testWidgets('navigate push reports an unnamed generated route', (
-    final tester,
+    tester,
   ) async {
     final navKey = GlobalKey<NavigatorState>();
     MCPToolkitBinding.instance.navigatorKey = navKey;
@@ -453,8 +453,8 @@ void main() {
       MaterialApp(
         navigatorKey: navKey,
         home: const Scaffold(body: Text('home')),
-        onGenerateRoute: (final settings) => MaterialPageRoute<void>(
-          builder: (final _) =>
+        onGenerateRoute: (settings) => MaterialPageRoute<void>(
+          builder: (_) =>
               const Scaffold(body: Text('generated destination')),
         ),
       ),
@@ -474,7 +474,7 @@ void main() {
   });
 
   testWidgets('navigate push reports a route the app never opened', (
-    final tester,
+    tester,
   ) async {
     final navKey = GlobalKey<NavigatorState>();
     MCPToolkitBinding.instance.navigatorKey = navKey;
@@ -483,10 +483,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         navigatorKey: navKey,
-        routes: {'/': (final _) => const Scaffold(body: Text('home'))},
-        onUnknownRoute: (final settings) => MaterialPageRoute<void>(
+        routes: {'/': (_) => const Scaffold(body: Text('home'))},
+        onUnknownRoute: (settings) => MaterialPageRoute<void>(
           settings: const RouteSettings(name: '/not-found'),
-          builder: (final _) => const Scaffold(body: Text('not found')),
+          builder: (_) => const Scaffold(body: Text('not found')),
         ),
       ),
     );
@@ -505,7 +505,7 @@ void main() {
     MCPToolkitBinding.instance.navigatorKey = null;
   });
 
-  testWidgets('navigate pop returns to previous route', (final tester) async {
+  testWidgets('navigate pop returns to previous route', (tester) async {
     final navKey = GlobalKey<NavigatorState>();
     MCPToolkitBinding.instance.navigatorKey = navKey;
 
@@ -513,8 +513,8 @@ void main() {
       MaterialApp(
         navigatorKey: navKey,
         routes: {
-          '/': (final _) => const Scaffold(body: Text('home')),
-          '/inner': (final _) => const Scaffold(body: Text('inner page')),
+          '/': (_) => const Scaffold(body: Text('home')),
+          '/inner': (_) => const Scaffold(body: Text('inner page')),
         },
       ),
     );
@@ -534,7 +534,7 @@ void main() {
   });
 
   testWidgets('navigate pop reports a page that refused to leave', (
-    final tester,
+    tester,
   ) async {
     final navKey = GlobalKey<NavigatorState>();
     MCPToolkitBinding.instance.navigatorKey = navKey;
@@ -544,8 +544,8 @@ void main() {
       MaterialApp(
         navigatorKey: navKey,
         routes: {
-          '/': (final _) => const Scaffold(body: Text('home')),
-          '/editor': (final _) => const PopScope(
+          '/': (_) => const Scaffold(body: Text('home')),
+          '/editor': (_) => const PopScope(
             canPop: false,
             child: Scaffold(body: Text('editor')),
           ),
@@ -590,7 +590,7 @@ void main() {
   });
 
   testWidgets('navigate popUntil rejects a route not in the stack instead of '
-      'popping everything', (final tester) async {
+      'popping everything', (tester) async {
     final navKey = GlobalKey<NavigatorState>();
     MCPToolkitBinding.instance.navigatorKey = navKey;
 
@@ -598,8 +598,8 @@ void main() {
       MaterialApp(
         navigatorKey: navKey,
         routes: {
-          '/': (final _) => const Scaffold(body: Text('home')),
-          '/inner': (final _) => const Scaffold(body: Text('inner page')),
+          '/': (_) => const Scaffold(body: Text('home')),
+          '/inner': (_) => const Scaffold(body: Text('inner page')),
         },
       ),
     );
@@ -630,7 +630,7 @@ void main() {
   // -----------------------------------------------------------------------
 
   testWidgets('hover triggers MouseRegion.onEnter on the targeted widget', (
-    final tester,
+    tester,
   ) async {
     var entered = false;
     await tester.pumpWidget(
@@ -662,7 +662,7 @@ void main() {
     // Find the ref whose label is 'hover_target'.
     final targetEntry =
         nodes.firstWhere(
-              (final n) =>
+              (n) =>
                   n is Map &&
                   (n['label'] as String?)?.contains('hover_target') == true,
             )!
@@ -686,7 +686,7 @@ void main() {
 
   testWidgets(
     'hover can be called repeatedly without mouse tracker assertion',
-    (final tester) async {
+    (tester) async {
       var entered = 0;
       await tester.pumpWidget(
         MaterialApp(
@@ -712,7 +712,7 @@ void main() {
       final nodes = snapshot['nodes']! as List<Object?>;
       final targetEntry =
           nodes.firstWhere(
-                (final n) =>
+                (n) =>
                     n is Map &&
                     (n['label'] as String?)?.contains('hover_target') == true,
               )!
@@ -736,7 +736,7 @@ void main() {
   );
 
   testWidgets('hover returns ref_not_found for an unknown ref', (
-    final tester,
+    tester,
   ) async {
     await tester.pumpWidget(const MaterialApp(home: Scaffold()));
     await tester.pumpAndSettle();

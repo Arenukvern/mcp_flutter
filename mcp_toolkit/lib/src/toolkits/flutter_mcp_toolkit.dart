@@ -26,7 +26,7 @@ const selectWidgetAtPointToolName = 'select_widget_at_point';
 
 /// MCP tool entries for Flutter screenshots, errors, views, and interactions.
 Set<AgentCallEntry> getFlutterMcpToolkitEntries({
-  required final MCPToolkitBinding binding,
+  required MCPToolkitBinding binding,
 }) => {
   OnAppErrorsEntry(errorMonitor: binding),
   OnAppIdentityEntry(binding: binding),
@@ -52,9 +52,9 @@ extension MCPToolkitBindingExtension on MCPToolkitBinding {
 extension type const OnAppIdentityEntry._(AgentCallEntry entry)
     implements AgentCallEntry {
   /// {@macro on_app_identity_entry}
-  factory OnAppIdentityEntry({required final MCPToolkitBinding binding}) {
+  factory OnAppIdentityEntry({required MCPToolkitBinding binding}) {
     final entry = mcpToolkitTool(
-      handler: (final parameters) {
+      handler: (parameters) {
         final label = binding.appIdentityLabel;
         return MCPCallResult(
           message: label == null
@@ -84,12 +84,12 @@ extension type const OnAppIdentityEntry._(AgentCallEntry entry)
 extension type OnAppErrorsEntry._(AgentCallEntry entry)
     implements AgentCallEntry {
   /// {@macro on_app_errors_entry}
-  factory OnAppErrorsEntry({required final ErrorMonitor errorMonitor}) {
+  factory OnAppErrorsEntry({required ErrorMonitor errorMonitor}) {
     final entry = mcpToolkitTool(
-      handler: (final parameters) {
+      handler: (parameters) {
         final count = jsonDecodeInt(parameters['count'] ?? '').whenZeroUse(4);
         final reversedErrors = errorMonitor.errors.take(count).toList();
-        final errors = reversedErrors.map((final e) => e.toJson()).toList();
+        final errors = reversedErrors.map((e) => e.toJson()).toList();
         final message = () {
           if (errors.isEmpty) {
             return 'No errors found. Here are possible reasons: \n'
@@ -129,9 +129,9 @@ extension type OnAppErrorsEntry._(AgentCallEntry entry)
 extension type OnViewScreenshotsEntry._(AgentCallEntry entry)
     implements AgentCallEntry {
   /// {@macro on_view_screenshots_entry}
-  factory OnViewScreenshotsEntry({required final MCPToolkitBinding binding}) {
+  factory OnViewScreenshotsEntry({required MCPToolkitBinding binding}) {
     final entry = mcpToolkitTool(
-      handler: (final parameters) async {
+      handler: (parameters) async {
         final compress = jsonDecodeBool(parameters['compress']);
         final images = await ScreenshotService.takeScreenshots(
           compress: compress,
@@ -163,9 +163,9 @@ extension type OnViewScreenshotsEntry._(AgentCallEntry entry)
 extension type const OnViewDetailsEntry._(AgentCallEntry entry)
     implements AgentCallEntry {
   /// {@macro on_view_details_entry}
-  factory OnViewDetailsEntry({required final MCPToolkitBinding binding}) {
+  factory OnViewDetailsEntry({required MCPToolkitBinding binding}) {
     final entry = mcpToolkitTool(
-      handler: (final parameters) {
+      handler: (parameters) {
         final payload = ViewIntrospectionService.buildViewDetailsPayload(
           captureHintsContributor: binding.captureHintsContributor,
         );
@@ -194,7 +194,7 @@ extension type const OnInspectWidgetAtPointEntry._(AgentCallEntry entry)
   /// {@macro on_inspect_widget_at_point_entry}
   factory OnInspectWidgetAtPointEntry() {
     final entry = mcpToolkitTool(
-      handler: (final parameters) {
+      handler: (parameters) {
         final x = jsonDecodeInt(parameters['x']).whenZeroUse(0);
         final y = jsonDecodeInt(parameters['y']).whenZeroUse(0);
         final viewId = jsonDecodeInt(parameters['viewId']);
@@ -226,10 +226,10 @@ extension type const OnSelectWidgetAtPointEntry._(AgentCallEntry entry)
     implements AgentCallEntry {
   /// Creates the select-at-point tool backed by [binding].
   factory OnSelectWidgetAtPointEntry({
-    required final MCPToolkitBinding binding,
+    required MCPToolkitBinding binding,
   }) {
     final entry = mcpToolkitTool(
-      handler: (final parameters) {
+      handler: (parameters) {
         final customHandler = binding.selectAtPointHandler;
         if (customHandler != null) {
           return customHandler(parameters);

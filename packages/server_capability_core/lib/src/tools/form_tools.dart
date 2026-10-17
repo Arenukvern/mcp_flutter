@@ -10,7 +10,7 @@ import '_internal/handler_helpers.dart';
 /// and stop-on-first-failure semantics live inside the executor's `_fillForm`
 /// method — the capability layer sees a single CoreResult and applies the same
 /// `runCommand` path as every other tool.
-void registerFormTools(final CapabilityContext context) {
+void registerFormTools(CapabilityContext context) {
   final runner = context.require<CommandRunner>();
 
   context.registerTool(
@@ -22,11 +22,11 @@ void registerFormTools(final CapabilityContext context) {
           'to validate against the most recent semantic_snapshot (checked '
           'on the first field only).',
       inputSchema: fillFormInputSchema(),
-      handler: (final args) async {
+      handler: (args) async {
         final fieldsRaw = args['fields'];
         final fields = fieldsRaw is List
             ? fieldsRaw
-                  .map<Map<String, Object?>>((final e) {
+                  .map<Map<String, Object?>>((e) {
                     if (e is Map<String, Object?>) return e;
                     if (e is Map) return e.cast<String, Object?>();
                     return const <String, Object?>{};

@@ -2,7 +2,7 @@
 // Usage: dart run tool/merge_dogfood_tracker.dart <tracker.yaml> <iteration.yaml> <verdict>
 import 'dart:io';
 
-void main(final List<String> args) {
+void main(List<String> args) {
   if (args.length < 3) {
     stderr.writeln(
       'Usage: dart run tool/merge_dogfood_tracker.dart <tracker.yaml> '
@@ -22,7 +22,7 @@ void main(final List<String> args) {
   }
 
   final lines = trackerFile.readAsLinesSync();
-  final summaryIdx = lines.indexWhere((final line) => line == 'summary:');
+  final summaryIdx = lines.indexWhere((line) => line == 'summary:');
   if (summaryIdx < 0) {
     stderr.writeln('Tracker missing summary: section');
     exit(1);
@@ -65,12 +65,12 @@ void main(final List<String> args) {
   num? best;
   num? worst;
   if (scores.isNotEmpty) {
-    best = scores.reduce((final a, final b) => a > b ? a : b);
-    worst = scores.reduce((final a, final b) => a < b ? a : b);
+    best = scores.reduce((a, b) => a > b ? a : b);
+    worst = scores.reduce((a, b) => a < b ? a : b);
   }
   final mean = scores.isEmpty
       ? 0
-      : scores.fold<num>(0, (final a, final b) => a + b) / scores.length;
+      : scores.fold<num>(0, (a, b) => a + b) / scores.length;
 
   for (var i = 0; i < out.length; i++) {
     final line = out[i];

@@ -16,7 +16,7 @@ final class _CodegenLogCapability implements Capability {
   String get version => '0.0.0';
 
   @override
-  Future<void> register(final CapabilityContext context) async {
+  Future<void> register(CapabilityContext context) async {
     context.registerTool(
       agentCallEntryToToolRegistration(
         getRecentLogsCallEntry,

@@ -19,7 +19,7 @@ import '../services/wait_predicate_service.dart';
 /// The refs that snapshot handed out are keyed to it: by now the same strings
 /// address whatever took those nodes' place, so acting on them is worse than
 /// refusing.
-MCPCallResult _staleSnapshot(final int providedSnapshotId) => MCPCallResult(
+MCPCallResult _staleSnapshot(int providedSnapshotId) => MCPCallResult(
   message: 'Snapshot is stale. Call semantic_snapshot to get fresh refs.',
   parameters: <String, Object?>{
     'ok': false,
@@ -39,10 +39,10 @@ MCPCallResult _staleSnapshot(final int providedSnapshotId) => MCPCallResult(
 /// have to guess at — and the hint says where the value comes from, which for
 /// a ref is never something to invent.
 MCPCallResult _missingParameters({
-  required final String tool,
-  required final String error,
-  required final List<String> missing,
-  required final String hint,
+  required String tool,
+  required String error,
+  required List<String> missing,
+  required String hint,
 }) => MCPCallResult(
   message: '$tool: missing required parameter(s) ${missing.join(', ')}.',
   parameters: <String, Object?>{
@@ -91,7 +91,7 @@ extension type OnSemanticSnapshotEntry._(AgentCallEntry entry)
   /// {@macro on_semantic_snapshot_entry}
   factory OnSemanticSnapshotEntry() {
     final entry = mcpToolkitTool(
-      handler: (final parameters) async {
+      handler: (parameters) async {
         final filter = SemanticSnapshotFilter.fromJson(parameters);
         final snapshot = await SemanticSnapshotService.buildSemanticSnapshot(
           filter: filter.isEmpty ? null : filter,
@@ -132,7 +132,7 @@ extension type OnTapWidgetEntry._(AgentCallEntry entry)
   /// {@macro on_tap_widget_entry}
   factory OnTapWidgetEntry() {
     final entry = mcpToolkitTool(
-      handler: (final parameters) async {
+      handler: (parameters) async {
         final ref = parameters['ref'] ?? '';
         if (ref.isEmpty) {
           return _missingParameters(
@@ -181,7 +181,7 @@ extension type OnEnterTextEntry._(AgentCallEntry entry)
   /// {@macro on_enter_text_entry}
   factory OnEnterTextEntry() {
     final entry = mcpToolkitTool(
-      handler: (final parameters) async {
+      handler: (parameters) async {
         final ref = parameters['ref'] ?? '';
         // An empty string is a value, not an omission: it is how a field is
         // cleared. Only a missing key is a missing parameter.
@@ -240,7 +240,7 @@ extension type OnRevealSearchEntry._(AgentCallEntry entry)
   /// {@macro on_reveal_search_entry}
   factory OnRevealSearchEntry() {
     final entry = mcpToolkitTool(
-      handler: (final parameters) async {
+      handler: (parameters) async {
         final query = parameters['query'] ?? '';
         if (query.isEmpty) {
           return _missingParameters(
@@ -339,7 +339,7 @@ extension type OnScrollEntry._(AgentCallEntry entry) implements AgentCallEntry {
   /// {@macro on_scroll_entry}
   factory OnScrollEntry() {
     final entry = mcpToolkitTool(
-      handler: (final parameters) async {
+      handler: (parameters) async {
         final direction = parameters['direction'] ?? 'down';
         final ref = parameters['ref'];
         final distance = jsonDecodeDouble(parameters['distance'] ?? '300');
@@ -393,7 +393,7 @@ extension type OnLongPressEntry._(AgentCallEntry entry)
   /// {@macro on_long_press_entry}
   factory OnLongPressEntry() {
     final entry = mcpToolkitTool(
-      handler: (final parameters) async {
+      handler: (parameters) async {
         final ref = parameters['ref'] ?? '';
         if (ref.isEmpty) {
           return _missingParameters(
@@ -442,7 +442,7 @@ extension type OnSwipeEntry._(AgentCallEntry entry) implements AgentCallEntry {
   /// {@macro on_swipe_entry}
   factory OnSwipeEntry() {
     final entry = mcpToolkitTool(
-      handler: (final parameters) async {
+      handler: (parameters) async {
         final direction = parameters['direction'] ?? 'up';
         final ref = parameters['ref'];
         final distance = jsonDecodeDouble(parameters['distance'] ?? '300');
@@ -488,7 +488,7 @@ extension type OnDragEntry._(AgentCallEntry entry) implements AgentCallEntry {
   /// {@macro on_drag_entry}
   factory OnDragEntry() {
     final entry = mcpToolkitTool(
-      handler: (final parameters) async {
+      handler: (parameters) async {
         final fromRef = parameters['fromRef'] ?? '';
         final toRef = parameters['toRef'] ?? '';
         if (fromRef.isEmpty || toRef.isEmpty) {
@@ -552,7 +552,7 @@ extension type OnGetRecentLogsEntry._(AgentCallEntry entry)
   /// {@macro on_get_recent_logs_entry}
   factory OnGetRecentLogsEntry() {
     final entry = mcpToolkitTool(
-      handler: (final parameters) {
+      handler: (parameters) {
         final count = jsonDecodeInt(parameters['count'] ?? '50');
         final logs = LogCaptureService.getRecentLogs(
           count: count == 0 ? 50 : count,
@@ -589,7 +589,7 @@ extension type OnWaitForEntry._(AgentCallEntry entry)
   /// {@macro on_wait_for_entry}
   factory OnWaitForEntry() {
     final entry = mcpToolkitTool(
-      handler: (final parameters) async {
+      handler: (parameters) async {
         final predicate = Map<String, Object?>.from(
           jsonDecodeMap(parameters['predicate'] ?? '{}'),
         );
@@ -641,7 +641,7 @@ extension type OnPressKeyEntry._(AgentCallEntry entry)
   /// {@macro on_press_key_entry}
   factory OnPressKeyEntry() {
     final entry = mcpToolkitTool(
-      handler: (final parameters) async {
+      handler: (parameters) async {
         final key = jsonDecodeString(parameters['key']);
         final result = await ControlFlowService.pressKey(
           key: key,
@@ -686,7 +686,7 @@ extension type OnHandleDialogEntry._(AgentCallEntry entry)
   /// {@macro on_handle_dialog_entry}
   factory OnHandleDialogEntry() {
     final entry = mcpToolkitTool(
-      handler: (final parameters) async {
+      handler: (parameters) async {
         final action = jsonDecodeString(parameters['action']);
         if (action != 'dismiss') {
           return MCPCallResult(
@@ -737,7 +737,7 @@ extension type OnNavigateEntry._(AgentCallEntry entry)
   /// {@macro on_navigate_entry}
   factory OnNavigateEntry() {
     final entry = mcpToolkitTool(
-      handler: (final parameters) async {
+      handler: (parameters) async {
         final action = jsonDecodeString(parameters['action']);
         final route = jsonDecodeString(parameters['route']);
         final argsRaw = parameters['arguments'];
@@ -783,7 +783,7 @@ extension type OnHoverEntry._(AgentCallEntry entry) implements AgentCallEntry {
   /// {@macro on_hover_entry}
   factory OnHoverEntry() {
     final entry = mcpToolkitTool(
-      handler: (final parameters) async {
+      handler: (parameters) async {
         final ref = jsonDecodeString(parameters['ref']);
         if (ref.isEmpty) {
           return _missingParameters(
@@ -838,7 +838,7 @@ extension type OnFocusWidgetEntry._(AgentCallEntry entry)
   /// {@macro on_focus_widget_entry}
   factory OnFocusWidgetEntry() {
     final entry = mcpToolkitTool(
-      handler: (final parameters) async {
+      handler: (parameters) async {
         final ref = jsonDecodeString(parameters['ref']);
         if (ref.isEmpty) {
           return _missingParameters(

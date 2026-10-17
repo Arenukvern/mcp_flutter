@@ -29,7 +29,7 @@ final class FmtCapability implements Capability {
   String get version => '7.0.1'; // x-release-please-version
 
   @override
-  Future<void> register(final CapabilityContext context) async {
+  Future<void> register(CapabilityContext context) async {
     registerFlutterInspectorTools(context);
     registerInteractionTools(context);
     registerNavigationTools(context);

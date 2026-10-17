@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 
 Future<Map<String, Object?>> _snapshotAfterPump(
-  final WidgetTester tester,
+  WidgetTester tester,
 ) async {
   final snapshotFuture = SemanticSnapshotService.buildSemanticSnapshot();
   await tester.pump();
@@ -13,9 +13,9 @@ Future<Map<String, Object?>> _snapshotAfterPump(
 }
 
 Future<Map<String, Object?>> _settleAfterPumps(
-  final WidgetTester tester,
-  final Future<Map<String, Object?>> future, {
-  final int pumps = 8,
+  WidgetTester tester,
+  Future<Map<String, Object?>> future, {
+  int pumps = 8,
 }) async {
   for (var i = 0; i < pumps; i++) {
     await tester.pump(const Duration(milliseconds: 20));
@@ -23,18 +23,18 @@ Future<Map<String, Object?>> _settleAfterPumps(
   return future;
 }
 
-String _refFor(final Map<String, Object?> snapshot, final String identifier) {
+String _refFor(Map<String, Object?> snapshot, String identifier) {
   final nodes = (snapshot['nodes']! as List<Object?>)
       .cast<Map<String, Object?>>();
   return nodes.firstWhere(
-        (final node) => node['identifier'] == identifier,
+        (node) => node['identifier'] == identifier,
       )['ref']!
       as String;
 }
 
 void main() {
   testWidgets('synthetic hover enters the target and leaves on the next tap', (
-    final tester,
+    tester,
   ) async {
     final semantics = tester.ensureSemantics();
     try {
@@ -45,8 +45,8 @@ void main() {
           home: Scaffold(
             body: Center(
               child: MouseRegion(
-                onEnter: (final _) => entered = true,
-                onExit: (final _) => exited = true,
+                onEnter: (_) => entered = true,
+                onExit: (_) => exited = true,
                 child: Semantics(
                   identifier: 'hover_target',
                   label: 'Hover me',
@@ -81,7 +81,7 @@ void main() {
   });
 
   testWidgets('every gesture releases the synthetic mouse device', (
-    final tester,
+    tester,
   ) async {
     final semantics = tester.ensureSemantics();
     try {
@@ -182,7 +182,7 @@ void main() {
   });
 
   testWidgets('scroll releases the synthetic mouse device on both tiers', (
-    final tester,
+    tester,
   ) async {
     final semantics = tester.ensureSemantics();
     try {
@@ -191,7 +191,7 @@ void main() {
           home: Scaffold(
             body: ListView.builder(
               itemCount: 30,
-              itemBuilder: (final context, final index) => SizedBox(
+              itemBuilder: (context, index) => SizedBox(
                 height: 48,
                 child: Semantics(
                   identifier: 'row_$index',
@@ -210,7 +210,7 @@ void main() {
           (snapshot['nodes']! as List<Object?>)
                   .cast<Map<String, Object?>>()
                   .firstWhere(
-                    (final node) => node['type'] == 'scrollable',
+                    (node) => node['type'] == 'scrollable',
                   )['ref']!
               as String;
 
@@ -248,7 +248,7 @@ void main() {
   });
 
   testWidgets('synthetic hover leaves the platform mouse device untouched', (
-    final tester,
+    tester,
   ) async {
     final semantics = tester.ensureSemantics();
     try {

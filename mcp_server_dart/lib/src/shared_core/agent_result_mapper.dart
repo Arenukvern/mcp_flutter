@@ -5,8 +5,8 @@ import 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart';
 import 'package:intentcall_schema/intentcall_schema.dart';
 
 CoreResult coreResultFromAgentResult(
-  final AgentResult result, {
-  final Map<String, Object?> meta = const <String, Object?>{},
+  AgentResult result, {
+  Map<String, Object?> meta = const <String, Object?>{},
 }) {
   if (result.ok) {
     return CoreResult.success(data: result.data, meta: meta);

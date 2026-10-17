@@ -130,7 +130,7 @@ void main() {
         target.launch(),
         throwsA(
           isA<StateError>().having(
-            (final e) => e.message,
+            (e) => e.message,
             'message',
             contains('attachOnly found no running'),
           ),

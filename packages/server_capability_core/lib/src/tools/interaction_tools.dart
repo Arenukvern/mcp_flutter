@@ -8,7 +8,7 @@ import '_internal/handler_helpers.dart';
 /// [context]. Registers: tap_widget, enter_text, scroll, long_press, swipe,
 /// drag, hover, focus_widget, press_key, evaluate_dart_expression,
 /// hot_reload_and_capture.
-void registerInteractionTools(final CapabilityContext context) {
+void registerInteractionTools(CapabilityContext context) {
   final runner = context.require<CommandRunner>();
 
   context.registerTool(
@@ -18,7 +18,7 @@ void registerInteractionTools(final CapabilityContext context) {
           'Tap a widget identified by ref from semantic_snapshot. '
           'Refs are session-scoped to the most recent semantic_snapshot call.',
       inputSchema: tapWidgetInputSchema(),
-      handler: (final args) async {
+      handler: (args) async {
         final ref = stringArgOrNull(args['ref']) ?? '';
         final snapshotId = intArgOrNull(args['snapshotId']);
         return runCommand(
@@ -37,7 +37,7 @@ void registerInteractionTools(final CapabilityContext context) {
           'Enter text into a text field identified by ref from '
           'semantic_snapshot. Taps the field to focus before typing.',
       inputSchema: enterTextInputSchema(),
-      handler: (final args) async {
+      handler: (args) async {
         final ref = stringArgOrNull(args['ref']) ?? '';
         // Verbatim: the caller's spaces are the value they are typing.
         final text = verbatimStringArgOrNull(args['text']) ?? '';
@@ -59,7 +59,7 @@ void registerInteractionTools(final CapabilityContext context) {
           'snapshot, matching one bounded selector, scrolling up to '
           'maxAttempts, and returning a fresh ref/snapshotId plus trace.',
       inputSchema: revealSearchInputSchema(),
-      handler: (final args) async {
+      handler: (args) async {
         final query = stringArgOrNull(args['query']) ?? '';
         final matchBy = stringArgOrNull(args['matchBy']) ?? 'text';
         final direction = stringArgOrNull(args['direction']) ?? 'down';
@@ -92,7 +92,7 @@ void registerInteractionTools(final CapabilityContext context) {
           'below (finger swipes up); "up" reveals content above. Matches '
           'Playwright and user language ("scroll down to see the footer").',
       inputSchema: scrollInputSchema(),
-      handler: (final args) async {
+      handler: (args) async {
         final direction = stringArgOrNull(args['direction']) ?? 'down';
         final ref = stringArgOrNull(args['ref']);
         final distance = doubleArgOrDefault(args['distance'], 300.0);
@@ -116,7 +116,7 @@ void registerInteractionTools(final CapabilityContext context) {
       name: 'long_press',
       description: 'Long-press a widget identified by ref.',
       inputSchema: longPressInputSchema(),
-      handler: (final args) async {
+      handler: (args) async {
         final ref = stringArgOrNull(args['ref']) ?? '';
         final snapshotId = intArgOrNull(args['snapshotId']);
         return runCommand(
@@ -135,7 +135,7 @@ void registerInteractionTools(final CapabilityContext context) {
           'Swipe to reveal content in a direction (higher pointer velocity '
           'than scroll; used for flings). "down" reveals content below.',
       inputSchema: swipeInputSchema(),
-      handler: (final args) async {
+      handler: (args) async {
         final direction = stringArgOrNull(args['direction']) ?? 'up';
         final ref = stringArgOrNull(args['ref']);
         final distance = doubleArgOrDefault(args['distance'], 300.0);
@@ -159,7 +159,7 @@ void registerInteractionTools(final CapabilityContext context) {
       name: 'drag',
       description: 'Drag from one widget to another, identified by refs.',
       inputSchema: dragInputSchema(),
-      handler: (final args) async {
+      handler: (args) async {
         final fromRef = stringArgOrNull(args['fromRef']) ?? '';
         final toRef = stringArgOrNull(args['toRef']) ?? '';
         final snapshotId = intArgOrNull(args['snapshotId']);
@@ -189,7 +189,7 @@ void registerInteractionTools(final CapabilityContext context) {
           'next call — any other interaction releases the hover, and the '
           'affordance goes with it. Pass snapshotId to detect staleness.',
       inputSchema: hoverInputSchema(),
-      handler: (final args) async {
+      handler: (args) async {
         final ref = stringArgOrNull(args['ref']) ?? '';
         final snapshotId = intArgOrNull(args['snapshotId']);
         return runCommand(
@@ -212,7 +212,7 @@ void registerInteractionTools(final CapabilityContext context) {
           'where focus landed. Leaves a parked hover in place. '
           'Pass snapshotId to detect staleness.',
       inputSchema: focusWidgetInputSchema(),
-      handler: (final args) async {
+      handler: (args) async {
         final ref = stringArgOrNull(args['ref']) ?? '';
         final snapshotId = intArgOrNull(args['snapshotId']);
         return runCommand(
@@ -233,7 +233,7 @@ void registerInteractionTools(final CapabilityContext context) {
           'Left/Right, and single ASCII chars (a-z, 0-9). Optional '
           'modifiers: ctrl, shift, alt, meta.',
       inputSchema: pressKeyInputSchema(),
-      handler: (final args) async {
+      handler: (args) async {
         final key = stringArgOrNull(args['key']) ?? '';
         final ctrl = boolArgOrFalse(args['ctrl']);
         final shift = boolArgOrFalse(args['shift']);
@@ -267,7 +267,7 @@ void registerInteractionTools(final CapabilityContext context) {
           'Evaluate a Dart expression in the running app isolate. '
           'Returns the result of the expression as text.',
       inputSchema: evaluateDartExpressionInputSchema(),
-      handler: (final args) async {
+      handler: (args) async {
         final expression = stringArgOrNull(args['expression']) ?? '';
         return runCommand(
           runner,
@@ -296,7 +296,7 @@ void registerInteractionTools(final CapabilityContext context) {
           'Hot reload then capture screenshot + semantic snapshot + errors '
           'in a single call. Tight edit-preview cycle for AI iteration.',
       inputSchema: hotReloadAndCaptureInputSchema(),
-      handler: (final args) async {
+      handler: (args) async {
         final compress = boolArgOrDefault(args['compress'], defaultValue: true);
         final includeSemantics = boolArgOrDefault(
           args['includeSemantics'],

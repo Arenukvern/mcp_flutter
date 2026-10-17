@@ -62,7 +62,7 @@ void main() {
       expect(data['schemaVersion'], equals('command-catalog/v1'));
 
       final commands = (data['commands'] as List).cast<Map<String, dynamic>>();
-      final names = commands.map((final c) => c['name'] as String).toSet();
+      final names = commands.map((c) => c['name'] as String).toSet();
       expect(names.contains('status'), isTrue);
       expect(names.contains('get_vm'), isTrue);
       expect(names.contains('session_start'), isTrue);
@@ -349,7 +349,7 @@ void main() {
   }, timeout: const Timeout(Duration(minutes: 2)));
 }
 
-Future<ProcessResult> _runCli(final String statePath, final List<String> args) {
+Future<ProcessResult> _runCli(String statePath, List<String> args) {
   final fullArgs = <String>[
     'run',
     'bin/flutter_mcp_toolkit.dart',

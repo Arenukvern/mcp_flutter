@@ -17,13 +17,13 @@ final class _RegistryProbeCapability implements Capability {
   String get version => '0.0.0';
 
   @override
-  Future<void> register(final CapabilityContext context) async {
+  Future<void> register(CapabilityContext context) async {
     context.registerTool(
       ToolRegistration(
         name: 'ping',
         description: 'ping',
         inputSchema: const {'type': 'object'},
-        handler: (final args) async => AgentResult.success(
+        handler: (args) async => AgentResult.success(
           data: const <String, Object?>{'text': 'legacy'},
         ),
       ),
@@ -40,7 +40,7 @@ void main() {
         <String, FutureOr<CallToolResult> Function(CallToolRequest)>{};
     final host = McpHost(
       dispatchBridge: DartMcpDispatchBridge(
-        publish: (final tool, final impl) {
+        publish: (tool, impl) {
           published[tool.name] = impl;
         },
         unpublish: (_) {},
@@ -77,9 +77,9 @@ void main() {
           >{};
       final host = McpHost(
         dispatchBridge: DartMcpDispatchBridge(
-          publish: (_, final _) {},
+          publish: (_, _) {},
           unpublish: (_) {},
-          publishResource: (final resource, final impl) {
+          publishResource: (resource, impl) {
             publishedResources[resource.uri] = impl;
           },
           unpublishResource: (_) {},

@@ -6,5 +6,5 @@ export 'package:intentcall_mcp/intentcall_mcp.dart'
     show agentResultToMcpResult, mcpResultToAgentResult;
 
 /// Legacy alias used by server tests.
-AgentResult mcpToolResultToAgentResult(final CallToolResult result) =>
+AgentResult mcpToolResultToAgentResult(CallToolResult result) =>
     mcpResultToAgentResult(result);

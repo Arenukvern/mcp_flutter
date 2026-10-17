@@ -23,11 +23,11 @@ abstract interface class CapabilityContext {
   /// Throws [PrePrefixedToolNameError] if [registration.name] starts with
   /// the capability prefix. Throws [ToolNameCollisionError] if another
   /// registration with the same final name exists.
-  void registerTool(final ToolRegistration registration);
+  void registerTool(ToolRegistration registration);
 
   /// Register an MCP resource. URIs are not prefixed by the kernel
   /// (URIs already encode their authority).
-  void registerResource(final ResourceRegistration registration);
+  void registerResource(ResourceRegistration registration);
 
   /// Resolve a host service the capability needs.
   ///
@@ -36,7 +36,7 @@ abstract interface class CapabilityContext {
   T require<T extends HostService>();
 
   /// Optional logger sink. Implementation-defined.
-  void log(final String message, {final LogLevel level = LogLevel.info});
+  void log(String message, {LogLevel level = LogLevel.info});
 }
 
 enum LogLevel { trace, debug, info, warning, error }

@@ -63,9 +63,9 @@ final class DartMcpDispatchBridge {
 /// they registered.
 final class McpHost {
   McpHost({
-    final Map<Type, HostService>? services,
-    final CapabilityConfig? config,
-    final DartMcpDispatchBridge? dispatchBridge,
+    Map<Type, HostService>? services,
+    CapabilityConfig? config,
+    DartMcpDispatchBridge? dispatchBridge,
   }) : _services = services ?? const <Type, HostService>{},
        _config = config ?? const CapabilityConfig(),
        agentRegistry = InMemoryAgentRegistry() {
@@ -107,7 +107,7 @@ final class McpHost {
     await (_runtimeReady ?? Future<void>.value());
   }
 
-  Future<void> registerCapability(final Capability capability) async {
+  Future<void> registerCapability(Capability capability) async {
     await _ensureRuntimeStarted();
     validateCapabilityId(capability.id);
     if (_capabilities.containsKey(capability.id)) {
@@ -122,7 +122,7 @@ final class McpHost {
       await capability.register(ctx);
     } on Object catch (_) {
       final publish = _mcpPublish;
-      _tools.removeWhere((final fullName, _) {
+      _tools.removeWhere((fullName, _) {
         if (!fullName.startsWith(prefix)) return false;
         publish?.unpublishRegistryTool(
           registry: agentRegistry,
@@ -130,11 +130,11 @@ final class McpHost {
         );
         return true;
       });
-      _resources.removeWhere((final uri, _) {
+      _resources.removeWhere((uri, _) {
         publish?.unpublishRegistryResource(registry: agentRegistry, uri: uri);
         return true;
       });
-      _resourceTemplates.removeWhere((final uriTemplate, _) {
+      _resourceTemplates.removeWhere((uriTemplate, _) {
         publish?.unpublishRegistryResourceTemplate(
           registry: agentRegistry,
           uriTemplate: uriTemplate,
@@ -150,8 +150,8 @@ final class McpHost {
 
   /// Publish a static resource (e.g. Flutter Inspector `visual://` surface).
   Future<void> registerPublishedResource({
-    required final String capabilityId,
-    required final ResourceRegistration registration,
+    required String capabilityId,
+    required ResourceRegistration registration,
   }) async {
     await _ensureRuntimeStarted();
     _registerResource(capabilityId: capabilityId, registration: registration);
@@ -159,8 +159,8 @@ final class McpHost {
 
   /// Publish a parameterized resource template via [AgentRegistry].
   Future<void> registerPublishedResourceTemplate({
-    required final String capabilityId,
-    required final ResourceTemplateRegistration registration,
+    required String capabilityId,
+    required ResourceTemplateRegistration registration,
   }) async {
     await _ensureRuntimeStarted();
     _registerResourceTemplate(
@@ -170,8 +170,8 @@ final class McpHost {
   }
 
   void _registerTool({
-    required final String capabilityId,
-    required final ToolRegistration registration,
+    required String capabilityId,
+    required ToolRegistration registration,
   }) {
     validateBareToolName(capabilityId: capabilityId, name: registration.name);
     final fullName = applyPrefix(
@@ -203,8 +203,8 @@ final class McpHost {
   }
 
   void _registerResource({
-    required final String capabilityId,
-    required final ResourceRegistration registration,
+    required String capabilityId,
+    required ResourceRegistration registration,
   }) {
     if (_resources.containsKey(registration.uri)) {
       throw StateError('Resource "${registration.uri}" registered twice.');
@@ -230,8 +230,8 @@ final class McpHost {
   }
 
   void _registerResourceTemplate({
-    required final String capabilityId,
-    required final ResourceTemplateRegistration registration,
+    required String capabilityId,
+    required ResourceTemplateRegistration registration,
   }) {
     if (_resourceTemplates.containsKey(registration.uriTemplate)) {
       throw StateError(
@@ -330,13 +330,13 @@ final class _HostCapabilityContext implements CapabilityContext {
   CapabilityConfig get config => host._config;
 
   @override
-  void registerTool(final ToolRegistration registration) {
+  void registerTool(ToolRegistration registration) {
     _ensureNotSealed();
     host._registerTool(capabilityId: capability.id, registration: registration);
   }
 
   @override
-  void registerResource(final ResourceRegistration registration) {
+  void registerResource(ResourceRegistration registration) {
     _ensureNotSealed();
     host._registerResource(
       capabilityId: capability.id,
@@ -348,7 +348,7 @@ final class _HostCapabilityContext implements CapabilityContext {
   T require<T extends HostService>() => host._require<T>();
 
   @override
-  void log(final String message, {final LogLevel level = LogLevel.info}) {
+  void log(String message, {LogLevel level = LogLevel.info}) {
     // ignore: avoid_print
     print('[${capability.id}] $message');
   }

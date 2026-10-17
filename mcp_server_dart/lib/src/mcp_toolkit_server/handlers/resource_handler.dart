@@ -26,8 +26,8 @@ class ResourceHandler {
   final CoreCommandExecutor executor;
 
   Future<ReadResourceResult> handleAppErrorsResource(
-    final ReadResourceRequest request, {
-    final int count = 4,
+    ReadResourceRequest request, {
+    int count = 4,
   }) async {
     final connectError = await applyConnectionOverrideFromResourceUri(
       resourceUri: request.uri,
@@ -61,7 +61,7 @@ class ResourceHandler {
     ).whenEmptyUse('No errors found');
     final errors = jsonDecodeListAs<Map<String, dynamic>>(
       data['errors'],
-    ).map((final e) => e.cast<String, Object?>()).toList();
+    ).map((e) => e.cast<String, Object?>()).toList();
 
     if (errors.isEmpty) {
       return ReadResourceResult(
@@ -73,7 +73,7 @@ class ResourceHandler {
       contents: [
         TextResourceContents(uri: request.uri, text: message),
         ...errors.map(
-          (final error) => TextResourceContents(
+          (error) => TextResourceContents(
             uri: request.uri,
             text: jsonEncode(error),
             mimeType: 'application/json',
@@ -84,7 +84,7 @@ class ResourceHandler {
   }
 
   Future<ReadResourceResult> handleScreenshotsResource(
-    final ReadResourceRequest request,
+    ReadResourceRequest request,
   ) async {
     final connectError = await applyConnectionOverrideFromResourceUri(
       resourceUri: request.uri,
@@ -115,7 +115,7 @@ class ResourceHandler {
         meta: Meta.fromMap({'fileUrls': fileUrls}),
         contents: fileUrls
             .map(
-              (final fileUrl) => TextResourceContents(
+              (fileUrl) => TextResourceContents(
                 uri: request.uri,
                 text: 'Analyse with vision image by URL $fileUrl ',
                 mimeType: 'text/plain',
@@ -144,7 +144,7 @@ class ResourceHandler {
             mimeType: 'application/json',
           ),
         ...images.map(
-          (final image) => BlobResourceContents(
+          (image) => BlobResourceContents(
             uri: request.uri,
             blob: image,
             mimeType: 'image/png',
@@ -155,7 +155,7 @@ class ResourceHandler {
   }
 
   Future<ReadResourceResult> handleViewDetailsResource(
-    final ReadResourceRequest request,
+    ReadResourceRequest request,
   ) async {
     final connectError = await applyConnectionOverrideFromResourceUri(
       resourceUri: request.uri,
@@ -193,7 +193,7 @@ class ResourceHandler {
 
   Future<void> dispose() async {}
 
-  Map<String, Object?> _map(final Object? data) {
+  Map<String, Object?> _map(Object? data) {
     if (data is Map<String, Object?>) {
       return data;
     }

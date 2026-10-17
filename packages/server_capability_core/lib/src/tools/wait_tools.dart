@@ -11,7 +11,7 @@ import '_internal/handler_helpers.dart';
 /// `_waitFor` + `routeWaitForResponse` pair — the capability layer sees a
 /// standard CoreResult and applies the same `runCommand` path as every other
 /// tool.
-void registerWaitTools(final CapabilityContext context) {
+void registerWaitTools(CapabilityContext context) {
   final runner = context.require<CommandRunner>();
 
   context.registerTool(
@@ -26,7 +26,7 @@ void registerWaitTools(final CapabilityContext context) {
           '"absent":true to wait for it to go away. '
           'Default timeout 5000 ms, max 30000 ms.',
       inputSchema: waitForInputSchema(),
-      handler: (final args) async {
+      handler: (args) async {
         final predicateRaw = args['predicate'];
         final predicate = predicateRaw is Map
             ? Map<String, Object?>.from(predicateRaw)

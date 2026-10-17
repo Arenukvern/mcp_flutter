@@ -13,7 +13,7 @@ import '_internal/handler_helpers.dart';
 /// Registers inspection tools with the host through [context].
 /// Registers: get_view_details, inspect_widget_at_point, get_app_errors,
 /// get_screenshots, capture_ui_snapshot.
-void registerInspectionTools(final CapabilityContext context) {
+void registerInspectionTools(CapabilityContext context) {
   final runner = context.require<CommandRunner>();
 
   context.registerTool(
@@ -21,7 +21,7 @@ void registerInspectionTools(final CapabilityContext context) {
       name: 'get_view_details',
       description: 'Get details for all views in the application.',
       inputSchema: getViewDetailsInputSchema(),
-      handler: (final args) async {
+      handler: (args) async {
         return runCommand(runner, args, const GetViewDetailsCommand());
       },
     ),
@@ -33,7 +33,7 @@ void registerInspectionTools(final CapabilityContext context) {
       description:
           'Inspect the deepest widget at global logical coordinates (x, y).',
       inputSchema: inspectWidgetAtPointInputSchema(),
-      handler: (final args) async {
+      handler: (args) async {
         final x = coordinateIntArgOrNull(args['x']);
         final y = coordinateIntArgOrNull(args['y']);
         if (x == null || y == null) {
@@ -57,14 +57,14 @@ void registerInspectionTools(final CapabilityContext context) {
       name: 'get_app_errors',
       description: 'Get the most recent application errors from Dart VM.',
       inputSchema: getAppErrorsInputSchema(),
-      handler: (final args) async {
+      handler: (args) async {
         final countRaw = intArgOrNull(args['count']);
         final count = countRaw ?? 4;
         return runCommand(
           runner,
           args,
           GetAppErrorsCommand(count: count),
-          onSuccess: (final data) {
+          onSuccess: (data) {
             // Legacy parity: fan-out message + per-error TextContent blocks.
             final map = _asMap(data);
             final message = _stringFromMap(map, 'message') ?? 'No errors found';
@@ -74,7 +74,7 @@ void registerInspectionTools(final CapabilityContext context) {
               artifacts: [
                 AgentArtifact.text(message),
                 ...errors.map(
-                  (final error) => AgentArtifact.text(jsonEncode(error)),
+                  (error) => AgentArtifact.text(jsonEncode(error)),
                 ),
               ],
             );
@@ -104,7 +104,7 @@ void registerInspectionTools(final CapabilityContext context) {
       name: 'get_screenshots',
       description: 'Get screenshots of all views in the application.',
       inputSchema: getScreenshotsInputSchema(),
-      handler: (final args) async {
+      handler: (args) async {
         final compress = _boolArg(args['compress'], defaultValue: true);
         return runCommand(
           runner,
@@ -114,7 +114,7 @@ void registerInspectionTools(final CapabilityContext context) {
             mode: parseScreenshotMode(args['mode']),
             permissionPolicy: parsePermissionPolicy(args['permissionPolicy']),
           ),
-          onSuccess: (final data) {
+          onSuccess: (data) {
             final map = _asMap(data);
             final fileUrls = _stringList(map['fileUrls']);
             if (fileUrls.isNotEmpty) {
@@ -125,7 +125,7 @@ void registerInspectionTools(final CapabilityContext context) {
                 },
                 artifacts: fileUrls
                     .map(
-                      (final url) => AgentArtifact.text(
+                      (url) => AgentArtifact.text(
                         'Analyse with vision image by URL $url',
                       ),
                     )
@@ -142,7 +142,7 @@ void registerInspectionTools(final CapabilityContext context) {
               artifacts: [
                 if (routing.isNotEmpty) AgentArtifact.text(jsonEncode(routing)),
                 ...images.map(
-                  (final image) =>
+                  (image) =>
                       AgentArtifact.text(image, mimeType: 'image/png'),
                 ),
               ],
@@ -168,7 +168,7 @@ void registerInspectionTools(final CapabilityContext context) {
       description:
           'Capture screenshots, view details, and app errors in one response.',
       inputSchema: captureUiSnapshotInputSchema(),
-      handler: (final args) async {
+      handler: (args) async {
         final errorsCount = intArgOrNull(args['errorsCount']) ?? 4;
         final compress = _boolArg(args['compress'], defaultValue: true);
         final includeViewDetails = _boolArg(
@@ -190,7 +190,7 @@ void registerInspectionTools(final CapabilityContext context) {
             screenshotMode: parseScreenshotMode(args['screenshotMode']),
             permissionPolicy: parsePermissionPolicy(args['permissionPolicy']),
           ),
-          onSuccess: (final data) {
+          onSuccess: (data) {
             final bundle = _asMap(data);
             final screenshots = _asMap(bundle['screenshots']);
             final images = _stringList(screenshots['images']);
@@ -207,7 +207,7 @@ void registerInspectionTools(final CapabilityContext context) {
                   ),
                 ),
                 ...images.map(
-                  (final image) =>
+                  (image) =>
                       AgentArtifact.text(image, mimeType: 'image/png'),
                 ),
               ],
@@ -224,7 +224,7 @@ void registerInspectionTools(final CapabilityContext context) {
       description:
           'Focus the host macOS app window or iOS Simulator before desktop capture.',
       inputSchema: focusWindowInputSchema(),
-      handler: (final args) async {
+      handler: (args) async {
         return runCommand(
           runner,
           args,
@@ -243,9 +243,9 @@ void registerInspectionTools(final CapabilityContext context) {
 /// result, which keeps the images inline; neither survives the lift into
 /// ImageContent blocks, so the shipped bundle has to restate them.
 Map<String, Object?> _bundleWithImagesLifted(
-  final Map<String, Object?> bundle,
-  final Map<String, Object?> screenshots,
-  final int imageCount,
+  Map<String, Object?> bundle,
+  Map<String, Object?> screenshots,
+  int imageCount,
 ) => <String, Object?>{
   ...bundle,
   'screenshots': <String, Object?>{
@@ -265,7 +265,7 @@ Map<String, Object?> _bundleWithImagesLifted(
 };
 
 /// One image summary, with its source pointing at the block that carries it.
-Object? _summaryDeliveredAsBlock(final Object? summary) {
+Object? _summaryDeliveredAsBlock(Object? summary) {
   if (summary is! Map || summary['source'] != 'inline_base64') return summary;
   return <String, Object?>{..._asMap(summary), 'source': 'image_block'};
 }
@@ -274,35 +274,35 @@ Object? _summaryDeliveredAsBlock(final Object? summary) {
 // Local helpers for data unpacking.
 // ---------------------------------------------------------------------------
 
-Map<String, Object?> _asMap(final Object? data) {
+Map<String, Object?> _asMap(Object? data) {
   if (data is Map<String, Object?>) return data;
   if (data is Map) return data.cast<String, Object?>();
   return const <String, Object?>{};
 }
 
-String? _stringFromMap(final Map<String, Object?> map, final String key) {
+String? _stringFromMap(Map<String, Object?> map, String key) {
   final v = map[key];
   if (v is String && v.isNotEmpty) return v;
   return null;
 }
 
-List<Map<String, Object?>> _errorsList(final Object? raw) {
+List<Map<String, Object?>> _errorsList(Object? raw) {
   if (raw is! List) return const [];
   return raw
       .whereType<Map>()
-      .map<Map<String, Object?>>((final e) => e.cast<String, Object?>())
+      .map<Map<String, Object?>>((e) => e.cast<String, Object?>())
       .toList(growable: false);
 }
 
 /// Returns a flat list of strings from [raw] (which may be a `List<dynamic>`).
-List<String> _stringList(final Object? raw) {
+List<String> _stringList(Object? raw) {
   if (raw is! List) return const <String>[];
   return raw.whereType<String>().toList(growable: false);
 }
 
 /// Parses a bool argument, accepting `bool` or `String` (case-insensitive).
 /// Falls back to [defaultValue] when the value is absent or unrecognised.
-bool _boolArg(final Object? raw, {required final bool defaultValue}) {
+bool _boolArg(Object? raw, {required bool defaultValue}) {
   if (raw is bool) return raw;
   if (raw is String) return raw.toLowerCase() != 'false';
   return defaultValue;

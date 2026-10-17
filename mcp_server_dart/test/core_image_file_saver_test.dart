@@ -16,7 +16,7 @@ void main() {
     });
 
     final saver = CoreImageFileSaver(
-      logger: (final level, final message, {final logger = 'test'}) {},
+      logger: (level, message, {logger = 'test'}) {},
       baseDirectory: tempDir.path,
     );
     final bytes = base64Encode(List<int>.filled(8, 1));

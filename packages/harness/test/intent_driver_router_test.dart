@@ -17,7 +17,7 @@ final class _RecordingDriver implements AutomationDriver {
   );
 
   @override
-  Future<void> perform(final AutomationAction action) async {
+  Future<void> perform(AutomationAction action) async {
     actions.add(action);
   }
 

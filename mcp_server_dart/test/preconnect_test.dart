@@ -36,7 +36,7 @@ void main() {
           logger: _noopLogger,
           discoverPorts: () async => <int>[8181, 8182],
           probeFlutterTarget:
-              (final endpoint, {required final timeout}) async => true,
+              (endpoint, {required timeout}) async => true,
         );
 
         final manager = IntentSessionManager(
@@ -130,8 +130,8 @@ void main() {
 }
 
 DefaultCoreCommandExecutor _buildExecutor({
-  required final ConnectionContext context,
-  required final IntentSessionManager? sessionManager,
+  required ConnectionContext context,
+  required IntentSessionManager? sessionManager,
 }) => DefaultCoreCommandExecutor(
   connectionContext: context,
   portScanner: const CorePortScanner(logger: _noopLogger),
@@ -149,7 +149,7 @@ DefaultCoreCommandExecutor _buildExecutor({
 );
 
 void _noopLogger(
-  final LoggingLevel level,
-  final String message, {
-  final String logger = 'test',
+  LoggingLevel level,
+  String message, {
+  String logger = 'test',
 }) {}

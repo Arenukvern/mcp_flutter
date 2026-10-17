@@ -36,7 +36,7 @@ mixin ViewIntrospectionService {
 
   /// Widget tree plus multi-view metrics for the `view_details` MCP tool.
   static Map<String, Object?> buildViewDetailsPayload({
-    final PlatformViewHints Function()? captureHintsContributor,
+    PlatformViewHints Function()? captureHintsContributor,
   }) {
     final viewMetrics = ApplicationInfo.getViewsInformation();
     final state = _TreeBuildState(maxNodes: _defaultMaxNodes);
@@ -47,7 +47,7 @@ mixin ViewIntrospectionService {
     );
 
     return {
-      'details': viewMetrics.map((final view) => view.toJson()).toList(),
+      'details': viewMetrics.map((view) => view.toJson()).toList(),
       'widgetTree': tree,
       'captureHints': captureHints.toCaptureHintsJson(),
       'summary': {
@@ -61,9 +61,9 @@ mixin ViewIntrospectionService {
 
   /// Hit-tests [RenderView]s at logical ([x], [y]) and summarizes selection.
   static Map<String, Object?> inspectWidgetAtPoint({
-    required final int x,
-    required final int y,
-    final int? viewId,
+    required int x,
+    required int y,
+    int? viewId,
   }) {
     final point = ui.Offset(x.toDouble(), y.toDouble());
     final renderView = _selectRenderView(
@@ -83,7 +83,7 @@ mixin ViewIntrospectionService {
     final hitTestResult = HitTestResult();
     renderView.hitTest(hitTestResult, position: point);
     final targets = hitTestResult.path
-        .map((final entry) => entry.target)
+        .map((entry) => entry.target)
         .whereType<RenderObject>()
         .toList(growable: false);
     final target = targets.isEmpty ? null : targets.first;
@@ -110,7 +110,7 @@ mixin ViewIntrospectionService {
 
   /// Full element walk for [captureHints] (no depth cap; tree JSON stays bounded).
   static PlatformViewHints _captureHintsFromLiveElements({
-    final PlatformViewHints Function()? captureHintsContributor,
+    PlatformViewHints Function()? captureHintsContributor,
   }) {
     final root = WidgetsBinding.instance.rootElement;
     if (root == null) {
@@ -120,7 +120,7 @@ mixin ViewIntrospectionService {
     var visited = 0;
     const maxVisit = 8000;
 
-    void visit(final Element element, final int depth) {
+    void visit(Element element, int depth) {
       if (visited >= maxVisit) {
         return;
       }
@@ -132,7 +132,7 @@ mixin ViewIntrospectionService {
         globalBounds: _globalBoundsForRenderObject(element.renderObject),
         matches: matches,
       );
-      element.visitChildElements((final child) => visit(child, depth + 1));
+      element.visitChildElements((child) => visit(child, depth + 1));
     }
 
     visit(root, 0);
@@ -144,8 +144,8 @@ mixin ViewIntrospectionService {
   }
 
   static Map<String, Object?> _buildWidgetTree({
-    required final _TreeBuildState state,
-    required final int maxDepth,
+    required _TreeBuildState state,
+    required int maxDepth,
   }) {
     final root = WidgetsBinding.instance.rootElement;
     if (root == null) {
@@ -159,10 +159,10 @@ mixin ViewIntrospectionService {
   }
 
   static Map<String, Object?> _buildNode(
-    final Element element, {
-    required final _TreeBuildState state,
-    required final int depth,
-    required final int maxDepth,
+    Element element, {
+    required _TreeBuildState state,
+    required int depth,
+    required int maxDepth,
   }) {
     if (!state.consume()) {
       return {
@@ -176,7 +176,7 @@ mixin ViewIntrospectionService {
     final renderObject = element.renderObject;
     final children = <Map<String, Object?>>[];
     if (depth < maxDepth) {
-      element.visitChildElements((final child) {
+      element.visitChildElements((child) {
         if (state.visited >= state.maxNodes) {
           state.truncated = true;
           return;
@@ -207,7 +207,7 @@ mixin ViewIntrospectionService {
     };
   }
 
-  static Map<String, Object?>? _routeInfoForElement(final Element element) {
+  static Map<String, Object?>? _routeInfoForElement(Element element) {
     try {
       final route = ModalRoute.of(element);
       if (route == null) {
@@ -223,7 +223,7 @@ mixin ViewIntrospectionService {
     }
   }
 
-  static int? _viewIdForRenderObject(final RenderObject renderObject) {
+  static int? _viewIdForRenderObject(RenderObject renderObject) {
     RenderObject current = renderObject;
     while (current.parent is RenderObject) {
       current = current.parent!;
@@ -236,7 +236,7 @@ mixin ViewIntrospectionService {
   }
 
   static Map<String, Object?> _overflowFlagsForRenderObject(
-    final RenderObject? renderObject,
+    RenderObject? renderObject,
   ) {
     if (renderObject == null) {
       return const <String, Object?>{};
@@ -254,7 +254,7 @@ mixin ViewIntrospectionService {
     };
   }
 
-  static String? _sourceLocationHintForElement(final Element element) {
+  static String? _sourceLocationHintForElement(Element element) {
     String? creatorChain;
     assert(() {
       try {
@@ -276,7 +276,7 @@ mixin ViewIntrospectionService {
   }
 
   static Map<String, Object?>? _globalBoundsForRenderObject(
-    final RenderObject? renderObject,
+    RenderObject? renderObject,
   ) {
     if (renderObject == null || !renderObject.attached) {
       return null;
@@ -307,7 +307,7 @@ mixin ViewIntrospectionService {
   }
 
   static Map<String, Object?>? _semanticBoundsForRenderObject(
-    final RenderObject? renderObject,
+    RenderObject? renderObject,
   ) {
     if (renderObject == null || !renderObject.attached) {
       return null;
@@ -326,7 +326,7 @@ mixin ViewIntrospectionService {
     }
   }
 
-  static Map<String, Object?> _rectToJson(final ui.Rect rect) => {
+  static Map<String, Object?> _rectToJson(ui.Rect rect) => {
     'left': rect.left,
     'top': rect.top,
     'right': rect.right,
@@ -336,8 +336,8 @@ mixin ViewIntrospectionService {
   };
 
   static RenderView? _selectRenderView({
-    required final int? requestedViewId,
-    required final ui.Offset position,
+    required int? requestedViewId,
+    required ui.Offset position,
   }) {
     final binding = WidgetsBinding.instance;
     final renderViews = binding.renderViews.toList(growable: false);
@@ -365,8 +365,8 @@ mixin ViewIntrospectionService {
   }
 
   static bool _rectContainsPoint(
-    final Map<String, Object?>? rect,
-    final ui.Offset point,
+    Map<String, Object?>? rect,
+    ui.Offset point,
   ) {
     if (rect == null) {
       return false;
@@ -384,14 +384,14 @@ mixin ViewIntrospectionService {
         point.dy <= bottom;
   }
 
-  static Map<String, Object?> _viewSummary(final RenderView renderView) => {
+  static Map<String, Object?> _viewSummary(RenderView renderView) => {
     'viewId': renderView.flutterView.viewId,
     'renderObjectType': renderView.runtimeType.toString(),
     'globalBounds': _globalBoundsForRenderObject(renderView),
     'semanticBounds': _semanticBoundsForRenderObject(renderView),
   };
 
-  static Map<String, Object?> _renderObjectSummary(final RenderObject object) {
+  static Map<String, Object?> _renderObjectSummary(RenderObject object) {
     final element = (object.debugCreator as DebugCreator?)?.element;
     return {
       'renderObjectType': object.runtimeType.toString(),
@@ -407,7 +407,7 @@ mixin ViewIntrospectionService {
     };
   }
 
-  static Map<String, Object?> _elementSummary(final Element element) => {
+  static Map<String, Object?> _elementSummary(Element element) => {
     'widgetType': element.widget.runtimeType.toString(),
     if (element.widget.key != null) 'key': '${element.widget.key}',
     'renderObjectType': element.renderObject?.runtimeType.toString(),
@@ -415,7 +415,7 @@ mixin ViewIntrospectionService {
     'route': ?_routeInfoForElement(element),
   };
 
-  static Map<String, Object?> _semanticSummary(final RenderObject object) {
+  static Map<String, Object?> _semanticSummary(RenderObject object) {
     final semantics = <String, Object?>{};
     assert(() {
       try {
@@ -440,7 +440,7 @@ mixin ViewIntrospectionService {
     return semantics;
   }
 
-  static Map<String, Object?> _selectedSummary(final RenderObject? target) {
+  static Map<String, Object?> _selectedSummary(RenderObject? target) {
     if (target == null) {
       return const <String, Object?>{};
     }
@@ -456,7 +456,7 @@ mixin ViewIntrospectionService {
     }
   }
 
-  static Map<String, Object?> _decodeSummaryJson(final Object? raw) {
+  static Map<String, Object?> _decodeSummaryJson(Object? raw) {
     if (raw is Map<String, Object?>) {
       return raw;
     }

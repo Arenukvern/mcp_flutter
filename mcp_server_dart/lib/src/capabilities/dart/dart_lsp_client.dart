@@ -87,14 +87,14 @@ final class DartLspClient {
 
       // Listen for stderr to catch any startup errors
       _serverProcess!.stderr.listen(
-        (final data) => logger.warning('LSP stderr: ${utf8.decode(data)}'),
-        onError: (final error) => logger.severe('LSP stderr error: $error'),
+        (data) => logger.warning('LSP stderr: ${utf8.decode(data)}'),
+        onError: (error) => logger.severe('LSP stderr error: $error'),
       );
 
       // Listen for raw bytes from server
       _stdoutSubscription = _serverProcess!.stdout.listen(
         _handleServerData,
-        onError: (final error) => logger.severe('LSP server error: $error'),
+        onError: (error) => logger.severe('LSP server error: $error'),
         onDone: () => logger.info('LSP server connection closed'),
       );
 
@@ -151,9 +151,9 @@ final class DartLspClient {
   ///
   /// Returns the hover documentation or null if not found
   Future<String?> getHover(
-    final String filePath,
-    final int line,
-    final int character,
+    String filePath,
+    int line,
+    int character,
   ) async {
     if (!_isInitialized) {
       logger.warning('LSP client not initialized');
@@ -179,13 +179,13 @@ final class DartLspClient {
         return contents;
       } else if (contents is List) {
         return contents
-            .map((final item) {
+            .map((item) {
               if (item is Map<String, dynamic>) {
                 return item['value'] as String? ?? item.toString();
               }
               return item.toString();
             })
-            .where((final s) => s.isNotEmpty)
+            .where((s) => s.isNotEmpty)
             .join('\n\n');
       }
 
@@ -204,9 +204,9 @@ final class DartLspClient {
   ///
   /// Returns list of definition locations
   Future<List<LspLocation>> getDefinition(
-    final String filePath,
-    final int line,
-    final int character,
+    String filePath,
+    int line,
+    int character,
   ) async {
     if (!_isInitialized) {
       logger.warning('LSP client not initialized');
@@ -251,8 +251,8 @@ final class DartLspClient {
   ///
   /// Returns documentation if found
   Future<String?> findSymbolDocumentation(
-    final String filePath,
-    final String symbolName,
+    String filePath,
+    String symbolName,
   ) async {
     try {
       final file = File(filePath);
@@ -365,7 +365,7 @@ final class DartLspClient {
   }
 
   /// Open a document in the LSP server
-  Future<void> _openDocument(final String filePath) async {
+  Future<void> _openDocument(String filePath) async {
     try {
       final file = File(filePath);
       if (!file.existsSync()) return;
@@ -386,8 +386,8 @@ final class DartLspClient {
 
   /// Send an LSP request and wait for response
   Future<Map<String, dynamic>> _sendRequest(
-    final String method,
-    final Map<String, dynamic> params,
+    String method,
+    Map<String, dynamic> params,
   ) async {
     final id = _nextRequestId;
     final completer = Completer<Map<String, dynamic>>();
@@ -413,8 +413,8 @@ final class DartLspClient {
 
   /// Send an LSP notification (no response expected)
   Future<void> _sendNotification(
-    final String method,
-    final Map<String, dynamic> params,
+    String method,
+    Map<String, dynamic> params,
   ) async {
     final notification = {'jsonrpc': '2.0', 'method': method, 'params': params};
 
@@ -422,7 +422,7 @@ final class DartLspClient {
   }
 
   /// Send a message to the LSP server
-  Future<void> _sendMessage(final Map<String, dynamic> message) async {
+  Future<void> _sendMessage(Map<String, dynamic> message) async {
     if (_serverStdin == null) {
       throw StateError('LSP server not started');
     }
@@ -438,7 +438,7 @@ final class DartLspClient {
   }
 
   /// Handle incoming raw data from server
-  void _handleServerData(final List<int> data) {
+  void _handleServerData(List<int> data) {
     try {
       _messageBuffer += utf8.decode(data);
       _processMessages();
@@ -485,7 +485,7 @@ final class DartLspClient {
   }
 
   /// Handle a complete JSON message
-  void _handleJsonMessage(final String content) {
+  void _handleJsonMessage(String content) {
     try {
       logger.fine('Received LSP message: $content');
       final message = jsonDecode(content) as Map<String, dynamic>;
@@ -507,10 +507,10 @@ final class DartLspClient {
   }
 
   /// Convert file path to URI
-  String _pathToUri(final String filePath) => 'file://$filePath';
+  String _pathToUri(String filePath) => 'file://$filePath';
 
   /// Check if a line contains a symbol definition
-  bool _isSymbolDefinition(final String line, final String symbolName) {
+  bool _isSymbolDefinition(String line, String symbolName) {
     final trimmed = line.trim();
 
     // Check for class definitions
@@ -558,7 +558,7 @@ final class LspLocation {
   final LspRange range;
 
   /// Create from JSON
-  static LspLocation? fromJson(final Map<String, dynamic> json) {
+  static LspLocation? fromJson(Map<String, dynamic> json) {
     try {
       final uri = json['uri'] as String?;
       final rangeJson = json['range'] as Map<String, dynamic>?;
@@ -596,7 +596,7 @@ final class LspRange {
   final LspPosition end;
 
   /// Create from JSON
-  static LspRange? fromJson(final Map<String, dynamic> json) {
+  static LspRange? fromJson(Map<String, dynamic> json) {
     try {
       final startJson = json['start'] as Map<String, dynamic>?;
       final endJson = json['end'] as Map<String, dynamic>?;
@@ -630,7 +630,7 @@ final class LspPosition {
   final int character;
 
   /// Create from JSON
-  static LspPosition? fromJson(final Map<String, dynamic> json) {
+  static LspPosition? fromJson(Map<String, dynamic> json) {
     try {
       final line = json['line'] as int?;
       final character = json['character'] as int?;

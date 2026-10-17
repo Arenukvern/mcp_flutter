@@ -10,8 +10,8 @@ final class AgentClientInstall {
   static var _done = false;
 
   static Future<void> once({
-    required final Future<Set<AgentCallEntry>> Function() buildEntries,
-    final Future<void> Function({required Set<AgentCallEntry> entries})?
+    required Future<Set<AgentCallEntry>> Function() buildEntries,
+    Future<void> Function({required Set<AgentCallEntry> entries})?
     register,
   }) async {
     if (kReleaseMode || _done) {

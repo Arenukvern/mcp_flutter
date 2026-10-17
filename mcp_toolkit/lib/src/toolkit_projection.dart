@@ -25,7 +25,7 @@ import 'package:intentcall_core/intentcall_core.dart';
 abstract interface class ToolkitProjection {
   /// Called with the toolkit's full current entry set after entries are
   /// added, replaced, or re-registered.
-  void entriesChanged(final Set<AgentCallEntry> entries);
+  void entriesChanged(Set<AgentCallEntry> entries);
 }
 
 /// Adapter for duck-typed projections from other packages (e.g. intentcall's
@@ -38,5 +38,5 @@ final class EntryListenerProjection implements ToolkitProjection {
   final void Function(Set<AgentCallEntry> entries) _listener;
 
   @override
-  void entriesChanged(final Set<AgentCallEntry> entries) => _listener(entries);
+  void entriesChanged(Set<AgentCallEntry> entries) => _listener(entries);
 }

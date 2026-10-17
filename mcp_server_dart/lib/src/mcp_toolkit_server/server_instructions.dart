@@ -1,7 +1,7 @@
 import 'package:flutter_mcp_toolkit_server/src/mcp_toolkit_server/base_server.dart';
 
 String buildMcpToolkitServerInstructions(
-  final VMServiceConfigurationRecord configuration,
+  VMServiceConfigurationRecord configuration,
 ) =>
     '''
 Flutter Inspector MCP Server - AI Agent Guide

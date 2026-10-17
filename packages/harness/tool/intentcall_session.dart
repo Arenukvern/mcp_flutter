@@ -34,18 +34,18 @@ final String repoRoot = p.normalize(
 
 final String showcaseDir = p.join(repoRoot, '.showcase');
 
-void log(final String message) {
+void log(String message) {
   // ignore: avoid_print
   print('[intentcall-session] $message');
 }
 
-Future<Never> quit(final int code) async {
+Future<Never> quit(int code) async {
   await stdout.flush();
   await stderr.flush();
   exit(code);
 }
 
-Future<void> main(final List<String> arguments) async {
+Future<void> main(List<String> arguments) async {
   const modes = <String>['demo', 'serve-link', 'serve-debug'];
   var mode = 'demo';
   String? explicitUri;
@@ -132,8 +132,8 @@ void _printUsage() {
 /// Explicit arg wins (http form is canonicalized); otherwise scrape the
 /// showcase log — the `ws://` web form first, then the desktop http form.
 Future<Uri?> _resolveWsUri({
-  required final String? explicit,
-  required final String? logPath,
+  required String? explicit,
+  required String? logPath,
 }) async {
   final explicitUri = explicit == null ? null : Uri.parse(explicit);
   if (explicitUri != null && explicitUri.scheme == 'ws') return explicitUri;
@@ -194,8 +194,8 @@ final class IntentcallCommand {
 /// Runs the CLI with stdio inherited (the serve modes are interactive and
 /// blocking by design) and forwards its exit code.
 Future<void> _run(
-  final IntentcallCommand command,
-  final List<String> arguments,
+  IntentcallCommand command,
+  List<String> arguments,
 ) async {
   final process = await Process.start(
     command.executable,

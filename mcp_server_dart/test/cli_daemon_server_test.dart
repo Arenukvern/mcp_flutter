@@ -27,15 +27,15 @@ void main() {
       final stream = process!.stdout
           .transform(utf8.decoder)
           .transform(const LineSplitter())
-          .where((final line) => line.trim().isNotEmpty)
-          .map((final line) => jsonDecode(line) as Map<String, dynamic>)
+          .where((line) => line.trim().isNotEmpty)
+          .map((line) => jsonDecode(line) as Map<String, dynamic>)
           .asBroadcastStream();
 
       subscription = stream.listen(events.add);
 
       process!.stderr
           .transform(utf8.decoder)
-          .listen((final _) {}); // keep stderr drained
+          .listen((_) {}); // keep stderr drained
 
       await Future<void>.delayed(const Duration(milliseconds: 100));
     });
@@ -132,7 +132,7 @@ void main() {
 
       final started = await _waitForEvent(
         events,
-        (final e) =>
+        (e) =>
             e['method'] == 'watch/event' &&
             (e['params'] as Map<String, dynamic>)['event'] == 'watch_started' &&
             (e['params'] as Map<String, dynamic>)['watchId'] == watchId,
@@ -141,7 +141,7 @@ void main() {
 
       final commandResult = await _waitForEvent(
         events,
-        (final e) =>
+        (e) =>
             e['method'] == 'watch/event' &&
             (e['params'] as Map<String, dynamic>)['event'] ==
                 'command_result' &&
@@ -151,7 +151,7 @@ void main() {
 
       final stopped = await _waitForEvent(
         events,
-        (final e) =>
+        (e) =>
             e['method'] == 'watch/event' &&
             (e['params'] as Map<String, dynamic>)['event'] == 'watch_stopped' &&
             (e['params'] as Map<String, dynamic>)['watchId'] == watchId,
@@ -233,11 +233,11 @@ void main() {
 }
 
 Future<Map<String, dynamic>> _sendRequest({
-  required final int id,
-  required final String method,
-  required final Map<String, Object?> params,
-  required final Process process,
-  required final List<Map<String, dynamic>> events,
+  required int id,
+  required String method,
+  required Map<String, Object?> params,
+  required Process process,
+  required List<Map<String, dynamic>> events,
 }) async {
   process.stdin.writeln(
     jsonEncode({
@@ -248,7 +248,7 @@ Future<Map<String, dynamic>> _sendRequest({
     }),
   );
 
-  final response = await _waitForEvent(events, (final e) => e['id'] == id);
+  final response = await _waitForEvent(events, (e) => e['id'] == id);
 
   if (response == null) {
     throw TimeoutException('No response for request $id ($method)');
@@ -258,8 +258,8 @@ Future<Map<String, dynamic>> _sendRequest({
 }
 
 Future<Map<String, dynamic>?> _waitForEvent(
-  final List<Map<String, dynamic>> events,
-  final bool Function(Map<String, dynamic>) predicate,
+  List<Map<String, dynamic>> events,
+  bool Function(Map<String, dynamic>) predicate,
 ) async {
   final started = DateTime.now();
   while (DateTime.now().difference(started) < const Duration(seconds: 20)) {

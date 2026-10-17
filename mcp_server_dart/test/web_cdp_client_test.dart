@@ -14,7 +14,7 @@ void main() {
       addTearDown(server.close);
       final port = server.port;
 
-      server.listen((final request) async {
+      server.listen((request) async {
         if (!WebSocketTransformer.isUpgradeRequest(request)) {
           request.response.statusCode = HttpStatus.notFound;
           await request.response.close();
@@ -22,7 +22,7 @@ void main() {
         }
         final socket = await WebSocketTransformer.upgrade(request);
         addTearDown(socket.close);
-        socket.listen((final data) {
+        socket.listen((data) {
           final decoded = jsonDecode(data as String) as Map<String, Object?>;
           final id = (decoded['id'] as num?)?.toInt();
           final method = decoded['method'];

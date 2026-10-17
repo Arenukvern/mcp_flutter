@@ -14,7 +14,7 @@ import 'package:test/test.dart';
 ConnectionContext _makeContext() => ConnectionContext(
   defaultHost: 'localhost',
   defaultPort: 8181,
-  logger: (final level, final message, {final logger = 'test'}) {},
+  logger: (level, message, {logger = 'test'}) {},
   discoverPorts: () async => <int>[],
 );
 

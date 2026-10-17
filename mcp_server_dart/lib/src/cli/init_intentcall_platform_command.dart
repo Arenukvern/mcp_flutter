@@ -4,9 +4,9 @@ import 'package:flutter_mcp_toolkit_server/src/cli/intentcall_delegate.dart';
 /// IntentCall CLI, discovered at runtime (ADR-0016). [cli] overrides
 /// resolution (tests inject a fake).
 Future<int> runInitintentcallPlatform({
-  required final String projectRoot,
-  final bool checkOnly = false,
-  final IntentcallCli? cli,
+  required String projectRoot,
+  bool checkOnly = false,
+  IntentcallCli? cli,
 }) => delegatePlatformHooksInit(
   projectRoot: projectRoot,
   checkOnly: checkOnly,

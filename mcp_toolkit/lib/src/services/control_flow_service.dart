@@ -47,7 +47,7 @@ class ControlFlowService {
         LogicalKeyboardKey.metaRight: PhysicalKeyboardKey.metaRight,
       };
 
-  static PhysicalKeyboardKey _physicalFor(final LogicalKeyboardKey k) =>
+  static PhysicalKeyboardKey _physicalFor(LogicalKeyboardKey k) =>
       _modifierPhysical[k] ?? PhysicalKeyboardKey(k.keyId);
 
   /// Releases every modifier the keyboard reports as held except [keep], and
@@ -60,8 +60,8 @@ class ControlFlowService {
   /// simply stops matching unmodified shortcuts, which reads as a feature that
   /// quietly does nothing.
   static List<String> _releaseHeldModifiers({
-    required final Set<LogicalKeyboardKey> keep,
-    required final Duration stamp,
+    required Set<LogicalKeyboardKey> keep,
+    required Duration stamp,
   }) {
     final keyboard = HardwareKeyboard.instance;
     final released = <String>[];
@@ -90,7 +90,7 @@ class ControlFlowService {
     return released;
   }
 
-  static LogicalKeyboardKey? _resolveKey(final String name) {
+  static LogicalKeyboardKey? _resolveKey(String name) {
     if (name.isEmpty) return null;
     final named = _namedKeys[name];
     if (named != null) return named;
@@ -152,11 +152,11 @@ class ControlFlowService {
   /// ([TextInputAction.done]), not this path. Use `tap_widget` on the submit
   /// control when you need submission semantics.
   static Future<Map<String, Object?>> pressKey({
-    required final String key,
-    final bool ctrl = false,
-    final bool shift = false,
-    final bool alt = false,
-    final bool meta = false,
+    required String key,
+    bool ctrl = false,
+    bool shift = false,
+    bool alt = false,
+    bool meta = false,
   }) async {
     final logical = _resolveKey(key);
     if (logical == null) {
@@ -185,8 +185,8 @@ class ControlFlowService {
     final stamp = Duration(microseconds: DateTime.now().microsecondsSinceEpoch);
 
     KeyEvent makeEvent({
-      required final bool isDown,
-      required final LogicalKeyboardKey k,
+      required bool isDown,
+      required LogicalKeyboardKey k,
     }) {
       final physical = _physicalFor(k);
       return isDown
@@ -198,8 +198,8 @@ class ControlFlowService {
     // listens for is dispatched just as successfully as one that triggers a
     // shortcut, so the caller needs this to tell the two apart.
     bool send({
-      required final bool isDown,
-      required final LogicalKeyboardKey k,
+      required bool isDown,
+      required LogicalKeyboardKey k,
     }) {
       final event = makeEvent(isDown: isDown, k: k);
       final byKeyboard = keyboard.handleKeyEvent(event);
@@ -300,7 +300,7 @@ class ControlFlowService {
     final root = WidgetsBinding.instance.rootElement;
     if (root == null) return null;
     NavigatorState? found;
-    void visit(final Element element) {
+    void visit(Element element) {
       if (found != null) return;
       if (element is StatefulElement && element.state is NavigatorState) {
         found = element.state as NavigatorState;
@@ -318,9 +318,9 @@ class ControlFlowService {
   /// [NavigatorState.popUntil] visits routes from the top down, and a
   /// predicate that answers `true` on the first one aborts the loop before
   /// anything is popped.
-  static Route<Object?>? _topRoute(final NavigatorState navState) {
+  static Route<Object?>? _topRoute(NavigatorState navState) {
     Route<Object?>? top;
-    navState.popUntil((final r) {
+    navState.popUntil((r) {
       top ??= r;
       return true;
     });
@@ -386,9 +386,9 @@ class ControlFlowService {
 
   /// Performs [Navigator] actions: `push`, `pop`, or `popUntil` [route].
   static Future<Map<String, Object?>> navigate({
-    required final String action,
-    final String? route,
-    final Map<String, Object?>? arguments,
+    required String action,
+    String? route,
+    Map<String, Object?>? arguments,
   }) async {
     // Precheck only: the navigator key must be registered. We resolve
     // `currentState` lazily inside the arms that need it so the `default`
@@ -427,8 +427,8 @@ class ControlFlowService {
         try {
           unawaited(
             navState.pushNamed<Object?>(route, arguments: arguments).catchError((
-              final Object error,
-              final StackTrace stack,
+              Object error,
+              StackTrace stack,
             ) {
               debugPrint(
                 '[MCPToolkit] navigate push failed for route "$route": $error',
@@ -535,7 +535,7 @@ class ControlFlowService {
         // is not in the stack would pop every route until the navigator
         // is empty — catastrophic for the host app.
         final routeNames = <String?>[];
-        navState.popUntil((final r) {
+        navState.popUntil((r) {
           routeNames.add(r.settings.name);
           return true;
         });

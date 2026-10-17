@@ -8,7 +8,7 @@ final class _RecordingProjection implements ToolkitProjection {
   final List<Set<AgentCallEntry>> received = <Set<AgentCallEntry>>[];
 
   @override
-  void entriesChanged(final Set<AgentCallEntry> entries) {
+  void entriesChanged(Set<AgentCallEntry> entries) {
     received.add(Set<AgentCallEntry>.of(entries));
   }
 }
@@ -17,8 +17,8 @@ final class _ProjectionToolkitBinding extends MCPToolkitBindingBase
     with MCPToolkitExtensions {
   @override
   void registerServiceExtension({
-    required final String name,
-    required final ServiceExtensionCallback callback,
+    required String name,
+    required ServiceExtensionCallback callback,
   }) {}
 }
 
@@ -39,7 +39,7 @@ void main() {
           properties: {'x': IntegerSchema()},
         ),
       ),
-      handler: (final request) => Future<MCPCallResult>.value(
+      handler: (request) => Future<MCPCallResult>.value(
         MCPCallResult(message: 'inspected', parameters: {'ok': true}),
       ),
     );

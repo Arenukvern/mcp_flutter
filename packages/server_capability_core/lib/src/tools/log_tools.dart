@@ -15,14 +15,14 @@ import 'codegen/get_recent_logs_tool.dart';
 /// registration applies [getRecentLogsInputSchema] via [mergeInputSchema] so
 /// discovery matches dynamic tools even if `.g.dart` is regenerated without
 /// connection / `additionalProperties: false`.
-void registerLogTools(final CapabilityContext context) {
+void registerLogTools(CapabilityContext context) {
   final runner = context.require<CommandRunner>();
 
   context.registerTool(
     agentCallEntryToToolRegistration(
       getRecentLogsCallEntry,
       mergeInputSchema: (_) => getRecentLogsInputSchema(),
-      handler: (final args) async {
+      handler: (args) async {
         final countRaw = intArgOrNull(args['count']);
         return runCommand(
           runner,

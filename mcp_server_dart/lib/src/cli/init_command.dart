@@ -7,10 +7,10 @@ import 'package:flutter_mcp_toolkit_server/src/cli/init_target.dart';
 import 'package:flutter_mcp_toolkit_server/src/cli/init_writers.dart';
 
 Future<int> runInit({
-  required final InitTarget target,
-  required final InitMode modeOverride,
-  required final String outputRoot,
-  required final bool scopeIsUserHome,
+  required InitTarget target,
+  required InitMode modeOverride,
+  required String outputRoot,
+  required bool scopeIsUserHome,
 }) async {
   final mode = modeOverride == InitMode.auto
       ? detectMode(
@@ -29,14 +29,14 @@ Future<int> runInit({
   return 0;
 }
 
-bool _binaryOnPath(final String name) {
+bool _binaryOnPath(String name) {
   final result = Process.runSync(Platform.isWindows ? 'where' : 'which', [
     name,
   ]);
   return result.exitCode == 0;
 }
 
-bool _isMcpServerRegistered(final InitTarget target, final String outputRoot) {
+bool _isMcpServerRegistered(InitTarget target, String outputRoot) {
   // Heuristic: existing `mcp.json`/`claude_desktop_config.json` mentions
   // `flutter-mcp-toolkit`. Per-target detection details deferred to follow-up.
   switch (target) {

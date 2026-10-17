@@ -21,11 +21,11 @@ void main() {
 
       final evidence = (causes.first['evidence']! as List).cast<String>();
       expect(
-        evidence.any((final line) => line.contains('RenderFlex overflowed')),
+        evidence.any((line) => line.contains('RenderFlex overflowed')),
         isTrue,
       );
       expect(
-        evidence.any((final line) => line.contains('main.dart:262:13')),
+        evidence.any((line) => line.contains('main.dart:262:13')),
         isTrue,
       );
     });

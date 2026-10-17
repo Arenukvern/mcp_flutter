@@ -12,11 +12,11 @@ final class DiagnosticsBundler {
   final CoreExecuteFn execute;
 
   Future<Map<String, Object?>> run({
-    final bool includeViewDetails = false,
+    bool includeViewDetails = false,
   }) async {
     final steps = <Map<String, Object?>>[];
 
-    Future<void> runStep(final String name, final CoreCommand command) async {
+    Future<void> runStep(String name, CoreCommand command) async {
       final result = await execute(command);
       steps.add({
         'name': name,
@@ -37,7 +37,7 @@ final class DiagnosticsBundler {
       await runStep('get_view_details', const GetViewDetailsCommand());
     }
 
-    final failures = steps.where((final e) => e['ok'] != true).length;
+    final failures = steps.where((e) => e['ok'] != true).length;
 
     return {
       'steps': steps,

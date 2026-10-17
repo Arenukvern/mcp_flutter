@@ -26,7 +26,7 @@ Set<AgentCallEntry> get _starterEntries => {
         required: ['n'],
       ),
     ),
-    handler: (final request) {
+    handler: (request) {
       final n = int.tryParse(request['n'] ?? '0') ?? 0;
 
       if (n < 0) {
@@ -61,7 +61,7 @@ Set<AgentCallEntry> get _starterEntries => {
       description: 'Read-only runtime diagnostics for the starter app',
       mimeType: 'application/json',
     ),
-    handler: (final request) => MCPCallResult(
+    handler: (request) => MCPCallResult(
       message: 'Starter app runtime diagnostics',
       parameters: {
         'appName': 'Fibonacci MCP Tool',
@@ -74,7 +74,7 @@ Set<AgentCallEntry> get _starterEntries => {
 };
 
 /// Calculate the nth Fibonacci number
-int _calculateFibonacci(final int n) {
+int _calculateFibonacci(int n) {
   if (n <= 1) return n;
 
   var a = 0;
@@ -90,7 +90,7 @@ int _calculateFibonacci(final int n) {
 }
 
 /// Get the Fibonacci sequence up to position n
-List<int> _getFibonacciSequence(final int n) {
+List<int> _getFibonacciSequence(int n) {
   if (n < 0) return [];
   if (n == 0) return [0];
 
@@ -107,7 +107,7 @@ class FibonacciApp extends StatelessWidget {
   const FibonacciApp({super.key});
 
   @override
-  Widget build(final BuildContext context) => MaterialApp(
+  Widget build(BuildContext context) => MaterialApp(
     title: 'Fibonacci MCP Tool',
     theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
     home: const FibonacciHomePage(),
@@ -119,7 +119,7 @@ class FibonacciHomePage extends StatelessWidget {
   const FibonacciHomePage({super.key});
 
   @override
-  Widget build(final BuildContext context) => Scaffold(
+  Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
       title: const Text('Fibonacci MCP Tool'),
       backgroundColor: Theme.of(context).colorScheme.inversePrimary,

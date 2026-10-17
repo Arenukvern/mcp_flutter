@@ -85,7 +85,7 @@ final class PlatformViewHints {
   Map<String, Object?> toCaptureHintsJson() => <String, Object?>{
     'platformViewsDetected': platformViewsDetected,
     if (weakSignalsDetected) 'weakSignalsDetected': true,
-    'matches': matches.map((final m) => m.toJson()).toList(growable: false),
+    'matches': matches.map((m) => m.toJson()).toList(growable: false),
     if (recommendedMode != null) 'recommendedMode': recommendedMode,
     if (warning != null) 'warning': warning,
   };
@@ -93,13 +93,13 @@ final class PlatformViewHints {
 
 /// Builds [PlatformViewHints] from collected [matches].
 PlatformViewHints platformViewHintsFromMatches(
-  final List<PlatformViewMatch> matches,
+  List<PlatformViewMatch> matches,
 ) {
   if (matches.isEmpty) {
     return PlatformViewHints.none;
   }
-  final hasStrong = matches.any((final m) => m.confidence == 'high');
-  final hasWeak = matches.any((final m) => m.confidence == 'low');
+  final hasStrong = matches.any((m) => m.confidence == 'high');
+  final hasWeak = matches.any((m) => m.confidence == 'low');
   if (hasStrong) {
     return PlatformViewHints(
       platformViewsDetected: true,
@@ -122,11 +122,11 @@ PlatformViewHints platformViewHintsFromMatches(
 
 /// Records platform-view signals for one widget/render pair.
 void accumulatePlatformViewSignals({
-  required final String? widgetType,
-  required final String? renderObjectType,
-  required final int depth,
-  required final List<PlatformViewMatch> matches,
-  final Map<String, Object?>? globalBounds,
+  required String? widgetType,
+  required String? renderObjectType,
+  required int depth,
+  required List<PlatformViewMatch> matches,
+  Map<String, Object?>? globalBounds,
 }) {
   final strongWidget =
       widgetType != null && _matchesSuffix(widgetType, _strongWidgetSuffixes);
@@ -159,8 +159,8 @@ void accumulatePlatformViewSignals({
 
 /// Merges auto-detected [detected] hints with an optional app [contributor].
 PlatformViewHints mergePlatformViewHints({
-  required final PlatformViewHints detected,
-  final PlatformViewHints? contributor,
+  required PlatformViewHints detected,
+  PlatformViewHints? contributor,
 }) {
   if (contributor == null) {
     return detected;
@@ -187,7 +187,7 @@ PlatformViewHints mergePlatformViewHints({
 
 /// Parses app-embedded `captureHints` from `get_view_details` (authoritative when present).
 PlatformViewHints platformViewHintsFromCaptureHintsJson(
-  final Map<String, Object?> json,
+  Map<String, Object?> json,
 ) {
   final platformViewsDetected = json['platformViewsDetected'] == true;
   final weakSignalsDetected = json['weakSignalsDetected'] == true;
@@ -243,16 +243,16 @@ PlatformViewHints platformViewHintsFromCaptureHintsJson(
 }
 
 /// Detects native platform views in a [widgetTree] map from `get_view_details`.
-PlatformViewHints detectPlatformViews(final Object? widgetTree) {
+PlatformViewHints detectPlatformViews(Object? widgetTree) {
   final matches = <PlatformViewMatch>[];
   _walkWidgetTree(widgetTree, depth: 0, matches: matches);
   return platformViewHintsFromMatches(matches);
 }
 
 void _walkWidgetTree(
-  final Object? node, {
-  required final int depth,
-  required final List<PlatformViewMatch> matches,
+  Object? node, {
+  required int depth,
+  required List<PlatformViewMatch> matches,
 }) {
   final map = _asTreeMap(node);
   if (map.isEmpty) {
@@ -276,7 +276,7 @@ void _walkWidgetTree(
   }
 }
 
-bool _matchesSuffix(final String value, final Set<String> suffixes) {
+bool _matchesSuffix(String value, Set<String> suffixes) {
   for (final suffix in suffixes) {
     if (value == suffix || value.endsWith(suffix)) {
       return true;
@@ -285,7 +285,7 @@ bool _matchesSuffix(final String value, final Set<String> suffixes) {
   return false;
 }
 
-String? _typeName(final Object? value) {
+String? _typeName(Object? value) {
   final text = '$value'.trim();
   if (text.isEmpty || text == 'null') {
     return null;
@@ -293,7 +293,7 @@ String? _typeName(final Object? value) {
   return text;
 }
 
-Map<String, Object?> _asTreeMap(final Object? value) {
+Map<String, Object?> _asTreeMap(Object? value) {
   if (value is Map<String, Object?>) {
     return value;
   }
@@ -303,7 +303,7 @@ Map<String, Object?> _asTreeMap(final Object? value) {
   return const <String, Object?>{};
 }
 
-Map<String, Object?>? _boundsMap(final Object? value) {
+Map<String, Object?>? _boundsMap(Object? value) {
   if (value is Map<String, Object?>) {
     return value;
   }
@@ -315,9 +315,9 @@ Map<String, Object?>? _boundsMap(final Object? value) {
 
 /// Merges [hints] and optional [warnings] into screenshot/snapshot payload maps.
 Map<String, Object?> mergeCaptureHintMetadata({
-  required final Map<String, Object?> data,
-  required final PlatformViewHints hints,
-  final List<String> extraWarnings = const <String>[],
+  required Map<String, Object?> data,
+  required PlatformViewHints hints,
+  List<String> extraWarnings = const <String>[],
 }) {
   final warnings = <String>[
     ...extraWarnings,

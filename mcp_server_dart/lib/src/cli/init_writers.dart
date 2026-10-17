@@ -9,10 +9,10 @@ import 'package:flutter_mcp_toolkit_server/src/skill_assets.g.dart';
 // ignore: avoid_classes_with_only_static_members
 class InitWriters {
   static void writeFor({
-    required final InitTarget target,
-    required final InitMode mode,
-    required final String outputRoot,
-    required final bool scopeIsUserHome,
+    required InitTarget target,
+    required InitMode mode,
+    required String outputRoot,
+    required bool scopeIsUserHome,
   }) {
     if (target == InitTarget.all) {
       for (final t in [
@@ -47,9 +47,9 @@ class InitWriters {
   }
 
   static void _writeSkillFile(
-    final String path,
-    final SkillAsset s,
-    final InitMode mode,
+    String path,
+    SkillAsset s,
+    InitMode mode,
   ) {
     final dir = Directory(File(path).parent.path);
     if (!dir.existsSync()) dir.createSync(recursive: true);
@@ -57,17 +57,17 @@ class InitWriters {
     File(path).writeAsStringSync(body);
   }
 
-  static String _reassemble(final SkillAsset s) =>
+  static String _reassemble(SkillAsset s) =>
       '---\n${s.frontmatter}\n---\n${s.body}';
 
-  static void _writeClaudeCode(final String root, final InitMode mode) {
+  static void _writeClaudeCode(String root, InitMode mode) {
     for (final s in SkillAssets.skills) {
       final path = '$root/.claude/skills/flutter-mcp-toolkit/${s.id}/SKILL.md';
       _writeSkillFile(path, s, mode);
     }
   }
 
-  static void _writeCursor(final String root, final InitMode mode) {
+  static void _writeCursor(String root, InitMode mode) {
     final base = '$root/.cursor/plugins/local/flutter-mcp-toolkit';
     Directory('$base/.cursor-plugin').createSync(recursive: true);
     File(
@@ -79,7 +79,7 @@ class InitWriters {
     }
   }
 
-  static void _writeCodex(final String root, final InitMode mode) {
+  static void _writeCodex(String root, InitMode mode) {
     final base = '$root/.codex/plugins/cache/local/flutter-mcp-toolkit/local';
     Directory('$base/.codex-plugin').createSync(recursive: true);
     File(
@@ -96,7 +96,7 @@ class InitWriters {
     );
   }
 
-  static void _writeCline(final String root, final InitMode mode) {
+  static void _writeCline(String root, InitMode mode) {
     final dir = Directory('$root/.clinerules');
     if (!dir.existsSync()) dir.createSync(recursive: true);
     for (final s in SkillAssets.skills) {
@@ -105,7 +105,7 @@ class InitWriters {
     }
   }
 
-  static void _writeAgentsSkills(final String root, final InitMode mode) {
+  static void _writeAgentsSkills(String root, InitMode mode) {
     for (final s in SkillAssets.skills) {
       _writeSkillFile('$root/.agents/skills/${s.id}/SKILL.md', s, mode);
     }

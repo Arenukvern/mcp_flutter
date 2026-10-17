@@ -29,7 +29,7 @@ final class WebCdpEndpoint {
 }
 
 /// Parses Chrome `--remote-debugging-port` values from process listings.
-List<int> parseChromeDebugPortsFromProcessList(final String processListing) {
+List<int> parseChromeDebugPortsFromProcessList(String processListing) {
   final ports = <int>{};
   final pattern = RegExp(r'--remote-debugging-port=(\d+)');
   for (final match in pattern.allMatches(processListing)) {
@@ -63,7 +63,7 @@ Future<List<int>> discoverChromeDebugPortsFromProcesses() async {
   }
 }
 
-bool isLoopbackHost(final String host) {
+bool isLoopbackHost(String host) {
   final normalized = host.toLowerCase();
   return normalized == 'localhost' ||
       normalized == '127.0.0.1' ||
@@ -72,7 +72,7 @@ bool isLoopbackHost(final String host) {
 }
 
 /// Fetches Chrome DevTools target list from `http://127.0.0.1:{port}/json/list`.
-Future<List<Map<String, Object?>>> fetchCdpTargetList(final int port) async {
+Future<List<Map<String, Object?>>> fetchCdpTargetList(int port) async {
   if (port <= 0 || port > 65535) {
     return const <Map<String, Object?>>[];
   }
@@ -103,10 +103,10 @@ Future<List<Map<String, Object?>>> fetchCdpTargetList(final int port) async {
 }
 
 Map<String, Object?>? selectCdpPageTarget({
-  required final List<Map<String, Object?>> targets,
-  final int? preferredWebPort,
+  required List<Map<String, Object?>> targets,
+  int? preferredWebPort,
 }) {
-  final pages = targets.where((final t) => '${t['type']}' == 'page').toList();
+  final pages = targets.where((t) => '${t['type']}' == 'page').toList();
   if (pages.isEmpty) {
     return null;
   }
@@ -141,7 +141,7 @@ Map<String, Object?>? selectCdpPageTarget({
   return best ?? pages.first;
 }
 
-Uri? parseCdpPageWebSocketUrl(final Map<String, Object?> target) {
+Uri? parseCdpPageWebSocketUrl(Map<String, Object?> target) {
   final raw = target['webSocketDebuggerUrl']?.toString().trim();
   if (raw == null || raw.isEmpty) {
     return null;
@@ -155,9 +155,9 @@ Uri? parseCdpPageWebSocketUrl(final Map<String, Object?> target) {
 
 /// Discovery order: sticky target port, CLI override, process scan + HTTP verify.
 Future<WebCdpEndpoint?> discoverWebCdpEndpoint({
-  required final CoreRuntimeConfiguration configuration,
-  final CoreConnectionTarget? connectionTarget,
-  final List<int> extraCandidatePorts = const <int>[],
+  required CoreRuntimeConfiguration configuration,
+  CoreConnectionTarget? connectionTarget,
+  List<int> extraCandidatePorts = const <int>[],
 }) async {
   final candidates = <int>{};
 
@@ -201,8 +201,8 @@ Future<WebCdpEndpoint?> discoverWebCdpEndpoint({
 
 /// Lightweight viability probe for broker permission checks.
 Future<bool> isWebCdpCaptureViable({
-  required final CoreRuntimeConfiguration configuration,
-  final CoreConnectionTarget? connectionTarget,
+  required CoreRuntimeConfiguration configuration,
+  CoreConnectionTarget? connectionTarget,
 }) async {
   final endpoint = await discoverWebCdpEndpoint(
     configuration: configuration,
@@ -211,7 +211,7 @@ Future<bool> isWebCdpCaptureViable({
   return endpoint != null;
 }
 
-bool isWebFlutterDevice(final String? device) {
+bool isWebFlutterDevice(String? device) {
   switch (device) {
     case 'chrome':
     case 'web':

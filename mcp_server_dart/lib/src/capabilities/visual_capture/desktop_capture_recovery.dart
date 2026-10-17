@@ -30,9 +30,9 @@ final class DesktopCaptureRecoveryResult {
 /// Resolves `auto` to [ScreenshotMode.desktopWindow] when platform views need
 /// host pixels and the macOS host can capture.
 ScreenshotMode resolveEffectiveScreenshotMode({
-  required final ScreenshotMode requested,
-  required final PlatformViewHints hints,
-  required final bool hostDesktopCaptureViable,
+  required ScreenshotMode requested,
+  required PlatformViewHints hints,
+  required bool hostDesktopCaptureViable,
 }) {
   if (requested == ScreenshotMode.auto &&
       hints.platformViewsDetected &&
@@ -44,15 +44,15 @@ ScreenshotMode resolveEffectiveScreenshotMode({
 
 /// Whether a second focus+capture cycle may help after the first failure.
 bool shouldAttemptDesktopRecovery({
-  required final PlatformViewHints hints,
-  required final bool explicitDesktopMode,
+  required PlatformViewHints hints,
+  required bool explicitDesktopMode,
 }) => hints.platformViewsDetected || explicitDesktopMode;
 
 /// Matches retryable host capture failures (window focus, permissions, SCK).
 bool isRetryableDesktopCaptureFailure({
-  final Object? error,
-  final String? message,
-  final Map<String, Object?> details = const <String, Object?>{},
+  Object? error,
+  String? message,
+  Map<String, Object?> details = const <String, Object?>{},
 }) {
   final text = '${message ?? error ?? ''} $details'.toLowerCase();
   if (text.contains('desktop window') ||
@@ -80,14 +80,14 @@ bool isRetryableDesktopCaptureFailure({
 /// [DesktopWindowScreenshotService.capture] already focuses once; recovery adds
 /// a second focus+capture only when the first attempt fails.
 Future<DesktopCaptureRecoveryResult> captureDesktopWithRecovery({
-  required final DesktopWindowScreenshotService service,
-  required final String projectDir,
-  required final String device,
-  required final bool compress,
-  required final int? targetPid,
-  required final String? cacheDir,
-  required final PlatformViewHints hints,
-  required final bool explicitDesktopMode,
+  required DesktopWindowScreenshotService service,
+  required String projectDir,
+  required String device,
+  required bool compress,
+  required int? targetPid,
+  required String? cacheDir,
+  required PlatformViewHints hints,
+  required bool explicitDesktopMode,
 }) async {
   final first = await _attemptCapture(
     service: service,
@@ -151,12 +151,12 @@ Future<DesktopCaptureRecoveryResult> captureDesktopWithRecovery({
 }
 
 Future<DesktopCaptureRecoveryResult> _attemptCapture({
-  required final DesktopWindowScreenshotService service,
-  required final String projectDir,
-  required final String device,
-  required final bool compress,
-  required final int? targetPid,
-  required final String? cacheDir,
+  required DesktopWindowScreenshotService service,
+  required String projectDir,
+  required String device,
+  required bool compress,
+  required int? targetPid,
+  required String? cacheDir,
 }) async {
   try {
     final capture = await service.capture(
@@ -196,9 +196,9 @@ Future<DesktopCaptureRecoveryResult> _attemptCapture({
 }
 
 Map<String, Object?> _recoveryFailureDetails({
-  required final DesktopCaptureRecoveryResult first,
-  required final Map<String, Object?> focus,
-  required final DesktopCaptureRecoveryResult second,
+  required DesktopCaptureRecoveryResult first,
+  required Map<String, Object?> focus,
+  required DesktopCaptureRecoveryResult second,
 }) => <String, Object?>{
   'firstAttempt': <String, Object?>{
     'message': first.errorMessage,

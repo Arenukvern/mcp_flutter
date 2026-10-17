@@ -19,7 +19,7 @@ mixin ScreenshotService {
   ///
   /// Returns a base64 encoded PNG image string, or null if capture fails.
   static Future<List<String>> takeScreenshots({
-    final bool compress = true,
+    bool compress = true,
   }) async {
     // Target the main RenderView and its corresponding FlutterView
     final renderViews = WidgetsBinding.instance.renderViews;
@@ -53,9 +53,9 @@ mixin ScreenshotService {
   ///
   /// Returns a base64 encoded PNG image string, or null if capture fails.
   static Future<String?> takeImage({
-    required final ui.FlutterView flutterView,
-    required final RenderView view,
-    required final bool compress,
+    required ui.FlutterView flutterView,
+    required RenderView view,
+    required bool compress,
   }) async {
     // ignore: invalid_use_of_protected_member
     if (view.debugNeedsPaint || view.layer == null) {

@@ -7,14 +7,14 @@ import 'package:test/test.dart';
 
 /// Minimal VM service HTTP facade: enough for the discovery probe.
 Future<HttpServer> _startFakeVmService({
-  required final int pid,
-  final int Function()? pidOverride,
-  final String? label,
+  required int pid,
+  int Function()? pidOverride,
+  String? label,
 }) async {
   final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
   const isolateId = 'isolates/1';
   unawaited(
-    server.forEach((final request) async {
+    server.forEach((request) async {
       final result = switch (request.uri.pathSegments.last) {
         'getVM' => {
           'pid': pidOverride?.call() ?? pid,
@@ -45,7 +45,7 @@ void main() {
     final context = ConnectionContext(
       defaultHost: 'localhost',
       defaultPort: 8181,
-      logger: (final level, final message, {final logger = 'test'}) {},
+      logger: (level, message, {logger = 'test'}) {},
       discoverPorts: () async => <int>[],
       initialStickyEndpointUri: 'ws://127.0.0.1:8181/pHDrCFCDBwg=/ws',
     );
@@ -60,9 +60,9 @@ void main() {
     final context = ConnectionContext(
       defaultHost: 'localhost',
       defaultPort: 8181,
-      logger: (final level, final message, {final logger = 'test'}) {},
+      logger: (level, message, {logger = 'test'}) {},
       discoverPorts: () async => <int>[8181],
-      probeFlutterTarget: (final endpoint, {required final timeout}) async =>
+      probeFlutterTarget: (endpoint, {required timeout}) async =>
           true,
     );
 
@@ -79,7 +79,7 @@ void main() {
       final context = ConnectionContext(
         defaultHost: 'localhost',
         defaultPort: 8181,
-        logger: (final level, final message, {final logger = 'test'}) {},
+        logger: (level, message, {logger = 'test'}) {},
         discoverPorts: () async => <int>[8181, 8182],
         discoverMachineTargets: () async => <FlutterMachineDiscoveryTarget>[
           FlutterMachineDiscoveryTarget(
@@ -93,7 +93,7 @@ void main() {
       expect(targets, hasLength(1));
 
       final machineTarget = targets.firstWhere(
-        (final target) => target.port == 8181,
+        (target) => target.port == 8181,
       );
       expect(machineTarget.targetId, equals('ws://127.0.0.1:8181/abc/ws'));
       expect(
@@ -108,7 +108,7 @@ void main() {
     final context = ConnectionContext(
       defaultHost: 'localhost',
       defaultPort: 8181,
-      logger: (final level, final message, {final logger = 'test'}) {},
+      logger: (level, message, {logger = 'test'}) {},
       discoverPorts: () async => <int>[],
       discoverMachineTargets: () async => <FlutterMachineDiscoveryTarget>[],
       initialStickyEndpointUri: 'ws://127.0.0.1:8181/old-token/ws',
@@ -132,9 +132,9 @@ void main() {
     final context = ConnectionContext(
       defaultHost: 'localhost',
       defaultPort: 8181,
-      logger: (final level, final message, {final logger = 'test'}) {},
+      logger: (level, message, {logger = 'test'}) {},
       discoverPorts: () async => <int>[8181, 9001, 9100],
-      probeFlutterTarget: (final endpoint, {required final timeout}) async =>
+      probeFlutterTarget: (endpoint, {required timeout}) async =>
           endpoint.port == 8181,
     );
 
@@ -163,13 +163,13 @@ void main() {
     final context = ConnectionContext(
       defaultHost: '127.0.0.1',
       defaultPort: 8181,
-      logger: (final level, final message, {final logger = 'test'}) {},
+      logger: (level, message, {logger = 'test'}) {},
       discoverPorts: () async => <int>[app.port, dds.port],
     );
 
     final targets = await context.discoverTargets();
     expect(targets, hasLength(2));
-    expect(targets.every((final t) => t.vmPid == 4242), isTrue);
+    expect(targets.every((t) => t.vmPid == 4242), isTrue);
     expect(targets.first.toJson()['pid'], equals(4242));
 
     // The fake VM speaks HTTP only, so the attempt dies on the websocket
@@ -179,7 +179,7 @@ void main() {
       context.connect(),
       throwsA(
         predicate(
-          (final e) =>
+          (e) =>
               e is! CoreConnectionException && '$e'.contains(':$lowerPort/'),
           'websocket attempt against port $lowerPort',
         ),
@@ -196,7 +196,7 @@ void main() {
     final context = ConnectionContext(
       defaultHost: '127.0.0.1',
       defaultPort: 8181,
-      logger: (final level, final message, {final logger = 'test'}) {},
+      logger: (level, message, {logger = 'test'}) {},
       discoverPorts: () async => <int>[first.port, second.port],
     );
 
@@ -204,7 +204,7 @@ void main() {
       context.connect(),
       throwsA(
         isA<CoreConnectionException>().having(
-          (final e) => e.reason,
+          (e) => e.reason,
           'reason',
           CoreConnectionFailureReason.multipleTargets,
         ),
@@ -225,13 +225,13 @@ void main() {
     final context = ConnectionContext(
       defaultHost: '127.0.0.1',
       defaultPort: 8181,
-      logger: (final level, final message, {final logger = 'test'}) {},
+      logger: (level, message, {logger = 'test'}) {},
       discoverPorts: () async => <int>[first.port, second.port],
     );
 
     final targets = await context.discoverTargets();
     expect(
-      targets.every((final target) => target.vmPid == 21),
+      targets.every((target) => target.vmPid == 21),
       isTrue,
       reason: 'both endpoints answered as one process on the first pass',
     );
@@ -244,7 +244,7 @@ void main() {
       context.connect(),
       throwsA(
         isA<CoreConnectionException>().having(
-          (final e) => e.reason,
+          (e) => e.reason,
           'reason',
           CoreConnectionFailureReason.multipleTargets,
         ),
@@ -260,7 +260,7 @@ void main() {
     final context = ConnectionContext(
       defaultHost: '127.0.0.1',
       defaultPort: 8181,
-      logger: (final level, final message, {final logger = 'test'}) {},
+      logger: (level, message, {logger = 'test'}) {},
       discoverPorts: () async => <int>[server.port],
     );
 
@@ -285,7 +285,7 @@ void main() {
     final context = ConnectionContext(
       defaultHost: '127.0.0.1',
       defaultPort: 8181,
-      logger: (final level, final message, {final logger = 'test'}) {},
+      logger: (level, message, {logger = 'test'}) {},
       discoverPorts: () async => <int>[server.port],
     );
 
@@ -315,7 +315,7 @@ void main() {
     final context = ConnectionContext(
       defaultHost: '127.0.0.1',
       defaultPort: 8181,
-      logger: (final level, final message, {final logger = 'test'}) {},
+      logger: (level, message, {logger = 'test'}) {},
       discoverPorts: () async => <int>[agent.port, other.port],
       preferredTargetLabel: 'staging',
     );
@@ -326,7 +326,7 @@ void main() {
       context.connect(),
       throwsA(
         predicate(
-          (final e) =>
+          (e) =>
               e is! CoreConnectionException && '$e'.contains(':${agent.port}/'),
           'websocket attempt against the preferred target',
         ),
@@ -350,7 +350,7 @@ void main() {
     final context = ConnectionContext(
       defaultHost: '127.0.0.1',
       defaultPort: 8181,
-      logger: (final level, final message, {final logger = 'test'}) {},
+      logger: (level, message, {logger = 'test'}) {},
       discoverPorts: () async => <int>[chosen.port, preferred.port],
       initialStickyEndpointUri: 'ws://127.0.0.1:${chosen.port}/ws',
       preferredTargetLabel: 'production',
@@ -362,7 +362,7 @@ void main() {
       context.connect(),
       throwsA(
         predicate(
-          (final e) =>
+          (e) =>
               e is! CoreConnectionException &&
               '$e'.contains(':${chosen.port}/'),
           'websocket attempt against the sticky target',
@@ -384,7 +384,7 @@ void main() {
     final context = ConnectionContext(
       defaultHost: '127.0.0.1',
       defaultPort: 8181,
-      logger: (final level, final message, {final logger = 'test'}) {},
+      logger: (level, message, {logger = 'test'}) {},
       discoverPorts: () async => <int>[first.port, second.port],
       preferredTargetLabel: 'nobody',
     );
@@ -393,7 +393,7 @@ void main() {
       context.connect(),
       throwsA(
         isA<CoreConnectionException>().having(
-          (final e) => e.reason,
+          (e) => e.reason,
           'reason',
           CoreConnectionFailureReason.multipleTargets,
         ),

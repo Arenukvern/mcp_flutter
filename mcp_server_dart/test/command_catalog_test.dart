@@ -10,7 +10,7 @@ void main() {
     final catalog = CommandCatalog.instance;
 
     test('contains expected core commands', () {
-      final names = catalog.commands.map((final c) => c.name).toSet();
+      final names = catalog.commands.map((c) => c.name).toSet();
 
       expect(names.contains('status'), isTrue);
       expect(names.contains('get_vm'), isTrue);
@@ -86,7 +86,7 @@ void main() {
         () => catalog.buildCommand('status', {'unexpected': true}),
         throwsA(
           isA<ArgumentError>().having(
-            (final error) => error.message,
+            (error) => error.message,
             'message',
             contains('Unknown argument key'),
           ),
@@ -99,7 +99,7 @@ void main() {
         () => catalog.buildCommand('tap_widget', <String, Object?>{}),
         throwsA(
           isA<ArgumentError>().having(
-            (final error) => error.message,
+            (error) => error.message,
             'message',
             contains('ref'),
           ),
@@ -112,7 +112,7 @@ void main() {
         () => catalog.buildCommand('fill_form', <String, Object?>{}),
         throwsA(
           isA<ArgumentError>().having(
-            (final error) => error.message,
+            (error) => error.message,
             'message',
             contains('fields'),
           ),
@@ -127,7 +127,7 @@ void main() {
         }),
         throwsA(
           isA<ArgumentError>().having(
-            (final error) => error.message,
+            (error) => error.message,
             'message',
             contains('ref'),
           ),
@@ -144,7 +144,7 @@ void main() {
         }),
         throwsA(
           isA<ArgumentError>().having(
-            (final error) => error.message,
+            (error) => error.message,
             'message',
             contains('ref'),
           ),
@@ -191,7 +191,7 @@ void main() {
         () => catalog.buildCommand('semantic_snapshot', {'unexpected': true}),
         throwsA(
           isA<ArgumentError>().having(
-            (final error) => error.message,
+            (error) => error.message,
             'message',
             anyOf(
               contains('Unknown argument key'),
@@ -417,7 +417,7 @@ void main() {
         () => catalog.buildCommand('hot_reload_flutter', {'force': 'true'}),
         throwsA(
           isA<ArgumentError>().having(
-            (final error) => error.message,
+            (error) => error.message,
             'message',
             contains('expected boolean'),
           ),
@@ -512,7 +512,7 @@ void main() {
         }),
         throwsA(
           isA<ArgumentError>().having(
-            (final error) => error.message,
+            (error) => error.message,
             'message',
             contains('30000'),
           ),
@@ -528,7 +528,7 @@ void main() {
         }),
         throwsA(
           isA<ArgumentError>().having(
-            (final error) => error.message,
+            (error) => error.message,
             'message',
             contains('timeoutMs'),
           ),
