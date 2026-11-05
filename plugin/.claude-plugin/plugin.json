@@ -21,5 +21,6 @@
     "runtime-tools",
     "game-debug"
   ],
-  "skills": "./skills"
+  "skills": "./skills",
+  "mcpServers": "./mcp.json"
 }
