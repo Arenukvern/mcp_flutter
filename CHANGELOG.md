@@ -3,6 +3,28 @@
 <!-- markdownlint-disable MD052 -->
 <!-- Keep a Changelog version headings use [3.0.1] brackets; MD052 treats them as reference links. -->
 
+## [7.0.2](https://github.com/Arenukvern/mcp_flutter/compare/v7.0.1...v7.0.2) (2026-11-07)
+
+
+### Bug Fixes
+
+* **ci:** address PR155 review — safe release sync and manifest policy ([4445d1a](https://github.com/Arenukvern/mcp_flutter/commit/4445d1ac6f04c2ced9b90909307fc35f74b6b96f))
+* **ci:** harden push ref env, gate sync contracts, path policy ([91c62c5](https://github.com/Arenukvern/mcp_flutter/commit/91c62c59952f51fbfcc39912b9daf61c2cc99990))
+* **ci:** harden release skill sync and validate Claude plugin manifest ([3905f92](https://github.com/Arenukvern/mcp_flutter/commit/3905f92ad2d9772c73d3c157d38f591d7857b95e))
+* **ci:** PR [#151](https://github.com/Arenukvern/mcp_flutter/issues/151) follow-up — skill asset sync, Claude manifest gate, changelog credit ([294a15c](https://github.com/Arenukvern/mcp_flutter/commit/294a15cc35eef2a504ccf72fb40f78e20efcfedb))
+* **plugin:** Claude marketplace install — credit [@PiotrMitkowski](https://github.com/PiotrMitkowski) in https://github.com/Arenukvern/mcp_flutter/pull/151 ([30e3d02](https://github.com/Arenukvern/mcp_flutter/commit/30e3d02dcda7a9864865da50e036d596cf29b831))
+* **plugin:** drop the agents directory path from the Claude manifest ([365d576](https://github.com/Arenukvern/mcp_flutter/commit/365d5762f4a5444ce76a841a6be0339728cae2fe))
+* **plugin:** make the Claude Code plugin installable and load its MCP server ([04023b5](https://github.com/Arenukvern/mcp_flutter/commit/04023b5c4a8f417ff2b3ee7389ac2f634ad4753a))
+* **plugin:** register the MCP server from the Claude manifest ([e11f680](https://github.com/Arenukvern/mcp_flutter/commit/e11f6804bef77033a308f3b0d6e951c8980195fa))
+* **plugin:** reject .. in raw path segments before normalize ([69b19c0](https://github.com/Arenukvern/mcp_flutter/commit/69b19c0dbfa124e90199af39f928f3fdfa19d81a))
+
+
+### Documentation
+
+* add PiotrMitkowski as a contributor for code, maintenance, and bug ([4025cc2](https://github.com/Arenukvern/mcp_flutter/commit/4025cc219cbbd7f4ffc2b9f91a17c22a89fe288e))
+* update .all-contributorsrc ([e80f17b](https://github.com/Arenukvern/mcp_flutter/commit/e80f17bd5531d604177a67e0b56bc843819878f5))
+* update README.md ([7620459](https://github.com/Arenukvern/mcp_flutter/commit/76204592f86aff39d066b71c5fcb86b02f11112b))
+
 ## [7.0.1](https://github.com/Arenukvern/mcp_flutter/compare/v7.0.0...v7.0.1) (2026-10-17)
 
 
