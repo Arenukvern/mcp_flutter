@@ -65,7 +65,10 @@ void main() {
         manifestJson: jsonEncode(base),
         pluginRootPath: pluginRoot,
       );
-      expect(errors.any((e) => e.contains('.. path segments')), isTrue);
+      expect(
+        errors.any((e) => e.contains('must not contain ".." path segments')),
+        isTrue,
+      );
     });
 
     test('does not false-positive parent segment on literal dots in name', () {
