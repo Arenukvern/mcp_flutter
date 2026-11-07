@@ -59,6 +59,8 @@ jobs:
 
       - name: Commit and push if changed
         id: sync_commit
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
         run: |
           head_sha="$(git rev-parse HEAD)"
           echo "head_sha=$head_sha" >> "$GITHUB_OUTPUT"
@@ -67,11 +69,15 @@ jobs:
             echo "skill_assets.g.dart already in sync"
             exit 0
           fi
+          if [[ ! "$HEAD_REF" =~ ^[A-Za-z0-9._/-]+$ ]]; then
+            echo "::error::unexpected HEAD_REF"
+            exit 1
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add mcp_server_dart/lib/src/skill_assets.g.dart
           git commit -m "chore: sync skill_assets.g.dart for release PR"
-          git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
+          git push origin "HEAD:refs/heads/${HEAD_REF}"
           echo "pushed=true" >> "$GITHUB_OUTPUT"
           echo "head_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 

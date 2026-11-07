@@ -47,10 +47,16 @@ jobs:
         run: bash tool/release/sync_version.sh
 
       - name: Commit and push if changed
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
         run: |
           if git diff --quiet; then
             echo "release version touchpoints already in sync"
             exit 0
+          fi
+          if [[ ! "$HEAD_REF" =~ ^[A-Za-z0-9._/-]+$ ]]; then
+            echo "::error::unexpected HEAD_REF"
+            exit 1
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -59,7 +65,7 @@ jobs:
           # flutter_mcp_harness and silently failed to commit its sync).
           git add -A
           git commit -m "chore: sync release version touchpoints"
-          git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
+          git push origin "HEAD:refs/heads/${HEAD_REF}"
 
   release-pr-checklist-comment:
     needs: detect-release-pr

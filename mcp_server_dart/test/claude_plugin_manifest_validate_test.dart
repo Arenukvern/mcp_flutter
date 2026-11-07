@@ -57,15 +57,28 @@ void main() {
       expect(errors.any((e) => e.contains('not absolute')), isTrue);
     });
 
-    test('rejects agents path with ..', () {
+    test('rejects agents path with parent segment', () {
       final base = jsonDecode(File(validManifestPath).readAsStringSync())
           as Map<String, dynamic>;
-      base['agents'] = './../outside.md';
+      base['agents'] = './agents/../outside.md';
       final errors = validateClaudePluginManifest(
         manifestJson: jsonEncode(base),
         pluginRootPath: pluginRoot,
       );
-      expect(errors.any((e) => e.contains('..')), isTrue);
+      expect(errors.any((e) => e.contains('.. path segments')), isTrue);
+    });
+
+    test('does not false-positive parent segment on literal dots in name', () {
+      final base = jsonDecode(File(validManifestPath).readAsStringSync())
+          as Map<String, dynamic>;
+      base['agents'] = './agents/flutter-mcp-toolkit-runtime.md';
+      expect(
+        validateClaudePluginManifest(
+          manifestJson: jsonEncode(base),
+          pluginRootPath: pluginRoot,
+        ),
+        isEmpty,
+      );
     });
 
     test('accepts agents pointing at an existing .md file', () {
@@ -102,6 +115,7 @@ void main() {
       );
       expect(errors, isNotEmpty);
       expect(errors.join(' '), contains('repository policy'));
+      expect(errors.join(' '), isNot(contains('agents')));
     });
 
     test('rejects missing mcpServers target file', () {

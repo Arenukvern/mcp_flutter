@@ -154,6 +154,12 @@ jobs:
       - name: Version touchpoints match the train
         run: bash tool/contracts/check_version_sync.sh
 
+      - name: Release PR sync workflow guards
+        run: bash tool/contracts/check_release_sync_workflows.sh
+
+      - name: Skill asset sync idempotence (synthetic stale)
+        run: bash tool/contracts/test_skill_asset_sync_idempotence.sh
+
       - name: MCP Registry contracts (server.json, Dockerfile, publish workflow)
         run: bash tool/contracts/check_mcp_registry.sh
 

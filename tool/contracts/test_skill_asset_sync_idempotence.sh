@@ -10,11 +10,22 @@ ok() { echo "test_skill_asset_sync_idempotence: $*"; }
 
 command -v dart >/dev/null 2>&1 || fail "dart not found"
 command -v flutter >/dev/null 2>&1 || fail "flutter not found"
+command -v python3 >/dev/null 2>&1 || fail "python3 not found"
 
 BEFORE="$(mktemp)"
 STALE="$(mktemp)"
 AFTER_FIRST="$(mktemp)"
-cleanup() { rm -f "$BEFORE" "$STALE" "$AFTER_FIRST"; }
+
+restore_generated() {
+  if [[ -f "$BEFORE" ]]; then
+    cp "$BEFORE" "$GENERATED"
+  fi
+}
+
+cleanup() {
+  restore_generated
+  rm -f "$BEFORE" "$STALE" "$AFTER_FIRST"
+}
 trap cleanup EXIT
 
 cp "$GENERATED" "$BEFORE"
@@ -26,7 +37,23 @@ cd "$ROOT_DIR"
 if ! grep -q '"version":' "$GENERATED"; then
   fail "expected version field in bundle"
 fi
-sed -i '0,/"version": "/s/"version": "[^"]*"/"version": "0.0.0-stale"/' "$GENERATED"
+python3 - "$GENERATED" <<'PY'
+from pathlib import Path
+import re
+import sys
+
+path = Path(sys.argv[1])
+text = path.read_text(encoding="utf-8")
+new_text, count = re.subn(
+    r'"version": "[^"]*"',
+    '"version": "0.0.0-stale"',
+    text,
+    count=1,
+)
+if count != 1:
+    raise SystemExit("expected exactly one version substitution")
+path.write_text(new_text, encoding="utf-8")
+PY
 cp "$GENERATED" "$STALE"
 
 if git diff --exit-code -- "$GENERATED" >/dev/null 2>&1; then
@@ -47,7 +74,5 @@ dart run mcp_server_dart/tool/build_skill_assets.dart >/dev/null
 if ! cmp -s "$AFTER_FIRST" "$GENERATED"; then
   fail "second generator run must not change skill_assets.g.dart"
 fi
-
-git checkout -- "$GENERATED"
 
 ok "stale→regen→idempotent path OK"

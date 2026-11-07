@@ -42,4 +42,16 @@ if ! grep -q 'statuses: write' "$SKILLS"; then
   fail "release_pr_sync_skills.yml needs statuses: write for post-push verification status"
 fi
 
+for wf in "$VERSIONS" "$SKILLS"; do
+  if grep -E 'git push.*github\.event\.pull_request\.head\.ref' "$wf"; then
+    fail "$(basename "$wf") must not interpolate head.ref inside git push run scripts"
+  fi
+  if ! grep -q 'HEAD_REF:' "$wf"; then
+    fail "$(basename "$wf") git push step must set HEAD_REF env"
+  fi
+  if ! grep -q 'HEAD:refs/heads/\${HEAD_REF}' "$wf"; then
+    fail "$(basename "$wf") must push via quoted HEAD:refs/heads/\${HEAD_REF}"
+  fi
+done
+
 ok "release PR sync workflow structure OK"

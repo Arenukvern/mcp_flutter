@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 
 const _policyPrefix = 'repository policy (mcp_flutter plugin packaging):';
-const _claudeHint =
+const _claudeAgentsHint =
     'Claude Code plugin validate rejects directory paths for agents';
 
 /// Targeted checks for this repo's Claude marketplace packaging policy and
@@ -37,8 +37,8 @@ List<String> validateClaudePluginManifest({
   final mcpServers = manifest['mcpServers'];
   if (mcpServers == null) {
     errors.add(
-      '$_policyPrefix mcpServers is required — $_claudeHint; '
-      'Claude does not load plugin/mcp.json unless explicitly referenced',
+      '$_policyPrefix mcpServers is required — marketplace installs must '
+      'reference ./mcp.json explicitly',
     );
   } else {
     errors.addAll(
@@ -71,7 +71,7 @@ List<String> _validateAgentsField(
     if (!target.endsWith('.md')) {
       errors.add(
         '$label must reference an agent .md file (got "$value"; '
-        '$_claudeHint)',
+        '$_claudeAgentsHint)',
       );
       return;
     }
@@ -148,6 +148,33 @@ class _ResolvedPath {
   final String? error;
 }
 
+bool _hasParentPathSegment(String relativePath) {
+  for (final segment in p.split(p.normalize(relativePath))) {
+    if (segment == '..') return true;
+  }
+  return false;
+}
+
+String _realPath(String path) {
+  final absolute = p.normalize(p.absolute(path));
+  try {
+    final type = FileSystemEntity.typeSync(absolute, followLinks: false);
+    if (type == FileSystemEntityType.notFound) return absolute;
+    if (type == FileSystemEntityType.directory) {
+      return p.normalize(Directory(absolute).resolveSymbolicLinksSync());
+    }
+    return p.normalize(File(absolute).resolveSymbolicLinksSync());
+  } catch (_) {
+    return absolute;
+  }
+}
+
+bool _isInsidePluginRoot(String pluginRoot, String candidate) {
+  final rootReal = _realPath(pluginRoot);
+  final candidateReal = _realPath(candidate);
+  return p.isWithin(rootReal, candidateReal) || candidateReal == rootReal;
+}
+
 _ResolvedPath _resolveRelativePluginPath({
   required String pluginRoot,
   required String rawPath,
@@ -162,9 +189,9 @@ _ResolvedPath _resolveRelativePluginPath({
       error: '$_policyPrefix $field must be relative (./...), not absolute',
     );
   }
-  if (trimmed.contains('..')) {
+  if (_hasParentPathSegment(trimmed)) {
     return _ResolvedPath(
-      error: '$_policyPrefix $field must not contain ".." segments',
+      error: '$_policyPrefix $field must not contain ".." path segments',
     );
   }
   if (!trimmed.startsWith('./')) {
@@ -174,9 +201,10 @@ _ResolvedPath _resolveRelativePluginPath({
     );
   }
   final joined = p.normalize(p.join(pluginRoot, trimmed));
-  if (!p.isWithin(pluginRoot, joined) && joined != pluginRoot) {
+  if (!_isInsidePluginRoot(pluginRoot, joined)) {
     return _ResolvedPath(
-      error: '$_policyPrefix $field must resolve inside plugin root',
+      error:
+          '$_policyPrefix $field must resolve inside plugin root (symlink escape rejected)',
     );
   }
   return _ResolvedPath(path: joined);
