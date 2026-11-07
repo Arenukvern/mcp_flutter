@@ -1,0 +1,30 @@
+# Recover missing GitHub Release binaries
+
+Use when a tagged release exists but [`release.yml`](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/release.yml) failed before attaching `flutter_mcp_<version>_<triple>.tar.gz` and `checksums.txt` (for example after an unsupported macOS runner image).
+
+## Preconditions
+
+- The git tag (for example `v7.0.2`) and GitHub Release already exist from release-please.
+- The release must have **no** expected tarballs or `checksums.txt` yet; the workflow **refuses** upload when those asset names already exist (no overwrite mode).
+- Recovery does **not** create, move, or delete tags and does **not** republish pub.dev or MCP Registry packages.
+
+## How the workflow is wired
+
+| Checkout | Purpose |
+|----------|---------|
+| `_tooling` at `${{ github.sha }}` | Trusted helper scripts from the workflow commit (`persist-credentials: false`) |
+| `release-src` at `refs/tags/<tag>` | Immutable product source used to compile binaries |
+
+Build uses **tooling** scripts against **release-src** (`RELEASE_ROOT`). Historical tags (for example `v7.0.2`) may lack newer helpers; dispatch recovery still works because helpers come from `_tooling`.
+
+## Manual recovery (maintainers)
+
+1. Open **Actions → Release → Run workflow** on `main` (after runner/dispatch fix is merged).
+2. `release_tag`: existing tag (for example `v7.0.2`).
+3. The run checks out `release-src`, records `release_sha`, and uploads to that tag via explicit `tag_name`.
+
+**Not verified in CI:** a full end-to-end dispatch against `v7.0.2` until a maintainer runs it post-merge.
+
+## Changelog convention
+
+Ship runner/dispatch hardening via conventional `fix(release):` on `main`; release-please aggregates into the next version — do not add a stranded `## [Unreleased]` block for recovery-only workflow edits.

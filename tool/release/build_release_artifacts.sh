@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+ROOT_DIR="${RELEASE_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 DIST_DIR="${DIST_DIR:-$ROOT_DIR/dist/release}"
 VERSION_SOURCE_FILE="$ROOT_DIR/packages/core/lib/src/runtime_version.dart"
 
@@ -70,7 +70,7 @@ assert_host_can_build() {
         cat >&2 <<EOF
 darwin-arm64 requires an Apple Silicon macOS host.
 Dart does not support macos/arm64 cross-compilation from Intel Macs.
-Use macos-14 (or newer arm64) in CI, or build on an arm64 Mac locally.
+Use macos-15 (or newer arm64) in CI, or build on an arm64 Mac locally.
 EOF
         exit 1
       fi
