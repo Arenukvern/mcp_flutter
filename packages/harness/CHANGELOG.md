@@ -4,6 +4,12 @@ All notable changes to this package are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [7.0.2] - 2026-11-07
+
+### Changed
+
+- Align package version and hosted sibling dependency constraints with the Flutter MCP Toolkit 7.0.2 release.
+
 ## [7.0.1] - 2026-10-17
 
 ### Fixed
