@@ -10,10 +10,11 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  statuses: write
 
 concurrency:
-  group: release-pr-sync-skills-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+  group: release-pr-automation-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
 
 jobs:
   detect-release-pr:
@@ -23,9 +24,12 @@ jobs:
     steps:
       - id: check
         name: Detect release-please PR
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_HEAD: ${{ github.head_ref }}
         run: |
-          title="${{ github.event.pull_request.title }}"
-          head="${{ github.head_ref }}"
+          title="$PR_TITLE"
+          head="$PR_HEAD"
           if [[ "$head" == release-please--* ]] || [[ "$title" == *": release "* ]]; then
             echo "is_release_pr=true" >> "$GITHUB_OUTPUT"
           else
@@ -54,16 +58,51 @@ jobs:
         run: dart run mcp_server_dart/tool/build_skill_assets.dart
 
       - name: Commit and push if changed
+        id: sync_commit
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
         run: |
+          head_sha="$(git rev-parse HEAD)"
+          echo "head_sha=$head_sha" >> "$GITHUB_OUTPUT"
           if git diff --quiet -- mcp_server_dart/lib/src/skill_assets.g.dart; then
+            echo "pushed=false" >> "$GITHUB_OUTPUT"
             echo "skill_assets.g.dart already in sync"
             exit 0
+          fi
+          if [[ ! "$HEAD_REF" =~ ^[A-Za-z0-9._/-]+$ ]]; then
+            echo "::error::unexpected HEAD_REF"
+            exit 1
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add mcp_server_dart/lib/src/skill_assets.g.dart
           git commit -m "chore: sync skill_assets.g.dart for release PR"
-          git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
+          git push origin "HEAD:refs/heads/${HEAD_REF}"
+          echo "pushed=true" >> "$GITHUB_OUTPUT"
+          echo "head_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Verify idempotence on PR head
+        run: |
+          dart run mcp_server_dart/tool/build_skill_assets.dart
+          if ! git diff --exit-code mcp_server_dart/lib/src/skill_assets.g.dart; then
+            echo "::error::skill_assets bundle not idempotent after sync"
+            exit 1
+          fi
+
+      - name: Publish skill-assets-post-sync status
+        if: steps.sync_commit.outputs.pushed == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const sha = '${{ steps.sync_commit.outputs.head_sha }}';
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha,
+              state: 'success',
+              context: 'skill-assets-post-sync',
+              description: 'skill_assets.g.dart regenerated and idempotent on this commit',
+            });
 
   release-pr-checklist-comment:
     needs: detect-release-pr
@@ -85,6 +124,8 @@ jobs:
             release-please bumps \`plugin/*-plugin/plugin.json\` but not the generated \`skill_assets.g.dart\` bundle.
 
             **Automatic:** [Release PR — sync skill assets](${process.env.WORKFLOW_URL}) commits \`skill_assets.g.dart\` when drift is detected on this PR.
+
+            After a bot sync push, look for commit status **skill-assets-post-sync** on the latest head SHA, then re-run **skill-assets-drift** if required checks did not auto-fire.
 
             **Manual (if automation did not run):**
             \`\`\`bash

@@ -41,10 +41,7 @@ jobs:
 
       - name: Comment on Release PR (drift)
         if: >-
-          failure() && (
-            startsWith(github.head_ref, 'release-please--') ||
-            contains(github.event.pull_request.title, ': release ')
-          )
+          failure() && startsWith(github.head_ref, 'release-please--')
         uses: actions/github-script@v7
         env:
           WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/workflows/release_pr_sync_skills.yml
@@ -60,7 +57,8 @@ jobs:
             1. Wait for [Release PR — sync skill assets](${process.env.WORKFLOW_URL}) to push a fix commit on this branch, **or**
             2. Run locally: \`make sync-skills\`, commit \`mcp_server_dart/lib/src/skill_assets.g.dart\`, and push.
 
-            Re-run the **skill-assets-drift** check after the sync commit lands.
+            After the bot sync commit, check commit status **skill-assets-post-sync** on the latest PR head SHA.
+            Re-run the **skill-assets-drift** check if branch protection did not auto-trigger on the bot push.
             `;
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
