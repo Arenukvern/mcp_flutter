@@ -149,7 +149,7 @@ class _ResolvedPath {
 }
 
 bool _hasParentPathSegment(String relativePath) {
-  for (final segment in p.split(p.normalize(relativePath))) {
+  for (final segment in p.split(relativePath)) {
     if (segment == '..') return true;
   }
   return false;
