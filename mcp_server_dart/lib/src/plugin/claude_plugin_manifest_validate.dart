@@ -3,14 +3,18 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
-/// Targeted checks aligned with Claude Code plugin install failures seen in
-/// https://github.com/Arenukvern/mcp_flutter/pull/151 — not a full upstream
-/// schema implementation.
+const _policyPrefix = 'repository policy (mcp_flutter plugin packaging):';
+const _claudeHint =
+    'Claude Code plugin validate rejects directory paths for agents';
+
+/// Targeted checks for this repo's Claude marketplace packaging policy and
+/// known Claude install failure modes (PR #151). Not a full upstream schema.
 List<String> validateClaudePluginManifest({
   required String manifestJson,
   required String pluginRootPath,
 }) {
   final errors = <String>[];
+  final pluginRoot = p.normalize(p.absolute(pluginRootPath));
 
   late final Map<String, dynamic> manifest;
   try {
@@ -27,20 +31,20 @@ List<String> validateClaudePluginManifest({
 
   final agents = manifest['agents'];
   if (agents != null) {
-    errors.addAll(_validateAgentsField(agents));
+    errors.addAll(_validateAgentsField(agents, pluginRoot: pluginRoot));
   }
 
   final mcpServers = manifest['mcpServers'];
   if (mcpServers == null) {
     errors.add(
-      'mcpServers is required (Claude Code does not load plugin/mcp.json '
-      'unless explicitly referenced)',
+      '$_policyPrefix mcpServers is required — $_claudeHint; '
+      'Claude does not load plugin/mcp.json unless explicitly referenced',
     );
   } else {
     errors.addAll(
       _validateMcpServersField(
         mcpServers,
-        pluginRootPath: pluginRootPath,
+        pluginRoot: pluginRoot,
       ),
     );
   }
@@ -48,15 +52,31 @@ List<String> validateClaudePluginManifest({
   return errors;
 }
 
-List<String> _validateAgentsField(Object agents) {
+List<String> _validateAgentsField(
+  Object agents, {
+  required String pluginRoot,
+}) {
   final errors = <String>[];
   void checkPath(String value, String label) {
-    final trimmed = value.trim();
-    if (!trimmed.endsWith('.md')) {
+    final resolved = _resolveRelativePluginPath(
+      pluginRoot: pluginRoot,
+      rawPath: value,
+      field: label,
+    );
+    if (resolved.error != null) {
+      errors.add(resolved.error!);
+      return;
+    }
+    final target = resolved.path!;
+    if (!target.endsWith('.md')) {
       errors.add(
-        '$label must be a path to an agent .md file (got "$value"; '
-        'directories are rejected by Claude plugin validate)',
+        '$label must reference an agent .md file (got "$value"; '
+        '$_claudeHint)',
       );
+      return;
+    }
+    if (!File(target).existsSync()) {
+      errors.add('$label target does not exist: $value (resolved $target)');
     }
   }
 
@@ -79,7 +99,7 @@ List<String> _validateAgentsField(Object agents) {
 
 List<String> _validateMcpServersField(
   Object mcpServers, {
-  required String pluginRootPath,
+  required String pluginRoot,
 }) {
   final errors = <String>[];
   if (mcpServers is! String || mcpServers.trim().isEmpty) {
@@ -87,10 +107,20 @@ List<String> _validateMcpServersField(
     return errors;
   }
 
-  final resolved = p.normalize(p.join(pluginRootPath, mcpServers));
-  final file = File(resolved);
+  final resolved = _resolveRelativePluginPath(
+    pluginRoot: pluginRoot,
+    rawPath: mcpServers,
+    field: 'mcpServers',
+  );
+  if (resolved.error != null) {
+    errors.add(resolved.error!);
+    return errors;
+  }
+  final file = File(resolved.path!);
   if (!file.existsSync()) {
-    errors.add('mcpServers target does not exist: $mcpServers (resolved $resolved)');
+    errors.add(
+      'mcpServers target does not exist: $mcpServers (resolved ${resolved.path})',
+    );
     return errors;
   }
 
@@ -110,4 +140,44 @@ List<String> _validateMcpServersField(
     errors.add('mcpServers file is not valid JSON ($mcpServers): $e');
   }
   return errors;
+}
+
+class _ResolvedPath {
+  _ResolvedPath({this.path, this.error});
+  final String? path;
+  final String? error;
+}
+
+_ResolvedPath _resolveRelativePluginPath({
+  required String pluginRoot,
+  required String rawPath,
+  required String field,
+}) {
+  final trimmed = rawPath.trim();
+  if (trimmed.isEmpty) {
+    return _ResolvedPath(error: '$field must be a non-empty path');
+  }
+  if (p.isAbsolute(trimmed)) {
+    return _ResolvedPath(
+      error: '$_policyPrefix $field must be relative (./...), not absolute',
+    );
+  }
+  if (trimmed.contains('..')) {
+    return _ResolvedPath(
+      error: '$_policyPrefix $field must not contain ".." segments',
+    );
+  }
+  if (!trimmed.startsWith('./')) {
+    return _ResolvedPath(
+      error:
+          '$_policyPrefix $field paths must start with ./ (got "$trimmed")',
+    );
+  }
+  final joined = p.normalize(p.join(pluginRoot, trimmed));
+  if (!p.isWithin(pluginRoot, joined) && joined != pluginRoot) {
+    return _ResolvedPath(
+      error: '$_policyPrefix $field must resolve inside plugin root',
+    );
+  }
+  return _ResolvedPath(path: joined);
 }

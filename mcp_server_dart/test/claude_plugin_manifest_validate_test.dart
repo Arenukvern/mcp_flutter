@@ -27,20 +27,48 @@ void main() {
       final base = jsonDecode(File(validManifestPath).readAsStringSync())
           as Map<String, dynamic>;
       base['agents'] = './agents';
-      expect(
-        validateClaudePluginManifest(
-          manifestJson: jsonEncode(base),
-          pluginRootPath: pluginRoot,
-        ),
-        contains(
-          matches(
-            RegExp(r'agents.*\.md', caseSensitive: false),
-          ),
-        ),
+      final errors = validateClaudePluginManifest(
+        manifestJson: jsonEncode(base),
+        pluginRootPath: pluginRoot,
       );
+      expect(errors, isNotEmpty);
+      expect(errors.join(' '), contains('.md'));
     });
 
-    test('accepts agents pointing at a single .md file', () {
+    test('rejects agents path without ./ prefix (repo policy)', () {
+      final base = jsonDecode(File(validManifestPath).readAsStringSync())
+          as Map<String, dynamic>;
+      base['agents'] = 'agents/flutter-mcp-toolkit-runtime.md';
+      final errors = validateClaudePluginManifest(
+        manifestJson: jsonEncode(base),
+        pluginRootPath: pluginRoot,
+      );
+      expect(errors.any((e) => e.contains('repository policy')), isTrue);
+    });
+
+    test('rejects absolute agents path', () {
+      final base = jsonDecode(File(validManifestPath).readAsStringSync())
+          as Map<String, dynamic>;
+      base['agents'] = '/etc/passwd.md';
+      final errors = validateClaudePluginManifest(
+        manifestJson: jsonEncode(base),
+        pluginRootPath: pluginRoot,
+      );
+      expect(errors.any((e) => e.contains('not absolute')), isTrue);
+    });
+
+    test('rejects agents path with ..', () {
+      final base = jsonDecode(File(validManifestPath).readAsStringSync())
+          as Map<String, dynamic>;
+      base['agents'] = './../outside.md';
+      final errors = validateClaudePluginManifest(
+        manifestJson: jsonEncode(base),
+        pluginRootPath: pluginRoot,
+      );
+      expect(errors.any((e) => e.contains('..')), isTrue);
+    });
+
+    test('accepts agents pointing at an existing .md file', () {
       final base = jsonDecode(File(validManifestPath).readAsStringSync())
           as Map<String, dynamic>;
       base['agents'] = './agents/flutter-mcp-toolkit-runtime.md';
@@ -53,7 +81,18 @@ void main() {
       );
     });
 
-    test('rejects missing mcpServers', () {
+    test('rejects agents .md path that does not exist', () {
+      final base = jsonDecode(File(validManifestPath).readAsStringSync())
+          as Map<String, dynamic>;
+      base['agents'] = './agents/missing-agent.md';
+      final errors = validateClaudePluginManifest(
+        manifestJson: jsonEncode(base),
+        pluginRootPath: pluginRoot,
+      );
+      expect(errors.any((e) => e.contains('does not exist')), isTrue);
+    });
+
+    test('rejects missing mcpServers (repo policy)', () {
       final base = jsonDecode(File(validManifestPath).readAsStringSync())
           as Map<String, dynamic>;
       base.remove('mcpServers');
@@ -62,7 +101,7 @@ void main() {
         pluginRootPath: pluginRoot,
       );
       expect(errors, isNotEmpty);
-      expect(errors.join(' '), contains('mcpServers'));
+      expect(errors.join(' '), contains('repository policy'));
     });
 
     test('rejects missing mcpServers target file', () {
@@ -74,6 +113,17 @@ void main() {
         pluginRootPath: pluginRoot,
       );
       expect(errors.any((e) => e.contains('missing-mcp.json')), isTrue);
+    });
+
+    test('rejects absolute mcpServers path', () {
+      final base = jsonDecode(File(validManifestPath).readAsStringSync())
+          as Map<String, dynamic>;
+      base['mcpServers'] = '/tmp/mcp.json';
+      final errors = validateClaudePluginManifest(
+        manifestJson: jsonEncode(base),
+        pluginRootPath: pluginRoot,
+      );
+      expect(errors.any((e) => e.contains('not absolute')), isTrue);
     });
 
     test('rejects malformed manifest JSON', () {
@@ -89,11 +139,10 @@ void main() {
     test('rejects malformed mcp.json referenced by mcpServers', () {
       final tmp = Directory.systemTemp.createTempSync('claude_manifest_test_');
       addTearDown(() => tmp.deleteSync(recursive: true));
-      final badMcp = File(p.join(tmp.path, 'bad-mcp.json'))
-        ..writeAsStringSync('{broken');
+      File(p.join(tmp.path, 'bad-mcp.json')).writeAsStringSync('{broken');
       final manifest = jsonEncode({
         'name': 'flutter-mcp-toolkit',
-        'mcpServers': badMcp.path,
+        'mcpServers': './bad-mcp.json',
       });
       final errors = validateClaudePluginManifest(
         manifestJson: manifest,

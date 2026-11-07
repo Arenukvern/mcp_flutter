@@ -2,38 +2,38 @@
 
 ## Context
 
-[PR #151](https://github.com/Arenukvern/mcp_flutter/pull/151) (merged) fixed `plugin/.claude-plugin/plugin.json`: drop invalid `agents` directory override; add `mcpServers: "./mcp.json"`. `skill_assets.g.dart` still embeds Cursor/Codex manifests at stale `7.0.1` source vs `7.0.0` bundle until `make sync-skills`. Release-please bumps plugin JSON via `extra-files` but not the generated bundle.
+[PR #151](https://github.com/Arenukvern/mcp_flutter/pull/151) (merged) fixed `plugin/.claude-plugin/plugin.json`: drop invalid `agents` directory override; add `mcpServers: "./mcp.json"`. `skill_assets.g.dart` still embeds Cursor/Codex manifests at stale versions until `make sync-skills`. Release-please bumps plugin JSON via `extra-files` but not the generated bundle.
 
-## Goals
+## Goals (updated after review)
 
-1. Regenerate `skill_assets.g.dart`; keep drift check strict.
-2. Add **targeted** Claude plugin manifest validation (not full official schema; not embedding Claude manifest in the bundle).
-3. Harden release PR automation so version bumps and skill asset regen land in a verifiable commit (address GITHUB_TOKEN push not re-firing PR checks).
-4. `CHANGELOG.md`: credit [@PiotrMitkowski](https://github.com/PiotrMitkowski) + PR #151 under `## [Unreleased]`; no credit for this follow-up.
-5. Fix Docker SDK parity (3.13.0) — evidence from PR #151 / `check_sdk_parity.sh`.
+1. Regenerate `skill_assets.g.dart`; keep drift check strict; **no** `workflow_run` on drift.
+2. Targeted Claude manifest validation with path containment + repo-policy messaging.
+3. Single owner for skill asset bot regen (`release_pr_sync_skills`); shared `release-pr-automation` concurrency; post-push `skill-assets-post-sync` status on exact bot SHA.
+4. release-please-compatible contributor credit (not stranded `Unreleased`).
+5. Docker SDK parity 3.13.0.
 
 ## Key Design Decisions
 
 | Decision | Rationale |
 |----------|-----------|
-| Dart validator + unit tests in `mcp_server_dart` | JSON parsing and path resolution need tests; matches existing contract test package layout. |
-| Enforce known Claude failure modes only | Mirrors `claude plugin validate` errors from PR #151 (`agents` path, `mcpServers` file); avoid claiming full upstream schema compliance. |
-| Require `mcpServers` for **this** repo's Claude manifest | Product docs promise MCP registration on marketplace install; omission was the second bug in #151. Omitting `agents` remains valid (default scan). |
-| Regen skill assets in **Release PR — sync versions** job | Same `git add -A` commit as `sync_version.sh` keeps manifest bumps and bundle in sync before merge. |
-| `workflow_run` on `skill-assets-drift` after sync-skills | Mitigates bot pushes not re-triggering `pull_request` workflows; no new secrets. |
-| Do not embed Claude manifest in `build_skill_assets.dart` | Contributor and maintainer docs already exclude it; validation stays separate. |
+| Remove `workflow_run` from `skill-assets-drift` | Review: stale `head_sha`, wrong attach context, privileged execution of PR head on base token. |
+| Skill assets only in `release_pr_sync_skills` | Avoid dual writers + race with version sync; `release_pr_sync_versions` runs `sync_version.sh` only. |
+| Post-sync idempotence + `skill-assets-post-sync` status | Documents bot SHA verification without claiming to replace required workflow check when `GITHUB_TOKEN` push does not re-fire PR workflows. |
+| `fix(plugin):` empty commit for credit | release-please on `main` adds subject line to [#154](https://github.com/Arenukvern/mcp_flutter/pull/154) `7.0.2` Bug Fixes when follow-up merges. |
+| Path policy `./` + no `..`/absolute | Repository packaging contract; errors labeled vs Claude upstream hints. |
 
-## Implementation checklist
+## Changelog credit (release-please)
 
-- [ ] `claude_plugin_manifest_validate.dart` + tests (valid, bad agents, missing/bad mcpServers, malformed JSON)
-- [ ] `tool/contracts/check_claude_plugin_manifest.sh` → `make check-contracts` + CI informational step
-- [ ] `skill_assets.g.dart` regen; optional test that embedded versions match `plugin/` on disk
-- [ ] `release_pr_sync_versions.yml`: Flutter + `build_skill_assets.dart` before commit
-- [ ] `skill_assets_drift.yml`: `workflow_run` after sync-skills
-- [ ] Dockerfiles `3.13.0-sdk`
-- [ ] `CHANGELOG.md` Unreleased + contributor line
+[PR #154](https://github.com/Arenukvern/mcp_flutter/pull/154) already lists three `fix(plugin):` commits without contributor text. **This follow-up does not edit #154.** Options:
 
-## Assumptions
+1. **Automatic:** merge follow-up; release-please adds the empty-credit `fix(plugin):` commit subject to `7.0.2`.
+2. **Parent consolidation (recommended):** before merging #154, edit Bug Fixes to a single bullet:
 
-- Branch protection requires `skill-assets-drift`; `workflow_run` runs are acceptable for maintainers to mark required (report if not).
-- PR #153 all-contributors entry is sufficient for README; changelog credit is additive in Unreleased only.
+```markdown
+* **plugin:** Claude Code marketplace install — remove invalid `agents` directory override so default `agents/` discovery works; set `mcpServers` to `./mcp.json` so marketplace installs register the MCP server. Made by [@PiotrMitkowski](https://github.com/PiotrMitkowski) in https://github.com/Arenukvern/mcp_flutter/pull/151
+```
+
+## Manual blockers
+
+- Branch protection may still require manually re-running **skill-assets-drift** after bot sync on release PRs.
+- `skill-assets-post-sync` is optional unless added to required checks.
