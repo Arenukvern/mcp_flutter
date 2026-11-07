@@ -202,6 +202,17 @@
         "doc",
         "platform"
       ]
+    },
+    {
+      "login": "PiotrMitkowski",
+      "name": "Piotr Mitkowski",
+      "avatar_url": "https://avatars.githubusercontent.com/u/1737922?v=4",
+      "profile": "https://github.com/PiotrMitkowski",
+      "contributions": [
+        "code",
+        "maintenance",
+        "bug"
+      ]
     }
   ]
 }
