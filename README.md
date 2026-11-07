@@ -292,6 +292,7 @@ More detail: [docs/contributing/contributors.mdx](docs/contributing/contributors
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/dipsy"><img src="https://avatars.githubusercontent.com/u/1336665?v=4?s=100" width="100px;" alt="dipsy"/><br /><sub><b>dipsy</b></sub></a><br /><a href="#code-dipsy" title="Code">💻</a> <a href="#maintenance-dipsy" title="Maintenance">🚧</a> <a href="#bug-dipsy" title="Bug reports">🐛</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/wenyue"><img src="https://avatars.githubusercontent.com/u/4454019?v=4?s=100" width="100px;" alt="wenyue"/><br /><sub><b>wenyue</b></sub></a><br /><a href="#code-wenyue" title="Code">💻</a> <a href="#maintenance-wenyue" title="Maintenance">🚧</a></td>
       <td align="center" valign="top" width="14.28%"><a href="http://biff.ai"><img src="https://avatars.githubusercontent.com/u/10966918?v=4?s=100" width="100px;" alt="Christophe"/><br /><sub><b>Christophe</b></sub></a><br /><a href="#doc-chrstphe" title="Documentation">📖</a> <a href="#platform-chrstphe" title="Packaging/porting to new platform">📦</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/thanks"><img src="https://avatars.githubusercontent.com/u/1121545?v=4?s=100" width="100px;" alt="Thanks"/><br /><sub><b>Thanks</b></sub></a><br /><a href="#maintenance-Thanks" title="Maintenance">🚧</a> <a href="#plugin-Thanks" title="Plugin/utility libraries">🔌</a></td>
     </tr>
   </tbody>
 </table>
