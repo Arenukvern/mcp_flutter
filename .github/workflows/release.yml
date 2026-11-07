@@ -10,16 +10,13 @@ on:
         description: 'Existing release tag to build assets for (e.g. v7.0.2)'
         required: true
         type: string
-      recovery_mode:
-        description: >-
-          Attach assets when tarballs/checksums already exist on the release
-          (partial recovery only; does not move tags or republish packages)
-        required: false
-        type: boolean
-        default: false
 
 permissions:
   contents: read
+
+env:
+  TOOLING_CHECKOUT_PATH: _tooling
+  RELEASE_SRC_PATH: release-src
 
 jobs:
   prepare:
@@ -27,24 +24,58 @@ jobs:
     outputs:
       release_tag: ${{ steps.resolve.outputs.release_tag }}
       version: ${{ steps.resolve.outputs.version }}
-      recovery_mode: ${{ steps.resolve.outputs.recovery_mode }}
+      release_sha: ${{ steps.release_sha.outputs.sha }}
     steps:
+      - name: Checkout workflow tooling (trusted SHA)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          path: ${{ env.TOOLING_CHECKOUT_PATH }}
+          persist-credentials: false
+
       - name: Resolve release target
         id: resolve
         env:
           GITHUB_EVENT_NAME: ${{ github.event_name }}
           GITHUB_REF_NAME: ${{ github.ref_name }}
           DISPATCH_RELEASE_TAG: ${{ github.event.inputs.release_tag }}
-          DISPATCH_RECOVERY_MODE: ${{ github.event.inputs.recovery_mode }}
-        run: bash tool/release/resolve_release_tag.sh
+        run: bash "${{ env.TOOLING_CHECKOUT_PATH }}/tool/release/resolve_release_tag.sh"
+
+      - name: Checkout release source (immutable tag)
+        uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ steps.resolve.outputs.release_tag }}
+          path: ${{ env.RELEASE_SRC_PATH }}
+          fetch-depth: 1
+
+      - id: release_sha
+        name: Record and verify release commit SHA
+        env:
+          RELEASE_TAG: ${{ steps.resolve.outputs.release_tag }}
+        run: |
+          tag_sha="$(git -C "${{ env.RELEASE_SRC_PATH }}" rev-parse "refs/tags/${RELEASE_TAG}^{commit}")"
+          head_sha="$(git -C "${{ env.RELEASE_SRC_PATH }}" rev-parse "HEAD^{commit}")"
+          if [[ "$tag_sha" != "$head_sha" ]]; then
+            echo "::error::release-src HEAD ($head_sha) != tag^{commit} ($tag_sha)"
+            exit 1
+          fi
+          echo "sha=$head_sha" >> "$GITHUB_OUTPUT"
+
+      - name: Assert VERSION at release source matches tag
+        env:
+          RELEASE_ROOT: ${{ github.workspace }}/${{ env.RELEASE_SRC_PATH }}
+        run: |
+          bash "${{ env.TOOLING_CHECKOUT_PATH }}/tool/release/assert_release_tag.sh" \
+            "${{ steps.resolve.outputs.release_tag }}"
 
       - name: Verify GitHub release exists
         if: github.event_name == 'workflow_dispatch'
         env:
           GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
-          gh release view "${{ steps.resolve.outputs.release_tag }}" \
-            --repo "${{ github.repository }}" >/dev/null
+          bash "${{ env.TOOLING_CHECKOUT_PATH }}/tool/release/assert_github_release_exists.sh" \
+            "${{ steps.resolve.outputs.release_tag }}"
 
   build:
     needs: prepare
@@ -61,16 +92,26 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - name: Checkout release tag (immutable)
+      - name: Checkout workflow tooling (trusted SHA)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          path: ${{ env.TOOLING_CHECKOUT_PATH }}
+          persist-credentials: false
+
+      - name: Checkout release source (immutable tag)
         uses: actions/checkout@v4
         with:
           ref: refs/tags/${{ needs.prepare.outputs.release_tag }}
-          fetch-depth: 0
+          path: ${{ env.RELEASE_SRC_PATH }}
+          fetch-depth: 1
 
-      - name: Verify checkout SHA
+      - name: Verify release source SHA
         run: |
-          git rev-parse "HEAD^{commit}"
-          git describe --tags --exact-match
+          bash "${{ env.TOOLING_CHECKOUT_PATH }}/tool/release/verify_release_source_checkout.sh" \
+            "${{ env.RELEASE_SRC_PATH }}" \
+            "${{ needs.prepare.outputs.release_tag }}" \
+            "${{ needs.prepare.outputs.release_sha }}"
 
       - name: Setup Flutter SDK
         uses: subosito/flutter-action@v2
@@ -80,35 +121,37 @@ jobs:
           cache: true
 
       - name: Install mcp_server_dart dependencies
-        working-directory: mcp_server_dart
+        working-directory: ${{ env.RELEASE_SRC_PATH }}/mcp_server_dart
         run: flutter pub get
 
-      - name: Assert release tag matches VERSION
-        run: bash tool/release/assert_release_tag.sh "${{ needs.prepare.outputs.release_tag }}"
-
-      - name: Check release version sync
-        run: bash tool/contracts/check_version_sync.sh
+      - name: Check release version sync (release source)
+        env:
+          RELEASE_ROOT: ${{ github.workspace }}/${{ env.RELEASE_SRC_PATH }}
+        run: |
+          bash "${{ env.TOOLING_CHECKOUT_PATH }}/tool/contracts/check_version_sync.sh"
 
       - name: Build release artifacts
         env:
+          RELEASE_ROOT: ${{ github.workspace }}/${{ env.RELEASE_SRC_PATH }}
           VERSION: ${{ needs.prepare.outputs.version }}
         run: |
-          bash tool/release/build_release_artifacts.sh \
+          bash "${{ env.TOOLING_CHECKOUT_PATH }}/tool/release/build_release_artifacts.sh" \
             --version "$VERSION" \
             --triple "${{ matrix.triple }}"
 
-      - name: Verify tarball architecture
+      - name: Verify tarball architecture (trusted tooling script)
         env:
           VERSION: ${{ needs.prepare.outputs.version }}
         run: |
-          archive="dist/release/flutter_mcp_${VERSION}_${{ matrix.triple }}.tar.gz"
-          bash tool/release/verify_release_tarball_architecture.sh "$archive" "${{ matrix.triple }}"
+          archive="${{ env.RELEASE_SRC_PATH }}/dist/release/flutter_mcp_${VERSION}_${{ matrix.triple }}.tar.gz"
+          bash "${{ env.TOOLING_CHECKOUT_PATH }}/tool/release/verify_release_tarball_architecture.sh" \
+            "$archive" "${{ matrix.triple }}"
 
       - name: Upload release tarball
         uses: actions/upload-artifact@v4
         with:
           name: release-${{ matrix.triple }}
-          path: dist/release/flutter_mcp_${{ needs.prepare.outputs.version }}_${{ matrix.triple }}.tar.gz
+          path: ${{ env.RELEASE_SRC_PATH }}/dist/release/flutter_mcp_${{ needs.prepare.outputs.version }}_${{ matrix.triple }}.tar.gz
           if-no-files-found: error
 
   publish:
@@ -119,6 +162,13 @@ jobs:
     timeout-minutes: 15
 
     steps:
+      - name: Checkout workflow tooling (trusted SHA)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          path: ${{ env.TOOLING_CHECKOUT_PATH }}
+          persist-credentials: false
+
       - name: Download release tarballs
         uses: actions/download-artifact@v4
         with:
@@ -130,16 +180,15 @@ jobs:
           cd dist/release
           sha256sum *.tar.gz > checksums.txt
 
-      - name: Guard against accidental asset overwrite
+      - name: Guard against conflicting GitHub release assets
         env:
           GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
-          bash tool/release/check_release_assets_conflict.sh \
+          bash "${{ env.TOOLING_CHECKOUT_PATH }}/tool/release/check_release_assets_conflict.sh" \
             "${{ needs.prepare.outputs.release_tag }}" \
-            "${{ needs.prepare.outputs.version }}" \
-            "${{ needs.prepare.outputs.recovery_mode }}"
+            "${{ needs.prepare.outputs.version }}"
 
-      # Release notes come from release-please. This job only attaches binaries.
       - name: Publish GitHub release assets
         uses: softprops/action-gh-release@v2
         with:

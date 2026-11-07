@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+ROOT_DIR="${RELEASE_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 DIST_DIR="${DIST_DIR:-$ROOT_DIR/dist/release}"
 VERSION_SOURCE_FILE="$ROOT_DIR/packages/core/lib/src/runtime_version.dart"
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Resolve release_tag for tag-push and workflow_dispatch runs.
-# Writes: release_tag, version, recovery_mode to GITHUB_OUTPUT when set.
+# Writes: release_tag, version to GITHUB_OUTPUT when set.
 set -euo pipefail
 
 fail() { echo "resolve_release_tag: $*" >&2; exit 1; }
@@ -8,7 +8,6 @@ fail() { echo "resolve_release_tag: $*" >&2; exit 1; }
 EVENT_NAME="${GITHUB_EVENT_NAME:-}"
 REF_NAME="${GITHUB_REF_NAME:-}"
 DISPATCH_TAG="${DISPATCH_RELEASE_TAG:-}"
-RECOVERY_MODE="${DISPATCH_RECOVERY_MODE:-${RECOVERY_MODE:-false}}"
 
 resolve_tag() {
   local tag=""
@@ -35,16 +34,11 @@ resolve_tag() {
 TAG="$(resolve_tag)"
 VERSION="${TAG#v}"
 
-if [[ "$RECOVERY_MODE" != "true" && "$RECOVERY_MODE" != "false" ]]; then
-  fail "recovery_mode must be true or false"
-fi
-
 if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
   {
     echo "release_tag=$TAG"
     echo "version=$VERSION"
-    echo "recovery_mode=$RECOVERY_MODE"
   } >>"$GITHUB_OUTPUT"
 fi
 
-echo "resolve_release_tag: tag=$TAG version=$VERSION recovery_mode=$RECOVERY_MODE"
+echo "resolve_release_tag: tag=$TAG version=$VERSION"

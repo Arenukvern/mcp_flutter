@@ -3,7 +3,7 @@
 
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+ROOT_DIR="${RELEASE_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 VERSION="$(tr -d '[:space:]' < "$ROOT_DIR/VERSION")"
 TAG="${1:-${GITHUB_REF_NAME:-}}"
 

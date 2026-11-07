@@ -164,6 +164,7 @@ jobs:
         run: |
           bash tool/contracts/check_release_workflow.sh
           bash tool/contracts/test_resolve_release_tag.sh
+          bash tool/contracts/test_release_recovery_flow.sh
 
       - name: MCP Registry contracts (server.json, Dockerfile, publish workflow)
         run: bash tool/contracts/check_mcp_registry.sh

@@ -8,7 +8,6 @@ fail() { echo "test_resolve_release_tag: $*" >&2; exit 1; }
 ok() { echo "test_resolve_release_tag: $*"; }
 
 run_case() {
-  local name="$1"
   shift
   set +e
   out="$(env "$@" bash "$SCRIPT" 2>&1)"
@@ -24,7 +23,7 @@ else
   fail "tag push resolution failed"
 fi
 
-if run_case dispatch_ok GITHUB_EVENT_NAME=workflow_dispatch DISPATCH_RELEASE_TAG=v7.0.2 RECOVERY_MODE=true | grep -q 'recovery_mode=true'; then
+if run_case dispatch_ok GITHUB_EVENT_NAME=workflow_dispatch DISPATCH_RELEASE_TAG=v7.0.2 | grep -q 'version=7.0.2'; then
   ok "dispatch ok"
 else
   fail "dispatch resolution failed"
