@@ -4,18 +4,56 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Existing release tag to build assets for (e.g. v7.0.2)'
+        required: true
+        type: string
+      recovery_mode:
+        description: >-
+          Attach assets when tarballs/checksums already exist on the release
+          (partial recovery only; does not move tags or republish packages)
+        required: false
+        type: boolean
+        default: false
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      release_tag: ${{ steps.resolve.outputs.release_tag }}
+      version: ${{ steps.resolve.outputs.version }}
+      recovery_mode: ${{ steps.resolve.outputs.recovery_mode }}
+    steps:
+      - name: Resolve release target
+        id: resolve
+        env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+          DISPATCH_RELEASE_TAG: ${{ github.event.inputs.release_tag }}
+          DISPATCH_RECOVERY_MODE: ${{ github.event.inputs.recovery_mode }}
+        run: bash tool/release/resolve_release_tag.sh
+
+      - name: Verify GitHub release exists
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "${{ steps.resolve.outputs.release_tag }}" \
+            --repo "${{ github.repository }}" >/dev/null
+
   build:
+    needs: prepare
     strategy:
       fail-fast: false
       matrix:
         include:
           - triple: darwin-arm64
-            runner: macos-14
+            runner: macos-15
           - triple: linux-x64
             runner: ubuntu-latest
 
@@ -23,8 +61,16 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - name: Checkout
+      - name: Checkout release tag (immutable)
         uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ needs.prepare.outputs.release_tag }}
+          fetch-depth: 0
+
+      - name: Verify checkout SHA
+        run: |
+          git rev-parse "HEAD^{commit}"
+          git describe --tags --exact-match
 
       - name: Setup Flutter SDK
         uses: subosito/flutter-action@v2
@@ -38,28 +84,38 @@ jobs:
         run: flutter pub get
 
       - name: Assert release tag matches VERSION
-        run: bash tool/release/assert_release_tag.sh "${{ github.ref_name }}"
+        run: bash tool/release/assert_release_tag.sh "${{ needs.prepare.outputs.release_tag }}"
 
       - name: Check release version sync
         run: bash tool/contracts/check_version_sync.sh
 
       - name: Build release artifacts
         env:
-          VERSION: ${{ github.ref_name }}
+          VERSION: ${{ needs.prepare.outputs.version }}
         run: |
-          VERSION_NO_PREFIX="${VERSION#v}"
-          bash tool/release/build_release_artifacts.sh --version "$VERSION_NO_PREFIX" --triple "${{ matrix.triple }}"
+          bash tool/release/build_release_artifacts.sh \
+            --version "$VERSION" \
+            --triple "${{ matrix.triple }}"
+
+      - name: Verify tarball architecture
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          archive="dist/release/flutter_mcp_${VERSION}_${{ matrix.triple }}.tar.gz"
+          bash tool/release/verify_release_tarball_architecture.sh "$archive" "${{ matrix.triple }}"
 
       - name: Upload release tarball
         uses: actions/upload-artifact@v4
         with:
           name: release-${{ matrix.triple }}
-          path: dist/release/flutter_mcp_*_${{ matrix.triple }}.tar.gz
+          path: dist/release/flutter_mcp_${{ needs.prepare.outputs.version }}_${{ matrix.triple }}.tar.gz
           if-no-files-found: error
 
   publish:
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
-    needs: build
+    needs: [prepare, build]
     timeout-minutes: 15
 
     steps:
@@ -74,12 +130,20 @@ jobs:
           cd dist/release
           sha256sum *.tar.gz > checksums.txt
 
-      # Release notes come from release-please (Release PR merge). This job
-      # only attaches binaries — do not set body/body_path here.
+      - name: Guard against accidental asset overwrite
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          bash tool/release/check_release_assets_conflict.sh \
+            "${{ needs.prepare.outputs.release_tag }}" \
+            "${{ needs.prepare.outputs.version }}" \
+            "${{ needs.prepare.outputs.recovery_mode }}"
+
+      # Release notes come from release-please. This job only attaches binaries.
       - name: Publish GitHub release assets
         uses: softprops/action-gh-release@v2
         with:
-          name: ${{ github.ref_name }}
+          tag_name: ${{ needs.prepare.outputs.release_tag }}
           files: |
             dist/release/*.tar.gz
             dist/release/checksums.txt

@@ -20,6 +20,8 @@ check-contracts:
 	bash tool/contracts/check_claude_plugin_manifest.sh && \
 	bash tool/contracts/check_release_sync_workflows.sh && \
 	bash tool/contracts/test_skill_asset_sync_idempotence.sh && \
+	bash tool/contracts/check_release_workflow.sh && \
+	bash tool/contracts/test_resolve_release_tag.sh && \
 	bash tool/contracts/check_version_sync.sh && \
 	bash tool/contracts/check_skill_assets_drift.sh && \
 	bash tool/contracts/check_no_personal_paths.sh && \

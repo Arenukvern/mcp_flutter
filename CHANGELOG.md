@@ -3,6 +3,12 @@
 <!-- markdownlint-disable MD052 -->
 <!-- Keep a Changelog version headings use [3.0.1] brackets; MD052 treats them as reference links. -->
 
+## [Unreleased]
+
+### Bug Fixes
+
+* **release:** use supported `macos-15` runner for `darwin-arm64` artifacts; add guarded `workflow_dispatch` recovery to attach binaries to an existing tag without retagging
+
 ## [7.0.2](https://github.com/Arenukvern/mcp_flutter/compare/v7.0.1...v7.0.2) (2026-11-07)
 
 

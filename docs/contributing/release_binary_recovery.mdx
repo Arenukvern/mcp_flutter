@@ -1,0 +1,22 @@
+# Recover missing GitHub Release binaries
+
+Use when a tagged release exists but [`release.yml`](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/release.yml) failed before attaching `flutter_mcp_<version>_<triple>.tar.gz` and `checksums.txt` (for example after an unsupported macOS runner image).
+
+## Preconditions
+
+- The git tag (for example `v7.0.2`) and GitHub Release already exist from release-please.
+- Root [`VERSION`](https://github.com/Arenukvern/mcp_flutter/blob/main/VERSION) on `main` is **not** required to match for recovery — the workflow checks out **the tag** and asserts `VERSION` at that commit.
+- Recovery does **not** create, move, or delete tags and does **not** republish pub.dev or MCP Registry packages.
+
+## Manual recovery (maintainers)
+
+1. Open **Actions → Release → Run workflow**.
+2. `release_tag`: existing tag (for example `v7.0.2`).
+3. `recovery_mode`:
+   - `false` (default) if the release has **no** expected tarballs/checksums yet.
+   - `true` only when re-attaching after a **partial** upload or intentional replace (workflow logs existing asset names).
+4. The run builds from **`refs/tags/<tag>`** (immutable), verifies `VERSION` equals the tag, builds `darwin-arm64` on `macos-15` and `linux-x64` on `ubuntu-latest`, then uploads to the **same** release via explicit `tag_name`.
+
+## Changelog convention
+
+Record recovery in the next release-please train with a `fix(ci):` or `fix(release):` subject describing runner/dispatch hardening — not a new product version line for the recovered tag unless the tag itself is re-cut.

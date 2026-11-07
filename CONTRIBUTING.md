@@ -31,6 +31,7 @@ mcp_flutter is the reference implementation: release-please on `main`, tag-trigg
 | Build tarballs | [`.github/workflows/release.yml`](.github/workflows/release.yml) or locally `make release-artifacts` → [`tool/release/build_release_artifacts.sh`](tool/release/build_release_artifacts.sh) |
 | Outputs | `dist/release/flutter_mcp_<version>_<triple>.tar.gz` + [`dist/release/checksums.txt`](dist/release/checksums.txt) (SHA-256 per tarball) |
 | Attach to GitHub Release | CI on tag (same filenames as `checksums.txt` entries) |
+| Recover missing assets on an existing tag | [Release → Run workflow](.github/workflows/release.yml) with `release_tag` + optional `recovery_mode` — see [release_binary_recovery.mdx](docs/contributing/release_binary_recovery.mdx) |
 
 Before merge, run `make check-contracts` (`check_version_sync.sh`, skill assets drift). Bundled skill: **`flutter-mcp-toolkit-repo-maintainer`** (`.cursor/skills/flutter-mcp-toolkit-repo-maintainer`).
 

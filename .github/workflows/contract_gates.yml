@@ -160,6 +160,11 @@ jobs:
       - name: Skill asset sync idempotence (synthetic stale)
         run: bash tool/contracts/test_skill_asset_sync_idempotence.sh
 
+      - name: Release workflow contract (tag + dispatch recovery)
+        run: |
+          bash tool/contracts/check_release_workflow.sh
+          bash tool/contracts/test_resolve_release_tag.sh
+
       - name: MCP Registry contracts (server.json, Dockerfile, publish workflow)
         run: bash tool/contracts/check_mcp_registry.sh
 
