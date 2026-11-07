@@ -17,6 +17,7 @@ check-contracts:
 	bash tool/contracts/check_cli_alias_surface.sh && \
 	bash tool/contracts/check_docs_drift.sh && \
 	bash tool/contracts/check_plugin_surfaces.sh && \
+	bash tool/contracts/check_claude_plugin_manifest.sh && \
 	bash tool/contracts/check_version_sync.sh && \
 	bash tool/contracts/check_skill_assets_drift.sh && \
 	bash tool/contracts/check_no_personal_paths.sh && \

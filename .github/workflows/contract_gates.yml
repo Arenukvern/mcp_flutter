@@ -103,6 +103,10 @@ jobs:
         continue-on-error: true
         run: bash tool/contracts/check_plugin_surfaces.sh
 
+      - name: Check Claude plugin manifest
+        continue-on-error: true
+        run: bash tool/contracts/check_claude_plugin_manifest.sh
+
       - name: Check version sync
         run: bash tool/contracts/check_version_sync.sh
 

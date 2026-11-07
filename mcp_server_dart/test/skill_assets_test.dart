@@ -1,4 +1,6 @@
 // mcp_server_dart/test/skill_assets_test.dart
+import 'dart:io';
+
 import 'package:flutter_mcp_toolkit_server/src/skill_assets.g.dart';
 import 'package:test/test.dart';
 
@@ -59,5 +61,35 @@ void main() {
       expect(SkillAssets.codexPluginManifest, contains('flutter-mcp-toolkit'));
       expect(SkillAssets.mcpServerConfig, contains('flutter-mcp-toolkit'));
     });
+
+    test('embedded plugin manifest versions match plugin/ on disk', () {
+      final root = _repoRootFromTest();
+      final cursor = File('$root/plugin/.cursor-plugin/plugin.json')
+          .readAsStringSync();
+      final codex =
+          File('$root/plugin/.codex-plugin/plugin.json').readAsStringSync();
+      final versionPattern = RegExp(r'"version"\s*:\s*"([^"]+)"');
+      final cursorVersion = versionPattern.firstMatch(cursor)?.group(1);
+      final codexVersion = versionPattern.firstMatch(codex)?.group(1);
+      expect(cursorVersion, isNotNull);
+      expect(codexVersion, equals(cursorVersion));
+      expect(SkillAssets.cursorPluginManifest, contains('"version": "$cursorVersion"'));
+      expect(SkillAssets.codexPluginManifest, contains('"version": "$codexVersion"'));
+    });
   });
+}
+
+String _repoRootFromTest() {
+  var dir = Directory.current;
+  while (true) {
+    final git = '${dir.path}/.git';
+    if (File(git).existsSync() || Directory(git).existsSync()) {
+      return dir.path;
+    }
+    if (Directory('${dir.path}/plugin').existsSync()) return dir.path;
+    final parent = dir.parent;
+    if (parent.path == dir.path) break;
+    dir = parent;
+  }
+  throw StateError('repo root not found');
 }

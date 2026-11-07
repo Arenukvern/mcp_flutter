@@ -3,6 +3,12 @@
 <!-- markdownlint-disable MD052 -->
 <!-- Keep a Changelog version headings use [3.0.1] brackets; MD052 treats them as reference links. -->
 
+## [Unreleased]
+
+### Bug Fixes
+
+* **plugin:** Claude Code marketplace install — remove invalid `agents` directory override so default `agents/` discovery works; set `mcpServers` to `./mcp.json` so marketplace installs register the MCP server. Made by [@PiotrMitkowski](https://github.com/PiotrMitkowski) in https://github.com/Arenukvern/mcp_flutter/pull/151
+
 ## [7.0.1](https://github.com/Arenukvern/mcp_flutter/compare/v7.0.0...v7.0.1) (2026-10-17)
 
 

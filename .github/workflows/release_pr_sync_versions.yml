@@ -40,8 +40,27 @@ jobs:
           ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 0
 
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.5'
+
+      - name: Install mcp_server_dart deps
+        run: cd mcp_server_dart && dart pub get
+
       - name: Sync release version touchpoints
         run: bash tool/release/sync_version.sh
+
+      - name: Regenerate skill assets (bundled plugin manifests)
+        run: dart run mcp_server_dart/tool/build_skill_assets.dart
+
+      - name: Verify skill assets before commit
+        run: |
+          dart run mcp_server_dart/tool/build_skill_assets.dart
+          if ! git diff --exit-code mcp_server_dart/lib/src/skill_assets.g.dart; then
+            echo "::error::skill_assets bundle still drifts after regeneration"
+            exit 1
+          fi
 
       - name: Commit and push if changed
         run: |
@@ -76,9 +95,11 @@ jobs:
             ## Release PR — version sync
 
             release-please updates \`VERSION\`; all package/plugin/runtime
-            touchpoints must be derived from that value.
+            touchpoints must be derived from that value. The same workflow
+            regenerates \`skill_assets.g.dart\` so embedded Cursor/Codex
+            manifests match bumped plugin JSON.
 
-            **Automatic:** [Release PR — sync versions](${process.env.WORKFLOW_URL}) runs \`tool/release/sync_version.sh\` and commits drift fixes.
+            **Automatic:** [Release PR — sync versions](${process.env.WORKFLOW_URL}) runs \`tool/release/sync_version.sh\`, \`build_skill_assets.dart\`, and commits drift fixes.
 
             **Manual (if automation did not run):**
             \`\`\`bash

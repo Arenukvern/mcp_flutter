@@ -65,6 +65,14 @@ jobs:
           git commit -m "chore: sync skill_assets.g.dart for release PR"
           git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
 
+      - name: Verify skill assets after sync commit
+        run: |
+          dart run mcp_server_dart/tool/build_skill_assets.dart
+          if ! git diff --exit-code mcp_server_dart/lib/src/skill_assets.g.dart; then
+            echo "::error::skill_assets sync left generated bundle out of sync"
+            exit 1
+          fi
+
   release-pr-checklist-comment:
     needs: detect-release-pr
     if: >-

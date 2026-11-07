@@ -15,14 +15,29 @@ on:
       - 'mcp_server_dart/tool/build_skill_assets.dart'
       - 'tool/contracts/check_skill_assets_drift.sh'
       - '.github/workflows/release_pr_sync_skills.yml'
+      - '.github/workflows/release_pr_sync_versions.yml'
   push:
     branches: [main]
+  workflow_run:
+    workflows:
+      - 'Release PR — sync skill assets'
+      - 'Release PR — sync versions'
+    types:
+      - completed
 
 jobs:
   check-drift:
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event == 'pull_request'
+      )
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
