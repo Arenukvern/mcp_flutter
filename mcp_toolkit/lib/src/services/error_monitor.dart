@@ -10,7 +10,7 @@ import 'package:flutter/widgets.dart';
 enum ErrorSeverity { warning, error, fatal }
 
 /// Represents a Flutter error event.
-class FlutterErrorEvent with Equatable {
+class FlutterErrorEvent extends Equatable {
   /// The type of the error.
   FlutterErrorEvent({
     required this.type,
