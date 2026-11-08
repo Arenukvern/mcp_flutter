@@ -15,7 +15,9 @@ import 'package:test/test.dart';
 
 import '../support/bounded_subprocess_stop.dart';
 import '../support/android_oka_dev_launch_intent.dart';
+import '../support/android_host_identity_track.dart';
 import '../support/android_owned_physical_observations.dart';
+import '../support/android_physical_forward_watch.dart';
 import '../support/android_owned_session_stop.dart';
 import '../support/linux_bounded_flutter_run.dart';
 import '../support/native_capture_session_cleanup.dart';
@@ -162,25 +164,26 @@ void main() {
               'ownership': postLaunchOwnership,
             },
           );
-          final vmPorts = <int>{
-            if (postLaunchOwnership['vmServiceUriPort'] is int)
-              postLaunchOwnership['vmServiceUriPort'] as int,
-            if (postLaunchOwnership['controlPort'] is int)
-              postLaunchOwnership['controlPort'] as int,
-          };
+          final launchForwardLines = await _readAdbForwardLinesForHarness();
+          final forwardWatch = buildAndroidVmForwardWatch(
+            deviceId: deviceId,
+            ownership: postLaunchOwnership,
+            forwardLines: launchForwardLines,
+          );
           await recordAndroidPhysicalObservation(
             artifactDir: artifactDir,
             phase: 'post_launch',
             deviceId: deviceId,
             spawnHandlePid: app.pid,
             sessionOwnerPid: app.sessionOwnerPid,
-            vmForwardHostPorts: vmPorts,
+            forwardWatch: forwardWatch,
+            forwardBaselineLines: launchForwardLines,
           );
           return _OwnedSession.android(
             okaApp: app,
             logTap: combinedTap,
             appTap: app.stdout,
-            androidVmForwardHostPorts: vmPorts,
+            androidForwardWatch: forwardWatch,
           );
         },
       ),
@@ -238,19 +241,19 @@ final class _OwnedSession {
     required this.appTap,
     this.linuxTarget,
   })  : okaApp = null,
-        androidVmForwardHostPorts = const {};
+        androidForwardWatch = null;
 
   _OwnedSession.android({
     required this.okaApp,
     required this.logTap,
     required this.appTap,
-    this.androidVmForwardHostPorts = const {},
+    required this.androidForwardWatch,
   })  : flutterApp = null,
         linuxTarget = null;
 
   final LaunchedApp? flutterApp;
   final OkaLaunchedApp? okaApp;
-  final Set<int> androidVmForwardHostPorts;
+  final AndroidVmForwardWatch? androidForwardWatch;
   final LogTap logTap;
   final LogTap appTap;
   final LinuxBoundedFlutterRunTarget? linuxTarget;
@@ -428,23 +431,54 @@ Future<void> _runNativeCapture({
       await activeDriver.close();
       driver = null;
 
+      List<String>? androidForwardBaselineLines;
+      List<Map<String, Object?>>? androidTrackedIdentities;
+      AndroidVmForwardWatch? androidForwardWatch;
+      Map<String, Object?>? androidPreStopObservation;
       if (platform == 'android') {
         final deviceId = Platform.environment['ANDROID_SERIAL'] ?? '';
         final preStopOwnership = snapshotRunnerSessionOwnership(appDir.path);
-        await recordAndroidPhysicalObservation(
-          artifactDir: artifactDir,
+        androidForwardBaselineLines = await _readAdbForwardLinesForHarness();
+        androidForwardWatch = owned.androidForwardWatch ??
+            buildAndroidVmForwardWatch(
+              deviceId: deviceId,
+              ownership: preStopOwnership,
+              forwardLines: androidForwardBaselineLines,
+            );
+        final identityBundle = await captureHostIdentityBundle(
+          spawnHandlePid: owned.okaApp?.pid,
+          sessionOwnerPid: owned.okaApp?.sessionOwnerPid,
+        );
+        androidTrackedIdentities =
+            (identityBundle['identities'] as List?)?.cast<Map<String, Object?>>() ??
+                const [];
+        androidPreStopObservation = await snapshotAndroidOwnedPhysicalObservations(
           phase: 'pre_stop',
           deviceId: deviceId,
           spawnHandlePid: owned.okaApp?.pid,
           sessionOwnerPid: owned.okaApp?.sessionOwnerPid,
-          vmForwardHostPorts: owned.androidVmForwardHostPorts,
+          forwardWatch: androidForwardWatch,
+          forwardBaselineLines: androidForwardBaselineLines,
+          trackedIdentitiesFrozen: androidTrackedIdentities,
           runnerSessionOwnership: preStopOwnership,
+        );
+        await appendPhysicalObservationTimeline(
+          artifactDir,
+          androidPreStopObservation,
+        );
+        await writeAndroidPhysicalBaseline(
+          artifactDir: artifactDir,
+          deviceId: deviceId,
+          forwardWatch: androidForwardWatch,
+          forwardLines: androidForwardBaselineLines,
+          fixtureAppProcesses:
+              androidPreStopObservation['fixtureAppProcesses'] as Map<String, Object?>?,
+          identityBundle: identityBundle,
         );
       }
 
       final spawnPid = owned.okaApp?.pid;
       final sessionOwnerPid = owned.okaApp?.sessionOwnerPid;
-      final vmPorts = owned.androidVmForwardHostPorts;
       if (owned.okaApp != null) {
         androidStopReport = await owned.okaApp!.stopSession();
         owned.stopped = true;
@@ -485,14 +519,18 @@ Future<void> _runNativeCapture({
           deviceId: deviceId,
           spawnHandlePid: spawnPid,
           sessionOwnerPid: sessionOwnerPid,
-          vmForwardHostPorts: vmPorts,
+          forwardWatch: androidForwardWatch,
+          forwardBaselineLines: androidForwardBaselineLines,
+          trackedIdentitiesFrozen: androidTrackedIdentities,
         );
         androidPhysicalSettlement = await recordAndroidPhysicalSettlementWindow(
           artifactDir: artifactDir,
           deviceId: deviceId,
           spawnHandlePid: spawnPid,
           sessionOwnerPid: sessionOwnerPid,
-          vmForwardHostPorts: vmPorts,
+          forwardWatch: androidForwardWatch!,
+          forwardBaselineLines: androidForwardBaselineLines!,
+          trackedIdentitiesFrozen: androidTrackedIdentities!,
         );
         expect(report.ok, isTrue, reason: '$receipt');
         expect(
@@ -500,7 +538,7 @@ Future<void> _runNativeCapture({
           isTrue,
           reason:
               'Read-only ${kPhysicalSettlementPollWindow.inSeconds}s settlement '
-              '(forwards, fixture pid, host owner/spawn/descendants): '
+              '(owned forward baseline, fixture pid, tracked host identities): '
               '$androidPhysicalSettlement',
         );
       }
@@ -586,4 +624,14 @@ int _imageHeight(Uint8List png) {
   final decoded = img.decodeImage(png);
   if (decoded == null) throw StateError('png_decode_failed');
   return decoded.height;
+}
+
+Future<List<String>> _readAdbForwardLinesForHarness() async {
+  final adb = Platform.environment['ADB'] ?? 'adb';
+  final forwards = await Process.run(adb, ['forward', '--list']);
+  return '${forwards.stdout}'
+      .trim()
+      .split('\n')
+      .where((l) => l.isNotEmpty)
+      .toList();
 }
