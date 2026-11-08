@@ -65,6 +65,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.8"
+  cryptography:
+    dependency: transitive
+    description:
+      name: cryptography
+      sha256: "3eda3029d34ec9095a27a198ac9785630fe525c0eb6a49f3d575272f8e792ef0"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.9.0"
   cupertino_icons:
     dependency: "direct main"
     description:
@@ -134,6 +142,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.0.0"
+  flutter_mcp_harness:
+    dependency: transitive
+    description:
+      name: flutter_mcp_harness
+      sha256: "1f463939cc300381f0c6c4dc834b1aba723aa645a6b81dffa66dd5b55c7fff27"
+      url: "https://pub.dev"
+    source: hosted
+    version: "7.0.1"
   flutter_mcp_toolkit_core:
     dependency: transitive
     description:
@@ -155,6 +171,30 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.5.0"
+  google_cloud:
+    dependency: transitive
+    description:
+      name: google_cloud
+      sha256: b385e20726ef5315d302c5933bfb728103116c5be2d3d17094b01a82da538c1f
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.5.0"
+  google_identity_services_web:
+    dependency: transitive
+    description:
+      name: google_identity_services_web
+      sha256: "5d187c46dc59e02646e10fe82665fc3884a9b71bc1c90c2b8b749316d33ee454"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.3.3+1"
+  googleapis_auth:
+    dependency: transitive
+    description:
+      name: googleapis_auth
+      sha256: "6c37e60a7e9139b6cb143615b740663f427ffd5162f47c06eb8b9632fc217520"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.3.7"
   http:
     dependency: transitive
     description:
@@ -290,6 +330,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.19.0"
+  oka:
+    dependency: "direct overridden"
+    description:
+      path: "../../oka/packages/oka"
+      relative: true
+    source: path
+    version: "0.9.1"
   oka_android:
     dependency: "direct dev"
     description:
@@ -297,10 +344,94 @@ packages:
       relative: true
     source: path
     version: "0.9.1"
+  oka_artifacts:
+    dependency: "direct overridden"
+    description:
+      path: "../../oka/packages/oka_artifacts"
+      relative: true
+    source: path
+    version: "0.9.1"
+  oka_conformance:
+    dependency: "direct overridden"
+    description:
+      path: "../../oka/packages/oka_conformance"
+      relative: true
+    source: path
+    version: "0.9.1"
   oka_core:
     dependency: "direct dev"
     description:
       path: "../../oka/packages/oka_core"
+      relative: true
+    source: path
+    version: "0.9.1"
+  oka_dart_kernel:
+    dependency: "direct overridden"
+    description:
+      path: "../../oka/packages/oka_dart_kernel"
+      relative: true
+    source: path
+    version: "0.0.1"
+  oka_harness:
+    dependency: "direct overridden"
+    description:
+      path: "../../oka/packages/oka_harness"
+      relative: true
+    source: path
+    version: "0.9.1"
+  oka_huawei:
+    dependency: "direct overridden"
+    description:
+      path: "../../oka/packages/oka_huawei"
+      relative: true
+    source: path
+    version: "0.9.1"
+  oka_play:
+    dependency: "direct overridden"
+    description:
+      path: "../../oka/packages/oka_play"
+      relative: true
+    source: path
+    version: "0.9.1"
+  oka_process:
+    dependency: "direct overridden"
+    description:
+      path: "../../oka/packages/oka_process"
+      relative: true
+    source: path
+    version: "0.9.1"
+  oka_rustore:
+    dependency: "direct overridden"
+    description:
+      path: "../../oka/packages/oka_rustore"
+      relative: true
+    source: path
+    version: "0.9.1"
+  oka_supervisor:
+    dependency: "direct overridden"
+    description:
+      path: "../../oka/packages/oka_supervisor"
+      relative: true
+    source: path
+    version: "0.9.1"
+  oka_update:
+    dependency: "direct overridden"
+    description:
+      path: "../../oka/packages/oka_update"
+      relative: true
+    source: path
+    version: "0.0.1"
+  oka_verify:
+    dependency: "direct overridden"
+    description:
+      path: "../../oka/packages/oka_verify"
+      relative: true
+    source: path
+    version: "0.8.1"
+  oka_web:
+    dependency: "direct overridden"
+    description:
+      path: "../../oka/packages/oka_web"
       relative: true
     source: path
     version: "0.9.1"
@@ -337,12 +468,11 @@ packages:
     source: hosted
     version: "2.2.3"
   resource_composition:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
-      name: resource_composition
-      sha256: "1d512e19137e5d3b425d7413658cd670cbda4776b7b08dcc287a8a6a6fd97161"
-      url: "https://pub.dev"
-    source: hosted
+      path: "../../oka/packages/resource_composition"
+      relative: true
+    source: path
     version: "0.9.1"
   schemantic:
     dependency: transitive
@@ -437,6 +567,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.2.0"
+  universal_browser_cdp:
+    dependency: transitive
+    description:
+      name: universal_browser_cdp
+      sha256: "9fd73eab43165271ed289c5a22d6496133bbd7a81d07158bf9af6aed092ce9ed"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.4.0"
   universal_io:
     dependency: transitive
     description:

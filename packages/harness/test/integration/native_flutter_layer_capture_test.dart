@@ -22,6 +22,7 @@ import '../support/native_capture_session_cleanup.dart';
 import '../support/native_layer_capture_layout.dart';
 import '../support/native_layer_evidence.dart';
 import '../support/native_layer_failure_artifacts.dart';
+import '../support/native_capture_artifact_binding.dart';
 import '../support/native_layer_oka_diagnostics.dart';
 import '../support/session_settlement.dart';
 
@@ -161,17 +162,25 @@ void main() {
               'ownership': postLaunchOwnership,
             },
           );
+          final vmPorts = <int>{
+            if (postLaunchOwnership['vmServiceUriPort'] is int)
+              postLaunchOwnership['vmServiceUriPort'] as int,
+            if (postLaunchOwnership['controlPort'] is int)
+              postLaunchOwnership['controlPort'] as int,
+          };
           await recordAndroidPhysicalObservation(
             artifactDir: artifactDir,
             phase: 'post_launch',
             deviceId: deviceId,
-            hostOkaDevChildPid: app.pid,
-            runnerOwnership: postLaunchOwnership,
+            spawnHandlePid: app.pid,
+            sessionOwnerPid: app.sessionOwnerPid,
+            vmForwardHostPorts: vmPorts,
           );
           return _OwnedSession.android(
             okaApp: app,
             logTap: combinedTap,
             appTap: app.stdout,
+            androidVmForwardHostPorts: vmPorts,
           );
         },
       ),
@@ -179,7 +188,7 @@ void main() {
       skip: runAndroid
           ? false
           : 'Set RUN_NATIVE_FLUTTER_LAYER_ANDROID=1 (and oka + emulator)',
-      timeout: const Timeout(Duration(minutes: 35)),
+      timeout: const Timeout(Duration(minutes: 40)),
     );
 
     test(
@@ -228,17 +237,20 @@ final class _OwnedSession {
     required this.logTap,
     required this.appTap,
     this.linuxTarget,
-  }) : okaApp = null;
+  })  : okaApp = null,
+        androidVmForwardHostPorts = const {};
 
   _OwnedSession.android({
     required this.okaApp,
     required this.logTap,
     required this.appTap,
+    this.androidVmForwardHostPorts = const {},
   })  : flutterApp = null,
         linuxTarget = null;
 
   final LaunchedApp? flutterApp;
   final OkaLaunchedApp? okaApp;
+  final Set<int> androidVmForwardHostPorts;
   final LogTap logTap;
   final LogTap appTap;
   final LinuxBoundedFlutterRunTarget? linuxTarget;
@@ -273,6 +285,7 @@ Future<void> _runNativeCapture({
   ToolkitDriver? driver;
   SubprocessStopVerdict? logcatStopVerdict;
   DevSessionStopReport? androidStopReport;
+  Map<String, Object?>? androidPhysicalSettlement;
   BoundedSessionSettlement? linuxSettlement;
 
   await runWithPreservedPrimaryFailure<void>(
@@ -371,9 +384,21 @@ Future<void> _runNativeCapture({
       expect(cli['captureImplementation'], captureImplementationAppLayerTree);
       final cliPng = cliPrimaryPngBytes(cli);
       expect(cliPng, isNotNull);
+      Uint8List? cliPngWritten;
       if (cliPng != null) {
-        await writePng(artifactDir, '${platform}_cli_compressed.png', cliPng);
+        cliPngWritten = await writePng(
+          artifactDir,
+          '${platform}_cli_compressed.png',
+          cliPng,
+        );
       }
+      await writeNativeCaptureArtifactBindings(
+        artifactDir: artifactDir,
+        platform: platform,
+        beforePng: before,
+        afterPng: after,
+        cliPng: cliPngWritten,
+      );
       final cliProof = analyzeCliCaptureProof(
         driverUncompressed: after,
         cliResult: cli,
@@ -410,12 +435,16 @@ Future<void> _runNativeCapture({
           artifactDir: artifactDir,
           phase: 'pre_stop',
           deviceId: deviceId,
-          hostOkaDevChildPid: owned.okaApp?.pid,
-          runnerOwnership: preStopOwnership,
+          spawnHandlePid: owned.okaApp?.pid,
+          sessionOwnerPid: owned.okaApp?.sessionOwnerPid,
+          vmForwardHostPorts: owned.androidVmForwardHostPorts,
+          runnerSessionOwnership: preStopOwnership,
         );
       }
 
-      final ownerPid = owned.okaApp?.pid ?? owned.flutterApp?.process?.pid;
+      final spawnPid = owned.okaApp?.pid;
+      final sessionOwnerPid = owned.okaApp?.sessionOwnerPid;
+      final vmPorts = owned.androidVmForwardHostPorts;
       if (owned.okaApp != null) {
         androidStopReport = await owned.okaApp!.stopSession();
         owned.stopped = true;
@@ -452,17 +481,36 @@ Future<void> _runNativeCapture({
         final deviceId = Platform.environment['ANDROID_SERIAL'] ?? '';
         await recordAndroidPhysicalObservation(
           artifactDir: artifactDir,
-          phase: 'post_stop',
+          phase: 'post_stop_immediate',
           deviceId: deviceId,
-          hostOkaDevChildPid: ownerPid,
-          runnerOwnership: snapshotRunnerSessionOwnership(appDir.path),
+          spawnHandlePid: spawnPid,
+          sessionOwnerPid: sessionOwnerPid,
+          vmForwardHostPorts: vmPorts,
+        );
+        androidPhysicalSettlement = await recordAndroidPhysicalSettlementWindow(
+          artifactDir: artifactDir,
+          deviceId: deviceId,
+          spawnHandlePid: spawnPid,
+          sessionOwnerPid: sessionOwnerPid,
+          vmForwardHostPorts: vmPorts,
         );
         expect(report.ok, isTrue, reason: '$receipt');
+        expect(
+          androidPhysicalSettlement!['provenPhysicalSettlement'],
+          isTrue,
+          reason:
+              'Read-only ${kPhysicalSettlementPollWindow.inSeconds}s settlement '
+              '(forwards, fixture pid, host owner/spawn/descendants): '
+              '$androidPhysicalSettlement',
+        );
       }
 
+      final physicalSettlementOk = platform != 'android'
+          ? true
+          : (androidPhysicalSettlement?['provenPhysicalSettlement'] == true);
       final lifecyclePass = platform == 'linux'
           ? (linuxSettlement?.shutdownTruthful ?? false)
-          : (androidStopReport?.ok ?? false);
+          : ((androidStopReport?.ok ?? false) && physicalSettlementOk);
 
       await writeJsonArtifact(
         artifactDir,
@@ -478,6 +526,11 @@ Future<void> _runNativeCapture({
               : devSessionStopReportJson(androidStopReport!),
           'logcatStop': logcatStopVerdict?.toJson(),
           'provenOwnedResourceSettlement': false,
+          'provenPhysicalSettlement':
+              androidPhysicalSettlement?['provenPhysicalSettlement'] ?? false,
+          'runnerStopOk': androidStopReport?.ok,
+          'physicalSettlementOk': physicalSettlementOk,
+          'androidPhysicalSettlement': androidPhysicalSettlement,
         },
       );
     },
