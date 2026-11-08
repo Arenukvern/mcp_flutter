@@ -1,9 +1,3 @@
-# Unit/integration tests live only under test/. tool/*.dart are dart run VM probes
-# (ADR-0041 §6) and must not use the *_test.dart suffix — dart test rejects
-# main(List<String> args).
 tags:
   native-android:
   native-linux:
-
-paths:
-  - test

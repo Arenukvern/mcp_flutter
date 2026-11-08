@@ -65,7 +65,15 @@ failed=0
     if [[ "$pkg" == mcp_toolkit || "$pkg" == showcase/* ]]; then
       run_section "$pkg flutter pub get" bash -c "cd $pkg && flutter pub get" || failed=1
       run_section "$pkg dart analyze" dart analyze "$pkg" || failed=1
-      run_section "$pkg flutter test" bash -c "cd $pkg && flutter test" || failed=1
+      if [[ ! -d "$pkg/test" ]]; then
+        echo ""
+        echo "== N/A $pkg flutter test (no test/) =="
+        echo "command=(skipped — verified on origin/main: showcase/drivers has bin/ only)"
+        echo "exit_status=0"
+        echo "reason=not_applicable_no_test_directory"
+      else
+        run_section "$pkg flutter test" bash -c "cd $pkg && flutter test" || failed=1
+      fi
     elif [[ "$pkg" == mcp_server_dart ]]; then
       run_section "$pkg flutter pub get" bash -c "cd $pkg && flutter pub get" || failed=1
       run_section "$pkg dart test (full)" bash -c "cd $pkg && dart test" || failed=1
@@ -73,7 +81,16 @@ failed=0
     else
       run_section "$pkg dart pub get" bash -c "cd $pkg && dart pub get" || failed=1
       run_section "$pkg dart analyze" dart analyze "$pkg" || failed=1
-      run_section "$pkg dart test" bash -c "cd $pkg && dart test" || failed=1
+      if [[ "$pkg" == "jaspr_web_example" ]]; then
+        echo ""
+        echo "== UNRESOLVED $pkg dart test (intentcall workspace hook) =="
+        echo "command=cd $pkg && dart test"
+        echo "note=jaspr_web_example/intentcall.yaml lists platforms.enabled web; hook still fails with: No projection platforms resolved"
+        echo "reason=workspace_root_hook_projection_unresolved_in_local_inventory"
+        run_section "$pkg dart test (attempt)" bash -c "cd $pkg && dart test" || failed=1
+      else
+        run_section "$pkg dart test" bash -c "cd $pkg && dart test" || failed=1
+      fi
     fi
   done
 
