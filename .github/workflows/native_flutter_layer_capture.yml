@@ -23,15 +23,21 @@ jobs:
           flutter-version: '3.47.5'
           cache: true
 
-      - name: Checkout IntentCall (flutter_demo path overrides)
+      - name: Checkout IntentCall (flutter_test_app path overrides)
         uses: actions/checkout@v4
         with:
           repository: Arenukvern/intentcall
           path: intentcall
           persist-credentials: false
 
-      - name: Enable Linux desktop (host dependency sanity)
-        run: sudo apt-get update && sudo apt-get install -y ninja-build libgtk-3-dev
+      - name: Workspace pub get
+        run: flutter pub get
+
+      - name: Install oka CLI
+        run: dart pub global activate oka
+
+      - name: Enable PATH for global packages
+        run: echo "$HOME/.pub-cache/bin" >> $GITHUB_PATH
 
       - uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -39,7 +45,13 @@ jobs:
           arch: x86_64
           profile: pixel_6
           emulator-options: -no-snapshot-save -gpu swiftshader_indirect -no-window
-          script: bash tool/native_capture/ci_android_flutter_layer.sh
+          script: |
+            export RUN_NATIVE_FLUTTER_LAYER_ANDROID=1
+            export NATIVE_CAPTURE_ARTIFACT_DIR="$GITHUB_WORKSPACE/.native_capture/android"
+            mkdir -p "$NATIVE_CAPTURE_ARTIFACT_DIR"
+            cd packages/harness
+            dart test -t native-android --concurrency=1 \
+              test/integration/native_flutter_layer_capture_test.dart
 
       - name: Upload Android native capture artifacts
         if: always()
@@ -64,21 +76,30 @@ jobs:
           flutter-version: '3.47.5'
           cache: true
 
-      - name: Checkout IntentCall (flutter_demo path overrides)
+      - name: Linux toolchain deps
+        run: sudo apt-get update && sudo apt-get install -y ninja-build libgtk-3-dev mesa-utils libgl1 g++ libstdc++-12-dev xvfb
+
+      - name: Checkout IntentCall (flutter_test_app path overrides)
         uses: actions/checkout@v4
         with:
           repository: Arenukvern/intentcall
           path: intentcall
           persist-credentials: false
 
-      - name: Linux toolchain deps
-        run: sudo apt-get update && sudo apt-get install -y ninja-build libgtk-3-dev mesa-utils libgl1 g++ libstdc++-12-dev xvfb
+      - name: Workspace pub get
+        run: flutter pub get
 
-      - name: Run Linux flutter_layer matrix
+      - name: Run Linux flutter_layer integration (Dart owner)
         env:
           LIBRARY_PATH: /usr/lib/gcc/x86_64-linux-gnu/12:/usr/lib/gcc/x86_64-linux-gnu/13
           LDFLAGS: -L/usr/lib/gcc/x86_64-linux-gnu/12 -L/usr/lib/gcc/x86_64-linux-gnu/13
-        run: bash tool/native_capture/ci_linux_flutter_layer.sh
+          RUN_NATIVE_FLUTTER_LAYER_LINUX: '1'
+          NATIVE_CAPTURE_ARTIFACT_DIR: ${{ github.workspace }}/.native_capture/linux
+        run: |
+          mkdir -p "$NATIVE_CAPTURE_ARTIFACT_DIR"
+          cd packages/harness
+          xvfb-run -a dart test -t native-linux --concurrency=1 \
+            test/integration/native_flutter_layer_capture_test.dart
 
       - name: Upload Linux native capture artifacts
         if: always()

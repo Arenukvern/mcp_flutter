@@ -2112,10 +2112,10 @@ Map<String, Object?> _observationRender(
     }
   }
   if (nodes.isEmpty) return const {};
-  final lens = switch (lensName) {
-    'compact' => SemanticLens.compact,
-    'design' => SemanticLens.design,
-    _ => SemanticLens.standard,
+  // Hosted semantics 0.2.x: standard [SemanticView] only (SemanticLens is 0.4+).
+  final view = switch (lensName) {
+    'compact' => const SemanticView().trimmed(120),
+    _ => const SemanticView(),
   };
   try {
     final snapshot = familySnapshotFromNodes(
@@ -2124,10 +2124,7 @@ Map<String, Object?> _observationRender(
       capturedAt: DateTime.now().toUtc(),
     );
     return {
-      'render': Observation.of(
-        snapshot,
-        const SemanticView(),
-      ).render(lens: lens),
+      'render': Observation.of(snapshot, view).render(),
     };
   } on Object {
     // Enrichment only: the primary contract is the node list itself.

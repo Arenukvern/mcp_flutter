@@ -34,12 +34,6 @@
 
 ### Changed
 
-- **`get_screenshots` (`flutter_layer`)** now fails closed when
-  `ext.mcp.toolkit.view_screenshots` returns zero images, with
-  `captureBackend: flutter_layer_vm_extension` and
-  `captureImplementation: app_layer_tree` in error details (not a silent
-  success).
-
 - **Honest reload reporting:** the VM-service fallback path (no
   compile-capable session discovered — the late-attach case) no longer
   reports a bare `ReloadReport {success: true}` for a reload that loaded
