@@ -78,34 +78,53 @@ Future<Map<String, Object?>> resolveOkaCliMetadata({String okaBin = 'oka'}) asyn
   };
 }
 
+List<String> _okaBuildApkDebugProcessArgv({
+  required String okaBin,
+  required Map<String, String> mergedEnv,
+}) {
+  final abi = mergedEnv['OKA_ANDROID_BUILD_ABI']?.trim() ?? '';
+  final tail = <String>['build', 'apk', '--debug'];
+  if (abi.isNotEmpty) {
+    tail.addAll(['--abi', abi]);
+  }
+  return [okaBin, ...tail];
+}
+
 /// Runs `oka build apk --debug` with argv/cwd logging and pre/post trees.
+///
+/// Set [OKA_ANDROID_BUILD_ABI] (e.g. `x86_64`) when the install target is a
+/// CI x86_64 AVD; default oka/engine splits may omit that ABI on amd64 hosts.
 Future<Map<String, Object?>> runOkaAndroidManifestBuildTraced({
   required String projectDir,
   required String okaBin,
   Map<String, String> environment = const {},
   bool runInShell = false,
 }) async {
-  final argv = [okaBin, 'build', 'apk', '--debug'];
+  final mergedEnv = environment.isEmpty
+      ? Map<String, String>.from(Platform.environment)
+      : <String, String>{...Platform.environment, ...environment};
+  final processArgv = _okaBuildApkDebugProcessArgv(
+    okaBin: okaBin,
+    mergedEnv: mergedEnv,
+  );
+  final argv = List<String>.from(processArgv);
   final pre = await snapshotOkaAndroidArtifactTree(projectDir);
-  final okaMeta = await resolveOkaCliMetadata(okaBin: 'oka');
+  final okaMeta = await resolveOkaCliMetadata(okaBin: okaBin);
   final started = DateTime.now().toUtc().toIso8601String();
+  final okaTail = processArgv.sublist(1);
   final build = runInShell
       ? await Process.run(
           okaBin,
-          ['build', 'apk', '--debug'],
+          okaTail,
           workingDirectory: projectDir,
-          environment: environment.isEmpty
-              ? null
-              : <String, String>{...Platform.environment, ...environment},
+          environment: mergedEnv,
           runInShell: true,
         )
       : await Process.run(
           'bash',
-          [okaBin, 'build', 'apk', '--debug'],
+          processArgv,
           workingDirectory: projectDir,
-          environment: environment.isEmpty
-              ? null
-              : <String, String>{...Platform.environment, ...environment},
+          environment: mergedEnv,
         );
   final post = await snapshotOkaAndroidArtifactTree(projectDir);
   final manifestPath = p.join(

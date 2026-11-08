@@ -31,6 +31,8 @@
 
 **Fixture pipeline:** `steps: [...AndroidPipeline.defaultSteps]` only — no manual `RecordRunSessionStep` (pinned `defaultSteps` includes recorder).
 
+**CI emulator ABI:** `native_flutter_layer_capture` sets `OKA_ANDROID_BUILD_ABI=x86_64` for prebuild + integration so `app-debug.apk` matches the `pixel_6` x86_64 AVD (`INSTALL_FAILED_NO_MATCHING_ABIS` otherwise).
+
 ## SDK review caveat (consumer does not fix here)
 
 `oka_harness` launch-failure paths may not await/escalate child process death; do not treat pgrep-style or timeout-only cleanup as proof of settlement. Native receipts must show **all owners settled** (bounded UTR / oka session / device app) with honest failure bundles — not claims from unit fakes alone.

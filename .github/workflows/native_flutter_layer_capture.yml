@@ -43,6 +43,9 @@ jobs:
         run: flutter pub get
 
       - name: Prebuild native layer capture fixture (android debug APK + manifest)
+        env:
+          # pixel_6 x86_64 AVD — APK must include x86_64 engine/libs (not arm-only).
+          OKA_ANDROID_BUILD_ABI: x86_64
         run: |
           set -o pipefail
           mkdir -p "$GITHUB_WORKSPACE/.native_capture"
@@ -60,7 +63,7 @@ jobs:
           profile: pixel_6
           emulator-boot-timeout: 600
           emulator-options: -no-snapshot-save -gpu swiftshader_indirect -no-window -no-boot-anim
-          script: export ANDROID_SERIAL=emulator-5554 && export OKA_ANDROID_USE_PREBUILD=1 && export OKA_CONSUMER_PIN_SHA="$OKA_CONSUMER_PIN_SHA" && export OKA_BIN=oka && export RUN_NATIVE_FLUTTER_LAYER_ANDROID=1 && export NATIVE_CAPTURE_ARTIFACT_DIR="${GITHUB_WORKSPACE}/.native_capture/android" && mkdir -p "$NATIVE_CAPTURE_ARTIFACT_DIR" && cd packages/harness && dart test -t native-android --concurrency=1 test/integration/native_flutter_layer_capture_test.dart
+          script: export ANDROID_SERIAL=emulator-5554 && export OKA_ANDROID_BUILD_ABI=x86_64 && export OKA_ANDROID_USE_PREBUILD=1 && export OKA_CONSUMER_PIN_SHA="$OKA_CONSUMER_PIN_SHA" && export OKA_BIN=oka && export RUN_NATIVE_FLUTTER_LAYER_ANDROID=1 && export NATIVE_CAPTURE_ARTIFACT_DIR="${GITHUB_WORKSPACE}/.native_capture/android" && mkdir -p "$NATIVE_CAPTURE_ARTIFACT_DIR" && cd packages/harness && dart test -t native-android --concurrency=1 test/integration/native_flutter_layer_capture_test.dart
 
       - name: Upload Android native capture artifacts
         if: always()
