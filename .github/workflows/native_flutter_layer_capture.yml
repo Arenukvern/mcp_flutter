@@ -30,7 +30,7 @@ jobs:
         run: flutter pub get
 
       - name: Install oka CLI
-        run: dart pub global activate oka
+        run: dart pub global activate oka 0.9.1
 
       - name: Enable PATH for global packages
         run: echo "$HOME/.pub-cache/bin" >> $GITHUB_PATH

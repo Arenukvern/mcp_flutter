@@ -37,6 +37,7 @@ final class LinuxBoundedFlutterRunTarget implements AppTarget {
 
     final tap = LogTap();
     final vmUri = Completer<Uri>();
+    String? machineAppId;
     BoundedDuplexHandle? duplex;
     late final Future<BoundedRunResult> boundedRun;
     boundedRun = runBounded(
@@ -57,7 +58,14 @@ final class LinuxBoundedFlutterRunTarget implements AppTarget {
       grace: stopGrace,
       onDuplexReady: (handle) {
         duplex = handle;
-        unawaited(_consumeMachineOutput(handle, tap, vmUri));
+        unawaited(
+          _consumeMachineOutput(
+            handle,
+            tap,
+            vmUri,
+            onAppId: (id) => machineAppId ??= id,
+          ),
+        );
       },
     );
 
@@ -80,7 +88,8 @@ final class LinuxBoundedFlutterRunTarget implements AppTarget {
         process: null,
         stdout: tap,
         vmUri: wsUri,
-        stopOverride: () => _stopBoundedSession(handle, boundedRun, tap),
+        stopOverride: () =>
+            _stopBoundedSession(handle, boundedRun, tap, machineAppId),
       );
     } on Object catch (error, stack) {
       await _settleBoundedOnLaunchFailure(duplex, boundedRun, tap, error, stack);
@@ -99,7 +108,7 @@ final class LinuxBoundedFlutterRunTarget implements AppTarget {
     final handle = duplex;
     if (handle != null) {
       try {
-        await _stopBoundedSession(handle, boundedRun, tap);
+        await _stopBoundedSession(handle, boundedRun, tap, null);
       } on Object catch (stopError) {
         tap.add('[linux-machine-run] launch-failure settle error: $stopError');
       }
@@ -117,11 +126,28 @@ final class LinuxBoundedFlutterRunTarget implements AppTarget {
     BoundedDuplexHandle handle,
     Future<BoundedRunResult> boundedRun,
     LogTap tap,
+    String? appId,
   ) async {
-    try {
-      await handle.send(utf8.encode('q\n'));
-    } on Object {
-      // Cooperative quit may already be impossible; owner close still runs.
+    if (appId != null && appId.isNotEmpty) {
+      try {
+        final cmd = jsonEncode([
+          {
+            'method': 'app.stop',
+            'params': {'appId': appId},
+          },
+        ]);
+        await handle.send(utf8.encode('$cmd\n'));
+        tap.add('[linux-machine-run] app.stop appId=$appId');
+      } on Object catch (error) {
+        tap.add('[linux-machine-run] app.stop failed: $error');
+      }
+    } else {
+      try {
+        await handle.send(utf8.encode('q\n'));
+        tap.add('[linux-machine-run] fallback stop sent q (no appId yet)');
+      } on Object {
+        // Cooperative quit may already be impossible; owner close still runs.
+      }
     }
     await handle.close();
     final settled = await boundedRun;
@@ -143,23 +169,56 @@ final class LinuxBoundedFlutterRunTarget implements AppTarget {
   static Future<void> _consumeMachineOutput(
     BoundedDuplexHandle handle,
     LogTap tap,
-    Completer<Uri> vmUri,
-  ) async {
+    Completer<Uri> vmUri, {
+    void Function(String appId)? onAppId,
+  }) async {
     await for (final frame in handle.output) {
       final line = utf8.decode(frame).trimRight();
       if (line.isEmpty) continue;
       tap.add(line);
       Uri? found;
+      String? appId;
       try {
         final decoded = jsonDecode(line);
         found = _wsUriFromMachinePayload(decoded);
+        appId = _appIdFromMachinePayload(decoded);
       } on Object {
         found = _wsUriFromMachineLine(line);
+      }
+      if (appId != null && onAppId != null) {
+        onAppId(appId);
       }
       if (found != null && !vmUri.isCompleted) {
         vmUri.complete(found);
       }
     }
+  }
+
+  static String? _appIdFromMachinePayload(Object? decoded) {
+    if (decoded is List) {
+      for (final item in decoded) {
+        final found = _appIdFromMachinePayload(item);
+        if (found != null) return found;
+      }
+      return null;
+    }
+    if (decoded is! Map) return null;
+    final params = decoded['params'];
+    if (params is Map) {
+      final fromParams = params['appId'];
+      if (fromParams is String && fromParams.isNotEmpty) return fromParams;
+      final app = params['app'];
+      if (app is Map) {
+        final nested = app['appId'];
+        if (nested is String && nested.isNotEmpty) return nested;
+      }
+    }
+    final app = decoded['app'];
+    if (app is Map) {
+      final nested = app['appId'];
+      if (nested is String && nested.isNotEmpty) return nested;
+    }
+    return null;
   }
 
   static Uri? _wsUriFromMachineLine(String line) {

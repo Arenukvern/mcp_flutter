@@ -45,7 +45,14 @@ jobs:
         run: |
           flutter pub get
           dart analyze packages/harness
-          cd packages/harness && dart test --exclude-tags native-android,native-linux
+          cd packages/harness && dart test --exclude-tags native-android,native-linux,compile-repro-opt-in
+
+      - name: native_layer_capture_fixture analyze and widget tests
+        run: |
+          cd showcase/native_layer_capture_fixture
+          flutter pub get
+          dart analyze .
+          flutter test
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4

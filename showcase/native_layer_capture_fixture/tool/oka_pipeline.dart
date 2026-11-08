@@ -4,7 +4,6 @@
 // (--release/--aab/--abi/--dart-define/...).
 // Project: native_layer_capture_fixture 1.0.0+1 (from oka.yaml)
 import 'package:oka_android/oka_android.dart';
-import 'package:oka_core/oka_core.dart';
 
 Future<void> main(List<String> args) => okaRun(
   args,

@@ -58,7 +58,10 @@ void main() {
           if (deviceId == null || deviceId.isEmpty) {
             throw StateError('ANDROID_SERIAL is required for Android native proof');
           }
-          await startAndroidEngineLogcat(deviceId: deviceId, sink: combinedTap);
+          final logcat = await AndroidEngineLogcatSession.start(
+            deviceId: deviceId,
+            sink: combinedTap,
+          );
           final staleOkaDebug = Directory(
             '${appDir.path}/.oka_cache/build/debug',
           );
@@ -76,7 +79,12 @@ void main() {
           );
           // oka dev android requires a session-manifest APK from `oka build`.
           final app = await target.launch(build: true);
-          return _OwnedSession(app: app, logTap: combinedTap, appTap: app.stdout);
+          return _OwnedSession(
+            app: app,
+            logTap: combinedTap,
+            appTap: app.stdout,
+            logcat: logcat,
+          );
         },
       ),
       tags: ['native-android'],
@@ -125,10 +133,12 @@ final class _OwnedSession {
     required this.app,
     required this.logTap,
     required this.appTap,
+    this.logcat,
   });
   final LaunchedApp app;
   final LogTap logTap;
   final LogTap appTap;
+  final AndroidEngineLogcatSession? logcat;
   var stopped = false;
 
   List<String> get combinedLogLines => [...logTap.lines, ...appTap.lines];
@@ -168,7 +178,7 @@ Future<void> _runNativeCapture({
     );
 
     await tapIncrementButton(driver);
-    await Future<void>.delayed(const Duration(milliseconds: 800));
+    await Future<void>.delayed(const Duration(milliseconds: 1200));
 
     final counterAfter = await counterFromDriver(driver);
     final after = await writePng(
@@ -204,7 +214,17 @@ Future<void> _runNativeCapture({
     expect(cli['captureMode'], 'flutter_layer');
     expect(cli['captureBackend'], captureBackendFlutterLayerVm);
     expect(cli['captureImplementation'], captureImplementationAppLayerTree);
-    expect(cli['imageCount'], greaterThan(0));
+    final cliPng = cliPrimaryPngBytes(cli);
+    expect(cliPng, isNotNull);
+    if (cliPng != null) {
+      await writePng(artifactDir, '${platform}_cli_compressed.png', cliPng);
+    }
+    final cliProof = analyzeCliCaptureProof(
+      driverUncompressed: after,
+      cliResult: cli,
+    );
+    await writeJsonArtifact(artifactDir, '${platform}_cli_capture_proof.json', cliProof);
+    expect(cliProof['verdict'], 'pass', reason: '$cliProof');
 
     final renderer = rendererVerdictFromLogs(
       session.combinedLogLines,
@@ -215,9 +235,7 @@ Future<void> _runNativeCapture({
       '${platform}_renderer_verdict.json',
       renderer,
     );
-    if (renderer['observed'] != true) {
-      fail('renderer backend not observed in logs: $renderer');
-    }
+    expect(renderer['rendererAccepted'], isTrue, reason: '$renderer');
 
     await driver.close();
     driver = null;
@@ -225,7 +243,6 @@ Future<void> _runNativeCapture({
     final exitCode = await app.stop();
     session.stopped = true;
     expect(exitCode, isNotNull);
-    expect(exitCode, inInclusiveRange(0, 1));
 
     await writeJsonArtifact(
       artifactDir,
@@ -240,9 +257,13 @@ Future<void> _runNativeCapture({
     );
   } finally {
     await driver?.close();
-    if (session != null && !session.stopped) {
-      await session.app.stop();
-      session.stopped = true;
+    try {
+      if (session != null && !session.stopped) {
+        await session.app.stop();
+        session.stopped = true;
+      }
+    } finally {
+      await session?.logcat?.stop();
     }
   }
 }

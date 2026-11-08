@@ -1,30 +1,28 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
 import 'package:native_layer_capture_fixture/main.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('Increment updates counter and keeps marker stripe', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const NativeLayerCaptureFixtureApp());
+    await tester.pumpAndSettle();
 
-    // Verify that our counter starts at 0.
     expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    expect(find.widgetWithText(ElevatedButton, 'Increment'), findsOneWidget);
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    final stripeFinder = find.byWidgetPredicate(
+      (widget) =>
+          widget is Container &&
+          widget.color == kMarkerStripe &&
+          (widget.constraints?.maxHeight == 8 ||
+              widget.constraints == const BoxConstraints.tightFor(height: 8)),
+    );
+    expect(stripeFinder, findsOneWidget);
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Increment'));
+    await tester.pumpAndSettle();
     expect(find.text('1'), findsOneWidget);
   });
 }

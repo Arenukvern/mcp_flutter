@@ -14,8 +14,9 @@ dependencies:
   mcp_toolkit:
     path: ../../mcp_toolkit
 
-# Outside the workspace; mirror hosted-intentcall cutover via sibling path
-# when developing with a local intentcall checkout (CI checks out intentcall/).
+# This app sits outside the mcp_flutter pub workspace (like
+# flutter_test_app), so the workspace's hosted-intentcall cutover is
+# mirrored here as path overrides.
 dependency_overrides:
   flutter_mcp_toolkit_core:
     path: ../../packages/core

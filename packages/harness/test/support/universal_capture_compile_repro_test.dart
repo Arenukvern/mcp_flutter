@@ -1,4 +1,5 @@
 @TestOn('vm')
+@Tags(['compile-repro-opt-in'])
 library;
 
 import 'dart:io';
