@@ -19,7 +19,12 @@ Future<void> main(List<String> args) => okaRun(
         overrides: const PipelineOverrides(
           resDirs: ['android/app/src/main/res'],
         ),
-        steps: [...AndroidPipeline.defaultSteps],
+        // `AndroidPipeline.defaultSteps` (oka init) omits `RecordRunSessionStep`;
+        // builtin `defaultApkPipeline` includes it after packaging (ADR-0011 H1).
+        steps: [
+          ...AndroidPipeline.defaultSteps,
+          RecordRunSessionStep(),
+        ],
       ),
     ],
     // Lifecycle operations run against workflows composed here.
