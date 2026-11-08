@@ -133,7 +133,7 @@ void main() {
       expect(proof['verdict'], 'fail');
     });
 
-    test('linux-like ~3.3% diagonal foreign misses probe columns yet can pass 0.95', () {
+    test('linux-like ~3.3% diagonal foreign fails driver interior exact (0.95 blindspot)', () {
       final layout = NativeCaptureLayout.fromSemantics(
         imageWidth: 1280,
         imageHeight: 720,
@@ -153,10 +153,28 @@ void main() {
       );
       final stripe = analyzeMarkerStripe(image, layout: layout);
       expect(stripe['greenRatio'], greaterThan(0.95));
+      expect(stripe['interiorExactOk'], isFalse);
+      expect(stripe['interiorExactGreenRatio'], lessThan(1.0));
       expect(
         (stripe['probePoints'] as List).every((p) => (p as Map)['ok'] == 1),
         isTrue,
       );
+      final after = img.Image.from(image);
+      final (roiLeft, top, roiW, roiH) = layout.counterTextPhysicalRoi;
+      for (var y = top; y < top + roiH; y++) {
+        for (var x = roiLeft; x < roiLeft + roiW; x++) {
+          after.setPixelRgba(x, y, 0x40, 0x40, 0x40, 0xFF);
+        }
+      }
+      final proof = analyzeCapturePair(
+        before: _encode(image),
+        after: _encode(after),
+        counterBefore: 0,
+        counterAfter: 1,
+        layout: layout,
+      );
+      expect(proof['verdict'], 'fail');
+      expect(proof['reason'], 'marker_stripe_interior_not_exact');
     });
 
     test('android-like ~10.1% diagonal foreign fails 0.95 but probes stay green', () {

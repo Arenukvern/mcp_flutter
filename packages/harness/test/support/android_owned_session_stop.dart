@@ -57,10 +57,12 @@ final class AndroidOkaSessionSettlement {
         'runnerSessionAfterStop': runnerSessionAfterStop,
         'cooperativeTeardown': cooperativeTeardown,
         'ownedResourceSettlement': ownedResourceSettlement,
+        'provenOwnedResourceSettlement': false,
         'ownedResourceSettlementNote':
             'Consumer observes oka dev child + runner-session file only; '
+            'exitCode==0 and runner-session absence alone are insufficient. '
             'adb forward, VM attach, and on-device app descendants require '
-            'SDK cooperative shutdown (no harness session-file deletion).',
+            'SDK cooperative shutdown (see android_owned_physical_observations.json).',
       };
 }
 

@@ -13,7 +13,8 @@ import 'package:oka_harness/oka_harness.dart';
 import 'package:test/test.dart';
 
 import '../support/bounded_subprocess_stop.dart';
-import '../support/android_oka_dev_argv_diagnostics.dart';
+import '../support/android_oka_dev_launch_intent.dart';
+import '../support/android_owned_physical_observations.dart';
 import '../support/android_owned_session_stop.dart';
 import '../support/linux_bounded_flutter_run.dart';
 import '../support/native_capture_session_cleanup.dart';
@@ -21,7 +22,6 @@ import '../support/native_layer_capture_layout.dart';
 import '../support/native_layer_evidence.dart';
 import '../support/native_layer_failure_artifacts.dart';
 import '../support/native_layer_oka_diagnostics.dart';
-import '../support/oka_consumer_pin.dart';
 import '../support/session_settlement.dart';
 
 void main() {
@@ -71,7 +71,6 @@ void main() {
             throw StateError('ANDROID_SERIAL is required for Android native proof');
           }
           final okaBin = Platform.environment['OKA_BIN'] ?? 'oka';
-          final okaPinSha = readOkaConsumerPinSha(repoRoot: repoRoot);
           final emulatorReady = await waitForAndroidPackageManagerReady(
             deviceId: deviceId,
           );
@@ -89,17 +88,12 @@ void main() {
           await writeJsonArtifact(
             artifactDir,
             'android_oka_dev_launch_intent.json',
-            {
-              ...androidOkaDevLaunchIntent(
-                okaBin: okaBin,
-                projectDir: appDir.path,
-                deviceId: deviceId,
-              ),
-              'consumerCutoverPlan':
-                  'docs/evidence/native_layer_oka_consumer_cutover_plan.md',
-              'okaConsumerPinSha': okaPinSha,
-              'shellWorkaroundRemoved': true,
-            },
+            await buildAndroidOkaDevLaunchIntentReport(
+              repoRoot: repoRoot,
+              okaBin: okaBin,
+              projectDir: appDir.path,
+              deviceId: deviceId,
+            ),
           );
           final usePrebuild =
               Platform.environment['OKA_ANDROID_USE_PREBUILD'] == '1';
@@ -152,13 +146,22 @@ void main() {
             sessionTimeout: const Duration(minutes: 5),
           );
           final app = await target.launch(build: false);
+          final postLaunchOwnership =
+              snapshotRunnerSessionOwnership(appDir.path);
           await writeJsonArtifact(
             artifactDir,
             'android_runner_session_post_launch.json',
             {
               'okaDevChildPid': app.process?.pid,
-              'ownership': snapshotRunnerSessionOwnership(appDir.path),
+              'ownership': postLaunchOwnership,
             },
+          );
+          await recordAndroidPhysicalObservation(
+            artifactDir: artifactDir,
+            phase: 'post_launch',
+            deviceId: deviceId,
+            hostOkaDevChildPid: app.process?.pid,
+            runnerOwnership: postLaunchOwnership,
           );
           return _OwnedSession(
             app: app,
@@ -382,6 +385,18 @@ Future<void> _runNativeCapture({
       await activeDriver.close();
       driver = null;
 
+      if (platform == 'android') {
+        final deviceId = Platform.environment['ANDROID_SERIAL'] ?? '';
+        final preStopOwnership = snapshotRunnerSessionOwnership(appDir.path);
+        await recordAndroidPhysicalObservation(
+          artifactDir: artifactDir,
+          phase: 'pre_stop',
+          deviceId: deviceId,
+          hostOkaDevChildPid: app.process?.pid,
+          runnerOwnership: preStopOwnership,
+        );
+      }
+
       final ownerPid = app.process?.pid;
       androidStopExitCode = await app.stop();
       owned.stopped = true;
@@ -413,6 +428,14 @@ Future<void> _runNativeCapture({
           artifactDir,
           'android_owned_session_receipt.json',
           androidSettlement!.toJson(),
+        );
+        final deviceId = Platform.environment['ANDROID_SERIAL'] ?? '';
+        await recordAndroidPhysicalObservation(
+          artifactDir: artifactDir,
+          phase: 'post_stop',
+          deviceId: deviceId,
+          hostOkaDevChildPid: ownerPid,
+          runnerOwnership: androidSettlement!.runnerSessionAfterStop,
         );
         expect(
           androidSettlement!.processSettled,

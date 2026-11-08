@@ -140,6 +140,11 @@ Map<String, Object?> analyzeMarkerStripe(
     stripeW: stripeW,
     stripeH: stripeH,
   );
+  final interiorSamples = interior['samples'] as int;
+  final interiorGreenHits = interior['greenHits'] as int;
+  final interiorExactOk =
+      interiorSamples > 0 && interiorGreenHits == interiorSamples;
+
   return {
     'stripeHeightPx': stripeH,
     'stripeTopPx': stripeTop,
@@ -149,11 +154,16 @@ Map<String, Object?> analyzeMarkerStripe(
     'greenHits': greenHits,
     'greenRatio': ratio,
     'interiorExactGreenRatio': interior['ratio'],
-    'interiorSamples': interior['samples'],
+    'interiorSamples': interiorSamples,
+    'interiorExactGreenHits': interiorGreenHits,
+    'interiorExactOk': interiorExactOk,
     'probePoints': probePoints,
     'ok': probesOk && samples > 0 && ratio >= minGreenRatio,
   };
 }
+
+/// Driver `compress_false` captures require solid interior (#22AA55 exact).
+const double kDriverInteriorExactGreenRatio = 1.0;
 
 /// Full-resolution exact marker color, excluding probe rows/columns (edge handling).
 Map<String, Object?> _stripeInteriorExactGreenRatio(
@@ -323,6 +333,9 @@ Map<String, Object?> analyzeCapturePair({
 
   final counterOk = counterAfter == counterBefore + 1;
   final stripeOk = stripeBefore['ok'] == true && stripeAfter['ok'] == true;
+  final interiorBeforeOk = stripeBefore['interiorExactOk'] == true;
+  final interiorAfterOk = stripeAfter['interiorExactOk'] == true;
+  final interiorExactOk = interiorBeforeOk && interiorAfterOk;
   final roiOk = counterRoiDiff >= kMinCounterRoiDiffPixels;
 
   String? reason;
@@ -330,12 +343,16 @@ Map<String, Object?> analyzeCapturePair({
     reason = 'counter_not_incremented';
   } else if (!stripeOk) {
     reason = 'marker_stripe_not_green';
+  } else if (!interiorExactOk) {
+    reason = 'marker_stripe_interior_not_exact';
   } else if (!roiOk) {
     reason = 'counter_roi_insufficient_delta';
   }
 
   return {
-    'verdict': counterOk && stripeOk && roiOk ? 'pass' : 'fail',
+    'verdict':
+        counterOk && stripeOk && interiorExactOk && roiOk ? 'pass' : 'fail',
+    'interiorExactInvariant': 'driver_compress_false_interior_exact_1.0',
     'reason': reason,
     'counterBefore': counterBefore,
     'counterAfter': counterAfter,
