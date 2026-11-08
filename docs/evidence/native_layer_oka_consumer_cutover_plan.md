@@ -1,6 +1,6 @@
 # Native layer capture — oka consumer cutover plan (blocked on immutable PR SHA)
 
-**Status:** **Test pin active:** `tool/ci/oka_consumer_pin.txt` → `75153244c0357b04f730707c95bae98b8b29b7fd` (supersedes `32a1b69f…` / SDK `5ac6dea…`; cooperative `OkaLaunchedApp.stopSession` → `DevSessionStopReport`). Prior pins retained in CI logs as diagnostic only. **No merge, no publish** in either repo.
+**Status:** **Provisional test pin (hold — not approval):** `tool/ci/oka_consumer_pin.txt` → `75153244c0357b04f730707c95bae98b8b29b7fd`. Consumer **`684e8850`** wires `OkaLaunchedApp.stopSession` / `DevSessionStopReport` — useful **diagnostic** run only until **revised oka SHA** lands (SDK review: fatal lint CI, cooperative TCP EOF/ack race, stdin quit mis-labeled `controlQuitAcknowledged`; fake tests cover stdin only). **No consumer workarounds.** **No blind native reruns** for final approval. Prior pins / CI logs preserved. **No merge, no publish** in either repo.
 
 ## Defect (confirmed)
 
@@ -32,6 +32,22 @@
 **CI emulator ABI:** `native_flutter_layer_capture` sets `OKA_ANDROID_BUILD_ABI=x86_64` for prebuild + integration so `app-debug.apk` matches the `pixel_6` x86_64 AVD (`INSTALL_FAILED_NO_MATCHING_ABIS` otherwise).
 
 **CI emulator readiness (consumer, not SDK):** enable `/dev/kvm` via `tool/ci/enable_android_emulator_kvm.sh` (reactivecircus docs). Integration polls `adb shell pm path com.android.shell` before `oka dev android` (fail-closed `android_emulator_readiness.json`); `sys.boot_completed` alone is insufficient on API 34 GHA images.
+
+## SDK `75153244` review blockers (upstream; consumer holds)
+
+Independent SDK review of `75153244` (in progress with SDK worker):
+
+| Finding | Consumer stance |
+|--------|------------------|
+| Fatal **lint CI** on oka | Fix in oka; do not patch consumer to greenwash |
+| Cooperative **TCP EOF/ack race** on `requestQuit` | Real TCP lifecycle tests required (today’s fakes exercise stdin only) |
+| **`stdin` quit write** counted as `controlQuitAcknowledged` | SDK must not label acknowledged without verified ack |
+| **`DevSessionStopReport.ok`** | **Only** owning-child exit + `runner-session` discovery cleared — **not** adb forward, device app PID, attach children |
+| **`AndroidAppTarget` API break** | Compatibility addressed upstream; bump pin when SHA provided |
+
+**Physical settlement:** consumer retains read-only `android_owned_physical_observations.json`; `provenOwnedResourceSettlement` stays **false** until observations + SDK receipts are reviewed together — **exit 0 + file absent alone are insufficient**.
+
+**`684e8850` native workflow:** treat artifacts as evidence archive, **not** final parent approval. Wait for revised pin SHA before the next intentional native rerun.
 
 ## SDK review caveat (consumer does not fix here)
 
