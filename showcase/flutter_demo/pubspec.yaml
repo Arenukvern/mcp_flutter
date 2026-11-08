@@ -14,6 +14,32 @@ dependencies:
   mcp_toolkit:
     path: ../../mcp_toolkit
 
+# Outside the workspace; mirror hosted-intentcall cutover via sibling path
+# when developing with a local intentcall checkout (CI checks out intentcall/).
+dependency_overrides:
+  flutter_mcp_toolkit_core:
+    path: ../../packages/core
+  intentcall_bridge:
+    path: ../../../intentcall/packages/intentcall_bridge
+  intentcall_core:
+    path: ../../../intentcall/packages/intentcall_core
+  intentcall_hooks:
+    path: ../../../intentcall/packages/intentcall_hooks
+  intentcall_platform:
+    path: ../../../intentcall/packages/intentcall_platform
+  intentcall_platform_android:
+    path: ../../../intentcall/packages/intentcall_platform_android
+  intentcall_platform_apple:
+    path: ../../../intentcall/packages/intentcall_platform_apple
+  intentcall_platform_sync:
+    path: ../../../intentcall/packages/intentcall_platform_sync
+  intentcall_schema:
+    path: ../../../intentcall/packages/intentcall_schema
+  intentcall_session:
+    path: ../../../intentcall/packages/intentcall_session
+  intentcall_webmcp:
+    path: ../../../intentcall/packages/intentcall_webmcp
+
 dev_dependencies:
   flutter_lints: ^6.0.0
 

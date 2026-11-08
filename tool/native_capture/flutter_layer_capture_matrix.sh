@@ -1,18 +1,10 @@
 #!/usr/bin/env bash
-# Native flutter_layer capture proof: toolkit CLI + optional flutter screenshot CLI.
-# Requires a running `flutter run` and WS URI. Fails if platform fallback is used.
+# Native flutter_layer capture proof: toolkit CLI + classified flutter screenshot CLI.
 set -euo pipefail
 
 usage() {
   cat <<'EOF'
 Usage: flutter_layer_capture_matrix.sh --device <id> --vm-ws <ws-uri> --out <dir> [--project-dir <path>]
-
-Runs:
-  1) fmtk exec get_screenshots mode=flutter_layer compress true/false
-  2) Optional: flutter screenshot --type skia (Flutter-rendered via VM) when VM URL known
-  3) Optional: flutter screenshot (device default = OS screencap) for contrast only
-
-Writes PNG artifacts, vm_trace.jsonl, and summary.json under --out.
 EOF
 }
 
@@ -21,7 +13,6 @@ vm_ws=""
 out=""
 project_dir=""
 flutter_bin="${FLUTTER_BIN:-flutter}"
-server_dir=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -42,6 +33,7 @@ done
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "${here}/../.." && pwd)"
 server_dir="${repo_root}/mcp_server_dart"
+decode="${here}/decode_screenshot_envelope.py"
 mkdir -p "$out"
 
 run_cli() {
@@ -58,69 +50,80 @@ run_cli() {
   ) >"${out}/${tag}.stdout" 2>"${out}/${tag}.stderr"
 }
 
-decode_summary() {
-  python3 - "$1" <<'PY'
-import json, base64, struct, sys
-path = sys.argv[1]
-raw = open(path).read()
-d = json.loads(raw)
-ok = d.get("ok")
-data = d.get("data") or {}
-imgs = data.get("images") or []
-meta = {k: data.get(k) for k in (
-    "captureMode", "actualMode", "captureBackend", "captureImplementation",
-    "requestedMode", "fallbackReason", "captureModeUpgraded",
-)}
-print(json.dumps({"ok": ok, "imageCount": len(imgs), "meta": meta}, indent=2))
-if not ok:
-    sys.exit(0)
-if meta.get("captureMode") != "flutter_layer" and meta.get("actualMode") != "flutter_layer":
-    print("FAIL: not flutter_layer backend", file=sys.stderr)
-    sys.exit(3)
-if meta.get("captureBackend") not in (None, "flutter_layer_vm_extension"):
-    print("FAIL: unexpected captureBackend", file=sys.stderr)
-    sys.exit(3)
-if len(imgs) < 1:
-    print("FAIL: empty images", file=sys.stderr)
-    sys.exit(3)
-b = base64.b64decode(imgs[0])
-open(path.replace(".stdout", ".png"), "wb").write(b)
-if b[:8] != b"\x89PNG\r\n\x1a\n":
-    print("FAIL: not a PNG", file=sys.stderr)
-    sys.exit(3)
-w, h = struct.unpack(">II", b[16:24])
-print(json.dumps({"pngBytes": len(b), "width": w, "height": h}))
-PY
-}
-
 echo '{"event":"matrix_start","device":"'"$device"'","vmWs":"'"$vm_ws"'"}' >"${out}/vm_trace.jsonl"
 
 run_cli get_screenshots '{"mode":"flutter_layer","compress":false}' exec_layer_compress_false
-decode_summary "${out}/exec_layer_compress_false.stdout" | tee "${out}/exec_layer_compress_false.summary.json"
+python3 "$decode" "${out}/exec_layer_compress_false.stdout" --png "${out}/exec_layer_compress_false.png" \
+  | tee "${out}/exec_layer_compress_false.summary.json"
 
 run_cli get_screenshots '{"mode":"flutter_layer","compress":true}' exec_layer_compress_true
-decode_summary "${out}/exec_layer_compress_true.stdout" | tee "${out}/exec_layer_compress_true.summary.json"
+python3 "$decode" "${out}/exec_layer_compress_true.stdout" --png "${out}/exec_layer_compress_true.png" \
+  | tee "${out}/exec_layer_compress_true.summary.json"
 
-# Contrast: flutter CLI device screencap vs skia (layer) when project dir supplied.
+bash "${here}/selftest_decode.sh"
+
+echo '{"event":"harness_proof_start"}' >>"${out}/vm_trace.jsonl"
+(
+  cd "${repo_root}/packages/harness"
+  dart run tool/native_layer_proof.dart "$vm_ws" "${out}/harness_proof"
+) >"${out}/native_layer_proof.stdout" 2>"${out}/native_layer_proof.stderr"
+
+flutter_cli=()
 if [[ -n "$project_dir" ]]; then
-  $flutter_bin screenshot -d "$device" -o "${out}/flutter_screenshot_device.png" \
-    >"${out}/flutter_screenshot_device.log" 2>&1 || true
   http_ws="${vm_ws%/ws}"
   http_ws="${http_ws/ws:\/\//http:\/\/}"
+  set +e
+  $flutter_bin screenshot -d "$device" -o "${out}/flutter_screenshot_device.png" \
+    >"${out}/flutter_screenshot_device.log" 2>&1
+  dev_ec=$?
   $flutter_bin screenshot --type skia --vm-service-url="$http_ws" \
     -o "${out}/flutter_screenshot_skia.png" \
-    >"${out}/flutter_screenshot_skia.log" 2>&1 || true
+    >"${out}/flutter_screenshot_skia.log" 2>&1
+  skia_ec=$?
+  set -e
+  python3 - "${out}" "${dev_ec}" "${skia_ec}" <<'PY'
+import json, pathlib, sys
+out, dev_ec, skia_ec = sys.argv[1], int(sys.argv[2]), int(sys.argv[3])
+root = pathlib.Path(out)
+def probe(name):
+    p = root / name
+    return p.is_file() and p.stat().st_size > 100
+report = {
+    "deviceScreencap": {
+        "kind": "os_device_framebuffer",
+        "exitCode": dev_ec,
+        "artifactPresent": probe("flutter_screenshot_device.png"),
+        "countsAsFlutterLayerProof": False,
+    },
+    "skiaVmScreenshot": {
+        "kind": "flutter_skia_picture_via_vm",
+        "exitCode": skia_ec,
+        "artifactPresent": probe("flutter_screenshot_skia.png"),
+        "countsAsFlutterLayerProof": skia_ec == 0 and probe("flutter_screenshot_skia.png"),
+    },
+}
+(root / "flutter_screenshot_report.json").write_text(json.dumps(report, indent=2))
+print(json.dumps(report, indent=2))
+PY
 fi
 
 python3 - "${out}" <<'PY'
-import json, pathlib, struct
+import json, pathlib
 root = pathlib.Path(__import__("sys").argv[1])
-summary = {"steps": []}
+summary = {"steps": [], "verdict": "fail"}
 for p in sorted(root.glob("exec_layer_*.summary.json")):
     summary["steps"].append(json.loads(p.read_text()))
+hp = root / "harness_proof" / "harness_proof.json"
+if hp.is_file():
+    summary["harnessProof"] = json.loads(hp.read_text())
+fs = root / "flutter_screenshot_report.json"
+if fs.is_file():
+    summary["flutterScreenshot"] = json.loads(fs.read_text())
 fail = [s for s in summary["steps"] if not s.get("ok")]
+if summary.get("harnessProof", {}).get("verdict") != "pass":
+    fail.append({"harnessProof": summary.get("harnessProof")})
 summary["verdict"] = "pass" if not fail else "fail"
 (root / "summary.json").write_text(json.dumps(summary, indent=2))
 print(json.dumps(summary, indent=2))
-raise SystemExit(1 if fail else 0)
+raise SystemExit(0 if summary["verdict"] == "pass" else 1)
 PY

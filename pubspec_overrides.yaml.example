@@ -1,7 +1,5 @@
-# Copy to pubspec_overrides.yaml (gitignored) after running:
-#   bash tool/ci/prepare_universal_automation_sibling.sh
-dependency_overrides:
-  universal_automation_interface:
-    path: universal_automation/pkgs/universal_automation_interface
-  universal_automation_semantics:
-    path: universal_automation/pkgs/universal_automation_semantics
+# Local-only overrides (gitignored). CI uses git deps — see tool/ci/UNIVERSAL_AUTOMATION.md
+# Optional path checkout for UA monorepo hacking (not committed in pubspec.lock):
+# dependency_overrides:
+#   universal_automation_interface:
+#     path: universal_automation/pkgs/universal_automation_interface
