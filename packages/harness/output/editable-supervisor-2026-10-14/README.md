@@ -1,1 +1,0 @@
-Owned Oka supervisor real headless-browser focused-editable regression. Source hashes name direct inputs, not complete build closure. Test refuses borrowed sessions and verifies owned browser exit/profile removal.

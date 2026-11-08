@@ -52,3 +52,6 @@ pubspec_overrides.yaml
 
 # ZCode workspace MCP mount is machine-local (absolute binary path); recreate with: flutter-mcp-toolkit init zcode
 .zcode/config.json
+
+# harness run outputs (runtime-generated E2E artifacts)
+packages/harness/output/
