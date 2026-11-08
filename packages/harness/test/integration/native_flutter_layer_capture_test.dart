@@ -134,6 +134,16 @@ void main() {
               artifactDir: artifactDir,
             );
           }
+          await writeJsonArtifact(
+            artifactDir,
+            'android_runner_session_pre_launch.json',
+            {
+              'note':
+                  'Read-only snapshot before AndroidAppTarget launch; target '
+                  'may clear stale runner-session as oka ADR debris handling.',
+              'ownership': snapshotRunnerSessionOwnership(appDir.path),
+            },
+          );
           final target = AndroidAppTarget(
             projectDir: appDir.path,
             deviceId: deviceId,
@@ -142,6 +152,14 @@ void main() {
             sessionTimeout: const Duration(minutes: 5),
           );
           final app = await target.launch(build: false);
+          await writeJsonArtifact(
+            artifactDir,
+            'android_runner_session_post_launch.json',
+            {
+              'okaDevChildPid': app.process?.pid,
+              'ownership': snapshotRunnerSessionOwnership(appDir.path),
+            },
+          );
           return _OwnedSession(
             app: app,
             logTap: combinedTap,
@@ -391,23 +409,34 @@ Future<void> _runNativeCapture({
           processPid: ownerPid,
           projectDir: appDir.path,
         );
+        await writeJsonArtifact(
+          artifactDir,
+          'android_owned_session_receipt.json',
+          androidSettlement!.toJson(),
+        );
         expect(
           androidSettlement!.processSettled,
           isTrue,
           reason: '${androidSettlement!.toJson()}',
         );
         expect(
-          androidSettlement!.runnerSessionAbsent,
+          androidSettlement!.cooperativeTeardown,
           isTrue,
-          reason: '${androidSettlement!.toJson()}',
+          reason:
+              'SDK must clear runner-session on cooperative oka dev stop '
+              '(no harness file deletion): ${androidSettlement!.toJson()}',
         );
       }
+
+      final lifecyclePass = platform == 'linux'
+          ? (linuxSettlement?.shutdownTruthful ?? false)
+          : (androidSettlement?.cooperativeTeardown ?? false);
 
       await writeJsonArtifact(
         artifactDir,
         '${platform}_harness_proof.json',
         {
-          'verdict': 'pass',
+          'verdict': lifecyclePass ? 'pass' : 'lifecycle_incomplete',
           'platform': platform,
           'vmUriHost': app.vmUri.host,
           'sessionArtifactDir': artifactDir.path,
@@ -415,6 +444,10 @@ Future<void> _runNativeCapture({
           'androidSettlement': androidSettlement?.toJson(),
           'androidStopExitCode': androidStopExitCode,
           'logcatStop': logcatStopVerdict?.toJson(),
+          'ownedResourceSettlement':
+              platform == 'android'
+                  ? (androidSettlement?.ownedResourceSettlement ?? false)
+                  : null,
         },
       );
     },
