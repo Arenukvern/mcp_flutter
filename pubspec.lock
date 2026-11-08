@@ -876,14 +876,14 @@ packages:
       path: "../../../xs/ai_computer_use_universal_automation/pkgs/universal_automation_semantics"
       relative: true
     source: path
-    version: "0.3.0"
+    version: "0.4.0"
   universal_automation_toolkit:
     dependency: "direct overridden"
     description:
       path: "../../../xs/ai_computer_use_universal_automation/pkgs/universal_automation_toolkit"
       relative: true
     source: path
-    version: "0.3.0"
+    version: "0.4.0"
   universal_browser_cdp:
     dependency: "direct overridden"
     description:
@@ -918,7 +918,7 @@ packages:
       path: "../../../xs/ai_computer_use_universal_automation/pkgs/universal_driver_flutter"
       relative: true
     source: path
-    version: "0.1.0"
+    version: "0.1.1"
   universal_driver_linux:
     dependency: "direct overridden"
     description:
