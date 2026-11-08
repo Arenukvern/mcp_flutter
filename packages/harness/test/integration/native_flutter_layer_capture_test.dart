@@ -62,23 +62,24 @@ void main() {
             deviceId: deviceId,
             sink: combinedTap,
           );
-          final staleOkaDebug = Directory(
-            '${appDir.path}/.oka_cache/build/debug',
-          );
-          if (staleOkaDebug.existsSync()) {
-            staleOkaDebug.deleteSync(recursive: true);
-          }
           final harnessDir = Directory.current.path.endsWith('harness')
               ? Directory.current
               : Directory('${Directory.current.path}/packages/harness');
+          final okaBin = '${harnessDir.path}/test/support/oka_dev_android.sh';
+          await purgeOkaAndroidSessionArtifacts(appDir.path);
+          await runOkaAndroidManifestBuild(
+            projectDir: appDir.path,
+            okaBin: okaBin,
+          );
           final target = AndroidAppTarget(
             projectDir: appDir.path,
             deviceId: deviceId,
             logcat: false,
-            okaBin: '${harnessDir.path}/test/support/oka_dev_android.sh',
+            okaBin: okaBin,
+            sessionTimeout: const Duration(minutes: 10),
           );
-          // oka dev android requires a session-manifest APK from `oka build`.
-          final app = await target.launch(build: true);
+          // Session manifest APK already built; attach only.
+          final app = await target.launch(build: false);
           return _OwnedSession(
             app: app,
             logTap: combinedTap,

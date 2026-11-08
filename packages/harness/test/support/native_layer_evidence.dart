@@ -13,13 +13,16 @@ const captureImplementationAppLayerTree = 'app_layer_tree';
 const int kMarkerStripeArgb = 0xFF22AA55;
 const int kMarkerStripeHeightPx = 8;
 
+/// Logical window height for the native capture fixture (debug desktop).
+const int kFixtureReferenceHeightPx = 720;
+
 /// Counter text region below stripe (fraction of decoded capture dimensions).
 (double left, double top, double width, double height) counterRoiNorm(
   img.Image image,
 ) {
   return (
     image.width * 0.20,
-    kMarkerStripeHeightPx + image.height * 0.04,
+    markerStripeHeightPx(image) + image.height * 0.04,
     image.width * 0.60,
     image.height * 0.22,
   );
@@ -80,44 +83,72 @@ int _pixelArgb(img.Image image, int x, int y) {
       p.b.toInt();
 }
 
-bool _isMarkerGreenArgb(int argb) {
+bool _isMarkerGreenArgb(int argb, {bool resamplingTolerant = false}) {
   final a = (argb >> 24) & 0xFF;
   final r = (argb >> 16) & 0xFF;
   final g = (argb >> 8) & 0xFF;
   final b = argb & 0xFF;
-  return a == 0xFF && r == 0x22 && g == 0xAA && b == 0x55;
+  if (a != 0xFF) return false;
+  if (!resamplingTolerant) {
+    return r == 0x22 && g == 0xAA && b == 0x55;
+  }
+  const tol = 24;
+  return (r - 0x22).abs() <= tol &&
+      (g - 0xAA).abs() <= tol &&
+      (b - 0x55).abs() <= tol;
+}
+
+int markerStripeHeightPx(img.Image image) {
+  return (kMarkerStripeHeightPx * image.height / kFixtureReferenceHeightPx)
+      .round()
+      .clamp(1, image.height);
 }
 
 /// Samples the top marker stripe for the fixture green (#22AA55).
-Map<String, Object?> analyzeMarkerStripe(img.Image image) {
-  final stripeH = kMarkerStripeHeightPx.clamp(0, image.height);
+Map<String, Object?> analyzeMarkerStripe(
+  img.Image image, {
+  bool resamplingTolerant = false,
+  double minGreenRatio = 0.95,
+}) {
+  final stripeH = markerStripeHeightPx(image);
   var samples = 0;
   var greenHits = 0;
   for (var y = 0; y < stripeH; y++) {
     for (var x = 0; x < image.width; x++) {
       samples++;
-      if (_isMarkerGreenArgb(_pixelArgb(image, x, y))) greenHits++;
+      if (_isMarkerGreenArgb(
+        _pixelArgb(image, x, y),
+        resamplingTolerant: resamplingTolerant,
+      )) {
+        greenHits++;
+      }
     }
   }
-  final probeYs = [1, stripeH ~/ 2, stripeH - 1]
-      .where((y) => y >= 0 && y < stripeH)
-      .toList();
+  final probeYs = <int>{
+    0,
+    if (stripeH > 2) stripeH ~/ 2,
+    if (stripeH > 1) stripeH - 1,
+  }.where((y) => y >= 0 && y < stripeH).toList();
   final probePoints = <Map<String, int>>[];
   var probesOk = true;
   for (final y in probeYs) {
     for (final x in [0, image.width ~/ 2, image.width - 1]) {
-      final ok = _isMarkerGreenArgb(_pixelArgb(image, x, y));
+      final ok = _isMarkerGreenArgb(
+        _pixelArgb(image, x, y),
+        resamplingTolerant: resamplingTolerant,
+      );
       probePoints.add({'x': x, 'y': y, 'ok': ok ? 1 : 0});
       if (!ok) probesOk = false;
     }
   }
   final ratio = samples == 0 ? 0.0 : greenHits / samples;
   return {
+    'stripeHeightPx': stripeH,
     'samples': samples,
     'greenHits': greenHits,
     'greenRatio': ratio,
     'probePoints': probePoints,
-    'ok': probesOk && samples > 0 && ratio >= 0.95,
+    'ok': probesOk && samples > 0 && ratio >= minGreenRatio,
   };
 }
 
@@ -300,6 +331,9 @@ Uint8List? cliPrimaryPngBytes(Map<String, Object?> cliResult) {
   return base64Decode(first);
 }
 
+/// Min green ratio for downscaled CLI captures (resampling tolerance).
+const double kCliCompressMinGreenRatio = 0.70;
+
 Map<String, Object?> analyzeCliCaptureProof({
   required Uint8List driverUncompressed,
   required Map<String, Object?> cliResult,
@@ -313,19 +347,83 @@ Map<String, Object?> analyzeCliCaptureProof({
   if (driverImg == null || cliImg == null) {
     return {'verdict': 'fail', 'reason': 'cli_or_driver_png_decode_failed'};
   }
-  final stripeCli = analyzeMarkerStripe(cliImg);
+  final widthScale = cliImg.width / driverImg.width;
+  final heightScale = cliImg.height / driverImg.height;
+  final dimensionsOk = cliImg.width < driverImg.width &&
+      cliImg.height < driverImg.height &&
+      (widthScale - heightScale).abs() <= 0.02 &&
+      widthScale >= 0.5 &&
+      heightScale >= 0.5;
+  final stripeCli = analyzeMarkerStripe(
+    cliImg,
+    resamplingTolerant: true,
+    minGreenRatio: kCliCompressMinGreenRatio,
+  );
+  String? reason;
+  if (!dimensionsOk) {
+    reason = 'cli_downscale_dimensions_invalid';
+  } else if (stripeCli['ok'] != true) {
+    reason = 'cli_marker_stripe_missing';
+  } else if (cliBytes.length >= driverUncompressed.length) {
+    reason = 'cli_not_smaller_than_driver';
+  }
   return {
-    'verdict': stripeCli['ok'] == true ? 'pass' : 'fail',
-    'reason': stripeCli['ok'] == true ? null : 'cli_marker_stripe_missing',
+    'verdict': reason == null ? 'pass' : 'fail',
+    'reason': reason,
     'driverWidth': driverImg.width,
     'driverHeight': driverImg.height,
     'cliWidth': cliImg.width,
     'cliHeight': cliImg.height,
+    'widthScale': widthScale,
+    'heightScale': heightScale,
     'cliBytes': cliBytes.length,
     'driverBytes': driverUncompressed.length,
     'markerStripeCli': stripeCli,
     'compressSmallerThanDriver': cliBytes.length < driverUncompressed.length,
+    'dimensionsOk': dimensionsOk,
   };
+}
+
+Future<void> purgeOkaAndroidSessionArtifacts(String projectDir) async {
+  for (final name in ['.oka_cache', '.flutter_mcp']) {
+    final dir = Directory('$projectDir/$name');
+    if (dir.existsSync()) {
+      dir.deleteSync(recursive: true);
+    }
+  }
+}
+
+/// `oka build apk --debug` must record `run_session.json` beside the APK (ADR-0011 H1).
+Future<void> runOkaAndroidManifestBuild({
+  required String projectDir,
+  required String okaBin,
+  Map<String, String> environment = const {},
+}) async {
+  final build = await Process.run(
+    okaBin,
+    ['build', 'apk', '--debug'],
+    workingDirectory: projectDir,
+    environment: environment.isEmpty
+        ? null
+        : <String, String>{...Platform.environment, ...environment},
+    runInShell: true,
+  );
+  if (build.exitCode != 0) {
+    throw StateError(
+      'oka build apk --debug failed (${build.exitCode}):\n'
+      '${build.stdout}\n${build.stderr}',
+    );
+  }
+  final manifest = File(
+    '$projectDir/.oka_cache/build/debug/run_session.json',
+  );
+  final apk = File('$projectDir/.oka_cache/build/debug/app-debug.apk');
+  if (!manifest.existsSync() || !apk.existsSync()) {
+    throw StateError(
+      'oka build did not record session manifest next to APK; '
+      'manifest=${manifest.existsSync()} apk=${apk.existsSync()}',
+    );
+  }
 }
 
 Future<Map<String, Object?>> runToolkitCliGetScreenshots({

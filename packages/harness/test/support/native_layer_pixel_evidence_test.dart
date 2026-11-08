@@ -1,6 +1,7 @@
 @TestOn('vm')
 library;
 
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:image/image.dart' as img;
@@ -105,6 +106,40 @@ void main() {
       );
       expect(proof['verdict'], 'fail');
       expect(proof['reason'], 'counter_not_incremented');
+    });
+  });
+
+  group('analyzeCliCaptureProof', () {
+    test('passes on downscaled compress capture with marker stripe', () {
+      final driver = img.Image(width: 1280, height: 720);
+      for (var y = 0; y < kMarkerStripeHeightPx; y++) {
+        for (var x = 0; x < driver.width; x++) {
+          driver.setPixelRgba(x, y, 0x22, 0xAA, 0x55, 0xFF);
+        }
+      }
+      final driverBytes = _encode(driver);
+      final cliImg = img.copyResize(
+        driver,
+        width: 1024,
+        height: 576,
+        interpolation: img.Interpolation.average,
+      );
+      final cliBytes = _encode(cliImg);
+      final cliResult = {
+        'ok': true,
+        'envelope': {
+          'ok': true,
+          'data': {
+            'images': [base64Encode(cliBytes)],
+          },
+        },
+      };
+      final proof = analyzeCliCaptureProof(
+        driverUncompressed: driverBytes,
+        cliResult: cliResult,
+      );
+      expect(proof['verdict'], 'pass');
+      expect(proof['dimensionsOk'], isTrue);
     });
   });
 }

@@ -35,6 +35,15 @@ jobs:
       - name: Enable PATH for global packages
         run: echo "$HOME/.pub-cache/bin" >> $GITHUB_PATH
 
+      - name: Prebuild native layer capture fixture (android debug APK + manifest)
+        run: |
+          cd showcase/native_layer_capture_fixture
+          flutter pub get
+          rm -rf .oka_cache .flutter_mcp
+          oka build apk --debug
+          test -f .oka_cache/build/debug/run_session.json
+          test -f .oka_cache/build/debug/app-debug.apk
+
       - uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
