@@ -1,6 +1,8 @@
 # Native layer capture — oka consumer cutover plan (blocked on immutable PR SHA)
 
-**Status:** **Provisional test pin (hold — not approval):** `tool/ci/oka_consumer_pin.txt` → `75153244c0357b04f730707c95bae98b8b29b7fd`. Consumer **`684e8850`** wires `OkaLaunchedApp.stopSession` / `DevSessionStopReport` — useful **diagnostic** run only until **revised oka SHA** lands (SDK review: fatal lint CI, cooperative TCP EOF/ack race, stdin quit mis-labeled `controlQuitAcknowledged`; fake tests cover stdin only). **No consumer workarounds.** **No blind native reruns** for final approval. Prior pins / CI logs preserved. **No merge, no publish** in either repo.
+**Status:** **Provisional test pin:** `tool/ci/oka_consumer_pin.txt` → **`f339a359dc202896ab1591be7d80469e1a3145a7`** (oka PR #18 head; full 40-char SHA only). Supersedes `75153244…`, `32a1b69f…`. Consumer uses `launchOka()` + `verifyRunnerSessionSpawnBinding` / `spawnBinding.isPlausibleOwnership` (not `discoveryPid == spawn.pid`). Cooperative `stopSession` via control port + spawn exit wait. **Independent SDK re-review** (TCP EOF/ack, stdin ack truthfulness, lint CI) still gates **final parent approval**. **No merge, no publish** in either repo.
+
+**`32a1b69f` oka_core full suite correction:** single failing test was **`storage_inventory_test.dart`** (mtime ordering), not `project_operations/` — the `251 ~1 -1` counter is **cumulative across the suite**, not a second `project_operations` failure. See `/cursor/stores/self/artifacts/oka_core-consumer-repro-notes-32a1b69.md`.
 
 ## Defect (confirmed)
 
@@ -33,9 +35,9 @@
 
 **CI emulator readiness (consumer, not SDK):** enable `/dev/kvm` via `tool/ci/enable_android_emulator_kvm.sh` (reactivecircus docs). Integration polls `adb shell pm path com.android.shell` before `oka dev android` (fail-closed `android_emulator_readiness.json`); `sys.boot_completed` alone is insufficient on API 34 GHA images.
 
-## SDK `75153244` review blockers (upstream; consumer holds)
+## SDK cooperative-stop review blockers (`75153244` / follow-up `f339a35`)
 
-Independent SDK review of `75153244` (in progress with SDK worker):
+Still under independent re-review on `f339a35` until cleared:
 
 | Finding | Consumer stance |
 |--------|------------------|
@@ -43,11 +45,11 @@ Independent SDK review of `75153244` (in progress with SDK worker):
 | Cooperative **TCP EOF/ack race** on `requestQuit` | Real TCP lifecycle tests required (today’s fakes exercise stdin only) |
 | **`stdin` quit write** counted as `controlQuitAcknowledged` | SDK must not label acknowledged without verified ack |
 | **`DevSessionStopReport.ok`** | **Only** owning-child exit + `runner-session` discovery cleared — **not** adb forward, device app PID, attach children |
-| **`AndroidAppTarget` API break** | Compatibility addressed upstream; bump pin when SHA provided |
+| **`AndroidAppTarget` API break** | `launchOka()` + spawn binding on `f339a35`; `launch()` compat only |
 
 **Physical settlement:** consumer retains read-only `android_owned_physical_observations.json`; `provenOwnedResourceSettlement` stays **false** until observations + SDK receipts are reviewed together — **exit 0 + file absent alone are insufficient**.
 
-**`684e8850` native workflow:** treat artifacts as evidence archive, **not** final parent approval. Wait for revised pin SHA before the next intentional native rerun.
+**Prior native runs** (`900c5a80`, `684e8850`, `5d0d5d8f`, `dde9a7c5`): diagnostic archives only until SDK re-review clears cooperative-stop blockers.
 
 ## SDK review caveat (consumer does not fix here)
 

@@ -19,8 +19,19 @@ Map<String, Object?> devSessionStopReportJson(DevSessionStopReport report) {
   };
 }
 
-/// Fail-closed: runner-session must exist and name the owning `oka dev` child.
-void assertOkaDevOwnershipAtLaunch({
+Map<String, Object?> spawnBindingReportJson(
+  RunnerSessionSpawnBindingReport report,
+) {
+  return {
+    'discoveryPid': report.discoveryPid,
+    'spawnPid': report.spawnPid,
+    'binding': report.binding.name,
+    'isPlausibleOwnership': report.isPlausibleOwnership,
+  };
+}
+
+/// SDK ownership: discovery pid is session owner; spawn pid is wrapper handle.
+void assertOkaSpawnBindingAtLaunch({
   required OkaLaunchedApp app,
   required String projectDir,
 }) {
@@ -31,17 +42,16 @@ void assertOkaDevOwnershipAtLaunch({
       '$ownership',
     );
   }
-  final discoveryPid = ownership['discoveryPid'];
-  final expected = app.pid;
-  if (discoveryPid is! int || discoveryPid != expected) {
-    throw StateError(
-      'Cannot prove oka ownership: discovery pid $discoveryPid != '
-      'host child $expected: $ownership',
-    );
-  }
   if (ownership['parseError'] != null) {
     throw StateError(
       'Cannot prove oka ownership: unreadable runner-session: $ownership',
+    );
+  }
+  if (!app.spawnBinding.isPlausibleOwnership) {
+    throw StateError(
+      'Cannot prove oka ownership: spawn binding not plausible '
+      '(binding=${app.spawnBinding.binding}): '
+      '${spawnBindingReportJson(app.spawnBinding)}',
     );
   }
 }
@@ -60,6 +70,7 @@ Map<String, Object?> snapshotRunnerSessionOwnership(String projectDir) {
     return {
       'present': true,
       'discoveryPid': session.pid,
+      'sessionOwnerPid': session.pid,
       'deviceId': session.deviceId,
       'controlPort': session.controlPort,
       'vmServiceUriHost': vmUri?.host,

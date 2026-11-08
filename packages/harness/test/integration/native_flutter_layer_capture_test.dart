@@ -146,16 +146,18 @@ void main() {
             okaBin: okaBin,
             sessionTimeout: const Duration(minutes: 5),
           );
-          final app = await target.launch(build: false);
-          assertOkaDevOwnershipAtLaunch(app: app, projectDir: appDir.path);
+          final app = await target.launchOka(build: false);
+          assertOkaSpawnBindingAtLaunch(app: app, projectDir: appDir.path);
           final postLaunchOwnership =
               snapshotRunnerSessionOwnership(appDir.path);
           await writeJsonArtifact(
             artifactDir,
             'android_runner_session_post_launch.json',
             {
-              'okaDevChildPid': app.pid,
+              'spawnHandlePid': app.pid,
+              'sessionOwnerPid': app.sessionOwnerPid,
               'controlPort': app.controlPort,
+              'spawnBinding': spawnBindingReportJson(app.spawnBinding),
               'ownership': postLaunchOwnership,
             },
           );
