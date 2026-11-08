@@ -1,4 +1,5 @@
 // mcp_server_dart/lib/src/cli/init_writers.dart
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_mcp_toolkit_server/src/cli/init_mode.dart';
@@ -20,6 +21,7 @@ class InitWriters {
         InitTarget.cursor,
         InitTarget.codex,
         InitTarget.cline,
+        InitTarget.zcode,
       ]) {
         writeFor(
           target: t,
@@ -39,6 +41,8 @@ class InitWriters {
         _writeCodex(outputRoot, mode);
       case InitTarget.cline:
         _writeCline(outputRoot, mode);
+      case InitTarget.zcode:
+        _writeZcode(outputRoot, mode);
       case InitTarget.agentsSkills:
         _writeAgentsSkills(outputRoot, mode);
       case InitTarget.all:
@@ -109,5 +113,49 @@ class InitWriters {
     for (final s in SkillAssets.skills) {
       _writeSkillFile('$root/.agents/skills/${s.id}/SKILL.md', s, mode);
     }
+  }
+
+  /// ZCode reads workspace `.zcode/config.json` (`mcp.servers`, nested shape)
+  /// and `.agents/skills/`. Config-file MCP servers get no `${...}` template
+  /// expansion there, so the server binary is resolved to an absolute path
+  /// at init time (falling back to the bare name when not on PATH).
+  static void _writeZcode(String root, InitMode mode) {
+    const encoder = JsonEncoder.withIndent('  ');
+    final config = encoder.convert({
+      'mcp': {
+        'servers': {
+          'flutter-mcp-toolkit': {
+            'type': 'stdio',
+            'command': _resolveServerCommand(),
+            'args': [
+              '--dart-vm-host=localhost',
+              '--dart-vm-port=8181',
+              '--resources',
+              '--images',
+              '--dynamics',
+            ],
+          },
+        },
+      },
+    });
+    final path = '$root/.zcode/config.json';
+    Directory(File(path).parent.path).createSync(recursive: true);
+    File(path).writeAsStringSync('$config\n');
+    _writeAgentsSkills(root, mode);
+  }
+
+  static String _resolveServerCommand() {
+    final result = Process.runSync(Platform.isWindows ? 'where' : 'which', [
+      'flutter-mcp-toolkit-server',
+    ]);
+    if (result.exitCode == 0) {
+      final first = (result.stdout as String)
+          .trim()
+          .split('\n')
+          .first
+          .trim();
+      if (first.isNotEmpty) return first;
+    }
+    return 'flutter-mcp-toolkit-server';
   }
 }

@@ -45,16 +45,17 @@ Skills teach the agent **how** to use the toolkit. You still need the **MCP serv
 | **Claude git marketplace** | Yes (plugin) | Yes | `/plugin marketplace add Arenukvern/mcp_flutter` |
 | **Codex git marketplace** | Yes (plugin) | Yes | `codex plugin marketplace add Arenukvern/mcp_flutter` |
 | **Cursor local plugin** | Yes | Yes | `init cursor` |
+| **ZCode workspace** | Yes | Yes (`.zcode/config.json`) | `init zcode` |
 | **Manual `mcpServers` JSON** | No | Yes only | Advanced / legacy — prefer `init` first |
 
 Full matrix: [Marketplace distribution](/ai_agents/marketplace_distribution). Store submission: [runbook](/contributing/marketplace_submission_runbook).
 
-`init all` installs for **claude-code, cursor, codex, and cline** only. For the cross-agent `.agents/skills/` layout, use `init agents-skills` or `npx skills`.
+`init all` installs for **claude-code, cursor, codex, cline, and zcode** only. For the cross-agent `.agents/skills/` layout, use `init agents-skills` or `npx skills`.
 
 ## Install for your agent (`flutter-mcp-toolkit init`)
 
 ```bash
-flutter-mcp-toolkit init claude-code   # or: cursor | codex | cline | agents-skills | all
+flutter-mcp-toolkit init claude-code   # or: cursor | codex | cline | zcode | agents-skills | all
 ```
 
 This writes skills + plugin manifest + MCP server registration to the agent's expected path. The `init` command auto-detects MCP vs CLI mode; override with `--mode mcp|cli|auto`.
@@ -72,6 +73,7 @@ flutter-mcp-toolkit init agents-skills -y      # .agents/skills/ (Cursor, Cline,
 | `cursor` | `.cursor/plugins/local/flutter-mcp-toolkit/skills/<id>/` | `mcp.json`, plugin manifest |
 | `codex` | `.codex/plugins/cache/local/flutter-mcp-toolkit/local/skills/<id>/` | marketplace + `mcp.json` |
 | `cline` | `.clinerules/<id>.md` | — |
+| `zcode` | `.agents/skills/<id>/SKILL.md` | `.zcode/config.json` (`mcp.servers`; binary resolved to an absolute path — ZCode does not expand `${...}` in config-file servers) |
 | `agents-skills` | `.agents/skills/<id>/SKILL.md` | — |
 
 ## Install via `npx skills` (open agent skills ecosystem)

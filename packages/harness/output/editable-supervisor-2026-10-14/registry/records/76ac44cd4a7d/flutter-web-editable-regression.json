@@ -1,0 +1,13 @@
+{
+  "componentId": "flutter-web-editable-regression",
+  "provider": "process",
+  "shape": "job",
+  "revisionHash": "c21bfebde372",
+  "epoch": 1,
+  "killPolicy": "spawned",
+  "startedAt": "2026-10-13T21:42:02.322001Z",
+  "restartCount": 0,
+  "windowStartedAt": "2026-10-13T21:42:02.322001Z",
+  "trigger": "none",
+  "lastRun": "succeeded"
+}

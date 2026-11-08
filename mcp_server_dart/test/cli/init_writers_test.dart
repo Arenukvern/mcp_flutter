@@ -90,6 +90,26 @@ void main() {
       expect(f.existsSync(), isTrue);
     });
 
+    test('zcode writes .zcode/config.json + .agents/skills/', () {
+      InitWriters.writeFor(
+        target: InitTarget.zcode,
+        mode: InitMode.mcp,
+        outputRoot: tmp.path,
+        scopeIsUserHome: false,
+      );
+      final config = File('${tmp.path}/.zcode/config.json');
+      expect(config.existsSync(), isTrue);
+      final content = config.readAsStringSync();
+      expect(content, contains('"mcp"'));
+      expect(content, contains('"servers"'));
+      expect(content, contains('flutter-mcp-toolkit-server'));
+      expect(content, isNot(contains(r'${')));
+      final skill = File(
+        '${tmp.path}/.agents/skills/flutter-mcp-toolkit-guide/SKILL.md',
+      );
+      expect(skill.existsSync(), isTrue);
+    });
+
     test('writes are idempotent (re-running is safe)', () {
       InitWriters.writeFor(
         target: InitTarget.claudeCode,

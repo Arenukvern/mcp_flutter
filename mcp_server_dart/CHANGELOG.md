@@ -4,6 +4,10 @@
 
 ### Added
 
+- **`init zcode` target**: writes `.zcode/config.json` (`mcp.servers`, nested
+  shape) with the server binary resolved to an absolute path at init time
+  (ZCode does not expand `${...}` templates in config-file MCP servers) plus
+  all skills to `.agents/skills/`. Also included in `init all`.
 - **External dev session delegation** (Dart dev session contract, spec v2):
   when a runner-session file exists (default
   `.flutter_mcp/runner-session.json`, configurable via

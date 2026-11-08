@@ -49,3 +49,6 @@ mcp_server_dart/mcp-publisher
 
 # local sibling-repo overrides (dev only)
 pubspec_overrides.yaml
+
+# ZCode workspace MCP mount is machine-local (absolute binary path); recreate with: flutter-mcp-toolkit init zcode
+.zcode/config.json

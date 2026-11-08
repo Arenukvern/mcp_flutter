@@ -1,0 +1,2 @@
+Owned runtime regression evidence. Oka supervisor CLI runs the existing Flutter MCP harness test as a declared job. Headless browser, fresh profile/dynamic port, finally-stop. Not native desktop-focus or general Flutter navigation acceptance.
+Earlier -a plan failed before browser startup: VM-only --packages is not a dart test option. This plan uses native dart test resolution from the repository working directory.

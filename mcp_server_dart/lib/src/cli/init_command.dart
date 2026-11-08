@@ -44,6 +44,10 @@ bool _isMcpServerRegistered(InitTarget target, String outputRoot) {
       final f = File('$outputRoot/.claude/mcp.json');
       return f.existsSync() &&
           f.readAsStringSync().contains('flutter-mcp-toolkit');
+    case InitTarget.zcode:
+      final f = File('$outputRoot/.zcode/config.json');
+      return f.existsSync() &&
+          f.readAsStringSync().contains('flutter-mcp-toolkit');
     case InitTarget.cursor:
     case InitTarget.codex:
     case InitTarget.cline:

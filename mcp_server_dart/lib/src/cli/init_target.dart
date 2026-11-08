@@ -3,6 +3,7 @@ enum InitTarget {
   cursor('cursor'),
   codex('codex'),
   cline('cline'),
+  zcode('zcode'),
   agentsSkills('agents-skills'),
   all('all');
 

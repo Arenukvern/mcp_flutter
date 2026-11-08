@@ -1,0 +1,1 @@
+Owned runtime regression evidence. Oka supervisor CLI runs the existing Flutter MCP harness test as a declared job. Headless browser, fresh profile/dynamic port, finally-stop. Not native desktop-focus or general Flutter navigation acceptance.

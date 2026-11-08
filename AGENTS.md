@@ -43,6 +43,25 @@ This project is indexed by GitNexus as **mcp_flutter** (5951 symbols, 12839 rela
 
 <!-- gitnexus:end -->
 
+## Seeing the app (runtime evidence — read before any UI task)
+
+Flutter captures come from the app's own render pipeline over the Dart VM
+service: they work while the window is in the background and need no
+screen-recording consent. macOS-native capture is the wrong tool for
+Flutter UI evidence.
+
+| When you need… | Use |
+|---|---|
+| A screenshot / UI state of the Flutter app | toolkit MCP tool `get_screenshots` (mounted as `flutter-mcp-toolkit`; ZCode workspace mount in `.zcode/config.json`, recreated with `flutter-mcp-toolkit init zcode`) |
+| No MCP server attached | `packages/harness` one-shot: `dart run packages/harness/tool/shot.dart <out-dir> [<vm-service-uri>]` (or `LA_VM_URI` env) |
+| Repeatable E2E scenarios, widget driving | skill `flutter-mcp-e2e-harness` (`packages/harness`) · chain overview: skill `flutter-mcp-automation-chain` |
+| A web build | universal-automation CDP tier is fine |
+| macOS-native pixels of a non-Flutter app | universal-automation `--os` tier (last resort: needs TCC grants + focus) |
+
+If a universal-automation capture/observe fails on a Flutter desktop app,
+do not retry it — switch tier to `get_screenshots` or the harness. Toolkit
+skills are vendored in `.agents/skills/` from `plugin/skills/`.
+
 ## IntentCall consumer boundary
 
 `mcp_flutter` is a production-grade consumer and proof repo for IntentCall. It does not define IntentCall architecture.

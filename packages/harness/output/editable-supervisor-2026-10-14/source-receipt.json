@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "files": [
+    {
+      "path": "packages/harness/lib/src/flutter_web_cdp.dart",
+      "sha256": "c016c1cf3b710952c067b7cc8c8f9ddd1c5e8d5321f7cdc9f2637529fc381fc1"
+    },
+    {
+      "path": "packages/harness/test/flutter_web_cdp_live_test.dart",
+      "sha256": "b6ed05066a469ba43bf0eccd5f3a7d5fc359576f50af99259783754dd3d0f100"
+    },
+    {
+      "path": "packages/harness/pubspec.yaml",
+      "sha256": "1cb5788b8551b022c2e077d8e49b948c1ec6ddd89057b986d1f1d4f156d67ba5"
+    },
+    {
+      "path": ".dart_tool/package_config.json",
+      "sha256": "b9abb7de66841557a01da90fffeffcdfce4f323f8a62bbcd042dbf5b83f53e16"
+    }
+  ],
+  "scope": "Named direct inputs only; not full compiler/dependency closure"
+}

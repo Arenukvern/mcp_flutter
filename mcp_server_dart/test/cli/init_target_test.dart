@@ -8,6 +8,7 @@ void main() {
       expect(InitTarget.parse('cursor'), InitTarget.cursor);
       expect(InitTarget.parse('codex'), InitTarget.codex);
       expect(InitTarget.parse('cline'), InitTarget.cline);
+      expect(InitTarget.parse('zcode'), InitTarget.zcode);
       expect(InitTarget.parse('agents-skills'), InitTarget.agentsSkills);
       expect(InitTarget.parse('all'), InitTarget.all);
     });
