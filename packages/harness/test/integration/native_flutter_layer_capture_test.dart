@@ -517,22 +517,17 @@ Future<void> _runNativeCapture({
 
       if (platform == 'android') {
         final report = androidStopReport!;
-        final sessionTeardownSidecar = readConsumerSessionTeardownSidecar(
-          appDir.path,
-          owningPid: sessionOwnerPid,
-        );
-        final receipt = devSessionStopReportJson(
-          report,
-          sessionCleanupSidecar: sessionTeardownSidecar,
-        );
+        final rawSessionTeardown = readSessionTeardownFile(appDir.path);
+        final receipt = devSessionStopReportJson(report);
         await writeJsonArtifact(
           artifactDir,
           'android_owned_session_receipt.json',
           receipt,
         );
         final cleanupEvidence = sessionCleanupConsumerEvidence(
+          report: report,
           sessionOwnerPid: sessionOwnerPid,
-          sessionCleanupSidecar: sessionTeardownSidecar,
+          rawSessionTeardownFile: rawSessionTeardown,
           trackedIdentitiesFrozen: androidTrackedIdentities,
         );
         await writeJsonArtifact(
@@ -606,25 +601,15 @@ Future<void> _runNativeCapture({
           'linuxSettlement': linuxSettlement?.toJson(),
           'androidStopReport': androidStopReport == null
               ? null
-              : devSessionStopReportJson(
-                  androidStopReport!,
-                  sessionCleanupSidecar: platform == 'android'
-                      ? readConsumerSessionTeardownSidecar(
-                          appDir.path,
-                          owningPid: sessionOwnerPid,
-                        )
-                      : null,
-                ),
-          'androidSessionCleanup': platform == 'android'
-              ? sessionCleanupConsumerEvidence(
+              : devSessionStopReportJson(androidStopReport!),
+          'androidSessionCleanup': androidStopReport == null
+              ? null
+              : sessionCleanupConsumerEvidence(
+                  report: androidStopReport!,
                   sessionOwnerPid: sessionOwnerPid,
-                  sessionCleanupSidecar: readConsumerSessionTeardownSidecar(
-                    appDir.path,
-                    owningPid: sessionOwnerPid,
-                  ),
+                  rawSessionTeardownFile: readSessionTeardownFile(appDir.path),
                   trackedIdentitiesFrozen: androidTrackedIdentities,
-                )
-              : null,
+                ),
           'logcatStop': logcatStopVerdict?.toJson(),
           'provenOwnedResourceSettlement': false,
           'provenPhysicalSettlement':

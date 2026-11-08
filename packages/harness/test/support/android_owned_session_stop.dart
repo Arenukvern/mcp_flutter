@@ -1,41 +1,8 @@
-import 'dart:convert';
-import 'dart:io';
-
 import 'package:oka_android/oka_android.dart';
 import 'package:oka_harness/oka_harness.dart';
 
-const _sessionTeardownFileName = 'session-teardown.json';
-
-/// Mirrors SDK identity filter for `.flutter_mcp/session-teardown.json`.
-Map<String, Object?>? readConsumerSessionTeardownSidecar(
-  String projectPath, {
-  required int? owningPid,
-}) {
-  final file = File('$projectPath/.flutter_mcp/$_sessionTeardownFileName');
-  if (!file.existsSync()) return null;
-  try {
-    final decoded = jsonDecode(file.readAsStringSync());
-    if (decoded is! Map) return null;
-    final raw = Map<String, Object?>.from(decoded);
-    final id = raw['identity'];
-    if (owningPid != null && id is Map) {
-      final runnerPid = id['runnerPid'];
-      if (runnerPid is int && runnerPid != owningPid) {
-        return null;
-      }
-    }
-    return raw;
-  } on Object {
-    return null;
-  }
-}
-
 /// JSON receipt from SDK [DevSessionStopReport] (truthful limits preserved).
-Map<String, Object?> devSessionStopReportJson(
-  DevSessionStopReport report, {
-  Map<String, Object?>? sessionCleanupSidecar,
-}) {
-  final cleanupActionsSucceeded = sessionCleanupSidecar?['actionsSucceeded'];
+Map<String, Object?> devSessionStopReportJson(DevSessionStopReport report) {
   return {
     'ok': report.ok,
     'disposition': report.disposition.name,
@@ -50,26 +17,28 @@ Map<String, Object?> devSessionStopReportJson(
     'limits': report.limits,
     'controlResponse': report.controlResponse,
     'message': report.message,
-    'sessionCleanup': ?sessionCleanupSidecar,
-    if (cleanupActionsSucceeded is bool)
-      'sessionCleanupActionsSucceeded': cleanupActionsSucceeded,
+    'sessionCleanup': ?report.sessionCleanup,
+    'sessionCleanupActionsSucceeded': ?report.sessionCleanupActionsSucceeded,
     'provenOwnedResourceSettlement': false,
     'consumerPhysicalObservations':
         'See android_owned_physical_observations.json (read-only; not attested by SDK).',
   };
 }
 
-/// Identity-filtered session-teardown sidecar for consumer artifacts (fail-closed).
+/// Consumer verdict over SDK-authored [DevSessionStopReport.sessionCleanup].
+///
+/// Optional [rawSessionTeardownFile] is attach-only evidence ([readSessionTeardownFile]);
+/// identity filtering stays on the SDK stop report.
 Map<String, Object?> sessionCleanupConsumerEvidence({
+  required DevSessionStopReport report,
   required int? sessionOwnerPid,
-  Map<String, Object?>? sessionCleanupSidecar,
+  Map<String, Object?>? rawSessionTeardownFile,
   List<Map<String, Object?>>? trackedIdentitiesFrozen,
 }) {
-  final cleanup = sessionCleanupSidecar;
+  final cleanup = report.sessionCleanup;
   final unknown = <String>[];
   var identityMatch = false;
   int? runnerPid;
-  final actionsSucceeded = cleanup?['actionsSucceeded'] == true;
   if (cleanup == null) {
     unknown.add('session_cleanup_sidecar_missing');
   } else {
@@ -93,22 +62,22 @@ Map<String, Object?> sessionCleanupConsumerEvidence({
       unknown.add('session_cleanup_identity_missing');
     }
   }
-  if (cleanup != null && !actionsSucceeded) {
+  if (report.sessionCleanupActionsSucceeded != true) {
     unknown.add('session_cleanup_actions_not_succeeded');
   }
   return {
     'sessionCleanup': cleanup,
-    'sessionCleanupActionsSucceeded': actionsSucceeded ? true : false,
+    'sessionCleanupActionsSucceeded': report.sessionCleanupActionsSucceeded,
     'sessionOwnerPidAtStop': sessionOwnerPid,
     'sessionCleanupRunnerPid': runnerPid,
     'sessionCleanupIdentityMatch': identityMatch,
     'trackedHostIdentitiesFrozenAtLaunch': trackedIdentitiesFrozen,
+    'rawSessionTeardownFile': ?rawSessionTeardownFile,
     'observationComplete': unknown.isEmpty,
     'observationUnknownReasons': unknown,
     'limits':
-        'Parsed from SDK session-teardown sidecar after identity-filtered '
-        'read; frozen host identities are launch-time orphans only — '
-        'not post-stop settlement authority.',
+        'Verdict uses SDK stop report sessionCleanup (identity-filtered at stop); '
+        'rawSessionTeardownFile when present is attach-only, not a second parser.',
   };
 }
 
