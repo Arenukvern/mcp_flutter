@@ -23,6 +23,9 @@ jobs:
           flutter-version: '3.47.5'
           cache: true
 
+      - name: Resolve universal_automation 0.4.x sibling
+        run: bash tool/ci/prepare_universal_automation_sibling.sh
+
       - name: Install mcp_server_dart dependencies
         working-directory: mcp_server_dart
         run: flutter pub get
@@ -60,6 +63,9 @@ jobs:
           channel: stable
           flutter-version: '3.47.5'
           cache: true
+
+      - name: Resolve universal_automation 0.4.x sibling
+        run: bash tool/ci/prepare_universal_automation_sibling.sh
 
       - name: Install mcp_server_dart dependencies
         working-directory: mcp_server_dart
@@ -144,6 +150,9 @@ jobs:
           channel: stable
           flutter-version: '3.47.5'
           cache: true
+
+      - name: Resolve universal_automation 0.4.x sibling
+        run: bash tool/ci/prepare_universal_automation_sibling.sh
 
       - name: Checkout IntentCall (CLI delegation target)
         uses: actions/checkout@v4

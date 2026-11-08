@@ -18,6 +18,8 @@ export 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart'
         PermissionStatus,
         parsePermissionKind,
         parsePermissionPolicy,
+        captureBackendFlutterLayerVm,
+        captureImplementationAppLayerTree,
         screenshotModeAuto,
         screenshotModeDesktopWindow,
         screenshotModeFlutterLayer;

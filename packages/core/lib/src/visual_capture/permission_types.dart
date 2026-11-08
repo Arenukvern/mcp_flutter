@@ -9,6 +9,13 @@ const screenshotModeAuto = 'auto';
 const screenshotModeFlutterLayer = 'flutter_layer';
 const screenshotModeDesktopWindow = 'desktop_window';
 
+/// Wire value: Flutter pixels came from [ext.mcp.toolkit.view_screenshots]
+/// (app layer tree → scene.toImage), not host/desktop capture.
+const captureBackendFlutterLayerVm = 'flutter_layer_vm_extension';
+
+/// Wire value: capture path inside the Flutter app (RenderView layer tree).
+const captureImplementationAppLayerTree = 'app_layer_tree';
+
 enum PermissionKind {
   visualCapture('visual_capture');
 

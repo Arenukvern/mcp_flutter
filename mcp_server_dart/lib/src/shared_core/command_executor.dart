@@ -635,12 +635,31 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       final extensionHints = _hintsFromPayload(extensionJson);
       final mergedHints = hints.hasCaptureRoutingHints ? hints : extensionHints;
 
+      if (images.isEmpty) {
+        return CoreResult.failure(
+          code: CoreErrorCode.getScreenshotsFailed,
+          message:
+              'Flutter layer screenshot returned no images '
+              '(ext.mcp.toolkit.view_screenshots).',
+          details: <String, Object?>{
+            'captureMode': screenshotModeFlutterLayer,
+            'captureBackend': captureBackendFlutterLayerVm,
+            'captureImplementation': captureImplementationAppLayerTree,
+            'permission': permission.toJson(),
+            if (mergedHints.hasCaptureRoutingHints)
+              'captureHints': mergedHints.toCaptureHintsJson(),
+          },
+        );
+      }
+
       Map<String, Object?> payload;
       if (!configuration.saveImagesToFiles) {
         payload = <String, Object?>{
           'images': images,
           'fileUrls': const <String>[],
           'captureMode': screenshotModeFlutterLayer,
+          'captureBackend': captureBackendFlutterLayerVm,
+          'captureImplementation': captureImplementationAppLayerTree,
         };
       } else {
         await imageFileSaver.cleanupOldScreenshots();
@@ -649,6 +668,8 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
           'images': const <String>[],
           'fileUrls': fileUrls,
           'captureMode': screenshotModeFlutterLayer,
+          'captureBackend': captureBackendFlutterLayerVm,
+          'captureImplementation': captureImplementationAppLayerTree,
         };
       }
 
