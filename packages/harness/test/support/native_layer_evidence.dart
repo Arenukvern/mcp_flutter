@@ -6,27 +6,14 @@ import 'dart:typed_data';
 import 'package:flutter_mcp_harness/flutter_mcp_harness.dart';
 import 'package:image/image.dart' as img;
 
+import 'native_layer_capture_layout.dart';
+
 const captureBackendFlutterLayerVm = 'flutter_layer_vm_extension';
 const captureImplementationAppLayerTree = 'app_layer_tree';
 
 /// Fixture marker stripe (see [kMarkerStripe] in fixture `main.dart`).
 const int kMarkerStripeArgb = 0xFF22AA55;
 const int kMarkerStripeHeightPx = 8;
-
-/// Logical window height for the native capture fixture (debug desktop).
-const int kFixtureReferenceHeightPx = 720;
-
-/// Counter text region below stripe (fraction of decoded capture dimensions).
-(double left, double top, double width, double height) counterRoiNorm(
-  img.Image image,
-) {
-  return (
-    image.width * 0.20,
-    markerStripeHeightPx(image) + image.height * 0.04,
-    image.width * 0.60,
-    image.height * 0.22,
-  );
-}
 
 /// Minimum changed pixels in counter ROI after 0→1 (excludes tiny noise).
 const int kMinCounterRoiDiffPixels = 12;
@@ -98,19 +85,14 @@ bool _isMarkerGreenArgb(int argb, {bool resamplingTolerant = false}) {
       (b - 0x55).abs() <= tol;
 }
 
-int markerStripeHeightPx(img.Image image) {
-  return (kMarkerStripeHeightPx * image.height / kFixtureReferenceHeightPx)
-      .round()
-      .clamp(1, image.height);
-}
-
 /// Samples the top marker stripe for the fixture green (#22AA55).
 Map<String, Object?> analyzeMarkerStripe(
   img.Image image, {
+  required NativeCaptureLayout layout,
   bool resamplingTolerant = false,
   double minGreenRatio = 0.95,
 }) {
-  final stripeH = markerStripeHeightPx(image);
+  final stripeH = layout.markerStripePhysicalPx.clamp(1, image.height);
   var samples = 0;
   var greenHits = 0;
   for (var y = 0; y < stripeH; y++) {
@@ -152,15 +134,19 @@ Map<String, Object?> analyzeMarkerStripe(
   };
 }
 
-int counterTextRoiDiffPixels(img.Image before, img.Image after) {
-  final norm = counterRoiNorm(before);
-  final left = norm.$1.round().clamp(0, before.width - 1);
-  final top = norm.$2.round().clamp(0, before.height - 1);
-  final width = norm.$3.round().clamp(1, before.width - left);
-  final height = norm.$4.round().clamp(1, before.height - top);
+int counterTextRoiDiffPixels(
+  img.Image before,
+  img.Image after,
+  NativeCaptureLayout layout,
+) {
+  final (left, top, width, height) = layout.counterTextPhysicalRoi;
+  final rLeft = left.clamp(0, before.width - 1);
+  final rTop = top.clamp(0, before.height - 1);
+  final rWidth = width.clamp(1, before.width - rLeft);
+  final rHeight = height.clamp(1, before.height - rTop);
   var diff = 0;
-  for (var y = top; y < top + height; y++) {
-    for (var x = left; x < left + width; x++) {
+  for (var y = rTop; y < rTop + rHeight; y++) {
+    for (var x = rLeft; x < rLeft + rWidth; x++) {
       if (before.getPixel(x, y) != after.getPixel(x, y)) diff++;
     }
   }
@@ -172,6 +158,7 @@ Map<String, Object?> analyzeCapturePair({
   required Uint8List after,
   required int counterBefore,
   required int counterAfter,
+  required NativeCaptureLayout layout,
 }) {
   final decodedBefore = img.decodeImage(before);
   final decodedAfter = img.decodeImage(after);
@@ -190,9 +177,13 @@ Map<String, Object?> analyzeCapturePair({
     };
   }
 
-  final stripeBefore = analyzeMarkerStripe(decodedBefore);
-  final stripeAfter = analyzeMarkerStripe(decodedAfter);
-  final counterRoiDiff = counterTextRoiDiffPixels(decodedBefore, decodedAfter);
+  final stripeBefore = analyzeMarkerStripe(decodedBefore, layout: layout);
+  final stripeAfter = analyzeMarkerStripe(decodedAfter, layout: layout);
+  final counterRoiDiff = counterTextRoiDiffPixels(
+    decodedBefore,
+    decodedAfter,
+    layout,
+  );
 
   final counterOk = counterAfter == counterBefore + 1;
   final stripeOk = stripeBefore['ok'] == true && stripeAfter['ok'] == true;
@@ -217,6 +208,13 @@ Map<String, Object?> analyzeCapturePair({
     'markerStripeAfter': stripeAfter,
     'width': decodedBefore.width,
     'height': decodedBefore.height,
+    'layout': {
+      'logicalWindowWidth': layout.logicalWindowWidth,
+      'logicalWindowHeight': layout.logicalWindowHeight,
+      'scale': layout.scale,
+      'markerStripePhysicalPx': layout.markerStripePhysicalPx,
+      'counterTextPhysicalRoi': layout.counterTextPhysicalRoi,
+    },
   };
 }
 
@@ -259,10 +257,18 @@ Map<String, Object?> rendererVerdictFromLogs(
   }
 
   final accepted = active != null;
+  final expectedBackend = platform == 'android' ? 'impeller' : null;
+  final platformAccepted = switch (platform) {
+    'android' => active == 'impeller',
+    'linux' => accepted,
+    _ => accepted,
+  };
   return {
     'platform': platform,
     'activeRendererBackend': active ?? 'unknown',
     'rendererAccepted': accepted,
+    'platformRendererAccepted': platformAccepted,
+    'expectedRendererBackend': expectedBackend,
     'observed': hits.isNotEmpty,
     'hits': hits,
     'honestGap': !accepted,
@@ -343,6 +349,7 @@ const double kCliCompressMinGreenRatio = 0.70;
 Map<String, Object?> analyzeCliCaptureProof({
   required Uint8List driverUncompressed,
   required Map<String, Object?> cliResult,
+  required NativeCaptureLayout driverLayout,
 }) {
   final cliBytes = cliPrimaryPngBytes(cliResult);
   if (cliBytes == null) {
@@ -355,14 +362,21 @@ Map<String, Object?> analyzeCliCaptureProof({
   }
   final widthScale = cliImg.width / driverImg.width;
   final heightScale = cliImg.height / driverImg.height;
-  final dimensionsOk = cliImg.width < driverImg.width &&
-      cliImg.height < driverImg.height &&
-      (widthScale - heightScale).abs() <= 0.02 &&
-      widthScale >= 0.5 &&
-      heightScale >= 0.5;
+  final bool dimensionsOk;
+  if (driverImg.width <= kCliCompressMaxWidthPx) {
+    dimensionsOk =
+        cliImg.width == driverImg.width && cliImg.height == driverImg.height;
+  } else {
+    final expectedCliW = kCliCompressMaxWidthPx;
+    final expectedCliH = (expectedCliW / (driverImg.width / driverImg.height))
+        .round();
+    dimensionsOk = cliImg.width == expectedCliW && cliImg.height == expectedCliH;
+  }
+  final cliLayout = driverLayout.forRescaledImage(cliImg.width, cliImg.height);
   final stripeCli = analyzeMarkerStripe(
     cliImg,
-    resamplingTolerant: true,
+    layout: cliLayout,
+    resamplingTolerant: driverImg.width > kCliCompressMaxWidthPx,
     minGreenRatio: kCliCompressMinGreenRatio,
   );
   String? reason;
@@ -386,6 +400,8 @@ Map<String, Object?> analyzeCliCaptureProof({
     // Observed for this deterministic fixture — PNG size is not globally monotonic.
     'compressSmallerThanDriver': cliBytes.length < driverUncompressed.length,
     'dimensionsOk': dimensionsOk,
+    'compressMaxWidthPx': kCliCompressMaxWidthPx,
+    'compressApplied': driverImg.width > kCliCompressMaxWidthPx,
   };
 }
 

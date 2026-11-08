@@ -37,6 +37,8 @@ jobs:
 
       - name: Prebuild native layer capture fixture (android debug APK + manifest)
         run: |
+          set -o pipefail
+          mkdir -p "$GITHUB_WORKSPACE/.native_capture"
           cd showcase/native_layer_capture_fixture
           flutter pub get
           dart run ../../packages/harness/tool/oka_android_build_probe.dart | tee "$GITHUB_WORKSPACE/.native_capture/android_oka_build_probe.json"

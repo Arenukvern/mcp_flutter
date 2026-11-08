@@ -15,7 +15,17 @@ void main() {
       platform: 'linux',
     );
     expect(verdict['rendererAccepted'], isTrue);
+    expect(verdict['platformRendererAccepted'], isTrue);
     expect(verdict['activeRendererBackend'], 'impeller');
+  });
+
+  test('android requires Impeller affirmative startup', () {
+    final verdict = rendererVerdictFromLogs(
+      ['Using the Skia rendering backend.'],
+      platform: 'android',
+    );
+    expect(verdict['rendererAccepted'], isTrue);
+    expect(verdict['platformRendererAccepted'], isFalse);
   });
 
   test('rejects bare embedder filename without startup sentence', () {

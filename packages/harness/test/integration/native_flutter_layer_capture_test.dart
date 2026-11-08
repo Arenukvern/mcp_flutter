@@ -5,14 +5,18 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
+import 'dart:typed_data';
 
 import 'package:flutter_mcp_harness/flutter_mcp_harness.dart';
+import 'package:image/image.dart' as img;
 import 'package:oka_harness/oka_harness.dart';
 import 'package:test/test.dart';
 
 import '../support/linux_bounded_flutter_run.dart';
+import '../support/native_layer_capture_layout.dart';
 import '../support/native_layer_evidence.dart';
 import '../support/native_layer_oka_diagnostics.dart';
+import '../support/session_settlement.dart';
 
 void main() {
   final runAndroid =
@@ -60,17 +64,12 @@ void main() {
           if (deviceId == null || deviceId.isEmpty) {
             throw StateError('ANDROID_SERIAL is required for Android native proof');
           }
-          final logcat = await AndroidEngineLogcatSession.start(
-            deviceId: deviceId,
-            sink: combinedTap,
-          );
           final harnessDir = Directory.current.path.endsWith('harness')
               ? Directory.current
               : Directory('${Directory.current.path}/packages/harness');
           final okaBin = '${harnessDir.path}/test/support/oka_dev_android.sh';
           final usePrebuild =
               Platform.environment['OKA_ANDROID_USE_PREBUILD'] == '1';
-          Map<String, Object?>? buildTrace;
           try {
             await assertOkaAndroidDevPreflight(
               projectDir: appDir.path,
@@ -80,7 +79,7 @@ void main() {
             if (usePrebuild) {
               rethrow;
             }
-            buildTrace = await runOkaAndroidManifestBuildTraced(
+            final buildTrace = await runOkaAndroidManifestBuildTraced(
               projectDir: appDir.path,
               okaBin: okaBin,
             );
@@ -114,7 +113,6 @@ void main() {
             app: app,
             logTap: combinedTap,
             appTap: app.stdout,
-            logcat: logcat,
           );
         },
       ),
@@ -142,14 +140,20 @@ void main() {
               '--use-application-binary=${linuxBinary.path}',
             ]);
           }
-          final app = await LinuxBoundedFlutterRunTarget(
+          final target = LinuxBoundedFlutterRunTarget(
             projectDir: appDir.path,
             extraArgs: extraArgs,
-          ).launch();
+          );
+          final app = await target.launch();
           for (final line in app.stdout.lines) {
             tap.add(line);
           }
-          return _OwnedSession(app: app, logTap: tap, appTap: app.stdout);
+          return _OwnedSession(
+            app: app,
+            logTap: tap,
+            appTap: app.stdout,
+            linuxTarget: target,
+          );
         },
       ),
       tags: ['native-linux'],
@@ -164,12 +168,12 @@ final class _OwnedSession {
     required this.app,
     required this.logTap,
     required this.appTap,
-    this.logcat,
+    this.linuxTarget,
   });
   final LaunchedApp app;
   final LogTap logTap;
   final LogTap appTap;
-  final AndroidEngineLogcatSession? logcat;
+  final LinuxBoundedFlutterRunTarget? linuxTarget;
   var stopped = false;
 
   List<String> get combinedLogLines => [...logTap.lines, ...appTap.lines];
@@ -190,10 +194,21 @@ Future<void> _runNativeCapture({
   );
   expect(pubGet.exitCode, 0, reason: '${pubGet.stderr}\n${pubGet.stdout}');
 
+  AndroidEngineLogcatSession? logcat;
   _OwnedSession? session;
   ToolkitDriver? driver;
 
   try {
+    if (platform == 'android') {
+      final deviceId = Platform.environment['ANDROID_SERIAL'];
+      if (deviceId != null && deviceId.isNotEmpty) {
+        logcat = await AndroidEngineLogcatSession.start(
+          deviceId: deviceId,
+          sink: combinedTap,
+        );
+      }
+    }
+
     session = await launch(combinedTap);
     final app = session.app;
     await vmHandshake(app.vmUri);
@@ -202,20 +217,27 @@ Future<void> _runNativeCapture({
     final counterBefore = await counterFromDriver(driver);
     expect(counterBefore, 0);
 
+    final beforeBytes = await driver.screenshot();
     final before = await writePng(
       artifactDir,
       '${platform}_before_increment.png',
-      await driver.screenshot(),
+      beforeBytes,
+    );
+    final layout = await resolveNativeCaptureLayout(
+      driver,
+      _imageWidth(beforeBytes),
+      _imageHeight(beforeBytes),
     );
 
     await tapIncrementButton(driver);
     await Future<void>.delayed(const Duration(milliseconds: 1200));
 
     final counterAfter = await counterFromDriver(driver);
+    final afterBytes = await driver.screenshot();
     final after = await writePng(
       artifactDir,
       '${platform}_after_increment.png',
-      await driver.screenshot(),
+      afterBytes,
     );
 
     final pixelProof = analyzeCapturePair(
@@ -223,6 +245,7 @@ Future<void> _runNativeCapture({
       after: after,
       counterBefore: counterBefore,
       counterAfter: counterAfter,
+      layout: layout,
     );
     await writeJsonArtifact(artifactDir, '${platform}_pixel_proof.json', {
       ...pixelProof,
@@ -253,6 +276,7 @@ Future<void> _runNativeCapture({
     final cliProof = analyzeCliCaptureProof(
       driverUncompressed: after,
       cliResult: cli,
+      driverLayout: layout,
     );
     await writeJsonArtifact(artifactDir, '${platform}_cli_capture_proof.json', cliProof);
     expect(cliProof['verdict'], 'pass', reason: '$cliProof');
@@ -266,14 +290,33 @@ Future<void> _runNativeCapture({
       '${platform}_renderer_verdict.json',
       renderer,
     );
-    expect(renderer['rendererAccepted'], isTrue, reason: '$renderer');
+    expect(renderer['platformRendererAccepted'], isTrue, reason: '$renderer');
+    if (platform == 'android') {
+      expect(renderer['activeRendererBackend'], 'impeller', reason: '$renderer');
+    } else if (platform == 'linux') {
+      expect(renderer['rendererAccepted'], isTrue, reason: '$renderer');
+      expect(
+        renderer['activeRendererBackend'],
+        isIn(['impeller', 'skia']),
+        reason: '$renderer',
+      );
+    }
 
     await driver.close();
     driver = null;
 
-    final exitCode = await app.stop();
+    await app.stop();
     session.stopped = true;
-    expect(exitCode, isNotNull);
+
+    BoundedSessionSettlement? settlement = session.linuxTarget?.lastSettlement;
+    if (settlement != null) {
+      expect(
+        settlement.physicallySettled,
+        isTrue,
+        reason: '${settlement.toJson()}',
+      );
+      expect(settlement.survivors, isEmpty, reason: '${settlement.toJson()}');
+    }
 
     await writeJsonArtifact(
       artifactDir,
@@ -283,7 +326,7 @@ Future<void> _runNativeCapture({
         'platform': platform,
         'vmUriHost': app.vmUri.host,
         'sessionArtifactDir': artifactDir.path,
-        'settlementExitCode': exitCode,
+        'settlement': settlement?.toJson(),
       },
     );
   } finally {
@@ -294,7 +337,19 @@ Future<void> _runNativeCapture({
         session.stopped = true;
       }
     } finally {
-      await session?.logcat?.stop();
+      await logcat?.stop();
     }
   }
+}
+
+int _imageWidth(Uint8List png) {
+  final decoded = img.decodeImage(png);
+  if (decoded == null) throw StateError('png_decode_failed');
+  return decoded.width;
+}
+
+int _imageHeight(Uint8List png) {
+  final decoded = img.decodeImage(png);
+  if (decoded == null) throw StateError('png_decode_failed');
+  return decoded.height;
 }
