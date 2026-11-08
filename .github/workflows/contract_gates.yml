@@ -41,6 +41,12 @@ jobs:
           dart pub global activate coverage
           dart pub global run coverage:test_with_coverage --branch-coverage
 
+      - name: flutter_mcp_harness analyze and unit tests
+        run: |
+          flutter pub get
+          dart analyze packages/harness
+          cd packages/harness && dart test --exclude-tags native-android,native-linux
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:

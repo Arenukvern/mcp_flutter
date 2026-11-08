@@ -115,8 +115,8 @@ void main() {
       });
 
       final render = (result.data! as Map<String, Object?>)['render'] as String;
-      expect(render, contains('s_0'));
-      expect(render, contains('Buy now'));
+      expect(render, contains('s_0 button "Buy now"'));
+      expect(render, contains('[disabled]'));
     });
 
     test('a payload without renderable nodes keeps its JSON shape', () {
@@ -132,7 +132,7 @@ void main() {
       );
     });
 
-    test('lens compact uses trimmed standard view (hosted semantics 0.2.x)', () {
+    test('lens compact shortens roles and drops container rows', () {
       final result = routeSemanticSnapshotResponse(<String, Object?>{
         'snapshot_id': 4,
         'nodes': <Object?>[
@@ -151,13 +151,12 @@ void main() {
       }, lens: 'compact');
 
       final render = (result.data! as Map<String, Object?>)['render'] as String;
-      expect(render, contains('s_1'));
-      expect(render, contains('Buy now'));
-      // SemanticLens compact grammar requires semantics 0.4+ / interface 0.4.
-      expect(render, isNot(contains('lens=compact')));
+      expect(render, contains('lens=compact'));
+      expect(render, contains('s_1 btn "Buy now"'));
+      expect(render, isNot(contains(' generic')));
     });
 
-    test('lens design falls back to standard view without SemanticLens', () {
+    test('lens design emits geometry and clustering footers', () {
       final result = routeSemanticSnapshotResponse(<String, Object?>{
         'snapshot_id': 5,
         'nodes': <Object?>[
@@ -179,9 +178,8 @@ void main() {
       }, lens: 'design');
 
       final render = (result.data! as Map<String, Object?>)['render'] as String;
-      expect(render, contains('Alpha'));
-      expect(render, contains('Beta'));
-      expect(render, isNot(contains('lens=design')));
+      expect(render, contains('lens=design'));
+      expect(render, contains('# cols 72×2'));
     });
 
     test('an unknown lens falls back to the standard grammar', () {

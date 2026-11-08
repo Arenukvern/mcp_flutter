@@ -58,3 +58,4 @@ universal_automation/
 # harness run outputs (runtime-generated E2E artifacts)
 packages/harness/output/
 .native_capture/
+intentcall/

@@ -24,6 +24,7 @@ import 'package:flutter_mcp_toolkit_server/src/shared_core/types/error_codes.dar
 import 'package:flutter_mcp_toolkit_server/src/shared_core/types/results.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/vm_connections/connection_context.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/vm_connections/core_port_scanner.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/semantic_lens_render_adapter.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
 import 'package:intentcall_session/intentcall_session.dart';
 import 'package:is_dart_empty_or_not/is_dart_empty_or_not.dart';
@@ -2112,19 +2113,20 @@ Map<String, Object?> _observationRender(
     }
   }
   if (nodes.isEmpty) return const {};
-  // Hosted semantics 0.2.x: standard [SemanticView] only (SemanticLens is 0.4+).
-  final view = switch (lensName) {
-    'compact' => const SemanticView().trimmed(120),
-    _ => const SemanticView(),
-  };
   try {
     final snapshot = familySnapshotFromNodes(
       nodes,
       snapshotId: (data['snapshot_id'] as num?)?.toInt() ?? 0,
       capturedAt: DateTime.now().toUtc(),
     );
+    final observation = Observation.of(snapshot, const SemanticView());
+    final lens = hostedSemanticLens(lensName);
     return {
-      'render': Observation.of(snapshot, view).render(),
+      'render': renderHostedSemanticLens(
+        snapshot: snapshot,
+        observation: observation,
+        lens: lens,
+      ),
     };
   } on Object {
     // Enrichment only: the primary contract is the node list itself.

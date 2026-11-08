@@ -3,7 +3,7 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
-  gtk
+  app_links_linux
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST

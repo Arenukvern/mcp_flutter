@@ -4,7 +4,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_mcp_harness/flutter_mcp_harness.dart';
 import 'package:image/image.dart' as img;
-import 'vm_screenshot_grabber_sdk_compat.dart';
+import 'package:universal_automation_interface/universal_automation_interface.dart';
 import 'package:universal_tooling_runtime/universal_tooling_runtime.dart';
 
 const captureBackendFlutterLayerVm = 'flutter_layer_vm_extension';
@@ -29,68 +29,145 @@ Future<Uint8List> writePng(Directory dir, String name, Uint8List bytes) async {
   return bytes;
 }
 
-Map<String, Object?> analyzePngPair(Uint8List before, Uint8List after) {
+Future<int> counterFromDriver(ToolkitDriver driver) async {
+  final nodes = (await driver.snapshot()).nodes.toList();
+  for (final node in nodes) {
+    if (node.attributes['identifier'] == 'native_layer_counter_value') {
+      final parsed = int.tryParse(node.value ?? node.name ?? '');
+      if (parsed != null) return parsed;
+    }
+  }
+  throw StateError('native_layer_counter_value not found');
+}
+
+Future<void> tapIncrementButton(ToolkitDriver driver) async {
+  final nodes = (await driver.snapshot()).nodes.toList();
+  for (final node in nodes) {
+    if (node.attributes['identifier'] == 'native_layer_increment_button') {
+      final ref = node.attributes['ref'];
+      if (ref != null) {
+        await driver.perform(ClickAction(css: ref));
+        return;
+      }
+    }
+  }
+  throw StateError('native_layer_increment_button ref not found');
+}
+
+Map<String, Object?> analyzeCapturePair({
+  required Uint8List before,
+  required Uint8List after,
+  required int counterBefore,
+  required int counterAfter,
+}) {
   final decodedBefore = img.decodeImage(before);
   final decodedAfter = img.decodeImage(after);
   if (decodedBefore == null || decodedAfter == null) {
-    return {
-      'verdict': 'fail',
-      'reason': 'png_decode_failed',
-    };
+    return {'verdict': 'fail', 'reason': 'png_decode_failed'};
   }
-  if (decodedBefore.width != decodedAfter.width ||
-      decodedBefore.height != decodedAfter.height) {
-    return {
-      'verdict': 'fail',
-      'reason': 'dimension_mismatch',
-      'widthBefore': decodedBefore.width,
-      'widthAfter': decodedAfter.width,
-      'heightBefore': decodedBefore.height,
-      'heightAfter': decodedAfter.height,
-    };
-  }
-  var diffPixels = 0;
-  for (var y = 0; y < decodedBefore.height; y++) {
+  final stripeY1 = 8.clamp(0, decodedBefore.height);
+  var stripeDiff = 0;
+  for (var y = 0; y < stripeY1; y++) {
     for (var x = 0; x < decodedBefore.width; x++) {
       if (decodedBefore.getPixel(x, y) != decodedAfter.getPixel(x, y)) {
-        diffPixels++;
+        stripeDiff++;
       }
     }
   }
   return {
-    'verdict': diffPixels > 0 ? 'pass' : 'fail',
-    'reason': diffPixels > 0 ? null : 'no_pixel_change',
-    'diffPixels': diffPixels,
+    'verdict':
+        counterAfter == counterBefore + 1 && stripeDiff == 0 ? 'pass' : 'fail',
+    'reason': counterAfter == counterBefore + 1
+        ? (stripeDiff == 0 ? null : 'unexpected_stripe_change')
+        : 'counter_not_incremented',
+    'counterBefore': counterBefore,
+    'counterAfter': counterAfter,
+    'markerStripeDiffPixels': stripeDiff,
     'width': decodedBefore.width,
     'height': decodedBefore.height,
-    'pngBeforeBytes': before.length,
-    'pngAfterBytes': after.length,
   };
 }
 
-Map<String, Object?> rendererVerdictFromLogs(LogTap tap, {required String platform}) {
-  final text = tap.lines.join('\n');
-  final lower = text.toLowerCase();
-  final impeller = lower.contains('impeller');
-  final skia = lower.contains('skia');
-  final vulkan = lower.contains('vulkan');
-  final opengl = lower.contains('opengl') || lower.contains('gles');
-  String? backend;
-  if (impeller) {
-    backend = 'impeller';
-  } else if (skia) {
-    backend = 'skia';
+Map<String, Object?> rendererVerdictFromLogs(
+  List<String> lines, {
+  required String platform,
+}) {
+  final patterns = <(String backend, RegExp pattern)>[
+    (
+      'impeller',
+      RegExp(
+        r'Impeller rendering backend|Using the Impeller rendering backend|embedder_surface_gl_impeller',
+        caseSensitive: false,
+      ),
+    ),
+    (
+      'impeller',
+      RegExp(r'FlutterImpeller', caseSensitive: false),
+    ),
+    (
+      'skia',
+      RegExp(
+        r'Skia GLES|Skia\s+backend|using\s+Skia',
+        caseSensitive: false,
+      ),
+    ),
+    (
+      'software',
+      RegExp(r'software rendering', caseSensitive: false),
+    ),
+  ];
+
+  final hits = <Map<String, Object?>>[];
+  for (var i = 0; i < lines.length; i++) {
+    final line = lines[i];
+    for (final (backend, pattern) in patterns) {
+      if (pattern.hasMatch(line)) {
+        hits.add({
+          'lineIndex': i,
+          'backend': backend,
+          'sourceLine': line,
+          'pattern': pattern.pattern,
+        });
+      }
+    }
   }
+
+  final active = hits.isEmpty ? null : hits.first['backend'] as String;
   return {
     'platform': platform,
-    'impellerMentioned': impeller,
-    'skiaMentioned': skia,
-    'vulkanMentioned': vulkan,
-    'openglMentioned': opengl,
-    'inferredRendererBackend': backend,
-    'honestGap': backend == null,
-    'logLineCount': tap.lines.length,
+    'activeRendererBackend': active,
+    'observed': hits.isNotEmpty,
+    'hits': hits,
+    'honestGap': active == null,
+    'logLineCount': lines.length,
   };
+}
+
+Future<Process?> startAndroidEngineLogcat({
+  required String deviceId,
+  required LogTap sink,
+}) async {
+  try {
+    await Process.run('adb', ['-s', deviceId, 'logcat', '-c']);
+    final process = await Process.start('adb', [
+      '-s',
+      deviceId,
+      'logcat',
+      '-v',
+      'time',
+    ]);
+    process.stdout
+        .transform(utf8.decoder)
+        .transform(const LineSplitter())
+        .listen((line) => sink.add('[logcat] $line'));
+    process.stderr
+        .transform(utf8.decoder)
+        .transform(const LineSplitter())
+        .listen((line) => sink.add('[logcat:err] $line'));
+    return process;
+  } on Object {
+    return null;
+  }
 }
 
 Future<void> vmHandshake(Uri vmServiceUri) async {
@@ -104,7 +181,7 @@ Future<Map<String, Object?>> runToolkitCliGetScreenshots({
 }) async {
   final serverDir = Directory('${repoRoot.path}/mcp_server_dart');
   final ws = vmServiceUri.scheme == 'http'
-      ? VmScreenshotGrabber.normalizeWsUri(vmServiceUri).toString()
+      ? canonicalVmServiceWsUri(vmServiceUri).toString()
       : vmServiceUri.toString();
   final result = await Process.run(
     'dart',
@@ -149,24 +226,6 @@ Future<Map<String, Object?>> runToolkitCliGetScreenshots({
   };
 }
 
-Future<Map<String, Object?>> boundedSettlementReceipt(
-  Future<BoundedRunResult>? runFuture,
-) async {
-  final run = runFuture;
-  if (run == null) {
-    return {'skipped': true, 'reason': 'no_bounded_run_future'};
-  }
-  final result = await run;
-  return {
-    'cause': '${result.cause}',
-    'exitCode': result.exitCode,
-    'ok': result.ok,
-    'physicallySettled': result.physicallySettled,
-    'survivors': result.survivors,
-    'settlementProblem': result.settlementProblem,
-  };
-}
-
 Directory harnessRepoRoot() {
   final harnessDir = Directory.current.path.endsWith('harness')
       ? Directory.current
@@ -174,5 +233,5 @@ Directory harnessRepoRoot() {
   return Directory('${harnessDir.parent.parent.path}');
 }
 
-Directory showcaseFlutterTestApp(Directory repoRoot) =>
-    Directory('${repoRoot.path}/showcase/flutter_test_app');
+Directory nativeCaptureFixtureApp(Directory repoRoot) =>
+    Directory('${repoRoot.path}/showcase/native_layer_capture_fixture');

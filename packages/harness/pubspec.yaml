@@ -32,5 +32,4 @@ dev_dependencies:
   oka_harness: ^0.9.1
   test: ^1.31.0
   universal_automation_conformance: ^0.3.0
-  universal_capture_flutter: ^0.2.0
   universal_tooling_runtime: ^0.2.2

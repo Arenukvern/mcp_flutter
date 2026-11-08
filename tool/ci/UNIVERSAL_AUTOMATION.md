@@ -1,16 +1,10 @@
-# Universal automation dependency pinning
+# Universal automation dependency policy (hosted)
 
-`universal_automation_semantics` **0.4.x / 0.5.x** on pub.dev requires
-`universal_automation_interface` **^0.4.0**, but pub.dev’s latest published
-interface is **0.3.0** — so hosted-only resolution cannot satisfy the
-observation-render stack until **interface 0.4.0 is published** on pub.dev
-(this repo cannot publish that package).
+This workspace resolves **hosted** `universal_automation_*` packages from pub.dev:
 
-**Bounded in-repo fix:** the workspace root `pubspec.yaml` declares
-`dependency_overrides` for **git** UA packages at the immutable ref in
-`tool/ci/universal_automation_ref.txt`
-(`1c6f7982a1764ea090860d23aff284c5df073159`). `dart pub get` clones that
-commit; no gitignored `universal_automation/` checkout is required for CI.
+- `universal_automation_interface` **0.3.0** (latest published interface)
+- `universal_automation_semantics` **0.2.0**
 
-**Pub publish note:** `mcp_toolkit` pub.dev releases remain blocked on the same
-upstream publish until interface 0.4.0 is on pub.dev (documented blocker).
+**Blocker:** semantics **0.4+** / lens APIs require `universal_automation_interface` **^0.4.0**, which is **not** published on pub.dev. Until interface 0.4 ships, `mcp_server_dart` keeps lens rendering (`standard` / `compact` / `design`) via the in-repo compatibility adapter in `mcp_server_dart/lib/src/shared_core/semantic_lens_render_adapter.dart` (UA semantics grammar @ `1c6f7982`).
+
+Do not add git `dependency_overrides` for UA packages in this consumer repo.
