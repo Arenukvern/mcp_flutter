@@ -59,8 +59,6 @@ void main() {
             throw StateError('ANDROID_SERIAL is required for Android native proof');
           }
           await startAndroidEngineLogcat(deviceId: deviceId, sink: combinedTap);
-          final skipApkBuild =
-              Platform.environment['NATIVE_CAPTURE_SKIP_APK_BUILD'] == '1';
           final harnessDir = Directory.current.path.endsWith('harness')
               ? Directory.current
               : Directory('${Directory.current.path}/packages/harness');
@@ -70,7 +68,8 @@ void main() {
             logcat: false,
             okaBin: '${harnessDir.path}/test/support/oka_dev_android.sh',
           );
-          final app = await target.launch(build: !skipApkBuild);
+          // oka dev android requires a session-manifest APK from `oka build`.
+          final app = await target.launch(build: true);
           return _OwnedSession(app: app, logTap: combinedTap, appTap: app.stdout);
         },
       ),
@@ -88,9 +87,19 @@ void main() {
         artifactDir: artifactDir,
         appDir: appDir,
         launch: (tap) async {
+          final linuxBinary = File(
+            '${appDir.path}/build/linux/x64/debug/bundle/native_layer_capture_fixture',
+          );
+          final extraArgs = <String>['-v'];
+          if (linuxBinary.existsSync()) {
+            extraArgs.addAll([
+              '--no-build',
+              '--use-application-binary=${linuxBinary.path}',
+            ]);
+          }
           final app = await LinuxBoundedFlutterRunTarget(
             projectDir: appDir.path,
-            extraArgs: const ['-v', '--no-build'],
+            extraArgs: extraArgs,
           ).launch();
           for (final line in app.stdout.lines) {
             tap.add(line);
