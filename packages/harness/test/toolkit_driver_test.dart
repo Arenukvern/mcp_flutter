@@ -97,6 +97,20 @@ const String _pngBase64 =
               'success': true,
               'result': {'orderId': 'o-1'},
             },
+      // s_2b has no bounds in the fixture — the canned answer for an
+      // off-viewport control, exactly what the app side returns.
+      ToolkitExtensions.tap => args['ref'] == 's_2b'
+          ? {
+            'success': false,
+            'ref': args['ref'],
+            'action': 'tap',
+            'error': 'target_outside_viewport',
+            'hint': 'Reveal or scroll the target before tapping.',
+          }
+          : {'success': true, 'ref': args['ref'], 'via': 'semantic_action'},
+      ToolkitExtensions.enterText => args['ref'] == 's_4'
+          ? {'success': false, 'error': 'not_editable', 'ref': args['ref']}
+          : {'success': true, 'ref': args['ref']},
       _ => {'success': true},
     };
   }
@@ -163,6 +177,39 @@ void main() {
           isA<ElementNotFoundException>()
               .having((error) => error.kind, 'kind', 'elementNotFound')
               .having((error) => error.locator, 'locator', 'name'),
+        ),
+      );
+      await driver.close();
+    });
+
+    test('tap refusal surfaces the app-side error, never a silent ok',
+        () async {
+      final driver = ToolkitDriver.custom(_fakeApp().$1);
+      // s_2b answers with the app's off-viewport refusal: the driver
+      // must throw it (with the hint), not report success.
+      await expectLater(
+        driver.perform(const ClickAction(css: 's_2b')),
+        throwsA(
+          isA<ProtocolException>().having(
+            (error) => error.message,
+            'message',
+            contains('target_outside_viewport — Reveal or scroll'),
+          ),
+        ),
+      );
+      await driver.close();
+    });
+
+    test('enter_text refusal surfaces the app-side error', () async {
+      final driver = ToolkitDriver.custom(_fakeApp().$1);
+      await expectLater(
+        driver.perform(const TypeAction('x', css: 's_4')),
+        throwsA(
+          isA<ProtocolException>().having(
+            (error) => error.message,
+            'message',
+            contains('not_editable'),
+          ),
         ),
       );
       await driver.close();

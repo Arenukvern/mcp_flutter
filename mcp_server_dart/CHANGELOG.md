@@ -4,6 +4,12 @@
 
 ### Added
 
+- **`semantic_snapshot` observation render**: success payloads now carry a
+  `render` field — the compact numbered text of the
+  `universal_automation_semantics` 0.4.0 observation grammar (`s_N role
+  "name" value=…`, `[disabled]`/`#identifier` suffixes, honest trim
+  header) projected from the same node walk. Additive enrichment: the
+  node list is untouched, and non-renderable payloads keep their shape.
 - **`init zcode` target**: writes `.zcode/config.json` (`mcp.servers`, nested
   shape) with the server binary resolved to an absolute path at init time
   (ZCode does not expand `${...}` templates in config-file MCP servers) plus

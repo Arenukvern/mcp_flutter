@@ -27,6 +27,7 @@ import 'package:flutter_mcp_toolkit_server/src/shared_core/vm_connections/core_p
 import 'package:from_json_to_json/from_json_to_json.dart';
 import 'package:intentcall_session/intentcall_session.dart';
 import 'package:is_dart_empty_or_not/is_dart_empty_or_not.dart';
+import 'package:universal_automation_semantics/universal_automation_semantics.dart';
 import 'package:vm_service/vm_service.dart';
 
 /// Single command dispatch interface shared by CLI and MCP wrapper.
@@ -2043,14 +2044,52 @@ CoreResult routeInteractionResponse(
 /// absent key is a success. A filter that names an unresolvable `subtreeOf`
 /// takes no snapshot at all, and reaching the caller as a successful command
 /// would let it read stale refs as if they had just been issued.
+///
+/// A success payload is additionally enriched with the family observation
+/// render (`render`: compact numbered text via
+/// `universal_automation_semantics`) — additive enrichment; the wire nodes
+/// stay untouched, so existing consumers are unaffected. Rendering is
+/// fail-soft: a payload the projection cannot read keeps its JSON shape.
 CoreResult routeSemanticSnapshotResponse(Map<String, Object?> data) {
-  if (data['success'] != false) return CoreResult.success(data: data);
+  if (data['success'] != false) {
+    return CoreResult.success(data: {
+      ...data,
+      ..._observationRender(data),
+    });
+  }
   return CoreResult.failure(
     code: CoreErrorCode.semanticSnapshotFailed,
     message:
         'semantic_snapshot refused: ${data['error'] ?? 'no reason given'}',
     details: data,
   );
+}
+
+/// The family observation text for a snapshot payload — `{}` when the
+/// payload carries no renderable node list (refusals, malformed walks).
+Map<String, Object?> _observationRender(Map<String, Object?> data) {
+  final rawNodes = data['nodes'];
+  if (rawNodes is! List) return const {};
+  final nodes = <Map<String, Object?>>[];
+  for (final node in rawNodes) {
+    if (node is Map &&
+        node['ref'] is String &&
+        (node as Map<Object?, Object?>).keys.every((key) => key is String)) {
+      nodes.add(node.cast<String, Object?>());
+    }
+  }
+  if (nodes.isEmpty) return const {};
+  try {
+    final snapshot = familySnapshotFromNodes(
+      nodes,
+      snapshotId: (data['snapshot_id'] as num?)?.toInt() ?? 0,
+      capturedAt: DateTime.now().toUtc(),
+    );
+    return {'render': Observation.of(snapshot, const SemanticView()).render()};
+  } on Object {
+    // Enrichment only: the primary contract is the node list itself.
+    return const {};
+  }
 }
 
 /// Route the toolkit's `wait_for` extension response to a [CoreResult].

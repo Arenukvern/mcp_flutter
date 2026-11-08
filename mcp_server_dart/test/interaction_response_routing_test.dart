@@ -94,7 +94,42 @@ void main() {
       });
 
       expect(result.ok, isTrue);
-      expect((result.data! as Map<String, Object?>)['snapshot_id'], 7);
+      final data = result.data! as Map<String, Object?>;
+      expect(data['snapshot_id'], 7);
+      // The wire nodes pass through; the observation render rides along.
+      expect(data['nodes'], hasLength(1));
+      expect(data['render'], isA<String>());
+    });
+
+    test('the render is the family observation text over the walk', () {
+      final result = routeSemanticSnapshotResponse(<String, Object?>{
+        'snapshot_id': 3,
+        'nodes': <Object?>[
+          <String, Object?>{
+            'ref': 's_0',
+            'type': 'button',
+            'label': 'Buy now',
+            'enabled': false,
+          },
+        ],
+      });
+
+      final render = (result.data! as Map<String, Object?>)['render'] as String;
+      expect(render, contains('s_0 button "Buy now"'));
+      expect(render, contains('[disabled]'));
+    });
+
+    test('a payload without renderable nodes keeps its JSON shape', () {
+      final result = routeSemanticSnapshotResponse(<String, Object?>{
+        'snapshot_id': 1,
+        'nodes': <Object?>['not-a-node'],
+      });
+
+      expect(result.ok, isTrue);
+      expect(
+        (result.data! as Map<String, Object?>).containsKey('render'),
+        isFalse,
+      );
     });
 
     test('an unresolvable subtreeOf is a failure, not an empty snapshot', () {

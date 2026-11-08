@@ -120,7 +120,19 @@ final class ToolkitDriver
         await _navigate(url);
       case ClickAction(:final css, :final role, :final name):
         final ref = await _resolveRef(css: css, role: role, name: name);
-        await _call(ToolkitExtensions.tap, args: {'ref': ref});
+        final tap = _unwrap(
+          await _call(ToolkitExtensions.tap, args: {'ref': ref}),
+        );
+        if (tap['success'] == false) {
+          // The app side owns the refusal vocabulary (ref not found,
+          // stale ref, disabled control, target_outside_viewport) —
+          // surface it, never report a silent ok (live-proven: an
+          // off-viewport control refuses with a reveal hint).
+          throw ProtocolException(
+            'tap refused at ref "$ref": ${tap['error']} — '
+            '${tap['hint'] ?? tap['message'] ?? 'no hint'}',
+          );
+        }
       case TypeAction(:final text, :final css, :final submit):
         if (css == null) {
           throw const DriverUnsupportedException(
@@ -130,10 +142,18 @@ final class ToolkitDriver
           );
         }
         final ref = await _resolveRef(css: css);
-        await _call(
-          ToolkitExtensions.enterText,
-          args: {'ref': ref, 'text': text},
+        final enter = _unwrap(
+          await _call(
+            ToolkitExtensions.enterText,
+            args: {'ref': ref, 'text': text},
+          ),
         );
+        if (enter['success'] == false) {
+          throw ProtocolException(
+            'enter_text refused at ref "$ref": ${enter['error']} — '
+            '${enter['hint'] ?? enter['message'] ?? 'no hint'}',
+          );
+        }
         if (submit) await _pressKey('Enter');
       case KeyPressAction(:final key):
         await _pressKey(key);
