@@ -94,6 +94,13 @@ jobs:
       - name: Provision intentcall (pinned ref in-repo)
         run: bash tool/ci/checkout_intentcall.sh
 
+      - name: Provision oka test pin (compile integration tests; Linux run does not spawn oka)
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/.native_capture"
+          bash tool/ci/provision_oka_consumer_test_pin.sh
+          bash tool/ci/report_oka_consumer_provenance.sh "$GITHUB_WORKSPACE/.native_capture/oka_consumer_provenance_linux.json"
+          echo "$HOME/.pub-cache/bin" >> "$GITHUB_PATH"
+
       - name: Workspace pub get
         run: flutter pub get
 
@@ -125,5 +132,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: native-capture-linux
-          path: .native_capture/linux/
+          path: |
+            .native_capture/linux/
+            .native_capture/oka_consumer_provenance_linux.json
           if-no-files-found: warn
