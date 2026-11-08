@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter_mcp_harness/flutter_mcp_harness.dart';
 import 'package:universal_tooling_runtime/universal_tooling_runtime.dart';
 
+import 'linux_machine_protocol.dart';
 import 'session_settlement.dart';
 
 /// Linux lifecycle owner via [runBounded] + `flutter run --machine` typed JSON.
@@ -35,6 +36,7 @@ final class LinuxBoundedFlutterRunTarget implements AppTarget {
   int _nextMachineRequestId = 1;
   Completer<bool>? _appStopAck;
   int? _lastAppStopRequestId;
+  String? _lastMachineAppId;
 
   @override
   Future<LaunchedApp> launch({bool build = true}) async {
@@ -70,8 +72,11 @@ final class LinuxBoundedFlutterRunTarget implements AppTarget {
             handle,
             tap,
             vmUri,
-            onAppId: (id) => machineAppId ??= id,
-            onMachineLine: _onMachineLine,
+            onAppId: (id) {
+              machineAppId ??= id;
+              _lastMachineAppId = id;
+            },
+            onMachinePayload: _onMachinePayload,
           ),
         );
       },
@@ -138,24 +143,39 @@ final class LinuxBoundedFlutterRunTarget implements AppTarget {
     Error.throwWithStackTrace(error, stack);
   }
 
-  void _onMachineLine(String line) {
-    try {
-      final decoded = jsonDecode(line);
-      if (decoded is! List) return;
-      for (final item in decoded) {
-        if (item is! Map) continue;
-        final id = item['id'];
-        if (id is! int || id != _lastAppStopRequestId) continue;
-        if (item.containsKey('result') || item['event'] == 'app.stop') {
-          _appStopAck?.complete(true);
-        }
-        if (item.containsKey('error')) {
-          _appStopAck?.complete(false);
-        }
-      }
-    } on Object {
-      // Non-JSON machine noise.
+  void _onMachinePayload(Map<String, Object?> payload) {
+    final stopId = _lastAppStopRequestId;
+    final completer = _appStopAck;
+    if (stopId == null || completer == null || completer.isCompleted) {
+      return;
     }
+    final ack = machineAppStopAckFromPayload(
+      payload,
+      stopRequestId: stopId,
+      expectedAppId: _lastMachineAppId,
+    );
+    if (ack == true) {
+      completer.complete(true);
+    } else if (ack == false) {
+      completer.complete(false);
+    }
+  }
+
+  static bool _replayStopAckFromTap(
+    LogTap tap,
+    int stopRequestId,
+    String? expectedAppId,
+  ) {
+    for (final line in tap.lines.reversed.take(120)) {
+      final ack = machineAppStopAckFromLine(
+        line,
+        stopRequestId: stopRequestId,
+        expectedAppId: expectedAppId,
+      );
+      if (ack == true) return true;
+      if (ack == false) return false;
+    }
+    return false;
   }
 
   static Future<int> _stopBoundedSession(
@@ -190,6 +210,19 @@ final class LinuxBoundedFlutterRunTarget implements AppTarget {
             return false;
           },
         );
+        if (!appStopAcknowledged) {
+          final recovered = _replayStopAckFromTap(
+            tap,
+            stopRequestId!,
+            appId,
+          );
+          if (recovered) {
+            appStopAcknowledged = true;
+            tap.add(
+              '[linux-machine-run] app.stop ack recovered from tap id=$stopRequestId',
+            );
+          }
+        }
       } on Object catch (error) {
         tap.add('[linux-machine-run] app.stop failed: $error');
       } finally {
@@ -205,6 +238,9 @@ final class LinuxBoundedFlutterRunTarget implements AppTarget {
     }
     await handle.close();
     final settled = await boundedRun;
+    final cooperativeAckGap = stopRequestId != null &&
+        !appStopAcknowledged &&
+        settled.physicallySettled;
     owner.lastSettlement = BoundedSessionSettlement(
       exitCode: settled.exitCode,
       physicallySettled: settled.physicallySettled,
@@ -212,12 +248,13 @@ final class LinuxBoundedFlutterRunTarget implements AppTarget {
       cause: settled.cause.name,
       appStopAcknowledged: appStopAcknowledged,
       appStopRequestId: stopRequestId,
+      cooperativeAckGap: cooperativeAckGap,
     );
     tap.add(
       '[linux-machine-run] bounded stop cause=${settled.cause} ok=${settled.ok} '
       'physicallySettled=${settled.physicallySettled} '
       'survivors=${settled.survivors} settlementProblem=${settled.settlementProblem} '
-      'appStopAcknowledged=$appStopAcknowledged',
+      'appStopAcknowledged=$appStopAcknowledged cooperativeAckGap=$cooperativeAckGap',
     );
     if (!settled.physicallySettled) {
       throw StateError(
@@ -234,13 +271,16 @@ final class LinuxBoundedFlutterRunTarget implements AppTarget {
     LogTap tap,
     Completer<Uri> vmUri, {
     void Function(String appId)? onAppId,
-    void Function(String line)? onMachineLine,
+    void Function(Map<String, Object?>)? onMachinePayload,
   }) async {
     await for (final frame in handle.output) {
       final line = utf8.decode(frame).trimRight();
       if (line.isEmpty) continue;
       tap.add(line);
-      onMachineLine?.call(line);
+      final payload = unwrapFlutterMachineLine(line);
+      if (payload != null) {
+        onMachinePayload?.call(payload);
+      }
       Uri? found;
       String? appId;
       try {

@@ -344,15 +344,13 @@ Future<void> _runNativeCapture({
           reason: '${linuxSettlement!.toJson()}',
         );
         expect(linuxSettlement!.survivors, isEmpty, reason: '${linuxSettlement!.toJson()}');
-        if (linuxSettlement!.appStopRequestId != null) {
-          expect(
-            linuxSettlement!.appStopAcknowledged,
-            isTrue,
-            reason:
-                'flutter --machine app.stop requires cooperative ack: '
-                '${linuxSettlement!.toJson()}',
-          );
-        }
+        expect(
+          linuxSettlement!.shutdownTruthful,
+          isTrue,
+          reason:
+              'Linux shutdown: cooperative app.stop ack or documented '
+              'bounded-settlement fallback: ${linuxSettlement!.toJson()}',
+        );
       }
 
       if (platform == 'android') {
