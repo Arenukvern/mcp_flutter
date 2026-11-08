@@ -4,8 +4,6 @@ import 'dart:typed_data';
 
 import 'package:flutter_mcp_harness/flutter_mcp_harness.dart';
 import 'package:image/image.dart' as img;
-import 'package:universal_automation_interface/universal_automation_interface.dart';
-import 'package:universal_tooling_runtime/universal_tooling_runtime.dart';
 
 const captureBackendFlutterLayerVm = 'flutter_layer_vm_extension';
 const captureImplementationAppLayerTree = 'app_layer_tree';
@@ -230,7 +228,7 @@ Directory harnessRepoRoot() {
   final harnessDir = Directory.current.path.endsWith('harness')
       ? Directory.current
       : Directory('${Directory.current.path}/packages/harness');
-  return Directory('${harnessDir.parent.parent.path}');
+  return harnessDir.parent.parent;
 }
 
 Directory nativeCaptureFixtureApp(Directory repoRoot) =>

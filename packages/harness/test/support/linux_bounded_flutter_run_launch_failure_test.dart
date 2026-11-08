@@ -4,7 +4,6 @@ library;
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter_mcp_harness/flutter_mcp_harness.dart';
 import 'package:test/test.dart';
 
 import 'linux_bounded_flutter_run.dart';

@@ -33,6 +33,7 @@ environment:
 dependencies:
   universal_capture_flutter: 0.2.0
 ''');
+      expect(pubspec.existsSync(), isTrue);
       final get = await Process.run('dart', ['pub', 'get'], workingDirectory: dir.path);
       expect(get.exitCode, 0, reason: '${get.stderr}');
 
