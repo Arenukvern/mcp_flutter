@@ -2,6 +2,7 @@
 library;
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
 
@@ -11,6 +12,7 @@ import 'package:test/test.dart';
 
 import '../support/linux_bounded_flutter_run.dart';
 import '../support/native_layer_evidence.dart';
+import '../support/native_layer_oka_diagnostics.dart';
 
 void main() {
   final runAndroid =
@@ -66,19 +68,47 @@ void main() {
               ? Directory.current
               : Directory('${Directory.current.path}/packages/harness');
           final okaBin = '${harnessDir.path}/test/support/oka_dev_android.sh';
-          await purgeOkaAndroidSessionArtifacts(appDir.path);
-          await runOkaAndroidManifestBuild(
-            projectDir: appDir.path,
-            okaBin: okaBin,
-          );
+          final usePrebuild =
+              Platform.environment['OKA_ANDROID_USE_PREBUILD'] == '1';
+          Map<String, Object?>? buildTrace;
+          try {
+            await assertOkaAndroidDevPreflight(
+              projectDir: appDir.path,
+              artifactDir: artifactDir,
+            );
+          } on StateError {
+            if (usePrebuild) {
+              rethrow;
+            }
+            buildTrace = await runOkaAndroidManifestBuildTraced(
+              projectDir: appDir.path,
+              okaBin: okaBin,
+            );
+            await writeJsonArtifact(
+              artifactDir,
+              'android_oka_build_trace.json',
+              buildTrace,
+            );
+            if (buildTrace['exitCode'] != 0 ||
+                buildTrace['checkDevSessionOk'] != true) {
+              throw StateError(
+                'oka build apk --debug failed manifest lifecycle '
+                '(RecordRunSessionStep / checkDevSession):\n'
+                '${jsonEncode(buildTrace)}',
+              );
+            }
+            await assertOkaAndroidDevPreflight(
+              projectDir: appDir.path,
+              artifactDir: artifactDir,
+            );
+          }
           final target = AndroidAppTarget(
             projectDir: appDir.path,
             deviceId: deviceId,
             logcat: false,
             okaBin: okaBin,
-            sessionTimeout: const Duration(minutes: 10),
+            sessionTimeout: const Duration(minutes: 5),
           );
-          // Session manifest APK already built; attach only.
           final app = await target.launch(build: false);
           return _OwnedSession(
             app: app,

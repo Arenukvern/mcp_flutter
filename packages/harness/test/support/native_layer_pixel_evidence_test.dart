@@ -141,5 +141,58 @@ void main() {
       expect(proof['verdict'], 'pass');
       expect(proof['dimensionsOk'], isTrue);
     });
+
+    test('fails when downscaled image has no marker stripe', () {
+      final driver = img.Image(width: 1280, height: 720);
+      final driverBytes = _encode(driver);
+      final cliImg = img.copyResize(
+        driver,
+        width: 1024,
+        height: 576,
+        interpolation: img.Interpolation.average,
+      );
+      final cliBytes = _encode(cliImg);
+      final proof = analyzeCliCaptureProof(
+        driverUncompressed: driverBytes,
+        cliResult: {
+          'ok': true,
+          'envelope': {
+            'ok': true,
+            'data': {'images': [base64Encode(cliBytes)]},
+          },
+        },
+      );
+      expect(proof['verdict'], 'fail');
+      expect(proof['reason'], 'cli_marker_stripe_missing');
+    });
+
+    test('fails when downscaled stripe is wrong color', () {
+      final driver = img.Image(width: 1280, height: 720);
+      for (var y = 0; y < kMarkerStripeHeightPx; y++) {
+        for (var x = 0; x < driver.width; x++) {
+          driver.setPixelRgba(x, y, 0xFF, 0x00, 0x00, 0xFF);
+        }
+      }
+      final driverBytes = _encode(driver);
+      final cliImg = img.copyResize(
+        driver,
+        width: 1024,
+        height: 576,
+        interpolation: img.Interpolation.average,
+      );
+      final cliBytes = _encode(cliImg);
+      final proof = analyzeCliCaptureProof(
+        driverUncompressed: driverBytes,
+        cliResult: {
+          'ok': true,
+          'envelope': {
+            'ok': true,
+            'data': {'images': [base64Encode(cliBytes)]},
+          },
+        },
+      );
+      expect(proof['verdict'], 'fail');
+      expect(proof['reason'], 'cli_marker_stripe_missing');
+    });
   });
 }

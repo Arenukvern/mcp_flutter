@@ -39,10 +39,10 @@ jobs:
         run: |
           cd showcase/native_layer_capture_fixture
           flutter pub get
-          rm -rf .oka_cache .flutter_mcp
-          oka build apk --debug
+          dart run ../../packages/harness/tool/oka_android_build_probe.dart | tee "$GITHUB_WORKSPACE/.native_capture/android_oka_build_probe.json"
           test -f .oka_cache/build/debug/run_session.json
           test -f .oka_cache/build/debug/app-debug.apk
+        continue-on-error: false
 
       - uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -53,14 +53,16 @@ jobs:
           emulator-options: -no-snapshot-save -gpu swiftshader_indirect -no-window -no-boot-anim
           # android-emulator-runner invokes each script line in a separate shell;
           # keep env + test in one line so exports survive.
-          script: export ANDROID_SERIAL=emulator-5554 && export RUN_NATIVE_FLUTTER_LAYER_ANDROID=1 && export NATIVE_CAPTURE_ARTIFACT_DIR="${GITHUB_WORKSPACE}/.native_capture/android" && mkdir -p "$NATIVE_CAPTURE_ARTIFACT_DIR" && cd packages/harness && dart test -t native-android --concurrency=1 test/integration/native_flutter_layer_capture_test.dart
+          script: export ANDROID_SERIAL=emulator-5554 && export OKA_ANDROID_USE_PREBUILD=1 && export RUN_NATIVE_FLUTTER_LAYER_ANDROID=1 && export NATIVE_CAPTURE_ARTIFACT_DIR="${GITHUB_WORKSPACE}/.native_capture/android" && mkdir -p "$NATIVE_CAPTURE_ARTIFACT_DIR" && cd packages/harness && dart test -t native-android --concurrency=1 test/integration/native_flutter_layer_capture_test.dart
 
       - name: Upload Android native capture artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: native-capture-android
-          path: .native_capture/android/
+          path: |
+            .native_capture/android/
+            .native_capture/android_oka_build_probe.json
           if-no-files-found: warn
 
   linux-desktop:
