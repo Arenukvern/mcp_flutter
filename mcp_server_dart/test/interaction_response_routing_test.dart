@@ -132,6 +132,74 @@ void main() {
       );
     });
 
+    test('lens compact shortens roles and drops container rows', () {
+      final result = routeSemanticSnapshotResponse(<String, Object?>{
+        'snapshot_id': 4,
+        'nodes': <Object?>[
+          <String, Object?>{
+            'ref': 's_0',
+            'type': 'generic',
+            'children': <String>[],
+          },
+          <String, Object?>{
+            'ref': 's_1',
+            'type': 'button',
+            'label': 'Buy now',
+            'children': <String>[],
+          },
+        ],
+      }, lens: 'compact');
+
+      final render = (result.data! as Map<String, Object?>)['render'] as String;
+      expect(render, contains('lens=compact'));
+      expect(render, contains('s_1 btn "Buy now"'));
+      expect(render, isNot(contains(' generic')));
+    });
+
+    test('lens design emits geometry and clustering footers', () {
+      final result = routeSemanticSnapshotResponse(<String, Object?>{
+        'snapshot_id': 5,
+        'nodes': <Object?>[
+          <String, Object?>{
+            'ref': 's_0',
+            'type': 'button',
+            'label': 'Alpha',
+            'bounds': {'left': 72.0, 'top': 100.0, 'right': 232.0, 'bottom': 132.0},
+            'children': <String>[],
+          },
+          <String, Object?>{
+            'ref': 's_1',
+            'type': 'button',
+            'label': 'Beta',
+            'bounds': {'left': 72.0, 'top': 200.0, 'right': 232.0, 'bottom': 232.0},
+            'children': <String>[],
+          },
+        ],
+      }, lens: 'design');
+
+      final render = (result.data! as Map<String, Object?>)['render'] as String;
+      expect(render, contains('lens=design'));
+      expect(render, contains('# cols 72×2'));
+    });
+
+    test('an unknown lens falls back to the standard grammar', () {
+      final result = routeSemanticSnapshotResponse(<String, Object?>{
+        'snapshot_id': 6,
+        'nodes': <Object?>[
+          <String, Object?>{
+            'ref': 's_0',
+            'type': 'button',
+            'label': 'Buy now',
+            'children': <String>[],
+          },
+        ],
+      }, lens: 'cinematic');
+
+      final render = (result.data! as Map<String, Object?>)['render'] as String;
+      expect(render, contains('s_0 button "Buy now"'));
+      expect(render, isNot(contains('lens=')));
+    });
+
     test('an unresolvable subtreeOf is a failure, not an empty snapshot', () {
       // No snapshot was taken, so the refs the caller already holds stay
       // current — reporting success would read as a screen that went empty.

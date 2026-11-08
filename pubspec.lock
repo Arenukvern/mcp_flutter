@@ -876,7 +876,7 @@ packages:
       path: "../../../xs/ai_computer_use_universal_automation/pkgs/universal_automation_semantics"
       relative: true
     source: path
-    version: "0.4.0"
+    version: "0.5.0"
   universal_automation_toolkit:
     dependency: "direct overridden"
     description:

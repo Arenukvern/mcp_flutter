@@ -949,7 +949,10 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
           if (command.fields != null) 'fields': jsonEncode(command.fields),
         },
       );
-      return routeSemanticSnapshotResponse(_map(result.json));
+      return routeSemanticSnapshotResponse(
+        _map(result.json),
+        lens: command.lens,
+      );
     } on Exception catch (e) {
       return CoreResult.failure(
         code: CoreErrorCode.semanticSnapshotFailed,
@@ -2048,13 +2051,19 @@ CoreResult routeInteractionResponse(
 /// A success payload is additionally enriched with the family observation
 /// render (`render`: compact numbered text via
 /// `universal_automation_semantics`) — additive enrichment; the wire nodes
-/// stay untouched, so existing consumers are unaffected. Rendering is
-/// fail-soft: a payload the projection cannot read keeps its JSON shape.
-CoreResult routeSemanticSnapshotResponse(Map<String, Object?> data) {
+/// stay untouched, so existing consumers are unaffected. [lens] switches
+/// the render usefulness (`standard`/`compact`/`design`, from the
+/// `semantic_snapshot` `lens` argument; anything else renders standard).
+/// Rendering is fail-soft: a payload the projection cannot read keeps its
+/// JSON shape.
+CoreResult routeSemanticSnapshotResponse(
+  Map<String, Object?> data, {
+  String? lens,
+}) {
   if (data['success'] != false) {
     return CoreResult.success(data: {
       ...data,
-      ..._observationRender(data),
+      ..._observationRender(data, lens),
     });
   }
   return CoreResult.failure(
@@ -2067,7 +2076,10 @@ CoreResult routeSemanticSnapshotResponse(Map<String, Object?> data) {
 
 /// The family observation text for a snapshot payload — `{}` when the
 /// payload carries no renderable node list (refusals, malformed walks).
-Map<String, Object?> _observationRender(Map<String, Object?> data) {
+Map<String, Object?> _observationRender(
+  Map<String, Object?> data,
+  String? lensName,
+) {
   final rawNodes = data['nodes'];
   if (rawNodes is! List) return const {};
   final nodes = <Map<String, Object?>>[];
@@ -2079,13 +2091,23 @@ Map<String, Object?> _observationRender(Map<String, Object?> data) {
     }
   }
   if (nodes.isEmpty) return const {};
+  final lens = switch (lensName) {
+    'compact' => SemanticLens.compact,
+    'design' => SemanticLens.design,
+    _ => SemanticLens.standard,
+  };
   try {
     final snapshot = familySnapshotFromNodes(
       nodes,
       snapshotId: (data['snapshot_id'] as num?)?.toInt() ?? 0,
       capturedAt: DateTime.now().toUtc(),
     );
-    return {'render': Observation.of(snapshot, const SemanticView()).render()};
+    return {
+      'render': Observation.of(
+        snapshot,
+        const SemanticView(),
+      ).render(lens: lens),
+    };
   } on Object {
     // Enrichment only: the primary contract is the node list itself.
     return const {};

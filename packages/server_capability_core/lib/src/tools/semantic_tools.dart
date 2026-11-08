@@ -33,6 +33,7 @@ void registerSemanticTools(CapabilityContext context) {
             fields: rawFields is List
                 ? rawFields.map((f) => f.toString()).toList()
                 : null,
+            lens: stringArgOrNull(args['lens']),
           ),
         );
       },

@@ -299,11 +299,17 @@ final class SemanticSnapshotCommand extends CoreCommand {
     this.identifierPrefix,
     this.subtreeOf,
     this.fields,
+    this.lens,
   });
 
   final String? identifierPrefix;
   final String? subtreeOf;
   final List<String>? fields;
+
+  /// Render usefulness for the server-side `render` enrichment:
+  /// `standard` (default), `compact`, or `design`. The node payload is
+  /// identical under every lens.
+  final String? lens;
 
   @override
   String get name => 'semantic_snapshot';

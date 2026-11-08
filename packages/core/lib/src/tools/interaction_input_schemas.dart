@@ -100,6 +100,17 @@ Map<String, Object?> semanticSnapshotInputSchema() => <String, Object?>{
           'field. A name outside the list is refused before the call reaches '
           'the app.',
     },
+    'lens': <String, Object?>{
+      'type': 'string',
+      'enum': ['standard', 'compact', 'design'],
+      'description':
+          'Render usefulness for the "render" field: "standard" (default) '
+          'is the full grammar; "compact" shortens roles and drops unnamed '
+          'container rows for the act loop (refs, names, identifiers and '
+          'state suffixes are never dropped); "design" adds per-node '
+          'geometry plus column/row/width clustering footers for design '
+          'critique. The nodes payload is identical under every lens.',
+    },
     'connection': connectionOverrideJsonSchema(),
   },
 };

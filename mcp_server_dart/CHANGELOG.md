@@ -6,10 +6,16 @@
 
 - **`semantic_snapshot` observation render**: success payloads now carry a
   `render` field — the compact numbered text of the
-  `universal_automation_semantics` 0.4.0 observation grammar (`s_N role
+  `universal_automation_semantics` observation grammar (`s_N role
   "name" value=…`, `[disabled]`/`#identifier` suffixes, honest trim
   header) projected from the same node walk. Additive enrichment: the
   node list is untouched, and non-renderable payloads keep their shape.
+  The new `lens` argument switches the render usefulness: `standard`
+  (default), `compact` (act-loop: role codes, container rows dropped —
+  refs/names/identifiers never dropped; benchmarked 8-17% smaller with
+  identical findability), `design` (geometry rows + column/row/width
+  clustering footers for design critique). Compression benchmark:
+  `universal_automation_semantics/tool/benchmark_compression.dart`.
 - **`init zcode` target**: writes `.zcode/config.json` (`mcp.servers`, nested
   shape) with the server binary resolved to an absolute path at init time
   (ZCode does not expand `${...}` templates in config-file MCP servers) plus
