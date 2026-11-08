@@ -174,50 +174,26 @@ Future<Map<String, Object?>> recordAndroidPhysicalSettlementWindow({
     await appendPhysicalObservationTimeline(artifactDir, last);
   }
 
-  final forwardLines =
-      ((last['adbForwardList'] as Map?)?['lines'] as List?)?.cast<String>() ??
-          const <String>[];
-  final matched =
-      ((last['adbForwardList'] as Map?)?['matchedVmSessionLines'] as List?)
-              ?.cast<String>() ??
-          const <String>[];
-  final appPids =
-      ((last['fixtureAppProcesses'] as Map?)?['pidList'] as List?) ?? const [];
-  final ownerAlive =
-      (last['hostSessionOwner'] as Map?)?['alive'] == true;
-  final spawnAlive = (last['hostSpawnHandle'] as Map?)?['alive'] == true;
-  final ownerDescendants =
-      ((last['hostSessionOwner'] as Map?)?['descendantPids'] as List?) ?? [];
-  final spawnDescendants =
-      ((last['hostSpawnHandle'] as Map?)?['descendantPids'] as List?) ?? [];
-
-  final forwardsCleared = matched.isEmpty;
-  final deviceAppGone = appPids.isEmpty;
-  final hostTreeQuiet =
-      !ownerAlive && !spawnAlive && ownerDescendants.isEmpty && spawnDescendants.isEmpty;
-
-  final proven =
-      forwardsCleared && deviceAppGone && hostTreeQuiet;
+  final verdictFields = physicalSettlementVerdictFromObservation(last);
+  final proven = verdictFields['provenPhysicalSettlement'] == true;
 
   final evidence = {
-    'provenPhysicalSettlement': proven,
-    'provenOwnedResourceSettlement': false,
+    ...verdictFields,
     'note':
         'Physical settlement requires cleared VM forwards, no fixture app pid, '
         'and no live host owner/spawn/descendants after window. SDK '
         'DevSessionStopReport.ok is runner-only (quit app.stop best-effort, '
-        'daemon shutdown); it does not remove adb forwards or attest this.',
+        'daemon shutdown fire-and-forget, no await); never '
+        'provenOwnedResourceSettlement. No adb forward --remove in SDK.',
+    'sdkGapExpectation':
+        '10s read-only window documents survivors (forwards, app pid, host tree); '
+        'does not claim all-resource settlement success.',
     'windowSeconds': window.inSeconds,
     'pollIntervalMs': _settlementPollInterval.inMilliseconds,
     'sampleCount': samples.length,
     'settlementPollSamples': samples,
     'observationsTimelineFile': 'android_owned_physical_observations.json',
     'finalObservation': last,
-    'forwardLinesAtEnd': forwardLines,
-    'matchedVmForwardsAtEnd': matched,
-    'deviceAppPidsAtEnd': appPids,
-    'hostOwnerAliveAtEnd': ownerAlive,
-    'hostSpawnAliveAtEnd': spawnAlive,
     'verdict': proven ? 'physical_settled' : 'physical_leak_or_slow_teardown',
   };
   await writeJsonArtifact(
@@ -226,4 +202,52 @@ Future<Map<String, Object?>> recordAndroidPhysicalSettlementWindow({
     evidence,
   );
   return evidence;
+}
+
+/// Derives read-only physical settlement verdict from one observation snapshot.
+Map<String, Object?> physicalSettlementVerdictFromObservation(
+  Map<String, Object?> observation,
+) {
+  final forwardLines =
+      ((observation['adbForwardList'] as Map?)?['lines'] as List?)
+              ?.cast<String>() ??
+          const <String>[];
+  final matched =
+      ((observation['adbForwardList'] as Map?)?['matchedVmSessionLines'] as List?)
+              ?.cast<String>() ??
+          const <String>[];
+  final appPids =
+      ((observation['fixtureAppProcesses'] as Map?)?['pidList'] as List?) ??
+          const [];
+  final ownerAlive =
+      (observation['hostSessionOwner'] as Map?)?['alive'] == true;
+  final spawnAlive =
+      (observation['hostSpawnHandle'] as Map?)?['alive'] == true;
+  final ownerDescendants =
+      ((observation['hostSessionOwner'] as Map?)?['descendantPids'] as List?) ??
+          [];
+  final spawnDescendants =
+      ((observation['hostSpawnHandle'] as Map?)?['descendantPids'] as List?) ??
+          [];
+
+  final forwardsCleared = matched.isEmpty;
+  final deviceAppGone = appPids.isEmpty;
+  final hostTreeQuiet = !ownerAlive &&
+      !spawnAlive &&
+      ownerDescendants.isEmpty &&
+      spawnDescendants.isEmpty;
+
+  final proven = forwardsCleared && deviceAppGone && hostTreeQuiet;
+
+  return {
+    'provenPhysicalSettlement': proven,
+    'provenOwnedResourceSettlement': false,
+    'forwardLinesAtEnd': forwardLines,
+    'matchedVmForwardsAtEnd': matched,
+    'deviceAppPidsAtEnd': appPids,
+    'hostOwnerAliveAtEnd': ownerAlive,
+    'hostSpawnAliveAtEnd': spawnAlive,
+    'hostOwnerDescendantCountAtEnd': ownerDescendants.length,
+    'hostSpawnDescendantCountAtEnd': spawnDescendants.length,
+  };
 }

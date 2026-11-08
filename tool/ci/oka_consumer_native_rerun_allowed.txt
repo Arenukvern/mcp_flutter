@@ -1,0 +1,6 @@
+# One full 40-char oka consumer SHA per line when expensive native_layer CI may run.
+# workflow_dispatch always allowed. PR/push jobs skip unless pin matches a line below.
+#
+# HOLD until local gates green, then add full 40-char SHA for intentional native rerun.
+# 1ab510f restores fail-closed ownership; 469b was blocked (unknown ownership TCP quit).
+# Forwards still not removed in SDK; 10s read-only settlement exposes survivors only.
