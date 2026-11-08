@@ -72,6 +72,20 @@ void main() {
           }
           final okaBin = Platform.environment['OKA_BIN'] ?? 'oka';
           final okaPinSha = readOkaConsumerPinSha(repoRoot: repoRoot);
+          final emulatorReady = await waitForAndroidPackageManagerReady(
+            deviceId: deviceId,
+          );
+          await writeJsonArtifact(
+            artifactDir,
+            'android_emulator_readiness.json',
+            emulatorReady,
+          );
+          if (emulatorReady['ready'] != true) {
+            throw StateError(
+              'Android emulator package service not ready:\n'
+              '${jsonEncode(emulatorReady)}',
+            );
+          }
           await writeJsonArtifact(
             artifactDir,
             'android_oka_dev_launch_intent.json',

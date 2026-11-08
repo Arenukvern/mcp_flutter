@@ -36,6 +36,9 @@ jobs:
       - name: Workspace pub get
         run: flutter pub get
 
+      - name: Enable KVM (ubuntu-latest hardware acceleration)
+        run: bash tool/ci/enable_android_emulator_kvm.sh
+
       - name: Prebuild native layer capture fixture (android debug APK + manifest)
         env:
           # pixel_6 x86_64 AVD — APK must include x86_64 engine/libs (not arm-only).

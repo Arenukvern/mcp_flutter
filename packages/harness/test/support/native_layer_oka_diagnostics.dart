@@ -163,6 +163,60 @@ Future<Map<String, Object?>> runOkaAndroidManifestBuildTraced({
   };
 }
 
+/// After [reactivecircus/android-emulator-runner] boot, `package` / activity
+/// services may still be down (API 34+). Poll `pm path` per okhttp/dotnet pattern.
+Future<Map<String, Object?>> waitForAndroidPackageManagerReady({
+  String? deviceId,
+  Duration timeout = const Duration(minutes: 3),
+  Duration pollInterval = const Duration(seconds: 5),
+}) async {
+  final serial = deviceId ?? Platform.environment['ANDROID_SERIAL'];
+  if (serial == null || serial.isEmpty) {
+    throw StateError('ANDROID_SERIAL required for emulator readiness wait');
+  }
+  final adb = Platform.environment['ADB'] ?? 'adb';
+  final started = DateTime.now().toUtc();
+  final attempts = <Map<String, Object?>>[];
+
+  while (DateTime.now().difference(started) < timeout) {
+    final boot = await Process.run(
+      adb,
+      ['-s', serial, 'shell', 'getprop', 'sys.boot_completed'],
+    );
+    final bootCompleted = '${boot.stdout}'.trim() == '1';
+    final pmPath = await Process.run(
+      adb,
+      ['-s', serial, 'shell', 'pm', 'path', 'com.android.shell'],
+    );
+    final pmOk = pmPath.exitCode == 0 && '${pmPath.stdout}'.contains('package:');
+    attempts.add({
+      'at': DateTime.now().toUtc().toIso8601String(),
+      'bootCompleted': bootCompleted,
+      'packageManagerOk': pmOk,
+      'pmPathExitCode': pmPath.exitCode,
+      'pmStderrTail': '${pmPath.stderr}'.trim().split('\n').take(3).join('\n'),
+    });
+    if (bootCompleted && pmOk) {
+      return {
+        'deviceId': serial,
+        'ready': true,
+        'elapsedMs': DateTime.now().difference(started).inMilliseconds,
+        'attempts': attempts,
+      };
+    }
+    await Future<void>.delayed(pollInterval);
+  }
+
+  return {
+    'deviceId': serial,
+    'ready': false,
+    'elapsedMs': DateTime.now().difference(started).inMilliseconds,
+    'attempts': attempts,
+    'reason':
+        'package manager not ready (cmd: Can\'t find service: package / boot incomplete)',
+  };
+}
+
 /// Fail-closed preflight before spawning `oka dev android` (no multi-minute wait).
 Future<Map<String, Object?>> okaAndroidDevPreflightReport({
   required String projectDir,

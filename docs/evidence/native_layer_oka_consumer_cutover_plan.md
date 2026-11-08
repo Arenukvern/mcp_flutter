@@ -31,6 +31,8 @@
 
 **CI emulator ABI:** `native_flutter_layer_capture` sets `OKA_ANDROID_BUILD_ABI=x86_64` for prebuild + integration so `app-debug.apk` matches the `pixel_6` x86_64 AVD (`INSTALL_FAILED_NO_MATCHING_ABIS` otherwise).
 
+**CI emulator readiness (consumer, not SDK):** enable `/dev/kvm` via `tool/ci/enable_android_emulator_kvm.sh` (reactivecircus docs). Integration polls `adb shell pm path com.android.shell` before `oka dev android` (fail-closed `android_emulator_readiness.json`); `sys.boot_completed` alone is insufficient on API 34 GHA images.
+
 ## SDK review caveat (consumer does not fix here)
 
 Pinned SDK head adds core **fixture teardown bounded reaping**, CI **all-package test** failure collection, and harness **failed-launch TERM → 5s wait → KILL** plus bounded log stability drain. Independent re-review requested; **consumer CI not verified** on `32a1b69…` at pin move time.
