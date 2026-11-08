@@ -69,19 +69,22 @@ void main() {
           if (deviceId == null || deviceId.isEmpty) {
             throw StateError('ANDROID_SERIAL is required for Android native proof');
           }
-          final harnessDir = Directory.current.path.endsWith('harness')
-              ? Directory.current
-              : Directory('${Directory.current.path}/packages/harness');
-          final okaBin = Platform.environment['OKA_BIN'] ??
-              '${harnessDir.path}/test/support/oka_dev_android.sh';
+          final okaBin = Platform.environment['OKA_BIN'] ?? 'oka';
+          final okaPinSha = Platform.environment['OKA_CONSUMER_PIN_SHA'];
           await writeJsonArtifact(
             artifactDir,
             'android_oka_dev_launch_intent.json',
-            androidOkaDevLaunchIntent(
-              okaBin: okaBin,
-              projectDir: appDir.path,
-              deviceId: deviceId,
-            ),
+            {
+              ...androidOkaDevLaunchIntent(
+                okaBin: okaBin,
+                projectDir: appDir.path,
+                deviceId: deviceId,
+              ),
+              'consumerCutoverPlan':
+                  'docs/evidence/native_layer_oka_consumer_cutover_plan.md',
+              'okaConsumerPinSha': okaPinSha,
+              'shellWorkaroundRemoved': true,
+            },
           );
           final usePrebuild =
               Platform.environment['OKA_ANDROID_USE_PREBUILD'] == '1';

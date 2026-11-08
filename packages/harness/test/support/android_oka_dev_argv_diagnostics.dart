@@ -81,8 +81,7 @@ Map<String, Object?> androidOkaDevLaunchIntent({
     },
     'routingReference': 'oka 0.9.1 DevCommand: args.first != android → kernel stack',
     'consumerNote':
-        'mcp_flutter may point okaBin at test/support/oka_dev_android.sh '
-        '(local rewrite only; not hosted public API). Parent must decide '
-        'legitimate scope for oka_harness fix or first-class argv.',
+        'Await immutable oka SDK PR commit (OKA_BIN + OKA_CONSUMER_PIN_SHA). '
+        'No shell argv rewrite; hosted fix must emit dev android child argv.',
   };
 }
