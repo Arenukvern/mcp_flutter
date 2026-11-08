@@ -32,9 +32,11 @@ jobs:
 
       - name: Provision oka SDK (pinned unmerged commit)
         run: |
+          mkdir -p "$GITHUB_WORKSPACE/.native_capture"
           bash tool/ci/checkout_oka_consumer.sh
           bash tool/ci/apply_oka_consumer_overrides.sh
           bash tool/ci/activate_oka_consumer_cli.sh
+          bash tool/ci/report_oka_consumer_provenance.sh "$GITHUB_WORKSPACE/.native_capture/oka_consumer_provenance.json"
           echo "$HOME/.pub-cache/bin" >> $GITHUB_PATH
 
       - name: Workspace pub get
@@ -68,6 +70,7 @@ jobs:
           path: |
             .native_capture/android/
             .native_capture/android_oka_build_probe.json
+            .native_capture/oka_consumer_provenance.json
           if-no-files-found: warn
 
   linux-desktop:

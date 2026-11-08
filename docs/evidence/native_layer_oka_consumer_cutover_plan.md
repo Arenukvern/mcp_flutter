@@ -23,7 +23,19 @@
 - Failure bundles + argv diagnostics (honest routing documentation).
 - **Android integration enabled in CI but expected fail** on hosted 0.9.1 until pin lands — **no blind reruns** for green.
 
+## Coherent graph (fixture + harness)
+
+`tool/ci/apply_oka_consumer_overrides.sh` overrides **every** `oka/packages/*` pub package (incl. `resource_composition`, `oka_core`, `oka_android`, `oka_harness`, transitive oka members) so neither harness tests nor fixture `tool/oka_pipeline.dart` (`dart run` / `oka build`) mixes hosted 0.9.1 with path sources. `tool/ci/report_oka_consumer_provenance.sh` records checkout HEAD + `dart pub deps` for parent review.
+
+**CLI:** `dart pub global activate --source path oka/packages/oka` at the pinned checkout — not `dart pub global activate oka` from pub.dev.
+
+**Fixture pipeline:** `steps: [...AndroidPipeline.defaultSteps]` only — no manual `RecordRunSessionStep` (pinned `defaultSteps` includes recorder).
+
+## SDK review caveat (consumer does not fix here)
+
+`oka_harness` launch-failure paths may not await/escalate child process death; do not treat pgrep-style or timeout-only cleanup as proof of settlement. Native receipts must show **all owners settled** (bounded UTR / oka session / device app) with honest failure bundles — not claims from unit fakes alone.
+
 ## Out of scope here
 
-- Building or patching oka upstream in `mcp_flutter`.
+- Editing oka source in `mcp_flutter/oka` (checkout is read-only pin only).
 - Permanent pub release break or mutable `git clone` on `main`.
