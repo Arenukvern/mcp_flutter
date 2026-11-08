@@ -1,8 +1,41 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:oka_android/oka_android.dart';
 import 'package:oka_harness/oka_harness.dart';
 
+const _sessionTeardownFileName = 'session-teardown.json';
+
+/// Mirrors SDK identity filter for `.flutter_mcp/session-teardown.json`.
+Map<String, Object?>? readConsumerSessionTeardownSidecar(
+  String projectPath, {
+  required int? owningPid,
+}) {
+  final file = File('$projectPath/.flutter_mcp/$_sessionTeardownFileName');
+  if (!file.existsSync()) return null;
+  try {
+    final decoded = jsonDecode(file.readAsStringSync());
+    if (decoded is! Map) return null;
+    final raw = Map<String, Object?>.from(decoded);
+    final id = raw['identity'];
+    if (owningPid != null && id is Map) {
+      final runnerPid = id['runnerPid'];
+      if (runnerPid is int && runnerPid != owningPid) {
+        return null;
+      }
+    }
+    return raw;
+  } on Object {
+    return null;
+  }
+}
+
 /// JSON receipt from SDK [DevSessionStopReport] (truthful limits preserved).
-Map<String, Object?> devSessionStopReportJson(DevSessionStopReport report) {
+Map<String, Object?> devSessionStopReportJson(
+  DevSessionStopReport report, {
+  Map<String, Object?>? sessionCleanupSidecar,
+}) {
+  final cleanupActionsSucceeded = sessionCleanupSidecar?['actionsSucceeded'];
   return {
     'ok': report.ok,
     'disposition': report.disposition.name,
@@ -17,8 +50,9 @@ Map<String, Object?> devSessionStopReportJson(DevSessionStopReport report) {
     'limits': report.limits,
     'controlResponse': report.controlResponse,
     'message': report.message,
-    'sessionCleanup': report.sessionCleanup,
-    'sessionCleanupActionsSucceeded': report.sessionCleanupActionsSucceeded,
+    'sessionCleanup': ?sessionCleanupSidecar,
+    if (cleanupActionsSucceeded is bool)
+      'sessionCleanupActionsSucceeded': cleanupActionsSucceeded,
     'provenOwnedResourceSettlement': false,
     'consumerPhysicalObservations':
         'See android_owned_physical_observations.json (read-only; not attested by SDK).',
@@ -27,14 +61,15 @@ Map<String, Object?> devSessionStopReportJson(DevSessionStopReport report) {
 
 /// Identity-filtered session-teardown sidecar for consumer artifacts (fail-closed).
 Map<String, Object?> sessionCleanupConsumerEvidence({
-  required DevSessionStopReport report,
   required int? sessionOwnerPid,
+  Map<String, Object?>? sessionCleanupSidecar,
   List<Map<String, Object?>>? trackedIdentitiesFrozen,
 }) {
-  final cleanup = report.sessionCleanup;
+  final cleanup = sessionCleanupSidecar;
   final unknown = <String>[];
   var identityMatch = false;
   int? runnerPid;
+  final actionsSucceeded = cleanup?['actionsSucceeded'] == true;
   if (cleanup == null) {
     unknown.add('session_cleanup_sidecar_missing');
   } else {
@@ -58,12 +93,12 @@ Map<String, Object?> sessionCleanupConsumerEvidence({
       unknown.add('session_cleanup_identity_missing');
     }
   }
-  if (report.sessionCleanupActionsSucceeded != true) {
+  if (cleanup != null && !actionsSucceeded) {
     unknown.add('session_cleanup_actions_not_succeeded');
   }
   return {
     'sessionCleanup': cleanup,
-    'sessionCleanupActionsSucceeded': report.sessionCleanupActionsSucceeded,
+    'sessionCleanupActionsSucceeded': actionsSucceeded ? true : false,
     'sessionOwnerPidAtStop': sessionOwnerPid,
     'sessionCleanupRunnerPid': runnerPid,
     'sessionCleanupIdentityMatch': identityMatch,
