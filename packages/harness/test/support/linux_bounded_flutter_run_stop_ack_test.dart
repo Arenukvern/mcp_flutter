@@ -3,7 +3,6 @@ library;
 
 import 'dart:io';
 
-import 'package:flutter_mcp_harness/flutter_mcp_harness.dart';
 import 'package:test/test.dart';
 
 import 'linux_bounded_flutter_run.dart';
@@ -40,7 +39,7 @@ exit 0
 
 Future<String> _installFakeFlutter(Directory dir, String stopMode) async {
   final path = '${dir.path}/fake_flutter_machine.sh';
-  final file = File(path)..writeAsStringSync(_machineFakeScript(stopMode: stopMode));
+  File(path).writeAsStringSync(_machineFakeScript(stopMode: stopMode));
   await Process.run('chmod', ['+x', path]);
   return path;
 }

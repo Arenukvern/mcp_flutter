@@ -70,8 +70,8 @@ Future<SubprocessStopVerdict> stopOwnedSubprocess(
   var drainsCompleted = true;
   String? drainError;
   final drains = <Future<void>>[
-    if (stdoutDrain != null) stdoutDrain,
-    if (stderrDrain != null) stderrDrain,
+    ?stdoutDrain,
+    ?stderrDrain,
   ];
   if (drains.isNotEmpty) {
     try {

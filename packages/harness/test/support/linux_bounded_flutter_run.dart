@@ -213,7 +213,7 @@ final class LinuxBoundedFlutterRunTarget implements AppTarget {
         if (!appStopAcknowledged) {
           final recovered = _replayStopAckFromTap(
             tap,
-            stopRequestId!,
+            stopRequestId,
             appId,
           );
           if (recovered) {
