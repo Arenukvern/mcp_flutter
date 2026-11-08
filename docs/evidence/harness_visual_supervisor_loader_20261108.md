@@ -23,7 +23,7 @@ Observed when running `dart test packages/harness` from the workspace root (coll
 ## Fix in local batch (unpushed)
 
 1. Rename probe → `tool/visual_supervisor_probe.dart` (align with `visual_probe.dart`).
-2. `test/visual_supervisor_probe_entry_test.dart` resolves **`packages/harness` via `Platform.script`**, not `Directory.current`, so both invocations pass.
+2. `test/visual_supervisor_probe_entry_test.dart` resolves **`flutter_mcp_harness`** via pubspec walk (`cwd` + `packages/harness` under ancestors), not raw `Directory.current`, so both invocations pass.
 3. **No** `dart_test.yaml` `paths:` change — redundant in-package and **ignored** for `dart test packages/harness` from repo root; attribution removed from earlier draft.
 
 Probe logic (timeouts, semantic checks) unchanged. Manual run:
@@ -34,17 +34,15 @@ export LA_VM_URI='http://127.0.0.1:PORT/TOKEN/'
 dart run tool/visual_supervisor_probe.dart /tmp/out
 ```
 
-## Verified command exit statuses (clean tree at `a7ccced6`+fixes, no shell pipelines)
+## Verified command exit statuses (clean tree at **`6917431d`**, sequential)
 
-Recorded with `set -o pipefail` and **no** `| tail` on `dart test`:
+See `docs/evidence/harness_probe_verification_6917431d_20261108.md` — captured **after** code commit, **no** concurrent git writes; porcelain hash checked explicitly.
 
 | Command | Exit |
 |---------|------|
 | `dart analyze --fatal-infos packages/harness` | **0** |
 | `dart test packages/harness --exclude-tags native-android,native-linux,compile-repro-opt-in` | **0** (128 tests; 1 skip) |
 | `cd packages/harness && dart test --exclude-tags native-android,native-linux,compile-repro-opt-in` | **0** (128 tests; 1 skip) |
-
-Log: `/cursor/stores/self/harness_probe_verification_exit_codes_20261108.txt`
 
 ## Related harness test fix (same batch)
 
