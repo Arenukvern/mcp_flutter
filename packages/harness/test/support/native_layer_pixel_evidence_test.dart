@@ -251,4 +251,20 @@ void main() {
       expect(proof['reason'], 'cli_marker_stripe_missing');
     });
   });
+
+  test('analyzeCapturePair and layout.toEvidenceJson jsonEncode without Records',
+      () {
+    final (image, layout) = _fixture320(counterGlyph: '0');
+    final (afterLayoutImage, _) = _fixture320(counterGlyph: '1');
+    final proof = analyzeCapturePair(
+      before: _encode(image),
+      after: _encode(afterLayoutImage),
+      counterBefore: 0,
+      counterAfter: 1,
+      layout: layout,
+    );
+    expect(() => jsonEncode(proof), returnsNormally);
+    expect(() => jsonEncode(layout.toEvidenceJson()), returnsNormally);
+    expect(proof['layout'], layout.toEvidenceJson());
+  });
 }

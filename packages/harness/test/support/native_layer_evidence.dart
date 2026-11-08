@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'package:flutter_mcp_harness/flutter_mcp_harness.dart';
 import 'package:image/image.dart' as img;
 
+import 'bounded_subprocess_stop.dart';
 import 'native_layer_capture_layout.dart';
 
 const captureBackendFlutterLayerVm = 'flutter_layer_vm_extension';
@@ -272,47 +273,70 @@ Map<String, Object?> rendererVerdictFromLogs(
 
 /// Owned adb logcat stream for renderer / engine evidence (not fire-and-forget).
 final class AndroidEngineLogcatSession {
-  AndroidEngineLogcatSession._(this._process, this._done);
+  AndroidEngineLogcatSession._(
+    this._process,
+    this._stdoutDrain,
+    this._stderrDrain,
+  );
 
   final Process _process;
-  final Future<void> _done;
+  final Future<void> _stdoutDrain;
+  final Future<void> _stderrDrain;
+  SubprocessStopVerdict? lastStopVerdict;
 
-  static Future<AndroidEngineLogcatSession?> start({
+  int get pid => _process.pid;
+
+  static Future<AndroidEngineLogcatSession> start({
     required String deviceId,
     required LogTap sink,
+    String adbBin = 'adb',
   }) async {
     try {
-      await Process.run('adb', ['-s', deviceId, 'logcat', '-c']);
-      final process = await Process.start('adb', [
+      final clear = await Process.run(adbBin, ['-s', deviceId, 'logcat', '-c']);
+      if (clear.exitCode != 0) {
+        throw StateError(
+          'adb logcat -c failed (${clear.exitCode}): ${clear.stderr}',
+        );
+      }
+      final process = await Process.start(adbBin, [
         '-s',
         deviceId,
         'logcat',
         '-v',
         'time',
       ]);
-      final stdoutDone = process.stdout
+      final stdoutDrain = process.stdout
           .transform(utf8.decoder)
           .transform(const LineSplitter())
           .map((line) => sink.add('[logcat] $line'))
           .drain<void>();
-      final stderrDone = process.stderr
+      final stderrDrain = process.stderr
           .transform(utf8.decoder)
           .transform(const LineSplitter())
           .map((line) => sink.add('[logcat:err] $line'))
           .drain<void>();
-      final done = Future.wait([stdoutDone, stderrDone]);
-      return AndroidEngineLogcatSession._(process, done);
-    } on Object {
-      return null;
+      return AndroidEngineLogcatSession._(process, stdoutDrain, stderrDrain);
+    } on Object catch (error, stack) {
+      Error.throwWithStackTrace(
+        StateError('adb logcat start failed for $deviceId: $error'),
+        stack,
+      );
     }
   }
 
-  Future<void> stop() async {
-    _process.kill();
-    await _done.timeout(
-      const Duration(seconds: 3),
-      onTimeout: () => <void>[],
+  Future<SubprocessStopVerdict> stop() async {
+    final verdict = await stopOwnedSubprocess(
+      _process,
+      stdoutDrain: _stdoutDrain,
+      stderrDrain: _stderrDrain,
     );
+    lastStopVerdict = verdict;
+    if (!verdict.settled) {
+      throw StateError(
+        'adb logcat stop did not settle: ${verdict.toJson()}',
+      );
+    }
+    return verdict;
   }
 }
 

@@ -12,9 +12,14 @@ import 'package:image/image.dart' as img;
 import 'package:oka_harness/oka_harness.dart';
 import 'package:test/test.dart';
 
+import '../support/bounded_subprocess_stop.dart';
+import '../support/android_oka_dev_argv_diagnostics.dart';
+import '../support/android_owned_session_stop.dart';
 import '../support/linux_bounded_flutter_run.dart';
+import '../support/native_capture_session_cleanup.dart';
 import '../support/native_layer_capture_layout.dart';
 import '../support/native_layer_evidence.dart';
+import '../support/native_layer_failure_artifacts.dart';
 import '../support/native_layer_oka_diagnostics.dart';
 import '../support/session_settlement.dart';
 
@@ -67,7 +72,17 @@ void main() {
           final harnessDir = Directory.current.path.endsWith('harness')
               ? Directory.current
               : Directory('${Directory.current.path}/packages/harness');
-          final okaBin = '${harnessDir.path}/test/support/oka_dev_android.sh';
+          final okaBin = Platform.environment['OKA_BIN'] ??
+              '${harnessDir.path}/test/support/oka_dev_android.sh';
+          await writeJsonArtifact(
+            artifactDir,
+            'android_oka_dev_launch_intent.json',
+            androidOkaDevLaunchIntent(
+              okaBin: okaBin,
+              projectDir: appDir.path,
+              deviceId: deviceId,
+            ),
+          );
           final usePrebuild =
               Platform.environment['OKA_ANDROID_USE_PREBUILD'] == '1';
           try {
@@ -197,149 +212,227 @@ Future<void> _runNativeCapture({
   AndroidEngineLogcatSession? logcat;
   _OwnedSession? session;
   ToolkitDriver? driver;
+  SubprocessStopVerdict? logcatStopVerdict;
+  AndroidOkaSessionSettlement? androidSettlement;
+  BoundedSessionSettlement? linuxSettlement;
+  int? androidStopExitCode;
 
-  try {
-    if (platform == 'android') {
-      final deviceId = Platform.environment['ANDROID_SERIAL'];
-      if (deviceId != null && deviceId.isNotEmpty) {
+  await runWithPreservedPrimaryFailure<void>(
+    body: () async {
+      if (platform == 'android') {
+        final deviceId = Platform.environment['ANDROID_SERIAL'];
+        if (deviceId == null || deviceId.isEmpty) {
+          throw StateError('ANDROID_SERIAL is required for Android native proof');
+        }
         logcat = await AndroidEngineLogcatSession.start(
           deviceId: deviceId,
           sink: combinedTap,
         );
       }
-    }
 
-    session = await launch(combinedTap);
-    final app = session.app;
-    await vmHandshake(app.vmUri);
-    driver = await attachDriver(app);
+      session = await launch(combinedTap);
+      final owned = session!;
+      final app = owned.app;
+      await vmHandshake(app.vmUri);
+      final activeDriver = await attachDriver(app);
+      driver = activeDriver;
 
-    final counterBefore = await counterFromDriver(driver);
-    expect(counterBefore, 0);
+      final counterBefore = await counterFromDriver(activeDriver);
+      expect(counterBefore, 0);
 
-    final beforeBytes = await driver.screenshot();
-    final before = await writePng(
-      artifactDir,
-      '${platform}_before_increment.png',
-      beforeBytes,
-    );
-    final layout = await resolveNativeCaptureLayout(
-      driver,
-      _imageWidth(beforeBytes),
-      _imageHeight(beforeBytes),
-    );
-
-    await tapIncrementButton(driver);
-    await Future<void>.delayed(const Duration(milliseconds: 1200));
-
-    final counterAfter = await counterFromDriver(driver);
-    final afterBytes = await driver.screenshot();
-    final after = await writePng(
-      artifactDir,
-      '${platform}_after_increment.png',
-      afterBytes,
-    );
-
-    final pixelProof = analyzeCapturePair(
-      before: before,
-      after: after,
-      counterBefore: counterBefore,
-      counterAfter: counterAfter,
-      layout: layout,
-    );
-    await writeJsonArtifact(artifactDir, '${platform}_pixel_proof.json', {
-      ...pixelProof,
-      'captureBackend': captureBackendFlutterLayerVm,
-      'captureImplementation': captureImplementationAppLayerTree,
-      'observer': 'ToolkitDriver.view_screenshots.compress_false',
-    });
-    expect(pixelProof['verdict'], 'pass', reason: '$pixelProof');
-
-    final cli = await runToolkitCliGetScreenshots(
-      repoRoot: repoRoot,
-      vmServiceUri: app.vmUri,
-    );
-    await writeJsonArtifact(
-      artifactDir,
-      '${platform}_cli_get_screenshots.json',
-      cli,
-    );
-    expect(cli['ok'], isTrue, reason: '$cli');
-    expect(cli['captureMode'], 'flutter_layer');
-    expect(cli['captureBackend'], captureBackendFlutterLayerVm);
-    expect(cli['captureImplementation'], captureImplementationAppLayerTree);
-    final cliPng = cliPrimaryPngBytes(cli);
-    expect(cliPng, isNotNull);
-    if (cliPng != null) {
-      await writePng(artifactDir, '${platform}_cli_compressed.png', cliPng);
-    }
-    final cliProof = analyzeCliCaptureProof(
-      driverUncompressed: after,
-      cliResult: cli,
-      driverLayout: layout,
-    );
-    await writeJsonArtifact(artifactDir, '${platform}_cli_capture_proof.json', cliProof);
-    expect(cliProof['verdict'], 'pass', reason: '$cliProof');
-
-    final renderer = rendererVerdictFromLogs(
-      session.combinedLogLines,
-      platform: platform,
-    );
-    await writeJsonArtifact(
-      artifactDir,
-      '${platform}_renderer_verdict.json',
-      renderer,
-    );
-    expect(renderer['platformRendererAccepted'], isTrue, reason: '$renderer');
-    if (platform == 'android') {
-      expect(renderer['activeRendererBackend'], 'impeller', reason: '$renderer');
-    } else if (platform == 'linux') {
-      expect(renderer['rendererAccepted'], isTrue, reason: '$renderer');
-      expect(
-        renderer['activeRendererBackend'],
-        isIn(['impeller', 'skia']),
-        reason: '$renderer',
+      final beforeBytes = await activeDriver.screenshot();
+      final before = await writePng(
+        artifactDir,
+        '${platform}_before_increment.png',
+        beforeBytes,
       );
-    }
-
-    await driver.close();
-    driver = null;
-
-    await app.stop();
-    session.stopped = true;
-
-    BoundedSessionSettlement? settlement = session.linuxTarget?.lastSettlement;
-    if (settlement != null) {
-      expect(
-        settlement.physicallySettled,
-        isTrue,
-        reason: '${settlement.toJson()}',
+      final layout = await resolveNativeCaptureLayout(
+        activeDriver,
+        _imageWidth(beforeBytes),
+        _imageHeight(beforeBytes),
       );
-      expect(settlement.survivors, isEmpty, reason: '${settlement.toJson()}');
-    }
 
-    await writeJsonArtifact(
-      artifactDir,
-      '${platform}_harness_proof.json',
-      {
-        'verdict': 'pass',
-        'platform': platform,
-        'vmUriHost': app.vmUri.host,
-        'sessionArtifactDir': artifactDir.path,
-        'settlement': settlement?.toJson(),
-      },
-    );
-  } finally {
-    await driver?.close();
-    try {
-      if (session != null && !session.stopped) {
-        await session.app.stop();
-        session.stopped = true;
+      await tapIncrementButton(activeDriver);
+      await Future<void>.delayed(const Duration(milliseconds: 1200));
+
+      final counterAfter = await counterFromDriver(activeDriver);
+      final afterBytes = await activeDriver.screenshot();
+      final after = await writePng(
+        artifactDir,
+        '${platform}_after_increment.png',
+        afterBytes,
+      );
+
+      final pixelProof = analyzeCapturePair(
+        before: before,
+        after: after,
+        counterBefore: counterBefore,
+        counterAfter: counterAfter,
+        layout: layout,
+      );
+      await writeJsonArtifact(artifactDir, '${platform}_pixel_proof.json', {
+        ...pixelProof,
+        'captureBackend': captureBackendFlutterLayerVm,
+        'captureImplementation': captureImplementationAppLayerTree,
+        'observer': 'ToolkitDriver.view_screenshots.compress_false',
+      });
+      expect(pixelProof['verdict'], 'pass', reason: '$pixelProof');
+
+      final cli = await runToolkitCliGetScreenshots(
+        repoRoot: repoRoot,
+        vmServiceUri: app.vmUri,
+      );
+      await writeJsonArtifact(
+        artifactDir,
+        '${platform}_cli_get_screenshots.json',
+        cli,
+      );
+      expect(cli['ok'], isTrue, reason: '$cli');
+      expect(cli['captureMode'], 'flutter_layer');
+      expect(cli['captureBackend'], captureBackendFlutterLayerVm);
+      expect(cli['captureImplementation'], captureImplementationAppLayerTree);
+      final cliPng = cliPrimaryPngBytes(cli);
+      expect(cliPng, isNotNull);
+      if (cliPng != null) {
+        await writePng(artifactDir, '${platform}_cli_compressed.png', cliPng);
       }
-    } finally {
-      await logcat?.stop();
-    }
-  }
+      final cliProof = analyzeCliCaptureProof(
+        driverUncompressed: after,
+        cliResult: cli,
+        driverLayout: layout,
+      );
+      await writeJsonArtifact(
+        artifactDir,
+        '${platform}_cli_capture_proof.json',
+        cliProof,
+      );
+      expect(cliProof['verdict'], 'pass', reason: '$cliProof');
+
+      final renderer = rendererVerdictFromLogs(
+        owned.combinedLogLines,
+        platform: platform,
+      );
+      await writeJsonArtifact(
+        artifactDir,
+        '${platform}_renderer_verdict.json',
+        renderer,
+      );
+      expect(renderer['platformRendererAccepted'], isTrue, reason: '$renderer');
+      if (platform == 'android') {
+        expect(renderer['activeRendererBackend'], 'impeller', reason: '$renderer');
+      } else if (platform == 'linux') {
+        expect(renderer['rendererAccepted'], isTrue, reason: '$renderer');
+        expect(
+          renderer['activeRendererBackend'],
+          isIn(['impeller', 'skia']),
+          reason: '$renderer',
+        );
+      }
+
+      await activeDriver.close();
+      driver = null;
+
+      final ownerPid = app.process?.pid;
+      androidStopExitCode = await app.stop();
+      owned.stopped = true;
+
+      linuxSettlement = owned.linuxTarget?.lastSettlement;
+      if (linuxSettlement != null) {
+        expect(
+          linuxSettlement!.physicallySettled,
+          isTrue,
+          reason: '${linuxSettlement!.toJson()}',
+        );
+        expect(linuxSettlement!.survivors, isEmpty, reason: '${linuxSettlement!.toJson()}');
+        if (linuxSettlement!.appStopRequestId != null) {
+          expect(
+            linuxSettlement!.appStopAcknowledged,
+            isTrue,
+            reason:
+                'flutter --machine app.stop requires cooperative ack: '
+                '${linuxSettlement!.toJson()}',
+          );
+        }
+      }
+
+      if (platform == 'android') {
+        androidSettlement = await recordAndroidOkaStopSettlement(
+          exitCode: androidStopExitCode!,
+          processPid: ownerPid,
+          projectDir: appDir.path,
+        );
+        expect(
+          androidSettlement!.processSettled,
+          isTrue,
+          reason: '${androidSettlement!.toJson()}',
+        );
+        expect(
+          androidSettlement!.runnerSessionAbsent,
+          isTrue,
+          reason: '${androidSettlement!.toJson()}',
+        );
+      }
+
+      await writeJsonArtifact(
+        artifactDir,
+        '${platform}_harness_proof.json',
+        {
+          'verdict': 'pass',
+          'platform': platform,
+          'vmUriHost': app.vmUri.host,
+          'sessionArtifactDir': artifactDir.path,
+          'linuxSettlement': linuxSettlement?.toJson(),
+          'androidSettlement': androidSettlement?.toJson(),
+          'androidStopExitCode': androidStopExitCode,
+          'logcatStop': logcatStopVerdict?.toJson(),
+        },
+      );
+    },
+    cleanupSteps: [
+      (
+        'driver.close',
+        () async {
+          if (driver == null) return;
+          await driver!.close();
+          driver = null;
+        },
+      ),
+      (
+        'app.stop',
+        () async {
+          if (session == null || session!.stopped) return;
+          final app = session!.app;
+          final exit = await app.stop();
+          session!.stopped = true;
+          if (platform == 'android' && androidSettlement == null) {
+            androidStopExitCode = exit;
+            androidSettlement = await recordAndroidOkaStopSettlement(
+              exitCode: exit,
+              processPid: app.process?.pid,
+              projectDir: appDir.path,
+            );
+          }
+        },
+      ),
+      (
+        'logcat.stop',
+        () async {
+          if (logcat == null) return;
+          logcatStopVerdict = await logcat!.stop();
+        },
+      ),
+    ],
+    onOutcome: (outcome) async {
+      if (!outcome.hasPrimary && !outcome.hasCleanupFailures) return;
+      await persistNativeCaptureFailureBundle(
+        artifactDir: artifactDir,
+        platform: platform,
+        outcome: outcome,
+        combinedLogTap: combinedTap,
+        projectDir: platform == 'android' ? appDir.path : null,
+      );
+    },
+  );
 }
 
 int _imageWidth(Uint8List png) {
