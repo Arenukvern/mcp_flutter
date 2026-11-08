@@ -3,7 +3,7 @@
 **SDK SHA:** `1b7f18fa48f2c87096e023ce59478d30737e69f8`  
 **Independent review:** NO critical source blocker; stop-start snapshot owner pid/port/startedAt triple-match, no-identity reject, unknown pidof stderr fail-closed, actual-resource force-stop/detach/long budget — reviewed correct. CI/native only remaining.
 
-**Consumer mcp_flutter HEAD at repin push:** (see git after commit)  
+**Consumer mcp_flutter HEAD at repin push:** `3a8846146d904d2ecfe95e18f92da7a7e8562113`  
 **Provenance:** `docs/evidence/oka_consumer_provenance_1b7f18f.json`
 
 ## Local member gates (pre-push)
