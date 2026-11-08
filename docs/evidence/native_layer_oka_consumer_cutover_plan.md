@@ -1,6 +1,6 @@
 # Native layer capture — oka consumer cutover plan (blocked on immutable PR SHA)
 
-**Status:** **Test pin active:** `tool/ci/oka_consumer_pin.txt` → `7416849a14cf817217e6fd84c305d5f1529b7c41` ([oka PR #18](https://github.com/Arenukvern/oka/pull/18), unmerged). **No merge, no publish** in either repo.
+**Status:** **Test pin active:** `tool/ci/oka_consumer_pin.txt` → `32a1b69f9f9980d3e67d7c772cf2c7f0a99d485c` ([oka PR #18](https://github.com/Arenukvern/oka/pull/18), unmerged). Prior pin `7416849a…` retained in CI logs as diagnostic only. **No merge, no publish** in either repo.
 
 ## Defect (confirmed)
 
@@ -33,7 +33,9 @@
 
 ## SDK review caveat (consumer does not fix here)
 
-`oka_harness` launch-failure paths may not await/escalate child process death; do not treat pgrep-style or timeout-only cleanup as proof of settlement. Native receipts must show **all owners settled** (bounded UTR / oka session / device app) with honest failure bundles — not claims from unit fakes alone.
+Pinned SDK head adds core **fixture teardown bounded reaping**, CI **all-package test** failure collection, and harness **failed-launch TERM → 5s wait → KILL** plus bounded log stability drain. Independent re-review requested; **consumer CI not verified** on `32a1b69…` at pin move time.
+
+TERM/KILL alone does **not** prove descendant/orphan cleanup (attach/forward/session leftovers). Native receipts must show **all owners settled** with honest failure bundles — preserve any evidence of survivors; do not claim settlement from unit fakes or parent kill alone.
 
 ## Out of scope here
 
