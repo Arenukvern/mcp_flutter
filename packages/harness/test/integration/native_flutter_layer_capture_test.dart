@@ -61,10 +61,14 @@ void main() {
           await startAndroidEngineLogcat(deviceId: deviceId, sink: combinedTap);
           final skipApkBuild =
               Platform.environment['NATIVE_CAPTURE_SKIP_APK_BUILD'] == '1';
+          final harnessDir = Directory.current.path.endsWith('harness')
+              ? Directory.current
+              : Directory('${Directory.current.path}/packages/harness');
           final target = AndroidAppTarget(
             projectDir: appDir.path,
             deviceId: deviceId,
             logcat: false,
+            okaBin: '${harnessDir.path}/test/support/oka_dev_android.sh',
           );
           final app = await target.launch(build: !skipApkBuild);
           return _OwnedSession(app: app, logTap: combinedTap, appTap: app.stdout);
