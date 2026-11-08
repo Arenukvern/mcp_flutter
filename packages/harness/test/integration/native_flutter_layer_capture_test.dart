@@ -294,7 +294,28 @@ Future<void> _runNativeCapture({
         'captureImplementation': captureImplementationAppLayerTree,
         'observer': 'ToolkitDriver.view_screenshots.compress_false',
       });
-      expect(pixelProof['verdict'], 'pass', reason: '$pixelProof');
+      final beforeImg = img.decodeImage(before);
+      final afterImg = img.decodeImage(after);
+      if (beforeImg != null && afterImg != null) {
+        await writeJsonArtifact(
+          artifactDir,
+          '${platform}_stripe_forensics.json',
+          {
+            'before': analyzeMarkerStripeForensics(beforeImg, layout: layout),
+            'after': analyzeMarkerStripeForensics(afterImg, layout: layout),
+          },
+        );
+      }
+
+      final rendererPrePixel = rendererVerdictFromLogs(
+        owned.combinedLogLines,
+        platform: platform,
+      );
+      await writeJsonArtifact(
+        artifactDir,
+        '${platform}_renderer_verdict.json',
+        rendererPrePixel,
+      );
 
       final cli = await runToolkitCliGetScreenshots(
         repoRoot: repoRoot,
@@ -324,18 +345,11 @@ Future<void> _runNativeCapture({
         '${platform}_cli_capture_proof.json',
         cliProof,
       );
-      expect(cliProof['verdict'], 'pass', reason: '$cliProof');
 
-      final renderer = rendererVerdictFromLogs(
-        owned.combinedLogLines,
-        platform: platform,
-      );
-      await writeJsonArtifact(
-        artifactDir,
-        '${platform}_renderer_verdict.json',
-        renderer,
-      );
-      expect(renderer['platformRendererAccepted'], isTrue, reason: '$renderer');
+      expect(pixelProof['verdict'], 'pass', reason: '$pixelProof');
+      expect(cliProof['verdict'], 'pass', reason: '$cliProof');
+      expect(rendererPrePixel['platformRendererAccepted'], isTrue, reason: '$rendererPrePixel');
+      final renderer = rendererPrePixel;
       if (platform == 'android') {
         expect(renderer['activeRendererBackend'], 'impeller', reason: '$renderer');
       } else if (platform == 'linux') {

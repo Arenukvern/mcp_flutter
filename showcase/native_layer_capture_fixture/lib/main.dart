@@ -31,14 +31,15 @@ class _NativeLayerCaptureFixtureAppState
   Widget build(BuildContext context) {
     return MaterialApp(
       home: Scaffold(
-        body: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Semantics(
-              identifier: 'native_layer_marker_stripe',
-              child: Container(height: 8, color: kMarkerStripe),
-            ),
-            Padding(
+        body: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Semantics(
+                identifier: 'native_layer_marker_stripe',
+                child: Container(height: 8, color: kMarkerStripe),
+              ),
+              Padding(
               padding: const EdgeInsets.all(24),
               child: Column(
                 children: [
@@ -67,7 +68,8 @@ class _NativeLayerCaptureFixtureAppState
                 ],
               ),
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );

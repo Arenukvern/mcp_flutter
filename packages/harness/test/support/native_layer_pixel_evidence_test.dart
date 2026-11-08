@@ -64,6 +64,17 @@ void main() {
       expect(layout.markerStripePhysicalPx, isNot(27));
     });
 
+    test('stripe ROI follows semantics top/left (SafeArea offset)', () {
+      final layout = NativeCaptureLayout.fromSemantics(
+        imageWidth: 1080,
+        imageHeight: 2274,
+        marker: const AxBounds(left: 0, top: 24, width: 411, height: 8),
+        counter: const AxBounds(left: 24, top: 56, width: 80, height: 56),
+      );
+      expect(layout!.markerStripePhysicalTop, greaterThan(0));
+      expect(layout.markerStripePhysicalLeft, 0);
+    });
+
     test('1280x720 @ logical 1:1 → 8px stripe', () {
       final layout = NativeCaptureLayout.fromSemantics(
         imageWidth: 1280,
@@ -102,6 +113,26 @@ void main() {
         layout: layout,
       );
       expect(proof['verdict'], 'fail');
+    });
+
+    test('fails when foreign pixels contaminate semantics stripe band', () {
+      final (image, layout) = _fixture320(counterGlyph: '0');
+      for (var y = layout.markerStripePhysicalTop;
+          y < layout.markerStripePhysicalTop + layout.markerStripePhysicalPx;
+          y++) {
+        for (var x = 0; x < image.width; x += 9) {
+          image.setPixelRgba(x, y, 122, 54, 36, 255);
+        }
+      }
+      final proof = analyzeCapturePair(
+        before: _encode(image),
+        after: _encode(image),
+        counterBefore: 0,
+        counterAfter: 1,
+        layout: layout,
+      );
+      expect(proof['verdict'], 'fail');
+      expect(proof['reason'], 'marker_stripe_not_green');
     });
 
     test('fails when stripe is wrong color', () {

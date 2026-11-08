@@ -93,11 +93,14 @@ Map<String, Object?> analyzeMarkerStripe(
   bool resamplingTolerant = false,
   double minGreenRatio = 0.95,
 }) {
-  final stripeH = layout.markerStripePhysicalPx.clamp(1, image.height);
+  final stripeTop = layout.markerStripePhysicalTop;
+  final stripeLeft = layout.markerStripePhysicalLeft;
+  final stripeW = layout.markerStripePhysicalWidth.clamp(1, image.width - stripeLeft);
+  final stripeH = layout.markerStripePhysicalPx.clamp(1, image.height - stripeTop);
   var samples = 0;
   var greenHits = 0;
-  for (var y = 0; y < stripeH; y++) {
-    for (var x = 0; x < image.width; x++) {
+  for (var y = stripeTop; y < stripeTop + stripeH; y++) {
+    for (var x = stripeLeft; x < stripeLeft + stripeW; x++) {
       samples++;
       if (_isMarkerGreenArgb(
         _pixelArgb(image, x, y),
@@ -108,14 +111,19 @@ Map<String, Object?> analyzeMarkerStripe(
     }
   }
   final probeYs = <int>{
-    0,
-    if (stripeH > 2) stripeH ~/ 2,
-    if (stripeH > 1) stripeH - 1,
-  }.where((y) => y >= 0 && y < stripeH).toList();
+    stripeTop,
+    if (stripeH > 2) stripeTop + stripeH ~/ 2,
+    if (stripeH > 1) stripeTop + stripeH - 1,
+  }.where((y) => y >= stripeTop && y < stripeTop + stripeH).toList();
+  final probeXs = [
+    stripeLeft,
+    stripeLeft + stripeW ~/ 2,
+    stripeLeft + stripeW - 1,
+  ];
   final probePoints = <Map<String, int>>[];
   var probesOk = true;
   for (final y in probeYs) {
-    for (final x in [0, image.width ~/ 2, image.width - 1]) {
+    for (final x in probeXs) {
       final ok = _isMarkerGreenArgb(
         _pixelArgb(image, x, y),
         resamplingTolerant: resamplingTolerant,
@@ -127,11 +135,59 @@ Map<String, Object?> analyzeMarkerStripe(
   final ratio = samples == 0 ? 0.0 : greenHits / samples;
   return {
     'stripeHeightPx': stripeH,
+    'stripeTopPx': stripeTop,
+    'stripeLeftPx': stripeLeft,
+    'stripeWidthPx': stripeW,
     'samples': samples,
     'greenHits': greenHits,
     'greenRatio': ratio,
     'probePoints': probePoints,
     'ok': probesOk && samples > 0 && ratio >= minGreenRatio,
+  };
+}
+
+/// Counts exact vs tolerant-green vs foreign pixels in the semantics stripe ROI.
+Map<String, Object?> analyzeMarkerStripeForensics(
+  img.Image image, {
+  required NativeCaptureLayout layout,
+}) {
+  final stripe = analyzeMarkerStripe(image, layout: layout);
+  final top = layout.markerStripePhysicalTop;
+  final left = layout.markerStripePhysicalLeft;
+  final w = layout.markerStripePhysicalWidth.clamp(1, image.width - left);
+  final h = layout.markerStripePhysicalPx.clamp(1, image.height - top);
+  var exact = 0, tolerant = 0, foreign = 0;
+  final foreignColors = <String, int>{};
+  for (var y = top; y < top + h; y++) {
+    for (var x = left; x < left + w; x++) {
+      final argb = _pixelArgb(image, x, y);
+      if (_isMarkerGreenArgb(argb)) {
+        exact++;
+      } else if (_isMarkerGreenArgb(argb, resamplingTolerant: true)) {
+        tolerant++;
+      } else {
+        foreign++;
+        final r = (argb >> 16) & 0xFF;
+        final g = (argb >> 8) & 0xFF;
+        final b = argb & 0xFF;
+        final a = (argb >> 24) & 0xFF;
+        final k = '$r,$g,$b,$a';
+        foreignColors[k] = (foreignColors[k] ?? 0) + 1;
+      }
+    }
+  }
+  final rankedForeign = foreignColors.entries.toList()
+    ..sort((a, b) => b.value.compareTo(a.value));
+  return {
+    'layout': layout.toEvidenceJson(),
+    'stripeAnalysis': stripe,
+    'exactGreenPixels': exact,
+    'tolerantOnlyPixels': tolerant,
+    'foreignPixels': foreign,
+    'topForeignColors': rankedForeign
+        .take(8)
+        .map((e) => {'rgba': e.key, 'count': e.value})
+        .toList(),
   };
 }
 

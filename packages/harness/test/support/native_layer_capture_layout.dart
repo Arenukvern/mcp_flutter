@@ -19,6 +19,9 @@ class NativeCaptureLayout {
     required this.logicalWindowHeight,
     required this.scale,
     required this.markerStripePhysicalPx,
+    required this.markerStripePhysicalTop,
+    required this.markerStripePhysicalLeft,
+    required this.markerStripePhysicalWidth,
     required this.counterTextPhysicalRoi,
   });
 
@@ -28,6 +31,9 @@ class NativeCaptureLayout {
   final double logicalWindowHeight;
   final double scale;
   final int markerStripePhysicalPx;
+  final int markerStripePhysicalTop;
+  final int markerStripePhysicalLeft;
+  final int markerStripePhysicalWidth;
   final (int, int, int, int) counterTextPhysicalRoi;
 
   /// JSON-safe layout snapshot for artifact files ([dart:convert] cannot encode Records).
@@ -38,6 +44,9 @@ class NativeCaptureLayout {
       'logicalWindowHeight': logicalWindowHeight,
       'scale': scale,
       'markerStripePhysicalPx': markerStripePhysicalPx,
+      'markerStripePhysicalTop': markerStripePhysicalTop,
+      'markerStripePhysicalLeft': markerStripePhysicalLeft,
+      'markerStripePhysicalWidth': markerStripePhysicalWidth,
       'counterTextPhysicalRoi': {
         'left': left,
         'top': top,
@@ -57,9 +66,15 @@ class NativeCaptureLayout {
     if (marker.width <= 0) return null;
     final scale = imageWidth / marker.width;
     final logicalH = imageHeight / scale;
-    final markerPhysical = (kFixtureMarkerStripeLogicalPx * scale).round().clamp(
+    final markerH = marker.height > 0
+        ? marker.height
+        : kFixtureMarkerStripeLogicalPx;
+    final stripeTop = (marker.top * scale).round().clamp(0, imageHeight - 1);
+    final stripeLeft = (marker.left * scale).round().clamp(0, imageWidth - 1);
+    final stripeW = math.max(1, (marker.width * scale).round().clamp(1, imageWidth - stripeLeft));
+    final markerPhysical = (markerH * scale).round().clamp(
       1,
-      imageHeight,
+      imageHeight - stripeTop,
     );
     final c = counter;
     final roi = (
@@ -75,6 +90,9 @@ class NativeCaptureLayout {
       logicalWindowHeight: logicalH,
       scale: scale,
       markerStripePhysicalPx: markerPhysical,
+      markerStripePhysicalTop: stripeTop,
+      markerStripePhysicalLeft: stripeLeft,
+      markerStripePhysicalWidth: stripeW,
       counterTextPhysicalRoi: roi,
     );
   }
@@ -88,6 +106,9 @@ class NativeCaptureLayout {
       logicalWindowHeight: image.height.toDouble(),
       scale: 1,
       markerStripePhysicalPx: kMarkerStripeHeightPx,
+      markerStripePhysicalTop: 0,
+      markerStripePhysicalLeft: 0,
+      markerStripePhysicalWidth: image.width,
       counterTextPhysicalRoi: (
         24,
         8 + 24,
@@ -110,6 +131,18 @@ class NativeCaptureLayout {
       markerStripePhysicalPx: (markerStripePhysicalPx * heightScale).round().clamp(
         1,
         newHeight,
+      ),
+      markerStripePhysicalTop: (markerStripePhysicalTop * heightScale).round().clamp(
+        0,
+        newHeight - 1,
+      ),
+      markerStripePhysicalLeft: (markerStripePhysicalLeft * widthScale).round().clamp(
+        0,
+        newWidth - 1,
+      ),
+      markerStripePhysicalWidth: math.max(
+        1,
+        (markerStripePhysicalWidth * widthScale).round().clamp(1, newWidth),
       ),
       counterTextPhysicalRoi: (
         (l * widthScale).round(),
