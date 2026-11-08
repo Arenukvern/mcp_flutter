@@ -65,9 +65,8 @@ void main() {
             projectDir: appDir.path,
             deviceId: deviceId,
             logcat: false,
-            build: !skipApkBuild,
           );
-          final app = await target.launch();
+          final app = await target.launch(build: !skipApkBuild);
           return _OwnedSession(app: app, logTap: combinedTap, appTap: app.stdout);
         },
       ),
