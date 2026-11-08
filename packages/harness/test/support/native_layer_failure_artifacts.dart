@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:oka_android/oka_android.dart';
@@ -8,21 +7,22 @@ import 'native_layer_evidence.dart';
 import 'native_layer_oka_diagnostics.dart';
 import 'package:flutter_mcp_harness/flutter_mcp_harness.dart';
 
-const _attachHandshakeFailureFile = 'attach-handshake-failure.json';
+/// SDK `.flutter_mcp/attach-handshake-failure.json` (pre-launch or attach abort).
+const attachHandshakeFailureSourceName = 'attach-handshake-failure.json';
 
-/// SDK-authored attach failure diagnostic under `.flutter_mcp/` (a92e+).
-Map<String, Object?>? readAttachHandshakeFailureArtifact(String projectDir) {
-  final file = File('$projectDir/.flutter_mcp/$_attachHandshakeFailureFile');
-  if (!file.existsSync()) return null;
-  try {
-    final decoded = jsonDecode(file.readAsStringSync());
-    if (decoded is Map) {
-      return Map<String, Object?>.from(decoded);
-    }
-    return {'parseError': 'not_a_map', 'path': file.path};
-  } on Object catch (e) {
-    return {'parseError': e.toString(), 'path': file.path};
-  }
+/// Raw copy of an SDK sidecar into [artifactDir] (no parse/re-encode).
+Future<String?> copyFlutterMcpSidecarToArtifacts({
+  required String projectDir,
+  required Directory artifactDir,
+  required String sourceFileName,
+  required String artifactFileName,
+}) async {
+  final src = File('$projectDir/.flutter_mcp/$sourceFileName');
+  if (!src.existsSync()) return null;
+  await artifactDir.create(recursive: true);
+  final dest = File('${artifactDir.path}/$artifactFileName');
+  await src.copy(dest.path);
+  return artifactFileName;
 }
 
 /// Persist launch/cleanup evidence when native capture aborts (no silent waits).
@@ -46,18 +46,23 @@ Future<void> persistNativeCaptureFailureBundle({
       projectDir: projectDir,
       checkDevice: false,
     );
-    final attachDiag = readAttachHandshakeFailureArtifact(projectDir);
-    if (attachDiag != null) {
-      payload['attachHandshakeFailure'] = attachDiag;
-      await writeJsonArtifact(
-        artifactDir,
-        'android_attach_handshake_failure.json',
-        attachDiag,
-      );
+    final attachFile = await copyFlutterMcpSidecarToArtifacts(
+      projectDir: projectDir,
+      artifactDir: artifactDir,
+      sourceFileName: attachHandshakeFailureSourceName,
+      artifactFileName: 'android_attach_handshake_failure.json',
+    );
+    if (attachFile != null) {
+      payload['attachHandshakeFailureArtifactFile'] = attachFile;
     }
-    final rawTeardown = readSessionTeardownFile(projectDir);
-    if (rawTeardown != null) {
-      payload['rawSessionTeardownFile'] = rawTeardown;
+    final teardownFile = await copyFlutterMcpSidecarToArtifacts(
+      projectDir: projectDir,
+      artifactDir: artifactDir,
+      sourceFileName: sessionTeardownFileName,
+      artifactFileName: 'android_session_teardown_raw.json',
+    );
+    if (teardownFile != null) {
+      payload['rawSessionTeardownArtifactFile'] = teardownFile;
     }
   }
   await writeJsonArtifact(artifactDir, '${platform}_failure_bundle.json', payload);

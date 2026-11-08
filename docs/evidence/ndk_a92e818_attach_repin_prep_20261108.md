@@ -1,6 +1,6 @@
 # Coherent repin prep: oka `a92e818a…` (attach argv revision)
 
-**Target SDK SHA:** `a92e818a18889cd70ef3078031bfaf249a92d728` (supersedes fixture `30ef847…`)  
+**Target SDK SHA:** `a92e818061de37e9188eada5c41a3d855596e5bc` (supersedes fixture `30ef847…`)  
 **Consumer pin file:** updated locally; **not pushed** until SHA is fetchable from `oka` remote and local member gates pass.
 
 ## SDK change (evidence-only candidate until native proves)
