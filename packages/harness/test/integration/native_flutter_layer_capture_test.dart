@@ -15,6 +15,7 @@ import 'package:test/test.dart';
 
 import '../support/bounded_subprocess_stop.dart';
 import '../support/android_oka_dev_launch_intent.dart';
+import '../support/android_adb_readonly_snapshot.dart';
 import '../support/android_host_identity_track.dart';
 import '../support/android_owned_physical_observations.dart';
 import '../support/android_physical_forward_watch.dart';
@@ -142,6 +143,17 @@ void main() {
               'ownership': snapshotRunnerSessionOwnership(appDir.path),
             },
           );
+          final preLaunchForwards = await fetchAdbForwardListOnce();
+          final preLaunchFixture = await observeFixtureAppOnDevice(deviceId);
+          final forwardBaselineLines =
+              List<String>.from(preLaunchForwards.lines);
+          await writeAndroidPhysicalBaseline(
+            artifactDir: artifactDir,
+            phase: 'pre_launch_before_oka',
+            deviceId: deviceId,
+            forwards: preLaunchForwards,
+            fixtureObservation: preLaunchFixture,
+          );
           final target = AndroidAppTarget(
             projectDir: appDir.path,
             deviceId: deviceId,
@@ -164,11 +176,12 @@ void main() {
               'ownership': postLaunchOwnership,
             },
           );
-          final launchForwardLines = await _readAdbForwardLinesForHarness();
+          final postLaunchForwards = await fetchAdbForwardListOnce();
           final forwardWatch = buildAndroidVmForwardWatch(
             deviceId: deviceId,
             ownership: postLaunchOwnership,
-            forwardLines: launchForwardLines,
+            forwardLines: postLaunchForwards.lines,
+            forwardListExitCode: postLaunchForwards.exitCode,
           );
           await recordAndroidPhysicalObservation(
             artifactDir: artifactDir,
@@ -177,13 +190,14 @@ void main() {
             spawnHandlePid: app.pid,
             sessionOwnerPid: app.sessionOwnerPid,
             forwardWatch: forwardWatch,
-            forwardBaselineLines: launchForwardLines,
+            forwardBaselineLines: forwardBaselineLines,
           );
           return _OwnedSession.android(
             okaApp: app,
             logTap: combinedTap,
             appTap: app.stdout,
             androidForwardWatch: forwardWatch,
+            androidForwardBaselineLines: forwardBaselineLines,
           );
         },
       ),
@@ -241,19 +255,22 @@ final class _OwnedSession {
     required this.appTap,
     this.linuxTarget,
   })  : okaApp = null,
-        androidForwardWatch = null;
+        androidForwardWatch = null,
+        androidForwardBaselineLines = const [];
 
   _OwnedSession.android({
     required this.okaApp,
     required this.logTap,
     required this.appTap,
     required this.androidForwardWatch,
+    required this.androidForwardBaselineLines,
   })  : flutterApp = null,
         linuxTarget = null;
 
   final LaunchedApp? flutterApp;
   final OkaLaunchedApp? okaApp;
   final AndroidVmForwardWatch? androidForwardWatch;
+  final List<String> androidForwardBaselineLines;
   final LogTap logTap;
   final LogTap appTap;
   final LinuxBoundedFlutterRunTarget? linuxTarget;
@@ -438,12 +455,15 @@ Future<void> _runNativeCapture({
       if (platform == 'android') {
         final deviceId = Platform.environment['ANDROID_SERIAL'] ?? '';
         final preStopOwnership = snapshotRunnerSessionOwnership(appDir.path);
-        androidForwardBaselineLines = await _readAdbForwardLinesForHarness();
+        androidForwardBaselineLines =
+            List<String>.from(owned.androidForwardBaselineLines);
+        final preStopForwards = await fetchAdbForwardListOnce();
         androidForwardWatch = owned.androidForwardWatch ??
             buildAndroidVmForwardWatch(
               deviceId: deviceId,
               ownership: preStopOwnership,
-              forwardLines: androidForwardBaselineLines,
+              forwardLines: preStopForwards.lines,
+              forwardListExitCode: preStopForwards.exitCode,
             );
         final identityBundle = await captureHostIdentityBundle(
           spawnHandlePid: owned.okaApp?.pid,
@@ -465,15 +485,6 @@ Future<void> _runNativeCapture({
         await appendPhysicalObservationTimeline(
           artifactDir,
           androidPreStopObservation,
-        );
-        await writeAndroidPhysicalBaseline(
-          artifactDir: artifactDir,
-          deviceId: deviceId,
-          forwardWatch: androidForwardWatch,
-          forwardLines: androidForwardBaselineLines,
-          fixtureAppProcesses:
-              androidPreStopObservation['fixtureAppProcesses'] as Map<String, Object?>?,
-          identityBundle: identityBundle,
         );
       }
 
@@ -626,12 +637,3 @@ int _imageHeight(Uint8List png) {
   return decoded.height;
 }
 
-Future<List<String>> _readAdbForwardLinesForHarness() async {
-  final adb = Platform.environment['ADB'] ?? 'adb';
-  final forwards = await Process.run(adb, ['forward', '--list']);
-  return '${forwards.stdout}'
-      .trim()
-      .split('\n')
-      .where((l) => l.isNotEmpty)
-      .toList();
-}

@@ -1,43 +1,15 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'android_adb_readonly_snapshot.dart';
 import 'android_host_identity_track.dart';
 import 'android_physical_forward_watch.dart';
 import 'native_layer_evidence.dart';
 
-/// Android fixture application id (read-only process observation).
-const kNativeCaptureFixtureAndroidPackage =
-    'dev.mcpflutter.native_layer_capture_fixture';
+export 'android_adb_readonly_snapshot.dart' show kNativeCaptureFixtureAndroidPackage;
 
 const kPhysicalSettlementPollWindow = Duration(seconds: 10);
 const _settlementPollInterval = Duration(milliseconds: 500);
-
-Future<List<String>> _adbForwardLines() async {
-  final adb = Platform.environment['ADB'] ?? 'adb';
-  final forwards = await Process.run(adb, ['forward', '--list']);
-  return '${forwards.stdout}'
-      .trim()
-      .split('\n')
-      .where((l) => l.isNotEmpty)
-      .toList();
-}
-
-Future<Map<String, Object?>?> _fixtureDevicePids(String deviceId) async {
-  if (deviceId.isEmpty) return null;
-  final adb = Platform.environment['ADB'] ?? 'adb';
-  final pidof = await Process.run(
-    adb,
-    ['-s', deviceId, 'shell', 'pidof', kNativeCaptureFixtureAndroidPackage],
-  );
-  final stdout = '${pidof.stdout}'.trim();
-  return {
-    'exitCode': pidof.exitCode,
-    'pidofStdout': stdout.isEmpty ? null : stdout,
-    'pidList': stdout.isEmpty
-        ? <String>[]
-        : stdout.split(RegExp(r'\s+')).where((s) => s.isNotEmpty).toList(),
-  };
-}
 
 /// Read-only host/device observations for oka-owned sessions (no kills).
 Future<Map<String, Object?>> snapshotAndroidOwnedPhysicalObservations({
@@ -50,27 +22,59 @@ Future<Map<String, Object?>> snapshotAndroidOwnedPhysicalObservations({
   List<Map<String, Object?>>? trackedIdentitiesFrozen,
   Map<String, Object?>? runnerSessionOwnership,
 }) async {
-  final forwardLines = await _adbForwardLines();
-  final adb = Platform.environment['ADB'] ?? 'adb';
-  final forwards = await Process.run(adb, ['forward', '--list']);
-
-  Map<String, Object?>? devicePids;
-  if (deviceId != null && deviceId.isNotEmpty) {
-    devicePids = await _fixtureDevicePids(deviceId);
-  }
+  final forwards = await fetchAdbForwardListOnce();
+  final fixture = deviceId == null || deviceId.isEmpty
+      ? {
+          'observationComplete': false,
+          'fixtureAppState': 'unknown',
+          'observationUnknownReasons': ['empty_device_id'],
+          'pidList': <String>[],
+        }
+      : await observeFixtureAppOnDevice(deviceId);
 
   Map<String, Object?>? forwardClassification;
+  final unknownReasons = <String>[];
+  if (forwards.parseFailures > 0) {
+    unknownReasons.add('forward_line_parse_failures_${forwards.parseFailures}');
+  }
+  if (!forwards.observationComplete) {
+    unknownReasons.add('adb_forward_list_exit_${forwards.exitCode}');
+  }
+  if (fixture['observationComplete'] != true) {
+    unknownReasons.addAll(
+      ((fixture['observationUnknownReasons'] as List?)?.cast<String>()) ??
+          const [],
+    );
+  }
   if (forwardWatch != null && forwardBaselineLines != null) {
     forwardClassification = classifyAdbForwards(
-      currentLines: forwardLines,
+      currentLines: forwards.lines,
       watch: forwardWatch,
       baselineLines: forwardBaselineLines,
+      forwardListExitCode: forwards.exitCode,
     );
+    if (forwardClassification['observationComplete'] != true) {
+      unknownReasons.addAll(
+        ((forwardClassification['observationUnknownReasons'] as List?)
+                ?.cast<String>()) ??
+            const [],
+      );
+    }
+  } else if (forwardWatch == null || forwardBaselineLines == null) {
+    unknownReasons.add('missing_forward_classification_inputs');
   }
 
   List<Map<String, Object?>>? identityRecheck;
+  Map<String, Object?>? identityEval;
   if (trackedIdentitiesFrozen != null && trackedIdentitiesFrozen.isNotEmpty) {
     identityRecheck = await recheckTrackedHostIdentities(trackedIdentitiesFrozen);
+    identityEval = evaluateTrackedHostIdentities(identityRecheck);
+    if (identityEval['observationComplete'] != true) {
+      unknownReasons.addAll(
+        ((identityEval['observationUnknownReasons'] as List?)?.cast<String>()) ??
+            const [],
+      );
+    }
   }
 
   return {
@@ -81,15 +85,17 @@ Future<Map<String, Object?>> snapshotAndroidOwnedPhysicalObservations({
     'forwardWatch': forwardWatch?.toJson(),
     'forwardClassification': forwardClassification,
     'trackedHostIdentityRecheck': identityRecheck,
-    'trackedHostIdentitiesQuiet':
-        identityRecheck == null ? null : trackedHostIdentitiesQuiet(identityRecheck),
-    'fixtureAppProcesses': ?devicePids,
+    'trackedHostIdentityEval': identityEval,
+    'fixtureAppProcesses': fixture,
     'deviceId': ?deviceId,
     'adbForwardList': {
       'exitCode': forwards.exitCode,
-      'lines': forwardLines,
-      'stderrTail': '${forwards.stderr}'.trim(),
+      'lines': forwards.lines,
+      'stderrTail': forwards.stderrTail,
+      'parseFailures': forwards.parseFailures,
     },
+    'observationUnknownReasons': unknownReasons,
+    'observationComplete': unknownReasons.isEmpty,
     'readOnly': true,
     'runnerSessionOwnership': ?runnerSessionOwnership,
   };
@@ -139,27 +145,29 @@ Future<void> recordAndroidPhysicalObservation({
   );
 }
 
-/// Writes immutable pre-stop baseline (forwards, app, watch) — not mutated later.
+/// Immutable baseline before `launchOka` (forwards + fixture); never mutated.
 Future<Map<String, Object?>> writeAndroidPhysicalBaseline({
   required Directory artifactDir,
+  required String phase,
   required String deviceId,
-  required AndroidVmForwardWatch forwardWatch,
-  required List<String> forwardLines,
-  required Map<String, Object?>? fixtureAppProcesses,
-  required Map<String, Object?> identityBundle,
+  required AdbForwardListSnapshot forwards,
+  required Map<String, Object?> fixtureObservation,
 }) async {
   final baseline = {
     'recordedAt': DateTime.now().toUtc().toIso8601String(),
-    'phase': 'pre_stop_baseline',
+    'phase': phase,
     'deviceId': deviceId,
-    'forwardWatch': forwardWatch.toJson(),
-    'adbForwardLines': List<String>.from(forwardLines),
-    'fixtureAppProcesses': fixtureAppProcesses,
-    'hostIdentityBundle': identityBundle,
+    'adbForwardList': {
+      'exitCode': forwards.exitCode,
+      'lines': forwards.lines,
+      'stderrTail': forwards.stderrTail,
+      'parseFailures': forwards.parseFailures,
+    },
+    'fixtureAppProcesses': fixtureObservation,
     'immutable': true,
     'note':
-        'Snapshot before cooperative stop; settlement compares against this '
-        'without mutating stored lines.',
+        'Captured before launchOka; settlement delta compares current state '
+        'to this snapshot without mutating it (delta does not prove ownership).',
   };
   await writeJsonArtifact(
     artifactDir,
@@ -169,7 +177,6 @@ Future<Map<String, Object?>> writeAndroidPhysicalBaseline({
   return baseline;
 }
 
-/// Bounded read-only polling after cooperative stop (no kills).
 Future<Map<String, Object?>> recordAndroidPhysicalSettlementWindow({
   required Directory artifactDir,
   required String deviceId,
@@ -210,21 +217,15 @@ Future<Map<String, Object?>> recordAndroidPhysicalSettlementWindow({
   final finalSample = await takeSample('post_stop_settle_final');
   await appendPhysicalObservationTimeline(artifactDir, finalSample);
 
-  final last = finalSample;
   final elapsedMs = DateTime.now().difference(started).inMilliseconds;
-
-  final verdictFields = physicalSettlementVerdictFromObservation(last);
+  final verdictFields = physicalSettlementVerdictFromObservation(finalSample);
   final proven = verdictFields['provenPhysicalSettlement'] == true;
 
   final evidence = {
     ...verdictFields,
-    'note':
-        'Physical settlement requires cleared owned forward baseline, no '
-        'fixture app pid, and no live tracked host identities (by pid+starttime). '
-        'SDK DevSessionStopReport.ok is runner-only; never '
-        'provenOwnedResourceSettlement.',
-    'sdkGapExpectation':
-        'Read-only window documents survivors; no all-resource cleanup claim.',
+    'limits':
+        'Host identities frozen before stop; processes spawned during stop are '
+        'not tracked. Candidates are not deletion authority for owned forwards.',
     'windowSeconds': window.inSeconds,
     'pollIntervalMs': _settlementPollInterval.inMilliseconds,
     'windowElapsedMs': elapsedMs,
@@ -233,8 +234,12 @@ Future<Map<String, Object?>> recordAndroidPhysicalSettlementWindow({
     'settlementPollSamples': [...samples, finalSample],
     'observationsTimelineFile': 'android_owned_physical_observations.json',
     'baselineFile': 'android_owned_physical_baseline.json',
-    'finalObservation': last,
-    'verdict': proven ? 'physical_settled' : 'physical_leak_or_slow_teardown',
+    'finalObservation': finalSample,
+    'verdict': proven
+        ? 'physical_settled'
+        : verdictFields['observationComplete'] == false
+            ? 'physical_observation_incomplete'
+            : 'physical_leak_or_slow_teardown',
   };
   await writeJsonArtifact(
     artifactDir,
@@ -244,11 +249,48 @@ Future<Map<String, Object?>> recordAndroidPhysicalSettlementWindow({
   return evidence;
 }
 
-/// Derives read-only physical settlement verdict from one observation snapshot.
 Map<String, Object?> physicalSettlementVerdictFromObservation(
   Map<String, Object?> observation,
 ) {
+  final unknown = <String>[
+    ...(((observation['observationUnknownReasons'] as List?)?.cast<String>()) ??
+        const []),
+  ];
+  if (observation['observationComplete'] != true) {
+    unknown.add('snapshot_observation_incomplete');
+  }
+
   final classification = observation['forwardClassification'] as Map?;
+  if (classification == null) {
+    unknown.add('missing_forward_classification');
+  }
+  if (classification?['observationComplete'] != true) {
+    unknown.addAll(
+      ((classification?['observationUnknownReasons'] as List?)?.cast<String>()) ??
+          const [],
+    );
+  }
+
+  final identityEval =
+      observation['trackedHostIdentityEval'] as Map<String, Object?>?;
+  if (identityEval == null) {
+    unknown.add('missing_tracked_host_identity_eval');
+  } else if (identityEval['observationComplete'] != true) {
+    unknown.addAll(
+      ((identityEval['observationUnknownReasons'] as List?)?.cast<String>()) ??
+          const [],
+    );
+  }
+
+  final fixture = observation['fixtureAppProcesses'] as Map?;
+  if (fixture?['observationComplete'] != true) {
+    unknown.addAll(
+      ((fixture?['observationUnknownReasons'] as List?)?.cast<String>()) ??
+          const [],
+    );
+  }
+
+  final observationComplete = unknown.isEmpty;
   final matchedOwned =
       (classification?['matchedOwnedBaselineLines'] as List?)?.cast<String>() ??
           const <String>[];
@@ -260,24 +302,33 @@ Map<String, Object?> physicalSettlementVerdictFromObservation(
       ((observation['adbForwardList'] as Map?)?['lines'] as List?)
               ?.cast<String>() ??
           const <String>[];
-  final appPids =
-      ((observation['fixtureAppProcesses'] as Map?)?['pidList'] as List?) ??
-          const [];
-  final identitiesQuiet = observation['trackedHostIdentitiesQuiet'] == true;
 
-  final forwardsCleared = matchedOwned.isEmpty;
-  final deviceAppGone = appPids.isEmpty;
-  final hostQuiet = identitiesQuiet;
+  final fixtureState = fixture?['fixtureAppState'] as String?;
+  final deviceAppGone =
+      observationComplete && fixtureState == 'not_running';
+  final forwardsCleared = observationComplete && matchedOwned.isEmpty;
+  final hostQuiet =
+      observationComplete && identityEval?['trackedHostIdentitiesQuiet'] == true;
+  final candidatesPresent = remoteCandidates.isNotEmpty;
 
-  final proven = forwardsCleared && deviceAppGone && hostQuiet;
+  final proven = observationComplete &&
+      forwardsCleared &&
+      deviceAppGone &&
+      hostQuiet &&
+      !candidatesPresent;
 
   return {
     'provenPhysicalSettlement': proven,
     'provenOwnedResourceSettlement': false,
+    'observationComplete': observationComplete,
+    'observationUnknownReasons': unknown,
     'forwardLinesAtEnd': forwardLines,
     'matchedOwnedBaselineLinesAtEnd': matchedOwned,
     'sameDeviceRemotePortCandidatesAtEnd': remoteCandidates,
-    'deviceAppPidsAtEnd': appPids,
-    'trackedHostIdentitiesQuietAtEnd': identitiesQuiet,
+    'remotePortCandidatesPresentAtEnd': candidatesPresent,
+    'fixtureAppStateAtEnd': fixtureState,
+    'deviceAppGoneAtEnd': deviceAppGone,
+    'trackedHostIdentitiesQuietAtEnd':
+        identityEval?['trackedHostIdentitiesQuiet'],
   };
 }

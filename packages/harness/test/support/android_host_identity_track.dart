@@ -25,7 +25,6 @@ Future<Map<String, Object?>> captureHostIdentityBundle({
   await addTree(spawnHandlePid, 'spawn_handle');
   await addTree(sessionOwnerPid, 'session_owner');
 
-  // Dedupe by pid (owner may overlap spawn ancestry).
   final byPid = <int, Map<String, Object?>>{};
   for (final id in identities) {
     final pid = id['pid'] as int?;
@@ -38,6 +37,8 @@ Future<Map<String, Object?>> captureHostIdentityBundle({
     'capturedAt': DateTime.now().toUtc().toIso8601String(),
     'identityCount': frozen.length,
     'identities': frozen,
+    'limits':
+        'Does not track host processes spawned during stop after this capture.',
   };
 }
 
@@ -48,12 +49,14 @@ Future<Map<String, Object?>> _identityForPid(
 }) async {
   final stat = await _readProcStat(pid);
   final alive = await _pidAliveKill0(pid);
+  final start = stat?['starttimeTicks'];
   return {
     'pid': pid,
     'role': role,
     'rootOfTree': root,
     'aliveAtCapture': alive,
-    'starttimeTicks': stat?['starttimeTicks'],
+    'starttimeTicks': start,
+    'identityObservabilityAtCapture': start != null ? 'known' : 'unknown',
     'comm': stat?['comm'],
     'cmdlinePrefix': stat?['cmdlinePrefix'],
   };
@@ -70,7 +73,7 @@ Future<Map<String, Object?>?> _readProcStat(int pid) async {
     final close = stat.lastIndexOf(')');
     if (close < 0) return null;
     final after = stat.substring(close + 2).split(' ');
-    final starttime = int.tryParse(after[19]); // field 22 (1-based after comm)
+    final starttime = int.tryParse(after[19]);
     final comm = stat.substring(stat.indexOf('(') + 1, close);
     String? cmdline;
     try {
@@ -90,45 +93,99 @@ Future<Map<String, Object?>?> _readProcStat(int pid) async {
   }
 }
 
-/// Re-check each frozen identity; orphans remain addressable after parent exit.
+/// Re-check each frozen identity (read-only).
 Future<List<Map<String, Object?>>> recheckTrackedHostIdentities(
   List<Map<String, Object?>> frozen,
 ) async {
   final out = <Map<String, Object?>>[];
   for (final id in frozen) {
-    final pid = id['pid'] as int?;
-    if (pid == null) {
-      out.add({...id, 'aliveNow': false, 'identityMatch': false});
-      continue;
-    }
-    final alive = await _pidAliveKill0(pid);
-    final stat = alive ? await _readProcStat(pid) : null;
-    final expectedStart = id['starttimeTicks'];
-    final actualStart = stat?['starttimeTicks'];
-    final identityMatch = !alive ||
-        (expectedStart != null &&
-            actualStart != null &&
-            expectedStart == actualStart);
-    final pidReuseSuspect =
-        alive && expectedStart != null && actualStart != expectedStart;
-    out.add({
-      ...id,
-      'aliveNow': alive,
-      'starttimeTicksNow': actualStart,
-      'commNow': stat?['comm'],
-      'identityMatch': identityMatch,
-      'pidReuseSuspect': pidReuseSuspect,
-    });
+    out.add(await _recheckOneIdentity(id));
   }
   return out;
 }
 
-/// True when any tracked identity is alive with matching starttime (not reuse).
-bool trackedHostIdentitiesQuiet(List<Map<String, Object?>> rechecked) {
-  for (final id in rechecked) {
-    if (id['aliveNow'] != true) continue;
-    if (id['pidReuseSuspect'] == true) continue;
-    if (id['identityMatch'] == true) return false;
+Future<Map<String, Object?>> _recheckOneIdentity(Map<String, Object?> id) async {
+  final pid = id['pid'] as int?;
+  if (pid == null || pid <= 0) {
+    return {
+      ...id,
+      'aliveNow': false,
+      'identityObservabilityNow': 'unknown',
+      'trackedProcessSurviving': false,
+      'pidReuseSuspect': null,
+    };
   }
-  return true;
+  final alive = await _pidAliveKill0(pid);
+  final stat = alive ? await _readProcStat(pid) : null;
+  final expectedStart = id['starttimeTicks'];
+  final actualStart = stat?['starttimeTicks'];
+  final captureObs = id['identityObservabilityAtCapture'] as String?;
+
+  String observabilityNow;
+  bool? pidReuseSuspect;
+  bool trackedSurviving;
+
+  if (!alive) {
+    observabilityNow = 'known_absent';
+    trackedSurviving = false;
+    pidReuseSuspect = false;
+  } else if (captureObs == 'unknown' || expectedStart == null) {
+    observabilityNow = 'unknown';
+    trackedSurviving = true;
+    pidReuseSuspect = null;
+  } else if (actualStart == null) {
+    observabilityNow = 'unknown';
+    trackedSurviving = true;
+    pidReuseSuspect = null;
+  } else if (actualStart == expectedStart) {
+    observabilityNow = 'known';
+    trackedSurviving = true;
+    pidReuseSuspect = false;
+  } else {
+    observabilityNow = 'known';
+    trackedSurviving = true;
+    pidReuseSuspect = true;
+  }
+
+  return {
+    ...id,
+    'aliveNow': alive,
+    'starttimeTicksNow': actualStart,
+    'commNow': stat?['comm'],
+    'identityObservabilityNow': observabilityNow,
+    'pidReuseSuspect': pidReuseSuspect,
+    'trackedProcessSurviving': trackedSurviving,
+  };
 }
+
+/// Pure evaluation for settlement (unknown at capture/now => not quiet).
+Map<String, Object?> evaluateTrackedHostIdentities(
+  List<Map<String, Object?>> rechecked,
+) {
+  final reasons = <String>[];
+  var surviving = false;
+  for (final id in rechecked) {
+    final obs = id['identityObservabilityNow'] as String?;
+    if (obs == 'unknown') {
+      reasons.add('identity_unknown_pid_${id['pid']}');
+      continue;
+    }
+    if (id['pidReuseSuspect'] == true) {
+      surviving = true;
+      continue;
+    }
+    if (id['trackedProcessSurviving'] == true) {
+      surviving = true;
+    }
+  }
+  return {
+    'trackedHostIdentitiesQuiet': surviving == false && reasons.isEmpty,
+    'observationComplete': reasons.isEmpty,
+    'observationUnknownReasons': reasons,
+    'trackedProcessSurviving': surviving,
+  };
+}
+
+/// Test helper: evaluate one row without live /proc (injects recheck fields).
+Map<String, Object?> evaluateSingleTrackedIdentityRow(Map<String, Object?> row) =>
+    evaluateTrackedHostIdentities([row]);

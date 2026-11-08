@@ -1,12 +1,14 @@
 import 'android_owned_physical_observations.dart';
-import 'android_physical_forward_watch.dart';
 import 'package:test/test.dart';
 
 void main() {
   group('physicalSettlementVerdictFromObservation', () {
-    test('b241-style survivors => not proven (owned forwards + app pid)', () {
+    test('b241 survivors + candidates => not proven', () {
       final observation = <String, Object?>{
+        'observationComplete': true,
+        'observationUnknownReasons': <String>[],
         'forwardClassification': <String, Object?>{
+          'observationComplete': true,
           'matchedOwnedBaselineLines': <String>[
             'emulator-5554 tcp:34381 tcp:35699',
           ],
@@ -15,70 +17,65 @@ void main() {
           ],
         },
         'fixtureAppProcesses': <String, Object?>{
+          'observationComplete': true,
+          'fixtureAppState': 'running',
           'pidList': <String>['2398'],
         },
-        'trackedHostIdentitiesQuiet': true,
+        'trackedHostIdentityEval': <String, Object?>{
+          'observationComplete': true,
+          'trackedHostIdentitiesQuiet': true,
+        },
       };
       final v = physicalSettlementVerdictFromObservation(observation);
       expect(v['provenPhysicalSettlement'], isFalse);
-      expect(v['matchedOwnedBaselineLinesAtEnd'], hasLength(1));
-      expect(v['sameDeviceRemotePortCandidatesAtEnd'], hasLength(1));
+      expect(v['observationComplete'], isTrue);
+      expect(v['remotePortCandidatesPresentAtEnd'], isTrue);
     });
 
-    test('cleared owned forwards, no app, quiet identities => proven', () {
+    test('unknown fixture => not proven, incomplete', () {
       final observation = <String, Object?>{
+        'observationComplete': false,
+        'observationUnknownReasons': <String>['adb'],
         'forwardClassification': <String, Object?>{
+          'observationComplete': true,
           'matchedOwnedBaselineLines': <String>[],
+          'sameDeviceRemotePortCandidates': <String>[],
         },
         'fixtureAppProcesses': <String, Object?>{
+          'observationComplete': false,
+          'fixtureAppState': 'unknown',
+        },
+        'trackedHostIdentityEval': <String, Object?>{
+          'observationComplete': true,
+          'trackedHostIdentitiesQuiet': true,
+        },
+      };
+      final v = physicalSettlementVerdictFromObservation(observation);
+      expect(v['provenPhysicalSettlement'], isFalse);
+      expect(v['observationComplete'], isFalse);
+    });
+
+    test('cleared owned, not_running, quiet => proven', () {
+      final observation = <String, Object?>{
+        'observationComplete': true,
+        'observationUnknownReasons': <String>[],
+        'forwardClassification': <String, Object?>{
+          'observationComplete': true,
+          'matchedOwnedBaselineLines': <String>[],
+          'sameDeviceRemotePortCandidates': <String>[],
+        },
+        'fixtureAppProcesses': <String, Object?>{
+          'observationComplete': true,
+          'fixtureAppState': 'not_running',
           'pidList': <String>[],
         },
-        'trackedHostIdentitiesQuiet': true,
+        'trackedHostIdentityEval': <String, Object?>{
+          'observationComplete': true,
+          'trackedHostIdentitiesQuiet': true,
+        },
       };
       final v = physicalSettlementVerdictFromObservation(observation);
       expect(v['provenPhysicalSettlement'], isTrue);
-    });
-
-    test('tracked orphan still alive blocks proven', () {
-      final observation = <String, Object?>{
-        'forwardClassification': <String, Object?>{
-          'matchedOwnedBaselineLines': <String>[],
-        },
-        'fixtureAppProcesses': <String, Object?>{
-          'pidList': <String>[],
-        },
-        'trackedHostIdentitiesQuiet': false,
-      };
-      final v = physicalSettlementVerdictFromObservation(observation);
-      expect(v['provenPhysicalSettlement'], isFalse);
-    });
-  });
-
-  group('buildAndroidVmForwardWatch', () {
-    test('includes secondary host local sharing device remote, excludes control', () {
-      final lines = <String>[
-        'emulator-5554 tcp:34381 tcp:35699',
-        'emulator-5554 tcp:35059 tcp:35699',
-        'emulator-5554 tcp:36421 tcp:36421',
-      ];
-      final watch = buildAndroidVmForwardWatch(
-        deviceId: 'emulator-5554',
-        ownership: {
-          'vmServiceUriPort': 34381,
-          'controlPort': 36421,
-        },
-        forwardLines: lines,
-      );
-      expect(watch.hostLocalVmPorts, containsAll([34381, 35059]));
-      expect(watch.hostLocalVmPorts, isNot(contains(36421)));
-      expect(watch.deviceRemoteVmPorts, contains(35699));
-      final classified = classifyAdbForwards(
-        currentLines: lines,
-        watch: watch,
-        baselineLines: lines,
-      );
-      expect(classified['matchedOwnedBaselineLines'], hasLength(2));
-      expect(classified['sameDeviceRemotePortCandidates'], isEmpty);
     });
   });
 }

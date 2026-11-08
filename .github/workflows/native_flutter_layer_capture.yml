@@ -2,10 +2,10 @@ name: Native flutter_layer capture
 
 # 10s read-only physical settlement + pixel/cli proof. Consumer pin from
 # tool/ci/oka_consumer_pin.txt (provisional oka PR #18).
-# TEMP: no pull_request until observation fix + SDK cleanup SHA land (workflow_dispatch only).
+# pull_request restored for final review; do not rely on green Android physical until SDK cleanup + observation tests.
 on:
+  pull_request:
   workflow_dispatch:
-  # pull_request:
 
 permissions:
   contents: read
