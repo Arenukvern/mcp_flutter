@@ -56,6 +56,20 @@ void main(List<String> args) {
     }
   }
   stdout.writeln('rows0-20 tolerantGreenRatio=${bandT == 0 ? 0 : bandH / bandT}');
+  var bannerBrown = 0, bannerSamples = 0;
+  for (var y = 0; y < 21; y++) {
+    for (var x = im.width - 320; x < im.width; x++) {
+      if (x < 0) continue;
+      bannerSamples++;
+      final p = im.getPixel(x, y);
+      if (p.r >= 110 && p.r <= 130 && p.g >= 45 && p.g <= 70 && p.b >= 30 && p.b <= 45) {
+        bannerBrown++;
+      }
+    }
+  }
+  stdout.writeln(
+    'topRightStripe323x21 debug-banner-brownish=$bannerBrown/$bannerSamples',
+  );
   for (final top in [0, 42, 52, 63, 74, 84]) {
     var total = 0, hits = 0;
     for (var y = top; y < top + 21 && y < im.height; y++) {

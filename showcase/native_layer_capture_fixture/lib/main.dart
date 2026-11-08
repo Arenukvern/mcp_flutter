@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 
 /// Minimal native-layer proof fixture: one increment control, one counter, no
-/// IntentCall path dependencies.
+/// IntentCall path dependencies. Debug banner is off so the green stripe ROI
+/// stays all-marker (#22AA55) in flutter_layer captures.
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   MCPToolkitBinding.instance
@@ -30,16 +31,16 @@ class _NativeLayerCaptureFixtureAppState
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       home: Scaffold(
-        body: SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Semantics(
-                identifier: 'native_layer_marker_stripe',
-                child: Container(height: 8, color: kMarkerStripe),
-              ),
-              Padding(
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Semantics(
+              identifier: 'native_layer_marker_stripe',
+              child: Container(height: 8, color: kMarkerStripe),
+            ),
+            Padding(
               padding: const EdgeInsets.all(24),
               child: Column(
                 children: [
@@ -68,8 +69,7 @@ class _NativeLayerCaptureFixtureAppState
                 ],
               ),
             ),
-            ],
-          ),
+          ],
         ),
       ),
     );

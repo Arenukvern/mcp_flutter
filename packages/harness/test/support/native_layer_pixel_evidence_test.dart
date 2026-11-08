@@ -64,7 +64,7 @@ void main() {
       expect(layout.markerStripePhysicalPx, isNot(27));
     });
 
-    test('stripe ROI follows semantics top/left (SafeArea offset)', () {
+    test('stripe ROI follows semantics top/left when marker is inset', () {
       final layout = NativeCaptureLayout.fromSemantics(
         imageWidth: 1080,
         imageHeight: 2274,
@@ -115,12 +115,13 @@ void main() {
       expect(proof['verdict'], 'fail');
     });
 
-    test('fails when foreign pixels contaminate semantics stripe band', () {
+    test('fails when debug-banner-like pixels cross semantics stripe band', () {
       final (image, layout) = _fixture320(counterGlyph: '0');
+      // Colors observed on run 42497211845 stripe (Flutter DEBUG ribbon), top-right.
       for (var y = layout.markerStripePhysicalTop;
           y < layout.markerStripePhysicalTop + layout.markerStripePhysicalPx;
           y++) {
-        for (var x = 0; x < image.width; x += 9) {
+        for (var x = image.width - 280; x < image.width; x += 3) {
           image.setPixelRgba(x, y, 122, 54, 36, 255);
         }
       }
