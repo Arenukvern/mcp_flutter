@@ -309,7 +309,10 @@ final class AndroidEngineLogcatSession {
 
   Future<void> stop() async {
     _process.kill();
-    await _done.timeout(const Duration(seconds: 3), onTimeout: () {});
+    await _done.timeout(
+      const Duration(seconds: 3),
+      onTimeout: () => <void>[],
+    );
   }
 }
 
