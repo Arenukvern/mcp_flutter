@@ -38,6 +38,15 @@ All step logic, timeouts, and semantic assertions remain in `tool/visual_supervi
 2. `dart_test.yaml` `paths: [test]` so `dart test packages/harness` cannot collect `tool/`.
 3. `test/visual_supervisor_probe_entry_test.dart` guards naming contract + documents `dart run` entry.
 
+## Related harness test fix (same local batch, unpushed)
+
+`bounded_subprocess_stop_test.dart` SIG_IGN case: on POSIX hosts without `python3`
+on PATH, `markTestSkipped` must be followed by `return` — otherwise
+`Process.start('python3', …)` still runs. Readiness + `drainsCompleted` assertions
+unchanged.
+
 ## Approval
 
-Attach/native proof unchanged — **no merge/publish** on this doc alone.
+Attach/native proof on pin **`a92e818061…`** unchanged — **no repin** (SDK `2b2…` race
+under SDK review), **no push/restart** of purposeful native while in flight, **no
+merge/publish** on this doc alone.

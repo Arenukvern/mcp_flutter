@@ -69,6 +69,7 @@ void main() {
     test('ignoring SIGTERM escalates to SIGKILL and settles', () async {
         if (python3Skip != null) {
           markTestSkipped(python3Skip!);
+          return;
         }
         final process = await Process.start(
           'python3',
