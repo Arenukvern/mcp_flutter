@@ -1,6 +1,6 @@
 # Native layer capture — oka consumer cutover plan (blocked on immutable PR SHA)
 
-**Status:** **Provisional test pin:** `tool/ci/oka_consumer_pin.txt` → **`f339a359dc202896ab1591be7d80469e1a3145a7`** (oka PR #18 head; full 40-char SHA only). Supersedes `75153244…`, `32a1b69f…`. Consumer uses `launchOka()` + `verifyRunnerSessionSpawnBinding` / `spawnBinding.isPlausibleOwnership` (not `discoveryPid == spawn.pid`). Cooperative `stopSession` via control port + spawn exit wait. **Independent SDK re-review** (TCP EOF/ack, stdin ack truthfulness, lint CI) still gates **final parent approval**. **No merge, no publish** in either repo.
+**Status:** **Provisional test pin:** `tool/ci/oka_consumer_pin.txt` → **`f41b0d64ffb02e4d2e51adf3608e43746809f470`** (oka PR #18; full 40-char SHA only). Supersedes `f339a359…`, `75153244…`. Local consumer graph green (`109+1` harness unit, `17` oka_harness, TCP `dev_session_stop` tests). Consumer: `launchOka()` + spawn binding + `stopSession` (no generic `LaunchedApp.stop` on Android). **Independent SDK re-review in flight** before final parent approval. **No merge, no publish** in either repo.
 
 **`32a1b69f` oka_core full suite correction:** single failing test was **`storage_inventory_test.dart`** (mtime ordering), not `project_operations/` — the `251 ~1 -1` counter is **cumulative across the suite**, not a second `project_operations` failure. See `/cursor/stores/self/artifacts/oka_core-consumer-repro-notes-32a1b69.md`.
 
