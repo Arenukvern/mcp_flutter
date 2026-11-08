@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'android_owned_session_stop.dart';
+
 /// Android fixture application id (read-only process observation).
 const kNativeCaptureFixtureAndroidPackage =
     'dev.mcpflutter.native_layer_capture_fixture';

@@ -15,10 +15,11 @@ const _historicalBareDevDiagnosis = {
   'supersededBy': 'actualResolvedChildArgvFromWorkspace (pin-provisioned oka_harness)',
 };
 
-/// Mirrors [AndroidAppTarget] `Process.start` argv from resolved oka_harness source.
+/// Mirrors pinned [AndroidAppTarget] `Process.start` argv (`dev android --json` …).
 List<String> mirrorAndroidAppTargetDevChildArgv({
   String? deviceId,
   Map<String, String> dartDefines = const {},
+  bool jsonControl = true,
 }) {
   final defineArgs = [
     for (final entry in dartDefines.entries) ...[
@@ -28,6 +29,8 @@ List<String> mirrorAndroidAppTargetDevChildArgv({
   ];
   return <String>[
     'dev',
+    'android',
+    if (jsonControl) '--json',
     if (deviceId != null) ...['--device', deviceId],
     ...defineArgs,
   ];
@@ -86,8 +89,8 @@ Future<Map<String, Object?>> buildAndroidOkaDevLaunchIntentReport({
     'okaVersionExitCode': version.exitCode,
     'projectDir': projectDir,
     'actualResolvedChildArgv': actualChildArgv,
-    'actualOmitsAndroidPositional':
-        !actualChildArgv.contains('android'),
+    'actualOmitsAndroidPositional': !actualChildArgv.contains('android'),
+    'actualIncludesJsonControl': actualChildArgv.contains('--json'),
     'resolvedPackages': {
       'oka_harness': okaHarness,
       'oka_android': okaAndroid,

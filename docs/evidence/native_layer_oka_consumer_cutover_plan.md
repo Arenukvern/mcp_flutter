@@ -1,6 +1,6 @@
 # Native layer capture — oka consumer cutover plan (blocked on immutable PR SHA)
 
-**Status:** **Test pin active:** `tool/ci/oka_consumer_pin.txt` → `32a1b69f9f9980d3e67d7c772cf2c7f0a99d485c` ([oka PR #18](https://github.com/Arenukvern/oka/pull/18), unmerged). Prior pin `7416849a…` retained in CI logs as diagnostic only. **No merge, no publish** in either repo.
+**Status:** **Test pin active:** `tool/ci/oka_consumer_pin.txt` → `75153244c0357b04f730707c95bae98b8b29b7fd` (supersedes `32a1b69f…` / SDK `5ac6dea…`; cooperative `OkaLaunchedApp.stopSession` → `DevSessionStopReport`). Prior pins retained in CI logs as diagnostic only. **No merge, no publish** in either repo.
 
 ## Defect (confirmed)
 

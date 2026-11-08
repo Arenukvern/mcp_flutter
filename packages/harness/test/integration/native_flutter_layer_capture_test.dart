@@ -9,6 +9,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_mcp_harness/flutter_mcp_harness.dart';
 import 'package:image/image.dart' as img;
+import 'package:oka_android/oka_android.dart';
 import 'package:oka_harness/oka_harness.dart';
 import 'package:test/test.dart';
 
@@ -146,13 +147,15 @@ void main() {
             sessionTimeout: const Duration(minutes: 5),
           );
           final app = await target.launch(build: false);
+          assertOkaDevOwnershipAtLaunch(app: app, projectDir: appDir.path);
           final postLaunchOwnership =
               snapshotRunnerSessionOwnership(appDir.path);
           await writeJsonArtifact(
             artifactDir,
             'android_runner_session_post_launch.json',
             {
-              'okaDevChildPid': app.process?.pid,
+              'okaDevChildPid': app.pid,
+              'controlPort': app.controlPort,
               'ownership': postLaunchOwnership,
             },
           );
@@ -160,11 +163,11 @@ void main() {
             artifactDir: artifactDir,
             phase: 'post_launch',
             deviceId: deviceId,
-            hostOkaDevChildPid: app.process?.pid,
+            hostOkaDevChildPid: app.pid,
             runnerOwnership: postLaunchOwnership,
           );
-          return _OwnedSession(
-            app: app,
+          return _OwnedSession.android(
+            okaApp: app,
             logTap: combinedTap,
             appTap: app.stdout,
           );
@@ -202,8 +205,8 @@ void main() {
           for (final line in app.stdout.lines) {
             tap.add(line);
           }
-          return _OwnedSession(
-            app: app,
+          return _OwnedSession.linux(
+            flutterApp: app,
             logTap: tap,
             appTap: app.stdout,
             linuxTarget: target,
@@ -218,17 +221,32 @@ void main() {
 }
 
 final class _OwnedSession {
-  _OwnedSession({
-    required this.app,
+  _OwnedSession.linux({
+    required this.flutterApp,
     required this.logTap,
     required this.appTap,
     this.linuxTarget,
-  });
-  final LaunchedApp app;
+  }) : okaApp = null;
+
+  _OwnedSession.android({
+    required this.okaApp,
+    required this.logTap,
+    required this.appTap,
+  })  : flutterApp = null,
+        linuxTarget = null;
+
+  final LaunchedApp? flutterApp;
+  final OkaLaunchedApp? okaApp;
   final LogTap logTap;
   final LogTap appTap;
   final LinuxBoundedFlutterRunTarget? linuxTarget;
   var stopped = false;
+
+  Uri get vmUri => okaApp?.vmUri ?? flutterApp!.vmUri;
+
+  Future<ToolkitDriver> attachDriverSession() async => okaApp != null
+      ? ToolkitDriver(await okaApp!.vm())
+      : attachDriver(flutterApp!);
 
   List<String> get combinedLogLines => [...logTap.lines, ...appTap.lines];
 }
@@ -252,9 +270,8 @@ Future<void> _runNativeCapture({
   _OwnedSession? session;
   ToolkitDriver? driver;
   SubprocessStopVerdict? logcatStopVerdict;
-  AndroidOkaSessionSettlement? androidSettlement;
+  DevSessionStopReport? androidStopReport;
   BoundedSessionSettlement? linuxSettlement;
-  int? androidStopExitCode;
 
   await runWithPreservedPrimaryFailure<void>(
     body: () async {
@@ -271,9 +288,8 @@ Future<void> _runNativeCapture({
 
       session = await launch(combinedTap);
       final owned = session!;
-      final app = owned.app;
-      await vmHandshake(app.vmUri);
-      final activeDriver = await attachDriver(app);
+      await vmHandshake(owned.vmUri);
+      final activeDriver = await owned.attachDriverSession();
       driver = activeDriver;
 
       final counterBefore = await counterFromDriver(activeDriver);
@@ -340,7 +356,7 @@ Future<void> _runNativeCapture({
 
       final cli = await runToolkitCliGetScreenshots(
         repoRoot: repoRoot,
-        vmServiceUri: app.vmUri,
+        vmServiceUri: owned.vmUri,
       );
       await writeJsonArtifact(
         artifactDir,
@@ -392,14 +408,19 @@ Future<void> _runNativeCapture({
           artifactDir: artifactDir,
           phase: 'pre_stop',
           deviceId: deviceId,
-          hostOkaDevChildPid: app.process?.pid,
+          hostOkaDevChildPid: owned.okaApp?.pid,
           runnerOwnership: preStopOwnership,
         );
       }
 
-      final ownerPid = app.process?.pid;
-      androidStopExitCode = await app.stop();
-      owned.stopped = true;
+      final ownerPid = owned.okaApp?.pid ?? owned.flutterApp?.process?.pid;
+      if (owned.okaApp != null) {
+        androidStopReport = await owned.okaApp!.stopSession();
+        owned.stopped = true;
+      } else {
+        await owned.flutterApp!.stop();
+        owned.stopped = true;
+      }
 
       linuxSettlement = owned.linuxTarget?.lastSettlement;
       if (linuxSettlement != null) {
@@ -419,15 +440,12 @@ Future<void> _runNativeCapture({
       }
 
       if (platform == 'android') {
-        androidSettlement = await recordAndroidOkaStopSettlement(
-          exitCode: androidStopExitCode!,
-          processPid: ownerPid,
-          projectDir: appDir.path,
-        );
+        final report = androidStopReport!;
+        final receipt = devSessionStopReportJson(report);
         await writeJsonArtifact(
           artifactDir,
           'android_owned_session_receipt.json',
-          androidSettlement!.toJson(),
+          receipt,
         );
         final deviceId = Platform.environment['ANDROID_SERIAL'] ?? '';
         await recordAndroidPhysicalObservation(
@@ -435,25 +453,14 @@ Future<void> _runNativeCapture({
           phase: 'post_stop',
           deviceId: deviceId,
           hostOkaDevChildPid: ownerPid,
-          runnerOwnership: androidSettlement!.runnerSessionAfterStop,
+          runnerOwnership: snapshotRunnerSessionOwnership(appDir.path),
         );
-        expect(
-          androidSettlement!.processSettled,
-          isTrue,
-          reason: '${androidSettlement!.toJson()}',
-        );
-        expect(
-          androidSettlement!.cooperativeTeardown,
-          isTrue,
-          reason:
-              'SDK must clear runner-session on cooperative oka dev stop '
-              '(no harness file deletion): ${androidSettlement!.toJson()}',
-        );
+        expect(report.ok, isTrue, reason: '$receipt');
       }
 
       final lifecyclePass = platform == 'linux'
           ? (linuxSettlement?.shutdownTruthful ?? false)
-          : (androidSettlement?.cooperativeTeardown ?? false);
+          : (androidStopReport?.ok ?? false);
 
       await writeJsonArtifact(
         artifactDir,
@@ -461,16 +468,14 @@ Future<void> _runNativeCapture({
         {
           'verdict': lifecyclePass ? 'pass' : 'lifecycle_incomplete',
           'platform': platform,
-          'vmUriHost': app.vmUri.host,
+          'vmUriHost': owned.vmUri.host,
           'sessionArtifactDir': artifactDir.path,
           'linuxSettlement': linuxSettlement?.toJson(),
-          'androidSettlement': androidSettlement?.toJson(),
-          'androidStopExitCode': androidStopExitCode,
+          'androidStopReport': androidStopReport == null
+              ? null
+              : devSessionStopReportJson(androidStopReport!),
           'logcatStop': logcatStopVerdict?.toJson(),
-          'ownedResourceSettlement':
-              platform == 'android'
-                  ? (androidSettlement?.ownedResourceSettlement ?? false)
-                  : null,
+          'provenOwnedResourceSettlement': false,
         },
       );
     },
@@ -487,17 +492,12 @@ Future<void> _runNativeCapture({
         'app.stop',
         () async {
           if (session == null || session!.stopped) return;
-          final app = session!.app;
-          final exit = await app.stop();
-          session!.stopped = true;
-          if (platform == 'android' && androidSettlement == null) {
-            androidStopExitCode = exit;
-            androidSettlement = await recordAndroidOkaStopSettlement(
-              exitCode: exit,
-              processPid: app.process?.pid,
-              projectDir: appDir.path,
-            );
+          if (session!.okaApp != null) {
+            androidStopReport = await session!.okaApp!.stopSession();
+          } else {
+            await session!.flutterApp!.stop();
           }
+          session!.stopped = true;
         },
       ),
       (
