@@ -59,10 +59,13 @@ void main() {
             throw StateError('ANDROID_SERIAL is required for Android native proof');
           }
           await startAndroidEngineLogcat(deviceId: deviceId, sink: combinedTap);
+          final skipApkBuild =
+              Platform.environment['NATIVE_CAPTURE_SKIP_APK_BUILD'] == '1';
           final target = AndroidAppTarget(
             projectDir: appDir.path,
             deviceId: deviceId,
             logcat: false,
+            build: !skipApkBuild,
           );
           final app = await target.launch();
           return _OwnedSession(app: app, logTap: combinedTap, appTap: app.stdout);

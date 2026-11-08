@@ -13,9 +13,12 @@ Future<void> main(List<String> args) => okaRun(
       AndroidPipeline(
         config: AndroidBuild(
           name: 'native_layer_capture_fixture',
-          packageName: 'com.example.native_layer_capture_fixture',
+          packageName: 'dev.mcpflutter.native_layer_capture_fixture',
           versionCode: 1,
           versionName: '1.0.0+1',
+        ),
+        overrides: const PipelineOverrides(
+          resDirs: ['android/app/src/main/res'],
         ),
         steps: [...AndroidPipeline.defaultSteps],
       ),
