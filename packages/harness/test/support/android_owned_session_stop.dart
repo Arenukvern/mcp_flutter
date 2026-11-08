@@ -8,14 +8,72 @@ Map<String, Object?> devSessionStopReportJson(DevSessionStopReport report) {
     'disposition': report.disposition.name,
     'runnerSessionCleared': report.runnerSessionCleared,
     'controlQuitAcknowledged': report.controlQuitAcknowledged,
+    'controlQuitSent': report.controlQuitSent,
+    'controlQuitConnectFailed': report.controlQuitConnectFailed,
+    'controlReplyLost': report.controlReplyLost,
+    'stdinQuitWritten': report.stdinQuitWritten,
     'processExitCode': report.processExitCode,
     'elapsedMs': report.elapsed.inMilliseconds,
     'limits': report.limits,
     'controlResponse': report.controlResponse,
     'message': report.message,
+    'sessionCleanup': report.sessionCleanup,
+    'sessionCleanupActionsSucceeded': report.sessionCleanupActionsSucceeded,
     'provenOwnedResourceSettlement': false,
     'consumerPhysicalObservations':
         'See android_owned_physical_observations.json (read-only; not attested by SDK).',
+  };
+}
+
+/// Identity-filtered session-teardown sidecar for consumer artifacts (fail-closed).
+Map<String, Object?> sessionCleanupConsumerEvidence({
+  required DevSessionStopReport report,
+  required int? sessionOwnerPid,
+  List<Map<String, Object?>>? trackedIdentitiesFrozen,
+}) {
+  final cleanup = report.sessionCleanup;
+  final unknown = <String>[];
+  var identityMatch = false;
+  int? runnerPid;
+  if (cleanup == null) {
+    unknown.add('session_cleanup_sidecar_missing');
+  } else {
+    final identity = cleanup['identity'];
+    if (identity is Map) {
+      final raw = identity['runnerPid'];
+      if (raw is int) {
+        runnerPid = raw;
+        if (sessionOwnerPid != null) {
+          identityMatch = raw == sessionOwnerPid;
+          if (!identityMatch) {
+            unknown.add('session_cleanup_identity_mismatch');
+          }
+        } else {
+          unknown.add('session_owner_pid_unknown_at_stop');
+        }
+      } else {
+        unknown.add('session_cleanup_identity_runner_pid_invalid');
+      }
+    } else {
+      unknown.add('session_cleanup_identity_missing');
+    }
+  }
+  if (report.sessionCleanupActionsSucceeded != true) {
+    unknown.add('session_cleanup_actions_not_succeeded');
+  }
+  return {
+    'sessionCleanup': cleanup,
+    'sessionCleanupActionsSucceeded': report.sessionCleanupActionsSucceeded,
+    'sessionOwnerPidAtStop': sessionOwnerPid,
+    'sessionCleanupRunnerPid': runnerPid,
+    'sessionCleanupIdentityMatch': identityMatch,
+    'trackedHostIdentitiesFrozenAtLaunch': trackedIdentitiesFrozen,
+    'observationComplete': unknown.isEmpty,
+    'observationUnknownReasons': unknown,
+    'limits':
+        'Parsed from SDK session-teardown sidecar after identity-filtered '
+        'read; frozen host identities are launch-time orphans only — '
+        'not post-stop settlement authority.',
   };
 }
 

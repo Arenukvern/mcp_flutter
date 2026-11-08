@@ -523,6 +523,16 @@ Future<void> _runNativeCapture({
           'android_owned_session_receipt.json',
           receipt,
         );
+        final cleanupEvidence = sessionCleanupConsumerEvidence(
+          report: report,
+          sessionOwnerPid: sessionOwnerPid,
+          trackedIdentitiesFrozen: androidTrackedIdentities,
+        );
+        await writeJsonArtifact(
+          artifactDir,
+          'android_session_cleanup_receipt.json',
+          cleanupEvidence,
+        );
         final deviceId = Platform.environment['ANDROID_SERIAL'] ?? '';
         await recordAndroidPhysicalObservation(
           artifactDir: artifactDir,
@@ -544,6 +554,23 @@ Future<void> _runNativeCapture({
           trackedIdentitiesFrozen: androidTrackedIdentities!,
         );
         expect(report.ok, isTrue, reason: '$receipt');
+        expect(
+          cleanupEvidence['sessionCleanupIdentityMatch'],
+          isTrue,
+          reason: '$cleanupEvidence',
+        );
+        expect(
+          cleanupEvidence['observationComplete'],
+          isTrue,
+          reason: '$cleanupEvidence',
+        );
+        expect(
+          androidPhysicalSettlement!['remotePortCandidatesPresentAtEnd'],
+          isFalse,
+          reason:
+              'same-device remote-port candidates must be absent at settle end: '
+              '$androidPhysicalSettlement',
+        );
         expect(
           androidPhysicalSettlement!['provenPhysicalSettlement'],
           isTrue,
@@ -573,6 +600,13 @@ Future<void> _runNativeCapture({
           'androidStopReport': androidStopReport == null
               ? null
               : devSessionStopReportJson(androidStopReport!),
+          'androidSessionCleanup': androidStopReport == null
+              ? null
+              : sessionCleanupConsumerEvidence(
+                  report: androidStopReport!,
+                  sessionOwnerPid: sessionOwnerPid,
+                  trackedIdentitiesFrozen: androidTrackedIdentities,
+                ),
           'logcatStop': logcatStopVerdict?.toJson(),
           'provenOwnedResourceSettlement': false,
           'provenPhysicalSettlement':
