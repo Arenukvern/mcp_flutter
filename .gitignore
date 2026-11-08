@@ -59,3 +59,5 @@ universal_automation/
 packages/harness/output/
 .native_capture/
 intentcall/
+oka/
+**/pubspec_overrides.yaml

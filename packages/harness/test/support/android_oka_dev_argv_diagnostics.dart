@@ -61,7 +61,7 @@ Map<String, Object?> androidOkaDevLaunchIntent({
     'okaHarnessVersion': '0.9.1',
     'hostedAndroidAppTargetChildArgv': hostedChild,
     'supportedOkaCliArgv': supported,
-    'hostedOmitsAndroidPositional': true,
+    'hostedOmitsAndroidPositional': !hostedChild.contains('android'),
     'okaBinConfigured': okaBin,
     'projectDir': projectDir,
     'publicAndroidAppTargetKnobs': const [

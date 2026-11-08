@@ -7,11 +7,13 @@ on:
 permissions:
   contents: read
 
+env:
+  # Immutable unmerged oka SDK under test (PR #18). Not a hosted release claim.
+  OKA_CONSUMER_PIN_SHA: '7416849a14cf817217e6fd84c305d5f1529b7c41'
+
 jobs:
   android-emulator:
     name: Android emulator flutter_layer proof
-    # Held until parent supplies OKA_CONSUMER_PIN_SHA from immutable oka SDK fix commit.
-    if: ${{ vars.OKA_CONSUMER_PIN_SHA != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -28,14 +30,15 @@ jobs:
       - name: Provision intentcall (pinned ref in-repo)
         run: bash tool/ci/checkout_intentcall.sh
 
+      - name: Provision oka SDK (pinned unmerged commit)
+        run: |
+          bash tool/ci/checkout_oka_consumer.sh
+          bash tool/ci/apply_oka_consumer_overrides.sh
+          bash tool/ci/activate_oka_consumer_cli.sh
+          echo "$HOME/.pub-cache/bin" >> $GITHUB_PATH
+
       - name: Workspace pub get
         run: flutter pub get
-
-      - name: Install oka CLI
-        run: dart pub global activate oka 0.9.1
-
-      - name: Enable PATH for global packages
-        run: echo "$HOME/.pub-cache/bin" >> $GITHUB_PATH
 
       - name: Prebuild native layer capture fixture (android debug APK + manifest)
         run: |
@@ -53,11 +56,9 @@ jobs:
           api-level: 34
           arch: x86_64
           profile: pixel_6
-          emulator-boot-timeout-in-minutes: 20
+          emulator-boot-timeout: 600
           emulator-options: -no-snapshot-save -gpu swiftshader_indirect -no-window -no-boot-anim
-          # android-emulator-runner invokes each script line in a separate shell;
-          # keep env + test in one line so exports survive.
-          script: export ANDROID_SERIAL=emulator-5554 && export OKA_ANDROID_USE_PREBUILD=1 && export OKA_CONSUMER_PIN_SHA="${{ vars.OKA_CONSUMER_PIN_SHA }}" && export OKA_BIN=oka && export RUN_NATIVE_FLUTTER_LAYER_ANDROID=1 && export NATIVE_CAPTURE_ARTIFACT_DIR="${GITHUB_WORKSPACE}/.native_capture/android" && mkdir -p "$NATIVE_CAPTURE_ARTIFACT_DIR" && cd packages/harness && dart test -t native-android --concurrency=1 test/integration/native_flutter_layer_capture_test.dart
+          script: export ANDROID_SERIAL=emulator-5554 && export OKA_ANDROID_USE_PREBUILD=1 && export OKA_CONSUMER_PIN_SHA="$OKA_CONSUMER_PIN_SHA" && export OKA_BIN=oka && export RUN_NATIVE_FLUTTER_LAYER_ANDROID=1 && export NATIVE_CAPTURE_ARTIFACT_DIR="${GITHUB_WORKSPACE}/.native_capture/android" && mkdir -p "$NATIVE_CAPTURE_ARTIFACT_DIR" && cd packages/harness && dart test -t native-android --concurrency=1 test/integration/native_flutter_layer_capture_test.dart
 
       - name: Upload Android native capture artifacts
         if: always()

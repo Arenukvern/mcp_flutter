@@ -293,18 +293,16 @@ packages:
   oka_android:
     dependency: "direct dev"
     description:
-      name: oka_android
-      sha256: b8f700398ec41c572ea79b59beba50b5fa080e79570a6514109ab1ff0b26ecf2
-      url: "https://pub.dev"
-    source: hosted
+      path: "../../oka/packages/oka_android"
+      relative: true
+    source: path
     version: "0.9.1"
   oka_core:
     dependency: "direct dev"
     description:
-      name: oka_core
-      sha256: ba0b612f437287f52698714af0e8d1181b0f9c73e54a08569fae56eb6c7546b5
-      url: "https://pub.dev"
-    source: hosted
+      path: "../../oka/packages/oka_core"
+      relative: true
+    source: path
     version: "0.9.1"
   path:
     dependency: transitive

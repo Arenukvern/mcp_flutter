@@ -1,6 +1,6 @@
 # Native layer capture — oka consumer cutover plan (blocked on immutable PR SHA)
 
-**Status:** HOLD Android native proof until parent supplies **one immutable git commit** from the focused oka SDK fix workstream. **No merge, no publish** in either repo from this branch alone.
+**Status:** **Test pin active:** `tool/ci/oka_consumer_pin.txt` → `7416849a14cf817217e6fd84c305d5f1529b7c41` ([oka PR #18](https://github.com/Arenukvern/oka/pull/18), unmerged). **No merge, no publish** in either repo.
 
 ## Defect (confirmed)
 
