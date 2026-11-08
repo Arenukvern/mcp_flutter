@@ -59,6 +59,12 @@ void main() {
             throw StateError('ANDROID_SERIAL is required for Android native proof');
           }
           await startAndroidEngineLogcat(deviceId: deviceId, sink: combinedTap);
+          final staleOkaDebug = Directory(
+            '${appDir.path}/.oka_cache/build/debug',
+          );
+          if (staleOkaDebug.existsSync()) {
+            staleOkaDebug.deleteSync(recursive: true);
+          }
           final harnessDir = Directory.current.path.endsWith('harness')
               ? Directory.current
               : Directory('${Directory.current.path}/packages/harness');
