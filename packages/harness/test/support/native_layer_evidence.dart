@@ -208,13 +208,7 @@ Map<String, Object?> analyzeCapturePair({
     'markerStripeAfter': stripeAfter,
     'width': decodedBefore.width,
     'height': decodedBefore.height,
-    'layout': {
-      'logicalWindowWidth': layout.logicalWindowWidth,
-      'logicalWindowHeight': layout.logicalWindowHeight,
-      'scale': layout.scale,
-      'markerStripePhysicalPx': layout.markerStripePhysicalPx,
-      'counterTextPhysicalRoi': layout.counterTextPhysicalRoi,
-    },
+    'layout': layout.toEvidenceJson(),
   };
 }
 

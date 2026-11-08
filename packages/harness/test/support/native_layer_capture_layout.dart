@@ -30,6 +30,23 @@ class NativeCaptureLayout {
   final int markerStripePhysicalPx;
   final (int, int, int, int) counterTextPhysicalRoi;
 
+  /// JSON-safe layout snapshot for artifact files ([dart:convert] cannot encode Records).
+  Map<String, Object?> toEvidenceJson() {
+    final (left, top, width, height) = counterTextPhysicalRoi;
+    return {
+      'logicalWindowWidth': logicalWindowWidth,
+      'logicalWindowHeight': logicalWindowHeight,
+      'scale': scale,
+      'markerStripePhysicalPx': markerStripePhysicalPx,
+      'counterTextPhysicalRoi': {
+        'left': left,
+        'top': top,
+        'width': width,
+        'height': height,
+      },
+    };
+  }
+
   static NativeCaptureLayout? fromSemantics({
     required int imageWidth,
     required int imageHeight,
