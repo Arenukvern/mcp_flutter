@@ -7,6 +7,7 @@ void main() {
       final observation = <String, Object?>{
         'observationComplete': true,
         'observationUnknownReasons': <String>[],
+        'settlementWindowDeadlineMet': true,
         'forwardClassification': <String, Object?>{
           'observationComplete': true,
           'matchedOwnedBaselineLines': <String>[
@@ -55,10 +56,36 @@ void main() {
       expect(v['observationComplete'], isFalse);
     });
 
+    test('deadline not met => unknown incomplete', () {
+      final observation = <String, Object?>{
+        'observationComplete': true,
+        'observationUnknownReasons': <String>[],
+        'settlementWindowDeadlineMet': false,
+        'forwardClassification': <String, Object?>{
+          'observationComplete': true,
+          'matchedOwnedBaselineLines': <String>[],
+          'sameDeviceRemotePortCandidates': <String>[],
+        },
+        'fixtureAppProcesses': <String, Object?>{
+          'observationComplete': true,
+          'fixtureAppState': 'not_running',
+          'pidList': <String>[],
+        },
+        'trackedHostIdentityEval': <String, Object?>{
+          'observationComplete': true,
+          'trackedHostIdentitiesQuiet': true,
+        },
+      };
+      final v = physicalSettlementVerdictFromObservation(observation);
+      expect(v['provenPhysicalSettlement'], isFalse);
+      expect(v['observationComplete'], isFalse);
+    });
+
     test('cleared owned, not_running, quiet => proven', () {
       final observation = <String, Object?>{
         'observationComplete': true,
         'observationUnknownReasons': <String>[],
+        'settlementWindowDeadlineMet': true,
         'forwardClassification': <String, Object?>{
           'observationComplete': true,
           'matchedOwnedBaselineLines': <String>[],

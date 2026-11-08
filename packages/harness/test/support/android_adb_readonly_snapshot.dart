@@ -42,6 +42,9 @@ Future<AdbForwardListSnapshot> fetchAdbForwardListOnce() async {
 }
 
 /// Distinguishes fixture absent vs adb unreachable (read-only).
+///
+/// Note: separate `get-state` and `pidof` shells admit device-state TOCTOU;
+/// evidence treats adb failures as unknown, not "gone".
 Future<Map<String, Object?>> observeFixtureAppOnDevice(String deviceId) async {
   if (deviceId.isEmpty) {
     return {

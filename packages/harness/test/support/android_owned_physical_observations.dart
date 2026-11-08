@@ -218,7 +218,12 @@ Future<Map<String, Object?>> recordAndroidPhysicalSettlementWindow({
   await appendPhysicalObservationTimeline(artifactDir, finalSample);
 
   final elapsedMs = DateTime.now().difference(started).inMilliseconds;
-  final verdictFields = physicalSettlementVerdictFromObservation(finalSample);
+  final deadlineMet = elapsedMs >= window.inMilliseconds;
+  final finalForVerdict = {
+    ...finalSample,
+    'settlementWindowDeadlineMet': deadlineMet,
+  };
+  final verdictFields = physicalSettlementVerdictFromObservation(finalForVerdict);
   final proven = verdictFields['provenPhysicalSettlement'] == true;
 
   final evidence = {
@@ -258,6 +263,9 @@ Map<String, Object?> physicalSettlementVerdictFromObservation(
   ];
   if (observation['observationComplete'] != true) {
     unknown.add('snapshot_observation_incomplete');
+  }
+  if (observation['settlementWindowDeadlineMet'] == false) {
+    unknown.add('settlement_window_deadline_not_met');
   }
 
   final classification = observation['forwardClassification'] as Map?;

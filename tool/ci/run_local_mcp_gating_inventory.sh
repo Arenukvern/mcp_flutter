@@ -83,7 +83,8 @@ failed=0
     echo "== SKIP oka_harness (oka checkout missing) =="
   fi
   if [[ -d oka/packages/oka_android ]]; then
-    run_section "oka_android stop+binding (pinned)" bash -c 'cd oka/packages/oka_android && dart test test/runner_session_spawn_binding_test.dart test/dev_session_stop_test.dart' || failed=1
+    run_section "oka_android stop+binding+teardown (pinned)" bash -c 'cd oka/packages/oka_android && dart test test/runner_session_spawn_binding_test.dart test/dev_session_stop_test.dart test/dev_session_teardown_test.dart' || failed=1
+    run_section "oka_android dart analyze fatal-infos" bash -c 'cd oka/packages/oka_android && dart analyze --fatal-infos .' || failed=1
   fi
 
   # Workspace-declared packages not individually covered above
