@@ -84,7 +84,7 @@ void main() {
         launch: (tap) async {
           final app = await LinuxBoundedFlutterRunTarget(
             projectDir: appDir.path,
-            extraArgs: const ['-v'],
+            extraArgs: const ['-v', '--no-build'],
           ).launch();
           for (final line in app.stdout.lines) {
             tap.add(line);
