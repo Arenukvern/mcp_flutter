@@ -14,7 +14,7 @@ final class LinuxBoundedFlutterRunTarget implements AppTarget {
     this.environment = const <String, String>{},
     this.name = 'linux-machine-run',
     this.flutterBin = 'flutter',
-    this.vmServiceTimeout = const Duration(minutes: 8),
+    this.vmServiceTimeout = const Duration(minutes: 12),
     this.runDeadline = const Duration(hours: 2),
     this.stopGrace = const Duration(seconds: 8),
   });

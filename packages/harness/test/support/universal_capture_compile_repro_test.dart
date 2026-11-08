@@ -8,11 +8,21 @@ import 'package:test/test.dart';
 /// Documents pub.dev [universal_capture_flutter] 0.2.0 vs Dart 3.13.4 compiler.
 /// Run: `dart test test/support/universal_capture_compile_repro_test.dart`
 /// Expectation: kernel compile of hosted source fails on `final` parameters.
+Future<void> ensureHostedUcf020InPubCache() async {
+  final add = await Process.run(
+    'dart',
+    ['pub', 'cache', 'add', 'universal_capture_flutter', '--version', '0.2.0'],
+  );
+  expect(add.exitCode, 0, reason: '${add.stderr}');
+}
+
 void main() {
   final pubCache = Platform.environment['PUB_CACHE'] ??
       '${Platform.environment['HOME']}/.pub-cache';
   final grabPath =
       '$pubCache/hosted/pub.dev/universal_capture_flutter-0.2.0/lib/src/vm_screenshot_grab.dart';
+
+  setUpAll(ensureHostedUcf020InPubCache);
 
   test(
     'hosted universal_capture_flutter 0.2.0 kernel compile diagnostic',

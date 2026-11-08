@@ -35,13 +35,21 @@ jobs:
       - name: Enable PATH for global packages
         run: echo "$HOME/.pub-cache/bin" >> $GITHUB_PATH
 
+      - name: Prebuild native layer capture fixture (apk)
+        run: |
+          cd showcase/native_layer_capture_fixture
+          flutter pub get
+          flutter build apk --debug
+
       - uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
           arch: x86_64
           profile: pixel_6
-          emulator-options: -no-snapshot-save -gpu swiftshader_indirect -no-window
+          emulator-boot-timeout-in-minutes: 20
+          emulator-options: -no-snapshot-save -gpu swiftshader_indirect -no-window -no-boot-anim
           script: |
+            export ANDROID_SERIAL=emulator-5554
             export RUN_NATIVE_FLUTTER_LAYER_ANDROID=1
             export NATIVE_CAPTURE_ARTIFACT_DIR="$GITHUB_WORKSPACE/.native_capture/android"
             mkdir -p "$NATIVE_CAPTURE_ARTIFACT_DIR"
@@ -80,6 +88,16 @@ jobs:
 
       - name: Workspace pub get
         run: flutter pub get
+
+      - name: Prebuild native layer capture fixture (linux)
+        env:
+          LIBRARY_PATH: /usr/lib/gcc/x86_64-linux-gnu/12:/usr/lib/gcc/x86_64-linux-gnu/13
+          LDFLAGS: -L/usr/lib/gcc/x86_64-linux-gnu/12 -L/usr/lib/gcc/x86_64-linux-gnu/13
+          CPATH: /usr/include/c++/12:/usr/include/x86_64-linux-gnu/c++/12
+        run: |
+          cd showcase/native_layer_capture_fixture
+          flutter pub get
+          xvfb-run -a flutter build linux --debug
 
       - name: Run Linux flutter_layer integration (Dart owner)
         env:
