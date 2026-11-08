@@ -41,6 +41,12 @@ jobs:
           dart pub global activate coverage
           dart pub global run coverage:test_with_coverage --branch-coverage
 
+      - name: Provision oka test pin (provisional; unmerged PR #18)
+        if: hashFiles('tool/ci/oka_consumer_pin.txt') != ''
+        run: |
+          bash tool/ci/provision_oka_consumer_test_pin.sh
+          echo "$HOME/.pub-cache/bin" >> "$GITHUB_PATH"
+
       - name: flutter_mcp_harness analyze and unit tests
         run: |
           flutter pub get

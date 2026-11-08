@@ -21,6 +21,7 @@ import '../support/native_layer_capture_layout.dart';
 import '../support/native_layer_evidence.dart';
 import '../support/native_layer_failure_artifacts.dart';
 import '../support/native_layer_oka_diagnostics.dart';
+import '../support/oka_consumer_pin.dart';
 import '../support/session_settlement.dart';
 
 void main() {
@@ -70,7 +71,7 @@ void main() {
             throw StateError('ANDROID_SERIAL is required for Android native proof');
           }
           final okaBin = Platform.environment['OKA_BIN'] ?? 'oka';
-          final okaPinSha = Platform.environment['OKA_CONSUMER_PIN_SHA'];
+          final okaPinSha = readOkaConsumerPinSha(repoRoot: repoRoot);
           await writeJsonArtifact(
             artifactDir,
             'android_oka_dev_launch_intent.json',

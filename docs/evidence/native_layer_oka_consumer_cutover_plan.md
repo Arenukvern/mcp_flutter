@@ -9,9 +9,7 @@
 
 ## Consumer integration (after SHA is provided)
 
-1. **Pin (test/CI only, documented):** set `OKA_BIN` to the oka monorepo-built CLI at the **exact commit SHA** (not `main`, not a guessed tag). Record in `.github/workflows/native_flutter_layer_capture.yml` and/or steward probe metadata:
-   - `OKA_CONSUMER_PIN_SHA=<parent-supplied>`
-   - `OKA_BIN=<path-on-CI-after-checkout@SHA>`
+1. **Pin (test/CI only, documented):** single source `tool/ci/oka_consumer_pin.txt` → checkout + path overrides + `OKA_BIN` from `dart pub global activate --source path oka/packages/oka` (not `main`, not a guessed tag).
 2. **Deps alignment:** bump `oka_harness` / `oka_android` in `packages/harness/pubspec.yaml` to the **same monorepo revision** as the CLI pin (path/git ref in workspace only until parent publishes).
 3. **Remove shell workarounds:** no `oka_dev_android.sh` or argv-rewrite scripts; `AndroidAppTarget(okaBin: Platform.environment['OKA_BIN'] ?? 'oka')` only.
 4. **Verification gate:** Android native job runs only when pin env is set to the approved SHA artifact; first green must show capture PNGs + `runner-session.json` + honest Impeller log, not timeout-only artifacts.

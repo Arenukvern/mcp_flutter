@@ -81,7 +81,7 @@ Map<String, Object?> androidOkaDevLaunchIntent({
     },
     'routingReference': 'oka 0.9.1 DevCommand: args.first != android → kernel stack',
     'consumerNote':
-        'Await immutable oka SDK PR commit (OKA_BIN + OKA_CONSUMER_PIN_SHA). '
+        'Await immutable oka SDK PR commit (tool/ci/oka_consumer_pin.txt + OKA_BIN). '
         'No shell argv rewrite; hosted fix must emit dev android child argv.',
   };
 }

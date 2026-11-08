@@ -7,10 +7,6 @@ on:
 permissions:
   contents: read
 
-env:
-  # Immutable unmerged oka SDK under test (PR #18). Not a hosted release claim.
-  OKA_CONSUMER_PIN_SHA: '7416849a14cf817217e6fd84c305d5f1529b7c41'
-
 jobs:
   android-emulator:
     name: Android emulator flutter_layer proof
@@ -30,14 +26,12 @@ jobs:
       - name: Provision intentcall (pinned ref in-repo)
         run: bash tool/ci/checkout_intentcall.sh
 
-      - name: Provision oka SDK (pinned unmerged commit)
+      - name: Provision oka test pin (provisional; unmerged PR #18)
         run: |
           mkdir -p "$GITHUB_WORKSPACE/.native_capture"
-          bash tool/ci/checkout_oka_consumer.sh
-          bash tool/ci/apply_oka_consumer_overrides.sh
-          bash tool/ci/activate_oka_consumer_cli.sh
+          bash tool/ci/provision_oka_consumer_test_pin.sh
           bash tool/ci/report_oka_consumer_provenance.sh "$GITHUB_WORKSPACE/.native_capture/oka_consumer_provenance.json"
-          echo "$HOME/.pub-cache/bin" >> $GITHUB_PATH
+          echo "$HOME/.pub-cache/bin" >> "$GITHUB_PATH"
 
       - name: Workspace pub get
         run: flutter pub get
@@ -63,7 +57,7 @@ jobs:
           profile: pixel_6
           emulator-boot-timeout: 600
           emulator-options: -no-snapshot-save -gpu swiftshader_indirect -no-window -no-boot-anim
-          script: export ANDROID_SERIAL=emulator-5554 && export OKA_ANDROID_BUILD_ABI=x86_64 && export OKA_ANDROID_USE_PREBUILD=1 && export OKA_CONSUMER_PIN_SHA="$OKA_CONSUMER_PIN_SHA" && export OKA_BIN=oka && export RUN_NATIVE_FLUTTER_LAYER_ANDROID=1 && export NATIVE_CAPTURE_ARTIFACT_DIR="${GITHUB_WORKSPACE}/.native_capture/android" && mkdir -p "$NATIVE_CAPTURE_ARTIFACT_DIR" && cd packages/harness && dart test -t native-android --concurrency=1 test/integration/native_flutter_layer_capture_test.dart
+          script: export ANDROID_SERIAL=emulator-5554 && export OKA_ANDROID_BUILD_ABI=x86_64 && export OKA_ANDROID_USE_PREBUILD=1 && export OKA_BIN=oka && export RUN_NATIVE_FLUTTER_LAYER_ANDROID=1 && export NATIVE_CAPTURE_ARTIFACT_DIR="${GITHUB_WORKSPACE}/.native_capture/android" && mkdir -p "$NATIVE_CAPTURE_ARTIFACT_DIR" && cd packages/harness && dart test -t native-android --concurrency=1 test/integration/native_flutter_layer_capture_test.dart
 
       - name: Upload Android native capture artifacts
         if: always()
