@@ -30,6 +30,14 @@ if [[ -d oka/packages/oka_harness ]]; then
   (cd oka/packages/oka_harness && dart test)
 fi
 
+echo "== oka_android stop + spawn binding (pinned) =="
+if [[ -d oka/packages/oka_android ]]; then
+  (
+    cd oka/packages/oka_android
+    dart test test/runner_session_spawn_binding_test.dart test/dev_session_stop_test.dart
+  )
+fi
+
 echo "== mcp_server_dart (full; matches contract_gates) =="
 (
   cd mcp_server_dart

@@ -1,5 +1,7 @@
 name: Native flutter_layer capture
 
+# 10s read-only physical settlement + pixel/cli proof on PR. Consumer pin from
+# tool/ci/oka_consumer_pin.txt (provisional oka PR #18).
 on:
   pull_request:
   workflow_dispatch:
@@ -8,49 +10,8 @@ permissions:
   contents: read
 
 jobs:
-  native-capture-gate:
-    name: Native capture allowlist gate
-    runs-on: ubuntu-latest
-    outputs:
-      run: ${{ steps.decide.outputs.run }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - name: Decide run vs hold (oka pin allowlist)
-        id: decide
-        run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "run=true" >> "$GITHUB_OUTPUT"
-            echo "workflow_dispatch: native capture explicitly requested"
-            exit 0
-          fi
-          if bash tool/ci/should_run_native_flutter_layer_capture.sh; then
-            echo "run=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "run=false" >> "$GITHUB_OUTPUT"
-          fi
-
-  native-capture-held:
-    name: Native capture held (await SDK SHA)
-    needs: native-capture-gate
-    if: needs.native-capture-gate.outputs.run != 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - name: Explain hold
-        run: |
-          echo "Skipping expensive emulator/desktop jobs."
-          echo "Pin: $(tr -d '[:space:]' < tool/ci/oka_consumer_pin.txt)"
-          echo "Allowlist: tool/ci/oka_consumer_native_rerun_allowed.txt (empty = HOLD)"
-          bash tool/ci/should_run_native_flutter_layer_capture.sh || true
-
   android-emulator:
     name: Android emulator flutter_layer proof
-    needs: native-capture-gate
-    if: needs.native-capture-gate.outputs.run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -116,8 +77,6 @@ jobs:
 
   linux-desktop:
     name: Linux desktop flutter_layer proof
-    needs: native-capture-gate
-    if: needs.native-capture-gate.outputs.run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
