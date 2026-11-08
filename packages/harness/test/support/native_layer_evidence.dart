@@ -133,6 +133,13 @@ Map<String, Object?> analyzeMarkerStripe(
     }
   }
   final ratio = samples == 0 ? 0.0 : greenHits / samples;
+  final interior = _stripeInteriorExactGreenRatio(
+    image,
+    stripeTop: stripeTop,
+    stripeLeft: stripeLeft,
+    stripeW: stripeW,
+    stripeH: stripeH,
+  );
   return {
     'stripeHeightPx': stripeH,
     'stripeTopPx': stripeTop,
@@ -141,9 +148,81 @@ Map<String, Object?> analyzeMarkerStripe(
     'samples': samples,
     'greenHits': greenHits,
     'greenRatio': ratio,
+    'interiorExactGreenRatio': interior['ratio'],
+    'interiorSamples': interior['samples'],
     'probePoints': probePoints,
     'ok': probesOk && samples > 0 && ratio >= minGreenRatio,
   };
+}
+
+/// Full-resolution exact marker color, excluding probe rows/columns (edge handling).
+Map<String, Object?> _stripeInteriorExactGreenRatio(
+  img.Image image, {
+  required int stripeTop,
+  required int stripeLeft,
+  required int stripeW,
+  required int stripeH,
+}) {
+  final probeXs = {
+    stripeLeft,
+    stripeLeft + stripeW ~/ 2,
+    stripeLeft + stripeW - 1,
+  };
+  final probeYs = {
+    stripeTop,
+    if (stripeH > 2) stripeTop + stripeH ~/ 2,
+    if (stripeH > 1) stripeTop + stripeH - 1,
+  };
+  var samples = 0;
+  var greenHits = 0;
+  for (var y = stripeTop; y < stripeTop + stripeH; y++) {
+    for (var x = stripeLeft; x < stripeLeft + stripeW; x++) {
+      if (probeXs.contains(x) || probeYs.contains(y)) continue;
+      samples++;
+      if (_isMarkerGreenArgb(_pixelArgb(image, x, y))) greenHits++;
+    }
+  }
+  return {
+    'samples': samples,
+    'greenHits': greenHits,
+    'ratio': samples == 0 ? 0.0 : greenHits / samples,
+  };
+}
+
+/// Diagonal top-right overlay avoiding probe columns (empirical Linux/Android densities).
+void paintRealisticTopRightDiagonalForeign(
+  img.Image image, {
+  required NativeCaptureLayout layout,
+  required double foreignFractionOfInterior,
+  int argb = 0xFF7A3624,
+}) {
+  final top = layout.markerStripePhysicalTop;
+  final left = layout.markerStripePhysicalLeft;
+  final w = layout.markerStripePhysicalWidth.clamp(1, image.width - left);
+  final h = layout.markerStripePhysicalPx.clamp(1, image.height - top);
+  final probeXs = {left, left + w ~/ 2, left + w - 1};
+  final probeYs = {
+    top,
+    if (h > 2) top + h ~/ 2,
+    if (h > 1) top + h - 1,
+  };
+  final candidates = <(int x, int y, int rank)>[];
+  for (var y = top; y < top + h; y++) {
+    for (var x = left; x < left + w; x++) {
+      if (probeXs.contains(x) || probeYs.contains(y)) continue;
+      final rank = (left + w - x) + (y - top);
+      candidates.add((x, y, rank));
+    }
+  }
+  candidates.sort((a, b) => a.$3.compareTo(b.$3));
+  final foreignCount = (candidates.length * foreignFractionOfInterior).round();
+  final r = (argb >> 16) & 0xFF;
+  final g = (argb >> 8) & 0xFF;
+  final b = argb & 0xFF;
+  for (var i = 0; i < foreignCount && i < candidates.length; i++) {
+    final (x, y, _) = candidates[i];
+    image.setPixelRgba(x, y, r, g, b, 255);
+  }
 }
 
 /// Counts exact vs tolerant-green vs foreign pixels in the semantics stripe ROI.

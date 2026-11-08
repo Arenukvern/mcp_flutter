@@ -52,16 +52,19 @@ Uint8List _encode(img.Image image) => Uint8List.fromList(img.encodePng(image));
 
 void main() {
   group('NativeCaptureLayout geometry table', () {
-    test('1080x2400 @ logical width 411 → ~21px stripe', () {
+    test('1080x2274 @ marker width 411 → exact physical stripe rect', () {
       final layout = NativeCaptureLayout.fromSemantics(
         imageWidth: 1080,
-        imageHeight: 2400,
+        imageHeight: 2274,
         marker: const AxBounds(left: 0, top: 0, width: 411, height: 8),
         counter: const AxBounds(left: 24, top: 32, width: 80, height: 56),
       );
       expect(layout, isNotNull);
-      expect(layout!.markerStripePhysicalPx, closeTo(21, 1));
-      expect(layout.markerStripePhysicalPx, isNot(27));
+      expect(layout!.scale, closeTo(1080 / 411, 0.001));
+      expect(layout.markerStripePhysicalTop, 0);
+      expect(layout.markerStripePhysicalLeft, 0);
+      expect(layout.markerStripePhysicalWidth, 1080);
+      expect(layout.markerStripePhysicalPx, 21);
     });
 
     test('stripe ROI follows semantics top/left when marker is inset', () {
@@ -71,18 +74,23 @@ void main() {
         marker: const AxBounds(left: 0, top: 24, width: 411, height: 8),
         counter: const AxBounds(left: 24, top: 56, width: 80, height: 56),
       );
-      expect(layout!.markerStripePhysicalTop, greaterThan(0));
+      expect(layout!.markerStripePhysicalTop, 63);
       expect(layout.markerStripePhysicalLeft, 0);
+      expect(layout.markerStripePhysicalWidth, 1080);
+      expect(layout.markerStripePhysicalPx, 21);
     });
 
-    test('1280x720 @ logical 1:1 → 8px stripe', () {
+    test('1280x720 @ logical 1:1 → exact 8px full-width stripe', () {
       final layout = NativeCaptureLayout.fromSemantics(
         imageWidth: 1280,
         imageHeight: 720,
         marker: const AxBounds(left: 0, top: 0, width: 1280, height: 8),
         counter: const AxBounds(left: 24, top: 32, width: 200, height: 56),
       );
-      expect(layout!.markerStripePhysicalPx, 8);
+      expect(layout!.markerStripePhysicalTop, 0);
+      expect(layout.markerStripePhysicalLeft, 0);
+      expect(layout.markerStripePhysicalWidth, 1280);
+      expect(layout.markerStripePhysicalPx, 8);
     });
   });
 
@@ -99,6 +107,16 @@ void main() {
       );
       expect(proof['verdict'], 'pass');
       expect(proof['counterRoiDiffPixels'], greaterThanOrEqualTo(kMinCounterRoiDiffPixels));
+      expect(
+        (proof['markerStripeBefore'] as Map)['interiorExactGreenRatio'],
+        1.0,
+      );
+    });
+
+    test('interior exact green is 1.0 on unmodified synthetic stripe', () {
+      final (image, layout) = _fixture320(counterGlyph: '0');
+      final stripe = analyzeMarkerStripe(image, layout: layout);
+      expect(stripe['interiorExactGreenRatio'], 1.0);
     });
 
     test('fails on identical blank PNGs despite fake counter semantics', () {
@@ -115,25 +133,56 @@ void main() {
       expect(proof['verdict'], 'fail');
     });
 
-    test('fails when debug-banner-like pixels cross semantics stripe band', () {
-      final (image, layout) = _fixture320(counterGlyph: '0');
-      // Colors observed on run 42497211845 stripe (Flutter DEBUG ribbon), top-right.
-      for (var y = layout.markerStripePhysicalTop;
-          y < layout.markerStripePhysicalTop + layout.markerStripePhysicalPx;
-          y++) {
-        for (var x = image.width - 280; x < image.width; x += 3) {
-          image.setPixelRgba(x, y, 122, 54, 36, 255);
+    test('linux-like ~3.3% diagonal foreign misses probe columns yet can pass 0.95', () {
+      final layout = NativeCaptureLayout.fromSemantics(
+        imageWidth: 1280,
+        imageHeight: 720,
+        marker: const AxBounds(left: 0, top: 0, width: 1280, height: 8),
+        counter: const AxBounds(left: 24, top: 32, width: 200, height: 56),
+      )!;
+      final image = img.Image(width: 1280, height: 720);
+      for (var y = 0; y < 8; y++) {
+        for (var x = 0; x < 1280; x++) {
+          image.setPixelRgba(x, y, 0x22, 0xAA, 0x55, 0xFF);
         }
       }
-      final proof = analyzeCapturePair(
-        before: _encode(image),
-        after: _encode(image),
-        counterBefore: 0,
-        counterAfter: 1,
+      paintRealisticTopRightDiagonalForeign(
+        image,
         layout: layout,
+        foreignFractionOfInterior: 0.033,
       );
-      expect(proof['verdict'], 'fail');
-      expect(proof['reason'], 'marker_stripe_not_green');
+      final stripe = analyzeMarkerStripe(image, layout: layout);
+      expect(stripe['greenRatio'], greaterThan(0.95));
+      expect(
+        (stripe['probePoints'] as List).every((p) => (p as Map)['ok'] == 1),
+        isTrue,
+      );
+    });
+
+    test('android-like ~10.1% diagonal foreign fails 0.95 but probes stay green', () {
+      final layout = NativeCaptureLayout.fromSemantics(
+        imageWidth: 1080,
+        imageHeight: 2274,
+        marker: const AxBounds(left: 0, top: 0, width: 411, height: 8),
+        counter: const AxBounds(left: 24, top: 32, width: 80, height: 56),
+      )!;
+      final image = img.Image(width: 1080, height: 2274);
+      for (var y = 0; y < 21; y++) {
+        for (var x = 0; x < 1080; x++) {
+          image.setPixelRgba(x, y, 0x22, 0xAA, 0x55, 0xFF);
+        }
+      }
+      paintRealisticTopRightDiagonalForeign(
+        image,
+        layout: layout,
+        foreignFractionOfInterior: 0.101,
+      );
+      final stripe = analyzeMarkerStripe(image, layout: layout);
+      expect(stripe['greenRatio'], lessThan(0.95));
+      expect(
+        (stripe['probePoints'] as List).every((p) => (p as Map)['ok'] == 1),
+        isTrue,
+      );
     });
 
     test('fails when stripe is wrong color', () {

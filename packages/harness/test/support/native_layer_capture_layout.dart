@@ -71,7 +71,13 @@ class NativeCaptureLayout {
         : kFixtureMarkerStripeLogicalPx;
     final stripeTop = (marker.top * scale).round().clamp(0, imageHeight - 1);
     final stripeLeft = (marker.left * scale).round().clamp(0, imageWidth - 1);
-    final stripeW = math.max(1, (marker.width * scale).round().clamp(1, imageWidth - stripeLeft));
+    var stripeW = math.max(1, (marker.width * scale).round().clamp(1, imageWidth - stripeLeft));
+    if (marker.left == 0) {
+      final scaledLogicalWidth = marker.width * scale;
+      if ((scaledLogicalWidth - imageWidth).abs() <= 2) {
+        stripeW = imageWidth - stripeLeft;
+      }
+    }
     final markerPhysical = (markerH * scale).round().clamp(
       1,
       imageHeight - stripeTop,

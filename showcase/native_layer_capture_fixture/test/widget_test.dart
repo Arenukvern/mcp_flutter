@@ -9,6 +9,10 @@ void main() {
     await tester.pumpWidget(const NativeLayerCaptureFixtureApp());
     await tester.pumpAndSettle();
 
+    final materialApp = tester.widget<MaterialApp>(find.byType(MaterialApp));
+    expect(materialApp.debugShowCheckedModeBanner, isFalse);
+    expect(find.byType(Banner), findsNothing);
+
     expect(find.text('0'), findsOneWidget);
     expect(find.widgetWithText(ElevatedButton, 'Increment'), findsOneWidget);
 

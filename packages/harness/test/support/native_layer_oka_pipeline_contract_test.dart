@@ -38,15 +38,6 @@ void main() {
       expect(lint, greaterThan(record));
     });
 
-    test('fixture disables MaterialApp debug banner for stripe proof', () {
-      final mainDart = File(
-        '${nativeCaptureFixtureApp(harnessRepoRoot()).path}/lib/main.dart',
-      );
-      expect(mainDart.existsSync(), isTrue);
-      final src = mainDart.readAsStringSync();
-      expect(src, contains('debugShowCheckedModeBanner: false'));
-    });
-
     test('fixture oka_pipeline does not double-append RecordRunSessionStep', () {
       final repo = harnessRepoRoot();
       final hook = File(
