@@ -141,10 +141,10 @@ packages:
     dependency: transitive
     description:
       name: code_assets
-      sha256: bf394f466ba9205f1812a0433b392d6af280f155f56651eda7c18cc32ed493b8
+      sha256: "1ef22a0be3af9370bd9481ac76db114db92bfe75d5ca2b2d7bc911764478a4d9"
       url: "https://pub.dev"
     source: hosted
-    version: "1.2.1"
+    version: "2.2.0"
   collection:
     dependency: transitive
     description:
@@ -383,42 +383,42 @@ packages:
     dependency: transitive
     description:
       name: intentcall_codegen
-      sha256: "899ef0d531af1b9cc42735aa5f61088ff2c20d2f8edf3215a0fffdb2adab1036"
+      sha256: "4d15bd75876a087fd998be091e83fb55756c934c17d5fbebd42752358d204252"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.0"
+    version: "1.2.0"
   intentcall_core:
     dependency: transitive
     description:
       name: intentcall_core
-      sha256: fbdbe9c22c1d8478e7b9d737051af4187ed202abd9e79eedbddfd6126e44b943
+      sha256: "5943bf2101129d2c1c7e011d5987bc873e83506c4de0245b400159011054d51a"
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.0"
+    version: "1.2.0"
   intentcall_hooks:
     dependency: transitive
     description:
       name: intentcall_hooks
-      sha256: e4e7bf7948478feb9a13549c11614a49bdf39eb322075d6877232afc6a818bc3
+      sha256: "8ed8d414c81d37c4b64a4d1c936c8e4bc1ec39df54124f3dc5d14f0fd3be84e9"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.0"
+    version: "1.2.0"
   intentcall_mcp:
     dependency: transitive
     description:
       name: intentcall_mcp
-      sha256: "06826531622bafe8ac2506966a88101adb1694e1b9e4541e0048634b2c12b0d5"
+      sha256: "7e7786c797c5440b7d9ead12e30fafeb0e548f26bb83f287f2521e2bb1ac59ac"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.0"
+    version: "1.2.0"
   intentcall_platform_sync:
     dependency: transitive
     description:
       name: intentcall_platform_sync
-      sha256: bb856d8e352d3a0aac5ce02cc93abb6b048faf4faae755c6eb058772b1c0ee1e
+      sha256: "83613e05ed39aaf5cd7a9776a015e71ba90da756ddd5d03afd7352038507cdc3"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.0"
+    version: "1.2.0"
   intentcall_schema:
     dependency: transitive
     description:
@@ -431,10 +431,10 @@ packages:
     dependency: transitive
     description:
       name: intentcall_session
-      sha256: "89873ee39e71f4a05b37a84ea0c8c5a22d5e734e5898ae32e93d4d16edfcd260"
+      sha256: "84cf7bf76358edeaf01a730beeeb995b0fb6868cfbf7109fad0edf2a257eb55a"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.0"
+    version: "1.2.0"
   intl:
     dependency: transitive
     description:
@@ -945,7 +945,7 @@ packages:
     source: hosted
     version: "0.3.1"
   universal_automation_interface:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
       name: universal_automation_interface
       sha256: ed50caf4a72a6debdc667a59be3424c7a5e3e84514df81f3cc1118663248407a
@@ -956,10 +956,10 @@ packages:
     dependency: transitive
     description:
       name: universal_automation_semantics
-      sha256: b0761ce0d004816a774cc4f57fc4963fea26f9b9acfe30fe42013a655adf5dcf
+      sha256: "315e2e86f5cb00a4290ccc167e6bd81d4b2d6f0b9ffc6a296cd320b2aa6882f9"
       url: "https://pub.dev"
     source: hosted
-    version: "0.2.0"
+    version: "0.5.0"
   universal_browser_cdp:
     dependency: transitive
     description:

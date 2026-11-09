@@ -9,6 +9,18 @@ compile: sync-skills
 	dart compile exe bin/flutter_mcp_toolkit.dart -o build/flutter-mcp-toolkit && \
 	cp build/flutter-mcp-toolkit build/fmtk
 
+# Installs the binaries to ~/.local/bin ATOMICALLY: mv renames the directory
+# entry, so a session spawning the server mid-install can never exec a
+# half-written file (a truncating copy here produced "Connection closed"
+# spawn failures across every open workspace on 2026-11-08).
+.PHONY: install-bin
+install-bin: compile
+	@ mkdir -p $(HOME)/.local/bin && \
+	mv -f build/flutter-mcp-toolkit-server $(HOME)/.local/bin/flutter-mcp-toolkit-server && \
+	mv -f build/flutter-mcp-toolkit $(HOME)/.local/bin/flutter-mcp-toolkit && \
+	mv -f build/fmtk $(HOME)/.local/bin/fmtk && \
+	echo "installed to ~/.local/bin (atomic mv — safe while sessions run the old binary)"
+
 .PHONY: inspect
 inspect:
 	npx @modelcontextprotocol/inspector build/flutter-mcp-toolkit-server --log-level=debug
