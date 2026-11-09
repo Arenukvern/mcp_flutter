@@ -10,3 +10,9 @@ workspace:
   - jaspr_web_example
   - showcase/drivers
 
+# Hosted semantics 0.4+/0.5 require universal_automation_interface ^0.4.0, which
+# is not on pub.dev yet. Pin 0.3.0 until the family train publishes interface
+# 0.4.0 (remove this block when it ships).
+dependency_overrides:
+  universal_automation_interface: 0.3.0
+
