@@ -17,7 +17,7 @@ Runner script: `/cursor/stores/self/harness_probe_verification_sequential_691743
 | 2 | `dart test packages/harness --exclude-tags native-android,native-linux,compile-repro-opt-in` | 0 |
 | 3 | `cd packages/harness && dart test --exclude-tags native-android,native-linux,compile-repro-opt-in` | 0 |
 
-Harness unit: **128 passed**, **1 skipped** (native integration tag).
+Harness unit: **126 passed**, **1 skipped** (native integration tag).
 
 ## SDK / native (unchanged)
 

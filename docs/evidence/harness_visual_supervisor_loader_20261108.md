@@ -20,7 +20,7 @@ Observed when running `dart test packages/harness` from the workspace root (coll
 
 **Plausible pre-existing misname** (same file name/signature on `main` in git), **not** a same-command reproduction on `main` in this VM.
 
-## Fix in local batch (unpushed)
+## Fix on branch (pushed: `3f69d655`, `6917431d`)
 
 1. Rename probe → `tool/visual_supervisor_probe.dart` (align with `visual_probe.dart`).
 2. `test/visual_supervisor_probe_entry_test.dart` resolves **`flutter_mcp_harness`** via pubspec walk (`cwd` + `packages/harness` under ancestors), not raw `Directory.current`, so both invocations pass.
@@ -41,8 +41,8 @@ See `docs/evidence/harness_probe_verification_6917431d_20261108.md` — captured
 | Command | Exit |
 |---------|------|
 | `dart analyze --fatal-infos packages/harness` | **0** |
-| `dart test packages/harness --exclude-tags native-android,native-linux,compile-repro-opt-in` | **0** (128 tests; 1 skip) |
-| `cd packages/harness && dart test --exclude-tags native-android,native-linux,compile-repro-opt-in` | **0** (128 tests; 1 skip) |
+| `dart test packages/harness --exclude-tags native-android,native-linux,compile-repro-opt-in` | **0** (**126 passed**, **1 skipped**) |
+| `cd packages/harness && dart test --exclude-tags native-android,native-linux,compile-repro-opt-in` | **0** (**126 passed**, **1 skipped**) |
 
 ## Related harness test fix (same batch)
 
