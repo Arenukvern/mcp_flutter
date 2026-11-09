@@ -1,7 +1,7 @@
 name: Native flutter_layer capture
 
 # 10s read-only physical settlement + pixel/cli proof. Consumer pin from
-# tool/ci/oka_consumer_pin.txt (provisional oka PR #18).
+# tool/ci/oka_consumer_pin.txt (immutable SHA; oka main incl. #17 Linux L0 + #21 oka_devices).
 # pull_request restored for final review; do not rely on green Android physical until SDK cleanup + observation tests.
 on:
   pull_request:
