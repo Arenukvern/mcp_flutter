@@ -471,6 +471,10 @@
 
 ## [Unreleased]
 
+### Bug Fixes
+
+* **deps:** drop workspace `universal_automation_interface` `0.3.0` override; resolve `^0.4.0` from pub.dev (semantics `^0.5.0` train).
+
 ### Features
 
 * Delegate `codegen sync` and `init intentcall-platform` to `intentcall_cli`; add `jaspr_web_example` with the three-gate CI recipe.

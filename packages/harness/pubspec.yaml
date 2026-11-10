@@ -22,8 +22,8 @@ dependencies:
   intentcall_schema: ^1.0.0
   flutter_mcp_toolkit_core: ^7.0.2
   path: ^1.9.0
-  universal_automation_interface: ^0.3.0
-  universal_browser_cdp: ^0.4.0
+  universal_automation_interface: ^0.4.0
+  universal_browser_cdp: ^0.5.0
   vm_service: ^15.3.0
 dev_dependencies:
   crypto: ^3.0.6
@@ -33,5 +33,10 @@ dev_dependencies:
   oka_android: ^0.9.1
   oka_harness: ^0.9.1
   test: ^1.31.0
-  universal_automation_conformance: ^0.3.0
-  universal_tooling_runtime: ^0.2.2
+  # Hosted 0.3.1 still declares interface ^0.3.0; main already targets ^0.4.0.
+  # Pin git until pub.dev ships conformance with the interface 0.4 train floor.
+  universal_automation_conformance:
+    git:
+      url: https://github.com/Arenukvern/universal_automation_ai_device_use.git
+      path: pkgs/universal_automation_conformance
+      ref: a3be2da0ec99eeaa8eab3d05fc6db16b2c7bb984

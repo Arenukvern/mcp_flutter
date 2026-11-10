@@ -45,4 +45,4 @@ PR #159 at proof head: **15 checks — 10 success, 5 skipped, 0 failed**; `merge
 
 ## CI fix note (`03c1fdae`)
 
-`apply_oka_consumer_overrides.sh` mirrors `universal_automation_interface: 0.3.0` into **fixture-only** `pubspec_overrides.yaml` (not harness workspace member) so `provision_oka_consumer_test_pin` succeeds after main merge — **not** an assertion change.
+After main #161 (`150a01d5`), provisioning pins the full oka graph via path overrides and sets hosted `universal_automation_interface: 0.4.0` (oka pin `3477fb8a` still declares `^0.3.0`) — **not** an assertion change.

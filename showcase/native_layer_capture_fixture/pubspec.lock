@@ -372,6 +372,13 @@ packages:
       relative: true
     source: path
     version: "0.0.1"
+  oka_devices:
+    dependency: "direct overridden"
+    description:
+      path: "../../oka/packages/oka_devices"
+      relative: true
+    source: path
+    version: "0.0.1"
   oka_harness:
     dependency: "direct overridden"
     description:
@@ -552,21 +559,21 @@ packages:
     source: hosted
     version: "1.4.0"
   universal_automation_interface:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
       name: universal_automation_interface
-      sha256: ed50caf4a72a6debdc667a59be3424c7a5e3e84514df81f3cc1118663248407a
+      sha256: "72b21a227fc0a64c2122d5cae3b56b31128382121e64043f3d8d40ebd300527c"
       url: "https://pub.dev"
     source: hosted
-    version: "0.3.0"
+    version: "0.4.0"
   universal_automation_semantics:
     dependency: transitive
     description:
       name: universal_automation_semantics
-      sha256: b0761ce0d004816a774cc4f57fc4963fea26f9b9acfe30fe42013a655adf5dcf
+      sha256: "315e2e86f5cb00a4290ccc167e6bd81d4b2d6f0b9ffc6a296cd320b2aa6882f9"
       url: "https://pub.dev"
     source: hosted
-    version: "0.2.0"
+    version: "0.5.0"
   universal_browser_cdp:
     dependency: transitive
     description:
