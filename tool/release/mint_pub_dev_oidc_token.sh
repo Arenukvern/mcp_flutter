@@ -21,6 +21,8 @@ mint_pub_dev_oidc_token() {
     return 1
   fi
 
+  echo "mint_pub_dev_oidc_token: requesting OIDC token (audience=https://pub.dev, Authorization: bearer <redacted>)" >&2
+
   local response
   if ! response="$(curl -fsS \
     -H "Authorization: bearer ${request_token}" \
@@ -32,12 +34,18 @@ mint_pub_dev_oidc_token() {
     return 1
   fi
 
-  PUB_TOKEN="$(printf '%s' "$response" | ruby -rjson -e '
-    j = JSON.parse(STDIN.read)
-    v = j["value"]
-    abort "missing OIDC token value" if v.nil? || v.empty?
-    print v
-  ')"
+  local token_value
+  if ! token_value="$(printf '%s' "$response" | jq -er '.value | select(type == "string" and length > 0)')"; then
+    if declare -F fail >/dev/null 2>&1; then
+      fail "OIDC response missing or empty .value (jq parse failed)"
+    fi
+    echo "mint_pub_dev_oidc_token: OIDC response missing or empty .value" >&2
+    return 1
+  fi
+  PUB_TOKEN="$token_value"
+  if [[ "${GITHUB_ACTIONS:-}" == "true" ]]; then
+    echo "::add-mask::${PUB_TOKEN}"
+  fi
   export PUB_TOKEN
   dart pub token add https://pub.dev --env-var PUB_TOKEN
 }
