@@ -13,7 +13,7 @@ publishes `mcp_server_dart/server.json` to the registry.
 
 This pipeline failed four times before its first green run. Every failure mode
 is now covered by a local gate — see
-[ADR 0013](/decisions/0013_mcp_registry_publish_hardening) for the full
+[ADR 0013](/decisions/0013_mcp_registry_publish_hardening.mdx) for the full
 post-mortem.
 
 ## Recovery when pub.dev publish failed mid-train
@@ -22,8 +22,8 @@ post-mortem.
 **Publish packages** step succeeds on a tag push. If that step failed after some
 packages were already uploaded (JWT expiry on v7.0.2 — see [ADR 0021](/decisions/0021_pub_dev_oidc_token_per_package.mdx) and Actions run 42410677650), registry publication is skipped.
 
-1. Re-run or **workflow_dispatch** [Publish pub.dev packages](/.github/workflows/pub_publish.yml) on the same `v*` tag with **execute_publish** (`--skip-existing` skips versions already on pub.dev).
-2. When all intended packages are on pub.dev, run [Publish MCP Registry server](/.github/workflows/publish_mcp_registry.yml) via **workflow_dispatch** on that tag (must be a `v*` ref; `VERSION` in the checkout must match the tag).
+1. Re-run or **workflow_dispatch** [Publish pub.dev packages](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/pub_publish.yml) on the same `v*` tag with **execute_publish** (`--skip-existing` skips versions already on pub.dev).
+2. When all intended packages are on pub.dev, run [Publish MCP Registry server](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/publish_mcp_registry.yml) via **workflow_dispatch** on that tag (must be a `v*` ref; `VERSION` in the checkout must match the tag).
 
 ## Pre-flight gates (run before cutting a release)
 

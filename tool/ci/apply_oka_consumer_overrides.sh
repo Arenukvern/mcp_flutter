@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# Writes pubspec_overrides.yaml — every oka/packages/* member at the pinned SHA.
+# Writes workspace-root pubspec_overrides.yaml for the pinned oka consumer graph.
+# Workspace members (packages/*, showcase/native_layer_capture_fixture) must not
+# carry their own pubspec_overrides — pub applies overrides from the repo root only.
 set -euo pipefail
 repo_root="$(cd "$(dirname "$0")/../.." && pwd)"
 pin="$(tr -d '[:space:]' < "$repo_root/tool/ci/oka_consumer_pin.txt")"
@@ -9,28 +11,21 @@ if [[ ! -d "$oka/packages/oka_android" ]]; then
   exit 1
 fi
 
-write_oka_overrides() {
-  local target_dir="$1"
-  local rel_prefix="$2"
-  local add_interface_override="${3:-0}"
-  local out="$target_dir/pubspec_overrides.yaml"
-  {
-    echo "# GENERATED: oka consumer test pin $pin (unmerged PR — not a release claim)"
-    echo "dependency_overrides:"
-    if [[ "$add_interface_override" == 1 ]]; then
-      # Fixture oka path graph; mirror root 0.4.0 train when resolving oka dev_deps.
-      echo "  universal_automation_interface: 0.4.0"
-    fi
-    for pkg_dir in "$oka"/packages/*/; do
-      [[ -f "$pkg_dir/pubspec.yaml" ]] || continue
-      local name
-      name="$(basename "$pkg_dir")"
-      echo "  $name:"
-      echo "    path: $rel_prefix/$name"
-    done
-  } >"$out"
-}
+out="$repo_root/pubspec_overrides.yaml"
+{
+  echo "# GENERATED: oka consumer test pin $pin (unmerged PR — not a release claim)"
+  echo "dependency_overrides:"
+  echo "  universal_automation_interface: 0.4.0"
+  for pkg_dir in "$oka"/packages/*/; do
+    [[ -f "$pkg_dir/pubspec.yaml" ]] || continue
+    name="$(basename "$pkg_dir")"
+    echo "  $name:"
+    echo "    path: oka/packages/$name"
+  done
+} >"$out"
 
-write_oka_overrides "$repo_root/packages/harness" "../../oka/packages" 0
-write_oka_overrides "$repo_root/showcase/native_layer_capture_fixture" "../../oka/packages" 1
-echo "pubspec_overrides.yaml applied (full oka graph, pin $pin)"
+# Remove legacy per-package override files (workspace members reject these).
+rm -f "$repo_root/packages/harness/pubspec_overrides.yaml"
+rm -f "$repo_root/showcase/native_layer_capture_fixture/pubspec_overrides.yaml"
+
+echo "pubspec_overrides.yaml applied at workspace root (full oka graph, pin $pin)"
