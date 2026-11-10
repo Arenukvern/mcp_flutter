@@ -143,8 +143,8 @@ for entry in "${packages[@]}"; do
     if [[ "$DRY_RUN" -eq 1 ]]; then
       run_pub "$runner" --dry-run --skip-validation
     else
-      mint_pub_dev_oidc_token
       run_pub "$runner" --dry-run
+      mint_pub_dev_oidc_token
       run_pub "$runner" --force
     fi
   )
