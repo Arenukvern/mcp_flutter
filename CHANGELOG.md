@@ -3,6 +3,90 @@
 <!-- markdownlint-disable MD052 -->
 <!-- Keep a Changelog version headings use [3.0.1] brackets; MD052 treats them as reference links. -->
 
+## [7.1.0](https://github.com/Arenukvern/mcp_flutter/compare/v7.0.2...v7.1.0) (2026-11-10)
+
+
+### Features
+
+* **capture:** pin oka 75153244, OkaLaunchedApp.stopSession receipt ([684e885](https://github.com/Arenukvern/mcp_flutter/commit/684e8850f4679e3495449acbf234ccbad913fec4))
+* **capture:** pin oka f339a359; launchOka spawn-binding ownership ([6352502](https://github.com/Arenukvern/mcp_flutter/commit/63525020acea85d76f513236e6e3347942afa342))
+* **harness:** 469b0d55 pin, read-only physical settlement, artifact bindings ([fb8d8ba](https://github.com/Arenukvern/mcp_flutter/commit/fb8d8ba43f9d5b372439a507d4e6706907edbb18))
+* **semantic_snapshot:** lens argument — standard | compact | design ([17b2b83](https://github.com/Arenukvern/mcp_flutter/commit/17b2b835a6afb26f87bb65a9be3f8d5778646d2d))
+* ZCode discoverability - init zcode target, runtime-evidence guidance, toolkit skills in .agents/skills ([744f278](https://github.com/Arenukvern/mcp_flutter/commit/744f2787e97c59066a87d6c37ce74bd351f3c7ff))
+
+
+### Bug Fixes
+
+* **android-capture:** honest oka stop receipt; no harness session deletion ([44fdf3f](https://github.com/Arenukvern/mcp_flutter/commit/44fdf3fd31c9b7e83a851936a69c85cf3c7fa3e7))
+* **android-capture:** settle runner-session after oka dev SIGTERM stop ([d9291c0](https://github.com/Arenukvern/mcp_flutter/commit/d9291c0b0a3764012bf05864eaa2539c72711972))
+* **android-native:** drop stale oka debug cache before build ([d07a8ef](https://github.com/Arenukvern/mcp_flutter/commit/d07a8eff54cb308c69470584555c0b7294f9e64e))
+* **android-native:** oka res merge + skip rebuild after CI prebuild ([8b067f4](https://github.com/Arenukvern/mcp_flutter/commit/8b067f495ee74f5002071e79dd1f8bfb76ca71ee))
+* **android-native:** route oka dev through android daemon on CI ([88a852b](https://github.com/Arenukvern/mcp_flutter/commit/88a852bbae98c2595e8623acb75999badc4bb1bb))
+* **capture:** flutter_layer provenance, fail-closed, native CI matrix ([844cb8b](https://github.com/Arenukvern/mcp_flutter/commit/844cb8bec88b9457ec09b842bf9760f3e23c6282))
+* **capture:** review blockers — lens adapter, fixture, Linux native proof ([303abc7](https://github.com/Arenukvern/mcp_flutter/commit/303abc79c6be5d7dd2abdbf7bee24307e571d5ae))
+* **capture:** SDK-native flutter_layer proof (Android oka + Linux runBounded) ([552c3fe](https://github.com/Arenukvern/mcp_flutter/commit/552c3fe1c3692204ee3fba52e9f8a6c217a10bc2))
+* **capture:** SDK-native flutter_layer proof with single Dart lifecycle owner ([e474e89](https://github.com/Arenukvern/mcp_flutter/commit/e474e898f227ea4b3843c02bf049033dde7be5e4))
+* **capture:** semantics stripe ROI, forensics receipts before pixel gate ([9b883e0](https://github.com/Arenukvern/mcp_flutter/commit/9b883e07d07193c30cb57c5ddff5ce02f7121462))
+* **ci:** Android native script as single shell for emulator runner ([835771f](https://github.com/Arenukvern/mcp_flutter/commit/835771f101fd6720461d9d316c15052aa51d4b00))
+* **ci:** build Android capture APK for x86_64 emulator ABI ([e9d61f5](https://github.com/Arenukvern/mcp_flutter/commit/e9d61f5682517e5440cb8db1343dd41c88fe9874))
+* **ci:** fixture-only universal_automation_interface override for provision ([03c1fda](https://github.com/Arenukvern/mcp_flutter/commit/03c1fdae450a9d9abf739fa690cc23b791fd6e32))
+* **ci:** guard personal pubspec_overrides; clean lock for hosted graph ([cfab6e3](https://github.com/Arenukvern/mcp_flutter/commit/cfab6e301cc7fcedcf2efd3f5c0b787fc9e7e4dc))
+* **ci:** harness compile repro cache + native workflow reliability ([bab805d](https://github.com/Arenukvern/mcp_flutter/commit/bab805dac014456f5402e49fba8a6501eb090e17))
+* **ci:** KVM + pm path emulator readiness before Android capture ([3e505e7](https://github.com/Arenukvern/mcp_flutter/commit/3e505e79f487450b535b48bae987a5904dd787a9))
+* **ci:** provenance script safe deps capture (no shell embed) ([c2814b6](https://github.com/Arenukvern/mcp_flutter/commit/c2814b67f2a3214cdcb200272d2e1d20c61a3284))
+* **ci:** provision oka test pin for contract gates; fail-closed provenance ([5898712](https://github.com/Arenukvern/mcp_flutter/commit/5898712d8f830e5b5317d629a54f0a34932413af))
+* **ci:** restore tooling runtime and resolve UA 0.4 with oka dev_deps ([42459d9](https://github.com/Arenukvern/mcp_flutter/commit/42459d9a596d419dd160a5aaf669c5bfcc2b51e6))
+* **ci:** workspace-root oka overrides, prove pin in provision ([2d3cba5](https://github.com/Arenukvern/mcp_flutter/commit/2d3cba5f04297929b00cf3a1791379bdede6819e))
+* **deps:** align universal_automation_semantics for hosted pub get ([8f514b8](https://github.com/Arenukvern/mcp_flutter/commit/8f514b8b0d7d99b2f2947e43858a1e6dad07fd5d))
+* **deps:** align universal_automation_semantics on hosted pub.dev ([7aa2ba9](https://github.com/Arenukvern/mcp_flutter/commit/7aa2ba953d7bf79030a2fe58ec1725e5731e585e))
+* **deps:** drop universal_automation_interface 0.3.0 workspace override ([150a01d](https://github.com/Arenukvern/mcp_flutter/commit/150a01d58f70a789b7a329e6c4aa0de2245bbf08))
+* **deps:** resolve universal_automation_interface ^0.4.0 from pub.dev ([82ed5a7](https://github.com/Arenukvern/mcp_flutter/commit/82ed5a7a5b81215d68f2b17df5dd292f4bf7315d))
+* **fixture:** add oka pipeline for Android native capture CI ([69f85ea](https://github.com/Arenukvern/mcp_flutter/commit/69f85eae6ebf7530ceef20c0a6b947ed5e0043b2))
+* **fixture:** append RecordRunSessionStep to oka init pipeline ([a2b0934](https://github.com/Arenukvern/mcp_flutter/commit/a2b09342668ecaf95ae8c57c4ba837f78bb7e3df))
+* **fixture:** disable debug banner; correct stripe failure mechanism ([900c5a8](https://github.com/Arenukvern/mcp_flutter/commit/900c5a800d04b1d53a4d2658873e80b9c8b35269))
+* **harness/linux:** parse flutter machine app.stop event + ack policy ([4d9f5a2](https://github.com/Arenukvern/mcp_flutter/commit/4d9f5a23bb4f041e6edb38465337cb42cb2ba74f))
+* **harness:** Android logcat stop timeout callback type for Future.wait ([c5bcbad](https://github.com/Arenukvern/mcp_flutter/commit/c5bcbad44f278c76f6a143b512c5b4bc8cfd65b8))
+* **harness:** clear analyze warnings for contract gate harness step ([2605795](https://github.com/Arenukvern/mcp_flutter/commit/2605795b43fed70ee6d241b751e0db0e62ed1328))
+* **harness:** clear dart analyze findings for contract gates ([bef7189](https://github.com/Arenukvern/mcp_flutter/commit/bef71893b544609766e1b1f94963cb15bd834a47))
+* **harness:** collect SDK attach-handshake failure; pin a92e (local) ([6c90662](https://github.com/Arenukvern/mcp_flutter/commit/6c9066259acdc8c47cd1de07258f96274f75eea7))
+* **harness:** harden physical observation verdict (unknown fail-closed) ([1edd1e4](https://github.com/Arenukvern/mcp_flutter/commit/1edd1e4f2a6b05574a403cdcbd07ab7288aba603))
+* **harness:** JSON-serialize native capture layout for pixel_proof artifacts ([85de4c8](https://github.com/Arenukvern/mcp_flutter/commit/85de4c821f0e5fb0897107b55cec0e9231d883db))
+* **harness:** orphan PID tracking, VM forward watch, full 10s settlement ([283a1e2](https://github.com/Arenukvern/mcp_flutter/commit/283a1e2e393a6418e38139862ad57488b6dfdb2e))
+* **harness:** preserve primary native failures; honest teardown gates ([f09daac](https://github.com/Arenukvern/mcp_flutter/commit/f09daac4dac55c21648177acf3914503c8ce5d63))
+* **harness:** read session-teardown sidecar without SDK pin fields ([8c30ab4](https://github.com/Arenukvern/mcp_flutter/commit/8c30ab4f6415b63f978076be6343f3b4b559ee7e))
+* **harness:** restore subprocess drain; session cleanup evidence hold ([69815a7](https://github.com/Arenukvern/mcp_flutter/commit/69815a70aed68518ff7a2df1394a042f81f60dbd))
+* **harness:** return after markTestSkipped in SIG_IGN python3 branch ([a7ccced](https://github.com/Arenukvern/mcp_flutter/commit/a7ccced60dfc1aca7f79046a8122412f2e04e1fe))
+* **harness:** stabilize SIGKILL escalation subprocess test ([ab022b5](https://github.com/Arenukvern/mcp_flutter/commit/ab022b52c32c69544ea19da8eaa1a65f21b50031))
+* **harness:** surface tap/enter_text refusals; feat(server): semantic_snapshot observation render ([f6cd2ae](https://github.com/Arenukvern/mcp_flutter/commit/f6cd2aeb69440224f9f03f2b878a7005bc7840a9))
+* **harness:** truthful probe entry paths; inventory honesty (local, no push) ([6917431](https://github.com/Arenukvern/mcp_flutter/commit/6917431d423769918e0fc87c433a92d8daf89bc6))
+* **harness:** visual supervisor probe out of dart test discovery ([3f69d65](https://github.com/Arenukvern/mcp_flutter/commit/3f69d65564aed70cc63e28a291a7cc60fa07567d))
+* **mcp_toolkit:** equatable 2.1.0 removed the Equatable mixin - extend instead ([20c0557](https://github.com/Arenukvern/mcp_flutter/commit/20c0557d469536bca58b805b8e3e7d66a91357a5))
+* **native-android:** pass build flag to AndroidAppTarget.launch ([dd0607d](https://github.com/Arenukvern/mcp_flutter/commit/dd0607d51833697bad91d88d49c34caacc9d4868))
+* **native-ci:** oka build for session manifest; linux prebuilt binary ([523e7dc](https://github.com/Arenukvern/mcp_flutter/commit/523e7dc497ce41f179e5fe9ea6a5f578f564a23e))
+* **native-linux:** flutter run --machine with --no-build after CI prebuild ([b507f93](https://github.com/Arenukvern/mcp_flutter/commit/b507f936f21b7fd62112342f347a6e412faa9dc6))
+* **release:** dual checkout for tooling vs tag source (PR157 review) ([6811c02](https://github.com/Arenukvern/mcp_flutter/commit/6811c02619fad682919aa3a97f01f7dd4a3d9f14))
+* **release:** macos-15 runner + safe workflow_dispatch asset recovery ([8902de4](https://github.com/Arenukvern/mcp_flutter/commit/8902de421faff1da6e7c3d23aebe6d38743120ad))
+* **release:** macos-15 runner and guarded tag asset recovery dispatch ([f60c798](https://github.com/Arenukvern/mcp_flutter/commit/f60c798a3cd77973d34a0c303c116542cec17b12))
+* **release:** mint pub.dev token right before --force, mask, jq ([68220da](https://github.com/Arenukvern/mcp_flutter/commit/68220da7feeb2b3685d49d93e6e2dc82f0d55e5d))
+* **release:** mint pub.dev token right before --force, mask, jq ([fea994d](https://github.com/Arenukvern/mcp_flutter/commit/fea994d391b6be05fd984f085003aa1219527b2d))
+* **release:** pub publish recovery, skip-existing default, release PR CI ([048689f](https://github.com/Arenukvern/mcp_flutter/commit/048689f12d95e87f64aa46da4d3053ab25f7e767))
+* **release:** pub publish recovery, skip-existing default, release PR CI ([1b32ae1](https://github.com/Arenukvern/mcp_flutter/commit/1b32ae12258688622c2e5b7e99955bc6afa67861))
+* **release:** refresh pub.dev OIDC token before each package publish ([7c74c2b](https://github.com/Arenukvern/mcp_flutter/commit/7c74c2b5ed2eee22a19037d4513e15da1f618361))
+* **release:** refresh pub.dev OIDC token before each package publish ([55e52d4](https://github.com/Arenukvern/mcp_flutter/commit/55e52d4184e3c0a6fb65f4df97c4a3640e935dbf))
+* restore pubspec.lock generated from pub.dev ([2491e18](https://github.com/Arenukvern/mcp_flutter/commit/2491e181553a78020bc279f477f17a7ee45825fd))
+* restore pubspec.lock generated from pub.dev ([19c586d](https://github.com/Arenukvern/mcp_flutter/commit/19c586dd5790f6dbcc2035d87d2c7ed2e6f9dff4))
+
+
+### Documentation
+
+* **capture:** hold 75153244 pin pending SDK cooperative-stop fixes ([5d0d5d8](https://github.com/Arenukvern/mcp_flutter/commit/5d0d5d8f95d7105229aa419700a5b45a9450b688))
+* **evidence:** native green on oka main 3477fb8a at 03c1fdae ([6518aeb](https://github.com/Arenukvern/mcp_flutter/commit/6518aeba067bb9a1117cbb47bb0d2046bd0e6bd9))
+* **evidence:** native green report for oka pin 7fd1d5bf at dbee54a3 ([84562b5](https://github.com/Arenukvern/mcp_flutter/commit/84562b5f71fc7ec696a8f8252c6b9d00efb82dc6))
+* **evidence:** oka main 754b4750 repin record (native CI pending) ([2847958](https://github.com/Arenukvern/mcp_flutter/commit/28479582066a756b9feeb23a74ed0b93f0781e6d))
+* **evidence:** record consumer head for 1b7f18f repin ([b946e2c](https://github.com/Arenukvern/mcp_flutter/commit/b946e2c17eb5b2d242e28f91c1fe5ce8ecc43693))
+* **evidence:** sequential harness verification at clean 6917431d ([cd66e1a](https://github.com/Arenukvern/mcp_flutter/commit/cd66e1a5a72e3d67664eefe3b16ad77f59265b06))
+* **harness:** hold cb672 SDK repin; settlement deadline gate note ([a3a3ccf](https://github.com/Arenukvern/mcp_flutter/commit/a3a3ccf8aeae0264a86dfb8cc699e0f4e935b9a4))
+
 ## [7.0.2](https://github.com/Arenukvern/mcp_flutter/compare/v7.0.1...v7.0.2) (2026-11-07)
 
 
