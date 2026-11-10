@@ -3,7 +3,7 @@ description: >-
   Programmatic E2E harness for Flutter apps: build and launch a debug binary,
   attach to its Dart VM service, drive widgets through the MCP toolkit service
   extensions, and assert with composable scenarios.
-version: 7.0.2
+version: 7.1.0
 license: MIT
 repository: https://github.com/Arenukvern/mcp_flutter/tree/main/packages/harness
 issue_tracker: https://github.com/Arenukvern/mcp_flutter/issues
@@ -34,8 +34,6 @@ dev_dependencies:
   oka_harness: ^0.9.1
   test: ^1.31.0
   universal_tooling_runtime: ^0.2.2
-  # Hosted 0.3.1 still declares interface ^0.3.0; main already targets ^0.4.0.
-  # Pin git until pub.dev ships conformance with the interface 0.4 train floor.
   universal_automation_conformance:
     git:
       url: https://github.com/Arenukvern/universal_automation_ai_device_use.git
