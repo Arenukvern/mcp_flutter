@@ -27,6 +27,7 @@ RUN apt-get update && \
   echo "${FLUTTER_SDK_SHA256}  /tmp/flutter.tar.xz" | sha256sum --check --strict - && \
   tar -xJf /tmp/flutter.tar.xz -C /opt && \
   rm /tmp/flutter.tar.xz && \
+  git config --global --add safe.directory /opt/flutter && \
   /opt/flutter/bin/flutter config --no-analytics && \
   /opt/flutter/bin/flutter --version
 

@@ -91,6 +91,9 @@ end
 unless dockerfile.include?('sha256sum --check --strict')
   abort 'Dockerfile must verify the Flutter SDK archive sha256 before extraction'
 end
+unless dockerfile.include?('safe.directory /opt/flutter')
+  abort 'Dockerfile must mark /opt/flutter as a git safe.directory before invoking flutter'
+end
 
 # --- Dockerfile: no RUN instruction may use --enforce-lockfile ---
 if instructions.grep(/^RUN\b/i).any? { |l| l.include?('--enforce-lockfile') }
