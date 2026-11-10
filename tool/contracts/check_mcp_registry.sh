@@ -22,6 +22,52 @@ fail() {
 [[ -f "$RELEASE_WORKFLOW" ]] || fail "missing publish_mcp_registry.yml"
 [[ -f "$PUB_WORKFLOW" ]] || fail "missing pub_publish.yml"
 
+export FLUTTER_PIN
+python3 <<'PY'
+import json, os, pathlib, urllib.request
+
+pin_path = pathlib.Path(os.environ["FLUTTER_PIN"])
+pin = {}
+for line in pin_path.read_text().splitlines():
+    line = line.strip()
+    if not line or line.startswith("#"):
+        continue
+    key, value = line.split("=", 1)
+    pin[key] = value
+
+flutter = pin["FLUTTER_VERSION"]
+expected_dart = pin["EXPECTED_DART_SDK_VERSION"]
+expected_sha = pin["FLUTTER_SDK_SHA256"]
+
+with urllib.request.urlopen(
+    "https://storage.googleapis.com/flutter_infra_release/releases/releases_linux.json",
+    timeout=60,
+) as resp:
+    data = json.load(resp)
+
+matches = [
+    r
+    for r in data.get("releases", [])
+    if r.get("version") == flutter and r.get("channel") == "stable"
+]
+if len(matches) != 1:
+    raise SystemExit(f"flutter_sdk_pin: expected one stable linux row for {flutter}, got {len(matches)}")
+
+rel = matches[0]
+if rel.get("sha256") != expected_sha:
+    raise SystemExit(
+        f"flutter_sdk_pin: FLUTTER_SDK_SHA256 mismatch for {flutter} "
+        f"(pin {expected_sha}, official {rel.get('sha256')})"
+    )
+official_dart = rel.get("dart_sdk_version", "")
+if official_dart != expected_dart:
+    raise SystemExit(
+        f"flutter_sdk_pin: EXPECTED_DART_SDK_VERSION must be {official_dart} "
+        f"(Flutter {flutter} stable linux), not {expected_dart}"
+    )
+print(f"flutter_sdk_pin: {flutter} stable linux ships Dart {official_dart} (sha256 verified)")
+PY
+
 export SERVER_JSON ROOT_DIR
 ruby <<'RUBY'
 require 'json'
@@ -116,5 +162,9 @@ grep -Fq 'github-oidc' "$RELEASE_WORKFLOW" ||
   fail "publish workflow does not use GitHub OIDC for MCP Registry authentication"
 grep -Fq 'gh workflow run publish_mcp_registry.yml' "$PUB_WORKFLOW" ||
   fail "pub.dev publication does not trigger the dependent MCP Registry publication"
+grep -Fq "startsWith(github.ref, 'refs/tags/v')" "$PUB_WORKFLOW" ||
+  fail "pub_publish registry trigger must require a v* tag ref"
+grep -Fq 'resolve_mcp_registry_release_version.sh' "$RELEASE_WORKFLOW" ||
+  fail "publish_mcp_registry must resolve version from release-src"
 
 echo "check_mcp_registry: manifest, OCI metadata, and release wiring are consistent for $(tr -d '[:space:]' < "$ROOT_DIR/VERSION")"

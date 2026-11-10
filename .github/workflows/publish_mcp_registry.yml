@@ -52,19 +52,12 @@ jobs:
           rm -rf mcp_server_dart
           cp -a "${{ env.RELEASE_SRC_PATH }}/mcp_server_dart" .
 
-      - name: Resolve release version
+      - name: Resolve release version (tag tree)
         id: version
-        shell: bash
-        run: |
-          set -euo pipefail
-          version="${{ inputs.release_tag }}"
-          version="${version#v}"
-          file_version="$(tr -d '[:space:]' < VERSION)"
-          if [[ "$version" != "$file_version" ]]; then
-            echo "::error::Tag ${{ inputs.release_tag }} does not match root VERSION (${file_version})."
-            exit 1
-          fi
-          echo "version=$version" >> "$GITHUB_OUTPUT"
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          RELEASE_SRC: ${{ github.workspace }}/${{ env.RELEASE_SRC_PATH }}
+        run: bash tool/release/resolve_mcp_registry_release_version.sh
 
       - name: Synchronize release metadata
         env:

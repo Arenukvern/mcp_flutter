@@ -198,7 +198,9 @@ jobs:
           bash tool/contracts/test_verify_release_tarball_architecture.sh
 
       - name: MCP Registry contracts (server.json, Dockerfile, publish workflow)
-        run: bash tool/contracts/check_mcp_registry.sh
+        run: |
+          bash tool/contracts/test_mcp_registry_release_version.sh
+          bash tool/contracts/check_mcp_registry.sh
 
       - name: IntentCall consumer policy (incl. published-package floors)
         env:
