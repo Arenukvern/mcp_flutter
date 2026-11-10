@@ -110,6 +110,8 @@ abort 'publish workflow build step must set with.context exactly to "." (workspa
 abort 'publish workflow build step must set with.file exactly to mcp_server_dart/Dockerfile.registry' unless with['file'] == 'mcp_server_dart/Dockerfile.registry'
 RUBY
 
+grep -Fq 'release_tag:' "$RELEASE_WORKFLOW" ||
+  fail "publish workflow must declare workflow_dispatch release_tag input"
 grep -Fq 'github-oidc' "$RELEASE_WORKFLOW" ||
   fail "publish workflow does not use GitHub OIDC for MCP Registry authentication"
 grep -Fq 'gh workflow run publish_mcp_registry.yml' "$PUB_WORKFLOW" ||

@@ -18,17 +18,30 @@ SCRIPTS=(
 )
 
 # Patterns that bash 3.2 does not support (or macOS /bin/bash rejects).
-FORBIDDEN_REGEX='(^|[^#].*)\b(mapfile|readarray)\b|(^|[^#].*)declare -A|(\$\{[a-zA-Z_][a-zA-Z0-9_]*,,|\$\{[a-zA-Z_][a-zA-Z0-9_]*,\^)'
+FORBIDDEN_REGEX='\b(mapfile|readarray)\b|declare -A|\$\{[a-zA-Z_][a-zA-Z0-9_]*(,,|\^\^?|,)\}'
+
+scan_file() {
+  local rel="$1"
+  local path="$ROOT_DIR/$rel"
+  grep -nE "$FORBIDDEN_REGEX" "$path" | grep -vE '^[0-9]+:(#|[[:space:]]+#)' || true
+}
 
 errors=0
 for rel in "${SCRIPTS[@]}"; do
-  path="$ROOT_DIR/$rel"
-  [[ -f "$path" ]] || fail "missing script: $rel"
+  [[ -f "$ROOT_DIR/$rel" ]] || fail "missing script: $rel"
   while IFS= read -r hit; do
     [[ -z "$hit" ]] && continue
     echo "macos-release-shell: forbidden bash 4 construct in $rel: $hit" >&2
     errors=$((errors + 1))
-  done < <(grep -nE "$FORBIDDEN_REGEX" "$path" | grep -vE '^[0-9]+:(#|[[:space:]]+#)' || true)
+  done < <(scan_file "$rel")
+done
+
+# Self-test: regex must catch each Bash 4 parameter expansion form.
+for sample in '${name,}' '${name,,}' '${name^}' '${name^^}'; do
+  if ! printf '%s\n' "$sample" | grep -nE "$FORBIDDEN_REGEX" | grep -q .; then
+    echo "macos-release-shell: FORBIDDEN_REGEX missed $sample" >&2
+    errors=$((errors + 1))
+  fi
 done
 
 [[ "$errors" -eq 0 ]] || fail "$errors forbidden construct(s) in release shell scripts"

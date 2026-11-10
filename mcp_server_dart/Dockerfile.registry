@@ -25,7 +25,7 @@ RUN apt-get update && \
   curl -fsSL "https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_${FLUTTER_VERSION}-stable.tar.xz" \
     -o /tmp/flutter.tar.xz && \
   echo "${FLUTTER_SDK_SHA256}  /tmp/flutter.tar.xz" | sha256sum --check --strict - && \
-  tar -xJf /tmp/flutter.tar.xz -C /opt && \
+  tar --no-same-owner -xJf /tmp/flutter.tar.xz -C /opt && \
   rm /tmp/flutter.tar.xz && \
   git config --global --add safe.directory /opt/flutter && \
   /opt/flutter/bin/flutter config --no-analytics && \

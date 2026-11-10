@@ -25,11 +25,12 @@ downstream automation failed (release binaries and/or MCP Registry OCI publish).
 | Failure | Recovery |
 |---------|----------|
 | Missing `flutter_mcp_*` tarballs or `checksums.txt` | On `main`, **Actions → Release → Run workflow** with `release_tag` (e.g. `v7.1.0`). See [release_binary_recovery](/contributing/release_binary_recovery). |
-| MCP Registry image / `server.json` publish | **Actions → Publish MCP Registry server → Run workflow** on the tag ref (e.g. `v7.1.0`; `VERSION` must match the tag). |
+| MCP Registry image / `server.json` publish | On **`main`** (after tooling fixes are merged), **Actions → Publish MCP Registry server → Run workflow** with `release_tag` (e.g. `v7.1.0`). The workflow uses **tooling from `main`** (fixed `Dockerfile.registry`) and **`mcp_server_dart` from the tag**. |
 
 `publish_mcp_registry.yml` only auto-triggers after a successful pub publish step on tag
-push. When pub.dev already succeeded out-of-band, dispatch the registry workflow manually
-on the tag.
+push (`pub_publish.yml` dispatches it on **`main`** with the `release_tag` input). When pub.dev
+already succeeded out-of-band, dispatch manually on **`main`** with the same input — not from
+the tag ref (the tag tree may still carry a broken Dockerfile).
 
 ## Recovery when pub.dev publish failed mid-train
 
@@ -38,7 +39,7 @@ on the tag.
 packages were already uploaded (JWT expiry on v7.0.2 — see [ADR 0021](/decisions/0021_pub_dev_oidc_token_per_package.mdx) and Actions run 42410677650), registry publication is skipped.
 
 1. Re-run or **workflow_dispatch** [Publish pub.dev packages](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/pub_publish.yml) on the same `v*` tag with **execute_publish** (`--skip-existing` skips versions already on pub.dev).
-2. When all intended packages are on pub.dev, run [Publish MCP Registry server](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/publish_mcp_registry.yml) via **workflow_dispatch** on that tag (must be a `v*` ref; `VERSION` in the checkout must match the tag).
+2. When all intended packages are on pub.dev, run [Publish MCP Registry server](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/publish_mcp_registry.yml) via **workflow_dispatch** on **`main`** with `release_tag` set to that `v*` tag.
 
 ## Pre-flight gates (run before cutting a release)
 

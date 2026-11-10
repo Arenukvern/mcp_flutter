@@ -80,4 +80,4 @@ jobs:
           (github.event_name == 'workflow_dispatch' && inputs.trigger_mcp_registry)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh workflow run publish_mcp_registry.yml --ref "${GITHUB_REF_NAME}"
+        run: gh workflow run publish_mcp_registry.yml --ref main -f release_tag="${GITHUB_REF_NAME}"

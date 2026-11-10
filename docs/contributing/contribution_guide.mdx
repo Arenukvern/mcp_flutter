@@ -108,7 +108,7 @@ When packages are already on pub.dev but later steps failed (GitHub release bina
 and/or MCP Registry OCI image):
 
 1. **Binaries:** On `main`, dispatch [Release](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/release.yml) with `release_tag` set to the existing tag (e.g. `v7.1.0`). The workflow refuses to overwrite assets that already exist.
-2. **MCP Registry:** Dispatch [Publish MCP Registry server](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/publish_mcp_registry.yml) on that tag ref (`refs/tags/v7.1.0`), not `main`.
+2. **MCP Registry:** On **`main`**, dispatch [Publish MCP Registry server](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/publish_mcp_registry.yml) with `release_tag` (e.g. `v7.1.0`). Tooling (Dockerfile) comes from `main`; server sources come from the tag.
 
 See [MCP Registry publish runbook](/contributing/mcp_registry_publish_runbook) and [release_binary_recovery](/contributing/release_binary_recovery).
 
