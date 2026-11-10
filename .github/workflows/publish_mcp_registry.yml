@@ -46,11 +46,14 @@ jobs:
         with:
           ref: refs/tags/${{ inputs.release_tag }}
           path: ${{ env.RELEASE_SRC_PATH }}
+          persist-credentials: false
 
-      - name: Overlay tagged mcp_server_dart
-        run: |
-          rm -rf mcp_server_dart
-          cp -a "${{ env.RELEASE_SRC_PATH }}/mcp_server_dart" .
+      # Tag supplies server sources only; main keeps Dockerfile.registry + Flutter pin + contracts.
+      - name: Overlay tagged server sources onto main tooling
+        env:
+          TOOLING_ROOT: ${{ github.workspace }}
+          RELEASE_SRC: ${{ github.workspace }}/${{ env.RELEASE_SRC_PATH }}
+        run: bash tool/release/overlay_mcp_registry_tag_sources.sh
 
       - name: Resolve release version (tag tree)
         id: version

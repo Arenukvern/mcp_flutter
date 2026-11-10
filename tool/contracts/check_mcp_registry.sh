@@ -166,5 +166,7 @@ grep -Fq "startsWith(github.ref, 'refs/tags/v')" "$PUB_WORKFLOW" ||
   fail "pub_publish registry trigger must require a v* tag ref"
 grep -Fq 'resolve_mcp_registry_release_version.sh' "$RELEASE_WORKFLOW" ||
   fail "publish_mcp_registry must resolve version from release-src"
+grep -Fq 'overlay_mcp_registry_tag_sources.sh' "$RELEASE_WORKFLOW" ||
+  fail "publish_mcp_registry must overlay tag sources without replacing Dockerfile.registry"
 
 echo "check_mcp_registry: manifest, OCI metadata, and release wiring are consistent for $(tr -d '[:space:]' < "$ROOT_DIR/VERSION")"
