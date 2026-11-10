@@ -5,6 +5,8 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 SERVER_JSON="$ROOT_DIR/mcp_server_dart/server.json"
 DOCKERFILE="$ROOT_DIR/mcp_server_dart/Dockerfile.registry"
+FLUTTER_PIN="$ROOT_DIR/tool/contracts/flutter_sdk_pin.env"
+SERVER_PUBSPEC="$ROOT_DIR/mcp_server_dart/pubspec.yaml"
 RELEASE_WORKFLOW="$ROOT_DIR/.github/workflows/publish_mcp_registry.yml"
 PUB_WORKFLOW="$ROOT_DIR/.github/workflows/pub_publish.yml"
 
@@ -15,6 +17,8 @@ fail() {
 
 [[ -f "$SERVER_JSON" ]] || fail "missing mcp_server_dart/server.json"
 [[ -f "$DOCKERFILE" ]] || fail "missing mcp_server_dart/Dockerfile.registry"
+[[ -f "$FLUTTER_PIN" ]] || fail "missing tool/contracts/flutter_sdk_pin.env"
+[[ -f "$SERVER_PUBSPEC" ]] || fail "missing mcp_server_dart/pubspec.yaml"
 [[ -f "$RELEASE_WORKFLOW" ]] || fail "missing publish_mcp_registry.yml"
 [[ -f "$PUB_WORKFLOW" ]] || fail "missing pub_publish.yml"
 
@@ -45,33 +49,48 @@ grep -Fq 'io.modelcontextprotocol.server.name="io.github.Arenukvern/flutter-mcp-
 grep -Fq 'bin/flutter_mcp_toolkit_server.dart' "$DOCKERFILE" ||
   fail "Dockerfile does not compile the published server entrypoint"
 
-export DOCKERFILE RELEASE_WORKFLOW
+export DOCKERFILE RELEASE_WORKFLOW FLUTTER_PIN SERVER_PUBSPEC
 ruby <<'RUBY'
 require 'yaml'
 
 dockerfile = File.read(ENV.fetch('DOCKERFILE'))
+pin = {}
+File.readlines(ENV.fetch('FLUTTER_PIN'), chomp: true).each do |line|
+  next if line.strip.empty? || line.start_with?('#')
+  key, value = line.split('=', 2)
+  pin[key] = value
+end
 
-# --- Dockerfile: build stage must be a pinned Flutter SDK image ---
-# Join continuation lines, then strip leading whitespace (Docker ignores it).
+%w[FLUTTER_VERSION FLUTTER_SDK_SHA256 EXPECTED_DART_SDK_VERSION].each do |key|
+  abort "flutter_sdk_pin.env missing #{key}" unless pin[key]&.length&.positive?
+end
+abort 'FLUTTER_SDK_SHA256 must be 64 hex chars' unless pin['FLUTTER_SDK_SHA256'] =~ /\A[0-9a-f]{64}\z/
+
+server_pubspec = File.read(ENV.fetch('SERVER_PUBSPEC'))
+sdk_constraint = server_pubspec[/^\s*sdk:\s*'([^']+)'/m, 1]
+unless (m = sdk_constraint&.match(/\A>=\s*([^<\s]+)/))
+  abort 'mcp_server_dart pubspec must declare sdk lower bound (e.g. >=3.13.0 <4.0.0)'
+end
+required_dart = Gem::Version.new(m[1])
+bundled_dart = Gem::Version.new(pin.fetch('EXPECTED_DART_SDK_VERSION'))
+abort "Docker Flutter pin Dart #{bundled_dart} does not satisfy server sdk #{required_dart}" if bundled_dart < required_dart
+
+# --- Dockerfile: build stage pins the same Flutter SDK as CI ---
 instructions = dockerfile.gsub(/\\\s*\n/, ' ').split(/\n+/).map(&:strip)
 build_from = instructions.grep(/^FROM\b/i).find { |l| /\bAS\s+build(\s|$)/i.match?(l) }
 abort 'Dockerfile is missing a build stage named AS build' unless build_from
 
-# Accept: [FROM] [--platform=...] ghcr.io/cirruslabs/flutter:<exact-version>[@sha256:...]
-# or a digest-only reference. Reject floating tags (:latest, no tag).
-rest = build_from.sub(/^FROM\s+/i, '')
-rest = rest.sub(/^--platform=\S+\s+/i, '')
-image_ref = rest.split(/\s+/).first.to_s
-# Valid pins: exact version tag, optionally with digest; or digest-only.
-# Floating: no tag and no digest (includes :latest).
-valid_pin = if image_ref =~ /^ghcr\.io\/cirruslabs\/flutter@sha256:[0-9a-f]{64}$/
-              true
-            elsif (m = image_ref.match(/^ghcr\.io\/cirruslabs\/flutter:(\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?)(@sha256:[0-9a-f]{64})?$/))
-              true
-            else
-              false
-            end
-abort "Dockerfile build stage must use ghcr.io/cirruslabs/flutter with an exact version tag (optionally @sha256 digest); got: #{build_from}" unless valid_pin
+arg_flutter = dockerfile[/^\s*ARG\s+FLUTTER_VERSION=(\S+)/m, 1]
+arg_sha = dockerfile[/^\s*ARG\s+FLUTTER_SDK_SHA256=(\S+)/m, 1]
+abort 'Dockerfile must declare ARG FLUTTER_VERSION matching flutter_sdk_pin.env' unless arg_flutter == pin['FLUTTER_VERSION']
+abort 'Dockerfile must declare ARG FLUTTER_SDK_SHA256 matching flutter_sdk_pin.env' unless arg_sha == pin['FLUTTER_SDK_SHA256']
+
+unless dockerfile.include?('storage.googleapis.com/flutter_infra_release')
+  abort 'Dockerfile must install Flutter from the official stable linux archive'
+end
+unless dockerfile.include?('sha256sum --check --strict')
+  abort 'Dockerfile must verify the Flutter SDK archive sha256 before extraction'
+end
 
 # --- Dockerfile: no RUN instruction may use --enforce-lockfile ---
 if instructions.grep(/^RUN\b/i).any? { |l| l.include?('--enforce-lockfile') }

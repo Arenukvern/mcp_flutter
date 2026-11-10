@@ -16,6 +16,21 @@ is now covered by a local gate — see
 [ADR 0013](/decisions/0013_mcp_registry_publish_hardening.mdx) for the full
 post-mortem.
 
+## After-release recovery (v7.1.0+ partial train)
+
+Use when the `v*` tag and GitHub Release exist, pub.dev already has all packages, but
+downstream automation failed (release binaries and/or MCP Registry OCI publish).
+**Do not** re-tag, republish pub.dev, or merge a Release PR again for the same version.
+
+| Failure | Recovery |
+|---------|----------|
+| Missing `flutter_mcp_*` tarballs or `checksums.txt` | On `main`, **Actions → Release → Run workflow** with `release_tag` (e.g. `v7.1.0`). See [release_binary_recovery](/contributing/release_binary_recovery). |
+| MCP Registry image / `server.json` publish | **Actions → Publish MCP Registry server → Run workflow** on the tag ref (e.g. `v7.1.0`; `VERSION` must match the tag). |
+
+`publish_mcp_registry.yml` only auto-triggers after a successful pub publish step on tag
+push. When pub.dev already succeeded out-of-band, dispatch the registry workflow manually
+on the tag.
+
 ## Recovery when pub.dev publish failed mid-train
 
 `pub_publish.yml` triggers `publish_mcp_registry.yml` only after the pub.dev
@@ -38,9 +53,11 @@ The `check_mcp_registry.sh` contract asserts:
 - The OCI package identifier is exactly
   `ghcr.io/arenukvern/flutter-mcp-toolkit:<VERSION>` and carries **no**
   `registryBaseUrl` field (the Registry rejects it).
-- The Dockerfile compiles `bin/flutter_mcp_toolkit_server.dart`, uses a pinned
-  `ghcr.io/cirruslabs/flutter:` build stage, and never runs
-  `--enforce-lockfile` (SDK-bundled pins differ per host platform).
+- The Dockerfile compiles `bin/flutter_mcp_toolkit_server.dart`, installs a
+  **sha256-pinned** Flutter stable linux SDK matching CI (`tool/contracts/flutter_sdk_pin.env`),
+  and never runs `--enforce-lockfile` (SDK-bundled pins differ per host platform).
+- PR/push CI (`.github/workflows/mcp_registry_dockerfile.yml`) builds
+  `Dockerfile.registry` for `linux/amd64` without pushing when registry paths change.
 - The workflow builds with `context: .` (workspace siblings are unpublished)
   and uses GitHub OIDC for registry auth.
 - pub.dev publication still triggers the dependent registry publication.

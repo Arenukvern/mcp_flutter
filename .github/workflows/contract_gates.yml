@@ -194,6 +194,8 @@ jobs:
           bash tool/contracts/test_publish_pub_packages_oidc.sh
           bash tool/contracts/test_publish_pub_packages_skip_existing.sh
           bash tool/contracts/test_oka_consumer_overrides_guard.sh
+          bash tool/contracts/check_macos_release_shell_compat.sh
+          bash tool/contracts/test_verify_release_tarball_architecture.sh
 
       - name: MCP Registry contracts (server.json, Dockerfile, publish workflow)
         run: bash tool/contracts/check_mcp_registry.sh

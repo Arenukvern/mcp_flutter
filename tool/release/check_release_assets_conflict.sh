@@ -32,7 +32,10 @@ if ! echo "$json" | jq -e '.assets | type == "array"' >/dev/null; then
   fail "invalid gh release view JSON for $TAG on $REPO"
 fi
 
-mapfile -t existing < <(echo "$json" | jq -r '.assets[].name')
+existing=()
+while IFS= read -r name; do
+  [[ -n "$name" ]] && existing+=("$name")
+done < <(echo "$json" | jq -r '.assets[].name')
 
 conflicts=()
 for name in "${expected[@]}"; do

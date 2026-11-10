@@ -437,7 +437,9 @@ actions:
     effects:
       fs_read:
         - tool/contracts/check_mcp_registry.sh
+        - tool/contracts/flutter_sdk_pin.env
         - mcp_server_dart/server.json
+        - mcp_server_dart/pubspec.yaml
         - mcp_server_dart/Dockerfile.registry
         - .github/workflows/publish_mcp_registry.yml
         - .github/workflows/pub_publish.yml
