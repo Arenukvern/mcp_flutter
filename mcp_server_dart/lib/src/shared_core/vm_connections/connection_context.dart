@@ -187,6 +187,33 @@ final class CoreConnectionException implements Exception {
   String toString() => message;
 }
 
+/// A VM service extension RPC failed.
+///
+/// [cause] is the underlying VM-service error — an app-side handler
+/// exception travels in the RPC error's message/details — so tool-level
+/// failure messages that interpolate this exception name the root cause
+/// instead of a bare "returned null". [toString] keeps the cause text
+/// inline because error classifiers (e.g. the unknown-method probes in
+/// the dynamic registry) key off the rendered text. The VM call's original
+/// [stackTrace] rides on the exception because the rethrow itself cannot
+/// carry it.
+final class FlutterExtensionCallException implements Exception {
+  FlutterExtensionCallException(this.method, this.cause, this.stackTrace);
+
+  /// The extension method that was called, e.g.
+  /// `ext.mcp.toolkit.semantic_snapshot`.
+  final String method;
+
+  /// The underlying VM-service error (usually an `RPCError`).
+  final Object cause;
+
+  /// The stack of the failed VM call, captured at the rethrow site.
+  final StackTrace stackTrace;
+
+  @override
+  String toString() => 'Extension call $method failed: $cause';
+}
+
 final class EnsureConnectionResult {
   const EnsureConnectionResult._({
     required this.connected,
@@ -226,8 +253,10 @@ final class EnsureConnectionResult {
   final Map<String, Object?>? recovery;
 }
 
-typedef CoreFlutterTargetProbe =
-    Future<bool> Function(CoreEndpoint endpoint, {required Duration timeout});
+typedef CoreFlutterTargetProbe = Future<bool> Function(
+  CoreEndpoint endpoint, {
+  required Duration timeout,
+});
 
 final class ConnectionContext {
   ConnectionContext({
@@ -307,8 +336,7 @@ final class ConnectionContext {
   StreamSubscription<Event>? _serviceStreamSubscription;
   final Set<String> _reloadSourcesMethods = <String>{};
   final Set<String> _hotRestartMethods = <String>{};
-  final List<void Function()> _serviceRegistrationWaiters =
-      <void Function()>[];
+  final List<void Function()> _serviceRegistrationWaiters = <void Function()>[];
   bool _serviceRegistrationGraceExhausted = false;
 
   /// Single-flight gate shared by [hotReload] and [hotRestart].
@@ -654,10 +682,10 @@ final class ConnectionContext {
         // sink.close() never completes when the websocket upgrade failed,
         // so bound the wait and swallow late errors to keep disconnect()
         // best-effort and non-blocking.
-        await _vmChannel?.sink.close().catchError((_) {}).timeout(
-          const Duration(seconds: 1),
-          onTimeout: () => null,
-        );
+        await _vmChannel?.sink
+            .close()
+            .catchError((_) {})
+            .timeout(const Duration(seconds: 1), onTimeout: () => null);
       }
     } catch (e) {
       logger(
@@ -708,10 +736,10 @@ final class ConnectionContext {
         // Bound the close: sink.close() never completes when the upgrade
         // failed, and abandoning the channel would leak the socket.
         unawaited(
-          dtdChannel.sink.close().catchError((_) {}).timeout(
-            const Duration(seconds: 1),
-            onTimeout: () => null,
-          ),
+          dtdChannel.sink
+              .close()
+              .catchError((_) {})
+              .timeout(const Duration(seconds: 1), onTimeout: () => null),
         );
         logger(
           LoggingLevel.warning,
@@ -1187,8 +1215,7 @@ final class ConnectionContext {
       final selectionDetails = _multipleTargetsDetails(preferredTargets);
       throw CoreConnectionException(
         reason: CoreConnectionFailureReason.multipleTargets,
-        message:
-            'Multiple debug targets detected. Retry with URI connection.targetId.',
+        message: 'Multiple debug targets detected. Retry with URI connection.targetId.',
         details: selectionDetails,
       );
     }
@@ -1331,8 +1358,7 @@ final class ConnectionContext {
         details: {
           'reason': 'invalid_target_id_legacy_host_port',
           'targetId': targetId,
-          'migrationHint':
-              'Use connection.targetId set to a full ws://.../ws URI or provide connection.uri.',
+          'migrationHint': 'Use connection.targetId set to a full ws://.../ws URI or provide connection.uri.',
         },
       );
     }
@@ -1346,8 +1372,7 @@ final class ConnectionContext {
         details: {
           'reason': 'invalid_target_id',
           'targetId': targetId,
-          'migrationHint':
-              'Use connection.targetId set to a full ws://.../ws URI or provide connection.uri.',
+          'migrationHint': 'Use connection.targetId set to a full ws://.../ws URI or provide connection.uri.',
         },
       );
     }
@@ -1420,8 +1445,7 @@ final class ConnectionContext {
 
     final matches = targets
         .where(
-          (target) =>
-              target.label?.toLowerCase().contains(preference) ?? false,
+          (target) => target.label?.toLowerCase().contains(preference) ?? false,
         )
         .toList(growable: false);
     if (matches.isEmpty) {
@@ -1628,9 +1652,7 @@ final class ConnectionContext {
 
   Uri _vmServiceHttpBaseUri(CoreEndpoint endpoint) {
     final wsUri = endpoint.wsUri;
-    final pathSegments = wsUri.pathSegments
-        .where((s) => s.isNotEmpty)
-        .toList();
+    final pathSegments = wsUri.pathSegments.where((s) => s.isNotEmpty).toList();
     if (pathSegments.isNotEmpty && pathSegments.last == 'ws') {
       pathSegments.removeLast();
     }
@@ -1742,9 +1764,7 @@ final class ConnectionContext {
   /// Service extension an app registers to name its running instance.
   static const String _appIdentityExtension = 'ext.mcp.toolkit.app_identity';
 
-  Future<bool> _isCurrentConnectionHealthy({
-    required Duration timeout,
-  }) async {
+  Future<bool> _isCurrentConnectionHealthy({required Duration timeout}) async {
     final vmService = _vmService;
     if (vmService == null) {
       return false;
@@ -1763,6 +1783,14 @@ final class ConnectionContext {
     }
   }
 
+  /// Call a Flutter/app extension and return the response, or throw.
+  ///
+  /// The hard-fail path: a failed RPC throws
+  /// [FlutterExtensionCallException] carrying the underlying VM-service
+  /// error, so callers that interpolate the exception into their failure
+  /// messages surface the app-side root cause instead of a bare "returned
+  /// null". For the graceful null-on-failure path (target probing, hot
+  /// reload), see [callServiceExtension].
   Future<Response> callFlutterExtension(
     String method, {
     Map<String, dynamic>? args,
@@ -1773,15 +1801,32 @@ final class ConnectionContext {
       throw StateError('No Flutter isolate found');
     }
 
-    final response = await callServiceExtension(
-      method,
-      isolateId: isolateId,
-      args: args,
-    );
-    if (response == null) {
-      throw StateError('Extension call returned null');
+    final vmService = _vmService;
+    if (vmService == null) {
+      throw StateError('VM service not connected');
     }
-    return response;
+
+    try {
+      return await vmService.callServiceExtension(
+        method,
+        isolateId: isolateId,
+        args: args,
+      );
+    } on Exception catch (e, s) {
+      logger(
+        LoggingLevel.error,
+        'Failed to call service extension $method: $e',
+        logger: 'ConnectionContext',
+      );
+      logger(
+        LoggingLevel.debug,
+        'Stack trace: $s',
+        logger: 'ConnectionContext',
+      );
+      // `Error` is shadowed here by a VM-model type, so the stack rides on
+      // the exception instead of Error.throwWithStackTrace.
+      throw FlutterExtensionCallException(method, e, s);
+    }
   }
 
   Future<Response?> callServiceExtension(
@@ -1870,9 +1915,7 @@ final class ConnectionContext {
     return completer.future;
   }
 
-  Future<Map<String, dynamic>?> _runHotReload({
-    required bool force,
-  }) async {
+  Future<Map<String, dynamic>?> _runHotReload({required bool force}) async {
     final delegated = await _delegatedReloadOrRestart(method: 'reload');
     if (delegated != null) return delegated;
 
@@ -1889,9 +1932,9 @@ final class ConnectionContext {
         return {'error': 'Hot reload failed: no isolates found'};
       }
 
-      final hotReloadMethodName = await _awaitServiceMethod(
-        const {'reloadSources'},
-      );
+      final hotReloadMethodName = await _awaitServiceMethod(const {
+        'reloadSources',
+      });
 
       if (hotReloadMethodName == null) {
         // Honest no-op: without the flutter tool's custom reloadSources
@@ -2044,9 +2087,9 @@ final class ConnectionContext {
     }
 
     try {
-      final hotRestartMethodName = await _awaitServiceMethod(
-        const {'hotRestart'},
-      );
+      final hotRestartMethodName = await _awaitServiceMethod(const {
+        'hotRestart',
+      });
 
       if (hotRestartMethodName == null) {
         // Honest no-op for the method-not-found path: the flutter tool's
@@ -2080,7 +2123,5 @@ final class ConnectionContext {
       'no compile-capable session; delegate via RunnerControl or connect '
       'inside the registration window';
 
-  static const Duration _serviceRegistrationGrace = Duration(
-    milliseconds: 300,
-  );
+  static const Duration _serviceRegistrationGrace = Duration(milliseconds: 300);
 }
