@@ -9,6 +9,7 @@ workspace:
   - mcp_server_dart
   - jaspr_web_example
   - showcase/drivers
+  - showcase/native_layer_capture_fixture
 
 # Native capture branch: hosted oka_* dev_deps still declare interface ^0.3.0 while the
 # workspace trains on published 0.4.0 (main #161). Drop when oka pub coordinates match.

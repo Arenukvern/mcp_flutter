@@ -20,13 +20,16 @@ token: invalid timestamps` while earlier packages had already reached pub.dev.
 ## Decision
 
 On the `--execute` path only, mint a fresh OIDC token immediately before each
-package's real publish (dry-run + `--force` block), using the same GitHub
-runner exchange as setup-dart:
+package's `--force` upload (after that package's execute-path `--dry-run`), using
+the same GitHub runner exchange as setup-dart:
 
 - `GET $ACTIONS_ID_TOKEN_REQUEST_URL&audience=https://pub.dev` with
   `Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN`
 - export `PUB_TOKEN` from the JSON `value` field (never log the token)
 - `dart pub token add https://pub.dev --env-var PUB_TOKEN`
+
+Re-runs on the same tag use `--skip-existing` (default on `--execute`) so
+packages already at `VERSION` on pub.dev are not re-uploaded.
 
 Preflight (`publish_pub_packages.sh` without `--execute`) is unchanged and does
 not require OIDC env vars.

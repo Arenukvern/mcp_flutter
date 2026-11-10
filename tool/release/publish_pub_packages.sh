@@ -27,6 +27,10 @@ Publishes packages in dependency order:
 Default: preflight only. Preflight uses --skip-validation for packages whose
 same-train dependencies are not yet visible on pub.dev; full validation happens
 during --execute after each upstream package has been published and observed.
+
+--execute always skips a package when that exact VERSION is already on pub.dev
+(--skip-existing is the explicit flag; re-runs are safe). Use workflow_dispatch
+on a tag when a tag push publish failed partway; see docs/contributing/contribution_guide.mdx.
 USAGE
 }
 
@@ -58,6 +62,10 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+if [[ "$DRY_RUN" -eq 0 ]]; then
+  SKIP_EXISTING=1
+fi
 
 packages=(
   "flutter_mcp_toolkit_core|packages/core|dart"

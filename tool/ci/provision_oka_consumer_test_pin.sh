@@ -13,5 +13,10 @@ bash "$repo_root/tool/ci/checkout_oka_consumer.sh"
 bash "$repo_root/tool/ci/apply_oka_consumer_overrides.sh"
 bash "$repo_root/tool/ci/activate_oka_consumer_cli.sh"
 (cd "$repo_root" && flutter pub get)
-(cd "$repo_root/showcase/native_layer_capture_fixture" && flutter pub get)
 echo "OKA_BIN=$(command -v oka || true)"
+if ! grep -q 'path: "oka/packages/oka_core"' "$repo_root/pubspec.lock" 2>/dev/null; then
+  echo "oka consumer: expected path-pinned oka_core in root pubspec.lock after workspace overrides" >&2
+  exit 1
+fi
+echo "oka consumer pin resolved via workspace root pubspec_overrides.yaml (path oka/packages/*, pin $pin)"
+dart pub deps --style=compact -C "$repo_root" 2>/dev/null | rg '\boka(_[a-z0-9_]+)?\b' | head -12 || true
