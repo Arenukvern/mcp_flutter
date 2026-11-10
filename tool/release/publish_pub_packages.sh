@@ -35,6 +35,10 @@ fail() {
   exit 1
 }
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=mint_pub_dev_oidc_token.sh
+source "$SCRIPT_DIR/mint_pub_dev_oidc_token.sh"
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --execute)
@@ -139,6 +143,7 @@ for entry in "${packages[@]}"; do
     if [[ "$DRY_RUN" -eq 1 ]]; then
       run_pub "$runner" --dry-run --skip-validation
     else
+      mint_pub_dev_oidc_token
       run_pub "$runner" --dry-run
       run_pub "$runner" --force
     fi
