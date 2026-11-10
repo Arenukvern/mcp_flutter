@@ -763,19 +763,20 @@ packages:
   universal_automation_conformance:
     dependency: transitive
     description:
-      name: universal_automation_conformance
-      sha256: "3bd12e94595abb9738d141255f2beff347bf69f7d03b1b3a8301dd5dfaa0ee1b"
-      url: "https://pub.dev"
-    source: hosted
+      path: "pkgs/universal_automation_conformance"
+      ref: a3be2da0ec99eeaa8eab3d05fc6db16b2c7bb984
+      resolved-ref: a3be2da0ec99eeaa8eab3d05fc6db16b2c7bb984
+      url: "https://github.com/Arenukvern/universal_automation_ai_device_use.git"
+    source: git
     version: "0.3.1"
   universal_automation_interface:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
       name: universal_automation_interface
-      sha256: ed50caf4a72a6debdc667a59be3424c7a5e3e84514df81f3cc1118663248407a
+      sha256: "72b21a227fc0a64c2122d5cae3b56b31128382121e64043f3d8d40ebd300527c"
       url: "https://pub.dev"
     source: hosted
-    version: "0.3.0"
+    version: "0.4.0"
   universal_automation_semantics:
     dependency: transitive
     description:
@@ -788,10 +789,10 @@ packages:
     dependency: transitive
     description:
       name: universal_browser_cdp
-      sha256: "9fd73eab43165271ed289c5a22d6496133bbd7a81d07158bf9af6aed092ce9ed"
+      sha256: "3543f188272d866e3f790a3966767aef392fe2e134da76e438517935f84c0890"
       url: "https://pub.dev"
     source: hosted
-    version: "0.4.0"
+    version: "0.5.0"
   universal_io:
     dependency: transitive
     description:
@@ -804,10 +805,10 @@ packages:
     dependency: transitive
     description:
       name: universal_screencast
-      sha256: a732868af048d42b618e713cd6e3c632b7c3ed5d08a5361be9b2224be5d2f6b2
+      sha256: "6caf269f1e4532e17a1dcd15b0b9c979e67cb67501dc8c204977e8fa60069313"
       url: "https://pub.dev"
     source: hosted
-    version: "0.2.0"
+    version: "0.3.0"
   vector_math:
     dependency: transitive
     description:
