@@ -30,7 +30,8 @@ dependency_overrides:
   some_sibling:
     path: ../elsewhere
 YAML
-if (cd "$fake_root" && OKA_CONSUMER_OVERWRITE_OVERRIDES=1 bash tool/ci/apply_oka_consumer_overrides.sh) 2>"$tmpdir/err"; then
+if (cd "$fake_root" && env -u GITHUB_ACTIONS -u CI \
+  OKA_CONSUMER_OVERWRITE_OVERRIDES=1 bash tool/ci/apply_oka_consumer_overrides.sh) 2>"$tmpdir/err"; then
   fail "must not overwrite personal root pubspec_overrides.yaml"
 fi
 grep -q 'refusing to touch' "$tmpdir/err" || fail "expected refuse message: $(cat "$tmpdir/err")"
@@ -41,14 +42,16 @@ cat >"$fake_root/pubspec_overrides.yaml" <<'YAML'
 # GENERATED: oka consumer test pin deadbeef
 dependency_overrides: {}
 YAML
-if (cd "$fake_root" && bash tool/ci/apply_oka_consumer_overrides.sh) 2>"$tmpdir/err2"; then
+if (cd "$fake_root" && env -u GITHUB_ACTIONS -u CI \
+  bash tool/ci/apply_oka_consumer_overrides.sh) 2>"$tmpdir/err2"; then
   fail "must not overwrite GENERATED override without opt-in"
 fi
 grep -q 'overwrite not allowed' "$tmpdir/err2" || fail "expected overwrite guard: $(cat "$tmpdir/err2")"
 ok "blocks GENERATED overwrite without opt-in"
 
 # With opt-in — may replace GENERATED root file.
-if ! (cd "$fake_root" && OKA_CONSUMER_OVERWRITE_OVERRIDES=1 bash tool/ci/apply_oka_consumer_overrides.sh); then
+if ! (cd "$fake_root" && env -u GITHUB_ACTIONS -u CI \
+  OKA_CONSUMER_OVERWRITE_OVERRIDES=1 bash tool/ci/apply_oka_consumer_overrides.sh); then
   fail "opt-in should write GENERATED root override"
 fi
 head -n 1 "$fake_root/pubspec_overrides.yaml" | grep -q '^# GENERATED: oka consumer' \
@@ -62,7 +65,8 @@ dependency_overrides:
   local_pkg:
     path: ../../local
 YAML
-if ! (cd "$fake_root" && OKA_CONSUMER_OVERWRITE_OVERRIDES=1 bash tool/ci/apply_oka_consumer_overrides.sh); then
+if ! (cd "$fake_root" && env -u GITHUB_ACTIONS -u CI \
+  OKA_CONSUMER_OVERWRITE_OVERRIDES=1 bash tool/ci/apply_oka_consumer_overrides.sh); then
   fail "apply should succeed when harness override is personal"
 fi
 [[ -f "$fake_root/packages/harness/pubspec_overrides.yaml" ]] \
