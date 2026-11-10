@@ -12,12 +12,15 @@ fi
 write_oka_overrides() {
   local target_dir="$1"
   local rel_prefix="$2"
+  local add_interface_override="${3:-0}"
   local out="$target_dir/pubspec_overrides.yaml"
   {
     echo "# GENERATED: oka consumer test pin $pin (unmerged PR — not a release claim)"
     echo "dependency_overrides:"
-    # Oka pin still declares ^0.3.0; workspace trains on published 0.4.0 after main #161.
-    echo "  universal_automation_interface: 0.4.0"
+    if [[ "$add_interface_override" == 1 ]]; then
+      # Fixture is outside the workspace; mirror root 0.4.0 train for oka path graph.
+      echo "  universal_automation_interface: 0.4.0"
+    fi
     for pkg_dir in "$oka"/packages/*/; do
       [[ -f "$pkg_dir/pubspec.yaml" ]] || continue
       local name
@@ -28,6 +31,6 @@ write_oka_overrides() {
   } >"$out"
 }
 
-write_oka_overrides "$repo_root/packages/harness" "../../oka/packages"
-write_oka_overrides "$repo_root/showcase/native_layer_capture_fixture" "../../oka/packages"
+write_oka_overrides "$repo_root/packages/harness" "../../oka/packages" 0
+write_oka_overrides "$repo_root/showcase/native_layer_capture_fixture" "../../oka/packages" 1
 echo "pubspec_overrides.yaml applied (full oka graph, pin $pin)"
