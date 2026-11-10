@@ -102,6 +102,16 @@ On **Release PRs**, [`.github/workflows/release_pr_sync_versions.yml`](https://g
 
 Before automated pub.dev publishing can run, each package must have automated publishing enabled in its pub.dev Admin page for repository `Arenukvern/mcp_flutter`, tag pattern `v{{version}}`, and GitHub environment `pub.dev`.
 
+**Recovering after release when pub.dev already succeeded (same tag):**
+
+When packages are already on pub.dev but later steps failed (GitHub release binaries
+and/or MCP Registry OCI image):
+
+1. **Binaries:** On `main`, dispatch [Release](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/release.yml) with `release_tag` set to the existing tag (e.g. `v7.1.0`). All three expected asset names must be **absent** (`flutter_mcp_<version>_darwin-arm64.tar.gz`, `_linux-x64.tar.gz`, `checksums.txt`); delete any partial assets before re-dispatch — the workflow does not overwrite.
+2. **MCP Registry:** On **`main`**, dispatch [Publish MCP Registry server](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/publish_mcp_registry.yml) with `release_tag` (e.g. `v7.1.0`). Tooling (Dockerfile) comes from `main`; server sources come from the tag.
+
+See [MCP Registry publish runbook](/contributing/mcp_registry_publish_runbook) and [release_binary_recovery](/contributing/release_binary_recovery).
+
 **Recovering a failed pub.dev publish (same tag):**
 
 1. **Re-run** the failed [Publish pub.dev packages](https://github.com/Arenukvern/mcp_flutter/actions/workflows/pub_publish.yml) workflow on the release tag. The execute step uses `--skip-existing`: packages already at that `VERSION` on pub.dev are logged and skipped; the train continues from the first missing package.

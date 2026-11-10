@@ -8,11 +8,30 @@
 # so the image resolves hosted and drops `resolution: workspace` — the
 # monorepo workspace would drag in Flutter-app members (harness, showcase)
 # whose universal_automation_interface floor conflicts with the SDK meta
-# pin of older Flutter images (cirruslabs publishes no 3.47.x tags).
-# Digest of ghcr.io/cirruslabs/flutter:latest at the 6.0.0 release
-# (sha256:217a3d8…). The digest is the reproducibility anchor; bump it
-# deliberately per release.
-FROM ghcr.io/cirruslabs/flutter@sha256:217a3d81b124f3fab82b24633bf66b256cc74528b894e7f17103f70150232077 AS build
+# pin of older Flutter images.
+#
+# ghcr.io/cirruslabs/flutter stopped updating after Flutter 3.44.0 (Dart 3.12.0).
+# CI trains on Flutter 3.47.5 (Dart 3.13.4); the build stage installs that
+# stable linux SDK from storage.googleapis.com. Values must match
+# tool/contracts/flutter_sdk_pin.env (reproducibility anchor).
+FROM debian:bookworm-slim AS build
+
+ARG FLUTTER_VERSION=3.47.5
+ARG FLUTTER_SDK_SHA256=2132e990f236f8d22e7c6314b29a191a95b10d7cbcfec9b4e2e303d996652cbb
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates curl git unzip xz-utils && \
+    rm -rf /var/lib/apt/lists/* && \
+  curl -fsSL "https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_${FLUTTER_VERSION}-stable.tar.xz" \
+    -o /tmp/flutter.tar.xz && \
+  echo "${FLUTTER_SDK_SHA256}  /tmp/flutter.tar.xz" | sha256sum --check --strict - && \
+  tar --no-same-owner -xJf /tmp/flutter.tar.xz -C /opt && \
+  rm /tmp/flutter.tar.xz && \
+  git config --global --add safe.directory /opt/flutter && \
+  /opt/flutter/bin/flutter config --no-analytics && \
+  /opt/flutter/bin/flutter --version
+
+ENV PATH="/opt/flutter/bin:/opt/flutter/bin/cache/dart-sdk/bin:${PATH}"
 
 WORKDIR /app
 

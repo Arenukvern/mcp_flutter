@@ -15,7 +15,11 @@ cleanup() { rm -rf "$tmpdir"; }
 trap cleanup EXIT
 
 tar -C "$tmpdir" -xzf "$ARCHIVE"
-mapfile -d '' bins < <(find "$tmpdir" -type f \( -name flutter-mcp-toolkit -o -name flutter-mcp-toolkit-server \) -print0 | sort -z)
+# bash 3.2 compatible — macOS runners ship bash 3.2 (no mapfile).
+bins=()
+while IFS= read -r -d '' bin; do
+  bins+=("$bin")
+done < <(find "$tmpdir" -type f \( -name flutter-mcp-toolkit -o -name flutter-mcp-toolkit-server \) -print0 | sort -z)
 [[ ${#bins[@]} -ge 2 ]] || fail "expected toolkit + server binaries in $ARCHIVE"
 
 verify_one() {

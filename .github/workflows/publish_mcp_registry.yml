@@ -2,6 +2,11 @@ name: Publish MCP Registry server
 
 on:
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Release tag to publish (e.g. v7.1.0)'
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -9,40 +14,53 @@ permissions:
   id-token: write
 
 concurrency:
-  group: mcp-registry-${{ github.ref_name }}
+  group: mcp-registry-${{ inputs.release_tag }}
   cancel-in-progress: false
+
+env:
+  RELEASE_SRC_PATH: release-src
 
 jobs:
   publish:
     runs-on: ubuntu-latest
     environment: mcp-registry-publish
     steps:
-      - name: Checkout
+      - name: Validate release tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="${{ inputs.release_tag }}"
+          if [[ ! "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::release_tag must look like vX.Y.Z (got '$tag')."
+            exit 1
+          fi
+
+      - name: Checkout workflow tooling (trusted SHA)
         uses: actions/checkout@v5
         with:
+          ref: ${{ github.sha }}
           persist-credentials: false
 
-      - name: Require release tag
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [[ "$GITHUB_REF" != refs/tags/v* ]]; then
-            echo "::error::This workflow must be run from a v* release tag (got $GITHUB_REF)."
-            exit 1
-          fi
+      - name: Checkout release source (immutable tag)
+        uses: actions/checkout@v5
+        with:
+          ref: refs/tags/${{ inputs.release_tag }}
+          path: ${{ env.RELEASE_SRC_PATH }}
+          persist-credentials: false
 
-      - name: Resolve release version
+      # Tag supplies server sources only; main keeps Dockerfile.registry + Flutter pin + contracts.
+      - name: Overlay tagged server sources onto main tooling
+        env:
+          TOOLING_ROOT: ${{ github.workspace }}
+          RELEASE_SRC: ${{ github.workspace }}/${{ env.RELEASE_SRC_PATH }}
+        run: bash tool/release/overlay_mcp_registry_tag_sources.sh
+
+      - name: Resolve release version (tag tree)
         id: version
-        shell: bash
-        run: |
-          set -euo pipefail
-          version="${GITHUB_REF_NAME#v}"
-          file_version="$(tr -d '[:space:]' < VERSION)"
-          if [[ "$version" != "$file_version" ]]; then
-            echo "::error::Tag ${GITHUB_REF_NAME} does not match VERSION (${file_version})."
-            exit 1
-          fi
-          echo "version=$version" >> "$GITHUB_OUTPUT"
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          RELEASE_SRC: ${{ github.workspace }}/${{ env.RELEASE_SRC_PATH }}
+        run: bash tool/release/resolve_mcp_registry_release_version.sh
 
       - name: Synchronize release metadata
         env:
@@ -65,6 +83,7 @@ jobs:
           context: .
           file: mcp_server_dart/Dockerfile.registry
           push: true
+          platforms: linux/amd64
           tags: ghcr.io/arenukvern/flutter-mcp-toolkit:${{ steps.version.outputs.version }}
 
       - name: Install pinned mcp-publisher

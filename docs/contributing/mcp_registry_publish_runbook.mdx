@@ -16,6 +16,22 @@ is now covered by a local gate — see
 [ADR 0013](/decisions/0013_mcp_registry_publish_hardening.mdx) for the full
 post-mortem.
 
+## After-release recovery (v7.1.0+ partial train)
+
+Use when the `v*` tag and GitHub Release exist, pub.dev already has all packages, but
+downstream automation failed (release binaries and/or MCP Registry OCI publish).
+**Do not** re-tag, republish pub.dev, or merge a Release PR again for the same version.
+
+| Failure | Recovery |
+|---------|----------|
+| Missing `flutter_mcp_*` tarballs or `checksums.txt` | On `main`, **Actions → Release → Run workflow** with `release_tag` (e.g. `v7.1.0`). See [release_binary_recovery](/contributing/release_binary_recovery). |
+| MCP Registry image / `server.json` publish | On **`main`** (after tooling fixes are merged), **Actions → Publish MCP Registry server → Run workflow** with `release_tag` (e.g. `v7.1.0`). The workflow uses **tooling from `main`** (fixed `Dockerfile.registry`) and **`mcp_server_dart` from the tag**. |
+
+`publish_mcp_registry.yml` only auto-triggers after a successful pub publish step on tag
+push (`pub_publish.yml` dispatches it on **`main`** with the `release_tag` input). When pub.dev
+already succeeded out-of-band, dispatch manually on **`main`** with the same input — not from
+the tag ref (the tag tree may still carry a broken Dockerfile).
+
 ## Recovery when pub.dev publish failed mid-train
 
 `pub_publish.yml` triggers `publish_mcp_registry.yml` only after the pub.dev
@@ -23,7 +39,7 @@ post-mortem.
 packages were already uploaded (JWT expiry on v7.0.2 — see [ADR 0021](/decisions/0021_pub_dev_oidc_token_per_package.mdx) and Actions run 42410677650), registry publication is skipped.
 
 1. Re-run or **workflow_dispatch** [Publish pub.dev packages](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/pub_publish.yml) on the same `v*` tag with **execute_publish** (`--skip-existing` skips versions already on pub.dev).
-2. When all intended packages are on pub.dev, run [Publish MCP Registry server](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/publish_mcp_registry.yml) via **workflow_dispatch** on that tag (must be a `v*` ref; `VERSION` in the checkout must match the tag).
+2. When all intended packages are on pub.dev, run [Publish MCP Registry server](https://github.com/Arenukvern/mcp_flutter/blob/main/.github/workflows/publish_mcp_registry.yml) via **workflow_dispatch** on **`main`** with `release_tag` set to that `v*` tag.
 
 ## Pre-flight gates (run before cutting a release)
 
@@ -38,9 +54,11 @@ The `check_mcp_registry.sh` contract asserts:
 - The OCI package identifier is exactly
   `ghcr.io/arenukvern/flutter-mcp-toolkit:<VERSION>` and carries **no**
   `registryBaseUrl` field (the Registry rejects it).
-- The Dockerfile compiles `bin/flutter_mcp_toolkit_server.dart`, uses a pinned
-  `ghcr.io/cirruslabs/flutter:` build stage, and never runs
-  `--enforce-lockfile` (SDK-bundled pins differ per host platform).
+- The Dockerfile compiles `bin/flutter_mcp_toolkit_server.dart`, installs a
+  **sha256-pinned** Flutter stable linux SDK matching CI (`tool/contracts/flutter_sdk_pin.env`),
+  and never runs `--enforce-lockfile` (SDK-bundled pins differ per host platform).
+- PR/push CI (`.github/workflows/mcp_registry_dockerfile.yml`) builds
+  `Dockerfile.registry` for `linux/amd64` without pushing when registry paths change.
 - The workflow builds with `context: .` (workspace siblings are unpublished)
   and uses GitHub OIDC for registry auth.
 - pub.dev publication still triggers the dependent registry publication.

@@ -1,0 +1,47 @@
+name: MCP Registry Dockerfile (smoke build)
+
+on:
+  pull_request:
+    paths:
+      - mcp_server_dart/Dockerfile.registry
+      - mcp_server_dart/pubspec.yaml
+      - tool/contracts/flutter_sdk_pin.env
+      - tool/contracts/check_mcp_registry.sh
+      - .github/workflows/publish_mcp_registry.yml
+      - .github/workflows/mcp_registry_dockerfile.yml
+  push:
+    branches:
+      - main
+    paths:
+      - mcp_server_dart/Dockerfile.registry
+      - mcp_server_dart/pubspec.yaml
+      - tool/contracts/flutter_sdk_pin.env
+      - tool/contracts/check_mcp_registry.sh
+      - .github/workflows/publish_mcp_registry.yml
+      - .github/workflows/mcp_registry_dockerfile.yml
+
+permissions:
+  contents: read
+
+jobs:
+  build-smoke:
+    name: Build Dockerfile.registry (linux/amd64, no push)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Verify MCP Registry contracts
+        run: bash tool/contracts/check_mcp_registry.sh
+
+      - name: Build OCI image (smoke)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: mcp_server_dart/Dockerfile.registry
+          push: false
+          platforms: linux/amd64

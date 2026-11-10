@@ -40,6 +40,12 @@ grep -q 'trigger_mcp_registry' "$WORKFLOW" ||
   fail "pub_publish workflow_dispatch must define trigger_mcp_registry input"
 grep -q 'publish_mcp_registry.yml' "$WORKFLOW" ||
   fail "pub_publish must be able to trigger publish_mcp_registry.yml"
+grep -q '\-\-ref main' "$WORKFLOW" ||
+  fail "registry trigger must dispatch publish_mcp_registry on main (fixed tooling)"
+grep -q 'release_tag=' "$WORKFLOW" ||
+  fail "registry trigger must pass release_tag to publish_mcp_registry"
+grep -q "startsWith(github.ref, 'refs/tags/v')" "$WORKFLOW" ||
+  fail "registry trigger must require refs/tags/v*"
 
 # package_has_version: exact VERSION match, not just latest.
 grep -q "v\['version'\] == '\$VERSION'" "$PUBLISH_SCRIPT" ||
