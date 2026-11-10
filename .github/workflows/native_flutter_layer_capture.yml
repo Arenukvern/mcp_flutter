@@ -1,0 +1,141 @@
+name: Native flutter_layer capture
+
+# 10s read-only physical settlement + pixel/cli proof. Consumer pin from
+# tool/ci/oka_consumer_pin.txt (immutable SHA; oka main incl. #17 Linux L0 + #21 oka_devices).
+# pull_request restored for final review; do not rely on green Android physical until SDK cleanup + observation tests.
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android-emulator:
+    name: Android emulator flutter_layer proof
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.5'
+          cache: true
+
+      - name: Provision intentcall (pinned ref in-repo)
+        run: bash tool/ci/checkout_intentcall.sh
+
+      - name: Provision oka test pin (provisional; unmerged PR #18)
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/.native_capture"
+          bash tool/ci/provision_oka_consumer_test_pin.sh
+          bash tool/ci/report_oka_consumer_provenance.sh "$GITHUB_WORKSPACE/.native_capture/oka_consumer_provenance.json"
+          echo "$HOME/.pub-cache/bin" >> "$GITHUB_PATH"
+
+      - name: Workspace pub get
+        run: flutter pub get
+
+      - name: Enable KVM (ubuntu-latest hardware acceleration)
+        run: bash tool/ci/enable_android_emulator_kvm.sh
+
+      - name: Prebuild native layer capture fixture (android debug APK + manifest)
+        env:
+          # pixel_6 x86_64 AVD — APK must include x86_64 engine/libs (not arm-only).
+          OKA_ANDROID_BUILD_ABI: x86_64
+        run: |
+          set -o pipefail
+          mkdir -p "$GITHUB_WORKSPACE/.native_capture"
+          cd showcase/native_layer_capture_fixture
+          flutter pub get
+          dart run ../../packages/harness/tool/oka_android_build_probe.dart | tee "$GITHUB_WORKSPACE/.native_capture/android_oka_build_probe.json"
+          test -f .oka_cache/build/debug/run_session.json
+          test -f .oka_cache/build/debug/app-debug.apk
+        continue-on-error: false
+
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          profile: pixel_6
+          emulator-boot-timeout: 600
+          emulator-options: -no-snapshot-save -gpu swiftshader_indirect -no-window -no-boot-anim
+          script: export ANDROID_SERIAL=emulator-5554 && export OKA_ANDROID_BUILD_ABI=x86_64 && export OKA_ANDROID_USE_PREBUILD=1 && export OKA_BIN=oka && export RUN_NATIVE_FLUTTER_LAYER_ANDROID=1 && export NATIVE_CAPTURE_ARTIFACT_DIR="${GITHUB_WORKSPACE}/.native_capture/android" && mkdir -p "$NATIVE_CAPTURE_ARTIFACT_DIR" && cd packages/harness && dart test -t native-android --concurrency=1 test/integration/native_flutter_layer_capture_test.dart
+
+      - name: Upload Android native capture artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-capture-android
+          path: |
+            .native_capture/android/
+            .native_capture/android_oka_build_probe.json
+            .native_capture/oka_consumer_provenance.json
+          if-no-files-found: warn
+
+  linux-desktop:
+    name: Linux desktop flutter_layer proof
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.5'
+          cache: true
+
+      - name: Linux toolchain deps
+        run: sudo apt-get update && sudo apt-get install -y ninja-build libgtk-3-dev mesa-utils libgl1 g++ libstdc++-12-dev xvfb
+
+      - name: Provision intentcall (pinned ref in-repo)
+        run: bash tool/ci/checkout_intentcall.sh
+
+      - name: Provision oka test pin (compile integration tests; Linux run does not spawn oka)
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/.native_capture"
+          bash tool/ci/provision_oka_consumer_test_pin.sh
+          bash tool/ci/report_oka_consumer_provenance.sh "$GITHUB_WORKSPACE/.native_capture/oka_consumer_provenance_linux.json"
+          echo "$HOME/.pub-cache/bin" >> "$GITHUB_PATH"
+
+      - name: Workspace pub get
+        run: flutter pub get
+
+      - name: Prebuild native layer capture fixture (linux)
+        env:
+          LIBRARY_PATH: /usr/lib/gcc/x86_64-linux-gnu/12:/usr/lib/gcc/x86_64-linux-gnu/13
+          LDFLAGS: -L/usr/lib/gcc/x86_64-linux-gnu/12 -L/usr/lib/gcc/x86_64-linux-gnu/13
+          CPATH: /usr/include/c++/12:/usr/include/x86_64-linux-gnu/c++/12
+        run: |
+          cd showcase/native_layer_capture_fixture
+          flutter pub get
+          xvfb-run -a flutter build linux --debug
+
+      - name: Run Linux flutter_layer integration (Dart owner)
+        env:
+          LIBRARY_PATH: /usr/lib/gcc/x86_64-linux-gnu/12:/usr/lib/gcc/x86_64-linux-gnu/13
+          LDFLAGS: -L/usr/lib/gcc/x86_64-linux-gnu/12 -L/usr/lib/gcc/x86_64-linux-gnu/13
+          CPATH: /usr/include/c++/12:/usr/include/x86_64-linux-gnu/c++/12
+          RUN_NATIVE_FLUTTER_LAYER_LINUX: '1'
+          NATIVE_CAPTURE_ARTIFACT_DIR: ${{ github.workspace }}/.native_capture/linux
+        run: |
+          mkdir -p "$NATIVE_CAPTURE_ARTIFACT_DIR"
+          cd packages/harness
+          xvfb-run -a dart test -t native-linux --concurrency=1 \
+            test/integration/native_flutter_layer_capture_test.dart
+
+      - name: Upload Linux native capture artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-capture-linux
+          path: |
+            .native_capture/linux/
+            .native_capture/oka_consumer_provenance_linux.json
+          if-no-files-found: warn

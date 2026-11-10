@@ -49,9 +49,15 @@ mcp_server_dart/mcp-publisher
 
 # local sibling-repo overrides (dev only)
 pubspec_overrides.yaml
+**/pubspec_overrides.yaml
+universal_automation/
 
 # ZCode workspace MCP mount is machine-local (absolute binary path); recreate with: flutter-mcp-toolkit init zcode
 .zcode/config.json
 
 # harness run outputs (runtime-generated E2E artifacts)
 packages/harness/output/
+.native_capture/
+intentcall/
+oka/
+**/pubspec_overrides.yaml

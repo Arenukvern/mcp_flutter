@@ -27,6 +27,7 @@ final class LaunchedApp {
     required this.vmUri,
     this.onStop,
     this.fingerprint,
+    this.stopOverride,
   }) : ownership = AppOwnership.launchAndOwn;
 
   /// Attached bring-up: the app was already running and the harness only
@@ -39,6 +40,7 @@ final class LaunchedApp {
     this.fingerprint,
   }) : process = null,
        onStop = null,
+       stopOverride = null,
        ownership = AppOwnership.attachOnly;
 
   final String name;
@@ -60,12 +62,22 @@ final class LaunchedApp {
   /// (best-effort: errors are swallowed so cleanup always finishes).
   final Future<void> Function()? onStop;
 
+  /// When set, owns teardown instead of signaling [process] (e.g.
+  /// [runBounded] + [BoundedDuplexHandle] on Linux).
+  final Future<int> Function()? stopOverride;
+
   VmClient? _vm;
 
   Future<VmClient> vm() async => _vm ??= await VmClient.connect(vmUri);
 
   Future<int> stop() async {
     await stdout.close();
+    final override = stopOverride;
+    if (override != null) {
+      final code = await override();
+      await onStop?.call().catchError((_) {});
+      return code;
+    }
     final process = this.process;
     // Attach-only: the process belongs to someone else — never stop it.
     if (process == null) return 0;

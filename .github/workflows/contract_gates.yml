@@ -6,6 +6,9 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 jobs:
   tests-and-coverage:
     name: Tests & coverage (gating)
@@ -15,6 +18,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Setup Flutter SDK
         uses: subosito/flutter-action@v2
@@ -36,6 +41,25 @@ jobs:
           dart pub global activate coverage
           dart pub global run coverage:test_with_coverage --branch-coverage
 
+      - name: Provision oka test pin (provisional; unmerged PR #18)
+        if: hashFiles('tool/ci/oka_consumer_pin.txt') != ''
+        run: |
+          bash tool/ci/provision_oka_consumer_test_pin.sh
+          echo "$HOME/.pub-cache/bin" >> "$GITHUB_PATH"
+
+      - name: flutter_mcp_harness analyze and unit tests
+        run: |
+          flutter pub get
+          dart analyze packages/harness
+          cd packages/harness && dart test --exclude-tags native-android,native-linux,compile-repro-opt-in
+
+      - name: native_layer_capture_fixture analyze and widget tests
+        run: |
+          cd showcase/native_layer_capture_fixture
+          flutter pub get
+          dart analyze .
+          flutter test
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
@@ -53,6 +77,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Setup Flutter SDK
         uses: subosito/flutter-action@v2

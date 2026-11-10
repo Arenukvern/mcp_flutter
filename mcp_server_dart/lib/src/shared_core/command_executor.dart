@@ -24,6 +24,7 @@ import 'package:flutter_mcp_toolkit_server/src/shared_core/types/error_codes.dar
 import 'package:flutter_mcp_toolkit_server/src/shared_core/types/results.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/vm_connections/connection_context.dart';
 import 'package:flutter_mcp_toolkit_server/src/shared_core/vm_connections/core_port_scanner.dart';
+import 'package:flutter_mcp_toolkit_server/src/shared_core/semantic_lens_render_adapter.dart';
 import 'package:from_json_to_json/from_json_to_json.dart';
 import 'package:intentcall_session/intentcall_session.dart';
 import 'package:is_dart_empty_or_not/is_dart_empty_or_not.dart';
@@ -635,12 +636,31 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
       final extensionHints = _hintsFromPayload(extensionJson);
       final mergedHints = hints.hasCaptureRoutingHints ? hints : extensionHints;
 
+      if (images.isEmpty) {
+        return CoreResult.failure(
+          code: CoreErrorCode.getScreenshotsFailed,
+          message:
+              'Flutter layer screenshot returned no images '
+              '(ext.mcp.toolkit.view_screenshots).',
+          details: <String, Object?>{
+            'captureMode': screenshotModeFlutterLayer,
+            'captureBackend': captureBackendFlutterLayerVm,
+            'captureImplementation': captureImplementationAppLayerTree,
+            'permission': permission.toJson(),
+            if (mergedHints.hasCaptureRoutingHints)
+              'captureHints': mergedHints.toCaptureHintsJson(),
+          },
+        );
+      }
+
       Map<String, Object?> payload;
       if (!configuration.saveImagesToFiles) {
         payload = <String, Object?>{
           'images': images,
           'fileUrls': const <String>[],
           'captureMode': screenshotModeFlutterLayer,
+          'captureBackend': captureBackendFlutterLayerVm,
+          'captureImplementation': captureImplementationAppLayerTree,
         };
       } else {
         await imageFileSaver.cleanupOldScreenshots();
@@ -649,6 +669,8 @@ final class DefaultCoreCommandExecutor implements CoreCommandExecutor {
           'images': const <String>[],
           'fileUrls': fileUrls,
           'captureMode': screenshotModeFlutterLayer,
+          'captureBackend': captureBackendFlutterLayerVm,
+          'captureImplementation': captureImplementationAppLayerTree,
         };
       }
 
@@ -2091,22 +2113,20 @@ Map<String, Object?> _observationRender(
     }
   }
   if (nodes.isEmpty) return const {};
-  final lens = switch (lensName) {
-    'compact' => SemanticLens.compact,
-    'design' => SemanticLens.design,
-    _ => SemanticLens.standard,
-  };
   try {
     final snapshot = familySnapshotFromNodes(
       nodes,
       snapshotId: (data['snapshot_id'] as num?)?.toInt() ?? 0,
       capturedAt: DateTime.now().toUtc(),
     );
+    final observation = Observation.of(snapshot, const SemanticView());
+    final lens = hostedSemanticLens(lensName);
     return {
-      'render': Observation.of(
-        snapshot,
-        const SemanticView(),
-      ).render(lens: lens),
+      'render': renderHostedSemanticLens(
+        snapshot: snapshot,
+        observation: observation,
+        lens: lens,
+      ),
     };
   } on Object {
     // Enrichment only: the primary contract is the node list itself.

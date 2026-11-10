@@ -10,3 +10,8 @@ workspace:
   - jaspr_web_example
   - showcase/drivers
 
+# Native capture branch: hosted oka_* dev_deps still declare interface ^0.3.0 while the
+# workspace trains on published 0.4.0 (main #161). Drop when oka pub coordinates match.
+dependency_overrides:
+  universal_automation_interface: 0.4.0
+

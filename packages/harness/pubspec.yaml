@@ -26,8 +26,14 @@ dependencies:
   universal_browser_cdp: ^0.5.0
   vm_service: ^15.3.0
 dev_dependencies:
+  crypto: ^3.0.6
+  image: ^4.3.0
+  oka_core: ^0.9.1
   lints: ^6.1.0
+  oka_android: ^0.9.1
+  oka_harness: ^0.9.1
   test: ^1.31.0
+  universal_tooling_runtime: ^0.2.2
   # Hosted 0.3.1 still declares interface ^0.3.0; main already targets ^0.4.0.
   # Pin git until pub.dev ships conformance with the interface 0.4 train floor.
   universal_automation_conformance:

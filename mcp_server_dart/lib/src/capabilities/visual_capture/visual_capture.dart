@@ -18,6 +18,8 @@ export 'package:flutter_mcp_toolkit_core/flutter_mcp_toolkit_core.dart'
         PermissionStatus,
         parsePermissionKind,
         parsePermissionPolicy,
+        captureBackendFlutterLayerVm,
+        captureImplementationAppLayerTree,
         screenshotModeAuto,
         screenshotModeDesktopWindow,
         screenshotModeFlutterLayer;
@@ -594,6 +596,22 @@ final class VisualCaptureBroker {
     PermissionBrokerResult result, {
     required String requestedMode,
   }) {
+    // `flutter_layer` is served by `ext.mcp.toolkit.view_screenshots` on the
+    // connected VM — not the desktop-window / app-bridge permission path.
+    if (requestedMode == screenshotModeFlutterLayer) {
+      return result.copyWith(
+        requestedMode: requestedMode,
+        actualMode: screenshotModeFlutterLayer,
+        truthMode: screenshotModeFlutterLayer,
+        status: PermissionStatus.granted,
+        supportedModes: {
+          screenshotModeFlutterLayer,
+          ...result.supportedModes,
+        },
+        clearFallbackReason: true,
+      );
+    }
+
     if (!result.supportedModes.contains(screenshotModeFlutterLayer)) {
       return result.copyWith(
         requestedMode: requestedMode,

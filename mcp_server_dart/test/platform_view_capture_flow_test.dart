@@ -203,6 +203,100 @@ void main() {
       },
     );
 
+    test('flutter_layer fail-closed when extension returns no images', () async {
+      void logger(
+        LoggingLevel level,
+        String message, {
+        String logger = 'test',
+      }) {}
+
+      final context = ConnectionContext(
+        defaultHost: 'localhost',
+        defaultPort: 8181,
+        logger: logger,
+        discoverPorts: () async => <int>[8181],
+      );
+      context.debugViewScreenshotsPayload = const <String, Object?>{
+        'images': <String>[],
+      };
+      addTearDown(() => context.debugViewScreenshotsPayload = null);
+
+      final executor = DefaultCoreCommandExecutor(
+        connectionContext: context,
+        portScanner: CorePortScanner(logger: logger),
+        imageFileSaver: CoreImageFileSaver(logger: logger),
+        configuration: const CoreRuntimeConfiguration(
+          vmHost: 'localhost',
+          vmPort: 8181,
+          resourcesSupported: true,
+          imagesSupported: true,
+          dumpsSupported: false,
+          dynamicRegistrySupported: false,
+          saveImagesToFiles: false,
+          flutterProjectDir: '/tmp/sample_app',
+          flutterDevice: 'linux',
+        ),
+        desktopWindowScreenshotService: const _FlutterLayerCapableFakeAdapter(),
+      );
+
+      final result = await executor.execute(
+        const GetScreenshotsCommand(mode: ScreenshotMode.flutterLayer),
+      );
+
+      expect(result.ok, isFalse);
+      expect(result.error?.code, CoreErrorCode.getScreenshotsFailed);
+      final data = result.error?.details as Map<String, Object?>?;
+      expect(data?['captureMode'], screenshotModeFlutterLayer);
+      expect(data?['captureImplementation'], captureImplementationAppLayerTree);
+    });
+
+    test('flutter_layer exposes layer-tree provenance when images present', () async {
+      void logger(
+        LoggingLevel level,
+        String message, {
+        String logger = 'test',
+      }) {}
+
+      final context = ConnectionContext(
+        defaultHost: 'localhost',
+        defaultPort: 8181,
+        logger: logger,
+        discoverPorts: () async => <int>[8181],
+      );
+      context.debugViewScreenshotsPayload = const <String, Object?>{
+        'images': <String>['AQID'],
+      };
+      addTearDown(() => context.debugViewScreenshotsPayload = null);
+
+      final executor = DefaultCoreCommandExecutor(
+        connectionContext: context,
+        portScanner: CorePortScanner(logger: logger),
+        imageFileSaver: CoreImageFileSaver(logger: logger),
+        configuration: const CoreRuntimeConfiguration(
+          vmHost: 'localhost',
+          vmPort: 8181,
+          resourcesSupported: true,
+          imagesSupported: true,
+          dumpsSupported: false,
+          dynamicRegistrySupported: false,
+          saveImagesToFiles: false,
+          flutterProjectDir: '/tmp/sample_app',
+          flutterDevice: 'linux',
+        ),
+        desktopWindowScreenshotService: const _FlutterLayerCapableFakeAdapter(),
+      );
+
+      final result = await executor.execute(
+        const GetScreenshotsCommand(mode: ScreenshotMode.flutterLayer),
+      );
+
+      expect(result.ok, isTrue);
+      final data = result.data! as Map<String, Object?>;
+      expect(data['captureMode'], screenshotModeFlutterLayer);
+      expect(data['captureBackend'], captureBackendFlutterLayerVm);
+      expect(data['captureImplementation'], captureImplementationAppLayerTree);
+    });
+
     test('flutter_layer with platform views attaches warnings', () async {
       void logger(
         LoggingLevel level,

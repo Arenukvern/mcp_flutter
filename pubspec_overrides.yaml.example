@@ -1,0 +1,5 @@
+# Local-only overrides (gitignored). CI uses git deps — see tool/ci/UNIVERSAL_AUTOMATION.md
+# Optional path checkout for UA monorepo hacking (not committed in pubspec.lock):
+# dependency_overrides:
+#   universal_automation_interface:
+#     path: universal_automation/pkgs/universal_automation_interface
