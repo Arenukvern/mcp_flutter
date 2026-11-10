@@ -5,6 +5,19 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      execute_publish:
+        description: >-
+          Publish to pub.dev with skip-existing (run from a v* tag ref after a
+          partial failure or to finish the train without re-uploading packages).
+        type: boolean
+        default: false
+      trigger_mcp_registry:
+        description: >-
+          After a successful publish step, run publish_mcp_registry.yml on this ref
+          (use when the tag push run failed after pub.dev upload).
+        type: boolean
+        default: false
 
 permissions:
   actions: write
@@ -31,19 +44,40 @@ jobs:
 
       - uses: dart-lang/setup-dart@v1
 
+      - name: Require v* tag for publish
+        if: >-
+          github.event_name == 'push' ||
+          (github.event_name == 'workflow_dispatch' && inputs.execute_publish)
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REF" != refs/tags/v* ]]; then
+            echo "::error::Publish requires a v* tag ref (got $GITHUB_REF). In workflow_dispatch, select the tag (e.g. v7.1.0)."
+            exit 1
+          fi
+
       - name: Assert release tag matches VERSION
-        if: github.event_name == 'push'
+        if: >-
+          github.event_name == 'push' ||
+          (github.event_name == 'workflow_dispatch' && inputs.execute_publish)
         run: bash tool/release/assert_release_tag.sh "${{ github.ref_name }}"
 
       - name: Release preflight
+        if: >-
+          github.event_name == 'push' ||
+          (github.event_name == 'workflow_dispatch' && inputs.execute_publish)
         run: bash tool/release/publish_pub_packages.sh
 
       - name: Publish packages
-        if: github.event_name == 'push'
+        if: >-
+          github.event_name == 'push' ||
+          (github.event_name == 'workflow_dispatch' && inputs.execute_publish)
         run: bash tool/release/publish_pub_packages.sh --execute --skip-existing
 
       - name: Trigger MCP Registry publication
-        if: github.event_name == 'push'
+        if: >-
+          github.event_name == 'push' ||
+          (github.event_name == 'workflow_dispatch' && inputs.trigger_mcp_registry)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh workflow run publish_mcp_registry.yml --ref "${GITHUB_REF_NAME}"

@@ -18,7 +18,7 @@ write_oka_overrides() {
     echo "# GENERATED: oka consumer test pin $pin (unmerged PR — not a release claim)"
     echo "dependency_overrides:"
     if [[ "$add_interface_override" == 1 ]]; then
-      # Fixture is outside the workspace; mirror root 0.4.0 train for oka path graph.
+      # Fixture oka path graph; mirror root 0.4.0 train when resolving oka dev_deps.
       echo "  universal_automation_interface: 0.4.0"
     fi
     for pkg_dir in "$oka"/packages/*/; do

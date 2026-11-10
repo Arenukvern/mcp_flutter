@@ -102,6 +102,12 @@ On **Release PRs**, [`.github/workflows/release_pr_sync_versions.yml`](https://g
 
 Before automated pub.dev publishing can run, each package must have automated publishing enabled in its pub.dev Admin page for repository `Arenukvern/mcp_flutter`, tag pattern `v{{version}}`, and GitHub environment `pub.dev`.
 
+**Recovering a failed pub.dev publish (same tag):**
+
+1. **Re-run** the failed [Publish pub.dev packages](https://github.com/Arenukvern/mcp_flutter/actions/workflows/pub_publish.yml) workflow on the release tag. The execute step uses `--skip-existing`: packages already at that `VERSION` on pub.dev are logged and skipped; the train continues from the first missing package.
+2. Or **workflow_dispatch** on that tag with **execute_publish** enabled (same skip-existing behavior).
+3. **MCP Registry:** the registry workflow runs only after a successful pub publish step on tag push. If publish failed after some packages uploaded (for example v7.0.2 left `flutter_mcp_harness` unpublished), finish pub.dev first, then either re-run the tag workflow or dispatch [Publish MCP Registry server](https://github.com/Arenukvern/mcp_flutter/actions/workflows/publish_mcp_registry.yml) on the same tag with **trigger_mcp_registry** (dispatch path) or run the registry workflow directly from the tag ref. See [MCP Registry publish runbook](/contributing/mcp_registry_publish_runbook).
+
 ### Pull Requests
 
 Before submitting a pull request, please make sure that:
