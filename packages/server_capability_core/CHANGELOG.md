@@ -4,6 +4,12 @@
 
 ### Changed
 
+## [7.1.0] - 2026-11-10
+
+### Changed
+
+- Align package version and hosted sibling dependency constraints with the Flutter MCP Toolkit 7.1.0 release.
+
 ## [7.0.2] - 2026-11-07
 
 ### Changed
