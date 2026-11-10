@@ -62,8 +62,7 @@ void main() {
       defaultPort: 8181,
       logger: (level, message, {logger = 'test'}) {},
       discoverPorts: () async => <int>[8181],
-      probeFlutterTarget: (endpoint, {required timeout}) async =>
-          true,
+      probeFlutterTarget: (endpoint, {required timeout}) async => true,
     );
 
     final targets = await context.discoverTargets();
@@ -92,9 +91,7 @@ void main() {
       final targets = await context.discoverTargets();
       expect(targets, hasLength(1));
 
-      final machineTarget = targets.firstWhere(
-        (target) => target.port == 8181,
-      );
+      final machineTarget = targets.firstWhere((target) => target.port == 8181);
       expect(machineTarget.targetId, equals('ws://127.0.0.1:8181/abc/ws'));
       expect(
         machineTarget.discoverySource,
@@ -179,8 +176,7 @@ void main() {
       context.connect(),
       throwsA(
         predicate(
-          (e) =>
-              e is! CoreConnectionException && '$e'.contains(':$lowerPort/'),
+          (e) => e is! CoreConnectionException && '$e'.contains(':$lowerPort/'),
           'websocket attempt against port $lowerPort',
         ),
       ),
@@ -401,4 +397,179 @@ void main() {
       reason: 'a stale preference must not pick an app on its own',
     );
   });
+
+  group('callFlutterExtension failure surfacing', () {
+    test('returns the extension response on success', () async {
+      final server = await _startWsFakeVmService(
+        extensionResponse: (method) => <String, Object?>{
+          'nodes': <Object?>[
+            <String, Object?>{'ref': 's_0'},
+          ],
+          'nodeCount': 1,
+        },
+      );
+      addTearDown(() => server.close(force: true));
+
+      final context = await _connectToWsFake(server);
+      final response = await context.callFlutterExtension(
+        'ext.mcp.toolkit.semantic_snapshot',
+      );
+      expect(response.json?['nodeCount'], equals(1));
+    });
+
+    test('throws the app-side root cause instead of a bare null', () async {
+      final server = await _startWsFakeVmService(
+        extensionResponse: (method) => <String, Object?>{
+          'error': <String, Object?>{
+            // The shape a failing app-side extension handler produces:
+            // the exception text travels in the error payload.
+            'code': -32000,
+            'message': jsonEncode({
+              'exception': 'Bad state: kaboom',
+              'method': method,
+            }),
+          },
+        },
+      );
+      addTearDown(() => server.close(force: true));
+
+      final context = await _connectToWsFake(server);
+      await expectLater(
+        context.callFlutterExtension('ext.mcp.toolkit.semantic_snapshot'),
+        throwsA(
+          isA<FlutterExtensionCallException>()
+              .having(
+                (e) => e.method,
+                'method',
+                'ext.mcp.toolkit.semantic_snapshot',
+              )
+              .having((e) => '$e', 'text', contains('kaboom')),
+        ),
+      );
+
+      // The soft path keeps its null contract (target probing, hot reload).
+      expect(
+        await context.callServiceExtension('ext.mcp.toolkit.semantic_snapshot'),
+        isNull,
+      );
+    });
+
+    test('keeps the -32601 code readable for unknown-method probes', () async {
+      final server = await _startWsFakeVmService(
+        extensionResponse: (method) => <String, Object?>{
+          'error': <String, Object?>{
+            'code': -32601,
+            'message': 'Unknown method',
+          },
+        },
+      );
+      addTearDown(() => server.close(force: true));
+
+      final context = await _connectToWsFake(server);
+      Object? caught;
+      try {
+        await context.callFlutterExtension('ext.mcp.toolkit.nope');
+      } on Exception catch (e) {
+        caught = e;
+      }
+      expect(caught, isA<FlutterExtensionCallException>());
+      // The dynamic registry classifies unknown methods off the rendered
+      // text; the RPC code must survive it.
+      expect('$caught', contains('-32601'));
+    });
+  });
+}
+
+/// Minimal VM service websocket facade: enough for [ConnectionContext] to
+/// connect, resolve its Flutter isolate, and call `ext.mcp.toolkit.*`
+/// extensions. [extensionResponse] answers extension methods; returning a
+/// map with an `error` key sends that map as the JSON-RPC error object
+/// instead of a result. Non-extension traffic (DTD handshake, stream
+/// bookkeeping) always succeeds so connect stays out of the test's way.
+Future<HttpServer> _startWsFakeVmService({
+  required Object? Function(String method) extensionResponse,
+}) async {
+  final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+  unawaited(
+    server.forEach((request) async {
+      // Discovery probes plain HTTP before any websocket exists.
+      if (!WebSocketTransformer.isUpgradeRequest(request)) {
+        final result = switch (request.uri.pathSegments.last) {
+          'getVM' => <String, Object?>{
+            'type': 'VM',
+            'pid': 4242,
+            'isolates': [
+              {'type': '@Isolate', 'id': 'isolates/1', 'name': 'main'},
+            ],
+          },
+          'getIsolate' => <String, Object?>{
+            'type': '@Isolate',
+            'id': 'isolates/1',
+            'extensionRPCs': ['ext.flutter.reassemble'],
+          },
+          _ => <String, Object?>{},
+        };
+        request.response
+          ..headers.contentType = ContentType.json
+          ..write(jsonEncode({'jsonrpc': '2.0', 'result': result}));
+        await request.response.close();
+        return;
+      }
+
+      // Sockets die with the forced server close in each test's tearDown.
+      // ignore: close_sinks
+      final socket = await WebSocketTransformer.upgrade(request);
+      socket.listen((raw) {
+        final Object? frame;
+        try {
+          frame = jsonDecode(raw as String);
+        } on FormatException {
+          return;
+        }
+        if (frame is! Map<String, dynamic>) return;
+        final method = frame['method'] as String? ?? '';
+        final id = frame['id'];
+        final payload = switch (method) {
+          'getVM' => <String, Object?>{
+            'type': 'VM',
+            'pid': 4242,
+            'isolates': [
+              {'type': '@Isolate', 'id': 'isolates/1', 'name': 'main'},
+            ],
+          },
+          'getIsolate' => <String, Object?>{
+            'type': 'Isolate',
+            'id': 'isolates/1',
+            'extensionRPCs': ['ext.flutter.reassemble'],
+          },
+          _ when !method.startsWith('ext.') => <String, Object?>{
+            'type': 'Success',
+          },
+          _ => extensionResponse(method) ?? <String, Object?>{},
+        };
+        final error = payload is Map<String, Object?>
+            ? payload.remove('error')
+            : null;
+        socket.add(
+          jsonEncode({
+            'jsonrpc': '2.0',
+            'id': id,
+            if (error != null) 'error': error else 'result': payload,
+          }),
+        );
+      });
+    }),
+  );
+  return server;
+}
+
+Future<ConnectionContext> _connectToWsFake(HttpServer server) async {
+  final context = ConnectionContext(
+    defaultHost: '127.0.0.1',
+    defaultPort: 8181,
+    logger: (level, message, {logger = 'test'}) {},
+    discoverPorts: () async => <int>[server.port],
+  );
+  await context.connect();
+  return context;
 }
