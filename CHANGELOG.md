@@ -3,6 +3,23 @@
 <!-- markdownlint-disable MD052 -->
 <!-- Keep a Changelog version headings use [3.0.1] brackets; MD052 treats them as reference links. -->
 
+## [7.1.1](https://github.com/Arenukvern/mcp_flutter/compare/v7.1.0...v7.1.1) (2026-11-11)
+
+
+### Bug Fixes
+
+* **ci:** address CodeRabbit review (registry tooling split, bash 3.2) ([c561b8c](https://github.com/Arenukvern/mcp_flutter/commit/c561b8c52d018737421c3c299b8e76474db2c13d))
+* **ci:** bash 3.2 release scripts and Flutter 3.47.5 registry Docker build ([b3f9798](https://github.com/Arenukvern/mcp_flutter/commit/b3f97980c69d71768705e54b544e478119a935b6))
+* **ci:** bash 3.2 release verify and Flutter 3.47.5 MCP registry Docker ([fd5fd39](https://github.com/Arenukvern/mcp_flutter/commit/fd5fd3995338fb1d92ced8f07f0b550c90a159b6))
+* **ci:** git safe.directory for Flutter SDK in registry Docker build ([88c4479](https://github.com/Arenukvern/mcp_flutter/commit/88c4479e5efbb916dc4b7e6c70a7fbeab0102e01))
+* **ci:** harden MCP Registry smoke pub.dev probe and contracts ([ec5eb35](https://github.com/Arenukvern/mcp_flutter/commit/ec5eb3576fa189f09fd0a310971a8187dcb369c2))
+* **ci:** keep Dockerfile.registry from main on MCP registry overlay ([a63da3c](https://github.com/Arenukvern/mcp_flutter/commit/a63da3c380eaa2e4b02190d0fd1520f1c6a243c9))
+* **ci:** MCP Registry smoke build sibling fallback before pub.dev ([28ef07a](https://github.com/Arenukvern/mcp_flutter/commit/28ef07a8d9733c259bbbd9b1ffed4fca071dacf0))
+* **ci:** MCP Registry smoke sibling fallback before pub.dev publish ([d1cb0b6](https://github.com/Arenukvern/mcp_flutter/commit/d1cb0b6c4b66c955005d73045a699d118044a5d9))
+* **ci:** resolve MCP registry version from tag tree, not main VERSION ([25d20bc](https://github.com/Arenukvern/mcp_flutter/commit/25d20bcfa56fc7dbc2a62022fa44a2865688e629))
+* **server:** surface extension-call root causes instead of a bare null ([2e11f77](https://github.com/Arenukvern/mcp_flutter/commit/2e11f77f098b44ce6e324b0cc8ab1ea14b9389d1))
+* **server:** surface extension-call root causes instead of a bare null ([1678094](https://github.com/Arenukvern/mcp_flutter/commit/1678094521192ade5ed40eaa8f121c485df47437))
+
 ## [7.1.0](https://github.com/Arenukvern/mcp_flutter/compare/v7.0.2...v7.1.0) (2026-11-10)
 
 
