@@ -3,12 +3,20 @@
 # Tries hosted pub.dev resolution first; when a pinned sibling train version is
 # not yet published, assembles a temp context with path overrides (never
 # written into the git checkout).
+#
+# Runtime (ubuntu-latest smoke / local):
+#   - python3 + PyYAML (package python3-yaml on Debian/Ubuntu images)
+#   - curl when MCP_REGISTRY_PUB_API_BASE is an https URL (default pub.dev)
+#
+# Contract tests set MCP_REGISTRY_PUB_API_BASE to
+# tool/contracts/fixtures/mcp_registry_pub_api (offline JSON per package).
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 SERVER_PUBSPEC="${MCP_REGISTRY_SERVER_PUBSPEC:-$ROOT_DIR/mcp_server_dart/pubspec.yaml}"
 OUTPUT_DIR="${MCP_REGISTRY_SMOKE_OUTPUT:-${RUNNER_TEMP:-/tmp}/mcp_registry_smoke_ctx}"
 GITHUB_OUTPUT="${GITHUB_OUTPUT:-}"
+PUB_API_BASE="${MCP_REGISTRY_PUB_API_BASE:-https://pub.dev/api/packages}"
 
 fail() {
   echo "prepare_mcp_registry_smoke_build: $*" >&2
@@ -19,7 +27,14 @@ log_mode() {
   echo "prepare_mcp_registry_smoke_build: resolution_mode=$1"
 }
 
+normalize_pub_api_base() {
+  case "$PUB_API_BASE" in
+    file://*) PUB_API_BASE="${PUB_API_BASE#file://}" ;;
+  esac
+}
+
 [[ -f "$SERVER_PUBSPEC" ]] || fail "missing server pubspec: $SERVER_PUBSPEC"
+normalize_pub_api_base
 
 read_sibling_requirements() {
   export SERVER_PUBSPEC
@@ -30,7 +45,10 @@ import sys
 try:
     import yaml
 except ImportError:
-    sys.exit("prepare_mcp_registry_smoke_build: python3 PyYAML required")
+    sys.exit(
+        "prepare_mcp_registry_smoke_build: python3 PyYAML required "
+        "(install python3-yaml on ubuntu-latest)"
+    )
 
 path = os.environ["SERVER_PUBSPEC"]
 with open(path, encoding="utf-8") as f:
@@ -51,12 +69,68 @@ for name in names:
 PY
 }
 
+fetch_package_index_json() {
+  local package="$1"
+  local dest="$2"
+  if [[ "$PUB_API_BASE" =~ ^https?:// ]]; then
+    local code
+    code="$(curl -sS -o "$dest" -w '%{http_code}' "${PUB_API_BASE%/}/${package}" || true)"
+    if [[ "$code" == "404" ]]; then
+      fail "pub.dev package not found: ${package} (HTTP 404)"
+    fi
+    if [[ "$code" != "200" ]]; then
+      fail "pub.dev API error for ${package}: HTTP ${code}"
+    fi
+    return 0
+  fi
+  local fixture="${PUB_API_BASE%/}/${package}.json"
+  [[ -f "$fixture" ]] || fail "pub API fixture missing for ${package}: ${fixture}"
+  cp "$fixture" "$dest"
+}
+
 pub_dev_has_version() {
   local package="$1"
   local version="$2"
-  curl -fsS "https://pub.dev/api/packages/${package}" 2>/dev/null |
-    python3 -c "import json,sys; j=json.load(sys.stdin); sys.exit(0 if any(v['version']=='${version}' for v in j.get('versions',[])) else 1)" \
-    2>/dev/null
+  local body_file
+  body_file="$(mktemp)"
+  fetch_package_index_json "$package" "$body_file"
+  local py_rc=0
+  BODY_FILE="$body_file" PUB_PKG="$package" PUB_VER="$version" python3 <<'PY' || py_rc=$?
+import json, os, sys
+
+try:
+    with open(os.environ["BODY_FILE"], encoding="utf-8") as f:
+        j = json.load(f)
+except json.JSONDecodeError as exc:
+    print(
+        "prepare_mcp_registry_smoke_build: invalid JSON for "
+        + os.environ["PUB_PKG"]
+        + ": "
+        + str(exc),
+        file=sys.stderr,
+    )
+    sys.exit(3)
+vers = j.get("versions") or []
+if not isinstance(vers, list):
+    print(
+        "prepare_mcp_registry_smoke_build: invalid versions list for "
+        + os.environ["PUB_PKG"],
+        file=sys.stderr,
+    )
+    sys.exit(3)
+has = any(
+    isinstance(v, dict) and v.get("version") == os.environ["PUB_VER"] for v in vers
+)
+sys.exit(0 if has else 1)
+PY
+  rm -f "$body_file"
+  if [[ "$py_rc" -eq 0 ]]; then
+    return 0
+  fi
+  if [[ "$py_rc" -eq 1 ]]; then
+    return 1
+  fi
+  fail "pub index parse/query failed for ${package} (python exit ${py_rc})"
 }
 
 strip_workspace_resolution() {
@@ -81,9 +155,9 @@ needs_fallback=0
 while IFS='|' read -r pkg ver; do
   [[ -z "$pkg" ]] && continue
   if pub_dev_has_version "$pkg" "$ver"; then
-    echo "prepare_mcp_registry_smoke_build: pub.dev has ${pkg} ${ver}"
+    echo "prepare_mcp_registry_smoke_build: pub index has ${pkg} ${ver}"
   else
-    echo "prepare_mcp_registry_smoke_build: pub.dev missing ${pkg} ${ver} (pre-release train)"
+    echo "prepare_mcp_registry_smoke_build: pub index missing ${pkg} ${ver} (pre-release train)"
     needs_fallback=1
   fi
 done < <(read_sibling_requirements)
@@ -126,9 +200,6 @@ dependency_overrides:
   flutter_mcp_toolkit_capability_core:
     path: ../packages/server_capability_core
 YAML
-
-[[ -f "$ROOT_DIR/pubspec_overrides.yaml" ]] && \
-  fail "refusing to run while repo root pubspec_overrides.yaml exists (use a clean checkout)"
 
 if [[ -n "$GITHUB_OUTPUT" ]]; then
   {

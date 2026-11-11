@@ -70,6 +70,9 @@ jobs:
       - name: Verify MCP Registry contracts
         run: bash tool/contracts/check_mcp_registry.sh
 
+      - name: Assert hosted-only resolution (no pubspec_overrides)
+        run: bash tool/release/assert_mcp_registry_no_pubspec_overrides.sh
+
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:

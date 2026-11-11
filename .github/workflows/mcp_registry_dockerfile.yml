@@ -8,7 +8,9 @@ on:
       - tool/contracts/flutter_sdk_pin.env
       - tool/contracts/check_mcp_registry.sh
       - tool/ci/prepare_mcp_registry_smoke_build.sh
+      - tool/release/assert_mcp_registry_no_pubspec_overrides.sh
       - tool/contracts/test_mcp_registry_smoke_resolution.sh
+      - tool/contracts/fixtures/mcp_registry_pub_api/**
       - .github/workflows/publish_mcp_registry.yml
       - .github/workflows/mcp_registry_dockerfile.yml
   push:
@@ -20,7 +22,9 @@ on:
       - tool/contracts/flutter_sdk_pin.env
       - tool/contracts/check_mcp_registry.sh
       - tool/ci/prepare_mcp_registry_smoke_build.sh
+      - tool/release/assert_mcp_registry_no_pubspec_overrides.sh
       - tool/contracts/test_mcp_registry_smoke_resolution.sh
+      - tool/contracts/fixtures/mcp_registry_pub_api/**
       - .github/workflows/publish_mcp_registry.yml
       - .github/workflows/mcp_registry_dockerfile.yml
 

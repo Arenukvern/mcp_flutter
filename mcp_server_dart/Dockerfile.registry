@@ -39,7 +39,8 @@ ENV PATH="/opt/flutter/bin:/opt/flutter/bin/cache/dart-sdk/bin:${PATH}"
 WORKDIR /app
 
 COPY mcp_server_dart/ mcp_server_dart/
-# Optional sibling copies: present in full-repo or smoke fallback contexts only.
+# Sibling packages are always present in the repo-root build context and in the
+# smoke fallback temp context; they are inert unless pubspec_overrides.yaml exists.
 COPY packages/core/ packages/core/
 COPY packages/server_capability_kernel/ packages/server_capability_kernel/
 COPY packages/server_capability_core/ packages/server_capability_core/

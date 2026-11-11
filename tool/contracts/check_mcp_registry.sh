@@ -170,6 +170,8 @@ RUBY
 
 grep -Fq 'prepare_mcp_registry_smoke_build.sh' "$RELEASE_WORKFLOW" &&
   fail "publish workflow must not invoke prepare_mcp_registry_smoke_build.sh"
+grep -Fq 'assert_mcp_registry_no_pubspec_overrides.sh' "$RELEASE_WORKFLOW" ||
+  fail "publish workflow must assert no pubspec_overrides before OCI build"
 
 grep -Fq 'release_tag:' "$RELEASE_WORKFLOW" ||
   fail "publish workflow must declare workflow_dispatch release_tag input"
