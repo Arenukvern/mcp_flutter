@@ -21,6 +21,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   instead of reporting a silent ok. Mirrors the live-proven fix in
   `universal_driver_flutter` 0.1.1.
 
+## [7.1.1] - 2026-11-11
+
+### Changed
+
+- Align package version and hosted sibling dependency constraints with the Flutter MCP Toolkit 7.1.1 release.
+
 ## [7.1.0] - 2026-11-10
 
 ### Changed
