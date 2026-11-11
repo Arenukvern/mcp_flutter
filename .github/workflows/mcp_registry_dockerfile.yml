@@ -7,6 +7,10 @@ on:
       - mcp_server_dart/pubspec.yaml
       - tool/contracts/flutter_sdk_pin.env
       - tool/contracts/check_mcp_registry.sh
+      - tool/ci/prepare_mcp_registry_smoke_build.sh
+      - tool/release/assert_mcp_registry_no_pubspec_overrides.sh
+      - tool/contracts/test_mcp_registry_smoke_resolution.sh
+      - tool/contracts/fixtures/mcp_registry_pub_api/**
       - .github/workflows/publish_mcp_registry.yml
       - .github/workflows/mcp_registry_dockerfile.yml
   push:
@@ -17,6 +21,10 @@ on:
       - mcp_server_dart/pubspec.yaml
       - tool/contracts/flutter_sdk_pin.env
       - tool/contracts/check_mcp_registry.sh
+      - tool/ci/prepare_mcp_registry_smoke_build.sh
+      - tool/release/assert_mcp_registry_no_pubspec_overrides.sh
+      - tool/contracts/test_mcp_registry_smoke_resolution.sh
+      - tool/contracts/fixtures/mcp_registry_pub_api/**
       - .github/workflows/publish_mcp_registry.yml
       - .github/workflows/mcp_registry_dockerfile.yml
 
@@ -38,10 +46,14 @@ jobs:
       - name: Verify MCP Registry contracts
         run: bash tool/contracts/check_mcp_registry.sh
 
+      - name: Prepare smoke build context (hosted vs sibling fallback)
+        id: smoke_ctx
+        run: bash tool/ci/prepare_mcp_registry_smoke_build.sh
+
       - name: Build OCI image (smoke)
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: ${{ steps.smoke_ctx.outputs.docker_context }}
           file: mcp_server_dart/Dockerfile.registry
           push: false
           platforms: linux/amd64

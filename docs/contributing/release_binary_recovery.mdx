@@ -7,6 +7,7 @@ Use when a tagged release exists but [`release.yml`](https://github.com/Arenukve
 - The git tag (for example `v7.0.2`) and GitHub Release already exist from release-please.
 - The release must have **no** expected tarballs or `checksums.txt` yet (all three names absent). A **partially** populated release (for example only `linux-x64` uploaded) still fails the conflict guard and does not upload missing assets — delete the existing expected assets in the GitHub Release UI, then re-dispatch.
 - Recovery does **not** create, move, or delete tags and does **not** republish pub.dev or MCP Registry packages.
+- **MCP Registry smoke CI** on release-please PRs is unrelated to tarball recovery: smoke builds use ephemeral sibling path overrides when pub.dev does not yet expose the bumped train; production registry publish remains hosted-only after `pub_publish`.
 
 ## How the workflow is wired
 
