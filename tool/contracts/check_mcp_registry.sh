@@ -8,6 +8,7 @@ DOCKERFILE="$ROOT_DIR/mcp_server_dart/Dockerfile.registry"
 FLUTTER_PIN="$ROOT_DIR/tool/contracts/flutter_sdk_pin.env"
 SERVER_PUBSPEC="$ROOT_DIR/mcp_server_dart/pubspec.yaml"
 RELEASE_WORKFLOW="$ROOT_DIR/.github/workflows/publish_mcp_registry.yml"
+SMOKE_WORKFLOW="$ROOT_DIR/.github/workflows/mcp_registry_dockerfile.yml"
 PUB_WORKFLOW="$ROOT_DIR/.github/workflows/pub_publish.yml"
 
 fail() {
@@ -20,6 +21,7 @@ fail() {
 [[ -f "$FLUTTER_PIN" ]] || fail "missing tool/contracts/flutter_sdk_pin.env"
 [[ -f "$SERVER_PUBSPEC" ]] || fail "missing mcp_server_dart/pubspec.yaml"
 [[ -f "$RELEASE_WORKFLOW" ]] || fail "missing publish_mcp_registry.yml"
+[[ -f "$SMOKE_WORKFLOW" ]] || fail "missing mcp_registry_dockerfile.yml"
 [[ -f "$PUB_WORKFLOW" ]] || fail "missing pub_publish.yml"
 
 export FLUTTER_PIN
@@ -152,9 +154,22 @@ steps = workflow.dig('jobs', 'publish', 'steps') || []
 build_step = steps.find { |s| s['uses'].to_s.start_with?('docker/build-push-action@') }
 abort 'publish workflow has no docker/build-push-action step' unless build_step
 with = build_stage_with = build_step['with'] || {}
-abort 'publish workflow build step must set with.context exactly to "." (workspace siblings are unpublished)' unless with['context'] == '.'
+abort 'publish workflow build step must set with.context exactly to "." (hosted resolution; no smoke overrides)' unless with['context'] == '.'
 abort 'publish workflow build step must set with.file exactly to mcp_server_dart/Dockerfile.registry' unless with['file'] == 'mcp_server_dart/Dockerfile.registry'
+
+smoke = YAML.safe_load(File.read(File.join(ENV.fetch('ROOT_DIR'), '.github/workflows/mcp_registry_dockerfile.yml')), aliases: true)
+smoke_steps = smoke.dig('jobs', 'build-smoke', 'steps') || []
+abort 'smoke workflow must call prepare_mcp_registry_smoke_build.sh' unless smoke_steps.any? { |s|
+  s['run'].to_s.include?('prepare_mcp_registry_smoke_build.sh')
+}
+smoke_build = smoke_steps.find { |s| s['uses'].to_s.start_with?('docker/build-push-action@') }
+abort 'smoke workflow has no docker/build-push-action step' unless smoke_build
+smoke_with = smoke_build['with'] || {}
+abort 'smoke workflow must use dynamic docker context outputs' unless smoke_with['context'].to_s.include?('smoke_ctx.outputs.docker_context')
 RUBY
+
+grep -Fq 'prepare_mcp_registry_smoke_build.sh' "$RELEASE_WORKFLOW" &&
+  fail "publish workflow must not invoke prepare_mcp_registry_smoke_build.sh"
 
 grep -Fq 'release_tag:' "$RELEASE_WORKFLOW" ||
   fail "publish workflow must declare workflow_dispatch release_tag input"

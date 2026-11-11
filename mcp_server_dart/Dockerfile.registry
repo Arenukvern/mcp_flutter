@@ -3,12 +3,15 @@
 # Build from the repository root:
 # docker build -f mcp_server_dart/Dockerfile.registry -t flutter-mcp-toolkit:registry .
 #
-# The build is STANDALONE: since 6.0.0 every server dependency lives on
-# pub.dev (flutter_mcp_toolkit core/capability floors ^6.0.0, intentcall_*),
-# so the image resolves hosted and drops `resolution: workspace` — the
-# monorepo workspace would drag in Flutter-app members (harness, showcase)
-# whose universal_automation_interface floor conflicts with the SDK meta
-# pin of older Flutter images.
+# The build is STANDALONE: production resolves hosted pub.dev siblings and
+# drops `resolution: workspace`. The monorepo workspace would drag in Flutter-app
+# members (harness, showcase) whose universal_automation_interface floor
+# conflicts with the SDK meta pin of older Flutter images.
+#
+# PR smoke CI (`mcp_registry_dockerfile.yml`) may inject sibling packages plus an
+# ephemeral `mcp_server_dart/pubspec_overrides.yaml` in a temp build context when
+# a release-please PR bumps train versions before pub.dev publish. Production
+# publish (`publish_mcp_registry.yml`) never supplies overrides — only hosted.
 #
 # ghcr.io/cirruslabs/flutter stopped updating after Flutter 3.44.0 (Dart 3.12.0).
 # CI trains on Flutter 3.47.5 (Dart 3.13.4); the build stage installs that
@@ -36,12 +39,21 @@ ENV PATH="/opt/flutter/bin:/opt/flutter/bin/cache/dart-sdk/bin:${PATH}"
 WORKDIR /app
 
 COPY mcp_server_dart/ mcp_server_dart/
+# Optional sibling copies: present in full-repo or smoke fallback contexts only.
+COPY packages/core/ packages/core/
+COPY packages/server_capability_kernel/ packages/server_capability_kernel/
+COPY packages/server_capability_core/ packages/server_capability_core/
 
-# Standalone resolution: drop the workspace marker, then resolve hosted
-# (no host lockfile — SDK-bundled pins differ per platform, so
-# --enforce-lockfile fails on amd64 CI runners).
+# Standalone resolution: drop the workspace marker, then resolve hosted unless
+# smoke CI attached pubspec_overrides.yaml (no host lockfile — SDK-bundled pins
+# differ per platform, so --enforce-lockfile fails on amd64 CI runners).
 RUN cd mcp_server_dart && \
     sed -i '/^resolution: workspace/d' pubspec.yaml && \
+    if [ -f pubspec_overrides.yaml ]; then \
+      echo "mcp_registry_docker: resolution=workspace_fallback (local sibling path overrides)"; \
+    else \
+      echo "mcp_registry_docker: resolution=hosted (pub.dev)"; \
+    fi && \
     flutter pub get
 
 RUN cd mcp_server_dart && dart compile exe bin/flutter_mcp_toolkit_server.dart -o /app/mcp_server

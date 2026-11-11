@@ -37,6 +37,7 @@ check-contracts:
 	bash tool/contracts/check_intentcall_jaspr_three_gate.sh && \
 	bash tool/contracts/test_mcp_registry_release_version.sh && \
 	bash tool/contracts/test_mcp_registry_overlay_boundaries.sh && \
+	bash tool/contracts/test_mcp_registry_smoke_resolution.sh && \
 	bash tool/contracts/check_mcp_registry.sh && \
 	bash tool/contracts/check_macos_release_shell_compat.sh && \
 	bash tool/contracts/test_verify_release_tarball_architecture.sh && \

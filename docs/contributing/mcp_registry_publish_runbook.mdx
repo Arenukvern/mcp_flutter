@@ -59,8 +59,10 @@ The `check_mcp_registry.sh` contract asserts:
   and never runs `--enforce-lockfile` (SDK-bundled pins differ per host platform).
 - PR/push CI (`.github/workflows/mcp_registry_dockerfile.yml`) builds
   `Dockerfile.registry` for `linux/amd64` without pushing when registry paths change.
-- The workflow builds with `context: .` (workspace siblings are unpublished)
-  and uses GitHub OIDC for registry auth.
+- The smoke workflow resolves siblings from **pub.dev** when the pinned train is
+  already published; otherwise it builds from a **temporary** context with path
+  overrides (release-please PRs before `pub_publish`). Production publish still
+  uses `context: .` with **hosted-only** resolution (after pub.dev).
 - pub.dev publication still triggers the dependent registry publication.
 
 ## Manual validation of server.json against the live registry
