@@ -1,3 +1,7 @@
+# 7.1.1
+
+- Align package version and hosted sibling dependency constraints with the Flutter MCP Toolkit 7.1.1 release.
+
 # 7.1.0
 
 - Align package version and hosted sibling dependency constraints with the Flutter MCP Toolkit 7.1.0 release.
