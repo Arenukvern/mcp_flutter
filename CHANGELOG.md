@@ -3,6 +3,14 @@
 <!-- markdownlint-disable MD052 -->
 <!-- Keep a Changelog version headings use [3.0.1] brackets; MD052 treats them as reference links. -->
 
+## [7.1.2](https://github.com/Arenukvern/mcp_flutter/compare/v7.1.1...v7.1.2) (2026-11-13)
+
+
+### Bug Fixes
+
+* **release:** registry overlay guard matches FROM lines only ([4a43c44](https://github.com/Arenukvern/mcp_flutter/commit/4a43c44d2e0ebf8fd18cbe1d596b5c2b7ac6f0cc))
+* **release:** registry overlay guard matches FROM lines only ([f2dfd19](https://github.com/Arenukvern/mcp_flutter/commit/f2dfd194d73732993c96c2aae2cf94ba25c39b73))
+
 ## [7.1.1](https://github.com/Arenukvern/mcp_flutter/compare/v7.1.0...v7.1.1) (2026-11-11)
 
 
