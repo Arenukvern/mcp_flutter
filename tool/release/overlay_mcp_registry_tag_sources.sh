@@ -37,7 +37,10 @@ fi
 
 dockerfile="$dest_server/Dockerfile.registry"
 [[ -f "$dockerfile" ]] || fail "main checkout missing $dockerfile"
-if grep -q 'ghcr.io/cirruslabs/flutter' "$dockerfile"; then
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=dockerfile_registry_from_guard.sh
+source "$SCRIPT_DIR/dockerfile_registry_from_guard.sh"
+if dockerfile_registry_has_forbidden_cirruslabs_from "$dockerfile"; then
   fail "Dockerfile.registry must come from main tooling, not the tag tree"
 fi
 
