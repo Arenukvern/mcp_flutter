@@ -14,7 +14,7 @@ environment:
   sdk: '>=3.13.0 <4.0.0'
 resolution: workspace
 dependencies:
-  flutter_mcp_toolkit_core: ^7.1.1
+  flutter_mcp_toolkit_core: ^7.1.2
   intentcall_core: ^1.0.0
   meta: ^1.18.0
 dev_dependencies:
