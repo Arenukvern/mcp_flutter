@@ -49,6 +49,7 @@ jobs:
           persist-credentials: false
 
       # Tag supplies server sources only; main keeps Dockerfile.registry + Flutter pin + contracts.
+      # (overlay guard matches FROM lines only — not comment mentions of cirruslabs/flutter.)
       - name: Overlay tagged server sources onto main tooling
         env:
           TOOLING_ROOT: ${{ github.workspace }}

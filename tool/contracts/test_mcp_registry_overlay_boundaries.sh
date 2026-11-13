@@ -4,7 +4,11 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 OVERLAY="$ROOT_DIR/tool/release/overlay_mcp_registry_tag_sources.sh"
+GUARD="$ROOT_DIR/tool/release/dockerfile_registry_from_guard.sh"
 WF="$ROOT_DIR/.github/workflows/publish_mcp_registry.yml"
+
+# shellcheck source=/dev/null
+source "$GUARD"
 
 fail() { echo "test_mcp_registry_overlay_boundaries: $*" >&2; exit 1; }
 ok() { echo "test_mcp_registry_overlay_boundaries: $*"; }
@@ -34,7 +38,8 @@ TOOLING_ROOT="$main" RELEASE_SRC="$tag" bash "$OVERLAY"
 effective="$main/mcp_server_dart/Dockerfile.registry"
 grep -Fq 'storage.googleapis.com/flutter_infra_release' "$effective" || \
   fail "effective Dockerfile must remain main's tooling after overlay"
-grep -Fq 'cirruslabs/flutter' "$effective" && fail "tag Dockerfile must not replace main Dockerfile.registry"
+dockerfile_registry_has_forbidden_cirruslabs_from "$effective" &&
+  fail "tag Dockerfile must not replace main Dockerfile.registry (FROM cirruslabs)"
 
 grep -Fq 'overlay_mcp_registry_tag_sources.sh' "$WF" || \
   fail "publish workflow must use overlay_mcp_registry_tag_sources.sh"
