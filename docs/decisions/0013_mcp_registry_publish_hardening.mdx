@@ -1,0 +1,76 @@
+# ADR 0013 — MCP Registry publish pipeline hardening
+
+- **Status:** Accepted
+- **Date:** 2026-08-23
+- **Deciders:** flutter-mcp-toolkit maintainers
+
+## Context
+
+The `Publish MCP Registry server` workflow (`.github/workflows/publish_mcp_registry.yml`)
+failed four consecutive times before its first successful run. Each failure had a
+distinct root cause, and none would have been caught by the existing contract gates:
+
+| Run | Failing step | Root cause |
+|-----|--------------|------------|
+| [#1](https://github.com/Arenukvern/mcp_flutter/actions/runs/32583065939/job/97055220028) | Build and publish OCI image | `docker/build-push-action` resolves a relative `file:` input against the workspace root, not the build context, so `file: Dockerfile.registry` pointed at a nonexistent path |
+| [#2](https://github.com/Arenukvern/mcp_flutter/actions/runs/32595712455/job/97086182837) | Verify MCP Registry contracts | The contract asserted the literal buggy string `file: Dockerfile.registry`, encoding the bug instead of catching it |
+| [#3](https://github.com/Arenukvern/mcp_flutter/actions/runs/32644803739/job/97207320133) | Build and publish OCI image | `flutter pub get --enforce-lockfile` failed on the amd64 CI runner: Flutter SDK-bundled package pins (`matcher`, `meta`, `test`, `vector_math`) differ per host platform, and the committed lockfile was generated on arm64 |
+| [#4](https://github.com/Arenukvern/mcp_flutter/actions/runs/32655982663/job/97234695029) | Publish server metadata | The MCP Registry rejects OCI packages carrying `registryBaseUrl`; the canonical reference must live solely in `identifier` |
+
+Two deeper structural problems sat underneath these:
+
+1. **Unpublished workspace siblings.** `mcp_server_dart` depends on `packages/*`
+   and `mcp_toolkit` via the pub workspace. Those are not on pub.dev, so an image
+   built from a bare `mcp_server_dart/` context can never resolve dependencies.
+2. **Flutter SDK requirement in a Dart-only image.** `intentcall_platform` (a
+   transitive dependency of the server CLI) declares `sdk: flutter`, which the
+   pure `dart:SDK` base image cannot resolve.
+
+## Decision
+
+1. **Build from the monorepo context with a pinned Flutter SDK image.**
+   `Dockerfile.registry` uses `ghcr.io/cirruslabs/flutter:<version>` as its build
+   stage and copies only the sources needed for compilation (`pubspec.yaml`,
+   `mcp_toolkit/`, `packages/`, `mcp_server_dart/{bin,lib,pubspec.yaml}`). The
+   runtime stage stays `debian:bookworm-slim`.
+
+2. **Do not enforce the lockfile inside Docker.** SDK-bundled package pins differ
+   between arm64 and amd64 hosts of the same Flutter version, so any
+   host-generated lockfile breaks one platform or the other under
+   `--enforce-lockfile`. Reproducibility is anchored by the pinned base-image tag
+   (digest-pinnable for stricter supply-chain needs), not by the lockfile.
+
+3. **Canonical OCI identifier only.** `server.json` carries no `registryBaseUrl`;
+   the full `ghcr.io/arenukvern/flutter-mcp-toolkit:<version>` reference lives in
+   `identifier`. `tool/release/sync_version.sh` rewrites both `version` and
+   `identifier` and never reintroduces removed fields.
+
+4. **Gate all of this in `check_mcp_registry.sh`.** The contract now asserts:
+   - no `registryBaseUrl` on OCI packages,
+   - workflow builds with `context: .` and the explicit
+     `file: mcp_server_dart/Dockerfile.registry`,
+   - the Dockerfile's build stage is a pinned `cirruslabs/flutter` image,
+   - no `RUN ... --enforce-lockfile` in the Dockerfile.
+
+5. **Steward action `fmt.check.mcp-registry`** wraps the gate so agents validate
+   registry wiring through `steward action run fmt.check.mcp-registry` before
+   touching release files.
+
+## Consequences
+
+- The publish pipeline is validated locally end-to-end except GHCR push and OIDC
+  login, which require CI.
+- Cross-platform image builds work; the trade-off is that hosted package
+  versions inside the image float within `pubspec.yaml` constraints rather than
+  being lock-pinned. Accepted because the compiled server binary does not link
+  the SDK-varying test/matcher packages, and the base image pin bounds the rest.
+- Future registry schema changes may invalidate `server.json` again; the
+  `mcp-publisher validate` step in the workflow catches that before publish, and
+  the contract keeps local parity for structural checks.
+
+## References
+
+- PRs #125, #127, #129, #131 (fix train)
+- [MCP Registry docs](https://github.com/modelcontextprotocol/registry)
+- Local validation loop: `make check-contracts`,
+  `steward action run fmt.check.mcp-registry`

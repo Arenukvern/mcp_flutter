@@ -1,0 +1,145 @@
+# ADR 0014 — External dev sessions: runner delegation, honest reload reporting, and the Dart dev session contract
+
+- **Status:** Accepted
+- **Date:** 2026-09-08
+- **Verification basis:** scripted-fake unit tests + live end-to-end smoke
+  against an `oka dev` session (see
+  [dev-session delegation guide](/guides/dev-session-delegation-roadmap) for
+  the transcript-level evidence).
+
+## Context
+
+`hot_reload_flutter` and `hot_restart_flutter` were **silently unreliable
+for late-attached connections**. The flutter tool (`flutter run` /
+`flutter attach`) registers custom VM services (`s<N>.reloadSources`,
+`hotRestart`) **once, at session start** — these are the only
+compile-capable reload channels. The toolkit discovered them by listening
+for `ServiceRegistered` events **per command, with a 1s timeout**, and the
+VM service does **not replay** already-registered services on
+`streamListen(Service)`.
+
+Consequences:
+
+- Any connection made **after** the flutter tool registered its services
+  (i.e. every late attach) silently fell back to raw
+  `vmService.reloadSources` → `ReloadReport {success: true}` with **zero
+  sources loaded** — a no-op reported as success. An agent reading the
+  envelope could not distinguish "reloaded" from "reloaded nothing".
+- Integration attempts with external dev-session runners (verified against
+  [oka](https://github.com/Arenukvern/oka), a no-Gradle Flutter build system
+  with an owning `oka dev` session) hit the same failure — and the first fix
+  attempt inlined a vendor-specific adapter (`oka_dev_session.dart`) into
+  the toolkit, coupling the toolkit to one runner's private file layout.
+  Its maintainers had never heard of that runner; the coupling was wrong in
+  both directions.
+- A second constraint makes "just spawn our own `flutter attach`" wrong: an
+  app has **one owning attach session** — a second attach reinstalls the
+  app and kills the first session. Compilation is the owning runner's job;
+  duplicating it means fighting the owner.
+
+## Decision
+
+Three changes, ordered by the dependency rule that follows.
+
+### 1. Honest reload reporting
+
+Reload/restart results carry a `changed` flag. The VM-service fallback path
+(the case where no compile-capable session was discovered) reports
+`{success: true, changed: false, reason: ...}` — the envelope's `report`
+field stays backward-compatible, so existing clients see the same shape;
+new clients read `changed`. The raw no-compile `reloadSources` call is no
+longer fired at all in the delegated path.
+
+### 2. Connection-lifetime service subscription
+
+The `Service` stream is subscribed **once per connection** (discovered
+method names cached), not per command. Early-connect sessions now always
+find the flutter tool's services; late-attach sessions still cannot (the VM
+never replays registrations) — which is why decision 3 exists.
+
+### 3. The Dart dev session contract (spec v2) — invert by protocol
+
+The toolkit defines a **published, versioned, tool-neutral contract** for
+an externally owned dev session — the same inversion pattern as LSP/DAP:
+the editor does not depend on language servers, both implement the spec.
+
+**Discovery file** `<project>/.flutter_mcp/runner-session.json`
+(default; sibling of the toolkit's `state.json`; overridable via
+`--runner-session-file`). Written by the **runner** at session start,
+deleted by the runner at exit — absence is the liveness signal.
+
+```json
+{
+  "schema": 1,
+  "runner": "oka-dev",
+  "vm_service_uri": "ws://127.0.0.1:65250/<token>/ws",
+  "control_port": 59871,
+  "device_id": "emulator-5554",
+  "pid": 12345,
+  "started_at": "2026-09-08T00:00:00.000Z"
+}
+```
+
+**Control wire protocol**: TCP, bound to `127.0.0.1` only, JSON lines.
+Request `{"id": int, "method": "reload"|"restart"|"stop"|"status"}`;
+response `{"id": int, "ok": bool, "result": {...}}` or
+`{"id": int, "ok": false, "error": "..."}`. Reload/restart carry the
+**actual daemon outcome** (`fallback: true` when the owning session used
+its relaunch fallback). Clients treat EOF as session end and re-read the
+file. No auth — localhost-only dev tool by contract.
+
+**Consumer side** (`ExternalSessionRunnerControl` behind the existing
+`RunnerControl` seam): when the file exists, reload/restart **delegate** to
+the owning session (the only compile-capable channel), machine discovery is
+suppressed (a second attach would kill the first session), and the app
+connection uses the file's `vm_service_uri`. `runner` is **display metadata
+read from the file** — the toolkit prints it, it does not interpret it.
+
+**Precedence** (composes with existing machinery, replaces nothing):
+caller decision (`connection` override) → active healthy connection →
+**live runner session** → sticky endpoint / machine discovery → defaults.
+
+**Why the file is not `state.json`**: different writer (the external
+runner, not the toolkit), different lifecycle (the file's existence *is*
+the liveness signal), different trust (it drives compilation). The runner
+file composes with sticky endpoints and overrides; it never replaces them.
+
+## Alternatives considered
+
+- **Vendor adapter inside the toolkit** (`oka_dev_session.dart`, the first
+  attempt) — rejected: couples the toolkit to one runner's private
+  conventions; unmaintainable as runners multiply. Acceptance rule adopted
+  from it: `grep -ri oka` over toolkit code returns zero hits; oka appears
+  only as the worked example in the spec.
+- **Adapter package on the runner side** (runner ships a package
+  implementing a toolkit interface) — rejected for now: Dart has no runtime
+  plugin discovery (no AOT reflection, no service loader), so the toolkit
+  could not find third-party adapters without building a config/codegen
+  plugin system. Revisit if runner adapters grow behavior beyond
+  reload/restart/stop.
+- **Toolkit compiles** (spawn its own frontend-server session) — rejected:
+  duplicates the owning runner's compiler and guarantees the two-session
+  kill. Compilation is always delegated.
+- **Runner embeds the toolkit** — out of scope for the toolkit; the runner
+  adapts to the spec instead.
+
+## Consequences
+
+- Late-attached sessions get **honest** results: `changed: false` with an
+  actionable reason instead of a green no-op.
+- External runners (oka today; any Dart VM runner — server-side Dart
+  frameworks, ECS tooling, CI daemons — later) integrate by writing one
+  conforming JSON file; zero toolkit code changes per runner.
+- The Flutter capability tier (semantics, screenshots, interaction)
+  continues to require the framework's service extensions; the contract's
+  core (connection, delegation, errors) is deliberately Flutter-independent
+  so non-Flutter Dart runners can adopt the core tier.
+- Pre-existing failures in the repo's tool-surface/migration golden tests
+  are unrelated to this ADR (verified against a stash baseline).
+
+## Verification recipe
+
+See [dev-session delegation guide](/guides/dev-session-delegation-roadmap):
+`oka dev --json` → `session.ready` → semantic snapshot oracle → edit →
+delegated reload → label changed; negative test: reload with no source
+change reports `changed: false`.

@@ -22,6 +22,10 @@ flutter-mcp-toolkit validate-runtime --target "$VM_WS_URI"
 flutter-mcp-toolkit exec --name semantic_snapshot --args '{"connection":{"uri":"'"$VM_WS_URI"'"}}'
 ```
 
+## Safe writes
+
+`snapshot create` and `bundle create` support `--check`, `--diff`, `--backup`, and `--no-overwrite` for review-before-write workflows.
+
 ## Gates in this repo
 
 Maintainers run `make check-contracts` and Skill Steward probes — see [contributing guide](../contributing/guide.mdx).
@@ -33,5 +37,5 @@ Maintainers run `make check-contracts` and Skill Steward probes — see [contrib
 
 ## See also
 
-- [start_here/cli_vs_mcp](../start_here/cli_vs_mcp.mdx)
+- [CLI vs MCP](../concepts/cli-vs-mcp.mdx)
 - [E2E scenarios](./e2e-scenarios.mdx)

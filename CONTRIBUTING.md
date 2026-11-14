@@ -2,7 +2,7 @@
 
 We welcome pull requests and issues on [GitHub](https://github.com/Arenukvern/mcp_flutter).
 
-**Full guide (setup, commits, releases, PR checklist):** [docs/contributing/contribution_guide.mdx](docs/contributing/contribution_guide.mdx) · [docs.page](https://docs.page/Arenukvern/mcp_flutter/contributing/contribution_guide)
+**Full guide (setup, commits, releases, PR checklist):** [docs/contributing/guide.mdx](docs/contributing/guide.mdx) · [docs.page](https://docs.page/Arenukvern/mcp_flutter/contributing/guide)
 
 ## Contributor links
 

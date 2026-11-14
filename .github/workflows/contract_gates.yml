@@ -121,6 +121,14 @@ jobs:
         continue-on-error: true
         run: bash tool/contracts/check_docs_drift.sh
 
+      - name: Check docs reference drift
+        continue-on-error: true
+        run: bash tool/contracts/check_docs_reference_drift.sh
+
+      - name: Check no hardcoded tool counts in docs
+        continue-on-error: true
+        run: bash tool/contracts/check_no_hardcoded_tool_counts.sh
+
       - name: Check SDK parity
         continue-on-error: true
         run: bash tool/contracts/check_sdk_parity.sh

@@ -1,0 +1,64 @@
+# flutter-mcp-toolkit
+# https://llmstxt.org — for agents USING the toolkit
+
+> Dart MCP server + Flutter `mcp_toolkit` package. Inspect and drive a **running debug Flutter app** (semantic UI, input, hot reload, app-defined tools). Not a substitute for the official Dart MCP server (static analysis / tooling).
+
+## Docs
+
+- Site: https://docs.page/arenukvern/mcp_flutter
+- Quickstart: docs/quickstart.mdx
+- Tool reference (generated): docs/reference/tools.mdx
+- Human index: docs/index.mdx
+
+## When to use
+
+| Use this | Not this |
+| --- | --- |
+| Live UI, taps, screenshots, app custom tools | `dart_mcp_server` for analyzer/tests only |
+| Debug `flutter run` with `mcp_toolkit` in main() | Release/profile builds without VM service |
+| Claude/Cursor/Codex MCP + skills | Guessing UI from source |
+
+## Install (pick one)
+
+1. **Marketplace / plugin** — `flutter-mcp-toolkit init cursor` (writes skills + mcp.json) or Claude/Codex marketplace `Arenukvern/mcp_flutter`.
+2. **Script** — `curl -fsSL …/install.sh | bash` → `flutter-mcp-toolkit-server` on PATH.
+3. **Docker / from source** — secondary; see docs/install/docker.mdx and docs/install/platforms.mdx.
+
+`init claude-code` / `cline` / `agents-skills`: **skills only** — add MCP server manually.
+
+## App requirement
+
+```bash
+flutter-mcp-toolkit codegen-init   # pub add + main() snippet — paste before runApp
+flutter run --debug
+```
+
+## MCP server
+
+```json
+{ "command": "flutter-mcp-toolkit-server", "args": [] }
+```
+
+Optional: `--dumps` for heavy tree dumps (off by default).
+
+## Verify
+
+```bash
+flutter-mcp-toolkit doctor
+```
+
+Then: `fmt_discover_debug_apps` → `fmt_semantic_snapshot` (or `fmt_get_screenshots`).
+
+## Core loop tools
+
+discover → connect → semantic_snapshot → tap_widget / enter_text → hot_reload_flutter → wait_for stable.
+
+Full names: docs/reference/tools.mdx.
+
+## Platforms
+
+Release binaries: macOS **arm64**, Linux **x64**. Intel Mac: deprecated (build from source). Windows: no install.sh; use WSL/Linux binary or build from source. App targets: any Flutter platform in debug when instrumented.
+
+## Editing this repo
+
+See AGENTS.md (build/test, not this file).

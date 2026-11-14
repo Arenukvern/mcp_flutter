@@ -1,0 +1,53 @@
+# ADR 0011 — Dogfood tracker vs `.showcase` runtime artifacts
+
+- **Status:** Accepted
+- **Date:** 2026-06-17
+
+## Context
+
+The flutter_test_app dogfood program accumulated iteration history in
+`dogfood_web_eval.yaml` under `.showcase/`. That directory is **gitignored**
+(see `.gitignore`) and holds ephemeral runtime state: PIDs, logs, per-run JSON,
+screenshots, and `eval_runs/<timestamp>/` bundles.
+
+Docs, skills, and `run_dogfood_eval.sh --merge` treated the tracker as the
+**living canonical history** — but fresh clones had no tracker file, `--merge`
+skipped with a warning, and doc links pointed at a path that does not exist in
+version control.
+
+Meanwhile, steward promotion evidence and other durable proofs already live under
+`docs/evidence/` (e.g. `docs/evidence/generated/*.json`).
+
+## Decision
+
+**Split durable evidence from ephemeral runtime output.**
+
+| Artifact | Location | Versioned |
+|----------|----------|-----------|
+| Cumulative dogfood tracker (`dogfood_web_eval.yaml`) | `docs/evidence/dogfood/` | Yes |
+| Cold-start tracker template | `tool/evals/dogfood_web_eval.seed.yaml` | Yes |
+| Logs, PIDs, per-run YAML/JSON, screenshots | `.showcase/` | No |
+
+`tool/evals/run_dogfood_eval.sh --merge` writes to the versioned tracker. If the
+tracker file is missing, bootstrap by copying the seed template first.
+
+Per-run artifacts remain under `.showcase/eval_runs/`; iteration blocks may
+reference those paths as historical pointers to local evidence.
+
+`.showcase/` stays gitignored. No scripts or rubrics move into it.
+
+## Consequences
+
+- New clones get 22+ iterations of dogfood history and working doc links.
+- Agents can diff tracker changes in PRs when iterations are merged.
+- `--merge` on a clean tree no longer silently skips (seed bootstrap).
+- Tracker YAML may reference `.showcase/...` artifact paths from past runs;
+  those files exist only on machines that ran the battery locally.
+- Skills and eval docs must point at `docs/evidence/dogfood/dogfood_web_eval.yaml`.
+
+## Notes
+
+- Do **not** treat committed tracker YAML as a CI gate without a fresh
+  `run_dogfood_eval.sh` battery (unchanged policy).
+- Optional env override: `DOGFOOD_TRACKER` in `run_dogfood_eval.sh` for
+  experiments; default is the evidence path above.

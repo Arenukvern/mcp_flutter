@@ -13,7 +13,7 @@ description: >-
 `MCPCallEntry` is **removed** from `mcp_toolkit`. App code must use
 `AgentCallEntry` (from `intentcall_core`, re-exported by `mcp_toolkit`).
 
-Canonical migration doc: [migration_mcp_call_entry_to_agent_call_entry.md](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/start_here/migration_mcp_call_entry_to_agent_call_entry.md)
+Canonical migration doc: [migration_mcp_call_entry_to_agent_call_entry.md](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/migration/migration_mcp_call_entry_to_agent_call_entry.md)
 
 ## When to use this skill
 

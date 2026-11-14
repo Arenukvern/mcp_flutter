@@ -1,0 +1,64 @@
+# ADR-0020: App ownership — launch-and-own vs attach-only
+
+## Status
+
+Accepted (2026-10-07)
+
+## Context
+
+A harness scenario must relate to an app process it did not start. The
+vosges low-look verification run (ADR-0008 in that repo) hit it directly:
+a desktop app was already running, the scenario's only options were to
+refuse silently-ish (pgrep + exit 2) or launch a second instance and
+fight over the camera and the OS-input sink. Neither is honest
+automation. And the third path — attach to the running app — had two
+unpriced risks: stopping a process the harness does not own, and
+silently driving a STALE binary while everyone believes the fresh build
+is under test (a desktop app rebuilt minutes ago keeps running the
+hours-old image until its owner relaunches it).
+
+## Decision
+
+App ownership becomes an explicit, first-class target choice
+(`AppOwnership`):
+
+- `launchAndOwn` (default) — build, launch, stop. The previous implicit
+  behavior, unchanged.
+- `attachOnly` — a borrowed lease. The target discovers the pid by
+  binary name (an ambiguous match is an error naming the pids, never a
+  silent pick; an explicit `attachPid` disambiguates), verifies the
+  running executable resolves to `binaryPath`, refuses when the on-disk
+  build is newer than the process start (beyond a small filesystem
+  tolerance), optionally pins an exact `BuildFingerprint` (sha256 +
+  size) recorded at build time, attaches through an explicitly named
+  `vmServiceUri`, and `LaunchedApp.stop` becomes a no-op: the owner
+  keeps full lifecycle control.
+
+The explicit `vmServiceUri` is a consequence, not a wart: a process the
+tool did not launch has no stdout to scrape, so its VM service can only
+be named by the session that owns it. Fingerprint checks use identity
+(sha256/size/exe-path/mtime-vs-process-start) because attach cannot
+know what the process used to be — only whether it matches the build
+under test.
+
+## Consequences
+
+- Scenarios state their intent: a run against a live desktop says
+  `attachOnly` and carries its URI; a hermetic run says nothing and
+  owns everything.
+- Stale-binary tests fail loudly with the fingerprint delta instead of
+  producing confidently wrong evidence.
+- The borrowed-lease rule that `drive_macos.dart` and the vosges
+  scenario hand-rolled moves into the targets layer (ADR-0019's
+  layering holds: ownership is a target concern; sessions and drivers
+  don't care).
+- Attach never builds — rebuilding under the running process would
+  break the identity the mode just verified.
+
+## Notes
+
+Measured driver: the 2026-10-07 vosges low-look run. The first
+consumer converted its hand-rolled pgrep guard to the target flag in
+the same session; parse-level helpers (`parsePgrepPids`,
+`parseLsofExecutablePath`, `parsePsLstart`, `buildNewerThanProcess`)
+are pure and unit-tested, the process probes are thin.
