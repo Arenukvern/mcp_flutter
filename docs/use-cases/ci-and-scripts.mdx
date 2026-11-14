@@ -1,0 +1,37 @@
+---
+title: CI and scripts
+description: Deterministic checks without an interactive chat session.
+---
+
+# CI and scripts
+
+Use the **CLI** when you want JSON on stdout, exit codes, and no MCP client in the loop.
+
+## Preflight
+
+```bash
+flutter-mcp-toolkit doctor --json
+flutter-mcp-toolkit validate-runtime --target "$VM_WS_URI"
+```
+
+`validate-runtime` exercises extensions, snapshot, and capture tiers ([CLI reference](../reference/cli.mdx)).
+
+## One-shot commands
+
+```bash
+flutter-mcp-toolkit exec --name semantic_snapshot --args '{"connection":{"uri":"'"$VM_WS_URI"'"}}'
+```
+
+## Gates in this repo
+
+Maintainers run `make check-contracts` and Skill Steward probes — see [contributing guide](../contributing/guide.mdx).
+
+## Skills
+
+- `flutter-mcp-cli-runtime-validation`
+- `flutter-mcp-automation-chain`
+
+## See also
+
+- [start_here/cli_vs_mcp](../start_here/cli_vs_mcp.mdx)
+- [E2E scenarios](./e2e-scenarios.mdx)

@@ -1,0 +1,31 @@
+---
+title: E2E scenarios
+description: Repeatable Dart scenarios with flutter_mcp_harness.
+---
+
+# E2E scenarios
+
+When a flow should run in **CI** or on a schedule, promote it from chat to **checked-in Dart** using **`flutter_mcp_harness`**.
+
+## Shape
+
+1. Build or launch the app (`MacosAppTarget`, web target, etc.).
+2. Attach **`ToolkitDriver`** to the VM service.
+3. Observe → act → assert in Dart.
+4. `stop()` in `finally` with a non-zero exit on failure.
+
+## Where to look in this repo
+
+- Package: [`packages/harness`](../../packages/harness)
+- Guide: [E2E scenarios guide](../guides/e2e_scenarios.mdx)
+- Showcase launcher: `make showcase`, `packages/harness` tools
+
+## Skills
+
+- **`flutter-mcp-e2e-harness`**
+- **`flutter-mcp-automation-chain`**
+
+## See also
+
+- [Automation chain](../concepts/automation-chain.mdx)
+- [CI and scripts](./ci-and-scripts.mdx)

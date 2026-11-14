@@ -1,0 +1,37 @@
+---
+title: Custom tools
+description: Expose app-specific MCP tools from the running Flutter app.
+---
+
+# Custom tools
+
+Your domain logic can surface as MCP tools **from the app**, not only from the server repo.
+
+## Author in the app
+
+Use **`AgentCallEntry`** and register before `bootstrapFlutter`:
+
+```dart
+await binding.addEntries(entries: { myEntries });
+await binding.bootstrapFlutter(runApp: () => runApp(const MyApp()));
+```
+
+## Discover from the agent
+
+1. **`fmt_list_client_tools_and_resources`**
+2. Invoke with **`fmt_client_tool`** / **`fmt_client_resource`**
+
+Server flag **`--dynamics`** should stay enabled (default in [`plugin/mcp.json`](../../plugin/mcp.json)).
+
+## Migration
+
+Legacy `MCPCallEntry` → `AgentCallEntry`: [migration guide](../migration/migration_mcp_call_entry_to_agent_call_entry.md).
+
+## Skills
+
+- `flutter-mcp-toolkit-custom-tools`
+- [Dynamic tools registry](../core/dynamic_tools_registry.mdx)
+
+## See also
+
+- [App setup](../install/app-setup.mdx)

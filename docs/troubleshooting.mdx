@@ -1,0 +1,125 @@
+---
+title: Troubleshooting
+description: Symptom → cause → fix for flutter-mcp-toolkit connections and captures.
+---
+
+# Troubleshooting
+
+One page for hosts, agents, and CLI. For Claude-specific tracking see [GitHub issue #60](https://github.com/Arenukvern/mcp_flutter/issues/60#issuecomment-3070419190).
+
+---
+
+## Agent shows no MCP tools
+
+**Symptom:** `fmt_*` tools missing in the client.
+
+**Cause:** MCP server not registered, wrong binary path, or client not restarted after config change.
+
+**Fix:**
+
+1. Confirm `flutter-mcp-toolkit-server --version` on PATH ([install](../quickstart.mdx)).
+2. Validate `mcpServers` JSON ([clients](./install/clients.mdx)).
+3. Restart the AI client fully.
+4. Run `flutter-mcp-toolkit doctor --json`.
+
+---
+
+## `connect_failed` / cannot attach
+
+**Symptom:** Tools fail immediately or first connect times out.
+
+**Cause:** App not in debug, wrong VM URI, or firewall/port mismatch.
+
+**Fix:**
+
+1. `flutter run --debug` (not profile/release).
+2. Use exact `app.debugPort.wsUri` from `flutter run --machine` in `connection.uri`.
+3. Retry with `flutter-mcp-toolkit doctor --json --target <ws_uri> --timeout-ms 10000`.
+4. Confirm `mcp_toolkit` bootstrap in `main()` ([app setup](./install/app-setup.mdx)); hot **restart** after adding it.
+
+---
+
+## `connection_selection_required`
+
+**Symptom:** Error lists `availableTargets`.
+
+**Cause:** Multiple debug VMs; server needs an explicit pick.
+
+**Fix:** Retry with `arguments.connection.targetId` or `uri` copied exactly from the error payload. Do not use bare `host:port` as `targetId`.
+
+---
+
+## `target_not_found`
+
+**Symptom:** Provided `targetId` not in current discovery.
+
+**Fix:** Prefer `connection.uri` from fresh machine output, or call `fmt_discover_debug_apps` again and copy a listed URI.
+
+---
+
+## App missing from `discover_debug_apps`
+
+**Symptom:** App runs but discovery is empty.
+
+**Cause:** VM lives inside a native desktop process or `--no-dds` hides the usual `dart` process name.
+
+**Fix:**
+
+1. Pin VM port: `flutter run -d macos --device-vmservice-port=8765`.
+2. Start server with `--scan-ports=8765` (ranges and lists supported).
+3. Or pass `connection.uri` manually.
+
+---
+
+## Missing `ext.mcp.toolkit.*` / “cannot plug into app”
+
+**Symptom:** `get_extension_rpcs` lacks toolkit extensions; screenshots/layout fail.
+
+**Cause:** `mcp_toolkit` not initialized or app not modifiable.
+
+**Fix:**
+
+1. `flutter pub add mcp_toolkit` and paste [codegen-init](./install/app-setup.mdx) snippet.
+2. Hot **restart** (not reload only).
+3. If you cannot change the app, say plainly that toolkit inspection is unavailable — do not claim screenshots succeeded.
+
+---
+
+## Blank or missing screenshots
+
+**Symptom:** Empty image or tool errors.
+
+**Cause:** `--images` off, missing extension, wrong capture tier, or minimized host window.
+
+**Fix:**
+
+1. Server args include `--images` (see [`plugin/mcp.json`](../plugin/mcp.json)).
+2. Confirm `ext.mcp.toolkit.view_screenshots` via `get_extension_rpcs`.
+3. **Flutter-layer** captures (`fmt_get_screenshots`) work with the app window in the **background**.
+4. **Host `desktop_window` tier** may need the window **foreground**; CLI `validate-runtime` retries `flutter_layer` once on failure.
+
+---
+
+## View / layout details missing
+
+**Fix:** Enable `--resources` or call `get_view_details`; pin `connection.uri` if multiple apps; verify `ext.mcp.toolkit.view_details`.
+
+---
+
+## Dynamic tools not listed
+
+**Fix:** Call `addEntries` before `bootstrapFlutter`; hot restart app; use `fmt_list_client_tools_and_resources`.
+
+---
+
+## Dynamic registry / schema errors after upgrade
+
+See [migrations](./migration/migration_v2_to_v3.mdx) (`fmt_` prefix) and [AgentCallEntry migration](./migration/migration_mcp_call_entry_to_agent_call_entry.md).
+
+---
+
+## Related
+
+- [Error codes](./reference/errors.mdx)
+- [Server flags](./reference/server-flags.mdx)
+- [How it works — seeing the app](./concepts/how-it-works.mdx)

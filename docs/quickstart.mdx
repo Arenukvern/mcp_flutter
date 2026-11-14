@@ -1,0 +1,76 @@
+---
+title: Quickstart
+description: Connect an AI agent to a Flutter debug app in about five minutes.
+---
+
+# Quickstart
+
+This path gets you from zero to an agent that can **see** and **drive** your Flutter UI.
+
+## 1. Install the toolkit
+
+**Option A — marketplace / plugin (recommended)**
+
+- **Cursor:** add the local plugin via `flutter-mcp-toolkit init cursor`, or install from the repo marketplace.
+- **Claude Code / Codex:** `/plugin marketplace add Arenukvern/mcp_flutter` or `codex plugin marketplace add Arenukvern/mcp_flutter`.
+
+**Option B — install script**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Arenukvern/mcp_flutter/main/install.sh | bash
+```
+
+This installs `flutter-mcp-toolkit` and `flutter-mcp-toolkit-server` on your PATH. See [platform support](./install/platforms.mdx) for binary limits.
+
+## 2. Wire your Flutter app
+
+From your app directory:
+
+```bash
+flutter-mcp-toolkit codegen-init
+```
+
+Follow the printed snippet: add the `mcp_toolkit` bootstrap to `main()` before `runApp`. Details: [app setup](./install/app-setup.mdx).
+
+## 3. Agent skills and MCP config
+
+```bash
+flutter-mcp-toolkit init cursor   # or: claude-code | codex | cline | agents-skills
+```
+
+- **`init cursor` / `init codex`** write **skills plus** an `mcp.json` stub under the plugin folder.
+- **`init claude-code`, `init cline`, `init agents-skills`** write **skills only** — you add the MCP server to the host yourself.
+- If your host **already** lists `flutter-mcp-toolkit` in `mcp.json`, `init` mainly refreshes skills and MCP-oriented skill text; it does not replace your existing server block unless you use a target that always writes `mcp.json` (Cursor/Codex).
+
+For hand-rolled MCP config, see [client setup](./install/clients.mdx) and the canonical [`plugin/mcp.json`](../plugin/mcp.json).
+
+## 4. Run and verify
+
+```bash
+flutter run --debug
+flutter-mcp-toolkit doctor
+```
+
+Doctor checks the binary, PATH, and (with a target) VM connectivity and `mcp_toolkit` extensions.
+
+## 5. First prompt to your agent
+
+Ask something concrete, for example:
+
+> Discover my debug Flutter app, take a semantic snapshot, and describe what is on screen.
+
+The agent should call **`fmt_discover_debug_apps`** (or connect with a VM URI), then **`fmt_semantic_snapshot`**. You get widget refs, labels, and bounds — not guesswork from pixels alone.
+
+Next steps: [use cases](./use-cases/see-the-ui.mdx), [tool reference](./reference/tools.mdx), [skills](./reference/skills.mdx).
+
+## vs official Dart MCP server
+
+The [official Dart MCP server](https://github.com/dart-lang/ai/tree/main/pkgs/dart_mcp_server) is great for **Dart tooling** (analysis, packages, VM introspection).
+
+**flutter-mcp-toolkit** targets **Flutter app workflows**:
+
+- Requires **`mcp_toolkit` inside your app** (debug only) so the server can call app extensions.
+- Exposes **semantic snapshots**, gestures, hot reload, screenshots, and **app-defined tools** at runtime.
+- Skills and CLI mirror the same capabilities for scripts and CI.
+
+Many teams use **both**: Dart MCP for the SDK, this toolkit for the running app UI.

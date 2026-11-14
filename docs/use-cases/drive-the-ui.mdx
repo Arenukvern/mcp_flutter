@@ -1,0 +1,37 @@
+---
+title: Drive the UI
+description: Tap, type, scroll, and navigate from an agent or script.
+---
+
+# Drive the UI
+
+## Pattern
+
+1. **`fmt_semantic_snapshot`** — pick a stable `ref`.
+2. **Act** — `fmt_tap_widget`, `fmt_enter_text`, `fmt_scroll`, `fmt_fill_form`, `fmt_navigate`, etc.
+3. **Verify** — snapshot or screenshot again.
+
+Always pass the same **`snapshotId`** / refs the tool response expects.
+
+## Example prompt
+
+> Snapshot the screen, tap the "Sign in" button, enter test@example.com in the email field, and snapshot again.
+
+## CLI (no chat)
+
+```bash
+flutter-mcp-toolkit exec --name semantic_snapshot --args '{}'
+flutter-mcp-toolkit exec --name tap_widget --args '{"ref":"..."}'
+```
+
+Catalog names map to `fmt_*` on the wire ([glossary](../concepts/glossary.mdx)).
+
+## Skills
+
+- `flutter-mcp-toolkit-control`
+- `flutter-mcp`
+
+## See also
+
+- [See the UI](./see-the-ui.mdx)
+- [Interaction cookbook](../guides/interaction_cookbook.mdx)

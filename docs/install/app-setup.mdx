@@ -1,0 +1,69 @@
+---
+title: Flutter app setup
+description: Add mcp_toolkit and bootstrap main() for debug-mode agent access.
+---
+
+# Flutter app setup
+
+Agents can only inspect and drive your app when **`mcp_toolkit`** is linked and initialized in **debug** builds.
+
+## One-command bootstrap
+
+From your Flutter project root:
+
+```bash
+flutter-mcp-toolkit codegen-init
+```
+
+This runs `flutter pub add mcp_toolkit` (unless you pass `--no-pub-add`) and prints a `main()` snippet to paste.
+
+## `main()` pattern
+
+The generated path uses `MCPToolkitBinding.instance.bootstrapFlutter`, which sets up zones, toolkit extensions, and `runApp` in the right order:
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:mcp_toolkit/mcp_toolkit.dart';
+
+Future<void> main() async {
+  final binding = MCPToolkitBinding.instance;
+  // Optional: await binding.addEntries(entries: { ... });
+  await binding.bootstrapFlutter(
+    runApp: () => runApp(const MyApp()),
+  );
+}
+```
+
+Equivalent manual init (if you do not use `bootstrapFlutter`):
+
+```dart
+MCPToolkitBinding.instance
+  ..initialize()
+  ..initializeFlutterToolkit();
+```
+
+After changing bootstrap code, use **hot restart** or stop and `flutter run --debug` again — hot reload alone is not enough.
+
+## Custom tools (optional)
+
+Register app-specific MCP tools before bootstrap:
+
+```dart
+await binding.addEntries(entries: {
+  myToolEntry,
+});
+await binding.bootstrapFlutter(runApp: () => runApp(const MyApp()));
+```
+
+See [custom tools use case](../use-cases/custom-tools.mdx) and [dynamic tools](../core/dynamic_tools_registry.mdx).
+
+## Verify
+
+1. `flutter run --debug`
+2. `flutter-mcp-toolkit doctor`
+3. Agent or CLI: `get_extension_rpcs` should list `ext.mcp.toolkit.*` extensions.
+
+## Related
+
+- [Quickstart](../quickstart.mdx)
+- [CLI reference — codegen-init](../reference/cli.mdx)

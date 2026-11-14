@@ -1,0 +1,67 @@
+---
+title: Automation chain
+description: MCP, CLI, harness, and optional build runners — pick the right surface.
+---
+
+# Automation chain
+
+## Why this exists
+
+An agent that only sees static code or blurry screenshots is guessing. In debug mode, `mcp_toolkit` exposes **semantic snapshots** (stable widget refs, labels, bounds). The toolkit closes an **observe → act → verify** loop: snapshot, tap or type, hot reload, snapshot again.
+
+That loop should not be locked to one transport. The same vocabulary appears across **MCP chat tools**, **CLI one-shots**, and **checked-in Dart scenarios**.
+
+## Chain at a glance
+
+```text
+ Flutter app (debug) ── ext.mcp.toolkit.* ──┐
+                                              │
+        ┌─────────────┬──────────────┬────────┴────────┐
+        ▼             ▼              ▼                 ▼
+   MCP fmt_*     flutter-mcp-toolkit   flutter_mcp_harness   optional oka
+   (agent chat)  CLI / fmtk            (Dart scenarios)       (build + owned session)
+```
+
+Only **one** surface should **own** compile-capable reload for a given app session at a time (see ownership below).
+
+## Pick your tier
+
+| You want… | Use | Read |
+| --- | --- | --- |
+| Chat debugging and verification | MCP `fmt_*` | [Quickstart](../quickstart.mdx) |
+| Scripts and CI checks | CLI | [CLI vs MCP](../start_here/cli_vs_mcp.mdx), [CI use case](../use-cases/ci-and-scripts.mdx) |
+| Repeatable E2E as Dart | `flutter_mcp_harness` | [E2E use case](../use-cases/e2e-scenarios.mdx) |
+| Web page automation | CDP driver tier | [Automation skill](../../.agents/skills/flutter-mcp-automation-chain/SKILL.md) |
+| Device builds + owned dev session | **oka** (separate repo) | [dev-session roadmap](../guides/dev-session-delegation-roadmap.mdx) |
+
+## First loop (interactive)
+
+Same as [quickstart](../quickstart.mdx): install binary, `codegen-init`, `init` for your agent, `flutter run --debug`, ask for a semantic snapshot.
+
+## Second loop (commit the scenario)
+
+When a flow is worth repeating (regression, release checks), encode it with **`flutter_mcp_harness`**: build/launch, attach VM, drive with `ToolkitDriver`, assert, exit with CI-friendly codes. Skill: **`flutter-mcp-e2e-harness`**.
+
+## Ownership law
+
+**At most one owning attach session per app.** A `flutter run` or `oka dev` owns reload/restart. MCP and harness drivers are usually **observers** on the same VM service. Two owners can kill each other’s session. Details: [ADR 0014](../decisions/0014_external_dev_sessions_runner_delegation.mdx).
+
+## FAQ
+
+**Do I need oka?** No for MCP-only or harness desktop loops.
+
+**Can MCP run while a harness scenario runs?** Observers can coexist; avoid two **owners**.
+
+**Declarative YAML scenarios?** Checked-in **Dart** is the supported path today (`flutter_mcp_harness`).
+
+## Use cases
+
+- [Debug a running app](../use-cases/debug-a-running-app.mdx)
+- [Drive the UI](../use-cases/drive-the-ui.mdx)
+- [Hot reload loop](../use-cases/hot-reload-loop.mdx)
+- [Multiple apps](../use-cases/multiple-apps.mdx)
+
+## Related
+
+- [How it works](./how-it-works.mdx)
+- [Reference tools](../reference/tools.mdx)

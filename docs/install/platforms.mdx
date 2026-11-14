@@ -1,0 +1,51 @@
+---
+title: Platform support
+description: Where release binaries run and where your Flutter app can run.
+---
+
+# Platform support
+
+## MCP server binaries (install.sh / GitHub Releases)
+
+Prebuilt archives ship only for:
+
+| Triple | CI / release matrix |
+| --- | --- |
+| **darwin-arm64** | Apple Silicon macOS |
+| **linux-x64** | Linux x86_64 |
+
+Source: [`.github/workflows/release.yml`](../../.github/workflows/release.yml) `matrix.include`.
+
+### Intel macOS (deprecated for binaries)
+
+`install.sh` **exits** on `darwin-x64` with a message that published macOS builds are **arm64 only**. Options:
+
+- Use Apple Silicon hardware, or
+- Build `flutter-mcp-toolkit-server` from source (`make build` in a clone).
+
+### Windows
+
+`install.sh` does **not** support Windows as a host OS (`Unsupported OS`). On Windows:
+
+- Use **WSL2** (Linux) and install the **linux-x64** tarball, or
+- Clone the repo and build with Flutter/Dart on Windows.
+
+### Version selection
+
+From a git clone, `install.sh` defaults to the repo [`VERSION`](../../VERSION) file. Otherwise it resolves the latest GitHub release, or you pass `--version` / `FLUTTER_MCP_VERSION`.
+
+## Flutter **app** targets
+
+The **Flutter app** you instrument with `mcp_toolkit` can run on any platform Flutter supports (iOS, Android, Web, Windows, macOS, Linux, etc.) when you build from source.
+
+What changes per platform:
+
+- How you launch debug mode and VM service URLs
+- Screenshot capture paths (Flutter layer vs host window) — see [troubleshooting](../troubleshooting.mdx)
+
+The **server binary** matrix above is only about where `flutter-mcp-toolkit-server` itself runs.
+
+## Related
+
+- [Quickstart](../quickstart.mdx)
+- [Docker](./docker.mdx)
