@@ -21,5 +21,16 @@ void main() {
         throwsStateError,
       );
     });
+
+    test('install URL points at mcp_flutter repo', () {
+      expect(
+        () => detectMode(binaryOnPath: false, mcpServerRegistered: false),
+        throwsA(
+          predicate<StateError>(
+            (e) => e.message.contains('Arenukvern/mcp_flutter/main/install.sh'),
+          ),
+        ),
+      );
+    });
   });
 }
