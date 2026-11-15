@@ -7,17 +7,32 @@ CHECKER="$ROOT/tool/contracts/check_docs_links.dart"
 FIXTURES="$ROOT/tool/contracts/test_docs_links_fixtures.sh"
 BACKUP="$(mktemp)"
 
+command -v dart >/dev/null 2>&1 || {
+  echo "test_docs_links_checker_mutations: dart required" >&2
+  exit 1
+}
+
 cp "$CHECKER" "$BACKUP"
 restore() {
   cp "$BACKUP" "$CHECKER"
 }
 trap restore EXIT
 
+cd "$ROOT"
+if ! dart run tool/contracts/check_docs_links.dart >/dev/null 2>&1; then
+  echo "test_docs_links_checker_mutations: unmodified checker must pass on clean tree" >&2
+  exit 1
+fi
+
 apply_mutation() {
   local desc="$1"
   shift
   cp "$BACKUP" "$CHECKER"
   "$@"
+  if cmp -s "$BACKUP" "$CHECKER"; then
+    echo "test_docs_links_checker_mutations: mutation '$desc' did not edit checker" >&2
+    exit 1
+  fi
   set +e
   bash "$FIXTURES" >/dev/null 2>&1
   local ec=$?

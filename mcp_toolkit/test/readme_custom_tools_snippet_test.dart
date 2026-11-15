@@ -95,7 +95,7 @@ void main() {
     final root = packageRoot();
     final block = extractDartFence(
       File('$root/README.md').readAsStringSync(),
-      mustContain: 'bootstrapFlutter',
+      mustContain: 'Future<void> main',
       occurrence: 0,
     );
     await analyzeSnippet(

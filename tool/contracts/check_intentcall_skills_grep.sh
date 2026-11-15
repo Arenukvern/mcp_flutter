@@ -120,8 +120,11 @@ for f in \
   fi
 done
 
-if [[ -f "$SKILL_ASSETS" ]]; then
-  if rg_match 'MCPCallEntry' "$SKILL_ASSETS"; then
+if [[ ! -f "$SKILL_ASSETS" ]]; then
+  echo "check_intentcall_skills_grep: missing required file: $SKILL_ASSETS" >&2
+  exit 2
+fi
+if rg_match 'MCPCallEntry' "$SKILL_ASSETS"; then
     if ! rg_match 'flutter-mcp-toolkit-intentcall-migration' "$SKILL_ASSETS"; then
       echo "check_intentcall_skills_grep: MCPCallEntry in skill_assets.g.dart without migration skill" >&2
       bad=1
@@ -132,6 +135,5 @@ if [[ -f "$SKILL_ASSETS" ]]; then
       bad=1
     fi
   fi
-fi
 
 exit "$bad"

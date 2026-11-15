@@ -12,6 +12,7 @@ sub normalize_line {
   return '' if $raw =~ /tool-count-allow/i;
   my $line = $raw;
   $line =~ s/^\s*\d+\.\s+//;
+  $line =~ s/`([^`]*)`/$1/g;
   $line =~ s/<[^>]+>//g;
   $line =~ s/&nbsp;/ /gi;
   return $line;
@@ -31,6 +32,7 @@ sub strip_benign_fragments {
   $blob =~ s/\/custom-tools\b//gi;
   $blob =~ s/custom-tools\.mdx//gi;
   $blob =~ s/"tools"\s*:\s*\[\s*\]//gi;
+  $blob =~ s/\(terminal\s+\d{1,3}\)//gi;
   return $blob;
 }
 

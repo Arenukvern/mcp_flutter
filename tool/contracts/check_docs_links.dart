@@ -49,9 +49,19 @@ class AllowEntry {
 
 late final List<AllowEntry> allowlist;
 
+String repoRelativePath(String path) {
+  final root = repoRoot.path;
+  if (path == root) return '';
+  if (path.startsWith('$root/')) {
+    return path.substring(root.length + 1);
+  }
+  return path.replaceAll('\\', '/');
+}
+
 bool allowlisted(String citingFile, String target) {
+  final relCiting = repoRelativePath(citingFile);
   for (final e in allowlist) {
-    if (e.target != target || e.citingFile != citingFile) continue;
+    if (e.target != target || e.citingFile != relCiting) continue;
     e.used = true;
     return true;
   }
@@ -59,10 +69,10 @@ bool allowlisted(String citingFile, String target) {
 }
 
 void report(String msg, {String? citingFile, String? target}) {
-  if (target != null &&
-      citingFile != null &&
-      allowlisted(citingFile, target)) {
-    return;
+  if (target != null && citingFile != null) {
+    if (allowlisted(citingFile, target)) {
+      return;
+    }
   }
   stderr.writeln('check_docs_links: $msg');
   broken++;
@@ -149,6 +159,7 @@ final linkPatterns = [
 ];
 
 void scanMarkdownFile(String path) {
+  final relPath = repoRelativePath(path);
   final content = File(path).readAsStringSync();
   for (final re in linkPatterns) {
     for (final m in re.allMatches(content)) {
@@ -156,12 +167,20 @@ void scanMarkdownFile(String path) {
       if (isExternal(href)) continue;
       if (href.startsWith('/')) {
         if (resolveSiteAbsolute(href) == null) {
-          report('$path: broken site path -> $href', citingFile: path, target: href);
+          report(
+            '$relPath: broken site path -> $href',
+            citingFile: relPath,
+            target: href,
+          );
         }
         continue;
       }
       if (resolveRelative(path, href) == null) {
-        report('$path: broken link -> $href', citingFile: path, target: href);
+        report(
+          '$relPath: broken link -> $href',
+          citingFile: relPath,
+          target: href,
+        );
       }
     }
   }
@@ -172,6 +191,7 @@ final docPathInSource = RegExp(
 );
 
 void scanDocPathLiterals(String path) {
+  final relPath = repoRelativePath(path);
   final content = File(path)
       .readAsStringSync()
       .replaceAll(RegExp(r'https?://\S+'), ' ');
@@ -191,19 +211,17 @@ void scanDocPathLiterals(String path) {
       }
     }
     if (found) {
-      if (allowlisted(path, p)) {
+      if (allowlisted(relPath, p)) {
         report(
-          '$path: stale allowlist entry (target exists) -> $p',
-          citingFile: path,
-          target: p,
+          '$relPath: stale allowlist entry (target exists) -> $p',
         );
       }
       continue;
     }
-    if (allowlisted(path, p)) continue;
+    if (allowlisted(relPath, p)) continue;
     report(
-      '$path: broken doc path in source -> $p',
-      citingFile: path,
+      '$relPath: broken doc path in source -> $p',
+      citingFile: relPath,
       target: p,
     );
   }
