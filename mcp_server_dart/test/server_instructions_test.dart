@@ -31,6 +31,8 @@ void main() {
     expect(text, isNot(contains('Flutter Inspector MCP Server')));
     expect(text, contains('fmt_discover_debug_apps'));
     expect(text, contains('fmt_semantic_snapshot'));
+    expect(text, contains('screenshotMode: flutter_layer'));
+    expect(text, contains('errors/{count}'));
     expect(text, isNot(contains('fmt_debug_dump_render_tree')));
   });
 
@@ -39,5 +41,24 @@ void main() {
       _minimalConfig(dumpsSupported: true),
     );
     expect(withDumps, contains('fmt_debug_dump_render_tree'));
+  });
+
+  test('dynamic registry section omitted when dynamics disabled', () {
+    final text = buildMcpToolkitServerInstructions(
+      _minimalConfig(dynamicRegistrySupported: false),
+    );
+    expect(text, isNot(contains('fmt_client_tool')));
+    expect(text, isNot(contains('fmt_list_client_tools_and_resources')));
+  });
+
+  test('dynamicRegistrySupported parameter changes instructions', () {
+    final on = buildMcpToolkitServerInstructions(
+      _minimalConfig(dynamicRegistrySupported: true),
+    );
+    final off = buildMcpToolkitServerInstructions(
+      _minimalConfig(dynamicRegistrySupported: false),
+    );
+    expect(on, isNot(equals(off)));
+    expect(on, contains('fmt_client_tool'));
   });
 }
