@@ -1,0 +1,1 @@
+Agents call the 34 fmt_* functions after connect.

@@ -14,7 +14,7 @@ fail() {
 must_fail_scan() {
   local file="$1"
   local hits
-  hits="$("$SCANNER" "$file")"
+  hits="$(perl "$SCANNER" "$file")"
   if [[ -z "$hits" ]]; then
     fail "fixture $file should trip scanner but did not"
   fi

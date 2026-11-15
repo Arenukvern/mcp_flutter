@@ -27,10 +27,21 @@ String stripImports(String block) {
 }
 
 String wrapForAnalyze(String block, {bool includeFlutterShell = false}) {
-  final body = stripImports(block).replaceFirst(
-    RegExp(r'Future<void>\s+main\s*\(\)\s*async\s*'),
-    'Future<void> probe() async ',
-  );
+  var stripped = stripImports(block).trim();
+  final String body;
+  if (RegExp(r'Future<void>\s+main\s*\(\)\s*async').hasMatch(stripped)) {
+    body = stripped.replaceFirst(
+      RegExp(r'Future<void>\s+main\s*\(\)\s*async\s*'),
+      'Future<void> probe() async ',
+    );
+  } else {
+    body = '''
+Future<void> probe() async {
+  final binding = MCPToolkitBinding.instance;
+$stripped
+}
+''';
+  }
   final flutterShell = includeFlutterShell
       ? '''
 import 'package:flutter/material.dart';
@@ -48,17 +59,6 @@ import 'package:mcp_toolkit/mcp_toolkit.dart';
 $flutterShell
 $body
 ''';
-}
-
-String extractAgentCallEntryTool(String block) {
-  final match = RegExp(
-    r'AgentCallEntry\.tool\([\s\S]*?\n\s*\)',
-    multiLine: true,
-  ).firstMatch(block);
-  if (match == null) {
-    throw StateError('No AgentCallEntry.tool(...) in block');
-  }
-  return match.group(0)!;
 }
 
 Future<void> analyzeSnippet(String packageRoot, String wrapped) async {
@@ -90,15 +90,10 @@ void main() {
       File('$root/README.md').readAsStringSync(),
       mustContain: 'AgentCallEntry.tool',
     );
-    final entry = extractAgentCallEntryTool(block);
-    final wrapped = '''
-import 'package:mcp_toolkit/mcp_toolkit.dart';
-
-void probe() {
-  $entry;
-}
-''';
-    await analyzeSnippet(root, wrapped);
+    await analyzeSnippet(
+      root,
+      wrapForAnalyze(block, includeFlutterShell: true),
+    );
   });
 
   test('docs/use-cases/custom-tools.mdx dart fence type-checks', () async {

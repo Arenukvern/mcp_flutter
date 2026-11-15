@@ -12,11 +12,24 @@ command -v rg >/dev/null 2>&1 || {
 
 bad=0
 
+rg_list() {
+  local hits rg_status
+  set +e
+  hits="$(rg -l 'MCPCallEntry' "$@" 2>/dev/null)"
+  rg_status=$?
+  set -e
+  if ((rg_status > 1)); then
+    echo "check_intentcall_skills_grep: rg failed (exit $rg_status)" >&2
+    exit 2
+  fi
+  printf '%s' "$hits"
+}
+
 check_paths() {
   local label="$1"
   shift
   if [[ $# -eq 0 ]]; then
-  return 0
+    return 0
   fi
   for root in "$@"; do
     [[ -e "$root" ]] || {
@@ -24,13 +37,8 @@ check_paths() {
       exit 2
     }
   done
-  local hits rg_status
-  hits="$(rg -l 'MCPCallEntry' "$@" || true)"
-  rg_status=$?
-  if ((rg_status > 1)); then
-    echo "check_intentcall_skills_grep: rg failed (exit $rg_status)" >&2
-    exit 2
-  fi
+  local hits
+  hits="$(rg_list "$@")"
   [[ -z "$hits" ]] && return 0
   while IFS= read -r file; do
     [[ -z "$file" ]] && continue
@@ -42,14 +50,8 @@ check_paths() {
   done <<< "$hits"
 }
 
-# Plugin skills (migration skill only)
 if [[ -d "$ROOT/plugin/skills" ]]; then
-  hits="$(rg -l 'MCPCallEntry' "$ROOT/plugin/skills" --glob 'SKILL.md' || true)"
-  rg_status=$?
-  if ((rg_status > 1)); then
-    echo "check_intentcall_skills_grep: rg failed (exit $rg_status)" >&2
-    exit 2
-  fi
+  hits="$(rg_list "$ROOT/plugin/skills" --glob 'SKILL.md')"
   if [[ -n "$hits" ]]; then
     while IFS= read -r file; do
       [[ -z "$file" ]] && continue
@@ -72,7 +74,6 @@ check_paths "docs/contributing" "$ROOT/docs/contributing"
 
 check_paths "readme" "$ROOT/README.md" "$ROOT/llms.txt"
 
-# Plugin surfaces
 for f in \
   "$ROOT/plugin/README.md" \
   "$ROOT/plugin/agents/flutter-mcp-toolkit-runtime.md" \
@@ -84,7 +85,6 @@ for f in \
   fi
 done
 
-# Generated skill bundle — migration skill only
 if rg -q 'MCPCallEntry' "$ROOT/mcp_server_dart/lib/src/skill_assets.g.dart"; then
   if ! rg -q 'flutter-mcp-toolkit-intentcall-migration' "$ROOT/mcp_server_dart/lib/src/skill_assets.g.dart"; then
     echo "check_intentcall_skills_grep: MCPCallEntry in skill_assets.g.dart without migration skill" >&2

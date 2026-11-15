@@ -11,21 +11,29 @@ sub normalize_line {
   my ($raw) = @_;
   return '' if $raw =~ /tool-count-allow/i;
   my $line = $raw;
-  $line =~ s/^\s*\d+\.\s+//;    # ordered-list prefix — scan remainder only
+  $line =~ s/^\s*\d+\.\s+//;
   $line =~ s/<[^>]+>//g;
   $line =~ s/&nbsp;/ /gi;
   return $line;
 }
 
+sub strip_benign_fragments {
+  my ($blob) = @_;
+  $blob =~ s/\b\d{1,3}\s*-(?:second|minute|hour|day|week|month|year)\b//gi;
+  $blob =~ s/\bin\s+a\s+\d{1,3}\s*-(?:second|minute|hour|day)\s+setup\b//gi;
+  $blob =~ s/\btools\/call\b//gi;
+  $blob =~ s/\band\s+\d{1,3}\s+skills\b//gi;
+  $blob =~ s/(?<=\s)\d{1,3}\s+skills\b(?!\s+and)//gi;
+  $blob =~ s/\bfor\s+[\w-]*-tools\s+users\b//gi;
+  $blob =~ s/\bcustom-tools\b//gi;
+  $blob =~ s/"tools"\s*:\s*\[\s*\]//gi;
+  return $blob;
+}
+
 sub scan_text {
   my ($blob, $line_no, $raw_for_print) = @_;
-  return if $blob =~ /\b\d{1,3}\s*-(?:second|minute|hour|day|week|month|year)\b/i;
-  return if $blob =~ /\btools\/call\b/i;
-  return if $blob =~ /(?:^|[^\d])\d+\s*skills\b/i;
-  return if $blob =~ /[\w]-tools\b/i && $blob !~ /\b\d{1,3}\s*[-–]\s*tool/i;
-  return if $blob =~ /"tools"\s*:\s*\[/i;
-  return if $blob =~ /\bcore\s+\d{1,3}\b[\s\S]{0,40}\btools\b/i && $blob !~ /\+\s*\d{1,3}\s+inspection/i;
-  return if $blob =~ /\btools\b[\s\S]{0,24}\bcore\s+\d{1,3}\b/i;
+  $blob = strip_benign_fragments($blob);
+  return if $blob =~ /^\s*$/;
   return unless $blob =~ /(?<![\w-])\btools\b/i
     || $blob =~ /\btoolset\b/i
     || $blob =~ /\d+\s*[-–]\s*tool\b/i
@@ -48,8 +56,10 @@ sub scan_text {
   $hit = 1 if !$hit && $blob =~ /tool\s+count\s*:\s*\d{1,3}\b/i;
   $hit = 1 if !$hit && $blob =~ /\b\d{1,3}\s*[-–]\s*strong\s+tool\s+surface\b/i;
   $hit = 1 if !$hit && $blob =~ /\btoolset\s+of\s+(?:\d{1,3}|thirty[\s-]?four|twenty[\s-]?nine)\b/i;
-  $hit = 1 if !$hit && $blob =~ /\b(?:the\s+)?\d{1,3}\s+fmt_\w+/i;
+  $hit = 1 if !$hit && $blob =~ /\b(?:the\s+)?\d{1,3}\s+fmt_[a-z][\w_]*/i;
+  $hit = 1 if !$hit && $blob =~ /\b(?:the\s+)?\d{1,3}\s+fmt_\*/i;
   $hit = 1 if !$hit && $blob =~ /\b(?:thirty|twenty)[\s-]?(?:four|nine)\b[\s\S]{0,48}\btools\b/i;
+  $hit = 1 if !$hit && $blob =~ /\bcore\s+\d{1,3}\s+plus\s+\d{1,3}\s+extra\s+tools\b/i;
   if ($hit) {
     print "$file:$line_no:$raw_for_print";
   }

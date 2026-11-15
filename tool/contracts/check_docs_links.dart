@@ -7,12 +7,17 @@ import 'dart:io';
 
 final repoRoot = Directory.current;
 var broken = 0;
-late final List<AllowEntry> allowlist;
 
 class AllowEntry {
-  AllowEntry({required this.match, required this.reason});
-  final String match;
+  AllowEntry({
+    required this.target,
+    required this.reason,
+    this.citingFile,
+  });
+  final String target;
+  final String? citingFile;
   final String reason;
+  bool used = false;
 
   static List<AllowEntry> load() {
     final file = File('${repoRoot.path}/tool/contracts/check_docs_links_allowlist.json');
@@ -24,7 +29,8 @@ class AllowEntry {
         .map((e) => e as Map<String, dynamic>)
         .map(
           (e) => AllowEntry(
-            match: '${e['match']}',
+            target: '${e['target']}',
+            citingFile: e['citingFile'] as String?,
             reason: '${e['reason']}',
           ),
         )
@@ -32,16 +38,28 @@ class AllowEntry {
   }
 }
 
-bool allowlisted(String context, String target) {
-  final hay = '$context $target';
+late final List<AllowEntry> allowlist;
+
+bool allowlisted(String citingFile, String target) {
   for (final e in allowlist) {
-    if (hay.contains(e.match)) return true;
+    if (e.target != target) continue;
+    if (e.citingFile != null &&
+        citingFile != e.citingFile &&
+        !citingFile.endsWith('/${e.citingFile}')) {
+      continue;
+    }
+    e.used = true;
+    return true;
   }
   return false;
 }
 
-void report(String msg, {String? context, String? target}) {
-  if (target != null && allowlisted(context ?? msg, target)) return;
+void report(String msg, {String? citingFile, String? target}) {
+  if (target != null &&
+      citingFile != null &&
+      allowlisted(citingFile, target)) {
+    return;
+  }
   stderr.writeln('check_docs_links: $msg');
   broken++;
 }
@@ -134,12 +152,12 @@ void scanMarkdownFile(String path) {
       if (isExternal(href)) continue;
       if (href.startsWith('/')) {
         if (resolveSiteAbsolute(href) == null) {
-          report('$path: broken site path -> $href', context: path, target: href);
+          report('$path: broken site path -> $href', citingFile: path, target: href);
         }
         continue;
       }
       if (resolveRelative(path, href) == null) {
-        report('$path: broken link -> $href', context: path, target: href);
+        report('$path: broken link -> $href', citingFile: path, target: href);
       }
     }
   }
@@ -160,18 +178,22 @@ void scanDocPathLiterals(String path) {
     if (p.startsWith('docs/')) {
       candidates.add('mcp_server_dart/$p');
     }
-  var found = false;
-  for (final c in candidates) {
-    final f = File('${repoRoot.path}/$c');
-    final d = Directory('${repoRoot.path}/$c');
-    if (f.existsSync() || d.existsSync()) {
-      found = true;
-      break;
+    var found = false;
+    for (final c in candidates) {
+      final f = File('${repoRoot.path}/$c');
+      final d = Directory('${repoRoot.path}/$c');
+      if (f.existsSync() || d.existsSync()) {
+        found = true;
+        break;
+      }
     }
-  }
-  if (!found) {
-    report('$path: broken doc path in source -> $p', context: path, target: p);
-  }
+    if (!found) {
+      report(
+        '$path: broken doc path in source -> $p',
+        citingFile: path,
+        target: p,
+      );
+    }
   }
 }
 
@@ -239,9 +261,8 @@ void scanTreeForLiterals(String rel) {
   final entity = FileSystemEntity.typeSync('${repoRoot.path}/$rel');
   if (entity == FileSystemEntityType.notFound) return;
   if (entity == FileSystemEntityType.file) {
-    scanDocPathLiterals('${repoRoot.path}/$rel'.replaceFirst('${repoRoot.path}/', ''));
-    final name = rel;
-    if (name.endsWith('.md') || name.endsWith('.mdx')) {
+    scanDocPathLiterals(rel);
+    if (rel.endsWith('.md') || rel.endsWith('.mdx')) {
       scanMarkdownFile('${repoRoot.path}/$rel');
     }
     return;
@@ -252,6 +273,8 @@ void scanTreeForLiterals(String rel) {
     if (name.contains('/.git/') || name.contains('node_modules')) continue;
     if (name.contains('/tool/contracts/check_docs_links.dart')) continue;
     final relPath = name.replaceFirst('${repoRoot.path}/', '');
+    if (relPath.contains('tool/contracts/fixtures/')) continue;
+    if (relPath.endsWith('tool/contracts/test_docs_links_fixtures.sh')) continue;
     if (name.endsWith('.dart') ||
         name.endsWith('.sh') ||
         name.endsWith('.md') ||
@@ -300,10 +323,12 @@ Future<void> main() async {
     }
   }
 
-  for (final pkg in Directory('${repoRoot.path}/packages').listSync()) {
-    if (pkg is! Directory) continue;
-    final readme = File('${pkg.path}/README.md');
-    if (readme.existsSync()) scanMarkdownFile(readme.path);
+  if (Directory('${repoRoot.path}/packages').existsSync()) {
+    for (final pkg in Directory('${repoRoot.path}/packages').listSync()) {
+      if (pkg is! Directory) continue;
+      final readme = File('${pkg.path}/README.md');
+      if (readme.existsSync()) scanMarkdownFile(readme.path);
+    }
   }
 
   for (final dir in [
@@ -328,11 +353,13 @@ Future<void> main() async {
     scanDocsJson();
   }
 
-  if (Platform.environment['DOC_LINKS_MUTATION_PROBE'] == '1') {
-    final probe = File(
-      '${repoRoot.path}/mcp_server_dart/lib/src/_doc_links_mutation_probe.dart',
-    );
-    if (probe.existsSync()) scanDocPathLiterals(probe.path);
+  for (final e in allowlist) {
+    if (!e.used) {
+      report(
+        'allowlist: unused entry target=${e.target}'
+        '${e.citingFile != null ? " citingFile=${e.citingFile}" : ""} (${e.reason})',
+      );
+    }
   }
 
   if (broken > 0) {
