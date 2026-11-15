@@ -15,7 +15,9 @@ Inspect and drive a **debug** Flutter app over the VM service. MCP tool names us
    On macOS / iOS Simulator, if host `desktop_window` capture fails, pass `screenshotMode: flutter_layer` in tool args for a reliable Flutter-layer shot.
 3. **Act** — `fmt_tap_widget`, `fmt_enter_text`, `fmt_scroll`, `fmt_wait_for` (stable predicate after reload).
 4. **Reload + verify** — `fmt_hot_reload_flutter`, `fmt_hot_reload_and_capture`.
-${configuration.dynamicRegistrySupported ? '''5. **Dynamic tools** (when the app registers AgentCallEntry surfaces) — `fmt_list_client_tools_and_resources`, `fmt_client_tool`, `fmt_client_resource`; hot reload after code changes.
+${configuration.dynamicRegistrySupported ? '''
+5. **Dynamic tools** (when the app registers AgentCallEntry surfaces) — `fmt_list_client_tools_and_resources`, `fmt_client_tool`, `fmt_client_resource`; **hot restart** after registration changes (reload alone is not enough).
+   Skills: `flutter-mcp-toolkit-custom-tools`, `flutter-mcp-toolkit-intentcall-migration`.
 ''' : ''}
 Supporting tools include `fmt_get_vm`, `fmt_get_view_details`, navigation/dialog helpers, and interaction catalog entries (`fmt_drag`, `fmt_swipe`, …). Install the `flutter-mcp-toolkit-*` skills or call `tools/list` for the live catalog.
 

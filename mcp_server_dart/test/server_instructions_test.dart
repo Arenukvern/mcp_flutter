@@ -7,22 +7,22 @@ VMServiceConfigurationRecord _minimalConfig({
   bool resourcesSupported = true,
   bool dynamicRegistrySupported = true,
 }) => (
-      vmHost: 'localhost',
-      vmPort: 8181,
-      resourcesSupported: resourcesSupported,
-      imagesSupported: true,
-      dumpsSupported: dumpsSupported,
-      dynamicRegistrySupported: dynamicRegistrySupported,
-      logLevel: 'warning',
-      environment: 'development',
-      awaitDndConnection: false,
-      saveImagesToFiles: false,
-      flutterProjectDir: null,
-      flutterDevice: null,
-      flutterDiscoveryTimeoutMs: 3000,
-      scanPorts: const <int>[],
-      preferredTargetLabel: null,
-    );
+  vmHost: 'localhost',
+  vmPort: 8181,
+  resourcesSupported: resourcesSupported,
+  imagesSupported: true,
+  dumpsSupported: dumpsSupported,
+  dynamicRegistrySupported: dynamicRegistrySupported,
+  logLevel: 'warning',
+  environment: 'development',
+  awaitDndConnection: false,
+  saveImagesToFiles: false,
+  flutterProjectDir: null,
+  flutterDevice: null,
+  flutterDiscoveryTimeoutMs: 3000,
+  scanPorts: const <int>[],
+  preferredTargetLabel: null,
+);
 
 void main() {
   test('server instructions title reflects flutter-mcp-toolkit branding', () {
@@ -49,16 +49,25 @@ void main() {
     );
     expect(text, isNot(contains('fmt_client_tool')));
     expect(text, isNot(contains('fmt_list_client_tools_and_resources')));
+    expect(text, isNot(contains('flutter-mcp-toolkit-custom-tools')));
   });
 
   test('dynamicRegistrySupported parameter changes instructions', () {
-    final on = buildMcpToolkitServerInstructions(
-      _minimalConfig(dynamicRegistrySupported: true),
-    );
+    final on = buildMcpToolkitServerInstructions(_minimalConfig());
     final off = buildMcpToolkitServerInstructions(
       _minimalConfig(dynamicRegistrySupported: false),
     );
     expect(on, isNot(equals(off)));
     expect(on, contains('fmt_client_tool'));
+    expect(on, contains('hot restart'));
+    expect(on, contains('flutter-mcp-toolkit-custom-tools'));
+  });
+
+  test('resources section uses tools when resources disabled', () {
+    final text = buildMcpToolkitServerInstructions(
+      _minimalConfig(resourcesSupported: false),
+    );
+    expect(text, isNot(contains('visual://localhost/app/errors/latest')));
+    expect(text, contains('fmt_get_app_errors'));
   });
 }
