@@ -21,7 +21,7 @@ stewardship:
     adr_dir: decisions/
     ethics_charter: docs/NORTH_STAR.md
   knowledge:
-    docs_map: docs/start_here/docs_map.mdx
+    docs_map: docs/index.mdx
     source_policy: required_for_external_claims
   repo_quality:
     contract_spec: steward.yaml
@@ -42,7 +42,7 @@ stewardship:
   review_handoff:
     moe_required_for_architecture: true
   strategic_alignment:
-    vision_source: docs/start_here/why_this_repo_matters.mdx
+    vision_source: docs/NORTH_STAR.md
     success_evidence: required
   security:
     action_effects: required
@@ -50,13 +50,12 @@ stewardship:
   org:
     owners: AGENTS.md
 docs:
-  "Why This Repo Matters": docs/start_here/why_this_repo_matters.mdx
-  "Feature Map": docs/start_here/feature_map.mdx
-  "Docs Map": docs/start_here/docs_map.mdx
-  "CLI vs MCP": docs/start_here/cli_vs_mcp.mdx
-  "Execution Playbook": docs/ai_agents/execution_playbook.mdx
-  "Architecture": docs/core/project_architecture.mdx
-  "Dynamic Tool Registry": docs/core/dynamic_tools_registry.mdx
+  "Docs hub": docs/index.mdx
+  "Quickstart": docs/quickstart.mdx
+  "CLI vs MCP": docs/concepts/cli-vs-mcp.mdx
+  "How it works": docs/concepts/how-it-works.mdx
+  "Custom tools": docs/use-cases/custom-tools.mdx
+  "North Star": docs/NORTH_STAR.md
 actions:
   fmt.check.tool-prefix:
     kind: command
@@ -72,7 +71,7 @@ actions:
         - CHANGELOG.md
         - README.md
         - ARCHITECTURE.md
-        - docs/start_here/migration_v2_to_v3.mdx
+        - docs/migration/migration_v2_to_v3.mdx
         - decisions/0001_capability_kernel_and_tool_prefix.mdx
         - decisions/0002_v3_scope_and_consolidation_deferrals.mdx
       fs_write: []

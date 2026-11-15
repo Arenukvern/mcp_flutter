@@ -34,14 +34,14 @@ mv /tmp/mascot-transparent.png plugin/assets/mascot_collaborative_weaver.png
 ## How to capture screenshots
 
 1. Run `showcase/flutter_test_app` (or your app) in **debug** with `mcp_toolkit` initialized.
-2. Register a sample tool (see [Creating dynamic tools](../../docs/guides/creating_dynamic_tools.mdx)).
+2. Register a sample tool (see [Custom tools](../../docs/use-cases/custom-tools.mdx)).
 3. Use `fmt_capture_ui_snapshot` or `fmt_get_screenshots` from a connected agent, or OS screenshot.
 4. Prefer showing: running app UI + proof of custom tool in `fmt_list_client_tools_and_resources` output.
 
 ## Branding
 
 - Flutter blue `#02569B` is set in `plugin/.codex-plugin/plugin.json` → `interface.brandColor`.
-- Copy for listings: [docs/ai_agents/marketplace_copy.yaml](../../docs/ai_agents/marketplace_copy.yaml).
+- Copy for listings: [plugin/assets/marketplace_copy.yaml](./marketplace_copy.yaml).
 
 ## Submission
 

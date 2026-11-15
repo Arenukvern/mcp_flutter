@@ -4,7 +4,7 @@
 - **Date:** 2026-09-08
 - **Verification basis:** scripted-fake unit tests + live end-to-end smoke
   against an `oka dev` session (see
-  [dev-session delegation guide](/guides/dev-session-delegation-roadmap) for
+  this ADR (`/decisions/0014_external_dev_sessions_runner_delegation`) for
   the transcript-level evidence).
 
 ## Context
@@ -139,7 +139,7 @@ file composes with sticky endpoints and overrides; it never replaces them.
 
 ## Verification recipe
 
-See [dev-session delegation guide](/guides/dev-session-delegation-roadmap):
+See [ADR 0014](/decisions/0014_external_dev_sessions_runner_delegation) (this document):
 `oka dev --json` → `session.ready` → semantic snapshot oracle → edit →
 delegated reload → label changed; negative test: reload with no source
 change reports `changed: false`.

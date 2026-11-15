@@ -145,7 +145,7 @@ See `packages/harness/lib/src/intent_driver_router.dart` and
 - `flutter-mcp` — the interactive MCP loop
 - `flutter-mcp-e2e-harness` — scenario authoring, launch-path table, showcase launcher
 - [The Automation Chain](/docs/concepts/automation-chain) — first-time guide
-- [Dev-session delegation roadmap](/guides/dev-session-delegation-roadmap) — spec v2 contract in full
+- [ADR 0014 — external dev sessions](/decisions/0014_external_dev_sessions_runner_delegation) — runner delegation contract
 - [E2E Scenarios](/docs/use-cases/e2e-scenarios) · [CLI vs MCP](/docs/concepts/cli-vs-mcp)
 
 ## Sources

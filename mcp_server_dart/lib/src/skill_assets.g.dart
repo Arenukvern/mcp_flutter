@@ -314,7 +314,7 @@ flutter-mcp-toolkit init all --mode cli      # install for every detected agent 
 
 Mode auto-detects (MCP if registered, else CLI). Override with `--mode mcp|cli|auto`.
 
-**Alternative (skills only, open ecosystem):** `npx skills add Arenukvern/mcp_flutter -a cursor -y` installs the same `SKILL.md` bundles via [skills.sh](https://skills.sh); it does not write `mcp.json` — run `init` afterward or configure `mcpServers` manually. See [AI agent overview](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/ai_agents/overview.mdx).
+**Alternative (skills only, open ecosystem):** `npx skills add Arenukvern/mcp_flutter -a cursor -y` installs the same `SKILL.md` bundles via [skills.sh](https://skills.sh); it does not write `mcp.json` — run `init` afterward or configure `mcpServers` manually. See [Connect your agent](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/install/clients.mdx).
 
 ---
 
@@ -2082,16 +2082,16 @@ Publish pub.dev packages locally only as a fallback: `make publish-pub`.
 
 | Topic                    | Canonical doc                                                                                                                                                    |
 | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| End-user agent install   | [docs/ai_agents/overview.mdx](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/ai_agents/overview.mdx)                                                   |
-| `npx skills` + lockfile  | overview § Install via `npx skills`; [.skills.json.example](https://github.com/Arenukvern/mcp_flutter/blob/main/.skills.json.example)                            |
-| Contributor / releases   | [docs/contributing/contribution_guide.mdx](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/contributing/contribution_guide.mdx)                         |
+| End-user agent install   | [docs/install/clients.mdx](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/install/clients.mdx)                                                         |
+| `npx skills` + lockfile  | [clients.mdx](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/install/clients.mdx) § skills; [.skills.json.example](https://github.com/Arenukvern/mcp_flutter/blob/main/.skills.json.example) |
+| Contributor / releases   | [docs/contributing/guide.mdx](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/contributing/guide.mdx)                                                    |
 | Plugin layout            | [plugin/README.md](https://github.com/Arenukvern/mcp_flutter/blob/main/plugin/README.md)                                                                         |
-| Marketplace copy SSOT    | [docs/ai_agents/marketplace_copy.yaml](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/ai_agents/marketplace_copy.yaml)                                 |
-| Distribution / stores    | [docs/ai_agents/marketplace_distribution.mdx](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/ai_agents/marketplace_distribution.mdx)                   |
+| Marketplace copy SSOT    | [plugin/assets/marketplace_copy.yaml](https://github.com/Arenukvern/mcp_flutter/blob/main/plugin/assets/marketplace_copy.yaml)                                   |
+| Distribution / stores    | [docs/install/clients.mdx](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/install/clients.mdx)                                                         |
 | Store submission runbook | [docs/contributing/marketplace_submission_runbook.mdx](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/contributing/marketplace_submission_runbook.mdx) |
 | Skill bodies             | `plugin/skills/<id>/SKILL.md` → `make sync-skills`                                                                                                               |
 
-Avoid duplicating install tables in README — link to overview.
+Avoid duplicating install tables in README — link to [docs/index.mdx](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/index.mdx).
 
 ## Skills maintenance
 
@@ -2881,7 +2881,7 @@ See `packages/harness/lib/src/intent_driver_router.dart` and
 - `flutter-mcp` — the interactive MCP loop
 - `flutter-mcp-e2e-harness` — scenario authoring, launch-path table, showcase launcher
 - [The Automation Chain](/docs/concepts/automation-chain) — first-time guide
-- [Dev-session delegation roadmap](/guides/dev-session-delegation-roadmap) — spec v2 contract in full
+- [ADR 0014 — external dev sessions](/decisions/0014_external_dev_sessions_runner_delegation) — runner delegation contract
 - [E2E Scenarios](/docs/use-cases/e2e-scenarios) · [CLI vs MCP](/docs/concepts/cli-vs-mcp)
 
 ## Sources

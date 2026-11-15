@@ -18,5 +18,5 @@
 
 ## Notes
 
-- Contribution guide: `docs/contributing/contribution_guide.mdx`
+- Contribution guide: `docs/contributing/guide.mdx`
 - Contributor credit: `docs/contributing/contributors.mdx`

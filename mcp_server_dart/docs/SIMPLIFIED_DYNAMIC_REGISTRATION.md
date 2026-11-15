@@ -2,11 +2,11 @@
 
 > [!WARNING]
 > Historical/internal design note. Examples here may not match the current public API exactly.
-> For canonical usage, use root docs (`README.md`, `QUICK_START.md`, `CONFIGURATION.md`) and `docs/`.
+> For canonical usage, use [`docs/quickstart.mdx`](../docs/quickstart.mdx), [`docs/index.mdx`](../docs/index.mdx), and `README.md`.
 >
 > **Phase 6b:** the legacy call-entry API was removed. Use `AgentCallEntry` +
 > `MCPToolkitBinding.addEntries` / `mcpToolkitTool` (forwards `ObjectSchema`
-> to `inputSchema`). See `docs/start_here/migration_mcp_call_entry_to_agent_call_entry.md`.
+> to `inputSchema`). See `docs/migration/migration_mcp_call_entry_to_agent_call_entry.md`.
 
 ## Overview
 

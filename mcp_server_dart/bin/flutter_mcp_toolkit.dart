@@ -2731,7 +2731,7 @@ Examples:
   flutter-mcp-toolkit migrate mcp-call-entry --write --namespace my_app lib/
 
 Migrates legacy MCPCallEntry tool/resource factories to AgentCallEntry (Phase 6b hard cut shipped).
-See docs/start_here/migration_mcp_call_entry_to_agent_call_entry.md for limitations.
+See docs/migration/migration_mcp_call_entry_to_agent_call_entry.md for limitations.
 ''';
 
 Future<int> _runWebmcpSubcommand(ArgResults command) async {

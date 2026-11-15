@@ -55,7 +55,7 @@ Harness and video-production skills live in their owner repositories. This
 plugin only ships the Flutter MCP Toolkit runtime, maintenance, migration, and
 boundary-audit skills listed above.
 
-Store listing copy: [docs/ai_agents/marketplace_copy.yaml](../docs/ai_agents/marketplace_copy.yaml).
+Store listing copy: [plugin/assets/marketplace_copy.yaml](assets/marketplace_copy.yaml).
 
 ## Layout
 
