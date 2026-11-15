@@ -1425,7 +1425,7 @@ If something should appear but does not: confirm **`addEntries`** completed (**`
 
 - **`flutter-mcp-toolkit-intentcall-migration`** — CLI migrator, breaking upgrade
 - **`flutter-mcp-toolkit-guide`** → inspect / control / debug skills
-- Repository **`ARCHITECTURE.md`** → “Dynamic Registry Architecture”
+- Docs [**How it works**](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/concepts/how-it-works.mdx) → dynamic registry overview
 ''',
       relativePath: 'skills/flutter-mcp-toolkit-custom-tools/SKILL.md',
     ),
