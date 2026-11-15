@@ -1,0 +1,44 @@
+{
+  "entries": [
+    {
+      "match": "github.com/Arenukvern/intentcall",
+      "reason": "Hosted IntentCall canonical docs (external repo)."
+    },
+    {
+      "match": "github.com/cursor/",
+      "reason": "Cursor product/plugin documentation (external)."
+    },
+    {
+      "match": "cursor.com/docs/",
+      "reason": "Cursor product documentation site (external)."
+    },
+    {
+      "match": "docs.page/Arenukvern/intentcall",
+      "reason": "Published IntentCall docs site (external)."
+    },
+    {
+      "match": "flutter_harness/decisions/",
+      "reason": "Historical path in ADR 0012 — harness package context."
+    },
+    {
+      "match": "docs/superpowers/plans/",
+      "reason": "Historical ADR Sources paths (removed files; cite as-written)."
+    },
+    {
+      "match": "docs/ai_agents/",
+      "reason": "North-star agent-ops layer placeholder (not a checked-in tree yet)."
+    },
+    {
+      "match": "github.com/Arenukvern/oka/",
+      "reason": "Oka sibling repo doc paths cited inside skills (not this checkout)."
+    },
+    {
+      "match": "docs/core/",
+      "reason": "Legacy docs/core layout referenced from vendored steward skills."
+    },
+    {
+      "match": "docs/evidence/",
+      "reason": "Historical evidence paths (relocated under maintainers/evidence)."
+    }
+  ]
+}

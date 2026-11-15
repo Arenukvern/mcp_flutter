@@ -6,30 +6,83 @@ use warnings;
 
 my $file = $ARGV[0];
 open my $fh, '<', $file or die "open $file: $!\n";
-my $line_no = 0;
-while (my $raw = <$fh>) {
-  $line_no++;
-  next if $raw =~ /tool-count-allow/i;
-  next if $raw =~ /^\s*\d+\.\s/;    # ordered-list lead-in, not a tool total
+
+sub normalize_line {
+  my ($raw) = @_;
+  return '' if $raw =~ /tool-count-allow/i;
   my $line = $raw;
+  $line =~ s/^\s*\d+\.\s+//;    # ordered-list prefix — scan remainder only
   $line =~ s/<[^>]+>//g;
   $line =~ s/&nbsp;/ /gi;
-  next unless $line =~ /(?<![\w-])\btools\b/i || $line =~ /\d+\s*[-–]\s*tool\b/i;
+  return $line;
+}
+
+sub scan_text {
+  my ($blob, $line_no, $raw_for_print) = @_;
+  return if $blob =~ /\b\d{1,3}\s*-(?:second|minute|hour|day|week|month|year)\b/i;
+  return if $blob =~ /\btools\/call\b/i;
+  return if $blob =~ /(?:^|[^\d])\d+\s*skills\b/i;
+  return if $blob =~ /[\w]-tools\b/i && $blob !~ /\b\d{1,3}\s*[-–]\s*tool/i;
+  return if $blob =~ /"tools"\s*:\s*\[/i;
+  return if $blob =~ /\bcore\s+\d{1,3}\b[\s\S]{0,40}\btools\b/i && $blob !~ /\+\s*\d{1,3}\s+inspection/i;
+  return if $blob =~ /\btools\b[\s\S]{0,24}\bcore\s+\d{1,3}\b/i;
+  return unless $blob =~ /(?<![\w-])\btools\b/i
+    || $blob =~ /\btoolset\b/i
+    || $blob =~ /\d+\s*[-–]\s*tool\b/i
+    || $blob =~ /\bfmt_/i
+    || $blob =~ /tool\s+count\s*:/i
+    || $blob =~ /tool(?:s)?\s+surface/i;
   my $hit = 0;
-  $hit = 1 if $line =~ /
+  $hit = 1 if $blob =~ /
     (?:
       \b\d{1,3}\+?\b
-      | \b(?:twenty|thirty|forty|twenty[\s-]?(?:nine|eight|seven|six|five|four|three|two|one)|thirty[\s-]?(?:nine|eight|seven|six|five|four|three|two|one)|forty)\b
+      | \b(?:twenty|thirty|forty|twenty[\s-]?(?:nine|eight|seven|six|five|four|three|two|one)|thirty[\s-]?(?:nine|eight|seven|six|five|four|three|two|one)|forty|thirty[\s-]?four|twenty[\s-]?nine)\b
     )
-    [\s\S]{0,56}
+    [\s\S]{0,72}
     \btools\b
   /xi;
-  $hit = 1 if !$hit && $line =~ /\btools\b[\s\S]{0,32}\b\d{1,3}\+?\b/i;
-  $hit = 1 if !$hit && $line =~ /\btools\s*:\s*\d{1,3}\b/i;
-  $hit = 1 if !$hit && $line =~ /\b\d{1,3}\+?\s*[-–]\s*tool\b/i;
-  $hit = 1 if !$hit && $line =~ /\bover\s+\d{1,3}\s+(?:\w+\s+){0,4}tools\b/i;
+  $hit = 1 if !$hit && $blob =~ /\btools\b[\s\S]{0,40}\b\d{1,3}\+?\b/i;
+  $hit = 1 if !$hit && $blob =~ /\btools\s*:\s*\d{1,3}\b/i;
+  $hit = 1 if !$hit && $blob =~ /\b\d{1,3}\+?\s*[-–]\s*tool\b/i;
+  $hit = 1 if !$hit && $blob =~ /\bover\s+\d{1,3}\s+(?:\w+\s+){0,6}tools\b/i;
+  $hit = 1 if !$hit && $blob =~ /tool\s+count\s*:\s*\d{1,3}\b/i;
+  $hit = 1 if !$hit && $blob =~ /\b\d{1,3}\s*[-–]\s*strong\s+tool\s+surface\b/i;
+  $hit = 1 if !$hit && $blob =~ /\btoolset\s+of\s+(?:\d{1,3}|thirty[\s-]?four|twenty[\s-]?nine)\b/i;
+  $hit = 1 if !$hit && $blob =~ /\b(?:the\s+)?\d{1,3}\s+fmt_\w+/i;
+  $hit = 1 if !$hit && $blob =~ /\b(?:thirty|twenty)[\s-]?(?:four|nine)\b[\s\S]{0,48}\btools\b/i;
   if ($hit) {
-    print "$file:$line_no:$raw";
+    print "$file:$line_no:$raw_for_print";
   }
 }
+
+my @paragraph;
+my $para_start = 1;
+my $line_no = 0;
+
+while (my $raw = <$fh>) {
+  $line_no++;
+  if ($raw =~ /^\s*$/ || $raw =~ /^\s*\d+\.\s/) {
+    if (@paragraph) {
+      my $joined = join ' ', map { normalize_line($_) } @paragraph;
+      scan_text($joined, $para_start, $paragraph[0]) if $joined ne '';
+      @paragraph = ();
+    }
+    if ($raw =~ /^\s*\d+\.\s/) {
+      my $one = normalize_line($raw);
+      scan_text($one, $line_no, $raw) if $one ne '';
+    }
+    next if $raw =~ /^\s*$/;
+    next;
+  }
+  my $one = normalize_line($raw);
+  scan_text($one, $line_no, $raw) if $one ne '';
+  $para_start = $line_no if !@paragraph;
+  push @paragraph, $raw;
+}
+
+if (@paragraph) {
+  my $joined = join ' ', map { normalize_line($_) } @paragraph;
+  scan_text($joined, $para_start, $paragraph[0]) if $joined ne '';
+}
+
 close $fh;

@@ -18,10 +18,12 @@
 | Debug `flutter run` with `mcp_toolkit` in main() | Release/profile builds without VM service |
 | Claude/Cursor/Codex MCP + skills | Guessing UI from source |
 
-## Install (pick one)
+## Install (server binary required)
 
-1. **Marketplace / plugin** — Claude: `/plugin marketplace add Arenukvern/mcp_flutter` then `/plugin install flutter-mcp-toolkit@flutter-mcp-toolkit`; Cursor: `flutter-mcp-toolkit init cursor` (CLI must be on PATH — use install script first).
-2. **Script** — `curl -fsSL …/install.sh | bash` → `flutter-mcp-toolkit-server` on PATH.
+Every path still needs **`flutter-mcp-toolkit-server` on PATH** (marketplace/plugins ship skills and MCP config, not the server binary).
+
+1. **Script (recommended first)** — `curl -fsSL …/install.sh | bash` → `flutter-mcp-toolkit-server` on PATH.
+2. **Marketplace / plugin** — Claude: `/plugin marketplace add Arenukvern/mcp_flutter` then `/plugin install flutter-mcp-toolkit@flutter-mcp-toolkit`; Cursor: install script first, then `flutter-mcp-toolkit init cursor`.
 3. **Docker / from source** — secondary; see docs/install/docker.mdx and docs/install/platforms.mdx.
 
 `init claude-code` / `cline` / `agents-skills`: **skills only** — add MCP server manually.

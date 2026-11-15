@@ -15,10 +15,18 @@ bad=0
 check_paths() {
   local label="$1"
   shift
-  [[ -e "$1" ]] || return 0
-  local hits
+  if [[ $# -eq 0 ]]; then
+  return 0
+  fi
+  for root in "$@"; do
+    [[ -e "$root" ]] || {
+      echo "check_intentcall_skills_grep: missing scan root: $root" >&2
+      exit 2
+    }
+  done
+  local hits rg_status
   hits="$(rg -l 'MCPCallEntry' "$@" || true)"
-  rg_status=${PIPESTATUS[0]}
+  rg_status=$?
   if ((rg_status > 1)); then
     echo "check_intentcall_skills_grep: rg failed (exit $rg_status)" >&2
     exit 2
@@ -35,15 +43,34 @@ check_paths() {
 }
 
 # Plugin skills (migration skill only)
-check_paths "plugin/skills" "$ROOT/plugin/skills" --glob 'SKILL.md'
+if [[ -d "$ROOT/plugin/skills" ]]; then
+  hits="$(rg -l 'MCPCallEntry' "$ROOT/plugin/skills" --glob 'SKILL.md' || true)"
+  rg_status=$?
+  if ((rg_status > 1)); then
+    echo "check_intentcall_skills_grep: rg failed (exit $rg_status)" >&2
+    exit 2
+  fi
+  if [[ -n "$hits" ]]; then
+    while IFS= read -r file; do
+      [[ -z "$file" ]] && continue
+      if [[ "$file" == "$MIGRATION_SKILL" ]]; then
+        continue
+      fi
+      echo "check_intentcall_skills_grep (plugin/skills): unexpected MCPCallEntry in $file" >&2
+      bad=1
+    done <<< "$hits"
+  fi
+fi
 
 for docs_area in concepts install use-cases; do
-  [[ -d "$ROOT/docs/$docs_area" ]] && check_paths "docs/$docs_area" "$ROOT/docs/$docs_area"
+  check_paths "docs/$docs_area" "$ROOT/docs/$docs_area"
 done
 for doc_file in quickstart.mdx troubleshooting.mdx; do
-  [[ -f "$ROOT/docs/$doc_file" ]] && check_paths "docs" "$ROOT/docs/$doc_file"
+  check_paths "docs" "$ROOT/docs/$doc_file"
 done
 check_paths "docs/contributing" "$ROOT/docs/contributing"
+
+check_paths "readme" "$ROOT/README.md" "$ROOT/llms.txt"
 
 # Plugin surfaces
 for f in \
@@ -63,7 +90,7 @@ if rg -q 'MCPCallEntry' "$ROOT/mcp_server_dart/lib/src/skill_assets.g.dart"; the
     echo "check_intentcall_skills_grep: MCPCallEntry in skill_assets.g.dart without migration skill" >&2
     bad=1
   fi
-  count="$(rg -c 'MCPCallEntry' "$ROOT/mcp_server_dart/lib/src/skill_assets.g.dart" || echo 0)"
+  count="$(rg -c 'MCPCallEntry' "$ROOT/mcp_server_dart/lib/src/skill_assets.g.dart" || true)"
   if [[ "$count" -gt 20 ]]; then
     echo "check_intentcall_skills_grep: too many MCPCallEntry hits ($count) in skill_assets.g.dart" >&2
     bad=1

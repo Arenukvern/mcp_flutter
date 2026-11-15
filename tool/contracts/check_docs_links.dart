@@ -7,8 +7,41 @@ import 'dart:io';
 
 final repoRoot = Directory.current;
 var broken = 0;
+late final List<AllowEntry> allowlist;
 
-void report(String msg) {
+class AllowEntry {
+  AllowEntry({required this.match, required this.reason});
+  final String match;
+  final String reason;
+
+  static List<AllowEntry> load() {
+    final file = File('${repoRoot.path}/tool/contracts/check_docs_links_allowlist.json');
+    if (!file.existsSync()) return [];
+    final raw = jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
+    final entries = raw['entries'];
+    if (entries is! List) return [];
+    return entries
+        .map((e) => e as Map<String, dynamic>)
+        .map(
+          (e) => AllowEntry(
+            match: '${e['match']}',
+            reason: '${e['reason']}',
+          ),
+        )
+        .toList();
+  }
+}
+
+bool allowlisted(String context, String target) {
+  final hay = '$context $target';
+  for (final e in allowlist) {
+    if (hay.contains(e.match)) return true;
+  }
+  return false;
+}
+
+void report(String msg, {String? context, String? target}) {
+  if (target != null && allowlisted(context ?? msg, target)) return;
   stderr.writeln('check_docs_links: $msg');
   broken++;
 }
@@ -34,22 +67,31 @@ File? resolveSiteAbsolute(String href) {
     ]);
   }
   if (path.startsWith('docs/')) {
-    return _firstExisting(['$path.mdx', '$path.md', path]);
+    final stripped = path.substring('docs/'.length);
+    return _firstExisting([
+      'docs/$stripped.mdx',
+      'docs/$stripped.md',
+      'docs/$stripped/index.mdx',
+      path,
+      '$path.mdx',
+      '$path.md',
+    ]);
   }
   var base = path;
   if (base.startsWith('decisions/')) {
     base = base.substring('decisions/'.length);
   }
   final candidates = <String>[
-  if (path.contains('.mdx') || path.contains('.md'))
-    ...['decisions/$path', 'docs/decisions/$path', path]
-  else ...[
-    'docs/$path.mdx',
-    'docs/$path.md',
-    'decisions/$path.mdx',
-    'decisions/$path.md',
-    'docs/decisions/$base.mdx',
-  ],
+    if (path.contains('.mdx') || path.contains('.md'))
+      ...['decisions/$path', 'docs/decisions/$path', path]
+    else ...[
+      'docs/$path.mdx',
+      'docs/$path.md',
+      'decisions/$path.mdx',
+      'decisions/$path.md',
+      'docs/decisions/$base.mdx',
+      'docs/decisions/$base.md',
+    ],
   ];
   return _firstExisting(candidates);
 }
@@ -58,6 +100,8 @@ File? _firstExisting(List<String> relative) {
   for (final rel in relative) {
     final f = File('${repoRoot.path}/$rel');
     if (f.existsSync()) return f;
+    final d = Directory('${repoRoot.path}/$rel');
+    if (d.existsSync()) return File(d.path);
   }
   return null;
 }
@@ -90,28 +134,44 @@ void scanMarkdownFile(String path) {
       if (isExternal(href)) continue;
       if (href.startsWith('/')) {
         if (resolveSiteAbsolute(href) == null) {
-          report('$path: broken site path -> $href');
+          report('$path: broken site path -> $href', context: path, target: href);
         }
         continue;
       }
       if (resolveRelative(path, href) == null) {
-        report('$path: broken link -> $href');
+        report('$path: broken link -> $href', context: path, target: href);
       }
     }
   }
 }
 
 final docPathInSource = RegExp(
-  r'''(?:docs/[a-zA-Z0-9_./-]+\.(?:mdx?|md)|maintainers/[a-zA-Z0-9_./-]+\.(?:mdx?|md|ya?ml)|decisions/[a-zA-Z0-9_./-]+\.mdx)''',
+  r'''(?:(?:mcp_server_dart|packages/harness)/)?(?:docs/[a-zA-Z0-9_./-]+\.(?:mdx?|md)|maintainers/[a-zA-Z0-9_./-]+\.(?:mdx?|md|ya?ml)|decisions/[a-zA-Z0-9_./-]+\.mdx)''',
 );
 
 void scanDocPathLiterals(String path) {
-  final content = File(path).readAsStringSync();
+  final content = File(path)
+      .readAsStringSync()
+      .replaceAll(RegExp(r'https?://\S+'), ' ');
   for (final m in docPathInSource.allMatches(content)) {
-    final p = m.group(0)!;
-    if (!File('${repoRoot.path}/$p').existsSync()) {
-      report('$path: broken doc path in source -> $p');
+    var p = m.group(0)!;
+    if (allowlisted(path, p)) continue;
+    final candidates = <String>[p];
+    if (p.startsWith('docs/')) {
+      candidates.add('mcp_server_dart/$p');
     }
+  var found = false;
+  for (final c in candidates) {
+    final f = File('${repoRoot.path}/$c');
+    final d = Directory('${repoRoot.path}/$c');
+    if (f.existsSync() || d.existsSync()) {
+      found = true;
+      break;
+    }
+  }
+  if (!found) {
+    report('$path: broken doc path in source -> $p', context: path, target: p);
+  }
   }
 }
 
@@ -125,7 +185,7 @@ void scanDocsJson() {
           final href = e.value as String;
           if (!isExternal(href) && href.startsWith('/')) {
             if (resolveSiteAbsolute(href) == null) {
-              report('docs.json: broken href -> $href');
+              report('docs.json: broken href -> $href', target: href);
             }
           }
         } else {
@@ -159,51 +219,95 @@ void scanStewardYaml() {
     final f = File('${repoRoot.path}/$entry');
     final d = Directory('${repoRoot.path}/$entry');
     if (!f.existsSync() && !d.existsSync()) {
-      report('steward.yaml: missing effects path -> $entry');
+      report('steward.yaml: missing effects path -> $entry', target: entry);
+    }
+  }
+}
+
+void walkDir(String dir, void Function(String path) onFile) {
+  final d = Directory('${repoRoot.path}/$dir');
+  if (!d.existsSync()) return;
+  for (final entity in d.listSync(recursive: true, followLinks: false)) {
+    if (entity is! File) continue;
+    final p = entity.path;
+    if (p.contains('/.git/') || p.contains('node_modules')) continue;
+    onFile(p);
+  }
+}
+
+void scanTreeForLiterals(String rel) {
+  final entity = FileSystemEntity.typeSync('${repoRoot.path}/$rel');
+  if (entity == FileSystemEntityType.notFound) return;
+  if (entity == FileSystemEntityType.file) {
+    scanDocPathLiterals('${repoRoot.path}/$rel'.replaceFirst('${repoRoot.path}/', ''));
+    final name = rel;
+    if (name.endsWith('.md') || name.endsWith('.mdx')) {
+      scanMarkdownFile('${repoRoot.path}/$rel');
+    }
+    return;
+  }
+  for (final f in Directory('${repoRoot.path}/$rel').listSync(recursive: true)) {
+    if (f is! File) continue;
+    final name = f.path;
+    if (name.contains('/.git/') || name.contains('node_modules')) continue;
+    if (name.contains('/tool/contracts/check_docs_links.dart')) continue;
+    final relPath = name.replaceFirst('${repoRoot.path}/', '');
+    if (name.endsWith('.dart') ||
+        name.endsWith('.sh') ||
+        name.endsWith('.md') ||
+        name.endsWith('.mdx') ||
+        name.endsWith('.yaml') ||
+        name.endsWith('.yml')) {
+      scanDocPathLiterals(relPath);
+    }
+    if (name.endsWith('.md') || name.endsWith('.mdx')) {
+      scanMarkdownFile(name);
     }
   }
 }
 
 Future<void> main() async {
-  final mdRoots = <String>[
-    'docs',
-    'plugin',
-    'skills',
-    '.agents',
-    '.cursor',
-    'maintainers',
+  allowlist = AllowEntry.load();
+
+  for (final root in ['docs', 'plugin', 'skills', 'maintainers', 'decisions']) {
+    walkDir(root, (p) {
+      if (p.endsWith('.md') || p.endsWith('.mdx')) scanMarkdownFile(p);
+    });
+  }
+
+  for (final sub in ['.cursor']) {
+    walkDir(sub, (p) {
+      if (p.endsWith('.md') || p.endsWith('.mdx')) scanMarkdownFile(p);
+    });
+  }
+
+  for (final f in [
     'README.md',
     'AGENTS.md',
     'CONTRIBUTING.md',
     'mcp_toolkit/README.md',
+    'mcp_server_dart/README.md',
     'llms.txt',
     'docs/llms.txt',
-  ];
-
-  void walkDir(String dir) {
-    final d = Directory('${repoRoot.path}/$dir');
-    if (!d.existsSync()) return;
-    for (final entity in d.listSync(recursive: true, followLinks: false)) {
-      if (entity is! File) continue;
-      final p = entity.path;
-      if (p.contains('/.git/') || p.contains('node_modules')) continue;
-      if (p.endsWith('.md') || p.endsWith('.mdx')) {
-        scanMarkdownFile(p);
+  ]) {
+    final file = File('${repoRoot.path}/$f');
+    if (file.existsSync()) {
+      if (f.endsWith('.md') || f.endsWith('.mdx')) {
+        scanMarkdownFile(file.path);
+      } else {
+        scanDocPathLiterals(f);
       }
     }
   }
 
-  for (final root in ['docs', 'plugin', 'skills', 'maintainers']) {
-    walkDir(root);
-  }
-  for (final f in ['README.md', 'AGENTS.md', 'CONTRIBUTING.md', 'mcp_toolkit/README.md']) {
-    final file = File('${repoRoot.path}/$f');
-    if (file.existsSync()) scanMarkdownFile(file.path);
+  for (final pkg in Directory('${repoRoot.path}/packages').listSync()) {
+    if (pkg is! Directory) continue;
+    final readme = File('${pkg.path}/README.md');
+    if (readme.existsSync()) scanMarkdownFile(readme.path);
   }
 
-  final literalGlobs = [
+  for (final dir in [
     'mcp_toolkit/lib',
-    'mcp_toolkit/README.md',
     'mcp_server_dart/bin',
     'mcp_server_dart/lib',
     'mcp_server_dart/test',
@@ -211,37 +315,24 @@ Future<void> main() async {
     'tool',
     'plugin/skills',
     'skills',
-    '.agents/skills',
-    'steward.yaml',
     'showcase',
-  ];
-
-  for (final dir in literalGlobs) {
-    final target = File('${repoRoot.path}/$dir');
-    if (target.existsSync() && target is File) {
-      scanDocPathLiterals(target.path);
-      continue;
-    }
-    if (!target.existsSync()) continue;
-    for (final entity in Directory(target.path).listSync(recursive: true)) {
-      if (entity is! File) continue;
-      final name = entity.path;
-      if (name.endsWith('.dart') ||
-          name.endsWith('.sh') ||
-          name.endsWith('.md') ||
-          name.endsWith('.mdx') ||
-          name.endsWith('.yaml') ||
-          name.endsWith('.yml')) {
-        scanDocPathLiterals(name);
-      }
-    }
+  ]) {
+    scanTreeForLiterals(dir);
   }
 
   if (File('${repoRoot.path}/steward.yaml').existsSync()) {
     scanStewardYaml();
+    scanDocPathLiterals('steward.yaml');
   }
   if (File('${repoRoot.path}/docs.json').existsSync()) {
     scanDocsJson();
+  }
+
+  if (Platform.environment['DOC_LINKS_MUTATION_PROBE'] == '1') {
+    final probe = File(
+      '${repoRoot.path}/mcp_server_dart/lib/src/_doc_links_mutation_probe.dart',
+    );
+    if (probe.existsSync()) scanDocPathLiterals(probe.path);
   }
 
   if (broken > 0) {

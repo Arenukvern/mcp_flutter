@@ -2838,10 +2838,9 @@ See `packages/harness/lib/src/intent_driver_router.dart` and
 - `decisions/0015_flutter_mcp_harness_extraction.mdx` — harness extraction and boundaries
 - `decisions/0012_fmtk_cli_alias_and_harness_boundary.mdx` — CLI/harness boundary
 - oka repo ([github.com/Arenukvern/oka](https://github.com/Arenukvern/oka)):
-  `packages/oka_harness/` (targets, `driverForLiveSession`),
-  `docs/decisions/0027-oka-harness-device-targets.mdx` (hosted
-  `flutter_mcp_harness` consumption), `docs/decisions/0024-declarative-test-workflows-and-agent-adapters.mdx`
-  (oracle/adapter layering)
+  `packages/oka_harness/` (targets, `driverForLiveSession`); hosted harness ADR
+  [Oka harness ADR](https://github.com/Arenukvern/oka/blob/main/docs/decisions/0026-oka-harness-device-targets.mdx).
+  In-repo boundary: [0015](/decisions/0015_flutter_mcp_harness_extraction).
 ''',
       relativePath: 'skills/flutter-mcp-automation-chain/SKILL.md',
     ),

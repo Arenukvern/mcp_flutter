@@ -29,4 +29,4 @@ bash tool/evals/run_dogfood_eval.sh --ws-uri "$WS_URI" --merge
 
 ## Live capture vs widget golden
 
-The widget test renders at the test binding’s logical size (typically **800×600**, DPR **1.0**). Live Chrome capture (`screenshot_mode: flutter_layer`) depends on window size and DPR — see [maintainers superpowers evals](../../../maintainers/superpowers/evals/README.md) (viewport/DPR pinning). Warm dogfood uses `dogfood_warm.yaml`, not strict `default_guild.yaml`.
+The widget test renders at the test binding’s logical size (typically **800×600**, DPR **1.0**). Live Chrome capture (`screenshot_mode: flutter_layer`) depends on window size and DPR — see [maintainers superpowers evals](../../../../maintainers/superpowers/evals/README.md) (viewport/DPR pinning). Warm dogfood uses `dogfood_warm.yaml`, not strict `default_guild.yaml`.

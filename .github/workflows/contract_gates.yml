@@ -105,6 +105,12 @@ jobs:
       - name: Check docs internal links
         run: bash tool/contracts/check_docs_links.sh
 
+      - name: Check docs links fixtures (mutation)
+        run: bash tool/contracts/test_docs_links_fixtures.sh
+
+      - name: Check docs/help drift
+        run: bash tool/contracts/check_docs_drift.sh
+
       - name: Check decisions docs sync
         run: bash tool/contracts/check_decisions_docs_sync.sh
 
@@ -165,10 +171,6 @@ jobs:
         if: ${{ hashFiles('flutter_live_edit/flutter_live_edit_toolkit/test/agent_import_boundary_test.dart') != '' }}
         working-directory: flutter_live_edit/flutter_live_edit_toolkit
         run: flutter test test/agent_import_boundary_test.dart
-
-      - name: Check docs/help drift
-        continue-on-error: true
-        run: bash tool/contracts/check_docs_drift.sh
 
       - name: Check SDK parity
         continue-on-error: true
