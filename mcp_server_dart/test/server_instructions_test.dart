@@ -59,15 +59,20 @@ void main() {
     );
     expect(on, isNot(equals(off)));
     expect(on, contains('fmt_client_tool'));
-    expect(on, contains('hot restart'));
+    expect(on, contains('fmt_hot_restart_flutter'));
     expect(on, contains('flutter-mcp-toolkit-custom-tools'));
   });
 
   test('resources section uses tools when resources disabled', () {
+    final withResources = buildMcpToolkitServerInstructions(_minimalConfig());
     final text = buildMcpToolkitServerInstructions(
       _minimalConfig(resourcesSupported: false),
     );
+    expect(withResources, contains('## Static resources'));
+    expect(text, isNot(contains('## Static resources')));
+    expect(text, contains('## Error and view tools'));
     expect(text, isNot(contains('visual://localhost/app/errors/latest')));
     expect(text, contains('fmt_get_app_errors'));
+    expect(text, contains('fmt_get_view_details'));
   });
 }
