@@ -39,7 +39,7 @@ hits=""
 scanner_failed=0
 for f in "${files[@]}"; do
   line_hits=""
-  if ! line_hits="$("$SCANNER" "$f")"; then
+  if ! line_hits="$(perl "$SCANNER" "$f")"; then
     echo "check_no_hardcoded_tool_counts: scanner failed on $f (exit $?)" >&2
     scanner_failed=1
     continue
