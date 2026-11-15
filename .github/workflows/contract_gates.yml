@@ -109,9 +109,10 @@ jobs:
         run: bash tool/contracts/check_decisions_docs_sync.sh
 
       - name: mcp_toolkit README snippet compiles
+        working-directory: mcp_toolkit
         run: |
-          cd mcp_toolkit && dart pub get
-          dart test test/readme_custom_tools_snippet_test.dart
+          flutter pub get
+          flutter test test/readme_custom_tools_snippet_test.dart
 
   informational:
     name: Contracts & analysis (informational)
