@@ -8,14 +8,21 @@ String packageRoot() {
   return File(Platform.script.toFilePath()).parent.parent.path;
 }
 
-String extractDartFence(String contents, {String? mustContain}) {
+String extractDartFence(
+  String contents, {
+  String? mustContain,
+  int occurrence = 0,
+}) {
   final re = RegExp(r'```dart[^\n]*\n([\s\S]*?)\n```', multiLine: true);
+  var seen = 0;
   for (final m in re.allMatches(contents)) {
     final block = m.group(1)!;
-    if (mustContain == null || block.contains(mustContain)) return block;
+    if (mustContain != null && !block.contains(mustContain)) continue;
+    if (seen == occurrence) return block;
+    seen++;
   }
   throw StateError(
-    'No ```dart fence found${mustContain != null ? ' containing $mustContain' : ''}',
+    'No ```dart fence found${mustContain != null ? ' containing $mustContain' : ''} (#$occurrence)',
   );
 }
 
@@ -84,6 +91,19 @@ Future<void> analyzeSnippet(String packageRoot, String wrapped) async {
 }
 
 void main() {
+  test('mcp_toolkit README bootstrap main dart fence type-checks', () async {
+    final root = packageRoot();
+    final block = extractDartFence(
+      File('$root/README.md').readAsStringSync(),
+      mustContain: 'bootstrapFlutter',
+      occurrence: 0,
+    );
+    await analyzeSnippet(
+      root,
+      wrapForAnalyze(block, includeFlutterShell: true),
+    );
+  });
+
   test('mcp_toolkit README custom-tools dart fence type-checks', () async {
     final root = packageRoot();
     final block = extractDartFence(

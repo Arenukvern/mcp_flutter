@@ -21,11 +21,15 @@ sub strip_benign_fragments {
   my ($blob) = @_;
   $blob =~ s/\b\d{1,3}\s*-(?:second|minute|hour|day|week|month|year)\b//gi;
   $blob =~ s/\bin\s+a\s+\d{1,3}\s*-(?:second|minute|hour|day)\s+setup\b//gi;
-  $blob =~ s/\btools\/call\b//gi;
+  unless ($blob =~ /\b\d{1,3}\s+tools\/call\b/i) {
+    $blob =~ s/\btools\/call\b//gi;
+  }
   $blob =~ s/\band\s+\d{1,3}\s+skills\b//gi;
   $blob =~ s/(?<=\s)\d{1,3}\s+skills\b(?!\s+and)//gi;
   $blob =~ s/\bfor\s+[\w-]*-tools\s+users\b//gi;
-  $blob =~ s/\bcustom-tools\b//gi;
+  $blob =~ s/`[^`]*custom-tools[^`]*`//gi;
+  $blob =~ s/\/custom-tools\b//gi;
+  $blob =~ s/custom-tools\.mdx//gi;
   $blob =~ s/"tools"\s*:\s*\[\s*\]//gi;
   return $blob;
 }
@@ -35,6 +39,7 @@ sub scan_text {
   $blob = strip_benign_fragments($blob);
   return if $blob =~ /^\s*$/;
   return unless $blob =~ /(?<![\w-])\btools\b/i
+    || $blob =~ /\b\d{1,3}\s+custom-tools\b/i
     || $blob =~ /\btoolset\b/i
     || $blob =~ /\d+\s*[-–]\s*tool\b/i
     || $blob =~ /\bfmt_/i
@@ -60,6 +65,7 @@ sub scan_text {
   $hit = 1 if !$hit && $blob =~ /\b(?:the\s+)?\d{1,3}\s+fmt_\*/i;
   $hit = 1 if !$hit && $blob =~ /\b(?:thirty|twenty)[\s-]?(?:four|nine)\b[\s\S]{0,48}\btools\b/i;
   $hit = 1 if !$hit && $blob =~ /\bcore\s+\d{1,3}\s+plus\s+\d{1,3}\s+extra\s+tools\b/i;
+  $hit = 1 if !$hit && $blob =~ /\b\d{1,3}\s+custom-tools\b/i;
   if ($hit) {
     print "$file:$line_no:$raw_for_print";
   }

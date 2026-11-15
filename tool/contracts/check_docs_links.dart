@@ -11,11 +11,11 @@ var broken = 0;
 class AllowEntry {
   AllowEntry({
     required this.target,
+    required this.citingFile,
     required this.reason,
-    this.citingFile,
   });
   final String target;
-  final String? citingFile;
+  final String citingFile;
   final String reason;
   bool used = false;
 
@@ -25,16 +25,25 @@ class AllowEntry {
     final raw = jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
     final entries = raw['entries'];
     if (entries is! List) return [];
-    return entries
-        .map((e) => e as Map<String, dynamic>)
-        .map(
-          (e) => AllowEntry(
-            target: '${e['target']}',
-            citingFile: e['citingFile'] as String?,
-            reason: '${e['reason']}',
-          ),
-        )
-        .toList();
+  final out = <AllowEntry>[];
+    for (final item in entries) {
+      final e = item as Map<String, dynamic>;
+      final citing = e['citingFile'];
+      if (citing is! String || citing.isEmpty) {
+        stderr.writeln(
+          'check_docs_links: allowlist entry missing citingFile for target ${e['target']}',
+        );
+        exit(2);
+      }
+      out.add(
+        AllowEntry(
+          target: '${e['target']}',
+          citingFile: citing,
+          reason: '${e['reason']}',
+        ),
+      );
+    }
+    return out;
   }
 }
 
@@ -42,12 +51,7 @@ late final List<AllowEntry> allowlist;
 
 bool allowlisted(String citingFile, String target) {
   for (final e in allowlist) {
-    if (e.target != target) continue;
-    if (e.citingFile != null &&
-        citingFile != e.citingFile &&
-        !citingFile.endsWith('/${e.citingFile}')) {
-      continue;
-    }
+    if (e.target != target || e.citingFile != citingFile) continue;
     e.used = true;
     return true;
   }
@@ -173,7 +177,6 @@ void scanDocPathLiterals(String path) {
       .replaceAll(RegExp(r'https?://\S+'), ' ');
   for (final m in docPathInSource.allMatches(content)) {
     var p = m.group(0)!;
-    if (allowlisted(path, p)) continue;
     final candidates = <String>[p];
     if (p.startsWith('docs/')) {
       candidates.add('mcp_server_dart/$p');
@@ -187,13 +190,22 @@ void scanDocPathLiterals(String path) {
         break;
       }
     }
-    if (!found) {
-      report(
-        '$path: broken doc path in source -> $p',
-        citingFile: path,
-        target: p,
-      );
+    if (found) {
+      if (allowlisted(path, p)) {
+        report(
+          '$path: stale allowlist entry (target exists) -> $p',
+          citingFile: path,
+          target: p,
+        );
+      }
+      continue;
     }
+    if (allowlisted(path, p)) continue;
+    report(
+      '$path: broken doc path in source -> $p',
+      citingFile: path,
+      target: p,
+    );
   }
 }
 
@@ -357,7 +369,7 @@ Future<void> main() async {
     if (!e.used) {
       report(
         'allowlist: unused entry target=${e.target}'
-        '${e.citingFile != null ? " citingFile=${e.citingFile}" : ""} (${e.reason})',
+        ' citingFile=${e.citingFile} (${e.reason})',
       );
     }
   }

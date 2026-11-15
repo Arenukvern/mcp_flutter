@@ -4,6 +4,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 MIGRATION_SKILL="$ROOT/plugin/skills/flutter-mcp-toolkit-intentcall-migration/SKILL.md"
+SKILL_ASSETS="$ROOT/mcp_server_dart/lib/src/skill_assets.g.dart"
 
 command -v rg >/dev/null 2>&1 || {
   echo "check_intentcall_skills_grep: rg required" >&2
@@ -23,6 +24,38 @@ rg_list() {
     exit 2
   fi
   printf '%s' "$hits"
+}
+
+rg_match() {
+  local pattern="$1"
+  shift
+  set +e
+  rg -q "$pattern" "$@"
+  local rg_status=$?
+  set -e
+  if ((rg_status > 1)); then
+    echo "check_intentcall_skills_grep: rg failed (exit $rg_status)" >&2
+    exit 2
+  fi
+  [[ "$rg_status" -eq 0 ]]
+}
+
+rg_count() {
+  local pattern="$1"
+  shift
+  set +e
+  local count
+  count="$(rg -c "$pattern" "$@" 2>/dev/null)"
+  local rg_status=$?
+  set -e
+  if ((rg_status > 1)); then
+    echo "check_intentcall_skills_grep: rg failed (exit $rg_status)" >&2
+    exit 2
+  fi
+  if ((rg_status == 1)); then
+    count=0
+  fi
+  printf '%s' "$count"
 }
 
 check_paths() {
@@ -79,21 +112,25 @@ for f in \
   "$ROOT/plugin/agents/flutter-mcp-toolkit-runtime.md" \
   "$ROOT/plugin/.codex-plugin/plugin.json" \
   "$ROOT/docs/concepts/how-it-works.mdx"; do
-  if [[ -f "$f" ]] && rg -q 'MCPCallEntry' "$f"; then
-    echo "check_intentcall_skills_grep (plugin): unexpected MCPCallEntry in $f" >&2
-    bad=1
+  if [[ -f "$f" ]]; then
+    if rg_match 'MCPCallEntry' "$f"; then
+      echo "check_intentcall_skills_grep (plugin): unexpected MCPCallEntry in $f" >&2
+      bad=1
+    fi
   fi
 done
 
-if rg -q 'MCPCallEntry' "$ROOT/mcp_server_dart/lib/src/skill_assets.g.dart"; then
-  if ! rg -q 'flutter-mcp-toolkit-intentcall-migration' "$ROOT/mcp_server_dart/lib/src/skill_assets.g.dart"; then
-    echo "check_intentcall_skills_grep: MCPCallEntry in skill_assets.g.dart without migration skill" >&2
-    bad=1
-  fi
-  count="$(rg -c 'MCPCallEntry' "$ROOT/mcp_server_dart/lib/src/skill_assets.g.dart" || true)"
-  if [[ "$count" -gt 20 ]]; then
-    echo "check_intentcall_skills_grep: too many MCPCallEntry hits ($count) in skill_assets.g.dart" >&2
-    bad=1
+if [[ -f "$SKILL_ASSETS" ]]; then
+  if rg_match 'MCPCallEntry' "$SKILL_ASSETS"; then
+    if ! rg_match 'flutter-mcp-toolkit-intentcall-migration' "$SKILL_ASSETS"; then
+      echo "check_intentcall_skills_grep: MCPCallEntry in skill_assets.g.dart without migration skill" >&2
+      bad=1
+    fi
+    count="$(rg_count 'MCPCallEntry' "$SKILL_ASSETS")"
+    if [[ "$count" -gt 20 ]]; then
+      echo "check_intentcall_skills_grep: too many MCPCallEntry hits ($count) in skill_assets.g.dart" >&2
+      bad=1
+    fi
   fi
 fi
 

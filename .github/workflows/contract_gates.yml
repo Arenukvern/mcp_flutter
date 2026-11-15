@@ -108,6 +108,9 @@ jobs:
       - name: Check docs links fixtures (mutation)
         run: bash tool/contracts/test_docs_links_fixtures.sh
 
+      - name: Check docs links checker mutation harness
+        run: bash tool/contracts/test_docs_links_checker_mutations.sh
+
       - name: Check docs/help drift
         run: bash tool/contracts/check_docs_drift.sh
 
