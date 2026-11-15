@@ -1,14 +1,14 @@
 # Browser dogfood eval tracker — showcase/flutter_test_app + flutter-mcp-toolkit
 # Versioned evidence (ADR 0011). Per-run artifacts stay under .showcase/eval_runs/.
 # Schema: iterations[] + summary (recurring_errors, fix_recommendations, verdict).
-# Rubric: docs/superpowers/evals/tool_quality_rubric.yaml
+# Rubric: maintainers/superpowers/evals/tool_quality_rubric.yaml
 # Run battery: bash tool/evals/run_dogfood_eval.sh --ws-uri "$WS_URI" [--merge]
-# Overview: docs/superpowers/evals/README.md
+# Overview: maintainers/superpowers/evals/README.md
 # Do not treat as CI gate without a fresh run_dogfood_eval.sh battery.
 
 program: flutter_test_app_web_dogfood
 scoring:
-  rubric: docs/superpowers/evals/tool_quality_rubric.yaml
+  rubric: maintainers/superpowers/evals/tool_quality_rubric.yaml
   max_per_iteration: 100
   pass_threshold: 80
   # Legacy flat weights (iterations 1–4); new runs also populate dimension_scores.

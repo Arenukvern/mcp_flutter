@@ -1,7 +1,7 @@
 # Plan — visual reconstruct (post warm-path)
 
 **Status:** **Maintenance** — checkpoint protocol + optional runtime E2E only  
-**Living tracker:** [`docs/evidence/dogfood/dogfood_web_eval.yaml`](../../evidence/dogfood/dogfood_web_eval.yaml) · [evals README](../evals/README.md)  
+**Living tracker:** [`maintainers/evidence/dogfood/dogfood_web_eval.yaml`](../../evidence/dogfood/dogfood_web_eval.yaml) · [evals README](../evals/README.md)  
 **Archived critique:** [evals/archive/2026-05-26-visual-reconstruct-critique.md](../evals/archive/2026-05-26-visual-reconstruct-critique.md)
 
 ## Key design decisions
@@ -29,7 +29,7 @@
 
 - [x] HS `navigate` step (route name or URI) — harness v2 bump if needed
 - [x] `compare.out` may be relative to `--bundle-dir` when set
-- [x] Document viewport/DPR pinning for warm path (Chrome 8080) — [evals README](../evals/README.md), [goldens README](../../../flutter_test_app/test/goldens/README.md)
+- [x] Document viewport/DPR pinning for warm path (Chrome 8080) — [evals README](../evals/README.md), [goldens README](../../../showcase/flutter_test_app/test/goldens/README.md)
 - [x] Dogfood merge records `visual_guild_weighted_score` (tracker iterations 13–17+)
 
 ## Phase 5 (v1) — Perceptual & semantic regions

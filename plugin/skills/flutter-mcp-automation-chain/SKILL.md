@@ -44,7 +44,7 @@ owner. Absence of the file is the liveness signal.
 | Need | Surface | Skill / doc |
 |---|---|---|
 | Chat-driven debugging ("tap X, what changed?") | MCP `fmt_*` tools | `flutter-mcp` |
-| Script/CI one-shot commands (snapshot, exec, batch) | CLI (`flutter-mcp-toolkit` / `fmtk`) | [CLI vs MCP](/docs/concepts/cli-vs-mcp) |
+| Script/CI one-shot commands (snapshot, exec, batch) | CLI (`flutter-mcp-toolkit` / `fmtk`) | [CLI vs MCP](/concepts/cli-vs-mcp) |
 | Repeatable scenario as checked-in Dart, CI exit codes | `flutter_mcp_harness` | `flutter-mcp-e2e-harness` |
 | Build + install + launch + process lifecycle (Android/iOS devices) | **oka** (separate repo) | this skill, oka section below |
 | Browser tier (web demos, WebMCP dogfood) | `CdpDriver` over CDP | `flutter-mcp-toolkit-maintain-web` |
@@ -144,9 +144,9 @@ See `packages/harness/lib/src/intent_driver_router.dart` and
 
 - `flutter-mcp` — the interactive MCP loop
 - `flutter-mcp-e2e-harness` — scenario authoring, launch-path table, showcase launcher
-- [The Automation Chain](/docs/concepts/automation-chain) — first-time guide
+- [The Automation Chain](/concepts/automation-chain) — first-time guide
 - [ADR 0014 — external dev sessions](/decisions/0014_external_dev_sessions_runner_delegation) — runner delegation contract
-- [E2E Scenarios](/docs/use-cases/e2e-scenarios) · [CLI vs MCP](/docs/concepts/cli-vs-mcp)
+- [E2E Scenarios](/use-cases/e2e-scenarios) · [CLI vs MCP](/concepts/cli-vs-mcp)
 
 ## Sources
 

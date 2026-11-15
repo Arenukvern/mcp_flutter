@@ -68,6 +68,51 @@ jobs:
           fail_ci_if_error: false
           token: ${{ secrets.CODECOV_TOKEN }}
 
+  docs-contracts:
+    name: Docs contracts (gating)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Install ripgrep
+        run: sudo apt-get update && sudo apt-get install -y ripgrep
+
+      - name: Setup Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.5'
+          cache: true
+
+      - name: Install mcp_server_dart dependencies
+        working-directory: mcp_server_dart
+        run: flutter pub get
+
+      - name: Check docs reference drift
+        run: bash tool/contracts/check_docs_reference_drift.sh
+
+      - name: Check no hardcoded tool counts
+        run: bash tool/contracts/check_no_hardcoded_tool_counts.sh
+
+      - name: Check hardcoded tool count fixtures
+        run: bash tool/contracts/test_hardcoded_tool_counts_fixtures.sh
+
+      - name: Check docs internal links
+        run: bash tool/contracts/check_docs_links.sh
+
+      - name: Check decisions docs sync
+        run: bash tool/contracts/check_decisions_docs_sync.sh
+
+      - name: mcp_toolkit README snippet compiles
+        run: |
+          cd mcp_toolkit && dart pub get
+          dart test test/readme_custom_tools_snippet_test.dart
+
   informational:
     name: Contracts & analysis (informational)
     runs-on: ubuntu-latest
@@ -79,6 +124,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           persist-credentials: false
+
+      - name: Install ripgrep
+        run: sudo apt-get update && sudo apt-get install -y ripgrep
 
       - name: Setup Flutter SDK
         uses: subosito/flutter-action@v2
@@ -120,26 +168,6 @@ jobs:
       - name: Check docs/help drift
         continue-on-error: true
         run: bash tool/contracts/check_docs_drift.sh
-
-      - name: Check docs reference drift
-        continue-on-error: true
-        run: bash tool/contracts/check_docs_reference_drift.sh
-
-      - name: Check no hardcoded tool counts in docs
-        continue-on-error: true
-        run: bash tool/contracts/check_no_hardcoded_tool_counts.sh
-
-      - name: Check hardcoded tool count fixtures
-        continue-on-error: true
-        run: bash tool/contracts/test_hardcoded_tool_counts_fixtures.sh
-
-      - name: Check docs internal links
-        continue-on-error: true
-        run: bash tool/contracts/check_docs_links.sh
-
-      - name: Check decisions docs sync
-        continue-on-error: true
-        run: bash tool/contracts/check_decisions_docs_sync.sh
 
       - name: Check SDK parity
         continue-on-error: true
@@ -183,6 +211,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Install ripgrep
+        run: sudo apt-get update && sudo apt-get install -y ripgrep
 
       - name: Setup Flutter SDK
         uses: subosito/flutter-action@v2

@@ -25,11 +25,11 @@ Iterative dogfood framework for scoring **flutter-mcp-toolkit** and **intentcall
 
 Machine-readable source: [`tool_quality_rubric.yaml`](./tool_quality_rubric.yaml).
 
-Tracker file (web dogfood history): [`docs/evidence/dogfood/dogfood_web_eval.yaml`](../../evidence/dogfood/dogfood_web_eval.yaml) ([ADR 0011](/decisions/0011_dogfood_tracker_evidence_split)).
+Tracker file (web dogfood history): [`maintainers/evidence/dogfood/dogfood_web_eval.yaml`](../../evidence/dogfood/dogfood_web_eval.yaml) ([ADR 0011](/decisions/0011_dogfood_tracker_evidence_split)).
 
 WebMCP-specific verification (separate from VM dogfood): [2026-05-26-webmcp-verification.md](./2026-05-26-webmcp-verification.md).
 
-Archived spec gap matrix (iter 1–11): [archive/2026-05-26-dogfood-spec-gap-matrix.md](./archive/2026-05-26-dogfood-spec-gap-matrix.md). Current iterations: [`docs/evidence/dogfood/dogfood_web_eval.yaml`](../../evidence/dogfood/dogfood_web_eval.yaml).
+Archived spec gap matrix (iter 1–11): [archive/2026-05-26-dogfood-spec-gap-matrix.md](./archive/2026-05-26-dogfood-spec-gap-matrix.md). Current iterations: [`maintainers/evidence/dogfood/dogfood_web_eval.yaml`](../../evidence/dogfood/dogfood_web_eval.yaml).
 
 ## Workspace layout
 
@@ -125,7 +125,7 @@ make web-showcase          # Chrome + WebMCP flags
 | PR + push | `intentcall-static` | `make dogfood-eval-static` |
 | Weekly + `main` | `intentcall-weekly` | intentcall package tests + static battery |
 
-Workflow: [`.github/workflows/intentcall_eval.yml`](../../.github/workflows/intentcall_eval.yml). Full Chrome runtime dogfood stays local until a headless WebMCP runner is cost-effective.
+Workflow: [`.github/workflows/intentcall_eval.yml`](../../../.github/workflows/intentcall_eval.yml). Full Chrome runtime dogfood stays local until a headless WebMCP runner is cost-effective.
 
 Agent skills (run `make sync-skills` after edits):
 
@@ -138,7 +138,7 @@ Agent skills (run `make sync-skills` after edits):
 Artifacts:
 
 - Per-run folder: `.showcase/eval_runs/<timestamp>/` (`validate-runtime.json`, check logs, `eval_run.yaml`)
-- With `--merge`: updates `docs/evidence/dogfood/dogfood_web_eval.yaml` iteration list + `summary`
+- With `--merge`: updates `maintainers/evidence/dogfood/dogfood_web_eval.yaml` iteration list + `summary`
 - Without `--merge`: `.showcase/eval_run_<timestamp>.yaml` at repo root
 
 ### 3. Interpret results
@@ -177,7 +177,7 @@ See `.showcase/eval_run_<timestamp>.yaml` after a run. Minimal shape:
 
 ```yaml
 run_id: "20260526T120000Z"
-rubric: docs/superpowers/evals/tool_quality_rubric.yaml
+rubric: maintainers/superpowers/evals/tool_quality_rubric.yaml
 device: chrome
 score: 92
 verdict: pass_with_warnings
@@ -204,5 +204,5 @@ fix_recommendations: []
 ## Related docs
 
 - [flutter-mcp-cli-runtime-validation](https://github.com/Arenukvern/mcp_flutter/blob/main/plugin/skills/flutter-mcp-cli-runtime-validation/SKILL.md)
-- [migration_mcp_call_entry_to_agent_call_entry.md](../../start_here/migration_mcp_call_entry_to_agent_call_entry.md)
-- [flutter_test_app/INTENTCALL_PLATFORM.md](../../flutter_test_app/INTENTCALL_PLATFORM.md)
+- [migration_mcp_call_entry_to_agent_call_entry.md](../../../docs/migration/migration_mcp_call_entry_to_agent_call_entry.md)
+- [flutter_test_app/INTENTCALL_PLATFORM.md](../../../showcase/flutter_test_app/INTENTCALL_PLATFORM.md)

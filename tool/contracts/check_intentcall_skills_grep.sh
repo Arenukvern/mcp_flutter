@@ -5,13 +5,24 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 MIGRATION_SKILL="$ROOT/plugin/skills/flutter-mcp-toolkit-intentcall-migration/SKILL.md"
 
+command -v rg >/dev/null 2>&1 || {
+  echo "check_intentcall_skills_grep: rg required" >&2
+  exit 1
+}
+
 bad=0
 
 check_paths() {
   local label="$1"
   shift
+  [[ -e "$1" ]] || return 0
   local hits
-  hits="$(rg -l 'MCPCallEntry' "$@" 2>/dev/null || true)"
+  hits="$(rg -l 'MCPCallEntry' "$@" || true)"
+  rg_status=${PIPESTATUS[0]}
+  if ((rg_status > 1)); then
+    echo "check_intentcall_skills_grep: rg failed (exit $rg_status)" >&2
+    exit 2
+  fi
   [[ -z "$hits" ]] && return 0
   while IFS= read -r file; do
     [[ -z "$file" ]] && continue
@@ -26,9 +37,12 @@ check_paths() {
 # Plugin skills (migration skill only)
 check_paths "plugin/skills" "$ROOT/plugin/skills" --glob 'SKILL.md'
 
-# User-facing docs (exclude superpowers specs/plans/closure)
-check_paths "docs/core" "$ROOT/docs/core"
-check_paths "docs/use-cases" "$ROOT/docs/use-cases"
+for docs_area in concepts install use-cases; do
+  [[ -d "$ROOT/docs/$docs_area" ]] && check_paths "docs/$docs_area" "$ROOT/docs/$docs_area"
+done
+for doc_file in quickstart.mdx troubleshooting.mdx; do
+  [[ -f "$ROOT/docs/$doc_file" ]] && check_paths "docs" "$ROOT/docs/$doc_file"
+done
 check_paths "docs/contributing" "$ROOT/docs/contributing"
 
 # Plugin surfaces
@@ -37,15 +51,15 @@ for f in \
   "$ROOT/plugin/agents/flutter-mcp-toolkit-runtime.md" \
   "$ROOT/plugin/.codex-plugin/plugin.json" \
   "$ROOT/docs/concepts/how-it-works.mdx"; do
-  if [[ -f "$f" ]] && rg -q 'MCPCallEntry' "$f" 2>/dev/null; then
+  if [[ -f "$f" ]] && rg -q 'MCPCallEntry' "$f"; then
     echo "check_intentcall_skills_grep (plugin): unexpected MCPCallEntry in $f" >&2
     bad=1
   fi
 done
 
 # Generated skill bundle — migration skill only
-if rg -q 'MCPCallEntry' "$ROOT/mcp_server_dart/lib/src/skill_assets.g.dart" 2>/dev/null; then
-  if ! rg 'flutter-mcp-toolkit-intentcall-migration' "$ROOT/mcp_server_dart/lib/src/skill_assets.g.dart" >/dev/null; then
+if rg -q 'MCPCallEntry' "$ROOT/mcp_server_dart/lib/src/skill_assets.g.dart"; then
+  if ! rg -q 'flutter-mcp-toolkit-intentcall-migration' "$ROOT/mcp_server_dart/lib/src/skill_assets.g.dart"; then
     echo "check_intentcall_skills_grep: MCPCallEntry in skill_assets.g.dart without migration skill" >&2
     bad=1
   fi

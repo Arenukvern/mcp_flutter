@@ -6,8 +6,8 @@
 | Merge commit | `a2d1e510` (`origin/main` into capture branch) |
 | Prior pin attempt HEAD | `d0fbf497` — native **failed** (fixture pub get / semantics graph; fixed in `03c1fdae`) |
 | Oka pin | `3477fb8ad96bd96750a7cdbe2959f818e55d6029` |
-| Repin record | `docs/evidence/oka_consumer_repin_3477fb8a_20261109.md` |
-| Prior pin history | `754b4750…` — `docs/evidence/oka_consumer_repin_754b4750_20261109.md` |
+| Repin record | `maintainers/evidence/oka_consumer_repin_3477fb8a_20261109.md` |
+| Prior pin history | `754b4750…` — `maintainers/evidence/oka_consumer_repin_754b4750_20261109.md` |
 
 ## CI runs (`03c1fdae`)
 

@@ -11,6 +11,6 @@
 
 ## Native proof
 
-Completed on consumer **`03c1fdae`**: see `docs/evidence/ndk_3477fb8a_native_green_20261109.md`.
+Completed on consumer **`03c1fdae`**: see `maintainers/evidence/ndk_3477fb8a_native_green_20261109.md`.
 
 Failed attempt on **`d0fbf497`**: provision `flutter pub get` in fixture (semantics/interface graph) — fixed without weakening native assertions.

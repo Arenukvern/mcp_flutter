@@ -20,7 +20,7 @@
 
 ## Install (pick one)
 
-1. **Marketplace / plugin** — `flutter-mcp-toolkit init cursor` (writes skills + mcp.json) or Claude/Codex marketplace `Arenukvern/mcp_flutter`.
+1. **Marketplace / plugin** — Claude: `/plugin marketplace add Arenukvern/mcp_flutter` then `/plugin install flutter-mcp-toolkit@flutter-mcp-toolkit`; Cursor: `flutter-mcp-toolkit init cursor` (CLI must be on PATH — use install script first).
 2. **Script** — `curl -fsSL …/install.sh | bash` → `flutter-mcp-toolkit-server` on PATH.
 3. **Docker / from source** — secondary; see docs/install/docker.mdx and docs/install/platforms.mdx.
 

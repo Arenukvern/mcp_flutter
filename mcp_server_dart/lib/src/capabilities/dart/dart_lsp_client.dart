@@ -330,7 +330,7 @@ final class DartLspClient {
       logger.info('Sending initialize request...');
       final response = await _sendRequest('initialize', {
         'processId': pid,
-        'clientInfo': {'name': 'Flutter Inspector MCP', 'version': '1.0.0'},
+        'clientInfo': {'name': 'Flutter MCP Toolkit', 'version': '1.0.0'},
         'capabilities': {
           'textDocument': {
             'hover': {

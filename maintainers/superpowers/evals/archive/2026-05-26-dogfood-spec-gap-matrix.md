@@ -1,10 +1,10 @@
-> **ARCHIVED** — Historical snapshot (iterations 1–11). For current status see [evals README](../README.md) and [dogfood tracker](../../evidence/dogfood/dogfood_web_eval.yaml).
+> **ARCHIVED** — Historical snapshot (iterations 1–11). For current status see [evals README](../README.md) and [dogfood tracker](../../../evidence/dogfood/dogfood_web_eval.yaml).
 
 # Dogfood vs intentcall spec — gap matrix
 
 **Date:** 2026-05-26  
 **Spec:** Historical IntentCall in-repo design and Bar D pre-extract completion docs were removed after durable extraction to the IntentCall repository; this archived eval remains a snapshot of the old gap analysis.
-**Evidence:** [`docs/evidence/dogfood/dogfood_web_eval.yaml`](../../evidence/dogfood/dogfood_web_eval.yaml) (iterations 1–10), code + CI on `feat/intentcall-phase1-3`
+**Evidence:** [`maintainers/evidence/dogfood/dogfood_web_eval.yaml`](../../../evidence/dogfood/dogfood_web_eval.yaml) (iterations 1–10), code + CI on `feat/intentcall-phase1-3`
 
 ## Summary
 
@@ -33,7 +33,7 @@
 | Dogfood app (`flutter_test_app`) | Strong web coverage | 10 iterations; hand-written `AgentCallEntry`; legacy `mcpToolkitTool` demos remain | **low** |
 | macOS dogfood parity | Sparse | Integration closure macOS validate-runtime; no macOS iteration tracker file | **medium** |
 | CLI exec vs MCP `fmt_*` names | Shipped | `CommandCatalog.resolveExecCommandName`; iter **3**; `INTENTCALL_PLATFORM.md` | **none** |
-| ADR 0008 — no Flutter `/agent/invoke` route | Accepted | [0008](../../decisions/0008_web_agent_invoke_js_only.mdx); JS `fetch` **404** expected | **none** for gate |
+| ADR 0008 — no Flutter `/agent/invoke` route | Accepted | [0008](../../../../decisions/0008_web_agent_invoke_js_only.mdx); JS `fetch` **404** expected | **none** for gate |
 | `MCPCallEntry` hard cut | Done | Phase 6; `migrate agent-entries --check` in battery | **none** |
 | Server `@AgentTool` codegen (≥1 fmt_*) | Pilot only | `fmt_get_recent_logs` codegen; second tool deferred | **low** (by policy) |
 | Live manifest from registry | Not done | Manual `web/agent_manifest.json`; tracker `deferred_work` | **high** for automation |
@@ -66,7 +66,7 @@
 
 ## Related
 
-- [Integration completion plan](../../plans/archive/2026-05-26-intentcall-integration-completion-next.md)
+- Integration completion plan (archived; recover from git history if needed)
 - [WebMCP verification](../2026-05-26-webmcp-verification.md)
 - [tool_quality_rubric.yaml](../tool_quality_rubric.yaml)
-- [intentcall-rollout.yaml](../../tracker/intentcall-rollout.yaml)
+- intentcall-rollout tracker (removed; see `maintainers/superpowers/tracker/mcp-boundary-hardening.yaml`)

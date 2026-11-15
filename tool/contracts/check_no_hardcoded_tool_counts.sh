@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Fails when prose hard-codes MCP tool totals (30–40) outside generated reference.
+# Fails when prose hard-codes tool totals next to "tool(s)" outside generated reference.
 set -euo pipefail
 
 ROOT_DIR="${HARDCODED_TOOL_COUNT_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
@@ -10,27 +10,45 @@ command -v rg >/dev/null 2>&1 || {
   exit 1
 }
 
-# Digits or spelled 30–40, optional markdown emphasis, then "tools" (fmt_ allowed between).
-PATTERN='(?i)(?:\*\*)?(?:40|3[0-9]|thirty(?:[-\s](?:one|two|three|four|five|six|seven|eight|nine))?|thirty|forty)(?:\*\*)?[\s\*_]{0,16}(?:fmt_\*[\s\*_]{0,8})?(?:MCP[\s\*_]{0,8})?tools\b'
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCANNER="${SCRIPT_DIR}/hardcoded_tool_count_scan.pl"
+[[ -x "$SCANNER" ]] || chmod +x "$SCANNER"
 
-hits="$(rg -n -P "$PATTERN" \
-  --glob '*.md' \
-  --glob '*.mdx' \
-  --glob '*.txt' \
-  --glob '!docs/reference/**' \
-  --glob '!**/CHANGELOG.md' \
-  --glob '!tool/contracts/**' \
-  --glob '!**/.agents/**' \
-  --glob '!**/skill_assets.g.dart' \
-  . || true)"
-rg_status=$?
-if ((rg_status > 1)); then
-  echo "check_no_hardcoded_tool_counts: rg failed (exit $rg_status)" >&2
-  exit 1
-fi
+mapfile -t files < <(
+  find . \( \
+    -path './docs/reference/*' -o \
+    -path './decisions/*' -o \
+    -path './docs/decisions/*' -o \
+    -path './maintainers/*' -o \
+    -path './.verify-matrix/*' -o \
+    -path './packages/*' -o \
+    -path '*/test/*' -o \
+    -path './plugin/skills/*' -o \
+    -path './.agents/*' -o \
+    -path './.cursor/*' -o \
+    -path './mcp_server_dart/docs/*' -o \
+    -path './.git/*' -o \
+    -path './**/node_modules/*' -o \
+    -path './tool/contracts/fixtures/hardcoded_tool_counts/*' -o \
+    -name 'CHANGELOG.md' -o \
+    -name 'skill_assets.g.dart' \
+  \) -prune -o -type f \( \
+    -name '*.md' -o -name '*.mdx' -o -name '*.txt' -o \
+    -name '*.json' -o -name '*.yaml' -o -name '*.yml' -o \
+    -name '*.dart' \
+  \) -print 2>/dev/null | sort
+)
+
+hits=""
+for f in "${files[@]}"; do
+  line_hits="$("$SCANNER" "$f" 2>/dev/null || true)"
+  if [[ -n "$line_hits" ]]; then
+    hits+="$line_hits"
+  fi
+done
 
 if [[ -n "$hits" ]]; then
-  echo "Hard-coded tool counts found outside docs/reference (use generated reference instead):" >&2
+  echo "Hard-coded tool counts found outside docs/reference (use generated reference or add tool-count-allow on the line):" >&2
   echo "$hits" >&2
   exit 1
 fi

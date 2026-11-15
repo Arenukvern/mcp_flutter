@@ -30,7 +30,7 @@ during --execute after each upstream package has been published and observed.
 
 --execute always skips a package when that exact VERSION is already on pub.dev
 (--skip-existing is the explicit flag; re-runs are safe). Use workflow_dispatch
-on a tag when a tag push publish failed partway; see docs/contributing/contribution_guide.mdx.
+on a tag when a tag push publish failed partway; see docs/contributing/guide.mdx.
 USAGE
 }
 

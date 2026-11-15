@@ -68,7 +68,7 @@ Store listing copy: [plugin/assets/marketplace_copy.yaml](assets/marketplace_cop
 - `EXPECTED_SERVER_VERSION` — must match repo root `VERSION`
 - `agents/flutter-mcp-toolkit-runtime.md` — Claude specialist agent
 - `assets/` — store icons/screenshots (see [assets/README.md](assets/README.md))
-- `skills/` — skill bodies; repo root [`skills/`](../skills) symlinks here for `npx skills`
+- `skills/` — skill bodies; repo root `skills/` symlinks here for `npx skills`
 
 ## Editing skills
 

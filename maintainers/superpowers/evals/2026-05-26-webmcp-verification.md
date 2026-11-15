@@ -34,7 +34,7 @@ Both paths **no-op silently** when API absent.
 | When | Page load (`index.html`) | After `addEntries` (debug web only) |
 | Tools | From `web/agent_manifest.json` (e.g. `app_demo_ping`) | All runtime `AgentCallEntry` tools |
 | `execute` | `fetch('/agent/invoke?name=…')` | `entry.invokeDirect` in-process |
-| Live invoke today | **404** on `/agent/invoke` ([ADR 0008](../../decisions/0008_web_agent_invoke_js_only.mdx)) | Works only if `modelContext` exists |
+| Live invoke today | **404** on `/agent/invoke` ([ADR 0008](../../../decisions/0008_web_agent_invoke_js_only.mdx)) | Works only if `modelContext` exists |
 
 ## Chrome requirements
 

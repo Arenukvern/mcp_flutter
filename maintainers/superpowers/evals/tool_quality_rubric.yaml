@@ -1,6 +1,6 @@
 # Machine-readable rubric for MCP / intentcall tool quality dogfood evals.
 # Consumed by: tool/evals/run_dogfood_eval.sh, agents, Closer gates.
-# Human overview: docs/superpowers/evals/README.md
+# Human overview: maintainers/superpowers/evals/README.md
 
 version: 1
 name: mcp_intentcall_tool_quality

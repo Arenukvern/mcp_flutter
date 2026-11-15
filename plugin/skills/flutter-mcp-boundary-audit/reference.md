@@ -128,7 +128,7 @@ dart test packages/server_capability_core/test/tools/interaction_input_schemas_t
 
 ### Historical P0/P1 patterns (regression watch)
 
-From `docs/superpowers/tracker/mcp-boundary-hardening.yaml` — re-audit if touching these areas:
+From `maintainers/superpowers/tracker/mcp-boundary-hardening.yaml` — re-audit if touching these areas:
 
 | Pattern | Risk |
 |---------|------|
@@ -156,12 +156,12 @@ See this skill reference and `showcase/flutter_test_app/INTENTCALL_PLATFORM.md`.
 ### ADRs / evals (mcp_flutter)
 
 - `decisions/0008_web_agent_invoke_js_only.mdx` — JS `/agent/invoke` 404; Dart `invokeDirect` in-process
-- `docs/superpowers/evals/2026-05-26-webmcp-verification.md`
-- `docs/superpowers/evals/2026-05-26-deconstruct-verification.md`
+- `maintainers/superpowers/evals/2026-05-26-webmcp-verification.md`
+- `maintainers/superpowers/evals/2026-05-26-deconstruct-verification.md`
 
 ### Tracker (mcp_flutter)
 
-Completed hardening: `docs/superpowers/tracker/mcp-boundary-hardening.yaml`
+Completed hardening: `maintainers/superpowers/tracker/mcp-boundary-hardening.yaml`
 
 ---
 

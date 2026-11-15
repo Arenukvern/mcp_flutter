@@ -1142,7 +1142,7 @@ updates `PATH` for you on first run.
   - `0001_capability_kernel_and_tool_prefix.mdx`
   - `0002_v3_scope_and_consolidation_deferrals.mdx`
 - Docs reorganized under `docs/start_here/`, `docs/decisions/`,
-  `docs/ai_agents/`, `docs/superpowers/`, `docs/guides/`.
+  `docs/ai_agents/`, `maintainers/superpowers/`, `docs/guides/`.
 - Dockerfile pinned to `dart:3.11.0-sdk`.
 
 ### Fixed

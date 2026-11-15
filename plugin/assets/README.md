@@ -7,7 +7,7 @@
 | `mascot_collaborative_weaver.png` | — | Transparent bird mascot (promo journey lanes) |
 | `original_logo.png` | — | Full logo artwork (promo cold-open / CTA) |
 | `screenshot-1.png` | 1280×800 | Live `showcase/flutter_test_app` capture (`validate-runtime`, flutter_layer) |
-| `screenshot-2.png` | 1280×800 | Live `fmt_list_client_tools_and_resources` output (21 tools) |
+| `screenshot-2.png` | 1280×800 | Live `fmt_list_client_tools_and_resources` listing sample |
 
 Regenerate: run `showcase/flutter_test_app` on macOS port 8181, then from `mcp_server_dart`:
 

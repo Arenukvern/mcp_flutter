@@ -46,11 +46,13 @@ Docs: [docs.page/arenukvern/mcp_flutter](https://docs.page/arenukvern/mcp_flutte
 ```text
 Claude Code: /plugin marketplace add Arenukvern/mcp_flutter
              /plugin install flutter-mcp-toolkit@flutter-mcp-toolkit
-Cursor:      flutter-mcp-toolkit init cursor
+Cursor:      flutter-mcp-toolkit init cursor   # needs CLI on PATH — install script first
 Codex:       codex plugin marketplace add Arenukvern/mcp_flutter
 ```
 
-**2. Or install script** (curl): `curl -fsSL https://raw.githubusercontent.com/Arenukvern/mcp_flutter/main/install.sh | bash`
+**2. Install script (recommended for server + CLI on PATH)** — curl:
+
+`curl -fsSL https://raw.githubusercontent.com/Arenukvern/mcp_flutter/main/install.sh | bash`
 
 **3. Instrument the app** — `cd my_flutter_app && flutter-mcp-toolkit codegen-init` (paste `main()` snippet before `runApp`).
 

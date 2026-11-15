@@ -9,18 +9,19 @@ This path gets you from zero to an agent that can **see** and **drive** your Flu
 
 ## 1. Install the toolkit
 
-**Option A — marketplace / plugin (recommended)**
+**Option A — marketplace / plugin (recommended for skills + MCP wiring)**
 
-- **Cursor:** add the local plugin via `flutter-mcp-toolkit init cursor`, or install from the repo marketplace.
-- **Claude Code / Codex:** `/plugin marketplace add Arenukvern/mcp_flutter` or `codex plugin marketplace add Arenukvern/mcp_flutter`.
+- **Claude Code:** `/plugin marketplace add Arenukvern/mcp_flutter` then `/plugin install flutter-mcp-toolkit@flutter-mcp-toolkit`
+- **Cursor:** `flutter-mcp-toolkit init cursor` (after the install script puts the CLI on PATH) or install from the repo marketplace.
+- **Codex:** `codex plugin marketplace add Arenukvern/mcp_flutter`
 
-**Option B — install script**
+**Option B — install script (required for `flutter-mcp-toolkit-server` on PATH)**
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Arenukvern/mcp_flutter/main/install.sh | bash
 ```
 
-This installs `flutter-mcp-toolkit` and `flutter-mcp-toolkit-server` on your PATH. See [platform support](./install/platforms.mdx) for binary limits.
+Marketplace/plugin alone does **not** ship the server binary. See [platform support](./install/platforms.mdx) for binary limits.
 
 ## 2. Wire your Flutter app
 

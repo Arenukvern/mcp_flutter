@@ -392,7 +392,7 @@ actions:
       fs_read:
         - tool/contracts/check_intentcall_skills_grep.sh
         - plugin/skills
-        - docs/core
+        - docs/concepts/how-it-works.mdx
         - plugin/assets/marketplace_copy.yaml
         - docs/use-cases/custom-tools.mdx
         - docs/contributing

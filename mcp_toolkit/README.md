@@ -34,15 +34,17 @@ Debug mode only (assert-guarded). After changing bootstrap code, **hot restart**
 ## Custom tools
 
 ```dart
-import 'package:intentcall_schema/intentcall_schema.dart';
-
 await binding.addEntries(
   entries: {
     AgentCallEntry.tool(
       namespace: 'demo',
       name: 'ping',
       description: 'Health check',
-      inputSchema: ObjectSchema(properties: {}),
+      inputSchema: const {
+        'type': 'object',
+        'additionalProperties': false,
+        'properties': {},
+      },
       handler: (args) async => AgentResult.success(message: 'pong'),
     ),
   },
@@ -50,7 +52,7 @@ await binding.addEntries(
 await binding.bootstrapFlutter(runApp: () => runApp(const MyApp()));
 ```
 
-Full example with `inputSchema`: [fibonacci_tool_example.dart](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_toolkit/example/fibonacci_tool_example.dart).
+Full example: [fibonacci_tool_example.dart](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_toolkit/example/fibonacci_tool_example.dart).
 
 Agent discovery: `fmt_list_client_tools_and_resources` / `fmt_client_tool`.
 
@@ -58,21 +60,4 @@ Migrations: [projections](https://github.com/Arenukvern/mcp_flutter/blob/main/do
 
 ## Server pairing
 
-Install `flutter-mcp-toolkit-server` ([install script](https://github.com/Arenukvern/mcp_flutter/blob/main/install.sh)) and point your MCP client at it. Verify with `flutter-mcp-toolkit doctor`.
-
-## Version
-
-Pin with the server release you install (see [VERSION](https://github.com/Arenukvern/mcp_flutter/blob/main/VERSION)). Check [CHANGELOG](https://github.com/Arenukvern/mcp_flutter/blob/main/CHANGELOG.md) before upgrading.
-
-## Examples
-
-- [example/](https://github.com/Arenukvern/mcp_flutter/tree/main/mcp_toolkit/example)
-- [showcase/flutter_test_app](https://github.com/Arenukvern/mcp_flutter/tree/main/showcase/flutter_test_app)
-
-## Develop
-
-```bash
-cd mcp_toolkit && flutter pub get && flutter test
-```
-
-Package changelog history: [mcp_server_dart/CHANGELOG.md](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_server_dart/CHANGELOG.md). Train releases: [CHANGELOG.md](https://github.com/Arenukvern/mcp_flutter/blob/main/CHANGELOG.md).
+Run the [flutter-mcp-toolkit-server](https://github.com/Arenukvern/mcp_flutter/tree/main/mcp_server_dart) MCP entry (`flutter-mcp-toolkit-server` on stdio) with the app in **debug** and `mcp_toolkit` initialized in `main()`.

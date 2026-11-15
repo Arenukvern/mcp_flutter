@@ -36,7 +36,7 @@ dart run tool/visual_supervisor_probe.dart /tmp/out
 
 ## Verified command exit statuses (clean tree at **`6917431d`**, sequential)
 
-See `docs/evidence/harness_probe_verification_6917431d_20261108.md` — captured **after** code commit, **no** concurrent git writes; porcelain hash checked explicitly.
+See `maintainers/evidence/harness_probe_verification_6917431d_20261108.md` — captured **after** code commit, **no** concurrent git writes; porcelain hash checked explicitly.
 
 | Command | Exit |
 |---------|------|

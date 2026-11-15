@@ -4,16 +4,19 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 FIXTURE_DIR="$ROOT_DIR/tool/contracts/fixtures/hardcoded_tool_counts"
 CHECK="$ROOT_DIR/tool/contracts/check_no_hardcoded_tool_counts.sh"
+SCANNER="$ROOT_DIR/tool/contracts/hardcoded_tool_count_scan.pl"
 
 fail() {
   echo "test_hardcoded_tool_counts_fixtures: $*" >&2
   exit 1
 }
 
-must_match() {
+must_fail_scan() {
   local file="$1"
-  if ! rg -q -P '(?i)(?:\*\*)?(?:40|3[0-9]|thirty(?:[-\s](?:one|two|three|four|five|six|seven|eight|nine))?|thirty|forty)(?:\*\*)?[\s\*_]{0,16}(?:fmt_\*[\s\*_]{0,8})?(?:MCP[\s\*_]{0,8})?tools\b' "$file"; then
-    fail "fixture $file should match violation pattern but did not"
+  local hits
+  hits="$("$SCANNER" "$file" 2>/dev/null || true)"
+  if [[ -z "$hits" ]]; then
+    fail "fixture $file should trip scanner but did not"
   fi
 }
 
@@ -33,7 +36,7 @@ run_probe() {
 
 for f in "$FIXTURE_DIR"/should_fail_*.txt; do
   [[ -f "$f" ]] || fail "no should_fail fixtures in $FIXTURE_DIR"
-  must_match "$f"
+  must_fail_scan "$f"
   run_probe "$f"
 done
 

@@ -2229,7 +2229,7 @@ Pass `--web-browser-debugging-port <cdp>` if CDP discovery fails.
 
 ## Related
 
-- `docs/superpowers/evals/2026-05-26-webmcp-verification.md`
+- `maintainers/superpowers/evals/2026-05-26-webmcp-verification.md`
 - `flutter-mcp-cli-runtime-validation` — validate-runtime details
 - `flutter-mcp-toolkit-dogfood-iterations` — scored iterations
 - `flutter-mcp-e2e-harness` — programmatic scenarios over this showcase (`packages/harness`, `--web --detach` variant)
@@ -2329,9 +2329,9 @@ description: Runs and records showcase/flutter_test_app dogfood iterations (tool
 
 # Dogfood iterations
 
-Tracker: `docs/evidence/dogfood/dogfood_web_eval.yaml`  
-Rubric: `docs/superpowers/evals/tool_quality_rubric.yaml`  
-Overview: `docs/superpowers/evals/README.md`
+Tracker: `maintainers/evidence/dogfood/dogfood_web_eval.yaml`  
+Rubric: `maintainers/superpowers/evals/tool_quality_rubric.yaml`  
+Overview: `maintainers/superpowers/evals/README.md`
 
 ## Pass threshold
 
@@ -2388,7 +2388,7 @@ make dogfood-eval-static
 
 - Per run: `.showcase/eval_runs/<timestamp>/eval_run.yaml`
 - Snapshot: `.showcase/eval_run_<timestamp>.yaml`
-- With `--merge`: updates `docs/evidence/dogfood/dogfood_web_eval.yaml` (`yq` or `dart run mcp_server_dart/tool/merge_dogfood_tracker.dart`)
+- With `--merge`: updates `maintainers/evidence/dogfood/dogfood_web_eval.yaml` (`yq` or `dart run mcp_server_dart/tool/merge_dogfood_tracker.dart`)
 
 ## Verdicts
 
@@ -2728,7 +2728,7 @@ owner. Absence of the file is the liveness signal.
 | Need | Surface | Skill / doc |
 |---|---|---|
 | Chat-driven debugging ("tap X, what changed?") | MCP `fmt_*` tools | `flutter-mcp` |
-| Script/CI one-shot commands (snapshot, exec, batch) | CLI (`flutter-mcp-toolkit` / `fmtk`) | [CLI vs MCP](/docs/concepts/cli-vs-mcp) |
+| Script/CI one-shot commands (snapshot, exec, batch) | CLI (`flutter-mcp-toolkit` / `fmtk`) | [CLI vs MCP](/concepts/cli-vs-mcp) |
 | Repeatable scenario as checked-in Dart, CI exit codes | `flutter_mcp_harness` | `flutter-mcp-e2e-harness` |
 | Build + install + launch + process lifecycle (Android/iOS devices) | **oka** (separate repo) | this skill, oka section below |
 | Browser tier (web demos, WebMCP dogfood) | `CdpDriver` over CDP | `flutter-mcp-toolkit-maintain-web` |
@@ -2828,9 +2828,9 @@ See `packages/harness/lib/src/intent_driver_router.dart` and
 
 - `flutter-mcp` — the interactive MCP loop
 - `flutter-mcp-e2e-harness` — scenario authoring, launch-path table, showcase launcher
-- [The Automation Chain](/docs/concepts/automation-chain) — first-time guide
+- [The Automation Chain](/concepts/automation-chain) — first-time guide
 - [ADR 0014 — external dev sessions](/decisions/0014_external_dev_sessions_runner_delegation) — runner delegation contract
-- [E2E Scenarios](/docs/use-cases/e2e-scenarios) · [CLI vs MCP](/docs/concepts/cli-vs-mcp)
+- [E2E Scenarios](/use-cases/e2e-scenarios) · [CLI vs MCP](/concepts/cli-vs-mcp)
 
 ## Sources
 
