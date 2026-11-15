@@ -28,8 +28,7 @@ check_paths "plugin/skills" "$ROOT/plugin/skills" --glob 'SKILL.md'
 
 # User-facing docs (exclude superpowers specs/plans/closure)
 check_paths "docs/core" "$ROOT/docs/core"
-check_paths "docs/ai_agents" "$ROOT/docs/ai_agents"
-check_paths "docs/guides" "$ROOT/docs/guides"
+check_paths "docs/use-cases" "$ROOT/docs/use-cases"
 check_paths "docs/contributing" "$ROOT/docs/contributing"
 
 # Plugin surfaces
@@ -37,7 +36,7 @@ for f in \
   "$ROOT/plugin/README.md" \
   "$ROOT/plugin/agents/flutter-mcp-toolkit-runtime.md" \
   "$ROOT/plugin/.codex-plugin/plugin.json" \
-  "$ROOT/ARCHITECTURE.md"; do
+  "$ROOT/docs/concepts/how-it-works.mdx"; do
   if [[ -f "$f" ]] && rg -q 'MCPCallEntry' "$f" 2>/dev/null; then
     echo "check_intentcall_skills_grep (plugin): unexpected MCPCallEntry in $f" >&2
     bad=1

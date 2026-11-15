@@ -11,7 +11,8 @@ description: Marketplace install and manual MCP JSON for Cursor, Codex, and Clau
 | --- | --- |
 | **Cursor** | `flutter-mcp-toolkit init cursor` or repo marketplace plugin |
 | **Codex** | `codex plugin marketplace add Arenukvern/mcp_flutter` |
-| **Claude Code** | `/plugin marketplace add Arenukvern/mcp_flutter` |
+| **Claude Code** | `/plugin marketplace add Arenukvern/mcp_flutter` then `/plugin install flutter-mcp-toolkit@flutter-mcp-toolkit` |
+| **ChatGPT** | No supported MCP plugin path yet — use Cursor/Codex/Claude or manual `mcpServers` JSON |
 | **Cline** | `flutter-mcp-toolkit init cline` (skills); add MCP JSON below |
 | **Any agent** | `npx skills add Arenukvern/mcp_flutter` then configure MCP manually |
 
@@ -29,7 +30,7 @@ When the host **already** references `flutter-mcp-toolkit` in `mcp.json`, re-run
 
 ## Manual `mcpServers` JSON
 
-Use binary **`flutter-mcp-toolkit-server`** (on PATH after [install.sh](../../install.sh) or marketplace). Registry key **`flutter-mcp-toolkit`** is canonical; legacy **`flutter-inspector`** still works.
+Use binary **`flutter-mcp-toolkit-server`** (on PATH after marketplace install or [install.sh](../../install.sh)). Registry key **`flutter-mcp-toolkit`**. Renaming legacy keys: [migration v2→v3](../migration/migration_v2_to_v3.mdx).
 
 ### Cursor (`~/.cursor/mcp.json` or project `.cursor/mcp.json`)
 

@@ -110,7 +110,7 @@ check_description_mentions_dynamic() {
   if echo "$desc" | grep -qiE 'dynamic|custom'; then
     return 0
   fi
-  fail "description in ${file#$ROOT_DIR/} must mention dynamic or custom tools (see docs/ai_agents/marketplace_copy.yaml)"
+  fail "description in ${file#$ROOT_DIR/} must mention dynamic or custom tools (see plugin/assets/marketplace_copy.yaml)"
 }
 for manifest in \
   "$PLUGIN_DIR/.claude-plugin/plugin.json" \

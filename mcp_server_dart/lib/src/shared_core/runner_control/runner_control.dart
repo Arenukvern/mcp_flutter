@@ -13,7 +13,7 @@ import 'package:meta/meta.dart';
 /// must be delegated to it instead of (or in addition to) talking to the VM
 /// service directly.
 ///
-/// See `docs/decisions/0014_external_dev_sessions_runner_delegation.mdx` for
+/// See `docs/concepts/external-runner-contract.mdx` and ADR 0014 for
 /// the rationale.
 abstract interface class RunnerControl {
   /// Human-readable runner identity used in results.

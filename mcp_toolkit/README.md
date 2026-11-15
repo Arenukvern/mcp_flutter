@@ -20,6 +20,7 @@ flutter pub add mcp_toolkit
 ```
 
 ```dart
+import 'package:flutter/material.dart';
 import 'package:mcp_toolkit/mcp_toolkit.dart';
 
 Future<void> main() async {
@@ -32,21 +33,26 @@ Debug mode only (assert-guarded). After changing bootstrap code, **hot restart**
 
 ## Custom tools
 
-Register `AgentCallEntry` surfaces, then bootstrap:
-
 ```dart
-await binding.addEntries(entries: {
-  AgentCallEntry.tool(
-    namespace: 'demo',
-    name: 'ping',
-    description: 'Health check',
-    handler: (args) async => AgentResult.success(message: 'pong'),
-  ),
-});
+import 'package:intentcall_schema/intentcall_schema.dart';
+
+await binding.addEntries(
+  entries: {
+    AgentCallEntry.tool(
+      namespace: 'demo',
+      name: 'ping',
+      description: 'Health check',
+      inputSchema: ObjectSchema(properties: {}),
+      handler: (args) async => AgentResult.success(message: 'pong'),
+    ),
+  },
+);
 await binding.bootstrapFlutter(runApp: () => runApp(const MyApp()));
 ```
 
-Agent discovers them via `fmt_list_client_tools_and_resources` / `fmt_client_tool`.
+Full example with `inputSchema`: [fibonacci_tool_example.dart](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_toolkit/example/fibonacci_tool_example.dart).
+
+Agent discovery: `fmt_list_client_tools_and_resources` / `fmt_client_tool`.
 
 Migrations: [projections](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/migration/migration_toolkit_projections.mdx), [AgentCallEntry](https://github.com/Arenukvern/mcp_flutter/blob/main/docs/migration/migration_mcp_call_entry_to_agent_call_entry.md).
 
@@ -56,12 +62,12 @@ Install `flutter-mcp-toolkit-server` ([install script](https://github.com/Arenuk
 
 ## Version
 
-Pin with the server release you install (see repo [VERSION](https://github.com/Arenukvern/mcp_flutter/blob/main/VERSION)). Example constraint: `mcp_toolkit: ^7.1.1` when matching server 7.1.x — check [CHANGELOG](https://github.com/Arenukvern/mcp_flutter/blob/main/CHANGELOG.md) before upgrading.
+Pin with the server release you install (see [VERSION](https://github.com/Arenukvern/mcp_flutter/blob/main/VERSION)). Check [CHANGELOG](https://github.com/Arenukvern/mcp_flutter/blob/main/CHANGELOG.md) before upgrading.
 
 ## Examples
 
-- [example/](example/) — minimal bootstrap and Fibonacci tool
-- Showcase: [showcase/flutter_test_app](../showcase/flutter_test_app/)
+- [example/](https://github.com/Arenukvern/mcp_flutter/tree/main/mcp_toolkit/example)
+- [showcase/flutter_test_app](https://github.com/Arenukvern/mcp_flutter/tree/main/showcase/flutter_test_app)
 
 ## Develop
 
@@ -69,4 +75,4 @@ Pin with the server release you install (see repo [VERSION](https://github.com/A
 cd mcp_toolkit && flutter pub get && flutter test
 ```
 
-Changelog: [repository CHANGELOG.md](../CHANGELOG.md).
+Package changelog history: [mcp_server_dart/CHANGELOG.md](https://github.com/Arenukvern/mcp_flutter/blob/main/mcp_server_dart/CHANGELOG.md). Train releases: [CHANGELOG.md](https://github.com/Arenukvern/mcp_flutter/blob/main/CHANGELOG.md).

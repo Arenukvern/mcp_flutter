@@ -1,0 +1,29 @@
+---
+title: External runner contract (spec v2)
+description: Checklist for conforming dev-session runners (ADR 0014).
+---
+
+# Writing a conforming runner
+
+A runner (for example [oka](https://github.com/Arenukvern/oka) `dev`) is conforming when it:
+
+- [ ] Writes the discovery file (default `<project>/.flutter_mcp/runner-session.json`, schema 1) at session start, containing `vm_service_uri`, `control_port`, `device_id`, `pid`, `started_at`, and optionally its `runner` display name.
+- [ ] Deletes the discovery file at session exit — including attach-relaunch, where the **old** session file must not outlive the old session.
+- [ ] Serves the frozen TCP JSON-lines protocol on `127.0.0.1:<control_port>` (request `{id, method}`; response `{id, ok, result}` / `{id, ok:false, error}`) for `reload`, `restart`, `stop`, `status`.
+- [ ] Reports the **actual** daemon outcome for reload/restart; sets `result.fallback: true` when the attach-mode relaunch fallback fired.
+- [ ] Treats the toolkit as a client that may disconnect at any moment; on restart relaunch the runner may close the control connection — the toolkit interprets EOF mid-restart as session end, re-reads the discovery file once, and reconnects to the new `vm_service_uri`.
+- [ ] Binds to `127.0.0.1` only, with no auth (localhost-only dev tool).
+- [ ] Never spawns (or tolerates) a second attach session for the same app while alive.
+- [ ] Keeps `schema: 1` until a negotiated contract bump.
+
+## Worked example
+
+```bash
+oka dev -d <device>
+cat .flutter_mcp/runner-session.json
+flutter-mcp-toolkit exec --name hot_reload_flutter --args '{}'
+```
+
+Results carry `delegated: true`, the file's `runner` display name, and the daemon's raw outcome.
+
+Full rationale: [ADR 0014](../decisions/0014_external_dev_sessions_runner_delegation.mdx).

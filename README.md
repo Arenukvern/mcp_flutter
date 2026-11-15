@@ -41,20 +41,20 @@ Docs: [docs.page/arenukvern/mcp_flutter](https://docs.page/arenukvern/mcp_flutte
 
 ## Five-minute quickstart
 
-```bash
-# 1. Install (marketplace — see docs/install/clients.mdx — or script)
-curl -fsSL https://raw.githubusercontent.com/Arenukvern/mcp_flutter/main/install.sh | bash
+**1. Marketplace (recommended)** — see [client setup](docs/install/clients.mdx):
 
-# 2. Instrument the app (prints main() snippet — paste before runApp)
-cd my_flutter_app && flutter-mcp-toolkit codegen-init
-
-# 3. Skills (+ MCP config for Cursor/Codex only; other agents need manual mcp.json)
-flutter-mcp-toolkit init cursor   # or claude-code | codex | cline | agents-skills
-
-# 4. Run and verify
-flutter run --debug
-flutter-mcp-toolkit doctor
+```text
+Claude Code: /plugin marketplace add Arenukvern/mcp_flutter
+             /plugin install flutter-mcp-toolkit@flutter-mcp-toolkit
+Cursor:      flutter-mcp-toolkit init cursor
+Codex:       codex plugin marketplace add Arenukvern/mcp_flutter
 ```
+
+**2. Or install script** (curl): `curl -fsSL https://raw.githubusercontent.com/Arenukvern/mcp_flutter/main/install.sh | bash`
+
+**3. Instrument the app** — `cd my_flutter_app && flutter-mcp-toolkit codegen-init` (paste `main()` snippet before `runApp`).
+
+**4. Run and verify** — `flutter run --debug` then `flutter-mcp-toolkit doctor`.
 
 Connect the MCP server in your host (`flutter-mcp-toolkit-server` on stdio). Example for Claude Code:
 

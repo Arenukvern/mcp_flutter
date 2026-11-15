@@ -1,9 +1,18 @@
 #!/usr/bin/env bash
-# Regenerates docs/reference from live server/CLI and fails if output drifts.
+# Regenerates docs/reference from live server/CLI and fails on drift or extras.
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 REF_DIR="$ROOT_DIR/docs/reference"
+
+EXPECTED_FILES=(
+  cli.mdx
+  errors.mdx
+  resources.mdx
+  server-flags.mdx
+  skills.mdx
+  tools.mdx
+)
 
 fail() {
   echo "check_docs_reference_drift: $*" >&2
@@ -35,5 +44,18 @@ dart run tool/docs/gen_reference.dart >/dev/null
 if ! diff -qr "$BEFORE" "$REF_DIR" >/dev/null; then
   fail "docs/reference drifted. Run 'make docs-reference' and commit."
 fi
+
+mapfile -t on_disk < <(find "$REF_DIR" -maxdepth 1 -type f -printf '%f\n' | sort)
+mapfile -t expected_sorted < <(printf '%s\n' "${EXPECTED_FILES[@]}" | sort)
+
+if ((${#on_disk[@]} != ${#expected_sorted[@]})); then
+  fail "unexpected file count in docs/reference (want ${#expected_sorted[@]}, got ${#on_disk[@]})"
+fi
+
+for i in "${!expected_sorted[@]}"; do
+  if [[ "${on_disk[$i]}" != "${expected_sorted[$i]}" ]]; then
+    fail "unexpected docs/reference file set (extra or missing files)"
+  fi
+done
 
 ok "docs/reference in sync"

@@ -2786,7 +2786,7 @@ Usage:
       [--tool-name NAME --tool-args JSON --expect-result-field FIELD --expect-result-value VALUE]
 
 Enables repeatable WebMCP E2E on Chrome without manual chrome://flags each session.
-See docs/superpowers/evals/2026-05-26-webmcp-verification.md
+See maintainers/superpowers/evals/2026-05-26-webmcp-verification.md
 ''';
 
 String _usageWebmcpChromeArgs() => '''

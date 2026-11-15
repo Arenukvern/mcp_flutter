@@ -22,8 +22,6 @@ Docker and build-from-source are secondary: [docs/install/docker.mdx](../docs/in
 }
 ```
 
-Legacy `mcpServers` key `flutter-inspector` pointed at the same binary; use `flutter-mcp-toolkit` for new configs.
-
 ## App requirement
 
 Instrument the Flutter app with `mcp_toolkit` (`flutter-mcp-toolkit codegen-init`). Without it, server tools cannot reach UI extensions.

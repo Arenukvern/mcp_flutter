@@ -70,7 +70,7 @@ actions:
         - tool/contracts/expected_tool_surface.txt
         - CHANGELOG.md
         - README.md
-        - ARCHITECTURE.md
+        - docs/concepts/how-it-works.mdx
         - docs/migration/migration_v2_to_v3.mdx
         - decisions/0001_capability_kernel_and_tool_prefix.mdx
         - decisions/0002_v3_scope_and_consolidation_deferrals.mdx
@@ -393,13 +393,13 @@ actions:
         - tool/contracts/check_intentcall_skills_grep.sh
         - plugin/skills
         - docs/core
-        - docs/ai_agents
-        - docs/guides
+        - plugin/assets/marketplace_copy.yaml
+        - docs/use-cases/custom-tools.mdx
         - docs/contributing
         - plugin/README.md
         - plugin/agents/flutter-mcp-toolkit-runtime.md
         - plugin/.codex-plugin/plugin.json
-        - ARCHITECTURE.md
+        - docs/concepts/how-it-works.mdx
         - mcp_server_dart/lib/src/skill_assets.g.dart
       fs_write: []
       git: false

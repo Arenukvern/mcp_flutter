@@ -40,6 +40,21 @@ const _cliHelpCommands = <List<String>>[
   ['webmcp', 'verify'],
 ];
 
+const _referenceOutputs = <String>[
+  'tools.mdx',
+  'resources.mdx',
+  'cli.mdx',
+  'server-flags.mdx',
+  'skills.mdx',
+  'errors.mdx',
+];
+
+Future<void> _writeReferenceFile(String name, String content) async {
+  final path = '${_outDir.path}/$name';
+  final normalized = '${content.trimRight()}\n';
+  await File(path).writeAsString(normalized, flush: true);
+}
+
 Future<void> main(List<String> args) async {
   await _outDir.create(recursive: true);
 
@@ -48,18 +63,26 @@ Future<void> main(List<String> args) async {
   final defaultResources = await _probeServerResources(dumps: false);
   final templates = await _probeResourceTemplates();
 
-  await File('${_outDir.path}/tools.mdx').writeAsString(
-    _renderToolsMdx(defaultTools, dumpsTools),
-  );
-  await File('${_outDir.path}/resources.mdx').writeAsString(
+  await _writeReferenceFile('tools.mdx', _renderToolsMdx(defaultTools, dumpsTools));
+  await _writeReferenceFile(
+    'resources.mdx',
     _renderResourcesMdx(defaultResources, templates),
   );
-  await File('${_outDir.path}/cli.mdx').writeAsString(await _renderCliMdx());
-  await File('${_outDir.path}/server-flags.mdx').writeAsString(
-    await _renderServerFlagsMdx(),
-  );
-  await File('${_outDir.path}/skills.mdx').writeAsString(_renderSkillsMdx());
-  await File('${_outDir.path}/errors.mdx').writeAsString(_renderErrorsMdx());
+  await _writeReferenceFile('cli.mdx', await _renderCliMdx());
+  await _writeReferenceFile('server-flags.mdx', await _renderServerFlagsMdx());
+  await _writeReferenceFile('skills.mdx', _renderSkillsMdx());
+  await _writeReferenceFile('errors.mdx', _renderErrorsMdx());
+
+  for (final entity in _outDir.listSync()) {
+    final base = entity.uri.pathSegments.last;
+    if (!_referenceOutputs.contains(base)) {
+      if (entity is File) {
+        entity.deleteSync();
+      } else if (entity is Directory) {
+        entity.deleteSync(recursive: true);
+      }
+    }
+  }
 
   print('OK: wrote ${_outDir.path} (${defaultTools.length} default tools, '
       '${dumpsTools.length} with --dumps)');

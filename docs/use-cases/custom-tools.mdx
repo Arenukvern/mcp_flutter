@@ -5,33 +5,70 @@ description: Expose app-specific MCP tools from the running Flutter app.
 
 # Custom tools
 
-Your domain logic can surface as MCP tools **from the app**, not only from the server repo.
+Built-in `fmt_*` tools are generic. **Dynamic registration** lets your Flutter app publish tools and resources at runtime; the MCP server bridges them via `fmt_list_client_tools_and_resources`, `fmt_client_tool`, and `fmt_client_resource`.
 
-## Author in the app
+## When to use
 
-Use **`AgentCallEntry`** and register before `bootstrapFlutter`:
+Use dynamic tools when:
+
+- You need diagnostics only your app code can provide.
+- You want repeatable agent workflows as named tools with schemas.
+- You expose read-only snapshots of internal state.
+
+Skip them when built-in inspection tools are enough, or when the handler would be unsafe in debug without extra guards.
+
+## Minimal setup
 
 ```dart
-await binding.addEntries(entries: { myEntries });
-await binding.bootstrapFlutter(runApp: () => runApp(const MyApp()));
+import 'package:flutter/material.dart';
+import 'package:intentcall_schema/intentcall_schema.dart';
+import 'package:mcp_toolkit/mcp_toolkit.dart';
+
+Future<void> main() async {
+  final binding = MCPToolkitBinding.instance;
+  await binding.addEntries(
+    entries: {
+      AgentCallEntry.tool(
+        namespace: 'demo',
+        name: 'ping',
+        description: 'Health check',
+        inputSchema: ObjectSchema(properties: {}),
+        handler: (args) async => AgentResult.success(message: 'pong'),
+      ),
+    },
+  );
+  await binding.bootstrapFlutter(runApp: () => runApp(const MyApp()));
+}
 ```
 
-## Discover from the agent
+Compatibility bridge (legacy handlers): see [`mcp_toolkit/example/fibonacci_tool_example.dart`](../../mcp_toolkit/example/fibonacci_tool_example.dart).
 
-1. **`fmt_list_client_tools_and_resources`**
-2. Invoke with **`fmt_client_tool`** / **`fmt_client_resource`**
+After code changes to registrations, **hot restart** (not reload-only).
 
-Server flag **`--dynamics`** should stay enabled (default in [`plugin/mcp.json`](../../plugin/mcp.json)).
+## Agent workflow
+
+1. App running in debug with `mcp_toolkit` initialized.
+2. Server running with **`--dynamics`** (default in [`plugin/mcp.json`](../../plugin/mcp.json)).
+3. `fmt_list_client_tools_and_resources` → names + schemas.
+4. `fmt_client_tool` / `fmt_client_resource` with validated args.
+
+## Registry model
+
+- Entries are **`AgentCallEntry`** values registered through **`MCPToolkitBinding.addEntries`** before **`bootstrapFlutter`**.
+- IntentCall owns registry/session/schema semantics upstream; this repo owns the Flutter VM bridge and `fmt_*` host tools.
+- Namespace + name become stable tool identifiers for the agent.
 
 ## Migration
 
-Legacy `MCPCallEntry` → `AgentCallEntry`: [migration guide](../migration/migration_mcp_call_entry_to_agent_call_entry.md).
+- `MCPCallEntry` → `AgentCallEntry`: [migration guide](../migration/migration_mcp_call_entry_to_agent_call_entry.md).
+- Deeper maintainer notes: [SIMPLIFIED_DYNAMIC_REGISTRATION.md](../../mcp_server_dart/docs/SIMPLIFIED_DYNAMIC_REGISTRATION.md).
 
 ## Skills
 
 - `flutter-mcp-toolkit-custom-tools`
-- [Dynamic registration (maintainer)](../../mcp_server_dart/docs/SIMPLIFIED_DYNAMIC_REGISTRATION.md)
+- `flutter-mcp-toolkit-intentcall-migration`
 
 ## See also
 
 - [App setup](../install/app-setup.mdx)
+- [Tools reference](../reference/tools.mdx)

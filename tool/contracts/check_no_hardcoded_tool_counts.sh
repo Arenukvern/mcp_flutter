@@ -1,24 +1,32 @@
 #!/usr/bin/env bash
-# Fails when prose hard-codes MCP tool totals outside generated reference.
+# Fails when prose hard-codes MCP tool totals (30–40) outside generated reference.
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+ROOT_DIR="${HARDCODED_TOOL_COUNT_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 cd "$ROOT_DIR"
 
-PATTERN='([0-9]{2,3}[[:space:]]+(built-in[[:space:]]+)?fmt_\*|[0-9]{2,3}[[:space:]]+MCP[[:space:]]+tools|exposes[[:space:]]+[0-9]{2,3}[[:space:]]+MCP|The default toolkit surface exposes[[:space:]]+[0-9]+)'
+command -v rg >/dev/null 2>&1 || {
+  echo "check_no_hardcoded_tool_counts: rg required" >&2
+  exit 1
+}
 
-if command -v rg >/dev/null 2>&1; then
-  hits="$(rg -n -i --pcre2 "$PATTERN" \
-    --glob '*.md' --glob '*.mdx' \
-    --glob '!docs/reference/**' \
-    --glob '!**/CHANGELOG.md' \
-    --glob '!tool/contracts/**' \
-    --glob '!**/.agents/**' \
-    --glob '!**/skill_assets.g.dart' \
-    . 2>/dev/null || true)"
-else
-  hits="$(grep -RIn -E '[0-9]{2,3}[[:space:]]+MCP tools|exposes [0-9]{2,3}' \
-    --include='*.md' --include='*.mdx' . 2>/dev/null | grep -v docs/reference || true)"
+# Digits or spelled 30–40, optional markdown emphasis, then "tools" (fmt_ allowed between).
+PATTERN='(?i)(?:\*\*)?(?:40|3[0-9]|thirty(?:[-\s](?:one|two|three|four|five|six|seven|eight|nine))?|thirty|forty)(?:\*\*)?[\s\*_]{0,16}(?:fmt_\*[\s\*_]{0,8})?(?:MCP[\s\*_]{0,8})?tools\b'
+
+hits="$(rg -n -P "$PATTERN" \
+  --glob '*.md' \
+  --glob '*.mdx' \
+  --glob '*.txt' \
+  --glob '!docs/reference/**' \
+  --glob '!**/CHANGELOG.md' \
+  --glob '!tool/contracts/**' \
+  --glob '!**/.agents/**' \
+  --glob '!**/skill_assets.g.dart' \
+  . || true)"
+rg_status=$?
+if ((rg_status > 1)); then
+  echo "check_no_hardcoded_tool_counts: rg failed (exit $rg_status)" >&2
+  exit 1
 fi
 
 if [[ -n "$hits" ]]; then
