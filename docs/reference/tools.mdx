@@ -95,7 +95,7 @@ Capture screenshots, view details, and app errors in one response.
 
 Read content from a dynamically registered resource in the Flutter application. Resources provide structured data like app state, view details, or configuration information. Use this to access read-only information that doesn't require tool execution. Names/URIs must match exactly what appears in fmt_list_client_tools_and_resources. Typically used for getting current app state snapshots or accessing structured data. 
 
-For custom resources: To create new tools/resources: 1) Define AgentCallEntry.tool() or AgentCallEntry.resource() (namespace, name, description, inputSchema, handler returning AgentResult), 2) Register in the Flutter app (main.dart or bootstrap) via MCPToolkitBinding.addEntries() or addMcpTool(), 3) Use fmt_list_client_tools_and_resources to verify registration, 4) Hot restart the app to activate. 5) Use fmt_client_tool or fmt_client_resource to execute. Example: AgentCallEntry.resource(namespace: "app", name: "my_resource", ...) then addEntries; hot restart.
+For custom resources: To register custom surfaces: define AgentCallEntry.tool() or AgentCallEntry.resource() (namespace, name, description, inputSchema, handler returning AgentResult), 2) Register in the Flutter app (main.dart or bootstrap) via MCPToolkitBinding.addEntries() or addMcpTool(), 3) Use fmt_list_client_tools_and_resources to verify registration, 4) Hot restart the app to activate. 5) Use fmt_client_tool or fmt_client_resource to execute. Example: AgentCallEntry.resource(namespace: "app", name: "my_resource", ...) then addEntries; hot restart.
 
 ```json
 {
@@ -152,7 +152,7 @@ For custom resources: To create new tools/resources: 1) Define AgentCallEntry.to
 
 Execute a specific dynamically registered tool from the Flutter application. Use this to run debugging tools, inspect app state, take screenshots, analyze errors, or execute custom tools. Names/URIs must match exactly what appears in fmt_list_client_tools_and_resources. Arguments should conform to the tool's inputSchema requirements. This is your primary way to interact with Flutter app functionality beyond static MCP server tools. 
 
-For custom tools: To create new tools/resources: 1) Define AgentCallEntry.tool() or AgentCallEntry.resource() (namespace, name, description, inputSchema, handler returning AgentResult), 2) Register in the Flutter app (main.dart or bootstrap) via MCPToolkitBinding.addEntries() or addMcpTool(), 3) Use fmt_list_client_tools_and_resources to verify registration, 4) Hot restart the app to activate. 5) Use fmt_client_tool or fmt_client_resource to execute. Example: AgentCallEntry.tool(namespace: "app", name: "my_tool", ...) then addEntries; hot restart.
+For custom tools: To register custom surfaces: define AgentCallEntry.tool() or AgentCallEntry.resource() (namespace, name, description, inputSchema, handler returning AgentResult), 2) Register in the Flutter app (main.dart or bootstrap) via MCPToolkitBinding.addEntries() or addMcpTool(), 3) Use fmt_list_client_tools_and_resources to verify registration, 4) Hot restart the app to activate. 5) Use fmt_client_tool or fmt_client_resource to execute. Example: AgentCallEntry.tool(namespace: "app", name: "my_tool", ...) then addEntries; hot restart.
 
 ```json
 {
@@ -1357,7 +1357,7 @@ Inspect the deepest widget at global logical coordinates (x, y).
 
 Discover all dynamically registered tools and resources from the connected Flutter application. Use this as your first step to understand what debugging and inspection capabilities are available. Returns tool definitions with names, descriptions, and input schemas, plus available resources with URIs. Essential for planning your debugging workflow and understanding the app's current MCP toolkit setup. 
 
-To create new tools/resources: 1) Define AgentCallEntry.tool() or AgentCallEntry.resource() (namespace, name, description, inputSchema, handler returning AgentResult), 2) Register in the Flutter app (main.dart or bootstrap) via MCPToolkitBinding.addEntries() or addMcpTool(), 3) Use fmt_list_client_tools_and_resources to verify registration, 4) Hot restart the app to activate. 5) Use fmt_client_tool or fmt_client_resource to execute. See flutter-mcp-toolkit-custom-tools skill for AgentCallEntry examples.
+To register custom surfaces: define AgentCallEntry.tool() or AgentCallEntry.resource() (namespace, name, description, inputSchema, handler returning AgentResult), 2) Register in the Flutter app (main.dart or bootstrap) via MCPToolkitBinding.addEntries() or addMcpTool(), 3) Use fmt_list_client_tools_and_resources to verify registration, 4) Hot restart the app to activate. 5) Use fmt_client_tool or fmt_client_resource to execute. See flutter-mcp-toolkit-custom-tools skill for AgentCallEntry examples.
 
 ```json
 {
