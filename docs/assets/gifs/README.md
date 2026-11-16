@@ -1,24 +1,19 @@
 # Reproducible CLI demo GIFs (vhs)
 
-Terminal recordings for docs quickstart / CI pages. Sources are [Charmbracelet vhs](https://github.com/charmbracelet/vhs) `.tape` files; GIFs are committed so docs render without running vhs locally.
+Terminal recordings for docs quickstart / CI / harness pages. Sources are [Charmbracelet vhs](https://github.com/charmbracelet/vhs) `.tape` files; GIFs are committed so docs render without running vhs locally.
 
 ## Regenerate
 
-Prereqs: `vhs`, `ttyd`, `ffmpeg`, `flutter` (3.47.5+), release `flutter-mcp-toolkit` on `PATH`, Chrome (for harness/exec demos on Linux).
+Prereqs: `vhs`, `ttyd`, `ffmpeg`, `flutter` (3.47.5+), release `flutter-mcp-toolkit` on `PATH`, Chrome (headless `drive-web` / `drive-flutter-chrome`), X11 (`DISPLAY`).
 
 ```bash
-# Install vhs (example: Linux amd64 deb from GitHub releases)
-# export PATH="$HOME/.local/bin:$HOME/flutter/bin:$PATH"
-# export DISPLAY=:0  # or your X11 display; Xvfb works headless
+export PATH="$HOME/.local/bin:$HOME/flutter/bin:$PATH"
+export DISPLAY=:99   # Xvfb works headless
 
 bash docs/assets/gifs/regenerate_cli_gifs.sh
-# or per file:
-vhs docs/assets/gifs/cli-doctor.tape
-vhs docs/assets/gifs/cli-exec.tape
-vhs docs/assets/gifs/harness.tape
 ```
 
-Set `HARNESS_GIF_DEVICE=linux` to attempt a GTK desktop run of `showcase/native_layer_capture_fixture` (needs `ninja`, `cmake`, `libgtk-3-dev`, and a working `clang++` + `libstdc++` toolchain). Default is **`chrome`** headless on Linux, which drives the same fixture with `mcp_toolkit` extensions attached.
+`regenerate_cli_gifs.sh` provisions **intentcall** (`tool/ci/checkout_intentcall.sh`) and symlinks `../intentcall` so `showcase/flutter_demo` path overrides resolve — same as native-layer CI.
 
 ## Size budget
 
@@ -29,36 +24,30 @@ Set `HARNESS_GIF_DEVICE=linux` to attempt a GTK desktop run of `showcase/native_
 | File size | ≤2MB | **5MB** (`regenerate_cli_gifs.sh` fails above cap) |
 | Theme | GitHub Dark, font **14px** | — |
 
-After recording, `regenerate_cli_gifs.sh` writes probe PNG/text under `frames/` (gitignored locally; CI workflow uploads GIFs only).
+Probe output lands under `frames/` (gitignored).
 
 ## Tapes in this folder
 
-| Tape | GIF | Content |
+| Tape | GIF | On-screen content |
 | --- | --- | --- |
-| `cli-doctor.tape` | `cli-doctor.gif` | `warm_fixture` (hide) → `doctor --help` → `doctor_demo_display` (`criticalFailures=0`) |
-| `cli-exec.tape` | `cli-exec.gif` | `warm_fixture` (hide) → `exec_demo_display` + `get_extension_rpcs` JSON preview |
-| `harness.tape` | `harness.gif` | `scenarios/harness_counter_smoke.dart` scenario, passes, summary |
+| `harness-flutter.tape` | `harness-flutter.gif` | Hide: `flutter build web` for `showcase/flutter_demo`. Show: `make drive-flutter-chrome` — semantic tree, Increment ×3, Name, Count: 3, OK |
+| `harness-web.tape` | `harness-web.gif` | `make drive-web` — CDP tree on `showcase/web_demo`, increment/type/profile, OK |
+| `cli-exec.tape` | `cli-exec.gif` | Hide: headless `flutter run` on `flutter_demo` with `--host-vmservice-port=8181` (pinned port). Show: `flutter-mcp-toolkit --vm-service-uri … exec --name semantic_snapshot --pretty` |
 
-Supporting scripts live under `scenarios/` (not committed lockfile noise: run `dart pub get` there before harness recording).
+Harness flows mirror [`showcase/README.md`](../../showcase/README.md) and skill `flutter-mcp-e2e-harness` (`make drive-flutter-chrome`, `make drive-web`).
 
-## Recorded vs shot-list only
+### Exec warm path (oka gap)
 
-**Recorded in this repo (Linux agent VM):**
+Anton’s target owner is **`oka dev` / `oka_harness`** writing `.flutter_mcp/runner-session.json` with a known VM endpoint. **Published `oka_harness` 0.9.1** in this repo only ships **Android** `AppTarget`s — no Chrome/desktop launcher in the hosted package yet. Until oka publishes a Chrome dev session target, the exec tape uses the same **pinned-port** pattern as `showcase/flutter_test_app` (`--host-vmservice-port=8181`) off-camera only; the on-camera line is first-class CLI flags (no jq/python/bash helpers).
 
-- All three GIFs above with **real** CLI and harness output (no faked JSON).
-- Harness / exec demos use **`native_layer_capture_fixture`** via **headless Chrome** (`HARNESS_GIF_DEVICE=chrome`) because the snapshot VM lacked a working Flutter **Linux GTK** link (`clang++` could not link `libstdc++`). CI/workflow can retry with `HARNESS_GIF_DEVICE=linux` on a full desktop runner.
+**`cli-doctor.gif`** is deferred until doctor output is human-readable in a terminal recording (tracked separately).
 
-**Shot-list only (Anton / Mac manual — IDE + window visible):**
+## Shot-list only (macOS manual)
 
 | Flow | What to capture |
 | --- | --- |
-| See the UI | MCP client open beside **macOS** `showcase/flutter_test_app`; `fmt_get_screenshots` / semantic snapshot in chat |
-| Drive the UI | Terminal + app window; agent taps via `fmt_tap` / harness `ToolkitDriver` |
-| Debug | Errors + stack in client; hot reload proof (`r` in `flutter run` or harness) |
-| Custom tools | Dynamic tool list in client after app registers tools (`fmt_list_client_tools_and_resources`) |
-| Hot reload | Side-by-side editor, terminal `flutter run`, before/after screenshot |
-| MCP server connect | `flutter-mcp-toolkit init cursor` + Cursor MCP panel connected |
-| **Harness (macOS / iOS sim)** | Terminal running `dart run packages/harness/tool/showcase.dart` or a `Scenario` file **with the app window visible beside the terminal** — pair with `example/desktop_pair.dart` on macOS; on iOS sim, show Simulator + `flutter run` attach line |
-| **Harness (proof output)** | Same layout: scroll to `ALL PASS` / `FAILURES` summary and any evidence paths the scenario prints |
+| Instrumented harness + window | `make drive-flutter` with the `flutter_demo` window beside the terminal |
+| Two-instance desktop | `dart run example/desktop_pair.dart --skip-build` from `packages/harness` (macOS) |
+| See / drive / debug UI | MCP client beside `showcase/flutter_test_app`; `fmt_*` or harness `ToolkitDriver` |
 
-Suggested Mac harness layout: **60% terminal / 40% app window**, full screen recording trimmed to 8–15s, then `ffmpeg`/`gifsicle` downscale to 960px wide to match CLI GIFs.
+Suggested layout: **60% terminal / 40% app window**, trim to 8–15s, downscale to ~960px wide to match CLI GIFs.

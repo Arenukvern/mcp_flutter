@@ -59,5 +59,8 @@ universal_automation/
 packages/harness/output/
 .native_capture/
 intentcall/
+docs/assets/gifs/frames/
+docs/assets/gifs/.exec_ws_uri
+docs/assets/gifs/cli-exec.run.tape
 oka/
 **/pubspec_overrides.yaml

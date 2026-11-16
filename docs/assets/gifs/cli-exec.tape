@@ -1,4 +1,5 @@
-# Regenerate: vhs docs/assets/gifs/cli-exec.tape
+# Regenerate: bash docs/assets/gifs/regenerate_cli_gifs.sh (injects __VM_WS_URI__).
+# Off-camera warm: headless flutter run on showcase/flutter_demo (pinned VM port).
 Output docs/assets/gifs/cli-exec.gif
 
 Require bash
@@ -8,15 +9,9 @@ Set Width 1008
 Set Height 540
 Set Padding 24
 Set Theme "GitHub Dark"
-Set PlaybackSpeed 1.4
+Set PlaybackSpeed 1.35
 Set MarginFill "#0d1117"
 
-Hide
-Type "bash docs/assets/gifs/scenarios/warm_fixture.sh"
+Type "flutter-mcp-toolkit --vm-service-uri __VM_WS_URI__ exec --name semantic_snapshot --pretty"
 Enter
-Sleep 30s
-
-Show
-Type "bash docs/assets/gifs/scenarios/exec_demo_display.sh"
-Enter
-Sleep 11s
+Sleep 10s

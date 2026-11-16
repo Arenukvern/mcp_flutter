@@ -30,6 +30,10 @@ make drive-flutter            # macOS (first build takes minutes)
 make drive-flutter-chrome     # Flutter web
 ```
 
+<p align="center">
+  <img src="../docs/assets/gifs/harness-flutter.gif" alt="make drive-flutter-chrome: semantic tree, Increment ×3, Count: 3, OK" width="960" />
+</p>
+
 or directly:
 
 ```bash
@@ -53,6 +57,10 @@ by `serve.dart` and driven in Chrome:
 make drive-web                # headless Chrome
 make drive-web VISIBLE=1      # watch it
 ```
+
+<p align="center">
+  <img src="../docs/assets/gifs/harness-web.gif" alt="make drive-web: CDP accessibility tree, profile greeting, OK" width="960" />
+</p>
 
 or directly:
 

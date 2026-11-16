@@ -18,11 +18,11 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Install ttyd, ffmpeg, Xvfb, jq
+      - name: Install ttyd, ffmpeg, Xvfb
         run: |
           set -euo pipefail
           sudo apt-get update
-          sudo apt-get install -y -qq ttyd ffmpeg gifsicle xvfb x11-utils jq libgtk-3-dev ninja-build cmake
+          sudo apt-get install -y -qq ttyd ffmpeg xvfb x11-utils
 
       - name: Install vhs
         run: |
@@ -54,15 +54,9 @@ jobs:
           cp "/tmp/flutter_mcp_${ver}_linux-x64/bin/"* "$HOME/.local/bin/"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
-      - name: Harness scenario deps
-        run: |
-          dart pub get
-          cd docs/assets/gifs/scenarios && dart pub get
-
       - name: Regenerate GIFs
         env:
           DISPLAY: ':99'
-          HARNESS_GIF_DEVICE: chrome
         run: |
           set -euo pipefail
           Xvfb :99 -screen 0 1280x720x24 &

@@ -12,50 +12,40 @@ A guided tour lives in the
 [E2E scenarios](../../docs/use-cases/e2e-scenarios.mdx).
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Arenukvern/mcp_flutter/main/docs/assets/gifs/harness.gif" alt="Harness counter smoke scenario: launch fixture, tap increment, ALL PASS summary" width="960" />
+  <img src="https://raw.githubusercontent.com/Arenukvern/mcp_flutter/main/docs/assets/gifs/harness-flutter.gif" alt="make drive-flutter-chrome: ToolkitDriver on showcase/flutter_demo" width="960" />
 </p>
 
-Reproducible terminal source: [`docs/assets/gifs/harness.tape`](../../docs/assets/gifs/harness.tape) and [`docs/assets/gifs/scenarios/harness_counter_smoke.dart`](../../docs/assets/gifs/scenarios/harness_counter_smoke.dart).
+Recorded from the repo showcase drives — see [`showcase/drivers/bin/drive_flutter.dart`](../../showcase/drivers/bin/drive_flutter.dart), [`makefile`](../../makefile) (`drive-flutter-chrome` / `drive-web`), and vhs sources under [`docs/assets/gifs/`](../../docs/assets/gifs/).
+
+**macOS shot-list (not recorded in Linux CI):** `make drive-flutter` with the app window beside the terminal; two-instance pairing via `dart run example/desktop_pair.dart --skip-build`.
 
 ## Quick start
+
+Same observe → act → verify loop as the showcase driver (trimmed):
 
 ```dart
 import 'package:flutter_mcp_harness/flutter_mcp_harness.dart';
 
-LaunchedApp? app;
-var passed = false;
-try {
-  final scenario = Scenario('smoke', steps: [
-    ('launch', (context) async {
-      app = await MacosAppTarget(
-        projectDir: 'my_app',
-        binaryPath: 'my_app/build/macos/Build/Products/Debug/My App.app/Contents/MacOS/My App',
-      ).launch(); // full `flutter build macos --debug`, then run the binary
-      await app!.stdout.waitFor('app ready'); // wait on logs, never sleep
-      context.report.pass('attached at ${app!.vmUri}');
-    }),
-    ('drive + assert', (context) async {
-      final driver = WidgetDriver(await app!.vm());
-      final ref = await driver.findRef('login');
-      if (ref == null) return context.report.fail('no login button');
-      await driver.enterText(await driver.findRef('email'), 'me@example.com');
-      await driver.tap(ref);
-      final banner = await driver.findValue((v) => v.contains('Welcome'));
-      banner != null
-          ? context.report.pass('login confirmed')
-          : context.report.fail('no welcome banner');
-    }),
-  ]);
-  passed = await scenario.run();
-  scenario.report.printSummary();
-} finally {
-  await app?.stop(); // cleanup always runs
+Future<void> main() async {
+  final launched = await FlutterRunTarget(
+    projectDir: 'path/to/your_flutter_app',
+    device: 'chrome', // or macos, etc.
+  ).launch();
+  final driver = await attachDriver(launched);
+  try {
+    await driver.perform(const ClickAction(name: 'Increment'));
+    await driver.perform(const TypeAction('Ada', css: 'Name'));
+    final count = await driver.expectLabel('Count: 1');
+    // ignore: avoid_print
+    print('verified: $count');
+  } finally {
+    await driver.close();
+    await launched.stop();
+  }
 }
-exit(passed ? 0 : 1);
 ```
 
-Full two-instance composition root (host + controller pairing):
-[`example/desktop_pair.dart`](example/desktop_pair.dart).
+Structured steps, assertions, and cleanup: [`Scenario`](lib/src/scenario.dart) + [`Check`](lib/src/check.dart). Full two-instance composition root: [`example/desktop_pair.dart`](example/desktop_pair.dart) (`attachDriver`, `ClickAction`, `perform`, `expectLabel`).
 
 ## Why this shape
 
