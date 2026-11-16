@@ -2,6 +2,8 @@
 
 Dart MCP server and CLI for inspecting and driving a **debug** Flutter app. Ships as GitHub Release binaries (`flutter-mcp-toolkit`, `fmtk`, `flutter-mcp-toolkit-server`).
 
+See it in action: [dynamic tools](https://www.youtube.com/watch?v=Qog3x2VcO98), [Cursor setup](https://www.youtube.com/watch?v=pyDHaI81uts), and [video walkthroughs](../docs/concepts/video-walkthroughs.mdx).
+
 ## Install (recommended)
 
 1. **Marketplace / plugin** — see [docs/install/clients.mdx](../docs/install/clients.mdx).
