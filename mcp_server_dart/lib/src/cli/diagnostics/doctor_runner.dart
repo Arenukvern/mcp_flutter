@@ -60,7 +60,9 @@ final class DoctorRunner {
         dynamicGateway: dynamicRegistrySupported
             ? VmExtensionDynamicGateway(connectionContext: connectionContext)
             : null,
-        adapters: _doctorVisualCaptureAdapters(targetPlatform: targetPlatform),
+        adapters: _doctorVisualCaptureAdapters(
+          targetPlatform: targetPlatform,
+        ),
       );
       checks.add(await _checkVisualCaptureBackend(broker: visualCaptureBroker));
       checks.add(
@@ -115,8 +117,9 @@ final class DoctorRunner {
         );
       }
 
-      final line = _firstNonEmptyLine('${result.stdout}\n${result.stderr}')
-          .trim();
+      final line = _firstNonEmptyLine(
+        '${result.stdout}\n${result.stderr}',
+      ).trim();
       return _check(
         id: 'dart_sdk',
         status: DoctorCheckStatus.pass,
@@ -132,7 +135,8 @@ final class DoctorRunner {
         critical: false,
         diagnostic:
             'dart --version timed out after ${timeout.inMilliseconds}ms',
-        fixCommand: 'Retry with --timeout-ms <n> or verify local Dart SDK installation.',
+        fixCommand:
+            'Retry with --timeout-ms <n> or verify local Dart SDK installation.',
       );
     } on Exception catch (error) {
       return _check(
@@ -164,8 +168,9 @@ final class DoctorRunner {
         );
       }
 
-      final line = _firstNonEmptyLine('${result.stdout}\n${result.stderr}')
-          .trim();
+      final line = _firstNonEmptyLine(
+        '${result.stdout}\n${result.stderr}',
+      ).trim();
       return _check(
         id: 'flutter_sdk',
         status: DoctorCheckStatus.pass,
@@ -264,7 +269,8 @@ final class DoctorRunner {
             status: DoctorCheckStatus.fail,
             critical: true,
             diagnostic: 'No Flutter debug targets discovered.',
-            fixCommand: 'Start a Flutter app in debug mode and retry `flutter-mcp-toolkit doctor`.',
+            fixCommand:
+                'Start a Flutter app in debug mode and retry `flutter-mcp-toolkit doctor`.',
           );
         }
         selectedTarget = targets.first.targetId;
@@ -280,7 +286,8 @@ final class DoctorRunner {
         status: DoctorCheckStatus.pass,
         critical: true,
         diagnostic: 'Connected to VM target: $endpoint',
-        fixCommand: 'If this check regresses, retry with --target <ws_uri> and --timeout-ms <n>.',
+        fixCommand:
+            'If this check regresses, retry with --target <ws_uri> and --timeout-ms <n>.',
       );
     } on TimeoutException {
       return _check(
@@ -303,7 +310,8 @@ final class DoctorRunner {
         status: DoctorCheckStatus.fail,
         critical: true,
         diagnostic: 'Failed to reach VM target: $error',
-        fixCommand: 'Use --target with exact app.debugPort.wsUri or run discover_debug_apps.',
+        fixCommand:
+            'Use --target with exact app.debugPort.wsUri or run discover_debug_apps.',
       );
     } finally {
       if (disconnectAfterCheck) {
@@ -318,7 +326,8 @@ final class DoctorRunner {
     final skipped = _skipAppOwnedBridgeCheck(
       broker: broker,
       id: 'visual_capture_backend',
-      fixCommand: 'Start or connect to the target app before probing app-owned capture backends.',
+      fixCommand:
+          'Start or connect to the target app before probing app-owned capture backends.',
     );
     if (skipped != null) {
       return skipped;
@@ -341,7 +350,8 @@ final class DoctorRunner {
             'Visual capture backend ${result.backend} '
             '(target platform: ${broker.effectivePlatform}; '
             'owner: ${result.owner.wireName}; capabilities: $capabilityNames).',
-        fixCommand: 'Use `flutter-mcp-toolkit permissions status` to inspect capture support for the selected target.',
+        fixCommand:
+            'Use `flutter-mcp-toolkit permissions status` to inspect capture support for the selected target.',
       );
     } on Object catch (error) {
       logger(
@@ -354,7 +364,8 @@ final class DoctorRunner {
         status: DoctorCheckStatus.warn,
         critical: false,
         diagnostic: 'Visual capture backend probe failed: $error',
-        fixCommand: 'Verify the host visual-capture helper can run, or use the Flutter-layer capture path on supported targets.',
+        fixCommand:
+            'Verify the host visual-capture helper can run, or use the Flutter-layer capture path on supported targets.',
       );
     }
   }
@@ -365,7 +376,8 @@ final class DoctorRunner {
     final skipped = _skipAppOwnedBridgeCheck(
       broker: broker,
       id: 'visual_capture_permission',
-      fixCommand: 'Start or connect to the target app before probing app-owned capture permissions.',
+      fixCommand:
+          'Start or connect to the target app before probing app-owned capture permissions.',
     );
     if (skipped != null) {
       return skipped;
@@ -396,7 +408,8 @@ final class DoctorRunner {
         status: DoctorCheckStatus.warn,
         critical: false,
         diagnostic: 'Visual capture permission probe failed: $error',
-        fixCommand: 'Use `flutter-mcp-toolkit permissions status` for a direct permission check after fixing the host adapter.',
+        fixCommand:
+            'Use `flutter-mcp-toolkit permissions status` for a direct permission check after fixing the host adapter.',
       );
     }
   }
@@ -407,7 +420,8 @@ final class DoctorRunner {
     final skipped = _skipAppOwnedBridgeCheck(
       broker: broker,
       id: 'visual_capture_truth_mode',
-      fixCommand: 'Start or connect to the target app before probing app-owned capture truth mode.',
+      fixCommand:
+          'Start or connect to the target app before probing app-owned capture truth mode.',
     );
     if (skipped != null) {
       return skipped;
@@ -453,7 +467,8 @@ final class DoctorRunner {
         status: DoctorCheckStatus.warn,
         critical: false,
         diagnostic: 'Visual truth-mode probe failed: $error',
-        fixCommand: 'Fix the visual-capture backend or fall back to an explicitly supported capture mode.',
+        fixCommand:
+            'Fix the visual-capture backend or fall back to an explicitly supported capture mode.',
       );
     }
   }
@@ -467,7 +482,8 @@ final class DoctorRunner {
         status: DoctorCheckStatus.pass,
         critical: false,
         diagnostic: 'App permission bridge is not required for this target.',
-        fixCommand: 'Only app-owned capture targets need the optional permission bridge.',
+        fixCommand:
+            'Only app-owned capture targets need the optional permission bridge.',
       );
     }
     if (!dynamicRegistrySupported) {
@@ -475,8 +491,10 @@ final class DoctorRunner {
         id: 'app_permission_bridge',
         status: DoctorCheckStatus.warn,
         critical: false,
-        diagnostic: 'App permission bridge could not be checked because dynamic registry support is disabled.',
-        fixCommand: 'Run with --dynamics and install the optional app permission bridge if this target requires it.',
+        diagnostic:
+            'App permission bridge could not be checked because dynamic registry support is disabled.',
+        fixCommand:
+            'Run with --dynamics and install the optional app permission bridge if this target requires it.',
       );
     }
     if (!connectionContext.isConnected) {
@@ -484,8 +502,10 @@ final class DoctorRunner {
         id: 'app_permission_bridge',
         status: DoctorCheckStatus.warn,
         critical: false,
-        diagnostic: 'App permission bridge could not be checked because VM target is not connected.',
-        fixCommand: 'Use --target <ws_uri> or start the debug app before re-running doctor.',
+        diagnostic:
+            'App permission bridge could not be checked because VM target is not connected.',
+        fixCommand:
+            'Use --target <ws_uri> or start the debug app before re-running doctor.',
       );
     }
 
@@ -497,7 +517,8 @@ final class DoctorRunner {
       diagnostic: installed
           ? 'App permission bridge detected through dynamic registry.'
           : 'App permission bridge not detected.',
-      fixCommand: 'Install the optional mcp_toolkit permission delegate and re-run doctor.',
+      fixCommand:
+          'Install the optional mcp_toolkit permission delegate and re-run doctor.',
     );
   }
 
@@ -528,7 +549,8 @@ final class DoctorRunner {
       id: id,
       status: DoctorCheckStatus.warn,
       critical: false,
-      diagnostic: 'App-owned visual capture could not be checked because VM target is not connected.',
+      diagnostic:
+          'App-owned visual capture could not be checked because VM target is not connected.',
       fixCommand: fixCommand,
     );
   }
@@ -571,7 +593,8 @@ final class DoctorRunner {
           critical: false,
           diagnostic:
               'Dynamic registry reachable (tools: $tools, resources: $resources).',
-          fixCommand: 'If expected tools are missing, hot-reload the app and retry discovery.',
+          fixCommand:
+              'If expected tools are missing, hot-reload the app and retry discovery.',
         );
       }
 
