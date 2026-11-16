@@ -13,10 +13,10 @@ void main() {
       );
     });
 
-    test('accepts any ext.mcp.toolkit prefix', () {
+    test('rejects other ext.mcp.toolkit verbs before snapshot registers', () {
       expect(
         toolkitExtensionsReady(['ext.mcp.toolkit.tap_widget']),
-        isTrue,
+        isFalse,
       );
     });
 
