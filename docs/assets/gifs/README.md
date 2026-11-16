@@ -30,7 +30,7 @@ The script compiles the workspace **`flutter-mcp-toolkit`** (`mcp_server_dart/ma
 | --- | --- | --- |
 | `harness-flutter.tape` | `harness-flutter.gif` | `make drive-flutter-chrome` — full showcase drive ending in **OK** |
 | `harness-web.tape` | `harness-web.gif` | `make drive-web` — CDP tier **OK** |
-| `cli-exec.tape` | `cli-exec.gif` | Hide: `WEB_HEADLESS=1 dart run packages/harness/tool/showcase.dart --web --detach`. Show: `flutter-mcp-toolkit exec --name semantic_snapshot --pretty` from `showcase/flutter_test_app` |
+| `cli-exec.tape` | `cli-exec.gif` | Hide: `SHOWCASE_APP_DIR=showcase/flutter_demo WEB_HEADLESS=1 dart run packages/harness/tool/showcase.dart --web --detach`. Show: `flutter-mcp-toolkit exec --name semantic_snapshot --pretty` from `showcase/flutter_demo` (compact tree + `render` line) |
 
 Harness flows mirror [`showcase/README.md`](../../../showcase/README.md) (`make drive-flutter-chrome`, `make drive-web`).
 

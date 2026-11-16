@@ -7,25 +7,25 @@ Output docs/assets/gifs/cli-exec.gif
 
 Require make
 Set Shell "bash"
-Set FontSize 14
+Set FontSize 12
 Set Width 1008
-Set Height 540
-Set Padding 24
+Set Height 660
+Set Padding 20
 Set Theme "GitHub Dark"
-Set PlaybackSpeed 1.35
+Set PlaybackSpeed 1.1
 Set MarginFill "#0d1117"
 
 Hide
 Type "make showcase-stop"
 Enter
 Sleep 2s
-Type "WEB_HEADLESS=1 dart run packages/harness/tool/showcase.dart --web --detach"
+Type "SHOWCASE_APP_DIR=showcase/flutter_demo WEB_HEADLESS=1 dart run packages/harness/tool/showcase.dart --web --detach"
 Enter
 Sleep 90s
 
 Show
-Type "cd showcase/flutter_test_app"
+Type "cd showcase/flutter_demo"
 Enter
 Type "flutter-mcp-toolkit exec --name semantic_snapshot --pretty"
 Enter
-Sleep 12s
+Sleep 14s

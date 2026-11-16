@@ -29,7 +29,17 @@ final String repoRoot = p.normalize(
 );
 
 final String showcaseDir = p.join(repoRoot, '.showcase');
-final String appDir = p.join(repoRoot, 'showcase', 'flutter_test_app');
+
+/// Default dogfood app; override with `SHOWCASE_APP_DIR` (repo-relative path).
+String get appDir {
+  final override = Platform.environment['SHOWCASE_APP_DIR']?.trim();
+  if (override != null && override.isNotEmpty) {
+    return p.isAbsolute(override)
+        ? p.normalize(override)
+        : p.join(repoRoot, override);
+  }
+  return p.join(repoRoot, 'showcase', 'flutter_test_app');
+}
 
 const String scheme = 'mcpfluttertest';
 
