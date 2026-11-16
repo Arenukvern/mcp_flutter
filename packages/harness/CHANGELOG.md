@@ -15,6 +15,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- `attachDriver` waits until `ext.mcp.toolkit.semantic_snapshot` is listed on
+  the bound isolate before the first `ToolkitDriver.snapshot` — avoids a
+  web/chrome race where an earlier `ext.mcp.toolkit.*` verb appears first.
+
 - `ToolkitDriver` tap/enter_text now surface the app-side refusal
   (`success: false` — ref not found, stale ref, disabled control,
   `target_outside_viewport` with its reveal hint) as `ProtocolException`

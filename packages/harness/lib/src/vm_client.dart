@@ -254,13 +254,12 @@ final class VmClient {
   }
 }
 
-/// Returns true when [names] includes [required] or any `ext.mcp.toolkit.*`.
+/// Returns true when [names] includes [required] (typically semantic_snapshot).
 bool toolkitExtensionsReady(
   List<String> names, {
   String required = ToolkitExtensions.snapshot,
 }) {
-  if (names.contains(required)) return true;
-  return names.any((name) => name.startsWith(ToolkitExtensions.prefix));
+  return names.contains(required);
 }
 
 /// Shared poll loop for toolkit registration (tested directly).
