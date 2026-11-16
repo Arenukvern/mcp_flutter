@@ -32,7 +32,7 @@ The script compiles the workspace **`flutter-mcp-toolkit`** (`mcp_server_dart/ma
 | `harness-web.tape` | `harness-web.gif` | `make drive-web` — CDP tier **OK** |
 | `cli-exec.tape` | `cli-exec.gif` | Hide: `WEB_HEADLESS=1 dart run packages/harness/tool/showcase.dart --web --detach`. Show: `flutter-mcp-toolkit exec --name semantic_snapshot --pretty` from `showcase/flutter_test_app` |
 
-Harness flows mirror [`showcase/README.md`](../../showcase/README.md) (`make drive-flutter-chrome`, `make drive-web`).
+Harness flows mirror [`showcase/README.md`](../../../showcase/README.md) (`make drive-flutter-chrome`, `make drive-web`).
 
 ### Exec warm path / oka
 
