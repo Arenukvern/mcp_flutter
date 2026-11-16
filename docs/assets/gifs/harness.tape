@@ -3,22 +3,18 @@ Output docs/assets/gifs/harness.gif
 
 Require dart
 Set Shell "bash"
-Set FontSize 15
-Set Width 960
+Set FontSize 14
+Set Width 1008
 Set Height 540
 Set Padding 24
 Set Theme "GitHub Dark"
-Set PlaybackSpeed 2.1
+Set PlaybackSpeed 2.0
 Set MarginFill "#0d1117"
 
 Type "cd docs/assets/gifs/scenarios"
 Enter
-Sleep 300ms
-
-Type "sed -n '1,24p' harness_counter_smoke.dart"
-Enter
-Sleep 2s
+Sleep 250ms
 
 Type "dart run harness_counter_smoke.dart"
 Enter
-Sleep 26s
+Sleep 30s

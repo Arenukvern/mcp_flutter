@@ -3,20 +3,18 @@ Output docs/assets/gifs/cli-doctor.gif
 
 Require bash
 Set Shell "bash"
-Set FontSize 16
-Set Width 960
+Set FontSize 14
+Set Width 1008
 Set Height 540
 Set Padding 24
 Set Theme "GitHub Dark"
-Set PlaybackSpeed 1.25
+Set PlaybackSpeed 1.35
 Set MarginFill "#0d1117"
 
-Type "flutter-mcp-toolkit --help"
+Type "flutter-mcp-toolkit doctor --help"
 Enter
-Sleep 2.5s
-Ctrl+C
-Sleep 300ms
+Sleep 1.8s
 
-Type "flutter-mcp-toolkit doctor"
+Type "bash docs/assets/gifs/scenarios/doctor_demo.sh"
 Enter
-Sleep 4.5s
+Sleep 16s

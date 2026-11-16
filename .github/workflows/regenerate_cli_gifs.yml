@@ -14,17 +14,25 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
-      - name: Install vhs, ttyd, ffmpeg
+      - name: Install ttyd, ffmpeg, Xvfb, jq
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y -qq ttyd ffmpeg gifsicle xvfb x11-utils jq libgtk-3-dev ninja-build cmake
+
+      - name: Install vhs
         run: |
           set -euo pipefail
           curl -fsSL -o /tmp/vhs.deb \
             https://github.com/charmbracelet/vhs/releases/download/v0.12.1/vhs_0.12.1_amd64.deb
           sudo dpkg -i /tmp/vhs.deb
-          sudo apt-get install -y -qq ttyd ffmpeg gifsicle
+
+      - name: Setup Chrome
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: stable
 
       - name: Setup Flutter SDK
         uses: subosito/flutter-action@v2
@@ -55,15 +63,12 @@ jobs:
           HARNESS_GIF_DEVICE: chrome
         run: |
           set -euo pipefail
-          sudo apt-get install -y -qq xvfb google-chrome-stable libgtk-3-dev ninja-build cmake || true
           Xvfb :99 -screen 0 1280x720x24 &
           sleep 2
           bash docs/assets/gifs/regenerate_cli_gifs.sh
 
-      - name: Upload GIFs and probe artifacts
+      - name: Upload GIFs artifact
         uses: actions/upload-artifact@v4
         with:
           name: cli-harness-gifs
-          path: |
-            docs/assets/gifs/*.gif
-            docs/assets/gifs/frames/*
+          path: docs/assets/gifs/*.gif

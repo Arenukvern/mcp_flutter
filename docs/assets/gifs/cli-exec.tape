@@ -3,14 +3,20 @@ Output docs/assets/gifs/cli-exec.gif
 
 Require bash
 Set Shell "bash"
-Set FontSize 15
-Set Width 960
+Set FontSize 14
+Set Width 1008
 Set Height 540
 Set Padding 24
 Set Theme "GitHub Dark"
-Set PlaybackSpeed 2.0
+Set PlaybackSpeed 1.4
 Set MarginFill "#0d1117"
 
-Type "bash docs/assets/gifs/scenarios/exec_demo.sh"
+Hide
+Type "bash docs/assets/gifs/scenarios/warm_fixture.sh"
 Enter
-Sleep 32s
+Sleep 30s
+
+Show
+Type "bash docs/assets/gifs/scenarios/exec_demo_display.sh"
+Enter
+Sleep 11s

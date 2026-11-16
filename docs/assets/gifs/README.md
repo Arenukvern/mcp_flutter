@@ -29,7 +29,7 @@ Set `HARNESS_GIF_DEVICE=linux` to attempt a GTK desktop run of `showcase/native_
 | File size | ≤2MB | **5MB** (`regenerate_cli_gifs.sh` fails above cap) |
 | Theme | GitHub Dark, font 15–16px | — |
 
-After recording, `regenerate_cli_gifs.sh` writes `frames/*-frame0.png` and `frames/*.ffprobe.txt` for inspection.
+After recording, `regenerate_cli_gifs.sh` writes probe PNG/text under `frames/` (gitignored locally; CI workflow uploads GIFs only).
 
 ## Tapes in this folder
 
