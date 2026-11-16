@@ -116,6 +116,41 @@ void main() {
       expect(hints.platformViewsDetected, isTrue);
       expect(hints.matches.single.widgetType, 'AppKitView');
     });
+
+    test('declared platform view keeps the platform-view warning', () {
+      // The app says a platform view is present but lists only a weak match:
+      // the declared state wins, so the warning must name the platform view —
+      // not the external Texture.
+      final hints = platformViewHintsFromCaptureHintsJson(<String, Object?>{
+        'platformViewsDetected': true,
+        'matches': <Object?>[
+          <String, Object?>{'widgetType': 'Texture', 'confidence': 'low'},
+        ],
+      });
+      expect(hints.platformViewsDetected, isTrue);
+      expect(hints.warning, kPlatformViewWarning);
+      expect(hints.toCaptureHintsJson()['warning'], kPlatformViewWarning);
+    });
+
+    test('weak-only declaration keeps the weak-Texture warning', () {
+      // The app says no platform view, weak signal only. A strong match in the
+      // list must not upgrade the warning while the flag stays false.
+      final hints = platformViewHintsFromCaptureHintsJson(<String, Object?>{
+        'platformViewsDetected': false,
+        'weakSignalsDetected': true,
+        'matches': <Object?>[
+          <String, Object?>{
+            'widgetType': 'AndroidView',
+            'confidence': 'high',
+            'renderObjectType': 'RenderAndroidView',
+          },
+        ],
+      });
+      expect(hints.platformViewsDetected, isFalse);
+      expect(hints.weakSignalsDetected, isTrue);
+      expect(hints.warning, kWeakTextureWarning);
+      expect(hints.toCaptureHintsJson()['warning'], kWeakTextureWarning);
+    });
   });
 
   group('mergeCaptureHintMetadata', () {
