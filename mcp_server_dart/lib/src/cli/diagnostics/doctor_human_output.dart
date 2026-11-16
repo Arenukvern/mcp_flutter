@@ -110,8 +110,8 @@ String formatDoctorHuman(Map<String, Object?> doctorData) {
 
   final overall = _overallHeadline(critical: critical, fail: fail, warn: warn);
   final overallLabel = _overallLabel(overall, useColor: useColor);
-  buffer.writeln(
-    '$overallLabel — $pass pass, $warn warn, $fail fail ($critical critical)',
+  buffer.write(
+    '$overallLabel — $pass pass, $warn warn, $fail fail ($critical critical)\n',
   );
   return buffer.toString();
 }

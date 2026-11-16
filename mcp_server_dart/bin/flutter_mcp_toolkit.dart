@@ -1,5 +1,4 @@
 #!/usr/bin/env dart
-
 // ignore_for_file: do_not_use_environment
 
 import 'dart:convert';
@@ -343,7 +342,8 @@ Future<CoreResult> _runOneShot({
           if (_containsBlockedWrite(bundle)) {
             return CoreResult.failure(
               code: CoreErrorCode.writeBlocked,
-              message: 'Bundle output already exists and is blocked by --no-overwrite',
+              message:
+                  'Bundle output already exists and is blocked by --no-overwrite',
               details: bundle,
             );
           }
@@ -486,7 +486,8 @@ Future<CoreResult> _runSnapshotCommand({
         if (_containsBlockedWrite(snapshot)) {
           return CoreResult.failure(
             code: CoreErrorCode.writeBlocked,
-            message: 'Snapshot target already exists and is blocked by --no-overwrite',
+            message:
+                'Snapshot target already exists and is blocked by --no-overwrite',
             details: snapshot,
           );
         }
@@ -594,7 +595,8 @@ Future<CoreResult> _runValidateRuntime({
   if (toolkitCheck != null && toolkitCheck['status'] == 'fail') {
     return CoreResult.failure(
       code: CoreErrorCode.getExtensionRpcsFailed,
-      message: 'Runtime validation blocked: required mcp_toolkit extensions are missing.',
+      message:
+          'Runtime validation blocked: required mcp_toolkit extensions are missing.',
       details: {
         'doctor': doctorData,
         'toolkitCheck': toolkitCheck,
@@ -705,7 +707,8 @@ Future<CoreResult> _runValidateRuntime({
         'target': resolvedTarget,
         'missingExtensions': missingExtensions,
         'failureKind': 'missing_mcp_toolkit_wiring',
-        'fix': 'Install/initialize `mcp_toolkit` in the app, then hot restart or rerun.',
+        'fix':
+            'Install/initialize `mcp_toolkit` in the app, then hot restart or rerun.',
         'steps': steps,
       },
     );
@@ -1102,12 +1105,13 @@ List<_BatchStep> _parseBatchStepsJson(String? value) {
       .toList(growable: false);
 }
 
-SafeWriteOptions _safeWriteOptionsFrom(ArgResults command) => SafeWriteOptions(
-  check: command.flag(_check),
-  diff: command.flag(_diff),
-  backup: command.flag(_backup),
-  noOverwrite: command.flag(_noOverwrite),
-);
+SafeWriteOptions _safeWriteOptionsFrom(ArgResults command) =>
+    SafeWriteOptions(
+      check: command.flag(_check),
+      diff: command.flag(_diff),
+      backup: command.flag(_backup),
+      noOverwrite: command.flag(_noOverwrite),
+    );
 
 bool _containsBlockedWrite(Object? payload) {
   final map = switch (payload) {
@@ -1147,7 +1151,10 @@ LoggingLevel _parseLogLevel(String? level) => switch (level) {
   _ => LoggingLevel.error,
 };
 
-List<int> _parseScanPortsOption(String? value, {required CoreLogger logger}) {
+List<int> _parseScanPortsOption(
+  String? value, {
+  required CoreLogger logger,
+}) {
   final spec = _nonEmptyOption(value);
   final ports = CorePortScanner.parseScanPortsSpec(spec);
   if (spec != null && ports.isEmpty) {
@@ -1160,7 +1167,10 @@ List<int> _parseScanPortsOption(String? value, {required CoreLogger logger}) {
   return ports;
 }
 
-int _parsePositiveIntOption(String? value, {required int fallback}) {
+int _parsePositiveIntOption(
+  String? value, {
+  required int fallback,
+}) {
   final parsed = int.tryParse(value ?? '');
   if (parsed == null || parsed <= 0) {
     return fallback;
@@ -1168,7 +1178,10 @@ int _parsePositiveIntOption(String? value, {required int fallback}) {
   return parsed;
 }
 
-int _parseNonNegativeIntOption(String? value, {required int fallback}) {
+int _parseNonNegativeIntOption(
+  String? value, {
+  required int fallback,
+}) {
   final parsed = int.tryParse(value ?? '');
   if (parsed == null || parsed < 0) {
     return fallback;
@@ -1273,7 +1286,8 @@ CoreResult _installBundledSkill({
       if (!force) {
         return CoreResult.failure(
           code: CoreErrorCode.writeBlocked,
-          message: 'Skill destination already exists. Re-run with --force-skill-install.',
+          message:
+              'Skill destination already exists. Re-run with --force-skill-install.',
           details: {'destination': destination.path},
         );
       }
@@ -1436,12 +1450,14 @@ Future<void> _writeDoctorOrEnvelopeStdout({
     if (format == DoctorStdoutFormat.human) {
       final data = result.data;
       if (data is Map<String, Object?>) {
-        io.stdout.writeln(formatDoctorHuman(data));
+        io.stdout.write(formatDoctorHuman(data));
         return;
       }
       if (data is Map) {
-        io.stdout.writeln(
-          formatDoctorHuman(data.map((key, value) => MapEntry('$key', value))),
+        io.stdout.write(
+          formatDoctorHuman(
+            data.map((key, value) => MapEntry('$key', value)),
+          ),
         );
         return;
       }
@@ -1512,7 +1528,10 @@ Map<String, Object?> _asObject(Object? value) {
   return const <String, Object?>{};
 }
 
-Map<String, Object?>? _stepData(List<Map<String, Object?>> steps, String name) {
+Map<String, Object?>? _stepData(
+  List<Map<String, Object?>> steps,
+  String name,
+) {
   for (final step in steps) {
     if ('${step['name']}' != name) {
       continue;
@@ -1591,7 +1610,9 @@ String? _resolveVmTargetUri({
   return fromCommand ?? fromGlobal;
 }
 
-bool _captureHintsPlatformViewsDetected(List<Map<String, Object?>> steps) {
+bool _captureHintsPlatformViewsDetected(
+  List<Map<String, Object?>> steps,
+) {
   for (final step in steps) {
     if (step['ok'] != true) {
       continue;
@@ -1900,12 +1921,14 @@ final _argParser = ArgParser(allowTrailingOptions: false)
   ..addOption(
     _dartVmHost,
     defaultsTo: _defaultHost,
-    help: 'Fallback host for manual VM connection (prefer args.connection.uri for explicit targeting)',
+    help:
+        'Fallback host for manual VM connection (prefer args.connection.uri for explicit targeting)',
   )
   ..addOption(
     _dartVmPort,
     defaultsTo: '$_defaultPort',
-    help: 'Fallback port for manual VM connection (prefer args.connection.uri for explicit targeting)',
+    help:
+        'Fallback port for manual VM connection (prefer args.connection.uri for explicit targeting)',
   )
   ..addOption(
     _vmServiceUri,
@@ -2004,7 +2027,8 @@ final _argParser = ArgParser(allowTrailingOptions: false)
   ..addOption(
     _logLevel,
     defaultsTo: _defaultLogLevel,
-    help: 'Logging level (debug|info|notice|warning|error|critical|alert|emergency)',
+    help:
+        'Logging level (debug|info|notice|warning|error|critical|alert|emergency)',
   )
   ..addFlag(_help, abbr: 'h', help: 'Show usage text')
   ..addCommand(
@@ -2180,11 +2204,13 @@ final _argParser = ArgParser(allowTrailingOptions: false)
       )
       ..addFlag(
         'after-reload',
-        help: 'Also run hot_reload_flutter and capture one more screenshot after reload.',
+        help:
+            'Also run hot_reload_flutter and capture one more screenshot after reload.',
       )
       ..addFlag(
         'install-skill',
-        help: 'Install bundled Codex runtime-validation skill before running checks.',
+        help:
+            'Install bundled Codex runtime-validation skill before running checks.',
       )
       ..addOption(
         'skill-destination',
@@ -2261,7 +2287,8 @@ final _argParser = ArgParser(allowTrailingOptions: false)
           )
           ..addOption(
             'tool-name',
-            help: 'Optional WebMCP tool name to invoke through modelContextTesting.',
+            help:
+                'Optional WebMCP tool name to invoke through modelContextTesting.',
           )
           ..addOption(
             'tool-args',
@@ -2287,7 +2314,8 @@ final _argParser = ArgParser(allowTrailingOptions: false)
           ..addOption(
             'platform',
             defaultsTo: 'web',
-            help: 'Comma-separated platforms: web,android,ios,macos,linux,windows',
+            help:
+                'Comma-separated platforms: web,android,ios,macos,linux,windows',
           )
           ..addOption(
             'project-dir',
@@ -2324,11 +2352,13 @@ final _argParser = ArgParser(allowTrailingOptions: false)
             )
             ..addOption(
               'sample-arguments',
-              help: 'Optional JSON file keyed by manifest qualifiedName with primitive App Intent argument fixtures.',
+              help:
+                  'Optional JSON file keyed by manifest qualifiedName with primitive App Intent argument fixtures.',
             )
             ..addOption(
               'entity-fixtures',
-              help: 'Optional JSON file keyed by entity qualifiedName with identifier/search/expectedTitle fixtures.',
+              help:
+                  'Optional JSON file keyed by entity qualifiedName with identifier/search/expectedTitle fixtures.',
             ),
         ),
       ),
@@ -2617,11 +2647,12 @@ Future<int> _runInitSubcommand(ArgResults command) async {
   }
 }
 
-Future<int> _runCodegenInitSubcommand(ArgResults command) => runCodegenInit(
-  projectRoot: io.Directory.current.path,
-  printSnippetOnly: command.flag('print-only'),
-  runPubAdd: command.flag('pub-add'),
-);
+Future<int> _runCodegenInitSubcommand(ArgResults command) =>
+    runCodegenInit(
+      projectRoot: io.Directory.current.path,
+      printSnippetOnly: command.flag('print-only'),
+      runPubAdd: command.flag('pub-add'),
+    );
 
 Future<int> _runCodegenSubcommand(ArgResults command) async {
   final sub = command.command;
@@ -2639,7 +2670,9 @@ Future<int> _runCodegenSubcommand(ArgResults command) async {
   );
 }
 
-Future<int> _runCodegenAppIntentsTestingSubcommand(ArgResults command) async {
+Future<int> _runCodegenAppIntentsTestingSubcommand(
+  ArgResults command,
+) async {
   final sub = command.command;
   if (sub == null || sub.name != 'generate') {
     io.stderr.writeln(_usageCodegenAppIntentsTesting());
