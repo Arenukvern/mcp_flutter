@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:vm_service/vm_service.dart' as vm;
 import 'package:vm_service/vm_service_io.dart' as vm_io;
 
+import 'toolkit_extensions.dart';
 import 'vm_service_uri.dart';
 
 /// Owns the VM-service connection to one running Flutter app.
@@ -68,6 +69,28 @@ final class VmClient {
   Future<List<String>> extensionNames() async {
     final isolate = await _service.getIsolate(_mainIsolate.id!);
     return List<String>.from(isolate.extensionRPCs ?? const <String>[]);
+  }
+
+  /// Polls [extensionNames] (re-scanning isolates each tick) until the MCP
+  /// toolkit registers on the UI isolate — web/chrome often attaches before
+  /// `ext.mcp.toolkit.*` land on [extensionRPCs].
+  Future<void> waitForToolkitExtensions({
+    Duration timeout = const Duration(seconds: 90),
+    Duration poll = const Duration(milliseconds: 250),
+    String required = ToolkitExtensions.snapshot,
+  }) async {
+    await waitUntilToolkitRegistered(
+      readExtensions: extensionNames,
+      rebind: _rebindToToolkitIsolate,
+      required: required,
+      timeout: timeout,
+      poll: poll,
+      onTimeout: () => throw TimeoutException(
+        'MCP toolkit extensions not registered within $timeout '
+        '(waited for $required on $httpUri)',
+        timeout,
+      ),
+    );
   }
 
   /// Calls a registered service extension and returns its JSON response.
@@ -229,4 +252,32 @@ final class VmClient {
   Future<void> dispose() async {
     _service.dispose();
   }
+}
+
+/// Returns true when [names] includes [required] or any `ext.mcp.toolkit.*`.
+bool toolkitExtensionsReady(
+  List<String> names, {
+  String required = ToolkitExtensions.snapshot,
+}) {
+  if (names.contains(required)) return true;
+  return names.any((name) => name.startsWith(ToolkitExtensions.prefix));
+}
+
+/// Shared poll loop for toolkit registration (tested directly).
+Future<void> waitUntilToolkitRegistered({
+  required Future<List<String>> Function() readExtensions,
+  required Future<void> Function() rebind,
+  String required = ToolkitExtensions.snapshot,
+  Duration timeout = const Duration(seconds: 90),
+  Duration poll = const Duration(milliseconds: 250),
+  required void Function() onTimeout,
+}) async {
+  final deadline = DateTime.now().add(timeout);
+  while (DateTime.now().isBefore(deadline)) {
+    await rebind();
+    final names = await readExtensions();
+    if (toolkitExtensionsReady(names, required: required)) return;
+    await Future<void>.delayed(poll);
+  }
+  onTimeout();
 }
