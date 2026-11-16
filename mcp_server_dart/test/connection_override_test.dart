@@ -56,6 +56,22 @@ void main() {
       expect(result!.error?.code, equals(CoreErrorCode.connectFailed));
     });
 
+    test('parses a numeric port from the resource URI query', () async {
+      final executor = _RecordingExecutor();
+
+      final result = await applyConnectionOverrideFromResourceUri(
+        resourceUri:
+            'visual://localhost/view/details?mode=manual&host=127.0.0.1&port=8181',
+        executor: executor,
+      );
+
+      expect(result, isNull);
+      final command = executor.lastCommand! as ConnectCommand;
+      expect(command.mode, equals(CoreConnectionMode.manual));
+      expect(command.host, equals('127.0.0.1'));
+      expect(command.port, equals(8181));
+    });
+
     test('rejects unknown fields in nested connection object', () async {
       final executor = _RecordingExecutor();
 
